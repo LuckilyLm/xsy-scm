@@ -1,0 +1,15 @@
+# Project-local agent skills and installation metadata
+.agents/
+skills-lock.json
+
+# Local IDE metadata
+.idea/
+
+# Build outputs and local environment files
+**/target/
+**/node_modules/
+**/dist/
+.env
+.env.*
+!.env.example
+*.log
