@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.xianshuyuan.scm.common.persistence.JsonbStringMapTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 
 import java.math.BigDecimal;
@@ -22,7 +22,7 @@ public class ProductSkuEntity {
     private String skuCode;
     private String barcode;
     private String specName;
-    @TableField(typeHandler = JacksonTypeHandler.class, jdbcType = JdbcType.OTHER)
+    @TableField(typeHandler = JsonbStringMapTypeHandler.class, jdbcType = JdbcType.OTHER)
     private Map<String, String> specValues;
     private String saleUnit;
     private ProductType productType;

@@ -27,6 +27,12 @@ public final class ProductErrorCodes {
         new ErrorCode(40024, HttpStatus.BAD_REQUEST, "SKU 规格组合重复");
     public static final ErrorCode SKU_PRICE_INVALID =
         new ErrorCode(40025, HttpStatus.BAD_REQUEST, "SKU 市场价不能小于零");
+    public static final ErrorCode PRODUCT_NOT_FOUND =
+        new ErrorCode(40420, HttpStatus.NOT_FOUND, "商品不存在");
+    public static final ErrorCode SKU_NOT_OWNED =
+        new ErrorCode(40920, HttpStatus.CONFLICT, "SKU 不属于当前商品");
+    public static final ErrorCode VERSION_CONFLICT =
+        new ErrorCode(40921, HttpStatus.CONFLICT, "数据已被其他操作修改，请刷新后重试");
 
     private ProductErrorCodes() {
     }
