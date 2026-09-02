@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${XSY_TEST_DB_URL}
+    username: ${XSY_DB_USERNAME}
+    password: ${XSY_DB_PASSWORD}
+  flyway:
+    enabled: true
+    clean-disabled: true
+
+logging:
+  level:
+    root: warn
