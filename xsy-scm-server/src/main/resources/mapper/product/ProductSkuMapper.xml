@@ -35,6 +35,19 @@
         ORDER BY sort_order, id
     </select>
 
+    <select id="selectActiveBySpuIds" resultMap="SkuResultMap">
+        SELECT id, spu_id, sku_code, barcode, spec_name, spec_values, sale_unit,
+               product_type, market_price, status, is_default, sort_order,
+               version, deleted, created_at, updated_at, created_by, updated_by
+        FROM product_sku
+        WHERE deleted = FALSE
+          AND spu_id IN
+          <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">
+              #{spuId}
+          </foreach>
+        ORDER BY spu_id, sort_order, id
+    </select>
+
     <update id="clearDefault">
         UPDATE product_sku
         SET is_default = FALSE,

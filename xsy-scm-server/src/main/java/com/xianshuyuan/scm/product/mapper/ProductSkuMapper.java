@@ -12,5 +12,7 @@ public interface ProductSkuMapper extends BaseMapper<ProductSkuEntity> {
 
     List<ProductSkuEntity> selectActiveBySpuId(@Param("spuId") long spuId);
 
+    List<ProductSkuEntity> selectActiveBySpuIds(@Param("spuIds") List<Long> spuIds);
+
     int clearDefault(@Param("spuId") long spuId);
 }

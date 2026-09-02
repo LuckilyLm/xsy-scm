@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -30,6 +31,18 @@ public class GlobalExceptionHandler {
             .map(error -> error.getDefaultMessage() == null
                 ? ErrorCode.VALIDATION_ERROR.message()
                 : error.getDefaultMessage())
+            .orElse(ErrorCode.VALIDATION_ERROR.message());
+        return ResponseEntity.badRequest()
+            .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR.code(), message));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodValidationException(
+        ConstraintViolationException exception
+    ) {
+        String message = exception.getConstraintViolations().stream()
+            .findFirst()
+            .map(violation -> violation.getMessage())
             .orElse(ErrorCode.VALIDATION_ERROR.message());
         return ResponseEntity.badRequest()
             .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR.code(), message));
