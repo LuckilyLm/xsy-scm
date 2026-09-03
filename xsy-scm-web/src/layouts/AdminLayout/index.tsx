@@ -1,61 +1,42 @@
-import {
-  AppstoreOutlined,
-  BarChartOutlined,
-  DollarOutlined,
-  HomeOutlined,
-  InboxOutlined,
-  ShopOutlined,
-  ShoppingCartOutlined,
-  TeamOutlined,
-} from '@ant-design/icons';
 import { Badge, Input } from 'antd';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import styles from './AdminLayout.module.css';
-
-const primaryNavigation = [
-  { label: '首页', icon: <HomeOutlined /> },
-  { label: '商品', icon: <ShopOutlined />, active: true },
-  { label: '订单', icon: <InboxOutlined /> },
-  { label: '采购', icon: <ShoppingCartOutlined /> },
-  { label: '库房', icon: <AppstoreOutlined /> },
-  { label: '客户', icon: <TeamOutlined /> },
-  { label: '财务', icon: <DollarOutlined /> },
-  { label: '报表', icon: <BarChartOutlined /> },
-];
-
-const productNavigation = ['商品档案', '商品分类', '辅助资料', '商品图片', '售卖情况'];
+import { primaryNavigation, secondaryNavigation } from './navigation';
 
 export function AdminLayout() {
+  const location = useLocation();
+  const activePrimary = primaryNavigation.find((item) => item.path !== '/' && location.pathname.startsWith(item.path)) ?? primaryNavigation[0];
+  const section = activePrimary.path === '/' ? 'products' : activePrimary.path.slice(1);
+  const secondary = secondaryNavigation[section] ?? [];
   return (
     <div className={styles.shell}>
       <aside className={styles.primarySidebar}>
         <nav aria-label="一级导航" className={styles.primaryNav}>
           {primaryNavigation.map((item) => (
-            <button
-              className={item.active ? styles.primaryItemActive : styles.primaryItem}
+            <NavLink
+              className={item.path === activePrimary.path ? styles.primaryItemActive : styles.primaryItem}
               key={item.label}
-              type="button"
+              to={item.path}
+              end={item.path === '/'}
             >
               <span className={styles.primaryIcon}>{item.icon}</span>
               <span>{item.label}</span>
-            </button>
+            </NavLink>
           ))}
         </nav>
       </aside>
 
       <aside className={styles.secondarySidebar}>
-        <nav aria-label="商品二级导航" className={styles.secondaryNav}>
-          {productNavigation.map((item, index) =>
-            index === 0 ? (
-              <NavLink className={styles.secondaryItemActive} key={item} to="/products">
-                {item}
-              </NavLink>
-            ) : (
-              <span className={styles.secondaryItem} key={item}>
-                {item}
-              </span>
-            ),
-          )}
+        <nav aria-label={`${activePrimary.label}二级导航`} className={styles.secondaryNav}>
+          {secondary.map((item) => (
+            <NavLink
+              className={({ isActive }) => isActive ? styles.secondaryItemActive : styles.secondaryItem}
+              key={item.path}
+              to={item.path}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
         <div className={styles.collapseHint}>收起</div>
       </aside>
