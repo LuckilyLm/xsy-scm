@@ -12,19 +12,20 @@ export type RefundStatus = 'PENDING' | 'COMPLETED';
 export interface CustomerType { id: number; typeCode: string; name: string; status: CustomerTypeStatus; version: number; }
 export interface CustomerSummary {
   id: number; version: number; customerCode: string; name: string; customerTypeId: number;
-  status: CustomerStatus; visibilityPolicy: VisibilityPolicy; updatedAt: string;
+  customerTypeName: string; status: CustomerStatus; visibilityPolicy: VisibilityPolicy; updatedAt: string;
 }
-export interface CustomerSkuVisibility { id: number | null; version: number | null; skuId: number; }
+export interface CustomerSkuVisibility { id?: number; version?: number; skuId: number; }
+export interface CustomerDetail extends CustomerSummary { visibilities: CustomerSkuVisibility[]; }
 export interface CustomerPayload {
   version: number | null; customerCode: string; name: string; customerTypeId: number;
-  status: CustomerStatus; visibilityPolicy: VisibilityPolicy; skuVisibility: CustomerSkuVisibility[];
+  status: CustomerStatus; visibilityPolicy: VisibilityPolicy; visibilities: CustomerSkuVisibility[];
 }
 export interface AgreementPrice {
   id: number; version: number; customerId: number; skuId: number; unitPrice: string;
   effectiveFrom: string; effectiveTo: string | null;
 }
 export interface AgreementPricePayload {
-  id: number | null; version: number | null; customerId: number; skuId: number; unitPrice: string;
+  version: number | null; customerId: number; skuId: number; unitPrice: string;
   effectiveFrom: string; effectiveTo: string | null;
 }
 export interface OrderItem {
@@ -56,5 +57,5 @@ export type CustomerPage = PageData<CustomerSummary>;
 export type OrderPage = PageData<SalesOrder>;
 export type ReturnPage = PageData<OrderReturn>;
 export type RefundPage = PageData<Refund>;
-export interface SalesPageParams { page: number; pageSize: number; keyword?: string; status?: string; customerId?: number; }
+export interface SalesPageParams { page: number; pageSize: number; keyword?: string; status?: string; customerId?: number; customerTypeId?: number; }
 export type SkuSaleOption = { skuId: number; skuCode: string; productName: string; saleUnit: string; productType: ProductType; marketPrice: string; status: ShelfStatus };
