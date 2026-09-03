@@ -29,6 +29,21 @@ class CustomerSkuVisibilityChangeSetTest {
             .isInstanceOf(BusinessException.class).hasMessageContaining("不属于当前客户");
     }
 
+    @Test
+    void rejectsRetainedVisibilitySkuReplacement() {
+        assertThatThrownBy(() -> CustomerSkuVisibilityChangeSet.between(
+            List.of(existing(1, 10)), List.of(new CustomerSkuVisibilityRequest(1L, 0, 20L))))
+            .isInstanceOf(BusinessException.class).hasMessageContaining("不能更换 SKU");
+    }
+
+    @Test
+    void rejectsDuplicateRequestedSku() {
+        assertThatThrownBy(() -> CustomerSkuVisibilityChangeSet.between(List.of(), List.of(
+            new CustomerSkuVisibilityRequest(null, null, 10L),
+            new CustomerSkuVisibilityRequest(null, null, 10L))))
+            .isInstanceOf(BusinessException.class).hasMessageContaining("重复");
+    }
+
     private static CustomerSkuVisibilityEntity existing(long id, long skuId) {
         var entity = new CustomerSkuVisibilityEntity(); entity.setId(id); entity.setSkuId(skuId); return entity;
     }

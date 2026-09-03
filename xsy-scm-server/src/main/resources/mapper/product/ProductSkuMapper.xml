@@ -62,6 +62,18 @@
         ORDER BY s.id
     </select>
 
+    <select id="selectAllOrderable" resultMap="SkuResultMap">
+        SELECT s.id, s.spu_id, s.sku_code, s.barcode, s.spec_name, s.spec_values,
+               s.sale_unit, s.product_type, s.market_price, s.status, s.is_default,
+               s.sort_order, s.version, s.deleted, s.created_at, s.updated_at,
+               s.created_by, s.updated_by
+        FROM product_sku s
+        JOIN product_spu p ON p.id = s.spu_id
+        WHERE s.deleted = FALSE AND p.deleted = FALSE
+          AND s.status = 'ON_SHELF' AND p.status = 'ON_SHELF'
+        ORDER BY s.sku_code, s.id
+    </select>
+
     <update id="clearDefault">
         UPDATE product_sku
         SET is_default = FALSE,

@@ -1,1 +1,39 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd"><mapper namespace="com.xianshuyuan.scm.customer.mapper.CustomerAgreementPriceMapper"><select id="selectEffective" resultType="com.xianshuyuan.scm.customer.entity.CustomerAgreementPriceEntity">SELECT * FROM customer_agreement_price WHERE customer_id=#{customerId} AND deleted=FALSE AND effective_from &lt;= #{at} AND (effective_to IS NULL OR effective_to &gt; #{at}) AND sku_id IN <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach> ORDER BY effective_from DESC,id DESC</select><select id="countOverlapping" resultType="int">SELECT COUNT(*) FROM customer_agreement_price WHERE customer_id=#{customerId} AND sku_id=#{skuId} AND deleted=FALSE <if test="id != null">AND id != #{id}</if> AND effective_from &lt; COALESCE(#{to},'infinity'::timestamptz) AND (effective_to IS NULL OR effective_to &gt; #{from})</select><select id="selectActive" resultType="com.xianshuyuan.scm.customer.entity.CustomerAgreementPriceEntity">SELECT * FROM customer_agreement_price WHERE deleted=FALSE ORDER BY customer_id,sku_id,effective_from DESC</select></mapper>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.customer.mapper.CustomerAgreementPriceMapper">
+    <select id="selectEffective" resultType="com.xianshuyuan.scm.customer.entity.CustomerAgreementPriceEntity">
+        SELECT * FROM customer_agreement_price
+        WHERE customer_id = #{customerId} AND deleted = FALSE
+          AND effective_from &lt;= #{at} AND (effective_to IS NULL OR effective_to &gt; #{at})
+          AND sku_id IN
+          <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY effective_from DESC, id DESC
+    </select>
+
+    <select id="countOverlapping" resultType="int">
+        SELECT COUNT(*) FROM customer_agreement_price
+        WHERE customer_id = #{customerId} AND sku_id = #{skuId} AND deleted = FALSE
+        <if test="id != null">AND id != #{id}</if>
+        AND effective_from &lt; COALESCE(#{to}, 'infinity'::timestamptz)
+        AND (effective_to IS NULL OR effective_to &gt; #{from})
+    </select>
+
+    <select id="selectAgreementPage" resultType="com.xianshuyuan.scm.customer.entity.CustomerAgreementPriceEntity">
+        SELECT * FROM customer_agreement_price
+        WHERE deleted = FALSE
+        <if test="query.customerId != null">AND customer_id = #{query.customerId}</if>
+        <if test="query.skuId != null">AND sku_id = #{query.skuId}</if>
+        ORDER BY effective_from DESC, id DESC
+    </select>
+
+    <select id="lockCustomer" resultType="long">
+        SELECT id FROM customer WHERE id = #{customerId} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <update id="softDelete">
+        UPDATE customer_agreement_price
+        SET deleted = TRUE, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
+        WHERE id = #{id} AND version = #{version} AND deleted = FALSE
+    </update>
+</mapper>

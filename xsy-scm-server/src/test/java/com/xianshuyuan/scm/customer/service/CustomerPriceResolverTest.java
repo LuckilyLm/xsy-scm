@@ -12,7 +12,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 class CustomerPriceResolverTest {
     @Test void choosesAgreementPriceAndFallsBackToMarketPriceInBatch() {
@@ -30,6 +30,19 @@ class CustomerPriceResolverTest {
 
         assertThat(result).extracting(ResolvedCustomerPrice::unitPrice).containsExactly(new BigDecimal("6.5000"), new BigDecimal("8.0000"));
         assertThat(result).extracting(ResolvedCustomerPrice::source).containsExactly(PriceSource.AGREEMENT, PriceSource.MARKET);
+    }
+
+    @Test void returnsEmptyWithoutDatabaseCalls() {
+        var customerService = mock(CustomerService.class);
+        var priceMapper = mock(CustomerAgreementPriceMapper.class);
+        var skuMapper = mock(ProductSkuMapper.class);
+        var orderable = mock(OrderableSkuQueryService.class);
+
+        var result = new CustomerPriceResolver(customerService, priceMapper, skuMapper, orderable)
+            .resolve(10L, List.of(), OffsetDateTime.now());
+
+        assertThat(result).isEmpty();
+        verifyNoInteractions(priceMapper, orderable);
     }
 
     private ProductSkuEntity sku(long id, String price) { var sku = new ProductSkuEntity(); sku.setId(id); sku.setMarketPrice(new BigDecimal(price)); return sku; }
