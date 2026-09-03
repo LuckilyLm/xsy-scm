@@ -9,6 +9,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate replace to="/products" /> },
       {
         path: 'products',
+        hydrateFallbackElement: <div aria-busy="true">商品档案加载中…</div>,
         lazy: async () => {
           const { ProductPage } = await import('../pages/product/ProductPage');
           return { Component: ProductPage };
