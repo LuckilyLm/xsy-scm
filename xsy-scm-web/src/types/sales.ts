@@ -46,10 +46,12 @@ export interface SalesOrderPayload {
 }
 export interface ActualQuantityPayload { version: number; actualQuantity: string; reason: string; }
 export interface CancelOrderPayload { version: number; reason: string; }
-export interface ReturnItemPayload { orderItemId: number; quantity: string; }
-export interface OrderReturn { id: number; version: number; returnNo: string; orderId: number; status: ReturnStatus; reason: string; items: ReturnItemPayload[]; amount: string; }
+export interface ReturnItemPayload { orderItemId: number; requestedQuantity: string; }
+export interface ReturnItem { id: number; orderItemId: number; requestedQuantity: string; approvedQuantity: string | null; lockedUnitPrice: string; approvedAmount: string; version: number; }
+export interface OrderReturn { id: number; version: number; returnNo: string; orderId: number; customerId: number; status: ReturnStatus; reason: string; decisionReason: string | null; items: ReturnItem[]; approvedAmount: string; }
 export interface OrderReturnPayload { orderId: number; reason: string; items: ReturnItemPayload[]; }
-export interface Refund { id: number; version: number; refundNo: string; returnId: number; status: RefundStatus; amount: string; externalReference: string | null; }
+export interface ApproveReturnPayload { version: number; items: Array<{ returnItemId: number; version: number; approvedQuantity: string }>; }
+export interface Refund { id: number; version: number; refundNo: string; returnId: number; orderId: number; customerId: number; status: RefundStatus; refundAmount: string; externalReference: string | null; completedAt: string | null; }
 export interface CompleteRefundPayload { version: number; externalReference?: string; }
 export interface OrderOperationLog { id: number; operationType: string; operator: string; beforeData: unknown; afterData: unknown; createdAt: string; }
 
