@@ -23,6 +23,7 @@ class ResizeObserverMock {
 class IntersectionObserverMock {
   readonly root = null;
   readonly rootMargin = '';
+  readonly scrollMargin = '';
   readonly thresholds = [];
   disconnect() {}
   observe() {}

@@ -33,6 +33,7 @@ import type {
   ProductType,
   ShelfStatus,
 } from '../../types/product';
+import { ProductDrawer } from './ProductDrawer';
 import styles from './ProductPage.module.css';
 
 interface ProductFilterValues {
@@ -117,6 +118,8 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
   const [advanced, setAdvanced] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [pendingAction, setPendingAction] = useState<number | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerProductId, setDrawerProductId] = useState<number | null>(null);
   const categories = useQuery({ queryKey: ['product-categories'], queryFn: fetchCategoryTree });
   const categoryOptions = useMemo(
     () => toCategoryOptions(categories.data ?? []),
@@ -133,6 +136,24 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
     }
   }
 
+  function openCreate() {
+    if (onCreate) {
+      onCreate();
+      return;
+    }
+    setDrawerProductId(null);
+    setDrawerOpen(true);
+  }
+
+  function openEdit(id: number) {
+    if (onEdit) {
+      onEdit(id);
+      return;
+    }
+    setDrawerProductId(id);
+    setDrawerOpen(true);
+  }
+
   const columns: ProColumns<ProductSummary>[] = [
     {
       title: '商品名称',
@@ -140,7 +161,7 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
       width: 150,
       fixed: 'left',
       render: (_, record) => (
-        <button className={styles.nameButton} type="button" onClick={() => onEdit?.(record.id)}>
+        <button className={styles.nameButton} type="button" onClick={() => openEdit(record.id)}>
           {record.name}
         </button>
       ),
@@ -179,7 +200,7 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
       width: 210,
       fixed: 'right',
       render: (_, record) => [
-        <Button key="edit" size="small" type="link" onClick={() => onEdit?.(record.id)}>
+        <Button key="edit" size="small" type="link" onClick={() => openEdit(record.id)}>
           编辑
         </Button>,
         <Popconfirm
@@ -301,7 +322,7 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
       </Form>
 
       <div className={styles.toolbar}>
-        <Button icon={<PlusOutlined />} type="primary" onClick={onCreate}>
+        <Button icon={<PlusOutlined />} type="primary" onClick={openCreate}>
           新增商品
         </Button>
         <Typography.Text type="secondary">商品交易单位以 SKU 为准</Typography.Text>
@@ -386,6 +407,12 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
             </div>
           ),
         }}
+      />
+      <ProductDrawer
+        open={drawerOpen}
+        productId={drawerProductId}
+        onOpenChange={setDrawerOpen}
+        onSaved={() => actionRef.current?.reload()}
       />
     </PageContainer>
   );
