@@ -50,6 +50,7 @@ export interface OrderReturn { id: number; version: number; returnNo: string; or
 export interface OrderReturnPayload { orderId: number; reason: string; items: ReturnItemPayload[]; }
 export interface Refund { id: number; version: number; refundNo: string; returnId: number; status: RefundStatus; amount: string; externalReference: string | null; }
 export interface CompleteRefundPayload { version: number; externalReference?: string; }
+export interface OrderOperationLog { id: number; operationType: string; operator: string; beforeData: unknown; afterData: unknown; createdAt: string; }
 
 export type CustomerPage = PageData<CustomerSummary>;
 export type OrderPage = PageData<SalesOrder>;

@@ -8,5 +8,6 @@ export async function approveReturn(id: number, version: number, key: string) { 
 export async function rejectReturn(id: number, version: number, reason: string, key: string) { await apiClient.post(`/order-returns/${id}/reject`, { version, reason }, idempotency(key)); }
 export async function cancelReturn(id: number, version: number, reason: string, key: string) { await apiClient.post(`/order-returns/${id}/cancel`, { version, reason }, idempotency(key)); }
 export async function fetchRefunds(params: SalesPageParams) { return (await apiClient.get<RefundPage>('/order-refunds', { params })).data; }
+export async function fetchRefund(id: number) { return (await apiClient.get<Refund>(`/order-refunds/${id}`)).data; }
 export async function completeRefund(id: number, payload: CompleteRefundPayload, key: string) { await apiClient.post(`/order-refunds/${id}/complete`, payload, idempotency(key)); }
 export type { Refund };
