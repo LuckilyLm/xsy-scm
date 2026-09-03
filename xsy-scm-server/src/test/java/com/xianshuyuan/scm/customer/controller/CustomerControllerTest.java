@@ -44,11 +44,14 @@ class CustomerControllerTest {
 
     @Test void exposesOrderableSkusForCustomer() throws Exception {
         given(orderableSkus.listOrderable(1L)).willReturn(List.of(
-            new OrderableSkuResponse(9L, 3L, "SKU-9", "Red / Large", "kg", "12.3400")
+            new OrderableSkuResponse(9L, 3L, "Red Apple", "SKU-9", "Red / Large", java.util.Map.of("size", "L"), "kg", com.xianshuyuan.scm.product.entity.ProductType.STANDARD, "12.3400", com.xianshuyuan.scm.product.entity.ShelfStatus.ON_SHELF)
         ));
         mvc.perform(get("/api/customers/1/skus"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data[0].id").value(9))
+            .andExpect(jsonPath("$.data[0].skuId").value(9))
+            .andExpect(jsonPath("$.data[0].productName").value("Red Apple"))
+            .andExpect(jsonPath("$.data[0].productType").value("STANDARD"))
+            .andExpect(jsonPath("$.data[0].status").value("ON_SHELF"))
             .andExpect(jsonPath("$.data[0].marketPrice").value("12.3400"));
     }
 }

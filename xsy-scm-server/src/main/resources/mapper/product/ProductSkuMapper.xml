@@ -8,6 +8,7 @@
         <id property="id" column="id"/>
         <result property="spuId" column="spu_id"/>
         <result property="skuCode" column="sku_code"/>
+        <result property="productName" column="product_name"/>
         <result property="barcode" column="barcode"/>
         <result property="specName" column="spec_name"/>
         <result property="specValues" column="spec_values"
@@ -49,7 +50,7 @@
     </select>
 
     <select id="selectOrderableByIds" resultMap="SkuResultMap">
-        SELECT s.id, s.spu_id, s.sku_code, s.barcode, s.spec_name, s.spec_values,
+        SELECT s.id, s.spu_id, p.name AS product_name, s.sku_code, s.barcode, s.spec_name, s.spec_values,
                s.sale_unit, s.product_type, s.market_price, s.status, s.is_default,
                s.sort_order, s.version, s.deleted, s.created_at, s.updated_at,
                s.created_by, s.updated_by
@@ -63,7 +64,7 @@
     </select>
 
     <select id="selectAllOrderable" resultMap="SkuResultMap">
-        SELECT s.id, s.spu_id, s.sku_code, s.barcode, s.spec_name, s.spec_values,
+        SELECT s.id, s.spu_id, p.name AS product_name, s.sku_code, s.barcode, s.spec_name, s.spec_values,
                s.sale_unit, s.product_type, s.market_price, s.status, s.is_default,
                s.sort_order, s.version, s.deleted, s.created_at, s.updated_at,
                s.created_by, s.updated_by

@@ -1,10 +1,14 @@
 package com.xianshuyuan.scm.customer.vo;
 
 public record OrderableSkuResponse(
-    Long id,
+    Long skuId,
     Long spuId,
+    String productName,
     String skuCode,
     String specName,
+    java.util.Map<String, String> specValues,
     String saleUnit,
-    String marketPrice
+    com.xianshuyuan.scm.product.entity.ProductType productType,
+    String marketPrice,
+    com.xianshuyuan.scm.product.entity.ShelfStatus status
 ) {}

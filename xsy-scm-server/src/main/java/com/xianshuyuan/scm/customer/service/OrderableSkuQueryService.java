@@ -52,7 +52,8 @@ public class OrderableSkuQueryService {
     }
 
     private OrderableSkuResponse response(ProductSkuEntity sku) {
-        return new OrderableSkuResponse(sku.getId(), sku.getSpuId(), sku.getSkuCode(),
-            sku.getSpecName(), sku.getSaleUnit(), sku.getMarketPrice().setScale(4).toPlainString());
+        return new OrderableSkuResponse(sku.getId(), sku.getSpuId(), sku.getProductName(),
+            sku.getSkuCode(), sku.getSpecName(), sku.getSpecValues(), sku.getSaleUnit(),
+            sku.getProductType(), sku.getMarketPrice().setScale(4).toPlainString(), sku.getStatus());
     }
 }
