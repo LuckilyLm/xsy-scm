@@ -2,6 +2,7 @@
 <mapper namespace="com.xianshuyuan.scm.order.mapper.IdempotencyRecordMapper">
  <resultMap id="record" type="com.xianshuyuan.scm.order.entity.IdempotencyRecordEntity"><id property="id" column="id"/><result property="resultData" column="result_data" typeHandler="com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler"/></resultMap>
  <sql id="columns">id,operation_scope,idempotency_key,request_hash,result_type,result_id,result_data,version,deleted,created_at,updated_at,created_by,updated_by</sql>
+ <insert id="insertClaim">INSERT INTO idempotency_record(operation_scope,idempotency_key,request_hash,version,deleted,created_by) VALUES(#{operationScope},#{idempotencyKey},#{requestHash},0,FALSE,'SYSTEM') ON CONFLICT (operation_scope,idempotency_key) WHERE deleted=FALSE DO NOTHING</insert>
  <select id="selectActiveByScopeAndKey" resultMap="record">SELECT <include refid="columns"/> FROM idempotency_record WHERE operation_scope=#{operationScope} AND idempotency_key=#{idempotencyKey} AND deleted=FALSE</select>
  <select id="selectActiveByScopeAndKeyForUpdate" resultMap="record">SELECT <include refid="columns"/> FROM idempotency_record WHERE operation_scope=#{operationScope} AND idempotency_key=#{idempotencyKey} AND deleted=FALSE FOR UPDATE</select>
 </mapper>

@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -46,6 +48,12 @@ public class GlobalExceptionHandler {
             .orElse(ErrorCode.VALIDATION_ERROR.message());
         return ResponseEntity.badRequest()
             .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR.code(), message));
+    }
+
+    @ExceptionHandler({MissingRequestHeaderException.class, HttpMessageNotReadableException.class})
+    public ResponseEntity<ApiResponse<Void>> handleMalformedRequest(Exception exception) {
+        return ResponseEntity.badRequest()
+            .body(ApiResponse.error(ErrorCode.VALIDATION_ERROR.code(), ErrorCode.VALIDATION_ERROR.message()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

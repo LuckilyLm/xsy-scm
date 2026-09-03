@@ -37,6 +37,11 @@ public final class IdempotencyRequestHasher {
             return sorted;
         }
         if (node.isArray()) { var result=objectMapper.createArrayNode(); node.forEach(v -> result.add(canonicalNode(v))); return result; }
+        if (node.isNumber()) return objectMapper.getNodeFactory().numberNode(node.decimalValue().stripTrailingZeros());
+        if (node.isTextual() && node.textValue().matches("-?\\d+(\\.\\d+)?")) {
+            try { return objectMapper.getNodeFactory().textNode(new java.math.BigDecimal(node.textValue()).stripTrailingZeros().toPlainString()); }
+            catch (NumberFormatException ignored) { }
+        }
         return node;
     }
 }

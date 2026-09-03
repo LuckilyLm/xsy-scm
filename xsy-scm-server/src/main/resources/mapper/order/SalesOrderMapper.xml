@@ -3,4 +3,11 @@
  <sql id="columns">id,order_no,customer_id,customer_code_snapshot,customer_name_snapshot,order_source,original_order_id,supplement_reason,status,ordered_total_amount,settlement_total_amount,cancel_reason,submitted_at,confirmed_at,cancelled_at,version,deleted,created_at,updated_at,created_by,updated_by</sql>
  <select id="selectActiveById" resultType="com.xianshuyuan.scm.order.entity.SalesOrderEntity">SELECT <include refid="columns"/> FROM sales_order WHERE id=#{id} AND deleted=FALSE</select>
  <select id="selectActiveByIdForUpdate" resultType="com.xianshuyuan.scm.order.entity.SalesOrderEntity">SELECT <include refid="columns"/> FROM sales_order WHERE id=#{id} AND deleted=FALSE FOR UPDATE</select>
+ <select id="selectOrderPage" resultType="com.xianshuyuan.scm.order.entity.SalesOrderEntity">
+  SELECT <include refid="columns"/> FROM sales_order WHERE deleted=FALSE
+  <if test="query.status != null">AND status=#{query.status}</if>
+  <if test="query.customerId != null">AND customer_id=#{query.customerId}</if>
+  <if test="query.keyword != null and query.keyword != ''">AND (order_no ILIKE CONCAT('%',#{query.keyword},'%') OR customer_name_snapshot ILIKE CONCAT('%',#{query.keyword},'%'))</if>
+  ORDER BY created_at DESC,id DESC
+ </select>
 </mapper>
