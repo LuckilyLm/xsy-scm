@@ -1,9 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { AdminLayout } from '../layouts/AdminLayout';
-
-function ProductPlaceholder() {
-  return <div>商品档案</div>;
-}
+import { ProductPage } from '../pages/product/ProductPage';
 
 export const router = createBrowserRouter([
   {
@@ -11,7 +8,7 @@ export const router = createBrowserRouter([
     element: <AdminLayout />,
     children: [
       { index: true, element: <Navigate replace to="/products" /> },
-      { path: 'products', element: <ProductPlaceholder /> },
+      { path: 'products', element: <ProductPage /> },
     ],
   },
 ]);
