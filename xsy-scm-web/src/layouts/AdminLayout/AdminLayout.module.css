@@ -1,0 +1,157 @@
+.shell {
+  min-height: 100vh;
+  background: #f5f7f9;
+}
+
+.primarySidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  width: 66px;
+  overflow-y: auto;
+  background: #202631;
+}
+
+.primaryNav {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 5px;
+  gap: 2px;
+}
+
+.primaryItem,
+.primaryItemActive {
+  display: flex;
+  min-height: 52px;
+  padding: 5px 2px;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  cursor: default;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.primaryItemActive {
+  background: #00b96b;
+}
+
+.primaryItem:hover {
+  background: #2c3440;
+}
+
+.primaryIcon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.secondarySidebar {
+  position: fixed;
+  inset: 48px auto 0 66px;
+  z-index: 20;
+  display: flex;
+  width: 110px;
+  background: #fff;
+  border-right: 1px solid #e5e6eb;
+  flex-direction: column;
+}
+
+.secondaryNav {
+  display: flex;
+  padding: 12px 12px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.secondaryItem,
+.secondaryItemActive {
+  display: block;
+  padding: 9px 12px;
+  color: #1f2329;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.secondaryItemActive {
+  background: #f2f3f5;
+  font-weight: 500;
+}
+
+.collapseHint {
+  margin-top: auto;
+  padding: 16px 0;
+  color: #4e5969;
+  text-align: center;
+  border-top: 1px solid #f2f3f5;
+}
+
+.header {
+  position: fixed;
+  inset: 0 0 auto 66px;
+  z-index: 25;
+  display: flex;
+  height: 48px;
+  padding: 0 20px 0 30px;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #f2f3f5;
+  align-items: center;
+  gap: 20px;
+}
+
+.brand {
+  min-width: 230px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.globalSearch {
+  width: 240px;
+  margin-left: auto;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  white-space: nowrap;
+}
+
+.headerLink {
+  color: #4e5969;
+}
+
+.userName {
+  color: #1f2329;
+  font-weight: 500;
+}
+
+.content {
+  min-height: 100vh;
+  padding: 60px 14px 14px 190px;
+}
+
+@media (max-width: 900px) {
+  .header {
+    padding-right: 12px;
+  }
+
+  .brand,
+  .headerActions .headerLink {
+    display: none;
+  }
+
+  .globalSearch {
+    width: min(260px, calc(100vw - 110px));
+  }
+
+  .secondarySidebar {
+    display: none;
+  }
+
+  .content {
+    padding-left: 78px;
+  }
+}

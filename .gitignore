@@ -13,3 +13,7 @@ skills-lock.json
 .env.*
 !.env.example
 *.log
+.playwright-cli/
+
+# playwright and test
+.playwright-cli
