@@ -5,8 +5,10 @@ import { primaryNavigation, secondaryNavigation } from './navigation';
 
 export function AdminLayout() {
   const location = useLocation();
-  const activePrimary = primaryNavigation.find((item) => item.path !== '/' && location.pathname.startsWith(item.path)) ?? primaryNavigation[0];
-  const section = activePrimary.path === '/' ? 'products' : activePrimary.path.slice(1);
+  const activePrimary = primaryNavigation.find((item) => item.path !== '/' && location.pathname.startsWith(item.path))
+    ?? primaryNavigation.find((item) => item.path === '/products')
+    ?? primaryNavigation[0];
+  const section = activePrimary.path.slice(1);
   const secondary = secondaryNavigation[section] ?? [];
   return (
     <div className={styles.shell}>
