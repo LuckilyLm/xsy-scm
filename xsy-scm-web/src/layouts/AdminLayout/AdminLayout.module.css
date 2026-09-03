@@ -33,6 +33,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 2px;
+  text-decoration: none;
 }
 
 .primaryItemActive {

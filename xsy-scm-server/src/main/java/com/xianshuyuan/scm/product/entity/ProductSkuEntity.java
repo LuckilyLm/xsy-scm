@@ -21,6 +21,9 @@ public class ProductSkuEntity {
     private Long spuId;
     private String skuCode;
     private String barcode;
+    @TableField(exist = false)
+    private String productName;
+
     private String specName;
     @TableField(typeHandler = JsonbStringMapTypeHandler.class, jdbcType = JdbcType.OTHER)
     private Map<String, String> specValues;
@@ -46,6 +49,8 @@ public class ProductSkuEntity {
     public void setSpuId(Long spuId) { this.spuId = spuId; }
     public String getSkuCode() { return skuCode; }
     public void setSkuCode(String skuCode) { this.skuCode = skuCode; }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
     public String getBarcode() { return barcode; }
     public void setBarcode(String barcode) { this.barcode = barcode; }
     public String getSpecName() { return specName; }

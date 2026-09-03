@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.customer.mapper.CustomerSkuVisibilityMapper">
+    <select id="selectActiveByCustomerId" resultType="com.xianshuyuan.scm.customer.entity.CustomerSkuVisibilityEntity">
+        SELECT * FROM customer_sku_visibility
+        WHERE customer_id = #{customerId} AND deleted = FALSE ORDER BY id
+    </select>
+    <select id="selectVisibleSkuIds" resultType="long">
+        SELECT sku_id FROM customer_sku_visibility
+        WHERE customer_id = #{customerId} AND deleted = FALSE AND sku_id IN
+        <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+    <update id="softDeleteOwned">
+        UPDATE customer_sku_visibility
+        SET deleted = TRUE, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
+        WHERE customer_id = #{customerId} AND deleted = FALSE AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+</mapper>
