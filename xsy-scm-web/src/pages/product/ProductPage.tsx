@@ -60,7 +60,7 @@ function toCategoryOptions(nodes: ProductCategoryTreeNode[]): CategoryOption[] {
   return nodes.map((node) => ({
     value: node.id,
     label: node.name,
-    disabled: !node.enabled,
+    disabled: node.status !== 'ENABLED',
     children: node.children.length ? toCategoryOptions(node.children) : undefined,
   }));
 }

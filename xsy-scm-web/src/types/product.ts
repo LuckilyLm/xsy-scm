@@ -51,10 +51,11 @@ export interface ProductDetail {
 export interface ProductCategoryTreeNode {
   id: number;
   parentId: number | null;
+  categoryCode: string;
   name: string;
   level: number;
-  enabled: boolean;
-  selectable: boolean;
+  sortOrder: number;
+  status: 'ENABLED' | 'DISABLED';
   children: ProductCategoryTreeNode[];
 }
 

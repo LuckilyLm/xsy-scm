@@ -41,7 +41,7 @@ function toCategoryOptions(nodes: ProductCategoryTreeNode[]): CategoryOption[] {
   return nodes.map((node) => ({
     value: node.id,
     label: node.name,
-    disabled: !node.enabled || (node.children.length === 0 && (!node.selectable || node.level !== 3)),
+    disabled: node.status !== 'ENABLED' || (node.children.length === 0 && node.level !== 3),
     children: node.children.length ? toCategoryOptions(node.children) : undefined,
   }));
 }
@@ -171,7 +171,8 @@ export function ProductDrawer({ open, productId, onOpenChange, onSaved }: Produc
 
           <section className={styles.section}>
             <h3>基础信息</h3>
-            <Form className={styles.basicGrid} layout="vertical">
+            <div className={styles.basicGrid}>
+              <Form component={false} layout="vertical">
               <Form.Item label="商品分类" required>
                 <Cascader
                   options={categoryOptions}
@@ -229,7 +230,8 @@ export function ProductDrawer({ open, productId, onOpenChange, onSaved }: Produc
                   onChange={(event) => updateField('description', event.target.value)}
                 />
               </Form.Item>
-            </Form>
+              </Form>
+            </div>
           </section>
 
           <section className={styles.section}>

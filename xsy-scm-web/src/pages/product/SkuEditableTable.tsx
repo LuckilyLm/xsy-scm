@@ -43,7 +43,7 @@ export function SkuEditableTable({
       ),
     },
     {
-      title: <><span className={styles.required}>*</span> SKU 编码</>,
+      title: <span><span className={styles.required}>*</span> SKU 编码</span>,
       width: 170,
       render: (_, sku) => (
         <Input
@@ -56,7 +56,7 @@ export function SkuEditableTable({
       ),
     },
     {
-      title: <><span className={styles.required}>*</span> 规格名称</>,
+      title: <span><span className={styles.required}>*</span> 规格名称</span>,
       width: 140,
       render: (_, sku) => (
         <Input
@@ -110,7 +110,7 @@ export function SkuEditableTable({
       ),
     },
     {
-      title: <><span className={styles.required}>*</span> 单位</>,
+      title: <span><span className={styles.required}>*</span> 单位</span>,
       width: 100,
       render: (_, sku) => (
         <Input
@@ -123,7 +123,7 @@ export function SkuEditableTable({
       ),
     },
     {
-      title: <><span className={styles.required}>*</span> 市场价</>,
+      title: <span><span className={styles.required}>*</span> 市场价</span>,
       width: 130,
       render: (_, sku) => (
         <Input

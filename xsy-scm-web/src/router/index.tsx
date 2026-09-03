@@ -1,6 +1,5 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { AdminLayout } from '../layouts/AdminLayout';
-import { ProductPage } from '../pages/product/ProductPage';
 
 export const router = createBrowserRouter([
   {
@@ -8,7 +7,13 @@ export const router = createBrowserRouter([
     element: <AdminLayout />,
     children: [
       { index: true, element: <Navigate replace to="/products" /> },
-      { path: 'products', element: <ProductPage /> },
+      {
+        path: 'products',
+        lazy: async () => {
+          const { ProductPage } = await import('../pages/product/ProductPage');
+          return { Component: ProductPage };
+        },
+      },
     ],
   },
 ]);
