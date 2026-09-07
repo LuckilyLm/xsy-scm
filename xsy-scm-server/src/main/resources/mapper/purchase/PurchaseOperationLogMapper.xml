@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseOperationLogMapper">
+    <resultMap id="log" type="com.xianshuyuan.scm.purchase.entity.PurchaseOperationLogEntity">
+        <id property="id" column="id"/>
+        <result property="beforeData" column="before_data"
+                typeHandler="com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler"/>
+        <result property="afterData" column="after_data"
+                typeHandler="com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler"/>
+    </resultMap>
+    <select id="selectByOrderId" resultMap="log">SELECT *
+                                                 FROM purchase_operation_log
+                                                 WHERE purchase_order_id = #{orderId}
+                                                 ORDER BY created_at ASC, id ASC</select>
+</mapper>

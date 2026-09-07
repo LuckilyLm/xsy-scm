@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseReceiptMapper">
+    <select id="selectActiveById" resultType="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptEntity">SELECT * FROM
+        purchase_receipt WHERE id=#{id} AND deleted=FALSE
+    </select>
+    <select id="selectActiveByIdForUpdate" resultType="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptEntity">SELECT
+        * FROM purchase_receipt WHERE id=#{id} AND deleted=FALSE FOR UPDATE
+    </select>
+    <select id="selectActiveByOrderIdForUpdate" resultType="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptEntity">
+        SELECT * FROM purchase_receipt WHERE purchase_order_id=#{orderId} AND deleted=FALSE FOR UPDATE
+    </select>
+    <select id="selectActiveList" resultType="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptEntity">SELECT * FROM
+        purchase_receipt WHERE deleted=FALSE ORDER BY id DESC
+    </select>
+</mapper>

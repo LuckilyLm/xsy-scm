@@ -42,7 +42,11 @@ export interface SalesOrder {
 }
 export interface SalesOrderPayload {
   version: number | null; customerId: number; source: OrderSource; supplementReason: string | null;
-  originalOrderId: number | null; items: OrderItem[];
+  originalOrderId: number | null; items: SalesOrderItemPayload[];
+}
+export interface SalesOrderItemPayload {
+  id: number | null; version: number | null; skuId: number; orderedQuantity: string;
+  unitPrice: string | null; manualPriceOverride: boolean; overrideReason: string | null;
 }
 export interface ActualQuantityPayload { version: number; actualQuantity: string; reason: string; }
 export interface CancelOrderPayload { version: number; reason: string; }

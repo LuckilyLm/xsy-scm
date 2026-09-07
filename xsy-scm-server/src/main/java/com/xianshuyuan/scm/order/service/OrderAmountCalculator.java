@@ -19,7 +19,7 @@ public final class OrderAmountCalculator {
 
     public static BigDecimal orderAmount(List<BigDecimal> lineAmounts) {
         return lineAmounts.stream()
-            .reduce(ZERO, BigDecimal::add)
-            .setScale(SCALE, ROUNDING_MODE);
+                .reduce(ZERO, BigDecimal::add)
+                .setScale(SCALE, ROUNDING_MODE);
     }
 }

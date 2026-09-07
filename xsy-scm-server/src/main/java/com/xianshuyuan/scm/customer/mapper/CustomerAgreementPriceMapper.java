@@ -12,11 +12,15 @@ import java.util.List;
 @Mapper
 public interface CustomerAgreementPriceMapper extends BaseMapper<CustomerAgreementPriceEntity> {
     List<CustomerAgreementPriceEntity> selectEffective(@Param("customerId") long customerId,
-        @Param("skuIds") List<Long> skuIds, @Param("at") OffsetDateTime at);
+                                                       @Param("skuIds") List<Long> skuIds, @Param("at") OffsetDateTime at);
+
     int countOverlapping(@Param("id") Long id, @Param("customerId") long customerId,
-        @Param("skuId") long skuId, @Param("from") OffsetDateTime from, @Param("to") OffsetDateTime to);
+                         @Param("skuId") long skuId, @Param("from") OffsetDateTime from, @Param("to") OffsetDateTime to);
+
     IPage<CustomerAgreementPriceEntity> selectAgreementPage(IPage<CustomerAgreementPriceEntity> page,
-        @Param("query") AgreementPricePageQuery query);
+                                                            @Param("query") AgreementPricePageQuery query);
+
     void lockCustomer(@Param("customerId") long customerId);
+
     int softDelete(@Param("id") long id, @Param("version") int version);
 }

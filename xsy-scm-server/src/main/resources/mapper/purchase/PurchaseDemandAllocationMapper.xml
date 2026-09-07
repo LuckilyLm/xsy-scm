@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseDemandAllocationMapper">
+    <resultMap id="PurchaseDemandAllocationResultMap"
+               type="com.xianshuyuan.scm.purchase.entity.PurchaseDemandAllocationEntity">
+        <id property="id" column="id"/>
+        <result property="demandSnapshot" column="demand_snapshot"
+                typeHandler="com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler"/>
+    </resultMap>
+
+    <select id="selectActiveByDemandId" resultMap="PurchaseDemandAllocationResultMap">
+        SELECT *
+        FROM purchase_demand_allocation
+        WHERE purchase_demand_id = #{demandId}
+        AND deleted = FALSE
+        ORDER BY id
+    </select>
+
+    <select id="selectActiveByOrderItemAndDemandForUpdate" resultMap="PurchaseDemandAllocationResultMap">
+        SELECT *
+        FROM purchase_demand_allocation
+        WHERE purchase_order_item_id = #{orderItemId}
+        AND purchase_demand_id = #{demandId}
+        AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectActiveByOrderItemIdForUpdate" resultMap="PurchaseDemandAllocationResultMap">
+        SELECT *
+        FROM purchase_demand_allocation
+        WHERE purchase_order_item_id = #{orderItemId}
+        AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectActiveByOrderId" resultMap="PurchaseDemandAllocationResultMap">
+        SELECT a.*
+        FROM purchase_demand_allocation a
+        JOIN purchase_order_item i ON i.id = a.purchase_order_item_id
+        WHERE i.purchase_order_id = #{orderId}
+        AND i.deleted = FALSE
+        AND a.deleted = FALSE
+        ORDER BY a.id
+    </select>
+
+    <select id="selectActiveByOrderIdForUpdate" resultMap="PurchaseDemandAllocationResultMap">
+        SELECT a.*
+        FROM purchase_demand_allocation a
+        JOIN purchase_order_item i ON i.id = a.purchase_order_item_id
+        WHERE i.purchase_order_id = #{orderId}
+        AND i.deleted = FALSE
+        AND a.deleted = FALSE
+        ORDER BY a.id
+        FOR UPDATE OF a
+    </select>
+    <update id="softDeleteWithVersion">
+        UPDATE purchase_demand_allocation
+        SET deleted = TRUE,
+        version = version + 1,
+        updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+        AND version = #{version}
+        AND deleted = FALSE
+    </update>
+</mapper>

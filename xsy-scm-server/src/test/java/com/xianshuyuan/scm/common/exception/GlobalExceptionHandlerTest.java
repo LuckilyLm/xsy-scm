@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -46,6 +48,52 @@ class GlobalExceptionHandlerTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value(40000))
             .andExpect(jsonPath("$.message").value("名称不能为空"));
+    }
+
+    @Test
+    void mapsNestedSupplierConstraintToDomainConflict() {
+        Throwable databaseCause = new IllegalStateException(
+                "duplicate key value violates unique constraint uk_supplier_code_active");
+        DataIntegrityViolationException exception = new DataIntegrityViolationException(
+                "write rejected", new RuntimeException("persistence failure", databaseCause));
+
+        var response = new GlobalExceptionHandler().handleDataConflict(exception);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody().code()).isEqualTo(40944);
+    }
+
+    @Test
+    void mapsWarehouseConstraintToDomainConflict() {
+        var exception = new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint uk_warehouse_code_active");
+
+        var response = new GlobalExceptionHandler().handleDataConflict(exception);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody().code()).isEqualTo(40945);
+    }
+
+    @Test
+    void mapsSupplierSkuConstraintToDomainConflict() {
+        var exception = new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint uk_supplier_sku_active");
+
+        var response = new GlobalExceptionHandler().handleDataConflict(exception);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody().code()).isEqualTo(40946);
+    }
+
+    @Test
+    void mapsUnknownConstraintToGenericDataConflict() {
+        var exception = new DataIntegrityViolationException(
+                "duplicate key value violates unique constraint uk_other_active");
+
+        var response = new GlobalExceptionHandler().handleDataConflict(exception);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+        assertThat(response.getBody().code()).isEqualTo(ErrorCode.DATA_CONFLICT.code());
     }
 
     @RestController

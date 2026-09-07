@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.inventory.mapper.InventoryMapper">
+    <insert id="insertIfAbsent">INSERT INTO
+        inventory(warehouse_id,sku_id,warehouse_code_snapshot,warehouse_name_snapshot,sku_code_snapshot,sku_name_snapshot,unit,quantity,version,deleted,created_by)
+        VALUES(#{warehouseId},#{skuId},#{warehouseCode},#{warehouseName},#{skuCode},#{skuName},#{unit},0,0,FALSE,'SYSTEM')
+        ON CONFLICT (warehouse_id,sku_id) WHERE deleted=FALSE DO NOTHING
+    </insert>
+    <select id="selectByWarehouseAndSkuForUpdate" resultType="com.xianshuyuan.scm.inventory.entity.InventoryEntity">
+        SELECT * FROM inventory WHERE warehouse_id=#{warehouseId} AND sku_id=#{skuId} AND deleted=FALSE FOR UPDATE
+    </select>
+    <update id="increase">UPDATE inventory SET
+        quantity=quantity+#{quantity},version=version+1,updated_at=CURRENT_TIMESTAMP,updated_by='SYSTEM' WHERE id=#{id}
+        AND version=#{version} AND deleted=FALSE
+    </update>
+    <select id="selectActiveList" resultType="com.xianshuyuan.scm.inventory.entity.InventoryEntity">SELECT * FROM
+        inventory WHERE deleted=FALSE
+        <if test="warehouseId != null">AND warehouse_id=#{warehouseId}</if>
+        <if test="skuId != null">AND sku_id=#{skuId}</if>
+        ORDER BY updated_at DESC,id DESC
+    </select>
+</mapper>

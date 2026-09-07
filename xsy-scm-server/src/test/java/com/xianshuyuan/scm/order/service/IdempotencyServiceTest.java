@@ -1,6 +1,7 @@
 package com.xianshuyuan.scm.order.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xianshuyuan.scm.common.exception.BusinessException;
 import com.xianshuyuan.scm.order.entity.IdempotencyRecordEntity;
 import com.xianshuyuan.scm.order.mapper.IdempotencyRecordMapper;
 import org.junit.jupiter.api.Test;
@@ -30,5 +31,16 @@ class IdempotencyServiceTest {
         var claim=new IdempotencyService.Claim(row,false);
         assertDoesNotThrow(()->service.complete(claim,"VOID",0L,null));
         assertNull(service.replay(new IdempotencyService.Claim(row,true),Void.class));
+    }
+
+    @Test void rejectsKeyLongerThanDatabaseLimitBeforeClaiming() {
+        var mapper=mock(IdempotencyRecordMapper.class);
+        var service=new IdempotencyService(mapper,new ObjectMapper());
+
+        var error=assertThrows(BusinessException.class,
+                ()->service.claim("S","x".repeat(201),Map.of("a",1)));
+
+        assertEquals(OrderErrorCodes.IDEMPOTENCY_KEY_INVALID,error.getErrorCode());
+        verifyNoInteractions(mapper);
     }
 }

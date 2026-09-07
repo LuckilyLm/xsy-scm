@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Param;
 public interface ProductSpuMapper extends BaseMapper<ProductSpuEntity> {
 
     IPage<ProductSpuEntity> selectProductPage(
-        Page<ProductSpuEntity> page,
-        @Param("query") ProductPageQuery query
+            Page<ProductSpuEntity> page,
+            @Param("query") ProductPageQuery query
     );
 }

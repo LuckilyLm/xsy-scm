@@ -24,7 +24,25 @@ describe('orderFormModel', () => {
     expect(updated).not.toBe(form);
     expect(updated.items[0]).not.toBe(form.items[0]);
     expect(updated.items[0]).toMatchObject({ id: 21, version: 2, unitPrice: '11.5000', priceSource: 'OVERRIDE', overrideReason: '临时议价' });
-    expect(toOrderPayload(updated).items[0]).toMatchObject({ id: 21, version: 2 });
+    expect(toOrderPayload(updated).items[0]).toMatchObject({
+      id: 21,
+      version: 2,
+      unitPrice: '11.5000',
+      manualPriceOverride: true,
+      overrideReason: '临时议价',
+    });
+  });
+
+  it('omits client price for automatically priced rows', () => {
+    const payload = toOrderPayload(orderDetailToForm(detail));
+
+    expect(payload.items[0]).toMatchObject({
+      id: 21,
+      version: 2,
+      unitPrice: null,
+      manualPriceOverride: false,
+      overrideReason: null,
+    });
   });
 
   it('adds and removes rows without mutating the source form', () => {

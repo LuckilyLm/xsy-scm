@@ -15,29 +15,35 @@ import org.springframework.web.bind.annotation.*;
 public class AgreementPriceController {
     private final AgreementPriceService service;
 
-    public AgreementPriceController(AgreementPriceService service) { this.service = service; }
+    public AgreementPriceController(AgreementPriceService service) {
+        this.service = service;
+    }
 
     @GetMapping
     public ApiResponse<PageData<AgreementPriceResponse>> page(
-        @RequestParam(defaultValue = "1") @Min(1) long page,
-        @RequestParam(defaultValue = "20") @Min(1) @Max(100) long pageSize,
-        @RequestParam(required = false) Long customerId,
-        @RequestParam(required = false) Long skuId) {
-        return ApiResponse.success(service.page(page, pageSize, customerId, skuId));
+            @RequestParam(defaultValue = "1") @Min(1) long page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) long pageSize,
+            @RequestParam(required = false) Long customerId,
+            @RequestParam(required = false) Long skuId,
+            @RequestParam(required = false) @Size(max = 100) String keyword) {
+        return ApiResponse.success(service.page(page, pageSize, customerId, skuId, keyword));
     }
 
-    @PostMapping public ApiResponse<Long> create(@Valid @RequestBody AgreementPriceSaveRequest request) {
+    @PostMapping
+    public ApiResponse<Long> create(@Valid @RequestBody AgreementPriceSaveRequest request) {
         return ApiResponse.success(service.create(request));
     }
 
-    @PutMapping("/{id}") public ApiResponse<Void> update(@PathVariable long id,
-                                                         @Valid @RequestBody AgreementPriceSaveRequest request) {
+    @PutMapping("/{id}")
+    public ApiResponse<Void> update(@PathVariable long id,
+                                    @Valid @RequestBody AgreementPriceSaveRequest request) {
         service.update(id, request);
         return ApiResponse.success(null);
     }
 
-    @DeleteMapping("/{id}") public ApiResponse<Void> delete(@PathVariable long id,
-                                                             @RequestParam @Min(0) int version) {
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable long id,
+                                    @RequestParam @Min(0) int version) {
         service.delete(id, version);
         return ApiResponse.success(null);
     }

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.inventory.mapper.InventoryMovementMapper">
+    <select id="nextNumber" resultType="java.lang.String">SELECT 'IM' || to_char(CURRENT_DATE,'YYYYMMDD') ||
+        lpad(nextval('inventory_movement_no_seq')::text,6,'0')
+    </select>
+    <select id="selectBySource" resultType="com.xianshuyuan.scm.inventory.entity.InventoryMovementEntity">SELECT * FROM
+        inventory_movement WHERE source_document_type='PURCHASE_RECEIPT' AND source_document_id=#{receiptId} AND
+        source_document_item_id=#{receiptItemId} AND confirmation_id=#{confirmationId} AND deleted=FALSE
+    </select>
+    <select id="selectActiveList" resultType="com.xianshuyuan.scm.inventory.entity.InventoryMovementEntity">SELECT *
+        FROM inventory_movement WHERE deleted=FALSE AND movement_type='PURCHASE_IN'
+        <if test="warehouseId != null">AND warehouse_id=#{warehouseId}</if>
+        <if test="skuId != null">AND sku_id=#{skuId}</if>
+        <if test="sourceId != null">AND source_document_id=#{sourceId}</if>
+        ORDER BY occurred_at DESC,id DESC
+    </select>
+</mapper>

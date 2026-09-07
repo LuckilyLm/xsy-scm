@@ -1,9 +1,13 @@
 # Project-local agent skills and installation metadata
 .agents/
 skills-lock.json
+.claude
 
 # Local IDE metadata
 .idea/
+
+# Downloaded reference projects
+project-reference-examples/
 
 # Build outputs and local environment files
 **/target/

@@ -16,7 +16,7 @@ public record CustomerSkuVisibilityChangeSet(List<CustomerSkuVisibilityRequest> 
     }
 
     public static CustomerSkuVisibilityChangeSet between(List<CustomerSkuVisibilityEntity> existing,
-                                                          List<CustomerSkuVisibilityRequest> requested) {
+                                                         List<CustomerSkuVisibilityRequest> requested) {
         Map<Long, CustomerSkuVisibilityEntity> unmatched = new LinkedHashMap<>();
         existing.forEach(v -> unmatched.put(v.getId(), v));
         var inserted = new ArrayList<CustomerSkuVisibilityRequest>();

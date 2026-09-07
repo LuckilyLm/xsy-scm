@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseDemandMapper">
+    <resultMap id="PurchaseDemandResultMap"
+               type="com.xianshuyuan.scm.purchase.entity.PurchaseDemandEntity">
+        <id property="id" column="id"/>
+        <result property="specValuesSnapshot" column="spec_values_snapshot"
+                typeHandler="com.xianshuyuan.scm.common.persistence.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <select id="selectActiveBySalesOrderItemId" resultMap="PurchaseDemandResultMap">
+        SELECT *
+        FROM purchase_demand
+        WHERE sales_order_item_id = #{itemId}
+        AND deleted = FALSE
+    </select>
+
+    <select id="selectActiveBySalesOrderItemIdForUpdate" resultMap="PurchaseDemandResultMap">
+        SELECT *
+        FROM purchase_demand
+        WHERE sales_order_item_id = #{itemId}
+        AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectActiveByIdForUpdate" resultMap="PurchaseDemandResultMap">
+        SELECT *
+        FROM purchase_demand
+        WHERE id = #{id}
+        AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="insertIfAbsent" parameterType="com.xianshuyuan.scm.purchase.entity.PurchaseDemandEntity"
+            resultType="long">
+        INSERT INTO purchase_demand (
+        sales_order_id, sales_order_item_id, spu_id, sku_id,
+        sales_order_no_snapshot, spu_code_snapshot, product_name_snapshot,
+        sku_code_snapshot, sku_name_snapshot, spec_values_snapshot,
+        purchase_unit_snapshot, product_type_snapshot, required_quantity,
+        allocated_quantity, fulfilled_quantity, status, demand_date,
+        version, deleted, created_by
+        ) VALUES (
+        #{salesOrderId}, #{salesOrderItemId}, #{spuId}, #{skuId},
+        #{salesOrderNoSnapshot}, #{spuCodeSnapshot}, #{productNameSnapshot},
+        #{skuCodeSnapshot}, #{skuNameSnapshot},
+        #{specValuesSnapshot, typeHandler=com.xianshuyuan.scm.common.persistence.JsonbStringMapTypeHandler},
+        #{purchaseUnitSnapshot}, #{productTypeSnapshot}, #{requiredQuantity},
+        #{allocatedQuantity}, #{fulfilledQuantity}, #{status}, #{demandDate},
+        #{version}, #{deleted}, #{createdBy}
+        )
+        ON CONFLICT (sales_order_item_id) WHERE deleted = FALSE
+        DO NOTHING
+        RETURNING id
+    </select>
+
+    <select id="selectActivePage" resultMap="PurchaseDemandResultMap">
+        SELECT *
+        FROM purchase_demand
+        WHERE deleted = FALSE
+        ORDER BY id DESC
+    </select>
+</mapper>

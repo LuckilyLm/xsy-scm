@@ -61,8 +61,8 @@ public class ProductAggregateValidator {
             return normalized;
         }
         values.forEach((key, value) -> normalized.put(
-            key == null ? "" : key.trim().toLowerCase(Locale.ROOT),
-            value == null ? "" : value.trim().toLowerCase(Locale.ROOT)
+                key == null ? "" : key.trim().toLowerCase(Locale.ROOT),
+                value == null ? "" : value.trim().toLowerCase(Locale.ROOT)
         ));
         return normalized;
     }

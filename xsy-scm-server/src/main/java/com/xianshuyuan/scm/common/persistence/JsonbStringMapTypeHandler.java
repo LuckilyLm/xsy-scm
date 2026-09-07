@@ -17,14 +17,15 @@ import java.util.Map;
 public class JsonbStringMapTypeHandler extends BaseTypeHandler<Map<String, String>> {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final TypeReference<LinkedHashMap<String, String>> MAP_TYPE = new TypeReference<>() { };
+    private static final TypeReference<LinkedHashMap<String, String>> MAP_TYPE = new TypeReference<>() {
+    };
 
     @Override
     public void setNonNullParameter(
-        PreparedStatement statement,
-        int index,
-        Map<String, String> parameter,
-        JdbcType jdbcType
+            PreparedStatement statement,
+            int index,
+            Map<String, String> parameter,
+            JdbcType jdbcType
     ) throws SQLException {
         try {
             statement.setObject(index, OBJECT_MAPPER.writeValueAsString(parameter), Types.OTHER);

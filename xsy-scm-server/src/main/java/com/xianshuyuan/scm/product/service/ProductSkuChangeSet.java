@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 
 public record ProductSkuChangeSet(
-    List<ProductSkuSaveRequest> inserted,
-    List<ProductSkuSaveRequest> updated,
-    List<Long> removedIds
+        List<ProductSkuSaveRequest> inserted,
+        List<ProductSkuSaveRequest> updated,
+        List<Long> removedIds
 ) {
 
     public ProductSkuChangeSet {
@@ -22,8 +22,8 @@ public record ProductSkuChangeSet(
     }
 
     public static ProductSkuChangeSet between(
-        List<ProductSkuEntity> existing,
-        List<ProductSkuSaveRequest> requested
+            List<ProductSkuEntity> existing,
+            List<ProductSkuSaveRequest> requested
     ) {
         Map<Long, ProductSkuEntity> unmatched = new LinkedHashMap<>();
         existing.forEach(sku -> unmatched.put(sku.getId(), sku));
