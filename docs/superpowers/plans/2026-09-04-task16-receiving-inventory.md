@@ -1,8 +1,12 @@
 # Task 16 Receiving and Inventory Implementation Plan
 
+> **Status (2026-09-07):** Superseded as a controlling specification by
+> `docs/superpowers/plans/2026-09-07-purchase-receiving-inventory-design.md`.
+> The implementation keeps **one active receipt per purchase order and multiple immutable confirmation batches on that receipt**. Historical task checkboxes below describe the original execution plan and are not delivery evidence; use the Sprint 3 verification report for current results.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement multi-receipt purchasing with manual non-standard weight, atomic inventory balances, and append-only `PURCHASE_IN` movements.
+**Goal:** Implement incremental purchasing receipt confirmation with manual non-standard weight, atomic inventory balances, and append-only `PURCHASE_IN` movements.
 
 **Architecture:** `PurchaseReceiptApplicationService` owns receipt commands and locks purchase order → purchase-order items → inventory rows. `InventoryApplicationService` exposes only a transaction-participating purchase-in command; query services expose typed read-only pages.
 
@@ -12,7 +16,7 @@
 
 ## Global Constraints
 
-- One purchase order may have multiple confirmed receipts.
+- One purchase order has at most one active receipt; that receipt may have multiple confirmed batches.
 - Standard items use received quantity; non-standard items use confirmed manual actual weight as the effective inventory quantity.
 - Strictly reject over-receipt; confirmed receipts and movements are immutable.
 - Inventory balance and one movement per confirmed receipt line commit atomically.
@@ -50,7 +54,7 @@
 **Interfaces:**
 - Produces: `POST/PUT/GET /api/purchase-receipts`, decimal-string response fields, retained receipt-line identity, and read-only confirmed detail.
 
-- [ ] **Step 1: Add failing tests** for draft creation, multiple receipts per order, line ownership, retained versions, non-standard manual-weight reason, and confirmed-edit rejection.
+- [ ] **Step 1: Add failing tests** for draft creation, one active receipt per order, line ownership, retained versions, non-standard manual-weight reason, and confirmed-edit rejection.
 - [ ] **Step 2: Run** `mvn.cmd -q -Dtest=PurchaseReceiptApplicationServiceTest,PurchaseReceiptControllerTest test` **and confirm RED**.
 - [ ] **Step 3: Implement request validation and server-owned snapshots**; reject client totals and derive warehouse/order snapshots from locked domain records.
 - [ ] **Step 4: Run** `mvn.cmd -q -Dtest=PurchaseReceiptApplicationServiceTest,PurchaseReceiptControllerTest test` **and expect pass**.
@@ -73,7 +77,7 @@
 - [ ] **Step 2: Run** `mvn.cmd -q -Dtest=PurchaseReceiptApplicationServiceTest,InventoryApplicationServiceTest test` **and confirm RED**.
 - [ ] **Step 3: Implement confirmation in one `@Transactional` method**; claim idempotency, lock order/items, validate all rows, ensure/lock inventory rows, apply balances, append movements, update purchase progress, confirm receipt, write audit, then complete idempotency.
 - [ ] **Step 4: Use `INSERT ... ON CONFLICT (...) WHERE deleted = FALSE DO NOTHING` before inventory row locking** so concurrent first receipt does not leak a 500.
-- [ ] **Step 5: Add PostgreSQL tests** for two concurrent receipts, first-inventory creation race, forced rollback, and exactly one movement on replay.
+- [ ] **Step 5: Add PostgreSQL tests** for concurrent receipt confirmations, first-inventory creation race, forced rollback, and exactly one movement on replay.
 - [ ] **Step 6: Run** `mvn.cmd -q -Dtest=PurchaseReceiptApplicationServiceTest,InventoryApplicationServiceTest,PurchaseReceiptInventoryIT test` **and expect zero failures**.
 - [ ] **Step 7: Commit** with `git commit -m "feat(inventory): confirm receipts atomically"`.
 

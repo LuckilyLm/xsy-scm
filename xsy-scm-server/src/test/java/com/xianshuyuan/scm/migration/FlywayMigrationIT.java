@@ -398,6 +398,134 @@ class FlywayMigrationIT {
         assertThat(movementNumber).isPositive();
     }
 
+    @Test
+    void createsReceiptConfirmationTablesAndSequenceWithoutForeignKeys() {
+        Integer tables = jdbcTemplate.queryForObject("""
+            select count(*)
+            from information_schema.tables
+            where table_schema = 'public'
+              and table_name in (
+                'purchase_receipt_confirmation',
+                'purchase_receipt_confirmation_item'
+              )
+            """, Integer.class);
+        Integer sequences = jdbcTemplate.queryForObject("""
+            select count(*)
+            from information_schema.sequences
+            where sequence_schema = 'public'
+              and sequence_name = 'purchase_receipt_confirmation_no_seq'
+            """, Integer.class);
+        Integer foreignKeys = jdbcTemplate.queryForObject("""
+            select count(*)
+            from information_schema.table_constraints
+            where constraint_schema = 'public'
+              and table_name in (
+                'purchase_receipt_confirmation',
+                'purchase_receipt_confirmation_item'
+              )
+              and constraint_type = 'FOREIGN KEY'
+            """, Integer.class);
+
+        assertThat(tables).isEqualTo(2);
+        assertThat(sequences).isOne();
+        assertThat(foreignKeys).isZero();
+    }
+
+    @Test
+    void createsReceiptConfirmationConstraintsAndIndexes() {
+        assertThat(constraintDefinition("ck_purchase_receipt_status").toLowerCase())
+            .contains("draft", "partially_confirmed", "confirmed");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation").toLowerCase())
+            .contains("status", "confirmed_at");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation_total").toLowerCase())
+            .contains("total_quantity", ">");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation_status").toLowerCase())
+            .contains("status", "confirmed");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation_result").toLowerCase())
+            .contains("result_data", "jsonb_typeof", "object");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation_item_planned").toLowerCase())
+            .contains("planned_quantity", ">", "0");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation_item_effective").toLowerCase())
+            .contains("effective_quantity", ">", "0");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation_item_weight").toLowerCase())
+            .contains("actual_weight", ">", "0");
+        assertThat(constraintDefinition("ck_purchase_receipt_confirmation_item_source").toLowerCase())
+            .contains("weighing_source", "manual");
+
+        assertThat(indexDefinition("uk_purchase_receipt_confirmation_key").toLowerCase())
+            .contains("unique", "(idempotency_scope, idempotency_key)");
+        assertThat(indexDefinition("uk_purchase_receipt_confirmation_no").toLowerCase())
+            .contains("unique", "(confirmation_no)");
+        assertThat(indexDefinition("idx_purchase_receipt_confirmation_receipt").toLowerCase())
+            .contains("(purchase_receipt_id, confirmed_at desc)");
+        assertThat(indexDefinition("uk_purchase_receipt_confirmation_item").toLowerCase())
+            .contains("unique", "(confirmation_id, purchase_receipt_item_id)");
+        assertThat(indexDefinition("idx_purchase_receipt_confirmation_item_receipt_item").toLowerCase())
+            .contains("(purchase_receipt_item_id, confirmation_id)");
+    }
+
+    @Test
+    void hardensReceiptConfirmationIdempotencyAndReceivedQuantity() {
+        Integer idempotencyKeyWidth = jdbcTemplate.queryForObject("""
+            select character_maximum_length
+            from information_schema.columns
+            where table_schema = 'public'
+              and table_name = 'purchase_receipt_confirmation'
+              and column_name = 'idempotency_key'
+            """, Integer.class);
+
+        assertThat(idempotencyKeyWidth).isEqualTo(200);
+        assertThat(constraintDefinition("ck_purchase_order_item_received_not_over_planned").toLowerCase())
+            .contains("received_quantity", "<=", "planned_quantity");
+    }
+
+    @Test
+    void requiresConfirmationForPurchaseInMovementsAndIndexesIt() {
+        assertThat(constraintDefinition("ck_inventory_movement_confirmation").toLowerCase())
+            .contains("movement_type", "purchase_in", "confirmation_id", "is not null");
+        assertThat(indexDefinition("uk_inventory_movement_receipt_confirmation").toLowerCase())
+            .contains("unique",
+                "(source_document_type, source_document_id, source_document_item_id, confirmation_id)",
+                "deleted = false", "movement_type", "purchase_in");
+        assertThat(indexDefinition("idx_inventory_movement_confirmation").toLowerCase())
+            .contains("(confirmation_id)", "confirmation_id is not null");
+    }
+
+    @Test
+    void makesInventoryMovementsAppendOnlyWithDatabaseTrigger() {
+        String triggerDefinition = jdbcTemplate.queryForObject("""
+            select pg_get_triggerdef(t.oid)
+            from pg_trigger t
+            join pg_class c on c.oid = t.tgrelid
+            join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname = 'public'
+              and c.relname = 'inventory_movement'
+              and t.tgname = 'trg_inventory_movement_append_only'
+              and not t.tgisinternal
+            """, String.class);
+        String functionDefinition = jdbcTemplate.queryForObject("""
+            select pg_get_functiondef(p.oid)
+            from pg_proc p
+            join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public'
+              and p.proname = 'reject_inventory_movement_mutation'
+            """, String.class);
+
+        assertThat(triggerDefinition.toLowerCase())
+            .contains("before", "update", "delete", "on public.inventory_movement", "for each row",
+                "reject_inventory_movement_mutation");
+        assertThat(functionDefinition.toLowerCase())
+            .contains("returns trigger", "inventory movements are append-only");
+    }
+
+    @Test
+    void makesReceiptConfirmationSequenceUsable() {
+        Long confirmationNumber = jdbcTemplate.queryForObject(
+            "select nextval('purchase_receipt_confirmation_no_seq')", Long.class);
+
+        assertThat(confirmationNumber).isPositive();
+    }
+
     private String indexDefinition(String indexName) {
         return jdbcTemplate.queryForObject("""
             select indexdef from pg_indexes

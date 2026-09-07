@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Current scope
 
-This checkout implements the Sprint 1 product catalog and Sprint 2 customer-pricing/sales-order vertical slices of 鲜蔬源智慧供应链管理平台. The working system is a modular monolith with two runnable projects:
+This checkout implements the Sprint 1 product catalog, Sprint 2 customer-pricing/sales-order, and Sprint 3 supplier/purchasing/receiving/inventory vertical slices of 鲜蔬源智慧供应链管理平台. The working system is a modular monolith with two runnable projects:
 
 - `xsy-scm-web/`: React 19, TypeScript, Vite, Ant Design/ProComponents, React Router, TanStack Query, and Axios.
 - `xsy-scm-server/`: Java 21 Spring Boot REST API using Validation, MyBatis-Plus, Flyway, and PostgreSQL.
 
-Implemented domains are product categories, the SPU/SKU aggregate, customer types/customers, customer-SKU visibility, agreement prices, sales orders, actual-weight settlement, supplementary orders, returns, refunds, command idempotency, and order operation logs. Authentication/RBAC, suppliers, purchasing, warehouses/inventory movement, real payment execution, device integration, Redis, Docker Compose, and CI remain deferred.
+Implemented domains are product categories, the SPU/SKU aggregate, customer types/customers, customer-SKU visibility, agreement prices, sales orders, actual-weight settlement, supplementary orders, returns, refunds, suppliers, warehouses, purchase demands, purchase orders, partial receipt confirmations, inventory balances, `PURCHASE_IN` movements, command idempotency, and operation logs. Authentication/RBAC, real payment execution, sales outbound, inventory reservation/adjustment, purchase returns, real device integration, Redis, Docker Compose, and CI remain deferred.
 
 ## Commands
 
@@ -57,7 +57,7 @@ npm test -- productFormModel.test.ts
 npm test -- ProductDrawer.test.tsx
 ```
 
-Vite listens on port `5173`, proxies `/api` to `http://127.0.0.1:8080`, and exposes product, customer, agreement-price, order, return, and refund routes.
+Vite listens on port `5173`, proxies `/api` to `http://127.0.0.1:8080`, and exposes product, customer, agreement-price, order, return, refund, supplier, warehouse, purchase-demand, purchase-order, receipt, inventory-balance, and inventory-movement routes.
 
 ### Browser acceptance
 
@@ -71,7 +71,7 @@ npm run e2e -- sprint2-order-pricing.spec.ts
 npm run e2e -- sprint2-after-sales.spec.ts
 ```
 
-The product flow validates retained SKU identity, specification changes, shelf status, and soft deletion. Sprint 2 flows cover customer visibility and pricing through order settlement, then supplementary orders, partial returns, generated refunds, and over-return rejection. Order and after-sales documents are retained for audit rather than hard-deleted during cleanup.
+The product flow validates retained SKU identity, specification changes, shelf status, and soft deletion. Sprint 2 flows cover customer visibility and pricing through order settlement, then supplementary orders, partial returns, generated refunds, and over-return rejection. Order and after-sales documents are retained for audit rather than hard-deleted during cleanup. Sprint 3 currently has unit and PostgreSQL integration coverage but no checked-in Playwright main-chain spec; do not describe browser acceptance for purchasing/receiving/inventory as passed until such a spec exists and is run.
 
 ## Architecture and data flow
 
@@ -85,8 +85,8 @@ Browser
   -> PostgreSQL
 ```
 
-- `/` redirects to `/products`; `AdminLayout` supplies route-aware primary and secondary sidebars for product, customer/pricing, order, return, and refund pages.
-- Product editing uses `ProductPage`/`ProductDrawer`; sales orders use a full-page editor backed by immutable form-model helpers. TanStack Query is used for shared reads while table and command mutations explicitly refresh affected views.
+- `/` redirects to `/products`; `AdminLayout` supplies route-aware primary and secondary sidebars for product, customer/pricing, order/after-sales, purchase, supplier/warehouse, and inventory pages.
+- Product editing uses `ProductPage`/`ProductDrawer`; sales and purchase orders use full-page editors backed by immutable form-model helpers. Receipt confirmation is a full-page incremental workflow. TanStack Query is used for shared reads while table and command mutations explicitly refresh affected views.
 - `src/api/http.ts` is the frontend HTTP boundary. The backend always returns `{ code, message, data }`; the Axios interceptor unwraps `data` and normalizes failures as `ApiError`.
 - Backend code is grouped by domain under `com.xianshuyuan.scm`. Customer/pricing lives under `customer`; sales orders and after-sales live under `order`. Do not introduce global controller/service/mapper/entity package trees.
 - Transactional application services own writes and state transitions; query services own paginated/detail reads. Aggregate validators and child change sets preserve retained row IDs/versions and reconcile inserts/removals without rebuilding collections.
@@ -107,8 +107,12 @@ Browser
 - Customer visibility is either `ALL_ENABLED` or `ALLOWLIST`; agreement-price intervals are half-open and must not overlap for the same customer/SKU.
 - Order prices are server-resolved and locked at submit. Standard actual quantity equals ordered quantity; non-standard actual quantity must be recorded while pending before confirmation.
 - `DRAFT`/`PENDING` orders may be cancelled with a reason; `CONFIRMED`/`CANCELLED` are terminal for editing. Use explicit command endpoints and require `Idempotency-Key` on document creation and transitions.
-- Pending and approved returns reserve against confirmed actual quantity. Return approval creates one pending refund from locked prices; Sprint 2 records no inventory movement or payment execution.
-- Persist order operation logs append-only with the temporary actor `SYSTEM`, and use PostgreSQL sequences rather than `MAX + 1` for document numbers.
+- Pending and approved returns reserve against confirmed actual quantity. Return approval creates one pending refund from locked prices; refunds currently record state only and do not execute payment or inventory movement.
+- A purchase order has at most one active receipt. That receipt may contain multiple immutable confirmation batches and progresses `DRAFT -> PARTIALLY_CONFIRMED -> CONFIRMED`; the purchase order progresses `DRAFT -> SUBMITTED -> PARTIALLY_RECEIVED -> RECEIVED`, with cancellation allowed only before partial receipt.
+- Receipt confirmation is incremental and strictly rejects over-receipt. Standard SKUs post `receivedQuantity`; non-standard SKUs retain declared quantity separately and post manually confirmed `actualWeight`.
+- Receipt confirmation, purchase progress, inventory balance, `PURCHASE_IN` movement, operation log, and idempotency completion commit in one transaction. Inventory writes participate in the caller transaction; do not add asynchronous posting or a generic balance mutation endpoint.
+- Inventory balance grain is warehouse + SKU. Each movement records exact before/change/after quantities and source confirmation identity; inventory movements are append-only.
+- Persist operation logs append-only with the temporary actor `SYSTEM`, and use PostgreSQL sequences rather than `MAX + 1` for document numbers.
 
 ## UI conventions
 

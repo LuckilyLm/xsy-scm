@@ -1,5 +1,8 @@
 # Task 17 Sprint 3 Web Implementation Plan
 
+> **Status (2026-09-07):** The Admin supplier, warehouse, purchase-demand,
+> purchase-order, receipt, inventory-balance, and inventory-movement routes are implemented in the current branch. The historical checkboxes below are retained as the original execution plan rather than rewritten as evidence. Frontend command results belong in `docs/superpowers/verification/2026-09-07-sprint-3-verification.md`. Task 6 remains open because no Sprint 3 Playwright main-chain spec is checked in.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add the Admin purchase, receipt, inventory, supplier, and warehouse workflows with typed APIs, conflict recovery, and repeat-submit protection.
@@ -84,7 +87,7 @@
 **Interfaces:**
 - Produces: `/purchases/receipts`, `/purchases/orders/:id/receipts/new`, `/purchases/receipts/:id`.
 
-- [ ] **Step 1: Add failing tests** for two partial receipts, non-standard manual weight/reason, remaining quantity, confirmation replay, read-only confirmed state, and 409.
+- [ ] **Step 1: Add failing tests** for two partial confirmation batches, non-standard manual weight/reason, remaining quantity, confirmation replay, read-only confirmed state, and 409.
 - [ ] **Step 2: Run** `npx vitest run src/pages/purchase/PurchaseReceiptListPage.test.tsx src/pages/purchase/PurchaseReceiptEditorPage.test.tsx src/pages/purchase/PurchaseReceiptDetailPage.test.tsx src/pages/purchase/receiptFormModel.test.ts` **and confirm RED**.
 - [ ] **Step 3: Implement the full-page operational receipt UI**, emphasizing non-standard weight and using string inputs rather than JavaScript numeric authority.
 - [ ] **Step 4: Run** `npx vitest run src/pages/purchase/PurchaseReceiptListPage.test.tsx src/pages/purchase/PurchaseReceiptEditorPage.test.tsx src/pages/purchase/PurchaseReceiptDetailPage.test.tsx src/pages/purchase/receiptFormModel.test.ts` **and expect pass**.
@@ -115,7 +118,7 @@
 **Files:**
 - Create: `e2e/sprint3-purchase-receiving-inventory.spec.ts`
 
-- [ ] **Step 1: Write the E2E flow** confirming a sales order, generating demand, creating/submitting a purchase order, confirming two receipts, then checking balance and two movements.
+- [ ] **Step 1: Write the E2E flow** confirming a sales order, generating demand, creating/submitting a purchase order, confirming two receipt batches, then checking balance and two movements.
 - [ ] **Step 2: Run the test and confirm any failure reflects a real missing contract**, not selector timing.
 - [ ] **Step 3: Fix only the exposed contract/UI issue and re-run**.
 - [ ] **Step 4: Commit** with `git commit -m "test(web): cover sprint 3 purchase-in flow"`.

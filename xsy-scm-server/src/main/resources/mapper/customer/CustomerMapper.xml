@@ -4,7 +4,8 @@
     <select id="selectCustomerPage" resultType="com.xianshuyuan.scm.customer.entity.CustomerEntity">
         SELECT * FROM customer WHERE deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
-            AND (customer_code ILIKE CONCAT('%', #{query.keyword}, '%') OR name ILIKE CONCAT('%', #{query.keyword}, '%'))
+            AND (customer_code ILIKE CONCAT('%', #{query.keyword}, '%') OR name ILIKE CONCAT('%', #{query.keyword},
+            '%'))
         </if>
         <if test="query.customerTypeId != null">AND customer_type_id = #{query.customerTypeId}</if>
         ORDER BY updated_at DESC, id DESC
@@ -12,7 +13,7 @@
     <update id="softDelete">
         UPDATE customer
         SET deleted = TRUE, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
+        updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
         WHERE id = #{id} AND version = #{version} AND deleted = FALSE
     </update>
 </mapper>

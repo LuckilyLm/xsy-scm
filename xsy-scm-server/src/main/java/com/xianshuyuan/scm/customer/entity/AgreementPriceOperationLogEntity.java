@@ -24,20 +24,67 @@ public class AgreementPriceOperationLogEntity {
     private OffsetDateTime createdAt;
     private String createdBy;
 
-    public Long getId() { return id; }
-    public void setId(Long value) { id = value; }
-    public Long getAgreementPriceId() { return agreementPriceId; }
-    public void setAgreementPriceId(Long value) { agreementPriceId = value; }
-    public String getOperationType() { return operationType; }
-    public void setOperationType(String value) { operationType = value; }
-    public String getOperator() { return operator; }
-    public void setOperator(String value) { operator = value; }
-    public JsonNode getBeforeData() { return beforeData; }
-    public void setBeforeData(JsonNode value) { beforeData = value; }
-    public JsonNode getAfterData() { return afterData; }
-    public void setAfterData(JsonNode value) { afterData = value; }
-    public OffsetDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(OffsetDateTime value) { createdAt = value; }
-    public String getCreatedBy() { return createdBy; }
-    public void setCreatedBy(String value) { createdBy = value; }
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long value) {
+        id = value;
+    }
+
+    public Long getAgreementPriceId() {
+        return agreementPriceId;
+    }
+
+    public void setAgreementPriceId(Long value) {
+        agreementPriceId = value;
+    }
+
+    public String getOperationType() {
+        return operationType;
+    }
+
+    public void setOperationType(String value) {
+        operationType = value;
+    }
+
+    public String getOperator() {
+        return operator;
+    }
+
+    public void setOperator(String value) {
+        operator = value;
+    }
+
+    public JsonNode getBeforeData() {
+        return beforeData;
+    }
+
+    public void setBeforeData(JsonNode value) {
+        beforeData = value;
+    }
+
+    public JsonNode getAfterData() {
+        return afterData;
+    }
+
+    public void setAfterData(JsonNode value) {
+        afterData = value;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime value) {
+        createdAt = value;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String value) {
+        createdBy = value;
+    }
 }

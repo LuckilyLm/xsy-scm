@@ -4,9 +4,9 @@
     <select id="selectEffective" resultType="com.xianshuyuan.scm.customer.entity.CustomerAgreementPriceEntity">
         SELECT * FROM customer_agreement_price
         WHERE customer_id = #{customerId} AND deleted = FALSE
-          AND effective_from &lt;= #{at} AND (effective_to IS NULL OR effective_to &gt; #{at})
-          AND sku_id IN
-          <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        AND effective_from &lt;= #{at} AND (effective_to IS NULL OR effective_to &gt; #{at})
+        AND sku_id IN
+        <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
         ORDER BY effective_from DESC, id DESC
     </select>
 
@@ -25,20 +25,20 @@
         <if test="query.skuId != null">AND cap.sku_id = #{query.skuId}</if>
         <if test="query.keyword != null and query.keyword != ''">
             AND (
-                CAST(cap.sku_id AS TEXT) ILIKE CONCAT('%', #{query.keyword}, '%')
-                OR EXISTS (
-                    SELECT 1 FROM customer c
-                    WHERE c.id = cap.customer_id AND c.deleted = FALSE
-                      AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')
-                           OR c.name ILIKE CONCAT('%', #{query.keyword}, '%'))
-                )
-                OR EXISTS (
-                    SELECT 1 FROM product_sku sku
-                    JOIN product_spu spu ON spu.id = sku.spu_id AND spu.deleted = FALSE
-                    WHERE sku.id = cap.sku_id AND sku.deleted = FALSE
-                      AND (sku.sku_code ILIKE CONCAT('%', #{query.keyword}, '%')
-                           OR spu.name ILIKE CONCAT('%', #{query.keyword}, '%'))
-                )
+            CAST(cap.sku_id AS TEXT) ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR EXISTS (
+            SELECT 1 FROM customer c
+            WHERE c.id = cap.customer_id AND c.deleted = FALSE
+            AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR c.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+            )
+            OR EXISTS (
+            SELECT 1 FROM product_sku sku
+            JOIN product_spu spu ON spu.id = sku.spu_id AND spu.deleted = FALSE
+            WHERE sku.id = cap.sku_id AND sku.deleted = FALSE
+            AND (sku.sku_code ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR spu.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+            )
             )
         </if>
         ORDER BY cap.effective_from DESC, cap.id DESC
@@ -51,7 +51,7 @@
     <update id="softDelete">
         UPDATE customer_agreement_price
         SET deleted = TRUE, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
+        updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
         WHERE id = #{id} AND version = #{version} AND deleted = FALSE
     </update>
 </mapper>

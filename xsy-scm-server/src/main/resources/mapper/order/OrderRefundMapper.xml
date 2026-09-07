@@ -1,1 +1,24 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd"><mapper namespace="com.xianshuyuan.scm.order.mapper.OrderRefundMapper"><select id="nextNumber" resultType="long">SELECT nextval('order_refund_no_seq')</select><select id="selectActiveById" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM order_refund WHERE id=#{id} AND deleted=FALSE</select><select id="selectActiveByIdForUpdate" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM order_refund WHERE id=#{id} AND deleted=FALSE FOR UPDATE</select><select id="selectByReturnId" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM order_refund WHERE return_id=#{returnId} AND deleted=FALSE</select><select id="selectRefundPage" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM order_refund WHERE deleted=FALSE<if test="query.keyword != null and query.keyword != ''"> AND refund_no ILIKE CONCAT('%',#{query.keyword},'%')</if><if test="query.status != null"> AND status=#{query.status}</if><if test="query.orderId != null"> AND order_id=#{query.orderId}</if><if test="query.returnId != null"> AND return_id=#{query.returnId}</if><if test="query.customerId != null"> AND customer_id=#{query.customerId}</if> ORDER BY created_at DESC,id DESC</select></mapper>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.order.mapper.OrderRefundMapper">
+    <select id="nextNumber" resultType="long">SELECT nextval('order_refund_no_seq')</select>
+    <select id="selectActiveById" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM
+        order_refund WHERE id=#{id} AND deleted=FALSE
+    </select>
+    <select id="selectActiveByIdForUpdate" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM
+        order_refund WHERE id=#{id} AND deleted=FALSE FOR UPDATE
+    </select>
+    <select id="selectByReturnId" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM
+        order_refund WHERE return_id=#{returnId} AND deleted=FALSE
+    </select>
+    <select id="selectRefundPage" resultType="com.xianshuyuan.scm.order.entity.OrderRefundEntity">SELECT * FROM
+        order_refund WHERE deleted=FALSE
+        <if test="query.keyword != null and query.keyword != ''">AND refund_no ILIKE CONCAT('%',#{query.keyword},'%')
+        </if>
+        <if test="query.status != null">AND status=#{query.status}</if>
+        <if test="query.orderId != null">AND order_id=#{query.orderId}</if>
+        <if test="query.returnId != null">AND return_id=#{query.returnId}</if>
+        <if test="query.customerId != null">AND customer_id=#{query.customerId}</if>
+        ORDER BY created_at DESC,id DESC
+    </select>
+</mapper>

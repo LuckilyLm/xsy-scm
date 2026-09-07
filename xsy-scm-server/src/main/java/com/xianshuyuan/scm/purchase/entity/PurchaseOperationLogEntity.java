@@ -1,4 +1,102 @@
 package com.xianshuyuan.scm.purchase.entity;
-import com.baomidou.mybatisplus.annotation.*; import com.fasterxml.jackson.databind.JsonNode; import com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler; import org.apache.ibatis.type.JdbcType; import java.time.OffsetDateTime;
-@TableName(value="purchase_operation_log",autoResultMap=true) public class PurchaseOperationLogEntity { @TableId(type=IdType.AUTO) Long id; Long purchaseOrderId,purchaseReceiptId; String operationType,operator,reason; @TableField(typeHandler=JsonbJsonNodeTypeHandler.class,jdbcType=JdbcType.OTHER) JsonNode beforeData; @TableField(typeHandler=JsonbJsonNodeTypeHandler.class,jdbcType=JdbcType.OTHER) JsonNode afterData; OffsetDateTime createdAt; String createdBy;
-public Long getId(){return id;} public void setId(Long v){id=v;} public Long getPurchaseOrderId(){return purchaseOrderId;} public void setPurchaseOrderId(Long v){purchaseOrderId=v;} public Long getPurchaseReceiptId(){return purchaseReceiptId;} public void setPurchaseReceiptId(Long v){purchaseReceiptId=v;} public String getOperationType(){return operationType;} public void setOperationType(String v){operationType=v;} public String getOperator(){return operator;} public void setOperator(String v){operator=v;} public String getReason(){return reason;} public void setReason(String v){reason=v;} public JsonNode getBeforeData(){return beforeData;} public void setBeforeData(JsonNode v){beforeData=v;} public JsonNode getAfterData(){return afterData;} public void setAfterData(JsonNode v){afterData=v;} public OffsetDateTime getCreatedAt(){return createdAt;} public void setCreatedAt(OffsetDateTime v){createdAt=v;} public String getCreatedBy(){return createdBy;} public void setCreatedBy(String v){createdBy=v;} }
+
+import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler;
+import org.apache.ibatis.type.JdbcType;
+
+import java.time.OffsetDateTime;
+
+@TableName(value = "purchase_operation_log", autoResultMap = true)
+public class PurchaseOperationLogEntity {
+    @TableId(type = IdType.AUTO)
+    Long id;
+    Long purchaseOrderId, purchaseReceiptId;
+    String operationType, operator, reason;
+    @TableField(typeHandler = JsonbJsonNodeTypeHandler.class, jdbcType = JdbcType.OTHER)
+    JsonNode beforeData;
+    @TableField(typeHandler = JsonbJsonNodeTypeHandler.class, jdbcType = JdbcType.OTHER)
+    JsonNode afterData;
+    OffsetDateTime createdAt;
+    String createdBy;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long v) {
+        id = v;
+    }
+
+    public Long getPurchaseOrderId() {
+        return purchaseOrderId;
+    }
+
+    public void setPurchaseOrderId(Long v) {
+        purchaseOrderId = v;
+    }
+
+    public Long getPurchaseReceiptId() {
+        return purchaseReceiptId;
+    }
+
+    public void setPurchaseReceiptId(Long v) {
+        purchaseReceiptId = v;
+    }
+
+    public String getOperationType() {
+        return operationType;
+    }
+
+    public void setOperationType(String v) {
+        operationType = v;
+    }
+
+    public String getOperator() {
+        return operator;
+    }
+
+    public void setOperator(String v) {
+        operator = v;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String v) {
+        reason = v;
+    }
+
+    public JsonNode getBeforeData() {
+        return beforeData;
+    }
+
+    public void setBeforeData(JsonNode v) {
+        beforeData = v;
+    }
+
+    public JsonNode getAfterData() {
+        return afterData;
+    }
+
+    public void setAfterData(JsonNode v) {
+        afterData = v;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime v) {
+        createdAt = v;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String v) {
+        createdBy = v;
+    }
+}

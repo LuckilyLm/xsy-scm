@@ -20,7 +20,9 @@ public class IdempotencyService {
 
     public Claim claim(String scope, String key, Object request) {
         if (key == null || key.isBlank()) throw new BusinessException(OrderErrorCodes.IDEMPOTENCY_KEY_REQUIRED);
-        String normalized = key.trim(), hash = hasher.hash(request);
+        String normalized = key.trim();
+        if (normalized.length() > 200) throw new BusinessException(OrderErrorCodes.IDEMPOTENCY_KEY_INVALID);
+        String hash = hasher.hash(request);
         if (mapper.insertClaim(scope, normalized, hash) == 1)
             return new Claim(mapper.selectActiveByScopeAndKeyForUpdate(scope, normalized), false);
         var stored = mapper.selectActiveByScopeAndKeyForUpdate(scope, normalized);

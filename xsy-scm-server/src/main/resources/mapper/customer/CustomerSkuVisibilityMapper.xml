@@ -13,7 +13,7 @@
     <update id="softDeleteOwned">
         UPDATE customer_sku_visibility
         SET deleted = TRUE, version = version + 1,
-            updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
+        updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
         WHERE customer_id = #{customerId} AND deleted = FALSE AND id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>

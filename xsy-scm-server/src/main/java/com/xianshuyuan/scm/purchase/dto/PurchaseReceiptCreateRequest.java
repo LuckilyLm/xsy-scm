@@ -5,5 +5,6 @@ import jakarta.validation.constraints.Size;
 
 public record PurchaseReceiptCreateRequest(
         @NotNull Long purchaseOrderId,
-        @Size(max=500) String remark
-) {}
+        @Size(max = 500) String remark
+) {
+}

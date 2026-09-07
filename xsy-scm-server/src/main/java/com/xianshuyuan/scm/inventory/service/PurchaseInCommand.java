@@ -8,4 +8,5 @@ public record PurchaseInCommand(
         String warehouseCode, String warehouseName,
         String skuCode, String skuName, String unit,
         BigDecimal quantity, BigDecimal unitCost
-) {}
+) {
+}

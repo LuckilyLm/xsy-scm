@@ -109,12 +109,16 @@ public class AgreementPriceService {
 
     private JsonNode snapshot(CustomerAgreementPriceEntity entity) {
         ObjectNode node = json.createObjectNode();
-        if (entity.getId() == null) node.putNull("id"); else node.put("id", entity.getId());
+        if (entity.getId() == null) node.putNull("id");
+        else node.put("id", entity.getId());
         node.put("customerId", entity.getCustomerId());
         node.put("skuId", entity.getSkuId());
-        if (entity.getUnitPrice() == null) node.putNull("unitPrice"); else node.put("unitPrice", entity.getUnitPrice().setScale(4).toPlainString());
-        if (entity.getEffectiveFrom() == null) node.putNull("effectiveFrom"); else node.put("effectiveFrom", entity.getEffectiveFrom().toString());
-        if (entity.getEffectiveTo() == null) node.putNull("effectiveTo"); else node.put("effectiveTo", entity.getEffectiveTo().toString());
+        if (entity.getUnitPrice() == null) node.putNull("unitPrice");
+        else node.put("unitPrice", entity.getUnitPrice().setScale(4).toPlainString());
+        if (entity.getEffectiveFrom() == null) node.putNull("effectiveFrom");
+        else node.put("effectiveFrom", entity.getEffectiveFrom().toString());
+        if (entity.getEffectiveTo() == null) node.putNull("effectiveTo");
+        else node.put("effectiveTo", entity.getEffectiveTo().toString());
         node.put("version", entity.getVersion());
         node.put("deleted", Boolean.TRUE.equals(entity.getDeleted()));
         return node;

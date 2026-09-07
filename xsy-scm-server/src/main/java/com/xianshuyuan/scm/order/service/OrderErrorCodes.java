@@ -25,4 +25,5 @@ public final class OrderErrorCodes {
     public static final ErrorCode CANCEL_REASON_REQUIRED = new ErrorCode(40028, HttpStatus.BAD_REQUEST, "取消原因不能为空");
     public static final ErrorCode ACTUAL_QUANTITY_REQUIRED = new ErrorCode(40926, HttpStatus.CONFLICT, "确认前所有订单行必须具有有效实数量");
     public static final ErrorCode IDEMPOTENCY_KEY_REQUIRED = new ErrorCode(40029, HttpStatus.BAD_REQUEST, "Idempotency-Key不能为空");
+    public static final ErrorCode IDEMPOTENCY_KEY_INVALID = new ErrorCode(40030, HttpStatus.BAD_REQUEST, "Idempotency-Key长度不能超过200个字符");
 }

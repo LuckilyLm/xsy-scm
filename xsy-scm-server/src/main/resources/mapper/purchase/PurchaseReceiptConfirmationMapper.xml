@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseReceiptConfirmationMapper">
- <resultMap id="confirmation" type="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptConfirmationEntity"><id property="id" column="id"/><result property="resultData" column="result_data" typeHandler="com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler"/></resultMap>
- <select id="nextNumber" resultType="java.lang.String">SELECT 'RC' || to_char(CURRENT_DATE,'YYYYMMDD') || lpad(nextval('purchase_receipt_confirmation_no_seq')::text,6,'0')</select>
- <select id="selectByReceiptId" resultMap="confirmation">SELECT * FROM purchase_receipt_confirmation WHERE purchase_receipt_id=#{receiptId} ORDER BY id</select>
+    <resultMap id="confirmation" type="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptConfirmationEntity">
+        <id property="id" column="id"/>
+        <result property="resultData" column="result_data"
+                typeHandler="com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler"/>
+    </resultMap>
+    <select id="nextNumber" resultType="java.lang.String">SELECT 'RC' || to_char(CURRENT_DATE,'YYYYMMDD') ||
+        lpad(nextval('purchase_receipt_confirmation_no_seq')::text,6,'0')
+    </select>
+    <select id="selectByReceiptId" resultMap="confirmation">SELECT * FROM purchase_receipt_confirmation WHERE
+        purchase_receipt_id=#{receiptId} ORDER BY id
+    </select>
 </mapper>

@@ -331,8 +331,10 @@ public class SalesOrderApplicationService {
         node.put("customerId", order.getCustomerId());
         node.put("status", order.getStatus().name());
         node.put("source", order.getOrderSource().name());
-        if (order.getOriginalOrderId() == null) node.putNull("originalOrderId"); else node.put("originalOrderId", order.getOriginalOrderId());
-        if (order.getSupplementReason() == null) node.putNull("supplementReason"); else node.put("supplementReason", order.getSupplementReason());
+        if (order.getOriginalOrderId() == null) node.putNull("originalOrderId");
+        else node.put("originalOrderId", order.getOriginalOrderId());
+        if (order.getSupplementReason() == null) node.putNull("supplementReason");
+        else node.put("supplementReason", order.getSupplementReason());
         node.set("items", json.valueToTree(rows.stream().map(this::itemAuditSnapshot).toList()));
         return node;
     }
@@ -346,12 +348,14 @@ public class SalesOrderApplicationService {
         putDecimal(node, "draftUnitPrice", item.getDraftUnitPrice());
         putDecimal(node, "lockedUnitPrice", item.getLockedUnitPrice());
         node.put("manualPriceOverride", Boolean.TRUE.equals(item.getManualPriceOverride()));
-        if (item.getManualPriceReason() == null) node.putNull("manualPriceReason"); else node.put("manualPriceReason", item.getManualPriceReason());
+        if (item.getManualPriceReason() == null) node.putNull("manualPriceReason");
+        else node.put("manualPriceReason", item.getManualPriceReason());
         return node;
     }
 
     private static void putDecimal(ObjectNode node, String field, BigDecimal value) {
-        if (value == null) node.putNull(field); else node.put(field, value.setScale(4).toPlainString());
+        if (value == null) node.putNull(field);
+        else node.put(field, value.setScale(4).toPlainString());
     }
 
     private static String trim(String v) {

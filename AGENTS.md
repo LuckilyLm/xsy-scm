@@ -1,5 +1,11 @@
 # AGENTS.md
 
+> **SmartAdmin 参考规则：**开发任何系统通用能力前，必须先调查当前项目，再搜索
+> `project-reference-examples/smart-admin-java17` 的对应实现；开发供应链业务能力时，
+> 以 `xsy-scm-server`、`xsy-scm-web` 的现有实现及当前 Sprint 规格为准。
+> SmartAdmin 仅作只读参考，禁止修改、机械复制或替换当前 Java 21 + React 技术栈。
+> 完整规则见 [`SMARTADMIN_REFERENCE_RULES.md`](./SMARTADMIN_REFERENCE_RULES.md)。
+
 > Project: 鲜蔬源智慧供应链管理平台  
 > Short name: 鲜蔬源智链  
 > Code name: `xsy-scm`  
@@ -1523,6 +1529,890 @@ Do not add:
 - large dependencies for trivial utility functions
 
 ---
+
+## 35.1 Java Productivity and Code Generation Tools
+
+For Java backend development, prefer mature, compile-time or framework-native tools over repetitive handwritten boilerplate when they clearly improve maintainability.
+
+The agent should actively inspect the current project dependencies and conventions before manually implementing repetitive Java code.
+
+### General Rule
+
+Before writing repetitive infrastructure or boilerplate code, ask:
+
+```text
+1. Does the project already include a tool that solves this?
+2. Is there a mature compile-time library commonly used for this problem?
+3. Will the dependency remove meaningful repetitive code?
+4. Will the generated behavior remain explicit, predictable and easy to debug?
+5. Does it fit the existing Spring Boot / MyBatis-Plus architecture?
+```
+
+If the answer is yes, prefer the established tool instead of manually reproducing the same functionality.
+
+The agent may add a small, mature dependency without separate approval when:
+
+- it solves a recurring engineering concern rather than a one-off convenience;
+- no equivalent dependency already exists in the project;
+- it is actively maintained and compatible with the project's Java / Spring Boot version;
+- it does not introduce a new architectural paradigm;
+- it materially reduces boilerplate or error-prone mapping code;
+- its behavior is deterministic and understandable by developers;
+- the change is limited in scope and documented in the dependency file.
+
+Do not add a dependency merely to save a few trivial lines of code.
+
+### Lombok
+
+Prefer Lombok for routine Java boilerplate when Lombok is already present or when the project contains enough DTOs, entities, value objects or configuration classes to justify it.
+
+Typical allowed uses:
+
+```java
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@RequiredArgsConstructor
+@ToString
+@EqualsAndHashCode
+```
+
+Prefer:
+
+```java
+@Getter
+@Setter
+public class ProductDTO {
+    private Long id;
+    private String name;
+}
+```
+
+over manually writing repetitive getters and setters.
+
+For Spring dependency injection, prefer constructor injection, for example:
+
+```java
+@RequiredArgsConstructor
+@Service
+public class ProductService {
+
+    private final ProductMapper productMapper;
+}
+```
+
+Do not manually write constructors whose only purpose is Spring dependency injection when Lombok can generate them clearly.
+
+Do not use Lombok indiscriminately.
+
+Avoid or carefully evaluate:
+
+```text
+@Data on persistence entities
+@EqualsAndHashCode on entities with mutable/database identity
+@ToString on objects containing sensitive data or cyclic relationships
+@Builder where framework construction semantics become unclear
+```
+
+Prefer explicit annotations such as `@Getter` and `@Setter` when `@Data` would generate more behavior than required.
+
+Business behavior must never be hidden inside Lombok-generated mechanisms.
+
+### MapStruct
+
+Prefer MapStruct for structured mappings between:
+
+```text
+Entity
+DTO
+VO
+Command
+Query object
+API response model
+```
+
+when mappings are repeated, contain multiple fields, or are likely to evolve.
+
+For example:
+
+```text
+ProductEntity
+→ ProductDTO
+
+SalesOrderEntity
+→ SalesOrderVO
+
+CreateProductRequest
+→ ProductEntity
+```
+
+should normally use a domain-local converter when the mapping is non-trivial or reused.
+
+Preferred location:
+
+```text
+product/
+└─ converter/
+   └─ ProductConverter.java
+```
+
+Prefer MapStruct over:
+
+```java
+target.setId(source.getId());
+target.setName(source.getName());
+target.setCategoryId(source.getCategoryId());
+target.setUnit(source.getUnit());
+target.setPrice(source.getPrice());
+```
+
+repeated across services and controllers.
+
+Typical pattern:
+
+```java
+@Mapper(componentModel = "spring")
+public interface ProductConverter {
+
+    ProductDTO toDTO(ProductEntity entity);
+
+    ProductVO toVO(ProductEntity entity);
+
+    ProductEntity toEntity(CreateProductRequest request);
+
+    List<ProductVO> toVOList(List<ProductEntity> entities);
+}
+```
+
+Use explicit mappings when field names or semantics differ:
+
+```java
+@Mapping(target = "customerName", source = "customer.name")
+@Mapping(target = "settledQuantity", source = "actualQuantity")
+OrderVO toVO(OrderEntity entity);
+```
+
+Do not force MapStruct for trivial one-field or one-off transformations where ordinary Java is clearer.
+
+Do not hide business calculations in MapStruct.
+
+The following normally belong in the service/domain layer rather than converters:
+
+```text
+price calculation
+inventory calculation
+settlement calculation
+permission decisions
+state transitions
+database lookups
+external API calls
+```
+
+Converters should primarily perform deterministic structural transformation.
+
+### Bean Copy Utilities
+
+Do not introduce or broadly use reflection-based property copying such as:
+
+```java
+BeanUtils.copyProperties(...)
+```
+
+as the default mapping strategy when MapStruct is available.
+
+Avoid relying on implicit runtime copying for important business objects because:
+
+- field mismatches are easier to miss;
+- refactoring is less safe;
+- mapping rules are less visible;
+- runtime reflection provides weaker compile-time guarantees.
+
+For repeated typed mappings, prefer MapStruct.
+
+For extremely small local transformations, explicit Java mapping is acceptable.
+
+### Object Construction
+
+Use builders when objects contain many optional or clearly named fields and builder construction improves readability.
+
+Example:
+
+```java
+OrderQuery.builder()
+    .customerId(customerId)
+    .status(status)
+    .startTime(startTime)
+    .endTime(endTime)
+    .build();
+```
+
+Prefer constructors when the object has only a small number of mandatory arguments and the meaning remains obvious.
+
+Do not create builders purely because Lombok provides `@Builder`.
+
+### Utility Libraries
+
+Before manually implementing common utility behavior, inspect existing project dependencies.
+
+Examples include:
+
+```text
+string handling
+collection handling
+date/time handling
+JSON serialization
+validation
+HTTP communication
+object mapping
+file handling
+ID generation
+retry
+caching
+```
+
+Prefer, in order:
+
+```text
+JDK standard library
+→ Spring Framework utilities
+→ existing project dependency
+→ small mature third-party dependency
+→ custom implementation
+```
+
+Examples:
+
+```text
+java.time
+instead of custom date arithmetic
+
+Spring Validation / Jakarta Validation
+instead of handwritten request validation
+
+Jackson
+instead of custom JSON serialization
+
+Spring utilities
+instead of introducing another utility library for a trivial helper
+```
+
+Do not introduce large "utility collections" only because one helper method is convenient.
+
+### Annotation Processors and Compile-Time Generation
+
+Compile-time generation is generally preferred over runtime magic when both solve the same problem cleanly.
+
+Examples:
+
+```text
+Lombok
+MapStruct
+framework-supported annotation processors
+```
+
+are acceptable because generated behavior is established during compilation.
+
+When adding annotation processors, ensure that:
+
+```text
+Maven / Gradle compilation works
+IDE annotation processing works
+CI build works
+generated sources do not need to be manually edited
+```
+
+Never modify generated source files directly.
+
+### Dependency Introduction Decision
+
+The agent does not need to ask for confirmation before adding a lightweight Java productivity dependency such as Lombok or MapStruct when all of the following are true:
+
+```text
+the dependency is clearly appropriate
+AND
+the project does not already provide an equivalent
+AND
+the task would otherwise introduce substantial repetitive code
+AND
+the dependency is compatible with the current stack
+AND
+it does not alter system architecture or runtime infrastructure
+```
+
+The agent should explain the dependency addition in the final change summary.
+
+Explicit approval is required before introducing dependencies that:
+
+```text
+change the persistence framework
+change the web framework
+introduce a new RPC framework
+introduce a workflow engine
+introduce a message broker
+introduce a distributed framework
+introduce a new ORM
+replace MyBatis-Plus
+significantly affect application runtime behavior
+add large transitive dependency trees
+```
+
+### Preferred Java Development Principle
+
+When implementing Java backend code, follow this preference:
+
+```text
+framework-native capability
+> mature compile-time generation
+> existing project utility
+> explicit reusable abstraction
+> repetitive handwritten boilerplate
+```
+
+But for business logic:
+
+```text
+explicit business code
+> clever abstraction
+> hidden framework magic
+```
+
+Use tools to remove mechanical code, not to hide domain behavior.
+
+The goal is:
+
+```text
+less boilerplate
++
+more compile-time safety
++
+clearer domain code
++
+consistent project conventions
+```
+
+not simply fewer lines of code.
+
+---
+
+## 35.2 Frontend Productivity and Framework Tools
+
+For frontend development, prefer framework-native capabilities, existing project libraries and mature ecosystem tools over repetitive handwritten infrastructure.
+
+The agent should actively inspect:
+
+```text
+package.json
+existing components
+existing hooks
+existing utilities
+existing API abstractions
+existing form patterns
+existing table patterns
+existing state-management patterns
+```
+
+before implementing equivalent functionality manually.
+
+### General Rule
+
+Before writing reusable frontend infrastructure, ask:
+
+```text
+1. Does React already provide the required capability?
+2. Does Ant Design / ProComponents already provide the required component?
+3. Does TanStack Query already solve the server-state problem?
+4. Does React Hook Form or the existing form system already solve the form problem?
+5. Does Zod or the existing validation system already solve the validation problem?
+6. Does the project already have a shared component, hook or utility for this?
+7. Is there a mature small dependency that materially reduces complexity?
+```
+
+Prefer:
+
+```text
+framework capability
+→ existing project abstraction
+→ existing project dependency
+→ mature lightweight dependency
+→ custom implementation
+```
+
+Do not manually rebuild established framework functionality without a clear reason.
+
+### Ant Design and ProComponents
+
+Prefer Ant Design and `@ant-design/pro-components` for standard ERP interface patterns.
+
+Use existing components such as:
+
+```text
+ProTable
+ProForm
+ModalForm
+DrawerForm
+ProDescriptions
+ProCard
+StatisticCard
+ProLayout
+```
+
+instead of manually assembling equivalent infrastructure.
+
+For example, do not manually implement:
+
+```text
+table loading
+pagination
+search form binding
+reset behavior
+column filtering
+form submission state
+modal form lifecycle
+standard CRUD table mechanics
+```
+
+when ProComponents already provides an appropriate implementation.
+
+Custom components are justified when:
+
+```text
+business interaction is genuinely specialized
+OR
+existing components cannot satisfy the workflow cleanly
+OR
+reuse would create more complexity than a focused implementation
+```
+
+Do not create custom UI infrastructure merely to avoid learning an existing component API.
+
+### TanStack Query
+
+Use TanStack Query as the default tool for server state.
+
+Prefer it for:
+
+```text
+API querying
+loading state
+error state
+cache management
+request deduplication
+refetch
+query invalidation
+pagination data
+mutation lifecycle
+optimistic updates where justified
+```
+
+Avoid patterns such as:
+
+```tsx
+const [loading, setLoading] = useState(false);
+const [data, setData] = useState([]);
+
+useEffect(() => {
+  setLoading(true);
+
+  api.getList()
+    .then(setData)
+    .finally(() => setLoading(false));
+}, []);
+```
+
+when the same behavior is naturally expressed through TanStack Query.
+
+Do not introduce custom global request caches when TanStack Query already owns server state.
+
+Do not copy TanStack Query results into Zustand unless there is a demonstrated client-state requirement.
+
+### Forms
+
+Prefer the existing project form stack before manually creating form-state infrastructure.
+
+Use:
+
+```text
+ProForm
+Ant Design Form
+React Hook Form
+Zod
+```
+
+according to existing project conventions and the complexity of the form.
+
+Do not manually maintain dozens of field states such as:
+
+```tsx
+const [name, setName] = useState('');
+const [phone, setPhone] = useState('');
+const [address, setAddress] = useState('');
+const [remark, setRemark] = useState('');
+```
+
+for normal business forms when an existing form library can manage the form consistently.
+
+Prefer schema-based validation when validation logic is reused or sufficiently complex.
+
+Do not introduce another form library when the existing stack already covers the requirement.
+
+### Validation
+
+Prefer existing schema and framework validation tools.
+
+Frontend validation should normally use:
+
+```text
+Ant Design form rules
+Zod
+React Hook Form integration
+shared validation utilities
+```
+
+where appropriate.
+
+Do not manually duplicate complex validation logic across pages.
+
+Reusable validation such as:
+
+```text
+phone numbers
+money ranges
+weight ranges
+date ranges
+required identifiers
+common text-length limits
+```
+
+should be centralized when repeated.
+
+Frontend validation improves UX but does not replace backend authoritative validation.
+
+### Shared Hooks
+
+Extract reusable React behavior into hooks when the behavior is repeated and has a clear semantic purpose.
+
+Examples:
+
+```text
+usePermission
+usePagination
+useTableColumns
+useDebounce
+useDeviceStatus
+useWeightStream
+useCustomerOptions
+useWarehouseOptions
+```
+
+Do not create a hook merely to wrap one trivial line.
+
+Before creating a new hook, search for an existing equivalent.
+
+Prefer a descriptive domain hook over repeatedly copying:
+
+```text
+useEffect
+useState
+request
+cleanup
+subscription
+permission checks
+```
+
+across multiple components.
+
+### Utility Libraries
+
+Before implementing generic utilities manually, inspect existing dependencies and platform APIs.
+
+Common areas include:
+
+```text
+date/time
+URL handling
+query strings
+deep object operations
+debounce/throttle
+number formatting
+money formatting
+file download
+CSV/Excel processing
+JSON handling
+UUID generation
+validation
+```
+
+Prefer:
+
+```text
+browser / ECMAScript standard API
+→ React / framework capability
+→ existing project utility
+→ existing dependency
+→ small mature dependency
+→ custom implementation
+```
+
+Do not add a large utility library for one trivial function.
+
+Do not add overlapping libraries for the same category.
+
+For example:
+
+```text
+do not add another date library
+if the project already has an established date solution
+
+do not add another HTTP client
+when Axios already exists
+
+do not add another state-management library
+when TanStack Query + Zustand already cover the required state
+```
+
+### Data Transformation
+
+For simple transformations, prefer TypeScript-native code:
+
+```tsx
+records.map(...)
+records.filter(...)
+Object.fromEntries(...)
+```
+
+Do not introduce a transformation library for straightforward operations.
+
+When transformation logic becomes:
+
+```text
+complex
+repeated
+business-specific
+or independently testable
+```
+
+extract it into a named utility or domain function.
+
+Keep business transformation logic outside React rendering code when it becomes substantial.
+
+### API Client
+
+Use the project's existing Axios abstraction.
+
+Do not call `fetch`, create additional Axios instances or introduce another HTTP client unless there is a demonstrated technical requirement.
+
+Prefer centralized handling for:
+
+```text
+base URL
+authentication headers
+error normalization
+request timeout
+response format
+token expiration
+request tracing
+```
+
+Pages and components should consume domain/API functions rather than repeatedly configuring raw HTTP requests.
+
+### Code Generation
+
+Use code generation when it removes substantial repetitive, mechanically derived code and the generated output has a reliable source of truth.
+
+Reasonable uses include:
+
+```text
+OpenAPI-generated TypeScript API types
+OpenAPI-generated clients where project conventions support them
+schema-generated types
+route/type generation provided by an adopted framework
+```
+
+Do not manually maintain large duplicated API type definitions when they can reliably be generated from a stable API contract.
+
+Generated files must:
+
+```text
+have a clear source of truth
+be reproducible
+not contain handwritten business logic
+not be manually edited unless explicitly designed for extension
+```
+
+Do not introduce code generation for small amounts of ordinary code.
+
+### TypeScript
+
+Use TypeScript to eliminate preventable runtime uncertainty.
+
+Prefer:
+
+```text
+explicit domain types
+discriminated unions
+generic reusable types
+inferred schema types
+type-safe API responses
+type-safe component props
+```
+
+over:
+
+```text
+any
+unchecked casts
+duplicated interfaces
+stringly-typed state
+```
+
+Avoid using:
+
+```tsx
+as SomeType
+```
+
+merely to silence compiler errors.
+
+Use `as` only when runtime knowledge genuinely exceeds what TypeScript can infer and the assumption is safe.
+
+Prefer fixing the type model over suppressing the type system.
+
+### Component Libraries
+
+Do not introduce another general-purpose component library when Ant Design already covers the application.
+
+For example, do not add:
+
+```text
+Material UI
+Element Plus
+Arco Design
+Semi Design
+another enterprise UI framework
+```
+
+for isolated components.
+
+A specialized library may be introduced when Ant Design does not address the domain, for example:
+
+```text
+charting
+maps
+rich-text editing
+specialized file processing
+specialized visualization
+```
+
+and the requirement is substantial enough to justify the dependency.
+
+### Specialized Libraries
+
+The agent may add a mature specialized frontend dependency without separate approval when:
+
+```text
+the project has no equivalent
+AND
+the requirement is non-trivial
+AND
+implementing it manually would create substantial complexity
+AND
+the library has a focused responsibility
+AND
+the dependency is maintained
+AND
+bundle/runtime impact is reasonable
+```
+
+Examples may include libraries for:
+
+```text
+specialized visualization
+drag and drop
+rich-text editing
+Excel/CSV parsing
+QR/barcode processing
+virtualized large lists
+complex geometry
+device protocols exposed to the browser
+```
+
+The agent must still prefer existing project dependencies first.
+
+### Dependency Introduction Decision
+
+The agent does not need separate approval for a small frontend productivity dependency when all conditions are true:
+
+```text
+no equivalent exists in the project
+AND
+the capability is genuinely reusable or complex
+AND
+the dependency materially reduces custom infrastructure
+AND
+bundle impact is reasonable
+AND
+it does not replace an existing architectural choice
+```
+
+The dependency addition must be mentioned in the final change summary.
+
+Explicit approval is required before introducing:
+
+```text
+another UI framework
+another state-management framework
+another routing framework
+another HTTP client
+another form framework that overlaps the existing stack
+a new frontend meta-framework
+a new build system
+a micro-frontend framework
+a large runtime dependency
+a library that materially changes application architecture
+```
+
+### Preferred Frontend Development Principle
+
+For frontend infrastructure:
+
+```text
+platform capability
+> framework capability
+> existing project component/hook
+> existing dependency
+> mature specialized tool
+> handwritten infrastructure
+```
+
+For business behavior:
+
+```text
+explicit domain logic
+> reusable domain abstraction
+> clever generic abstraction
+> hidden library magic
+```
+
+Use libraries to remove mechanical implementation work, not to hide business behavior.
+
+The goal is:
+
+```text
+less duplicated infrastructure
++
+better type safety
++
+consistent UX
++
+smaller maintenance burden
++
+clear business code
+```
+
+not simply fewer lines of frontend code.
+
 
 ## 36. UI Skill Guidance
 
