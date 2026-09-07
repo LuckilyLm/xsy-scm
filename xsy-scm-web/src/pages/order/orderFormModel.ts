@@ -73,10 +73,14 @@ export function toOrderPayload(form: OrderForm): SalesOrderPayload {
     version: form.version, customerId: form.customerId!, source: form.source,
     supplementReason: form.source === 'SUPPLEMENT' ? form.supplementReason.trim() : null,
     originalOrderId: form.source === 'SUPPLEMENT' ? form.originalOrderId : null,
-    items: form.items.map((item) => {
-      const payloadItem: OrderItem = { ...item };
-      delete (payloadItem as OrderItem & { key?: string }).key;
-      return { ...payloadItem, orderedQuantity: item.orderedQuantity.trim(), unitPrice: item.unitPrice.trim(), overrideReason: item.priceSource === 'OVERRIDE' ? item.overrideReason?.trim() || null : null };
-    }),
+    items: form.items.map((item) => ({
+      id: item.id,
+      version: item.version,
+      skuId: item.skuId,
+      orderedQuantity: item.orderedQuantity.trim(),
+      unitPrice: item.priceSource === 'OVERRIDE' ? item.unitPrice.trim() : null,
+      manualPriceOverride: item.priceSource === 'OVERRIDE',
+      overrideReason: item.priceSource === 'OVERRIDE' ? item.overrideReason?.trim() || null : null,
+    })),
   };
 }

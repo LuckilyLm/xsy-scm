@@ -28,10 +28,10 @@ public class CustomerController {
 
     @GetMapping
     public ApiResponse<PageData<CustomerResponse>> page(
-        @RequestParam(defaultValue = "1") @Min(1) long page,
-        @RequestParam(defaultValue = "20") @Min(1) @Max(100) long pageSize,
-        @RequestParam(required = false) String keyword,
-        @RequestParam(required = false) Long customerTypeId) {
+            @RequestParam(defaultValue = "1") @Min(1) long page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) long pageSize,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long customerTypeId) {
         return ApiResponse.success(query.page(new CustomerPageQuery(page, pageSize, keyword, customerTypeId)));
     }
 
@@ -45,24 +45,28 @@ public class CustomerController {
         return ApiResponse.success(orderableSkus.listOrderable(id));
     }
 
-    @PostMapping public ApiResponse<Long> create(@Valid @RequestBody CustomerSaveRequest request) {
+    @PostMapping
+    public ApiResponse<Long> create(@Valid @RequestBody CustomerSaveRequest request) {
         return ApiResponse.success(service.create(request));
     }
 
-    @PutMapping("/{id}") public ApiResponse<Void> update(@PathVariable long id,
-                                                         @Valid @RequestBody CustomerSaveRequest request) {
+    @PutMapping("/{id}")
+    public ApiResponse<Void> update(@PathVariable long id,
+                                    @Valid @RequestBody CustomerSaveRequest request) {
         service.update(id, request);
         return ApiResponse.success(null);
     }
 
-    @PutMapping("/{id}/status") public ApiResponse<Void> status(@PathVariable long id,
-                                                                @Valid @RequestBody CustomerStatusRequest request) {
+    @PutMapping("/{id}/status")
+    public ApiResponse<Void> status(@PathVariable long id,
+                                    @Valid @RequestBody CustomerStatusRequest request) {
         service.updateStatus(id, request.version(), request.status());
         return ApiResponse.success(null);
     }
 
-    @DeleteMapping("/{id}") public ApiResponse<Void> delete(@PathVariable long id,
-                                                             @RequestParam @Min(0) int version) {
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable long id,
+                                    @RequestParam @Min(0) int version) {
         service.delete(id, version);
         return ApiResponse.success(null);
     }

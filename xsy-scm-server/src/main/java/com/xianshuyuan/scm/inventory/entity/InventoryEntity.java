@@ -1,0 +1,11 @@
+package com.xianshuyuan.scm.inventory.entity;
+
+import com.baomidou.mybatisplus.annotation.*;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
+@TableName("inventory")
+public class InventoryEntity {
+ @TableId(type=IdType.AUTO) private Long id; private Long warehouseId,skuId; private String warehouseCodeSnapshot,warehouseNameSnapshot,skuCodeSnapshot,skuNameSnapshot,unit; private BigDecimal quantity,averageCost; @Version private Integer version; @TableLogic private Boolean deleted; private OffsetDateTime createdAt,updatedAt; private String createdBy,updatedBy;
+ public Long getId(){return id;} public void setId(Long v){id=v;} public Long getWarehouseId(){return warehouseId;} public void setWarehouseId(Long v){warehouseId=v;} public Long getSkuId(){return skuId;} public void setSkuId(Long v){skuId=v;} public String getWarehouseCodeSnapshot(){return warehouseCodeSnapshot;} public void setWarehouseCodeSnapshot(String v){warehouseCodeSnapshot=v;} public String getWarehouseNameSnapshot(){return warehouseNameSnapshot;} public void setWarehouseNameSnapshot(String v){warehouseNameSnapshot=v;} public String getSkuCodeSnapshot(){return skuCodeSnapshot;} public void setSkuCodeSnapshot(String v){skuCodeSnapshot=v;} public String getSkuNameSnapshot(){return skuNameSnapshot;} public void setSkuNameSnapshot(String v){skuNameSnapshot=v;} public String getUnit(){return unit;} public void setUnit(String v){unit=v;} public BigDecimal getQuantity(){return quantity;} public void setQuantity(BigDecimal v){quantity=v;} public BigDecimal getAverageCost(){return averageCost;} public void setAverageCost(BigDecimal v){averageCost=v;} public Integer getVersion(){return version;} public void setVersion(Integer v){version=v;} public Boolean getDeleted(){return deleted;} public void setDeleted(Boolean v){deleted=v;} public OffsetDateTime getCreatedAt(){return createdAt;} public void setCreatedAt(OffsetDateTime v){createdAt=v;} public OffsetDateTime getUpdatedAt(){return updatedAt;} public void setUpdatedAt(OffsetDateTime v){updatedAt=v;} public String getCreatedBy(){return createdBy;} public void setCreatedBy(String v){createdBy=v;} public String getUpdatedBy(){return updatedBy;} public void setUpdatedBy(String v){updatedBy=v;}
+}

@@ -1,2 +1,50 @@
-import type { ActionType,ProColumns } from '@ant-design/pro-components';import { ProTable } from '@ant-design/pro-components';import { Alert,Button,Input,Modal,Select,message } from 'antd';import { useRef,useState } from 'react';import { useNavigate } from 'react-router-dom';import { completeRefund,fetchRefunds } from '../../api/afterSales';import { ApiError } from '../../api/http';import { AmountText } from '../../components/common/AmountText';import { PageContainer } from '../../components/common/PageContainer';import { StatusTag } from '../../components/common/StatusTag';import type { Refund,RefundStatus } from '../../types/sales';import styles from './Sales.module.css';const key=()=>`${Date.now()}-${Math.random().toString(36).slice(2)}`;
-export function RefundListPage(){const nav=useNavigate();const ref=useRef<ActionType>(null);const[status,setStatus]=useState<RefundStatus>();const[error,setError]=useState<string|null>(null);const[pending,setPending]=useState<number|null>(null);function finish(record:Refund){let externalReference=record.externalReference??'';Modal.confirm({title:`完成退款 ${record.refundNo}`,content:<Input value={externalReference} placeholder="外部退款凭证（选填且不可重复）" onChange={e=>externalReference=e.target.value}/>,okText:'确认完成',onOk:async()=>{if(pending)return;setPending(record.id);setError(null);try{await completeRefund(record.id,{version:record.version,externalReference:externalReference.trim()||undefined},key());message.success('退款已完成');await ref.current?.reload()}catch(c){setError(c instanceof ApiError&&c.status===409?'退款已被处理或外部凭证重复，请重新加载':c instanceof Error?c.message:'退款操作失败')}finally{setPending(null)}}})}const cols:ProColumns<Refund>[]=[{title:'退款单号',dataIndex:'refundNo',width:210,render:(_,r)=><Button type="link" onClick={()=>nav(`/order-refunds/${r.id}`)}>{r.refundNo}</Button>},{title:'退货单 ID',dataIndex:'returnId',width:130},{title:'退款金额',dataIndex:'refundAmount',width:160,align:'right',render:(_,r)=><AmountText value={r.refundAmount}/>},{title:'外部凭证',dataIndex:'externalReference',render:(_,r)=>r.externalReference||'--'},{title:'状态',dataIndex:'status',width:110,align:'center',render:(_,r)=><StatusTag status={r.status}/>},{title:'操作',valueType:'option',width:120,render:(_,r)=>r.status==='PENDING'?<Button type="link" loading={pending===r.id} disabled={pending!==null} onClick={()=>finish(r)}>完成退款</Button>:<Button type="link" onClick={()=>Modal.info({title:r.refundNo,content:<><p>退货单：{r.returnId}</p><p>金额：¥ {r.refundAmount}</p><p>外部凭证：{r.externalReference||'--'}</p></>})}>详情</Button>}];return <PageContainer><div className={styles.toolbar}><Select allowClear value={status} placeholder="全部状态" options={[{value:'PENDING',label:'待退款'},{value:'COMPLETED',label:'已完成'}]} onChange={setStatus}/><Button type="primary" onClick={()=>ref.current?.reload()}>查询</Button></div>{error?<Alert className={styles.error} type="error" showIcon message={error} action={<Button onClick={()=>ref.current?.reload()}>重新加载</Button>}/>:null}<ProTable actionRef={ref} rowKey="id" search={false} options={false} columns={cols} pagination={{defaultPageSize:20,showSizeChanger:true}} request={async p=>{try{const d=await fetchRefunds({page:p.current??1,pageSize:p.pageSize??20,status});setError(null);return{data:d.records,total:d.total,success:true}}catch{setError('退款记录加载失败');return{data:[],total:0,success:true}}}}/></PageContainer>}
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import { ProTable } from '@ant-design/pro-components';
+import { Alert, Button, Modal, Select } from 'antd';
+import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { fetchRefunds } from '../../api/afterSales';
+import { AmountText } from '../../components/common/AmountText';
+import { PageContainer } from '../../components/common/PageContainer';
+import { StatusTag } from '../../components/common/StatusTag';
+import type { Refund, RefundStatus } from '../../types/sales';
+import { RefundCompleteModal } from './RefundCompleteModal';
+import styles from './Sales.module.css';
+
+export function RefundListPage() {
+  const navigate = useNavigate();
+  const actionRef = useRef<ActionType>(null);
+  const [status, setStatus] = useState<RefundStatus>();
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedRefund, setSelectedRefund] = useState<Refund | null>(null);
+
+  const columns: ProColumns<Refund>[] = [
+    { title: '退款单号', dataIndex: 'refundNo', width: 210, render: (_, row) => <Button type="link" onClick={() => navigate(`/order-refunds/${row.id}`)}>{row.refundNo}</Button> },
+    { title: '退货单 ID', dataIndex: 'returnId', width: 130 },
+    { title: '退款金额', dataIndex: 'refundAmount', width: 160, align: 'right', render: (_, row) => <AmountText value={row.refundAmount} /> },
+    { title: '外部凭证', dataIndex: 'externalReference', render: (_, row) => row.externalReference || '--' },
+    { title: '状态', dataIndex: 'status', width: 110, align: 'center', render: (_, row) => <StatusTag status={row.status} /> },
+    { title: '操作', valueType: 'option', width: 120, render: (_, row) => row.status === 'PENDING'
+      ? <Button type="link" onClick={() => setSelectedRefund(row)}>完成退款</Button>
+      : <Button type="link" onClick={() => Modal.info({ title: row.refundNo, content: <><p>退货单：{row.returnId}</p><p>金额：¥ {row.refundAmount}</p><p>外部凭证：{row.externalReference || '--'}</p></> })}>详情</Button> },
+  ];
+
+  return <PageContainer>
+    <div className={styles.toolbar}>
+      <Select allowClear value={status} placeholder="全部状态" options={[{ value: 'PENDING', label: '待退款' }, { value: 'COMPLETED', label: '已完成' }]} onChange={setStatus} />
+      <Button type="primary" onClick={() => actionRef.current?.reload()}>查询</Button>
+    </div>
+    {loadError ? <Alert className={styles.error} type="error" showIcon message={loadError} action={<Button onClick={() => actionRef.current?.reload()}>重新加载</Button>} /> : null}
+    <ProTable actionRef={actionRef} rowKey="id" search={false} options={false} columns={columns} pagination={{ defaultPageSize: 20, showSizeChanger: true }} request={async (params) => {
+      try {
+        const data = await fetchRefunds({ page: params.current ?? 1, pageSize: params.pageSize ?? 20, status });
+        setLoadError(null);
+        return { data: data.records, total: data.total, success: true };
+      } catch {
+        setLoadError('退款记录加载失败');
+        return { data: [], total: 0, success: true };
+      }
+    }} />
+    <RefundCompleteModal refund={selectedRefund} onOpenChange={(open) => { if (!open) setSelectedRefund(null); }} onCompleted={() => actionRef.current?.reload() ?? Promise.resolve()} />
+  </PageContainer>;
+}

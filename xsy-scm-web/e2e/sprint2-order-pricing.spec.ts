@@ -82,13 +82,13 @@ test('allowlisted agreement price locks on submit and manual quantity confirms t
     },
   });
 
-  const orderableSkus = await api<Array<{ id: number; skuCode: string }>>(
+  const orderableSkus = await api<Array<{ skuId: number; skuCode: string }>>(
     request,
     'get',
     `/customers/${customerId}/skus`,
   );
   expect(orderableSkus).toEqual([
-    expect.objectContaining({ id: sku.id, skuCode: sku.skuCode }),
+    expect.objectContaining({ skuId: sku.id, skuCode: sku.skuCode }),
   ]);
 
   const agreementPrice = '5.2500';

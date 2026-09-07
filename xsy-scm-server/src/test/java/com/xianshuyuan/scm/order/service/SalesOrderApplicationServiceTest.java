@@ -9,6 +9,7 @@ import com.xianshuyuan.scm.order.dto.SalesOrderItemSaveRequest;
 import com.xianshuyuan.scm.order.dto.SalesOrderSaveRequest;
 import com.xianshuyuan.scm.order.entity.OrderSource;
 import com.xianshuyuan.scm.order.entity.OrderStatus;
+import com.xianshuyuan.scm.order.entity.OrderOperationLogEntity;
 import com.xianshuyuan.scm.order.entity.SalesOrderEntity;
 import com.xianshuyuan.scm.order.entity.SalesOrderItemEntity;
 import com.xianshuyuan.scm.order.mapper.IdempotencyRecordMapper;
@@ -21,6 +22,7 @@ import com.xianshuyuan.scm.product.entity.ProductType;
 import com.xianshuyuan.scm.product.mapper.ProductSkuMapper;
 import com.xianshuyuan.scm.product.mapper.ProductSpuMapper;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SalesOrderApplicationServiceTest {
     @Test
@@ -56,11 +59,50 @@ class SalesOrderApplicationServiceTest {
         verify(orders,times(1)).updateById(any(SalesOrderEntity.class));
     }
 
+    @Test
+    void updateWritesBeforeAndAfterAuditSnapshots() {
+        SalesOrderMapper orders=mock(SalesOrderMapper.class);
+        SalesOrderItemMapper items=mock(SalesOrderItemMapper.class);
+        OrderOperationLogMapper logs=mock(OrderOperationLogMapper.class);
+        CustomerService customers=mock(CustomerService.class);
+        CustomerPriceResolver pricing=mock(CustomerPriceResolver.class);
+        ProductSkuMapper skus=mock(ProductSkuMapper.class);
+        ProductSpuMapper spus=mock(ProductSpuMapper.class);
+        SalesOrderEntity order=order(); SalesOrderItemEntity existing=item();
+        existing.setOrderedQuantity(new BigDecimal("1.0000"));
+        when(orders.selectActiveByIdForUpdate(1L)).thenReturn(order);
+        when(orders.updateById(any(SalesOrderEntity.class))).thenReturn(1);
+        when(items.selectActiveByOrderIdForUpdate(1L)).thenReturn(List.of(existing));
+        when(items.selectActiveByOrderId(1L)).thenAnswer(invocation -> List.of(existing));
+        doAnswer(invocation -> {
+            SalesOrderItemEntity updated = invocation.getArgument(0);
+            existing.setOrderedQuantity(updated.getOrderedQuantity());
+            existing.setDraftUnitPrice(updated.getDraftUnitPrice());
+            existing.setManualPriceOverride(updated.getManualPriceOverride());
+            existing.setManualPriceReason(updated.getManualPriceReason());
+            return 1;
+        }).when(items).updateById(any(SalesOrderItemEntity.class));
+        when(customers.requireEnabled(2L)).thenReturn(customer());
+        when(pricing.resolve(eq(2L),anyList(),any())).thenReturn(List.of(new ResolvedCustomerPrice(3L,new BigDecimal("8.0000"),com.xianshuyuan.scm.customer.service.PriceSource.MARKET,null)));
+        when(skus.selectById(3L)).thenReturn(sku()); when(spus.selectById(4L)).thenReturn(spu());
+        var service=service(orders,items,logs,customers,pricing,skus,spus);
+
+        service.update(1L,new SalesOrderSaveRequest(0,2L,OrderSource.NORMAL,null,null,List.of(new SalesOrderItemSaveRequest(5L,0,3L,"2.0000",null,false,null))));
+
+        var captor=ArgumentCaptor.forClass(OrderOperationLogEntity.class);
+        verify(logs).insert(captor.capture());
+        assertThat(captor.getValue().getBeforeData().get("items").get(0).get("orderedQuantity").asText()).isEqualTo("1.0000");
+        assertThat(captor.getValue().getAfterData().get("items").get(0).get("orderedQuantity").asText()).isEqualTo("2.0000");
+    }
+
     private static SalesOrderApplicationService service(SalesOrderMapper orders,SalesOrderItemMapper items,CustomerService customers,CustomerPriceResolver pricing,ProductSkuMapper skus,ProductSpuMapper spus){
-        var logs=mock(OrderOperationLogMapper.class); var numbers=mock(SalesOrderNumberGenerator.class); var query=mock(SalesOrderQueryService.class); var idMapper=mock(IdempotencyRecordMapper.class);
+        return service(orders,items,mock(OrderOperationLogMapper.class),customers,pricing,skus,spus);
+    }
+    private static SalesOrderApplicationService service(SalesOrderMapper orders,SalesOrderItemMapper items,OrderOperationLogMapper logs,CustomerService customers,CustomerPriceResolver pricing,ProductSkuMapper skus,ProductSpuMapper spus){
+        var numbers=mock(SalesOrderNumberGenerator.class); var query=mock(SalesOrderQueryService.class); var idMapper=mock(IdempotencyRecordMapper.class);
         return new SalesOrderApplicationService(orders,items,logs,customers,pricing,skus,spus,numbers,new SalesOrderValidator(),query,new IdempotencyService(idMapper,new ObjectMapper()),new ObjectMapper());
     }
-    private static SalesOrderEntity order(){var x=new SalesOrderEntity();x.setId(1L);x.setCustomerId(2L);x.setStatus(OrderStatus.DRAFT);x.setVersion(0);return x;}
+    private static SalesOrderEntity order(){var x=new SalesOrderEntity();x.setId(1L);x.setCustomerId(2L);x.setOrderSource(OrderSource.NORMAL);x.setStatus(OrderStatus.DRAFT);x.setVersion(0);return x;}
     private static SalesOrderItemEntity item(){var x=new SalesOrderItemEntity();x.setId(5L);x.setOrderId(1L);x.setSkuId(3L);x.setVersion(0);x.setOrderedLineAmount(new BigDecimal("16.0000"));return x;}
     private static CustomerEntity customer(){var x=new CustomerEntity();x.setId(2L);x.setCustomerCode("C2");x.setName("客户");return x;}
     private static ProductSkuEntity sku(){var x=new ProductSkuEntity();x.setId(3L);x.setSpuId(4L);x.setSkuCode("SKU3");x.setSpecName("规格");x.setSpecValues(java.util.Map.of());x.setSaleUnit("斤");x.setProductType(ProductType.STANDARD);return x;}

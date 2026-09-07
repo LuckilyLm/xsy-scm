@@ -14,7 +14,6 @@
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
 .formGrid :global(.ant-form-item) { margin-bottom: 16px; }
 .fullWidth { grid-column: 1 / -1; }
-.nativeDate { box-sizing: border-box; width: 100%; height: 32px; padding: 4px 11px; border: 1px solid #d9d9d9; border-radius: 6px; color: #1f2329; background: #fff; font: inherit; }
-.nativeDate:focus { border-color: #00b96b; outline: 2px solid rgba(0, 185, 107, .12); }
+.datePicker { width: 100%; }
 .hint { margin-top: -4px; color: #86909c; font-size: 12px; }
 @media (max-width: 760px) { .formGrid { grid-template-columns: 1fr; } .fullWidth { grid-column: auto; } .inlineFilter { min-width: 100%; } .filterActions { margin-left: 0 !important; } }

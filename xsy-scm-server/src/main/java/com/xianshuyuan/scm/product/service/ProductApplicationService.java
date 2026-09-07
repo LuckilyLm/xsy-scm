@@ -27,10 +27,10 @@ public class ProductApplicationService {
     private final ProductAggregateValidator validator;
 
     public ProductApplicationService(
-        ProductSpuMapper spuMapper,
-        ProductSkuMapper skuMapper,
-        ProductCategoryService categoryService,
-        ProductAggregateValidator validator
+            ProductSpuMapper spuMapper,
+            ProductSkuMapper skuMapper,
+            ProductCategoryService categoryService,
+            ProductAggregateValidator validator
     ) {
         this.spuMapper = spuMapper;
         this.skuMapper = skuMapper;
@@ -56,7 +56,7 @@ public class ProductApplicationService {
             skuMapper.insert(sku);
         }
         LOGGER.info("product_created operator=SYSTEM spuId={} skuCount={}",
-            spu.getId(), request.skus().size());
+                spu.getId(), request.skus().size());
         return spu.getId();
     }
 
@@ -99,8 +99,8 @@ public class ProductApplicationService {
             skuMapper.deleteByIds(changes.removedIds());
         }
         LOGGER.info(
-            "product_updated operator=SYSTEM spuId={} inserted={} updated={} removed={}",
-            spuId, changes.inserted().size(), changes.updated().size(), changes.removedIds().size()
+                "product_updated operator=SYSTEM spuId={} inserted={} updated={} removed={}",
+                spuId, changes.inserted().size(), changes.updated().size(), changes.removedIds().size()
         );
     }
 

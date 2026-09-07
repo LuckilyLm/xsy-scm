@@ -1,3 +1,45 @@
 package com.xianshuyuan.scm.customer.service;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page; import com.xianshuyuan.scm.common.api.PageData; import com.xianshuyuan.scm.customer.dto.CustomerPageQuery; import com.xianshuyuan.scm.customer.entity.*; import com.xianshuyuan.scm.customer.mapper.*; import com.xianshuyuan.scm.customer.vo.*; import org.springframework.stereotype.Service; import java.util.*; import java.util.function.Function; import java.util.stream.Collectors;
-@Service public class CustomerQueryService {private final CustomerMapper customers;private final CustomerTypeMapper types;private final CustomerSkuVisibilityMapper visibility;private final CustomerService service;public CustomerQueryService(CustomerMapper c,CustomerTypeMapper t,CustomerSkuVisibilityMapper v,CustomerService s){customers=c;types=t;visibility=v;service=s;}public PageData<CustomerResponse> page(CustomerPageQuery q){var normalized=new CustomerPageQuery(q.page(),q.pageSize(),q.keyword()==null?null:q.keyword().trim(),q.customerTypeId());var p=customers.selectCustomerPage(new Page<>(q.page(),q.pageSize()),normalized);var typeMap=types.selectBatchIds(p.getRecords().stream().map(CustomerEntity::getCustomerTypeId).distinct().toList()).stream().collect(Collectors.toMap(CustomerTypeEntity::getId,Function.identity()));return new PageData<>(p.getRecords().stream().map(e->response(e,typeMap.get(e.getCustomerTypeId()),List.of())).toList(),q.page(),q.pageSize(),p.getTotal());}public CustomerResponse get(long id){var e=service.require(id);var t=types.selectById(e.getCustomerTypeId());return response(e,t,visibility.selectActiveByCustomerId(id));}private CustomerResponse response(CustomerEntity e,CustomerTypeEntity t,List<CustomerSkuVisibilityEntity> v){return new CustomerResponse(e.getId(),e.getVersion(),e.getCustomerCode(),e.getName(),e.getCustomerTypeId(),t==null?null:t.getName(),e.getStatus(),e.getVisibilityPolicy(),v.stream().map(x->new CustomerSkuVisibilityResponse(x.getId(),x.getVersion(),x.getSkuId())).toList(),e.getUpdatedAt());}}
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xianshuyuan.scm.common.api.PageData;
+import com.xianshuyuan.scm.customer.dto.CustomerPageQuery;
+import com.xianshuyuan.scm.customer.entity.*;
+import com.xianshuyuan.scm.customer.mapper.*;
+import com.xianshuyuan.scm.customer.vo.*;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@Service
+public class CustomerQueryService {
+    private final CustomerMapper customers;
+    private final CustomerTypeMapper types;
+    private final CustomerSkuVisibilityMapper visibility;
+    private final CustomerService service;
+
+    public CustomerQueryService(CustomerMapper c, CustomerTypeMapper t, CustomerSkuVisibilityMapper v, CustomerService s) {
+        customers = c;
+        types = t;
+        visibility = v;
+        service = s;
+    }
+
+    public PageData<CustomerResponse> page(CustomerPageQuery q) {
+        var normalized = new CustomerPageQuery(q.page(), q.pageSize(), q.keyword() == null ? null : q.keyword().trim(), q.customerTypeId());
+        var p = customers.selectCustomerPage(new Page<>(q.page(), q.pageSize()), normalized);
+        var typeMap = types.selectBatchIds(p.getRecords().stream().map(CustomerEntity::getCustomerTypeId).distinct().toList()).stream().collect(Collectors.toMap(CustomerTypeEntity::getId, Function.identity()));
+        return new PageData<>(p.getRecords().stream().map(e -> response(e, typeMap.get(e.getCustomerTypeId()), List.of())).toList(), q.page(), q.pageSize(), p.getTotal());
+    }
+
+    public CustomerResponse get(long id) {
+        var e = service.require(id);
+        var t = types.selectById(e.getCustomerTypeId());
+        return response(e, t, visibility.selectActiveByCustomerId(id));
+    }
+
+    private CustomerResponse response(CustomerEntity e, CustomerTypeEntity t, List<CustomerSkuVisibilityEntity> v) {
+        return new CustomerResponse(e.getId(), e.getVersion(), e.getCustomerCode(), e.getName(), e.getCustomerTypeId(), t == null ? null : t.getName(), e.getStatus(), e.getVisibilityPolicy(), v.stream().map(x -> new CustomerSkuVisibilityResponse(x.getId(), x.getVersion(), x.getSkuId())).toList(), e.getUpdatedAt());
+    }
+}

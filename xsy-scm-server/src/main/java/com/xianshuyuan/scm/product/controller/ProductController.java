@@ -37,8 +37,8 @@ public class ProductController {
     private final ProductApplicationService applicationService;
 
     public ProductController(
-        ProductQueryService queryService,
-        ProductApplicationService applicationService
+            ProductQueryService queryService,
+            ProductApplicationService applicationService
     ) {
         this.queryService = queryService;
         this.applicationService = applicationService;
@@ -47,18 +47,18 @@ public class ProductController {
     @Operation(summary = "分页查询商品")
     @GetMapping
     public ApiResponse<PageData<ProductSummaryResponse>> page(
-        @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") long page,
-        @RequestParam(defaultValue = "20")
-        @Min(value = 1, message = "每页数量不能小于1")
-        @Max(value = 100, message = "每页数量不能超过100") long pageSize,
-        @RequestParam(required = false) String keyword,
-        @RequestParam(required = false) Long categoryId,
-        @RequestParam(required = false) ShelfStatus spuStatus,
-        @RequestParam(required = false) ShelfStatus skuStatus,
-        @RequestParam(required = false) ProductType productType
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") long page,
+            @RequestParam(defaultValue = "20")
+            @Min(value = 1, message = "每页数量不能小于1")
+            @Max(value = 100, message = "每页数量不能超过100") long pageSize,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) ShelfStatus spuStatus,
+            @RequestParam(required = false) ShelfStatus skuStatus,
+            @RequestParam(required = false) ProductType productType
     ) {
         return ApiResponse.success(queryService.page(new ProductPageQuery(
-            page, pageSize, keyword, categoryId, spuStatus, skuStatus, productType
+                page, pageSize, keyword, categoryId, spuStatus, skuStatus, productType
         )));
     }
 
@@ -77,8 +77,8 @@ public class ProductController {
     @Operation(summary = "编辑商品")
     @PutMapping("/{id}")
     public ApiResponse<Void> update(
-        @PathVariable long id,
-        @Valid @RequestBody ProductSaveRequest request
+            @PathVariable long id,
+            @Valid @RequestBody ProductSaveRequest request
     ) {
         applicationService.update(id, request);
         return ApiResponse.success(null);
@@ -87,8 +87,8 @@ public class ProductController {
     @Operation(summary = "修改商品上下架状态")
     @PutMapping("/{id}/status")
     public ApiResponse<Void> updateStatus(
-        @PathVariable long id,
-        @Valid @RequestBody ProductStatusRequest request
+            @PathVariable long id,
+            @Valid @RequestBody ProductStatusRequest request
     ) {
         applicationService.updateStatus(id, request.version(), request.status());
         return ApiResponse.success(null);
@@ -97,8 +97,8 @@ public class ProductController {
     @Operation(summary = "删除商品")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(
-        @PathVariable long id,
-        @RequestParam @Min(value = 0, message = "版本号不正确") int version
+            @PathVariable long id,
+            @RequestParam @Min(value = 0, message = "版本号不正确") int version
     ) {
         applicationService.delete(id, version);
         return ApiResponse.success(null);

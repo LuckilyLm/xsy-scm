@@ -17,13 +17,24 @@ public class JsonbJsonNodeTypeHandler extends BaseTypeHandler<JsonNode> {
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, JsonNode parameter, JdbcType jdbcType)
-        throws SQLException {
+            throws SQLException {
         ps.setObject(i, parameter.toString(), Types.OTHER);
     }
 
-    @Override public JsonNode getNullableResult(ResultSet rs, String columnName) throws SQLException { return read(rs.getString(columnName)); }
-    @Override public JsonNode getNullableResult(ResultSet rs, int columnIndex) throws SQLException { return read(rs.getString(columnIndex)); }
-    @Override public JsonNode getNullableResult(CallableStatement cs, int columnIndex) throws SQLException { return read(cs.getString(columnIndex)); }
+    @Override
+    public JsonNode getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        return read(rs.getString(columnName));
+    }
+
+    @Override
+    public JsonNode getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        return read(rs.getString(columnIndex));
+    }
+
+    @Override
+    public JsonNode getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        return read(cs.getString(columnIndex));
+    }
 
     private JsonNode read(String value) throws SQLException {
         if (value == null) return null;

@@ -33,12 +33,12 @@ public class ProductCategoryService {
                 roots.add(category);
             } else {
                 childrenByParent.computeIfAbsent(category.getParentId(), ignored -> new ArrayList<>())
-                    .add(category);
+                        .add(category);
             }
         }
         Comparator<ProductCategoryEntity> order = Comparator
-            .comparing(ProductCategoryEntity::getSortOrder)
-            .thenComparing(ProductCategoryEntity::getId);
+                .comparing(ProductCategoryEntity::getSortOrder)
+                .thenComparing(ProductCategoryEntity::getId);
         roots.sort(order);
         childrenByParent.values().forEach(children -> children.sort(order));
         return roots.stream().map(root -> toNode(root, childrenByParent)).toList();
@@ -75,15 +75,15 @@ public class ProductCategoryService {
         ProductCategoryEntity category = requireCategory(id);
         if (category.getLevel() != MAX_LEVEL || !"ENABLED".equals(category.getStatus())) {
             throw new BusinessException(ProductErrorCodes.CATEGORY_PARENT_INVALID,
-                "商品必须选择已启用的第三级分类");
+                    "商品必须选择已启用的第三级分类");
         }
         return category;
     }
 
     private void applyRequest(
-        ProductCategoryEntity category,
-        ProductCategorySaveRequest request,
-        Long currentId
+            ProductCategoryEntity category,
+            ProductCategorySaveRequest request,
+            Long currentId
     ) {
         int level = resolveLevel(request.parentId(), currentId);
         category.setParentId(request.parentId());
@@ -114,7 +114,7 @@ public class ProductCategoryService {
         }
         if (!"ENABLED".equals(parent.getStatus())) {
             throw new BusinessException(ProductErrorCodes.CATEGORY_PARENT_INVALID,
-                "不能在已停用分类下新增子分类");
+                    "不能在已停用分类下新增子分类");
         }
         return level;
     }
@@ -128,18 +128,18 @@ public class ProductCategoryService {
     }
 
     private ProductCategoryTreeNode toNode(
-        ProductCategoryEntity category,
-        Map<Long, List<ProductCategoryEntity>> childrenByParent
+            ProductCategoryEntity category,
+            Map<Long, List<ProductCategoryEntity>> childrenByParent
     ) {
         List<ProductCategoryTreeNode> children = childrenByParent
-            .getOrDefault(category.getId(), List.of())
-            .stream()
-            .map(child -> toNode(child, childrenByParent))
-            .toList();
+                .getOrDefault(category.getId(), List.of())
+                .stream()
+                .map(child -> toNode(child, childrenByParent))
+                .toList();
         return new ProductCategoryTreeNode(
-            category.getId(), category.getParentId(), category.getCategoryCode(),
-            category.getName(), category.getLevel(), category.getSortOrder(),
-            category.getStatus(), children
+                category.getId(), category.getParentId(), category.getCategoryCode(),
+                category.getName(), category.getLevel(), category.getSortOrder(),
+                category.getStatus(), children
         );
     }
 }

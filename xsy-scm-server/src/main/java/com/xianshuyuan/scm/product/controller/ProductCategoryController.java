@@ -44,8 +44,8 @@ public class ProductCategoryController {
     @Operation(summary = "编辑商品分类")
     @PutMapping("/{id}")
     public ApiResponse<Void> update(
-        @PathVariable long id,
-        @Valid @RequestBody ProductCategorySaveRequest request
+            @PathVariable long id,
+            @Valid @RequestBody ProductCategorySaveRequest request
     ) {
         service.update(id, request);
         return ApiResponse.success(null);

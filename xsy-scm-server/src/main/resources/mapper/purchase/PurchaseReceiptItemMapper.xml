@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseReceiptItemMapper">
+ <resultMap id="receiptItem" type="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptItemEntity"><id property="id" column="id"/><result property="specValuesSnapshot" column="spec_values_snapshot" typeHandler="com.xianshuyuan.scm.common.persistence.JsonbStringMapTypeHandler"/></resultMap>
+ <select id="selectActiveByReceiptId" resultMap="receiptItem">SELECT * FROM purchase_receipt_item WHERE purchase_receipt_id=#{receiptId} AND deleted=FALSE ORDER BY sort_order,id</select>
+ <select id="selectActiveByReceiptIdForUpdate" resultMap="receiptItem">SELECT * FROM purchase_receipt_item WHERE purchase_receipt_id=#{receiptId} AND deleted=FALSE ORDER BY sort_order,id FOR UPDATE</select>
+</mapper>

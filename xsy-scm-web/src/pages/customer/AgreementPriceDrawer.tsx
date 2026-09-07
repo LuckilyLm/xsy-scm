@@ -1,6 +1,7 @@
 import { DrawerForm } from '@ant-design/pro-components';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Form, Input, Select } from 'antd';
+import { Alert, DatePicker, Form, Input, Select } from 'antd';
+import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 import { createAgreementPrice, fetchCustomers, fetchSkuCatalog, updateAgreementPrice } from '../../api/customers';
 import { ApiError } from '../../api/http';
@@ -10,8 +11,6 @@ import type { AgreementPriceForm } from './agreementPriceFormModel';
 import styles from './Customer.module.css';
 
 interface Props { open: boolean; record: AgreementPrice | null; onOpenChange: (open: boolean) => void; onSaved: () => void; }
-function localInput(value: string | null) { return value ? value.slice(0, 16) : ''; }
-function toIso(value: string) { return value ? new Date(value).toISOString() : ''; }
 export function AgreementPriceDrawer({ open, record, onOpenChange, onSaved }: Props) {
   const [value, setValue] = useState<AgreementPriceForm>(createEmptyAgreementPriceForm); const [error, setError] = useState<string | null>(null); const [pending, setPending] = useState(false);
   const customers = useQuery({ queryKey: ['agreement-customer-options'], queryFn: () => fetchCustomers({ page: 1, pageSize: 100 }), enabled: open });
@@ -30,7 +29,7 @@ export function AgreementPriceDrawer({ open, record, onOpenChange, onSaved }: Pr
       <Form.Item label="客户" required><Select aria-label="协议价客户" showSearch optionFilterProp="label" loading={customers.isLoading} value={value.customerId} options={(customers.data?.records ?? []).map((c) => ({ value: c.id, label: `${c.name}（${c.customerCode}）`, disabled: c.status !== 'ENABLED' }))} onChange={(id) => field('customerId', id)} /></Form.Item>
       <Form.Item label="SKU" required><Select aria-label="协议价 SKU" showSearch optionFilterProp="label" loading={products.isLoading} value={value.skuId} options={skuOptions} onChange={(id) => field('skuId', id)} /></Form.Item>
       <Form.Item label="协议单价" required><Input aria-label="协议单价" prefix="¥" inputMode="decimal" value={value.unitPrice} onChange={(e) => field('unitPrice', e.target.value)} /></Form.Item>
-      <div className={styles.formGrid}><Form.Item label="生效时间" required><input className={styles.nativeDate} aria-label="生效时间" type="datetime-local" value={localInput(value.effectiveFrom)} onChange={(e) => field('effectiveFrom', toIso(e.target.value))} /></Form.Item><Form.Item label="结束时间"><input className={styles.nativeDate} aria-label="结束时间" type="datetime-local" value={localInput(value.effectiveTo)} onChange={(e) => field('effectiveTo', e.target.value ? toIso(e.target.value) : null)} /></Form.Item></div>
+      <div className={styles.formGrid}><Form.Item label="生效时间" required><DatePicker className={styles.datePicker} aria-label="生效时间" showTime format="YYYY-MM-DD HH:mm" value={value.effectiveFrom ? dayjs(value.effectiveFrom) : null} onChange={(date) => field('effectiveFrom', date?.toISOString() ?? '')} /></Form.Item><Form.Item label="结束时间"><DatePicker className={styles.datePicker} aria-label="结束时间" showTime format="YYYY-MM-DD HH:mm" allowClear value={value.effectiveTo ? dayjs(value.effectiveTo) : null} onChange={(date) => field('effectiveTo', date?.toISOString() ?? null)} /></Form.Item></div>
       <TypographyHint />
     </Form></div>
   </DrawerForm>;

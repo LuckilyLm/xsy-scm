@@ -19,11 +19,29 @@
     </select>
 
     <select id="selectAgreementPage" resultType="com.xianshuyuan.scm.customer.entity.CustomerAgreementPriceEntity">
-        SELECT * FROM customer_agreement_price
-        WHERE deleted = FALSE
-        <if test="query.customerId != null">AND customer_id = #{query.customerId}</if>
-        <if test="query.skuId != null">AND sku_id = #{query.skuId}</if>
-        ORDER BY effective_from DESC, id DESC
+        SELECT cap.* FROM customer_agreement_price cap
+        WHERE cap.deleted = FALSE
+        <if test="query.customerId != null">AND cap.customer_id = #{query.customerId}</if>
+        <if test="query.skuId != null">AND cap.sku_id = #{query.skuId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (
+                CAST(cap.sku_id AS TEXT) ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR EXISTS (
+                    SELECT 1 FROM customer c
+                    WHERE c.id = cap.customer_id AND c.deleted = FALSE
+                      AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                           OR c.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+                )
+                OR EXISTS (
+                    SELECT 1 FROM product_sku sku
+                    JOIN product_spu spu ON spu.id = sku.spu_id AND spu.deleted = FALSE
+                    WHERE sku.id = cap.sku_id AND sku.deleted = FALSE
+                      AND (sku.sku_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                           OR spu.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+                )
+            )
+        </if>
+        ORDER BY cap.effective_from DESC, cap.id DESC
     </select>
 
     <select id="lockCustomer" resultType="long">
