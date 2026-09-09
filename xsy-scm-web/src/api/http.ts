@@ -31,7 +31,45 @@ export const apiClient = axios.create({
   baseURL: '/api',
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
+  // 会话由后端 HttpOnly Cookie `XSY_SESSION` 持有，不写入 Web Storage。
+  withCredentials: true,
+  // 与后端 CookieCsrfTokenRepository 的 cookie/header 名称保持一致。
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+  withXSRFToken: true,
 });
+
+/**
+ * 登录接口自身的 401 表示凭据错误，不能当作“会话失效”触发全局登出，
+ * 否则输入错误密码时会被立刻判定为已登出。
+ */
+function isCredentialProbe(url: string | undefined): boolean {
+  return url === '/auth/login' || url === '/auth/csrf';
+}
+
+type UnauthorizedListener = () => void;
+
+let unauthorizedListener: UnauthorizedListener | null = null;
+let unauthorizedSignaled = false;
+
+/** 由 AuthProvider 注册，用于在任意请求返回 401 时清理内存中的认证状态。 */
+export function setUnauthorizedListener(listener: UnauthorizedListener | null): void {
+  unauthorizedListener = listener;
+}
+
+/** 登录成功后复位，避免上一次会话的 401 抑制后续通知。 */
+export function resetUnauthorizedSignal(): void {
+  unauthorizedSignaled = false;
+}
+
+/** 并发的多个 401 只通知一次，避免重复跳转或重复提示。 */
+function signalUnauthorized(): void {
+  if (unauthorizedSignaled) {
+    return;
+  }
+  unauthorizedSignaled = true;
+  unauthorizedListener?.();
+}
 
 apiClient.interceptors.response.use(
   (response) => {
@@ -45,6 +83,9 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
+    if (error.response?.status === 401 && !isCredentialProbe(error.config?.url)) {
+      signalUnauthorized();
+    }
     if (isEnvelope(error.response?.data)) {
       const envelope = error.response.data;
       return Promise.reject(
