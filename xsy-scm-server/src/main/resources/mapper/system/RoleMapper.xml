@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.system.mapper.RoleMapper">
+    <select id="lockActive" resultType="com.xianshuyuan.scm.system.entity.RoleEntity">
+        SELECT * FROM sys_role WHERE id=#{id} AND deleted=FALSE FOR UPDATE
+    </select>
+    <select id="countCode" resultType="long">
+        SELECT COUNT(*) FROM sys_role WHERE LOWER(BTRIM(code))=#{code} AND deleted=FALSE
+        <if test="excludedId != null">AND id != #{excludedId}</if>
+    </select>
+    <update id="updateRole">
+        UPDATE sys_role SET code=#{role.code}, name=#{role.name}, description=#{role.description},
+            status=#{role.status}, deleted=#{role.deleted}, version=version+1,
+            updated_at=CURRENT_TIMESTAMP, updated_by=#{role.updatedBy}
+        WHERE id=#{role.id} AND version=#{role.version} AND deleted=FALSE
+    </update>
+    <!-- Global security lock, then role, then user rows in ascending ID order. Future grants
+         must acquire the same global lock before checking enabled roles or locking any rows. -->
+    <select id="lockAffectedUsers" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity">
+        SELECT u.* FROM sys_user u WHERE u.deleted=FALSE AND EXISTS (
+            SELECT 1 FROM sys_user_role ur WHERE ur.user_id=u.id AND ur.role_id=#{roleId} AND ur.deleted=FALSE
+        ) ORDER BY u.id FOR UPDATE
+    </select>
+    <update id="incrementAuthVersions">
+        UPDATE sys_user u SET auth_version=auth_version+1 WHERE u.deleted=FALSE AND EXISTS (
+            SELECT 1 FROM sys_user_role ur WHERE ur.user_id=u.id AND ur.role_id=#{roleId} AND ur.deleted=FALSE
+        )
+    </update>
+    <select id="activatablePermissions" resultType="java.lang.String">
+        SELECT DISTINCT p.code FROM sys_role_permission rp
+        JOIN sys_permission p ON p.id=rp.permission_id AND p.deleted=FALSE AND p.status='ENABLED'
+        WHERE rp.role_id=#{roleId} AND rp.deleted=FALSE
+    </select>
+    <select id="permissionsLost" resultType="java.lang.String">
+        SELECT DISTINCT p.code FROM sys_user_role ur
+        JOIN sys_role r ON r.id=ur.role_id AND r.deleted=FALSE AND r.status='ENABLED'
+        JOIN sys_role_permission rp ON rp.role_id=r.id AND rp.deleted=FALSE
+        JOIN sys_permission p ON p.id=rp.permission_id AND p.deleted=FALSE AND p.status='ENABLED'
+        WHERE ur.user_id=#{userId} AND ur.role_id=#{roleId} AND ur.deleted=FALSE
+        AND NOT EXISTS (
+            SELECT 1 FROM sys_user_role other_ur
+            JOIN sys_role other_r ON other_r.id=other_ur.role_id AND other_r.deleted=FALSE AND other_r.status='ENABLED'
+            JOIN sys_role_permission other_rp ON other_rp.role_id=other_r.id AND other_rp.deleted=FALSE
+            WHERE other_ur.user_id=#{userId} AND other_ur.role_id != #{roleId}
+              AND other_ur.deleted=FALSE AND other_rp.permission_id=p.id
+        )
+    </select>
+    <insert id="insertAudit">
+        INSERT INTO sys_operation_log(actor_user_id,actor_name_snapshot,module,operation_code,target_type,target_id,success,before_data,after_data)
+        VALUES(#{actorId},#{actor},'system',#{operation},'ROLE',#{id}::text,TRUE,#{before}::jsonb,#{after}::jsonb)
+    </insert>
+</mapper>

@@ -9,6 +9,7 @@ import com.xianshuyuan.scm.order.vo.OrderRefundResponse;
 import com.xianshuyuan.scm.order.vo.OrderReturnResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest({OrderReturnController.class, OrderRefundController.class})
+@AutoConfigureMockMvc(addFilters = false)
 class AfterSalesControllerTest {
     @Autowired MockMvc mockMvc;
     @MockitoBean AfterSalesApplicationService commands;

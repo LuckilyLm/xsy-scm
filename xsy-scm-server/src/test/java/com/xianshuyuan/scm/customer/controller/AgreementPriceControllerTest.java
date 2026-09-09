@@ -4,6 +4,7 @@ import com.xianshuyuan.scm.common.api.PageData;
 import com.xianshuyuan.scm.customer.service.AgreementPriceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -17,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AgreementPriceController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class AgreementPriceControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean AgreementPriceService service;

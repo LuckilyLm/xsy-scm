@@ -399,6 +399,86 @@ class FlywayMigrationIT {
     }
 
     @Test
+    void createsSprintFourRbacSessionLogAndDictionarySchemaWithoutForeignKeys() {
+        Integer tables = jdbcTemplate.queryForObject("""
+            select count(*)
+            from information_schema.tables
+            where table_schema = 'public'
+              and table_name in (
+                'sys_department', 'sys_role', 'sys_permission', 'sys_menu',
+                'sys_user_role', 'sys_role_permission', 'sys_role_menu',
+                'spring_session', 'spring_session_attributes',
+                'sys_login_log', 'sys_operation_log',
+                'sys_dictionary', 'sys_dictionary_item'
+              )
+            """, Integer.class);
+        Integer foreignKeys = jdbcTemplate.queryForObject("""
+            select count(*)
+            from information_schema.table_constraints
+            where constraint_schema = 'public'
+              and constraint_type = 'FOREIGN KEY'
+            """, Integer.class);
+
+        assertThat(tables).isEqualTo(13);
+        assertThat(foreignKeys).isZero();
+    }
+
+    @Test
+    void extendsExistingUsersAndCreatesSessionPrincipalIndex() {
+        Integer userColumns = jdbcTemplate.queryForObject("""
+            select count(*)
+            from information_schema.columns
+            where table_schema = 'public'
+              and table_name = 'sys_user'
+              and column_name in (
+                'password_hash', 'password_changed_at', 'department_id',
+                'email', 'phone', 'administrator', 'must_change_password',
+                'auth_version', 'failed_login_count', 'locked_until', 'last_login_at'
+              )
+            """, Integer.class);
+        Integer sessionIndexes = jdbcTemplate.queryForObject("""
+            select count(*) from pg_indexes
+            where schemaname = 'public'
+              and indexname in ('spring_session_ix1', 'spring_session_ix2', 'spring_session_ix3')
+            """, Integer.class);
+
+        assertThat(userColumns).isEqualTo(11);
+        assertThat(sessionIndexes).isEqualTo(3);
+    }
+
+    @Test
+    void createsSprintFourActiveUniquenessIndexes() {
+        Integer indexes = jdbcTemplate.queryForObject("""
+            select count(*) from pg_indexes
+            where schemaname = 'public'
+              and indexname in (
+                'uk_sys_department_code_active', 'uk_sys_user_email_active',
+                'uk_sys_user_phone_active', 'uk_sys_role_code_active',
+                'uk_sys_permission_code_active', 'uk_sys_menu_route_key_active',
+                'uk_sys_user_role_active', 'uk_sys_role_permission_active',
+                'uk_sys_role_menu_active', 'uk_sys_dictionary_code_active',
+                'uk_sys_dictionary_item_value_active'
+              )
+              and indexdef ilike '% where %'
+            """, Integer.class);
+
+        assertThat(indexes).isEqualTo(11);
+    }
+
+    @Test
+    void usesJsonbForSystemOperationSnapshots() {
+        Integer jsonbColumns = jdbcTemplate.queryForObject("""
+            select count(*)
+            from information_schema.columns
+            where table_schema = 'public'
+              and table_name = 'sys_operation_log'
+              and column_name in ('before_data', 'after_data')
+              and data_type = 'jsonb'
+            """, Integer.class);
+
+        assertThat(jsonbColumns).isEqualTo(2);
+    }
+    @Test
     void createsReceiptConfirmationTablesAndSequenceWithoutForeignKeys() {
         Integer tables = jdbcTemplate.queryForObject("""
             select count(*)

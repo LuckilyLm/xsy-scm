@@ -51,6 +51,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void mapsUnexpectedExceptionToStableResponse() throws Exception {
+        mockMvc.perform(get("/test/unexpected"))
+            .andExpect(status().isInternalServerError())
+            .andExpect(jsonPath("$.code").value(ErrorCode.INTERNAL_ERROR.code()))
+            .andExpect(jsonPath("$.message").value(ErrorCode.INTERNAL_ERROR.message()))
+            .andExpect(jsonPath("$.stackTrace").doesNotExist());
+    }
+
+    @Test
     void mapsNestedSupplierConstraintToDomainConflict() {
         Throwable databaseCause = new IllegalStateException(
                 "duplicate key value violates unique constraint uk_supplier_code_active");
@@ -105,6 +114,11 @@ class GlobalExceptionHandlerTest {
                 new ErrorCode(40401, HttpStatus.NOT_FOUND, "资源不存在"),
                 "商品不存在"
             );
+        }
+
+        @GetMapping("/test/unexpected")
+        void unexpected() {
+            throw new IllegalStateException("sensitive internal detail");
         }
 
         @PostMapping("/test/validation")

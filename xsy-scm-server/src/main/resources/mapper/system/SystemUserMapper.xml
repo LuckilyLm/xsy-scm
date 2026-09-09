@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.system.mapper.SystemUserMapper">
+    <select id="selectActiveByUsername" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity">
+        SELECT id,
+               username,
+               display_name,
+               password_hash,
+               status,
+               administrator,
+               must_change_password,
+               auth_version,
+               failed_login_count,
+               locked_until,
+               last_login_at,
+               version,
+               deleted
+        FROM sys_user
+        WHERE LOWER(username) = LOWER(#{username})
+          AND deleted = FALSE
+    </select>
+
+    <select id="selectActiveSecurityStateById" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity">
+        SELECT id, status, auth_version, must_change_password, deleted
+        FROM sys_user
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </select>
+
+    <select id="selectEnabledRoleCodes" resultType="java.lang.String">
+        SELECT DISTINCT r.code
+        FROM sys_user_role ur
+        JOIN sys_role r ON r.id = ur.role_id
+        WHERE ur.user_id = #{userId}
+          AND ur.deleted = FALSE
+          AND r.deleted = FALSE
+          AND r.status = 'ENABLED'
+        ORDER BY r.code
+    </select>
+
+    <select id="selectEnabledPermissionCodes" resultType="java.lang.String">
+        SELECT DISTINCT p.code
+        FROM sys_user_role ur
+        JOIN sys_role r ON r.id = ur.role_id
+        JOIN sys_role_permission rp ON rp.role_id = r.id
+        JOIN sys_permission p ON p.id = rp.permission_id
+        WHERE ur.user_id = #{userId}
+          AND ur.deleted = FALSE
+          AND r.deleted = FALSE
+          AND r.status = 'ENABLED'
+          AND rp.deleted = FALSE
+          AND p.deleted = FALSE
+          AND p.status = 'ENABLED'
+        ORDER BY p.code
+    </select>
+    <!-- All future role/grant/password/department security writes must acquire this lock first. -->
+    <select id="lockSecurityWrites" resultType="java.lang.String" flushCache="true" useCache="false">
+        SELECT pg_advisory_xact_lock(20260908, 1)
+    </select>
+    <select id="countUsableAdministratorsExcept" resultType="long" useCache="false">
+        SELECT COUNT(*) FROM sys_user
+        WHERE id != #{id} AND administrator=TRUE AND deleted=FALSE AND status='ENABLED'
+          AND (locked_until IS NULL OR locked_until &lt;= CURRENT_TIMESTAMP)
+          AND password_hash ~ '^\$2[aby]\$(0[4-9]|[12][0-9]|3[01])\$[./A-Za-z0-9]{53}$'
+    </select>
+    <select id="lockActiveUser" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity">
+        SELECT * FROM sys_user WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+    <select id="lockActiveUserByUsername" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity" useCache="false">
+        SELECT * FROM sys_user
+        WHERE LOWER(username) = LOWER(#{username}) AND deleted = FALSE
+        FOR UPDATE
+    </select>
+    <update id="recordLoginFailure">
+        UPDATE sys_user
+        SET failed_login_count = #{count}, locked_until = #{lockedUntil},
+            auth_version = auth_version + CASE WHEN #{incrementAuthVersion} THEN 1 ELSE 0 END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND deleted = FALSE
+    </update>
+    <update id="recordLoginSuccess">
+        UPDATE sys_user
+        SET failed_login_count = 0, locked_until = NULL, last_login_at = #{loginAt},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND deleted = FALSE AND status = 'ENABLED'
+    </update>
+    <!-- Department disable/delete must lock this same row before checking active users. -->
+    <select id="lockEnabledDepartment" resultType="java.lang.Long">
+        SELECT id FROM sys_department WHERE id = #{id} AND deleted = FALSE AND status = 'ENABLED' FOR UPDATE
+    </select>
+    <update id="updateProfile">
+        UPDATE sys_user SET display_name=#{user.displayName}, department_id=#{user.departmentId},
+            email=#{user.email}, phone=#{user.phone}, version=version+1, auth_version=auth_version+1,
+            updated_at=CURRENT_TIMESTAMP, updated_by=#{user.updatedBy}
+        WHERE id=#{user.id} AND version=#{user.version} AND deleted=FALSE
+    </update>
+    <update id="updateState">
+        UPDATE sys_user SET status=#{status}, deleted=#{deleted}, version=version+1,
+            auth_version=auth_version+1, updated_at=CURRENT_TIMESTAMP, updated_by=#{actor}
+        WHERE id=#{id} AND version=#{version} AND deleted=FALSE
+    </update>
+    <update id="updatePassword">
+        UPDATE sys_user SET password_hash=#{passwordHash}, password_changed_at=CURRENT_TIMESTAMP,
+            must_change_password=#{mustChangePassword}, version=version+1, auth_version=auth_version+1,
+            updated_at=CURRENT_TIMESTAMP, updated_by=#{actor}
+        WHERE id=#{id} AND version=#{version} AND deleted=FALSE
+    </update>
+    <insert id="insertAudit">
+        INSERT INTO sys_operation_log(actor_user_id,actor_name_snapshot,module,operation_code,target_type,target_id,success,before_data,after_data)
+        VALUES(#{actorId},#{actor},'system',#{operation},'USER',#{id}::text,TRUE,#{before}::jsonb,#{after}::jsonb)
+    </insert>
+</mapper>

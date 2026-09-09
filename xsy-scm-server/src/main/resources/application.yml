@@ -9,13 +9,30 @@ spring:
     enabled: true
   jackson:
     default-property-inclusion: non_null
+  session:
+    jdbc:
+      initialize-schema: never
 
 server:
   port: ${XSY_SERVER_PORT:8080}
+  servlet:
+    session:
+      timeout: ${XSY_SESSION_TIMEOUT:30m}
+      cookie:
+        name: XSY_SESSION
+        http-only: true
+        same-site: lax
+        secure: ${XSY_SESSION_COOKIE_SECURE:false}
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+xsy:
+  auth:
+    login:
+      failure-threshold: ${XSY_LOGIN_FAILURE_THRESHOLD:5}
+      lock-duration: ${XSY_LOGIN_LOCK_DURATION:15m}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml

@@ -101,6 +101,7 @@ public class GlobalExceptionHandler {
         return detail.toString();
     }
 
+    @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpectedException(Exception exception) {
         LOGGER.error("Unhandled request failure", exception);
         return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.status())
