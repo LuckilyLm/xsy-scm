@@ -2,7 +2,7 @@
 
 ## 1. 背景与目标
 
-Sprint 1 只跑通第一条真实技术链路：PostgreSQL → Spring Boot REST API → React 商品档案页面。交付范围以 `docs/xsy-scm-项目设计草案-v0.2.md` 第 20 节为准，并吸收已确认的 SPU/SKU 约束。
+Sprint 1 只跑通第一条真实技术链路：PostgreSQL → Spring Boot REST API → React 商品档案页面。交付范围以 `docs/architecture/xsy-scm-项目设计草案-v0.2.md` 第 20 节为准，并吸收已确认的 SPU/SKU 约束。
 
 完成标准：用户可以在商品档案页面查询、新增、编辑、上下架和删除一个包含至少一个 SKU 的 SPU，刷新页面后仍能从 PostgreSQL 读取一致数据。
 
