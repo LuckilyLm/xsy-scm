@@ -14,13 +14,15 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserRoleGrantController {
     private final UserRoleGrantService grants;
+
     @GetMapping
     public ApiResponse<UserRolesResponse> read(@PathVariable @Positive long id) {
         return ApiResponse.success(grants.read(id));
     }
+
     @PostMapping
     public ApiResponse<UserRolesResponse> replace(@PathVariable @Positive long id,
-            @Valid @RequestBody ReplaceUserRolesRequest request, Authentication actor) {
+                                                  @Valid @RequestBody ReplaceUserRolesRequest request, Authentication actor) {
         return ApiResponse.success(grants.replace(id, request, actor));
     }
 }

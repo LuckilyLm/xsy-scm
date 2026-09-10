@@ -3,6 +3,7 @@ package com.xianshuyuan.scm.system.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.OffsetDateTime;
 
 @Getter

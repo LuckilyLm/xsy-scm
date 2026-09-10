@@ -14,10 +14,10 @@ public class LoginLogService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void append(Long userId, String username, String result, String reason, String ip, String userAgent) {
         jdbc.update("""
-                INSERT INTO sys_login_log
-                    (user_id, username_snapshot, result, failure_reason_code, ip, user_agent)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, userId, bounded(username, 64, ""), result, bounded(reason, 64, null),
+                        INSERT INTO sys_login_log
+                            (user_id, username_snapshot, result, failure_reason_code, ip, user_agent)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        """, userId, bounded(username, 64, ""), result, bounded(reason, 64, null),
                 bounded(ip, 64, null), bounded(userAgent, 500, null));
     }
 

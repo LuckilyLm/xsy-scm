@@ -35,8 +35,10 @@ public final class AuthorityRules {
                 .contains(code.strip().toLowerCase(java.util.Locale.ROOT));
     }
 
-    /** Losing any current capability through one's own destructive security write is forbidden.
-     * Flag-based administrators retain their independent central bypass. */
+    /**
+     * Losing any current capability through one's own destructive security write is forbidden.
+     * Flag-based administrators retain their independent central bypass.
+     */
     public static boolean canRemoveOwnPermissions(Authentication actor, java.util.Collection<String> lost) {
         return isAdministrator(actor) || lost.isEmpty();
     }
@@ -49,9 +51,9 @@ public final class AuthorityRules {
         boolean granted = authentication != null
                 && authentication.isAuthenticated()
                 && (isAdministrator(authentication)
-                    || (!ADMINISTRATOR_AUTHORITY.equals(authority)
-                        && authentication.getAuthorities().stream().anyMatch(candidate ->
-                        authority.equals(candidate.getAuthority()))));
+                || (!ADMINISTRATOR_AUTHORITY.equals(authority)
+                && authentication.getAuthorities().stream().anyMatch(candidate ->
+                authority.equals(candidate.getAuthority()))));
         return new AuthorizationDecision(granted);
     }
 }

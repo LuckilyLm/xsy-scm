@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class RoleMenuGrantController {
     private final RoleMenuGrantService grants;
+
     @PostMapping
     public ApiResponse<RoleMenusResponse> replace(@PathVariable @Positive long id,
-            @jakarta.validation.Valid @RequestBody com.xianshuyuan.scm.system.dto.ReplaceRoleMenusRequest request,
-            org.springframework.security.core.Authentication actor) {
+                                                  @jakarta.validation.Valid @RequestBody com.xianshuyuan.scm.system.dto.ReplaceRoleMenusRequest request,
+                                                  org.springframework.security.core.Authentication actor) {
         return ApiResponse.success(grants.replace(id, request, actor));
     }
+
     @GetMapping
     public ApiResponse<RoleMenusResponse> read(@PathVariable @Positive long id) {
         return ApiResponse.success(grants.read(id));

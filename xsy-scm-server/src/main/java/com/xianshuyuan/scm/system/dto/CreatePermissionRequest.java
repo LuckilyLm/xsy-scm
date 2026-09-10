@@ -7,4 +7,5 @@ public record CreatePermissionRequest(
         @NotBlank @Size(max = 100) String name,
         @NotNull @Pattern(regexp = "PAGE|ACTION|API") String type,
         @NotBlank @Size(max = 64) String module
-) {}
+) {
+}

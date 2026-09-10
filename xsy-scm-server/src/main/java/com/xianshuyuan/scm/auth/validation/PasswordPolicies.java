@@ -1,7 +1,9 @@
 package com.xianshuyuan.scm.auth.validation;
 
 public final class PasswordPolicies {
-    private PasswordPolicies() {}
+    private PasswordPolicies() {
+    }
+
     public static boolean valid(String value) {
         if (value == null) return false;
         int bytes = value.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;

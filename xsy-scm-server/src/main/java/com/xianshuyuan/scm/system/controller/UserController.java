@@ -23,34 +23,40 @@ public class UserController {
     public ApiResponse<PageData<UserResponse>> list(@Valid @ModelAttribute UserQuery query) {
         return ApiResponse.success(users.list(query));
     }
+
     @GetMapping("/{id}")
     public ApiResponse<UserResponse> detail(@PathVariable @Positive long id) {
         return ApiResponse.success(users.detail(id));
     }
+
     @PostMapping
     public ApiResponse<UserResponse> create(@Valid @RequestBody CreateUserRequest request, Authentication actor) {
-        return ApiResponse.success(users.create(request,actor));
+        return ApiResponse.success(users.create(request, actor));
     }
+
     @PutMapping("/{id}")
     public ApiResponse<UserResponse> update(@PathVariable @Positive long id,
-            @Valid @RequestBody UpdateUserRequest request, Authentication actor) {
-        return ApiResponse.success(users.update(id,request,actor));
+                                            @Valid @RequestBody UpdateUserRequest request, Authentication actor) {
+        return ApiResponse.success(users.update(id, request, actor));
     }
+
     @PostMapping("/{id}/status")
     public ApiResponse<UserResponse> status(@PathVariable @Positive long id,
-            @Valid @RequestBody UserStatusRequest request, Authentication actor) {
-        return ApiResponse.success(users.changeStatus(id,request,actor));
+                                            @Valid @RequestBody UserStatusRequest request, Authentication actor) {
+        return ApiResponse.success(users.changeStatus(id, request, actor));
     }
+
     @PostMapping("/{id}/reset-password")
     public ApiResponse<Void> resetPassword(@PathVariable @Positive long id,
-            @Valid @RequestBody ResetPasswordRequest request, Authentication actor) {
+                                           @Valid @RequestBody ResetPasswordRequest request, Authentication actor) {
         passwords.reset(id, request, actor);
         return ApiResponse.success(null);
     }
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable @Positive long id,
-            @RequestParam @PositiveOrZero int version, Authentication actor) {
-        users.delete(id,version,actor);
+                                    @RequestParam @PositiveOrZero int version, Authentication actor) {
+        users.delete(id, version, actor);
         return ApiResponse.success(null);
     }
 }

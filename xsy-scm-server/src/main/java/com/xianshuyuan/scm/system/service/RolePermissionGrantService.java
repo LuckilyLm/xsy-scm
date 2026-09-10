@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -32,8 +33,10 @@ public class RolePermissionGrantService {
     private final UserSessionService sessions;
     private final ObjectMapper json;
 
-    @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
-    public RolePermissionsResponse read(long id) { return response(require(roles.selectById(id))); }
+    @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    public RolePermissionsResponse read(long id) {
+        return response(require(roles.selectById(id)));
+    }
 
     @Transactional
     public RolePermissionsResponse replace(long id, ReplaceRolePermissionsRequest request, Authentication authentication) {
@@ -55,7 +58,8 @@ public class RolePermissionGrantService {
         var actor = locked.stream().filter(u -> u.getId().equals(principal.userId())).findFirst().orElse(null);
         if (actor == null || !"ENABLED".equals(actor.getStatus())
                 || !Objects.equals(actor.getAuthVersion(), principal.authVersion())
-                || (actor.getLockedUntil() != null && actor.getLockedUntil().isAfter(OffsetDateTime.now()))) forbidden();
+                || (actor.getLockedUntil() != null && actor.getLockedUntil().isAfter(OffsetDateTime.now())))
+            forbidden();
         boolean administrator = Boolean.TRUE.equals(actor.getAdministrator());
         var actorCodes = users.selectEnabledPermissionCodes(actor.getId());
         if (!administrator && !actorCodes.contains("system:role:assign-permissions")) forbidden();
@@ -72,20 +76,28 @@ public class RolePermissionGrantService {
         before.permissions().forEach(p -> retained.add(p.id()));
         if (retained.equals(requested)) return before;
         for (long permissionId : retained) if (!requested.contains(permissionId)) grants.remove(id, permissionId);
-        for (long permissionId : requested) if (!retained.contains(permissionId)) grants.add(id, permissionId, actor.getUsername());
-        if (grants.incrementVersion(id, request.version(), actor.getUsername()) != 1) throw new BusinessException(ErrorCode.DATA_CONFLICT);
+        for (long permissionId : requested)
+            if (!retained.contains(permissionId)) grants.add(id, permissionId, actor.getUsername());
+        if (grants.incrementVersion(id, request.version(), actor.getUsername()) != 1)
+            throw new BusinessException(ErrorCode.DATA_CONFLICT);
         var affected = roles.lockAffectedUsers(id);
         roles.incrementAuthVersions(id);
         var after = response(require(roles.selectById(id)));
         try {
             roles.insertAudit(id, actor.getId(), actor.getUsername(), "ROLE_ASSIGN_PERMISSIONS", json.writeValueAsString(before), json.writeValueAsString(after));
-        } catch (JsonProcessingException failure) { throw new IllegalStateException("Cannot serialize role permission audit", failure); }
+        } catch (JsonProcessingException failure) {
+            throw new IllegalStateException("Cannot serialize role permission audit", failure);
+        }
         var usernames = affected.stream().map(u -> u.getUsername()).toList();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() {
+            @Override
+            public void afterCommit() {
                 for (String username : usernames) {
-                    try { sessions.invalidateAll(username); }
-                    catch (RuntimeException failure) { log.warn("Session invalidation failed after role permission update; account version checks remain active"); }
+                    try {
+                        sessions.invalidateAll(username);
+                    } catch (RuntimeException failure) {
+                        log.warn("Session invalidation failed after role permission update; account version checks remain active");
+                    }
                 }
             }
         });
@@ -96,10 +108,17 @@ public class RolePermissionGrantService {
         return new RolePermissionsResponse(role.getId(), role.getVersion(), grants.permissions(role.getId()).stream()
                 .map(p -> new RolePermissionsResponse.Permission(p.getId(), p.getCode(), p.getName(), p.getStatus())).toList());
     }
+
     private RoleEntity require(RoleEntity role) {
         if (role == null) throw new BusinessException(SystemErrorCodes.ROLE_NOT_FOUND);
         return role;
     }
-    private void invalid() { throw new BusinessException(ErrorCode.VALIDATION_ERROR); }
-    private void forbidden() { throw new BusinessException(SystemErrorCodes.PROTECTED_ROLE); }
+
+    private void invalid() {
+        throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+    }
+
+    private void forbidden() {
+        throw new BusinessException(SystemErrorCodes.PROTECTED_ROLE);
+    }
 }

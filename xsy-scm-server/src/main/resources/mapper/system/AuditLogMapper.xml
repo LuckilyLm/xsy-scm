@@ -29,21 +29,25 @@
         </where>
     </sql>
     <select id="countLoginLogs" resultType="long">
-        SELECT COUNT(*) FROM sys_login_log <include refid="loginFilters"/>
+        SELECT COUNT(*) FROM sys_login_log
+        <include refid="loginFilters"/>
     </select>
     <select id="selectLoginLogs" resultType="com.xianshuyuan.scm.system.dto.LoginLogResponse">
         SELECT id, user_id, username_snapshot, result, failure_reason_code, ip, user_agent, occurred_at
-        FROM sys_login_log <include refid="loginFilters"/>
+        FROM sys_login_log
+        <include refid="loginFilters"/>
         ORDER BY occurred_at DESC, id DESC
         LIMIT #{query.pageSize} OFFSET #{query.offset}
     </select>
     <select id="countOperationLogs" resultType="long">
-        SELECT COUNT(*) FROM sys_operation_log <include refid="operationFilters"/>
+        SELECT COUNT(*) FROM sys_operation_log
+        <include refid="operationFilters"/>
     </select>
     <select id="selectOperationLogs" resultType="com.xianshuyuan.scm.system.dto.OperationLogResponse">
         SELECT id, actor_user_id, actor_name_snapshot, module, operation_code,
-               target_type, target_id, success, error_code, occurred_at
-        FROM sys_operation_log <include refid="operationFilters"/>
+        target_type, target_id, success, error_code, occurred_at
+        FROM sys_operation_log
+        <include refid="operationFilters"/>
         ORDER BY occurred_at DESC, id DESC
         LIMIT #{query.pageSize} OFFSET #{query.offset}
     </select>

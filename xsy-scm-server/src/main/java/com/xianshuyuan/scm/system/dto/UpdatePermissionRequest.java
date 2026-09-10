@@ -8,4 +8,5 @@ public record UpdatePermissionRequest(
         @NotNull @Pattern(regexp = "PAGE|ACTION|API") String type,
         @NotBlank @Size(max = 64) String module,
         @NotNull @PositiveOrZero Integer version
-) {}
+) {
+}

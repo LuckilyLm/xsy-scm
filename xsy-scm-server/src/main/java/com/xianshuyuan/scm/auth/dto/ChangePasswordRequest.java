@@ -9,4 +9,5 @@ public record ChangePasswordRequest(
         @NotBlank String currentPassword,
         @NotBlank @PasswordPolicy String newPassword,
         @NotNull @PositiveOrZero Integer version
-) {}
+) {
+}

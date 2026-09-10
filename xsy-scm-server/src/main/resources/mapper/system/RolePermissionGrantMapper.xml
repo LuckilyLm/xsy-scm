@@ -7,11 +7,12 @@
     </select>
     <select id="lockActorAndAffectedUsers" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity">
         SELECT u.* FROM sys_user u WHERE u.deleted=FALSE AND (u.id=#{actorId} OR EXISTS (
-            SELECT 1 FROM sys_user_role ur WHERE ur.user_id=u.id AND ur.role_id=#{roleId} AND ur.deleted=FALSE
+        SELECT 1 FROM sys_user_role ur WHERE ur.user_id=u.id AND ur.role_id=#{roleId} AND ur.deleted=FALSE
         )) ORDER BY u.id FOR UPDATE
     </select>
     <update id="remove">
-        UPDATE sys_role_permission SET deleted=TRUE WHERE role_id=#{roleId} AND permission_id=#{permissionId} AND deleted=FALSE
+        UPDATE sys_role_permission SET deleted=TRUE WHERE role_id=#{roleId} AND permission_id=#{permissionId} AND
+        deleted=FALSE
     </update>
     <insert id="add">
         INSERT INTO sys_role_permission(role_id,permission_id,created_by) VALUES(#{roleId},#{permissionId},#{actor})

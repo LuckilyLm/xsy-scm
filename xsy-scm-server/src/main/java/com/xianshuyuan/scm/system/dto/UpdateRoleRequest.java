@@ -6,4 +6,5 @@ public record UpdateRoleRequest(
         @NotBlank @Size(max = 102) @Pattern(regexp = "\s*[A-Za-z0-9][A-Za-z0-9._-]{0,99}\s*") String roleCode,
         @NotBlank @Size(max = 100) String name,
         @Size(max = 500) String description,
-        @NotNull @PositiveOrZero Integer version) {}
+        @NotNull @PositiveOrZero Integer version) {
+}

@@ -10,6 +10,7 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface DepartmentConverter {
     DepartmentResponse toResponse(DepartmentEntity entity);
+
     @Mapping(target = "children", ignore = true)
     DepartmentTreeResponse toTreeResponse(DepartmentEntity entity);
 }

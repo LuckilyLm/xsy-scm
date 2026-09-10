@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MenuTreeQuery {
-    @Pattern(regexp = "ENABLED|DISABLED") private String status;
+    @Pattern(regexp = "ENABLED|DISABLED")
+    private String status;
     private Boolean visible;
 }

@@ -158,7 +158,7 @@ public class DepartmentService {
     private void validateParent(Long id, Long parentId) {
         Set<Long> seen = new HashSet<>();
         if (id != null) seen.add(id);
-        for (Long next = parentId; next != null;) {
+        for (Long next = parentId; next != null; ) {
             if (!seen.add(next)) throw new BusinessException(SystemErrorCodes.DEPARTMENT_CYCLE);
             var parent = departments.lockActive(next);
             if (parent == null || !"ENABLED".equals(parent.getStatus()))

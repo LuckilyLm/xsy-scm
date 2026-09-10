@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -80,25 +81,32 @@ public class RoleMenuGrantService {
         if (retained.equals(requested)) return before;
         for (long menuId : retained) if (!requested.contains(menuId)) grants.remove(id, menuId);
         for (long menuId : requested) if (!retained.contains(menuId)) grants.add(id, menuId, actor.getUsername());
-        if (grants.incrementVersion(id, request.version(), actor.getUsername()) != 1) throw new BusinessException(ErrorCode.DATA_CONFLICT);
+        if (grants.incrementVersion(id, request.version(), actor.getUsername()) != 1)
+            throw new BusinessException(ErrorCode.DATA_CONFLICT);
         roles.incrementAuthVersions(id);
         var after = read(id);
         try {
             roles.insertAudit(id, actor.getId(), actor.getUsername(), "ROLE_ASSIGN_MENUS", json.writeValueAsString(before), json.writeValueAsString(after));
-        } catch (JsonProcessingException failure) { throw new IllegalStateException("Cannot serialize role menu audit", failure); }
+        } catch (JsonProcessingException failure) {
+            throw new IllegalStateException("Cannot serialize role menu audit", failure);
+        }
         var affectedNames = roles.lockAffectedUsers(id).stream().map(com.xianshuyuan.scm.system.entity.SystemUserEntity::getUsername).toList();
         org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(new org.springframework.transaction.support.TransactionSynchronization() {
-            @Override public void afterCommit() {
+            @Override
+            public void afterCommit() {
                 for (String username : affectedNames) {
-                    try { sessions.invalidateAll(username); }
-                    catch (RuntimeException failure) { log.warn("Session invalidation failed after role menu update; account version checks remain active"); }
+                    try {
+                        sessions.invalidateAll(username);
+                    } catch (RuntimeException failure) {
+                        log.warn("Session invalidation failed after role menu update; account version checks remain active");
+                    }
                 }
             }
         });
         return after;
     }
 
-    @Transactional(readOnly=true, isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public RoleMenusResponse read(long id) {
         var role = roles.selectById(id);
         if (role == null) throw new BusinessException(SystemErrorCodes.ROLE_NOT_FOUND);

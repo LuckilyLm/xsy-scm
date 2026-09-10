@@ -13,7 +13,7 @@
     </select>
     <select id="lockActorAndAffectedUsers" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity">
         SELECT u.* FROM sys_user u WHERE u.deleted=FALSE AND (u.id=#{actorId} OR EXISTS (
-            SELECT 1 FROM sys_user_role ur WHERE ur.user_id=u.id AND ur.role_id=#{roleId} AND ur.deleted=FALSE
+        SELECT 1 FROM sys_user_role ur WHERE ur.user_id=u.id AND ur.role_id=#{roleId} AND ur.deleted=FALSE
         )) ORDER BY u.id FOR UPDATE
     </select>
     <update id="remove">

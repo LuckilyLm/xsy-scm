@@ -137,7 +137,8 @@ public class RoleService {
         var current = users.selectById(principal.userId());
         if (!actor.isAuthenticated() || current == null || !"ENABLED".equals(current.getStatus())
                 || !Objects.equals(current.getAuthVersion(), principal.authVersion())
-                || (current.getLockedUntil() != null && current.getLockedUntil().isAfter(OffsetDateTime.now()))) forbidden();
+                || (current.getLockedUntil() != null && current.getLockedUntil().isAfter(OffsetDateTime.now())))
+            forbidden();
         if (Boolean.TRUE.equals(current.getAdministrator())) return;
         if (AuthorityRules.isReservedRole(role.getCode(), Boolean.TRUE.equals(role.getSystemRole()))) forbidden();
         var permissions = users.selectEnabledPermissionCodes(current.getId());
@@ -161,10 +162,12 @@ public class RoleService {
         roles.incrementAuthVersions(roleId);
         List<String> usernames = affected.stream().map(u -> u.getUsername()).toList();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() {
+            @Override
+            public void afterCommit() {
                 for (String username : usernames) {
-                    try { sessions.invalidateAll(username); }
-                    catch (RuntimeException failure) {
+                    try {
+                        sessions.invalidateAll(username);
+                    } catch (RuntimeException failure) {
                         // The commit succeeded. AccountVersionFilter rejects stale sessions even
                         // if the session repository fails; continue invalidating other users.
                         log.warn("Session invalidation failed after role update; account version checks remain active");
@@ -179,24 +182,35 @@ public class RoleService {
         if (!Objects.equals(role.getVersion(), version)) throw new BusinessException(ErrorCode.DATA_CONFLICT);
         return role;
     }
+
     private RoleEntity require(RoleEntity role) {
         if (role == null) throw new BusinessException(SystemErrorCodes.ROLE_NOT_FOUND);
         return role;
     }
+
     private void unique(Long id, String code) {
         if (roles.countCode(code, id) > 0) throw new BusinessException(ErrorCode.DATA_CONFLICT);
     }
+
     private String code(String value) {
         String code = value.strip().toLowerCase(Locale.ROOT);
         if (!code.matches("[a-z0-9][a-z0-9._-]{0,99}")) throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         return code;
     }
-    private String optional(String value) { return value == null || value.isBlank() ? null : value.strip(); }
-    private void forbidden() { throw new BusinessException(SystemErrorCodes.PROTECTED_ROLE); }
+
+    private String optional(String value) {
+        return value == null || value.isBlank() ? null : value.strip();
+    }
+
+    private void forbidden() {
+        throw new BusinessException(SystemErrorCodes.PROTECTED_ROLE);
+    }
+
     private void save(RoleEntity role, Authentication actor) {
         role.setUpdatedBy(actor.getName());
         if (roles.updateRole(role) != 1) throw new BusinessException(ErrorCode.DATA_CONFLICT);
     }
+
     private void audit(long id, Authentication actor, String operation, RoleResponse before, RoleResponse after) {
         Long actorId = actor.getPrincipal() instanceof SystemUserDetails details ? details.getUser().userId() : null;
         try {

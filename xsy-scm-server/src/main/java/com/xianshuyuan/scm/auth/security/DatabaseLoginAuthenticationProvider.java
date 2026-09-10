@@ -136,7 +136,12 @@ public class DatabaseLoginAuthenticationProvider implements AuthenticationProvid
     }
 
     private record Outcome(Authentication authentication, String username, boolean invalidateSessions) {
-        static Outcome success(Authentication authentication) { return new Outcome(authentication, null, false); }
-        static Outcome failure(String username, boolean invalidate) { return new Outcome(null, username, invalidate); }
+        static Outcome success(Authentication authentication) {
+            return new Outcome(authentication, null, false);
+        }
+
+        static Outcome failure(String username, boolean invalidate) {
+            return new Outcome(null, username, invalidate);
+        }
     }
 }

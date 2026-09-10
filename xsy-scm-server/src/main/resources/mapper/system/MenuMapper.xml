@@ -14,10 +14,10 @@
     <select id="countLiveRoles" resultType="long">
         SELECT COUNT(*) FROM sys_role_menu rm JOIN sys_role r ON r.id=rm.role_id AND r.deleted=FALSE
         WHERE rm.menu_id IN (
-            WITH RECURSIVE subtree AS (
-                SELECT id FROM sys_menu WHERE id=#{id}
-                UNION SELECT m.id FROM sys_menu m JOIN subtree s ON m.parent_id=s.id WHERE m.deleted=FALSE
-            ) SELECT id FROM subtree
+        WITH RECURSIVE subtree AS (
+        SELECT id FROM sys_menu WHERE id=#{id}
+        UNION SELECT m.id FROM sys_menu m JOIN subtree s ON m.parent_id=s.id WHERE m.deleted=FALSE
+        ) SELECT id FROM subtree
         ) AND rm.deleted=FALSE
     </select>
     <select id="countPermission" resultType="long">
@@ -25,24 +25,24 @@
     </select>
     <update id="updateMenu">
         UPDATE sys_menu SET parent_id=#{menu.parentId}, type=#{menu.type}, name=#{menu.name},
-            route_key=#{menu.routeKey}, path=#{menu.path}, icon_key=#{menu.iconKey},
-            required_permission_code=#{menu.requiredPermissionCode}, sort_order=#{menu.sortOrder},
-            visible=#{menu.visible}, status=#{menu.status}, deleted=#{menu.deleted},
-            version=version+1, updated_at=CURRENT_TIMESTAMP, updated_by=#{menu.updatedBy}
+        route_key=#{menu.routeKey}, path=#{menu.path}, icon_key=#{menu.iconKey},
+        required_permission_code=#{menu.requiredPermissionCode}, sort_order=#{menu.sortOrder},
+        visible=#{menu.visible}, status=#{menu.status}, deleted=#{menu.deleted},
+        version=version+1, updated_at=CURRENT_TIMESTAMP, updated_by=#{menu.updatedBy}
         WHERE id=#{menu.id} AND version=#{menu.version} AND deleted=FALSE
     </update>
     <select id="lockAffectedUsers" resultType="com.xianshuyuan.scm.system.entity.SystemUserEntity">
         WITH RECURSIVE subtree AS (
-            SELECT id FROM sys_menu WHERE id=#{id}
-            UNION
-            SELECT m.id FROM sys_menu m JOIN subtree s ON m.parent_id=s.id WHERE m.deleted=FALSE
+        SELECT id FROM sys_menu WHERE id=#{id}
+        UNION
+        SELECT m.id FROM sys_menu m JOIN subtree s ON m.parent_id=s.id WHERE m.deleted=FALSE
         )
         SELECT u.* FROM sys_user u WHERE u.deleted=FALSE AND EXISTS (
-            SELECT 1 FROM sys_user_role ur
-            JOIN sys_role r ON r.id=ur.role_id AND r.deleted=FALSE
-            JOIN sys_role_menu rm ON rm.role_id=r.id AND rm.deleted=FALSE
-            JOIN subtree s ON s.id=rm.menu_id
-            WHERE ur.user_id=u.id AND ur.deleted=FALSE
+        SELECT 1 FROM sys_user_role ur
+        JOIN sys_role r ON r.id=ur.role_id AND r.deleted=FALSE
+        JOIN sys_role_menu rm ON rm.role_id=r.id AND rm.deleted=FALSE
+        JOIN subtree s ON s.id=rm.menu_id
+        WHERE ur.user_id=u.id AND ur.deleted=FALSE
         ) ORDER BY u.id FOR UPDATE
     </select>
     <update id="incrementAuthVersions">
@@ -50,7 +50,8 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </update>
     <insert id="insertAudit">
-        INSERT INTO sys_operation_log(actor_user_id,actor_name_snapshot,module,operation_code,target_type,target_id,success,before_data,after_data)
+        INSERT INTO
+        sys_operation_log(actor_user_id,actor_name_snapshot,module,operation_code,target_type,target_id,success,before_data,after_data)
         VALUES(#{actorId},#{actor},'system',#{operation},'MENU',#{id}::text,TRUE,#{before}::jsonb,#{after}::jsonb)
     </insert>
 </mapper>

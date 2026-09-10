@@ -7,9 +7,9 @@
     <!-- UNION (not UNION ALL) terminates even if imported data contains a cycle. -->
     <select id="descendants" resultType="com.xianshuyuan.scm.system.entity.DepartmentEntity" useCache="false">
         WITH RECURSIVE subtree AS (
-            SELECT * FROM sys_department WHERE parent_id=#{id} AND deleted=FALSE
-            UNION
-            SELECT d.* FROM sys_department d JOIN subtree s ON d.parent_id=s.id WHERE d.deleted=FALSE
+        SELECT * FROM sys_department WHERE parent_id=#{id} AND deleted=FALSE
+        UNION
+        SELECT d.* FROM sys_department d JOIN subtree s ON d.parent_id=s.id WHERE d.deleted=FALSE
         )
         SELECT * FROM subtree ORDER BY sort_order, id
     </select>
@@ -21,13 +21,14 @@
     </select>
     <update id="updateDepartment">
         UPDATE sys_department SET parent_id=#{department.parentId}, code=#{department.code},
-            name=#{department.name}, sort_order=#{department.sortOrder}, status=#{department.status},
-            deleted=#{department.deleted}, version=version+1, updated_at=CURRENT_TIMESTAMP,
-            updated_by=#{department.updatedBy}
+        name=#{department.name}, sort_order=#{department.sortOrder}, status=#{department.status},
+        deleted=#{department.deleted}, version=version+1, updated_at=CURRENT_TIMESTAMP,
+        updated_by=#{department.updatedBy}
         WHERE id=#{department.id} AND version=#{department.version} AND deleted=FALSE
     </update>
     <insert id="insertAudit">
-        INSERT INTO sys_operation_log(actor_user_id,actor_name_snapshot,module,operation_code,target_type,target_id,success,before_data,after_data)
+        INSERT INTO
+        sys_operation_log(actor_user_id,actor_name_snapshot,module,operation_code,target_type,target_id,success,before_data,after_data)
         VALUES(#{actorId},#{actor},'system',#{operation},'DEPARTMENT',#{id}::text,TRUE,#{before}::jsonb,#{after}::jsonb)
     </insert>
 </mapper>

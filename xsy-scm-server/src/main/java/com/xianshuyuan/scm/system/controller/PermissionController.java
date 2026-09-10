@@ -18,16 +18,35 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 public class PermissionController {
     private final PermissionService service;
+
     @GetMapping
-    public ApiResponse<PageData<PermissionResponse>> list(@Valid PermissionQuery query) { return ApiResponse.success(service.list(query)); }
+    public ApiResponse<PageData<PermissionResponse>> list(@Valid PermissionQuery query) {
+        return ApiResponse.success(service.list(query));
+    }
+
     @GetMapping("/{id}")
-    public ApiResponse<PermissionResponse> detail(@PathVariable @Positive long id) { return ApiResponse.success(service.detail(id)); }
+    public ApiResponse<PermissionResponse> detail(@PathVariable @Positive long id) {
+        return ApiResponse.success(service.detail(id));
+    }
+
     @PostMapping
-    public ApiResponse<PermissionResponse> create(@RequestBody @Valid CreatePermissionRequest request, Authentication actor) { return ApiResponse.success(service.create(request, actor)); }
+    public ApiResponse<PermissionResponse> create(@RequestBody @Valid CreatePermissionRequest request, Authentication actor) {
+        return ApiResponse.success(service.create(request, actor));
+    }
+
     @PutMapping("/{id}")
-    public ApiResponse<PermissionResponse> update(@PathVariable @Positive long id, @RequestBody @Valid UpdatePermissionRequest request, Authentication actor) { return ApiResponse.success(service.update(id, request, actor)); }
+    public ApiResponse<PermissionResponse> update(@PathVariable @Positive long id, @RequestBody @Valid UpdatePermissionRequest request, Authentication actor) {
+        return ApiResponse.success(service.update(id, request, actor));
+    }
+
     @PostMapping("/{id}/status")
-    public ApiResponse<PermissionResponse> status(@PathVariable @Positive long id, @RequestBody @Valid PermissionStatusRequest request, Authentication actor) { return ApiResponse.success(service.changeStatus(id, request, actor)); }
+    public ApiResponse<PermissionResponse> status(@PathVariable @Positive long id, @RequestBody @Valid PermissionStatusRequest request, Authentication actor) {
+        return ApiResponse.success(service.changeStatus(id, request, actor));
+    }
+
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable @Positive long id, @RequestParam @PositiveOrZero int version, Authentication actor) { service.delete(id, version, actor); return ApiResponse.success(null); }
+    public ApiResponse<Void> delete(@PathVariable @Positive long id, @RequestParam @PositiveOrZero int version, Authentication actor) {
+        service.delete(id, version, actor);
+        return ApiResponse.success(null);
+    }
 }

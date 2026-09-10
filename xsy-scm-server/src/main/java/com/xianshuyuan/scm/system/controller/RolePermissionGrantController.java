@@ -14,13 +14,15 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class RolePermissionGrantController {
     private final RolePermissionGrantService grants;
+
     @GetMapping
     public ApiResponse<RolePermissionsResponse> read(@PathVariable @Positive long id) {
         return ApiResponse.success(grants.read(id));
     }
+
     @PostMapping
     public ApiResponse<RolePermissionsResponse> replace(@PathVariable @Positive long id,
-            @Valid @RequestBody ReplaceRolePermissionsRequest request, Authentication actor) {
+                                                        @Valid @RequestBody ReplaceRolePermissionsRequest request, Authentication actor) {
         return ApiResponse.success(grants.replace(id, request, actor));
     }
 }

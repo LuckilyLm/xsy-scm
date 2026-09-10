@@ -16,31 +16,37 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class RoleController {
     private final RoleService roles;
+
     @GetMapping
     public ApiResponse<PageData<RoleResponse>> list(@Valid @ModelAttribute RoleQuery query) {
         return ApiResponse.success(roles.list(query));
     }
+
     @GetMapping("/{id}")
     public ApiResponse<RoleResponse> detail(@PathVariable @Positive long id) {
         return ApiResponse.success(roles.detail(id));
     }
+
     @PostMapping
     public ApiResponse<RoleResponse> create(@Valid @RequestBody CreateRoleRequest request, Authentication actor) {
         return ApiResponse.success(roles.create(request, actor));
     }
+
     @PutMapping("/{id}")
     public ApiResponse<RoleResponse> update(@PathVariable @Positive long id,
-            @Valid @RequestBody UpdateRoleRequest request, Authentication actor) {
+                                            @Valid @RequestBody UpdateRoleRequest request, Authentication actor) {
         return ApiResponse.success(roles.update(id, request, actor));
     }
+
     @PostMapping("/{id}/status")
     public ApiResponse<RoleResponse> status(@PathVariable @Positive long id,
-            @Valid @RequestBody RoleStatusRequest request, Authentication actor) {
+                                            @Valid @RequestBody RoleStatusRequest request, Authentication actor) {
         return ApiResponse.success(roles.changeStatus(id, request, actor));
     }
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable @Positive long id,
-            @RequestParam @PositiveOrZero int version, Authentication actor) {
+                                    @RequestParam @PositiveOrZero int version, Authentication actor) {
         roles.delete(id, version, actor);
         return ApiResponse.success(null);
     }

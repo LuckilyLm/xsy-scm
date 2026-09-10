@@ -7,4 +7,5 @@ import jakarta.validation.constraints.PositiveOrZero;
 public record ResetPasswordRequest(
         @PasswordPolicy String newPassword,
         @NotNull @PositiveOrZero Integer version
-) {}
+) {
+}

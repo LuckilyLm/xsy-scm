@@ -12,4 +12,5 @@ public record CreateMenuRequest(
         @Size(max = 160) String requiredPermission,
         @NotNull @PositiveOrZero Integer sort,
         @NotNull Boolean visible,
-        @NotNull @Pattern(regexp = "ENABLED|DISABLED") String status) {}
+        @NotNull @Pattern(regexp = "ENABLED|DISABLED") String status) {
+}

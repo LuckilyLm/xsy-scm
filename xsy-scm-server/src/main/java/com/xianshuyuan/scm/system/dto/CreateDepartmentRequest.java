@@ -7,4 +7,5 @@ public record CreateDepartmentRequest(
         @NotBlank @Size(max = 100) String name,
         @Positive Long parentId,
         @NotNull @PositiveOrZero Integer sortOrder
-) {}
+) {
+}

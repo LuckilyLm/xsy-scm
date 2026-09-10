@@ -53,7 +53,9 @@ public class PermissionService {
         return new PageData<>(page.getRecords().stream().map(converter::toResponse).toList(), page.getCurrent(), page.getSize(), page.getTotal());
     }
 
-    public PermissionResponse detail(long id) { return converter.toResponse(require(permissions.selectById(id))); }
+    public PermissionResponse detail(long id) {
+        return converter.toResponse(require(permissions.selectById(id)));
+    }
 
     @Transactional
     public PermissionResponse create(CreatePermissionRequest request, Authentication actor) {
@@ -66,12 +68,18 @@ public class PermissionService {
         // Menu references are code-based, unlike retained grants. Never implicitly reconnect one.
         if (permissions.countMenuReferences(code) > 0) forbidden();
         var permission = new PermissionEntity();
-        permission.setCode(code); permission.setName(request.name().strip());
-        permission.setModule(request.module().strip()); permission.setResourceType(request.type());
-        permission.setStatus("DISABLED"); permission.setSystemPermission(false);
-        permission.setVersion(0); permission.setDeleted(false);
-        permission.setCreatedAt(OffsetDateTime.now()); permission.setUpdatedAt(permission.getCreatedAt());
-        permission.setCreatedBy(current.username()); permission.setUpdatedBy(current.username());
+        permission.setCode(code);
+        permission.setName(request.name().strip());
+        permission.setModule(request.module().strip());
+        permission.setResourceType(request.type());
+        permission.setStatus("DISABLED");
+        permission.setSystemPermission(false);
+        permission.setVersion(0);
+        permission.setDeleted(false);
+        permission.setCreatedAt(OffsetDateTime.now());
+        permission.setUpdatedAt(permission.getCreatedAt());
+        permission.setCreatedBy(current.username());
+        permission.setUpdatedBy(current.username());
         permissions.insert(permission);
         var result = converter.toResponse(permission);
         audit(permission.getId(), current, "PERMISSION_CREATE", null, result);
@@ -86,9 +94,13 @@ public class PermissionService {
         if (!normalize(request.permissionCode()).equals(permission.getCode())) forbidden();
         if (reserved(permission) && !current.administrator()) forbidden();
         var before = converter.toResponse(permission);
-        permission.setName(request.name().strip()); permission.setResourceType(request.type()); permission.setModule(request.module().strip());
+        permission.setName(request.name().strip());
+        permission.setResourceType(request.type());
+        permission.setModule(request.module().strip());
         save(permission, current);
-        var result = detail(id); audit(id, current, "PERMISSION_UPDATE", before, result); return result;
+        var result = detail(id);
+        audit(id, current, "PERMISSION_UPDATE", before, result);
+        return result;
     }
 
     @Transactional
@@ -104,9 +116,12 @@ public class PermissionService {
                 && !current.permissions().contains(permission.getCode())) forbidden();
         if ("DISABLED".equals(request.status())) protectOwn(permission, current);
         var before = converter.toResponse(permission);
-        permission.setStatus(request.status()); save(permission, current);
+        permission.setStatus(request.status());
+        save(permission, current);
         if (changed) invalidateAffected(id);
-        var result = detail(id); audit(id, current, "PERMISSION_STATUS", before, result); return result;
+        var result = detail(id);
+        audit(id, current, "PERMISSION_STATUS", before, result);
+        return result;
     }
 
     @Transactional
@@ -116,19 +131,24 @@ public class PermissionService {
         var current = currentActor(actor, "delete");
         if (reserved(permission)) forbidden();
         protectOwn(permission, current);
-        if (permissions.countMenuReferences(permission.getCode()) > 0) throw new BusinessException(SystemErrorCodes.PERMISSION_IN_USE);
+        if (permissions.countMenuReferences(permission.getCode()) > 0)
+            throw new BusinessException(SystemErrorCodes.PERMISSION_IN_USE);
         var before = converter.toResponse(permission);
-        permission.setDeleted(true); save(permission, current); invalidateAffected(id);
+        permission.setDeleted(true);
+        save(permission, current);
+        invalidateAffected(id);
         audit(id, current, "PERMISSION_DELETE", before, null);
     }
 
     private CurrentActor currentActor(Authentication actor, String operation) {
-        if (actor == null || !actor.isAuthenticated() || !(actor.getPrincipal() instanceof SystemUserDetails)) forbidden();
+        if (actor == null || !actor.isAuthenticated() || !(actor.getPrincipal() instanceof SystemUserDetails))
+            forbidden();
         var principal = ((SystemUserDetails) actor.getPrincipal()).getUser();
         var current = users.selectById(principal.userId());
         if (current == null || !"ENABLED".equals(current.getStatus())
                 || !Objects.equals(current.getAuthVersion(), principal.authVersion())
-                || (current.getLockedUntil() != null && current.getLockedUntil().isAfter(OffsetDateTime.now()))) forbidden();
+                || (current.getLockedUntil() != null && current.getLockedUntil().isAfter(OffsetDateTime.now())))
+            forbidden();
         var codes = users.selectEnabledPermissionCodes(current.getId());
         boolean admin = Boolean.TRUE.equals(current.getAdministrator());
         if (!admin && !codes.contains("system:permission:" + operation)) forbidden();
@@ -136,46 +156,70 @@ public class PermissionService {
     }
 
     private void protectOwn(PermissionEntity permission, CurrentActor actor) {
-        if (!actor.administrator() && "ENABLED".equals(permission.getStatus()) && actor.permissions().contains(permission.getCode())) forbidden();
+        if (!actor.administrator() && "ENABLED".equals(permission.getStatus()) && actor.permissions().contains(permission.getCode()))
+            forbidden();
     }
-    private boolean reserved(PermissionEntity permission) { return AuthorityRules.isReservedPermission(permission.getCode(), Boolean.TRUE.equals(permission.getSystemPermission())); }
+
+    private boolean reserved(PermissionEntity permission) {
+        return AuthorityRules.isReservedPermission(permission.getCode(), Boolean.TRUE.equals(permission.getSystemPermission()));
+    }
+
     private void invalidateAffected(long id) {
         var affected = permissions.lockAffectedUsers(id);
         if (affected.isEmpty()) return;
         permissions.incrementAuthVersions(id);
         List<String> usernames = affected.stream().map(u -> u.getUsername()).toList();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() {
+            @Override
+            public void afterCommit() {
                 for (String username : usernames) {
-                    try { sessions.invalidateAll(username); }
-                    catch (RuntimeException failure) {
+                    try {
+                        sessions.invalidateAll(username);
+                    } catch (RuntimeException failure) {
                         log.warn("Session invalidation failed after permission update; account version checks remain active");
                     }
                 }
             }
         });
     }
+
     private PermissionEntity locked(long id, int version) {
         var permission = require(permissions.lockActive(id));
         if (!Objects.equals(permission.getVersion(), version)) throw new BusinessException(ErrorCode.DATA_CONFLICT);
         return permission;
     }
+
     private PermissionEntity require(PermissionEntity permission) {
         if (permission == null) throw new BusinessException(SystemErrorCodes.PERMISSION_NOT_FOUND);
         return permission;
     }
-    private String normalize(String value) { return value.strip().toLowerCase(Locale.ROOT); }
-    private void validateCode(String code) {
-        if (code.length() > 160 || !code.matches("[a-z0-9][a-z0-9._-]*(?::[a-z0-9][a-z0-9._-]*)+")) throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+
+    private String normalize(String value) {
+        return value.strip().toLowerCase(Locale.ROOT);
     }
-    private void forbidden() { throw new BusinessException(SystemErrorCodes.PROTECTED_PERMISSION); }
+
+    private void validateCode(String code) {
+        if (code.length() > 160 || !code.matches("[a-z0-9][a-z0-9._-]*(?::[a-z0-9][a-z0-9._-]*)+"))
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+    }
+
+    private void forbidden() {
+        throw new BusinessException(SystemErrorCodes.PROTECTED_PERMISSION);
+    }
+
     private void save(PermissionEntity permission, CurrentActor actor) {
         permission.setUpdatedBy(actor.username());
         if (permissions.updatePermission(permission) != 1) throw new BusinessException(ErrorCode.DATA_CONFLICT);
     }
+
     private void audit(long id, CurrentActor actor, String operation, PermissionResponse before, PermissionResponse after) {
-        try { permissions.insertAudit(id, actor.id(), actor.username(), operation, json.writeValueAsString(before), json.writeValueAsString(after)); }
-        catch (JsonProcessingException failure) { throw new IllegalStateException("Cannot serialize permission audit", failure); }
+        try {
+            permissions.insertAudit(id, actor.id(), actor.username(), operation, json.writeValueAsString(before), json.writeValueAsString(after));
+        } catch (JsonProcessingException failure) {
+            throw new IllegalStateException("Cannot serialize permission audit", failure);
+        }
     }
-    private record CurrentActor(long id, String username, boolean administrator, List<String> permissions) {}
+
+    private record CurrentActor(long id, String username, boolean administrator, List<String> permissions) {
+    }
 }

@@ -16,19 +16,26 @@ public class SystemUserEntity {
     private String username;
     private String displayName;
     private String passwordHash;
-    @lombok.Getter @lombok.Setter
+    @lombok.Getter
+    @lombok.Setter
     private Long departmentId;
-    @lombok.Getter @lombok.Setter
+    @lombok.Getter
+    @lombok.Setter
     private String email;
-    @lombok.Getter @lombok.Setter
+    @lombok.Getter
+    @lombok.Setter
     private String phone;
-    @lombok.Getter @lombok.Setter
+    @lombok.Getter
+    @lombok.Setter
     private OffsetDateTime createdAt;
-    @lombok.Getter @lombok.Setter
+    @lombok.Getter
+    @lombok.Setter
     private OffsetDateTime updatedAt;
-    @lombok.Getter @lombok.Setter
+    @lombok.Getter
+    @lombok.Setter
     private String createdBy;
-    @lombok.Getter @lombok.Setter
+    @lombok.Getter
+    @lombok.Setter
     private String updatedBy;
     private String status;
     private Boolean administrator;

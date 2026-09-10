@@ -8,4 +8,5 @@ public record UpdateDepartmentRequest(
         @Positive Long parentId,
         @NotNull @PositiveOrZero Integer sortOrder,
         @NotNull @PositiveOrZero Integer version
-) {}
+) {
+}

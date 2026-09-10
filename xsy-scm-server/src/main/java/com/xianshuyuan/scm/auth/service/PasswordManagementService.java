@@ -61,9 +61,11 @@ public class PasswordManagementService {
         requireCurrentSession(actor, principal);
         if (Boolean.TRUE.equals(actor.getMustChangePassword()))
             throw new BusinessException(AuthErrorCodes.PASSWORD_CHANGE_REQUIRED);
-        if (!Boolean.TRUE.equals(actor.getAdministrator())) throw new BusinessException(AuthErrorCodes.PERMISSION_DENIED);
+        if (!Boolean.TRUE.equals(actor.getAdministrator()))
+            throw new BusinessException(AuthErrorCodes.PERMISSION_DENIED);
         requireUsable(target);
-        if (!Objects.equals(target.getVersion(), request.version())) throw new BusinessException(ErrorCode.DATA_CONFLICT);
+        if (!Objects.equals(target.getVersion(), request.version()))
+            throw new BusinessException(ErrorCode.DATA_CONFLICT);
         rejectReuse(request.newPassword(), target);
         update(target, request.newPassword(), true, actor.getId(), actor.getUsername(), "USER_PASSWORD_RESET");
     }
@@ -112,9 +114,11 @@ public class PasswordManagementService {
 
     private void invalidateAfterCommit(String username) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() {
-                try { sessions.invalidateAll(username); }
-                catch (RuntimeException failure) {
+            @Override
+            public void afterCommit() {
+                try {
+                    sessions.invalidateAll(username);
+                } catch (RuntimeException failure) {
                     log.warn("Session invalidation failed after password update; version checks remain active");
                 }
             }

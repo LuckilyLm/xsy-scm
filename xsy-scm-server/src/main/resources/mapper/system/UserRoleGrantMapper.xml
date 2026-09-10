@@ -6,7 +6,8 @@
         WHERE ur.user_id=#{userId} AND ur.deleted=FALSE ORDER BY r.id
     </select>
     <select id="permissions" resultType="string">
-        SELECT DISTINCT p.code FROM sys_role_permission rp JOIN sys_permission p ON p.id=rp.permission_id AND p.deleted=FALSE
+        SELECT DISTINCT p.code FROM sys_role_permission rp JOIN sys_permission p ON p.id=rp.permission_id AND
+        p.deleted=FALSE
         WHERE rp.deleted=FALSE AND rp.role_id IN
         <foreach collection="roleIds" item="id" open="(" separator="," close=")">#{id}</foreach>
     </select>
@@ -22,7 +23,8 @@
         INSERT INTO sys_user_role(user_id,role_id,created_by) VALUES(#{userId},#{roleId},#{actor})
     </insert>
     <update id="incrementVersion">
-        UPDATE sys_user SET version=version+1,auth_version=auth_version+1,updated_at=CURRENT_TIMESTAMP,updated_by=#{actor}
+        UPDATE sys_user SET
+        version=version+1,auth_version=auth_version+1,updated_at=CURRENT_TIMESTAMP,updated_by=#{actor}
         WHERE id=#{id} AND version=#{version} AND deleted=FALSE
     </update>
 </mapper>

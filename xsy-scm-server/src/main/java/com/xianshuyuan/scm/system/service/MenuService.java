@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.time.OffsetDateTime;
 import java.util.*;
 
@@ -57,7 +58,9 @@ public class MenuService {
         return new PageData<>(page.getRecords().stream().map(converter::toResponse).toList(), page.getCurrent(), page.getSize(), page.getTotal());
     }
 
-    public MenuResponse detail(long id) { return converter.toResponse(require(menus.selectById(id))); }
+    public MenuResponse detail(long id) {
+        return converter.toResponse(require(menus.selectById(id)));
+    }
 
     public List<MenuResponse> tree(MenuTreeQuery query) {
         var all = menus.selectList(new LambdaQueryWrapper<MenuEntity>().orderByAsc(MenuEntity::getSortOrder, MenuEntity::getId));
@@ -69,7 +72,8 @@ public class MenuService {
             var node = queue.remove();
             int depth = node.getParentId() == null ? 1 : depths.get(node.getParentId()) + 1;
             if (depth > MAX_DEPTH) tooDeep();
-            depths.put(node.getId(), depth); ordered.add(node);
+            depths.put(node.getId(), depth);
+            ordered.add(node);
             queue.addAll(children.getOrDefault(node.getId(), List.of()));
         }
         if (ordered.size() != all.size()) invalid();
@@ -84,13 +88,16 @@ public class MenuService {
         }
         return children.getOrDefault(null, List.of()).stream().map(n -> responses.get(n.getId())).filter(Objects::nonNull).toList();
     }
+
     // Implementation envelope for bounded JSON nesting, not a business taxonomy requirement.
     private static final int MAX_DEPTH = 64;
+
     private Map<Long, List<MenuEntity>> children(List<MenuEntity> all) {
         Map<Long, List<MenuEntity>> result = new HashMap<>();
         for (var node : all) result.computeIfAbsent(node.getParentId(), ignored -> new ArrayList<>()).add(node);
         return result;
     }
+
     private void validateDepth(MenuEntity menu, Long parent, int ancestorDepth) {
         // Unchanged legacy placement remains editable; list/detail and reparenting permit repair.
         if (menu.getId() != null && Objects.equals(menu.getParentId(), parent)) return;
@@ -106,12 +113,16 @@ public class MenuService {
                     next.addAll(graph.getOrDefault(node.getId(), List.of()));
                 }
                 if (next.isEmpty()) break;
-                height++; level = next;
+                height++;
+                level = next;
             }
         }
         if (ancestorDepth + height > MAX_DEPTH) tooDeep();
     }
-    private void tooDeep() { throw new BusinessException(SystemErrorCodes.MENU_TOO_DEEP); }
+
+    private void tooDeep() {
+        throw new BusinessException(SystemErrorCodes.MENU_TOO_DEEP);
+    }
 
     @Transactional
     public MenuResponse create(CreateMenuRequest request, Authentication actor) {
@@ -119,9 +130,12 @@ public class MenuService {
         var current = currentActor(actor, "create");
         var menu = new MenuEntity();
         apply(menu, request);
-        menu.setVersion(0); menu.setDeleted(false);
-        menu.setCreatedAt(OffsetDateTime.now()); menu.setUpdatedAt(menu.getCreatedAt());
-        menu.setCreatedBy(current.username()); menu.setUpdatedBy(current.username());
+        menu.setVersion(0);
+        menu.setDeleted(false);
+        menu.setCreatedAt(OffsetDateTime.now());
+        menu.setUpdatedAt(menu.getCreatedAt());
+        menu.setCreatedBy(current.username());
+        menu.setUpdatedBy(current.username());
         menus.insert(menu);
         var result = converter.toResponse(menu);
         audit(menu.getId(), current, "MENU_CREATE", null, result);
@@ -163,9 +177,11 @@ public class MenuService {
         users.lockSecurityWrites();
         var menu = locked(id, version);
         var current = currentActor(actor, "delete");
-        if (menus.countChildren(id) > 0 || menus.countLiveRoles(id) > 0) throw new BusinessException(SystemErrorCodes.MENU_IN_USE);
+        if (menus.countChildren(id) > 0 || menus.countLiveRoles(id) > 0)
+            throw new BusinessException(SystemErrorCodes.MENU_IN_USE);
         var before = converter.toResponse(menu);
-        menu.setDeleted(true); save(menu, current);
+        menu.setDeleted(true);
+        save(menu, current);
         audit(id, current, "MENU_DELETE", before, null);
     }
 
@@ -188,22 +204,33 @@ public class MenuService {
             parent = node.getParentId();
         }
         validateDepth(menu, request.parentId(), visited.size());
-        menu.setParentId(request.parentId()); menu.setType(request.type()); menu.setName(request.name().strip());
-        menu.setRouteKey(route); menu.setPath(path); menu.setIconKey(icon); menu.setRequiredPermissionCode(permission);
-        menu.setSortOrder(request.sort()); menu.setVisible(request.visible()); menu.setStatus(request.status());
+        menu.setParentId(request.parentId());
+        menu.setType(request.type());
+        menu.setName(request.name().strip());
+        menu.setRouteKey(route);
+        menu.setPath(path);
+        menu.setIconKey(icon);
+        menu.setRequiredPermissionCode(permission);
+        menu.setSortOrder(request.sort());
+        menu.setVisible(request.visible());
+        menu.setStatus(request.status());
     }
+
     private CurrentActor currentActor(Authentication actor, String operation) {
-        if (actor == null || !actor.isAuthenticated() || !(actor.getPrincipal() instanceof SystemUserDetails)) forbidden();
+        if (actor == null || !actor.isAuthenticated() || !(actor.getPrincipal() instanceof SystemUserDetails))
+            forbidden();
         var principal = ((SystemUserDetails) actor.getPrincipal()).getUser();
         var current = users.selectById(principal.userId());
         if (current == null || !"ENABLED".equals(current.getStatus())
                 || !Objects.equals(current.getAuthVersion(), principal.authVersion())
-                || (current.getLockedUntil() != null && current.getLockedUntil().isAfter(OffsetDateTime.now()))) forbidden();
+                || (current.getLockedUntil() != null && current.getLockedUntil().isAfter(OffsetDateTime.now())))
+            forbidden();
         var codes = users.selectEnabledPermissionCodes(current.getId());
         boolean admin = Boolean.TRUE.equals(current.getAdministrator());
         if (!admin && !codes.contains("system:menu:" + operation)) forbidden();
         return new CurrentActor(current.getId(), current.getUsername(), admin, codes);
     }
+
     private void protectExpansion(MenuEntity menu, MenuResponse before, CurrentActor actor) {
         if (actor.administrator() || menus.countLiveRoles(menu.getId()) == 0) return;
         // Retained navigation grants include disabled roles and descendants. Changing their
@@ -213,44 +240,67 @@ public class MenuService {
                 || !Objects.equals(before.routeKey(), menu.getRouteKey())
                 || !Objects.equals(before.path(), menu.getPath())
                 || (before.requiredPermission() != null
-                    && !Objects.equals(before.requiredPermission(), menu.getRequiredPermissionCode()));
+                && !Objects.equals(before.requiredPermission(), menu.getRequiredPermissionCode()));
         boolean activated = (!"ENABLED".equals(before.status()) && "ENABLED".equals(menu.getStatus()))
                 || (!Boolean.TRUE.equals(before.visible()) && Boolean.TRUE.equals(menu.getVisible()));
         if (identityChanged || activated) forbidden();
     }
+
     private void invalidateAffected(long id) {
         var affected = menus.lockAffectedUsers(id);
         if (affected.isEmpty()) return;
         menus.incrementAuthVersions(affected.stream().map(u -> u.getId()).toList());
         List<String> names = affected.stream().map(u -> u.getUsername()).toList();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCommit() {
+            @Override
+            public void afterCommit() {
                 for (String name : names) {
-                    try { sessions.invalidateAll(name); }
-                    catch (RuntimeException failure) { log.warn("Session invalidation failed after menu update; account version checks remain active"); }
+                    try {
+                        sessions.invalidateAll(name);
+                    } catch (RuntimeException failure) {
+                        log.warn("Session invalidation failed after menu update; account version checks remain active");
+                    }
                 }
             }
         });
     }
+
     private MenuEntity locked(long id, int version) {
         var menu = require(menus.lockActive(id));
         if (!Objects.equals(menu.getVersion(), version)) throw new BusinessException(ErrorCode.DATA_CONFLICT);
         return menu;
     }
+
     private MenuEntity require(MenuEntity menu) {
         if (menu == null) throw new BusinessException(SystemErrorCodes.MENU_NOT_FOUND);
         return menu;
     }
+
     private void save(MenuEntity menu, CurrentActor actor) {
         menu.setUpdatedBy(actor.username());
         if (menus.updateMenu(menu) != 1) throw new BusinessException(ErrorCode.DATA_CONFLICT);
     }
-    private String clean(String value) { return value == null || value.isBlank() ? null : value.strip(); }
-    private void invalid() { throw new BusinessException(ErrorCode.VALIDATION_ERROR); }
-    private void forbidden() { throw new BusinessException(SystemErrorCodes.PROTECTED_MENU); }
-    private void audit(long id, CurrentActor actor, String operation, MenuResponse before, MenuResponse after) {
-        try { menus.insertAudit(id, actor.id(), actor.username(), operation, json.writeValueAsString(before), json.writeValueAsString(after)); }
-        catch (JsonProcessingException failure) { throw new IllegalStateException("Cannot serialize menu audit", failure); }
+
+    private String clean(String value) {
+        return value == null || value.isBlank() ? null : value.strip();
     }
-    private record CurrentActor(long id, String username, boolean administrator, List<String> permissions) {}
+
+    private void invalid() {
+        throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+    }
+
+    private void forbidden() {
+        throw new BusinessException(SystemErrorCodes.PROTECTED_MENU);
+    }
+
+    private void audit(long id, CurrentActor actor, String operation, MenuResponse before, MenuResponse after) {
+        try {
+            menus.insertAudit(id, actor.id(), actor.username(), operation, json.writeValueAsString(before), json.writeValueAsString(after));
+        } catch (JsonProcessingException failure) {
+            throw new IllegalStateException("Cannot serialize menu audit", failure);
+        }
+    }
+
+    private record CurrentActor(long id, String username, boolean administrator, List<String> permissions) {
+    }
 }
