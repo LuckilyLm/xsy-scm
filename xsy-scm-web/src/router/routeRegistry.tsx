@@ -316,4 +316,20 @@ export const ROUTE_REGISTRY: RouteDefinition[] = [
     group: 'system',
     lazy: page(() => import('../pages/system/PermissionPage'), 'PermissionPage'),
   },
+  {
+    key: 'system-login-logs',
+    path: 'system/login-logs',
+    title: '登录日志',
+    permission: AUTHORITIES.loginLogList,
+    group: 'system',
+    lazy: page(() => import('../pages/system/LoginLogPage'), 'LoginLogPage'),
+  },
+  {
+    key: 'system-operation-logs',
+    path: 'system/operation-logs',
+    title: '操作日志',
+    permission: AUTHORITIES.operationLogList,
+    group: 'system',
+    lazy: page(() => import('../pages/system/OperationLogPage'), 'OperationLogPage'),
+  },
 ];

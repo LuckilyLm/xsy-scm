@@ -1,5 +1,5 @@
 import { Alert, Form, Input, Modal, message } from 'antd';
-import type { FormInstance, FormRule } from 'antd';
+import type { FormRule } from 'antd';
 import { useState } from 'react';
 import { ApiError } from '../../api/http';
 import { useAuth } from '../../auth/AuthProvider';
@@ -108,9 +108,9 @@ export function ChangePasswordModal({ open, forced = false, onClose }: ChangePas
           dependencies={['newPassword']}
           rules={[
             { required: true, message: '请再次输入新密码' },
-            ({ getFieldValue }: FormInstance) => ({
+            (form) => ({
               validator: (_rule: FormRule, value: string) =>
-                !value || value === getFieldValue('newPassword')
+                !value || value === form.getFieldValue('newPassword')
                   ? Promise.resolve()
                   : Promise.reject(new Error('两次输入的新密码不一致')),
             }),

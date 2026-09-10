@@ -50,6 +50,10 @@ export const AUTHORITIES = {
   menuStatus: 'system:menu:status',
   menuDelete: 'system:menu:delete',
 
+  /* 审计 */
+  loginLogList: 'system:login-log:list',
+  operationLogList: 'system:operation-log:list',
+
   /* 权限 */
   permissionList: 'system:permission:list',
   permissionCreate: 'system:permission:create',

@@ -1,5 +1,5 @@
 import { Alert, Form, Input, Modal, message } from 'antd';
-import type { FormInstance, FormRule } from 'antd';
+import type { FormRule } from 'antd';
 import { useEffect, useState } from 'react';
 import { resetUserPassword } from '../../api/system/users';
 import type { SystemUser } from '../../types/system';
@@ -97,9 +97,9 @@ export function ResetPasswordModal({ open, user, onClose, onSuccess }: ResetPass
           dependencies={['newPassword']}
           rules={[
             { required: true, message: '请再次输入新密码' },
-            ({ getFieldValue }: FormInstance) => ({
+            (form) => ({
               validator: (_rule: FormRule, value: string) =>
-                !value || value === getFieldValue('newPassword')
+                !value || value === form.getFieldValue('newPassword')
                   ? Promise.resolve()
                   : Promise.reject(new Error('两次输入的新密码不一致')),
             }),
