@@ -24,6 +24,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 @Configuration
 @EnableMethodSecurity
+@lombok.extern.slf4j.Slf4j
 public class SecurityConfig {
 
     @Bean
@@ -155,6 +156,11 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/system/permissions/*")
                     .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "system:permission:delete"))
                 .requestMatchers("/api/system/permissions/**").denyAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/system/login-logs")
+                    .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "system:login-log:list"))
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/system/operation-logs")
+                    .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "system:operation-log:list"))
+                .requestMatchers("/api/system/login-logs/**", "/api/system/operation-logs/**").denyAll()
                 .requestMatchers("/api/system/**")
                     .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "system.manage"))
                 .requestMatchers("/api/**").denyAll()
@@ -193,6 +199,7 @@ public class SecurityConfig {
                                     request.getRemoteAddr(), request.getHeader("User-Agent"));
                         } catch (RuntimeException ignored) {
                             // Logout remains successful when audit persistence is unavailable.
+                            log.warn("Logout audit persistence failed");
                         }
                     }
                     SecurityErrorResponseWriter.writeSuccess(response, objectMapper);

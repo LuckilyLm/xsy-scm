@@ -71,12 +71,11 @@ public class AuthController {
             HttpServletResponse servletResponse
     ) {
         try {
-            Authentication authentication = authenticationManager.authenticate(
-                    UsernamePasswordAuthenticationToken.unauthenticated(
-                            request.username().trim(),
-                            request.password()
-                    )
-            );
+            var login = UsernamePasswordAuthenticationToken.unauthenticated(
+                    request.username().trim(), request.password());
+            login.setDetails(new com.xianshuyuan.scm.auth.security.LoginRequestDetails(
+                    servletRequest.getRemoteAddr(), servletRequest.getHeader("User-Agent")));
+            Authentication authentication = authenticationManager.authenticate(login);
             sessionAuthenticationStrategy.onAuthentication(authentication, servletRequest, servletResponse);
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);

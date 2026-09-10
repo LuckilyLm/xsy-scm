@@ -34,7 +34,8 @@ public class SystemUserDetailsService implements UserDetailsService {
         List<String> roleCodes = userMapper.selectEnabledRoleCodes(user.getId());
         List<String> permissionCodes = userMapper.selectEnabledPermissionCodes(user.getId());
         List<SimpleGrantedAuthority> authorities = new ArrayList<>(permissionCodes.size() + 1);
-        permissionCodes.stream().map(SimpleGrantedAuthority::new).forEach(authorities::add);
+        permissionCodes.stream().filter(code -> !ADMINISTRATOR_AUTHORITY.equals(code))
+                .map(SimpleGrantedAuthority::new).forEach(authorities::add);
         if (Boolean.TRUE.equals(user.getAdministrator())) {
             authorities.add(new SimpleGrantedAuthority(ADMINISTRATOR_AUTHORITY));
         }

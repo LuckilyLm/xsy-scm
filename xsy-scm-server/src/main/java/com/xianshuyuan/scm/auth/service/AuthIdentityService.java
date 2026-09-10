@@ -40,7 +40,8 @@ public class AuthIdentityService {
     public List<SimpleGrantedAuthority> loadAuthorities(AuthenticatedUser user) {
         List<String> permissionCodes = userMapper.selectEnabledPermissionCodes(user.userId());
         List<SimpleGrantedAuthority> authorities = new ArrayList<>(permissionCodes.size() + 1);
-        permissionCodes.stream().map(SimpleGrantedAuthority::new).forEach(authorities::add);
+        permissionCodes.stream().filter(code -> !"system.administrator".equals(code))
+                .map(SimpleGrantedAuthority::new).forEach(authorities::add);
         if (user.administrator()) {
             authorities.add(new SimpleGrantedAuthority("system.administrator"));
         }
@@ -56,6 +57,7 @@ public class AuthIdentityService {
         }
         List<String> permissions = authentication.getAuthorities().stream()
                 .map(authority -> authority.getAuthority())
+                .filter(code -> user.administrator() || !"system.administrator".equals(code))
                 .sorted()
                 .toList();
         return new CurrentUserResponse(

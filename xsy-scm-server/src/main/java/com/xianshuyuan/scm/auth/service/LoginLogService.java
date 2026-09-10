@@ -17,15 +17,14 @@ public class LoginLogService {
                 INSERT INTO sys_login_log
                     (user_id, username_snapshot, result, failure_reason_code, ip, user_agent)
                 VALUES (?, ?, ?, ?, ?, ?)
-                """, userId, usernameSnapshot(username), result, nullable(reason), nullable(ip), nullable(userAgent));
+                """, userId, bounded(username, 64, ""), result, bounded(reason, 64, null),
+                bounded(ip, 64, null), bounded(userAgent, 500, null));
     }
 
-    private String usernameSnapshot(String value) {
-        return value == null ? "" : value.strip();
-    }
-
-    private String nullable(String value) {
-        if (value == null || value.isBlank()) return null;
-        return value.strip();
+    private String bounded(String value, int maxLength, String fallback) {
+        if (value == null || value.isBlank()) return fallback;
+        String clean = value.replaceAll("[\\p{Cntrl}]", " ").strip();
+        int length = clean.codePointCount(0, clean.length());
+        return length <= maxLength ? clean : clean.substring(0, clean.offsetByCodePoints(0, maxLength));
     }
 }

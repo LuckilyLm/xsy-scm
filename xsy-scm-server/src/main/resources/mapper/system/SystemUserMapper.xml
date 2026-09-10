@@ -51,6 +51,7 @@
           AND rp.deleted = FALSE
           AND p.deleted = FALSE
           AND p.status = 'ENABLED'
+          AND p.code != 'system.administrator'
         ORDER BY p.code
     </select>
     <!-- All future role/grant/password/department security writes must acquire this lock first. -->

@@ -13,9 +13,10 @@ public final class AuthorityRules {
     }
 
     public static boolean isAdministrator(Authentication authentication) {
-        return authentication != null && authentication.isAuthenticated()
-                && authentication.getAuthorities().stream().anyMatch(candidate ->
-                    ADMINISTRATOR_AUTHORITY.equals(candidate.getAuthority()));
+        if (authentication == null || !authentication.isAuthenticated()) return false;
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof SystemUserDetails details) return details.getUser().administrator();
+        return principal instanceof AuthenticatedUser user && user.administrator();
     }
 
     public static boolean isReservedPermission(String code, boolean systemPermission) {
@@ -48,8 +49,9 @@ public final class AuthorityRules {
         boolean granted = authentication != null
                 && authentication.isAuthenticated()
                 && (isAdministrator(authentication)
-                    || authentication.getAuthorities().stream().anyMatch(candidate ->
-                        authority.equals(candidate.getAuthority())));
+                    || (!ADMINISTRATOR_AUTHORITY.equals(authority)
+                        && authentication.getAuthorities().stream().anyMatch(candidate ->
+                        authority.equals(candidate.getAuthority()))));
         return new AuthorizationDecision(granted);
     }
 }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.system.mapper.AuditLogMapper">
+    <sql id="timeFilters">
+        <if test="query.startTime != null">AND occurred_at &gt;= #{query.startTime}</if>
+        <if test="query.endTime != null">AND occurred_at &lt;= #{query.endTime}</if>
+    </sql>
+    <sql id="loginFilters">
+        <where>
+            <if test="query.userId != null">AND user_id = #{query.userId}</if>
+            <if test="query.username != null and query.username != ''">
+                AND username_snapshot = #{query.username}
+            </if>
+            <if test="query.result != null">AND result = #{query.result}</if>
+            <include refid="timeFilters"/>
+        </where>
+    </sql>
+    <sql id="operationFilters">
+        <where>
+            <if test="query.actorUserId != null">AND actor_user_id = #{query.actorUserId}</if>
+            <if test="query.module != null and query.module != ''">AND module = #{query.module}</if>
+            <if test="query.operationCode != null and query.operationCode != ''">
+                AND operation_code = #{query.operationCode}
+            </if>
+            <if test="query.targetType != null and query.targetType != ''">AND target_type = #{query.targetType}</if>
+            <if test="query.targetId != null and query.targetId != ''">AND target_id = #{query.targetId}</if>
+            <if test="query.success != null">AND success = #{query.success}</if>
+            <include refid="timeFilters"/>
+        </where>
+    </sql>
+    <select id="countLoginLogs" resultType="long">
+        SELECT COUNT(*) FROM sys_login_log <include refid="loginFilters"/>
+    </select>
+    <select id="selectLoginLogs" resultType="com.xianshuyuan.scm.system.dto.LoginLogResponse">
+        SELECT id, user_id, username_snapshot, result, failure_reason_code, ip, user_agent, occurred_at
+        FROM sys_login_log <include refid="loginFilters"/>
+        ORDER BY occurred_at DESC, id DESC
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
+    </select>
+    <select id="countOperationLogs" resultType="long">
+        SELECT COUNT(*) FROM sys_operation_log <include refid="operationFilters"/>
+    </select>
+    <select id="selectOperationLogs" resultType="com.xianshuyuan.scm.system.dto.OperationLogResponse">
+        SELECT id, actor_user_id, actor_name_snapshot, module, operation_code,
+               target_type, target_id, success, error_code, occurred_at
+        FROM sys_operation_log <include refid="operationFilters"/>
+        ORDER BY occurred_at DESC, id DESC
+        LIMIT #{query.pageSize} OFFSET #{query.offset}
+    </select>
+</mapper>
