@@ -1,5 +1,6 @@
 import {expect, test} from '@playwright/test';
 import type {APIRequestContext} from '@playwright/test';
+import {mutationHeaders} from './authenticated-api';
 
 const apiBase = process.env.XSY_API_BASE_URL ?? 'http://127.0.0.1:8080/api';
 
@@ -52,7 +53,10 @@ async function api<T>(
     path: string,
     options?: Parameters<APIRequestContext['post']>[1],
 ): Promise<T> {
-    const response = await request[method](`${apiBase}${path}`, options);
+    const response = await request[method](`${apiBase}${path}`, method === 'post' ? {
+        ...options,
+        headers: await mutationHeaders(request, options?.headers as Record<string, string> | undefined),
+    } : options);
     expect(response.status(), `${method.toUpperCase()} ${path}: ${await response.text()}`).toBe(200);
     const body = (await response.json()) as Envelope<T>;
     expect(body.code).toBe(0);
@@ -222,7 +226,9 @@ test('supplement order supports partial approval, refund completion, and rejects
     expect(Number(completedRefund.refundAmount)).toBeGreaterThan(0);
 
     const overReturnResponse = await request.post(`${apiBase}/order-returns`, {
-        headers: {'Idempotency-Key': unique('return-over-limit')},
+        headers: await mutationHeaders(request, {
+            'Idempotency-Key': unique('return-over-limit'),
+        }),
         data: {
             orderId: supplement.id,
             reason: 'Playwright 超额退货校验',

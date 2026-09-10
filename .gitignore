@@ -20,6 +20,7 @@ project-reference-examples/
 .playwright-cli/
 **/test-results/
 **/playwright-report/
+**/playwright/.auth/
 
 # playwright and test
 .playwright-cli

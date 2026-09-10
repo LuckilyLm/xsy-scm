@@ -1,5 +1,7 @@
 import {defineConfig, devices} from '@playwright/test';
 
+const authStatePath = 'playwright/.auth/admin.json';
+
 export default defineConfig({
     testDir: './e2e',
     fullyParallel: false,
@@ -23,5 +25,13 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
     },
-    projects: [{name: 'chromium', use: {...devices['Desktop Chrome']}}],
+    projects: [
+        {name: 'setup', testMatch: /auth\.setup\.ts/},
+        {
+            name: 'chromium',
+            testIgnore: /auth\.setup\.ts/,
+            use: {...devices['Desktop Chrome'], storageState: authStatePath},
+            dependencies: ['setup'],
+        },
+    ],
 });

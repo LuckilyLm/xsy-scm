@@ -1,5 +1,6 @@
 import {expect, test} from '@playwright/test';
 import type {APIRequestContext} from '@playwright/test';
+import {mutationHeaders} from './authenticated-api';
 
 const apiBase = process.env.XSY_API_BASE_URL ?? 'http://127.0.0.1:8080/api';
 
@@ -162,6 +163,7 @@ test('real SPU/SKU lifecycle preserves retained SKU identity', async ({page, req
                 const body = (await detailResponse.json()) as ApiEnvelope<ProductDetail>;
                 if (body.code === 0) {
                     await request.delete(`${apiBase}/products/${createdId}`, {
+                        headers: await mutationHeaders(request),
                         params: {version: body.data.version},
                     });
                 }
