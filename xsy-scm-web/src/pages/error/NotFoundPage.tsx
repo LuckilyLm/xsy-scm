@@ -1,13 +1,13 @@
-import { Result } from 'antd';
-import { Link } from 'react-router-dom';
+import {Result} from 'antd';
+import {Link} from 'react-router-dom';
 
 export function NotFoundPage() {
-  return (
-    <Result
-      status={404}
-      title="404"
-      subTitle="页面不存在或已被移除。"
-      extra={<Link to="/">返回首页</Link>}
-    />
-  );
+    return (
+        <Result
+            status={404}
+            title="404"
+            subTitle="页面不存在或已被移除。"
+            extra={<Link to="/">返回首页</Link>}
+        />
+    );
 }

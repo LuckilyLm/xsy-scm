@@ -20,10 +20,20 @@ class AuthorityRulesTest {
     }
 
     @Test
-    void administratorAuthorityGrantsEveryRegisteredPermission() {
+    void administratorIdentityGrantsEveryRegisteredPermission() {
+        var principal = new AuthenticatedUser(1L, "admin", "Admin", 0L, true, false, List.of());
         var authentication = UsernamePasswordAuthenticationToken.authenticated(
-                "admin", "credentials", List.of(new SimpleGrantedAuthority("system.administrator")));
+                principal, null, List.of(new SimpleGrantedAuthority("system.administrator")));
 
         assertThat(AuthorityRules.hasAuthority(() -> authentication, "purchase.manage").isGranted()).isTrue();
+    }
+
+    @Test
+    void administratorPermissionAloneDoesNotCreateAdministratorIdentity() {
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(
+                "ordinary", null, List.of(new SimpleGrantedAuthority("system.administrator")));
+
+        assertThat(AuthorityRules.isAdministrator(authentication)).isFalse();
+        assertThat(AuthorityRules.hasAuthority(() -> authentication, "purchase.manage").isGranted()).isFalse();
     }
 }

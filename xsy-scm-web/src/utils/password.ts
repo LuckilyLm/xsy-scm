@@ -7,19 +7,19 @@
 export const PASSWORD_HINT = '12—72 位，需包含大写字母、小写字母、数字和符号，且不含空格';
 
 export function passwordByteLength(value: string): number {
-  return new TextEncoder().encode(value).length;
+    return new TextEncoder().encode(value).length;
 }
 
 export function isValidPassword(value: string): boolean {
-  if (value.length === 0) {
-    return false;
-  }
-  const bytes = passwordByteLength(value);
-  if (bytes < 12 || bytes > 72) {
-    return false;
-  }
-  if (/\s/.test(value)) {
-    return false;
-  }
-  return /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+    if (value.length === 0) {
+        return false;
+    }
+    const bytes = passwordByteLength(value);
+    if (bytes < 12 || bytes > 72) {
+        return false;
+    }
+    if (/\s/.test(value)) {
+        return false;
+    }
+    return /[A-Z]/.test(value) && /[a-z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
 }

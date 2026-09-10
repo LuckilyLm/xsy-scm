@@ -2,6 +2,9 @@ package com.xianshuyuan.scm.system;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xianshuyuan.scm.auth.security.SystemUserDetails;
+import com.xianshuyuan.scm.auth.service.AuthIdentityService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,6 +33,12 @@ class DepartmentCrudIT extends IsolatedUserDatabase {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
+    @Autowired AuthIdentityService identities;
+    private SystemUserDetails administrator;
+
+    @BeforeEach void createAdministrator() {
+        administrator = new DatabaseSecurityActor(jdbc, identities).createAdministrator("deptadmin").details();
+    }
 
     @Test void createsListsDetailsAndBuildsSortedTreeAndDescendants() throws Exception {
         long root=create(null,5), second=create(root,9), first=create(root,1), leaf=create(first,0);
@@ -165,7 +174,7 @@ class DepartmentCrudIT extends IsolatedUserDatabase {
     }
 
     private long create(Long parent,int sort) throws Exception {
-        return json.readTree(mvc.perform(post(BASE).with(user("admin").authorities(()->"system.administrator")).with(csrf()).contentType("application/json").content(payload(parent,sort)))
+        return json.readTree(mvc.perform(post(BASE).with(user(administrator)).with(csrf()).contentType("application/json").content(payload(parent,sort)))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).path("data").path("id").asLong();
     }
     private JsonNode call(MockHttpServletRequestBuilder request,String permission,int expected) throws Exception {

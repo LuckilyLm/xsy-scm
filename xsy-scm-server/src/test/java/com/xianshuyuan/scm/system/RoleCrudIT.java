@@ -2,6 +2,9 @@ package com.xianshuyuan.scm.system;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xianshuyuan.scm.auth.security.SystemUserDetails;
+import com.xianshuyuan.scm.auth.service.AuthIdentityService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -29,7 +32,12 @@ class RoleCrudIT extends IsolatedUserDatabase {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
-    @Autowired com.xianshuyuan.scm.auth.service.AuthIdentityService identities;
+    @Autowired AuthIdentityService identities;
+    private SystemUserDetails administrator;
+
+    @BeforeEach void createAdministrator() {
+        administrator = new DatabaseSecurityActor(jdbc, identities).createAdministrator("roleadmin").details();
+    }
 
     @Test void createsNormalizedRolePagesFiltersAndUpdatesWithoutAcceptingSecurityFields() throws Exception {
         String code = "role" + suffix();
@@ -70,12 +78,7 @@ class RoleCrudIT extends IsolatedUserDatabase {
         call(put(BASE + "/" + id).content(payload("v" + suffix(), "Changed", ",\"version\":0")), "update", 409);
         call(post(BASE + "/" + id + "/status").content(state("ENABLED", 0)), "status", 409);
         call(delete(BASE + "/" + id).param("version", "0"), "delete", 409);
-        long operator = fixtureUser();
-        jdbc.update("update sys_user set administrator=true where id=?", operator);
-        var principal = identities.loadPrincipal(
-                jdbc.queryForObject("select username from sys_user where id=?", String.class, operator));
-        var details = new com.xianshuyuan.scm.auth.security.SystemUserDetails(principal, null, List.of(() -> "system.administrator"), true, true);
-        mvc.perform(post(BASE + "/" + id + "/status").with(user(details)).with(csrf()).contentType("application/json")
+        mvc.perform(post(BASE + "/" + id + "/status").with(user(administrator)).with(csrf()).contentType("application/json")
                 .content(state("ENABLED", 1))).andExpect(status().isOk());
         call(delete(BASE + "/" + id).param("version", "2"), "delete", 200);
         for (long missing : List.of(id, Long.MAX_VALUE)) {
@@ -131,11 +134,11 @@ class RoleCrudIT extends IsolatedUserDatabase {
         call(put(BASE + "/" + id).content(payload("reservedchanged", "Changed", ",\"version\":0")), "update", 403);
         call(post(BASE + "/" + id + "/status").content(state("DISABLED", 0)), "status", 403);
         call(delete(BASE + "/" + id).param("version", "0"), "delete", 403);
-        mvc.perform(put(BASE + "/" + id).with(user("admin").authorities(() -> "system.administrator")).with(csrf()).contentType("application/json")
+        mvc.perform(put(BASE + "/" + id).with(user(administrator)).with(csrf()).contentType("application/json")
                 .content(payload("reservedchanged", "Admin edited", ",\"version\":0,\"systemRole\":false"))).andExpect(status().isOk());
         assertThat(jdbc.queryForObject("select system_role from sys_role where id=?", Boolean.class, id)).isTrue();
         // Even administrators cannot remove reserved roles through ordinary CRUD.
-        mvc.perform(delete(BASE + "/" + id).param("version", "1").with(user("admin").authorities(() -> "system.administrator")).with(csrf()))
+        mvc.perform(delete(BASE + "/" + id).param("version", "1").with(user(administrator)).with(csrf()))
                 .andExpect(status().isForbidden());
     }
 
@@ -159,13 +162,12 @@ class RoleCrudIT extends IsolatedUserDatabase {
         long affected = fixtureUser(), unassigned = fixtureUser(), removed = fixtureUser();
         grant(affected, role, "system:role:list");
         jdbc.update("insert into sys_user_role(user_id,role_id,deleted) values(?,?,true)", removed, role);
-        var principal = new com.xianshuyuan.scm.auth.security.AuthenticatedUser(unassigned, username(unassigned), "Actor", 0, true, false, List.of());
-        var details = new com.xianshuyuan.scm.auth.security.SystemUserDetails(principal, null, List.of(() -> "system.administrator"), true, true);
-        mvc.perform(post(BASE + "/" + role + "/status").with(user(details)).with(csrf()).contentType("application/json").content(state("DISABLED", 0))).andExpect(status().isOk());
+        mvc.perform(post(BASE + "/" + role + "/status").with(user(administrator)).with(csrf()).contentType("application/json").content(state("DISABLED", 0))).andExpect(status().isOk());
+        long administratorId = administrator.getUser().userId();
         assertThat(jdbc.queryForObject("select auth_version from sys_user where id=?", Long.class, affected)).isEqualTo(1);
-        for (long untouched : List.of(unassigned, removed))
+        for (long untouched : List.of(administratorId, removed))
             assertThat(jdbc.queryForObject("select auth_version from sys_user where id=?", Long.class, untouched)).isZero();
-        assertThat(jdbc.queryForObject("select actor_user_id from sys_operation_log where target_type='ROLE' and target_id=? and operation_code='ROLE_STATUS'", Long.class, Long.toString(role))).isEqualTo(unassigned);
+        assertThat(jdbc.queryForObject("select actor_user_id from sys_operation_log where target_type='ROLE' and target_id=? and operation_code='ROLE_STATUS'", Long.class, Long.toString(role))).isEqualTo(administratorId);
         assertThat(jdbc.queryForObject("select before_data->>'status' from sys_operation_log where target_type='ROLE' and target_id=? and operation_code='ROLE_STATUS'", String.class, Long.toString(role))).isEqualTo("ENABLED");
         assertThat(jdbc.queryForObject("select count(*) from sys_user_role where role_id=?", Long.class, role)).isEqualTo(2);
     }

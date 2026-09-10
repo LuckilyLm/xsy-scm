@@ -7,12 +7,14 @@ import com.xianshuyuan.scm.auth.service.UserSessionService;
 import com.xianshuyuan.scm.system.dto.*;
 import com.xianshuyuan.scm.system.mapper.SystemUserMapper;
 import com.xianshuyuan.scm.system.service.RoleService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
@@ -39,6 +41,14 @@ class RoleTransactionsIT extends IsolatedUserDatabase {
     @Autowired AuthIdentityService identities;
     @Autowired ObjectMapper json;
     @MockitoSpyBean UserSessionService sessions;
+    private DatabaseSecurityActor.Actor administrator;
+
+    @AfterEach void deleteAdministrator() {
+        if (administrator != null) {
+            new DatabaseSecurityActor(jdbc, identities).delete(administrator);
+            administrator = null;
+        }
+    }
 
     @Test void rollbackRetainsRolesPermissionsVersionsAuditAndCurrentSessionsThenCommitRevokes() throws Exception {
         var f = fixture();
@@ -202,6 +212,7 @@ class RoleTransactionsIT extends IsolatedUserDatabase {
 
     @Test void roleNamedAdminNeverElevatesAndLastUsableFlagAdminSurvivesRoleDeletion() {
         var f = fixture();
+        long usableAdministratorsBefore = users.countUsableAdministratorsExcept(-1);
         try {
             jdbc.update("update sys_role set code='administrator' where id=?", f.role());
             assertThat(AuthorityRules.isAdministrator(identity(f.username()))).isFalse();
@@ -209,7 +220,7 @@ class RoleTransactionsIT extends IsolatedUserDatabase {
             jdbc.update("update sys_user set administrator=true,password_hash=? where id=?", new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("test-password-123"), f.user());
             service.delete(f.role(), 0, identity(f.username()));
             assertThat(AuthorityRules.isAdministrator(identity(f.username()))).isTrue();
-            assertThat(users.countUsableAdministratorsExcept(-1)).isEqualTo(1);
+            assertThat(users.countUsableAdministratorsExcept(-1)).isEqualTo(usableAdministratorsBefore + 1);
         } finally { cleanup(f); }
     }
 
@@ -244,7 +255,8 @@ class RoleTransactionsIT extends IsolatedUserDatabase {
             jdbc.update("update sys_role set system_role=true where id=?", target.role());
             assertActivationDenied(target, staleAdmin);
             jdbc.update("update sys_role set system_role=false where id=?", target.role());
-            assertActivationDenied(target, admin());
+            assertActivationDenied(target, new UsernamePasswordAuthenticationToken(
+                    "operator", "", List.of(() -> "system.administrator")));
             jdbc.update("update sys_user set administrator=true where id=?", operator.user());
             assertThat(service.changeStatus(target.role(), new RoleStatusRequest("ENABLED", 0), identity(operator.username())).status()).isEqualTo("ENABLED");
         } finally { cleanup(target); cleanup(operator); }
@@ -265,7 +277,7 @@ class RoleTransactionsIT extends IsolatedUserDatabase {
         } finally { cleanup(target); cleanup(operator); }
     }
 
-    private void assertActivationDenied(Fixture target, UsernamePasswordAuthenticationToken actor) {
+    private void assertActivationDenied(Fixture target, Authentication actor) {
         assertThatThrownBy(() -> service.changeStatus(target.role(), new RoleStatusRequest("ENABLED", 0), actor))
                 .isInstanceOf(com.xianshuyuan.scm.common.exception.BusinessException.class)
                 .extracting("errorCode").isEqualTo(SystemErrorCodes.PROTECTED_ROLE);
@@ -303,10 +315,14 @@ class RoleTransactionsIT extends IsolatedUserDatabase {
         jdbc.update("insert into sys_role_permission(role_id,permission_id) select ?,id from sys_permission where code='system:role:list' and deleted=false", role);
         return new Fixture(user, role, name, code);
     }
-    private long user(String name) { return jdbc.queryForObject("insert into sys_user(username,display_name,status) values(?,'Fixture','ENABLED') returning id", Long.class, name); }
+    private long user(String name) { return jdbc.queryForObject("insert into sys_user(username,display_name,status,must_change_password) values(?,'Fixture','ENABLED',false) returning id", Long.class, name); }
     private String username(long id) { return jdbc.queryForObject("select username from sys_user where id=?", String.class, id); }
     private long version(long id) { return jdbc.queryForObject("select auth_version from sys_user where id=?", Long.class, id); }
-    private UsernamePasswordAuthenticationToken admin() { return new UsernamePasswordAuthenticationToken("operator", "", List.of(() -> "system.administrator")); }
+    private Authentication admin() {
+        if (administrator == null)
+            administrator = new DatabaseSecurityActor(jdbc, identities).createAdministrator("roletxadmin");
+        return administrator.authentication();
+    }
     private void await(CountDownLatch latch) { try { if (!latch.await(10, TimeUnit.SECONDS)) throw new AssertionError("Timed out"); } catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new AssertionError(e); } }
     private String suffix() { return UUID.randomUUID().toString().replace("-", "").substring(0, 12); }
     private void cleanup(Fixture f) {

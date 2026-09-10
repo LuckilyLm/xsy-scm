@@ -76,6 +76,12 @@ public class AuthController {
             login.setDetails(new com.xianshuyuan.scm.auth.security.LoginRequestDetails(
                     servletRequest.getRemoteAddr(), servletRequest.getHeader("User-Agent")));
             Authentication authentication = authenticationManager.authenticate(login);
+            // ProviderManager copies request details onto the successful token. Request/device
+            // metadata is needed only while writing the login audit and must never enter the
+            // durable SecurityContext stored by Spring Session JDBC.
+            if (authentication instanceof org.springframework.security.authentication.AbstractAuthenticationToken token) {
+                token.setDetails(null);
+            }
             sessionAuthenticationStrategy.onAuthentication(authentication, servletRequest, servletResponse);
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);

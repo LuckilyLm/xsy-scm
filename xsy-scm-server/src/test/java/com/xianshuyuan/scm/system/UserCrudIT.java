@@ -2,6 +2,9 @@ package com.xianshuyuan.scm.system;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xianshuyuan.scm.auth.security.SystemUserDetails;
+import com.xianshuyuan.scm.auth.service.AuthIdentityService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -29,6 +32,14 @@ class UserCrudIT extends IsolatedUserDatabase {
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
     @Autowired PasswordEncoder encoder;
+    @Autowired AuthIdentityService identities;
+    private DatabaseSecurityActor.Actor administratorActor;
+    private SystemUserDetails administrator;
+
+    @BeforeEach void createAdministrator() {
+        administratorActor = new DatabaseSecurityActor(jdbc, identities).createAdministrator("useradmin");
+        administrator = administratorActor.details();
+    }
 
     @Test void createsNormalizedNonAdministratorAndReturnsOnlySafeFields() throws Exception {
         String name = "Case" + suffix();
@@ -47,7 +58,7 @@ class UserCrudIT extends IsolatedUserDatabase {
 
     @Test void rejectsDuplicateCaseInsensitiveUsername() throws Exception {
         String name = "unique" + suffix(); create(name);
-        mvc.perform(post("/api/system/users").with(user("admin").authorities(() -> "system.administrator")).with(csrf())
+        mvc.perform(post("/api/system/users").with(user(administrator)).with(csrf())
             .contentType("application/json").content(payload(name.toUpperCase())))
             .andExpect(status().isConflict());
     }
@@ -66,14 +77,14 @@ class UserCrudIT extends IsolatedUserDatabase {
 
     @Test void validatesDepartmentAndStateAndMissingUsers() throws Exception {
         long id = create("state"+suffix()).path("id").asLong();
-        mvc.perform(put("/api/system/users/"+id).with(user("admin").authorities(() -> "system.administrator")).with(csrf()).contentType("application/json")
+        mvc.perform(put("/api/system/users/"+id).with(user(administrator)).with(csrf()).contentType("application/json")
             .content("{\"displayName\":\"A\",\"departmentId\":9223372036854775807,\"version\":0}")).andExpect(status().isBadRequest());
         mvc.perform(post("/api/system/users/"+id+"/status").with(user("admin").authorities(() -> "system:user:status")).with(csrf()).contentType("application/json")
             .content("{\"status\":\"DISABLED\",\"version\":0}")).andExpect(status().isOk());
         assertThat(jdbc.queryForObject("select auth_version from sys_user where id=?",Long.class,id)).isEqualTo(1L);
         mvc.perform(post("/api/system/users/"+id+"/status").with(user("admin").authorities(() -> "system:user:status")).with(csrf()).contentType("application/json")
             .content("{\"status\":\"INVALID\",\"version\":1}")).andExpect(status().isBadRequest());
-        mvc.perform(get("/api/system/users/9223372036854775807").with(user("admin").authorities(() -> "system.administrator"))).andExpect(status().isNotFound());
+        mvc.perform(get("/api/system/users/9223372036854775807").with(user(administrator))).andExpect(status().isNotFound());
     }
 
     @Test void rejectsUnauthorizedAndInvalidRequests() throws Exception {
@@ -88,7 +99,9 @@ class UserCrudIT extends IsolatedUserDatabase {
         long id = create("protected"+suffix()).path("id").asLong();
         jdbc.update("update sys_user set administrator=true where id=?",id);
         mvc.perform(delete("/api/system/users/"+id).param("version","0").with(user("ordinary").authorities(() -> "system:user:delete")).with(csrf())).andExpect(status().isForbidden());
-        mvc.perform(post("/api/system/users/"+id+"/status").with(user("admin").authorities(() -> "system.administrator")).with(csrf()).contentType("application/json").content("{\"status\":\"DISABLED\",\"version\":0}")).andExpect(status().isForbidden());
+        jdbc.update("update sys_user set administrator=false where id not in (?,?)", id, administratorActor.userId());
+        jdbc.update("update sys_user set password_hash=null where id=?", administratorActor.userId());
+        mvc.perform(post("/api/system/users/"+id+"/status").with(user(administrator)).with(csrf()).contentType("application/json").content("{\"status\":\"DISABLED\",\"version\":0}")).andExpect(status().isForbidden());
         String name="self"+suffix(); long selfId=create(name).path("id").asLong();
         mvc.perform(delete("/api/system/users/"+selfId).param("version","0").with(user(name).authorities(() -> "system:user:delete")).with(csrf())).andExpect(status().isForbidden());
     }
@@ -97,7 +110,7 @@ class UserCrudIT extends IsolatedUserDatabase {
         long target=create("retire"+suffix()).path("id").asLong();
         long survivor=create("survivor"+suffix()).path("id").asLong();
         jdbc.update("update sys_user set administrator=true where id in (?,?)",target,survivor);
-        mvc.perform(delete("/api/system/users/"+target).param("version","0").with(user("operator").authorities(() -> "system.administrator")).with(csrf())).andExpect(status().isOk());
+        mvc.perform(delete("/api/system/users/"+target).param("version","0").with(user(administrator)).with(csrf())).andExpect(status().isOk());
         assertThat(jdbc.queryForObject("select deleted from sys_user where id=?",Boolean.class,target)).isTrue();
     }
 
@@ -149,7 +162,7 @@ class UserCrudIT extends IsolatedUserDatabase {
     }
 
     private JsonNode create(String username) throws Exception {
-        return json.readTree(mvc.perform(post("/api/system/users").with(user("admin").authorities(() -> "system.administrator")).with(csrf()).contentType("application/json").content(payload(username)))
+        return json.readTree(mvc.perform(post("/api/system/users").with(user(administrator)).with(csrf()).contentType("application/json").content(payload(username)))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).path("data");
     }
     private String payload(String name) throws Exception { return json.writeValueAsString(Map.of("username",name,"displayName","Test User","password","test-password-123","administrator",true)); }

@@ -52,6 +52,19 @@ class LoginLockoutIT extends IsolatedUserDatabase {
     @MockitoSpyBean UserSessionService sessions;
 
     @Test
+    void successfulLoginPersistsSerializableSecurityContextAndRestoresOnNextRequest() throws Exception {
+        String username = createUser("restore", "ENABLED", false);
+        var login = mvc.perform(post("/api/auth/login").with(csrf()).contentType("application/json")
+                        .content(json.writeValueAsString(java.util.Map.of("username", username, "password", "correct-password"))))
+                .andExpect(status().isOk()).andReturn();
+        var cookie = login.getResponse().getCookie("XSY_SESSION");
+        assertThat(cookie).isNotNull();
+        String sessionId = new String(java.util.Base64.getDecoder().decode(cookie.getValue()), java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(sessionsRepository.findById(sessionId)).isNotNull();
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/auth/me").cookie(cookie))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.username").value(username));
+    }
+    @Test
     void countsFailuresLocksAtThresholdRejectsCorrectPasswordAndSuccessClears() throws Exception {
         String username = createUser("lock", "ENABLED", false);
         for (int i = 1; i < 3; i++) {

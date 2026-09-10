@@ -1,13 +1,14 @@
 package com.xianshuyuan.scm.system;
 
+import com.xianshuyuan.scm.auth.service.AuthIdentityService;
 import com.xianshuyuan.scm.system.dto.UserStatusRequest;
 import com.xianshuyuan.scm.system.service.UserService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.test.context.ActiveProfiles;
@@ -27,6 +28,15 @@ class UserSecurityTransactionsIT extends IsolatedUserDatabase {
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager manager;
     @Autowired FindByIndexNameSessionRepository repository;
+    @Autowired AuthIdentityService identities;
+    private DatabaseSecurityActor.Actor administrator;
+
+    @AfterEach void deleteAdministrator() {
+        if (administrator != null) {
+            new DatabaseSecurityActor(jdbc, identities).delete(administrator);
+            administrator = null;
+        }
+    }
 
     @Test void invalidatesPrincipalSessionsOnlyAfterCommitAndNotAfterRollback() {
         String name="session"+suffix(); long id=fixture(name,false);
@@ -92,11 +102,14 @@ class UserSecurityTransactionsIT extends IsolatedUserDatabase {
 
     @Test void concurrentDisableAndDeletePreserveOneUsableAdministrator() throws Exception {
         long first=fixture("first"+suffix(),true), second=fixture("second"+suffix(),true);
+        jdbc.update("update sys_user set administrator=false where id not in (?,?)", first, second);
+        var firstActor = identity(first);
+        var secondActor = identity(second);
         ExecutorService executor=Executors.newFixedThreadPool(2);
         CountDownLatch start=new CountDownLatch(1);
         try {
-            Future<Boolean> disable=executor.submit(() -> { start.await(); return attempt(() -> service.changeStatus(first,new UserStatusRequest("DISABLED",0),actor())); });
-            Future<Boolean> delete=executor.submit(() -> { start.await(); return attempt(() -> service.delete(second,0,actor())); });
+            Future<Boolean> disable=executor.submit(() -> { start.await(); return attempt(() -> service.changeStatus(first,new UserStatusRequest("DISABLED",0),secondActor)); });
+            Future<Boolean> delete=executor.submit(() -> { start.await(); return attempt(() -> service.delete(second,0,firstActor)); });
             start.countDown();
             assertThat(List.of(disable.get(20,TimeUnit.SECONDS),delete.get(20,TimeUnit.SECONDS))).containsExactlyInAnyOrder(true,false);
             assertThat(jdbc.queryForObject("select count(*) from sys_user where id in (?,?) and deleted=false and status='ENABLED'",Long.class,first,second)).isEqualTo(1);
@@ -129,7 +142,18 @@ class UserSecurityTransactionsIT extends IsolatedUserDatabase {
         return jdbc.queryForObject("insert into sys_user(username,display_name,status,administrator,password_hash) values(?,?,'ENABLED',?,?) returning id",Long.class,name,"Transaction test",admin,
             new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("test-password-123"));
     }
-    private UsernamePasswordAuthenticationToken actor() { return new UsernamePasswordAuthenticationToken("operator","",List.of(new SimpleGrantedAuthority("system.administrator"))); }
+    private org.springframework.security.core.Authentication actor() {
+        if (administrator == null)
+            administrator = new DatabaseSecurityActor(jdbc, identities).createAdministrator("usertxadmin");
+        return administrator.authentication();
+    }
+    private org.springframework.security.core.Authentication identity(long id) {
+        String username = jdbc.queryForObject("select username from sys_user where id=?", String.class, id);
+        var principal = identities.loadPrincipal(username);
+        var details = new com.xianshuyuan.scm.auth.security.SystemUserDetails(
+                principal, null, identities.loadAuthorities(principal), true, true);
+        return UsernamePasswordAuthenticationToken.authenticated(details, null, details.getAuthorities());
+    }
     private String suffix() { return UUID.randomUUID().toString().replace("-","").substring(0,12); }
     private void cleanup(long id) { jdbc.update("delete from sys_operation_log where target_type='USER' and target_id=?",Long.toString(id)); jdbc.update("delete from sys_user where id=?",id); }
 }

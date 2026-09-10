@@ -1,2 +1,32 @@
-export interface InventoryBalance { id:number; warehouseId:number; warehouseNameSnapshot:string; skuId:number; skuCodeSnapshot:string; skuNameSnapshot:string; unit:string; quantity:string; averageCost?:string; updatedAt:string; }
-export interface InventoryMovement { id:number; movementNo:string; occurredAt:string; warehouseId:number; warehouseNameSnapshot:string; skuId:number; skuCodeSnapshot:string; skuNameSnapshot:string; movementType:'PURCHASE_IN'; sourceDocumentId:number; sourceDocumentItemId:number; confirmationId:number; quantityBefore:string; quantityChange:string; quantityAfter:string; unit:string; operator:string; }
+export interface InventoryBalance {
+    id: number;
+    warehouseId: number;
+    warehouseNameSnapshot: string;
+    skuId: number;
+    skuCodeSnapshot: string;
+    skuNameSnapshot: string;
+    unit: string;
+    quantity: string;
+    averageCost?: string;
+    updatedAt: string;
+}
+
+export interface InventoryMovement {
+    id: number;
+    movementNo: string;
+    occurredAt: string;
+    warehouseId: number;
+    warehouseNameSnapshot: string;
+    skuId: number;
+    skuCodeSnapshot: string;
+    skuNameSnapshot: string;
+    movementType: 'PURCHASE_IN';
+    sourceDocumentId: number;
+    sourceDocumentItemId: number;
+    confirmationId: number;
+    quantityBefore: string;
+    quantityChange: string;
+    quantityAfter: string;
+    unit: string;
+    operator: string;
+}

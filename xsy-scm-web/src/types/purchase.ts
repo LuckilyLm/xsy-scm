@@ -1,11 +1,119 @@
-export type PurchaseDemandStatus = 'PENDING'|'PARTIALLY_ALLOCATED'|'ALLOCATED'|'FULFILLED'|'CANCELLED';
-export type PurchaseOrderStatus = 'DRAFT'|'SUBMITTED'|'PARTIALLY_RECEIVED'|'RECEIVED'|'CANCELLED';
-export type PurchaseReceiptStatus = 'DRAFT'|'PARTIALLY_CONFIRMED'|'CONFIRMED';
-export interface PurchaseDemand { id:number; version:number; salesOrderId:number; salesOrderNoSnapshot:string; skuId:number; skuCodeSnapshot:string; skuNameSnapshot:string; productNameSnapshot:string; purchaseUnitSnapshot:string; productTypeSnapshot:'STANDARD'|'NON_STANDARD'; requiredQuantity:string; allocatedQuantity:string; fulfilledQuantity:string; supplierId?:number; warehouseId?:number; status:PurchaseDemandStatus; demandDate:string; }
-export interface PurchaseOrderItem { id:number; version:number; skuId:number; skuCode:string; skuName:string; productName:string; purchaseUnit:string; productType:'STANDARD'|'NON_STANDARD'; plannedQuantity:string; receivedQuantity:string; purchasePrice:string; lineAmount:string; }
-export interface PurchaseOrder { id:number; version:number; orderNo:string; supplierId:number; supplierName:string; warehouseId:number; warehouseName:string; purchaserId?:number; plannedArrivalDate?:string; remark?:string; status:PurchaseOrderStatus; totalAmount:string; items:PurchaseOrderItem[]; allocations:Array<{id:number;purchaseDemandId:number;purchaseOrderItemId:number;allocatedQuantity:string}>; operationLogs:Array<{id:number;operationType:string;operator:string;createdAt:string}>; }
-export interface PurchaseOrderPayload { supplierId:number; warehouseId:number; purchaserId?:number; plannedArrivalDate?:string; remark?:string; version?:number; items:Array<{id?:number;skuId:number;quantity:string;price:string;demandId:number;version?:number}>; }
-export interface PurchaseReceipt { id:number; receiptNo:string; purchaseOrderId:number; purchaseOrderNoSnapshot:string; warehouseId:number; warehouseNameSnapshot:string; status:PurchaseReceiptStatus; version:number; confirmedAt?:string; remark?:string; }
-export interface PurchaseReceiptItem { id:number; purchaseOrderItemId:number; skuId:number; skuCodeSnapshot:string; skuNameSnapshot:string; productNameSnapshot:string; purchaseUnitSnapshot:string; productTypeSnapshot:'STANDARD'|'NON_STANDARD'; receivedQuantity:string; version:number; }
-export interface PurchaseReceiptConfirmation { id:number; confirmationNo:string; purchaseReceiptId:number; totalQuantity:string; status:string; operator:string; confirmedAt:string; }
-export interface ReceiptConfirmPayload { version:number; items:Array<{receiptItemId:number;version:number;receivedQuantity:string;actualWeight?:string|null;weightSource?:'MANUAL'|null;correctionReason?:string|null}>; }
+export type PurchaseDemandStatus = 'PENDING' | 'PARTIALLY_ALLOCATED' | 'ALLOCATED' | 'FULFILLED' | 'CANCELLED';
+export type PurchaseOrderStatus = 'DRAFT' | 'SUBMITTED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED';
+export type PurchaseReceiptStatus = 'DRAFT' | 'PARTIALLY_CONFIRMED' | 'CONFIRMED';
+
+export interface PurchaseDemand {
+    id: number;
+    version: number;
+    salesOrderId: number;
+    salesOrderNoSnapshot: string;
+    skuId: number;
+    skuCodeSnapshot: string;
+    skuNameSnapshot: string;
+    productNameSnapshot: string;
+    purchaseUnitSnapshot: string;
+    productTypeSnapshot: 'STANDARD' | 'NON_STANDARD';
+    requiredQuantity: string;
+    allocatedQuantity: string;
+    fulfilledQuantity: string;
+    supplierId?: number;
+    warehouseId?: number;
+    status: PurchaseDemandStatus;
+    demandDate: string;
+}
+
+export interface PurchaseOrderItem {
+    id: number;
+    version: number;
+    skuId: number;
+    skuCode: string;
+    skuName: string;
+    productName: string;
+    purchaseUnit: string;
+    productType: 'STANDARD' | 'NON_STANDARD';
+    plannedQuantity: string;
+    receivedQuantity: string;
+    purchasePrice: string;
+    lineAmount: string;
+}
+
+export interface PurchaseOrder {
+    id: number;
+    version: number;
+    orderNo: string;
+    supplierId: number;
+    supplierName: string;
+    warehouseId: number;
+    warehouseName: string;
+    purchaserId?: number;
+    plannedArrivalDate?: string;
+    remark?: string;
+    status: PurchaseOrderStatus;
+    totalAmount: string;
+    items: PurchaseOrderItem[];
+    allocations: Array<{
+        id: number;
+        purchaseDemandId: number;
+        purchaseOrderItemId: number;
+        allocatedQuantity: string
+    }>;
+    operationLogs: Array<{ id: number; operationType: string; operator: string; createdAt: string }>;
+}
+
+export interface PurchaseOrderPayload {
+    supplierId: number;
+    warehouseId: number;
+    purchaserId?: number;
+    plannedArrivalDate?: string;
+    remark?: string;
+    version?: number;
+    items: Array<{ id?: number; skuId: number; quantity: string; price: string; demandId: number; version?: number }>;
+}
+
+export interface PurchaseReceipt {
+    id: number;
+    receiptNo: string;
+    purchaseOrderId: number;
+    purchaseOrderNoSnapshot: string;
+    warehouseId: number;
+    warehouseNameSnapshot: string;
+    status: PurchaseReceiptStatus;
+    version: number;
+    confirmedAt?: string;
+    remark?: string;
+}
+
+export interface PurchaseReceiptItem {
+    id: number;
+    purchaseOrderItemId: number;
+    skuId: number;
+    skuCodeSnapshot: string;
+    skuNameSnapshot: string;
+    productNameSnapshot: string;
+    purchaseUnitSnapshot: string;
+    productTypeSnapshot: 'STANDARD' | 'NON_STANDARD';
+    receivedQuantity: string;
+    version: number;
+}
+
+export interface PurchaseReceiptConfirmation {
+    id: number;
+    confirmationNo: string;
+    purchaseReceiptId: number;
+    totalQuantity: string;
+    status: string;
+    operator: string;
+    confirmedAt: string;
+}
+
+export interface ReceiptConfirmPayload {
+    version: number;
+    items: Array<{
+        receiptItemId: number;
+        version: number;
+        receivedQuantity: string;
+        actualWeight?: string | null;
+        weightSource?: 'MANUAL' | null;
+        correctionReason?: string | null
+    }>;
+}
