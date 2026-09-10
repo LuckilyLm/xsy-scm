@@ -1,7 +1,7 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import { fetchCategoryTree, fetchProducts } from '../../api/products';
+import { ALL_BUSINESS_PERMISSIONS, renderWithProviders } from '../../test/renderWithProviders';
 import type { ProductSummary } from '../../types/product';
 import { ProductPage } from './ProductPage';
 
@@ -10,6 +10,14 @@ vi.mock('../../api/products', () => ({
   fetchCategoryTree: vi.fn(),
   deleteProduct: vi.fn(),
   updateProductStatus: vi.fn(),
+}));
+
+vi.mock('../../api/auth', () => ({
+  fetchCsrf: vi.fn().mockResolvedValue({ headerName: 'X-XSRF-TOKEN', parameterName: '_csrf' }),
+  fetchCurrentUser: vi.fn(),
+  login: vi.fn(),
+  logout: vi.fn(),
+  changePassword: vi.fn(),
 }));
 
 const products: ProductSummary[] = [
@@ -103,14 +111,7 @@ const products: ProductSummary[] = [
 ];
 
 function renderPage() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-  return render(
-    <QueryClientProvider client={client}>
-      <ProductPage />
-    </QueryClientProvider>,
-  );
+  return renderWithProviders(<ProductPage />, { permissions: ALL_BUSINESS_PERMISSIONS });
 }
 
 beforeEach(() => {
@@ -161,4 +162,13 @@ it('asks for confirmation before delete', async () => {
   fireEvent.click(screen.getAllByRole('button', { name: '删除' })[0]);
 
   expect(await screen.findByText('确认删除该商品？')).toBeInTheDocument();
+});
+
+it('hides write actions when the user only holds product.read', async () => {
+  renderWithProviders(<ProductPage />, { permissions: ['product.read'] });
+  await screen.findByText('西红柿');
+
+  expect(screen.queryByRole('button', { name: '新增商品' })).not.toBeInTheDocument();
+  expect(screen.queryAllByRole('button', { name: '编辑' })).toHaveLength(0);
+  expect(screen.queryAllByRole('button', { name: '删除' })).toHaveLength(0);
 });

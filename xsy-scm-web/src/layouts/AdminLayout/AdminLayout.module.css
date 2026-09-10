@@ -81,12 +81,33 @@
   font-weight: 500;
 }
 
-.collapseHint {
+.emptyNav {
+  padding: 16px 12px;
+  color: #86909c;
+  font-size: 12px;
+}
+
+.secondaryCollapsed {
+  width: 0;
+  overflow: hidden;
+  border-right: 0;
+}
+
+.collapseButton {
+  width: 100%;
   margin-top: auto;
   padding: 16px 0;
   color: #4e5969;
+  font-size: 12px;
   text-align: center;
+  background: transparent;
+  border: 0;
   border-top: 1px solid #f2f3f5;
+  cursor: pointer;
+}
+
+.collapseButton:hover {
+  color: #00b96b;
 }
 
 .header {
@@ -108,25 +129,19 @@
   font-weight: 600;
 }
 
-.globalSearch {
-  width: 240px;
-  margin-left: auto;
-}
-
 .headerActions {
   display: flex;
+  margin-left: auto;
   align-items: center;
   gap: 20px;
   white-space: nowrap;
 }
 
-.headerLink {
-  color: #4e5969;
-}
-
 .userName {
   color: #1f2329;
   font-weight: 500;
+  cursor: pointer;
+  user-select: none;
 }
 
 .content {
@@ -134,18 +149,18 @@
   padding: 60px 14px 14px 190px;
 }
 
+/* 二级导航收起后，正文左内边距回到一级导航宽度 + 常规留白。 */
+.contentCollapsed {
+  padding-left: 80px;
+}
+
 @media (max-width: 900px) {
   .header {
     padding-right: 12px;
   }
 
-  .brand,
-  .headerActions .headerLink {
+  .brand {
     display: none;
-  }
-
-  .globalSearch {
-    width: min(260px, calc(100vw - 110px));
   }
 
   .secondarySidebar {

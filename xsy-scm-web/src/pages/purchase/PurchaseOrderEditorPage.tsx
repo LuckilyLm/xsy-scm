@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createPurchaseOrder, fetchPurchaseDemands, fetchPurchaseOrder, updatePurchaseOrder } from '../../api/purchases';
 import { fetchSuppliers, fetchWarehouses } from '../../api/suppliers';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { PageContainer } from '../../components/common/PageContainer';
 import type { PurchaseDemand, PurchaseOrderPayload } from '../../types/purchase';
 import { isPositiveDecimal, subtractDecimal } from '../../utils/decimal';
@@ -189,7 +191,9 @@ export function PurchaseOrderEditorPage() {
         />
         <Space>
           <Button onClick={() => navigate(-1)}>取消</Button>
-          <Button type="primary" loading={submitting} disabled={loading || !rows.length} onClick={submit}>保存采购单</Button>
+          <Permission authority={AUTHORITIES.purchaseManage}>
+            <Button type="primary" loading={submitting} disabled={loading || !rows.length} onClick={submit}>保存采购单</Button>
+          </Permission>
         </Space>
       </Space>
     </PageContainer>

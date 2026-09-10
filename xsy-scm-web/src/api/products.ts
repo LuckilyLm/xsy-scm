@@ -1,13 +1,15 @@
 import { apiClient } from './http';
 import type {
   PageData,
-  ProductCategoryTreeNode,
   ProductDetail,
   ProductPageParams,
   ProductPayload,
   ProductSummary,
   ShelfStatus,
 } from '../types/product';
+
+// 商品分类树 API 统一由 product-categories.ts 维护，这里只做转发，避免重复定义。
+export { fetchCategoryTree } from './product-categories';
 
 export async function fetchProducts(params: ProductPageParams) {
   const response = await apiClient.get<PageData<ProductSummary>>('/products', { params });
@@ -34,9 +36,4 @@ export async function updateProductStatus(id: number, version: number, status: S
 
 export async function deleteProduct(id: number, version: number) {
   await apiClient.delete(`/products/${id}`, { params: { version } });
-}
-
-export async function fetchCategoryTree() {
-  const response = await apiClient.get<ProductCategoryTreeNode[]>('/product-categories/tree');
-  return response.data;
 }

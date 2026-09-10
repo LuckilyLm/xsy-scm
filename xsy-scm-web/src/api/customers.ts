@@ -1,10 +1,12 @@
 import { apiClient } from './http';
-import type { CustomerDetail, CustomerPage, CustomerPayload, SalesPageParams, CustomerType, AgreementPrice, AgreementPricePayload, SkuSaleOption } from '../types/sales';
+import type { CustomerDetail, CustomerPage, CustomerPayload, SalesPageParams, CustomerType, CustomerTypeInput, AgreementPrice, AgreementPricePayload, SkuSaleOption } from '../types/sales';
 import type { ProductPageParams, ProductSummary } from '../types/product';
 import type { PageData } from '../types/product';
 
 export async function fetchCustomers(params: SalesPageParams) { return (await apiClient.get<CustomerPage>('/customers', { params })).data; }
 export async function fetchCustomerTypes() { return (await apiClient.get<CustomerType[]>('/customer-types')).data; }
+export async function createCustomerType(payload: CustomerTypeInput) { return (await apiClient.post<number>('/customer-types', payload)).data; }
+export async function updateCustomerType(id: number, payload: CustomerTypeInput) { await apiClient.put(`/customer-types/${id}`, payload); }
 export async function fetchCustomer(id: number) { return (await apiClient.get<CustomerDetail>(`/customers/${id}`)).data; }
 export async function fetchCustomerSkus(id: number) { return (await apiClient.get<SkuSaleOption[]>(`/customers/${id}/skus`)).data; }
 export async function createCustomer(payload: CustomerPayload) { return (await apiClient.post<number>('/customers', payload)).data; }

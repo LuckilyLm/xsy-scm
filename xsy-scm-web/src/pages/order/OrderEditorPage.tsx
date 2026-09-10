@@ -6,6 +6,8 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { fetchCustomers, fetchCustomerSkus } from '../../api/customers';
 import { ApiError } from '../../api/http';
 import { createOrder, fetchOrder, submitOrder, updateOrder } from '../../api/orders';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { PageContainer } from '../../components/common/PageContainer';
 import { StatusTag } from '../../components/common/StatusTag';
 import { addOrderItem, createEmptyOrderForm, orderDetailToForm, removeOrderItem, setManualPrice, toOrderPayload, updateOrderItem, validateOrderForm } from './orderFormModel';
@@ -100,10 +102,10 @@ export function OrderEditorPage() {
         { title:'改价原因', width:220, render:(_, row) => row.priceSource === 'OVERRIDE' && editable ? <Input placeholder="必填" value={row.overrideReason ?? ''} onChange={(e) => setForm((current) => setManualPrice(current,row.key,row.unitPrice,e.target.value))} /> : row.overrideReason || '--' },
         { title:'实数/重量', width:130, align:'right', render:(_, row) => row.actualQuantity ? `${row.actualQuantity} ${row.saleUnit}` : <Typography.Text type="secondary">待录入</Typography.Text> },
         { title:'金额', width:130, align:'right', render:(_, row) => row.amount ? `¥ ${row.amount}` : '--' },
-        ...(editable ? [{ title:'操作', width:70, fixed:'right' as const, render:(_: unknown, row: OrderForm['items'][number]) => <Button danger type="link" onClick={() => setForm((current) => removeOrderItem(current,row.key))}>移除</Button> }] : []),
+        ...(editable ? [{ title:'操作', width:70, fixed:'right' as const, render:(_: unknown, row: OrderForm['items'][number]) => <Permission authority={AUTHORITIES.orderManage}><Button danger type="link" onClick={() => setForm((current) => removeOrderItem(current,row.key))}>移除</Button></Permission> }] : []),
       ]} />
     </section>
-    {editable ? <div className={styles.actions}><Space><Button disabled={Boolean(pending)} onClick={() => navigate('/orders')}>取消</Button><Button loading={pending === 'save'} disabled={Boolean(pending)} onClick={save}>保存草稿</Button><Button type="primary" loading={pending === 'submit'} disabled={Boolean(pending)} onClick={submit}>保存并提交</Button></Space></div> : null}
+    {editable ? <div className={styles.actions}><Space><Button disabled={Boolean(pending)} onClick={() => navigate('/orders')}>取消</Button><Permission authority={AUTHORITIES.orderManage}><Button loading={pending === 'save'} disabled={Boolean(pending)} onClick={save}>保存草稿</Button><Button type="primary" loading={pending === 'submit'} disabled={Boolean(pending)} onClick={submit}>保存并提交</Button></Permission></Space></div> : null}
     </div>
   </PageContainer>;
 }

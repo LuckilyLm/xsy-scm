@@ -4,6 +4,8 @@ import { Alert, Button, Modal, Select } from 'antd';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchRefunds } from '../../api/afterSales';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { AmountText } from '../../components/common/AmountText';
 import { PageContainer } from '../../components/common/PageContainer';
 import { StatusTag } from '../../components/common/StatusTag';
@@ -25,7 +27,7 @@ export function RefundListPage() {
     { title: '外部凭证', dataIndex: 'externalReference', render: (_, row) => row.externalReference || '--' },
     { title: '状态', dataIndex: 'status', width: 110, align: 'center', render: (_, row) => <StatusTag status={row.status} /> },
     { title: '操作', valueType: 'option', width: 120, render: (_, row) => row.status === 'PENDING'
-      ? <Button type="link" onClick={() => setSelectedRefund(row)}>完成退款</Button>
+      ? <Permission authority={AUTHORITIES.orderManage}><Button type="link" onClick={() => setSelectedRefund(row)}>完成退款</Button></Permission>
       : <Button type="link" onClick={() => Modal.info({ title: row.refundNo, content: <><p>退货单：{row.returnId}</p><p>金额：¥ {row.refundAmount}</p><p>外部凭证：{row.externalReference || '--'}</p></> })}>详情</Button> },
   ];
 

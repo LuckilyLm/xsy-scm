@@ -10,6 +10,8 @@ export type ReturnStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type RefundStatus = 'PENDING' | 'COMPLETED';
 
 export interface CustomerType { id: number; typeCode: string; name: string; status: CustomerTypeStatus; version: number; }
+/** 与后端 `CustomerTypeSaveRequest` 对齐；新增时不传 version，编辑时携带当前 version。 */
+export interface CustomerTypeInput { typeCode: string; name: string; status: CustomerTypeStatus; version?: number; }
 export interface CustomerSummary {
   id: number; version: number; customerCode: string; name: string; customerTypeId: number;
   customerTypeName: string; status: CustomerStatus; visibilityPolicy: VisibilityPolicy; updatedAt: string;

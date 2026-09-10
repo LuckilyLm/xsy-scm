@@ -1,25 +1,35 @@
-import { Badge, Input } from 'antd';
+import { DownOutlined, LockOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Dropdown, Modal } from 'antd';
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../../auth/AuthProvider';
+import { ChangePasswordModal } from '../../pages/auth/ChangePasswordModal';
 import styles from './AdminLayout.module.css';
-import { primaryNavigation, secondaryNavigation } from './navigation';
+import { resolveActiveGroup, useNavigation } from './navigation';
 
 export function AdminLayout() {
   const location = useLocation();
-  const activePrimary = primaryNavigation.find((item) => item.path !== '/' && location.pathname.startsWith(item.path))
-    ?? primaryNavigation.find((item) => item.path === '/products')
-    ?? primaryNavigation[0];
-  const section = activePrimary.path.slice(1);
-  const secondary = secondaryNavigation[section] ?? [];
+  const { user, logout } = useAuth();
+  const navigation = useNavigation();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const activePrimary = resolveActiveGroup(navigation, location.pathname);
+  const secondary = activePrimary?.children ?? [];
+
+  async function handleLogout() {
+    await logout();
+  }
+
   return (
     <div className={styles.shell}>
       <aside className={styles.primarySidebar}>
         <nav aria-label="一级导航" className={styles.primaryNav}>
-          {primaryNavigation.map((item) => (
+          {navigation.map((item) => (
             <NavLink
-              className={item.path === activePrimary.path ? styles.primaryItemActive : styles.primaryItem}
-              key={item.label}
+              className={item.key === activePrimary?.key ? styles.primaryItemActive : styles.primaryItem}
+              key={item.key}
               to={item.path}
-              end={item.path === '/'}
             >
               <span className={styles.primaryIcon}>{item.icon}</span>
               <span>{item.label}</span>
@@ -28,40 +38,83 @@ export function AdminLayout() {
         </nav>
       </aside>
 
-      <aside className={styles.secondarySidebar}>
-        <nav aria-label={`${activePrimary.label}二级导航`} className={styles.secondaryNav}>
-          {secondary.map((item) => (
-            <NavLink
-              className={({ isActive }) => isActive ? styles.secondaryItemActive : styles.secondaryItem}
-              key={item.path}
-              to={item.path}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className={styles.collapseHint}>收起</div>
+      <aside
+        className={
+          collapsed ? `${styles.secondarySidebar} ${styles.secondaryCollapsed}` : styles.secondarySidebar
+        }
+      >
+        {secondary.length > 0 ? (
+          <nav aria-label={`${activePrimary?.label ?? ''}二级导航`} className={styles.secondaryNav}>
+            {secondary.map((item) => (
+              <NavLink
+                className={({ isActive }) => (isActive ? styles.secondaryItemActive : styles.secondaryItem)}
+                key={item.path}
+                to={item.path}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        ) : (
+          <div className={styles.emptyNav}>暂无可访问功能</div>
+        )}
+        <button
+          aria-expanded={!collapsed}
+          className={styles.collapseButton}
+          onClick={() => setCollapsed((previous) => !previous)}
+          type="button"
+        >
+          {collapsed ? '展开' : '收起'}
+        </button>
       </aside>
 
       <header className={styles.header}>
         <div className={styles.brand}>鲜蔬源智慧供应链</div>
-        <Input.Search
-          aria-label="功能搜索"
-          className={styles.globalSearch}
-          placeholder="搜功能、搜应用"
-        />
         <div className={styles.headerActions}>
-          <Badge dot>
-            <span className={styles.headerLink}>新功能</span>
-          </Badge>
-          <span className={styles.headerLink}>帮助中心</span>
-          <span className={styles.userName}>管理员</span>
+          {user ? (
+            <Dropdown
+              menu={{
+                items: [
+                  { key: 'password', icon: <LockOutlined />, label: '修改密码' },
+                  { type: 'divider' },
+                  { key: 'logout', icon: <LogoutOutlined />, label: '退出登录' },
+                ],
+                onClick: ({ key }) => {
+                  if (key === 'password') {
+                    setChangePasswordOpen(true);
+                    return;
+                  }
+                  if (key === 'logout') {
+                    void Modal.confirm({
+                      title: '退出登录',
+                      content: '退出后需要重新登录才能继续操作。',
+                      okText: '退出',
+                      cancelText: '取消',
+                      onOk: () => handleLogout(),
+                    });
+                  }
+                },
+              }}
+            >
+              <span className={styles.userName}>
+                {user.displayName}
+                {user.administrator ? '（超管）' : ''}
+                <DownOutlined style={{ marginLeft: 6, fontSize: 10 }} />
+              </span>
+            </Dropdown>
+          ) : null}
         </div>
       </header>
 
-      <main className={styles.content}>
+      <main className={collapsed ? `${styles.content} ${styles.contentCollapsed}` : styles.content}>
         <Outlet />
       </main>
+
+      <ChangePasswordModal
+        forced={user?.mustChangePassword === true}
+        open={changePasswordOpen || user?.mustChangePassword === true}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </div>
   );
 }
