@@ -22,6 +22,8 @@ import {
   fetchProducts,
   updateProductStatus,
 } from '../../api/products';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { AmountText } from '../../components/common/AmountText';
 import { PageContainer } from '../../components/common/PageContainer';
 import { StatusTag } from '../../components/common/StatusTag';
@@ -200,39 +202,43 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
       width: 210,
       fixed: 'right',
       render: (_, record) => [
-        <Button key="edit" size="small" type="link" onClick={() => openEdit(record.id)}>
-          编辑
-        </Button>,
-        <Popconfirm
-          key="status"
-          title={`确认${record.status === 'ON_SHELF' ? '下架' : '上架'}该商品？`}
-          onConfirm={() =>
-            runMutation(record.id, () =>
-              updateProductStatus(
-                record.id,
-                record.version,
-                record.status === 'ON_SHELF' ? 'OFF_SHELF' : 'ON_SHELF',
-              ),
-            )
-          }
-        >
-          <Button loading={pendingAction === record.id} size="small" type="link">
-            {record.status === 'ON_SHELF' ? '下架' : '上架'}
+        <Permission key="edit" authority={AUTHORITIES.productManage}>
+          <Button size="small" type="link" onClick={() => openEdit(record.id)}>
+            编辑
           </Button>
-        </Popconfirm>,
-        <Popconfirm
-          key="delete"
-          okButtonProps={{ danger: true }}
-          okText="删除"
-          title="确认删除该商品？"
-          onConfirm={() =>
-            runMutation(record.id, () => deleteProduct(record.id, record.version))
-          }
-        >
-          <Button danger loading={pendingAction === record.id} size="small" type="link">
-            删除
-          </Button>
-        </Popconfirm>,
+        </Permission>,
+        <Permission key="status" authority={AUTHORITIES.productManage}>
+          <Popconfirm
+            title={`确认${record.status === 'ON_SHELF' ? '下架' : '上架'}该商品？`}
+            onConfirm={() =>
+              runMutation(record.id, () =>
+                updateProductStatus(
+                  record.id,
+                  record.version,
+                  record.status === 'ON_SHELF' ? 'OFF_SHELF' : 'ON_SHELF',
+                ),
+              )
+            }
+          >
+            <Button loading={pendingAction === record.id} size="small" type="link">
+              {record.status === 'ON_SHELF' ? '下架' : '上架'}
+            </Button>
+          </Popconfirm>
+        </Permission>,
+        <Permission key="delete" authority={AUTHORITIES.productManage}>
+          <Popconfirm
+            okButtonProps={{ danger: true }}
+            okText="删除"
+            title="确认删除该商品？"
+            onConfirm={() =>
+              runMutation(record.id, () => deleteProduct(record.id, record.version))
+            }
+          >
+            <Button danger loading={pendingAction === record.id} size="small" type="link">
+              删除
+            </Button>
+          </Popconfirm>
+        </Permission>,
       ],
     },
   ];
@@ -322,9 +328,11 @@ export function ProductPage({ onCreate, onEdit }: ProductPageProps) {
       </Form>
 
       <div className={styles.toolbar}>
-        <Button icon={<PlusOutlined />} type="primary" onClick={openCreate}>
-          新增商品
-        </Button>
+        <Permission authority={AUTHORITIES.productManage}>
+          <Button icon={<PlusOutlined />} type="primary" onClick={openCreate}>
+            新增商品
+          </Button>
+        </Permission>
         <Typography.Text type="secondary">商品交易单位以 SKU 为准</Typography.Text>
       </div>
 

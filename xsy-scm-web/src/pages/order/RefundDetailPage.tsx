@@ -4,6 +4,8 @@ import { Alert, Button, Descriptions, Space, Spin, Typography } from 'antd';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchRefund } from '../../api/afterSales';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { PageContainer } from '../../components/common/PageContainer';
 import { StatusTag } from '../../components/common/StatusTag';
 import { RefundCompleteModal } from './RefundCompleteModal';
@@ -23,7 +25,7 @@ export function RefundDetailPage() {
   return <PageContainer>
     <div className={styles.header}>
       <Space><Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/order-refunds')}>返回列表</Button><Typography.Title level={4} className={styles.title}>{data.refundNo}</Typography.Title><StatusTag status={data.status} /></Space>
-      {data.status === 'PENDING' ? <Button type="primary" onClick={() => setCompleteOpen(true)}>完成退款</Button> : null}
+      {data.status === 'PENDING' ? <Permission authority={AUTHORITIES.orderManage}><Button type="primary" onClick={() => setCompleteOpen(true)}>完成退款</Button></Permission> : null}
     </div>
     <Descriptions bordered size="small" column={2} items={[
       { key: 'return', label: '退货单 ID', children: <Button type="link" onClick={() => navigate(`/order-returns/${data.returnId}`)}>{data.returnId}</Button> },

@@ -59,6 +59,15 @@ export interface ProductCategoryTreeNode {
   children: ProductCategoryTreeNode[];
 }
 
+/** 与后端 `ProductCategorySaveRequest` 对齐；分类保存与删除不携带乐观锁版本号。 */
+export interface ProductCategoryInput {
+  parentId?: number | null;
+  categoryCode: string;
+  name: string;
+  sortOrder: number;
+  status: 'ENABLED' | 'DISABLED';
+}
+
 export interface PageData<T> {
   records: T[];
   page: number;

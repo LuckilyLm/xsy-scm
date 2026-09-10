@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { confirmReceipt, fetchReceipt, fetchReceiptConfirmations, fetchReceiptItems } from '../../api/purchases';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { PageContainer } from '../../components/common/PageContainer';
 import { toReceiptConfirmPayload, type ReceiptInput } from './receiptFormModel';
 
@@ -99,7 +101,9 @@ export function PurchaseReceiptPage() {
             },
           ]}
         />
-        <Button type="primary" loading={submitting} disabled={readOnly} onClick={submit}>确认本次收货</Button>
+        <Permission authority={AUTHORITIES.purchaseManage}>
+          <Button type="primary" loading={submitting} disabled={readOnly} onClick={submit}>确认本次收货</Button>
+        </Permission>
         <Table
           title={() => '确认历史'}
           loading={confirmations.isLoading}

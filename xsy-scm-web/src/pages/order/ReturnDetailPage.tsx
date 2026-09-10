@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { approveReturn, cancelReturn, fetchReturn, rejectReturn } from '../../api/afterSales';
 import { ApiError } from '../../api/http';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { PageContainer } from '../../components/common/PageContainer';
 import { StatusTag } from '../../components/common/StatusTag';
 import type { ReturnItem } from '../../types/sales';
@@ -85,7 +87,7 @@ export function ReturnDetailPage() {
   return <PageContainer>
     <div className={styles.header}>
       <Space><Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/order-returns')}>返回列表</Button><Typography.Title level={4} className={styles.title}>{data.returnNo}</Typography.Title><StatusTag status={data.status} /></Space>
-      {data.status === 'PENDING' ? <Space><Button danger disabled={pending} onClick={() => withReason('cancel')}>取消申请</Button><Button danger disabled={pending} onClick={() => withReason('reject')}>驳回</Button><Button type="primary" loading={pending} disabled={pending} onClick={approve}>批准退货</Button></Space> : null}
+      {data.status === 'PENDING' ? <Permission authority={AUTHORITIES.orderManage}><Space><Button danger disabled={pending} onClick={() => withReason('cancel')}>取消申请</Button><Button danger disabled={pending} onClick={() => withReason('reject')}>驳回</Button><Button type="primary" loading={pending} disabled={pending} onClick={approve}>批准退货</Button></Space></Permission> : null}
     </div>
     {error ? <Alert className={styles.error} type="error" message={error} showIcon action={<Button onClick={() => query.refetch()}>重新加载</Button>} /> : null}
     <Descriptions bordered size="small" items={[
@@ -98,7 +100,9 @@ export function ReturnDetailPage() {
       { title: '原订单行 ID', dataIndex: 'orderItemId' },
       { title: '申请数量', dataIndex: 'requestedQuantity', align: 'right' },
       { title: '批准数量', dataIndex: 'approvedQuantity', align: 'right', render: (_, row: ReturnItem) => data.status === 'PENDING'
-        ? <Input aria-label={`订单行 ${row.orderItemId} 批准数量`} inputMode="decimal" value={approvalDraft.find((item) => item.returnItemId === row.id)?.approvedQuantity ?? ''} onChange={(event) => setApprovalDraft((current) => updateApprovalQuantity(current, row.id, event.target.value))} />
+        ? <Permission authority={AUTHORITIES.orderManage} fallback={<span>{row.approvedQuantity ?? '--'}</span>}>
+          <Input aria-label={`订单行 ${row.orderItemId} 批准数量`} inputMode="decimal" value={approvalDraft.find((item) => item.returnItemId === row.id)?.approvedQuantity ?? ''} onChange={(event) => setApprovalDraft((current) => updateApprovalQuantity(current, row.id, event.target.value))} />
+        </Permission>
         : row.approvedQuantity ?? '--' },
       { title: '锁定单价', dataIndex: 'lockedUnitPrice', align: 'right' },
       { title: '批准金额', dataIndex: 'approvedAmount', align: 'right' },

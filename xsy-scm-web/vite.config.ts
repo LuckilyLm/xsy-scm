@@ -18,6 +18,8 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: true,
     globals: true,
-    testTimeout: 20_000,
+    // jsdom 下 antd/ProTable 首次渲染较慢（模块转换 + 大量 DOM 计算），
+    // 20s 在低速机器上会误判为超时，放宽到 60s 只影响上限而非预期耗时。
+    testTimeout: 60_000,
   },
 });

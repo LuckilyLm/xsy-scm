@@ -4,6 +4,8 @@ import { Alert, Button, Space } from 'antd';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchPurchaseDemands } from '../../api/purchases';
+import { AUTHORITIES } from '../../auth/authorities';
+import { Permission } from '../../auth/Permission';
 import { PageContainer } from '../../components/common/PageContainer';
 import type { PurchaseDemand } from '../../types/purchase';
 import { subtractDecimal } from '../../utils/decimal';
@@ -60,9 +62,11 @@ export function PurchaseDemandPage() {
             }),
           }}
           tableAlertOptionRender={() => (
-            <Button type="primary" disabled={!selectedIds.length} onClick={createOrder}>
-              分组预览并创建采购单
-            </Button>
+            <Permission authority={AUTHORITIES.purchaseManage}>
+              <Button type="primary" disabled={!selectedIds.length} onClick={createOrder}>
+                分组预览并创建采购单
+              </Button>
+            </Permission>
           )}
           request={async () => {
             try {
