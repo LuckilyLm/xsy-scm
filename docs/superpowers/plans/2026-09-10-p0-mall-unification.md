@@ -8,7 +8,7 @@
 
 **Tech Stack:** Spring Boot 3.5.x, Java 21, MyBatis-Plus, PostgreSQL, React 19, React Router, Taro 4.2.1, React 18, TypeScript。
 
-**Spec:** `docs/2026-09-10-Web端P0与跨端商城统一设计.md`
+**Spec:** `docs/roadmap/商城与小程序规划.md`
 
 ## Global Constraints
 

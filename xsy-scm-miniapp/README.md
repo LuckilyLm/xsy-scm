@@ -4,7 +4,7 @@
 与后台 `xsy-scm-web`（Ant Design 管理端）完全独立构建，复用同一套后端 `/api/mall/**` 接口与业务数据。
 
 > 配套后端实现位于 `xsy-scm-server` 的 `com.xianshuyuan.scm.mall` 模块；接口设计见
-> `docs/小程序商城规划草案.md`（M0–M2 首发闭环）。
+> `docs/roadmap/商城与小程序规划.md`（M0–M2 首发闭环）。
 
 ## 技术栈
 
