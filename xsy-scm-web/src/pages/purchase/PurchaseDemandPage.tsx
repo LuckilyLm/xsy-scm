@@ -1,9 +1,14 @@
 import type {ActionType, ProColumns} from '@ant-design/pro-components';
 import {ProTable} from '@ant-design/pro-components';
-import {Alert, Button, Space} from 'antd';
+import {Alert, Button, Checkbox, DatePicker, Form, Modal, Space, Table, Typography, message} from 'antd';
 import {useRef, useState} from 'react';
+import dayjs from 'dayjs';
+import {fetchPurchaseDemands, generatePurchaseDemands, previewPurchaseDemandGeneration} from '../../api/purchases';
+import {fetchWarehouses} from '../../api/suppliers';
+import {toGenerationPayload, type PurchaseDemandGenerationValues} from './purchaseDemandGenerationModel';
+import type {PurchaseDemandGenerationPreview} from '../../types/purchase';
+import {useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {fetchPurchaseDemands} from '../../api/purchases';
 import {AUTHORITIES} from '../../auth/authorities';
 import {Permission} from '../../auth/Permission';
 import {PageContainer} from '../../components/common/PageContainer';
@@ -15,6 +20,25 @@ export function PurchaseDemandPage() {
     const navigate = useNavigate();
     const [error, setError] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [generationOpen, setGenerationOpen] = useState(false);
+    const [preview, setPreview] = useState<PurchaseDemandGenerationPreview>();
+    const [warehouses, setWarehouses] = useState<Array<{id: number; name: string}>>([]);
+    const [form] = Form.useForm<PurchaseDemandGenerationValues>();
+
+    useEffect(() => { fetchWarehouses().then(setWarehouses).catch(() => undefined); }, []);
+
+    const openGeneration = () => { form.setFieldsValue({calculateInventory: true, timeRange: [dayjs().startOf('day'), dayjs().add(1, 'day').startOf('day')]}); setGenerationOpen(true); };
+    const previewGeneration = async () => { const values = await form.validateFields(); setPreview(await previewPurchaseDemandGeneration(toGenerationPayload(values))); };
+    const generate = async () => { if (!preview) return; const values = await form.validateFields(); await generatePurchaseDemands(toGenerationPayload(values), `purchase-demand-${Date.now()}`); message.success('采购需求生成成功'); setGenerationOpen(false); setPreview(undefined); action.current?.reload(); };
+    const generationModal = <Modal title="按时间段生成采购需求" open={generationOpen} onCancel={() => {setGenerationOpen(false); setPreview(undefined);}} onOk={generate} okText="确认生成" width={900}>
+        <Form form={form} layout="inline">
+            <Form.Item name="warehouseId" label="仓库" rules={[{required: true}]}><select style={{height: 32, minWidth: 160}}>{warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></Form.Item>
+            <Form.Item name="timeRange" label="统计时间段" rules={[{required: true}]}><DatePicker.RangePicker showTime /></Form.Item>
+            <Form.Item name="calculateInventory" valuePropName="checked"><Checkbox>计算库存</Checkbox></Form.Item>
+        </Form>
+        <Button style={{marginTop: 16}} onClick={previewGeneration}>预览</Button>
+        {preview && <><Typography.Paragraph>销售订单 {preview.sourceOrderCount} 单，原始需求 {preview.originalQuantity}，库存抵扣 {preview.inventoryDeductionQuantity}，建议采购 {preview.suggestedPurchaseQuantity}</Typography.Paragraph><Table size="small" rowKey="salesOrderItemId" pagination={false} dataSource={preview.items} columns={[{title: '销售单', dataIndex: 'salesOrderNo'}, {title: 'SKU', dataIndex: 'skuCode'}, {title: '原始需求', dataIndex: 'originalQuantity'}, {title: '库存抵扣', dataIndex: 'inventoryDeductionQuantity'}, {title: '建议采购', dataIndex: 'suggestedPurchaseQuantity'}]} /></>}
+    </Modal>;
 
     const columns: ProColumns<PurchaseDemand>[] = [
         {title: '来源销售单', dataIndex: 'salesOrderNoSnapshot'},
@@ -40,6 +64,8 @@ export function PurchaseDemandPage() {
     return (
         <PageContainer>
             <Space direction="vertical" style={{width: '100%'}}>
+                <Permission authority={AUTHORITIES.purchaseManage}><Button onClick={openGeneration}>按时间段生成采购需求</Button></Permission>
+                {generationModal}
                 {error && (
                     <Alert
                         type="error"

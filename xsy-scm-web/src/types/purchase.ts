@@ -1,6 +1,38 @@
 export type PurchaseDemandStatus = 'PENDING' | 'PARTIALLY_ALLOCATED' | 'ALLOCATED' | 'FULFILLED' | 'CANCELLED';
-export type PurchaseOrderStatus = 'DRAFT' | 'SUBMITTED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED';
+export type PurchaseOrderStatus = 'DRAFT' | 'SUBMITTED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'SHORT_CLOSED' | 'CANCELLED';
 export type PurchaseReceiptStatus = 'DRAFT' | 'PARTIALLY_CONFIRMED' | 'CONFIRMED';
+export type PurchaseReceiptPutawayStatus = 'NOT_APPLICABLE' | 'PENDING_PUTAWAY' | 'PUTAWAY_COMPLETED';
+export type PurchaseReceiptMode = 'DIRECT' | 'DEFERRED';
+
+export interface PurchaseDemandGenerationPayload {
+    warehouseId: number;
+    startAt: string;
+    endAt: string;
+    calculateInventory: boolean;
+}
+
+export interface PurchaseDemandGenerationPreview {
+    warehouseId: number;
+    startAt: string;
+    endAt: string;
+    calculateInventory: boolean;
+    sourceOrderCount: number;
+    sourceItemCount: number;
+    originalQuantity: string;
+    inventoryDeductionQuantity: string;
+    suggestedPurchaseQuantity: string;
+    items: Array<{
+        salesOrderId: number;
+        salesOrderNo: string;
+        salesOrderItemId: number;
+        skuId: number;
+        skuCode: string;
+        productName: string;
+        originalQuantity: string;
+        inventoryDeductionQuantity: string;
+        suggestedPurchaseQuantity: string;
+    }>;
+}
 
 export interface PurchaseDemand {
     id: number;
@@ -81,6 +113,13 @@ export interface PurchaseReceipt {
     version: number;
     confirmedAt?: string;
     remark?: string;
+    mode?: PurchaseReceiptMode;
+    putawayStatus?: PurchaseReceiptPutawayStatus;
+    plannedQuantity?: string;
+    arrivedQuantity?: string;
+    remainingQuantity?: string;
+    differenceQuantity?: string;
+    overReceivedQuantity?: string;
 }
 
 export interface PurchaseReceiptItem {

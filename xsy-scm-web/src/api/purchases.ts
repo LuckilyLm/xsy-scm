@@ -6,7 +6,9 @@ import type {
     PurchaseReceipt,
     PurchaseReceiptConfirmation,
     PurchaseReceiptItem,
-    ReceiptConfirmPayload
+    ReceiptConfirmPayload,
+    PurchaseDemandGenerationPayload,
+    PurchaseDemandGenerationPreview
 } from '../types/purchase';
 
 const config = (key: string) => ({headers: {'Idempotency-Key': key}});
@@ -15,8 +17,12 @@ export async function fetchPurchaseDemands() {
     return (await apiClient.get<PurchaseDemand[]>('/purchase-demands')).data;
 }
 
-export async function generatePurchaseDemands(salesOrderIds: number[], key: string) {
-    return (await apiClient.post<number[]>('/purchase-demands/generate', {salesOrderIds}, config(key))).data;
+export async function previewPurchaseDemandGeneration(payload: PurchaseDemandGenerationPayload) {
+    return (await apiClient.post<PurchaseDemandGenerationPreview>('/purchase-demands/generation-preview', payload)).data;
+}
+
+export async function generatePurchaseDemands(payload: PurchaseDemandGenerationPayload, key: string) {
+    return (await apiClient.post<number[]>('/purchase-demands/generate', payload, config(key))).data;
 }
 
 export async function fetchPurchaseOrders() {
