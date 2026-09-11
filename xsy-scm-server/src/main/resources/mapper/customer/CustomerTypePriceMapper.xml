@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.customer.mapper.CustomerTypePriceMapper">
+    <select id="selectEffective" resultType="com.xianshuyuan.scm.customer.entity.CustomerTypePriceEntity">
+        SELECT * FROM customer_type_price
+        WHERE customer_type_id = #{customerTypeId} AND deleted = FALSE
+          AND effective_from &lt;= #{at} AND (effective_to IS NULL OR effective_to &gt; #{at})
+          AND sku_id IN <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY effective_from DESC, id DESC
+    </select>
+    <select id="countOverlapping" resultType="int">
+        SELECT COUNT(*) FROM customer_type_price
+        WHERE customer_type_id = #{customerTypeId} AND sku_id = #{skuId} AND deleted = FALSE
+          <if test="id != null">AND id != #{id}</if>
+          AND effective_from &lt; COALESCE(#{to}, 'infinity'::timestamptz)
+          AND (effective_to IS NULL OR effective_to &gt; #{from})
+    </select>
+    <select id="selectPricePage" resultType="com.xianshuyuan.scm.customer.entity.CustomerTypePriceEntity">
+        SELECT ctp.* FROM customer_type_price ctp
+        WHERE ctp.deleted = FALSE
+        <if test="query.customerTypeId != null">AND ctp.customer_type_id = #{query.customerTypeId}</if>
+        <if test="query.skuId != null">AND ctp.sku_id = #{query.skuId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (CAST(ctp.sku_id AS TEXT) ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR EXISTS (SELECT 1 FROM customer_type ct WHERE ct.id = ctp.customer_type_id
+                AND ct.deleted = FALSE AND (ct.type_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR ct.name ILIKE CONCAT('%', #{query.keyword}, '%')))
+            OR EXISTS (SELECT 1 FROM product_sku sku JOIN product_spu spu ON spu.id = sku.spu_id
+                AND spu.deleted = FALSE WHERE sku.id = ctp.sku_id AND sku.deleted = FALSE
+                AND (sku.sku_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR spu.name ILIKE CONCAT('%', #{query.keyword}, '%'))))
+        </if>
+        ORDER BY ctp.effective_from DESC, ctp.id DESC
+    </select>
+    <select id="lockCustomerType" resultType="long">
+        SELECT id FROM customer_type WHERE id = #{customerTypeId} AND deleted = FALSE FOR UPDATE
+    </select>
+    <update id="softDelete">
+        UPDATE customer_type_price SET deleted = TRUE, version = version + 1,
+        updated_at = CURRENT_TIMESTAMP, updated_by = 'SYSTEM'
+        WHERE id = #{id} AND version = #{version} AND deleted = FALSE
+    </update>
+</mapper>

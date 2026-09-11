@@ -19,6 +19,7 @@ class OrderEnumsTest {
     void exposesSupportedPriceSources() {
         assertThat(PriceSource.values()).containsExactly(
             PriceSource.AGREEMENT,
+            PriceSource.CUSTOMER_TYPE,
             PriceSource.MARKET,
             PriceSource.OVERRIDE
         );

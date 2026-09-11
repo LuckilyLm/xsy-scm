@@ -5,5 +5,5 @@ import com.xianshuyuan.scm.product.entity.ProductType;
 
 public record MallCheckoutItemResponse(Long skuId, String productName, String specName, String saleUnit,
                                        ProductType productType, String quantity, String unitPrice,
-                                       PriceSource priceSource, String lineAmount) {
+                                       PriceSource priceSource, Long priceSourceId, String lineAmount) {
 }

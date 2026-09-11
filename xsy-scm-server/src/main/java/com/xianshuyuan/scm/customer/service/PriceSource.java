@@ -1,3 +1,3 @@
 package com.xianshuyuan.scm.customer.service;
 
-public enum PriceSource {AGREEMENT, MARKET}
+public enum PriceSource {AGREEMENT, CUSTOMER_TYPE, MARKET}

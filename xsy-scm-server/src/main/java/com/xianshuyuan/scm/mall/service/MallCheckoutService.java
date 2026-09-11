@@ -26,13 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,12 +49,14 @@ public class MallCheckoutService {
     private final MallCartService cart;
     private final MallOrderAddressMapper orderAddresses;
     private final SalesOrderApplicationService orders;
+    private final MallCheckoutFingerprint fingerprints;
 
     public MallCheckoutPreviewResponse preview(long customerId, MallCheckoutPreviewRequest request) {
         Priced priced = price(customerId, request.items());
         MallAddressResponse address = addressService.requireAddress(customerId, request.addressId());
         return new MallCheckoutPreviewResponse(priced.items(), SalesOrderConverter.decimal(priced.totalQuantity()),
-                SalesOrderConverter.decimal(priced.totalAmount()), fingerprint(priced), address, 0);
+                SalesOrderConverter.decimal(priced.totalAmount()),
+                fingerprints.create(customerId, request.addressId(), priced.items()), address, 0);
     }
 
     @Transactional
@@ -67,7 +65,7 @@ public class MallCheckoutService {
             throw new BusinessException(MallErrorCodes.ORDER_ITEMS_REQUIRED);
         }
         Priced priced = price(customerId, request.items());
-        String expected = fingerprint(priced);
+        String expected = fingerprints.create(customerId, request.addressId(), priced.items());
         if (!expected.equals(request.priceFingerprint() == null ? "" : request.priceFingerprint().trim())) {
             throw new BusinessException(MallErrorCodes.PRICE_CHANGED);
         }
@@ -119,7 +117,6 @@ public class MallCheckoutService {
                 .collect(Collectors.toMap(ResolvedCustomerPrice::skuId, Function.identity(), (a, b) -> a));
 
         List<MallCheckoutItemResponse> items = new ArrayList<>();
-        Map<Long, BigDecimal> unitPrices = new java.util.LinkedHashMap<>();
         BigDecimal totalQuantity = BigDecimal.ZERO.setScale(4);
         BigDecimal totalAmount = BigDecimal.ZERO.setScale(4);
         int index = 0;
@@ -130,28 +127,14 @@ public class MallCheckoutService {
             BigDecimal lineAmount = OrderAmountCalculator.lineAmount(quantity, price.unitPrice());
             items.add(new MallCheckoutItemResponse(row.getSkuId(), row.getProductName(), row.getSpecName(),
                     row.getSaleUnit(), row.getProductType(), SalesOrderConverter.decimal(quantity),
-                    SalesOrderConverter.decimal(price.unitPrice()), price.source(),
+                    SalesOrderConverter.decimal(price.unitPrice()), price.source(), price.sourceRecordId(),
                     SalesOrderConverter.decimal(lineAmount)));
-            unitPrices.put(row.getSkuId(), price.unitPrice());
             totalQuantity = totalQuantity.add(quantity);
             totalAmount = totalAmount.add(lineAmount);
         }
-        return new Priced(items, unitPrices, totalQuantity, totalAmount);
+        return new Priced(items, totalQuantity, totalAmount);
     }
 
-    private static String fingerprint(Priced priced) {
-        String source = priced.unitPrices().keySet().stream().sorted()
-                .map(skuId -> skuId + ":" + priced.unitPrices().get(skuId).setScale(4).toPlainString())
-                .collect(Collectors.joining("|"));
-        try {
-            byte[] digest = MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("缺少 SHA-256 算法支持", exception);
-        }
-    }
-
-    private record Priced(List<MallCheckoutItemResponse> items, Map<Long, BigDecimal> unitPrices,
-                          BigDecimal totalQuantity, BigDecimal totalAmount) {
+    private record Priced(List<MallCheckoutItemResponse> items, BigDecimal totalQuantity, BigDecimal totalAmount) {
     }
 }

@@ -64,10 +64,12 @@ public class SecurityConfig {
                         .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "product.manage"))
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/customers/**", "/api/customer-types/**", "/api/customer-agreement-prices/**",
-                                "/api/agreement-prices/**")
+                                "/api/agreement-prices/**", "/api/customer-type-prices/**")
                         .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "customer.read"))
                         .requestMatchers("/api/customers/**", "/api/customer-types/**",
                                 "/api/customer-agreement-prices/**", "/api/agreement-prices/**")
+                        .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "customer.manage"))
+                        .requestMatchers("/api/customer-type-prices/**")
                         .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "customer.manage"))
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/orders/**", "/api/order-returns/**", "/api/order-refunds/**")
