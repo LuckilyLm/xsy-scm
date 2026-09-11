@@ -17,7 +17,7 @@
 | 分支 | 提交哈希 | 说明 |
 | --- | --- | --- |
 | `feature/sprint5`（当前集成基线） | `78666e69cdde6c02a46f142dfacdcc3c714a9054` | `merge: integrate Sprint 5 mall client` |
-| `feature/sprint5-reuse-audit`（审计分支） | `78666e69cdde6c02a46f142dfacdcc3c714a9054` | 审计前与基线同指向，本次只新增本文档 |
+| `feature/sprint5-reuse-audit`（审计分支） | `852d8b440043c494901c09b0debd5d760072ea3e` | 本次审计文档提交 |
 | `workbuddy/feature-sprint5-e5d79aff` | `78666e69cdde6c02a46f142dfacdcc3c714a9054` | 与基线同指向 |
 | `feature/sprint5-quality-gate` | `78666e69cdde6c02a46f142dfacdcc3c714a9054` | 与基线同指向 |
 | `feature/sprint5-mall-client` | `ebc65bc0fd7f03a87b72b9bd12e06f66327bc4f6` | 已并入基线 |
