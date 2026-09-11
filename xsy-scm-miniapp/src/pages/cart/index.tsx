@@ -1,5 +1,5 @@
 import { View, Text, Checkbox } from '@tarojs/components'
-import { useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { cartList, cartUpdate, cartRemove } from '../../services/cart'
 import { setCartBadge } from '../../utils/cart-badge'
@@ -7,6 +7,8 @@ import { useCheckout } from '../../stores/checkout'
 import QuantityStepper from '../../components/QuantityStepper'
 import EmptyState from '../../components/EmptyState'
 import { formatPrice, priceSourceLabel } from '../../utils/format'
+import { sumDecimal } from '../../utils/decimal'
+import { showApiError } from '../../utils/error'
 import type { MallCart, MallCartItem } from '../../types/mall'
 import './index.css'
 
@@ -14,55 +16,69 @@ export default function CartPage() {
   const [cart, setCart] = useState<MallCart | null>(null)
   const [quantities, setQuantities] = useState<Record<number, string>>({})
   const [selected, setSelected] = useState<Record<number, boolean>>({})
+  const [loading, setLoading] = useState(true)
   const setCheckoutItems = useCheckout((s) => s.setItems)
+  // 每个 SKU 的请求序号：只有最新一次响应可以落地，避免快速改数量时旧响应覆盖新状态。
+  const seqRef = useRef<Record<number, number>>({})
+
+  const applyCart = (next: MallCart, preserveSelection = false) => {
+    setCart(next)
+    setCartBadge(next.items.filter((it) => it.available).length)
+    setQuantities((prev) => {
+      const merged: Record<number, string> = { ...prev }
+      next.items.forEach((it) => {
+        merged[it.skuId] = it.quantity
+      })
+      return merged
+    })
+    setSelected((prev) => {
+      const merged: Record<number, boolean> = {}
+      next.items.forEach((it) => {
+        merged[it.skuId] = it.available ? (preserveSelection ? prev[it.skuId] ?? true : true) : false
+      })
+      return merged
+    })
+  }
 
   const load = async () => {
+    setLoading(true)
     try {
-      const c = await cartList()
-      setCart(c)
-      setCartBadge(c.items.length)
-      const q: Record<number, string> = {}
-      const sel: Record<number, boolean> = {}
-      c.items.forEach((it) => {
-        q[it.skuId] = it.quantity
-        sel[it.skuId] = it.available
-      })
-      setQuantities(q)
-      setSelected(sel)
-    } catch {
-      /* toast by request layer */
+      applyCart(await cartList())
+    } catch (e: unknown) {
+      showApiError(e, '购物车加载失败，请稍后重试')
+    } finally {
+      setLoading(false)
     }
   }
 
   useDidShow(() => load())
 
-  useEffect(() => {
-    /* noop，保留以兼容 hooks 规则 */
-  }, [])
-
   const updateQty = async (skuId: number, qty: number) => {
     const str = String(qty)
     setQuantities((prev) => ({ ...prev, [skuId]: str }))
+    const seq = (seqRef.current[skuId] ?? 0) + 1
+    seqRef.current[skuId] = seq
     try {
-      const c = await cartUpdate(skuId, str)
-      setCart(c)
-      setCartBadge(c.items.length)
-    } catch {
+      const next = await cartUpdate(skuId, str)
+      if (seqRef.current[skuId] !== seq) return
+      applyCart(next, true)
+    } catch (e: unknown) {
+      if (seqRef.current[skuId] !== seq) return
+      showApiError(e, '数量更新失败，请重试')
       load()
     }
   }
 
-  const remove = async (skuId: number) => {
+  const remove = (skuId: number) => {
     Taro.showModal({
       title: '提示',
       content: '确定从购物车移除该商品？',
       success: async (res) => {
         if (!res.confirm) return
         try {
-          const c = await cartRemove(skuId)
-          setCart(c)
-          setCartBadge(c.items.length)
-        } catch {
+          applyCart(await cartRemove(skuId), true)
+        } catch (e: unknown) {
+          showApiError(e, '移除失败，请重试')
           load()
         }
       },
@@ -72,21 +88,23 @@ export default function CartPage() {
   const toggle = (skuId: number) =>
     setSelected((prev) => ({ ...prev, [skuId]: !prev[skuId] }))
 
+  const hasAvailable = !!cart && cart.items.some((it) => it.available)
   const allSelected =
-    !!cart && cart.items.length > 0 && cart.items.every((it) => !it.available || selected[it.skuId])
+    hasAvailable && !!cart && cart.items.every((it) => !it.available || selected[it.skuId])
   const toggleAll = () => {
     if (!cart) return
     const next = !allSelected
-    const sel: Record<number, boolean> = {}
+    const merged: Record<number, boolean> = {}
     cart.items.forEach((it) => {
-      sel[it.skuId] = !it.available ? false : next
+      merged[it.skuId] = it.available ? next : false
     })
-    setSelected(sel)
+    setSelected(merged)
   }
 
   const selectedItems: MallCartItem[] =
     cart?.items.filter((it) => it.available && selected[it.skuId]) ?? []
-  const totalAmount = selectedItems.reduce((sum, it) => sum + (Number(it.lineAmount) || 0), 0)
+  // 小计只对后端返回的 lineAmount 做精确求和：前端不重新定价，也不用浮点累加。
+  const totalAmount = sumDecimal(selectedItems.map((it) => it.lineAmount))
 
   const checkout = () => {
     if (selectedItems.length === 0) {
@@ -97,11 +115,15 @@ export default function CartPage() {
     Taro.navigateTo({ url: '/subpackages/trade/checkout/index' })
   }
 
-  if (!cart) {
-    return <EmptyState text="购物车加载中..." />
+  if (loading && !cart) {
+    return (
+      <View className="cart">
+        <EmptyState text="购物车加载中..." />
+      </View>
+    )
   }
 
-  if (cart.items.length === 0) {
+  if (!cart || cart.items.length === 0) {
     return (
       <View className="cart">
         <EmptyState text="购物车还是空的" />
@@ -114,6 +136,12 @@ export default function CartPage() {
 
   return (
     <View className="cart">
+      {cart.unavailableCount > 0 && (
+        <View className="cart__notice">
+          <Text>{cart.unavailableCount} 件商品已失效，请移除后结算</Text>
+        </View>
+      )}
+
       <View className="cart__list">
         {cart.items.map((it) => (
           <View key={it.skuId} className="cart-item">
@@ -122,7 +150,7 @@ export default function CartPage() {
               value={String(it.skuId)}
               checked={!!selected[it.skuId]}
               disabled={!it.available}
-              onClick={() => toggle(it.skuId)}
+              onClick={() => it.available && toggle(it.skuId)}
             />
             <View className="cart-item__body">
               <View className="cart-item__name">
@@ -130,8 +158,8 @@ export default function CartPage() {
                 {it.specName ? `（${it.specName}）` : ''}
               </View>
               <View className="cart-item__meta">
-                <Text className="tag">{it.saleUnit}</Text>
-                {it.priceSource === 'AGREEMENT' && (
+                {it.saleUnit && <Text className="tag">{it.saleUnit}</Text>}
+                {priceSourceLabel(it.priceSource) && (
                   <Text className="tag tag--price">{priceSourceLabel(it.priceSource)}</Text>
                 )}
               </View>
@@ -157,7 +185,7 @@ export default function CartPage() {
 
       <View className="cart__bar">
         <View className="cart__bar-left" onClick={toggleAll}>
-          <Checkbox value="__all__" checked={allSelected} onClick={toggleAll} />
+          <Checkbox className="cart-item__check" value="__all__" checked={allSelected} />
           <Text>全选</Text>
         </View>
         <View className="cart__bar-right">

@@ -8,6 +8,34 @@
   padding: 120rpx 0;
   color: var(--color-text-placeholder);
 }
+.detail__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 140rpx 48rpx;
+}
+.detail__error-text {
+  color: var(--color-text-secondary);
+  font-size: 28rpx;
+  text-align: center;
+  line-height: 1.6;
+}
+.detail__error-btn {
+  margin-top: 32rpx;
+  padding: 0 60rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+}
+.detail__error-btn--ghost {
+  margin-top: 16rpx;
+  background: #fff;
+  color: var(--color-text-secondary);
+  border: 1rpx solid var(--color-border);
+}
 .detail__card {
   background: #fff;
   padding: 32rpx;

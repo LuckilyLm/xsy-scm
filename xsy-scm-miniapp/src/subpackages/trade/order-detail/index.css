@@ -8,6 +8,27 @@
   padding: 120rpx 0;
   color: var(--color-text-placeholder);
 }
+.od__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 40rpx;
+}
+.od__error-text {
+  color: var(--color-text-secondary);
+  font-size: 26rpx;
+  text-align: center;
+}
+.od__retry {
+  margin-top: 24rpx;
+  padding: 0 44rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+}
 .od__head {
   display: flex;
   align-items: center;

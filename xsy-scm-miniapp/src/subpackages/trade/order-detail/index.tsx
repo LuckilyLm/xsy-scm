@@ -1,8 +1,16 @@
 import { View, Text } from '@tarojs/components'
-import { useState, useEffect } from 'react'
-import { useRouter } from '@tarojs/taro'
+import { useRef, useState, useEffect } from 'react'
+import { useRouter, useDidShow } from '@tarojs/taro'
 import { orderDetail } from '../../../services/order'
-import { formatPrice, orderStatusLabel, orderSourceLabel, priceSourceLabel, formatDateTime } from '../../../utils/format'
+import {
+  formatPrice,
+  formatQuantity,
+  orderStatusLabel,
+  orderSourceLabel,
+  priceSourceLabel,
+  formatDateTime,
+} from '../../../utils/format'
+import { errorMessage } from '../../../utils/error'
 import type { MallOrder } from '../../../types/mall'
 import './index.css'
 
@@ -10,18 +18,57 @@ export default function OrderDetailPage() {
   const router = useRouter()
   const id = Number(router.params.id)
   const [order, setOrder] = useState<MallOrder | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const firstShowRef = useRef(true)
+
+  const load = async () => {
+    if (!id) {
+      setError('订单参数缺失')
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    try {
+      setOrder(await orderDetail(id))
+      setError(null)
+    } catch (e: unknown) {
+      setError(errorMessage(e, '订单加载失败，请稍后重试'))
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    if (!id) return
-    orderDetail(id)
-      .then(setOrder)
-      .catch(() => undefined)
+    load()
   }, [id])
 
-  if (!order) {
+  // 从其他页面返回时刷新状态（例如后台确认后状态变化）。
+  useDidShow(() => {
+    if (firstShowRef.current) {
+      firstShowRef.current = false
+      return
+    }
+    load()
+  })
+
+  if (loading && !order) {
     return (
       <View className="od">
         <View className="od__loading">加载中...</View>
+      </View>
+    )
+  }
+
+  if (error || !order) {
+    return (
+      <View className="od">
+        <View className="od__error">
+          <Text className="od__error-text">{error ?? '订单不存在'}</Text>
+          <View className="od__retry" onClick={load}>
+            <Text>重新加载</Text>
+          </View>
+        </View>
       </View>
     )
   }
@@ -38,7 +85,8 @@ export default function OrderDetailPage() {
 
       <View className="od__items">
         {order.items.map((it) => {
-          const showActual = it.actualQuantity && it.actualQuantity !== it.orderedQuantity
+          const showActual =
+            it.actualQuantity && it.actualQuantity !== it.orderedQuantity
           return (
             <View key={it.id} className="od__item">
               <View className="od__item-body">
@@ -47,14 +95,15 @@ export default function OrderDetailPage() {
                   {it.specName ? `（${it.specName}）` : ''}
                 </Text>
                 <Text className="od__item-meta">
-                  {it.saleUnit} · {priceSourceLabel(it.priceSource)}
+                  {it.saleUnit}
+                  {priceSourceLabel(it.priceSource) ? ` · ${priceSourceLabel(it.priceSource)}` : ''}
                 </Text>
               </View>
               <View className="od__item-right">
                 <Text className="price price-md">{formatPrice(it.amount)}</Text>
-                <Text className="od__item-qty">下单 {it.orderedQuantity}</Text>
+                <Text className="od__item-qty">下单 {formatQuantity(it.orderedQuantity)}</Text>
                 {showActual && (
-                  <Text className="od__item-actual">实重 {it.actualQuantity}</Text>
+                  <Text className="od__item-actual">实重 {formatQuantity(it.actualQuantity)}</Text>
                 )}
               </View>
             </View>

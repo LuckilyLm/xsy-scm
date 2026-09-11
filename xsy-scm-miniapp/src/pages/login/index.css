@@ -37,6 +37,20 @@
   border-radius: 999rpx;
   font-size: 32rpx;
 }
+.login__btn--wechat {
+  margin-top: 0;
+  background: #07c160;
+}
+.login__divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8rpx 24rpx;
+}
+.login__divider-text {
+  color: var(--color-text-placeholder);
+  font-size: 24rpx;
+}
 .login__hint {
   display: block;
   text-align: center;

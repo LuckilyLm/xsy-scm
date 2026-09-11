@@ -1,15 +1,22 @@
 import type { OrderStatus, PriceSource, OrderSource } from '../types/mall'
+import { formatMoney, trimDecimal } from './decimal'
 
-export function formatPrice(value: string | number | null | undefined, prefix = '¥'): string {
-  if (value === null || value === undefined || value === '') return `${prefix}0.00`
-  const n = typeof value === 'number' ? value : Number(value)
-  if (Number.isNaN(n)) return `${prefix}0.00`
-  return prefix + n.toFixed(2)
+/**
+ * 金额展示。价格一律来自后端，前端只做定点格式化（HALF_UP 保留 2 位）。
+ * 缺价时用 placeholder 表达业务含义（商品场景传 '询价'），避免把“无价”显示成 ¥0.00。
+ */
+export function formatPrice(
+  value: string | number | null | undefined,
+  prefix = '¥',
+  placeholder?: string,
+): string {
+  return formatMoney(value, { prefix, placeholder })
 }
 
+/** 数量展示：去掉后端返回的尾随零。 */
 export function formatQuantity(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === '') return '0'
-  return String(value)
+  return trimDecimal(value)
 }
 
 export function orderStatusLabel(status: OrderStatus): string {
@@ -36,7 +43,7 @@ export function orderSourceLabel(source: OrderSource | string): string {
   }
 }
 
-export function priceSourceLabel(source: PriceSource): string {
+export function priceSourceLabel(source: PriceSource | null | undefined): string {
   switch (source) {
     case 'AGREEMENT':
       return '协议价'

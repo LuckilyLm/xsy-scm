@@ -5,6 +5,8 @@ import type { CSSProperties } from 'react'
 import { categories, home as fetchHome, products } from '../../services/catalog'
 import { cartAdd } from '../../services/cart'
 import { setCartBadge } from '../../utils/cart-badge'
+import { formatPrice } from '../../utils/format'
+import { showApiError } from '../../utils/error'
 import ProductCard from '../../components/ProductCard'
 import EmptyState from '../../components/EmptyState'
 import type {
@@ -19,10 +21,6 @@ import type {
 import './index.css'
 
 const PAGE_SIZE = 20
-
-function formatPrice(value: string | number | null | undefined) {
-  return value === null || value === undefined || value === '' ? '询价' : `¥${value}`
-}
 
 function payloadOf(section: MallHomeSection): MallHomeSectionPayload {
   return section.payload || {}
@@ -134,10 +132,11 @@ export default function HomePage() {
   const onAdd = async (p: MallProduct) => {
     try {
       const cart = await cartAdd(p.skuId, '1')
-      setCartBadge(cart.items.length)
+      setCartBadge(cart.items.filter((it) => it.available).length)
       Taro.showToast({ title: '已加入购物车', icon: 'success' })
-    } catch {
-      /* toast 由请求层处理 */
+    } catch (e: unknown) {
+      // 可见性（40372）等失败必须显式反馈，避免“点了没反应”。
+      showApiError(e, '加入购物车失败，请稍后重试')
     }
   }
 
