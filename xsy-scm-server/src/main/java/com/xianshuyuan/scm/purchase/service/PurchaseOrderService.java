@@ -200,6 +200,29 @@ public class PurchaseOrderService {
         idempotency.complete(claim, "PURCHASE_ORDER", id, id);
     }
 
+    @Transactional
+    public void shortClose(long id, com.xianshuyuan.scm.purchase.dto.PurchaseOrderShortCloseRequest request, String key) {
+        var claim = idempotency.claim("PURCHASE_ORDER_SHORT_CLOSE:" + id, key, request);
+        if (claim.replay()) return;
+        var order = orders.selectActiveByIdForUpdate(id);
+        if (order == null) throw new BusinessException(PurchaseOrderErrorCodes.NOT_FOUND);
+        if (order.getStatus() != PurchaseOrderStatus.PARTIALLY_RECEIVED)
+            throw new BusinessException(PurchaseOrderErrorCodes.INVALID_STATE);
+        if (!Objects.equals(order.getVersion(), request.version()))
+            throw new BusinessException(PurchaseOrderErrorCodes.VERSION_CONFLICT);
+        var rows = orderItems.selectActiveByOrderIdForUpdate(id);
+        boolean received = rows.stream().anyMatch(row -> row.getReceivedQuantity().signum() > 0);
+        boolean remaining = rows.stream().anyMatch(row -> row.getReceivedQuantity().compareTo(row.getPlannedQuantity()) < 0);
+        if (!received || !remaining) throw new BusinessException(PurchaseOrderErrorCodes.INVALID_STATE);
+        order.setStatus(PurchaseOrderStatus.SHORT_CLOSED);
+        order.setShortClosedAt(OffsetDateTime.now());
+        order.setShortCloseReason(request.reason().trim());
+        order.setVersion(request.version());
+        if (orders.updateById(order) != 1) throw new BusinessException(PurchaseOrderErrorCodes.VERSION_CONFLICT);
+        log(order, "SHORT_CLOSE", request.reason().trim());
+        idempotency.complete(claim, "PURCHASE_ORDER", id, id);
+    }
+
     private void log(PurchaseOrderEntity order, String type, String reason) {
         var entry = new PurchaseOperationLogEntity();
         entry.setPurchaseOrderId(order.getId());

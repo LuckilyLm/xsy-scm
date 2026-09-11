@@ -36,15 +36,17 @@ class PurchaseReceiptApplicationServiceTest {
     private final PurchaseReceiptNumberGenerator numbers = mock(PurchaseReceiptNumberGenerator.class);
     private final InventoryApplicationService inventory = mock(InventoryApplicationService.class);
     private final IdempotencyService idempotency = mock(IdempotencyService.class);
+    private final PurchaseReceivingConfigMapper config = mock(PurchaseReceivingConfigMapper.class);
     private final PurchaseReceiptApplicationService service = new PurchaseReceiptApplicationService(receipts, receiptItems,
             confirmations, confirmationItems, weighingRecords, orders, orderItems, logs, numbers, inventory,
-            idempotency, new ObjectMapper());
+            idempotency, new ObjectMapper(), config);
 
     @BeforeEach
     void setUp() {
         IdempotencyRecordEntity record = new IdempotencyRecordEntity();
         record.setRequestHash("hash");
         when(idempotency.claim(anyString(), anyString(), any())).thenReturn(new IdempotencyService.Claim(record, false));
+        when(config.selectEnabledValue(anyString())).thenReturn("10");
         when(confirmations.nextNumber()).thenReturn("RC-1");
         when(confirmations.insert(any(PurchaseReceiptConfirmationEntity.class))).thenAnswer(invocation -> {
             invocation.<PurchaseReceiptConfirmationEntity>getArgument(0).setId(70L);
@@ -70,7 +72,7 @@ class PurchaseReceiptApplicationServiceTest {
 
         PurchaseReceiptConfirmResult result = service.confirm(50L, request("4.0000", null, null), " partial-key ");
 
-        assertThat(result.status()).isEqualTo("PARTIALLY_CONFIRMED");
+        assertThat(result.status()).isEqualTo("CONFIRMED");
         assertThat(result.purchaseOrderStatus()).isEqualTo("PARTIALLY_RECEIVED");
         assertThat(result.confirmedQuantity()).isEqualTo("4.0000");
         assertThat(poItem.getReceivedQuantity()).isEqualByComparingTo("4.0000");
@@ -135,7 +137,7 @@ class PurchaseReceiptApplicationServiceTest {
         arrange(receipt(PurchaseReceiptStatus.DRAFT), order(PurchaseOrderStatus.SUBMITTED),
                 orderItem(ProductType.STANDARD, "10.0000", "8.0000"), receiptItem(ProductType.STANDARD));
 
-        assertThatThrownBy(() -> service.confirm(50L, request("2.0001", null, null), "over-key"))
+        assertThatThrownBy(() -> service.confirm(50L, request("3.0001", null, null), "over-key"))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(error -> assertThat(((BusinessException) error).getErrorCode())
                         .isEqualTo(PurchaseReceiptErrorCodes.OVER_RECEIVED));
@@ -176,6 +178,30 @@ class PurchaseReceiptApplicationServiceTest {
         ArgumentCaptor<PurchaseInCommand> commands = ArgumentCaptor.forClass(PurchaseInCommand.class);
         verify(inventory, times(2)).postPurchaseIn(commands.capture());
         assertThat(commands.getAllValues()).extracting(PurchaseInCommand::receiptItemId).containsExactly(52L, 51L);
+    }
+
+    @Test
+    void deferredReceiptConfirmsWithoutInventoryAndWaitsForPutaway() {
+        PurchaseReceiptEntity receipt = receipt(PurchaseReceiptStatus.DRAFT);
+        receipt.setReceiptMode(PurchaseReceiptMode.DEFERRED);
+        arrange(receipt, order(PurchaseOrderStatus.SUBMITTED),
+                orderItem(ProductType.STANDARD, "10.0000", "0.0000"), receiptItem(ProductType.STANDARD));
+
+        service.confirm(50L, request("4.0000", null, null), "deferred-key");
+
+        verifyNoInteractions(inventory);
+        assertThat(receipt.getPutawayStatus()).isEqualTo(PurchaseReceiptPutawayStatus.PENDING_PUTAWAY);
+    }
+
+    @Test
+    void toleranceAllowsTenPercentButRejectsBeyondConfiguredLimit() {
+        arrange(receipt(PurchaseReceiptStatus.DRAFT), order(PurchaseOrderStatus.PARTIALLY_RECEIVED),
+                orderItem(ProductType.STANDARD, "10.0000", "10.0000"), receiptItem(ProductType.STANDARD));
+
+        service.confirm(50L, request("1.0000", null, null), "within-tolerance");
+
+        assertThatThrownBy(() -> service.confirm(50L, request("1.0001", null, null), "beyond-tolerance"))
+                .isInstanceOf(BusinessException.class);
     }
 
     @Test

@@ -11,6 +11,7 @@ public final class PurchaseReceiptErrorCodes {
     public static final ErrorCode ITEM_NOT_FOUND = new ErrorCode(40461, HttpStatus.NOT_FOUND, "收货行不存在");
     public static final ErrorCode OVER_RECEIVED = new ErrorCode(40963, HttpStatus.CONFLICT, "本次收货数量超过剩余可收数量");
     public static final ErrorCode INVALID_QUANTITY = new ErrorCode(40060, HttpStatus.BAD_REQUEST, "收货数量或重量不正确");
+    public static final ErrorCode INVALID_TOLERANCE = new ErrorCode(50060, HttpStatus.INTERNAL_SERVER_ERROR, "采购超收容差系统参数无效");
 
     private PurchaseReceiptErrorCodes() {
     }

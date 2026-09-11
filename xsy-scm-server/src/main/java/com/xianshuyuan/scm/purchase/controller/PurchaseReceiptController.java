@@ -48,4 +48,11 @@ public class PurchaseReceiptController {
     public ApiResponse<PurchaseReceiptConfirmResult> confirm(@PathVariable long id, @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody PurchaseReceiptConfirmRequest request) {
         return ApiResponse.success(service.confirm(id, request, key));
     }
+
+    @PostMapping("/{id}/putaway")
+    public ApiResponse<PurchaseReceiptConfirmResult> putaway(@PathVariable long id,
+            @RequestHeader("Idempotency-Key") String key,
+            @Valid @RequestBody PurchaseReceiptPutawayRequest request) {
+        return ApiResponse.success(service.putaway(id, request.version(), key));
+    }
 }

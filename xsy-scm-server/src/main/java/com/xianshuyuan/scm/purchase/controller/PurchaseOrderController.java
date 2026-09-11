@@ -65,4 +65,11 @@ public class PurchaseOrderController {
         s.cancel(id, r, k);
         return ApiResponse.success(null);
     }
+
+    @PostMapping("/{id}/short-close")
+    public ApiResponse<Void> shortClose(@PathVariable long id, @RequestHeader("Idempotency-Key") String k,
+            @Valid @RequestBody PurchaseOrderShortCloseRequest r) {
+        s.shortClose(id, r, k);
+        return ApiResponse.success(null);
+    }
 }

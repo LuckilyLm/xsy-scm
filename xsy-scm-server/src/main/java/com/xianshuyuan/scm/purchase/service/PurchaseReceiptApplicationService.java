@@ -59,6 +59,7 @@ public class PurchaseReceiptApplicationService {
     private final InventoryApplicationService inventory;
     private final IdempotencyService idempotency;
     private final ObjectMapper json;
+    private final com.xianshuyuan.scm.purchase.mapper.PurchaseReceivingConfigMapper config;
 
     public PurchaseReceiptApplicationService(
             PurchaseReceiptMapper receipts,
@@ -72,7 +73,8 @@ public class PurchaseReceiptApplicationService {
             PurchaseReceiptNumberGenerator numbers,
             InventoryApplicationService inventory,
             IdempotencyService idempotency,
-            ObjectMapper json
+            ObjectMapper json,
+            com.xianshuyuan.scm.purchase.mapper.PurchaseReceivingConfigMapper config
     ) {
         this.receipts = receipts;
         this.receiptItems = receiptItems;
@@ -86,6 +88,7 @@ public class PurchaseReceiptApplicationService {
         this.inventory = inventory;
         this.idempotency = idempotency;
         this.json = json;
+        this.config = config;
     }
 
     @Transactional
@@ -98,11 +101,6 @@ public class PurchaseReceiptApplicationService {
                 && order.getStatus() != PurchaseOrderStatus.PARTIALLY_RECEIVED) {
             throw new BusinessException(PurchaseReceiptErrorCodes.INVALID_STATE);
         }
-        var existing = receipts.selectActiveByOrderIdForUpdate(order.getId());
-        if (existing != null) {
-            return existing.getId();
-        }
-
         var receipt = new PurchaseReceiptEntity();
         receipt.setReceiptNo(numbers.next());
         receipt.setPurchaseOrderId(order.getId());
@@ -111,6 +109,9 @@ public class PurchaseReceiptApplicationService {
         receipt.setWarehouseCodeSnapshot(order.getWarehouseCodeSnapshot());
         receipt.setWarehouseNameSnapshot(order.getWarehouseNameSnapshot());
         receipt.setStatus(PurchaseReceiptStatus.DRAFT);
+        receipt.setReceiptMode(request.receiptMode() == null
+                ? com.xianshuyuan.scm.purchase.entity.PurchaseReceiptMode.DIRECT : request.receiptMode());
+        receipt.setPutawayStatus(com.xianshuyuan.scm.purchase.entity.PurchaseReceiptPutawayStatus.NOT_APPLICABLE);
         receipt.setRemark(request.remark());
         receipt.setVersion(0);
         receipt.setDeleted(false);
@@ -131,6 +132,11 @@ public class PurchaseReceiptApplicationService {
             row.setPurchaseUnitSnapshot(source.getPurchaseUnitSnapshot());
             row.setProductTypeSnapshot(source.getProductTypeSnapshot());
             row.setReceivedQuantity(BigDecimal.ZERO.setScale(QUANTITY_SCALE));
+            row.setPlannedQuantity(source.getPlannedQuantity());
+            row.setCumulativeReceivedQuantity(source.getReceivedQuantity());
+            row.setRemainingQuantity(source.getPlannedQuantity().subtract(source.getReceivedQuantity()).max(BigDecimal.ZERO));
+            row.setOverReceiptQuantity(source.getReceivedQuantity().subtract(source.getPlannedQuantity()).max(BigDecimal.ZERO));
+            row.setReceiptDifference(source.getPlannedQuantity().subtract(source.getReceivedQuantity()));
             row.setSortOrder(sort++);
             row.setVersion(0);
             row.setDeleted(false);
@@ -214,7 +220,10 @@ public class PurchaseReceiptApplicationService {
             throw new BusinessException(PurchaseOrderErrorCodes.VERSION_CONFLICT);
         }
 
-        receipt.setStatus(complete ? PurchaseReceiptStatus.CONFIRMED : PurchaseReceiptStatus.PARTIALLY_CONFIRMED);
+        receipt.setStatus(PurchaseReceiptStatus.CONFIRMED);
+        receipt.setPutawayStatus(receipt.getReceiptMode() == com.xianshuyuan.scm.purchase.entity.PurchaseReceiptMode.DEFERRED
+                ? com.xianshuyuan.scm.purchase.entity.PurchaseReceiptPutawayStatus.PENDING_PUTAWAY
+                : com.xianshuyuan.scm.purchase.entity.PurchaseReceiptPutawayStatus.PUTAWAY_COMPLETED);
         receipt.setConfirmedAt(OffsetDateTime.now());
         receipt.setReceivedAt(receipt.getConfirmedAt());
         receipt.setOperator("SYSTEM");
@@ -275,7 +284,9 @@ public class PurchaseReceiptApplicationService {
                 throw new BusinessException(PurchaseReceiptErrorCodes.INVALID_QUANTITY);
             }
 
-            BigDecimal remaining = purchaseItem.getPlannedQuantity().subtract(purchaseItem.getReceivedQuantity());
+            BigDecimal maximum = purchaseItem.getPlannedQuantity()
+                    .multiply(BigDecimal.ONE.add(tolerancePercent().movePointLeft(2)));
+            BigDecimal remaining = maximum.subtract(purchaseItem.getReceivedQuantity());
             if (effectiveQuantity.compareTo(remaining) > 0) {
                 throw new BusinessException(PurchaseReceiptErrorCodes.OVER_RECEIVED);
             }
@@ -328,19 +339,21 @@ public class PurchaseReceiptApplicationService {
         detail.setCreatedBy("SYSTEM");
         confirmationItems.insert(detail);
 
-        inventory.postPurchaseIn(new PurchaseInCommand(
-                receipt.getId(),
-                receiptItem.getId(),
-                confirmation.getId(),
-                receipt.getWarehouseId(),
-                receiptItem.getSkuId(),
-                receipt.getWarehouseCodeSnapshot(),
-                receipt.getWarehouseNameSnapshot(),
-                receiptItem.getSkuCodeSnapshot(),
-                receiptItem.getSkuNameSnapshot(),
-                receiptItem.getPurchaseUnitSnapshot(),
-                line.effectiveQuantity(),
-                purchaseItem.getPurchasePrice()));
+        if (receipt.getReceiptMode() != com.xianshuyuan.scm.purchase.entity.PurchaseReceiptMode.DEFERRED) {
+            inventory.postPurchaseIn(new PurchaseInCommand(
+                    receipt.getId(),
+                    receiptItem.getId(),
+                    confirmation.getId(),
+                    receipt.getWarehouseId(),
+                    receiptItem.getSkuId(),
+                    receipt.getWarehouseCodeSnapshot(),
+                    receipt.getWarehouseNameSnapshot(),
+                    receiptItem.getSkuCodeSnapshot(),
+                    receiptItem.getSkuNameSnapshot(),
+                    receiptItem.getPurchaseUnitSnapshot(),
+                    line.effectiveQuantity(),
+                    purchaseItem.getPurchasePrice()));
+        }
 
         purchaseItem.setReceivedQuantity(purchaseItem.getReceivedQuantity().add(line.effectiveQuantity()));
         if (orderItems.updateById(purchaseItem) != 1) {
@@ -348,6 +361,11 @@ public class PurchaseReceiptApplicationService {
         }
 
         receiptItem.setReceivedQuantity(receiptItem.getReceivedQuantity().add(line.effectiveQuantity()));
+        receiptItem.setPlannedQuantity(purchaseItem.getPlannedQuantity());
+        receiptItem.setCumulativeReceivedQuantity(purchaseItem.getReceivedQuantity());
+        receiptItem.setRemainingQuantity(purchaseItem.getPlannedQuantity().subtract(purchaseItem.getReceivedQuantity()).max(BigDecimal.ZERO));
+        receiptItem.setOverReceiptQuantity(purchaseItem.getReceivedQuantity().subtract(purchaseItem.getPlannedQuantity()).max(BigDecimal.ZERO));
+        receiptItem.setReceiptDifference(purchaseItem.getPlannedQuantity().subtract(purchaseItem.getReceivedQuantity()));
         receiptItem.setActualWeight(line.actualWeight());
         receiptItem.setWeightUnit(line.actualWeight() == null ? null : receiptItem.getPurchaseUnitSnapshot());
         receiptItem.setWeighingSource(detail.getWeighingSource());
@@ -355,6 +373,52 @@ public class PurchaseReceiptApplicationService {
         receiptItem.setVersion(requested.version());
         if (receiptItems.updateById(receiptItem) != 1) {
             throw new BusinessException(PurchaseReceiptErrorCodes.VERSION_CONFLICT);
+        }
+    }
+
+    @Transactional
+    public PurchaseReceiptConfirmResult putaway(long receiptId, Integer version, String key) {
+        String scope = "PURCHASE_RECEIPT_PUTAWAY:" + receiptId;
+        var claim = idempotency.claim(scope, key, java.util.Map.of("version", version));
+        if (claim.replay()) return idempotency.replay(claim, PurchaseReceiptConfirmResult.class);
+        var receipt = receipts.selectActiveByIdForUpdate(receiptId);
+        if (receipt == null) throw new BusinessException(PurchaseReceiptErrorCodes.NOT_FOUND);
+        if (!Objects.equals(receipt.getVersion(), version)) throw new BusinessException(PurchaseReceiptErrorCodes.VERSION_CONFLICT);
+        if (receipt.getPutawayStatus() != com.xianshuyuan.scm.purchase.entity.PurchaseReceiptPutawayStatus.PENDING_PUTAWAY)
+            throw new BusinessException(PurchaseReceiptErrorCodes.INVALID_STATE);
+        var poRows = orderItems.selectActiveByOrderIdForUpdate(receipt.getPurchaseOrderId());
+        var costs = new HashMap<Long, BigDecimal>();
+        poRows.forEach(row -> costs.put(row.getId(), row.getPurchasePrice()));
+        BigDecimal total = BigDecimal.ZERO;
+        for (var item : receiptItems.selectActiveByReceiptIdForUpdate(receiptId)) {
+            if (item.getReceivedQuantity().signum() <= 0) continue;
+            inventory.postPurchaseIn(new PurchaseInCommand(receiptId, item.getId(), 0L,
+                    receipt.getWarehouseId(), item.getSkuId(), receipt.getWarehouseCodeSnapshot(),
+                    receipt.getWarehouseNameSnapshot(), item.getSkuCodeSnapshot(), item.getSkuNameSnapshot(),
+                    item.getPurchaseUnitSnapshot(), item.getReceivedQuantity(), costs.get(item.getPurchaseOrderItemId())));
+            total = total.add(item.getReceivedQuantity());
+        }
+        receipt.setPutawayStatus(com.xianshuyuan.scm.purchase.entity.PurchaseReceiptPutawayStatus.PUTAWAY_COMPLETED);
+        receipt.setPutawayAt(OffsetDateTime.now());
+        receipt.setPutawayOperator("SYSTEM");
+        receipt.setVersion(version);
+        if (receipts.updateById(receipt) != 1) throw new BusinessException(PurchaseReceiptErrorCodes.VERSION_CONFLICT);
+        var order = orders.selectActiveByIdForUpdate(receipt.getPurchaseOrderId());
+        var result = new PurchaseReceiptConfirmResult(receiptId, 0L, null, receipt.getStatus().name(),
+                order.getStatus().name(), decimal(total));
+        log(order.getId(), receiptId, "RECEIPT_PUTAWAY", receipt.getPutawayStatus().name());
+        idempotency.complete(claim, "PURCHASE_RECEIPT", receiptId, result);
+        return result;
+    }
+
+    private BigDecimal tolerancePercent() {
+        String raw = config.selectEnabledValue("purchase.over_receipt_tolerance_percent");
+        try {
+            BigDecimal value = new BigDecimal(raw == null ? "10" : raw);
+            if (value.signum() < 0 || value.compareTo(new BigDecimal("100")) > 0) throw new NumberFormatException();
+            return value;
+        } catch (NumberFormatException error) {
+            throw new BusinessException(PurchaseReceiptErrorCodes.INVALID_TOLERANCE);
         }
     }
 

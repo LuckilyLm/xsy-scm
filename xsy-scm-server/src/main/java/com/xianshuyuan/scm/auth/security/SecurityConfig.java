@@ -82,7 +82,9 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/purchase-demands/**", "/api/purchase-orders/**", "/api/purchase-receipts/**")
                         .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "purchase.read"))
-                        .requestMatchers("/api/purchase-demands/**", "/api/purchase-orders/**", "/api/purchase-receipts/**")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/purchase-receipts/*/putaway")
+                        .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "purchase:receipt:putaway"))
+                .requestMatchers("/api/purchase-demands/**", "/api/purchase-orders/**", "/api/purchase-receipts/**")
                         .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "purchase.manage"))
                         .requestMatchers("/api/inventories/**", "/api/inventory-movements/**")
                         .access((authentication, context) -> AuthorityRules.hasAuthority(authentication, "inventory.read"))

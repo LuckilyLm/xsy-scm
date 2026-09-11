@@ -15,7 +15,8 @@ public class PurchaseOrderEntity {
     LocalDate plannedArrivalDate;
     PurchaseOrderStatus status;
     BigDecimal totalAmount;
-    OffsetDateTime submittedAt, cancelledAt, createdAt, updatedAt;
+    OffsetDateTime submittedAt, cancelledAt, shortClosedAt, createdAt, updatedAt;
+    String shortCloseReason;
     @Version
     Integer version;
     @TableLogic
@@ -149,6 +150,11 @@ public class PurchaseOrderEntity {
     public void setCancelledAt(OffsetDateTime v) {
         cancelledAt = v;
     }
+
+    public OffsetDateTime getShortClosedAt() { return shortClosedAt; }
+    public void setShortClosedAt(OffsetDateTime v) { shortClosedAt = v; }
+    public String getShortCloseReason() { return shortCloseReason; }
+    public void setShortCloseReason(String v) { shortCloseReason = v; }
 
     public Integer getVersion() {
         return version;

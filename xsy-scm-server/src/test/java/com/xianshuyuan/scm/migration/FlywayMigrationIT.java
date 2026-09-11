@@ -632,6 +632,7 @@ class FlywayMigrationIT {
     }
 
 
+    private String indexDefinition(String indexName) {
         return jdbcTemplate.queryForObject("""
             select indexdef from pg_indexes
             where schemaname = 'public' and indexname = ?
