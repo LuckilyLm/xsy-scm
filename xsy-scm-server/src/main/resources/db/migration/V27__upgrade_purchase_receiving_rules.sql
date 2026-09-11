@@ -86,7 +86,10 @@ ALTER TABLE purchase_receipt_item
     ADD COLUMN receipt_difference NUMERIC(18,4) NOT NULL DEFAULT 0;
 ALTER TABLE purchase_receipt_item
     ADD CONSTRAINT ck_purchase_receipt_item_p1_quantities CHECK
-    (planned_quantity IS NULL OR planned_quantity > 0) AND cumulative_received_quantity >= 0 AND remaining_quantity >= 0 AND over_receipt_quantity >= 0;
+    ((planned_quantity IS NULL OR planned_quantity > 0)
+        AND cumulative_received_quantity >= 0
+        AND remaining_quantity >= 0
+        AND over_receipt_quantity >= 0);
 
 ALTER TABLE inventory_movement ADD COLUMN receipt_id BIGINT;
 CREATE INDEX idx_inventory_movement_receipt_id ON inventory_movement (receipt_id) WHERE receipt_id IS NOT NULL;

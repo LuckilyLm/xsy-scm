@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.mall.mapper.MallCartItemMapper">
+
+    <sql id="columns">
+        id, customer_id, sku_id, quantity, version, deleted, created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <select id="selectActiveByCustomerId" resultType="com.xianshuyuan.scm.mall.entity.MallCartItemEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM mall_cart_item
+        WHERE deleted = FALSE
+        AND customer_id = #{customerId}
+        ORDER BY updated_at DESC, id
+    </select>
+
+    <select id="selectActiveByCustomerAndSku" resultType="com.xianshuyuan.scm.mall.entity.MallCartItemEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM mall_cart_item
+        WHERE deleted = FALSE
+        AND customer_id = #{customerId}
+        AND sku_id = #{skuId}
+    </select>
+
+    <update id="softDeleteByCustomerAndSkus">
+        UPDATE mall_cart_item
+        SET deleted = TRUE,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = 'MALL'
+        WHERE customer_id = #{customerId}
+        AND deleted = FALSE
+        AND sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+    </update>
+
+    <update id="softDeleteByCustomer">
+        UPDATE mall_cart_item
+        SET deleted = TRUE,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = 'MALL'
+        WHERE customer_id = #{customerId}
+        AND deleted = FALSE
+    </update>
+</mapper>

@@ -5,6 +5,7 @@ import {AdminLayout} from '../layouts/AdminLayout';
 import {useNavigation} from '../layouts/AdminLayout/navigation';
 import {LoginPage} from '../pages/auth/LoginPage';
 import {NotFoundPage} from '../pages/error/NotFoundPage';
+import {MallHomePage} from '../pages/mall/MallHomePage';
 import {ROUTE_REGISTRY} from './routeRegistry';
 
 /** 懒加载占位，避免路由切换时出现空白。 */
@@ -28,6 +29,7 @@ function HomeRedirect() {
 }
 
 export const router = createBrowserRouter([
+    {path: '/mall', element: <RequireAuth><MallHomePage/></RequireAuth>},
     {path: '/login', element: <LoginPage/>},
     {
         path: '/',

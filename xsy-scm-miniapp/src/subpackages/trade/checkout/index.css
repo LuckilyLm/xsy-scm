@@ -1,0 +1,114 @@
+.checkout {
+  min-height: 100vh;
+  background: var(--color-bg);
+  padding-bottom: 120rpx;
+}
+.checkout__empty {
+  text-align: center;
+  padding: 120rpx 0;
+  color: var(--color-text-placeholder);
+}
+.checkout__back {
+  text-align: center;
+  margin-top: 20rpx;
+  color: var(--color-primary);
+  font-size: 30rpx;
+}
+.checkout__address {
+  background: #fff;
+  padding: 28rpx;
+  margin: 20rpx;
+  border-radius: 16rpx;
+}
+.checkout__address-add {
+  color: var(--color-primary);
+  font-size: 30rpx;
+}
+.checkout__addr-item {
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--color-border);
+}
+.checkout__addr-item:last-child {
+  border-bottom: none;
+}
+.checkout__addr-item--active {
+  color: var(--color-primary);
+}
+.checkout__addr-line {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.checkout__addr-detail {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+}
+.checkout__items {
+  background: #fff;
+  margin: 0 20rpx 20rpx;
+  border-radius: 16rpx;
+  padding: 12rpx 28rpx;
+}
+.checkout__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--color-border);
+}
+.checkout__item:last-child {
+  border-bottom: none;
+}
+.checkout__item-body {
+  flex: 1;
+}
+.checkout__item-name {
+  font-size: 30rpx;
+  color: var(--color-text);
+}
+.checkout__item-meta {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--color-text-placeholder);
+}
+.checkout__item-right {
+  text-align: right;
+  margin-left: 20rpx;
+}
+.checkout__item-qty {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+.checkout__bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100rpx;
+  padding: 0 24rpx;
+  background: #fff;
+  border-top: 1rpx solid var(--color-border);
+}
+.checkout__bar-total {
+  display: flex;
+  align-items: baseline;
+  font-size: 26rpx;
+  color: var(--color-text-secondary);
+}
+.checkout__submit {
+  padding: 0 48rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 30rpx;
+}

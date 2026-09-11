@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -85,5 +86,21 @@ class SecurityConfigTest {
         mockMvc.perform(post("/api/auth/logout").with(csrf()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    @WithMockUser(authorities = "marketing.read")
+    void marketingReadAuthorityCanReachGetEndpoints() throws Exception {
+        mockMvc.perform(get("/api/marketing/theme"))
+            // This MVC slice has no MarketingController; reaching MVC's resource handler
+            // proves the request passed the marketing.read security matcher.
+            .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @WithMockUser(authorities = "marketing.read")
+    void marketingReadAuthorityCannotReachMutationEndpoints() throws Exception {
+        mockMvc.perform(put("/api/marketing/theme").with(csrf()))
+            .andExpect(status().isForbidden());
     }
 }

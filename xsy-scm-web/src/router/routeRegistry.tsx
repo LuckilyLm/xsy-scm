@@ -30,6 +30,7 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     {key: 'purchases', label: '采购', icon: <ShoppingCartOutlined/>},
     {key: 'warehouses', label: '库房', icon: <AppstoreOutlined/>},
     {key: 'customers', label: '客户', icon: <TeamOutlined/>},
+    {key: 'shop', label: '商城', icon: <ShopOutlined/>},
     {key: 'system', label: '系统', icon: <SettingOutlined/>},
 ];
 
@@ -273,6 +274,24 @@ export const ROUTE_REGISTRY: RouteDefinition[] = [
         permission: AUTHORITIES.customerRead,
         group: 'customers',
         lazy: page(() => import('../pages/customer/AgreementPricePage'), 'AgreementPricePage'),
+    },
+
+    /* --------------------------------- 商城 --------------------------------- */
+    {
+        key: 'shop-theme',
+        path: 'shop/theme',
+        title: '商城主题',
+        permission: AUTHORITIES.marketingRead,
+        group: 'shop',
+        lazy: page(() => import('../pages/shop/ShopThemePage'), 'ShopThemePage'),
+    },
+    {
+        key: 'shop-home-sections',
+        path: 'shop/home-sections',
+        title: '首页装修',
+        permission: AUTHORITIES.marketingRead,
+        group: 'shop',
+        lazy: page(() => import('../pages/shop/ShopHomeSectionPage'), 'ShopHomeSectionPage'),
     },
 
     /* --------------------------------- 系统 --------------------------------- */

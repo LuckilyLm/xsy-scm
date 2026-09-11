@@ -288,7 +288,7 @@ class FlywayMigrationIT {
             """, Integer.class);
 
         assertThat(partialUniqueIndexes).isEqualTo(5);
-        assertThat(sourceUniqueIndexes).isEqualTo(4);
+        assertThat(sourceUniqueIndexes).isEqualTo(3);
 
         Integer queryIndexes = jdbcTemplate.queryForObject("""
             select count(*) from pg_indexes
@@ -367,11 +367,17 @@ class FlywayMigrationIT {
     }
 
     @Test
-    void enforcesOneActiveReceiptPerPurchaseOrder() {
-        String receiptOrderIndex = indexDefinition("uk_purchase_receipt_order_active");
+    void allowsMultipleReceiptsPerPurchaseOrderAndKeepsQueryIndex() {
+        Integer legacyUniqueIndex = jdbcTemplate.queryForObject("""
+            select count(*) from pg_indexes
+            where schemaname = 'public' and indexname = 'uk_purchase_receipt_order_active'
+            """, Integer.class);
+        String receiptOrderIndex = indexDefinition("idx_purchase_receipt_order_created");
 
+        assertThat(legacyUniqueIndex).isZero();
         assertThat(receiptOrderIndex.toLowerCase())
-            .contains("unique", "(purchase_order_id)", "where (deleted = false)");
+            .contains("(purchase_order_id, created_at desc)", "where (deleted = false)")
+            .doesNotContain("unique");
     }
 
     @Test
@@ -545,7 +551,7 @@ class FlywayMigrationIT {
     }
 
     @Test
-    void hardensReceiptConfirmationIdempotencyAndReceivedQuantity() {
+    void hardensReceiptConfirmationIdempotencyAndConfiguresOverReceiptTolerance() {
         Integer idempotencyKeyWidth = jdbcTemplate.queryForObject("""
             select character_maximum_length
             from information_schema.columns
@@ -555,8 +561,17 @@ class FlywayMigrationIT {
             """, Integer.class);
 
         assertThat(idempotencyKeyWidth).isEqualTo(200);
-        assertThat(constraintDefinition("ck_purchase_order_item_received_not_over_planned").toLowerCase())
-            .contains("received_quantity", "<=", "planned_quantity");
+        Integer legacyConstraint = jdbcTemplate.queryForObject("""
+            select count(*) from pg_constraint
+            where conname = 'ck_purchase_order_item_received_not_over_planned'
+            """, Integer.class);
+        String tolerance = jdbcTemplate.queryForObject("""
+            select config_value from sys_config
+            where config_key = 'purchase.over_receipt_tolerance_percent' and deleted = false
+            """, String.class);
+
+        assertThat(legacyConstraint).isZero();
+        assertThat(tolerance).isEqualTo("10");
     }
 
     @Test

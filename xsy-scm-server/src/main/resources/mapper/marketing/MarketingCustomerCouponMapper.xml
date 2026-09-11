@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.marketing.mapper.MarketingCustomerCouponMapper">
+
+    <select id="selectByCustomer" resultType="com.xianshuyuan.scm.marketing.entity.MarketingCustomerCouponEntity">
+        SELECT id, coupon_id, customer_id, coupon_no, status, used_order_id, used_at, obtained_at,
+        valid_from, valid_to, version, created_at, updated_at
+        FROM marketing_customer_coupon
+        WHERE deleted = FALSE
+        AND customer_id = #{customerId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY obtained_at DESC, id DESC
+    </select>
+
+    <select id="selectByCouponNo" resultType="com.xianshuyuan.scm.marketing.entity.MarketingCustomerCouponEntity">
+        SELECT id, coupon_id, customer_id, coupon_no, status, used_order_id, used_at, obtained_at,
+        valid_from, valid_to, version, created_at, updated_at
+        FROM marketing_customer_coupon
+        WHERE deleted = FALSE
+        AND coupon_no = #{couponNo}
+    </select>
+
+    <select id="countIssued" resultType="int">
+        SELECT COUNT(*)
+        FROM marketing_customer_coupon
+        WHERE deleted = FALSE
+        AND coupon_id = #{couponId}
+        AND customer_id = #{customerId}
+    </select>
+</mapper>
