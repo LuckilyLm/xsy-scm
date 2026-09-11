@@ -15,7 +15,6 @@ public class PurchaseOrderEntity {
     LocalDate plannedArrivalDate;
     PurchaseOrderStatus status;
     BigDecimal totalAmount;
-<<<<<<< HEAD
     OffsetDateTime submittedAt, cancelledAt, shortClosedAt, createdAt, updatedAt;
     String shortCloseReason;
     @Version
