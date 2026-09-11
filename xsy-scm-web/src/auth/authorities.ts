@@ -17,6 +17,8 @@ export const AUTHORITIES = {
     purchaseRead: 'purchase.read',
     purchaseManage: 'purchase.manage',
     inventoryRead: 'inventory.read',
+    marketingRead: 'marketing.read',
+    marketingManage: 'marketing.manage',
 
     /* 部门 */
     departmentList: 'system:department:list',

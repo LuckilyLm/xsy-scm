@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.marketing.mapper.MarketingThemeConfigMapper">
+
+    <resultMap id="ThemeConfigEntityMap" type="com.xianshuyuan.scm.marketing.entity.MarketingThemeConfigEntity">
+        <id property="id" column="id"/>
+        <result property="themeCode" column="theme_code"/>
+        <result property="primaryColor" column="primary_color"/>
+        <result property="accentColor" column="accent_color"/>
+        <result property="pageBackground" column="page_background"/>
+        <result property="cardRadius" column="card_radius"/>
+        <result property="cardStyle" column="card_style"/>
+        <result property="productCardStyle" column="product_card_style"/>
+        <result property="navigationStyle" column="navigation_style"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+    </resultMap>
+
+    <select id="selectCurrent" resultMap="ThemeConfigEntityMap">
+        SELECT id, theme_code, primary_color, accent_color, page_background, card_radius,
+               card_style, product_card_style, navigation_style, created_at, updated_at,
+               created_by, updated_by
+        FROM marketing_theme_config
+        ORDER BY id
+        LIMIT 1
+    </select>
+</mapper>

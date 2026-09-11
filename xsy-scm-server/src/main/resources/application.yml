@@ -33,6 +33,10 @@ xsy:
     login:
       failure-threshold: ${XSY_LOGIN_FAILURE_THRESHOLD:5}
       lock-duration: ${XSY_LOGIN_LOCK_DURATION:15m}
+  mall:
+    session:
+      # 商城客户会话有效期（小时），默认 7 天。
+      ttl-hours: ${XSY_MALL_SESSION_TTL_HOURS:168}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml

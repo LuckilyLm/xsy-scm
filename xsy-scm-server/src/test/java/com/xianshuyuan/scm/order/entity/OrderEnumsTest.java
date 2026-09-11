@@ -10,7 +10,8 @@ class OrderEnumsTest {
     void exposesSupportedOrderSources() {
         assertThat(OrderSource.values()).containsExactly(
             OrderSource.NORMAL,
-            OrderSource.SUPPLEMENT
+            OrderSource.SUPPLEMENT,
+            OrderSource.MALL
         );
     }
 

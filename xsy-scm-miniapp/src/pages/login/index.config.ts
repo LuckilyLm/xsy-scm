@@ -1,0 +1,6 @@
+export default {
+  navigationBarTitleText: '登录',
+  navigationBarBackgroundColor: '#16a34a',
+  navigationBarTextStyle: 'white',
+  enablePullDownRefresh: false,
+}

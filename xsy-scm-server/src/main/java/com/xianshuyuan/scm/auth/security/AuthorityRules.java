@@ -27,7 +27,7 @@ public final class AuthorityRules {
                 "system.administrator", "system.manage", "product.read", "product.manage",
                 "customer.read", "customer.manage", "order.read", "order.manage",
                 "supplier.read", "supplier.manage", "purchase.read", "purchase.manage",
-                "inventory.read").contains(normalized);
+                "inventory.read", "marketing.read", "marketing.manage").contains(normalized);
     }
 
     public static boolean isReservedRole(String code, boolean systemRole) {

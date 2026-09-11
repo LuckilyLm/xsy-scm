@@ -36,4 +36,10 @@ class AuthorityRulesTest {
         assertThat(AuthorityRules.isAdministrator(authentication)).isFalse();
         assertThat(AuthorityRules.hasAuthority(() -> authentication, "purchase.manage").isGranted()).isFalse();
     }
+
+    @Test
+    void treatsMarketingPermissionsAsReservedBusinessAuthorities() {
+        assertThat(AuthorityRules.isReservedPermission("marketing.read", false)).isTrue();
+        assertThat(AuthorityRules.isReservedPermission("marketing.manage", false)).isTrue();
+    }
 }

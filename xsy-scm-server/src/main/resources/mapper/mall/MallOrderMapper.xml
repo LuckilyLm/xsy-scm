@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xianshuyuan.scm.mall.mapper.MallOrderMapper">
+
+    <resultMap id="SalesOrderMap" type="com.xianshuyuan.scm.order.entity.SalesOrderEntity">
+        <id property="id" column="id"/>
+        <result property="orderNo" column="order_no"/>
+        <result property="customerId" column="customer_id"/>
+        <result property="customerCodeSnapshot" column="customer_code_snapshot"/>
+        <result property="customerNameSnapshot" column="customer_name_snapshot"/>
+        <result property="orderSource" column="order_source"/>
+        <result property="originalOrderId" column="original_order_id"/>
+        <result property="supplementReason" column="supplement_reason"/>
+        <result property="status" column="status"/>
+        <result property="orderedTotalAmount" column="ordered_total_amount"/>
+        <result property="settlementTotalAmount" column="settlement_total_amount"/>
+        <result property="cancelReason" column="cancel_reason"/>
+        <result property="submittedAt" column="submitted_at"/>
+        <result property="confirmedAt" column="confirmed_at"/>
+        <result property="cancelledAt" column="cancelled_at"/>
+        <result property="version" column="version"/>
+        <result property="deleted" column="deleted"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, order_no, customer_id, customer_code_snapshot, customer_name_snapshot, order_source,
+        original_order_id, supplement_reason, status, ordered_total_amount, settlement_total_amount,
+        cancel_reason, submitted_at, confirmed_at, cancelled_at, version, deleted,
+        created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <select id="selectPageByCustomer" resultMap="SalesOrderMap">
+        SELECT
+        <include refid="columns"/>
+        FROM sales_order
+        WHERE deleted = FALSE
+        AND customer_id = #{customerId}
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND order_no ILIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY created_at DESC, id DESC
+    </select>
+
+    <select id="selectActiveByIdAndCustomer" resultMap="SalesOrderMap">
+        SELECT
+        <include refid="columns"/>
+        FROM sales_order
+        WHERE deleted = FALSE
+        AND id = #{id}
+        AND customer_id = #{customerId}
+    </select>
+</mapper>
