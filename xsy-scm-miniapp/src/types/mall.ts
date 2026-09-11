@@ -67,9 +67,11 @@ export interface MallProduct {
   productType: ProductType
   categoryId: number | null
   categoryName: string
-  marketPrice: string
-  unitPrice: string
-  priceSource: PriceSource
+  /** 市场价（SKU 档案价），可能缺省。 */
+  marketPrice: string | null
+  /** 服务端解析后的成交单价；无有效价格时为 null，前端展示“询价”。 */
+  unitPrice: string | null
+  priceSource: PriceSource | null
 }
 
 export type MallCardStyle = 'FLAT' | 'SHADOW' | 'BORDER'
@@ -169,14 +171,15 @@ export interface PageData<T> {
 export interface MallCartItem {
   skuId: number
   productName: string
-  specName: string
-  specValues: SpecValue
-  saleUnit: string
-  productType: ProductType
+  specName: string | null
+  specValues: SpecValue | null
+  saleUnit: string | null
+  productType: ProductType | null
   quantity: string
-  unitPrice: string
-  priceSource: PriceSource
-  lineAmount: string
+  /** 失效商品保留在列表中，价格字段为 null。 */
+  unitPrice: string | null
+  priceSource: PriceSource | null
+  lineAmount: string | null
   available: boolean
   reason: string | null
 }

@@ -29,7 +29,7 @@ xsy-scm-miniapp/
 │  ├─ types/mall.ts        # 领域类型 + 错误码 + 信封
 │  ├─ services/            # http / auth / catalog / cart / order / address / checkout
 │  ├─ stores/              # session（登录态）、checkout（结算中转）
-│  ├─ utils/               # format（价格/状态）、id（幂等键）、cart-badge
+│  ├─ utils/               # decimal（定点金额）、format（价格/状态）、error（错误提示）、id（幂等键）、cart-badge
 │  ├─ components/          # PriceTag / ProductCard / QuantityStepper / EmptyState
 │  ├─ pages/               # 登录、首页、分类、购物车、我的（tabBar 主包）
 │  └─ subpackages/
@@ -68,17 +68,23 @@ TARO_APP_API_BASE=/api npm run dev:h5
 
 1. **身份令牌**：登录返回 `token`，后续请求放在请求头 `X-Mall-Token`。
    令牌失效（`40171` 登录缺失 / `40172` 令牌无效）时，请求层自动清理本地会话并跳转登录页。
-2. **数量一律字符串**：购物车/结算的 `quantity` 必须是 JSON 字符串（如 `"2"`、`"1.5"`），
+2. **错误信封与状态码**：后端业务错误统一返回 `{ code, message, data }`，且 HTTP 状态码与业务域一致
+   （`40170`→401、`40372`→403、`40970`→409、`50170`→501）。请求层**无论 HTTP 状态码为何都优先解析信封**，
+   并把 `code/message` 还原成 `ApiError`。否则登录失败、登录失效、变价与可见性提示都会退化成“网络错误”。
+   调用方用 `isApiError(e, MallErrorCode.XXX)` 判定业务码，用 `showApiError(e)` 保证错误不被静默吞掉。
+3. **数量一律字符串**：购物车/结算的 `quantity` 必须是 JSON 字符串（如 `"2"`、`"1.5"`），
    后端用 `DecimalStringDeserializer` 解析，避免浮点误差。前端 `QuantityStepper` 输出数字，
    提交时转字符串。
-3. **价格服务端权威**：列表/详情/结算的价格与 `priceSource` 全部来自服务端 `CustomerPriceResolver`，
-   前端只展示、不改价、不自行计算。
-4. **变价确认（价格指纹）**：结算先 `POST /api/mall/orders/preview` 拿到 `priceFingerprint`，
+4. **价格服务端权威**：列表/详情/结算的价格与 `priceSource` 全部来自服务端 `CustomerPriceResolver`，
+   前端只展示、不改价、不自行计算。金额展示走 `utils/decimal.ts` 的定点运算，
+   **禁止用 `Number()` 做求和或格式化**；后端可能返回 `null` 价格，此时展示“询价”而非 `¥0.00`。
+5. **变价确认（价格指纹）**：结算先 `POST /api/mall/orders/preview` 拿到 `priceFingerprint`，
    提交 `POST /api/mall/orders` 时原样带回；若服务端检测到价格变化返回 `40970`，
    前端重新 `preview` 并提示“价格已变化，请重新确认”。
-5. **幂等提交**：下单请求带 `Idempotency-Key` 请求头（前端 `utils/id.ts` 生成 UUID），
-   网络重试使用同一 key，避免重复建单。
-6. **客户归属隔离**：所有订单/地址/购物车查询都绑定登录客户，前端无法越权查看他人数据（后端强制过滤）。
+6. **幂等提交**：下单请求带 `Idempotency-Key` 请求头（前端 `utils/id.ts` 生成 UUID）。
+   幂等键与“下单内容签名（商品+数量+地址+价格指纹）”绑定：内容不变时网络重试**复用同一个 key**，
+   只有内容变化或提交成功后才换新 key，避免重复建单。提交按钮另有 ref 级 in-flight 互斥，防止连点。
+7. **客户归属隔离**：所有订单/地址/购物车查询都绑定登录客户，前端无法越权查看他人数据（后端强制过滤）。
 
 ## 接口速查
 

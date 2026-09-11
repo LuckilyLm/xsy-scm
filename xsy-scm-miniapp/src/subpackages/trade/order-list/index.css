@@ -9,6 +9,52 @@
   background: #fff;
   border-bottom: 1rpx solid var(--color-border);
 }
+.orders__search {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 20rpx;
+  background: #fff;
+  border-bottom: 1rpx solid var(--color-border);
+}
+.orders__search-input {
+  flex: 1;
+  height: 64rpx;
+  padding: 0 20rpx;
+  background: var(--color-bg);
+  border-radius: 999rpx;
+  font-size: 26rpx;
+}
+.orders__search-btn {
+  margin-left: 16rpx;
+  padding: 0 28rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+}
+.orders__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 40rpx;
+}
+.orders__error-text {
+  color: var(--color-text-secondary);
+  font-size: 26rpx;
+  text-align: center;
+}
+.orders__retry {
+  margin-top: 24rpx;
+  padding: 0 44rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+}
 .orders__tab {
   flex: 1;
   text-align: center;

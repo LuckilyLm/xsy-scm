@@ -4,6 +4,7 @@ import Taro, { useReachBottom } from '@tarojs/taro'
 import { categories, products } from '../../services/catalog'
 import { cartAdd } from '../../services/cart'
 import { setCartBadge } from '../../utils/cart-badge'
+import { showApiError } from '../../utils/error'
 import ProductCard from '../../components/ProductCard'
 import EmptyState from '../../components/EmptyState'
 import type { MallCategory, MallProduct } from '../../types/mall'
@@ -63,10 +64,10 @@ export default function CategoryPage() {
   const onAdd = async (p: MallProduct) => {
     try {
       const cart = await cartAdd(p.skuId, '1')
-      setCartBadge(cart.items.length)
+      setCartBadge(cart.items.filter((it) => it.available).length)
       Taro.showToast({ title: '已加入购物车', icon: 'success' })
-    } catch {
-      /* toast by request layer */
+    } catch (e: unknown) {
+      showApiError(e, '加入购物车失败，请稍后重试')
     }
   }
 
