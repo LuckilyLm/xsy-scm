@@ -20,6 +20,8 @@ public class PurchaseReceiptItemEntity {
     private String purchaseUnitSnapshot;
     private ProductType productTypeSnapshot;
     private BigDecimal receivedQuantity, actualWeight;
+    private BigDecimal plannedQuantity, cumulativeReceivedQuantity, remainingQuantity,
+        overReceiptQuantity, receiptDifference;
     private String weightUnit;
     private ReceiptWeighingSource weighingSource;
     private String correctionReason;
@@ -126,6 +128,17 @@ public class PurchaseReceiptItemEntity {
     public void setReceivedQuantity(BigDecimal v) {
         receivedQuantity = v;
     }
+
+    public BigDecimal getPlannedQuantity() { return plannedQuantity; }
+    public void setPlannedQuantity(BigDecimal v) { plannedQuantity = v; }
+    public BigDecimal getCumulativeReceivedQuantity() { return cumulativeReceivedQuantity; }
+    public void setCumulativeReceivedQuantity(BigDecimal v) { cumulativeReceivedQuantity = v; }
+    public BigDecimal getRemainingQuantity() { return remainingQuantity; }
+    public void setRemainingQuantity(BigDecimal v) { remainingQuantity = v; }
+    public BigDecimal getOverReceiptQuantity() { return overReceiptQuantity; }
+    public void setOverReceiptQuantity(BigDecimal v) { overReceiptQuantity = v; }
+    public BigDecimal getReceiptDifference() { return receiptDifference; }
+    public void setReceiptDifference(BigDecimal v) { receiptDifference = v; }
 
     public BigDecimal getActualWeight() {
         return actualWeight;

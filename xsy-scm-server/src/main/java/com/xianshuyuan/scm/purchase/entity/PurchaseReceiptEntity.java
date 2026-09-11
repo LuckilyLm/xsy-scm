@@ -15,9 +15,14 @@ public class PurchaseReceiptEntity {
     private String warehouseCodeSnapshot;
     private String warehouseNameSnapshot;
     private PurchaseReceiptStatus status;
+    private PurchaseReceiptMode receiptMode;
+    private PurchaseReceiptPutawayStatus putawayStatus;
     private OffsetDateTime receivedAt;
     private OffsetDateTime confirmedAt;
+    private OffsetDateTime putawayAt;
     private String operator;
+    private String putawayOperator;
+    private String reason;
     private String remark;
     @Version
     private Integer version;
@@ -82,13 +87,18 @@ public class PurchaseReceiptEntity {
         warehouseNameSnapshot = v;
     }
 
-    public PurchaseReceiptStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PurchaseReceiptStatus v) {
-        status = v;
-    }
+    public PurchaseReceiptStatus getStatus() { return status; }
+    public void setStatus(PurchaseReceiptStatus v) { status = v; }
+    public PurchaseReceiptMode getReceiptMode() { return receiptMode; }
+    public void setReceiptMode(PurchaseReceiptMode v) { receiptMode = v; }
+    public PurchaseReceiptPutawayStatus getPutawayStatus() { return putawayStatus; }
+    public void setPutawayStatus(PurchaseReceiptPutawayStatus v) { putawayStatus = v; }
+    public OffsetDateTime getPutawayAt() { return putawayAt; }
+    public void setPutawayAt(OffsetDateTime v) { putawayAt = v; }
+    public String getPutawayOperator() { return putawayOperator; }
+    public void setPutawayOperator(String v) { putawayOperator = v; }
+    public String getReason() { return reason; }
+    public void setReason(String v) { reason = v; }
 
     public OffsetDateTime getReceivedAt() {
         return receivedAt;

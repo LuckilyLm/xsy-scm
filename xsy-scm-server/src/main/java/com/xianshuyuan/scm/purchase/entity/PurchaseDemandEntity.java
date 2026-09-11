@@ -21,6 +21,10 @@ public class PurchaseDemandEntity {
     private ProductType productTypeSnapshot;
     private BigDecimal requiredQuantity, allocatedQuantity, fulfilledQuantity;
     private Long supplierId, purchaserId, warehouseId;
+    private Long generationBatchId, targetWarehouseId;
+    private OffsetDateTime sourceConfirmedAt;
+    private Boolean calculateInventory;
+    private BigDecimal originalRequiredQuantity, inventoryDeductedQuantity;
     private PurchaseDemandStatus status;
     private LocalDate demandDate;
     @Version
@@ -182,13 +186,21 @@ public class PurchaseDemandEntity {
         warehouseId = v;
     }
 
-    public PurchaseDemandStatus getStatus() {
-        return status;
-    }
+    public PurchaseDemandStatus getStatus() { return status; }
+    public void setStatus(PurchaseDemandStatus v) { status = v; }
 
-    public void setStatus(PurchaseDemandStatus v) {
-        status = v;
-    }
+    public Long getGenerationBatchId() { return generationBatchId; }
+    public void setGenerationBatchId(Long v) { generationBatchId = v; }
+    public Long getTargetWarehouseId() { return targetWarehouseId; }
+    public void setTargetWarehouseId(Long v) { targetWarehouseId = v; }
+    public OffsetDateTime getSourceConfirmedAt() { return sourceConfirmedAt; }
+    public void setSourceConfirmedAt(OffsetDateTime v) { sourceConfirmedAt = v; }
+    public Boolean getCalculateInventory() { return calculateInventory; }
+    public void setCalculateInventory(Boolean v) { calculateInventory = v; }
+    public BigDecimal getOriginalRequiredQuantity() { return originalRequiredQuantity; }
+    public void setOriginalRequiredQuantity(BigDecimal v) { originalRequiredQuantity = v; }
+    public BigDecimal getInventoryDeductedQuantity() { return inventoryDeductedQuantity; }
+    public void setInventoryDeductedQuantity(BigDecimal v) { inventoryDeductedQuantity = v; }
 
     public LocalDate getDemandDate() {
         return demandDate;

@@ -606,7 +606,32 @@ class FlywayMigrationIT {
         assertThat(confirmationNumber).isPositive();
     }
 
-    private String indexDefinition(String indexName) {
+    @Test
+    void createsP1PurchaseGenerationAndConfigSchema() {
+        Integer tables = jdbcTemplate.queryForObject("""
+            select count(*) from information_schema.tables
+            where table_schema = 'public' and table_name in ('sys_config', 'purchase_demand_generation_batch')
+            """, Integer.class);
+        assertThat(tables).isEqualTo(2);
+        assertThat(jdbcTemplate.queryForObject("select config_value from sys_config where config_key = 'purchase.over_receipt_tolerance_percent'", String.class))
+            .isEqualTo("10");
+        assertThat(indexDefinition("uk_purchase_demand_batch_idempotency").toLowerCase())
+            .contains("unique", "idempotency_scope", "idempotency_key");
+    }
+
+    @Test
+    void evolvesP1ReceiptAndPurchaseStatusModel() {
+        assertThat(constraintDefinition("ck_purchase_order_status").toLowerCase()).contains("short_closed");
+        Integer receiptColumns = jdbcTemplate.queryForObject("""
+            select count(*) from information_schema.columns where table_schema = 'public'
+              and table_name = 'purchase_receipt'
+              and column_name in ('receipt_mode', 'putaway_status', 'putaway_at', 'reason')
+            """, Integer.class);
+        assertThat(receiptColumns).isEqualTo(4);
+        assertThat(indexDefinition("idx_inventory_movement_receipt_id").toLowerCase()).contains("receipt_id");
+    }
+
+
         return jdbcTemplate.queryForObject("""
             select indexdef from pg_indexes
             where schemaname = 'public' and indexname = ?
