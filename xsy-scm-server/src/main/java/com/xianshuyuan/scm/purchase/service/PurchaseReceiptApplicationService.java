@@ -136,7 +136,7 @@ public class PurchaseReceiptApplicationService {
             row.setCumulativeReceivedQuantity(source.getReceivedQuantity());
             row.setRemainingQuantity(source.getPlannedQuantity().subtract(source.getReceivedQuantity()).max(BigDecimal.ZERO));
             row.setOverReceiptQuantity(source.getReceivedQuantity().subtract(source.getPlannedQuantity()).max(BigDecimal.ZERO));
-            row.setReceiptDifference(source.getPlannedQuantity().subtract(source.getReceivedQuantity()));
+            row.setReceiptDifference(source.getReceivedQuantity().subtract(source.getPlannedQuantity()));
             row.setSortOrder(sort++);
             row.setVersion(0);
             row.setDeleted(false);
@@ -214,13 +214,13 @@ public class PurchaseReceiptApplicationService {
         }
 
         boolean complete = purchaseRows.stream()
-                .allMatch(row -> row.getReceivedQuantity().compareTo(row.getPlannedQuantity()) == 0);
+                .allMatch(row -> row.getReceivedQuantity().compareTo(row.getPlannedQuantity()) >= 0);
         order.setStatus(complete ? PurchaseOrderStatus.RECEIVED : PurchaseOrderStatus.PARTIALLY_RECEIVED);
         if (orders.updateById(order) != 1) {
             throw new BusinessException(PurchaseOrderErrorCodes.VERSION_CONFLICT);
         }
 
-        receipt.setStatus(PurchaseReceiptStatus.CONFIRMED);
+        receipt.setStatus(complete ? PurchaseReceiptStatus.CONFIRMED : PurchaseReceiptStatus.PARTIALLY_CONFIRMED);
         receipt.setPutawayStatus(receipt.getReceiptMode() == com.xianshuyuan.scm.purchase.entity.PurchaseReceiptMode.DEFERRED
                 ? com.xianshuyuan.scm.purchase.entity.PurchaseReceiptPutawayStatus.PENDING_PUTAWAY
                 : com.xianshuyuan.scm.purchase.entity.PurchaseReceiptPutawayStatus.PUTAWAY_COMPLETED);
@@ -365,7 +365,7 @@ public class PurchaseReceiptApplicationService {
         receiptItem.setCumulativeReceivedQuantity(purchaseItem.getReceivedQuantity());
         receiptItem.setRemainingQuantity(purchaseItem.getPlannedQuantity().subtract(purchaseItem.getReceivedQuantity()).max(BigDecimal.ZERO));
         receiptItem.setOverReceiptQuantity(purchaseItem.getReceivedQuantity().subtract(purchaseItem.getPlannedQuantity()).max(BigDecimal.ZERO));
-        receiptItem.setReceiptDifference(purchaseItem.getPlannedQuantity().subtract(purchaseItem.getReceivedQuantity()));
+        receiptItem.setReceiptDifference(purchaseItem.getReceivedQuantity().subtract(purchaseItem.getPlannedQuantity()));
         receiptItem.setActualWeight(line.actualWeight());
         receiptItem.setWeightUnit(line.actualWeight() == null ? null : receiptItem.getPurchaseUnitSnapshot());
         receiptItem.setWeighingSource(detail.getWeighingSource());

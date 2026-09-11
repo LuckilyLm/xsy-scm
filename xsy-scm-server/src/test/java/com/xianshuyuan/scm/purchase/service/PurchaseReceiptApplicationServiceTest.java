@@ -72,7 +72,7 @@ class PurchaseReceiptApplicationServiceTest {
 
         PurchaseReceiptConfirmResult result = service.confirm(50L, request("4.0000", null, null), " partial-key ");
 
-        assertThat(result.status()).isEqualTo("CONFIRMED");
+        assertThat(result.status()).isEqualTo("PARTIALLY_CONFIRMED");
         assertThat(result.purchaseOrderStatus()).isEqualTo("PARTIALLY_RECEIVED");
         assertThat(result.confirmedQuantity()).isEqualTo("4.0000");
         assertThat(poItem.getReceivedQuantity()).isEqualByComparingTo("4.0000");

@@ -109,7 +109,7 @@ class PurchaseReceiptInventoryIT {
                 receiptId, request(currentItem.getId(), currentItem.getVersion(), "1.0000"), key))
                 .isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> receiptsService.confirm(
-                receiptId, request(currentItem.getId(), currentItem.getVersion(), "2.0001"), fixture.key("over")))
+                receiptId, request(currentItem.getId(), currentItem.getVersion(), "2.5001"), fixture.key("over")))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(error -> assertThat(((BusinessException) error).getErrorCode())
                         .isEqualTo(PurchaseReceiptErrorCodes.OVER_RECEIVED));
