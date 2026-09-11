@@ -15,6 +15,7 @@ public class PurchaseOrderEntity {
     LocalDate plannedArrivalDate;
     PurchaseOrderStatus status;
     BigDecimal totalAmount;
+<<<<<<< HEAD
     OffsetDateTime submittedAt, cancelledAt, shortClosedAt, createdAt, updatedAt;
     String shortCloseReason;
     @Version
@@ -143,6 +144,14 @@ public class PurchaseOrderEntity {
         submittedAt = v;
     }
 
+    public OffsetDateTime getShortClosedAt() { return shortClosedAt; }
+
+    public void setShortClosedAt(OffsetDateTime v) { shortClosedAt = v; }
+
+    public String getShortCloseReason() { return shortCloseReason; }
+
+    public void setShortCloseReason(String v) { shortCloseReason = v; }
+
     public OffsetDateTime getCancelledAt() {
         return cancelledAt;
     }
@@ -150,11 +159,6 @@ public class PurchaseOrderEntity {
     public void setCancelledAt(OffsetDateTime v) {
         cancelledAt = v;
     }
-
-    public OffsetDateTime getShortClosedAt() { return shortClosedAt; }
-    public void setShortClosedAt(OffsetDateTime v) { shortClosedAt = v; }
-    public String getShortCloseReason() { return shortCloseReason; }
-    public void setShortCloseReason(String v) { shortCloseReason = v; }
 
     public Integer getVersion() {
         return version;

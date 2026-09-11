@@ -15,7 +15,7 @@ public class InventoryMovementEntity {
     private String warehouseCodeSnapshot, warehouseNameSnapshot, skuCodeSnapshot, skuNameSnapshot;
     private InventoryMovementType movementType;
     private String sourceDocumentType;
-    private Long sourceDocumentId, sourceDocumentItemId, confirmationId;
+    private Long sourceDocumentId, sourceDocumentItemId, confirmationId, receiptId;
     private BigDecimal quantityBefore, quantityChange, quantityAfter, unitCost;
     private String unit, operator, remark;
     private Integer version;
@@ -135,6 +135,10 @@ public class InventoryMovementEntity {
     public void setConfirmationId(Long v) {
         confirmationId = v;
     }
+
+    public Long getReceiptId() { return receiptId; }
+
+    public void setReceiptId(Long v) { receiptId = v; }
 
     public BigDecimal getQuantityBefore() {
         return quantityBefore;

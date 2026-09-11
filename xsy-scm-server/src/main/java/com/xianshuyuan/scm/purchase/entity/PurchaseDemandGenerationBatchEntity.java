@@ -1,13 +1,17 @@
 package com.xianshuyuan.scm.purchase.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.xianshuyuan.scm.common.persistence.JsonbJsonNodeTypeHandler;
+import org.apache.ibatis.type.JdbcType;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-@TableName("purchase_demand_generation_batch")
+@TableName(value = "purchase_demand_generation_batch", autoResultMap = true)
 public class PurchaseDemandGenerationBatchEntity {
     @TableId(type = IdType.AUTO) private Long id;
     private String idempotencyScope, idempotencyKey, requestHash;
@@ -16,6 +20,8 @@ public class PurchaseDemandGenerationBatchEntity {
     private Boolean calculateInventory;
     private Integer sourceLineCount, createdCount, skippedCount;
     private BigDecimal originalQuantity, deductedQuantity;
+    @TableField(typeHandler = JsonbJsonNodeTypeHandler.class, jdbcType = JdbcType.OTHER)
+    private JsonNode resultData;
     private OffsetDateTime createdAt;
     private String createdBy;
     public Long getId(){return id;} public void setId(Long v){id=v;}
@@ -31,6 +37,7 @@ public class PurchaseDemandGenerationBatchEntity {
     public Integer getSkippedCount(){return skippedCount;} public void setSkippedCount(Integer v){skippedCount=v;}
     public BigDecimal getOriginalQuantity(){return originalQuantity;} public void setOriginalQuantity(BigDecimal v){originalQuantity=v;}
     public BigDecimal getDeductedQuantity(){return deductedQuantity;} public void setDeductedQuantity(BigDecimal v){deductedQuantity=v;}
+    public JsonNode getResultData(){return resultData;} public void setResultData(JsonNode v){resultData=v;}
     public OffsetDateTime getCreatedAt(){return createdAt;} public void setCreatedAt(OffsetDateTime v){createdAt=v;}
     public String getCreatedBy(){return createdBy;} public void setCreatedBy(String v){createdBy=v;}
 }
