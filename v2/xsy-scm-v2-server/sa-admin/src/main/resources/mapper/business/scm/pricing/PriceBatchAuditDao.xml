@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.pricing.dao.PriceBatchAuditDao">
+<select id="successCount" resultType="long">SELECT count(*) FROM customer_price_batch_audit WHERE batch_key=#{key} AND result='SUCCESS'</select>
+<insert id="insert">INSERT INTO customer_price_batch_audit(batch_key,operation_type,result,row_count,error_data,created_by) VALUES (#{key},'CUSTOMER_TYPE_PRICE_BATCH',#{result},#{count},CAST(#{errors,jdbcType=VARCHAR} AS jsonb),#{operator})</insert>
+</mapper>

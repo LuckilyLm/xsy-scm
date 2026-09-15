@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseReceiptConfirmationItemMapper">
-    <select id="selectByReceiptId"
-            resultType="com.xianshuyuan.scm.purchase.entity.PurchaseReceiptConfirmationItemEntity">SELECT ci.* FROM
-        purchase_receipt_confirmation_item ci JOIN purchase_receipt_confirmation c ON c.id=ci.confirmation_id WHERE
-        c.purchase_receipt_id=#{receiptId} ORDER BY c.id,ci.id
-    </select>
-</mapper>

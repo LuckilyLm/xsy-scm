@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.xianshuyuan.scm.purchase.mapper.PurchaseDemandGenerationBatchMapper">
-    <select id="selectByIdempotency" resultType="com.xianshuyuan.scm.purchase.entity.PurchaseDemandGenerationBatchEntity">
-        SELECT * FROM purchase_demand_generation_batch
-        WHERE idempotency_scope = #{scope} AND idempotency_key = #{key}
-    </select>
-</mapper>

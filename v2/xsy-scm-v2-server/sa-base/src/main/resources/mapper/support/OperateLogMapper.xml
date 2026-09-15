@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.base.module.support.operatelog.OperateLogDao">
+
+    <select id="queryByPage" resultType="net.lab1024.sa.base.module.support.operatelog.domain.OperateLogEntity">
+        select
+        *
+        from t_operate_log
+        <where>
+            <if test="query.operateUserId != null">
+                AND operate_user_id = #{query.operateUserId}
+            </if>
+            <if test="query.operateUserType != null">
+                AND operate_user_type = #{query.operateUserType}
+            </if>
+            <if test="query.startDate != null and query.startDate != ''">
+                AND CAST(create_time AS DATE) &gt;= #{query.startDate}
+            </if>
+            <if test="query.endDate != null and query.endDate != ''">
+                AND CAST(create_time AS DATE) &lt;= #{query.endDate}
+            </if>
+            <if test="query.userName != null and query.userName != ''">
+                AND STRPOS(operate_user_name,#{query.userName}) > 0
+            </if>
+            <if test="query.keywords != null and query.keywords != ''">
+                AND (STRPOS(module,#{query.keywords}) > 0 OR STRPOS(content,#{query.keywords}) > 0)
+            </if>
+            <if test="query.requestKeywords != null and query.requestKeywords != ''">
+                AND (STRPOS(url,#{query.requestKeywords}) > 0 OR STRPOS(method,#{query.requestKeywords}) > 0 OR STRPOS(param,#{query.requestKeywords}) > 0 OR STRPOS(response,#{query.requestKeywords}) > 0)
+            </if>
+            <if test="query.successFlag != null">
+                AND success_flag = #{query.successFlag}
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+
+    <delete id="deleteByIds">
+        delete from t_operate_log where id in
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </delete>
+
+</mapper>

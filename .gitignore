@@ -2,9 +2,13 @@
 .agents/
 skills-lock.json
 .claude
+.workbuddy-ai
 
 # Local IDE metadata
 .idea/
+
+# Local environment inventory (machine-specific, never commit)
+local-environment-info.txt
 
 # Downloaded reference projects
 project-reference-examples/
@@ -21,6 +25,7 @@ project-reference-examples/
 **/test-results/
 **/playwright-report/
 **/playwright/.auth/
+v2/.runtime
 
 # playwright and test
 .playwright-cli

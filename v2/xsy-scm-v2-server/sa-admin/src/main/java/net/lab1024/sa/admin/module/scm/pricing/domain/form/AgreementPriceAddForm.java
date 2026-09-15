@@ -1,0 +1,19 @@
+package net.lab1024.sa.admin.module.scm.pricing.domain.form;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
+import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
+import net.lab1024.sa.base.common.domain.PageParam;
+import java.time.OffsetDateTime;
+@Data
+public class AgreementPriceAddForm {
+    @NotNull private Long customerId;
+    @NotNull private Long skuId;
+    @NotNull @Pattern(regexp=ScmDecimalStrings.PATTERN)
+    @JsonDeserialize(using=ScmStrictDecimalStringDeserializer.class) private String unitPrice;
+    @NotNull private OffsetDateTime effectiveFrom;
+    private OffsetDateTime effectiveTo;
+}

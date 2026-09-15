@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.base.module.support.codegenerator.dao.CodeGeneratorDao">
+
+    <!--
+      V2 已从 MySQL 切换到 PostgreSQL。
+      原 MySQL 实现依赖 information_schema.tables.table_comment / columns.column_comment
+      以及 (select database())，这些在 PostgreSQL 中不存在，需改写为：
+        - 当前 schema            -> current_schema()
+        - 表/列注释              -> obj_description() / col_description() + to_regclass()
+        - 主键列                  -> information_schema.table_constraints
+        - 自增列                  -> is_identity / nextval() 默认值
+      注意：代码生成器是开发辅助工具，不属于 W0 验收范围，转换后未做功能级验证。
+    -->
+
+    <select id="countByTableName" resultType="Long">
+        select count(*)
+        from information_schema.tables
+        where table_schema = current_schema()
+          and table_name = #{tableName}
+    </select>
+
+    <select id="selectTableColumn" resultType="net.lab1024.sa.base.module.support.codegenerator.domain.vo.TableColumnVO">
+        select
+            c.column_name,
+            col_description(
+                to_regclass(quote_ident(c.table_schema) || '.' || quote_ident(c.table_name)),
+                c.ordinal_position
+            ) as column_comment,
+            c.data_type,
+            (c.is_nullable = 'YES') as nullable_flag,
+            case when pk.column_name is not null then 'PRI' else '' end as column_key,
+            case
+                when c.is_identity = 'YES' then 'auto_increment'
+                when c.column_default like 'nextval(%' then 'auto_increment'
+                else ''
+            end as extra
+        from information_schema.columns c
+        left join (
+            select kcu.table_schema, kcu.table_name, kcu.column_name
+            from information_schema.table_constraints tc
+            join information_schema.key_column_usage kcu
+              on kcu.constraint_name = tc.constraint_name
+             and kcu.table_schema = tc.table_schema
+            where tc.constraint_type = 'PRIMARY KEY'
+        ) pk
+          on pk.table_schema = c.table_schema
+         and pk.table_name = c.table_name
+         and pk.column_name = c.column_name
+        where c.table_schema = current_schema()
+          and c.table_name = #{tableName}
+        order by c.ordinal_position
+    </select>
+
+    <select id="queryTableList" resultType="net.lab1024.sa.base.module.support.codegenerator.domain.vo.TableVO">
+        select
+            t.table_name,
+            obj_description(
+                to_regclass(quote_ident(t.table_schema) || '.' || quote_ident(t.table_name))
+            ) as table_comment,
+            t_code_generator_config.update_time configTime
+        from information_schema.tables t
+        left join t_code_generator_config on t.table_name = t_code_generator_config.table_name
+        where t.table_schema = current_schema()
+          and t.table_type = 'BASE TABLE'
+        <if test="queryForm.tableNameKeywords != null and queryForm.tableNameKeywords != ''">
+            AND STRPOS(t.table_name, #{queryForm.tableNameKeywords}) > 0
+        </if>
+    </select>
+</mapper>

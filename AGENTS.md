@@ -1,15 +1,19 @@
 # AGENTS.md
 
-> **SmartAdmin 参考规则：**开发任何系统通用能力前，必须先调查当前项目，再搜索
-> `project-reference-examples/smart-admin-java17` 的对应实现；开发供应链业务能力时，
-> 以 `xsy-scm-server`、`xsy-scm-web` 的现有实现及当前 Sprint 规格为准。
-> SmartAdmin 仅作只读参考，禁止修改、机械复制或替换当前 Java 21 + React 技术栈。
+> **SmartAdmin V2 底座规则（2026-09-14 生效）：**SmartAdmin 是 V2 的**正式系统底座**，
+> 不是只读参考。登录、认证、用户、员工、部门、角色、菜单、权限、数据权限、日志、字典、
+> 文件、统一异常、统一响应、前端 Layout 与系统页面全部采用 SmartAdmin；旧 `auth` / `system`
+> 实现不迁移。V2 只迁 xsy-scm 供应链业务域，管理后台统一 Vue3 + TypeScript。
+> V2 正式工作区为根目录下的 `xsy-scm-server/` 与 `xsy-scm-web/`；当前代码移动前，
+> 实现暂存于 `v2/xsy-scm-v2-server/` 与 `v2/xsy-scm-v2-web/`，这两个目录只是迁移过渡来源。
+> `xsy-scm-miniapp` 仍为冻结的 legacy 小程序目录。
+> 禁止机械复制旧代码，禁止机械把 React 翻译成 Vue。
 > 完整规则见 [`SMARTADMIN_REFERENCE_RULES.md`](./SMARTADMIN_REFERENCE_RULES.md)。
 
 > Project: 鲜蔬源智慧供应链管理平台  
 > Short name: 鲜蔬源智链  
 > Code name: `xsy-scm`  
-> Version: v1.1  
+> Version: v2.0  
 > Scope: Global repository-level instructions for coding agents working on this project.
 
 ---
@@ -64,9 +68,15 @@ Expected top-level structure:
 
 ```text
 xsy-scm/
-├─ xsy-scm-web/
-├─ xsy-scm-server/
+├─ xsy-scm-server/           ← V2 正式后端（Java 21 + PostgreSQL）
+├─ xsy-scm-web/              ← V2 正式后台（SmartAdmin Vue3 + TypeScript）
+├─ v2/                       ← 迁移过渡目录（代码移动完成后不再作为新代码工作区）
+│  ├─ xsy-scm-v2-server/     ← 待移动的 SmartAdmin + SCM 后端
+│  └─ xsy-scm-v2-web/        ← 待移动的 SmartAdmin Vue3 前端
+├─ xsy-scm-miniapp/          ← LEGACY，冻结只读（待 W6 迁 uni-app）
 ├─ xsy-device-agent/
+├─ project-reference-examples/
+│  └─ xsy-scm/               ← 上游源码参考（只读，用于同步与比对）
 ├─ docs/
 ├─ deploy/
 ├─ docker-compose.yml
@@ -76,14 +86,20 @@ xsy-scm/
 Responsibilities:
 
 ```text
-xsy-scm-web
-= React admin UI, dashboards, data screens
-
 xsy-scm-server
-= Spring Boot business API and core domain logic
+= SmartAdmin-based Spring Boot business API and core domain logic (Java 21 + PostgreSQL)
+
+xsy-scm-web
+= SmartAdmin-based Vue3 + TypeScript admin UI
+
+v2/xsy-scm-v2-server and v2/xsy-scm-v2-web
+= Transitional source locations for the root V2 workspaces; use only while completing the move
 
 xsy-device-agent
 = Local Windows device integration for scales, printers, scanners, etc.
+
+project-reference-examples/xsy-scm
+= Upstream xsy-scm source reference — read-only, used for diffing and design extraction
 
 docs
 = Product, architecture, database, API, UI, workflow and device integration documentation
@@ -93,6 +109,11 @@ deploy
 ```
 
 Do not move responsibilities across these boundaries without a clear architectural reason.
+
+**Frozen directory.** `xsy-scm-miniapp/` remains frozen and read-only. The root
+`xsy-scm-server/` and `xsy-scm-web/` directories are the official V2 workspaces. Until the
+planned move is complete, do not create a parallel implementation; use the matching `v2/`
+directory only as the migration source.
 
 ---
 
@@ -134,37 +155,48 @@ Do not invent business rules that are not defined. If a workflow rule is unclear
 
 ## 4. Default Technology Stack
 
-### Frontend
+V2 baseline is SmartAdmin v3.31. Do not upgrade Spring Boot / MyBatis-Plus / Sa-Token or other
+upstream dependency versions unless a compile failure requires it — and report before doing so.
+
+### Frontend (V2)
 
 ```text
-React
+Vue 3
 Vite
 TypeScript
-Ant Design
-@ant-design/pro-components
-React Router
-TanStack Query
+Ant Design Vue
+Pinia
+Vue Router
 Axios
-Zustand
-React Hook Form
-Zod
 Apache ECharts
-DataV-React where needed
-AMap JS API where needed
+v-privilege permission directive
 ```
 
-### Backend
+The legacy React stack (React, @ant-design/pro-components, TanStack Query, Zustand,
+React Hook Form, Zod, DataV-React) is **frozen** and must not be introduced into the root V2 frontend.
+
+### Backend (V2)
 
 ```text
 Java 21
-Spring Boot
-Spring Security
-MyBatis-Plus
+Spring Boot 3.5.4
+MyBatis-Plus 3.5.12
+Sa-Token 1.44.0 + Redis (Bearer token)
 Spring Validation
-Flyway
-OpenAPI 3
+Flyway (sole schema-evolution mechanism)
+OpenAPI 3 / knife4j
 PostgreSQL
-Redis only when justified
+Lombok (no MapStruct)
+```
+
+`Spring Security` is retained only where SmartAdmin's own crypto/utility layer uses it
+(e.g. `Argon2PasswordEncoder`); authentication itself is Sa-Token based.
+
+### Mini Program
+
+```text
+Target: uni-app + Vue3
+Current: xsy-scm-miniapp (Taro + React) — frozen, migrates at W6
 ```
 
 ### Device Integration
@@ -555,45 +587,88 @@ Base path:
 /api
 ```
 
-Typical response:
+**V2 response envelope (Q5 — SmartAdmin `ResponseDTO`, mandatory):**
 
 ```json
 {
   "code": 0,
-  "message": "success",
-  "data": {}
+  "level": "",
+  "msg": "操作成功",
+  "ok": true,
+  "data": {},
+  "dataType": ""
 }
 ```
 
-Typical pagination:
+`code = 0` means success (`OK_CODE`). The legacy `message` field and the legacy `PageData`
+envelope are **not** supported in V2 — do not add compatibility shims for them.
+
+**V2 pagination (SmartAdmin `PageResult`):**
 
 ```json
 {
   "code": 0,
-  "message": "success",
+  "msg": "操作成功",
+  "ok": true,
   "data": {
-    "records": [],
-    "page": 1,
+    "pageNum": 1,
     "pageSize": 20,
-    "total": 100
+    "total": 100,
+    "pages": 5,
+    "list": [],
+    "emptyFlag": false
   }
 }
 ```
 
+Request side uses `PageParam{ pageNum, pageSize, searchCount, sortItemList[] }`,
+converted via `SmartPageUtil.convert2PageQuery` / `convert2PageResult`.
+
 Rules:
 
 - Validate input at the API boundary.
-- Return stable error codes.
+- Return stable error codes. Preserve existing in-use SCM business error codes
+  (e.g. `40921`, `40933`, `40926`, `40963`, `40970`, `40971`) — do not renumber them for
+  tidiness. New V2 error codes use a planned unified SCM range.
 - Do not expose stack traces to clients.
 - Make mutation semantics explicit.
-- Use idempotency where repeated external requests can create financial, stock or order side effects.
+- Use idempotency (`Idempotency-Key` + `idempotency_record`) where repeated external requests
+  can create financial, stock or order side effects.
 - Document public or shared API contracts.
+- Method-level authorization uses `@SaCheckPermission("scm:<domain>:<action>")`.
 
 ---
 
 ## 10. Frontend Architecture
 
-Suggested structure:
+> **V2 前端边界（2026-09-14）**
+>
+> §10–§16、§22、§27、§28、§35.2、§36、§38 中出现的 React / ProComponents /
+> TanStack Query / Zustand / React Hook Form / Zod 约定，描述的是 **legacy React 管理后台**。
+> 该前端已冻结只读，仅作字段与交互参考，**不得在根目录 V2 前端中复用其技术选型**。
+>
+> V2 管理后台为 `xsy-scm-web`，采用 **SmartAdmin Vue3 原生方案**：
+> 目录、Layout、菜单、Tabs、权限指令、表格、表单、弹窗、上传、字典展示
+> 全部沿用 SmartAdmin 既有结构与组件，不重新发明。
+>
+> 概念映射：
+>
+> ```text
+> React 页面 (pages/)            → Vue3 视图 (src/views/**/index.vue)
+> React Router 动态路由           → SmartAdmin buildRoutes（菜单驱动，name = menuId）
+> Permission / AuthGuard / hook  → v-privilege 指令 + 路由守卫
+> TanStack Query 缓存             → SmartAdmin 既有请求封装（不引入 React Query）
+> Zustand store                  → Pinia store（SmartAdmin 既有 store）
+> React Hook Form + Zod          → Ant Design Vue 表单 + SmartAdmin 校验范式
+> @ant-design/pro-components     → Ant Design Vue + SmartAdmin 业务组件
+> 双级侧栏布局                    → SmartAdmin 原生 Layout（废止双级侧栏）
+> ```
+>
+> Vue3 侧的详细约定在 W0 的 Vue3 后台基线任务中固化到本节；
+> 在代码移动完成前，以迁移过渡目录 `v2/xsy-scm-v2-web` 的既有实现为准；移动完成后以
+> 根目录 `xsy-scm-web` 为准。
+
+Suggested structure (**legacy React reference only** — not the V2 layout):
 
 ```text
 src/
@@ -616,6 +691,22 @@ src/
 ```
 
 Do not create page-specific duplicates of shared selectors, status tags, search panels or table wrappers.
+
+**V2 structure** (SmartAdmin native):
+
+```text
+xsy-scm-web/src/
+├─ api/            ← 接口定义（含 scm/ 业务域）
+├─ views/          ← 页面（system/ 沿用 SmartAdmin；scm/ 为业务域）
+├─ components/     ← 通用与业务组件
+├─ layout/         ← SmartAdmin Layout
+├─ router/         ← 静态路由 + buildRoutes 动态菜单
+├─ store/          ← Pinia
+├─ directives/     ← privilege 等指令
+├─ constants/
+├─ utils/
+└─ types/
+```
 
 ---
 
@@ -1149,6 +1240,21 @@ Do not implement printing independently in each business module.
 ## 24. Security and Permission Rules
 
 Use RBAC first.
+
+> **V2 认证与鉴权（Q4 — 采用 SmartAdmin Sa-Token，不迁 legacy Spring Security 会话方案）**
+>
+> ```text
+> Header：Authorization: Bearer <token>
+> Sa-Token token-style: simple-uuid，有效期 30 天，登录态存 Redis
+> loginId 形如 "2:44"（userType:employeeId）
+> 接口鉴权：@SaCheckPermission("scm:<domain>:<action>")
+> 前端按钮权限：v-privilege="'scm:<domain>:<action>'"
+> administratorFlag 绕过权限校验
+> ```
+>
+> 禁止套用 legacy 的 Spring Session JDBC 方案；
+> 禁止为适配 legacy 而修改 SmartAdmin 核心认证实现。
+> 当前不是 SaaS，不引入 `tenant_id` 与多租户。
 
 Permission layers:
 
@@ -1897,6 +2003,20 @@ not simply fewer lines of code.
 ---
 
 ## 35.2 Frontend Productivity and Framework Tools
+
+> **V2 前端边界：**本节描述 **legacy React 前端** 的生产力工具约定（React Hook Form、Zod、
+> TanStack Query、Zustand、ProComponents 等），该前端已冻结只读。
+> V2 管理后台（`xsy-scm-web`；移动完成前为 `v2/xsy-scm-v2-web`）使用
+> **Vue3 + TypeScript + Ant Design Vue + Pinia**，
+> 优先复用 SmartAdmin 既有组件、hooks（composables）、请求封装与表单/表格范式，
+> 不引入本节中的 React 生态库。判断标准改为：
+>
+> ```text
+> 1. Vue3 / Ant Design Vue 是否已提供该能力？
+> 2. SmartAdmin 既有实现是否已解决该问题？
+> 3. 是否存在 Vue3 生态的成熟等价方案？
+> 4. 只有在以上都不满足时，才考虑自建。
+> ```
 
 For frontend development, prefer framework-native capabilities, existing project libraries and mature ecosystem tools over repetitive handwritten infrastructure.
 

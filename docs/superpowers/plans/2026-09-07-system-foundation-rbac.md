@@ -40,7 +40,7 @@
 - `CONTEXT.md`
 - `docs/architecture/smartadmin-code-conventions.md`
 - `docs/architecture/xsy-vs-smartadmin-conventions.md`
-- `project-reference-examples/smart-admin-java17/**`（只读参考）
+- `project-reference-examples/xsy-scm/**`（只读上游参考）
 
 ## 1. 调查结论
 

@@ -1,5 +1,36 @@
 # 鲜蔬源智慧供应链管理平台
 
+> ## ⚠️ 正在迁移到 SmartAdmin V2（2026-09-14 起）
+>
+> 本仓库正在执行 **SmartAdmin V2 迁移**。V2 正式工作区固定为根目录前后端目录；代码移动完成前，
+> `v2/` 下的对应目录仅作为迁移过渡来源：
+>
+> | 目录 | 状态 |
+> |---|---|
+> | `xsy-scm-server/` | **V2 正式后端**（SmartAdmin 基线 + SCM 业务，Java 21 + PostgreSQL） |
+> | `xsy-scm-web/` | **V2 正式后台**（SmartAdmin Vue3 + TypeScript） |
+> | `v2/xsy-scm-v2-server/` | 迁移过渡来源（待移动到根目录后端） |
+> | `v2/xsy-scm-v2-web/` | 迁移过渡来源（待移动到根目录前端） |
+> | `xsy-scm-miniapp/` | LEGACY，冻结只读（W6 迁 uni-app Vue3） |
+>
+> 关键变化：
+>
+> - **系统底座改为 SmartAdmin**：登录、认证、用户、员工、部门、角色、菜单、权限、数据权限、
+>   日志、字典、文件、统一异常/响应、前端 Layout 与系统页面全部采用 SmartAdmin；
+>   旧 `auth` / `system` 实现**不迁移**。
+> - **管理后台改为 Vue3 + TypeScript**，旧 React 后台停止开发。
+> - **只迁供应链业务**：product / customer / supplier / order / purchase / inventory / mall
+>   （`marketing` 为 DEFERRED）。
+> - **保持 PostgreSQL**（不切 MySQL），V2 使用独立 schema `xsy_v2`。
+> - 当前不是 SaaS，不引入 `tenant_id` / 多租户；不引入 Spring Cloud。
+>
+> 规则见 [`SMARTADMIN_REFERENCE_RULES.md`](./SMARTADMIN_REFERENCE_RULES.md)，
+> 审计与迁移方案见 [`docs/architecture/2026-09-14-smartadmin-v2-迁移审计报告.md`](./docs/architecture/2026-09-14-smartadmin-v2-迁移审计报告.md)。
+>
+> **下文描述的是 legacy 实现（Sprint 1–4），保留作为业务语义与字段参考。**
+
+---
+
 当前分支已实现 Sprint 1 商品档案、Sprint 2 客户定价/销售订单/售后、Sprint 3 采购收货与库存，以及 Sprint 4 登录权限、商城和小程序基础。PostgreSQL、Spring Boot REST API、React 管理端与 Taro 小程序已经形成工程链路，后端保持按领域分包的模块化单体结构。当前完成事实以代码和验证记录为准，后续方向见 [Sprint 5–12 产品路线规划](docs/roadmap/2026-09-11-Sprint5-12产品路线规划.md)。
 
 ## 已实现范围

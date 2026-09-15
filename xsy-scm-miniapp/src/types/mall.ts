@@ -1,6 +1,7 @@
 // 商城领域类型定义，对应后端 com.xianshuyuan.scm.mall.vo / dto。
 
-export type PriceSource = 'AGREEMENT' | 'MARKET' | 'OVERRIDE'
+export type PriceSource = 'AGREEMENT' | 'CUSTOMER_TYPE' | 'MARKET' | 'OVERRIDE'
+export type PriceStatus = 'PRICED' | 'UNPRICED'
 export type ProductType = 'STANDARD' | 'NON_STANDARD'
 export type OrderStatus = 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'CANCELLED'
 export type OrderSource = 'NORMAL' | 'SUPPLEMENT' | 'MALL'
@@ -72,6 +73,8 @@ export interface MallProduct {
   /** 服务端解析后的成交单价；无有效价格时为 null，前端展示“询价”。 */
   unitPrice: string | null
   priceSource: PriceSource | null
+  /** 价格状态：UNPRICED 表示没有任何有效价格来源，商品不可购买（零价属于 PRICED）。 */
+  priceStatus?: PriceStatus | null
 }
 
 export type MallCardStyle = 'FLAT' | 'SHADOW' | 'BORDER'
@@ -179,6 +182,8 @@ export interface MallCartItem {
   /** 失效商品保留在列表中，价格字段为 null。 */
   unitPrice: string | null
   priceSource: PriceSource | null
+  /** 价格状态：缺价行为 UNPRICED，商品仍保留在购物车但不可结算。 */
+  priceStatus?: PriceStatus | null
   lineAmount: string | null
   available: boolean
   reason: string | null

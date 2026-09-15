@@ -1,0 +1,1 @@
+import{p as e,g as a}from"./index-DB9tUd_Y.js";const t={queryPage:a=>e("/support/changeLog/queryPage",a),add:a=>e("/support/changeLog/add",a),update:a=>e("/support/changeLog/update",a),delete:e=>a(`/support/changeLog/delete/${e}`),batchDelete:a=>e("/support/changeLog/batchDelete",a)};export{t as c};

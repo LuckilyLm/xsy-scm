@@ -1,0 +1,1 @@
+import{p as s,g as p}from"./index-DB9tUd_Y.js";const e={listBySupplierId:s=>p(`/scm/supplier/sku/list/${s}`,{}),query:p=>s("/scm/supplier/sku/query",p),replace:p=>s("/scm/supplier/sku/replace",p)};export{e as s};

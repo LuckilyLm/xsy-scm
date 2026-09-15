@@ -1,0 +1,1 @@
+const l=[{value:"ON_SHELF",label:"上架"},{value:"OFF_SHELF",label:"下架"}],a=[{value:"STANDARD",label:"标品"},{value:"NON_STANDARD",label:"非标品"}],e=[{value:"ENABLED",label:"启用"},{value:"DISABLED",label:"停用"}],u=(l,a)=>null===l?"未定价":l===a||null===a?`¥ ${l}`:`¥ ${l} ～ ${a}`;export{e as E,a as P,l as S,u as p};

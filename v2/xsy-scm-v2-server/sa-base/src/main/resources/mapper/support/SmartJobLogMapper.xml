@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.base.module.support.job.repository.SmartJobLogDao">
+
+    <!-- 定时任务-执行记录-分页查询 -->
+    <select id="query" resultType="net.lab1024.sa.base.module.support.job.api.domain.SmartJobLogVO">
+        SELECT *
+        FROM t_smart_job_log
+        <where>
+            <if test="query.searchWord != null and query.searchWord != ''">
+                AND ( STRPOS(job_name,#{query.searchWord}) > 0
+                OR STRPOS(param,#{query.searchWord}) > 0
+                OR STRPOS(execute_result,#{query.searchWord}) > 0
+                OR STRPOS(create_name,#{query.searchWord}) > 0
+                )
+            </if>
+            <if test="query.jobId != null">
+                AND job_id = #{query.jobId}
+            </if>
+            <if test="query.successFlag != null">
+                AND success_flag = #{query.successFlag}
+            </if>
+            <if test="query.startTime != null">
+                AND CAST(execute_start_time AS DATE) &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND CAST(execute_start_time AS DATE) &lt;= #{query.endTime}
+            </if>
+        </where>
+        <if test="query.sortItemList == null or query.sortItemList.size == 0">
+            ORDER BY log_id DESC
+        </if>
+    </select>
+
+</mapper>

@@ -1,5 +1,21 @@
 # 鲜蔬源智慧供应链管理平台 UI/UX 设计与前端开发指导
 
+> ## ⚠️ 前端技术实现部分已废止（2026-09-14）
+>
+> 本文档的**三套视觉系统划分（Admin / Screen / Mall）、品牌识别、信息架构意图与验收思路**
+> 仍有参考价值。
+>
+> 但所有 **React 相关的技术实现约束已废止**，不再作为实现依据：
+>
+> - React / ProComponents / TanStack Query / Zustand / React Hook Form / Zod 约定 → **废止**。
+> - 双级侧栏（一级 + 二级）布局要求 → **废止**（V2 采用 SmartAdmin 原生 Layout）。
+> - V2 管理后台为 **Vue3 + TypeScript + Ant Design Vue**，Layout、菜单、Tabs、表格、表单、
+>   弹窗、上传与权限指令**全部采用 SmartAdmin 原生方案**，不重新发明。
+> - 数据大屏与商城端在各自迁移阶段再确定实现方式。
+>
+> 现行依据：[`../../SMARTADMIN_REFERENCE_RULES.md`](../../SMARTADMIN_REFERENCE_RULES.md)。
+> 具体 Vue3 页面约定以 `v2/xsy-scm-v2-web` 既有实现为准。
+
 > 项目名称：鲜蔬源智慧供应链管理平台
 > 页面简称：鲜蔬源智链
 > 项目代码：`xsy-scm`

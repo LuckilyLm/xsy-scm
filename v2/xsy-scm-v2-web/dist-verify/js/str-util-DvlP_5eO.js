@@ -1,0 +1,1 @@
+function e(e){return e?e.replace(/([A-Z])/g,"-$1").toLowerCase().substring(1):""}function r(e){return e?(e=e.replace(/_(\w)/g,((e,r)=>r.toUpperCase())))[0].toUpperCase()+e.substring(1):""}function t(e){return e?e.replace(/_(\w)/g,((e,r)=>r.toUpperCase())):""}export{r as a,t as b,e as c};

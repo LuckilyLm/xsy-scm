@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.supplier.dao.SupplierSkuDao">
+
+    <sql id="supplierSkuColumns">
+        ss.id, ss.version, ss.supplier_id, ss.sku_id,
+        ss.supplier_code_snapshot, ss.supplier_name_snapshot,
+        ss.sku_code_snapshot, ss.sku_name_snapshot, ss.spec_values_snapshot,
+        ss.purchase_unit, ss.reference_price, ss.purchaser_id,
+        ss.is_default, ss.status,
+        ss.created_at, ss.updated_at, ss.created_by, ss.updated_by
+    </sql>
+
+    <!--
+      其余列由下划线→驼峰自动映射；JSONB 列需要显式 typeHandler。
+      `is_default` 必须显式映射：自动映射会把它折成 `isDefault`（实体属性名是 `defaultFlag`），
+      列名与属性名不同源，不写这一行读路径会静默返回 null。
+    -->
+    <resultMap id="supplierSkuMap" type="net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierSkuEntity">
+        <id column="id" property="id"/>
+        <result column="is_default" property="defaultFlag"/>
+        <result column="spec_values_snapshot" property="specValuesSnapshot"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <select id="selectActiveBySupplierId" resultMap="supplierSkuMap">
+        SELECT <include refid="supplierSkuColumns"/>
+        FROM supplier_sku ss
+        WHERE ss.supplier_id = #{supplierId}
+          AND ss.deleted = FALSE
+        ORDER BY ss.id
+    </select>
+
+    <!-- 写入路径的第二把锁；ORDER BY id 保证多行加锁顺序确定 -->
+    <select id="selectActiveBySupplierIdForUpdate" resultMap="supplierSkuMap">
+        SELECT <include refid="supplierSkuColumns"/>
+        FROM supplier_sku ss
+        WHERE ss.supplier_id = #{supplierId}
+          AND ss.deleted = FALSE
+        ORDER BY ss.id
+        FOR UPDATE
+    </select>
+
+    <!--
+      「可采购来源」四表联动（legacy R16）：supplier_sku → supplier → product_sku → product_spu。
+      W2 无消费端点，查询先落地供 W3 采购域复用。
+      排序 is_default DESC 让默认来源排在前面，但不改变基数（允许多条默认，R12）。
+    -->
+    <select id="selectEnabledBySkuId" resultMap="supplierSkuMap">
+        SELECT <include refid="supplierSkuColumns"/>
+        FROM supplier_sku ss
+        JOIN supplier s     ON s.id = ss.supplier_id AND s.deleted = FALSE AND s.status = 'ENABLED'
+        JOIN product_sku k  ON k.id = ss.sku_id      AND k.deleted = FALSE AND k.status = 'ON_SHELF'
+        JOIN product_spu p  ON p.id = k.spu_id       AND p.deleted = FALSE AND p.status = 'ON_SHELF'
+        WHERE ss.sku_id = #{skuId}
+          AND ss.deleted = FALSE
+          AND ss.status = 'ENABLED'
+        ORDER BY ss.is_default DESC, ss.id
+    </select>
+
+    <select id="queryPage" resultMap="supplierSkuMap">
+        SELECT <include refid="supplierSkuColumns"/>
+        FROM supplier_sku ss
+        WHERE ss.deleted = FALSE
+        <if test="query.supplierId != null">
+            AND ss.supplier_id = #{query.supplierId}
+        </if>
+        <if test="query.skuId != null">
+            AND ss.sku_id = #{query.skuId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND ss.status = #{query.status}
+        </if>
+    </select>
+
+    <update id="softDeleteOwnedWithVersion">
+        UPDATE supplier_sku
+        SET deleted = TRUE,
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE supplier_id = #{supplierId}
+          AND id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <select id="countActiveBySupplierId" resultType="long">
+        SELECT COUNT(*)
+        FROM supplier_sku
+        WHERE supplier_id = #{supplierId}
+          AND deleted = FALSE
+    </select>
+
+    <select id="countActiveBySupplierIds" resultType="net.lab1024.sa.admin.module.scm.supplier.domain.vo.SupplierSkuCountVO">
+        SELECT ss.supplier_id AS supplierId, COUNT(*) AS skuCount
+        FROM supplier_sku ss
+        WHERE ss.deleted = FALSE
+          AND ss.supplier_id IN
+          <foreach collection="supplierIds" item="id" open="(" close=")" separator=",">#{id}</foreach>
+        GROUP BY ss.supplier_id
+    </select>
+
+    <resultMap id="orderableSkuMap" type="net.lab1024.sa.admin.module.scm.supplier.domain.vo.OrderableSkuVO">
+        <id column="sku_id" property="skuId"/>
+        <result column="sku_code" property="skuCode"/>
+        <result column="product_name" property="productName"/>
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <!-- 名称取 SPU 名称（productName），不是 SKU 的 specName（legacy R4） -->
+    <select id="selectOrderableSkuByIds" resultMap="orderableSkuMap">
+        SELECT k.id AS sku_id, k.sku_code, p.name AS product_name, k.spec_values
+        FROM product_sku k
+        JOIN product_spu p ON p.id = k.spu_id AND p.deleted = FALSE AND p.status = 'ON_SHELF'
+        WHERE k.deleted = FALSE
+          AND k.status = 'ON_SHELF'
+          AND k.id IN
+          <foreach collection="skuIds" item="id" open="(" close=")" separator=",">#{id}</foreach>
+    </select>
+
+</mapper>

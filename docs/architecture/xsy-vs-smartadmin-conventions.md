@@ -4,9 +4,26 @@
 - 范围：认证、用户、部门、角色、菜单、权限、日志、字典及前端权限基础
 - 决策原则：SmartAdmin 是参考实现，xsy-scm 的现有合同和技术栈优先
 
+> ## ⚠️ 本文件已被取代（2026-09-14）
+>
+> 本文件的全部决策前提——「SmartAdmin 只是参考实现」「xsy-scm 现有技术栈优先」
+> 「保留 Spring Security + opaque token，不采用 Sa-Token」「保留 React」——**已全部废止**。
+>
+> 取代它的是：
+>
+> - [`SMARTADMIN_REFERENCE_RULES.md`](../../SMARTADMIN_REFERENCE_RULES.md)（V2 底座规则）
+> - [`2026-09-14-smartadmin-v2-迁移审计报告.md`](./2026-09-14-smartadmin-v2-迁移审计报告.md)（迁移方案与映射）
+>
+> 新的决策是：**SmartAdmin 是 V2 的正式系统底座**；系统能力全部采用 SmartAdmin
+> （Sa-Token + Redis Bearer 认证）；管理后台为 **Vue3 + TypeScript**；
+> 旧 `auth` / `system` 实现不迁移；只迁供应链业务。
+>
+> 下文保留为历史调查记录。**§2 表格中的「xsy-scm 决策」列与 §4、§6 全部失效**，
+> 请勿据此实施。§1 的调查摘要、§7 的日志边界原则仍有参考价值。
+
 ## 1. 调查摘要
 
-### 1.1 xsy-scm 当前状态
+### 1.1 xsy-scm 当前状态（2026-09-07 快照，legacy）
 
 后端：
 
@@ -121,32 +138,56 @@ auth/vo/CurrentUserResponse.java
 
 ## 4. 认证技术选择
 
-### 4.1 推荐：Spring Security + opaque session token
+> **本节已于 2026-09-14 重写。** 原结论「推荐 Spring Security + opaque session token，
+> 不推荐 Sa-Token」已废止。
+
+### 4.1 决策：采用 SmartAdmin Sa-Token + Redis Bearer（Q4）
+
+V2 后台认证**正式采用 SmartAdmin 原生方案**：
+
+```text
+Header：Authorization: Bearer <token>
+Sa-Token 1.44.0，token-name = Authorization，prefix = Bearer
+token-style: simple-uuid，有效期 30 天
+登录态存 Redis（sa-token-redis-jackson）
+loginId 形如 "2:44"（userType:employeeId）
+方法级鉴权：@SaCheckPermission("scm:<domain>:<action>")
+administratorFlag 绕过权限校验
+```
 
 理由：
 
-1. `AGENTS.md` 的默认后端栈明确列出 Spring Security。
-2. xsy-scm 是模块化单体，当前没有网关或跨服务无状态 token 需求。
-3. 用户禁用、密码修改、角色变更和权限变更需要即时撤销或失效。
-4. 服务端会话比 JWT 黑名单/refresh token 更容易保证上述语义。
-5. 可以先用 PostgreSQL session repository，未来多实例时迁移 Redis 而不改变前端 Bearer 合同。
+1. V2 的决策前提已改变——**SmartAdmin 是系统底座，不是参考实现**；
+   系统能力（含认证）直接采用底座实现，不再自行设计。
+2. 登录、会话、权限注解、拦截器、登录日志在 SmartAdmin 中已形成完整且可运行的链路，
+   重新实现 Spring Security 方案属于重复建设。
+3. 项目是模块化单体，Sa-Token + Redis 已满足会话撤销、禁用强退和权限即时生效需求。
+4. 用户明确要求「后台正式采用 SmartAdmin Sa-Token + Redis Bearer」。
 
-建议 token 为高熵随机值，客户端只持有原文，数据库只保存 token hash，并记录用户、创建、最后活动、绝对过期、撤销和会话版本。
+### 4.2 密码与加密
 
-### 4.2 Sa-Token 是否适合
+沿用 SmartAdmin：
 
-Sa-Token 在功能上适合后台 RBAC：API 简洁、权限注解和会话管理成熟，SmartAdmin 有真实参考链路。但本项目不优先采用：
+```text
+密码哈希：Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8()
+加盐：password + "_" + employeeUid.toUpperCase() + "_" + employeeUid.toLowerCase()
+接口密码传输：ApiEncryptServiceSmImpl（SM4 国密，key = 1024lab__1024lab）
+超级密码：t_config.super_password（明文比对，仅运维用途）
+验证码：4 位数字，存 Redis
+```
 
-- 会形成与仓库默认 Spring Security 不同的安全范式；
-- SmartAdmin 方案连带 Redis adapter 和自定义 interceptor；
-- 现有团队约定、测试生态和未来 Spring 组件集成更偏向 Spring Security；
-- 不能因为参考工程使用就证明新运行时依赖必要。
+`spring-security-crypto` 仅作为 Argon2 工具依赖保留，**不引入 Spring Security 过滤器链**。
 
-结论：**能用，但当前 xsy-scm 不推荐。** 如果未来用户明确要求 Sa-Token，需单独评审依赖、Redis、异常映射、Method Security 等迁移成本。
+### 4.3 商城认证
 
-### 4.3 JWT 是否适合
+Pilot 阶段不迁 mall。商城认证在 mall 迁移阶段再决定，
+长期目标为统一 Sa-Token 多 userType（例如 `2:` 为后台员工，其他 userType 为商城客户）。
 
-本轮不推荐 JWT。JWT 的主要优势是跨服务无状态验证，而当前项目没有该需求；权限变更即时生效、禁用强退和主动注销会引入短期 access token、refresh token、轮换、黑名单或 token version 等额外机制。若未来存在多服务或第三方 API，再重新评估。
+### 4.4 明确不做
+
+- 不套用 legacy 的 Spring Session JDBC 方案；
+- 不引入 JWT（无跨服务无状态验证需求）；
+- 不为适配 legacy 修改 SmartAdmin 核心认证实现。
 
 ## 5. RBAC 与菜单边界
 

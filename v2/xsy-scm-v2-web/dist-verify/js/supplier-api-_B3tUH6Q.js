@@ -1,0 +1,1 @@
+import{p as s,g as e}from"./index-DB9tUd_Y.js";const p={query:e=>s("/scm/supplier/query",e),detail:s=>e(`/scm/supplier/detail/${s}`,{}),optionList:()=>s("/scm/supplier/option/list",{}),add:e=>s("/scm/supplier/add",e),update:e=>s("/scm/supplier/update",e),updateStatus:e=>s("/scm/supplier/updateStatus",e),delete:e=>s("/scm/supplier/delete",e)};export{p as s};

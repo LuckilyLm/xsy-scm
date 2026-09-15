@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao">
+
+    <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
+    <sql id="customerColumns">
+        c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.status, c.settle_mode,
+        c.credit_limit, c.parent_customer_id, c.seller_id, c.supplier_id,
+        c.contact_name, c.contact_phone, c.address,
+        c.credit_period_type, c.credit_amount_threshold, c.credit_period_value, c.credit_period_unit,
+        c.settle_day, c.remark, c.created_at, c.updated_at, c.created_by, c.updated_by
+    </sql>
+
+    <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity">
+        SELECT <include refid="customerColumns"/>
+        FROM customer c
+        WHERE c.deleted = FALSE
+        <if test="query.keyword != null and query.keyword != ''">
+            <!-- 增强（Target Design Q8）：legacy 只搜编码 + 名称，这里追加联系人 / 联系电话 -->
+            AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')
+              OR c.name ILIKE CONCAT('%', #{query.keyword}, '%')
+              OR c.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')
+              OR c.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.customerTypeId != null">
+            AND c.customer_type_id = #{query.customerTypeId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND c.status = #{query.status}
+        </if>
+        <if test="query.settleMode != null and query.settleMode != ''">
+            AND c.settle_mode = #{query.settleMode}
+        </if>
+        <if test="query.parentCustomerId != null">
+            AND c.parent_customer_id = #{query.parentCustomerId}
+        </if>
+    </select>
+
+    <update id="softDelete">
+        UPDATE customer
+        SET deleted = TRUE,
+            version = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{customerId}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <select id="countActiveByTypeId" resultType="long">
+        SELECT COUNT(*)
+        FROM customer
+        WHERE customer_type_id = #{typeId}
+          AND deleted = FALSE
+    </select>
+
+</mapper>

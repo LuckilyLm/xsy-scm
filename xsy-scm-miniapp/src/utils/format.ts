@@ -47,6 +47,8 @@ export function priceSourceLabel(source: PriceSource | null | undefined): string
   switch (source) {
     case 'AGREEMENT':
       return '协议价'
+    case 'CUSTOMER_TYPE':
+      return '客户类型价'
     case 'MARKET':
       return '市场价'
     case 'OVERRIDE':

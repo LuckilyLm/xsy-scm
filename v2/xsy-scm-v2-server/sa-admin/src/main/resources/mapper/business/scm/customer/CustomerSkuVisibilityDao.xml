@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.customer.dao.CustomerSkuVisibilityDao">
+<select id="policy" resultType="string">SELECT visibility_policy FROM customer WHERE id=#{customerId} AND deleted=FALSE</select>
+<select id="visibleIds" resultType="long">SELECT sku_id FROM customer_sku_visibility WHERE customer_id=#{customerId} AND deleted=FALSE AND sku_id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach></select>
+<select id="lockCustomer" resultType="long">SELECT id FROM customer WHERE id=#{id} AND deleted=FALSE FOR UPDATE</select>
+<update id="softDelete">UPDATE customer_sku_visibility SET deleted=TRUE,version=version+1,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator} WHERE id=#{id} AND version=#{version} AND customer_id=#{customerId} AND deleted=FALSE</update>
+<select id="customerReferences" resultType="long">SELECT
+ (SELECT count(*) FROM customer_agreement_price WHERE customer_id=#{id} AND deleted=FALSE)+
+ (SELECT count(*) FROM customer_sku_visibility WHERE customer_id=#{id} AND deleted=FALSE)+
+ (SELECT count(*) FROM customer_type_price p JOIN customer c ON c.customer_type_id=p.customer_type_id WHERE c.id=#{id} AND p.deleted=FALSE)
+</select>
+<select id="typeReferences" resultType="long">SELECT count(*) FROM customer_type_price WHERE customer_type_id=#{id} AND deleted=FALSE</select>
+<select id="reverse" resultType="net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO">
+ SELECT c.id customer_id,c.customer_code,c.name customer_name,t.name customer_type_name,c.visibility_policy,v.sku_id,s.sku_code,p.name product_name,s.spec_name,s.status sku_status,p.status spu_status,v.created_at,v.created_by
+ FROM customer c LEFT JOIN customer_type t ON t.id=c.customer_type_id
+ LEFT JOIN customer_sku_visibility v ON v.customer_id=c.id AND v.deleted=FALSE
+ LEFT JOIN product_sku s ON s.id=v.sku_id LEFT JOIN product_spu p ON p.id=s.spu_id WHERE c.deleted=FALSE
+ <if test="query.customerId != null">AND c.id=#{query.customerId}</if>
+ <if test="query.skuId != null">AND v.sku_id=#{query.skuId}</if>
+ <if test="query.visibilityPolicy != null">AND c.visibility_policy=#{query.visibilityPolicy}</if>
+ ORDER BY c.customer_code,v.id
+</select>
+</mapper>

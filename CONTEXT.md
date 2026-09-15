@@ -1,3 +1,10 @@
+# 工程工作区约定（2026-09-15）
+
+V2 的正式工作区固定为仓库根目录下的 `xsy-scm-server/`（Java 21 + PostgreSQL 后端）和
+`xsy-scm-web/`（SmartAdmin Vue3 + TypeScript 管理后台）。当前实现仍位于
+`v2/xsy-scm-v2-server/` 与 `v2/xsy-scm-v2-web/`，这两个目录只作为迁移到根目录前的过渡来源；
+后续新代码、测试和构建命令以根目录前后端目录为准。`xsy-scm-miniapp/` 继续保持 legacy 冻结状态。
+
 # 鲜蔬源智链领域词汇
 
 本文件统一鲜蔬源供应链业务中的核心用语。它只定义业务概念，不描述数据库、接口或代码实现。

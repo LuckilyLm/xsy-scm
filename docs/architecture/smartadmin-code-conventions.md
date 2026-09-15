@@ -1,12 +1,12 @@
 # SmartAdmin Java17 编码规范调查与提取
 
 - 调查日期：2026-09-07
-- 参考范围：`project-reference-examples/smart-admin-java17/smart-admin-api-java17-springboot3`
+- 参考范围：`project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-server`
 - 文档性质：只读参考调查，不是 xsy-scm 的强制实现模板
 
 ## 1. 使用边界
 
-SmartAdmin 是系统通用能力的参考实现，xsy-scm 才是产品事实源。本文只提取登录、组织、RBAC、菜单、字典和日志的设计意图及编码习惯，不复制其包名、表名、Controller、DTO、Vue 页面或 MySQL SQL，也不以其 Java 17 + Vue 技术栈替代 xsy-scm 的 Java 21 + React 技术栈。
+SmartAdmin 是系统通用能力的参考实现，xsy-scm 才是产品事实源。本文只提取登录、组织、RBAC、菜单、字典和日志的设计意图及编码习惯，不复制其包名、表名、Controller、DTO、Vue 页面或 MySQL SQL，也不以其 Java 17 技术栈替代 xsy-scm 的 Java 21 + Vue3 技术栈。
 
 参考时采用以下判断：
 
