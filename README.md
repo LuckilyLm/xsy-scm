@@ -1,16 +1,15 @@
 # 鲜蔬源智慧供应链管理平台
 
-> ## ⚠️ 正在迁移到 SmartAdmin V2（2026-09-14 起）
+> ## SmartAdmin V2（W0–W3 已完成，2026-09-15）
 >
-> 本仓库正在执行 **SmartAdmin V2 迁移**。V2 正式工作区固定为根目录前后端目录；代码移动完成前，
-> `v2/` 下的对应目录仅作为迁移过渡来源：
+> 本仓库的 SmartAdmin V2 正式工作区固定为根目录前后端、工具和文档目录：
 >
 > | 目录 | 状态 |
 > |---|---|
 > | `xsy-scm-server/` | **V2 正式后端**（SmartAdmin 基线 + SCM 业务，Java 21 + PostgreSQL） |
 > | `xsy-scm-web/` | **V2 正式后台**（SmartAdmin Vue3 + TypeScript） |
-> | `v2/xsy-scm-v2-server/` | 迁移过渡来源（待移动到根目录后端） |
-> | `v2/xsy-scm-v2-web/` | 迁移过渡来源（待移动到根目录前端） |
+> | `tools/` | **V2 正式工具** |
+> | `docs/` | **V2 正式文档** |
 > | `xsy-scm-miniapp/` | LEGACY，冻结只读（W6 迁 uni-app Vue3） |
 >
 > 关键变化：

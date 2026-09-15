@@ -3,7 +3,7 @@
 > 日期：2026-09-14
 > 范围：`xsy-scm` 全仓库 + `project-reference-examples/xsy-scm`
 > 性质：**只读审计**。本报告不包含任何迁移代码，未修改任何 legacy 文件。
-> 结论状态：**待确认**（第 11 节列出需人工拍板的 9 项决策）
+> 结论状态：**历史审计已执行**（原第 11 节决策已落地；当前工作区与波次状态以根目录规则及验收报告为准）
 
 ---
 
@@ -754,7 +754,7 @@ SCM 菜单写入 `t_menu`，`component` 字段填 Vue 组件路径（不含 `.vu
 ### 11.2 阶段划分
 
 **P0 · V2 Clean Baseline（前置，最高风险）**
-1. 创建 V2 工作区（已确定为根目录 `xsy-scm-server/` 与 `xsy-scm-web/`；W0/W3 期间暂存于 `v2/`），从 SmartAdmin v3.31 复制 `sa-base` + `sa-admin` 作为基线；前端从上游 `xsy-scm-web` 复制。
+1. 创建 V2 工作区（已确定为根目录 `xsy-scm-server/` 与 `xsy-scm-web/`），从 SmartAdmin v3.31 复制 `sa-base` + `sa-admin` 作为基线；前端从上游 `xsy-scm-web` 复制。
 2. 确定 Java 版本策略（17 保持 / 升 21，见 Q2）。
 3. **MySQL → PostgreSQL 全量转换**：38 张系统表 DDL 转写；`DbType.POSTGRE_SQL`；`jdbc:p6spy:postgresql://`；逐表回归。
 4. 引入 Flyway（SmartAdmin 原本没有），建立 `V1__sa_system_baseline.sql` + `V2__sa_system_seed.sql`。
@@ -838,7 +838,7 @@ SCM 菜单写入 `t_menu`，`component` 字段填 Vue 组件路径（不含 `.vu
 
 ### 13.1 新增（V2 工作区）
 
-**目录骨架（当前规则；W0/W3 实际证据暂存于 `v2/`）**
+**目录骨架（当前规则）**
 ```
 xsy-scm/
 ├─ xsy-scm-server/             # 从上游 xsy-scm-server 派生
@@ -848,7 +848,6 @@ xsy-scm/
 ├─ xsy-scm-web/                # 从上游 xsy-scm-web 派生
 │  ├─ src/
 │  └─ package.json
-└─ v2/                          # W0/W3 迁移过渡源与验证证据
 ```
 
 **后端新增（Product Pilot）**
@@ -967,7 +966,7 @@ CONTEXT.md                 # 领域词汇（不改）
 
 | # | 决策 | 选项 | 建议 |
 |---|---|---|---|
-| Q1 | **V2 代码放哪里** | (a) 仓库内新增 `v2/` 目录；(b) 新建独立仓库 `xsy-scm-v2` | **(a)**：保留上下文与历史，legacy 目录冻结不动，符合「不修改 legacy」 |
+| Q1 | **V2 代码放哪里** | (a) 仓库根目录 `xsy-scm-server/` + `xsy-scm-web/`；(b) 新建独立仓库 | **(a)**：保留仓库上下文，正式代码集中于根目录 |
 | Q2 | **Java 版本** | (a) 保持 SmartAdmin 基线 Java 17；(b) 统一升 Java 21 | **(b)**：SB 3.5.4 官方支持 17–24；旧代码为 21。但需你批准，我不自行升级 |
 | Q3 | **PostgreSQL 脚本来源** | (a) 自写转换 38 张系统表；(b) 购买 SmartAdmin 官方 PG 脚本 | **(a) 先做 3 张表验证**，评估后再决定是否购买以降低风险 |
 | Q4 | **认证切换范围** | (a) 后台 Sa-Token + 商城保留独立 token（两套）；(b) 全部统一 Sa-Token 多 `userType` | **(b)** 长期更简洁；但 (a) 迁移期风险更低。建议 Pilot 阶段先只做后台，商城留到 mall 迁移时再定 |
@@ -1004,11 +1003,11 @@ CONTEXT.md                 # 领域词汇（不改）
 | W0 | 规则文档修订 + V2 基线 + PG 转换 | 无 |
 | W1 | **Product Pilot** | W0 |
 | W2 | customer（含 `CustomerPriceResolver`）+ supplier | W1 |
-| W3 | order + inventory | W2 |
+| W3 | **Pricing** | W2 |
 | W4 | purchase（含超收 UI 补齐） | W3 |
 | W5 | mall + marketing | W2（依赖 customer） |
 | W6 | 小程序 uni-app Vue3 | W5 |
 
 ---
 
-*报告结束。本报告未修改任何 legacy 代码；仅新增本文档。等待确认后进入 W0。*
+*报告结束。本报告记录的是迁移前审计；W0 baseline、W1 Product、W2 Customer + Supplier 和 W3 Pricing 已按后续验收报告完成。*

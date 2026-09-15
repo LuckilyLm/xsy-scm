@@ -1,9 +1,9 @@
 # 工程工作区约定（2026-09-15）
 
-V2 的正式工作区固定为仓库根目录下的 `xsy-scm-server/`（Java 21 + PostgreSQL 后端）和
-`xsy-scm-web/`（SmartAdmin Vue3 + TypeScript 管理后台）。当前实现仍位于
-`v2/xsy-scm-v2-server/` 与 `v2/xsy-scm-v2-web/`，这两个目录只作为迁移到根目录前的过渡来源；
-后续新代码、测试和构建命令以根目录前后端目录为准。`xsy-scm-miniapp/` 继续保持 legacy 冻结状态。
+V2 的正式工作区固定为仓库根目录下的 `xsy-scm-server/`（Java 21 + PostgreSQL 后端）、
+`xsy-scm-web/`（SmartAdmin Vue3 + TypeScript 管理后台）、`tools/`（工程工具）和 `docs/`
+（正式文档）。`project-reference-examples/xsy-scm/` 只读。`xsy-scm-miniapp/` 继续保持 legacy
+冻结状态。
 
 # 鲜蔬源智链领域词汇
 

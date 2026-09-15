@@ -25,7 +25,7 @@ project-reference-examples/
 **/test-results/
 **/playwright-report/
 **/playwright/.auth/
-v2/.runtime
+**/.runtime/
 
 # playwright and test
 .playwright-cli

@@ -5,7 +5,6 @@ This file provides guidance to coding agents working with this repository.
 > **V2 baseline notice (2026-09-14).** This repository is migrating to **SmartAdmin V2**.
 > - The system foundation is **SmartAdmin v3.31** (login/auth/user/employee/department/role/menu/permission/data-scope/log/dict/file/unified exception/unified response/frontend Layout and system pages).
 > - `xsy-scm-server/` and `xsy-scm-web/` are the **official root V2 workspaces** (backend and admin frontend).
-> - The current implementation remains under `v2/xsy-scm-v2-server` and `v2/xsy-scm-v2-web` only as a migration source until it is moved into the root workspaces.
 > - `xsy-scm-miniapp/` remains **LEGACY and frozen read-only**. Do not add features or fix defects there.
 > - Only SCM supply-chain business is migrated. Legacy `auth`/`system` modules are **not** migrated.
 > - See [`SMARTADMIN_REFERENCE_RULES.md`](./SMARTADMIN_REFERENCE_RULES.md) and [`docs/architecture/2026-09-14-smartadmin-v2-迁移审计报告.md`](./docs/architecture/2026-09-14-smartadmin-v2-迁移审计报告.md).
@@ -19,10 +18,10 @@ slices of 鲜蔬源智慧供应链管理平台 as a modular monolith.
 V2 re-implements that supply-chain business on the SmartAdmin foundation, wave by wave:
 
 ```text
-W0  baseline (rules, transitional v2 workspace, clean baseline, Java 21, PG conversion, Flyway, Sa-Token, Vue3)
-W1  product pilot
-W2  customer + supplier
-W3  order + inventory
+W0  baseline (complete)
+W1  Product (complete)
+W2  Customer + Supplier (complete)
+W3  Pricing (implementation and functional verification complete)
 W4  purchase
 W5  mall (+ marketing, re-evaluated)
 W6  mini program (uni-app Vue3)
@@ -80,12 +79,11 @@ npm run dev      # dev server on port 8081
 npm run build
 ```
 
-### Transitional verification source
+### Verification artifacts
 
-Until the move is complete, historical W1–W3 verification commands and artifacts refer to
-`v2/xsy-scm-v2-server` and `v2/xsy-scm-v2-web`. After the move, run the same commands from the
-root `xsy-scm-server` and `xsy-scm-web` workspaces. The only remaining frozen legacy application
-directory is `xsy-scm-miniapp`.
+Historical W1–W3 verification commands and artifacts are retained under the root `docs/` and
+`.runtime/` directories. The only remaining frozen legacy application directory is
+`xsy-scm-miniapp`.
 
 ## Architecture and data flow (V2)
 

@@ -14,7 +14,7 @@
 > - 数据大屏与商城端在各自迁移阶段再确定实现方式。
 >
 > 现行依据：[`../../SMARTADMIN_REFERENCE_RULES.md`](../../SMARTADMIN_REFERENCE_RULES.md)。
-> 具体 Vue3 页面约定以 `v2/xsy-scm-v2-web` 既有实现为准。
+> 具体 Vue3 页面约定以 `xsy-scm-web` 既有实现为准。
 
 > 项目名称：鲜蔬源智慧供应链管理平台
 > 页面简称：鲜蔬源智链

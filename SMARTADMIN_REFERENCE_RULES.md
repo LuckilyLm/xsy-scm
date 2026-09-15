@@ -24,7 +24,7 @@
 8. 业务金额一律 BigDecimal，对外定点数契约不变
 9. 不引入 Spring Cloud、微服务、分布式事务、独立搜索引擎
 10. 不引入数据库外键
-11. V2 正式工作区固定为根目录 `xsy-scm-server/` 与 `xsy-scm-web/`；`v2/` 仅为迁移过渡目录
+11. V2 正式工作区固定为根目录 `xsy-scm-server/`、`xsy-scm-web/`、`tools/` 与 `docs/`
 ```
 
 ## 1. 工作区与仓库定位
@@ -33,12 +33,10 @@
 
 ```text
 xsy-scm/
-├── xsy-scm-server/              ← V2 正式后端（代码移动目标）
-├── xsy-scm-web/                 ← V2 正式后台（代码移动目标）
-├── v2/                          ← 迁移过渡目录（代码移动完成后不再写入新代码）
-│   ├── xsy-scm-v2-server/       ← 待移动的 SmartAdmin + SCM 后端
-│   └── xsy-scm-v2-web/          ← 待移动的 SmartAdmin Vue3 前端
+├── xsy-scm-server/              ← V2 正式后端
+├── xsy-scm-web/                 ← V2 正式后台
 ├── xsy-scm-miniapp/             ← LEGACY，冻结只读（后续迁 uni-app）
+├── tools/                       ← V2 正式工具脚本
 ├── project-reference-examples/
 │   └── xsy-scm/                 ← 上游源码参考（只读，用于同步与比对）
 └── docs/                        ← 规格与设计文档
@@ -50,7 +48,8 @@ xsy-scm/
 |---|---|---|
 | `xsy-scm-server/**` | **正式** | 后端开发、重构、提交 |
 | `xsy-scm-web/**` | **正式** | 前端开发、重构、提交 |
-| `v2/xsy-scm-v2-server/**` / `v2/xsy-scm-v2-web/**` | **迁移过渡** | 仅用于移动前的验证与迁移 |
+| `tools/**` | **正式** | 工程工具与验证脚本 |
+| `docs/**` | **正式** | 产品、架构、验收与验证文档 |
 | `project-reference-examples/xsy-scm/**` | **上游只读** | 只读、比对、提取设计 |
 | `xsy-scm-miniapp/**` | **冻结只读** | 只读，待 W6 迁移 |
 
@@ -59,7 +58,7 @@ xsy-scm/
 - 禁止修改 `project-reference-examples/**`；
 - 禁止修改上游参考目录 `project-reference-examples/xsy-scm/**`；
 - 禁止修改 legacy 小程序目录 `xsy-scm-miniapp/`；
-- 代码移动完成前，不要在根目录前后端创建与 `v2/` 并行的第二份实现；
+- 不要创建第二套正式代码、兼容副本或 symlink；
 - 禁止把 legacy 代码整体或机械复制进 V2 根目录工作区；
 - 禁止机械把 React 组件翻译成 Vue 组件（必须按 Vue3 原生范式重写）；
 - 禁止在 V2 中引入 React 或双级侧栏布局；
@@ -259,17 +258,16 @@ marketing：DEFERRED —— 不删除、不在 Product Pilot 迁移
 ## 6. 迁移波次
 
 ```text
-W0  基线：规则修订 + v2 工作区 + Clean Baseline + Java 21
-        + PostgreSQL PoC/转换 + Flyway + Sa-Token + Vue3 后台 + 系统基础验证
-W1  Product Pilot
-W2  customer + supplier
-W3  order + inventory
+W0  基线（已完成）：Clean Baseline + Java 21 + PostgreSQL + Flyway + Sa-Token + Vue3 后台
+W1  Product（已完成）
+W2  Customer + Supplier（已完成）
+W3  Pricing（已完成实现与功能验证）
 W4  purchase
 W5  mall + marketing（marketing 视情况）
 W6  小程序（uni-app Vue3）
 ```
 
-当前进度：**W0 进行中**。W0 baseline 验收通过前不迁商品。
+当前进度：**W3 Pricing 已完成实现与功能验证**。本任务不进入 W4。
 
 ## 7. 开发工作流
 

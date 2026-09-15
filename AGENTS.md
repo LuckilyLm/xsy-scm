@@ -4,9 +4,8 @@
 > 不是只读参考。登录、认证、用户、员工、部门、角色、菜单、权限、数据权限、日志、字典、
 > 文件、统一异常、统一响应、前端 Layout 与系统页面全部采用 SmartAdmin；旧 `auth` / `system`
 > 实现不迁移。V2 只迁 xsy-scm 供应链业务域，管理后台统一 Vue3 + TypeScript。
-> V2 正式工作区为根目录下的 `xsy-scm-server/` 与 `xsy-scm-web/`；当前代码移动前，
-> 实现暂存于 `v2/xsy-scm-v2-server/` 与 `v2/xsy-scm-v2-web/`，这两个目录只是迁移过渡来源。
-> `xsy-scm-miniapp` 仍为冻结的 legacy 小程序目录。
+> V2 正式工作区固定为根目录下的 `xsy-scm-server/` 与 `xsy-scm-web/`；正式工具和文档分别位于
+> `tools/` 与 `docs/`。`xsy-scm-miniapp` 仍为冻结的 legacy 小程序目录。
 > 禁止机械复制旧代码，禁止机械把 React 翻译成 Vue。
 > 完整规则见 [`SMARTADMIN_REFERENCE_RULES.md`](./SMARTADMIN_REFERENCE_RULES.md)。
 
@@ -60,6 +59,25 @@ Customer
 
 All implementation decisions should preserve this end-to-end business chain.
 
+### Current delivery status (2026-09-15)
+
+```text
+W0  baseline                         COMPLETE
+W1  Product                          COMPLETE
+W2  Customer + Supplier              COMPLETE
+W3  Pricing implementation/verification COMPLETE
+```
+
+The current task stops after W3. Do not start W4 or add unrelated business scope.
+
+Architecture contracts for the completed waves:
+
+```text
+Frontend              = SmartAdmin Base + SCM Vue (Copy First + Adapt)
+Backend Infrastructure = SmartAdmin Native First
+Backend SCM Business   = SmartAdmin Structure + confirmed SCM business rules
+```
+
 ---
 
 ## 2. Repository Structure
@@ -70,10 +88,8 @@ Expected top-level structure:
 xsy-scm/
 ├─ xsy-scm-server/           ← V2 正式后端（Java 21 + PostgreSQL）
 ├─ xsy-scm-web/              ← V2 正式后台（SmartAdmin Vue3 + TypeScript）
-├─ v2/                       ← 迁移过渡目录（代码移动完成后不再作为新代码工作区）
-│  ├─ xsy-scm-v2-server/     ← 待移动的 SmartAdmin + SCM 后端
-│  └─ xsy-scm-v2-web/        ← 待移动的 SmartAdmin Vue3 前端
 ├─ xsy-scm-miniapp/          ← LEGACY，冻结只读（待 W6 迁 uni-app）
+├─ tools/                    ← V2 正式工具脚本
 ├─ xsy-device-agent/
 ├─ project-reference-examples/
 │  └─ xsy-scm/               ← 上游源码参考（只读，用于同步与比对）
@@ -92,9 +108,6 @@ xsy-scm-server
 xsy-scm-web
 = SmartAdmin-based Vue3 + TypeScript admin UI
 
-v2/xsy-scm-v2-server and v2/xsy-scm-v2-web
-= Transitional source locations for the root V2 workspaces; use only while completing the move
-
 xsy-device-agent
 = Local Windows device integration for scales, printers, scanners, etc.
 
@@ -111,9 +124,8 @@ deploy
 Do not move responsibilities across these boundaries without a clear architectural reason.
 
 **Frozen directory.** `xsy-scm-miniapp/` remains frozen and read-only. The root
-`xsy-scm-server/` and `xsy-scm-web/` directories are the official V2 workspaces. Until the
-planned move is complete, do not create a parallel implementation; use the matching `v2/`
-directory only as the migration source.
+`xsy-scm-server/` and `xsy-scm-web/` directories are the official V2 workspaces. Do not create
+a second implementation or compatibility copy elsewhere in the repository.
 
 ---
 
@@ -665,8 +677,7 @@ Rules:
 > ```
 >
 > Vue3 侧的详细约定在 W0 的 Vue3 后台基线任务中固化到本节；
-> 在代码移动完成前，以迁移过渡目录 `v2/xsy-scm-v2-web` 的既有实现为准；移动完成后以
-> 根目录 `xsy-scm-web` 为准。
+> 以根目录 `xsy-scm-web` 的既有实现为准。
 
 Suggested structure (**legacy React reference only** — not the V2 layout):
 
@@ -2006,8 +2017,7 @@ not simply fewer lines of code.
 
 > **V2 前端边界：**本节描述 **legacy React 前端** 的生产力工具约定（React Hook Form、Zod、
 > TanStack Query、Zustand、ProComponents 等），该前端已冻结只读。
-> V2 管理后台（`xsy-scm-web`；移动完成前为 `v2/xsy-scm-v2-web`）使用
-> **Vue3 + TypeScript + Ant Design Vue + Pinia**，
+> V2 管理后台（`xsy-scm-web`）使用 **Vue3 + TypeScript + Ant Design Vue + Pinia**，
 > 优先复用 SmartAdmin 既有组件、hooks（composables）、请求封装与表单/表格范式，
 > 不引入本节中的 React 生态库。判断标准改为：
 >
