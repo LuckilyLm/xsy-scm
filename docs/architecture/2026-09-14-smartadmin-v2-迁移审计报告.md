@@ -1004,8 +1004,9 @@ CONTEXT.md                 # 领域词汇（不改）
 | W1 | **Product Pilot** | W0 |
 | W2 | customer（含 `CustomerPriceResolver`）+ supplier | W1 |
 | W3 | **Pricing** | W2 |
-| W4 | purchase（含超收 UI 补齐） | W3 |
-| W5 | mall + marketing | W2（依赖 customer） |
+| W4 | Sales Order（2026-09-16 最终裁决） | W3 |
+| W5 | Purchase（含超收 UI 补齐） | W4 |
+| 后续另排 | mall + marketing | W2 / W4 |
 | W6 | 小程序 uni-app Vue3 | W5 |
 
 ---

@@ -1,0 +1,11 @@
+{
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/order/order-item-list.vue": "9986e7afcae15f3114038a027624e14bb70b97bca45d5080932b3303578a953b",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/order/order-list.vue": "be7932ceda4051ef38363ec2c89dbf734eb82a0ade8d16846c6c34a2ea0b8824",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/order/order-log-list.vue": "28ff677bfdde6ecb3b893c21639c256c3566d50a33976c3f72e8760a3bcf3149",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/order/order-refund-list.vue": "92600cad14dcd7c56d0cea647fbe26d21debd1cd53c2323017a80cacdf82a4af",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/order/order-api.ts": "2e861d79d044b87117ee0ac46c0e4ac075c74c1856bd829eb1d0e5dbdc1903d3",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/order/order-item-api.ts": "af5a786e9bf46a85bde14b4e3f1605694813f8af7075e7f64e9ef337e7da6889",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/order/order-log-api.ts": "727be93d0d01b58df64ac5020b7fa90677102311b8ffd2a4c32fab80ea806513",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/order/order-refund-api.ts": "c076d20a1afab3bdb28fa47e94001ac831034539e636b4248417e6d713cbe52f",
+  "project-reference-examples/xsy-scm/xsy-scm-web/src/constants/business/order/order-const.ts": "9cf70174ba630f29134cab4629450362eaab0160b3fd06baa8d0a024ecfba0f4"
+}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.OrderReturnDao">
+<resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.OrderReturnEntity">
+<result column="id" property="id"/>
+<result column="return_no" property="returnNo"/>
+<result column="order_id" property="orderId"/>
+<result column="customer_id" property="customerId"/>
+<result column="status" property="status"/>
+<result column="reason" property="reason"/>
+<result column="decision_reason" property="decisionReason"/>
+<result column="approved_amount" property="approvedAmount"/>
+<result column="approved_at" property="approvedAt"/>
+<result column="rejected_at" property="rejectedAt"/>
+<result column="cancelled_at" property="cancelledAt"/>
+<result column="version" property="version"/>
+<result column="deleted" property="deleted"/>
+<result column="created_at" property="createdAt"/>
+<result column="updated_at" property="updatedAt"/>
+<result column="created_by" property="createdBy"/>
+<result column="updated_by" property="updatedBy"/>
+</resultMap>
+<select id="lock" resultMap="row">SELECT * FROM order_return WHERE id=#{id} AND deleted=FALSE FOR UPDATE</select>
+<select id="query" resultMap="row">SELECT * FROM order_return WHERE deleted=FALSE <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if><if test="query.status != null and query.status != ''">AND status=#{query.status}</if><if test="query.orderId != null">AND order_id=#{query.orderId}</if><if test="query.keyword != null and query.keyword != ''">AND (return_no ILIKE '%' || #{query.keyword} || '%')</if><if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if><if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if> ORDER BY created_at DESC,id DESC</select>
+</mapper>

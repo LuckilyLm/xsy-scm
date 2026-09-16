@@ -262,12 +262,13 @@ W0  基线（已完成）：Clean Baseline + Java 21 + PostgreSQL + Flyway + Sa-
 W1  Product（已完成）
 W2  Customer + Supplier（已完成）
 W3  Pricing（已完成实现与功能验证）
-W4  purchase
-W5  mall + marketing（marketing 视情况）
+W4  Sales Order（已完成实施与验收）
+W5  Purchase（未启动）
+后续 mall + marketing（另行排期；marketing 视情况）
 W6  小程序（uni-app Vue3）
 ```
 
-当前进度：**W3 Pricing 已完成实现与功能验证**。本任务不进入 W4。
+当前进度：**W4 Sales Order 已完成实施与验收**；已停止于 W4，不进入 W5 Purchase。
 
 ## 7. 开发工作流
 

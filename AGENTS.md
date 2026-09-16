@@ -59,16 +59,21 @@ Customer
 
 All implementation decisions should preserve this end-to-end business chain.
 
-### Current delivery status (2026-09-15)
+### Current delivery status (2026-09-16)
 
 ```text
 W0  baseline                         COMPLETE
 W1  Product                          COMPLETE
 W2  Customer + Supplier              COMPLETE
 W3  Pricing implementation/verification COMPLETE
+W4  Sales Order                      COMPLETE
+W5  Purchase                         NOT STARTED
 ```
 
-The current task stops after W3. Do not start W4 or add unrelated business scope.
+W4 = Sales Order (COMPLETE, acceptance report 2026-09-16). W5 = Purchase (NOT STARTED).
+The current task stops after W4 acceptance. Do not start W5 or add unrelated business scope.
+The PostgreSQL Closure restriction against V13+ applies only to that completed phase.
+W4 adds V13/V14 normally; V1–V12 remain immutable.
 
 Architecture contracts for the completed waves:
 

@@ -645,3 +645,6 @@ W1/W2/W3 regression            = PASS
 V1-V11 unchanged
 V12 frozen
 ```
+
+
+> 2026-09-16 阶段澄清（W4 最终裁决 U10）：本报告的“不新增 V13+ / 不进入 W4”仅属于已经完成的 PostgreSQL Closure 阶段。W4 已获独立授权，正常新增 V13/V14；V1–V12 与本阶段 hash 清单保持不变。
