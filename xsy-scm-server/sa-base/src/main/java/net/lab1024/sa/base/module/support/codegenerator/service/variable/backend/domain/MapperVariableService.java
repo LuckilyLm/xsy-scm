@@ -39,38 +39,38 @@ public class MapperVariableService extends CodeGenerateBaseVariableService {
                 StringBuilder stringBuilder = new StringBuilder();
                 List<String> columnNameList = queryField.getColumnNameList();
                 if (columnNameList.size() == 1) {
-                    // AND INSTR(t_notice.title,#{query.keywords})
-                    stringBuilder.append("AND INSTR(")
+                    // AND STRPOS(t_notice.title,#{queryForm.keywords}) > 0
+                    stringBuilder.append("AND STRPOS(")
                             .append(form.getTableName()).append(".").append(queryField.getColumnNameList().get(0))
                             .append(",#{queryForm.")
                             .append(queryField.getFieldName())
-                            .append("})");
+                            .append("}) > 0");
                 } else {
                     for (int i = 0; i < columnNameList.size(); i++) {
                         if (i == 0) {
-                            stringBuilder.append("AND (\n                  INSTR(")
+                            stringBuilder.append("AND (\n                  STRPOS(")
                                     .append(form.getTableName()).append(".").append(queryField.getColumnNameList().get(i))
                                     .append(",#{queryForm.")
                                     .append(queryField.getFieldName())
-                                    .append("})");
+                                    .append("}) > 0");
                         } else {
-                            // OR INSTR(t_notice.author,#{query.keywords})
-                            stringBuilder.append("\n                  OR INSTR(")
+                            // OR STRPOS(t_notice.author,#{queryForm.keywords}) > 0
+                            stringBuilder.append("\n                  OR STRPOS(")
                                     .append(form.getTableName()).append(".").append(queryField.getColumnNameList().get(i))
                                     .append(",#{queryForm.")
                                     .append(queryField.getFieldName())
-                                    .append("})");
+                                    .append("}) > 0");
                         }
                     }
                     stringBuilder.append("\n                )");
                 }
                 fieldMap.put("likeStr", stringBuilder.toString());
             } else if (CodeQueryFieldQueryTypeEnum.DICT.equalsValue(queryField.getQueryTypeEnum())) {
-                String stringBuilder = "AND INSTR(" +
+                String stringBuilder = "AND STRPOS(" +
                         form.getTableName() + "." + queryField.getColumnNameList().get(0) +
                         ",#{queryForm." +
                         queryField.getFieldName() +
-                        "})";
+                        "}) > 0";
                 fieldMap.put("likeStr", stringBuilder);
             }
             else {

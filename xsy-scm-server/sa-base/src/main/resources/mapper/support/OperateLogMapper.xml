@@ -13,11 +13,15 @@
             <if test="query.operateUserType != null">
                 AND operate_user_type = #{query.operateUserType}
             </if>
+            <!-- startDate/endDate 在 OperateLogQueryForm 里是 String。
+                 MySQL 会把字符串隐式转成日期，PostgreSQL 不会：
+                 `date >= character varying` 直接报 operator does not exist。
+                 这里显式 CAST，与 HelpDocDao / MessageMapper 的写法保持一致。 -->
             <if test="query.startDate != null and query.startDate != ''">
-                AND CAST(create_time AS DATE) &gt;= #{query.startDate}
+                AND CAST(create_time AS DATE) &gt;= CAST(#{query.startDate} AS DATE)
             </if>
             <if test="query.endDate != null and query.endDate != ''">
-                AND CAST(create_time AS DATE) &lt;= #{query.endDate}
+                AND CAST(create_time AS DATE) &lt;= CAST(#{query.endDate} AS DATE)
             </if>
             <if test="query.userName != null and query.userName != ''">
                 AND STRPOS(operate_user_name,#{query.userName}) > 0
@@ -36,7 +40,7 @@
     </select>
 
     <delete id="deleteByIds">
-        delete from t_operate_log where id in
+        delete from t_operate_log where operate_log_id in
         <foreach collection="idList" open="(" close=")" separator="," item="item">
             #{item}
         </foreach>

@@ -6,7 +6,7 @@
             resultType="net.lab1024.sa.base.module.support.datatracer.domain.vo.DataTracerVO">
         select *
         from t_data_tracer
-        where data_type = #{dataType}
+        where type = #{dataType}
           and data_id = #{dataId}
     </select>
 

@@ -151,7 +151,11 @@
                 AND CAST(t_notice.publish_time AS DATE) &lt;= CAST(#{query.publishTimeEnd} AS DATE)
             </if>
             <if test="query.notViewFlag">
-                AND viewFlag = 0
+                <!-- viewFlag 是本条 SELECT 的列别名，WHERE 里不可引用（MySQL 同样报 Unknown column）。
+                     这里展开成等价的关联子查询：无浏览记录即未读。 -->
+                AND (select count(*) from t_notice_view_record
+                     where t_notice_view_record.employee_id = #{requestEmployeeId}
+                       and t_notice_view_record.notice_id = t_notice.notice_id) = 0
             </if>
         </where>
         order by t_notice.publish_time desc
@@ -195,7 +199,7 @@
             <if test="query.keywords != null and query.keywords !=''">
                 AND ( STRPOS(t_notice.title,#{query.keywords}) > 0
                 OR STRPOS(t_notice.author,#{query.keywords}) > 0
-                OR STRPOS(t_notice.documentNumber,#{query.keywords}) > 0
+                OR STRPOS(t_notice.document_number,#{query.keywords}) > 0
                 OR STRPOS(t_notice.source,#{query.keywords}) > 0
                 )
             </if>

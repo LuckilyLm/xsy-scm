@@ -28,7 +28,9 @@
                 AND CAST(heart_beat_time AS DATE) &lt;= #{query.endDate}
             </if>
             <if test="query.keywords != null and query.keywords != ''">
-                AND (STRPOS(project_path,#{query.keywords}) > 0 or STRPOS(server_ip,#{query.keywords}) > 0 or STRPOS(process_no,#{query.keywords}) > 0)
+                <!-- process_no 是 integer：MySQL 的 INSTR(int, 'x') 会隐式转字符串，
+                     PostgreSQL 的 STRPOS(integer, text) 不存在，必须显式 CAST。 -->
+                AND (STRPOS(project_path,#{query.keywords}) > 0 or STRPOS(server_ip,#{query.keywords}) > 0 or STRPOS(CAST(process_no AS TEXT),#{query.keywords}) > 0)
             </if>
         </where>
         order by heart_beat_time desc

@@ -16,11 +16,15 @@
             <if test="query.ip != null and query.ip != ''">
                 AND STRPOS(login_ip,#{query.ip}) > 0
             </if>
+            <!-- startDate/endDate 在 LoginLogQueryForm 里是 String。
+                 MySQL 会把字符串隐式转成日期，PostgreSQL 不会：
+                 `date >= character varying` 直接报 operator does not exist。
+                 这里显式 CAST，与 HelpDocDao / MessageMapper 的写法保持一致。 -->
             <if test="query.startDate != null and query.startDate != ''">
-                AND CAST(create_time AS DATE) &gt;= #{query.startDate}
+                AND CAST(create_time AS DATE) &gt;= CAST(#{query.startDate} AS DATE)
             </if>
             <if test="query.endDate != null and query.endDate != ''">
-                AND CAST(create_time AS DATE) &lt;= #{query.endDate}
+                AND CAST(create_time AS DATE) &lt;= CAST(#{query.endDate} AS DATE)
             </if>
             <if test="query.userName != null and query.userName != ''">
                 AND STRPOS(user_name,#{query.userName}) > 0
