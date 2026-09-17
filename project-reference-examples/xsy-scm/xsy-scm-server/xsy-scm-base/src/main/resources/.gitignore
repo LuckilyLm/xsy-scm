@@ -1,0 +1,2 @@
+# Keep reference environment credentials out of version control.
+/*/sa-base.yaml
