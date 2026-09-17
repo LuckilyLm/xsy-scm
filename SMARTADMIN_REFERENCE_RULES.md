@@ -36,7 +36,7 @@ xsy-scm/
 ├── xsy-scm-server/              ← V2 正式后端
 ├── xsy-scm-web/                 ← V2 正式后台
 ├── xsy-scm-miniapp/             ← LEGACY，冻结只读（后续迁 uni-app）
-├── tools/                       ← V2 正式工具脚本
+├── tools/                       ← 本地工具脚本（Git 忽略）
 ├── project-reference-examples/
 │   └── xsy-scm/                 ← 上游源码参考（只读，用于同步与比对）
 └── docs/                        ← 规格与设计文档
@@ -48,7 +48,7 @@ xsy-scm/
 |---|---|---|
 | `xsy-scm-server/**` | **正式** | 后端开发、重构、提交 |
 | `xsy-scm-web/**` | **正式** | 前端开发、重构、提交 |
-| `tools/**` | **正式** | 工程工具与验证脚本 |
+| `tools/**` | **本地** | 工程工具与验证脚本，已排除 Git 跟踪 |
 | `docs/**` | **正式** | 产品、架构、验收与验证文档 |
 | `project-reference-examples/xsy-scm/**` | **上游只读** | 只读、比对、提取设计 |
 | `xsy-scm-miniapp/**` | **冻结只读** | 只读，待 W6 迁移 |
@@ -255,20 +255,9 @@ marketing：DEFERRED —— 不删除、不在 Product Pilot 迁移
 重新评估时机：product / customer / pricing / order / purchase / inventory 主链稳定后
 ```
 
-## 6. 迁移波次
+## 6. 当前范围与阶段证据
 
-```text
-W0  基线（已完成）：Clean Baseline + Java 21 + PostgreSQL + Flyway + Sa-Token + Vue3 后台
-W1  Product（已完成）
-W2  Customer + Supplier（已完成）
-W3  Pricing（已完成实现与功能验证）
-W4  Sales Order（已完成实施与验收）
-W5  Purchase（未启动）
-后续 mall + marketing（另行排期；marketing 视情况）
-W6  小程序（uni-app Vue3）
-```
-
-当前进度：**W4 Sales Order 已完成实施与验收**；已停止于 W4，不进入 W5 Purchase。
+阶段进度统一见 [文档总览](docs/00-文档总览与索引.md)。当前已完成至 W5 Purchase，包含最小 warehouse 主数据和收货，尚未实施库存；W6 库存与小程序未启动。
 
 ## 7. 开发工作流
 

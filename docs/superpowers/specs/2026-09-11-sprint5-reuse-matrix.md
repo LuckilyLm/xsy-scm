@@ -1,5 +1,7 @@
 # Sprint 5 目标分支复用矩阵
 
+> 历史参考：本文保留原始业务/设计语义。技术栈、实施状态和进度均为 legacy 快照；当前实现以 V2 对应波次的 target-design、approval 与验收报告为准。已删除的旧计划及验证记录可从 Git 历史恢复。
+
 状态：待人工规格评审
 审计日期：2026-09-11
 审计分支：`feature/sprint5-reuse-audit`

@@ -1,5 +1,7 @@
 # Sprint 1 商品 SPU/SKU 纵向链路设计
 
+> 历史参考：本文保留原始业务/设计语义。技术栈、实施状态和进度均为 legacy 快照；当前实现以 V2 对应波次的 target-design、approval 与验收报告为准。已删除的旧计划及验证记录可从 Git 历史恢复。
+
 ## 1. 背景与目标
 
 Sprint 1 只跑通第一条真实技术链路：PostgreSQL → Spring Boot REST API → React 商品档案页面。交付范围以 `docs/architecture/xsy-scm-项目设计草案-v0.2.md` 第 20 节为准，并吸收已确认的 SPU/SKU 约束。
