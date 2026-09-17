@@ -33,6 +33,3 @@ local-environment-info.txt
 **/playwright-report/
 **/playwright/.auth/
 **/.runtime/
-
-# playwright and test
-.playwright-cli

@@ -24,6 +24,7 @@ AGENTS 从 2,829 行整理为 1,994 行，主要移除失效的 React 生产力�
 - 独立审查 worktree `D:/DevCaches/Codex/reviews/xsy-deepseek-ea5838a` 保留：HEAD `ea5838a`，相对 main 存在 47 个独有提交，且有未跟踪的 `PurchaseDemandSuggestionReviewTest.java`。不合并、不删除。
 - 根目录没有 npm 项目，空 `package-lock.json` 属无效元数据；删除空 lockfile，实际 web/miniapp lockfile 保留。
 - `.gitignore` 重复的 `.playwright-cli` 条目移除，原目录忽略规则保留。
+- 发现 6 个 2026-09-14/15 遗留的 `tmp_obj_*`，共 1,816,115 字节。确认无 Git 锁，逐个检查时间与哈希后隔离到 `.runtime/git-maintenance-2026-09-17/`；`manifest.json` 保留原路径、备份路径、长度和 SHA-256，6 项备份摘要全部一致。`git count-objects -vH` 的 garbage 从 6 降为 0。
 
 ## 上轮结论勘误
 
@@ -34,4 +35,33 @@ AGENTS 从 2,829 行整理为 1,994 行，主要移除失效的 React 生产力�
 
 ## 验证与交付
 
-文档提交与 Git 检出修复分开交付。最终独立 clone 检查结果在仓库修复提交中补记。
+文档整理提交：`2d9e411 docs(repo): reconcile V2 rules and document repository maintenance`。
+第二笔为 `.gitattributes`、`.gitignore`、根空 lockfile 清理及本记录，不混入业务代码。
+
+### 迁移检出验证
+
+先对 `b476ce9` 独立 clone，复现默认 Windows 检出失败；再创建三份独立 clone，放入待提交的
+`.gitattributes` 并重新从索引生成迁移文件，用 Python `hashlib.sha256` 逐项校验冻结清单。
+
+| 场景 | 清单通过 | 摘要通过 |
+| --- | --- | --- |
+| 修复前 clone，`core.autocrlf=true` | 3/8 | 16/30 |
+| 修复属性，`core.autocrlf=true` | 8/8 | 30/30 |
+| 修复属性，`core.autocrlf=false` | 8/8 | 30/30 |
+| 修复属性，`core.autocrlf=input` | 8/8 | 30/30 |
+
+失败复现涉及 f0、pg-closure、v3、w2、w5 共 5 份清单，不仅是上轮报告提到的 w5/f0。
+三种配置下 SQL 与清单相对于 Git 索引的 diff 均为零；当前主工作区也为 8/8、30/30。
+18 个迁移 SQL 的 Git blob 与 8 份冻结清单均未改动。新迁移默认 LF，仅 8 个历史文件保留 CRLF 例外。
+
+注意：修改属性不会立即重写已存在且索引认为未变化的工作文件。本次在隔离 clone 中移除其自动生成的
+SQL 副本后重新检出验证，没有删除主工作区 SQL。已有工作区若校验失败，应先保护本地修改再按文件重新检出，
+不要对整个仓库运行 reset/clean。提交后还需用实际提交再做一次无补丁的新 clone 确认。
+
+### 其他检查
+
+- 本地 Markdown 链接检查：59 份文档，147 个文件链接，无失效目标（不检查外部 URL 与锚点）。
+- `git diff --check` 通过。
+- `git fsck --full --no-reflogs` 退出 0，444 个 dangling 对象保留，不执行强制清理。
+- 主工作区保持 `main`；旧审查 worktree 未改动。
+- 未运行后端、前端、数据库测试：业务源码、SQL blob 和数据库内容均不在本次改动范围。

@@ -10,3 +10,16 @@
 # 用 -text 关闭换行符转换：以什么字节入库，就以什么字节检出。
 # 清单统一以 LF 入库（见 docs/architecture/*-applied-migrations.sha256）。
 *.sha256 -text
+
+# 冻结迁移：保持既有 SHA-256 清单对应的检出字节，Git blob 继续为 LF。
+# 默认 LF；下列历史文件的清单记录 CRLF，显式保留，避免依赖 core.autocrlf。
+# 不重算清单、不重写 SQL。新增迁移使用默认 LF，不扩大历史例外。
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/*.sql text eol=lf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V3__sa_system_login_support_and_seed.sql text eol=crlf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V6__scm_product.sql text eol=crlf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V7__scm_product_permissions.sql text eol=crlf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V10__scm_pricing.sql text eol=crlf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V11__scm_pricing_permissions.sql text eol=crlf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V13__scm_sales_order.sql text eol=crlf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V14__scm_sales_order_permissions.sql text eol=crlf
+/xsy-scm-server/sa-admin/src/main/resources/db/migration/V18__scm_menu_icons.sql text eol=crlf
