@@ -1,0 +1,46 @@
+name: xsy-scm-f0-minio
+services:
+  minio:
+    image: xsy-scm/minio:RELEASE.2025-10-15T17-29-55Z
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      MINIO_ROOT_USER: ${XSY_FILE_ACCESS_KEY:?Set XSY_FILE_ACCESS_KEY in the local .env}
+      MINIO_ROOT_PASSWORD: ${XSY_FILE_SECRET_KEY:?Set XSY_FILE_SECRET_KEY in the local .env}
+    ports:
+      # Host ports are overridable for machines whose Windows excluded port ranges
+      # cover 9000/9001 (check: netsh int ipv4 show excludedportrange protocol=tcp).
+      # Container ports stay 9000/9001; only the host mapping changes.
+      - "${MINIO_BIND_ADDRESS:-127.0.0.1}:${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_BIND_ADDRESS:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+  bootstrap:
+    # Canonical official registry. Docker Hub's minio/mc repository was removed
+    # (HTTP 404 as of 2026-09-17); quay.io serves the identical pinned tag.
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      XSY_FILE_ACCESS_KEY: ${XSY_FILE_ACCESS_KEY:?Set XSY_FILE_ACCESS_KEY in the local .env}
+      XSY_FILE_SECRET_KEY: ${XSY_FILE_SECRET_KEY:?Set XSY_FILE_SECRET_KEY in the local .env}
+      XSY_FILE_BUCKET: ${XSY_FILE_BUCKET:?Set XSY_FILE_BUCKET in the local .env}
+    volumes:
+      - ./bootstrap.sh:/bootstrap.sh:ro
+    entrypoint: ["/bin/sh", "/bootstrap.sh"]
+    restart: "no"
+volumes:
+  minio-data:

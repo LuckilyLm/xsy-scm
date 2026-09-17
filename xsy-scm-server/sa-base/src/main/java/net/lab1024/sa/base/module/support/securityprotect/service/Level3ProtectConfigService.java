@@ -87,13 +87,13 @@ public class Level3ProtectConfigService {
     private int regularChangePasswordNotAllowRepeatTimes = 3;
 
     /**
-     * 文件大小限制，单位 mb ，(默认：50 mb)
+     * 文件大小限制，单位 mb ，(默认：20 mb)
      * -- GETTER --
-     *  文件大小限制，单位 mb ，(默认：50 mb)
+     *  文件大小限制，单位 mb ，(默认：20 mb)
 
      */
     @Getter
-    private long maxUploadFileSizeMb = 50;
+    private long maxUploadFileSizeMb = 20;
 
     /**
      * 文件检测，默认：不开启

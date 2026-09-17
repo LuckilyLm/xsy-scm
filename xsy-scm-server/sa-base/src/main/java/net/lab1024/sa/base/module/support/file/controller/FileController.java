@@ -16,6 +16,10 @@ import net.lab1024.sa.base.constant.SwaggerTagConst;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileDownloadVO;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileUploadVO;
 import net.lab1024.sa.base.module.support.file.service.FileService;
+import net.lab1024.sa.base.module.support.file.service.FileAccessGuard;
+import net.lab1024.sa.base.common.code.UserErrorCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +44,14 @@ public class FileController extends SupportBaseController {
     @Resource
     private FileService fileService;
 
+    @Resource
+    private FileAccessGuard fileAccessGuard;
+
+    @ExceptionHandler(FileAccessGuard.AccessDenied.class)
+    public ResponseEntity<ResponseDTO<Void>> fileAccessDenied() {
+        return ResponseEntity.status(403).body(ResponseDTO.error(UserErrorCode.NO_PERMISSION));
+    }
+
 
     @Operation(summary = "文件上传 @author 胡克")
     @PostMapping("/file/upload")
@@ -51,12 +63,14 @@ public class FileController extends SupportBaseController {
     @Operation(summary = "获取文件URL：根据fileKey @author 胡克")
     @GetMapping("/file/getFileUrl")
     public ResponseDTO<String> getUrl(@RequestParam String fileKey) {
+        fileAccessGuard.checkRead(fileKey, SmartRequestUtil.getRequestUser());
         return fileService.getFileUrl(fileKey);
     }
 
     @Operation(summary = "下载文件流（根据fileKey） @author 胡克")
     @GetMapping("/file/downLoad")
     public void downLoad(@RequestParam String fileKey, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        fileAccessGuard.checkRead(fileKey, SmartRequestUtil.getRequestUser());
         String userAgent = JakartaServletUtil.getHeaderIgnoreCase(request, RequestHeaderConst.USER_AGENT);
         ResponseDTO<FileDownloadVO> downloadFileResult = fileService.getDownloadFile(fileKey, userAgent);
         if (!downloadFileResult.getOk()) {

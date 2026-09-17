@@ -59,24 +59,45 @@ Customer
 
 All implementation decisions should preserve this end-to-end business chain.
 
-### Current delivery status (2026-09-16)
+### Current delivery status (2026-09-17)
 
 ```text
-W0  baseline                         COMPLETE
-W1  Product                          COMPLETE
-W2  Customer + Supplier              COMPLETE
-W3  Pricing implementation/verification COMPLETE
-W4  Sales Order                      COMPLETE
-W5  Purchase                         COMPLETE
-W6  Inventory / Mini Program         NOT STARTED
+W0   baseline                              COMPLETE
+W1   Product                               COMPLETE
+W2   Customer + Supplier                   COMPLETE
+W3   Pricing implementation/verification   COMPLETE
+W4   Sales Order                           COMPLETE
+W5   Purchase                              COMPLETE
+W5.5 SmartAdmin Native Feature Parity      COMPLETE
+F0   Object Storage Activation             COMPLETE
+W6   Inventory / Mini Program              NOT STARTED
 ```
 
 W4 = Sales Order (COMPLETE, acceptance report 2026-09-16).
 W5 = Purchase (COMPLETE, acceptance report 2026-09-16) — purchase demand, purchase order,
 receiving and the minimal `warehouse` master data, with **no inventory implementation**.
-The current task stops after W5 acceptance. Do not start W6 or add unrelated business scope.
+W5.5 = SmartAdmin native feature parity sync (COMPLETE, report 2026-09-17) — zero new migrations,
+zero menu changes, zero permission changes; the formal V2 workspace already carried the native
+system and support capabilities.
+F0 = Object Storage Activation (**COMPLETE**, acceptance report 2026-09-17) — strict fileKey
+prefix policy, per-folder read guard with HTTP 403 + native 30005 envelope, S3/MinIO path-style
+client and presigner, canned-ACL switch, short-TTL cache exclusion, four-profile cloud ENV
+alignment, multipart 20/25 MB, data-only V17, and the `deploy/minio/` local development stack.
+Verified end-to-end against a real MinIO + PostgreSQL + Redis: backend specialty tests
+39/0/0/0, V17 applied with `maxUploadFileSizeMb` 30→20 and `fileDetectFlag` unchanged, cloud
+Playwright 7/7, real-page read-guard matrix with zero mismatches, and full local regression
+(backend unit 351/0/0/0, PG IT 187/0/0/5, frontend unit 50/50, Playwright 40/40).
+F0 adds no SCM business domain and no business attachment tables.
+**F0-DEBT-01 remains binding**: `FileKeyVoSerializer` → `FileService.getFileList()` expands
+attachments server-side **without any per-user permission filtering**, so attachment URLs returned
+through business VO fields bypass the Controller-level read guard. Before any non-administrator
+business role is introduced, OA enterprise licences and similar COMMON private assets must move to
+business-permission + ownership/relation + FileService reads.
+W6 = Inventory / Mini Program — **NOT STARTED**; do not begin before F0 is accepted.
+
 The PostgreSQL Closure restriction against V13+ applies only to that completed phase.
-W4 adds V13/V14 and W5 adds V15/V16 normally; V1–V14 remain immutable.
+W4 adds V13/V14 and W5 adds V15/V16 normally; V1–V16 remain immutable, and F0 appended only the
+data-only V17 (`t_config` file upload size alignment).
 
 Architecture contracts for the completed waves:
 
@@ -90,7 +111,7 @@ Backend SCM Business   = SmartAdmin Structure + confirmed SCM business rules
 
 ## 2. Repository Structure
 
-Expected top-level structure:
+Actual top-level structure:
 
 ```text
 xsy-scm/
@@ -98,12 +119,11 @@ xsy-scm/
 ├─ xsy-scm-web/              ← V2 正式后台（SmartAdmin Vue3 + TypeScript）
 ├─ xsy-scm-miniapp/          ← LEGACY，冻结只读（待 W6 迁 uni-app）
 ├─ tools/                    ← V2 正式工具脚本
-├─ xsy-device-agent/
 ├─ project-reference-examples/
 │  └─ xsy-scm/               ← 上游源码参考（只读，用于同步与比对）
 ├─ docs/
 ├─ deploy/
-├─ docker-compose.yml
+│  └─ minio/                 ← F0 本地开发与集成测试对象存储
 └─ AGENTS.md
 ```
 
@@ -116,9 +136,6 @@ xsy-scm-server
 xsy-scm-web
 = SmartAdmin-based Vue3 + TypeScript admin UI
 
-xsy-device-agent
-= Local Windows device integration for scales, printers, scanners, etc.
-
 project-reference-examples/xsy-scm
 = Upstream xsy-scm source reference — read-only, used for diffing and design extraction
 
@@ -130,6 +147,8 @@ deploy
 ```
 
 Do not move responsibilities across these boundaries without a clear architectural reason.
+
+当前不存在根目录 `docker-compose.yml` 和 `xsy-device-agent/`；设备集成章节描述的是未来职责，不代表已有实现。
 
 **Frozen directory.** `xsy-scm-miniapp/` remains frozen and read-only. The root
 `xsy-scm-server/` and `xsy-scm-web/` directories are the official V2 workspaces. Do not create
@@ -555,7 +574,10 @@ store large images directly in relational tables
 skip important unique/check constraints and rely only on Java validation
 ```
 
-Use object storage for images and large attachments.
+Use object storage for images and large attachments. Production storage must be S3-compatible.
+SCM uploads must go through SmartAdmin `FileService`; do not create a second upload facility,
+write business binaries directly to disk, or bypass validation/metadata via `IFileStorageService`.
+File access details and the mandatory pre-RBAC COMMON asset debt are maintained in the F0 Target Design.
 
 Money fields should normally use:
 
