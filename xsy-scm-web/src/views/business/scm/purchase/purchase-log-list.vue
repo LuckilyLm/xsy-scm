@@ -72,7 +72,7 @@
   </a-card>
 
   <a-modal :open="visible" title="变更前后" width="900px" :footer="null" @cancel="visible = false">
-    <pre>{{ JSON.stringify({ before: active?.beforeData, after: active?.afterData }, null, 2) }}</pre>
+    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" />
   </a-modal>
 </template>
 
@@ -81,11 +81,13 @@ import { onMounted, ref } from 'vue';
 import type { TableColumnsType } from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
 import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
 import { SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_TABLE_ID } from '/@/constants/business/scm/purchase-const';
 import type { LogRow } from './purchase-types';
 import { purchaseError } from './purchase-errors';
+import { datetime } from '../common/scm-display';
 
 const orderNo = ref<string | undefined>(undefined);
 const operationType = ref<string | undefined>(undefined);
@@ -97,7 +99,7 @@ const active = ref<LogRow>();
 let requestId = 0;
 
 const columns: TableColumnsType<LogRow> = [
-  { title: '时间', dataIndex: 'createdAt', width: 200 },
+  { title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({ text }) => datetime(text) },
   { title: '操作', dataIndex: 'operationType', width: 150 },
   { title: '操作人', dataIndex: 'operator', width: 130 },
   { title: '采购单 id', dataIndex: 'purchaseOrderId', width: 120 },

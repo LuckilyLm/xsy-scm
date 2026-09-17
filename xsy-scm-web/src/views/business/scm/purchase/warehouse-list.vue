@@ -116,6 +116,7 @@ import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
 import { SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM } from '/@/constants/business/scm/purchase-const';
 import type { Warehouse, WarehousePayload, WarehouseQuery } from './purchase-types';
 import { purchaseError } from './purchase-errors';
+import { datetime } from '../common/scm-display';
 
 const queryForm = reactive<WarehouseQuery>({ pageNum: 1, pageSize: 20 });
 const tableData = ref<Warehouse[]>([]);
@@ -134,7 +135,7 @@ const columns: TableColumnsType<Warehouse> = [
   { title: '状态', dataIndex: 'status', align: 'center', width: 110 },
   { title: '地址', dataIndex: 'address', width: 260 },
   { title: '备注', dataIndex: 'remark', width: 200 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 190 },
+  { title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({ text }) => datetime(text) },
   { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 100 },
 ];
 

@@ -31,9 +31,9 @@
         <a-descriptions-item label="关联商品数">{{ supplier.skuCount ?? 0 }}</a-descriptions-item>
         <a-descriptions-item label="联系人">{{ supplier.contactName || '—' }}</a-descriptions-item>
         <a-descriptions-item label="联系电话">{{ supplier.contactPhone || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="创建时间">{{ supplier.createdAt || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
         <a-descriptions-item label="地址" :span="2">{{ supplier.address || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="更新时间">{{ supplier.updatedAt || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="更新时间">{{ datetime(supplier.updatedAt) }}</a-descriptions-item>
         <a-descriptions-item label="备注" :span="3">{{ supplier.remark || '—' }}</a-descriptions-item>
       </a-descriptions>
 
@@ -74,6 +74,7 @@
   import type { EnableStatus, SupplierDetail, SupplierSkuRow } from '/@/types/business/scm/supplier';
   import { SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM } from '/@/constants/business/scm/supplier-const';
   import { supplierError } from './supplier-errors';
+  import { datetime } from '../common/scm-display';
 
   const route = useRoute();
   const router = useRouter();

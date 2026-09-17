@@ -68,6 +68,16 @@ export function progress(value: string | null | undefined): string {
   return new Decimal(value).times(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2) + '%';
 }
 
+/**
+ * 时间渲染（A18 同族）：`null` → `—`，统一输出 `yyyy-MM-dd HH:mm:ss`。
+ *
+ * <p>实现已抽到 `../common/scm-display.ts`，由全域共享；
+ * 这里重新导出以保持采购模块内 `purchase-form-model` 作为**唯一导入入口**的既有用法，
+ * 避免各组件关心 helper 的物理位置。
+ */
+export { datetime } from '../common/scm-display';
+
+
 // ------------------------------------------------------------------
 // 采购单表单
 // ------------------------------------------------------------------

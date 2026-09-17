@@ -34,8 +34,8 @@
         <a-descriptions-item label="联系人">{{ customer.contactName || '—' }}</a-descriptions-item>
         <a-descriptions-item label="联系电话">{{ customer.contactPhone || '—' }}</a-descriptions-item>
         <a-descriptions-item label="地址" :span="3">{{ customer.address || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="创建时间">{{ customer.createdAt || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="更新时间">{{ customer.updatedAt || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="创建时间">{{ datetime(customer.createdAt) }}</a-descriptions-item>
+        <a-descriptions-item label="更新时间">{{ datetime(customer.updatedAt) }}</a-descriptions-item>
         <a-descriptions-item label="备注" :span="3">{{ customer.remark || '—' }}</a-descriptions-item>
       </a-descriptions>
 
@@ -65,6 +65,7 @@
   import type { CustomerDetail, CustomerStatus } from '/@/types/business/scm/customer';
   import { CREDIT_PERIOD_TYPE_ENUM, CREDIT_PERIOD_UNIT_ENUM, CUSTOMER_STATUS_ENUM, SETTLE_MODE_ENUM } from '/@/constants/business/scm/customer-const';
   import { customerError } from './customer-errors';
+  import { datetime } from '../common/scm-display';
 
   const route = useRoute();
   const router = useRouter();

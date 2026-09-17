@@ -39,10 +39,11 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {formatAmount} from '/@/utils/scm-amount';
 import {pricingError} from './pricing-errors';
 import PriceDrawer from './components/customer-type-price-form-drawer.vue';
+import { datetime } from '../common/scm-display';
 const router=useRouter();const api=pricingApi.typePrice;
 const query=reactive<PriceQuery>({pageNum:1,pageSize:20});const range=ref<[string,string]|undefined>();
 const rows=ref<PriceRow[]>([]),total=ref(0),loading=ref(false),error=ref('');const drawer=ref<InstanceType<typeof PriceDrawer>>();let requestId=0;
-const columns=ref<TableColumnsType<PriceRow>>([{title:'客户类型',dataIndex:'customerTypeName',width:160},{title:'客户类型编码',dataIndex:'customerTypeCode',width:130},{title:'SKU 编码',dataIndex:'skuCode',width:150},{title:'商品',dataIndex:'productName',width:160},{title:'规格',dataIndex:'specName',width:120},{title:'单价',dataIndex:'unitPrice',align:'right',width:120},{title:'生效时间',dataIndex:'effectiveFrom',width:200},{title:'结束时间',dataIndex:'effectiveTo',width:200},{title:'更新时间',dataIndex:'updatedAt',width:200},{title:'操作',dataIndex:'action',align:'right',fixed:'right',width:130}]);
+const columns=ref<TableColumnsType<PriceRow>>([{title:'客户类型',dataIndex:'customerTypeName',width:160},{title:'客户类型编码',dataIndex:'customerTypeCode',width:130},{title:'SKU 编码',dataIndex:'skuCode',width:150},{title:'商品',dataIndex:'productName',width:160},{title:'规格',dataIndex:'specName',width:120},{title:'单价',dataIndex:'unitPrice',align:'right',width:120},{title:'生效时间',dataIndex:'effectiveFrom',width:200, customRender: ({ text }) => datetime(text) },{title:'结束时间',dataIndex:'effectiveTo',width:200, customRender: ({ text }) => datetime(text) },{title:'更新时间',dataIndex:'updatedAt',width:200, customRender: ({ text }) => datetime(text) },{title:'操作',dataIndex:'action',align:'right',fixed:'right',width:130}]);
 async function load(){const id=++requestId;loading.value=true;error.value='';try{const r=await api.query({...query,effectiveFrom:range.value?.[0]||null,effectiveTo:range.value?.[1]||null});if(id===requestId){rows.value=r.data.list;total.value=r.data.total;}}catch(e){if(id===requestId)error.value=pricingError(e);}finally{if(id===requestId)loading.value=false;}}
 function search(){query.pageNum=1;load();}
 function reset(){query.keyword=undefined;query.customerTypeId=undefined;query.skuId=undefined;range.value=undefined;search();}

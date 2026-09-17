@@ -51,6 +51,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ProductDrawer from './components/product-form-drawer.vue';
 import SkuTable from './components/product-sku-table.vue';
 import { productError } from './product-errors';
+import { datetime } from '../common/scm-display';
 const router = useRouter();
 const filters = reactive<ProductQuery>({ pageNum: 1, pageSize: 20 });
 const categories = ref<ProductCategory[]>([]), rows = ref<ProductRow[]>([]), total = ref(0), loading = ref(false), error = ref(''), advanced = ref(false);
@@ -60,7 +61,7 @@ const columns = ref<TableColumnsType<ProductRow>>([
   { title: 'SPU 编码', dataIndex: 'spuCode', width: 170, sorter: true }, { title: '分类', dataIndex: 'categoryPath', width: 210 },
   { title: '单位', dataIndex: 'saleUnit', width: 65 }, { title: '市场价', dataIndex: 'price', width: 205, align: 'right' },
   { title: 'SKU 数', dataIndex: 'skuCount', width: 80, align: 'right' }, { title: '状态', dataIndex: 'status', width: 80, align: 'center', sorter: true },
-  { title: '别名', dataIndex: 'alias', width: 140 }, { title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true },
+  { title: '别名', dataIndex: 'alias', width: 140 }, { title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true, customRender: ({ text }) => datetime(text) },
   { title: '操作', dataIndex: 'action', width: 180, align: 'right', fixed: 'right' },
 ]);
 let requestId = 0;

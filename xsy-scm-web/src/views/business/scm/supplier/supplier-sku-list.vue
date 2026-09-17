@@ -92,6 +92,7 @@
   import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
   import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
   import { supplierError } from './supplier-errors';
+import { datetime } from '../common/scm-display';
 
   const filters = reactive<SupplierSkuQuery>({ pageNum: 1, pageSize: 20 });
   const rows = ref<SupplierSkuRow[]>([]);
@@ -116,7 +117,7 @@
     { title: '采购员', dataIndex: 'purchaserName', width: 110 },
     { title: '默认来源', dataIndex: 'defaultFlag', width: 110, align: 'center' },
     { title: '状态', dataIndex: 'status', width: 90, align: 'center' },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 190 },
+    { title: '更新时间', dataIndex: 'updatedAt', width: 190, customRender: ({ text }) => datetime(text) },
   ]);
 
   let requestId = 0;

@@ -90,6 +90,7 @@
   import TableOperator from '/@/components/support/table-operator/index.vue';
   import CustomerTypeModal from './components/customer-type-form-modal.vue';
   import { customerError } from './customer-errors';
+import { datetime } from '../common/scm-display';
 
   const filters = reactive<CustomerTypeQuery>({ pageNum: 1, pageSize: 20 });
   const rows = ref<CustomerType[]>([]);
@@ -105,7 +106,7 @@
     { title: '类型编码', dataIndex: 'typeCode', width: 200, sorter: true },
     { title: '类型名称', dataIndex: 'name', width: 220, sorter: true },
     { title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true },
-    { title: '创建时间', dataIndex: 'createdAt', width: 190 },
+    { title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({ text }) => datetime(text) },
     { title: '操作', dataIndex: 'action', width: 140, align: 'right', fixed: 'right' },
   ]);
 

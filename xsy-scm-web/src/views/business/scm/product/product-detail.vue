@@ -9,7 +9,7 @@
         <a-descriptions-item label="状态"><a-tag :color="product.status === 'ON_SHELF' ? 'green' : 'default'">{{ product.status === 'ON_SHELF' ? '上架' : '下架' }}</a-tag></a-descriptions-item>
         <a-descriptions-item label="别名">{{ product.alias || '—' }}</a-descriptions-item>
         <a-descriptions-item label="市场价">{{ priceRange(product.minMarketPrice, product.maxMarketPrice) }}</a-descriptions-item>
-        <a-descriptions-item label="更新时间">{{ product.updatedAt }}</a-descriptions-item>
+        <a-descriptions-item label="更新时间">{{ datetime(product.updatedAt) }}</a-descriptions-item>
         <a-descriptions-item label="商品简介" :span="3">{{ product.description || '—' }}</a-descriptions-item>
       </a-descriptions>
       <a-divider orientation="left">商品图集</a-divider>
@@ -28,6 +28,7 @@ import type { ProductRow } from '/@/types/business/scm/product';
 import { priceRange } from '/@/constants/business/scm/product-const';
 import SkuTable from './components/product-sku-table.vue';
 import { productError } from './product-errors';
+import { datetime } from '../common/scm-display';
 const route = useRoute(), router = useRouter();
 const product = ref<ProductRow>(), loading = ref(false), error = ref('');
 let requestId = 0;

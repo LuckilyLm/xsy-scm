@@ -75,6 +75,9 @@
         <template v-else-if="column.dataIndex === 'receivedProgress'">
           <span class="num">{{ progress(record.receivedProgress) }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'createdAt'">
+          <span class="num">{{ datetime(record.createdAt) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button type="link" @click="detail?.open(record.id)">详情</a-button>
@@ -136,7 +139,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
 import { SCM_PURCHASE_STATUS_ENUM, SCM_PURCHASE_TABLE_ID } from '/@/constants/business/scm/purchase-const';
 import type { Order, OrderQuery } from './purchase-types';
-import { amount, progress } from './purchase-form-model';
+import { amount, datetime, progress } from './purchase-form-model';
 import { purchaseError } from './purchase-errors';
 import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
 import PurchaseOrderDetail from './components/purchase-order-detail-drawer.vue';

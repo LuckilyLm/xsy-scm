@@ -133,6 +133,7 @@
   import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
   import CustomerDrawer from './components/customer-form-drawer.vue';
   import { customerError } from './customer-errors';
+import { datetime } from '../common/scm-display';
 
   const router = useRouter();
   const filters = reactive<CustomerQuery>({ pageNum: 1, pageSize: 20 });
@@ -166,7 +167,7 @@
     { title: '结算方式', dataIndex: 'settleMode', width: 110, align: 'center' },
     { title: '授信额度', dataIndex: 'creditLimit', width: 140, align: 'right' },
     { title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true },
+    { title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true, customRender: ({ text }) => datetime(text) },
     { title: '操作', dataIndex: 'action', width: 220, align: 'right', fixed: 'right' },
   ]);
 

@@ -120,6 +120,7 @@
   import SupplierDrawer from './components/supplier-form-drawer.vue';
   import SupplierSkuDrawer from './components/supplier-sku-drawer.vue';
   import { supplierError } from './supplier-errors';
+import { datetime } from '../common/scm-display';
 
   const router = useRouter();
   const filters = reactive<SupplierQuery>({ pageNum: 1, pageSize: 20 });
@@ -139,7 +140,7 @@
     { title: '联系电话', dataIndex: 'contactPhone', width: 150 },
     { title: '关联商品数', dataIndex: 'skuCount', width: 120, align: 'center' },
     { title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true },
-    { title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true },
+    { title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true, customRender: ({ text }) => datetime(text) },
     { title: '操作', dataIndex: 'action', width: 300, align: 'right', fixed: 'right' },
   ]);
 
