@@ -1,1 +1,0 @@
-import{p as r,g as e}from"./index-DB9tUd_Y.js";const o={queryList:()=>e("/support/reload/query"),queryReloadResult:r=>e(`/support/reload/result/${r}`),reload:e=>r("/support/reload/update",e)};export{o as r};

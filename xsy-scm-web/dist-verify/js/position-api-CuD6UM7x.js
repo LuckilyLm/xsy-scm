@@ -1,1 +1,0 @@
-import{g as e,p as t}from"./index-DB9tUd_Y.js";const i={queryPage:e=>t("/position/queryPage",e),add:e=>t("/position/add",e),update:e=>t("/position/update",e),delete:t=>e(`/position/delete/${t}`),batchDelete:e=>t("/position/batchDelete",e),queryList:()=>e("/position/queryList")};export{i as p};

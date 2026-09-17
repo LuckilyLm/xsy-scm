@@ -21,6 +21,9 @@ local-environment-info.txt
 **/target/
 **/node_modules/
 **/dist/
+# dist-verify 是 `vite build --outDir dist-verify` 的构建产物，会随源码漂移，
+# 不应被跟踪（历史上一度入库，内容长期滞后于源码）。需要时本地重新构建即可。
+**/dist-verify/
 .env
 .env.*
 !.env.example
