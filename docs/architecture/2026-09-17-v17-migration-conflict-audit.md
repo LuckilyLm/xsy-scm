@@ -726,17 +726,35 @@ xsy_v2 表数:            74
            - 文档：AGENTS.md / 验收报告 / approval / 文档总览 / 本审计报告
 ```
 
-### 13.6 遗留事项（未做，需你拍板）
+### 13.6 遗留事项与最终状态
 
-1. **§10.4 加固项 2/3 未实施**（用户答复「2 否」）：全仓仍无「迁移版本唯一性」检查，
-   `ScmPurchaseMigrationIT` 仍只查 DB 历史、不扫描磁盘。同类事故理论上可再次发生。
-2. **`xsy_scm_test` 保留未清空**（见 §13.4）。
-3. **仓外探针目录 `D:/Browser Download/.runtime/v17probe/`** 未清理（含解出的 jar 与 class）。
-4. **推送**：提交 2 完成后是否 `git push` 尚未确认。
-5. `docs/architecture/2026-09-16-smartadmin-postgresql-closure-report.md` L468 有一句
-   「`xsy_scm_test` 库中并无 `xsy_v2` schema（无 Flyway 历史）」——该句在本次实测后**已过时**，
-   但属于历史报告（记录当时事实），**未改动**，仅在此标注。
-6. **迁移 `.sql` 的混合换行符未处理**（见 §13.7，本次只报告不动手）。
+用户二次决策：**推送两个提交 / 删探针保留测试库 / 迁移 .sql 混合 EOL 先不处理**。
+
+| # | 事项 | 状态 |
+| --- | --- | --- |
+| 1 | §10.4 加固项 2/3（迁移版本唯一性门禁 + IT 增强） | ❌ **未实施**（用户答复「2 否」）。全仓仍无版本唯一性检查，`ScmPurchaseMigrationIT` 仍只查 DB 历史、不扫描磁盘，同类事故理论上可再次发生 |
+| 2 | `xsy_scm_test` | ⏸️ **保留**为「V1–V18 已验证的 fresh-build 参照库」（见 §13.4）。需再次作空库：`DROP SCHEMA xsy_v2 CASCADE` |
+| 3 | 仓外探针目录 `D:/Browser Download/.runtime/v17probe/` | ✅ **已删除**（5.3 MB / 64 文件，含 52 个迁移副本）。探针源码可由技能 §3.3 重建 |
+| 4 | 推送 | ✅ **已完成**：`48134bf..0682427 main -> main`。推送后复核发现 packed-ref 陈旧（第三次命中），loose + packed 双写后 HEAD = origin/main = ls-remote = `0682427` |
+| 5 | 迁移 `.sql` 混合 EOL（§13.7b） | ❌ **未处理**（用户选择「先不处理，记入待办」）。**建议 W6 前单独批准处理** |
+| 6 | `2026-09-16-smartadmin-postgresql-closure-report.md` L468「`xsy_scm_test` 无 `xsy_v2` schema」 | 该句在本次实测后**已过时**；属历史报告（记录当时事实），**未改动**，仅在此标注 |
+
+**最终终态核验（全部通过）：**
+
+```text
+V18 sha256            ed715accae11e4b44b6a0195b8e53b1fb60286d8e5236671106470e5e46da903（与改名前一致）
+工作区                git status 干净
+迁移版本号            1–18 唯一且连续，无重复无缺口
+8 份清单              8/8 通过（合计 30 项哈希）
+开发库                max_version=18 / failed=0 / baseline=1 / t_menu 有图标 71
+HEAD                  0682427 == origin/main == ls-remote（已同步，无 ahead/behind）
+```
+
+**⚠️ 陈旧 packed-ref 陷阱（本次第三次命中）**：`git push` 报告成功、`ls-remote` 返回 `0682427`，
+但 `git rev-parse origin/main` 仍返回 `48134bf`。根因同 §2.1——`.git/refs/remotes/origin/` 目录为空
+（无 loose ref），`packed-refs` 第 5/6 行的陈旧条目接管。修复方式为 **loose + packed 双写**。
+**教训：本仓库每次 push/fetch 后都应复核 `git rev-parse origin/main` vs `ls-remote`；
+`git push` 的成功输出不代表本地 remote-tracking ref 已更新。**
 
 ### 13.7 顺带发现的仓库级缺陷：换行符（EOL）不一致
 
