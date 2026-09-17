@@ -60,6 +60,15 @@ public class FileConfig implements WebMvcConfigurer {
     @Value("${file.storage.cloud.public-url-prefix}")
     private String cloudPublicUrlPrefix;
 
+    @Value("${file.storage.cloud.path-style-access-enabled:false}")
+    private boolean cloudPathStyleAccessEnabled = false;
+
+    @Value("${file.storage.cloud.send-object-acl:true}")
+    private boolean cloudSendObjectAcl = true;
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfiles = "dev";
+
     @Value("${file.storage.local.upload-path}")
     private String localUploadPath;
 
@@ -70,6 +79,7 @@ public class FileConfig implements WebMvcConfigurer {
     @Bean
     @ConditionalOnProperty(prefix = "file.storage", name = {"mode"}, havingValue = MODE_CLOUD)
     public S3Client initS3Client() {
+        validateCloudConfig();
         return S3Client.builder()
                 .region(Region.of(cloudRegion))
                 .endpointOverride(URI.create(cloudEndpoint))
@@ -77,7 +87,7 @@ public class FileConfig implements WebMvcConfigurer {
                         StaticCredentialsProvider.create(
                                 AwsBasicCredentials.create(cloudAccessKey, cloudSecretKey)))
                 .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(false)
+                        .pathStyleAccessEnabled(cloudPathStyleAccessEnabled)
                         .chunkedEncodingEnabled(false)
                         .build())
                 .build();
@@ -89,6 +99,7 @@ public class FileConfig implements WebMvcConfigurer {
     @Bean
     @ConditionalOnProperty(prefix = "file.storage", name = {"mode"}, havingValue = MODE_CLOUD)
     public S3Presigner initS3Presigner() {
+        validateCloudConfig();
         return S3Presigner
                 .builder()
                 .region(Region.of(cloudRegion))
@@ -97,7 +108,7 @@ public class FileConfig implements WebMvcConfigurer {
                         StaticCredentialsProvider.create(
                                 AwsBasicCredentials.create(cloudAccessKey, cloudSecretKey)))
                 .serviceConfiguration(S3Configuration.builder()
-                        .pathStyleAccessEnabled(false)
+                        .pathStyleAccessEnabled(cloudPathStyleAccessEnabled)
                         .chunkedEncodingEnabled(false)
                         .build())
                 .build();
@@ -107,6 +118,29 @@ public class FileConfig implements WebMvcConfigurer {
     @ConditionalOnProperty(prefix = "file.storage", name = {"mode"}, havingValue = MODE_CLOUD)
     public IFileStorageService initCloudFileService() {
         return new FileStorageCloudServiceImpl();
+    }
+
+    private void validateCloudConfig() {
+        boolean production = java.util.Arrays.stream(activeProfiles.split(","))
+                .map(String::trim).anyMatch(p -> p.equals("pre") || p.equals("prod") || p.equals("production"));
+        if (production && ("xsy_f0_local".equals(cloudAccessKey)
+                || "xsy-f0-local-only-change-me".equals(cloudSecretKey))) {
+            throw new IllegalStateException("F0 local sample credentials must not be used in pre/prod");
+        }
+        if (cloudEndpoint == null || cloudEndpoint.isBlank() || cloudBucketName == null || cloudBucketName.isBlank()
+                || cloudAccessKey == null || cloudAccessKey.isBlank() || cloudSecretKey == null || cloudSecretKey.isBlank()
+                || cloudPublicUrlPrefix == null || cloudPublicUrlPrefix.isBlank()) {
+            throw new IllegalStateException("Cloud storage requires endpoint, bucket, credentials and public-url-prefix");
+        }
+        if (cloudPrivateUrlExpireSeconds == null || cloudPrivateUrlExpireSeconds < 1 || cloudPrivateUrlExpireSeconds > 604800) {
+            throw new IllegalStateException("Cloud private URL expiration must be between 1 and 604800 seconds");
+        }
+        URI prefix = URI.create(cloudPublicUrlPrefix);
+        if (!("http".equals(prefix.getScheme()) || "https".equals(prefix.getScheme()))
+                || prefix.getHost() == null || prefix.getQuery() != null || prefix.getFragment() != null
+                || !cloudPublicUrlPrefix.endsWith("/")) {
+            throw new IllegalStateException("Cloud public-url-prefix must be an absolute HTTP(S) URL ending with /");
+        }
     }
 
     @Bean

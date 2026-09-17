@@ -6,11 +6,11 @@ import cn.hutool.core.util.IdUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.base.common.code.SystemErrorCode;
+import net.lab1024.sa.base.common.code.UserErrorCode;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartStringUtil;
 import net.lab1024.sa.base.config.FileConfig;
 import net.lab1024.sa.base.constant.RedisKeyConst;
-import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.dao.FileDao;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileDownloadVO;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileMetadataVO;
@@ -19,7 +19,6 @@ import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import net.lab1024.sa.base.module.support.redis.RedisService;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseBytes;
@@ -29,10 +28,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -84,6 +81,9 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
 
     @Override
     public ResponseDTO<FileUploadVO> upload(MultipartFile file, String path) {
+        if (!FileKeyPolicy.isValid(path)) {
+            return ResponseDTO.error(UserErrorCode.NO_PERMISSION);
+        }
         // 设置文件 key
         String originalFileName = file.getOriginalFilename();
         if (SmartStringUtil.isEmpty(originalFileName)) {
@@ -94,6 +94,9 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
         String uuid = IdUtil.fastSimpleUUID();
         String time = LocalDateTimeUtil.format(LocalDateTime.now(), DatePattern.PURE_DATETIME_FORMATTER);
         String fileKey = path + uuid + "_" + time + "." + fileType;
+        if (!FileKeyPolicy.isValid(fileKey)) {
+            return ResponseDTO.userErrorParam("文件扩展名包含不支持的字符");
+        }
 
         // 文件名称 URL 编码
         String urlEncoderFilename;
@@ -105,16 +108,18 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
 
         // 根据文件路径获取并设置访问权限
         ObjectCannedACL acl = this.getACL(path);
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+        PutObjectRequest.Builder putObjectBuilder = PutObjectRequest.builder()
                 .bucket(cloudConfig.getCloudBucketName())
                 .key(fileKey)
                 .metadata(userMetadata)
                 .contentLength(file.getSize())
                 .contentType(this.getContentType(fileType))
                 .contentEncoding(StandardCharsets.UTF_8.name())
-                .contentDisposition("attachment;filename=" + urlEncoderFilename)
-                .acl(acl)
-                .build();
+                .contentDisposition("attachment;filename=" + urlEncoderFilename);
+        if (cloudConfig.isCloudSendObjectAcl()) {
+            putObjectBuilder.acl(acl);
+        }
+        PutObjectRequest putObjectRequest = putObjectBuilder.build();
         try {
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
         } catch (IOException e) {
@@ -129,7 +134,8 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
         String url = cloudConfig.getCloudPublicUrlPrefix() + fileKey;
         if (ObjectCannedACL.PRIVATE.equals(acl)) {
             // 获取临时访问的URL
-            url = this.getFileUrl(fileKey).getData();
+            // FileService inserts t_file only after upload returns. Sign the new object directly.
+            url = presign(fileKey);
         }
         uploadVO.setFileUrl(url);
         uploadVO.setFileKey(fileKey);
@@ -145,42 +151,45 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
      */
     @Override
     public ResponseDTO<String> getFileUrl(String fileKey) {
-        if (StringUtils.isBlank(fileKey)) {
-            return ResponseDTO.userErrorParam("文件不存在，key为空");
+        if (!FileKeyPolicy.isValid(fileKey)) {
+            return ResponseDTO.error(UserErrorCode.NO_PERMISSION);
         }
 
-        if (!fileKey.startsWith(FileFolderTypeEnum.FOLDER_PRIVATE)) {
-            // 不是私有的 都公共读
+        if (fileKey.startsWith("public/")) {
             return ResponseDTO.ok(cloudConfig.getCloudPublicUrlPrefix() + fileKey);
         }
 
         // 如果是私有的，则规定时间内可以访问，超过规定时间，则连接失效
-        String fileRedisKey = RedisKeyConst.Support.FILE_PRIVATE_VO + fileKey;
-        FileVO fileVO = redisService.getObject(fileRedisKey, FileVO.class);
+        String fileRedisKey = privateCacheKey(fileKey);
+        long cacheSeconds = cloudConfig.getCloudPrivateUrlExpireSeconds() - 5;
+        FileVO fileVO = cacheSeconds > 0 ? redisService.getObject(fileRedisKey, FileVO.class) : null;
         if (fileVO == null) {
             fileVO = fileDao.getByFileKey(fileKey);
             if (fileVO == null) {
                 return ResponseDTO.userErrorParam("文件不存在");
             }
-            GetObjectRequest getUrlRequest = GetObjectRequest
-                    .builder()
-                    .bucket(cloudConfig.getCloudBucketName())
-                    .key(fileKey)
-                    .build();
-
-            GetObjectPresignRequest getObjectPresignRequest = GetObjectPresignRequest
-                    .builder()
-                    .signatureDuration(Duration.ofSeconds(cloudConfig.getCloudPrivateUrlExpireSeconds()))
-                    .getObjectRequest(getUrlRequest)
-                    .build();
-
-            PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(getObjectPresignRequest);
-            String url = presignedGetObjectRequest.url().toString();
-            fileVO.setFileUrl(url);
-            redisService.set(fileRedisKey, fileVO, cloudConfig.getCloudPrivateUrlExpireSeconds() - 5);
+            fileVO.setFileUrl(presign(fileKey));
+            // RedisService treats non-positive TTL as permanent: never cache a short-lived signature that way.
+            if (cacheSeconds > 0) {
+                redisService.set(fileRedisKey, fileVO, cacheSeconds);
+            }
         }
 
         return ResponseDTO.ok(fileVO.getFileUrl());
+    }
+
+    private String presign(String fileKey) {
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(cloudConfig.getCloudBucketName()).key(fileKey).build();
+        return s3Presigner.presignGetObject(GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofSeconds(cloudConfig.getCloudPrivateUrlExpireSeconds()))
+                .getObjectRequest(request).build()).url().toString();
+    }
+
+    private String privateCacheKey(String fileKey) {
+        // Prevent reusing signatures after switching environment, bucket, endpoint or TTL.
+        return RedisKeyConst.Support.FILE_PRIVATE_VO + cloudConfig.getCloudBucketName() + ":"
+                + cloudConfig.getCloudEndpoint() + ":" + cloudConfig.getCloudPrivateUrlExpireSeconds() + ":" + fileKey;
     }
 
 
@@ -189,6 +198,9 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
      */
     @Override
     public ResponseDTO<FileDownloadVO> download(String key) {
+        if (!FileKeyPolicy.isValid(key)) {
+            return ResponseDTO.error(UserErrorCode.NO_PERMISSION);
+        }
 
         // 获取文件 meta
         HeadObjectRequest objectRequest = HeadObjectRequest.builder().bucket(this.cloudConfig.getCloudBucketName()).key(key).build();
@@ -223,8 +235,10 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
      * @return 权限
      */
     private ObjectCannedACL getACL(String fileKey) {
-        // 公用读
-        if (fileKey.contains(FileFolderTypeEnum.FOLDER_PUBLIC)) {
+        if (!FileKeyPolicy.isValid(fileKey)) {
+            throw new IllegalArgumentException("Invalid file key prefix");
+        }
+        if (fileKey.startsWith("public/")) {
             return ObjectCannedACL.PUBLIC_READ;
         }
         // 其他默认私有读写
@@ -240,8 +254,12 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
      */
     @Override
     public ResponseDTO<String> delete(String fileKey) {
+        if (!FileKeyPolicy.isValid(fileKey)) {
+            return ResponseDTO.error(UserErrorCode.NO_PERMISSION);
+        }
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(cloudConfig.getCloudBucketName()).key(fileKey).build();
         s3Client.deleteObject(deleteObjectRequest);
+        redisService.delete(privateCacheKey(fileKey));
         return ResponseDTO.ok();
     }
 

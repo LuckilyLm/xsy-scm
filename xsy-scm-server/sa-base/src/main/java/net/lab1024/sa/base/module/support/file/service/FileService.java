@@ -91,6 +91,10 @@ public class FileService {
             return ResponseDTO.error(validateFile);
         }
 
+        // F0: enum remains the sole folder whitelist; reject malformed storage paths.
+        if (!FileKeyPolicy.isValid(folderTypeEnum.getFolder())) {
+            return ResponseDTO.error(UserErrorCode.NO_PERMISSION);
+        }
         // 进行上传
         ResponseDTO<FileUploadVO> response = fileStorageService.upload(file, folderTypeEnum.getFolder());
         if (!response.getOk()) {
