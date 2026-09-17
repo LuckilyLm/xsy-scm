@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.customer.dao.CustomerDiscountDao">
+
+    <!-- 分页查询客户折扣率 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.customer.domain.vo.CustomerDiscountVO">
+        SELECT
+            discount_id,
+            customer_id,
+            scope_type,
+            product_id,
+            category_id,
+            discount_rate,
+            status,
+            create_time,
+            update_time
+        FROM t_customer_discount
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.customerId != null">
+                AND customer_id = #{queryForm.customerId}
+            </if>
+            <if test="queryForm.scopeType != null">
+                AND scope_type = #{queryForm.scopeType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY discount_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_customer_discount
+        set deleted_flag = #{deletedFlag}
+        WHERE discount_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

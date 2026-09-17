@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.screen.dao.ScreenConfigDao">
+
+    <!-- 分页查询大屏配置 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.screen.domain.vo.ScreenConfigVO">
+        SELECT
+            screen_id,
+            screen_code,
+            screen_name,
+            layout_json,
+            refresh_interval,
+            sort_field,
+            status,
+            create_time,
+            update_time
+        FROM t_screen_config
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.screenCode != null">
+                AND screen_code = #{queryForm.screenCode}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY screen_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_screen_config
+        set deleted_flag = #{deletedFlag}
+        WHERE screen_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.purchase.dao.PurchaseOrderDao">
+
+    <!-- 分页查询采购单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.purchase.domain.vo.PurchaseOrderVO">
+        SELECT *
+        FROM t_purchase_order
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.purchaseNo != null and queryForm.purchaseNo != ''">
+                AND INSTR(purchase_no, #{queryForm.purchaseNo})
+            </if>
+            <if test="queryForm.supplierId != null">
+                AND supplier_id = #{queryForm.supplierId}
+            </if>
+            <if test="queryForm.buyerId != null">
+                AND buyer_id = #{queryForm.buyerId}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY purchase_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态（业务上应走取消状态，本方法仅供异常数据清理） -->
+    <update id="batchUpdateDeleted">
+        update t_purchase_order
+        set deleted_flag = #{deletedFlag}
+        WHERE purchase_id IN
+        <foreach collection="purchaseIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

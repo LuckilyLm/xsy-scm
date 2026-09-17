@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.order.dao.SaleOrderDao">
+
+    <!-- 分页查询销售订单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.order.domain.vo.SaleOrderVO">
+        SELECT *
+        FROM t_order
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.orderNo != null and queryForm.orderNo != ''">
+                AND INSTR(order_no, #{queryForm.orderNo})
+            </if>
+            <if test="queryForm.customerId != null">
+                AND customer_id = #{queryForm.customerId}
+            </if>
+            <if test="queryForm.source != null">
+                AND source = #{queryForm.source}
+            </if>
+            <if test="queryForm.settleType != null">
+                AND settle_type = #{queryForm.settleType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+            <if test="queryForm.payStatus != null">
+                AND pay_status = #{queryForm.payStatus}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY order_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态（仅供草稿类数据清理，业务上应走取消/作废状态流转） -->
+    <update id="batchUpdateDeleted">
+        update t_order
+        set deleted_flag = #{deletedFlag}
+        WHERE order_id IN
+        <foreach collection="orderIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

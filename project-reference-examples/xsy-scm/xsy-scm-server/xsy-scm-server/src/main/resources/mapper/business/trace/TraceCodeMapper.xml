@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.trace.dao.TraceCodeDao">
+
+    <!-- 分页查询溯源码 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.trace.domain.vo.TraceCodeVO">
+        SELECT
+            code_id,
+            trace_code,
+            code_type,
+            product_id,
+            sku_id,
+            batch_id,
+            qrcode_url,
+            status,
+            create_time,
+            update_time
+        FROM t_trace_code
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.batchId != null">
+                AND batch_id = #{queryForm.batchId}
+            </if>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND INSTR(trace_code, #{queryForm.searchWord})
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY code_id DESC
+        </if>
+    </select>
+
+    <!-- 按溯源码查询（扫码入口） -->
+    <select id="getByTraceCode" resultType="com.xsy.scm.admin.module.business.trace.domain.entity.TraceCodeEntity">
+        SELECT
+            code_id,
+            trace_code,
+            code_type,
+            product_id,
+            sku_id,
+            batch_id,
+            qrcode_url,
+            status,
+            deleted_flag
+        FROM t_trace_code
+        WHERE trace_code = #{traceCode}
+          AND deleted_flag = 0
+        LIMIT 1
+    </select>
+
+    <!-- 统计批次下已生成的溯源码数量 -->
+    <select id="countByBatchId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_trace_code
+        WHERE batch_id = #{batchId}
+          AND deleted_flag = 0
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_trace_code
+        set deleted_flag = #{deletedFlag}
+        WHERE code_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

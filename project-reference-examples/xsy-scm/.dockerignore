@@ -1,0 +1,15 @@
+# 镜像构建上下文排除项（构建上下文为仓库根目录）
+**/node_modules
+**/dist
+**/target
+**/.git
+**/.idea
+**/.vscode
+**/.workbuddy-ai
+**/*.log
+**/*.err
+**/logs
+**/upload
+**/.env.local
+**/unpackage
+**/.hbuilderx

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.external.dao.ExternalSyncLogDao">
+
+    <!-- 分页查询同步日志 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.external.domain.vo.ExternalSyncLogVO">
+        SELECT
+            log_id,
+            system_type,
+            biz_type,
+            biz_id,
+            sync_type,
+            sync_status,
+            fail_reason,
+            retry_count,
+            sync_time,
+            create_time,
+            update_time
+        FROM t_external_sync_log
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.systemType != null">
+                AND system_type = #{queryForm.systemType}
+            </if>
+            <if test="queryForm.bizType != null">
+                AND biz_type = #{queryForm.bizType}
+            </if>
+            <if test="queryForm.bizId != null">
+                AND biz_id = #{queryForm.bizId}
+            </if>
+            <if test="queryForm.syncType != null">
+                AND sync_type = #{queryForm.syncType}
+            </if>
+            <if test="queryForm.syncStatus != null">
+                AND sync_status = #{queryForm.syncStatus}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY log_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_external_sync_log
+        set deleted_flag = #{deletedFlag}
+        WHERE log_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

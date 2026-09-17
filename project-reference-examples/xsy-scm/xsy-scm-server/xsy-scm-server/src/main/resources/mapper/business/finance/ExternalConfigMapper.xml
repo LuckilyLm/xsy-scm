@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.finance.dao.ExternalConfigDao">
+
+    <!-- 分页查询外部系统配置（不返回密钥，仅返回是否已配置） -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.finance.domain.vo.ExternalConfigVO">
+        SELECT
+            config_id,
+            system_type,
+            api_url,
+            app_key,
+            CASE WHEN IFNULL(app_secret, '') = '' THEN 0 ELSE 1 END AS secretConfigured,
+            field_mapping_json,
+            status,
+            create_time,
+            update_time
+        FROM t_external_config
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.systemType != null">
+                AND system_type = #{queryForm.systemType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY config_id DESC
+        </if>
+    </select>
+
+    <!-- 按系统类型查询启用中的配置（含密钥，仅服务端使用） -->
+    <select id="getBySystemType" resultType="com.xsy.scm.admin.module.business.finance.domain.entity.ExternalConfigEntity">
+        SELECT
+            config_id,
+            system_type,
+            api_url,
+            app_key,
+            app_secret,
+            field_mapping_json,
+            status,
+            deleted_flag
+        FROM t_external_config
+        WHERE system_type = #{systemType}
+          AND status = 1
+          AND deleted_flag = 0
+        LIMIT 1
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_external_config
+        set deleted_flag = #{deletedFlag}
+        WHERE config_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

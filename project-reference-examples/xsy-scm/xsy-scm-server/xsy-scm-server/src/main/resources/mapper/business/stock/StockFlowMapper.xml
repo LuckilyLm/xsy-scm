@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.stock.dao.StockFlowDao">
+
+    <!-- 根据规格查询流水（流水不做逻辑删除） -->
+    <select id="queryBySku" resultType="com.xsy.scm.admin.module.business.stock.domain.entity.StockFlowEntity">
+        SELECT *
+        FROM t_stock_flow
+        WHERE sku_id = #{skuId}
+        ORDER BY operate_time DESC, flow_id DESC
+    </select>
+
+    <!-- 根据关联业务查询流水 -->
+    <select id="queryByBiz" resultType="com.xsy.scm.admin.module.business.stock.domain.entity.StockFlowEntity">
+        SELECT *
+        FROM t_stock_flow
+        WHERE biz_type = #{bizType}
+          AND biz_id = #{bizId}
+        ORDER BY flow_id ASC
+    </select>
+
+    <!-- 分页查询库存流水（流水不做逻辑删除，不加 deleted_flag 过滤） -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.stock.domain.vo.StockFlowVO">
+        SELECT
+            flow_id,
+            flow_no,
+            product_id,
+            sku_id,
+            warehouse_id,
+            batch_id,
+            flow_type,
+            biz_type,
+            biz_id,
+            direction,
+            quantity,
+            weight,
+            unit_price,
+            amount,
+            before_quantity,
+            after_quantity,
+            before_avg_cost,
+            after_avg_cost,
+            operate_by,
+            operate_time,
+            create_time,
+            update_time
+        FROM t_stock_flow
+        <where>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.skuId != null">
+                AND sku_id = #{queryForm.skuId}
+            </if>
+            <if test="queryForm.flowType != null">
+                AND flow_type = #{queryForm.flowType}
+            </if>
+            <if test="queryForm.bizType != null">
+                AND biz_type = #{queryForm.bizType}
+            </if>
+            <if test="queryForm.direction != null">
+                AND direction = #{queryForm.direction}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY operate_time DESC, flow_id DESC
+        </if>
+    </select>
+
+</mapper>

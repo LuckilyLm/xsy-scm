@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.stock.dao.StockBalanceDao">
+
+    <!-- 根据规格与仓库查询库存余额 -->
+    <select id="queryBySku" resultType="com.xsy.scm.admin.module.business.stock.domain.entity.StockBalanceEntity">
+        SELECT *
+        FROM t_stock_balance
+        WHERE sku_id = #{skuId}
+          AND warehouse_id = #{warehouseId}
+          AND deleted_flag = 0
+        LIMIT 1
+    </select>
+
+    <!-- 根据商品查询库存余额列表 -->
+    <select id="queryByProductId" resultType="com.xsy.scm.admin.module.business.stock.domain.entity.StockBalanceEntity">
+        SELECT *
+        FROM t_stock_balance
+        WHERE product_id = #{productId}
+          AND deleted_flag = 0
+        ORDER BY sku_id ASC
+    </select>
+
+    <!-- 分页查询库存余额 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.stock.domain.vo.StockBalanceVO">
+        SELECT
+            balance_id,
+            product_id,
+            sku_id,
+            warehouse_id,
+            batch_id,
+            quantity,
+            weight,
+            avg_cost,
+            total_cost,
+            warn_min,
+            warn_max,
+            create_time,
+            update_time
+        FROM t_stock_balance
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.skuId != null">
+                AND sku_id = #{queryForm.skuId}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY balance_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_stock_balance
+        set deleted_flag = #{deletedFlag}
+        WHERE balance_id IN
+        <foreach collection="balanceIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.purchase.dao.ReceiveDao">
+
+    <!-- 根据采购明细查询收货记录（同一明细可多次收货） -->
+    <select id="queryByItemId" resultType="com.xsy.scm.admin.module.business.purchase.domain.entity.ReceiveEntity">
+        SELECT *
+        FROM t_receive
+        WHERE item_id = #{itemId}
+          AND deleted_flag = 0
+        ORDER BY receive_id ASC
+    </select>
+
+    <!-- 分页查询收货单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.purchase.domain.vo.ReceiveVO">
+        SELECT
+            receive_id,
+            receive_no,
+            receive_type,
+            supplier_id,
+            purchase_id,
+            item_id,
+            product_id,
+            sku_id,
+            receive_quantity,
+            receive_weight,
+            unit_price,
+            receive_by,
+            receive_time,
+            status,
+            receive_flag,
+            remark,
+            create_time,
+            update_time
+        FROM t_receive
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.receiveType != null">
+                AND receive_type = #{queryForm.receiveType}
+            </if>
+            <if test="queryForm.supplierId != null">
+                AND supplier_id = #{queryForm.supplierId}
+            </if>
+            <if test="queryForm.purchaseId != null">
+                AND purchase_id = #{queryForm.purchaseId}
+            </if>
+            <if test="queryForm.itemId != null">
+                AND item_id = #{queryForm.itemId}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY receive_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_receive
+        set deleted_flag = #{deletedFlag}
+        WHERE receive_id IN
+        <foreach collection="receiveIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

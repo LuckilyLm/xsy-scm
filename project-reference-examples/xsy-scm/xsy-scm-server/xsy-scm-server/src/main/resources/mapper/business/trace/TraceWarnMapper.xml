@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.trace.dao.TraceWarnDao">
+
+    <!-- 查询资质即将到期 / 已过期的厂商（文件预警查询） -->
+    <select id="listExpiringManufacturers" resultType="com.xsy.scm.admin.module.business.trace.domain.vo.TraceWarnVO">
+        SELECT
+            manufacturer_id,
+            supplier_id,
+            manufacturer_name,
+            qualification_file,
+            qualification_expire_date,
+            DATEDIFF(qualification_expire_date, CURDATE()) AS daysToExpire
+        FROM t_supplier_manufacturer
+        WHERE deleted_flag = 0
+          AND qualification_expire_date IS NOT NULL
+          AND qualification_expire_date &lt;= #{deadline}
+        ORDER BY qualification_expire_date ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.stock.dao.StockAdjustDao">
+
+    <!-- 根据规格查询调整记录 -->
+    <select id="queryBySkuId" resultType="com.xsy.scm.admin.module.business.stock.domain.entity.StockAdjustEntity">
+        SELECT *
+        FROM t_stock_adjust
+        WHERE sku_id = #{skuId}
+          AND deleted_flag = 0
+        ORDER BY adjust_id DESC
+    </select>
+
+    <!-- 分页查询库存调整单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.stock.domain.vo.StockAdjustVO">
+        SELECT *
+        FROM t_stock_adjust
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.adjustNo != null and queryForm.adjustNo != ''">
+                AND INSTR(adjust_no, #{queryForm.adjustNo})
+            </if>
+            <if test="queryForm.adjustType != null">
+                AND adjust_type = #{queryForm.adjustType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.skuId != null">
+                AND sku_id = #{queryForm.skuId}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY adjust_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_stock_adjust
+        set deleted_flag = #{deletedFlag}
+        WHERE adjust_id IN
+        <foreach collection="adjustIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

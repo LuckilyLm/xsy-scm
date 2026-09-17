@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.finance.dao.ReceivableDao">
+
+    <!-- 分页查询应收单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.finance.domain.vo.ReceivableVO">
+        SELECT
+            receivable_id,
+            receivable_no,
+            order_id,
+            customer_id,
+            settle_customer_id,
+            settle_type,
+            amount,
+            received_amount,
+            balance_amount,
+            due_time,
+            status,
+            create_time
+        FROM t_receivable
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.receivableNo != null and queryForm.receivableNo != ''">
+                AND receivable_no LIKE CONCAT('%', #{queryForm.receivableNo}, '%')
+            </if>
+            <if test="queryForm.customerId != null">
+                AND customer_id = #{queryForm.customerId}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        ORDER BY receivable_id DESC
+    </select>
+
+</mapper>

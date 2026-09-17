@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.customer.dao.CustomerPeriodDao">
+
+    <!-- 分页查询客户账期 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.customer.domain.vo.CustomerPeriodVO">
+        SELECT
+            period_id,
+            customer_id,
+            period_type,
+            amount_threshold,
+            period_value,
+            period_unit,
+            settle_day,
+            status,
+            create_time,
+            update_time
+        FROM t_customer_period
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.customerId != null">
+                AND customer_id = #{queryForm.customerId}
+            </if>
+            <if test="queryForm.periodType != null">
+                AND period_type = #{queryForm.periodType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY period_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_customer_period
+        set deleted_flag = #{deletedFlag}
+        WHERE period_id IN
+        <foreach collection="periodIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+    <!-- 查询客户生效的时间型账期（应收到期日计算用）：period_type=2 按时间，status=1 生效 -->
+    <select id="queryEffectiveTimePeriod" resultType="com.xsy.scm.admin.module.business.customer.domain.entity.CustomerPeriodEntity">
+        SELECT
+            period_id,
+            customer_id,
+            period_type,
+            amount_threshold,
+            period_value,
+            period_unit,
+            settle_day,
+            status,
+            create_time,
+            update_time
+        FROM t_customer_period
+        WHERE customer_id = #{customerId}
+          AND period_type = 2
+          AND status = 1
+          AND deleted_flag = 0
+        ORDER BY period_id DESC
+        LIMIT 1
+    </select>
+
+</mapper>

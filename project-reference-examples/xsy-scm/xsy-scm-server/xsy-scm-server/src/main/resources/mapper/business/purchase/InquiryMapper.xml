@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.purchase.dao.InquiryDao">
+
+    <!-- 分页查询询价单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.purchase.domain.vo.InquiryVO">
+        SELECT
+            inquiry_id,
+            inquiry_no,
+            inquiry_name,
+            valid_start,
+            valid_end,
+            status,
+            create_time,
+            update_time
+        FROM t_inquiry
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND (INSTR(inquiry_no, #{queryForm.searchWord}) OR INSTR(inquiry_name, #{queryForm.searchWord}))
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY inquiry_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_inquiry
+        set deleted_flag = #{deletedFlag}
+        WHERE inquiry_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

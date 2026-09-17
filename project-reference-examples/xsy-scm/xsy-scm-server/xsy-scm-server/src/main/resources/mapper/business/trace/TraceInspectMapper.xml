@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.trace.dao.TraceInspectDao">
+
+    <!-- 分页查询检测报告 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.trace.domain.vo.TraceInspectVO">
+        SELECT
+            inspect_id,
+            batch_id,
+            product_id,
+            report_name,
+            match_mode,
+            report_file,
+            pdf_file,
+            inspect_date,
+            inspect_org,
+            status,
+            create_time,
+            update_time
+        FROM t_trace_inspect
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.batchId != null">
+                AND batch_id = #{queryForm.batchId}
+            </if>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.matchMode != null">
+                AND match_mode = #{queryForm.matchMode}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND INSTR(report_name, #{queryForm.searchWord})
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY inspect_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_trace_inspect
+        set deleted_flag = #{deletedFlag}
+        WHERE inspect_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

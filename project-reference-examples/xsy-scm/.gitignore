@@ -1,0 +1,35 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/src/test/**
+
+### STS ###
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### front ###
+**/dist
+**/node_modules
+**/.vscode
+
+# 临时构建/脚本目录(初始化阶段使用)
+.build/
+
+# 运行日志
+*.log
+*.err
+
+# AI 协作工作区(本地记忆、脚本等)
+.workbuddy-ai/
+

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.purchase.dao.PurchaseGenerateDao">
+
+    <!-- 按时间段汇总订单明细需求量（商品 + 规格维度） -->
+    <select id="aggregateRequireByProduct" resultType="com.xsy.scm.admin.module.business.purchase.domain.bo.OrderRequireAggBO">
+        SELECT oi.product_id      AS productId,
+               oi.sku_id          AS skuId,
+               p.product_name     AS productName,
+               SUM(oi.quantity)   AS requireQuantity
+        FROM t_order_item oi
+                 JOIN t_order o ON o.order_id = oi.order_id
+                 LEFT JOIN t_product p ON p.product_id = oi.product_id
+        WHERE o.create_time &gt;= #{startTime}
+          AND o.create_time &lt; #{endTime}
+          AND o.status NOT IN (1, 11, 12)
+          AND oi.status = 1
+          AND oi.deleted_flag = 0
+          AND o.deleted_flag = 0
+        GROUP BY oi.product_id, oi.sku_id, p.product_name
+    </select>
+
+    <!-- 按商品汇总现有库存余额 -->
+    <select id="sumStockByProductIds" resultType="com.xsy.scm.admin.module.business.purchase.domain.bo.ProductStockAggBO">
+        SELECT product_id    AS productId,
+               SUM(quantity) AS stockQuantity
+        FROM t_stock_balance
+        WHERE product_id IN
+        <foreach collection="productIdList" open="(" close=")" separator="," item="pid">
+            #{pid}
+        </foreach>
+          AND deleted_flag = 0
+        GROUP BY product_id
+    </select>
+
+    <!-- 按商品查询供应商（含供应价） -->
+    <select id="listSupplierByProductIds" resultType="com.xsy.scm.admin.module.business.purchase.domain.bo.ProductSupplierAggBO">
+        SELECT ps.product_id    AS productId,
+               ps.supplier_id   AS supplierId,
+               s.supplier_name  AS supplierName,
+               ps.supply_price  AS supplyPrice,
+               ps.default_flag  AS defaultFlag
+        FROM t_product_supplier ps
+                 LEFT JOIN t_supplier s ON s.supplier_id = ps.supplier_id
+        WHERE ps.product_id IN
+        <foreach collection="productIdList" open="(" close=")" separator="," item="pid">
+            #{pid}
+        </foreach>
+          AND ps.deleted_flag = 0
+    </select>
+
+</mapper>

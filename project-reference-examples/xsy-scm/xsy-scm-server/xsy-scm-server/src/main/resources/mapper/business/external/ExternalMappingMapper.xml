@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.external.dao.ExternalMappingDao">
+
+    <!-- 查询条件（分页与导出共用） -->
+    <sql id="condition">
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.systemType != null">
+                AND system_type = #{queryForm.systemType}
+            </if>
+            <if test="queryForm.bizType != null">
+                AND biz_type = #{queryForm.bizType}
+            </if>
+            <if test="queryForm.localId != null">
+                AND local_id = #{queryForm.localId}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+            <if test="queryForm.externalId != null and queryForm.externalId != ''">
+                AND INSTR(external_id, #{queryForm.externalId})
+            </if>
+        </where>
+    </sql>
+
+    <!-- 查询列 -->
+    <sql id="columns">
+        mapping_id,
+        system_type,
+        biz_type,
+        local_id,
+        external_id,
+        convert_ratio,
+        status,
+        create_time,
+        update_time
+    </sql>
+
+    <!-- 分页查询映射 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.external.domain.vo.ExternalMappingVO">
+        SELECT
+        <include refid="columns"/>
+        FROM t_external_mapping
+        <include refid="condition"/>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY mapping_id DESC
+        </if>
+    </select>
+
+    <!-- 按条件查询全部映射（导出用） -->
+    <select id="listByCondition" resultType="com.xsy.scm.admin.module.business.external.domain.vo.ExternalMappingVO">
+        SELECT
+        <include refid="columns"/>
+        FROM t_external_mapping
+        <include refid="condition"/>
+        ORDER BY mapping_id DESC
+    </select>
+
+    <!-- 统计同平台 + 同对象 + 同系统ID + 同外部ID 的映射数 -->
+    <select id="countByMapping" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_external_mapping
+        WHERE deleted_flag = 0
+          AND system_type = #{systemType}
+          AND biz_type = #{bizType}
+          AND local_id = #{localId}
+          AND external_id = #{externalId}
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_external_mapping
+        set deleted_flag = #{deletedFlag}
+        WHERE mapping_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

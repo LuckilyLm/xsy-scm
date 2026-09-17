@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.screen.dao.ScreenDataDao">
+
+    <!-- 经营大屏：区间内订单量与销售额（核算金额，不含税） -->
+    <select id="selectBusinessOrder" resultType="com.xsy.scm.admin.module.business.screen.domain.vo.ScreenBusinessVO">
+        SELECT COUNT(*)                        AS orderCount,
+               IFNULL(SUM(actual_amount), 0)   AS salesAmount
+        FROM t_order
+        WHERE deleted_flag = 0
+          AND create_time &gt;= #{startTime}
+          AND create_time &lt; #{endTime}
+    </select>
+
+    <!-- 客户数 -->
+    <select id="countCustomer" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_customer
+        WHERE deleted_flag = 0
+    </select>
+
+    <!-- 待收余额合计 -->
+    <select id="selectReceivableBalance" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(balance_amount), 0)
+        FROM t_receivable
+        WHERE deleted_flag = 0
+    </select>
+
+    <!-- 库存大屏：规格数、总数量、总成本 -->
+    <select id="selectStock" resultType="com.xsy.scm.admin.module.business.screen.domain.vo.ScreenStockVO">
+        SELECT COUNT(*)                     AS productCount,
+               IFNULL(SUM(quantity), 0)     AS totalQuantity,
+               IFNULL(SUM(total_cost), 0)   AS totalCost
+        FROM t_stock_balance
+        WHERE deleted_flag = 0
+    </select>
+
+    <!-- 库存预警数（低于下限） -->
+    <select id="countStockWarn" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_stock_balance
+        WHERE deleted_flag = 0
+          AND warn_min IS NOT NULL
+          AND quantity &lt; warn_min
+    </select>
+
+    <!-- 采购大屏：区间内采购单量与采购金额 -->
+    <select id="selectPurchase" resultType="com.xsy.scm.admin.module.business.screen.domain.vo.ScreenPurchaseVO">
+        SELECT COUNT(*)                      AS purchaseCount,
+               IFNULL(SUM(total_amount), 0)  AS purchaseAmount
+        FROM t_purchase_order
+        WHERE deleted_flag = 0
+          AND create_time &gt;= #{startTime}
+          AND create_time &lt; #{endTime}
+    </select>
+
+    <!-- 供应商数 -->
+    <select id="countSupplier" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM t_supplier
+        WHERE deleted_flag = 0
+    </select>
+
+</mapper>

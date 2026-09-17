@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.purchase.dao.InquiryItemDao">
+
+    <!-- 查询询价单下的明细 -->
+    <select id="listByInquiryId" resultType="com.xsy.scm.admin.module.business.purchase.domain.vo.InquiryItemVO">
+        SELECT
+            item_id,
+            inquiry_id,
+            product_id,
+            sku_id,
+            require_quantity
+        FROM t_inquiry_item
+        WHERE inquiry_id = #{inquiryId}
+          AND deleted_flag = 0
+        ORDER BY item_id ASC
+    </select>
+
+    <!-- 逻辑删除询价单下的全部明细 -->
+    <update id="batchUpdateDeletedByInquiryId">
+        update t_inquiry_item
+        set deleted_flag = 1
+        WHERE inquiry_id = #{inquiryId}
+    </update>
+
+</mapper>

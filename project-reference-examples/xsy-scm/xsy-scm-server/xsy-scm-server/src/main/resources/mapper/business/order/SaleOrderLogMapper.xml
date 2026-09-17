@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.order.dao.SaleOrderLogDao">
+
+    <!-- 根据订单查询操作日志（日志不做逻辑删除） -->
+    <select id="queryByOrderId" resultType="com.xsy.scm.admin.module.business.order.domain.entity.SaleOrderLogEntity">
+        SELECT *
+        FROM t_order_log
+        WHERE order_id = #{orderId}
+        ORDER BY operate_time DESC, log_id DESC
+    </select>
+
+    <!-- 分页查询订单操作日志 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.order.domain.vo.SaleOrderLogVO">
+        SELECT
+            log_id,
+            order_id,
+            operate_type,
+            before_value,
+            after_value,
+            operate_by,
+            operate_time,
+            create_time,
+            update_time
+        FROM t_order_log
+        <where>
+            <if test="queryForm.orderId != null">
+                AND order_id = #{queryForm.orderId}
+            </if>
+            <if test="queryForm.operateType != null">
+                AND operate_type = #{queryForm.operateType}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY operate_time DESC, log_id DESC
+        </if>
+    </select>
+
+</mapper>

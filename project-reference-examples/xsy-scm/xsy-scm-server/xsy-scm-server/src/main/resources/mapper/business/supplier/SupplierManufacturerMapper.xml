@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.supplier.dao.SupplierManufacturerDao">
+
+    <!-- 分页查询供应商厂商信息 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.supplier.domain.vo.SupplierManufacturerVO">
+        SELECT
+            manufacturer_id,
+            supplier_id,
+            manufacturer_name,
+            qualification_file,
+            qualification_expire_date,
+            inspect_report_file,
+            status,
+            create_time,
+            update_time
+        FROM t_supplier_manufacturer
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.supplierId != null">
+                AND supplier_id = #{queryForm.supplierId}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND INSTR(manufacturer_name, #{queryForm.searchWord})
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY manufacturer_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_supplier_manufacturer
+        set deleted_flag = #{deletedFlag}
+        WHERE manufacturer_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

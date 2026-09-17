@@ -1,0 +1,12 @@
+# Shell 脚本在 Linux 容器内执行，必须保持 LF 行尾
+# 否则 core.autocrlf=true 检出为 CRLF 时会报 bad interpreter
+*.sh text eol=lf
+
+# Docker 构建上下文内的配置/脚本同样要求 LF
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+*.env text eol=lf
+.env.docker text eol=lf
+
+# Windows 批处理按 CRLF 检出
+*.bat text eol=crlf

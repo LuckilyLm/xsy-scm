@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.supplier.dao.SupplierProductApplyDao">
+
+    <!-- 分页查询供应商商品提报 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.supplier.domain.vo.SupplierProductApplyVO">
+        SELECT
+            apply_id,
+            apply_no,
+            supplier_id,
+            product_name,
+            alias,
+            category_id,
+            supply_price,
+            last_purchase_price,
+            image,
+            audit_status,
+            reject_reason,
+            product_id,
+            create_time,
+            update_time
+        FROM t_supplier_product_apply
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.supplierId != null">
+                AND supplier_id = #{queryForm.supplierId}
+            </if>
+            <if test="queryForm.auditStatus != null">
+                AND audit_status = #{queryForm.auditStatus}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND (INSTR(product_name, #{queryForm.searchWord}) OR INSTR(alias, #{queryForm.searchWord}))
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY apply_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_supplier_product_apply
+        set deleted_flag = #{deletedFlag}
+        WHERE apply_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

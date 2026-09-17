@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.product.dao.ProductDao">
+
+    <!-- 分页查询商品 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.product.domain.vo.ProductVO">
+        SELECT
+            p.*,
+            c.category_name AS categoryName
+        FROM t_product p
+        LEFT JOIN t_product_category c ON c.category_id = p.category_id
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND p.deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.categoryId != null">
+                AND p.category_id = #{queryForm.categoryId}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND (INSTR(p.product_name, #{queryForm.searchWord}) OR INSTR(p.product_no, #{queryForm.searchWord}))
+            </if>
+            <if test="queryForm.productType != null">
+                AND p.product_type = #{queryForm.productType}
+            </if>
+            <if test="queryForm.status != null">
+                AND p.status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY p.product_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_product
+        set deleted_flag = #{deletedFlag}
+        WHERE product_id IN
+        <foreach collection="productIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

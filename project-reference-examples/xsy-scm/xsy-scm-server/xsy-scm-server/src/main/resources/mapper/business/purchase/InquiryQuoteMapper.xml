@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.purchase.dao.InquiryQuoteDao">
+
+    <!-- 查询询价单下的全部报价 -->
+    <select id="listByInquiryId" resultType="com.xsy.scm.admin.module.business.purchase.domain.vo.InquiryQuoteVO">
+        SELECT
+            quote_id,
+            inquiry_id,
+            item_id,
+            supplier_id,
+            quote_price,
+            quote_time,
+            score
+        FROM t_inquiry_quote
+        WHERE inquiry_id = #{inquiryId}
+          AND deleted_flag = 0
+        ORDER BY quote_id ASC
+    </select>
+
+    <!-- 按明细 + 供应商查询已有报价 -->
+    <select id="getByItemAndSupplier" resultType="com.xsy.scm.admin.module.business.purchase.domain.entity.InquiryQuoteEntity">
+        SELECT
+            quote_id,
+            inquiry_id,
+            item_id,
+            supplier_id,
+            quote_price,
+            quote_time,
+            score,
+            deleted_flag
+        FROM t_inquiry_quote
+        WHERE item_id = #{itemId}
+          AND supplier_id = #{supplierId}
+          AND deleted_flag = 0
+        LIMIT 1
+    </select>
+
+</mapper>

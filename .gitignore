@@ -10,11 +10,11 @@ skills-lock.json
 # Local environment inventory (machine-specific, never commit)
 local-environment-info.txt
 
-# Downloaded reference projects
-project-reference-examples/
-
 # Local tooling (machine-specific, keep out of repository)
 /tools/
+
+# Reference environment configs contain credentials
+/project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml
 
 # Build outputs and local environment files
 **/target/

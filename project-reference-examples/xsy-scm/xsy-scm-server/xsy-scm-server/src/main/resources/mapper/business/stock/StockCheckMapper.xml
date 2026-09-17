@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.stock.dao.StockCheckDao">
+
+    <!-- 分页查询盘点单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.stock.domain.vo.StockCheckVO">
+        SELECT
+            check_id,
+            check_no,
+            warehouse_id,
+            check_type,
+            status,
+            create_time,
+            update_time
+        FROM t_stock_check
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.warehouseId != null">
+                AND warehouse_id = #{queryForm.warehouseId}
+            </if>
+            <if test="queryForm.checkType != null">
+                AND check_type = #{queryForm.checkType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY check_id DESC
+        </if>
+    </select>
+
+    <!-- 回填盘点单号 -->
+    <update id="updateCheckNo">
+        update t_stock_check
+        set check_no = #{checkNo}
+        where check_id = #{checkId}
+    </update>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_stock_check
+        set deleted_flag = #{deletedFlag}
+        WHERE check_id IN
+        <foreach collection="checkIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

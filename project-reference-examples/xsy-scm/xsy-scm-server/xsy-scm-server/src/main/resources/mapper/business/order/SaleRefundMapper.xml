@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.order.dao.SaleRefundDao">
+
+    <!-- 根据订单查询退款单 -->
+    <select id="queryByOrderId" resultType="com.xsy.scm.admin.module.business.order.domain.entity.SaleRefundEntity">
+        SELECT *
+        FROM t_refund
+        WHERE order_id = #{orderId}
+          AND deleted_flag = 0
+        ORDER BY refund_id DESC
+    </select>
+
+    <!-- 分页查询退款单 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.order.domain.vo.SaleRefundVO">
+        SELECT
+            refund_id,
+            refund_no,
+            order_id,
+            item_id,
+            refund_type,
+            refund_amount,
+            refund_reason,
+            status,
+            create_time,
+            update_time
+        FROM t_refund
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.orderId != null">
+                AND order_id = #{queryForm.orderId}
+            </if>
+            <if test="queryForm.refundType != null">
+                AND refund_type = #{queryForm.refundType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY refund_id DESC
+        </if>
+    </select>
+
+    <!-- 回填退款单号 -->
+    <update id="updateRefundNo">
+        update t_refund
+        set refund_no = #{refundNo}
+        where refund_id = #{refundId}
+    </update>
+
+    <!-- 批量更新删除状态（业务上应走状态冲销，本方法仅供异常数据清理） -->
+    <update id="batchUpdateDeleted">
+        update t_refund
+        set deleted_flag = #{deletedFlag}
+        WHERE refund_id IN
+        <foreach collection="refundIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

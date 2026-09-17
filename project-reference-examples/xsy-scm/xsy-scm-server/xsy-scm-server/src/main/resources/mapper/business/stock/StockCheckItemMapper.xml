@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.stock.dao.StockCheckItemDao">
+
+    <!-- 根据盘点单查询明细 -->
+    <select id="queryByCheckId" resultType="com.xsy.scm.admin.module.business.stock.domain.entity.StockCheckItemEntity">
+        SELECT *
+        FROM t_stock_check_item
+        WHERE check_id = #{checkId}
+          AND deleted_flag = 0
+        ORDER BY item_id ASC
+    </select>
+
+    <!-- 分页查询盘点明细 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.stock.domain.vo.StockCheckItemVO">
+        SELECT
+            item_id,
+            check_id,
+            product_id,
+            sku_id,
+            book_quantity,
+            book_weight,
+            actual_quantity,
+            actual_weight,
+            diff_quantity,
+            create_time,
+            update_time
+        FROM t_stock_check_item
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.checkId != null">
+                AND check_id = #{queryForm.checkId}
+            </if>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.skuId != null">
+                AND sku_id = #{queryForm.skuId}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY item_id ASC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_stock_check_item
+        set deleted_flag = #{deletedFlag}
+        WHERE item_id IN
+        <foreach collection="itemIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

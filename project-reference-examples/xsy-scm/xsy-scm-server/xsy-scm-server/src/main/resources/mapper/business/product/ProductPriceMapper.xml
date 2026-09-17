@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.product.dao.ProductPriceDao">
+
+    <!-- 分页查询商品价格 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.product.domain.vo.ProductPriceVO">
+        SELECT
+            price_id,
+            product_id,
+            sku_id,
+            price_type,
+            customer_level_id,
+            customer_id,
+            price,
+            effective_time,
+            expire_time,
+            status,
+            create_time,
+            update_time
+        FROM t_product_price
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.skuId != null">
+                AND sku_id = #{queryForm.skuId}
+            </if>
+            <if test="queryForm.priceType != null">
+                AND price_type = #{queryForm.priceType}
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY price_id DESC
+        </if>
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_product_price
+        set deleted_flag = #{deletedFlag}
+        WHERE price_id IN
+        <foreach collection="priceIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+    <!-- 按优先级取价：协议价（指定客户 + 商品/规格，优先规格级） -->
+    <select id="selectAgreementPrice" resultType="com.xsy.scm.admin.module.business.product.domain.entity.ProductPriceEntity">
+        SELECT *
+        FROM t_product_price
+        WHERE price_type = 4
+          AND product_id = #{productId}
+          AND customer_id = #{customerId}
+          AND status = 1
+          AND deleted_flag = 0
+          AND (sku_id = #{skuId} OR sku_id IS NULL)
+        ORDER BY (sku_id IS NULL) ASC
+        LIMIT 1
+    </select>
+
+    <!-- 按优先级取价：客户分级价（客户分级 + 商品/规格，优先规格级） -->
+    <select id="selectLevelPrice" resultType="com.xsy.scm.admin.module.business.product.domain.entity.ProductPriceEntity">
+        SELECT *
+        FROM t_product_price
+        WHERE price_type = 2
+          AND product_id = #{productId}
+          AND customer_level_id = #{customerLevelId}
+          AND status = 1
+          AND deleted_flag = 0
+          AND (sku_id = #{skuId} OR sku_id IS NULL)
+        ORDER BY (sku_id IS NULL) ASC
+        LIMIT 1
+    </select>
+
+    <!-- 按优先级取价：时价（当前生效窗口内 + 商品/规格，优先规格级） -->
+    <select id="selectMarketPrice" resultType="com.xsy.scm.admin.module.business.product.domain.entity.ProductPriceEntity">
+        SELECT *
+        FROM t_product_price
+        WHERE price_type = 3
+          AND product_id = #{productId}
+          AND status = 1
+          AND deleted_flag = 0
+          AND (sku_id = #{skuId} OR sku_id IS NULL)
+          AND (effective_time IS NULL OR effective_time &lt;= #{now})
+          AND (expire_time IS NULL OR expire_time &gt;= #{now})
+        ORDER BY (sku_id IS NULL) ASC
+        LIMIT 1
+    </select>
+
+    <!-- 按优先级取价：基础价（商品/规格兜底，优先规格级） -->
+    <select id="selectBasePrice" resultType="com.xsy.scm.admin.module.business.product.domain.entity.ProductPriceEntity">
+        SELECT *
+        FROM t_product_price
+        WHERE price_type = 1
+          AND product_id = #{productId}
+          AND status = 1
+          AND deleted_flag = 0
+          AND (sku_id = #{skuId} OR sku_id IS NULL)
+        ORDER BY (sku_id IS NULL) ASC
+        LIMIT 1
+    </select>
+
+</mapper>

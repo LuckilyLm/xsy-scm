@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.purchase.dao.SupplierDao">
+
+    <!-- 分页查询供应商 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.purchase.domain.vo.SupplierVO">
+        SELECT
+            supplier_id,
+            supplier_no,
+            supplier_name,
+            contact_name,
+            contact_phone,
+            address,
+            status,
+            create_time,
+            update_time
+        FROM t_supplier
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND INSTR(supplier_name, #{queryForm.searchWord})
+            </if>
+            <if test="queryForm.status != null">
+                AND status = #{queryForm.status}
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY supplier_id DESC
+        </if>
+    </select>
+
+    <!-- 查询所有未删除供应商 -->
+    <select id="queryAll" resultType="com.xsy.scm.admin.module.business.purchase.domain.vo.SupplierVO">
+        SELECT
+            supplier_id,
+            supplier_no,
+            supplier_name,
+            contact_name,
+            contact_phone,
+            address,
+            status,
+            create_time,
+            update_time
+        FROM t_supplier
+        WHERE deleted_flag = 0
+        ORDER BY supplier_id DESC
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_supplier
+        set deleted_flag = #{deletedFlag}
+        WHERE supplier_id IN
+        <foreach collection="supplierIdList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

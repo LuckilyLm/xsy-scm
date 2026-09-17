@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.admin.module.business.customer.dao.CustomerProductAliasDao">
+
+    <!-- 分页查询客户商品别名 -->
+    <select id="queryPage" resultType="com.xsy.scm.admin.module.business.customer.domain.vo.CustomerProductAliasVO">
+        SELECT
+            alias_id,
+            customer_id,
+            product_id,
+            sku_id,
+            alias_name,
+            alias_desc,
+            sub_alias_name,
+            sub_alias_desc,
+            create_time,
+            update_time
+        FROM t_customer_product_alias
+        <where>
+            <if test="queryForm.deletedFlag != null">
+                AND deleted_flag = #{queryForm.deletedFlag}
+            </if>
+            <if test="queryForm.customerId != null">
+                AND customer_id = #{queryForm.customerId}
+            </if>
+            <if test="queryForm.productId != null">
+                AND product_id = #{queryForm.productId}
+            </if>
+            <if test="queryForm.searchWord != null and queryForm.searchWord != ''">
+                AND (INSTR(alias_name, #{queryForm.searchWord}) OR INSTR(sub_alias_name, #{queryForm.searchWord}))
+            </if>
+        </where>
+        <if test="queryForm.sortItemList == null or queryForm.sortItemList.size == 0">
+            ORDER BY alias_id DESC
+        </if>
+    </select>
+
+    <!-- 按客户 + 商品 + 规格查询（唯一性校验） -->
+    <select id="getByCustomerProductSku" resultType="com.xsy.scm.admin.module.business.customer.domain.entity.CustomerProductAliasEntity">
+        SELECT
+            alias_id,
+            customer_id,
+            product_id,
+            sku_id,
+            alias_name,
+            alias_desc,
+            sub_alias_name,
+            sub_alias_desc,
+            deleted_flag
+        FROM t_customer_product_alias
+        WHERE customer_id = #{customerId}
+          AND product_id = #{productId}
+          AND deleted_flag = 0
+        <choose>
+            <when test="skuId != null">
+                AND sku_id = #{skuId}
+            </when>
+            <otherwise>
+                AND sku_id IS NULL
+            </otherwise>
+        </choose>
+        LIMIT 1
+    </select>
+
+    <!-- 批量更新删除状态 -->
+    <update id="batchUpdateDeleted">
+        update t_customer_product_alias
+        set deleted_flag = #{deletedFlag}
+        WHERE alias_id IN
+        <foreach collection="idList" open="(" close=")" separator="," item="item">
+            #{item}
+        </foreach>
+    </update>
+
+</mapper>

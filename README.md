@@ -17,7 +17,7 @@
 | `docs/` | 有效业务规则、架构设计与阶段验收 |
 | `tools/` | 本地工具，已排除 Git 跟踪 |
 | `xsy-scm-miniapp/` | 冻结的 Taro + React legacy 小程序，后续目标为 uni-app + Vue3 |
-| `project-reference-examples/` | 本地只读上游参考，已排除 Git 跟踪 |
+| `project-reference-examples/` | 本分支纳入 Git 的只读上游参考；含凭据的环境配置仍忽略 |
 
 系统登录、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现。规则见 [AGENTS.md](AGENTS.md) 与 [SmartAdmin 底座规则](SMARTADMIN_REFERENCE_RULES.md)。
 
