@@ -19,6 +19,9 @@ public class RoleEmployeeQueryForm extends PageParam {
     @Schema(description = "关键字")
     private String keywords;
 
+    // t_role_employee.role_id 是 bigint。此处必须用 Long：
+    // 若声明为 String，PostgreSQL 会以 varchar 绑定参数并报
+    // "operator does not exist: bigint = character varying"（MySQL 有隐式转换，故旧库无感）。
     @Schema(description = "角色id")
-    private String roleId;
+    private Long roleId;
 }
