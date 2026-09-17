@@ -10,14 +10,12 @@
 <template>
   <!--左侧菜单分为两部分：1、顶部logo区域，包含 logo和名称;2、下方菜单区域-->
 
-  <!-- 1、顶部logo区域 -->
+  <!-- 1、顶部logo区域：直接展示鲜蔬源横版 logo（已含品牌文字，不再重复渲染名称） -->
   <div class="logo" @click="onGoHome" :style="sideMenuWidth" v-if="!collapsed">
     <img class="logo-img" :src="logoImg" />
-    <div class="title smart-logo title-light" v-if="sideMenuTheme === 'light'">{{ websiteName }}</div>
-    <div class="title smart-logo title-dark" v-if="sideMenuTheme === 'dark'">{{ websiteName }}</div>
   </div>
   <div class="min-logo" @click="onGoHome" v-if="collapsed">
-    <img class="logo-img" :src="logoImg" />
+    <img class="logo-img" :src="logoMinImg" />
   </div>
 
   <!-- 2、下方菜单区域： 这里使用一个递归菜单解决 -->
@@ -30,13 +28,13 @@
   import { computed, nextTick, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import RecursionMenu from './recursion-menu.vue';
-  import logoImg from '/@/assets/images/logo/smart-admin-logo.png';
+  import logoImg from '/@/assets/images/logo/xsy-logo.png';
+  import logoMinImg from '/@/assets/images/logo/xsy-logo-min.png';
   import { HOME_PAGE_NAME } from '/@/constants/system/home-const';
   import { useAppConfigStore } from '/@/store/modules/system/app-config';
 
-  const websiteName = computed(() => useAppConfigStore().websiteName);
-  const sideMenuWidth = computed(() => 'width:' + useAppConfigStore().sideMenuWidth + 'px');
-  const sideMenuTheme = computed(() => useAppConfigStore().sideMenuTheme);
+  const sidebarStore = useAppConfigStore();
+  const sideMenuWidth = computed(() => 'width:' + sidebarStore.sideMenuWidth + 'px');
 
   const props = defineProps({
     collapsed: {
@@ -50,7 +48,7 @@
 
   watch(
     () => props.collapsed,
-    (newValue, oldValue) => {
+    (newValue) => {
       // 如果是展开菜单的话，重新获取更新菜单的展开项: openkeys和selectKeys
       if (!newValue) {
         nextTick(() => menuRef.value.updateOpenKeysAndSelectKeys());
@@ -92,8 +90,10 @@
       justify-content: center;
       align-items: center;
       .logo-img {
-        width: 30px;
-        height: 30px;
+        // 收起态用方形图标版，高度与展开态保持一致观感
+        width: 26px;
+        height: 26px;
+        object-fit: contain;
       }
     }
 
@@ -110,20 +110,12 @@
       align-items: center;
 
       .logo-img {
-        width: 30px;
+        // 鲜蔬源横版 logo（含品牌文字），按高度撑满、宽度自适应，
+        // 避免固定 30x30 把 2.88:1 的横版图压扁
         height: 30px;
-      }
-
-      .title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-left: 8px;
-      }
-      .title-light {
-        color: #001529;
-      }
-      .title-dark {
-        color: #ffffff;
+        width: auto;
+        max-width: 100%;
+        object-fit: contain;
       }
     }
   }

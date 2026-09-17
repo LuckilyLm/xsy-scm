@@ -12,28 +12,20 @@
   <div class="login-container">
     <div class="box-item desc">
       <div class="welcome">
-        <p>欢迎登录 SmartAdmin V3</p>
+        <p>欢迎登录 鲜蔬源智链</p>
         <p class="desc">
-          SmartAdmin 是由 河南·洛阳
-          <a target="_blank" href="https://www.1024lab.net" style="color: white; weight: bolder; font-size: 15px; text-decoration: underline"
-            >1024创新实验室（1024Lab）</a
-          >
-          基于SpringBoot + Sa-Token + Mybatis-Plus 和 Vue3 + Vite5 + Ant Design Vue 4 (同时支持JavaScript和TypeScript双版本)
-          以「高质量代码」为核心，「简洁、高效、安全」的快速开发平台。
+          鲜蔬源智慧供应链管理平台，覆盖商品、客户、供应商、价格、销售订单、采购、收货、
+          仓储等全链路业务，支持客户专属定价、实际重量收货与订单全流程追溯。
           <br />
           <br />
           <span class="setence">
-            致伟大的开发者 ：
+            让生鲜供应链的每一环都清晰可见 ：
             <br />
-            &nbsp;&nbsp;&nbsp;&nbsp;我们希望用一套漂亮优雅的代码和一套整洁高效的代码规范，让大家在这浮躁的世界里感受到一股把代码写好的清流 !
+            &nbsp;&nbsp;&nbsp;&nbsp;从客户下单、订单聚合、采购需求到实际称重收货、分拣发运，
+            用一套统一的业务链路串联起采购、销售与交付。
             <br />
-            保持谦逊，保持学习，热爱代码，更热爱生活 !<br />
-            永远年轻，永远前行 !<br />
-            <span class="author">
-              <a target="_blank" href="https://zhuoda.vip" style="color: white; font-size: 13px; text-decoration: underline">
-                1024创新实验室-主任：卓大
-              </a>
-            </span>
+            数据驱动决策，效率成就新鲜 !<br />
+            鲜蔬源，让好食材更快抵达 !<br />
           </span>
         </p>
       </div>
@@ -118,7 +110,7 @@
 </template>
 <script setup lang="ts">
   defineOptions({ name: "SystemLogin" });
-  import { message, notification, Button } from 'ant-design-vue';
+  import { message, notification } from 'ant-design-vue';
   import { onMounted, onUnmounted, reactive, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { loginApi } from '/@/api/system/login-api';
@@ -139,7 +131,6 @@
   import { buildRoutes } from '/@/router/index';
   import { smartSentry } from '/@/lib/smart-sentry';
   import { encryptData } from '/@/lib/encrypt';
-  import { h } from 'vue';
   import { localSave } from '/@/utils/local-util';
   import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
   import { useDictStore } from '/@/store/modules/system/dict';
@@ -174,21 +165,9 @@
 
     notification['success']({
       message: '温馨提示',
-      description: 'SmartAdmin 提供 9种 登录背景风格哦！',
+      description: '鲜蔬源智链 · 智慧供应链管理平台已就绪',
       duration: 8,
       onClick: () => {},
-      btn: () =>
-        h(
-          Button,
-          {
-            type: 'primary',
-            target: '_blank',
-            size: 'small',
-            href: 'https://smartadmin.vip/views/doc/front/Login.html',
-            onClick: () => {},
-          },
-          { default: () => '去看看' }
-        ),
     });
   });
 

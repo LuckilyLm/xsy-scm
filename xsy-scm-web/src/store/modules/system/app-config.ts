@@ -22,8 +22,16 @@ let appConfigStr = localRead(localStorageKeyConst.APP_CONFIG);
 let language = appDefaultConfig.language;
 if (appConfigStr) {
   try {
-    state = JSON.parse(appConfigStr);
-    language = state.language;
+    const cached = JSON.parse(appConfigStr);
+    // 缓存配置版本低于当前默认配置版本时，说明 app-config.ts 的默认值已更新，
+    // 直接采用新默认值（老用户会平滑升级到新配置，而不是一直停留在旧配置上）。
+    if (cached && cached.configVersion === appDefaultConfig.configVersion) {
+      state = cached;
+      language = state.language;
+    } else {
+      state = { ...appDefaultConfig };
+      language = appDefaultConfig.language;
+    }
   } catch (e) {
     smartSentry.captureError(e);
   }

@@ -12,8 +12,8 @@
   <div class="login-container">
     <div class="box-item desc">
       <div class="welcome">
-        <p>欢迎登录 SmartAdmin V3</p>
-        <p class="sub-welcome">「高质量代码、简洁、高效、安全」的开发平台</p>
+        <p>欢迎登录 鲜蔬源智链</p>
+        <p class="sub-welcome">鲜蔬源智慧供应链管理平台</p>
       </div>
       <img class="welcome-img" :src="loginGif" />
     </div>

@@ -26,6 +26,8 @@ export type ThemeType = 'light' | 'dark';
  * 应用信息配置
  */
 export interface AppConfig {
+  // 默认配置版本号：app-config.ts 默认值变更时 +1，用于让浏览器缓存的旧配置失效
+  configVersion: number;
   // i18n 语言选择
   language: LanguageType;
   // 布局
@@ -62,4 +64,10 @@ export interface AppConfig {
   primaryColor: string;
   // 紧凑
   compactFlag: boolean;
+  // 夜间模式
+  darkModeFlag: boolean;
+  // 菜单展开模式（同时只展开一个一级菜单）
+  menuSingleExpandFlag: boolean;
+  // 全屏（运行时状态，不属于持久化配置）
+  fullScreenFlag?: boolean;
 }

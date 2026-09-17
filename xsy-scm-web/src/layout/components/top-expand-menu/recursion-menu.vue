@@ -9,13 +9,12 @@
 -->
 <template>
   <div class="recursion-container" v-show="topMenu.children && topMenu.children.length > 0">
-    <!-- 顶部logo区域 -->
+    <!-- 顶部logo区域：直接展示鲜蔬源横版 logo（已含品牌文字） -->
     <div class="logo" @click="onGoHome" :style="sideMenuWidth" v-if="!collapsed">
       <img class="logo-img" :src="logoImg" />
-      <div class="title" >{{ websiteName }}</div>
     </div>
     <div class="min-logo" @click="onGoHome" v-if="collapsed">
-      <img class="logo-img" :src="logoImg" />
+      <img class="logo-img" :src="logoMinImg" />
     </div>
     <!-- 次级菜单展示 -->
     <a-menu :selectedKeys="selectedKeys" theme="light" :openKeys="openKeys" mode="inline">
@@ -47,10 +46,8 @@
   import menuEmitter from './top-expand-menu-mitt';
   import { useAppConfigStore } from '/@/store/modules/system/app-config';
   import { useUserStore } from '/@/store/modules/system/user';
-  import logoImg from '/@/assets/images/logo/smart-admin-logo.png';
-
-  const websiteName = computed(() => useAppConfigStore().websiteName);
-  const theme = computed(() => useAppConfigStore().$state.sideMenuTheme);
+  import logoImg from '/@/assets/images/logo/xsy-logo.png';
+  import logoMinImg from '/@/assets/images/logo/xsy-logo-min.png';
 
   const props = defineProps({
     collapsed: {
@@ -122,8 +119,6 @@
 
   defineExpose({ updateSelectKeyAndOpenKey });
 
-  const darkModeFlag = computed(() => useAppConfigStore().$state.darkModeFlag);
-
   const logoHeight = computed(() => {
     if(useAppConfigStore().$state.compactFlag){
       return '40px';
@@ -148,8 +143,10 @@
     justify-content: center;
     align-items: center;
     .logo-img {
-      width: 30px;
-      height: 30px;
+      // 收起态方形图标
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
     }
   }
   .top-menu {
@@ -176,17 +173,11 @@
     background-color: #001529;
 
     .logo-img {
-      width: 30px;
+      // 深色底用白色版 logo，避免绿色/橙色在 #001529 上对比不足
       height: 30px;
-    }
-
-    .title {
-      font-size: 16px;
-      font-weight: 600;
-      overflow: hidden;
-      word-wrap: break-word;
-      white-space: nowrap;
-      color: #ffffff;
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
     }
   }
 </style>

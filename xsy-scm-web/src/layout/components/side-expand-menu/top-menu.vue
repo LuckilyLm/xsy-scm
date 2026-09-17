@@ -9,10 +9,9 @@
 -->
 <template>
   <div class="top-menu-container">
-    <!-- 顶部logo区域 -->
+    <!-- 顶部logo区域：直接展示鲜蔬源横版 logo（已含品牌文字） -->
     <div class="logo" @click="onGoHome">
       <img class="logo-img" :src="logoImg" />
-      <div class="title smart-logo">{{ websiteName }}</div>
     </div>
     <!-- 一级菜单展示 -->
     <a-menu :selectedKeys="selectedKeys" mode="inline" :theme="theme">
@@ -37,10 +36,9 @@
   import { router } from '/@/router';
   import { useAppConfigStore } from '/@/store/modules/system/app-config';
   import { useUserStore } from '/@/store/modules/system/user';
-  import logoImg from '/@/assets/images/logo/smart-admin-logo.png';
+  import logoImg from '/@/assets/images/logo/xsy-logo.png';
   import menuEmitter from './side-expand-menu-mitt';
 
-  const websiteName = computed(() => useAppConfigStore().websiteName);
   const theme = computed(() => useAppConfigStore().$state.sideMenuTheme);
   const menuTree = computed(() => useUserStore().getMenuTree || []);
 
@@ -94,17 +92,11 @@
     cursor: pointer;
 
     .logo-img {
-      width: 30px;
+      // 鲜蔬源横版 logo（含品牌文字），按高度撑满、宽度自适应
       height: 30px;
-    }
-
-    .title {
-      font-size: 16px;
-      font-weight: 600;
-      overflow: hidden;
-      word-wrap: break-word;
-      white-space: nowrap;
-      color: v-bind('theme === "light" ? "#001529": "#ffffff"');
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
     }
   }
 </style>

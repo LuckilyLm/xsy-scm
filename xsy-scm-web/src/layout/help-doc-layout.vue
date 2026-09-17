@@ -20,8 +20,7 @@
       <a-row class="layout-header-title">
         <img class="logo-img" :src="logoImg" />
         <div class="title">{{ websiteName }}</div>
-        <div class="title">帮助文档</div>
-        <a-col class="avatar">
+        <div class="title">帮助文档</div>        <a-col class="avatar">
           <HeaderAvatar />
         </a-col>
       </a-row>
@@ -69,7 +68,7 @@
   import SmartFooter from './components/smart-footer/index.vue';
   import { helpDocApi } from '/@/api/support/help-doc-api';
   import { helpDocCatalogApi } from '/@/api/support/help-doc-catalog-api';
-  import logoImg from '/@/assets/images/logo/smart-admin-logo-white.png';
+  import logoImg from '/@/assets/images/logo/xsy-logo-min-white.png';
   import { SmartLoading } from '/@/components/framework/smart-loading';
   import { HOME_PAGE_NAME } from '/@/constants/system/home-const';
   import watermark from '../lib/smart-watermark';
@@ -248,8 +247,10 @@
       margin-bottom: 10px;
 
       .logo-img {
-        width: 40px;
-        height: @header-user-height;
+        // 方形图标版（白色剪影），配合右侧品牌文字使用
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
       }
       .title {
         font-size: 18px;

@@ -10,11 +10,9 @@
 <template>
   <!--总共3部分：1、logo区域，包含 logo和名称; 2、菜单区域  ;3、用户操作区域-->
   <div class="header-main">
-    <!-- 1、logo区域 -->
+    <!-- 1、logo区域：直接展示鲜蔬源横版 logo（已含品牌文字） -->
     <div class="logo" @click="onGoHome">
       <img class="logo-img" :src="logoImg" />
-      <div class="title smart-logo title-light" v-if="sideMenuTheme === 'light'">{{ websiteName }}</div>
-      <div class="title smart-logo title-dark" v-if="sideMenuTheme === 'dark'">{{ websiteName }}</div>
     </div>
     <!-- 2、菜单区域 -->
     <RecursionMenu ref="menuRef" />
@@ -42,7 +40,7 @@
   import { computed, ref, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import RecursionMenu from './recursion-menu.vue';
-  import logoImg from '/@/assets/images/logo/smart-admin-logo.png';
+  import logoImg from '/@/assets/images/logo/xsy-logo.png';
   import { HOME_PAGE_NAME } from '/@/constants/system/home-const';
   import { useAppConfigStore } from '/@/store/modules/system/app-config';
   import HeaderAvatar from '../header-user-space/header-avatar.vue';
@@ -61,9 +59,6 @@
   function showMessage() {
     headerMessage.value.showMessage();
   }
-
-  const websiteName = computed(() => useAppConfigStore().websiteName);
-  const sideMenuTheme = computed(() => useAppConfigStore().sideMenuTheme);
 
   const props = defineProps({
     collapsed: {
@@ -125,18 +120,10 @@
       .logo-img {
         display: inline-block;
         height: 30px;
+        width: auto;
+        max-width: 100%;
+        object-fit: contain;
         vertical-align: middle;
-      }
-      .title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-left: 8px;
-      }
-      .title-light {
-        color: #001529;
-      }
-      .title-dark {
-        color: #ffffff;
       }
     }
 
