@@ -6,6 +6,7 @@ skills-lock.json
 
 # Local IDE metadata
 .idea/
+.vscode
 
 # Local environment inventory (machine-specific, never commit)
 local-environment-info.txt

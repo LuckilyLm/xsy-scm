@@ -1,5 +1,7 @@
 package net.lab1024.sa.admin.module.system;
 
+
+import net.lab1024.sa.admin.test.PgITPaths;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -62,8 +64,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 是「全量扫描 active SQL 是否仍有 MySQL 残留」的可执行证据。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
-        "project.log-directory=D:/Browser Download/xsy-scm/.runtime/logs/test",
-        "file.storage.local.upload-path=D:/Browser Download/xsy-scm/.runtime/upload/",
+        "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
+        "file.storage.local.upload-path=" + PgITPaths.DEFAULT_UPLOAD_PATH,
         "file.storage.local.url-prefix=http://127.0.0.1:18082",
         "logging.level.root=WARN"})
 class SmartAdminMapperPgValidationIT {

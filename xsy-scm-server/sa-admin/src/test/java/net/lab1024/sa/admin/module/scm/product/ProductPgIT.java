@@ -8,6 +8,7 @@ import net.lab1024.sa.admin.module.scm.product.domain.form.*;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.product.service.*;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
+import net.lab1024.sa.admin.test.PgITPaths;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.service.FileService;
@@ -25,8 +26,8 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest(classes=AdminApplication.class,properties={
-    "project.log-directory=D:/Browser Download/xsy-scm/.runtime/logs/test",
-    "file.storage.local.upload-path=D:/Browser Download/xsy-scm/.runtime/upload/",
+    "project.log-directory="+PgITPaths.DEFAULT_LOG_DIR,
+    "file.storage.local.upload-path="+PgITPaths.DEFAULT_UPLOAD_PATH,
     "file.storage.local.url-prefix=http://127.0.0.1:18082",
     "logging.level.root=WARN"})
 @Transactional

@@ -117,7 +117,8 @@ file:
   storage:
     mode: local
     local:
-      upload-path: ${XSY_V2_UPLOAD_PATH:D:/Browser Download/xsy-scm/.runtime/upload/}   #文件上传目录
+      # 默认值不写死盘符（原基线为 D:/Browser Download/...）；部署时用 XSY_V2_UPLOAD_PATH 覆盖。
+      upload-path: ${XSY_V2_UPLOAD_PATH:../.runtime/upload/}   #文件上传目录
       url-prefix:
     cloud:
       region: oss-cn-hangzhou

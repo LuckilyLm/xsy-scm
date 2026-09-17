@@ -11,7 +11,9 @@
 # 覆盖掉 YAML 中的 project.name 键。因此日志目录段使用字面量。
 project:
   name: xsy-scm-v2-admin
-  log-directory: ${XSY_V2_LOG_DIR:D:/Browser Download/xsy-scm/.runtime/logs}/xsy-scm-v2-admin/${spring.profiles.active}
+  # 默认值不写死盘符：原基线硬编码 D:/Browser Download/...，遇到没有 D 盘的机器直接不可用。
+  # XSY_V2_LOG_DIR 存在时优先（部署 / CI 用绝对路径），否则落到仓库内 .runtime/logs。
+  log-directory: ${XSY_V2_LOG_DIR:../.runtime/logs}/xsy-scm-v2-admin/${spring.profiles.active}
 
 # 项目端口和url根路径
 # 注意：SmartAdmin 原基线默认 1024，但本机 Windows 的动态端口范围是 1024-15000

@@ -1,5 +1,7 @@
 package net.lab1024.sa.admin.module.scm.common;
 
+
+import net.lab1024.sa.admin.test.PgITPaths;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.lab1024.sa.admin.AdminApplication;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
@@ -41,8 +43,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 直接插表会绕过 W1 的聚合不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
-        "project.log-directory=D:/Browser Download/xsy-scm/.runtime/logs/test",
-        "file.storage.local.upload-path=D:/Browser Download/xsy-scm/.runtime/upload/",
+        "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
+        "file.storage.local.upload-path=" + PgITPaths.DEFAULT_UPLOAD_PATH,
         "file.storage.local.url-prefix=http://127.0.0.1:18082",
         "logging.level.root=WARN"})
 @Transactional
