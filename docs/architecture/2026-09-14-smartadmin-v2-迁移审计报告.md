@@ -998,17 +998,23 @@ CONTEXT.md                 # 领域词汇（不改）
 
 ## 附录 B · 迁移波次建议
 
-| 波次 | 内容 | 前置 |
-|---|---|---|
-| W0 | 规则文档修订 + V2 基线 + PG 转换 | 无 |
-| W1 | **Product Pilot** | W0 |
-| W2 | customer（含 `CustomerPriceResolver`）+ supplier | W1 |
-| W3 | **Pricing** | W2 |
-| W4 | Sales Order（2026-09-16 最终裁决） | W3 |
-| W5 | Purchase（含超收 UI 补齐） | W4 |
-| 后续另排 | mall + marketing | W2 / W4 |
-| W6 | 小程序 uni-app Vue3 | W5 |
+| 波次 | 内容 | 前置 | 状态 |
+|---|---|---|---|
+| W0 | 规则文档修订 + V2 基线 + PG 转换 | 无 | COMPLETE |
+| W1 | **Product Pilot** | W0 | COMPLETE |
+| W2 | customer（含 `CustomerPriceResolver`）+ supplier | W1 | COMPLETE |
+| W3 | **Pricing** | W2 | COMPLETE |
+| W4 | Sales Order（2026-09-16 最终裁决） | W3 | COMPLETE |
+| W5 | Purchase（含 `warehouse` 最小主数据 + 超收容差；**不含库存实现**） | W4 | COMPLETE |
+| W6 | Inventory 库存域（余额 / 占用 / 只追加流水 / `PURCHASE_IN`）+ 小程序 uni-app Vue3 | W5 | NOT STARTED |
+| 后续另排 | mall + marketing | W2 / W4 | NOT STARTED |
+
+W5 的范围调整（相对本审计报告原始建议）：采购退货、无单收货、询价比价、二维码协同、
+采购业务员数据权限、`receipt_mode` / putaway 三列**均不做**；库存**零实现**，
+只保留 `PurchaseInventoryContract` 契约与 W6 backfill 口径。W5 新增 `module/scm/warehouse/`
+（最小仓库主数据：启用状态 + 1 条默认仓库种子）。
 
 ---
 
-*报告结束。本报告记录的是迁移前审计；W0 baseline、W1 Product、W2 Customer + Supplier 和 W3 Pricing 已按后续验收报告完成。*
+*报告结束。本报告记录的是迁移前审计；W0 baseline、W1 Product、W2 Customer + Supplier、
+W3 Pricing、W4 Sales Order 和 W5 Purchase 已按后续验收报告完成。*

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandDao">
+
+    <!-- 约定（同 W1–W3）：只显式声明 <id> 与 JSONB 列，其余列走下划线→驼峰自动映射。
+         W5 的 8 张表列名与属性名全部是干净的单射（无 is_default→defaultFlag 这类错位），
+         因此不需要逐列罗列；JSONB 列必须显式 typeHandler，否则 PGobject 无法转成 Map。 -->
+    <resultMap id="demandRowMap" type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity">
+        <id column="id" property="id"/>
+        <result column="spec_values_snapshot" property="specValuesSnapshot"
+                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+    </resultMap>
+
+    <resultMap id="demandVoMap" type="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandVO">
+        <id column="id" property="id"/>
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+    </resultMap>
+
+    <!-- 来源行属于 W4 的 sales_order_item，其 JSONB 处理器是 W4 的 OrderJsonbTypeHandler；
+         这里只以字符串引用，不产生 purchase → order 的编译期依赖。 -->
+    <resultMap id="sourceItemMap" type="net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity">
+        <id column="id" property="id"/>
+        <result column="spec_values_snapshot" property="specValuesSnapshot"
+                typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
+    </resultMap>
+
+    <!-- §7.4 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。 -->
+    <select id="listSourceItems" resultMap="sourceItemMap">
+        SELECT oi.id, oi.order_id, oi.spu_id, oi.sku_id,
+               oi.spu_code_snapshot, oi.product_name_snapshot, oi.sku_code_snapshot,
+               oi.spec_name_snapshot, oi.spec_values_snapshot, oi.sale_unit_snapshot,
+               oi.product_type_snapshot, oi.ordered_quantity, oi.actual_quantity,
+               oi.actual_quantity_source, oi.actual_quantity_reason, oi.sort_order,
+               oi.version, oi.created_at, oi.updated_at
+        FROM sales_order_item oi
+        JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
+        WHERE o.status = 'CONFIRMED'
+          AND oi.deleted = FALSE
+          AND oi.actual_quantity IS NOT NULL
+          AND oi.actual_quantity &gt; 0
+          AND o.confirmed_at &gt;= #{startAt}
+          AND o.confirmed_at &lt; #{endAt}
+        ORDER BY oi.sku_id ASC, o.confirmed_at ASC, oi.id ASC
+    </select>
+
+    <!-- 联 supplier / warehouse 取名称（快照之外还需要当前名称展示，两者语义不同） -->
+    <select id="query" resultMap="demandVoMap">
+        SELECT d.id, d.sales_order_id, d.sales_order_no_snapshot, d.sales_order_item_id,
+               d.sku_id,
+               d.sku_code_snapshot       AS sku_code,
+               d.sku_name_snapshot       AS sku_name,
+               d.product_name_snapshot   AS product_name,
+               d.spec_values_snapshot    AS spec_values,
+               d.demand_unit_snapshot    AS demand_unit,
+               d.product_type_snapshot   AS product_type,
+               d.required_quantity, d.allocated_quantity,
+               (d.required_quantity - d.allocated_quantity) AS unallocated_quantity,
+               d.supplier_id, s.name AS supplier_name,
+               d.warehouse_id, w.name AS warehouse_name,
+               d.status, d.demand_date, d.source_confirmed_at, d.version, d.created_at
+        FROM purchase_demand d
+        LEFT JOIN supplier  s ON s.id = d.supplier_id  AND s.deleted = FALSE
+        LEFT JOIN warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
+        WHERE d.deleted = FALSE
+        <if test="query.salesOrderNo != null and query.salesOrderNo != ''">
+            AND d.sales_order_no_snapshot ILIKE CONCAT('%', #{query.salesOrderNo}, '%')
+        </if>
+        <if test="query.skuId != null">
+            AND d.sku_id = #{query.skuId}
+        </if>
+        <if test="query.supplierId != null">
+            AND d.supplier_id = #{query.supplierId}
+        </if>
+        <if test="query.warehouseId != null">
+            AND d.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND d.status = #{query.status}
+        </if>
+        <!-- 半开区间：与 Q6a 的 demand_date 口径一致 -->
+        <if test="query.demandDateFrom != null">
+            AND d.demand_date &gt;= #{query.demandDateFrom}
+        </if>
+        <if test="query.demandDateTo != null">
+            AND d.demand_date &lt; #{query.demandDateTo}
+        </if>
+        ORDER BY d.demand_date DESC, d.id DESC
+    </select>
+
+    <select id="detail" resultMap="demandVoMap">
+        SELECT d.id, d.sales_order_id, d.sales_order_no_snapshot, d.sales_order_item_id,
+               d.sku_id,
+               d.sku_code_snapshot       AS sku_code,
+               d.sku_name_snapshot       AS sku_name,
+               d.product_name_snapshot   AS product_name,
+               d.spec_values_snapshot    AS spec_values,
+               d.demand_unit_snapshot    AS demand_unit,
+               d.product_type_snapshot   AS product_type,
+               d.required_quantity, d.allocated_quantity,
+               (d.required_quantity - d.allocated_quantity) AS unallocated_quantity,
+               d.supplier_id, s.name AS supplier_name,
+               d.warehouse_id, w.name AS warehouse_name,
+               d.status, d.demand_date, d.source_confirmed_at, d.version, d.created_at
+        FROM purchase_demand d
+        LEFT JOIN supplier  s ON s.id = d.supplier_id  AND s.deleted = FALSE
+        LEFT JOIN warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
+        WHERE d.deleted = FALSE
+          AND d.id = #{id}
+    </select>
+
+    <!-- P12 锁序：必须 ORDER BY id ASC，否则与 order.create 路径可能交叉成环 -->
+    <select id="lockByIds" resultMap="demandRowMap">
+        SELECT * FROM purchase_demand
+        WHERE deleted = FALSE
+          AND id IN
+        <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
+        ORDER BY id ASC
+        FOR UPDATE
+    </select>
+
+    <select id="lock" resultMap="demandRowMap">
+        SELECT * FROM purchase_demand WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <select id="listActiveBySourceItemIds" resultMap="demandRowMap">
+        SELECT * FROM purchase_demand
+        WHERE deleted = FALSE
+          AND sales_order_item_id IN
+        <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
+        ORDER BY id ASC
+    </select>
+
+    <!-- INSERT 竞争（修 A-D17）：不先查后插；冲突返回 0，调用方重读收敛。
+         冲突（0 行）时 JDBC 不回传生成键，因此 row.id 保持 null —— 调用方必须走「重读」分支。 -->
+    <insert id="insertIgnore" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO purchase_demand (
+            sales_order_id, sales_order_item_id, spu_id, sku_id,
+            sales_order_no_snapshot, spu_code_snapshot, product_name_snapshot,
+            sku_code_snapshot, sku_name_snapshot, spec_values_snapshot,
+            demand_unit_snapshot, product_type_snapshot,
+            required_quantity, allocated_quantity, supplier_id, warehouse_id, purchaser_id,
+            status, demand_date, source_confirmed_at, created_by)
+        VALUES (
+            #{row.salesOrderId}, #{row.salesOrderItemId}, #{row.spuId}, #{row.skuId},
+            #{row.salesOrderNoSnapshot}, #{row.spuCodeSnapshot}, #{row.productNameSnapshot},
+            #{row.skuCodeSnapshot}, #{row.skuNameSnapshot},
+            #{row.specValuesSnapshot,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
+            #{row.demandUnitSnapshot}, #{row.productTypeSnapshot},
+            #{row.requiredQuantity}, 0, #{row.supplierId}, #{row.warehouseId}, #{row.purchaserId},
+            #{row.status}, #{row.demandDate}, #{row.sourceConfirmedAt}, #{row.createdBy})
+        ON CONFLICT DO NOTHING
+    </insert>
+
+    <!-- §7.8 C 段：需求侧重算。supplier_id 只在首次分配时写入（Q17/§7.4 分配段） -->
+    <update id="updateAllocation">
+        UPDATE purchase_demand
+        SET allocated_quantity = #{allocatedQuantity},
+            status             = #{status},
+            supplier_id        = #{supplierId},
+            version            = version + 1,
+            updated_at         = CURRENT_TIMESTAMP,
+            updated_by         = #{operator}
+        WHERE id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <update id="softDelete">
+        UPDATE purchase_demand
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+</mapper>

@@ -1,0 +1,172 @@
+package net.lab1024.sa.admin.module.scm.purchase;
+
+import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode;
+import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * W5 错误码撞码门禁（W5 Target Design §7.7 Q11 / §11.1）。
+ *
+ * <p>锁定三件事：
+ * <ol>
+ *   <li>{@link PurchaseErrorCode} 恰好 **38** 个、{@link WarehouseErrorCode} 恰好 **2** 个，合计 **40**；</li>
+ *   <li>W5 的 40 个码**段内无重复**，且段分布为 400xx=12 · 404xx=5 · 409xx=21（+ 仓库域 40485 / 40996）；</li>
+ *   <li>W5 的 40 个码与 **W1–W4 全部** SCM 错误码**零交集**，且两个枚举之间也零重复。</li>
+ * </ol>
+ *
+ * <p>**为什么自动扫描而不是硬编码清单**：硬编码清单在 W6+ 新增域时会被忘记更新，
+ * 门禁就形同虚设。这里从 classpath 上 {@code module/scm} 目录反查所有
+ * {@code *ErrorCode} 枚举（实现 {@link ScmErrorCode} 且为 enum），
+ * 因此**未来任何新域的错误码都会被自动纳入比对**。
+ * 目录不可读时（例如从 jar 运行）回退到显式清单，并断言清单里 6 个 W1–W4 枚举确实被扫到。
+ */
+class PurchaseErrorCodeTest {
+
+    private static final String SCM_PACKAGE = "net.lab1024.sa.admin.module.scm";
+
+    /** 回退清单：classpath 不是展开目录时使用。 */
+    private static final List<String> FALLBACK = List.of(
+            "net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode",
+            "net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode",
+            "net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode",
+            "net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode",
+            "net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode",
+            "net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode",
+            PurchaseErrorCode.class.getName(),
+            WarehouseErrorCode.class.getName());
+
+    /** W1–W4 已存在的错误码枚举，必须被扫描到（防止扫描静默失效）。 */
+    private static final Set<String> W1_TO_W4_ENUMS = Set.of(
+            "ScmCommonErrorCode", "ProductErrorCode", "CustomerErrorCode",
+            "SupplierErrorCode", "PricingErrorCode", "OrderErrorCode");
+
+    @Test
+    @DisplayName("撞码门禁：W5 合计 40 码、段内无重复、段分布正确、与 W1–W4 零交集")
+    void gate() {
+        // ---------- 1. 数量 ----------
+        assertThat(PurchaseErrorCode.values()).hasSize(38);
+        assertThat(WarehouseErrorCode.values()).hasSize(2);
+
+        Map<String, Integer> w5 = new LinkedHashMap<>();
+        Arrays.stream(PurchaseErrorCode.values())
+                .forEach(c -> w5.put("PurchaseErrorCode." + c.name(), c.getCode()));
+        Arrays.stream(WarehouseErrorCode.values())
+                .forEach(c -> w5.put("WarehouseErrorCode." + c.name(), c.getCode()));
+        assertThat(w5).as("W5 错误码合计").hasSize(40);
+
+        // ---------- 2. 段内无重复 ----------
+        Set<Integer> w5Codes = new LinkedHashSet<>(w5.values());
+        assertThat(w5Codes).as("W5 段内存在重复码值").hasSize(40);
+
+        // ---------- 3. 段分布 ----------
+        Set<Integer> purchaseCodes = Arrays.stream(PurchaseErrorCode.values())
+                .map(PurchaseErrorCode::getCode).collect(Collectors.toSet());
+        assertThat(purchaseCodes.stream().filter(c -> c / 100 == 400).count())
+                .as("PurchaseErrorCode 400xx 段").isEqualTo(12L);
+        assertThat(purchaseCodes.stream().filter(c -> c / 100 == 404).count())
+                .as("PurchaseErrorCode 404xx 段").isEqualTo(5L);
+        assertThat(purchaseCodes.stream().filter(c -> c / 100 == 409).count())
+                .as("PurchaseErrorCode 409xx 段").isEqualTo(21L);
+        assertThat(purchaseCodes).hasSize(38);
+
+        assertThat(WarehouseErrorCode.WAREHOUSE_NOT_FOUND.getCode()).isEqualTo(40485);
+        assertThat(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE.getCode()).isEqualTo(40996);
+
+        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(12L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(6L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(22L);
+
+        // ---------- 4. 与 W1–W4 零交集 ----------
+        List<Class<?>> discovered = discover();
+        Set<String> discoveredNames = discovered.stream()
+                .map(Class::getSimpleName).collect(Collectors.toCollection(LinkedHashSet::new));
+        assertThat(discoveredNames)
+                .as("扫描未覆盖 W1–W4 全部错误码枚举，门禁会漏放")
+                .containsAll(W1_TO_W4_ENUMS);
+        assertThat(discoveredNames)
+                .as("扫描未覆盖 W5 自己的两个枚举")
+                .contains(PurchaseErrorCode.class.getSimpleName(), WarehouseErrorCode.class.getSimpleName());
+
+        Set<Integer> otherCodes = new LinkedHashSet<>();
+        for (Class<?> type : discovered) {
+            if (type == PurchaseErrorCode.class || type == WarehouseErrorCode.class) {
+                continue;
+            }
+            for (Object constant : type.getEnumConstants()) {
+                otherCodes.add(((ScmErrorCode) constant).getCode());
+            }
+        }
+        assertThat(otherCodes).as("W1–W4 错误码集合不应为空").isNotEmpty();
+
+        for (Map.Entry<String, Integer> entry : w5.entrySet()) {
+            assertThat(otherCodes)
+                    .as("W5 错误码 %s(%d) 与 W1–W4 已占用码冲突", entry.getKey(), entry.getValue())
+                    .doesNotContain(entry.getValue());
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // classpath 扫描
+    // ------------------------------------------------------------------
+
+    private static List<Class<?>> discover() {
+        try {
+            URL root = ScmErrorCode.class.getResource("/net/lab1024/sa/admin/module/scm");
+            if (root != null && "file".equals(root.getProtocol())) {
+                Path base = Paths.get(root.toURI());
+                List<Class<?>> found = new ArrayList<>();
+                try (Stream<Path> walk = Files.walk(base)) {
+                    for (Path path : walk.filter(Files::isRegularFile).collect(Collectors.toList())) {
+                        String fileName = path.getFileName().toString();
+                        if (!fileName.endsWith("ErrorCode.class") || fileName.contains("$")) {
+                            continue;
+                        }
+                        String relative = base.relativize(path).toString()
+                                .replace(File.separatorChar, '.').replace('/', '.');
+                        String fqn = SCM_PACKAGE + "." + relative.substring(0, relative.length() - ".class".length());
+                        Class<?> type = load(fqn);
+                        if (type != null && type.isEnum() && ScmErrorCode.class.isAssignableFrom(type)) {
+                            found.add(type);
+                        }
+                    }
+                }
+                if (!found.isEmpty()) {
+                    return found;
+                }
+            }
+        } catch (Exception ignored) {
+            // 落到回退清单
+        }
+        return FALLBACK.stream().map(PurchaseErrorCodeTest::load)
+                .filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    private static Class<?> load(String fqn) {
+        try {
+            return Class.forName(fqn, false, ScmErrorCode.class.getClassLoader());
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+}

@@ -67,13 +67,16 @@ W1  Product                          COMPLETE
 W2  Customer + Supplier              COMPLETE
 W3  Pricing implementation/verification COMPLETE
 W4  Sales Order                      COMPLETE
-W5  Purchase                         NOT STARTED
+W5  Purchase                         COMPLETE
+W6  Inventory / Mini Program         NOT STARTED
 ```
 
-W4 = Sales Order (COMPLETE, acceptance report 2026-09-16). W5 = Purchase (NOT STARTED).
-The current task stops after W4 acceptance. Do not start W5 or add unrelated business scope.
+W4 = Sales Order (COMPLETE, acceptance report 2026-09-16).
+W5 = Purchase (COMPLETE, acceptance report 2026-09-16) — purchase demand, purchase order,
+receiving and the minimal `warehouse` master data, with **no inventory implementation**.
+The current task stops after W5 acceptance. Do not start W6 or add unrelated business scope.
 The PostgreSQL Closure restriction against V13+ applies only to that completed phase.
-W4 adds V13/V14 normally; V1–V12 remain immutable.
+W4 adds V13/V14 and W5 adds V15/V16 normally; V1–V14 remain immutable.
 
 Architecture contracts for the completed waves:
 
@@ -277,6 +280,7 @@ com.xianshuyuan.scm
 ├─ product
 ├─ customer
 ├─ supplier
+├─ warehouse
 ├─ order
 ├─ purchase
 ├─ inventory

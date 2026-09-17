@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandAllocationDao">
+
+    <resultMap id="allocationRowMap"
+               type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandAllocationEntity">
+        <id column="id" property="id"/>
+        <result column="demand_snapshot" property="demandSnapshot"
+                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+    </resultMap>
+
+    <!-- Q13：全部查询都是集合形态。没有「按 itemId 查单条」的方法（A-D23 的错误形状）。 -->
+    <select id="listActiveByOrderId" resultMap="allocationRowMap">
+        SELECT a.*
+        FROM purchase_demand_allocation a
+        JOIN purchase_order_item oi ON oi.id = a.purchase_order_item_id AND oi.deleted = FALSE
+        WHERE a.deleted = FALSE
+          AND oi.purchase_order_id = #{purchaseOrderId}
+        ORDER BY a.purchase_order_item_id ASC, a.purchase_demand_id ASC
+    </select>
+
+    <select id="listActiveByOrderItemIds" resultMap="allocationRowMap">
+        SELECT * FROM purchase_demand_allocation
+        WHERE deleted = FALSE
+          AND purchase_order_item_id IN
+        <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
+        ORDER BY purchase_order_item_id ASC, purchase_demand_id ASC
+    </select>
+
+    <!-- 跨采购单：allocated_quantity 是需求级累计值，只按本单算会漏掉其它单的贡献 -->
+    <select id="listActiveByDemandIds" resultMap="allocationRowMap">
+        SELECT * FROM purchase_demand_allocation
+        WHERE deleted = FALSE
+          AND purchase_demand_id IN
+        <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
+        ORDER BY purchase_demand_id ASC, id ASC
+    </select>
+
+    <select id="listActiveByOrderIdAndDemandIds" resultMap="allocationRowMap">
+        SELECT a.*
+        FROM purchase_demand_allocation a
+        JOIN purchase_order_item oi ON oi.id = a.purchase_order_item_id AND oi.deleted = FALSE
+        WHERE a.deleted = FALSE
+          AND oi.purchase_order_id = #{purchaseOrderId}
+          AND a.purchase_demand_id IN
+        <foreach collection="demandIds" item="it" open="(" separator="," close=")">#{it}</foreach>
+        ORDER BY a.purchase_order_item_id ASC, a.purchase_demand_id ASC
+    </select>
+
+    <!-- 保留的 allocation：只改数量，不重建行（Q13）。版本作为显式参数，0 行 = 并发冲突 -->
+    <update id="updateQuantity">
+        UPDATE purchase_demand_allocation
+        SET allocated_quantity = #{allocatedQuantity},
+            version            = version + 1,
+            updated_at         = CURRENT_TIMESTAMP,
+            updated_by         = #{operator}
+        WHERE id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <!-- 只删这一条：同一采购行的其它 allocation 必须原样保留（Q13） -->
+    <update id="softDelete">
+        UPDATE purchase_demand_allocation
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <update id="softDeleteByOrderItemId">
+        UPDATE purchase_demand_allocation
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE purchase_order_item_id = #{purchaseOrderItemId}
+          AND deleted = FALSE
+    </update>
+
+</mapper>

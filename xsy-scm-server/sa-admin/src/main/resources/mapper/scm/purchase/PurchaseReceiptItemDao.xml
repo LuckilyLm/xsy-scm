@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseReceiptItemDao">
+
+    <resultMap id="receiptItemRowMap"
+               type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseReceiptItemEntity">
+        <id column="id" property="id"/>
+        <result column="spec_values_snapshot" property="specValuesSnapshot"
+                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+    </resultMap>
+
+    <select id="listByReceiptId" resultMap="receiptItemRowMap">
+        SELECT * FROM purchase_receipt_item
+        WHERE deleted = FALSE
+          AND purchase_receipt_id = #{purchaseReceiptId}
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <!-- 锁序 P12：purchase_receipt_item 内部按 id ASC 取锁 -->
+    <select id="lockByReceiptId" resultMap="receiptItemRowMap">
+        SELECT * FROM purchase_receipt_item
+        WHERE deleted = FALSE
+          AND purchase_receipt_id = #{purchaseReceiptId}
+        ORDER BY id ASC
+        FOR UPDATE
+    </select>
+
+    <select id="lock" resultMap="receiptItemRowMap">
+        SELECT * FROM purchase_receipt_item WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <select id="listActiveByOrderItemId" resultMap="receiptItemRowMap">
+        SELECT * FROM purchase_receipt_item
+        WHERE deleted = FALSE
+          AND purchase_order_item_id = #{purchaseOrderItemId}
+        ORDER BY id ASC
+    </select>
+
+    <!-- 一次写全 5 个对账数量 + 实重三字段：
+         ck_purchase_receipt_item_reconciliation 与 ck_purchase_receipt_item_weight_fields
+         要求这些列**同时**满足恒等式，分两步写必然中间态撞 CHECK。
+         标品传 actualWeight/weightUnit/weighingSource 全 NULL（三字段同生同灭）。 -->
+    <update id="updateReconciliation">
+        UPDATE purchase_receipt_item
+        SET received_quantity            = #{receivedQuantity},
+            cumulative_received_quantity = #{cumulativeReceivedQuantity},
+            remaining_quantity           = #{remainingQuantity},
+            over_receipt_quantity        = #{overReceiptQuantity},
+            receipt_difference           = #{receiptDifference},
+            actual_weight                = #{actualWeight},
+            weight_unit                  = #{weightUnit},
+            weighing_source              = #{weighingSource},
+            correction_reason            = #{correctionReason},
+            version                      = version + 1,
+            updated_at                   = CURRENT_TIMESTAMP,
+            updated_by                   = #{operator}
+        WHERE id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <update id="softDelete">
+        UPDATE purchase_receipt_item
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <update id="softDeleteByReceiptId">
+        UPDATE purchase_receipt_item
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE purchase_receipt_id = #{purchaseReceiptId}
+          AND deleted = FALSE
+    </update>
+
+    <select id="countActiveByReceiptId" resultType="int">
+        SELECT count(*) FROM purchase_receipt_item
+        WHERE deleted = FALSE AND purchase_receipt_id = #{purchaseReceiptId}
+    </select>
+
+</mapper>

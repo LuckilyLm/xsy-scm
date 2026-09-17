@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOrderItemDao">
+
+    <resultMap id="itemRowMap"
+               type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderItemEntity">
+        <id column="id" property="id"/>
+        <result column="spec_values_snapshot" property="specValuesSnapshot"
+                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+    </resultMap>
+
+    <select id="listByOrderId" resultMap="itemRowMap">
+        SELECT * FROM purchase_order_item
+        WHERE deleted = FALSE
+          AND purchase_order_id = #{purchaseOrderId}
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="listByOrderIds" resultMap="itemRowMap">
+        SELECT * FROM purchase_order_item
+        WHERE deleted = FALSE
+          AND purchase_order_id IN
+        <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
+        ORDER BY purchase_order_id ASC, sort_order ASC, id ASC
+    </select>
+
+    <!-- 锁序 P12：purchase_order_item 内部必须按 id ASC 取锁 -->
+    <select id="lockByOrderId" resultMap="itemRowMap">
+        SELECT * FROM purchase_order_item
+        WHERE deleted = FALSE
+          AND purchase_order_id = #{purchaseOrderId}
+        ORDER BY id ASC
+        FOR UPDATE
+    </select>
+
+    <select id="lock" resultMap="itemRowMap">
+        SELECT * FROM purchase_order_item WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <!-- received_quantity 只增不减；**不做上限判定**（上限是运行时 t_config 容差，静态表达不了） -->
+    <update id="accumulateReceived">
+        UPDATE purchase_order_item
+        SET received_quantity = received_quantity + #{delta},
+            version           = version + 1,
+            updated_at        = CURRENT_TIMESTAMP,
+            updated_by        = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+
+    <update id="softDelete">
+        UPDATE purchase_order_item
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND version = #{version}
+          AND deleted = FALSE
+    </update>
+
+    <update id="softDeleteByOrderId">
+        UPDATE purchase_order_item
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE purchase_order_id = #{purchaseOrderId}
+          AND deleted = FALSE
+    </update>
+
+    <select id="countActiveByOrderId" resultType="int">
+        SELECT count(*) FROM purchase_order_item
+        WHERE deleted = FALSE AND purchase_order_id = #{purchaseOrderId}
+    </select>
+
+</mapper>
