@@ -13,6 +13,9 @@ local-environment-info.txt
 # Downloaded reference projects
 project-reference-examples/
 
+# Local tooling (machine-specific, keep out of repository)
+/tools/
+
 # Build outputs and local environment files
 **/target/
 **/node_modules/
