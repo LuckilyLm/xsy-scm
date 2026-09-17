@@ -1,0 +1,12 @@
+# 迁移校验清单（*-applied-migrations.sha256）必须字节稳定。
+#
+# 原因：这些清单以「文件名 + 十六进制摘要」的形式被 `sha256sum -c` 消费，
+# 而 sha256sum 是把整行当作**文件名**去打开的。本仓库 core.autocrlf=true
+# （Windows 默认），若清单被检出为 CRLF，行尾会多出一个 \r，
+# sha256sum 就会报：
+#     'V6__scm_product.sql'$'\r': No such file or directory
+# 即清单**完全无法校验**。
+#
+# 用 -text 关闭换行符转换：以什么字节入库，就以什么字节检出。
+# 清单统一以 LF 入库（见 docs/architecture/*-applied-migrations.sha256）。
+*.sha256 -text

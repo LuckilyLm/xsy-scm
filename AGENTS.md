@@ -79,6 +79,10 @@ receiving and the minimal `warehouse` master data, with **no inventory implement
 W5.5 = SmartAdmin native feature parity sync (COMPLETE, report 2026-09-17) — zero new migrations,
 zero menu changes, zero permission changes; the formal V2 workspace already carried the native
 system and support capabilities.
+The **W5.5 UI/branding commit `fdfd643`** (default page config, SCM sidebar menu icons, 鲜蔬源
+branding) is a separate increment that *did* add a migration and named its manifest
+`w5_5-applied-migrations.sha256`. That migration is now **V18** (see the V17/V18 note below);
+the "zero new migrations" statement above refers only to the native-parity sync (`663d354`).
 F0 = Object Storage Activation (**COMPLETE**, acceptance report 2026-09-17) — strict fileKey
 prefix policy, per-folder read guard with HTTP 403 + native 30005 envelope, S3/MinIO path-style
 client and presigner, canned-ACL switch, short-TTL cache exclusion, four-profile cloud ENV
@@ -96,8 +100,21 @@ business-permission + ownership/relation + FileService reads.
 W6 = Inventory / Mini Program — **NOT STARTED**; do not begin before F0 is accepted.
 
 The PostgreSQL Closure restriction against V13+ applies only to that completed phase.
-W4 adds V13/V14 and W5 adds V15/V16 normally; V1–V16 remain immutable, and F0 appended only the
-data-only V17 (`t_config` file upload size alignment).
+W4 adds V13/V14 and W5 adds V15/V16 normally; V1–V16 remain immutable.
+
+```text
+V17  V17__sa_config_file_upload_size.sql   F0    data-only, t_config 文件上传大小 30→20
+V18  V18__scm_menu_icons.sql               W5.5  data-only, t_menu 侧边栏图标（34 条 UPDATE）
+```
+
+> **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
+> version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，
+> **任何库都无法启动**。已按「保留已被真实库应用的那个版本号」原则，把菜单图标迁移
+> **改名为 V18**（内容字节不变）。F0 的 V17 保留。审计见
+> [`docs/architecture/2026-09-17-v17-migration-conflict-audit.md`](./docs/architecture/2026-09-17-v17-migration-conflict-audit.md)。
+>
+> **选版本号前必须先同步远端**：`git fetch` 后用 `git ls-remote origin refs/heads/main` 确认真值，
+> 并确认本地 HEAD 是它的祖先；基线落后时不得选号。当前 `db/migration/` 的版本号必须**唯一且连续**。
 
 Architecture contracts for the completed waves:
 

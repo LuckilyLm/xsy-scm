@@ -19,6 +19,30 @@
 | HD-8 | APPROVED | AGENTS 描述真实 `deploy/minio/`，明确当前不存在根 docker-compose.yml、xsy-device-agent/。 |
 | HD-9 | APPROVED | 不给非管理员预置 `support:file:query`；无正式非管理员种子角色，授权留正式 RBAC/业务角色设计。 |
 
+### HD-2 补记：版本号在合并 W5.5 后重定（2026-09-17）
+
+HD-2 的批准内容**不变**——F0 新增的那一个 data-only migration 仍是 **`V17__sa_config_file_upload_size.sql`**，
+V1–V16 仍禁止修改。
+
+需要补记的是**版本号占用冲突**：W5.5 波次的独立增量 `fdfd643` 也把一个 migration 命名为 `V17`
+（`V17__scm_menu_icons.sql`，侧边栏图标）。F0 的 V17 创建于 15:15:51（当时工作区上限为 V16），
+而 `fdfd643` 于 16:01:33 推上远端占用 V17；我的本地基线在 17:24:55 才 fast-forward 追上，
+提交时未复核上限，导致仓库同时存在两个 V17。
+
+**裁决与处置**：按「保留已被真实库应用过的版本号」原则，**F0 的 V17 保持不变**
+（开发库 `flyway_schema_history` 中 `version 17 = V17__sa_config_file_upload_size.sql`，
+checksum `998995225`，已成功应用），把 **W5.5 的 `V17__scm_menu_icons.sql` 改名为
+`V18__scm_menu_icons.sql`**（内容字节不变）。因此：
+
+```text
+V17  V17__sa_config_file_upload_size.sql   F0    ← HD-2 批准的这个，未动
+V18  V18__scm_menu_icons.sql               W5.5  ← 由 W5.5 的 V17 重编号而来
+```
+
+**全程未执行 `flyway repair`，未改写 `flyway_schema_history` 任何一行。** 完整审计、修复方案
+与 fresh-DB 实测见 [V17 Flyway 版本冲突审计报告](./2026-09-17-v17-migration-conflict-audit.md)。
+F0 自身迁移的清单见 [`f0-applied-migrations.sha256`](./f0-applied-migrations.sha256)。
+
 ### 强制后续债务 F0-DEBT-01
 
 在正式引入任何非管理员业务角色之前，必须验收 OA 企业证照等 COMMON 私密资产的

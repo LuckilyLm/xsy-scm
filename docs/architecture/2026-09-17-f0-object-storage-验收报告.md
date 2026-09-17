@@ -11,6 +11,50 @@
 
 ---
 
+## 勘误：V17 版本号冲突与重编号（2026-09-17 追加）
+
+> 本节是**事后勘误**，不修改上文任何验收数字——那些数字在验收当时都是真实且正确的。
+> 勘误只说明**版本号在合并 W5.5 之后发生的变化**。
+
+**结论：F0 自己的 migration 号未变，仍是 `V17__sa_config_file_upload_size.sql`。**
+
+```text
+V17  V17__sa_config_file_upload_size.sql   F0    ← 本报告验收的这个，未改名、未改内容
+V18  V18__scm_menu_icons.sql               W5.5  ← 由 W5.5 的 V17 重编号而来
+```
+
+**发生了什么**：F0 的这个 V17 创建于 15:15:51，当时工作区 migration 上限是 V16，选 V17 正确。
+但 W5.5 波次的独立增量 `fdfd643` 在 16:01:33 已把一个 migration 命名为 `V17`
+（`V17__scm_menu_icons.sql`，SCM 侧边栏图标）并推到远端。本验收报告执行期间（16:45–16:51）
+本地基线尚未包含 `fdfd643`，所以当时仓库里只有一个 V17，**报告里的所有 V17 断言都成立**。
+本地在 17:24:55 才 fast-forward 追上 `fdfd643`，随后提交时未复核上限，导致仓库同时存在两个 V17
+（Flyway 11.7.2 在**解析期**即抛 `Found more than one migration with version 17`，
+新库老库全部无法启动）。
+
+**处置**：按「保留已被真实库应用过的版本号」原则，F0 的 V17 保持不变（开发库
+`version 17` 的 checksum `998995225` 未变，无需 `repair`），把 W5.5 的
+`V17__scm_menu_icons.sql` 改名为 `V18__scm_menu_icons.sql`（**内容字节不变**，
+sha256 前后一致：`ed715acc…da903`）。
+
+**因此本报告中以下表述需按下表理解（内容不变，只是编号环境变了）：**
+
+| 报告原文位置 | 当时（仅 F0 的 V17） | 现在（V17 + V18 并存） |
+| --- | --- | --- |
+| §A 静态保护「仅新增 V17」 | 正确 | 仍正确（F0 只新增 V17）；W5.5 的增量另计为 V18 |
+| §E「version=17 success=true」 | 正确 | 仍正确；`installed_on=16:10:05` 未变 |
+| §E「总行数 18 = 17 条版本化 + 1 条基线」 | 正确 | 现为 **19 = 18 条版本化 + 1 条基线**（新增 V18） |
+| §6「上限抬到 `"17"`」 | 正确 | 现已抬到 **`"18"`**（`ScmPurchaseMigrationIT`，实测 4/0/0/0） |
+
+**F0 自身迁移的冻结清单**（本报告此前缺失，现补上）：
+[`f0-applied-migrations.sha256`](./f0-applied-migrations.sha256) →
+`6d22bd494e1a17fbade70bb00b5742fc916e629be21457cf9bb1287fc07f6edd *V17__sa_config_file_upload_size.sql`
+
+完整审计、四场景只读实测、修复实施与 fresh-DB 实测见
+[V17 Flyway 版本冲突审计报告](./2026-09-17-v17-migration-conflict-audit.md)。
+**全程未执行 `flyway repair`，未改写 `flyway_schema_history` 任何一行。**
+
+---
+
 ## 1. 验收环境（真实运行）
 
 | 组件 | 实际形态 |
