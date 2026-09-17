@@ -1,5 +1,11 @@
 # SmartAdmin Java17 编码规范调查与提取
 
+> **历史调查，非现行编码规范（2026-09-17 勘误）**：本文记录 2026-09-07 的 legacy 决策。
+> “SmartAdmin 仅作参考”、自研系统能力、MapStruct 及拒绝原生 ResponseDTO 等结论已废止。
+> 当前实现遵循 [AGENTS](../../AGENTS.md) 与 [SmartAdmin 底座规则](../../SMARTADMIN_REFERENCE_RULES.md)。
+> 下文保留原始调查内容，用于来源追踪。
+
+
 - 调查日期：2026-09-07
 - 参考范围：`project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-server`
 - 文档性质：只读参考调查，不是 xsy-scm 的强制实现模板

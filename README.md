@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-截至 2026-09-17，W0 基线、W1 商品、W2 客户与供应商、W3 定价、W4 销售订单、W5 采购均已完成实施与对应阶段验收。W5 包含采购需求、采购单、多次实重收货和最小仓库主数据，**不包含库存实现**。W6 库存与小程序尚未启动，后续范围须另行确认。
+截至 2026-09-17，W0 基线、W1 商品、W2 客户与供应商、W3 定价、W4 销售订单、W5 采购均已完成实施与对应阶段验收；W5.5 原生功能同步与 F0 对象存储激活也已完成。W5 包含采购需求、采购单、多次实重收货和最小仓库主数据，**不包含库存实现**。W6 库存与小程序尚未启动，后续范围须另行确认。
 
 阶段证据与业务设计见 [文档总览](docs/00-文档总览与索引.md)。历史阶段结论及限制以各验收报告原文为准，不代表本次重新运行了验收。
 
@@ -15,9 +15,10 @@
 | `xsy-scm-server/` | 正式后端：Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway |
 | `xsy-scm-web/` | 正式后台：Vue3、TypeScript、Ant Design Vue、Vite、Pinia |
 | `docs/` | 有效业务规则、架构设计与阶段验收 |
-| `tools/` | 本地工具，已排除 Git 跟踪 |
+| `tools/` | 本地工具，已排除 Git 跟踪（克隆后不会自动获得） |
+| `deploy/minio/` | F0 本地对象存储与集成验证环境 |
 | `xsy-scm-miniapp/` | 冻结的 Taro + React legacy 小程序，后续目标为 uni-app + Vue3 |
-| `project-reference-examples/` | 本分支纳入 Git 的只读上游参考；含凭据的环境配置仍忽略 |
+| `project-reference-examples/` | 纳入 Git 的只读上游参考；含凭据的环境配置仍忽略 |
 
 系统登录、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现。规则见 [AGENTS.md](AGENTS.md) 与 [SmartAdmin 底座规则](SMARTADMIN_REFERENCE_RULES.md)。
 

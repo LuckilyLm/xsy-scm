@@ -1,5 +1,11 @@
 # V17 Flyway 版本冲突审计报告
 
+> **后续仓库复核（2026-09-17）**：本文保留 V17/V18 修复与数据库实测的历史记录。
+> §13.7b 的 SQL 换行分布和“必须重算清单”的判断已被后续逐文件验证修正；
+> §2.1 / §13.6 的 packed-ref 根因归因尚无充分证据，手工双写引用不作为维护规范。
+> 当前处理与独立 clone 验证见 [仓库整理与修复记录](../maintenance/2026-09-17-repository-cleanup.md)。
+
+
 日期：2026-09-17
 状态：**AUDIT COMPLETE → REPAIR IMPLEMENTED & VERIFIED**（审计结论 §0–§9 保持只读取证口径，§10 起的「已实施」部分由 §13 记录）
 仓库：`xsy-scm`（GitHub `LuckilyLm/xsy-scm`）
