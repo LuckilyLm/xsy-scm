@@ -1,19 +1,9 @@
-# 迁移校验清单（*-applied-migrations.sha256）必须字节稳定。
+# 迁移 SQL 的换行必须保持稳定。
 #
-# 原因：这些清单以「文件名 + 十六进制摘要」的形式被 `sha256sum -c` 消费，
-# 而 sha256sum 是把整行当作**文件名**去打开的。本仓库 core.autocrlf=true
-# （Windows 默认），若清单被检出为 CRLF，行尾会多出一个 \r，
-# sha256sum 就会报：
-#     'V6__scm_product.sql'$'\r': No such file or directory
-# 即清单**完全无法校验**。
+# 本仓库 core.autocrlf=true（Windows 默认），迁移 SQL 统一按 LF 检出，
+# 避免不同平台的换行差异改变迁移文件字节。
 #
-# 用 -text 关闭换行符转换：以什么字节入库，就以什么字节检出。
-# 清单统一以 LF 入库（见 docs/architecture/*-applied-migrations.sha256）。
-*.sha256 -text
-
-# 冻结迁移：保持既有 SHA-256 清单对应的检出字节，Git blob 继续为 LF。
-# 默认 LF；下列历史文件的清单记录 CRLF，显式保留，避免依赖 core.autocrlf。
-# 不重算清单、不重写 SQL。新增迁移使用默认 LF，不扩大历史例外。
+# 通过 text eol=lf 固定迁移 SQL 的检出换行；新增或修改迁移时不要通过换行转换重写既有 SQL。
 /xsy-scm-server/sa-admin/src/main/resources/db/migration/*.sql text eol=lf
 /xsy-scm-server/sa-admin/src/main/resources/db/migration/V3__sa_system_login_support_and_seed.sql text eol=crlf
 /xsy-scm-server/sa-admin/src/main/resources/db/migration/V6__scm_product.sql text eol=crlf

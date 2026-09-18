@@ -4,9 +4,9 @@
 
 ## 当前范围
 
-截至 2026-09-18，W0–W5、W5.5 与 F0 已完成对应阶段验收。W6-1 已交付库存余额、流水、收货确认同事务入库和历史收货回填；原验收结果见阶段报告。随后静态复核补充了 V21 流水不可改删约束及代码修复，**按用户要求未运行测试或迁移，尚待验证**，详见 [复核记录](docs/architecture/2026-09-18-w6-inventory-static-review.md)。W6-2 小程序未启动，仍需裁决遗留项后再开工。
+截至 2026-09-18，W0–W5、W5.5 与 F0 已完成对应阶段交付。W6-1 已交付库存余额、流水、收货确认同事务入库和历史收货回填；后续修复尚待验证。W6-2 小程序未启动，仍需裁决遗留项后再开工。详见 [项目进度](docs/progress.md)。
 
-阶段证据与业务设计见 [文档总览](docs/00-文档总览与索引.md)。历史阶段结论及限制以各验收报告原文为准，不代表本次重新运行了验收。
+业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
 ## 工程目录
 
@@ -14,7 +14,7 @@
 | --- | --- |
 | `xsy-scm-server/` | 正式后端：Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway |
 | `xsy-scm-web/` | 正式后台：Vue3、TypeScript、Ant Design Vue、Vite、Pinia |
-| `docs/` | 有效业务规则、架构设计与阶段验收 |
+| `docs/` | 当前进度和少量项目决策 |
 | `tools/` | 本地工具，已排除 Git 跟踪（克隆后不会自动获得） |
 | `deploy/minio/` | F0 本地对象存储与集成验证环境 |
 | `deploy/postgres/` | 本地 PostgreSQL 容器配置与操作说明 |

@@ -47,6 +47,6 @@ bootstrap 必须以退出码 0 完成才可开始集成验收。
 ## 外部验收入口
 
 当前实现按用户要求未运行最终构建、MinIO 集成与回归；不是 PASS 证据。
-执行清单和边界见 [F0 验收报告](../../docs/architecture/2026-09-17-f0-object-storage-验收报告.md)。
+当前阶段状态见 [项目进度](../../docs/progress.md)；对象存储配置以本目录和代码为准。
 回到 local 时在启动后端的进程设置 `XSY_FILE_STORAGE_MODE=local` 并重启；
 cloud 对象不会自动搬到本地，已有引用须先确认可用性。

@@ -1,5 +1,5 @@
 -- W6 Inventory phase 1 permissions, approved 2026-09-18 (Q8).
--- See docs/architecture/2026-09-18-w6-inventory-approval.md.
+-- See docs/progress.md and docs/decisions.md for the current W6 scope.
 -- Data-only: 5 t_menu rows (800 / 801 / 802 / 811 / 821) + role_id = 1 grants + sequence advance.
 -- NO DDL, NO new role, NO permission change to any existing menu (W6-1 excludes non-admin role seeds).
 --

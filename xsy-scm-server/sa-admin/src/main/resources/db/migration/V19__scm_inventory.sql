@@ -1,6 +1,5 @@
 -- W6 Inventory phase 1 (W6-1), approved 2026-09-18.
--- See docs/architecture/2026-09-18-w6-inventory-approval.md (Q1-Q13) and
--- docs/architecture/2026-09-18-w6-inventory-target-design.md.
+-- See docs/progress.md and docs/decisions.md for the current W6 scope.
 -- PostgreSQL; NO foreign keys (AGENTS.md).
 --
 -- Scope: inventory_balance + inventory_movement, plus the one-shot bootstrap backfill of

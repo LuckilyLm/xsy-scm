@@ -59,7 +59,7 @@ Customer
 
 All implementation decisions should preserve this end-to-end business chain.
 
-### Current delivery status (2026-09-17)
+### Current delivery status (2026-09-18)
 
 ```text
 W0   baseline                              COMPLETE
@@ -70,42 +70,35 @@ W4   Sales Order                           COMPLETE
 W5   Purchase                              COMPLETE
 W5.5 SmartAdmin Native Feature Parity      COMPLETE
 F0   Object Storage Activation             COMPLETE
-W6-1 Inventory (balance/movement/inbound)  COMPLETE
+W6-1 Inventory (balance/movement/inbound)  DELIVERED; FOLLOW-UP UNVERIFIED
 W6-2 Mini Program                          NOT STARTED
 ```
 
-W4 = Sales Order (COMPLETE, acceptance report 2026-09-16).
-W5 = Purchase (COMPLETE, acceptance report 2026-09-16) — purchase demand, purchase order,
+W4 = Sales Order (COMPLETE).
+W5 = Purchase (COMPLETE) — purchase demand, purchase order,
 receiving and the minimal `warehouse` master data, with **no inventory implementation**.
-W5.5 = SmartAdmin native feature parity sync (COMPLETE, report 2026-09-17) — zero new migrations,
+W5.5 = SmartAdmin native feature parity sync (COMPLETE) — zero new migrations,
 zero menu changes, zero permission changes; the formal V2 workspace already carried the native
 system and support capabilities.
-The **W5.5 UI/branding commit `fdfd643`** (default page config, SCM sidebar menu icons, 鲜蔬源
-branding) is a separate increment that *did* add a migration and named its manifest
-`w5_5-applied-migrations.sha256`. That migration is now **V18** (see the V17/V18 note below);
-the "zero new migrations" statement above refers only to the native-parity sync (`663d354`).
-F0 = Object Storage Activation (**COMPLETE**, acceptance report 2026-09-17) — strict fileKey
+The W5.5 UI and branding increment added V18; migration history is verified from the SQL directory
+and Git history when needed. The native-parity statement above refers only to the parity sync.
+F0 = Object Storage Activation (**COMPLETE**) — strict fileKey
 prefix policy, per-folder read guard with HTTP 403 + native 30005 envelope, S3/MinIO path-style
 client and presigner, canned-ACL switch, short-TTL cache exclusion, four-profile cloud ENV
 alignment, multipart 20/25 MB, data-only V17, and the `deploy/minio/` local development stack.
-Verified end-to-end against a real MinIO + PostgreSQL + Redis: backend specialty tests
-39/0/0/0, V17 applied with `maxUploadFileSizeMb` 30→20 and `fileDetectFlag` unchanged, cloud
-Playwright 7/7, real-page read-guard matrix with zero mismatches, and full local regression
-(backend unit 351/0/0/0, PG IT 187/0/0/5, frontend unit 50/50, Playwright 40/40).
+Historical verification details are no longer duplicated here; consult Git history and the reference
+project when a new change needs them.
 F0 adds no SCM business domain and no business attachment tables.
 **F0-DEBT-01 remains binding**: `FileKeyVoSerializer` → `FileService.getFileList()` expands
 attachments server-side **without any per-user permission filtering**, so attachment URLs returned
 through business VO fields bypass the Controller-level read guard. Before any non-administrator
 business role is introduced, OA enterprise licences and similar COMMON private assets must move to
 business-permission + ownership/relation + FileService reads.
-W6-1 = Inventory phase 1 (**COMPLETE**, acceptance report 2026-09-18) — `inventory_balance` +
+W6-1 = Inventory phase 1 (**DELIVERED, FOLLOW-UP UNVERIFIED**) — `inventory_balance` +
 `inventory_movement` (append-only ledger), `PurchaseReceiptService.confirm` → `PURCHASE_IN` **in the
 same transaction**, the one-shot Q5 backfill of historical CONFIRMED receipt lines, and two read-only
 query pages (balance / movement) with menu ids 800/801/802/811/821.
-Governing decisions: **Q1–Q13** in
-[`docs/architecture/2026-09-18-w6-inventory-approval.md`](./docs/architecture/2026-09-18-w6-inventory-approval.md),
-design in
-[`docs/architecture/2026-09-18-w6-inventory-target-design.md`](./docs/architecture/2026-09-18-w6-inventory-target-design.md).
+Current scope and decisions: [`docs/progress.md`](./docs/progress.md) and [`docs/decisions.md`](./docs/decisions.md).
 Non-negotiable invariants established by W6-1:
 **Q13 inventory unit invariant** — one `(warehouse_id, sku_id)` locks exactly one bookkeeping unit;
 a differing unit fails loudly with `INVENTORY_UNIT_MISMATCH(41001)` and rolls the whole confirm back,
@@ -116,14 +109,12 @@ UPDATE / DELETE / TRUNCATE. V21 has NOT been executed or tested in this review.
 The DAO declares only insert + select; reversals must be NEW reverse movements.
 **Q11** — the `ON CONFLICT (...) WHERE ... DO NOTHING` conflict targets match the partial unique
 indexes verbatim, with zero PostgreSQL version branching in business code.
-Verified: backend unit 363/0/0/0, PG IT 203/0/0/5 (the 5 skips are the pre-existing MinIO-dependent
-`F0FileStorageCloudIT`), W6 specialty 18 IT + 12 unit, frontend lint 0 error / unit 63/63 / build OK /
-TS ratchet SCM zone 0 errors, and `e2e/scm-inventory.spec.ts` 6/6 plus the W5 `scm-purchase` spec 9/9.
+The W6 follow-up changes are not currently verified; do not infer a passing quality gate from historical reports.
 W6-1 explicitly excludes Mini Program, outbound/reserve, stocktake, loss/gain, transfer, unit
 conversion, warning thresholds, full costing, delivery, sorting and traceability — none of them were
 touched.
-W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in the acceptance
-report (§5 existing observations, §6 unverified items) are adjudicated.
+W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
+[`docs/progress.md`](./docs/progress.md) are adjudicated.
 
 The PostgreSQL Closure restriction against V13+ applies only to that completed phase.
 W4 adds V13/V14, W5 adds V15/V16 and W6-1 adds V19/V20 normally; V1–V18 remain immutable.
@@ -136,15 +127,12 @@ V20  V20__scm_inventory_permissions.sql       W6-1   data-only, t_menu 库存菜
 V21  V21__scm_inventory_movement_append_only.sql W6-1 静态复核修复，流水不可改删；尚未执行验证
 ```
 
-W6-1 follow-up review: [2026-09-18 static review](docs/architecture/2026-09-18-w6-inventory-static-review.md).
-Its fixes are **FUNCTIONALLY IMPLEMENTED BUT UNVERIFIED**: the user explicitly prohibited tests;
-no build, runtime verification or database migration was executed. V1–V20 remain unchanged.
+W6-1 follow-up changes are **FUNCTIONALLY IMPLEMENTED BUT UNVERIFIED**; see `docs/progress.md`.
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，
 > **任何库都无法启动**。已按「保留已被真实库应用的那个版本号」原则，把菜单图标迁移
-> **改名为 V18**（内容字节不变）。F0 的 V17 保留。审计见
-> [`docs/architecture/2026-09-17-v17-migration-conflict-audit.md`](./docs/architecture/2026-09-17-v17-migration-conflict-audit.md)。
+> **改名为 V18**（内容字节不变）。F0 的 V17 保留。当前只以迁移目录和 Git 历史为准。
 >
 > **选版本号前必须先同步远端**：`git fetch` 后用 `git ls-remote origin refs/heads/main` 确认真值，
 > 并确认远端 main 是本地 HEAD 的祖先（或两者相等）；基线落后或分叉时不得选号。当前 `db/migration/` 的版本号必须**唯一且连续**。
@@ -191,7 +179,7 @@ project-reference-examples/xsy-scm
 = Upstream xsy-scm source reference — read-only, used for diffing and design extraction
 
 docs
-= Product, architecture, database, API, UI, workflow and device integration documentation
+= Current progress and concise project decisions; business reference remains under `project-reference-examples/xsy-scm/`
 
 deploy
 = Docker, Nginx and deployment assets
@@ -216,7 +204,7 @@ Priority:
 ```text
 1. Current user request
 2. AGENTS.md
-3. Relevant docs under docs/
+3. `project-reference-examples/xsy-scm/` for business requirements and legacy semantics
 4. Existing implementation
 5. Existing tests
 6. Framework conventions
@@ -226,19 +214,13 @@ For UI work, read:
 
 ```text
 SMARTADMIN_REFERENCE_RULES.md
-docs/00-文档总览与索引.md
-对应波次 target-design（历史 docs/design/ 仅作视觉意图参考）
+project-reference-examples/xsy-scm/（只读，提取业务语义和页面参考）
+docs/decisions.md
 ```
 
-For business workflow changes, read the corresponding design documents first.
+For business workflow changes, read the corresponding reference-project documents first, then append the current decision or progress to `docs/` when needed.
 
-For hardware work, read:
-
-```text
-docs/08-电子秤与设备接入设计.md
-```
-
-when that file exists.
+For hardware work, read the corresponding hardware material in `project-reference-examples/xsy-scm/` when it exists.
 
 Do not invent business rules that are not defined. If a workflow rule is unclear, preserve the existing behavior and clearly flag the ambiguity.
 
@@ -701,7 +683,7 @@ Rules:
 ## 10. Frontend Architecture
 
 V2 管理后台使用 SmartAdmin Vue3 原生结构。旧 React 技术约定仅保留在
-[历史 UI/UX 指导](docs/design/xsy-scm-UIUX设计与前端开发指导-v1.1.md)，不作为实施规则。
+页面参考以 `project-reference-examples/xsy-scm/` 为主；本仓库不维护独立的旧 UI/UX 指导。
 
 ```text
 xsy-scm-web/src/
@@ -1506,7 +1488,7 @@ While editing:
 - Preserve user changes.
 - Keep the primary checkout on its starting branch unless the user requests a switch.
 - Check worktree changes and ancestry before cleanup; do not discard unmerged or untracked work.
-- Follow [Git maintenance](docs/maintenance/git-and-document-maintenance.md) for reference verification and repository hygiene.
+- Follow [docs/README.md](docs/README.md) for the concise documentation boundary; use the Git commands below for repository hygiene.
 - Avoid generated noise.
 
 After editing:

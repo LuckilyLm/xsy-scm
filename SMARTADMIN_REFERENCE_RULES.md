@@ -8,8 +8,8 @@
 > 供应链业务域。禁止机械复制旧代码，禁止机械把 React 翻译成 Vue。
 >
 > **本文件为 V2 唯一有效的底座使用规则。**
-> 2026-09-14 之前的“SmartAdmin 仅作只读参考、不得替换 React 技术栈”表述已全部废止，
-> 详见 [`docs/architecture/2026-09-14-smartadmin-v2-迁移审计报告.md`](./docs/architecture/2026-09-14-smartadmin-v2-迁移审计报告.md)。
+> 2026-09-14 之前的“SmartAdmin 仅作只读参考、不得替换 React 技术栈”表述已全部废止；
+> 当前项目进度与边界见 [`docs/progress.md`](./docs/progress.md) 和 [`docs/decisions.md`](./docs/decisions.md)。
 
 ## 0. V2 决策基线（不可协商）
 
@@ -257,7 +257,7 @@ marketing：DEFERRED —— 不删除、不在 Product Pilot 迁移
 
 ## 6. 当前范围与阶段证据
 
-阶段进度统一见 [文档总览](docs/00-文档总览与索引.md)。业务已交付 W6-1 库存第一阶段，基础设施已完成 W5.5 与 F0。W6-1 原验收和后续静态修复须分开读取：V21 与复核修复尚未运行验证。W6-2 小程序未启动，阶段边界不变。
+阶段进度统一见 [项目进度](docs/progress.md)。业务已交付 W6-1 库存第一阶段，基础设施已完成 W5.5 与 F0；后续修复尚未验证。W6-2 小程序未启动，阶段边界不变。
 
 ## 7. 开发工作流
 
