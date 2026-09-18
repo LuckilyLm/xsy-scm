@@ -3,6 +3,7 @@
 skills-lock.json
 .claude
 .workbuddy-ai
+.commandcode
 
 # Local IDE metadata
 .idea/

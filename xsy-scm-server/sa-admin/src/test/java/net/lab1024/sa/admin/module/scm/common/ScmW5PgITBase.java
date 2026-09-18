@@ -26,6 +26,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandGenera
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderUpdateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderVersionForm;
+import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptConfirmForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptDeleteForm;
@@ -668,6 +669,8 @@ public abstract class ScmW5PgITBase {
     protected PurchaseReceiptVO createReceipt(Long orderId) {
         PurchaseReceiptCreateForm form = new PurchaseReceiptCreateForm();
         form.setPurchaseOrderId(orderId);
+        // B1：历史用例验证的是「确认即入库」的 DIRECT 语义，因此默认 DIRECT。
+        form.setReceiptMode(ScmReceiptModeEnum.DIRECT.name());
         form.setRemark("W5 IT 收货单");
         return purchaseReceiptService.create(form, prefix + ":receipt:" + orderId);
     }
@@ -681,6 +684,7 @@ public abstract class ScmW5PgITBase {
     protected PurchaseReceiptVO createAnotherReceipt(Long orderId, String suffix) {
         PurchaseReceiptCreateForm form = new PurchaseReceiptCreateForm();
         form.setPurchaseOrderId(orderId);
+        form.setReceiptMode(ScmReceiptModeEnum.DIRECT.name());
         form.setRemark("W5 IT 收货单 " + suffix);
         return purchaseReceiptService.create(form, prefix + ":receipt:" + orderId + ":" + suffix);
     }

@@ -41,7 +41,9 @@ async function submittedPlainOrder(quantity:string){
   await post('/scm/purchase/submit',{id:o.id,version:o.version});
   return await get('/scm/purchase/detail/'+o.id);
 }
-async function createReceipt(purchaseOrderId:string){return await post('/scm/purchase/receipt/create',{purchaseOrderId,remark:name});}
+async function createReceipt(purchaseOrderId:string,receiptMode:'DIRECT'|'WAREHOUSE_CONFIRM'){
+  return await post('/scm/purchase/receipt/create',{purchaseOrderId,receiptMode,remark:name});
+}
 function line(receipt:any,declared:string,actualWeight:string|null){const item=receipt.items[0];return {receiptItemId:item.id,version:item.version,receivedQuantity:declared,actualWeight,weightSource:actualWeight?('MANUAL' as const):null};}
 const confirmReceipt=(receipt:any,quantity:string)=>post('/scm/purchase/receipt/confirm',{id:receipt.id,version:receipt.version,items:[line(receipt,quantity,quantity)]});
 
@@ -80,9 +82,13 @@ test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose
 test('1 a confirmed receipt lands as a PURCHASE_IN balance row with the purchase unit',async({page})=>{
   const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
   orderA=await submittedPlainOrder('20.0000');
-  const receipt=await createReceipt(orderA.id);
+  const receipt=await createReceipt(orderA.id,'DIRECT');
   const confirmed=await confirmReceipt(receipt,'10.0000');
   expect(confirmed.status).toBe('CONFIRMED');
+  expect(confirmed.receiptMode).toBe('DIRECT');
+  expect(confirmed.putawayStatus).toBe('COMPLETED');
+  expect(confirmed.putawayAt).not.toBeNull();
+  expect(confirmed.putawayBy).not.toBeNull();
 
   // 接口层：余额与流水同时落地，单位取采购单位快照（Q13）
   const balances=await balanceQuery({warehouseId,skuId});
@@ -117,7 +123,7 @@ test('1 a confirmed receipt lands as a PURCHASE_IN balance row with the purchase
 // ------------------------------------------------------------------
 
 test('2 a second partial receipt accumulates the balance and adds a traceable movement',async({page})=>{
-  const receipt=await createReceipt(orderA.id);
+  const receipt=await createReceipt(orderA.id,'DIRECT');
   await confirmReceipt(receipt,'5.0000');
 
   const balances=await balanceQuery({warehouseId,skuId});
@@ -256,10 +262,7 @@ test('6 Q12 the balance page defaults the warehouse only when exactly one is ena
     await expect(selection()).toHaveCount(0);
   }
 
-  // 条件化默认的另一半：把仓库列表**伪造**成两个仓库，断言页面不自动选任何一个。
-  // 不真的建第二个仓库 —— `warehouse` 没有停用写入路径（W5 G1），
-  // 建了会永久改变开发库「恰好一个启用仓库」的前提，让后续所有 Q12 正例失效。
-  //
+  // 条件化默认的另一半：伪造两个启用仓库，断言页面不自动选任何一个。
   // 必须 `reload()` 而不是再次 `goto` 同一个 hash：hash 路由不变时 vue-router 不会重新挂载
   // 组件，`onMounted` 里的 Q12 判定不会重跑，于是会读到上一次留下的默认值（假失败）。
   await page.route('**/scm/warehouse/list*',route=>route.fulfill({json:{code:0,msg:'ok',data:[
@@ -272,4 +275,96 @@ test('6 Q12 the balance page defaults the warehouse only when exactly one is ena
   await select().click();
   await page.locator('.ant-select-dropdown:visible').getByText('验收仓A').click();
   await expect(selection()).toContainText('验收仓A');
+});
+
+// ------------------------------------------------------------------
+// 7. B1 仓库确认入库
+// ------------------------------------------------------------------
+
+test('7 WAREHOUSE_CONFIRM posts inventory only when the warehouse confirms putaway',async({page})=>{
+  const order=await submittedPlainOrder('3.0000');
+  const receipt=await createReceipt(order.id,'WAREHOUSE_CONFIRM');
+  const balanceBefore=await balanceQuery({warehouseId,skuId});
+  const movementsBefore=await movementQuery({warehouseId,skuId});
+
+  const confirmed=await confirmReceipt(receipt,'3.0000');
+  expect(confirmed.status).toBe('CONFIRMED');
+  expect(confirmed.receiptMode).toBe('WAREHOUSE_CONFIRM');
+  expect(confirmed.putawayStatus).toBe('PENDING');
+  expect(confirmed.putawayAt).toBeNull();
+  expect(confirmed.putawayBy).toBeNull();
+  expect(await balanceQuery({warehouseId,skuId})).toMatchObject({
+    total:balanceBefore.total,
+    list:[{quantity:balanceBefore.list[0].quantity}],
+  });
+  expect((await movementQuery({warehouseId,skuId})).total).toBe(movementsBefore.total);
+
+  await browse(page,'/purchase/purchase-receipt-list');
+  await page.getByPlaceholder('收货单号').fill(receipt.receiptNo);
+  await search(page);
+  const receiptRow=receiptRows(page,receipt.receiptNo);
+  await expect(receiptRow).toHaveCount(1);
+  await expect(receiptRow).toContainText('仓库确认入库');
+  await expect(receiptRow).toContainText('待入库');
+  await receiptRow.getByRole('button',{name:'确认入库'}).click();
+  const modal=page.locator('.ant-modal-confirm:visible');
+  await expect(modal).toContainText('该操作会把本收货单数量正式记入库存');
+  await modal.getByRole('button',{name:/确\s*定/}).click();
+  await expect(page.locator('.ant-message-notice-content').getByText('已入库',{exact:true})).toBeVisible();
+  await expect(receiptRow).toContainText('已入库');
+  await expect(receiptRow.getByRole('button',{name:'确认入库'})).toHaveCount(0);
+
+  const completed=await get('/scm/purchase/receipt/detail/'+receipt.id);
+  expect(completed.putawayStatus).toBe('COMPLETED');
+  expect(completed.putawayAt).not.toBeNull();
+  expect(completed.putawayBy).not.toBeNull();
+  const balanceAfter=await balanceQuery({warehouseId,skuId});
+  expect(balanceAfter.list[0].quantity).toBe('18.0000');
+  const movementsAfter=await movementQuery({warehouseId,skuId});
+  expect(movementsAfter.total).toBe(movementsBefore.total+1);
+  const movement=movementsAfter.list.find((item:any)=>item.receiptNo===receipt.receiptNo);
+  expect(movement).toBeTruthy();
+  expect(movement.quantity).toBe('3.0000');
+  expect(new Date(movement.occurredAt).getTime()).toBe(new Date(completed.putawayAt).getTime());
+
+  const repeated=await raw('/scm/purchase/receipt/putaway',{id:completed.id,version:completed.version});
+  expect(repeated.code).toBe(41008);
+  expect((await balanceQuery({warehouseId,skuId})).list[0].quantity).toBe('18.0000');
+  expect((await movementQuery({warehouseId,skuId})).total).toBe(movementsAfter.total);
+});
+
+// ------------------------------------------------------------------
+// 8. B1 仓库严格停用与启停往返
+// ------------------------------------------------------------------
+
+test('8 warehouse disable is strict and an empty warehouse can be disabled and enabled',async({page})=>{
+  const code=(name+'_WH').toUpperCase();
+  const isolatedId=await post('/scm/warehouse/create',{warehouseCode:code,name:name+'隔离仓',address:null,remark:name});
+
+  await browse(page,'/purchase/warehouse-list');
+  await page.getByPlaceholder('仓库编码').fill('WH001');
+  await search(page);
+  const defaultRow=page.locator('#scm-warehouse-table tr').filter({hasText:'WH001'});
+  await expect(defaultRow).toHaveCount(1);
+  await defaultRow.getByRole('button',{name:'停用'}).click();
+  await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/确\s*定/}).click();
+  await expect(page.locator('.ant-alert-error')).toContainText('仓库仍有库存余额，不能停用');
+  await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/取\s*消/}).click();
+
+  await page.getByPlaceholder('仓库编码').fill(code);
+  await search(page);
+  const isolatedRow=page.locator('#scm-warehouse-table tr').filter({hasText:code});
+  await expect(isolatedRow).toHaveCount(1);
+  await isolatedRow.getByRole('button',{name:'停用'}).click();
+  await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/确\s*定/}).click();
+  await expect(page.getByText('仓库已停用',{exact:true})).toBeVisible();
+  await expect(isolatedRow).toContainText('停用');
+  await isolatedRow.getByRole('button',{name:'启用'}).click();
+  await expect(page.getByText('仓库已启用',{exact:true})).toBeVisible();
+  await expect(isolatedRow).toContainText('启用');
+
+  const enabled=await get('/scm/warehouse/detail/'+isolatedId);
+  await post('/scm/warehouse/disable',{id:enabled.id,version:enabled.version});
+  const disabled=await get('/scm/warehouse/detail/'+isolatedId);
+  expect(disabled.status).toBe('DISABLED');
 });

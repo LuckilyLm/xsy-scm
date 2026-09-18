@@ -1,9 +1,7 @@
 <!-- C 无仓库页（新增文件）。仿 W2 `supplier-list.vue` 的列表骨架。
-适配：`/scm/warehouse/**`（5 个端点）、`version`（A8）、`scm:warehouse:*`（A22）、
+适配：`/scm/warehouse/**`、`version`（A8）、`scm:warehouse:*`（A22）、
       `scm-warehouse-table`（A23）、`purchase-errors`（A24）、loading/empty/error/retry（A27）、
-      `v-privilege`（A30）。
-**已知缺口 G1**：`WarehouseAddForm` / `WarehouseUpdateForm` **不含 `status`**，且没有独立的启停端点
-——因此本页只做「新建 / 编辑基础信息」，不提供启用停用按钮（停用需要后端补写入路径）。
+      `v-privilege`（A30）。B1 使用独立命令启用或停用仓库，基础信息表单不直接修改状态。
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
@@ -62,6 +60,23 @@
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button type="link" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
+            <a-button
+              v-if="record.status === 'ENABLED'"
+              danger
+              type="link"
+              v-privilege="'scm:warehouse:disable'"
+              @click="disable(record)"
+            >
+              停用
+            </a-button>
+            <a-button
+              v-if="record.status === 'DISABLED'"
+              type="link"
+              v-privilege="'scm:warehouse:enable'"
+              @click="enable(record)"
+            >
+              启用
+            </a-button>
           </div>
         </template>
       </template>
@@ -107,7 +122,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { message } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 import type { TableColumnsType } from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -213,6 +228,35 @@ async function save() {
   } finally {
     saving.value = false;
   }
+}
+
+async function enable(row: Warehouse) {
+  try {
+    await warehouseApi.enable({ id: row.id, version: row.version! });
+    message.success('仓库已启用');
+    await queryData();
+  } catch (e) {
+    error.value = purchaseError(e);
+  }
+}
+
+/** 停用失败会把后端真实原因（库存余额 / 在途采购单 / 待入库收货单）显示给用户。 */
+function disable(row: Warehouse) {
+  Modal.confirm({
+    title: '停用该仓库？',
+    content: '停用后不能再用于新的采购需求、采购单与收货单。',
+    okType: 'danger',
+    onOk: async () => {
+      try {
+        await warehouseApi.disable({ id: row.id, version: row.version! });
+        message.success('仓库已停用');
+        await queryData();
+      } catch (e) {
+        error.value = purchaseError(e);
+        throw e;
+      }
+    },
+  });
 }
 
 onMounted(queryData);

@@ -2,7 +2,7 @@
 复制日期：2026-09-16。Copy First + Adapt。
 剪枝：`resizable`/`@resizeColumn`（A1）、`RECEIVE_FLAG_ENUM` 收货标记列（A4）、
       C 的「收货数量 / 收货重量 / 单价 / 收货人」列（W5 的行级对账量在**确认弹窗**里逐行展示，
-      列表不再复制一套口径）、`confirmInbound` 入库确认（W5 不做库存）、
+      列表不再复制一套口径）、C 的 `confirmInbound`（B1 改为受控的 `putaway` 命令）、
       C 的行内抽屉表单（拆为独立组件）、C 的 `TABLE_ID_CONST.BUSINESS.PURCHASE.*`（A28）。
 适配：2 值字符串状态枚举（A3）、`/scm/purchase/receipt/**`（A6）、`version`（A8）、
       `confirm` 操作仅 DRAFT（A15）、**不允许直接填状态**（A16）、右对齐 + 等宽（A17）、
@@ -67,6 +67,14 @@
         <template v-if="column.dataIndex === 'status'">
           <a-tag>{{ SCM_RECEIPT_STATUS_ENUM[record.status]?.desc }}</a-tag>
         </template>
+        <template v-else-if="column.dataIndex === 'receiptMode'">
+          <a-tag>{{ SCM_RECEIPT_MODE_ENUM[record.receiptMode]?.desc || record.receiptMode }}</a-tag>
+        </template>
+        <template v-else-if="column.dataIndex === 'putawayStatus'">
+          <a-tag :color="record.putawayStatus === 'COMPLETED' ? 'green' : 'orange'">
+            {{ SCM_PUTAWAY_STATUS_ENUM[record.putawayStatus]?.desc || record.putawayStatus }}
+          </a-tag>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button
@@ -76,6 +84,14 @@
               @click="confirmModal?.open(record.id)"
             >
               确认收货
+            </a-button>
+            <a-button
+              v-if="record.status === 'CONFIRMED' && record.receiptMode === 'WAREHOUSE_CONFIRM' && record.putawayStatus === 'PENDING'"
+              type="link"
+              v-privilege="'scm:purchase:receipt:putaway'"
+              @click="putaway(record)"
+            >
+              确认入库
             </a-button>
             <a-button
               v-if="record.status === 'DRAFT'"
@@ -118,7 +134,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue';
-import { Modal } from 'ant-design-vue';
+import { message, Modal } from 'ant-design-vue';
 import type { TableColumnsType } from 'ant-design-vue';
 import { useRoute } from 'vue-router';
 import { purchaseReceiptApi } from '/@/api/business/scm/purchase-receipt-api';
@@ -126,7 +142,12 @@ import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-import { SCM_PURCHASE_TABLE_ID, SCM_RECEIPT_STATUS_ENUM } from '/@/constants/business/scm/purchase-const';
+import {
+  SCM_PURCHASE_TABLE_ID,
+  SCM_PUTAWAY_STATUS_ENUM,
+  SCM_RECEIPT_MODE_ENUM,
+  SCM_RECEIPT_STATUS_ENUM,
+} from '/@/constants/business/scm/purchase-const';
 import type { Receipt, ReceiptQuery } from './purchase-types';
 import { purchaseError } from './purchase-errors';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
@@ -150,10 +171,12 @@ const columns = ref<TableColumnsType<Receipt>>([
   { title: '供应商', dataIndex: 'supplierName', width: 180 },
   { title: '收货仓库', dataIndex: 'warehouseName', width: 140 },
   { title: '状态', dataIndex: 'status', align: 'center', width: 110 },
+  { title: '入库方式', dataIndex: 'receiptMode', align: 'center', width: 120 },
+  { title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 110 },
   { title: '确认时间', dataIndex: 'confirmedAt', width: 190 },
   { title: '操作者', dataIndex: 'operator', width: 120 },
   { title: '备注', dataIndex: 'remark', width: 180 },
-  { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 230 },
+  { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 250 },
 ]);
 
 /** 采购单号 → id：收货单列表按 `purchaseOrderId` 过滤，不能直接传单号。 */
@@ -234,6 +257,24 @@ function batchDelete() {
             .filter((r) => selected.value.includes(r.id!))
             .map((r) => ({ id: r.id!, version: r.version! }))
         );
+        await queryData();
+      } catch (e) {
+        error.value = purchaseError(e);
+        throw e;
+      }
+    },
+  });
+}
+
+/** 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
+async function putaway(row: Receipt) {
+  Modal.confirm({
+    title: '确认入库？',
+    content: '该操作会把本收货单数量正式记入库存（不可撤销）。',
+    onOk: async () => {
+      try {
+        await purchaseReceiptApi.putaway({ id: row.id!, version: row.version! });
+        message.success('已入库');
         await queryData();
       } catch (e) {
         error.value = purchaseError(e);

@@ -31,7 +31,7 @@ async function confirmedOrder(orderedQuantity:string,actualQuantity:string){
  const after=new Date(Date.now()+30000).toISOString();
  return {orderId:o.orderId,orderNo:o.orderNo,before,after};
 }
-/** 汇总窗口内**恰好这一张**订单 → 需求（窗口收窄，避免把库里既有 CONFIRMED 订单一起汇总）。 */
+/** 在汇总窗口内生成需求，再按销售单号断言本订单恰好生成一条；窗口可能含同轮其它 spec 的订单。 */
 async function demandOf(so:any){
  await post('/scm/purchase/demand/generate',{startAt:so.before,endAt:so.after,warehouseId,supplierId});
  const page=await post('/scm/purchase/demand/query',{pageNum:1,pageSize:20,salesOrderNo:so.orderNo});
@@ -48,7 +48,7 @@ async function submittedPlainOrder(quantity:string){
  return await orderDetail(o.id);
 }
 async function createReceipt(purchaseOrderId:string,key=randomUUID()){
- return await post('/scm/purchase/receipt/create',{purchaseOrderId,remark:name},key);
+ return await post('/scm/purchase/receipt/create',{purchaseOrderId,receiptMode:'DIRECT',remark:name},key);
 }
 function line(receipt:any,declared:string,actualWeight:string|null){const item=receipt.items[0];return {receiptItemId:item.id,version:item.version,receivedQuantity:declared,actualWeight,weightSource:actualWeight?('MANUAL' as const):null};}
 const confirmReceipt=(receipt:any,items:any[],key=randomUUID())=>post('/scm/purchase/receipt/confirm',{id:receipt.id,version:receipt.version,items},key);
@@ -75,7 +75,7 @@ test('1 demand generation from a confirmed sales order',async({page})=>{
  const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
  soA=await confirmedOrder('10.0000','10.0000');
  const generated=await post('/scm/purchase/demand/generate',{startAt:soA.before,endAt:soA.after,warehouseId,supplierId});
- expect(generated.createdCount).toBe(1);expect(generated.sourceLineCount).toBe(1);
+ expect(generated.sourceLineCount).toBeGreaterThanOrEqual(1);expect(generated.createdCount+generated.skippedCount).toBe(generated.sourceLineCount);
  demandA=await demandOf(soA);
  expect(demandA.salesOrderNoSnapshot).toBe(soA.orderNo);
  expect(demandA.requiredQuantity).toBe('10.0000');expect(demandA.allocatedQuantity).toBe('0.0000');expect(demandA.unallocatedQuantity).toBe('10.0000');

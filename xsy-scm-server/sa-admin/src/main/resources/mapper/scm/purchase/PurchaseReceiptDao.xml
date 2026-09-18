@@ -23,7 +23,8 @@
                r.supplier_name_snapshot     AS supplier_name,
                r.warehouse_id,
                r.warehouse_name_snapshot    AS warehouse_name,
-               r.status, r.received_at, r.confirmed_at, r.operator, r.remark,
+               r.status, r.receipt_mode, r.putaway_status, r.putaway_at, r.putaway_by,
+               r.received_at, r.confirmed_at, r.operator, r.remark,
                r.version, r.created_at, r.updated_at
         FROM purchase_receipt r
         WHERE r.deleted = FALSE
@@ -42,6 +43,12 @@
         <if test="query.status != null and query.status != ''">
             AND r.status = #{query.status}
         </if>
+        <if test="query.receiptMode != null and query.receiptMode != ''">
+            AND r.receipt_mode = #{query.receiptMode}
+        </if>
+        <if test="query.putawayStatus != null and query.putawayStatus != ''">
+            AND r.putaway_status = #{query.putawayStatus}
+        </if>
         <if test="query.receivedFrom != null">
             AND r.received_at &gt;= #{query.receivedFrom}
         </if>
@@ -59,7 +66,8 @@
                r.supplier_name_snapshot     AS supplier_name,
                r.warehouse_id,
                r.warehouse_name_snapshot    AS warehouse_name,
-               r.status, r.received_at, r.confirmed_at, r.operator, r.remark,
+               r.status, r.receipt_mode, r.putaway_status, r.putaway_at, r.putaway_by,
+               r.received_at, r.confirmed_at, r.operator, r.remark,
                r.version, r.created_at, r.updated_at
         FROM purchase_receipt r
         WHERE r.deleted = FALSE

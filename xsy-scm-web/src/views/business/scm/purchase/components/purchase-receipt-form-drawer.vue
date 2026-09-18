@@ -1,8 +1,8 @@
 <!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-receive-list.vue 的行内抽屉表单
 复制日期：2026-09-16。Copy First + Adapt（C 把表单内嵌在列表页里，这里拆成独立组件）。
 剪枝：C 的 `receiveQuantity` / `receiveWeight` / `unitPrice` / `receiveBy` / `receiveTime` / `directStock`
-      —— **收货数量只在 `confirm` 一次性落库**（A16：草稿态不允许改数量，否则会出现
-      「草稿数量」与「实际收货」两套真相）；`directStock` 属库存，W5 不做。
+      —— **收货数量只在 `confirm` 一次性确认**（A16：草稿态不允许改数量，否则会出现
+      「草稿数量」与「实际收货」两套真相）；B1 以 `receiptMode` 明确确认即入库或仓库二次入库。
 适配：**状态由命令驱动**（A16：表单里没有 `status`）、`version`（A8）、`/scm/purchase/receipt/**`（A6）、
       采购单选择器只列**可收货状态**、`a-form-item` 带 `name`（A29）、loading/error/retry（A27）。
 验收：W5 单测、TS 棘轮与 Playwright。 -->
@@ -31,6 +31,16 @@
           <a-input v-else :value="form.purchaseOrderNo" disabled />
         </a-form-item>
 
+        <a-form-item v-if="!form.id" label="入库方式" name="receiptMode" required>
+          <a-radio-group v-model:value="form.receiptMode">
+            <a-radio value="DIRECT">直接入库</a-radio>
+            <a-radio value="WAREHOUSE_CONFIRM">仓库确认入库</a-radio>
+          </a-radio-group>
+          <div class="form-tip">
+            直接入库：确认收货即入账；仓库确认入库：确认后由仓库二次确认才入账。
+          </div>
+        </a-form-item>
+
         <a-alert
           v-if="!form.id"
           type="info"
@@ -47,6 +57,12 @@
           <a-descriptions-item label="收货仓库">{{ form.warehouseName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="状态">
             {{ SCM_RECEIPT_STATUS_ENUM[form.status ?? '']?.desc || '—' }}
+          </a-descriptions-item>
+          <a-descriptions-item label="入库方式">
+            {{ SCM_RECEIPT_MODE_ENUM[form.receiptMode ?? '']?.desc || '—' }}
+          </a-descriptions-item>
+          <a-descriptions-item label="入库状态">
+            {{ SCM_PUTAWAY_STATUS_ENUM[form.putawayStatus ?? '']?.desc || '—' }}
           </a-descriptions-item>
         </a-descriptions>
       </a-form>
@@ -68,7 +84,11 @@ import { ref } from 'vue';
 import { message } from 'ant-design-vue';
 import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
 import { purchaseReceiptApi } from '/@/api/business/scm/purchase-receipt-api';
-import { SCM_RECEIPT_STATUS_ENUM } from '/@/constants/business/scm/purchase-const';
+import {
+  SCM_PUTAWAY_STATUS_ENUM,
+  SCM_RECEIPT_MODE_ENUM,
+  SCM_RECEIPT_STATUS_ENUM,
+} from '/@/constants/business/scm/purchase-const';
 import type { Id, Receipt } from '../purchase-types';
 import { purchaseError } from '../purchase-errors';
 
@@ -132,6 +152,10 @@ async function save() {
     error.value = '请选择采购单';
     return;
   }
+  if (!form.value.id && !form.value.receiptMode) {
+    error.value = '请选择入库方式';
+    return;
+  }
   saving.value = true;
   try {
     if (form.value.id) {
@@ -144,6 +168,7 @@ async function save() {
     } else {
       await purchaseReceiptApi.create({
         purchaseOrderId: form.value.purchaseOrderId!,
+        receiptMode: form.value.receiptMode!,
         remark: form.value.remark ?? null,
       });
       message.success('草稿收货单已创建');
@@ -159,3 +184,10 @@ async function save() {
 
 defineExpose({ open });
 </script>
+
+<style scoped>
+.form-tip {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+}
+</style>

@@ -122,10 +122,10 @@ class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
             }
         }
 
-        // 3（需求）+ 11（采购单）+ 8（收货）+ 5（仓库）= 27 个端点
-        assertThat(endpointCount).isEqualTo(27);
-        // 权限码去重后 19 个：3 + 8 + 5 + 3（多个端点共用同一个查询码）
-        assertThat(declared).hasSize(19);
+        // 3（需求）+ 11（采购单）+ 9（收货，B1 加 putaway）+ 7（仓库，B1 加 enable/disable）= 30 个端点
+        assertThat(endpointCount).isEqualTo(30);
+        // 权限码去重后 22 个：3 + 8 + 6 + 5（多个端点共用同一个查询码）
+        assertThat(declared).hasSize(22);
 
         List<String> seeded = jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms IS NOT NULL", String.class);

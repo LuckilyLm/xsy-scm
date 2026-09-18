@@ -70,7 +70,10 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_DEMAND_ITEM_NOT_OWNED(40995, "采购明细与采购需求不匹配"),
     PURCHASE_ORDER_ITEM_DUPLICATE_SKU(40997, "采购单内 SKU 不能重复"),
     PURCHASE_RECEIPT_ITEM_INCOMPLETE(40998, "确认收货必须提交本收货单的全部明细"),
-    PURCHASE_TOLERANCE_CONFIG_INVALID(40999, "采购超收容差配置无效");
+    PURCHASE_TOLERANCE_CONFIG_INVALID(40999, "采购超收容差配置无效"),
+
+    // ---- B1 入库确认（41008，410xx 新段）----
+    PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID(41008, "收货单当前状态不允许入库确认");
 
     private final int code;
     private final String msg;

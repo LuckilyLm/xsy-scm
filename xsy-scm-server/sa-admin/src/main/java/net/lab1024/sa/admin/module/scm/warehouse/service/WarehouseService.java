@@ -9,8 +9,10 @@ import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
+import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseStatusForm;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseUpdateForm;
 import net.lab1024.sa.admin.module.scm.warehouse.manager.WarehouseValidator;
+import net.lab1024.sa.admin.module.scm.warehouse.support.WarehouseDisableGuard;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,9 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VE
 public class WarehouseService {
 
     private final WarehouseDao dao;
+
+    /** 停用前置守卫（B1，HD-B1-01）：inventory 域实现，避免 warehouse 反向依赖 purchase/inventory。 */
+    private final WarehouseDisableGuard disableGuard;
 
     /** 读取仓库，不存在或已删除 → 40485。 */
     public WarehouseEntity require(Long id) {
@@ -112,6 +117,53 @@ public class WarehouseService {
             }
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE);
+        }
+    }
+
+    /**
+     * 启用仓库（B1，HD-B1-01）：{@code DISABLED → ENABLED}，靠乐观锁 version。
+     *
+     * <p>重复 enable（已是 ENABLED）抛 {@code WAREHOUSE_STATE_INVALID}，不做隐式状态覆盖。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void enable(WarehouseStatusForm form) {
+        WarehouseEntity entity = require(form.getId());
+        if (!Objects.equals(entity.getVersion(), form.getVersion())) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+        if (ScmWarehouseStatusEnum.ENABLED.name().equals(entity.getStatus())) {
+            throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_STATE_INVALID);
+        }
+        entity.setStatus(ScmWarehouseStatusEnum.ENABLED.name());
+        stamp(entity, false);
+        if (dao.updateById(entity) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    /**
+     * 停用仓库（B1，HD-B1-01 严格模式）：{@code ENABLED → DISABLED}。
+     *
+     * <p>任一阻塞条件成立（库存余额 / 在途采购单 / 待入库收货单）即拒绝，并返回对应错误码，
+     * 不使用 {@code WAREHOUSE_NOT_FOUND} 掩盖真实原因。阻塞检查与状态写入在同一事务。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void disable(WarehouseStatusForm form) {
+        WarehouseEntity entity = require(form.getId());
+        if (!Objects.equals(entity.getVersion(), form.getVersion())) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+        if (ScmWarehouseStatusEnum.DISABLED.name().equals(entity.getStatus())) {
+            throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_STATE_INVALID);
+        }
+        WarehouseErrorCode blocker = disableGuard.disableBlocker(entity.getId());
+        if (blocker != null) {
+            throw new ScmBusinessException(blocker);
+        }
+        entity.setStatus(ScmWarehouseStatusEnum.DISABLED.name());
+        stamp(entity, false);
+        if (dao.updateById(entity) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
 

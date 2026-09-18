@@ -257,6 +257,10 @@ export interface Receipt {
   warehouseId?: Id;
   warehouseName?: string;
   status?: string;
+  receiptMode?: string;
+  putawayStatus?: string;
+  putawayAt?: string | null;
+  putawayBy?: string | null;
   receivedAt?: string | null;
   confirmedAt?: string | null;
   operator?: string | null;
@@ -273,13 +277,23 @@ export interface ReceiptQuery extends Page {
   supplierId?: Id;
   warehouseId?: Id;
   status?: string;
+  receiptMode?: string;
+  putawayStatus?: string;
   receivedFrom?: string;
   receivedTo?: string;
 }
 
 export interface ReceiptCreatePayload {
   purchaseOrderId: Id;
+  /** 入库方式（HD-B1-02）：DIRECT | WAREHOUSE_CONFIRM，必填无默认。 */
+  receiptMode: string;
   remark?: string | null;
+}
+
+/** `PurchaseReceiptPutawayForm`：仓库确认入库。 */
+export interface ReceiptPutawayPayload {
+  id: Id;
+  version: number;
 }
 
 export interface ReceiptUpdatePayload {
@@ -368,4 +382,10 @@ export interface WarehousePayload {
   name: string;
   address?: string | null;
   remark?: string | null;
+}
+
+/** `WarehouseStatusForm`：启用 / 停用（乐观锁 version）。 */
+export interface WarehouseStatusPayload {
+  id: Id;
+  version: number;
 }

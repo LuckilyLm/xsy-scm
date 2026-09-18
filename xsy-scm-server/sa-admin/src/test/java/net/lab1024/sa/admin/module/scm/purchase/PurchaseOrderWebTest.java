@@ -107,8 +107,8 @@ class PurchaseOrderWebTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("27 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
-    void allTwentySevenEndpointsHaveNativePermissions() {
+    @DisplayName("30 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
+    void allThirtyEndpointsHaveNativePermissions() {
         int count = 0;
         for (Class<?> controller : List.of(PurchaseDemandController.class, PurchaseOrderController.class,
                 PurchaseReceiptController.class, WarehouseController.class)) {
@@ -125,7 +125,7 @@ class PurchaseOrderWebTest {
                 count++;
             }
         }
-        assertThat(count).isEqualTo(27);
+        assertThat(count).isEqualTo(30);
     }
 
     // ------------------------------------------------------------------

@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-截至 2026-09-18，W0–W5、W5.5 与 F0 已完成对应阶段交付。W6-1 已交付库存余额、流水、收货确认同事务入库和历史收货回填；后续修复尚待验证。W6-2 小程序未启动，仍需裁决遗留项后再开工。详见 [项目进度](docs/progress.md)。
+截至 2026-09-18，W0–W5、W5.5 与 F0 已完成对应阶段交付。W6-1 已完成后端与浏览器验证，覆盖库存余额、不可变流水、`DIRECT` / `WAREHOUSE_CONFIRM` 双入库模式、仓库启停和历史收货回填。W6-2 小程序未启动，仍需裁决遗留项后再开工。详见 [项目进度](docs/progress.md)。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
@@ -64,4 +64,4 @@ npm test
 npm run build
 ```
 
-浏览器验证须先启动后端和所需服务，并使用当前工程中的 Playwright 配置与用例。没有执行的检查不能报告为通过。
+浏览器验证须先启动 PostgreSQL、Redis、后端 18080 与前端 18081；`verify.ps1` / `verify.sh` 只执行门禁，不管理服务生命周期。完整入口从仓库根目录运行 `./verify.ps1`，结果保存在 `.runtime/verify/<timestamp>/summary.json` 与 `.runtime/playwright-result.json`。没有执行或因环境跳过的检查不能报告为通过。

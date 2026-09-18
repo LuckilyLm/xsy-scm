@@ -7,6 +7,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptBatch
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptConfirmForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptDeleteForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptPutawayForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptUpdateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
@@ -91,6 +92,16 @@ public class PurchaseReceiptController {
             @Valid @RequestBody PurchaseReceiptConfirmForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseReceiptService.confirm(form, idempotencyKey));
+    }
+
+    /** 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
+    @PostMapping("/putaway")
+    @SaCheckPermission("scm:purchase:receipt:putaway")
+    @OperateLog
+    public ResponseDTO<PurchaseReceiptVO> putaway(
+            @Valid @RequestBody PurchaseReceiptPutawayForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(purchaseReceiptService.putaway(form, idempotencyKey));
     }
 
     @PostMapping("/delete")

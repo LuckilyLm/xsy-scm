@@ -64,22 +64,22 @@ class PurchaseErrorCodeTest {
             "SupplierErrorCode", "PricingErrorCode", "OrderErrorCode");
 
     @Test
-    @DisplayName("撞码门禁：W5 合计 40 码、段内无重复、段分布正确、与 W1–W4 零交集")
+    @DisplayName("撞码门禁：W5+B1 合计 45 码、段内无重复、段分布正确、与 W1–W4 零交集")
     void gate() {
         // ---------- 1. 数量 ----------
-        assertThat(PurchaseErrorCode.values()).hasSize(38);
-        assertThat(WarehouseErrorCode.values()).hasSize(2);
+        assertThat(PurchaseErrorCode.values()).hasSize(39);
+        assertThat(WarehouseErrorCode.values()).hasSize(6);
 
         Map<String, Integer> w5 = new LinkedHashMap<>();
         Arrays.stream(PurchaseErrorCode.values())
                 .forEach(c -> w5.put("PurchaseErrorCode." + c.name(), c.getCode()));
         Arrays.stream(WarehouseErrorCode.values())
                 .forEach(c -> w5.put("WarehouseErrorCode." + c.name(), c.getCode()));
-        assertThat(w5).as("W5 错误码合计").hasSize(40);
+        assertThat(w5).as("W5+B1 错误码合计").hasSize(45);
 
         // ---------- 2. 段内无重复 ----------
         Set<Integer> w5Codes = new LinkedHashSet<>(w5.values());
-        assertThat(w5Codes).as("W5 段内存在重复码值").hasSize(40);
+        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(45);
 
         // ---------- 3. 段分布 ----------
         Set<Integer> purchaseCodes = Arrays.stream(PurchaseErrorCode.values())
@@ -90,15 +90,22 @@ class PurchaseErrorCodeTest {
                 .as("PurchaseErrorCode 404xx 段").isEqualTo(5L);
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 409).count())
                 .as("PurchaseErrorCode 409xx 段").isEqualTo(21L);
-        assertThat(purchaseCodes).hasSize(38);
+        assertThat(purchaseCodes.stream().filter(c -> c / 100 == 410).count())
+                .as("PurchaseErrorCode 410xx 段").isEqualTo(1L);
+        assertThat(purchaseCodes).hasSize(39);
 
         assertThat(WarehouseErrorCode.WAREHOUSE_NOT_FOUND.getCode()).isEqualTo(40485);
         assertThat(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE.getCode()).isEqualTo(40996);
+        assertThat(WarehouseErrorCode.WAREHOUSE_STATE_INVALID.getCode()).isEqualTo(41004);
+        assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_BALANCE.getCode()).isEqualTo(41005);
+        assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_INBOUND.getCode()).isEqualTo(41006);
+        assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY.getCode()).isEqualTo(41007);
 
-        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）
+        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）· 410xx=5
         assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(12L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(6L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(22L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(5L);
 
         // ---------- 4. 与 W1–W4 零交集 ----------
         List<Class<?>> discovered = discover();

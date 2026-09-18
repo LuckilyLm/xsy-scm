@@ -70,7 +70,7 @@ public class InventoryMovementVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal afterQuantity;
 
-    /** 业务发生时刻 = 收货确认时刻（不是写入时刻）。 */
+    /** 业务发生时刻 = 物理入库时刻：DIRECT 取收货确认时刻，WAREHOUSE_CONFIRM 取仓库确认入库时刻。 */
     private OffsetDateTime occurredAt;
 
     private String operator;

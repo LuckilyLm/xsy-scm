@@ -38,6 +38,8 @@ import {
   SCM_RECEIPT_STATUS_ENUM,
   SCM_DEMAND_STATUS_ENUM,
   SCM_WAREHOUSE_STATUS_ENUM,
+  SCM_RECEIPT_MODE_ENUM,
+  SCM_PUTAWAY_STATUS_ENUM,
   SCM_PURCHASE_OPERATION_ENUM,
   SCM_PURCHASE_TABLE_ID,
 } from '../src/constants/business/scm/purchase-const.ts';
@@ -417,6 +419,9 @@ test('purchase errors resolve from body, data and response shapes', () => {
   assert.match(purchaseError({code: 40082}), /可分配余量/);
   assert.match(purchaseError({code: 40989}), /超收容差/);
   assert.match(purchaseError({code: 40998}), /全部明细/);
+  assert.match(purchaseError({code: 41005}), /库存余额/);
+  assert.match(purchaseError({code: 41007}), /待入库收货单/);
+  assert.match(purchaseError({code: 41008}), /已入库/);
   assert.match(purchaseError({data: {code: 40982}}), /状态/);
   assert.equal(purchaseError({msg: '业务提示'}), '业务提示');
   assert.equal(purchaseError({response: {data: {msg: '业务提示'}}}), '业务提示');
@@ -440,7 +445,23 @@ test('purchase enums expose exactly the states the backend state machine allows'
   assert.deepEqual(Object.keys(SCM_RECEIPT_STATUS_ENUM), ['DRAFT', 'CONFIRMED']);
   assert.deepEqual(Object.keys(SCM_DEMAND_STATUS_ENUM), ['PENDING', 'PARTIALLY_ALLOCATED', 'ALLOCATED']);
   assert.deepEqual(Object.keys(SCM_WAREHOUSE_STATUS_ENUM), ['ENABLED', 'DISABLED']);
-  assert.equal(Object.keys(SCM_PURCHASE_OPERATION_ENUM).length, 11);
+  assert.deepEqual(Object.keys(SCM_RECEIPT_MODE_ENUM), ['DIRECT', 'WAREHOUSE_CONFIRM']);
+  assert.deepEqual(Object.keys(SCM_PUTAWAY_STATUS_ENUM), ['PENDING', 'COMPLETED']);
+  assert.deepEqual(Object.keys(SCM_PURCHASE_OPERATION_ENUM), [
+    'DEMAND_GENERATE',
+    'DEMAND_ALLOCATE',
+    'CREATE',
+    'UPDATE',
+    'SUBMIT',
+    'CANCEL',
+    'SHORT_CLOSE',
+    'DELETE',
+    'RECEIPT_CREATE',
+    'RECEIPT_UPDATE',
+    'RECEIPT_CONFIRM',
+    'RECEIPT_DELETE',
+    'RECEIPT_PUTAWAY',
+  ]);
   assert.deepEqual(Object.keys(SCM_PURCHASE_TABLE_ID), ['ORDER', 'RECEIPT', 'DEMAND', 'LOG', 'WAREHOUSE']);
   assert.equal(SCM_PURCHASE_TABLE_ID.ORDER, 'scm-purchase-order-table');
 });
@@ -470,4 +491,24 @@ test('pruned legacy enums, resize plumbing and inventory wiring never reach the 
   // W5 不实现库存：采购域不得出现库存读写入口（`OrderInventoryContract` 只有定义、零调用点）。
   const inventory = code('../src/api/business/scm/purchase-order-api.ts');
   assert.doesNotMatch(inventory, /inventory|stock/i);
+});
+
+test('B1 commands and action guards stay explicit in the frontend contract', () => {
+  const receiptApi = code('../src/api/business/scm/purchase-receipt-api.ts');
+  assert.match(receiptApi, /purchaseCommand<Receipt>\('\/scm\/purchase\/receipt\/putaway'/);
+
+  const warehouseApi = code('../src/api/business/scm/warehouse-api.ts');
+  assert.match(warehouseApi, /postRequest\('\/scm\/warehouse\/enable'/);
+  assert.match(warehouseApi, /postRequest\('\/scm\/warehouse\/disable'/);
+
+  const receiptList = code('../src/views/business/scm/purchase/purchase-receipt-list.vue');
+  assert.match(
+    receiptList,
+    /record\.status === 'CONFIRMED'\s*&&\s*record\.receiptMode === 'WAREHOUSE_CONFIRM'\s*&&\s*record\.putawayStatus === 'PENDING'/
+  );
+  assert.match(receiptList, /scm:purchase:receipt:putaway/);
+
+  const warehouseList = code('../src/views/business/scm/purchase/warehouse-list.vue');
+  assert.match(warehouseList, /record\.status === 'ENABLED'[\s\S]*scm:warehouse:disable/);
+  assert.match(warehouseList, /record\.status === 'DISABLED'[\s\S]*scm:warehouse:enable/);
 });

@@ -5,11 +5,14 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.OffsetDateTime;
 
 /**
- * 采购收货单头（W5 Target Design §5.7）。
+ * 采购收货单头（W5 Target Design §5.7；B1 扩展 HD-B1-01/02/03）。
  *
- * <p>2 状态 `DRAFT/CONFIRMED`（Q7 / Q7a）。**没有 `receipt_mode` / `putaway_status`**：
- * W5 只做 DIRECT、不实现库存，建一个恒为固定值的字段等于死字段
- * （同 W4 拒绝 `fulfillment_status` 的纪律）；W6 用 `ALTER TABLE` 追加。
+ * <p>商业状态 `status`（`DRAFT/CONFIRMED`）与入库生命周期 `receiptMode` /
+ * `putawayStatus` **解耦**：`CONFIRMED` 只表示收货已确认，不等于库存已入账。
+ * <ul>
+ *   <li>{@code receiptMode=DIRECT}：confirm 同事务完成入库（putaway=COMPLETED）；</li>
+ *   <li>{@code receiptMode=WAREHOUSE_CONFIRM}：confirm 后 putaway=PENDING，仓库二次确认才入库。</li>
+ * </ul>
  *
  * <p>供应商 / 仓库快照在收货单创建时从采购单继承。
  */
@@ -26,6 +29,10 @@ public class PurchaseReceiptEntity {
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private String warehouseCodeSnapshot;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private String warehouseNameSnapshot;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private String status;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String receiptMode;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String putawayStatus;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private OffsetDateTime putawayAt;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String putawayBy;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private OffsetDateTime receivedAt;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private OffsetDateTime confirmedAt;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private String operator;

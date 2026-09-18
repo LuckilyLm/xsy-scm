@@ -14,17 +14,27 @@
 | W5 采购 | 完成 | 采购需求、采购单、多次收货和最小仓库主数据 |
 | W5.5 原生功能同步 | 完成 | SmartAdmin 原生功能与 SCM 品牌配置 |
 | F0 对象存储 | 完成 | FileService、S3/MinIO 和访问保护 |
-| W6-1 库存第一阶段 | 后端回归通过，浏览器待验证 | 余额、流水、收货确认同事务入库、历史回填和只读查询页 |
+| W6-1 库存第一阶段 | 后端与浏览器已验证 | 余额、不可变流水、双入库模式、仓库生命周期、历史回填和只读查询页 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
 
-- W6-1 后续修复（含 V21）已通过本次后端回归；浏览器验收未完成，不能视为整阶段验收通过。
 - 引入非管理员业务角色前，处理 F0-DEBT-01：业务附件必须接入权限、归属/关系和 FileService 读取控制。
-- 明确仓库启停、非管理员角色、全量 E2E 账号供给和多角色库存验证方案。
-- 依照参考项目目录继续评估下一波业务，不提前启动 W6-2。
+- 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
+- B2/B3 尚未形成批准方案；依照参考项目目录评估下一波库存业务，不提前启动 W6-2。
+- F0 cloud/MinIO 环境未配置时，后端 5 项 cloud IT 与 Playwright 7 项 cloud 用例继续跳过；全量入口因此返回 INCOMPLETE，而非 FAIL。
 
 ## 追加记录
+
+### 2026-09-18 B1 收口
+
+- V22 为 `purchase_receipt` 增加显式 `DIRECT` / `WAREHOUSE_CONFIRM` 与 `PENDING` / `COMPLETED` 生命周期，扩展 `RECEIPT_PUTAWAY` 审计类型；V23 增加确认入库、仓库启用、仓库停用权限 822/823/824。
+- `DIRECT` 确认收货与库存入账保持同事务；`WAREHOUSE_CONFIRM` 确认收货不改库存，putaway 独立事务写余额和 `PURCHASE_IN`，流水 `occurred_at` 等于物理入库时刻。重复、并发和单位不一致均有回滚/防重测试。
+- 仓库停用采用严格阻塞：正库存、在途采购单、待入库收货单任一存在即拒绝；停用仓库拒绝新的业务引用，历史记录保留可查。
+- 修复全量 E2E 基础设施漂移：W1–W4 账号脚本改用本地 PostgreSQL Docker 容器，W5 full 测试账号继承管理员原生菜单以覆盖 SmartAdmin 页面，验证工具在 Windows 非 UTF-8 控制台打印失败日志时不再崩溃；工具回归 6/6 通过。
+- B0+B1 定向浏览器验收 `scm-inventory.spec.ts` 8/8 通过；覆盖 DIRECT、WAREHOUSE_CONFIRM、二次入库发生时刻、重复防重、严格停用及仓库启停往返。W5 采购 9/9、W4 订单 6/6、SmartAdmin 原生 17/17 定向通过。
+- 最终全量入口：`.runtime/verify/20260918-184859-883696/summary.json`，后端 `Tests run: 583, Failures: 0, Errors: 0, Skipped: 5`；TS 基线 1974、当前 1953、SCM 0、新增 0；lint 0 错误/3 条既有警告；前端 unit 64/64；production build 通过。
+- 最终 Playwright：48 passed、0 unexpected、0 flaky、7 skipped；F0 cloud 环境未配置导致 7 项跳过。全量无 FAILED，因后端 5 项和 E2E 7 项环境 skip 返回 `INCOMPLETE (exit 2)`。
 
 ### 2026-09-18
 

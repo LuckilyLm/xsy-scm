@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
 import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOperationLogVO;
@@ -180,9 +181,10 @@ class PurchaseReceiptServiceIT extends ScmW5PgITBase {
     void createIsIdempotentWithinOrderScope() {
         ReceiptFixture fx = receiptFixture("RC6", "10.0000");
 
-        // 与 createReceipt 完全相同的请求（同 key、同 remark）
+        // 与 createReceipt 完全相同的请求（同 key、同 remark、同 receiptMode）
         PurchaseReceiptCreateForm form = new PurchaseReceiptCreateForm();
         form.setPurchaseOrderId(fx.order().getId());
+        form.setReceiptMode(ScmReceiptModeEnum.DIRECT.name());
         form.setRemark("W5 IT 收货单");
         PurchaseReceiptVO replayed = purchaseReceiptService.create(
                 form, prefix + ":receipt:" + fx.order().getId());

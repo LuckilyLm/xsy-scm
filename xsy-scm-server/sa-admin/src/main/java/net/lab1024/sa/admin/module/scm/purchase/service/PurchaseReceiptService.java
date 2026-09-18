@@ -5,6 +5,8 @@ import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseConfigKey;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
+import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
+import net.lab1024.sa.admin.module.scm.purchase.constant.ScmPutawayStatusEnum;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOperationLogDao;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOrderDao;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOrderItemDao;
@@ -20,14 +22,17 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptBatch
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptConfirmForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptDeleteForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptPutawayForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptUpdateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderStateMachine;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderValidator;
+import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptPutawayGuard;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptQuantityCalculator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
+import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseWarehouseReferenceGuard;
 import net.lab1024.sa.base.module.support.config.ConfigService;
 import net.lab1024.sa.base.module.support.config.domain.ConfigVO;
 import org.springframework.stereotype.Service;
@@ -54,6 +59,7 @@ import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCod
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_ORDER_STATE_INVALID;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_OVER_RECEIVED;
+import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_STATE_INVALID;
 
 /**
@@ -110,6 +116,9 @@ public class PurchaseReceiptService {
      */
     private final PurchaseInventoryContract purchaseInventoryContract;
 
+    /** 仓库引用守卫：收货单创建 / 入库确认前断言仓库仍启用（40987）。 */
+    private final PurchaseWarehouseReferenceGuard warehouseReferenceGuard;
+
     // ------------------------------------------------------------------
     // receipt.create
     // ------------------------------------------------------------------
@@ -136,6 +145,8 @@ public class PurchaseReceiptService {
             // RECEIVED / SHORT_CLOSED / CANCELLED / DRAFT 都不允许新收货（T8）
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
+        // 仓库可能在采购单创建后被停用：收货单创建是「新引用」，必须重查启用态（HD-B1-01）。
+        warehouseReferenceGuard.requireEnabled(order.getWarehouseId());
         List<PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId());
         if (orderItems.isEmpty()) {
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_EMPTY);
@@ -143,6 +154,9 @@ public class PurchaseReceiptService {
 
         PurchaseReceiptEntity receipt =
                 PurchaseSnapshotFactory.receipt(order, numberGenerator.receipt(), form.getRemark());
+        // B1：入库方式由调用方显式二选一（无默认）；DRAFT 期入库状态恒 PENDING。
+        receipt.setReceiptMode(form.getReceiptMode());
+        receipt.setPutawayStatus(ScmPutawayStatusEnum.PENDING.name());
         stamp(receipt, true);
         purchaseReceiptDao.insert(receipt);
 
@@ -333,10 +347,19 @@ public class PurchaseReceiptService {
         }
 
         OffsetDateTime now = OffsetDateTime.now();
+        // B1：入库方式决定 confirm 是否同事务入库（HD-B1-01/03）。
+        boolean direct = ScmReceiptModeEnum.DIRECT.name().equals(receipt.getReceiptMode());
         receipt.setStatus("CONFIRMED");
         receipt.setReceivedAt(now);
         receipt.setConfirmedAt(now);
         receipt.setOperator(ScmOperator.current());
+        if (direct) {
+            // DIRECT：确认即物理入库，putaway 与 confirm 同事务完成。
+            receipt.setPutawayStatus(ScmPutawayStatusEnum.COMPLETED.name());
+            receipt.setPutawayAt(now);
+            receipt.setPutawayBy(receipt.getOperator());
+        }
+        // WAREHOUSE_CONFIRM：此处**不写库存**，putaway_status 保持 PENDING，等待仓库二次确认。
         stamp(receipt, false);
         if (purchaseReceiptDao.updateById(receipt) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -353,7 +376,92 @@ public class PurchaseReceiptService {
         // §4.3 第 15 步（W6）：库存入库 —— 与采购侧写入同事务。
         // 位置固定：操作日志之后、幂等 complete 之前。幂等 complete 落在库存写入之后，
         // 保证「重放返回的结果」= 库存已写入的成功结果。
-        postInbound(order, receipt, inboundLines);
+        if (direct) {
+            postInbound(order, receipt, inboundLines, receipt.getConfirmedAt(), receipt.getOperator());
+        }
+
+        PurchaseReceiptVO result = queryService.receiptDetail(receipt.getId());
+        idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
+        return result;
+    }
+
+    // ------------------------------------------------------------------
+    // receipt.putaway（B1：仓库二次确认入库，独立事务，HD-B1-03）
+    // ------------------------------------------------------------------
+
+    /**
+     * 仓库确认入库：仅适用于 {@code WAREHOUSE_CONFIRM} 且 {@code putaway_status=PENDING} 的已确认收货单。
+     *
+     * <p><b>锁序（§9）</b>：收货单（行锁）→ 余额（按 (warehouseId, skuId) 升序）。收货单锁始终先于
+     * 余额锁，且 confirm 路径同样是「收货单锁在余额锁之前」，因此不存在 {@code balance → receipt}
+     * 的反向路径，与 P12 全局锁序兼容，不会成环。
+     *
+     * <p><b>并发两次 putaway</b>：只有先拿到收货单锁的那次能通过 {@code putaway_status=PENDING} 校验并
+     * 写入库存；后到者读到 {@code COMPLETED} 抛 41008（或由幂等 claim 重放）。数据库侧
+     * {@code uk_inventory_movement_source_active} 兜底，绝不重复 PURCHASE_IN。
+     *
+     * <p><b>occurred_at / operator</b>：流水取本次 putaway 的物理入库时刻与操作人（HD-B1-03），
+     * **不得**写成 receipt.confirmed_at。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PurchaseReceiptVO putaway(PurchaseReceiptPutawayForm form, String idempotencyKey) {
+        var claim = idempotencyService.claim(
+                "PURCHASE_RECEIPT_PUTAWAY:" + form.getId(), idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, PurchaseReceiptVO.class);
+        }
+
+        PurchaseReceiptEntity receipt = lockReceipt(form.getId());
+        version(receipt.getVersion(), form.getVersion());
+        if (!PurchaseReceiptPutawayGuard.putawayAllowed(
+                receipt.getStatus(), receipt.getReceiptMode(), receipt.getPutawayStatus())) {
+            throw new ScmBusinessException(PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID);
+        }
+
+        PurchaseOrderEntity order = purchaseOrderDao.selectById(receipt.getPurchaseOrderId());
+        if (order == null) {
+            throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
+        }
+        // 已确认收货单的采购单不可能仍是 DRAFT，行价格只读即可（不入行锁）。
+        Map<Long, PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.listByOrderId(order.getId())
+                .stream()
+                .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
+        List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.listByReceiptId(receipt.getId());
+
+        // 入库事实的最小元组：数量取确认时已落库的 received_quantity，单位/单价取采购行快照。
+        List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
+        for (PurchaseReceiptItemEntity line : receiptItems) {
+            PurchaseOrderItemEntity orderItem = orderItems.get(line.getPurchaseOrderItemId());
+            if (orderItem == null) {
+                throw new ScmBusinessException(PURCHASE_ORDER_ITEM_NOT_FOUND);
+            }
+            inboundLines.add(new InboundLine(line, orderItem, line.getReceivedQuantity()));
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        String operator = ScmOperator.current();
+        receipt.setPutawayStatus(ScmPutawayStatusEnum.COMPLETED.name());
+        receipt.setPutawayAt(now);
+        receipt.setPutawayBy(operator);
+        stamp(receipt, false);
+        if (purchaseReceiptDao.updateById(receipt) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+
+        Map<String, Object> before = PurchaseSnapshotFactory.snapshot();
+        before.put("putawayStatus", ScmPutawayStatusEnum.PENDING.name());
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
+        after.put("putawayStatus", ScmPutawayStatusEnum.COMPLETED.name());
+        // 审计快照只放字符串：PurchaseJsonbTypeHandler 的 ObjectMapper 未注册 JavaTimeModule，
+        // 直接放 OffsetDateTime 会抛「Invalid purchase JSON」（与确认日志同纪律）。
+        after.put("putawayAt", now.toString());
+        after.put("putawayBy", operator);
+        purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
+                ScmPurchaseOperationTypeEnum.RECEIPT_PUTAWAY, order.getId(), receipt.getId(),
+                null, before, after));
+
+        // 位置固定：putaway 状态落库之后、幂等 complete 之前（与 confirm 同纪律）。
+        postInbound(order, receipt, inboundLines, now, operator);
 
         PurchaseReceiptVO result = queryService.receiptDetail(receipt.getId());
         idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
@@ -441,7 +549,7 @@ public class PurchaseReceiptService {
      * 幂等记录全部不落库。用户视角 = 「这次收货确认失败了」，重试安全（幂等 claim 未提交）。
      */
     private void postInbound(PurchaseOrderEntity order, PurchaseReceiptEntity receipt,
-                             List<InboundLine> lines) {
+                             List<InboundLine> lines, OffsetDateTime occurredAt, String operator) {
         if (lines.isEmpty()) {
             // confirm 要求请求行 == 活动行且非空（40998），因此这里只是防御性短路
             return;
@@ -463,8 +571,8 @@ public class PurchaseReceiptService {
                         line.effective(),
                         line.orderItem().getPurchasePrice(),
                         PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE + ":" + line.line().getId(),
-                        receipt.getConfirmedAt(),
-                        receipt.getOperator()))
+                        occurredAt,
+                        operator))
                 .toList();
 
         facts.stream()

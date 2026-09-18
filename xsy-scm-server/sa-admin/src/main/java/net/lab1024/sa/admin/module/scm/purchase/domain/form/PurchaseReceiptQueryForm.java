@@ -14,6 +14,8 @@ public class PurchaseReceiptQueryForm extends PageParam {
     private Long supplierId;
     private Long warehouseId;
     @Pattern(regexp="DRAFT|CONFIRMED") private String status;
+    @Pattern(regexp="DIRECT|WAREHOUSE_CONFIRM") private String receiptMode;
+    @Pattern(regexp="PENDING|COMPLETED") private String putawayStatus;
     private OffsetDateTime receivedFrom;
     private OffsetDateTime receivedTo;
 }
