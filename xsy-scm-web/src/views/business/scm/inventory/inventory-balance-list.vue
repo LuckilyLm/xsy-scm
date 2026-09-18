@@ -1,20 +1,6 @@
 <!--
-  W6 库存余额（新增文件）。仿 W5 `warehouse-list.vue` 的列表骨架。
-  适配：`/scm/inventory/balance/**`（2 个只读端点）、`scm:inventory:balance:query`（菜单 811）、
-        `scm-inventory-balance-table`、`inventory-errors`、loading/empty/error/retry、`v-privilege`。
-
-  **本页全只读**：库存余额不是可以被直接赋值的状态，它只能是流水的净和。
-  唯一的写入路径是「收货确认 → 采购入库」，发生在采购侧的同事务内，因此这里
-  没有任何新建/编辑/删除按钮 —— 一个不存在的入口比一个会报错的入口更诚实。
-
-  **Q12（默认仓库）**：系统恰好只有 1 个启用仓库时，加载时默认带出该仓库；
-  启用仓库数量 != 1 时**不自动选任何一个**（只提供普通筛选）。理由：多仓下随便选一个仓
-  会让用户误以为自己在看全部仓库的库存，而实际上只看到一个仓 —— 这种误解比多一次点击昂贵得多。
-  判定放在前端（后端不做隐式默认），见 `applySingleWarehouseDefault`。
-
-  **筛选为什么用编码/名称文本而不是 SKU 选择器**：`/scm/product/sku/option-list` 需要
-  `scm:product:sku:query`。把它放到库存页会让「只有库存权限的人打不开库存页的筛选」——
-  一个只读页不该依赖另一个域的权限。后端仍支持 `skuId` 精确筛选（见 `inventory-types.ts`）。
+  库存余额只读查询，数量由收货确认产生的流水累加。
+  SKU 使用编码/名称筛选，避免额外依赖商品选项接口的权限。
 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
@@ -114,7 +100,7 @@ const tableData = ref<InventoryBalance[]>([]);
 const total = ref(0);
 const loading = ref(false);
 const error = ref('');
-/** 仓库选项由本页持有并传给 `WarehouseSelect`：Q12 的判定本来就要拉一次，避免同一端点被请求两次。 */
+// 与选择器共享仓库列表，避免默认值判定重复请求。
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
@@ -129,8 +115,6 @@ const columns = ref<TableColumnsType<InventoryBalance>>([
   { title: '库存数量', dataIndex: 'quantity', align: 'right', width: 130 },
   { title: '更新时间', dataIndex: 'updatedAt', width: 190 },
 ]);
-
-/** `specValues` 是 `{"规格":"散装"}` 形状的 JSONB；无值显示破折号。见 `inventory-model.ts`。 */
 
 async function queryData() {
   const id = ++requestId;
@@ -154,11 +138,7 @@ async function queryData() {
 }
 
 /**
- * Q12：系统恰好只有 1 个启用仓库时默认带出该仓库；否则不自动选择（规则见
- * `inventory-model.ts` 的 `singleWarehouseDefault`，那里有单测）。
- *
- * 拉不到仓库列表（例如当前账号没有 `scm:warehouse:query`）时**静默跳过**：
- * 默认仓库只是便利，不该让整个只读页打不开。
+ * 仅有一个启用仓库时默认选中；列表请求失败时跳过默认值，不阻断余额查询。
  */
 async function applySingleWarehouseDefault() {
   try {
@@ -179,8 +159,7 @@ function onSearch() {
 }
 
 function resetQuery() {
-  // 重置时**清空**仓库，而不是重新套用 Q12 默认值：用户点「重置」的意图是「回到无筛选」。
-  // 多仓下重新套一个默认值会让人以为筛选没清掉。
+  // 重置表示查看全部仓库，不重新应用默认值。
   queryForm.warehouseId = undefined;
   queryForm.skuCode = undefined;
   queryForm.productName = undefined;
@@ -188,15 +167,13 @@ function resetQuery() {
 }
 
 onMounted(async () => {
-  // 顺序固定：先定默认仓库，再查第一屏数据 —— 否则首屏会先显示「全部仓库」再跳成「默认仓库」，
-  // 看起来像页面闪了一下。
+  // 先确定默认仓库，避免首屏短暂展示全部仓库的数据。
   await applySingleWarehouseDefault();
   await queryData();
 });
 </script>
 
 <style scoped>
-/* 数量一律等宽右对齐：4 位定点数在比例字体下会参差不齐，扫描一列数字时很费眼 */
 .num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }

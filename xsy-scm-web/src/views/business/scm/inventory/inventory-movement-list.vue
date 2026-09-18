@@ -1,18 +1,6 @@
 <!--
-  W6 库存流水（新增文件）。仿 W5 `purchase-log-list.vue` 的只读列表骨架。
-  适配：`/scm/inventory/movement/query`（**唯一**端点）、`scm:inventory:movement:query`（菜单 821）、
-        `scm-inventory-movement-table`、`inventory-errors`、loading/empty/error/retry、`v-privilege`。
-
-  **append-only 在页面上的体现**：没有任何新增/编辑/删除入口。流水是账本，
-  未来冲销靠「新增反向 movement」，因此这一页永远只会多行、不会改行。
-
-  **来源单号可跳收货单**：`receiptNo` 链到收货单列表并带上 `receiptNo` 查询参数
-  （见 `purchase-receipt-list.vue` 里的 `route.query.receiptNo` 处理）。
-  它是**人类可读溯源**；机器可读的溯源是 `sourceDocumentId` / `sourceDocumentItemId`（不展示）。
-
-  **时间筛选过滤的是 `occurred_at`（业务发生时刻 = 收货确认时刻），不是写入时刻**：
-  backfill 回放的历史收货，其写入时刻是迁移执行时刻，用写入时刻过滤会让这部分数据查不到。
-  区间为**左闭右开**：`occurredFrom <= occurred_at < occurredTo`。
+  库存流水只读查询，来源单号可跳转至收货单列表。
+  时间筛选使用业务发生时刻 occurred_at，区间左闭右开；历史回填的写入时刻不参与筛选。
 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
@@ -167,9 +155,7 @@ async function queryData() {
   try {
     const r = await inventoryMovementApi.query({
       ...queryForm,
-      // 枚举筛选清空时必须送 undefined（字段被省略），**不能送空串**：
-      // 后端 `InventoryMovementQueryForm` 上是 `@Pattern(regexp = "PURCHASE_IN")`，
-      // 空串会被 Bean Validation 判成 40000，页面看起来像「一清空就报错」。
+      // 清空时省略枚举字段，空字符串会被后端校验拒绝。
       movementType: queryForm.movementType || undefined,
       occurredFrom: occurredRange.value?.[0] ?? null,
       occurredTo: occurredRange.value?.[1] ?? null,
@@ -205,7 +191,6 @@ function resetQuery() {
   onSearch();
 }
 
-/** 来源单号 → 收货单列表（带 `receiptNo` 查询参数）。只读溯源，不改变收货单任何状态。 */
 function openReceipt(receiptNo: string) {
   router.push({ path: '/purchase/purchase-receipt-list', query: { receiptNo } });
 }
@@ -214,7 +199,6 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-/* 数量与金额一律等宽右对齐：4 位定点数在比例字体下会参差不齐，扫描一列数字时很费眼 */
 .num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
