@@ -29,24 +29,8 @@
           </span>
         </p>
       </div>
-      <div class="app-qr-box">
-        <div class="app-qr">
-          <img :src="zhuoda" />
-          <span class="qr-desc"> 加微信，骚扰卓大 :) </span>
-        </div>
-        <div class="app-qr">
-          <img :src="gzh" />
-          <div class="qr-desc-marquee">
-            <div class="marquee">
-              <span>关注：六边形工程师</span>
-              <span>分享：AI、赚钱、代码、健康</span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     <div class="box-item login">
-      <img class="login-qr" :src="loginQR" />
       <div class="login-title">账号登录</div>
       <a-form ref="formRef" class="login-form" :model="loginForm" :rules="rules">
         <a-form-item name="loginName">
@@ -61,21 +45,12 @@
           </a-input-group>
         </a-form-item>
         <a-form-item name="password">
-          <a-popover placement="top">
-            <template #content>
-              <a-flex :vertical="true" justify="center" align="center">
-               <img :src="gzh" />
-               <a-typography-text type="danger">扫码关注：【六边形工程师】</a-typography-text>
-               <a-typography-text type="danger">完成问卷调查，获取登录密码</a-typography-text>
-              </a-flex>
-            </template>
-            <a-input-password
-              v-model:value="loginForm.password"
-              autocomplete="on"
-              :type="showPassword ? 'text' : 'password'"
-              placeholder="请输入密码"
-            />
-          </a-popover>
+          <a-input-password
+            v-model:value="loginForm.password"
+            autocomplete="on"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="请输入密码"
+          />
         </a-form-item>
         <a-form-item name="captchaCode">
           <a-input class="captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码" />
@@ -85,26 +60,7 @@
         <a-form-item>
           <div class="btn" @click="onLogin">登录</div>
         </a-form-item>
-        <a-form-item>
-          <span>  账号：admin, 关注【六边形工程师】，参与问卷，获取密码</span>
-        </a-form-item>
       </a-form>
-      <div class="more">
-        <div class="title-box">
-          <p class="line"></p>
-          <p class="title">其他方式登录</p>
-          <p class="line"></p>
-        </div>
-        <div class="login-type">
-          <img :src="wechatIcon" />
-          <img :src="aliIcon" />
-          <img :src="douyinIcon" />
-          <img :src="qqIcon" />
-          <img :src="weiboIcon" />
-          <img :src="feishuIcon" />
-          <img :src="googleIcon" />
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -117,17 +73,6 @@
   import { SmartLoading } from '/@/components/framework/smart-loading';
   import { LOGIN_DEVICE_ENUM } from '/@/constants/system/login-device-const';
   import { useUserStore } from '/@/store/modules/system/user';
-  import zhuoda from '/@/assets/images/1024lab/zhuoda-wechat.jpg';
-  import loginQR from '/@/assets/images/login/login-qr.png';
-  import gzh from '/@/assets/images/1024lab/gzh.jpg';
-  import wechatIcon from '/@/assets/images/login/wechat-icon.png';
-  import aliIcon from '/@/assets/images/login/ali-icon.png';
-  import douyinIcon from '/@/assets/images/login/douyin-icon.png';
-  import qqIcon from '/@/assets/images/login/qq-icon.png';
-  import weiboIcon from '/@/assets/images/login/weibo-icon.png';
-  import feishuIcon from '/@/assets/images/login/feishu-icon.png';
-  import googleIcon from '/@/assets/images/login/google-icon.png';
-
   import { buildRoutes } from '/@/router/index';
   import { smartSentry } from '/@/lib/smart-sentry';
   import { encryptData } from '/@/lib/encrypt';

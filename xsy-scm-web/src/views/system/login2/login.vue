@@ -17,7 +17,6 @@
       </div>
     </div>
     <div class="box-item login">
-      <img class="login-qr" :src="loginQR" />
       <div class="login-title">账号登录</div>
       <a-form ref="formRef" class="login-form" :model="loginForm" :rules="rules">
         <a-form-item name="loginName">
@@ -45,28 +44,11 @@
         </a-form-item>
         <a-form-item>
           <a-checkbox v-model:checked="rememberPwd">记住密码</a-checkbox>
-          <span> ( 账号：admin, 密码：123456)</span>
         </a-form-item>
         <a-form-item>
           <div class="btn" @click="onLogin">登录</div>
         </a-form-item>
       </a-form>
-      <div class="more">
-        <div class="title-box">
-          <p class="line"></p>
-          <p class="title">其他方式登录</p>
-          <p class="line"></p>
-        </div>
-        <div class="login-type">
-          <img :src="wechatIcon" />
-          <img :src="aliIcon" />
-          <img :src="douyinIcon" />
-          <img :src="qqIcon" />
-          <img :src="weiboIcon" />
-          <img :src="feishuIcon" />
-          <img :src="googleIcon" />
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -79,15 +61,6 @@
   import { SmartLoading } from '/@/components/framework/smart-loading';
   import { LOGIN_DEVICE_ENUM } from '/@/constants/system/login-device-const';
   import { useUserStore } from '/@/store/modules/system/user';
-  import loginQR from '/@/assets/images/login/login-qr.png';
-  import wechatIcon from '/@/assets/images/login/wechat-icon.png';
-  import aliIcon from '/@/assets/images/login/ali-icon.png';
-  import douyinIcon from '/@/assets/images/login/douyin-icon.png';
-  import qqIcon from '/@/assets/images/login/qq-icon.png';
-  import weiboIcon from '/@/assets/images/login/weibo-icon.png';
-  import feishuIcon from '/@/assets/images/login/feishu-icon.png';
-  import googleIcon from '/@/assets/images/login/google-icon.png';
-
   import { buildRoutes } from '/@/router/index';
   import { smartSentry } from '/@/lib/smart-sentry';
   import { encryptData } from '/@/lib/encrypt';

@@ -48,10 +48,6 @@
         <!-- <a-col :span="24">
           <HomeQuickEntry />
         </a-col> -->
-        <!--关注公众号-->
-        <a-col :span="24">
-          <OfficialAccountCard />
-        </a-col>
         <!--更新日志-->
         <a-col :span="24">
           <ChangelogCard />
@@ -66,10 +62,8 @@
   </a-row>
 </template>
 <script setup lang="ts">
-  import { computed } from 'vue';
   import HomeHeader from './home-header.vue';
   import HomeNotice from './home-notice.vue';
-  import OfficialAccountCard from './components/official-account-card.vue';
   import ToBeDoneCard from './components/to-be-done-card/home-to-be-done.vue';
   import ChangelogCard from './components/changelog-card.vue';
   import Category from './components/echarts/category.vue';
@@ -78,9 +72,6 @@
   // import AdModal from './ad-modal.vue';
 
   // 业绩完成百分比
-  const saleTargetPercent = computed(() => {
-    return 75;
-  });
 </script>
 <style lang="less" scoped>
   @import './index.less';
