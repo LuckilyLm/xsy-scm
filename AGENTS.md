@@ -128,6 +128,8 @@ V20  V20__scm_inventory_permissions.sql       W6-1   data-only, t_menu 库存菜
 V21  V21__scm_inventory_movement_append_only.sql W6-1 流水不可改删
 V22  V22__scm_receipt_putaway_warehouse.sql B1 收货双入库生命周期、仓库严格停用与操作日志类型
 V23  V23__scm_warehouse_putaway_permissions.sql B1 data-only，确认入库/仓库启停权限（822/823/824）
+V24  V24__scm_table_column_comments.sql       chore 数据字典补全：15 表 + 323 字段 COMMENT，
+                                                   并覆盖 V5 遗留的上游品牌列注释（data-only）
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
