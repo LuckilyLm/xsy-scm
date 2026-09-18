@@ -35,6 +35,7 @@
           :min="'0.0001'"
           v-model:value="record.plannedQuantity"
           :aria-label="'采购数量 ' + (index + 1)"
+          @blur="normalizeNumber(record, 'plannedQuantity')"
         />
       </template>
       <template v-else-if="column.dataIndex === 'purchasePrice'">
@@ -42,8 +43,10 @@
           string-mode
           :precision="4"
           :min="'0'"
+          :allow-clear="true"
           v-model:value="record.purchasePrice"
           :aria-label="'采购单价 ' + (index + 1)"
+          @blur="normalizeNumber(record, 'purchasePrice')"
         />
       </template>
       <template v-else-if="column.dataIndex === 'allocated'">
@@ -77,6 +80,7 @@
                 :min="'0.0001'"
                 v-model:value="alloc.quantity"
                 aria-label="分配数量"
+                @blur="normalizeNumber(alloc, 'quantity')"
               />
             </template>
             <template v-else-if="column.dataIndex === 'demandStatus'">
@@ -135,6 +139,7 @@ import {
   hasAllocation,
   newAllocation,
   newOrderItem,
+  normalizeTyped,
   quantity,
   unitMismatch,
 } from '../purchase-form-model';
@@ -186,6 +191,21 @@ function asItem(record: unknown): OrderItem {
 
 function removeAllocation(item: OrderItem, index: number) {
   item.allocations = (item.allocations ?? []).filter((_row, i) => i !== index);
+}
+
+/**
+ * 失焦时把输入框里的裸数显示成四位定点（`"2"` → `"2.0000"`）。
+ *
+ * `a-input-number` 只在 blur 之后才按 `precision` 归一（读的是组件内部 `inputValue`），
+ * 而 `props.value` 的 watch 会因为「新值等于当前解析值」而**跳过**回写，
+ * 于是显示值会一直停在 `"2"`。这里直接写模型：不等值才赋值，避免多余渲染。
+ */
+function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice' | 'quantity') {
+  const self = target as Record<string, string | null | undefined>;
+  const normalized = normalizeTyped(self[key]);
+  if (normalized !== self[key]) {
+    self[key] = normalized;
+  }
 }
 
 function onSkuChange(item: OrderItem, value: Id | Id[] | undefined) {

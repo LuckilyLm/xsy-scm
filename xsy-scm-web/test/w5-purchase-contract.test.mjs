@@ -146,11 +146,24 @@ test('order validation rejects duplicate SKU, non-positive quantity and bad pric
   f.items.pop();
   f.items[0].plannedQuantity = '0.0000';
   assert.match(validateOrder(f), /采购数量/);
+  // 用户键入期间 antd 的 `precision` 不生效（见 purchase-form-model 的 typedFixed），
+  // 模型里就是裸数：这里断言「校验时机与提交口径一致」——
+  // 形状合法的短小数按 4 位定点归一后放行，而 `payload` 归一出的正是同一个值。
   f.items[0].plannedQuantity = '1.00';
-  assert.match(validateOrder(f), /采购数量/);
+  assert.equal(validateOrder(f), undefined);
+  assert.equal(payload(f).items[0].quantity, '1.0000');
+  assert.equal(validateOrder(f), undefined);
+  // 真正不合法的形状仍然要被拒（不放宽定点纪律）。
+  for (const bad of ['', '0.0000', '-1', '2.', '.5', 'abc', '1e5', '12345678901234567890']) {
+    f.items[0].plannedQuantity = bad;
+    assert.match(validateOrder(f), /采购数量/, `应收紧 ${JSON.stringify(bad)}`);
+  }
   f.items[0].plannedQuantity = '1.0000';
   f.items[0].purchasePrice = '-1.0000';
   assert.match(validateOrder(f), /采购单价/);
+  // 单价可以留空（未定价）；填了就必须是非负定点数。
+  f.items[0].purchasePrice = '';
+  assert.equal(validateOrder(f), undefined);
   f.items[0].purchasePrice = '0.0000';
   assert.equal(validateOrder(f), undefined);
 });
@@ -161,7 +174,11 @@ test('allocation validation requires demand, positive quantity and demand versio
   assert.match(validateOrder(f), /分配缺少采购需求/);
   f.items[0].allocations = [{demandId: '7', quantity: '0.0000', demandVersion: 0}];
   assert.match(validateOrder(f), /分配数量/);
+  // 分配数量同样按「输入框键入中的裸数」口径归一后再判定形状。
   f.items[0].allocations = [{demandId: '7', quantity: '1.00', demandVersion: 0}];
+  assert.equal(validateOrder(f), undefined);
+  assert.equal(payload(f).items[0].allocations[0].quantity, '1.0000');
+  f.items[0].allocations = [{demandId: '7', quantity: '', demandVersion: 0}];
   assert.match(validateOrder(f), /分配数量/);
   f.items[0].allocations = [{demandId: '7', quantity: '1.0000'}];
   assert.match(validateOrder(f), /需求版本/);
