@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 消息
  *
- * @author luoyi
- * @date 2024/06/22 20:20
  */
 @RestController
 @Tag(name = SwaggerTagConst.Support.MESSAGE)
@@ -28,7 +26,7 @@ public class MessageController extends SupportBaseController {
     @Resource
     private MessageService messageService;
 
-    @Operation(summary = "分页查询我的消息 @luoyi")
+    @Operation(summary = "分页查询我的消息")
     @PostMapping("/message/queryMyMessage")
     public ResponseDTO<PageResult<MessageVO>> query(@RequestBody @Valid MessageQueryForm queryForm) {
         RequestUser user = SmartRequestUtil.getRequestUser();
@@ -42,7 +40,7 @@ public class MessageController extends SupportBaseController {
         return ResponseDTO.ok(messageService.query(queryForm));
     }
 
-    @Operation(summary = "查询未读消息数量 @luoyi")
+    @Operation(summary = "查询未读消息数量")
     @GetMapping("/message/getUnreadCount")
     public ResponseDTO<Long> getUnreadCount() {
         RequestUser user = SmartRequestUtil.getRequestUser();
@@ -52,7 +50,7 @@ public class MessageController extends SupportBaseController {
         return ResponseDTO.ok(messageService.getUnreadCount(user.getUserType(), user.getUserId()));
     }
 
-    @Operation(summary = "更新已读 @luoyi")
+    @Operation(summary = "更新已读")
     @GetMapping("/message/read/{messageId}")
     public ResponseDTO<String> updateReadFlag(@PathVariable Long messageId) {
         RequestUser user = SmartRequestUtil.getRequestUser();

@@ -9,8 +9,6 @@ import net.lab1024.sa.base.common.enumeration.BaseEnum;
 /**
  * 消息类型
  *
- * @author luoyi
- * @date 2024/06/22 20:20
  */
 @Getter
 @AllArgsConstructor

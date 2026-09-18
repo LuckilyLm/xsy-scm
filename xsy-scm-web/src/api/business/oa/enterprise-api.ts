@@ -1,41 +1,36 @@
 /*
  * 企业信息
  *
- * @Author:    开云
- * @Date:      2022-09-03 21:47:28
- * @Wechat:    zhuda1024
- * @Email:     lab1024@163.com
- * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
  */
 import {postRequest, getRequest, postDownload} from '/@/lib/axios';
 
 export const enterpriseApi = {
-    // 新建企业 @author 开云
+    // 新建企业
     create: (param) => {
         return postRequest('/oa/enterprise/create', param);
     },
 
-    // 删除企业 @author 开云
+    // 删除企业
     delete: (enterpriseId) => {
         return getRequest(`/oa/enterprise/delete/${enterpriseId}`);
     },
 
-    // 查询企业详情 @author 开云
+    // 查询企业详情
     detail: (enterpriseId) => {
         return getRequest(`/oa/enterprise/get/${enterpriseId}`);
     },
 
-    // 分页查询企业模块 @author 开云
+    // 分页查询企业模块
     pageQuery: (param) => {
         return postRequest('/oa/enterprise/page/query', param);
     },
 
-    // 导出企业数据excel @author 卓大
+    // 导出企业数据excel
     exportExcel: (param) => {
         return postDownload('/oa/enterprise/exportExcel', param);
     },
 
-    //企业列表查询 含数据范围 @author 开云
+    //企业列表查询 含数据范围
     queryList: (type) => {
         let query = '';
         if (type) {
@@ -44,24 +39,24 @@ export const enterpriseApi = {
         return getRequest(`/oa/enterprise/query/list${query}`);
     },
 
-    // 编辑企业 @author 开云
+    // 编辑企业
     update: (param) => {
         return postRequest('/oa/enterprise/update', param);
     },
-    // 企业全部员工List @author yandy
+    // 企业全部员工List
     employeeList: (param) => {
         return postRequest('/oa/enterprise/employee/list', param);
     },
-    // 分页查询企业员工List @author 卓大
+    // 分页查询企业员工List
     queryPageEmployeeList: (param) => {
         return postRequest('/oa/enterprise/employee/queryPage', param);
     },
-    // 添加员工 @author yandy
+    // 添加员工
     addEmployee: (param) => {
         return postRequest('/oa/enterprise/employee/add', param);
     },
 
-    // 删除员工 @author yandy
+    // 删除员工
     deleteEmployee: (param) => {
         return postRequest('/oa/enterprise/employee/delete', param);
     },

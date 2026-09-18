@@ -1,8 +1,6 @@
 /*
- * @Author: zhuoda
- * @Date: 2021-08-18 16:58:28
  * @LastEditTime: 2021-08-26
- * @LastEditors: zhuoda
+ * @LastEditors: 
  * @Description:
  * @FilePath: /smart-admin/@/types/base.d.ts
  */

@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
  * 定时任务 接口业务管理
  * 如果不需要通过接口管理定时任务 可以删除此类
  *
- * @author huke
- * @date 2024/6/17 20:41
  */
 @ConditionalOnBean(SmartJobAutoConfiguration.class)
 @Service
@@ -278,7 +276,6 @@ public class SmartJobService {
      * 物理删除
      *
      * @return
-     * @author huke
      */
     public synchronized ResponseDTO<String> deleteJob(Integer jobId, RequestUser requestUser) {
         // 删除任务

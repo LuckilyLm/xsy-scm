@@ -1,8 +1,6 @@
 /*
- * @Author: zhuoda
- * @Date: 2021-08-09 17:11:01
  * @LastEditTime: 2021-08-19 17:53:36
- * @LastEditors: zhuoda
+ * @LastEditors: 
  * @Description:
  * @FilePath: /smart-admin/@/store/modules/model/UserTagNav.ts
  */

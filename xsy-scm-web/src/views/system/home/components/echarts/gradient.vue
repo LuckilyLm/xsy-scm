@@ -28,7 +28,7 @@
         },
       },
       legend: {
-        data: ['罗伊', '佩弦', '开云', '清野', '飞叶'],
+        data: ['孙七', '周八', '王五', '吴九', '郑十'],
       },
       grid: {
         left: '3%',
@@ -50,7 +50,7 @@
       ],
       series: [
         {
-          name: '罗伊',
+          name: '孙七',
           type: 'line',
           stack: 'Total',
           smooth: true,
@@ -77,7 +77,7 @@
           data: [140, 232, 101, 264, 90, 340, 250],
         },
         {
-          name: '佩弦',
+          name: '周八',
           type: 'line',
           stack: 'Total',
           smooth: true,
@@ -104,7 +104,7 @@
           data: [120, 282, 111, 234, 220, 340, 310],
         },
         {
-          name: '开云',
+          name: '王五',
           type: 'line',
           stack: 'Total',
           smooth: true,
@@ -131,7 +131,7 @@
           data: [320, 132, 201, 334, 190, 130, 220],
         },
         {
-          name: '清野',
+          name: '吴九',
           type: 'line',
           stack: 'Total',
           smooth: true,
@@ -158,7 +158,7 @@
           data: [220, 402, 231, 134, 190, 230, 120],
         },
         {
-          name: '飞叶',
+          name: '郑十',
           type: 'line',
           stack: 'Total',
           smooth: true,

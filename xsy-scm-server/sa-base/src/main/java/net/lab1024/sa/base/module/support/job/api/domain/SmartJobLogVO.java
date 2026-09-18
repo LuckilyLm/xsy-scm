@@ -8,8 +8,6 @@ import java.time.LocalDateTime;
 /**
  * 定时任务-执行记录 vo
  *
- * @author huke
- * @date 2024/6/17 21:30
  */
 @Data
 public class SmartJobLogVO {

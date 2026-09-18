@@ -1,11 +1,6 @@
 <!--
   * 通知  表单
   * 
-  * @Author:    1024创新实验室-主任：卓大 
-  * @Date:      2022-08-21 19:52:43 
-  * @Wechat:    zhuda1024 
-  * @Email:     lab1024@163.com 
-  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012 
 -->
 <template>
   <a-drawer
@@ -28,7 +23,7 @@
         </a-select>
       </a-form-item>
       <a-form-item label="文号">
-        <a-input v-model:value="formData.documentNumber" placeholder="文号，如：1024创新实验室发〔2022〕字第36号" />
+        <a-input v-model:value="formData.documentNumber" placeholder="文号，如：鲜蔬源〔2026〕字第36号" />
       </a-form-item>
       <a-form-item label="作者" name="author">
         <a-input v-model:value="formData.author" placeholder="请输入作者" />

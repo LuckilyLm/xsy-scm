@@ -1,7 +1,4 @@
 
-/**
- *
- */
 export interface ResponseModel<T> {
     /**
      *

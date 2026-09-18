@@ -39,7 +39,7 @@
       },
       series: [
         {
-          name: '善逸',
+          name: '张三',
           data: [120, 200, 150, 80, 70, 110, 130],
           type: 'bar',
           backgroundStyle: {
@@ -47,7 +47,7 @@
           },
         },
         {
-          name: '胡克',
+          name: '李四',
           data: [100, 80, 120, 77, 52, 22, 190],
           type: 'bar',
           backgroundStyle: {
@@ -55,7 +55,7 @@
           },
         },
         {
-          name: '开云',
+          name: '王五',
           data: [200, 110, 85, 99, 120, 145, 180],
           type: 'bar',
           backgroundStyle: {
@@ -63,7 +63,7 @@
           },
         },
         {
-          name: '初晓',
+          name: '赵六',
           data: [80, 70, 90, 110, 200, 44, 80],
           type: 'bar',
           backgroundStyle: {

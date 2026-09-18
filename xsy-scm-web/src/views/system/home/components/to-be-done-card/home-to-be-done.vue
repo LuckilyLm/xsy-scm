@@ -1,9 +1,6 @@
 <!--
   * 待办工作
   * 
-  * @Author:    1024创新实验室-主任：卓大 
-  * @Date:      2022-09-12 22:34:00
-  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012 
   *
 -->
 <template>

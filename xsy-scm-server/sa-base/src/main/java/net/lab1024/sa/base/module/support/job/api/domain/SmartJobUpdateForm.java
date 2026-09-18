@@ -7,8 +7,6 @@ import lombok.Data;
 /**
  * 定时任务 更新
  *
- * @author huke
- * @date 2024/6/17 21:30
  */
 @Data
 public class SmartJobUpdateForm extends SmartJobAddForm {

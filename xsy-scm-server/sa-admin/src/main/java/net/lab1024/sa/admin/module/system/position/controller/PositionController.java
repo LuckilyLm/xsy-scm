@@ -20,9 +20,6 @@ import java.util.List;
 /**
  * 职务表 Controller
  *
- * @Author kaiyun
- * @Date 2024-06-23 23:31:38
- * @Copyright <a href="https://1024lab.net">1024创新实验室</a>
  */
 
 @RestController
@@ -32,38 +29,38 @@ public class PositionController {
     @Resource
     private PositionService positionService;
 
-    @Operation(summary = "分页查询 @author kaiyun")
+    @Operation(summary = "分页查询")
     @PostMapping("/position/queryPage")
     public ResponseDTO<PageResult<PositionVO>> queryPage(@RequestBody @Valid PositionQueryForm queryForm) {
         return ResponseDTO.ok(positionService.queryPage(queryForm));
     }
 
-    @Operation(summary = "添加 @author kaiyun")
+    @Operation(summary = "添加")
     @PostMapping("/position/add")
     public ResponseDTO<String> add(@RequestBody @Valid PositionAddForm addForm) {
         return positionService.add(addForm);
     }
 
-    @Operation(summary = "更新 @author kaiyun")
+    @Operation(summary = "更新")
     @PostMapping("/position/update")
     public ResponseDTO<String> update(@RequestBody @Valid PositionUpdateForm updateForm) {
         return positionService.update(updateForm);
     }
 
-    @Operation(summary = "批量删除 @author kaiyun")
+    @Operation(summary = "批量删除")
     @PostMapping("/position/batchDelete")
     public ResponseDTO<String> batchDelete(@RequestBody ValidateList<Long> idList) {
         return positionService.batchDelete(idList);
     }
 
-    @Operation(summary = "单个删除 @author kaiyun")
+    @Operation(summary = "单个删除")
     @GetMapping("/position/delete/{positionId}")
     public ResponseDTO<String> batchDelete(@PathVariable Long positionId) {
         return positionService.delete(positionId);
     }
 
 
-    @Operation(summary = "不分页查询 @author kaiyun")
+    @Operation(summary = "不分页查询")
     @GetMapping("/position/queryList")
     public ResponseDTO<List<PositionVO>> queryList() {
         return ResponseDTO.ok(positionService.queryList());

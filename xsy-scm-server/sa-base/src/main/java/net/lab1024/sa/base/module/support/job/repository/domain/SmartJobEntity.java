@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
 /**
  * 定时任务 实体类
  *
- * @author huke
- * @date 2024/6/17 21:30
  */
 @Data
 @TableName("t_smart_job")

@@ -1,18 +1,13 @@
 /*
  *  员工
  *
- * @Author:    1024创新实验室-主任：卓大
- * @Date:      2022-09-03 21:59:15
- * @Wechat:    zhuda1024
- * @Email:     lab1024@163.com
- * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
  */
 
 import { getRequest, postEncryptRequest, postRequest } from '/@/lib/axios';
 
 export const employeeApi = {
   /**
-   * 查询所有员工 @author 卓大
+   * 查询所有员工
    */
   queryAll: () => {
     return getRequest('/employee/queryAll');

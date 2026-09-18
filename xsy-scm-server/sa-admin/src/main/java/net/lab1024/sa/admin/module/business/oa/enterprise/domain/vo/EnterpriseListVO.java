@@ -6,8 +6,6 @@ import lombok.Data;
 /**
  * OA企业模块列表
  *
- * @author lihaifan
- * @date 2022/6/23 14:31
  */
 @Data
 public class EnterpriseListVO {

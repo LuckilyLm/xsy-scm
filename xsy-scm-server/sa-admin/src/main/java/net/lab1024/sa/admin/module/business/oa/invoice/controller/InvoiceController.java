@@ -24,11 +24,6 @@ import java.util.List;
 /**
  * OA发票信息
  *
- * @Author 1024创新实验室: 善逸
- * @Date 2022-06-23 19:32:59
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright  <a href="https://1024lab.net">1024创新实验室</a>
  */
 @Slf4j
 @RestController
@@ -38,21 +33,21 @@ public class InvoiceController {
     @Resource
     private InvoiceService invoiceService;
 
-    @Operation(summary = "分页查询发票信息 @author 善逸")
+    @Operation(summary = "分页查询发票信息")
     @PostMapping("/oa/invoice/page/query")
     @SaCheckPermission("oa:invoice:query")
     public ResponseDTO<PageResult<InvoiceVO>> queryByPage(@RequestBody @Valid InvoiceQueryForm queryForm) {
         return invoiceService.queryByPage(queryForm);
     }
 
-    @Operation(summary = "查询发票信息详情 @author 善逸")
+    @Operation(summary = "查询发票信息详情")
     @GetMapping("/oa/invoice/get/{invoiceId}")
     @SaCheckPermission("oa:invoice:query")
     public ResponseDTO<InvoiceVO> getDetail(@PathVariable Long invoiceId) {
         return invoiceService.getDetail(invoiceId);
     }
 
-    @Operation(summary = "新建发票信息 @author 善逸")
+    @Operation(summary = "新建发票信息")
     @PostMapping("/oa/invoice/create")
     @SaCheckPermission("oa:invoice:add")
     public ResponseDTO<String> createInvoice(@RequestBody @Valid InvoiceAddForm createVO) {
@@ -63,21 +58,21 @@ public class InvoiceController {
     }
 
     @OperateLog
-    @Operation(summary = "编辑发票信息 @author 善逸")
+    @Operation(summary = "编辑发票信息")
     @PostMapping("/oa/invoice/update")
     @SaCheckPermission("oa:invoice:update")
     public ResponseDTO<String> updateInvoice(@RequestBody @Valid InvoiceUpdateForm updateVO) {
         return invoiceService.updateInvoice(updateVO);
     }
 
-    @Operation(summary = "删除发票信息 @author 善逸")
+    @Operation(summary = "删除发票信息")
     @GetMapping("/invoice/delete/{invoiceId}")
     @SaCheckPermission("oa:invoice:delete")
     public ResponseDTO<String> deleteInvoice(@PathVariable Long invoiceId) {
         return invoiceService.deleteInvoice(invoiceId);
     }
 
-    @Operation(summary = "查询列表 @author lidoudou")
+    @Operation(summary = "查询列表")
     @GetMapping("/oa/invoice/query/list/{enterpriseId}")
     @SaCheckPermission("oa:invoice:query")
     public ResponseDTO<List<InvoiceVO>> queryList(@PathVariable Long enterpriseId) {

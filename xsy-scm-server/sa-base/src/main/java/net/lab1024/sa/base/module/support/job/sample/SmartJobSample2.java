@@ -11,8 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 定时任务 示例2
  *
- * @author huke
- * @date 2024/6/17 21:30
  */
 @Slf4j
 @Service

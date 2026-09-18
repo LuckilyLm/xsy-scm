@@ -14,8 +14,6 @@ import java.util.List;
 /**
  * 定时任务 dao
  *
- * @author huke
- * @date 2024/6/17 21:30
  */
 @Mapper
 public interface SmartJobDao extends BaseMapper<SmartJobEntity> {

@@ -10,8 +10,6 @@ import java.time.LocalDate;
 /**
  * 定时任务-执行记录 分页查询
  *
- * @author huke
- * @date 2024/6/17 20:50
  */
 @Data
 public class SmartJobLogQueryForm extends PageParam {

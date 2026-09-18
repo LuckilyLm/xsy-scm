@@ -17,11 +17,6 @@ import java.util.List;
 /**
  * 登录日志
  *
- * @Author 1024创新实验室-主任: 卓大
- * @Date 2022/07/22 19:46:23
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright  <a href="https://1024lab.net">1024创新实验室</a>
  */
 @Service
 @Slf4j
@@ -31,7 +26,6 @@ public class LoginLogService {
     private LoginLogDao loginLogDao;
 
     /**
-     * @author 卓大
      * @description 分页查询
      */
     public ResponseDTO<PageResult<LoginLogVO>> queryByPage(LoginLogQueryForm queryForm) {
@@ -42,7 +36,6 @@ public class LoginLogService {
     }
 
     /**
-     * @author 卓大
      * @description 添加
      */
     public void log(LoginLogEntity loginLogEntity) {
@@ -57,7 +50,6 @@ public class LoginLogService {
     /**
      * 查询上一个登录记录
      *
-     * @author 卓大
      * @description 查询上一个登录记录
      */
     public LoginLogVO queryLastByUserId(Long userId, UserTypeEnum userTypeEnum, LoginLogResultEnum loginLogResultEnum) {

@@ -20,11 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 登录日志
  *
- * @Author 1024创新实验室-主任: 卓大
- * @Date 2022/07/22 19:46:23
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright  <a href="https://1024lab.net">1024创新实验室</a>
  */
 @RestController
 @Tag(name = SwaggerTagConst.Support.LOGIN_LOG)
@@ -33,14 +28,14 @@ public class AdminLoginLogController extends SupportBaseController {
     @Resource
     private LoginLogService loginLogService;
 
-    @Operation(summary = "分页查询 @author 卓大")
+    @Operation(summary = "分页查询")
     @PostMapping("/loginLog/page/query")
     @SaCheckPermission("support:loginLog:query")
     public ResponseDTO<PageResult<LoginLogVO>> queryByPage(@RequestBody LoginLogQueryForm queryForm) {
         return loginLogService.queryByPage(queryForm);
     }
 
-    @Operation(summary = "分页查询当前登录人信息 @author 善逸")
+    @Operation(summary = "分页查询当前登录人信息")
     @PostMapping("/loginLog/page/query/login")
     public ResponseDTO<PageResult<LoginLogVO>> queryByPageLogin(@RequestBody LoginLogQueryForm queryForm) {
         RequestUser requestUser = SmartRequestUtil.getRequestUser();

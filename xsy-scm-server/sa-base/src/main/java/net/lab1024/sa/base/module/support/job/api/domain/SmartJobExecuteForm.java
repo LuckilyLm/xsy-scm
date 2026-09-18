@@ -8,8 +8,6 @@ import org.hibernate.validator.constraints.Length;
 /**
  * 定时任务-手动执行
  *
- * @author huke
- * @date 2024/6/18 20:30
  */
 @Data
 public class SmartJobExecuteForm {

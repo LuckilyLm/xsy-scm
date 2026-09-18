@@ -36,11 +36,6 @@ import java.util.Map;
  * 1、支持直接发送 <br/>
  * 2、支持使用邮件模板发送
  *
- * @Author 1024创新实验室-创始人兼主任:卓大
- * @Date 2024/8/5
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright <a href="https://1024lab.net">1024创新实验室</a> ，Since 2012
  */
 @Slf4j
 @Component

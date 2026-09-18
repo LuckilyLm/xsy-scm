@@ -12,11 +12,6 @@ import java.io.IOException;
 /**
  * 字典值为 int类型的 反序列化
  *
- * @Author 1024创新实验室: 卓大
- * @Date 2026-04-05 22:17:53
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright <a href="https://1024lab.net">1024创新实验室</a>
  */
 @Slf4j
 public class DictDataIntDeserializer extends JsonDeserializer<Integer> {

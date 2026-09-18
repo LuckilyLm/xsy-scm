@@ -37,11 +37,6 @@ import java.util.Optional;
  *  location /v3/api-docs/ {
  *          proxy_pass  http://127.0.0.1:1024/v3/api-docs/;
  * }
- * @Author 1024创新实验室-主任: 卓大
- * @Date 2020-03-25 22:54:46
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright <a href="https://1024lab.net">1024创新实验室</a>
  */
 @Slf4j
 @Configuration
@@ -68,12 +63,11 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .components(components())
                 .info(new Info()
-                        .title("SmartAdmin 3.X 接口文档")
-                        .contact(new Contact().name("1024创新实验室").email("lab1024@163.com").url("https://1024lab.net"))
-                        .version("v3.X")
-                        .description("<font color=\"#DC143C\">**以「高质量代码」为核心，「简洁、高效、安全」**</font>基于 SpringBoot + Sa-Token + Mybatis-Plus 和 Vue3 + Vite5 + Ant Design (同时支持JavaScript和TypeScript双版本) 的快速开发平台。" +
-                                "<br/><font color=\"#DC143C\">**国内首个满足《网络安全》、《数据安全》、三级等保**</font>， 支持登录限制、支持国产接口加解密等安全、支持数据加解密等一系列安全体系的开源项目。" +
-                                "<br/><font color=\"#DC143C\">**我们开源一套漂亮的代码和一套整洁的代码规范**</font>，让大家在这浮躁的代码世界里感受到一股把代码写好的清流！同时又让开发者节省大量的时间，减少加班，快乐工作，保持谦逊，保持学习，热爱代码，更热爱生活！")
+                        .title("鲜蔬源智链 接口文档")
+                        .contact(new Contact().name("鲜蔬源智慧供应链管理平台"))
+                        .version("v2.0")
+                        .description("鲜蔬源智慧供应链管理平台后端接口文档，覆盖商品、客户、供应商、价格、销售订单、采购、收货、仓储等全链路业务。" +
+                                "<br/>支持客户专属定价、实际重量收货、订单全流程追溯，并提供登录限制、接口加解密等安全能力。")
                 )
                 .addSecurityItem(new SecurityRequirement().addList(RequestHeaderConst.TOKEN));
     }

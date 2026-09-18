@@ -18,11 +18,6 @@ import java.util.Set;
 /**
  * 角色 员工 dao
  *
- * @Author 1024创新实验室: 罗伊
- * @Date 2022-03-07 18:54:42
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright  <a href="https://1024lab.net">1024创新实验室</a>
  */
 @Mapper
 public interface RoleEmployeeDao extends BaseMapper<RoleEmployeeEntity> {
@@ -52,15 +47,10 @@ public interface RoleEmployeeDao extends BaseMapper<RoleEmployeeEntity> {
      */
     Set<Long> selectEmployeeIdByRoleIdList(@Param("roleIdList") List<Long> roleIdList);
 
-    /**
-     *
-     */
     List<EmployeeVO> selectRoleEmployeeByName(Page page, @Param("queryForm") RoleEmployeeQueryForm roleEmployeeQueryForm);
 
-    /**
-     *
-     */
     List<EmployeeVO> selectEmployeeByRoleId(@Param("roleId") Long roleId);
+
     /**
      * 根据员工信息删除
      */

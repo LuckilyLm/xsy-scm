@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import lombok.Data;
+import net.lab1024.sa.admin.test.PgITDatabase;
 import net.lab1024.sa.base.config.MybatisPlusConfig;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
@@ -29,9 +30,9 @@ class ScmOptimisticLockTest {
     @Test
     void staleUpdateIsRejectedAndPersistedVersionAdvances() throws Exception {
         PGSimpleDataSource source = new PGSimpleDataSource();
-        source.setURL("jdbc:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy_v2");
-        source.setUser(System.getenv().getOrDefault("XSY_V2_DB_USERNAME", "xsy_scm_app"));
-        source.setPassword(System.getenv("XSY_V2_DB_PASSWORD"));
+        source.setURL(PgITDatabase.url());
+        source.setUser(PgITDatabase.user());
+        source.setPassword(PgITDatabase.password());
         MybatisConfiguration config = new MybatisConfiguration();
         config.setEnvironment(new Environment("g1", new JdbcTransactionFactory(), source));
         config.addInterceptor(new MybatisPlusConfig().paginationInterceptor());

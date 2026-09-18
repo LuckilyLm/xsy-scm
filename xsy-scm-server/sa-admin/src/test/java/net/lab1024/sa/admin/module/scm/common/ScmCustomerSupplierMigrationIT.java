@@ -1,5 +1,6 @@
 package net.lab1024.sa.admin.module.scm.common;
 
+import net.lab1024.sa.admin.test.PgITDatabase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 
@@ -27,14 +28,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ScmCustomerSupplierMigrationIT {
 
-    private static final String URL = "jdbc:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy_v2";
+    private static final String URL = PgITDatabase.url();
 
     private static String user() {
-        return System.getenv().getOrDefault("XSY_V2_DB_USERNAME", "xsy_scm_app");
+        return PgITDatabase.user();
     }
 
     private static String password() {
-        return System.getenv("XSY_V2_DB_PASSWORD");
+        return PgITDatabase.password();
     }
 
     private static long scalar(Statement statement, String sql) throws SQLException {

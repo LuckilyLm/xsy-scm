@@ -3,8 +3,6 @@ package net.lab1024.sa.base.module.support.job.constant;
 /**
  * smart job 常量
  *
- * @author huke
- * @date 2024/6/19 20:25
  */
 public class SmartJobConst {
 

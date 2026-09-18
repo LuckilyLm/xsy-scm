@@ -31,11 +31,6 @@ import java.io.IOException;
 /**
  * 文件服务
  *
- * @Author 1024创新实验室: 罗伊
- * @Date 2019年10月11日 15:34:47
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright <a href="https://1024lab.net">1024创新实验室</a>
  */
 @RestController
 @Tag(name = SwaggerTagConst.Support.FILE)
@@ -53,21 +48,21 @@ public class FileController extends SupportBaseController {
     }
 
 
-    @Operation(summary = "文件上传 @author 胡克")
+    @Operation(summary = "文件上传")
     @PostMapping("/file/upload")
     public ResponseDTO<FileUploadVO> upload(@RequestParam MultipartFile file, @RequestParam Integer folder) {
         RequestUser requestUser = SmartRequestUtil.getRequestUser();
         return fileService.fileUpload(file, folder, requestUser);
     }
 
-    @Operation(summary = "获取文件URL：根据fileKey @author 胡克")
+    @Operation(summary = "获取文件URL：根据fileKey")
     @GetMapping("/file/getFileUrl")
     public ResponseDTO<String> getUrl(@RequestParam String fileKey) {
         fileAccessGuard.checkRead(fileKey, SmartRequestUtil.getRequestUser());
         return fileService.getFileUrl(fileKey);
     }
 
-    @Operation(summary = "下载文件流（根据fileKey） @author 胡克")
+    @Operation(summary = "下载文件流（根据fileKey）")
     @GetMapping("/file/downLoad")
     public void downLoad(@RequestParam String fileKey, HttpServletRequest request, HttpServletResponse response) throws IOException {
         fileAccessGuard.checkRead(fileKey, SmartRequestUtil.getRequestUser());

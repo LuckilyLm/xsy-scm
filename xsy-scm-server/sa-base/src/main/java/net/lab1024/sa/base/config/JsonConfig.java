@@ -23,11 +23,6 @@ import java.time.format.DateTimeParseException;
 /**
  * json 序列化配置
  *
- * @Author 1024创新实验室-主任: 卓大
- * @Date 2017-11-28 15:21:10
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright <a href="https://1024lab.net">1024创新实验室</a>
  */
 @Configuration
 public class JsonConfig {
@@ -50,7 +45,6 @@ public class JsonConfig {
     /**
      * string 转为 LocalDateTime 配置类
      *
-     * @author 卓大
      */
     @Configuration
     public static class StringToLocalDateTime implements Converter<String, LocalDateTime> {
@@ -74,7 +68,6 @@ public class JsonConfig {
     /**
      * string 转为 LocalDate 配置类
      *
-     * @author 卓大
      */
     @Configuration
     public static class StringToLocalDate implements Converter<String, LocalDate> {

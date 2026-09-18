@@ -17,11 +17,6 @@ import java.util.List;
 /**
  *  操作日志
  *
- * @Author 1024创新实验室: 罗伊
- * @Date 2021-12-08 20:48:52
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright  <a href="https://1024lab.net">1024创新实验室</a>
  */
 @Service
 public class OperateLogService {
@@ -30,7 +25,6 @@ public class OperateLogService {
     private OperateLogDao operateLogDao;
 
     /**
-     * @author 罗伊
      * @description 分页查询
      */
     public ResponseDTO<PageResult<OperateLogVO>> queryByPage(OperateLogQueryForm queryForm) {

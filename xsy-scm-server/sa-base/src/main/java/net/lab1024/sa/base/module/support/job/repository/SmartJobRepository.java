@@ -9,8 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * job 持久化业务
  *
- * @author huke
- * @date 2024/6/22 22:28
  */
 @Service
 public class SmartJobRepository {

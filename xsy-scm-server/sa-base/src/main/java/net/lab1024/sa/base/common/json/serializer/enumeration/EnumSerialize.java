@@ -12,8 +12,6 @@ import java.lang.annotation.Target;
 /**
  * 枚举类 序列化 注解
  *
- * @author huke
- * @date 2024年6月29日
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)

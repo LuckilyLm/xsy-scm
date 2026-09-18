@@ -1,9 +1,7 @@
 /*
  * @Description: 分页查询你参数
- * @Author: zhuoda
- * @Date: 2021-08-12
  * @LastEditTime: 2021-08-14
- * @LastEditors: zhuoda
+ * @LastEditors: 
  */
 import { SortItemModel } from './sort-item-model';
 

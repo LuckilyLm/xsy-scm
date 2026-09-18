@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 后管 消息路由
  *
- * @author: 卓大
- * @date: 2025/04/09 20:55
  */
 @Tag(name = AdminSwaggerTagConst.System.SYSTEM_MESSAGE)
 @RestController
@@ -29,7 +27,7 @@ public class AdminMessageController {
     @Autowired
     private MessageService messageService;
 
-    @Operation(summary = "通知消息-新建  @author 卓大")
+    @Operation(summary = "通知消息-新建")
     @PostMapping("/message/sendMessages")
     @SaCheckPermission("system:message:send")
     public ResponseDTO<String> sendMessages(@RequestBody @Valid ValidateList<MessageSendForm> messageList) {
@@ -37,14 +35,14 @@ public class AdminMessageController {
         return ResponseDTO.ok();
     }
 
-    @Operation(summary = "通知消息-分页查询   @author 卓大")
+    @Operation(summary = "通知消息-分页查询")
     @PostMapping("/message/query")
     @SaCheckPermission("system:message:query")
     public ResponseDTO<PageResult<MessageVO>> query(@RequestBody @Valid MessageQueryForm queryForm) {
         return ResponseDTO.ok(messageService.query(queryForm));
     }
 
-    @Operation(summary = "通知消息-删除   @author 卓大")
+    @Operation(summary = "通知消息-删除")
     @GetMapping("/message/delete/{messageId}")
     @SaCheckPermission("system:message:delete")
     public ResponseDTO<String> delete(@PathVariable Long messageId) {

@@ -12,8 +12,6 @@ import static net.lab1024.sa.base.common.constant.StringConst.COLON;
 /**
  * 自定义 RedisCacheManager，支持在 cacheName 中通过 '#' 指定 TTL（过期时间）。
  *
- * @Author CoderKK
- * @Date 2025-08-15 13:01:01
  * <p>
  * 支持格式：{@code cacheName#ttl}，其中 ttl 支持 Spring 的 Duration 格式。
  * 特殊值：{@code -1} 表示永久缓存（永不过期）。

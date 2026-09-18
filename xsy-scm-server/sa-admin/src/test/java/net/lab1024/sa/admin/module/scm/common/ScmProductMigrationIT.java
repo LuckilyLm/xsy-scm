@@ -1,5 +1,6 @@
 package net.lab1024.sa.admin.module.scm.common;
 
+import net.lab1024.sa.admin.test.PgITDatabase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import java.sql.DriverManager;
@@ -8,9 +9,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmProductMigrationIT {
     @Test
     void migrationsApplyAndValidateWithoutChangingLegacySchema() throws Exception {
-        String url = "jdbc:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy_v2";
-        String user = System.getenv().getOrDefault("XSY_V2_DB_USERNAME", "xsy_scm_app");
-        String password = System.getenv("XSY_V2_DB_PASSWORD");
+        String url = PgITDatabase.url();
+        String user = PgITDatabase.user();
+        String password = PgITDatabase.password();
         Flyway flyway = Flyway.configure().dataSource(url,user,password)
                 .schemas("xsy_v2").defaultSchema("xsy_v2").cleanDisabled(true)
                 .placeholderReplacement(false).locations("classpath:db/migration").load();

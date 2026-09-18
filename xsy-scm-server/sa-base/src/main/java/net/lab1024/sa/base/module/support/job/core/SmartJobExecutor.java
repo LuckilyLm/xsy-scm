@@ -19,8 +19,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * 定时任务 执行器
  *
- * @author huke
- * @date 2024/6/17 21:30
  */
 @Slf4j
 public class SmartJobExecutor implements Runnable {

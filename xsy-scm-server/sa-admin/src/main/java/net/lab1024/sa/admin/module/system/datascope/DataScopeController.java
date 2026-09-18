@@ -15,11 +15,6 @@ import java.util.List;
 /**
  * 查询支持的数据范围类型
  *
- * @Author 1024创新实验室: 罗伊
- * @Date 2022-03-18 20:59:17
- * @Wechat zhuoda1024
- * @Email lab1024@163.com
- * @Copyright <a href="https://1024lab.net">1024创新实验室</a>
  */
 @RestController
 @Tag(name = AdminSwaggerTagConst.System.SYSTEM_DATA_SCOPE)
@@ -28,7 +23,7 @@ public class DataScopeController {
     @Resource
     private DataScopeService dataScopeService;
 
-    @Operation(summary = "获取当前系统所配置的所有数据范围 @author 罗伊")
+    @Operation(summary = "获取当前系统所配置的所有数据范围")
     @GetMapping("/dataScope/list")
     public ResponseDTO<List<DataScopeAndViewTypeVO>> dataScopeList() {
         return dataScopeService.dataScopeList();
