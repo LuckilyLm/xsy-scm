@@ -54,9 +54,7 @@ export const useAppConfigStore = defineStore({
   }),
   actions: {
     reset() {
-      for (const k in appDefaultConfig) {
-        this[k] = appDefaultConfig[k];
-      }
+      this.$patch({ ...appDefaultConfig });
     },
     showHelpDoc() {
       this.helpDocExpandFlag = true;

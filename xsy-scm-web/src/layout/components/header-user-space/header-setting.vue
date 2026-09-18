@@ -177,9 +177,7 @@
   }
 
   function reset() {
-    for (const k in appDefaultConfig) {
-      formState[k] = appDefaultConfig[k];
-    }
+    Object.assign(formState, appDefaultConfig);
     appConfigStore.reset();
   }
 

@@ -7,7 +7,9 @@
  * @Email:     lab1024@163.com
  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
  */
-export const appDefaultConfig = {
+import type { AppConfig } from '/@/types/config';
+
+export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
   // 默认配置版本号：只要本文件的默认值发生变更，就把它 +1，
   // 已有浏览器里 localStorage 缓存的旧配置会被自动迁移到新默认值，
   // 否则老用户永远停留在旧样式上（详见 store/modules/system/app-config.ts）。
