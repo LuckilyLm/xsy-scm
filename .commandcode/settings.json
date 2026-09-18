@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(mvn:*)",
+      "Shell(npm:*)",
+      "powershell",
+      "Shell(npx playwright test e2e/scm-inventory.spec.ts)",
+      "Shell(python -m unittest tools/test_verification.py)",
+      "Shell(npx playwright test e2e/smartadmin-native.spec.ts)",
+      "Shell(python -m unittest test_verification.py)",
+      "Shell(npx playwright test e2e/scm-order.spec.ts)",
+      "Shell(npx playwright test e2e/scm-purchase.spec.ts)",
+      "Shell(python -m py_compile tools/verify.py tools/w1_e2e_accounts.py tools/w2_e2e_accounts.py tools/w3_e2e_accounts.py tools/w4_e2e_accounts.py tools/w5_e2e_accounts.py tools/w6_e2e_accounts.py)",
+      "Shell(git:*)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

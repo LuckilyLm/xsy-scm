@@ -1,0 +1,2 @@
+- Prefers implementation tasks to be closed end-to-end: fix remaining issues, run backend/frontend/E2E/full gates, update project documentation, and clean up the local runtime afterward. Confidence: 0.9
+- Wants verification results reported with concrete evidence and exact counts/exit codes, explicitly distinguishing genuine failures from environment-driven skips or incomplete checks rather than overstating success. Confidence: 0.95
