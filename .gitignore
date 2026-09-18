@@ -36,3 +36,6 @@ local-environment-info.txt
 **/playwright-report/
 **/playwright/.auth/
 **/.runtime/
+
+# Local deployment assets; production deployment files are maintained outside Git.
+/deploy/
