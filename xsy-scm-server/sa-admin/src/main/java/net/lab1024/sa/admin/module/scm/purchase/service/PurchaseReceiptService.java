@@ -27,6 +27,7 @@ import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderStateMachin
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderValidator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptQuantityCalculator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
+import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
 import net.lab1024.sa.base.module.support.config.ConfigService;
 import net.lab1024.sa.base.module.support.config.domain.ConfigVO;
 import org.springframework.stereotype.Service;
@@ -74,8 +75,10 @@ import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCod
  * 全库只有本类同时持有「收货单」与「采购行」两把锁，因此与 `order.create`
  * （需求 → 采购单 → 采购行）不构成环。
  *
- * <p><b>W5 零库存</b>：`confirm` 的最后一步（§4.3 第 15 步）在 W6 才调用
- * `PurchaseInventoryContract.postInbound(...)`；W5 **没有调用点**（G-04）。
+ * <p><b>W6 库存接线</b>：{@code confirm} 的最后一步（§4.3 第 15 步）调用
+ * {@link PurchaseInventoryContract#postInbound}，**在同一个事务内**。
+ * 本类只依赖 W5 已定义的接口，**不 import inventory 模块任何类** ——
+ * purchase → inventory 的编译期依赖为零，真实实现由 Spring 在装配期注入。
  */
 @Service
 @RequiredArgsConstructor
@@ -100,6 +103,12 @@ public class PurchaseReceiptService {
     private final PurchaseQueryService queryService;
 
     private final ConfigService configService;
+
+    /**
+     * 库存契约（W6 接线）。运行时注入的是 {@code inventory.support.PurchaseInventoryContractImpl}；
+     * W5 期间容器里没有该类型的 Bean，本字段是 W6 新增的唯一依赖。
+     */
+    private final PurchaseInventoryContract purchaseInventoryContract;
 
     // ------------------------------------------------------------------
     // receipt.create
@@ -232,6 +241,9 @@ public class PurchaseReceiptService {
 
         List<Map<String, Object>> beforeItems = new ArrayList<>(receiptItems.size());
         List<Map<String, Object>> afterItems = new ArrayList<>(receiptItems.size());
+        // W6：本行入库事实的最小元组（行 / 采购行 / 有效数量）。**循环内只收集，不调用契约** ——
+        // 事实装配必须发生在收货单 CONFIRMED 落库之后（occurredAt/operator 取自那一刻的冻结事实）。
+        List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
 
         for (PurchaseReceiptItemEntity line : receiptItems) {
             PurchaseReceiptConfirmForm.Item input = requested.get(line.getId());
@@ -304,6 +316,9 @@ public class PurchaseReceiptService {
             afterLine.put("over", PurchaseSnapshotFactory.fixed(over));
             afterLine.put("difference", PurchaseSnapshotFactory.fixed(difference));
             afterItems.add(afterLine);
+
+            // W6：收集入库事实元组（不在此处调用契约，见 inboundLines 声明处的说明）
+            inboundLines.add(new InboundLine(line, orderItem, effective));
         }
 
         // T7：全部活动行收齐 → RECEIVED，否则 PARTIALLY_RECEIVED
@@ -335,7 +350,10 @@ public class PurchaseReceiptService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.RECEIPT_CONFIRM, order.getId(), receipt.getId(),
                 null, before, after));
-        // §4.3 第 15 步（W6）：PurchaseInventoryContract.postInbound(...) —— W5 零调用点
+        // §4.3 第 15 步（W6）：库存入库 —— 与采购侧写入同事务。
+        // 位置固定：操作日志之后、幂等 complete 之前。幂等 complete 落在库存写入之后，
+        // 保证「重放返回的结果」= 库存已写入的成功结果。
+        postInbound(order, receipt, inboundLines);
 
         PurchaseReceiptVO result = queryService.receiptDetail(receipt.getId());
         idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
@@ -403,6 +421,86 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_RECEIPT_ITEM_INCOMPLETE);
         }
         return requested;
+    }
+
+    /**
+     * §4.3 第 15 步（W6）：把本次确认的收货行交给库存域入库。
+     *
+     * <p><b>事实装配的取值纪律（Q13-附）</b>：{@code occurredAt} / {@code operator} 一律取
+     * **已落库的收货确认事实**（{@code receipt.getConfirmedAt()} / {@code receipt.getOperator()}），
+     * 而不是在库存侧现取 {@code now()} 或 ambient operator。因此本方法必须在
+     * 「收货单 → CONFIRMED 落库」之后调用（调用点见 {@code confirm}）。
+     *
+     * <p><b>锁序（§8.1 / §8.4）</b>：余额锁是事务里最后获取的锁，且多把余额锁之间必须按
+     * {@code (warehouseId, skuId)} **升序**获取 —— 任意两个并发 confirm 的加锁顺序因此一致，
+     * 这是防死锁的关键，也是「排序发生在调用方而不是实现侧」的原因
+     * （实现侧内部缓冲会把事务状态留在契约实现里）。
+     *
+     * <p><b>失败传播</b>：库存写入抛出的任何异常都会冒泡出去，使整个 confirm 回滚 ——
+     * {@code received_quantity} 累计、对账快照、称重记录、采购单状态、收货单状态、操作日志、
+     * 幂等记录全部不落库。用户视角 = 「这次收货确认失败了」，重试安全（幂等 claim 未提交）。
+     */
+    private void postInbound(PurchaseOrderEntity order, PurchaseReceiptEntity receipt,
+                             List<InboundLine> lines) {
+        if (lines.isEmpty()) {
+            // confirm 要求请求行 == 活动行且非空（40998），因此这里只是防御性短路
+            return;
+        }
+        List<PurchaseInventoryContract.InboundFact> facts = lines.stream()
+                .map(line -> new PurchaseInventoryContract.InboundFact(
+                        order.getId(),
+                        receipt.getId(),
+                        line.line().getId(),
+                        order.getWarehouseId(),
+                        line.line().getSkuId(),
+                        receipt.getWarehouseCodeSnapshot(),
+                        receipt.getWarehouseNameSnapshot(),
+                        line.line().getSkuCodeSnapshot(),
+                        line.line().getSkuNameSnapshot(),
+                        // 审计提醒（Legacy Audit §7.3）：单位统一取 purchase_unit_snapshot，
+                        // **不得**用 confirm 循环里的 weightUnit（标品时为 null）
+                        line.orderItem().getPurchaseUnitSnapshot(),
+                        line.effective(),
+                        line.orderItem().getPurchasePrice(),
+                        PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE + ":" + line.line().getId(),
+                        receipt.getConfirmedAt(),
+                        receipt.getOperator()))
+                .toList();
+
+        facts.stream()
+                .sorted(inboundLockOrder())
+                .forEach(purchaseInventoryContract::postInbound);
+    }
+
+    /**
+     * 余额加锁顺序（W6 §8.1 / §8.4）：按 {@code (warehouseId, skuId)} 字典序升序。
+     *
+     * <p><b>为什么必须排好序再逐条调用</b>：库存余额锁是整个事务里**最后**获取的锁。
+     * 如果两个并发事务各自按「采购单行的自然顺序」去锁余额，就可能出现
+     * A 先锁 {@code (w1,k1)} 再锁 {@code (w2,k2)}、B 先锁 {@code (w2,k2)} 再锁 {@code (w1,k1)} ——
+     * 加锁方向相反即形成等待环，PostgreSQL 只能靠死锁检测牺牲其中一个事务
+     * （表现为「偶发的收货失败」，最难排查的一类缺陷）。统一升序后任意两个事务的
+     * 加锁方向一致，环不可能形成。
+     *
+     * <p><b>为什么抽成具名方法而不是内联 lambda</b>：这条纪律的正确性由单测
+     * {@code PurchaseInboundLockOrderTest} 锁住，而内联 lambda 无法被直接断言 ——
+     * 「不可测的纪律」等于「没有纪律」。
+     */
+    static Comparator<PurchaseInventoryContract.InboundFact> inboundLockOrder() {
+        return Comparator.comparing(PurchaseInventoryContract.InboundFact::warehouseId)
+                .thenComparing(PurchaseInventoryContract.InboundFact::skuId);
+    }
+
+    /**
+     * 一行入库事实的最小元组（W6 §6.3）。
+     *
+     * <p>刻意**不**在收货循环里直接装配 {@code InboundFact}：那时 {@code receipt} 还没落库成
+     * CONFIRMED，{@code confirmedAt} / {@code operator} 仍是 null —— 用它装配出来的流水
+     * 会把「发生时刻」写成 null，或者被迫在库存侧补一个 {@code now()}。
+     */
+    private record InboundLine(PurchaseReceiptItemEntity line,
+                              PurchaseOrderItemEntity orderItem,
+                              BigDecimal effective) {
     }
 
     private void appendWeighingRecord(Long receiptItemId, BigDecimal actualWeight,

@@ -1,5 +1,6 @@
 package net.lab1024.sa.admin.config;
 
+import net.lab1024.sa.admin.module.scm.common.json.ScmOffsetDateTimeDeserializer;
 import net.lab1024.sa.admin.module.scm.common.json.ScmOffsetDateTimeSerializer;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -32,15 +33,22 @@ import java.time.OffsetDateTime;
 public class ScmJsonConfig {
 
     /**
-     * 注册 SCM 的 {@link OffsetDateTime} 序列化器。
+     * 注册 SCM 的 {@link OffsetDateTime} 序列化器与反序列化器。
      *
      * <p>Spring Boot 会把容器里所有 {@link Jackson2ObjectMapperBuilderCustomizer}
      * 依次应用到同一个 {@code Jackson2ObjectMapperBuilder} 上，
      * 因此这里注册的 {@code serializerByType} 与底座 {@code JsonConfig} 的注册互不冲突，
      * 只补上底座遗漏的那一种类型。
+     *
+     * <p><b>反序列化器是必需的对称件</b>（2026-09-18 补齐）：只注册序列化器会让
+     * 「API 返回什么就能送回来什么」这条往返契约断掉，而幂等重放正是靠它把库里的 JSON
+     * 还原成 VO —— 缺了它，所有含 {@code OffsetDateTime} 的写命令在重放时都会抛异常。
+     * 详见 {@link ScmOffsetDateTimeDeserializer} 的类注释。
      */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer scmOffsetDateTimeCustomizer() {
-        return builder -> builder.serializerByType(OffsetDateTime.class, new ScmOffsetDateTimeSerializer());
+        return builder -> builder
+                .serializerByType(OffsetDateTime.class, new ScmOffsetDateTimeSerializer())
+                .deserializerByType(OffsetDateTime.class, new ScmOffsetDateTimeDeserializer());
     }
 }

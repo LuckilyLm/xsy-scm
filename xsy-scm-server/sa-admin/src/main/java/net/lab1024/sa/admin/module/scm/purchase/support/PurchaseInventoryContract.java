@@ -1,16 +1,23 @@
 package net.lab1024.sa.admin.module.scm.purchase.support;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 /**
- * Future integration only: W5 neither implements nor calls inventory mutations.
+ * W5 定义、W6 实现的库存契约。
  *
- * <p>W6 (Inventory) is expected to implement this contract. The single call site will be
- * {@code PurchaseReceiptService.confirm(...)}, inside the same transaction, immediately after
- * the purchase-side writes. W5 ships {@link NoOpPurchaseInventoryContract} and never invokes
- * any method, so W5 收货确认 does not create inventory facts.
+ * <p>W5 只定义契约并提供一个**不注册为 Bean**的 {@link NoOpPurchaseInventoryContract}，
+ * 因此 W5 的收货确认**不产生任何库存事实**。W6-1 交付真实实现
+ * （{@code inventory.support.PurchaseInventoryContractImpl}），
+ * 唯一调用点是 {@code PurchaseReceiptService.confirm(...)} 内、**同一个事务**里、
+ * 采购侧全部写入之后（§4.3 第 15 步）。
  *
- * <p>设计依据：W5 Target Design §8.2（契约定义）+ §8.5（Q5 修订后的 W6 bootstrap 口径）。
+ * <p><b>编译期依赖方向</b>：{@code purchase} 侧只依赖本接口，**不 import inventory 模块任何类**；
+ * {@code inventory} 侧实现本接口（因此 inventory → purchase 仅限本契约类型）。
+ * Spring 在装配期完成接线，purchase → inventory 的编译期依赖为零。
+ *
+ * <p>设计依据：W5 Target Design §8.2（契约定义）+ §8.5（Q5 修订后的 W6 bootstrap 口径）；
+ * W6 Target Design §6（接线）+ Q13-附（{@code occurredAt} / {@code operator} 契约演进）。
  */
 public interface PurchaseInventoryContract {
 
@@ -44,6 +51,12 @@ public interface PurchaseInventoryContract {
      * @param quantity        有效数量（{@code received_quantity}）
      * @param unitCost        采购单价快照（来自 {@code purchase_order_item.purchase_price}）
      * @param idempotencyKey  W6 侧防重键
+     * @param occurredAt      **W6 contract evolution（Q13-附）**：业务发生时刻，必须传
+     *                        {@code receipt.confirmed_at}。库存流水以此作为 {@code occurred_at}，
+     *                        与 backfill 回放的历史流水保持同一时间口径 ——
+     *                        禁止库存侧用 {@code OffsetDateTime.now()} 替代。
+     * @param operator        **W6 contract evolution（Q13-附）**：操作者，必须传
+     *                        {@code receipt.operator}。禁止库存侧用 ambient operator 替代。
      */
     record InboundFact(
             Long purchaseOrderId,
@@ -58,22 +71,30 @@ public interface PurchaseInventoryContract {
             String unit,
             BigDecimal quantity,
             BigDecimal unitCost,
-            String idempotencyKey) {
+            String idempotencyKey,
+            OffsetDateTime occurredAt,
+            String operator) {
     }
 
     /**
      * 可用量探测。
      *
-     * <p><b>返回 {@code null} 表示「库存能力未启用」</b>，必须与「可用量为 0」严格区分 ——
+     * <p><b>{@code null} 表示「库存能力未启用」</b>，必须与「可用量为 0」严格区分 ——
      * 与 W3 的 {@code UNPRICED ≠ 0 元}、W4 的 {@code ordered_total_amount 可空} 同一语义纪律。
-     * 调用方在 {@code null} 时不得把可用量当作 0。
+     *
+     * <p><b>W6 起实现方不再返回 {@code null}</b>（能力已上线）：余额行不存在时返回
+     * {@code available = 0}。{@code null} 分支保留在契约里，供未来可能出现的新部署形态使用。
      */
     record Availability(BigDecimal available, BigDecimal reserved) {
     }
 
-    /** W6 调用点（W5 零调用）。 */
+    /**
+     * 入库写入（W6 已接线：{@code PurchaseReceiptService.confirm} 的唯一调用点）。
+     *
+     * <p>实现方**必须加入调用方事务**（不得另开事务），失败即让收货确认整体回滚。
+     */
     void postInbound(InboundFact fact);
 
-    /** W6 调用点（W5 零调用）；{@code null} = 库存能力未启用。 */
+    /** 可用量探测；{@code null} = 库存能力未启用（W6 实现方返回非 null，见 {@link Availability}）。 */
     Availability queryAvailability(Long skuId, Long warehouseId);
 }

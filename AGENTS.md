@@ -70,7 +70,8 @@ W4   Sales Order                           COMPLETE
 W5   Purchase                              COMPLETE
 W5.5 SmartAdmin Native Feature Parity      COMPLETE
 F0   Object Storage Activation             COMPLETE
-W6   Inventory / Mini Program              NOT STARTED
+W6-1 Inventory (balance/movement/inbound)  COMPLETE
+W6-2 Mini Program                          NOT STARTED
 ```
 
 W4 = Sales Order (COMPLETE, acceptance report 2026-09-16).
@@ -97,15 +98,47 @@ attachments server-side **without any per-user permission filtering**, so attach
 through business VO fields bypass the Controller-level read guard. Before any non-administrator
 business role is introduced, OA enterprise licences and similar COMMON private assets must move to
 business-permission + ownership/relation + FileService reads.
-W6 = Inventory / Mini Program — **NOT STARTED**; do not begin before F0 is accepted.
+W6-1 = Inventory phase 1 (**COMPLETE**, acceptance report 2026-09-18) — `inventory_balance` +
+`inventory_movement` (append-only ledger), `PurchaseReceiptService.confirm` → `PURCHASE_IN` **in the
+same transaction**, the one-shot Q5 backfill of historical CONFIRMED receipt lines, and two read-only
+query pages (balance / movement) with menu ids 800/801/802/811/821.
+Governing decisions: **Q1–Q13** in
+[`docs/architecture/2026-09-18-w6-inventory-approval.md`](./docs/architecture/2026-09-18-w6-inventory-approval.md),
+design in
+[`docs/architecture/2026-09-18-w6-inventory-target-design.md`](./docs/architecture/2026-09-18-w6-inventory-target-design.md).
+Non-negotiable invariants established by W6-1:
+**Q13 inventory unit invariant** — one `(warehouse_id, sku_id)` locks exactly one bookkeeping unit;
+a differing unit fails loudly with `INVENTORY_UNIT_MISMATCH(41001)` and rolls the whole confirm back,
+and the backfill refuses to run (`RAISE EXCEPTION`) when historical lines mix units.
+**Q7 append-only ledger** — V19's `CHECK (deleted = FALSE)` rejects soft deletion only.
+The subsequent static-review fix V21 adds `trg_inventory_movement_append_only` to reject
+UPDATE / DELETE / TRUNCATE. V21 has NOT been executed or tested in this review.
+The DAO declares only insert + select; reversals must be NEW reverse movements.
+**Q11** — the `ON CONFLICT (...) WHERE ... DO NOTHING` conflict targets match the partial unique
+indexes verbatim, with zero PostgreSQL version branching in business code.
+Verified: backend unit 363/0/0/0, PG IT 203/0/0/5 (the 5 skips are the pre-existing MinIO-dependent
+`F0FileStorageCloudIT`), W6 specialty 18 IT + 12 unit, frontend lint 0 error / unit 63/63 / build OK /
+TS ratchet SCM zone 0 errors, and `e2e/scm-inventory.spec.ts` 6/6 plus the W5 `scm-purchase` spec 9/9.
+W6-1 explicitly excludes Mini Program, outbound/reserve, stocktake, loss/gain, transfer, unit
+conversion, warning thresholds, full costing, delivery, sorting and traceability — none of them were
+touched.
+W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in the acceptance
+report (§5 existing observations, §6 unverified items) are adjudicated.
 
 The PostgreSQL Closure restriction against V13+ applies only to that completed phase.
-W4 adds V13/V14 and W5 adds V15/V16 normally; V1–V16 remain immutable.
+W4 adds V13/V14, W5 adds V15/V16 and W6-1 adds V19/V20 normally; V1–V18 remain immutable.
 
 ```text
-V17  V17__sa_config_file_upload_size.sql   F0    data-only, t_config 文件上传大小 30→20
-V18  V18__scm_menu_icons.sql               W5.5  data-only, t_menu 侧边栏图标（34 条 UPDATE）
+V17  V17__sa_config_file_upload_size.sql      F0     data-only, t_config 文件上传大小 30→20
+V18  V18__scm_menu_icons.sql                  W5.5   data-only, t_menu 侧边栏图标（34 条 UPDATE）
+V19  V19__scm_inventory.sql                   W6-1   inventory_balance + inventory_movement + Q5 backfill
+V20  V20__scm_inventory_permissions.sql       W6-1   data-only, t_menu 库存菜单与权限（800/801/802/811/821）
+V21  V21__scm_inventory_movement_append_only.sql W6-1 静态复核修复，流水不可改删；尚未执行验证
 ```
+
+W6-1 follow-up review: [2026-09-18 static review](docs/architecture/2026-09-18-w6-inventory-static-review.md).
+Its fixes are **FUNCTIONALLY IMPLEMENTED BUT UNVERIFIED**: the user explicitly prohibited tests;
+no build, runtime verification or database migration was executed. V1–V20 remain unchanged.
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，
@@ -140,7 +173,8 @@ xsy-scm/
 │  └─ xsy-scm/               ← 上游源码参考（只读，用于同步与比对）
 ├─ docs/
 ├─ deploy/
-│  └─ minio/                 ← F0 本地开发与集成测试对象存储
+│  ├─ minio/                 ← F0 本地开发与集成测试对象存储
+│  └─ postgres/              ← 本地开发与集成测试 PostgreSQL（Docker Desktop 官方镜像）
 └─ AGENTS.md
 ```
 

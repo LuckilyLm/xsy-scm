@@ -44,7 +44,7 @@ class PurchaseErrorCodeTest {
 
     private static final String SCM_PACKAGE = "net.lab1024.sa.admin.module.scm";
 
-    /** 回退清单：classpath 不是展开目录时使用。 */
+    /** 回退清单：classpath 不是展开目录时使用。新域的错误码枚举要在这里补一行。 */
     private static final List<String> FALLBACK = List.of(
             "net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode",
             "net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode",
@@ -53,7 +53,10 @@ class PurchaseErrorCodeTest {
             "net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode",
             "net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode",
             PurchaseErrorCode.class.getName(),
-            WarehouseErrorCode.class.getName());
+            WarehouseErrorCode.class.getName(),
+            // W6 库存域（V19/V20）：本类只断言「W5 的 40 个码不撞车」，
+            // W6 与其余域的撞码由 ScmInventoryConstantTest 的全库唯一性判据负责。
+            "net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode");
 
     /** W1–W4 已存在的错误码枚举，必须被扫描到（防止扫描静默失效）。 */
     private static final Set<String> W1_TO_W4_ENUMS = Set.of(

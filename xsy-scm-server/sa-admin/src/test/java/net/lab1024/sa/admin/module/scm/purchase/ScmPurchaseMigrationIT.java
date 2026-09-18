@@ -92,20 +92,28 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("全库零外键 + W5 无任何库存表（§3 / §8.1）")
-    void noForeignKeysAndNoInventoryTables() {
-        // 全库 FK=0 是 V2 的既有纪律（W1–W4 已实测），W5 不得引入第一个外键
+    @DisplayName("全库零外键 + 库存表归属 W6/V19 而非 W5（§3 / §8.1）")
+    void noForeignKeysAndInventoryTablesBelongToW6() {
+        // 全库 FK=0 是 V2 的既有纪律（W1–W4 已实测），W5/W6 都不得引入第一个外键。
+        // 库存表之间（余额 → 流水）的引用完整性同样走服务层守卫，不走 DB 外键。
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM pg_constraint WHERE contype = 'f'", Integer.class)).isZero();
 
-        // 库存域在 W6：W5 不建任何库存表，连「临时余额表」都不允许（否则成为 W6 的迁移债）
-        List<String> inventoryLike = jdbc.queryForList(
-                "SELECT table_name FROM information_schema.tables "
-                        + "WHERE table_schema = current_schema() AND ("
-                        + "  table_name LIKE 'inventory%' OR table_name LIKE '%_inventory' "
-                        + "  OR table_name LIKE '%_movement%' OR table_name LIKE '%_stock%' "
-                        + "  OR table_name LIKE '%_balance%')", String.class);
-        assertThat(inventoryLike).isEmpty();
+        // W5 当时断言「一张库存表都不存在」（库存是 W6 的活，W5 不得留迁移债）。
+        // W6 的 V19 合法地建了这两张表，因此这里改成断言**归属**：
+        //   1) 它们确实存在；
+        //   2) 它们不在 V15 的 9 张表里（证明不是 W5 偷偷建的）；
+        //   3) 表注释带 V19 的 `W6 库存域` 前缀（证明来自 V19 而不是别处）。
+        // 形状（列 / 约束 / 索引）由 W6 的 ScmInventoryMigrationIT 负责断言，本类不重复。
+        List<String> inventoryTables = List.of("inventory_balance", "inventory_movement");
+        assertThat(inventoryTables).doesNotContainAnyElementsOf(V15_TABLES);
+        assertThat(jdbc.queryForList(
+                "SELECT obj_description(c.oid, 'pg_class') FROM pg_class c "
+                        + "JOIN pg_namespace n ON n.oid = c.relnamespace "
+                        + "WHERE n.nspname = current_schema() AND c.relname = ANY (string_to_array(?, ','))",
+                String.class, String.join(",", inventoryTables)))
+                .hasSize(2)
+                .allSatisfy(comment -> assertThat(comment).startsWith("W6 库存域"));
     }
 
     @Test
@@ -150,14 +158,17 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     }
 
     @Test
-    // 上限随获批的新迁移追加而抬升。当前上限 18：
+    // 上限随获批的新迁移追加而抬升。当前上限 21：
     //   V17 = F0（仅数据，t_config 文件上传大小）
     //   V18 = W5.5（仅数据，t_menu 侧边栏图标）
-    // V1–V16 的内容与顺序仍被逐条钉死，任何回改/重排都会立刻失败。
+    //   V19 = W6（inventory_balance / inventory_movement + Q5 backfill）
+    //   V20 = W6（仅数据，t_menu 库存菜单与权限）
+    //   V21 = W6 静态复核修复（流水不可改删触发器）
+    // V1–V18 的内容与顺序仍被逐条钉死，任何回改/重排都会立刻失败。
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），**不扫描磁盘上的 migration 文件**，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V18 全部 success，V15–V18 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V21 全部 success，V15–V21 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -165,10 +176,11 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 String.class);
         // 逐条列举而不是只断言 contains：V1–V14 一旦被重写/重排，这个断言会立刻失败
         assertThat(versions).containsExactly(
-                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18");
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
+                "19", "20", "21");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除 18 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除 21 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
     }

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao">
+
+    <resultMap id="balanceVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryBalanceVO">
+        <id column="id" property="id"/>
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <!--
+      Q11：冲突目标与部分唯一索引 uk_inventory_balance_wh_sku_active 完全匹配
+      （列 + WHERE 谓词）。不使用无目标的 ON CONFLICT DO NOTHING，也不做 PG 版本分支。
+      返回 0 = 并发输家，随后与赢家一起走 lockByWarehouseAndSku 拿同一把行锁。
+    -->
+    <insert id="insertOnConflictDoNothing">
+        INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity,
+                                       version, deleted, created_at, updated_at, created_by, updated_by)
+        VALUES (#{warehouseId}, #{skuId}, #{unit}, 0,
+                0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{operator}, #{operator})
+        ON CONFLICT (warehouse_id, sku_id) WHERE deleted = FALSE DO NOTHING
+    </insert>
+
+    <!-- 锁序 §8.1：余额锁是事务里最后获取的锁；调用方负责按 (warehouse_id, sku_id) 升序调用 -->
+    <select id="lockByWarehouseAndSku"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity">
+        SELECT * FROM inventory_balance
+        WHERE warehouse_id = #{warehouseId}
+          AND sku_id = #{skuId}
+          AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectByWarehouseAndSku"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity">
+        SELECT * FROM inventory_balance
+        WHERE warehouse_id = #{warehouseId}
+          AND sku_id = #{skuId}
+          AND deleted = FALSE
+    </select>
+
+    <!-- 持锁后的增量自增（不做「读-改-写」两步）；version 同步 +1 作为纵深防御 -->
+    <update id="incrementQuantity">
+        UPDATE inventory_balance
+        SET quantity   = quantity + #{quantity},
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+
+    <!--
+      展示字段实时联表（§2.1「余额是活状态，不是单据」）：
+      LEFT JOIN 且不带 deleted / status 谓词 —— 这是按不可变 id 做的展示解析，
+      把「已下架 / 已软删 SKU」的历史余额整行藏起来比显示它更危险。
+      排序写死在 SQL 里：客户端传入的 sortItemList 由 Service 显式拒绝（避免 join 列名歧义）。
+    -->
+    <select id="queryPage" resultMap="balanceVoMap">
+        SELECT b.id,
+               b.warehouse_id,
+               b.sku_id,
+               b.unit,
+               b.quantity,
+               b.version,
+               b.updated_at,
+               w.warehouse_code,
+               w.name       AS warehouse_name,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name
+        FROM inventory_balance b
+        LEFT JOIN warehouse   w ON w.id = b.warehouse_id
+        LEFT JOIN product_sku k ON k.id = b.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE b.deleted = FALSE
+        <if test="query.warehouseId != null">
+            AND b.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.skuId != null">
+            AND b.sku_id = #{query.skuId}
+        </if>
+        <if test="query.skuCode != null and query.skuCode != ''">
+            AND k.sku_code ILIKE CONCAT('%', #{query.skuCode}, '%')
+        </if>
+        <if test="query.productName != null and query.productName != ''">
+            AND p.name ILIKE CONCAT('%', #{query.productName}, '%')
+        </if>
+        ORDER BY b.updated_at DESC, b.id DESC
+    </select>
+
+    <select id="detail" resultMap="balanceVoMap">
+        SELECT b.id,
+               b.warehouse_id,
+               b.sku_id,
+               b.unit,
+               b.quantity,
+               b.version,
+               b.updated_at,
+               w.warehouse_code,
+               w.name       AS warehouse_name,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name
+        FROM inventory_balance b
+        LEFT JOIN warehouse   w ON w.id = b.warehouse_id
+        LEFT JOIN product_sku k ON k.id = b.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE b.deleted = FALSE
+          AND b.id = #{id}
+    </select>
+
+</mapper>

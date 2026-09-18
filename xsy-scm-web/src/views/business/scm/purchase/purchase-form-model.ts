@@ -68,14 +68,16 @@ export function progress(value: string | null | undefined): string {
   return new Decimal(value).times(100).toDecimalPlaces(2, Decimal.ROUND_HALF_UP).toFixed(2) + '%';
 }
 
-/**
- * 时间渲染（A18 同族）：`null` → `—`，统一输出 `yyyy-MM-dd HH:mm:ss`。
+/*
+ * 时间渲染（A18 同族）的实现在 `../common/scm-display.ts`，**不再从这里转出**。
  *
- * <p>实现已抽到 `../common/scm-display.ts`，由全域共享；
- * 这里重新导出以保持采购模块内 `purchase-form-model` 作为**唯一导入入口**的既有用法，
- * 避免各组件关心 helper 的物理位置。
+ * 历史：提交 48134bf 曾在这里 `export { datetime } from '../common/scm-display'`（漏了 `.ts`），
+ * 于是本模块在 `node --experimental-strip-types --test` 下以 ERR_MODULE_NOT_FOUND 整体加载失败；
+ * 而补上 `.ts` 又会触发 TS5097（本项目 `tsconfig` 未开启 `allowImportingTsExtensions`）。
+ * 两个约束的交集是：**本模块不得有值导入**（它要被 node 直接加载）。
+ * 因此转出去掉，原来经这里取 `datetime` 的两个页面改为直接从 `common/scm-display` 取。
+ * 详见 `test/w6-inventory-contract.test.mjs` 里的 node 可加载性门禁。
  */
-export { datetime } from '../common/scm-display';
 
 
 // ------------------------------------------------------------------

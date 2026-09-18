@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao">
+
+    <resultMap id="movementVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryMovementVO">
+        <id column="id" property="id"/>
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <!--
+      追加流水（append-only）。Q11：冲突目标与部分唯一索引
+      uk_inventory_movement_source_active 的列 + WHERE 谓词完全一致
+      （该谓词里的 source_document_item_id IS NOT NULL 对 NOT NULL 列是冗余的，
+       保留是为了与 W5 TD §8.5 预留 SQL 逐字匹配）。
+      返回 0 = 源身份已存在；实时路径视为数据异常（41002），backfill 视为幂等跳过。
+    -->
+    <insert id="insertOnConflictDoNothing"
+            parameterType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity">
+        INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type,
+                                        source_document_type, source_document_id, source_document_item_id,
+                                        quantity, unit_snapshot, unit_cost,
+                                        before_quantity, after_quantity, occurred_at, operator,
+                                        deleted, created_at, created_by)
+        VALUES (#{warehouseId}, #{skuId}, #{movementType},
+                #{sourceDocumentType}, #{sourceDocumentId}, #{sourceDocumentItemId},
+                #{quantity}, #{unitSnapshot}, #{unitCost},
+                #{beforeQuantity}, #{afterQuantity}, #{occurredAt}, #{operator},
+                FALSE, CURRENT_TIMESTAMP, #{createdBy})
+        ON CONFLICT (source_document_type, source_document_item_id)
+            WHERE deleted = FALSE AND source_document_item_id IS NOT NULL
+        DO NOTHING
+    </insert>
+
+    <!--
+      展示字段实时联表；收货单号 LEFT JOIN 而来（Q9：不设 movement_no，人类可读溯源用 receipt_no）。
+      source_document_id 只在 source_document_type = 'PURCHASE_RECEIPT_ITEM' 时才是收货单 id，
+      因此 join 条件里带上类型判定，未来接入别的来源类型时不会误联到收货单。
+      排序写死：客户端 sortItemList 由 Service 显式拒绝（join 列名歧义风险）。
+    -->
+    <select id="queryPage" resultMap="movementVoMap">
+        SELECT m.id,
+               m.warehouse_id,
+               m.sku_id,
+               m.movement_type,
+               m.source_document_type,
+               m.source_document_id,
+               m.source_document_item_id,
+               m.quantity,
+               m.unit_snapshot,
+               m.unit_cost,
+               m.before_quantity,
+               m.after_quantity,
+               m.occurred_at,
+               m.operator,
+               m.created_at,
+               r.receipt_no,
+               w.warehouse_code,
+               w.name       AS warehouse_name,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name
+        FROM inventory_movement m
+        LEFT JOIN purchase_receipt r
+               ON r.id = m.source_document_id
+              AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+        LEFT JOIN warehouse   w ON w.id = m.warehouse_id
+        LEFT JOIN product_sku k ON k.id = m.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE m.deleted = FALSE
+        <if test="query.warehouseId != null">
+            AND m.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.skuId != null">
+            AND m.sku_id = #{query.skuId}
+        </if>
+        <!-- SKU 编码模糊匹配：用户在页面上看到的是编码，筛选条件必须能只凭编码用起来 -->
+        <if test="query.skuCode != null and query.skuCode != ''">
+            AND k.sku_code ILIKE CONCAT('%', #{query.skuCode}, '%')
+        </if>
+        <if test="query.movementType != null and query.movementType != ''">
+            AND m.movement_type = #{query.movementType}
+        </if>
+        <if test="query.sourceDocumentType != null and query.sourceDocumentType != ''">
+            AND m.source_document_type = #{query.sourceDocumentType}
+        </if>
+        <if test="query.sourceDocumentId != null">
+            AND m.source_document_id = #{query.sourceDocumentId}
+        </if>
+        <!-- occurred_at 是业务发生时刻（= 收货确认时刻），不是写入时刻：backfill 回放的历史
+             收货必须能被「按业务时间」查到，用 created_at 过滤会让这部分数据完全查不到。 -->
+        <if test="query.occurredFrom != null">
+            AND m.occurred_at &gt;= #{query.occurredFrom}
+        </if>
+        <if test="query.occurredTo != null">
+            AND m.occurred_at &lt; #{query.occurredTo}
+        </if>
+        ORDER BY m.occurred_at DESC, m.id DESC
+    </select>
+
+    <select id="countActiveBySourceItem" resultType="int">
+        SELECT count(*) FROM inventory_movement
+        WHERE deleted = FALSE
+          AND source_document_type = #{sourceDocumentType}
+          AND source_document_item_id = #{sourceDocumentItemId}
+    </select>
+
+</mapper>

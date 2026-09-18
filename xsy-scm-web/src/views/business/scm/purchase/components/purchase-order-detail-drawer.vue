@@ -205,7 +205,8 @@ import {
 } from '/@/constants/business/scm/purchase-const';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type { Allocation, Id, LogRow, Order, OrderItem } from '../purchase-types';
-import { amount, datetime, progress, quantity } from '../purchase-form-model';
+import { amount, progress, quantity } from '../purchase-form-model';
+import { datetime } from '../../common/scm-display';
 import { purchaseError } from '../purchase-errors';
 
 const emit = defineEmits<{ saved: [] }>();

@@ -117,9 +117,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { Modal } from 'ant-design-vue';
 import type { TableColumnsType } from 'ant-design-vue';
+import { useRoute } from 'vue-router';
 import { purchaseReceiptApi } from '/@/api/business/scm/purchase-receipt-api';
 import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
@@ -242,5 +243,25 @@ function batchDelete() {
   });
 }
 
-onMounted(queryData);
+// W6：支持从库存流水页「来源单号」直接跳进来（`/purchase/purchase-receipt-list?receiptNo=PR...`）。
+// 只读一个查询参数、填进已有的筛选框，不新增任何后端能力。
+// 用 `route.query` 而不是 props：菜单路由不会传 props，而 `query` 是 hash 路由下唯一稳定的传参方式。
+const route = useRoute();
+const receiptRouteName = route.name;
+watch(
+  [() => route.name, () => route.query.receiptNo],
+  ([name, incomingReceiptNo]) => {
+    // SmartAdmin caches by route.name. Reapply the source link on reuse, but
+    // ignore navigation to other pages while this component stays cached.
+    if (name !== receiptRouteName) return;
+    if (typeof incomingReceiptNo === 'string' && incomingReceiptNo.trim()) {
+      queryForm.receiptNo = incomingReceiptNo.trim();
+      queryForm.status = undefined;
+      queryForm.purchaseOrderId = undefined;
+      orderNoInput.value = undefined;
+    }
+    onSearch();
+  },
+  { immediate: true }
+);
 </script>

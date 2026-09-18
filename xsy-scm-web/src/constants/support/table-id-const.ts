@@ -43,6 +43,9 @@ export const TABLE_ID_CONST = {
     SCM_PURCHASE_DEMAND: 50014,
     SCM_PURCHASE_LOG: 50015,
     SCM_WAREHOUSE: 50016,
+    // W6 库存域（两个只读查询页）
+    SCM_INVENTORY_BALANCE: 50017,
+    SCM_INVENTORY_MOVEMENT: 50018,
     OA: {
       NOTICE: businessOAInitTableId + 1, //通知公告
       ENTERPRISE: businessOAInitTableId + 2, //企业信息
