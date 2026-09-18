@@ -213,6 +213,35 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(updateLog.getAfterData()).containsEntry("totalAmount", "10.0000");
     }
 
+    @Test
+    @DisplayName("update：替换采购行后，需求分配引用新行且旧分配释放")
+    void updateReplacesItemAndLinksAllocationsToNewItem() {
+        Long skuId = newOnShelfSku("PO_NEW_ROW");
+        Long supplierId = newPurchasableSupplier("PO_NEW_ROW", skuId);
+        Long salesOrder = confirmedSalesOrder(newCustomer(), skuId, "5.0000", "3.0000");
+        PurchaseDemandEntity demand = generateDemandFor(supplierId, salesOrder);
+        PurchaseOrderVO order = createDraftOrder("PO_NEW_ROW", supplierId, skuId, "3.0000", "6.2000",
+                allocation(demand, "1.0000"));
+        Long oldItemId = order.getItems().getFirst().getId();
+        PurchaseOrderUpdateForm form = editForm(order.getId(), "3.0000", "6.2000",
+                allocation(reloadDemand(demand.getId()), "2.0000"));
+        form.getItems().getFirst().setId(null);
+        form.getItems().getFirst().setVersion(null);
+
+        PurchaseOrderVO updated = purchaseOrderService.update(form);
+
+        assertThat(updated.getItems()).hasSize(1);
+        PurchaseOrderItemVO item = updated.getItems().getFirst();
+        assertThat(item.getId()).isNotEqualTo(oldItemId);
+        assertThat(item.getAllocations()).hasSize(1);
+        assertThat(item.getAllocations().getFirst().getDemandId()).isEqualTo(demand.getId());
+        assertThat(allocationOf(item.getId(), demand.getId()).getAllocatedQuantity())
+                .isEqualByComparingTo("2.0000");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM purchase_demand_allocation "
+                + "WHERE purchase_order_item_id = ? AND deleted = FALSE", Long.class, oldItemId)).isZero();
+        assertThat(reloadDemand(demand.getId()).getAllocatedQuantity()).isEqualByComparingTo("2.0000");
+    }
+
     // ------------------------------------------------------------------
     // 6. update 保留行的已收数量
     // ------------------------------------------------------------------

@@ -129,7 +129,7 @@ const formError = ref('');
 const form = ref<WarehousePayload>({ warehouseCode: '', name: '' });
 let requestId = 0;
 
-const columns: TableColumnsType<Warehouse> = [
+const columns = ref<TableColumnsType<Warehouse>>([
   { title: '仓库编码', dataIndex: 'warehouseCode', width: 160 },
   { title: '仓库名称', dataIndex: 'name', width: 200 },
   { title: '状态', dataIndex: 'status', align: 'center', width: 110 },
@@ -137,7 +137,7 @@ const columns: TableColumnsType<Warehouse> = [
   { title: '备注', dataIndex: 'remark', width: 200 },
   { title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({ text }) => datetime(text) },
   { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 100 },
-];
+]);
 
 async function queryData() {
   const id = ++requestId;

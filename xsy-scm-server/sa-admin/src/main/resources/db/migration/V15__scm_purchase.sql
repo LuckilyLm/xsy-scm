@@ -1,4 +1,4 @@
--- W5 Purchase; see docs/progress.md for the current stage record.
+-- W5 Purchase, approved 2026-09-16 (see docs/architecture/2026-09-16-w5-purchase-approval.md).
 -- PostgreSQL; NO foreign keys (AGENTS.md). Global sequences never reset daily; padding is >= 6 digits.
 -- Scope: warehouse + purchase demand/order/receipt. NO inventory tables, NO inventory writes (Q5).
 -- Seeds: 1 default warehouse (G-03 single warehouse) + 1 t_config row (Q3a over-receipt tolerance).

@@ -70,7 +70,7 @@ W4   Sales Order                           COMPLETE
 W5   Purchase                              COMPLETE
 W5.5 SmartAdmin Native Feature Parity      COMPLETE
 F0   Object Storage Activation             COMPLETE
-W6-1 Inventory (balance/movement/inbound)  DELIVERED; FOLLOW-UP UNVERIFIED
+W6-1 Inventory (balance/movement/inbound)  BACKEND VERIFIED; BROWSER PENDING
 W6-2 Mini Program                          NOT STARTED
 ```
 
@@ -94,7 +94,7 @@ attachments server-side **without any per-user permission filtering**, so attach
 through business VO fields bypass the Controller-level read guard. Before any non-administrator
 business role is introduced, OA enterprise licences and similar COMMON private assets must move to
 business-permission + ownership/relation + FileService reads.
-W6-1 = Inventory phase 1 (**DELIVERED, FOLLOW-UP UNVERIFIED**) — `inventory_balance` +
+W6-1 = Inventory phase 1 (**BACKEND VERIFIED, BROWSER PENDING**) — `inventory_balance` +
 `inventory_movement` (append-only ledger), `PurchaseReceiptService.confirm` → `PURCHASE_IN` **in the
 same transaction**, the one-shot Q5 backfill of historical CONFIRMED receipt lines, and two read-only
 query pages (balance / movement) with menu ids 800/801/802/811/821.
@@ -105,11 +105,11 @@ a differing unit fails loudly with `INVENTORY_UNIT_MISMATCH(41001)` and rolls th
 and the backfill refuses to run (`RAISE EXCEPTION`) when historical lines mix units.
 **Q7 append-only ledger** — V19's `CHECK (deleted = FALSE)` rejects soft deletion only.
 The subsequent static-review fix V21 adds `trg_inventory_movement_append_only` to reject
-UPDATE / DELETE / TRUNCATE. V21 has NOT been executed or tested in this review.
+UPDATE / DELETE / TRUNCATE. V21 is applied in the local PostgreSQL database; the 2026-09-18 backend regression verifies its constraints.
 The DAO declares only insert + select; reversals must be NEW reverse movements.
 **Q11** — the `ON CONFLICT (...) WHERE ... DO NOTHING` conflict targets match the partial unique
 indexes verbatim, with zero PostgreSQL version branching in business code.
-The W6 follow-up changes are not currently verified; do not infer a passing quality gate from historical reports.
+The 2026-09-18 backend regression passed; browser acceptance remains pending. See `docs/progress.md` for current evidence and exclusions.
 W6-1 explicitly excludes Mini Program, outbound/reserve, stocktake, loss/gain, transfer, unit
 conversion, warning thresholds, full costing, delivery, sorting and traceability — none of them were
 touched.
@@ -124,10 +124,10 @@ V17  V17__sa_config_file_upload_size.sql      F0     data-only, t_config 文件�
 V18  V18__scm_menu_icons.sql                  W5.5   data-only, t_menu 侧边栏图标（34 条 UPDATE）
 V19  V19__scm_inventory.sql                   W6-1   inventory_balance + inventory_movement + Q5 backfill
 V20  V20__scm_inventory_permissions.sql       W6-1   data-only, t_menu 库存菜单与权限（800/801/802/811/821）
-V21  V21__scm_inventory_movement_append_only.sql W6-1 静态复核修复，流水不可改删；尚未执行验证
+V21  V21__scm_inventory_movement_append_only.sql W6-1 流水不可改删；本地 PG 回归通过，浏览器待验证
 ```
 
-W6-1 follow-up changes are **FUNCTIONALLY IMPLEMENTED BUT UNVERIFIED**; see `docs/progress.md`.
+W6-1 follow-up changes are **BACKEND VERIFIED, BROWSER PENDING**; see `docs/progress.md`.
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，

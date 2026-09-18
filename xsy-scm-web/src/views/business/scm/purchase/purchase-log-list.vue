@@ -98,7 +98,7 @@ const visible = ref(false);
 const active = ref<LogRow>();
 let requestId = 0;
 
-const columns: TableColumnsType<LogRow> = [
+const columns = ref<TableColumnsType<LogRow>>([
   { title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({ text }) => datetime(text) },
   { title: '操作', dataIndex: 'operationType', width: 150 },
   { title: '操作人', dataIndex: 'operator', width: 130 },
@@ -106,7 +106,7 @@ const columns: TableColumnsType<LogRow> = [
   { title: '收货单 id', dataIndex: 'purchaseReceiptId', width: 120 },
   { title: '原因', dataIndex: 'reason', width: 200 },
   { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 120 },
-];
+]);
 
 async function queryData() {
   const id = ++requestId;

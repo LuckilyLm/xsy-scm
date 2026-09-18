@@ -12,7 +12,10 @@ skills-lock.json
 local-environment-info.txt
 
 # Local tooling (machine-specific, keep out of repository)
-/tools/
+/tools/*
+!/tools/ts_baseline_ratchet.py
+!/tools/verify.py
+!/tools/test_verification.py
 
 # Reference environment configs contain credentials
 /project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml

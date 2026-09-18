@@ -36,7 +36,7 @@ xsy-scm/
 ├── xsy-scm-server/              ← V2 正式后端
 ├── xsy-scm-web/                 ← V2 正式后台
 ├── xsy-scm-miniapp/             ← LEGACY，冻结只读（后续迁 uni-app）
-├── tools/                       ← 本地工具脚本（Git 忽略）
+├── tools/                       ← 工程工具（验证入口按白名单跟踪，其余本机脚本忽略）
 ├── project-reference-examples/
 │   └── xsy-scm/                 ← 上游源码参考（只读，用于同步与比对）
 └── docs/                        ← 规格与设计文档
@@ -48,7 +48,7 @@ xsy-scm/
 |---|---|---|
 | `xsy-scm-server/**` | **正式** | 后端开发、重构、提交 |
 | `xsy-scm-web/**` | **正式** | 前端开发、重构、提交 |
-| `tools/**` | **本地** | 工程工具与验证脚本，已排除 Git 跟踪 |
+| `tools/**` | **工程工具** | 验证入口、TS 门禁及其测试按 `.gitignore` 白名单跟踪；其他本机脚本保持忽略 |
 | `docs/**` | **正式** | 产品、架构、验收与验证文档 |
 | `project-reference-examples/xsy-scm/**` | **上游只读** | 只读、比对、提取设计 |
 | `xsy-scm-miniapp/**` | **冻结只读** | 只读，待 W6 迁移 |
