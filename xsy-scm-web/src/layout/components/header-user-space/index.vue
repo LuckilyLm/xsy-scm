@@ -7,6 +7,10 @@
     <div class="setting">
       <!---消息通知--->
       <HeaderMessage ref="headerMessage" />
+      <!---数据大屏--->
+      <a-button type="text" @click="openScreen" class="operate-icon" title="数据大屏">
+        <template #icon><dashboard-outlined /></template>
+      </a-button>
       <!---国际化--->
       <!-- <a-button type="text" @click="showSetting" class="operate-icon">
         <template #icon><switcher-outlined /></template>
@@ -43,6 +47,11 @@
   const headerSetting = ref();
   function showSetting() {
     headerSetting.value.show();
+  }
+
+  // 数据大屏（新窗口打开）
+  function openScreen() {
+    window.open('/screen', '_blank');
   }
 
   //帮助文档

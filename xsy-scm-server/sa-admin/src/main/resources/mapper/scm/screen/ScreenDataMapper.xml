@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.screen.dao.ScreenDataDao">
+
+    <!-- 经营：订单统计（已确认口径） -->
+    <select id="countConfirmedOrders" resultType="long">
+        SELECT COUNT(*)
+        FROM sales_order
+        WHERE deleted = FALSE
+          AND status = 'CONFIRMED'
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
+    <select id="sumOrderedAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(ordered_total_amount), 0)
+        FROM sales_order
+        WHERE deleted = FALSE
+          AND status = 'CONFIRMED'
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
+    <select id="sumSettlementAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(settlement_total_amount), 0)
+        FROM sales_order
+        WHERE deleted = FALSE
+          AND status = 'CONFIRMED'
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
+    <select id="countTotalConfirmedOrders" resultType="long">
+        SELECT COUNT(*)
+        FROM sales_order
+        WHERE deleted = FALSE
+          AND status = 'CONFIRMED'
+    </select>
+
+    <select id="sumTotalSettlementAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(settlement_total_amount), 0)
+        FROM sales_order
+        WHERE deleted = FALSE
+          AND status = 'CONFIRMED'
+    </select>
+
+    <select id="countCustomers" resultType="long">
+        SELECT COUNT(*) FROM customer WHERE deleted = FALSE
+    </select>
+
+    <select id="countSuppliers" resultType="long">
+        SELECT COUNT(*) FROM supplier WHERE deleted = FALSE
+    </select>
+
+    <select id="countSkus" resultType="long">
+        SELECT COUNT(*) FROM product_sku WHERE deleted = FALSE
+    </select>
+
+    <select id="topCustomersBySettlement" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
+        SELECT customer_name_snapshot AS name,
+               COALESCE(SUM(settlement_total_amount), 0) AS amount
+        FROM sales_order
+        WHERE deleted = FALSE
+          AND status = 'CONFIRMED'
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+        GROUP BY customer_id, customer_name_snapshot
+        ORDER BY amount DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="topProductsBySettlement" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
+        SELECT item.product_name_snapshot AS name,
+               COALESCE(SUM(item.settlement_total_amount), 0) AS amount
+        FROM sales_order_item item
+        JOIN sales_order so ON so.id = item.order_id
+        WHERE item.deleted = FALSE
+          AND so.deleted = FALSE
+          AND so.status = 'CONFIRMED'
+          AND so.created_at &gt;= #{startTime}
+          AND so.created_at &lt; #{endTime}
+        GROUP BY item.sku_id, item.product_name_snapshot
+        ORDER BY amount DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 库存 -->
+    <select id="sumInventoryQuantity" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(quantity), 0)
+        FROM inventory_balance
+        WHERE deleted = FALSE
+    </select>
+
+    <select id="countInventorySkus" resultType="long">
+        SELECT COUNT(DISTINCT sku_id)
+        FROM inventory_balance
+        WHERE deleted = FALSE
+    </select>
+
+    <select id="countEnabledWarehouses" resultType="long">
+        SELECT COUNT(*)
+        FROM warehouse
+        WHERE deleted = FALSE
+          AND status = 'ENABLED'
+    </select>
+
+    <select id="countMovementsByTypeAndRange" resultType="long">
+        SELECT COUNT(*)
+        FROM inventory_movement
+        WHERE deleted = FALSE
+          AND movement_type = #{movementType}
+          AND occurred_at &gt;= #{startTime}
+          AND occurred_at &lt; #{endTime}
+    </select>
+
+    <select id="inventoryDistributionByWarehouse" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
+        SELECT w.warehouse_name AS warehouseName,
+               COALESCE(SUM(b.quantity), 0) AS quantity
+        FROM inventory_balance b
+        JOIN warehouse w ON w.id = b.warehouse_id
+        WHERE b.deleted = FALSE
+          AND w.deleted = FALSE
+        GROUP BY b.warehouse_id, w.warehouse_name
+        ORDER BY quantity DESC
+    </select>
+
+    <!-- 采购 -->
+    <select id="countPurchaseOrders" resultType="long">
+        SELECT COUNT(*)
+        FROM purchase_order
+        WHERE deleted = FALSE
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
+    <select id="sumPurchaseAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_amount), 0)
+        FROM purchase_order
+        WHERE deleted = FALSE
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
+    <select id="countTotalPurchaseOrders" resultType="long">
+        SELECT COUNT(*)
+        FROM purchase_order
+        WHERE deleted = FALSE
+    </select>
+
+    <select id="sumTotalPurchaseAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_amount), 0)
+        FROM purchase_order
+        WHERE deleted = FALSE
+    </select>
+
+    <select id="countReceipts" resultType="long">
+        SELECT COUNT(*)
+        FROM purchase_receipt
+        WHERE deleted = FALSE
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
+</mapper>
