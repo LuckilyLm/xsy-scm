@@ -40,18 +40,27 @@ public class InventoryMovementQueryForm extends PageParam {
      *
      * <p>正则白名单与 {@code ScmInventoryMovementTypeEnum} / {@code ck_inventory_movement_type}
      * **同源**：入库 {@code PURCHASE_IN}、出库 {@code SALES_OUT}、盘点 {@code STOCKTAKE_GAIN} /
-     * {@code STOCKTAKE_LOSS}、报损报溢 {@code LOSS_REPORT} / {@code GAIN_REPORT}。
+     * {@code STOCKTAKE_LOSS}、报损报溢 {@code LOSS_REPORT} / {@code GAIN_REPORT}、
+     * 调拨 {@code TRANSFER_OUT} / {@code TRANSFER_IN}。
      * 新增流水类型时必须同步这三处 —— 否则页面按新类型筛选会被参数校验
      * 直接拒掉（30001），表现为「流水明明写进去了，却筛不出来」。
      */
-    @Pattern(regexp = "PURCHASE_IN|SALES_OUT|STOCKTAKE_GAIN|STOCKTAKE_LOSS|LOSS_REPORT|GAIN_REPORT")
+    @Pattern(regexp = "PURCHASE_IN|SALES_OUT|STOCKTAKE_GAIN|STOCKTAKE_LOSS"
+            + "|LOSS_REPORT|GAIN_REPORT|TRANSFER_OUT|TRANSFER_IN")
     private String movementType;
 
-    /** 来源单据类型过滤；与 {@code ScmInventorySourceDocumentTypeEnum} 同源。 */
-    @Pattern(regexp = "PURCHASE_RECEIPT_ITEM|SALES_OUTBOUND_ITEM|SALES_ORDER_ITEM|STOCKTAKE_ITEM|LOSS_GAIN_ITEM")
+    /**
+     * 来源单据类型过滤；与 {@code ScmInventorySourceDocumentTypeEnum} 同源。
+     *
+     * <p>调拨占**两个**来源类型（{@code TRANSFER_OUT_ITEM} / {@code TRANSFER_IN_ITEM}）：
+     * 同一条调拨明细行会产生两条流水，若共用一个来源类型会撞上
+     * {@code uk_inventory_movement_source_active}。
+     */
+    @Pattern(regexp = "PURCHASE_RECEIPT_ITEM|SALES_OUTBOUND_ITEM|SALES_ORDER_ITEM|STOCKTAKE_ITEM"
+            + "|LOSS_GAIN_ITEM|TRANSFER_OUT_ITEM|TRANSFER_IN_ITEM")
     private String sourceDocumentType;
 
-    /** 来源单据头 id（收货单 / 出库单 / 盘点单 / 报损报溢单 id），头级溯源过滤。 */
+    /** 来源单据头 id（收货单 / 出库单 / 盘点单 / 报损报溢单 / 调拨单 id），头级溯源过滤。 */
     private Long sourceDocumentId;
 
     /** {@code occurred_at >= occurredFrom}。 */

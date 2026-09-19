@@ -45,7 +45,26 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * 它们出自同一张单据表的同一种行，拆成两个来源类型只会让查询多一次分支，
      * 而「这张单据是报损还是报溢」在单据头上已经能读到。
      */
-    LOSS_GAIN_ITEM("报损报溢单行");
+    LOSS_GAIN_ITEM("报损报溢单行"),
+
+    /**
+     * 调拨**转出**行的来源类型：{@code source_document_item_id = inventory_transfer_item.id}。
+     *
+     * <p><b>为什么调拨要拆成两个来源类型</b>：这是全仓唯一「一条来源行会产生两条流水」的情况
+     * （发出写转出、收货写转入）。而防重锚点是部分唯一索引
+     * {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)}
+     * —— 两条流水引用的是**同一个明细行 id**，若共用同一个来源类型，第二条插入必然冲突，
+     * 收货就永远做不成。
+     *
+     * <p>该索引是 V19 冻结的 Q7/Q11 契约，不能为了调拨去放宽它。因此改用
+     * 「来源类型本身编码方向」：转出与转入各占一个来源类型，各自在自己的
+     * {@code (type, itemId)} 空间里唯一。副作用是正向的 ——
+     * 可以直接按来源类型查出「所有转出流水」或「所有转入流水」。
+     */
+    TRANSFER_OUT_ITEM("调拨单行（转出）"),
+
+    /** 调拨**转入**行的来源类型；与 {@link #TRANSFER_OUT_ITEM} 分开以满足源身份唯一索引。 */
+    TRANSFER_IN_ITEM("调拨单行（转入）");
 
     private final String desc;
 

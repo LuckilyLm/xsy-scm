@@ -147,11 +147,14 @@ V29  V29__scm_inventory_stocktake.sql           stocktake 库存盘点：STOCKTA
 V30  V30__scm_inventory_loss_gain.sql           loss-gain 报损报溢：LOSS_REPORT/GAIN_REPORT
                                                    流水类型、六方向快照约束、报损报溢单两张表
                                                    （含审批状态机）、菜单 840-846
+V31  V31__scm_inventory_transfer.sql            transfer 库存调拨：TRANSFER_OUT/TRANSFER_IN
+                                                   流水类型、八方向分组快照约束、调拨单两张表
+                                                   （两步式：发出 → 在途 → 收货）、菜单 850-856
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
-V25–V27（出库 / 预留）、V29（盘点）与 V30（报损报溢）为 **BACKEND VERIFIED, BROWSER PENDING**；
-见 `docs/progress.md`。
+V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）与 V31（调拨）为
+**BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，

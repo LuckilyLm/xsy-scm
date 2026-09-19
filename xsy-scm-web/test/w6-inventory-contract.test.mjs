@@ -33,6 +33,7 @@ import {
   SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
   SCM_INVENTORY_SOURCE_TYPE_ENUM,
   SCM_INVENTORY_TABLE_ID,
+  SCM_INVENTORY_TRANSFER_STATUS_ENUM,
 } from '../src/constants/business/scm/inventory-const.ts';
 import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
@@ -120,8 +121,9 @@ test('movement type text falls back to the raw value so an unmapped type stays v
   assert.equal(movementTypeText('', labels), '—');
   assert.equal(movementTypeText(null, labels), '—');
   assert.equal(movementTypeText(undefined, labels), '—');
-  // 未知类型**不显示成「—」**：一个后端新增而前端未跟上的类型本身就是有用信号
-  assert.equal(movementTypeText('TRANSFER_IN', labels), 'TRANSFER_IN');
+  // 未知类型**不显示成「—」**：一个后端新增而前端未跟上的类型本身就是有用信号。
+  // 这里用 CONVERT_IN（规格转换，尚未落地）而不是任何已放行的类型。
+  assert.equal(movementTypeText('CONVERT_IN', labels), 'CONVERT_IN');
   // 文案表里缺 desc 时同样回落到原值，而不是显示空白
   assert.equal(movementTypeText('PURCHASE_IN', {}), 'PURCHASE_IN');
 });
@@ -132,10 +134,11 @@ test('movement type text falls back to the raw value so an unmapped type stays v
 
 test('inventory enums expose exactly the values the backend CHECK whitelist allows', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM),
-      ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'GAIN_REPORT']);
+      ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'GAIN_REPORT',
+        'TRANSFER_OUT', 'TRANSFER_IN']);
   assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM),
       ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM', 'STOCKTAKE_ITEM',
-        'LOSS_GAIN_ITEM']);
+        'LOSS_GAIN_ITEM', 'TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM']);
 
   // 值与键逐字一致（后端 `ScmInventoryMovementTypeEnum.name()` 就是持久化值）
   for (const [key, item] of Object.entries(SCM_INVENTORY_MOVEMENT_TYPE_ENUM)) {
@@ -148,11 +151,18 @@ test('inventory enums expose exactly the values the backend CHECK whitelist allo
   }
 
   // 盘盈与盘亏必须是**两个**类型：方向要能从类型本身读出来，否则 DB 的
-  // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。报损 / 报溢同理。
+  // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。报损 / 报溢、转出 / 转入同理。
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /STOCKTAKE_ADJUST/);
 
-  // 报损报溢波次已落地；调拨 / 规格转换仍不得提前出现
-  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /TRANSFER|CONVERT/);
+  // 八个类型必须**恰好**分成两个方向组、每组四个 ——
+  // 这是 `ck_inventory_movement_snap`「按方向分组」写法的前提。
+  const inbound = ['PURCHASE_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN'];
+  const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT'];
+  assert.deepEqual([...inbound, ...outbound].sort(),
+      Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).sort());
+
+  // 规格转换仍不得提前出现
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /CONVERT/);
 });
 
 test('loss/gain document enums match the backend state machine', () => {
@@ -175,11 +185,12 @@ test('loss/gain document enums match the backend state machine', () => {
 
 test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID),
-      ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN']);
+      ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN', 'TRANSFER']);
   assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.STOCKTAKE, 'scm-inventory-stocktake-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.LOSS_GAIN, 'scm-inventory-loss-gain-table');
+  assert.equal(SCM_INVENTORY_TABLE_ID.TRANSFER, 'scm-inventory-transfer-table');
 
   const business = TABLE_ID_CONST.BUSINESS;
   assert.equal(business.SCM_INVENTORY_BALANCE, 50017);
@@ -188,6 +199,7 @@ test('inventory table DOM ids are distinct, non-empty and registered with numeri
   assert.equal(business.SCM_INVENTORY_RESERVATION, 50020);
   assert.equal(business.SCM_INVENTORY_STOCKTAKE, 50021);
   assert.equal(business.SCM_INVENTORY_LOSS_GAIN, 50022);
+  assert.equal(business.SCM_INVENTORY_TRANSFER, 50023);
 
   // 数字 tableId 必须全局唯一（列配置按它持久化，撞了会串列）
   const numeric = Object.values(business).filter((value) => typeof value === 'number');
@@ -402,6 +414,64 @@ test('loss/gain error codes all have actionable Chinese text', () => {
   assert.match(inventoryError({code: 41032}), /先办理入库/);
   assert.match(inventoryError({code: 41033}), /不能把库存变成负数/);
   assert.match(inventoryError({code: 41037}), /说明驳回原因/);
+});
+
+// ------------------------------------------------------------------
+// 调拨波次
+// ------------------------------------------------------------------
+
+test('the transfer status machine is two-step and in-transit is not cancellable', () => {
+  // 两步式：DRAFT → SHIPPED（在途）→ RECEIVED，草稿可 CANCELLED
+  assert.deepEqual(Object.keys(SCM_INVENTORY_TRANSFER_STATUS_ENUM),
+      ['DRAFT', 'SHIPPED', 'RECEIVED', 'CANCELLED']);
+  for (const [key, item] of Object.entries(SCM_INVENTORY_TRANSFER_STATUS_ENUM)) {
+    assert.equal(item.value, key);
+    assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
+  }
+  // 「在途」的中文描述必须是「在途」而不是「已发货」之类的完成态措辞 ——
+  // 它代表货不在任何仓库里，措辞上不能让人以为已经落地。
+  assert.equal(SCM_INVENTORY_TRANSFER_STATUS_ENUM.SHIPPED.desc, '在途');
+});
+
+test('the transfer page wires its own DOM id, six privileges and a two-step action set', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-transfer-list.vue');
+  assert.match(page, /TableOperator/);
+  assert.match(page, /SCM_INVENTORY_TABLE_ID/);
+  assert.match(page, /v-privilege/);
+
+  // 六个权限点。「发出」与「收货」必须分开 —— 跨仓调拨的常见分工是源仓发货、
+  // 目标仓点收；由同一人两头都确认会让在途数量失去复核。
+  for (const perm of [
+    'scm:inventory:transfer:query',
+    'scm:inventory:transfer:add',
+    'scm:inventory:transfer:update',
+    'scm:inventory:transfer:ship',
+    'scm:inventory:transfer:receive',
+    'scm:inventory:transfer:delete',
+  ]) {
+    assert.match(page, new RegExp(perm), page + ' 缺少权限 ' + perm);
+  }
+
+  // 发出只能对草稿、收货只能对在途 —— 两个动作各挂在自己的状态上
+  assert.match(page, /record\.status === 'DRAFT'/);
+  assert.match(page, /record\.status === 'SHIPPED'/);
+
+  // 页面必须写明「在途期间货不在任何余额行里」，否则用户会以为货丢了
+  assert.match(page, /在途/);
+  assert.match(page, /不在任何仓库的余额/);
+});
+
+test('transfer error codes all have actionable Chinese text', () => {
+  // 调拨波次 11 个码：41038–41048
+  for (let code = 41038; code <= 41048; code++) {
+    const text = inventoryError({code});
+    assert.notEqual(text, '操作失败，请重试', code + ' 未登记可执行提示');
+    assert.ok(text.length > 8, code + ' 的提示过于简短，无法指导下一步');
+  }
+  // 三条最容易被误读的码：提示里必须给出「怎么做」
+  assert.match(inventoryError({code: 41042}), /不能相同/);
+  assert.match(inventoryError({code: 41044}), /统一两仓的采购单位/);
+  assert.match(inventoryError({code: 41039}), /反向调拨/);
 });
 
 // ------------------------------------------------------------------

@@ -11,6 +11,7 @@
  * - `ScmInventorySourceDocumentTypeEnum` ↔ `uk_inventory_movement_source_active` 的列值
  * - `ScmInventoryLossGainTypeEnum` ↔ `ck_inventory_loss_gain_type`
  * - `ScmInventoryLossGainStatusEnum` ↔ `ck_inventory_loss_gain_status`
+ * - `ScmInventoryTransferStatusEnum` ↔ `ck_inventory_transfer_status`
  *
  * **新增流水类型时必须同时改四处**：本文件的枚举、后端枚举类、DB CHECK（新迁移），
  * 以及后端 `InventoryMovementQueryForm` 的 `@Pattern` 白名单 ——
@@ -23,9 +24,9 @@ import type { SmartEnum } from '/@/types/smart-enum';
 /**
  * 库存流水类型。
  *
- * **方向编码在类型里**：`PURCHASE_IN` / `STOCKTAKE_GAIN` / `GAIN_REPORT` 即「入」，
- * `SALES_OUT` / `STOCKTAKE_LOSS` / `LOSS_REPORT` 即「出」，因此流水没有独立的 `direction` 列，
- * `quantity` 恒为正。新增类型必须先扩 DB CHECK 白名单。
+ * **方向编码在类型里**：`PURCHASE_IN` / `STOCKTAKE_GAIN` / `GAIN_REPORT` / `TRANSFER_IN` 即「入」，
+ * `SALES_OUT` / `STOCKTAKE_LOSS` / `LOSS_REPORT` / `TRANSFER_OUT` 即「出」，
+ * 因此流水没有独立的 `direction` 列，`quantity` 恒为正。新增类型必须先扩 DB CHECK 白名单。
  */
 export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
   PURCHASE_IN: { value: 'PURCHASE_IN', desc: '采购入库' },
@@ -34,13 +35,19 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
   STOCKTAKE_LOSS: { value: 'STOCKTAKE_LOSS', desc: '盘亏' },
   LOSS_REPORT: { value: 'LOSS_REPORT', desc: '报损' },
   GAIN_REPORT: { value: 'GAIN_REPORT', desc: '报溢' },
+  TRANSFER_OUT: { value: 'TRANSFER_OUT', desc: '调拨转出' },
+  TRANSFER_IN: { value: 'TRANSFER_IN', desc: '调拨转入' },
 };
 
 /**
  * 流水来源单据类型。
  *
  * 与 `sourceDocumentItemId` 一起构成**稳定唯一源键**（防重锚点）；
- * 人类可读的来源单号用 `receiptNo`（收货单）或 `sourceDocumentNo`（出库 / 盘点 / 报损报溢单）。
+ * 人类可读的来源单号用 `receiptNo`（收货单）或 `sourceDocumentNo`（出库 / 盘点 / 报损报溢 / 调拨单）。
+ *
+ * **调拨占两个来源类型**：同一条调拨明细行会产生两条流水（发出、收货），
+ * 而唯一索引只认 `(source_document_type, source_document_item_id)` ——
+ * 共用一个来源类型会让第二条流水插不进去。因此方向被编进了来源类型。
  */
 export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
   PURCHASE_RECEIPT_ITEM: { value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货行' },
@@ -48,6 +55,8 @@ export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
   SALES_ORDER_ITEM: { value: 'SALES_ORDER_ITEM', desc: '销售订单行' },
   STOCKTAKE_ITEM: { value: 'STOCKTAKE_ITEM', desc: '盘点单行' },
   LOSS_GAIN_ITEM: { value: 'LOSS_GAIN_ITEM', desc: '报损报溢单行' },
+  TRANSFER_OUT_ITEM: { value: 'TRANSFER_OUT_ITEM', desc: '调拨单行（转出）' },
+  TRANSFER_IN_ITEM: { value: 'TRANSFER_IN_ITEM', desc: '调拨单行（转入）' },
 };
 
 /**
@@ -85,7 +94,6 @@ export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
  * 报损报溢单的调整类型（与后端 `ScmInventoryLossGainTypeEnum` 逐字对应）。
  *
  * **方向是单据级属性**：一张单要么全报损、要么全报溢，行上的数量恒为正。
- * 这样「这张单是加库存还是减库存」在列表页一眼可见，不会出现同行异向的状态。
  */
 export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
   LOSS: { value: 'LOSS', desc: '报损' },
@@ -95,14 +103,26 @@ export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
 /**
  * 报损报溢单状态（与后端 `ScmInventoryLossGainStatusEnum` 逐字对应）。
  *
- * **与出库单 / 盘点单不同：这里没有 DRAFT**。报损报溢创建即提交（待审核），
- * 因为「把货从账上抹掉」这个动作需要制衡：录单的人与审批的人应当分开。
- * `PENDING` 可改可删可审；`COMPLETED` / `REJECTED` 都是终态。
+ * **没有 DRAFT**：报损报溢创建即提交（待审核），因为「把货从账上抹掉」需要制衡。
  */
 export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
   PENDING: { value: 'PENDING', desc: '待审核' },
   COMPLETED: { value: 'COMPLETED', desc: '已完成' },
   REJECTED: { value: 'REJECTED', desc: '已驳回' },
+};
+
+/**
+ * 调拨单状态（与后端 `ScmInventoryTransferStatusEnum` 逐字对应）。
+ *
+ * **两步式**：`DRAFT → SHIPPED（在途）→ RECEIVED`，草稿可 `CANCELLED`。
+ * `SHIPPED` **不可取消** —— 货已经物理离开源仓，账上只能靠一张反向调拨单冲回。
+ * 在途期间这批货不在任何余额行里（没有虚拟在途仓），全仓总库存会暂时减少。
+ */
+export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
+  DRAFT: { value: 'DRAFT', desc: '草稿' },
+  SHIPPED: { value: 'SHIPPED', desc: '在途' },
+  RECEIVED: { value: 'RECEIVED', desc: '已完成' },
+  CANCELLED: { value: 'CANCELLED', desc: '已取消' },
 };
 
 /**
@@ -118,6 +138,7 @@ export const SCM_INVENTORY_TABLE_ID = {
   RESERVATION: 'scm-inventory-reservation-table',
   STOCKTAKE: 'scm-inventory-stocktake-table',
   LOSS_GAIN: 'scm-inventory-loss-gain-table',
+  TRANSFER: 'scm-inventory-transfer-table',
 } as const;
 
 export default {
@@ -130,4 +151,5 @@ export default {
   SCM_INVENTORY_STOCKTAKE_STATUS_ENUM,
   SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
   SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
+  SCM_INVENTORY_TRANSFER_STATUS_ENUM,
 };

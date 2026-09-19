@@ -47,7 +47,8 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
     private static final List<String> POST_W6_TABLES = List.of(
             "inventory_outbound", "inventory_outbound_item", "inventory_reservation",
             "inventory_stocktake", "inventory_stocktake_item",
-            "inventory_loss_gain", "inventory_loss_gain_item");
+            "inventory_loss_gain", "inventory_loss_gain_item",
+            "inventory_transfer", "inventory_transfer_item");
 
     /** 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。 */
     private static final long SENTINEL_SOURCE_ITEM_ID = 9_000_000_000L + (System.nanoTime() % 1_000_000_000L);
@@ -132,18 +133,21 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
         // --- CHECK 定义（读约束定义，确认判据写在 DB 里而不是只写在服务层）---
         // 快照约束必须是**方向感知**的：V19 只写了入库分支，出库波次补了出库分支，
-        // 盘点波次补盘盈 / 盘亏，报损报溢波次补报损 / 报溢 —— 六个类型都必须被分类。
+        // 盘点波次补盘盈 / 盘亏，报损报溢波次补报损 / 报溢，调拨波次补转出 / 转入 ——
+        // 八个类型必须**全部**落在一个方向组里。
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_snap"))
                 .contains("before_quantity").contains("after_quantity").contains("quantity")
                 .contains("PURCHASE_IN").contains("SALES_OUT")
                 .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
-                .contains("LOSS_REPORT").contains("GAIN_REPORT");
+                .contains("LOSS_REPORT").contains("GAIN_REPORT")
+                .contains("TRANSFER_OUT").contains("TRANSFER_IN");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_append_only"))
                 .containsIgnoringCase("deleted = false");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_type"))
                 .contains("PURCHASE_IN").contains("SALES_OUT")
                 .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
-                .contains("LOSS_REPORT").contains("GAIN_REPORT");
+                .contains("LOSS_REPORT").contains("GAIN_REPORT")
+                .contains("TRANSFER_OUT").contains("TRANSFER_IN");
         assertThat(constraintDef("inventory_balance", "ck_inventory_balance_quantity"))
                 .contains("quantity");
         // 可用量不为负：已预留的货不能被出库吃掉（出库波次新增）
@@ -180,13 +184,14 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 0, 'kg', 0, 0, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 2);
-        // movement_type 白名单：未实现的类型（调拨 / 报损报溢 / 规格转换）必须被 DB 拒绝。
-        // 这里刻意用 TRANSFER_IN 而不是已放行的 SALES_OUT —— 后者会因快照方向不符而失败，
-        // 那样这个用例就不再是在验证「白名单」，而是在验证快照约束。
+        // movement_type 白名单：未实现的类型（规格转换）必须被 DB 拒绝。
+        // 这里刻意用 CONVERT_IN 而不是已放行的 SALES_OUT / TRANSFER_IN ——
+        // 用已放行的类型会因快照方向不符而失败，那样这个用例就不再是在验证「白名单」，
+        // 而是在验证快照约束。
         expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
-                + "VALUES (1, 1, 'TRANSFER_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
+                + "VALUES (1, 1, 'CONVERT_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 3);
         // 单位快照不能是空白
         expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
@@ -268,6 +273,56 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                         + "(loss_gain_no, warehouse_id, adjust_type, status, reason, version, deleted) "
                         + "VALUES (?, 1, 'LOSS', 'PENDING', '到货变质', 0, FALSE)", "W30-IT-OK"))
                 .isEqualTo(1);
+    }
+
+    // ------------------------------------------------------------------
+    // V31 调拨：源仓≠目标仓 + 状态与发出/收货信息一致
+    // ------------------------------------------------------------------
+
+    /**
+     * 调拨 schema 的四条判据必须在**数据库层**生效。
+     *
+     * <p>为什么值得单独断言：「源仓 ≠ 目标仓」是调拨唯一的结构性前提，
+     * 而「状态与发出 / 收货信息一致」保证了两笔流水各自的 {@code occurred_at} 与
+     * {@code operator} 一定读得到 —— 少了任何一条，调拨就能写出无法审计的账。
+     */
+    @Test
+    @DisplayName("V31 调拨 schema：源仓≠目标仓、状态与发出/收货信息一致，都在 DB 层生效")
+    void transferSchemaIsEnforcedByTheDatabase() {
+        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_status"))
+                .contains("DRAFT").contains("SHIPPED").contains("RECEIVED").contains("CANCELLED");
+        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_distinct"))
+                .contains("from_warehouse_id").contains("to_warehouse_id");
+        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_shipped"))
+                .contains("shipped_at").contains("shipped_by");
+        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_received"))
+                .contains("received_at").contains("received_by");
+
+        String insert = "INSERT INTO inventory_transfer "
+                + "(transfer_no, from_warehouse_id, to_warehouse_id, status, "
+                + "shipped_at, shipped_by, received_at, received_by, version, deleted) "
+                + "VALUES (?, ?, ?, ?, %s, %s, %s, %s, 0, FALSE)";
+
+        // 1) 源仓 == 目标仓：那不是调拨，是把货在同一行余额上来回加减
+        expectSqlFailure(insert.formatted("NULL", "NULL", "NULL", "NULL"),
+                "W31-IT-1", 1L, 1L, "DRAFT");
+        // 2) 未知状态
+        expectSqlFailure(insert.formatted("NULL", "NULL", "NULL", "NULL"),
+                "W31-IT-2", 1L, 2L, "CONFIRMED");
+        // 3) 在途却没有发出信息 → 转出流水的 occurred_at / operator 就无从取值
+        expectSqlFailure(insert.formatted("NULL", "NULL", "NULL", "NULL"),
+                "W31-IT-3", 1L, 2L, "SHIPPED");
+        // 4) 已收货却没有收货信息 → 转入流水的 occurred_at / operator 无从取值
+        expectSqlFailure(insert.formatted("CURRENT_TIMESTAMP", "'甲'", "NULL", "NULL"),
+                "W31-IT-4", 1L, 2L, "RECEIVED");
+        // 5) 草稿却带了发出人：两侧都要挡，否则「谁发的」可以被预先写脏
+        expectSqlFailure(insert.formatted("CURRENT_TIMESTAMP", "'甲'", "NULL", "NULL"),
+                "W31-IT-5", 1L, 2L, "DRAFT");
+
+        // 合法插入必须成功 —— 证明上面五次失败是判据生效，而不是表根本插不进去
+        assertThat(jdbc.update("INSERT INTO inventory_transfer "
+                + "(transfer_no, from_warehouse_id, to_warehouse_id, status, version, deleted) "
+                + "VALUES (?, 1, 2, 'DRAFT', 0, FALSE)", "W31-IT-OK")).isEqualTo(1);
     }
 
     // ------------------------------------------------------------------

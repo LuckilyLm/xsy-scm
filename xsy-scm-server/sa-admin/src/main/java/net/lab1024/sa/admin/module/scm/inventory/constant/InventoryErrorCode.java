@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
 
 /**
- * 库存域错误码（30 个）。
+ * 库存域错误码（41 个）。
  *
  * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加，
- * 盘点的码在盘点波次追加，报损报溢的码在报损报溢波次追加。
+ * 盘点的码在盘点波次追加，报损报溢的码在报损报溢波次追加，调拨的码在调拨波次追加。
  *
  * <pre>
  * 40486                 NOT_FOUND   1
@@ -16,6 +16,7 @@ import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
  * 41011–41017           出库波次 7 个
  * 41019–41027           盘点波次 9 个
  * 41028–41037           报损报溢波次 10 个
+ * 41038–41048           调拨波次 11 个
  * </pre>
  *
  * <p><b>为什么是 40486 / 41xxx</b>：2026-09-18 与全域码表核对，全仓 {@code 4xxxx} 已占用
@@ -24,7 +25,8 @@ import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
  * （由 {@code ScmInventoryConstantTest} 门禁强制）。
  *
  * <p><b>410xx 段的实际占用必须现查现用</b>：41004–41007 属 warehouse、41008 属 purchase、
- * 41018 亦属 warehouse，因此库存域只能取 41001–41003 / 41011–41017 / 41019–41037。
+ * 41009 属 warehouse（调拨波次新增的在途阻塞码）、41018 亦属 warehouse，
+ * 因此库存域只能取 41001–41003 / 41011–41017 / 41019–41048。
  * 不要相信任何注释里写的「本段空闲」—— 那是写下时的状态，会过期。
  *
  * <p><b>刻意不放进本枚举的码</b>：{@code WarehouseErrorCode.WAREHOUSE_NOT_FOUND(40485)} ——
@@ -200,7 +202,76 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 允许空意见的驳回会让录单人只知道被拒、不知道改什么，只能反复试 ——
      * 那是把沟通成本转移给了最不该承担的人。
      */
-    INVENTORY_LOSS_GAIN_REJECT_OPINION_REQUIRED(41037, "驳回时必须填写审核意见，说明驳回原因");
+    INVENTORY_LOSS_GAIN_REJECT_OPINION_REQUIRED(41037, "驳回时必须填写审核意见，说明驳回原因"),
+
+    /** 41038：调拨单不存在（行不存在或已软删）。 */
+    INVENTORY_TRANSFER_NOT_FOUND(41038, "调拨单不存在"),
+
+    /**
+     * 41039：调拨单当前状态不允许该操作。
+     *
+     * <p>发出仅草稿可做、收货仅在途可做、改/删仅草稿可做。
+     * **在途不可取消**：货已物理离开源仓，账上只能靠反向调拨单冲回。
+     */
+    INVENTORY_TRANSFER_STATUS_INVALID(41039,
+            "调拨单当前状态不允许该操作（草稿可改可发可删，在途只能收货）"),
+
+    /** 41040：调拨单至少需要一行明细。 */
+    INVENTORY_TRANSFER_EMPTY_ITEMS(41040, "调拨单至少需要一条明细"),
+
+    /** 41041：调拨事实非法（quantity &lt;= 0、仓库 / SKU / 来源行缺失等）。 */
+    INVENTORY_TRANSFER_PARAM_INVALID(41041, "调拨事实不合法"),
+
+    /**
+     * 41042：源仓库与目标仓库相同。
+     *
+     * <p>那不是调拨，而是把货在同一行余额上来回加减：净效果为零却留下两条流水，
+     * 纯属噪声，还会让「本月调拨量」这个指标虚高。
+     */
+    INVENTORY_TRANSFER_SAME_WAREHOUSE(41042, "源仓库与目标仓库不能相同"),
+
+    /**
+     * 41043：源仓可用量不足。
+     *
+     * <p>可用量 = {@code quantity − reserved_quantity}。调拨转出与销售出库同一口径：
+     * 不得让源仓变负，也不得吃掉源仓已预留的货（预留代表对下游的承诺）。
+     */
+    INVENTORY_TRANSFER_INSUFFICIENT_AVAILABLE(41043,
+            "源仓库可用库存不足（可用量 = 现有量 − 预留量），请减少调拨数量或先释放预留"),
+
+    /**
+     * 41044：目标仓的记账单位与调拨单位不一致。
+     *
+     * <p>Q13 规定一个 {@code (warehouse, sku)} 只锁一个记账单位，且**不做隐式换算**：
+     * 源仓按「箱」记账、目标仓按「kg」记账时，把 10 箱直接加成 10 kg 会得到一个
+     * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。
+     * 换算能力属「单位转换」波次，本波次显式失败。
+     */
+    INVENTORY_TRANSFER_UNIT_MISMATCH(41044,
+            "目标仓库该 SKU 的记账单位与调拨单位不一致，库存不做自动换算：请先统一两仓的采购单位"),
+
+    /** 41045：同一 SKU 在调拨单里出现多次。 */
+    INVENTORY_TRANSFER_DUPLICATE_SKU(41045, "同一 SKU 在调拨单中只能出现一次"),
+
+    /**
+     * 41046：源仓没有该 SKU 的余额行，无法发出。
+     *
+     * <p>转出是「出」方向，与销售出库同一取向：没有余额行 = 从未入库 = 无货可调，
+     * **不建零余额行**（只有「入」方向才允许建行）。
+     */
+    INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING(41046,
+            "源仓库该 SKU 尚无库存记录，无货可调：请确认源仓是否入过库"),
+
+    /** 41047：源身份重复调拨（同一条明细行已写过该方向的流水）。 */
+    INVENTORY_DUPLICATE_TRANSFER(41047, "该调拨明细行已产生库存流水，不能重复操作"),
+
+    /**
+     * 41048：仓库已停用，不能用于调拨。
+     *
+     * <p>与采购侧的 40987 同一类规则（「不允许用停用仓库建单」不是仓库域自身的不变量，
+     * 所以码留在调用方域）。发出时断言**源仓**启用、收货时断言**目标仓**启用。
+     */
+    INVENTORY_TRANSFER_WAREHOUSE_DISABLED(41048, "仓库已停用，不能用于新的调拨业务");
 
     private final int code;
     private final String msg;

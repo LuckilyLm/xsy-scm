@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferDao">
+
+    <resultMap id="transferVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferVO"/>
+
+    <select id="countByTransferNo" resultType="int">
+        SELECT COUNT(*) FROM inventory_transfer
+        WHERE transfer_no = #{transferNo} AND deleted = FALSE
+    </select>
+
+    <select id="nextTransferNo" resultType="long">
+        SELECT nextval('inventory_transfer_no_seq')
+    </select>
+
+    <select id="selectById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity">
+        SELECT * FROM inventory_transfer WHERE id = #{id} AND deleted = FALSE
+    </select>
+
+    <!-- 锁序：单据锁先于余额锁（与收货 / 出库 / 盘点 / 报损报溢同一顺序，避免反向拿锁） -->
+    <select id="lockById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity">
+        SELECT * FROM inventory_transfer WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <!-- 带状态条件：并发重复发出时只有一次能成功（影响行数 = 1） -->
+    <update id="markShipped">
+        UPDATE inventory_transfer
+        SET status     = 'SHIPPED',
+            shipped_at = #{shippedAt},
+            shipped_by = #{shippedBy},
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{shippedBy}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <!-- 收货只允许从「在途」推进，因此已收货的单再收货影响行数为 0 -->
+    <update id="markReceived">
+        UPDATE inventory_transfer
+        SET status      = 'RECEIVED',
+            received_at = #{receivedAt},
+            received_by = #{receivedBy},
+            version     = version + 1,
+            updated_at  = CURRENT_TIMESTAMP,
+            updated_by  = #{receivedBy}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'SHIPPED'
+    </update>
+
+    <update id="markCancelled">
+        UPDATE inventory_transfer
+        SET status     = 'CANCELLED',
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <update id="updateDraft">
+        UPDATE inventory_transfer
+        SET from_warehouse_id = #{fromWarehouseId},
+            to_warehouse_id   = #{toWarehouseId},
+            remark            = #{remark},
+            version           = version + 1,
+            updated_at        = CURRENT_TIMESTAMP,
+            updated_by        = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <!--
+      展示字段实时联表：warehouse 联两次（源仓 fw / 目标仓 tw），
+      因为调拨的语义天然是「从哪到哪」，列表只显示一个仓名会让用户必须点进详情才能确认方向。
+      排序写死，不接受客户端排序（联表列名会歧义）。
+    -->
+    <select id="queryPage" resultMap="transferVoMap">
+        SELECT t.id,
+               t.transfer_no,
+               t.from_warehouse_id,
+               t.to_warehouse_id,
+               t.status,
+               t.remark,
+               t.shipped_at,
+               t.shipped_by,
+               t.received_at,
+               t.received_by,
+               t.version,
+               t.created_at,
+               t.updated_at,
+               fw.warehouse_code AS from_warehouse_code,
+               fw.name           AS from_warehouse_name,
+               tw.warehouse_code AS to_warehouse_code,
+               tw.name           AS to_warehouse_name
+        FROM inventory_transfer t
+        LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
+        LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
+        WHERE t.deleted = FALSE
+        <if test="query.transferNo != null and query.transferNo != ''">
+            AND t.transfer_no ILIKE CONCAT('%', #{query.transferNo}, '%')
+        </if>
+        <if test="query.fromWarehouseId != null">
+            AND t.from_warehouse_id = #{query.fromWarehouseId}
+        </if>
+        <if test="query.toWarehouseId != null">
+            AND t.to_warehouse_id = #{query.toWarehouseId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND t.status = #{query.status}
+        </if>
+        ORDER BY t.created_at DESC, t.id DESC
+    </select>
+
+    <select id="detail" resultMap="transferVoMap">
+        SELECT t.id,
+               t.transfer_no,
+               t.from_warehouse_id,
+               t.to_warehouse_id,
+               t.status,
+               t.remark,
+               t.shipped_at,
+               t.shipped_by,
+               t.received_at,
+               t.received_by,
+               t.version,
+               t.created_at,
+               t.updated_at,
+               fw.warehouse_code AS from_warehouse_code,
+               fw.name           AS from_warehouse_name,
+               tw.warehouse_code AS to_warehouse_code,
+               tw.name           AS to_warehouse_name
+        FROM inventory_transfer t
+        LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
+        LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
+        WHERE t.deleted = FALSE AND t.id = #{id}
+    </select>
+
+</mapper>

@@ -11,6 +11,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryLossGainFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryStocktakeAdjustment;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryStocktakeFact;
+import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryTransferFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
@@ -26,6 +27,7 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_LOSS_GAIN;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_OUTBOUND;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_STOCKTAKE;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_TRANSFER;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_INSUFFICIENT_AVAILABLE;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_BALANCE_MISSING;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_BELOW_RESERVED;
@@ -37,6 +39,10 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_BELOW_RESERVED;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_NEGATIVE_AFTER;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_PARAM_INVALID;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSFER_INSUFFICIENT_AVAILABLE;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSFER_PARAM_INVALID;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSFER_UNIT_MISMATCH;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH;
 
 /**
@@ -46,15 +52,20 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
  * 避免多行收货以相反顺序获取余额锁。
  *
  * <p><b>本类是全仓唯一会改变 {@code inventory_balance.quantity} 的地方</b>，
- * 四条写入路径都遵守同一套纪律：
+ * 六条写入路径都遵守同一套纪律：
  * <ul>
  *   <li>{@link #postPurchaseInbound} —— 采购入库（方向 = 入，可建零余额行）；</li>
  *   <li>{@link #postSalesOutbound} —— 销售出库（方向 = 出，不建行，先判可用量）；</li>
  *   <li>{@link #postStocktakeAdjust} —— 盘点调整（方向由差异正负决定，不建行）；</li>
- *   <li>{@link #postLossGainAdjust} —— 报损报溢（方向由单据类型决定，不建行）。</li>
+ *   <li>{@link #postLossGainAdjust} —— 报损报溢（方向由单据类型决定，不建行）；</li>
+ *   <li>{@link #postTransferOut} —— 调拨转出（方向 = 出，不建行，先判可用量）；</li>
+ *   <li>{@link #postTransferIn} —— 调拨转入（方向 = 入，**可建零余额行**）。</li>
  * </ul>
- * 四者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
+ * 六者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
  * （{@code incrementQuantity} / {@code decrementQuantity}），从不做「读-改-写」赋值。
+ *
+ * <p><b>「入方向才允许建零余额行」是一条不变量</b>：入库与调拨转入可以建行（它们带单位事实），
+ * 出库 / 盘点 / 报损报溢都不建（无余额行意味着「从未入库」，对「出」方向就是无货可动）。
  */
 @Service
 @RequiredArgsConstructor
@@ -396,6 +407,147 @@ public class InventoryCommandService {
     }
 
     /**
+     * 调拨**转出**：从源仓扣减并写 {@code TRANSFER_OUT} 流水（方向 = 出）。
+     *
+     * <p>与销售出库（{@link #postSalesOutbound}）同一取向：**不建零余额行**
+     * （没有余额行 = 从未入库 = 无货可调），先判可用量，再持锁扣减。
+     * 可用量 = {@code quantity − reserved_quantity}：调拨不得吃掉源仓已预留的货。
+     *
+     * <p><b>单位由源仓余额决定，不由调用方传入</b>（Q13）：直接取余额单位写入流水快照，
+     * 并返回给调用方回写到明细行 —— 那正是收货时用来断言目标仓单位一致的那个值。
+     *
+     * @return 本次转出使用的记账单位（= 源仓记账单位）
+     */
+    public String postTransferOut(InventoryTransferFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Transfer out requires the caller's transaction");
+        }
+        requireTransferFact(fact);
+
+        warehouseService.require(fact.warehouseId());
+
+        // 转出不建行：没有余额行 = 从未入库 = 无货可调。
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING);
+        }
+
+        String unit = balance.getUnit();
+
+        // 持有行锁后再算可用量，避免并发下读到过期快照。
+        BigDecimal onHand = balance.getQuantity();
+        BigDecimal reserved = balance.getReservedQuantity() == null
+                ? BigDecimal.ZERO : balance.getReservedQuantity();
+        if (onHand.subtract(reserved).compareTo(fact.quantity()) < 0) {
+            throw new ScmBusinessException(INVENTORY_TRANSFER_INSUFFICIENT_AVAILABLE);
+        }
+
+        BigDecimal after = onHand.subtract(fact.quantity());
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(ScmInventoryMovementTypeEnum.TRANSFER_OUT.name());
+        // 方向编码在**来源类型**里：转出与转入引用同一条明细行，必须落在两个来源类型下，
+        // 否则第二条流水会撞上 uk_inventory_movement_source_active。
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.TRANSFER_OUT_ITEM.name());
+        movement.setSourceDocumentId(fact.transferId());
+        movement.setSourceDocumentItemId(fact.transferItemId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(unit);
+        // 调拨本身不产生成本事实，unit_cost 留空。
+        movement.setUnitCost(null);
+        movement.setBeforeQuantity(onHand);
+        movement.setAfterQuantity(after);
+        // 用**发出**时刻与发出人（不是当前时间 / 当前登录人）。
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_TRANSFER);
+        }
+
+        if (balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+        return unit;
+    }
+
+    /**
+     * 调拨**转入**：向目标仓累加并写 {@code TRANSFER_IN} 流水（方向 = 入）。
+     *
+     * <p>与采购入库（{@link #postPurchaseInbound}）同一取向：**入方向允许建零余额行**
+     * —— 目标仓从没有过该 SKU 时，由本次调入建立该行，单位取明细行的快照
+     * （= 发出时记录的源仓单位）。
+     *
+     * <p><b>单位必须与目标仓既有记账单位一致</b>：不一致直接 41044，绝不隐式换算
+     * （Q13）。源仓按「箱」记账、目标仓按「kg」记账时把 10 箱加成 10 kg 会得到一个
+     * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。
+     *
+     * <p>转入没有下限判断（只增不减），但 {@code ck_inventory_balance_quantity} 仍然生效。
+     */
+    public void postTransferIn(InventoryTransferFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Transfer in requires the caller's transaction");
+        }
+        requireTransferFact(fact);
+        if (fact.unitSnapshot() == null || fact.unitSnapshot().isBlank()) {
+            // 转入必须知道期望单位（来自明细行快照），否则无法判断「是否在偷偷换算」。
+            throw new ScmBusinessException(INVENTORY_TRANSFER_PARAM_INVALID);
+        }
+
+        warehouseService.require(fact.warehouseId());
+
+        // 入方向允许首建余额行：单位取调拨明细的快照（= 源仓记账单位）。
+        // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引（Q11）。
+        balanceDao.insertOnConflictDoNothing(
+                fact.warehouseId(), fact.skuId(), fact.unitSnapshot(), fact.operator());
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
+        }
+
+        // 目标仓已有该 SKU 时，记账单位必须与调拨单位一致 —— 不做隐式换算。
+        if (!fact.unitSnapshot().equals(balance.getUnit())) {
+            throw new ScmBusinessException(INVENTORY_TRANSFER_UNIT_MISMATCH);
+        }
+
+        BigDecimal before = balance.getQuantity();
+        BigDecimal after = before.add(fact.quantity());
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(ScmInventoryMovementTypeEnum.TRANSFER_IN.name());
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.TRANSFER_IN_ITEM.name());
+        movement.setSourceDocumentId(fact.transferId());
+        movement.setSourceDocumentItemId(fact.transferItemId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(fact.unitSnapshot());
+        movement.setUnitCost(null);
+        movement.setBeforeQuantity(before);
+        movement.setAfterQuantity(after);
+        // 用**收货**时刻与收货人 —— 与转出的 occurred_at 是同一个调拨的两个不同时点，
+        // 这正是两步式能被审计的关键：能看出货在途待了多久。
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_TRANSFER);
+        }
+
+        if (balanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    /**
      * 查询可用量；缺少查询标识或余额不存在时返回零，不返回表示能力未启用的 {@code null}。
      *
      * <p>出库波次起 {@code reserved} 返回**真实预留量**（此前恒为零）。
@@ -497,6 +649,29 @@ public class InventoryCommandService {
                 || fact.operator() == null
                 || fact.operator().isBlank()) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_PARAM_INVALID);
+        }
+    }
+
+    /**
+     * 校验调拨事实。
+     *
+     * <p>数量必须**严格为正**（调拨没有「零数量」这种合法事实）。
+     * {@code unitSnapshot} 刻意**不在这里校验**：发出时它应当为空（单位由源仓余额决定），
+     * 收货时必须非空（期望单位来自明细行快照）—— 两个方向的要求相反，
+     * 因此各自在自己的方法里判断，而不是塞进这个共用校验里。
+     */
+    private static void requireTransferFact(InventoryTransferFact fact) {
+        if (fact == null
+                || fact.warehouseId() == null
+                || fact.skuId() == null
+                || fact.transferId() == null
+                || fact.transferItemId() == null
+                || fact.quantity() == null
+                || fact.quantity().signum() <= 0
+                || fact.occurredAt() == null
+                || fact.operator() == null
+                || fact.operator().isBlank()) {
+            throw new ScmBusinessException(INVENTORY_TRANSFER_PARAM_INVALID);
         }
     }
 }

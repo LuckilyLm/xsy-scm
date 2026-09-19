@@ -23,8 +23,8 @@ import lombok.RequiredArgsConstructor;
  *
  * <p><b>已实现</b>：W6-1 的 {@code PURCHASE_IN}；出库波次新增 {@code SALES_OUT}；
  * 盘点波次新增 {@code STOCKTAKE_GAIN} / {@code STOCKTAKE_LOSS}；
- * 报损报溢波次新增 {@code LOSS_REPORT} / {@code GAIN_REPORT}。
- * 调拨 / 规格转换仍待后续波次。
+ * 报损报溢波次新增 {@code LOSS_REPORT} / {@code GAIN_REPORT}；
+ * 调拨波次新增 {@code TRANSFER_OUT} / {@code TRANSFER_IN}。规格转换仍待后续波次。
  */
 @Getter
 @RequiredArgsConstructor
@@ -59,7 +59,18 @@ public enum ScmInventoryMovementTypeEnum {
     LOSS_REPORT("报损", false),
 
     /** 报溢：报溢单审批通过时写入（方向 = 入）。 */
-    GAIN_REPORT("报溢", true);
+    GAIN_REPORT("报溢", true),
+
+    /**
+     * 调拨转出：调拨单**发出**时写入**源仓**（方向 = 出）。
+     *
+     * <p>与 {@code SALES_OUT} 分开而不是复用：两者都从仓库扣货，但业务含义不同
+     * （销售出库是履约，调拨转出只是换仓）。合并后「这个月跨仓调了多少」就无法从流水读出。
+     */
+    TRANSFER_OUT("调拨转出", false),
+
+    /** 调拨转入：调拨单**收货**时写入**目标仓**（方向 = 入）。 */
+    TRANSFER_IN("调拨转入", true);
 
     /** 持久化到 {@code inventory_movement.movement_type} 的值。 */
     private final String desc;

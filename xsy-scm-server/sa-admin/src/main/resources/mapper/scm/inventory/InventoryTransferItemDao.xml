@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferItemDao">
+
+    <resultMap id="itemVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferItemVO">
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <select id="listByTransferId" resultMap="itemVoMap">
+        SELECT i.id,
+               i.transfer_id,
+               i.sku_id,
+               i.quantity,
+               i.unit_snapshot,
+               i.remark,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name
+        FROM inventory_transfer_item i
+        LEFT JOIN product_sku k ON k.id = i.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE i.deleted = FALSE AND i.transfer_id = #{transferId}
+        ORDER BY i.id ASC
+    </select>
+
+    <!-- 草稿重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
+    <update id="deleteByTransferId">
+        UPDATE inventory_transfer_item
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE transfer_id = #{transferId} AND deleted = FALSE
+    </update>
+
+    <update id="updateUnitSnapshot">
+        UPDATE inventory_transfer_item
+        SET unit_snapshot = #{unit},
+            version       = version + 1,
+            updated_at    = CURRENT_TIMESTAMP,
+            updated_by    = #{operator}
+        WHERE id = #{id} AND deleted = FALSE
+    </update>
+
+</mapper>

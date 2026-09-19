@@ -374,12 +374,13 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         outWindow.setOccurredTo(movement.getOccurredAt());
         assertThat(inventoryMovementQueryService.query(outWindow).getList()).isEmpty();
 
-        // --- 类型白名单：枚举与 DB CHECK 同源（W6-1 = PURCHASE_IN；出库波次追加 SALES_OUT）---
+        // --- 类型白名单：枚举与 DB CHECK 同源
+        //（W6-1 = PURCHASE_IN；出库波次追加 SALES_OUT；盘点 / 报损报溢 / 调拨依次追加）---
         assertThat(ScmInventoryMovementTypeEnum.isSupported("PURCHASE_IN")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("SALES_OUT")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported(null)).isFalse();
-        // 尚未落地的类型仍不得放行
-        assertThat(ScmInventoryMovementTypeEnum.isSupported("TRANSFER_IN")).isFalse();
+        // 尚未落地的类型仍不得放行（规格转换是最后一个未做的库存动作）
+        assertThat(ScmInventoryMovementTypeEnum.isSupported("CONVERT_IN")).isFalse();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("STOCKTAKE_ADJUST")).isFalse();
     }
 }

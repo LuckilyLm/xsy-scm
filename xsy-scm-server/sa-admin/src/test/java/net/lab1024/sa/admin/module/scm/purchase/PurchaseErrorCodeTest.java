@@ -29,9 +29,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>锁定三件事：
  * <ol>
- *   <li>{@link PurchaseErrorCode} 恰好 **38** 个、{@link WarehouseErrorCode} 恰好 **2** 个，合计 **40**；</li>
- *   <li>W5 的 40 个码**段内无重复**，且段分布为 400xx=12 · 404xx=5 · 409xx=21（+ 仓库域 40485 / 40996）；</li>
- *   <li>W5 的 40 个码与 **W1–W4 全部** SCM 错误码**零交集**，且两个枚举之间也零重复。</li>
+ *   <li>{@link PurchaseErrorCode} 恰好 **39** 个、{@link WarehouseErrorCode} 恰好 **8** 个，合计 **47**
+ *       （W5 冻结 40 个，B1 加 1、出库波次加 1、调拨波次加 1，另有 W5 内的 39 与 2 的口径见下方断言）；</li>
+ *   <li>W5+B1 的 47 个码**段内无重复**，且段分布为 400xx=12 · 404xx=6 · 409xx=22 · 410xx=7；</li>
+ *   <li>W5 的 47 个码与 **W1–W4 全部** SCM 错误码**零交集**，且两个枚举之间也零重复。</li>
  * </ol>
  *
  * <p>**为什么自动扫描而不是硬编码清单**：硬编码清单在 W6+ 新增域时会被忘记更新，
@@ -68,19 +69,20 @@ class PurchaseErrorCodeTest {
     void gate() {
         // ---------- 1. 数量 ----------
         assertThat(PurchaseErrorCode.values()).hasSize(39);
-        // 出库波次新增 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，仓库域由 6 增至 7
-        assertThat(WarehouseErrorCode.values()).hasSize(7);
+        // 出库波次新增 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，仓库域由 6 增至 7；
+        // 调拨波次新增 WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009)，再增至 8。
+        assertThat(WarehouseErrorCode.values()).hasSize(8);
 
         Map<String, Integer> w5 = new LinkedHashMap<>();
         Arrays.stream(PurchaseErrorCode.values())
                 .forEach(c -> w5.put("PurchaseErrorCode." + c.name(), c.getCode()));
         Arrays.stream(WarehouseErrorCode.values())
                 .forEach(c -> w5.put("WarehouseErrorCode." + c.name(), c.getCode()));
-        assertThat(w5).as("W5+B1 错误码合计").hasSize(46);
+        assertThat(w5).as("W5+B1 错误码合计").hasSize(47);
 
         // ---------- 2. 段内无重复 ----------
         Set<Integer> w5Codes = new LinkedHashSet<>(w5.values());
-        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(46);
+        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(47);
 
         // ---------- 3. 段分布 ----------
         Set<Integer> purchaseCodes = Arrays.stream(PurchaseErrorCode.values())
@@ -103,12 +105,14 @@ class PurchaseErrorCodeTest {
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY.getCode()).isEqualTo(41007);
         // 出库波次：启用仓库不唯一时无法解析「默认仓库」（订单无仓库字段，G-03）
         assertThat(WarehouseErrorCode.WAREHOUSE_DEFAULT_AMBIGUOUS.getCode()).isEqualTo(41018);
+        // 调拨波次：在途调拨单阻塞仓库停用（第四条停用阻塞条件）
+        assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER.getCode()).isEqualTo(41009);
 
-        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）· 410xx=6
+        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）· 410xx=7
         assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(12L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(6L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(22L);
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(6L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(7L);
 
         // ---------- 4. 与 W1–W4 零交集 ----------
         List<Class<?>> discovered = discover();

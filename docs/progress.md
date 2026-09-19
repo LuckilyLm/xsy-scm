@@ -18,22 +18,59 @@
 | 出库 / 预留（V25–V27） | 后端已验证，浏览器待验证 | 独立出库单、`SALES_OUT` 流水、可用量门槛、预留与释放、订单「预留库存」显式动作 |
 | 盘点（V29） | 后端已验证，浏览器待验证 | 盘点单、盘盈 / 盘亏流水、差异施加到确认瞬间的账面量、双下限保护 |
 | 报损报溢（V30） | 后端已验证，浏览器待验证 | 报损报溢单、`LOSS_REPORT` / `GAIN_REPORT` 流水、审批状态机（待审核 → 已完成 / 已驳回）、审批乐观锁 |
+| 调拨（V31） | 后端已验证，浏览器待验证 | 调拨单、两步式（发出 → 在途 → 收货）、`TRANSFER_OUT` / `TRANSFER_IN` 流水、两仓单位一致性、在途阻塞仓库停用 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
 
 - 引入非管理员业务角色前，处理 F0-DEBT-01：业务附件必须接入权限、归属/关系和 FileService 读取控制。
 - 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
-- 库存深化剩余项：调拨、单位转换、阈值预警、移动加权成本。顺序见
+- 库存深化剩余项：阈值预警、单位转换、移动加权成本。顺序见
   [`requirements/2026-09-19-需求覆盖与待办清单.md`](./requirements/2026-09-19-需求覆盖与待办清单.md)。
-- 出库 / 预留 / 盘点 / 报损报溢的**浏览器验收尚未执行**（Docker 未运行时 PostgreSQL 与 Redis 同时不可用，
-  需登录的 E2E 无法进行）。
+- 出库 / 预留 / 盘点 / 报损报溢 / 调拨的**浏览器验收尚未执行**（Docker 未运行时 PostgreSQL 与 Redis
+  同时不可用，需登录的 E2E 无法进行）。
 - 预留的**并发**场景目前只有单线程 IT 覆盖（并发压测待补）。
 - 报损报溢**没有消息通知**：驳回后录单人只能靠自己回来看状态。引入通知/待办机制前，
   这是审批链路上已知的体验缺口（不影响正确性）。
+- **在途库存是否需要在余额上可见**（调拨波次的未决事项）：当前在途货不属于任何仓库余额，
+  对账时必须把在途调拨单算进去。三种收敛方式见 `decisions.md`。
 - F0 cloud/MinIO 环境未配置时，后端 5 项 cloud IT 与 Playwright 7 项 cloud 用例继续跳过；全量入口因此返回 INCOMPLETE，而非 FAIL。
 
 ## 追加记录
+
+### 2026-09-19 调拨（V31）
+
+- V31 把「调拨」纳入范围：扩 `inventory_movement` 类型白名单加 `TRANSFER_OUT` / `TRANSFER_IN`，
+  把 `ck_inventory_movement_snap` 扩到**八方向分组**，新建 `inventory_transfer` /
+  `inventory_transfer_item` 与 `inventory_transfer_no_seq`，菜单 850–856。
+- **参考项目没有任何调拨实现**（`t_stock_adjust` 只有报损 / 报溢 / 盘点调整 / 规格转换），
+  因此本波次是 **V2 原创设计**，每条口径都是裁决结果而非沿袭。
+- **核心裁决：两步式（发出 → 在途 → 收货）**。① 语义正确 —— 货在卡车上时既不在源仓也不在目标仓；
+  ② 并发安全 —— 两步各自只锁一个仓库的余额行，既有锁序纪律完全不用改。一步式要锁跨仓两行，
+  锁序就得升级为跨仓排序，而那是六条既有写入路径都要跟着改的事。
+- 在途期间这批货**不在任何余额行里**（没有虚拟在途仓），全仓总库存会暂时减少。
+  这是两步式的必然结果，已登记为未决事项（是否引入「在途仓」或报表增列）。
+- **调拨占两个来源类型**（`TRANSFER_OUT_ITEM` / `TRANSFER_IN_ITEM`）：同一条明细行产生两条流水，
+  而 `uk_inventory_movement_source_active` 只认 `(source_document_type, source_document_item_id)`，
+  共用一个类型会让第二条插不进去。该索引是 V19 冻结的 Q7/Q11 契约，不能为调拨放宽。
+- 两仓记账单位必须一致（41044），不做隐式换算；目标仓从未有过该 SKU 时由本次调入建立余额行
+  （入方向允许建行，与采购入库同一取向）。
+- **在途调拨阻塞仓库停用**（41009）：调拨波次新增的第四条停用阻塞条件，源仓与目标仓都算；
+  草稿不阻塞。
+- **本波次的自测抓出一个真实缺陷**：V31 初版的 `ck_inventory_transfer_shipped` 只写了正向判据
+  （「已发出必须有发出人」），漏了反向（「草稿不得带发出人」）——
+  `ScmInventoryMigrationIT` 的「待审核却带了发出人」用例直接把它抓了出来，已改为双侧判据。
+  同一形状的缺陷在 V30 的 `ck_inventory_loss_gain_audit` 上因为一开始就写成双侧而没有发生。
+- 测试：新增 `ScmInventoryTransferIT`（15 例）、`ScmInventoryTransferRollbackIT`（1 例，
+  `Propagation.NOT_SUPPORTED` 真实回滚，并在 `@AfterEach` 里软删本类建的仓库以免破坏
+  「唯一启用仓库」口径）、`InventoryTransferNumberGeneratorTest`（4 例）；
+  同步扩 `ScmInventoryConstantTest`（枚举 8 个 / 错误码 41 个 / 调拨状态机 + 方向分组计数）、
+  `ScmInventoryMigrationIT`（八方向 CHECK + V31 四条 DB 层判据）、`ScmPurchaseMigrationIT`（加 31）、
+  `PurchaseErrorCodeTest`（仓库域 7 → 8，合计 46 → 47）、`ScmInventoryInboundIT`（白名单用例改用
+  `CONVERT_IN`，因为 `TRANSFER_IN` 已落地）；前端 `w6-inventory-contract.test.mjs` 新增调拨契约。
+- 验证：干净库 `xsy_scm_trf2` 上 `Tests run: 666+ / Failures: 0（除数据大屏）/ Skipped: 5`；
+  调拨相关用例全绿。前端 `npm run test` 74/74、ESLint 0 错误 / 3 条既有警告。
+- 未覆盖：浏览器验收；调拨并发压测；阈值预警 / 单位转换 / 移动加权成本。
 
 ### 2026-09-19 报损报溢（V30）
 

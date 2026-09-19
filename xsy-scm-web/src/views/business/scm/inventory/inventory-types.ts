@@ -402,3 +402,89 @@ export interface InventoryLossGainAudit {
   version: number;
   auditOpinion?: string;
 }
+
+// ------------------------------------------------------------------
+// 调拨单（调拨波次新增）
+// ------------------------------------------------------------------
+
+/**
+ * `InventoryTransferVO`。
+ *
+ * **两步式**：`DRAFT → SHIPPED（在途）→ RECEIVED`。`SHIPPED` 期间这批货
+ * **不在任何余额行里**（没有虚拟在途仓），因此全仓总库存会暂时减少 ——
+ * 这是两步式的必然结果，不是缺陷。列表页必须把「在途」显示得足够醒目，
+ * 否则用户会以为货丢了。
+ *
+ * **源仓与目标仓各带一套编码 / 名称**：调拨的语义天然是「从哪到哪」，
+ * 只显示一个仓名会让用户必须点进详情才能确认方向。
+ */
+export interface InventoryTransfer {
+  id: Id;
+  transferNo?: string;
+  fromWarehouseId?: Id;
+  fromWarehouseCode?: string;
+  fromWarehouseName?: string;
+  toWarehouseId?: Id;
+  toWarehouseCode?: string;
+  toWarehouseName?: string;
+  /** `DRAFT` / `SHIPPED`（在途）/ `RECEIVED` / `CANCELLED`。 */
+  status?: string;
+  statusDesc?: string;
+  remark?: string;
+  /** 发出时刻；草稿与已取消为空。 */
+  shippedAt?: string;
+  shippedBy?: string;
+  /** 收货时刻；仅已完成非空。 */
+  receivedAt?: string;
+  receivedBy?: string;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  /** 明细；仅详情接口返回，列表为 undefined。 */
+  items?: InventoryTransferItem[];
+}
+
+/** `InventoryTransferVO.Item`。 */
+export interface InventoryTransferItem {
+  id?: Id;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  productName?: string;
+  specValues?: Record<string, unknown> | null;
+  /** 调拨数量，恒为正；方向由「发出 / 收货」动作决定。 */
+  quantity?: string | null;
+  /** 发出时写入的**源仓**记账单位快照；**草稿态为空**。收货时用它断言目标仓单位一致。 */
+  unitSnapshot?: string | null;
+  remark?: string;
+}
+
+/**
+ * `InventoryTransferQueryForm`。
+ *
+ * 同时给出「源仓」与「目标仓」两个筛选维度：只看源仓回答「这个仓发出去了多少」，
+ * 只看目标仓回答「这个仓要收多少」，两者都有查询价值。
+ */
+export interface InventoryTransferQuery extends Page {
+  transferNo?: string;
+  fromWarehouseId?: Id;
+  toWarehouseId?: Id;
+  status?: string;
+}
+
+/**
+ * `InventoryTransferAddForm`（新建与改草稿共用）。
+ *
+ * 数量是**定点字符串**：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字。
+ * 源仓与目标仓必须不同（后端 41042）。
+ */
+export interface InventoryTransferAdd {
+  fromWarehouseId: Id;
+  toWarehouseId: Id;
+  remark?: string;
+  items: Array<{
+    skuId: Id;
+    quantity: string;
+    remark?: string;
+  }>;
+}
