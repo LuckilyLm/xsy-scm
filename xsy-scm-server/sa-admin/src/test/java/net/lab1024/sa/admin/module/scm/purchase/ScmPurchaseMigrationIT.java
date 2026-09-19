@@ -181,10 +181,10 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         // 逐条列举而不是只断言 contains：V1–V14 一旦被重写/重排，这个断言会立刻失败
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
-                "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29");
+                "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除 29 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除 30 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
     }

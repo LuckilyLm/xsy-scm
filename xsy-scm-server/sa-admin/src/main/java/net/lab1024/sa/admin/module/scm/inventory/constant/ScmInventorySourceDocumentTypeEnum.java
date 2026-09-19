@@ -36,7 +36,16 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * （数量恒为正，写不出「零差异」的流水），因此
      * {@code uk_inventory_movement_source_active} 的一行一流水语义在这里依然成立。
      */
-    STOCKTAKE_ITEM("盘点单行");
+    STOCKTAKE_ITEM("盘点单行"),
+
+    /**
+     * 报损报溢单行：{@code source_document_item_id = inventory_loss_gain_item.id}。
+     *
+     * <p>报损与报溢**共用一个来源类型**（方向由流水的 {@code movement_type} 表达）：
+     * 它们出自同一张单据表的同一种行，拆成两个来源类型只会让查询多一次分支，
+     * 而「这张单据是报损还是报溢」在单据头上已经能读到。
+     */
+    LOSS_GAIN_ITEM("报损报溢单行");
 
     private final String desc;
 

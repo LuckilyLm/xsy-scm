@@ -46,7 +46,8 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
      */
     private static final List<String> POST_W6_TABLES = List.of(
             "inventory_outbound", "inventory_outbound_item", "inventory_reservation",
-            "inventory_stocktake", "inventory_stocktake_item");
+            "inventory_stocktake", "inventory_stocktake_item",
+            "inventory_loss_gain", "inventory_loss_gain_item");
 
     /** 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。 */
     private static final long SENTINEL_SOURCE_ITEM_ID = 9_000_000_000L + (System.nanoTime() % 1_000_000_000L);
@@ -131,16 +132,18 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
         // --- CHECK 定义（读约束定义，确认判据写在 DB 里而不是只写在服务层）---
         // 快照约束必须是**方向感知**的：V19 只写了入库分支，出库波次补了出库分支，
-        // 盘点波次再补盘盈 / 盘亏两个分支。
+        // 盘点波次补盘盈 / 盘亏，报损报溢波次补报损 / 报溢 —— 六个类型都必须被分类。
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_snap"))
                 .contains("before_quantity").contains("after_quantity").contains("quantity")
                 .contains("PURCHASE_IN").contains("SALES_OUT")
-                .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS");
+                .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
+                .contains("LOSS_REPORT").contains("GAIN_REPORT");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_append_only"))
                 .containsIgnoringCase("deleted = false");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_type"))
                 .contains("PURCHASE_IN").contains("SALES_OUT")
-                .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS");
+                .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
+                .contains("LOSS_REPORT").contains("GAIN_REPORT");
         assertThat(constraintDef("inventory_balance", "ck_inventory_balance_quantity"))
                 .contains("quantity");
         // 可用量不为负：已预留的货不能被出库吃掉（出库波次新增）
@@ -217,6 +220,54 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         assertThat(balanceDaoMethods)
                 .noneMatch(name -> name.toLowerCase().contains("setquantity"))
                 .noneMatch(name -> name.toLowerCase().contains("updatequantity"));
+    }
+
+    // ------------------------------------------------------------------
+    // V30 报损报溢：四条 DB 层判据
+    // ------------------------------------------------------------------
+
+    /**
+     * 报损报溢 schema 的四条判据（类型 / 状态 / 原因 / 审核信息）必须在**数据库层**生效。
+     *
+     * <p>为什么这四条值得单独断言：它们不是「格式约束」，而是**控制**——
+     * 类型决定库存往哪个方向变；原因与审核信息是审批留痕的全部内容。
+     * 只写在服务层的话，任何绕过服务层的写入（脚本、修数、未来的新入口）都会静默破坏它们。
+     */
+    @Test
+    @DisplayName("V30 报损报溢 schema：类型 / 状态 / 原因 / 审核信息四条判据都在 DB 层生效")
+    void lossGainSchemaIsEnforcedByTheDatabase() {
+        // 白名单与枚举同源（前端枚举、后端枚举、DB CHECK 三处必须一致）
+        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_type"))
+                .contains("LOSS").contains("OVERFLOW");
+        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_status"))
+                .contains("PENDING").contains("COMPLETED").contains("REJECTED");
+        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_reason"))
+                .contains("reason");
+        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_audit"))
+                .contains("audited_at").contains("auditor");
+
+        String insert = "INSERT INTO inventory_loss_gain "
+                + "(loss_gain_no, warehouse_id, adjust_type, status, reason, audited_at, auditor, version, deleted) "
+                + "VALUES (?, 1, ?, ?, ?, %s, %s, 0, FALSE)";
+
+        // 1) 未知类型：方向无法确定，不能猜
+        expectSqlFailure(insert.formatted("NULL", "NULL"), "W30-IT-1", "CONVERT", "PENDING", "规格转换不属于本表");
+        // 2) 未知状态
+        expectSqlFailure(insert.formatted("NULL", "NULL"), "W30-IT-2", "LOSS", "DRAFT", "草稿态不在本表状态机里");
+        // 3) 空白原因：没有原因的单据无法审计，「留痕」也就没有内容
+        expectSqlFailure(insert.formatted("NULL", "NULL"), "W30-IT-3", "LOSS", "PENDING", "   ");
+        // 4) 已完成却没有审核时刻 / 审核人：审批必须留下是谁、什么时候
+        expectSqlFailure(insert.formatted("NULL", "NULL"), "W30-IT-4", "LOSS", "COMPLETED", "到货变质");
+        // 5) 待审核却带了审核人：两侧都要挡，否则审核信息可以被提前写脏，
+        //    「谁批的」就失去意义（因为可以预先填一个名字）
+        expectSqlFailure(insert.formatted("CURRENT_TIMESTAMP", "'张三'"), "W30-IT-5", "LOSS", "PENDING", "到货变质");
+
+        // 合法插入必须成功 —— 证明上面五次失败是判据生效，而不是表根本插不进去
+        assertThat(jdbc.update(
+                "INSERT INTO inventory_loss_gain "
+                        + "(loss_gain_no, warehouse_id, adjust_type, status, reason, version, deleted) "
+                        + "VALUES (?, 1, 'LOSS', 'PENDING', '到货变质', 0, FALSE)", "W30-IT-OK"))
+                .isEqualTo(1);
     }
 
     // ------------------------------------------------------------------

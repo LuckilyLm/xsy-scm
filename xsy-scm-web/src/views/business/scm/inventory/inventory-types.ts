@@ -114,9 +114,9 @@ export interface InventoryMovementQuery extends Page {
   skuId?: Id;
   /** SKU 编码模糊匹配（联 `product_sku`）。 */
   skuCode?: string;
-  /** 流水类型：`PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` / `STOCKTAKE_LOSS`。 */
+  /** 流水类型：`PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` / `STOCKTAKE_LOSS` / `LOSS_REPORT` / `GAIN_REPORT`。 */
   movementType?: string;
-  /** 来源单据类型：收货行 / 出库单行 / 销售订单行 / 盘点单行。 */
+  /** 来源单据类型：收货行 / 出库单行 / 销售订单行 / 盘点单行 / 报损报溢单行。 */
   sourceDocumentType?: string;
   sourceDocumentId?: Id;
   occurredFrom?: string | null;
@@ -305,4 +305,100 @@ export interface InventoryStocktakeAdd {
     actualQuantity: string;
     remark?: string;
   }>;
+}
+
+// ------------------------------------------------------------------
+// 报损报溢单（报损报溢波次新增）
+// ------------------------------------------------------------------
+
+/**
+ * `InventoryLossGainVO`。
+ *
+ * **方向在单据头上**：`adjustType` 为 `LOSS` 时审批通过会减少库存、`OVERFLOW` 时增加库存。
+ * 明细行的 `quantity` 恒为正，前端不得按正负号猜方向。
+ *
+ * **`version` 是审批的必填入参**：审批人必须批准自己读到的内容。若在「打开单据 → 点审批」
+ * 之间单据被改过，后端会以 40921 拒绝并要求刷新 —— 因此详情/列表拿到的 `version`
+ * 必须原样回传，不能在本地自增。
+ */
+export interface InventoryLossGain {
+  id: Id;
+  lossGainNo?: string;
+  warehouseId?: Id;
+  warehouseCode?: string;
+  warehouseName?: string;
+  /** `LOSS` 报损 / `OVERFLOW` 报溢。 */
+  adjustType?: string;
+  adjustTypeDesc?: string;
+  /** `PENDING` / `COMPLETED` / `REJECTED`。 */
+  status?: string;
+  statusDesc?: string;
+  /** 报损报溢原因（必填）。 */
+  reason?: string;
+  remark?: string;
+  auditedAt?: string;
+  auditor?: string;
+  auditOpinion?: string;
+  /** 乐观锁版本号；审批时必须原样回传。 */
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  /** 明细；仅详情接口返回，列表为 undefined。 */
+  items?: InventoryLossGainItem[];
+}
+
+/** `InventoryLossGainVO.Item`。 */
+export interface InventoryLossGainItem {
+  id?: Id;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  productName?: string;
+  specValues?: Record<string, unknown> | null;
+  /** 申报数量，恒为正；方向看单据的 `adjustType`。 */
+  quantity?: string | null;
+  /** 审批通过时写入的记账单位快照；**待审核态为空**。 */
+  unitSnapshot?: string | null;
+  remark?: string;
+}
+
+/**
+ * `InventoryLossGainQueryForm`。
+ *
+ * 与余额 / 流水 / 出库 / 盘点一致：**没有 `sortItemList`**，排序固定为 `created_at DESC, id DESC`。
+ */
+export interface InventoryLossGainQuery extends Page {
+  lossGainNo?: string;
+  warehouseId?: Id;
+  adjustType?: string;
+  status?: string;
+}
+
+/**
+ * `InventoryLossGainAddForm`（新建与改待审核共用）。
+ *
+ * `reason` 必填：报损是「把货从账上抹掉」，没有原因的单据审批人无从判断。
+ * 数量是**定点字符串**：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字。
+ */
+export interface InventoryLossGainAdd {
+  adjustType: string;
+  warehouseId: Id;
+  reason: string;
+  remark?: string;
+  items: Array<{
+    skuId: Id;
+    quantity: string;
+    remark?: string;
+  }>;
+}
+
+/**
+ * `InventoryLossGainAuditForm`（审批通过 / 驳回共用）。
+ *
+ * `version` 必填并参与乐观锁校验；`auditOpinion` 在**驳回时必填**
+ * （驳回是唯一会把「为什么不行」传达给录单人的渠道）。
+ */
+export interface InventoryLossGainAudit {
+  version: number;
+  auditOpinion?: string;
 }

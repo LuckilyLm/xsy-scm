@@ -2,10 +2,12 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryLossGainTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao;
+import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryLossGainFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryStocktakeAdjustment;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryStocktakeFact;
@@ -21,9 +23,14 @@ import java.math.BigDecimal;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_INBOUND;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_LOSS_GAIN;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_OUTBOUND;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_STOCKTAKE;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_INSUFFICIENT_AVAILABLE;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_BALANCE_MISSING;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_BELOW_RESERVED;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_NEGATIVE_AFTER;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_BALANCE_MISSING;
@@ -39,13 +46,14 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
  * 避免多行收货以相反顺序获取余额锁。
  *
  * <p><b>本类是全仓唯一会改变 {@code inventory_balance.quantity} 的地方</b>，
- * 三条写入路径都遵守同一套纪律：
+ * 四条写入路径都遵守同一套纪律：
  * <ul>
  *   <li>{@link #postPurchaseInbound} —— 采购入库（方向 = 入，可建零余额行）；</li>
  *   <li>{@link #postSalesOutbound} —— 销售出库（方向 = 出，不建行，先判可用量）；</li>
- *   <li>{@link #postStocktakeAdjust} —— 盘点调整（方向由差异正负决定，不建行）。</li>
+ *   <li>{@link #postStocktakeAdjust} —— 盘点调整（方向由差异正负决定，不建行）；</li>
+ *   <li>{@link #postLossGainAdjust} —— 报损报溢（方向由单据类型决定，不建行）。</li>
  * </ul>
- * 三者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
+ * 四者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
  * （{@code incrementQuantity} / {@code decrementQuantity}），从不做「读-改-写」赋值。
  */
 @Service
@@ -292,6 +300,102 @@ public class InventoryCommandService {
     }
 
     /**
+     * 按报损 / 报溢审批结果调整余额并追加流水，必须参与调用方事务。
+     *
+     * <p><b>方向由单据类型决定，不由数量正负决定</b>：{@code LOSS} → {@code LOSS_REPORT} 且
+     * {@code after = before - quantity}；{@code OVERFLOW} → {@code GAIN_REPORT} 且
+     * {@code after = before + quantity}。数量恒为正（{@code ck_inventory_movement_qty}），
+     * 方向只存在于 {@code movement_type} 里 —— 与 {@code ck_inventory_movement_snap} 的分组一致。
+     *
+     * <p><b>报损有两条下限，报溢没有上限</b>：
+     * <ul>
+     *   <li>Q10：{@code after >= 0}，报损不得把库存推成负数（41033）；</li>
+     *   <li>可用量：{@code after >= reserved}，报损不得吃掉已预留的货（41034）——
+     *       预留代表对下游（销售订单）的承诺，报损不能单方面让它落空。</li>
+     * </ul>
+     * 报溢只增不减，因此不需要下限判断；但它**不建零余额行**：记账单位（Q13）只能来自
+     * 余额行，从未入库过的 SKU 报 41032（与盘点同一约束）。
+     *
+     * <p><b>用审核时刻与审核人</b>，不是创建时刻与创建人：库存是在审核那一刻变的，
+     * 流水的 {@code occurred_at} 必须指向那个时刻，否则「按业务时间查流水」会失真。
+     *
+     * @return 本次使用的记账单位（调用方用于回写明细行的 {@code unitSnapshot}）
+     */
+    public String postLossGainAdjust(InventoryLossGainFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Loss/gain adjustment requires the caller's transaction");
+        }
+        requireLossGainFact(fact);
+
+        // 未知类型直接失败：白名单有 DB CHECK 兜底，但这里先给出可归因的错误码。
+        ScmInventoryLossGainTypeEnum type = ScmInventoryLossGainTypeEnum.of(fact.adjustType());
+        if (type == null) {
+            throw new ScmBusinessException(INVENTORY_LOSS_GAIN_PARAM_INVALID);
+        }
+
+        warehouseService.require(fact.warehouseId());
+
+        // 不建零余额行：没有余额行 = 从未入库 = 既无账可调，也无法确定记账单位。
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_LOSS_GAIN_BALANCE_MISSING);
+        }
+
+        String unit = balance.getUnit();
+
+        // 持有行锁后再读账面量与预留量，避免并发下拿到过期快照。
+        BigDecimal live = balance.getQuantity();
+        BigDecimal reserved = balance.getReservedQuantity() == null
+                ? BigDecimal.ZERO : balance.getReservedQuantity();
+
+        BigDecimal after;
+        if (type.isInbound()) {
+            after = live.add(fact.quantity());
+        } else {
+            after = live.subtract(fact.quantity());
+            // Q10：报损不得把库存推成负数。
+            if (after.signum() < 0) {
+                throw new ScmBusinessException(INVENTORY_LOSS_GAIN_NEGATIVE_AFTER);
+            }
+            // 可用量不为负：已预留的货不能被报损吃掉。
+            if (after.compareTo(reserved) < 0) {
+                throw new ScmBusinessException(INVENTORY_LOSS_GAIN_BELOW_RESERVED);
+            }
+        }
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(type.getMovementType().name());
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.LOSS_GAIN_ITEM.name());
+        movement.setSourceDocumentId(fact.lossGainId());
+        movement.setSourceDocumentItemId(fact.lossGainItemId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(unit);
+        // 报损报溢没有成本依据，unit_cost 留空（V19 的 ck_inventory_movement_cost 允许 NULL）。
+        movement.setUnitCost(null);
+        movement.setBeforeQuantity(live);
+        movement.setAfterQuantity(after);
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_LOSS_GAIN);
+        }
+
+        int rows = type.isInbound()
+                ? balanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator())
+                : balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator());
+        if (rows != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+        return unit;
+    }
+
+    /**
      * 查询可用量；缺少查询标识或余额不存在时返回零，不返回表示能力未启用的 {@code null}。
      *
      * <p>出库波次起 {@code reserved} 返回**真实预留量**（此前恒为零）。
@@ -369,6 +473,30 @@ public class InventoryCommandService {
                 || fact.operator() == null
                 || fact.operator().isBlank()) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_PARAM_INVALID);
+        }
+    }
+
+    /**
+     * 校验报损报溢事实。
+     *
+     * <p>数量必须**严格为正**：与盘点不同，报损报溢没有「零差异」这种合法事实 ——
+     * 一张数量为 0 的报损单在业务上不存在，出现它只可能是录单错误或调用方拼错了参数。
+     * 单据类型必须属于白名单（未知类型无法确定方向，不能猜）。
+     */
+    private static void requireLossGainFact(InventoryLossGainFact fact) {
+        if (fact == null
+                || fact.warehouseId() == null
+                || fact.skuId() == null
+                || fact.lossGainId() == null
+                || fact.lossGainItemId() == null
+                || fact.adjustType() == null
+                || fact.adjustType().isBlank()
+                || fact.quantity() == null
+                || fact.quantity().signum() <= 0
+                || fact.occurredAt() == null
+                || fact.operator() == null
+                || fact.operator().isBlank()) {
+            throw new ScmBusinessException(INVENTORY_LOSS_GAIN_PARAM_INVALID);
         }
     }
 }

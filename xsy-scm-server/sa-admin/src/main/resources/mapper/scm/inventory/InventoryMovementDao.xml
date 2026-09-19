@@ -56,7 +56,7 @@
                m.operator,
                m.created_at,
                r.receipt_no,
-               COALESCE(ob.outbound_no, st.stocktake_no) AS source_document_no,
+               COALESCE(ob.outbound_no, st.stocktake_no, lg.loss_gain_no) AS source_document_no,
                w.warehouse_code,
                w.name       AS warehouse_name,
                k.sku_code,
@@ -78,6 +78,11 @@
         LEFT JOIN inventory_stocktake st
                ON st.id = m.source_document_id
               AND m.source_document_type = 'STOCKTAKE_ITEM'
+        -- 报损报溢波次：LOSS_REPORT / GAIN_REPORT 流水的来源单号取报损报溢单号。
+        -- 报损与报溢共用同一个来源类型（LOSS_GAIN_ITEM），方向由 movement_type 区分。
+        LEFT JOIN inventory_loss_gain lg
+               ON lg.id = m.source_document_id
+              AND m.source_document_type = 'LOSS_GAIN_ITEM'
         LEFT JOIN warehouse   w ON w.id = m.warehouse_id
         LEFT JOIN product_sku k ON k.id = m.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id

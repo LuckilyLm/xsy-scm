@@ -8,12 +8,14 @@
  *    `"0.0000"` → `0.0000`；「没有值」与「值是零」不得被合并；
  * 3. **append-only**：流水前端只有 query，没有新增 / 编辑 / 删除入口；
  * 4. **枚举与 DB 白名单同源**：流水类型 `PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` /
- *    `STOCKTAKE_LOSS`，来源 `PURCHASE_RECEIPT_ITEM` / `SALES_OUTBOUND_ITEM` /
- *    `SALES_ORDER_ITEM` / `STOCKTAKE_ITEM`；
- * 5. **错误码有可执行文案**：库存域全部码（含盘点波次 41019–41027）都必须在映射表里，
- *    且提示要说「下一步做什么」；
+ *    `STOCKTAKE_LOSS` / `LOSS_REPORT` / `GAIN_REPORT`，来源 `PURCHASE_RECEIPT_ITEM` /
+ *    `SALES_OUTBOUND_ITEM` / `SALES_ORDER_ITEM` / `STOCKTAKE_ITEM` / `LOSS_GAIN_ITEM`；
+ * 5. **错误码有可执行文案**：库存域全部码（含盘点 41019–41027、报损报溢 41028–41037）
+ *    都必须在映射表里，且提示要说「下一步做什么」；
  * 6. **盘点口径不被误读**：确认后的账面不一定等于实盘数（差异施加到确认瞬间的账面量上），
- *    页面必须写明，且新增表单不得提交账面量。
+ *    页面必须写明，且新增表单不得提交账面量；
+ * 7. **审批乐观锁**：报损报溢的审批请求必须带上审批人看到的 `version`，
+ *    且打开审批弹窗时不得重新拉取单据 —— 否则「审批人必须批准自己读到的内容」这条防线失效。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,6 +28,8 @@ import {
 } from '../src/views/business/scm/inventory/inventory-model.ts';
 import {inventoryError} from '../src/views/business/scm/inventory/inventory-errors.ts';
 import {
+  SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
+  SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
   SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
   SCM_INVENTORY_SOURCE_TYPE_ENUM,
   SCM_INVENTORY_TABLE_ID,
@@ -128,9 +132,10 @@ test('movement type text falls back to the raw value so an unmapped type stays v
 
 test('inventory enums expose exactly the values the backend CHECK whitelist allows', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM),
-      ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS']);
+      ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'GAIN_REPORT']);
   assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM),
-      ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM', 'STOCKTAKE_ITEM']);
+      ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM', 'STOCKTAKE_ITEM',
+        'LOSS_GAIN_ITEM']);
 
   // 值与键逐字一致（后端 `ScmInventoryMovementTypeEnum.name()` 就是持久化值）
   for (const [key, item] of Object.entries(SCM_INVENTORY_MOVEMENT_TYPE_ENUM)) {
@@ -143,19 +148,38 @@ test('inventory enums expose exactly the values the backend CHECK whitelist allo
   }
 
   // 盘盈与盘亏必须是**两个**类型：方向要能从类型本身读出来，否则 DB 的
-  // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。
+  // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。报损 / 报溢同理。
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /STOCKTAKE_ADJUST/);
 
-  // 盘点波次已落地；报损报溢 / 调拨 / 规格转换仍不得提前出现
-  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /TRANSFER|LOSS_REPORT|GAIN_REPORT|CONVERT/);
+  // 报损报溢波次已落地；调拨 / 规格转换仍不得提前出现
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /TRANSFER|CONVERT/);
+});
+
+test('loss/gain document enums match the backend state machine', () => {
+  // 方向是**单据级**属性：一张单要么全报损、要么全报溢
+  assert.deepEqual(Object.keys(SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM), ['LOSS', 'OVERFLOW']);
+  // 没有 DRAFT：报损报溢创建即提交待审核（录单与审批应当由不同的人完成）
+  assert.deepEqual(Object.keys(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM),
+      ['PENDING', 'COMPLETED', 'REJECTED']);
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM), /DRAFT/);
+
+  for (const [key, item] of Object.entries(SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM)) {
+    assert.equal(item.value, key);
+    assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
+  }
+  for (const [key, item] of Object.entries(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM)) {
+    assert.equal(item.value, key);
+    assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
+  }
 });
 
 test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID),
-      ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE']);
+      ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN']);
   assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.STOCKTAKE, 'scm-inventory-stocktake-table');
+  assert.equal(SCM_INVENTORY_TABLE_ID.LOSS_GAIN, 'scm-inventory-loss-gain-table');
 
   const business = TABLE_ID_CONST.BUSINESS;
   assert.equal(business.SCM_INVENTORY_BALANCE, 50017);
@@ -163,6 +187,7 @@ test('inventory table DOM ids are distinct, non-empty and registered with numeri
   assert.equal(business.SCM_INVENTORY_OUTBOUND, 50019);
   assert.equal(business.SCM_INVENTORY_RESERVATION, 50020);
   assert.equal(business.SCM_INVENTORY_STOCKTAKE, 50021);
+  assert.equal(business.SCM_INVENTORY_LOSS_GAIN, 50022);
 
   // 数字 tableId 必须全局唯一（列配置按它持久化，撞了会串列）
   const numeric = Object.values(business).filter((value) => typeof value === 'number');
@@ -313,6 +338,70 @@ test('stocktake error codes all have actionable Chinese text', () => {
   // 两条最容易被误读的码：提示里必须给出「怎么做」
   assert.match(inventoryError({code: 41023}), /先办理入库/);
   assert.match(inventoryError({code: 41025}), /释放/);
+});
+
+// ------------------------------------------------------------------
+// 报损报溢波次
+// ------------------------------------------------------------------
+
+test('the loss/gain page wires its own DOM id, six privileges and a PENDING-only action set', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-loss-gain-list.vue');
+  assert.match(page, /TableOperator/);
+  assert.match(page, /SCM_INVENTORY_TABLE_ID/);
+  assert.match(page, /v-privilege/);
+
+  // 六个权限点都要出现。「审批」与「驳回」必须是两个独立权限 ——
+  // 允许主管审批、由另一角色驳回是常见分工，合成一个「审核」会让这两件事无法分权。
+  for (const perm of [
+    'scm:inventory:loss-gain:query',
+    'scm:inventory:loss-gain:add',
+    'scm:inventory:loss-gain:update',
+    'scm:inventory:loss-gain:approve',
+    'scm:inventory:loss-gain:reject',
+    'scm:inventory:loss-gain:delete',
+  ]) {
+    assert.match(page, new RegExp(perm), page + ' 缺少权限 ' + perm);
+  }
+
+  // 只有待审核可写：编辑 / 审批 / 驳回 / 删除都必须挂在 status === 'PENDING' 上
+  assert.match(page, /record\.status === 'PENDING'/);
+  // 两个终态都不能出现在可写条件里
+  assert.doesNotMatch(page, /record\.status === 'COMPLETED'/);
+  assert.doesNotMatch(page, /record\.status === 'REJECTED'/);
+});
+
+test('the audit request carries the version the approver saw (optimistic lock)', () => {
+  // 审批人必须批准自己读到的内容。若在「打开单据 → 点审批」之间单据被改过，
+  // 后端以 40921 拒绝并要求刷新。因此前端必须把打开时的 version 原样回传，
+  // 且**不得**在打开弹窗时重新拉取单据（那等于「总是批准最新的」，防线就没了）。
+  const page = code('../src/views/business/scm/inventory/inventory-loss-gain-list.vue');
+  assert.match(page, /version:\s*record\.version \?\? 0/);
+
+  // 驳回必须在前端也校验一次意见，避免白跑一次请求才拿到 41037
+  assert.match(page, /驳回时必须填写审核意见/);
+
+  const api = code('../src/api/business/scm/inventory-loss-gain-api.ts');
+  assert.match(api, /approve:/);
+  assert.match(api, /reject:/);
+  // 报损报溢是**有状态单据**，与 append-only 的流水不同
+  assert.match(api, /create:/);
+  assert.match(api, /update:/);
+  assert.match(api, /delete:/);
+  // 没有独立的「提交」端点：创建即待审核
+  assert.doesNotMatch(api, /submit/);
+});
+
+test('loss/gain error codes all have actionable Chinese text', () => {
+  // 报损报溢波次 10 个码：41028–41037
+  for (let code = 41028; code <= 41037; code++) {
+    const text = inventoryError({code});
+    assert.notEqual(text, '操作失败，请重试', code + ' 未登记可执行提示');
+    assert.ok(text.length > 8, code + ' 的提示过于简短，无法指导下一步');
+  }
+  // 三条最容易被误读的码：提示里必须给出「怎么做」
+  assert.match(inventoryError({code: 41032}), /先办理入库/);
+  assert.match(inventoryError({code: 41033}), /不能把库存变成负数/);
+  assert.match(inventoryError({code: 41037}), /说明驳回原因/);
 });
 
 // ------------------------------------------------------------------

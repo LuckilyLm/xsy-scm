@@ -5,16 +5,17 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
 
 /**
- * 库存域错误码（19 个）。
+ * 库存域错误码（30 个）。
  *
  * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加，
- * 盘点的码在盘点波次追加。
+ * 盘点的码在盘点波次追加，报损报溢的码在报损报溢波次追加。
  *
  * <pre>
  * 40486                 NOT_FOUND   1
  * 41001–41003           既有 3 个
  * 41011–41017           出库波次 7 个
- * 41019–41026           盘点波次 8 个
+ * 41019–41027           盘点波次 9 个
+ * 41028–41037           报损报溢波次 10 个
  * </pre>
  *
  * <p><b>为什么是 40486 / 41xxx</b>：2026-09-18 与全域码表核对，全仓 {@code 4xxxx} 已占用
@@ -23,7 +24,7 @@ import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
  * （由 {@code ScmInventoryConstantTest} 门禁强制）。
  *
  * <p><b>410xx 段的实际占用必须现查现用</b>：41004–41007 属 warehouse、41008 属 purchase、
- * 41018 亦属 warehouse，因此库存域只能取 41001–41003 / 41011–41017 / 41019–41026。
+ * 41018 亦属 warehouse，因此库存域只能取 41001–41003 / 41011–41017 / 41019–41037。
  * 不要相信任何注释里写的「本段空闲」—— 那是写下时的状态，会过期。
  *
  * <p><b>刻意不放进本枚举的码</b>：{@code WarehouseErrorCode.WAREHOUSE_NOT_FOUND(40485)} ——
@@ -141,7 +142,65 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 而结果看起来完全正常（余额确实变了），只是变错了。这类错误只有在
      * 未来对账时才会暴露，所以要在入口挡住。
      */
-    INVENTORY_STOCKTAKE_DUPLICATE_SKU(41027, "同一 SKU 在盘点单中只能出现一次");
+    INVENTORY_STOCKTAKE_DUPLICATE_SKU(41027, "同一 SKU 在盘点单中只能出现一次"),
+
+    /** 41028：报损报溢单不存在（行不存在或已软删）。 */
+    INVENTORY_LOSS_GAIN_NOT_FOUND(41028, "报损报溢单不存在"),
+
+    /**
+     * 41029：报损报溢单当前状态不允许该操作。
+     *
+     * <p>只有「待审核」可改 / 可删 / 可审批。已完成的单据已写流水，改它会让账与单对不上；
+     * 已驳回的单据必须留痕。参考项目对 update / delete 没有状态守卫，本波次刻意补上。
+     */
+    INVENTORY_LOSS_GAIN_STATUS_INVALID(41029,
+            "报损报溢单当前状态不允许该操作（仅待审核可改、可删、可审批）"),
+
+    /** 41030：报损报溢单至少需要一行明细。 */
+    INVENTORY_LOSS_GAIN_EMPTY_ITEMS(41030, "报损报溢单至少需要一条明细"),
+
+    /** 41031：报损报溢事实非法（quantity &lt;= 0、仓库 / SKU / 来源行缺失等）。 */
+    INVENTORY_LOSS_GAIN_PARAM_INVALID(41031, "报损报溢事实不合法"),
+
+    /**
+     * 41032：该 {@code (warehouse, sku)} 没有余额行，无法报损报溢。
+     *
+     * <p>与盘点的 41023 是**同一类约束**（记账单位只能来自余额行），
+     * 但补救动作不同：盘点要「先入库再盘点」，报损报溢要「先入库再报损报溢」。
+     * 因此各自保留一个码，让前端提示能给出准确的下一步。
+     */
+    INVENTORY_LOSS_GAIN_BALANCE_MISSING(41032, "该仓库与 SKU 尚无库存记录，请先办理入库再报损报溢"),
+
+    /** 41033（Q10）：报损后库存数量为负。 */
+    INVENTORY_LOSS_GAIN_NEGATIVE_AFTER(41033, "报损数量超过现有库存，请核对后重填"),
+
+    /**
+     * 41034：报损后低于已预留量（可用量为负）。
+     *
+     * <p>已预留的货代表对下游（销售订单）的承诺，报损不能把它吃掉 ——
+     * 否则承诺无法兑现，且 {@code ck_inventory_balance_available} 会在 DB 层拒绝。
+     */
+    INVENTORY_LOSS_GAIN_BELOW_RESERVED(41034, "报损后库存低于已预留量，请先释放预留或减少报损数量"),
+
+    /** 41035：源身份重复报损报溢（同一条单据行已写过流水）。 */
+    INVENTORY_DUPLICATE_LOSS_GAIN(41035, "该报损报溢明细行已产生库存流水，不能重复审批"),
+
+    /**
+     * 41036：同一 SKU 在报损报溢单里出现多次。
+     *
+     * <p>与盘点的 41027 同一理由：重复行会让同一份数量被调整两次，
+     * 而结果看起来完全正常。
+     */
+    INVENTORY_LOSS_GAIN_DUPLICATE_SKU(41036, "同一 SKU 在报损报溢单中只能出现一次"),
+
+    /**
+     * 41037：驳回时必须填写审核意见。
+     *
+     * <p>驳回是**唯一会把「为什么不行」传达给录单人的渠道**（本波次没有消息通知）。
+     * 允许空意见的驳回会让录单人只知道被拒、不知道改什么，只能反复试 ——
+     * 那是把沟通成本转移给了最不该承担的人。
+     */
+    INVENTORY_LOSS_GAIN_REJECT_OPINION_REQUIRED(41037, "驳回时必须填写审核意见，说明驳回原因");
 
     private final int code;
     private final String msg;

@@ -49,6 +49,8 @@ export const TABLE_ID_CONST = {
     SCM_INVENTORY_RESERVATION: 50020,
     // 盘点波次（盘点单）
     SCM_INVENTORY_STOCKTAKE: 50021,
+    // 报损报溢波次（报损报溢单）
+    SCM_INVENTORY_LOSS_GAIN: 50022,
     OA: {
       NOTICE: businessOAInitTableId + 1, //通知公告
       ENTERPRISE: businessOAInitTableId + 2, //企业信息

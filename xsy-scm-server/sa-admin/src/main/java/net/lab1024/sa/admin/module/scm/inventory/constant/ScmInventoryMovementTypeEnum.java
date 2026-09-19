@@ -22,8 +22,9 @@ import lombok.RequiredArgsConstructor;
  * </ol>
  *
  * <p><b>已实现</b>：W6-1 的 {@code PURCHASE_IN}；出库波次新增 {@code SALES_OUT}；
- * 盘点波次新增 {@code STOCKTAKE_GAIN} / {@code STOCKTAKE_LOSS}。
- * 报损报溢 / 调拨 / 规格转换仍待后续波次。
+ * 盘点波次新增 {@code STOCKTAKE_GAIN} / {@code STOCKTAKE_LOSS}；
+ * 报损报溢波次新增 {@code LOSS_REPORT} / {@code GAIN_REPORT}。
+ * 调拨 / 规格转换仍待后续波次。
  */
 @Getter
 @RequiredArgsConstructor
@@ -46,7 +47,19 @@ public enum ScmInventoryMovementTypeEnum {
     STOCKTAKE_GAIN("盘盈", true),
 
     /** 盘亏：盘点确认时实盘量低于账面量的部分（方向 = 出）。 */
-    STOCKTAKE_LOSS("盘亏", false);
+    STOCKTAKE_LOSS("盘亏", false),
+
+    /**
+     * 报损：报损单审批通过时写入（方向 = 出）。
+     *
+     * <p>与 {@code STOCKTAKE_LOSS} 分开而不是复用：两者都减少库存，但**业务含义与追责对象不同**
+     * （盘亏是「账实不符」的结果，报损是「对已知损耗的申报」）。合并成一个类型后，
+     * 「这个月损耗了多少」就无法从流水里直接读出来，而那正是报损存在的理由。
+     */
+    LOSS_REPORT("报损", false),
+
+    /** 报溢：报溢单审批通过时写入（方向 = 入）。 */
+    GAIN_REPORT("报溢", true);
 
     /** 持久化到 {@code inventory_movement.movement_type} 的值。 */
     private final String desc;
