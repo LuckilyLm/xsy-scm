@@ -70,7 +70,19 @@ public enum ScmInventoryMovementTypeEnum {
     TRANSFER_OUT("调拨转出", false),
 
     /** 调拨转入：调拨单**收货**时写入**目标仓**（方向 = 入）。 */
-    TRANSFER_IN("调拨转入", true);
+    TRANSFER_IN("调拨转入", true),
+
+    /**
+     * 规格转换出：转换单审批通过时写入**源 SKU**（方向 = 出）。
+     *
+     * <p>与 {@code TRANSFER_OUT} / {@code SALES_OUT} 分开而不是复用：三者都是「出」，
+     * 但业务含义不同（调拨是换仓、销售是履约、转换是改规格）。合并后
+     * 「这个月拆零消耗了多少」就无法从流水里读出来。
+     */
+    CONVERT_OUT("规格转换出", false),
+
+    /** 规格转换入：转换单审批通过时写入**目标 SKU**（方向 = 入）。 */
+    CONVERT_IN("规格转换入", true);
 
     /** 持久化到 {@code inventory_movement.movement_type} 的值。 */
     private final String desc;

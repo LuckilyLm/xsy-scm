@@ -153,11 +153,15 @@ V31  V31__scm_inventory_transfer.sql            transfer 库存调拨：TRANSFER
 V32  V32__scm_inventory_warning_threshold.sql   warning 库存阈值预警：阈值配置表（**独立于
                                                    余额表**）、预警列表（读时算状态）、
                                                    菜单 860-866
+V33  V33__scm_inventory_conversion.sql          conversion 规格转换（整件拆零 / 组合拆分）：
+                                                   CONVERT_OUT/CONVERT_IN 流水类型、
+                                                   十方向分组快照约束、转换单两张表、
+                                                   菜单 870-876
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
-V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）、V31（调拨）与 V32（阈值预警）为
-**BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
+V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）、V31（调拨）、V32（阈值预警）与
+V33（规格转换）为 **BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，

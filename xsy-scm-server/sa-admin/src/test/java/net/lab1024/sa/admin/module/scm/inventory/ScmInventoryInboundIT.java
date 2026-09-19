@@ -375,12 +375,13 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(inventoryMovementQueryService.query(outWindow).getList()).isEmpty();
 
         // --- 类型白名单：枚举与 DB CHECK 同源
-        //（W6-1 = PURCHASE_IN；出库波次追加 SALES_OUT；盘点 / 报损报溢 / 调拨依次追加）---
+        //（W6-1 = PURCHASE_IN；出库 / 盘点 / 报损报溢 / 调拨 / 规格转换依次追加）---
         assertThat(ScmInventoryMovementTypeEnum.isSupported("PURCHASE_IN")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("SALES_OUT")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported(null)).isFalse();
-        // 尚未落地的类型仍不得放行（规格转换是最后一个未做的库存动作）
-        assertThat(ScmInventoryMovementTypeEnum.isSupported("CONVERT_IN")).isFalse();
+        // 白名单之外一律拒绝。用 UNKNOWN_IN 这个**明确不存在**的名字 ——
+        // 十个真实类型已全部落地，再拿「未实现的业务类型」当反例会每落地一个就要改一次。
+        assertThat(ScmInventoryMovementTypeEnum.isSupported("UNKNOWN_IN")).isFalse();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("STOCKTAKE_ADJUST")).isFalse();
     }
 }

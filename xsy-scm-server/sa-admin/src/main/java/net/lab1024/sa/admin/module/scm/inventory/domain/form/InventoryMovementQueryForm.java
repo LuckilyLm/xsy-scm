@@ -46,21 +46,20 @@ public class InventoryMovementQueryForm extends PageParam {
      * 直接拒掉（30001），表现为「流水明明写进去了，却筛不出来」。
      */
     @Pattern(regexp = "PURCHASE_IN|SALES_OUT|STOCKTAKE_GAIN|STOCKTAKE_LOSS"
-            + "|LOSS_REPORT|GAIN_REPORT|TRANSFER_OUT|TRANSFER_IN")
+            + "|LOSS_REPORT|GAIN_REPORT|TRANSFER_OUT|TRANSFER_IN|CONVERT_OUT|CONVERT_IN")
     private String movementType;
 
     /**
      * 来源单据类型过滤；与 {@code ScmInventorySourceDocumentTypeEnum} 同源。
      *
-     * <p>调拨占**两个**来源类型（{@code TRANSFER_OUT_ITEM} / {@code TRANSFER_IN_ITEM}）：
-     * 同一条调拨明细行会产生两条流水，若共用一个来源类型会撞上
-     * {@code uk_inventory_movement_source_active}。
+     * <p>调拨与规格转换各占**两个**来源类型：它们的同一条明细行都会产生两条流水，
+     * 若共用一个来源类型会撞上 {@code uk_inventory_movement_source_active}。
      */
     @Pattern(regexp = "PURCHASE_RECEIPT_ITEM|SALES_OUTBOUND_ITEM|SALES_ORDER_ITEM|STOCKTAKE_ITEM"
-            + "|LOSS_GAIN_ITEM|TRANSFER_OUT_ITEM|TRANSFER_IN_ITEM")
+            + "|LOSS_GAIN_ITEM|TRANSFER_OUT_ITEM|TRANSFER_IN_ITEM|CONVERT_OUT_ITEM|CONVERT_IN_ITEM")
     private String sourceDocumentType;
 
-    /** 来源单据头 id（收货单 / 出库单 / 盘点单 / 报损报溢单 / 调拨单 id），头级溯源过滤。 */
+    /** 来源单据头 id（收货单 / 出库单 / 盘点单 / 报损报溢单 / 调拨单 / 转换单 id），头级溯源过滤。 */
     private Long sourceDocumentId;
 
     /** {@code occurred_at >= occurredFrom}。 */

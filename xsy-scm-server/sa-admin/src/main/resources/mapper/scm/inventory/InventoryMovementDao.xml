@@ -56,7 +56,7 @@
                m.operator,
                m.created_at,
                r.receipt_no,
-               COALESCE(ob.outbound_no, st.stocktake_no, lg.loss_gain_no, tr.transfer_no) AS source_document_no,
+               COALESCE(ob.outbound_no, st.stocktake_no, lg.loss_gain_no, tr.transfer_no, cv.conversion_no) AS source_document_no,
                w.warehouse_code,
                w.name       AS warehouse_name,
                k.sku_code,
@@ -89,6 +89,11 @@
         LEFT JOIN inventory_transfer tr
                ON tr.id = m.source_document_id
               AND m.source_document_type IN ('TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM')
+        -- 规格转换波次：CONVERT_OUT / CONVERT_IN 流水的来源单号取转换单号。
+        -- 同样占两个来源类型（同一条明细行产生两条流水），两个条件都要列上。
+        LEFT JOIN inventory_conversion cv
+               ON cv.id = m.source_document_id
+              AND m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
         LEFT JOIN warehouse   w ON w.id = m.warehouse_id
         LEFT JOIN product_sku k ON k.id = m.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id

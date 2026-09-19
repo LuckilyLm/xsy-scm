@@ -7,6 +7,7 @@ import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTy
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao;
+import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryConversionFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryLossGainFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryStocktakeAdjustment;
@@ -23,6 +24,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_PARAM_INVALID;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_SOURCE_BALANCE_MISSING;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_SOURCE_UNIT_MISMATCH;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_TARGET_UNIT_MISMATCH;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_CONVERSION;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_INBOUND;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_LOSS_GAIN;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_OUTBOUND;
@@ -548,6 +555,128 @@ public class InventoryCommandService {
     }
 
     /**
+     * 规格转换**转出**：从**源 SKU** 扣减并写 {@code CONVERT_OUT} 流水（方向 = 出）。
+     *
+     * <p>与销售出库 / 调拨转出同一取向：**不建零余额行**（没有余额行 = 从未入库 = 无货可转），
+     * 先判可用量再持锁扣减。
+     *
+     * <p><b>单位与出库 / 调拨的关键差异：单位来自单据声明，不是余额</b>。
+     * 折算关系本身含单位（1 箱 = 10 kg），所以单据必须写清源单位；
+     * 这里用它与余额记账单位**比对**，不一致直接失败（41059），不做隐式换算，
+     * 也**不**按声明改写余额单位 —— 那会让既有余额的含义漂移。
+     */
+    public void postConvertOut(InventoryConversionFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Conversion out requires the caller's transaction");
+        }
+        requireConversionFact(fact);
+
+        warehouseService.require(fact.warehouseId());
+
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_CONVERSION_SOURCE_BALANCE_MISSING);
+        }
+        if (!fact.unit().equals(balance.getUnit())) {
+            throw new ScmBusinessException(INVENTORY_CONVERSION_SOURCE_UNIT_MISMATCH);
+        }
+
+        BigDecimal onHand = balance.getQuantity();
+        BigDecimal reserved = balance.getReservedQuantity() == null
+                ? BigDecimal.ZERO : balance.getReservedQuantity();
+        if (onHand.subtract(reserved).compareTo(fact.quantity()) < 0) {
+            throw new ScmBusinessException(INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE);
+        }
+        BigDecimal after = onHand.subtract(fact.quantity());
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(ScmInventoryMovementTypeEnum.CONVERT_OUT.name());
+        // 方向编码在**来源类型**里：转出与转入引用同一条明细行，必须落在两个来源类型下，
+        // 否则第二条流水会撞上 uk_inventory_movement_source_active（与调拨同一原因）。
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.CONVERT_OUT_ITEM.name());
+        movement.setSourceDocumentId(fact.conversionId());
+        movement.setSourceDocumentItemId(fact.conversionItemId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(fact.unit());
+        // 转换本身不产生成本事实，unit_cost 留空（成本核算属后续波次）。
+        movement.setUnitCost(null);
+        movement.setBeforeQuantity(onHand);
+        movement.setAfterQuantity(after);
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_CONVERSION);
+        }
+        if (balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    /**
+     * 规格转换**转入**：向**目标 SKU** 累加并写 {@code CONVERT_IN} 流水（方向 = 入）。
+     *
+     * <p>与采购入库 / 调拨转入同一取向：**入方向允许建零余额行** —— 目标 SKU 在该仓库
+     * 从没有过余额时，由本次转换建立，单位取单据声明的目标单位。
+     *
+     * <p>目标 SKU **已有**余额行时，其记账单位必须等于声明的目标单位（否则 41060）：
+     * 否则会把「箱」与「kg」相加，得到一个没有物理意义的余额。
+     */
+    public void postConvertIn(InventoryConversionFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Conversion in requires the caller's transaction");
+        }
+        requireConversionFact(fact);
+
+        warehouseService.require(fact.warehouseId());
+
+        // 入方向允许首建余额行：单位取单据声明的目标单位。
+        // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引（Q11）。
+        balanceDao.insertOnConflictDoNothing(
+                fact.warehouseId(), fact.skuId(), fact.unit(), fact.operator());
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
+        }
+        if (!fact.unit().equals(balance.getUnit())) {
+            throw new ScmBusinessException(INVENTORY_CONVERSION_TARGET_UNIT_MISMATCH);
+        }
+
+        BigDecimal before = balance.getQuantity();
+        BigDecimal after = before.add(fact.quantity());
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(ScmInventoryMovementTypeEnum.CONVERT_IN.name());
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.CONVERT_IN_ITEM.name());
+        movement.setSourceDocumentId(fact.conversionId());
+        movement.setSourceDocumentItemId(fact.conversionItemId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(fact.unit());
+        movement.setUnitCost(null);
+        movement.setBeforeQuantity(before);
+        movement.setAfterQuantity(after);
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_CONVERSION);
+        }
+        if (balanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    /**
      * 查询可用量；缺少查询标识或余额不存在时返回零，不返回表示能力未启用的 {@code null}。
      *
      * <p>出库波次起 {@code reserved} 返回**真实预留量**（此前恒为零）。
@@ -672,6 +801,30 @@ public class InventoryCommandService {
                 || fact.operator() == null
                 || fact.operator().isBlank()) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_PARAM_INVALID);
+        }
+    }
+
+    /**
+     * 校验规格转换事实。
+     *
+     * <p>与其它事实不同的一点：**单位是必填的**（单据声明，不是从余额推导），
+     * 所以这里校验它非空。转出与转入都要求非空，因此可以放在共用校验里
+     * —— 这一点与调拨相反（调拨的转出不传单位，由余额决定）。
+     */
+    private static void requireConversionFact(InventoryConversionFact fact) {
+        if (fact == null
+                || fact.warehouseId() == null
+                || fact.conversionId() == null
+                || fact.conversionItemId() == null
+                || fact.skuId() == null
+                || fact.quantity() == null
+                || fact.quantity().signum() <= 0
+                || fact.unit() == null
+                || fact.unit().isBlank()
+                || fact.occurredAt() == null
+                || fact.operator() == null
+                || fact.operator().isBlank()) {
+            throw new ScmBusinessException(INVENTORY_CONVERSION_PARAM_INVALID);
         }
     }
 }

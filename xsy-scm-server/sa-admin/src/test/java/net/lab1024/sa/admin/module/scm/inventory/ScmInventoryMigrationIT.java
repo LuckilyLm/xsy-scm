@@ -49,7 +49,8 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
             "inventory_stocktake", "inventory_stocktake_item",
             "inventory_loss_gain", "inventory_loss_gain_item",
             "inventory_transfer", "inventory_transfer_item",
-            "inventory_warning_threshold");
+            "inventory_warning_threshold",
+            "inventory_conversion", "inventory_conversion_item");
 
     /** 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。 */
     private static final long SENTINEL_SOURCE_ITEM_ID = 9_000_000_000L + (System.nanoTime() % 1_000_000_000L);
@@ -141,14 +142,16 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 .contains("PURCHASE_IN").contains("SALES_OUT")
                 .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
                 .contains("LOSS_REPORT").contains("GAIN_REPORT")
-                .contains("TRANSFER_OUT").contains("TRANSFER_IN");
+                .contains("TRANSFER_OUT").contains("TRANSFER_IN")
+                .contains("CONVERT_OUT").contains("CONVERT_IN");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_append_only"))
                 .containsIgnoringCase("deleted = false");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_type"))
                 .contains("PURCHASE_IN").contains("SALES_OUT")
                 .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
                 .contains("LOSS_REPORT").contains("GAIN_REPORT")
-                .contains("TRANSFER_OUT").contains("TRANSFER_IN");
+                .contains("TRANSFER_OUT").contains("TRANSFER_IN")
+                .contains("CONVERT_OUT").contains("CONVERT_IN");
         assertThat(constraintDef("inventory_balance", "ck_inventory_balance_quantity"))
                 .contains("quantity");
         // 可用量不为负：已预留的货不能被出库吃掉（出库波次新增）
@@ -185,14 +188,14 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 0, 'kg', 0, 0, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 2);
-        // movement_type 白名单：未实现的类型（规格转换）必须被 DB 拒绝。
-        // 这里刻意用 CONVERT_IN 而不是已放行的 SALES_OUT / TRANSFER_IN ——
-        // 用已放行的类型会因快照方向不符而失败，那样这个用例就不再是在验证「白名单」，
-        // 而是在验证快照约束。
+        // movement_type 白名单：**白名单之外一律拒绝**。这里用 UNKNOWN_IN 这个
+        // 明确不存在的名字 —— 十个真实类型已全部落地，再拿「未实现的业务类型」当反例
+        // 会每落地一个就要改一次（这条断言在 V29/V30/V31/V33 各改过一次）。
+        // 也刻意不用已放行的类型：那会因快照方向不符而失败，就不是在验证白名单了。
         expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
-                + "VALUES (1, 1, 'CONVERT_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
+                + "VALUES (1, 1, 'UNKNOWN_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 3);
         // 单位快照不能是空白
         expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "

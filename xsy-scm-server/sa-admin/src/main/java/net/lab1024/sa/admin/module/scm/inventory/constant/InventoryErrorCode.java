@@ -305,7 +305,74 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * SKU 选择器驱动）：配置表是长期驻留的，一条指向不存在 SKU 的配置会永远留在
      * 预警列表里（没有余额 → 数量按 0 计 → 触发下限预警），成为永远清不掉的噪声。
      */
-    INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND(41052, "SKU 不存在，请选择有效的 SKU");
+    INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND(41052, "SKU 不存在，请选择有效的 SKU"),
+
+    /** 41053：规格转换单不存在（行不存在或已软删）。 */
+    INVENTORY_CONVERSION_NOT_FOUND(41053, "规格转换单不存在"),
+
+    /** 41054：规格转换单当前状态不允许该操作（仅待审核可改、可删、可审批）。 */
+    INVENTORY_CONVERSION_STATUS_INVALID(41054,
+            "规格转换单当前状态不允许该操作（仅待审核可改、可删、可审批）"),
+
+    /** 41055：规格转换单至少需要一行明细。 */
+    INVENTORY_CONVERSION_EMPTY_ITEMS(41055, "规格转换单至少需要一条明细"),
+
+    /** 41056：规格转换事实非法（数量非正、仓库 / SKU / 来源行缺失、单位空白等）。 */
+    INVENTORY_CONVERSION_PARAM_INVALID(41056, "规格转换事实不合法"),
+
+    /**
+     * 41057：同一行的源 SKU 与目标 SKU 相同。
+     *
+     * <p>那不是转换，是把货在**同一行余额**上来回加减：净效果为零却留下两条流水，
+     * 还会让「本月转换量」虚高。DB 也有 {@code ck_inventory_conversion_item_distinct} 兜底。
+     */
+    INVENTORY_CONVERSION_SAME_SKU(41057, "源 SKU 与目标 SKU 不能相同"),
+
+    /**
+     * 41058：源 SKU 在该仓库没有余额行。
+     *
+     * <p>转出是「出」方向，与销售出库 / 调拨转出同一取向：没有余额行 = 从未入库 = 无货可转，
+     * **不建零余额行**（只有「入」方向才允许建行）。
+     */
+    INVENTORY_CONVERSION_SOURCE_BALANCE_MISSING(41058,
+            "源 SKU 在该仓库尚无库存记录，无货可转：请确认源 SKU 是否入过库"),
+
+    /**
+     * 41059：源 SKU 的余额记账单位与单据声明的源单位不一致。
+     *
+     * <p>Q13 规定一个 {@code (warehouse, sku)} 只锁一个记账单位且**不做隐式换算**。
+     * 单位是单据显式声明的（折算关系本身含单位），因此不一致时只能失败，
+     * 不能「按声明改记账单位」—— 那会让既有余额的含义漂移。
+     */
+    INVENTORY_CONVERSION_SOURCE_UNIT_MISMATCH(41059,
+            "源 SKU 的记账单位与单据声明的源单位不一致，库存不做自动换算"),
+
+    /**
+     * 41060：目标 SKU 已有余额行，但其记账单位与单据声明的目标单位不一致。
+     *
+     * <p>目标 SKU 没有余额行时允许用声明单位建行（入方向）；**已有**余额行则必须一致，
+     * 否则会把「箱」与「kg」相加，得到一个没有物理意义的余额。
+     */
+    INVENTORY_CONVERSION_TARGET_UNIT_MISMATCH(41060,
+            "目标 SKU 的记账单位与单据声明的目标单位不一致，库存不做自动换算"),
+
+    /**
+     * 41061：源 SKU 可用量不足。
+     *
+     * <p>可用量 = {@code quantity − reserved_quantity}。转换不得让源 SKU 变负，
+     * 也不得吃掉源 SKU 已预留的货（预留代表对下游的承诺）。
+     */
+    INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE(41061,
+            "源 SKU 可用库存不足（可用量 = 现有量 − 预留量），请减少转出数量或先释放预留"),
+
+    /** 41062：源身份重复转换（同一条明细行已写过该方向的流水）。 */
+    INVENTORY_DUPLICATE_CONVERSION(41062, "该转换明细行已产生库存流水，不能重复审批"),
+
+    /** 41063：驳回时必须填写审核意见。 */
+    INVENTORY_CONVERSION_REJECT_OPINION_REQUIRED(41063, "驳回时必须填写审核意见，说明驳回原因"),
+
+    /** 41064：仓库已停用，不能用于新的规格转换。 */
+    INVENTORY_CONVERSION_WAREHOUSE_DISABLED(41064, "仓库已停用，不能用于新的规格转换业务");
 
     private final int code;
     private final String msg;

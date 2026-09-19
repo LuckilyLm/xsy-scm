@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryConversionDao">
+
+    <resultMap id="conversionVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryConversionVO"/>
+
+    <select id="countByConversionNo" resultType="int">
+        SELECT COUNT(*) FROM inventory_conversion
+        WHERE conversion_no = #{conversionNo} AND deleted = FALSE
+    </select>
+
+    <select id="nextConversionNo" resultType="long">
+        SELECT nextval('inventory_conversion_no_seq')
+    </select>
+
+    <select id="selectById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversionEntity">
+        SELECT * FROM inventory_conversion WHERE id = #{id} AND deleted = FALSE
+    </select>
+
+    <!-- 锁序：单据锁先于余额锁（与收货 / 出库 / 盘点 / 报损报溢 / 调拨同一顺序） -->
+    <select id="lockById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversionEntity">
+        SELECT * FROM inventory_conversion WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <!-- 带状态 + 版本双重守卫：并发重复审批时只有一次能成功 -->
+    <update id="markCompleted">
+        UPDATE inventory_conversion
+        SET status        = 'COMPLETED',
+            audited_at    = #{auditedAt},
+            auditor       = #{auditor},
+            audit_opinion = #{auditOpinion},
+            version       = version + 1,
+            updated_at    = CURRENT_TIMESTAMP,
+            updated_by    = #{auditor}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING' AND version = #{version}
+    </update>
+
+    <update id="markRejected">
+        UPDATE inventory_conversion
+        SET status        = 'REJECTED',
+            audited_at    = #{auditedAt},
+            auditor       = #{auditor},
+            audit_opinion = #{auditOpinion},
+            version       = version + 1,
+            updated_at    = CURRENT_TIMESTAMP,
+            updated_by    = #{auditor}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING' AND version = #{version}
+    </update>
+
+    <update id="updatePending">
+        UPDATE inventory_conversion
+        SET warehouse_id = #{warehouseId},
+            convert_type = #{convertType},
+            reason       = #{reason},
+            remark       = #{remark},
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING'
+    </update>
+
+    <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
+    <select id="queryPage" resultMap="conversionVoMap">
+        SELECT t.id,
+               t.conversion_no,
+               t.warehouse_id,
+               t.convert_type,
+               t.status,
+               t.reason,
+               t.remark,
+               t.audited_at,
+               t.auditor,
+               t.audit_opinion,
+               t.version,
+               t.created_at,
+               t.updated_at,
+               w.warehouse_code,
+               w.name AS warehouse_name
+        FROM inventory_conversion t
+        LEFT JOIN warehouse w ON w.id = t.warehouse_id
+        WHERE t.deleted = FALSE
+        <if test="query.conversionNo != null and query.conversionNo != ''">
+            AND t.conversion_no ILIKE CONCAT('%', #{query.conversionNo}, '%')
+        </if>
+        <if test="query.warehouseId != null">
+            AND t.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.convertType != null and query.convertType != ''">
+            AND t.convert_type = #{query.convertType}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND t.status = #{query.status}
+        </if>
+        ORDER BY t.created_at DESC, t.id DESC
+    </select>
+
+    <select id="detail" resultMap="conversionVoMap">
+        SELECT t.id,
+               t.conversion_no,
+               t.warehouse_id,
+               t.convert_type,
+               t.status,
+               t.reason,
+               t.remark,
+               t.audited_at,
+               t.auditor,
+               t.audit_opinion,
+               t.version,
+               t.created_at,
+               t.updated_at,
+               w.warehouse_code,
+               w.name AS warehouse_name
+        FROM inventory_conversion t
+        LEFT JOIN warehouse w ON w.id = t.warehouse_id
+        WHERE t.deleted = FALSE AND t.id = #{id}
+    </select>
+
+</mapper>

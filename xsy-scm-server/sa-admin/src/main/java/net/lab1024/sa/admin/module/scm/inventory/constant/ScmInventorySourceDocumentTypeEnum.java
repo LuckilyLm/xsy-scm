@@ -64,7 +64,21 @@ public enum ScmInventorySourceDocumentTypeEnum {
     TRANSFER_OUT_ITEM("调拨单行（转出）"),
 
     /** 调拨**转入**行的来源类型；与 {@link #TRANSFER_OUT_ITEM} 分开以满足源身份唯一索引。 */
-    TRANSFER_IN_ITEM("调拨单行（转入）");
+    TRANSFER_IN_ITEM("调拨单行（转入）"),
+
+    /**
+     * 规格转换**转出**行的来源类型：{@code source_document_item_id = inventory_conversion_item.id}。
+     *
+     * <p>与调拨**同一个原因**拆成两个来源类型：同一条明细行会产生两条流水
+     * （转出写源 SKU、转入写目标 SKU），而防重锚点是部分唯一索引
+     * {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)}
+     * —— 两条流水引用同一个明细行 id，共用一个来源类型第二条就插不进去。
+     * 该索引是 V19 冻结的 Q7/Q11 契约，不为新能力放宽。
+     */
+    CONVERT_OUT_ITEM("转换单行（转出）"),
+
+    /** 规格转换**转入**行的来源类型；与 {@link #CONVERT_OUT_ITEM} 分开以满足源身份唯一索引。 */
+    CONVERT_IN_ITEM("转换单行（转入）");
 
     private final String desc;
 
