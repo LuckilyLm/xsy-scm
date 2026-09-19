@@ -20,6 +20,7 @@
 | 报损报溢（V30） | 后端已验证，浏览器待验证 | 报损报溢单、`LOSS_REPORT` / `GAIN_REPORT` 流水、审批状态机（待审核 → 已完成 / 已驳回）、审批乐观锁 |
 | 调拨（V31） | 后端已验证，浏览器待验证 | 调拨单、两步式（发出 → 在途 → 收货）、`TRANSFER_OUT` / `TRANSFER_IN` 流水、两仓单位一致性、在途阻塞仓库停用 |
 | 阈值预警（V32） | 后端已验证，浏览器待验证 | 阈值配置（独立于余额表）、预警列表（按可用量读时算状态）、按异常默认过滤 |
+| B7 数据大屏（V28） | 后端与前端代码完成，浏览器待验证 | 经营/库存/采购只读聚合、Screen Theme 1920×1080、Header 入口新窗口打开 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
@@ -38,6 +39,20 @@
 - F0 cloud/MinIO 环境未配置时，后端 5 项 cloud IT 与 Playwright 7 项 cloud 用例继续跳过；全量入口因此返回 INCOMPLETE，而非 FAIL。
 
 ## 追加记录
+
+### 2026-09-20 B7 数据大屏（V28）
+
+- V28 把「数据大屏」纳入范围：新增隐藏目录 900 + 查询权限 901（`scm:screen:query`），
+  后端新增 `net.lab1024.sa.admin.module.scm.screen` 只读聚合接口
+  `/scm/screen/data/business|inventory|purchase`。
+- 前端新增独立全屏静态路由 `/screen`（不进 SmartLayout），Screen Theme 1920×1080，
+  Header 消息通知左侧新增入口图标，新窗口打开；数据手动刷新。
+- 指标全部来自现有业务域（销售订单、库存余额/流水、采购单/收货单、客户/供应商/SKU），
+  不维护独立副本；大屏只读。
+- 测试：`ScmScreenPermissionMigrationIT`（V28 菜单/授权/代码一致性）、
+  `ScmScreenDataIT`（空库零值兜底）。后端 Java 21 环境缺失，Maven 测试未运行；
+  前端 lint/typecheck/test/build 已通过。
+- 未覆盖：大屏真实浏览器验收；后端集成测试需 Java 21 环境执行。
 
 ### 2026-09-19 阈值预警（V32）
 
