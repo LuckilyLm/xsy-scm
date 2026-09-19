@@ -49,6 +49,9 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:transfer:add'">
           新建调拨单
         </a-button>
+        <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'">
+          在途库存
+        </a-button>
         <a-typography-text type="secondary" style="margin-left: 12px">
           发出后进入「在途」：源仓已扣、目标仓未加，需由目标仓收货才完成。
         </a-typography-text>
@@ -258,7 +261,44 @@
     <a-typography-text v-if="detail.status === 'SHIPPED'" type="secondary" style="display: block; margin-top: 8px">
       在途：源仓已扣减、目标仓尚未增加。这批货当前不在任何仓库的余额里，需由目标仓收货后才落地。
     </a-typography-text>
-  </a-drawer>
+  <!-- 在途库存报表（只读聚合，不进 inventory_balance） -->
+  <a-modal
+    :open="inTransitOpen"
+    title="在途库存"
+    width="1000"
+    :footer="null"
+    @cancel="inTransitOpen = false"
+  >
+    <a-alert
+      type="info"
+      show-icon
+      style="margin-bottom: 12px"
+      message="在途 = 已发出（源仓已扣减）但目标仓尚未收货的调拨量。这批货不在任何仓库的余额里，因此库存余额页看不到它 —— 对账时必须把这份报表算进去。"
+    />
+    <a-table
+      size="small"
+      :data-source="inTransitRows"
+      :columns="inTransitColumns"
+      row-key="rowKey"
+      bordered
+      :loading="inTransitLoading"
+      :pagination="false"
+      :locale="{ emptyText: '当前没有在途调拨' }"
+      :scroll="{ x: 900 }"
+    >
+      <template #bodyCell="{ record, column }">
+        <template v-if="column.dataIndex === 'direction'">
+          <span>{{ record.fromWarehouseName || '—' }}</span>
+          <span style="margin: 0 6px; color: #999">→</span>
+          <span>{{ record.toWarehouseName || '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'quantity'">
+          <span class="num">{{ quantityText(record.quantity) }}</span>
+        </template>
+        <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
+      </template>
+    </a-table>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
@@ -276,6 +316,7 @@ import {
   SCM_INVENTORY_TRANSFER_STATUS_ENUM,
 } from '/@/constants/business/scm/inventory-const';
 import type {
+  InventoryInTransit,
   InventoryTransfer,
   InventoryTransferAdd,
   InventoryTransferQuery,
@@ -604,6 +645,43 @@ function onDelete(record: InventoryTransfer) {
       }
     },
   });
+}
+
+// ------------------------------------------------------------------ 在途库存报表
+
+const inTransitOpen = ref(false);
+const inTransitLoading = ref(false);
+/** 加一个稳定的 rowKey：同一调拨单的同一 SKU 可能出现在多行（多张单），单靠单号+SKU 会撞。 */
+const inTransitRows = ref<Array<InventoryInTransit & { rowKey: string }>>([]);
+
+const inTransitColumns: TableColumnsType = [
+  { title: '调拨单号', dataIndex: 'transferNo', width: 190 },
+  { title: '调拨方向', dataIndex: 'direction', width: 240 },
+  { title: 'SKU 编码', dataIndex: 'skuCode', width: 150 },
+  { title: 'SKU 名称', dataIndex: 'skuName', width: 140 },
+  { title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120 },
+  { title: '单位', dataIndex: 'unit', align: 'center', width: 90 },
+];
+
+/**
+ * 打开在途库存报表。
+ *
+ * 每次打开都重新拉取（这是**活状态**：调拨收货后该行就消失了），不做缓存。
+ */
+async function openInTransit() {
+  inTransitOpen.value = true;
+  inTransitLoading.value = true;
+  try {
+    const r = await inventoryTransferApi.inTransit();
+    inTransitRows.value = (r.data ?? []).map((row, index) => ({
+      ...row,
+      rowKey: `${row.transferNo}-${row.skuId}-${index}`,
+    }));
+  } catch (e) {
+    message.error(inventoryError(e));
+  } finally {
+    inTransitLoading.value = false;
+  }
 }
 
 onMounted(async () => {

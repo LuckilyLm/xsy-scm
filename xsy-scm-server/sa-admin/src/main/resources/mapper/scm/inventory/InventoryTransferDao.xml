@@ -135,4 +135,28 @@
         WHERE t.deleted = FALSE AND t.id = #{id}
     </select>
 
+    <!-- 在途库存：把 SHIPPED 调拨单展开成 (单号, SKU) 粒度，供对账与库存查询页使用 -->
+    <select id="queryInTransit"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryInTransitVO">
+        SELECT t.transfer_no,
+               t.from_warehouse_id,
+               fw.name AS from_warehouse_name,
+               t.to_warehouse_id,
+               tw.name AS to_warehouse_name,
+               item.sku_id,
+               sku.sku_code,
+               spu.name AS sku_name,
+               item.quantity,
+               item.unit_snapshot AS unit
+        FROM inventory_transfer t
+        JOIN inventory_transfer_item item ON item.transfer_id = t.id AND item.deleted = FALSE
+        LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
+        LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
+        LEFT JOIN product_sku sku ON sku.id = item.sku_id
+        LEFT JOIN product_spu spu ON spu.id = sku.spu_id
+        WHERE t.deleted = FALSE
+          AND t.status = 'SHIPPED'
+        ORDER BY t.transfer_no DESC, item.sku_id
+    </select>
+
 </mapper>

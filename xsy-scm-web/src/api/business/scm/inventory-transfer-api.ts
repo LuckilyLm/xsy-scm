@@ -15,6 +15,7 @@ import { getRequest, postRequest } from '/@/lib/axios';
 import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
 import type {
   Id,
+  InventoryInTransit,
   InventoryTransfer,
   InventoryTransferAdd,
   InventoryTransferQuery,
@@ -47,6 +48,16 @@ export const inventoryTransferApi = {
   /** 删除草稿（逻辑删）。 */
   delete: (id: Id) =>
     postRequest(`/scm/inventory/transfer/delete/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
+  /**
+   * 在途库存报表（只读聚合，**不进 `inventory_balance`**）。
+   *
+   * 把 SHIPPED 的调拨单展开成明细行，用于对账与库存查询 —— 这是「在途库存可见」的
+   * 落地方式：不引入虚拟在途仓，而是以报表形式暴露。因此**在途量不会出现在库存余额页**。
+   */
+  inTransit: () =>
+    getRequest('/scm/inventory/transfer/in-transit', {}) as unknown as Promise<
+      ScmResponse<InventoryInTransit[]>
+    >,
 };
 
 export default inventoryTransferApi;

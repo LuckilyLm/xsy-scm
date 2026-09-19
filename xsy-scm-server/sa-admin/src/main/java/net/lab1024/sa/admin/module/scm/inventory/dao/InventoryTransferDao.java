@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryTransferQueryForm;
+import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryInTransitVO;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -71,4 +72,11 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
 
     /** 详情。 */
     InventoryTransferVO detail(@Param("id") Long id);
+
+    /**
+     * 在途库存报表：按调拨单明细聚合 SHIPPED 状态的调拨量。
+     *
+     * <p>只读聚合，不修改任何业务表；结果按 (transfer_no, sku_id) 展开。
+     */
+    List<InventoryInTransitVO> queryInTransit();
 }

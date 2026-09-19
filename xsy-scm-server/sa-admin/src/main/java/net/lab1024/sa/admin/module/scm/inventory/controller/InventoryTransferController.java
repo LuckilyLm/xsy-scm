@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryTransferAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryTransferQueryForm;
+import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryInTransitVO;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferVO;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryTransferQueryService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryTransferService;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * SCM 库存调拨单（跨仓，两步式：发出 → 在途 → 收货）。
@@ -45,6 +48,13 @@ public class InventoryTransferController {
     @SaCheckPermission("scm:inventory:transfer:query")
     public ResponseDTO<PageResult<InventoryTransferVO>> query(@Valid @RequestBody InventoryTransferQueryForm form) {
         return ResponseDTO.ok(queryService.queryPage(form));
+    }
+
+    /** 在途库存报表（只读聚合，把 SHIPPED 调拨单展开成明细行）。 */
+    @GetMapping("/in-transit")
+    @SaCheckPermission("scm:inventory:transfer:query")
+    public ResponseDTO<List<InventoryInTransitVO>> inTransit() {
+        return ResponseDTO.ok(queryService.queryInTransit());
     }
 
     @GetMapping("/detail/{id}")

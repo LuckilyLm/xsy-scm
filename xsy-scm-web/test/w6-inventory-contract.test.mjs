@@ -28,6 +28,8 @@ import {
 } from '../src/views/business/scm/inventory/inventory-model.ts';
 import {inventoryError} from '../src/views/business/scm/inventory/inventory-errors.ts';
 import {
+  SCM_INVENTORY_CONVERSION_STATUS_ENUM,
+  SCM_INVENTORY_CONVERSION_TYPE_ENUM,
   SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
   SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
   SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
@@ -123,8 +125,9 @@ test('movement type text falls back to the raw value so an unmapped type stays v
   assert.equal(movementTypeText(null, labels), '—');
   assert.equal(movementTypeText(undefined, labels), '—');
   // 未知类型**不显示成「—」**：一个后端新增而前端未跟上的类型本身就是有用信号。
-  // 这里用 CONVERT_IN（规格转换，尚未落地）而不是任何已放行的类型。
-  assert.equal(movementTypeText('CONVERT_IN', labels), 'CONVERT_IN');
+  // 用 UNKNOWN_IN（**明确不存在**的名字）：十个真实类型已全部落地，
+  // 再拿「未实现的业务类型」当反例会每落地一个就要改一次。
+  assert.equal(movementTypeText('UNKNOWN_IN', labels), 'UNKNOWN_IN');
   // 文案表里缺 desc 时同样回落到原值，而不是显示空白
   assert.equal(movementTypeText('PURCHASE_IN', {}), 'PURCHASE_IN');
 });
@@ -136,10 +139,11 @@ test('movement type text falls back to the raw value so an unmapped type stays v
 test('inventory enums expose exactly the values the backend CHECK whitelist allows', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM),
       ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'GAIN_REPORT',
-        'TRANSFER_OUT', 'TRANSFER_IN']);
+        'TRANSFER_OUT', 'TRANSFER_IN', 'CONVERT_OUT', 'CONVERT_IN']);
   assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM),
       ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM', 'STOCKTAKE_ITEM',
-        'LOSS_GAIN_ITEM', 'TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM']);
+        'LOSS_GAIN_ITEM', 'TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM', 'CONVERT_OUT_ITEM',
+        'CONVERT_IN_ITEM']);
 
   // 值与键逐字一致（后端 `ScmInventoryMovementTypeEnum.name()` 就是持久化值）
   for (const [key, item] of Object.entries(SCM_INVENTORY_MOVEMENT_TYPE_ENUM)) {
@@ -155,15 +159,15 @@ test('inventory enums expose exactly the values the backend CHECK whitelist allo
   // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。报损 / 报溢、转出 / 转入同理。
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /STOCKTAKE_ADJUST/);
 
-  // 八个类型必须**恰好**分成两个方向组、每组四个 ——
+  // 十个类型必须**恰好**分成两个方向组、每组五个 ——
   // 这是 `ck_inventory_movement_snap`「按方向分组」写法的前提。
-  const inbound = ['PURCHASE_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN'];
-  const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT'];
+  const inbound = ['PURCHASE_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN', 'CONVERT_IN'];
+  const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT', 'CONVERT_OUT'];
   assert.deepEqual([...inbound, ...outbound].sort(),
       Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).sort());
 
-  // 规格转换仍不得提前出现
-  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /CONVERT/);
+  // 十个真实类型已全部落地；这里断言的是「白名单之外一律拒绝」这条性质本身
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /UNKNOWN|ADJUST/);
 });
 
 test('loss/gain document enums match the backend state machine', () => {
@@ -187,7 +191,7 @@ test('loss/gain document enums match the backend state machine', () => {
 test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID),
       ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN', 'TRANSFER',
-        'WARNING', 'WARNING_THRESHOLD']);
+        'WARNING', 'WARNING_THRESHOLD', 'CONVERSION']);
   assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.STOCKTAKE, 'scm-inventory-stocktake-table');
@@ -206,6 +210,8 @@ test('inventory table DOM ids are distinct, non-empty and registered with numeri
   assert.equal(business.SCM_INVENTORY_TRANSFER, 50023);
   assert.equal(business.SCM_INVENTORY_WARNING, 50024);
   assert.equal(business.SCM_INVENTORY_WARNING_THRESHOLD, 50025);
+  assert.equal(business.SCM_INVENTORY_CONVERSION, 50026);
+  assert.equal(SCM_INVENTORY_TABLE_ID.CONVERSION, 'scm-inventory-conversion-table');
 
   // 数字 tableId 必须全局唯一（列配置按它持久化，撞了会串列）
   const numeric = Object.values(business).filter((value) => typeof value === 'number');
@@ -554,6 +560,71 @@ test('warning error codes all have actionable Chinese text', () => {
   }
   assert.match(inventoryError({code: 41050}), /只允许一条/);
   assert.match(inventoryError({code: 41051}), /下限不得大于上限/);
+});
+
+// ------------------------------------------------------------------
+// 规格转换波次
+// ------------------------------------------------------------------
+
+test('the conversion enums match the backend whitelist and stay cross-SKU', () => {
+  assert.deepEqual(Object.keys(SCM_INVENTORY_CONVERSION_TYPE_ENUM), ['SPLIT', 'COMBINE']);
+  // 状态机与报损报溢同构（没有 DRAFT：创建即提交待审核）
+  assert.deepEqual(Object.keys(SCM_INVENTORY_CONVERSION_STATUS_ENUM),
+      ['PENDING', 'COMPLETED', 'REJECTED']);
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_CONVERSION_STATUS_ENUM), /DRAFT/);
+  for (const [key, item] of Object.entries(SCM_INVENTORY_CONVERSION_TYPE_ENUM)) {
+    assert.equal(item.value, key);
+    assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
+  }
+  // **Q13 不受影响**：转换是跨 SKU 的（源规格 → 目标规格），
+  // 两个 SKU 各自仍只锁一个记账单位。一旦有人往类型枚举里加「单位」维度，这里会失败。
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_CONVERSION_TYPE_ENUM), /UNIT/);
+});
+
+test('the conversion page is an approval page wired to its own DOM id and six privileges', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-conversion-list.vue');
+  assert.match(page, /TableOperator/);
+  assert.match(page, /SCM_INVENTORY_TABLE_ID/);
+  for (const perm of [
+    'scm:inventory:conversion:query',
+    'scm:inventory:conversion:add',
+    'scm:inventory:conversion:update',
+    'scm:inventory:conversion:approve',
+    'scm:inventory:conversion:reject',
+    'scm:inventory:conversion:delete',
+  ]) {
+    assert.match(page, new RegExp(perm), page + ' 缺少权限 ' + perm);
+  }
+  // 只有待审核可写
+  assert.match(page, /record\.status === 'PENDING'/);
+  // 审批必须原样回传打开时读到的 version（乐观锁），且不在打开弹窗时重新拉单据
+  assert.match(page, /version:\s*record\.version \?\? 0/);
+  // 驳回必须在前端也校验一次意见，避免白跑一次请求才拿到 41063
+  assert.match(page, /驳回时必须填写审核意见/);
+  // 折算关系与两个单位都由单据声明：页面必须让用户填源/目标单位
+  assert.match(page, /sourceUnit/);
+  assert.match(page, /targetUnit/);
+  // 同一行源与目标不得相同（前端先拦一道）
+  assert.match(page, /源 SKU 与目标 SKU 不能相同/);
+
+  const api = code('../src/api/business/scm/inventory-conversion-api.ts');
+  assert.match(api, /approve:/);
+  assert.match(api, /reject:/);
+  assert.match(api, /create:/);
+  assert.match(api, /update:/);
+  assert.match(api, /delete:/);
+});
+
+test('conversion error codes all have actionable Chinese text', () => {
+  // 规格转换波次 12 个码：41053–41064
+  for (let code = 41053; code <= 41064; code++) {
+    const text = inventoryError({code});
+    assert.notEqual(text, '操作失败，请重试', code + ' 未登记可执行提示');
+    assert.ok(text.length > 8, code + ' 的提示过于简短，无法指导下一步');
+  }
+  assert.match(inventoryError({code: 41057}), /不能相同/);
+  assert.match(inventoryError({code: 41059}), /不做自动换算/);
+  assert.match(inventoryError({code: 41061}), /可用量/);
 });
 
 // ------------------------------------------------------------------

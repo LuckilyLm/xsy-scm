@@ -56,6 +56,8 @@ export const TABLE_ID_CONST = {
     // 阈值预警波次（预警列表 + 阈值配置）
     SCM_INVENTORY_WARNING: 50024,
     SCM_INVENTORY_WARNING_THRESHOLD: 50025,
+    // 规格转换波次（转换单）
+    SCM_INVENTORY_CONVERSION: 50026,
     OA: {
       NOTICE: businessOAInitTableId + 1, //通知公告
       ENTERPRISE: businessOAInitTableId + 2, //企业信息

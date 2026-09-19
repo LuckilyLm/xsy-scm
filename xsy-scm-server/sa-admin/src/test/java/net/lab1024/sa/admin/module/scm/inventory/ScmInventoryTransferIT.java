@@ -43,6 +43,9 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     private InventoryTransferService transferService;
 
     @Autowired
+    private net.lab1024.sa.admin.module.scm.inventory.service.InventoryTransferQueryService transferQueryService;
+
+    @Autowired
     private InventoryReservationService reservations;
 
     @Autowired
@@ -372,6 +375,51 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         // —— 断言本身即是证明：若别的条件先命中，这里会拿到 41005 / 41006 / 41007。
         assertThat(warehouseDisableGuard.disableBlocker(wh1))
                 .isEqualTo(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER);
+    }
+
+    // ------------------------------------------------------------------
+    // 在途库存报表（「在途可见」的落地方式：报表增列，不进余额表）
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("在途库存报表：只列已发出的调拨量，收货后消失，且不进余额表")
+    void inTransitReportListsOnlyShippedTransfers() {
+        Long sku = stockedInSeed("tf15", "10.0000");
+        Long wh1 = seedWarehouseId();
+        Long wh2 = newWarehouse("TF15B");
+
+        Long id = transferService.create(form(wh1, wh2, sku, "4.0000"));
+
+        // 草稿：还没动过库存，不在在途报表里
+        assertThat(transferQueryService.queryInTransit())
+                .as("草稿调拨不在在途报表里")
+                .noneMatch(row -> sku.equals(row.getSkuId()));
+
+        transferService.ship(id);
+
+        // 在途：出现，数量是发出量，方向与单位都可读
+        var row = transferQueryService.queryInTransit().stream()
+                .filter(r -> sku.equals(r.getSkuId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("已发出的调拨应出现在在途报表里"));
+        assertThat(row.getTransferNo()).isNotBlank();
+        assertThat(row.getFromWarehouseId()).isEqualTo(wh1);
+        assertThat(row.getToWarehouseId()).isEqualTo(wh2);
+        assertThat(row.getQuantity()).isEqualByComparingTo("4.0000");
+        assertThat(row.getUnit()).isEqualTo(balanceRow(wh1, sku).getUnit());
+
+        // **核心断言**：在途量不在余额表里 —— 目标仓此时还没有余额行。
+        // 这正是「不引入虚拟在途仓」的代价，也是这份报表存在的理由：
+        // 对账时必须把它算进去，否则「全仓总库存」在在途期间会对不上。
+        assertThat(balanceRow(wh2, sku)).as("在途期间目标仓没有余额行").isNull();
+
+        transferService.receive(id);
+
+        // 收货后从在途报表消失，同时目标仓出现余额
+        assertThat(transferQueryService.queryInTransit())
+                .as("收货后不再是在途")
+                .noneMatch(r -> sku.equals(r.getSkuId()));
+        assertThat(balanceRow(wh2, sku).getQuantity()).isEqualByComparingTo("4.0000");
     }
 
     // ------------------------------------------------------------------

@@ -6,6 +6,7 @@ import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryTransferSt
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferItemDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryTransferQueryForm;
+import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryInTransitVO;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferItemVO;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferVO;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -29,6 +30,11 @@ public class InventoryTransferQueryService {
     private final InventoryTransferDao transferDao;
 
     private final InventoryTransferItemDao itemDao;
+
+    /** 在途库存报表（只读聚合，不进 inventory_balance）。 */
+    public List<InventoryInTransitVO> queryInTransit() {
+        return transferDao.queryInTransit();
+    }
 
     /** 分页查询（不返回明细，明细走 {@link #detail}）。 */
     public PageResult<InventoryTransferVO> queryPage(InventoryTransferQueryForm query) {

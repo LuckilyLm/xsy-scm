@@ -489,6 +489,26 @@ export interface InventoryTransferAdd {
   }>;
 }
 
+/**
+ * `InventoryInTransitVO` —— 在途库存报表的一行（按调拨单明细展开）。
+ *
+ * **不进 `inventory_balance`**：在途货不属于任何仓库的余额，这里以**报表**形式暴露，
+ * 因此**在途量不会出现在库存余额页**。对账时必须把这份报表算进去，
+ * 否则「全仓总库存」在在途期间会对不上。
+ */
+export interface InventoryInTransit {
+  transferNo?: string;
+  fromWarehouseId?: Id;
+  fromWarehouseName?: string;
+  toWarehouseId?: Id;
+  toWarehouseName?: string;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  quantity?: string | null;
+  unit?: string | null;
+}
+
 // ------------------------------------------------------------------
 // 阈值预警（阈值预警波次新增）
 // ------------------------------------------------------------------
@@ -583,4 +603,102 @@ export interface InventoryWarningThresholdAdd {
   warnMin?: string | null;
   warnMax?: string | null;
   remark?: string;
+}
+
+// ------------------------------------------------------------------
+// 规格转换（规格转换波次新增）
+// ------------------------------------------------------------------
+
+/**
+ * `InventoryConversionVO` —— 规格转换单。
+ *
+ * **跨 SKU、同仓库**：源规格 → 目标规格（如整件 → 散装）。跨仓搬运是**调拨**，不是转换。
+ * 明细行上源与目标**各带一套** SKU 编码 / 名称 / 商品名：转换的语义天然是「从哪到哪」，
+ * 只显示一套会让用户必须点进详情才能确认方向。
+ *
+ * `version` 是审批的必填入参（审批人必须批准自己读到的内容）；
+ * 若期间单据被改过，后端以 40921 拒绝并要求刷新。
+ */
+export interface InventoryConversion {
+  id: Id;
+  conversionNo?: string;
+  warehouseId?: Id;
+  warehouseCode?: string;
+  warehouseName?: string;
+  /** `SPLIT` 整件拆零 / `COMBINE` 组合拆分。 */
+  convertType?: string;
+  convertTypeDesc?: string;
+  /** `PENDING` / `COMPLETED` / `REJECTED`。 */
+  status?: string;
+  statusDesc?: string;
+  reason?: string;
+  remark?: string;
+  auditedAt?: string;
+  auditor?: string;
+  auditOpinion?: string;
+  /** 乐观锁版本号；审批时必须原样回传。 */
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  /** 明细；仅详情接口返回。 */
+  items?: InventoryConversionItem[];
+}
+
+/** `InventoryConversionVO.Item`。 */
+export interface InventoryConversionItem {
+  id?: Id;
+  sourceSkuId?: Id;
+  sourceSkuCode?: string;
+  sourceSkuName?: string;
+  sourceProductName?: string;
+  /** 源数量，恒为正。 */
+  sourceQuantity?: string | null;
+  /** 源单位（**单据声明**，折算关系的一部分）。 */
+  sourceUnit?: string | null;
+  targetSkuId?: Id;
+  targetSkuCode?: string;
+  targetSkuName?: string;
+  targetProductName?: string;
+  /** 目标数量，恒为正；与源数量构成折算关系。 */
+  targetQuantity?: string | null;
+  /** 目标单位（**单据声明**）。 */
+  targetUnit?: string | null;
+  remark?: string;
+}
+
+/** `InventoryConversionQueryForm`。 */
+export interface InventoryConversionQuery extends Page {
+  conversionNo?: string;
+  warehouseId?: Id;
+  convertType?: string;
+  status?: string;
+}
+
+/**
+ * `InventoryConversionAddForm`（新建与改待审核共用）。
+ *
+ * 折算关系由两个数量 + 两个单位**显式声明**：后端会用两个单位分别与各自 SKU 的
+ * 余额记账单位比对，不一致直接失败（41059 / 41060），**不做隐式换算**。
+ * 数量是定点字符串（后端拒绝 JSON 数字）。
+ */
+export interface InventoryConversionAdd {
+  warehouseId: Id;
+  convertType: string;
+  reason?: string;
+  remark?: string;
+  items: Array<{
+    sourceSkuId: Id;
+    sourceQuantity: string;
+    sourceUnit: string;
+    targetSkuId: Id;
+    targetQuantity: string;
+    targetUnit: string;
+    remark?: string;
+  }>;
+}
+
+/** `InventoryConversionAuditForm`（审批 / 驳回共用）。 */
+export interface InventoryConversionAudit {
+  version: number;
+  auditOpinion?: string;
 }
