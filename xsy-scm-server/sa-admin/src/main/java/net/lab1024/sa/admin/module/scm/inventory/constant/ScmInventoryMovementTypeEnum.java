@@ -21,8 +21,9 @@ import lombok.RequiredArgsConstructor;
  *   <li>复用同一套「先锁单据、后按 (warehouse_id, sku_id) 升序锁余额」的锁序规则（§8.1）。</li>
  * </ol>
  *
- * <p><b>已实现</b>：W6-1 的 {@code PURCHASE_IN}；W6-1 之后的出库波次新增 {@code SALES_OUT}。
- * 盘点 / 报损报溢 / 调拨 / 规格转换仍待后续波次。
+ * <p><b>已实现</b>：W6-1 的 {@code PURCHASE_IN}；出库波次新增 {@code SALES_OUT}；
+ * 盘点波次新增 {@code STOCKTAKE_GAIN} / {@code STOCKTAKE_LOSS}。
+ * 报损报溢 / 调拨 / 规格转换仍待后续波次。
  */
 @Getter
 @RequiredArgsConstructor
@@ -32,7 +33,20 @@ public enum ScmInventoryMovementTypeEnum {
     PURCHASE_IN("采购入库", true),
 
     /** 销售出库：独立出库单确认时写入（方向 = 出）。 */
-    SALES_OUT("销售出库", false);
+    SALES_OUT("销售出库", false),
+
+    /**
+     * 盘盈：盘点确认时实盘量高于账面量的部分（方向 = 入）。
+     *
+     * <p>数量是**差异的绝对值**，恒为正 —— 与「方向编码在类型里」的既有纪律一致。
+     * 盘盈与盘亏拆成两个类型而不是一个 {@code STOCKTAKE_ADJUST}：
+     * 方向必须能从类型本身读出来，否则 {@code ck_inventory_movement_snap} 无法判定
+     * {@code after} 该加还是该减。
+     */
+    STOCKTAKE_GAIN("盘盈", true),
+
+    /** 盘亏：盘点确认时实盘量低于账面量的部分（方向 = 出）。 */
+    STOCKTAKE_LOSS("盘亏", false);
 
     /** 持久化到 {@code inventory_movement.movement_type} 的值。 */
     private final String desc;

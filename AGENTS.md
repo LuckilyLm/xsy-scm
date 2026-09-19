@@ -140,9 +140,14 @@ V25  V25__scm_inventory_outbound_reservation.sql outbound 库存出库与预留�
                                                    方向感知快照约束重建、菜单 803/804/812/813/825-829
 V26  V26__scm_order_reserve_stock_permission.sql outbound data-only，订单「预留库存」权限（620）
 V27  V27__scm_order_log_reserve_stock_type.sql  outbound 操作日志类型白名单加 RESERVE_STOCK
+V28  V28__scm_screen_permissions.sql            B7     data-only，数据大屏隐藏目录 + 查询权限（900/901）
+V29  V29__scm_inventory_stocktake.sql           stocktake 库存盘点：STOCKTAKE_GAIN/STOCKTAKE_LOSS
+                                                   流水类型、四方向快照约束、盘点单两张表、
+                                                   菜单 830-835
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
+V25–V27（出库 / 预留）与 V29（盘点）为 **BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，

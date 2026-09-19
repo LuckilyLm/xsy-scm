@@ -5,19 +5,26 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
 
 /**
- * 库存域错误码（11 个）。
+ * 库存域错误码（19 个）。
  *
- * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加。
+ * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加，
+ * 盘点的码在盘点波次追加。
  *
  * <pre>
- * 40486        NOT_FOUND   1
- * 41001–41003  既有 3 个；41011–41017  出库波次 7 个
+ * 40486                 NOT_FOUND   1
+ * 41001–41003           既有 3 个
+ * 41011–41017           出库波次 7 个
+ * 41019–41026           盘点波次 8 个
  * </pre>
  *
  * <p><b>为什么是 40486 / 41xxx</b>：2026-09-18 与全域码表核对，全仓 {@code 4xxxx} 已占用
  * {@code 40000–40091 / 40410–40499 / 40910–40999}，其中 {@code 40486} 落在 4048x 段的空档内、
  * {@code 41000+} 完全空闲。与 W1–W5 的全部错误码**零交集**
- * （由 {@code InventoryErrorCodeTest} 门禁强制）。
+ * （由 {@code ScmInventoryConstantTest} 门禁强制）。
+ *
+ * <p><b>410xx 段的实际占用必须现查现用</b>：41004–41007 属 warehouse、41008 属 purchase、
+ * 41018 亦属 warehouse，因此库存域只能取 41001–41003 / 41011–41017 / 41019–41026。
+ * 不要相信任何注释里写的「本段空闲」—— 那是写下时的状态，会过期。
  *
  * <p><b>刻意不放进本枚举的码</b>：{@code WarehouseErrorCode.WAREHOUSE_NOT_FOUND(40485)} ——
  * 仓库不存在是 warehouse 域的事实，库存域直接复用（AGENTS §9 稳定码纪律：可复用的既有码
@@ -83,7 +90,58 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_RESERVATION_INVALID(41016, "库存预留不合法或当前状态不允许该操作"),
 
     /** 41017：出库单至少需要一行明细。 */
-    INVENTORY_OUTBOUND_EMPTY_ITEMS(41017, "出库单至少需要一条明细");
+    INVENTORY_OUTBOUND_EMPTY_ITEMS(41017, "出库单至少需要一条明细"),
+
+    /** 41019：盘点单不存在（行不存在或已软删）。 */
+    INVENTORY_STOCKTAKE_NOT_FOUND(41019, "盘点单不存在"),
+
+    /** 41020：盘点单当前状态不允许该操作（如已确认还要再改明细）。 */
+    INVENTORY_STOCKTAKE_STATUS_INVALID(41020, "盘点单当前状态不允许该操作"),
+
+    /** 41021：盘点单至少需要一行明细。 */
+    INVENTORY_STOCKTAKE_EMPTY_ITEMS(41021, "盘点单至少需要一条明细"),
+
+    /** 41022：盘点事实非法（actualQuantity 为负、warehouseId / skuId / 来源行缺失等）。 */
+    INVENTORY_STOCKTAKE_PARAM_INVALID(41022, "库存盘点事实不合法"),
+
+    /**
+     * 41023：该 {@code (warehouse, sku)} 没有余额行，无法盘点。
+     *
+     * <p>记账单位（Q13）只能来自余额行，因此「从未入库过的 SKU」不能在盘点里凭空盘盈 ——
+     * 那需要先有入库事实来确定单位。这不是能力缺失，而是刻意不让盘点成为
+     * 「绕过入库、凭空造库存」的入口。
+     */
+    INVENTORY_STOCKTAKE_BALANCE_MISSING(41023, "该仓库与 SKU 尚无库存记录，请先办理入库再盘点"),
+
+    /**
+     * 41024（Q10）：盘点调整后数量为负。
+     *
+     * <p>出现这种组合说明「清点差异」与「确认瞬间账面量」指向了矛盾的事实
+     * （例如盘亏量大于确认时的账面量），此时**必须失败**而不是写出负库存 ——
+     * 否则 {@code ck_inventory_balance_quantity} 也会在 DB 层拒绝，但错误会难以归因。
+     */
+    INVENTORY_STOCKTAKE_NEGATIVE_AFTER(41024, "盘点调整后库存数量为负，请核对账面量与实盘量"),
+
+    /**
+     * 41025：盘点调整后低于已预留量（可用量为负）。
+     *
+     * <p>已预留的货不能被盘点吃掉 —— 预留代表对下游（销售订单）的承诺，
+     * 盘亏到低于预留量意味着承诺无法兑现，必须显式失败而不是静默破坏
+     * {@code ck_inventory_balance_available}。
+     */
+    INVENTORY_STOCKTAKE_BELOW_RESERVED(41025, "盘点调整后库存低于已预留量，请先释放预留或核对实盘量"),
+
+    /** 41026：源身份重复盘点（同一条盘点明细行已写过流水）。 */
+    INVENTORY_DUPLICATE_STOCKTAKE(41026, "该盘点明细行已产生库存流水，不能重复盘点"),
+
+    /**
+     * 41027：同一 SKU 在盘点单里出现多次。
+     *
+     * <p>必须显式拒绝而不是静默去重：重复行会让同一份差异被施加两次，
+     * 而结果看起来完全正常（余额确实变了），只是变错了。这类错误只有在
+     * 未来对账时才会暴露，所以要在入口挡住。
+     */
+    INVENTORY_STOCKTAKE_DUPLICATE_SKU(41027, "同一 SKU 在盘点单中只能出现一次");
 
     private final int code;
     private final String msg;

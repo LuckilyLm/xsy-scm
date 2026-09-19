@@ -59,9 +59,14 @@ class ScmInventoryConstantTest {
     void enumsOnlyAllowSupportedValues() {
         assertThat(ScmInventoryMovementTypeEnum.isSupported("PURCHASE_IN")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("SALES_OUT")).isTrue();
+        assertThat(ScmInventoryMovementTypeEnum.isSupported("STOCKTAKE_GAIN")).isTrue();
+        assertThat(ScmInventoryMovementTypeEnum.isSupported("STOCKTAKE_LOSS")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("PURCHASE_RECEIPT_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("SALES_OUTBOUND_ITEM")).isTrue();
+        assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("STOCKTAKE_ITEM")).isTrue();
 
+        // STOCKTAKE_ADJUST 是**刻意不存在**的类型名：盘盈与盘亏必须是两个类型，
+        // 否则 ck_inventory_movement_snap 无法从类型本身判定 after 该加还是该减。
         for (String rejected : new String[]{null, "", " ", "TRANSFER_IN", "STOCKTAKE_ADJUST", "purchase_in"}) {
             assertThat(ScmInventoryMovementTypeEnum.isSupported(rejected))
                     .as("movement_type 不应放行 %s", rejected).isFalse();
@@ -69,10 +74,11 @@ class ScmInventoryConstantTest {
                     .as("source_document_type 不应放行 %s", rejected).isFalse();
         }
 
-        // 出库波次已落地 PURCHASE_IN + SALES_OUT；调拨 / 盘点 / 报损报溢 / 规格转换仍不得提前出现。
-        assertThat(ScmInventoryMovementTypeEnum.values()).hasSize(2);
-        // 来源类型：采购收货行 + 出库单行 + 销售订单行（预留来源）
-        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(3);
+        // 已落地：PURCHASE_IN + SALES_OUT + STOCKTAKE_GAIN + STOCKTAKE_LOSS；
+        // 报损报溢 / 调拨 / 规格转换仍不得提前出现。
+        assertThat(ScmInventoryMovementTypeEnum.values()).hasSize(4);
+        // 来源类型：采购收货行 + 出库单行 + 销售订单行（预留来源）+ 盘点单行
+        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(4);
     }
 
     @Test
@@ -80,6 +86,9 @@ class ScmInventoryConstantTest {
     void movementDirectionMatchesSnapshotConstraint() {
         assertThat(ScmInventoryMovementTypeEnum.PURCHASE_IN.isInbound()).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.SALES_OUT.isInbound()).isFalse();
+        // 盘盈是「入」、盘亏是「出」—— 方向由差异正负决定，但类型本身已经把它写死
+        assertThat(ScmInventoryMovementTypeEnum.STOCKTAKE_GAIN.isInbound()).isTrue();
+        assertThat(ScmInventoryMovementTypeEnum.STOCKTAKE_LOSS.isInbound()).isFalse();
         assertThat(ScmInventoryMovementTypeEnum.of("SALES_OUT"))
                 .isEqualTo(ScmInventoryMovementTypeEnum.SALES_OUT);
         assertThat(ScmInventoryMovementTypeEnum.of("NOT_A_TYPE")).isNull();
@@ -90,9 +99,9 @@ class ScmInventoryConstantTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("错误码：恰好 11 个、码值冻结、段内无重复")
+    @DisplayName("错误码：恰好 20 个、码值冻结、段内无重复")
     void errorCodesAreFrozenAndUniqueWithinTheDomain() {
-        assertThat(InventoryErrorCode.values()).hasSize(11);
+        assertThat(InventoryErrorCode.values()).hasSize(20);
 
         // W6-1 的 4 个码值冻结不变
         assertThat(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND.getCode()).isEqualTo(40486);
@@ -110,20 +119,31 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_RESERVATION_INVALID.getCode()).isEqualTo(41016);
         assertThat(InventoryErrorCode.INVENTORY_OUTBOUND_EMPTY_ITEMS.getCode()).isEqualTo(41017);
 
+        // 盘点波次新增：41019–41027（41018 已被 warehouse 占用，故盘点从 41019 起）
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_NOT_FOUND.getCode()).isEqualTo(41019);
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_STATUS_INVALID.getCode()).isEqualTo(41020);
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_EMPTY_ITEMS.getCode()).isEqualTo(41021);
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_PARAM_INVALID.getCode()).isEqualTo(41022);
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_BALANCE_MISSING.getCode()).isEqualTo(41023);
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_NEGATIVE_AFTER.getCode()).isEqualTo(41024);
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_BELOW_RESERVED.getCode()).isEqualTo(41025);
+        assertThat(InventoryErrorCode.INVENTORY_DUPLICATE_STOCKTAKE.getCode()).isEqualTo(41026);
+        assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_DUPLICATE_SKU.getCode()).isEqualTo(41027);
+
         Set<Integer> codes = Arrays.stream(InventoryErrorCode.values())
                 .map(InventoryErrorCode::getCode).collect(Collectors.toCollection(LinkedHashSet::new));
-        assertThat(codes).as("库存域段内出现重复码值").hasSize(11);
+        assertThat(codes).as("库存域段内出现重复码值").hasSize(20);
 
-        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 十个（业务冲突 / 参数非法）
+        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 十九个（业务冲突 / 参数非法）
         assertThat(codes.stream().filter(code -> code / 100 == 404).count()).isEqualTo(1L);
-        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(10L);
+        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(19L);
         // 消息不得为空 —— 错误码没有可读消息等于没有错误码
         Arrays.stream(InventoryErrorCode.values())
                 .forEach(code -> assertThat(code.getMsg()).isNotBlank());
     }
 
     @Test
-    @DisplayName("撞码门禁：库存域的 11 个码与其它全部 SCM 域零交集")
+    @DisplayName("撞码门禁：库存域的 20 个码与其它全部 SCM 域零交集")
     void inventoryErrorCodesDoNotCollideWithAnyOtherDomain() {
         List<Class<?>> domains = discoverErrorCodeEnums();
         Set<String> names = domains.stream()

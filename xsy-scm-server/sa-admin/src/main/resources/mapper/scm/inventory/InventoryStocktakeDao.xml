@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryStocktakeDao">
+
+    <resultMap id="stocktakeVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeVO"/>
+
+    <select id="countByStocktakeNo" resultType="int">
+        SELECT COUNT(*) FROM inventory_stocktake
+        WHERE stocktake_no = #{stocktakeNo} AND deleted = FALSE
+    </select>
+
+    <select id="nextStocktakeNo" resultType="long">
+        SELECT nextval('inventory_stocktake_no_seq')
+    </select>
+
+    <select id="selectById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktakeEntity">
+        SELECT * FROM inventory_stocktake WHERE id = #{id} AND deleted = FALSE
+    </select>
+
+    <!-- 锁序：单据锁先于余额锁（与收货/出库确认同一顺序，避免反向拿锁） -->
+    <select id="lockById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktakeEntity">
+        SELECT * FROM inventory_stocktake WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <!-- 带状态条件：并发重复确认时只有一次能成功（影响行数 = 1） -->
+    <update id="markConfirmed">
+        UPDATE inventory_stocktake
+        SET status       = 'CONFIRMED',
+            confirmed_at = #{confirmedAt},
+            operator     = #{operator},
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <update id="markCancelled">
+        UPDATE inventory_stocktake
+        SET status     = 'CANCELLED',
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <update id="updateDraft">
+        UPDATE inventory_stocktake
+        SET warehouse_id = #{warehouseId},
+            remark       = #{remark},
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
+    <select id="queryPage" resultMap="stocktakeVoMap">
+        SELECT s.id,
+               s.stocktake_no,
+               s.warehouse_id,
+               s.status,
+               s.remark,
+               s.confirmed_at,
+               s.operator,
+               s.version,
+               s.created_at,
+               s.updated_at,
+               w.warehouse_code,
+               w.name AS warehouse_name
+        FROM inventory_stocktake s
+        LEFT JOIN warehouse w ON w.id = s.warehouse_id
+        WHERE s.deleted = FALSE
+        <if test="query.stocktakeNo != null and query.stocktakeNo != ''">
+            AND s.stocktake_no ILIKE CONCAT('%', #{query.stocktakeNo}, '%')
+        </if>
+        <if test="query.warehouseId != null">
+            AND s.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND s.status = #{query.status}
+        </if>
+        ORDER BY s.created_at DESC, s.id DESC
+    </select>
+
+    <select id="detail" resultMap="stocktakeVoMap">
+        SELECT s.id,
+               s.stocktake_no,
+               s.warehouse_id,
+               s.status,
+               s.remark,
+               s.confirmed_at,
+               s.operator,
+               s.version,
+               s.created_at,
+               s.updated_at,
+               w.warehouse_code,
+               w.name AS warehouse_name
+        FROM inventory_stocktake s
+        LEFT JOIN warehouse w ON w.id = s.warehouse_id
+        WHERE s.deleted = FALSE AND s.id = #{id}
+    </select>
+
+</mapper>

@@ -38,6 +38,16 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
     private static final List<String> W6_TABLES = List.of("inventory_balance", "inventory_movement");
 
+    /**
+     * 出库波次与盘点波次新增的表。
+     *
+     * <p>与 {@link #W6_TABLES} 分开列，是为了让「W6-1 交付了什么」这个事实不被后续波次稀释 ——
+     * 一个列表越加越长就失去了「范围锁定」的作用。
+     */
+    private static final List<String> POST_W6_TABLES = List.of(
+            "inventory_outbound", "inventory_outbound_item", "inventory_reservation",
+            "inventory_stocktake", "inventory_stocktake_item");
+
     /** 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。 */
     private static final long SENTINEL_SOURCE_ITEM_ID = 9_000_000_000L + (System.nanoTime() % 1_000_000_000L);
 
@@ -84,6 +94,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                         + "WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'",
                 String.class);
         assertThat(tables).containsAll(W6_TABLES);
+        assertThat(tables).containsAll(POST_W6_TABLES);
 
         // --- 列形状：余额带 unit（Q13）、version，出库波次起带 reserved_quantity；
         //     流水是纯 append-only（无 version / updated_*）---
@@ -119,14 +130,17 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         assertThat(movementIndex).containsIgnoringCase("source_document_item_id IS NOT NULL");
 
         // --- CHECK 定义（读约束定义，确认判据写在 DB 里而不是只写在服务层）---
-        // 快照约束必须是**方向感知**的：V19 只写了入库分支，出库波次补了出库分支。
+        // 快照约束必须是**方向感知**的：V19 只写了入库分支，出库波次补了出库分支，
+        // 盘点波次再补盘盈 / 盘亏两个分支。
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_snap"))
                 .contains("before_quantity").contains("after_quantity").contains("quantity")
-                .contains("PURCHASE_IN").contains("SALES_OUT");
+                .contains("PURCHASE_IN").contains("SALES_OUT")
+                .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_append_only"))
                 .containsIgnoringCase("deleted = false");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_type"))
-                .contains("PURCHASE_IN").contains("SALES_OUT");
+                .contains("PURCHASE_IN").contains("SALES_OUT")
+                .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS");
         assertThat(constraintDef("inventory_balance", "ck_inventory_balance_quantity"))
                 .contains("quantity");
         // 可用量不为负：已预留的货不能被出库吃掉（出库波次新增）
@@ -163,11 +177,13 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 0, 'kg', 0, 0, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 2);
-        // movement_type 白名单（W6-1 只有 PURCHASE_IN；新增类型必须走新迁移扩白名单）
+        // movement_type 白名单：未实现的类型（调拨 / 报损报溢 / 规格转换）必须被 DB 拒绝。
+        // 这里刻意用 TRANSFER_IN 而不是已放行的 SALES_OUT —— 后者会因快照方向不符而失败，
+        // 那样这个用例就不再是在验证「白名单」，而是在验证快照约束。
         expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
-                + "VALUES (1, 1, 'SALES_OUT', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
+                + "VALUES (1, 1, 'TRANSFER_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 3);
         // 单位快照不能是空白
         expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "

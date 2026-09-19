@@ -1,6 +1,6 @@
 # 项目进度
 
-最后更新：2026-09-18
+最后更新：2026-09-19
 
 ## 当前状态
 
@@ -15,16 +15,58 @@
 | W5.5 原生功能同步 | 完成 | SmartAdmin 原生功能与 SCM 品牌配置 |
 | F0 对象存储 | 完成 | FileService、S3/MinIO 和访问保护 |
 | W6-1 库存第一阶段 | 后端与浏览器已验证 | 余额、不可变流水、双入库模式、仓库生命周期、历史回填和只读查询页 |
+| 出库 / 预留（V25–V27） | 后端已验证，浏览器待验证 | 独立出库单、`SALES_OUT` 流水、可用量门槛、预留与释放、订单「预留库存」显式动作 |
+| 盘点（V29） | 后端已验证，浏览器待验证 | 盘点单、盘盈 / 盘亏流水、差异施加到确认瞬间的账面量、双下限保护 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
 
 - 引入非管理员业务角色前，处理 F0-DEBT-01：业务附件必须接入权限、归属/关系和 FileService 读取控制。
 - 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
-- B2/B3 尚未形成批准方案；依照参考项目目录评估下一波库存业务，不提前启动 W6-2。
+- 库存深化剩余项：报损报溢、调拨、单位转换、阈值预警、移动加权成本。顺序见
+  [`requirements/2026-09-19-需求覆盖与待办清单.md`](./requirements/2026-09-19-需求覆盖与待办清单.md)。
+- 出库 / 预留 / 盘点的**浏览器验收尚未执行**（Docker 未运行时 PostgreSQL 与 Redis 同时不可用，
+  需登录的 E2E 无法进行）。
+- 预留的**并发**场景目前只有单线程 IT 覆盖（并发压测待补）。
 - F0 cloud/MinIO 环境未配置时，后端 5 项 cloud IT 与 Playwright 7 项 cloud 用例继续跳过；全量入口因此返回 INCOMPLETE，而非 FAIL。
 
 ## 追加记录
+
+### 2026-09-19 盘点（V29）
+
+- V29 把「盘点」纳入范围：扩 `inventory_movement` 类型白名单加 `STOCKTAKE_GAIN` / `STOCKTAKE_LOSS`，
+  重建 `ck_inventory_movement_snap` 为**四方向分支**（V19 只有入库分支，V25 补了出库分支），
+  新建 `inventory_stocktake` / `inventory_stocktake_item` 与 `inventory_stocktake_no_seq`，
+  菜单 830–835（盘点单页 + 查询 / 新建 / 编辑 / 确认盘点 / 删除）。
+- **核心口径：差异施加到「确认瞬间的账面量」，不是把账面改写成实盘数。**
+  `delta = 实盘量 − 账面量快照`，`after = 确认瞬间账面量 + delta`。
+  这样「保存草稿 → 确认」之间发生的收货 / 出库不会被盘点悄悄抹掉；期间无变动时 `after` 恰好等于实盘数。
+  两种量都在单据行上留痕，流水的 `before` / `after` 是确认瞬间的真实账面，漂移完全可审计。
+- 差异为 0 的行**不写流水**（`quantity` 恒为正，写不出「零差异」流水），但单位快照仍回写。
+- 两条下限：调整后为负（Q10）报 41024；调整后低于已预留量报 41025 —— 已预留的货不能被盘点吃掉。
+- 边界：盘点**不建零余额行**。记账单位（Q13）只能来自余额行，因此从未入库过的 SKU 不能在盘点里
+  凭空盘盈（41023），必须先有入库事实。
+- 入口校验：同一 SKU 在盘点单里出现两次直接拒绝（41027），不做静默去重 ——
+  重复行会让同一份差异被施加两次，而结果看起来完全正常。
+- 测试：新增 `ScmInventoryStocktakeIT`（15 例）、`ScmInventoryStocktakeRollbackIT`（2 例，
+  `Propagation.NOT_SUPPORTED` 真实回滚）、`InventoryStocktakeNumberGeneratorTest`（4 例）；
+  同步扩 `ScmInventoryConstantTest`（枚举 4 个 / 错误码 20 个）、`ScmInventoryMigrationIT`（四方向 CHECK 断言）、
+  `ScmPurchaseMigrationIT`（版本清单加 28/29）；前端 `w6-inventory-contract.test.mjs` 新增盘点页契约。
+- 验证：干净库 `xsy_scm_stk` 上 `Tests run: 622, Failures: 2, Errors: 2, Skipped: 5` ——
+  4 项失败**全部**落在并行开发的未提交 `scm/screen`（数据大屏）模块，与盘点无关；
+  盘点相关用例全绿。前端 `npm run test` 67/67、ESLint 0 错误 / 3 条既有警告。
+- 未覆盖：浏览器验收；盘点并发压测；报损报溢 / 调拨 / 单位转换 / 阈值预警 / 移动加权成本。
+
+### 2026-09-19 出库与预留（V25–V27）
+
+- V25 扩流水类型加 `SALES_OUT`，重建方向感知快照约束，`inventory_balance` 加 `reserved_quantity`
+  （可用量 = 现有量 − 预留量，`reserved_quantity <= quantity` 由 DB CHECK 兜底），
+  新建 `inventory_outbound` / `inventory_outbound_item` / `inventory_reservation`，菜单 803/804/812/813/825–829。
+- V26/V27 增加订单「预留库存」显式动作（权限 620）与操作日志类型 `RESERVE_STOCK`。
+- **预留不挂在销售订单确认上**：本业务库存在订单确认之后才产生，在确认时校验可用量等于要求「货先到才能接单」。
+  实测把预留挂到确认上会让 82 个既有集成测试报 41011。触发点仍未决，见 `decisions.md`。
+- 契约守卫抓出两处「硬编码白名单」漏改：查询表单 `@Pattern`（漏了会「数据写进去但筛不出来」）
+  与操作日志 `operation_type`（漏了会让业务动作整个失败）。
 
 ### 2026-09-18 B1 收口
 

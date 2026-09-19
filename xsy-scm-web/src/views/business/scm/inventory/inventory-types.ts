@@ -90,7 +90,7 @@ export interface InventoryMovement {
   sourceDocumentItemId?: Id;
   /** 收货单号（Q9：人类可读来源，W6-1 不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
   receiptNo?: string;
-  /** 出库单号（出库波次新增）。仅 `SALES_OUT` 有值。 */
+  /** 来源单号：`SALES_OUT` 取出库单号、`STOCKTAKE_*` 取盘点单号。后端 COALESCE 成一个展示列。 */
   sourceDocumentNo?: string;
   quantity?: string | null;
   unitSnapshot?: string;
@@ -114,9 +114,9 @@ export interface InventoryMovementQuery extends Page {
   skuId?: Id;
   /** SKU 编码模糊匹配（联 `product_sku`）。 */
   skuCode?: string;
-  /** W6-1 只有 `PURCHASE_IN`。 */
+  /** 流水类型：`PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` / `STOCKTAKE_LOSS`。 */
   movementType?: string;
-  /** W6-1 只有 `PURCHASE_RECEIPT_ITEM`。 */
+  /** 来源单据类型：收货行 / 出库单行 / 销售订单行 / 盘点单行。 */
   sourceDocumentType?: string;
   sourceDocumentId?: Id;
   occurredFrom?: string | null;
@@ -222,4 +222,87 @@ export interface InventoryReservationQuery extends Page {
   skuId?: Id;
   status?: string;
   sourceDocumentId?: Id;
+}
+
+// ------------------------------------------------------------------
+// 盘点单（盘点波次新增）
+// ------------------------------------------------------------------
+
+/**
+ * `InventoryStocktakeVO`。
+ *
+ * **差异语义**（与后端一致，前端只是展示，不重算）：
+ * ```
+ * delta = actualQuantity - bookQuantity     // 清点发现的差异，基线是保存草稿时的账面量快照
+ * after = live + delta                      // live 是确认瞬间的账面量
+ * ```
+ * 因此确认后的账面**不一定等于实盘数** —— 保存草稿到确认之间发生的收货 / 出库会被保留。
+ * 详情页据此提示用户，避免把「账面 ≠ 实盘」误读成系统出错。
+ */
+export interface InventoryStocktake {
+  id: Id;
+  stocktakeNo?: string;
+  warehouseId?: Id;
+  warehouseCode?: string;
+  warehouseName?: string;
+  status?: string;
+  /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
+  statusDesc?: string;
+  remark?: string;
+  confirmedAt?: string;
+  operator?: string;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  /** 明细；仅详情接口返回，列表为 undefined。 */
+  items?: InventoryStocktakeItem[];
+}
+
+/** `InventoryStocktakeVO.Item`。 */
+export interface InventoryStocktakeItem {
+  id?: Id;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  productName?: string;
+  specValues?: Record<string, unknown> | null;
+  /** 账面量快照（保存草稿那一刻）。 */
+  bookQuantity?: string | null;
+  /** 实盘量。 */
+  actualQuantity?: string | null;
+  /** 差异 = 实盘量 − 账面量。**后端派生字段**，不落库。 */
+  deltaQuantity?: string | null;
+  /** 确认盘点时写入的记账单位快照；**草稿态为空**。 */
+  unitSnapshot?: string | null;
+  remark?: string;
+}
+
+/**
+ * `InventoryStocktakeQueryForm`。
+ *
+ * 与余额 / 流水 / 出库一致：**没有 `sortItemList`**，排序固定为 `created_at DESC, id DESC`。
+ */
+export interface InventoryStocktakeQuery extends Page {
+  stocktakeNo?: string;
+  warehouseId?: Id;
+  status?: string;
+}
+
+/**
+ * `InventoryStocktakeAddForm`（新建与改草稿共用）。
+ *
+ * **不提交账面量**：账面量由服务端在保存时从余额行读取并快照 ——
+ * 让客户端提交账面量等于把「账」交给调用方定义，那样盘点就能凭空制造差异。
+ *
+ * 实盘量是**定点字符串**：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字，
+ * 前端必须传 `"12.0000"` 这样的字符串，不能传 number。允许 `"0"`（确实一件不剩），不允许负数。
+ */
+export interface InventoryStocktakeAdd {
+  warehouseId: Id;
+  remark?: string;
+  items: Array<{
+    skuId: Id;
+    actualQuantity: string;
+    remark?: string;
+  }>;
 }

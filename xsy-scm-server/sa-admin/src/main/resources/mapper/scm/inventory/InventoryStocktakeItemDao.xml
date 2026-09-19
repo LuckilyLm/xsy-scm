@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryStocktakeItemDao">
+
+    <resultMap id="itemVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeItemVO">
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <!--
+      delta_quantity 是**派生列**（actual − book），只在 SQL 里算给前端看，不落库：
+      落库会与两个真值列失去同步。展示单位也一并取出，前端不必再查一次余额。
+    -->
+    <select id="listByStocktakeId" resultMap="itemVoMap">
+        SELECT i.id,
+               i.stocktake_id,
+               i.sku_id,
+               i.book_quantity,
+               i.actual_quantity,
+               (i.actual_quantity - i.book_quantity) AS delta_quantity,
+               i.unit_snapshot,
+               i.remark,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name
+        FROM inventory_stocktake_item i
+        LEFT JOIN product_sku k ON k.id = i.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE i.deleted = FALSE AND i.stocktake_id = #{stocktakeId}
+        ORDER BY i.id ASC
+    </select>
+
+    <!-- 草稿重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
+    <update id="deleteByStocktakeId">
+        UPDATE inventory_stocktake_item
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE stocktake_id = #{stocktakeId} AND deleted = FALSE
+    </update>
+
+    <update id="updateUnitSnapshot">
+        UPDATE inventory_stocktake_item
+        SET unit_snapshot = #{unit},
+            version       = version + 1,
+            updated_at    = CURRENT_TIMESTAMP,
+            updated_by    = #{operator}
+        WHERE id = #{id} AND deleted = FALSE
+    </update>
+
+</mapper>

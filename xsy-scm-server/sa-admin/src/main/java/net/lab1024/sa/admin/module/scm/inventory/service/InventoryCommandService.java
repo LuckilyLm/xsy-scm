@@ -7,6 +7,8 @@ import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocu
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
+import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryStocktakeAdjustment;
+import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryStocktakeFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
@@ -20,9 +22,14 @@ import java.math.BigDecimal;
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_INBOUND;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_OUTBOUND;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_STOCKTAKE;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_INSUFFICIENT_AVAILABLE;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_PARAM_INVALID;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_BALANCE_MISSING;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_BELOW_RESERVED;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_NEGATIVE_AFTER;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH;
 
 /**
@@ -30,6 +37,16 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
  *
  * <p>调用方须先持有采购/收货锁，再按 {@code (warehouseId, skuId)} 升序写入库存，
  * 避免多行收货以相反顺序获取余额锁。
+ *
+ * <p><b>本类是全仓唯一会改变 {@code inventory_balance.quantity} 的地方</b>，
+ * 三条写入路径都遵守同一套纪律：
+ * <ul>
+ *   <li>{@link #postPurchaseInbound} —— 采购入库（方向 = 入，可建零余额行）；</li>
+ *   <li>{@link #postSalesOutbound} —— 销售出库（方向 = 出，不建行，先判可用量）；</li>
+ *   <li>{@link #postStocktakeAdjust} —— 盘点调整（方向由差异正负决定，不建行）。</li>
+ * </ul>
+ * 三者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
+ * （{@code incrementQuantity} / {@code decrementQuantity}），从不做「读-改-写」赋值。
  */
 @Service
 @RequiredArgsConstructor
@@ -176,6 +193,105 @@ public class InventoryCommandService {
     }
 
     /**
+     * 按盘点结果调整余额并追加盘盈 / 盘亏流水，必须参与调用方事务。
+     *
+     * <p><b>差异施加到「当前账面量」而不是「快照」</b>（本波次的核心口径）：
+     * <pre>
+     * delta = actualQuantity - bookQuantity   // 清点发现的差异，基线是保存草稿时的快照
+     * after = live + delta                    // live 是**此刻持锁读到的**账面量
+     * </pre>
+     * 之所以不直接把账面量改写成实盘数：保存草稿到确认之间很可能发生了收货 / 出库
+     * （鲜活品仓里这是常态），直接改写会把那些真实变动悄悄抹掉，而抹掉的痕迹在任何
+     * 报表里都看不出来。用「施加差异」的写法，期间发生的变动被完整保留，
+     * 且当期间无变动时 {@code after} 恰好等于实盘数 —— 符合直觉。
+     *
+     * <p><b>delta 为 0 时不写流水</b>：{@code quantity} 恒为正（{@code ck_inventory_movement_qty}），
+     * 写不出「零差异」的流水；强行写一条 0 会让「一行一流水」的防重索引语义变脏。
+     * 调用方据 {@code movementWritten} 区分「调整了 0」与「无需调整」。
+     *
+     * <p><b>不建零余额行</b>：记账单位（Q13）只能来自余额行，因此从未入库过的 SKU
+     * 不能在盘点里凭空盘盈 —— 那需要先有入库事实来确定单位（41023）。
+     *
+     * @return 本次调整的结果（记账单位 + 差异 + 调整前后量 + 是否写了流水）
+     */
+    public InventoryStocktakeAdjustment postStocktakeAdjust(InventoryStocktakeFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Stocktake adjustment requires the caller's transaction");
+        }
+        requireStocktakeFact(fact);
+
+        warehouseService.require(fact.warehouseId());
+
+        // 盘点不建行：没有余额行 = 从未入库 = 无账可盘，也无法确定记账单位。
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_STOCKTAKE_BALANCE_MISSING);
+        }
+
+        String unit = balance.getUnit();
+
+        // 持有行锁后再读账面量与预留量，避免并发下拿到过期快照。
+        BigDecimal live = balance.getQuantity();
+        BigDecimal reserved = balance.getReservedQuantity() == null
+                ? BigDecimal.ZERO : balance.getReservedQuantity();
+
+        BigDecimal delta = fact.actualQuantity().subtract(fact.bookQuantity());
+        BigDecimal after = live.add(delta);
+
+        // Q10：盘亏不得把库存推成负数。DB 的 ck_inventory_balance_quantity 也会拦，
+        // 但这里先给出可归因的错误码。
+        if (after.signum() < 0) {
+            throw new ScmBusinessException(INVENTORY_STOCKTAKE_NEGATIVE_AFTER);
+        }
+        // 可用量不为负：已预留的货代表对下游的承诺，不能被盘点吃掉。
+        if (after.compareTo(reserved) < 0) {
+            throw new ScmBusinessException(INVENTORY_STOCKTAKE_BELOW_RESERVED);
+        }
+
+        if (delta.signum() == 0) {
+            return new InventoryStocktakeAdjustment(unit, delta, live, after, false);
+        }
+
+        boolean gain = delta.signum() > 0;
+        BigDecimal quantity = delta.abs();
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(gain
+                ? ScmInventoryMovementTypeEnum.STOCKTAKE_GAIN.name()
+                : ScmInventoryMovementTypeEnum.STOCKTAKE_LOSS.name());
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.STOCKTAKE_ITEM.name());
+        movement.setSourceDocumentId(fact.stocktakeId());
+        movement.setSourceDocumentItemId(fact.stocktakeItemId());
+        movement.setQuantity(quantity);
+        movement.setUnitSnapshot(unit);
+        // 盘盈/盘亏没有成本依据，unit_cost 留空（V19 的 ck_inventory_movement_cost 允许 NULL）。
+        movement.setUnitCost(null);
+        movement.setBeforeQuantity(live);
+        movement.setAfterQuantity(after);
+        // 与入库/出库同纪律：用盘点确认时刻与确认人，不能改用当前时间或当前登录人。
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_STOCKTAKE);
+        }
+
+        int rows = gain
+                ? balanceDao.incrementQuantity(balance.getId(), quantity, fact.operator())
+                : balanceDao.decrementQuantity(balance.getId(), quantity, fact.operator());
+        if (rows != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+
+        return new InventoryStocktakeAdjustment(unit, delta, live, after, true);
+    }
+
+    /**
      * 查询可用量；缺少查询标识或余额不存在时返回零，不返回表示能力未启用的 {@code null}。
      *
      * <p>出库波次起 {@code reserved} 返回**真实预留量**（此前恒为零）。
@@ -229,6 +345,30 @@ public class InventoryCommandService {
                 || fact.operator() == null
                 || fact.operator().isBlank()) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
+        }
+    }
+
+    /**
+     * 校验盘点事实。
+     *
+     * <p>两个数量都允许为 0（账面 0、实盘 0 都是合法事实），但**都不允许为负**：
+     * 负的实盘量没有物理含义，负的账面量则意味着库本身已经坏了。
+     * 差异的正负在这里不做判断 —— 那是 {@code delta} 的事，不是参数合法性的问题。
+     */
+    private static void requireStocktakeFact(InventoryStocktakeFact fact) {
+        if (fact == null
+                || fact.warehouseId() == null
+                || fact.skuId() == null
+                || fact.stocktakeId() == null
+                || fact.stocktakeItemId() == null
+                || fact.bookQuantity() == null
+                || fact.bookQuantity().signum() < 0
+                || fact.actualQuantity() == null
+                || fact.actualQuantity().signum() < 0
+                || fact.occurredAt() == null
+                || fact.operator() == null
+                || fact.operator().isBlank()) {
+            throw new ScmBusinessException(INVENTORY_STOCKTAKE_PARAM_INVALID);
         }
     }
 }

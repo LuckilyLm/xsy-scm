@@ -7,8 +7,13 @@
  * 2. **三态展示**（A18 同族）：`null` / `undefined` / 空串 → `—`，
  *    `"0.0000"` → `0.0000`；「没有值」与「值是零」不得被合并；
  * 3. **append-only**：流水前端只有 query，没有新增 / 编辑 / 删除入口；
- * 4. **枚举与 DB 白名单同源**：W6-1 的流水类型只有 `PURCHASE_IN`，来源只有 `PURCHASE_RECEIPT_ITEM`；
- * 5. **错误码有可执行文案**：4 个库存码都必须在映射表里，且提示要说「下一步做什么」。
+ * 4. **枚举与 DB 白名单同源**：流水类型 `PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` /
+ *    `STOCKTAKE_LOSS`，来源 `PURCHASE_RECEIPT_ITEM` / `SALES_OUTBOUND_ITEM` /
+ *    `SALES_ORDER_ITEM` / `STOCKTAKE_ITEM`；
+ * 5. **错误码有可执行文案**：库存域全部码（含盘点波次 41019–41027）都必须在映射表里，
+ *    且提示要说「下一步做什么」；
+ * 6. **盘点口径不被误读**：确认后的账面不一定等于实盘数（差异施加到确认瞬间的账面量上），
+ *    页面必须写明，且新增表单不得提交账面量。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -121,10 +126,11 @@ test('movement type text falls back to the raw value so an unmapped type stays v
 // 枚举 / 表格 id
 // ------------------------------------------------------------------
 
-test('W6-1 enums expose exactly the values the backend CHECK whitelist allows', () => {
-  assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), ['PURCHASE_IN', 'SALES_OUT']);
+test('inventory enums expose exactly the values the backend CHECK whitelist allows', () => {
+  assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM),
+      ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS']);
   assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM),
-      ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM']);
+      ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM', 'STOCKTAKE_ITEM']);
 
   // 值与键逐字一致（后端 `ScmInventoryMovementTypeEnum.name()` 就是持久化值）
   for (const [key, item] of Object.entries(SCM_INVENTORY_MOVEMENT_TYPE_ENUM)) {
@@ -136,20 +142,27 @@ test('W6-1 enums expose exactly the values the backend CHECK whitelist allows', 
     assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
   }
 
-  // 出库波次已落地 PURCHASE_IN + SALES_OUT；调拨 / 盘点 / 报损报溢 / 规格转换仍不得提前出现
-  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /TRANSFER|STOCKTAKE|LOSS|GAIN|CONVERT/);
+  // 盘盈与盘亏必须是**两个**类型：方向要能从类型本身读出来，否则 DB 的
+  // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /STOCKTAKE_ADJUST/);
+
+  // 盘点波次已落地；报损报溢 / 调拨 / 规格转换仍不得提前出现
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /TRANSFER|LOSS_REPORT|GAIN_REPORT|CONVERT/);
 });
 
 test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
-  assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID), ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION']);
+  assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID),
+      ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE']);
   assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
+  assert.equal(SCM_INVENTORY_TABLE_ID.STOCKTAKE, 'scm-inventory-stocktake-table');
 
   const business = TABLE_ID_CONST.BUSINESS;
   assert.equal(business.SCM_INVENTORY_BALANCE, 50017);
   assert.equal(business.SCM_INVENTORY_MOVEMENT, 50018);
   assert.equal(business.SCM_INVENTORY_OUTBOUND, 50019);
   assert.equal(business.SCM_INVENTORY_RESERVATION, 50020);
+  assert.equal(business.SCM_INVENTORY_STOCKTAKE, 50021);
 
   // 数字 tableId 必须全局唯一（列配置按它持久化，撞了会串列）
   const numeric = Object.values(business).filter((value) => typeof value === 'number');
@@ -235,6 +248,71 @@ test('movement type filter is omitted (not sent as an empty string) when cleared
   assert.match(page, /movementType: queryForm\.movementType \|\| undefined/);
   assert.match(page, /occurredFrom: occurredRange\.value\?\.\[0\] \?\? null/);
   assert.match(page, /occurredTo: occurredRange\.value\?\.\[1\] \?\? null/);
+});
+
+// ------------------------------------------------------------------
+// 盘点波次
+// ------------------------------------------------------------------
+
+test('the stocktake page is a stateful document page wired to its own DOM id and privileges', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-stocktake-list.vue');
+  assert.match(page, /TableOperator/);
+  assert.match(page, /SCM_INVENTORY_TABLE_ID/);
+  assert.match(page, /v-privilege/);
+
+  // 四个权限点都要出现：查询 / 新建 / 编辑 / 确认 / 删除。
+  // 「确认盘点」必须是**独立权限** —— 它会真实调整库存并写不可逆流水，
+  // 允许仓管录数、由主管确认是完全合理的分工。
+  for (const perm of [
+    'scm:inventory:stocktake:query',
+    'scm:inventory:stocktake:add',
+    'scm:inventory:stocktake:update',
+    'scm:inventory:stocktake:confirm',
+    'scm:inventory:stocktake:delete',
+  ]) {
+    assert.match(page, new RegExp(perm.replace(/:/g, ':')), page + ' 缺少权限 ' + perm);
+  }
+
+  // 只有草稿可写：确认 / 取消 / 删除都必须挂在 status === 'DRAFT' 上
+  assert.match(page, /record\.status === 'DRAFT'/);
+
+  // 实盘量允许 0（确实一件不剩），因此校验正则不得要求大于 0
+  assert.match(page, /\^\\d\+\(\\.\\d\{1,4\}\)\?\$/);
+});
+
+test('the stocktake page documents that delta is applied to the live book quantity', () => {
+  // 这是本波次最容易让人误读的一条口径：确认后的账面**不一定等于实盘数**，
+  // 因为「保存草稿 → 确认」之间发生的收货 / 出库会被保留（差异是施加到当前账面量上的）。
+  // 页面上必须写明，否则用户会把正确行为当成 bug。
+  const page = code('../src/views/business/scm/inventory/inventory-stocktake-list.vue');
+  assert.match(page, /确认瞬间的账面量/);
+
+  // 明细里的账面量由服务端快照，前端不得提交它（否则盘点能凭空制造差异）
+  const api = code('../src/api/business/scm/inventory-stocktake-api.ts');
+  assert.match(api, /create:/);
+  assert.match(api, /confirm:/);
+  // 盘点单是**有状态单据**，与 append-only 的流水不同：它有 update / cancel / delete
+  assert.match(api, /update:/);
+  assert.match(api, /cancel:/);
+  assert.match(api, /delete:/);
+
+  const types = code('../src/views/business/scm/inventory/inventory-types.ts');
+  const addForm = types.slice(types.indexOf('export interface InventoryStocktakeAdd'));
+  assert.ok(addForm.length > 0, '未能定位 InventoryStocktakeAdd');
+  assert.doesNotMatch(addForm, /bookQuantity/, '新增表单不得提交账面量');
+});
+
+test('stocktake error codes all have actionable Chinese text', () => {
+  // 盘点波次 9 个码：41019–41027。每一个都必须说「下一步做什么」。
+  const codes = [41019, 41020, 41021, 41022, 41023, 41024, 41025, 41026, 41027];
+  for (const code of codes) {
+    const text = inventoryError({code});
+    assert.notEqual(text, '操作失败，请重试', code + ' 未登记可执行提示');
+    assert.ok(text.length > 8, code + ' 的提示过于简短，无法指导下一步');
+  }
+  // 两条最容易被误读的码：提示里必须给出「怎么做」
+  assert.match(inventoryError({code: 41023}), /先办理入库/);
+  assert.match(inventoryError({code: 41025}), /释放/);
 });
 
 // ------------------------------------------------------------------

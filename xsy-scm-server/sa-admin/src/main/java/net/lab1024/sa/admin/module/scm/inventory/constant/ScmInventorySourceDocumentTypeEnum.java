@@ -27,7 +27,16 @@ public enum ScmInventorySourceDocumentTypeEnum {
     SALES_OUTBOUND_ITEM("出库单行"),
 
     /** 销售订单行（预留的来源）：{@code source_document_item_id = sales_order_item.id}。 */
-    SALES_ORDER_ITEM("销售订单行");
+    SALES_ORDER_ITEM("销售订单行"),
+
+    /**
+     * 盘点单行：{@code source_document_item_id = inventory_stocktake_item.id}。
+     *
+     * <p>一条盘点明细行最多产生**一条**流水：{@code delta = 0} 的行不写流水
+     * （数量恒为正，写不出「零差异」的流水），因此
+     * {@code uk_inventory_movement_source_active} 的一行一流水语义在这里依然成立。
+     */
+    STOCKTAKE_ITEM("盘点单行");
 
     private final String desc;
 

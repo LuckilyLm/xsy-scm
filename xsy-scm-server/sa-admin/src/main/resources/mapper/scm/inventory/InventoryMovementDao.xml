@@ -56,7 +56,7 @@
                m.operator,
                m.created_at,
                r.receipt_no,
-               ob.outbound_no AS source_document_no,
+               COALESCE(ob.outbound_no, st.stocktake_no) AS source_document_no,
                w.warehouse_code,
                w.name       AS warehouse_name,
                k.sku_code,
@@ -72,6 +72,12 @@
         LEFT JOIN inventory_outbound ob
                ON ob.id = m.source_document_id
               AND m.source_document_type = 'SALES_OUTBOUND_ITEM'
+        -- 盘点波次：盘盈/盘亏流水的来源单号取盘点单号。
+        -- 与上面两条 join 互斥（靠 source_document_type 判定），因此用 COALESCE 合并成一个展示列，
+        -- 前端不必为三种来源各写一个「来源单号」字段。
+        LEFT JOIN inventory_stocktake st
+               ON st.id = m.source_document_id
+              AND m.source_document_type = 'STOCKTAKE_ITEM'
         LEFT JOIN warehouse   w ON w.id = m.warehouse_id
         LEFT JOIN product_sku k ON k.id = m.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
