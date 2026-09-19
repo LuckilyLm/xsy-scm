@@ -44,6 +44,10 @@ export interface InventoryBalance {
   /** Q13 记账单位：一个仓库 + SKU 只可能有一个（异单位入库会被 41001 拒绝）。 */
   unit?: string;
   quantity?: string | null;
+  /** 已预留量（出库波次新增）。 */
+  reservedQuantity?: string | null;
+  /** 可用量 = quantity − reservedQuantity。**后端计算属性**，不落库。 */
+  availableQuantity?: string | null;
   version?: number;
   updatedAt?: string;
 }
@@ -84,8 +88,10 @@ export interface InventoryMovement {
   sourceDocumentId?: Id;
   /** 收货行 id（防重锚点）。 */
   sourceDocumentItemId?: Id;
-  /** 收货单号（Q9：人类可读来源，W6-1 不设 movement_no）。 */
+  /** 收货单号（Q9：人类可读来源，W6-1 不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
   receiptNo?: string;
+  /** 出库单号（出库波次新增）。仅 `SALES_OUT` 有值。 */
+  sourceDocumentNo?: string;
   quantity?: string | null;
   unitSnapshot?: string;
   unitCost?: string | null;
@@ -115,4 +121,105 @@ export interface InventoryMovementQuery extends Page {
   sourceDocumentId?: Id;
   occurredFrom?: string | null;
   occurredTo?: string | null;
+}
+
+// ------------------------------------------------------------------
+// 出库单（出库波次新增）
+// ------------------------------------------------------------------
+
+/** `InventoryOutboundVO`。 */
+export interface InventoryOutbound {
+  id: Id;
+  outboundNo?: string;
+  warehouseId?: Id;
+  warehouseCode?: string;
+  warehouseName?: string;
+  status?: string;
+  /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
+  statusDesc?: string;
+  remark?: string;
+  confirmedAt?: string;
+  operator?: string;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  /** 明细；仅详情接口返回，列表为 undefined。 */
+  items?: InventoryOutboundItem[];
+}
+
+/** `InventoryOutboundVO.Item`。 */
+export interface InventoryOutboundItem {
+  id?: Id;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  productName?: string;
+  specValues?: Record<string, unknown> | null;
+  quantity?: string | null;
+  /** 确认出库时写入的记账单位快照；**草稿态为空**。 */
+  unitSnapshot?: string | null;
+  remark?: string;
+}
+
+/**
+ * `InventoryOutboundQueryForm`。
+ *
+ * 与余额 / 流水一致：**没有 `sortItemList`**，排序固定为 `created_at DESC, id DESC`。
+ */
+export interface InventoryOutboundQuery extends Page {
+  outboundNo?: string;
+  warehouseId?: Id;
+  status?: string;
+}
+
+/**
+ * `InventoryOutboundAddForm`（新建与改草稿共用）。
+ *
+ * 数量是**定点字符串**：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字，
+ * 前端必须传 `"1.0000"` 这样的字符串，不能传 number。
+ */
+export interface InventoryOutboundAdd {
+  warehouseId: Id;
+  remark?: string;
+  items: Array<{
+    skuId: Id;
+    quantity: string;
+    remark?: string;
+  }>;
+}
+
+// ------------------------------------------------------------------
+// 库存预留（出库波次新增）
+// ------------------------------------------------------------------
+
+/** `InventoryReservationVO`。 */
+export interface InventoryReservation {
+  id: Id;
+  warehouseId?: Id;
+  warehouseCode?: string;
+  warehouseName?: string;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  productName?: string;
+  sourceDocumentType?: string;
+  sourceDocumentId?: Id;
+  sourceDocumentItemId?: Id;
+  /** 来源单号（联销售订单取，可能为空）。 */
+  sourceDocumentNo?: string;
+  quantity?: string | null;
+  unitSnapshot?: string;
+  status?: string;
+  statusDesc?: string;
+  occurredAt?: string;
+  operator?: string;
+  createdAt?: string;
+}
+
+/** `InventoryReservationQueryForm`。 */
+export interface InventoryReservationQuery extends Page {
+  warehouseId?: Id;
+  skuId?: Id;
+  status?: string;
+  sourceDocumentId?: Id;
 }

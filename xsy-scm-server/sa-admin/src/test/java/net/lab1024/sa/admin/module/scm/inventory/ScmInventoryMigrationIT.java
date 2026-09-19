@@ -85,9 +85,11 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 String.class);
         assertThat(tables).containsAll(W6_TABLES);
 
-        // --- 列形状：余额带 unit（Q13）与 version；流水是纯 append-only（无 version / updated_*）---
+        // --- 列形状：余额带 unit（Q13）、version，出库波次起带 reserved_quantity；
+        //     流水是纯 append-only（无 version / updated_*）---
         assertThat(columnsOf("inventory_balance"))
-                .contains("id", "warehouse_id", "sku_id", "unit", "quantity", "version", "deleted",
+                .contains("id", "warehouse_id", "sku_id", "unit", "quantity", "reserved_quantity",
+                        "version", "deleted",
                         "created_at", "updated_at", "created_by", "updated_by")
                 // Q2 / Q3 / Q4 / G-03：这些列被裁决**不纳入 W6-1**，不允许悄悄出现
                 .doesNotContain("weight", "avg_cost", "total_cost", "warn_min", "warn_max", "batch_id");
@@ -117,14 +119,21 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         assertThat(movementIndex).containsIgnoringCase("source_document_item_id IS NOT NULL");
 
         // --- CHECK 定义（读约束定义，确认判据写在 DB 里而不是只写在服务层）---
+        // 快照约束必须是**方向感知**的：V19 只写了入库分支，出库波次补了出库分支。
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_snap"))
-                .contains("before_quantity").contains("after_quantity").contains("quantity");
+                .contains("before_quantity").contains("after_quantity").contains("quantity")
+                .contains("PURCHASE_IN").contains("SALES_OUT");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_append_only"))
                 .containsIgnoringCase("deleted = false");
         assertThat(constraintDef("inventory_movement", "ck_inventory_movement_type"))
-                .contains("PURCHASE_IN");
+                .contains("PURCHASE_IN").contains("SALES_OUT");
         assertThat(constraintDef("inventory_balance", "ck_inventory_balance_quantity"))
                 .contains("quantity");
+        // 可用量不为负：已预留的货不能被出库吃掉（出库波次新增）
+        assertThat(constraintDef("inventory_balance", "ck_inventory_balance_available"))
+                .contains("reserved_quantity").contains("quantity");
+        assertThat(constraintDef("inventory_balance", "ck_inventory_balance_reserved"))
+                .contains("reserved_quantity");
 
         // --- 行为验证：约束真的会拒绝坏数据 ---
         Long movementId = insertMovement("kg", "PURCHASE_IN", "5", "0", "5");
@@ -181,11 +190,14 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         assertThat(movementDaoMethods)
                 .containsExactly("countActiveBySourceItem", "insertOnConflictDoNothing", "queryPage");
 
-        // 余额 DAO 也**没有**任何「设置绝对数量」的方法：余额只能是流水的净和
+        // 余额 DAO 也**没有**任何「设置绝对数量」的方法：余额只能是流水的净和。
+        // 出库波次新增 4 个**增量**方法（出库扣减 + 预留增减），仍然没有赋值型方法。
         List<String> balanceDaoMethods = Arrays.stream(InventoryBalanceDao.class.getDeclaredMethods())
                 .map(Method::getName).sorted().toList();
-        assertThat(balanceDaoMethods).containsExactly("detail", "incrementQuantity",
-                "insertOnConflictDoNothing", "lockByWarehouseAndSku", "queryPage", "selectByWarehouseAndSku");
+        assertThat(balanceDaoMethods).containsExactly(
+                "decrementQuantity", "decrementReserved", "detail", "incrementQuantity",
+                "incrementReserved", "insertOnConflictDoNothing", "lockByWarehouseAndSku",
+                "queryPage", "selectByWarehouseAndSku");
         assertThat(balanceDaoMethods)
                 .noneMatch(name -> name.toLowerCase().contains("setquantity"))
                 .noneMatch(name -> name.toLowerCase().contains("updatequantity"));

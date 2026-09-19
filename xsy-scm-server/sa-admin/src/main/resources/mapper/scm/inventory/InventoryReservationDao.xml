@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryReservationDao">
+
+    <resultMap id="reservationVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryReservationVO"/>
+
+    <!--
+      Q11：冲突目标与部分唯一索引 uk_inventory_reservation_source_active 完全匹配
+      （列 + WHERE 谓词）。返回 0 = 该来源行已有有效预留，由服务层按业务语义处理。
+    -->
+    <insert id="insertOnConflictDoNothing"
+            parameterType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inventory_reservation (warehouse_id, sku_id,
+                                           source_document_type, source_document_id, source_document_item_id,
+                                           quantity, unit_snapshot, status, occurred_at, operator,
+                                           version, deleted, created_at, updated_at, created_by, updated_by)
+        VALUES (#{warehouseId}, #{skuId},
+                #{sourceDocumentType}, #{sourceDocumentId}, #{sourceDocumentItemId},
+                #{quantity}, #{unitSnapshot}, #{status}, #{occurredAt}, #{operator},
+                0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{createdBy}, #{updatedBy})
+        ON CONFLICT (source_document_type, source_document_item_id)
+            WHERE deleted = FALSE AND source_document_item_id IS NOT NULL
+        DO NOTHING
+    </insert>
+
+    <select id="selectById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+        SELECT * FROM inventory_reservation WHERE id = #{id} AND deleted = FALSE
+    </select>
+
+    <select id="selectActiveBySource"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+        SELECT * FROM inventory_reservation
+        WHERE source_document_type = #{sourceDocumentType}
+          AND source_document_item_id = #{sourceDocumentItemId}
+          AND status = 'ACTIVE'
+          AND deleted = FALSE
+    </select>
+
+    <select id="listActiveBySourceDocument"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+        SELECT * FROM inventory_reservation
+        WHERE source_document_type = #{sourceDocumentType}
+          AND source_document_id = #{sourceDocumentId}
+          AND status = 'ACTIVE'
+          AND deleted = FALSE
+        -- 释放要按 (warehouse_id, sku_id) 升序拿余额锁，这里先排好，调用方不必再排一次
+        ORDER BY warehouse_id ASC, sku_id ASC
+    </select>
+
+    <select id="lockById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+        SELECT * FROM inventory_reservation WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <!-- 带状态条件：重复释放只有一次能成功 -->
+    <update id="markReleased">
+        UPDATE inventory_reservation
+        SET status     = 'RELEASED',
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'ACTIVE'
+    </update>
+
+    <update id="markConsumed">
+        UPDATE inventory_reservation
+        SET status     = 'CONSUMED',
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'ACTIVE'
+    </update>
+
+    <select id="queryPage" resultMap="reservationVoMap">
+        SELECT r.id,
+               r.warehouse_id,
+               r.sku_id,
+               r.source_document_type,
+               r.source_document_id,
+               r.source_document_item_id,
+               r.quantity,
+               r.unit_snapshot,
+               r.status,
+               r.occurred_at,
+               r.operator,
+               r.created_at,
+               w.warehouse_code,
+               w.name       AS warehouse_name,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               p.name       AS product_name,
+               s.order_no   AS source_document_no
+        FROM inventory_reservation r
+        LEFT JOIN warehouse   w ON w.id = r.warehouse_id
+        LEFT JOIN product_sku k ON k.id = r.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        LEFT JOIN sales_order s ON s.id = r.source_document_id
+        WHERE r.deleted = FALSE
+        <if test="query.warehouseId != null">
+            AND r.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.skuId != null">
+            AND r.sku_id = #{query.skuId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND r.status = #{query.status}
+        </if>
+        <if test="query.sourceDocumentId != null">
+            AND r.source_document_id = #{query.sourceDocumentId}
+        </if>
+        ORDER BY r.created_at DESC, r.id DESC
+    </select>
+
+</mapper>

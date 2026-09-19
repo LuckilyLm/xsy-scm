@@ -53,8 +53,16 @@ public class InventoryMovementVO {
     /** 收货行 id（防重锚点）。 */
     private Long sourceDocumentItemId;
 
-    /** 收货单号（联 {@code purchase_receipt}），前端跳详情用。 */
+    /** 收货单号（联 {@code purchase_receipt}），前端跳详情用。仅 {@code PURCHASE_IN} 有值。 */
     private String receiptNo;
+
+    /**
+     * 出库单号（联 {@code inventory_outbound}），出库波次新增。
+     *
+     * <p>仅 {@code SALES_OUT} 有值。与 {@code receiptNo} 分开两个字段而不是合并成
+     * 「来源单号」一个：两者的跳转目标不同（收货单 vs 出库单），前端要按类型渲染不同链接。
+     */
+    private String sourceDocumentNo;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;

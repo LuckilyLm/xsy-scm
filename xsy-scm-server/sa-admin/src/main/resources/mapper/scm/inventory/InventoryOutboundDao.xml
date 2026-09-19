@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryOutboundDao">
+
+    <resultMap id="outboundVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryOutboundVO"/>
+
+    <select id="countByOutboundNo" resultType="int">
+        SELECT COUNT(*) FROM inventory_outbound
+        WHERE outbound_no = #{outboundNo} AND deleted = FALSE
+    </select>
+
+    <select id="nextOutboundNo" resultType="long">
+        SELECT nextval('inventory_outbound_no_seq')
+    </select>
+
+    <select id="selectById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryOutboundEntity">
+        SELECT * FROM inventory_outbound WHERE id = #{id} AND deleted = FALSE
+    </select>
+
+    <!-- 锁序：单据锁先于余额锁（与收货确认同一顺序，避免反向拿锁） -->
+    <select id="lockById"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryOutboundEntity">
+        SELECT * FROM inventory_outbound WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <!-- 带状态条件：并发重复确认时只有一次能成功（影响行数 = 1） -->
+    <update id="markConfirmed">
+        UPDATE inventory_outbound
+        SET status       = 'CONFIRMED',
+            confirmed_at = #{confirmedAt},
+            operator     = #{operator},
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <update id="markCancelled">
+        UPDATE inventory_outbound
+        SET status     = 'CANCELLED',
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <update id="updateDraft">
+        UPDATE inventory_outbound
+        SET warehouse_id = #{warehouseId},
+            remark       = #{remark},
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+    </update>
+
+    <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
+    <select id="queryPage" resultMap="outboundVoMap">
+        SELECT o.id,
+               o.outbound_no,
+               o.warehouse_id,
+               o.status,
+               o.remark,
+               o.confirmed_at,
+               o.operator,
+               o.version,
+               o.created_at,
+               o.updated_at,
+               w.warehouse_code,
+               w.name AS warehouse_name
+        FROM inventory_outbound o
+        LEFT JOIN warehouse w ON w.id = o.warehouse_id
+        WHERE o.deleted = FALSE
+        <if test="query.outboundNo != null and query.outboundNo != ''">
+            AND o.outbound_no ILIKE CONCAT('%', #{query.outboundNo}, '%')
+        </if>
+        <if test="query.warehouseId != null">
+            AND o.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND o.status = #{query.status}
+        </if>
+        ORDER BY o.created_at DESC, o.id DESC
+    </select>
+
+    <select id="detail" resultMap="outboundVoMap">
+        SELECT o.id,
+               o.outbound_no,
+               o.warehouse_id,
+               o.status,
+               o.remark,
+               o.confirmed_at,
+               o.operator,
+               o.version,
+               o.created_at,
+               o.updated_at,
+               w.warehouse_code,
+               w.name AS warehouse_name
+        FROM inventory_outbound o
+        LEFT JOIN warehouse w ON w.id = o.warehouse_id
+        WHERE o.deleted = FALSE AND o.id = #{id}
+    </select>
+
+</mapper>

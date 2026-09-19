@@ -32,7 +32,16 @@ public enum WarehouseErrorCode implements ScmErrorCode {
     /** 41006：停用被在途采购单阻塞（HD-B1-01 第二条）。 */
     WAREHOUSE_DISABLE_HAS_INBOUND(41006, "仓库存在在途采购单，不能停用"),
     /** 41007：停用被待入库收货单阻塞（HD-B1-01 第三条）。 */
-    WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY(41007, "仓库存在待入库收货单，不能停用");
+    WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY(41007, "仓库存在待入库收货单，不能停用"),
+
+    /**
+     * 41018：当前没有唯一启用的仓库，无法解析「默认仓库」。
+     *
+     * <p>G-03 是单仓库口径，销售订单**没有仓库字段**，因此订单预留库存时必须有一个
+     * 明确的落点。启用仓库数为 0 或大于 1 时都不能猜 —— 猜错会把货占在错误的仓库上，
+     * 而且要到出库/盘点才会暴露。
+     */
+    WAREHOUSE_DEFAULT_AMBIGUOUS(41018, "当前启用仓库不是唯一一个，无法确定默认仓库");
 
     private final int code;
     private final String msg;

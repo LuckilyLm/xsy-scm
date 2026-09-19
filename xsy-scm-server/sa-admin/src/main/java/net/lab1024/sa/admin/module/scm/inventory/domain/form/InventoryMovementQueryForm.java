@@ -35,12 +35,19 @@ public class InventoryMovementQueryForm extends PageParam {
     @Size(max = 64)
     private String skuCode;
 
-    /** W6-1 只有 {@code PURCHASE_IN}（枚举与 DB CHECK 白名单同源）。 */
-    @Pattern(regexp = "PURCHASE_IN")
+    /**
+     * 流水类型过滤。
+     *
+     * <p>正则白名单与 {@code ScmInventoryMovementTypeEnum} / {@code ck_inventory_movement_type}
+     * **同源**：入库 {@code PURCHASE_IN}、出库波次新增 {@code SALES_OUT}。
+     * 新增流水类型时必须同步这三处 —— 否则页面按新类型筛选会被参数校验直接拒掉（30001），
+     * 表现为「流水明明写进去了，却筛不出来」。
+     */
+    @Pattern(regexp = "PURCHASE_IN|SALES_OUT")
     private String movementType;
 
-    /** W6-1 只有 {@code PURCHASE_RECEIPT_ITEM}。 */
-    @Pattern(regexp = "PURCHASE_RECEIPT_ITEM")
+    /** 来源单据类型过滤；与 {@code ScmInventorySourceDocumentTypeEnum} 同源。 */
+    @Pattern(regexp = "PURCHASE_RECEIPT_ITEM|SALES_OUTBOUND_ITEM|SALES_ORDER_ITEM")
     private String sourceDocumentType;
 
     /** 来源单据头 id（收货单 id），头级溯源过滤。 */

@@ -114,6 +114,11 @@ The 2026-09-18 backend and browser regressions passed for W6-1/B1. See `docs/pro
 W6-1 explicitly excludes Mini Program, outbound/reserve, stocktake, loss/gain, transfer, unit
 conversion, warning thresholds, full costing, delivery, sorting and traceability — none of them were
 touched.
+> **范围变更（2026-09-19）**：上述 excludes 是 **W6-1 当时的阶段范围控制，不是对需求的否决**。
+> 除 Mini Program 外，其余能力（出库/预留、盘点、报损报溢、调拨、单位转换、阈值预警、
+> 完整成本核算、分拣、配送、溯源）**现已全部重新纳入范围**，归属见
+> [`docs/requirements/2026-09-19-需求覆盖与待办清单.md`](./docs/requirements/2026-09-19-需求覆盖与待办清单.md)。
+> 推进原则：**先搭主线功能的后台模块，小程序（W6-2）排在最后**。
 W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
 [`docs/progress.md`](./docs/progress.md) are adjudicated.
 
@@ -130,6 +135,9 @@ V22  V22__scm_receipt_putaway_warehouse.sql B1 收货双入库生命周期、仓
 V23  V23__scm_warehouse_putaway_permissions.sql B1 data-only，确认入库/仓库启停权限（822/823/824）
 V24  V24__scm_table_column_comments.sql       chore 数据字典补全：15 表 + 323 字段 COMMENT，
                                                    并覆盖 V5 遗留的上游品牌列注释（data-only）
+V25  V25__scm_inventory_outbound_reservation.sql outbound 库存出库与预留：SALES_OUT 流水类型、
+                                                   reserved_quantity、出库单/预留三张表、
+                                                   方向感知快照约束重建、菜单 803/804/812/813/825-829
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

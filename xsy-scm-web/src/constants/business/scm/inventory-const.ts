@@ -22,16 +22,38 @@ import type { SmartEnum } from '/@/types/smart-enum';
  */
 export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
   PURCHASE_IN: { value: 'PURCHASE_IN', desc: '采购入库' },
+  SALES_OUT: { value: 'SALES_OUT', desc: '销售出库' },
 };
 
 /**
- * 流水来源单据类型（W6-1 只有 1 个值）。
+ * 流水来源单据类型。
  *
  * 与 `sourceDocumentItemId` 一起构成**稳定唯一源键**（防重锚点）；
- * 人类可读的来源单号用 `receiptNo`（收货单号），W6-1 不设 `movement_no`。
+ * 人类可读的来源单号用 `receiptNo`（收货单）或 `sourceDocumentNo`（出库单 / 销售订单）。
  */
 export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
   PURCHASE_RECEIPT_ITEM: { value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货行' },
+  SALES_OUTBOUND_ITEM: { value: 'SALES_OUTBOUND_ITEM', desc: '出库单行' },
+  SALES_ORDER_ITEM: { value: 'SALES_ORDER_ITEM', desc: '销售订单行' },
+};
+
+/**
+ * 出库单状态（与后端 `ScmInventoryOutboundStatusEnum` 逐字对应）。
+ *
+ * `DRAFT → CONFIRMED`，草稿可 `CANCELLED`。**已确认不可回退** ——
+ * 流水 append-only，冲销必须新增反向流水。
+ */
+export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: SmartEnum<string> = {
+  DRAFT: { value: 'DRAFT', desc: '草稿' },
+  CONFIRMED: { value: 'CONFIRMED', desc: '已确认' },
+  CANCELLED: { value: 'CANCELLED', desc: '已取消' },
+};
+
+/** 预留状态（与后端 `ScmInventoryReservationStatusEnum` 逐字对应）。 */
+export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
+  ACTIVE: { value: 'ACTIVE', desc: '生效中' },
+  RELEASED: { value: 'RELEASED', desc: '已释放' },
+  CONSUMED: { value: 'CONSUMED', desc: '已消耗' },
 };
 
 /**
@@ -43,6 +65,8 @@ export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
 export const SCM_INVENTORY_TABLE_ID = {
   BALANCE: 'scm-inventory-balance-table',
   MOVEMENT: 'scm-inventory-movement-table',
+  OUTBOUND: 'scm-inventory-outbound-table',
+  RESERVATION: 'scm-inventory-reservation-table',
 } as const;
 
 export default {
@@ -50,4 +74,6 @@ export default {
   // `$smartEnumPlugin.getValueDescList` 拿到一个非枚举对象（W5 的 `purchase-const` 同样只导出枚举）。
   SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
   SCM_INVENTORY_SOURCE_TYPE_ENUM,
+  SCM_INVENTORY_OUTBOUND_STATUS_ENUM,
+  SCM_INVENTORY_RESERVATION_STATUS_ENUM,
 };

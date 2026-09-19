@@ -6,28 +6,43 @@ import lombok.RequiredArgsConstructor;
 /**
  * 库存流水类型（W6 Target Design §2.2）。
  *
- * <p><b>方向编码在类型里</b>：{@code PURCHASE_IN} 即「入」，因此 {@code inventory_movement}
- * 没有独立的 {@code direction} 列，{@code quantity} 恒为正（由
- * {@code ck_inventory_movement_qty} 在 DB 层强制）。与 reference 的
+ * <p><b>方向编码在类型里</b>：{@code PURCHASE_IN} 即「入」、{@code SALES_OUT} 即「出」，
+ * 因此 {@code inventory_movement} 没有独立的 {@code direction} 列，{@code quantity} 恒为正
+ * （由 {@code ck_inventory_movement_qty} 在 DB 层强制）。与 reference 的
  * 「direction + 正数」双表达相比少一列，且不可能自相矛盾。
  *
- * <p><b>W6-1 只有 PURCHASE_IN</b>：出库 / 调拨 / 盘点 / 报损报溢 / 规格转换
- * 全部在 W6-1 的排除清单里。新增类型必须同时：
+ * <p><b>方向与快照约束必须同步</b>：{@code ck_inventory_movement_snap} 是**方向感知**的
+ * （入库 {@code after = before + quantity}，出库 {@code after = before - quantity}）。
+ * 新增类型时必须同时：
  * <ol>
- *   <li>扩 {@code ck_inventory_movement_type} 的白名单（新迁移，不改 V19）；</li>
+ *   <li>扩 {@code ck_inventory_movement_type} 白名单（新迁移，不改 V19）；</li>
+ *   <li>若方向与已有类型不同，同步扩 {@code ck_inventory_movement_snap} 的方向分支；</li>
  *   <li>在本枚举加值；</li>
  *   <li>复用同一套「先锁单据、后按 (warehouse_id, sku_id) 升序锁余额」的锁序规则（§8.1）。</li>
  * </ol>
+ *
+ * <p><b>已实现</b>：W6-1 的 {@code PURCHASE_IN}；W6-1 之后的出库波次新增 {@code SALES_OUT}。
+ * 盘点 / 报损报溢 / 调拨 / 规格转换仍待后续波次。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryMovementTypeEnum {
 
-    /** 采购入库：收货确认即入库（Q1 直接入库，无二次入库确认）。 */
-    PURCHASE_IN("采购入库");
+    /** 采购入库：收货确认或仓库二次入库确认时写入（方向 = 入）。 */
+    PURCHASE_IN("采购入库", true),
+
+    /** 销售出库：独立出库单确认时写入（方向 = 出）。 */
+    SALES_OUT("销售出库", false);
 
     /** 持久化到 {@code inventory_movement.movement_type} 的值。 */
     private final String desc;
+
+    /**
+     * 方向：{@code true} = 入库（余额增加），{@code false} = 出库（余额减少）。
+     *
+     * <p>与 {@code ck_inventory_movement_snap} 的方向分支同源 —— 新增类型时必须同步该约束。
+     */
+    private final boolean inbound;
 
     /** 该值是否允许写入 {@code inventory_movement.movement_type}（DB CHECK 白名单的同源判定）。 */
     public static boolean isSupported(String value) {
@@ -37,5 +52,15 @@ public enum ScmInventoryMovementTypeEnum {
             }
         }
         return false;
+    }
+
+    /** 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。 */
+    public static ScmInventoryMovementTypeEnum of(String value) {
+        for (ScmInventoryMovementTypeEnum item : values()) {
+            if (item.name().equals(value)) {
+                return item;
+            }
+        }
+        return null;
     }
 }

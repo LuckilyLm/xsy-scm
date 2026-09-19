@@ -46,6 +46,23 @@ public class InventoryBalanceVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;
 
+    /** 已预留量（出库波次新增）。 */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal reservedQuantity;
+
+    /**
+     * 可用量 = {@code quantity - reservedQuantity}。
+     *
+     * <p>**计算属性，不入库** —— 它是两个活状态的差，落库会成为第三个需要同步的状态。
+     * 用同一套 4 位定点序列化，保证前端拿到的口径与现有量一致。
+     */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    public BigDecimal getAvailableQuantity() {
+        BigDecimal onHand = quantity == null ? BigDecimal.ZERO : quantity;
+        BigDecimal reserved = reservedQuantity == null ? BigDecimal.ZERO : reservedQuantity;
+        return onHand.subtract(reserved);
+    }
+
     private Integer version;
 
     private OffsetDateTime updatedAt;

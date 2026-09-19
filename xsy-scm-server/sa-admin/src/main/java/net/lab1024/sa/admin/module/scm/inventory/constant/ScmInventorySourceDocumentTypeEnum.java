@@ -21,7 +21,13 @@ import lombok.RequiredArgsConstructor;
 public enum ScmInventorySourceDocumentTypeEnum {
 
     /** 采购收货行：{@code source_document_item_id = purchase_receipt_item.id}。 */
-    PURCHASE_RECEIPT_ITEM("采购收货行");
+    PURCHASE_RECEIPT_ITEM("采购收货行"),
+
+    /** 出库单行：{@code source_document_item_id = inventory_outbound_item.id}。 */
+    SALES_OUTBOUND_ITEM("出库单行"),
+
+    /** 销售订单行（预留的来源）：{@code source_document_item_id = sales_order_item.id}。 */
+    SALES_ORDER_ITEM("销售订单行");
 
     private final String desc;
 

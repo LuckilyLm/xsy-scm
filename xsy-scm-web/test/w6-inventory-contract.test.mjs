@@ -112,7 +112,7 @@ test('movement type text falls back to the raw value so an unmapped type stays v
   assert.equal(movementTypeText(null, labels), '—');
   assert.equal(movementTypeText(undefined, labels), '—');
   // 未知类型**不显示成「—」**：一个后端新增而前端未跟上的类型本身就是有用信号
-  assert.equal(movementTypeText('SALES_OUT', labels), 'SALES_OUT');
+  assert.equal(movementTypeText('TRANSFER_IN', labels), 'TRANSFER_IN');
   // 文案表里缺 desc 时同样回落到原值，而不是显示空白
   assert.equal(movementTypeText('PURCHASE_IN', {}), 'PURCHASE_IN');
 });
@@ -122,8 +122,9 @@ test('movement type text falls back to the raw value so an unmapped type stays v
 // ------------------------------------------------------------------
 
 test('W6-1 enums expose exactly the values the backend CHECK whitelist allows', () => {
-  assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), ['PURCHASE_IN']);
-  assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM), ['PURCHASE_RECEIPT_ITEM']);
+  assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), ['PURCHASE_IN', 'SALES_OUT']);
+  assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM),
+      ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM']);
 
   // 值与键逐字一致（后端 `ScmInventoryMovementTypeEnum.name()` 就是持久化值）
   for (const [key, item] of Object.entries(SCM_INVENTORY_MOVEMENT_TYPE_ENUM)) {
@@ -135,18 +136,20 @@ test('W6-1 enums expose exactly the values the backend CHECK whitelist allows', 
     assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
   }
 
-  // W6-1 的排除清单：出库 / 调拨 / 盘点 / 报损报溢 / 规格转换不得提前出现在白名单里
-  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /SALES_OUT|TRANSFER|STOCKTAKE|LOSS|GAIN|CONVERT/);
+  // 出库波次已落地 PURCHASE_IN + SALES_OUT；调拨 / 盘点 / 报损报溢 / 规格转换仍不得提前出现
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /TRANSFER|STOCKTAKE|LOSS|GAIN|CONVERT/);
 });
 
 test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
-  assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID), ['BALANCE', 'MOVEMENT']);
+  assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID), ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION']);
   assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
 
   const business = TABLE_ID_CONST.BUSINESS;
   assert.equal(business.SCM_INVENTORY_BALANCE, 50017);
   assert.equal(business.SCM_INVENTORY_MOVEMENT, 50018);
+  assert.equal(business.SCM_INVENTORY_OUTBOUND, 50019);
+  assert.equal(business.SCM_INVENTORY_RESERVATION, 50020);
 
   // 数字 tableId 必须全局唯一（列配置按它持久化，撞了会串列）
   const numeric = Object.values(business).filter((value) => typeof value === 'number');

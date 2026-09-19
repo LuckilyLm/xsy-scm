@@ -61,6 +61,12 @@
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="num">{{ quantityText(record.quantity) }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'reservedQuantity'">
+          <span class="num">{{ quantityText(record.reservedQuantity) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'availableQuantity'">
+          <span class="num">{{ quantityText(record.availableQuantity) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'updatedAt'">{{ datetime(record.updatedAt) }}</template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -113,6 +119,8 @@ const columns = ref<TableColumnsType<InventoryBalance>>([
   { title: '规格', dataIndex: 'specValues', width: 160 },
   { title: '单位', dataIndex: 'unit', align: 'center', width: 90 },
   { title: '库存数量', dataIndex: 'quantity', align: 'right', width: 130 },
+  { title: '预留量', dataIndex: 'reservedQuantity', align: 'right', width: 110 },
+  { title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110 },
   { title: '更新时间', dataIndex: 'updatedAt', width: 190 },
 ]);
 

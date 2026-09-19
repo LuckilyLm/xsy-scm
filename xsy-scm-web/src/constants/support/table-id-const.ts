@@ -44,6 +44,9 @@ export const TABLE_ID_CONST = {
     // W6 库存域（两个只读查询页）
     SCM_INVENTORY_BALANCE: 50017,
     SCM_INVENTORY_MOVEMENT: 50018,
+    // 出库波次（出库单 / 库存预留）
+    SCM_INVENTORY_OUTBOUND: 50019,
+    SCM_INVENTORY_RESERVATION: 50020,
     OA: {
       NOTICE: businessOAInitTableId + 1, //通知公告
       ENTERPRISE: businessOAInitTableId + 2, //企业信息

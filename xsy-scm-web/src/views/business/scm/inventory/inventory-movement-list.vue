@@ -73,7 +73,9 @@
           {{ movementTypeText(record.movementType, SCM_INVENTORY_MOVEMENT_TYPE_ENUM) }}
         </template>
         <template v-else-if="column.dataIndex === 'receiptNo'">
+          <!-- 入库显示收货单号、出库显示出库单号；两者是不同的跳转目标，故分开字段而非合并 -->
           <a v-if="record.receiptNo" @click="openReceipt(record.receiptNo)">{{ record.receiptNo }}</a>
+          <span v-else-if="record.sourceDocumentNo">{{ record.sourceDocumentNo }}</span>
           <span v-else>—</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">

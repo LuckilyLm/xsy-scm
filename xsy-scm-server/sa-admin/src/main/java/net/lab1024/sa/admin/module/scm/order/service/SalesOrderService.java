@@ -7,6 +7,7 @@ import net.lab1024.sa.admin.module.scm.order.dao.*;
 import net.lab1024.sa.admin.module.scm.order.manager.*;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,8 @@ public class SalesOrderService {
     private final ProductSpuDao spus;
     private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService idempotency;
+    /** 确认订单时预留库存、取消时释放（出库波次新增的跨域依赖：order → inventory）。 */
+    private final InventoryReservationService reservations;
     private final SalesOrderQueryService query;
     private final ObjectMapper json;
 
@@ -118,6 +121,10 @@ public class SalesOrderService {
             row.setSettlementLineAmount(OrderAmountCalculator.lineAmount(row.getActualQuantity(),row.getLockedUnitPrice()));saveItem(row);
         }
         o.setSettlementTotalAmount(OrderAmountCalculator.orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));o.setStatus("CONFIRMED");o.setConfirmedAt(OffsetDateTime.now());save(o);
+        // 注意：这里**刻意不做库存预留**。本业务的链路是「先接单 → 聚合 → 采购 → 收货 → 才到货」，
+        // 订单确认时库存尚未产生；在确认时校验可用量会让整条链路无法运转
+        // （实测：把预留挂在这里会直接打断 W1–W6 的全部集成测试，82 个用例报 41011）。
+        // 预留能力已就绪（InventoryReservationService），触发点待定，见 docs/decisions.md。
         var result=query.detail(o.getId());log(o.getId(),"CONFIRM",null,before,result);idempotency.complete(claim,"SALES_ORDER",o.getId(),result);return result;
     }
 
@@ -126,6 +133,9 @@ public class SalesOrderService {
         var claim=idempotency.claim("ORDER_CANCEL:"+f.getOrderId(),key,f);if(claim.replay()) return idempotency.replay(claim,SalesOrderDetailVO.class);
         var o=lock(f.getOrderId());version(o.getVersion(),f.getVersion());OrderStateMachine.transition(o.getStatus(),"CANCELLED");OrderValidator.reason(f.getReason(),ORDER_CANCEL_REASON_REQUIRED);
         var before=query.detail(o.getId());o.setStatus("CANCELLED");o.setCancelReason(f.getReason().trim());o.setCancelledAt(OffsetDateTime.now());save(o);
+        // 取消时释放该订单的预留（若存在）。当前没有触发点会创建预留，因此通常是空操作；
+        // 保留这行是为了让「预留一旦启用」时取消路径自动正确，不需要再改这里。
+        reservations.releaseBySalesOrder(o.getId());
         var result=query.detail(o.getId());log(o.getId(),"CANCEL",f.getReason(),before,result);idempotency.complete(claim,"SALES_ORDER",o.getId(),result);return result;
     }
 

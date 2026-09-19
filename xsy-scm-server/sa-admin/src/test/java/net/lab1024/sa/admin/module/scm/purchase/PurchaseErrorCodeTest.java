@@ -64,22 +64,23 @@ class PurchaseErrorCodeTest {
             "SupplierErrorCode", "PricingErrorCode", "OrderErrorCode");
 
     @Test
-    @DisplayName("撞码门禁：W5+B1 合计 45 码、段内无重复、段分布正确、与 W1–W4 零交集")
+    @DisplayName("撞码门禁：W5+B1 合计 46 码、段内无重复、段分布正确、与 W1–W4 零交集")
     void gate() {
         // ---------- 1. 数量 ----------
         assertThat(PurchaseErrorCode.values()).hasSize(39);
-        assertThat(WarehouseErrorCode.values()).hasSize(6);
+        // 出库波次新增 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，仓库域由 6 增至 7
+        assertThat(WarehouseErrorCode.values()).hasSize(7);
 
         Map<String, Integer> w5 = new LinkedHashMap<>();
         Arrays.stream(PurchaseErrorCode.values())
                 .forEach(c -> w5.put("PurchaseErrorCode." + c.name(), c.getCode()));
         Arrays.stream(WarehouseErrorCode.values())
                 .forEach(c -> w5.put("WarehouseErrorCode." + c.name(), c.getCode()));
-        assertThat(w5).as("W5+B1 错误码合计").hasSize(45);
+        assertThat(w5).as("W5+B1 错误码合计").hasSize(46);
 
         // ---------- 2. 段内无重复 ----------
         Set<Integer> w5Codes = new LinkedHashSet<>(w5.values());
-        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(45);
+        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(46);
 
         // ---------- 3. 段分布 ----------
         Set<Integer> purchaseCodes = Arrays.stream(PurchaseErrorCode.values())
@@ -100,12 +101,14 @@ class PurchaseErrorCodeTest {
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_BALANCE.getCode()).isEqualTo(41005);
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_INBOUND.getCode()).isEqualTo(41006);
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY.getCode()).isEqualTo(41007);
+        // 出库波次：启用仓库不唯一时无法解析「默认仓库」（订单无仓库字段，G-03）
+        assertThat(WarehouseErrorCode.WAREHOUSE_DEFAULT_AMBIGUOUS.getCode()).isEqualTo(41018);
 
-        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）· 410xx=5
+        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）· 410xx=6
         assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(12L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(6L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(22L);
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(5L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(6L);
 
         // ---------- 4. 与 W1–W4 零交集 ----------
         List<Class<?>> discovered = discover();

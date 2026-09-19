@@ -66,6 +66,24 @@ public class WarehouseService {
                 .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
     }
 
+    /**
+     * 解析「默认仓库」= 当前**唯一启用**的仓库。
+     *
+     * <p>为什么需要它：销售订单没有仓库字段（G-03 单仓库口径），而订单确认时要预留库存，
+     * 必须落在一个具体仓库上。启用仓库恰好一个时直接返回；0 个或多个都**不猜**，
+     * 抛 {@code WAREHOUSE_DEFAULT_AMBIGUOUS(41018)} —— 猜错会把货占在错误的仓库，
+     * 而且要到出库/盘点才暴露。
+     */
+    public WarehouseEntity defaultEnabledWarehouse() {
+        List<WarehouseEntity> enabled = all().stream()
+                .filter(w -> ScmWarehouseStatusEnum.ENABLED.name().equals(w.getStatus()))
+                .toList();
+        if (enabled.size() != 1) {
+            throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_DEFAULT_AMBIGUOUS);
+        }
+        return enabled.getFirst();
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public Long create(WarehouseAddForm form) {
         WarehouseValidator.validateRequired(form);

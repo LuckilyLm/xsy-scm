@@ -47,9 +47,20 @@ public class InventoryBalanceEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unit;
 
-    /** Q10：{@code quantity >= 0} 本期冻结（DB CHECK）。 */
+    /** Q10：{@code quantity >= 0} 本期冻结（DB CHECK）。出库波次明确「不允许负库存」。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
+
+    /**
+     * 已预留量（出库波次新增）。**可用量 = {@code quantity - reserved_quantity}**。
+     *
+     * <p>预留不改变物理库存，因此这里是一个独立计数，而不是从流水推导 ——
+     * 它由 {@code InventoryReservationService} 在**持有本行锁之后**增减，
+     * 并由 DB 层两条 CHECK 兜底：{@code reserved_quantity >= 0} 与
+     * {@code reserved_quantity <= quantity}（后者保证可用量不为负，即「已预留的货不能被出库吃掉」）。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private BigDecimal reservedQuantity;
 
     /**
      * 乐观锁列 —— **纵深防御，不是第一道并发机制**。

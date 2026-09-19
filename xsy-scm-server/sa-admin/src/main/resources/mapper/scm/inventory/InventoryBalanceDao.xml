@@ -52,6 +52,44 @@
     </update>
 
     <!--
+      出库：持锁后的增量扣减。同样不做「读-改-写」。
+      可用量下限由业务层先判（41004），DB 侧 ck_inventory_balance_quantity (quantity >= 0)
+      与 ck_inventory_balance_available (reserved_quantity <= quantity) 双重兜底 ——
+      即使业务层判断被绕过，也只会失败，不会写出负库存或吃掉预留。
+    -->
+    <update id="decrementQuantity">
+        UPDATE inventory_balance
+        SET quantity   = quantity - #{quantity},
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+
+    <!-- 预留：占用量自增（不动 quantity）；reserved_quantity <= quantity 由 DB CHECK 兜底 -->
+    <update id="incrementReserved">
+        UPDATE inventory_balance
+        SET reserved_quantity = reserved_quantity + #{quantity},
+            version           = version + 1,
+            updated_at        = CURRENT_TIMESTAMP,
+            updated_by        = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+
+    <!-- 释放预留：占用量自减；reserved_quantity >= 0 由 DB CHECK 兜底 -->
+    <update id="decrementReserved">
+        UPDATE inventory_balance
+        SET reserved_quantity = reserved_quantity - #{quantity},
+            version           = version + 1,
+            updated_at        = CURRENT_TIMESTAMP,
+            updated_by        = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+
+    <!--
       展示字段实时联表（§2.1「余额是活状态，不是单据」）：
       LEFT JOIN 且不带 deleted / status 谓词 —— 这是按不可变 id 做的展示解析，
       把「已下架 / 已软删 SKU」的历史余额整行藏起来比显示它更危险。
@@ -63,6 +101,7 @@
                b.sku_id,
                b.unit,
                b.quantity,
+               b.reserved_quantity,
                b.version,
                b.updated_at,
                w.warehouse_code,
@@ -97,6 +136,7 @@
                b.sku_id,
                b.unit,
                b.quantity,
+               b.reserved_quantity,
                b.version,
                b.updated_at,
                w.warehouse_code,

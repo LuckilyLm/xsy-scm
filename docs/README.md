@@ -6,6 +6,8 @@
 - [decisions.md](decisions.md)：当前仍然有效的项目边界和技术决策。
 - [requirements/产品功能需求基线.md](requirements/产品功能需求基线.md)：产品范围清单，作为需求输入保存。
 - [requirements/2026-09-09-负责人确认口径.md](requirements/2026-09-09-负责人确认口径.md)：已确认的业务口径。
+- [requirements/2026-09-19-需求覆盖与待办清单.md](requirements/2026-09-19-需求覆盖与待办清单.md)：需求基线的执行对照表，含「阶段排除项重新纳入范围」的范围变更与推进顺序。
+- [requirements/2026-09-19-高德地图与数据大屏技术调研.md](requirements/2026-09-19-高德地图与数据大屏技术调研.md)：配送模块接高德地图与可视化大屏的依赖/方案调研及待决策清单。
 
 业务需求、旧系统语义、页面参考和历史方案以只读目录
 [`project-reference-examples/xsy-scm/`](../project-reference-examples/xsy-scm/) 为主要参考来源。

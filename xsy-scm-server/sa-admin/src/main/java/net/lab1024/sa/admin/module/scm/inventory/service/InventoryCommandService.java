@@ -6,6 +6,7 @@ import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTy
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao;
+import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
@@ -18,6 +19,9 @@ import java.math.BigDecimal;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_INBOUND;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_DUPLICATE_OUTBOUND;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_INSUFFICIENT_AVAILABLE;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH;
 
@@ -96,17 +100,97 @@ public class InventoryCommandService {
     }
 
     /**
+     * 追加销售出库流水并扣减余额，必须参与调用方事务。
+     *
+     * <p>与入库的三点差异：
+     * <ol>
+     *   <li><b>不建零余额行</b>：出库时若该 (仓库, SKU) 没有余额行，说明从来没有入过库，
+     *       直接判可用量不足（41004），而不是先建一行 0 再扣成负数；</li>
+     *   <li><b>可用量门槛</b>：{@code 可用量 = quantity - reserved_quantity}，
+     *       出库不得吃掉已预留的货（否则 DB 的 {@code ck_inventory_balance_available} 会拒绝）；</li>
+     *   <li><b>方向</b>：{@code after = before - quantity}，与
+     *       {@code ck_inventory_movement_snap} 的出库分支一致。</li>
+     * </ol>
+     *
+     * <p><b>单位由余额决定，不由调用方传入</b>：Q13 规定 {@code (warehouse_id, sku_id)} 的记账单位
+     * 以余额为准。让调用方传一个单位再与余额比对，等于要求调用方先查一次余额，
+     * 既多一次查询、又把「谁是权威」搞反。这里直接取余额单位写入流水快照，
+     * 并把该单位返回给调用方回写单据行。
+     *
+     * @return 本次出库使用的记账单位（调用方用于回写 {@code unitSnapshot}）
+     */
+    public String postSalesOutbound(InventoryOutboundFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Sales outbound requires the caller's transaction");
+        }
+        requireOutboundFact(fact);
+
+        warehouseService.require(fact.warehouseId());
+
+        // 出库不建行：没有余额行 = 从未入库 = 无货可出。
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+        }
+
+        String unit = balance.getUnit();
+
+        // 持有行锁后再算可用量，避免并发下读到过期快照。
+        BigDecimal onHand = balance.getQuantity();
+        BigDecimal reserved = balance.getReservedQuantity() == null
+                ? BigDecimal.ZERO : balance.getReservedQuantity();
+        BigDecimal available = onHand.subtract(reserved);
+        if (available.compareTo(fact.quantity()) < 0) {
+            throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+        }
+
+        BigDecimal after = onHand.subtract(fact.quantity());
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(ScmInventoryMovementTypeEnum.SALES_OUT.name());
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.SALES_OUTBOUND_ITEM.name());
+        movement.setSourceDocumentId(fact.outboundId());
+        movement.setSourceDocumentItemId(fact.outboundItemId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(unit);
+        movement.setUnitCost(fact.unitCost());
+        movement.setBeforeQuantity(onHand);
+        movement.setAfterQuantity(after);
+        // 与入库同纪律：用出库确认时刻与确认人，不能改用当前时间或当前登录人。
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_OUTBOUND);
+        }
+
+        if (balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+        return unit;
+    }
+
+    /**
      * 查询可用量；缺少查询标识或余额不存在时返回零，不返回表示能力未启用的 {@code null}。
-     * 当前未实现库存占用，{@code reserved} 恒为零。
+     *
+     * <p>出库波次起 {@code reserved} 返回**真实预留量**（此前恒为零）。
      */
     public PurchaseInventoryContract.Availability queryAvailability(Long skuId, Long warehouseId) {
         if (skuId == null || warehouseId == null) {
             return new PurchaseInventoryContract.Availability(BigDecimal.ZERO, BigDecimal.ZERO);
         }
         InventoryBalanceEntity balance = balanceDao.selectByWarehouseAndSku(warehouseId, skuId);
-        return new PurchaseInventoryContract.Availability(
-                balance == null ? BigDecimal.ZERO : balance.getQuantity(),
-                BigDecimal.ZERO);
+        if (balance == null) {
+            return new PurchaseInventoryContract.Availability(BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+        BigDecimal reserved = balance.getReservedQuantity() == null
+                ? BigDecimal.ZERO : balance.getReservedQuantity();
+        return new PurchaseInventoryContract.Availability(balance.getQuantity(), reserved);
     }
 
     /**
@@ -126,6 +210,25 @@ public class InventoryCommandService {
                 || fact.operator() == null
                 || fact.operator().isBlank()) {
             throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
+        }
+    }
+
+    /**
+     * 校验出库事实；可用量门槛在 {@link #postSalesOutbound} 持锁后判定，
+     * 单位不在这里校验（以余额记账单位为准，见方法注释）。
+     */
+    private static void requireOutboundFact(InventoryOutboundFact fact) {
+        if (fact == null
+                || fact.warehouseId() == null
+                || fact.skuId() == null
+                || fact.outboundId() == null
+                || fact.outboundItemId() == null
+                || fact.quantity() == null
+                || fact.quantity().signum() <= 0
+                || fact.occurredAt() == null
+                || fact.operator() == null
+                || fact.operator().isBlank()) {
+            throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
         }
     }
 }

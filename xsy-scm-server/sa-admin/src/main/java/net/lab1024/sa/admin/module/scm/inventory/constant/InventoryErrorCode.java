@@ -5,13 +5,13 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
 
 /**
- * 库存域错误码（4 个）。
+ * 库存域错误码（11 个）。
  *
- * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13。
+ * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加。
  *
  * <pre>
  * 40486        NOT_FOUND   1
- * 41001–41003  CONFLICT / BAD_REQUEST  3
+ * 41001–41003  既有 3 个；41011–41017  出库波次 7 个
  * </pre>
  *
  * <p><b>为什么是 40486 / 41xxx</b>：2026-09-18 与全域码表核对，全仓 {@code 4xxxx} 已占用
@@ -54,7 +54,36 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_DUPLICATE_INBOUND(41002, "该来源单据已入库，不能重复入库"),
 
     /** 41003：入库事实非法（quantity &lt;= 0、unit / occurredAt / operator 快照缺失等）。 */
-    INVENTORY_PARAM_INVALID(41003, "库存入库事实不合法");
+    INVENTORY_PARAM_INVALID(41003, "库存入库事实不合法"),
+
+    /**
+     * 41011：可用量不足。
+     *
+     * <p>可用量 = {@code quantity - reserved_quantity}。出库与预留都要先过这一关：
+     * 出库不能吃掉已被预留的货，预留不能超出可用量。DB 层另有
+     * {@code ck_inventory_balance_available} 兜底，本码负责给出可读原因。
+     */
+    INVENTORY_INSUFFICIENT_AVAILABLE(41011, "可用库存不足（可用量 = 现有量 − 预留量）"),
+
+    /**
+     * 41012：出库事实非法（quantity &lt;= 0、warehouseId / skuId / 来源行缺失等）。
+     */
+    INVENTORY_OUTBOUND_PARAM_INVALID(41012, "库存出库事实不合法"),
+
+    /** 41013：出库单不存在（行不存在或已软删）。 */
+    INVENTORY_OUTBOUND_NOT_FOUND(41013, "出库单不存在"),
+
+    /** 41014：出库单当前状态不允许该操作（如已确认还要再改明细）。 */
+    INVENTORY_OUTBOUND_STATUS_INVALID(41014, "出库单当前状态不允许该操作"),
+
+    /** 41015：源身份重复出库（同一条出库单行已写过流水）。 */
+    INVENTORY_DUPLICATE_OUTBOUND(41015, "该来源单据已出库，不能重复出库"),
+
+    /** 41016：预留事实非法或状态不允许（如已释放还要再释放）。 */
+    INVENTORY_RESERVATION_INVALID(41016, "库存预留不合法或当前状态不允许该操作"),
+
+    /** 41017：出库单至少需要一行明细。 */
+    INVENTORY_OUTBOUND_EMPTY_ITEMS(41017, "出库单至少需要一条明细");
 
     private final int code;
     private final String msg;

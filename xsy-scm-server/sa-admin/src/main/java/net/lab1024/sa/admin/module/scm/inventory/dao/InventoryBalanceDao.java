@@ -65,6 +65,32 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
                           @Param("quantity") BigDecimal quantity,
                           @Param("operator") String operator);
 
+    /**
+     * 持锁后的增量扣减（{@code quantity = quantity - ?}），用于出库。
+     *
+     * <p>与 {@link #incrementQuantity} 同一纪律：只在持行锁之后调用，且是 DB 侧增量而非赋值。
+     *
+     * @return 影响行数，必须为 1（否则说明行被删除或 id 不存在 → 调用方抛 40921）
+     */
+    int decrementQuantity(@Param("id") Long id,
+                          @Param("quantity") BigDecimal quantity,
+                          @Param("operator") String operator);
+
+    /**
+     * 持锁后的预留占用自增（{@code reserved_quantity = reserved_quantity + ?}）。
+     *
+     * <p>只改预留计数，**不动 {@code quantity}** —— 预留不改变物理库存。
+     * 「占用不得超过现有量」由 {@code ck_inventory_balance_available} 在 DB 层兜底。
+     */
+    int incrementReserved(@Param("id") Long id,
+                          @Param("quantity") BigDecimal quantity,
+                          @Param("operator") String operator);
+
+    /** 持锁后的预留占用自减（释放预留）。 */
+    int decrementReserved(@Param("id") Long id,
+                          @Param("quantity") BigDecimal quantity,
+                          @Param("operator") String operator);
+
     /** 余额分页（联仓库 / SKU / 商品取展示字段，§2.1「余额是活状态」）。 */
     List<InventoryBalanceVO> queryPage(Page<?> page, @Param("query") InventoryBalanceQueryForm query);
 
