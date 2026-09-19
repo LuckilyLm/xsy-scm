@@ -19,7 +19,7 @@
     <template v-else-if="column.dataIndex==='orderSource'">{{SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc}}</template>
     <template v-else-if="column.dataIndex==='orderedTotalAmount'">{{amount(record.orderedTotalAmount,true)}}</template>
     <template v-else-if="column.dataIndex==='settlementTotalAmount'">{{amount(record.settlementTotalAmount)}}</template>
-    <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate"><a-button type="link" @click="detail?.open(record.orderId)">详情</a-button><a-button v-if="record.status==='DRAFT'" type="link" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑</a-button><a-button v-if="record.status==='DRAFT'" type="link" v-privilege="'scm:order:submit'" @click="submit(record)">提交</a-button><a-button v-if="record.status==='DRAFT'" danger type="link" v-privilege="'scm:order:delete'" @click="remove(record)">删除</a-button></div></template>
+    <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate"><a-button type="link" @click="detail?.open(record.orderId)">详情</a-button><a-button v-if="record.status==='DRAFT'" type="link" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑</a-button><a-button v-if="record.status==='DRAFT'" type="link" v-privilege="'scm:order:submit'" @click="submit(record)">提交</a-button><a-button v-if="record.status==='DRAFT'" danger type="link" v-privilege="'scm:order:delete'" @click="remove(record)">删除</a-button><a-button v-if="record.status==='CONFIRMED'" type="link" v-privilege="'scm:order:reserve-stock'" @click="reserveStock(record)">预留库存</a-button></div></template>
    </template>
   </a-table><div class="smart-query-table-page"><a-pagination show-size-changer show-quick-jumper v-model:current="queryForm.pageNum" v-model:page-size="queryForm.pageSize" :total="total" @change="queryData" :show-total="(n:number)=>`共${n}条`"/></div>
  </a-card><OrderForm ref="drawer" @saved="queryData"/><OrderDetail ref="detail" @saved="queryData"/>
@@ -34,6 +34,14 @@ async function queryData(){const id=++requestId;loading.value=true;error.value='
 function onSearch(){queryForm.pageNum=1;queryData();}function resetQuery(){queryForm.keyword=undefined;queryForm.status=undefined;queryForm.orderSource=undefined;onSearch();}
 function submit(r:Order){Modal.confirm({title:'提交订单并锁定价格？',onOk:async()=>{try{await orderApi.submit({orderId:r.orderId,version:r.version});await queryData();}catch(e){error.value=orderError(e);throw e;}}});}
 function remove(r:Order){Modal.confirm({title:'删除这张草稿订单？',okType:'danger',onOk:async()=>{try{await orderApi.delete({orderId:r.orderId,version:r.version});await queryData();}catch(e){error.value=orderError(e);throw e;}}});}
+/**
+ * 预留库存（出库波次）。
+ *
+ * 显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生，
+ * 挂在确认上会让「先接单 → 再采购」链路无法运转（见 docs/decisions.md）。
+ * 货到之后由业务人员对本单执行；任一行可用量不足则整体失败（41011）。
+ */
+function reserveStock(r:Order){Modal.confirm({title:'为该订单预留库存？',content:'将按订单明细的实数量占用可用量（可用量 = 现有量 − 预留量）。任一行不足则整体失败，不会只占一半。',okText:'预留',onOk:async()=>{try{await orderApi.reserveStock(r.orderId);await queryData();}catch(e){error.value=orderError(e);throw e;}}});}
 function batchDelete(){Modal.confirm({title:'删除所选草稿？',okType:'danger',onOk:async()=>{try{await orderApi.batchDelete(tableData.value.filter(o=>selected.value.includes(o.orderId!)).map(o=>({orderId:o.orderId,version:o.version})));await queryData();}catch(e){error.value=orderError(e);throw e;}}});}
 onMounted(queryData);
 </script>

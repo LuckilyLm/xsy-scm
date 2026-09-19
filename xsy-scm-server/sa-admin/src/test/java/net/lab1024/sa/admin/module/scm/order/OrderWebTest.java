@@ -34,8 +34,8 @@ class OrderWebTest {
     @MockitoBean OrderRefundService refunds;
     @MockitoBean PriceResolver prices;
     @MockitoBean(name="systemEnvironment") SystemEnvironment environment;
-    @Test void allTwentyOneEndpointsHaveNativePermissions(){
-        int count=0;for(var type:java.util.List.of(SalesOrderController.class,OrderReturnController.class,OrderRefundController.class))for(var m:type.getDeclaredMethods())if(java.lang.reflect.Modifier.isPublic(m.getModifiers())){assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();count++;}assertThat(count).isEqualTo(21);
+    @Test void allTwentyTwoEndpointsHaveNativePermissions(){
+        int count=0;for(var type:java.util.List.of(SalesOrderController.class,OrderReturnController.class,OrderRefundController.class))for(var m:type.getDeclaredMethods())if(java.lang.reflect.Modifier.isPublic(m.getModifiers())){assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();count++;}assertThat(count).isEqualTo(22);
     }
     @Test void detailUsesFourDecimalStringsAndKeepsNull() throws Exception {
         var o=new SalesOrderDetailVO();o.setOrderId(1L);o.setOrderedTotalAmount(null);o.setSettlementTotalAmount(new java.math.BigDecimal("0"));when(queries.detail(1L)).thenReturn(o);

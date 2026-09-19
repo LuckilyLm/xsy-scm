@@ -138,6 +138,8 @@ V24  V24__scm_table_column_comments.sql       chore 数据字典补全：15 表 
 V25  V25__scm_inventory_outbound_reservation.sql outbound 库存出库与预留：SALES_OUT 流水类型、
                                                    reserved_quantity、出库单/预留三张表、
                                                    方向感知快照约束重建、菜单 803/804/812/813/825-829
+V26  V26__scm_order_reserve_stock_permission.sql outbound data-only，订单「预留库存」权限（620）
+V27  V27__scm_order_log_reserve_stock_type.sql  outbound 操作日志类型白名单加 RESERVE_STOCK
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

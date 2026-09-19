@@ -39,6 +39,16 @@ public class SalesOrderController {
     public ResponseDTO<String> delete(@Valid @RequestBody OrderVersionForm f){service.delete(f);return ResponseDTO.ok();}
     @PostMapping("/batch-delete") @SaCheckPermission("scm:order:delete") @OperateLog
     public ResponseDTO<String> batchDelete(@Valid @RequestBody OrderBatchDeleteForm f){service.batchDelete(f);return ResponseDTO.ok();}
+
+    /**
+     * 为已确认的订单预留库存（出库波次）。
+     *
+     * <p>显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生，
+     * 把预留挂在确认上会让「先接单→再采购」链路无法运转（见 docs/decisions.md）。
+     * 货到之后由业务人员对本单执行预留，占用可用量。
+     */
+    @PostMapping("/reserve-stock/{orderId}") @SaCheckPermission("scm:order:reserve-stock") @OperateLog
+    public ResponseDTO<String> reserveStock(@PathVariable Long orderId){service.reserveStock(orderId);return ResponseDTO.ok();}
     private void overridePermission(SalesOrderAddForm f) {
         if(f.getItems().stream().anyMatch(x->Boolean.TRUE.equals(x.getManualPriceOverride()))) cn.dev33.satoken.stp.StpUtil.checkPermission("scm:order:price-override");
     }

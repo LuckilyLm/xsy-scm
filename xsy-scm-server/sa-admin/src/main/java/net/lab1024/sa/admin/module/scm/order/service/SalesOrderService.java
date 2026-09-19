@@ -149,6 +149,33 @@ public class SalesOrderService {
     }
     @Transactional(rollbackFor=Exception.class)
     public void batchDelete(OrderBatchDeleteForm f) {for(var row:f.getOrders().stream().sorted(Comparator.comparing(OrderVersionForm::getOrderId)).toList()) delete(row);}
+
+    /**
+     * 为已确认的订单**显式预留库存**（出库波次）。
+     *
+     * <p><b>为什么是显式操作而不是确认时自动预留</b>：本业务的链路是
+     * 「客户下单 → 订单 → 确认 → 聚合 → 采购需求 → 采购单 → 收货 → 库存」，
+     * **库存在订单确认之后才产生**。把预留挂在确认上等于要求「货先到才能接单」，
+     * 与「先接单、再采购」的设计前提冲突（实测会让 82 个集成用例报 41011）。
+     * 因此把「什么时候占货」交给业务判断：货到之后，由业务人员对本单执行预留。
+     *
+     * <p>业务依据仍是销售订单 —— 预留的来源单据就是订单行，不存在「凭空占货」。
+     *
+     * <p>严格语义：任一行可用量不足就抛 41011，整体回滚（不会只占一半）。
+     * 仓库由 {@code defaultEnabledWarehouse} 解析（订单无仓库字段，G-03 单仓库）。
+     */
+    @Transactional(rollbackFor=Exception.class)
+    public void reserveStock(Long orderId) {
+        var o=lock(orderId);
+        if(!"CONFIRMED".equals(o.getStatus())) throw new ScmBusinessException(ORDER_RESERVE_STATE_INVALID);
+        var rows=items.list(o.getId());
+        reservations.reserveForSalesOrder(o.getId(),
+                rows.stream()
+                        .map(r->new InventoryReservationService.OrderReserveLine(r.getId(),r.getSkuId(),r.getActualQuantity()))
+                        .toList(),
+                OffsetDateTime.now());
+        log(o.getId(),"RESERVE_STOCK",null,null,Map.of("reservedLines",rows.size()));
+    }
     public SalesOrderEntity lock(Long id) {var o=orders.lock(id);if(o==null) throw new ScmBusinessException(ORDER_NOT_FOUND);return o;}
     public static void version(Integer actual,Integer expected) {if(!Objects.equals(actual,expected)) throw new ScmBusinessException(VERSION_CONFLICT);}
     private void validateOriginal(SalesOrderAddForm f) {

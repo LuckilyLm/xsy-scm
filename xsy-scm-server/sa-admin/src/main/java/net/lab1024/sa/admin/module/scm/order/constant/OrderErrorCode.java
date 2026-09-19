@@ -34,7 +34,17 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_RETURN_STATUS_INVALID(40967,"当前退货状态不允许此操作"),
     ORDER_REFUND_STATUS_INVALID(40968,"当前退款状态不允许此操作"),
     ORDER_RETURN_QUANTITY_EXCEEDED(40969,"退货数量超过可退数量"),
-    ORDER_RETURN_ORDER_NOT_CONFIRMED(40970,"仅已确认订单可以申请退货");
+    ORDER_RETURN_ORDER_NOT_CONFIRMED(40970,"仅已确认订单可以申请退货"),
+
+    /**
+     * 40945：当前订单状态不允许预留库存。
+     *
+     * <p>只有 {@code CONFIRMED} 的订单能预留 —— 草稿还没定下要多少（实数量可能变），
+     * 已取消/已完成的订单没有占用可用量的意义。
+     *
+     * <p>40945 已核对空闲（409xx 段在 40944 与 40946 之间有空档）。
+     */
+    ORDER_RESERVE_STATE_INVALID(40945,"当前订单状态不允许预留库存（仅已确认订单可预留）");
     private final int code;
     private final String msg;
 }
