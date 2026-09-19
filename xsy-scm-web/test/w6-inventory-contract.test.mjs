@@ -34,6 +34,7 @@ import {
   SCM_INVENTORY_SOURCE_TYPE_ENUM,
   SCM_INVENTORY_TABLE_ID,
   SCM_INVENTORY_TRANSFER_STATUS_ENUM,
+  SCM_INVENTORY_WARNING_STATUS_ENUM,
 } from '../src/constants/business/scm/inventory-const.ts';
 import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
@@ -185,12 +186,15 @@ test('loss/gain document enums match the backend state machine', () => {
 
 test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID),
-      ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN', 'TRANSFER']);
+      ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN', 'TRANSFER',
+        'WARNING', 'WARNING_THRESHOLD']);
   assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.STOCKTAKE, 'scm-inventory-stocktake-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.LOSS_GAIN, 'scm-inventory-loss-gain-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.TRANSFER, 'scm-inventory-transfer-table');
+  assert.equal(SCM_INVENTORY_TABLE_ID.WARNING, 'scm-inventory-warning-table');
+  assert.equal(SCM_INVENTORY_TABLE_ID.WARNING_THRESHOLD, 'scm-inventory-warning-threshold-table');
 
   const business = TABLE_ID_CONST.BUSINESS;
   assert.equal(business.SCM_INVENTORY_BALANCE, 50017);
@@ -200,6 +204,8 @@ test('inventory table DOM ids are distinct, non-empty and registered with numeri
   assert.equal(business.SCM_INVENTORY_STOCKTAKE, 50021);
   assert.equal(business.SCM_INVENTORY_LOSS_GAIN, 50022);
   assert.equal(business.SCM_INVENTORY_TRANSFER, 50023);
+  assert.equal(business.SCM_INVENTORY_WARNING, 50024);
+  assert.equal(business.SCM_INVENTORY_WARNING_THRESHOLD, 50025);
 
   // 数字 tableId 必须全局唯一（列配置按它持久化，撞了会串列）
   const numeric = Object.values(business).filter((value) => typeof value === 'number');
@@ -472,6 +478,82 @@ test('transfer error codes all have actionable Chinese text', () => {
   assert.match(inventoryError({code: 41042}), /不能相同/);
   assert.match(inventoryError({code: 41044}), /统一两仓的采购单位/);
   assert.match(inventoryError({code: 41039}), /反向调拨/);
+});
+
+// ------------------------------------------------------------------
+// 阈值预警波次
+// ------------------------------------------------------------------
+
+test('the warning status enum matches the backend and treats the boundary as normal', () => {
+  assert.deepEqual(Object.keys(SCM_INVENTORY_WARNING_STATUS_ENUM), ['NORMAL', 'LOW', 'HIGH']);
+  for (const [key, item] of Object.entries(SCM_INVENTORY_WARNING_STATUS_ENUM)) {
+    assert.equal(item.value, key);
+    assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
+  }
+  // 状态是**派生值**，不落库：不得出现任何「已读 / 已忽略」这类需要持久化的状态
+  assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_WARNING_STATUS_ENUM),
+      /READ|ACK|IGNORED|DISMISSED/);
+});
+
+test('the warning list page is read-only and defaults to abnormal-only', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-warning-list.vue');
+  assert.match(page, /TableOperator/);
+  assert.match(page, /SCM_INVENTORY_TABLE_ID/);
+  assert.match(page, /v-privilege/);
+
+  // 只读页不得有任何写入口。判据落在**结构**上而不是文案上：
+  // 页面里确实会写「预警不能标记已读」这类说明文字，用关键词匹配会误报。
+  //   - 本项目的写表单一律住在 `<a-modal>` 里；
+  //   - 写操作一定表现为调用某个 create/update/remove/delete 方法。
+  assert.doesNotMatch(page, /<a-modal/, '预警列表出现了写表单弹窗');
+  assert.doesNotMatch(page, /\.(create|update|remove|delete)\s*\(/, '预警列表调用了写接口');
+
+  // 判定基准必须在页面上写明：只给一个数字会让用户看不懂预警为什么触发
+  assert.match(page, /可用量/);
+  assert.match(page, /预留/);
+
+  // 默认项必须是「仅异常」而不是「全部」—— 后端 status 为空时的语义就是只看异常，
+  // 标成「全部」会与事实不符（用户选了它却看不到正常项，会以为系统漏数据）。
+  assert.match(page, /仅异常/);
+  assert.doesNotMatch(page, /label: '全部'/);
+});
+
+test('the threshold config page is not a stock-mutating page and validates the range client-side', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-warning-threshold-list.vue');
+  assert.match(page, /TableOperator/);
+  assert.match(page, /SCM_INVENTORY_TABLE_ID/);
+  for (const perm of [
+    'scm:inventory:threshold:query',
+    'scm:inventory:threshold:add',
+    'scm:inventory:threshold:update',
+    'scm:inventory:threshold:delete',
+  ]) {
+    assert.match(page, new RegExp(perm), page + ' 缺少权限 ' + perm);
+  }
+  // 三条区间判据必须在提交前拦一道（后端 41051 会再判一次）
+  assert.match(page, /上下限至少填写一个/);
+  assert.match(page, /不得大于上限/);
+  // 空串要转成 null（= 清空该边界），不能把空串发上去
+  assert.match(page, /warnMin: min \?\? null/);
+  assert.match(page, /warnMax: max \?\? null/);
+
+  // 配置接口没有「确认 / 审批」这类动作：改配置立即生效（预警是读时计算的）
+  const api = code('../src/api/business/scm/inventory-warning-threshold-api.ts');
+  assert.match(api, /create:/);
+  assert.match(api, /update:/);
+  assert.match(api, /delete:/);
+  assert.doesNotMatch(api, /confirm|approve|submit/);
+});
+
+test('warning error codes all have actionable Chinese text', () => {
+  // 阈值预警波次 4 个码：41049–41052
+  for (let code = 41049; code <= 41052; code++) {
+    const text = inventoryError({code});
+    assert.notEqual(text, '操作失败，请重试', code + ' 未登记可执行提示');
+    assert.ok(text.length > 8, code + ' 的提示过于简短，无法指导下一步');
+  }
+  assert.match(inventoryError({code: 41050}), /只允许一条/);
+  assert.match(inventoryError({code: 41051}), /下限不得大于上限/);
 });
 
 // ------------------------------------------------------------------

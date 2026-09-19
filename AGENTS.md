@@ -150,10 +150,13 @@ V30  V30__scm_inventory_loss_gain.sql           loss-gain 报损报溢：LOSS_RE
 V31  V31__scm_inventory_transfer.sql            transfer 库存调拨：TRANSFER_OUT/TRANSFER_IN
                                                    流水类型、八方向分组快照约束、调拨单两张表
                                                    （两步式：发出 → 在途 → 收货）、菜单 850-856
+V32  V32__scm_inventory_warning_threshold.sql   warning 库存阈值预警：阈值配置表（**独立于
+                                                   余额表**）、预警列表（读时算状态）、
+                                                   菜单 860-866
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
-V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）与 V31（调拨）为
+V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）、V31（调拨）与 V32（阈值预警）为
 **BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用

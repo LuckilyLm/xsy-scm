@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryWarningThresholdDao">
+
+    <resultMap id="thresholdVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryWarningThresholdVO">
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <resultMap id="warningVoMap"
+               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryWarningVO">
+        <result column="spec_values" property="specValues"
+                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
+
+    <!--
+      预警状态表达式 —— **判定规则在 SQL 里只写这一处**。
+      过滤谓词（status 有值 / 无值两种情况）与排序都 include 它，
+      这样「改规则时漏改一处」不会发生。
+
+      基准是**可用量**（现有量 − 预留量）：下限的业务含义是「还够不够发货」，
+      20 kg 在库但 18 kg 已预留时可用只有 2 kg，必须触发补货预警。
+
+      COALESCE 把「没有余额行」按 0 计 —— 那正是「设了下限却一件没有」，应当预警。
+      这个表达式必须与 ScmInventoryWarningStatusEnum#evaluate 语义一致，
+      两者的等价性由 ScmInventoryWarningIT 交叉验证。
+    -->
+    <sql id="warningStatusExpr">
+        CASE
+            WHEN t.warn_min IS NOT NULL
+                 AND COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) &lt; t.warn_min THEN 'LOW'
+            WHEN t.warn_max IS NOT NULL
+                 AND COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) &gt; t.warn_max THEN 'HIGH'
+            ELSE 'NORMAL'
+        END
+    </sql>
+
+    <select id="countByWarehouseAndSku" resultType="int">
+        SELECT COUNT(*) FROM inventory_warning_threshold
+        WHERE warehouse_id = #{warehouseId} AND sku_id = #{skuId} AND deleted = FALSE
+    </select>
+
+    <!--
+      编辑配置：**手写 SQL 而不是 updateById**。
+      实体上标了 updateStrategy = ALWAYS 的字段（含 created_at）会被 updateById
+      一并写进 SET 子句，而更新实体里 created_at 是 null → 直接违反 NOT NULL。
+      手写 SQL 只更新真正该变的列，并且天然支持把 warn_min / warn_max 清空成 NULL
+      （那是一个合法操作：取消该方向的预警）。
+      version 乐观锁 + deleted 守卫都写在 WHERE 里。
+    -->
+    <update id="updateThreshold">
+        UPDATE inventory_warning_threshold
+        SET warehouse_id = #{warehouseId},
+            sku_id       = #{skuId},
+            warn_min     = #{warnMin},
+            warn_max     = #{warnMax},
+            remark       = #{remark},
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND version = #{version}
+    </update>
+
+    <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
+    <select id="queryPage" resultMap="thresholdVoMap">
+        SELECT t.id,
+               t.warehouse_id,
+               t.sku_id,
+               t.warn_min,
+               t.warn_max,
+               t.remark,
+               t.version,
+               t.created_at,
+               t.updated_at,
+               w.warehouse_code,
+               w.name       AS warehouse_name,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name
+        FROM inventory_warning_threshold t
+        LEFT JOIN warehouse   w ON w.id = t.warehouse_id
+        LEFT JOIN product_sku k ON k.id = t.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE t.deleted = FALSE
+        <if test="query.warehouseId != null">
+            AND t.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.skuId != null">
+            AND t.sku_id = #{query.skuId}
+        </if>
+        <if test="query.skuCode != null and query.skuCode != ''">
+            AND k.sku_code ILIKE CONCAT('%', #{query.skuCode}, '%')
+        </if>
+        ORDER BY t.updated_at DESC, t.id DESC
+    </select>
+
+    <select id="detail" resultMap="thresholdVoMap">
+        SELECT t.id,
+               t.warehouse_id,
+               t.sku_id,
+               t.warn_min,
+               t.warn_max,
+               t.remark,
+               t.version,
+               t.created_at,
+               t.updated_at,
+               w.warehouse_code,
+               w.name       AS warehouse_name,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name
+        FROM inventory_warning_threshold t
+        LEFT JOIN warehouse   w ON w.id = t.warehouse_id
+        LEFT JOIN product_sku k ON k.id = t.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE t.deleted = FALSE AND t.id = #{id}
+    </select>
+
+    <!--
+      预警列表：**由配置驱动**（阈值配置 LEFT JOIN 余额）。
+      没有配置的 (仓库, SKU) 不会出现 —— 否则每个 SKU × 每个仓库都会因为
+      「没有余额行 = 0 < 下限」而刷屏。
+      LEFT JOIN 余额而不是 JOIN：配置了阈值却没有余额行的行必须出现。
+    -->
+    <select id="queryWarningPage" resultMap="warningVoMap">
+        SELECT t.id AS threshold_id,
+               t.warehouse_id,
+               t.sku_id,
+               t.warn_min,
+               t.warn_max,
+               w.warehouse_code,
+               w.name       AS warehouse_name,
+               k.sku_code,
+               k.spec_name  AS sku_name,
+               k.spec_values,
+               p.name       AS product_name,
+               b.unit,
+               COALESCE(b.quantity, 0)          AS quantity,
+               COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
+               COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
+        FROM inventory_warning_threshold t
+        LEFT JOIN inventory_balance b
+               ON b.warehouse_id = t.warehouse_id
+              AND b.sku_id = t.sku_id
+              AND b.deleted = FALSE
+        LEFT JOIN warehouse   w ON w.id = t.warehouse_id
+        LEFT JOIN product_sku k ON k.id = t.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE t.deleted = FALSE
+        <if test="query.warehouseId != null">
+            AND t.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.skuId != null">
+            AND t.sku_id = #{query.skuId}
+        </if>
+        <if test="query.skuCode != null and query.skuCode != ''">
+            AND k.sku_code ILIKE CONCAT('%', #{query.skuCode}, '%')
+        </if>
+        <!-- status 有值 → 精确过滤；为空 → 只看异常（预警列表的默认语义） -->
+        <choose>
+            <when test="query.status != null and query.status != ''">
+                AND <include refid="warningStatusExpr"/> = #{query.status}
+            </when>
+            <otherwise>
+                AND <include refid="warningStatusExpr"/> &lt;&gt; 'NORMAL'
+            </otherwise>
+        </choose>
+        <!-- 严重度排序：低于下限（要补货）最急 → 高于上限（积压）次之 → 正常最后 -->
+        ORDER BY CASE <include refid="warningStatusExpr"/>
+                     WHEN 'LOW' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2
+                 END,
+                 t.warehouse_id ASC,
+                 t.id ASC
+    </select>
+
+</mapper>

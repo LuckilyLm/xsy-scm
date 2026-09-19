@@ -7,11 +7,13 @@ import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryLossGainTy
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryTransferStatusEnum;
+import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryWarningStatusEnum;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -194,14 +196,51 @@ class ScmInventoryConstantTest {
         assertThat(ScmInventoryTransferStatusEnum.isSupported("CONFIRMED")).isFalse();
     }
 
+    @Test
+    @DisplayName("预警状态判定：可用量 vs 阈值，边界取等号算正常")
+    void warningStatusIsEvaluatedFromAvailableQuantity() {
+        assertThat(ScmInventoryWarningStatusEnum.values()).hasSize(3);
+
+        // 边界语义：**取等号算正常**（「不低于下限」= 刚好等于下限是正常的）。
+        // 这条最容易写反，所以把等号两侧都钉住。
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(new BigDecimal("10"), new BigDecimal("10"), null))
+                .as("恰好等于下限 → 正常").isEqualTo(ScmInventoryWarningStatusEnum.NORMAL);
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(new BigDecimal("9.9999"), new BigDecimal("10"), null))
+                .as("略低于下限 → LOW").isEqualTo(ScmInventoryWarningStatusEnum.LOW);
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(new BigDecimal("100"), null, new BigDecimal("100")))
+                .as("恰好等于上限 → 正常").isEqualTo(ScmInventoryWarningStatusEnum.NORMAL);
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(new BigDecimal("100.0001"), null, new BigDecimal("100")))
+                .as("略高于上限 → HIGH").isEqualTo(ScmInventoryWarningStatusEnum.HIGH);
+
+        // 只设一个边界时，另一个方向不预警
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(new BigDecimal("9999"), new BigDecimal("10"), null))
+                .isEqualTo(ScmInventoryWarningStatusEnum.NORMAL);
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(BigDecimal.ZERO, null, new BigDecimal("100")))
+                .isEqualTo(ScmInventoryWarningStatusEnum.NORMAL);
+
+        // 没有余额行（available 为 null）按 0 计 → 设了下限就预警
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(null, new BigDecimal("1"), null))
+                .as("设了下限却一件没有 → LOW").isEqualTo(ScmInventoryWarningStatusEnum.LOW);
+        assertThat(ScmInventoryWarningStatusEnum.evaluate(null, null, new BigDecimal("1")))
+                .as("只设上限时没有余额不算异常").isEqualTo(ScmInventoryWarningStatusEnum.NORMAL);
+
+        // 异常判定与状态一致
+        assertThat(ScmInventoryWarningStatusEnum.NORMAL.isAbnormal()).isFalse();
+        assertThat(ScmInventoryWarningStatusEnum.LOW.isAbnormal()).isTrue();
+        assertThat(ScmInventoryWarningStatusEnum.HIGH.isAbnormal()).isTrue();
+
+        assertThat(ScmInventoryWarningStatusEnum.isSupported("LOW")).isTrue();
+        assertThat(ScmInventoryWarningStatusEnum.isSupported("CRITICAL")).isFalse();
+    }
+
     // ------------------------------------------------------------------
     // 错误码
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("错误码：恰好 41 个、码值冻结、段内无重复")
+    @DisplayName("错误码：恰好 45 个、码值冻结、段内无重复")
     void errorCodesAreFrozenAndUniqueWithinTheDomain() {
-        assertThat(InventoryErrorCode.values()).hasSize(41);
+        assertThat(InventoryErrorCode.values()).hasSize(45);
 
         // W6-1 的 4 个码值冻结不变
         assertThat(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND.getCode()).isEqualTo(40486);
@@ -255,20 +294,26 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_DUPLICATE_TRANSFER.getCode()).isEqualTo(41047);
         assertThat(InventoryErrorCode.INVENTORY_TRANSFER_WAREHOUSE_DISABLED.getCode()).isEqualTo(41048);
 
+        // 阈值预警波次新增：41049–41052
+        assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_NOT_FOUND.getCode()).isEqualTo(41049);
+        assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_DUPLICATE.getCode()).isEqualTo(41050);
+        assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_INVALID.getCode()).isEqualTo(41051);
+        assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND.getCode()).isEqualTo(41052);
+
         Set<Integer> codes = Arrays.stream(InventoryErrorCode.values())
                 .map(InventoryErrorCode::getCode).collect(Collectors.toCollection(LinkedHashSet::new));
-        assertThat(codes).as("库存域段内出现重复码值").hasSize(41);
+        assertThat(codes).as("库存域段内出现重复码值").hasSize(45);
 
-        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 四十个（业务冲突 / 参数非法）
+        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 四十四个（业务冲突 / 参数非法）
         assertThat(codes.stream().filter(code -> code / 100 == 404).count()).isEqualTo(1L);
-        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(40L);
+        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(44L);
         // 消息不得为空 —— 错误码没有可读消息等于没有错误码
         Arrays.stream(InventoryErrorCode.values())
                 .forEach(code -> assertThat(code.getMsg()).isNotBlank());
     }
 
     @Test
-    @DisplayName("撞码门禁：库存域的 41 个码与其它全部 SCM 域零交集")
+    @DisplayName("撞码门禁：库存域的 45 个码与其它全部 SCM 域零交集")
     void inventoryErrorCodesDoNotCollideWithAnyOtherDomain() {
         List<Class<?>> domains = discoverErrorCodeEnums();
         Set<String> names = domains.stream()

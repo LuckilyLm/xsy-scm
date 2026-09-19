@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
 
 /**
- * 库存域错误码（41 个）。
+ * 库存域错误码（45 个）。
  *
  * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加，
- * 盘点的码在盘点波次追加，报损报溢的码在报损报溢波次追加，调拨的码在调拨波次追加。
+ * 盘点、报损报溢、调拨、阈值预警依次追加。
  *
  * <pre>
  * 40486                 NOT_FOUND   1
@@ -17,6 +17,7 @@ import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
  * 41019–41027           盘点波次 9 个
  * 41028–41037           报损报溢波次 10 个
  * 41038–41048           调拨波次 11 个
+ * 41049–41052           阈值预警波次 4 个
  * </pre>
  *
  * <p><b>为什么是 40486 / 41xxx</b>：2026-09-18 与全域码表核对，全仓 {@code 4xxxx} 已占用
@@ -26,7 +27,7 @@ import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
  *
  * <p><b>410xx 段的实际占用必须现查现用</b>：41004–41007 属 warehouse、41008 属 purchase、
  * 41009 属 warehouse（调拨波次新增的在途阻塞码）、41018 亦属 warehouse，
- * 因此库存域只能取 41001–41003 / 41011–41017 / 41019–41048。
+ * 因此库存域只能取 41001–41003 / 41011–41017 / 41019–41052。
  * 不要相信任何注释里写的「本段空闲」—— 那是写下时的状态，会过期。
  *
  * <p><b>刻意不放进本枚举的码</b>：{@code WarehouseErrorCode.WAREHOUSE_NOT_FOUND(40485)} ——
@@ -271,7 +272,40 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>与采购侧的 40987 同一类规则（「不允许用停用仓库建单」不是仓库域自身的不变量，
      * 所以码留在调用方域）。发出时断言**源仓**启用、收货时断言**目标仓**启用。
      */
-    INVENTORY_TRANSFER_WAREHOUSE_DISABLED(41048, "仓库已停用，不能用于新的调拨业务");
+    INVENTORY_TRANSFER_WAREHOUSE_DISABLED(41048, "仓库已停用，不能用于新的调拨业务"),
+
+    /** 41049：预警阈值配置不存在（行不存在或已软删）。 */
+    INVENTORY_WARNING_THRESHOLD_NOT_FOUND(41049, "预警阈值配置不存在"),
+
+    /**
+     * 41050：该 {@code (仓库, SKU)} 已经有一条有效阈值配置。
+     *
+     * <p>必须显式拒绝而不是静默覆盖：两条配置会让「按哪条判断」变得没有答案，
+     * 而预警本身是给人看的，含糊的预警等于没有预警。
+     */
+    INVENTORY_WARNING_THRESHOLD_DUPLICATE(41050,
+            "该仓库与 SKU 已配置过预警阈值，请直接编辑既有配置"),
+
+    /**
+     * 41051：阈值配置非法。
+     *
+     * <p>三种情形合并为一个码，因为对用户的补救动作是同一个「改一下配置」：
+     * ① 上下限都没有填（都没有的配置没有任何判断依据）；
+     * ② 任一阈值为负（库存量不可能为负）；
+     * ③ 下限大于上限（那会让所有状态都异常，预警失去意义）。
+     * 具体是哪一种由前端表单校验先说清楚，后端只做兜底。
+     */
+    INVENTORY_WARNING_THRESHOLD_INVALID(41051,
+            "预警阈值不合法：上下限至少填一个，且都不能为负、下限不得大于上限"),
+
+    /**
+     * 41052：SKU 不存在。
+     *
+     * <p>阈值配置**必须**校验 SKU 存在（其它库存单据不校验，因为它们总是由已存在的
+     * SKU 选择器驱动）：配置表是长期驻留的，一条指向不存在 SKU 的配置会永远留在
+     * 预警列表里（没有余额 → 数量按 0 计 → 触发下限预警），成为永远清不掉的噪声。
+     */
+    INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND(41052, "SKU 不存在，请选择有效的 SKU");
 
     private final int code;
     private final String msg;

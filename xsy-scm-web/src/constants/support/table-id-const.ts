@@ -53,6 +53,9 @@ export const TABLE_ID_CONST = {
     SCM_INVENTORY_LOSS_GAIN: 50022,
     // 调拨波次（调拨单）
     SCM_INVENTORY_TRANSFER: 50023,
+    // 阈值预警波次（预警列表 + 阈值配置）
+    SCM_INVENTORY_WARNING: 50024,
+    SCM_INVENTORY_WARNING_THRESHOLD: 50025,
     OA: {
       NOTICE: businessOAInitTableId + 1, //通知公告
       ENTERPRISE: businessOAInitTableId + 2, //企业信息

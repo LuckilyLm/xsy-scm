@@ -48,7 +48,8 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
             "inventory_outbound", "inventory_outbound_item", "inventory_reservation",
             "inventory_stocktake", "inventory_stocktake_item",
             "inventory_loss_gain", "inventory_loss_gain_item",
-            "inventory_transfer", "inventory_transfer_item");
+            "inventory_transfer", "inventory_transfer_item",
+            "inventory_warning_threshold");
 
     /** 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。 */
     private static final long SENTINEL_SOURCE_ITEM_ID = 9_000_000_000L + (System.nanoTime() % 1_000_000_000L);
@@ -323,6 +324,66 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         assertThat(jdbc.update("INSERT INTO inventory_transfer "
                 + "(transfer_no, from_warehouse_id, to_warehouse_id, status, version, deleted) "
                 + "VALUES (?, 1, 2, 'DRAFT', 0, FALSE)", "W31-IT-OK")).isEqualTo(1);
+    }
+
+    // ------------------------------------------------------------------
+    // V32 预警阈值：配置不在余额表上 + 区间判据
+    // ------------------------------------------------------------------
+
+    /**
+     * V32 的两条结构性事实。
+     *
+     * <p>第一条是本波次最重要的取舍：**阈值配置不在 {@code inventory_balance} 上**。
+     * 上面 {@link #ddlContract()} 里 {@code doesNotContain("warn_min", "warn_max")} 的断言
+     * 从 W6-1 起就在，本波次**没有削弱它** —— 它现在的含义更明确了：
+     * 预警配置刻意不在余额表上，因为余额行只能由流水产生，而配置路径不该造出
+     * 「没有流水支撑的余额行」。
+     */
+    @Test
+    @DisplayName("V32 预警阈值：配置表独立于余额表，且区间判据在 DB 层生效")
+    void warningThresholdSchemaIsEnforcedByTheDatabase() {
+        // 阈值配置表存在，且余额表上**依然**没有 warn_min / warn_max
+        assertThat(columnsOf("inventory_warning_threshold"))
+                .contains("warehouse_id", "sku_id", "warn_min", "warn_max", "version", "deleted");
+        assertThat(columnsOf("inventory_balance"))
+                .as("阈值是配置，不是余额状态：不得挪到余额表上")
+                .doesNotContain("warn_min", "warn_max");
+
+        // 一个 (仓库, SKU) 只能有一条有效配置
+        String index = jdbc.queryForObject(
+                "SELECT indexdef FROM pg_indexes WHERE schemaname = current_schema() "
+                        + "AND indexname = 'uk_inventory_warning_threshold_wh_sku_active'",
+                String.class);
+        assertThat(index).containsIgnoringCase("unique");
+        assertThat(index).contains("warehouse_id, sku_id");
+        assertThat(index).containsIgnoringCase("deleted = false");
+
+        assertThat(constraintDef("inventory_warning_threshold", "ck_inventory_warning_threshold_range"))
+                .contains("warn_min").contains("warn_max");
+
+        String insert = "INSERT INTO inventory_warning_threshold "
+                + "(warehouse_id, sku_id, warn_min, warn_max, version, deleted) "
+                + "VALUES (1, 1, %s, %s, 0, FALSE)";
+
+        // 注意：下面每条 SQL 都**不带参数占位符**（边界值已经 format 进 SQL 文本），
+        // 所以不能再给 expectSqlFailure 传参数 —— 传了会让它因为「栏位索引超过许可范围」
+        // 而失败，看起来像「约束生效」，实际上根本没测到约束。
+        // 1) 上下限都没有：没有任何判断依据
+        expectSqlFailure(insert.formatted("NULL", "NULL"));
+        // 2) 下限为负
+        expectSqlFailure(insert.formatted("-1", "NULL"));
+        // 3) 上限为负
+        expectSqlFailure(insert.formatted("NULL", "-1"));
+        // 4) 下限大于上限：会让所有状态都异常，预警失去意义
+        expectSqlFailure(insert.formatted("10", "5"));
+
+        // 合法插入必须成功。两条用**不同的 sku_id** —— 唯一索引是 (warehouse_id, sku_id)，
+        // 同一个 sku 插两次会撞索引，那是另一条断言（下面 V32 的唯一索引已单独验证过）。
+        assertThat(jdbc.update(insert.formatted("5", "100"))).isEqualTo(1);
+        assertThat(jdbc.update("INSERT INTO inventory_warning_threshold "
+                + "(warehouse_id, sku_id, warn_min, warn_max, version, deleted) "
+                + "VALUES (1, 2, 5, 5, 0, FALSE)"))
+                .as("上下限相等是合法的（等价于精确值告警）").isEqualTo(1);
     }
 
     // ------------------------------------------------------------------

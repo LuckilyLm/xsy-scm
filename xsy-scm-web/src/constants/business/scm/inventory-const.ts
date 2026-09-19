@@ -126,6 +126,21 @@ export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
 };
 
 /**
+ * 库存预警状态（与后端 `ScmInventoryWarningStatusEnum` 逐字对应）。
+ *
+ * **这是派生值，不落库**：完全由 `(阈值, 可用量)` 决定，读时计算。
+ * 判定基准是**可用量**（现有量 − 预留量）而不是现有量 —— 下限的业务含义是
+ * 「还够不够发货」：20 kg 在库但 18 kg 已预留时可用只有 2 kg，必须触发补货预警。
+ *
+ * **取等号算正常**：`可用量 == 下限` 是「不低于下限」，属 `NORMAL`。
+ */
+export const SCM_INVENTORY_WARNING_STATUS_ENUM: SmartEnum<string> = {
+  NORMAL: { value: 'NORMAL', desc: '正常' },
+  LOW: { value: 'LOW', desc: '低于下限' },
+  HIGH: { value: 'HIGH', desc: '高于上限' },
+};
+
+/**
  * 表格 DOM id —— **给 Playwright 定位用**，不是 `TableOperator` 的 `tableId`。
  *
  * `TableOperator` 的 `tableId` prop 是 `Number`（列配置持久化用），因此另在
@@ -139,6 +154,8 @@ export const SCM_INVENTORY_TABLE_ID = {
   STOCKTAKE: 'scm-inventory-stocktake-table',
   LOSS_GAIN: 'scm-inventory-loss-gain-table',
   TRANSFER: 'scm-inventory-transfer-table',
+  WARNING: 'scm-inventory-warning-table',
+  WARNING_THRESHOLD: 'scm-inventory-warning-threshold-table',
 } as const;
 
 export default {
@@ -152,4 +169,5 @@ export default {
   SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
   SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
   SCM_INVENTORY_TRANSFER_STATUS_ENUM,
+  SCM_INVENTORY_WARNING_STATUS_ENUM,
 };

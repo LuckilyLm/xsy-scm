@@ -488,3 +488,99 @@ export interface InventoryTransferAdd {
     remark?: string;
   }>;
 }
+
+// ------------------------------------------------------------------
+// 阈值预警（阈值预警波次新增）
+// ------------------------------------------------------------------
+
+/**
+ * `InventoryWarningVO` —— 预警列表的一行（一条阈值配置 + 它对应的余额）。
+ *
+ * **三个数量都返回**：判定基准是**可用量**（现有量 − 预留量），只给一个数字会让用户
+ * 看不懂预警为什么触发 ——「明明有 20 kg 在库，为什么说低于下限 10 kg？」
+ * 的答案是那 20 kg 里有 18 kg 已预留。
+ *
+ * `status` 是**派生值**（`NORMAL` / `LOW` / `HIGH`），后端读时算出，不落库。
+ * 配置了阈值但没有余额行时三个数量都是 `"0.0000"` —— 那正是「设了下限却一件没有」，应当预警。
+ */
+export interface InventoryWarning {
+  /** 阈值配置 id（可跳转到配置页）。 */
+  thresholdId?: Id;
+  warehouseId?: Id;
+  warehouseCode?: string;
+  warehouseName?: string;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  productName?: string;
+  specValues?: Record<string, unknown> | null;
+  /** 记账单位；没有余额行时为空。 */
+  unit?: string | null;
+  quantity?: string | null;
+  reservedQuantity?: string | null;
+  /** 可用量 = 现有量 − 预留量。**判定基准**。 */
+  availableQuantity?: string | null;
+  warnMin?: string | null;
+  warnMax?: string | null;
+  status?: string;
+  statusDesc?: string;
+}
+
+/**
+ * `InventoryWarningQueryForm`。
+ *
+ * **`status` 为空时的语义是「只看异常」，不是「全部」**：这是预警列表，
+ * 一个全是正常项的列表对使用者没有意义。要看正常项就显式传 `NORMAL`。
+ * 因此页面下拉的第一项标成「仅异常」而不是「全部」。
+ */
+export interface InventoryWarningQuery extends Page {
+  warehouseId?: Id;
+  skuId?: Id;
+  skuCode?: string;
+  status?: string;
+}
+
+/**
+ * `InventoryWarningThresholdVO` —— 阈值配置的一行。
+ *
+ * 上下限各自可空：`warnMin` 为空表示不设下限，`warnMax` 为空表示不设上限。
+ * 但**不能同时为空**（后端 41051）—— 都没有的配置没有任何判断依据。
+ */
+export interface InventoryWarningThreshold {
+  id: Id;
+  warehouseId?: Id;
+  warehouseCode?: string;
+  warehouseName?: string;
+  skuId?: Id;
+  skuCode?: string;
+  skuName?: string;
+  productName?: string;
+  specValues?: Record<string, unknown> | null;
+  warnMin?: string | null;
+  warnMax?: string | null;
+  remark?: string;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** `InventoryWarningThresholdQueryForm`。 */
+export interface InventoryWarningThresholdQuery extends Page {
+  warehouseId?: Id;
+  skuId?: Id;
+  skuCode?: string;
+}
+
+/**
+ * `InventoryWarningThresholdAddForm`（新建与编辑共用）。
+ *
+ * 上下限是**定点字符串**（后端拒绝 JSON 数字）；传 `undefined`/`null` 表示不设该边界。
+ * 后端会校验「至少填一个、都非负、下限不高于上限」（41051）。
+ */
+export interface InventoryWarningThresholdAdd {
+  warehouseId: Id;
+  skuId: Id;
+  warnMin?: string | null;
+  warnMax?: string | null;
+  remark?: string;
+}
