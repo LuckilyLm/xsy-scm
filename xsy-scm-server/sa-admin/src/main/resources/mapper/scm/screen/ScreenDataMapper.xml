@@ -73,7 +73,7 @@
 
     <select id="topProductsBySettlement" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
         SELECT item.product_name_snapshot AS name,
-               COALESCE(SUM(item.settlement_total_amount), 0) AS amount
+               COALESCE(SUM(item.settlement_line_amount), 0) AS amount
         FROM sales_order_item item
         JOIN sales_order so ON so.id = item.order_id
         WHERE item.deleted = FALSE
@@ -116,13 +116,13 @@
     </select>
 
     <select id="inventoryDistributionByWarehouse" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
-        SELECT w.warehouse_name AS warehouseName,
+        SELECT w.name AS warehouseName,
                COALESCE(SUM(b.quantity), 0) AS quantity
         FROM inventory_balance b
         JOIN warehouse w ON w.id = b.warehouse_id
         WHERE b.deleted = FALSE
           AND w.deleted = FALSE
-        GROUP BY b.warehouse_id, w.warehouse_name
+        GROUP BY b.warehouse_id, w.name
         ORDER BY quantity DESC
     </select>
 
