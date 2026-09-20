@@ -1,5 +1,6 @@
 # 迁移 SQL 的换行必须保持稳定。
 /verify.sh text eol=lf
+/deploy/minio/bootstrap.sh text eol=lf
 #
 # 本仓库 core.autocrlf=true（Windows 默认），迁移 SQL 统一按 LF 检出，
 # 避免不同平台的换行差异改变迁移文件字节。

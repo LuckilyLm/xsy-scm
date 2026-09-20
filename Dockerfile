@@ -9,12 +9,11 @@ COPY xsy-scm-server/pom.xml ./pom.xml
 COPY xsy-scm-server/sa-base/pom.xml ./sa-base/pom.xml
 COPY xsy-scm-server/sa-admin/pom.xml ./sa-admin/pom.xml
 
-RUN mvn -B -ntp dependency:go-offline -pl sa-admin -am -DskipTests
-
 COPY xsy-scm-server/ ./
 
 ARG MAVEN_PROFILE=prod
-RUN mvn -B -ntp -P\${MAVEN_PROFILE} clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -ntp -P${MAVEN_PROFILE} clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 
@@ -22,15 +21,18 @@ ENV TZ=Asia/Shanghai \
     LANG=C.UTF-8 \
     JAVA_OPTS="-Xms512m -Xmx1024m"
 
-RUN groupadd --system --gid 10001 app \
+# 图形验证码使用 Java AWT，精简 JRE 需要字体与 fontconfig。
+RUN apt-get update && apt-get install -y --no-install-recommends curl fontconfig fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid 10001 --create-home --home-dir /home/app app \
-    && mkdir -p /app/logs /app/upload \
+    && mkdir -p /app/logs \
     && chown -R app:app /app
 
 WORKDIR /app
 COPY --from=builder --chown=app:app /build/sa-admin/target/*.jar /app/app.jar
 
-VOLUME ["/app/logs", "/app/upload"]
+VOLUME ["/app/logs"]
 EXPOSE 1024
 USER app
 

@@ -31,6 +31,7 @@ local-environment-info.txt
 .env
 .env.*
 !.env.example
+!/xsy-scm-web/.env.production
 *.log
 .playwright-cli/
 **/test-results/
@@ -38,5 +39,8 @@ local-environment-info.txt
 **/playwright/.auth/
 **/.runtime/
 
-# Local deployment assets; production deployment files are maintained outside Git.
-/deploy/
+# Keep local deployment state private; include only root Compose build assets.
+/deploy/*
+!/deploy/minio/
+/deploy/minio/*
+!/deploy/minio/bootstrap.sh

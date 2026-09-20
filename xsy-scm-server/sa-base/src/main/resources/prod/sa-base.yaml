@@ -1,4 +1,18 @@
 spring:
+  # 与开发环境使用同一迁移链；空库由 Flyway 创建 schema，禁止自动 baseline。
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas: xsy_v2
+    default-schema: xsy_v2
+    create-schemas: true
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    clean-disabled: true
+    table: flyway_schema_history
+    encoding: UTF-8
+    placeholder-replacement: false
+
   # 数据库连接信息
   datasource:
     url: ${XSY_V2_DB_URL:jdbc:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy_v2&ApplicationName=xsy-scm-v2}
@@ -23,10 +37,10 @@ spring:
   # redis 连接池配置信息
   data:
     redis:
-      database: 1
-      host: 127.0.0.1
-      port: 6379
-      password:
+      database: ${SPRING_DATA_REDIS_DATABASE:1}
+      host: ${SPRING_DATA_REDIS_HOST:127.0.0.1}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
       timeout: 10000ms
       lettuce:
         pool:

@@ -18,13 +18,13 @@ deploy
 **/playwright-report
 **/playwright/.auth
 xsy-scm-miniapp
-xsy-scm-web
 project-reference-examples
 docs
 *.log
 .env
 .env.*
 !.env.example
+!xsy-scm-web/.env.production
 README.md
 AGENTS.md
 CLAUDE.md
