@@ -13,10 +13,19 @@ skills-lock.json
 local-environment-info.txt
 
 # Local tooling (machine-specific, keep out of repository)
+# 其余脚本仍含本机绝对路径或明文种子口令（dev_up.sh / verify_screen.mjs 等），脱敏后再评估；
+# 只放行 Playwright 真实依赖的临时账号脚本。
 /tools/*
 !/tools/ts_baseline_ratchet.py
 !/tools/verify.py
 !/tools/test_verification.py
+!/tools/e2e_accounts.py
+!/tools/w1_e2e_accounts.py
+!/tools/w2_e2e_accounts.py
+!/tools/w3_e2e_accounts.py
+!/tools/w4_e2e_accounts.py
+!/tools/w5_e2e_accounts.py
+!/tools/w6_e2e_accounts.py
 
 # Reference environment configs contain credentials
 /project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml
