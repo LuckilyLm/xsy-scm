@@ -93,8 +93,10 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         Long second = stocked("RB1B", "10.0000");
 
         // second 已全部预留 10 → 实盘 0 会让 after = 0 < 已预留 10 → 41025
+        // 来源标识取本次新建的 skuId：本类无外层事务，预留会提交到开发库，
+        // 固定 id 会让同一个库上的第二次运行撞 uk 而假红（41016）。
         reservations.reserve(new ReserveInventoryFact(
-                wh, second, "SALES_ORDER_ITEM", 720001L, 820001L,
+                wh, second, "SALES_ORDER_ITEM", second, second,
                 new BigDecimal("10.0000"), OffsetDateTime.now(), null));
 
         Long id = stocktakeService.create(

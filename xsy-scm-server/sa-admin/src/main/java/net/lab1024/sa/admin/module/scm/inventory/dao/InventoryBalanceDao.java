@@ -102,8 +102,9 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 而 version 是纵深防御用的「这行动过没有」计数器，跳 2 会让这个信息失真。
      * 两条语句之间也不存在任何需要被观察到的中间态。
      *
-     * <p><b>只有采购入库调用它</b>：其余入库（调拨转入 / 转换转入 / 报溢）按现有均价入账、
-     * 均价不变，所以走普通的 {@link #incrementQuantity}；出库更不改均价。
+     * <p><b>三条带成本事实的入方向腿调用它</b>：采购入库、调拨转入（成本回读发出腿流水）、
+     * 规格转换转入（成本由调用方按持锁快照换算）。报溢等「不带来新成本事实」的入库按现有均价
+     * 入账、均价不变，走出普通的 {@link #incrementQuantity}；出库更不改均价。
      *
      * @return 影响行数，必须为 1
      */

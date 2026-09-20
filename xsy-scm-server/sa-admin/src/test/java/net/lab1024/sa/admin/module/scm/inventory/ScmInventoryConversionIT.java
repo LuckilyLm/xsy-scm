@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 规格转换的 PostgreSQL 集成测试（规格转换波次）。
  *
- * <p>覆盖五件在单测里验证不了的事：
+ * <p>覆盖六件在单测里验证不了的事：
  * <ol>
  *   <li><b>跨 SKU 的两行余额在同一事务里被改动</b> —— 这是本能力与既有六条写入路径的
  *       唯一实质差异（它们每个事务只碰一行余额）；</li>
@@ -129,6 +129,23 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
         assertThat(in.get("movement_type")).isEqualTo("CONVERT_IN");
         assertThat(in.get("source_document_type")).isEqualTo("CONVERT_IN_ITEM");
         assertThat(new BigDecimal(String.valueOf(in.get("quantity")))).isEqualByComparingTo("20.0000");
+
+        // **成本守恒的是总额，不是单价**（折算率是人工声明的，跨单位单价必然不同）：
+        // 2 箱 × 6.20 = 12.40，摊到 20 kg → 0.6200 / kg。
+        assertThat(new BigDecimal(String.valueOf(out.get("unit_cost"))))
+                .as("转出腿 = 源 SKU 当时的均价").isEqualByComparingTo("6.2000");
+        assertThat(new BigDecimal(String.valueOf(in.get("unit_cost"))))
+                .as("转入腿 = 转出腿总成本 ÷ 转入数量").isEqualByComparingTo("0.6200");
+        assertThat(balanceRow(wh, source).getAvgCost()).as("转出腿不改变源均价")
+                .isEqualByComparingTo("6.2000");
+        assertThat(balanceRow(wh, target).getAvgCost())
+                .as("目标行由转换建立，按转入成本入账而不是留在 0")
+                .isEqualByComparingTo("0.6200");
+        assertThat(balanceRow(wh, source).getQuantity().multiply(new BigDecimal("6.2000"))
+                        .add(balanceRow(wh, target).getQuantity()
+                                .multiply(balanceRow(wh, target).getAvgCost())))
+                .as("转换前后总金额不变：3 箱 × 6.20 + 20 kg × 0.62 = 5 箱 × 6.20")
+                .isEqualByComparingTo("31.0000");
     }
 
     @Test
@@ -153,6 +170,19 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
         // B：先入 5 再出 3 → 净 2。若实现成「先出后入」，B 的「出」会因为还没入而失败
         assertThat(balanceRow(wh, b).getQuantity()).as("链式：先入后出，净 2").isEqualByComparingTo("2.0000");
         assertThat(balanceRow(wh, c).getQuantity()).isEqualByComparingTo("3.0000");
+
+        // 成本沿链条走完：A→B→C 全程 1:1 同单位，所以三行的均价都是 A 的 6.2000。
+        // 基准若只取各 SKU 的**期初**均价，B 没有期初行 → 0，C 于是被记成零成本 ——
+        // 与调拨清零是同一个缺陷，因此链式场景必须在测试里钉住。
+        assertThat(balanceRow(wh, b).getAvgCost()).as("B 按本单转入腿加权，不是期初的 0")
+                .isEqualByComparingTo("6.2000");
+        assertThat(balanceRow(wh, c).getAvgCost()).as("成本穿过中间的 B 到达 C")
+                .isEqualByComparingTo("6.2000");
+        assertThat(convertMovements(wh, b).stream()
+                        .filter(m -> "CONVERT_OUT".equals(String.valueOf(m.get("movement_type"))))
+                        .map(m -> new BigDecimal(String.valueOf(m.get("unit_cost"))))
+                        .findFirst().orElseThrow())
+                .as("B 的转出腿 = 它进完之后的均价").isEqualByComparingTo("6.2000");
     }
 
     // ------------------------------------------------------------------

@@ -23,6 +23,10 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE;
@@ -60,20 +64,28 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
  * 避免多行收货以相反顺序获取余额锁。
  *
  * <p><b>本类是全仓唯一会改变 {@code inventory_balance.quantity} 的地方</b>，
- * 六条写入路径都遵守同一套纪律：
+ * 八条写入路径都遵守同一套纪律：
  * <ul>
  *   <li>{@link #postPurchaseInbound} —— 采购入库（方向 = 入，可建零余额行）；</li>
  *   <li>{@link #postSalesOutbound} —— 销售出库（方向 = 出，不建行，先判可用量）；</li>
  *   <li>{@link #postStocktakeAdjust} —— 盘点调整（方向由差异正负决定，不建行）；</li>
  *   <li>{@link #postLossGainAdjust} —— 报损报溢（方向由单据类型决定，不建行）；</li>
  *   <li>{@link #postTransferOut} —— 调拨转出（方向 = 出，不建行，先判可用量）；</li>
- *   <li>{@link #postTransferIn} —— 调拨转入（方向 = 入，**可建零余额行**）。</li>
+ *   <li>{@link #postTransferIn} —— 调拨转入（方向 = 入，**可建零余额行**）；</li>
+ *   <li>{@link #postConvertOut} —— 规格转换转出（方向 = 出，不建行，先判可用量）；</li>
+ *   <li>{@link #postConvertIn} —— 规格转换转入（方向 = 入，**可建零余额行**）。</li>
  * </ul>
- * 六者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
+ * 八者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
  * （{@code incrementQuantity} / {@code decrementQuantity}），从不做「读-改-写」赋值。
  *
- * <p><b>「入方向才允许建零余额行」是一条不变量</b>：入库与调拨转入可以建行（它们带单位事实），
- * 出库 / 盘点 / 报损报溢都不建（无余额行意味着「从未入库」，对「出」方向就是无货可动）。
+ * <p><b>均价（V34）只由三条入方向腿按加权公式更新</b>：采购入库、调拨转入、规格转换转入
+ * （{@link #inboundAvgCost}）。三者的成本来源分别是采购单价、{@link #transferInCost} 回读的
+ * 发出腿事实，以及调用方在写腿之前解好的成本基准（{@link #lockCostBasis} 的期初快照 +
+ * 链式求解）。出方向与其它入库都不改均价，只把当时的均价写进流水。
+ *
+ * <p><b>「入方向才允许建零余额行」是一条不变量</b>：三条入方向腿可以建行（它们带单位事实），
+ * 五条出方向腿（销售出库 / 盘点 / 报损报溢 / 调拨转出 / 转换转出）都不建
+ * （无余额行意味着「从未入库」，对「出」方向就是无货可动）。
  */
 @Service
 @RequiredArgsConstructor
@@ -153,24 +165,33 @@ public class InventoryCommandService {
      * 结果由 {@link InventoryBalanceDao#incrementQuantityAndSetAvgCost} 与数量增量一起写入，
      * 让一次逻辑行变更只自增一次 {@code version}。
      *
+     * <p>入参 {@code balance} 必须是**持有行锁之后**读到的快照，否则加权基数会是过期的。
+     * 公式与取整口径见 {@link #weightedAvgCost}。
+     */
+    private static BigDecimal inboundAvgCost(InventoryBalanceEntity balance, BigDecimal inboundQuantity,
+                                             BigDecimal inboundUnitCost) {
+        return weightedAvgCost(balance.getQuantity(), balance.getAvgCost(), inboundQuantity, inboundUnitCost);
+    }
+
+    /**
+     * 移动加权均价 —— 全项目**唯一**一份加权公式实现，转换腿的成本基准求解也走它。
+     *
      * <pre>
      * newAvg = (旧量·旧均价 + 入量·入价) / (旧量 + 入量)     四舍五入到 4 位小数
      * </pre>
      *
-     * <p>入参 {@code balance} 必须是**持有行锁之后**读到的快照，否则加权基数会是过期的。
-     *
      * <p>取整方式固定为 {@code HALF_UP}：四舍五入是财务口径的默认，而 {@code HALF_EVEN}
      * （银行家舍入）会让「同一批数据算两遍」的结果依赖于末位奇偶，对账时难以解释。
      *
-     * <p>{@code inboundUnitCost} 为空时按 0 计入 —— 那意味着「这批货没有成本事实」，
-     * 把它当作 0 会把均价拉低。这是**刻意的**：宁可在均价上体现「有一批货成本未知」，
-     * 也不要凭空编一个价格。调用方（采购收货）的 unit_cost 一定非空，
-     * 只有未来的无成本入库才会走到这里。
+     * <p>均价为空按 0 计入 —— 那意味着「这批货没有成本事实」。把它当作 0 会把均价拉低，
+     * 这是**刻意的**：宁可在均价上体现「有一批货成本未知」，也不要凭空编一个价格。
+     * 采购收货的 unit_cost 一定非空；实际会走到空值分支的只有成本核算（V34）上线前已发出、
+     * 上线后才收货的在途调拨。
      */
-    private static BigDecimal inboundAvgCost(InventoryBalanceEntity balance, BigDecimal inboundQuantity,
-                                             BigDecimal inboundUnitCost) {
-        BigDecimal oldQuantity = balance.getQuantity();
-        BigDecimal oldAvg = balance.getAvgCost() == null ? BigDecimal.ZERO : balance.getAvgCost();
+    public static BigDecimal weightedAvgCost(BigDecimal beforeQuantity, BigDecimal beforeAvgCost,
+                                             BigDecimal inboundQuantity, BigDecimal inboundUnitCost) {
+        BigDecimal oldQuantity = beforeQuantity == null ? BigDecimal.ZERO : beforeQuantity;
+        BigDecimal oldAvg = beforeAvgCost == null ? BigDecimal.ZERO : beforeAvgCost;
         BigDecimal inCost = inboundUnitCost == null ? BigDecimal.ZERO : inboundUnitCost;
         BigDecimal newQuantity = oldQuantity.add(inboundQuantity);
         if (newQuantity.signum() == 0) {
@@ -180,6 +201,69 @@ public class InventoryCommandService {
         return oldQuantity.multiply(oldAvg)
                 .add(inboundQuantity.multiply(inCost))
                 .divide(newQuantity, 4, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 在任何库存腿写入之前，锁定本次动作涉及的余额行并快照**期初数量与均价**。
+     *
+     * <p>规格转换需要它有两个原因：① 锁序 —— 调用方把明细拆成腿后按 {@code (skuId, 先入后出)}
+     * 排序执行，这里按 {@code skuId} 升序把全部行一次锁齐，腿后续的 {@code FOR UPDATE}
+     * 只是重入本事务已持有的行锁；② 成本基准的**期初输入** —— 同一条明细的转入腿可能先于
+     * 转出腿执行，到了腿里再读均价会读到被本单前半段改过的值，两条腿于是不同源、总成本不守恒。
+     * 链式转换（某 SKU 在本单内既进又出）的基准由调用方在这份期初快照之上求解
+     * （见 {@code InventoryConversionService#resolveOutboundCostBasis}）：腿的执行顺序保证
+     * 同一 SKU 先入后出，所以它的转出腿在真实账本上看到的正是「进完之后」的均价。
+     *
+     * @param skuIds 本单涉及的源与目标 SKU（重复与无序都可以，内部按升序去重锁定）
+     * @return {@code skuId -> 期初数量与均价}；没有余额行的 SKU 不在结果里，调用方按 0 处理
+     */
+    public Map<Long, CostBasis> lockCostBasis(Long warehouseId, Collection<Long> skuIds) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Cost basis snapshot requires the caller's transaction");
+        }
+        Map<Long, CostBasis> basis = new HashMap<>();
+        skuIds.stream().filter(Objects::nonNull).distinct().sorted().forEach(skuId -> {
+            InventoryBalanceEntity balance = balanceDao.lockByWarehouseAndSku(warehouseId, skuId);
+            // 没有余额行 = 从未入库 = 没有成本事实：出库腿会因此在后面失败（41058），
+            // 建行的入腿则以 0 起步，随后被本次转入的均价覆盖。
+            if (balance != null) {
+                basis.put(skuId, new CostBasis(balance.getQuantity(), balance.getAvgCost()));
+            }
+        });
+        return basis;
+    }
+
+    /**
+     * 一行余额的成本期初：数量与均价**必须同源**（加权公式的两个自变量）。
+     *
+     * @param quantity 持锁后读到的账面数量
+     * @param avgCost  持锁后读到的移动加权均价，可为空（按 0 计）
+     */
+    public record CostBasis(BigDecimal quantity, BigDecimal avgCost) {
+
+        public BigDecimal quantityOrZero() {
+            return quantity == null ? BigDecimal.ZERO : quantity;
+        }
+
+        public BigDecimal avgCostOrZero() {
+            return avgCost == null ? BigDecimal.ZERO : avgCost;
+        }
+    }
+
+    /**
+     * 转换后每个**目标单位**的成本 = 源腿总成本 ÷ 目标腿数量（{@code HALF_UP} 到 4 位，
+     * 与 {@code avg_cost} 的精度一致）。
+     *
+     * <p>折算率是人工声明的（一箱是 9.5 还是 10 kg 取决于供应商与批次），所以跨单位的
+     * 单价必然不同 —— 守恒的是总成本，不是单价。
+     */
+    public static BigDecimal convertedUnitCost(BigDecimal sourceQuantity, BigDecimal sourceUnitCost,
+                                              BigDecimal targetQuantity) {
+        if (targetQuantity.signum() <= 0) {
+            throw new IllegalArgumentException("Conversion target quantity must be positive: " + targetQuantity);
+        }
+        return sourceQuantity.multiply(sourceUnitCost)
+                .divide(targetQuantity, 4, RoundingMode.HALF_UP);
     }
 
     /**
@@ -505,7 +589,7 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.transferItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(unit);
-        // 调拨本身不产生成本事实，unit_cost 留空。
+        // 转出腿写源仓当时的均价；这条流水同时是收货时回读的转入成本基准（见 transferInCost）。
         movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(onHand);
         movement.setAfterQuantity(after);
@@ -535,6 +619,11 @@ public class InventoryCommandService {
      * <p><b>单位必须与目标仓既有记账单位一致</b>：不一致直接 41044，绝不隐式换算
      * （Q13）。源仓按「箱」记账、目标仓按「kg」记账时把 10 箱加成 10 kg 会得到一个
      * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。
+     *
+     * <p><b>转入成本取发出腿的事实，不取目标仓均价</b>：调拨只是把货换个仓库，总成本必须守恒
+     * （见 {@link #transferInCost}）。均价按与采购入库相同的加权公式更新，因此
+     * 「源仓 10 / 目标仓 8」时目标仓被拉向 10，而不是按 8 记；目标仓新建行时均价直接等于
+     * 转入成本，不再出现「数量对、金额为零」。
      *
      * <p>转入没有下限判断（只增不减），但 {@code ck_inventory_balance_quantity} 仍然生效。
      */
@@ -567,6 +656,7 @@ public class InventoryCommandService {
 
         BigDecimal before = balance.getQuantity();
         BigDecimal after = before.add(fact.quantity());
+        BigDecimal transferredCost = transferInCost(fact.transferItemId());
 
         InventoryMovementEntity movement = new InventoryMovementEntity();
         movement.setWarehouseId(fact.warehouseId());
@@ -577,7 +667,7 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.transferItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(fact.unitSnapshot());
-        movement.setUnitCost(balance.getAvgCost());
+        movement.setUnitCost(transferredCost);
         movement.setBeforeQuantity(before);
         movement.setAfterQuantity(after);
         // 用**收货**时刻与收货人 —— 与转出的 occurred_at 是同一个调拨的两个不同时点，
@@ -591,9 +681,33 @@ public class InventoryCommandService {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_TRANSFER);
         }
 
-        if (balanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+        if (balanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
+                inboundAvgCost(balance, fact.quantity(), transferredCost), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
+    }
+
+    /**
+     * 调拨转入的单位成本 = 同一条明细行**发出腿**当时的成本事实。
+     *
+     * <p>发出与收货是两个事务（两步式），收货时内存里什么都没有，只能回读已冻结的流水；
+     * 不在调拨明细行上另存一份成本副本，否则同一事实有两处可各自漂移。
+     *
+     * <p>发出腿 {@code unit_cost} 为空只可能发生在成本核算（V34）上线前已发出、上线后才收货的
+     * 在途单上 —— 那批货确实没有成本事实，按 0 计入，与 {@link #inboundAvgCost} 对无成本入库的
+     * 同一取向：宁可在均价上体现「有一批货成本未知」，也不凭空编一个价格。
+     *
+     * <p>流水本身不会缺失：收货要求单据为 SHIPPED，而 {@code ship()} 与转出流水在同一事务内写入。
+     * 真缺了就是账实不一致，必须响亮失败 —— 按 0 静默入账会把「成本清零」这个缺陷重新引进来。
+     */
+    private BigDecimal transferInCost(Long transferItemId) {
+        InventoryMovementEntity shipped = movementDao.selectBySourceItem(
+                ScmInventorySourceDocumentTypeEnum.TRANSFER_OUT_ITEM.name(), transferItemId);
+        if (shipped == null) {
+            throw new IllegalStateException(
+                    "TRANSFER_IN without the matching TRANSFER_OUT movement, transfer item " + transferItemId);
+        }
+        return shipped.getUnitCost() == null ? BigDecimal.ZERO : shipped.getUnitCost();
     }
 
     /**
@@ -643,8 +757,9 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.conversionItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(fact.unit());
-        // 转换本身不产生成本事实，unit_cost 留空（成本核算属后续波次）。
-        movement.setUnitCost(balance.getAvgCost());
+        // 基准由调用方在写任何腿之前按持锁快照给出：转出与转入两条腿必须同源，
+        // 否则同一条明细的总成本不守恒（成本核算上线前这里曾留空）。
+        movement.setUnitCost(fact.unitCost());
         movement.setBeforeQuantity(onHand);
         movement.setAfterQuantity(after);
         movement.setOccurredAt(fact.occurredAt());
@@ -668,6 +783,10 @@ public class InventoryCommandService {
      *
      * <p>目标 SKU **已有**余额行时，其记账单位必须等于声明的目标单位（否则 41060）：
      * 否则会把「箱」与「kg」相加，得到一个没有物理意义的余额。
+     *
+     * <p><b>成本只平移、不凭空产生</b>：转入腿单价 = 转出腿总成本 ÷ 目标腿数量（由调用方按
+     * 同一基准换算），目标 SKU 均价再按与采购入库相同的加权公式更新。因此「9.5 kg 拆成
+     * 1 箱」两边金额相等，而目标 SKU 新建余额行时均价等于转入成本、不再是 0。
      */
     public void postConvertIn(InventoryConversionFact fact) {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
@@ -702,7 +821,7 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.conversionItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(fact.unit());
-        movement.setUnitCost(balance.getAvgCost());
+        movement.setUnitCost(fact.unitCost());
         movement.setBeforeQuantity(before);
         movement.setAfterQuantity(after);
         movement.setOccurredAt(fact.occurredAt());
@@ -713,7 +832,8 @@ public class InventoryCommandService {
         if (movementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_CONVERSION);
         }
-        if (balanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+        if (balanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
+                inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }

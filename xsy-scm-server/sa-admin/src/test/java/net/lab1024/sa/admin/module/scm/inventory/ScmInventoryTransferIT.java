@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 调拨的 PostgreSQL 集成测试（调拨波次）。
  *
- * <p>覆盖六件在单测里验证不了的事：
+ * <p>覆盖七件在单测里验证不了的事：
  * <ol>
  *   <li><b>两步式的中间态</b> —— 发出后源仓已扣、目标仓未加（在途期间这批货不在任何余额行里），
  *       这是本波次最核心的语义；</li>
@@ -32,6 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       {@code (source_document_type, source_document_item_id)}）；</li>
  *   <li><b>源仓的可用量门槛</b> —— 不得让源仓变负，也不得吃掉源仓已预留的货；</li>
  *   <li><b>两仓单位必须一致</b> —— Q13 不做隐式换算（41044）；</li>
+ *   <li><b>成本随货平移</b> —— 转入腿的成本回读同一明细行的转出腿，目标仓自己的均价
+ *       （新建行时是 0）不参与定价；</li>
  *   <li><b>状态机</b> —— 在途不可取消，两个终态不可回退；</li>
  *   <li><b>在途调拨阻塞仓库停用</b> —— 调拨波次新增的第四条停用阻塞条件。</li>
  * </ol>
@@ -124,8 +126,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(decimal(out, "after_quantity")).isEqualByComparingTo("6.0000");
         // V34 起：调拨转出按**源仓当时的均价**记成本（出库不改变均价）。
         // 此前这里断言 `isNull()`，那是成本核算上线前的语义。
-        // 注意这是「按源仓均价」而不是「按目标仓均价」—— 精确平移源成本需要明细行快照，
-        // 属已知近似，见 decisions.md 的未决事项。
+        // 这条流水同时是收货时的转入成本基准 —— 见 transferInCost 的回读。
         assertThat(decimal(out, "unit_cost"))
                 .isEqualByComparingTo(balanceRow(wh1, sku).getAvgCost());
 
@@ -143,6 +144,15 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(decimal(in, "after_quantity")).isEqualByComparingTo("4.0000");
         // 单位快照 = 源仓记账单位（Q13），目标仓新建行时用的就是它
         assertThat(String.valueOf(in.get("unit_snapshot"))).isEqualTo(balanceRow(wh1, sku).getUnit());
+
+        // **成本守恒**：转入腿带的是转出腿的成本，不是目标行当时的 0 均价。
+        // 旧实现取目标行的 avg_cost（新建行 = 0），整批货的成本就此清零 —— 数量对、金额账全丢。
+        assertThat(decimal(in, "unit_cost"))
+                .as("转入腿回读同一明细行转出腿的成本")
+                .isEqualByComparingTo(decimal(out, "unit_cost"));
+        assertThat(balanceRow(wh2, sku).getAvgCost())
+                .as("新建的目标余额行按转入成本入账")
+                .isEqualByComparingTo(decimal(out, "unit_cost"));
     }
 
     @Test
@@ -160,9 +170,14 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         Long itemId = jdbc.queryForObject(
                 "SELECT id FROM inventory_transfer_item WHERE transfer_id = ? AND deleted = FALSE",
                 Long.class, id);
+        // 必须带上来源类型：明细行 id 只在其来源表内唯一，共享开发库里其它单据表的明细行
+        // 可能取到同一个数值。谓词与 uk_inventory_movement_source_active 的冲突域一致，
+        // 断言语义不变 —— 两条腿若共用一个类型，这里只会拿到一行。
         List<Map<String, Object>> both = jdbc.queryForList(
                 "SELECT movement_type, source_document_type FROM inventory_movement "
-                        + "WHERE source_document_item_id = ? ORDER BY id", itemId);
+                        + "WHERE source_document_item_id = ? "
+                        + "AND source_document_type IN ('TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM') "
+                        + "ORDER BY id", itemId);
         assertThat(both).hasSize(2);
         assertThat(both.get(0).get("movement_type")).isEqualTo("TRANSFER_OUT");
         assertThat(both.get(0).get("source_document_type")).isEqualTo("TRANSFER_OUT_ITEM");

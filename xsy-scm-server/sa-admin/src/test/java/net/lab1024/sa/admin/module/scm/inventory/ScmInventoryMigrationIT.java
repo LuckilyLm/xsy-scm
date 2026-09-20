@@ -224,10 +224,12 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         // --- append-only 在**代码层**的形态：DAO 只声明 insert + select ---
         // 这是「未来冲销必须新增反向 movement，而不是改历史行」的编译期保障：
         // 任何人往这个 DAO 加 update/delete 方法，本断言会立刻失败并强制走评审。
+        // V37 波次新增的 `selectBySourceItem` 仍是一个只读回查（调拨收货回读转出腿成本），
+        // 不改变这条纪律。
         List<String> movementDaoMethods = Arrays.stream(InventoryMovementDao.class.getDeclaredMethods())
                 .map(Method::getName).sorted().toList();
-        assertThat(movementDaoMethods)
-                .containsExactly("countActiveBySourceItem", "insertOnConflictDoNothing", "queryPage");
+        assertThat(movementDaoMethods).containsExactly(
+                "countActiveBySourceItem", "insertOnConflictDoNothing", "queryPage", "selectBySourceItem");
 
         // 余额 DAO 也**没有**任何「设置绝对数量」的方法：余额只能是流水的净和。
         // 出库波次新增 4 个**增量**方法（出库扣减 + 预留增减），仍然没有赋值型方法。

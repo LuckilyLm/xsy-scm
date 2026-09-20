@@ -45,6 +45,16 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
     /** 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转，Q9）。 */
     List<InventoryMovementVO> queryPage(Page<?> page, @Param("query") InventoryMovementQueryForm query);
 
+    /**
+     * 按来源行读回那一条活动流水。
+     *
+     * <p>流水是 append-only（V21），跨事务的两步动作（调拨「发出 → 收货」）拿不到上一步的
+     * 内存值，只能回读**已冻结的事实**。列对 {@code (source_document_type, source_document_item_id)}
+     * 上的部分唯一索引 {@code uk_inventory_movement_source_active} 逐字匹配，因此至多一行。
+     */
+    InventoryMovementEntity selectBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
+                                               @Param("sourceDocumentItemId") Long sourceDocumentItemId);
+
     /** 某个收货行是否已有活动流水（IT / 对账用，只读）。 */
     int countActiveBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
                                 @Param("sourceDocumentItemId") Long sourceDocumentItemId);

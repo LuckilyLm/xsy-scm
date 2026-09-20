@@ -128,6 +128,20 @@
         ORDER BY m.occurred_at DESC, m.id DESC
     </select>
 
+    <!--
+      按来源行读回唯一那条活动流水（调拨收货回读发出腿的成本事实）。
+      流水不可改删（Q7 / V21），所以「上一步用了什么成本」只能回读账本，
+      不在单据行上另存一份副本 —— 那会变成两处可各自漂移的同一事实。
+      deleted = FALSE 谓词与 uk_inventory_movement_source_active 逐字一致（Q11），走同一个索引。
+    -->
+    <select id="selectBySourceItem"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity">
+        SELECT * FROM inventory_movement
+        WHERE deleted = FALSE
+          AND source_document_type = #{sourceDocumentType}
+          AND source_document_item_id = #{sourceDocumentItemId}
+    </select>
+
     <select id="countActiveBySourceItem" resultType="int">
         SELECT count(*) FROM inventory_movement
         WHERE deleted = FALSE

@@ -22,6 +22,7 @@ import java.time.OffsetDateTime;
  * @param skuId            本次动作作用的 SKU（转出 = 源 SKU，转入 = 目标 SKU）
  * @param quantity         数量，必须为正
  * @param unit             单据声明的单位（转出 = sourceUnit，转入 = targetUnit）
+ * @param unitCost         本腿的单位成本基准，按**本腿自己的单位**计（转入腿已按折算率换算过）
  * @param occurredAt       发生时刻 —— 取**审核时刻**，不是创建时刻
  * @param operator         操作者 —— 取**审核人**，不是创建人
  */
@@ -32,6 +33,7 @@ public record InventoryConversionFact(
         Long skuId,
         BigDecimal quantity,
         String unit,
+        BigDecimal unitCost,
         OffsetDateTime occurredAt,
         String operator) {
 }

@@ -23,8 +23,12 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_EMPTY_ITEMS;
@@ -144,13 +148,29 @@ public class InventoryConversionService {
             throw new ScmBusinessException(INVENTORY_CONVERSION_EMPTY_ITEMS);
         }
 
+        // 成本基准必须在**任何腿写入之前**定好：下面的腿按 (skuId, 先入后出) 排序执行，
+        // 同一条明细的转入腿完全可能先于转出腿跑。等到腿里再读均价，读到的会是被本单前半段
+        // 改过的值，两条腿于是不同源 —— 守恒的是总成本，这一步就是它的唯一来源。
+        // lockCostBasis 同时承担锁序职责：按 skuId 升序把本单涉及的行一次锁齐。
+        List<Long> involvedSkuIds = new ArrayList<>(items.size() * 2);
+        for (InventoryConversionItemVO item : items) {
+            involvedSkuIds.add(item.getSourceSkuId());
+            involvedSkuIds.add(item.getTargetSkuId());
+        }
+        Map<Long, BigDecimal> costBasis = resolveOutboundCostBasis(items,
+                inventoryCommandService.lockCostBasis(locked.getWarehouseId(), involvedSkuIds));
+
         // 把每行拆成两条腿，再全局排序 —— 这是本能力与既有六条写入路径的**唯一实质差异**。
         List<Leg> legs = new ArrayList<>(items.size() * 2);
         for (InventoryConversionItemVO item : items) {
+            // 一条明细的两条腿共用同一个基准值，所以总成本必然守恒。
+            BigDecimal sourceCost = costBasis.getOrDefault(item.getSourceSkuId(), BigDecimal.ZERO);
             legs.add(new Leg(item.getSourceSkuId(), false, item.getId(),
-                    item.getSourceQuantity(), item.getSourceUnit()));
+                    item.getSourceQuantity(), item.getSourceUnit(), sourceCost));
             legs.add(new Leg(item.getTargetSkuId(), true, item.getId(),
-                    item.getTargetQuantity(), item.getTargetUnit()));
+                    item.getTargetQuantity(), item.getTargetUnit(),
+                    InventoryCommandService.convertedUnitCost(
+                            item.getSourceQuantity(), sourceCost, item.getTargetQuantity())));
         }
         // 按 skuId 升序（同仓，等价于 (warehouse_id, sku_id) 升序）；
         // 同一 skuId 时**先入后出**，让链式转换（A→B 且 B→C）能成立。
@@ -160,7 +180,7 @@ public class InventoryConversionService {
         for (Leg leg : legs) {
             InventoryConversionFact fact = new InventoryConversionFact(
                     locked.getWarehouseId(), locked.getId(), leg.itemId(),
-                    leg.skuId(), leg.quantity(), leg.unit(), now, operator);
+                    leg.skuId(), leg.quantity(), leg.unit(), leg.unitCost(), now, operator);
             if (leg.inbound()) {
                 inventoryCommandService.postConvertIn(fact);
             } else {
@@ -212,9 +232,79 @@ public class InventoryConversionService {
     // 内部
     // ------------------------------------------------------------------
 
-    /** 一条腿：一次对某行余额的增减。 */
+    /** 一条腿：一次对某行余额的增减。{@code unitCost} 是本单求解出的单位成本基准。 */
     private record Leg(Long skuId, boolean inbound, Long itemId,
-                       BigDecimal quantity, String unit) {
+                       BigDecimal quantity, String unit, BigDecimal unitCost) {
+    }
+
+    /**
+     * 求「某 SKU 作为转出腿时的单位成本基准」，输入是审批开始时持锁取到的期初快照。
+     *
+     * <p>不能直接拿期初均价当基准：腿的执行顺序保证同一 SKU **先入后出**，所以一个在本单里
+     * 既收又发的 SKU（链式转换 A→B 且 B→C 里的 B），它的转出腿在真实账本上看到的均价是
+     * 「进完之后」的加权值。B 没有期初行时期初均价为 0，直接取 0 会把 C 记成零成本 ——
+     * 与本轮修掉的「调拨转入清零」是同一个缺陷。
+     */
+    private Map<Long, BigDecimal> resolveOutboundCostBasis(
+            List<InventoryConversionItemVO> items,
+            Map<Long, InventoryCommandService.CostBasis> opening) {
+        Map<Long, List<InventoryConversionItemVO>> inboundByTarget = new HashMap<>();
+        for (InventoryConversionItemVO item : items) {
+            inboundByTarget.computeIfAbsent(item.getTargetSkuId(), key -> new ArrayList<>()).add(item);
+        }
+        Map<Long, BigDecimal> resolved = new HashMap<>();
+        for (InventoryConversionItemVO item : items) {
+            outboundCostBasis(item.getSourceSkuId(), inboundByTarget, opening, resolved, new HashSet<>());
+        }
+        return resolved;
+    }
+
+    /**
+     * 沿单据的 SKU 引用图递归求基准：某 SKU 的基准 = 期初行与它在本单里收到的全部转入腿加权，
+     * 而每条转入腿的成本又来自其源 SKU 的基准（同一条规则）。
+     *
+     * <p>循环引用（同一单里 A→B 且 B→A）没有定义良好的解，按期初均价收敛且不写缓存：
+     * 每条明细的两条腿仍共用同一个基准值，总成本依旧守恒，只是转出腿的基准价可能与该 SKU
+     * 当时的行均价不同。这类单据本身没有业务意义，不为它新增拒绝路径。
+     *
+     * <p>转入腿按 {@code items} 的顺序逐条加权，与腿的实际执行顺序一致（同一 SKU 上先入后出、
+     * 入腿之间保持明细行顺序），因此中间取整也与账本一致。
+     */
+    private BigDecimal outboundCostBasis(
+            Long skuId,
+            Map<Long, List<InventoryConversionItemVO>> inboundByTarget,
+            Map<Long, InventoryCommandService.CostBasis> opening,
+            Map<Long, BigDecimal> resolved,
+            Set<Long> visiting) {
+        BigDecimal cached = resolved.get(skuId);
+        if (cached != null) {
+            return cached;
+        }
+        if (!visiting.add(skuId)) {
+            InventoryCommandService.CostBasis cyclic = opening.get(skuId);
+            return cyclic == null ? BigDecimal.ZERO : cyclic.avgCostOrZero();
+        }
+
+        InventoryCommandService.CostBasis own = opening.get(skuId);
+        BigDecimal quantity = own == null ? BigDecimal.ZERO : own.quantityOrZero();
+        BigDecimal basis = own == null ? BigDecimal.ZERO : own.avgCostOrZero();
+
+        List<InventoryConversionItemVO> inbound = inboundByTarget.get(skuId);
+        if (inbound != null) {
+            for (InventoryConversionItemVO item : inbound) {
+                BigDecimal sourceCost = outboundCostBasis(
+                        item.getSourceSkuId(), inboundByTarget, opening, resolved, visiting);
+                basis = InventoryCommandService.weightedAvgCost(quantity, basis,
+                        item.getTargetQuantity(),
+                        InventoryCommandService.convertedUnitCost(
+                                item.getSourceQuantity(), sourceCost, item.getTargetQuantity()));
+                quantity = quantity.add(item.getTargetQuantity());
+            }
+        }
+
+        visiting.remove(skuId);
+        resolved.put(skuId, basis);
+        return basis;
     }
 
     private void insertItems(Long conversionId, InventoryConversionAddForm form, String operator) {

@@ -172,7 +172,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），**不扫描磁盘上的 migration 文件**，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V36 全部 success，V15–V36 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V37 全部 success，V15–V37 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -181,10 +181,11 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         // 逐条列举而不是只断言 contains：V1–V14 一旦被重写/重排，这个断言会立刻失败
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
-                "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36");
+                "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
+                "36", "37");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除 36 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除 37 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
     }

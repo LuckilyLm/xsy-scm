@@ -102,8 +102,10 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
         Long second = stocked("RB3B", "10.0000");
 
         // second 已全部预留 10 → 报损 1 会让 after = 9 < 已预留 10 → 41034
+        // 来源标识取本次新建的 skuId：本类无外层事务，预留会提交到开发库，
+        // 固定 id 会让同一个库上的第二次运行撞 uk 而假红（41016）。
         Long reservationId = reservations.reserve(new ReserveInventoryFact(
-                wh, second, "SALES_ORDER_ITEM", 740001L, 840001L,
+                wh, second, "SALES_ORDER_ITEM", second, second,
                 new BigDecimal("10.0000"), OffsetDateTime.now(), null));
 
         Long id = lossGainService.create(form(wh, first, "2.0000", second, "1.0000"));

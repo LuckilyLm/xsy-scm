@@ -162,14 +162,19 @@ V34  V34__scm_inventory_avg_cost.sql            costing 移动加权成本：inv
                                                    「最近一次采购入库单价，无则 0」回填
 V35  V35__scm_sales_order_import.sql             order Excel 导入来源 IMPORT
 V36  V36__scm_sales_order_import_permission.sql  order Excel 模板下载/导入权限（642）
+V37  V37__scm_inventory_reprice_zero_cost_balances.sql costing 数据修正：重放流水重算
+                                                   「有货但 avg_cost = 0」余额行的移动加权均价
+                                                   （只 UPDATE avg_cost，一行流水都不改）
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
 V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）、V31（调拨）、V32（阈值预警）、
 V33（规格转换）与 V34（移动加权成本）的**列表页已于 2026-09-20 浏览器验收**
 （与余额 / 流水 / 规格转换 / 数据大屏共 11 页全绿、0 pageerror）；
-**写流程 E2E 仍未覆盖**（出库确认、盘点确认、报损报溢审批、调拨发出/收货、规格转换审批）。
-见 `docs/progress.md`。
+**五条写流程 E2E 已于 2026-09-20 覆盖**（出库确认、盘点确认、报损报溢审批、
+调拨发出/收货、规格转换审批，`e2e/scm-inventory-write.spec.ts` 6/6）。
+V31/V33 的转入成本清零缺陷已由 V37 + 代码修复（成本随货平移）。
+仍未覆盖：预留的**并发**压测、阈值预警推送、分拣与配送。见 `docs/progress.md`。
 
 > **B7 数据大屏（V28）已于 2026-09-20 完成 V1 视觉重构**：三列 420/1000/420 + 底部趋势带，
 > 10 个面板、3 张图表，新增 `GET /scm/screen/data/trend?range=7d|30d` 与库存健康度
