@@ -160,6 +160,8 @@ V33  V33__scm_inventory_conversion.sql          conversion 规格转换（整件
 V34  V34__scm_inventory_avg_cost.sql            costing 移动加权成本：inventory_balance.avg_cost
                                                    （Q3 裁决变更，见迁移头注释）、期初按
                                                    「最近一次采购入库单价，无则 0」回填
+V35  V35__scm_sales_order_import.sql             order Excel 导入来源 IMPORT
+V36  V36__scm_sales_order_import_permission.sql  order Excel 模板下载/导入权限（642）
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

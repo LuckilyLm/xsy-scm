@@ -17,6 +17,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     @Autowired OrderReturnService returns;
     @Autowired OrderRefundService refunds;
     @Autowired CustomerService customers;
+    @Autowired SalesOrderImportService orderImports;
     @Autowired org.apache.ibatis.session.SqlSession session;
     Long customer() {var f=new CustomerAddForm();f.setCustomerCode(prefix);f.setName(prefix);f.setCustomerTypeId(customerTypeId("ENTERPRISE"));f.setSettleMode("INDEPENDENT");f.setSellerId(anyEmployeeId());Long id=customers.add(f);var s=new CustomerStatusForm();s.setCustomerId(id);s.setVersion(0);s.setStatus("COOPERATING");customers.updateStatus(s);return id;}
     SalesOrderAddForm form(Long c,Long sku) {
@@ -37,6 +38,77 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         assertThat(o.getSettlementTotalAmount()).isEqualByComparingTo("5.3085");assertThat(o.getOrderedTotalAmount()).isEqualByComparingTo("7.5000");assertThat(o.getSettleModeSnapshot()).isEqualTo("INDEPENDENT");assertThat(o.getCustomerNameSnapshot()).isEqualTo(prefix);assertThat(o.getItems().getFirst().getLockedUnitPrice()).isEqualByComparingTo("2.5000");
         var logs=new OrderLogQueryForm();logs.setOrderId(o.getOrderId());logs.setPageNum(1L);logs.setPageSize(20L);assertThat(query.logs(logs).getList()).extracting(OrderOperationLogVO::getOperationType).contains("CREATE","UPDATE","SUBMIT","ACTUAL_QUANTITY","CONFIRM");assertThat(query.logs(logs).getList()).allSatisfy(l->{assertThat(l.getOperator()).isEqualTo("1:1");assertThat(l.getAfterData()).isNotEmpty();});
         var jsonValue=json.valueToTree(o);assertThat(jsonValue.get("settlementTotalAmount").asText()).isEqualTo("5.3085");
+    }
+    @Test void createAndProgressConfirmsStandardButKeepsNonStandardPending(){
+        var customer=customer();
+        var standardSku=newOnShelfSku("AUTO_STANDARD");
+        jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?",standardSku);session.clearCache();
+        var standard=orders.createAndProgress(form(customer,standardSku),prefix+"standard");
+        assertThat(standard.getStatus()).isEqualTo("CONFIRMED");
+        assertThat(standard.getItems().getFirst().getActualQuantity()).isEqualByComparingTo("2.0000");
+        assertThat(orders.createAndProgress(form(customer,standardSku),prefix+"standard").getOrderId()).isEqualTo(standard.getOrderId());
+
+        var nonStandard=orders.createAndProgress(form(customer,newOnShelfSku("AUTO_WEIGHT")),prefix+"weight");
+        assertThat(nonStandard.getStatus()).isEqualTo("PENDING");
+        assertThat(nonStandard.getItems().getFirst().getActualQuantity()).isNull();
+    }
+    @Test void excelImportIsAtomicAndKeepsNonStandardPending() throws Exception {
+        var customerId=customer();var customerCode=jdbc.queryForObject("SELECT customer_code FROM customer WHERE id=?",String.class,customerId);
+        var standardSku=newOnShelfSku("IMPORT_STANDARD");jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?",standardSku);
+        var nonStandardSku=newOnShelfSku("IMPORT_WEIGHT");session.clearCache();
+        var standardCode=jdbc.queryForObject("SELECT sku_code FROM product_sku WHERE id=?",String.class,standardSku);
+        var nonStandardCode=jdbc.queryForObject("SELECT sku_code FROM product_sku WHERE id=?",String.class,nonStandardSku);
+        var first=importRow("A",customerCode,standardCode);var second=importRow("B",customerCode,nonStandardCode);
+        var bytes=new java.io.ByteArrayOutputStream();cn.idev.excel.FastExcel.write(bytes,net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(first,second));
+        var file=new org.springframework.mock.web.MockMultipartFile("file","orders.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",bytes.toByteArray());
+        var result=orderImports.importFile(file,prefix+"import",true);assertThat(result.getConfirmedOrders()).isOne();assertThat(result.getPendingOrders()).isOne();
+        assertThat(result.getOrders()).extracting(SalesOrderDetailVO::getOrderSource).containsOnly("IMPORT");
+        assertThat(orderImports.importFile(file,prefix+"import",true).getOrders()).extracting(SalesOrderDetailVO::getOrderId).containsExactlyElementsOf(result.getOrders().stream().map(SalesOrderDetailVO::getOrderId).toList());
+
+        var bad=importRow("C","MISSING",standardCode);bad.setOrderedQuantity("0");
+        bytes=new java.io.ByteArrayOutputStream();cn.idev.excel.FastExcel.write(bytes,net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(bad));
+        file=new org.springframework.mock.web.MockMultipartFile("file","bad.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",bytes.toByteArray());
+        var before=jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE order_source='IMPORT'",Integer.class);
+        var invalid=orderImports.importFile(file,prefix+"bad",true);assertThat(invalid.getTotalErrors()).isGreaterThanOrEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE order_source='IMPORT'",Integer.class)).isEqualTo(before);
+    }
+    private net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow importRow(String key,String customerCode,String skuCode){
+        var row=new net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow();row.setTemplateVersion(SalesOrderImportService.TEMPLATE_VERSION);row.setOrderKey(key);row.setCustomerCode(customerCode);row.setReceiverName("导入客户");row.setReceiverPhone("13800000000");row.setAddress("导入地址");row.setSkuCode(skuCode);row.setOrderedQuantity("2.0000");return row;
+    }
+    @Test @org.springframework.transaction.annotation.Transactional(propagation=org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    void lateImportFailureRollsBackOrdersItemsAddressesLogsAndIdempotency() {
+        var customerId=customer();var standardSku=newOnShelfSku("ROLLBACK_OK");var unavailableSku=newProductSku("ROLLBACK_BAD","ON_SHELF","OFF_SHELF");
+        jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?",standardSku);
+        var first=form(customerId,standardSku);first.setOrderSource("IMPORT");
+        var second=form(customerId,unavailableSku);second.setOrderSource("IMPORT");
+        var logCount=jdbc.queryForObject("SELECT count(*) FROM order_operation_log",Long.class);
+        try {
+            assertThatThrownBy(()->orders.importOrders(List.of(first,second),"test-hash",prefix+"rollback",2))
+                    .isInstanceOfSatisfying(SalesOrderService.ImportOrderException.class,e->assertThat(e.getOrderIndex()).isEqualTo(1));
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE customer_id=?",Integer.class,customerId)).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order_item WHERE sku_id IN (?,?)",Integer.class,standardSku,unavailableSku)).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM order_address_snapshot WHERE customer_id=?",Integer.class,customerId)).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM order_operation_log",Long.class)).isEqualTo(logCount);
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM idempotency_record WHERE idempotency_key=?",Integer.class,prefix+"rollback")).isZero();
+        } finally {
+            // Only this test's fixture IDs are removed; no shared business data is touched.
+            var spuIds=jdbc.queryForList("SELECT spu_id FROM product_sku WHERE id IN (?,?)",Long.class,standardSku,unavailableSku);
+            jdbc.update("DELETE FROM product_sku WHERE id IN (?,?)",standardSku,unavailableSku);
+            for(var spuId:spuIds) jdbc.update("DELETE FROM product_spu WHERE id=?",spuId);
+            jdbc.update("DELETE FROM customer WHERE id=?",customerId);
+        }
+    }
+    @Test void mixedManualOrderWaitsForWeightAndCannotConfirmEarly() {
+        var customerId=customer();var standardSku=newOnShelfSku("MIX_STANDARD");var weightSku=newOnShelfSku("MIX_WEIGHT");
+        jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?",standardSku);session.clearCache();
+        var request=form(customerId,standardSku);request.getItems().add(form(customerId,weightSku).getItems().getFirst());
+        var order=orders.createAndProgress(request,prefix+"mixed");
+        assertThat(order.getStatus()).isEqualTo("PENDING");
+        assertThat(order.getItems()).filteredOn(item->item.getSkuId().equals(standardSku)).singleElement()
+                .satisfies(item->assertThat(item.getActualQuantity()).isEqualByComparingTo("2.0000"));
+        assertThat(order.getItems()).filteredOn(item->item.getSkuId().equals(weightSku)).singleElement()
+                .satisfies(item->assertThat(item.getActualQuantity()).isNull());
+        expectCode(()->orders.confirm(version(order),prefix+"early-confirm"),40963);
     }
     @Test void zeroIsPricedStandardQuantityAndIdempotentReplay(){
         var c=customer();var sku=newOnShelfSku("Z");jdbc.update("UPDATE product_sku SET market_price=0,product_type='STANDARD' WHERE id=?",sku);var f=form(c,sku);var o=orders.create(f,prefix);assertThat(orders.create(f,prefix).getOrderId()).isEqualTo(o.getOrderId());

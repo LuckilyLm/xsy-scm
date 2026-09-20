@@ -27,4 +27,6 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
 
     /** 活动客户按类型计数，供删除客户类型前的引用检查（T6）。 */
     long countActiveByTypeId(@Param("typeId") Long typeId);
+
+    List<CustomerEntity> selectActiveByCodes(@Param("codes") List<String> codes);
 }

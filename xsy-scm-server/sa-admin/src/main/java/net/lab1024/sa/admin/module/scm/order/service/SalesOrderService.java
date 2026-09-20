@@ -49,13 +49,59 @@ public class SalesOrderService {
     @Transactional(rollbackFor=Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm f,String key) {
         var claim=idempotency.claim("ORDER_CREATE",key,f);if(claim.replay()) return idempotency.replay(claim,SalesOrderDetailVO.class);
+        var result=createDraft(f);idempotency.complete(claim,"SALES_ORDER",result.getOrderId(),result);return result;
+    }
+
+    @Transactional(rollbackFor=Exception.class)
+    public SalesOrderDetailVO createAndProgress(SalesOrderAddForm f,String key) {
+        var claim=idempotency.claim("ORDER_CREATE_AND_PROGRESS",key,f);if(claim.replay()) return idempotency.replay(claim,SalesOrderDetailVO.class);
+        var result=createDraft(f);
+        result=submitOrder(result.getOrderId(),result.getVersion());
+        if(result.getItems().stream().allMatch(x->"STANDARD".equals(x.getProductTypeSnapshot()))) {
+            result=confirmOrder(result.getOrderId(),result.getVersion());
+        }
+        idempotency.complete(claim,"SALES_ORDER",result.getOrderId(),result);return result;
+    }
+
+    @Transactional(rollbackFor=Exception.class)
+    public SalesOrderImportResultVO importOrders(List<SalesOrderAddForm> forms,String fileHash,String key,int totalRows) {
+        var request=Map.of("fileHash",fileHash,"forms",forms);
+        var claim=idempotency.claim("ORDER_IMPORT",key,request);if(claim.replay()) return idempotency.replay(claim,SalesOrderImportResultVO.class);
+        var result=new SalesOrderImportResultVO();result.setTotalRows(totalRows);result.setTotalOrders(forms.size());
+        var imported=new ArrayList<SalesOrderDetailVO>();
+        for(int index=0;index<forms.size();index++) {
+            try {
+                var order=createDraft(forms.get(index));order=submitOrder(order.getOrderId(),order.getVersion());
+                if(order.getItems().stream().allMatch(x->"STANDARD".equals(x.getProductTypeSnapshot()))) order=confirmOrder(order.getOrderId(),order.getVersion());
+                imported.add(order);
+            } catch (ScmBusinessException | org.springframework.dao.DataIntegrityViolationException exception) {
+                // Let the exception cross the transaction proxy before the import service formats errors.
+                throw new ImportOrderException(index, exception);
+            }
+        }
+        result.setOrders(imported);
+        result.setConfirmedOrders((int)imported.stream().filter(x->"CONFIRMED".equals(x.getStatus())).count());
+        result.setPendingOrders((int)imported.stream().filter(x->"PENDING".equals(x.getStatus())).count());
+        idempotency.complete(claim,"SALES_ORDER_IMPORT",null,result);return result;
+    }
+
+    public static final class ImportOrderException extends RuntimeException {
+        private final int orderIndex;
+        public ImportOrderException(int orderIndex, RuntimeException cause) {
+            super(cause);
+            this.orderIndex = orderIndex;
+        }
+        public int getOrderIndex() { return orderIndex; }
+    }
+
+    private SalesOrderDetailVO createDraft(SalesOrderAddForm f) {
         OrderValidator.draft(f);var customer=customers.requireTradable(f.getCustomerId());validateOriginal(f);
         if(f.getItems().stream().anyMatch(x->x.getItemId()!=null)) throw new ScmBusinessException(ORDER_ITEM_NOT_OWNED);
         var rows=materialize(f);var o=new SalesOrderEntity();OrderSnapshotFactory.customer(o,customer);
         o.setOrderNo(numbers.order());o.setStatus("DRAFT");header(o,f);o.setOrderedTotalAmount(total(rows));stamp(o,true);orders.insert(o);
         for(var row:rows) insert(o.getId(),row);
         var a=new OrderAddressSnapshotEntity();BeanUtils.copyProperties(f.getAddress(),a);a.setOrderId(o.getId());a.setCustomerId(o.getCustomerId());a.setCreatedAt(OffsetDateTime.now());a.setCreatedBy(ScmOperator.current());addresses.insert(a);
-        var result=query.detail(o.getId());log(o.getId(),"CREATE",null,null,result);idempotency.complete(claim,"SALES_ORDER",o.getId(),result);return result;
+        var result=query.detail(o.getId());log(o.getId(),"CREATE",null,null,result);return result;
     }
 
     @Transactional(rollbackFor=Exception.class)
@@ -78,7 +124,11 @@ public class SalesOrderService {
     @Transactional(rollbackFor=Exception.class)
     public SalesOrderDetailVO submit(OrderVersionForm f,String key) {
         var claim=idempotency.claim("ORDER_SUBMIT:"+f.getOrderId(),key,f);if(claim.replay()) return idempotency.replay(claim,SalesOrderDetailVO.class);
-        var o=lock(f.getOrderId());version(o.getVersion(),f.getVersion());OrderStateMachine.transition(o.getStatus(),"PENDING");
+        var result=submitOrder(f.getOrderId(),f.getVersion());idempotency.complete(claim,"SALES_ORDER",result.getOrderId(),result);return result;
+    }
+
+    private SalesOrderDetailVO submitOrder(Long orderId,Integer expectedVersion) {
+        var o=lock(orderId);version(o.getVersion(),expectedVersion);OrderStateMachine.transition(o.getStatus(),"PENDING");
         var before=query.detail(o.getId());var rows=items.list(o.getId());
         var automatic=rows.stream().filter(x->!x.getManualPriceOverride()).map(SalesOrderItemEntity::getSkuId).toList();
         customers.requireTradable(o.getCustomerId());
@@ -95,7 +145,7 @@ public class SalesOrderService {
             saveItem(row);
         }
         o.setOrderedTotalAmount(total(rows));o.setStatus("PENDING");o.setSubmittedAt(OffsetDateTime.now());save(o);
-        var result=query.detail(o.getId());log(o.getId(),"SUBMIT",null,before,result);idempotency.complete(claim,"SALES_ORDER",o.getId(),result);return result;
+        var result=query.detail(o.getId());log(o.getId(),"SUBMIT",null,before,result);return result;
     }
 
     @Transactional(rollbackFor=Exception.class)
@@ -114,18 +164,19 @@ public class SalesOrderService {
     @Transactional(rollbackFor=Exception.class)
     public SalesOrderDetailVO confirm(OrderVersionForm f,String key) {
         var claim=idempotency.claim("ORDER_CONFIRM:"+f.getOrderId(),key,f);if(claim.replay()) return idempotency.replay(claim,SalesOrderDetailVO.class);
-        var o=lock(f.getOrderId());version(o.getVersion(),f.getVersion());OrderStateMachine.transition(o.getStatus(),"CONFIRMED");
+        var result=confirmOrder(f.getOrderId(),f.getVersion());idempotency.complete(claim,"SALES_ORDER",result.getOrderId(),result);return result;
+    }
+
+    private SalesOrderDetailVO confirmOrder(Long orderId,Integer expectedVersion) {
+        var o=lock(orderId);version(o.getVersion(),expectedVersion);OrderStateMachine.transition(o.getStatus(),"CONFIRMED");
         var before=query.detail(o.getId());var rows=items.list(o.getId());
         for(var row:rows) {
             if(row.getActualQuantity()==null||row.getActualQuantity().signum()<=0) throw new ScmBusinessException(ORDER_ACTUAL_QUANTITY_REQUIRED);
             row.setSettlementLineAmount(OrderAmountCalculator.lineAmount(row.getActualQuantity(),row.getLockedUnitPrice()));saveItem(row);
         }
         o.setSettlementTotalAmount(OrderAmountCalculator.orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));o.setStatus("CONFIRMED");o.setConfirmedAt(OffsetDateTime.now());save(o);
-        // 注意：这里**刻意不做库存预留**。本业务的链路是「先接单 → 聚合 → 采购 → 收货 → 才到货」，
-        // 订单确认时库存尚未产生；在确认时校验可用量会让整条链路无法运转
-        // （实测：把预留挂在这里会直接打断 W1–W6 的全部集成测试，82 个用例报 41011）。
-        // 预留能力已就绪（InventoryReservationService），触发点待定，见 docs/decisions.md。
-        var result=query.detail(o.getId());log(o.getId(),"CONFIRM",null,before,result);idempotency.complete(claim,"SALES_ORDER",o.getId(),result);return result;
+        // 订单确认不自动预留库存；当前主链是先接单、再采购和收货，预留由后续显式动作完成。
+        var result=query.detail(o.getId());log(o.getId(),"CONFIRM",null,before,result);return result;
     }
 
     @Transactional(rollbackFor=Exception.class)

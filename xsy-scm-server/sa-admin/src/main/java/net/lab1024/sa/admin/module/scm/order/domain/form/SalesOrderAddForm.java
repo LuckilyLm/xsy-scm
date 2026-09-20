@@ -11,7 +11,7 @@ import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeseria
 @Data
 public class SalesOrderAddForm {
     @NotNull private Long customerId;
-    @NotBlank @Pattern(regexp="ADMIN|MALL|SUPPLEMENT") private String orderSource;
+    @NotBlank @Pattern(regexp="ADMIN|MALL|SUPPLEMENT|IMPORT") private String orderSource;
     private Long originalOrderId;
     @Size(max=500) private String supplementReason;
     @Size(max=500) private String remark;

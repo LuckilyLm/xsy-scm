@@ -54,4 +54,11 @@
           AND deleted = FALSE
     </select>
 
+    <select id="selectActiveByCodes" resultType="net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity">
+        SELECT <include refid="customerColumns"/>
+        FROM customer c
+        WHERE c.deleted = FALSE AND c.customer_code IN
+        <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
+    </select>
+
 </mapper>

@@ -17,6 +17,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_IDEMPOTENCY_KEY_REQUIRED(40069,"Idempotency-Key 不能为空"),
     ORDER_IDEMPOTENCY_KEY_INVALID(40070,"Idempotency-Key 长度不能超过 200 个字符"),
     ORDER_ITEM_VERSION_REQUIRED(40071,"保留订单明细必须携带版本"),
+    ORDER_SOURCE_INVALID(40075,"后台订单来源仅允许后台录单或补单"),
     ORDER_RETURN_APPROVAL_INVALID(40072,"批准数量无效或未批准任何商品"),
     ORDER_RETURN_ITEM_INVALID(40073,"退货明细不属于原订单或订单行不可退"),
     ORDER_DELETE_STATE_INVALID(40074,"仅草稿订单可以删除"),

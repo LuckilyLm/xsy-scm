@@ -20,8 +20,9 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_constraint WHERE connamespace=current_schema()::regnamespace AND contype='f' AND conrelid IN (SELECT oid FROM pg_class WHERE relname IN ("+TABLES+"))",Integer.class)).isZero();
     }
     @Test void permissionMenusGrantedAndBusinessLogsHaveNoMutationMapper() {
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_menu WHERE menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641)",Integer.class)).isEqualTo(22);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641)",Integer.class)).isEqualTo(22);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_menu WHERE menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)",Integer.class)).isEqualTo(23);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)",Integer.class)).isEqualTo(23);
+        assertThat(jdbc.queryForObject("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_sales_order_source'",String.class)).contains("IMPORT");
         assertThat(net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao.class.getMethods()).extracting(java.lang.reflect.Method::getName).containsExactlyInAnyOrder("insert","query");
     }
 }

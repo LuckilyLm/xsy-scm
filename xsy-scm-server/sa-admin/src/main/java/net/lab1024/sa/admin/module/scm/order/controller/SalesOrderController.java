@@ -25,6 +25,8 @@ public class SalesOrderController {
     public ResponseDTO<net.lab1024.sa.admin.module.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody net.lab1024.sa.admin.module.scm.pricing.domain.form.PriceResolveForm f){return ResponseDTO.ok(prices.preview(f.getCustomerId(),f.getSkuIds(),f.getAt()));}
     @PostMapping("/create") @SaCheckPermission("scm:order:add") @OperateLog
     public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody SalesOrderAddForm f,@RequestHeader(value="Idempotency-Key",required=false) String key){overridePermission(f);return ResponseDTO.ok(service.create(f,key));}
+    @PostMapping("/create-and-progress") @SaCheckPermission("scm:order:add") @OperateLog
+    public ResponseDTO<SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm f,@RequestHeader(value="Idempotency-Key",required=false) String key){overridePermission(f);return ResponseDTO.ok(service.createAndProgress(f,key));}
     @PostMapping("/update") @SaCheckPermission("scm:order:update") @OperateLog
     public ResponseDTO<SalesOrderDetailVO> update(@Valid @RequestBody SalesOrderUpdateForm f){overridePermission(f);return ResponseDTO.ok(service.update(f));}
     @PostMapping("/submit") @SaCheckPermission("scm:order:submit") @OperateLog
@@ -50,6 +52,7 @@ public class SalesOrderController {
     @PostMapping("/reserve-stock/{orderId}") @SaCheckPermission("scm:order:reserve-stock") @OperateLog
     public ResponseDTO<String> reserveStock(@PathVariable Long orderId){service.reserveStock(orderId);return ResponseDTO.ok();}
     private void overridePermission(SalesOrderAddForm f) {
+        if(!java.util.Set.of("ADMIN","SUPPLEMENT").contains(f.getOrderSource())) throw new net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException(net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
         if(f.getItems().stream().anyMatch(x->Boolean.TRUE.equals(x.getManualPriceOverride()))) cn.dev33.satoken.stp.StpUtil.checkPermission("scm:order:price-override");
     }
 }

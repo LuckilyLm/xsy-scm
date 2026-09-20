@@ -165,7 +165,7 @@ export const postEncryptRequest = (url, data) => {
 // ================================= 下载 =================================
 
 export const postDownload = function (url, data) {
-  request({
+  return request({
     method: 'post',
     url,
     data,
@@ -181,9 +181,11 @@ export const postDownload = function (url, data) {
 
 /**
  * 文件下载
+ *
+ * 返回 Promise 以便调用方展示下载中状态；失败已在此处统一提示，故 Promise 不会 reject。
  */
 export const getDownload = function (url, params) {
-  request({
+  return request({
     method: 'get',
     url,
     params,
@@ -197,49 +199,57 @@ export const getDownload = function (url, params) {
     });
 };
 
-function handleDownloadError(error) {
+function handleDownloadError(error: unknown) {
   if (error instanceof Blob) {
-    const fileReader = new FileReader();
-    fileReader.readAsText(error);
-    fileReader.onload = () => {
-      const msg = fileReader.result;
-      const jsonMsg = JSON.parse(msg);
+    error.text().then((text: string) => {
       message.destroy();
-      message.error(jsonMsg.msg);
-    };
-  } else {
-    message.destroy();
-    message.error('网络发生错误', error);
+      message.error(downloadErrorText(text));
+    });
+    return;
+  }
+  message.destroy();
+  message.error('网络发生错误');
+}
+
+/**
+ * 后端失败时也会返回二进制响应体，这里只从中提取可读文案。
+ * 非 JSON 内容仅在足够短且不是 HTML 时采用，避免把整页错误页弹给用户。
+ */
+function downloadErrorText(text: string) {
+  const value = (text || '').trim();
+  if (!value) return '文件下载失败';
+  try {
+    const msg = JSON.parse(value)?.msg;
+    if (typeof msg === 'string' && msg.trim()) return msg;
+  } catch {
+    if (value.length <= 200 && !value.startsWith('<')) return value;
+  }
+  return '文件下载失败';
+}
+
+function downloadFileName(contentDisposition: string | undefined) {
+  if (!contentDisposition) return 'download';
+  const encoded = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  const plain = contentDisposition.match(/filename=([^;]+)/i)?.[1];
+  const value = (encoded || plain || 'download').trim().replace(/^"|"$/g, '');
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
 }
 
 function handleDownloadData(response) {
-  if (!response) {
-    return;
-  }
-
-  // 获取返回类型
-  let contentType = _.isUndefined(response.headers['content-type']) ? response.headers['Content-Type'] : response.headers['content-type'];
-
-  // 构建下载数据
-  let url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
-  let link = document.createElement('a');
+  if (!response) return;
+  const contentType = response.headers['content-type'] || response.headers['Content-Type'] || 'application/octet-stream';
+  const contentDisposition = response.headers['content-disposition'] || response.headers['Content-Disposition'];
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
+  const link = document.createElement('a');
   link.style.display = 'none';
   link.href = url;
-
-  // 从消息头获取文件名
-  let str = _.isUndefined(response.headers['content-disposition'])
-    ? response.headers['Content-Disposition'].split(';')[1]
-    : response.headers['content-disposition'].split(';')[1];
-
-  let filename = _.isUndefined(str.split('fileName=')[1]) ? str.split('filename=')[1] : str.split('fileName=')[1];
-  link.setAttribute('download', decodeURIComponent(filename));
-
-  // 触发点击下载
+  link.setAttribute('download', downloadFileName(contentDisposition));
   document.body.appendChild(link);
   link.click();
-
-  // 下载完释放
-  document.body.removeChild(link); // 下载完成移除元素
-  window.URL.revokeObjectURL(url); // 释放掉blob对象
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 }

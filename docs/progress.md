@@ -44,6 +44,30 @@
 
 ## 追加记录
 
+### 2026-09-20 销售订单录入增强（V35–V36）
+
+- 后台新增原子“创建并推进”入口：纯标品自动确认；含任一非标品时整单待确认，标品实数量由系统回写，非标品等待电子秤联调。
+- 新增销售订单 Excel 模板与整批导入：客户编码/SKU 编码精确解析、分组一致性、四位定点、人工改价权限、5 MiB/2000 行/200 单上限、文件 SHA-256 批次幂等与行级错误汇总；任何错误零写入，写入阶段任一失败整批回滚。
+- 模板文件固定放在 `xsy-scm-server/sa-admin/src/main/resources/template/sales-order-import.xlsx`；页面“下载 Excel 模板”通过原接口读取 classpath 资源，随后端打包。**已于 2026-09-20 完成真实前后端联调**（见下方「模板下载与导入联调」）。
+- V35 为 `sales_order.order_source` 增加 `IMPORT`；V36 增加 `scm:order:import` 权限 642。无新业务表、无外键、无平行订单账。
+- 小程序只完成正式接口边界裁决，客户端与 mall 后端仍未实现；未来直接写同一订单聚合，商城提交要求事务内库存校验和预留。
+- 复查修复：上传组件保留原始 File，导入中禁止关闭/换文件，成功后禁止再次提交；手工录单仅提供后台录单/补单来源。Excel 错误使用实际行号，并校验模板表头、公式、单工作表、不可售/无价商品、金额溢出与数值实际精度；写入阶段失败回滚后返回订单行定位。
+- 当前验证：订单导入/服务/Web/订单及采购迁移定向后端 **38 项通过**，既有订单规则与未定价回归 **29 项通过**，合计 **67 项，零失败/错误/跳过**；覆盖纯标品自动确认、混合订单等待实重、幂等重放，以及第二单失败后订单/明细/地址/日志/幂等记录全部回滚。订单前端测试 **6 项通过**，production build 退出码 0；TypeScript 基线门禁通过（SCM 0 错误、新增 0，全仓既有 1949 项）。
+- Playwright 上传弹窗组件验证通过：真实 Vue/Ant Design 上传、multipart 文件、幂等请求头、行/字段错误展示、成功后防重提；**接口响应为模拟数据**，不等同于登录后完整端到端验收。全量后端回归、完整浏览器端到端及电子秤联调未执行。
+
+### 2026-09-20 模板下载与导入联调（真实 PostgreSQL + 打包 JAR + 浏览器）
+
+- 环境：`xsy-v2-postgres` / `xsy-v2-redis` 容器 + **打包后的 `sa-admin-dev-3.0.0.jar`** 跑 18080 + Vite 18081，Playwright 真实浏览器。
+- 后端：`GET /scm/order/import/template` 改为一次性读入 classpath 字节再写出（长度取实际字节数），资源缺失时回写 JSON 错误而不是 500；`SmartResponseUtil.setDownloadFileHeader` 补 `filename*=UTF-8''`（RFC 6266），`filename=` 保留为 ASCII 回退。
+- 实测响应：`200` + `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8` + `Content-Length: 6192` + 双文件名头，正文首两字节 `504b`（真 ZIP，非错误 JSON）。只读账号返回 `code 30005`、未登录返回 `30007`，均为 `application/json`，前端据此走失败分支、不会落盘成 Excel。
+- 打包证明：`BOOT-INF/classes/template/sales-order-import.xlsx` 在 JAR 内；从 `C:/Windows/Temp` 这种与仓库无关的工作目录启动同一 JAR 仍可下载，证明不依赖开发机绝对路径。
+- 前端：`getDownload`/`postDownload` 返回 Promise 以便按钮展示下载中状态；错误文案只接受 JSON `msg` 或 200 字符以内的非 HTML 文本。
+- 验收：`scm-order.spec.ts` **8/8 通过**。用例 7：页面下载模板 → 填真实客户/SKU → 上传 → 纯标品已确认 + 非标品待称重；混入错误行后整批失败、零写入、展示实际行号与字段；同一 Idempotency-Key 重放不重复建单。用例 8：**原样上传未替换示例行**的模板 → `发现 2 个问题、零写入`，逐行展示实际行号（Excel 第 2 行）、订单标识、字段（客户编码 / SKU编码）与原因（客户编码不存在 / SKU 编码不存在）；**人工单价 + 改价原因**在有 `scm:order:price-override` 的账号下成交且 `lockedUnitPrice=1.2345`、`orderedTotalAmount=2.4690`；**只填人工单价不填改价原因** → `发现 1 个问题、零写入`，提示「填写人工单价时必须填写改价原因」。`OrderWebTest` **6/6**，前端单测 **83/83**，ESLint 改动文件 0 错误，TS 棘轮新增 0、SCM 0（全仓 1947，较基线 1974 下降 27）。
+- 模板缺失分支实测：复制 JAR 并删掉其中 `BOOT-INF/classes/template/sales-order-import.xlsx` 后启动，接口返回 `application/json` + `code 30001`「导入模板缺失，请重新部署应用后再试」，不返回空文件、不返回 500。
+- 全量后端回归 `mvn -pl sa-admin -am test`：**713 项 / 5 错误**，错误全部落在 `module/scm/inventory/**`（`ScmInventoryBackfillIT` ×3、`ScmInventoryLossGainRollbackIT`、`ScmInventoryStocktakeRollbackIT`），与本次改动零交集。原因是 **V19 Step 4 的对账断言是「全库」校验**（`inventory_balance` 全表 vs 流水全表，不限定本测试数据），而共享 `xsy_v2` 库里残留了其它库存 IT 写入的 `TRANSFER_OUT` 流水；隔离单跑这 3 个 IT 同样失败，属既有的测试数据隔离缺陷，非本次引入。
+- 顺带修复：`tools/generate_import_template.py` 的 `verify()` 原先比对裸 XML，遇到 openpyxl + lxml 写出的字符引用（`&#27169;`）会误报乱码；改为反转义后比对，并追加对仓库内交付模板的校验。生成器契约与 `SalesOrderImportService.HEADERS` 逐列一致，模板可重建。
+- 未完成项：小程序（W6-2）与电子秤实重回写联调继续延后；F0 云/MinIO 场景未配置，cloud IT 与 cloud Playwright 用例仍跳过；库存那 5 个既有 IT 失败需由库存波次负责人决定是清理测试库还是把对账断言限定到测试数据范围。
+
 ### 2026-09-20 移动加权成本（V34）
 
 - V34 是库存深化的**最后一项**：前面七波做完「数量账」，本波次补「金额账」。

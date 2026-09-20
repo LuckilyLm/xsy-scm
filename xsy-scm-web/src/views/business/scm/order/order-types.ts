@@ -7,3 +7,5 @@ export interface ReturnItem {returnItemId?:Id;orderItemId:Id;requestedQuantity:s
 export interface ReturnRow {returnId:Id;orderId:Id;returnNo:string;status:string;version:number;reason:string;decisionReason?:string;approvedAmount:string;items:ReturnItem[]}
 export interface RefundRow {refundId:Id;orderId:Id;refundNo:string;returnId:Id;status:string;version:number;refundAmount:string;externalReference?:string|null}
 export interface LogRow {logId:Id;orderId:Id;operationType:string;operator:string;operatorName:string;reason?:string;beforeData:unknown;afterData:unknown;createdAt:string}
+export interface ImportError {rowNumber:number;orderKey?:string;column:string;code:string;message:string}
+export interface ImportResult {totalRows:number;totalOrders:number;confirmedOrders:number;pendingOrders:number;totalErrors:number;errors:ImportError[];orders:Order[]}

@@ -48,7 +48,10 @@ public class SmartResponseUtil {
 
         if (SmartStringUtil.isNotEmpty(fileName)) {
             response.setHeader(HttpHeaders.CONTENT_TYPE, MediaTypeFactory.getMediaType(fileName).orElse(MediaType.APPLICATION_OCTET_STREAM) + ";charset=utf-8");
-            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20"));
+            // RFC 6266：filename= 仅作 ASCII 兼容回退，中文名以 filename*=UTF-8'' 为准（前端优先解析后者）。
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment;filename=" + encodedFileName + ";filename*=UTF-8''" + encodedFileName);
             response.setHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION);
         }
     }

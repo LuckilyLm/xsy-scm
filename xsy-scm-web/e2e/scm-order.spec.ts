@@ -2,7 +2,7 @@
 import {test,expect,request,type APIRequestContext,type Page} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {readFileSync} from 'node:fs';
+import {copyFileSync,readFileSync} from 'node:fs';
 import smCrypto from 'sm-crypto';
 const apiUrl='http://127.0.0.1:18080';
 const name='w4_e2e_'+Date.now().toString(36),password='W4@'+randomBytes(8).toString('hex');
@@ -15,6 +15,12 @@ async function post(path:string,data:unknown,key=randomUUID()){const r=await(awa
 function draft(sku=skuId){return {customerId,orderSource:'ADMIN',address:{receiverName:'W4验收',receiverPhone:'13800000000',address:'验收地址'},remark:name,items:[{skuId:sku,orderedQuantity:'2.0000',manualPriceOverride:false}]};}
 async function detail(id:string){const r=await(await api.get('/scm/order/detail/'+id)).json();expect(r.code).toBe(0);return r.data;}
 async function browse(page:Page,path='/order/order-list'){await page.addInitScript(v=>localStorage.setItem('smart_admin_user_token',v),token);await page.goto('/#'+path);}
+/**
+ * 用模板自身作为载体写数据行：保留 C/E/H 列的文本格式，
+ * 否则 Excel/openpyxl 会把客户编码、SKU 编码、手机号转成数值。
+ */
+const writeRowsScript=`from openpyxl import load_workbook\nimport sys,json\np=sys.argv[1]; rows=json.loads(sys.argv[2])\nwb=load_workbook(p); ws=wb.active\nfor r in range(2,ws.max_row+1):\n    for c in range(1,13): ws.cell(r,c).value=None\nfor i,row in enumerate(rows,2):\n    for j,v in enumerate(row,1): ws.cell(i,j).value=v\nwb.save(p)`;
+function fillRows(path:string,rows:unknown[][]){execFileSync('python',['-c',writeRowsScript,path,JSON.stringify(rows)]);}
 async function select(page:Page,label:string,value:string){const box=page.locator(`.ant-form-item:has(#form_item_${label}) .ant-select-selector`);await box.click();await box.locator('input').fill(value);await page.locator('.ant-select-dropdown:visible').getByText(value,{exact:false}).first().click();}
 test.beforeAll(async()=>{
  execFileSync('python',['../tools/w4_e2e_accounts.py','setup'],{env,stdio:'pipe'});token=await login(name);api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
@@ -53,4 +59,62 @@ test('6 return approval atomically generates refund and completes in UI',async({
  const f={orderId:confirmedOrder.orderId,reason:'质量问题',items:[{orderItemId:confirmedOrder.items[0].itemId,requestedQuantity:'1.0000'}]};const r=await post('/scm/order/return/create',f);const excess=await(await api.post('/scm/order/return/create',{data:f,headers:{'Idempotency-Key':randomUUID()}})).json();expect(excess.code).toBe(40969);
  await browse(page,'/order/order-return-list');await expect(page.locator('#order-return-table')).toBeVisible();const row=page.locator('tr').filter({hasText:r.returnNo});await row.getByRole('button',{name:/^批\s*准$/}).click();await page.locator('.ant-modal:visible').getByRole('button',{name:'确 定'}).click();await expect(row).toContainText('已批准');
  const refunds=await post('/scm/order/refund/query',{pageNum:1,pageSize:20,orderId:confirmedOrder.orderId});expect(refunds.list).toHaveLength(1);await browse(page,'/order/order-refund-list');const refund=page.locator('tr').filter({hasText:refunds.list[0].refundNo});await refund.getByRole('button',{name:'登记退款完成'}).click();await page.locator('.ant-modal:visible input').fill(name+'-refund');await page.locator('.ant-modal:visible').getByRole('button',{name:'确 定'}).click();await expect(refund).toContainText('已完成');await expect(page.locator('.ant-modal:visible')).toHaveCount(0);await page.screenshot({path:'../.runtime/w4-refund-list.png',fullPage:true});expect((await detail(confirmedOrder.orderId)).status).toBe('CONFIRMED');
+});
+
+test('7 download template and import standard/nonstandard orders atomically',async({page})=>{
+ await browse(page);await page.getByRole('button',{name:'导入订单',exact:true}).click();
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'下载 Excel 模板',exact:true}).click();const download=await downloadPromise;
+ expect(download.suggestedFilename()).toBe('销售订单导入模板.xlsx');const valid='../.runtime/w4-order-import-valid.xlsx';await download.saveAs(valid);
+ const customerCode=name.toUpperCase(),standardCode=customerCode+'-BOX',weightCode=customerCode+'-KG';
+ const fillScript=`from openpyxl import load_workbook\nimport sys\np=sys.argv[1]; customer=sys.argv[2]; standard=sys.argv[3]; weight=sys.argv[4]; bad=sys.argv[5]=='bad'\nwb=load_workbook(p); ws=wb.active\nfor row in range(2,ws.max_row+1):\n    for col in range(1,13): ws.cell(row,col).value=None\nrows=[['1.0','IMPORT-STANDARD',customer,'W4验收','13800000000','验收地址',None,standard,'2.0000',None,None,'页面联调'],['1.0','IMPORT-WEIGHT',customer,'W4验收','13800000000','验收地址',None,weight,'3.0000',None,None,'页面联调']]\nif bad: rows.append(['1.0','IMPORT-BAD',customer,'W4验收','13800000000','验收地址',None,'SKU-NOT-FOUND','1.0000',None,None,'错误行'])\nfor r,row in enumerate(rows,2):\n    for c,v in enumerate(row,1): ws.cell(r,c).value=v\nwb.save(p)`;
+ execFileSync('python',['-c',fillScript,valid,customerCode,standardCode,weightCode,'valid']);
+ await page.locator('.ant-modal:visible input[type=file]').setInputFiles(valid);await page.getByRole('button',{name:'开始导入',exact:true}).click();
+ await expect(page.locator('.ant-modal:visible .ant-result-title')).toHaveText('订单导入完成');await expect(page.locator('.ant-modal:visible .ant-result-subtitle')).toContainText('已确认 1 张，待称重 1 张');
+ const imported=await post('/scm/order/query',{pageNum:1,pageSize:20,customerId,orderSource:'IMPORT'});const importedRows=imported.list.filter((x:any)=>x.remark==='页面联调');expect(importedRows.map((x:any)=>x.status).sort()).toEqual(['CONFIRMED','PENDING']);
+ const bad='../.runtime/w4-order-import-bad.xlsx';copyFileSync(valid,bad);
+ execFileSync('python',['-c',fillScript,bad,customerCode,standardCode,weightCode,'bad']);await page.getByRole('button',{name:'取 消'}).click();await page.getByRole('button',{name:'导入订单',exact:true}).click();
+ const before=(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;await page.locator('.ant-modal:visible input[type=file]').setInputFiles(bad);await page.getByRole('button',{name:'开始导入',exact:true}).click();
+ await expect(page.getByText(/发现 1 个问题，订单未写入/)).toBeVisible();await expect(page.locator('.ant-modal:visible')).toContainText('SKU 编码不存在');const after=(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;expect(after).toBe(before);
+ const bytes=readFileSync(valid);const key=randomUUID();const first=await api.post('/scm/order/import',{multipart:{file:{name:'retry.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes}},headers:{'Idempotency-Key':key}});const second=await api.post('/scm/order/import',{multipart:{file:{name:'retry.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes}},headers:{'Idempotency-Key':key}});const one=(await first.json()).data.orders.map((x:any)=>x.orderId),two=(await second.json()).data.orders.map((x:any)=>x.orderId);expect(two).toEqual(one);
+});
+
+test('8 sample row and manual override rules block the whole batch',async({page})=>{
+ const customerCode=name.toUpperCase(),standardCode=customerCode+'-BOX';
+ const importFile=async(path:string)=>{await page.locator('.ant-modal:visible input[type=file]').setInputFiles(path);await page.getByRole('button',{name:'开始导入',exact:true}).click();};
+ const reopen=async()=>{await page.getByRole('button',{name:'取 消'}).click();await page.getByRole('button',{name:'导入订单',exact:true}).click();};
+ const importedTotal=async()=>(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;
+ await browse(page);await page.getByRole('button',{name:'导入订单',exact:true}).click();
+
+ // A) 原样上传刚下载的模板（示例行未替换）→ 整批失败、零写入，错误指到具体字段
+ const raw='../.runtime/w4-order-import-raw.xlsx';
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'下载 Excel 模板',exact:true}).click();await (await downloadPromise).saveAs(raw);
+ const baseline=await importedTotal();
+ await importFile(raw);
+ await expect(page.locator('.ant-modal:visible')).toContainText('发现 2 个问题，订单未写入');
+ const sampleErrors=page.locator('.ant-modal:visible .ant-table tbody tr.ant-table-row');
+ await expect(sampleErrors).toHaveCount(2);
+ // 实际行号（Excel 第 2 行）+ 订单标识 + 字段 + 原因
+ await expect(sampleErrors.first().locator('td').first()).toHaveText('2');
+ await expect(sampleErrors.first()).toContainText('ORDER-001');
+ await expect(sampleErrors.first()).toContainText('客户编码');
+ await expect(sampleErrors.first()).toContainText('客户编码不存在');
+ await expect(sampleErrors.nth(1)).toContainText('SKU编码');
+ await expect(sampleErrors.nth(1)).toContainText('SKU 编码不存在');
+ expect(await importedTotal()).toBe(baseline);
+
+ // B) 人工单价 + 改价原因（账号同时持有 scm:order:import 与 scm:order:price-override）→ 成功且按人工价成交
+ const manual='../.runtime/w4-order-import-manual.xlsx';copyFileSync(raw,manual);
+ fillRows(manual,[['1.0','IMPORT-MANUAL',customerCode,'W4验收','13800000000','验收地址',null,standardCode,'2.0000','1.2345','客户议价','人工改价']]);
+ await reopen();await importFile(manual);
+ await expect(page.locator('.ant-modal:visible .ant-result-title')).toHaveText('订单导入完成');
+ const manualOrder=(await post('/scm/order/query',{pageNum:1,pageSize:20,customerId,orderSource:'IMPORT'})).list.find((x:any)=>x.remark==='人工改价');
+ const manualDetail=await detail(manualOrder.orderId);expect(manualDetail.status).toBe('CONFIRMED');expect(manualDetail.items[0].lockedUnitPrice).toBe('1.2345');expect(manualDetail.orderedTotalAmount).toBe('2.4690');
+
+ // C) 填了人工单价却不填改价原因 → 整批失败、零写入
+ const noReason='../.runtime/w4-order-import-noreason.xlsx';copyFileSync(raw,noReason);
+ fillRows(noReason,[['1.0','IMPORT-NOREASON',customerCode,'W4验收','13800000000','验收地址',null,standardCode,'2.0000','1.2345',null,'缺原因']]);
+ const beforeC=await importedTotal();await reopen();await importFile(noReason);
+ await expect(page.locator('.ant-modal:visible')).toContainText('发现 1 个问题，订单未写入');
+ await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('填写人工单价时必须填写改价原因');
+ expect(await importedTotal()).toBe(beforeC);
 });
