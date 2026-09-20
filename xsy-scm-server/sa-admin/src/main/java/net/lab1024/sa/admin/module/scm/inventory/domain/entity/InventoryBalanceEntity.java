@@ -63,6 +63,21 @@ public class InventoryBalanceEntity {
     private BigDecimal reservedQuantity;
 
     /**
+     * 移动加权平均成本（每记账单位，V34 新增）。
+     *
+     * <p><b>为什么这里最终加了成本列</b>：Q3 原本裁决「成本事实由 movement 的 unit_cost 承载，
+     * 余额表不加列」。本波次改变了该裁决，因为 movement 的 unit_cost 不足以表达移动加权：
+     * 移动加权是**顺序相关**的，且出库成本必须在**出库那一刻**确定 ——
+     * 事后从流水反推需要重放整条历史，而重放的前提是所有出库流水都已带成本，
+     * 那正是本波次要建立的东西（鸡生蛋）。
+     *
+     * <p><b>维护纪律</b>：由六条写入路径在**持有余额行锁之后**维护（与 quantity 同一时机）。
+     * 入库按 {@code (旧量·旧均价 + 入量·入价) / 新量} 重算；出库**不变**。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private BigDecimal avgCost;
+
+    /**
      * 乐观锁列 —— **纵深防御，不是第一道并发机制**。
      *
      * <p>余额更新只发生在**持有行锁之后**（{@code SELECT ... FOR UPDATE} 再 {@code WHERE id = ?} 自增），

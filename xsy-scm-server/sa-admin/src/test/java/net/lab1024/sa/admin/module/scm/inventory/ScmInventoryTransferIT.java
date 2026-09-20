@@ -122,7 +122,12 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(decimal(out, "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimal(out, "before_quantity")).isEqualByComparingTo("10.0000");
         assertThat(decimal(out, "after_quantity")).isEqualByComparingTo("6.0000");
-        assertThat(out.get("unit_cost")).isNull();
+        // V34 起：调拨转出按**源仓当时的均价**记成本（出库不改变均价）。
+        // 此前这里断言 `isNull()`，那是成本核算上线前的语义。
+        // 注意这是「按源仓均价」而不是「按目标仓均价」—— 精确平移源成本需要明细行快照，
+        // 属已知近似，见 decisions.md 的未决事项。
+        assertThat(decimal(out, "unit_cost"))
+                .isEqualByComparingTo(balanceRow(wh1, sku).getAvgCost());
 
         transferService.receive(id);
 

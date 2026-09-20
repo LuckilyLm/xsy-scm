@@ -104,8 +104,10 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
         assertThat(decimal(row, "after_quantity")).isEqualByComparingTo("12.0000");
         // 单位以余额记账单位为准（Q13），由服务端取，不由调用方传
         assertThat(String.valueOf(row.get("unit_snapshot"))).isEqualTo(balanceRow(wh, sku).getUnit());
-        // 盘盈没有成本依据，unit_cost 留空（ck_inventory_movement_cost 允许 NULL）
-        assertThat(row.get("unit_cost")).isNull();
+        // V34 起：盘盈按**现有均价**入账（它不带来新的采购价格信息，均价因此不变），
+        // 流水必须写下这个成本。此前这里断言 `isNull()`，那是成本核算上线前的语义。
+        assertThat(decimal(row, "unit_cost"))
+                .isEqualByComparingTo(balanceRow(wh, sku).getAvgCost());
     }
 
     @Test

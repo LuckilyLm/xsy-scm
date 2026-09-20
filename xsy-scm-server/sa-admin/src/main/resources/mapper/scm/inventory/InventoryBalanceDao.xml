@@ -90,6 +90,29 @@
     </update>
 
     <!--
+      V34 移动加权：采购入库**一条语句**同时做两件事 —— 数量增量 + 均价赋值。
+
+      为什么不拆成 incrementQuantity + updateAvgCost 两条：
+      ① 这是**一次**逻辑上的行变更，`version` 应当只自增一次；拆开会让「一张收货单
+         让余额 version 跳 2」，而 version 是纵深防御用的「这行动过没有」计数器，
+         跳 2 会让「动了几次」这个信息失真；
+      ② 两条语句之间没有任何需要被观察到的中间态，拆开只是多一次往返。
+
+      均价由调用方在**持锁状态下**算好后传入（不做「读-改-写」，与 quantity 同一纪律）。
+      **只有采购入库调用它** —— 其余入库按现有均价入账（均价不变），出库更不改均价。
+    -->
+    <update id="incrementQuantityAndSetAvgCost">
+        UPDATE inventory_balance
+        SET quantity   = quantity + #{quantity},
+            avg_cost   = #{avgCost},
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+
+    <!--
       展示字段实时联表（§2.1「余额是活状态，不是单据」）：
       LEFT JOIN 且不带 deleted / status 谓词 —— 这是按不可变 id 做的展示解析，
       把「已下架 / 已软删 SKU」的历史余额整行藏起来比显示它更危险。
@@ -102,6 +125,14 @@
                b.unit,
                b.quantity,
                b.reserved_quantity,
+               b.avg_cost,
+               <!--
+                 金额 = 数量 × 均价。**必须显式 ROUND 到 2 位**：
+                 NUMERIC(18,4) × NUMERIC(18,4) 在 PG 里得到 scale 8，而 BigDecimal 走
+                 ToStringSerializer 原样输出 → 前端会看到 112.00000000。
+                 金额是给对账看的，2 位是财务口径；均价保留 4 位不动（它是计算基数）。
+               -->
+               ROUND(b.quantity * b.avg_cost, 2) AS amount,
                b.version,
                b.updated_at,
                w.warehouse_code,
@@ -137,6 +168,9 @@
                b.unit,
                b.quantity,
                b.reserved_quantity,
+               b.avg_cost,
+               <!-- 同 queryPage：金额 ROUND 到 2 位，均价保持 4 位。 -->
+               ROUND(b.quantity * b.avg_cost, 2) AS amount,
                b.version,
                b.updated_at,
                w.warehouse_code,

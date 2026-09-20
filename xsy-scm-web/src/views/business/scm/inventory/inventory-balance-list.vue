@@ -53,7 +53,7 @@
       :loading="loading"
       :pagination="false"
       :locale="{ emptyText: '暂无库存余额' }"
-      :scroll="{ x: 1400 }"
+      :scroll="{ x: 1680 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'specValues'">{{ specText(record.specValues) }}</template>
@@ -66,6 +66,12 @@
         </template>
         <template v-else-if="column.dataIndex === 'availableQuantity'">
           <span class="num">{{ quantityText(record.availableQuantity) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'avgCost'">
+          <span class="num">{{ moneyText(record.avgCost) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'amount'">
+          <span class="num">{{ moneyText(record.amount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'updatedAt'">{{ datetime(record.updatedAt) }}</template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -97,7 +103,7 @@ import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
 import { SCM_INVENTORY_TABLE_ID } from '/@/constants/business/scm/inventory-const';
 import type { InventoryBalance, InventoryBalanceQuery } from './inventory-types';
 import type { Warehouse } from '../purchase/purchase-types';
-import { quantityText, singleWarehouseDefault, specText } from './inventory-model';
+import { moneyText, quantityText, singleWarehouseDefault, specText } from './inventory-model';
 import { inventoryError } from './inventory-errors';
 import { datetime } from '../common/scm-display';
 
@@ -121,6 +127,9 @@ const columns = ref<TableColumnsType<InventoryBalance>>([
   { title: '库存数量', dataIndex: 'quantity', align: 'right', width: 130 },
   { title: '预留量', dataIndex: 'reservedQuantity', align: 'right', width: 110 },
   { title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110 },
+  // V34 移动加权成本。均价恒有值（NOT NULL DEFAULT 0），金额由后端 quantity × avgCost 派生。
+  { title: '移动加权均价', dataIndex: 'avgCost', align: 'right', width: 140 },
+  { title: '库存金额', dataIndex: 'amount', align: 'right', width: 140 },
   { title: '更新时间', dataIndex: 'updatedAt', width: 190 },
 ]);
 

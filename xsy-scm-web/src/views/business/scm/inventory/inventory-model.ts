@@ -58,6 +58,23 @@ export function quantityText(value: string | null | undefined): string {
 }
 
 /**
+ * 金额 / 均价的展示文本（V34）。
+ *
+ * **与 `quantityText` 一样是「null 安全 + 原样透传」，刻意不做二次换算**：
+ * 千分位、补零、四舍五入都已经在源头定好 —— 均价由后端按 4 位小数存，
+ * 金额由 SQL `ROUND(..., 2)` 收敛到 2 位。前端再格式化一次就会出现
+ * 「同一笔钱在列表和详情里位数不同」这类只能靠肉眼发现的问题。
+ *
+ * 唯一的例外是 `null` → `—`：它表示「没有这个事实」，与 `"0.00"`（真的是零）必须区分。
+ */
+export function moneyText(value: string | null | undefined): string {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+  return value;
+}
+
+/**
  * `specValues`（JSONB，形状 `{"规格":"散装"}`）→ 可读文本。
  *
  * 无值或空对象 → `—`。刻意不抛错：规格是展示字段，坏形状不该让整页崩掉。

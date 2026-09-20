@@ -22,6 +22,7 @@ import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE;
@@ -137,9 +138,48 @@ public class InventoryCommandService {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_INBOUND);
         }
 
-        if (balanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+        // V34：采购入库是**唯一**会改变均价的路径，按 (旧量·旧均价 + 入量·入价) / 新量 重算。
+        // 数量增量与均价写入合并成**一条**语句 —— 一次逻辑行变更只自增一次 version。
+        // 其余入库（调拨转入 / 转换转入 / 报溢）走普通的 incrementQuantity，均价不变；
+        // 出库更不改均价，只把当时的均价写进流水。
+        if (balanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
+                inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
+    }
+
+    /**
+     * 采购入库后的移动加权均价（V34）。**纯计算，不落库** ——
+     * 结果由 {@link InventoryBalanceDao#incrementQuantityAndSetAvgCost} 与数量增量一起写入，
+     * 让一次逻辑行变更只自增一次 {@code version}。
+     *
+     * <pre>
+     * newAvg = (旧量·旧均价 + 入量·入价) / (旧量 + 入量)     四舍五入到 4 位小数
+     * </pre>
+     *
+     * <p>入参 {@code balance} 必须是**持有行锁之后**读到的快照，否则加权基数会是过期的。
+     *
+     * <p>取整方式固定为 {@code HALF_UP}：四舍五入是财务口径的默认，而 {@code HALF_EVEN}
+     * （银行家舍入）会让「同一批数据算两遍」的结果依赖于末位奇偶，对账时难以解释。
+     *
+     * <p>{@code inboundUnitCost} 为空时按 0 计入 —— 那意味着「这批货没有成本事实」，
+     * 把它当作 0 会把均价拉低。这是**刻意的**：宁可在均价上体现「有一批货成本未知」，
+     * 也不要凭空编一个价格。调用方（采购收货）的 unit_cost 一定非空，
+     * 只有未来的无成本入库才会走到这里。
+     */
+    private static BigDecimal inboundAvgCost(InventoryBalanceEntity balance, BigDecimal inboundQuantity,
+                                             BigDecimal inboundUnitCost) {
+        BigDecimal oldQuantity = balance.getQuantity();
+        BigDecimal oldAvg = balance.getAvgCost() == null ? BigDecimal.ZERO : balance.getAvgCost();
+        BigDecimal inCost = inboundUnitCost == null ? BigDecimal.ZERO : inboundUnitCost;
+        BigDecimal newQuantity = oldQuantity.add(inboundQuantity);
+        if (newQuantity.signum() == 0) {
+            // 入量恒为正（DB CHECK），所以这里不可达；留作防御，避免除零。
+            return oldAvg;
+        }
+        return oldQuantity.multiply(oldAvg)
+                .add(inboundQuantity.multiply(inCost))
+                .divide(newQuantity, 4, RoundingMode.HALF_UP);
     }
 
     /**
@@ -199,7 +239,9 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.outboundItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(unit);
-        movement.setUnitCost(fact.unitCost());
+        // V34：出库**按当时的移动加权均价**记成本（此前留空）。
+        // 出库不改变均价，所以余额不动，只把成本写进流水 —— 这是成本核算的核心语义变更。
+        movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(onHand);
         movement.setAfterQuantity(after);
         // 与入库同纪律：用出库确认时刻与确认人，不能改用当前时间或当前登录人。
@@ -294,7 +336,7 @@ public class InventoryCommandService {
         movement.setQuantity(quantity);
         movement.setUnitSnapshot(unit);
         // 盘盈/盘亏没有成本依据，unit_cost 留空（V19 的 ck_inventory_movement_cost 允许 NULL）。
-        movement.setUnitCost(null);
+        movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(live);
         movement.setAfterQuantity(after);
         // 与入库/出库同纪律：用盘点确认时刻与确认人，不能改用当前时间或当前登录人。
@@ -392,7 +434,7 @@ public class InventoryCommandService {
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(unit);
         // 报损报溢没有成本依据，unit_cost 留空（V19 的 ck_inventory_movement_cost 允许 NULL）。
-        movement.setUnitCost(null);
+        movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(live);
         movement.setAfterQuantity(after);
         movement.setOccurredAt(fact.occurredAt());
@@ -464,7 +506,7 @@ public class InventoryCommandService {
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(unit);
         // 调拨本身不产生成本事实，unit_cost 留空。
-        movement.setUnitCost(null);
+        movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(onHand);
         movement.setAfterQuantity(after);
         // 用**发出**时刻与发出人（不是当前时间 / 当前登录人）。
@@ -535,7 +577,7 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.transferItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(fact.unitSnapshot());
-        movement.setUnitCost(null);
+        movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(before);
         movement.setAfterQuantity(after);
         // 用**收货**时刻与收货人 —— 与转出的 occurred_at 是同一个调拨的两个不同时点，
@@ -602,7 +644,7 @@ public class InventoryCommandService {
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(fact.unit());
         // 转换本身不产生成本事实，unit_cost 留空（成本核算属后续波次）。
-        movement.setUnitCost(null);
+        movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(onHand);
         movement.setAfterQuantity(after);
         movement.setOccurredAt(fact.occurredAt());
@@ -660,7 +702,7 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.conversionItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(fact.unit());
-        movement.setUnitCost(null);
+        movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(before);
         movement.setAfterQuantity(after);
         movement.setOccurredAt(fact.occurredAt());

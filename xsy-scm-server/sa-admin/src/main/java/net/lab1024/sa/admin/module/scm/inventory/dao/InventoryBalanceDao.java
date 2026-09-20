@@ -91,6 +91,27 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
                           @Param("quantity") BigDecimal quantity,
                           @Param("operator") String operator);
 
+    /**
+     * 持锁后的**数量增量 + 成本重算**，一条语句完成（V34 移动加权）。
+     *
+     * <p>与 {@link #incrementQuantity} 同一纪律：只在**持有行锁之后**调用，且是 DB 侧赋值
+     * 而不是「读-改-写」—— 调用方在持锁状态下算出新均价，这里一次写入。
+     *
+     * <p><b>为什么合并成一条</b>：这是**一次**逻辑上的行变更，{@code version} 应当只自增一次。
+     * 拆成「先增量、再改均价」会让一张收货单把余额 version 顶高 2，
+     * 而 version 是纵深防御用的「这行动过没有」计数器，跳 2 会让这个信息失真。
+     * 两条语句之间也不存在任何需要被观察到的中间态。
+     *
+     * <p><b>只有采购入库调用它</b>：其余入库（调拨转入 / 转换转入 / 报溢）按现有均价入账、
+     * 均价不变，所以走普通的 {@link #incrementQuantity}；出库更不改均价。
+     *
+     * @return 影响行数，必须为 1
+     */
+    int incrementQuantityAndSetAvgCost(@Param("id") Long id,
+                                       @Param("quantity") BigDecimal quantity,
+                                       @Param("avgCost") BigDecimal avgCost,
+                                       @Param("operator") String operator);
+
     /** 余额分页（联仓库 / SKU / 商品取展示字段，§2.1「余额是活状态」）。 */
     List<InventoryBalanceVO> queryPage(Page<?> page, @Param("query") InventoryBalanceQueryForm query);
 

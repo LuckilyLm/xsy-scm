@@ -137,8 +137,11 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         assertThat(decimal(row, "after_quantity")).isEqualByComparingTo("7.0000");
         // 单位以余额记账单位为准（Q13），由服务端取
         assertThat(String.valueOf(row.get("unit_snapshot"))).isEqualTo(balanceRow(wh, sku).getUnit());
-        // 报损没有成本依据，unit_cost 留空
-        assertThat(row.get("unit_cost")).isNull();
+        // V34 起：**出库方向的流水必须带成本**，写的是出库那一刻的余额均价。
+        // 此前这里断言 `isNull()`（「报损没有成本依据」）—— 那是成本核算上线前的语义。
+        // 移动加权平均的性质是「出库不改变均价」，所以事后再读余额拿到的仍是同一个值。
+        assertThat(decimal(row, "unit_cost"))
+                .isEqualByComparingTo(balanceRow(wh, sku).getAvgCost());
     }
 
     @Test

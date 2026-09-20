@@ -48,6 +48,19 @@ export interface InventoryBalance {
   reservedQuantity?: string | null;
   /** 可用量 = quantity − reservedQuantity。**后端计算属性**，不落库。 */
   availableQuantity?: string | null;
+  /**
+   * 移动加权平均成本（V34，每记账单位，4 位小数）。
+   *
+   * **`NOT NULL DEFAULT 0`**：与其它定点数字段不同，它不会是 `null` ——
+   * 「没有均价」与「均价为 0」在本业务里无法区分，后端因此不允许为空。
+   * 所以这里不写 `| null`，也不做「无值显示 —」的分支。
+   *
+   * 期初口径：该 (仓库, SKU) **最近一次采购入库单价**，无采购入库则为 0。
+   * 因此历史库上线后第一眼看到的均价是近似值（见 V34 迁移头注释），不是缺陷。
+   */
+  avgCost?: string;
+  /** 库存金额 = quantity × avgCost。**后端计算属性**，不落库。 */
+  amount?: string | null;
   version?: number;
   updatedAt?: string;
 }

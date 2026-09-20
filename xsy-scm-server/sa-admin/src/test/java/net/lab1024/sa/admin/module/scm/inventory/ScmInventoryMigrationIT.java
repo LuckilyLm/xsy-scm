@@ -106,8 +106,15 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 .contains("id", "warehouse_id", "sku_id", "unit", "quantity", "reserved_quantity",
                         "version", "deleted",
                         "created_at", "updated_at", "created_by", "updated_by")
-                // Q2 / Q3 / Q4 / G-03：这些列被裁决**不纳入 W6-1**，不允许悄悄出现
-                .doesNotContain("weight", "avg_cost", "total_cost", "warn_min", "warn_max", "batch_id");
+                // V34 起 **avg_cost 存在**：Q3 原本裁决「成本事实由 movement 的 unit_cost 承载、
+                // 余额表不加列」，本波次改变了该裁决 —— 移动加权是顺序相关的，且出库成本必须
+                // 在出库那一刻确定，事后从流水反推需要重放整条历史（而重放的前提正是
+                // 出库流水都已带成本，鸡生蛋）。**这是范围扩张，不是悄悄加列。**
+                .contains("avg_cost")
+                // 仍然**不允许**悄悄出现的列（Q2 / Q4 / G-03 的裁决继续有效）：
+                // weight 属分拣波次；warn_min/warn_max 刻意不在余额表上（预警配置独立建表）；
+                // batch_id 永久不启用。total_cost 未采纳 —— 金额由 quantity × avg_cost 派生。
+                .doesNotContain("weight", "total_cost", "warn_min", "warn_max", "batch_id");
         assertThat(columnsOf("inventory_movement"))
                 .contains("id", "warehouse_id", "sku_id", "movement_type", "source_document_type",
                         "source_document_id", "source_document_item_id", "quantity", "unit_snapshot",
@@ -159,6 +166,10 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 .contains("reserved_quantity").contains("quantity");
         assertThat(constraintDef("inventory_balance", "ck_inventory_balance_reserved"))
                 .contains("reserved_quantity");
+        // V34：均价不得为负（服务层加权计算已保证，这里 DB 兜底）。
+        // 注意**没有** ck 约束禁止 avg_cost = 0 —— 0 是合法值（期初无采购历史时的默认）。
+        assertThat(constraintDef("inventory_balance", "ck_inventory_balance_avg_cost"))
+                .contains("avg_cost");
 
         // --- 行为验证：约束真的会拒绝坏数据 ---
         Long movementId = insertMovement("kg", "PURCHASE_IN", "5", "0", "5");
@@ -220,12 +231,14 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
         // 余额 DAO 也**没有**任何「设置绝对数量」的方法：余额只能是流水的净和。
         // 出库波次新增 4 个**增量**方法（出库扣减 + 预留增减），仍然没有赋值型方法。
+        // V34 新增 1 个：`incrementQuantityAndSetAvgCost` —— 数量仍是**增量**，
+        // 只有 avg_cost 是赋值（它是活状态而非流水的净和，见 V34 头注释）。
         List<String> balanceDaoMethods = Arrays.stream(InventoryBalanceDao.class.getDeclaredMethods())
                 .map(Method::getName).sorted().toList();
         assertThat(balanceDaoMethods).containsExactly(
                 "decrementQuantity", "decrementReserved", "detail", "incrementQuantity",
-                "incrementReserved", "insertOnConflictDoNothing", "lockByWarehouseAndSku",
-                "queryPage", "selectByWarehouseAndSku");
+                "incrementQuantityAndSetAvgCost", "incrementReserved", "insertOnConflictDoNothing",
+                "lockByWarehouseAndSku", "queryPage", "selectByWarehouseAndSku");
         assertThat(balanceDaoMethods)
                 .noneMatch(name -> name.toLowerCase().contains("setquantity"))
                 .noneMatch(name -> name.toLowerCase().contains("updatequantity"));

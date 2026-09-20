@@ -21,6 +21,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
+  moneyText,
   singleWarehouseDefault,
   quantityText,
   specText,
@@ -116,6 +117,37 @@ test('specValues render as readable text and degrade to a dash', () => {
   assert.equal(specText({}), '—');
   assert.equal(specText({规格: '散装'}), '规格：散装');
   assert.equal(specText({规格: '散装', 产地: '寿光'}), '规格：散装，产地：寿光');
+});
+
+// ------------------------------------------------------------------
+// V34 移动加权成本
+// ------------------------------------------------------------------
+
+test('money text passes the server-formatted value through unchanged', () => {
+  // 「没有这个事实」与「真的是零」不得合并 —— 与 quantityText 同一口径
+  assert.equal(moneyText(null), '—');
+  assert.equal(moneyText(undefined), '—');
+  assert.equal(moneyText(''), '—');
+
+  // 均价 4 位、金额 2 位，都由源头定好；前端再加千分位/补零就会与后端口径分叉
+  assert.equal(moneyText('7.0000'), '7.0000');
+  assert.equal(moneyText('112.00'), '112.00');
+  assert.equal(moneyText('0.0000'), '0.0000');
+  assert.equal(moneyText('12345678.9000'), '12345678.9000');
+});
+
+test('V34: the balance page shows the moving-average cost and the derived amount', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-balance-list.vue');
+  assert.match(page, /dataIndex: 'avgCost'/, '余额页必须有均价列');
+  assert.match(page, /dataIndex: 'amount'/, '余额页必须有金额列');
+  // 两列都要走 moneyText，不能落到「原样 {{ record[column.dataIndex] }}」的兜底分支
+  assert.match(page, /column\.dataIndex === 'avgCost'[\s\S]{0,120}moneyText\(record\.avgCost\)/);
+  assert.match(page, /column\.dataIndex === 'amount'[\s\S]{0,120}moneyText\(record\.amount\)/);
+
+  const types = code('../src/views/business/scm/inventory/inventory-types.ts');
+  // 均价是 NOT NULL DEFAULT 0，所以类型里**不带** `| null`；金额允许为空
+  assert.match(types, /avgCost\?:\s*string;/);
+  assert.match(types, /amount\?:\s*string \| null;/);
 });
 
 test('movement type text falls back to the raw value so an unmapped type stays visible', () => {

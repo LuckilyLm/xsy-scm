@@ -157,11 +157,14 @@ V33  V33__scm_inventory_conversion.sql          conversion 规格转换（整件
                                                    CONVERT_OUT/CONVERT_IN 流水类型、
                                                    十方向分组快照约束、转换单两张表、
                                                    菜单 870-876
+V34  V34__scm_inventory_avg_cost.sql            costing 移动加权成本：inventory_balance.avg_cost
+                                                   （Q3 裁决变更，见迁移头注释）、期初按
+                                                   「最近一次采购入库单价，无则 0」回填
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
-V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）、V31（调拨）、V32（阈值预警）与
-V33（规格转换）为 **BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
+V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）、V31（调拨）、V32（阈值预警）、
+V33（规格转换）与 V34（移动加权成本）为 **BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，
