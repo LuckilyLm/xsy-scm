@@ -261,6 +261,7 @@
     <a-typography-text v-if="detail.status === 'SHIPPED'" type="secondary" style="display: block; margin-top: 8px">
       在途：源仓已扣减、目标仓尚未增加。这批货当前不在任何仓库的余额里，需由目标仓收货后才落地。
     </a-typography-text>
+  </a-drawer>
   <!-- 在途库存报表（只读聚合，不进 inventory_balance） -->
   <a-modal
     :open="inTransitOpen"
