@@ -114,7 +114,7 @@ def argon2_encode(salt_password: str) -> str:
     except ImportError:
         raise SystemExit(
             "[e2e-accounts] 缺少 python 包 argon2-cffi。请执行：\n"
-            "  C:/Users/chenk/.workbuddy-ai/binaries/python/envs/default/Scripts/pip.exe install argon2-cffi"
+            "  python -m pip install argon2-cffi"
         )
 
     hasher = PasswordHasher(
