@@ -31,10 +31,9 @@ async function login(account: string) {
   return result.data.token as string;
 }
 
-async function ensureSku() {
-  const found = await (await api.post('/scm/product/sku/option-list', { data: { status: 'ON_SHELF', limit: 1 } })).json();
-  expect(found.code).toBe(0);
-  if (found.data.options.length) return found.data.options[0];
+/** 用例会把选中的 SKU 下架后再解析价格，所以商品必须由本用例自建：
+ *  复用 option-list 的首行会挑到挂在二级分类上的演示商品，而商品分类必须是三级，编辑校验会直接拒掉。 */
+async function createSku() {
   const categories = await (await api.post('/scm/product/category/tree', { data: {} })).json();
   const flatten = (items: Array<{ level: number; children?: Array<{ level: number }> }>): Array<{ level: number; categoryId?: string | number }> => items.flatMap((item) => [item as { level: number; categoryId?: string | number }, ...(item.children ? flatten(item.children) : [])]);
   const category = flatten(categories.data ?? []).find((item) => item.level === 3) ?? flatten(categories.data ?? [])[0];
@@ -83,14 +82,15 @@ test('pricing resolver keeps price and sale eligibility independent', async ({ p
   expect(customer.code).toBe(0); customerId = customer.data;
   const detail = await (await api.get(`/scm/customer/detail/${customerId}`)).json();
   await api.post('/scm/customer/updateStatus', { data: { customerId, version: detail.data.version, status: 'COOPERATING' } });
-  const sku = await ensureSku();
+  const sku = await createSku();
   const price = await (await api.post('/scm/pricing/agreement-price/add', { data: { customerId, skuId: sku.skuId, unitPrice: '0.0000', effectiveFrom: '2026-09-01T00:00:00Z', effectiveTo: null } })).json();
   expect(price.code).toBe(0); agreementId = price.data;
   let resolved = await (await api.post('/scm/pricing/resolve', { data: { customerId, skuIds: [sku.skuId], at: '2026-09-15T00:00:00Z' } })).json();
   expect(resolved.data.items[0]).toMatchObject({ priceStatus: 'PRICED', unitPrice: '0.0000', sellable: true, unavailableReason: null, unpricedReason: null });
   const product = await (await api.get(`/scm/product/detail/${sku.spuId}`)).json();
   product.data.skuList[0].status = 'OFF_SHELF';
-  await api.post('/scm/product/update', { data: product.data });
+  // 不检查返回码的话，保存被拒也会让下一条断言以「仍然可售」的形式溜过去
+  expect((await (await api.post('/scm/product/update', { data: product.data })).json()).code).toBe(0);
   resolved = await (await api.post('/scm/pricing/resolve', { data: { customerId, skuIds: [sku.skuId], at: '2026-09-15T00:00:00Z' } })).json();
   expect(resolved.data.items[0]).toMatchObject({ priceStatus: 'PRICED', unitPrice: '0.0000', sellable: false, unavailableReason: 'SKU_OFF_SHELF', unpricedReason: null });
   await page.addInitScript((value) => localStorage.setItem('smart_admin_user_token', value), token);

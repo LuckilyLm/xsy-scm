@@ -172,8 +172,10 @@ test('3 a SKU without stock renders the empty state instead of an error',async({
 // 4. 权限
 // ------------------------------------------------------------------
 
-test('4 a role without scm:inventory:balance:query sees no page and is rejected by the API',async({page})=>{
-  const readToken=await login(name+'_read');
+// 用 `_none` 而不是 `_read`：只读角色含全部页面菜单和 `:query` 按钮（含 scm:inventory:balance:query），
+// 拿它断言「查不到」会得到 code 0 的假失败。
+test('4 an account with no role sees no page and is rejected by the API',async({page})=>{
+  const readToken=await login(name+'_none');
   const client=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${readToken}`}});
   // 载荷合法（pageNum/pageSize 必填且合规），因此 @Valid 通过、拦截器先抛权限错误 30005
   const denied=await(await client.post('/scm/inventory/balance/query',{data:{pageNum:1,pageSize:20}})).json();
