@@ -56,7 +56,16 @@ function setWatermark(id, str) {
     div.style.width = '100%';
     div.style.height = '100%';
     div.style.background = 'url(' + can.toDataURL('image/png') + ') left top repeat';
-    document.getElementById(id).appendChild(div);
+
+    // 容器不存在时必须静默返回：数据大屏（/#/screen）等页面是 SmartLayout 之外的独立路由，
+    // 没有水印容器，而 set() 注册的 window.onresize 是全局的、离开 Layout 也不会注销，
+    // 于是只要在大屏上缩放窗口就会抛
+    // "TypeError: Cannot read properties of null (reading 'appendChild')"。
+    const container = document.getElementById(id);
+    if (container === null) {
+        return;
+    }
+    container.appendChild(div);
 }
 
 const watermark = {

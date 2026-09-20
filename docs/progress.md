@@ -20,9 +20,9 @@
 | 报损报溢（V30） | 后端已验证，浏览器待验证 | 报损报溢单、`LOSS_REPORT` / `GAIN_REPORT` 流水、审批状态机（待审核 → 已完成 / 已驳回）、审批乐观锁 |
 | 调拨（V31） | 后端已验证，浏览器待验证 | 调拨单、两步式（发出 → 在途 → 收货）、`TRANSFER_OUT` / `TRANSFER_IN` 流水、两仓单位一致性、在途阻塞仓库停用 |
 | 阈值预警（V32） | 后端已验证，浏览器待验证 | 阈值配置（独立于余额表）、预警列表（按可用量读时算状态）、按异常默认过滤 |
-| 规格转换（V33） | 后端已验证，浏览器待验证 | 转换单（整件拆零 / 组合拆分，跨 SKU 同仓库）、`CONVERT_OUT` / `CONVERT_IN` 流水、两行余额同一事务的全局锁序、审批乐观锁 |
-| 移动加权成本（V34） | 后端已验证，浏览器待验证 | `inventory_balance.avg_cost`（Q3 裁决变更）、入库加权 / 出库不变均价但流水带成本、期初回填、余额页均价与金额列 |
-| B7 数据大屏（V28） | 后端与前端代码完成，浏览器待验证 | 经营/库存/采购只读聚合、Screen Theme 1920×1080、Header 入口新窗口打开 |
+| 规格转换（V33） | 后端已验证，列表页浏览器已验证 | 转换单（整件拆零 / 组合拆分，跨 SKU 同仓库）、`CONVERT_OUT` / `CONVERT_IN` 流水、两行余额同一事务的全局锁序、审批乐观锁 |
+| 移动加权成本（V34） | 后端已验证，列表页浏览器已验证 | `inventory_balance.avg_cost`（Q3 裁决变更）、入库加权 / 出库不变均价但流水带成本、期初回填、余额页均价与金额列 |
+| B7 数据大屏（V28） | 后端已验证 + 浏览器已验证（V1 视觉版） | 经营/库存/采购/趋势四只读聚合、Screen Theme 1920×1080 等比缩放、10 面板 + 3 图趋势带、组件化拆分、Header 入口新窗口打开 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
@@ -33,14 +33,33 @@
   下一阶段顺序见
   [`requirements/2026-09-19-需求覆盖与待办清单.md`](./requirements/2026-09-19-需求覆盖与待办清单.md)：
   财务与报表 → 分拣 → 物流配送 → 营销 → 后台补缺 → 订单助手 → 溯源 → 小程序。
-- 出库 / 预留 / 盘点 / 报损报溢 / 调拨 / 阈值预警的**浏览器验收尚未执行**（Docker 未运行时
-  PostgreSQL 与 Redis 同时不可用，需登录的 E2E 无法进行）。
+- 出库 / 预留 / 盘点 / 报损报溢 / 调拨 / 阈值预警的**列表页**浏览器验收已于 2026-09-20 执行
+  （与余额 / 流水 / 规格转换 / 数据大屏共 11 页全绿、0 pageerror）。
+  **写流程 E2E 仍未覆盖**：出库确认、盘点确认、报损报溢审批、调拨发出/收货、规格转换审批。
+- **调拨转入的成本为 0（2026-09-20 发现，未修）**：`postTransferIn` 用 `balance.getAvgCost()`
+  作为转入成本，而转入新仓时余额行刚由 `insertOnConflictDoNothing` 建出、`avg_cost` 默认 0，
+  于是**成本在调拨时被清零**。实测：转出腿 `unit_cost` = 6.20 / 132.00 / 2.60，转入腿全部 0.0000，
+  冷库备用仓 3 个 SKU 的均价与金额均为 0。
+  收敛方向：转入成本应取**转出腿的 `unit_cost`**，并像采购入库一样加权
+  `(旧量·旧均价 + 入量·转入成本)/新量`。这属于改变库存成本语义，需新迁移 + 契约测试同步，
+  故本波次只记录不改，见 `decisions.md`。
 - 预留的**并发**场景目前只有单线程 IT 覆盖（并发压测待补）。
 - 报损报溢**没有消息通知**：驳回后录单人只能靠自己回来看状态。
   **阈值预警同样没有推送**：本波次的「提醒」只是一个可查的列表，推送采购 / 销售待定。
 - **在途库存是否需要在余额上可见**（调拨波次的未决事项）：当前在途货不属于任何仓库余额，
   对账时必须把在途调拨单算进去。三种收敛方式见 `decisions.md`。
 - F0 cloud/MinIO 环境未配置时，后端 5 项 cloud IT 与 Playwright 7 项 cloud 用例继续跳过；全量入口因此返回 INCOMPLETE，而非 FAIL。
+- **大屏「供应链网络」仍是抽象网络**（2026-09-20 V1）：`warehouse` / `customer` 只有自由文本 `address`，
+  没有经纬度也没有省市区结构化字段，做不出真实地理分布。接高德需要先给客户/仓库补结构化地址字段
+  （新迁移 + 主数据维护入口 + 种子回填），届时整体替换 `supply-chain-map.vue`，上层布局不受影响。
+- **大屏各面板的数量类指标是「跨单位求和」**：库存总量 / 库存趋势 / 今日出入库把 kg、箱、把、颗、托、件
+  直接相加，量纲不统一。这是既有口径（V28 起就是这样，设计稿也接受），但**不能当作重量或件数解读**，
+  只适合看趋势与相对大小。若要精确，需要按单位分组或统一折算成标准单位。
+- **大屏环比（较昨日）在演示数据下多为「—」**：种子数据的 09-19 没有任何单据，基数为 0，
+  而 `formatDelta` 对 0 基数返回 null（显示「—」）是刻意设计 —— 说「增长 0%」是错的。
+  想让环比有意义，需要让前一天也有业务数据。
+- **大屏未覆盖的验收**：仅验证了列表页与只读聚合的渲染，`/scm/screen/data/*` 四个接口的**写流程无关**，
+  但 V33 转换单创建/审批、V34 入库加权链路的 E2E 仍未覆盖（见上）。
 
 ## 追加记录
 
@@ -67,6 +86,101 @@
 - 全量后端回归 `mvn -pl sa-admin -am test`：**713 项 / 5 错误**，错误全部落在 `module/scm/inventory/**`（`ScmInventoryBackfillIT` ×3、`ScmInventoryLossGainRollbackIT`、`ScmInventoryStocktakeRollbackIT`），与本次改动零交集。原因是 **V19 Step 4 的对账断言是「全库」校验**（`inventory_balance` 全表 vs 流水全表，不限定本测试数据），而共享 `xsy_v2` 库里残留了其它库存 IT 写入的 `TRANSFER_OUT` 流水；隔离单跑这 3 个 IT 同样失败，属既有的测试数据隔离缺陷，非本次引入。
 - 顺带修复：`tools/generate_import_template.py` 的 `verify()` 原先比对裸 XML，遇到 openpyxl + lxml 写出的字符引用（`&#27169;`）会误报乱码；改为反转义后比对，并追加对仓库内交付模板的校验。生成器契约与 `SalesOrderImportService.HEADERS` 逐列一致，模板可重建。
 - 未完成项：小程序（W6-2）与电子秤实重回写联调继续延后；F0 云/MinIO 场景未配置，cloud IT 与 cloud Playwright 用例仍跳过；库存那 5 个既有 IT 失败需由库存波次负责人决定是清理测试库还是把对账断言限定到测试数据范围。
+### 2026-09-20 数据大屏 V1（视觉与信息架构重构）
+
+按设计稿把大屏从「一个页面堆 KPI」重做成**供应链运营中心**：三列布局 420/1000/420 + 底部趋势带，
+10 个面板、3 张图表，`index.vue` 只负责布局。
+
+**后端新增（只读聚合，不改任何业务表）**
+
+- **今日时区修正**：`ScreenDataService.todayRange()` 原用 `ZoneOffset.UTC` 的日界，
+  实际窗口是「北京时间 08:00 → 次日 08:00」—— 早上 07:00 下的单会被算进前一天。
+  改为 `Asia/Shanghai` 日界，与 `demand_date` 既有约定一致。
+- **`GET /scm/screen/data/trend?range=7d|30d`**（`ScreenTrendVO`）：一次返回 8 条等长序列
+  （`sales` / `orders` / `purchaseAmounts` / `purchaseOrders` / `inventoryQuantity` /
+  `inboundQuantity` / `outboundQuantity` + 日期轴），避免大屏为 3 张图打十几个接口。
+  未知 range 一律兜底 7d。日期轴与序列长度、末点=北京时间今天均有断言。
+- **库存健康度 `health`**：复用 `ScmInventoryWarningStatusEnum.evaluate`，**不新编算法**。
+  四档**互斥且之和等于 `totalSkuCount`**：缺货（可用量 ≤ 0，优先判定，不要求配阈值）→
+  未配置阈值 → 预警 / 积压 / 正常。`totalSkuCount` 取「参与评估的行数」而不是 product_sku 总数，
+  否则四档之和会对不上面板上显示的总数。
+- **供应链网络 `warehouseNodes`**：启用仓库的名称 / 库存量 / 今日出库量。
+- **`todayCustomerCount` / `todaySupplierCount`**：今日有已确认订单的客户数、今日有采购单的供应商数。
+- **商品排行按 SPU 归并**（原按 `sku_id`）：同一商品的多规格 SKU 会让榜单里出现两条同名行
+  （实测「智利车厘子」出现两次 ¥3,450 / ¥1,260），现在合并为一条 ¥4,710。
+- **出入库方向集合改由枚举派生**（`ScreenDataService.INBOUND_MOVEMENT_TYPES` /
+  `OUTBOUND_MOVEMENT_TYPES`）：原先趋势 SQL 把 10 个 `movement_type` 硬编码成两份清单，
+  将来新增第 11 个类型时会**静默少算**（数字看着正常、只是偏小）—— 这是本项目最忌讳的失败方式。
+  现在两份清单由 `ScmInventoryMovementTypeEnum` 的方向位派生后作为参数传入，
+  而方向位本身已被 `ScmInventoryConstantTest#movementDirectionMatchesSnapshotConstraint`
+  钉住（10 个类型恰好 5 入 / 5 出，与 `ck_inventory_movement_snap` 的方向分支同源），
+  等于把三处口径一并接进那道契约守卫。
+- **随之统一「出库」的口径**：今日出入库次数（`countMovementsByTypeAndRange`）原先只数
+  `PURCHASE_IN` / `SALES_OUT` 两个类型，供应链网络节点的「今日出库」原先只算 `SALES_OUT`，
+  而趋势的出入库量算的是方向全集 —— 同一屏上「出库」有三个定义。现在三处统一为方向全集，
+  与前端「今日出库 / 今日入库」的文案一致（调拨转入、盘盈、报溢也是入库作业）。
+  **这会改变已展示的数字**：有调拨/盘点/报损报溢发生时，出入库次数会比原来大。
+
+**前端重构**（`views/business/scm/screen/`）
+
+- `index.vue` 只做布局；组件 14 个（`screen-header` / `screen-panel` / `metric-card` /
+  `rank-bar-list` / `business-overview` / `customer-ranking` / `product-ranking` / `core-metrics` /
+  `supply-chain-map` / `purchase-overview` / `inventory-health` / `warehouse-ranking` / `trend-section`）；
+  composables 4 个（`use-screen-scale` / `use-screen-data` / `use-echarts` / `use-screen-clock`）；
+  `styles/` 3 个（`variables` / `screen` / `panel`）；另加 `types.ts` / `format.ts`。
+- **视觉层级**：今日销售额是整屏最大数字（hero 62px），订单数次级，客户/出库/采购再次，
+  不再让每个 KPI 一样大。排行用**自定义条形**而不是 ECharts bar（ECharts 类目轴做不出
+  「序号+名称+金额一行、条形另起一行」的排布，10 条柱状图在 420px 面板里标签必然截断）。
+- **仓库分布不用饼图**：改成横向条形 + 百分比 + 绝对量（饼图标签在 420px 下会被截断成「默…」）。
+- **三态**：Loading（仅首屏）/ Error（仅首屏全挂）/ 静默刷新失败保留旧数据 + 头部状态栏变黄。
+  30 秒自动刷新，页面不可见时跳过、重新可见时立刻补一次。
+- **等比缩放**：设计稿尺寸固定 1920×1080，只做整体 `transform: scale`；实测 1440×810 → scale 0.75，
+  文档高度 1080 无溢出。ECharts 实例 `dispose` 于 `onBeforeUnmount`（大屏是独立路由，反复进出会泄漏）。
+
+**顺带修掉的布局缺陷**：`.scm-panel` 原本是 `flex: 0 1 auto`，在列方向**不会撑满父容器** ——
+侧栏三个面板只占上半屏、中列地图内容仅 286px（可用 494px），而每块面板内部看起来都「正常」。
+改为 `flex: 1 1 0%` 后实测：侧栏 3×229、中列 210+494、趋势带 224，合计 1080 精确填满。
+
+**演示数据**：`inventory_warning_threshold` 原本 0 行，健康度会退化成一根「未配置」灰条。
+新增幂等脚本 `.workbuddy-ai/seed/live/seed-thresholds.py`（走 HTTP API，非直插）造出
+13 条阈值，覆盖正常/预警/积压/缺货四种状态。副作用是**库存预警列表开始有数据**（7 条异常）。
+
+**验证**：21 个新增前端模块全部通过 Vite 编译；ESLint 0 问题；`vue-tsc` 大屏目录 0 类型错误
+（全仓 1948 个报错全在 SmartAdmin 底座，属既有状态）；前端契约测试 83 项全过；
+Playwright 实测 10 面板 / 3 canvas / 0 pageerror；11 个库存与业务页面巡检全绿。
+
+**未覆盖**：地图仍是抽象网络（`warehouse` / `customer` 只有自由文本 `address`，无经纬度与省市区字段）；
+「较昨日」环比在种子数据下多为「—」（09-19 无任何单据，基数为 0）；
+V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
+
+### 2026-09-20 演示数据造数（数据大屏「今日」指标）与调拨成本发现
+
+- 现象：数据大屏 12 个 KPI 的「今日」类指标全为 0、两张排行图空白。原因是种子数据
+  （`.workbuddy-ai/seed/`）的时间固定在 2026-09-01~09-18，而当天是 09-20，没有当日单据。
+- 处理：**全程走 HTTP API 驱动真实业务链路造数，不直插业务表**。直插 `inventory_movement`
+  会造成「流水有、余额没变」的账实不一致（Q7 append-only + V19 重放会打架），
+  且会绕过 Q13 单位不变量与 V34 移动加权成本。产出脚本
+  `.workbuddy-ai/seed/live/seed-today.py`（**幂等，可重跑**）：
+  销售订单创建→提交→非标品补实数量→确认；采购单创建→提交；收货单创建→确认（DIRECT 直接入库）；
+  出库单创建→确认；调拨创建→发出→收货。
+- 结果：今日 7 张订单（全部 CONFIRMED）、2 张采购单、2 张收货单（CONFIRMED）、2 张调拨单（RECEIVED）、
+  16 条库存流水；12 个 KPI 全部非零，3 张图表有数据，11 个页面浏览器巡检全绿、0 pageerror。
+  **`inventory_balance` 与 `inventory_movement` 重放逐行一致（差异 0 行）**，余额未被污染。
+- 为让「仓库库存分布」饼图不止一个扇区，启用了原本 DISABLED 的「冷库备用仓」（id=2）
+  并发起一张 默认仓库 → 冷库备用仓 的调拨（苹果 300kg / 车厘子10斤装 100箱 / 上海青 400把）。
+  这是一次**主数据状态变更**，如需还原：`POST /scm/warehouse/disable {id:2,version:...}`。
+- 顺带修复大屏饼图：ECharts 默认外置标签在约 420px 宽的面板里被截断成「默…」「冷…」。
+  改为仓库名走底部图例、扇区内只标占比（<5% 不标）+ 显式浅色调色板 + 深色文字描边，
+  并补上空数据时的「暂无库存数据」提示（与两张排行图的「今日暂无数据」一致）。
+- **新增踩坑（造数时会撞到）**：
+  · `/scm/order/{create,submit,confirm,item/actual-quantity}`、`/scm/purchase/{create,submit}`、
+    `/scm/purchase/receipt/{create,confirm}` **全部强制要求 `Idempotency-Key` 头**；
+    控制器签名里的 `required=false` 是假象，服务层才校验（缺了报 40069 / 40084）。
+  · 调拨查询表单对 `getPageSize()` 有 `@Max(100)`，传 200 会被统一校验拦成 30001，
+    **且失败时 `list` 为 `None`** —— 不看 `code` 就会静默当成「没有数据」。
+  · 销售订单/详情的主键字段是 `orderId`，采购单是 `id`。
+  · 数量/价格必须匹配 `[0-9]{1,14}\.[0-9]{4}`（小数点必须有且恰好 4 位）；但**调拨**的
+    `quantity` 是普通 `BigDecimal`（`@Digits(14,4)`），与订单相反。
 
 ### 2026-09-20 移动加权成本（V34）
 
@@ -132,6 +246,29 @@
   `ScmScreenDataIT`（空库零值兜底）。后端 Java 21 环境缺失，Maven 测试未运行；
   前端 lint/typecheck/test/build 已通过。
 - 未覆盖：大屏真实浏览器验收；后端集成测试需 Java 21 环境执行。
+- **2026-09-20 故障修复：数据大屏打不开。** 两个独立原因叠加：
+  1. **前端容器是 `docker cp` 快照，不是挂载**（`tools/dev_up.sh` 为绕开 Docker Desktop
+     Windows 9p 挂载卡死而刻意如此）。容器里的源码停在建容器那一刻，
+     `src/views/business/scm/screen/` 等 **15 个文件**（大屏、调拨、盘点、报损报溢、
+     规格转换、阈值预警的前端）**根本不存在**；Vite 找不到 `.vue` 时会把请求回退成
+     `index.html`（HTTP 200 + `text/html`），页面白屏。修复：`bash tools/dev_up.sh sync`
+     新增同步子命令（tar 过滤 `node_modules` / `dist*`，约 10 秒，并自带「Vite 是否
+     真的在编译 .vue」的探针校验）。
+  2. **Header 入口 URL 缺 hash 前缀**：应用是 `createWebHashHistory`，
+     原 `window.open('/screen')` 命中服务端路径后被 SPA 回退，hash 为空最终落到首页。
+     改为 `window.location.origin + import.meta.env.BASE_URL + '#/screen'`。
+- 顺带修掉两个同源缺陷：
+  - 大屏 1920×1080 设计稿从未应用缩放（`transform-origin` 声明了却没有 `transform`），
+    小于 1920×1080 的视口右侧/底部内容被 `overflow:hidden` 裁掉 → 补 `fitScreen()` 等比缩放 +
+    容器 flex 居中；实测 1280×720 下 scale=0.6667、边界正好落在视口内。
+  - `src/lib/smart-watermark.ts`：水印容器只存在于 SmartLayout 内，
+    而 `set()` 注册的 `window.onresize` 是全局的、离开 Layout 不注销，
+    在大屏（独立路由）上缩放窗口必抛 `TypeError: ... reading 'appendChild'` → 加空值守卫。
+- 新增 `tools/verify_screen.mjs` 浏览器验收脚本（登录 → 点 Header 入口验证新标签 URL →
+  深链 `/#/screen` → 校验 3 个接口 code=0、12 个 KPI 有真实数据、3 张 canvas 图表挂载、
+  小视口不裁切、无 pageerror）。**注意 `tools/*` 被 .gitignore 排除，脚本只存在于本地。**
+- 结果：验收 20 项全绿，0 pageerror；`库存总量` 由 `4051.0000` 改为 `4,051`，
+  今日排行图为空时显示「今日暂无数据」（当日无订单时不再像页面坏了）。
 
 ### 2026-09-19 阈值预警（V32）
 

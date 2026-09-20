@@ -41,6 +41,12 @@ public class ScreenBusinessVO {
     @Schema(description = "商品 SKU 总数")
     private Long skuCount;
 
+    @Schema(description = "今日成交客户数（今日有 CONFIRMED 订单的客户去重数）")
+    private Long todayCustomerCount;
+
+    @Schema(description = "今日活跃供应商数（今日有采购单的供应商去重数）")
+    private Long todaySupplierCount;
+
     @Schema(description = "客户销售额排行（今日，前10）")
     private List<RankItem> topCustomers;
 

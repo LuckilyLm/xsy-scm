@@ -166,7 +166,17 @@ V36  V36__scm_sales_order_import_permission.sql  order Excel 模板下载/导入
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
 V25–V27（出库 / 预留）、V29（盘点）、V30（报损报溢）、V31（调拨）、V32（阈值预警）、
-V33（规格转换）与 V34（移动加权成本）为 **BACKEND VERIFIED, BROWSER PENDING**；见 `docs/progress.md`。
+V33（规格转换）与 V34（移动加权成本）的**列表页已于 2026-09-20 浏览器验收**
+（与余额 / 流水 / 规格转换 / 数据大屏共 11 页全绿、0 pageerror）；
+**写流程 E2E 仍未覆盖**（出库确认、盘点确认、报损报溢审批、调拨发出/收货、规格转换审批）。
+见 `docs/progress.md`。
+
+> **B7 数据大屏（V28）已于 2026-09-20 完成 V1 视觉重构**：三列 420/1000/420 + 底部趋势带，
+> 10 个面板、3 张图表，新增 `GET /scm/screen/data/trend?range=7d|30d` 与库存健康度
+> （四档互斥且之和等于总数，判定复用 `ScmInventoryWarningStatusEnum`，**不新编算法**）。
+> 大屏仍是**只读视图**：不写业务表、不维护任何独立副本。
+> 供应链地图为**抽象网络**（`warehouse` / `customer` 无经纬度与省市区结构化字段），
+> 接高德时整体替换该组件即可，上层布局不受影响。设计取舍见 `docs/decisions.md`。
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，

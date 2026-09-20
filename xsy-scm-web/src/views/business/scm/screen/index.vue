@@ -1,353 +1,227 @@
 <template>
-  <div class="screen-wrapper" ref="wrapperRef">
-    <div class="screen-container" ref="containerRef">
-      <!-- 顶部标题栏 -->
-      <header class="screen-header">
-        <div class="screen-title">鲜蔬源智链 · 数据大屏</div>
-        <div class="screen-time">{{ currentTime }}</div>
-        <a-button type="primary" ghost size="small" @click="loadAll" :loading="loading">
-          刷新
-        </a-button>
-      </header>
+  <div ref="wrapperRef" class="scm-screen-wrapper">
+    <div ref="containerRef" class="scm-screen">
+      <screen-header
+        :updated-at="updatedAt"
+        :stale-error="staleError"
+        :refreshing="refreshing"
+        :fullscreen="fullscreen"
+        @refresh="refresh"
+        @fullscreen="toggleFullscreen"
+      />
 
-      <!-- 主体 -->
-      <main class="screen-main">
-        <!-- 左列：经营 KPI -->
-        <section class="screen-left">
-          <div class="panel kpi-panel">
-            <div class="panel-title">经营数据</div>
-            <div class="kpi-grid">
-              <div class="kpi-item">
-                <div class="kpi-label">今日订单</div>
-                <div class="kpi-value">{{ businessData.todayOrderCount ?? 0 }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">今日销售额</div>
-                <div class="kpi-value">¥{{ formatAmount(businessData.todaySettlementAmount) }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">累计订单</div>
-                <div class="kpi-value">{{ businessData.totalOrderCount ?? 0 }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">累计销售额</div>
-                <div class="kpi-value">¥{{ formatAmount(businessData.totalSettlementAmount) }}</div>
-              </div>
+      <!-- 首屏加载：只有第一次才显示，后续静默刷新不闪屏 -->
+      <div v-if="loading" class="scm-screen-state">
+        <div class="scm-screen-state-inner">
+          <span class="scm-spinner" />
+          <span>正在加载运营数据…</span>
+        </div>
+      </div>
+
+      <!-- 首屏失败：此时页面上没有任何可用数据，显示错误态才是诚实的 -->
+      <div v-else-if="error && !business && !inventory" class="scm-screen-state">
+        <div class="scm-screen-state-inner is-error">
+          <span class="scm-state-icon">!</span>
+          <span>{{ error }}</span>
+          <button class="scm-retry" type="button" @click="refresh">重新加载</button>
+        </div>
+      </div>
+
+      <template v-else>
+        <main class="scm-body">
+          <!-- 左列：销售经营线 -->
+          <section class="scm-col-side">
+            <business-overview :business="business" />
+            <customer-ranking :business="business" />
+            <product-ranking :business="business" />
+          </section>
+
+          <!-- 中列：核心指标 + 供应链网络（主视觉） -->
+          <section class="scm-col-center">
+            <div class="scm-core-slot">
+              <core-metrics
+                :business="business"
+                :inventory="inventory"
+                :purchase="purchase"
+                :trend="trend"
+              />
             </div>
-          </div>
+            <supply-chain-map :inventory="inventory" :business="business" />
+          </section>
 
-          <div class="panel">
-            <div class="panel-title">库存概览</div>
-            <div class="kpi-grid">
-              <div class="kpi-item">
-                <div class="kpi-label">库存总量</div>
-                <div class="kpi-value">{{ inventoryData.totalQuantity ?? 0 }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">在库 SKU</div>
-                <div class="kpi-value">{{ inventoryData.skuCount ?? 0 }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">启用仓库</div>
-                <div class="kpi-value">{{ inventoryData.warehouseCount ?? 0 }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">今日出入库</div>
-                <div class="kpi-value">{{ (inventoryData.todayInboundCount ?? 0) + (inventoryData.todayOutboundCount ?? 0) }}</div>
-              </div>
-            </div>
-          </div>
-        </section>
+          <!-- 右列：采购 + 库存线（与左列镜像） -->
+          <section class="scm-col-side">
+            <purchase-overview :purchase="purchase" :business="business" />
+            <inventory-health :health="inventory?.health ?? null" />
+            <warehouse-ranking :distribution="inventory?.warehouseDistribution ?? []" />
+          </section>
+        </main>
 
-        <!-- 中列：图表 -->
-        <section class="screen-center">
-          <div class="panel chart-panel">
-            <div class="panel-title">客户销售额排行（今日）</div>
-            <div ref="customerChartRef" class="chart"></div>
-          </div>
-          <div class="panel chart-panel">
-            <div class="panel-title">商品销售额排行（今日）</div>
-            <div ref="productChartRef" class="chart"></div>
-          </div>
-        </section>
-
-        <!-- 右列：采购与分布 -->
-        <section class="screen-right">
-          <div class="panel kpi-panel">
-            <div class="panel-title">采购数据</div>
-            <div class="kpi-grid">
-              <div class="kpi-item">
-                <div class="kpi-label">今日采购单</div>
-                <div class="kpi-value">{{ purchaseData.todayPurchaseOrderCount ?? 0 }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">今日采购金额</div>
-                <div class="kpi-value">¥{{ formatAmount(purchaseData.todayPurchaseAmount) }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">累计采购单</div>
-                <div class="kpi-value">{{ purchaseData.totalPurchaseOrderCount ?? 0 }}</div>
-              </div>
-              <div class="kpi-item">
-                <div class="kpi-label">今日收货单</div>
-                <div class="kpi-value">{{ purchaseData.todayReceiptCount ?? 0 }}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel chart-panel">
-            <div class="panel-title">仓库库存分布</div>
-            <div ref="warehouseChartRef" class="chart"></div>
-          </div>
-        </section>
-      </main>
+        <!-- 底部趋势带（7 / 30 天切换，三图联动） -->
+        <trend-section :trend="trend" :range="range" @update:range="setRange" />
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
-import * as echarts from 'echarts';
-import { screenApi } from '/@/api/business/screen-api';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import ScreenHeader from './components/screen-header.vue';
+import BusinessOverview from './components/business-overview.vue';
+import CustomerRanking from './components/customer-ranking.vue';
+import ProductRanking from './components/product-ranking.vue';
+import CoreMetrics from './components/core-metrics.vue';
+import SupplyChainMap from './components/supply-chain-map.vue';
+import PurchaseOverview from './components/purchase-overview.vue';
+import InventoryHealth from './components/inventory-health.vue';
+import WarehouseRanking from './components/warehouse-ranking.vue';
+import TrendSection from './components/trend-section.vue';
+import { useScreenData } from './composables/use-screen-data';
+import { useScreenScale } from './composables/use-screen-scale';
 
-defineOptions({ name: 'ScmDataScreen' });
-
+/**
+ * 供应链运营中心（数据大屏）。
+ *
+ * <p>本文件**只负责布局**：三列（420 / 1000 / 420）+ 顶部状态栏 + 底部趋势带。
+ * 所有数据获取在 {@link useScreenData}，所有缩放适配在 {@link useScreenScale}，
+ * 每个面板的渲染细节在自己的组件里。
+ *
+ * <p><b>这是 Layout 之外的独立路由</b>（不带侧边栏/标签页），
+ * 所以：① 任何新窗口打开它的链接都必须带 hash（`#/screen`）；
+ * ② 页面内的全局监听（resize / visibilitychange）必须在卸载时注销，
+ * 否则离开大屏后仍会触发。
+ */
 const wrapperRef = ref<HTMLElement>();
 const containerRef = ref<HTMLElement>();
-const customerChartRef = ref<HTMLElement>();
-const productChartRef = ref<HTMLElement>();
-const warehouseChartRef = ref<HTMLElement>();
 
-const loading = ref(false);
-const currentTime = ref('');
-const businessData = ref<any>({});
-const inventoryData = ref<any>({});
-const purchaseData = ref<any>({});
+useScreenScale(wrapperRef, containerRef);
 
-let customerChart: echarts.ECharts | null = null;
-let productChart: echarts.ECharts | null = null;
-let warehouseChart: echarts.ECharts | null = null;
-let timer: number | undefined;
+const {
+  business,
+  inventory,
+  purchase,
+  trend,
+  loading,
+  refreshing,
+  error,
+  staleError,
+  updatedAt,
+  range,
+  refresh,
+  setRange,
+} = useScreenData();
 
-function formatAmount(val: number | string | null | undefined): string {
-  const num = Number(val ?? 0);
-  return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// ---------- 全屏 ----------
+const fullscreen = ref(false);
+
+function syncFullscreen() {
+  fullscreen.value = document.fullscreenElement === wrapperRef.value;
 }
 
-function updateTime() {
-  currentTime.value = new Date().toLocaleString('zh-CN', { hour12: false });
-}
-
-function initCharts() {
-  if (customerChartRef.value) {
-    customerChart = echarts.init(customerChartRef.value);
+async function toggleFullscreen() {
+  const wrapper = wrapperRef.value;
+  if (!wrapper) {
+    return;
   }
-  if (productChartRef.value) {
-    productChart = echarts.init(productChartRef.value);
-  }
-  if (warehouseChartRef.value) {
-    warehouseChart = echarts.init(warehouseChartRef.value);
-  }
-}
-
-function renderCharts() {
-  const topCustomers = businessData.value.topCustomers || [];
-  const topProducts = businessData.value.topProducts || [];
-  const distribution = inventoryData.value.warehouseDistribution || [];
-
-  customerChart?.setOption({
-    tooltip: { trigger: 'axis' },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: { type: 'value', axisLabel: { color: '#8FB7D9' } },
-    yAxis: {
-      type: 'category',
-      data: topCustomers.map((i: any) => i.name).reverse(),
-      axisLabel: { color: '#EAF6FF' },
-    },
-    series: [
-      {
-        name: '销售额',
-        type: 'bar',
-        data: topCustomers.map((i: any) => Number(i.amount)).reverse(),
-        itemStyle: { color: '#00A8FF' },
-      },
-    ],
-  });
-
-  productChart?.setOption({
-    tooltip: { trigger: 'axis' },
-    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-    xAxis: { type: 'value', axisLabel: { color: '#8FB7D9' } },
-    yAxis: {
-      type: 'category',
-      data: topProducts.map((i: any) => i.name).reverse(),
-      axisLabel: { color: '#EAF6FF' },
-    },
-    series: [
-      {
-        name: '销售额',
-        type: 'bar',
-        data: topProducts.map((i: any) => Number(i.amount)).reverse(),
-        itemStyle: { color: '#20E3FF' },
-      },
-    ],
-  });
-
-  warehouseChart?.setOption({
-    tooltip: { trigger: 'item' },
-    series: [
-      {
-        name: '库存量',
-        type: 'pie',
-        radius: ['40%', '70%'],
-        label: { color: '#EAF6FF' },
-        data: distribution.map((i: any) => ({
-          name: i.warehouseName,
-          value: Number(i.quantity),
-        })),
-      },
-    ],
-  });
-}
-
-async function loadAll() {
-  loading.value = true;
   try {
-    const [business, inventory, purchase] = await Promise.all([
-      screenApi.getBusinessData(),
-      screenApi.getInventoryData(),
-      screenApi.getPurchaseData(),
-    ]);
-    businessData.value = business.data || {};
-    inventoryData.value = inventory.data || {};
-    purchaseData.value = purchase.data || {};
-    renderCharts();
-  } finally {
-    loading.value = false;
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await wrapper.requestFullscreen();
+    }
+  } catch {
+    // 浏览器拒绝全屏（非用户手势、iframe 未授权）时静默降级：
+    // 大屏数据不受影响，没必要弹错误打断演示
   }
-}
-
-function resizeCharts() {
-  customerChart?.resize();
-  productChart?.resize();
-  warehouseChart?.resize();
 }
 
 onMounted(() => {
-  updateTime();
-  timer = window.setInterval(updateTime, 1000);
-  initCharts();
-  loadAll();
-  window.addEventListener('resize', resizeCharts);
+  document.addEventListener('fullscreenchange', syncFullscreen);
 });
 
-onUnmounted(() => {
-  window.clearInterval(timer);
-  window.removeEventListener('resize', resizeCharts);
-  customerChart?.dispose();
-  productChart?.dispose();
-  warehouseChart?.dispose();
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', syncFullscreen);
 });
 </script>
 
+<style lang="less">
+// 不带 scoped：本文件要作用在 screen-panel / metric-card 等子组件内部，
+// scoped 会给选择器加 data-v 属性，父组件的 scoped 样式作用不到子组件内部。
+@import './styles/screen.less';
+@import './styles/panel.less';
+</style>
+
 <style lang="less" scoped>
-.screen-wrapper {
+@import './styles/variables.less';
+
+// 外层 wrapper 占满视口并负责居中；缩放作用在内层的 1920×1080 设计稿容器上
+.scm-screen-wrapper {
+  position: relative;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #06152f;
-}
-
-.screen-container {
-  width: 1920px;
-  height: 1080px;
-  transform-origin: center center;
-  color: #eaf6ff;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.screen-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  height: 64px;
-  background: #071e42;
-  border: 1px solid #1565b8;
-  border-radius: 4px;
-  margin-bottom: 16px;
-
-  .screen-title {
-    font-size: 24px;
-    font-weight: bold;
-    color: #00a8ff;
-  }
-
-  .screen-time {
-    font-size: 16px;
-    color: #8fb7d9;
-  }
+  justify-content: center;
+  background: @screen-bg;
 }
 
-.screen-main {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 420px 1fr 420px;
-  gap: 16px;
+// 中列核心指标固定高度，剩余空间全部给供应链网络
+.scm-core-slot {
+  flex: 0 0 @core-h;
+  height: @core-h;
+  display: flex;
   min-height: 0;
 }
 
-.panel {
-  background: #071e42;
-  border: 1px solid #1565b8;
-  border-radius: 4px;
-  padding: 16px;
-  margin-bottom: 16px;
-
-  .panel-title {
-    font-size: 16px;
-    font-weight: bold;
-    color: #00a8ff;
-    margin-bottom: 12px;
-  }
+// ---------- 首屏三态（加载 / 失败）----------
+.scm-screen-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.kpi-item {
-  background: #092851;
-  padding: 12px;
-  border-radius: 4px;
-  text-align: center;
-
-  .kpi-label {
-    font-size: 14px;
-    color: #8fb7d9;
-    margin-bottom: 8px;
-  }
-
-  .kpi-value {
-    font-size: 24px;
-    font-weight: bold;
-    color: #ffd166;
-  }
-}
-
-.chart-panel {
-  height: calc(50% - 8px);
+.scm-screen-state-inner {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: @text-2;
 
-  .chart {
-    flex: 1;
-    min-height: 0;
+  &.is-error {
+    color: @state-danger;
+  }
+}
+
+.scm-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(47, 128, 237, 0.3);
+  border-top-color: @tech-cyan;
+  border-radius: 50%;
+  animation: scm-rotate 0.9s linear infinite;
+}
+
+@keyframes scm-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scm-retry {
+  padding: 4px 16px;
+  font-size: 13px;
+  color: @text-1;
+  background: rgba(47, 128, 237, 0.18);
+  border: 1px solid @panel-border-strong;
+  border-radius: 3px;
+  cursor: pointer;
+
+  &:hover {
+    color: @tech-cyan;
+    background: rgba(39, 215, 254, 0.18);
   }
 }
 </style>

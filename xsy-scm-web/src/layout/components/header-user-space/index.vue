@@ -50,8 +50,13 @@
   }
 
   // 数据大屏（新窗口打开）
+  // 注意：本应用是 hash 路由（src/router/index.ts 用 createWebHashHistory），
+  // 必须带上 "#/" 前缀。直接 window.open('/screen') 会请求服务端路径 /screen，
+  // 被 SPA 回退（vite dev 的 html 回退 / nginx 的 try_files ... /index.html）返回 index.html，
+  // 此时 hash 为空，路由落到首页，大屏永远打不开。
   function openScreen() {
-    window.open('/screen', '_blank');
+    const url = `${window.location.origin}${import.meta.env.BASE_URL}#/screen`;
+    window.open(url, '_blank');
   }
 
   //帮助文档

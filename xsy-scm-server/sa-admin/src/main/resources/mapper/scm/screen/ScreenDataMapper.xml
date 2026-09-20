@@ -58,6 +58,15 @@
         SELECT COUNT(*) FROM product_sku WHERE deleted = FALSE
     </select>
 
+    <select id="countCustomersWithOrdersInRange" resultType="long">
+        SELECT COUNT(DISTINCT customer_id)
+        FROM sales_order
+        WHERE deleted = FALSE
+          AND status = 'CONFIRMED'
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
     <select id="topCustomersBySettlement" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
         SELECT customer_name_snapshot AS name,
                COALESCE(SUM(settlement_total_amount), 0) AS amount
@@ -71,6 +80,13 @@
         LIMIT #{limit}
     </select>
 
+    <!--
+      商品排行按 **SPU** 归并，不是按 SKU。
+      一个 SPU 下可以有多个 SKU（如「智利车厘子」有 5 斤装 / 10 斤装），
+      按 sku_id 分组会让同一个商品名在榜单里出现两次（两条各带自己的金额），
+      看起来像数据重复。榜单的口径是「商品」，所以按 spu_id 合并金额。
+      展示名用快照列 product_name_snapshot（历史单据的商品名可能已被改名）。
+    -->
     <select id="topProductsBySettlement" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
         SELECT item.product_name_snapshot AS name,
                COALESCE(SUM(item.settlement_line_amount), 0) AS amount
@@ -81,7 +97,7 @@
           AND so.status = 'CONFIRMED'
           AND so.created_at &gt;= #{startTime}
           AND so.created_at &lt; #{endTime}
-        GROUP BY item.sku_id, item.product_name_snapshot
+        GROUP BY item.spu_id, item.product_name_snapshot
         ORDER BY amount DESC
         LIMIT #{limit}
     </select>
@@ -110,7 +126,8 @@
         SELECT COUNT(*)
         FROM inventory_movement
         WHERE deleted = FALSE
-          AND movement_type = #{movementType}
+          AND movement_type IN
+          <foreach collection="movementTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
           AND occurred_at &gt;= #{startTime}
           AND occurred_at &lt; #{endTime}
     </select>
@@ -124,6 +141,114 @@
           AND w.deleted = FALSE
         GROUP BY b.warehouse_id, w.name
         ORDER BY quantity DESC
+    </select>
+
+    <!--
+      库存健康度判定输入：只取事实（可用量 + 上下限），**不在这里分类**。
+      分类只有 ScmInventoryWarningStatusEnum#evaluate 一处实现；
+      若让 SQL 也算一份「正常/低于下限/高于上限」，大屏就会和预警列表对不上。
+      两个分支：
+        ① 有阈值配置的 (仓库, SKU) —— 以阈值表为准，左连余额（可能还没有余额行）
+        ② 有余额但没有阈值配置的 (仓库, SKU) —— 有货但无判定依据，需单列
+    -->
+    <select id="inventoryHealthRows" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow">
+        SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
+               t.warn_min AS warnMin,
+               t.warn_max AS warnMax
+        FROM inventory_warning_threshold t
+        LEFT JOIN inventory_balance b
+               ON b.warehouse_id = t.warehouse_id
+              AND b.sku_id = t.sku_id
+              AND b.deleted = FALSE
+        WHERE t.deleted = FALSE
+        UNION ALL
+        SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
+               CAST(NULL AS numeric) AS warnMin,
+               CAST(NULL AS numeric) AS warnMax
+        FROM inventory_balance b
+        WHERE b.deleted = FALSE
+          AND NOT EXISTS (
+              SELECT 1
+              FROM inventory_warning_threshold t
+              WHERE t.deleted = FALSE
+                AND t.warehouse_id = b.warehouse_id
+                AND t.sku_id = b.sku_id
+          )
+    </select>
+
+    <!-- 供应链网络节点：只取启用仓库（停用仓不属于「当前网络」） -->
+    <select id="warehouseNetworkNodes" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
+        SELECT w.name AS warehouseName,
+               COALESCE(SUM(b.quantity), 0) AS quantity,
+               COALESCE((SELECT SUM(m.quantity)
+                         FROM inventory_movement m
+                         WHERE m.deleted = FALSE
+                           AND m.warehouse_id = w.id
+                           AND m.movement_type IN
+                           <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                           AND m.occurred_at &gt;= #{startTime}
+                           AND m.occurred_at &lt; #{endTime}), 0) AS todayOutboundQuantity
+        FROM warehouse w
+        LEFT JOIN inventory_balance b
+               ON b.warehouse_id = w.id
+              AND b.deleted = FALSE
+        WHERE w.deleted = FALSE
+          AND w.status = 'ENABLED'
+        GROUP BY w.id, w.name
+        ORDER BY quantity DESC
+    </select>
+
+    <!--
+      趋势：一天一行、八条序列。
+      日期轴由 generate_series 生成 —— **没有任何单据的日期也必须占一行（全 0）**，
+      否则前端折线会在缺数据的日期上错位。
+      日期口径一律 Asia/Shanghai：用 UTC 日界会把窗口整体平移 8 小时（变成 08:00→次日 08:00），
+      早上下的单会被算到前一天。
+      inventoryQuantity 是**当日期末库存量**（当日及之前所有流水净额累加），不是当日变动量。
+      出入库方向的类型清单**不在这里硬编码**，由调用方从 ScmInventoryMovementTypeEnum 的
+      方向位派生后传入 —— 类型清单只有一处来源，新增流水类型时不会静默少算。
+    -->
+    <select id="trendByDay" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO$Point">
+        SELECT to_char(d, 'YYYY-MM-DD') AS date,
+               to_char(d, 'MM-DD')      AS label,
+               COALESCE((SELECT COUNT(*)
+                         FROM sales_order so
+                         WHERE so.deleted = FALSE
+                           AND so.status = 'CONFIRMED'
+                           AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS orders,
+               COALESCE((SELECT SUM(so.settlement_total_amount)
+                         FROM sales_order so
+                         WHERE so.deleted = FALSE
+                           AND so.status = 'CONFIRMED'
+                           AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS sales,
+               COALESCE((SELECT COUNT(*)
+                         FROM purchase_order po
+                         WHERE po.deleted = FALSE
+                           AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseOrders,
+               COALESCE((SELECT SUM(po.total_amount)
+                         FROM purchase_order po
+                         WHERE po.deleted = FALSE
+                           AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseAmounts,
+               COALESCE((SELECT SUM(CASE WHEN m.movement_type IN
+                                              <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                                         THEN m.quantity ELSE -m.quantity END)
+                         FROM inventory_movement m
+                         WHERE m.deleted = FALSE
+                           AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= d::date), 0) AS inventoryQuantity,
+               COALESCE((SELECT SUM(m.quantity)
+                         FROM inventory_movement m
+                         WHERE m.deleted = FALSE
+                           AND m.movement_type IN
+                               <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                           AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS inboundQuantity,
+               COALESCE((SELECT SUM(m.quantity)
+                         FROM inventory_movement m
+                         WHERE m.deleted = FALSE
+                           AND m.movement_type IN
+                               <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                           AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS outboundQuantity
+        FROM generate_series(#{startDate}::date, #{endDate}::date, INTERVAL '1 day') AS gs(d)
+        ORDER BY d
     </select>
 
     <!-- 采购 -->
@@ -158,6 +283,14 @@
     <select id="countReceipts" resultType="long">
         SELECT COUNT(*)
         FROM purchase_receipt
+        WHERE deleted = FALSE
+          AND created_at &gt;= #{startTime}
+          AND created_at &lt; #{endTime}
+    </select>
+
+    <select id="countSuppliersWithOrdersInRange" resultType="long">
+        SELECT COUNT(DISTINCT supplier_id)
+        FROM purchase_order
         WHERE deleted = FALSE
           AND created_at &gt;= #{startTime}
           AND created_at &lt; #{endTime}

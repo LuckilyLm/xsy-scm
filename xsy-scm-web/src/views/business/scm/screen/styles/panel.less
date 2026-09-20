@@ -1,0 +1,92 @@
+// =============================================================================
+// 面板容器样式（screen-panel.vue 专用）
+// =============================================================================
+// 大屏上所有内容块都套同一个壳：半透明深底 + 细边框 + 标题条。
+// 统一在这里定义，避免每个业务组件各写一套边框导致「每块面板长得都不一样」。
+
+@import './variables.less';
+
+.scm-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  // flex: 1 1 0% —— 面板必须**撑满父容器分配的空间**，而不是按内容高度收缩。
+  // 默认的 flex: 0 1 auto 会让面板高度等于内容高度：侧栏三个面板只占上半屏、
+  // 中列地图只占 286px（可用 494px），剩下整片留白，而每块面板内部看起来都是"正常"的。
+  // flex-basis 取 0% 而不是 auto，是为了让同一父容器里的多个面板**等分**空间。
+  flex: 1 1 0%;
+  min-height: 0;
+  background: @panel-bg;
+  border: 1px solid @panel-border;
+  border-radius: 4px;
+
+  // 左上角的装饰角标（克制：只有两条线，不做发光/跑马灯）
+  &::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: 14px;
+    height: 14px;
+    border-top: 2px solid @tech-cyan;
+    border-left: 2px solid @tech-cyan;
+    border-top-left-radius: 4px;
+    pointer-events: none;
+  }
+
+  .scm-panel-head {
+    flex: 0 0 auto;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border-bottom: 1px solid rgba(27, 77, 122, 0.6);
+
+    // 标题前的竖向色条
+    &::before {
+      content: '';
+      width: 3px;
+      height: 14px;
+      background: @tech-cyan;
+      border-radius: 2px;
+    }
+  }
+
+  .scm-panel-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: @text-1;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .scm-panel-extra {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: @text-3;
+  }
+
+  .scm-panel-body {
+    flex: 1;
+    min-height: 0;
+    padding: 10px 12px;
+    position: relative;
+  }
+
+  // 让 body 直接成为 flex 列容器（图表/列表用 flex:1 撑满）
+  .scm-panel-body.is-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  // 无内边距模式：图表要贴边铺满，内边距会压缩绘图区
+  .scm-panel-body.is-flush {
+    padding: 0;
+  }
+}

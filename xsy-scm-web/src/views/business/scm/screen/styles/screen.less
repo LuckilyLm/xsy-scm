@@ -1,0 +1,113 @@
+// =============================================================================
+// 大屏全局样式（在 index.vue 里**不带 scoped** 引入一次）
+// =============================================================================
+// 只放两类东西：
+//   1) 大屏自己的根容器样式（.scm-screen 及其后代）；
+//   2) 需要跨组件复用的原子类（空态、滚动条）。
+// 类名一律带 scm- 前缀，避免泄漏到系统其它页面。
+//
+// 不用 scoped 的原因：本文件要作用在 screen-panel / metric-card 等子组件上，
+// 而 scoped 会给选择器加 data-v 属性，父组件的 scoped 样式作用不到子组件内部。
+
+@import './variables.less';
+
+.scm-screen {
+  position: relative;
+  width: @screen-w;
+  height: @screen-h;
+  padding: @screen-pad;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: @screen-bg;
+  color: @text-1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  overflow: hidden;
+
+  * {
+    box-sizing: border-box;
+  }
+
+  // 主区域：左 420 / 中 1000 / 右 420，与设计稿一致
+  .scm-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: @gap;
+    margin-top: @gap;
+  }
+
+  .scm-col-side {
+    width: @col-side;
+    flex: 0 0 @col-side;
+    display: flex;
+    flex-direction: column;
+    gap: @gap;
+    min-height: 0;
+  }
+
+  .scm-col-center {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: @gap;
+    min-height: 0;
+  }
+
+  // 趋势带：三张图等宽（内部布局由 trend-section.vue 自己的 scoped 样式负责，
+  // 这里只留一个空档，避免两处都定义 .scm-trend 造成 flex-direction 打架）
+
+  // 空态 / 错误态 / 加载态：三态都用同一种视觉，避免大屏上出现「一块白」
+  .scm-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: @text-3;
+    font-size: 14px;
+
+    .scm-state-icon {
+      font-size: 22px;
+      color: @text-3;
+    }
+
+    &.is-error {
+      color: @state-danger;
+
+      .scm-state-icon {
+        color: @state-danger;
+      }
+    }
+  }
+
+  // 大屏是固定设计稿，内容超出时用细滚动条而不是撑破面板
+  .scm-scroll {
+    overflow: auto;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(47, 128, 237, 0.4);
+      border-radius: 2px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  }
+}
+
+// 全屏作用在**外层 wrapper**（100vw×100vh），不是这个 1920×1080 的设计稿容器 ——
+// 缩放由 wrapper 上的 transform 负责，设计稿容器始终保持 1920×1080。
+// 否则全屏会把设计稿拉成视口尺寸，图表的 clientWidth/Height 基准随之漂移。
+.scm-screen-wrapper:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  background: @screen-bg;
+}
