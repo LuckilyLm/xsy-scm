@@ -11,4 +11,11 @@ import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 public class ProductSpuDetailVO extends ProductSpuVO {
 private List<ProductImageVO> images;
 private OffsetDateTime createdAt;
+private Integer shelfLifeDays;
+private BigDecimal lossRate;
+private Integer purchaseWarningDays;
+private String invoiceName;
+private String taxCategoryCode;
+private Boolean taxExempt;
+private BigDecimal taxRate;
 }

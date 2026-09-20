@@ -7,11 +7,13 @@
 </resultMap>
 <sql id="columns">s.id sku_id,s.spu_id,s.sku_code,s.spec_name,s.spec_values,s.sale_unit,s.product_type,s.status,s.market_price,p.name product_name,p.status spu_status,p.category_id,c.status category_status</sql>
 <sql id="joins">FROM product_sku s LEFT JOIN product_spu p ON p.id=s.spu_id AND p.deleted=FALSE LEFT JOIN product_category c ON c.id=p.category_id AND c.deleted=FALSE</sql>
+<!-- 可选范围：主档停用或归档的商品不再出现在新的选择器结果里（PCO-1 裁决：只作用于可选范围，
+     不改订单/采购写入路径）。selectByIds / selectByCodes 仍按原样返回，历史行照旧解析。 -->
 <select id="options" resultMap="sku">
- SELECT <include refid="columns"/> <include refid="joins"/> WHERE s.deleted=FALSE AND p.id IS NOT NULL
+ SELECT <include refid="columns"/> <include refid="joins"/> WHERE s.deleted=FALSE AND p.id IS NOT NULL AND p.master_status='ENABLED'
  <if test="query.status != null">AND s.status=#{query.status}</if>
  <if test="query.spuId != null">AND s.spu_id=#{query.spuId}</if>
- <if test="query.keyword != null and query.keyword != ''">AND (s.sku_code ILIKE CONCAT('%',#{query.keyword},'%') OR s.barcode ILIKE CONCAT('%',#{query.keyword},'%') OR s.spec_name ILIKE CONCAT('%',#{query.keyword},'%') OR p.name ILIKE CONCAT('%',#{query.keyword},'%') OR p.alias ILIKE CONCAT('%',#{query.keyword},'%'))</if>
+ <if test="query.keyword != null and query.keyword != ''">AND (s.sku_code ILIKE CONCAT('%',#{query.keyword},'%') OR s.barcode ILIKE CONCAT('%',#{query.keyword},'%') OR s.spec_name ILIKE CONCAT('%',#{query.keyword},'%') OR p.name ILIKE CONCAT('%',#{query.keyword},'%') OR p.alias ILIKE CONCAT('%',#{query.keyword},'%') OR p.mnemonic_code ILIKE CONCAT('%',#{query.keyword},'%'))</if>
  ORDER BY s.sku_code,s.id LIMIT #{limitPlusOne}
 </select>
 <!-- Never filter by sale eligibility here: resolver retains existing price for unavailable SKUs. -->

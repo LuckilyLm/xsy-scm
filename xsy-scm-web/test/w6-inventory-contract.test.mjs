@@ -680,6 +680,7 @@ test('every node-loaded SCM module stays free of value imports on relative paths
     '../src/views/business/scm/purchase/purchase-errors.ts',
     '../src/views/business/scm/inventory/inventory-model.ts',
     '../src/views/business/scm/inventory/inventory-errors.ts',
+    '../src/views/business/scm/product/product-form-model.ts',
   ];
   for (const module of modules) {
     const source = code(module);

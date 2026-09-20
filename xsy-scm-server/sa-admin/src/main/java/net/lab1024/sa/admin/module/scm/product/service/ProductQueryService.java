@@ -25,6 +25,7 @@ public class ProductQueryService {
     private final ProductSkuDao skus;
     private final ProductImageDao images;
     private final ProductCategoryService categories;
+    private final ProductTagService tags;
     private final FileService files;
 
     public PageResult<ProductSpuVO> query(ProductSpuQueryForm form) {
@@ -54,6 +55,7 @@ public class ProductQueryService {
                 .orderByAsc(ProductImageEntity::getSortOrder,ProductImageEntity::getId));
         var skuMap=skuRows.stream().collect(Collectors.groupingBy(ProductSkuEntity::getSpuId));
         var imageMap=imageRows.stream().collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
+        var tagMap=tags.bySpuIds(ids);
         Map<String,String> urls=new HashMap<>();
         files.getFileList(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList())
                 .stream().filter(Objects::nonNull).forEach(f -> urls.put(f.getFileKey(),f.getFileUrl()));
@@ -62,6 +64,7 @@ public class ProductQueryService {
         for (var row:rows) {
             var vo=new ProductSpuDetailVO(); BeanUtils.copyProperties(row,vo); vo.setSpuId(row.getId());
             vo.setCategoryName(names.get(row.getCategoryId())); vo.setCategoryPath(ProductCategoryService.path(row.getCategoryId(),categoryRows));
+            vo.setTags(tagMap.getOrDefault(row.getId(),List.of()));
             List<ProductSkuVO> children=skuMap.getOrDefault(row.getId(),List.of()).stream().map(s -> {
                 var child=new ProductSkuVO(); BeanUtils.copyProperties(s,child); child.setSkuId(s.getId()); return child;
             }).toList();

@@ -14,7 +14,7 @@
           </div>
           <a-button type="link" size="small" @click="addAttribute(sku)">添加属性</a-button>
         </td>
-        <td><a-input v-model:value="sku.saleUnit" :maxlength="32" :aria-label="`SKU ${index + 1} 单位`" /></td>
+        <td><a-select v-model:value="sku.saleUnit" :options="unitOptions" show-search option-filter-prop="label" placeholder="选择单位" :aria-label="`SKU ${index + 1} 单位`" /></td>
         <td><a-input-number :value="sku.marketPrice" string-mode :min="0" step="0.0001" :controls="false" :aria-label="`SKU ${index + 1} 市场价`" @update:value="sku.marketPrice = $event === null ? '' : String($event)" /></td>
         <td><a-select v-model:value="sku.productType" :options="PRODUCT_TYPE_ENUM" :aria-label="`SKU ${index + 1} 类型`" /></td>
         <td><a-input v-model:value="sku.barcode" :maxlength="64" :aria-label="`SKU ${index + 1} 条码`" /></td>
@@ -26,12 +26,19 @@
   </div>
 </template>
 <script setup lang="ts">
+import { computed } from 'vue';
 import { message } from 'ant-design-vue';
-import type { ProductSku } from '/@/types/business/scm/product';
+import type { ProductSku, ProductUom } from '/@/types/business/scm/product';
 import { PRODUCT_TYPE_ENUM, SHELF_STATUS_ENUM } from '/@/constants/business/scm/product-const';
 import { emptySku, removeSku } from '../product-form-model';
-const props = defineProps<{ modelValue: ProductSku[] }>();
+const props = defineProps<{ modelValue: ProductSku[]; units: ProductUom[] }>();
 const emit = defineEmits<{ 'update:modelValue': [rows: ProductSku[]] }>();
+// 字典只给启用行；历史商品可能挂着已停用或字典外的单位，这些当前值要留在下拉里，否则编辑时看不出原值。
+const unitOptions = computed(() => {
+  const known = new Set(props.units.map((unit) => unit.name));
+  const outside = [...new Set(props.modelValue.map((sku) => sku.saleUnit).filter((name) => name && !known.has(name)))];
+  return [...props.units.map((unit) => ({ value: unit.name, label: unit.name })), ...outside.map((name) => ({ value: name, label: `${name}（字典外/已停用）` }))];
+});
 function makeDefault(index: number) { props.modelValue.forEach((row, i) => { row.defaultFlag = i === index; }); }
 function addAttribute(sku: ProductSku) { let index = 1; while (`属性${index}` in sku.specValues) index++; sku.specValues[`属性${index}`] = ''; }
 function renameKey(sku: ProductSku, previous: string, key: string) {

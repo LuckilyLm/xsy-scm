@@ -165,6 +165,14 @@ V36  V36__scm_sales_order_import_permission.sql  order Excel 模板下载/导入
 V37  V37__scm_inventory_reprice_zero_cost_balances.sql costing 数据修正：重放流水重算
                                                    「有货但 avg_cost = 0」余额行的移动加权均价
                                                    （只 UPDATE avg_cost，一行流水都不改）
+V38  V38__scm_product_master_data_enhancement.sql product PCO-1 主档增强：product_spu 十二个主档
+                                                   标量 + master_status（与 status 正交，归档必下架）+
+                                                   CHECK，scm_uom 字典（24 条种子，活动行内编码/名称
+                                                   各唯一，业务字段仍存名称快照），product_tag 与
+                                                   product_tag_relation
+V39  V39__scm_product_assistant_menu_permissions.sql product PCO-1 data-only，辅助资料页 405、
+                                                   商品批量维护 417、单位/标签 CRUD 488-495，
+                                                   仅授 SUPER_ADMIN
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
@@ -182,6 +190,12 @@ V31/V33 的转入成本清零缺陷已由 V37 + 代码修复（成本随货平�
 > 大屏仍是**只读视图**：不写业务表、不维护任何独立副本。
 > 供应链地图为**抽象网络**（`warehouse` / `customer` 无经纬度与省市区结构化字段），
 > 接高德时整体替换该组件即可，上层布局不受影响。设计取舍见 `docs/decisions.md`。
+
+> **商品中心优化 PCO-1（V38–V39）已于 2026-09-20 完成**：主档扩展字段（助记码 / 储存方式 / 税务与保质期
+> 等）、计量单位与商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护。
+> **`master_status` 只收窄商品可选范围**（仅 `ProductSkuOptionDao.options` 过滤），订单 / 采购 / 库存
+> 写入路径不受主档状态影响；计量单位只是**取值来源**，`sale_unit` / `purchase_unit` / `unit` 继续存
+> 名称快照，因此单位活动行内名称必须唯一且编辑锁定编码与名称。Excel 导入导出与图片中心仍属 PCO-2。
 
 > **V17/V18 版本号勘误（2026-09-17）**：SCM 菜单图标迁移原本与 F0 的文件上传迁移**同时**占用
 > version 17，导致 Flyway 在解析阶段抛 `Found more than one migration with version 17`，

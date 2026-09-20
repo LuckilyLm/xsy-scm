@@ -21,4 +21,16 @@ public class ProductSpuEntity {
     private Long categoryId;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private String description;
     private String status;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String mnemonicCode;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String brandName;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String origin;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String storageMethod;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Integer shelfLifeDays;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private BigDecimal lossRate;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Integer purchaseWarningDays;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String invoiceName;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String taxCategoryCode;
+    private Boolean taxExempt;
+    @TableField(updateStrategy=FieldStrategy.ALWAYS) private BigDecimal taxRate;
+    private String masterStatus;
 }

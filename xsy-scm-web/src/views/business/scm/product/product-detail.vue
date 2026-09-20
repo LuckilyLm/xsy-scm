@@ -6,14 +6,31 @@
       <a-descriptions :title="product.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
         <a-descriptions-item label="SPU 编码">{{ product.spuCode }}</a-descriptions-item>
         <a-descriptions-item label="分类">{{ product.categoryPath }}</a-descriptions-item>
-        <a-descriptions-item label="状态"><a-tag :color="product.status === 'ON_SHELF' ? 'green' : 'default'">{{ product.status === 'ON_SHELF' ? '上架' : '下架' }}</a-tag></a-descriptions-item>
+        <a-descriptions-item label="在售状态"><a-tag :color="product.status === 'ON_SHELF' ? 'green' : 'default'">{{ product.status === 'ON_SHELF' ? '上架' : '下架' }}</a-tag></a-descriptions-item>
+        <a-descriptions-item label="主档状态"><a-tag :color="MASTER_STATUS_COLOR[product.masterStatus]">{{ enumLabel(MASTER_STATUS_ENUM, product.masterStatus) }}</a-tag></a-descriptions-item>
         <a-descriptions-item label="别名">{{ product.alias || '—' }}</a-descriptions-item>
         <a-descriptions-item label="市场价">{{ priceRange(product.minMarketPrice, product.maxMarketPrice) }}</a-descriptions-item>
+        <a-descriptions-item label="商品标签" :span="3"><a-space v-if="product.tags.length" wrap><a-tag v-for="tag in product.tags" :key="tag.tagId" :color="tag.status === 'ENABLED' ? 'blue' : 'default'">{{ tag.name }}</a-tag></a-space><span v-else>—</span></a-descriptions-item>
         <a-descriptions-item label="更新时间">{{ datetime(product.updatedAt) }}</a-descriptions-item>
+        <a-descriptions-item label="创建时间">{{ datetime(product.createdAt) }}</a-descriptions-item>
         <a-descriptions-item label="商品简介" :span="3">{{ product.description || '—' }}</a-descriptions-item>
       </a-descriptions>
+      <a-divider orientation="left">主档扩展信息</a-divider>
+      <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 4 }">
+        <a-descriptions-item label="助记码">{{ product.mnemonicCode || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="品牌">{{ product.brandName || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="产地">{{ product.origin || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="储存方式">{{ product.storageMethod ? enumLabel(STORAGE_METHOD_ENUM, product.storageMethod) : '—' }}</a-descriptions-item>
+        <a-descriptions-item label="保质期">{{ product.shelfLifeDays == null ? '—' : `${product.shelfLifeDays} 天` }}</a-descriptions-item>
+        <a-descriptions-item label="损耗率">{{ product.lossRate == null ? '—' : `${product.lossRate}%` }}</a-descriptions-item>
+        <a-descriptions-item label="采购预警">{{ product.purchaseWarningDays == null ? '—' : `${product.purchaseWarningDays} 天` }}</a-descriptions-item>
+        <a-descriptions-item label="开票品名">{{ product.invoiceName || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="税收编码">{{ product.taxCategoryCode || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="免税">{{ product.taxExempt == null ? '—' : product.taxExempt ? '免税' : '否' }}</a-descriptions-item>
+        <a-descriptions-item label="税率">{{ product.taxRate == null ? '—' : `${product.taxRate}%` }}</a-descriptions-item>
+      </a-descriptions>
       <a-divider orientation="left">商品图集</a-divider>
-      <a-image-preview-group v-if="product.images.length"><a-space wrap><figure v-for="image in product.images" :key="image.fileKey"><a-image :src="image.fileUrl" :width="120" :height="120" :alt="image.fileName || product.name" /><figcaption>{{ image.primaryFlag ? '主图' : image.fileName }}</figcaption></figure></a-space></a-image-preview-group>
+      <a-image-preview-group v-if="product.images?.length"><a-space wrap><figure v-for="image in product.images ?? []" :key="image.fileKey"><a-image :src="image.fileUrl" :width="120" :height="120" :alt="image.fileName || product.name" /><figcaption>{{ image.primaryFlag ? '主图' : image.fileName }}</figcaption></figure></a-space></a-image-preview-group>
       <a-empty v-else description="暂无商品图片" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
       <a-divider orientation="left">SKU 规格</a-divider><SkuTable :rows="product.skuList" />
     </template>
@@ -25,7 +42,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { Empty } from 'ant-design-vue';
 import { productApi } from '/@/api/business/scm/product-api';
 import type { ProductRow } from '/@/types/business/scm/product';
-import { priceRange } from '/@/constants/business/scm/product-const';
+import { enumLabel, MASTER_STATUS_COLOR, MASTER_STATUS_ENUM, priceRange, STORAGE_METHOD_ENUM } from '/@/constants/business/scm/product-const';
 import SkuTable from './components/product-sku-table.vue';
 import { productError } from './product-errors';
 import { datetime } from '../common/scm-display';

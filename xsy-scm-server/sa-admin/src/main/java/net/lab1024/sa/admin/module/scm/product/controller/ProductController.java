@@ -20,6 +20,7 @@ import java.util.*;
 public class ProductController {
     private final ProductSpuService service;
     private final ProductQueryService query;
+    private final ProductBatchService batch;
     @PostMapping("/query") @SaCheckPermission("scm:product:query")
     public ResponseDTO<PageResult<ProductSpuVO>> query(@Valid @RequestBody ProductSpuQueryForm form) { return ResponseDTO.ok(query.query(form)); }
     @GetMapping("/detail/{spuId}") @SaCheckPermission("scm:product:query")
@@ -41,4 +42,10 @@ public class ProductController {
     public ResponseDTO<String> updateStatus(@Valid @RequestBody ProductStatusForm form) { service.updateStatus(form); return ResponseDTO.ok(); }
     @PostMapping("/delete") @SaCheckPermission("scm:product:delete") @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody ProductDeleteForm form) { service.delete(form); return ResponseDTO.ok(); }
+    @PostMapping("/batch/updateStatus") @SaCheckPermission("scm:product:batch") @OperateLog
+    public ResponseDTO<ProductBatchResultVO> batchStatus(@Valid @RequestBody ProductSpuBatchStatusForm form) { return ResponseDTO.ok(batch.updateStatus(form)); }
+    @PostMapping("/batch/updateCategory") @SaCheckPermission("scm:product:batch") @OperateLog
+    public ResponseDTO<ProductBatchResultVO> batchCategory(@Valid @RequestBody ProductSpuBatchCategoryForm form) { return ResponseDTO.ok(batch.updateCategory(form)); }
+    @PostMapping("/batch/updateTags") @SaCheckPermission("scm:product:batch") @OperateLog
+    public ResponseDTO<ProductBatchResultVO> batchTags(@Valid @RequestBody ProductSpuBatchTagForm form) { return ResponseDTO.ok(batch.updateTags(form)); }
 }

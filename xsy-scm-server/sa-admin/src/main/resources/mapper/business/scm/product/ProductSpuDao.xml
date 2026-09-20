@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao">
+    <sql id="ownSkuIds">SELECT s.id FROM product_sku s WHERE s.spu_id=#{spuId}</sql>
     <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity">
         SELECT p.* FROM product_spu p WHERE p.deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
             AND (p.spu_code ILIKE CONCAT('%',#{query.keyword},'%')
             OR p.name ILIKE CONCAT('%',#{query.keyword},'%')
             OR p.alias ILIKE CONCAT('%',#{query.keyword},'%')
+            OR p.mnemonic_code ILIKE CONCAT('%',#{query.keyword},'%')
             OR EXISTS (SELECT 1 FROM product_sku s WHERE s.spu_id=p.id AND s.deleted=FALSE
               AND (s.sku_code ILIKE CONCAT('%',#{query.keyword},'%') OR s.barcode ILIKE CONCAT('%',#{query.keyword},'%'))))
         </if>
@@ -14,10 +16,78 @@
             AND p.category_id IN <foreach collection="categoryIds" item="id" open="(" close=")" separator=",">#{id}</foreach>
         </if>
         <if test="query.status != null">AND p.status=#{query.status}</if>
+        <if test="query.masterStatus != null">AND p.master_status=#{query.masterStatus}</if>
+        <if test="query.storageMethod != null">AND p.storage_method=#{query.storageMethod}</if>
+        <if test="query.tagIds != null and query.tagIds.size() > 0">
+            AND EXISTS (SELECT 1 FROM product_tag_relation r WHERE r.spu_id=p.id AND r.deleted=FALSE AND r.tag_id IN
+            <foreach collection="query.tagIds" item="tagId" open="(" close=")" separator=",">#{tagId}</foreach>)
+        </if>
+        <!-- 有图/有码是有界的 EXISTS 探测，不 join 明细行，避免分页计数被放大。 -->
+        <if test="query.hasPrimaryImage != null">
+            <choose>
+                <when test="query.hasPrimaryImage">
+                    AND EXISTS (SELECT 1 FROM product_image i WHERE i.spu_id=p.id AND i.deleted=FALSE AND i.is_primary=TRUE)
+                </when>
+                <otherwise>
+                    AND NOT EXISTS (SELECT 1 FROM product_image i WHERE i.spu_id=p.id AND i.deleted=FALSE AND i.is_primary=TRUE)
+                </otherwise>
+            </choose>
+        </if>
+        <if test="query.hasBarcode != null">
+            <choose>
+                <when test="query.hasBarcode">
+                    AND EXISTS (SELECT 1 FROM product_sku s WHERE s.spu_id=p.id AND s.deleted=FALSE
+                      AND s.barcode IS NOT NULL AND s.barcode &lt;&gt; '')
+                </when>
+                <otherwise>
+                    AND NOT EXISTS (SELECT 1 FROM product_sku s WHERE s.spu_id=p.id AND s.deleted=FALSE
+                      AND s.barcode IS NOT NULL AND s.barcode &lt;&gt; '')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="query.createdFrom != null">AND p.created_at &gt;= #{query.createdFrom}</if>
+        <if test="query.createdTo != null">AND p.created_at &lt;= #{query.createdTo}</if>
         <if test="query.skuStatus != null or query.productType != null">
             AND EXISTS (SELECT 1 FROM product_sku s WHERE s.spu_id=p.id AND s.deleted=FALSE
             <if test="query.skuStatus != null">AND s.status=#{query.skuStatus}</if>
             <if test="query.productType != null">AND s.product_type=#{query.productType}</if>)
         </if>
     </select>
+    <!-- 删除前的业务引用复核：只要产生过交易或价格事实就不允许删除，改为停用/归档。
+         按 spu 直连与经 SKU 两级探测，全部走短路 OR，命中即返回；
+         供应商关系与客户可见性是主数据关联，不在此拦删除（方案 §11.2）。 -->
+    <select id="hasBusinessReference" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM sales_order_item WHERE spu_id=#{spuId})
+        OR EXISTS (SELECT 1 FROM purchase_demand WHERE spu_id=#{spuId})
+        OR EXISTS (SELECT 1 FROM purchase_order_item WHERE spu_id=#{spuId})
+        OR EXISTS (SELECT 1 FROM purchase_demand_allocation WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM purchase_receipt_item WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_balance WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_movement WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_outbound_item WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_reservation WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_stocktake_item WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_loss_gain_item WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_transfer_item WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_conversion_item WHERE source_sku_id IN (<include refid="ownSkuIds"/>)
+                                                          OR target_sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM inventory_warning_threshold WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM customer_agreement_price WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM customer_type_price WHERE sku_id IN (<include refid="ownSkuIds"/>))
+    </select>
+    <!-- 批量命令按 id 升序加锁，避免多标签/多批次交叉持锁造成死锁；版本号在锁后复核。 -->
+    <select id="lockByIds" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity">
+        SELECT * FROM product_spu WHERE deleted=FALSE AND id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
+        ORDER BY id FOR UPDATE
+    </select>
+    <!-- 行锁与版本复核已在 batchApply 之前完成，这里不再重复 version 条件。 -->
+    <update id="batchApply">
+        UPDATE product_spu SET updated_at=CURRENT_TIMESTAMP, updated_by=#{operator}, version=version+1
+        <if test="status != null">, status=#{status}</if>
+        <if test="masterStatus != null">, master_status=#{masterStatus}</if>
+        <if test="categoryId != null">, category_id=#{categoryId}</if>
+        WHERE deleted=FALSE AND id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
+    </update>
 </mapper>

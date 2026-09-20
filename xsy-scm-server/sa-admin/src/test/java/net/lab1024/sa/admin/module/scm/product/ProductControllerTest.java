@@ -26,6 +26,7 @@ import java.util.List;
 class ProductControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean ProductSpuService service;
+    @MockitoBean ProductBatchService batch;
     @MockitoBean ProductQueryService query;
     @MockitoBean(name="systemEnvironment") SystemEnvironment environment;
     @Test void returnsSmartAdminPaginationEnvelope() throws Exception {
