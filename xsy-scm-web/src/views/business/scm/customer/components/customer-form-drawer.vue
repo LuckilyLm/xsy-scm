@@ -109,7 +109,8 @@
             </a-form-item>
           </a-col>
           <a-col :span="16">
-            <a-form-item label="地址" name="address"><a-input v-model:value="form.address" :maxlength="255" /></a-form-item>
+            <a-form-item label="地址" name="address"><a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())" /></a-form-item>
+            <a-form-item label="地图定位"><ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" /></a-form-item>
           </a-col>
         </a-row>
 
@@ -173,6 +174,8 @@
 </template>
 
 <script setup lang="ts">
+  import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
+  import { emptyLocation, locationError } from '/@/components/business/scm/map/types';
   import { computed, nextTick, reactive, ref } from 'vue';
   import type { FormInstance } from 'ant-design-vue';
   import { message } from 'ant-design-vue';
@@ -213,7 +216,7 @@
   const area = ref<AreaNode[]>([]);
 
   function onAreaChange(_value: unknown, nodes: AreaNode[]) {
-    Object.assign(form, areaColumnsOf(nodes));
+    Object.assign(form, areaColumnsOf(nodes), emptyLocation());
   }
 
   const title = computed(() => (form.customerId ? '编辑客户' : '新增客户'));
@@ -261,6 +264,9 @@
         contactName: detail.contactName ?? '',
         contactPhone: detail.contactPhone ?? '',
         address: detail.address ?? '',
+        longitude: detail.longitude ?? null,
+        latitude: detail.latitude ?? null,
+        geomCrs: detail.geomCrs ?? null,
         provinceCode: detail.provinceCode ?? null,
         provinceName: detail.provinceName ?? null,
         cityCode: detail.cityCode ?? null,
@@ -325,7 +331,7 @@
       return;
     }
     // 表单规则覆盖不到的跨字段约束（账期三形态互斥、金额格式）由纯函数兜底。
-    const problem = validateCustomer(form);
+    const problem = locationError(form) || validateCustomer(form);
     if (problem) {
       error.value = problem;
       return;

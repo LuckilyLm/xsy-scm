@@ -22,6 +22,12 @@ import java.time.OffsetDateTime;
 @Data
 @TableName(value = "customer", autoResultMap = true)
 public class CustomerEntity {
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy=com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS) private java.math.BigDecimal longitude;
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy=com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS) private java.math.BigDecimal latitude;
+    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy=com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS) private String geomCrs;
+
     private String visibilityPolicy;
 
 

@@ -12,6 +12,12 @@ import java.time.OffsetDateTime;
  */
 @Data @TableName(value="warehouse",autoResultMap=true)
 public class WarehouseEntity {
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy=com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS) private java.math.BigDecimal longitude;
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy=com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS) private java.math.BigDecimal latitude;
+    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy=com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS) private String geomCrs;
+
     @TableId(type=IdType.AUTO) private Long id;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private String warehouseCode;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private String name;

@@ -10,6 +10,15 @@
 <result column="address" property="address"/>
 <result column="created_at" property="createdAt"/>
 <result column="created_by" property="createdBy"/>
+<result column="province_code" property="provinceCode"/>
+<result column="province_name" property="provinceName"/>
+<result column="city_code" property="cityCode"/>
+<result column="city_name" property="cityName"/>
+<result column="district_code" property="districtCode"/>
+<result column="district_name" property="districtName"/>
+<result column="longitude" property="longitude"/>
+<result column="latitude" property="latitude"/>
+<result column="geom_crs" property="geomCrs"/>
 </resultMap>
 <select id="list" resultMap="row">SELECT * FROM order_address_snapshot WHERE order_id=#{id} ORDER BY id</select>
 </mapper>

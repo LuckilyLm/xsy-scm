@@ -19,7 +19,7 @@ import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
  * （legacy 不变量 C7）。新增客户的初始状态由 Service 固定为 {@code POTENTIAL}（Q13）。
  */
 @Data
-public class CustomerAddForm {
+public class CustomerAddForm extends net.lab1024.sa.admin.module.scm.common.domain.ScmLocationForm {
     @Pattern(regexp="ALL_ENABLED|ALLOWLIST") private String visibilityPolicy;
     @jakarta.validation.Valid @Size(max=500) private java.util.List<CustomerSkuVisibilityItemForm> visibilities;
 

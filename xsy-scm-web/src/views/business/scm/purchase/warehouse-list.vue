@@ -122,8 +122,9 @@
         <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
       </a-form-item>
       <a-form-item label="地址" name="address">
-        <a-input v-model:value="form.address" maxlength="255" />
+        <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())" />
       </a-form-item>
+      <a-form-item label="地图定位"><ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" /></a-form-item>
       <a-form-item label="备注" name="remark">
         <a-input v-model:value="form.remark" maxlength="500" />
       </a-form-item>
@@ -132,6 +133,8 @@
 </template>
 
 <script setup lang="ts">
+import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
+import { emptyLocation, locationError } from '/@/components/business/scm/map/types';
 import { nextTick, onMounted, reactive, ref } from 'vue';
 import { message, Modal } from 'ant-design-vue';
 import type { TableColumnsType } from 'ant-design-vue';
@@ -160,7 +163,7 @@ const form = ref<WarehousePayload>({ warehouseCode: '', name: '' });
 const area = ref<AreaNode[]>([]);
 
 function onAreaChange(_value: unknown, nodes: AreaNode[]) {
-  Object.assign(form.value, areaColumnsOf(nodes));
+  Object.assign(form.value, areaColumnsOf(nodes), emptyLocation());
 }
 
 let requestId = 0;
@@ -217,6 +220,9 @@ async function open(row?: Warehouse) {
         warehouseCode: row.warehouseCode ?? '',
         name: row.name ?? '',
         address: row.address ?? null,
+        longitude: row.longitude ?? null,
+        latitude: row.latitude ?? null,
+        geomCrs: row.geomCrs ?? null,
         remark: row.remark ?? null,
         provinceCode: row.provinceCode ?? null,
         provinceName: row.provinceName ?? null,
@@ -235,7 +241,8 @@ async function open(row?: Warehouse) {
 }
 
 async function save() {
-  formError.value = '';
+  formError.value = locationError(form.value) ?? '';
+  if (formError.value) return;
   if (!form.value.warehouseCode.trim()) {
     formError.value = '请填写仓库编码';
     return;

@@ -1,3 +1,4 @@
+import type { ScmLocation } from '/@/components/business/scm/map/types';
 /**
  * W2 客户域前端契约（与后端 `module/scm/customer` 的 Form / VO 一一对应）。
  *
@@ -78,7 +79,7 @@ export interface CustomerTypeQuery {
 // ---------------------------------------------------------------------------
 
 /** 新建 / 编辑请求体（对应 CustomerAddForm / CustomerUpdateForm）。 */
-export interface CustomerForm extends Partial<AreaColumns> {
+export interface CustomerForm extends Partial<AreaColumns>, ScmLocation {
   customerId?: ScmId;
   version?: number;
   customerCode: string;

@@ -23,6 +23,9 @@ export function emptyCustomer(): CustomerForm {
   return {
     // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
     // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的客户。
+    longitude: null,
+    latitude: null,
+    geomCrs: null,
     provinceCode: null,
     provinceName: null,
     cityCode: null,

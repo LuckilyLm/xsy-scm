@@ -10,6 +10,12 @@ import java.time.OffsetDateTime;
 /** 客户详情：列表字段 + 地址 / 账期 / 归属关系 / 备注 / 时间戳。 */
 @Data
 public class CustomerDetailVO {
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    private java.math.BigDecimal longitude;
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    private java.math.BigDecimal latitude;
+    private String geomCrs;
+
     private String visibilityPolicy;
     private java.util.List<CustomerSkuVisibilityVO> visibilities;
 
