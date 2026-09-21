@@ -26,11 +26,16 @@
 | 商品中心 PCO-1 主档增强（V38–V39） | 后端与浏览器已验证 | 主档扩展字段与助记码搜索、计量单位 / 商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护；Excel 与图片中心属 PCO-2 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
+| F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40030`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
 
-- 引入非管理员业务角色前，处理 F0-DEBT-01：业务附件必须接入权限、归属/关系和 FileService 读取控制。
+- **F0-DEBT-01**：写侧绑定期限权与商品图公开化已于 2026-09-21 收口（FA-0 / V41）。
+  剩余 FA-1～FA-3：**受控批量读取**（`getFileList(keys, user)`）、`scm_file_relation` 落地、
+  OA `FileKeyVoSerializer` 收口与代码生成模板、存量商品图搬运到 `public/image/`。
+  引入任何非管理员业务角色前必须完成读侧，方案见
+  [`plan/attachment-asset-grading-and-file-access-plan.md`](./plan/attachment-asset-grading-and-file-access-plan.md)。
 - 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
 - 库存深化剩余项：**已完成**（入库侧、出库/预留、盘点、报损报溢、调拨、阈值预警、规格转换、移动加权成本）。
   下一阶段顺序见
@@ -75,6 +80,43 @@
   登录得到 `30001`。运行入口必须显式带上 `XSY_V2_PG_DB`，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
+
+### 2026-09-21 F0-DEBT-01 FA-0：附件资产分级与商品写侧收口（V41）
+
+- **范围**：本轮按裁决只做「出裁决 + 写侧收口」。商品图公开化 + 绑定期限权 + 停止持久化预签名 URL；
+  读侧受控批量读取、`scm_file_relation`、OA VO 收口、存量商品图搬运全部留到 FA-1～FA-3，
+  分期见 [`plan/attachment-asset-grading-and-file-access-plan.md`](./plan/attachment-asset-grading-and-file-access-plan.md)。
+- **分级落点**：`FileFolderTypeEnum` 新增 `PUBLIC_IMAGE(5, "public/image/")`。该目录的 ACL、
+  前缀策略与 MinIO 匿名读策略在 F0 就已就位，本次没有新增存储侧设施。
+  前端 `file-const.ts` 同步加枚举，商品上传组件不再写死 `folder=1`。
+- **写侧规则**：`ProductImageSyncManager.sync()` 在存在性校验之后加 `requirePublicImageKey` ——
+  新增或换绑的 `product_image` 只能引用 `public/image/` 前缀，违反即 `IMAGE_NOT_PUBLIC(40030)`；
+  **例外**是「行沿用自己本次修改前已有的 key」，否则 PCO-1 之前落在 `private/common/` 的存量行
+  会让历史商品连改排序、切主图都保存不了。前缀常量取自枚举，业务侧不另写字符串。
+- **不再持久化 URL**：删 `product_image.file_url`（V41）与 `ProductImageEntity` / `ProductImageForm`
+  的对应字段；展示 URL 由 `ProductQueryService` 按 `file_key` 现算覆盖。刻意不加 `file_key` 前缀
+  CHECK，理由写在迁移头注释（存量私有行合法，硬约束会把历史变成故障）。
+- **验证（2026-09-21）**：JDK 21 下在一次性临时库 `xsy_scm_f01`（本次从 V1 全链建到 V41）跑目标套件
+  **10 个类 76 用例全绿**：`ProductPgIT` 21（含新增 `rejectsBindingPrivateDirectoryImage` 与
+  `allowsLegacyPrivateKeyButRejectsRebindingToAnother`，正反两面都断言）、`ProductMasterDataPgIT` 11、
+  `ProductControllerTest` 4、`FileAccessGuardTest` 24、`ScmPurchaseMigrationIT` 4（追加性守卫已扩到 V41）等。
+  前端 `npm run lint` 0 error（3 个既有 warning，不在本次文件）、`npm run test` 93/93、
+  `ts_baseline_ratchet.py check` 判 `scm errors = 0` 且总量 -28（工具整体仍报 FAIL，
+  是其记录在案的跨 checkout 绝对路径噪声：TS7016 消息含 `node_modules` 路径，
+  换目录后同一错误以「新增 + 修复」成对出现，不代表类型回归）。
+- **浏览器验收（2026-09-21 补，dev 栈）**：`xsy_scm_b0` 已应用 V41（执行前先 `pg_dump` 备份
+  `product_image`，实测该表 0 活动行；重启后端后 `flyway_schema_history` version 41 success）。
+  `e2e/scm-product.spec.ts` **3/3 全绿、0 pageerror**：新增商品上传图片落到
+  `public/image/`（folder 5）并保存成功，商品详情页 **reload 后**图片 `naturalWidth > 0`
+  ——即展示 URL 确实由 `file_key` 现算，删列没有打断显示链路。
+  验收中修掉一处既有的用例竞态：抽屉打开会并发拉分类树与单位/标签字典，`load()` 返回时整体替换
+  `form`，而 Playwright 的 `fill` 不受 `a-spin` 遮罩约束，早期填入的值（尤其是三级分类）会被静默
+  清空，`submit()` 便在前端校验处无声返回、`/scm/product/add` 从不发出。dev 库字典体量增长后该
+  竞态才暴露；用例改为等本轮加载结束再填写。人工操作路径本就被遮罩与 `保存商品` 的 `disabled` 挡住，
+  因此这是测试稳定性问题，不是产品缺陷。
+- **未验证 / 未做**：
+  ① 存量商品图仍在 `private/common/`，读侧路径未收口，因此 F0-DEBT-01 仍是**未关闭**的门禁；
+  ② 本地存储模式 `/upload/**` 静态直出无守卫，权限行为只能在对象存储模式下判断。
 
 ### 2026-09-21 地图 M0 / M1：地理数据地基与大屏真实地图（V40）
 

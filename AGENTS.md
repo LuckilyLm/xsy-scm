@@ -89,11 +89,24 @@ alignment, multipart 20/25 MB, data-only V17, and the `deploy/minio/` local deve
 Historical verification details are no longer duplicated here; consult Git history and the reference
 project when a new change needs them.
 F0 adds no SCM business domain and no business attachment tables.
-**F0-DEBT-01 remains binding**: `FileKeyVoSerializer` → `FileService.getFileList()` expands
+**F0-DEBT-01 (adjudicated 2026-09-21, FA-0 landed in V41)** — attachments are graded by
+**directory prefix only**: `public/*` is anonymous-readable with static (non-expiring) URLs,
+`private/*` requires authorization. Product images are **public assets** and now upload to
+`public/image/` (`FileFolderTypeEnum.PUBLIC_IMAGE`). The **write side is closed**: binding a
+`product_image` row to a fileKey the SPU does not already own must reference the public prefix,
+otherwise the edit right would promote someone else's private attachment to all product viewers
+(confirmed data uplift, not a single-record read). `product_image.file_url` was dropped —
+presigned URLs are derived values and are always recomputed from `file_key`.
+The **read side remains open**: `FileKeyVoSerializer` → `FileService.getFileList()` still expands
 attachments server-side **without any per-user permission filtering**, so attachment URLs returned
-through business VO fields bypass the Controller-level read guard. Before any non-administrator
-business role is introduced, OA enterprise licences and similar COMMON private assets must move to
-business-permission + ownership/relation + FileService reads.
+through business VO fields bypass the Controller-level read guard. The confirmed target model is a
+**`scm_file_relation` table** (rights to the business object ⇒ rights to its files; upload to
+scratch, bind to create relation rows). Before any non-administrator business role is introduced,
+OA enterprise licences and similar COMMON private assets must move to business-permission +
+ownership/relation + FileService reads. Note that local storage mode maps `/upload/**` statically
+with no guard, so "private" is not confidential locally; permission behaviour must be verified in
+object-storage mode. Plan: [`docs/plan/attachment-asset-grading-and-file-access-plan.md`](./docs/plan/attachment-asset-grading-and-file-access-plan.md);
+decision rationale: [`docs/decisions.md`](./docs/decisions.md).
 W6-1 = Inventory phase 1 (**BACKEND + BROWSER VERIFIED**) — `inventory_balance` +
 `inventory_movement` (append-only ledger), `DIRECT` confirmation or `WAREHOUSE_CONFIRM` putaway →
 `PURCHASE_IN`, the one-shot Q5 backfill of historical CONFIRMED receipt lines, warehouse enable/disable,
@@ -178,6 +191,9 @@ V40  V40__scm_geo_region_and_master_location.sql  map 地图 M0 地理数据地�
                                                    warehouse/customer/supplier 各加省市区编码+名称快照六列与
                                                    longitude/latitude/geom_crs（成对、取值与 CRS CHECK），
                                                    市级部分索引，末尾按自由文本地址做保守解析回填
+V41  V41__scm_product_image_drop_file_url.sql     f0   F0-DEBT-01 写侧收口：删除 product_image.file_url
+                                                   （预签名地址是带 TTL 的派生值，一律按 file_key 现算），
+                                                   刻意不加 file_key 前缀 CHECK —— 存量私有行仍合法
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
