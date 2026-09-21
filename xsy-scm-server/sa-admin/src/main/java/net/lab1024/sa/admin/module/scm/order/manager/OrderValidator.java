@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.order.manager;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
 
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
 
@@ -21,10 +22,22 @@ public final class OrderValidator {
         if (trim(value) == null) throw new ScmBusinessException(code);
     }
 
+    /**
+     * 解析数量 / 金额的定点字符串。
+     *
+     * <p>形态规则直接复用 {@link ScmDecimalStrings}：订单域曾要求「恰好 4 位小数」，比全项目唯一规则
+     * 更严，导致前端与 Excel 导入提交的 {@code "10"} 被拒。负数、科学计数法与超 4 位小数仍然拒绝。
+     *
+     * @param positive {@code true} = 数量（必须 &gt; 0）；{@code false} = 单价（允许 0）
+     * @return 4 位小数的 {@link BigDecimal}，与 {@code NUMERIC(18,4)} 及对外序列化形态一致
+     */
     public static BigDecimal decimal(String value, boolean positive) {
-        if (value == null || !value.matches("[0-9]{1,14}\\.[0-9]{4}"))
-            throw new ScmBusinessException(positive ? ORDER_QUANTITY_INVALID : ORDER_PRICE_INVALID);
-        var result = new BigDecimal(value);
+        BigDecimal result;
+        try {
+            result = ScmDecimalStrings.parseScale4Required(value);
+        } catch (ScmBusinessException e) {
+            throw new ScmBusinessException(positive ? ORDER_QUANTITY_FORMAT_INVALID : ORDER_PRICE_INVALID);
+        }
         if (positive && result.signum() <= 0) throw new ScmBusinessException(ORDER_QUANTITY_INVALID);
         return result;
     }

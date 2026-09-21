@@ -35,9 +35,33 @@ class OrderRulesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1", "1.00000", "-1.0000", "1e4", "100000000000000.0000", "0.0000"})
+    @ValueSource(strings = {"1.00000", "-1.0000", "1e4", "100000000000000.0000", "0.0000", ""})
     void rejectsInvalidQuantity(String value) {
         assertThatThrownBy(() -> OrderValidator.decimal(value, true)).isInstanceOf(ScmBusinessException.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"10", "1.5", "1.5000"})
+    void quantityAcceptsUpToFourDecimalsAndNormalizesToScale4(String value) {
+        var parsed = OrderValidator.decimal(value, true);
+        assertThat(parsed).isEqualByComparingTo(value);
+        assertThat(parsed.scale()).isEqualTo(4);
+    }
+
+    @Test
+    void quantityFormatFailureIsDistinctFromNonPositive() {
+        assertThat(errorCode("1e4")).isEqualTo(40076);
+        assertThat(errorCode("0.0000")).isEqualTo(40063);
+        assertThat(errorCode("-1")).isEqualTo(40076);
+    }
+
+    private static int errorCode(String quantity) {
+        try {
+            OrderValidator.decimal(quantity, true);
+            throw new AssertionError("Expected a rejection for " + quantity);
+        } catch (ScmBusinessException e) {
+            return e.getErrorCode().getCode();
+        }
     }
 
     @Test
