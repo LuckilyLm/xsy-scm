@@ -26,7 +26,7 @@
 | 商品中心 PCO-1 主档增强（V38–V39） | 后端与浏览器已验证 | 主档扩展字段与助记码搜索、计量单位 / 商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护；Excel 与图片中心属 PCO-2 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
-| F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40030`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
+| F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
 | 物流配送 L0–L2（V42–V43） | 已实现，编译 / 构建 + 定向集成验证通过；浏览器与真实地图待验收 | 客户 / 仓库定位、订单地理快照、司机车辆、静态排线、规划锁定、取消释放、固定打印；高德配置待补，L3 未开始 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
@@ -91,7 +91,8 @@
   前缀策略与 MinIO 匿名读策略在 F0 就已就位，本次没有新增存储侧设施。
   前端 `file-const.ts` 同步加枚举，商品上传组件不再写死 `folder=1`。
 - **写侧规则**：`ProductImageSyncManager.sync()` 在存在性校验之后加 `requirePublicImageKey` ——
-  新增或换绑的 `product_image` 只能引用 `public/image/` 前缀，违反即 `IMAGE_NOT_PUBLIC(40030)`；
+  新增或换绑的 `product_image` 只能引用 `public/image/` 前缀，违反即 `IMAGE_NOT_PUBLIC(40038)`
+  （原 40030，因该号先被 W3 定价域 `PRICE_INVALID` 占用，按「先提交者保留」换号）；
   **例外**是「行沿用自己本次修改前已有的 key」，否则 PCO-1 之前落在 `private/common/` 的存量行
   会让历史商品连改排序、切主图都保存不了。前缀常量取自枚举，业务侧不另写字符串。
 - **不再持久化 URL**：删 `product_image.file_url`（V41）与 `ProductImageEntity` / `ProductImageForm`

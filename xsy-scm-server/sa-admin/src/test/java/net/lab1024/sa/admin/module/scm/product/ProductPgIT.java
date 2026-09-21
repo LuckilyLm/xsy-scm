@@ -145,7 +145,7 @@ class ProductPgIT {
      */
     @Test void rejectsBindingPrivateDirectoryImage() {
         var form=product(); form.setImages(new ArrayList<>(List.of(upload("w1-private.png",FileFolderTypeEnum.COMMON.getValue()))));
-        conflict(() -> service.add(form),40030);
+        conflict(() -> service.add(form),40038);
     }
     /**
      * 本裁决之前落库的存量行沿用原 key 时放行，否则历史商品连改排序都保存不了；
@@ -161,7 +161,7 @@ class ProductPgIT {
         assertThat(query.detail(id).getImages().getFirst().getFileKey()).isEqualTo(legacyKey);
 
         var rebind=update(id); rebind.getImages().getFirst().setFileKey(upload("w1-other-private.png",FileFolderTypeEnum.COMMON.getValue()).getFileKey());
-        conflict(() -> service.update(rebind),40030);
+        conflict(() -> service.update(rebind),40038);
     }
     private Long category(Long parent,String suffix) {
         var form=new ProductCategoryAddForm(); form.setParentId(parent); form.setCategoryCode(prefix+suffix); form.setName(suffix); form.setStatus("ENABLED"); return categories.add(form);
