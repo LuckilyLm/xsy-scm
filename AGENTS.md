@@ -194,6 +194,13 @@ V40  V40__scm_geo_region_and_master_location.sql  map 地图 M0 地理数据地�
 V41  V41__scm_product_image_drop_file_url.sql     f0   F0-DEBT-01 写侧收口：删除 product_image.file_url
                                                    （预签名地址是带 TTL 的派生值，一律按 file_key 现算），
                                                    刻意不加 file_key 前缀 CHECK —— 存量私有行仍合法
+V42  V42__scm_delivery_static_route.sql           delivery 物流配送 L0–L2：五张配送表（司机/车辆/线路/
+                                                   停靠点/线路订单）、订单地址地理快照、坐标完整性 CHECK、
+                                                   线路唯一/部分索引；原编号 V41，因与 F0 的 V41 撞号按
+                                                   「保留已被真实库应用的版本号」先例重排
+V43  V43__scm_delivery_permissions.sql            delivery data-only，物流配送菜单与权限
+                                                   （1000–1003 / 1011–1016 / 1021–1022 / 1031–1032，
+                                                   仅授 SUPER_ADMIN）；原编号 V42
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

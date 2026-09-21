@@ -198,6 +198,10 @@ public class CustomerService {
         entity.setCityName(CustomerValidator.normalizeOptional(form.getCityName()));
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(CustomerValidator.normalizeOptional(form.getDistrictName()));
+        if (!form.isLocationComplete()) throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+        entity.setLongitude(form.getLongitude());
+        entity.setLatitude(form.getLatitude());
+        entity.setGeomCrs(form.getGeomCrs());
         entity.setRemark(CustomerValidator.normalizeOptional(form.getRemark()));
 
         // 授信额度列非空，缺省按 0 处理；其余账期字段保持可空语义

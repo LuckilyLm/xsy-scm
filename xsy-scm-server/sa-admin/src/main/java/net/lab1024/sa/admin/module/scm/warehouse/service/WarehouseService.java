@@ -204,6 +204,10 @@ public class WarehouseService {
         entity.setCityName(form.getCityName());
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(form.getDistrictName());
+        if (!form.isLocationComplete()) throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+        entity.setLongitude(form.getLongitude());
+        entity.setLatitude(form.getLatitude());
+        entity.setGeomCrs(form.getGeomCrs());
     }
 
     private void stamp(WarehouseEntity entity, boolean creating) {

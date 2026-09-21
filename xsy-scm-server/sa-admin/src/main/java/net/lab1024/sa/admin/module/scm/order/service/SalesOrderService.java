@@ -100,7 +100,15 @@ public class SalesOrderService {
         var rows=materialize(f);var o=new SalesOrderEntity();OrderSnapshotFactory.customer(o,customer);
         o.setOrderNo(numbers.order());o.setStatus("DRAFT");header(o,f);o.setOrderedTotalAmount(total(rows));stamp(o,true);orders.insert(o);
         for(var row:rows) insert(o.getId(),row);
-        var a=new OrderAddressSnapshotEntity();BeanUtils.copyProperties(f.getAddress(),a);a.setOrderId(o.getId());a.setCustomerId(o.getCustomerId());a.setCreatedAt(OffsetDateTime.now());a.setCreatedBy(ScmOperator.current());addresses.insert(a);
+        var a=new OrderAddressSnapshotEntity();BeanUtils.copyProperties(f.getAddress(),a);a.setOrderId(o.getId());a.setCustomerId(o.getCustomerId());a.setCreatedAt(OffsetDateTime.now());a.setCreatedBy(ScmOperator.current());if (a.getAddress() != null && !a.getAddress().isBlank() && Objects.equals(a.getAddress(), customer.getAddress())) {
+            a.setProvinceCode(customer.getProvinceCode()); a.setProvinceName(customer.getProvinceName());
+            a.setCityCode(customer.getCityCode()); a.setCityName(customer.getCityName());
+            a.setDistrictCode(customer.getDistrictCode()); a.setDistrictName(customer.getDistrictName());
+            if (customer.getGeomCrs() != null) {
+                a.setLongitude(customer.getLongitude()); a.setLatitude(customer.getLatitude()); a.setGeomCrs(customer.getGeomCrs());
+            }
+        }
+        addresses.insert(a);
         var result=query.detail(o.getId());log(o.getId(),"CREATE",null,null,result);return result;
     }
 

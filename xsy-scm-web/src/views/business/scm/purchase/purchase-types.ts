@@ -1,3 +1,4 @@
+import type { ScmLocation } from '/@/components/business/scm/map/types';
 /**
  * W5 采购域前端类型（新增文件，无 Provenance 要求）。
  *
@@ -359,7 +360,7 @@ export interface LogQuery extends Page {
 }
 
 /** `WarehouseVO`。省 / 市 / 区编码与名称快照见 `AreaColumns`（地图 M0 / V40）。 */
-export interface Warehouse extends Partial<AreaColumns> {
+export interface Warehouse extends Partial<AreaColumns>, ScmLocation {
   id: Id;
   warehouseCode?: string;
   name?: string;
@@ -377,7 +378,7 @@ export interface WarehouseQuery extends Page {
   status?: string;
 }
 
-export interface WarehousePayload extends Partial<AreaColumns> {
+export interface WarehousePayload extends Partial<AreaColumns>, ScmLocation {
   id?: Id;
   version?: number;
   warehouseCode: string;

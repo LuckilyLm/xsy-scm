@@ -13,7 +13,7 @@ import lombok.Data;
  * 状态写入路径的缺口见验收报告 G1。
  */
 @Data
-public class WarehouseAddForm {
+public class WarehouseAddForm extends net.lab1024.sa.admin.module.scm.common.domain.ScmLocationForm {
 
     @NotBlank
     @Size(max = 64)

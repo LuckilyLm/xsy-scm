@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.delivery.dao.DeliveryQueryDao">
+    <sql id="routeColumns">
+        r.*,
+        (SELECT count(*) FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE) AS stop_count,
+        (SELECT count(*) FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE AND s.geom_crs IS NOT NULL) AS located_count,
+        (SELECT count(*) FROM delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS order_count,
+        (SELECT sum(o.order_amount_snapshot) FROM delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS total_amount
+    </sql>
+    <select id="routes" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryRouteVO">
+        SELECT <include refid="routeColumns"/> FROM delivery_route r WHERE r.deleted=FALSE
+        <if test="q.keyword != null and q.keyword != ''">AND (r.route_name ILIKE concat('%',#{q.keyword},'%') OR r.route_no ILIKE concat('%',#{q.keyword},'%'))</if>
+        <if test="q.deliveryDate != null">AND r.delivery_date=#{q.deliveryDate}</if>
+        <if test="q.status != null and q.status != ''">AND r.status=#{q.status}</if>
+        <if test="q.warehouseId != null">AND r.warehouse_id=#{q.warehouseId}</if>
+        <if test="q.driverId != null">AND r.driver_id=#{q.driverId}</if>
+        <if test="q.vehicleId != null">AND r.vehicle_id=#{q.vehicleId}</if>
+        <if test="q.provinceCode != null or q.cityCode != null or q.districtCode != null">
+            AND EXISTS (SELECT 1 FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE
+            <if test="q.provinceCode != null">AND s.province_code=#{q.provinceCode}</if>
+            <if test="q.cityCode != null">AND s.city_code=#{q.cityCode}</if>
+            <if test="q.districtCode != null">AND s.district_code=#{q.districtCode}</if>)
+        </if>
+        ORDER BY r.delivery_date DESC,r.id DESC
+    </select>
+    <select id="route" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryRouteVO">
+        SELECT <include refid="routeColumns"/> FROM delivery_route r WHERE r.id=#{id} AND r.deleted=FALSE
+    </select>
+    <select id="lockRoute" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.entity.DeliveryRouteEntity">
+        SELECT * FROM delivery_route WHERE id=#{id} AND deleted=FALSE FOR UPDATE
+    </select>
+    <select id="stops" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryStopVO">
+        SELECT s.*,count(o.id) AS order_count,sum(o.order_amount_snapshot) AS total_amount
+        FROM delivery_route_stop s LEFT JOIN delivery_route_order o ON o.stop_id=s.id AND o.deleted=FALSE
+        WHERE s.route_id=#{id} AND s.deleted=FALSE GROUP BY s.id ORDER BY s.stop_seq,s.id
+    </select>
+    <select id="nextNumber" resultType="long">SELECT nextval('delivery_route_no_seq')</select>
+    <update id="bumpStopSequences">
+        UPDATE delivery_route_stop SET stop_seq=stop_seq+1000 WHERE route_id=#{id} AND deleted=FALSE
+    </update>
+    <select id="printItems" resultMap="net.lab1024.sa.admin.module.scm.order.dao.SalesOrderItemDao.row">
+        SELECT i.* FROM sales_order_item i JOIN delivery_route_order o ON o.order_id=i.order_id
+        WHERE o.route_id=#{id} AND o.deleted=FALSE AND i.deleted=FALSE
+        ORDER BY o.stop_id,o.order_id,i.sort_order,i.id
+    </select>
+    <sql id="candidateSource">
+        SELECT o.id AS order_id,o.order_no,o.customer_id,o.customer_name_snapshot AS customer_name,o.status,
+            o.expect_delivery_time,o.ordered_total_amount AS order_amount,
+            a.receiver_name,a.receiver_phone,a.address,
+            (SELECT count(*) FROM sales_order_item i WHERE i.order_id=o.id AND i.deleted=FALSE) AS item_count,
+            CASE WHEN a.province_code IS NOT NULL THEN a.province_code ELSE c.province_code END AS province_code,
+            CASE WHEN a.province_code IS NOT NULL THEN a.province_name ELSE c.province_name END AS province_name,
+            CASE WHEN a.province_code IS NOT NULL THEN a.city_code ELSE c.city_code END AS city_code,
+            CASE WHEN a.province_code IS NOT NULL THEN a.city_name ELSE c.city_name END AS city_name,
+            CASE WHEN a.province_code IS NOT NULL THEN a.district_code ELSE c.district_code END AS district_code,
+            CASE WHEN a.province_code IS NOT NULL THEN a.district_name ELSE c.district_name END AS district_name,
+            CASE WHEN a.geom_crs IS NOT NULL THEN a.longitude ELSE c.longitude END AS longitude,
+            CASE WHEN a.geom_crs IS NOT NULL THEN a.latitude ELSE c.latitude END AS latitude,
+            CASE WHEN a.geom_crs IS NOT NULL THEN a.geom_crs ELSE c.geom_crs END AS geom_crs
+        FROM sales_order o
+        JOIN LATERAL (SELECT * FROM order_address_snapshot a WHERE a.order_id=o.id ORDER BY a.id LIMIT 1) a ON TRUE
+        LEFT JOIN customer c ON c.id=o.customer_id AND c.deleted=FALSE AND c.address=a.address AND btrim(a.address)&lt;&gt;''
+        WHERE o.deleted=FALSE
+    </sql>
+    <select id="candidate" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
+        SELECT * FROM (<include refid="candidateSource"/>) candidate WHERE order_id=#{id}
+    </select>
+    <select id="candidates" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
+        SELECT * FROM (<include refid="candidateSource"/>) c WHERE c.status IN
+        <foreach collection="statuses" item="status" open="(" close=")" separator=",">#{status}</foreach>
+        AND NOT EXISTS (SELECT 1 FROM delivery_route_order d WHERE d.order_id=c.order_id AND d.assignment_status='ACTIVE' AND d.deleted=FALSE)
+        <if test="q.keyword != null and q.keyword != ''">AND (c.order_no ILIKE concat('%',#{q.keyword},'%') OR c.customer_name ILIKE concat('%',#{q.keyword},'%') OR c.address ILIKE concat('%',#{q.keyword},'%'))</if>
+        <if test="q.customerKeyword != null and q.customerKeyword != ''">AND c.customer_name ILIKE concat('%',#{q.customerKeyword},'%')</if>
+        <if test="q.deliveryDate != null">AND (c.expect_delivery_time AT TIME ZONE 'Asia/Shanghai')::date=#{q.deliveryDate}</if>
+        <if test="q.deliveryTimeFrom != null">AND c.expect_delivery_time &gt;= #{q.deliveryTimeFrom}</if>
+        <if test="q.deliveryTimeTo != null">AND c.expect_delivery_time &lt;= #{q.deliveryTimeTo}</if>
+        <if test="q.customerId != null">AND c.customer_id=#{q.customerId}</if>
+        <if test="q.provinceCode != null">AND c.province_code=#{q.provinceCode}</if>
+        <if test="q.cityCode != null">AND c.city_code=#{q.cityCode}</if>
+        <if test="q.districtCode != null">AND c.district_code=#{q.districtCode}</if>
+        <if test="q.minAmount != null">AND c.order_amount &gt;= #{q.minAmount}</if>
+        <if test="q.maxAmount != null">AND c.order_amount &lt;= #{q.maxAmount}</if>
+        <if test="q.minItemCount != null">AND c.item_count &gt;= #{q.minItemCount}</if>
+        <if test="q.maxItemCount != null">AND c.item_count &lt;= #{q.maxItemCount}</if>
+        <if test="q.locatedOnly != null and q.locatedOnly">AND c.longitude IS NOT NULL AND c.latitude IS NOT NULL AND c.geom_crs IS NOT NULL</if>
+        ORDER BY c.expect_delivery_time NULLS LAST,c.order_id
+    </select>
+</mapper>

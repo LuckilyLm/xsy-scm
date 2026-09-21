@@ -11,6 +11,18 @@ import net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler;
 
 @Data @TableName(value="order_address_snapshot",autoResultMap=true)
 public class OrderAddressSnapshotEntity {
+    private Integer provinceCode;
+    private String provinceName;
+    private Integer cityCode;
+    private String cityName;
+    private Integer districtCode;
+    private String districtName;
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    private java.math.BigDecimal longitude;
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    private java.math.BigDecimal latitude;
+    private String geomCrs;
+
     @TableId(type=IdType.AUTO) private Long id;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private Long orderId;
     @TableField(updateStrategy=FieldStrategy.ALWAYS) private Long customerId;
