@@ -14,7 +14,6 @@ import net.lab1024.sa.base.common.enumeration.BaseEnum;
 public enum MessageTemplateEnum implements BaseEnum {
 
 
-
     ORDER_AUDIT(1000, "订单审批", MessageTypeEnum.ORDER, "您有一个订单等待审批，订单号【${orderNumber}】"),
 
     ;

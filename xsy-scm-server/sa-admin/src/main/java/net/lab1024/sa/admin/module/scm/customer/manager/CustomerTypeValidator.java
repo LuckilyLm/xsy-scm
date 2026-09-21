@@ -17,12 +17,16 @@ public final class CustomerTypeValidator {
     private CustomerTypeValidator() {
     }
 
-    /** 编码归一化：去空白 + 转大写。 */
+    /**
+     * 编码归一化：去空白 + 转大写。
+     */
     public static String normalizeCode(String raw) {
         return CustomerValidator.normalizeCode(raw);
     }
 
-    /** 名称归一化：去首尾空白。 */
+    /**
+     * 名称归一化：去首尾空白。
+     */
     public static String normalizeName(String raw) {
         return CustomerValidator.normalizeName(raw);
     }
@@ -44,7 +48,9 @@ public final class CustomerTypeValidator {
         throw new ScmBusinessException(VALIDATION_ERROR);
     }
 
-    /** 编码 / 名称必填校验（非 MVC 入口用）。 */
+    /**
+     * 编码 / 名称必填校验（非 MVC 入口用）。
+     */
     public static void validateRequired(CustomerTypeAddForm form) {
         if (form.getTypeCode() == null || form.getTypeCode().trim().isEmpty()
                 || form.getName() == null || form.getName().trim().isEmpty()) {

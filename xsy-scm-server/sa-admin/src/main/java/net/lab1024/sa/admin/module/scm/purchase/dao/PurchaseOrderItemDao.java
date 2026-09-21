@@ -22,10 +22,14 @@ import java.util.List;
 @Mapper
 public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity> {
 
-    /** 本单全部活动行，按 `sort_order` 排序。 */
+    /**
+     * 本单全部活动行，按 `sort_order` 排序。
+     */
     List<PurchaseOrderItemEntity> listByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
-    /** 多单活动行（批量详情用）。 */
+    /**
+     * 多单活动行（批量详情用）。
+     */
     List<PurchaseOrderItemEntity> listByOrderIds(@Param("ids") List<Long> ids);
 
     /**
@@ -36,23 +40,33 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      */
     List<PurchaseOrderItemEntity> lockByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
-    /** 单行 `FOR UPDATE`。 */
+    /**
+     * 单行 `FOR UPDATE`。
+     */
     PurchaseOrderItemEntity lock(@Param("id") Long id);
 
-    /** 累计已收数量（`received_quantity = received_quantity + delta`），不做上限判定。 */
+    /**
+     * 累计已收数量（`received_quantity = received_quantity + delta`），不做上限判定。
+     */
     int accumulateReceived(@Param("id") Long id,
                            @Param("delta") BigDecimal delta,
                            @Param("operator") String operator);
 
-    /** 软删单行。 */
+    /**
+     * 软删单行。
+     */
     int softDelete(@Param("id") Long id,
                    @Param("version") Integer version,
                    @Param("operator") String operator);
 
-    /** 软删本单全部行（整单删除时调用）。 */
+    /**
+     * 软删本单全部行（整单删除时调用）。
+     */
     int softDeleteByOrderId(@Param("purchaseOrderId") Long purchaseOrderId,
                             @Param("operator") String operator);
 
-    /** 活动行数（DELETE / 状态推导用）。 */
+    /**
+     * 活动行数（DELETE / 状态推导用）。
+     */
     int countActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 }

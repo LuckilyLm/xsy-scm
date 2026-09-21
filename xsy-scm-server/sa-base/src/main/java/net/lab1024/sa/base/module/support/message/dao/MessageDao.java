@@ -35,9 +35,8 @@ public interface MessageDao extends BaseMapper<MessageEntity> {
     /**
      * 查询未读消息数
      */
-    Long getUnreadCount( @Param("receiverUserType") Integer receiverUserType,
-                         @Param("receiverUserId") Long receiverUserId);
-
+    Long getUnreadCount(@Param("receiverUserType") Integer receiverUserType,
+                        @Param("receiverUserId") Long receiverUserId);
 
 
 }

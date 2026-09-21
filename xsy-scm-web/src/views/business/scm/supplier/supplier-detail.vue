@@ -20,7 +20,9 @@
       <a-button @click="load">刷新详情</a-button>
     </a-space>
     <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action><a-button size="small" @click="load">重新加载</a-button></template>
+      <template #action>
+        <a-button size="small" @click="load">重新加载</a-button>
+      </template>
     </a-alert>
     <template v-else-if="supplier">
       <a-descriptions :title="supplier.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
@@ -39,18 +41,20 @@
 
       <a-divider orientation="left">已关联商品（快照）</a-divider>
       <a-table
-        :data-source="relations"
-        :columns="relationColumns"
-        row-key="id"
-        size="small"
-        bordered
-        :pagination="false"
-        :scroll="{ x: 1000 }"
+          :data-source="relations"
+          :columns="relationColumns"
+          row-key="id"
+          size="small"
+          bordered
+          :pagination="false"
+          :scroll="{ x: 1000 }"
       >
         <template #bodyCell="{ column, record }">
           <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
           <span v-else-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
-          <span v-else-if="column.dataIndex === 'referencePrice'" class="amount">{{ record.referencePrice ?? '—' }}</span>
+          <span v-else-if="column.dataIndex === 'referencePrice'" class="amount">{{
+              record.referencePrice ?? '—'
+            }}</span>
           <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
           <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
             {{ record.defaultFlag ? '默认来源' : '—' }}
@@ -60,88 +64,88 @@
           </a-tag>
         </template>
       </a-table>
-      <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品" />
+      <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品"/>
     </template>
   </a-card>
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import type { TableColumnsType } from 'ant-design-vue';
-  import { supplierApi } from '/@/api/business/scm/supplier-api';
-  import { supplierSkuApi } from '/@/api/business/scm/supplier-sku-api';
-  import type { EnableStatus, SupplierDetail, SupplierSkuRow } from '/@/types/business/scm/supplier';
-  import { SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM } from '/@/constants/business/scm/supplier-const';
-  import { supplierError } from './supplier-errors';
-  import { datetime } from '../common/scm-display';
+import {ref, watch} from 'vue';
+import {useRoute, useRouter} from 'vue-router';
+import type {TableColumnsType} from 'ant-design-vue';
+import {supplierApi} from '/@/api/business/scm/supplier-api';
+import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
+import type {EnableStatus, SupplierDetail, SupplierSkuRow} from '/@/types/business/scm/supplier';
+import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
+import {supplierError} from './supplier-errors';
+import {datetime} from '../common/scm-display';
 
-  const route = useRoute();
-  const router = useRouter();
-  const supplier = ref<SupplierDetail>();
-  const relations = ref<SupplierSkuRow[]>([]);
-  const loading = ref(false);
-  const error = ref('');
+const route = useRoute();
+const router = useRouter();
+const supplier = ref<SupplierDetail>();
+const relations = ref<SupplierSkuRow[]>([]);
+const loading = ref(false);
+const error = ref('');
 
-  const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?.desc || value;
-  const skuStatusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
-  const specText = (spec: Record<string, string> | undefined): string => {
-    const values = Object.values(spec ?? {});
-    return values.length ? values.join('/') : '—';
-  };
+const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?.desc || value;
+const skuStatusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
+const specText = (spec: Record<string, string> | undefined): string => {
+  const values = Object.values(spec ?? {});
+  return values.length ? values.join('/') : '—';
+};
 
-  const relationColumns: TableColumnsType<SupplierSkuRow> = [
-    { title: '商品名称（快照）', dataIndex: 'skuNameSnapshot', width: 220 },
-    { title: '规格', dataIndex: 'spec', width: 160 },
-    { title: '规格编码（快照）', dataIndex: 'skuCodeSnapshot', width: 170 },
-    { title: '采购单位', dataIndex: 'purchaseUnit', width: 100 },
-    { title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right' },
-    { title: '采购员', dataIndex: 'purchaserName', width: 110 },
-    { title: '默认来源', dataIndex: 'defaultFlag', width: 110, align: 'center' },
-    { title: '状态', dataIndex: 'status', width: 90, align: 'center' },
-  ];
+const relationColumns: TableColumnsType<SupplierSkuRow> = [
+  {title: '商品名称（快照）', dataIndex: 'skuNameSnapshot', width: 220},
+  {title: '规格', dataIndex: 'spec', width: 160},
+  {title: '规格编码（快照）', dataIndex: 'skuCodeSnapshot', width: 170},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 100},
+  {title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right'},
+  {title: '采购员', dataIndex: 'purchaserName', width: 110},
+  {title: '默认来源', dataIndex: 'defaultFlag', width: 110, align: 'center'},
+  {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
+];
 
-  let requestId = 0;
+let requestId = 0;
 
-  async function load() {
-    const request = ++requestId;
-    const id = route.query.supplierId;
-    if (typeof id !== 'string' || !/^\d+$/.test(id)) {
-      supplier.value = undefined;
-      relations.value = [];
-      error.value = '供应商链接缺少有效编号';
-      return;
-    }
-    loading.value = true;
-    error.value = '';
+async function load() {
+  const request = ++requestId;
+  const id = route.query.supplierId;
+  if (typeof id !== 'string' || !/^\d+$/.test(id)) {
     supplier.value = undefined;
     relations.value = [];
-    try {
-      const response = await supplierApi.detail(id);
-      if (request !== requestId) {
-        return;
-      }
-      supplier.value = response.data;
-      // 关联关系是次要信息：单独取，失败不影响主体信息展示。
-      try {
-        const relationResponse = await supplierSkuApi.listBySupplierId(id);
-        if (request === requestId) relations.value = relationResponse.data ?? [];
-      } catch {
-        relations.value = [];
-      }
-    } catch (e) {
-      if (request === requestId) error.value = supplierError(e);
-    } finally {
-      if (request === requestId) loading.value = false;
-    }
+    error.value = '供应商链接缺少有效编号';
+    return;
   }
+  loading.value = true;
+  error.value = '';
+  supplier.value = undefined;
+  relations.value = [];
+  try {
+    const response = await supplierApi.detail(id);
+    if (request !== requestId) {
+      return;
+    }
+    supplier.value = response.data;
+    // 关联关系是次要信息：单独取，失败不影响主体信息展示。
+    try {
+      const relationResponse = await supplierSkuApi.listBySupplierId(id);
+      if (request === requestId) relations.value = relationResponse.data ?? [];
+    } catch {
+      relations.value = [];
+    }
+  } catch (e) {
+    if (request === requestId) error.value = supplierError(e);
+  } finally {
+    if (request === requestId) loading.value = false;
+  }
+}
 
-  watch(() => route.query.supplierId, load, { immediate: true });
+watch(() => route.query.supplierId, load, {immediate: true});
 </script>
 
 <style scoped>
-  .amount {
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
+.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 </style>

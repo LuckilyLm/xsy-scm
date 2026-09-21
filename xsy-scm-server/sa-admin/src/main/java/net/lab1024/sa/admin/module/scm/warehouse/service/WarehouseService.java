@@ -38,10 +38,14 @@ public class WarehouseService {
 
     private final WarehouseDao dao;
 
-    /** 停用前置守卫（B1，HD-B1-01）：inventory 域实现，避免 warehouse 反向依赖 purchase/inventory。 */
+    /**
+     * 停用前置守卫（B1，HD-B1-01）：inventory 域实现，避免 warehouse 反向依赖 purchase/inventory。
+     */
     private final WarehouseDisableGuard disableGuard;
 
-    /** 读取仓库，不存在或已删除 → 40485。 */
+    /**
+     * 读取仓库，不存在或已删除 → 40485。
+     */
     public WarehouseEntity require(Long id) {
         WarehouseEntity entity = id == null ? null : dao.selectById(id);
         if (entity == null) {
@@ -60,7 +64,9 @@ public class WarehouseService {
         return ScmWarehouseStatusEnum.ENABLED.name().equals(require(id).getStatus());
     }
 
-    /** 全量仓库（含 DISABLED），供内部逻辑使用。 */
+    /**
+     * 全量仓库（含 DISABLED），供内部逻辑使用。
+     */
     public List<WarehouseEntity> all() {
         return dao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
                 .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
@@ -196,7 +202,9 @@ public class WarehouseService {
         return dao.selectCount(wrapper) > 0;
     }
 
-    /** 省 / 市 / 区整组随表单覆盖：实体列均为 updateStrategy = ALWAYS，清空选择即写回 NULL。 */
+    /**
+     * 省 / 市 / 区整组随表单覆盖：实体列均为 updateStrategy = ALWAYS，清空选择即写回 NULL。
+     */
     private void applyRegion(WarehouseEntity entity, WarehouseAddForm form) {
         entity.setProvinceCode(form.getProvinceCode());
         entity.setProvinceName(form.getProvinceName());
@@ -204,7 +212,8 @@ public class WarehouseService {
         entity.setCityName(form.getCityName());
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(form.getDistrictName());
-        if (!form.isLocationComplete()) throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+        if (!form.isLocationComplete())
+            throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
         entity.setLongitude(form.getLongitude());
         entity.setLatitude(form.getLatitude());
         entity.setGeomCrs(form.getGeomCrs());

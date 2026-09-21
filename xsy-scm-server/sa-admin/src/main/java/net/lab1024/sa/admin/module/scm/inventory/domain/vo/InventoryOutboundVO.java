@@ -30,7 +30,9 @@ public class InventoryOutboundVO {
 
     private String status;
 
-    /** 状态中文描述（由服务层按枚举填充，便于列表直接展示）。 */
+    /**
+     * 状态中文描述（由服务层按枚举填充，便于列表直接展示）。
+     */
     private String statusDesc;
 
     private String remark;
@@ -45,10 +47,14 @@ public class InventoryOutboundVO {
 
     private OffsetDateTime updatedAt;
 
-    /** 明细；仅详情接口填充，列表接口为 null。 */
+    /**
+     * 明细；仅详情接口填充，列表接口为 null。
+     */
     private List<Item> items;
 
-    /** 出库单明细行。 */
+    /**
+     * 出库单明细行。
+     */
     @Data
     public static class Item {
 
@@ -67,7 +73,9 @@ public class InventoryOutboundVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal quantity;
 
-        /** 确认出库时写入的记账单位快照；草稿态为空。 */
+        /**
+         * 确认出库时写入的记账单位快照；草稿态为空。
+         */
         private String unitSnapshot;
 
         private String remark;

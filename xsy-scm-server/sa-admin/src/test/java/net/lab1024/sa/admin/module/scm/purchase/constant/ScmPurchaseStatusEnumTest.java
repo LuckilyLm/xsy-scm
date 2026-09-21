@@ -87,7 +87,9 @@ class ScmPurchaseStatusEnumTest {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    /** 取出 {@code CONSTRAINT <name> ... IN ( ... )} 中的取值集合（保持书写顺序）。 */
+    /**
+     * 取出 {@code CONSTRAINT <name> ... IN ( ... )} 中的取值集合（保持书写顺序）。
+     */
     private static Set<String> whitelist(String resource, String constraintName) {
         String sql = migrationSql(resource);
         int name = sql.indexOf(constraintName);

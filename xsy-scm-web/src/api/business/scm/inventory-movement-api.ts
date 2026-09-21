@@ -11,18 +11,18 @@
  *
  * 权限：`scm:inventory:movement:query`（菜单 821）。
  */
-import { postRequest } from '/@/lib/axios';
-import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
+import {postRequest} from '/@/lib/axios';
+import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
-  InventoryMovement,
-  InventoryMovementQuery,
+    InventoryMovement,
+    InventoryMovementQuery,
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryMovementApi = {
-  query: (data: InventoryMovementQuery) =>
-    postRequest('/scm/inventory/movement/query', data) as unknown as Promise<
-      ScmResponse<ScmPage<InventoryMovement>>
-    >,
+    query: (data: InventoryMovementQuery) =>
+        postRequest('/scm/inventory/movement/query', data) as unknown as Promise<
+            ScmResponse<ScmPage<InventoryMovement>>
+        >,
 };
 
 export default inventoryMovementApi;

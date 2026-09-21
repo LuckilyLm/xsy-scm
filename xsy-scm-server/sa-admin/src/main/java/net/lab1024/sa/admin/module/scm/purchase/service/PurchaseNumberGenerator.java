@@ -40,17 +40,23 @@ public class PurchaseNumberGenerator {
 
     private final PurchaseReceiptDao purchaseReceiptDao;
 
-    /** 采购单号。必须在事务内调用（序列的 nextval 不回滚，跳号是可接受的）。 */
+    /**
+     * 采购单号。必须在事务内调用（序列的 nextval 不回滚，跳号是可接受的）。
+     */
     public String order() {
         return format("PO", purchaseOrderDao.nextOrderNo());
     }
 
-    /** 收货单号。同上。 */
+    /**
+     * 收货单号。同上。
+     */
     public String receipt() {
         return format("PR", purchaseReceiptDao.nextReceiptNo());
     }
 
-    /** 单号拼接的纯函数（单测直接覆盖，不需要 DB）。 */
+    /**
+     * 单号拼接的纯函数（单测直接覆盖，不需要 DB）。
+     */
     public static String format(String prefix, long number) {
         return prefix
                 + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI).format(DATE)

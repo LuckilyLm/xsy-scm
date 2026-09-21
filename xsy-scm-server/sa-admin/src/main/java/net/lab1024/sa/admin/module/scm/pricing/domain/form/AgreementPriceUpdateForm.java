@@ -7,6 +7,15 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
 import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
 import net.lab1024.sa.base.common.domain.PageParam;
+
 import java.time.OffsetDateTime;
-@Data @EqualsAndHashCode(callSuper=true)
-public class AgreementPriceUpdateForm extends AgreementPriceAddForm { @NotNull private Long agreementPriceId; @NotNull @Min(0) private Integer version; }
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class AgreementPriceUpdateForm extends AgreementPriceAddForm {
+    @NotNull
+    private Long agreementPriceId;
+    @NotNull
+    @Min(0)
+    private Integer version;
+}

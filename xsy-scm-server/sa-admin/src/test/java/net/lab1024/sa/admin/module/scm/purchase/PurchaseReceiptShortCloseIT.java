@@ -34,7 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("少收关单：混合收付状态 + 分配保留（PG IT）")
 class PurchaseReceiptShortCloseIT extends ScmW5PgITBase {
 
-    /** 两行采购单（两个 SKU）+ 一张草稿收货单。 */
+    /**
+     * 两行采购单（两个 SKU）+ 一张草稿收货单。
+     */
     private record MixedFixture(Long skuA, Long skuB, Long supplierId,
                                 PurchaseDemandEntity demandA, PurchaseDemandEntity demandB,
                                 PurchaseOrderVO order, PurchaseReceiptVO receipt) {
@@ -67,7 +69,9 @@ class PurchaseReceiptShortCloseIT extends ScmW5PgITBase {
         return new MixedFixture(skuA, skuB, supplierId, demandA, demandB, order, receipt);
     }
 
-    /** 按 SKU 分派两个数量地确认收货。 */
+    /**
+     * 按 SKU 分派两个数量地确认收货。
+     */
     private PurchaseReceiptVO confirm(MixedFixture fx, String quantityA, String quantityB) {
         PurchaseReceiptVO current = reloadReceipt(fx.receipt().getId());
         List<PurchaseReceiptConfirmForm.Item> items = new ArrayList<>(current.getItems().size());

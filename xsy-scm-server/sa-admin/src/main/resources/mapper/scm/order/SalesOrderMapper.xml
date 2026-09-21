@@ -1,38 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao">
-<select id="customerReferences" resultType="long">SELECT count(*) FROM sales_order WHERE customer_id=#{id} AND deleted=FALSE</select>
-<update id="softDelete">UPDATE sales_order SET deleted=TRUE,version=version+1,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator} WHERE id=#{id} AND version=#{version} AND deleted=FALSE</update>
-<resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity">
-<result column="id" property="id"/>
-<result column="order_no" property="orderNo"/>
-<result column="customer_id" property="customerId"/>
-<result column="customer_code_snapshot" property="customerCodeSnapshot"/>
-<result column="customer_name_snapshot" property="customerNameSnapshot"/>
-<result column="order_source" property="orderSource"/>
-<result column="original_order_id" property="originalOrderId"/>
-<result column="supplement_reason" property="supplementReason"/>
-<result column="status" property="status"/>
-<result column="ordered_total_amount" property="orderedTotalAmount"/>
-<result column="settlement_total_amount" property="settlementTotalAmount"/>
-<result column="settle_mode_snapshot" property="settleModeSnapshot"/>
-<result column="expect_delivery_time" property="expectDeliveryTime"/>
-<result column="seller_id" property="sellerId"/>
-<result column="remark" property="remark"/>
-<result column="cancel_reason" property="cancelReason"/>
-<result column="submitted_at" property="submittedAt"/>
-<result column="confirmed_at" property="confirmedAt"/>
-<result column="cancelled_at" property="cancelledAt"/>
-<result column="version" property="version"/>
-<result column="deleted" property="deleted"/>
-<result column="created_at" property="createdAt"/>
-<result column="updated_at" property="updatedAt"/>
-<result column="created_by" property="createdBy"/>
-<result column="updated_by" property="updatedBy"/>
-</resultMap>
-<select id="lock" resultMap="row">SELECT * FROM sales_order WHERE id=#{id} AND deleted=FALSE FOR UPDATE</select>
-<select id="query" resultMap="row">SELECT * FROM sales_order WHERE deleted=FALSE <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if><if test="query.status != null and query.status != ''">AND status=#{query.status}</if><if test="query.orderSource != null and query.orderSource != ''">AND order_source=#{query.orderSource}</if><if test="query.orderId != null">AND id=#{query.orderId}</if><if test="query.keyword != null and query.keyword != ''">AND (order_no ILIKE '%' || #{query.keyword} || '%' OR customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')</if><if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if><if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if> ORDER BY created_at DESC,id DESC</select>
-<select id="nextOrder" resultType="long">SELECT nextval('sales_order_no_seq')</select>
-<select id="nextReturn" resultType="long">SELECT nextval('order_return_no_seq')</select>
-<select id="nextRefund" resultType="long">SELECT nextval('order_refund_no_seq')</select>
+    <select id="customerReferences" resultType="long">SELECT count(*)
+                                                      FROM sales_order
+                                                      WHERE customer_id = #{id}
+                                                        AND deleted = FALSE</select>
+    <update id="softDelete">UPDATE sales_order
+                            SET deleted= TRUE,
+                                version=version + 1,
+                                updated_at=CURRENT_TIMESTAMP,
+                                updated_by=#{operator}
+                            WHERE id = #{id}
+                              AND version = #{version}
+                              AND deleted = FALSE</update>
+    <resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity">
+        <result column="id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="customer_code_snapshot" property="customerCodeSnapshot"/>
+        <result column="customer_name_snapshot" property="customerNameSnapshot"/>
+        <result column="order_source" property="orderSource"/>
+        <result column="original_order_id" property="originalOrderId"/>
+        <result column="supplement_reason" property="supplementReason"/>
+        <result column="status" property="status"/>
+        <result column="ordered_total_amount" property="orderedTotalAmount"/>
+        <result column="settlement_total_amount" property="settlementTotalAmount"/>
+        <result column="settle_mode_snapshot" property="settleModeSnapshot"/>
+        <result column="expect_delivery_time" property="expectDeliveryTime"/>
+        <result column="seller_id" property="sellerId"/>
+        <result column="remark" property="remark"/>
+        <result column="cancel_reason" property="cancelReason"/>
+        <result column="submitted_at" property="submittedAt"/>
+        <result column="confirmed_at" property="confirmedAt"/>
+        <result column="cancelled_at" property="cancelledAt"/>
+        <result column="version" property="version"/>
+        <result column="deleted" property="deleted"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+    </resultMap>
+    <select id="lock" resultMap="row">SELECT *
+                                      FROM sales_order
+                                      WHERE id = #{id}
+                                        AND deleted = FALSE FOR UPDATE</select>
+    <select id="query" resultMap="row">SELECT * FROM sales_order WHERE deleted=FALSE
+        <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if>
+        <if test="query.status != null and query.status != ''">AND status=#{query.status}</if>
+        <if test="query.orderSource != null and query.orderSource != ''">AND order_source=#{query.orderSource}</if>
+        <if test="query.orderId != null">AND id=#{query.orderId}</if>
+        <if test="query.keyword != null and query.keyword != ''">AND (order_no ILIKE '%' || #{query.keyword} || '%' OR
+            customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')
+        </if>
+        <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>
+        <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
+        ORDER BY created_at DESC,id DESC
+    </select>
+    <select id="nextOrder" resultType="long">SELECT nextval('sales_order_no_seq')</select>
+    <select id="nextReturn" resultType="long">SELECT nextval('order_return_no_seq')</select>
+    <select id="nextRefund" resultType="long">SELECT nextval('order_refund_no_seq')</select>
 </mapper>

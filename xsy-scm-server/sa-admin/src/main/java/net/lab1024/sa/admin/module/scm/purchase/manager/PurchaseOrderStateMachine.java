@@ -29,7 +29,9 @@ public final class PurchaseOrderStateMachine {
     private PurchaseOrderStateMachine() {
     }
 
-    /** 状态图：只有表里列出的 (from, to) 是合法的。 */
+    /**
+     * 状态图：只有表里列出的 (from, to) 是合法的。
+     */
     public static boolean canTransition(String from, String to) {
         if (to == null) {
             // Set.of(...).contains(null) 会抛 NPE（ImmutableCollections 拒绝 null 查询），
@@ -45,34 +47,46 @@ public final class PurchaseOrderStateMachine {
         };
     }
 
-    /** 断言转换合法，否则 40982。 */
+    /**
+     * 断言转换合法，否则 40982。
+     */
     public static void transition(String from, String to) {
         if (!canTransition(from, to)) {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
         }
     }
 
-    /** 只有 {@code DRAFT} 可编辑行与需求分配（T2）。 */
+    /**
+     * 只有 {@code DRAFT} 可编辑行与需求分配（T2）。
+     */
     public static boolean editable(String status) {
         return "DRAFT".equals(status);
     }
 
-    /** 可建 / 可确认收货：{@code SUBMITTED} 或 {@code PARTIALLY_RECEIVED}（T7/T8）。 */
+    /**
+     * 可建 / 可确认收货：{@code SUBMITTED} 或 {@code PARTIALLY_RECEIVED}（T7/T8）。
+     */
     public static boolean receivable(String status) {
         return "SUBMITTED".equals(status) || "PARTIALLY_RECEIVED".equals(status);
     }
 
-    /** 可取消：{@code DRAFT} 或 {@code SUBMITTED}（T4）。**不含** {@code PARTIALLY_RECEIVED}（P14）。 */
+    /**
+     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}（T4）。**不含** {@code PARTIALLY_RECEIVED}（P14）。
+     */
     public static boolean cancellable(String status) {
         return "DRAFT".equals(status) || "SUBMITTED".equals(status);
     }
 
-    /** 可少收关单：仅 {@code PARTIALLY_RECEIVED}（T5）。 */
+    /**
+     * 可少收关单：仅 {@code PARTIALLY_RECEIVED}（T5）。
+     */
     public static boolean shortClosable(String status) {
         return "PARTIALLY_RECEIVED".equals(status);
     }
 
-    /** 是否终态（只读）。 */
+    /**
+     * 是否终态（只读）。
+     */
     public static boolean terminal(String status) {
         return "RECEIVED".equals(status) || "SHORT_CLOSED".equals(status) || "CANCELLED".equals(status);
     }

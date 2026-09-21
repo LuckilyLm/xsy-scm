@@ -44,11 +44,12 @@ public interface HelpDocDao extends BaseMapper<HelpDocEntity> {
 
     /**
      * 更新 阅读量
+     *
      * @param helpDocId
      * @param userViewCountIncrease
      * @param pageViewCountIncrease
      */
-    void updateViewCount(@Param("helpDocId")Long helpDocId, @Param("userViewCountIncrease")Integer userViewCountIncrease,@Param("pageViewCountIncrease") Integer pageViewCountIncrease);
+    void updateViewCount(@Param("helpDocId") Long helpDocId, @Param("userViewCountIncrease") Integer userViewCountIncrease, @Param("pageViewCountIncrease") Integer pageViewCountIncrease);
 
 
     /**
@@ -57,7 +58,7 @@ public interface HelpDocDao extends BaseMapper<HelpDocEntity> {
      * @param helpDocCatalogId
      * @return
      */
-    List<HelpDocVO> queryHelpDocByCatalogId( @Param("helpDocCatalogId") Long helpDocCatalogId);
+    List<HelpDocVO> queryHelpDocByCatalogId(@Param("helpDocCatalogId") Long helpDocCatalogId);
 
     /**
      * 根据关联文档id，查询文档
@@ -65,7 +66,7 @@ public interface HelpDocDao extends BaseMapper<HelpDocEntity> {
      * @param relationId
      * @return
      */
-    List<HelpDocVO> queryHelpDocByRelationId( @Param("relationId") Long relationId);
+    List<HelpDocVO> queryHelpDocByRelationId(@Param("relationId") Long relationId);
 
     // ================================= 关联项目 【子表 t_help_doc_relation 】 =================================
 
@@ -95,14 +96,16 @@ public interface HelpDocDao extends BaseMapper<HelpDocEntity> {
 
     /**
      * 查询某个用户的指定文档的阅读量
+     *
      * @param helpDocId
      * @param userId
      * @return
      */
-    long  viewRecordCount(@Param("helpDocId")Long helpDocId, @Param("userId")Long userId);
+    long viewRecordCount(@Param("helpDocId") Long helpDocId, @Param("userId") Long userId);
 
     /**
      * 查询帮助文档的 查看记录
+     *
      * @param page
      * @param helpDocViewRecordQueryForm
      * @return
@@ -111,21 +114,23 @@ public interface HelpDocDao extends BaseMapper<HelpDocEntity> {
 
     /**
      * 保存查看记录
+     *
      * @param helpDocId
      * @param userId
      * @param userName
      * @param ip
      * @param userAgent
      */
-    void insertViewRecord(@Param("helpDocId") Long helpDocId, @Param("userId") Long userId, @Param("userName") String userName, @Param("ip") String ip, @Param("userAgent") String userAgent,@Param("pageViewCount") Integer pageViewCount);
+    void insertViewRecord(@Param("helpDocId") Long helpDocId, @Param("userId") Long userId, @Param("userName") String userName, @Param("ip") String ip, @Param("userAgent") String userAgent, @Param("pageViewCount") Integer pageViewCount);
 
     /**
      * 更新查看记录
+     *
      * @param helpDocId
      * @param userId
      * @param ip
      * @param userAgent
      */
-    void updateViewRecord(@Param("helpDocId")Long helpDocId, @Param("userId")Long userId,@Param("ip") String ip, @Param("userAgent")String userAgent);
+    void updateViewRecord(@Param("helpDocId") Long helpDocId, @Param("userId") Long userId, @Param("ip") String ip, @Param("userAgent") String userAgent);
 
 }

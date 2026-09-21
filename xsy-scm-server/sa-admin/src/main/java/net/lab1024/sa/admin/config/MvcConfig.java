@@ -19,7 +19,6 @@ public class MvcConfig implements WebMvcConfigurer {
     private AdminInterceptor adminInterceptor;
 
 
-
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(adminInterceptor)

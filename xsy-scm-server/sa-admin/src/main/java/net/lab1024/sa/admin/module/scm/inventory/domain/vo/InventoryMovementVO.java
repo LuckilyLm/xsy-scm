@@ -47,13 +47,19 @@ public class InventoryMovementVO {
 
     private String sourceDocumentType;
 
-    /** 收货单 id（头级溯源）。 */
+    /**
+     * 收货单 id（头级溯源）。
+     */
     private Long sourceDocumentId;
 
-    /** 收货行 id（防重锚点）。 */
+    /**
+     * 收货行 id（防重锚点）。
+     */
     private Long sourceDocumentItemId;
 
-    /** 收货单号（联 {@code purchase_receipt}），前端跳详情用。仅 {@code PURCHASE_IN} 有值。 */
+    /**
+     * 收货单号（联 {@code purchase_receipt}），前端跳详情用。仅 {@code PURCHASE_IN} 有值。
+     */
     private String receiptNo;
 
     /**
@@ -78,7 +84,9 @@ public class InventoryMovementVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal afterQuantity;
 
-    /** 业务发生时刻 = 物理入库时刻：DIRECT 取收货确认时刻，WAREHOUSE_CONFIRM 取仓库确认入库时刻。 */
+    /**
+     * 业务发生时刻 = 物理入库时刻：DIRECT 取收货确认时刻，WAREHOUSE_CONFIRM 取仓库确认入库时刻。
+     */
     private OffsetDateTime occurredAt;
 
     private String operator;

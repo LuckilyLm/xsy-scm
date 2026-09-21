@@ -19,7 +19,7 @@ public class ReloadResultEntity {
     /**
      * 加载项标签
      */
-    @TableId(type= IdType.NONE)
+    @TableId(type = IdType.NONE)
     private String tag;
 
     /**

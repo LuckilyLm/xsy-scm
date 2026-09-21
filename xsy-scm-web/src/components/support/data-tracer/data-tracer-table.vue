@@ -18,75 +18,76 @@
         <div class="operate-content" v-html="record.content"></div>
       </template>
       <template v-else-if="column.dataIndex === 'action'">
-        <a-button v-if="record.diffOld || record.diffNew" @click="showDetail(record)" type="link">详情 </a-button>
+        <a-button v-if="record.diffOld || record.diffNew" @click="showDetail(record)" type="link">详情</a-button>
       </template>
     </template>
   </a-table>
 </template>
 <script setup lang="ts">
-  import { reactive } from 'vue';
+import {reactive} from 'vue';
 
-  const props = defineProps({
-    tableData: {
-      type: Array,
-    },
-  });
+const props = defineProps({
+  tableData: {
+    type: Array,
+  },
+});
 
-  const emit = defineEmits(['showDetail']);
-  function showDetail(record) {
-    emit('showDetail', record);
-  }
+const emit = defineEmits(['showDetail']);
 
-  const columns = reactive([
-    {
-      title: '序号',
-      dataIndex: 'dataTracerId',
-      width: 50,
-    },
-    {
-      title: '操作时间',
-      dataIndex: 'createTime',
-      width: 150,
-    },
-    {
-      title: '操作人',
-      dataIndex: 'userName',
-      width: 100,
-      ellipsis: true,
-    },
-    {
-      title: 'IP',
-      dataIndex: 'ip',
-      ellipsis: true,
-      width: 100,
-    },
-    {
-      title: 'IP地区',
-      dataIndex: 'ipRegion',
-      ellipsis: true,
-      width: 100,
-    },
-    {
-      title: '客户端',
-      dataIndex: 'userAgent',
-      ellipsis: true,
-      width: 150,
-    },
-    {
-      title: '操作内容',
-      dataIndex: 'content',
-    },
-    {
-      title: '操作',
-      dataIndex: 'action',
-      fixed: 'right',
-      width: 80,
-    },
-  ]);
+function showDetail(record) {
+  emit('showDetail', record);
+}
+
+const columns = reactive([
+  {
+    title: '序号',
+    dataIndex: 'dataTracerId',
+    width: 50,
+  },
+  {
+    title: '操作时间',
+    dataIndex: 'createTime',
+    width: 150,
+  },
+  {
+    title: '操作人',
+    dataIndex: 'userName',
+    width: 100,
+    ellipsis: true,
+  },
+  {
+    title: 'IP',
+    dataIndex: 'ip',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: 'IP地区',
+    dataIndex: 'ipRegion',
+    ellipsis: true,
+    width: 100,
+  },
+  {
+    title: '客户端',
+    dataIndex: 'userAgent',
+    ellipsis: true,
+    width: 150,
+  },
+  {
+    title: '操作内容',
+    dataIndex: 'content',
+  },
+  {
+    title: '操作',
+    dataIndex: 'action',
+    fixed: 'right',
+    width: 80,
+  },
+]);
 </script>
 <style scoped lang="less">
-  .operate-content {
-    font-size: 14px;
-    display: inline;
-  }
+.operate-content {
+  font-size: 14px;
+  display: inline;
+}
 </style>

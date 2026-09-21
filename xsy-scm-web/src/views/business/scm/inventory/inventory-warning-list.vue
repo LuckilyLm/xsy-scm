@@ -14,16 +14,16 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
       </a-form-item>
       <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <a-select
-          v-model:value="queryForm.status"
-          :options="statusOptions"
-          style="width: 150px"
+            v-model:value="queryForm.status"
+            :options="statusOptions"
+            style="width: 150px"
         />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
@@ -36,7 +36,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -49,24 +51,24 @@
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING"
-          :refresh="queryData"
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING"
+            :refresh="queryData"
         />
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_INVENTORY_TABLE_ID.WARNING"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="thresholdId"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :locale="{ emptyText: '没有需要处理的库存预警' }"
-      :scroll="{ x: 1500 }"
+        :id="SCM_INVENTORY_TABLE_ID.WARNING"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="thresholdId"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :locale="{ emptyText: '没有需要处理的库存预警' }"
+        :scroll="{ x: 1500 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -93,36 +95,36 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {onMounted, reactive, ref} from 'vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
-import { inventoryWarningApi } from '/@/api/business/scm/inventory-warning-api';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
+import {inventoryWarningApi} from '/@/api/business/scm/inventory-warning-api';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_INVENTORY_TABLE_ID,
   SCM_INVENTORY_WARNING_STATUS_ENUM,
 } from '/@/constants/business/scm/inventory-const';
-import type { InventoryWarning, InventoryWarningQuery } from './inventory-types';
-import type { Warehouse } from '../purchase/purchase-types';
-import { quantityText, singleWarehouseDefault } from './inventory-model';
-import { inventoryError } from './inventory-errors';
+import type {InventoryWarning, InventoryWarningQuery} from './inventory-types';
+import type {Warehouse} from '../purchase/purchase-types';
+import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {inventoryError} from './inventory-errors';
 
-const queryForm = reactive<InventoryWarningQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<InventoryWarningQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarning[]>([]);
 const total = ref(0);
 const loading = ref(false);
@@ -135,7 +137,7 @@ let requestId = 0;
  * 标成「全部」会与事实不符，用户选了它却看不到正常项会以为系统漏数据。
  */
 const statusOptions = [
-  { value: undefined, label: '仅异常' },
+  {value: undefined, label: '仅异常'},
   ...Object.values(SCM_INVENTORY_WARNING_STATUS_ENUM).map((i) => ({
     value: i.value,
     label: i.desc,
@@ -143,17 +145,17 @@ const statusOptions = [
 ];
 
 const columns = ref<TableColumnsType<InventoryWarning>>([
-  { title: '仓库', dataIndex: 'warehouseName', width: 150 },
-  { title: 'SKU 编码', dataIndex: 'skuCode', width: 160 },
-  { title: 'SKU 名称', dataIndex: 'skuName', width: 150 },
-  { title: '商品名称', dataIndex: 'productName', width: 150 },
-  { title: '单位', dataIndex: 'unit', align: 'center', width: 90 },
-  { title: '现有量', dataIndex: 'quantity', align: 'right', width: 110 },
-  { title: '已预留', dataIndex: 'reservedQuantity', align: 'right', width: 110 },
-  { title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110 },
-  { title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 110 },
-  { title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 110 },
-  { title: '状态', dataIndex: 'status', align: 'center', width: 110, fixed: 'right' },
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
+  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品名称', dataIndex: 'productName', width: 150},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
+  {title: '现有量', dataIndex: 'quantity', align: 'right', width: 110},
+  {title: '已预留', dataIndex: 'reservedQuantity', align: 'right', width: 110},
+  {title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110},
+  {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 110},
+  {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 110, fixed: 'right'},
 ]);
 
 /** 低于下限是补货问题（红），高于上限是积压（橙）。 */
@@ -168,7 +170,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await inventoryWarningApi.query({ ...queryForm });
+    const r = await inventoryWarningApi.query({...queryForm});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -220,6 +222,7 @@ onMounted(async () => {
 .num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
 .strong {
   font-weight: 600;
 }

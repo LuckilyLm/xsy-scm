@@ -43,7 +43,9 @@ public class SupplierService {
 
     private final SupplierSkuDao supplierSkuDao;
 
-    /** 读取供应商，不存在或已删除 → 40440。 */
+    /**
+     * 读取供应商，不存在或已删除 → 40440。
+     */
     public SupplierEntity require(Long supplierId) {
         SupplierEntity entity = supplierId == null ? null : dao.selectById(supplierId);
         if (entity == null) {
@@ -52,7 +54,9 @@ public class SupplierService {
         return entity;
     }
 
-    /** 读取供应商并校验乐观锁版本：不存在 → 40440，版本不一致 → 40921。 */
+    /**
+     * 读取供应商并校验乐观锁版本：不存在 → 40440，版本不一致 → 40921。
+     */
     public SupplierEntity require(Long supplierId, Integer version) {
         SupplierEntity entity = require(supplierId);
         if (!Objects.equals(entity.getVersion(), version)) {
@@ -61,7 +65,9 @@ public class SupplierService {
         return entity;
     }
 
-    /** 读取「可用」供应商：必须存在且 {@code ENABLED}（legacy 不变量 S3）。 */
+    /**
+     * 读取「可用」供应商：必须存在且 {@code ENABLED}（legacy 不变量 S3）。
+     */
     public SupplierEntity requireEnabled(Long supplierId) {
         SupplierEntity entity = require(supplierId);
         if (!ScmEnableStatusEnum.ENABLED.name().equals(entity.getStatus())) {
@@ -139,7 +145,9 @@ public class SupplierService {
         }
     }
 
-    /** 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。 */
+    /**
+     * 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。
+     */
     public boolean existsCode(String normalizedCode, Long excludeId) {
         LambdaQueryWrapper<SupplierEntity> wrapper = new LambdaQueryWrapper<SupplierEntity>()
                 .eq(SupplierEntity::getSupplierCode, normalizedCode);

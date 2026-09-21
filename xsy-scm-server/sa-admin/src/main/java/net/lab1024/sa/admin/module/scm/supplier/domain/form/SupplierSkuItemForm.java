@@ -26,11 +26,15 @@ import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
 @Data
 public class SupplierSkuItemForm {
 
-    /** 既有行主键；新增行为 {@code null}。 */
+    /**
+     * 既有行主键；新增行为 {@code null}。
+     */
     @Positive
     private Long id;
 
-    /** 既有行版本号；新增行为 {@code null}。 */
+    /**
+     * 既有行版本号；新增行为 {@code null}。
+     */
     @Min(0)
     private Integer version;
 
@@ -42,19 +46,25 @@ public class SupplierSkuItemForm {
     @Size(max = 32)
     private String purchaseUnit;
 
-    /** 参考价，4 位定点字符串；可空。 */
+    /**
+     * 参考价，4 位定点字符串；可空。
+     */
     @Pattern(regexp = ScmDecimalStrings.PATTERN)
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String referencePrice;
 
-    /** 默认采购员，引用 SmartAdmin {@code t_employee.employee_id}。 */
+    /**
+     * 默认采购员，引用 SmartAdmin {@code t_employee.employee_id}。
+     */
     @Positive
     private Long purchaserId;
 
     @NotNull
     private Boolean defaultFlag = false;
 
-    /** 缺省为 {@code ENABLED}（R20）。 */
+    /**
+     * 缺省为 {@code ENABLED}（R20）。
+     */
     @Pattern(regexp = "ENABLED|DISABLED")
     private String status;
 }

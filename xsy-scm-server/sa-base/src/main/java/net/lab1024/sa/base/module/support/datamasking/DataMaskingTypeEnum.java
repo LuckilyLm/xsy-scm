@@ -26,7 +26,6 @@ public enum DataMaskingTypeEnum {
     USER_ID(DesensitizedUtil.DesensitizedType.USER_ID, "用户id");
 
 
-
     private DesensitizedUtil.DesensitizedType type;
 
     private String desc;

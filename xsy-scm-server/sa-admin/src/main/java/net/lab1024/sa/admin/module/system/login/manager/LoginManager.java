@@ -59,7 +59,7 @@ public class LoginManager {
      * 获取请求用户信息
      */
     @Cacheable(AdminCacheConst.Login.REQUEST_EMPLOYEE)
-    public RequestEmployee getRequestEmployee(Long requestEmployeeId ) {
+    public RequestEmployee getRequestEmployee(Long requestEmployeeId) {
         if (requestEmployeeId == null) {
             return null;
         }
@@ -102,7 +102,7 @@ public class LoginManager {
      */
     @Cacheable(AdminCacheConst.Login.USER_PERMISSION)
     public UserPermission getUserPermission(Long employeeId) {
-        if(null == employeeId){
+        if (null == employeeId) {
             return null;
         }
 

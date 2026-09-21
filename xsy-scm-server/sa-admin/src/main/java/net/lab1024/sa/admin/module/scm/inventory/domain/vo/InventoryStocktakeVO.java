@@ -31,7 +31,9 @@ public class InventoryStocktakeVO {
 
     private String status;
 
-    /** 状态中文描述（由服务层按枚举填充，便于列表直接展示）。 */
+    /**
+     * 状态中文描述（由服务层按枚举填充，便于列表直接展示）。
+     */
     private String statusDesc;
 
     private String remark;
@@ -46,10 +48,14 @@ public class InventoryStocktakeVO {
 
     private OffsetDateTime updatedAt;
 
-    /** 明细；仅详情接口填充，列表接口为 null。 */
+    /**
+     * 明细；仅详情接口填充，列表接口为 null。
+     */
     private List<Item> items;
 
-    /** 盘点单明细行。 */
+    /**
+     * 盘点单明细行。
+     */
     @Data
     public static class Item {
 
@@ -65,11 +71,15 @@ public class InventoryStocktakeVO {
 
         private Map<String, String> specValues;
 
-        /** 账面量快照（保存草稿那一刻）。 */
+        /**
+         * 账面量快照（保存草稿那一刻）。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal bookQuantity;
 
-        /** 实盘量。 */
+        /**
+         * 实盘量。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal actualQuantity;
 
@@ -80,7 +90,9 @@ public class InventoryStocktakeVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal deltaQuantity;
 
-        /** 确认时写入的记账单位快照；草稿态为空。 */
+        /**
+         * 确认时写入的记账单位快照；草稿态为空。
+         */
         private String unitSnapshot;
 
         private String remark;

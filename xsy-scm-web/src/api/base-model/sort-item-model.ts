@@ -4,16 +4,16 @@
  * @LastEditors: 
  */
 export interface SortItemModel {
-  /**
-   *
-   * @type {boolean}
-   * @memberof SortItemModel
-   */
-  asc: boolean;
-  /**
-   *
-   * @type {string}
-   * @memberof SortItemModel
-   */
-  column: string;
+    /**
+     *
+     * @type {boolean}
+     * @memberof SortItemModel
+     */
+    asc: boolean;
+    /**
+     *
+     * @type {string}
+     * @memberof SortItemModel
+     */
+    column: string;
 }

@@ -18,7 +18,9 @@
       <a-button @click="load">刷新详情</a-button>
     </a-space>
     <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action><a-button size="small" @click="load">重新加载</a-button></template>
+      <template #action>
+        <a-button size="small" @click="load">重新加载</a-button>
+      </template>
     </a-alert>
     <template v-else-if="customer">
       <a-descriptions :title="customer.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
@@ -59,61 +61,66 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import { customerApi } from '/@/api/business/scm/customer-api';
-  import type { CustomerDetail, CustomerStatus } from '/@/types/business/scm/customer';
-  import { CREDIT_PERIOD_TYPE_ENUM, CREDIT_PERIOD_UNIT_ENUM, CUSTOMER_STATUS_ENUM, SETTLE_MODE_ENUM } from '/@/constants/business/scm/customer-const';
-  import { customerError } from './customer-errors';
-  import { datetime } from '../common/scm-display';
+import {computed, ref, watch} from 'vue';
+import {useRoute, useRouter} from 'vue-router';
+import {customerApi} from '/@/api/business/scm/customer-api';
+import type {CustomerDetail, CustomerStatus} from '/@/types/business/scm/customer';
+import {
+  CREDIT_PERIOD_TYPE_ENUM,
+  CREDIT_PERIOD_UNIT_ENUM,
+  CUSTOMER_STATUS_ENUM,
+  SETTLE_MODE_ENUM
+} from '/@/constants/business/scm/customer-const';
+import {customerError} from './customer-errors';
+import {datetime} from '../common/scm-display';
 
-  const route = useRoute();
-  const router = useRouter();
-  const customer = ref<CustomerDetail>();
-  const loading = ref(false);
-  const error = ref('');
+const route = useRoute();
+const router = useRouter();
+const customer = ref<CustomerDetail>();
+const loading = ref(false);
+const error = ref('');
 
-  const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
-  const settleModeText = (value: string): string => SETTLE_MODE_ENUM[value]?.desc || value;
-  const statusColor = (value: CustomerStatus): string => {
-    if (value === 'COOPERATING') return 'green';
-    if (value === 'SUSPENDED') return 'orange';
-    if (value === 'BLACKLIST') return 'red';
-    return 'default';
-  };
+const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
+const settleModeText = (value: string): string => SETTLE_MODE_ENUM[value]?.desc || value;
+const statusColor = (value: CustomerStatus): string => {
+  if (value === 'COOPERATING') return 'green';
+  if (value === 'SUSPENDED') return 'orange';
+  if (value === 'BLACKLIST') return 'red';
+  return 'default';
+};
 
-  const creditPeriodTypeText = computed(() => {
-    const type = customer.value?.creditPeriodType;
-    return type ? CREDIT_PERIOD_TYPE_ENUM[type]?.desc || type : '未设置账期';
-  });
+const creditPeriodTypeText = computed(() => {
+  const type = customer.value?.creditPeriodType;
+  return type ? CREDIT_PERIOD_TYPE_ENUM[type]?.desc || type : '未设置账期';
+});
 
-  const creditPeriodUnitText = computed(() => {
-    const unit = customer.value?.creditPeriodUnit;
-    return unit ? CREDIT_PERIOD_UNIT_ENUM[unit]?.desc || unit : '—';
-  });
+const creditPeriodUnitText = computed(() => {
+  const unit = customer.value?.creditPeriodUnit;
+  return unit ? CREDIT_PERIOD_UNIT_ENUM[unit]?.desc || unit : '—';
+});
 
-  let requestId = 0;
+let requestId = 0;
 
-  async function load() {
-    const request = ++requestId;
-    const id = route.query.customerId;
-    if (typeof id !== 'string' || !/^\d+$/.test(id)) {
-      customer.value = undefined;
-      error.value = '客户链接缺少有效编号';
-      return;
-    }
-    loading.value = true;
-    error.value = '';
+async function load() {
+  const request = ++requestId;
+  const id = route.query.customerId;
+  if (typeof id !== 'string' || !/^\d+$/.test(id)) {
     customer.value = undefined;
-    try {
-      const response = await customerApi.detail(id);
-      if (request === requestId) customer.value = response.data;
-    } catch (e) {
-      if (request === requestId) error.value = customerError(e);
-    } finally {
-      if (request === requestId) loading.value = false;
-    }
+    error.value = '客户链接缺少有效编号';
+    return;
   }
+  loading.value = true;
+  error.value = '';
+  customer.value = undefined;
+  try {
+    const response = await customerApi.detail(id);
+    if (request === requestId) customer.value = response.data;
+  } catch (e) {
+    if (request === requestId) error.value = customerError(e);
+  } finally {
+    if (request === requestId) loading.value = false;
+  }
+}
 
-  watch(() => route.query.customerId, load, { immediate: true });
+watch(() => route.query.customerId, load, {immediate: true});
 </script>

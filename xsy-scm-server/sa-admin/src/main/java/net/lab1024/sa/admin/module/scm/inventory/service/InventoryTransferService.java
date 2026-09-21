@@ -99,7 +99,9 @@ public class InventoryTransferService {
         return entity.getId();
     }
 
-    /** 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新）。 */
+    /**
+     * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新）。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, InventoryTransferAddForm form) {
         requireForm(form);
@@ -199,7 +201,9 @@ public class InventoryTransferService {
         }
     }
 
-    /** 取消草稿：不产生任何库存影响。在途不可取消（货已出库，只能反向调拨冲回）。 */
+    /**
+     * 取消草稿：不产生任何库存影响。在途不可取消（货已出库，只能反向调拨冲回）。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long id) {
         String operator = ScmOperator.current();
@@ -210,7 +214,9 @@ public class InventoryTransferService {
         }
     }
 
-    /** 删除草稿（逻辑删）。已发出 / 已收货的单不可删 —— 它们已产生流水，必须留痕。 */
+    /**
+     * 删除草稿（逻辑删）。已发出 / 已收货的单不可删 —— 它们已产生流水，必须留痕。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         String operator = ScmOperator.current();

@@ -31,11 +31,15 @@ public class InventoryTransferItemVO {
 
     private Map<String, String> specValues;
 
-    /** 调拨数量，恒为正。 */
+    /**
+     * 调拨数量，恒为正。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;
 
-    /** 发出时写入的源仓记账单位快照；草稿态为空。 */
+    /**
+     * 发出时写入的源仓记账单位快照；草稿态为空。
+     */
     private String unitSnapshot;
 
     private String remark;

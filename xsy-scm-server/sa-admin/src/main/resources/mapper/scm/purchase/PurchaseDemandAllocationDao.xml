@@ -13,7 +13,7 @@
     <select id="listActiveByOrderId" resultMap="allocationRowMap">
         SELECT a.*
         FROM purchase_demand_allocation a
-        JOIN purchase_order_item oi ON oi.id = a.purchase_order_item_id AND oi.deleted = FALSE
+                 JOIN purchase_order_item oi ON oi.id = a.purchase_order_item_id AND oi.deleted = FALSE
         WHERE a.deleted = FALSE
           AND oi.purchase_order_id = #{purchaseOrderId}
         ORDER BY a.purchase_order_item_id ASC, a.purchase_demand_id ASC
@@ -22,7 +22,7 @@
     <select id="listActiveByOrderItemIds" resultMap="allocationRowMap">
         SELECT * FROM purchase_demand_allocation
         WHERE deleted = FALSE
-          AND purchase_order_item_id IN
+        AND purchase_order_item_id IN
         <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
         ORDER BY purchase_order_item_id ASC, purchase_demand_id ASC
     </select>
@@ -31,7 +31,7 @@
     <select id="listActiveByDemandIds" resultMap="allocationRowMap">
         SELECT * FROM purchase_demand_allocation
         WHERE deleted = FALSE
-          AND purchase_demand_id IN
+        AND purchase_demand_id IN
         <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
         ORDER BY purchase_demand_id ASC, id ASC
     </select>
@@ -41,8 +41,8 @@
         FROM purchase_demand_allocation a
         JOIN purchase_order_item oi ON oi.id = a.purchase_order_item_id AND oi.deleted = FALSE
         WHERE a.deleted = FALSE
-          AND oi.purchase_order_id = #{purchaseOrderId}
-          AND a.purchase_demand_id IN
+        AND oi.purchase_order_id = #{purchaseOrderId}
+        AND a.purchase_demand_id IN
         <foreach collection="demandIds" item="it" open="(" separator="," close=")">#{it}</foreach>
         ORDER BY a.purchase_order_item_id ASC, a.purchase_demand_id ASC
     </select>

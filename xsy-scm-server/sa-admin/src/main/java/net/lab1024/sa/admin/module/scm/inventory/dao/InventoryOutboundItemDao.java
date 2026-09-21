@@ -17,14 +17,20 @@ import java.util.List;
 @Mapper
 public interface InventoryOutboundItemDao extends BaseMapper<InventoryOutboundItemEntity> {
 
-    /** 某单下的明细（含展示字段，按 id 升序 —— 即录入顺序）。 */
+    /**
+     * 某单下的明细（含展示字段，按 id 升序 —— 即录入顺序）。
+     */
     List<InventoryOutboundItemVO> listByOutboundId(@Param("outboundId") Long outboundId);
 
-    /** 软删某单下的全部明细（草稿重存时用）。 */
+    /**
+     * 软删某单下的全部明细（草稿重存时用）。
+     */
     int deleteByOutboundId(@Param("outboundId") Long outboundId,
                            @Param("operator") String operator);
 
-    /** 回写单位快照（确认出库时按余额记账单位写入）。 */
+    /**
+     * 回写单位快照（确认出库时按余额记账单位写入）。
+     */
     int updateUnitSnapshot(@Param("id") Long id,
                            @Param("unit") String unit,
                            @Param("operator") String operator);

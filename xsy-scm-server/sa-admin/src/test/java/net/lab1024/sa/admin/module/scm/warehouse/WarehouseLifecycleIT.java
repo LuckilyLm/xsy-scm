@@ -28,7 +28,9 @@ class WarehouseLifecycleIT extends ScmW6PgITBase {
     @Autowired
     private WarehouseQueryService warehouseQueryService;
 
-    /** 读库中的权威 version（jdbc 直读，绕开 MyBatis 一级缓存）。 */
+    /**
+     * 读库中的权威 version（jdbc 直读，绕开 MyBatis 一级缓存）。
+     */
     private WarehouseStatusForm statusForm(Long id) {
         WarehouseStatusForm form = new WarehouseStatusForm();
         form.setId(id);
@@ -41,7 +43,9 @@ class WarehouseLifecycleIT extends ScmW6PgITBase {
         return jdbc.queryForObject("SELECT status FROM warehouse WHERE id = ?", String.class, id);
     }
 
-    /** 造一张绑定到指定仓库的已提交采购单（无需求来源）。 */
+    /**
+     * 造一张绑定到指定仓库的已提交采购单（无需求来源）。
+     */
     private PurchaseOrderVO submittedOrderOn(Long warehouseId, String suffix, String quantity) {
         Long skuId = newOnShelfSku(suffix);
         Long supplierId = newPurchasableSupplier(suffix, skuId);
@@ -51,7 +55,9 @@ class WarehouseLifecycleIT extends ScmW6PgITBase {
         return submitOrder(order.getId());
     }
 
-    /** 为采购单造一张 WAREHOUSE_CONFIRM 收货单。 */
+    /**
+     * 为采购单造一张 WAREHOUSE_CONFIRM 收货单。
+     */
     private PurchaseReceiptVO warehouseConfirmReceipt(Long orderId, String suffix) {
         PurchaseReceiptCreateForm form = new PurchaseReceiptCreateForm();
         form.setPurchaseOrderId(orderId);

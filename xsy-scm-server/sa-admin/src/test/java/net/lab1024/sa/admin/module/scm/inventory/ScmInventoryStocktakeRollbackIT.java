@@ -51,7 +51,9 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         // 无外层事务 → 每次调用都是新 session → 一级缓存天然为空
     }
 
-    /** 造一个已入库指定数量的 SKU。 */
+    /**
+     * 造一个已入库指定数量的 SKU。
+     */
     private Long stocked(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture(suffix, skuId, quantity);
@@ -59,7 +61,9 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         return skuId;
     }
 
-    /** 两行盘点单（行序由服务端按 skuId 升序决定，因此先建的 SKU 先被处理）。 */
+    /**
+     * 两行盘点单（行序由服务端按 skuId 升序决定，因此先建的 SKU 先被处理）。
+     */
     private InventoryStocktakeAddForm twoLineForm(Long warehouseId,
                                                   Long firstSku, String firstActual,
                                                   Long secondSku, String secondActual) {

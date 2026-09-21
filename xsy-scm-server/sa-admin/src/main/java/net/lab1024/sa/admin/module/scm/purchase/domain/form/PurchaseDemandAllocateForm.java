@@ -14,10 +14,18 @@ import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeseria
  */
 @Data
 public class PurchaseDemandAllocateForm {
-    @NotNull private Long demandId;
-    @NotNull private Long purchaseOrderItemId;
-    @NotBlank @JsonDeserialize(using=ScmStrictDecimalStringDeserializer.class) private String quantity;
-    @NotNull private Long supplierId;
-    @NotNull private Long warehouseId;
-    @NotNull @Min(0) private Integer version;
+    @NotNull
+    private Long demandId;
+    @NotNull
+    private Long purchaseOrderItemId;
+    @NotBlank
+    @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
+    private String quantity;
+    @NotNull
+    private Long supplierId;
+    @NotNull
+    private Long warehouseId;
+    @NotNull
+    @Min(0)
+    private Integer version;
 }

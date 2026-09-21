@@ -8,7 +8,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
-/** 仓库列表查询条件（W5 Target Design §7.2）。 */
+/**
+ * 仓库列表查询条件（W5 Target Design §7.2）。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class WarehouseQueryForm extends PageParam {

@@ -31,19 +31,27 @@ public class InventoryStocktakeItemVO {
 
     private Map<String, String> specValues;
 
-    /** 账面量快照（保存草稿那一刻）。 */
+    /**
+     * 账面量快照（保存草稿那一刻）。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal bookQuantity;
 
-    /** 实盘量。 */
+    /**
+     * 实盘量。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal actualQuantity;
 
-    /** 差异 = 实盘量 − 账面量（派生值，仅展示）。 */
+    /**
+     * 差异 = 实盘量 − 账面量（派生值，仅展示）。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal deltaQuantity;
 
-    /** 确认时写入的记账单位快照；草稿态为空。 */
+    /**
+     * 确认时写入的记账单位快照；草稿态为空。
+     */
     private String unitSnapshot;
 
     private String remark;

@@ -11,6 +11,9 @@ import jakarta.validation.constraints.*;
  */
 @Data
 public class PurchaseReceiptPutawayForm {
-    @NotNull private Long id;
-    @NotNull @Min(0) private Integer version;
+    @NotNull
+    private Long id;
+    @NotNull
+    @Min(0)
+    private Integer version;
 }

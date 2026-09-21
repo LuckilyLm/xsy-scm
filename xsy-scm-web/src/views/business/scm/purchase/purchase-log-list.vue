@@ -10,10 +10,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="操作类型" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_PURCHASE_OPERATION_ENUM" v-model:value="operationType" width="170px" />
+        <SmartEnumSelect enum-name="SCM_PURCHASE_OPERATION_ENUM" v-model:value="operationType" width="170px"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -25,7 +25,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -34,20 +36,20 @@
         操作日志<span v-if="orderNo">：{{ orderNo }}</span>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_LOG" :refresh="queryData" />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_LOG" :refresh="queryData"/>
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_PURCHASE_TABLE_ID.LOG"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :scroll="{ x: 1200 }"
+        :id="SCM_PURCHASE_TABLE_ID.LOG"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :scroll="{ x: 1200 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'operationType'">
@@ -68,26 +70,26 @@
       </template>
     </a-table>
 
-    <a-empty v-if="!loading && !tableData.length" description="请先输入采购单号查询操作日志" />
+    <a-empty v-if="!loading && !tableData.length" description="请先输入采购单号查询操作日志"/>
   </a-card>
 
   <a-modal :open="visible" title="变更前后" width="900px" :footer="null" @cancel="visible = false">
-    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" />
+    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData"/>
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {onMounted, ref} from 'vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
-import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-import { SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_TABLE_ID } from '/@/constants/business/scm/purchase-const';
-import type { LogRow } from './purchase-types';
-import { purchaseError } from './purchase-errors';
-import { datetime } from '../common/scm-display';
+import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_TABLE_ID} from '/@/constants/business/scm/purchase-const';
+import type {LogRow} from './purchase-types';
+import {purchaseError} from './purchase-errors';
+import {datetime} from '../common/scm-display';
 
 const orderNo = ref<string | undefined>(undefined);
 const operationType = ref<string | undefined>(undefined);
@@ -99,13 +101,13 @@ const active = ref<LogRow>();
 let requestId = 0;
 
 const columns = ref<TableColumnsType<LogRow>>([
-  { title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({ text }) => datetime(text) },
-  { title: '操作', dataIndex: 'operationType', width: 150 },
-  { title: '操作人', dataIndex: 'operator', width: 130 },
-  { title: '采购单 id', dataIndex: 'purchaseOrderId', width: 120 },
-  { title: '收货单 id', dataIndex: 'purchaseReceiptId', width: 120 },
-  { title: '原因', dataIndex: 'reason', width: 200 },
-  { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 120 },
+  {title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({text}) => datetime(text)},
+  {title: '操作', dataIndex: 'operationType', width: 150},
+  {title: '操作人', dataIndex: 'operator', width: 130},
+  {title: '采购单 id', dataIndex: 'purchaseOrderId', width: 120},
+  {title: '收货单 id', dataIndex: 'purchaseReceiptId', width: 120},
+  {title: '原因', dataIndex: 'reason', width: 200},
+  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 120},
 ]);
 
 async function queryData() {
@@ -117,7 +119,7 @@ async function queryData() {
     if (!orderNo.value?.trim()) {
       return;
     }
-    const found = await purchaseOrderApi.query({ pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim() });
+    const found = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim()});
     const order = found.data.list[0];
     if (!order) {
       throw new Error(`采购单 ${orderNo.value} 不存在`);
@@ -126,8 +128,8 @@ async function queryData() {
     if (id === requestId) {
       // 操作类型是**客户端过滤**：后端只按采购单维度提供日志，没有按类型过滤的入参。
       tableData.value = operationType.value
-        ? r.data.filter((row) => row.operationType === operationType.value)
-        : r.data;
+          ? r.data.filter((row) => row.operationType === operationType.value)
+          : r.data;
     }
   } catch (e) {
     if (id === requestId) {

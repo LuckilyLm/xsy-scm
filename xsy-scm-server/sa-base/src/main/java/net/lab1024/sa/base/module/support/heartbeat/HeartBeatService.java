@@ -25,7 +25,7 @@ public class HeartBeatService {
 
     public ResponseDTO<PageResult<HeartBeatRecordVO>> pageQuery(HeartBeatRecordQueryForm pageParam) {
         Page pageQueryInfo = SmartPageUtil.convert2PageQuery(pageParam);
-        List<HeartBeatRecordVO> recordVOList = heartBeatRecordDao.pageQuery(pageQueryInfo,pageParam);
+        List<HeartBeatRecordVO> recordVOList = heartBeatRecordDao.pageQuery(pageQueryInfo, pageParam);
         PageResult<HeartBeatRecordVO> pageResult = SmartPageUtil.convert2PageResult(pageQueryInfo, recordVOList);
         return ResponseDTO.ok(pageResult);
     }

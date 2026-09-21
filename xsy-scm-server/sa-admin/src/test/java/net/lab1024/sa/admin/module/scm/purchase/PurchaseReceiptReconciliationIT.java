@@ -41,7 +41,9 @@ class PurchaseReceiptReconciliationIT extends ScmW5PgITBase {
                 prefix + ":rec:" + current.getId() + ":" + quantity);
     }
 
-    /** 库层的三个对账量（与 Java 侧逐字段比对，防止两套口径）。 */
+    /**
+     * 库层的三个对账量（与 Java 侧逐字段比对，防止两套口径）。
+     */
     private void assertDatabaseMatchesJava(Long receiptItemId, PurchaseReceiptItemVO line) {
         var row = jdbc.queryForMap(
                 "SELECT received_quantity, cumulative_received_quantity, remaining_quantity, "

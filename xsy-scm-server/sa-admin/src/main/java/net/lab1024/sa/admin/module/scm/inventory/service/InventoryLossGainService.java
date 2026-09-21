@@ -105,7 +105,9 @@ public class InventoryLossGainService {
         return entity.getId();
     }
 
-    /** 改待审核单据：只允许 PENDING；明细整表替换（逻辑删旧 + 插新）。 */
+    /**
+     * 改待审核单据：只允许 PENDING；明细整表替换（逻辑删旧 + 插新）。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, InventoryLossGainAddForm form) {
         requireItems(form);
@@ -197,7 +199,9 @@ public class InventoryLossGainService {
         }
     }
 
-    /** 删除待审核单据（逻辑删）。已审核的单不可删 —— 它们必须留痕。 */
+    /**
+     * 删除待审核单据（逻辑删）。已审核的单不可删 —— 它们必须留痕。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         String operator = ScmOperator.current();
@@ -246,7 +250,9 @@ public class InventoryLossGainService {
         }
     }
 
-    /** 类型白名单（与 DB CHECK / 前端枚举同源；@Pattern 已挡一层，这里是服务层兜底）。 */
+    /**
+     * 类型白名单（与 DB CHECK / 前端枚举同源；@Pattern 已挡一层，这里是服务层兜底）。
+     */
     private static void requireKnownType(String adjustType) {
         if (!ScmInventoryLossGainTypeEnum.isSupported(adjustType)) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_PARAM_INVALID);

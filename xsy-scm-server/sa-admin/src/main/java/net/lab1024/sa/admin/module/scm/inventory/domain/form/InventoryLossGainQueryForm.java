@@ -21,18 +21,26 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class InventoryLossGainQueryForm extends PageParam {
 
-    /** 单据号（模糊）。 */
+    /**
+     * 单据号（模糊）。
+     */
     @Size(max = 64)
     private String lossGainNo;
 
-    /** 仓库（精确）。 */
+    /**
+     * 仓库（精确）。
+     */
     private Long warehouseId;
 
-    /** 调整类型：{@code LOSS} / {@code OVERFLOW}（精确）。 */
+    /**
+     * 调整类型：{@code LOSS} / {@code OVERFLOW}（精确）。
+     */
     @Size(max = 20)
     private String adjustType;
 
-    /** 状态：{@code PENDING} / {@code COMPLETED} / {@code REJECTED}（精确）。 */
+    /**
+     * 状态：{@code PENDING} / {@code COMPLETED} / {@code REJECTED}（精确）。
+     */
     @Size(max = 20)
     private String status;
 

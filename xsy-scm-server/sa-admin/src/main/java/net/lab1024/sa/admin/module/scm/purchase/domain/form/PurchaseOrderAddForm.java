@@ -3,8 +3,10 @@ package net.lab1024.sa.admin.module.scm.purchase.domain.form;
 import lombok.Data;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+
 import java.time.LocalDate;
 import java.util.List;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
 
@@ -23,32 +25,61 @@ import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeseria
  */
 @Data
 public class PurchaseOrderAddForm {
-    @NotNull private Long supplierId;
+    @NotNull
+    private Long supplierId;
     private Long purchaserId;
-    @NotNull private Long warehouseId;
+    @NotNull
+    private Long warehouseId;
     private LocalDate plannedArrivalDate;
-    @Size(max=500) private String remark;
-    @Valid @NotEmpty @Size(max=500) private List<Item> items;
+    @Size(max = 500)
+    private String remark;
+    @Valid
+    @NotEmpty
+    @Size(max = 500)
+    private List<Item> items;
 
-    /** 采购单行：一个 SKU，可挂 N 条需求分配。 */
+    /**
+     * 采购单行：一个 SKU，可挂 N 条需求分配。
+     */
     @Data
     public static class Item {
-        /** 保留行必填；新增行为空。 */
+        /**
+         * 保留行必填；新增行为空。
+         */
         private Long id;
-        /** 保留行必填（`PURCHASE_ITEM_VERSION_REQUIRED`）。 */
-        @Min(0) private Integer version;
-        @NotNull private Long skuId;
-        @NotBlank @JsonDeserialize(using=ScmStrictDecimalStringDeserializer.class) private String quantity;
-        @NotBlank @JsonDeserialize(using=ScmStrictDecimalStringDeserializer.class) private String price;
-        @Valid @Size(max=100) private List<Allocation> allocations;
+        /**
+         * 保留行必填（`PURCHASE_ITEM_VERSION_REQUIRED`）。
+         */
+        @Min(0)
+        private Integer version;
+        @NotNull
+        private Long skuId;
+        @NotBlank
+        @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
+        private String quantity;
+        @NotBlank
+        @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
+        private String price;
+        @Valid
+        @Size(max = 100)
+        private List<Allocation> allocations;
     }
 
-    /** 需求分配：`(purchase_order_item_id, purchase_demand_id)` 是 allocation 的身份。 */
+    /**
+     * 需求分配：`(purchase_order_item_id, purchase_demand_id)` 是 allocation 的身份。
+     */
     @Data
     public static class Allocation {
-        @NotNull private Long demandId;
-        @NotBlank @JsonDeserialize(using=ScmStrictDecimalStringDeserializer.class) private String quantity;
-        /** 需求版本，必填（`PURCHASE_DEMAND_VERSION_REQUIRED`）。 */
-        @NotNull @Min(0) private Integer demandVersion;
+        @NotNull
+        private Long demandId;
+        @NotBlank
+        @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
+        private String quantity;
+        /**
+         * 需求版本，必填（`PURCHASE_DEMAND_VERSION_REQUIRED`）。
+         */
+        @NotNull
+        @Min(0)
+        private Integer demandVersion;
     }
 }

@@ -5,26 +5,23 @@
     <update id="updateRecord">
         update t_serial_number_record
         set last_number = #{lastNumber},
-        count = count + #{count}
-        where
-        serial_number_id = #{serialNumberId}
-        and
-        record_date = #{recordDate}
+            count       = count + #{count}
+        where serial_number_id = #{serialNumberId}
+          and record_date = #{recordDate}
     </update>
 
 
     <select id="selectRecordIdBySerialNumberIdAndDate" resultType="java.lang.Long">
-            select serial_number_record_id
-            from t_serial_number_record
-            where
-            serial_number_id = #{serialNumberId}
-            and
-            record_date = #{recordDate}
+        select serial_number_record_id
+        from t_serial_number_record
+        where serial_number_id = #{serialNumberId}
+          and record_date = #{recordDate}
     </select>
 
     <select id="query"
             resultType="net.lab1024.sa.base.module.support.serialnumber.domain.SerialNumberRecordEntity">
-        select * from t_serial_number_record
+        select *
+        from t_serial_number_record
         where serial_number_id = #{queryForm.serialNumberId}
         order by last_time desc
     </select>

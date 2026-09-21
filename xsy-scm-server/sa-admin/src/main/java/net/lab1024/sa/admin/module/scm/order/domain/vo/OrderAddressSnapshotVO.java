@@ -2,9 +2,11 @@ package net.lab1024.sa.admin.module.scm.order.domain.vo;
 
 import lombok.Data;
 import com.baomidou.mybatisplus.annotation.*;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 import net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler;
@@ -17,9 +19,9 @@ public class OrderAddressSnapshotVO {
     private String cityName;
     private Integer districtCode;
     private String districtName;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
     private java.math.BigDecimal longitude;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
     private java.math.BigDecimal latitude;
     private String geomCrs;
 

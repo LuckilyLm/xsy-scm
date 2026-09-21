@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmCommonErrorCode implements ScmErrorCode {
 
-    /** 乐观锁冲突：影响行数为 0，说明数据已被其他操作修改。 */
+    /**
+     * 乐观锁冲突：影响行数为 0，说明数据已被其他操作修改。
+     */
     VERSION_CONFLICT(40921, "数据已被其他操作修改，请刷新后重试"),
 
     /**

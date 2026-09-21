@@ -36,7 +36,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** 供应商端点契约测试。 */
+/**
+ * 供应商端点契约测试。
+ */
 @WebMvcTest(SupplierController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ContextConfiguration(classes = {SupplierController.class, ScmExceptionHandler.class, GlobalExceptionHandler.class})

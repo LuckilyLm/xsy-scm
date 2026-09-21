@@ -53,7 +53,9 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     @Autowired
     private WarehouseDisableGuard warehouseDisableGuard;
 
-    /** 造一个已入库指定数量到**默认启用仓库**的 SKU，返回 skuId。 */
+    /**
+     * 造一个已入库指定数量到**默认启用仓库**的 SKU，返回 skuId。
+     */
     private Long stockedInSeed(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture(suffix, skuId, quantity);
@@ -81,7 +83,9 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
                 "SELECT status FROM inventory_transfer WHERE id = ?", String.class, id);
     }
 
-    /** 指定类型的流水（同一 (仓库, SKU) 上可能同时有转出与转入）。 */
+    /**
+     * 指定类型的流水（同一 (仓库, SKU) 上可能同时有转出与转入）。
+     */
     private Map<String, Object> movementOf(Long wh, Long sku, String movementType) {
         return movementsOf(wh, sku).stream()
                 .filter(m -> movementType.equals(String.valueOf(m.get("movement_type"))))

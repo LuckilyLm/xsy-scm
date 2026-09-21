@@ -10,7 +10,8 @@
     </resultMap>
 
     <select id="listByReceiptId" resultMap="receiptItemRowMap">
-        SELECT * FROM purchase_receipt_item
+        SELECT *
+        FROM purchase_receipt_item
         WHERE deleted = FALSE
           AND purchase_receipt_id = #{purchaseReceiptId}
         ORDER BY sort_order ASC, id ASC
@@ -18,19 +19,24 @@
 
     <!-- 锁序 P12：purchase_receipt_item 内部按 id ASC 取锁 -->
     <select id="lockByReceiptId" resultMap="receiptItemRowMap">
-        SELECT * FROM purchase_receipt_item
+        SELECT *
+        FROM purchase_receipt_item
         WHERE deleted = FALSE
           AND purchase_receipt_id = #{purchaseReceiptId}
         ORDER BY id ASC
-        FOR UPDATE
+            FOR UPDATE
     </select>
 
     <select id="lock" resultMap="receiptItemRowMap">
-        SELECT * FROM purchase_receipt_item WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM purchase_receipt_item
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <select id="listActiveByOrderItemId" resultMap="receiptItemRowMap">
-        SELECT * FROM purchase_receipt_item
+        SELECT *
+        FROM purchase_receipt_item
         WHERE deleted = FALSE
           AND purchase_order_item_id = #{purchaseOrderItemId}
         ORDER BY id ASC
@@ -81,8 +87,10 @@
     </update>
 
     <select id="countActiveByReceiptId" resultType="int">
-        SELECT count(*) FROM purchase_receipt_item
-        WHERE deleted = FALSE AND purchase_receipt_id = #{purchaseReceiptId}
+        SELECT count(*)
+        FROM purchase_receipt_item
+        WHERE deleted = FALSE
+          AND purchase_receipt_id = #{purchaseReceiptId}
     </select>
 
 </mapper>

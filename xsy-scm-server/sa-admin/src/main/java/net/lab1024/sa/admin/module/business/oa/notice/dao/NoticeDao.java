@@ -81,41 +81,41 @@ public interface NoticeDao extends BaseMapper<NoticeEntity> {
      *
      */
     List<NoticeEmployeeVO> queryEmployeeNotViewNotice(Page<?> page,
-                                               @Param("requestEmployeeId") Long requestEmployeeId,
-                                               @Param("query") NoticeEmployeeQueryForm noticeEmployeeQueryForm,
-                                               @Param("requestEmployeeDepartmentIdList") List<Long> requestEmployeeDepartmentIdList,
-                                               @Param("deletedFlag") boolean deletedFlag,
-                                               @Param("administratorFlag") boolean administratorFlag,
-                                               @Param("departmentDataType") Integer departmentDataType,
-                                               @Param("employeeDataType") Integer employeeDataType
+                                                      @Param("requestEmployeeId") Long requestEmployeeId,
+                                                      @Param("query") NoticeEmployeeQueryForm noticeEmployeeQueryForm,
+                                                      @Param("requestEmployeeDepartmentIdList") List<Long> requestEmployeeDepartmentIdList,
+                                                      @Param("deletedFlag") boolean deletedFlag,
+                                                      @Param("administratorFlag") boolean administratorFlag,
+                                                      @Param("departmentDataType") Integer departmentDataType,
+                                                      @Param("employeeDataType") Integer employeeDataType
 
     );
 
-    long  viewRecordCount(@Param("noticeId")Long noticeId, @Param("employeeId")Long employeeId);
+    long viewRecordCount(@Param("noticeId") Long noticeId, @Param("employeeId") Long employeeId);
 
     /**
      * 查询通知、公告的 查看记录
      */
-    List<NoticeViewRecordVO> queryNoticeViewRecordList(Page page,@Param("queryForm") NoticeViewRecordQueryForm noticeViewRecordQueryForm);
+    List<NoticeViewRecordVO> queryNoticeViewRecordList(Page page, @Param("queryForm") NoticeViewRecordQueryForm noticeViewRecordQueryForm);
 
     /**
      * 保存查看记录
      */
-    void insertViewRecord(@Param("noticeId") Long noticeId, @Param("employeeId") Long employeeId, @Param("ip") String ip, @Param("userAgent") String userAgent,@Param("pageViewCount") Integer pageViewCount);
+    void insertViewRecord(@Param("noticeId") Long noticeId, @Param("employeeId") Long employeeId, @Param("ip") String ip, @Param("userAgent") String userAgent, @Param("pageViewCount") Integer pageViewCount);
 
     /**
      * 更新查看记录
      */
-    void updateViewRecord(@Param("noticeId")Long noticeId, @Param("employeeId")Long requestEmployeeId,@Param("ip") String ip, @Param("userAgent")String userAgent);
+    void updateViewRecord(@Param("noticeId") Long noticeId, @Param("employeeId") Long requestEmployeeId, @Param("ip") String ip, @Param("userAgent") String userAgent);
 
     /**
      * 更新 浏览量
      *
-     * @param noticeId 通知 id
+     * @param noticeId               通知 id
      * @param pageViewCountIncrement 页面浏览量的增量
      * @param userViewCountIncrement 用户浏览量的增量
      */
-    void updateViewCount(@Param("noticeId")Long noticeId,@Param("pageViewCountIncrement") Integer pageViewCountIncrement, @Param("userViewCountIncrement")Integer userViewCountIncrement);
+    void updateViewCount(@Param("noticeId") Long noticeId, @Param("pageViewCountIncrement") Integer pageViewCountIncrement, @Param("userViewCountIncrement") Integer userViewCountIncrement);
 
 
 }

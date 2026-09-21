@@ -19,105 +19,106 @@
           <a-descriptions-item label="创建时间">{{ detail.createTime }}</a-descriptions-item>
           <a-descriptions-item label="创建人">{{ detail.createUserName }}</a-descriptions-item>
           <a-descriptions-item label="营业执照">
-            <FilePreview :file-list="detail.businessLicense" />
+            <FilePreview :file-list="detail.businessLicense"/>
           </a-descriptions-item>
         </a-descriptions>
       </div>
     </a-page-header>
   </div>
   <a-card
-    class="smart-margin-top10"
-    size="small"
-    v-if="$privilege('oa:enterprise:queryEmployee') || $privilege('oa:bank:query') || $privilege('oa:invoice:query')"
+      class="smart-margin-top10"
+      size="small"
+      v-if="$privilege('oa:enterprise:queryEmployee') || $privilege('oa:bank:query') || $privilege('oa:invoice:query')"
   >
     <a-tabs>
       <a-tab-pane key="employee" tab="员工信息" v-if="$privilege('oa:enterprise:queryEmployee')">
-        <EmployeeList :enterpriseId="enterpriseId" />
+        <EmployeeList :enterpriseId="enterpriseId"/>
       </a-tab-pane>
       <a-tab-pane key="bank" tab="银行信息" v-if="$privilege('oa:bank:query')">
-        <BankList :enterpriseId="enterpriseId" />
+        <BankList :enterpriseId="enterpriseId"/>
       </a-tab-pane>
       <a-tab-pane key="invoice" tab="发票信息" v-if="$privilege('oa:invoice:query')">
-        <InvoiceList :enterpriseId="enterpriseId" />
+        <InvoiceList :enterpriseId="enterpriseId"/>
       </a-tab-pane>
       <a-tab-pane key="dataTracer" tab="变更记录">
-        <DataTracer :dataId="enterpriseId" :type="DATA_TRACER_TYPE_ENUM.OA_ENTERPRISE.value" />
+        <DataTracer :dataId="enterpriseId" :type="DATA_TRACER_TYPE_ENUM.OA_ENTERPRISE.value"/>
       </a-tab-pane>
     </a-tabs>
-    <EnterpriseOperate ref="operateRef" @refresh="getDetail" />
+    <EnterpriseOperate ref="operateRef" @refresh="getDetail"/>
   </a-card>
 </template>
 
 <script setup lang="ts">
-  import _ from 'lodash';
-  import { computed, onMounted, ref } from 'vue';
-  import { useRoute } from 'vue-router';
-  import BankList from './components/enterprise-bank-list.vue';
-  import EmployeeList from './components/enterprise-employee-list.vue';
-  import InvoiceList from './components/enterprise-invoice-list.vue';
-  import EnterpriseOperate from './components/enterprise-operate-modal.vue';
-  import { enterpriseApi } from '/@/api/business/oa/enterprise-api';
-  import { SmartLoading } from '/@/components/framework/smart-loading';
-  import DataTracer from '/@/components/support/data-tracer/index.vue';
-  import FilePreview from '/@/components/support/file-preview/index.vue';
-  import { DATA_TRACER_TYPE_ENUM } from '/@/constants/support/data-tracer-const';
-  import { smartSentry } from '/@/lib/smart-sentry';
+import _ from 'lodash';
+import {computed, onMounted, ref} from 'vue';
+import {useRoute} from 'vue-router';
+import BankList from './components/enterprise-bank-list.vue';
+import EmployeeList from './components/enterprise-employee-list.vue';
+import InvoiceList from './components/enterprise-invoice-list.vue';
+import EnterpriseOperate from './components/enterprise-operate-modal.vue';
+import {enterpriseApi} from '/@/api/business/oa/enterprise-api';
+import {SmartLoading} from '/@/components/framework/smart-loading';
+import DataTracer from '/@/components/support/data-tracer/index.vue';
+import FilePreview from '/@/components/support/file-preview/index.vue';
+import {DATA_TRACER_TYPE_ENUM} from '/@/constants/support/data-tracer-const';
+import {smartSentry} from '/@/lib/smart-sentry';
 
-  const route = useRoute();
-  let enterpriseId = ref();
-  onMounted(() => {
-    if (route.query.enterpriseId) {
-      enterpriseId.value = Number(route.query.enterpriseId);
-      getDetail();
-    }
-  });
-
-  //编辑
-  const operateRef = ref();
-  function showUpdate() {
-    operateRef.value.showModal(enterpriseId.value);
+const route = useRoute();
+let enterpriseId = ref();
+onMounted(() => {
+  if (route.query.enterpriseId) {
+    enterpriseId.value = Number(route.query.enterpriseId);
+    getDetail();
   }
+});
 
-  // 详情
-  let detail = ref({});
+//编辑
+const operateRef = ref();
 
-  async function getDetail() {
-    try {
-      let result = await enterpriseApi.detail(enterpriseId.value);
-      detail.value = result.data;
-    } catch (error) {
-      smartSentry.captureError(error);
-    } finally {
-      SmartLoading.hide();
-    }
+function showUpdate() {
+  operateRef.value.showModal(enterpriseId.value);
+}
+
+// 详情
+let detail = ref({});
+
+async function getDetail() {
+  try {
+    let result = await enterpriseApi.detail(enterpriseId.value);
+    detail.value = result.data;
+  } catch (error) {
+    smartSentry.captureError(error);
+  } finally {
+    SmartLoading.hide();
   }
+}
 
-  // 地区
-  const area = computed(() => {
-    let area = '';
-    if (!detail.value) {
-      return area;
-    }
-    if (detail.value.provinceName) {
-      area = area + detail.value.provinceName;
-    }
-    if (detail.value.cityName) {
-      area = area + detail.value.cityName;
-    }
-    if (detail.value.districtName) {
-      area = area + detail.value.districtName;
-    }
+// 地区
+const area = computed(() => {
+  let area = '';
+  if (!detail.value) {
     return area;
-  });
+  }
+  if (detail.value.provinceName) {
+    area = area + detail.value.provinceName;
+  }
+  if (detail.value.cityName) {
+    area = area + detail.value.cityName;
+  }
+  if (detail.value.districtName) {
+    area = area + detail.value.districtName;
+  }
+  return area;
+});
 
-  const logo = computed(() => {
-    if (!detail.value) {
-      return '';
-    }
-    if (!_.isEmpty(detail.value.enterpriseLogo)) {
-      return detail.value.enterpriseLogo[0].fileUrl;
-    }
+const logo = computed(() => {
+  if (!detail.value) {
     return '';
-  });
+  }
+  if (!_.isEmpty(detail.value.enterpriseLogo)) {
+    return detail.value.enterpriseLogo[0].fileUrl;
+  }
+  return '';
+});
 </script>
 

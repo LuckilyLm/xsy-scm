@@ -10,24 +10,24 @@
  *
  * 释放只对「生效中」的预留有效；重复释放会被拒绝（41016），不会把可用量虚增。
  */
-import { postRequest } from '/@/lib/axios';
-import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
+import {postRequest} from '/@/lib/axios';
+import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
-  Id,
-  InventoryReservation,
-  InventoryReservationQuery,
+    Id,
+    InventoryReservation,
+    InventoryReservationQuery,
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryReservationApi = {
-  query: (data: InventoryReservationQuery) =>
-    postRequest('/scm/inventory/reservation/query', data) as unknown as Promise<
-      ScmResponse<ScmPage<InventoryReservation>>
-    >,
-  /** 释放预留：占用归还可用量。 */
-  release: (id: Id) =>
-    postRequest(`/scm/inventory/reservation/release/${id}`, {}) as unknown as Promise<
-      ScmResponse<string>
-    >,
+    query: (data: InventoryReservationQuery) =>
+        postRequest('/scm/inventory/reservation/query', data) as unknown as Promise<
+            ScmResponse<ScmPage<InventoryReservation>>
+        >,
+    /** 释放预留：占用归还可用量。 */
+    release: (id: Id) =>
+        postRequest(`/scm/inventory/reservation/release/${id}`, {}) as unknown as Promise<
+            ScmResponse<string>
+        >,
 };
 
 export default inventoryReservationApi;

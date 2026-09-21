@@ -8,7 +8,8 @@
     <a-card size="small">
       <template #title>
         <div class="title">
-          <component :is="$antIcons[props.icon]" v-if="props.icon" :style="{ fontSize: '18px', color: token.colorPrimary }" />
+          <component :is="$antIcons[props.icon]" v-if="props.icon"
+                     :style="{ fontSize: '18px', color: token.colorPrimary }"/>
           <slot name="title"></slot>
           <span v-if="!$slots.title" class="smart-margin-left10">{{ props.title }} </span>
         </div>
@@ -22,42 +23,43 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { theme } from 'ant-design-vue';
-  import { computed } from 'vue';
+import {theme} from 'ant-design-vue';
+import {computed} from 'vue';
 
-  let props = defineProps({
-    icon: String,
-    title: String,
-    extra: String,
-  });
-  let emits = defineEmits(['extraClick']);
+let props = defineProps({
+  icon: String,
+  title: String,
+  extra: String,
+});
+let emits = defineEmits(['extraClick']);
 
-  function extraClick() {
-    emits('extraClick');
-  }
+function extraClick() {
+  emits('extraClick');
+}
 
-  const { useToken } = theme;
-  const { token } = useToken();
-  const color = computed(() => {
-    return token.colorPrimary;
-  });
+const {useToken} = theme;
+const {token} = useToken();
+const color = computed(() => {
+  return token.colorPrimary;
+});
 </script>
 <style lang="less" scoped>
-  .card-container {
-    height: 100%;
+.card-container {
+  height: 100%;
 
-    .title {
-      display: flex;
-      align-items: center;
-      &::before {
-        content: '';
-        position: absolute;
-        top: 3px;
-        left: 0;
-        width: 3px;
-        height: 30px;
-        background-color: v-bind('token.colorPrimary');
-      }
+  .title {
+    display: flex;
+    align-items: center;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 0;
+      width: 3px;
+      height: 30px;
+      background-color: v-bind('token.colorPrimary');
     }
   }
+}
 </style>

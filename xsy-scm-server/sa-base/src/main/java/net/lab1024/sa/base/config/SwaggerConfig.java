@@ -34,8 +34,8 @@ import java.util.Optional;
 /**
  * springdoc-openapi 配置
  * nginx配置前缀时如果需要访问【/swagger-ui/index.html】需添加额外nginx配置
- *  location /v3/api-docs/ {
- *          proxy_pass  http://127.0.0.1:1024/v3/api-docs/;
+ * location /v3/api-docs/ {
+ * proxy_pass  http://127.0.0.1:1024/v3/api-docs/;
  * }
  */
 @Slf4j
@@ -81,7 +81,7 @@ public class SwaggerConfig {
     public GlobalOpenApiCustomizer orderGlobalOpenApiCustomizer() {
         return openApi -> {
             // 全局添加鉴权参数
-            if(openApi.getPaths()!=null){
+            if (openApi.getPaths() != null) {
                 openApi.getPaths().forEach((s, pathItem) -> {
                     // 为所有接口添加鉴权
                     pathItem.readOperations().forEach(operation -> {
@@ -115,6 +115,7 @@ public class SwaggerConfig {
     /**
      * 以下代码可以用于设置 /swagger-ui/index.html 的serverBaseUrl
      * 如果使用knife4j则不需要
+     *
      * @param openAPI
      * @param securityParser
      * @param springDocConfigProperties

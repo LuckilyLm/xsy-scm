@@ -53,7 +53,7 @@ public class LoginLogService {
      * @description 查询上一个登录记录
      */
     public LoginLogVO queryLastByUserId(Long userId, UserTypeEnum userTypeEnum, LoginLogResultEnum loginLogResultEnum) {
-        return loginLogDao.queryLastByUserId(userId,userTypeEnum.getValue(), loginLogResultEnum.getValue());
+        return loginLogDao.queryLastByUserId(userId, userTypeEnum.getValue(), loginLogResultEnum.getValue());
     }
 
 }

@@ -19,7 +19,9 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class CustomerQueryForm extends PageParam {
 
-    /** 关键字：客户编码 / 客户名称 / 联系人 / 联系电话。 */
+    /**
+     * 关键字：客户编码 / 客户名称 / 联系人 / 联系电话。
+     */
     @Size(max = 150)
     private String keyword;
 
@@ -32,7 +34,9 @@ public class CustomerQueryForm extends PageParam {
     @Pattern(regexp = "INDEPENDENT|GROUP")
     private String settleMode;
 
-    /** 按上级集团客户反查下属单位。 */
+    /**
+     * 按上级集团客户反查下属单位。
+     */
     @Positive
     private Long parentCustomerId;
 

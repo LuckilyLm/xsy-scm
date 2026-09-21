@@ -95,7 +95,7 @@ public class PurchaseOrderAllocationService {
         Map<Long, String> spuCodes = spuIds.isEmpty()
                 ? Map.of()
                 : spus.selectBatchIds(spuIds).stream().collect(Collectors.toMap(
-                        ProductSpuEntity::getId, ProductSpuEntity::getSpuCode, (a, b) -> a));
+                ProductSpuEntity::getId, ProductSpuEntity::getSpuCode, (a, b) -> a));
 
         List<RequestedRow> rows = new ArrayList<>(form.getItems().size());
         for (PurchaseOrderAddForm.Item itemForm : form.getItems()) {
@@ -210,7 +210,9 @@ public class PurchaseOrderAllocationService {
         }
     }
 
-    /** 单行内的分配集合差量（Q13：**禁止**「一个 item 对一个 allocation」的算法）。 */
+    /**
+     * 单行内的分配集合差量（Q13：**禁止**「一个 item 对一个 allocation」的算法）。
+     */
     public void applyAllocationChanges(RequestedRow row,
                                        List<PurchaseDemandAllocationEntity> existing) {
         // 新增采购行在落库后才取得 ID；差量身份和插入记录都必须使用该 ID。
@@ -237,7 +239,9 @@ public class PurchaseOrderAllocationService {
         }
     }
 
-    /** 新建行的全部分配（没有旧集合可对账）。 */
+    /**
+     * 新建行的全部分配（没有旧集合可对账）。
+     */
     public void insertAllocations(RequestedRow row) {
         for (PurchaseDemandAllocationEntity allocation : row.allocations) {
             allocation.setPurchaseOrderItemId(row.item.getId());
@@ -295,7 +299,9 @@ public class PurchaseOrderAllocationService {
                 .toList();
     }
 
-    /** P12 锁序第 1 层：需求必须**按 id 升序**一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。 */
+    /**
+     * P12 锁序第 1 层：需求必须**按 id 升序**一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
+     */
     public Map<Long, PurchaseDemandEntity> lockDemands(Collection<Long> demandIds) {
         List<Long> ascending = PurchaseDemandAllocator.ascendingDemandIds(demandIds);
         if (ascending.isEmpty()) {

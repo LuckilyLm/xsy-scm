@@ -1,4 +1,4 @@
-import { convertUpperCamel } from '/@/utils/str-util';
+import {convertUpperCamel} from '/@/utils/str-util';
 
 // -------------------------------- java 类型 --------------------------------
 export const JavaTypeMap = new Map();
@@ -34,18 +34,18 @@ JavaTypeMap.set('timestamp', 'LocalDateTime');
 JavaTypeMap.set('timestamp without time zone', 'LocalDateTime');
 
 export const JavaTypeList = [
-  'Boolean', //
-  'Integer', //
-  'Long', //
-  'Double', //
-  'String', //
-  'BigDecimal', //
-  'LocalDate', //
-  'LocalDateTime', //
+    'Boolean', //
+    'Integer', //
+    'Long', //
+    'Double', //
+    'String', //
+    'BigDecimal', //
+    'LocalDate', //
+    'LocalDateTime', //
 ];
 
 export function getJavaType(dataType) {
-  return JavaTypeMap.get(dataType);
+    return JavaTypeMap.get(dataType);
 }
 
 // -------------------------------- js 类型 --------------------------------
@@ -83,14 +83,14 @@ JsTypeMap.set('timestamp', 'Date');
 JsTypeMap.set('timestamp without time zone', 'Date');
 
 export const JsTypeList = [
-  'Boolean', //
-  'Number', //
-  'String', //
-  'Date', //
+    'Boolean', //
+    'Number', //
+    'String', //
+    'Date', //
 ];
 
 export function getJsType(dataType) {
-  return JsTypeMap.get(dataType);
+    return JsTypeMap.get(dataType);
 }
 
 // -------------------------------- 前端组件 --------------------------------
@@ -129,83 +129,83 @@ FrontComponentMap.set('datetime2', 'DateTime');
 FrontComponentMap.set('timestamp without time zone', 'DateTime');
 
 export function getFrontComponent(dataType) {
-  return FrontComponentMap.get(dataType);
+    return FrontComponentMap.get(dataType);
 }
 
 // -------------------------------- 前端文件 --------------------------------
 
 export const LANGUAGE_LIST = [
-  'js', //
-  'ts', //
-  'java', //
+    'js', //
+    'ts', //
+    'java', //
 ];
 
 export const JS_FILE_LIST = [
-  'js/list.vue', //
-  'js/form.vue', //
-  'js/api.js', //
-  'js/const.js', //
+    'js/list.vue', //
+    'js/form.vue', //
+    'js/api.js', //
+    'js/const.js', //
 ];
 
 export const TS_FILE_LIST = [
-  'ts/list.vue', //
-  'ts/form.vue', //
-  'ts/api.ts', //
-  'ts/const.ts', //
+    'ts/list.vue', //
+    'ts/form.vue', //
+    'ts/api.ts', //
+    'ts/const.ts', //
 ];
 
 // -------------------------------- 后端文件 --------------------------------
 
 export const JAVA_DOMAIN_FILE_LIST = [
-  'Entity.java', //
-  'AddForm.java', //
-  'UpdateForm.java', //
-  'QueryForm.java', //
-  'VO.java', //
+    'Entity.java', //
+    'AddForm.java', //
+    'UpdateForm.java', //
+    'QueryForm.java', //
+    'VO.java', //
 ];
 
 export const JAVA_FILE_LIST = [
-  'Controller.java', //
-  'Service.java', //
-  'Manager.java', //
-  'Dao.java', //
-  'Mapper.xml', //
-  ...JAVA_DOMAIN_FILE_LIST,
-  'Menu.sql', //
+    'Controller.java', //
+    'Service.java', //
+    'Manager.java', //
+    'Dao.java', //
+    'Mapper.xml', //
+    ...JAVA_DOMAIN_FILE_LIST,
+    'Menu.sql', //
 ];
 
 // -------------------------------- 枚举enum --------------------------------
 
 export function convertJavaEnumName(moduleName, columnName) {
-  return moduleName + convertUpperCamel(columnName) + 'Enum';
+    return moduleName + convertUpperCamel(columnName) + 'Enum';
 }
 
 /**
  * 检测是否有枚举
  */
 export function checkExistEnum(comment) {
-  if (!comment) {
-    return false;
-  }
+    if (!comment) {
+        return false;
+    }
 
-  // 检测是否存在  [ ] 或者 【 】
-  let leftBracketIndex = comment.indexOf('[');
-  if (leftBracketIndex === -1) {
-    leftBracketIndex = comment.indexOf('【');
-  }
+    // 检测是否存在  [ ] 或者 【 】
+    let leftBracketIndex = comment.indexOf('[');
+    if (leftBracketIndex === -1) {
+        leftBracketIndex = comment.indexOf('【');
+    }
 
-  let rightBracketIndex = comment.indexOf(']');
-  if (rightBracketIndex === -1) {
-    leftBracketIndex = comment.indexOf('】');
-  }
+    let rightBracketIndex = comment.indexOf(']');
+    if (rightBracketIndex === -1) {
+        leftBracketIndex = comment.indexOf('】');
+    }
 
-  if (leftBracketIndex === -1 || rightBracketIndex === -1) {
-    return false;
-  }
+    if (leftBracketIndex === -1 || rightBracketIndex === -1) {
+        return false;
+    }
 
-  if (comment.indexOf(':') === -1) {
-    return false;
-  }
+    if (comment.indexOf(':') === -1) {
+        return false;
+    }
 
-  return true;
+    return true;
 }

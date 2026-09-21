@@ -32,11 +32,15 @@ public class InventoryOutboundItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;
 
-    /** 恒为正（DB CHECK），方向由 movement_type 表达。 */
+    /**
+     * 恒为正（DB CHECK），方向由 movement_type 表达。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 
-    /** 确认出库时写入的记账单位快照；草稿态为空。 */
+    /**
+     * 确认出库时写入的记账单位快照；草稿态为空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;
 

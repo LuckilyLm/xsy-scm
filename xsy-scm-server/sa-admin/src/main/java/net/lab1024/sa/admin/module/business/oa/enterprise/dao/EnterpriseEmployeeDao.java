@@ -23,42 +23,45 @@ public interface EnterpriseEmployeeDao extends BaseMapper<EnterpriseEmployeeEnti
     /**
      * 根据员工查询
      */
-    List<EnterpriseEmployeeVO> selectByEmployeeIdList(@Param("employeeIdList")Collection<Long> employeeIdList);
+    List<EnterpriseEmployeeVO> selectByEmployeeIdList(@Param("employeeIdList") Collection<Long> employeeIdList);
 
     /**
      * 查询员工关联的企业
      */
-    List<Long> selectEnterpriseIdByEmployeeId(@Param("employeeId")Long employeeId);
+    List<Long> selectEnterpriseIdByEmployeeId(@Param("employeeId") Long employeeId);
+
     /**
      * 根据企业查询
      */
-    List<EnterpriseEmployeeVO> selectByEnterpriseIdList(@Param("enterpriseIdList")Collection<Long> enterpriseIdList);
+    List<EnterpriseEmployeeVO> selectByEnterpriseIdList(@Param("enterpriseIdList") Collection<Long> enterpriseIdList);
+
     /**
      * 根据企业查询
      */
-    List<EnterpriseEmployeeEntity> selectByEnterpriseId(@Param("enterpriseId")Long enterpriseId);
+    List<EnterpriseEmployeeEntity> selectByEnterpriseId(@Param("enterpriseId") Long enterpriseId);
 
     /**
      * 查询企业下的所有员工id
      */
-    List<Long> selectEmployeeIdByEnterpriseIdList(@Param("enterpriseIdList")Collection<Long> enterpriseIdList);
+    List<Long> selectEmployeeIdByEnterpriseIdList(@Param("enterpriseIdList") Collection<Long> enterpriseIdList);
+
     /**
      * 根据员工删除
      */
-    void deleteByEnterpriseAndEmployeeIdList(@Param("enterpriseId")Long enterpriseId, @Param("employeeIdList")Collection<Long> employeeIdList);
+    void deleteByEnterpriseAndEmployeeIdList(@Param("enterpriseId") Long enterpriseId, @Param("employeeIdList") Collection<Long> employeeIdList);
 
     /**
      * 根据员工查询
      */
-    List<EnterpriseEmployeeEntity> selectByEnterpriseAndEmployeeIdList(@Param("enterpriseId")Long enterpriseId, @Param("employeeIdList")Collection<Long> employeeIdList);
+    List<EnterpriseEmployeeEntity> selectByEnterpriseAndEmployeeIdList(@Param("enterpriseId") Long enterpriseId, @Param("employeeIdList") Collection<Long> employeeIdList);
 
     /**
      * 删除某员工关联的所有企业
      */
-    void deleteByEmployeeId(@Param("employeeId")Long employeeId);
+    void deleteByEmployeeId(@Param("employeeId") Long employeeId);
 
     /**
      * 分页查询企业员工
      */
-    List<EnterpriseEmployeeVO> queryPageEmployeeList(Page<?> page,@Param("queryForm") EnterpriseEmployeeQueryForm queryForm);
+    List<EnterpriseEmployeeVO> queryPageEmployeeList(Page<?> page, @Param("queryForm") EnterpriseEmployeeQueryForm queryForm);
 }

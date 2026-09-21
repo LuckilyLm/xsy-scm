@@ -74,7 +74,9 @@ public class ScreenDataService {
 
     private final ScreenDataDao screenDataDao;
 
-    /** 今日起止（北京时间日界，转成带 +08:00 偏移的瞬间，与库中 TIMESTAMPTZ 可比）。 */
+    /**
+     * 今日起止（北京时间日界，转成带 +08:00 偏移的瞬间，与库中 TIMESTAMPTZ 可比）。
+     */
     private OffsetDateTime[] todayRange() {
         return dayRange(LocalDate.now(BUSINESS_ZONE));
     }
@@ -259,7 +261,9 @@ public class ScreenDataService {
         return vo;
     }
 
-    /** 省级上卷：只累加市级事实，不引入任何新的判定。 */
+    /**
+     * 省级上卷：只累加市级事实，不引入任何新的判定。
+     */
     private static List<ScreenGeoVO.ProvinceNode> rollUpProvinces(List<ScreenGeoVO.CityNode> cities) {
         Map<Integer, ScreenGeoVO.ProvinceNode> byProvince = new LinkedHashMap<>();
         for (ScreenGeoVO.CityNode city : cities) {

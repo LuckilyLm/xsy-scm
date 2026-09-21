@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
- *  操作日志查询 表单
+ * 操作日志查询 表单
  *
  */
 @Data

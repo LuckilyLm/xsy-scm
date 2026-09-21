@@ -14,11 +14,13 @@ import net.lab1024.sa.base.common.enumeration.BaseEnum;
 
 @AllArgsConstructor
 @Getter
-public enum ${enumName} implements BaseEnum {
+public enum ${enumName} implements
 
-    ;
+        BaseEnum {
 
-    private final ${enumJavaType} value;
+            ;
 
-    private final String desc;
-}
+            private final ${enumJavaType} value ;
+
+            private final String desc;
+        }

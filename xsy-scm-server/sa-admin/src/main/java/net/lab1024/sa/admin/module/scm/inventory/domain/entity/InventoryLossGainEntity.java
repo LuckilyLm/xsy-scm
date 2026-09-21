@@ -30,37 +30,51 @@ public class InventoryLossGainEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 单据号（业务唯一，软删范围内唯一）。 */
+    /**
+     * 单据号（业务唯一，软删范围内唯一）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String lossGainNo;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long warehouseId;
 
-    /** {@code ScmInventoryLossGainTypeEnum}：LOSS 报损 / OVERFLOW 报溢。 */
+    /**
+     * {@code ScmInventoryLossGainTypeEnum}：LOSS 报损 / OVERFLOW 报溢。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String adjustType;
 
-    /** {@code ScmInventoryLossGainStatusEnum}。 */
+    /**
+     * {@code ScmInventoryLossGainStatusEnum}。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;
 
-    /** 报损报溢原因，必填（DB CHECK 也挡空串）。 */
+    /**
+     * 报损报溢原因，必填（DB CHECK 也挡空串）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String reason;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String remark;
 
-    /** 审核时刻；仅已审核（通过 / 驳回）非空（DB CHECK 保证）。 */
+    /**
+     * 审核时刻；仅已审核（通过 / 驳回）非空（DB CHECK 保证）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime auditedAt;
 
-    /** 审核人；仅已审核非空。 */
+    /**
+     * 审核人；仅已审核非空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String auditor;
 
-    /** 审核意见（驳回理由）。 */
+    /**
+     * 审核意见（驳回理由）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String auditOpinion;
 

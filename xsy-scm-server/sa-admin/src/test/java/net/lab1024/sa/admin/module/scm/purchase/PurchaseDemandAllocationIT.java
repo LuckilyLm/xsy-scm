@@ -59,7 +59,9 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
     @Autowired
     private PurchaseDemandAllocationDao purchaseDemandAllocationDao;
 
-    /** 一个 SKU + 供应商 + 两条需求（两张已确认订单）+ 一张草稿采购单。 */
+    /**
+     * 一个 SKU + 供应商 + 两条需求（两张已确认订单）+ 一张草稿采购单。
+     */
     private record TwoDemandFixture(Long skuId, Long supplierId,
                                     Long demandA, Long demandB,
                                     Long salesOrderItemA, Long salesOrderItemB,
@@ -76,9 +78,9 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
     /**
      * 造出「一个 SKU 行挂两条需求」的完整前置数据，并按给定数量建单。
      *
-     * @param purchaseUnit       供应商侧的采购单位（传 {@code 箱} 即可构造 Q17 的单位不一致）
-     * @param quantityA          分配到需求 A 的数量（4 位定点字符串）
-     * @param quantityB          分配到需求 B 的数量
+     * @param purchaseUnit 供应商侧的采购单位（传 {@code 箱} 即可构造 Q17 的单位不一致）
+     * @param quantityA    分配到需求 A 的数量（4 位定点字符串）
+     * @param quantityB    分配到需求 B 的数量
      */
     private TwoDemandFixture twoDemands(String suffix, String purchaseUnit,
                                         String quantityA, String quantityB) {
@@ -177,12 +179,16 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
         return form;
     }
 
-    /** 目标态**只含一条**分配（同行的其它分配一律被删）。 */
+    /**
+     * 目标态**只含一条**分配（同行的其它分配一律被删）。
+     */
     private PurchaseOrderUpdateForm updateForm(TwoDemandFixture fx, Long demandId, String quantity) {
         return updateForm(fx, Map.of(demandId, quantity));
     }
 
-    /** 重新读需求。**必须先清一级缓存**：整个用例跑在一个事务里，MyBatis 的 SqlSession 与事务同生命周期。 */
+    /**
+     * 重新读需求。**必须先清一级缓存**：整个用例跑在一个事务里，MyBatis 的 SqlSession 与事务同生命周期。
+     */
     private PurchaseDemandEntity demandById(Long demandId) {
         evictMybatisCache();
         return purchaseDemandDao.selectById(demandId);

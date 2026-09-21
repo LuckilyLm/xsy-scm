@@ -10,18 +10,17 @@
     </resultMap>
 
     <insert id="append">
-        INSERT INTO receipt_weighing_record (
-            purchase_receipt_item_id, raw_reading, confirmed_reading, unit, source,
-            device_session_id, modification_reason, recorded_at, operator, created_by)
-        VALUES (
-            #{row.purchaseReceiptItemId}, #{row.rawReading}, #{row.confirmedReading},
-            #{row.unit}, #{row.source},
-            #{row.deviceSessionId}, #{row.modificationReason}, #{row.recordedAt},
-            #{row.operator}, #{row.createdBy})
+        INSERT INTO receipt_weighing_record (purchase_receipt_item_id, raw_reading, confirmed_reading, unit, source,
+                                             device_session_id, modification_reason, recorded_at, operator, created_by)
+        VALUES (#{row.purchaseReceiptItemId}, #{row.rawReading}, #{row.confirmedReading},
+                #{row.unit}, #{row.source},
+                #{row.deviceSessionId}, #{row.modificationReason}, #{row.recordedAt},
+                #{row.operator}, #{row.createdBy})
     </insert>
 
     <select id="listByReceiptItemId" resultMap="weighingRowMap">
-        SELECT * FROM receipt_weighing_record
+        SELECT *
+        FROM receipt_weighing_record
         WHERE purchase_receipt_item_id = #{purchaseReceiptItemId}
         ORDER BY recorded_at DESC, id DESC
     </select>
@@ -29,13 +28,14 @@
     <select id="listByReceiptId" resultMap="weighingRowMap">
         SELECT w.*
         FROM receipt_weighing_record w
-        JOIN purchase_receipt_item ri ON ri.id = w.purchase_receipt_item_id AND ri.deleted = FALSE
+                 JOIN purchase_receipt_item ri ON ri.id = w.purchase_receipt_item_id AND ri.deleted = FALSE
         WHERE ri.purchase_receipt_id = #{purchaseReceiptId}
         ORDER BY w.recorded_at DESC, w.id DESC
     </select>
 
     <select id="countByReceiptItemId" resultType="int">
-        SELECT count(*) FROM receipt_weighing_record
+        SELECT count(*)
+        FROM receipt_weighing_record
         WHERE purchase_receipt_item_id = #{purchaseReceiptItemId}
     </select>
 

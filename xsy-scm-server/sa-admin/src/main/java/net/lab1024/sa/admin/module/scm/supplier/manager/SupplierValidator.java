@@ -12,12 +12,16 @@ public final class SupplierValidator {
     private SupplierValidator() {
     }
 
-    /** 编码归一化：去空白 + 转大写。 */
+    /**
+     * 编码归一化：去空白 + 转大写。
+     */
     public static String normalizeCode(String raw) {
         return raw == null ? null : raw.trim().toUpperCase();
     }
 
-    /** 名称归一化：仅去首尾空白，保留大小写。 */
+    /**
+     * 名称归一化：仅去首尾空白，保留大小写。
+     */
     public static String normalizeName(String raw) {
         return raw == null ? null : raw.trim();
     }

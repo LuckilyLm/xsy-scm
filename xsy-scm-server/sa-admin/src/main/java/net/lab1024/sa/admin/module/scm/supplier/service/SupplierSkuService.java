@@ -47,7 +47,9 @@ public class SupplierSkuService {
 
     private final EmployeeDao employees;
 
-    /** 按供应商列出活动关联行，供替换编辑页回填。 */
+    /**
+     * 按供应商列出活动关联行，供替换编辑页回填。
+     */
     public List<SupplierSkuVO> listBySupplierId(Long supplierId) {
         // 供应商必须存在，否则回填一个不存在的供应商会得到「空列表」这种歧义结果
         supplierService.require(supplierId);
@@ -55,7 +57,9 @@ public class SupplierSkuService {
         return enrich(rows);
     }
 
-    /** 只读反查分页（按 SKU 找供应商）。 */
+    /**
+     * 只读反查分页（按 SKU 找供应商）。
+     */
     public PageResult<SupplierSkuVO> query(SupplierSkuQueryForm form) {
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {

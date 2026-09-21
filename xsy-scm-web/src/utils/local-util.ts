@@ -4,17 +4,17 @@
  */
 
 export const localSave = (key, value) => {
-  localStorage.setItem(key, value);
+    localStorage.setItem(key, value);
 };
 
 export const localRead = (key) => {
-  return localStorage.getItem(key) || '';
+    return localStorage.getItem(key) || '';
 };
 
 export const localClear = () => {
-  localStorage.clear();
+    localStorage.clear();
 };
 
 export const localRemove = (key) => {
-  localStorage.removeItem(key);
+    localStorage.removeItem(key);
 };

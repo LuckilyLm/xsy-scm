@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
-/** HTTP file reads only; business services retain their own permission/relation boundary. */
+/**
+ * HTTP file reads only; business services retain their own permission/relation boundary.
+ */
 @Component
 public class FileAccessGuard {
     private final FileDao fileDao;
@@ -51,5 +53,6 @@ public class FileAccessGuard {
                 && Objects.equals(file.getCreatorUserType(), user.getUserType().getValue());
     }
 
-    public static final class AccessDenied extends RuntimeException { }
+    public static final class AccessDenied extends RuntimeException {
+    }
 }

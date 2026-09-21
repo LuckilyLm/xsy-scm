@@ -73,7 +73,7 @@ public class MyBatisPlugin extends DataScopePlugin {
             String[] paramNameArray = paramName.split(",");
             Map<?, ?> parameterMap = (Map) parameter;
             for (String param : paramNameArray) {
-                if(parameterMap.containsKey(param)){
+                if (parameterMap.containsKey(param)) {
                     paramMap.put(param, parameterMap.get(param));
                 }
             }

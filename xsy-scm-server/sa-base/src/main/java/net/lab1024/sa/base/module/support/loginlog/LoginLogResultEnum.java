@@ -7,7 +7,7 @@ import net.lab1024.sa.base.common.enumeration.BaseEnum;
  *
  */
 public enum LoginLogResultEnum implements BaseEnum {
-    
+
     LOGIN_SUCCESS(0, "登录成功"),
     LOGIN_FAIL(1, "登录失败"),
     LOGIN_OUT(2, "退出登录");

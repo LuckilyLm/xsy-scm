@@ -6,6 +6,7 @@ import net.lab1024.sa.admin.module.scm.product.domain.form.ProductAssistantQuery
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductUomVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
 import java.util.List;
 
 @Mapper
@@ -15,7 +16,9 @@ public interface ProductUomDao extends BaseMapper<ProductUomEntity> {
 
     ProductUomVO selectVoById(@Param("id") Long id);
 
-    /** 锁定活动行，使「删除单位」与「商品改用该单位」串行，避免校验通过后被并发写引用。 */
+    /**
+     * 锁定活动行，使「删除单位」与「商品改用该单位」串行，避免校验通过后被并发写引用。
+     */
     ProductUomEntity selectForUpdate(@Param("id") Long id);
 
     /**

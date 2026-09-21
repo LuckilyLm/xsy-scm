@@ -13,16 +13,24 @@ package net.lab1024.sa.admin.module.scm.common.constant;
  */
 public enum ScmCustomerStatusEnum {
 
-    /** 潜在客户：已登记，尚未建立合作。 */
+    /**
+     * 潜在客户：已登记，尚未建立合作。
+     */
     POTENTIAL,
 
-    /** 合作中：唯一可交易的客户状态。 */
+    /**
+     * 合作中：唯一可交易的客户状态。
+     */
     COOPERATING,
 
-    /** 暂停合作。 */
+    /**
+     * 暂停合作。
+     */
     SUSPENDED,
 
-    /** 黑名单。 */
+    /**
+     * 黑名单。
+     */
     BLACKLIST;
 
     /**

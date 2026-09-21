@@ -1,14 +1,14 @@
-import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { screenApi } from '/@/api/business/screen-api';
+import {onBeforeUnmount, onMounted, ref} from 'vue';
+import {screenApi} from '/@/api/business/screen-api';
 import {
-  emptyGeo,
-  emptyTrend,
-  type BusinessData,
-  type GeoData,
-  type InventoryData,
-  type PurchaseData,
-  type ScreenRange,
-  type TrendData,
+    emptyGeo,
+    emptyTrend,
+    type BusinessData,
+    type GeoData,
+    type InventoryData,
+    type PurchaseData,
+    type ScreenRange,
+    type TrendData,
 } from '../types';
 
 /**
@@ -34,148 +34,148 @@ const REFRESH_INTERVAL = 30_000;
  * 经营、库存、采购三个聚合重拉一遍。
  */
 export function useScreenData() {
-  const business = ref<BusinessData | null>(null);
-  const inventory = ref<InventoryData | null>(null);
-  const purchase = ref<PurchaseData | null>(null);
-  // 初值就是空地理数据而不是 null：接口挂了地图面板仍要画出底图 + 「暂无归属数据」
-  const geoData = ref<GeoData>(emptyGeo());
-  const trend = ref<TrendData>(emptyTrend());
+    const business = ref<BusinessData | null>(null);
+    const inventory = ref<InventoryData | null>(null);
+    const purchase = ref<PurchaseData | null>(null);
+    // 初值就是空地理数据而不是 null：接口挂了地图面板仍要画出底图 + 「暂无归属数据」
+    const geoData = ref<GeoData>(emptyGeo());
+    const trend = ref<TrendData>(emptyTrend());
 
-  const loading = ref(true);
-  const refreshing = ref(false);
-  const error = ref('');
-  const staleError = ref('');
-  const updatedAt = ref<Date | null>(null);
-  const range = ref<ScreenRange>('7d');
+    const loading = ref(true);
+    const refreshing = ref(false);
+    const error = ref('');
+    const staleError = ref('');
+    const updatedAt = ref<Date | null>(null);
+    const range = ref<ScreenRange>('7d');
 
-  let timer: number | undefined;
+    let timer: number | undefined;
 
-  async function fetchTrend(target: ScreenRange) {
-    const res = await screenApi.getTrendData(target);
-    trend.value = (res.data as TrendData) ?? emptyTrend(target);
-  }
-
-  /** 首屏 / 手动刷新：五个接口并发，任一失败不影响其余。 */
-  async function loadAll() {
-    const results = await Promise.allSettled([
-      screenApi.getBusinessData(),
-      screenApi.getInventoryData(),
-      screenApi.getPurchaseData(),
-      screenApi.getTrendData(range.value),
-      screenApi.getGeoData(),
-    ]);
-
-    const [biz, inv, pur, trd, geo] = results;
-    if (biz.status === 'fulfilled') {
-      business.value = (biz.value.data as BusinessData) ?? null;
-    }
-    if (inv.status === 'fulfilled') {
-      inventory.value = (inv.value.data as InventoryData) ?? null;
-    }
-    if (pur.status === 'fulfilled') {
-      purchase.value = (pur.value.data as PurchaseData) ?? null;
-    }
-    if (trd.status === 'fulfilled') {
-      trend.value = (trd.value.data as TrendData) ?? emptyTrend(range.value);
-    }
-    if (geo.status === 'fulfilled') {
-      geoData.value = (geo.value.data as GeoData) ?? emptyGeo();
+    async function fetchTrend(target: ScreenRange) {
+        const res = await screenApi.getTrendData(target);
+        trend.value = (res.data as TrendData) ?? emptyTrend(target);
     }
 
-    const failed = results.filter((r) => r.status === 'rejected').length;
-    if (failed === results.length) {
-      // 全挂：没有可用数据，交给错误态
-      const first = results[0] as PromiseRejectedResult;
-      error.value = String(first.reason?.msg ?? first.reason?.message ?? '数据加载失败');
-      return false;
-    }
-    error.value = '';
-    staleError.value = failed > 0 ? `${failed} 个接口加载失败` : '';
-    updatedAt.value = new Date();
-    return true;
-  }
+    /** 首屏 / 手动刷新：五个接口并发，任一失败不影响其余。 */
+    async function loadAll() {
+        const results = await Promise.allSettled([
+            screenApi.getBusinessData(),
+            screenApi.getInventoryData(),
+            screenApi.getPurchaseData(),
+            screenApi.getTrendData(range.value),
+            screenApi.getGeoData(),
+        ]);
 
-  /** 首次加载：显示 loading。 */
-  async function bootstrap() {
-    loading.value = true;
-    try {
-      await loadAll();
-    } finally {
-      loading.value = false;
-    }
-  }
+        const [biz, inv, pur, trd, geo] = results;
+        if (biz.status === 'fulfilled') {
+            business.value = (biz.value.data as BusinessData) ?? null;
+        }
+        if (inv.status === 'fulfilled') {
+            inventory.value = (inv.value.data as InventoryData) ?? null;
+        }
+        if (pur.status === 'fulfilled') {
+            purchase.value = (pur.value.data as PurchaseData) ?? null;
+        }
+        if (trd.status === 'fulfilled') {
+            trend.value = (trd.value.data as TrendData) ?? emptyTrend(range.value);
+        }
+        if (geo.status === 'fulfilled') {
+            geoData.value = (geo.value.data as GeoData) ?? emptyGeo();
+        }
 
-  /** 静默刷新：不显示 loading，失败也只记 staleError。 */
-  async function refresh() {
-    if (refreshing.value) {
-      return;
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        if (failed === results.length) {
+            // 全挂：没有可用数据，交给错误态
+            const first = results[0] as PromiseRejectedResult;
+            error.value = String(first.reason?.msg ?? first.reason?.message ?? '数据加载失败');
+            return false;
+        }
+        error.value = '';
+        staleError.value = failed > 0 ? `${failed} 个接口加载失败` : '';
+        updatedAt.value = new Date();
+        return true;
     }
-    refreshing.value = true;
-    try {
-      await loadAll();
-    } finally {
-      refreshing.value = false;
-    }
-  }
 
-  /** 切换趋势区间：只重拉趋势。 */
-  async function setRange(next: ScreenRange) {
-    if (next === range.value) {
-      return;
+    /** 首次加载：显示 loading。 */
+    async function bootstrap() {
+        loading.value = true;
+        try {
+            await loadAll();
+        } finally {
+            loading.value = false;
+        }
     }
-    range.value = next;
-    try {
-      await fetchTrend(next);
-      updatedAt.value = new Date();
-      staleError.value = '';
-    } catch (e: any) {
-      staleError.value = String(e?.msg ?? '趋势数据加载失败');
+
+    /** 静默刷新：不显示 loading，失败也只记 staleError。 */
+    async function refresh() {
+        if (refreshing.value) {
+            return;
+        }
+        refreshing.value = true;
+        try {
+            await loadAll();
+        } finally {
+            refreshing.value = false;
+        }
     }
-  }
 
-  /**
-   * 页面不可见时跳过刷新。
-   *
-   * <p>大屏常年开着，切到后台标签页还在每 30 秒打接口纯属浪费；
-   * 而重新可见时立刻补一次，避免用户切回来看到的是十几分钟前的数据。
-   */
-  function onVisibilityChange() {
-    if (!document.hidden) {
-      refresh();
+    /** 切换趋势区间：只重拉趋势。 */
+    async function setRange(next: ScreenRange) {
+        if (next === range.value) {
+            return;
+        }
+        range.value = next;
+        try {
+            await fetchTrend(next);
+            updatedAt.value = new Date();
+            staleError.value = '';
+        } catch (e: any) {
+            staleError.value = String(e?.msg ?? '趋势数据加载失败');
+        }
     }
-  }
 
-  onMounted(() => {
-    bootstrap();
-    timer = window.setInterval(() => {
-      if (!document.hidden) {
-        refresh();
-      }
-    }, REFRESH_INTERVAL);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-  });
-
-  onBeforeUnmount(() => {
-    if (timer !== undefined) {
-      window.clearInterval(timer);
-      timer = undefined;
+    /**
+     * 页面不可见时跳过刷新。
+     *
+     * <p>大屏常年开着，切到后台标签页还在每 30 秒打接口纯属浪费；
+     * 而重新可见时立刻补一次，避免用户切回来看到的是十几分钟前的数据。
+     */
+    function onVisibilityChange() {
+        if (!document.hidden) {
+            refresh();
+        }
     }
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-  });
 
-  return {
-    business,
-    inventory,
-    purchase,
-    geo: geoData,
-    trend,
-    loading,
-    refreshing,
-    error,
-    staleError,
-    updatedAt,
-    range,
-    refresh,
-    setRange,
-  };
+    onMounted(() => {
+        bootstrap();
+        timer = window.setInterval(() => {
+            if (!document.hidden) {
+                refresh();
+            }
+        }, REFRESH_INTERVAL);
+        document.addEventListener('visibilitychange', onVisibilityChange);
+    });
+
+    onBeforeUnmount(() => {
+        if (timer !== undefined) {
+            window.clearInterval(timer);
+            timer = undefined;
+        }
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+    });
+
+    return {
+        business,
+        inventory,
+        purchase,
+        geo: geoData,
+        trend,
+        loading,
+        refreshing,
+        error,
+        staleError,
+        updatedAt,
+        range,
+        refresh,
+        setRange,
+    };
 }

@@ -5,22 +5,22 @@
  * @FilePath: /smart-admin/@/types/base.d.ts
  */
 export interface SmartEnumWrapper<T> {
-  [key: string]: SmartEnum<T>;
+    [key: string]: SmartEnum<T>;
 }
 
 export interface SmartEnum<T> {
-  [key: string]: SmartEnumItem<T>;
+    [key: string]: SmartEnumItem<T>;
 }
 
 interface SmartEnumItem<T> {
-  value: T;
-  desc: string;
+    value: T;
+    desc: string;
 }
 
 interface SmartEnumPlugin {
-  getDescByValue(constantName: string, value: string | number | undefined): string;
+    getDescByValue(constantName: string, value: string | number | undefined): string;
 
-  getValueDescList(constantName: string): SmartEnumItem[];
+    getValueDescList(constantName: string): SmartEnumItem[];
 
-  getValueDesc(constantName: string): { [key: string]: string };
+    getValueDesc(constantName: string): { [key: string]: string };
 }

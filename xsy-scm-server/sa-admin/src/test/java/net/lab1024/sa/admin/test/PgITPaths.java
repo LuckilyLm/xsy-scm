@@ -18,12 +18,18 @@ package net.lab1024.sa.admin.test;
  */
 public interface PgITPaths {
 
-    /** 仓库级运行时根目录（相对 sa-admin 模块目录）。 */
+    /**
+     * 仓库级运行时根目录（相对 sa-admin 模块目录）。
+     */
     String RUNTIME_ROOT = ".." + "/.runtime";
 
-    /** 集成测试日志目录。 */
+    /**
+     * 集成测试日志目录。
+     */
     String DEFAULT_LOG_DIR = RUNTIME_ROOT + "/logs/test";
 
-    /** 集成测试上传目录（注意结尾斜杠：FileService 直接做路径拼接）。 */
+    /**
+     * 集成测试上传目录（注意结尾斜杠：FileService 直接做路径拼接）。
+     */
     String DEFAULT_UPLOAD_PATH = RUNTIME_ROOT + "/upload/";
 }

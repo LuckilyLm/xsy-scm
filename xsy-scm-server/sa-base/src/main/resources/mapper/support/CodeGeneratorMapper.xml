@@ -20,33 +20,31 @@
           and table_name = #{tableName}
     </select>
 
-    <select id="selectTableColumn" resultType="net.lab1024.sa.base.module.support.codegenerator.domain.vo.TableColumnVO">
-        select
-            c.column_name,
-            col_description(
-                to_regclass(quote_ident(c.table_schema) || '.' || quote_ident(c.table_name)),
-                c.ordinal_position
-            ) as column_comment,
-            c.data_type,
-            (c.is_nullable = 'YES') as nullable_flag,
-            case when pk.column_name is not null then 'PRI' else '' end as column_key,
-            case
-                when c.is_identity = 'YES' then 'auto_increment'
-                when c.column_default like 'nextval(%' then 'auto_increment'
-                else ''
-            end as extra
+    <select id="selectTableColumn"
+            resultType="net.lab1024.sa.base.module.support.codegenerator.domain.vo.TableColumnVO">
+        select c.column_name,
+               col_description(
+                       to_regclass(quote_ident(c.table_schema) || '.' || quote_ident(c.table_name)),
+                       c.ordinal_position
+               )                                                           as column_comment,
+               c.data_type,
+               (c.is_nullable = 'YES')                                     as nullable_flag,
+               case when pk.column_name is not null then 'PRI' else '' end as column_key,
+               case
+                   when c.is_identity = 'YES' then 'auto_increment'
+                   when c.column_default like 'nextval(%' then 'auto_increment'
+                   else ''
+                   end                                                     as extra
         from information_schema.columns c
-        left join (
-            select kcu.table_schema, kcu.table_name, kcu.column_name
-            from information_schema.table_constraints tc
-            join information_schema.key_column_usage kcu
-              on kcu.constraint_name = tc.constraint_name
-             and kcu.table_schema = tc.table_schema
-            where tc.constraint_type = 'PRIMARY KEY'
-        ) pk
-          on pk.table_schema = c.table_schema
-         and pk.table_name = c.table_name
-         and pk.column_name = c.column_name
+                 left join (select kcu.table_schema, kcu.table_name, kcu.column_name
+                            from information_schema.table_constraints tc
+                                     join information_schema.key_column_usage kcu
+                                          on kcu.constraint_name = tc.constraint_name
+                                              and kcu.table_schema = tc.table_schema
+                            where tc.constraint_type = 'PRIMARY KEY') pk
+                           on pk.table_schema = c.table_schema
+                               and pk.table_name = c.table_name
+                               and pk.column_name = c.column_name
         where c.table_schema = current_schema()
           and c.table_name = #{tableName}
         order by c.ordinal_position
@@ -54,15 +52,15 @@
 
     <select id="queryTableList" resultType="net.lab1024.sa.base.module.support.codegenerator.domain.vo.TableVO">
         select
-            t.table_name,
-            obj_description(
-                to_regclass(quote_ident(t.table_schema) || '.' || quote_ident(t.table_name))
-            ) as table_comment,
-            t_code_generator_config.update_time configTime
+        t.table_name,
+        obj_description(
+        to_regclass(quote_ident(t.table_schema) || '.' || quote_ident(t.table_name))
+        ) as table_comment,
+        t_code_generator_config.update_time configTime
         from information_schema.tables t
         left join t_code_generator_config on t.table_name = t_code_generator_config.table_name
         where t.table_schema = current_schema()
-          and t.table_type = 'BASE TABLE'
+        and t.table_type = 'BASE TABLE'
         <if test="queryForm.tableNameKeywords != null and queryForm.tableNameKeywords != ''">
             AND STRPOS(t.table_name, #{queryForm.tableNameKeywords}) > 0
         </if>

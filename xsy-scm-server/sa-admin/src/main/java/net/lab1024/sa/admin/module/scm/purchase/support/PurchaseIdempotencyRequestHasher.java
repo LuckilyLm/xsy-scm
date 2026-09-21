@@ -43,7 +43,9 @@ public final class PurchaseIdempotencyRequestHasher {
         this.objectMapper = objectMapper.copy().configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
     }
 
-    /** 计算 SHA-256 十六进制摘要。 */
+    /**
+     * 计算 SHA-256 十六进制摘要。
+     */
     public String hash(Object request) {
         try {
             JsonNode tree = objectMapper.valueToTree(request);

@@ -32,21 +32,29 @@ public class InventoryBalanceVO {
 
     private String skuCode;
 
-    /** SKU 名称（来自 {@code product_sku.spec_name}）。 */
+    /**
+     * SKU 名称（来自 {@code product_sku.spec_name}）。
+     */
     private String skuName;
 
-    /** 商品名称（来自 {@code product_spu.name}）。 */
+    /**
+     * 商品名称（来自 {@code product_spu.name}）。
+     */
     private String productName;
 
     private Map<String, String> specValues;
 
-    /** Q13 记账单位：一个仓库 + SKU 只可能有一个。 */
+    /**
+     * Q13 记账单位：一个仓库 + SKU 只可能有一个。
+     */
     private String unit;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;
 
-    /** 已预留量（出库波次新增）。 */
+    /**
+     * 已预留量（出库波次新增）。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal reservedQuantity;
 

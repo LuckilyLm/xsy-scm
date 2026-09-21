@@ -6,8 +6,10 @@
                type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferVO"/>
 
     <select id="countByTransferNo" resultType="int">
-        SELECT COUNT(*) FROM inventory_transfer
-        WHERE transfer_no = #{transferNo} AND deleted = FALSE
+        SELECT COUNT(*)
+        FROM inventory_transfer
+        WHERE transfer_no = #{transferNo}
+          AND deleted = FALSE
     </select>
 
     <select id="nextTransferNo" resultType="long">
@@ -16,13 +18,19 @@
 
     <select id="selectById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity">
-        SELECT * FROM inventory_transfer WHERE id = #{id} AND deleted = FALSE
+        SELECT *
+        FROM inventory_transfer
+        WHERE id = #{id}
+          AND deleted = FALSE
     </select>
 
     <!-- 锁序：单据锁先于余额锁（与收货 / 出库 / 盘点 / 报损报溢同一顺序，避免反向拿锁） -->
     <select id="lockById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity">
-        SELECT * FROM inventory_transfer WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM inventory_transfer
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <!-- 带状态条件：并发重复发出时只有一次能成功（影响行数 = 1） -->
@@ -34,7 +42,9 @@
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{shippedBy}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'DRAFT'
     </update>
 
     <!-- 收货只允许从「在途」推进，因此已收货的单再收货影响行数为 0 -->
@@ -46,7 +56,9 @@
             version     = version + 1,
             updated_at  = CURRENT_TIMESTAMP,
             updated_by  = #{receivedBy}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'SHIPPED'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'SHIPPED'
     </update>
 
     <update id="markCancelled">
@@ -55,7 +67,9 @@
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{operator}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'DRAFT'
     </update>
 
     <update id="updateDraft">
@@ -66,7 +80,9 @@
             version           = version + 1,
             updated_at        = CURRENT_TIMESTAMP,
             updated_by        = #{operator}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'DRAFT'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'DRAFT'
     </update>
 
     <!--
@@ -76,22 +92,22 @@
     -->
     <select id="queryPage" resultMap="transferVoMap">
         SELECT t.id,
-               t.transfer_no,
-               t.from_warehouse_id,
-               t.to_warehouse_id,
-               t.status,
-               t.remark,
-               t.shipped_at,
-               t.shipped_by,
-               t.received_at,
-               t.received_by,
-               t.version,
-               t.created_at,
-               t.updated_at,
-               fw.warehouse_code AS from_warehouse_code,
-               fw.name           AS from_warehouse_name,
-               tw.warehouse_code AS to_warehouse_code,
-               tw.name           AS to_warehouse_name
+        t.transfer_no,
+        t.from_warehouse_id,
+        t.to_warehouse_id,
+        t.status,
+        t.remark,
+        t.shipped_at,
+        t.shipped_by,
+        t.received_at,
+        t.received_by,
+        t.version,
+        t.created_at,
+        t.updated_at,
+        fw.warehouse_code AS from_warehouse_code,
+        fw.name AS from_warehouse_name,
+        tw.warehouse_code AS to_warehouse_code,
+        tw.name AS to_warehouse_name
         FROM inventory_transfer t
         LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
         LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
@@ -130,9 +146,10 @@
                tw.warehouse_code AS to_warehouse_code,
                tw.name           AS to_warehouse_name
         FROM inventory_transfer t
-        LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
-        LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
-        WHERE t.deleted = FALSE AND t.id = #{id}
+                 LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
+                 LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
+        WHERE t.deleted = FALSE
+          AND t.id = #{id}
     </select>
 
     <!-- 在途库存：把 SHIPPED 调拨单展开成 (单号, SKU) 粒度，供对账与库存查询页使用 -->
@@ -140,20 +157,20 @@
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryInTransitVO">
         SELECT t.transfer_no,
                t.from_warehouse_id,
-               fw.name AS from_warehouse_name,
+               fw.name            AS from_warehouse_name,
                t.to_warehouse_id,
-               tw.name AS to_warehouse_name,
+               tw.name            AS to_warehouse_name,
                item.sku_id,
                sku.sku_code,
-               spu.name AS sku_name,
+               spu.name           AS sku_name,
                item.quantity,
                item.unit_snapshot AS unit
         FROM inventory_transfer t
-        JOIN inventory_transfer_item item ON item.transfer_id = t.id AND item.deleted = FALSE
-        LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
-        LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
-        LEFT JOIN product_sku sku ON sku.id = item.sku_id
-        LEFT JOIN product_spu spu ON spu.id = sku.spu_id
+                 JOIN inventory_transfer_item item ON item.transfer_id = t.id AND item.deleted = FALSE
+                 LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
+                 LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
+                 LEFT JOIN product_sku sku ON sku.id = item.sku_id
+                 LEFT JOIN product_spu spu ON spu.id = sku.spu_id
         WHERE t.deleted = FALSE
           AND t.status = 'SHIPPED'
         ORDER BY t.transfer_no DESC, item.sku_id

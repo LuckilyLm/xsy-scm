@@ -16,7 +16,7 @@ import net.lab1024.sa.base.module.support.operatelog.domain.OperateLogVO;
 import org.springframework.web.bind.annotation.*;
 
 /**
- *  操作日志
+ * 操作日志
  *
  */
 @RestController

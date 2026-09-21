@@ -20,10 +20,13 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class FileStorageCloudServiceImplTest {
-    @ParameterizedTest @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     void privateUploadSignsBeforeMetadataInsertAndAclIsOptional(boolean sendAcl) {
-        FileConfig config = FileConfigTest.config(); config.setCloudSendObjectAcl(sendAcl);
-        S3Client client = mock(S3Client.class); FileDao dao = mock(FileDao.class);
+        FileConfig config = FileConfigTest.config();
+        config.setCloudSendObjectAcl(sendAcl);
+        S3Client client = mock(S3Client.class);
+        FileDao dao = mock(FileDao.class);
         try (var signer = config.initS3Presigner()) {
             var storage = new FileStorageCloudServiceImpl();
             ReflectionTestUtils.setField(storage, "s3Client", client);
@@ -40,9 +43,12 @@ class FileStorageCloudServiceImplTest {
         }
     }
 
-    @Test void shortTtlDoesNotCreatePermanentRedisEntry() {
-        FileConfig config = FileConfigTest.config(); config.setCloudPrivateUrlExpireSeconds(2L);
-        FileDao dao = mock(FileDao.class); RedisService redis = mock(RedisService.class);
+    @Test
+    void shortTtlDoesNotCreatePermanentRedisEntry() {
+        FileConfig config = FileConfigTest.config();
+        config.setCloudPrivateUrlExpireSeconds(2L);
+        FileDao dao = mock(FileDao.class);
+        RedisService redis = mock(RedisService.class);
         String key = "private/common/short.png";
         when(dao.getByFileKey(key)).thenReturn(new FileVO());
         try (var signer = config.initS3Presigner()) {
@@ -56,7 +62,8 @@ class FileStorageCloudServiceImplTest {
         }
     }
 
-    @Test void malformedPrefixNeverReachesS3() {
+    @Test
+    void malformedPrefixNeverReachesS3() {
         var storage = new FileStorageCloudServiceImpl();
         assertThat(storage.getFileUrl("publicity/a.png").getCode()).isEqualTo(30005);
         assertThat(storage.download("privatex/a.png").getCode()).isEqualTo(30005);

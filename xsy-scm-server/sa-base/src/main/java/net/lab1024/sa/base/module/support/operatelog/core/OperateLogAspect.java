@@ -215,7 +215,7 @@ public abstract class OperateLogAspect {
         }
 
         // 处理返回值 ResponseDTO
-        if(responseDTO instanceof ResponseDTO) {
+        if (responseDTO instanceof ResponseDTO) {
             ResponseDTO response = (ResponseDTO) responseDTO;
             ResponseDTO logResponseDTO = new ResponseDTO(
                     response.getCode(),

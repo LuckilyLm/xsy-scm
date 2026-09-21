@@ -37,7 +37,9 @@ public final class Sm4EncryptCli {
     private Sm4EncryptCli() {
     }
 
-    /** 与 {@code ApiEncryptServiceSmImpl.stringToHex} 完全一致。 */
+    /**
+     * 与 {@code ApiEncryptServiceSmImpl.stringToHex} 完全一致。
+     */
     private static String stringToHex(String input) {
         StringBuilder hex = new StringBuilder();
         for (char c : input.toCharArray()) {
@@ -46,7 +48,9 @@ public final class Sm4EncryptCli {
         return hex.toString();
     }
 
-    /** 与 {@code ApiEncryptServiceSmImpl.hexToBytes} 完全一致。 */
+    /**
+     * 与 {@code ApiEncryptServiceSmImpl.hexToBytes} 完全一致。
+     */
     private static byte[] hexToBytes(String hex) {
         int length = hex.length();
         byte[] result;
@@ -64,7 +68,9 @@ public final class Sm4EncryptCli {
         return result;
     }
 
-    /** 与 {@code ApiEncryptServiceSmImpl.encrypt} 完全一致。 */
+    /**
+     * 与 {@code ApiEncryptServiceSmImpl.encrypt} 完全一致。
+     */
     public static String encrypt(String data) {
         SM4 sm4 = new SM4(hexToBytes(stringToHex(SM4_KEY)));
         String encryptHex = sm4.encryptHex(data);

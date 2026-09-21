@@ -109,7 +109,9 @@ public class InventoryConversionService {
         return entity.getId();
     }
 
-    /** 改待审核单据：只允许 PENDING；明细整表替换（逻辑删旧 + 插新）。 */
+    /**
+     * 改待审核单据：只允许 PENDING；明细整表替换（逻辑删旧 + 插新）。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, InventoryConversionAddForm form) {
         requireForm(form);
@@ -216,7 +218,9 @@ public class InventoryConversionService {
         }
     }
 
-    /** 删除待审核单据（逻辑删）。已审核的单不可删 —— 它们必须留痕。 */
+    /**
+     * 删除待审核单据（逻辑删）。已审核的单不可删 —— 它们必须留痕。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         String operator = ScmOperator.current();
@@ -232,7 +236,9 @@ public class InventoryConversionService {
     // 内部
     // ------------------------------------------------------------------
 
-    /** 一条腿：一次对某行余额的增减。{@code unitCost} 是本单求解出的单位成本基准。 */
+    /**
+     * 一条腿：一次对某行余额的增减。{@code unitCost} 是本单求解出的单位成本基准。
+     */
     private record Leg(Long skuId, boolean inbound, Long itemId,
                        BigDecimal quantity, String unit, BigDecimal unitCost) {
     }
@@ -356,7 +362,9 @@ public class InventoryConversionService {
         }
     }
 
-    /** 断言仓库**启用**（与调拨 / 采购同一取向：码留在调用方域）。 */
+    /**
+     * 断言仓库**启用**（与调拨 / 采购同一取向：码留在调用方域）。
+     */
     private void requireEnabled(Long warehouseId) {
         WarehouseEntity warehouse = warehouseService.require(warehouseId);
         if (!ScmEnableStatusEnum.ENABLED.name().equals(warehouse.getStatus())) {
@@ -364,7 +372,9 @@ public class InventoryConversionService {
         }
     }
 
-    /** 乐观锁早失败：版本不符时**在写流水之前**就报错，不做无用功。 */
+    /**
+     * 乐观锁早失败：版本不符时**在写流水之前**就报错，不做无用功。
+     */
     private static void requireVersion(InventoryConversionEntity entity,
                                        InventoryConversionAuditForm form) {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {

@@ -64,12 +64,16 @@ public class PurchaseOrderValidator {
     // 静态纯函数
     // ------------------------------------------------------------------
 
-    /** 去首尾空白；空白视作 {@code null}。 */
+    /**
+     * 去首尾空白；空白视作 {@code null}。
+     */
     public static String trim(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    /** 必填文本（原因类字段），缺失 → 传入的错误码。 */
+    /**
+     * 必填文本（原因类字段），缺失 → 传入的错误码。
+     */
     public static void reason(String value, ScmErrorCode code) {
         if (trim(value) == null) {
             throw new ScmBusinessException(code);
@@ -146,7 +150,9 @@ public class PurchaseOrderValidator {
         return supplier;
     }
 
-    /** 仓库必须存在（40485）且启用，否则 40987。 */
+    /**
+     * 仓库必须存在（40485）且启用，否则 40987。
+     */
     public WarehouseEntity requireEnabledWarehouse(Long warehouseId) {
         WarehouseEntity warehouse = warehouseService.require(warehouseId);
         if (!ScmEnableStatusEnum.ENABLED.name().equals(warehouse.getStatus())) {

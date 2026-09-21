@@ -70,7 +70,7 @@ public class PositionService {
      * @return
      */
     public ResponseDTO<String> batchDelete(List<Long> idList) {
-        if (CollectionUtils.isEmpty(idList)){
+        if (CollectionUtils.isEmpty(idList)) {
             return ResponseDTO.ok();
         }
 
@@ -82,7 +82,7 @@ public class PositionService {
      * 单个删除
      */
     public ResponseDTO<String> delete(Long positionId) {
-        if (null == positionId){
+        if (null == positionId) {
             return ResponseDTO.ok();
         }
 

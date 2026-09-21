@@ -39,11 +39,15 @@ public class InventoryWarningThresholdEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;
 
-    /** 预警下限（可用量低于它触发 LOW）；{@code null} 表示不设下限。 */
+    /**
+     * 预警下限（可用量低于它触发 LOW）；{@code null} 表示不设下限。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal warnMin;
 
-    /** 预警上限（可用量高于它触发 HIGH）；{@code null} 表示不设上限。 */
+    /**
+     * 预警上限（可用量高于它触发 HIGH）；{@code null} 表示不设上限。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal warnMax;
 

@@ -38,7 +38,9 @@
     </select>
 
     <select id="selectByCode" resultType="net.lab1024.sa.base.module.support.dict.domain.entity.DictEntity">
-        select * from t_dict where dict_code = #{code}
+        select *
+        from t_dict
+        where dict_code = #{code}
     </select>
 
 

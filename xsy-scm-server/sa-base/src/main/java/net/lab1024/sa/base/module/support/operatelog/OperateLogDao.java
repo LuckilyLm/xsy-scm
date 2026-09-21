@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- *  操作日志
+ * 操作日志
  *
  */
 @Mapper
@@ -19,6 +19,7 @@ public interface OperateLogDao extends BaseMapper<OperateLogEntity> {
 
     /**
      * 分页查询
+     *
      * @param page
      * @param queryForm
      * @return UserOperateLogEntity

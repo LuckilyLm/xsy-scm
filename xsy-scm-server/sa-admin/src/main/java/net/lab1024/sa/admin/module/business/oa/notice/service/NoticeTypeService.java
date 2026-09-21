@@ -26,6 +26,7 @@ public class NoticeTypeService {
 
     /**
      * 查询全部
+     *
      * @return
      */
     public List<NoticeTypeVO> getAll() {

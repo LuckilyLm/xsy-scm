@@ -13,15 +13,23 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class InventoryReservationQueryForm extends PageParam {
 
-    /** 仓库（精确）。 */
+    /**
+     * 仓库（精确）。
+     */
     private Long warehouseId;
 
-    /** SKU（精确）。 */
+    /**
+     * SKU（精确）。
+     */
     private Long skuId;
 
-    /** 状态（精确，{@code ScmInventoryReservationStatusEnum}）。 */
+    /**
+     * 状态（精确，{@code ScmInventoryReservationStatusEnum}）。
+     */
     private String status;
 
-    /** 来源单据 id（精确）。 */
+    /**
+     * 来源单据 id（精确）。
+     */
     private Long sourceDocumentId;
 }

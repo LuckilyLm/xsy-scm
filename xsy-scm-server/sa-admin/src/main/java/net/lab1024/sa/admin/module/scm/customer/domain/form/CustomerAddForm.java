@@ -20,8 +20,11 @@ import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
  */
 @Data
 public class CustomerAddForm extends net.lab1024.sa.admin.module.scm.common.domain.ScmLocationForm {
-    @Pattern(regexp="ALL_ENABLED|ALLOWLIST") private String visibilityPolicy;
-    @jakarta.validation.Valid @Size(max=500) private java.util.List<CustomerSkuVisibilityItemForm> visibilities;
+    @Pattern(regexp = "ALL_ENABLED|ALLOWLIST")
+    private String visibilityPolicy;
+    @jakarta.validation.Valid
+    @Size(max = 500)
+    private java.util.List<CustomerSkuVisibilityItemForm> visibilities;
 
 
     @NotBlank
@@ -76,7 +79,9 @@ public class CustomerAddForm extends net.lab1024.sa.admin.module.scm.common.doma
     @Pattern(regexp = "INDEPENDENT|GROUP")
     private String settleMode = "INDEPENDENT";
 
-    /** 授信额度，4 位定点字符串；缺省视作 0。 */
+    /**
+     * 授信额度，4 位定点字符串；缺省视作 0。
+     */
     @Pattern(regexp = ScmDecimalStrings.PATTERN)
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String creditLimit;
@@ -84,20 +89,28 @@ public class CustomerAddForm extends net.lab1024.sa.admin.module.scm.common.doma
     @Pattern(regexp = "BY_AMOUNT|BY_TIME")
     private String creditPeriodType;
 
-    /** 仅 {@code BY_AMOUNT} 时有效。 */
+    /**
+     * 仅 {@code BY_AMOUNT} 时有效。
+     */
     @Pattern(regexp = ScmDecimalStrings.PATTERN)
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String creditAmountThreshold;
 
-    /** 仅 {@code BY_TIME} 时有效，必须为正。 */
+    /**
+     * 仅 {@code BY_TIME} 时有效，必须为正。
+     */
     @Min(1)
     private Integer creditPeriodValue;
 
-    /** 仅 {@code BY_TIME} 时有效。 */
+    /**
+     * 仅 {@code BY_TIME} 时有效。
+     */
     @Pattern(regexp = "DAY|MONTH")
     private String creditPeriodUnit;
 
-    /** 仅 {@code BY_TIME} + {@code MONTH} 时有效；上限 28 保证每个自然月都存在该日。 */
+    /**
+     * 仅 {@code BY_TIME} + {@code MONTH} 时有效；上限 28 保证每个自然月都存在该日。
+     */
     @Min(1)
     @Max(28)
     private Integer settleDay;

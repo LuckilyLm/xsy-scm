@@ -95,6 +95,8 @@ public interface PurchaseInventoryContract {
      */
     void postInbound(InboundFact fact);
 
-    /** 可用量探测；{@code null} = 库存能力未启用（W6 实现方返回非 null，见 {@link Availability}）。 */
+    /**
+     * 可用量探测；{@code null} = 库存能力未启用（W6 实现方返回非 null，见 {@link Availability}）。
+     */
     Availability queryAvailability(Long skuId, Long warehouseId);
 }

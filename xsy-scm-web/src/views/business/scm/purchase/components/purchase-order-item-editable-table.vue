@@ -9,44 +9,44 @@
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-table
-    id="purchase-order-item-table"
-    size="small"
-    bordered
-    :data-source="items"
-    :columns="columns"
-    :pagination="false"
-    :scroll="{ x: 1250 }"
-    :row-key="(_row: OrderItem, index?: number) => index ?? 0"
-    :expanded-row-keys="items.map((_row, index) => index)"
+      id="purchase-order-item-table"
+      size="small"
+      bordered
+      :data-source="items"
+      :columns="columns"
+      :pagination="false"
+      :scroll="{ x: 1250 }"
+      :row-key="(_row: OrderItem, index?: number) => index ?? 0"
+      :expanded-row-keys="items.map((_row, index) => index)"
   >
     <template #bodyCell="{ record, column, index }">
       <template v-if="column.dataIndex === 'skuId'">
         <SkuSelect
-          :value="record.skuId"
-          width="270px"
-          :disabled-statuses="[]"
-          @update:value="(v: Id | Id[] | undefined) => onSkuChange(record, v)"
+            :value="record.skuId"
+            width="270px"
+            :disabled-statuses="[]"
+            @update:value="(v: Id | Id[] | undefined) => onSkuChange(record, v)"
         />
       </template>
       <template v-else-if="column.dataIndex === 'plannedQuantity'">
         <a-input-number
-          string-mode
-          :precision="4"
-          :min="'0.0001'"
-          v-model:value="record.plannedQuantity"
-          :aria-label="'采购数量 ' + (index + 1)"
-          @blur="normalizeNumber(record, 'plannedQuantity')"
+            string-mode
+            :precision="4"
+            :min="'0.0001'"
+            v-model:value="record.plannedQuantity"
+            :aria-label="'采购数量 ' + (index + 1)"
+            @blur="normalizeNumber(record, 'plannedQuantity')"
         />
       </template>
       <template v-else-if="column.dataIndex === 'purchasePrice'">
         <a-input-number
-          string-mode
-          :precision="4"
-          :min="'0'"
-          :allow-clear="true"
-          v-model:value="record.purchasePrice"
-          :aria-label="'采购单价 ' + (index + 1)"
-          @blur="normalizeNumber(record, 'purchasePrice')"
+            string-mode
+            :precision="4"
+            :min="'0'"
+            :allow-clear="true"
+            v-model:value="record.purchasePrice"
+            :aria-label="'采购单价 ' + (index + 1)"
+            @blur="normalizeNumber(record, 'purchasePrice')"
         />
       </template>
       <template v-else-if="column.dataIndex === 'allocated'">
@@ -64,23 +64,23 @@
     <template #expandedRowRender="slot">
       <div class="alloc-block">
         <a-table
-          size="small"
-          :data-source="asItem(slot.record).allocations ?? []"
-          :columns="allocationColumns"
-          :pagination="false"
-          :row-key="(row: Allocation) => String(row.demandId)"
+            size="small"
+            :data-source="asItem(slot.record).allocations ?? []"
+            :columns="allocationColumns"
+            :pagination="false"
+            :row-key="(row: Allocation) => String(row.demandId)"
         >
           <template #bodyCell="{ record: alloc, column, index: allocIndex }">
             <template v-if="column.dataIndex === 'salesOrderNo'">{{ alloc.salesOrderNo || '—' }}</template>
             <template v-else-if="column.dataIndex === 'demandUnit'">{{ alloc.demandUnit || '—' }}</template>
             <template v-else-if="column.dataIndex === 'quantity'">
               <a-input-number
-                string-mode
-                :precision="4"
-                :min="'0.0001'"
-                v-model:value="alloc.quantity"
-                aria-label="分配数量"
-                @blur="normalizeNumber(alloc, 'quantity')"
+                  string-mode
+                  :precision="4"
+                  :min="'0.0001'"
+                  v-model:value="alloc.quantity"
+                  aria-label="分配数量"
+                  @blur="normalizeNumber(alloc, 'quantity')"
               />
             </template>
             <template v-else-if="column.dataIndex === 'demandStatus'">
@@ -93,7 +93,8 @@
         </a-table>
 
         <a-space class="alloc-actions">
-          <a-button size="small" v-privilege="'scm:purchase:demand:allocate'" @click="openDemandPicker(asItem(slot.record))">
+          <a-button size="small" v-privilege="'scm:purchase:demand:allocate'"
+                    @click="openDemandPicker(asItem(slot.record))">
             添加需求分配
           </a-button>
           <span v-if="!asItem(slot.record).skuId" class="hint">请先选择采购商品</span>
@@ -109,7 +110,7 @@
 
   <!-- 需求选择：只列**同一 SKU**且仍有可分配余量的需求（跨 SKU → 40995） -->
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
-    <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon />
+    <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon/>
     <a-spin :spinning="picker.loading">
       <a-table size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
         <template #bodyCell="{ record: demand, column }">
@@ -127,13 +128,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
-import { message } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {reactive} from 'vue';
+import {message} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
-import { purchaseDemandApi } from '/@/api/business/scm/purchase-demand-api';
-import { SCM_DEMAND_STATUS_ENUM } from '/@/constants/business/scm/purchase-const';
-import type { Allocation, Demand, Id, OrderItem } from '../purchase-types';
+import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
+import {SCM_DEMAND_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
+import type {Allocation, Demand, Id, OrderItem} from '../purchase-types';
 import {
   allocatedOnItem,
   hasAllocation,
@@ -143,34 +144,34 @@ import {
   quantity,
   unitMismatch,
 } from '../purchase-form-model';
-import { purchaseError } from '../purchase-errors';
+import {purchaseError} from '../purchase-errors';
 
 defineProps<{ items: OrderItem[] }>();
 
 const columns: TableColumnsType<OrderItem> = [
-  { title: '商品 / 规格 / SKU', dataIndex: 'skuId', width: 300 },
-  { title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 150 },
-  { title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 150 },
-  { title: '已分配合计', dataIndex: 'allocated', align: 'right', width: 140 },
-  { title: '需求来源', dataIndex: 'allocationCount', align: 'center', width: 120 },
-  { title: '操作', dataIndex: 'action', align: 'right', width: 90 },
+  {title: '商品 / 规格 / SKU', dataIndex: 'skuId', width: 300},
+  {title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 150},
+  {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 150},
+  {title: '已分配合计', dataIndex: 'allocated', align: 'right', width: 140},
+  {title: '需求来源', dataIndex: 'allocationCount', align: 'center', width: 120},
+  {title: '操作', dataIndex: 'action', align: 'right', width: 90},
 ];
 
 const allocationColumns: TableColumnsType<Allocation> = [
-  { title: '来源销售单', dataIndex: 'salesOrderNo', width: 200 },
-  { title: '需求单位', dataIndex: 'demandUnit', width: 100 },
-  { title: '本次分配数量', dataIndex: 'quantity', align: 'right', width: 170 },
-  { title: '需求状态', dataIndex: 'demandStatus', align: 'center', width: 120 },
-  { title: '操作', dataIndex: 'action', align: 'right', width: 90 },
+  {title: '来源销售单', dataIndex: 'salesOrderNo', width: 200},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 100},
+  {title: '本次分配数量', dataIndex: 'quantity', align: 'right', width: 170},
+  {title: '需求状态', dataIndex: 'demandStatus', align: 'center', width: 120},
+  {title: '操作', dataIndex: 'action', align: 'right', width: 90},
 ];
 
 const pickerColumns: TableColumnsType<Demand> = [
-  { title: '来源销售单', dataIndex: 'salesOrderNoSnapshot', width: 210 },
-  { title: '商品', dataIndex: 'productName', width: 160 },
-  { title: '需求单位', dataIndex: 'demandUnit', width: 100 },
-  { title: '剩余可分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 140 },
-  { title: '需求日期', dataIndex: 'demandDate', width: 120 },
-  { title: '操作', dataIndex: 'action', align: 'right', width: 90 },
+  {title: '来源销售单', dataIndex: 'salesOrderNoSnapshot', width: 210},
+  {title: '商品', dataIndex: 'productName', width: 160},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 100},
+  {title: '剩余可分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 140},
+  {title: '需求日期', dataIndex: 'demandDate', width: 120},
+  {title: '操作', dataIndex: 'action', align: 'right', width: 90},
 ];
 
 const picker = reactive({
@@ -225,7 +226,7 @@ async function openDemandPicker(item: OrderItem) {
   picker.loading = true;
   picker.rows = [];
   try {
-    const r = await purchaseDemandApi.query({ pageNum: 1, pageSize: 50, skuId: item.skuId });
+    const r = await purchaseDemandApi.query({pageNum: 1, pageSize: 50, skuId: item.skuId});
     // 只保留还有余量的需求（`unallocated = 0` 的加进去必然 40082）
     picker.rows = r.data.list.filter((d) => Number(d.unallocatedQuantity ?? '0') > 0);
     if (!picker.rows.length) {
@@ -254,22 +255,26 @@ function pick(demand: Demand) {
   picker.error = '';
 }
 
-defineExpose({ openDemandPicker });
+defineExpose({openDemandPicker});
 </script>
 
 <style scoped>
 .alloc-block {
   padding: 4px 0 8px;
 }
+
 .alloc-actions {
   margin-top: 8px;
 }
+
 .add-line {
   margin-top: 12px;
 }
+
 .num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
 .hint {
   color: var(--ant-color-text-secondary);
   font-size: 12px;

@@ -6,26 +6,26 @@
       `startTime/endTime` → 半开区间 `startAt/endAt`（A21 / Q6a）；补 `warehouseId` / `supplierId`；
       新增 `query`（需求列表）与 `allocate`（把需求分配到采购行）。
 验收：W5 单测、TS 棘轮与 Playwright。 */
-import { postRequest } from '/@/lib/axios';
-import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
-import { purchaseCommand } from '/@/api/business/scm/purchase-order-api';
+import {postRequest} from '/@/lib/axios';
+import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
+import {purchaseCommand} from '/@/api/business/scm/purchase-order-api';
 import type {
-  Demand,
-  DemandAllocate,
-  DemandGenerate,
-  DemandQuery,
-  GenerateResult,
+    Demand,
+    DemandAllocate,
+    DemandGenerate,
+    DemandQuery,
+    GenerateResult,
 } from '/@/views/business/scm/purchase/purchase-types';
 
 export const purchaseDemandApi = {
-  query: (data: DemandQuery) =>
-    postRequest('/scm/purchase/demand/query', data) as unknown as Promise<ScmResponse<ScmPage<Demand>>>,
+    query: (data: DemandQuery) =>
+        postRequest('/scm/purchase/demand/query', data) as unknown as Promise<ScmResponse<ScmPage<Demand>>>,
 
-  /** 汇总窗口 `[startAt, endAt)` 内的已确认订单行 → 采购需求。 */
-  generate: (data: DemandGenerate) => purchaseCommand<GenerateResult>('/scm/purchase/demand/generate', data),
+    /** 汇总窗口 `[startAt, endAt)` 内的已确认订单行 → 采购需求。 */
+    generate: (data: DemandGenerate) => purchaseCommand<GenerateResult>('/scm/purchase/demand/generate', data),
 
-  /** 把一条需求分配到某个采购行（`version` 是**需求**的版本）。 */
-  allocate: (data: DemandAllocate) => purchaseCommand<Demand>('/scm/purchase/demand/allocate', data),
+    /** 把一条需求分配到某个采购行（`version` 是**需求**的版本）。 */
+    allocate: (data: DemandAllocate) => purchaseCommand<Demand>('/scm/purchase/demand/allocate', data),
 };
 
 export default purchaseDemandApi;

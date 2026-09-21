@@ -30,10 +30,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmInventoryMovementTypeEnum {
 
-    /** 采购入库：收货确认或仓库二次入库确认时写入（方向 = 入）。 */
+    /**
+     * 采购入库：收货确认或仓库二次入库确认时写入（方向 = 入）。
+     */
     PURCHASE_IN("采购入库", true),
 
-    /** 销售出库：独立出库单确认时写入（方向 = 出）。 */
+    /**
+     * 销售出库：独立出库单确认时写入（方向 = 出）。
+     */
     SALES_OUT("销售出库", false),
 
     /**
@@ -46,7 +50,9 @@ public enum ScmInventoryMovementTypeEnum {
      */
     STOCKTAKE_GAIN("盘盈", true),
 
-    /** 盘亏：盘点确认时实盘量低于账面量的部分（方向 = 出）。 */
+    /**
+     * 盘亏：盘点确认时实盘量低于账面量的部分（方向 = 出）。
+     */
     STOCKTAKE_LOSS("盘亏", false),
 
     /**
@@ -58,7 +64,9 @@ public enum ScmInventoryMovementTypeEnum {
      */
     LOSS_REPORT("报损", false),
 
-    /** 报溢：报溢单审批通过时写入（方向 = 入）。 */
+    /**
+     * 报溢：报溢单审批通过时写入（方向 = 入）。
+     */
     GAIN_REPORT("报溢", true),
 
     /**
@@ -69,7 +77,9 @@ public enum ScmInventoryMovementTypeEnum {
      */
     TRANSFER_OUT("调拨转出", false),
 
-    /** 调拨转入：调拨单**收货**时写入**目标仓**（方向 = 入）。 */
+    /**
+     * 调拨转入：调拨单**收货**时写入**目标仓**（方向 = 入）。
+     */
     TRANSFER_IN("调拨转入", true),
 
     /**
@@ -81,10 +91,14 @@ public enum ScmInventoryMovementTypeEnum {
      */
     CONVERT_OUT("规格转换出", false),
 
-    /** 规格转换入：转换单审批通过时写入**目标 SKU**（方向 = 入）。 */
+    /**
+     * 规格转换入：转换单审批通过时写入**目标 SKU**（方向 = 入）。
+     */
     CONVERT_IN("规格转换入", true);
 
-    /** 持久化到 {@code inventory_movement.movement_type} 的值。 */
+    /**
+     * 持久化到 {@code inventory_movement.movement_type} 的值。
+     */
     private final String desc;
 
     /**
@@ -94,7 +108,9 @@ public enum ScmInventoryMovementTypeEnum {
      */
     private final boolean inbound;
 
-    /** 该值是否允许写入 {@code inventory_movement.movement_type}（DB CHECK 白名单的同源判定）。 */
+    /**
+     * 该值是否允许写入 {@code inventory_movement.movement_type}（DB CHECK 白名单的同源判定）。
+     */
     public static boolean isSupported(String value) {
         for (ScmInventoryMovementTypeEnum item : values()) {
             if (item.name().equals(value)) {
@@ -104,7 +120,9 @@ public enum ScmInventoryMovementTypeEnum {
         return false;
     }
 
-    /** 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。 */
+    /**
+     * 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。
+     */
     public static ScmInventoryMovementTypeEnum of(String value) {
         for (ScmInventoryMovementTypeEnum item : values()) {
             if (item.name().equals(value)) {

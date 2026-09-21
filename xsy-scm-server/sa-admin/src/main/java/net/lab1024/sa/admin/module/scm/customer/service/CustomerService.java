@@ -36,7 +36,9 @@ import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCod
 @RequiredArgsConstructor
 public class CustomerService {
 
-    /** 新建客户的初始状态（Target Design Q13）。 */
+    /**
+     * 新建客户的初始状态（Target Design Q13）。
+     */
     public static final String INITIAL_STATUS = ScmCustomerStatusEnum.POTENTIAL.name();
 
     private final CustomerDao dao;
@@ -47,7 +49,9 @@ public class CustomerService {
 
     private final CustomerTypeService customerTypeService;
 
-    /** 读取客户，不存在或已删除 → 40430。 */
+    /**
+     * 读取客户，不存在或已删除 → 40430。
+     */
     public CustomerEntity require(Long customerId) {
         CustomerEntity entity = customerId == null ? null : dao.selectById(customerId);
         if (entity == null) {
@@ -56,7 +60,9 @@ public class CustomerService {
         return entity;
     }
 
-    /** 读取客户并校验乐观锁版本：不存在 → 40430，版本不一致 → 40921。 */
+    /**
+     * 读取客户并校验乐观锁版本：不存在 → 40430，版本不一致 → 40921。
+     */
     public CustomerEntity require(Long customerId, Integer version) {
         CustomerEntity entity = require(customerId);
         if (!Objects.equals(entity.getVersion(), version)) {
@@ -101,7 +107,8 @@ public class CustomerService {
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
         }
-        if (form.getVisibilityPolicy()!=null || form.getVisibilities()!=null) visibility.replace(entity.getId(),entity.getVisibilityPolicy(),form.getVisibilities());
+        if (form.getVisibilityPolicy() != null || form.getVisibilities() != null)
+            visibility.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
         return entity.getId();
     }
 
@@ -129,7 +136,8 @@ public class CustomerService {
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
         }
-        if(form.getVisibilityPolicy()!=null || form.getVisibilities()!=null) visibility.replace(entity.getId(),entity.getVisibilityPolicy(),form.getVisibilities());
+        if (form.getVisibilityPolicy() != null || form.getVisibilities() != null)
+            visibility.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -158,7 +166,9 @@ public class CustomerService {
         }
     }
 
-    /** 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。 */
+    /**
+     * 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。
+     */
     public boolean existsCode(String normalizedCode, Long excludeId) {
         LambdaQueryWrapper<CustomerEntity> wrapper = new LambdaQueryWrapper<CustomerEntity>()
                 .eq(CustomerEntity::getCustomerCode, normalizedCode);
@@ -176,12 +186,13 @@ public class CustomerService {
      * 检查位先落地，避免 W3 忘记加而导致删掉被引用的客户。
      */
     private void assertNotReferenced(Long customerId) {
-        if(visibilityDao.customerReferences(customerId)>0) throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED);
+        if (visibilityDao.customerReferences(customerId) > 0)
+            throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED);
     }
 
     private void apply(CustomerEntity entity, CustomerAddForm form) {
-        if(form.getVisibilityPolicy()!=null) entity.setVisibilityPolicy(form.getVisibilityPolicy());
-        else if(entity.getVisibilityPolicy()==null) entity.setVisibilityPolicy("ALL_ENABLED");
+        if (form.getVisibilityPolicy() != null) entity.setVisibilityPolicy(form.getVisibilityPolicy());
+        else if (entity.getVisibilityPolicy() == null) entity.setVisibilityPolicy("ALL_ENABLED");
         entity.setCustomerCode(CustomerValidator.normalizeCode(form.getCustomerCode()));
         entity.setName(CustomerValidator.normalizeName(form.getName()));
         entity.setCustomerTypeId(form.getCustomerTypeId());
@@ -198,7 +209,8 @@ public class CustomerService {
         entity.setCityName(CustomerValidator.normalizeOptional(form.getCityName()));
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(CustomerValidator.normalizeOptional(form.getDistrictName()));
-        if (!form.isLocationComplete()) throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+        if (!form.isLocationComplete())
+            throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
         entity.setLongitude(form.getLongitude());
         entity.setLatitude(form.getLatitude());
         entity.setGeomCrs(form.getGeomCrs());

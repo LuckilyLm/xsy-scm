@@ -3,8 +3,10 @@ package net.lab1024.sa.base.module.support.changelog.domain.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 import lombok.Data;
 
 /**

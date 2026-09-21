@@ -30,7 +30,9 @@ public class InventoryTransferEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 调拨单号（业务唯一，软删范围内唯一）。 */
+    /**
+     * 调拨单号（业务唯一，软删范围内唯一）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String transferNo;
 
@@ -40,26 +42,36 @@ public class InventoryTransferEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long toWarehouseId;
 
-    /** {@code ScmInventoryTransferStatusEnum}。 */
+    /**
+     * {@code ScmInventoryTransferStatusEnum}。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String remark;
 
-    /** 发出时刻；仅 SHIPPED / RECEIVED 非空（DB CHECK 保证）。 */
+    /**
+     * 发出时刻；仅 SHIPPED / RECEIVED 非空（DB CHECK 保证）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime shippedAt;
 
-    /** 发出人；仅 SHIPPED / RECEIVED 非空。 */
+    /**
+     * 发出人；仅 SHIPPED / RECEIVED 非空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String shippedBy;
 
-    /** 收货时刻；仅 RECEIVED 非空。 */
+    /**
+     * 收货时刻；仅 RECEIVED 非空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime receivedAt;
 
-    /** 收货人；仅 RECEIVED 非空。 */
+    /**
+     * 收货人；仅 RECEIVED 非空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String receivedBy;
 

@@ -28,17 +28,23 @@ public class InventoryStocktakeNumberGenerator {
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.BASIC_ISO_DATE;
 
-    /** 盘点单号前缀。 */
+    /**
+     * 盘点单号前缀。
+     */
     public static final String PREFIX = "STK";
 
     private final InventoryStocktakeDao stocktakeDao;
 
-    /** 盘点单号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。 */
+    /**
+     * 盘点单号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。
+     */
     public String next() {
         return format(PREFIX, stocktakeDao.nextStocktakeNo());
     }
 
-    /** 单号拼接的纯函数（单测直接覆盖，不需要 DB）。 */
+    /**
+     * 单号拼接的纯函数（单测直接覆盖，不需要 DB）。
+     */
     public static String format(String prefix, long number) {
         return prefix
                 + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI).format(DATE)

@@ -18,7 +18,9 @@ public final class PurchaseOrderAuditSnapshotFactory {
     private PurchaseOrderAuditSnapshotFactory() {
     }
 
-    /** `SUBMIT` / `CANCEL` / `SHORT_CLOSE` 的轻量状态快照（§7.12）。 */
+    /**
+     * `SUBMIT` / `CANCEL` / `SHORT_CLOSE` 的轻量状态快照（§7.12）。
+     */
     public static Map<String, Object> orderStateSnapshot(PurchaseOrderEntity order) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("status", order.getStatus());
@@ -26,7 +28,9 @@ public final class PurchaseOrderAuditSnapshotFactory {
         return snapshot;
     }
 
-    /** `CREATE` / `UPDATE` / `DELETE` 的「全量 header + items」快照（§7.12）。 */
+    /**
+     * `CREATE` / `UPDATE` / `DELETE` 的「全量 header + items」快照（§7.12）。
+     */
     public static Map<String, Object> orderAuditSnapshot(PurchaseOrderVO vo) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("id", vo.getId());
@@ -43,7 +47,9 @@ public final class PurchaseOrderAuditSnapshotFactory {
         return snapshot;
     }
 
-    /** 全量快照里的行数组；`null` 入参退化为空数组（不返回 `null`，避免下游判空）。 */
+    /**
+     * 全量快照里的行数组；`null` 入参退化为空数组（不返回 `null`，避免下游判空）。
+     */
     public static List<Map<String, Object>> orderItemAuditSnapshots(List<PurchaseOrderItemVO> items) {
         List<Map<String, Object>> snapshots = new ArrayList<>();
         if (items == null) {

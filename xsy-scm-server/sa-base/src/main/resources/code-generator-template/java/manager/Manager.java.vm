@@ -1,8 +1,8 @@
 package ${packageName};
 
-#foreach ($importClass in $importPackageList)
-$importClass
-#end
+    #foreach ($importClass in $importPackageList)
+        $importClass
+    #end
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;

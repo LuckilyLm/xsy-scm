@@ -3,24 +3,24 @@
  * 此插件为  自创的插件
  *
  */
-import { useDictStore } from '/@/store/modules/system/dict';
+import {useDictStore} from '/@/store/modules/system/dict';
 
 export default {
-  install: (app) => {
+    install: (app) => {
 
-    const dictPlugin = {};
+        const dictPlugin = {};
 
-    /**
-     * 根据枚举值获取描述
-     * @param {*} dictCode   字典编码
-     * @param {*} value     值
-     * @returns
-     */
-    dictPlugin.getDataLabels = function (dictCode, value) {
-      return useDictStore().getDataLabels(dictCode, value);
-    };
+        /**
+         * 根据枚举值获取描述
+         * @param {*} dictCode   字典编码
+         * @param {*} value     值
+         * @returns
+         */
+        dictPlugin.getDataLabels = function (dictCode, value) {
+            return useDictStore().getDataLabels(dictCode, value);
+        };
 
-    app.config.globalProperties.$dictPlugin = dictPlugin;
-    app.provide('dictPlugin', dictPlugin);
-  },
+        app.config.globalProperties.$dictPlugin = dictPlugin;
+        app.provide('dictPlugin', dictPlugin);
+    },
 };

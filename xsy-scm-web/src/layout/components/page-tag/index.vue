@@ -4,28 +4,28 @@
 -->
 <template>
   <div id="smartAdminPageTag" class="page-tag-div">
-    <DefaultTab v-if="pageTagStyle === PAGE_TAG_ENUM.DEFAULT.value" />
-    <AntdTab v-if="pageTagStyle === PAGE_TAG_ENUM.ANTD.value" />
-    <ChromeTab v-if="pageTagStyle === PAGE_TAG_ENUM.CHROME.value" />
+    <DefaultTab v-if="pageTagStyle === PAGE_TAG_ENUM.DEFAULT.value"/>
+    <AntdTab v-if="pageTagStyle === PAGE_TAG_ENUM.ANTD.value"/>
+    <ChromeTab v-if="pageTagStyle === PAGE_TAG_ENUM.CHROME.value"/>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { useAppConfigStore } from '/@/store/modules/system/app-config';
-  import DefaultTab from './components/default-tab.vue';
-  import AntdTab from './components/antd-tab.vue';
-  import ChromeTab from './components/chrome-tab.vue';
-  import { PAGE_TAG_ENUM } from '/@/constants/layout-const';
-  import { theme } from 'ant-design-vue';
+import {computed} from 'vue';
+import {useAppConfigStore} from '/@/store/modules/system/app-config';
+import DefaultTab from './components/default-tab.vue';
+import AntdTab from './components/antd-tab.vue';
+import ChromeTab from './components/chrome-tab.vue';
+import {PAGE_TAG_ENUM} from '/@/constants/layout-const';
+import {theme} from 'ant-design-vue';
 
-  const pageTagStyle = computed(() => useAppConfigStore().$state.pageTagStyle);
-  const { useToken } = theme;
-  const { token } = useToken();
+const pageTagStyle = computed(() => useAppConfigStore().$state.pageTagStyle);
+const {useToken} = theme;
+const {token} = useToken();
 </script>
 <style lang="less" scoped>
-  @color-border-secondary: v-bind('token.colorBorderSecondary');
-  .page-tag-div{
-    border-bottom: 1px solid @color-border-secondary;
-  }
+@color-border-secondary: v-bind('token.colorBorderSecondary');
+.page-tag-div {
+  border-bottom: 1px solid @color-border-secondary;
+}
 </style>

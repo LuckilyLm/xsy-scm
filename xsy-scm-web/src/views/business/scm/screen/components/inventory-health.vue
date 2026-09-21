@@ -15,22 +15,22 @@
       <div class="scm-health-list">
         <div v-for="row in rows" :key="row.key" class="scm-health-row">
           <div class="scm-health-line">
-            <span class="scm-health-dot" :style="{ background: row.color }" />
+            <span class="scm-health-dot" :style="{ background: row.color }"/>
             <span class="scm-health-label">{{ row.label }}</span>
             <span class="scm-health-count">{{ formatInt(row.count) }}</span>
             <span class="scm-health-pct">{{ percent(row.count) }}</span>
           </div>
           <div class="scm-health-bar">
             <span
-              class="scm-health-bar-fill"
-              :style="{ width: barWidth(row.count), background: row.color }"
+                class="scm-health-bar-fill"
+                :style="{ width: barWidth(row.count), background: row.color }"
             />
           </div>
         </div>
       </div>
 
       <div v-if="unconfigured > 0" class="scm-health-foot">
-        <span class="scm-health-foot-dot" />
+        <span class="scm-health-foot-dot"/>
         另有 {{ formatInt(unconfigured) }} 个未配置阈值，无法判定健康度
       </div>
     </template>
@@ -38,10 +38,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import {computed} from 'vue';
 import ScreenPanel from './screen-panel.vue';
-import { formatInt, toNumber } from '../format';
-import type { InventoryHealth } from '../types';
+import {formatInt, toNumber} from '../format';
+import type {InventoryHealth} from '../types';
 
 /**
  * 库存健康度。
@@ -70,10 +70,10 @@ const health = computed(() => props.health);
 const unconfigured = computed(() => toNumber(props.health?.unconfiguredCount));
 
 const rows = computed(() => [
-  { key: 'normal', label: '正常', count: props.health?.normalCount ?? 0, color: '#34d399' },
-  { key: 'low', label: '预警', count: props.health?.lowCount ?? 0, color: '#f6c344' },
-  { key: 'out', label: '缺货', count: props.health?.outOfStockCount ?? 0, color: '#ff6b6b' },
-  { key: 'high', label: '积压', count: props.health?.highCount ?? 0, color: '#ff8a65' },
+  {key: 'normal', label: '正常', count: props.health?.normalCount ?? 0, color: '#34d399'},
+  {key: 'low', label: '预警', count: props.health?.lowCount ?? 0, color: '#f6c344'},
+  {key: 'out', label: '缺货', count: props.health?.outOfStockCount ?? 0, color: '#ff6b6b'},
+  {key: 'high', label: '积压', count: props.health?.highCount ?? 0, color: '#ff8a65'},
 ]);
 
 function percent(count: number): string {

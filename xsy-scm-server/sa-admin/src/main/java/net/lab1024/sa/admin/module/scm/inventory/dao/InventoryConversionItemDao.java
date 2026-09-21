@@ -20,10 +20,14 @@ import java.util.List;
 @Mapper
 public interface InventoryConversionItemDao extends BaseMapper<InventoryConversionItemEntity> {
 
-    /** 某单下的明细（含源 / 目标两套展示字段，按 id 升序 —— 即录入顺序）。 */
+    /**
+     * 某单下的明细（含源 / 目标两套展示字段，按 id 升序 —— 即录入顺序）。
+     */
     List<InventoryConversionItemVO> listByConversionId(@Param("conversionId") Long conversionId);
 
-    /** 软删某单下的全部明细（待审核重存时用）。 */
+    /**
+     * 软删某单下的全部明细（待审核重存时用）。
+     */
     int deleteByConversionId(@Param("conversionId") Long conversionId,
                              @Param("operator") String operator);
 }

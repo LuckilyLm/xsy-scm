@@ -20,8 +20,8 @@ export type Id = string | number;
 
 /** 分页入参。`pageNum` / `pageSize` 必填：后端 `PageParam` 为 null 时 `convert2PageQuery` 会 NPE。 */
 export interface Page {
-  pageNum: number;
-  pageSize: number;
+    pageNum: number;
+    pageSize: number;
 }
 
 // ------------------------------------------------------------------
@@ -30,39 +30,39 @@ export interface Page {
 
 /** `InventoryBalanceVO`（粒度 = warehouse + sku）。 */
 export interface InventoryBalance {
-  id: Id;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  skuId?: Id;
-  skuCode?: string;
-  /** SKU 名称（来自 `product_sku.spec_name`）。 */
-  skuName?: string;
-  /** 商品名称（来自 `product_spu.name`）。 */
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  /** Q13 记账单位：一个仓库 + SKU 只可能有一个（异单位入库会被 41001 拒绝）。 */
-  unit?: string;
-  quantity?: string | null;
-  /** 已预留量（出库波次新增）。 */
-  reservedQuantity?: string | null;
-  /** 可用量 = quantity − reservedQuantity。**后端计算属性**，不落库。 */
-  availableQuantity?: string | null;
-  /**
-   * 移动加权平均成本（V34，每记账单位，4 位小数）。
-   *
-   * **`NOT NULL DEFAULT 0`**：与其它定点数字段不同，它不会是 `null` ——
-   * 「没有均价」与「均价为 0」在本业务里无法区分，后端因此不允许为空。
-   * 所以这里不写 `| null`，也不做「无值显示 —」的分支。
-   *
-   * 期初口径：该 (仓库, SKU) **最近一次采购入库单价**，无采购入库则为 0。
-   * 因此历史库上线后第一眼看到的均价是近似值（见 V34 迁移头注释），不是缺陷。
-   */
-  avgCost?: string;
-  /** 库存金额 = quantity × avgCost。**后端计算属性**，不落库。 */
-  amount?: string | null;
-  version?: number;
-  updatedAt?: string;
+    id: Id;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    skuId?: Id;
+    skuCode?: string;
+    /** SKU 名称（来自 `product_sku.spec_name`）。 */
+    skuName?: string;
+    /** 商品名称（来自 `product_spu.name`）。 */
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    /** Q13 记账单位：一个仓库 + SKU 只可能有一个（异单位入库会被 41001 拒绝）。 */
+    unit?: string;
+    quantity?: string | null;
+    /** 已预留量（出库波次新增）。 */
+    reservedQuantity?: string | null;
+    /** 可用量 = quantity − reservedQuantity。**后端计算属性**，不落库。 */
+    availableQuantity?: string | null;
+    /**
+     * 移动加权平均成本（V34，每记账单位，4 位小数）。
+     *
+     * **`NOT NULL DEFAULT 0`**：与其它定点数字段不同，它不会是 `null` ——
+     * 「没有均价」与「均价为 0」在本业务里无法区分，后端因此不允许为空。
+     * 所以这里不写 `| null`，也不做「无值显示 —」的分支。
+     *
+     * 期初口径：该 (仓库, SKU) **最近一次采购入库单价**，无采购入库则为 0。
+     * 因此历史库上线后第一眼看到的均价是近似值（见 V34 迁移头注释），不是缺陷。
+     */
+    avgCost?: string;
+    /** 库存金额 = quantity × avgCost。**后端计算属性**，不落库。 */
+    amount?: string | null;
+    version?: number;
+    updatedAt?: string;
 }
 
 /**
@@ -72,12 +72,12 @@ export interface InventoryBalance {
  * 交给框架拼 ORDER BY 会产生歧义列）。排序固定为 `updated_at DESC`。
  */
 export interface InventoryBalanceQuery extends Page {
-  warehouseId?: Id;
-  skuId?: Id;
-  /** SKU 编码模糊匹配。 */
-  skuCode?: string;
-  /** 商品名称模糊匹配。 */
-  productName?: string;
+    warehouseId?: Id;
+    skuId?: Id;
+    /** SKU 编码模糊匹配。 */
+    skuCode?: string;
+    /** 商品名称模糊匹配。 */
+    productName?: string;
 }
 
 // ------------------------------------------------------------------
@@ -86,34 +86,34 @@ export interface InventoryBalanceQuery extends Page {
 
 /** `InventoryMovementVO`（append-only 账本的一行）。 */
 export interface InventoryMovement {
-  id: Id;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  movementType?: string;
-  sourceDocumentType?: string;
-  /** 收货单 id（头级溯源）。 */
-  sourceDocumentId?: Id;
-  /** 收货行 id（防重锚点）。 */
-  sourceDocumentItemId?: Id;
-  /** 收货单号（Q9：人类可读来源，W6-1 不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
-  receiptNo?: string;
-  /** 来源单号：`SALES_OUT` 取出库单号、`STOCKTAKE_*` 取盘点单号。后端 COALESCE 成一个展示列。 */
-  sourceDocumentNo?: string;
-  quantity?: string | null;
-  unitSnapshot?: string;
-  unitCost?: string | null;
-  beforeQuantity?: string | null;
-  afterQuantity?: string | null;
-  /** 业务发生时刻 = 收货确认时刻（**不是**写入时刻）。 */
-  occurredAt?: string;
-  operator?: string;
-  createdAt?: string;
+    id: Id;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    movementType?: string;
+    sourceDocumentType?: string;
+    /** 收货单 id（头级溯源）。 */
+    sourceDocumentId?: Id;
+    /** 收货行 id（防重锚点）。 */
+    sourceDocumentItemId?: Id;
+    /** 收货单号（Q9：人类可读来源，W6-1 不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
+    receiptNo?: string;
+    /** 来源单号：`SALES_OUT` 取出库单号、`STOCKTAKE_*` 取盘点单号。后端 COALESCE 成一个展示列。 */
+    sourceDocumentNo?: string;
+    quantity?: string | null;
+    unitSnapshot?: string;
+    unitCost?: string | null;
+    beforeQuantity?: string | null;
+    afterQuantity?: string | null;
+    /** 业务发生时刻 = 收货确认时刻（**不是**写入时刻）。 */
+    occurredAt?: string;
+    operator?: string;
+    createdAt?: string;
 }
 
 /**
@@ -123,17 +123,17 @@ export interface InventoryMovement {
  * `occurredFrom <= occurred_at < occurredTo`。
  */
 export interface InventoryMovementQuery extends Page {
-  warehouseId?: Id;
-  skuId?: Id;
-  /** SKU 编码模糊匹配（联 `product_sku`）。 */
-  skuCode?: string;
-  /** 流水类型：`PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` / `STOCKTAKE_LOSS` / `LOSS_REPORT` / `GAIN_REPORT`。 */
-  movementType?: string;
-  /** 来源单据类型：收货行 / 出库单行 / 销售订单行 / 盘点单行 / 报损报溢单行。 */
-  sourceDocumentType?: string;
-  sourceDocumentId?: Id;
-  occurredFrom?: string | null;
-  occurredTo?: string | null;
+    warehouseId?: Id;
+    skuId?: Id;
+    /** SKU 编码模糊匹配（联 `product_sku`）。 */
+    skuCode?: string;
+    /** 流水类型：`PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` / `STOCKTAKE_LOSS` / `LOSS_REPORT` / `GAIN_REPORT`。 */
+    movementType?: string;
+    /** 来源单据类型：收货行 / 出库单行 / 销售订单行 / 盘点单行 / 报损报溢单行。 */
+    sourceDocumentType?: string;
+    sourceDocumentId?: Id;
+    occurredFrom?: string | null;
+    occurredTo?: string | null;
 }
 
 // ------------------------------------------------------------------
@@ -142,36 +142,36 @@ export interface InventoryMovementQuery extends Page {
 
 /** `InventoryOutboundVO`。 */
 export interface InventoryOutbound {
-  id: Id;
-  outboundNo?: string;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  status?: string;
-  /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
-  statusDesc?: string;
-  remark?: string;
-  confirmedAt?: string;
-  operator?: string;
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
-  items?: InventoryOutboundItem[];
+    id: Id;
+    outboundNo?: string;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    status?: string;
+    /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
+    statusDesc?: string;
+    remark?: string;
+    confirmedAt?: string;
+    operator?: string;
+    version?: number;
+    createdAt?: string;
+    updatedAt?: string;
+    /** 明细；仅详情接口返回，列表为 undefined。 */
+    items?: InventoryOutboundItem[];
 }
 
 /** `InventoryOutboundVO.Item`。 */
 export interface InventoryOutboundItem {
-  id?: Id;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  quantity?: string | null;
-  /** 确认出库时写入的记账单位快照；**草稿态为空**。 */
-  unitSnapshot?: string | null;
-  remark?: string;
+    id?: Id;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    quantity?: string | null;
+    /** 确认出库时写入的记账单位快照；**草稿态为空**。 */
+    unitSnapshot?: string | null;
+    remark?: string;
 }
 
 /**
@@ -180,9 +180,9 @@ export interface InventoryOutboundItem {
  * 与余额 / 流水一致：**没有 `sortItemList`**，排序固定为 `created_at DESC, id DESC`。
  */
 export interface InventoryOutboundQuery extends Page {
-  outboundNo?: string;
-  warehouseId?: Id;
-  status?: string;
+    outboundNo?: string;
+    warehouseId?: Id;
+    status?: string;
 }
 
 /**
@@ -192,13 +192,13 @@ export interface InventoryOutboundQuery extends Page {
  * 前端必须传 `"1.0000"` 这样的字符串，不能传 number。
  */
 export interface InventoryOutboundAdd {
-  warehouseId: Id;
-  remark?: string;
-  items: Array<{
-    skuId: Id;
-    quantity: string;
+    warehouseId: Id;
     remark?: string;
-  }>;
+    items: Array<{
+        skuId: Id;
+        quantity: string;
+        remark?: string;
+    }>;
 }
 
 // ------------------------------------------------------------------
@@ -207,34 +207,34 @@ export interface InventoryOutboundAdd {
 
 /** `InventoryReservationVO`。 */
 export interface InventoryReservation {
-  id: Id;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  sourceDocumentType?: string;
-  sourceDocumentId?: Id;
-  sourceDocumentItemId?: Id;
-  /** 来源单号（联销售订单取，可能为空）。 */
-  sourceDocumentNo?: string;
-  quantity?: string | null;
-  unitSnapshot?: string;
-  status?: string;
-  statusDesc?: string;
-  occurredAt?: string;
-  operator?: string;
-  createdAt?: string;
+    id: Id;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    sourceDocumentType?: string;
+    sourceDocumentId?: Id;
+    sourceDocumentItemId?: Id;
+    /** 来源单号（联销售订单取，可能为空）。 */
+    sourceDocumentNo?: string;
+    quantity?: string | null;
+    unitSnapshot?: string;
+    status?: string;
+    statusDesc?: string;
+    occurredAt?: string;
+    operator?: string;
+    createdAt?: string;
 }
 
 /** `InventoryReservationQueryForm`。 */
 export interface InventoryReservationQuery extends Page {
-  warehouseId?: Id;
-  skuId?: Id;
-  status?: string;
-  sourceDocumentId?: Id;
+    warehouseId?: Id;
+    skuId?: Id;
+    status?: string;
+    sourceDocumentId?: Id;
 }
 
 // ------------------------------------------------------------------
@@ -253,41 +253,41 @@ export interface InventoryReservationQuery extends Page {
  * 详情页据此提示用户，避免把「账面 ≠ 实盘」误读成系统出错。
  */
 export interface InventoryStocktake {
-  id: Id;
-  stocktakeNo?: string;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  status?: string;
-  /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
-  statusDesc?: string;
-  remark?: string;
-  confirmedAt?: string;
-  operator?: string;
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
-  items?: InventoryStocktakeItem[];
+    id: Id;
+    stocktakeNo?: string;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    status?: string;
+    /** 状态中文描述（后端按枚举填充，前端不硬编码字典）。 */
+    statusDesc?: string;
+    remark?: string;
+    confirmedAt?: string;
+    operator?: string;
+    version?: number;
+    createdAt?: string;
+    updatedAt?: string;
+    /** 明细；仅详情接口返回，列表为 undefined。 */
+    items?: InventoryStocktakeItem[];
 }
 
 /** `InventoryStocktakeVO.Item`。 */
 export interface InventoryStocktakeItem {
-  id?: Id;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  /** 账面量快照（保存草稿那一刻）。 */
-  bookQuantity?: string | null;
-  /** 实盘量。 */
-  actualQuantity?: string | null;
-  /** 差异 = 实盘量 − 账面量。**后端派生字段**，不落库。 */
-  deltaQuantity?: string | null;
-  /** 确认盘点时写入的记账单位快照；**草稿态为空**。 */
-  unitSnapshot?: string | null;
-  remark?: string;
+    id?: Id;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    /** 账面量快照（保存草稿那一刻）。 */
+    bookQuantity?: string | null;
+    /** 实盘量。 */
+    actualQuantity?: string | null;
+    /** 差异 = 实盘量 − 账面量。**后端派生字段**，不落库。 */
+    deltaQuantity?: string | null;
+    /** 确认盘点时写入的记账单位快照；**草稿态为空**。 */
+    unitSnapshot?: string | null;
+    remark?: string;
 }
 
 /**
@@ -296,9 +296,9 @@ export interface InventoryStocktakeItem {
  * 与余额 / 流水 / 出库一致：**没有 `sortItemList`**，排序固定为 `created_at DESC, id DESC`。
  */
 export interface InventoryStocktakeQuery extends Page {
-  stocktakeNo?: string;
-  warehouseId?: Id;
-  status?: string;
+    stocktakeNo?: string;
+    warehouseId?: Id;
+    status?: string;
 }
 
 /**
@@ -311,13 +311,13 @@ export interface InventoryStocktakeQuery extends Page {
  * 前端必须传 `"12.0000"` 这样的字符串，不能传 number。允许 `"0"`（确实一件不剩），不允许负数。
  */
 export interface InventoryStocktakeAdd {
-  warehouseId: Id;
-  remark?: string;
-  items: Array<{
-    skuId: Id;
-    actualQuantity: string;
+    warehouseId: Id;
     remark?: string;
-  }>;
+    items: Array<{
+        skuId: Id;
+        actualQuantity: string;
+        remark?: string;
+    }>;
 }
 
 // ------------------------------------------------------------------
@@ -335,44 +335,44 @@ export interface InventoryStocktakeAdd {
  * 必须原样回传，不能在本地自增。
  */
 export interface InventoryLossGain {
-  id: Id;
-  lossGainNo?: string;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  /** `LOSS` 报损 / `OVERFLOW` 报溢。 */
-  adjustType?: string;
-  adjustTypeDesc?: string;
-  /** `PENDING` / `COMPLETED` / `REJECTED`。 */
-  status?: string;
-  statusDesc?: string;
-  /** 报损报溢原因（必填）。 */
-  reason?: string;
-  remark?: string;
-  auditedAt?: string;
-  auditor?: string;
-  auditOpinion?: string;
-  /** 乐观锁版本号；审批时必须原样回传。 */
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
-  items?: InventoryLossGainItem[];
+    id: Id;
+    lossGainNo?: string;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    /** `LOSS` 报损 / `OVERFLOW` 报溢。 */
+    adjustType?: string;
+    adjustTypeDesc?: string;
+    /** `PENDING` / `COMPLETED` / `REJECTED`。 */
+    status?: string;
+    statusDesc?: string;
+    /** 报损报溢原因（必填）。 */
+    reason?: string;
+    remark?: string;
+    auditedAt?: string;
+    auditor?: string;
+    auditOpinion?: string;
+    /** 乐观锁版本号；审批时必须原样回传。 */
+    version?: number;
+    createdAt?: string;
+    updatedAt?: string;
+    /** 明细；仅详情接口返回，列表为 undefined。 */
+    items?: InventoryLossGainItem[];
 }
 
 /** `InventoryLossGainVO.Item`。 */
 export interface InventoryLossGainItem {
-  id?: Id;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  /** 申报数量，恒为正；方向看单据的 `adjustType`。 */
-  quantity?: string | null;
-  /** 审批通过时写入的记账单位快照；**待审核态为空**。 */
-  unitSnapshot?: string | null;
-  remark?: string;
+    id?: Id;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    /** 申报数量，恒为正；方向看单据的 `adjustType`。 */
+    quantity?: string | null;
+    /** 审批通过时写入的记账单位快照；**待审核态为空**。 */
+    unitSnapshot?: string | null;
+    remark?: string;
 }
 
 /**
@@ -381,10 +381,10 @@ export interface InventoryLossGainItem {
  * 与余额 / 流水 / 出库 / 盘点一致：**没有 `sortItemList`**，排序固定为 `created_at DESC, id DESC`。
  */
 export interface InventoryLossGainQuery extends Page {
-  lossGainNo?: string;
-  warehouseId?: Id;
-  adjustType?: string;
-  status?: string;
+    lossGainNo?: string;
+    warehouseId?: Id;
+    adjustType?: string;
+    status?: string;
 }
 
 /**
@@ -394,15 +394,15 @@ export interface InventoryLossGainQuery extends Page {
  * 数量是**定点字符串**：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字。
  */
 export interface InventoryLossGainAdd {
-  adjustType: string;
-  warehouseId: Id;
-  reason: string;
-  remark?: string;
-  items: Array<{
-    skuId: Id;
-    quantity: string;
+    adjustType: string;
+    warehouseId: Id;
+    reason: string;
     remark?: string;
-  }>;
+    items: Array<{
+        skuId: Id;
+        quantity: string;
+        remark?: string;
+    }>;
 }
 
 /**
@@ -412,8 +412,8 @@ export interface InventoryLossGainAdd {
  * （驳回是唯一会把「为什么不行」传达给录单人的渠道）。
  */
 export interface InventoryLossGainAudit {
-  version: number;
-  auditOpinion?: string;
+    version: number;
+    auditOpinion?: string;
 }
 
 // ------------------------------------------------------------------
@@ -432,44 +432,44 @@ export interface InventoryLossGainAudit {
  * 只显示一个仓名会让用户必须点进详情才能确认方向。
  */
 export interface InventoryTransfer {
-  id: Id;
-  transferNo?: string;
-  fromWarehouseId?: Id;
-  fromWarehouseCode?: string;
-  fromWarehouseName?: string;
-  toWarehouseId?: Id;
-  toWarehouseCode?: string;
-  toWarehouseName?: string;
-  /** `DRAFT` / `SHIPPED`（在途）/ `RECEIVED` / `CANCELLED`。 */
-  status?: string;
-  statusDesc?: string;
-  remark?: string;
-  /** 发出时刻；草稿与已取消为空。 */
-  shippedAt?: string;
-  shippedBy?: string;
-  /** 收货时刻；仅已完成非空。 */
-  receivedAt?: string;
-  receivedBy?: string;
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  /** 明细；仅详情接口返回，列表为 undefined。 */
-  items?: InventoryTransferItem[];
+    id: Id;
+    transferNo?: string;
+    fromWarehouseId?: Id;
+    fromWarehouseCode?: string;
+    fromWarehouseName?: string;
+    toWarehouseId?: Id;
+    toWarehouseCode?: string;
+    toWarehouseName?: string;
+    /** `DRAFT` / `SHIPPED`（在途）/ `RECEIVED` / `CANCELLED`。 */
+    status?: string;
+    statusDesc?: string;
+    remark?: string;
+    /** 发出时刻；草稿与已取消为空。 */
+    shippedAt?: string;
+    shippedBy?: string;
+    /** 收货时刻；仅已完成非空。 */
+    receivedAt?: string;
+    receivedBy?: string;
+    version?: number;
+    createdAt?: string;
+    updatedAt?: string;
+    /** 明细；仅详情接口返回，列表为 undefined。 */
+    items?: InventoryTransferItem[];
 }
 
 /** `InventoryTransferVO.Item`。 */
 export interface InventoryTransferItem {
-  id?: Id;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  /** 调拨数量，恒为正；方向由「发出 / 收货」动作决定。 */
-  quantity?: string | null;
-  /** 发出时写入的**源仓**记账单位快照；**草稿态为空**。收货时用它断言目标仓单位一致。 */
-  unitSnapshot?: string | null;
-  remark?: string;
+    id?: Id;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    /** 调拨数量，恒为正；方向由「发出 / 收货」动作决定。 */
+    quantity?: string | null;
+    /** 发出时写入的**源仓**记账单位快照；**草稿态为空**。收货时用它断言目标仓单位一致。 */
+    unitSnapshot?: string | null;
+    remark?: string;
 }
 
 /**
@@ -479,10 +479,10 @@ export interface InventoryTransferItem {
  * 只看目标仓回答「这个仓要收多少」，两者都有查询价值。
  */
 export interface InventoryTransferQuery extends Page {
-  transferNo?: string;
-  fromWarehouseId?: Id;
-  toWarehouseId?: Id;
-  status?: string;
+    transferNo?: string;
+    fromWarehouseId?: Id;
+    toWarehouseId?: Id;
+    status?: string;
 }
 
 /**
@@ -492,14 +492,14 @@ export interface InventoryTransferQuery extends Page {
  * 源仓与目标仓必须不同（后端 41042）。
  */
 export interface InventoryTransferAdd {
-  fromWarehouseId: Id;
-  toWarehouseId: Id;
-  remark?: string;
-  items: Array<{
-    skuId: Id;
-    quantity: string;
+    fromWarehouseId: Id;
+    toWarehouseId: Id;
     remark?: string;
-  }>;
+    items: Array<{
+        skuId: Id;
+        quantity: string;
+        remark?: string;
+    }>;
 }
 
 /**
@@ -510,16 +510,16 @@ export interface InventoryTransferAdd {
  * 否则「全仓总库存」在在途期间会对不上。
  */
 export interface InventoryInTransit {
-  transferNo?: string;
-  fromWarehouseId?: Id;
-  fromWarehouseName?: string;
-  toWarehouseId?: Id;
-  toWarehouseName?: string;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  quantity?: string | null;
-  unit?: string | null;
+    transferNo?: string;
+    fromWarehouseId?: Id;
+    fromWarehouseName?: string;
+    toWarehouseId?: Id;
+    toWarehouseName?: string;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    quantity?: string | null;
+    unit?: string | null;
 }
 
 // ------------------------------------------------------------------
@@ -537,26 +537,26 @@ export interface InventoryInTransit {
  * 配置了阈值但没有余额行时三个数量都是 `"0.0000"` —— 那正是「设了下限却一件没有」，应当预警。
  */
 export interface InventoryWarning {
-  /** 阈值配置 id（可跳转到配置页）。 */
-  thresholdId?: Id;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  /** 记账单位；没有余额行时为空。 */
-  unit?: string | null;
-  quantity?: string | null;
-  reservedQuantity?: string | null;
-  /** 可用量 = 现有量 − 预留量。**判定基准**。 */
-  availableQuantity?: string | null;
-  warnMin?: string | null;
-  warnMax?: string | null;
-  status?: string;
-  statusDesc?: string;
+    /** 阈值配置 id（可跳转到配置页）。 */
+    thresholdId?: Id;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    /** 记账单位；没有余额行时为空。 */
+    unit?: string | null;
+    quantity?: string | null;
+    reservedQuantity?: string | null;
+    /** 可用量 = 现有量 − 预留量。**判定基准**。 */
+    availableQuantity?: string | null;
+    warnMin?: string | null;
+    warnMax?: string | null;
+    status?: string;
+    statusDesc?: string;
 }
 
 /**
@@ -567,10 +567,10 @@ export interface InventoryWarning {
  * 因此页面下拉的第一项标成「仅异常」而不是「全部」。
  */
 export interface InventoryWarningQuery extends Page {
-  warehouseId?: Id;
-  skuId?: Id;
-  skuCode?: string;
-  status?: string;
+    warehouseId?: Id;
+    skuId?: Id;
+    skuCode?: string;
+    status?: string;
 }
 
 /**
@@ -580,28 +580,28 @@ export interface InventoryWarningQuery extends Page {
  * 但**不能同时为空**（后端 41051）—— 都没有的配置没有任何判断依据。
  */
 export interface InventoryWarningThreshold {
-  id: Id;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  skuId?: Id;
-  skuCode?: string;
-  skuName?: string;
-  productName?: string;
-  specValues?: Record<string, unknown> | null;
-  warnMin?: string | null;
-  warnMax?: string | null;
-  remark?: string;
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
+    id: Id;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    skuId?: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    specValues?: Record<string, unknown> | null;
+    warnMin?: string | null;
+    warnMax?: string | null;
+    remark?: string;
+    version?: number;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 /** `InventoryWarningThresholdQueryForm`。 */
 export interface InventoryWarningThresholdQuery extends Page {
-  warehouseId?: Id;
-  skuId?: Id;
-  skuCode?: string;
+    warehouseId?: Id;
+    skuId?: Id;
+    skuCode?: string;
 }
 
 /**
@@ -611,11 +611,11 @@ export interface InventoryWarningThresholdQuery extends Page {
  * 后端会校验「至少填一个、都非负、下限不高于上限」（41051）。
  */
 export interface InventoryWarningThresholdAdd {
-  warehouseId: Id;
-  skuId: Id;
-  warnMin?: string | null;
-  warnMax?: string | null;
-  remark?: string;
+    warehouseId: Id;
+    skuId: Id;
+    warnMin?: string | null;
+    warnMax?: string | null;
+    remark?: string;
 }
 
 // ------------------------------------------------------------------
@@ -633,58 +633,58 @@ export interface InventoryWarningThresholdAdd {
  * 若期间单据被改过，后端以 40921 拒绝并要求刷新。
  */
 export interface InventoryConversion {
-  id: Id;
-  conversionNo?: string;
-  warehouseId?: Id;
-  warehouseCode?: string;
-  warehouseName?: string;
-  /** `SPLIT` 整件拆零 / `COMBINE` 组合拆分。 */
-  convertType?: string;
-  convertTypeDesc?: string;
-  /** `PENDING` / `COMPLETED` / `REJECTED`。 */
-  status?: string;
-  statusDesc?: string;
-  reason?: string;
-  remark?: string;
-  auditedAt?: string;
-  auditor?: string;
-  auditOpinion?: string;
-  /** 乐观锁版本号；审批时必须原样回传。 */
-  version?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  /** 明细；仅详情接口返回。 */
-  items?: InventoryConversionItem[];
+    id: Id;
+    conversionNo?: string;
+    warehouseId?: Id;
+    warehouseCode?: string;
+    warehouseName?: string;
+    /** `SPLIT` 整件拆零 / `COMBINE` 组合拆分。 */
+    convertType?: string;
+    convertTypeDesc?: string;
+    /** `PENDING` / `COMPLETED` / `REJECTED`。 */
+    status?: string;
+    statusDesc?: string;
+    reason?: string;
+    remark?: string;
+    auditedAt?: string;
+    auditor?: string;
+    auditOpinion?: string;
+    /** 乐观锁版本号；审批时必须原样回传。 */
+    version?: number;
+    createdAt?: string;
+    updatedAt?: string;
+    /** 明细；仅详情接口返回。 */
+    items?: InventoryConversionItem[];
 }
 
 /** `InventoryConversionVO.Item`。 */
 export interface InventoryConversionItem {
-  id?: Id;
-  sourceSkuId?: Id;
-  sourceSkuCode?: string;
-  sourceSkuName?: string;
-  sourceProductName?: string;
-  /** 源数量，恒为正。 */
-  sourceQuantity?: string | null;
-  /** 源单位（**单据声明**，折算关系的一部分）。 */
-  sourceUnit?: string | null;
-  targetSkuId?: Id;
-  targetSkuCode?: string;
-  targetSkuName?: string;
-  targetProductName?: string;
-  /** 目标数量，恒为正；与源数量构成折算关系。 */
-  targetQuantity?: string | null;
-  /** 目标单位（**单据声明**）。 */
-  targetUnit?: string | null;
-  remark?: string;
+    id?: Id;
+    sourceSkuId?: Id;
+    sourceSkuCode?: string;
+    sourceSkuName?: string;
+    sourceProductName?: string;
+    /** 源数量，恒为正。 */
+    sourceQuantity?: string | null;
+    /** 源单位（**单据声明**，折算关系的一部分）。 */
+    sourceUnit?: string | null;
+    targetSkuId?: Id;
+    targetSkuCode?: string;
+    targetSkuName?: string;
+    targetProductName?: string;
+    /** 目标数量，恒为正；与源数量构成折算关系。 */
+    targetQuantity?: string | null;
+    /** 目标单位（**单据声明**）。 */
+    targetUnit?: string | null;
+    remark?: string;
 }
 
 /** `InventoryConversionQueryForm`。 */
 export interface InventoryConversionQuery extends Page {
-  conversionNo?: string;
-  warehouseId?: Id;
-  convertType?: string;
-  status?: string;
+    conversionNo?: string;
+    warehouseId?: Id;
+    convertType?: string;
+    status?: string;
 }
 
 /**
@@ -695,23 +695,23 @@ export interface InventoryConversionQuery extends Page {
  * 数量是定点字符串（后端拒绝 JSON 数字）。
  */
 export interface InventoryConversionAdd {
-  warehouseId: Id;
-  convertType: string;
-  reason?: string;
-  remark?: string;
-  items: Array<{
-    sourceSkuId: Id;
-    sourceQuantity: string;
-    sourceUnit: string;
-    targetSkuId: Id;
-    targetQuantity: string;
-    targetUnit: string;
+    warehouseId: Id;
+    convertType: string;
+    reason?: string;
     remark?: string;
-  }>;
+    items: Array<{
+        sourceSkuId: Id;
+        sourceQuantity: string;
+        sourceUnit: string;
+        targetSkuId: Id;
+        targetQuantity: string;
+        targetUnit: string;
+        remark?: string;
+    }>;
 }
 
 /** `InventoryConversionAuditForm`（审批 / 驳回共用）。 */
 export interface InventoryConversionAudit {
-  version: number;
-  auditOpinion?: string;
+    version: number;
+    auditOpinion?: string;
 }

@@ -40,7 +40,9 @@ class PurchaseReceiptOverReceiptIT extends ScmW5PgITBase {
     @Autowired
     private ConfigService configService;
 
-    /** 通过 ConfigService 改容差（会同步刷新它自己的缓存）。 */
+    /**
+     * 通过 ConfigService 改容差（会同步刷新它自己的缓存）。
+     */
     private void setTolerance(String value) {
         ConfigVO current = configService.getConfig(PurchaseConfigKey.OVER_RECEIPT_TOLERANCE_PERCENT);
         assertThat(current).as("V15 必须播种采购容差配置").isNotNull();
@@ -58,7 +60,9 @@ class PurchaseReceiptOverReceiptIT extends ScmW5PgITBase {
         setTolerance(PurchaseConfigKey.OVER_RECEIPT_TOLERANCE_PERCENT_DEFAULT);
     }
 
-    /** 用指定数量确认收货（自动回读当前版本）。 */
+    /**
+     * 用指定数量确认收货（自动回读当前版本）。
+     */
     private PurchaseReceiptVO confirm(ReceiptFixture fx, String quantity) {
         PurchaseReceiptVO current = reloadReceipt(fx.receipt().getId());
         PurchaseReceiptItemVO line = current.getItems().getFirst();

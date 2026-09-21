@@ -21,26 +21,28 @@
       <div class="content-html" v-html="helpDocDetail.contentHtml"></div>
       <!--endprint-->
     </div>
-    <a-divider v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0" />
-    <div v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0">附件：<FilePreview :fileList="helpDocDetail.attachment" /></div>
+    <a-divider v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0"/>
+    <div v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0">附件：
+      <FilePreview :fileList="helpDocDetail.attachment"/>
+    </div>
   </a-card>
 
   <a-card title="阅读记录" size="small" class="smart-margin-top10" :bordered="false">
-    <HelpDocViewRecordList ref="helpDocViewRecordListRef" :helpDocId="route.query.helpDocId" />
+    <HelpDocViewRecordList ref="helpDocViewRecordListRef" :helpDocId="route.query.helpDocId"/>
   </a-card>
 
   <!-- 预览附件 -->
-  <FilePreview ref="filePreviewRef" />
+  <FilePreview ref="filePreviewRef"/>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import {onMounted, ref} from 'vue';
+import {useRoute} from 'vue-router';
 import HelpDocViewRecordList from './components/help-doc-view-record-list.vue';
-import { helpDocApi } from '/@/api/support/help-doc-api';
-import { SmartLoading } from '/@/components/framework/smart-loading';
+import {helpDocApi} from '/@/api/support/help-doc-api';
+import {SmartLoading} from '/@/components/framework/smart-loading';
 import FilePreview from '/@/components/support/file-preview/index.vue';
-import { smartSentry } from '/@/lib/smart-sentry';
+import {smartSentry} from '/@/lib/smart-sentry';
 
 const route = useRoute();
 
@@ -73,6 +75,7 @@ async function queryHelpDocDetail() {
 
 // 预览附件
 const filePreviewRef = ref();
+
 function onPrevFile(fileItem) {
   filePreviewRef.value.showPreview(fileItem);
 }
@@ -80,7 +83,9 @@ function onPrevFile(fileItem) {
 // 打印
 function print() {
   let bdhtml = window.document.body.innerHTML;
-  let sprnstr = '<!--startprint-->'; //必须在页面添加<!--startprint-->和<!--endprint-->而且需要打印的内容必须在它们之间
+  let sprnstr = '<!--startprint-->'; //必须在页面添加<!--startprint-->
+  和<!--endprint-->
+  而且需要打印的内容必须在它们之间
   let eprnstr = '<!--endprint-->';
   let prnhtml = bdhtml.substr(bdhtml.indexOf(sprnstr));
   prnhtml = prnhtml.substring(0, prnhtml.indexOf(eprnstr));
@@ -98,23 +103,28 @@ function print() {
   flex: 1;
   overflow: hidden;
 }
+
 .file-list {
   width: 100%;
   display: flex;
   flex-wrap: wrap;
+
   .file-item {
     display: block;
     margin-right: 10px;
   }
 }
+
 .visible-list {
   display: flex;
   flex-wrap: wrap;
+
   .visible-item {
     margin-right: 10px;
     color: #666;
   }
 }
+
 .content-header {
   .content-header-title {
     margin: 10px 0px;
@@ -122,17 +132,20 @@ function print() {
     font-weight: bold;
     text-align: center;
   }
+
   .content-header-info {
     margin: 10px 0px;
     font-size: 14px;
     color: #888;
     text-align: center;
+
     span {
       margin: 0 10px;
       cursor: pointer;
     }
   }
 }
+
 /*样式深入*/
 :deep(.content-html) {
   margin-top: 30px;

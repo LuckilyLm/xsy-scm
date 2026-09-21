@@ -124,7 +124,9 @@ public class SupplierSkuSyncManager {
         }
     }
 
-    /** 构造待更新的行：先批量校验采购员与 SKU，再逐条组装。 */
+    /**
+     * 构造待更新的行：先批量校验采购员与 SKU，再逐条组装。
+     */
     private List<Planned> planRetained(SupplierSkuChangeSet changeSet, SupplierEntity supplier) {
         List<Planned> planned = new ArrayList<>(changeSet.retained().size());
         Map<Long, OrderableSkuVO> skus = loadOrderableSkus(collectSkuIds(changeSet));
@@ -136,7 +138,9 @@ public class SupplierSkuSyncManager {
         return planned;
     }
 
-    /** 构造待插入的行。 */
+    /**
+     * 构造待插入的行。
+     */
     private List<Planned> planInserted(SupplierSkuChangeSet changeSet, SupplierEntity supplier) {
         List<Planned> planned = new ArrayList<>(changeSet.inserted().size());
         Map<Long, OrderableSkuVO> skus = loadOrderableSkus(collectSkuIds(changeSet));
@@ -175,7 +179,9 @@ public class SupplierSkuSyncManager {
         return map;
     }
 
-    /** 批量校验默认采购员存在（引用 SmartAdmin {@code t_employee}，不旁路主数据）。 */
+    /**
+     * 批量校验默认采购员存在（引用 SmartAdmin {@code t_employee}，不旁路主数据）。
+     */
     private void validatePurchasers(SupplierSkuChangeSet changeSet) {
         Set<Long> purchaserIds = new HashSet<>();
         changeSet.retained().forEach(matched -> {
@@ -204,7 +210,9 @@ public class SupplierSkuSyncManager {
         }
     }
 
-    /** 把请求行与快照写入实体；不负责主键、版本与审计字段。 */
+    /**
+     * 把请求行与快照写入实体；不负责主键、版本与审计字段。
+     */
     private void fill(SupplierSkuEntity entity, Planned planned, String operator, OffsetDateTime now) {
         SupplierSkuItemForm item = planned.requested();
         OrderableSkuVO sku = planned.sku();
@@ -227,7 +235,9 @@ public class SupplierSkuSyncManager {
         entity.setUpdatedBy(operator);
     }
 
-    /** 一条待写行：既有实体（新增时为 {@code null}）+ 请求行 + 快照来源 + 供应商。 */
+    /**
+     * 一条待写行：既有实体（新增时为 {@code null}）+ 请求行 + 快照来源 + 供应商。
+     */
     private record Planned(SupplierSkuEntity existing,
                            SupplierSkuItemForm requested,
                            OrderableSkuVO sku,

@@ -1,17 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao">
-<resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.OrderOperationLogEntity">
-<result column="id" property="id"/>
-<result column="order_id" property="orderId"/>
-<result column="operation_type" property="operationType"/>
-<result column="operator" property="operator"/>
-<result column="reason" property="reason"/>
-<result column="before_data" property="beforeData" typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
-<result column="after_data" property="afterData" typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
-<result column="created_at" property="createdAt"/>
-<result column="created_by" property="createdBy"/>
-</resultMap>
-<insert id="insert" useGeneratedKeys="true" keyProperty="id">INSERT INTO order_operation_log(order_id,operation_type,operator,reason,before_data,after_data,created_by) VALUES(#{orderId},#{operationType},#{operator},#{reason},#{beforeData,typeHandler=net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler},#{afterData,typeHandler=net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler},#{createdBy})</insert>
-<select id="query" resultMap="row">SELECT * FROM order_operation_log WHERE TRUE <if test="query.operationType != null and query.operationType != ''">AND operation_type=#{query.operationType}</if><if test="query.orderId != null">AND order_id=#{query.orderId}</if><if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if><if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if> ORDER BY created_at DESC,id DESC</select>
+    <resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.OrderOperationLogEntity">
+        <result column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="operator" property="operator"/>
+        <result column="reason" property="reason"/>
+        <result column="before_data" property="beforeData"
+                typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
+        <result column="after_data" property="afterData"
+                typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="created_by" property="createdBy"/>
+    </resultMap>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">INSERT INTO order_operation_log(order_id,
+                                                                                                 operation_type,
+                                                                                                 operator, reason,
+                                                                                                 before_data,
+                                                                                                 after_data, created_by)
+                                                                 VALUES (#{orderId}, #{operationType}, #{operator},
+                                                                         #{reason},
+                                                                         #{beforeData,typeHandler=net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler},
+                                                                         #{afterData,typeHandler=net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler},
+                                                                         #{createdBy})</insert>
+    <select id="query" resultMap="row">SELECT * FROM order_operation_log WHERE TRUE
+        <if test="query.operationType != null and query.operationType != ''">AND operation_type=#{query.operationType}
+        </if>
+        <if test="query.orderId != null">AND order_id=#{query.orderId}</if>
+        <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>
+        <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
+        ORDER BY created_at DESC,id DESC
+    </select>
 </mapper>

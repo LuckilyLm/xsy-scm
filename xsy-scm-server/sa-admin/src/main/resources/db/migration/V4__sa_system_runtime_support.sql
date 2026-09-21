@@ -27,64 +27,67 @@
 -- ---------------------------------------------------------------------
 -- t_serial_number 单号生成器定义表
 -- ---------------------------------------------------------------------
-CREATE TABLE t_serial_number (
-    serial_number_id  INTEGER      NOT NULL,
-    business_name     VARCHAR(50)  NOT NULL,
+CREATE TABLE t_serial_number
+(
+    serial_number_id  INTEGER     NOT NULL,
+    business_name     VARCHAR(50) NOT NULL,
     format            VARCHAR(50),
-    rule_type         VARCHAR(20)  NOT NULL,
-    init_number       INTEGER      NOT NULL,
-    step_random_range INTEGER      NOT NULL,
+    rule_type         VARCHAR(20) NOT NULL,
+    init_number       INTEGER     NOT NULL,
+    step_random_range INTEGER     NOT NULL,
     remark            VARCHAR(255),
     last_number       BIGINT,
     last_time         TIMESTAMP,
-    update_time       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-    create_time       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    update_time       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    create_time       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_t_serial_number PRIMARY KEY (serial_number_id),
     CONSTRAINT uk_t_serial_number_business_name UNIQUE (business_name)
 );
 
-COMMENT ON TABLE  t_serial_number                   IS '单号生成器定义表';
-COMMENT ON COLUMN t_serial_number.serial_number_id  IS '主键id';
-COMMENT ON COLUMN t_serial_number.business_name     IS '业务名称';
-COMMENT ON COLUMN t_serial_number.format            IS '格式[yyyy]表示年,[mm]标识月,[dd]表示日,[nnn]表示三位数字';
-COMMENT ON COLUMN t_serial_number.rule_type         IS '规则格式。none没有周期, year 年周期, month月周期, day日周期';
-COMMENT ON COLUMN t_serial_number.init_number       IS '初始值';
+COMMENT ON TABLE t_serial_number IS '单号生成器定义表';
+COMMENT ON COLUMN t_serial_number.serial_number_id IS '主键id';
+COMMENT ON COLUMN t_serial_number.business_name IS '业务名称';
+COMMENT ON COLUMN t_serial_number.format IS '格式[yyyy]表示年,[mm]标识月,[dd]表示日,[nnn]表示三位数字';
+COMMENT ON COLUMN t_serial_number.rule_type IS '规则格式。none没有周期, year 年周期, month月周期, day日周期';
+COMMENT ON COLUMN t_serial_number.init_number IS '初始值';
 COMMENT ON COLUMN t_serial_number.step_random_range IS '步长随机数';
-COMMENT ON COLUMN t_serial_number.remark            IS '备注';
-COMMENT ON COLUMN t_serial_number.last_number       IS '上次产生的单号, 默认为空';
-COMMENT ON COLUMN t_serial_number.last_time         IS '上次产生的单号时间';
-COMMENT ON COLUMN t_serial_number.update_time       IS '更新时间';
-COMMENT ON COLUMN t_serial_number.create_time       IS '创建时间';
+COMMENT ON COLUMN t_serial_number.remark IS '备注';
+COMMENT ON COLUMN t_serial_number.last_number IS '上次产生的单号, 默认为空';
+COMMENT ON COLUMN t_serial_number.last_time IS '上次产生的单号时间';
+COMMENT ON COLUMN t_serial_number.update_time IS '更新时间';
+COMMENT ON COLUMN t_serial_number.create_time IS '创建时间';
 
 -- 上游种子数据（2 行）
 INSERT INTO t_serial_number
-    (serial_number_id, business_name, format, rule_type, init_number, step_random_range,
-     remark, last_number, last_time, update_time, create_time)
-VALUES
-    (1, '订单编号', 'DK[yyyy][mm][dd]NO[nnnnn]', 'day',  1000, 10, 'DK20201101NO321', 1, '2023-12-04 09:16:42', '2024-01-08 19:24:46', '2021-02-19 14:37:50'),
-    (2, '合同编号', 'HT[yyyy][mm][dd][nnnnn]-CX', 'none',   1,  1, '',                8, '2023-12-04 09:54:53', '2023-12-04 09:54:52', '2021-08-12 20:40:37');
+(serial_number_id, business_name, format, rule_type, init_number, step_random_range,
+ remark, last_number, last_time, update_time, create_time)
+VALUES (1, '订单编号', 'DK[yyyy][mm][dd]NO[nnnnn]', 'day', 1000, 10, 'DK20201101NO321', 1, '2023-12-04 09:16:42',
+        '2024-01-08 19:24:46', '2021-02-19 14:37:50'),
+       (2, '合同编号', 'HT[yyyy][mm][dd][nnnnn]-CX', 'none', 1, 1, '', 8, '2023-12-04 09:54:53', '2023-12-04 09:54:52',
+        '2021-08-12 20:40:37');
 
 -- ---------------------------------------------------------------------
 -- t_serial_number_record 单号生成记录表
 -- ---------------------------------------------------------------------
-CREATE TABLE t_serial_number_record (
+CREATE TABLE t_serial_number_record
+(
     serial_number_id INTEGER   NOT NULL,
     record_date      DATE      NOT NULL,
     last_number      BIGINT    NOT NULL DEFAULT 0,
     last_time        TIMESTAMP NOT NULL,
     count            BIGINT    NOT NULL DEFAULT 0,
-    update_time      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    create_time      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    update_time      TIMESTAMP          DEFAULT CURRENT_TIMESTAMP,
+    create_time      TIMESTAMP          DEFAULT CURRENT_TIMESTAMP
 );
 
-COMMENT ON TABLE  t_serial_number_record                 IS 'serial_number记录表';
+COMMENT ON TABLE t_serial_number_record IS 'serial_number记录表';
 COMMENT ON COLUMN t_serial_number_record.serial_number_id IS '单号id';
-COMMENT ON COLUMN t_serial_number_record.record_date      IS '记录日期';
-COMMENT ON COLUMN t_serial_number_record.last_number      IS '最后更新值';
-COMMENT ON COLUMN t_serial_number_record.last_time        IS '最后更新时间';
-COMMENT ON COLUMN t_serial_number_record.count            IS '更新次数';
-COMMENT ON COLUMN t_serial_number_record.update_time      IS '更新时间';
-COMMENT ON COLUMN t_serial_number_record.create_time      IS '创建时间';
+COMMENT ON COLUMN t_serial_number_record.record_date IS '记录日期';
+COMMENT ON COLUMN t_serial_number_record.last_number IS '最后更新值';
+COMMENT ON COLUMN t_serial_number_record.last_time IS '最后更新时间';
+COMMENT ON COLUMN t_serial_number_record.count IS '更新次数';
+COMMENT ON COLUMN t_serial_number_record.update_time IS '更新时间';
+COMMENT ON COLUMN t_serial_number_record.create_time IS '创建时间';
 
 -- 自然唯一键：saveRecord() 依赖「先 update 后 insert」的语义
 CREATE UNIQUE INDEX uk_t_serial_number_record_generator
@@ -93,8 +96,9 @@ CREATE UNIQUE INDEX uk_t_serial_number_record_generator
 -- ---------------------------------------------------------------------
 -- t_operate_log 操作记录表
 -- ---------------------------------------------------------------------
-CREATE TABLE t_operate_log (
-    operate_log_id    BIGINT       GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+CREATE TABLE t_operate_log
+(
+    operate_log_id    BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
     operate_user_id   BIGINT       NOT NULL,
     operate_user_type INTEGER      NOT NULL,
     operate_user_name VARCHAR(500) NOT NULL,
@@ -113,32 +117,33 @@ CREATE TABLE t_operate_log (
     create_time       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-COMMENT ON TABLE  t_operate_log                   IS '操作记录';
-COMMENT ON COLUMN t_operate_log.operate_log_id    IS '主键';
-COMMENT ON COLUMN t_operate_log.operate_user_id   IS '用户id';
+COMMENT ON TABLE t_operate_log IS '操作记录';
+COMMENT ON COLUMN t_operate_log.operate_log_id IS '主键';
+COMMENT ON COLUMN t_operate_log.operate_user_id IS '用户id';
 COMMENT ON COLUMN t_operate_log.operate_user_type IS '用户类型';
 COMMENT ON COLUMN t_operate_log.operate_user_name IS '用户名称';
-COMMENT ON COLUMN t_operate_log.module            IS '操作模块';
-COMMENT ON COLUMN t_operate_log.content           IS '操作内容';
-COMMENT ON COLUMN t_operate_log.url               IS '请求路径';
-COMMENT ON COLUMN t_operate_log.method            IS '请求方法';
-COMMENT ON COLUMN t_operate_log.param             IS '请求参数';
-COMMENT ON COLUMN t_operate_log.response          IS '返回值';
-COMMENT ON COLUMN t_operate_log.ip                IS '请求ip';
-COMMENT ON COLUMN t_operate_log.ip_region         IS '请求ip地区';
-COMMENT ON COLUMN t_operate_log.user_agent        IS '请求user-agent';
-COMMENT ON COLUMN t_operate_log.success_flag      IS '请求结果 false失败 true成功';
-COMMENT ON COLUMN t_operate_log.fail_reason       IS '失败原因';
-COMMENT ON COLUMN t_operate_log.update_time       IS '更新时间';
-COMMENT ON COLUMN t_operate_log.create_time       IS '创建时间';
+COMMENT ON COLUMN t_operate_log.module IS '操作模块';
+COMMENT ON COLUMN t_operate_log.content IS '操作内容';
+COMMENT ON COLUMN t_operate_log.url IS '请求路径';
+COMMENT ON COLUMN t_operate_log.method IS '请求方法';
+COMMENT ON COLUMN t_operate_log.param IS '请求参数';
+COMMENT ON COLUMN t_operate_log.response IS '返回值';
+COMMENT ON COLUMN t_operate_log.ip IS '请求ip';
+COMMENT ON COLUMN t_operate_log.ip_region IS '请求ip地区';
+COMMENT ON COLUMN t_operate_log.user_agent IS '请求user-agent';
+COMMENT ON COLUMN t_operate_log.success_flag IS '请求结果 false失败 true成功';
+COMMENT ON COLUMN t_operate_log.fail_reason IS '失败原因';
+COMMENT ON COLUMN t_operate_log.update_time IS '更新时间';
+COMMENT ON COLUMN t_operate_log.create_time IS '创建时间';
 
 CREATE INDEX idx_t_operate_log_create_time ON t_operate_log (create_time);
-CREATE INDEX idx_t_operate_log_user        ON t_operate_log (operate_user_id, operate_user_type);
+CREATE INDEX idx_t_operate_log_user ON t_operate_log (operate_user_id, operate_user_type);
 
 -- ---------------------------------------------------------------------
 -- t_reload_item reload项目表
 -- ---------------------------------------------------------------------
-CREATE TABLE t_reload_item (
+CREATE TABLE t_reload_item
+(
     tag            VARCHAR(255) NOT NULL,
     args           VARCHAR(255),
     identification VARCHAR(255) NOT NULL,
@@ -147,12 +152,12 @@ CREATE TABLE t_reload_item (
     CONSTRAINT pk_t_reload_item PRIMARY KEY (tag)
 );
 
-COMMENT ON TABLE  t_reload_item                IS 'reload项目';
-COMMENT ON COLUMN t_reload_item.tag            IS '项名称';
-COMMENT ON COLUMN t_reload_item.args           IS '参数 可选';
+COMMENT ON TABLE t_reload_item IS 'reload项目';
+COMMENT ON COLUMN t_reload_item.tag IS '项名称';
+COMMENT ON COLUMN t_reload_item.args IS '参数 可选';
 COMMENT ON COLUMN t_reload_item.identification IS '运行标识';
-COMMENT ON COLUMN t_reload_item.update_time    IS '更新时间';
-COMMENT ON COLUMN t_reload_item.create_time    IS '创建时间';
+COMMENT ON COLUMN t_reload_item.update_time IS '更新时间';
+COMMENT ON COLUMN t_reload_item.create_time IS '创建时间';
 
 -- 上游种子数据（1 行）
 INSERT INTO t_reload_item (tag, args, identification, update_time, create_time)
@@ -161,7 +166,8 @@ VALUES ('system_config', '4', '234', '2024-08-13 14:14:30', '2019-04-18 11:48:27
 -- ---------------------------------------------------------------------
 -- t_reload_result reload结果表（追加写，无主键，与上游一致）
 -- ---------------------------------------------------------------------
-CREATE TABLE t_reload_result (
+CREATE TABLE t_reload_result
+(
     tag            VARCHAR(255) NOT NULL,
     identification VARCHAR(255) NOT NULL,
     args           VARCHAR(255),
@@ -170,13 +176,13 @@ CREATE TABLE t_reload_result (
     create_time    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-COMMENT ON TABLE  t_reload_result                IS 'reload结果';
-COMMENT ON COLUMN t_reload_result.tag            IS '项名称';
+COMMENT ON TABLE t_reload_result IS 'reload结果';
+COMMENT ON COLUMN t_reload_result.tag IS '项名称';
 COMMENT ON COLUMN t_reload_result.identification IS '运行标识';
-COMMENT ON COLUMN t_reload_result.args           IS '参数 可选';
-COMMENT ON COLUMN t_reload_result.result         IS '是否成功';
-COMMENT ON COLUMN t_reload_result.exception      IS '异常';
-COMMENT ON COLUMN t_reload_result.create_time    IS '创建时间';
+COMMENT ON COLUMN t_reload_result.args IS '参数 可选';
+COMMENT ON COLUMN t_reload_result.result IS '是否成功';
+COMMENT ON COLUMN t_reload_result.exception IS '异常';
+COMMENT ON COLUMN t_reload_result.create_time IS '创建时间';
 
 CREATE INDEX idx_t_reload_result_tag ON t_reload_result (tag, create_time);
 

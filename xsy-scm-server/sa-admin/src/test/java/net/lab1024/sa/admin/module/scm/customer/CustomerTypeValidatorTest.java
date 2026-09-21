@@ -10,7 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** 客户类型校验器契约测试（纯静态，无依赖）。 */
+/**
+ * 客户类型校验器契约测试（纯静态，无依赖）。
+ */
 class CustomerTypeValidatorTest {
 
     private static int codeOf(Throwable t) {

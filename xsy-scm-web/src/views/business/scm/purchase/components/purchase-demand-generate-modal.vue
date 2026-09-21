@@ -10,45 +10,45 @@
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-modal
-    :open="open"
-    title="汇总生成采购需求"
-    width="720px"
-    :confirm-loading="saving"
-    ok-text="生成需求"
-    @ok="generate"
-    @cancel="close"
+      :open="open"
+      title="汇总生成采购需求"
+      width="720px"
+      :confirm-loading="saving"
+      ok-text="生成需求"
+      @ok="generate"
+      @cancel="close"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-alert
-      type="info"
-      show-icon
-      message="区间是半开区间 [开始, 结束)"
-      description="只汇总区间内「已确认」的销售订单行；重复汇总不会重复生成，已存在的来源行会被计入「已跳过」。"
+        type="info"
+        show-icon
+        message="区间是半开区间 [开始, 结束)"
+        description="只汇总区间内「已确认」的销售订单行；重复汇总不会重复生成，已存在的来源行会被计入「已跳过」。"
     />
     <a-form layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
         <a-range-picker
-          v-model:value="range"
-          show-time
-          value-format="YYYY-MM-DDTHH:mm:ssZ"
-          style="width: 100%"
+            v-model:value="range"
+            show-time
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
+            style="width: 100%"
         />
       </a-form-item>
       <a-form-item label="收货仓库" name="warehouseId" required>
         <a-select
-          v-model:value="form.warehouseId"
-          :options="warehouseOptions"
-          :loading="warehouseLoading"
-          show-search
-          option-filter-prop="label"
-          placeholder="请选择收货仓库"
+            v-model:value="form.warehouseId"
+            :options="warehouseOptions"
+            :loading="warehouseLoading"
+            show-search
+            option-filter-prop="label"
+            placeholder="请选择收货仓库"
         />
       </a-form-item>
       <a-form-item label="供应商（可选）" name="supplierId">
-        <SupplierSelect v-model:value="form.supplierId" />
+        <SupplierSelect v-model:value="form.supplierId"/>
       </a-form-item>
       <a-form-item label="采购员（可选）" name="purchaserId">
-        <EmployeeSelect v-model:value="purchaserValue" />
+        <EmployeeSelect v-model:value="purchaserValue"/>
       </a-form-item>
     </a-form>
 
@@ -62,14 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { message } from 'ant-design-vue';
+import {computed, ref, watch} from 'vue';
+import {message} from 'ant-design-vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
-import { purchaseDemandApi } from '/@/api/business/scm/purchase-demand-api';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import type { GenerateResult, Id } from '../purchase-types';
-import { purchaseError } from '../purchase-errors';
+import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import type {GenerateResult, Id} from '../purchase-types';
+import {purchaseError} from '../purchase-errors';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: []; generated: [] }>();
@@ -83,7 +83,7 @@ const warehouseLoading = ref(false);
 const warehouses = ref<{ id: Id; warehouseCode?: string; name?: string }[]>([]);
 
 const warehouseOptions = computed(() =>
-  warehouses.value.map((w) => ({ value: w.id, label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）` }))
+    warehouses.value.map((w) => ({value: w.id, label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`}))
 );
 
 /**
@@ -119,15 +119,15 @@ void loadWarehouses();
 
 // 弹窗每次打开都清掉上一次的区间与结果，避免「以为重新生成了其实没有」
 watch(
-  () => props.open,
-  (open) => {
-    if (open) {
-      range.value = undefined;
-      result.value = undefined;
-      error.value = '';
-      void loadWarehouses();
+    () => props.open,
+    (open) => {
+      if (open) {
+        range.value = undefined;
+        result.value = undefined;
+        error.value = '';
+        void loadWarehouses();
+      }
     }
-  }
 );
 
 async function generate() {

@@ -19,7 +19,8 @@
         from t_menu
         where menu_name = #{menuName}
           and parent_id = #{parentId}
-          and deleted_flag = #{deletedFlag} limit 1
+          and deleted_flag = #{deletedFlag}
+        limit 1
     </select>
     <select id="queryMenuList" resultType="net.lab1024.sa.admin.module.system.menu.domain.vo.MenuVO">
         select * from t_menu
@@ -65,7 +66,8 @@
         select *
         from t_menu
         where web_perms = #{webPerms}
-          and deleted_flag = #{deletedFlag} limit 1
+          and deleted_flag = #{deletedFlag}
+        limit 1
     </select>
     <select id="selectMenuIdByParentIdList" resultType="java.lang.Long">
         <if test="menuIdList != null and menuIdList.size > 0">

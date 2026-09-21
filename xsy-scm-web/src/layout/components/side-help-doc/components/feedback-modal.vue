@@ -3,10 +3,11 @@
   *
 -->
 <template>
-  <a-modal :open="visible" title="意见反馈" :closable="false" :maskClosable="true" >
+  <a-modal :open="visible" title="意见反馈" :closable="false" :maskClosable="true">
     <a-form :labelCol="{ span: 6 }">
       <a-form-item label="我要吐槽/建议：">
-        <a-textarea v-model:value="form.feedbackContent" placeholder="请输入让您不满意的点，我们争取做到更好～" :rows="3"/>
+        <a-textarea v-model:value="form.feedbackContent" placeholder="请输入让您不满意的点，我们争取做到更好～"
+                    :rows="3"/>
       </a-form-item>
       <a-form-item label="反馈图片：">
         <Upload
@@ -27,13 +28,13 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
-import { SmartLoading } from '/@/components/framework/smart-loading';
-import { feedbackApi } from '/@/api/support/feedback-api';
-import { message } from 'ant-design-vue';
-import { FILE_FOLDER_TYPE_ENUM } from '/@/constants/support/file-const';
+import {reactive, ref} from 'vue';
+import {SmartLoading} from '/@/components/framework/smart-loading';
+import {feedbackApi} from '/@/api/support/feedback-api';
+import {message} from 'ant-design-vue';
+import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 import Upload from '/@/components/support/file-upload/index.vue';
-import { smartSentry } from '/@/lib/smart-sentry';
+import {smartSentry} from '/@/lib/smart-sentry';
 
 defineExpose({
   show,
@@ -41,26 +42,26 @@ defineExpose({
 
 const visible = ref(false);
 
-function show () {
+function show() {
   Object.assign(form, formDefault);
   console.log(form)
   visible.value = true;
 }
 
-function hide () {
+function hide() {
   visible.value = false;
 }
 
 const formDefault = {
-  feedbackContent:'',
+  feedbackContent: '',
   feedbackAttachment: ''
 }
-const form = reactive({ ...formDefault });
+const form = reactive({...formDefault});
 
-async function submit () {
+async function submit() {
   try {
     SmartLoading.show();
-    if(!form.feedbackContent){
+    if (!form.feedbackContent) {
       message.warn('请填写具体内容');
       return;
     }
@@ -74,7 +75,7 @@ async function submit () {
   }
 }
 
-function changeAttachment (fileList) {
+function changeAttachment(fileList) {
   form.feedbackAttachment = fileList;
 }
 </script>

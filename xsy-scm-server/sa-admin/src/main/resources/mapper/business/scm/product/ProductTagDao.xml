@@ -1,33 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductTagDao">
-<resultMap id="vo" type="net.lab1024.sa.admin.module.scm.product.domain.vo.ProductTagVO" autoMapping="true">
- <id column="tag_id" property="tagId"/>
-</resultMap>
-<!-- 计数只含未删除商品：商品档案删除后不应继续占住标签。两处查询共用别名 d 与同一子查询，
-     保证列表展示与删除复核得到的 productCount 口径一致。 -->
-<sql id="columns">d.id tag_id,d.version,d.tag_code,d.name,d.status,d.sort_order</sql>
-<sql id="productCount">
- (SELECT count(*) FROM product_tag_relation r JOIN product_spu p ON p.id=r.spu_id AND p.deleted=FALSE
-  WHERE r.deleted=FALSE AND r.tag_id=d.id)
-</sql>
-<select id="selectWithProductCount" resultMap="vo">
- SELECT <include refid="columns"/>,<include refid="productCount"/> product_count
- FROM product_tag d WHERE d.deleted=FALSE
- <if test="query.keyword != null and query.keyword != ''">AND (d.tag_code ILIKE CONCAT('%',#{query.keyword},'%') OR d.name ILIKE CONCAT('%',#{query.keyword},'%'))</if>
- <if test="query.status != null">AND d.status=#{query.status}</if>
- ORDER BY d.sort_order,d.id
-</select>
-<select id="selectVoById" resultMap="vo">
- SELECT <include refid="columns"/>,<include refid="productCount"/> product_count
- FROM product_tag d WHERE d.deleted=FALSE AND d.id=#{id}
-</select>
-<select id="lockByIds" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductTagEntity">
- SELECT * FROM product_tag WHERE deleted=FALSE AND id IN
- <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
- ORDER BY id FOR UPDATE
-</select>
-<select id="selectForUpdate" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductTagEntity">
- SELECT * FROM product_tag WHERE deleted=FALSE AND id=#{id} FOR UPDATE
-</select>
+    <resultMap id="vo" type="net.lab1024.sa.admin.module.scm.product.domain.vo.ProductTagVO" autoMapping="true">
+        <id column="tag_id" property="tagId"/>
+    </resultMap>
+    <!-- 计数只含未删除商品：商品档案删除后不应继续占住标签。两处查询共用别名 d 与同一子查询，
+         保证列表展示与删除复核得到的 productCount 口径一致。 -->
+    <sql id="columns">d.id tag_id,d.version,d.tag_code,d.name,d.status,d.sort_order</sql>
+    <sql id="productCount">
+        (SELECT count(*)
+         FROM product_tag_relation r
+                  JOIN product_spu p ON p.id = r.spu_id AND p.deleted = FALSE
+         WHERE r.deleted = FALSE
+           AND r.tag_id = d.id)
+    </sql>
+    <select id="selectWithProductCount" resultMap="vo">
+        SELECT<include refid="columns"/>,
+        <include refid="productCount"/>
+        product_count
+        FROM product_tag d WHERE d.deleted=FALSE
+        <if test="query.keyword != null and query.keyword != ''">AND (d.tag_code ILIKE CONCAT('%',#{query.keyword},'%')
+            OR d.name ILIKE CONCAT('%',#{query.keyword},'%'))
+        </if>
+        <if test="query.status != null">AND d.status=#{query.status}</if>
+        ORDER BY d.sort_order,d.id
+    </select>
+    <select id="selectVoById" resultMap="vo">
+        SELECT<include refid="columns"/>,
+        <include refid="productCount"/>
+        product_count
+        FROM product_tag d WHERE d.deleted=FALSE AND d.id=#{id}
+    </select>
+    <select id="lockByIds" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductTagEntity">
+        SELECT * FROM product_tag WHERE deleted=FALSE AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY id FOR UPDATE
+    </select>
+    <select id="selectForUpdate" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductTagEntity">
+        SELECT *
+        FROM product_tag
+        WHERE deleted = FALSE
+          AND id = #{id} FOR UPDATE
+    </select>
 </mapper>

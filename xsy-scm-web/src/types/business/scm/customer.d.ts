@@ -1,4 +1,4 @@
-import type { ScmLocation } from '/@/components/business/scm/map/types';
+import type {ScmLocation} from '/@/components/business/scm/map/types';
 /**
  * W2 客户域前端契约（与后端 `module/scm/customer` 的 Form / VO 一一对应）。
  *
@@ -8,7 +8,7 @@ import type { ScmLocation } from '/@/components/business/scm/map/types';
  * - `version` 是乐观锁版本，编辑 / 状态 / 删除都必须回传。
  */
 
-import type { AreaColumns } from './area';
+import type {AreaColumns} from './area';
 
 export type ScmId = string | number;
 
@@ -24,24 +24,24 @@ export type EnableStatus = 'ENABLED' | 'DISABLED';
 
 /** SmartAdmin 统一响应信封（拦截器已解包，此处仅用于类型标注）。 */
 export interface ScmResponse<T> {
-  code: number;
-  ok: boolean;
-  msg: string;
-  data: T;
+    code: number;
+    ok: boolean;
+    msg: string;
+    data: T;
 }
 
 export interface ScmPage<T> {
-  pageNum: number;
-  pageSize: number;
-  total: number;
-  pages: number;
-  list: T[];
-  emptyFlag: boolean;
+    pageNum: number;
+    pageSize: number;
+    total: number;
+    pages: number;
+    list: T[];
+    emptyFlag: boolean;
 }
 
 export interface ScmSortItem {
-  column: string;
-  isAsc: boolean;
+    column: string;
+    isAsc: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,29 +49,29 @@ export interface ScmSortItem {
 // ---------------------------------------------------------------------------
 
 export interface CustomerType {
-  typeId: ScmId;
-  version: number;
-  typeCode: string;
-  name: string;
-  status: EnableStatus;
-  createdAt?: string;
+    typeId: ScmId;
+    version: number;
+    typeCode: string;
+    name: string;
+    status: EnableStatus;
+    createdAt?: string;
 }
 
 export interface CustomerTypeForm {
-  typeId?: ScmId;
-  version?: number;
-  typeCode: string;
-  name: string;
-  status: EnableStatus;
+    typeId?: ScmId;
+    version?: number;
+    typeCode: string;
+    name: string;
+    status: EnableStatus;
 }
 
 export interface CustomerTypeQuery {
-  pageNum: number;
-  pageSize: number;
-  searchCount?: boolean;
-  keyword?: string;
-  status?: EnableStatus;
-  sortItemList?: ScmSortItem[];
+    pageNum: number;
+    pageSize: number;
+    searchCount?: boolean;
+    keyword?: string;
+    status?: EnableStatus;
+    sortItemList?: ScmSortItem[];
 }
 
 // ---------------------------------------------------------------------------
@@ -80,81 +80,81 @@ export interface CustomerTypeQuery {
 
 /** 新建 / 编辑请求体（对应 CustomerAddForm / CustomerUpdateForm）。 */
 export interface CustomerForm extends Partial<AreaColumns>, ScmLocation {
-  customerId?: ScmId;
-  version?: number;
-  customerCode: string;
-  name: string;
-  customerTypeId?: ScmId;
-  parentCustomerId?: ScmId | null;
-  /**
-   * 业务员（员工）ID。
-   *
-   * 刻意不用 `ScmId` 而是 `number | null`：V2 原生 `employee-select` 的 `value` prop 声明为
-   * `[Number, Array]`，传 `string | number | null` 会在 vue-tsc 下报 TS2322。
-   * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近事实。
-   */
-  sellerId?: number | null;
-  supplierId?: ScmId | null;
-  contactName?: string | null;
-  contactPhone?: string | null;
-  address?: string | null;
-  settleMode: SettleMode;
-  creditLimit?: string | null;
-  creditPeriodType?: CreditPeriodType | null;
-  creditAmountThreshold?: string | null;
-  creditPeriodValue?: number | null;
-  creditPeriodUnit?: CreditPeriodUnit | null;
-  settleDay?: number | null;
-  remark?: string | null;
+    customerId?: ScmId;
+    version?: number;
+    customerCode: string;
+    name: string;
+    customerTypeId?: ScmId;
+    parentCustomerId?: ScmId | null;
+    /**
+     * 业务员（员工）ID。
+     *
+     * 刻意不用 `ScmId` 而是 `number | null`：V2 原生 `employee-select` 的 `value` prop 声明为
+     * `[Number, Array]`，传 `string | number | null` 会在 vue-tsc 下报 TS2322。
+     * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近事实。
+     */
+    sellerId?: number | null;
+    supplierId?: ScmId | null;
+    contactName?: string | null;
+    contactPhone?: string | null;
+    address?: string | null;
+    settleMode: SettleMode;
+    creditLimit?: string | null;
+    creditPeriodType?: CreditPeriodType | null;
+    creditAmountThreshold?: string | null;
+    creditPeriodValue?: number | null;
+    creditPeriodUnit?: CreditPeriodUnit | null;
+    settleDay?: number | null;
+    remark?: string | null;
 }
 
 /** 列表行（对应 CustomerVO）。 */
 export interface CustomerRow extends CustomerForm {
-  customerId: ScmId;
-  version: number;
-  status: CustomerStatus;
-  customerTypeName?: string;
-  parentCustomerName?: string;
-  sellerName?: string;
-  updatedAt: string;
+    customerId: ScmId;
+    version: number;
+    status: CustomerStatus;
+    customerTypeName?: string;
+    parentCustomerName?: string;
+    sellerName?: string;
+    updatedAt: string;
 }
 
 /** 详情（对应 CustomerDetailVO，比列表行多出绑定供应商名与创建时间）。 */
 export interface CustomerDetail extends CustomerRow {
-  supplierName?: string;
-  createdAt?: string;
+    supplierName?: string;
+    createdAt?: string;
 }
 
 /** 下拉选项（对应 CustomerOptionVO）。 */
 export interface CustomerOption {
-  customerId: ScmId;
-  customerCode: string;
-  name: string;
-  status: CustomerStatus;
-  customerTypeId?: ScmId | null;
-  /** 客户类型编码（例如 `GROUP`），用于「上级集团客户」这类按类型收窄的选择器。 */
-  customerTypeCode?: string | null;
+    customerId: ScmId;
+    customerCode: string;
+    name: string;
+    status: CustomerStatus;
+    customerTypeId?: ScmId | null;
+    /** 客户类型编码（例如 `GROUP`），用于「上级集团客户」这类按类型收窄的选择器。 */
+    customerTypeCode?: string | null;
 }
 
 export interface CustomerQuery {
-  pageNum: number;
-  pageSize: number;
-  searchCount?: boolean;
-  keyword?: string;
-  customerTypeId?: ScmId;
-  status?: CustomerStatus;
-  settleMode?: SettleMode;
-  parentCustomerId?: ScmId;
-  sortItemList?: ScmSortItem[];
+    pageNum: number;
+    pageSize: number;
+    searchCount?: boolean;
+    keyword?: string;
+    customerTypeId?: ScmId;
+    status?: CustomerStatus;
+    settleMode?: SettleMode;
+    parentCustomerId?: ScmId;
+    sortItemList?: ScmSortItem[];
 }
 
 export interface CustomerStatusPayload {
-  customerId: ScmId;
-  version: number;
-  status: CustomerStatus;
+    customerId: ScmId;
+    version: number;
+    status: CustomerStatus;
 }
 
 export interface CustomerDeletePayload {
-  customerId: ScmId;
-  version: number;
+    customerId: ScmId;
+    version: number;
 }

@@ -29,16 +29,24 @@ public class InventoryConversionVO {
 
     private String warehouseName;
 
-    /** {@code SPLIT} / {@code COMBINE}。 */
+    /**
+     * {@code SPLIT} / {@code COMBINE}。
+     */
     private String convertType;
 
-    /** 类型中文描述（服务层按枚举填充）。 */
+    /**
+     * 类型中文描述（服务层按枚举填充）。
+     */
     private String convertTypeDesc;
 
-    /** {@code PENDING} / {@code COMPLETED} / {@code REJECTED}。 */
+    /**
+     * {@code PENDING} / {@code COMPLETED} / {@code REJECTED}。
+     */
     private String status;
 
-    /** 状态中文描述（服务层按枚举填充）。 */
+    /**
+     * 状态中文描述（服务层按枚举填充）。
+     */
     private String statusDesc;
 
     private String reason;
@@ -57,10 +65,14 @@ public class InventoryConversionVO {
 
     private OffsetDateTime updatedAt;
 
-    /** 明细；仅详情接口填充，列表接口为 null。 */
+    /**
+     * 明细；仅详情接口填充，列表接口为 null。
+     */
     private List<Item> items;
 
-    /** 转换明细行。 */
+    /**
+     * 转换明细行。
+     */
     @Data
     public static class Item {
 
@@ -77,7 +89,9 @@ public class InventoryConversionVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal sourceQuantity;
 
-        /** 源单位（单据声明，折算关系的一部分）。 */
+        /**
+         * 源单位（单据声明，折算关系的一部分）。
+         */
         private String sourceUnit;
 
         private Long targetSkuId;
@@ -91,7 +105,9 @@ public class InventoryConversionVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal targetQuantity;
 
-        /** 目标单位（单据声明）。 */
+        /**
+         * 目标单位（单据声明）。
+         */
         private String targetUnit;
 
         private String remark;

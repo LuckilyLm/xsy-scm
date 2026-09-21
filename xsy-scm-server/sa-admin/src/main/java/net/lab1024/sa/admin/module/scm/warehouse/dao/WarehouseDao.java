@@ -18,6 +18,8 @@ import java.util.List;
 @Mapper
 public interface WarehouseDao extends BaseMapper<WarehouseEntity> {
 
-    /** 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。 */
+    /**
+     * 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。
+     */
     List<WarehouseEntity> queryPage(Page<?> page, @Param("query") WarehouseQueryForm query);
 }

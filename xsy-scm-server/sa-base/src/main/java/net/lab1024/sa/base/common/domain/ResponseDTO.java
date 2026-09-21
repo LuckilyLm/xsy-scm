@@ -34,7 +34,7 @@ public class ResponseDTO<T> {
     @Schema(description = "返回数据")
     private T data;
 
-    @SchemaEnum(value = DataTypeEnum.class,desc = "数据类型")
+    @SchemaEnum(value = DataTypeEnum.class, desc = "数据类型")
     private Integer dataType;
 
     public ResponseDTO(Integer code, String level, boolean ok, String msg, T data) {
@@ -100,7 +100,7 @@ public class ResponseDTO<T> {
         return new ResponseDTO<>(errorCode, ok, null, null);
     }
 
-    public static <T>  ResponseDTO<T> error(ResponseDTO<?> responseDTO) {
+    public static <T> ResponseDTO<T> error(ResponseDTO<?> responseDTO) {
         return new ResponseDTO<>(responseDTO.getCode(), responseDTO.getLevel(), responseDTO.getOk(), responseDTO.getMsg(), null);
     }
 

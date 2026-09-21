@@ -36,11 +36,15 @@ public class InventoryTransferItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;
 
-    /** 调拨数量，恒为正（DB CHECK）。 */
+    /**
+     * 调拨数量，恒为正（DB CHECK）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 
-    /** 发出时写入的记账单位快照（源仓单位）；草稿态为空。 */
+    /**
+     * 发出时写入的记账单位快照（源仓单位）；草稿态为空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;
 

@@ -42,7 +42,9 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
      */
     int insertOnConflictDoNothing(InventoryMovementEntity entity);
 
-    /** 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转，Q9）。 */
+    /**
+     * 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转，Q9）。
+     */
     List<InventoryMovementVO> queryPage(Page<?> page, @Param("query") InventoryMovementQueryForm query);
 
     /**
@@ -55,7 +57,9 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
     InventoryMovementEntity selectBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
                                                @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 
-    /** 某个收货行是否已有活动流水（IT / 对账用，只读）。 */
+    /**
+     * 某个收货行是否已有活动流水（IT / 对账用，只读）。
+     */
     int countActiveBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
                                 @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 }

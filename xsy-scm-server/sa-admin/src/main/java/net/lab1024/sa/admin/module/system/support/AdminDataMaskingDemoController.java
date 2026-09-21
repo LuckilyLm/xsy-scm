@@ -30,7 +30,7 @@ public class AdminDataMaskingDemoController extends SupportBaseController {
     public ResponseDTO<List<DataVO>> query() {
 
         List<DataVO> list = new ArrayList<>();
-        for (int i = 0; i < RandomUtil.randomInt(10,16); i++) {
+        for (int i = 0; i < RandomUtil.randomInt(10, 16); i++) {
             DataVO data = new DataVO();
             data.setUserId(RandomUtil.randomLong(1328479238, 83274298347982L));
             data.setPhone("1" + RandomUtil.randomNumbers(10));
@@ -38,7 +38,7 @@ public class AdminDataMaskingDemoController extends SupportBaseController {
             data.setAddress(RandomUtil.randomBoolean() ? "河南省洛阳市洛龙区一零二四大街1024号" : "河南省郑州市高新区六边形大街六边形大楼");
             data.setPassword(RandomUtil.randomString(10));
             data.setEmail(RandomUtil.randomString(RandomUtil.randomInt(6, 10)) + "@" + RandomUtil.randomString(2) + ".com");
-            data.setCarLicense("豫" + RandomStringUtils.randomAlphabetic(1).toUpperCase()+" " + RandomStringUtils.randomAlphanumeric(5).toUpperCase());
+            data.setCarLicense("豫" + RandomStringUtils.randomAlphabetic(1).toUpperCase() + " " + RandomStringUtils.randomAlphanumeric(5).toUpperCase());
             data.setBankCard("6225" + RandomStringUtils.randomNumeric(14));
             data.setOther(RandomStringUtils.randomAlphanumeric(1, 12));
             list.add(data);

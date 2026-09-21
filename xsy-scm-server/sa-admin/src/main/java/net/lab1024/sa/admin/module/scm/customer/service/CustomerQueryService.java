@@ -44,7 +44,9 @@ import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCod
 @RequiredArgsConstructor
 public class CustomerQueryService {
 
-    /** 排序白名单（修正 legacy D18：只做 SQL 注入检查、不做白名单）。 */
+    /**
+     * 排序白名单（修正 legacy D18：只做 SQL 注入检查、不做白名单）。
+     */
     private static final Set<String> SORTABLE = Set.of("customer_code", "name", "status", "updated_at");
 
     private final CustomerDao customers;
@@ -52,10 +54,14 @@ public class CustomerQueryService {
 
     private final CustomerTypeDao customerTypes;
 
-    /** 跨域只读：客户详情展示「绑定供应商」的名称。 */
+    /**
+     * 跨域只读：客户详情展示「绑定供应商」的名称。
+     */
     private final SupplierDao suppliers;
 
-    /** SmartAdmin 原生员工读取，用于补全业务员姓名。 */
+    /**
+     * SmartAdmin 原生员工读取，用于补全业务员姓名。
+     */
     private final EmployeeDao employees;
 
     public PageResult<CustomerVO> query(CustomerQueryForm form) {
@@ -202,7 +208,9 @@ public class CustomerQueryService {
         return ids;
     }
 
-    /** 补全所需的四张名称表，一次构造、多次复用。 */
+    /**
+     * 补全所需的四张名称表，一次构造、多次复用。
+     */
     private record EnrichmentContext(Map<Long, String> typeNames,
                                      Map<Long, String> customerNames,
                                      Map<Long, String> employeeNames,

@@ -40,15 +40,21 @@ public class InventoryStocktakeItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;
 
-    /** 账面量快照（保存草稿那一刻的余额数量），差异基线；允许为 0。 */
+    /**
+     * 账面量快照（保存草稿那一刻的余额数量），差异基线；允许为 0。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal bookQuantity;
 
-    /** 实盘量（清点结果）；允许为 0，不允许为负（DB CHECK）。 */
+    /**
+     * 实盘量（清点结果）；允许为 0，不允许为负（DB CHECK）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal actualQuantity;
 
-    /** 确认时写入的记账单位快照；草稿态为空。 */
+    /**
+     * 确认时写入的记账单位快照；草稿态为空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;
 

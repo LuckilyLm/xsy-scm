@@ -22,11 +22,15 @@ public class InventoryBalanceQueryForm extends PageParam {
 
     private Long skuId;
 
-    /** SKU 编码模糊匹配。 */
+    /**
+     * SKU 编码模糊匹配。
+     */
     @Size(max = 64)
     private String skuCode;
 
-    /** 商品名称模糊匹配（{@code product_spu.name}）。 */
+    /**
+     * 商品名称模糊匹配（{@code product_spu.name}）。
+     */
     @Size(max = 150)
     private String productName;
 

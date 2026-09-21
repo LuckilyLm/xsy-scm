@@ -34,13 +34,11 @@
     </select>
 
     <select id="queryLastByUserId" resultType="net.lab1024.sa.base.module.support.loginlog.domain.LoginLogVO">
-        select
-        *
+        select *
         from t_login_log
-        where
-            user_id = #{userId}
-            and user_type = #{userType}
-            and login_result = #{loginLogResult}
+        where user_id = #{userId}
+          and user_type = #{userType}
+          and login_result = #{loginLogResult}
         order by login_log_id desc
         limit 1
     </select>

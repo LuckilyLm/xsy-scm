@@ -19,22 +19,25 @@
                                        version, deleted, created_at, updated_at, created_by, updated_by)
         VALUES (#{warehouseId}, #{skuId}, #{unit}, 0,
                 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{operator}, #{operator})
-        ON CONFLICT (warehouse_id, sku_id) WHERE deleted = FALSE DO NOTHING
+        ON CONFLICT (warehouse_id, sku_id)
+        WHERE deleted = FALSE DO NOTHING
     </insert>
 
     <!-- 锁序 §8.1：余额锁是事务里最后获取的锁；调用方负责按 (warehouse_id, sku_id) 升序调用 -->
     <select id="lockByWarehouseAndSku"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity">
-        SELECT * FROM inventory_balance
+        SELECT *
+        FROM inventory_balance
         WHERE warehouse_id = #{warehouseId}
           AND sku_id = #{skuId}
           AND deleted = FALSE
-        FOR UPDATE
+            FOR UPDATE
     </select>
 
     <select id="selectByWarehouseAndSku"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity">
-        SELECT * FROM inventory_balance
+        SELECT *
+        FROM inventory_balance
         WHERE warehouse_id = #{warehouseId}
           AND sku_id = #{skuId}
           AND deleted = FALSE
@@ -120,29 +123,29 @@
     -->
     <select id="queryPage" resultMap="balanceVoMap">
         SELECT b.id,
-               b.warehouse_id,
-               b.sku_id,
-               b.unit,
-               b.quantity,
-               b.reserved_quantity,
-               b.avg_cost,
-               <!--
-                 金额 = 数量 × 均价。**必须显式 ROUND 到 2 位**：
-                 NUMERIC(18,4) × NUMERIC(18,4) 在 PG 里得到 scale 8，而 BigDecimal 走
-                 ToStringSerializer 原样输出 → 前端会看到 112.00000000。
-                 金额是给对账看的，2 位是财务口径；均价保留 4 位不动（它是计算基数）。
-               -->
-               ROUND(b.quantity * b.avg_cost, 2) AS amount,
-               b.version,
-               b.updated_at,
-               w.warehouse_code,
-               w.name       AS warehouse_name,
-               k.sku_code,
-               k.spec_name  AS sku_name,
-               k.spec_values,
-               p.name       AS product_name
+        b.warehouse_id,
+        b.sku_id,
+        b.unit,
+        b.quantity,
+        b.reserved_quantity,
+        b.avg_cost,
+        <!--
+          金额 = 数量 × 均价。**必须显式 ROUND 到 2 位**：
+          NUMERIC(18,4) × NUMERIC(18,4) 在 PG 里得到 scale 8，而 BigDecimal 走
+          ToStringSerializer 原样输出 → 前端会看到 112.00000000。
+          金额是给对账看的，2 位是财务口径；均价保留 4 位不动（它是计算基数）。
+        -->
+        ROUND(b.quantity * b.avg_cost, 2) AS amount,
+        b.version,
+        b.updated_at,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        k.spec_values,
+        p.name AS product_name
         FROM inventory_balance b
-        LEFT JOIN warehouse   w ON w.id = b.warehouse_id
+        LEFT JOIN warehouse w ON w.id = b.warehouse_id
         LEFT JOIN product_sku k ON k.id = b.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE b.deleted = FALSE
@@ -163,28 +166,28 @@
 
     <select id="detail" resultMap="balanceVoMap">
         SELECT b.id,
-               b.warehouse_id,
-               b.sku_id,
-               b.unit,
-               b.quantity,
-               b.reserved_quantity,
-               b.avg_cost,
-               <!-- 同 queryPage：金额 ROUND 到 2 位，均价保持 4 位。 -->
-               ROUND(b.quantity * b.avg_cost, 2) AS amount,
-               b.version,
-               b.updated_at,
-               w.warehouse_code,
-               w.name       AS warehouse_name,
-               k.sku_code,
-               k.spec_name  AS sku_name,
-               k.spec_values,
-               p.name       AS product_name
+        b.warehouse_id,
+        b.sku_id,
+        b.unit,
+        b.quantity,
+        b.reserved_quantity,
+        b.avg_cost,
+        <!-- 同 queryPage：金额 ROUND 到 2 位，均价保持 4 位。 -->
+        ROUND(b.quantity * b.avg_cost, 2) AS amount,
+        b.version,
+        b.updated_at,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        k.spec_values,
+        p.name AS product_name
         FROM inventory_balance b
-        LEFT JOIN warehouse   w ON w.id = b.warehouse_id
+        LEFT JOIN warehouse w ON w.id = b.warehouse_id
         LEFT JOIN product_sku k ON k.id = b.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE b.deleted = FALSE
-          AND b.id = #{id}
+        AND b.id = #{id}
     </select>
 
 </mapper>

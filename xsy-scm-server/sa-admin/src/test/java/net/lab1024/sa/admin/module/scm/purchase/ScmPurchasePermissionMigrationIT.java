@@ -33,7 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("W5 权限种子：V16 菜单 / 授权 / 代码一致性（PG IT）")
 class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
 
-    /** V16 播种的 25 个菜单 id。 */
+    /**
+     * V16 播种的 25 个菜单 id。
+     */
     private static final List<Long> W5_MENU_IDS = List.of(
             701L, 702L, 703L, 704L, 705L, 706L,
             711L, 712L, 713L,

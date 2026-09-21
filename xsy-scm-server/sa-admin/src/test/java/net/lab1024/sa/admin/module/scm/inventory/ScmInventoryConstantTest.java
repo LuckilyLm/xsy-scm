@@ -437,7 +437,9 @@ class ScmInventoryConstantTest {
             "net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode",
             InventoryErrorCode.class.getName());
 
-    /** 回退清单对应的简单名（用于断言覆盖完整）。 */
+    /**
+     * 回退清单对应的简单名（用于断言覆盖完整）。
+     */
     private static final Set<String> KNOWN_ENUMS = Set.of(
             "ScmCommonErrorCode", "ProductErrorCode", "CustomerErrorCode", "SupplierErrorCode",
             "PricingErrorCode", "OrderErrorCode", "PurchaseErrorCode", "WarehouseErrorCode",

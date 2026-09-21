@@ -10,9 +10,9 @@
 
     <!-- 中：中心标题（带左右引导线，不用龙纹/跑马灯） -->
     <div class="scm-header-center">
-      <span class="scm-header-line" />
+      <span class="scm-header-line"/>
       <h1 class="scm-header-title">供应链运营中心</h1>
-      <span class="scm-header-line" />
+      <span class="scm-header-line"/>
     </div>
 
     <!-- 右：日期时钟 + 状态 -->
@@ -23,52 +23,52 @@
       </div>
       <div class="scm-status">
         <span class="scm-status-item" :class="statusClass">
-          <i class="scm-dot" />{{ statusText }}
+          <i class="scm-dot"/>{{ statusText }}
         </span>
         <span class="scm-status-item is-muted">
           <svg class="scm-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path
-              d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
+                d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
             />
-            <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
           数据更新时间 {{ updatedText }}
         </span>
         <button class="scm-btn" type="button" title="立即刷新" @click="emit('refresh')">
           <svg class="scm-icon" viewBox="0 0 16 16" aria-hidden="true" :class="{ 'is-spin': refreshing }">
             <path
-              d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
+                d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
             />
-            <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
         </button>
         <button class="scm-btn" type="button" :title="fullscreen ? '退出全屏' : '进入全屏'" @click="emit('fullscreen')">
           <svg v-if="!fullscreen" class="scm-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path
-              d="M6 2H2v4M10 2h4v4M10 14h4v-4M6 14H2v-4"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+                d="M6 2H2v4M10 2h4v4M10 14h4v-4M6 14H2v-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
             />
           </svg>
           <svg v-else class="scm-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path
-              d="M2 6h4V2M14 6h-4V2M14 10h-4v4M2 10h4v4"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+                d="M2 6h4V2M14 6h-4V2M14 10h-4v4M2 10h4v4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
             />
           </svg>
         </button>
@@ -78,8 +78,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useScreenClock, formatClock } from '../composables/use-screen-clock';
+import {computed} from 'vue';
+import {useScreenClock, formatClock} from '../composables/use-screen-clock';
 
 /**
  * 大屏状态栏。
@@ -107,7 +107,7 @@ const emit = defineEmits<{
   (e: 'fullscreen'): void;
 }>();
 
-const { dateText, weekdayText, timeText } = useScreenClock();
+const {dateText, weekdayText, timeText} = useScreenClock();
 
 const updatedText = computed(() => formatClock(props.updatedAt));
 

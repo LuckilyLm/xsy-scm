@@ -35,7 +35,9 @@ import static net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCod
 @RequiredArgsConstructor
 public class SupplierQueryService {
 
-    /** 排序白名单（修正 legacy D18）。 */
+    /**
+     * 排序白名单（修正 legacy D18）。
+     */
     private static final Set<String> SORTABLE = Set.of("supplier_code", "name", "status", "updated_at");
 
     private final SupplierDao suppliers;
@@ -74,7 +76,9 @@ public class SupplierQueryService {
         return vo;
     }
 
-    /** 下拉选项：只返回 {@code ENABLED}（S11），按名称排序。 */
+    /**
+     * 下拉选项：只返回 {@code ENABLED}（S11），按名称排序。
+     */
     public List<SupplierOptionVO> optionList() {
         List<SupplierEntity> rows = suppliers.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SupplierEntity>()

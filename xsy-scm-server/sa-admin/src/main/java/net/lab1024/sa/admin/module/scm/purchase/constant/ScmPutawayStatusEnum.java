@@ -13,4 +13,4 @@ package net.lab1024.sa.admin.module.scm.purchase.constant;
  *   <li>{@link #COMPLETED}：已物理入库（DIRECT 在 confirm 时即完成）。</li>
  * </ul>
  */
-public enum ScmPutawayStatusEnum { PENDING, COMPLETED }
+public enum ScmPutawayStatusEnum {PENDING, COMPLETED}

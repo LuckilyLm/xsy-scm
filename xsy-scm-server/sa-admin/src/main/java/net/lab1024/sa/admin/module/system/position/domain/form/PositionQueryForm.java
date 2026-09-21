@@ -10,7 +10,7 @@ import lombok.Data;
  */
 
 @Data
-public class PositionQueryForm extends PageParam{
+public class PositionQueryForm extends PageParam {
 
     @Schema(description = "关键字查询")
     private String keywords;

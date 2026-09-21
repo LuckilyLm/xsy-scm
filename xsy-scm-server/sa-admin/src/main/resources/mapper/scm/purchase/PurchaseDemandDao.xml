@@ -27,14 +27,27 @@
 
     <!-- §7.4 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。 -->
     <select id="listSourceItems" resultMap="sourceItemMap">
-        SELECT oi.id, oi.order_id, oi.spu_id, oi.sku_id,
-               oi.spu_code_snapshot, oi.product_name_snapshot, oi.sku_code_snapshot,
-               oi.spec_name_snapshot, oi.spec_values_snapshot, oi.sale_unit_snapshot,
-               oi.product_type_snapshot, oi.ordered_quantity, oi.actual_quantity,
-               oi.actual_quantity_source, oi.actual_quantity_reason, oi.sort_order,
-               oi.version, oi.created_at, oi.updated_at
+        SELECT oi.id,
+               oi.order_id,
+               oi.spu_id,
+               oi.sku_id,
+               oi.spu_code_snapshot,
+               oi.product_name_snapshot,
+               oi.sku_code_snapshot,
+               oi.spec_name_snapshot,
+               oi.spec_values_snapshot,
+               oi.sale_unit_snapshot,
+               oi.product_type_snapshot,
+               oi.ordered_quantity,
+               oi.actual_quantity,
+               oi.actual_quantity_source,
+               oi.actual_quantity_reason,
+               oi.sort_order,
+               oi.version,
+               oi.created_at,
+               oi.updated_at
         FROM sales_order_item oi
-        JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
+                 JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
         WHERE o.status = 'CONFIRMED'
           AND oi.deleted = FALSE
           AND oi.actual_quantity IS NOT NULL
@@ -47,20 +60,20 @@
     <!-- 联 supplier / warehouse 取名称（快照之外还需要当前名称展示，两者语义不同） -->
     <select id="query" resultMap="demandVoMap">
         SELECT d.id, d.sales_order_id, d.sales_order_no_snapshot, d.sales_order_item_id,
-               d.sku_id,
-               d.sku_code_snapshot       AS sku_code,
-               d.sku_name_snapshot       AS sku_name,
-               d.product_name_snapshot   AS product_name,
-               d.spec_values_snapshot    AS spec_values,
-               d.demand_unit_snapshot    AS demand_unit,
-               d.product_type_snapshot   AS product_type,
-               d.required_quantity, d.allocated_quantity,
-               (d.required_quantity - d.allocated_quantity) AS unallocated_quantity,
-               d.supplier_id, s.name AS supplier_name,
-               d.warehouse_id, w.name AS warehouse_name,
-               d.status, d.demand_date, d.source_confirmed_at, d.version, d.created_at
+        d.sku_id,
+        d.sku_code_snapshot AS sku_code,
+        d.sku_name_snapshot AS sku_name,
+        d.product_name_snapshot AS product_name,
+        d.spec_values_snapshot AS spec_values,
+        d.demand_unit_snapshot AS demand_unit,
+        d.product_type_snapshot AS product_type,
+        d.required_quantity, d.allocated_quantity,
+        (d.required_quantity - d.allocated_quantity) AS unallocated_quantity,
+        d.supplier_id, s.name AS supplier_name,
+        d.warehouse_id, w.name AS warehouse_name,
+        d.status, d.demand_date, d.source_confirmed_at, d.version, d.created_at
         FROM purchase_demand d
-        LEFT JOIN supplier  s ON s.id = d.supplier_id  AND s.deleted = FALSE
+        LEFT JOIN supplier s ON s.id = d.supplier_id AND s.deleted = FALSE
         LEFT JOIN warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
         WHERE d.deleted = FALSE
         <if test="query.salesOrderNo != null and query.salesOrderNo != ''">
@@ -89,22 +102,32 @@
     </select>
 
     <select id="detail" resultMap="demandVoMap">
-        SELECT d.id, d.sales_order_id, d.sales_order_no_snapshot, d.sales_order_item_id,
+        SELECT d.id,
+               d.sales_order_id,
+               d.sales_order_no_snapshot,
+               d.sales_order_item_id,
                d.sku_id,
-               d.sku_code_snapshot       AS sku_code,
-               d.sku_name_snapshot       AS sku_name,
-               d.product_name_snapshot   AS product_name,
-               d.spec_values_snapshot    AS spec_values,
-               d.demand_unit_snapshot    AS demand_unit,
-               d.product_type_snapshot   AS product_type,
-               d.required_quantity, d.allocated_quantity,
+               d.sku_code_snapshot                          AS sku_code,
+               d.sku_name_snapshot                          AS sku_name,
+               d.product_name_snapshot                      AS product_name,
+               d.spec_values_snapshot                       AS spec_values,
+               d.demand_unit_snapshot                       AS demand_unit,
+               d.product_type_snapshot                      AS product_type,
+               d.required_quantity,
+               d.allocated_quantity,
                (d.required_quantity - d.allocated_quantity) AS unallocated_quantity,
-               d.supplier_id, s.name AS supplier_name,
-               d.warehouse_id, w.name AS warehouse_name,
-               d.status, d.demand_date, d.source_confirmed_at, d.version, d.created_at
+               d.supplier_id,
+               s.name                                       AS supplier_name,
+               d.warehouse_id,
+               w.name                                       AS warehouse_name,
+               d.status,
+               d.demand_date,
+               d.source_confirmed_at,
+               d.version,
+               d.created_at
         FROM purchase_demand d
-        LEFT JOIN supplier  s ON s.id = d.supplier_id  AND s.deleted = FALSE
-        LEFT JOIN warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
+                 LEFT JOIN supplier s ON s.id = d.supplier_id AND s.deleted = FALSE
+                 LEFT JOIN warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
         WHERE d.deleted = FALSE
           AND d.id = #{id}
     </select>
@@ -113,20 +136,23 @@
     <select id="lockByIds" resultMap="demandRowMap">
         SELECT * FROM purchase_demand
         WHERE deleted = FALSE
-          AND id IN
+        AND id IN
         <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
         ORDER BY id ASC
         FOR UPDATE
     </select>
 
     <select id="lock" resultMap="demandRowMap">
-        SELECT * FROM purchase_demand WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM purchase_demand
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <select id="listActiveBySourceItemIds" resultMap="demandRowMap">
         SELECT * FROM purchase_demand
         WHERE deleted = FALSE
-          AND sales_order_item_id IN
+        AND sales_order_item_id IN
         <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
         ORDER BY id ASC
     </select>
@@ -134,21 +160,19 @@
     <!-- INSERT 竞争（修 A-D17）：不先查后插；冲突返回 0，调用方重读收敛。
          冲突（0 行）时 JDBC 不回传生成键，因此 row.id 保持 null —— 调用方必须走「重读」分支。 -->
     <insert id="insertIgnore" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO purchase_demand (
-            sales_order_id, sales_order_item_id, spu_id, sku_id,
-            sales_order_no_snapshot, spu_code_snapshot, product_name_snapshot,
-            sku_code_snapshot, sku_name_snapshot, spec_values_snapshot,
-            demand_unit_snapshot, product_type_snapshot,
-            required_quantity, allocated_quantity, supplier_id, warehouse_id, purchaser_id,
-            status, demand_date, source_confirmed_at, created_by)
-        VALUES (
-            #{row.salesOrderId}, #{row.salesOrderItemId}, #{row.spuId}, #{row.skuId},
-            #{row.salesOrderNoSnapshot}, #{row.spuCodeSnapshot}, #{row.productNameSnapshot},
-            #{row.skuCodeSnapshot}, #{row.skuNameSnapshot},
-            #{row.specValuesSnapshot,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
-            #{row.demandUnitSnapshot}, #{row.productTypeSnapshot},
-            #{row.requiredQuantity}, 0, #{row.supplierId}, #{row.warehouseId}, #{row.purchaserId},
-            #{row.status}, #{row.demandDate}, #{row.sourceConfirmedAt}, #{row.createdBy})
+        INSERT INTO purchase_demand (sales_order_id, sales_order_item_id, spu_id, sku_id,
+                                     sales_order_no_snapshot, spu_code_snapshot, product_name_snapshot,
+                                     sku_code_snapshot, sku_name_snapshot, spec_values_snapshot,
+                                     demand_unit_snapshot, product_type_snapshot,
+                                     required_quantity, allocated_quantity, supplier_id, warehouse_id, purchaser_id,
+                                     status, demand_date, source_confirmed_at, created_by)
+        VALUES (#{row.salesOrderId}, #{row.salesOrderItemId}, #{row.spuId}, #{row.skuId},
+                #{row.salesOrderNoSnapshot}, #{row.spuCodeSnapshot}, #{row.productNameSnapshot},
+                #{row.skuCodeSnapshot}, #{row.skuNameSnapshot},
+                #{row.specValuesSnapshot,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
+                #{row.demandUnitSnapshot}, #{row.productTypeSnapshot},
+                #{row.requiredQuantity}, 0, #{row.supplierId}, #{row.warehouseId}, #{row.purchaserId},
+                #{row.status}, #{row.demandDate}, #{row.sourceConfirmedAt}, #{row.createdBy})
         ON CONFLICT DO NOTHING
     </insert>
 

@@ -33,7 +33,10 @@ class FileAccessGuardTest {
         return user;
     }
 
-    @AfterEach void clear() { SmartRequestUtil.remove(); }
+    @AfterEach
+    void clear() {
+        SmartRequestUtil.remove();
+    }
 
     @ParameterizedTest
     @NullAndEmptySource
@@ -56,28 +59,34 @@ class FileAccessGuardTest {
     @ParameterizedTest
     @ValueSource(strings = {"private/common/a.png", "private/feedback/a.png"})
     void strictFoldersAllowCreatorOrPrivilegeAndRejectOtherEmployees(String key) {
-        FileVO file = new FileVO(); file.setCreatorId(44L); file.setCreatorUserType(UserTypeEnum.ADMIN_EMPLOYEE.getValue());
+        FileVO file = new FileVO();
+        file.setCreatorId(44L);
+        file.setCreatorUserType(UserTypeEnum.ADMIN_EMPLOYEE.getValue());
         when(dao.getByFileKey(key)).thenReturn(file);
         assertThatCode(() -> guard.checkRead(key, employee)).doesNotThrowAnyException();
         file.setCreatorId(45L);
         assertThatThrownBy(() -> guard.checkRead(key, employee)).isInstanceOf(FileAccessGuard.AccessDenied.class);
-        file.setCreatorId(44L); file.setCreatorUserType(-1);
+        file.setCreatorId(44L);
+        file.setCreatorUserType(-1);
         assertThatThrownBy(() -> guard.checkRead(key, employee)).isInstanceOf(FileAccessGuard.AccessDenied.class);
         when(identity.canReadAllFiles(employee)).thenReturn(true);
         assertThatCode(() -> guard.checkRead(key, employee)).doesNotThrowAnyException();
     }
 
-    @Test void everyKeyInBatchMustBeAuthorized() {
+    @Test
+    void everyKeyInBatchMustBeAuthorized() {
         assertThatThrownBy(() -> guard.checkRead("private/notice/a,private/common/other", employee))
                 .isInstanceOf(FileAccessGuard.AccessDenied.class);
     }
 
-    @Test void administratorNeedsNoRoleOrPermissionLookup() {
+    @Test
+    void administratorNeedsNoRoleOrPermissionLookup() {
         employee.setAdministratorFlag(true);
         assertThat(new AdminFileAccessIdentity().canReadAllFiles(employee)).isTrue();
     }
 
-    @Test void nonAdministratorUsesExistingFileQueryPermission() {
+    @Test
+    void nonAdministratorUsesExistingFileQueryPermission() {
         try (var stp = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
             stp.when(() -> cn.dev33.satoken.stp.StpUtil.hasPermission("support:file:query")).thenReturn(true);
             assertThat(new AdminFileAccessIdentity().canReadAllFiles(employee)).isTrue();
@@ -86,7 +95,8 @@ class FileAccessGuardTest {
         }
     }
 
-    @Test void forbiddenEndpointsReturnHttp403AndNativeEnvelopeWithoutStorageCalls() throws Exception {
+    @Test
+    void forbiddenEndpointsReturnHttp403AndNativeEnvelopeWithoutStorageCalls() throws Exception {
         FileController controller = new FileController();
         FileService service = mock(FileService.class);
         ReflectionTestUtils.setField(controller, "fileService", service);

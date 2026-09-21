@@ -1,5 +1,5 @@
 import * as echarts from 'echarts';
-import { onBeforeUnmount, onMounted, type Ref } from 'vue';
+import {onBeforeUnmount, onMounted, type Ref} from 'vue';
 
 export type ChartOption = Record<string, unknown>;
 
@@ -17,64 +17,64 @@ export type ChartOption = Record<string, unknown>;
  * 这里保留 resize 只为应对「面板本身尺寸变化」（字体加载、内容撑开）这类情况。
  */
 export function useEcharts(elRef: Ref<HTMLElement | undefined>) {
-  let chart: echarts.ECharts | null = null;
-  let observer: ResizeObserver | null = null;
-  // 尺寸就绪前收到的配置，等有尺寸了再补上
-  let pending: ChartOption | null = null;
+    let chart: echarts.ECharts | null = null;
+    let observer: ResizeObserver | null = null;
+    // 尺寸就绪前收到的配置，等有尺寸了再补上
+    let pending: ChartOption | null = null;
 
-  function ensure(): echarts.ECharts | null {
-    const el = elRef.value;
-    if (!el || !el.clientWidth || !el.clientHeight) {
-      return null;
-    }
-    if (!chart) {
-      chart = echarts.init(el);
-    }
-    return chart;
-  }
-
-  function setOption(option: ChartOption, notMerge = true) {
-    pending = option;
-    const instance = ensure();
-    if (instance) {
-      instance.setOption(option, notMerge);
-    }
-  }
-
-  function resize() {
-    chart?.resize();
-  }
-
-  function dispose() {
-    chart?.dispose();
-    chart = null;
-  }
-
-  onMounted(() => {
-    const el = elRef.value;
-    if (typeof ResizeObserver === 'undefined' || !el) {
-      return;
-    }
-    observer = new ResizeObserver(() => {
-      if (!chart) {
-        // 尺寸刚出现：补一次 init（配置从 pending 里拿）
-        const instance = ensure();
-        if (instance && pending) {
-          instance.setOption(pending, true);
+    function ensure(): echarts.ECharts | null {
+        const el = elRef.value;
+        if (!el || !el.clientWidth || !el.clientHeight) {
+            return null;
         }
-        return;
-      }
-      chart.resize();
+        if (!chart) {
+            chart = echarts.init(el);
+        }
+        return chart;
+    }
+
+    function setOption(option: ChartOption, notMerge = true) {
+        pending = option;
+        const instance = ensure();
+        if (instance) {
+            instance.setOption(option, notMerge);
+        }
+    }
+
+    function resize() {
+        chart?.resize();
+    }
+
+    function dispose() {
+        chart?.dispose();
+        chart = null;
+    }
+
+    onMounted(() => {
+        const el = elRef.value;
+        if (typeof ResizeObserver === 'undefined' || !el) {
+            return;
+        }
+        observer = new ResizeObserver(() => {
+            if (!chart) {
+                // 尺寸刚出现：补一次 init（配置从 pending 里拿）
+                const instance = ensure();
+                if (instance && pending) {
+                    instance.setOption(pending, true);
+                }
+                return;
+            }
+            chart.resize();
+        });
+        observer.observe(el);
     });
-    observer.observe(el);
-  });
 
-  onBeforeUnmount(() => {
-    observer?.disconnect();
-    observer = null;
-    // 必须 dispose：ECharts 实例持有 canvas 与全局事件，只置 null 会随路由反复切换而泄漏
-    dispose();
-  });
+    onBeforeUnmount(() => {
+        observer?.disconnect();
+        observer = null;
+        // 必须 dispose：ECharts 实例持有 canvas 与全局事件，只置 null 会随路由反复切换而泄漏
+        dispose();
+    });
 
-  return { setOption, resize, dispose };
+    return {setOption, resize, dispose};
 }

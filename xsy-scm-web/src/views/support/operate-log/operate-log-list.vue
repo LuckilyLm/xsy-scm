@@ -6,17 +6,19 @@
   <a-form class="smart-query-form" v-privilege="'support:operateLog:query'">
     <a-row class="smart-query-form-row">
       <a-form-item label="操作关键字" class="smart-query-form-item">
-        <a-input style="width: 150px" v-model:value="queryForm.keywords" placeholder="模块/操作内容" />
+        <a-input style="width: 150px" v-model:value="queryForm.keywords" placeholder="模块/操作内容"/>
       </a-form-item>
       <a-form-item label="请求关键字" class="smart-query-form-item">
-        <a-input style="width: 270px" v-model:value="queryForm.requestKeywords" placeholder="请求地址/请求方法/请求参数/返回结果" />
+        <a-input style="width: 270px" v-model:value="queryForm.requestKeywords"
+                 placeholder="请求地址/请求方法/请求参数/返回结果"/>
       </a-form-item>
       <a-form-item label="用户名称" class="smart-query-form-item">
-        <a-input style="width: 100px" v-model:value="queryForm.userName" placeholder="用户名称" />
+        <a-input style="width: 100px" v-model:value="queryForm.userName" placeholder="用户名称"/>
       </a-form-item>
 
       <a-form-item label="请求时间" class="smart-query-form-item">
-        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange" style="width: 240px" />
+        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange"
+                        style="width: 240px"/>
       </a-form-item>
 
       <a-form-item label="状态：" class="smart-query-form-item">
@@ -31,13 +33,13 @@
         <a-button-group>
           <a-button type="primary" @click="ajaxQuery">
             <template #icon>
-              <SearchOutlined />
+              <SearchOutlined/>
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined />
+              <ReloadOutlined/>
             </template>
             重置
           </a-button>
@@ -46,11 +48,13 @@
     </a-row>
   </a-form>
 
-  <a-card size="small" :bordered="false" :hoverable="true" >
+  <a-card size="small" :bordered="false" :hoverable="true">
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG" :refresh="ajaxQuery" />
+      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG"
+                     :refresh="ajaxQuery"/>
     </a-row>
-    <a-table size="small" :loading="tableLoading" :dataSource="tableData" :columns="columns" bordered rowKey="operateLogId" :pagination="false">
+    <a-table size="small" :loading="tableLoading" :dataSource="tableData" :columns="columns" bordered
+             rowKey="operateLogId" :pagination="false">
       <template #bodyCell="{ text, record, column }">
         <template v-if="column.dataIndex === 'response'">
           <a-typography-text v-if="text && text.ok">{{ text ? text.msg : '-' }}</a-typography-text>
@@ -62,7 +66,7 @@
         </template>
 
         <template v-if="column.dataIndex === 'userAgent'">
-          <div>{{ record.os }} / {{ record.browser }}  {{ record.device ? '/' + record.device : record.device }}</div>
+          <div>{{ record.os }} / {{ record.browser }} {{ record.device ? '/' + record.device : record.device }}</div>
         </template>
 
         <template v-if="column.dataIndex === 'operateUserType'">
@@ -71,7 +75,9 @@
 
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
-            <a-button @click="showDetail(record.operateLogId)" type="link" v-privilege="'support:operateLog:detail'">详情</a-button>
+            <a-button @click="showDetail(record.operateLogId)" type="link" v-privilege="'support:operateLog:detail'">
+              详情
+            </a-button>
           </div>
         </template>
       </template>
@@ -79,162 +85,164 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        showSizeChanger
-        showQuickJumper
-        show-less-items
-        :pageSizeOptions="PAGE_SIZE_OPTIONS"
-        :defaultPageSize="queryForm.pageSize"
-        v-model:current="queryForm.pageNum"
-        v-model:pageSize="queryForm.pageSize"
-        :total="total"
-        @change="ajaxQuery"
-        :show-total="(total) => `共${total}条`"
+          showSizeChanger
+          showQuickJumper
+          show-less-items
+          :pageSizeOptions="PAGE_SIZE_OPTIONS"
+          :defaultPageSize="queryForm.pageSize"
+          v-model:current="queryForm.pageNum"
+          v-model:pageSize="queryForm.pageSize"
+          :total="total"
+          @change="ajaxQuery"
+          :show-total="(total) => `共${total}条`"
       />
     </div>
 
-    <OperateLogDetailModal ref="detailModal" />
+    <OperateLogDetailModal ref="detailModal"/>
   </a-card>
 </template>
 <script setup lang="ts">
-  import { onMounted, reactive, ref } from 'vue';
-  import OperateLogDetailModal from './operate-log-detail-modal.vue';
-  import { operateLogApi } from '/@/api/support/operate-log-api';
-  import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
-  import { defaultTimeRanges } from '/@/lib/default-time-ranges';
-  import uaparser from 'ua-parser-js';
-  import { smartSentry } from '/@/lib/smart-sentry';
-  import TableOperator from '/@/components/support/table-operator/index.vue';
-  import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
+import {onMounted, reactive, ref} from 'vue';
+import OperateLogDetailModal from './operate-log-detail-modal.vue';
+import {operateLogApi} from '/@/api/support/operate-log-api';
+import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
+import {defaultTimeRanges} from '/@/lib/default-time-ranges';
+import uaparser from 'ua-parser-js';
+import {smartSentry} from '/@/lib/smart-sentry';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 
-  const columns = ref([
-    {
-      title: '用户',
-      dataIndex: 'operateUserName',
-      width: 70,
-    },
-    {
-      title: '类型',
-      dataIndex: 'operateUserType',
-      width: 50,
-      ellipsis: true,
-    },
-    {
-      title: '操作模块',
-      dataIndex: 'module',
-      ellipsis: true,
-    },
-    {
-      title: '操作内容',
-      dataIndex: 'content',
-      ellipsis: true,
-    },
-    {
-      title: '请求路径',
-      dataIndex: 'url',
-      ellipsis: true,
-    },
-    {
-      title: '返回结果',
-      dataIndex: 'response',
-      ellipsis: true,
-    },
-    {
-      title: 'IP地区',
-      dataIndex: 'ipRegion',
-      ellipsis: true,
-      width: 150,
-    },
-    {
-      title: '客户端',
-      dataIndex: 'userAgent',
-      ellipsis: true,
-    },
-    {
-      title: '操作时间',
-      dataIndex: 'createTime',
-      width: 150,
-    },
-    {
-      title: '状态',
-      dataIndex: 'successFlag',
-      width: 60,
-    },
-    {
-      title: '操作',
-      dataIndex: 'action',
-      fixed: 'right',
-      width: 60,
-    },
-  ]);
+const columns = ref([
+  {
+    title: '用户',
+    dataIndex: 'operateUserName',
+    width: 70,
+  },
+  {
+    title: '类型',
+    dataIndex: 'operateUserType',
+    width: 50,
+    ellipsis: true,
+  },
+  {
+    title: '操作模块',
+    dataIndex: 'module',
+    ellipsis: true,
+  },
+  {
+    title: '操作内容',
+    dataIndex: 'content',
+    ellipsis: true,
+  },
+  {
+    title: '请求路径',
+    dataIndex: 'url',
+    ellipsis: true,
+  },
+  {
+    title: '返回结果',
+    dataIndex: 'response',
+    ellipsis: true,
+  },
+  {
+    title: 'IP地区',
+    dataIndex: 'ipRegion',
+    ellipsis: true,
+    width: 150,
+  },
+  {
+    title: '客户端',
+    dataIndex: 'userAgent',
+    ellipsis: true,
+  },
+  {
+    title: '操作时间',
+    dataIndex: 'createTime',
+    width: 150,
+  },
+  {
+    title: '状态',
+    dataIndex: 'successFlag',
+    width: 60,
+  },
+  {
+    title: '操作',
+    dataIndex: 'action',
+    fixed: 'right',
+    width: 60,
+  },
+]);
 
-  const queryFormState = {
-    userName: '',
-    requestKeywords: '',
-    keywords: '',
-    successFlag: undefined,
-    startDate: undefined,
-    endDate: undefined,
-    pageNum: 1,
-    pageSize: 10,
-  };
-  const queryForm = reactive({ ...queryFormState });
-  const createDateRange = ref([]);
-  const defaultChooseTimeRange = defaultTimeRanges;
-  // 时间变动
-  function changeCreateDate(dates, dateStrings) {
-    queryForm.startDate = dateStrings[0];
-    queryForm.endDate = dateStrings[1];
-  }
+const queryFormState = {
+  userName: '',
+  requestKeywords: '',
+  keywords: '',
+  successFlag: undefined,
+  startDate: undefined,
+  endDate: undefined,
+  pageNum: 1,
+  pageSize: 10,
+};
+const queryForm = reactive({...queryFormState});
+const createDateRange = ref([]);
+const defaultChooseTimeRange = defaultTimeRanges;
 
-  const tableLoading = ref(false);
-  const tableData = ref([]);
-  const total = ref(0);
+// 时间变动
+function changeCreateDate(dates, dateStrings) {
+  queryForm.startDate = dateStrings[0];
+  queryForm.endDate = dateStrings[1];
+}
 
-  function resetQuery() {
-    Object.assign(queryForm, queryFormState);
-    createDateRange.value = [];
-    ajaxQuery();
-  }
+const tableLoading = ref(false);
+const tableData = ref([]);
+const total = ref(0);
 
-  function onSearch() {
-    queryForm.pageNum = 1;
-    ajaxQuery();
-  }
+function resetQuery() {
+  Object.assign(queryForm, queryFormState);
+  createDateRange.value = [];
+  ajaxQuery();
+}
 
-  async function ajaxQuery() {
-    try {
-      tableLoading.value = true;
-      let responseModel = await operateLogApi.queryList(queryForm);
+function onSearch() {
+  queryForm.pageNum = 1;
+  ajaxQuery();
+}
 
-      for (const e of responseModel.data.list) {
-        if(e.response){
-          e.response = JSON.parse(e.response);
-        }
+async function ajaxQuery() {
+  try {
+    tableLoading.value = true;
+    let responseModel = await operateLogApi.queryList(queryForm);
 
-        if (!e.userAgent) {
-          continue;
-        }
-        let ua = uaparser(e.userAgent);
-        e.browser = ua.browser.name;
-        e.os = ua.os.name;
-        e.device = ua.device.vendor ? ua.device.vendor + ua.device.model : '';
+    for (const e of responseModel.data.list) {
+      if (e.response) {
+        e.response = JSON.parse(e.response);
       }
 
-      const list = responseModel.data.list;
-      total.value = responseModel.data.total;
-      tableData.value = list;
-    } catch (e) {
-      smartSentry.captureError(e);
-    } finally {
-      tableLoading.value = false;
+      if (!e.userAgent) {
+        continue;
+      }
+      let ua = uaparser(e.userAgent);
+      e.browser = ua.browser.name;
+      e.os = ua.os.name;
+      e.device = ua.device.vendor ? ua.device.vendor + ua.device.model : '';
     }
-  }
 
-  onMounted(ajaxQuery);
-
-  // ---------------------- 详情 ----------------------
-  const detailModal = ref();
-  function showDetail(operateLogId) {
-    detailModal.value.show(operateLogId);
+    const list = responseModel.data.list;
+    total.value = responseModel.data.total;
+    tableData.value = list;
+  } catch (e) {
+    smartSentry.captureError(e);
+  } finally {
+    tableLoading.value = false;
   }
+}
+
+onMounted(ajaxQuery);
+
+// ---------------------- 详情 ----------------------
+const detailModal = ref();
+
+function showDetail(operateLogId) {
+  detailModal.value.show(operateLogId);
+}
 </script>

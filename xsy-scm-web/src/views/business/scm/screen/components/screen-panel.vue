@@ -5,11 +5,11 @@
         <span class="scm-panel-title">{{ title }}</span>
       </slot>
       <div v-if="$slots.extra" class="scm-panel-extra">
-        <slot name="extra" />
+        <slot name="extra"/>
       </div>
     </header>
     <div class="scm-panel-body" :class="{ 'is-flex': flex, 'is-flush': flush }">
-      <slot />
+      <slot/>
     </div>
   </section>
 </template>

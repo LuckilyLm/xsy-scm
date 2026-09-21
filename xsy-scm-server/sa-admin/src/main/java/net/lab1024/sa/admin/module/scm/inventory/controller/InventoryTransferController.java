@@ -50,7 +50,9 @@ public class InventoryTransferController {
         return ResponseDTO.ok(queryService.queryPage(form));
     }
 
-    /** 在途库存报表（只读聚合，把 SHIPPED 调拨单展开成明细行）。 */
+    /**
+     * 在途库存报表（只读聚合，把 SHIPPED 调拨单展开成明细行）。
+     */
     @GetMapping("/in-transit")
     @SaCheckPermission("scm:inventory:transfer:query")
     public ResponseDTO<List<InventoryInTransitVO>> inTransit() {
@@ -63,7 +65,9 @@ public class InventoryTransferController {
         return ResponseDTO.ok(queryService.detail(id));
     }
 
-    /** 新建草稿调拨单，返回新单 id。 */
+    /**
+     * 新建草稿调拨单，返回新单 id。
+     */
     @PostMapping("/create")
     @SaCheckPermission("scm:inventory:transfer:add")
     @OperateLog
@@ -71,7 +75,9 @@ public class InventoryTransferController {
         return ResponseDTO.ok(service.create(form));
     }
 
-    /** 改草稿（仅 DRAFT）。 */
+    /**
+     * 改草稿（仅 DRAFT）。
+     */
     @PostMapping("/update/{id}")
     @SaCheckPermission("scm:inventory:transfer:update")
     @OperateLog
@@ -108,7 +114,9 @@ public class InventoryTransferController {
         return ResponseDTO.ok();
     }
 
-    /** 取消草稿（不产生任何库存影响）。在途不可取消 —— 货已出库，只能反向调拨冲回。 */
+    /**
+     * 取消草稿（不产生任何库存影响）。在途不可取消 —— 货已出库，只能反向调拨冲回。
+     */
     @PostMapping("/cancel/{id}")
     @SaCheckPermission("scm:inventory:transfer:update")
     @OperateLog
@@ -117,7 +125,9 @@ public class InventoryTransferController {
         return ResponseDTO.ok();
     }
 
-    /** 删除草稿（逻辑删）。已发出 / 已收货的单不可删除。 */
+    /**
+     * 删除草稿（逻辑删）。已发出 / 已收货的单不可删除。
+     */
     @PostMapping("/delete/{id}")
     @SaCheckPermission("scm:inventory:transfer:delete")
     @OperateLog

@@ -24,7 +24,7 @@ public class SerialNumberGenerateResultBO {
     private Integer serialNumberId;
 
     /**
-     *  是否重置的初始值
+     * 是否重置的初始值
      */
     private Boolean isReset;
 

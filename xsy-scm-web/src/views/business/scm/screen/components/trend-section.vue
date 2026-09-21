@@ -5,12 +5,12 @@
       <span class="scm-trend-title">趋势分析</span>
       <div class="scm-trend-toggle">
         <button
-          v-for="item in RANGES"
-          :key="item.value"
-          type="button"
-          class="scm-trend-tab"
-          :class="{ 'is-active': range === item.value }"
-          @click="emit('update:range', item.value)"
+            v-for="item in RANGES"
+            :key="item.value"
+            type="button"
+            class="scm-trend-tab"
+            :class="{ 'is-active': range === item.value }"
+            @click="emit('update:range', item.value)"
         >
           {{ item.label }}
         </button>
@@ -24,7 +24,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="salesEl" class="scm-chart" />
+        <div v-else ref="salesEl" class="scm-chart"/>
       </screen-panel>
 
       <screen-panel title="采购趋势" flex flush>
@@ -33,7 +33,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="purchaseEl" class="scm-chart" />
+        <div v-else ref="purchaseEl" class="scm-chart"/>
       </screen-panel>
 
       <screen-panel title="库存趋势" flex flush>
@@ -42,18 +42,18 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="inventoryEl" class="scm-chart" />
+        <div v-else ref="inventoryEl" class="scm-chart"/>
       </screen-panel>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import {computed, ref, watch} from 'vue';
 import ScreenPanel from './screen-panel.vue';
-import { useEcharts } from '../composables/use-echarts';
-import { toNumber } from '../format';
-import type { ScreenRange, TrendData } from '../types';
+import {useEcharts} from '../composables/use-echarts';
+import {toNumber} from '../format';
+import type {ScreenRange, TrendData} from '../types';
 
 /**
  * 底部趋势带。
@@ -75,8 +75,8 @@ const emit = defineEmits<{
 }>();
 
 const RANGES: Array<{ label: string; value: ScreenRange }> = [
-  { label: '近 7 天', value: '7d' },
-  { label: '近 30 天', value: '30d' },
+  {label: '近 7 天', value: '7d'},
+  {label: '近 30 天', value: '30d'},
 ];
 
 const empty = computed(() => !props.trend.dates?.length);
@@ -103,16 +103,16 @@ const C = {
 };
 
 const AXIS = {
-  axisLine: { lineStyle: { color: C.border } },
-  axisLabel: { color: C.text2, fontSize: 10 },
-  splitLine: { lineStyle: { color: 'rgba(27, 77, 122, 0.35)' } },
+  axisLine: {lineStyle: {color: C.border}},
+  axisLabel: {color: C.text2, fontSize: 10},
+  splitLine: {lineStyle: {color: 'rgba(27, 77, 122, 0.35)'}},
 };
 
 const TOOLTIP = {
   trigger: 'axis',
   backgroundColor: 'rgba(7, 30, 66, 0.94)',
   borderColor: '#1b4d7a',
-  textStyle: { color: C.text1, fontSize: 11 },
+  textStyle: {color: C.text1, fontSize: 11},
 };
 
 const LEGEND = {
@@ -120,7 +120,7 @@ const LEGEND = {
   right: 6,
   itemWidth: 10,
   itemHeight: 6,
-  textStyle: { color: C.text2, fontSize: 10 },
+  textStyle: {color: C.text2, fontSize: 10},
 };
 
 /** 折线/面积用的公共 series 片段。 */
@@ -129,8 +129,8 @@ function areaStyle(color: string) {
     type: 'line',
     smooth: true,
     symbol: 'none',
-    lineStyle: { width: 2, color },
-    itemStyle: { color },
+    lineStyle: {width: 2, color},
+    itemStyle: {color},
   };
 }
 
@@ -138,12 +138,12 @@ function renderSales() {
   const t = props.trend;
   salesChart.setOption({
     tooltip: TOOLTIP,
-    legend: { ...LEGEND, data: ['销售额', '订单数'] },
-    grid: { left: 6, right: 6, top: 26, bottom: 4, containLabel: true },
-    xAxis: { type: 'category', data: t.dates, boundaryGap: false, ...AXIS },
+    legend: {...LEGEND, data: ['销售额', '订单数']},
+    grid: {left: 6, right: 6, top: 26, bottom: 4, containLabel: true},
+    xAxis: {type: 'category', data: t.dates, boundaryGap: false, ...AXIS},
     yAxis: [
-      { type: 'value', ...AXIS, splitLine: { show: false } },
-      { type: 'value', ...AXIS, splitLine: { show: false }, axisLabel: { ...AXIS.axisLabel, color: C.text3 } },
+      {type: 'value', ...AXIS, splitLine: {show: false}},
+      {type: 'value', ...AXIS, splitLine: {show: false}, axisLabel: {...AXIS.axisLabel, color: C.text3}},
     ],
     series: [
       {
@@ -157,8 +157,8 @@ function renderSales() {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(39, 215, 254, 0.34)' },
-              { offset: 1, color: 'rgba(39, 215, 254, 0.02)' },
+              {offset: 0, color: 'rgba(39, 215, 254, 0.34)'},
+              {offset: 1, color: 'rgba(39, 215, 254, 0.02)'},
             ],
           },
         },
@@ -168,7 +168,7 @@ function renderSales() {
         name: '订单数',
         ...areaStyle(C.warn),
         yAxisIndex: 1,
-        lineStyle: { width: 1.5, color: C.warn, type: 'dashed' },
+        lineStyle: {width: 1.5, color: C.warn, type: 'dashed'},
         data: t.orders.map(toNumber),
       },
     ],
@@ -179,12 +179,12 @@ function renderPurchase() {
   const t = props.trend;
   purchaseChart.setOption({
     tooltip: TOOLTIP,
-    legend: { ...LEGEND, data: ['采购额', '采购单'] },
-    grid: { left: 6, right: 6, top: 26, bottom: 4, containLabel: true },
-    xAxis: { type: 'category', data: t.dates, ...AXIS },
+    legend: {...LEGEND, data: ['采购额', '采购单']},
+    grid: {left: 6, right: 6, top: 26, bottom: 4, containLabel: true},
+    xAxis: {type: 'category', data: t.dates, ...AXIS},
     yAxis: [
-      { type: 'value', ...AXIS, splitLine: { show: false } },
-      { type: 'value', ...AXIS, splitLine: { show: false }, axisLabel: { ...AXIS.axisLabel, color: C.text3 } },
+      {type: 'value', ...AXIS, splitLine: {show: false}},
+      {type: 'value', ...AXIS, splitLine: {show: false}, axisLabel: {...AXIS.axisLabel, color: C.text3}},
     ],
     series: [
       {
@@ -200,8 +200,8 @@ function renderPurchase() {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: C.blue },
-              { offset: 1, color: 'rgba(47, 128, 237, 0.25)' },
+              {offset: 0, color: C.blue},
+              {offset: 1, color: 'rgba(47, 128, 237, 0.25)'},
             ],
           },
         },
@@ -211,7 +211,7 @@ function renderPurchase() {
         name: '采购单',
         ...areaStyle(C.warn),
         yAxisIndex: 1,
-        lineStyle: { width: 1.5, color: C.warn },
+        lineStyle: {width: 1.5, color: C.warn},
         data: t.purchaseOrders.map(toNumber),
       },
     ],
@@ -222,12 +222,12 @@ function renderInventory() {
   const t = props.trend;
   inventoryChart.setOption({
     tooltip: TOOLTIP,
-    legend: { ...LEGEND, data: ['库存量', '入库', '出库'] },
-    grid: { left: 6, right: 6, top: 26, bottom: 4, containLabel: true },
-    xAxis: { type: 'category', data: t.dates, boundaryGap: false, ...AXIS },
+    legend: {...LEGEND, data: ['库存量', '入库', '出库']},
+    grid: {left: 6, right: 6, top: 26, bottom: 4, containLabel: true},
+    xAxis: {type: 'category', data: t.dates, boundaryGap: false, ...AXIS},
     yAxis: [
-      { type: 'value', ...AXIS, splitLine: { show: false } },
-      { type: 'value', ...AXIS, splitLine: { show: false }, axisLabel: { ...AXIS.axisLabel, color: C.text3 } },
+      {type: 'value', ...AXIS, splitLine: {show: false}},
+      {type: 'value', ...AXIS, splitLine: {show: false}, axisLabel: {...AXIS.axisLabel, color: C.text3}},
     ],
     series: [
       {
@@ -241,8 +241,8 @@ function renderInventory() {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(39, 215, 254, 0.3)' },
-              { offset: 1, color: 'rgba(39, 215, 254, 0.02)' },
+              {offset: 0, color: 'rgba(39, 215, 254, 0.3)'},
+              {offset: 1, color: 'rgba(39, 215, 254, 0.02)'},
             ],
           },
         },
@@ -252,14 +252,14 @@ function renderInventory() {
         name: '入库',
         ...areaStyle(C.green),
         yAxisIndex: 1,
-        lineStyle: { width: 1.5, color: C.green },
+        lineStyle: {width: 1.5, color: C.green},
         data: t.inboundQuantity.map(toNumber),
       },
       {
         name: '出库',
         ...areaStyle(C.orange),
         yAxisIndex: 1,
-        lineStyle: { width: 1.5, color: C.orange },
+        lineStyle: {width: 1.5, color: C.orange},
         data: t.outboundQuantity.map(toNumber),
       },
     ],
@@ -268,16 +268,16 @@ function renderInventory() {
 
 /** 空↔有数据来回切换时用 notMerge=true，避免残留上一次的 series。 */
 watch(
-  () => props.trend,
-  () => {
-    if (empty.value) {
-      return;
-    }
-    renderSales();
-    renderPurchase();
-    renderInventory();
-  },
-  { immediate: true, deep: false }
+    () => props.trend,
+    () => {
+      if (empty.value) {
+        return;
+      }
+      renderSales();
+      renderPurchase();
+      renderInventory();
+    },
+    {immediate: true, deep: false}
 );
 </script>
 

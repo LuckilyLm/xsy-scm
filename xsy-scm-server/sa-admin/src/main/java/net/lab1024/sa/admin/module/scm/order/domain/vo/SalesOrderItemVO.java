@@ -2,9 +2,11 @@ package net.lab1024.sa.admin.module.scm.order.domain.vo;
 
 import lombok.Data;
 import com.baomidou.mybatisplus.annotation.*;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 import net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler;
@@ -19,23 +21,29 @@ public class SalesOrderItemVO {
     private String productNameSnapshot;
     private String skuCodeSnapshot;
     private String specNameSnapshot;
-    private Map<String,Object> specValuesSnapshot;
+    private Map<String, Object> specValuesSnapshot;
     private String saleUnitSnapshot;
     private String productTypeSnapshot;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal orderedQuantity;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal actualQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal orderedQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal actualQuantity;
     private String actualQuantitySource;
     private String actualQuantityReason;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal draftUnitPrice;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal draftUnitPrice;
     private String draftPriceSource;
     private Long draftPriceSourceId;
     private Boolean manualPriceOverride;
     private String manualPriceReason;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal lockedUnitPrice;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal lockedUnitPrice;
     private String lockedPriceSource;
     private Long lockedPriceSourceId;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal orderedLineAmount;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal settlementLineAmount;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal orderedLineAmount;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal settlementLineAmount;
     private Integer sortOrder;
     private Integer version;
     private Boolean deleted;

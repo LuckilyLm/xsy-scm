@@ -28,7 +28,9 @@ public class InventoryLossGainAuditForm {
     @Min(0)
     private Integer version;
 
-    /** 审核意见（驳回时必填）。 */
+    /**
+     * 审核意见（驳回时必填）。
+     */
     @Size(max = 500)
     private String auditOpinion;
 }

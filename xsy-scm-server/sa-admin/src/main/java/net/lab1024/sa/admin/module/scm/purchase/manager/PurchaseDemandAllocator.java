@@ -44,7 +44,9 @@ public final class PurchaseDemandAllocator {
         }
     }
 
-    /** 采购行必须与需求同 SKU，否则 40995。 */
+    /**
+     * 采购行必须与需求同 SKU，否则 40995。
+     */
     public static void itemMatchesDemand(Long itemSkuId, Long demandSkuId) {
         if (itemSkuId == null || !itemSkuId.equals(demandSkuId)) {
             throw new ScmBusinessException(PURCHASE_DEMAND_ITEM_NOT_OWNED);
@@ -66,7 +68,9 @@ public final class PurchaseDemandAllocator {
         throw new ScmBusinessException(PURCHASE_DEMAND_ALLOCATION_CONFLICT);
     }
 
-    /** 需求版本必填（40091）且必须相等（40972）。 */
+    /**
+     * 需求版本必填（40091）且必须相等（40972）。
+     */
     public static void demandVersion(Integer requestedVersion, Integer currentVersion) {
         if (requestedVersion == null) {
             throw new ScmBusinessException(PURCHASE_DEMAND_VERSION_REQUIRED);
@@ -98,18 +102,24 @@ public final class PurchaseDemandAllocator {
         }
     }
 
-    /** 是否处于「尚未发生任何分配」的状态。 */
+    /**
+     * 是否处于「尚未发生任何分配」的状态。
+     */
     public static boolean isFirstAllocation(PurchaseDemandEntity demand) {
         BigDecimal allocated = demand.getAllocatedQuantity();
         return allocated == null || allocated.signum() == 0;
     }
 
-    /** 首次分配且供应商尚未固定 → 调用方应把 `supplier_id` 落为采购单的供应商。 */
+    /**
+     * 首次分配且供应商尚未固定 → 调用方应把 `supplier_id` 落为采购单的供应商。
+     */
     public static boolean shouldFixSupplier(PurchaseDemandEntity demand) {
         return isFirstAllocation(demand) && demand.getSupplierId() == null;
     }
 
-    /** 分配后的合计必须在 `[0, required]` 内，否则 40082。 */
+    /**
+     * 分配后的合计必须在 `[0, required]` 内，否则 40082。
+     */
     public static void withinRequired(BigDecimal requiredQuantity, BigDecimal finalAllocatedQuantity) {
         if (finalAllocatedQuantity == null
                 || finalAllocatedQuantity.signum() < 0

@@ -17,28 +17,28 @@
          没有活动行时返回 NULL（无值 ≠ 0.0000，与三态纪律一致）。 -->
     <select id="query" resultMap="orderVoMap">
         SELECT o.id, o.order_no, o.supplier_id,
-               o.supplier_code_snapshot  AS supplier_code,
-               o.supplier_name_snapshot  AS supplier_name,
-               o.purchaser_id, e.actual_name AS purchaser_name,
-               o.warehouse_id,
-               o.warehouse_code_snapshot AS warehouse_code,
-               o.warehouse_name_snapshot AS warehouse_name,
-               o.planned_arrival_date, o.status, o.total_amount,
-               CASE WHEN agg.planned_total IS NOT NULL AND agg.planned_total &gt; 0
-                    THEN ROUND(agg.received_total / agg.planned_total, 4)
-                    ELSE NULL END        AS received_progress,
-               o.remark, o.cancel_reason, o.short_close_reason,
-               o.submitted_at, o.cancelled_at, o.short_closed_at,
-               o.version, o.created_at, o.updated_at
+        o.supplier_code_snapshot AS supplier_code,
+        o.supplier_name_snapshot AS supplier_name,
+        o.purchaser_id, e.actual_name AS purchaser_name,
+        o.warehouse_id,
+        o.warehouse_code_snapshot AS warehouse_code,
+        o.warehouse_name_snapshot AS warehouse_name,
+        o.planned_arrival_date, o.status, o.total_amount,
+        CASE WHEN agg.planned_total IS NOT NULL AND agg.planned_total &gt; 0
+        THEN ROUND(agg.received_total / agg.planned_total, 4)
+        ELSE NULL END AS received_progress,
+        o.remark, o.cancel_reason, o.short_close_reason,
+        o.submitted_at, o.cancelled_at, o.short_closed_at,
+        o.version, o.created_at, o.updated_at
         FROM purchase_order o
         LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id AND e.deleted_flag = FALSE
         LEFT JOIN (
-            SELECT purchase_order_id,
-                   SUM(planned_quantity)  AS planned_total,
-                   SUM(received_quantity) AS received_total
-            FROM purchase_order_item
-            WHERE deleted = FALSE
-            GROUP BY purchase_order_id
+        SELECT purchase_order_id,
+        SUM(planned_quantity) AS planned_total,
+        SUM(received_quantity) AS received_total
+        FROM purchase_order_item
+        WHERE deleted = FALSE
+        GROUP BY purchase_order_id
         ) agg ON agg.purchase_order_id = o.id
         WHERE o.deleted = FALSE
         <if test="query.orderNo != null and query.orderNo != ''">
@@ -66,36 +66,49 @@
     </select>
 
     <select id="detail" resultMap="orderVoMap">
-        SELECT o.id, o.order_no, o.supplier_id,
+        SELECT o.id,
+               o.order_no,
+               o.supplier_id,
                o.supplier_code_snapshot  AS supplier_code,
                o.supplier_name_snapshot  AS supplier_name,
-               o.purchaser_id, e.actual_name AS purchaser_name,
+               o.purchaser_id,
+               e.actual_name             AS purchaser_name,
                o.warehouse_id,
                o.warehouse_code_snapshot AS warehouse_code,
                o.warehouse_name_snapshot AS warehouse_name,
-               o.planned_arrival_date, o.status, o.total_amount,
-               CASE WHEN agg.planned_total IS NOT NULL AND agg.planned_total &gt; 0
-                    THEN ROUND(agg.received_total / agg.planned_total, 4)
-                    ELSE NULL END        AS received_progress,
-               o.remark, o.cancel_reason, o.short_close_reason,
-               o.submitted_at, o.cancelled_at, o.short_closed_at,
-               o.version, o.created_at, o.updated_at
+               o.planned_arrival_date,
+               o.status,
+               o.total_amount,
+               CASE
+                   WHEN agg.planned_total IS NOT NULL AND agg.planned_total &gt; 0
+                       THEN ROUND(agg.received_total / agg.planned_total, 4)
+                   ELSE NULL END         AS received_progress,
+               o.remark,
+               o.cancel_reason,
+               o.short_close_reason,
+               o.submitted_at,
+               o.cancelled_at,
+               o.short_closed_at,
+               o.version,
+               o.created_at,
+               o.updated_at
         FROM purchase_order o
-        LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id AND e.deleted_flag = FALSE
-        LEFT JOIN (
-            SELECT purchase_order_id,
-                   SUM(planned_quantity)  AS planned_total,
-                   SUM(received_quantity) AS received_total
-            FROM purchase_order_item
-            WHERE deleted = FALSE
-            GROUP BY purchase_order_id
-        ) agg ON agg.purchase_order_id = o.id
+                 LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id AND e.deleted_flag = FALSE
+                 LEFT JOIN (SELECT purchase_order_id,
+                                   SUM(planned_quantity)  AS planned_total,
+                                   SUM(received_quantity) AS received_total
+                            FROM purchase_order_item
+                            WHERE deleted = FALSE
+                            GROUP BY purchase_order_id) agg ON agg.purchase_order_id = o.id
         WHERE o.deleted = FALSE
           AND o.id = #{id}
     </select>
 
     <select id="lock" resultMap="orderRowMap">
-        SELECT * FROM purchase_order WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM purchase_order
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <!-- 全局单调递增，不按日 reset（§5.1） -->

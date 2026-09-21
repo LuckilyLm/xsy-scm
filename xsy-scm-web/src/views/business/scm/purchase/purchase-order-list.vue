@@ -12,13 +12,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="供应商" class="smart-query-form-item">
-        <SupplierSelect v-model:value="queryForm.supplierId" width="200px" />
+        <SupplierSelect v-model:value="queryForm.supplierId" width="200px"/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_PURCHASE_STATUS_ENUM" v-model:value="queryForm.status" width="150px" />
+        <SmartEnumSelect enum-name="SCM_PURCHASE_STATUS_ENUM" v-model:value="queryForm.status" width="150px"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -30,7 +30,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -42,21 +44,21 @@
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_ORDER" :refresh="queryData" />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_ORDER" :refresh="queryData"/>
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_PURCHASE_TABLE_ID.ORDER"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :scroll="{ x: 1500 }"
-      :row-selection="{
+        :id="SCM_PURCHASE_TABLE_ID.ORDER"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :scroll="{ x: 1500 }"
+        :row-selection="{
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
         getCheckboxProps: (row: Order) => ({ disabled: row.status !== 'DRAFT' }),
@@ -81,29 +83,32 @@
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button type="link" @click="detail?.open(record.id)">详情</a-button>
-            <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:purchase:update'" @click="drawer?.open(record.id)">
+            <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:purchase:update'"
+                      @click="drawer?.open(record.id)">
               编辑
             </a-button>
-            <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:purchase:submit'" @click="submit(record)">
+            <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:purchase:submit'"
+                      @click="submit(record)">
               提交
             </a-button>
             <a-button
-              v-if="['DRAFT', 'SUBMITTED'].includes(record.status)"
-              type="link"
-              v-privilege="'scm:purchase:cancel'"
-              @click="cancel(record)"
+                v-if="['DRAFT', 'SUBMITTED'].includes(record.status)"
+                type="link"
+                v-privilege="'scm:purchase:cancel'"
+                @click="cancel(record)"
             >
               取消
             </a-button>
             <a-button
-              v-if="record.status === 'PARTIALLY_RECEIVED'"
-              type="link"
-              v-privilege="'scm:purchase:short-close'"
-              @click="shortClose(record)"
+                v-if="record.status === 'PARTIALLY_RECEIVED'"
+                type="link"
+                v-privilege="'scm:purchase:short-close'"
+                @click="shortClose(record)"
             >
               少收关单
             </a-button>
-            <a-button v-if="record.status === 'DRAFT'" danger type="link" v-privilege="'scm:purchase:delete'" @click="remove(record)">
+            <a-button v-if="record.status === 'DRAFT'" danger type="link" v-privilege="'scm:purchase:delete'"
+                      @click="remove(record)">
               删除
             </a-button>
           </div>
@@ -113,39 +118,39 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
-  <PurchaseOrderForm ref="drawer" @saved="queryData" />
-  <PurchaseOrderDetail ref="detail" @saved="queryData" />
+  <PurchaseOrderForm ref="drawer" @saved="queryData"/>
+  <PurchaseOrderDetail ref="detail" @saved="queryData"/>
 </template>
 
 <script setup lang="ts">
-import { h, onMounted, reactive, ref } from 'vue';
-import { Input, Modal } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
-import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
+import {h, onMounted, reactive, ref} from 'vue';
+import {Input, Modal} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
+import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-import { SCM_PURCHASE_STATUS_ENUM, SCM_PURCHASE_TABLE_ID } from '/@/constants/business/scm/purchase-const';
-import type { Order, OrderQuery } from './purchase-types';
-import { amount, progress } from './purchase-form-model';
-import { datetime } from '../common/scm-display';
-import { purchaseError } from './purchase-errors';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {SCM_PURCHASE_STATUS_ENUM, SCM_PURCHASE_TABLE_ID} from '/@/constants/business/scm/purchase-const';
+import type {Order, OrderQuery} from './purchase-types';
+import {amount, progress} from './purchase-form-model';
+import {datetime} from '../common/scm-display';
+import {purchaseError} from './purchase-errors';
 import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
 import PurchaseOrderDetail from './components/purchase-order-detail-drawer.vue';
 
-const queryForm = reactive<OrderQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<OrderQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<Order[]>([]);
 const total = ref(0);
 const loading = ref(false);
@@ -157,16 +162,16 @@ const detail = ref<InstanceType<typeof PurchaseOrderDetail>>();
 let requestId = 0;
 
 const columns = ref<TableColumnsType<Order>>([
-  { title: '采购单号', dataIndex: 'orderNo', width: 210 },
-  { title: '供应商', dataIndex: 'supplierName', width: 180 },
-  { title: '采购员', dataIndex: 'purchaserName', width: 120 },
-  { title: '收货仓库', dataIndex: 'warehouseName', width: 140 },
-  { title: '状态', dataIndex: 'status', align: 'center', width: 110 },
-  { title: '计划到货', dataIndex: 'plannedArrivalDate', width: 120 },
-  { title: '采购金额', dataIndex: 'totalAmount', align: 'right', width: 140 },
-  { title: '收货进度', dataIndex: 'receivedProgress', align: 'right', width: 110 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 180 },
-  { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 300 },
+  {title: '采购单号', dataIndex: 'orderNo', width: 210},
+  {title: '供应商', dataIndex: 'supplierName', width: 180},
+  {title: '采购员', dataIndex: 'purchaserName', width: 120},
+  {title: '收货仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 120},
+  {title: '采购金额', dataIndex: 'totalAmount', align: 'right', width: 140},
+  {title: '收货进度', dataIndex: 'receivedProgress', align: 'right', width: 110},
+  {title: '创建时间', dataIndex: 'createdAt', width: 180},
+  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 300},
 ]);
 
 async function queryData() {
@@ -209,7 +214,7 @@ function submit(row: Order) {
     title: '提交这张采购单？提交后不可再改行与分配。',
     onOk: async () => {
       try {
-        await purchaseOrderApi.submit({ id: row.id!, version: row.version! });
+        await purchaseOrderApi.submit({id: row.id!, version: row.version!});
         await queryData();
       } catch (e) {
         error.value = purchaseError(e);
@@ -224,21 +229,21 @@ function cancel(row: Order) {
   Modal.confirm({
     title: '取消这张采购单？已占用的采购需求会被释放。',
     content: () =>
-      h('div', [
-        h('p', '取消原因（必填）：'),
-        h(Input.TextArea, {
-          rows: 3,
-          maxlength: 500,
-          'onUpdate:value': (v: string) => (reason = v),
-        }),
-      ]),
+        h('div', [
+          h('p', '取消原因（必填）：'),
+          h(Input.TextArea, {
+            rows: 3,
+            maxlength: 500,
+            'onUpdate:value': (v: string) => (reason = v),
+          }),
+        ]),
     onOk: async () => {
       if (!reason.trim()) {
         error.value = '请填写取消原因';
         throw new Error('cancel reason required');
       }
       try {
-        await purchaseOrderApi.cancel({ id: row.id!, version: row.version!, cancelReason: reason });
+        await purchaseOrderApi.cancel({id: row.id!, version: row.version!, cancelReason: reason});
         await queryData();
       } catch (e) {
         error.value = purchaseError(e);
@@ -253,21 +258,21 @@ function shortClose(row: Order) {
   Modal.confirm({
     title: '少收关单？剩余未收数量将不再补收，采购单进入终态。',
     content: () =>
-      h('div', [
-        h('p', '少收原因（必填）：'),
-        h(Input.TextArea, {
-          rows: 3,
-          maxlength: 500,
-          'onUpdate:value': (v: string) => (reason = v),
-        }),
-      ]),
+        h('div', [
+          h('p', '少收原因（必填）：'),
+          h(Input.TextArea, {
+            rows: 3,
+            maxlength: 500,
+            'onUpdate:value': (v: string) => (reason = v),
+          }),
+        ]),
     onOk: async () => {
       if (!reason.trim()) {
         error.value = '请填写少收关单原因';
         throw new Error('short close reason required');
       }
       try {
-        await purchaseOrderApi.shortClose({ id: row.id!, version: row.version!, shortCloseReason: reason });
+        await purchaseOrderApi.shortClose({id: row.id!, version: row.version!, shortCloseReason: reason});
         await queryData();
       } catch (e) {
         error.value = purchaseError(e);
@@ -283,7 +288,7 @@ function remove(row: Order) {
     okType: 'danger',
     onOk: async () => {
       try {
-        await purchaseOrderApi.delete({ id: row.id!, version: row.version! });
+        await purchaseOrderApi.delete({id: row.id!, version: row.version!});
         await queryData();
       } catch (e) {
         error.value = purchaseError(e);
@@ -300,9 +305,9 @@ function batchDelete() {
     onOk: async () => {
       try {
         await purchaseOrderApi.batchDelete(
-          tableData.value
-            .filter((o) => selected.value.includes(o.id!))
-            .map((o) => ({ id: o.id!, version: o.version! }))
+            tableData.value
+                .filter((o) => selected.value.includes(o.id!))
+                .map((o) => ({id: o.id!, version: o.version!}))
         );
         await queryData();
       } catch (e) {

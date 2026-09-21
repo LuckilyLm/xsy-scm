@@ -16,16 +16,18 @@ Caffeine ：
 其他：
 · 对于分布式、集群等应用实现方式可以改为 Redis、CouchBase等
 </pre
-        >
+>
       </template>
     </a-alert>
 
-    <a-table size="small" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag" :pagination="false" >
+    <a-table size="small" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag"
+             :pagination="false">
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button @click="remove(record.key)" v-privilege="'support:cache:delete'" type="link">清除</a-button>
-            <a-button @click="getAllKeys(record.key)" v-privilege="'support:cache:keys'" type="link">获取所有key</a-button>
+            <a-button @click="getAllKeys(record.key)" v-privilege="'support:cache:keys'" type="link">获取所有key
+            </a-button>
           </div>
         </template>
       </template>
@@ -33,75 +35,75 @@ Caffeine ：
   </a-card>
 </template>
 <script setup lang="ts">
-  import { message } from 'ant-design-vue';
-  import { onMounted, reactive, ref, h } from 'vue';
-  import { cacheApi } from '/@/api/support/cache-api';
-  import { SmartLoading } from '/@/components/framework/smart-loading';
-  import { Modal } from 'ant-design-vue';
-  import _ from 'lodash';
-  import { smartSentry } from '/@/lib/smart-sentry';
+import {message} from 'ant-design-vue';
+import {onMounted, reactive, ref, h} from 'vue';
+import {cacheApi} from '/@/api/support/cache-api';
+import {SmartLoading} from '/@/components/framework/smart-loading';
+import {Modal} from 'ant-design-vue';
+import _ from 'lodash';
+import {smartSentry} from '/@/lib/smart-sentry';
 
-  //------------------------ 删除 ---------------------
+//------------------------ 删除 ---------------------
 
-  async function remove(key) {
-    try {
-      await cacheApi.remove(key);
-      message.success('删除成功');
-      ajaxQuery();
-    } catch (e) {
-      smartSentry.captureError(e);
-    }
+async function remove(key) {
+  try {
+    await cacheApi.remove(key);
+    message.success('删除成功');
+    ajaxQuery();
+  } catch (e) {
+    smartSentry.captureError(e);
   }
+}
 
-  //------------------------ 获取所有key ---------------------
-  async function getAllKeys(cacheName) {
-    SmartLoading.show();
-    try {
-      let res = await cacheApi.getKeys(cacheName);
-      SmartLoading.hide();
-      Modal.info({
-        title: '所有Key:' + cacheName,
-        content: h('div', {}, [h('p', _.join(res.data, ' , '))]),
-        onOk() {
-          ajaxQuery();
-        },
-      });
-    } catch (e) {
-      smartSentry.captureError(e);
-    } finally {
-      SmartLoading.hide();
-    }
+//------------------------ 获取所有key ---------------------
+async function getAllKeys(cacheName) {
+  SmartLoading.show();
+  try {
+    let res = await cacheApi.getKeys(cacheName);
+    SmartLoading.hide();
+    Modal.info({
+      title: '所有Key:' + cacheName,
+      content: h('div', {}, [h('p', _.join(res.data, ' , '))]),
+      onOk() {
+        ajaxQuery();
+      },
+    });
+  } catch (e) {
+    smartSentry.captureError(e);
+  } finally {
+    SmartLoading.hide();
   }
+}
 
-  //------------------------ 表格渲染 ---------------------
+//------------------------ 表格渲染 ---------------------
 
-  const columns = reactive([
-    {
-      title: 'Key',
-      dataIndex: 'key',
-    },
-    {
-      title: '操作',
-      dataIndex: 'action',
-      fixed: 'right',
-      width: 160,
-    },
-  ]);
+const columns = reactive([
+  {
+    title: 'Key',
+    dataIndex: 'key',
+  },
+  {
+    title: '操作',
+    dataIndex: 'action',
+    fixed: 'right',
+    width: 160,
+  },
+]);
 
-  const tableLoading = ref(false);
-  const tableData = ref([]);
+const tableLoading = ref(false);
+const tableData = ref([]);
 
-  async function ajaxQuery() {
-    try {
-      tableLoading.value = true;
-      let res = await cacheApi.getAllCacheNames();
-      tableData.value = res.data.map((e) => Object.assign({}, { key: e }));
-    } catch (e) {
-      smartSentry.captureError(e);
-    } finally {
-      tableLoading.value = false;
-    }
+async function ajaxQuery() {
+  try {
+    tableLoading.value = true;
+    let res = await cacheApi.getAllCacheNames();
+    tableData.value = res.data.map((e) => Object.assign({}, {key: e}));
+  } catch (e) {
+    smartSentry.captureError(e);
+  } finally {
+    tableLoading.value = false;
   }
+}
 
-  onMounted(ajaxQuery);
+onMounted(ajaxQuery);
 </script>

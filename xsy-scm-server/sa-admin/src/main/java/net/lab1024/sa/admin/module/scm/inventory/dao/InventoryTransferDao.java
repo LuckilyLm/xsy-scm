@@ -29,13 +29,19 @@ import java.util.List;
 @Mapper
 public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity> {
 
-    /** 单号是否存在（软删范围内）。生成单号时用于冲突重试。 */
+    /**
+     * 单号是否存在（软删范围内）。生成单号时用于冲突重试。
+     */
     int countByTransferNo(@Param("transferNo") String transferNo);
 
-    /** 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。 */
+    /**
+     * 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。
+     */
     long nextTransferNo();
 
-    /** 无锁读（详情 / 状态校验前置）。 */
+    /**
+     * 无锁读（详情 / 状态校验前置）。
+     */
     InventoryTransferEntity selectById(@Param("id") Long id);
 
     /**
@@ -46,31 +52,43 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      */
     InventoryTransferEntity lockById(@Param("id") Long id);
 
-    /** 置为在途（带状态条件，防并发重复发出）。 */
+    /**
+     * 置为在途（带状态条件，防并发重复发出）。
+     */
     int markShipped(@Param("id") Long id,
                     @Param("shippedAt") OffsetDateTime shippedAt,
                     @Param("shippedBy") String shippedBy);
 
-    /** 置为已收货（带状态条件，只有在途可收货）。 */
+    /**
+     * 置为已收货（带状态条件，只有在途可收货）。
+     */
     int markReceived(@Param("id") Long id,
                      @Param("receivedAt") OffsetDateTime receivedAt,
                      @Param("receivedBy") String receivedBy);
 
-    /** 置为已取消（带状态条件，只有草稿可取消）。 */
+    /**
+     * 置为已取消（带状态条件，只有草稿可取消）。
+     */
     int markCancelled(@Param("id") Long id,
                       @Param("operator") String operator);
 
-    /** 回写草稿头（源仓 / 目标仓 / 备注）。 */
+    /**
+     * 回写草稿头（源仓 / 目标仓 / 备注）。
+     */
     int updateDraft(@Param("id") Long id,
                     @Param("fromWarehouseId") Long fromWarehouseId,
                     @Param("toWarehouseId") Long toWarehouseId,
                     @Param("remark") String remark,
                     @Param("operator") String operator);
 
-    /** 分页查询（联两次 warehouse 取源仓 / 目标仓展示字段）。 */
+    /**
+     * 分页查询（联两次 warehouse 取源仓 / 目标仓展示字段）。
+     */
     List<InventoryTransferVO> queryPage(Page<?> page, @Param("query") InventoryTransferQueryForm query);
 
-    /** 详情。 */
+    /**
+     * 详情。
+     */
     InventoryTransferVO detail(@Param("id") Long id);
 
     /**

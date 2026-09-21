@@ -37,13 +37,20 @@ class SalesOrderImportServiceTest {
     private final SalesOrderImportService service = new SalesOrderImportService(customers, skus, orders, prices);
     private ResolvedPriceVO price;
 
-    @BeforeEach void catalog() {
+    @BeforeEach
+    void catalog() {
         var customer = new CustomerEntity();
-        customer.setId(1L); customer.setCustomerCode("C-1"); customer.setStatus("COOPERATING");
+        customer.setId(1L);
+        customer.setCustomerCode("C-1");
+        customer.setStatus("COOPERATING");
         when(customers.selectActiveByCodes(anyList())).thenReturn(List.of(customer));
-        var sku = new ProductSkuOptionVO(); sku.setSkuId(2L); sku.setSkuCode("S-1");
+        var sku = new ProductSkuOptionVO();
+        sku.setSkuId(2L);
+        sku.setSkuCode("S-1");
         when(skus.selectByCodes(anyList())).thenReturn(List.of(sku));
-        price = new ResolvedPriceVO(); price.setSkuId(2L); price.setSellable(true);
+        price = new ResolvedPriceVO();
+        price.setSkuId(2L);
+        price.setSellable(true);
         price.price(new BigDecimal("1.2000"), ScmPriceSourceEnum.MARKET, null);
         when(prices.resolve(eq(1L), anyList(), any())).thenReturn(List.of(price));
     }
@@ -65,7 +72,8 @@ class SalesOrderImportServiceTest {
         }
     }
 
-    @Test void reportsActualRowAndFieldAfterBlankRow() throws Exception {
+    @Test
+    void reportsActualRowAndFieldAfterBlankRow() throws Exception {
         var file = workbook(book -> book.getSheetAt(0).getRow(2).getCell(8).setCellValue("0"));
         var result = service.importFile(file, "key", false);
         assertThat(result.getErrors()).anySatisfy(error -> {
@@ -76,7 +84,8 @@ class SalesOrderImportServiceTest {
         verifyNoInteractions(orders);
     }
 
-    @Test void validatesHeadersEvenForOtherwiseValidData() throws Exception {
+    @Test
+    void validatesHeadersEvenForOtherwiseValidData() throws Exception {
         var result = service.importFile(workbook(book -> book.getSheetAt(0).getRow(0).getCell(7).setCellValue("错误列")), "key", false);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getRowNumber()).isOne();
@@ -86,7 +95,8 @@ class SalesOrderImportServiceTest {
         verifyNoInteractions(orders);
     }
 
-    @Test void formulaHasCellDiagnostic() throws Exception {
+    @Test
+    void formulaHasCellDiagnostic() throws Exception {
         var result = service.importFile(workbook(book -> book.getSheetAt(0).getRow(2).getCell(8).setCellFormula("1+1")), "key", false);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);
@@ -96,21 +106,25 @@ class SalesOrderImportServiceTest {
         verifyNoInteractions(orders);
     }
 
-    @Test void malformedWorkbookReturnsFileError() throws Exception {
+    @Test
+    void malformedWorkbookReturnsFileError() throws Exception {
         var file = new MockMultipartFile("file", "broken.xlsx", "application/octet-stream", new byte[]{1, 2, 3});
         assertThat(service.importFile(file, "key", false).getErrors()).extracting("code").contains("FILE_INVALID");
         verifyNoInteractions(orders);
     }
 
-    @Test void doesNotSilentlyIgnoreAdditionalSheets() throws Exception {
+    @Test
+    void doesNotSilentlyIgnoreAdditionalSheets() throws Exception {
         var result = service.importFile(workbook(book -> book.createSheet("更多订单")), "key", false);
         assertThat(result.getErrors()).extracting("code").contains("SHEET_COUNT");
         verifyNoInteractions(orders);
     }
 
-    @Test void unpricedAndUnavailableRowsAreLocatedBeforeWriting() throws Exception {
+    @Test
+    void unpricedAndUnavailableRowsAreLocatedBeforeWriting() throws Exception {
         price.price(null, ScmPriceSourceEnum.MARKET, null);
-        var file = workbook(book -> {});
+        var file = workbook(book -> {
+        });
         var result = service.importFile(file, "key", false);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);
@@ -122,36 +136,44 @@ class SalesOrderImportServiceTest {
         verifyNoInteractions(orders);
     }
 
-    @Test void manualPriceRequiresPermissionAndReason() throws Exception {
+    @Test
+    void manualPriceRequiresPermissionAndReason() throws Exception {
         var result = service.importFile(workbook(book -> book.getSheetAt(0).getRow(2).getCell(9).setCellValue("0")), "key", false);
         assertThat(result.getErrors()).extracting("code").contains("PRICE_OVERRIDE_FORBIDDEN", "OVERRIDE_REASON_REQUIRED");
         verifyNoInteractions(orders);
     }
 
-    @ParameterizedTest @ValueSource(strings = {"1e99999999", "0.00001", "-2", "999999999999999"})
+    @ParameterizedTest
+    @ValueSource(strings = {"1e99999999", "0.00001", "-2", "999999999999999"})
     void rejectsInvalidNumbersWithoutWriting(String quantity) throws Exception {
         var result = service.importFile(workbook(book -> book.getSheetAt(0).getRow(2).getCell(8).setCellValue(quantity)), "key", false);
         assertThat(result.getErrors()).extracting("code").contains("DECIMAL_INVALID");
         verifyNoInteractions(orders);
     }
 
-    @Test void detectsOverflowBeforeDatabaseWrites() throws Exception {
+    @Test
+    void detectsOverflowBeforeDatabaseWrites() throws Exception {
         price.price(new BigDecimal("99999999999999.0000"), ScmPriceSourceEnum.MARKET, null);
-        assertThat(service.importFile(workbook(book -> {}), "key", false).getErrors()).extracting("code").contains("AMOUNT_OVERFLOW");
+        assertThat(service.importFile(workbook(book -> {
+        }), "key", false).getErrors()).extracting("code").contains("AMOUNT_OVERFLOW");
         verifyNoInteractions(orders);
     }
 
-    @Test void numericDisplayFormatDoesNotHideInvalidPrecision() throws Exception {
+    @Test
+    void numericDisplayFormatDoesNotHideInvalidPrecision() throws Exception {
         var result = service.importFile(workbook(book -> {
             var cell = book.getSheetAt(0).getRow(2).getCell(8);
             cell.setCellValue(1.23456);
-            var style = book.createCellStyle(); style.setDataFormat(book.createDataFormat().getFormat("0.00")); cell.setCellStyle(style);
+            var style = book.createCellStyle();
+            style.setDataFormat(book.createDataFormat().getFormat("0.00"));
+            cell.setCellStyle(style);
         }), "key", false);
         assertThat(result.getErrors()).extracting("code").contains("DECIMAL_INVALID");
         verifyNoInteractions(orders);
     }
 
-    @Test void zeroPriceIsValidAndNumericCellsBecomeFixedPointStrings() throws Exception {
+    @Test
+    void zeroPriceIsValidAndNumericCellsBecomeFixedPointStrings() throws Exception {
         price.price(BigDecimal.ZERO, ScmPriceSourceEnum.MARKET, null);
         when(orders.importOrders(anyList(), anyString(), eq("key"), eq(1))).thenAnswer(invocation -> {
             List<SalesOrderAddForm> forms = invocation.getArgument(0);
@@ -163,10 +185,12 @@ class SalesOrderImportServiceTest {
         verify(orders).importOrders(anyList(), anyString(), eq("key"), eq(1));
     }
 
-    @Test void transactionFailureIsReturnedWithOrderAndRowContext() throws Exception {
+    @Test
+    void transactionFailureIsReturnedWithOrderAndRowContext() throws Exception {
         when(orders.importOrders(anyList(), anyString(), anyString(), anyInt())).thenThrow(
                 new SalesOrderService.ImportOrderException(0, new ScmBusinessException(OrderErrorCode.ORDER_ITEM_NOT_FOUND)));
-        var result = service.importFile(workbook(book -> {}), "key", false);
+        var result = service.importFile(workbook(book -> {
+        }), "key", false);
         assertThat(result.getOrders()).isEmpty();
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);

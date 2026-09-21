@@ -10,19 +10,19 @@
 
 /** 把后端返回的小数字符串安全转成 number。非法值一律返回 0，不返回 NaN。 */
 export function toNumber(value: string | number | null | undefined): number {
-  if (value === null || value === undefined || value === '') {
-    return 0;
-  }
-  const num = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(num) ? num : 0;
+    if (value === null || value === undefined || value === '') {
+        return 0;
+    }
+    const num = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(num) ? num : 0;
 }
 
 /** 金额：千分位 + 固定两位小数。用于销售额、采购额这类金额。 */
 export function formatAmount(value: string | number | null | undefined): string {
-  return toNumber(value).toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+    return toNumber(value).toLocaleString('zh-CN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 /**
@@ -32,21 +32,21 @@ export function formatAmount(value: string | number | null | undefined): string 
  * 「能省则省」的规则展示更易读。
  */
 export function formatQty(value: string | number | null | undefined): string {
-  return toNumber(value).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+    return toNumber(value).toLocaleString('zh-CN', {maximumFractionDigits: 2});
 }
 
 /** 整数计数（订单数、客户数等）。 */
 export function formatInt(value: string | number | null | undefined): string {
-  return Math.round(toNumber(value)).toLocaleString('zh-CN');
+    return Math.round(toNumber(value)).toLocaleString('zh-CN');
 }
 
 /** 紧凑金额：≥1 万显示为「1.2万」，否则按金额格式。用于地图节点这类空间紧张的地方。 */
 export function formatCompact(value: string | number | null | undefined): string {
-  const num = toNumber(value);
-  if (Math.abs(num) >= 10000) {
-    return `${(num / 10000).toFixed(1)}万`;
-  }
-  return formatQty(num);
+    const num = toNumber(value);
+    if (Math.abs(num) >= 10000) {
+        return `${(num / 10000).toFixed(1)}万`;
+    }
+    return formatQty(num);
 }
 
 /**
@@ -57,19 +57,19 @@ export function formatCompact(value: string | number | null | undefined): string
  * 这是唯一诚实的表达。
  */
 export function formatDelta(current: number, previous: number): number | null {
-  if (previous === 0) {
-    return null;
-  }
-  return ((current - previous) / previous) * 100;
+    if (previous === 0) {
+        return null;
+    }
+    return ((current - previous) / previous) * 100;
 }
 
 /** 环比文案：带符号、一位小数；无基数时返回「—」。 */
 export function formatDeltaText(delta: number | null): string {
-  if (delta === null) {
-    return '—';
-  }
-  const sign = delta > 0 ? '+' : '';
-  return `${sign}${delta.toFixed(1)}%`;
+    if (delta === null) {
+        return '—';
+    }
+    const sign = delta > 0 ? '+' : '';
+    return `${sign}${delta.toFixed(1)}%`;
 }
 
 /**
@@ -81,14 +81,14 @@ export function formatDeltaText(delta: number | null): string {
 export type DeltaDirection = 'up' | 'down' | 'flat' | 'unknown';
 
 export function deltaDirection(delta: number | null): DeltaDirection {
-  if (delta === null) {
-    return 'unknown';
-  }
-  if (delta > 0) {
-    return 'up';
-  }
-  if (delta < 0) {
-    return 'down';
-  }
-  return 'flat';
+    if (delta === null) {
+        return 'unknown';
+    }
+    if (delta > 0) {
+        return 'up';
+    }
+    if (delta < 0) {
+        return 'down';
+    }
+    return 'flat';
 }

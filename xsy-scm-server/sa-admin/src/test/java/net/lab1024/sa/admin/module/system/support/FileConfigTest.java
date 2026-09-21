@@ -9,6 +9,7 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 
 import java.time.Duration;
 import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.*;
 
 class FileConfigTest {
@@ -24,14 +25,17 @@ class FileConfigTest {
         return config;
     }
 
-    @Test void upstreamDefaultsRemainUnchanged() {
+    @Test
+    void upstreamDefaultsRemainUnchanged() {
         assertThat(new FileConfig().isCloudPathStyleAccessEnabled()).isFalse();
         assertThat(new FileConfig().isCloudSendObjectAcl()).isTrue();
     }
 
-    @ParameterizedTest @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     void presignerHonorsPathStyle(boolean pathStyle) {
-        FileConfig config = config(); config.setCloudPathStyleAccessEnabled(pathStyle);
+        FileConfig config = config();
+        config.setCloudPathStyleAccessEnabled(pathStyle);
         try (var signer = config.initS3Presigner(); var client = config.initS3Client()) {
             var url = signer.presignGetObject(GetObjectPresignRequest.builder()
                     .signatureDuration(Duration.ofSeconds(2))
@@ -43,17 +47,22 @@ class FileConfigTest {
         }
     }
 
-    @Test void rejectsMissingPublicPrefixAndUnsafeTtl() {
-        FileConfig config = config(); config.setCloudPublicUrlPrefix("");
+    @Test
+    void rejectsMissingPublicPrefixAndUnsafeTtl() {
+        FileConfig config = config();
+        config.setCloudPublicUrlPrefix("");
         assertThatThrownBy(config::initS3Client).isInstanceOf(IllegalStateException.class);
         config.setCloudPublicUrlPrefix("http://storage.example.test/xsy-scm-dev/");
         config.setCloudPrivateUrlExpireSeconds(0L);
         assertThatThrownBy(config::initS3Presigner).isInstanceOf(IllegalStateException.class);
     }
 
-    @ParameterizedTest @ValueSource(strings = {"pre", "prod"})
+    @ParameterizedTest
+    @ValueSource(strings = {"pre", "prod"})
     void rejectsLocalSampleCredentialsInProduction(String profile) {
-        FileConfig config = config(); config.setActiveProfiles(profile); config.setCloudAccessKey("xsy_f0_local");
+        FileConfig config = config();
+        config.setActiveProfiles(profile);
+        config.setCloudAccessKey("xsy_f0_local");
         assertThatThrownBy(config::initS3Client).isInstanceOf(IllegalStateException.class);
     }
 }

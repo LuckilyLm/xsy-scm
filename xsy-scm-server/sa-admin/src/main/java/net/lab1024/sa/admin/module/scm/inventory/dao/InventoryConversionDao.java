@@ -27,13 +27,19 @@ import java.util.List;
 @Mapper
 public interface InventoryConversionDao extends BaseMapper<InventoryConversionEntity> {
 
-    /** 单号是否存在（软删范围内）。 */
+    /**
+     * 单号是否存在（软删范围内）。
+     */
     int countByConversionNo(@Param("conversionNo") String conversionNo);
 
-    /** 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset）。 */
+    /**
+     * 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset）。
+     */
     long nextConversionNo();
 
-    /** 无锁读。 */
+    /**
+     * 无锁读。
+     */
     InventoryConversionEntity selectById(@Param("id") Long id);
 
     /**
@@ -45,21 +51,27 @@ public interface InventoryConversionDao extends BaseMapper<InventoryConversionEn
      */
     InventoryConversionEntity lockById(@Param("id") Long id);
 
-    /** 置为已完成（审批通过），带状态 + 版本双重守卫。 */
+    /**
+     * 置为已完成（审批通过），带状态 + 版本双重守卫。
+     */
     int markCompleted(@Param("id") Long id,
                       @Param("auditedAt") OffsetDateTime auditedAt,
                       @Param("auditor") String auditor,
                       @Param("auditOpinion") String auditOpinion,
                       @Param("version") Integer version);
 
-    /** 置为已驳回，带状态 + 版本双重守卫。 */
+    /**
+     * 置为已驳回，带状态 + 版本双重守卫。
+     */
     int markRejected(@Param("id") Long id,
                      @Param("auditedAt") OffsetDateTime auditedAt,
                      @Param("auditor") String auditor,
                      @Param("auditOpinion") String auditOpinion,
                      @Param("version") Integer version);
 
-    /** 回写待审核单据的头（仅 PENDING）。 */
+    /**
+     * 回写待审核单据的头（仅 PENDING）。
+     */
     int updatePending(@Param("id") Long id,
                       @Param("warehouseId") Long warehouseId,
                       @Param("convertType") String convertType,
@@ -67,9 +79,13 @@ public interface InventoryConversionDao extends BaseMapper<InventoryConversionEn
                       @Param("remark") String remark,
                       @Param("operator") String operator);
 
-    /** 分页查询（联仓库取展示字段）。 */
+    /**
+     * 分页查询（联仓库取展示字段）。
+     */
     List<InventoryConversionVO> queryPage(Page<?> page, @Param("query") InventoryConversionQueryForm query);
 
-    /** 详情。 */
+    /**
+     * 详情。
+     */
     InventoryConversionVO detail(@Param("id") Long id);
 }

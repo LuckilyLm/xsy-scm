@@ -27,10 +27,14 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
      */
     int insertOnConflictDoNothing(InventoryReservationEntity entity);
 
-    /** 无锁读。 */
+    /**
+     * 无锁读。
+     */
     InventoryReservationEntity selectById(@Param("id") Long id);
 
-    /** 按来源行查有效预留（释放时用；不锁）。 */
+    /**
+     * 按来源行查有效预留（释放时用；不锁）。
+     */
     InventoryReservationEntity selectActiveBySource(@Param("sourceDocumentType") String sourceDocumentType,
                                                     @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 
@@ -51,12 +55,18 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
      */
     InventoryReservationEntity lockById(@Param("id") Long id);
 
-    /** 置为已释放（带状态条件，防重复释放）。 */
+    /**
+     * 置为已释放（带状态条件，防重复释放）。
+     */
     int markReleased(@Param("id") Long id, @Param("operator") String operator);
 
-    /** 置为已消耗（带状态条件）。 */
+    /**
+     * 置为已消耗（带状态条件）。
+     */
     int markConsumed(@Param("id") Long id, @Param("operator") String operator);
 
-    /** 分页查询（联仓库 / SKU / 商品取展示字段）。 */
+    /**
+     * 分页查询（联仓库 / SKU / 商品取展示字段）。
+     */
     List<InventoryReservationVO> queryPage(Page<?> page, @Param("query") InventoryReservationQueryForm query);
 }

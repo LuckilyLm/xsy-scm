@@ -75,7 +75,9 @@ public class InventoryWarningThresholdService {
         return entity.getId();
     }
 
-    /** 编辑阈值配置。 */
+    /**
+     * 编辑阈值配置。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, InventoryWarningThresholdAddForm form) {
         requireRange(form);
@@ -107,7 +109,9 @@ public class InventoryWarningThresholdService {
         }
     }
 
-    /** 删除阈值配置（逻辑删）。删除后该 (仓库, SKU) 不再产生预警。 */
+    /**
+     * 删除阈值配置（逻辑删）。删除后该 (仓库, SKU) 不再产生预警。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         InventoryWarningThresholdEntity existing = thresholdDao.selectById(id);

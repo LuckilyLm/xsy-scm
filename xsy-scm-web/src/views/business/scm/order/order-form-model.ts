@@ -1,7 +1,46 @@
 import Decimal from 'decimal.js';
 import type {Order} from './order-types.ts';
-export function newOrder():Order{return {orderSource:'ADMIN',items:[],address:{receiverName:'',receiverPhone:'',address:''}};}
-export function fixed(value:string|number):string{return new Decimal(value).toDecimalPlaces(4,Decimal.ROUND_HALF_UP).toFixed(4);}
-export function validateOrder(f:Order):string|undefined {if(!f.customerId)return '请选择客户';if(!f.items.length)return '请添加商品';if(!f.address.receiverName||!f.address.receiverPhone||!f.address.address)return '请填写完整收货信息';if(f.orderSource==='SUPPLEMENT'&&!f.supplementReason?.trim())return '请填写补单原因';const seen=new Set<string>();for(const i of f.items){if(!i.skuId)return '请选择 SKU';if(seen.has(String(i.skuId)))return '同一 SKU 不能重复';seen.add(String(i.skuId));if(!/^\d{1,14}\.\d{4}$/.test(i.orderedQuantity)||new Decimal(i.orderedQuantity).lte(0))return '数量必须为正的四位定点数';if(i.manualPriceOverride&&(!i.overrideReason?.trim()||i.unitPrice==null||!/^\d{1,14}\.\d{4}$/.test(i.unitPrice)))return '人工改价需要有效价格和原因';}return undefined;}
-export function payload(f:Order):Order {return {...f,items:f.items.map((i,index)=>({itemId:i.itemId,version:i.version,skuId:i.skuId,orderedQuantity:fixed(i.orderedQuantity),manualPriceOverride:i.manualPriceOverride,unitPrice:i.manualPriceOverride&&i.unitPrice!=null?fixed(i.unitPrice):null,overrideReason:i.manualPriceOverride?i.overrideReason:null,sortOrder:index}))};}
-export function amount(value:string|null|undefined,unpriced=false):string{return value==null?(unpriced?'未定价':'—'):'¥ '+fixed(value);}
+
+export function newOrder(): Order {
+    return {orderSource: 'ADMIN', items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
+}
+
+export function fixed(value: string | number): string {
+    return new Decimal(value).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
+}
+
+export function validateOrder(f: Order): string | undefined {
+    if (!f.customerId) return '请选择客户';
+    if (!f.items.length) return '请添加商品';
+    if (!f.address.receiverName || !f.address.receiverPhone || !f.address.address) return '请填写完整收货信息';
+    if (f.orderSource === 'SUPPLEMENT' && !f.supplementReason?.trim()) return '请填写补单原因';
+    const seen = new Set<string>();
+    for (const i of f.items) {
+        if (!i.skuId) return '请选择 SKU';
+        if (seen.has(String(i.skuId))) return '同一 SKU 不能重复';
+        seen.add(String(i.skuId));
+        if (!/^\d{1,14}\.\d{4}$/.test(i.orderedQuantity) || new Decimal(i.orderedQuantity).lte(0)) return '数量必须为正的四位定点数';
+        if (i.manualPriceOverride && (!i.overrideReason?.trim() || i.unitPrice == null || !/^\d{1,14}\.\d{4}$/.test(i.unitPrice))) return '人工改价需要有效价格和原因';
+    }
+    return undefined;
+}
+
+export function payload(f: Order): Order {
+    return {
+        ...f,
+        items: f.items.map((i, index) => ({
+            itemId: i.itemId,
+            version: i.version,
+            skuId: i.skuId,
+            orderedQuantity: fixed(i.orderedQuantity),
+            manualPriceOverride: i.manualPriceOverride,
+            unitPrice: i.manualPriceOverride && i.unitPrice != null ? fixed(i.unitPrice) : null,
+            overrideReason: i.manualPriceOverride ? i.overrideReason : null,
+            sortOrder: index
+        }))
+    };
+}
+
+export function amount(value: string | null | undefined, unpriced = false): string {
+    return value == null ? (unpriced ? '未定价' : '—') : '¥ ' + fixed(value);
+}

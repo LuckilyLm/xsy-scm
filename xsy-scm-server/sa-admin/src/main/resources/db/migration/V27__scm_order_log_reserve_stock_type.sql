@@ -13,7 +13,9 @@
 --   * **操作日志的 operation_type 白名单**（最容易漏，因为它不在业务枚举旁边）
 --
 -- 纯 DDL（重建一条 CHECK），无数据变更。
-ALTER TABLE order_operation_log DROP CONSTRAINT ck_order_operation_log_type;
-ALTER TABLE order_operation_log ADD CONSTRAINT ck_order_operation_log_type
-    CHECK (operation_type IN ('CREATE', 'UPDATE', 'SUBMIT', 'ACTUAL_QUANTITY',
-                              'CONFIRM', 'CANCEL', 'RESERVE_STOCK'));
+ALTER TABLE order_operation_log
+    DROP CONSTRAINT ck_order_operation_log_type;
+ALTER TABLE order_operation_log
+    ADD CONSTRAINT ck_order_operation_log_type
+        CHECK (operation_type IN ('CREATE', 'UPDATE', 'SUBMIT', 'ACTUAL_QUANTITY',
+                                  'CONFIRM', 'CANCEL', 'RESERVE_STOCK'));

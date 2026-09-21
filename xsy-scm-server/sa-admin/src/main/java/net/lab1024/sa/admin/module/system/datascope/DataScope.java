@@ -18,19 +18,20 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface DataScope {
 
-    DataScopeTypeEnum dataScopeType() ;
+    DataScopeTypeEnum dataScopeType();
 
     DataScopeWhereInTypeEnum whereInType() default DataScopeWhereInTypeEnum.EMPLOYEE;
 
     /**
      * DataScopeWhereInTypeEnum.CUSTOM_STRATEGY类型 才可使用joinSqlImplClazz属性
      */
-    Class<? extends AbstractDataScopeStrategy> joinSqlImplClazz()  default AbstractDataScopeStrategy.class;
+    Class<? extends AbstractDataScopeStrategy> joinSqlImplClazz() default AbstractDataScopeStrategy.class;
 
     /**
      * 多个参数已逗号分隔，本属性主要用于joinSqlImplClazz 实现类跟进参数进行不同的范围控制，如不使用CUSTOM_STRATEGY，可不做配置
      */
     String paramName() default "";
+
     /**
      *
      * 第几个where 条件 从0开始

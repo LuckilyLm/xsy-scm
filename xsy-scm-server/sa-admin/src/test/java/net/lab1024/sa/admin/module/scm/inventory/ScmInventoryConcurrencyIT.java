@@ -47,7 +47,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("W6 并发入库（PG IT，无外层事务）")
 class ScmInventoryConcurrencyIT extends ScmW6PgITBase {
 
-    /** 并发等待上限：锁等待远小于它，超过即为死锁或活锁（比默默挂死好）。 */
+    /**
+     * 并发等待上限：锁等待远小于它，超过即为死锁或活锁（比默默挂死好）。
+     */
     private static final long TIMEOUT_SECONDS = 60;
 
     @Override
@@ -55,7 +57,9 @@ class ScmInventoryConcurrencyIT extends ScmW6PgITBase {
         // 无外层事务 → 每次 DAO 调用都是新 session → 一级缓存天然为空
     }
 
-    /** 子线程没有请求上下文，必须自己塞一个身份（{@code ScmOperator.current()} 依赖它）。 */
+    /**
+     * 子线程没有请求上下文，必须自己塞一个身份（{@code ScmOperator.current()} 依赖它）。
+     */
     private static void setThreadOperator() {
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);

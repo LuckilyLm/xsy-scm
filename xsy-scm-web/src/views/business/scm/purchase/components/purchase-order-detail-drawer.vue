@@ -8,7 +8,9 @@
 <template>
   <a-drawer :open="visible" :title="order?.orderNo || '采购单详情'" width="min(1240px, 96vw)" @close="visible = false">
     <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action><a-button @click="load">重试</a-button></template>
+      <template #action>
+        <a-button @click="load">重试</a-button>
+      </template>
     </a-alert>
     <a-spin :spinning="loading">
       <template v-if="order">
@@ -16,7 +18,7 @@
           <a-tag :color="STATUS_COLOR[order.status ?? '']">
             {{ SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc }}
           </a-tag>
-          <a-divider type="vertical" />
+          <a-divider type="vertical"/>
           <!--
             查询类动作（刷新）与状态流转类动作（提交 / 取消 / 少收关单）分组：
             后者是有副作用的命令，与刷新混在一排容易误点，因此用竖线隔开。
@@ -24,28 +26,28 @@
           <a-button :loading="loading" @click="load">刷新</a-button>
           <template v-if="order.status === 'DRAFT'">
             <a-button
-              type="primary"
-              :loading="submitting"
-              v-privilege="'scm:purchase:submit'"
-              @click="submit"
+                type="primary"
+                :loading="submitting"
+                v-privilege="'scm:purchase:submit'"
+                @click="submit"
             >
               提交
             </a-button>
           </template>
           <template v-if="['DRAFT', 'SUBMITTED'].includes(order.status ?? '')">
             <a-button
-              danger
-              v-privilege="'scm:purchase:cancel'"
-              @click="cancelOpen = true"
+                danger
+                v-privilege="'scm:purchase:cancel'"
+                @click="cancelOpen = true"
             >
               取消采购单
             </a-button>
           </template>
           <template v-if="order.status === 'PARTIALLY_RECEIVED'">
             <a-button
-              danger
-              v-privilege="'scm:purchase:short-close'"
-              @click="shortCloseOpen = true"
+                danger
+                v-privilege="'scm:purchase:short-close'"
+                @click="shortCloseOpen = true"
             >
               少收关单
             </a-button>
@@ -77,14 +79,14 @@
         </a-descriptions>
 
         <a-table
-          class="items"
-          :data-source="order.items ?? []"
-          :columns="itemColumns"
-          row-key="id"
-          :pagination="false"
-          :scroll="{ x: 1300 }"
-          size="small"
-          bordered
+            class="items"
+            :data-source="order.items ?? []"
+            :columns="itemColumns"
+            row-key="id"
+            :pagination="false"
+            :scroll="{ x: 1300 }"
+            size="small"
+            bordered
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'purchaseUnit'">{{ record.purchaseUnit || '—' }}</template>
@@ -114,12 +116,12 @@
 
         <a-divider orientation="left">需求分配明细</a-divider>
         <a-table
-          :data-source="order.allocations ?? []"
-          :columns="allocationColumns"
-          row-key="allocationId"
-          :pagination="false"
-          size="small"
-          bordered
+            :data-source="order.allocations ?? []"
+            :columns="allocationColumns"
+            row-key="allocationId"
+            :pagination="false"
+            size="small"
+            bordered
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'salesOrderNo'">{{ record.salesOrderNo || '—' }}</template>
@@ -135,14 +137,14 @@
 
         <a-divider orientation="left">操作记录（最新在前）</a-divider>
         <a-button
-          class="logs-trigger"
-          :loading="logsLoading"
-          v-privilege="'scm:purchase:log:query'"
-          @click="loadLogs"
+            class="logs-trigger"
+            :loading="logsLoading"
+            v-privilege="'scm:purchase:log:query'"
+            @click="loadLogs"
         >
           {{ logs.length ? '重新加载操作记录' : '查看操作记录' }}
         </a-button>
-        <a-empty v-if="!logs.length && logsLoaded" description="暂无操作记录" />
+        <a-empty v-if="!logs.length && logsLoaded" description="暂无操作记录"/>
         <a-timeline v-else class="logs">
           <a-timeline-item v-for="log in logs" :key="log.id" :color="logColor(log.operationType)">
             <div class="log-head">
@@ -159,7 +161,7 @@
             -->
             <a-collapse class="log-audit" ghost>
               <a-collapse-panel key="audit" header="变更前后">
-                <ScmDiffTable :before="log.beforeData" :after="log.afterData" />
+                <ScmDiffTable :before="log.beforeData" :after="log.afterData"/>
               </a-collapse-panel>
             </a-collapse>
           </a-timeline-item>
@@ -168,46 +170,46 @@
     </a-spin>
 
     <a-modal
-      :open="cancelOpen"
-      title="取消采购单"
-      :confirm-loading="saving"
-      @ok="cancel"
-      @cancel="cancelOpen = false"
+        :open="cancelOpen"
+        title="取消采购单"
+        :confirm-loading="saving"
+        @ok="cancel"
+        @cancel="cancelOpen = false"
     >
       <a-form-item label="取消原因" name="cancelReason" required>
-        <a-input v-model:value="cancelReason" maxlength="500" />
+        <a-input v-model:value="cancelReason" maxlength="500"/>
       </a-form-item>
     </a-modal>
 
     <a-modal
-      :open="shortCloseOpen"
-      title="少收关单"
-      :confirm-loading="saving"
-      @ok="shortClose"
-      @cancel="shortCloseOpen = false"
+        :open="shortCloseOpen"
+        title="少收关单"
+        :confirm-loading="saving"
+        @ok="shortClose"
+        @cancel="shortCloseOpen = false"
     >
       <a-form-item label="少收关单原因" name="shortCloseReason" required>
-        <a-input v-model:value="shortCloseReason" maxlength="500" />
+        <a-input v-model:value="shortCloseReason" maxlength="500"/>
       </a-form-item>
     </a-modal>
   </a-drawer>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Modal, message } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
-import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
+import {ref} from 'vue';
+import {Modal, message} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
+import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import {
   SCM_DEMAND_STATUS_ENUM,
   SCM_PURCHASE_OPERATION_ENUM,
   SCM_PURCHASE_STATUS_ENUM,
 } from '/@/constants/business/scm/purchase-const';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
-import type { Allocation, Id, LogRow, Order, OrderItem } from '../purchase-types';
-import { amount, progress, quantity } from '../purchase-form-model';
-import { datetime } from '../../common/scm-display';
-import { purchaseError } from '../purchase-errors';
+import type {Allocation, Id, LogRow, Order, OrderItem} from '../purchase-types';
+import {amount, progress, quantity} from '../purchase-form-model';
+import {datetime} from '../../common/scm-display';
+import {purchaseError} from '../purchase-errors';
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -256,30 +258,30 @@ function logColor(operationType: string | undefined): string {
 }
 
 const itemColumns: TableColumnsType<OrderItem> = [
-  { title: '商品', dataIndex: 'productName', width: 150 },
-  { title: '规格', dataIndex: 'skuName', width: 130 },
-  { title: '采购单位', dataIndex: 'purchaseUnit', width: 100 },
-  { title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 120 },
-  { title: '已收数量', dataIndex: 'receivedQuantity', align: 'right', width: 120 },
-  { title: '剩余可收', dataIndex: 'remainingQuantity', align: 'right', width: 120 },
-  { title: '超收数量', dataIndex: 'overReceiptQuantity', align: 'right', width: 120 },
-  { title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 130 },
-  { title: '金额', dataIndex: 'lineAmount', align: 'right', width: 130 },
-  { title: '需求来源', dataIndex: 'allocationCount', align: 'center', width: 100 },
+  {title: '商品', dataIndex: 'productName', width: 150},
+  {title: '规格', dataIndex: 'skuName', width: 130},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 100},
+  {title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 120},
+  {title: '已收数量', dataIndex: 'receivedQuantity', align: 'right', width: 120},
+  {title: '剩余可收', dataIndex: 'remainingQuantity', align: 'right', width: 120},
+  {title: '超收数量', dataIndex: 'overReceiptQuantity', align: 'right', width: 120},
+  {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 130},
+  {title: '金额', dataIndex: 'lineAmount', align: 'right', width: 130},
+  {title: '需求来源', dataIndex: 'allocationCount', align: 'center', width: 100},
 ];
 
 const allocationColumns: TableColumnsType<Allocation> = [
-  { title: '来源销售单', dataIndex: 'salesOrderNo', width: 210 },
-  { title: '分配数量', dataIndex: 'quantity', align: 'right', width: 130 },
-  { title: '需求单位', dataIndex: 'demandUnit', width: 100 },
-  { title: '需求状态', dataIndex: 'demandStatus', align: 'center', width: 120 },
+  {title: '来源销售单', dataIndex: 'salesOrderNo', width: 210},
+  {title: '分配数量', dataIndex: 'quantity', align: 'right', width: 130},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 100},
+  {title: '需求状态', dataIndex: 'demandStatus', align: 'center', width: 120},
 ];
 
 async function open(id: Id) {
   visible.value = true;
   logs.value = [];
   logsLoaded.value = false;
-  order.value = { id } as Order;
+  order.value = {id} as Order;
   await load();
 }
 
@@ -317,7 +319,7 @@ function submit() {
     onOk: async () => {
       submitting.value = true;
       try {
-        await purchaseOrderApi.submit({ id: order.value!.id!, version: order.value!.version! });
+        await purchaseOrderApi.submit({id: order.value!.id!, version: order.value!.version!});
         await load();
         emit('saved');
       } catch (e) {
@@ -374,7 +376,7 @@ async function shortClose() {
   }
 }
 
-defineExpose({ open });
+defineExpose({open});
 </script>
 
 <style scoped>
@@ -383,6 +385,7 @@ defineExpose({ open });
 .logs {
   margin: 16px 0;
 }
+
 /* 动作条：状态标签与动作按钮对齐，并在窄屏下自然换行。 */
 .actions {
   display: flex;
@@ -390,12 +393,15 @@ defineExpose({ open });
   flex-wrap: wrap;
   gap: 8px;
 }
+
 .num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
 .logs-trigger {
   margin-bottom: 12px;
 }
+
 /* 一条日志的抬头：时间 / 操作类型 / 操作人，等宽时间便于纵向比对。 */
 .log-head {
   display: flex;
@@ -403,25 +409,31 @@ defineExpose({ open });
   flex-wrap: wrap;
   gap: 8px;
 }
+
 .log-time {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   color: rgba(0, 0, 0, 0.65);
 }
+
 .log-operator {
   color: rgba(0, 0, 0, 0.45);
 }
+
 .log-reason {
   margin-top: 4px;
   color: rgba(0, 0, 0, 0.65);
 }
+
 /* 折叠面板去掉内边距，让差异表贴边，视觉上归属于这条日志。 */
 .log-audit {
   margin-top: 4px;
 }
+
 .log-audit :deep(.ant-collapse-header) {
   padding: 4px 0 !important;
 }
+
 .log-audit :deep(.ant-collapse-content-box) {
   padding: 8px 0 !important;
 }

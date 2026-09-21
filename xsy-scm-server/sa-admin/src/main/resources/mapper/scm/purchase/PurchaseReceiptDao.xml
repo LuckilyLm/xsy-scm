@@ -17,15 +17,15 @@
          不联 supplier / warehouse 主数据，避免快照与主数据被混用。 -->
     <select id="query" resultMap="receiptVoMap">
         SELECT r.id, r.receipt_no,
-               r.purchase_order_id,
-               r.purchase_order_no_snapshot AS purchase_order_no,
-               r.supplier_id,
-               r.supplier_name_snapshot     AS supplier_name,
-               r.warehouse_id,
-               r.warehouse_name_snapshot    AS warehouse_name,
-               r.status, r.receipt_mode, r.putaway_status, r.putaway_at, r.putaway_by,
-               r.received_at, r.confirmed_at, r.operator, r.remark,
-               r.version, r.created_at, r.updated_at
+        r.purchase_order_id,
+        r.purchase_order_no_snapshot AS purchase_order_no,
+        r.supplier_id,
+        r.supplier_name_snapshot AS supplier_name,
+        r.warehouse_id,
+        r.warehouse_name_snapshot AS warehouse_name,
+        r.status, r.receipt_mode, r.putaway_status, r.putaway_at, r.putaway_by,
+        r.received_at, r.confirmed_at, r.operator, r.remark,
+        r.version, r.created_at, r.updated_at
         FROM purchase_receipt r
         WHERE r.deleted = FALSE
         <if test="query.receiptNo != null and query.receiptNo != ''">
@@ -59,27 +59,41 @@
     </select>
 
     <select id="detail" resultMap="receiptVoMap">
-        SELECT r.id, r.receipt_no,
+        SELECT r.id,
+               r.receipt_no,
                r.purchase_order_id,
                r.purchase_order_no_snapshot AS purchase_order_no,
                r.supplier_id,
                r.supplier_name_snapshot     AS supplier_name,
                r.warehouse_id,
                r.warehouse_name_snapshot    AS warehouse_name,
-               r.status, r.receipt_mode, r.putaway_status, r.putaway_at, r.putaway_by,
-               r.received_at, r.confirmed_at, r.operator, r.remark,
-               r.version, r.created_at, r.updated_at
+               r.status,
+               r.receipt_mode,
+               r.putaway_status,
+               r.putaway_at,
+               r.putaway_by,
+               r.received_at,
+               r.confirmed_at,
+               r.operator,
+               r.remark,
+               r.version,
+               r.created_at,
+               r.updated_at
         FROM purchase_receipt r
         WHERE r.deleted = FALSE
           AND r.id = #{id}
     </select>
 
     <select id="lock" resultMap="receiptRowMap">
-        SELECT * FROM purchase_receipt WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM purchase_receipt
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <select id="listActiveByOrderId" resultMap="receiptRowMap">
-        SELECT * FROM purchase_receipt
+        SELECT *
+        FROM purchase_receipt
         WHERE deleted = FALSE
           AND purchase_order_id = #{purchaseOrderId}
         ORDER BY id ASC

@@ -1,10 +1,12 @@
 package net.lab1024.sa.admin.module.scm.purchase.domain.vo;
 
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 
@@ -24,13 +26,18 @@ public class PurchaseDemandVO {
     private String skuCode;
     private String skuName;
     private String productName;
-    private Map<String,Object> specValues;
+    private Map<String, Object> specValues;
     private String demandUnit;
     private String productType;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal requiredQuantity;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal allocatedQuantity;
-    /** 派生：requiredQuantity − allocatedQuantity。 */
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal unallocatedQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal requiredQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal allocatedQuantity;
+    /**
+     * 派生：requiredQuantity − allocatedQuantity。
+     */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal unallocatedQuantity;
     private Long supplierId;
     private String supplierName;
     private Long warehouseId;

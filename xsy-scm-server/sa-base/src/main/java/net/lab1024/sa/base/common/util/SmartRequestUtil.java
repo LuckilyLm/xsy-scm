@@ -13,7 +13,7 @@ public class SmartRequestUtil {
     private static final ThreadLocal<RequestUser> REQUEST_THREAD_LOCAL = new ThreadLocal<>();
 
     public static void setRequestUser(RequestUser requestUser) {
-        if(requestUser == null){
+        if (requestUser == null) {
             return;
         }
         REQUEST_THREAD_LOCAL.set(requestUser);

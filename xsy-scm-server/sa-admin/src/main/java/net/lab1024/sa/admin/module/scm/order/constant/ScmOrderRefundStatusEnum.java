@@ -1,4 +1,4 @@
 package net.lab1024.sa.admin.module.scm.order.constant;
 
 
-public enum ScmOrderRefundStatusEnum { PENDING, COMPLETED }
+public enum ScmOrderRefundStatusEnum {PENDING, COMPLETED}

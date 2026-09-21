@@ -52,26 +52,28 @@ public class RedisService {
 
     /**
      * 生成redis key
+     *
      * @param prefix
      * @param key
      * @return
      */
     public String generateRedisKey(String prefix, String key) {
         SystemEnvironmentEnum currentEnvironment = systemEnvironment.getCurrentEnvironment();
-        return systemEnvironment.getProjectName() + RedisKeyConst.SEPARATOR + currentEnvironment.getValue() +  RedisKeyConst.SEPARATOR + prefix + key;
+        return systemEnvironment.getProjectName() + RedisKeyConst.SEPARATOR + currentEnvironment.getValue() + RedisKeyConst.SEPARATOR + prefix + key;
     }
 
     /**
      * redis key 解析成真实的内容
+     *
      * @param redisKey
      * @return
      */
     public static String redisKeyParse(String redisKey) {
-        if(SmartStringUtil.isBlank(redisKey)){
+        if (SmartStringUtil.isBlank(redisKey)) {
             return "";
         }
         int index = redisKey.lastIndexOf(RedisKeyConst.SEPARATOR);
-        if(index < 1){
+        if (index < 1) {
             return redisKey;
         }
         return redisKey.substring(index);
@@ -181,6 +183,7 @@ public class RedisService {
     public void set(String key, String value) {
         redisValueOperations.set(key, value);
     }
+
     public void set(Object key, Object value) {
         String jsonString = JSON.toJSONString(value);
         redisValueOperations.set(key.toString(), jsonString);

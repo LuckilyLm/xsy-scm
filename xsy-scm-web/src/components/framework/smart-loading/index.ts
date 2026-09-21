@@ -2,14 +2,14 @@
  * loading 组件
  *
  */
-import { useSpinStore } from "/@/store/modules/system/spin";
+import {useSpinStore} from "/@/store/modules/system/spin";
 
 export const SmartLoading = {
-  show: () => {
-    useSpinStore().show();
-  },
+    show: () => {
+        useSpinStore().show();
+    },
 
-  hide: () => {
-    useSpinStore().hide();
-  },
+    hide: () => {
+        useSpinStore().hide();
+    },
 };

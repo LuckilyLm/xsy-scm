@@ -17,15 +17,23 @@ import java.util.List;
 @Mapper
 public interface ReceiptWeighingRecordDao extends BaseMapper<ReceiptWeighingRecordEntity> {
 
-    /** 追加一条称重事实。 */
+    /**
+     * 追加一条称重事实。
+     */
     int append(@Param("row") ReceiptWeighingRecordEntity row);
 
-    /** 某收货行的全部称重记录，按时间倒序。 */
+    /**
+     * 某收货行的全部称重记录，按时间倒序。
+     */
     List<ReceiptWeighingRecordEntity> listByReceiptItemId(@Param("purchaseReceiptItemId") Long purchaseReceiptItemId);
 
-    /** 某收货单（跨行）的全部称重记录，按时间倒序。 */
+    /**
+     * 某收货单（跨行）的全部称重记录，按时间倒序。
+     */
     List<ReceiptWeighingRecordEntity> listByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
-    /** 某收货行的称重记录条数（「非标品确认必有一条称重事实」的断言用）。 */
+    /**
+     * 某收货行的称重记录条数（「非标品确认必有一条称重事实」的断言用）。
+     */
     int countByReceiptItemId(@Param("purchaseReceiptItemId") Long purchaseReceiptItemId);
 }

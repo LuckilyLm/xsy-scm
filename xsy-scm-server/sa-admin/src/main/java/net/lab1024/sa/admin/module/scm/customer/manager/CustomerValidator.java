@@ -26,27 +26,37 @@ import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCod
 @RequiredArgsConstructor
 public class CustomerValidator {
 
-    /** 上级客户上溯的最大层数；超过即判定为环，避免脏数据把请求拖成死循环（Target Design R4）。 */
+    /**
+     * 上级客户上溯的最大层数；超过即判定为环，避免脏数据把请求拖成死循环（Target Design R4）。
+     */
     public static final int MAX_PARENT_DEPTH = 20;
 
-    /** 可以作为上级客户（集团）的类型编码。 */
+    /**
+     * 可以作为上级客户（集团）的类型编码。
+     */
     public static final String GROUP_TYPE_CODE = "GROUP";
 
     private final CustomerDao customerDao;
 
     private final CustomerTypeDao customerTypeDao;
 
-    /** 编码归一化：去空白 + 转大写，保证「abc 」与「ABC」被视为同一编码。 */
+    /**
+     * 编码归一化：去空白 + 转大写，保证「abc 」与「ABC」被视为同一编码。
+     */
     public static String normalizeCode(String raw) {
         return raw == null ? null : raw.trim().toUpperCase();
     }
 
-    /** 名称归一化：仅去首尾空白，保留大小写（中文名称大小写无意义，英文名称有意义）。 */
+    /**
+     * 名称归一化：仅去首尾空白，保留大小写（中文名称大小写无意义，英文名称有意义）。
+     */
     public static String normalizeName(String raw) {
         return raw == null ? null : raw.trim();
     }
 
-    /** 可选文本归一化：去首尾空白，空白视作「未填写」返回 {@code null}，以便真正清空列（R7）。 */
+    /**
+     * 可选文本归一化：去首尾空白，空白视作「未填写」返回 {@code null}，以便真正清空列（R7）。
+     */
     public static String normalizeOptional(String raw) {
         if (raw == null) {
             return null;
@@ -145,7 +155,9 @@ public class CustomerValidator {
         }
     }
 
-    /** 上级客户必须属于「集团」类型（业务语义：只有集团才能作为结算/归属上级）。 */
+    /**
+     * 上级客户必须属于「集团」类型（业务语义：只有集团才能作为结算/归属上级）。
+     */
     private boolean isGroupType(Long customerTypeId) {
         if (customerTypeId == null) {
             return false;

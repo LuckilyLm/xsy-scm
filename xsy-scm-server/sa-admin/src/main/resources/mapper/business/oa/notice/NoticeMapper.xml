@@ -101,7 +101,8 @@
     </select>
 
     <!-- ================================== 通知公告【员工查看】相关 ================================== -->
-    <select id="queryEmployeeNotice" resultType="net.lab1024.sa.admin.module.business.oa.notice.domain.vo.NoticeEmployeeVO">
+    <select id="queryEmployeeNotice"
+            resultType="net.lab1024.sa.admin.module.business.oa.notice.domain.vo.NoticeEmployeeVO">
         select
         <include refid="base_columns"/>,
         t_notice_type.notice_type_name,
@@ -111,25 +112,26 @@
         left join t_notice_type on t_notice.notice_type_id = t_notice_type.notice_type_id
         <where>
             <if test="!administratorFlag">
-            (
+                (
                 t_notice.notice_id in
                 (select t_notice_visible_range.notice_id
                 from t_notice_visible_range
                 where
                 ( t_notice_visible_range.data_type = #{departmentDataType}
-                    <if test="requestEmployeeDepartmentIdList != null and requestEmployeeDepartmentIdList.size > 0">
-                        and
-                        t_notice_visible_range.data_id
-                        in
-                        <foreach collection="requestEmployeeDepartmentIdList" open="(" close=")" separator="," item="item">
-                            #{item}
-                        </foreach>
-                    </if>
-                    )
-                    or ( t_notice_visible_range.data_type = #{employeeDataType} and t_notice_visible_range.data_id = #{requestEmployeeId} )
+                <if test="requestEmployeeDepartmentIdList != null and requestEmployeeDepartmentIdList.size > 0">
+                    and
+                    t_notice_visible_range.data_id
+                    in
+                    <foreach collection="requestEmployeeDepartmentIdList" open="(" close=")" separator="," item="item">
+                        #{item}
+                    </foreach>
+                </if>
+                )
+                or ( t_notice_visible_range.data_type = #{employeeDataType} and t_notice_visible_range.data_id =
+                #{requestEmployeeId} )
                 )
                 or t_notice.all_visible_flag = true
-            )
+                )
             </if>
 
             and t_notice.deleted_flag = #{deletedFlag}
@@ -154,13 +156,14 @@
                 <!-- viewFlag 是本条 SELECT 的列别名，WHERE 里不可引用（MySQL 同样报 Unknown column）。
                      这里展开成等价的关联子查询：无浏览记录即未读。 -->
                 AND (select count(*) from t_notice_view_record
-                     where t_notice_view_record.employee_id = #{requestEmployeeId}
-                       and t_notice_view_record.notice_id = t_notice.notice_id) = 0
+                where t_notice_view_record.employee_id = #{requestEmployeeId}
+                and t_notice_view_record.notice_id = t_notice.notice_id) = 0
             </if>
         </where>
         order by t_notice.publish_time desc
     </select>
-    <select id="queryEmployeeNotViewNotice" resultType="net.lab1024.sa.admin.module.business.oa.notice.domain.vo.NoticeEmployeeVO">
+    <select id="queryEmployeeNotViewNotice"
+            resultType="net.lab1024.sa.admin.module.business.oa.notice.domain.vo.NoticeEmployeeVO">
         select * from
         (
         select
@@ -213,7 +216,8 @@
         ) t where viewFlag = 0
         order by t.publish_time desc
     </select>
-    <select id="queryNoticeViewRecordList" resultType="net.lab1024.sa.admin.module.business.oa.notice.domain.vo.NoticeViewRecordVO">
+    <select id="queryNoticeViewRecordList"
+            resultType="net.lab1024.sa.admin.module.business.oa.notice.domain.vo.NoticeViewRecordVO">
         select t_notice_view_record.*,
         t_employee.actual_name as employeeName,
         t_department.department_name

@@ -2,18 +2,18 @@
   <div ref="wrapperRef" class="scm-screen-wrapper">
     <div ref="containerRef" class="scm-screen">
       <screen-header
-        :updated-at="updatedAt"
-        :stale-error="staleError"
-        :refreshing="refreshing"
-        :fullscreen="fullscreen"
-        @refresh="refresh"
-        @fullscreen="toggleFullscreen"
+          :updated-at="updatedAt"
+          :stale-error="staleError"
+          :refreshing="refreshing"
+          :fullscreen="fullscreen"
+          @refresh="refresh"
+          @fullscreen="toggleFullscreen"
       />
 
       <!-- 首屏加载：只有第一次才显示，后续静默刷新不闪屏 -->
       <div v-if="loading" class="scm-screen-state">
         <div class="scm-screen-state-inner">
-          <span class="scm-spinner" />
+          <span class="scm-spinner"/>
           <span>正在加载运营数据…</span>
         </div>
       </div>
@@ -31,41 +31,41 @@
         <main class="scm-body">
           <!-- 左列：销售经营线 -->
           <section class="scm-col-side">
-            <business-overview :business="business" />
-            <customer-ranking :business="business" />
-            <product-ranking :business="business" />
+            <business-overview :business="business"/>
+            <customer-ranking :business="business"/>
+            <product-ranking :business="business"/>
           </section>
 
           <!-- 中列：核心指标 + 供应链分布（主视觉） -->
           <section class="scm-col-center">
             <div class="scm-core-slot">
               <core-metrics
-                :business="business"
-                :inventory="inventory"
-                :purchase="purchase"
-                :trend="trend"
+                  :business="business"
+                  :inventory="inventory"
+                  :purchase="purchase"
+                  :trend="trend"
               />
             </div>
-            <supply-chain-map :inventory="inventory" :business="business" :geo="geo" />
+            <supply-chain-map :inventory="inventory" :business="business" :geo="geo"/>
           </section>
 
           <!-- 右列：采购 + 库存线（与左列镜像） -->
           <section class="scm-col-side">
-            <purchase-overview :purchase="purchase" :business="business" />
-            <inventory-health :health="inventory?.health ?? null" />
-            <warehouse-ranking :distribution="inventory?.warehouseDistribution ?? []" />
+            <purchase-overview :purchase="purchase" :business="business"/>
+            <inventory-health :health="inventory?.health ?? null"/>
+            <warehouse-ranking :distribution="inventory?.warehouseDistribution ?? []"/>
           </section>
         </main>
 
         <!-- 底部趋势带（7 / 30 天切换，三图联动） -->
-        <trend-section :trend="trend" :range="range" @update:range="setRange" />
+        <trend-section :trend="trend" :range="range" @update:range="setRange"/>
       </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import {onBeforeUnmount, onMounted, ref} from 'vue';
 import ScreenHeader from './components/screen-header.vue';
 import BusinessOverview from './components/business-overview.vue';
 import CustomerRanking from './components/customer-ranking.vue';
@@ -76,8 +76,8 @@ import PurchaseOverview from './components/purchase-overview.vue';
 import InventoryHealth from './components/inventory-health.vue';
 import WarehouseRanking from './components/warehouse-ranking.vue';
 import TrendSection from './components/trend-section.vue';
-import { useScreenData } from './composables/use-screen-data';
-import { useScreenScale } from './composables/use-screen-scale';
+import {useScreenData} from './composables/use-screen-data';
+import {useScreenScale} from './composables/use-screen-scale';
 
 /**
  * 供应链运营中心（数据大屏）。

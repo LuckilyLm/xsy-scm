@@ -1,50 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductTagRelationDao">
-<resultMap id="spuTag" type="net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSpuTagVO" autoMapping="true">
- <id column="spu_id" property="spuId"/>
- <id column="tag_id" property="tagId"/>
-</resultMap>
-<select id="selectBySpuIds" resultMap="spuTag">
- SELECT r.spu_id,t.id tag_id,t.tag_code,t.name,t.status
- FROM product_tag_relation r JOIN product_tag t ON t.id=r.tag_id AND t.deleted=FALSE
- WHERE r.deleted=FALSE AND r.spu_id IN
- <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
- ORDER BY r.spu_id,t.sort_order,t.id
-</select>
-<!-- 已绑定的活动关系，含已停用标签：单商品编辑据此放行历史绑定、只校验新增绑定。 -->
-<select id="selectTagIds" resultType="long">
- SELECT tag_id FROM product_tag_relation WHERE deleted=FALSE AND spu_id=#{spuId}
-</select>
-<!-- 一条语句完成整批打标：spuIds × tagIds 的笛卡尔积。
-     ON CONFLICT 目标与 uk_product_tag_relation_active 的谓词逐字一致（Q11），
-     已有活动关系时整行跳过，不刷新 version，也不复活已下线的行。 -->
-<insert id="insertIgnore">
- INSERT INTO product_tag_relation(spu_id,tag_id,created_at,updated_at,created_by,updated_by)
- SELECT s.spu_id,t.tag_id,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,#{operator},#{operator}
- FROM (VALUES <foreach collection="spuIds" item="spuId" separator=",">(#{spuId}::BIGINT)</foreach>) AS s(spu_id)
- CROSS JOIN (VALUES <foreach collection="tagIds" item="tagId" separator=",">(#{tagId}::BIGINT)</foreach>) AS t(tag_id)
- ON CONFLICT (spu_id,tag_id) WHERE deleted=FALSE DO NOTHING
-</insert>
-<!-- REPLACE 的下半场：清掉不在此集合内的活动关系。tagIds 为空即清空该商品的标签。 -->
-<update id="softDeleteExcept">
- UPDATE product_tag_relation SET deleted=TRUE,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator}
- WHERE deleted=FALSE AND spu_id IN
- <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
- <if test="tagIds != null and tagIds.size() > 0">AND tag_id NOT IN
-  <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">#{tagId}</foreach>
- </if>
-</update>
-<update id="softDelete">
- UPDATE product_tag_relation SET deleted=TRUE,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator}
- WHERE deleted=FALSE AND spu_id IN
- <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
- AND tag_id IN
- <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">#{tagId}</foreach>
-</update>
-<update id="softDeleteBySpuIds">
- UPDATE product_tag_relation SET deleted=TRUE,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator}
- WHERE deleted=FALSE AND spu_id IN
- <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
-</update>
+    <resultMap id="spuTag" type="net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSpuTagVO" autoMapping="true">
+        <id column="spu_id" property="spuId"/>
+        <id column="tag_id" property="tagId"/>
+    </resultMap>
+    <select id="selectBySpuIds" resultMap="spuTag">
+        SELECT r.spu_id,t.id tag_id,t.tag_code,t.name,t.status
+        FROM product_tag_relation r JOIN product_tag t ON t.id=r.tag_id AND t.deleted=FALSE
+        WHERE r.deleted=FALSE AND r.spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
+        ORDER BY r.spu_id,t.sort_order,t.id
+    </select>
+    <!-- 已绑定的活动关系，含已停用标签：单商品编辑据此放行历史绑定、只校验新增绑定。 -->
+    <select id="selectTagIds" resultType="long">
+        SELECT tag_id
+        FROM product_tag_relation
+        WHERE deleted = FALSE
+          AND spu_id = #{spuId}
+    </select>
+    <!-- 一条语句完成整批打标：spuIds × tagIds 的笛卡尔积。
+         ON CONFLICT 目标与 uk_product_tag_relation_active 的谓词逐字一致（Q11），
+         已有活动关系时整行跳过，不刷新 version，也不复活已下线的行。 -->
+    <insert id="insertIgnore">
+        INSERT INTO product_tag_relation(spu_id,tag_id,created_at,updated_at,created_by,updated_by)
+        SELECT s.spu_id,t.tag_id,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,#{operator},#{operator}
+        FROM (VALUES <foreach collection="spuIds" item="spuId" separator=",">(#{spuId}::BIGINT)</foreach>) AS s(spu_id)
+        CROSS JOIN (VALUES <foreach collection="tagIds" item="tagId" separator=",">(#{tagId}::BIGINT)</foreach>) AS
+        t(tag_id)
+        ON CONFLICT (spu_id,tag_id) WHERE deleted=FALSE DO NOTHING
+    </insert>
+    <!-- REPLACE 的下半场：清掉不在此集合内的活动关系。tagIds 为空即清空该商品的标签。 -->
+    <update id="softDeleteExcept">
+        UPDATE product_tag_relation SET deleted=TRUE,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator}
+        WHERE deleted=FALSE AND spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
+        <if test="tagIds != null and tagIds.size() > 0">AND tag_id NOT IN
+            <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">#{tagId}</foreach>
+        </if>
+    </update>
+    <update id="softDelete">
+        UPDATE product_tag_relation SET deleted=TRUE,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator}
+        WHERE deleted=FALSE AND spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
+        AND tag_id IN
+        <foreach collection="tagIds" item="tagId" open="(" separator="," close=")">#{tagId}</foreach>
+    </update>
+    <update id="softDeleteBySpuIds">
+        UPDATE product_tag_relation SET deleted=TRUE,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator}
+        WHERE deleted=FALSE AND spu_id IN
+        <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
+    </update>
 </mapper>

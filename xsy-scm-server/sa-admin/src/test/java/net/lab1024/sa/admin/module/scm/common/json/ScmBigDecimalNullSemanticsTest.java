@@ -32,7 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ScmBigDecimalNullSemanticsTest {
 
-    /** SCM 业务代码根包；任何新增 SCM 代码都必须落在这个包下。 */
+    /**
+     * SCM 业务代码根包；任何新增 SCM 代码都必须落在这个包下。
+     */
     private static final String SCM_ROOT_PACKAGE = "net.lab1024.sa.admin.module.scm";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -41,7 +43,9 @@ class ScmBigDecimalNullSemanticsTest {
     // 测试夹具：模拟一条"未定价"与一条"价格为零"的商品行
     // ------------------------------------------------------------------
 
-    /** 模拟 SCM 价格视图对象。 */
+    /**
+     * 模拟 SCM 价格视图对象。
+     */
     static class ScmPriceFixture {
 
         /**

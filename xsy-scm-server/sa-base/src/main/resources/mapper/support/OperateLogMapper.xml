@@ -30,7 +30,8 @@
                 AND (STRPOS(module,#{query.keywords}) > 0 OR STRPOS(content,#{query.keywords}) > 0)
             </if>
             <if test="query.requestKeywords != null and query.requestKeywords != ''">
-                AND (STRPOS(url,#{query.requestKeywords}) > 0 OR STRPOS(method,#{query.requestKeywords}) > 0 OR STRPOS(param,#{query.requestKeywords}) > 0 OR STRPOS(response,#{query.requestKeywords}) > 0)
+                AND (STRPOS(url,#{query.requestKeywords}) > 0 OR STRPOS(method,#{query.requestKeywords}) > 0 OR
+                STRPOS(param,#{query.requestKeywords}) > 0 OR STRPOS(response,#{query.requestKeywords}) > 0)
             </if>
             <if test="query.successFlag != null">
                 AND success_flag = #{query.successFlag}

@@ -9,37 +9,41 @@
         <div>
           <!-- <div class="operate-content" >{{ record.content }}</div> -->
           <div class="operate-content" v-html="record.content"></div>
-          <a href="javascript:void(0)" v-if="record.diffOld || record.diffNew" @click="showDetail(record)">（查看修改）</a>
+          <a href="javascript:void(0)" v-if="record.diffOld || record.diffNew"
+             @click="showDetail(record)">（查看修改）</a>
         </div>
         <div class="ip-font">
-          {{ record.createTime }} | {{ record.userName }} | {{ record.ipRegion }} | {{ record.ip }} | {{ record.browser }} | {{ record.os }}
+          {{ record.createTime }} | {{ record.userName }} | {{ record.ipRegion }} | {{ record.ip }} | {{
+            record.browser
+          }} | {{ record.os }}
         </div>
       </div>
     </a-timeline-item>
   </a-timeline>
 </template>
 <script setup lang="ts">
-  const props = defineProps({
-    tableData: {
-      type: Array,
-    },
-  });
+const props = defineProps({
+  tableData: {
+    type: Array,
+  },
+});
 
-  const emit = defineEmits(['showDetail']);
-  function showDetail(record) {
-    emit('showDetail', record);
-  }
+const emit = defineEmits(['showDetail']);
+
+function showDetail(record) {
+  emit('showDetail', record);
+}
 </script>
 <style scoped lang="less">
-  .operate-content {
-    font-size: 14px;
-    display: inline;
-  }
+.operate-content {
+  font-size: 14px;
+  display: inline;
+}
 
-  .ip-font {
-    margin-top: 5px;
-    font-size: 12px;
-    color: #999;
-    display: block;
-  }
+.ip-font {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #999;
+  display: block;
+}
 </style>

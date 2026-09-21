@@ -10,4 +10,4 @@ package net.lab1024.sa.admin.module.scm.purchase.constant;
  * <p>{@link #DEVICE} 是**扩展点**：等 W6+ 接入电子秤（G-05）时放宽 CHECK 即可启用，
  * W5 不写、不判、不落库。
  */
-public enum ScmWeighingSourceEnum { MANUAL, DEVICE }
+public enum ScmWeighingSourceEnum {MANUAL, DEVICE}

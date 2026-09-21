@@ -130,7 +130,7 @@ public class MenuService {
      * @return true 重复 false 未重复
      */
     public <T extends MenuBaseForm> Boolean validateWebPerms(T menuDTO) {
-        if(SmartStringUtil.isEmpty(menuDTO.getWebPerms())){
+        if (SmartStringUtil.isEmpty(menuDTO.getWebPerms())) {
             return false;
         }
 

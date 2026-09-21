@@ -20,18 +20,19 @@
                i.target_quantity,
                i.target_unit,
                i.remark,
-               sk.sku_code   AS source_sku_code,
-               sk.spec_name  AS source_sku_name,
-               sp.name       AS source_product_name,
-               tk.sku_code   AS target_sku_code,
-               tk.spec_name  AS target_sku_name,
-               tp.name       AS target_product_name
+               sk.sku_code  AS source_sku_code,
+               sk.spec_name AS source_sku_name,
+               sp.name      AS source_product_name,
+               tk.sku_code  AS target_sku_code,
+               tk.spec_name AS target_sku_name,
+               tp.name      AS target_product_name
         FROM inventory_conversion_item i
-        LEFT JOIN product_sku sk ON sk.id = i.source_sku_id
-        LEFT JOIN product_spu sp ON sp.id = sk.spu_id
-        LEFT JOIN product_sku tk ON tk.id = i.target_sku_id
-        LEFT JOIN product_spu tp ON tp.id = tk.spu_id
-        WHERE i.deleted = FALSE AND i.conversion_id = #{conversionId}
+                 LEFT JOIN product_sku sk ON sk.id = i.source_sku_id
+                 LEFT JOIN product_spu sp ON sp.id = sk.spu_id
+                 LEFT JOIN product_sku tk ON tk.id = i.target_sku_id
+                 LEFT JOIN product_spu tp ON tp.id = tk.spu_id
+        WHERE i.deleted = FALSE
+          AND i.conversion_id = #{conversionId}
         ORDER BY i.id ASC
     </select>
 
@@ -42,7 +43,8 @@
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{operator}
-        WHERE conversion_id = #{conversionId} AND deleted = FALSE
+        WHERE conversion_id = #{conversionId}
+          AND deleted = FALSE
     </update>
 
 </mapper>

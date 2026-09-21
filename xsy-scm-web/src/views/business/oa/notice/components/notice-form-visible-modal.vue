@@ -3,26 +3,28 @@
   * 
 -->
 <template>
-  <a-modal title="选择部门" v-model:open="visibleFlag" :maskClosable="false" :width="768" @ok="onSubmit" @cancel="onClose">
+  <a-modal title="选择部门" v-model:open="visibleFlag" :maskClosable="false" :width="768" @ok="onSubmit"
+           @cancel="onClose">
     <a-tabs v-model:activeKey="activeKey">
       <a-tab-pane :key="1" tab="选择员工">
-        <NoticeFormVisibleTransferEmployee :employeeList="employeeList" @onChange="onChangeEmployee" />
+        <NoticeFormVisibleTransferEmployee :employeeList="employeeList" @onChange="onChangeEmployee"/>
       </a-tab-pane>
       <a-tab-pane :key="2" tab="选择部门">
-        <NoticeFormVisibleTransferDepartment :departmentList="departmentList" @onChange="onChangeDepartment" />
+        <NoticeFormVisibleTransferDepartment :departmentList="departmentList" @onChange="onChangeDepartment"/>
       </a-tab-pane>
     </a-tabs>
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, watch } from 'vue';
-import { NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM } from '/@/constants/business/oa/notice-const';
+import {reactive, ref, onMounted, watch} from 'vue';
+import {NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM} from '/@/constants/business/oa/notice-const';
 import NoticeFormVisibleTransferDepartment from './notice-form-visible-transfer-department.vue';
 import NoticeFormVisibleTransferEmployee from './notice-form-visible-transfer-employee.vue';
 
 const emits = defineEmits('selectedFinish');
 const visibleFlag = ref(false);
+
 function onClose() {
   visibleFlag.value = false;
 }
@@ -48,12 +50,12 @@ function onSubmit() {
 }
 
 // 选择员工改变
-function onChangeEmployee({ selectedList }) {
+function onChangeEmployee({selectedList}) {
   employeeList.value = selectedList;
 }
 
 // 选择部门改变
-function onChangeDepartment({ selectedList }) {
+function onChangeDepartment({selectedList}) {
   departmentList.value = selectedList;
 }
 

@@ -10,4 +10,4 @@ package net.lab1024.sa.admin.module.scm.purchase.constant;
  * {@code PENDING} = 0 · {@code PARTIALLY_ALLOCATED} = 0 &lt; allocated &lt; required ·
  * {@code ALLOCATED} = allocated == required。
  */
-public enum ScmPurchaseDemandStatusEnum { PENDING, PARTIALLY_ALLOCATED, ALLOCATED }
+public enum ScmPurchaseDemandStatusEnum {PENDING, PARTIALLY_ALLOCATED, ALLOCATED}

@@ -42,25 +42,39 @@ public class InventoryMovementEntity {
 
     private Long skuId;
 
-    /** {@code ScmInventoryMovementTypeEnum}；W6-1 仅 {@code PURCHASE_IN}（DB CHECK 白名单）。 */
+    /**
+     * {@code ScmInventoryMovementTypeEnum}；W6-1 仅 {@code PURCHASE_IN}（DB CHECK 白名单）。
+     */
     private String movementType;
 
-    /** {@code ScmInventorySourceDocumentTypeEnum}；W6-1 仅 {@code PURCHASE_RECEIPT_ITEM}。 */
+    /**
+     * {@code ScmInventorySourceDocumentTypeEnum}；W6-1 仅 {@code PURCHASE_RECEIPT_ITEM}。
+     */
     private String sourceDocumentType;
 
-    /** 收货单 id（头级溯源，不参与防重）。 */
+    /**
+     * 收货单 id（头级溯源，不参与防重）。
+     */
     private Long sourceDocumentId;
 
-    /** 收货行 id（防重锚点，唯一索引列）。 */
+    /**
+     * 收货行 id（防重锚点，唯一索引列）。
+     */
     private Long sourceDocumentItemId;
 
-    /** 恒为正（{@code ck_inventory_movement_qty}）。 */
+    /**
+     * 恒为正（{@code ck_inventory_movement_qty}）。
+     */
     private BigDecimal quantity;
 
-    /** 确认时刻的采购单位快照（{@code purchase_unit_snapshot}）。 */
+    /**
+     * 确认时刻的采购单位快照（{@code purchase_unit_snapshot}）。
+     */
     private String unitSnapshot;
 
-    /** Q3：采购成本事实快照；可空只为未来的无成本 movement 类型预留表达空间。 */
+    /**
+     * Q3：采购成本事实快照；可空只为未来的无成本 movement 类型预留表达空间。
+     */
     private BigDecimal unitCost;
 
     private BigDecimal beforeQuantity;
@@ -74,10 +88,14 @@ public class InventoryMovementEntity {
      */
     private OffsetDateTime occurredAt;
 
-    /** 操作者 —— **等于 {@code purchase_receipt.operator}**（已冻结的收货确认事实）。 */
+    /**
+     * 操作者 —— **等于 {@code purchase_receipt.operator}**（已冻结的收货确认事实）。
+     */
     private String operator;
 
-    /** 恒为 FALSE（{@code ck_inventory_movement_append_only}），保留列只为匹配契约索引谓词。 */
+    /**
+     * 恒为 FALSE（{@code ck_inventory_movement_append_only}），保留列只为匹配契约索引谓词。
+     */
     private Boolean deleted = false;
 
     private OffsetDateTime createdAt;

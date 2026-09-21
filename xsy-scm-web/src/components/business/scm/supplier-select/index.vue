@@ -12,67 +12,68 @@
 -->
 <template>
   <a-select
-    v-model:value="selectValue"
-    :style="`width: ${width}`"
-    :placeholder="props.placeholder"
-    :show-search="true"
-    :allow-clear="true"
-    :size="size"
-    option-filter-prop="label"
-    @change="onChange"
+      v-model:value="selectValue"
+      :style="`width: ${width}`"
+      :placeholder="props.placeholder"
+      :show-search="true"
+      :allow-clear="true"
+      :size="size"
+      option-filter-prop="label"
+      @change="onChange"
   >
     <a-select-option
-      v-for="item in supplierList"
-      :key="item.supplierId"
-      :value="item.supplierId"
-      :label="`${item.name}（${item.supplierCode}）`"
+        v-for="item in supplierList"
+        :key="item.supplierId"
+        :value="item.supplierId"
+        :label="`${item.name}（${item.supplierCode}）`"
     >
       {{ item.name }}
-      <template v-if="item.supplierCode"> （{{ item.supplierCode }}） </template>
+      <template v-if="item.supplierCode"> （{{ item.supplierCode }}）</template>
     </a-select-option>
   </a-select>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref, watch } from 'vue';
-  import { supplierApi } from '/@/api/business/scm/supplier-api';
-  import { smartSentry } from '/@/lib/smart-sentry';
-  import type { ScmId, SupplierOption } from '/@/types/business/scm/supplier';
+import {onMounted, ref, watch} from 'vue';
+import {supplierApi} from '/@/api/business/scm/supplier-api';
+import {smartSentry} from '/@/lib/smart-sentry';
+import type {ScmId, SupplierOption} from '/@/types/business/scm/supplier';
 
-  const props = withDefaults(
+const props = withDefaults(
     defineProps<{
       value?: ScmId | ScmId[] | null;
       placeholder?: string;
       width?: string;
       size?: string;
     }>(),
-    { placeholder: '请选择供应商', width: '100%', size: 'default' }
-  );
+    {placeholder: '请选择供应商', width: '100%', size: 'default'}
+);
 
-  const emit = defineEmits<{ 'update:value': [value: ScmId | undefined]; change: [value: ScmId | undefined] }>();
+const emit = defineEmits<{ 'update:value': [value: ScmId | undefined]; change: [value: ScmId | undefined] }>();
 
-  const supplierList = ref<SupplierOption[]>([]);
+const supplierList = ref<SupplierOption[]>([]);
 
-  async function query() {
-    try {
-      const resp = await supplierApi.optionList();
-      supplierList.value = resp.data ?? [];
-    } catch (e) {
-      smartSentry.captureError(e);
-    }
+async function query() {
+  try {
+    const resp = await supplierApi.optionList();
+    supplierList.value = resp.data ?? [];
+  } catch (e) {
+    smartSentry.captureError(e);
   }
-  onMounted(query);
+}
 
-  const selectValue = ref<ScmId | ScmId[] | null | undefined>(props.value);
-  watch(
+onMounted(query);
+
+const selectValue = ref<ScmId | ScmId[] | null | undefined>(props.value);
+watch(
     () => props.value,
     (newValue) => {
       selectValue.value = newValue;
     }
-  );
+);
 
-  function onChange(value: ScmId | undefined) {
-    emit('update:value', value);
-    emit('change', value);
-  }
+function onChange(value: ScmId | undefined) {
+  emit('update:value', value);
+  emit('change', value);
+}
 </script>

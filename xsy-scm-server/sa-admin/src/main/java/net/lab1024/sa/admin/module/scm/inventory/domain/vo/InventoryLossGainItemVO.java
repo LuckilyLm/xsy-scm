@@ -31,11 +31,15 @@ public class InventoryLossGainItemVO {
 
     private Map<String, String> specValues;
 
-    /** 申报数量，恒为正。 */
+    /**
+     * 申报数量，恒为正。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;
 
-    /** 审批通过时写入的记账单位快照；待审核态为空。 */
+    /**
+     * 审批通过时写入的记账单位快照；待审核态为空。
+     */
     private String unitSnapshot;
 
     private String remark;

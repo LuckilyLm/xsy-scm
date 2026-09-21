@@ -67,7 +67,7 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
     }
 
     private InventoryLossGainAddForm form(Long wh, Long firstSku, String firstQty,
-                                         Long secondSku, String secondQty) {
+                                          Long secondSku, String secondQty) {
         InventoryLossGainAddForm form = new InventoryLossGainAddForm();
         form.setAdjustType("LOSS");
         form.setWarehouseId(wh);

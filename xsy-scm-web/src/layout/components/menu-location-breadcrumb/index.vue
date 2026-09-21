@@ -9,27 +9,27 @@
   </a-breadcrumb>
 </template>
 <script setup lang="ts">
-  import { useRoute } from 'vue-router';
-  import { useUserStore } from '/@/store/modules/system/user';
-  import { computed } from 'vue';
-  import { useAppConfigStore } from '/@/store/modules/system/app-config';
+import {useRoute} from 'vue-router';
+import {useUserStore} from '/@/store/modules/system/user';
+import {computed} from 'vue';
+import {useAppConfigStore} from '/@/store/modules/system/app-config';
 
-  // 是否显示面包屑
-  const breadCrumbFlag = computed(() =>  useAppConfigStore().$state.breadCrumbFlag);
+// 是否显示面包屑
+const breadCrumbFlag = computed(() => useAppConfigStore().$state.breadCrumbFlag);
 
-  let currentRoute = useRoute();
-  //根据路由监听面包屑
-  const parentMenuList = computed(() => {
-    let currentName = currentRoute.name;
-    if (!currentName || typeof currentName !== 'string') {
-      return [];
-    }
-    let menuParentIdListMap = useUserStore().getMenuParentIdListMap;
-    return menuParentIdListMap.get(currentName) || [];
-  });
+let currentRoute = useRoute();
+//根据路由监听面包屑
+const parentMenuList = computed(() => {
+  let currentName = currentRoute.name;
+  if (!currentName || typeof currentName !== 'string') {
+    return [];
+  }
+  let menuParentIdListMap = useUserStore().getMenuParentIdListMap;
+  return menuParentIdListMap.get(currentName) || [];
+});
 </script>
 <style scoped lang="less">
-.breadcrumb{
+.breadcrumb {
   line-height: @page-tag-height;
 }
 </style>

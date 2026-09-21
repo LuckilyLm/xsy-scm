@@ -52,7 +52,9 @@ public class InventoryStocktakeController {
         return ResponseDTO.ok(queryService.detail(id));
     }
 
-    /** 新建草稿盘点单，返回新单 id。 */
+    /**
+     * 新建草稿盘点单，返回新单 id。
+     */
     @PostMapping("/create")
     @SaCheckPermission("scm:inventory:stocktake:add")
     @OperateLog
@@ -60,7 +62,9 @@ public class InventoryStocktakeController {
         return ResponseDTO.ok(service.create(form));
     }
 
-    /** 改草稿（仅 DRAFT）；会重新快照账面量。 */
+    /**
+     * 改草稿（仅 DRAFT）；会重新快照账面量。
+     */
     @PostMapping("/update/{id}")
     @SaCheckPermission("scm:inventory:stocktake:update")
     @OperateLog
@@ -83,7 +87,9 @@ public class InventoryStocktakeController {
         return ResponseDTO.ok();
     }
 
-    /** 取消草稿（不产生任何库存影响）。 */
+    /**
+     * 取消草稿（不产生任何库存影响）。
+     */
     @PostMapping("/cancel/{id}")
     @SaCheckPermission("scm:inventory:stocktake:update")
     @OperateLog
@@ -92,7 +98,9 @@ public class InventoryStocktakeController {
         return ResponseDTO.ok();
     }
 
-    /** 删除草稿（逻辑删）。已确认的单不可删。 */
+    /**
+     * 删除草稿（逻辑删）。已确认的单不可删。
+     */
     @PostMapping("/delete/{id}")
     @SaCheckPermission("scm:inventory:stocktake:delete")
     @OperateLog

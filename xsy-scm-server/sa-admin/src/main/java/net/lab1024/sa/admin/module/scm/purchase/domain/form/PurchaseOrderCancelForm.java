@@ -11,7 +11,12 @@ import jakarta.validation.constraints.*;
  */
 @Data
 public class PurchaseOrderCancelForm {
-    @NotNull private Long id;
-    @NotNull @Min(0) private Integer version;
-    @NotBlank @Size(max=500) private String cancelReason;
+    @NotNull
+    private Long id;
+    @NotNull
+    @Min(0)
+    private Integer version;
+    @NotBlank
+    @Size(max = 500)
+    private String cancelReason;
 }

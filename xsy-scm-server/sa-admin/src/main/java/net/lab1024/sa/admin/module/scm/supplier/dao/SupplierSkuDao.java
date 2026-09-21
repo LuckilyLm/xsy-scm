@@ -15,7 +15,9 @@ import java.util.List;
 @Mapper
 public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
 
-    /** 活动关联行，按 id 升序（替换编辑页回填用）。 */
+    /**
+     * 活动关联行，按 id 升序（替换编辑页回填用）。
+     */
     List<SupplierSkuEntity> selectActiveBySupplierId(@Param("supplierId") Long supplierId);
 
     /**
@@ -34,7 +36,9 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
      */
     List<SupplierSkuEntity> selectEnabledBySkuId(@Param("skuId") Long skuId);
 
-    /** 只读反查分页。 */
+    /**
+     * 只读反查分页。
+     */
     List<SupplierSkuEntity> queryPage(Page<?> page, @Param("query") SupplierSkuQueryForm query);
 
     /**
@@ -47,10 +51,14 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
                                    @Param("version") Integer version,
                                    @Param("operator") String operator);
 
-    /** 删除供应商前的引用检查（S9）。 */
+    /**
+     * 删除供应商前的引用检查（S9）。
+     */
     long countActiveBySupplierId(@Param("supplierId") Long supplierId);
 
-    /** 列表批量补全 {@code skuCount}，一次查询完成，不 N+1。 */
+    /**
+     * 列表批量补全 {@code skuCount}，一次查询完成，不 N+1。
+     */
     List<SupplierSkuCountVO> countActiveBySupplierIds(@Param("supplierIds") Collection<Long> supplierIds);
 
     /**

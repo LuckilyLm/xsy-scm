@@ -40,7 +40,9 @@
 
     <select id="selectByVersion"
             resultType="net.lab1024.sa.base.module.support.changelog.domain.entity.ChangeLogEntity">
-        select * from t_change_log where update_version = #{version}
+        select *
+        from t_change_log
+        where update_version = #{version}
     </select>
 
 

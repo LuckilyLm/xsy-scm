@@ -9,16 +9,18 @@
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-modal
-    :open="visible"
-    :title="receipt?.receiptNo ? `确认收货 ${receipt.receiptNo}` : '确认收货'"
-    width="min(1180px, 96vw)"
-    :confirm-loading="saving"
-    ok-text="确认收货"
-    @ok="confirm"
-    @cancel="visible = false"
+      :open="visible"
+      :title="receipt?.receiptNo ? `确认收货 ${receipt.receiptNo}` : '确认收货'"
+      width="min(1180px, 96vw)"
+      :confirm-loading="saving"
+      ok-text="确认收货"
+      @ok="confirm"
+      @cancel="visible = false"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action><a-button @click="load">重试</a-button></template>
+      <template #action>
+        <a-button @click="load">重试</a-button>
+      </template>
     </a-alert>
 
     <a-spin :spinning="loading">
@@ -29,14 +31,14 @@
       </a-descriptions>
 
       <a-table
-        class="lines"
-        :data-source="receipt?.items ?? []"
-        :columns="columns"
-        row-key="id"
-        :pagination="false"
-        size="small"
-        bordered
-        :scroll="{ x: 1150 }"
+          class="lines"
+          :data-source="receipt?.items ?? []"
+          :columns="columns"
+          row-key="id"
+          :pagination="false"
+          size="small"
+          bordered
+          :scroll="{ x: 1150 }"
       >
         <template #bodyCell="{ record, column }">
           <template v-if="column.dataIndex === 'plannedQuantity'">
@@ -56,54 +58,54 @@
           </template>
           <template v-else-if="column.dataIndex === 'receivedQuantity'">
             <a-input-number
-              string-mode
-              :precision="4"
-              :min="'0'"
-              v-model:value="lineOf(record.id).receivedQuantity"
-              aria-label="本次声明数量"
+                string-mode
+                :precision="4"
+                :min="'0'"
+                v-model:value="lineOf(record.id).receivedQuantity"
+                aria-label="本次声明数量"
             />
           </template>
           <template v-else-if="column.dataIndex === 'actualWeight'">
             <!-- A25：非标品的有效数量取实重，必须录入 -->
             <a-input-number
-              v-if="isNonStandard(record)"
-              string-mode
-              :precision="4"
-              :min="'0'"
-              v-model:value="lineOf(record.id).actualWeight"
-              aria-label="实重"
+                v-if="isNonStandard(record)"
+                string-mode
+                :precision="4"
+                :min="'0'"
+                v-model:value="lineOf(record.id).actualWeight"
+                aria-label="实重"
             />
             <span v-else class="hint">标品按声明数量结算</span>
           </template>
           <template v-else-if="column.dataIndex === 'correctionReason'">
             <a-input
-              v-if="isNonStandard(record)"
-              v-model:value="lineOf(record.id).correctionReason"
-              placeholder="实重修正原因（可选）"
-              maxlength="500"
-              aria-label="实重修正原因"
+                v-if="isNonStandard(record)"
+                v-model:value="lineOf(record.id).correctionReason"
+                placeholder="实重修正原因（可选）"
+                maxlength="500"
+                aria-label="实重修正原因"
             />
           </template>
         </template>
       </a-table>
 
       <a-alert
-        class="hint-block"
-        type="info"
-        show-icon
-        message="超收容差"
-        description="超出剩余可收量的比例由服务端「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝（40989），不会部分入库。"
+          class="hint-block"
+          type="info"
+          show-icon
+          message="超收容差"
+          description="超出剩余可收量的比例由服务端「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝（40989），不会部分入库。"
       />
     </a-spin>
   </a-modal>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { message } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
-import { purchaseReceiptApi } from '/@/api/business/scm/purchase-receipt-api';
-import type { Id, Receipt, ReceiptConfirmItemPayload, ReceiptItem } from '../purchase-types';
+import {ref} from 'vue';
+import {message} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
+import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
+import type {Id, Receipt, ReceiptConfirmItemPayload, ReceiptItem} from '../purchase-types';
 import {
   confirmPayload,
   isNonStandard,
@@ -111,7 +113,7 @@ import {
   quantity,
   validateConfirm,
 } from '../purchase-form-model';
-import { purchaseError } from '../purchase-errors';
+import {purchaseError} from '../purchase-errors';
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -124,16 +126,16 @@ const lines = ref<ReceiptConfirmItemPayload[]>([]);
 let requestId = 0;
 
 const columns: TableColumnsType<ReceiptItem> = [
-  { title: '商品', dataIndex: 'skuName', width: 150 },
-  { title: '采购单位', dataIndex: 'purchaseUnit', width: 90 },
-  { title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 105 },
-  { title: '累计已收', dataIndex: 'cumulativeReceivedQuantity', align: 'right', width: 105 },
-  { title: '剩余可收', dataIndex: 'remainingQuantity', align: 'right', width: 105 },
-  { title: '超收', dataIndex: 'overReceiptQuantity', align: 'right', width: 95 },
-  { title: '差异', dataIndex: 'receiptDifference', align: 'right', width: 105 },
-  { title: '本次声明数量', dataIndex: 'receivedQuantity', align: 'right', width: 155 },
-  { title: '实重', dataIndex: 'actualWeight', align: 'right', width: 145 },
-  { title: '修正原因', dataIndex: 'correctionReason', width: 170 },
+  {title: '商品', dataIndex: 'skuName', width: 150},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 90},
+  {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 105},
+  {title: '累计已收', dataIndex: 'cumulativeReceivedQuantity', align: 'right', width: 105},
+  {title: '剩余可收', dataIndex: 'remainingQuantity', align: 'right', width: 105},
+  {title: '超收', dataIndex: 'overReceiptQuantity', align: 'right', width: 95},
+  {title: '差异', dataIndex: 'receiptDifference', align: 'right', width: 105},
+  {title: '本次声明数量', dataIndex: 'receivedQuantity', align: 'right', width: 155},
+  {title: '实重', dataIndex: 'actualWeight', align: 'right', width: 145},
+  {title: '修正原因', dataIndex: 'correctionReason', width: 170},
 ];
 
 /** 按收货行 id 取（并缓存）对应的确认行 —— 输入框双向绑定需要稳定对象。 */
@@ -208,20 +210,23 @@ async function confirm() {
   }
 }
 
-defineExpose({ open });
+defineExpose({open});
 </script>
 
 <style scoped>
 .lines {
   margin: 16px 0;
 }
+
 .num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
 .hint {
   color: var(--ant-color-text-secondary);
   font-size: 12px;
 }
+
 .hint-block {
   margin-top: 8px;
 }

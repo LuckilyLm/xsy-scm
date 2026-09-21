@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue';
+import {onBeforeUnmount, onMounted, ref, type Ref} from 'vue';
 
 /** 设计稿尺寸。所有布局常量都以这个尺寸为基准，缩放只改 transform，不改布局。 */
 export const DESIGN_WIDTH = 1920;
@@ -20,44 +20,44 @@ export const DESIGN_HEIGHT = 1080;
  * 用 ResizeObserver 可以在卸载时 unobserve，不会留下像 smart-watermark 那样的全局泄漏。
  */
 export function useScreenScale(
-  wrapperRef: Ref<HTMLElement | undefined>,
-  containerRef: Ref<HTMLElement | undefined>
+    wrapperRef: Ref<HTMLElement | undefined>,
+    containerRef: Ref<HTMLElement | undefined>
 ) {
-  const scale = ref(1);
-  let observer: ResizeObserver | null = null;
+    const scale = ref(1);
+    let observer: ResizeObserver | null = null;
 
-  function fit() {
-    const wrapper = wrapperRef.value;
-    const container = containerRef.value;
-    if (!wrapper || !container) {
-      return;
+    function fit() {
+        const wrapper = wrapperRef.value;
+        const container = containerRef.value;
+        if (!wrapper || !container) {
+            return;
+        }
+        const availableWidth = wrapper.clientWidth;
+        const availableHeight = wrapper.clientHeight;
+        if (!availableWidth || !availableHeight) {
+            return;
+        }
+        // 取较小比例：宁可上下留黑边，也不能让内容超出被裁掉
+        const next = Math.min(availableWidth / DESIGN_WIDTH, availableHeight / DESIGN_HEIGHT);
+        scale.value = next;
+        container.style.transform = `scale(${next})`;
     }
-    const availableWidth = wrapper.clientWidth;
-    const availableHeight = wrapper.clientHeight;
-    if (!availableWidth || !availableHeight) {
-      return;
-    }
-    // 取较小比例：宁可上下留黑边，也不能让内容超出被裁掉
-    const next = Math.min(availableWidth / DESIGN_WIDTH, availableHeight / DESIGN_HEIGHT);
-    scale.value = next;
-    container.style.transform = `scale(${next})`;
-  }
 
-  onMounted(() => {
-    fit();
-    if (typeof ResizeObserver !== 'undefined' && wrapperRef.value) {
-      observer = new ResizeObserver(() => fit());
-      observer.observe(wrapperRef.value);
-    }
-    // ResizeObserver 在部分浏览器的全屏切换中不会立刻回调，兜一层
-    window.addEventListener('resize', fit);
-  });
+    onMounted(() => {
+        fit();
+        if (typeof ResizeObserver !== 'undefined' && wrapperRef.value) {
+            observer = new ResizeObserver(() => fit());
+            observer.observe(wrapperRef.value);
+        }
+        // ResizeObserver 在部分浏览器的全屏切换中不会立刻回调，兜一层
+        window.addEventListener('resize', fit);
+    });
 
-  onBeforeUnmount(() => {
-    observer?.disconnect();
-    observer = null;
-    window.removeEventListener('resize', fit);
-  });
+    onBeforeUnmount(() => {
+        observer?.disconnect();
+        observer = null;
+        window.removeEventListener('resize', fit);
+    });
 
-  return { scale, fit };
+    return {scale, fit};
 }

@@ -30,7 +30,7 @@ public class EnumSerializer extends JsonSerializer<Object> implements Contextual
         // 多个枚举类 逗号分割
         if (value instanceof String && String.valueOf(value).contains(StringConst.SEPARATOR)) {
             desc = SmartStringUtil.splitConvertToIntList(String.valueOf(value), StringConst.SEPARATOR)
-                                  .stream().map(e -> SmartEnumUtil.getEnumDescByValue(e, enumClazz)).collect(Collectors.toList());
+                    .stream().map(e -> SmartEnumUtil.getEnumDescByValue(e, enumClazz)).collect(Collectors.toList());
 
         } else {
             BaseEnum anEnum = SmartEnumUtil.getEnumByValue(value, enumClazz);

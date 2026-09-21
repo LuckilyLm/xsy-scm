@@ -26,7 +26,7 @@ public class HelpDocVO {
 
     @Schema(description = "作者")
     private String author;
-    
+
     @Schema(description = "排序")
     private Integer sort;
 

@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.order.domain.vo;
 
 import lombok.Data;
+
 import java.util.ArrayList;
 import java.util.List;
 

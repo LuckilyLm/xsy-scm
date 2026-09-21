@@ -33,7 +33,9 @@ public class InventoryOutboundAddForm {
     @Valid
     private List<Item> items;
 
-    /** 出库明细行。 */
+    /**
+     * 出库明细行。
+     */
     @Data
     public static class Item {
 

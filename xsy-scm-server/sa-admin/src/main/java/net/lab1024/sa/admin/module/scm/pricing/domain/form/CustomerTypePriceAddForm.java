@@ -7,13 +7,20 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
 import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
 import net.lab1024.sa.base.common.domain.PageParam;
+
 import java.time.OffsetDateTime;
+
 @Data
 public class CustomerTypePriceAddForm {
-    @NotNull private Long customerTypeId;
-    @NotNull private Long skuId;
-    @NotNull @Pattern(regexp=ScmDecimalStrings.PATTERN)
-    @JsonDeserialize(using=ScmStrictDecimalStringDeserializer.class) private String unitPrice;
-    @NotNull private OffsetDateTime effectiveFrom;
+    @NotNull
+    private Long customerTypeId;
+    @NotNull
+    private Long skuId;
+    @NotNull
+    @Pattern(regexp = ScmDecimalStrings.PATTERN)
+    @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
+    private String unitPrice;
+    @NotNull
+    private OffsetDateTime effectiveFrom;
     private OffsetDateTime effectiveTo;
 }

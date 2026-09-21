@@ -18,92 +18,92 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        showSizeChanger
-        showQuickJumper
-        show-less-items
-        :pageSizeOptions="PAGE_SIZE_OPTIONS"
-        :defaultPageSize="queryForm.pageSize"
-        v-model:current="queryForm.pageNum"
-        v-model:pageSize="queryForm.pageSize"
-        :total="total"
-        @change="ajaxQuery"
-        :show-total="(total) => `共${total}条`"
+          showSizeChanger
+          showQuickJumper
+          show-less-items
+          :pageSizeOptions="PAGE_SIZE_OPTIONS"
+          :defaultPageSize="queryForm.pageSize"
+          v-model:current="queryForm.pageNum"
+          v-model:pageSize="queryForm.pageSize"
+          :total="total"
+          @change="ajaxQuery"
+          :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-modal>
 </template>
 <script setup lang="ts">
-  import { reactive, ref } from 'vue';
-  import { serialNumberApi } from '/@/api/support/serial-number-api';
-  import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
-import { smartSentry } from '/@/lib/smart-sentry';
+import {reactive, ref} from 'vue';
+import {serialNumberApi} from '/@/api/support/serial-number-api';
+import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
+import {smartSentry} from '/@/lib/smart-sentry';
 
-  defineExpose({
-    showModal,
-  });
+defineExpose({
+  showModal,
+});
 
-  // ----------------------- 表单 隐藏 与 显示 ------------------------
-  // 是否展示
-  const visible = ref(false);
+// ----------------------- 表单 隐藏 与 显示 ------------------------
+// 是否展示
+const visible = ref(false);
 
-  function showModal(id) {
-    queryForm.serialNumberId = id;
-    queryForm.pageNum = 1;
-    queryForm.pageSize = 10;
-    ajaxQuery();
-    visible.value = true;
+function showModal(id) {
+  queryForm.serialNumberId = id;
+  queryForm.pageNum = 1;
+  queryForm.pageSize = 10;
+  ajaxQuery();
+  visible.value = true;
+}
+
+function onClose() {
+  visible.value = false;
+}
+
+// ----------------------- 表格 ------------------------
+const columns = reactive([
+  {
+    title: '单号ID',
+    dataIndex: 'serialNumberId',
+    width: 70,
+  },
+  {
+    title: '日期',
+    dataIndex: 'recordDate',
+  },
+  {
+    title: '生成数量',
+    dataIndex: 'count',
+  },
+  {
+    title: '最后更新值',
+    dataIndex: 'lastNumber',
+  },
+  {
+    title: '上次生成时间',
+    dataIndex: 'lastTime',
+  },
+]);
+
+const queryForm = reactive({
+  serialNumberId: -1,
+  pageNum: 1,
+  pageSize: 10,
+});
+
+const tableLoading = ref(false);
+const tableData = ref([]);
+const total = ref(0);
+
+async function ajaxQuery() {
+  try {
+    tableLoading.value = true;
+    let responseModel = await serialNumberApi.queryRecord(queryForm);
+    const list = responseModel.data.list;
+    total.value = responseModel.data.total;
+    tableData.value = list;
+  } catch (e) {
+    smartSentry.captureError(e);
+  } finally {
+    tableLoading.value = false;
   }
-
-  function onClose() {
-    visible.value = false;
-  }
-
-  // ----------------------- 表格 ------------------------
-  const columns = reactive([
-    {
-      title: '单号ID',
-      dataIndex: 'serialNumberId',
-      width: 70,
-    },
-    {
-      title: '日期',
-      dataIndex: 'recordDate',
-    },
-    {
-      title: '生成数量',
-      dataIndex: 'count',
-    },
-    {
-      title: '最后更新值',
-      dataIndex: 'lastNumber',
-    },
-    {
-      title: '上次生成时间',
-      dataIndex: 'lastTime',
-    },
-  ]);
-
-  const queryForm = reactive({
-    serialNumberId: -1,
-    pageNum: 1,
-    pageSize: 10,
-  });
-
-  const tableLoading = ref(false);
-  const tableData = ref([]);
-  const total = ref(0);
-
-  async function ajaxQuery() {
-    try {
-      tableLoading.value = true;
-      let responseModel = await serialNumberApi.queryRecord(queryForm);
-      const list = responseModel.data.list;
-      total.value = responseModel.data.total;
-      tableData.value = list;
-    } catch (e) {
-      smartSentry.captureError(e);
-    } finally {
-      tableLoading.value = false;
-    }
-  }
+}
 </script>

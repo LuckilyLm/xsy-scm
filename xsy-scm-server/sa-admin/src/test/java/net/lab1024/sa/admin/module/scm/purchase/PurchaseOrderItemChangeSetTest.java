@@ -27,7 +27,9 @@ class PurchaseOrderItemChangeSetTest {
         return ((ScmBusinessException) t).getErrorCode().getCode();
     }
 
-    /** 已存在的行（id 非空、带版本、带创建审计）。 */
+    /**
+     * 已存在的行（id 非空、带版本、带创建审计）。
+     */
     private static PurchaseOrderItemEntity existing(Long id, Long skuId, int version) {
         PurchaseOrderItemEntity row = new PurchaseOrderItemEntity();
         row.setId(id);
@@ -39,7 +41,9 @@ class PurchaseOrderItemChangeSetTest {
         return row;
     }
 
-    /** 请求中的保留行（带 id + version）。 */
+    /**
+     * 请求中的保留行（带 id + version）。
+     */
     private static PurchaseOrderItemEntity retained(Long id, Long skuId, Integer version) {
         PurchaseOrderItemEntity row = new PurchaseOrderItemEntity();
         row.setId(id);
@@ -48,7 +52,9 @@ class PurchaseOrderItemChangeSetTest {
         return row;
     }
 
-    /** 请求中的新增行（无 id）。 */
+    /**
+     * 请求中的新增行（无 id）。
+     */
     private static PurchaseOrderItemEntity fresh(Long skuId) {
         PurchaseOrderItemEntity row = new PurchaseOrderItemEntity();
         row.setSkuId(skuId);

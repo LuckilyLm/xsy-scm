@@ -38,7 +38,9 @@ public class PurchaseWarehouseReferenceGuard {
 
     private final WarehouseService warehouseService;
 
-    /** 存在性检查（40485）。用于只需要「引用有效」的路径。 */
+    /**
+     * 存在性检查（40485）。用于只需要「引用有效」的路径。
+     */
     public WarehouseEntity requireExisting(Long warehouseId) {
         return warehouseService.require(warehouseId);
     }

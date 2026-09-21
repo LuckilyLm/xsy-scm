@@ -116,7 +116,9 @@ public class PurchaseReceiptService {
      */
     private final PurchaseInventoryContract purchaseInventoryContract;
 
-    /** 仓库引用守卫：收货单创建 / 入库确认前断言仓库仍启用（40987）。 */
+    /**
+     * 仓库引用守卫：收货单创建 / 入库确认前断言仓库仍启用（40987）。
+     */
     private final PurchaseWarehouseReferenceGuard warehouseReferenceGuard;
 
     // ------------------------------------------------------------------
@@ -607,8 +609,8 @@ public class PurchaseReceiptService {
      * 会把「发生时刻」写成 null，或者被迫在库存侧补一个 {@code now()}。
      */
     private record InboundLine(PurchaseReceiptItemEntity line,
-                              PurchaseOrderItemEntity orderItem,
-                              BigDecimal effective) {
+                               PurchaseOrderItemEntity orderItem,
+                               BigDecimal effective) {
     }
 
     private void appendWeighingRecord(Long receiptItemId, BigDecimal actualWeight,
@@ -693,7 +695,9 @@ public class PurchaseReceiptService {
         return snapshot;
     }
 
-    /** `RECEIPT_DELETE` 的「全量」前态（§7.12）。 */
+    /**
+     * `RECEIPT_DELETE` 的「全量」前态（§7.12）。
+     */
     private static Map<String, Object> receiptSnapshot(PurchaseReceiptVO vo) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("id", vo.getId());

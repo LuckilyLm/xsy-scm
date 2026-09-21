@@ -13,13 +13,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="收货单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.receiptNo" placeholder="收货单号" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.receiptNo" placeholder="收货单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="orderNoInput" placeholder="采购单号（自动解析）" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="orderNoInput" placeholder="采购单号（自动解析）" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
+        <SmartEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -31,7 +31,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -43,21 +45,21 @@
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_RECEIPT" :refresh="queryData" />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_RECEIPT" :refresh="queryData"/>
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_PURCHASE_TABLE_ID.RECEIPT"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :scroll="{ x: 1400 }"
-      :row-selection="{
+        :id="SCM_PURCHASE_TABLE_ID.RECEIPT"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :scroll="{ x: 1400 }"
+        :row-selection="{
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
         getCheckboxProps: (row: Receipt) => ({ disabled: row.status !== 'DRAFT' }),
@@ -78,35 +80,35 @@
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button
-              v-if="record.status === 'DRAFT'"
-              type="link"
-              v-privilege="'scm:purchase:receipt:confirm'"
-              @click="confirmModal?.open(record.id)"
+                v-if="record.status === 'DRAFT'"
+                type="link"
+                v-privilege="'scm:purchase:receipt:confirm'"
+                @click="confirmModal?.open(record.id)"
             >
               确认收货
             </a-button>
             <a-button
-              v-if="record.status === 'CONFIRMED' && record.receiptMode === 'WAREHOUSE_CONFIRM' && record.putawayStatus === 'PENDING'"
-              type="link"
-              v-privilege="'scm:purchase:receipt:putaway'"
-              @click="putaway(record)"
+                v-if="record.status === 'CONFIRMED' && record.receiptMode === 'WAREHOUSE_CONFIRM' && record.putawayStatus === 'PENDING'"
+                type="link"
+                v-privilege="'scm:purchase:receipt:putaway'"
+                @click="putaway(record)"
             >
               确认入库
             </a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
-              type="link"
-              v-privilege="'scm:purchase:receipt:update'"
-              @click="form?.open(record.id)"
+                v-if="record.status === 'DRAFT'"
+                type="link"
+                v-privilege="'scm:purchase:receipt:update'"
+                @click="form?.open(record.id)"
             >
               编辑备注
             </a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
-              danger
-              type="link"
-              v-privilege="'scm:purchase:receipt:delete'"
-              @click="remove(record)"
+                v-if="record.status === 'DRAFT'"
+                danger
+                type="link"
+                v-privilege="'scm:purchase:receipt:delete'"
+                @click="remove(record)"
             >
               删除
             </a-button>
@@ -117,43 +119,43 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
-  <PurchaseReceiptForm ref="form" @saved="queryData" />
-  <PurchaseReceiptConfirm ref="confirmModal" @saved="queryData" />
+  <PurchaseReceiptForm ref="form" @saved="queryData"/>
+  <PurchaseReceiptConfirm ref="confirmModal" @saved="queryData"/>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue';
-import { message, Modal } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
-import { useRoute } from 'vue-router';
-import { purchaseReceiptApi } from '/@/api/business/scm/purchase-receipt-api';
-import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
+import {reactive, ref, watch} from 'vue';
+import {message, Modal} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
+import {useRoute} from 'vue-router';
+import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
+import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_PURCHASE_TABLE_ID,
   SCM_PUTAWAY_STATUS_ENUM,
   SCM_RECEIPT_MODE_ENUM,
   SCM_RECEIPT_STATUS_ENUM,
 } from '/@/constants/business/scm/purchase-const';
-import type { Receipt, ReceiptQuery } from './purchase-types';
-import { purchaseError } from './purchase-errors';
+import type {Receipt, ReceiptQuery} from './purchase-types';
+import {purchaseError} from './purchase-errors';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
 import PurchaseReceiptConfirm from './components/purchase-receipt-confirm-modal.vue';
 
-const queryForm = reactive<ReceiptQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20});
 /** 用户输入的是**采购单号**（业务视角），请求参数要的是 `purchaseOrderId`。 */
 const orderNoInput = ref<string | undefined>(undefined);
 const tableData = ref<Receipt[]>([]);
@@ -166,17 +168,17 @@ const confirmModal = ref<InstanceType<typeof PurchaseReceiptConfirm>>();
 let requestId = 0;
 
 const columns = ref<TableColumnsType<Receipt>>([
-  { title: '收货单号', dataIndex: 'receiptNo', width: 210 },
-  { title: '采购单号', dataIndex: 'purchaseOrderNo', width: 210 },
-  { title: '供应商', dataIndex: 'supplierName', width: 180 },
-  { title: '收货仓库', dataIndex: 'warehouseName', width: 140 },
-  { title: '状态', dataIndex: 'status', align: 'center', width: 110 },
-  { title: '入库方式', dataIndex: 'receiptMode', align: 'center', width: 120 },
-  { title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 110 },
-  { title: '确认时间', dataIndex: 'confirmedAt', width: 190 },
-  { title: '操作者', dataIndex: 'operator', width: 120 },
-  { title: '备注', dataIndex: 'remark', width: 180 },
-  { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 250 },
+  {title: '收货单号', dataIndex: 'receiptNo', width: 210},
+  {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 210},
+  {title: '供应商', dataIndex: 'supplierName', width: 180},
+  {title: '收货仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '入库方式', dataIndex: 'receiptMode', align: 'center', width: 120},
+  {title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 110},
+  {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
+  {title: '操作者', dataIndex: 'operator', width: 120},
+  {title: '备注', dataIndex: 'remark', width: 180},
+  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 250},
 ]);
 
 /** 采购单号 → id：收货单列表按 `purchaseOrderId` 过滤，不能直接传单号。 */
@@ -186,7 +188,7 @@ async function resolveOrderId() {
     queryForm.purchaseOrderId = undefined;
     return;
   }
-  const r = await purchaseOrderApi.query({ pageNum: 1, pageSize: 1, orderNo: no });
+  const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: no});
   const first = r.data.list[0];
   if (!first) {
     throw new Error(`采购单 ${no} 不存在`);
@@ -236,7 +238,7 @@ function remove(row: Receipt) {
     okType: 'danger',
     onOk: async () => {
       try {
-        await purchaseReceiptApi.delete({ id: row.id! });
+        await purchaseReceiptApi.delete({id: row.id!});
         await queryData();
       } catch (e) {
         error.value = purchaseError(e);
@@ -253,9 +255,9 @@ function batchDelete() {
     onOk: async () => {
       try {
         await purchaseReceiptApi.batchDelete(
-          tableData.value
-            .filter((r) => selected.value.includes(r.id!))
-            .map((r) => ({ id: r.id!, version: r.version! }))
+            tableData.value
+                .filter((r) => selected.value.includes(r.id!))
+                .map((r) => ({id: r.id!, version: r.version!}))
         );
         await queryData();
       } catch (e) {
@@ -273,7 +275,7 @@ async function putaway(row: Receipt) {
     content: '该操作会把本收货单数量正式记入库存（不可撤销）。',
     onOk: async () => {
       try {
-        await purchaseReceiptApi.putaway({ id: row.id!, version: row.version! });
+        await purchaseReceiptApi.putaway({id: row.id!, version: row.version!});
         message.success('已入库');
         await queryData();
       } catch (e) {
@@ -290,19 +292,19 @@ async function putaway(row: Receipt) {
 const route = useRoute();
 const receiptRouteName = route.name;
 watch(
-  [() => route.name, () => route.query.receiptNo],
-  ([name, incomingReceiptNo]) => {
-    // SmartAdmin caches by route.name. Reapply the source link on reuse, but
-    // ignore navigation to other pages while this component stays cached.
-    if (name !== receiptRouteName) return;
-    if (typeof incomingReceiptNo === 'string' && incomingReceiptNo.trim()) {
-      queryForm.receiptNo = incomingReceiptNo.trim();
-      queryForm.status = undefined;
-      queryForm.purchaseOrderId = undefined;
-      orderNoInput.value = undefined;
-    }
-    onSearch();
-  },
-  { immediate: true }
+    [() => route.name, () => route.query.receiptNo],
+    ([name, incomingReceiptNo]) => {
+      // SmartAdmin caches by route.name. Reapply the source link on reuse, but
+      // ignore navigation to other pages while this component stays cached.
+      if (name !== receiptRouteName) return;
+      if (typeof incomingReceiptNo === 'string' && incomingReceiptNo.trim()) {
+        queryForm.receiptNo = incomingReceiptNo.trim();
+        queryForm.status = undefined;
+        queryForm.purchaseOrderId = undefined;
+        orderNoInput.value = undefined;
+      }
+      onSearch();
+    },
+    {immediate: true}
 );
 </script>

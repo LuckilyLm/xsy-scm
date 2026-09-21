@@ -1,8 +1,8 @@
 package ${packageName};
 
-#foreach ($importClass in $importPackageList)
-$importClass
-#end
+    #foreach ($importClass in $importPackageList)
+        $importClass
+    #end
 import net.lab1024.sa.base.common.util.SmartBeanUtil;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -36,65 +36,65 @@ public class ${name.upperCamel}Service {
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
-#if($insertAndUpdate.isSupportInsertAndUpdate)
-    /**
-     * 添加
-     */
-    public ResponseDTO<String> add(${name.upperCamel}AddForm addForm) {
-        ${name.upperCamel}Entity ${name.lowerCamel}Entity = SmartBeanUtil.copy(addForm, ${name.upperCamel}Entity.class);
-        ${name.lowerCamel}Dao.insert(${name.lowerCamel}Entity);
-        return ResponseDTO.ok();
-    }
-
-    /**
-     * 更新
-     *
-     */
-    public ResponseDTO<String> update(${name.upperCamel}UpdateForm updateForm) {
-        ${name.upperCamel}Entity ${name.lowerCamel}Entity = SmartBeanUtil.copy(updateForm, ${name.upperCamel}Entity.class);
-        ${name.lowerCamel}Dao.updateById(${name.lowerCamel}Entity);
-        return ResponseDTO.ok();
-    }
-#end
-
-#if($deleteInfo.isSupportDelete)
-    #if($deleteInfo.deleteEnum == "Batch" || $deleteInfo.deleteEnum == "SingleAndBatch")
-    /**
-     * 批量删除
-     */
-    public ResponseDTO<String> batchDelete(List<${primaryKeyJavaType}> idList) {
-        if (CollectionUtils.isEmpty(idList)){
+    #if($insertAndUpdate.isSupportInsertAndUpdate)
+        /**
+         * 添加
+         */
+        public ResponseDTO<String> add(${name.upperCamel}AddForm addForm) {
+                ${name.upperCamel}Entity ${name.lowerCamel}Entity = SmartBeanUtil.copy(addForm, ${name.upperCamel}Entity.class);
+                ${name.lowerCamel}Dao.insert(${name.lowerCamel}Entity);
             return ResponseDTO.ok();
         }
 
-### 真删除 or 假删除
-#if(!${deleteInfo.isPhysicallyDeleted})
-        ${name.lowerCamel}Dao.batchUpdateDeleted(idList, true);
-#else
-        ${name.lowerCamel}Dao.deleteBatchIds(idList);
-#end
-        return ResponseDTO.ok();
-    }
-    #end
-
-    #if($deleteInfo.deleteEnum == "Single" || $deleteInfo.deleteEnum == "SingleAndBatch")
-    /**
-     * 单个删除
-     */
-    public ResponseDTO<String> delete(${primaryKeyJavaType} ${primaryKeyFieldName}) {
-        if (null == ${primaryKeyFieldName}){
+        /**
+         * 更新
+         *
+         */
+        public ResponseDTO<String> update(${name.upperCamel}UpdateForm updateForm) {
+                ${name.upperCamel}Entity ${name.lowerCamel}Entity = SmartBeanUtil.copy(updateForm, ${name.upperCamel}Entity.class);
+                ${name.lowerCamel}Dao.updateById(${name.lowerCamel}Entity);
             return ResponseDTO.ok();
         }
-
-### 真删除 or 假删除
-#if(!${deleteInfo.isPhysicallyDeleted})
-        ${name.lowerCamel}Dao.updateDeleted(${primaryKeyFieldName}, true);
-#end
-#if(${deleteInfo.isPhysicallyDeleted})
-        ${name.lowerCamel}Dao.deleteById(${primaryKeyFieldName});
-#end
-        return ResponseDTO.ok();
-    }
     #end
-#end
+
+    #if($deleteInfo.isSupportDelete)
+        #if($deleteInfo.deleteEnum == "Batch" || $deleteInfo.deleteEnum == "SingleAndBatch")
+            /**
+             * 批量删除
+             */
+            public ResponseDTO<String> batchDelete(List<${primaryKeyJavaType}> idList) {
+                if (CollectionUtils.isEmpty(idList)) {
+                    return ResponseDTO.ok();
+                }
+
+                ### 真删除 or 假删除
+                #if(!${deleteInfo.isPhysicallyDeleted})
+                        ${name.lowerCamel}Dao.batchUpdateDeleted(idList, true);
+                #else
+                        ${name.lowerCamel}Dao.deleteBatchIds(idList);
+                #end
+                return ResponseDTO.ok();
+            }
+        #end
+
+        #if($deleteInfo.deleteEnum == "Single" || $deleteInfo.deleteEnum == "SingleAndBatch")
+            /**
+             * 单个删除
+             */
+            public ResponseDTO<String> delete(${primaryKeyJavaType} ${primaryKeyFieldName}) {
+                if (null == ${primaryKeyFieldName}) {
+                    return ResponseDTO.ok();
+                }
+
+                ### 真删除 or 假删除
+                #if(!${deleteInfo.isPhysicallyDeleted})
+                        ${name.lowerCamel}Dao.updateDeleted(${primaryKeyFieldName}, true);
+                #end
+                #if(${deleteInfo.isPhysicallyDeleted})
+                        ${name.lowerCamel}Dao.deleteById(${primaryKeyFieldName});
+                #end
+                return ResponseDTO.ok();
+            }
+        #end
+    #end
 }

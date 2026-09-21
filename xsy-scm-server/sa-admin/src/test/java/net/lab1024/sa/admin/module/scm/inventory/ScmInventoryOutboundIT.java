@@ -41,7 +41,9 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
         return warehouseService.defaultEnabledWarehouse().getId();
     }
 
-    /** 造一个已入库指定数量的 SKU，返回 (warehouseId, skuId)。 */
+    /**
+     * 造一个已入库指定数量的 SKU，返回 (warehouseId, skuId)。
+     */
     private Object[] stocked(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture(suffix, skuId, quantity);

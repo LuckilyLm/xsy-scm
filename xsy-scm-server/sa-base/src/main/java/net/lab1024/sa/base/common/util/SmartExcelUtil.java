@@ -34,7 +34,7 @@ public final class SmartExcelUtil {
     /**
      * 通用单sheet导出
      */
-    public static void exportExcel(HttpServletResponse response, String fileName, String sheetName, Class head,Collection<?> data) throws IOException {
+    public static void exportExcel(HttpServletResponse response, String fileName, String sheetName, Class head, Collection<?> data) throws IOException {
         // 设置下载消息头
         SmartResponseUtil.setDownloadFileHeader(response, fileName, null);
         // 下载
@@ -47,7 +47,7 @@ public final class SmartExcelUtil {
     /**
      * 通用单 sheet水印 导出
      */
-    public static void exportExcelWithWatermark(HttpServletResponse response, String fileName, String sheetName, Class head,Collection<?> data, String watermarkString) throws IOException {
+    public static void exportExcelWithWatermark(HttpServletResponse response, String fileName, String sheetName, Class head, Collection<?> data, String watermarkString) throws IOException {
         // 设置下载消息头
         SmartResponseUtil.setDownloadFileHeader(response, fileName, null);
         // 水印
@@ -176,7 +176,7 @@ public final class SmartExcelUtil {
         /**
          * 画笔颜色
          */
-        private Color color = new Color(239,239,239);
+        private Color color = new Color(239, 239, 239);
 
         /**
          * 字体样式

@@ -43,7 +43,9 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
     @Autowired
     private InventoryReservationService reservations;
 
-    /** 造一个已入库指定数量的 SKU，返回 {@code (warehouseId, skuId)}。 */
+    /**
+     * 造一个已入库指定数量的 SKU，返回 {@code (warehouseId, skuId)}。
+     */
     private Object[] stocked(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture(suffix, skuId, quantity);
@@ -67,7 +69,9 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         return form;
     }
 
-    /** 单据当前版本号 —— 审批必须带上它（读库而不是读缓存，避免 MyBatis 一级缓存干扰）。 */
+    /**
+     * 单据当前版本号 —— 审批必须带上它（读库而不是读缓存，避免 MyBatis 一级缓存干扰）。
+     */
     private int versionOf(Long id) {
         return jdbc.queryForObject(
                 "SELECT version FROM inventory_loss_gain WHERE id = ?", Integer.class, id);
@@ -89,7 +93,9 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
                 "SELECT status FROM inventory_loss_gain WHERE id = ?", String.class, id);
     }
 
-    /** 某个 (仓库, SKU) 的报损报溢流水，按业务时刻升序。 */
+    /**
+     * 某个 (仓库, SKU) 的报损报溢流水，按业务时刻升序。
+     */
     private List<Map<String, Object>> lossGainMovements(Long wh, Long sku) {
         return movementsOf(wh, sku).stream()
                 .filter(m -> {

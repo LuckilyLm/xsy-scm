@@ -4,16 +4,17 @@
   *
 -->
 <template>
-  <a-modal :title="form.roleId ? '编辑角色' : '添加角色'" :width="600" :open="modalVisible" @cancel="onClose" :footer="null">
+  <a-modal :title="form.roleId ? '编辑角色' : '添加角色'" :width="600" :open="modalVisible" @cancel="onClose"
+           :footer="null">
     <a-form ref="formRef" :model="form" :rules="rules" :labelCol="{ span: 4 }">
       <a-form-item label="角色名称" name="roleName">
-        <a-input style="width: 100%" placeholder="请输入角色名称" v-model:value="form.roleName" />
+        <a-input style="width: 100%" placeholder="请输入角色名称" v-model:value="form.roleName"/>
       </a-form-item>
       <a-form-item label="角色编码" name="roleCode">
-        <a-input style="width: 100%" placeholder="请输入角色编码" v-model:value="form.roleCode" />
+        <a-input style="width: 100%" placeholder="请输入角色编码" v-model:value="form.roleCode"/>
       </a-form-item>
       <a-form-item label="角色备注">
-        <a-input style="width: 100%" placeholder="请输入角色备注" v-model:value="form.remark" />
+        <a-input style="width: 100%" placeholder="请输入角色备注" v-model:value="form.remark"/>
       </a-form-item>
     </a-form>
 
@@ -25,56 +26,56 @@
 </template>
 
 <script setup lang="ts">
-  import { message } from 'ant-design-vue';
-  import { reactive, ref } from 'vue';
-  import { roleApi } from '/@/api/system/role-api';
-  import { smartSentry } from '/@/lib/smart-sentry';
-  import { SmartLoading } from '/@/components/framework/smart-loading';
-  // ----------------------- 以下是字段定义 emits props ---------------------
-  let emits = defineEmits(['refresh']);
+import {message} from 'ant-design-vue';
+import {reactive, ref} from 'vue';
+import {roleApi} from '/@/api/system/role-api';
+import {smartSentry} from '/@/lib/smart-sentry';
+import {SmartLoading} from '/@/components/framework/smart-loading';
+// ----------------------- 以下是字段定义 emits props ---------------------
+let emits = defineEmits(['refresh']);
 
-  defineExpose({
-    showModal,
-  });
+defineExpose({
+  showModal,
+});
 
-  // ----------------------- modal 显示与隐藏 ---------------------
-  const modalVisible = ref(false);
+// ----------------------- modal 显示与隐藏 ---------------------
+const modalVisible = ref(false);
 
-  function showModal(role) {
-    Object.assign(form, formDefault);
-    if (role) {
-      Object.assign(form, role);
-    }
-    modalVisible.value = true;
+function showModal(role) {
+  Object.assign(form, formDefault);
+  if (role) {
+    Object.assign(form, role);
   }
+  modalVisible.value = true;
+}
 
-  function onClose() {
-    Object.assign(form, formDefault);
-    modalVisible.value = false;
-  }
+function onClose() {
+  Object.assign(form, formDefault);
+  modalVisible.value = false;
+}
 
-  // ----------------------- 表单 ---------------------
+// ----------------------- 表单 ---------------------
 
-  const formRef = ref();
+const formRef = ref();
 
-  const formDefault = {
-    roleId: undefined,
-    remark: undefined,
-    roleCode: undefined,
-    roleName: undefined,
-  };
+const formDefault = {
+  roleId: undefined,
+  remark: undefined,
+  roleCode: undefined,
+  roleName: undefined,
+};
 
-  let form = reactive({ ...formDefault });
+let form = reactive({...formDefault});
 
-  // 表单规则
-  const rules = {
-    roleName: [{ required: true, message: '请输入角色名称' }],
-    roleCode: [{ required: true, message: '请输入角色编码' }],
-  };
+// 表单规则
+const rules = {
+  roleName: [{required: true, message: '请输入角色名称'}],
+  roleCode: [{required: true, message: '请输入角色编码'}],
+};
 
-  // 提交表单
-  async function submitForm() {
-    formRef.value
+// 提交表单
+async function submitForm() {
+  formRef.value
       .validate()
       .then(async () => {
         SmartLoading.show();
@@ -96,16 +97,16 @@
       .catch((error) => {
         message.error('参数验证错误，请仔细填写表单数据!');
       });
-  }
+}
 </script>
 
 <style scoped lang="less">
-  .footer {
-    width: 100%;
-    border-top: 1px solid #e9e9e9;
-    padding: 10px 16px;
-    background: #fff;
-    text-align: right;
-    z-index: 1;
-  }
+.footer {
+  width: 100%;
+  border-top: 1px solid #e9e9e9;
+  padding: 10px 16px;
+  background: #fff;
+  text-align: right;
+  z-index: 1;
+}
 </style>

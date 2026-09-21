@@ -36,14 +36,18 @@ public class InventoryStocktakeAddForm {
     @Valid
     private List<Item> items;
 
-    /** 盘点明细行。 */
+    /**
+     * 盘点明细行。
+     */
     @Data
     public static class Item {
 
         @NotNull
         private Long skuId;
 
-        /** 实盘量：允许 0，不允许负。 */
+        /**
+         * 实盘量：允许 0，不允许负。
+         */
         @NotNull
         @DecimalMin(value = "0", inclusive = true)
         @Digits(integer = 14, fraction = 4)

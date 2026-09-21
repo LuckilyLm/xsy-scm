@@ -105,7 +105,7 @@ public class MessageService {
 
     // 删除消息
     public ResponseDTO<String> delete(Long messageId) {
-        if(messageId == null){
+        if (messageId == null) {
             return ResponseDTO.userErrorParam();
         }
         messageDao.deleteById(messageId);

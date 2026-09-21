@@ -30,7 +30,7 @@ public class MessageController extends SupportBaseController {
     @PostMapping("/message/queryMyMessage")
     public ResponseDTO<PageResult<MessageVO>> query(@RequestBody @Valid MessageQueryForm queryForm) {
         RequestUser user = SmartRequestUtil.getRequestUser();
-        if(user == null){
+        if (user == null) {
             return ResponseDTO.userErrorParam("用户未登录");
         }
 
@@ -44,7 +44,7 @@ public class MessageController extends SupportBaseController {
     @GetMapping("/message/getUnreadCount")
     public ResponseDTO<Long> getUnreadCount() {
         RequestUser user = SmartRequestUtil.getRequestUser();
-        if(user == null){
+        if (user == null) {
             return ResponseDTO.userErrorParam("用户未登录");
         }
         return ResponseDTO.ok(messageService.getUnreadCount(user.getUserType(), user.getUserId()));
@@ -54,7 +54,7 @@ public class MessageController extends SupportBaseController {
     @GetMapping("/message/read/{messageId}")
     public ResponseDTO<String> updateReadFlag(@PathVariable Long messageId) {
         RequestUser user = SmartRequestUtil.getRequestUser();
-        if(user == null){
+        if (user == null) {
             return ResponseDTO.userErrorParam("用户未登录");
         }
 

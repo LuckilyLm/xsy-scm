@@ -34,14 +34,18 @@ public class InventoryWarningQueryService {
 
     private final InventoryWarningThresholdDao thresholdDao;
 
-    /** 阈值配置分页（联仓库 / SKU / 商品取展示字段）。 */
+    /**
+     * 阈值配置分页（联仓库 / SKU / 商品取展示字段）。
+     */
     public PageResult<InventoryWarningThresholdVO> queryThresholdPage(InventoryWarningThresholdQueryForm query) {
         var page = SmartPageUtil.convert2PageQuery(query);
         List<InventoryWarningThresholdVO> list = thresholdDao.queryPage(page, query);
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
-    /** 阈值配置详情（按 id）。 */
+    /**
+     * 阈值配置详情（按 id）。
+     */
     public InventoryWarningThresholdVO detail(Long id) {
         InventoryWarningThresholdVO vo = thresholdDao.detail(id);
         if (vo == null) {

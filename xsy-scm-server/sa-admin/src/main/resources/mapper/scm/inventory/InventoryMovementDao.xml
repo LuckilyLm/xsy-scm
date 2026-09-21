@@ -29,8 +29,9 @@
                 #{beforeQuantity}, #{afterQuantity}, #{occurredAt}, #{operator},
                 FALSE, CURRENT_TIMESTAMP, #{createdBy})
         ON CONFLICT (source_document_type, source_document_item_id)
-            WHERE deleted = FALSE AND source_document_item_id IS NOT NULL
-        DO NOTHING
+        WHERE deleted = FALSE
+          AND source_document_item_id IS NOT NULL
+            DO NOTHING
     </insert>
 
     <!--
@@ -41,60 +42,61 @@
     -->
     <select id="queryPage" resultMap="movementVoMap">
         SELECT m.id,
-               m.warehouse_id,
-               m.sku_id,
-               m.movement_type,
-               m.source_document_type,
-               m.source_document_id,
-               m.source_document_item_id,
-               m.quantity,
-               m.unit_snapshot,
-               m.unit_cost,
-               m.before_quantity,
-               m.after_quantity,
-               m.occurred_at,
-               m.operator,
-               m.created_at,
-               r.receipt_no,
-               COALESCE(ob.outbound_no, st.stocktake_no, lg.loss_gain_no, tr.transfer_no, cv.conversion_no) AS source_document_no,
-               w.warehouse_code,
-               w.name       AS warehouse_name,
-               k.sku_code,
-               k.spec_name  AS sku_name,
-               k.spec_values,
-               p.name       AS product_name
+        m.warehouse_id,
+        m.sku_id,
+        m.movement_type,
+        m.source_document_type,
+        m.source_document_id,
+        m.source_document_item_id,
+        m.quantity,
+        m.unit_snapshot,
+        m.unit_cost,
+        m.before_quantity,
+        m.after_quantity,
+        m.occurred_at,
+        m.operator,
+        m.created_at,
+        r.receipt_no,
+        COALESCE(ob.outbound_no, st.stocktake_no, lg.loss_gain_no, tr.transfer_no, cv.conversion_no) AS
+        source_document_no,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        k.spec_values,
+        p.name AS product_name
         FROM inventory_movement m
         LEFT JOIN purchase_receipt r
-               ON r.id = m.source_document_id
-              AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+        ON r.id = m.source_document_id
+        AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
         -- 出库波次：SALES_OUT 流水的来源单号取出库单号。
         -- 同样带类型判定 —— 否则一旦两条来源的 id 撞上，会把出库单号显示成收货单号。
         LEFT JOIN inventory_outbound ob
-               ON ob.id = m.source_document_id
-              AND m.source_document_type = 'SALES_OUTBOUND_ITEM'
+        ON ob.id = m.source_document_id
+        AND m.source_document_type = 'SALES_OUTBOUND_ITEM'
         -- 盘点波次：盘盈/盘亏流水的来源单号取盘点单号。
         -- 与上面两条 join 互斥（靠 source_document_type 判定），因此用 COALESCE 合并成一个展示列，
         -- 前端不必为三种来源各写一个「来源单号」字段。
         LEFT JOIN inventory_stocktake st
-               ON st.id = m.source_document_id
-              AND m.source_document_type = 'STOCKTAKE_ITEM'
+        ON st.id = m.source_document_id
+        AND m.source_document_type = 'STOCKTAKE_ITEM'
         -- 报损报溢波次：LOSS_REPORT / GAIN_REPORT 流水的来源单号取报损报溢单号。
         -- 报损与报溢共用同一个来源类型（LOSS_GAIN_ITEM），方向由 movement_type 区分。
         LEFT JOIN inventory_loss_gain lg
-               ON lg.id = m.source_document_id
-              AND m.source_document_type = 'LOSS_GAIN_ITEM'
+        ON lg.id = m.source_document_id
+        AND m.source_document_type = 'LOSS_GAIN_ITEM'
         -- 调拨波次：TRANSFER_OUT / TRANSFER_IN 流水的来源单号取调拨单号。
         -- 调拨占两个来源类型（同一条明细行产生两条流水），两个条件都要列上，
         -- 否则转出或转入会有一半查不到来源单号。
         LEFT JOIN inventory_transfer tr
-               ON tr.id = m.source_document_id
-              AND m.source_document_type IN ('TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM')
+        ON tr.id = m.source_document_id
+        AND m.source_document_type IN ('TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM')
         -- 规格转换波次：CONVERT_OUT / CONVERT_IN 流水的来源单号取转换单号。
         -- 同样占两个来源类型（同一条明细行产生两条流水），两个条件都要列上。
         LEFT JOIN inventory_conversion cv
-               ON cv.id = m.source_document_id
-              AND m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
-        LEFT JOIN warehouse   w ON w.id = m.warehouse_id
+        ON cv.id = m.source_document_id
+        AND m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
+        LEFT JOIN warehouse w ON w.id = m.warehouse_id
         LEFT JOIN product_sku k ON k.id = m.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE m.deleted = FALSE
@@ -136,14 +138,16 @@
     -->
     <select id="selectBySourceItem"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity">
-        SELECT * FROM inventory_movement
+        SELECT *
+        FROM inventory_movement
         WHERE deleted = FALSE
           AND source_document_type = #{sourceDocumentType}
           AND source_document_item_id = #{sourceDocumentItemId}
     </select>
 
     <select id="countActiveBySourceItem" resultType="int">
-        SELECT count(*) FROM inventory_movement
+        SELECT count(*)
+        FROM inventory_movement
         WHERE deleted = FALSE
           AND source_document_type = #{sourceDocumentType}
           AND source_document_item_id = #{sourceDocumentItemId}

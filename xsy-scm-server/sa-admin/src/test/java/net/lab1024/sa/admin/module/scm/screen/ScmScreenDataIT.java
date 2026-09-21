@@ -294,7 +294,9 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         assertThat(afterBogusCode.getCoverage().getCustomerLocated()).isEqualTo(customerTotal);
     }
 
-    /** 按市码取节点；取不到就是断言失败，而不是让调用方去和 null 较劲。 */
+    /**
+     * 按市码取节点；取不到就是断言失败，而不是让调用方去和 null 较劲。
+     */
     private static ScreenGeoVO.CityNode cityOf(ScreenGeoVO geo, int cityCode) {
         for (ScreenGeoVO.CityNode city : geo.getCities()) {
             if (city.getCityCode() == cityCode) {

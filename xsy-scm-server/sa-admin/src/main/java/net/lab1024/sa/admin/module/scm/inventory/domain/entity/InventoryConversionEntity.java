@@ -31,18 +31,24 @@ public class InventoryConversionEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 转换单号（业务唯一，软删范围内唯一）。 */
+    /**
+     * 转换单号（业务唯一，软删范围内唯一）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String conversionNo;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long warehouseId;
 
-    /** {@code ScmInventoryConversionTypeEnum}：SPLIT / COMBINE。 */
+    /**
+     * {@code ScmInventoryConversionTypeEnum}：SPLIT / COMBINE。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String convertType;
 
-    /** {@code ScmInventoryConversionStatusEnum}。 */
+    /**
+     * {@code ScmInventoryConversionStatusEnum}。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;
 
@@ -52,18 +58,24 @@ public class InventoryConversionEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String remark;
 
-    /** 审核时刻；仅已审核非空（DB 双侧 CHECK 保证待审核时为空）。 */
+    /**
+     * 审核时刻；仅已审核非空（DB 双侧 CHECK 保证待审核时为空）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime auditedAt;
 
-    /** 审核人；仅已审核非空。 */
+    /**
+     * 审核人；仅已审核非空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String auditor;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String auditOpinion;
 
-    /** 乐观锁版本号；审批时用于防「读后被改」。 */
+    /**
+     * 乐观锁版本号；审批时用于防「读后被改」。
+     */
     @Version
     private Integer version = 0;
 

@@ -8,7 +8,9 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-/** 商品-供应商关联行。 */
+/**
+ * 商品-供应商关联行。
+ */
 @Data
 public class SupplierSkuVO {
 
@@ -32,7 +34,9 @@ public class SupplierSkuVO {
 
     private String purchaseUnit;
 
-    /** 参考价，4 位定点字符串；{@code null} 保持 {@code null}。 */
+    /**
+     * 参考价，4 位定点字符串；{@code null} 保持 {@code null}。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal referencePrice;
 

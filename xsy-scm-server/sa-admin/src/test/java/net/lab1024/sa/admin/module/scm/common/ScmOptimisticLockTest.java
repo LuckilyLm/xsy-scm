@@ -16,16 +16,22 @@ import org.postgresql.ds.PGSimpleDataSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** G1 gate: real PostgreSQL + production interceptor; no permanent fixture table. */
+/**
+ * G1 gate: real PostgreSQL + production interceptor; no permanent fixture table.
+ */
 class ScmOptimisticLockTest {
     @Data
     @TableName("w1_version_probe")
     public static class Probe {
-        @TableId private Long id;
+        @TableId
+        private Long id;
         private String name;
-        @Version private Integer version;
+        @Version
+        private Integer version;
     }
-    public interface ProbeDao extends BaseMapper<Probe> { }
+
+    public interface ProbeDao extends BaseMapper<Probe> {
+    }
 
     @Test
     void staleUpdateIsRejectedAndPersistedVersionAdvances() throws Exception {

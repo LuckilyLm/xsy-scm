@@ -34,7 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("收货单生命周期：create / update / delete / 幂等（PG IT）")
 class PurchaseReceiptServiceIT extends ScmW5PgITBase {
 
-    /** 用指定数量确认收货（自动回读当前版本）。 */
+    /**
+     * 用指定数量确认收货（自动回读当前版本）。
+     */
     private PurchaseReceiptVO confirm(ReceiptFixture fx, String quantity) {
         PurchaseReceiptVO current = reloadReceipt(fx.receipt().getId());
         PurchaseReceiptItemVO line = current.getItems().getFirst();
