@@ -76,9 +76,9 @@
   规格转换 / 入库加权）已由 `e2e/scm-inventory-write.spec.ts` 覆盖。
 - **商品中心 PCO-2 未做**：商品 Excel 导入导出、图片中心（图集 `image_type` 分组与批量维护）
   仍按方案排在下一轮；PCO-1 只落了主档字段、字典、筛选、批量与删除保护。
-- **E2E 账号脚本的默认库与本机后端不一致**：`tools/e2e_accounts.py` 默认 `XSY_V2_PG_DB=xsy_scm`，
-  而后端当前连 `xsy_scm_b0`；不带该变量跑 Playwright 会在陈旧库（V17 校验和冲突、F0 之前）里建临时账号，
-  登录得到 `30001`。运行入口必须显式带上 `XSY_V2_PG_DB`，或把脚本默认值与后端 profile 对齐后去掉这条约束。
+- **E2E 账号脚本的默认库已过期**：`tools/e2e_accounts.py` 默认 `XSY_V2_PG_DB=xsy_scm`，该库停留在 V17
+  校验和冲突之前（F0 及以后未应用）；不带该变量跑 Playwright 会在陈旧库里建临时账号，登录得到 `30001`。
+  运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
 
@@ -98,7 +98,7 @@
 - **不再持久化 URL**：删 `product_image.file_url`（V41）与 `ProductImageEntity` / `ProductImageForm`
   的对应字段；展示 URL 由 `ProductQueryService` 按 `file_key` 现算覆盖。刻意不加 `file_key` 前缀
   CHECK，理由写在迁移头注释（存量私有行合法，硬约束会把历史变成故障）。
-- **验证（2026-09-21）**：JDK 21 下在一次性临时库 `xsy_scm_f01`（本次从 V1 全链建到 V41）跑目标套件
+- **验证（2026-09-21）**：在一次性临时库（本次从 V1 全链建到 V41）跑目标套件
   **10 个类 76 用例全绿**：`ProductPgIT` 21（含新增 `rejectsBindingPrivateDirectoryImage` 与
   `allowsLegacyPrivateKeyButRejectsRebindingToAnother`，正反两面都断言）、`ProductMasterDataPgIT` 11、
   `ProductControllerTest` 4、`FileAccessGuardTest` 24、`ScmPurchaseMigrationIT` 4（追加性守卫已扩到 V41）等。
@@ -106,7 +106,7 @@
   `ts_baseline_ratchet.py check` 判 `scm errors = 0` 且总量 -28（工具整体仍报 FAIL，
   是其记录在案的跨 checkout 绝对路径噪声：TS7016 消息含 `node_modules` 路径，
   换目录后同一错误以「新增 + 修复」成对出现，不代表类型回归）。
-- **浏览器验收（2026-09-21 补，dev 栈）**：`xsy_scm_b0` 已应用 V41（执行前先 `pg_dump` 备份
+- **浏览器验收（2026-09-21 补，dev 栈）**：日常开发库已应用 V41（执行前先 `pg_dump` 备份
   `product_image`，实测该表 0 活动行；重启后端后 `flyway_schema_history` version 41 success）。
   `e2e/scm-product.spec.ts` **3/3 全绿、0 pageerror**：新增商品上传图片落到
   `public/image/`（folder 5）并保存成功，商品详情页 **reload 后**图片 `naturalWidth > 0`
@@ -128,7 +128,7 @@
   `area-cascader` 静态字典，质心取 DataV.GeoAtlas 2026-09-21 快照）；`warehouse` / `customer` /
   `supplier` 各加省市区**编码 + 名称六列**与 `longitude` / `latitude` / `geom_crs`，
   配「经纬度成对」「有坐标必须有 CRS」「CRS 只允许 GCJ02/WGS84」三组 CHECK 与市级部分索引；
-  迁移末尾按自由文本地址做保守解析回填。开发库 `xsy_scm_b0` 已应用（`flyway_schema_history` version 40 success）。
+  迁移末尾按自由文本地址做保守解析回填。日常开发库已应用（`flyway_schema_history` version 40 success）。
 - **回填结果（解析覆盖率低是预期）**：客户 23 活动行 / 10 已归属到市，供应商 20 / 7，启用仓库 2 / 1。
   只解析到省的行保留省级归属（省级统计不丢行）。**经纬度与 `geom_crs` 三张表全为 0 行**，
   地图上的位置目前一律是区划质心。
@@ -149,11 +149,11 @@
   （`ts_baseline_ratchet.py check` 仍因基线含他机绝对路径假 FAIL，见下方既有遗留条目）。
   真实浏览器：`scm-customer` 2/2（本次扩展 —— 新增省市区后必须落成六列快照、编辑回填显示连续路径、
   再次保存不丢归属）、`scm-supplier` 2/2、`scm-purchase` 9/9、`scm-inventory` 仓库启停 1/1、
-  `tools/verify_screen.mjs` ✅（五接口 code=0、11 面板、13 指标、0 pageerror）。
+  大屏真实浏览器核验 ✅（五接口 code=0、11 面板、13 指标、0 pageerror）。
 - **未做**：`lines` 流向层、区县级后端字典与区划查询接口、经纬度人工录入入口（三者都等 M2 决策）。
 - **新增风险**（见方案 §8 R-6 / R-7）：港澳下辖市级字典名含「东区 / 南区 / 大堂区」等通名，
   与按整名做 `strpos` 的保守解析组合存在误挂可能，现网命中 0 行（已实测 `city_code` 落在
-  710000–829999 为 0）；一旦要收紧规则必须**新开 V41**，不能改 V40。
+  710000–829999 为 0）；一旦要收紧规则必须新开一个迁移号（按 `AGENTS.md` 从当时最大号之后选号），不能改 V40。
 - **迁移号冲突提示**：`docs/plan/product-center-optimization-plan.md` 把 PCO 各期排为 V37–V40，
   与已入库的 V37 / V38–V39 以及本次 V40 全部撞号，该文档落地前必须整体重排（见方案 §9 D-3）。
 
@@ -217,7 +217,7 @@
   看起来合理的均价。只 `UPDATE inventory_balance.avg_cost`，一行流水都不改（Q7 / V21）。
   `ScmInventoryRepriceMigrationIT` 8 项覆盖重算、幂等、非零行不动、两类失败必须 RAISE、
   纯盘盈不造价、只改派生状态、候选口径。
-- **真实库应用证据**：开发库 `xsy_scm_b0` 于 20:32:52 应用 V35 / V36 / V37，
+- **真实库应用证据**：日常开发库于 20:32:52 应用 V35 / V36 / V37，
   迁移自报 `V37 repriced 3 zero-cost balance row(s) from the movement ledger`。
   冷库备用仓 3 行均价由 0 回正为 6.2000 / 132.0000 / 2.6000，金额 3720.00 / 26400.00 / 2080.00
   （与两条腿的发出腿 `unit_cost` 逐条一致）。
@@ -230,21 +230,19 @@
   且目标仓均价 6.2、跨仓总成本守恒）、规格转换（`CONVERT_OUT` 6.2000 / `CONVERT_IN` 2.48、
   两边金额 24.8 相等、目标行均价 2.48 而非 0）、只读账号三个写接口一律 30005 且页面无写按钮。
 - **过程中修掉的真实环境问题**（都不是应用缺陷）：
-  · 后端进程陈旧（01:50 启动、库只到 V34）→ 重新打包并以 `XSY_V2_DB_URL=...xsy_scm_b0` 重启，
+  · 后端进程陈旧（01:50 启动、库只到 V34）→ 重新打包并把后端指向当前开发库后重启，
     陈旧判据见「后端启动时刻 vs 迁移文件 mtime vs `flyway_schema_history.installed_on`」。
-  · 前端容器是 `docker cp` 快照 → `bash tools/dev_up.sh sync`。
   · `t_employee` 的 identity 序列落后于种子显式插入的主键（`max=6`、序列=2），
     建 E2E 账号直接撞主键 → `setval` 推进序列（只动序列，不改行）。
   · 开发库种子分类**只播到二级**，而 SPU 只允许挂在三级且 ENABLED 的分类下
     （`requireSelectableCategory` → 40011）→ 新 spec 自建 1→2→3 级分类链，不依赖种子深度。
-    既有 `scm-inventory.spec.ts` 沿用「从分类树找 level===3」，在当前 `xsy_scm_b0` 上同样会失败（未改它）。
-  · E2E 账号脚本需要 `argon2-cffi`，本机 `python`（3.10.4）未装 → 已 `pip install`（仅开发工具依赖）。
+    既有 `scm-inventory.spec.ts` 沿用「从分类树找 level===3」，在当前开发库上同样会失败（未改它）。
 - **测试自曝的两处假红**（已修，未削弱断言）：`ScmInventoryTransferIT` 按明细行 id 查流水时未带来源类型，
   而明细行 id 只在其来源表内唯一 → 查询补 `source_document_type IN (...)` 谓词（与
   `uk_inventory_movement_source_active` 的冲突域一致）；两个回滚 IT 用**固定**来源行 id 建预留，
   在本类无外层事务、预留会提交的情况下第二次运行撞 uk 假红（41016）→ 改为按本次 `skuId` 派生。
 - **已知遗留**：脏库上 `ScmInventory*IT` 的 V19 Step 4 全库对账会被历史提交型用例残留挡下
-  （5 例，与本轮改动无交集）；干净库上库存 IT 全绿。收尾验证：在新建空库 `xsy_scm_e2e` 复跑
+  （5 例，与本轮改动无交集）；干净库上库存 IT 全绿。收尾验证：在新建的一次性空库复跑
   `ScmInventory*IT + ScmPurchaseMigrationIT`（V37 从 V1 起整链迁移）→
   **17 个测试类 / 114 项，Failures 0、Errors 0、Skipped 0，BUILD SUCCESS**（含
   `ScmInventoryRepriceMigrationIT` 8 项）。前端侧：`npm run test` **83/83**，
@@ -266,7 +264,7 @@
 
 ### 2026-09-20 模板下载与导入联调（真实 PostgreSQL + 打包 JAR + 浏览器）
 
-- 环境：`xsy-v2-postgres` / `xsy-v2-redis` 容器 + **打包后的 `sa-admin-dev-3.0.0.jar`** 跑 18080 + Vite 18081，Playwright 真实浏览器。
+- 环境：本地开发栈（Docker 内 PostgreSQL + Redis、打包后的后端 fat jar、Vite dev 前端），Playwright 真实浏览器。
 - 后端：`GET /scm/order/import/template` 改为一次性读入 classpath 字节再写出（长度取实际字节数），资源缺失时回写 JSON 错误而不是 500；`SmartResponseUtil.setDownloadFileHeader` 补 `filename*=UTF-8''`（RFC 6266），`filename=` 保留为 ASCII 回退。
 - 实测响应：`200` + `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8` + `Content-Length: 6192` + 双文件名头，正文首两字节 `504b`（真 ZIP，非错误 JSON）。只读账号返回 `code 30005`、未登录返回 `30007`，均为 `application/json`，前端据此走失败分支、不会落盘成 Excel。
 - 打包证明：`BOOT-INF/classes/template/sales-order-import.xlsx` 在 JAR 内；从 `C:/Windows/Temp` 这种与仓库无关的工作目录启动同一 JAR 仍可下载，证明不依赖开发机绝对路径。
@@ -422,7 +420,7 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
   （枚举 10 个 / 来源 9 个 / 错误码 57 个 / 版本清单加 33）。
 - 顺带把两处「未落地类型」的占位断言改成 `UNKNOWN_IN`：十个真实类型已全部落地，
   再拿「未实现的业务类型」当反例会每落地一个就要改一次（V29/V30/V31/V33 各改过一次）。
-- 验证：干净库 `xsy_scm_cv` 上 `ScmInventory*` 全绿。
+- 验证：一次性干净临时库上 `ScmInventory*` 全绿。
 - 未覆盖：浏览器验收；移动加权成本核算。
 
 ### 2026-09-20 B7 数据大屏（V28）
@@ -439,13 +437,10 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
   前端 lint/typecheck/test/build 已通过。
 - 未覆盖：大屏真实浏览器验收；后端集成测试需 Java 21 环境执行。
 - **2026-09-20 故障修复：数据大屏打不开。** 两个独立原因叠加：
-  1. **前端容器是 `docker cp` 快照，不是挂载**（`tools/dev_up.sh` 为绕开 Docker Desktop
-     Windows 9p 挂载卡死而刻意如此）。容器里的源码停在建容器那一刻，
-     `src/views/business/scm/screen/` 等 **15 个文件**（大屏、调拨、盘点、报损报溢、
-     规格转换、阈值预警的前端）**根本不存在**；Vite 找不到 `.vue` 时会把请求回退成
-     `index.html`（HTTP 200 + `text/html`），页面白屏。修复：`bash tools/dev_up.sh sync`
-     新增同步子命令（tar 过滤 `node_modules` / `dist*`，约 10 秒，并自带「Vite 是否
-     真的在编译 .vue」的探针校验）。
+  1. **前端运行实例里的源码是旧快照**，`src/views/business/scm/screen/` 等 **15 个文件**
+     （大屏、调拨、盘点、报损报溢、规格转换、阈值预警的前端）当时**并不存在于运行实例**；
+     Vite 找不到 `.vue` 时会把请求回退成 `index.html`（HTTP 200 + `text/html`），页面白屏。
+     修复是把当前源码同步进运行实例并确认 Vite 真的在编译 `.vue`。
   2. **Header 入口 URL 缺 hash 前缀**：应用是 `createWebHashHistory`，
      原 `window.open('/screen')` 命中服务端路径后被 SPA 回退，hash 为空最终落到首页。
      改为 `window.location.origin + import.meta.env.BASE_URL + '#/screen'`。
@@ -456,9 +451,8 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
   - `src/lib/smart-watermark.ts`：水印容器只存在于 SmartLayout 内，
     而 `set()` 注册的 `window.onresize` 是全局的、离开 Layout 不注销，
     在大屏（独立路由）上缩放窗口必抛 `TypeError: ... reading 'appendChild'` → 加空值守卫。
-- 新增 `tools/verify_screen.mjs` 浏览器验收脚本（登录 → 点 Header 入口验证新标签 URL →
-  深链 `/#/screen` → 校验 3 个接口 code=0、12 个 KPI 有真实数据、3 张 canvas 图表挂载、
-  小视口不裁切、无 pageerror）。**注意 `tools/*` 被 .gitignore 排除，脚本只存在于本地。**
+- 大屏浏览器验收覆盖：登录 → 点 Header 入口验证新标签 URL → 深链 `/#/screen` →
+  校验 3 个接口 code=0、12 个 KPI 有真实数据、3 张 canvas 图表挂载、小视口不裁切、无 pageerror。
 - 结果：验收 20 项全绿，0 pageerror；`库存总量` 由 `4051.0000` 改为 `4,051`，
   今日排行图为空时显示「今日暂无数据」（当日无订单时不再像页面坏了）。
 
@@ -490,7 +484,7 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
 - **实现期踩到一个坑**：配置编辑最初用 `updateById`，而实体上 `updateStrategy = ALWAYS`
   会把 `created_at` 也写进 SET 子句（更新实体里它是 null）→ 违反 NOT NULL。
   已改为手写 SQL（与全仓其它模块一致），顺带天然支持把边界清空成 NULL。
-- 验证：干净库 `xsy_scm_wn3` 上 `ScmInventory*` 全绿；前端 `npm run test` 78/78、
+- 验证：一次性干净临时库上 `ScmInventory*` 全绿；前端 `npm run test` 78/78、
   ESLint 0 错误 / 3 条既有警告。
 - 未覆盖：浏览器验收；推送 / 通知机制；单位转换 / 移动加权成本。
 
@@ -524,7 +518,7 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
   `ScmInventoryMigrationIT`（八方向 CHECK + V31 四条 DB 层判据）、`ScmPurchaseMigrationIT`（加 31）、
   `PurchaseErrorCodeTest`（仓库域 7 → 8，合计 46 → 47）、`ScmInventoryInboundIT`（白名单用例改用
   `CONVERT_IN`，因为 `TRANSFER_IN` 已落地）；前端 `w6-inventory-contract.test.mjs` 新增调拨契约。
-- 验证：干净库 `xsy_scm_trf2` 上 `Tests run: 666+ / Failures: 0（除数据大屏）/ Skipped: 5`；
+- 验证：一次性干净临时库上 `Tests run: 666+ / Failures: 0（除数据大屏）/ Skipped: 5`；
   调拨相关用例全绿。前端 `npm run test` 74/74、ESLint 0 错误 / 3 条既有警告。
 - 未覆盖：浏览器验收；调拨并发压测；阈值预警 / 单位转换 / 移动加权成本。
 
@@ -555,7 +549,7 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
   同步扩 `ScmInventoryConstantTest`（枚举 6 个 / 错误码 30 个 / 报损报溢类型与状态机）、
   `ScmInventoryMigrationIT`（六方向 CHECK + V30 四条 DB 层判据）、
   `ScmPurchaseMigrationIT`（版本清单加 30）；前端 `w6-inventory-contract.test.mjs` 新增报损报溢契约。
-- 验证：干净库 `xsy_scm_lg` 上 `Tests run: 645, Failures: 2, Errors: 2, Skipped: 5` ——
+- 验证：一次性干净临时库上 `Tests run: 645, Failures: 2, Errors: 2, Skipped: 5` ——
   4 项失败**全部**落在并行开发的未提交 `scm/screen`（数据大屏）模块，与报损报溢无关；
   报损报溢相关用例全绿。前端 `npm run test` 71/71、ESLint 0 错误 / 3 条既有警告。
 - 落库核对：`flyway latest=30`、0 条失败迁移、菜单 840–846 权限正确、
@@ -582,7 +576,7 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
   `Propagation.NOT_SUPPORTED` 真实回滚）、`InventoryStocktakeNumberGeneratorTest`（4 例）；
   同步扩 `ScmInventoryConstantTest`（枚举 4 个 / 错误码 20 个）、`ScmInventoryMigrationIT`（四方向 CHECK 断言）、
   `ScmPurchaseMigrationIT`（版本清单加 28/29）；前端 `w6-inventory-contract.test.mjs` 新增盘点页契约。
-- 验证：干净库 `xsy_scm_stk` 上 `Tests run: 622, Failures: 2, Errors: 2, Skipped: 5` ——
+- 验证：一次性干净临时库上 `Tests run: 622, Failures: 2, Errors: 2, Skipped: 5` ——
   4 项失败**全部**落在并行开发的未提交 `scm/screen`（数据大屏）模块，与盘点无关；
   盘点相关用例全绿。前端 `npm run test` 67/67、ESLint 0 错误 / 3 条既有警告。
 - 未覆盖：浏览器验收；盘点并发压测；报损报溢 / 调拨 / 单位转换 / 阈值预警 / 移动加权成本。
@@ -605,7 +599,7 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
 - 仓库停用采用严格阻塞：正库存、在途采购单、待入库收货单任一存在即拒绝；停用仓库拒绝新的业务引用，历史记录保留可查。
 - 修复全量 E2E 基础设施漂移：W1–W4 账号脚本改用本地 PostgreSQL Docker 容器，W5 full 测试账号继承管理员原生菜单以覆盖 SmartAdmin 页面，验证工具在 Windows 非 UTF-8 控制台打印失败日志时不再崩溃；工具回归 6/6 通过。
 - B0+B1 定向浏览器验收 `scm-inventory.spec.ts` 8/8 通过；覆盖 DIRECT、WAREHOUSE_CONFIRM、二次入库发生时刻、重复防重、严格停用及仓库启停往返。W5 采购 9/9、W4 订单 6/6、SmartAdmin 原生 17/17 定向通过。
-- 最终全量入口：`.runtime/verify/20260918-184859-883696/summary.json`，后端 `Tests run: 583, Failures: 0, Errors: 0, Skipped: 5`；TS 基线 1974、当前 1953、SCM 0、新增 0；lint 0 错误/3 条既有警告；前端 unit 64/64；production build 通过。
+- 最终全量入口：汇总产物留在本机被 gitignore 的运行目录（未入库），后端 `Tests run: 583, Failures: 0, Errors: 0, Skipped: 5`；TS 基线 1974、当前 1953、SCM 0、新增 0；lint 0 错误/3 条既有警告；前端 unit 64/64；production build 通过。
 - 最终 Playwright：48 passed、0 unexpected、0 flaky、7 skipped；F0 cloud 环境未配置导致 7 项跳过。全量无 FAILED，因后端 5 项和 E2E 7 项环境 skip 返回 `INCOMPLETE (exit 2)`。
 
 ### 2026-09-18
@@ -617,7 +611,7 @@ V2 高德地图 / V3 配送线路 / V4 分拣绩效未开始。
 - 前端 `npm run lint`：0 错误、3 条既有警告；`npm run test`：63 通过、0 失败、0 跳过。TS 棘轮：历史基线 1974，当前 1953，SCM 0、新增 0；上游全量 typecheck 仍有既有错误，未标记为零错误。
 - 验证工具 6 条回归测试通过。构建发现采购日志和仓库页的列设置 `v-model` 绑定常量数组，已改为 `ref`，以支持列设置回写。
 - 最终 `npm run build` 通过（1m 30s），两处常量赋值警告消失；仍有上游 `vue3-json-viewer` 图标路径和大包警告。修复后两文件 ESLint、TS 棘轮再次通过。PowerShell 与 Bash 入口均实测在 E2E 服务缺失时返回退出码 2。
-- 未覆盖：后端 18080、前端 18081 未运行，E2E 就绪检查返回 INCOMPLETE；MinIO 云端往返未执行；E2E 本机账号工具未纳入 Git，仍需供给。未启动 W6-2、未引入新角色。
+- 未覆盖：后端与前端开发服务未运行，E2E 就绪检查返回 INCOMPLETE；MinIO 云端往返未执行；E2E 本机账号工具未纳入 Git，仍需供给。未启动 W6-2、未引入新角色。
 - 完成 W6-1 代码交付和静态复核；新增库存账本不可改删约束及相关修复。
 - 删除重复的波次文档、旧 UI 指导、截图和过程性记录；文档收敛为本入口、进度和决策三份。
 - 前次文档整理没有运行测试或业务命令；当前验证以本日上方工作区收尾记录为准。
@@ -649,8 +643,35 @@ F0-DEBT-01 的 `V41__scm_product_image_drop_file_url` 已被真实开发库应�
 本轮验证结果：
 
 - 后端 `mvn -pl sa-admin -am -DskipTests compile` 通过；前端 `npm run build` 通过。
-- Docker Desktop 现有 `postgres:18-alpine` + `redis:7-alpine`；使用单独新建的 `xsy_delivery_verify_20260921` 数据库，Flyway 已升级至当时的 V42（= 重排后的 V43）。
+- 验证跑在本地 Docker 的 PostgreSQL / Redis 上；单独新建的一次性临时库，Flyway 已升级至当时的 V42（= 重排后的 V43）。
 - `DeliveryRouteServiceIT` **2/2 通过**（0 failure / 0 error）：同客户同地址聚合、重复分配拒绝、旧版本拒绝、排序落库、定位与同坐标系门槛、规划后锁定、历史快照不漂移、打印商品、规划不写库存、取消保留历史并释放订单、空停靠点移除与重新加入。未做并发压力测试。
 - 测试记录自动回滚；独立测试库已清理，日常开发库未执行本次迁移。后续启动此分支后端时由 Flyway 应用 V42–V43。
 - 前端全库类型检查仍有 **1946 条**诊断，集中在既有文件；**本次修改 / 新增文件 0 条**，不宣称全库类型检查通过。UI 静态检测 0 findings。
 - 构建存在已有依赖资源 `icon.svg` 与大分包提醒；没有因此扩大范围重构。
+
+## V43 部署后验收（2026-09-21）
+
+对本地开发栈的 V43 运行实例（后端为 `35e0fa4` 构建、前端 Vite dev、schema `xsy_v2`）做完整验收：
+Flyway V41 / V42 / V43 均 `success = true`（V42/V43 于 16:22 应用到日常开发库，即上述「未执行」已过去）。
+35 条路由加载扫描 0 console error / 0 pageerror / 0 HTTP≥400；V41 图片链路可用且 `private/*` 绑定按 `40038` 拒绝；
+配送 L0–L2 主流程与 10 条负向用例全部按预期收敛，规划与打印对库存 / 出库 / 订单状态零副作用（同一条 SQL 前后逐值相同）。
+
+计数：共执行 80 项 = PASS 67 / FAIL 5 / BLOCKED 2 / NOT TESTED 6；**P0 = P1 = P2 = 0，P3 = 6**（无阻断项）。
+未覆盖：高德可视化与地理编码（Key 未配置）、打印机物理输出、非管理员授权负向用例、并发抢单、`41109` 上限、对象存储模式权限语义、远端 `xsy.leyingiot.com` 实例。
+判定可进入 L3，但 L3 前需处理订单定点小数契约（`OrderValidator.decimal` 与 `ScmDecimalStrings.PATTERN` 不一致）、确认远端实例版本，并补非管理员授权回归 + F0-DEBT-01 读侧收口。
+
+完整矩阵、证据与缺陷记录见 [V43 部署后验收报告](test-report/2026-09-21-v43-deployment-acceptance.md)。
+
+### P3-1 修复：订单定点小数契约（同日落地）
+
+`OrderValidator.decimal` 不再自己写 `[0-9]{1,14}\.[0-9]{4}`，改为委托 `ScmDecimalStrings.parseScale4Required`
+—— 订单域此前的「恰好 4 位小数」比全项目唯一规则更严，`"10"` / `"1.5"` 这类合法字符串会被拒。
+形态与非正拆成两个码：新增 `ORDER_QUANTITY_FORMAT_INVALID(40076)`，`40063` 回归「数量必须大于零」，
+`40066` 文案由「四位定点数」改为「非负、至多 4 位小数」（编号不动）。返回值仍统一 `setScale(4)`，
+落库精度与对外序列化形态不变。采购域的同类严格形态有 W5 类头设计依据，未一并改动。
+验证：`OrderRulesTest` 32/32、`OrderWebTest` 6/6、`SalesOrderImportServiceTest` 15/15、
+`SalesOrderServiceIT` 12/12、`OrderUnpricedIT` 1/1（一次性临时库，V1→V43 全量迁移，用后删除）。
+
+跑该批 IT 时暴露一条与本次改动无关的既有问题（记为 P3-7）：`ScmOrderMigrationIT` 断言「订单 8 表所有
+numeric 列 = `NUMERIC(18,4)`」，而 V42 给 `order_address_snapshot` 加了 `NUMERIC(11,8)` / `NUMERIC(10,8)`
+经纬度列，因此该用例自 V42 起在任何已迁移库上常红。修法是把断言收窄到金额 / 数量列，待确认后再改。

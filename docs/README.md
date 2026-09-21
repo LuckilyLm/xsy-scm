@@ -11,7 +11,9 @@
 - [requirements/2026-09-20-规格转换与成本核算设计.md](requirements/2026-09-20-规格转换与成本核算设计.md)：规格转换（V33）与移动加权成本（V34 / V37）的设计与口径。
 - [requirements/2026-09-21-地图模块分期实施方案.md](requirements/2026-09-21-地图模块分期实施方案.md)：地图能力拆成 M0 地理数据地基 / M1 大屏真实地图 / M2 底图与选点 / M3 配送排线四期；M0 与 M1 已于 2026-09-21 完成，M2 底图路线 A/B/C 待裁决（含高德配额与商用授权的如实口径）。
 - [plan/attachment-asset-grading-and-file-access-plan.md](plan/attachment-asset-grading-and-file-access-plan.md)：附件资产分级与文件读取权限（F0-DEBT-01）的分批方案 —— FA-0 写侧收口已落地（V41），FA-1 受控批量读取 / FA-2 `scm_file_relation` / FA-3 存量商品图搬运待开工。
+- [plan/logistics-delivery-static-route-plan.md](plan/logistics-delivery-static-route-plan.md)：物流配送 L0–L2 静态排线的实施方案（V42–V43 已落地）；L3 实发量来源与角色授权仍待裁决。
 - [plan/product-center-optimization-plan.md](plan/product-center-optimization-plan.md)：商品中心优化的多轮方案（PCO-1 已落地、PCO-2 待开工）。`plan/` 目录专门存放**面向未来的规划稿**：其中的 Flyway 版本号只是规划期快照，落地实施前必须按 `AGENTS.md` 从当前最大号之后整体重排。
+- [test-report/](test-report/)：按版本归档的部署后验收报告。只写矩阵、计数与可复核结论（接口 / 数据 / 日志证据的**类别**），本机运行目录与脚本不作为引用对象。
 
 业务需求、旧系统语义、页面参考和历史方案以只读目录
 [`project-reference-examples/xsy-scm/`](../project-reference-examples/xsy-scm/) 为主要参考来源。
@@ -24,6 +26,12 @@
 - 新决策追加到 `decisions.md`，保留日期、范围和未决事项；不改写已经发生的进度记录。
 - 不在本目录复制参考项目的需求、UI 指导、截图或旧技术方案。
 - 迁移校验、生成物和本机运行信息不作为叙事文档维护；需要时从 Git、代码和部署配置重新核对。
+  - **禁止写入**：端口号、容器名与镜像 tag、开发库与一次性临时库名、PID、jar / 日志 / 脚本的机器绝对路径，
+    以及未入库脚本和被 `.gitignore` 的运行目录产物清单。
+  - **改用角色级表述**：「本地开发栈」「日常开发库」「一次性临时库（用后删除）」「本次运行的后端日志」；
+    本机拓扑（具体容器、库名、跑 IT 的环境变量口径）留在开发者的本机记录，不进仓库。
+  - **允许引用**：仓库内相对路径（如 `e2e/scm-product.spec.ts`）、Flyway 版本号、业务错误码、
+    测试类名与通过计数、commit SHA —— 这些可从仓库本身复核。
 - 删除或移动文档后同步更新根目录说明、`AGENTS.md`、迁移注释和部署说明中的链接。
 
 当前实现状态见 [progress.md](progress.md)。
