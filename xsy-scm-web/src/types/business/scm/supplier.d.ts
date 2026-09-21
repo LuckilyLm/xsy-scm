@@ -7,6 +7,8 @@
  * - `version` 是乐观锁版本；`supplier_sku` 的行级版本也要回传（整表替换时按行比对）。
  */
 
+import type { AreaColumns } from './area';
+
 export type ScmId = string | number;
 
 export type EnableStatus = 'ENABLED' | 'DISABLED';
@@ -38,7 +40,7 @@ export interface ScmSortItem {
 // ---------------------------------------------------------------------------
 
 /** 新建 / 编辑请求体（对应 SupplierAddForm / SupplierUpdateForm，**不含 status**）。 */
-export interface SupplierForm {
+export interface SupplierForm extends Partial<AreaColumns> {
   supplierId?: ScmId;
   version?: number;
   supplierCode: string;

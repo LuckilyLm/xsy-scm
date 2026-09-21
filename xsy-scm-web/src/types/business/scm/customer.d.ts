@@ -7,6 +7,8 @@
  * - `version` 是乐观锁版本，编辑 / 状态 / 删除都必须回传。
  */
 
+import type { AreaColumns } from './area';
+
 export type ScmId = string | number;
 
 export type CustomerStatus = 'POTENTIAL' | 'COOPERATING' | 'SUSPENDED' | 'BLACKLIST';
@@ -76,7 +78,7 @@ export interface CustomerTypeQuery {
 // ---------------------------------------------------------------------------
 
 /** 新建 / 编辑请求体（对应 CustomerAddForm / CustomerUpdateForm）。 */
-export interface CustomerForm {
+export interface CustomerForm extends Partial<AreaColumns> {
   customerId?: ScmId;
   version?: number;
   customerCode: string;

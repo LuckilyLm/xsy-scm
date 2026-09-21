@@ -54,6 +54,24 @@ public class CustomerAddForm {
     @Size(max = 255)
     private String address;
 
+    @Positive
+    private Integer provinceCode;
+
+    @Size(max = 32)
+    private String provinceName;
+
+    @Positive
+    private Integer cityCode;
+
+    @Size(max = 64)
+    private String cityName;
+
+    @Positive
+    private Integer districtCode;
+
+    @Size(max = 64)
+    private String districtName;
+
     @NotBlank
     @Pattern(regexp = "INDEPENDENT|GROUP")
     private String settleMode = "INDEPENDENT";

@@ -2,7 +2,8 @@
 适配：`/scm/warehouse/**`、`version`（A8）、`scm:warehouse:*`（A22）、
       `scm-warehouse-table`（A23）、`purchase-errors`（A24）、loading/empty/error/retry（A27）、
       `v-privilege`（A30）。B1 使用独立命令启用或停用仓库，基础信息表单不直接修改状态。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+验收：W5 单测、TS 棘轮与 Playwright。
+地图 M0（V40）：弹窗的「所在地区」省市区级联与 `address` 并存，编码列供大屏按市聚合，名称为同一次选择的快照。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -110,6 +111,16 @@
       <a-form-item label="仓库名称" name="name" required>
         <a-input v-model:value="form.name" maxlength="150" />
       </a-form-item>
+      <a-form-item label="所在地区">
+        <AreaCascader
+          type="province_city_district"
+          v-model:value="area"
+          style="width: 100%"
+          placeholder="省 / 市 / 区"
+          @change="onAreaChange"
+        />
+        <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
+      </a-form-item>
       <a-form-item label="地址" name="address">
         <a-input v-model:value="form.address" maxlength="255" />
       </a-form-item>
@@ -121,16 +132,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { nextTick, onMounted, reactive, ref } from 'vue';
 import { message, Modal } from 'ant-design-vue';
 import type { TableColumnsType } from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import AreaCascader from '/@/components/framework/area-cascader/index.vue';
+import type { AreaNode } from '/@/types/business/scm/area';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import { warehouseApi } from '/@/api/business/scm/warehouse-api';
 import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
 import { SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM } from '/@/constants/business/scm/purchase-const';
 import type { Warehouse, WarehousePayload, WarehouseQuery } from './purchase-types';
 import { purchaseError } from './purchase-errors';
+import { areaColumnsOf, areaNodesOf } from '../common/scm-area';
 import { datetime } from '../common/scm-display';
 
 const queryForm = reactive<WarehouseQuery>({ pageNum: 1, pageSize: 20 });
@@ -142,6 +156,13 @@ const visible = ref(false);
 const saving = ref(false);
 const formError = ref('');
 const form = ref<WarehousePayload>({ warehouseCode: '', name: '' });
+/** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
+const area = ref<AreaNode[]>([]);
+
+function onAreaChange(_value: unknown, nodes: AreaNode[]) {
+  Object.assign(form.value, areaColumnsOf(nodes));
+}
+
 let requestId = 0;
 
 const columns = ref<TableColumnsType<Warehouse>>([
@@ -187,7 +208,7 @@ function resetQuery() {
   onSearch();
 }
 
-function open(row?: Warehouse) {
+async function open(row?: Warehouse) {
   formError.value = '';
   form.value = row
     ? {
@@ -197,9 +218,20 @@ function open(row?: Warehouse) {
         name: row.name ?? '',
         address: row.address ?? null,
         remark: row.remark ?? null,
+        provinceCode: row.provinceCode ?? null,
+        provinceName: row.provinceName ?? null,
+        cityCode: row.cityCode ?? null,
+        cityName: row.cityName ?? null,
+        districtCode: row.districtCode ?? null,
+        districtName: row.districtName ?? null,
       }
     : { warehouseCode: '', name: '' };
+  area.value = [];
   visible.value = true;
+  // 弹窗内容首次打开才挂载，而 AreaCascader 只用**非 immediate** 的 watch 同步 value，
+  // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
+  await nextTick();
+  area.value = areaNodesOf(form.value);
 }
 
 async function save() {

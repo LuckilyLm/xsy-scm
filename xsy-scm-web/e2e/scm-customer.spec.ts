@@ -8,6 +8,7 @@
  * - 账期三形态：按时间 + 单位「月」+ 固定结算日必须完整落库（`creditPeriodType/Value/Unit/settleDay`）；
  * - 授信额度是 4 位定点**字符串**，`"1234.5000"` 不能被浮点化；
  * - 新建客户状态固定 `POTENTIAL`，状态变更只能走 `updateStatus`；
+ * - 省市区级联落成**编码 + 名称六列快照**，且编辑保存不会把它丢掉（地图 M0 的数据来源）；
  * - 客户类型被客户引用时删不掉（40938），删掉客户后才能删类型；
  * - 只读角色：接口 30005 + 「新增客户」按钮不渲染。
  */
@@ -115,6 +116,14 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   // 客户类型下拉的选项文本是「名称 （编码）」，不是纯名称，所以不能用 exact 匹配。
   await page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({ hasText: prefix + '类型' }).click();
   await drawer.getByLabel('联系电话', { exact: true }).fill('13800138000');
+
+  // 地图 M0：级联选择必须落成「编码 + 名称」六列，这是大屏按市聚合与后续底图唯一的数据来源。
+  await drawer.locator('.ant-cascader').click();
+  const cascaderMenus = page.locator('.ant-cascader-dropdown:visible .ant-cascader-menu');
+  await cascaderMenus.nth(0).getByText('浙江省', { exact: true }).click();
+  await cascaderMenus.nth(1).getByText('杭州市', { exact: true }).click();
+  await cascaderMenus.nth(2).getByText('西湖区', { exact: true }).click();
+  await drawer.getByLabel('地址', { exact: true }).fill('文三路 100 号');
   await drawer.getByLabel('授信额度', { exact: true }).fill('1234.5000');
 
   // 账期：按时间 / 1 / 月 / 15 —— 只有单位是「月」时才出现固定结算日。
@@ -143,6 +152,10 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   expect(detail.settleDay).toBe(15);
   expect(detail.status).toBe('POTENTIAL');
   expect(detail.contactPhone).toBe('13800138000');
+  // 编码与名称必须来自**同一次选择**：只回编码会让导出与大屏文案各自漂移。
+  expect([detail.provinceCode, detail.provinceName]).toEqual([330000, '浙江省']);
+  expect([detail.cityCode, detail.cityName]).toEqual([330100, '杭州市']);
+  expect([detail.districtCode, detail.districtName]).toEqual([330106, '西湖区']);
 
   // -------------------------------------------------------------- 状态变更
   let row = page.getByRole('row').filter({ hasText: prefix + 'C1' });
@@ -156,12 +169,19 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   // ------------------------------------------------------------------ 编辑
   await button(row, '编辑').click();
   await expect(drawer.getByLabel('客户编码', { exact: true })).toHaveValue(prefix + 'C1');
+  // 回填走 `areaNodesOf`：三级必须显示成一条连续路径，缺一级时级联选择器会渲染异常。
+  await expect(drawer.locator('.ant-cascader .ant-select-selection-item')).toHaveText(
+    /浙江省\s*\/\s*杭州市\s*\/\s*西湖区/
+  );
   await drawer.getByLabel('授信额度', { exact: true }).fill('9999.0000');
   const updated = page.waitForResponse((r) => r.url().endsWith('/scm/customer/update'));
   await button(drawer, '保存').click();
   expect((await (await updated).json()).code).toBe(0);
   await expectDrawerClosed();
-  expect((await (await api.get(`/scm/customer/detail/${customerId}`)).json()).data.creditLimit).toBe('9999.0000');
+  const afterUpdate = (await (await api.get(`/scm/customer/detail/${customerId}`)).json()).data;
+  expect(afterUpdate.creditLimit).toBe('9999.0000');
+  // 编辑不重新触发级联 change：六列必须由详情回填原样带回去，不能在这次保存里被清空。
+  expect([afterUpdate.provinceCode, afterUpdate.cityCode, afterUpdate.districtCode]).toEqual([330000, 330100, 330106]);
 
   // ------------------------------------------------------------------ 查询
   await page.getByPlaceholder('编码 / 名称 / 联系人 / 电话').fill(prefix + 'C1');

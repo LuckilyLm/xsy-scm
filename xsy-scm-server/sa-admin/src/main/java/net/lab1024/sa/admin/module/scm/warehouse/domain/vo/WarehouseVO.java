@@ -18,6 +18,18 @@ public class WarehouseVO {
 
     private String address;
 
+    private Integer provinceCode;
+
+    private String provinceName;
+
+    private Integer cityCode;
+
+    private String cityName;
+
+    private Integer districtCode;
+
+    private String districtName;
+
     private String remark;
 
     private Integer version;

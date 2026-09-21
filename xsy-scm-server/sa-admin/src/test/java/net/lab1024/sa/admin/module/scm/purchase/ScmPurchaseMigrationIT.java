@@ -52,7 +52,8 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 "SELECT sequencename FROM pg_sequences WHERE schemaname = current_schema()", String.class);
         assertThat(sequences).contains("purchase_order_no_seq", "purchase_receipt_no_seq");
 
-        // 非主键索引（主键走 pg_constraint，不计入 §6.4 的 31 条；B1 的 V22 追加 1 条部分索引）
+        // 非主键索引（主键走 pg_constraint，不计入 §6.4 的 31 条；B1 的 V22 追加 1 条部分索引，
+        // V40 的地图归属再追加 1 条 warehouse 部分索引）
         Integer indexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
@@ -60,14 +61,14 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND NOT EXISTS (SELECT 1 FROM pg_constraint c "
                         + "                  WHERE c.conname = i.indexname AND c.contype = 'p')",
                 Integer.class, V15_TABLE_LIST);
-        assertThat(indexes).isEqualTo(32);
+        assertThat(indexes).isEqualTo(33);
 
         Integer partial = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
                         + "  AND i.tablename = ANY (string_to_array(?, ',')) "
                         + "  AND i.indexdef LIKE '%WHERE%'", Integer.class, V15_TABLE_LIST);
-        assertThat(partial).isEqualTo(28);
+        assertThat(partial).isEqualTo(29);
 
         // 7 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条。
         // 必须排除「约束支撑的索引」：PG 的 PRIMARY KEY / UNIQUE 约束也会生成 CREATE UNIQUE INDEX，
@@ -158,7 +159,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     }
 
     @Test
-    // 上限随获批的新迁移追加而抬升。当前上限 23：
+    // 上限随获批的新迁移追加而抬升。当前上限 40：
     //   V17 = F0（仅数据，t_config 文件上传大小）
     //   V18 = W5.5（仅数据，t_menu 侧边栏图标）
     //   V19 = W6（inventory_balance / inventory_movement + Q5 backfill）
@@ -168,11 +169,14 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //   V23 = B1（仅数据，t_menu 入库确认 / 仓库启停权限）
     //   V24 = chore（仅数据，补齐 15 表 + 323 字段 COMMENT，并覆盖 V5 遗留的上游品牌列注释）
     //   V25 = 出库波次（SALES_OUT 流水类型 + reserved_quantity + 出库单/预留三张表 + 菜单）
+    //   V26–V37 = 出库权限 / 日志类型 / 大屏 / 盘点 / 报损报溢 / 调拨 / 预警 / 转换 / 成本 / 导入
+    //             （逐条口径见 AGENTS.md 的迁移表）
+    //   V40 = 地图 M0（scm_region 省市字典 + 三张主档地理归属列 + 存量地址保守解析）
     // V1–V18 的内容与顺序仍被逐条钉死，任何回改/重排都会立刻失败。
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），**不扫描磁盘上的 migration 文件**，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V37 全部 success，V15–V37 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V40 全部 success，V15–V40 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -182,10 +186,10 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
                 "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
-                "36", "37", "38", "39");
+                "36", "37", "38", "39", "40");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除 39 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除 40 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
     }

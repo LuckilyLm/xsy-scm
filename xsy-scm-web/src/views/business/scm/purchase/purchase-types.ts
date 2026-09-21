@@ -13,6 +13,8 @@
  * 2. **`version` 必填且为 `number`**，乐观锁靠它。
  */
 
+import type { AreaColumns } from '/@/types/business/scm/area';
+
 export type Id = string | number;
 
 /** 分页入参。`pageNum` / `pageSize` 必填：后端 `PageParam` 为 null 时 `convert2PageQuery` 会 NPE。 */
@@ -356,8 +358,8 @@ export interface LogQuery extends Page {
   operationType?: string;
 }
 
-/** `WarehouseVO`。 */
-export interface Warehouse {
+/** `WarehouseVO`。省 / 市 / 区编码与名称快照见 `AreaColumns`（地图 M0 / V40）。 */
+export interface Warehouse extends Partial<AreaColumns> {
   id: Id;
   warehouseCode?: string;
   name?: string;
@@ -375,7 +377,7 @@ export interface WarehouseQuery extends Page {
   status?: string;
 }
 
-export interface WarehousePayload {
+export interface WarehousePayload extends Partial<AreaColumns> {
   id?: Id;
   version?: number;
   warehouseCode: string;

@@ -155,6 +155,12 @@ public class SupplierService {
         entity.setContactName(SupplierValidator.normalizeOptional(form.getContactName()));
         entity.setContactPhone(SupplierValidator.normalizeOptional(form.getContactPhone()));
         entity.setAddress(SupplierValidator.normalizeOptional(form.getAddress()));
+        entity.setProvinceCode(form.getProvinceCode());
+        entity.setProvinceName(SupplierValidator.normalizeOptional(form.getProvinceName()));
+        entity.setCityCode(form.getCityCode());
+        entity.setCityName(SupplierValidator.normalizeOptional(form.getCityName()));
+        entity.setDistrictCode(form.getDistrictCode());
+        entity.setDistrictName(SupplierValidator.normalizeOptional(form.getDistrictName()));
         entity.setRemark(SupplierValidator.normalizeOptional(form.getRemark()));
     }
 

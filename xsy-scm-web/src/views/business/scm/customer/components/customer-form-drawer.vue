@@ -6,8 +6,9 @@
   *
   * 剪枝（W2 范围外，Target Design §5.4）：
   * - 删除 `customerLevelId`（客户等级，W2 不做）；
-  * - 删除 `longitude` / `latitude`（地图坐标，W3+ 随「客户地图」一起做）；
-  * - 删除「所属区域 / 省市区」级联（W2 只保留一个 `address` 文本）；
+  * - 删除 `longitude` / `latitude`（地图坐标，随 M2 的高德选点一起做）；
+  * - 「所属区域 / 省市区」级联：W2 只保留 `address` 文本，地图 M0（V40）起恢复级联，
+  *   与 `address` 并存 —— 前者是可统计的编码 + 名称快照，后者仍是配送用的自由文本；
   * - 删除 `visibleType` / 二维码相关字段（W3+）。
   *
   * 适配：
@@ -86,13 +87,28 @@
 
         <a-divider orientation="left">联系方式</a-divider>
         <a-row :gutter="16">
-          <a-col :span="8">
+          <a-col :span="12">
             <a-form-item label="联系人" name="contactName"><a-input v-model:value="form.contactName" :maxlength="100" /></a-form-item>
           </a-col>
-          <a-col :span="8">
+          <a-col :span="12">
             <a-form-item label="联系电话" name="contactPhone"><a-input v-model:value="form.contactPhone" :maxlength="32" /></a-form-item>
           </a-col>
+        </a-row>
+
+        <a-row :gutter="16">
           <a-col :span="8">
+            <a-form-item label="所在地区">
+              <AreaCascader
+                type="province_city_district"
+                v-model:value="area"
+                style="width: 100%"
+                placeholder="省 / 市 / 区"
+                @change="onAreaChange"
+              />
+              <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
+            </a-form-item>
+          </a-col>
+          <a-col :span="16">
             <a-form-item label="地址" name="address"><a-input v-model:value="form.address" :maxlength="255" /></a-form-item>
           </a-col>
         </a-row>
@@ -164,6 +180,9 @@
   import type { CreditPeriodType, CreditPeriodUnit, CustomerForm, CustomerStatus, ScmId } from '/@/types/business/scm/customer';
   import { CUSTOMER_STATUS_ENUM } from '/@/constants/business/scm/customer-const';
   import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+  import AreaCascader from '/@/components/framework/area-cascader/index.vue';
+  import type { AreaNode } from '/@/types/business/scm/area';
+  import { areaColumnsOf, areaNodesOf } from '../../common/scm-area';
   import EmployeeSelect from '/@/components/system/employee-select/index.vue';
   import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
   import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
@@ -190,6 +209,13 @@
 
   const form = reactive<CustomerForm>(emptyCustomer());
 
+  /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
+  const area = ref<AreaNode[]>([]);
+
+  function onAreaChange(_value: unknown, nodes: AreaNode[]) {
+    Object.assign(form, areaColumnsOf(nodes));
+  }
+
   const title = computed(() => (form.customerId ? '编辑客户' : '新增客户'));
   const statusText = computed(() => CUSTOMER_STATUS_ENUM[status.value]?.desc || status.value);
 
@@ -211,6 +237,7 @@
     visible.value = true;
     error.value = '';
     Object.assign(form, emptyCustomer());
+    area.value = [];
     status.value = 'POTENTIAL';
     if (customerId == null) {
       await nextTick();
@@ -234,6 +261,12 @@
         contactName: detail.contactName ?? '',
         contactPhone: detail.contactPhone ?? '',
         address: detail.address ?? '',
+        provinceCode: detail.provinceCode ?? null,
+        provinceName: detail.provinceName ?? null,
+        cityCode: detail.cityCode ?? null,
+        cityName: detail.cityName ?? null,
+        districtCode: detail.districtCode ?? null,
+        districtName: detail.districtName ?? null,
         settleMode: detail.settleMode,
         creditLimit: detail.creditLimit ?? '0.0000',
         creditPeriodType: detail.creditPeriodType ?? undefined,
@@ -248,7 +281,10 @@
       error.value = customerError(e);
     } finally {
       loading.value = false;
+      // 抽屉内容首次打开才挂载，而 AreaCascader 只用**非 immediate** 的 watch 同步 value，
+      // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
       await nextTick();
+      area.value = areaNodesOf(form);
       formRef.value?.clearValidate();
     }
   }

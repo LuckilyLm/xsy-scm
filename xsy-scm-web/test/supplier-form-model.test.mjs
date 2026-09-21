@@ -25,6 +25,10 @@ test('新建供应商不含状态字段，且新行默认启用且非默认来�
   // 状态不在表单里：新建强制 ENABLED（legacy S7），变更走独立的 updateStatus。
   assert.equal('status' in form, false);
   assert.equal(form.supplierCode, '');
+  // 区划六列必须由新建初值显式置 null：漏一列（undefined）就会让上一条记录的区划串进新供应商。
+  for (const key of ['provinceCode', 'provinceName', 'cityCode', 'cityName', 'districtCode', 'districtName']) {
+    assert.equal(form[key], null, `emptySupplier 缺少区划列 ${key}`);
+  }
 
   const draft = emptySkuDraft();
   assert.equal(draft.defaultFlag, false);

@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.supplier.domain.form;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -29,6 +30,24 @@ public class SupplierAddForm {
 
     @Size(max = 255)
     private String address;
+
+    @Positive
+    private Integer provinceCode;
+
+    @Size(max = 32)
+    private String provinceName;
+
+    @Positive
+    private Integer cityCode;
+
+    @Size(max = 64)
+    private String cityName;
+
+    @Positive
+    private Integer districtCode;
+
+    @Size(max = 64)
+    private String districtName;
 
     @Size(max = 500)
     private String remark;

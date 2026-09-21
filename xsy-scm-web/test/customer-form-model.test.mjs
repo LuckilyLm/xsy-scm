@@ -24,6 +24,10 @@ test('新建客户默认独立结算，授信额度是字符串零而不是数�
   assert.equal(form.creditLimit, '0.0000');
   assert.equal(form.creditPeriodType, undefined);
   assert.equal(form.customerTypeId, undefined);
+  // 区划六列必须由新建初值显式置 null：漏一列（undefined）就会让上一条记录的区划串进新客户。
+  for (const key of ['provinceCode', 'provinceName', 'cityCode', 'cityName', 'districtCode', 'districtName']) {
+    assert.equal(form[key], null, `emptyCustomer 缺少区划列 ${key}`);
+  }
 });
 
 test('切换账期形态会清掉不属于该形态的字段，避免后端 40000', () => {

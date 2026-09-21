@@ -97,6 +97,7 @@ public class WarehouseService {
         // §7.2 的 WarehouseAddForm 不含 status：新建一律 ENABLED（G-03 单仓库种子语义）。
         entity.setStatus(ScmWarehouseStatusEnum.ENABLED.name());
         entity.setAddress(form.getAddress());
+        applyRegion(entity, form);
         entity.setRemark(form.getRemark());
         entity.setVersion(0);
         entity.setDeleted(false);
@@ -124,6 +125,7 @@ public class WarehouseService {
         entity.setWarehouseCode(code);
         entity.setName(WarehouseValidator.normalizeName(form.getName()));
         entity.setAddress(form.getAddress());
+        applyRegion(entity, form);
         entity.setRemark(form.getRemark());
         // status 不随表单变化：§7.2 的 WarehouseUpdateForm 字段清单里没有 status，
         // 因此保持 require() 读出的原值（实体声明 updateStrategy = ALWAYS，会原值回写）。
@@ -192,6 +194,16 @@ public class WarehouseService {
             wrapper.ne(WarehouseEntity::getId, excludeId);
         }
         return dao.selectCount(wrapper) > 0;
+    }
+
+    /** 省 / 市 / 区整组随表单覆盖：实体列均为 updateStrategy = ALWAYS，清空选择即写回 NULL。 */
+    private void applyRegion(WarehouseEntity entity, WarehouseAddForm form) {
+        entity.setProvinceCode(form.getProvinceCode());
+        entity.setProvinceName(form.getProvinceName());
+        entity.setCityCode(form.getCityCode());
+        entity.setCityName(form.getCityName());
+        entity.setDistrictCode(form.getDistrictCode());
+        entity.setDistrictName(form.getDistrictName());
     }
 
     private void stamp(WarehouseEntity entity, boolean creating) {

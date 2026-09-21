@@ -192,6 +192,12 @@ public class CustomerService {
         entity.setContactName(CustomerValidator.normalizeOptional(form.getContactName()));
         entity.setContactPhone(CustomerValidator.normalizeOptional(form.getContactPhone()));
         entity.setAddress(CustomerValidator.normalizeOptional(form.getAddress()));
+        entity.setProvinceCode(form.getProvinceCode());
+        entity.setProvinceName(CustomerValidator.normalizeOptional(form.getProvinceName()));
+        entity.setCityCode(form.getCityCode());
+        entity.setCityName(CustomerValidator.normalizeOptional(form.getCityName()));
+        entity.setDistrictCode(form.getDistrictCode());
+        entity.setDistrictName(CustomerValidator.normalizeOptional(form.getDistrictName()));
         entity.setRemark(CustomerValidator.normalizeOptional(form.getRemark()));
 
         // 授信额度列非空，缺省按 0 处理；其余账期字段保持可空语义

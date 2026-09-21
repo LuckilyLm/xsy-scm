@@ -50,6 +50,18 @@ public class CustomerDetailVO {
 
     private String address;
 
+    private Integer provinceCode;
+
+    private String provinceName;
+
+    private Integer cityCode;
+
+    private String cityName;
+
+    private Integer districtCode;
+
+    private String districtName;
+
     private Long parentCustomerId;
 
     private String parentCustomerName;

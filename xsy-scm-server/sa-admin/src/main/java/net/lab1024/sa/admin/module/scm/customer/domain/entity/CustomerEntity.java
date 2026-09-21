@@ -73,6 +73,25 @@ public class CustomerEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String address;
 
+    /** 省 / 市 / 区编码为国标六位码，名称是同一条选择的快照，展示与导出用，不参与关联。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer provinceCode;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String provinceName;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer cityCode;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String cityName;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer districtCode;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String districtName;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String creditPeriodType;
 
