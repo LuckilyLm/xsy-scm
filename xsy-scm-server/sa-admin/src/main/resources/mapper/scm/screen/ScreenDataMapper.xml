@@ -296,4 +296,86 @@
           AND created_at &lt; #{endTime}
     </select>
 
+    <!--
+      ================= 地理分布（地图 M1） =================
+      三段人口片段是**唯一**的口径来源：市级气泡与覆盖度里的「总数 / 已归属数」都从它们派生。
+      如果各写一份 WHERE，覆盖度与气泡就会在两份 SQL 里各自漂移，而差异在图上看不出来。
+      `located` 只表示「解析出了市级归属」；仓库沿用大屏网络节点口径（仅启用仓），
+      否则地图上少掉的停用仓会被算进「已归属」，让差额看起来像数据缺失。
+    -->
+    <sql id="geoCustomerPopulation">
+        SELECT c.city_code IS NOT NULL AS located, c.city_code AS city_code
+        FROM customer c
+        WHERE c.deleted = FALSE
+    </sql>
+
+    <sql id="geoSupplierPopulation">
+        SELECT s.city_code IS NOT NULL AS located, s.city_code AS city_code
+        FROM supplier s
+        WHERE s.deleted = FALSE
+    </sql>
+
+    <sql id="geoWarehousePopulation">
+        SELECT w.city_code IS NOT NULL AS located, w.city_code AS city_code
+        FROM warehouse w
+        WHERE w.deleted = FALSE
+          AND w.status = 'ENABLED'
+    </sql>
+
+    <!--
+      按市聚合。INNER JOIN 区划字典是有意的：字典里查不到的编码没有质心，气泡画不出来，
+      这类行宁可不在 cities 里出现，也要让它留在 coverage 的「总数 − 已归属」差额里可见。
+      区划字典本身按 (region_code) 唯一（uk_scm_region_code_active），JOIN 不会放大计数。
+    -->
+    <select id="geoCityRows" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO$CityNode">
+        SELECT city.region_code AS cityCode,
+               city.region_name AS cityName,
+               city.parent_code AS provinceCode,
+               province.region_name AS provinceName,
+               city.center_lng  AS centerLng,
+               city.center_lat  AS centerLat,
+               COUNT(*) FILTER (WHERE src.kind = 'CUSTOMER')  AS customerCount,
+               COUNT(*) FILTER (WHERE src.kind = 'SUPPLIER')  AS supplierCount,
+               COUNT(*) FILTER (WHERE src.kind = 'WAREHOUSE') AS warehouseCount
+        FROM (
+                 SELECT city_code, 'CUSTOMER'::text AS kind FROM (<include refid="geoCustomerPopulation"/>) t WHERE t.located
+                 UNION ALL
+                 SELECT city_code, 'SUPPLIER'::text FROM (<include refid="geoSupplierPopulation"/>) t WHERE t.located
+                 UNION ALL
+                 SELECT city_code, 'WAREHOUSE'::text FROM (<include refid="geoWarehousePopulation"/>) t WHERE t.located
+             ) src
+                 JOIN scm_region city
+                      ON city.deleted = FALSE
+                          AND city.region_level = 2
+                          AND city.region_code = src.city_code
+                 JOIN scm_region province
+                      ON province.deleted = FALSE
+                          AND province.region_level = 1
+                          AND province.region_code = city.parent_code
+        GROUP BY city.region_code, city.region_name, city.parent_code, province.region_name,
+                 city.center_lng, city.center_lat
+        ORDER BY customerCount DESC, cityCode
+    </select>
+
+    <!-- 覆盖度：一次返回三张主档的「总数 / 已归属数」，与气泡共用上面三段口径。 -->
+    <select id="geoCoverage" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO$Coverage">
+        SELECT c.total            AS customerTotal,
+               c.located          AS customerLocated,
+               s.total            AS supplierTotal,
+               s.located          AS supplierLocated,
+               w.total            AS warehouseTotal,
+               w.located          AS warehouseLocated
+        FROM (SELECT COUNT(*)                          AS total,
+                     COUNT(*) FILTER (WHERE located)   AS located
+              FROM (<include refid="geoCustomerPopulation"/>) t) c
+                 CROSS JOIN
+             (SELECT COUNT(*)                          AS total,
+                     COUNT(*) FILTER (WHERE located)   AS located
+              FROM (<include refid="geoSupplierPopulation"/>) t) s
+                 CROSS JOIN
+             (SELECT COUNT(*)                          AS total,
+                     COUNT(*) FILTER (WHERE located)   AS located
+              FROM (<include refid="geoWarehousePopulation"/>) t) w
+    </select>
+
 </mapper>

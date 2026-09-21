@@ -36,7 +36,7 @@
             <product-ranking :business="business" />
           </section>
 
-          <!-- 中列：核心指标 + 供应链网络（主视觉） -->
+          <!-- 中列：核心指标 + 供应链分布（主视觉） -->
           <section class="scm-col-center">
             <div class="scm-core-slot">
               <core-metrics
@@ -46,7 +46,7 @@
                 :trend="trend"
               />
             </div>
-            <supply-chain-map :inventory="inventory" :business="business" />
+            <supply-chain-map :inventory="inventory" :business="business" :geo="geo" />
           </section>
 
           <!-- 右列：采购 + 库存线（与左列镜像） -->
@@ -100,6 +100,7 @@ const {
   business,
   inventory,
   purchase,
+  geo,
   trend,
   loading,
   refreshing,
@@ -166,7 +167,7 @@ onBeforeUnmount(() => {
   background: @screen-bg;
 }
 
-// 中列核心指标固定高度，剩余空间全部给供应链网络
+// 中列核心指标固定高度，剩余空间全部给供应链分布地图
 .scm-core-slot {
   flex: 0 0 @core-h;
   height: @core-h;

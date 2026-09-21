@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.screen.dao;
 
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
+import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO;
@@ -121,4 +122,17 @@ public interface ScreenDataDao {
     /** 今日活跃供应商数（有采购单的供应商去重）。 */
     Long countSuppliersWithOrdersInRange(@Param("startTime") OffsetDateTime startTime,
                                          @Param("endTime") OffsetDateTime endTime);
+
+    // ---------- 地理分布（地图 M1） ----------
+
+    /**
+     * 按市聚合的主档归属行，坐标取 {@code scm_region} 的区划质心。
+     *
+     * <p>只返回**已解析出市级归属、且编码能在区划字典里查到**的行；省级分布由调用方在这里
+     * 的结果上向上卷一层，避免两份 SQL 各自演算导致省界与气泡对不上。
+     */
+    List<ScreenGeoVO.CityNode> geoCityRows();
+
+    /** 三张主档各自的「总数 / 已归属数」，与 {@link #geoCityRows()} 共用同一份口径片段。 */
+    ScreenGeoVO.Coverage geoCoverage();
 }

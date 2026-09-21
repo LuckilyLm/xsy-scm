@@ -79,6 +79,58 @@ export interface PurchaseData {
   todayReceiptCount: number;
 }
 
+/**
+ * 地理分布（地图 M1）。
+ *
+ * <p>省级由市级在 Java 侧上卷，所以**只拿市级求和就能校验省级**，两者不会各自演算。
+ * 坐标是 `scm_region` 的**区划质心**（GCJ-02），不是任何单位的实际地址坐标。
+ */
+export interface GeoCityNode {
+  cityCode: number;
+  cityName: string;
+  provinceCode: number;
+  provinceName: string;
+  /** 质心经度，后端 BigDecimal → JSON 字符串，喂给 ECharts 前必须 toNumber */
+  centerLng: string;
+  centerLat: string;
+  customerCount: number;
+  supplierCount: number;
+  warehouseCount: number;
+}
+
+export interface GeoProvinceNode {
+  provinceCode: number;
+  provinceName: string;
+  cityCount: number;
+  customerCount: number;
+  supplierCount: number;
+  warehouseCount: number;
+}
+
+/**
+ * 归属覆盖度：`*Total` 是全部主档，`*Located` 是其中解析出市级归属的。
+ *
+ * <p>差额必须显示在大屏上 —— 否则用户会以为图上的分布就是全部业务量。
+ */
+export interface GeoCoverage {
+  customerTotal: number;
+  customerLocated: number;
+  supplierTotal: number;
+  supplierLocated: number;
+  warehouseTotal: number;
+  warehouseLocated: number;
+}
+
+export interface GeoData {
+  cities: GeoCityNode[];
+  provinces: GeoProvinceNode[];
+  coverage: GeoCoverage | null;
+}
+
+export function emptyGeo(): GeoData {
+  return { cities: [], provinces: [], coverage: null };
+}
+
 /** 趋势区间：近 7 天 / 近 30 天。 */
 export type ScreenRange = '7d' | '30d';
 

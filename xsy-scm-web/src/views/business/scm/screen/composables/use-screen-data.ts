@@ -1,8 +1,10 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { screenApi } from '/@/api/business/screen-api';
 import {
+  emptyGeo,
   emptyTrend,
   type BusinessData,
+  type GeoData,
   type InventoryData,
   type PurchaseData,
   type ScreenRange,
@@ -35,6 +37,8 @@ export function useScreenData() {
   const business = ref<BusinessData | null>(null);
   const inventory = ref<InventoryData | null>(null);
   const purchase = ref<PurchaseData | null>(null);
+  // 初值就是空地理数据而不是 null：接口挂了地图面板仍要画出底图 + 「暂无归属数据」
+  const geoData = ref<GeoData>(emptyGeo());
   const trend = ref<TrendData>(emptyTrend());
 
   const loading = ref(true);
@@ -51,16 +55,17 @@ export function useScreenData() {
     trend.value = (res.data as TrendData) ?? emptyTrend(target);
   }
 
-  /** 首屏 / 手动刷新：四个接口并发，任一失败不影响其余。 */
+  /** 首屏 / 手动刷新：五个接口并发，任一失败不影响其余。 */
   async function loadAll() {
     const results = await Promise.allSettled([
       screenApi.getBusinessData(),
       screenApi.getInventoryData(),
       screenApi.getPurchaseData(),
       screenApi.getTrendData(range.value),
+      screenApi.getGeoData(),
     ]);
 
-    const [biz, inv, pur, trd] = results;
+    const [biz, inv, pur, trd, geo] = results;
     if (biz.status === 'fulfilled') {
       business.value = (biz.value.data as BusinessData) ?? null;
     }
@@ -72,6 +77,9 @@ export function useScreenData() {
     }
     if (trd.status === 'fulfilled') {
       trend.value = (trd.value.data as TrendData) ?? emptyTrend(range.value);
+    }
+    if (geo.status === 'fulfilled') {
+      geoData.value = (geo.value.data as GeoData) ?? emptyGeo();
     }
 
     const failed = results.filter((r) => r.status === 'rejected').length;
@@ -159,6 +167,7 @@ export function useScreenData() {
     business,
     inventory,
     purchase,
+    geo: geoData,
     trend,
     loading,
     refreshing,

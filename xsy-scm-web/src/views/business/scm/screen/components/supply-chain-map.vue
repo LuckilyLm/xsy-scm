@@ -1,193 +1,416 @@
 <template>
-  <screen-panel title="供应链网络" flex>
+  <screen-panel title="供应链分布" flex>
     <template #extra>
-      <span class="scm-map-hint">第一阶段为抽象网络，接入高德后整体替换本区域</span>
+      <span class="scm-map-legend">气泡大小 = 该市主档数 · 着色 = 客户数</span>
+      <span v-if="unlocatedText" class="scm-map-unlocated">{{ unlocatedText }}</span>
     </template>
 
-    <div v-if="!nodes.length" class="scm-state">
-      <span class="scm-state-icon">—</span>
-      <span>暂无启用仓库</span>
+    <div v-if="baseMapError" class="scm-state">
+      <span class="scm-state-icon">!</span>
+      <span>{{ baseMapError }}</span>
+      <button class="scm-map-retry" type="button" @click="retryBaseMap">重新加载底图</button>
     </div>
 
     <div v-else class="scm-map">
-      <!-- ① 仓库节点层 -->
-      <div class="scm-map-nodes">
-        <div v-for="node in nodes" :key="node.name" class="scm-map-node">
-          <span class="scm-map-diamond" />
-          <span class="scm-map-node-name" :title="node.name">{{ node.name }}</span>
-          <div class="scm-map-node-stats">
-            <span class="scm-map-node-stat">
-              库存 <b>{{ node.qtyText }}</b>
+      <div class="scm-map-main">
+        <div ref="mapEl" class="scm-map-canvas" />
+        <div v-if="!cities.length" class="scm-map-empty">暂无已归属到市的客户 / 供应商 / 仓库</div>
+      </div>
+
+      <!-- 仓库明细：地图只到市，逐仓的库存与今日出库量仍然要看得见 -->
+      <div class="scm-map-rail">
+        <div class="scm-map-rail-title">启用仓库</div>
+        <div v-if="!nodes.length" class="scm-map-rail-empty">暂无启用仓库</div>
+        <div v-else class="scm-map-rail-list">
+          <div v-for="node in nodes" :key="node.warehouseName" class="scm-map-rail-row">
+            <span class="scm-map-rail-name" :title="node.warehouseName">{{ node.warehouseName }}</span>
+            <span class="scm-map-rail-figure">
+              库存 <b>{{ formatQty(node.quantity) }}</b>
             </span>
-            <span class="scm-map-node-stat is-dim">
-              今日出库量 <b>{{ node.outText }}</b>
+            <span class="scm-map-rail-figure is-dim">
+              今日出库 <b>{{ formatQty(node.todayOutboundQuantity) }}</b>
             </span>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ② 汇聚连线 + 配送线路 -->
-      <div class="scm-map-links">
-        <svg class="scm-map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <line
-            v-for="(node, index) in nodes"
-            :key="node.name"
-            :x1="nodeX(index)"
-            y1="0"
-            x2="50"
-            y2="46"
-            class="scm-map-link"
-            vector-effect="non-scaling-stroke"
-          />
-          <line x1="50" y1="54" x2="50" y2="100" class="scm-map-link" vector-effect="non-scaling-stroke" />
-        </svg>
-        <div class="scm-map-route">
-          <span class="scm-map-route-text">配送线路</span>
-        </div>
+    <div class="scm-map-stats">
+      <div class="scm-map-stat">
+        <span class="scm-map-stat-value">{{ formatInt(cities.length) }}</span>
+        <span class="scm-map-stat-label">覆盖城市</span>
       </div>
-
-      <!-- ③ 客户节点层（今日成交客户） -->
-      <div v-if="customers.length" class="scm-map-customers">
-        <div v-for="customer in customers" :key="customer.name" class="scm-map-customer-chip">
-          <span class="scm-map-customer-dot" />
-          <span class="scm-map-customer-name" :title="customer.name">{{ customer.name }}</span>
-          <span class="scm-map-customer-amount">{{ customer.amountText }}</span>
-        </div>
+      <div class="scm-map-stat">
+        <span class="scm-map-stat-value">{{ formatInt(business?.customerCount) }}</span>
+        <span class="scm-map-stat-label">客户总数</span>
       </div>
-
-      <!-- ④ 客户网络汇总 -->
-      <div class="scm-map-summary">
-        <span class="scm-map-summary-dot" />
-        <span class="scm-map-summary-text">
-          客户网络 共 <b>{{ formatInt(business?.customerCount) }}</b> 家 ·
-          今日成交 <b>{{ formatInt(business?.todayCustomerCount) }}</b> 家
-        </span>
+      <div class="scm-map-stat">
+        <span class="scm-map-stat-value">{{ formatInt(inventory?.todayOutboundCount) }}</span>
+        <span class="scm-map-stat-label">出库次数</span>
       </div>
-
-      <!-- ⑤ 底部统计条 -->
-      <div class="scm-map-stats">
-        <div class="scm-map-stat">
-          <span class="scm-map-stat-value">{{ formatInt(nodes.length) }}</span>
-          <span class="scm-map-stat-label">启用仓库</span>
-        </div>
-        <div class="scm-map-stat">
-          <span class="scm-map-stat-value">{{ formatInt(business?.customerCount) }}</span>
-          <span class="scm-map-stat-label">客户总数</span>
-        </div>
-        <div class="scm-map-stat">
-          <span class="scm-map-stat-value">{{ formatInt(inventory?.todayOutboundCount) }}</span>
-          <span class="scm-map-stat-label">出库次数</span>
-        </div>
-        <div class="scm-map-stat">
-          <span class="scm-map-stat-value">{{ formatInt(inventory?.todayInboundCount) }}</span>
-          <span class="scm-map-stat-label">入库次数</span>
-        </div>
+      <div class="scm-map-stat">
+        <span class="scm-map-stat-value">{{ formatInt(inventory?.todayInboundCount) }}</span>
+        <span class="scm-map-stat-label">入库次数</span>
       </div>
     </div>
   </screen-panel>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import * as echarts from 'echarts';
 import ScreenPanel from './screen-panel.vue';
-import { formatAmount, formatInt, formatQty } from '../format';
-import type { BusinessData, InventoryData, WarehouseNode } from '../types';
+import { useEcharts } from '../composables/use-echarts';
+import { formatInt, formatQty, toNumber } from '../format';
+import type { BusinessData, GeoData, GeoCityNode, InventoryData } from '../types';
 
 /**
- * 供应链网络（大屏主视觉）。
+ * 供应链分布（大屏主视觉，地图 M1）。
  *
- * <p><b>为什么是抽象网络而不是地图</b>：{@code warehouse} 与 {@code customer} 目前只有
- * 自由文本 {@code address}，没有经纬度、也没有省市区结构化字段，做不出真实地理分布。
- * 设计稿也明确「第一阶段不要卡住大屏」——先用抽象网络占位，
- * 等配送模块落地后再整体替换本区域（高德 Marker / LineLayer），
- * 上层布局与接口都不受影响。
+ * <p>省界着色与市级气泡来自**同一个** `/scm/screen/data/geo` 返回，前端不做二次聚合：
+ * 省级数值由后端从市级事实上卷，图例与气泡因此不会各自漂移。
  *
- * <p>五层结构自上而下：仓库节点 → 汇聚连线 + 配送线路 → 今日成交客户 → 客户网络汇总 → 统计条。
- * 用 {@code justify-content: space-between} 把五层摊满整个面板，
- * 否则仓库多、客户少时下半屏会整片留白。
+ * <p><b>底图是仓库里存档的省界 GeoJSON</b>（`public/screen/china-province.json`，
+ * 属性只留 `adcode` 与 `name`），零网络依赖、零授权。省级节点按 `adcode` 与底图对齐
+ * （两者同为 GB/T 2260 六位码），不按名称对齐 —— 字典里港澳用简称、边界数据用官方全称，
+ * 按名称匹配会静默丢省。
  *
- * <p><b>连线用 SVG 的 {@code vector-effect="non-scaling-stroke"}</b>：
- * 这个 SVG 用 {@code preserveAspectRatio="none"} 拉伸到整个容器，
- * 线宽会被非等比缩放拉成粗细不一；non-scaling-stroke 让线宽恒定 1px。
+ * <p><b>气泡坐标是区划质心（GCJ-02）</b>，代表「这个市」而不是某个单位的实际位置；
+ * 真正的点位/街道底图属于 M2，届时才需要地图服务商授权。
  */
 const props = defineProps<{
   inventory: InventoryData | null;
   business: BusinessData | null;
+  geo: GeoData;
 }>();
 
-const nodes = computed(() =>
-  (props.inventory?.warehouseNodes ?? []).map((node: WarehouseNode) => ({
-    name: node.warehouseName,
-    qtyText: formatQty(node.quantity),
-    outText: formatQty(node.todayOutboundQuantity),
-  }))
-);
+const MAP_NAME = 'xsy-china';
+const C = {
+  text1: '#eaf6ff',
+  text2: '#8fb7d9',
+  cyan: '#27d7fe',
+  blue: '#2f80ed',
+  border: '#1b4d7a',
+};
 
-/** 今日成交客户（取排行前 5），作为网络里的客户节点。 */
-const customers = computed(() =>
-  (props.business?.topCustomers ?? []).slice(0, 5).map((item) => ({
-    name: item.name,
-    amountText: `¥${formatAmount(item.amount)}`,
-  }))
-);
+const mapEl = ref<HTMLElement>();
+const chart = useEcharts(mapEl);
+const baseMapError = ref('');
 
-/** 第 index 个节点在 100 宽坐标系里的中心横坐标（与上方 flex 等分布局对齐）。 */
-function nodeX(index: number): number {
-  const total = nodes.value.length || 1;
-  return ((index + 0.5) / total) * 100;
+const cities = computed(() => props.geo.cities ?? []);
+const nodes = computed(() => props.inventory?.warehouseNodes ?? []);
+
+/** 覆盖度差额：没归属到市的量画不出气泡，必须显性化，否则图会被当成全部业务量。 */
+const unlocatedText = computed(() => {
+  const c = props.geo.coverage;
+  if (!c) {
+    return '';
+  }
+  const parts: string[] = [];
+  const customer = c.customerTotal - c.customerLocated;
+  const supplier = c.supplierTotal - c.supplierLocated;
+  const warehouse = c.warehouseTotal - c.warehouseLocated;
+  if (customer > 0) {
+    parts.push(`客户 ${formatInt(customer)}`);
+  }
+  if (supplier > 0) {
+    parts.push(`供应商 ${formatInt(supplier)}`);
+  }
+  if (warehouse > 0) {
+    parts.push(`仓库 ${formatInt(warehouse)}`);
+  }
+  return parts.length ? `未归属：${parts.join(' · ')}` : '';
+});
+
+/**
+ * 底图只注册一次：面板每 30 秒静默刷新一次数据，GeoJSON 却不该跟着重复下载 576 KB。
+ * 失败时把缓存清掉，让「重新加载底图」真的会重试。
+ */
+let baseMap: Promise<void> | null = null;
+
+/**
+ * 底图要素名按 `adcode` 索引。
+ *
+ * <p>省名**不能**直接当 ECharts map series 的匹配键：`scm_region` 存的是简称
+ * （香港 / 澳门），官方边界数据用的是全称（香港特别行政区 / 澳门特别行政区），
+ * 按名称匹配会让这两省静默不着色。`adcode` 与 `province_code` 同为 GB/T 2260 六位码，
+ * 是两份数据唯一稳定的共同身份，因此名称只在加载时按码回查一次。
+ */
+const boundaryNameByAdcode = new Map<number, string>();
+
+interface GeoFeature {
+  properties?: { adcode?: number | string; name?: string };
 }
+
+function loadBaseMap(): Promise<void> {
+  if (!baseMap) {
+    baseMap = fetch(`${import.meta.env.BASE_URL}screen/china-province.json`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`底图加载失败（HTTP ${res.status}）`);
+        }
+        return res.json();
+      })
+      .then((geoJson) => {
+        for (const feature of (geoJson as { features?: GeoFeature[] }).features ?? []) {
+          const adcode = Number(feature.properties?.adcode);
+          const name = feature.properties?.name;
+          if (name && Number.isFinite(adcode)) {
+            boundaryNameByAdcode.set(adcode, name);
+          }
+        }
+        echarts.registerMap(MAP_NAME, geoJson as Parameters<typeof echarts.registerMap>[1]);
+      })
+      .catch((e) => {
+        baseMap = null;
+        throw e;
+      });
+  }
+  return baseMap;
+}
+
+function bubbleSize(total: number, max: number): number {
+  // 开根号而不是线性：气泡面积才与数量成正比，线性放大会让最大城市糊掉整张图
+  return 7 + 24 * Math.sqrt(max > 0 ? total / max : 0);
+}
+
+function totalOf(city: GeoCityNode): number {
+  return city.customerCount + city.supplierCount + city.warehouseCount;
+}
+
+interface TipData {
+  customerCount: number;
+  supplierCount: number;
+  warehouseCount: number;
+  cityCount?: number;
+}
+
+interface TipParams {
+  name: string;
+  data?: TipData;
+}
+
+function tooltip(params: unknown): string {
+  const item = params as TipParams;
+  const data = item.data;
+  if (!data) {
+    return '';
+  }
+  const rows = [
+    `客户 ${formatInt(data.customerCount)}`,
+    `供应商 ${formatInt(data.supplierCount)}`,
+    `启用仓库 ${formatInt(data.warehouseCount)}`,
+  ];
+  if (data.cityCount !== undefined) {
+    rows.push(`覆盖市 ${formatInt(data.cityCount)}`);
+  }
+  return `<b>${item.name}</b><br/>${rows.join('<br/>')}`;
+}
+
+function render() {
+  const list = cities.value;
+  const maxTotal = list.reduce((acc, city) => Math.max(acc, totalOf(city)), 0);
+  const provinceMax = (props.geo.provinces ?? []).reduce(
+    (acc, p) => Math.max(acc, p.customerCount),
+    0
+  );
+
+  chart.setOption({
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(7, 30, 66, 0.94)',
+      borderColor: C.border,
+      textStyle: { color: C.text1, fontSize: 12 },
+    },
+    // 着色口径固定在「客户数」：大屏上同一张图同时表达三种量，气泡已经带了明细，
+    // 底色再换成综合值就会让颜色和位置说两件不同的事。
+    visualMap: {
+      type: 'continuous',
+      min: 0,
+      max: provinceMax || 1,
+      left: 10,
+      bottom: 12,
+      itemWidth: 8,
+      itemHeight: 60,
+      text: [`${provinceMax}`, '0'],
+      textStyle: { color: C.text2, fontSize: 10 },
+      inRange: { color: ['#0b2f52', '#1565b8', C.blue, C.cyan] },
+    },
+    geo: {
+      map: MAP_NAME,
+      roam: false,
+      zoom: 1.16,
+      label: { show: false },
+      itemStyle: {
+        areaColor: 'rgba(9, 40, 81, 0.9)',
+        borderColor: 'rgba(47, 111, 158, 0.8)',
+        borderWidth: 1,
+      },
+      emphasis: {
+        label: { show: false },
+        itemStyle: { areaColor: 'rgba(27, 77, 122, 1)' },
+      },
+      select: { disabled: true },
+    },
+    series: [
+      {
+        type: 'map',
+        geoIndex: 0,
+        tooltip: { formatter: tooltip },
+        data: (props.geo.provinces ?? []).map((province) => ({
+          // 按码取底图名；字典里冒出底图没有的码时退回原名（宁可少着色，不隐藏数据）
+          name: boundaryNameByAdcode.get(province.provinceCode) ?? province.provinceName,
+          value: province.customerCount,
+          customerCount: province.customerCount,
+          supplierCount: province.supplierCount,
+          warehouseCount: province.warehouseCount,
+          cityCount: province.cityCount,
+        })),
+      },
+      {
+        type: 'effectScatter',
+        coordinateSystem: 'geo',
+        // 只有真拿到归属数据的市才会成为气泡，图上不会出现空转的涟漪
+        rippleEffect: { brushType: 'stroke', scale: 3 },
+        symbolSize: (_value: unknown, params: { data?: { total: number } }) =>
+          bubbleSize(params.data?.total ?? 0, maxTotal),
+        tooltip: { formatter: tooltip },
+        data: list.map((city) => ({
+          name: city.cityName,
+          value: [toNumber(city.centerLng), toNumber(city.centerLat), totalOf(city)],
+          total: totalOf(city),
+          customerCount: city.customerCount,
+          supplierCount: city.supplierCount,
+          warehouseCount: city.warehouseCount,
+        })),
+        itemStyle: { color: C.cyan, opacity: 0.9 },
+      },
+    ],
+  });
+}
+
+async function retryBaseMap() {
+  baseMapError.value = '';
+  await mountBaseMap();
+}
+
+async function mountBaseMap() {
+  try {
+    await loadBaseMap();
+    // 容器在底图下载期间已经拿到尺寸，注册完成后必须再喂一次配置
+    await nextTick();
+    render();
+  } catch (e: any) {
+    baseMapError.value = String(e?.message ?? '地图底图加载失败');
+  }
+}
+
+onMounted(mountBaseMap);
+watch(() => props.geo, render);
 </script>
 
 <style lang="less" scoped>
 @import '../styles/variables.less';
 
-.scm-map-hint {
+.scm-map-legend {
   font-size: 11px;
   color: @text-3;
+}
+
+.scm-map-unlocated {
+  margin-left: 10px;
+  font-size: 11px;
+  color: @state-warn;
+}
+
+.scm-map-retry {
+  padding: 3px 12px;
+  font-size: 12px;
+  color: @text-1;
+  background: rgba(47, 128, 237, 0.18);
+  border: 1px solid @panel-border-strong;
+  border-radius: 3px;
+  cursor: pointer;
 }
 
 .scm-map {
   flex: 1;
   min-height: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-// ---------- ① 仓库节点 ----------
-.scm-map-nodes {
-  flex: 0 0 auto;
-  display: flex;
-  justify-content: space-around;
   gap: 10px;
 }
 
-.scm-map-node {
+.scm-map-main {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+
+.scm-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+// 底图已画出、但一个市都没归属上时的说明，浮在图上而不是替换掉图
+.scm-map-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 5px 14px;
+  font-size: 12px;
+  color: @text-2;
+  background: rgba(6, 21, 47, 0.82);
+  border: 1px solid @panel-border;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+// ---------- 右侧仓库明细 ----------
+.scm-map-rail {
+  flex: 0 0 186px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 9px 8px;
-  background: rgba(47, 128, 237, 0.1);
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(27, 77, 122, 0.6);
+}
+
+.scm-map-rail-title {
+  flex: 0 0 auto;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: @text-3;
+}
+
+.scm-map-rail-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scm-map-rail-empty {
+  font-size: 12px;
+  color: @text-3;
+}
+
+.scm-map-rail-row {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  background: rgba(47, 128, 237, 0.08);
   border: 1px solid @panel-border;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
-.scm-map-diamond {
-  width: 10px;
-  height: 10px;
-  background: @tech-cyan;
-  transform: rotate(45deg);
-  box-shadow: 0 0 8px rgba(39, 215, 254, 0.7);
-  margin-bottom: 3px;
-}
-
-.scm-map-node-name {
-  max-width: 100%;
-  font-size: 14px;
+.scm-map-rail-name {
+  font-size: 12px;
   font-weight: 600;
   color: @text-1;
   white-space: nowrap;
@@ -195,19 +418,14 @@ function nodeX(index: number): number {
   text-overflow: ellipsis;
 }
 
-.scm-map-node-stats {
-  display: flex;
-  gap: 14px;
-}
-
-.scm-map-node-stat {
+.scm-map-rail-figure {
   font-size: 11px;
   color: @text-2;
   white-space: nowrap;
 
   b {
     font-family: @font-num;
-    font-size: 13px;
+    font-size: 12px;
     color: @tech-cyan;
   }
 
@@ -216,131 +434,14 @@ function nodeX(index: number): number {
   }
 }
 
-// ---------- ② 汇聚连线 ----------
-.scm-map-links {
-  position: relative;
-  flex: 1;
-  min-height: 56px;
-  margin: 0 6px;
-}
-
-.scm-map-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.scm-map-link {
-  stroke: @panel-border-strong;
-  stroke-width: 1;
-  stroke-dasharray: 4 4;
-  opacity: 0.75;
-}
-
-.scm-map-route {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  padding: 3px 14px;
-  background: @panel-bg-solid;
-  border: 1px solid @panel-border-strong;
-  border-radius: 10px;
-  white-space: nowrap;
-
-  .scm-map-route-text {
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: @tech-cyan;
-  }
-}
-
-// ---------- ③ 客户节点 ----------
-.scm-map-customers {
-  flex: 0 0 auto;
-  display: flex;
-  gap: 8px;
-}
-
-.scm-map-customer-chip {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 7px 6px;
-  background: rgba(39, 215, 254, 0.07);
-  border: 1px solid @panel-border;
-  border-radius: 4px;
-}
-
-.scm-map-customer-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: @brand-blue;
-  box-shadow: 0 0 7px rgba(47, 128, 237, 0.9);
-}
-
-.scm-map-customer-name {
-  max-width: 100%;
-  font-size: 12px;
-  color: @text-1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.scm-map-customer-amount {
-  font-family: @font-num;
-  font-size: 12px;
-  font-weight: 600;
-  color: @tech-cyan;
-}
-
-// ---------- ④ 客户网络汇总 ----------
-.scm-map-summary {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 7px 12px;
-  background: rgba(39, 215, 254, 0.08);
-  border: 1px solid @panel-border;
-  border-radius: 4px;
-  margin: 0 6px;
-}
-
-.scm-map-summary-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: @brand-blue;
-  box-shadow: 0 0 10px rgba(47, 128, 237, 0.9);
-  flex: 0 0 auto;
-}
-
-.scm-map-summary-text {
-  font-size: 13px;
-  color: @text-2;
-
-  b {
-    font-family: @font-num;
-    font-size: 15px;
-    color: @tech-cyan;
-  }
-}
-
-// ---------- ⑤ 底部统计 ----------
+// ---------- 底部统计条 ----------
 .scm-map-stats {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid rgba(27, 77, 122, 0.6);
   padding-top: 8px;
+  margin-top: 6px;
 }
 
 .scm-map-stat {

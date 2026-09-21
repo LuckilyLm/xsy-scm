@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
+import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenPurchaseVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO;
@@ -35,6 +36,17 @@ public class ScreenDataController {
     @SaCheckPermission("scm:screen:query")
     public ResponseDTO<ScreenInventoryVO> inventory() {
         return ResponseDTO.ok(screenDataService.getInventoryData());
+    }
+
+    /**
+     * 地理分布（地图 M1）：按市聚合的客户 / 供应商 / 仓库气泡与按省上卷的着色值。
+     *
+     * <p>与其余面板同为只读聚合，复用 V28 已种下的 {@code scm:screen:query}，不新增权限码。
+     */
+    @GetMapping("/data/geo")
+    @SaCheckPermission("scm:screen:query")
+    public ResponseDTO<ScreenGeoVO> geo() {
+        return ResponseDTO.ok(screenDataService.getGeoData());
     }
 
     @GetMapping("/data/purchase")

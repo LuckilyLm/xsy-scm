@@ -5,6 +5,7 @@ import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTy
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryWarningStatusEnum;
 import net.lab1024.sa.admin.module.scm.screen.dao.ScreenDataDao;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
+import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenPurchaseVO;
@@ -18,7 +19,10 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 数据大屏只读聚合服务。
@@ -235,6 +239,49 @@ public class ScreenDataService {
         vo.setInboundQuantity(inboundQuantity);
         vo.setOutboundQuantity(outboundQuantity);
         return vo;
+    }
+
+    /**
+     * 地理分布（地图 M1）。
+     *
+     * <p>气泡取市级聚合行，省界着色由这批行**在 Java 侧上卷**得到：两者因此恒等，
+     * 不存在「省级图例与市级气泡对不上」这种两份 SQL 各自演算的漂移。
+     *
+     * <p>覆盖度原样透出：{@code 总数 − 已归属} 就是地图上找不到位置的业务量，
+     * 必须让用户看到差额，而不是以为看到的分布等于全部业务量。
+     */
+    public ScreenGeoVO getGeoData() {
+        List<ScreenGeoVO.CityNode> cities = nullToEmpty(screenDataDao.geoCityRows());
+        ScreenGeoVO vo = new ScreenGeoVO();
+        vo.setCities(cities);
+        vo.setProvinces(rollUpProvinces(cities));
+        vo.setCoverage(screenDataDao.geoCoverage());
+        return vo;
+    }
+
+    /** 省级上卷：只累加市级事实，不引入任何新的判定。 */
+    private static List<ScreenGeoVO.ProvinceNode> rollUpProvinces(List<ScreenGeoVO.CityNode> cities) {
+        Map<Integer, ScreenGeoVO.ProvinceNode> byProvince = new LinkedHashMap<>();
+        for (ScreenGeoVO.CityNode city : cities) {
+            ScreenGeoVO.ProvinceNode province = byProvince.computeIfAbsent(city.getProvinceCode(), code -> {
+                ScreenGeoVO.ProvinceNode created = new ScreenGeoVO.ProvinceNode();
+                created.setProvinceCode(code);
+                created.setProvinceName(city.getProvinceName());
+                created.setCityCount(0);
+                created.setCustomerCount(0L);
+                created.setSupplierCount(0L);
+                created.setWarehouseCount(0L);
+                return created;
+            });
+            province.setCityCount(province.getCityCount() + 1);
+            province.setCustomerCount(province.getCustomerCount() + city.getCustomerCount());
+            province.setSupplierCount(province.getSupplierCount() + city.getSupplierCount());
+            province.setWarehouseCount(province.getWarehouseCount() + city.getWarehouseCount());
+        }
+        List<ScreenGeoVO.ProvinceNode> provinces = new ArrayList<>(byProvince.values());
+        provinces.sort(Comparator.comparingLong(ScreenGeoVO.ProvinceNode::getCustomerCount).reversed()
+                .thenComparing(ScreenGeoVO.ProvinceNode::getProvinceCode));
+        return provinces;
     }
 
     private static Long nullToZero(Long value) {

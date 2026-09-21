@@ -25,4 +25,13 @@ export const screenApi = {
   getTrendData: (range: '7d' | '30d' = '7d') => {
     return getRequest('/scm/screen/data/trend', { range });
   },
+  /**
+   * 地理分布（地图 M1）。
+   *
+   * 市级气泡与省级着色来自**同一份**返回，前端不做二次聚合：省界数值由后端从市级
+   * 事实上卷，两边永远对得上。
+   */
+  getGeoData: () => {
+    return getRequest('/scm/screen/data/geo', {});
+  },
 };
