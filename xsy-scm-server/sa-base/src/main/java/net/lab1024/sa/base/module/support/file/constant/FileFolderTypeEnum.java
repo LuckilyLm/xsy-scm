@@ -32,6 +32,12 @@ public enum FileFolderTypeEnum implements BaseEnum {
      */
     FEEDBACK(4, FileFolderTypeEnum.FOLDER_PRIVATE + "/feedback/", "意见反馈"),
 
+    /**
+     * 公开图片：对象为 public-read，URL 静态可缓存、不过期，供面向客户的展示使用。
+     * 与 private/* 的区别只有目录前缀一个来源，业务用它来表达「这份资产本来就不机密」。
+     */
+    PUBLIC_IMAGE(5, FileFolderTypeEnum.FOLDER_PUBLIC + "/image/", "公开图片"),
+
     ;
 
     /**

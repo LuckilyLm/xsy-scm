@@ -11,6 +11,7 @@ import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.admin.test.PgITPaths;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
+import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -118,8 +119,11 @@ class ProductPgIT {
         assertThat(tree.at("/skuList/0/specValues/规格").asText()).isEqualTo("大");
     }
     private ProductImageForm upload(String name) {
+        return upload(name, FileFolderTypeEnum.PUBLIC_IMAGE.getValue());
+    }
+    private ProductImageForm upload(String name,int folder) {
         byte[] png=Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=");
-        var uploaded=files.fileUpload(new MockMultipartFile("file",name,"image/png",png),1,SmartRequestUtil.getRequestUser());
+        var uploaded=files.fileUpload(new MockMultipartFile("file",name,"image/png",png),folder,SmartRequestUtil.getRequestUser());
         assertThat(uploaded.getOk()).isTrue();
         var image=new ProductImageForm(); image.setFileKey(uploaded.getData().getFileKey()); image.setPrimaryFlag(true); return image;
     }
@@ -135,6 +139,29 @@ class ProductPgIT {
     @Test void rejectsUnknownFileReference() {
         var form=product(); var image=new ProductImageForm(); image.setFileKey("missing-file"); form.setImages(List.of(image));
         conflict(() -> service.add(form),40026);
+    }
+    /**
+     * 私有目录的 key 在文件模块里真实存在，绑定它等于把他人附件晋升为所有商品查看者可读，因此必须拒绝。
+     */
+    @Test void rejectsBindingPrivateDirectoryImage() {
+        var form=product(); form.setImages(new ArrayList<>(List.of(upload("w1-private.png",FileFolderTypeEnum.COMMON.getValue()))));
+        conflict(() -> service.add(form),40030);
+    }
+    /**
+     * 本裁决之前落库的存量行沿用原 key 时放行，否则历史商品连改排序都保存不了；
+     * 但换绑成另一个私有 key 依旧拒绝。
+     */
+    @Test void allowsLegacyPrivateKeyButRejectsRebindingToAnother() {
+        var legacyKey=upload("w1-legacy-private.png",FileFolderTypeEnum.COMMON.getValue()).getFileKey();
+        var form=product(); form.setImages(new ArrayList<>(List.of(upload("w1-public.png"))));
+        Long id=service.add(form);
+        jdbc.update("UPDATE product_image SET file_key=? WHERE spu_id=?",legacyKey,id);
+
+        var edit=update(id); edit.getImages().getFirst().setSortOrder(5); service.update(edit);
+        assertThat(query.detail(id).getImages().getFirst().getFileKey()).isEqualTo(legacyKey);
+
+        var rebind=update(id); rebind.getImages().getFirst().setFileKey(upload("w1-other-private.png",FileFolderTypeEnum.COMMON.getValue()).getFileKey());
+        conflict(() -> service.update(rebind),40030);
     }
     private Long category(Long parent,String suffix) {
         var form=new ProductCategoryAddForm(); form.setParentId(parent); form.setCategoryCode(prefix+suffix); form.setName(suffix); form.setStatus("ENABLED"); return categories.add(form);
@@ -155,7 +182,7 @@ class ProductPgIT {
                 case "default" -> jdbc.update("UPDATE product_sku SET is_default=TRUE WHERE spu_id=?",id);
                 case "price" -> jdbc.update("UPDATE product_sku SET market_price=-1 WHERE spu_id=?",id);
                 case "json" -> jdbc.update("UPDATE product_sku SET spec_values='[]'::jsonb WHERE spu_id=?",id);
-                case "primary" -> jdbc.update("INSERT INTO product_image(spu_id,file_key,file_url,is_primary) VALUES (?,'a','a',TRUE),(?,'b','b',TRUE)",id,id);
+                case "primary" -> jdbc.update("INSERT INTO product_image(spu_id,file_key,is_primary) VALUES (?,'a',TRUE),(?,'b',TRUE)",id,id);
                 default -> throw new AssertionError(type);
             }
         }).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);

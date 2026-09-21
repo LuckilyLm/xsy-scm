@@ -17,7 +17,6 @@ public class ProductImageEntity {
     private String updatedBy;
     private Long spuId;
     private String fileKey;
-    private String fileUrl;
     private String fileName;
     private Long fileSize;
     @TableField("is_primary") private Boolean primaryFlag;

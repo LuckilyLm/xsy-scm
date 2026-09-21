@@ -10,7 +10,6 @@ public class ProductImageForm {
 private Long imageId;
 private Integer version;
 @NotBlank @Size(max=255) private String fileKey;
-@Size(max=500) private String fileUrl;
 @Size(max=255) private String fileName;
 @Min(0) private Long fileSize;
 @NotNull private Boolean primaryFlag = false;

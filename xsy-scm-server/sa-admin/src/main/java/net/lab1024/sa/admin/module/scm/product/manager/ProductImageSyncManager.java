@@ -9,6 +9,7 @@ import net.lab1024.sa.admin.module.scm.product.dao.ProductImageDao;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductImageEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.base.module.support.file.service.FileService;
+import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
@@ -20,6 +21,8 @@ import static net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode.
 @Component
 @RequiredArgsConstructor
 public class ProductImageSyncManager {
+    /** 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。 */
+    private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
     private final ProductImageDao dao;
     private final FileService files;
     public List<ProductImageEntity> existing(Long spuId) {
@@ -32,6 +35,8 @@ public class ProductImageSyncManager {
         Map<String,FileVO> metadata=files.getFileList(requested.stream().map(ProductImageForm::getFileKey).toList())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey,Function.identity(),(a,b)->a));
         for (var form:requested) if (!metadata.containsKey(form.getFileKey())) throw new ScmBusinessException(IMAGE_INVALID);
+        Map<Long,String> persistedKeys=existing(spuId).stream().collect(Collectors.toMap(ProductImageEntity::getId,ProductImageEntity::getFileKey));
+        for (var form:requested) requirePublicImageKey(form,persistedKeys);
         dao.clearPrimary(spuId);
         for (var form:changes.updated()) {
             var entity=entity(spuId,form,metadata.get(form.getFileKey())); entity.setId(form.getImageId()); entity.setVersion(form.getVersion());
@@ -50,10 +55,22 @@ public class ProductImageSyncManager {
             .setSql("version = version + 1"));
         dao.deleteByIds(ids);
     }
+    /**
+     * 商品图是面向客户的展示资产，新增或换绑只能引用公开图片目录。
+     * 只读 fileKey 前缀不够：存在性由文件模块证明，而「谁的附件」不在这条链上——
+     * 少了这道判断，改商品权限就等于把他人私有附件晋升为所有查看者可读。
+     * 本裁决之前落库的行仍挂着私有 key，仅「沿用该行原有 key」放行，
+     * 否则改排序或切主图会被历史数据挡住，而换绑成另一个私有 key 依旧拒绝。
+     */
+    private void requirePublicImageKey(ProductImageForm form,Map<Long,String> persistedKeys) {
+        String fileKey=form.getFileKey();
+        if (fileKey.startsWith(PUBLIC_IMAGE_FOLDER) || fileKey.equals(persistedKeys.get(form.getImageId()))) return;
+        throw new ScmBusinessException(IMAGE_NOT_PUBLIC);
+    }
     private ProductImageEntity entity(Long spuId,ProductImageForm form,FileVO file) {
         if (file.getFileUrl()==null || file.getFileUrl().isBlank()) throw new ScmBusinessException(IMAGE_INVALID);
         var entity=new ProductImageEntity(); entity.setSpuId(spuId); entity.setFileKey(file.getFileKey());
-        entity.setFileUrl(file.getFileUrl()); entity.setFileName(file.getFileName());
+        entity.setFileName(file.getFileName());
         entity.setFileSize(file.getFileSize()==null ? null : file.getFileSize().longValue());
         entity.setPrimaryFlag(form.getPrimaryFlag()); entity.setSortOrder(form.getSortOrder());
         entity.setUpdatedAt(OffsetDateTime.now()); entity.setUpdatedBy(ScmOperator.current()); return entity;
