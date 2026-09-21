@@ -173,6 +173,11 @@ V38  V38__scm_product_master_data_enhancement.sql product PCO-1 主档增强：p
 V39  V39__scm_product_assistant_menu_permissions.sql product PCO-1 data-only，辅助资料页 405、
                                                    商品批量维护 417、单位/标签 CRUD 488-495，
                                                    仅授 SUPER_ADMIN
+V40  V40__scm_geo_region_and_master_location.sql  map 地图 M0 地理数据地基：scm_region 省市两级字典
+                                                   （34 省 + 414 市，中心为区划质心 GCJ-02，非地址坐标），
+                                                   warehouse/customer/supplier 各加省市区编码+名称快照六列与
+                                                   longitude/latitude/geom_crs（成对、取值与 CRS CHECK），
+                                                   市级部分索引，末尾按自由文本地址做保守解析回填
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
@@ -188,8 +193,25 @@ V31/V33 的转入成本清零缺陷已由 V37 + 代码修复（成本随货平�
 > 10 个面板、3 张图表，新增 `GET /scm/screen/data/trend?range=7d|30d` 与库存健康度
 > （四档互斥且之和等于总数，判定复用 `ScmInventoryWarningStatusEnum`，**不新编算法**）。
 > 大屏仍是**只读视图**：不写业务表、不维护任何独立副本。
-> 供应链地图为**抽象网络**（`warehouse` / `customer` 无经纬度与省市区结构化字段），
-> 接高德时整体替换该组件即可，上层布局不受影响。设计取舍见 `docs/decisions.md`。
+> 中间的「供应链网络」面板已于 2026-09-21（地图 M1）改为**真实中国地图**，
+> 见下方地图 M0/M1 段落。设计取舍见 `docs/decisions.md`。
+
+> **地图模块 M0 + M1（V40）已于 2026-09-21 完成**，方案与分期见
+> [`docs/requirements/2026-09-21-地图模块分期实施方案.md`](./docs/requirements/2026-09-21-地图模块分期实施方案.md)。
+> M0 给 `warehouse` / `customer` / `supplier` 建立结构化地理归属：三张主档各存**编码 + 名称快照六列**
+> （名称只服务展示与导出，不参与关联，必须由同一次选择写入，不事后按编码反查），
+> 加 `longitude` / `latitude` / `geom_crs`；**坐标系是硬约束**——GCJ-02 与 WGS-84 混存会造成百米级
+> 不可追溯偏移，任何写入经纬度的代码都要同时落 `geom_crs`。`scm_region.center_lng/lat` 是**区划质心**，
+> 只用于把聚合值画在正确位置，**不是任何单位的地址坐标**。
+> 本期**无区划查询接口**：前端级联复用 SmartAdmin 的 `area-cascader` 静态字典，
+> `scm_region` 只服务后端解析与质心；存量地址解析只在迁移内做保守整市名匹配，**解析不出即留空**，
+> 由大屏的覆盖度面板显性提示未归属量，不猜。
+> M1 的大屏地图为 ECharts 省界着色 + 市级气泡，底图是**存档进仓库的官方 GeoJSON**
+> （`xsy-scm-web/public/screen/china-province.json`，构建期资产，运行时不请求任何外部域名）；
+> 省级数值在 Java 侧由市级行上卷，省界图例与气泡之和恒等；
+> **省级节点与底图要素按 `adcode`（= `province_code`）对齐，绝不按名称**——字典用简称「香港」而
+> 官方边界用全称「香港特别行政区」，按名称匹配会静默不着色。流向层 `lines` 未做（等 M2 有真实点位再评估）。
+> M2（街道底图 / 选点 / 地理编码）是**唯一需要外部付费服务的一层**，路线 A/B/C 尚未裁决。
 
 > **商品中心优化 PCO-1（V38–V39）已于 2026-09-20 完成**：主档扩展字段（助记码 / 储存方式 / 税务与保质期
 > 等）、计量单位与商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护。
