@@ -5,11 +5,13 @@
  验收：W3 Playwright、TS baseline、ESLint。 -->
 <template>
  <a-form class="smart-query-form" layout="inline" @finish="search">
-  <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear /></a-form-item>
-  <a-form-item label="客户类型" class="smart-query-form-item"><CustomerTypeSelect v-model:value="query.customerTypeId" width="190px" /></a-form-item>
-  <a-form-item label="SKU" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
-  <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
-  <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit" v-privilege="'scm:pricing:type-price:query'">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
+  <a-row class="smart-query-form-row">
+   <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear /></a-form-item>
+   <a-form-item label="客户类型" class="smart-query-form-item"><CustomerTypeSelect v-model:value="query.customerTypeId" width="190px" /></a-form-item>
+   <a-form-item label="SKU" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
+   <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
+   <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit" v-privilege="'scm:pricing:type-price:query'">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
+  </a-row>
  </a-form>
  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error=''" />
  <a-card size="small" :bordered="false">

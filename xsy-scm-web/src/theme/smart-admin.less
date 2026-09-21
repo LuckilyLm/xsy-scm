@@ -76,7 +76,28 @@
   margin-top: 8px;
 }
 
+/*
+  a-form 带 layout="inline" 时是 display:flex，a-row 就成了 flex 项 ——
+  两行的宽度加起来放得下时会被并排到同一行（第二行还会多出 8px margin-top 造成错位）。
+  强制每个 .smart-query-form-row 独占一行。
+*/
+.smart-query-form.ant-form-inline > .smart-query-form-row {
+  flex: 1 0 100%;
+}
+
 .smart-query-form-row .smart-query-form-item {
+  margin-right: 8px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+/*
+  扁平写法兜底：直接把 .smart-query-form-item 挂在 a-form 下（不套 .smart-query-form-row）的页面，
+  上面两条规则都不命中 —— 表单项 margin 归零，一旦换行（窗口变窄或高级筛选展开）两行会贴死成 0px。
+  限定 .ant-form-inline + 子选择器：只命中「inline 表单的直接子项」，
+  套了 row 的页面、以及三级等保这类纵向表单（依赖 antd 默认 16px 行距）都不受影响。
+*/
+.smart-query-form.ant-form-inline > .smart-query-form-item {
   margin-right: 8px;
   margin-top: 5px;
   margin-bottom: 5px;

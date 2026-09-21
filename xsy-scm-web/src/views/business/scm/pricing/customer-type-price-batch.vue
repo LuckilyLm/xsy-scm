@@ -2,7 +2,13 @@
 <template>
  <a-card title="客户类型价批量调价" size="small" :bordered="false">
   <a-alert type="info" show-icon message="任意一行失败，整批价格不会写入。最多 500 行；成功批次号不可重复使用。" />
-  <a-form layout="inline" class="smart-query-form"><a-form-item label="批次号" required><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width:320px" /></a-form-item><a-form-item><a-button @click="add" :disabled="rows.length>=500||saving">新增行</a-button></a-form-item><a-form-item><a-button type="primary" :loading="saving" v-privilege="'scm:pricing:type-price:batch'" @click="submit">提交整批</a-button></a-form-item></a-form>
+  <a-form layout="inline" class="smart-query-form">
+   <a-row class="smart-query-form-row">
+    <a-form-item label="批次号" required class="smart-query-form-item"><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width:320px" /></a-form-item>
+    <a-form-item class="smart-query-form-item"><a-button @click="add" :disabled="rows.length>=500||saving">新增行</a-button></a-form-item>
+    <a-form-item class="smart-query-form-item"><a-button type="primary" :loading="saving" v-privilege="'scm:pricing:type-price:batch'" @click="submit">提交整批</a-button></a-form-item>
+   </a-row>
+  </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon />
   <a-table :data-source="rows" :columns="columns" row-key="rowNumber" :pagination="false" size="small" bordered :scroll="{x:1300}" :row-class-name="(r:BatchRow)=>failures.some(f=>f.rowNumber===r.rowNumber)?'failed-row':''">
    <template #bodyCell="{record,column}">

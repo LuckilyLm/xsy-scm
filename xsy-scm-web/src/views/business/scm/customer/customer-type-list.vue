@@ -17,18 +17,20 @@
 <template>
   <section aria-label="客户类型">
     <a-form class="smart-query-form" layout="inline" @finish="search">
-      <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" allow-clear placeholder="类型编码 / 名称" style="width: 220px" />
-      </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_TYPE_STATUS_ENUM" width="120px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-space>
-          <a-button type="primary" html-type="submit">查询</a-button>
-          <a-button @click="reset">重置</a-button>
-        </a-space>
-      </a-form-item>
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键字" class="smart-query-form-item">
+          <a-input v-model:value="filters.keyword" allow-clear placeholder="类型编码 / 名称" style="width: 220px" />
+        </a-form-item>
+        <a-form-item label="状态" class="smart-query-form-item">
+          <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_TYPE_STATUS_ENUM" width="120px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-space>
+            <a-button type="primary" html-type="submit">查询</a-button>
+            <a-button @click="reset">重置</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
     </a-form>
 
     <a-card size="small" :bordered="false">

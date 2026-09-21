@@ -1,11 +1,13 @@
 <template>
   <section aria-label="商品档案">
     <a-form class="smart-query-form" layout="inline" @finish="search">
-      <a-form-item label="分类" class="smart-query-form-item"><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" /></a-form-item>
-      <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名 / 编码 / 条码 / 助记码" style="width: 240px" /></a-form-item>
-      <a-form-item label="商品状态" class="smart-query-form-item"><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px" /></a-form-item>
-      <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit">查询</a-button><a-button @click="reset">重置</a-button><a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-space></a-form-item>
-      <template v-if="advanced">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="分类" class="smart-query-form-item"><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" /></a-form-item>
+        <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名 / 编码 / 条码 / 助记码" style="width: 240px" /></a-form-item>
+        <a-form-item label="商品状态" class="smart-query-form-item"><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px" /></a-form-item>
+        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="advanced = !advanced"><template #icon><UpOutlined v-if="advanced" /><DownOutlined v-else /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
+      </a-row>
+      <a-row v-if="advanced" class="smart-query-form-row">
         <a-form-item label="SKU 状态" class="smart-query-form-item"><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px" /></a-form-item>
         <a-form-item label="商品类型" class="smart-query-form-item"><a-select v-model:value="filters.productType" allow-clear :options="PRODUCT_TYPE_ENUM" style="width: 120px" /></a-form-item>
         <a-form-item label="主档状态" class="smart-query-form-item"><a-select v-model:value="filters.masterStatus" allow-clear :options="MASTER_STATUS_ENUM" style="width: 120px" /></a-form-item>
@@ -14,7 +16,7 @@
         <a-form-item label="主图" class="smart-query-form-item"><a-select v-model:value="filters.hasPrimaryImage" allow-clear :options="YES_NO_ENUM" style="width: 90px" /></a-form-item>
         <a-form-item label="条码" class="smart-query-form-item"><a-select v-model:value="filters.hasBarcode" allow-clear :options="YES_NO_ENUM" style="width: 90px" /></a-form-item>
         <a-form-item label="创建时间" class="smart-query-form-item"><a-range-picker v-model:value="createdRange" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true, true]" /></a-form-item>
-      </template>
+      </a-row>
     </a-form>
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">

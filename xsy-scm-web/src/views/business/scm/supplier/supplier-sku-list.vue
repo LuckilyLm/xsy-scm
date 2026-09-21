@@ -17,21 +17,23 @@
 <template>
   <section aria-label="商品-供应商关系">
     <a-form class="smart-query-form" layout="inline" @finish="search">
-      <a-form-item label="供应商" class="smart-query-form-item">
-        <SupplierSelect v-model:value="filters.supplierId" width="240px" />
-      </a-form-item>
-      <a-form-item label="商品规格" class="smart-query-form-item">
-        <SkuSelect v-model:value="filters.skuId" width="300px" />
-      </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_SKU_STATUS_ENUM" width="130px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-space>
-          <a-button type="primary" html-type="submit">查询</a-button>
-          <a-button @click="reset">重置</a-button>
-        </a-space>
-      </a-form-item>
+      <a-row class="smart-query-form-row">
+        <a-form-item label="供应商" class="smart-query-form-item">
+          <SupplierSelect v-model:value="filters.supplierId" width="240px" />
+        </a-form-item>
+        <a-form-item label="商品规格" class="smart-query-form-item">
+          <SkuSelect v-model:value="filters.skuId" width="300px" />
+        </a-form-item>
+        <a-form-item label="状态" class="smart-query-form-item">
+          <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_SKU_STATUS_ENUM" width="130px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-space>
+            <a-button type="primary" html-type="submit">查询</a-button>
+            <a-button @click="reset">重置</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
     </a-form>
 
     <a-card size="small" :bordered="false">

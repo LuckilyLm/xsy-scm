@@ -2,10 +2,12 @@
 <template>
  <a-card title="取价试算" size="small" :bordered="false">
   <a-form layout="inline" class="smart-query-form" @finish="resolve">
-   <a-form-item label="客户" required><CustomerSelect v-model:value="customerId" width="220px" /></a-form-item>
-   <a-form-item label="SKU" required><SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]" /></a-form-item>
-   <a-form-item label="时点"><a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" placeholder="当前时点" /></a-form-item>
-   <a-form-item><a-button type="primary" html-type="submit" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button></a-form-item>
+   <a-row class="smart-query-form-row">
+    <a-form-item label="客户" required class="smart-query-form-item"><CustomerSelect v-model:value="customerId" width="220px" /></a-form-item>
+    <a-form-item label="SKU" required class="smart-query-form-item"><SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]" /></a-form-item>
+    <a-form-item label="时点" class="smart-query-form-item"><a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" placeholder="当前时点" /></a-form-item>
+    <a-form-item class="smart-query-form-item"><a-button type="primary" html-type="submit" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button></a-form-item>
+   </a-row>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon />
   <a-alert message="已定价的商品也可能不可售。零价是有效价格；未定价不等于零价。" type="info" show-icon />

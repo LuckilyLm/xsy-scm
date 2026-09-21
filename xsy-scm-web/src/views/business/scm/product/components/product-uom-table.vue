@@ -1,9 +1,11 @@
 <!-- PCO-1 辅助资料「计量单位」Tab：字典只作取值来源，编码与名称不可改。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @finish="search">
-    <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" allow-clear placeholder="编码 / 名称" style="width: 200px" /></a-form-item>
-    <a-form-item label="状态" class="smart-query-form-item"><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px" /></a-form-item>
-    <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
+    <a-row class="smart-query-form-row">
+      <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" allow-clear placeholder="编码 / 名称" style="width: 200px" /></a-form-item>
+      <a-form-item label="状态" class="smart-query-form-item"><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px" /></a-form-item>
+      <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
+    </a-row>
   </a-form>
   <a-row class="smart-table-btn-block" justify="space-between">
     <a-button v-privilege="'scm:product:uom:add'" type="primary" @click="modal?.open()">新增单位</a-button>

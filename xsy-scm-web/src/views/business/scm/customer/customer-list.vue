@@ -22,30 +22,32 @@
 <template>
   <section aria-label="客户档案">
     <a-form class="smart-query-form" layout="inline" @finish="search">
-      <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
-      </a-form-item>
-      <a-form-item label="客户类型" class="smart-query-form-item">
-        <CustomerTypeSelect v-model:value="filters.customerTypeId" width="180px" />
-      </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="130px" />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-space>
-          <a-button type="primary" html-type="submit">查询</a-button>
-          <a-button @click="reset">重置</a-button>
-          <a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button>
-        </a-space>
-      </a-form-item>
-      <template v-if="advanced">
+      <a-row class="smart-query-form-row">
+        <a-form-item label="关键字" class="smart-query-form-item">
+          <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
+        </a-form-item>
+        <a-form-item label="客户类型" class="smart-query-form-item">
+          <CustomerTypeSelect v-model:value="filters.customerTypeId" width="180px" />
+        </a-form-item>
+        <a-form-item label="状态" class="smart-query-form-item">
+          <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="130px" />
+        </a-form-item>
+        <a-form-item class="smart-query-form-item">
+          <a-space>
+            <a-button type="primary" html-type="submit">查询</a-button>
+            <a-button @click="reset">重置</a-button>
+            <a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button>
+          </a-space>
+        </a-form-item>
+      </a-row>
+      <a-row v-if="advanced" class="smart-query-form-row">
         <a-form-item label="结算方式" class="smart-query-form-item">
           <SmartEnumSelect v-model:value="filters.settleMode" enum-name="SETTLE_MODE_ENUM" width="140px" />
         </a-form-item>
         <a-form-item label="上级集团" class="smart-query-form-item">
           <CustomerSelect v-model:value="filters.parentCustomerId" type-code="GROUP" width="220px" placeholder="仅集团客户" />
         </a-form-item>
-      </template>
+      </a-row>
     </a-form>
 
     <a-card size="small" :bordered="false">
