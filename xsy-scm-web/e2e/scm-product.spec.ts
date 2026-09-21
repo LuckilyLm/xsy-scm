@@ -94,7 +94,13 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   row = page.getByRole('row').filter({ hasText: prefix + '一级' }); await row.locator('.ant-table-row-expand-icon').click();
   row = page.getByRole('row').filter({ hasText: prefix + '二级' });
   await button(row, '新增子分类').click(); await saveCategory(page, prefix + '3', prefix + '三级');
-  await page.goto('/#/product/product-list'); await button(page, '新增商品').click();
+  await page.goto('/#/product/product-list');
+  // 抽屉打开会并发拉取分类树与单位/标签字典，load() 返回时整体替换 form。a-spin 遮罩挡住了人工
+  // 输入，但 Playwright 的 fill 不受 pointer-events 约束，所以要等这轮加载落地再填，否则值会被清空。
+  const opened = button(page, '新增商品').click();
+  const drawerLoading = page.locator('.ant-drawer .ant-spin-spinning');
+  await drawerLoading.waitFor({ state: 'attached', timeout: 3000 }).catch(() => {});
+  await opened; await expect(drawerLoading).toHaveCount(0);
   // a-drawer keeps its root element mounted after closing (destroy-on-close only drops
   // the body), so "closed" is asserted through the ant-drawer-open state class.
   const drawer = page.locator('.ant-drawer');
