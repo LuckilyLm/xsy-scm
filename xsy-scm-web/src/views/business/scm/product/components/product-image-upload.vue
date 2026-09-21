@@ -22,6 +22,7 @@
 import { ref } from 'vue';
 import type { UploadProps } from 'ant-design-vue';
 import { fileApi } from '/@/api/support/file-api';
+import { FILE_FOLDER_TYPE_ENUM } from '/@/constants/support/file-const';
 import type { ProductImage, ScmResponse } from '/@/types/business/scm/product';
 import { productError } from '../product-errors';
 const props = defineProps<{ modelValue: ProductImage[]; canEdit: boolean }>();
@@ -32,7 +33,7 @@ const upload: UploadProps['customRequest'] = async options => {
   uploading.value = true; emit('uploading', true); error.value = '';
   try {
     const data = new FormData(); data.append('file', options.file);
-    const response = await fileApi.uploadFile(data, 1) as unknown as ScmResponse<{ fileKey: string; fileUrl: string; fileName?: string; fileSize?: number }>;
+    const response = await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value) as unknown as ScmResponse<{ fileKey: string; fileUrl: string; fileName?: string; fileSize?: number }>;
     if (!props.modelValue.some(image => image.fileKey === response.data.fileKey)) emit('update:modelValue', [...props.modelValue, { ...response.data, fileName: response.data.fileName || options.file.name, primaryFlag: props.modelValue.length === 0, sortOrder: props.modelValue.length }]);
     options.onSuccess?.(response.data);
   } catch (e) { error.value = productError(e); options.onError?.(new Error(error.value)); }

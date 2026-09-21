@@ -22,6 +22,10 @@ export const FILE_FOLDER_TYPE_ENUM: SmartEnum<number> = {
     value: 4,
     desc: '意见反馈',
   },
+  PUBLIC_IMAGE: {
+    value: 5,
+    desc: '公开图片',
+  },
 };
 export default {
   FILE_FOLDER_TYPE_ENUM,
