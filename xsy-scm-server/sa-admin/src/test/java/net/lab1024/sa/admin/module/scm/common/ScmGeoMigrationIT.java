@@ -236,7 +236,9 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
         return current.getMessage();
     }
 
-    /** 三张主档各取一条新建行（走已验收的服务写入口，不直插表）。 */
+    /**
+     * 三张主档各取一条新建行（走已验收的服务写入口，不直插表）。
+     */
     private Long newMasterRow(String table) {
         return switch (table) {
             case "warehouse" -> newWarehouse("GEO-W");
@@ -251,7 +253,9 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
         evictMybatisCache();
     }
 
-    /** 归属四元组：省码 / 市码 / 省名 / 市名；null 原样保留，用来断言「没解析出来」。 */
+    /**
+     * 归属四元组：省码 / 市码 / 省名 / 市名；null 原样保留，用来断言「没解析出来」。
+     */
     private List<Object> geoColumnsOf(Long customerId) {
         evictMybatisCache();
         Map<String, Object> row = jdbc.queryForList(

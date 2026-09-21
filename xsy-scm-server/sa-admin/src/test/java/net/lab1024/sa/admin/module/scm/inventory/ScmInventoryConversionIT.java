@@ -38,7 +38,9 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
     @Autowired
     private InventoryConversionService conversionService;
 
-    /** 造一个按指定**采购单位**入库的 SKU，返回 skuId（余额行的记账单位 = 该采购单位）。 */
+    /**
+     * 造一个按指定**采购单位**入库的 SKU，返回 skuId（余额行的记账单位 = 该采购单位）。
+     */
     private Long stockedWithUnit(String suffix, String quantity, String purchaseUnit) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = freeInboundFixture(suffix, skuId, quantity, purchaseUnit);
@@ -47,7 +49,7 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
     }
 
     private static InventoryConversionAddForm.Item item(Long sourceSku, String sourceQty, String sourceUnit,
-                                                       Long targetSku, String targetQty, String targetUnit) {
+                                                        Long targetSku, String targetQty, String targetUnit) {
         InventoryConversionAddForm.Item row = new InventoryConversionAddForm.Item();
         row.setSourceSkuId(sourceSku);
         row.setSourceQuantity(new BigDecimal(sourceQty));
@@ -142,8 +144,8 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
                 .as("目标行由转换建立，按转入成本入账而不是留在 0")
                 .isEqualByComparingTo("0.6200");
         assertThat(balanceRow(wh, source).getQuantity().multiply(new BigDecimal("6.2000"))
-                        .add(balanceRow(wh, target).getQuantity()
-                                .multiply(balanceRow(wh, target).getAvgCost())))
+                .add(balanceRow(wh, target).getQuantity()
+                        .multiply(balanceRow(wh, target).getAvgCost())))
                 .as("转换前后总金额不变：3 箱 × 6.20 + 20 kg × 0.62 = 5 箱 × 6.20")
                 .isEqualByComparingTo("31.0000");
     }
@@ -179,9 +181,9 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh, c).getAvgCost()).as("成本穿过中间的 B 到达 C")
                 .isEqualByComparingTo("6.2000");
         assertThat(convertMovements(wh, b).stream()
-                        .filter(m -> "CONVERT_OUT".equals(String.valueOf(m.get("movement_type"))))
-                        .map(m -> new BigDecimal(String.valueOf(m.get("unit_cost"))))
-                        .findFirst().orElseThrow())
+                .filter(m -> "CONVERT_OUT".equals(String.valueOf(m.get("movement_type"))))
+                .map(m -> new BigDecimal(String.valueOf(m.get("unit_cost"))))
+                .findFirst().orElseThrow())
                 .as("B 的转出腿 = 它进完之后的均价").isEqualByComparingTo("6.2000");
     }
 

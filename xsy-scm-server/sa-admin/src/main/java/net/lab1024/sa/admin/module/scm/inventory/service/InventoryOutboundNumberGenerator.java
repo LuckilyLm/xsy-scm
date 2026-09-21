@@ -28,17 +28,23 @@ public class InventoryOutboundNumberGenerator {
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.BASIC_ISO_DATE;
 
-    /** 出库单号前缀。 */
+    /**
+     * 出库单号前缀。
+     */
     public static final String PREFIX = "OUT";
 
     private final InventoryOutboundDao outboundDao;
 
-    /** 出库单号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。 */
+    /**
+     * 出库单号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。
+     */
     public String next() {
         return format(PREFIX, outboundDao.nextOutboundNo());
     }
 
-    /** 单号拼接的纯函数（单测直接覆盖，不需要 DB）。 */
+    /**
+     * 单号拼接的纯函数（单测直接覆盖，不需要 DB）。
+     */
     public static String format(String prefix, long number) {
         return prefix
                 + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI).format(DATE)

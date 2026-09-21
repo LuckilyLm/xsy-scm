@@ -9,41 +9,41 @@
         SELECT COUNT(*)
         FROM sales_order
         WHERE deleted = FALSE
-          AND status = 'CONFIRMED'
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND status = 'CONFIRMED'
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
     <select id="sumOrderedAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(ordered_total_amount), 0)
         FROM sales_order
         WHERE deleted = FALSE
-          AND status = 'CONFIRMED'
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND status = 'CONFIRMED'
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
     <select id="sumSettlementAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(settlement_total_amount), 0)
         FROM sales_order
         WHERE deleted = FALSE
-          AND status = 'CONFIRMED'
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND status = 'CONFIRMED'
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
     <select id="countTotalConfirmedOrders" resultType="long">
         SELECT COUNT(*)
         FROM sales_order
         WHERE deleted = FALSE
-          AND status = 'CONFIRMED'
+        AND status = 'CONFIRMED'
     </select>
 
     <select id="sumTotalSettlementAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(settlement_total_amount), 0)
         FROM sales_order
         WHERE deleted = FALSE
-          AND status = 'CONFIRMED'
+        AND status = 'CONFIRMED'
     </select>
 
     <select id="countCustomers" resultType="long">
@@ -62,19 +62,20 @@
         SELECT COUNT(DISTINCT customer_id)
         FROM sales_order
         WHERE deleted = FALSE
-          AND status = 'CONFIRMED'
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND status = 'CONFIRMED'
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
-    <select id="topCustomersBySettlement" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
+    <select id="topCustomersBySettlement"
+            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
         SELECT customer_name_snapshot AS name,
-               COALESCE(SUM(settlement_total_amount), 0) AS amount
+        COALESCE(SUM(settlement_total_amount), 0) AS amount
         FROM sales_order
         WHERE deleted = FALSE
-          AND status = 'CONFIRMED'
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND status = 'CONFIRMED'
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
         GROUP BY customer_id, customer_name_snapshot
         ORDER BY amount DESC
         LIMIT #{limit}
@@ -87,16 +88,17 @@
       看起来像数据重复。榜单的口径是「商品」，所以按 spu_id 合并金额。
       展示名用快照列 product_name_snapshot（历史单据的商品名可能已被改名）。
     -->
-    <select id="topProductsBySettlement" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
+    <select id="topProductsBySettlement"
+            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
         SELECT item.product_name_snapshot AS name,
-               COALESCE(SUM(item.settlement_line_amount), 0) AS amount
+        COALESCE(SUM(item.settlement_line_amount), 0) AS amount
         FROM sales_order_item item
         JOIN sales_order so ON so.id = item.order_id
         WHERE item.deleted = FALSE
-          AND so.deleted = FALSE
-          AND so.status = 'CONFIRMED'
-          AND so.created_at &gt;= #{startTime}
-          AND so.created_at &lt; #{endTime}
+        AND so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND so.created_at &gt;= #{startTime}
+        AND so.created_at &lt; #{endTime}
         GROUP BY item.spu_id, item.product_name_snapshot
         ORDER BY amount DESC
         LIMIT #{limit}
@@ -119,26 +121,27 @@
         SELECT COUNT(*)
         FROM warehouse
         WHERE deleted = FALSE
-          AND status = 'ENABLED'
+        AND status = 'ENABLED'
     </select>
 
     <select id="countMovementsByTypeAndRange" resultType="long">
         SELECT COUNT(*)
         FROM inventory_movement
         WHERE deleted = FALSE
-          AND movement_type IN
-          <foreach collection="movementTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-          AND occurred_at &gt;= #{startTime}
-          AND occurred_at &lt; #{endTime}
+        AND movement_type IN
+        <foreach collection="movementTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+        AND occurred_at &gt;= #{startTime}
+        AND occurred_at &lt; #{endTime}
     </select>
 
-    <select id="inventoryDistributionByWarehouse" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
+    <select id="inventoryDistributionByWarehouse"
+            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
         SELECT w.name AS warehouseName,
-               COALESCE(SUM(b.quantity), 0) AS quantity
+        COALESCE(SUM(b.quantity), 0) AS quantity
         FROM inventory_balance b
         JOIN warehouse w ON w.id = b.warehouse_id
         WHERE b.deleted = FALSE
-          AND w.deleted = FALSE
+        AND w.deleted = FALSE
         GROUP BY b.warehouse_id, w.name
         ORDER BY quantity DESC
     </select>
@@ -151,49 +154,51 @@
         ① 有阈值配置的 (仓库, SKU) —— 以阈值表为准，左连余额（可能还没有余额行）
         ② 有余额但没有阈值配置的 (仓库, SKU) —— 有货但无判定依据，需单列
     -->
-    <select id="inventoryHealthRows" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow">
+    <select id="inventoryHealthRows"
+            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow">
         SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
-               t.warn_min AS warnMin,
-               t.warn_max AS warnMax
+        t.warn_min AS warnMin,
+        t.warn_max AS warnMax
         FROM inventory_warning_threshold t
         LEFT JOIN inventory_balance b
-               ON b.warehouse_id = t.warehouse_id
-              AND b.sku_id = t.sku_id
-              AND b.deleted = FALSE
+        ON b.warehouse_id = t.warehouse_id
+        AND b.sku_id = t.sku_id
+        AND b.deleted = FALSE
         WHERE t.deleted = FALSE
         UNION ALL
         SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
-               CAST(NULL AS numeric) AS warnMin,
-               CAST(NULL AS numeric) AS warnMax
+        CAST(NULL AS numeric) AS warnMin,
+        CAST(NULL AS numeric) AS warnMax
         FROM inventory_balance b
         WHERE b.deleted = FALSE
-          AND NOT EXISTS (
-              SELECT 1
-              FROM inventory_warning_threshold t
-              WHERE t.deleted = FALSE
-                AND t.warehouse_id = b.warehouse_id
-                AND t.sku_id = b.sku_id
-          )
+        AND NOT EXISTS (
+        SELECT 1
+        FROM inventory_warning_threshold t
+        WHERE t.deleted = FALSE
+        AND t.warehouse_id = b.warehouse_id
+        AND t.sku_id = b.sku_id
+        )
     </select>
 
     <!-- 供应链网络节点：只取启用仓库（停用仓不属于「当前网络」） -->
-    <select id="warehouseNetworkNodes" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
+    <select id="warehouseNetworkNodes"
+            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
         SELECT w.name AS warehouseName,
-               COALESCE(SUM(b.quantity), 0) AS quantity,
-               COALESCE((SELECT SUM(m.quantity)
-                         FROM inventory_movement m
-                         WHERE m.deleted = FALSE
-                           AND m.warehouse_id = w.id
-                           AND m.movement_type IN
-                           <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                           AND m.occurred_at &gt;= #{startTime}
-                           AND m.occurred_at &lt; #{endTime}), 0) AS todayOutboundQuantity
+        COALESCE(SUM(b.quantity), 0) AS quantity,
+        COALESCE((SELECT SUM(m.quantity)
+        FROM inventory_movement m
+        WHERE m.deleted = FALSE
+        AND m.warehouse_id = w.id
+        AND m.movement_type IN
+        <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+        AND m.occurred_at &gt;= #{startTime}
+        AND m.occurred_at &lt; #{endTime}), 0) AS todayOutboundQuantity
         FROM warehouse w
         LEFT JOIN inventory_balance b
-               ON b.warehouse_id = w.id
-              AND b.deleted = FALSE
+        ON b.warehouse_id = w.id
+        AND b.deleted = FALSE
         WHERE w.deleted = FALSE
-          AND w.status = 'ENABLED'
+        AND w.status = 'ENABLED'
         GROUP BY w.id, w.name
         ORDER BY quantity DESC
     </select>
@@ -210,43 +215,43 @@
     -->
     <select id="trendByDay" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO$Point">
         SELECT to_char(d, 'YYYY-MM-DD') AS date,
-               to_char(d, 'MM-DD')      AS label,
-               COALESCE((SELECT COUNT(*)
-                         FROM sales_order so
-                         WHERE so.deleted = FALSE
-                           AND so.status = 'CONFIRMED'
-                           AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS orders,
-               COALESCE((SELECT SUM(so.settlement_total_amount)
-                         FROM sales_order so
-                         WHERE so.deleted = FALSE
-                           AND so.status = 'CONFIRMED'
-                           AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS sales,
-               COALESCE((SELECT COUNT(*)
-                         FROM purchase_order po
-                         WHERE po.deleted = FALSE
-                           AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseOrders,
-               COALESCE((SELECT SUM(po.total_amount)
-                         FROM purchase_order po
-                         WHERE po.deleted = FALSE
-                           AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseAmounts,
-               COALESCE((SELECT SUM(CASE WHEN m.movement_type IN
-                                              <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                                         THEN m.quantity ELSE -m.quantity END)
-                         FROM inventory_movement m
-                         WHERE m.deleted = FALSE
-                           AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= d::date), 0) AS inventoryQuantity,
-               COALESCE((SELECT SUM(m.quantity)
-                         FROM inventory_movement m
-                         WHERE m.deleted = FALSE
-                           AND m.movement_type IN
-                               <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                           AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS inboundQuantity,
-               COALESCE((SELECT SUM(m.quantity)
-                         FROM inventory_movement m
-                         WHERE m.deleted = FALSE
-                           AND m.movement_type IN
-                               <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-                           AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS outboundQuantity
+        to_char(d, 'MM-DD') AS label,
+        COALESCE((SELECT COUNT(*)
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS orders,
+        COALESCE((SELECT SUM(so.settlement_total_amount)
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS sales,
+        COALESCE((SELECT COUNT(*)
+        FROM purchase_order po
+        WHERE po.deleted = FALSE
+        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseOrders,
+        COALESCE((SELECT SUM(po.total_amount)
+        FROM purchase_order po
+        WHERE po.deleted = FALSE
+        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseAmounts,
+        COALESCE((SELECT SUM(CASE WHEN m.movement_type IN
+        <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+        THEN m.quantity ELSE -m.quantity END)
+        FROM inventory_movement m
+        WHERE m.deleted = FALSE
+        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= d::date), 0) AS inventoryQuantity,
+        COALESCE((SELECT SUM(m.quantity)
+        FROM inventory_movement m
+        WHERE m.deleted = FALSE
+        AND m.movement_type IN
+        <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS inboundQuantity,
+        COALESCE((SELECT SUM(m.quantity)
+        FROM inventory_movement m
+        WHERE m.deleted = FALSE
+        AND m.movement_type IN
+        <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS outboundQuantity
         FROM generate_series(#{startDate}::date, #{endDate}::date, INTERVAL '1 day') AS gs(d)
         ORDER BY d
     </select>
@@ -256,16 +261,16 @@
         SELECT COUNT(*)
         FROM purchase_order
         WHERE deleted = FALSE
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
     <select id="sumPurchaseAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(total_amount), 0)
         FROM purchase_order
         WHERE deleted = FALSE
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
     <select id="countTotalPurchaseOrders" resultType="long">
@@ -284,16 +289,16 @@
         SELECT COUNT(*)
         FROM purchase_receipt
         WHERE deleted = FALSE
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
     <select id="countSuppliersWithOrdersInRange" resultType="long">
         SELECT COUNT(DISTINCT supplier_id)
         FROM purchase_order
         WHERE deleted = FALSE
-          AND created_at &gt;= #{startTime}
-          AND created_at &lt; #{endTime}
+        AND created_at &gt;= #{startTime}
+        AND created_at &lt; #{endTime}
     </select>
 
     <!--
@@ -319,7 +324,7 @@
         SELECT w.city_code IS NOT NULL AS located, w.city_code AS city_code
         FROM warehouse w
         WHERE w.deleted = FALSE
-          AND w.status = 'ENABLED'
+        AND w.status = 'ENABLED'
     </sql>
 
     <!--
@@ -329,53 +334,53 @@
     -->
     <select id="geoCityRows" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO$CityNode">
         SELECT city.region_code AS cityCode,
-               city.region_name AS cityName,
-               city.parent_code AS provinceCode,
-               province.region_name AS provinceName,
-               city.center_lng  AS centerLng,
-               city.center_lat  AS centerLat,
-               COUNT(*) FILTER (WHERE src.kind = 'CUSTOMER')  AS customerCount,
-               COUNT(*) FILTER (WHERE src.kind = 'SUPPLIER')  AS supplierCount,
-               COUNT(*) FILTER (WHERE src.kind = 'WAREHOUSE') AS warehouseCount
+        city.region_name AS cityName,
+        city.parent_code AS provinceCode,
+        province.region_name AS provinceName,
+        city.center_lng AS centerLng,
+        city.center_lat AS centerLat,
+        COUNT(*) FILTER (WHERE src.kind = 'CUSTOMER') AS customerCount,
+        COUNT(*) FILTER (WHERE src.kind = 'SUPPLIER') AS supplierCount,
+        COUNT(*) FILTER (WHERE src.kind = 'WAREHOUSE') AS warehouseCount
         FROM (
-                 SELECT city_code, 'CUSTOMER'::text AS kind FROM (<include refid="geoCustomerPopulation"/>) t WHERE t.located
-                 UNION ALL
-                 SELECT city_code, 'SUPPLIER'::text FROM (<include refid="geoSupplierPopulation"/>) t WHERE t.located
-                 UNION ALL
-                 SELECT city_code, 'WAREHOUSE'::text FROM (<include refid="geoWarehousePopulation"/>) t WHERE t.located
-             ) src
-                 JOIN scm_region city
-                      ON city.deleted = FALSE
-                          AND city.region_level = 2
-                          AND city.region_code = src.city_code
-                 JOIN scm_region province
-                      ON province.deleted = FALSE
-                          AND province.region_level = 1
-                          AND province.region_code = city.parent_code
+        SELECT city_code, 'CUSTOMER'::text AS kind FROM (<include refid="geoCustomerPopulation"/>) t WHERE t.located
+        UNION ALL
+        SELECT city_code, 'SUPPLIER'::text FROM (<include refid="geoSupplierPopulation"/>) t WHERE t.located
+        UNION ALL
+        SELECT city_code, 'WAREHOUSE'::text FROM (<include refid="geoWarehousePopulation"/>) t WHERE t.located
+        ) src
+        JOIN scm_region city
+        ON city.deleted = FALSE
+        AND city.region_level = 2
+        AND city.region_code = src.city_code
+        JOIN scm_region province
+        ON province.deleted = FALSE
+        AND province.region_level = 1
+        AND province.region_code = city.parent_code
         GROUP BY city.region_code, city.region_name, city.parent_code, province.region_name,
-                 city.center_lng, city.center_lat
+        city.center_lng, city.center_lat
         ORDER BY customerCount DESC, cityCode
     </select>
 
     <!-- 覆盖度：一次返回三张主档的「总数 / 已归属数」，与气泡共用上面三段口径。 -->
     <select id="geoCoverage" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO$Coverage">
-        SELECT c.total            AS customerTotal,
-               c.located          AS customerLocated,
-               s.total            AS supplierTotal,
-               s.located          AS supplierLocated,
-               w.total            AS warehouseTotal,
-               w.located          AS warehouseLocated
-        FROM (SELECT COUNT(*)                          AS total,
-                     COUNT(*) FILTER (WHERE located)   AS located
-              FROM (<include refid="geoCustomerPopulation"/>) t) c
-                 CROSS JOIN
-             (SELECT COUNT(*)                          AS total,
-                     COUNT(*) FILTER (WHERE located)   AS located
-              FROM (<include refid="geoSupplierPopulation"/>) t) s
-                 CROSS JOIN
-             (SELECT COUNT(*)                          AS total,
-                     COUNT(*) FILTER (WHERE located)   AS located
-              FROM (<include refid="geoWarehousePopulation"/>) t) w
+        SELECT c.total AS customerTotal,
+        c.located AS customerLocated,
+        s.total AS supplierTotal,
+        s.located AS supplierLocated,
+        w.total AS warehouseTotal,
+        w.located AS warehouseLocated
+        FROM (SELECT COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE located) AS located
+        FROM (<include refid="geoCustomerPopulation"/>) t) c
+        CROSS JOIN
+        (SELECT COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE located) AS located
+        FROM (<include refid="geoSupplierPopulation"/>) t) s
+        CROSS JOIN
+        (SELECT COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE located) AS located
+        FROM (<include refid="geoWarehousePopulation"/>) t) w
     </select>
 
 </mapper>

@@ -56,9 +56,7 @@ public enum SmartDateFormatterEnum {
      * 日期格式 ：时分 HH:mm
      * 例：10:15
      */
-    HM(DateTimeFormatter.ofPattern("HH:mm"))
-
-    ;
+    HM(DateTimeFormatter.ofPattern("HH:mm"));
 
     private final DateTimeFormatter formatter;
 

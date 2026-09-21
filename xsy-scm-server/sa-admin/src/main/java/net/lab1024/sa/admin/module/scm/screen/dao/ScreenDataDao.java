@@ -79,7 +79,9 @@ public interface ScreenDataDao {
      */
     List<ScreenInventoryHealthRow> inventoryHealthRows();
 
-    /** 供应链网络节点：仅启用仓库，带库存量与今日出库量（出库方向的全部流水类型）。 */
+    /**
+     * 供应链网络节点：仅启用仓库，带库存量与今日出库量（出库方向的全部流水类型）。
+     */
     List<ScreenInventoryVO.WarehouseNode> warehouseNetworkNodes(@Param("startTime") OffsetDateTime startTime,
                                                                 @Param("endTime") OffsetDateTime endTime,
                                                                 @Param("outboundTypes") List<String> outboundTypes);
@@ -115,11 +117,15 @@ public interface ScreenDataDao {
     Long countReceipts(@Param("startTime") OffsetDateTime startTime,
                        @Param("endTime") OffsetDateTime endTime);
 
-    /** 今日成交客户数（有 CONFIRMED 订单的客户去重）。 */
+    /**
+     * 今日成交客户数（有 CONFIRMED 订单的客户去重）。
+     */
     Long countCustomersWithOrdersInRange(@Param("startTime") OffsetDateTime startTime,
                                          @Param("endTime") OffsetDateTime endTime);
 
-    /** 今日活跃供应商数（有采购单的供应商去重）。 */
+    /**
+     * 今日活跃供应商数（有采购单的供应商去重）。
+     */
     Long countSuppliersWithOrdersInRange(@Param("startTime") OffsetDateTime startTime,
                                          @Param("endTime") OffsetDateTime endTime);
 
@@ -133,6 +139,8 @@ public interface ScreenDataDao {
      */
     List<ScreenGeoVO.CityNode> geoCityRows();
 
-    /** 三张主档各自的「总数 / 已归属数」，与 {@link #geoCityRows()} 共用同一份口径片段。 */
+    /**
+     * 三张主档各自的「总数 / 已归属数」，与 {@link #geoCityRows()} 共用同一份口径片段。
+     */
     ScreenGeoVO.Coverage geoCoverage();
 }

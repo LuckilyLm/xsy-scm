@@ -1,10 +1,12 @@
 package net.lab1024.sa.admin.module.scm.purchase.domain.vo;
 
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 
@@ -34,14 +36,16 @@ public class PurchaseOrderVO {
     private String warehouseName;
     private LocalDate plannedArrivalDate;
     private String status;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal totalAmount;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal totalAmount;
     /**
      * 派生：Σreceived / Σplanned（比例，scale 4，HALF_UP），用于列表进度展示。
      *
      * <p>**无活动行时为 {@code null}**，而不是 {@code "0.0000"} —— 与 W3/W4 的三态纪律一致
      * （「无值」不等于「值为零」）。超收时比例可大于 1。
      */
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal receivedProgress;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal receivedProgress;
     private String remark;
     private String cancelReason;
     private String shortCloseReason;

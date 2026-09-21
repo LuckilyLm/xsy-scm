@@ -10,12 +10,16 @@
     </delete>
 
     <delete id="deleteByEmployeeId">
-        delete from t_oa_enterprise_employee where employee_id = #{employeeId}
+        delete
+        from t_oa_enterprise_employee
+        where employee_id = #{employeeId}
     </delete>
 
     <select id="selectByEnterpriseId"
             resultType="net.lab1024.sa.admin.module.business.oa.enterprise.domain.entity.EnterpriseEmployeeEntity">
-        select * from t_oa_enterprise_employee where enterprise_id = #{enterpriseId}
+        select *
+        from t_oa_enterprise_employee
+        where enterprise_id = #{enterpriseId}
     </select>
 
     <select id="selectByEnterpriseAndEmployeeIdList"
@@ -33,8 +37,8 @@
         t_oa_enterprise.enterprise_name,
         t_employee.actual_name as employeeName
         from t_oa_enterprise_employee
-        left join t_oa_enterprise  on t_oa_enterprise_employee.enterprise_id = t_oa_enterprise.enterprise_id
-        left join t_employee  on t_oa_enterprise_employee.employee_id = t_employee.employee_id
+        left join t_oa_enterprise on t_oa_enterprise_employee.enterprise_id = t_oa_enterprise.enterprise_id
+        left join t_employee on t_oa_enterprise_employee.employee_id = t_employee.employee_id
         where t_oa_enterprise_employee.employee_id in
         <foreach collection="employeeIdList" item="item" separator="," open="(" close=")">
             #{item}
@@ -49,7 +53,7 @@
         t_employee.*,
         t_employee.actual_name as employeeName
         from t_oa_enterprise_employee
-        left join t_oa_enterprise  on t_oa_enterprise_employee.enterprise_id = t_oa_enterprise.enterprise_id
+        left join t_oa_enterprise on t_oa_enterprise_employee.enterprise_id = t_oa_enterprise.enterprise_id
         left join t_employee on t_oa_enterprise_employee.employee_id = t_employee.employee_id
         where t_oa_enterprise_employee.enterprise_id in
         <foreach collection="enterpriseIdList" item="item" separator="," open="(" close=")">
@@ -58,7 +62,9 @@
     </select>
 
     <select id="selectEnterpriseIdByEmployeeId" resultType="java.lang.Long">
-        select enterprise_id from t_oa_enterprise_employee where employee_id = #{employeeId}
+        select enterprise_id
+        from t_oa_enterprise_employee
+        where employee_id = #{employeeId}
     </select>
 
     <select id="selectEmployeeIdByEnterpriseIdList" resultType="java.lang.Long">
@@ -75,7 +81,7 @@
         t_employee.*,
         t_employee.actual_name as employeeName
         from t_oa_enterprise_employee
-        left join t_oa_enterprise  on t_oa_enterprise_employee.enterprise_id = t_oa_enterprise.enterprise_id
+        left join t_oa_enterprise on t_oa_enterprise_employee.enterprise_id = t_oa_enterprise.enterprise_id
         left join t_employee on t_oa_enterprise_employee.employee_id = t_employee.employee_id
         where t_oa_enterprise_employee.enterprise_id = #{queryForm.enterpriseId}
         <if test="queryForm.keyword != null and queryForm.keyword != ''">

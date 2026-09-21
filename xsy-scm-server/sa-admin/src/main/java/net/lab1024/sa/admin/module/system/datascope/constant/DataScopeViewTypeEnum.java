@@ -31,7 +31,6 @@ public enum DataScopeViewTypeEnum implements BaseEnum {
     ALL(10, 100, "全部");
 
 
-
     private final Integer value;
     private final Integer level;
     private final String desc;

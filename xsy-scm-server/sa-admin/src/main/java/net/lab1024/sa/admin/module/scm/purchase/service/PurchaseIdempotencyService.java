@@ -97,12 +97,16 @@ public class PurchaseIdempotencyService {
         return new Claim(row, true);
     }
 
-    /** 返回首次执行的结果，不重新执行业务写入。 */
+    /**
+     * 返回首次执行的结果，不重新执行业务写入。
+     */
     public <T> T replay(Claim claim, Class<T> type) {
         return RESULT_JSON.convertValue(claim.record().getResultData().get("value"), type);
     }
 
-    /** 保存结果，与调用方的业务写入一起提交或回滚。 */
+    /**
+     * 保存结果，与调用方的业务写入一起提交或回滚。
+     */
     public void complete(Claim claim, String type, Long id, Object result) {
         IdempotencyRecordEntity row = claim.record();
         row.setResultId(id);

@@ -59,7 +59,7 @@ public class EnterpriseController {
         String watermark = AdminRequestUtil.getRequestUser().getActualName();
         watermark += SmartLocalDateUtil.format(LocalDateTime.now(), SmartDateFormatterEnum.YMD_HMS);
 
-        SmartExcelUtil.exportExcelWithWatermark(response,"企业基本信息.xlsx","企业信息",EnterpriseExcelVO.class,data,watermark);
+        SmartExcelUtil.exportExcelWithWatermark(response, "企业基本信息.xlsx", "企业信息", EnterpriseExcelVO.class, data, watermark);
 
     }
 

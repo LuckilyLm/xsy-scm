@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 供应商详情。 */
+/**
+ * 供应商详情。
+ */
 @Data
 public class SupplierDetailVO {
 

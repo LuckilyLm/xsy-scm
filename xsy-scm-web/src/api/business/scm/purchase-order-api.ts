@@ -6,17 +6,17 @@
 适配：API 前缀 `/purchase/**` → `/scm/purchase/**`（A6）；写命令补 `Idempotency-Key`（A7）；
       全量补 `version`（A8）；错误提示走 `purchase-errors.ts`（A24）。
 验收：W5 单测、TS 棘轮与 Playwright。 */
-import { getRequest, postRequest, request } from '/@/lib/axios';
-import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
+import {getRequest, postRequest, request} from '/@/lib/axios';
+import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
-  Id,
-  LogRow,
-  Order,
-  OrderCancelPayload,
-  OrderPayload,
-  OrderQuery,
-  OrderShortClosePayload,
-  OrderVersionPayload,
+    Id,
+    LogRow,
+    Order,
+    OrderCancelPayload,
+    OrderPayload,
+    OrderQuery,
+    OrderShortClosePayload,
+    OrderVersionPayload,
 } from '/@/views/business/scm/purchase/purchase-types';
 
 /**
@@ -31,42 +31,42 @@ import type {
 const keys = new Map<string, string>();
 
 export async function purchaseCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
-  const signature = path + JSON.stringify(data);
-  let key = keys.get(signature);
-  if (!key) {
-    key = crypto.randomUUID();
-    keys.set(signature, key);
-  }
-  const result = (await request({
-    url: path,
-    method: 'post',
-    data,
-    headers: { 'Idempotency-Key': key },
-  })) as unknown as ScmResponse<T>;
-  keys.delete(signature);
-  return result;
+    const signature = path + JSON.stringify(data);
+    let key = keys.get(signature);
+    if (!key) {
+        key = crypto.randomUUID();
+        keys.set(signature, key);
+    }
+    const result = (await request({
+        url: path,
+        method: 'post',
+        data,
+        headers: {'Idempotency-Key': key},
+    })) as unknown as ScmResponse<T>;
+    keys.delete(signature);
+    return result;
 }
 
 export const purchaseOrderApi = {
-  query: (data: OrderQuery) =>
-    postRequest('/scm/purchase/query', data) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
-  detail: (id: Id) =>
-    getRequest(`/scm/purchase/detail/${id}`, {}) as unknown as Promise<ScmResponse<Order>>,
-  /** 单张采购单的操作日志（按 `created_at DESC` 返回，**最新在前**）。 */
-  logs: (orderId: Id) =>
-    getRequest(`/scm/purchase/log/${orderId}`, {}) as unknown as Promise<ScmResponse<LogRow[]>>,
+    query: (data: OrderQuery) =>
+        postRequest('/scm/purchase/query', data) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
+    detail: (id: Id) =>
+        getRequest(`/scm/purchase/detail/${id}`, {}) as unknown as Promise<ScmResponse<Order>>,
+    /** 单张采购单的操作日志（按 `created_at DESC` 返回，**最新在前**）。 */
+    logs: (orderId: Id) =>
+        getRequest(`/scm/purchase/log/${orderId}`, {}) as unknown as Promise<ScmResponse<LogRow[]>>,
 
-  create: (data: OrderPayload) => purchaseCommand<Order>('/scm/purchase/create', data),
-  update: (data: OrderPayload) =>
-    postRequest('/scm/purchase/update', data) as unknown as Promise<ScmResponse<Order>>,
-  submit: (data: OrderVersionPayload) => purchaseCommand<Order>('/scm/purchase/submit', data),
-  cancel: (data: OrderCancelPayload) => purchaseCommand<Order>('/scm/purchase/cancel', data),
-  shortClose: (data: OrderShortClosePayload) =>
-    purchaseCommand<Order>('/scm/purchase/short-close', data),
-  delete: (data: OrderVersionPayload) =>
-    postRequest('/scm/purchase/delete', data) as unknown as Promise<ScmResponse<string>>,
-  batchDelete: (orders: OrderVersionPayload[]) =>
-    postRequest('/scm/purchase/batch-delete', { orders }) as unknown as Promise<ScmResponse<string>>,
+    create: (data: OrderPayload) => purchaseCommand<Order>('/scm/purchase/create', data),
+    update: (data: OrderPayload) =>
+        postRequest('/scm/purchase/update', data) as unknown as Promise<ScmResponse<Order>>,
+    submit: (data: OrderVersionPayload) => purchaseCommand<Order>('/scm/purchase/submit', data),
+    cancel: (data: OrderCancelPayload) => purchaseCommand<Order>('/scm/purchase/cancel', data),
+    shortClose: (data: OrderShortClosePayload) =>
+        purchaseCommand<Order>('/scm/purchase/short-close', data),
+    delete: (data: OrderVersionPayload) =>
+        postRequest('/scm/purchase/delete', data) as unknown as Promise<ScmResponse<string>>,
+    batchDelete: (orders: OrderVersionPayload[]) =>
+        postRequest('/scm/purchase/batch-delete', {orders}) as unknown as Promise<ScmResponse<string>>,
 };
 
 export default purchaseOrderApi;

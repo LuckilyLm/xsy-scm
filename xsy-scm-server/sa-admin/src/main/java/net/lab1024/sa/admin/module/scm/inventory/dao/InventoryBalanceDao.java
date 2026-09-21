@@ -48,7 +48,9 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
     InventoryBalanceEntity lockByWarehouseAndSku(@Param("warehouseId") Long warehouseId,
                                                  @Param("skuId") Long skuId);
 
-    /** 无锁读余额行（只读查询路径 / {@code queryAvailability}）。 */
+    /**
+     * 无锁读余额行（只读查询路径 / {@code queryAvailability}）。
+     */
     InventoryBalanceEntity selectByWarehouseAndSku(@Param("warehouseId") Long warehouseId,
                                                    @Param("skuId") Long skuId);
 
@@ -86,7 +88,9 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
                           @Param("quantity") BigDecimal quantity,
                           @Param("operator") String operator);
 
-    /** 持锁后的预留占用自减（释放预留）。 */
+    /**
+     * 持锁后的预留占用自减（释放预留）。
+     */
     int decrementReserved(@Param("id") Long id,
                           @Param("quantity") BigDecimal quantity,
                           @Param("operator") String operator);
@@ -113,9 +117,13 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
                                        @Param("avgCost") BigDecimal avgCost,
                                        @Param("operator") String operator);
 
-    /** 余额分页（联仓库 / SKU / 商品取展示字段，§2.1「余额是活状态」）。 */
+    /**
+     * 余额分页（联仓库 / SKU / 商品取展示字段，§2.1「余额是活状态」）。
+     */
     List<InventoryBalanceVO> queryPage(Page<?> page, @Param("query") InventoryBalanceQueryForm query);
 
-    /** 余额详情（按 id）。 */
+    /**
+     * 余额详情（按 id）。
+     */
     InventoryBalanceVO detail(@Param("id") Long id);
 }

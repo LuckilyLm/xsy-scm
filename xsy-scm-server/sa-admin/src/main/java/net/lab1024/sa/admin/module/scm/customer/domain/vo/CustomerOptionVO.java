@@ -21,6 +21,8 @@ public class CustomerOptionVO {
 
     private Long customerTypeId;
 
-    /** 客户类型编码（例如 {@code GROUP}），供前端按类型过滤选项。 */
+    /**
+     * 客户类型编码（例如 {@code GROUP}），供前端按类型过滤选项。
+     */
     private String customerTypeCode;
 }

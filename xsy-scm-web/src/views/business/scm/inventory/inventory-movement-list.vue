@@ -6,24 +6,24 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" width="200px" />
+        <WarehouseSelect v-model:value="queryForm.warehouseId" width="200px"/>
       </a-form-item>
       <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="流水类型" class="smart-query-form-item">
         <SmartEnumSelect
-          enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM"
-          v-model:value="queryForm.movementType"
-          width="140px"
+            enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM"
+            v-model:value="queryForm.movementType"
+            width="140px"
         />
       </a-form-item>
       <a-form-item label="发生区间" class="smart-query-form-item" extra="结束时间不包含">
         <a-range-picker
-          v-model:value="occurredRange"
-          show-time
-          value-format="YYYY-MM-DDTHH:mm:ssZ"
-          :allow-empty="[true, true]"
+            v-model:value="occurredRange"
+            show-time
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
+            :allow-empty="[true, true]"
         />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
@@ -36,7 +36,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -48,24 +50,24 @@
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_MOVEMENT"
-          :refresh="queryData"
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_MOVEMENT"
+            :refresh="queryData"
         />
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_INVENTORY_TABLE_ID.MOVEMENT"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :locale="{ emptyText: '暂无库存流水' }"
-      :scroll="{ x: 1900 }"
+        :id="SCM_INVENTORY_TABLE_ID.MOVEMENT"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :locale="{ emptyText: '暂无库存流水' }"
+        :scroll="{ x: 1900 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
@@ -96,38 +98,38 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import type { TableColumnsType } from 'ant-design-vue';
+import {onMounted, reactive, ref} from 'vue';
+import {useRouter} from 'vue-router';
+import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
-import { inventoryMovementApi } from '/@/api/business/scm/inventory-movement-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
+import {inventoryMovementApi} from '/@/api/business/scm/inventory-movement-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
   SCM_INVENTORY_TABLE_ID,
 } from '/@/constants/business/scm/inventory-const';
-import type { InventoryMovement, InventoryMovementQuery } from './inventory-types';
-import { movementTypeText, quantityText } from './inventory-model';
-import { inventoryError } from './inventory-errors';
-import { datetime } from '../common/scm-display';
+import type {InventoryMovement, InventoryMovementQuery} from './inventory-types';
+import {movementTypeText, quantityText} from './inventory-model';
+import {inventoryError} from './inventory-errors';
+import {datetime} from '../common/scm-display';
 
 const router = useRouter();
-const queryForm = reactive<InventoryMovementQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<InventoryMovementQuery>({pageNum: 1, pageSize: 20});
 const occurredRange = ref<[string, string] | undefined>();
 const tableData = ref<InventoryMovement[]>([]);
 const total = ref(0);
@@ -136,18 +138,18 @@ const error = ref('');
 let requestId = 0;
 
 const columns = ref<TableColumnsType<InventoryMovement>>([
-  { title: '发生时间', dataIndex: 'occurredAt', width: 190 },
-  { title: '类型', dataIndex: 'movementType', width: 110 },
-  { title: '来源单号', dataIndex: 'receiptNo', width: 170 },
-  { title: '仓库', dataIndex: 'warehouseName', width: 150 },
-  { title: 'SKU 编码', dataIndex: 'skuCode', width: 170 },
-  { title: 'SKU 名称', dataIndex: 'skuName', width: 140 },
-  { title: '数量', dataIndex: 'quantity', align: 'right', width: 120 },
-  { title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80 },
-  { title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 120 },
-  { title: '期初', dataIndex: 'beforeQuantity', align: 'right', width: 120 },
-  { title: '期末', dataIndex: 'afterQuantity', align: 'right', width: 120 },
-  { title: '操作者', dataIndex: 'operator', width: 110 },
+  {title: '发生时间', dataIndex: 'occurredAt', width: 190},
+  {title: '类型', dataIndex: 'movementType', width: 110},
+  {title: '来源单号', dataIndex: 'receiptNo', width: 170},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
+  {title: 'SKU 名称', dataIndex: 'skuName', width: 140},
+  {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
+  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
+  {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 120},
+  {title: '期初', dataIndex: 'beforeQuantity', align: 'right', width: 120},
+  {title: '期末', dataIndex: 'afterQuantity', align: 'right', width: 120},
+  {title: '操作者', dataIndex: 'operator', width: 110},
 ]);
 
 async function queryData() {
@@ -194,7 +196,7 @@ function resetQuery() {
 }
 
 function openReceipt(receiptNo: string) {
-  router.push({ path: '/purchase/purchase-receipt-list', query: { receiptNo } });
+  router.push({path: '/purchase/purchase-receipt-list', query: {receiptNo}});
 }
 
 onMounted(queryData);

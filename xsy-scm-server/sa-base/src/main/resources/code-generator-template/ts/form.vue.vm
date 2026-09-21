@@ -18,122 +18,140 @@
       :maskClosable="false"
       :destroyOnClose="true"
   >
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }" >
-#if($insertAndUpdate.countPerLine == 1)
-  #foreach ($field in $formFields)
-      #if($field.frontComponent == "Input")
-        <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-          <a-input style="width: 100%" v-model:value="form.${field.fieldName}" placeholder="$!{field.label}" />
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "InputNumber")
-        <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-          <a-input-number style="width: 100%" v-model:value="form.${field.fieldName}" placeholder="$!{field.label}" />
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "Textarea")
-        <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-          <a-textarea style="width: 100%" v-model:value="form.${field.fieldName}" placeholder="$!{field.label}" />
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "BooleanSelect")
-        <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-          <BooleanSelect v-model:value="form.${field.fieldName}" style="width: 100%" />
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "SmartEnumSelect")
-        <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})"  name="${field.fieldName}">
-          <SmartEnumSelect width="100%" v-model:value="form.${field.fieldName}" enum-name="$!{field.upperUnderscoreEnum}" placeholder="$codeGeneratorTool.removeEnumDesc($!{field.label})"/>
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "DictSelect")
-        <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})"  name="${field.fieldName}">
-          <DictSelect width="100%" v-model:value="form.${field.fieldName}" :dict-code="DICT_CODE_ENUM.$!{field.dict} || '$!{field.dict}'" placeholder="$!{field.label}"/>
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "Date")
-        <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-          <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="form.$!{field.fieldName}" style="width: 100%" placeholder="$!{field.label}"/>
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "DateTime")
-        <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-          <a-date-picker show-time valueFormat="YYYY-MM-DD HH:mm:ss" v-model:value="form.$!{field.fieldName}" style="width: 100%" placeholder="$!{field.label}" />
-        </a-form-item>
-      #end
-      #if($field.frontComponent == "FileUpload")
-        <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-          <FileUpload
-              :defaultFileList="form.$!{field.fieldName}"
-              :folder="FILE_FOLDER_TYPE_ENUM.COMMON.value"
-              buttonText="上传 $!{field.label}"
-              listType="text"
-              @change="e => form.$!{field.fieldName} = e"
-          />
-        </a-form-item>
-      #end
-  #end
-#end
-    #if($insertAndUpdate.countPerLine > 1)
-      <a-row>
-          #set($span=24 / $!insertAndUpdate.countPerLine )
-      #foreach ($field in $formFields)
-        <a-col :span="$!{span}">
-        #if($field.frontComponent == "Input")
-          <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-            <a-input style="width: 100%" v-model:value="form.${field.fieldName}" placeholder="$!{field.label}" />
-          </a-form-item>
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }">
+        #if($insertAndUpdate.countPerLine == 1)
+            #foreach ($field in $formFields)
+                #if($field.frontComponent == "Input")
+                  <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                    <a-input style="width: 100%" v-model:value="form.${field.fieldName}" placeholder="$!{field.label}"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "InputNumber")
+                  <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                    <a-input-number style="width: 100%" v-model:value="form.${field.fieldName}"
+                                    placeholder="$!{field.label}"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "Textarea")
+                  <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                    <a-textarea style="width: 100%" v-model:value="form.${field.fieldName}"
+                                placeholder="$!{field.label}"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "BooleanSelect")
+                  <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                    <BooleanSelect v-model:value="form.${field.fieldName}" style="width: 100%"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "SmartEnumSelect")
+                  <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})" name="${field.fieldName}">
+                    <SmartEnumSelect width="100%" v-model:value="form.${field.fieldName}"
+                                     enum-name="$!{field.upperUnderscoreEnum}"
+                                     placeholder="$codeGeneratorTool.removeEnumDesc($!{field.label})"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "DictSelect")
+                  <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})" name="${field.fieldName}">
+                    <DictSelect width="100%" v-model:value="form.${field.fieldName}"
+                                :dict-code="DICT_CODE_ENUM.$!{field.dict} || '$!{field.dict}'"
+                                placeholder="$!{field.label}"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "Date")
+                  <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                    <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="form.$!{field.fieldName}" style="width: 100%"
+                                   placeholder="$!{field.label}"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "DateTime")
+                  <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                    <a-date-picker show-time valueFormat="YYYY-MM-DD HH:mm:ss" v-model:value="form.$!{field.fieldName}"
+                                   style="width: 100%" placeholder="$!{field.label}"/>
+                  </a-form-item>
+                #end
+                #if($field.frontComponent == "FileUpload")
+                  <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                    <FileUpload
+                        :defaultFileList="form.$!{field.fieldName}"
+                        :folder="FILE_FOLDER_TYPE_ENUM.COMMON.value"
+                        buttonText="上传 $!{field.label}"
+                        listType="text"
+                        @change="e => form.$!{field.fieldName} = e"
+                    />
+                  </a-form-item>
+                #end
+            #end
         #end
-        #if($field.frontComponent == "InputNumber")
-          <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-            <a-input-number style="width: 100%" v-model:value="form.${field.fieldName}" placeholder="$!{field.label}" />
-          </a-form-item>
+        #if($insertAndUpdate.countPerLine > 1)
+          <a-row>
+              #set($span=24 / $!insertAndUpdate.countPerLine )
+              #foreach ($field in $formFields)
+                <a-col :span="$!{span}">
+                    #if($field.frontComponent == "Input")
+                      <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                        <a-input style="width: 100%" v-model:value="form.${field.fieldName}"
+                                 placeholder="$!{field.label}"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "InputNumber")
+                      <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                        <a-input-number style="width: 100%" v-model:value="form.${field.fieldName}"
+                                        placeholder="$!{field.label}"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "Textarea")
+                      <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                        <a-textarea style="width: 100%" v-model:value="form.${field.fieldName}"
+                                    placeholder="$!{field.label}"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "BooleanSelect")
+                      <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                        <BooleanSelect v-model:value="form.${field.fieldName}" style="width: 100%"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "SmartEnumSelect")
+                      <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})" name="${field.fieldName}">
+                        <SmartEnumSelect width="100%" v-model:value="form.${field.fieldName}"
+                                         enum-name="$!{field.upperUnderscoreEnum}"
+                                         placeholder="$codeGeneratorTool.removeEnumDesc($!{field.label})"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "DictSelect")
+                      <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})" name="${field.fieldName}">
+                        <DictSelect width="100%" v-model:value="form.${field.fieldName}"
+                                    :dict-code="DICT_CODE_ENUM.$!{field.dict} || '$!{field.dict}'"
+                                    placeholder="$!{field.label}"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "Date")
+                      <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                        <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="form.$!{field.fieldName}"
+                                       style="width: 100%" placeholder="$!{field.label}"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "DateTime")
+                      <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                        <a-date-picker show-time valueFormat="YYYY-MM-DD HH:mm:ss"
+                                       v-model:value="form.$!{field.fieldName}" style="width: 100%"
+                                       placeholder="$!{field.label}"/>
+                      </a-form-item>
+                    #end
+                    #if($field.frontComponent == "FileUpload")
+                      <a-form-item label="$!{field.label}" name="${field.fieldName}">
+                        <FileUpload
+                            :defaultFileList="form.$!{field.fieldName}"
+                            :folder="FILE_FOLDER_TYPE_ENUM.COMMON.value"
+                            buttonText="上传 $!{field.label}"
+                            listType="text"
+                            @change="e => form.$!{field.fieldName} = e"
+                        />
+                      </a-form-item>
+                    #end
+                </a-col>
+              #end
+          </a-row>
         #end
-        #if($field.frontComponent == "Textarea")
-          <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-            <a-textarea style="width: 100%" v-model:value="form.${field.fieldName}" placeholder="$!{field.label}" />
-          </a-form-item>
-        #end
-        #if($field.frontComponent == "BooleanSelect")
-          <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-            <BooleanSelect v-model:value="form.${field.fieldName}" style="width: 100%" />
-          </a-form-item>
-        #end
-        #if($field.frontComponent == "SmartEnumSelect")
-          <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})"  name="${field.fieldName}">
-            <SmartEnumSelect width="100%" v-model:value="form.${field.fieldName}" enum-name="$!{field.upperUnderscoreEnum}" placeholder="$codeGeneratorTool.removeEnumDesc($!{field.label})"/>
-          </a-form-item>
-        #end
-        #if($field.frontComponent == "DictSelect")
-          <a-form-item label="$codeGeneratorTool.removeEnumDesc($!{field.label})"  name="${field.fieldName}">
-            <DictSelect width="100%" v-model:value="form.${field.fieldName}" :dict-code="DICT_CODE_ENUM.$!{field.dict} || '$!{field.dict}'" placeholder="$!{field.label}"/>
-          </a-form-item>
-        #end
-        #if($field.frontComponent == "Date")
-          <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-            <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="form.$!{field.fieldName}" style="width: 100%" placeholder="$!{field.label}"/>
-          </a-form-item>
-        #end
-        #if($field.frontComponent == "DateTime")
-          <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-            <a-date-picker show-time valueFormat="YYYY-MM-DD HH:mm:ss" v-model:value="form.$!{field.fieldName}" style="width: 100%" placeholder="$!{field.label}" />
-          </a-form-item>
-        #end
-        #if($field.frontComponent == "FileUpload")
-          <a-form-item label="$!{field.label}"  name="${field.fieldName}">
-            <FileUpload
-                :defaultFileList="form.$!{field.fieldName}"
-                :folder="FILE_FOLDER_TYPE_ENUM.COMMON.value"
-                buttonText="上传 $!{field.label}"
-                listType="text"
-                @change="e => form.$!{field.fieldName} = e"
-            />
-          </a-form-item>
-        #end
-        </a-col>
-      #end
-      </a-row>
-    #end
     </a-form>
 
     <template #footer>
@@ -145,15 +163,15 @@
   </a-$!{insertAndUpdate.pageType}>
 </template>
 <script setup lang="ts">
-  import { reactive, ref, nextTick } from 'vue';
+  import {reactive, ref, nextTick} from 'vue';
   import _ from 'lodash';
-  import { message } from 'ant-design-vue';
-  import { SmartLoading } from '/@/components/framework/smart-loading';
-  import { $!{name.lowerCamel}Api } from '/@/api/business/$!{name.lowerHyphenCamel}/$!{name.lowerHyphenCamel}-api';
-  import { smartSentry } from '/@/lib/smart-sentry';
-  #foreach ($import in $frontImportList)
-  $!{import}
-  #end
+  import {message} from 'ant-design-vue';
+  import {SmartLoading} from '/@/components/framework/smart-loading';
+  import {$!{name.lowerCamel}Api} from '/@/api/business/$!{name.lowerHyphenCamel}/$!{name.lowerHyphenCamel}-api';
+  import {smartSentry} from '/@/lib/smart-sentry';
+      #foreach ($import in $frontImportList)
+          $!{import}
+      #end
 
   // ------------------------ 事件 ------------------------
 
@@ -190,17 +208,17 @@
 
   const formDefault = {
       #foreach ($field in $formFields)
-      $!{field.fieldName}: undefined, //$!{field.label}
+              $!{field.fieldName}: undefined, //$!{field.label}
       #end
   };
 
-  let form = reactive({ ...formDefault });
+  let form = reactive({...formDefault});
 
   const rules = {
       #foreach ($field in $formFields)
-      #if($field.requiredFlag)
-      $!{field.fieldName}: [{ required: true, message: '$!{field.label} 必填' }],
-      #end
+          #if($field.requiredFlag)
+                  $!{field.fieldName}: [{required: true, message: '$!{field.label} 必填'}],
+          #end
       #end
   };
 

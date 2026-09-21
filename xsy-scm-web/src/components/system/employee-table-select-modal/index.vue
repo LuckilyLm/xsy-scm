@@ -7,27 +7,27 @@
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input style="width: 150px" v-model:value="params.keyword" placeholder="关键字" />
+          <a-input style="width: 150px" v-model:value="params.keyword" placeholder="关键字"/>
         </a-form-item>
         <a-form-item label="部门" class="smart-query-form-item">
-          <DepartmentTreeSelect style="width: 200px" ref="departmentTreeSelect" v-model:value="params.departmentId" />
+          <DepartmentTreeSelect style="width: 200px" ref="departmentTreeSelect" v-model:value="params.departmentId"/>
         </a-form-item>
         <a-form-item label="状态" class="smart-query-form-item">
           <a-select style="width: 120px" v-model:value="params.disabledFlag" placeholder="请选择状态" allowClear>
-            <a-select-option :key="1"> 禁用 </a-select-option>
-            <a-select-option :key="0"> 启用 </a-select-option>
+            <a-select-option :key="1"> 禁用</a-select-option>
+            <a-select-option :key="0"> 启用</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item class="smart-query-form-item smart-margin-left10">
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined />
+              <SearchOutlined/>
             </template>
             查询
           </a-button>
           <a-button @click="reset" class="smart-margin-left10">
             <template #icon>
-              <ReloadOutlined />
+              <ReloadOutlined/>
             </template>
             重置
           </a-button>
@@ -35,15 +35,15 @@
       </a-row>
     </a-form>
     <a-table
-      :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange, getCheckboxProps: getCheckboxProps }"
-      :loading="tableLoading"
-      size="small"
-      :columns="columns"
-      :data-source="tableData"
-      :pagination="false"
-      bordered
-      rowKey="employeeId"
-      :scroll="{ y: 300 }"
+        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange, getCheckboxProps: getCheckboxProps }"
+        :loading="tableLoading"
+        size="small"
+        :columns="columns"
+        :data-source="tableData"
+        :pagination="false"
+        bordered
+        rowKey="employeeId"
+        :scroll="{ y: 300 }"
     >
       <template #bodyCell="{ text, column }">
         <template v-if="column.dataIndex === 'disabledFlag'">
@@ -57,137 +57,141 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-        showSizeChanger
-        showQuickJumper
-        show-less-items
-        :pageSizeOptions="PAGE_SIZE_OPTIONS"
-        :defaultPageSize="params.pageSize"
-        v-model:current="params.pageNum"
-        v-model:pageSize="params.pageSize"
-        :total="total"
-        @change="queryEmployee"
-        :show-total="(total) => `共${total}条`"
+          showSizeChanger
+          showQuickJumper
+          show-less-items
+          :pageSizeOptions="PAGE_SIZE_OPTIONS"
+          :defaultPageSize="params.pageSize"
+          v-model:current="params.pageNum"
+          v-model:pageSize="params.pageSize"
+          :total="total"
+          @change="queryEmployee"
+          :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-modal>
 </template>
 <script setup lang="ts">
-  import { message } from 'ant-design-vue';
-  import { computed, reactive, ref } from 'vue';
-  import { employeeApi } from '/@/api/system/employee-api';
-  import { PAGE_SIZE, PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
-  import DepartmentTreeSelect from '/@/components/system/department-tree-select/index.vue';
-  import { smartSentry } from '/@/lib/smart-sentry';
+import {message} from 'ant-design-vue';
+import {computed, reactive, ref} from 'vue';
+import {employeeApi} from '/@/api/system/employee-api';
+import {PAGE_SIZE, PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
+import DepartmentTreeSelect from '/@/components/system/department-tree-select/index.vue';
+import {smartSentry} from '/@/lib/smart-sentry';
 
-  // ----------------------- 以下是字段定义 emits props ---------------------
-  const emits = defineEmits(['selectData']);
-  defineExpose({
-    showModal,
-  });
+// ----------------------- 以下是字段定义 emits props ---------------------
+const emits = defineEmits(['selectData']);
+defineExpose({
+  showModal,
+});
 
-  // ----------------------- modal  显示与隐藏 ---------------------
+// ----------------------- modal  显示与隐藏 ---------------------
 
-  const visible = ref(false);
-  async function showModal(selectEmployeeId) {
-    originalRowKeyList.value = selectEmployeeId || [];
-    selectedRowKeyList.value = selectEmployeeId || [];
-    visible.value = true;
-    onSearch();
+const visible = ref(false);
+
+async function showModal(selectEmployeeId) {
+  originalRowKeyList.value = selectEmployeeId || [];
+  selectedRowKeyList.value = selectEmployeeId || [];
+  visible.value = true;
+  onSearch();
+}
+
+function closeModal() {
+  Object.assign(params, defaultParams);
+  selectedRowKeyList.value = [];
+  visible.value = false;
+}
+
+// ----------------------- 员工查询表单与查询 ---------------------
+const tableLoading = ref(false);
+const departmentTreeSelect = ref();
+const total = ref();
+
+let defaultParams = {
+  departmentId: undefined,
+  disabledFlag: undefined,
+  employeeIdList: undefined,
+  keyword: undefined,
+  searchCount: undefined,
+  pageNum: 1,
+  pageSize: PAGE_SIZE,
+  sortItemList: undefined,
+};
+const params = reactive({...defaultParams});
+
+function reset() {
+  Object.assign(params, defaultParams);
+  queryEmployee();
+}
+
+function onSearch() {
+  params.pageNum = 1;
+  queryEmployee();
+}
+
+async function queryEmployee() {
+  tableLoading.value = true;
+  try {
+    let res = await employeeApi.queryEmployee(params);
+    tableData.value = res.data.list;
+    total.value = res.data.total;
+  } catch (error) {
+    smartSentry.captureError(error);
+  } finally {
+    tableLoading.value = false;
   }
-  function closeModal() {
-    Object.assign(params, defaultParams);
-    selectedRowKeyList.value = [];
-    visible.value = false;
-  }
-  // ----------------------- 员工查询表单与查询 ---------------------
-  const tableLoading = ref(false);
-  const departmentTreeSelect = ref();
-  const total = ref();
+}
 
-  let defaultParams = {
-    departmentId: undefined,
-    disabledFlag: undefined,
-    employeeIdList: undefined,
-    keyword: undefined,
-    searchCount: undefined,
-    pageNum: 1,
-    pageSize: PAGE_SIZE,
-    sortItemList: undefined,
+// ----------------------- 员工表格选择 ---------------------
+const originalRowKeyList = ref([]);
+let selectedRowKeyList = ref([]);
+const hasSelected = computed(() => selectedRowKeyList.value.length !== originalRowKeyList.value.length);
+
+function onSelectChange(selectedRowKeys) {
+  selectedRowKeyList.value = selectedRowKeys;
+}
+
+function onSelectEmployee() {
+  if (!hasSelected.value) {
+    message.warning('请选择角色人员');
+    return;
+  }
+  // 过滤出新选择的人员id
+  const newEmployeeIdList = selectedRowKeyList.value.filter((id) => !originalRowKeyList.value.includes(id));
+  emits('selectData', newEmployeeIdList);
+  closeModal();
+}
+
+function getCheckboxProps(record) {
+  return {
+    // 角色员工列表的添加员工弹窗中 禁止添加选择已存在该角色的员工
+    disabled: originalRowKeyList.value.includes(record.employeeId),
   };
-  const params = reactive({ ...defaultParams });
-  function reset() {
-    Object.assign(params, defaultParams);
-    queryEmployee();
-  }
+}
 
-  function onSearch() {
-    params.pageNum = 1;
-    queryEmployee();
-  }
-
-  async function queryEmployee() {
-    tableLoading.value = true;
-    try {
-      let res = await employeeApi.queryEmployee(params);
-      tableData.value = res.data.list;
-      total.value = res.data.total;
-    } catch (error) {
-      smartSentry.captureError(error);
-    } finally {
-      tableLoading.value = false;
-    }
-  }
-
-  // ----------------------- 员工表格选择 ---------------------
-  const originalRowKeyList = ref([]);
-  let selectedRowKeyList = ref([]);
-  const hasSelected = computed(() => selectedRowKeyList.value.length !== originalRowKeyList.value.length);
-
-  function onSelectChange(selectedRowKeys) {
-    selectedRowKeyList.value = selectedRowKeys;
-  }
-
-  function onSelectEmployee() {
-    if (!hasSelected.value) {
-      message.warning('请选择角色人员');
-      return;
-    }
-    // 过滤出新选择的人员id
-    const newEmployeeIdList = selectedRowKeyList.value.filter((id) => !originalRowKeyList.value.includes(id));
-    emits('selectData', newEmployeeIdList);
-    closeModal();
-  }
-
-  function getCheckboxProps(record) {
-    return {
-      // 角色员工列表的添加员工弹窗中 禁止添加选择已存在该角色的员工
-      disabled: originalRowKeyList.value.includes(record.employeeId),
-    };
-  }
-
-  // ----------------------- 员工表格渲染 ---------------------
-  const tableData = ref([]);
-  //字段
-  const columns = [
-    {
-      title: '姓名',
-      dataIndex: 'actualName',
-    },
-    {
-      title: '手机号',
-      dataIndex: 'phone',
-    },
-    {
-      title: '性别',
-      dataIndex: 'gender',
-    },
-    {
-      title: '登录账号',
-      dataIndex: 'loginName',
-    },
-    {
-      title: '状态',
-      dataIndex: 'disabledFlag',
-    },
-  ];
+// ----------------------- 员工表格渲染 ---------------------
+const tableData = ref([]);
+//字段
+const columns = [
+  {
+    title: '姓名',
+    dataIndex: 'actualName',
+  },
+  {
+    title: '手机号',
+    dataIndex: 'phone',
+  },
+  {
+    title: '性别',
+    dataIndex: 'gender',
+  },
+  {
+    title: '登录账号',
+    dataIndex: 'loginName',
+  },
+  {
+    title: '状态',
+    dataIndex: 'disabledFlag',
+  },
+];
 </script>

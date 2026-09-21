@@ -12,7 +12,9 @@ import java.util.List;
 @Mapper
 public interface CustomerDao extends BaseMapper<CustomerEntity> {
 
-    /** 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。 */
+    /**
+     * 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。
+     */
     List<CustomerEntity> queryPage(Page<?> page, @Param("query") CustomerQueryForm query);
 
     /**
@@ -25,7 +27,9 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
                    @Param("version") Integer version,
                    @Param("operator") String operator);
 
-    /** 活动客户按类型计数，供删除客户类型前的引用检查（T6）。 */
+    /**
+     * 活动客户按类型计数，供删除客户类型前的引用检查（T6）。
+     */
     long countActiveByTypeId(@Param("typeId") Long typeId);
 
     List<CustomerEntity> selectActiveByCodes(@Param("codes") List<String> codes);

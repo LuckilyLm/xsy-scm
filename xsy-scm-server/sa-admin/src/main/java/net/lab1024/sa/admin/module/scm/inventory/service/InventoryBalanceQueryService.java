@@ -43,7 +43,9 @@ public class InventoryBalanceQueryService {
         return SmartPageUtil.convert2PageResult(page, balanceDao.queryPage(page, form));
     }
 
-    /** 余额详情；不存在 → 40486。 */
+    /**
+     * 余额详情；不存在 → 40486。
+     */
     @Transactional(readOnly = true)
     public InventoryBalanceVO detail(Long id) {
         InventoryBalanceVO vo = id == null ? null : balanceDao.detail(id);
@@ -53,7 +55,9 @@ public class InventoryBalanceQueryService {
         return vo;
     }
 
-    /** 见类注释：join 查询不接受客户端排序。 */
+    /**
+     * 见类注释：join 查询不接受客户端排序。
+     */
     static void rejectClientSort(PageParam form) {
         if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
             throw new ScmBusinessException(VALIDATION_ERROR);

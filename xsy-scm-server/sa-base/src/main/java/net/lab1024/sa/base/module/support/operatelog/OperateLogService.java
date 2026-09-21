@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- *  操作日志
+ * 操作日志
  *
  */
 @Service
@@ -37,12 +37,13 @@ public class OperateLogService {
 
     /**
      * 查询详情
+     *
      * @param operateLogId
      * @return
      */
     public ResponseDTO<OperateLogVO> detail(Long operateLogId) {
         OperateLogEntity operateLogEntity = operateLogDao.selectById(operateLogId);
-        if(operateLogEntity == null){
+        if (operateLogEntity == null) {
             return ResponseDTO.error(UserErrorCode.DATA_NOT_EXIST);
         }
         OperateLogVO operateLogVO = SmartBeanUtil.copy(operateLogEntity, OperateLogVO.class);

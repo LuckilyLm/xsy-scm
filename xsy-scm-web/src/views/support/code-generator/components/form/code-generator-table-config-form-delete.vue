@@ -4,8 +4,8 @@
 -->
 <template>
   <a-form ref="formRef" :model="formData" :rules="formRules" :label-col="{ span: 6 }" style="width: 600px">
-    <a-form-item label="数据库表名词"> {{ tableInfo.tableName }} </a-form-item>
-    <a-form-item label="数据库表备注"> {{ tableInfo.tableComment }} </a-form-item>
+    <a-form-item label="数据库表名词"> {{ tableInfo.tableName }}</a-form-item>
+    <a-form-item label="数据库表备注"> {{ tableInfo.tableComment }}</a-form-item>
     <a-form-item label="是否允许删除" name="isSupportDelete">
       <a-radio-group v-model:value="formData.isSupportDelete" button-style="solid">
         <a-radio-button :value="true">支持删除</a-radio-button>
@@ -23,74 +23,74 @@
       </div>
     </a-form-item>
     <a-form-item label="删除类型" name="deleteEnum" v-if="formData.isSupportDelete">
-      <SmartEnumSelect enumName="CODE_DELETE_ENUM" v-model:value="formData.deleteEnum" width="200px" />
+      <SmartEnumSelect enumName="CODE_DELETE_ENUM" v-model:value="formData.deleteEnum" width="200px"/>
     </a-form-item>
   </a-form>
 </template>
 
 <script setup lang="ts">
-  import { message } from 'ant-design-vue';
-  import _ from 'lodash';
-  import { inject, reactive, ref } from 'vue';
-  import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
-  import { CODE_DELETE_ENUM } from '/@/constants/support/code-generator-const';
+import {message} from 'ant-design-vue';
+import _ from 'lodash';
+import {inject, reactive, ref} from 'vue';
+import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import {CODE_DELETE_ENUM} from '/@/constants/support/code-generator-const';
 
-  const tableInfo = inject('tableInfo');
+const tableInfo = inject('tableInfo');
 
-  // ------------- 表单 -------------
+// ------------- 表单 -------------
 
-  const deleteFlagColumnName = ref('');
-  const formRef = ref();
+const deleteFlagColumnName = ref('');
+const formRef = ref();
 
-  const defaultFormData = {
-    isSupportDelete: true, // 是否支持删除
-    isPhysicallyDeleted: undefined, // 是否为物理删除
-    deleteEnum: undefined, // 删除类型
-  };
+const defaultFormData = {
+  isSupportDelete: true, // 是否支持删除
+  isPhysicallyDeleted: undefined, // 是否为物理删除
+  deleteEnum: undefined, // 删除类型
+};
 
-  const formData = reactive({ ...defaultFormData });
+const formData = reactive({...defaultFormData});
 
-  const formRules = {
-    isSupportDelete: [{ required: true, message: '请输入 isSupportDelete' }],
-    isPhysicallyDeleted: [{ required: true, message: '请输入 是否为物理删除' }],
-    deleteEnum: [{ required: true, message: '请输入 删除类型' }],
-  };
+const formRules = {
+  isSupportDelete: [{required: true, message: '请输入 isSupportDelete'}],
+  isPhysicallyDeleted: [{required: true, message: '请输入 是否为物理删除'}],
+  deleteEnum: [{required: true, message: '请输入 删除类型'}],
+};
 
-  //初始化设置数据
-  function setData(tableColumns, config) {
-    //删除字段
-    let deletedFlagColumn = getDeleteFlagColumn(tableColumns);
-    if (deletedFlagColumn) {
-      deleteFlagColumnName.value = deletedFlagColumn.columnName;
-    }
-
-    //表单
-    let deleteInfo = config.deleteInfo;
-
-    formData.isSupportDelete = deleteInfo ? deleteInfo.isSupportDelete : true;
-    formData.isPhysicallyDeleted = deleteInfo && deleteInfo.isPhysicallyDeleted ? deleteInfo.isPhysicallyDeleted : !deletedFlagColumn;
-    formData.deleteEnum = deleteInfo && deleteInfo.deleteEnum ? deleteInfo.deleteEnum : CODE_DELETE_ENUM.SINGLE_AND_BATCH.value;
+//初始化设置数据
+function setData(tableColumns, config) {
+  //删除字段
+  let deletedFlagColumn = getDeleteFlagColumn(tableColumns);
+  if (deletedFlagColumn) {
+    deleteFlagColumnName.value = deletedFlagColumn.columnName;
   }
 
-  // 获取配置过的字段信息
-  function getDeleteFlagColumn(configFields) {
-    if (!configFields) {
-      return null;
-    }
+  //表单
+  let deleteInfo = config.deleteInfo;
 
-    let result = configFields.filter((e) => _.startsWith(e.columnName, 'deleted_flag' || _.startsWith(e.columnName, 'delete_flag')));
-    return result && result.length > 0 ? result[0] : null;
+  formData.isSupportDelete = deleteInfo ? deleteInfo.isSupportDelete : true;
+  formData.isPhysicallyDeleted = deleteInfo && deleteInfo.isPhysicallyDeleted ? deleteInfo.isPhysicallyDeleted : !deletedFlagColumn;
+  formData.deleteEnum = deleteInfo && deleteInfo.deleteEnum ? deleteInfo.deleteEnum : CODE_DELETE_ENUM.SINGLE_AND_BATCH.value;
+}
+
+// 获取配置过的字段信息
+function getDeleteFlagColumn(configFields) {
+  if (!configFields) {
+    return null;
   }
 
-  // 获取表单数据
-  function getForm() {
-    return Object.assign({}, formData);
-  }
+  let result = configFields.filter((e) => _.startsWith(e.columnName, 'deleted_flag' || _.startsWith(e.columnName, 'delete_flag')));
+  return result && result.length > 0 ? result[0] : null;
+}
 
-  // 校验表单
-  function validateForm() {
-    return new Promise((resolve, reject) => {
-      formRef.value
+// 获取表单数据
+function getForm() {
+  return Object.assign({}, formData);
+}
+
+// 校验表单
+function validateForm() {
+  return new Promise((resolve, reject) => {
+    formRef.value
         .validate()
         .then(() => {
           resolve(true);
@@ -99,24 +99,24 @@
           message.error(' 请检查【4.删除】表单，有参数验证错误');
           reject(error);
         });
-    });
-  }
-
-  defineExpose({
-    setData,
-    getForm,
-    validateForm,
   });
+}
+
+defineExpose({
+  setData,
+  getForm,
+  validateForm,
+});
 </script>
 
 <style lang="less" scoped>
-  .preview-title {
-    font-weight: 600;
-    margin: 5px 0px;
-  }
+.preview-title {
+  font-weight: 600;
+  margin: 5px 0px;
+}
 
-  .preview-block {
-    font-size: 14px;
-    padding: 10px 5px;
-  }
+.preview-block {
+  font-size: 14px;
+  padding: 10px 5px;
+}
 </style>

@@ -18,7 +18,7 @@
 1）脱敏注解 @DataMasking ，支持数据类型如：用户ID、手机号、密码、地址、银行卡、车牌号等；
 2）脱敏工具类： SmartDataMaskingUtil ；
 </pre
-        >
+>
       </template>
     </a-alert>
 
@@ -28,7 +28,7 @@
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
-                <SearchOutlined />
+                <SearchOutlined/>
               </template>
               查询
             </a-button>
@@ -38,95 +38,95 @@
     </a-form>
 
     <a-table
-      size="small"
-      bordered
-      :scroll="{ x: 1100 }"
-      :loading="tableLoading"
-      class="smart-margin-top10"
-      :dataSource="tableData"
-      :columns="columns"
-      :pagination="false"
+        size="small"
+        bordered
+        :scroll="{ x: 1100 }"
+        :loading="tableLoading"
+        class="smart-margin-top10"
+        :dataSource="tableData"
+        :columns="columns"
+        :pagination="false"
     />
   </a-card>
 </template>
 <script setup lang="ts">
-  import { onMounted, reactive, ref } from 'vue';
-  import { heartBeatApi } from '/@/api/support/heart-beat-api';
-  import { PAGE_SIZE_OPTIONS } from '/@/constants/common-const';
-  import { defaultTimeRanges } from '/@/lib/default-time-ranges';
-  import { smartSentry } from '/@/lib/smart-sentry';
-  import TableOperator from '/@/components/support/table-operator/index.vue';
-  import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-  import { dataMaskingApi } from '/@/api/support/data-masking-api';
+import {onMounted, reactive, ref} from 'vue';
+import {heartBeatApi} from '/@/api/support/heart-beat-api';
+import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
+import {defaultTimeRanges} from '/@/lib/default-time-ranges';
+import {smartSentry} from '/@/lib/smart-sentry';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {dataMaskingApi} from '/@/api/support/data-masking-api';
 
-  //------------------------ 表格渲染 ---------------------
+//------------------------ 表格渲染 ---------------------
 
-  const columns = ref([
-    {
-      title: '用户ID',
-      dataIndex: 'userId',
-      width: 70,
-    },
-    {
-      title: '默认',
-      dataIndex: 'other',
-      width: 100,
-    },
-    {
-      title: '手机号',
-      dataIndex: 'phone',
-      width: 100,
-    },
-    {
-      title: '身份证',
-      dataIndex: 'idCard',
-      width: 150,
-    },
-    {
-      title: '密码',
-      dataIndex: 'password',
-      width: 100,
-    },
-    {
-      title: '邮箱',
-      dataIndex: 'email',
-      width: 120,
-    },
-    {
-      title: '车牌号',
-      dataIndex: 'carLicense',
-      width: 120,
-    },
-    {
-      title: '银行卡',
-      dataIndex: 'bankCard',
-      width: 170,
-    },
-    {
-      title: '地址',
-      dataIndex: 'address',
-      width: 210,
-    },
-  ]);
+const columns = ref([
+  {
+    title: '用户ID',
+    dataIndex: 'userId',
+    width: 70,
+  },
+  {
+    title: '默认',
+    dataIndex: 'other',
+    width: 100,
+  },
+  {
+    title: '手机号',
+    dataIndex: 'phone',
+    width: 100,
+  },
+  {
+    title: '身份证',
+    dataIndex: 'idCard',
+    width: 150,
+  },
+  {
+    title: '密码',
+    dataIndex: 'password',
+    width: 100,
+  },
+  {
+    title: '邮箱',
+    dataIndex: 'email',
+    width: 120,
+  },
+  {
+    title: '车牌号',
+    dataIndex: 'carLicense',
+    width: 120,
+  },
+  {
+    title: '银行卡',
+    dataIndex: 'bankCard',
+    width: 170,
+  },
+  {
+    title: '地址',
+    dataIndex: 'address',
+    width: 210,
+  },
+]);
 
-  const tableLoading = ref(false);
-  const tableData = ref([]);
+const tableLoading = ref(false);
+const tableData = ref([]);
 
-  function onSearch() {
-    ajaxQuery();
+function onSearch() {
+  ajaxQuery();
+}
+
+async function ajaxQuery() {
+  try {
+    tableLoading.value = true;
+    let responseModel = await dataMaskingApi.query();
+    tableData.value = responseModel.data;
+  } catch (e) {
+    smartSentry.captureError(e);
+  } finally {
+    tableLoading.value = false;
   }
+}
 
-  async function ajaxQuery() {
-    try {
-      tableLoading.value = true;
-      let responseModel = await dataMaskingApi.query();
-      tableData.value = responseModel.data;
-    } catch (e) {
-      smartSentry.captureError(e);
-    } finally {
-      tableLoading.value = false;
-    }
-  }
-
-  onMounted(ajaxQuery);
+onMounted(ajaxQuery);
 </script>

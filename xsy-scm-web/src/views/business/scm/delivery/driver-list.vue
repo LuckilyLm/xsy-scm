@@ -1,4 +1,6 @@
-<template><MasterList kind="driver" /></template>
+<template>
+  <MasterList kind="driver"/>
+</template>
 <script setup lang="ts">
-  import MasterList from './components/master-list.vue';
+import MasterList from './components/master-list.vue';
 </script>

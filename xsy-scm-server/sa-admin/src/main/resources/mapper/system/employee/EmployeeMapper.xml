@@ -90,12 +90,14 @@
     </select>
 
     <select id="countByDepartmentId" resultType="integer">
-        SELECT count(1) FROM t_employee
-        WHERE
-        department_id = #{departmentId} AND deleted_flag = #{deletedFlag}
+        SELECT count(1)
+        FROM t_employee
+        WHERE department_id = #{departmentId}
+          AND deleted_flag = #{deletedFlag}
     </select>
 
-    <select id="selectByDepartmentId" resultType="net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity">
+    <select id="selectByDepartmentId"
+            resultType="net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity">
         SELECT *
         FROM t_employee
         <where>
@@ -107,7 +109,8 @@
         ORDER BY create_time DESC
     </select>
 
-    <select id="selectByActualName" resultType="net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity">
+    <select id="selectByActualName"
+            resultType="net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity">
         SELECT * FROM t_employee
         <where>
             actual_name = #{actualName}
@@ -175,7 +178,8 @@
         where t_employee.employee_id = #{employeeId}
     </select>
 
-    <select id="selectEmployeeByDisabledAndDeleted" resultType="net.lab1024.sa.admin.module.system.employee.domain.vo.EmployeeVO">
+    <select id="selectEmployeeByDisabledAndDeleted"
+            resultType="net.lab1024.sa.admin.module.system.employee.domain.vo.EmployeeVO">
         SELECT
         t_employee.*,
         t_department.department_name

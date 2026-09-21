@@ -15,7 +15,7 @@
           <span class="scm-wh-pct">{{ row.pctText }}</span>
         </div>
         <div class="scm-wh-bar">
-          <span class="scm-wh-bar-fill" :style="{ width: row.pctText }" />
+          <span class="scm-wh-bar-fill" :style="{ width: row.pctText }"/>
         </div>
       </div>
     </div>
@@ -23,10 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import {computed} from 'vue';
 import ScreenPanel from './screen-panel.vue';
-import { formatQty, toNumber } from '../format';
-import type { WarehouseDistribution } from '../types';
+import {formatQty, toNumber} from '../format';
+import type {WarehouseDistribution} from '../types';
 
 /**
  * 仓库库存分布。
@@ -41,23 +41,23 @@ import type { WarehouseDistribution } from '../types';
 const props = defineProps<{ distribution: WarehouseDistribution[] }>();
 
 const total = computed(() =>
-  props.distribution.reduce((acc, cur) => acc + toNumber(cur.quantity), 0)
+    props.distribution.reduce((acc, cur) => acc + toNumber(cur.quantity), 0)
 );
 
 const rows = computed(() => {
   const sum = total.value;
   return [...props.distribution]
-    .sort((a, b) => toNumber(b.quantity) - toNumber(a.quantity))
-    .map((item) => {
-      const qty = toNumber(item.quantity);
-      const pct = sum > 0 ? (qty / sum) * 100 : 0;
-      return {
-        name: item.warehouseName,
-        qtyText: formatQty(item.quantity),
-        // 条形长度与百分比文案共用同一个值，避免「条很长但写着 0%」
-        pctText: `${pct.toFixed(1)}%`,
-      };
-    });
+      .sort((a, b) => toNumber(b.quantity) - toNumber(a.quantity))
+      .map((item) => {
+        const qty = toNumber(item.quantity);
+        const pct = sum > 0 ? (qty / sum) * 100 : 0;
+        return {
+          name: item.warehouseName,
+          qtyText: formatQty(item.quantity),
+          // 条形长度与百分比文案共用同一个值，避免「条很长但写着 0%」
+          pctText: `${pct.toFixed(1)}%`,
+        };
+      });
 });
 </script>
 

@@ -17,12 +17,16 @@ import lombok.Data;
 @Data
 public class InventoryConversionAuditForm {
 
-    /** 审批人看到的单据版本号（{@code InventoryConversionVO.version}）。 */
+    /**
+     * 审批人看到的单据版本号（{@code InventoryConversionVO.version}）。
+     */
     @NotNull
     @Min(0)
     private Integer version;
 
-    /** 审核意见（驳回时必填）。 */
+    /**
+     * 审核意见（驳回时必填）。
+     */
     @Size(max = 500)
     private String auditOpinion;
 }

@@ -10,7 +10,7 @@ import java.util.List;
  *
  */
 @Data
-public class MenuTreeVO extends MenuVO{
+public class MenuTreeVO extends MenuVO {
 
     @Schema(description = "菜单子集")
     private List<MenuTreeVO> children;

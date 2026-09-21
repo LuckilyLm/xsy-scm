@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.system.position.dao;
 
 import java.util.List;
+
 import net.lab1024.sa.admin.module.system.position.domain.entity.PositionEntity;
 import net.lab1024.sa.admin.module.system.position.domain.form.PositionQueryForm;
 import net.lab1024.sa.admin.module.system.position.domain.vo.PositionVO;
@@ -30,6 +31,7 @@ public interface PositionDao extends BaseMapper<PositionEntity> {
 
     /**
      * 查询
+     *
      * @param deletedFlag
      * @return
      */

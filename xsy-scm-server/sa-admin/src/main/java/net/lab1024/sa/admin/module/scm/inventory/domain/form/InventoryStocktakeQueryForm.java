@@ -18,10 +18,14 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class InventoryStocktakeQueryForm extends PageParam {
 
-    /** 盘点单号（模糊）。 */
+    /**
+     * 盘点单号（模糊）。
+     */
     private String stocktakeNo;
 
-    /** 仓库（精确）。 */
+    /**
+     * 仓库（精确）。
+     */
     private Long warehouseId;
 
     /**

@@ -20,17 +20,25 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class InventoryTransferQueryForm extends PageParam {
 
-    /** 调拨单号（模糊）。 */
+    /**
+     * 调拨单号（模糊）。
+     */
     @Size(max = 64)
     private String transferNo;
 
-    /** 源仓库（精确）。 */
+    /**
+     * 源仓库（精确）。
+     */
     private Long fromWarehouseId;
 
-    /** 目标仓库（精确）。 */
+    /**
+     * 目标仓库（精确）。
+     */
     private Long toWarehouseId;
 
-    /** 状态：{@code DRAFT} / {@code SHIPPED} / {@code RECEIVED} / {@code CANCELLED}（精确）。 */
+    /**
+     * 状态：{@code DRAFT} / {@code SHIPPED} / {@code RECEIVED} / {@code CANCELLED}（精确）。
+     */
     @Size(max = 20)
     private String status;
 

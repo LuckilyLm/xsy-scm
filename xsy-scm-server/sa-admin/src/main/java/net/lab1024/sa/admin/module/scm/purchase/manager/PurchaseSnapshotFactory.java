@@ -39,7 +39,9 @@ import java.util.Map;
  */
 public final class PurchaseSnapshotFactory {
 
-    /** 与 V15 的 `AT TIME ZONE 'Asia/Shanghai'` 字面量保持一致（Q6a）。 */
+    /**
+     * 与 V15 的 `AT TIME ZONE 'Asia/Shanghai'` 字面量保持一致（Q6a）。
+     */
     public static final ZoneId ASIA_SHANGHAI = ZoneId.of("Asia/Shanghai");
 
     private PurchaseSnapshotFactory() {
@@ -105,7 +107,9 @@ public final class PurchaseSnapshotFactory {
         return item;
     }
 
-    /** 收货单头快照：供应商 / 仓库 / 采购单号从采购单**继承**。 */
+    /**
+     * 收货单头快照：供应商 / 仓库 / 采购单号从采购单**继承**。
+     */
     public static PurchaseReceiptEntity receipt(PurchaseOrderEntity order, String receiptNo, String remark) {
         PurchaseReceiptEntity receipt = new PurchaseReceiptEntity();
         receipt.setReceiptNo(receiptNo);
@@ -236,7 +240,9 @@ public final class PurchaseSnapshotFactory {
         return snapshot;
     }
 
-    /** 4 位定点字符串；`null` 保持 `null`（不写成 `"0.0000"`）。 */
+    /**
+     * 4 位定点字符串；`null` 保持 `null`（不写成 `"0.0000"`）。
+     */
     public static String fixed(BigDecimal value) {
         return value == null ? null : value.setScale(PurchaseAmountCalculator.SCALE, RoundingMode.HALF_UP)
                 .toPlainString();
@@ -271,12 +277,16 @@ public final class PurchaseSnapshotFactory {
         return log;
     }
 
-    /** 可变的 JSONB 快照容器（`Map.of` 不可变，日志快照需要逐项 put）。 */
+    /**
+     * 可变的 JSONB 快照容器（`Map.of` 不可变，日志快照需要逐项 put）。
+     */
     public static Map<String, Object> snapshot() {
         return new LinkedHashMap<>();
     }
 
-    /** DB 列是 `NOT NULL DEFAULT '{}'::JSONB`，因此空值统一落成空 Map 而不是 null。 */
+    /**
+     * DB 列是 `NOT NULL DEFAULT '{}'::JSONB`，因此空值统一落成空 Map 而不是 null。
+     */
     public static Map<String, Object> copySpecValues(Map<?, ?> source) {
         if (source == null || source.isEmpty()) {
             return new LinkedHashMap<>();

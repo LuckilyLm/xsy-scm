@@ -26,7 +26,9 @@ import java.io.IOException;
 @RequestMapping("/scm/order/import")
 public class SalesOrderImportController {
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
-    /** 模板固定在 sa-admin 的 classpath 下，随 JAR 一起发布，运行时不依赖开发机绝对路径。 */
+    /**
+     * 模板固定在 sa-admin 的 classpath 下，随 JAR 一起发布，运行时不依赖开发机绝对路径。
+     */
     private static final String TEMPLATE_RESOURCE = "template/sales-order-import.xlsx";
     private static final String TEMPLATE_FILE_NAME = "销售订单导入模板.xlsx";
 
@@ -53,12 +55,14 @@ public class SalesOrderImportController {
     @SaCheckPermission("scm:order:import")
     @OperateLog
     public ResponseDTO<SalesOrderImportResultVO> importOrders(@RequestParam MultipartFile file,
-                                                               @RequestHeader(value="Idempotency-Key",required=false) String key) throws Exception {
+                                                              @RequestHeader(value = "Idempotency-Key", required = false) String key) throws Exception {
         if (file.isEmpty()) return ResponseDTO.userErrorParam("导入文件不能为空");
-        var name=file.getOriginalFilename();
-        if(name==null||!name.toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx")) return ResponseDTO.userErrorParam("仅支持 .xlsx 文件");
-        if(file.getSize()>MAX_FILE_SIZE) return ResponseDTO.userErrorParam("导入文件不能超过 5 MiB");
-        var security=securityFileService.checkFile(file);if(!security.getOk()) return ResponseDTO.error(security);
-        return ResponseDTO.ok(service.importFile(file,key,StpUtil.hasPermission("scm:order:price-override")));
+        var name = file.getOriginalFilename();
+        if (name == null || !name.toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx"))
+            return ResponseDTO.userErrorParam("仅支持 .xlsx 文件");
+        if (file.getSize() > MAX_FILE_SIZE) return ResponseDTO.userErrorParam("导入文件不能超过 5 MiB");
+        var security = securityFileService.checkFile(file);
+        if (!security.getOk()) return ResponseDTO.error(security);
+        return ResponseDTO.ok(service.importFile(file, key, StpUtil.hasPermission("scm:order:price-override")));
     }
 }

@@ -26,7 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("采购单乐观锁：单头版本 / 行版本（PG IT）")
 class PurchaseOrderOptimisticLockIT extends ScmW5PgITBase {
 
-    /** 一张草稿单 + 它引用的需求（编辑请求需要需求的当前版本）。 */
+    /**
+     * 一张草稿单 + 它引用的需求（编辑请求需要需求的当前版本）。
+     */
     private record Draft(Long skuId, Long supplierId, PurchaseDemandEntity demand, PurchaseOrderVO order) {
     }
 

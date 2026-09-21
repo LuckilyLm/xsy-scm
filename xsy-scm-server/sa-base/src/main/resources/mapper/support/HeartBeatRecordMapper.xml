@@ -12,7 +12,11 @@
     </update>
 
     <select id="query" resultType="net.lab1024.sa.base.module.support.heartbeat.domain.HeartBeatRecordEntity">
-      select * from t_heart_beat_record where project_path = #{projectPath} and server_ip = #{serverIp} and process_no =#{processNo}
+        select *
+        from t_heart_beat_record
+        where project_path = #{projectPath}
+          and server_ip = #{serverIp}
+          and process_no = #{processNo}
     </select>
 
     <select id="pageQuery" resultType="net.lab1024.sa.base.module.support.heartbeat.domain.HeartBeatRecordVO">
@@ -30,7 +34,8 @@
             <if test="query.keywords != null and query.keywords != ''">
                 <!-- process_no 是 integer：MySQL 的 INSTR(int, 'x') 会隐式转字符串，
                      PostgreSQL 的 STRPOS(integer, text) 不存在，必须显式 CAST。 -->
-                AND (STRPOS(project_path,#{query.keywords}) > 0 or STRPOS(server_ip,#{query.keywords}) > 0 or STRPOS(CAST(process_no AS TEXT),#{query.keywords}) > 0)
+                AND (STRPOS(project_path,#{query.keywords}) > 0 or STRPOS(server_ip,#{query.keywords}) > 0 or
+                STRPOS(CAST(process_no AS TEXT),#{query.keywords}) > 0)
             </if>
         </where>
         order by heart_beat_time desc

@@ -31,13 +31,19 @@ import java.util.List;
 @Mapper
 public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity> {
 
-    /** 单号是否存在（软删范围内）。生成单号时用于冲突重试。 */
+    /**
+     * 单号是否存在（软删范围内）。生成单号时用于冲突重试。
+     */
     int countByLossGainNo(@Param("lossGainNo") String lossGainNo);
 
-    /** 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。 */
+    /**
+     * 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。
+     */
     long nextLossGainNo();
 
-    /** 无锁读（详情 / 状态校验前置）。 */
+    /**
+     * 无锁读（详情 / 状态校验前置）。
+     */
     InventoryLossGainEntity selectById(@Param("id") Long id);
 
     /**
@@ -60,14 +66,18 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
                       @Param("auditOpinion") String auditOpinion,
                       @Param("version") Integer version);
 
-    /** 置为已驳回，带状态 + 版本双重守卫。 */
+    /**
+     * 置为已驳回，带状态 + 版本双重守卫。
+     */
     int markRejected(@Param("id") Long id,
                      @Param("auditedAt") OffsetDateTime auditedAt,
                      @Param("auditor") String auditor,
                      @Param("auditOpinion") String auditOpinion,
                      @Param("version") Integer version);
 
-    /** 回写待审核单据的头（仅 PENDING）。 */
+    /**
+     * 回写待审核单据的头（仅 PENDING）。
+     */
     int updatePending(@Param("id") Long id,
                       @Param("adjustType") String adjustType,
                       @Param("warehouseId") Long warehouseId,
@@ -75,9 +85,13 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
                       @Param("remark") String remark,
                       @Param("operator") String operator);
 
-    /** 分页查询（联仓库取展示字段）。 */
+    /**
+     * 分页查询（联仓库取展示字段）。
+     */
     List<InventoryLossGainVO> queryPage(Page<?> page, @Param("query") InventoryLossGainQueryForm query);
 
-    /** 详情。 */
+    /**
+     * 详情。
+     */
     InventoryLossGainVO detail(@Param("id") Long id);
 }

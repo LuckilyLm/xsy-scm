@@ -13,21 +13,21 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="调拨单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.transferNo" placeholder="调拨单号" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.transferNo" placeholder="调拨单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="源仓" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.fromWarehouseId" :options="warehouses" width="190px" />
+        <WarehouseSelect v-model:value="queryForm.fromWarehouseId" :options="warehouses" width="190px"/>
       </a-form-item>
       <a-form-item label="目标仓" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.toWarehouseId" :options="warehouses" width="190px" />
+        <WarehouseSelect v-model:value="queryForm.toWarehouseId" :options="warehouses" width="190px"/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <a-select
-          v-model:value="queryForm.status"
-          :options="statusOptions"
-          placeholder="全部"
-          allow-clear
-          style="width: 130px"
+            v-model:value="queryForm.status"
+            :options="statusOptions"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
         />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
@@ -40,7 +40,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -58,24 +60,24 @@
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRANSFER"
-          :refresh="queryData"
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRANSFER"
+            :refresh="queryData"
         />
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_INVENTORY_TABLE_ID.TRANSFER"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :locale="{ emptyText: '暂无调拨单' }"
-      :scroll="{ x: 1550 }"
+        :id="SCM_INVENTORY_TABLE_ID.TRANSFER"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :locale="{ emptyText: '暂无调拨单' }"
+        :scroll="{ x: 1550 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
@@ -93,49 +95,49 @@
           <a-space :size="4">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
-              type="link"
-              size="small"
-              @click="openEdit(record)"
-              v-privilege="'scm:inventory:transfer:update'"
+                v-if="record.status === 'DRAFT'"
+                type="link"
+                size="small"
+                @click="openEdit(record)"
+                v-privilege="'scm:inventory:transfer:update'"
             >
               编辑
             </a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
-              type="link"
-              size="small"
-              @click="onShip(record)"
-              v-privilege="'scm:inventory:transfer:ship'"
+                v-if="record.status === 'DRAFT'"
+                type="link"
+                size="small"
+                @click="onShip(record)"
+                v-privilege="'scm:inventory:transfer:ship'"
             >
               发出
             </a-button>
             <a-button
-              v-if="record.status === 'SHIPPED'"
-              type="link"
-              size="small"
-              @click="onReceive(record)"
-              v-privilege="'scm:inventory:transfer:receive'"
+                v-if="record.status === 'SHIPPED'"
+                type="link"
+                size="small"
+                @click="onReceive(record)"
+                v-privilege="'scm:inventory:transfer:receive'"
             >
               收货
             </a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
-              type="link"
-              size="small"
-              danger
-              @click="onCancel(record)"
-              v-privilege="'scm:inventory:transfer:update'"
+                v-if="record.status === 'DRAFT'"
+                type="link"
+                size="small"
+                danger
+                @click="onCancel(record)"
+                v-privilege="'scm:inventory:transfer:update'"
             >
               取消
             </a-button>
             <a-button
-              v-if="record.status === 'DRAFT'"
-              type="link"
-              size="small"
-              danger
-              @click="onDelete(record)"
-              v-privilege="'scm:inventory:transfer:delete'"
+                v-if="record.status === 'DRAFT'"
+                type="link"
+                size="small"
+                danger
+                @click="onDelete(record)"
+                v-privilege="'scm:inventory:transfer:delete'"
             >
               删除
             </a-button>
@@ -147,63 +149,63 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑草稿 -->
   <a-drawer
-    :open="drawerOpen"
-    :title="form.id ? `编辑调拨单 ${form.transferNo}` : '新建调拨单'"
-    width="900"
-    @close="closeDrawer"
+      :open="drawerOpen"
+      :title="form.id ? `编辑调拨单 ${form.transferNo}` : '新建调拨单'"
+      width="900"
+      @close="closeDrawer"
   >
     <a-alert
-      type="info"
-      show-icon
-      style="margin-bottom: 12px"
-      message="调拨分两步：先「发出」（源仓扣减，进入在途），再由目标仓「收货」（目标仓增加）。"
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="调拨分两步：先「发出」（源仓扣减，进入在途），再由目标仓「收货」（目标仓增加）。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
-        <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px" />
+        <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
       <a-form-item label="目标仓库（转入）" name="toWarehouseId">
-        <WarehouseSelect v-model:value="form.toWarehouseId" :options="warehouses" width="260px" />
+        <WarehouseSelect v-model:value="form.toWarehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
       </a-form-item>
       <a-form-item label="调拨明细" required>
         <a-table
-          size="small"
-          :data-source="form.items"
-          :columns="itemColumns"
-          row-key="_key"
-          bordered
-          :pagination="false"
+            size="small"
+            :data-source="form.items"
+            :columns="itemColumns"
+            row-key="_key"
+            bordered
+            :pagination="false"
         >
           <template #bodyCell="{ record, column, index }">
             <template v-if="column.dataIndex === 'skuId'">
               <SkuSelect
-                :value="record.skuId"
-                :disabled-statuses="[]"
-                width="260px"
-                @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
+                  :value="record.skuId"
+                  :disabled-statuses="[]"
+                  width="260px"
+                  @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <a-input v-model:value="record.quantity" placeholder="0.0000" style="width: 130px" />
+              <a-input v-model:value="record.quantity" placeholder="0.0000" style="width: 130px"/>
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
-              <a-input v-model:value="record.remark" :maxlength="500" />
+              <a-input v-model:value="record.remark" :maxlength="500"/>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
@@ -240,13 +242,13 @@
       <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
     <a-table
-      style="margin-top: 12px"
-      size="small"
-      :data-source="detail.items || []"
-      :columns="detailItemColumns"
-      row-key="id"
-      bordered
-      :pagination="false"
+        style="margin-top: 12px"
+        size="small"
+        :data-source="detail.items || []"
+        :columns="detailItemColumns"
+        row-key="id"
+        bordered
+        :pagination="false"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'quantity'">
@@ -264,28 +266,28 @@
   </a-drawer>
   <!-- 在途库存报表（只读聚合，不进 inventory_balance） -->
   <a-modal
-    :open="inTransitOpen"
-    title="在途库存"
-    width="1000"
-    :footer="null"
-    @cancel="inTransitOpen = false"
+      :open="inTransitOpen"
+      title="在途库存"
+      width="1000"
+      :footer="null"
+      @cancel="inTransitOpen = false"
   >
     <a-alert
-      type="info"
-      show-icon
-      style="margin-bottom: 12px"
-      message="在途 = 已发出（源仓已扣减）但目标仓尚未收货的调拨量。这批货不在任何仓库的余额里，因此库存余额页看不到它 —— 对账时必须把这份报表算进去。"
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="在途 = 已发出（源仓已扣减）但目标仓尚未收货的调拨量。这批货不在任何仓库的余额里，因此库存余额页看不到它 —— 对账时必须把这份报表算进去。"
     />
     <a-table
-      size="small"
-      :data-source="inTransitRows"
-      :columns="inTransitColumns"
-      row-key="rowKey"
-      bordered
-      :loading="inTransitLoading"
-      :pagination="false"
-      :locale="{ emptyText: '当前没有在途调拨' }"
-      :scroll="{ x: 900 }"
+        size="small"
+        :data-source="inTransitRows"
+        :columns="inTransitColumns"
+        row-key="rowKey"
+        bordered
+        :loading="inTransitLoading"
+        :pagination="false"
+        :locale="{ emptyText: '当前没有在途调拨' }"
+        :scroll="{ x: 900 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
@@ -303,15 +305,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { message, Modal } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {onMounted, reactive, ref} from 'vue';
+import {message, Modal} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
-import { inventoryTransferApi } from '/@/api/business/scm/inventory-transfer-api';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
+import {inventoryTransferApi} from '/@/api/business/scm/inventory-transfer-api';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_INVENTORY_TABLE_ID,
   SCM_INVENTORY_TRANSFER_STATUS_ENUM,
@@ -322,12 +324,12 @@ import type {
   InventoryTransferAdd,
   InventoryTransferQuery,
 } from './inventory-types';
-import type { Warehouse } from '../purchase/purchase-types';
-import { quantityText, singleWarehouseDefault } from './inventory-model';
-import { inventoryError } from './inventory-errors';
-import { datetime } from '../common/scm-display';
+import type {Warehouse} from '../purchase/purchase-types';
+import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {inventoryError} from './inventory-errors';
+import {datetime} from '../common/scm-display';
 
-const queryForm = reactive<InventoryTransferQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<InventoryTransferQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryTransfer[]>([]);
 const total = ref(0);
 const loading = ref(false);
@@ -341,29 +343,29 @@ const statusOptions = Object.values(SCM_INVENTORY_TRANSFER_STATUS_ENUM).map((i) 
 }));
 
 const columns = ref<TableColumnsType<InventoryTransfer>>([
-  { title: '调拨单号', dataIndex: 'transferNo', width: 200 },
-  { title: '调拨方向', dataIndex: 'direction', width: 280 },
-  { title: '状态', dataIndex: 'status', align: 'center', width: 100 },
-  { title: '发出人', dataIndex: 'shippedBy', width: 120 },
-  { title: '发出时间', dataIndex: 'shippedAt', width: 170 },
-  { title: '收货人', dataIndex: 'receivedBy', width: 120 },
-  { title: '收货时间', dataIndex: 'receivedAt', width: 170 },
-  { title: '操作', dataIndex: 'action', width: 280, fixed: 'right' },
+  {title: '调拨单号', dataIndex: 'transferNo', width: 200},
+  {title: '调拨方向', dataIndex: 'direction', width: 280},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 100},
+  {title: '发出人', dataIndex: 'shippedBy', width: 120},
+  {title: '发出时间', dataIndex: 'shippedAt', width: 170},
+  {title: '收货人', dataIndex: 'receivedBy', width: 120},
+  {title: '收货时间', dataIndex: 'receivedAt', width: 170},
+  {title: '操作', dataIndex: 'action', width: 280, fixed: 'right'},
 ]);
 
 const itemColumns: TableColumnsType = [
-  { title: 'SKU', dataIndex: 'skuId', width: 290 },
-  { title: '调拨数量', dataIndex: 'quantity', width: 150 },
-  { title: '备注', dataIndex: 'remark' },
-  { title: '操作', dataIndex: 'action', width: 80 },
+  {title: 'SKU', dataIndex: 'skuId', width: 290},
+  {title: '调拨数量', dataIndex: 'quantity', width: 150},
+  {title: '备注', dataIndex: 'remark'},
+  {title: '操作', dataIndex: 'action', width: 80},
 ];
 
 const detailItemColumns: TableColumnsType = [
-  { title: 'SKU 编码', dataIndex: 'skuCode', width: 160 },
-  { title: 'SKU 名称', dataIndex: 'skuName', width: 150 },
-  { title: '商品名称', dataIndex: 'productName', width: 150 },
-  { title: '数量', dataIndex: 'quantity', align: 'right', width: 110 },
-  { title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 130 },
+  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
+  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品名称', dataIndex: 'productName', width: 150},
+  {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
+  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 130},
 ];
 
 /** 「在途」用醒目的橙色：它代表货不在任何仓库里，最容易被误读成丢失。 */
@@ -381,7 +383,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await inventoryTransferApi.query({ ...queryForm });
+    const r = await inventoryTransferApi.query({...queryForm});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -444,15 +446,15 @@ const form = reactive<{
   toWarehouseId?: string | number;
   remark?: string;
   items: EditableItem[];
-}>({ items: [] });
+}>({items: []});
 
 const formRules = {
-  fromWarehouseId: [{ required: true, message: '请选择源仓库' }],
-  toWarehouseId: [{ required: true, message: '请选择目标仓库' }],
+  fromWarehouseId: [{required: true, message: '请选择源仓库'}],
+  toWarehouseId: [{required: true, message: '请选择目标仓库'}],
 };
 
 function addItem() {
-  form.items.push({ _key: ++keySeq, quantity: '' });
+  form.items.push({_key: ++keySeq, quantity: ''});
 }
 
 function removeItem(index: number) {
@@ -656,12 +658,12 @@ const inTransitLoading = ref(false);
 const inTransitRows = ref<Array<InventoryInTransit & { rowKey: string }>>([]);
 
 const inTransitColumns: TableColumnsType = [
-  { title: '调拨单号', dataIndex: 'transferNo', width: 190 },
-  { title: '调拨方向', dataIndex: 'direction', width: 240 },
-  { title: 'SKU 编码', dataIndex: 'skuCode', width: 150 },
-  { title: 'SKU 名称', dataIndex: 'skuName', width: 140 },
-  { title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120 },
-  { title: '单位', dataIndex: 'unit', align: 'center', width: 90 },
+  {title: '调拨单号', dataIndex: 'transferNo', width: 190},
+  {title: '调拨方向', dataIndex: 'direction', width: 240},
+  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
+  {title: 'SKU 名称', dataIndex: 'skuName', width: 140},
+  {title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
 ];
 
 /**

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao">
-    <sql id="ownSkuIds">SELECT s.id FROM product_sku s WHERE s.spu_id=#{spuId}</sql>
+    <sql id="ownSkuIds">SELECT s.id
+                        FROM product_sku s
+                        WHERE s.spu_id = #{spuId}</sql>
     <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity">
         SELECT p.* FROM product_spu p WHERE p.deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
@@ -10,10 +12,12 @@
             OR p.alias ILIKE CONCAT('%',#{query.keyword},'%')
             OR p.mnemonic_code ILIKE CONCAT('%',#{query.keyword},'%')
             OR EXISTS (SELECT 1 FROM product_sku s WHERE s.spu_id=p.id AND s.deleted=FALSE
-              AND (s.sku_code ILIKE CONCAT('%',#{query.keyword},'%') OR s.barcode ILIKE CONCAT('%',#{query.keyword},'%'))))
+            AND (s.sku_code ILIKE CONCAT('%',#{query.keyword},'%') OR s.barcode ILIKE
+            CONCAT('%',#{query.keyword},'%'))))
         </if>
         <if test="categoryIds != null">
-            AND p.category_id IN <foreach collection="categoryIds" item="id" open="(" close=")" separator=",">#{id}</foreach>
+            AND p.category_id IN
+            <foreach collection="categoryIds" item="id" open="(" close=")" separator=",">#{id}</foreach>
         </if>
         <if test="query.status != null">AND p.status=#{query.status}</if>
         <if test="query.masterStatus != null">AND p.master_status=#{query.masterStatus}</if>
@@ -26,10 +30,12 @@
         <if test="query.hasPrimaryImage != null">
             <choose>
                 <when test="query.hasPrimaryImage">
-                    AND EXISTS (SELECT 1 FROM product_image i WHERE i.spu_id=p.id AND i.deleted=FALSE AND i.is_primary=TRUE)
+                    AND EXISTS (SELECT 1 FROM product_image i WHERE i.spu_id=p.id AND i.deleted=FALSE AND
+                    i.is_primary=TRUE)
                 </when>
                 <otherwise>
-                    AND NOT EXISTS (SELECT 1 FROM product_image i WHERE i.spu_id=p.id AND i.deleted=FALSE AND i.is_primary=TRUE)
+                    AND NOT EXISTS (SELECT 1 FROM product_image i WHERE i.spu_id=p.id AND i.deleted=FALSE AND
+                    i.is_primary=TRUE)
                 </otherwise>
             </choose>
         </if>
@@ -37,11 +43,11 @@
             <choose>
                 <when test="query.hasBarcode">
                     AND EXISTS (SELECT 1 FROM product_sku s WHERE s.spu_id=p.id AND s.deleted=FALSE
-                      AND s.barcode IS NOT NULL AND s.barcode &lt;&gt; '')
+                    AND s.barcode IS NOT NULL AND s.barcode &lt;&gt; '')
                 </when>
                 <otherwise>
                     AND NOT EXISTS (SELECT 1 FROM product_sku s WHERE s.spu_id=p.id AND s.deleted=FALSE
-                      AND s.barcode IS NOT NULL AND s.barcode &lt;&gt; '')
+                    AND s.barcode IS NOT NULL AND s.barcode &lt;&gt; '')
                 </otherwise>
             </choose>
         </if>
@@ -70,7 +76,7 @@
         OR EXISTS (SELECT 1 FROM inventory_loss_gain_item WHERE sku_id IN (<include refid="ownSkuIds"/>))
         OR EXISTS (SELECT 1 FROM inventory_transfer_item WHERE sku_id IN (<include refid="ownSkuIds"/>))
         OR EXISTS (SELECT 1 FROM inventory_conversion_item WHERE source_sku_id IN (<include refid="ownSkuIds"/>)
-                                                          OR target_sku_id IN (<include refid="ownSkuIds"/>))
+        OR target_sku_id IN (<include refid="ownSkuIds"/>))
         OR EXISTS (SELECT 1 FROM inventory_warning_threshold WHERE sku_id IN (<include refid="ownSkuIds"/>))
         OR EXISTS (SELECT 1 FROM customer_agreement_price WHERE sku_id IN (<include refid="ownSkuIds"/>))
         OR EXISTS (SELECT 1 FROM customer_type_price WHERE sku_id IN (<include refid="ownSkuIds"/>))

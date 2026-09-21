@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 客户类型（列表行与下拉共用）。 */
+/**
+ * 客户类型（列表行与下拉共用）。
+ */
 @Data
 public class CustomerTypeVO {
 

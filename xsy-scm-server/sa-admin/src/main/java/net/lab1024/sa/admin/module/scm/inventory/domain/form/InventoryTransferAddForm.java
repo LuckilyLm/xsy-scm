@@ -39,7 +39,9 @@ public class InventoryTransferAddForm {
     @Valid
     private List<Item> items;
 
-    /** 调拨明细行。 */
+    /**
+     * 调拨明细行。
+     */
     @Data
     public static class Item {
 

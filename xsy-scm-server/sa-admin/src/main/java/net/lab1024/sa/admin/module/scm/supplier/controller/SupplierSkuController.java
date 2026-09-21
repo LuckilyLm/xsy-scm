@@ -34,14 +34,18 @@ public class SupplierSkuController {
 
     private final SupplierSkuService service;
 
-    /** 按供应商列出活动关联行，供替换编辑页回填。 */
+    /**
+     * 按供应商列出活动关联行，供替换编辑页回填。
+     */
     @GetMapping("/list/{supplierId}")
     @SaCheckPermission("scm:supplier:sku:query")
     public ResponseDTO<List<SupplierSkuVO>> listBySupplierId(@PathVariable Long supplierId) {
         return ResponseDTO.ok(service.listBySupplierId(supplierId));
     }
 
-    /** 只读反查：按 SKU 找供应商。 */
+    /**
+     * 只读反查：按 SKU 找供应商。
+     */
     @PostMapping("/query")
     @SaCheckPermission("scm:supplier:sku:query")
     public ResponseDTO<PageResult<SupplierSkuVO>> query(@Valid @RequestBody SupplierSkuQueryForm form) {

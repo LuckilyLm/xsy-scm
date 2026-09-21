@@ -10,12 +10,13 @@
   </a-result>
 </template>
 <script setup lang="ts">
-  defineOptions({ name: "SystemNotFound" });
-  import { useRouter } from 'vue-router';
-  import { HOME_PAGE_NAME } from '/@/constants/system/home-const';
+defineOptions({name: "SystemNotFound"});
+import {useRouter} from 'vue-router';
+import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
 
-  const router = useRouter();
-  function goHome() {
-    router.push({ name: HOME_PAGE_NAME });
-  }
+const router = useRouter();
+
+function goHome() {
+  router.push({name: HOME_PAGE_NAME});
+}
 </script>

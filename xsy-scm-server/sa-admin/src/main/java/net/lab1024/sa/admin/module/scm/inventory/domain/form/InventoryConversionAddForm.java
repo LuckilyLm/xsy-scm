@@ -32,7 +32,9 @@ public class InventoryConversionAddForm {
     @NotNull
     private Long warehouseId;
 
-    /** {@code SPLIT} 整件拆零 / {@code COMBINE} 组合拆分。 */
+    /**
+     * {@code SPLIT} 整件拆零 / {@code COMBINE} 组合拆分。
+     */
     @NotBlank
     @Pattern(regexp = "SPLIT|COMBINE")
     private String convertType;
@@ -47,7 +49,9 @@ public class InventoryConversionAddForm {
     @Valid
     private List<Item> items;
 
-    /** 转换明细行：源 SKU 出 N（单位 U₁） → 目标 SKU 入 M（单位 U₂）。 */
+    /**
+     * 转换明细行：源 SKU 出 N（单位 U₁） → 目标 SKU 入 M（单位 U₂）。
+     */
     @Data
     public static class Item {
 

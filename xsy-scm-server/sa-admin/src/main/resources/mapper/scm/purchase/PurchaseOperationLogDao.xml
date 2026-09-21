@@ -24,38 +24,40 @@
          DEMAND_GENERATE 双 id 为 NULL；DEMAND_ALLOCATE 只有采购单 id；RECEIPT_* 双 id 非空。
          本 Dao 不做任何归属推断，只把调用方算好的 id 原样写入。 -->
     <insert id="append">
-        INSERT INTO purchase_operation_log (
-            purchase_order_id, purchase_receipt_id, operation_type, operator, reason,
-            before_data, after_data, created_by)
-        VALUES (
-            #{row.purchaseOrderId}, #{row.purchaseReceiptId}, #{row.operationType},
-            #{row.operator}, #{row.reason},
-            #{row.beforeData,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
-            #{row.afterData,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
-            #{row.createdBy})
+        INSERT INTO purchase_operation_log (purchase_order_id, purchase_receipt_id, operation_type, operator, reason,
+                                            before_data, after_data, created_by)
+        VALUES (#{row.purchaseOrderId}, #{row.purchaseReceiptId}, #{row.operationType},
+                #{row.operator}, #{row.reason},
+                #{row.beforeData,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
+                #{row.afterData,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
+                #{row.createdBy})
     </insert>
 
     <!-- 日志表没有 deleted 列，因此不写 WHERE deleted = FALSE -->
     <select id="listByOrderId" resultMap="logVoMap">
-        SELECT * FROM purchase_operation_log
+        SELECT *
+        FROM purchase_operation_log
         WHERE purchase_order_id = #{purchaseOrderId}
         ORDER BY created_at DESC, id DESC
     </select>
 
     <select id="listByReceiptId" resultMap="logVoMap">
-        SELECT * FROM purchase_operation_log
+        SELECT *
+        FROM purchase_operation_log
         WHERE purchase_receipt_id = #{purchaseReceiptId}
         ORDER BY created_at DESC, id DESC
     </select>
 
     <select id="listDemandGenerate" resultMap="logVoMap">
-        SELECT * FROM purchase_operation_log
+        SELECT *
+        FROM purchase_operation_log
         WHERE operation_type = 'DEMAND_GENERATE'
         ORDER BY created_at DESC, id DESC
     </select>
 
     <select id="countByType" resultType="int">
-        SELECT count(*) FROM purchase_operation_log
+        SELECT count(*)
+        FROM purchase_operation_log
         WHERE operation_type = #{operationType}
     </select>
 

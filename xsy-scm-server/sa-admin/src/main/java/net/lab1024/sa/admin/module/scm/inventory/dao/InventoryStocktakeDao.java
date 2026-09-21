@@ -20,13 +20,19 @@ import java.util.List;
 @Mapper
 public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEntity> {
 
-    /** 单号是否存在（软删范围内）。生成单号时用于冲突重试。 */
+    /**
+     * 单号是否存在（软删范围内）。生成单号时用于冲突重试。
+     */
     int countByStocktakeNo(@Param("stocktakeNo") String stocktakeNo);
 
-    /** 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。 */
+    /**
+     * 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。
+     */
     long nextStocktakeNo();
 
-    /** 无锁读（详情 / 状态校验前置）。 */
+    /**
+     * 无锁读（详情 / 状态校验前置）。
+     */
     InventoryStocktakeEntity selectById(@Param("id") Long id);
 
     /**
@@ -38,24 +44,34 @@ public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEnti
      */
     InventoryStocktakeEntity lockById(@Param("id") Long id);
 
-    /** 置为已确认（带状态条件，防并发重复确认）。 */
+    /**
+     * 置为已确认（带状态条件，防并发重复确认）。
+     */
     int markConfirmed(@Param("id") Long id,
                       @Param("confirmedAt") OffsetDateTime confirmedAt,
                       @Param("operator") String operator);
 
-    /** 置为已取消（带状态条件，只有草稿能取消）。 */
+    /**
+     * 置为已取消（带状态条件，只有草稿能取消）。
+     */
     int markCancelled(@Param("id") Long id,
                       @Param("operator") String operator);
 
-    /** 回写草稿头（仓库 / 备注）。 */
+    /**
+     * 回写草稿头（仓库 / 备注）。
+     */
     int updateDraft(@Param("id") Long id,
                     @Param("warehouseId") Long warehouseId,
                     @Param("remark") String remark,
                     @Param("operator") String operator);
 
-    /** 分页查询（联仓库取展示字段）。 */
+    /**
+     * 分页查询（联仓库取展示字段）。
+     */
     List<InventoryStocktakeVO> queryPage(Page<?> page, @Param("query") InventoryStocktakeQueryForm query);
 
-    /** 详情。 */
+    /**
+     * 详情。
+     */
     InventoryStocktakeVO detail(@Param("id") Long id);
 }

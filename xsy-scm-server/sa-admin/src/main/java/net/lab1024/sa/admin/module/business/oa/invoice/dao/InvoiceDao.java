@@ -19,6 +19,7 @@ public interface InvoiceDao extends BaseMapper<InvoiceEntity> {
 
     /**
      * 根据账号查询
+     *
      * @param enterpriseId
      * @param accountNumber
      * @param excludeInvoiceId
@@ -46,6 +47,7 @@ public interface InvoiceDao extends BaseMapper<InvoiceEntity> {
 
     /**
      * 查询发票信息详情
+     *
      * @param invoiceId
      * @param deletedFlag
      * @return

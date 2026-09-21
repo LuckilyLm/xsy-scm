@@ -12,7 +12,9 @@ import java.util.List;
 @Mapper
 public interface SupplierDao extends BaseMapper<SupplierEntity> {
 
-    /** 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。 */
+    /**
+     * 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。
+     */
     List<SupplierEntity> queryPage(Page<?> page, @Param("query") SupplierQueryForm query);
 
     /**
@@ -23,7 +25,9 @@ public interface SupplierDao extends BaseMapper<SupplierEntity> {
      */
     SupplierEntity selectActiveByIdForUpdate(@Param("supplierId") Long supplierId);
 
-    /** 原子软删：{@code id + version} 双谓词，返回 0 即冲突。 */
+    /**
+     * 原子软删：{@code id + version} 双谓词，返回 0 即冲突。
+     */
     int softDelete(@Param("supplierId") Long supplierId,
                    @Param("version") Integer version,
                    @Param("operator") String operator);

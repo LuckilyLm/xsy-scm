@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.purchase.domain.form;
 
 import lombok.Data;
 import jakarta.validation.constraints.*;
+
 import java.time.OffsetDateTime;
 
 /**
@@ -15,11 +16,18 @@ import java.time.OffsetDateTime;
  */
 @Data
 public class PurchaseDemandGenerateForm {
-    @NotNull private OffsetDateTime startAt;
-    @NotNull private OffsetDateTime endAt;
-    @NotNull private Long warehouseId;
-    /** 可选：指定后直接写入需求的 supplier_id；留空则待第一次分配时固定。 */
+    @NotNull
+    private OffsetDateTime startAt;
+    @NotNull
+    private OffsetDateTime endAt;
+    @NotNull
+    private Long warehouseId;
+    /**
+     * 可选：指定后直接写入需求的 supplier_id；留空则待第一次分配时固定。
+     */
     private Long supplierId;
-    /** 可选：默认采购员。 */
+    /**
+     * 可选：默认采购员。
+     */
     private Long purchaserId;
 }

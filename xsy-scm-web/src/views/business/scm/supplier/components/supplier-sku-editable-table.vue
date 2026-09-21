@@ -20,68 +20,69 @@
     <div class="sku-scroll">
       <table>
         <thead>
-          <tr>
-            <th>商品规格 *</th>
-            <th>采购单位 *</th>
-            <th>参考价</th>
-            <th>默认来源</th>
-            <th>采购员</th>
-            <th>状态</th>
-            <th>操作</th>
-          </tr>
+        <tr>
+          <th>商品规格 *</th>
+          <th>采购单位 *</th>
+          <th>参考价</th>
+          <th>默认来源</th>
+          <th>采购员</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
         </thead>
         <tbody>
-          <tr v-for="(draft, index) in modelValue" :key="draft.id ?? `new-${index}`">
-            <td>
-              <SkuSelect
+        <tr v-for="(draft, index) in modelValue" :key="draft.id ?? `new-${index}`">
+          <td>
+            <SkuSelect
                 :value="draft.skuId"
                 :aria-label="`第 ${index + 1} 行商品规格`"
                 @update:value="(value) => (draft.skuId = Array.isArray(value) ? value[0] : value)"
-              />
-            </td>
-            <td>
-              <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :aria-label="`第 ${index + 1} 行采购单位`" />
-            </td>
-            <td>
-              <a-input
+            />
+          </td>
+          <td>
+            <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :aria-label="`第 ${index + 1} 行采购单位`"/>
+          </td>
+          <td>
+            <a-input
                 v-model:value="draft.referencePrice"
                 placeholder="例如 3.5000"
                 :aria-label="`第 ${index + 1} 行参考价`"
-              />
-            </td>
-            <td class="center">
-              <a-checkbox
+            />
+          </td>
+          <td class="center">
+            <a-checkbox
                 v-model:checked="draft.defaultFlag"
                 :aria-label="`第 ${index + 1} 行设为默认来源`"
-              />
-            </td>
-            <td>
-              <EmployeeSelect
+            />
+          </td>
+          <td>
+            <EmployeeSelect
                 :value="draft.purchaserId ?? undefined"
                 width="100%"
                 placeholder="请选择"
                 :aria-label="`第 ${index + 1} 行采购员`"
                 @update:value="(value: number | undefined) => (draft.purchaserId = value ?? null)"
-              />
-            </td>
-            <td>
-              <SmartEnumSelect
+            />
+          </td>
+          <td>
+            <SmartEnumSelect
                 :value="draft.status ?? 'ENABLED'"
                 enum-name="SUPPLIER_SKU_STATUS_ENUM"
                 width="100%"
                 :aria-label="`第 ${index + 1} 行状态`"
                 @update:value="(value: string) => (draft.status = value as EnableStatus)"
-              />
-            </td>
-            <td class="center">
-              <a-popconfirm title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
-                <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
-              </a-popconfirm>
-            </td>
-          </tr>
-          <tr v-if="modelValue.length === 0">
-            <td colspan="7" class="empty">尚未关联任何商品；保存后将清空该供应商的全部关联</td>
-          </tr>
+            />
+          </td>
+          <td class="center">
+            <a-popconfirm title="确认移除该关联？"
+                          @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
+              <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
+            </a-popconfirm>
+          </td>
+        </tr>
+        <tr v-if="modelValue.length === 0">
+          <td colspan="7" class="empty">尚未关联任何商品；保存后将清空该供应商的全部关联</td>
+        </tr>
         </tbody>
       </table>
     </div>
@@ -91,74 +92,87 @@
 </template>
 
 <script setup lang="ts">
-  import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
-  import EmployeeSelect from '/@/components/system/employee-select/index.vue';
-  import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
-  import type { EnableStatus } from '/@/types/business/scm/supplier';
-  import { emptySkuDraft, removeSkuDraft } from '../supplier-form-model';
-  import type { SkuDraft } from '../supplier-form-model';
+import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import EmployeeSelect from '/@/components/system/employee-select/index.vue';
+import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
+import type {EnableStatus} from '/@/types/business/scm/supplier';
+import {emptySkuDraft, removeSkuDraft} from '../supplier-form-model';
+import type {SkuDraft} from '../supplier-form-model';
 
-  const props = defineProps<{ modelValue: SkuDraft[] }>();
-  const emit = defineEmits<{ 'update:modelValue': [rows: SkuDraft[]] }>();
+const props = defineProps<{ modelValue: SkuDraft[] }>();
+const emit = defineEmits<{ 'update:modelValue': [rows: SkuDraft[]] }>();
 
-  // 模板里 `modelValue` 直接引用 props（与 W1 product-sku-editable-table 同写法）；
-  // 这里显式引用一次，避免 `noUnusedLocals` 把 props 变量判为未使用。
-  void props;
+// 模板里 `modelValue` 直接引用 props（与 W1 product-sku-editable-table 同写法）；
+// 这里显式引用一次，避免 `noUnusedLocals` 把 props 变量判为未使用。
+void props;
 </script>
 
 <style scoped>
-  .sku-scroll {
-    overflow-x: auto;
-  }
-  table {
-    width: 100%;
-    min-width: 1080px;
-    border-collapse: collapse;
-  }
-  th,
-  td {
-    padding: 8px;
-    border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-    vertical-align: top;
-    text-align: left;
-  }
-  th {
-    background: var(--ant-color-fill-alter, #fafafa);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  td:nth-child(1) {
-    min-width: 260px;
-  }
-  td:nth-child(2) {
-    min-width: 110px;
-  }
-  td:nth-child(3) {
-    min-width: 130px;
-  }
-  td:nth-child(5) {
-    min-width: 160px;
-  }
-  td:nth-child(6) {
-    min-width: 110px;
-  }
-  .center {
-    text-align: center;
-  }
-  .empty {
-    text-align: center;
-    color: var(--ant-color-text-secondary, #8c8c8c);
-  }
-  .ant-select {
-    width: 100%;
-  }
-  .add-sku {
-    margin-top: 12px;
-  }
-  .hint {
-    margin-top: 8px;
-    color: var(--ant-color-text-secondary, #8c8c8c);
-    font-size: 12px;
-  }
+.sku-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px;
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  vertical-align: top;
+  text-align: left;
+}
+
+th {
+  background: var(--ant-color-fill-alter, #fafafa);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+td:nth-child(1) {
+  min-width: 260px;
+}
+
+td:nth-child(2) {
+  min-width: 110px;
+}
+
+td:nth-child(3) {
+  min-width: 130px;
+}
+
+td:nth-child(5) {
+  min-width: 160px;
+}
+
+td:nth-child(6) {
+  min-width: 110px;
+}
+
+.center {
+  text-align: center;
+}
+
+.empty {
+  text-align: center;
+  color: var(--ant-color-text-secondary, #8c8c8c);
+}
+
+.ant-select {
+  width: 100%;
+}
+
+.add-sku {
+  margin-top: 12px;
+}
+
+.hint {
+  margin-top: 8px;
+  color: var(--ant-color-text-secondary, #8c8c8c);
+  font-size: 12px;
+}
 </style>
 

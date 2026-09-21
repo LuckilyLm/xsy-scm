@@ -19,23 +19,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmInventoryReservationStatusEnum {
 
-    /** 生效中：占用可用量，但未改变物理库存。 */
+    /**
+     * 生效中：占用可用量，但未改变物理库存。
+     */
     ACTIVE("生效中"),
 
-    /** 已释放：占用已归还，可用量恢复。 */
+    /**
+     * 已释放：占用已归还，可用量恢复。
+     */
     RELEASED("已释放"),
 
-    /** 已消耗：已被出库消费，占用转为实际扣减。 */
+    /**
+     * 已消耗：已被出库消费，占用转为实际扣减。
+     */
     CONSUMED("已消耗");
 
     private final String desc;
 
-    /** 只有生效中的预留可以被释放或消耗。 */
+    /**
+     * 只有生效中的预留可以被释放或消耗。
+     */
     public boolean isActive() {
         return this == ACTIVE;
     }
 
-    /** 该值是否允许写入 {@code inventory_reservation.status}（DB CHECK 白名单的同源判定）。 */
+    /**
+     * 该值是否允许写入 {@code inventory_reservation.status}（DB CHECK 白名单的同源判定）。
+     */
     public static boolean isSupported(String value) {
         for (ScmInventoryReservationStatusEnum item : values()) {
             if (item.name().equals(value)) {

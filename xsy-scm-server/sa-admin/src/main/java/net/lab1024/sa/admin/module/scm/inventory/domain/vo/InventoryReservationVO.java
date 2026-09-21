@@ -37,7 +37,9 @@ public class InventoryReservationVO {
 
     private Long sourceDocumentItemId;
 
-    /** 来源单号（联销售订单取；取不到时为 null，不影响本行展示）。 */
+    /**
+     * 来源单号（联销售订单取；取不到时为 null，不影响本行展示）。
+     */
     private String sourceDocumentNo;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -47,7 +49,9 @@ public class InventoryReservationVO {
 
     private String status;
 
-    /** 状态中文描述（服务层按枚举填充）。 */
+    /**
+     * 状态中文描述（服务层按枚举填充）。
+     */
     private String statusDesc;
 
     private OffsetDateTime occurredAt;

@@ -31,12 +31,16 @@ public class InventoryTransferQueryService {
 
     private final InventoryTransferItemDao itemDao;
 
-    /** 在途库存报表（只读聚合，不进 inventory_balance）。 */
+    /**
+     * 在途库存报表（只读聚合，不进 inventory_balance）。
+     */
     public List<InventoryInTransitVO> queryInTransit() {
         return transferDao.queryInTransit();
     }
 
-    /** 分页查询（不返回明细，明细走 {@link #detail}）。 */
+    /**
+     * 分页查询（不返回明细，明细走 {@link #detail}）。
+     */
     public PageResult<InventoryTransferVO> queryPage(InventoryTransferQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是双联表结果（warehouse 联了两次），客户端传入的排序列名会与 join 列产生歧义。
@@ -46,7 +50,9 @@ public class InventoryTransferQueryService {
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
-    /** 详情（含明细，按录入顺序）。 */
+    /**
+     * 详情（含明细，按录入顺序）。
+     */
     public InventoryTransferVO detail(Long id) {
         InventoryTransferVO vo = transferDao.detail(id);
         if (vo == null) {

@@ -34,7 +34,9 @@ public class CustomerVO {
 
     private String settleMode;
 
-    /** 授信额度，4 位定点字符串；{@code null} 保持 {@code null}。 */
+    /**
+     * 授信额度，4 位定点字符串；{@code null} 保持 {@code null}。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal creditLimit;
 

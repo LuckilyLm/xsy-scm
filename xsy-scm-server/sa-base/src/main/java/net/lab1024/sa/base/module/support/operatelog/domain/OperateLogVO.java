@@ -9,7 +9,7 @@ import net.lab1024.sa.base.common.swagger.SchemaEnum;
 import java.time.LocalDateTime;
 
 /**
- *  操作日志信息
+ * 操作日志信息
  *
  */
 @Data

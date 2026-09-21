@@ -15,7 +15,7 @@
         <a-list-item>
           <div class="department-item" @click="selectTree(item.departmentId)">
             {{ item.departmentName }}
-            <RightOutlined />
+            <RightOutlined/>
           </div>
         </a-list-item>
       </template>
@@ -23,31 +23,34 @@
   </a-card>
 </template>
 <script setup lang="ts">
-  import emitter from '../../department-mitt';
+import emitter from '../../department-mitt';
 
-  const props = defineProps({
-    breadcrumb: Array,
-    selectedDepartmentChildren: Array,
-  });
+const props = defineProps({
+  breadcrumb: Array,
+  selectedDepartmentChildren: Array,
+});
 
-  function selectTree(id) {
-    emitter.emit('selectTree', id);
-  }
+function selectTree(id) {
+  emitter.emit('selectTree', id);
+}
 </script>
 <style scoped lang="less">
-  :deep(.ant-list-item) {
-    padding: 6px 0px;
+:deep(.ant-list-item) {
+  padding: 6px 0px;
+}
+
+.child-dept-container {
+  .department-list-box {
+    margin-top: 20px;
   }
-  .child-dept-container {
-    .department-list-box {
-      margin-top: 20px;
-    }
-    .department-list {
-      height: 170px;
-      overflow-y: auto;
-    }
-    .department-item {
-      cursor: pointer;
-    }
+
+  .department-list {
+    height: 170px;
+    overflow-y: auto;
   }
+
+  .department-item {
+    cursor: pointer;
+  }
+}
 </style>

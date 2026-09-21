@@ -6,8 +6,10 @@
                type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryConversionVO"/>
 
     <select id="countByConversionNo" resultType="int">
-        SELECT COUNT(*) FROM inventory_conversion
-        WHERE conversion_no = #{conversionNo} AND deleted = FALSE
+        SELECT COUNT(*)
+        FROM inventory_conversion
+        WHERE conversion_no = #{conversionNo}
+          AND deleted = FALSE
     </select>
 
     <select id="nextConversionNo" resultType="long">
@@ -16,13 +18,19 @@
 
     <select id="selectById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversionEntity">
-        SELECT * FROM inventory_conversion WHERE id = #{id} AND deleted = FALSE
+        SELECT *
+        FROM inventory_conversion
+        WHERE id = #{id}
+          AND deleted = FALSE
     </select>
 
     <!-- 锁序：单据锁先于余额锁（与收货 / 出库 / 盘点 / 报损报溢 / 调拨同一顺序） -->
     <select id="lockById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversionEntity">
-        SELECT * FROM inventory_conversion WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM inventory_conversion
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <!-- 带状态 + 版本双重守卫：并发重复审批时只有一次能成功 -->
@@ -35,7 +43,10 @@
             version       = version + 1,
             updated_at    = CURRENT_TIMESTAMP,
             updated_by    = #{auditor}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING' AND version = #{version}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'PENDING'
+          AND version = #{version}
     </update>
 
     <update id="markRejected">
@@ -47,7 +58,10 @@
             version       = version + 1,
             updated_at    = CURRENT_TIMESTAMP,
             updated_by    = #{auditor}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING' AND version = #{version}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'PENDING'
+          AND version = #{version}
     </update>
 
     <update id="updatePending">
@@ -59,26 +73,28 @@
             version      = version + 1,
             updated_at   = CURRENT_TIMESTAMP,
             updated_by   = #{operator}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'PENDING'
     </update>
 
     <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
     <select id="queryPage" resultMap="conversionVoMap">
         SELECT t.id,
-               t.conversion_no,
-               t.warehouse_id,
-               t.convert_type,
-               t.status,
-               t.reason,
-               t.remark,
-               t.audited_at,
-               t.auditor,
-               t.audit_opinion,
-               t.version,
-               t.created_at,
-               t.updated_at,
-               w.warehouse_code,
-               w.name AS warehouse_name
+        t.conversion_no,
+        t.warehouse_id,
+        t.convert_type,
+        t.status,
+        t.reason,
+        t.remark,
+        t.audited_at,
+        t.auditor,
+        t.audit_opinion,
+        t.version,
+        t.created_at,
+        t.updated_at,
+        w.warehouse_code,
+        w.name AS warehouse_name
         FROM inventory_conversion t
         LEFT JOIN warehouse w ON w.id = t.warehouse_id
         WHERE t.deleted = FALSE
@@ -114,8 +130,9 @@
                w.warehouse_code,
                w.name AS warehouse_name
         FROM inventory_conversion t
-        LEFT JOIN warehouse w ON w.id = t.warehouse_id
-        WHERE t.deleted = FALSE AND t.id = #{id}
+                 LEFT JOIN warehouse w ON w.id = t.warehouse_id
+        WHERE t.deleted = FALSE
+          AND t.id = #{id}
     </select>
 
 </mapper>

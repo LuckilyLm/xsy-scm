@@ -18,12 +18,16 @@ public final class WarehouseValidator {
     private WarehouseValidator() {
     }
 
-    /** 编码归一化：去首尾空白 + 转大写（与 W1/W2 的编码口径一致）。 */
+    /**
+     * 编码归一化：去首尾空白 + 转大写（与 W1/W2 的编码口径一致）。
+     */
     public static String normalizeCode(String raw) {
         return raw == null ? null : raw.trim().toUpperCase(java.util.Locale.ROOT);
     }
 
-    /** 名称归一化：去首尾空白。 */
+    /**
+     * 名称归一化：去首尾空白。
+     */
     public static String normalizeName(String raw) {
         return raw == null ? null : raw.trim();
     }
@@ -45,7 +49,9 @@ public final class WarehouseValidator {
         throw new ScmBusinessException(VALIDATION_ERROR);
     }
 
-    /** 编码 / 名称必填校验（非 MVC 入口用）。 */
+    /**
+     * 编码 / 名称必填校验（非 MVC 入口用）。
+     */
     public static void validateRequired(WarehouseAddForm form) {
         if (form == null
                 || form.getWarehouseCode() == null || form.getWarehouseCode().trim().isEmpty()

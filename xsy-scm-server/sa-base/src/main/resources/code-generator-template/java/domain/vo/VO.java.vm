@@ -1,7 +1,7 @@
 package ${packageName};
 
 #foreach ($importClass in $importPackageList)
-$importClass
+    $importClass
 #end
 
 /**
@@ -15,10 +15,10 @@ $importClass
 @Data
 public class ${name.upperCamel}VO {
 
-#foreach ($field in $fields)
+    #foreach ($field in $fields)
 
-    ${field.apiModelProperty}$!{field.notEmpty}$!{field.file}
-    private $field.javaType $field.fieldName;
-#end
+        ${field.apiModelProperty}$!{field.notEmpty}$!{field.file}
+        private $field.javaType $field.fieldName;
+    #end
 
 }

@@ -25,13 +25,17 @@ public final class PurchaseAmountCalculator {
 
     public static final int SCALE = 4;
 
-    /** 与 {@code NUMERIC(18,4)} 的容量一致：整数部分 14 位。 */
+    /**
+     * 与 {@code NUMERIC(18,4)} 的容量一致：整数部分 14 位。
+     */
     private static final BigDecimal MAX = new BigDecimal("99999999999999.9999");
 
     private PurchaseAmountCalculator() {
     }
 
-    /** 规范化到 4 位小数并做容量校验；{@code null} 透传。溢出 → 40081。 */
+    /**
+     * 规范化到 4 位小数并做容量校验；{@code null} 透传。溢出 → 40081。
+     */
     public static BigDecimal bounded(BigDecimal value) {
         if (value == null) {
             return null;
@@ -43,12 +47,16 @@ public final class PurchaseAmountCalculator {
         return normalized;
     }
 
-    /** 行金额；单价为 {@code null} 时返回 {@code null}（不是 0）。 */
+    /**
+     * 行金额；单价为 {@code null} 时返回 {@code null}（不是 0）。
+     */
     public static BigDecimal lineAmount(BigDecimal plannedQuantity, BigDecimal purchasePrice) {
         return purchasePrice == null ? null : bounded(plannedQuantity.multiply(purchasePrice));
     }
 
-    /** 单头金额；任一行金额为 {@code null} 时返回 {@code null}。 */
+    /**
+     * 单头金额；任一行金额为 {@code null} 时返回 {@code null}。
+     */
     public static BigDecimal totalAmount(List<BigDecimal> lineAmounts) {
         if (lineAmounts == null || lineAmounts.isEmpty()) {
             return BigDecimal.ZERO.setScale(SCALE, RoundingMode.HALF_UP);

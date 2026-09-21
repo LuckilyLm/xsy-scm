@@ -58,16 +58,16 @@ public class CacheConfig {
     }
 
 
-@Bean
-@ConditionalOnProperty(prefix = "spring.cache", name = {"type"}, havingValue = REDIS_CACHE)
-public CacheService redisCacheService() {
-    return new RedisCacheServiceImpl();
-}
+    @Bean
+    @ConditionalOnProperty(prefix = "spring.cache", name = {"type"}, havingValue = REDIS_CACHE)
+    public CacheService redisCacheService() {
+        return new RedisCacheServiceImpl();
+    }
 
-@Bean
-@ConditionalOnProperty(prefix = "spring.cache", name = {"type"}, havingValue = CAFFEINE_CACHE)
-public CacheService caffeineCacheService() {
-    return new CaffeineCacheServiceImpl();
-}
+    @Bean
+    @ConditionalOnProperty(prefix = "spring.cache", name = {"type"}, havingValue = CAFFEINE_CACHE)
+    public CacheService caffeineCacheService() {
+        return new CaffeineCacheServiceImpl();
+    }
 
 }

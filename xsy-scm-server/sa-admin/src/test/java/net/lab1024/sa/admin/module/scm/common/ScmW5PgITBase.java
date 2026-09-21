@@ -102,7 +102,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 public abstract class ScmW5PgITBase {
 
-    /** V15 播种的默认仓库编码（G-03 单仓库口径）。 */
+    /**
+     * V15 播种的默认仓库编码（G-03 单仓库口径）。
+     */
     public static final String SEED_WAREHOUSE_CODE = "WH001";
 
     /**
@@ -163,7 +165,9 @@ public abstract class ScmW5PgITBase {
     @Autowired
     protected PlatformTransactionManager transactionManager;
 
-    /** 每个用例独立的编码前缀，避免与其它用例或既有数据撞 partial unique index。 */
+    /**
+     * 每个用例独立的编码前缀，避免与其它用例或既有数据撞 partial unique index。
+     */
     protected String prefix;
 
     /**
@@ -219,7 +223,9 @@ public abstract class ScmW5PgITBase {
         SqlSessionUtils.getSqlSession(sqlSessionFactory).clearCache();
     }
 
-    /** 断言动作抛出带指定业务码的 {@link ScmBusinessException}。 */
+    /**
+     * 断言动作抛出带指定业务码的 {@link ScmBusinessException}。
+     */
     protected static void expectCode(Runnable action, int code) {
         assertThatThrownBy(action::run)
                 .isInstanceOfSatisfying(ScmBusinessException.class,
@@ -270,7 +276,9 @@ public abstract class ScmW5PgITBase {
     // 数据辅助
     // ------------------------------------------------------------------
 
-    /** V15 播种的默认仓库 id。 */
+    /**
+     * V15 播种的默认仓库 id。
+     */
     protected Long seedWarehouseId() {
         return warehouseId(SEED_WAREHOUSE_CODE);
     }
@@ -281,7 +289,9 @@ public abstract class ScmW5PgITBase {
                 Long.class, warehouseCode);
     }
 
-    /** 新建一个独立仓库（测试用，避免与种子仓库的状态改动互相污染）。 */
+    /**
+     * 新建一个独立仓库（测试用，避免与种子仓库的状态改动互相污染）。
+     */
     protected Long newWarehouse(String suffix) {
         WarehouseAddForm form = new WarehouseAddForm();
         form.setWarehouseCode(prefix + "-" + suffix);
@@ -289,7 +299,9 @@ public abstract class ScmW5PgITBase {
         return warehouseService.create(form);
     }
 
-    /** 任一可用员工 id，用于业务员 / 默认采购员引用。 */
+    /**
+     * 任一可用员工 id，用于业务员 / 默认采购员引用。
+     */
     protected Long anyEmployeeId() {
         return jdbc.queryForObject(
                 "SELECT employee_id FROM t_employee WHERE deleted_flag = FALSE ORDER BY employee_id LIMIT 1",
@@ -330,7 +342,9 @@ public abstract class ScmW5PgITBase {
                 "SELECT id FROM product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
     }
 
-    /** 直接改库把仓库置为 DISABLED（`status` 不在 §7.2 的表单字段清单内，见验收报告 G1）。 */
+    /**
+     * 直接改库把仓库置为 DISABLED（`status` 不在 §7.2 的表单字段清单内，见验收报告 G1）。
+     */
     protected void disableWarehouse(Long warehouseId) {
         int updated = jdbc.update(
                 "UPDATE warehouse SET status = 'DISABLED', version = version + 1, updated_at = CURRENT_TIMESTAMP "
@@ -372,7 +386,9 @@ public abstract class ScmW5PgITBase {
         supplierSkuService.replace(form);
     }
 
-    /** 一个「供应商 + 已挂 SKU」的现成组合，采购单位默认取 {@code kg}（与 SKU 的销售单位一致）。 */
+    /**
+     * 一个「供应商 + 已挂 SKU」的现成组合，采购单位默认取 {@code kg}（与 SKU 的销售单位一致）。
+     */
     protected Long newPurchasableSupplier(String suffix, Long skuId) {
         Long supplierId = newSupplier(suffix);
         linkSupplierSku(supplierId, skuId, DEFAULT_PURCHASE_UNIT);
@@ -448,7 +464,7 @@ public abstract class ScmW5PgITBase {
      * @return 该订单的 id（{@code sales_order.id}）
      */
     protected Long confirmedSalesOrder(Long customerId, Long skuId,
-                                      String orderedQuantity, String actualQuantity) {
+                                       String orderedQuantity, String actualQuantity) {
         String scope = prefix + ":so:" + (++salesOrderSequence);
         SalesOrderAddForm form = new SalesOrderAddForm();
         form.setCustomerId(customerId);
@@ -479,20 +495,26 @@ public abstract class ScmW5PgITBase {
         return salesOrderService.confirm(salesOrderVersion(order), scope + ":confirm").getOrderId();
     }
 
-    /** 已确认订单的来源行 id（{@code purchase_demand.sales_order_item_id} 的来源）。 */
+    /**
+     * 已确认订单的来源行 id（{@code purchase_demand.sales_order_item_id} 的来源）。
+     */
     protected Long confirmedSalesOrderItemId(Long orderId) {
         return jdbc.queryForObject(
                 "SELECT id FROM sales_order_item WHERE order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
                 Long.class, orderId);
     }
 
-    /** 来源订单的确认时间（Q6a 的 `demand_date` 与 `source_confirmed_at` 都取自它）。 */
+    /**
+     * 来源订单的确认时间（Q6a 的 `demand_date` 与 `source_confirmed_at` 都取自它）。
+     */
     protected java.time.OffsetDateTime salesOrderConfirmedAt(Long orderId) {
         return jdbc.queryForObject(
                 "SELECT confirmed_at FROM sales_order WHERE id = ?", java.time.OffsetDateTime.class, orderId);
     }
 
-    /** 一行 SKU + 供应商 + 客户 + 已确认订单的完整前置条件，返回需求生成所需的 id 组合。 */
+    /**
+     * 一行 SKU + 供应商 + 客户 + 已确认订单的完整前置条件，返回需求生成所需的 id 组合。
+     */
     protected Fixture fixture(String suffix, String orderedQuantity, String actualQuantity) {
         Long skuId = newOnShelfSku(suffix);
         Long supplierId = newPurchasableSupplier(suffix, skuId);
@@ -502,7 +524,9 @@ public abstract class ScmW5PgITBase {
                 confirmedSalesOrderItemId(salesOrderId), salesOrderConfirmedAt(salesOrderId));
     }
 
-    /** {@link #fixture} 的返回值。 */
+    /**
+     * {@link #fixture} 的返回值。
+     */
     protected record Fixture(Long skuId, Long supplierId, Long customerId,
                              Long salesOrderId, Long salesOrderItemId,
                              java.time.OffsetDateTime confirmedAt) {
@@ -529,7 +553,9 @@ public abstract class ScmW5PgITBase {
         return demandOfSourceItem(confirmedSalesOrderItemId(salesOrderId));
     }
 
-    /** 按来源销售订单行读**唯一**的活动需求（{@code uk_purchase_demand_source_active} 保证唯一）。 */
+    /**
+     * 按来源销售订单行读**唯一**的活动需求（{@code uk_purchase_demand_source_active} 保证唯一）。
+     */
     protected PurchaseDemandEntity demandOfSourceItem(Long salesOrderItemId) {
         List<PurchaseDemandEntity> rows =
                 purchaseDemandDao.listActiveBySourceItemIds(List.of(salesOrderItemId));
@@ -539,13 +565,17 @@ public abstract class ScmW5PgITBase {
         return rows.getFirst();
     }
 
-    /** 重新读需求（断言分配 / 状态变化时用；绕开事务内的一级缓存）。 */
+    /**
+     * 重新读需求（断言分配 / 状态变化时用；绕开事务内的一级缓存）。
+     */
     protected PurchaseDemandEntity reloadDemand(Long demandId) {
         evictMybatisCache();
         return purchaseDemandDao.selectById(demandId);
     }
 
-    /** 一条分配：{@code (demandId, quantity, demandVersion)} —— allocation 身份的一半。 */
+    /**
+     * 一条分配：{@code (demandId, quantity, demandVersion)} —— allocation 身份的一半。
+     */
     protected PurchaseOrderAddForm.Allocation allocation(PurchaseDemandEntity demand, String quantity) {
         PurchaseOrderAddForm.Allocation row = new PurchaseOrderAddForm.Allocation();
         row.setDemandId(demand.getId());
@@ -554,7 +584,9 @@ public abstract class ScmW5PgITBase {
         return row;
     }
 
-    /** 单行采购单请求；{@code allocations} 省略 = 该行没有任何需求来源。 */
+    /**
+     * 单行采购单请求；{@code allocations} 省略 = 该行没有任何需求来源。
+     */
     protected PurchaseOrderAddForm orderForm(Long supplierId, Long warehouseId, Long skuId,
                                              String quantity, String price,
                                              PurchaseOrderAddForm.Allocation... allocations) {
@@ -568,7 +600,9 @@ public abstract class ScmW5PgITBase {
         return form;
     }
 
-    /** 一个采购行请求（无 id = 新增行）。 */
+    /**
+     * 一个采购行请求（无 id = 新增行）。
+     */
     protected PurchaseOrderAddForm.Item item(Long skuId, String quantity, String price,
                                              PurchaseOrderAddForm.Allocation... allocations) {
         PurchaseOrderAddForm.Item item = new PurchaseOrderAddForm.Item();
@@ -620,13 +654,17 @@ public abstract class ScmW5PgITBase {
         return form;
     }
 
-    /** 采购单当前的全部活动分配（按 item 展开）。 */
+    /**
+     * 采购单当前的全部活动分配（按 item 展开）。
+     */
     protected List<PurchaseDemandAllocationEntity> allocationsOf(Long orderId) {
         evictMybatisCache();
         return purchaseDemandAllocationDao.listActiveByOrderId(orderId);
     }
 
-    /** 指定采购行上的分配（断言「只改了一条」时必须逐条比对 id）。 */
+    /**
+     * 指定采购行上的分配（断言「只改了一条」时必须逐条比对 id）。
+     */
     protected PurchaseDemandAllocationEntity allocationOf(Long purchaseOrderItemId, Long demandId) {
         evictMybatisCache();
         return purchaseDemandAllocationDao.listActiveByOrderItemIds(List.of(purchaseOrderItemId)).stream()
@@ -636,7 +674,9 @@ public abstract class ScmW5PgITBase {
                         "allocation 不存在: item=" + purchaseOrderItemId + " demand=" + demandId));
     }
 
-    /** 重新读采购单（断言状态 / 版本变化时用）。 */
+    /**
+     * 重新读采购单（断言状态 / 版本变化时用）。
+     */
     protected PurchaseOrderVO reloadOrder(Long orderId) {
         evictMybatisCache();
         return purchaseQueryService.orderDetail(orderId);
@@ -721,7 +761,9 @@ public abstract class ScmW5PgITBase {
         return item;
     }
 
-    /** 确认收货请求。必须覆盖该收货单的**全部**活动行，否则 40998。 */
+    /**
+     * 确认收货请求。必须覆盖该收货单的**全部**活动行，否则 40998。
+     */
     protected PurchaseReceiptConfirmForm confirmForm(Long receiptId, Integer version,
                                                      PurchaseReceiptConfirmForm.Item... items) {
         PurchaseReceiptConfirmForm form = new PurchaseReceiptConfirmForm();
@@ -731,7 +773,9 @@ public abstract class ScmW5PgITBase {
         return form;
     }
 
-    /** 重新读收货单明细。 */
+    /**
+     * 重新读收货单明细。
+     */
     protected PurchaseReceiptVO reloadReceipt(Long receiptId) {
         evictMybatisCache();
         return purchaseQueryService.receiptDetail(receiptId);
@@ -757,19 +801,25 @@ public abstract class ScmW5PgITBase {
         return purchaseQueryService.receiptDetail(page.getList().getFirst().getId());
     }
 
-    /** 收货单的收货行（按 sortOrder 升序）。 */
+    /**
+     * 收货单的收货行（按 sortOrder 升序）。
+     */
     protected List<PurchaseReceiptItemVO> receiptItems(Long receiptId) {
         evictMybatisCache();
         return purchaseQueryService.receiptItems(receiptId);
     }
 
-    /** 「提交采购单 + 建收货单」的常用组合，返回草稿收货单。 */
+    /**
+     * 「提交采购单 + 建收货单」的常用组合，返回草稿收货单。
+     */
     protected PurchaseReceiptVO submittedOrderReceipt(Long orderId) {
         submitOrder(orderId);
         return createReceipt(orderId);
     }
 
-    /** 更新收货单备注的请求（`receipt.update` 只允许改备注）。 */
+    /**
+     * 更新收货单备注的请求（`receipt.update` 只允许改备注）。
+     */
     protected PurchaseReceiptUpdateForm receiptRemarkForm(Long receiptId, Integer version, String remark) {
         PurchaseReceiptUpdateForm form = new PurchaseReceiptUpdateForm();
         form.setId(receiptId);
@@ -778,7 +828,9 @@ public abstract class ScmW5PgITBase {
         return form;
     }
 
-    /** 删除收货单的请求。 */
+    /**
+     * 删除收货单的请求。
+     */
     protected PurchaseReceiptDeleteForm receiptDeleteForm(Long receiptId) {
         PurchaseReceiptDeleteForm form = new PurchaseReceiptDeleteForm();
         form.setId(receiptId);
@@ -806,7 +858,9 @@ public abstract class ScmW5PgITBase {
             return order.getItems().getFirst().getId();
         }
 
-        /** 收货行（服务端按采购单活动行自动生成，因此只有一行）。 */
+        /**
+         * 收货行（服务端按采购单活动行自动生成，因此只有一行）。
+         */
         public Long receiptItemId() {
             return receipt.getItems().getFirst().getId();
         }

@@ -8,13 +8,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.warehouseCode" placeholder="仓库编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.warehouseCode" placeholder="仓库编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="仓库名称" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
+        <SmartEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -26,7 +26,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -35,20 +37,20 @@
         <a-button type="primary" v-privilege="'scm:warehouse:add'" @click="open()">新建仓库</a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_WAREHOUSE" :refresh="queryData" />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_WAREHOUSE" :refresh="queryData"/>
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_PURCHASE_TABLE_ID.WAREHOUSE"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :scroll="{ x: 1200 }"
+        :id="SCM_PURCHASE_TABLE_ID.WAREHOUSE"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :scroll="{ x: 1200 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -62,19 +64,19 @@
           <div class="smart-table-operate">
             <a-button type="link" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
             <a-button
-              v-if="record.status === 'ENABLED'"
-              danger
-              type="link"
-              v-privilege="'scm:warehouse:disable'"
-              @click="disable(record)"
+                v-if="record.status === 'ENABLED'"
+                danger
+                type="link"
+                v-privilege="'scm:warehouse:disable'"
+                @click="disable(record)"
             >
               停用
             </a-button>
             <a-button
-              v-if="record.status === 'DISABLED'"
-              type="link"
-              v-privilege="'scm:warehouse:enable'"
-              @click="enable(record)"
+                v-if="record.status === 'DISABLED'"
+                type="link"
+                v-privilege="'scm:warehouse:enable'"
+                @click="enable(record)"
             >
               启用
             </a-button>
@@ -85,48 +87,50 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <a-modal
-    :open="visible"
-    :title="form.id ? '编辑仓库' : '新建仓库'"
-    :confirm-loading="saving"
-    @ok="save"
-    @cancel="visible = false"
+      :open="visible"
+      :title="form.id ? '编辑仓库' : '新建仓库'"
+      :confirm-loading="saving"
+      @ok="save"
+      @cancel="visible = false"
   >
-    <a-alert v-if="formError" :message="formError" type="error" show-icon />
+    <a-alert v-if="formError" :message="formError" type="error" show-icon/>
     <a-form :model="form" layout="vertical">
       <a-form-item label="仓库编码" name="warehouseCode" required>
-        <a-input v-model:value="form.warehouseCode" maxlength="64" :disabled="!!form.id" />
+        <a-input v-model:value="form.warehouseCode" maxlength="64" :disabled="!!form.id"/>
       </a-form-item>
       <a-form-item label="仓库名称" name="name" required>
-        <a-input v-model:value="form.name" maxlength="150" />
+        <a-input v-model:value="form.name" maxlength="150"/>
       </a-form-item>
       <a-form-item label="所在地区">
         <AreaCascader
-          type="province_city_district"
-          v-model:value="area"
-          style="width: 100%"
-          placeholder="省 / 市 / 区"
-          @change="onAreaChange"
+            type="province_city_district"
+            v-model:value="area"
+            style="width: 100%"
+            placeholder="省 / 市 / 区"
+            @change="onAreaChange"
         />
         <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
       </a-form-item>
       <a-form-item label="地址" name="address">
-        <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())" />
+        <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())"/>
       </a-form-item>
-      <a-form-item label="地图定位"><ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" /></a-form-item>
+      <a-form-item label="地图定位">
+        <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
+      </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-input v-model:value="form.remark" maxlength="500" />
+        <a-input v-model:value="form.remark" maxlength="500"/>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -134,23 +138,23 @@
 
 <script setup lang="ts">
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
-import { emptyLocation, locationError } from '/@/components/business/scm/map/types';
-import { nextTick, onMounted, reactive, ref } from 'vue';
-import { message, Modal } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {emptyLocation, locationError} from '/@/components/business/scm/map/types';
+import {nextTick, onMounted, reactive, ref} from 'vue';
+import {message, Modal} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
-import type { AreaNode } from '/@/types/business/scm/area';
+import type {AreaNode} from '/@/types/business/scm/area';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-import { SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM } from '/@/constants/business/scm/purchase-const';
-import type { Warehouse, WarehousePayload, WarehouseQuery } from './purchase-types';
-import { purchaseError } from './purchase-errors';
-import { areaColumnsOf, areaNodesOf } from '../common/scm-area';
-import { datetime } from '../common/scm-display';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
+import type {Warehouse, WarehousePayload, WarehouseQuery} from './purchase-types';
+import {purchaseError} from './purchase-errors';
+import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
+import {datetime} from '../common/scm-display';
 
-const queryForm = reactive<WarehouseQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<WarehouseQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<Warehouse[]>([]);
 const total = ref(0);
 const loading = ref(false);
@@ -158,7 +162,7 @@ const error = ref('');
 const visible = ref(false);
 const saving = ref(false);
 const formError = ref('');
-const form = ref<WarehousePayload>({ warehouseCode: '', name: '' });
+const form = ref<WarehousePayload>({warehouseCode: '', name: ''});
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);
 
@@ -169,13 +173,13 @@ function onAreaChange(_value: unknown, nodes: AreaNode[]) {
 let requestId = 0;
 
 const columns = ref<TableColumnsType<Warehouse>>([
-  { title: '仓库编码', dataIndex: 'warehouseCode', width: 160 },
-  { title: '仓库名称', dataIndex: 'name', width: 200 },
-  { title: '状态', dataIndex: 'status', align: 'center', width: 110 },
-  { title: '地址', dataIndex: 'address', width: 260 },
-  { title: '备注', dataIndex: 'remark', width: 200 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({ text }) => datetime(text) },
-  { title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 100 },
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 160},
+  {title: '仓库名称', dataIndex: 'name', width: 200},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '地址', dataIndex: 'address', width: 260},
+  {title: '备注', dataIndex: 'remark', width: 200},
+  {title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({text}) => datetime(text)},
+  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 100},
 ]);
 
 async function queryData() {
@@ -214,7 +218,7 @@ function resetQuery() {
 async function open(row?: Warehouse) {
   formError.value = '';
   form.value = row
-    ? {
+      ? {
         id: row.id,
         version: row.version,
         warehouseCode: row.warehouseCode ?? '',
@@ -231,7 +235,7 @@ async function open(row?: Warehouse) {
         districtCode: row.districtCode ?? null,
         districtName: row.districtName ?? null,
       }
-    : { warehouseCode: '', name: '' };
+      : {warehouseCode: '', name: ''};
   area.value = [];
   visible.value = true;
   // 弹窗内容首次打开才挂载，而 AreaCascader 只用**非 immediate** 的 watch 同步 value，
@@ -271,7 +275,7 @@ async function save() {
 
 async function enable(row: Warehouse) {
   try {
-    await warehouseApi.enable({ id: row.id, version: row.version! });
+    await warehouseApi.enable({id: row.id, version: row.version!});
     message.success('仓库已启用');
     await queryData();
   } catch (e) {
@@ -287,7 +291,7 @@ function disable(row: Warehouse) {
     okType: 'danger',
     onOk: async () => {
       try {
-        await warehouseApi.disable({ id: row.id, version: row.version! });
+        await warehouseApi.disable({id: row.id, version: row.version!});
         message.success('仓库已停用');
         await queryData();
       } catch (e) {

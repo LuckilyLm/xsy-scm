@@ -3,7 +3,7 @@
  *
  */
 
-import { SmartEnum } from '/@/types/smart-enum';
+import {SmartEnum} from '/@/types/smart-enum';
 // 文件上传类型
 export const FILE_FOLDER_TYPE_ENUM: SmartEnum<number> = {
   COMMON: {
@@ -28,5 +28,5 @@ export const FILE_FOLDER_TYPE_ENUM: SmartEnum<number> = {
   },
 };
 export default {
-  FILE_FOLDER_TYPE_ENUM,
+    FILE_FOLDER_TYPE_ENUM,
 };

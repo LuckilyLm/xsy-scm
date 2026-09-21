@@ -24,7 +24,9 @@ import java.util.Map;
 @Data
 public class InventoryWarningVO {
 
-    /** 阈值配置 id（跳转到配置页用）。 */
+    /**
+     * 阈值配置 id（跳转到配置页用）。
+     */
     private Long thresholdId;
 
     private Long warehouseId;
@@ -43,18 +45,26 @@ public class InventoryWarningVO {
 
     private Map<String, String> specValues;
 
-    /** Q13 记账单位；没有余额行时为空。 */
+    /**
+     * Q13 记账单位；没有余额行时为空。
+     */
     private String unit;
 
-    /** 现有量；没有余额行时为 0。 */
+    /**
+     * 现有量；没有余额行时为 0。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;
 
-    /** 已预留量；没有余额行时为 0。 */
+    /**
+     * 已预留量；没有余额行时为 0。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal reservedQuantity;
 
-    /** 可用量 = 现有量 − 预留量。**判定基准**。 */
+    /**
+     * 可用量 = 现有量 − 预留量。**判定基准**。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal availableQuantity;
 
@@ -64,9 +74,13 @@ public class InventoryWarningVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal warnMax;
 
-    /** {@code NORMAL} / {@code LOW} / {@code HIGH}（服务层按可用量算出）。 */
+    /**
+     * {@code NORMAL} / {@code LOW} / {@code HIGH}（服务层按可用量算出）。
+     */
     private String status;
 
-    /** 状态中文描述（服务层按枚举填充，前端不硬编码字典）。 */
+    /**
+     * 状态中文描述（服务层按枚举填充，前端不硬编码字典）。
+     */
     private String statusDesc;
 }

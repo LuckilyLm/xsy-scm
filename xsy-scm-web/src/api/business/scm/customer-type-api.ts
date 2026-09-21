@@ -6,23 +6,23 @@
  * 形状对齐 V2 W1 `api/business/scm/product-category-api.ts`（同为简单字典表 CRUD）。
  */
 
-import { postRequest } from '/@/lib/axios';
+import {postRequest} from '/@/lib/axios';
 import type {
-  CustomerType,
-  CustomerTypeForm,
-  CustomerTypeQuery,
-  ScmId,
-  ScmPage,
-  ScmResponse,
+    CustomerType,
+    CustomerTypeForm,
+    CustomerTypeQuery,
+    ScmId,
+    ScmPage,
+    ScmResponse,
 } from '/@/types/business/scm/customer';
 
 export const customerTypeApi = {
-  query: (form: CustomerTypeQuery) =>
-    postRequest('/scm/customer/type/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerType>>>,
-  optionList: () =>
-    postRequest('/scm/customer/type/option/list', {}) as unknown as Promise<ScmResponse<CustomerType[]>>,
-  add: (form: CustomerTypeForm) =>
-    postRequest('/scm/customer/type/add', form) as unknown as Promise<ScmResponse<ScmId>>,
-  update: (form: CustomerTypeForm) => postRequest('/scm/customer/type/update', form),
-  delete: (typeId: ScmId, version: number) => postRequest('/scm/customer/type/delete', { typeId, version }),
+    query: (form: CustomerTypeQuery) =>
+        postRequest('/scm/customer/type/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerType>>>,
+    optionList: () =>
+        postRequest('/scm/customer/type/option/list', {}) as unknown as Promise<ScmResponse<CustomerType[]>>,
+    add: (form: CustomerTypeForm) =>
+        postRequest('/scm/customer/type/add', form) as unknown as Promise<ScmResponse<ScmId>>,
+    update: (form: CustomerTypeForm) => postRequest('/scm/customer/type/update', form),
+    delete: (typeId: ScmId, version: number) => postRequest('/scm/customer/type/delete', {typeId, version}),
 };

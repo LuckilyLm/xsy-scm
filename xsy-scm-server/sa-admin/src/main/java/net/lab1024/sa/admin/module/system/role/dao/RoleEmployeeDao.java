@@ -59,12 +59,12 @@ public interface RoleEmployeeDao extends BaseMapper<RoleEmployeeEntity> {
     /**
      * 删除某个角色的所有关系
      */
-    void deleteByRoleId(@Param("roleId")Long roleId);
+    void deleteByRoleId(@Param("roleId") Long roleId);
 
     /**
      * 根据员工和 角色删除关系
      */
-    void deleteByEmployeeIdRoleId(@Param("employeeId") Long employeeId,@Param("roleId")Long roleId);
+    void deleteByEmployeeIdRoleId(@Param("employeeId") Long employeeId, @Param("roleId") Long roleId);
 
     /**
      * 批量删除某个角色下的某批用户的关联关系

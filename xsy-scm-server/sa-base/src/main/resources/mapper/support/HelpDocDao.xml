@@ -92,8 +92,9 @@
           and user_id = #{userId}
     </select>
     <insert id="insertViewRecord">
-        insert into t_help_doc_view_record (help_doc_id, user_id,user_name, first_ip, first_user_agent, page_view_count)
-        values (#{helpDocId}, #{userId},#{userName}, #{ip}, #{userAgent}, #{pageViewCount})
+        insert into t_help_doc_view_record (help_doc_id, user_id, user_name, first_ip, first_user_agent,
+                                            page_view_count)
+        values (#{helpDocId}, #{userId}, #{userName}, #{ip}, #{userAgent}, #{pageViewCount})
     </insert>
     <update id="updateViewRecord">
         update t_help_doc_view_record

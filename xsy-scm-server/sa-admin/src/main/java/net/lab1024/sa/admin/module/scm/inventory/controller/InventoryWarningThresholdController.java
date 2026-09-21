@@ -53,7 +53,9 @@ public class InventoryWarningThresholdController {
         return ResponseDTO.ok(queryService.detail(id));
     }
 
-    /** 新建阈值配置；同一 (仓库, SKU) 只允许一条。 */
+    /**
+     * 新建阈值配置；同一 (仓库, SKU) 只允许一条。
+     */
     @PostMapping("/create")
     @SaCheckPermission("scm:inventory:threshold:add")
     @OperateLog
@@ -61,7 +63,9 @@ public class InventoryWarningThresholdController {
         return ResponseDTO.ok(service.create(form));
     }
 
-    /** 编辑阈值配置（可把某个边界清空 —— 传 null 即清空）。 */
+    /**
+     * 编辑阈值配置（可把某个边界清空 —— 传 null 即清空）。
+     */
     @PostMapping("/update/{id}")
     @SaCheckPermission("scm:inventory:threshold:update")
     @OperateLog
@@ -71,7 +75,9 @@ public class InventoryWarningThresholdController {
         return ResponseDTO.ok();
     }
 
-    /** 删除阈值配置（逻辑删）。删除后该 (仓库, SKU) 不再产生预警。 */
+    /**
+     * 删除阈值配置（逻辑删）。删除后该 (仓库, SKU) 不再产生预警。
+     */
     @PostMapping("/delete/{id}")
     @SaCheckPermission("scm:inventory:threshold:delete")
     @OperateLog

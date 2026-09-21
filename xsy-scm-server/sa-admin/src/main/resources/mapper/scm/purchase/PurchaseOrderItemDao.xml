@@ -10,7 +10,8 @@
     </resultMap>
 
     <select id="listByOrderId" resultMap="itemRowMap">
-        SELECT * FROM purchase_order_item
+        SELECT *
+        FROM purchase_order_item
         WHERE deleted = FALSE
           AND purchase_order_id = #{purchaseOrderId}
         ORDER BY sort_order ASC, id ASC
@@ -19,22 +20,26 @@
     <select id="listByOrderIds" resultMap="itemRowMap">
         SELECT * FROM purchase_order_item
         WHERE deleted = FALSE
-          AND purchase_order_id IN
+        AND purchase_order_id IN
         <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
         ORDER BY purchase_order_id ASC, sort_order ASC, id ASC
     </select>
 
     <!-- 锁序 P12：purchase_order_item 内部必须按 id ASC 取锁 -->
     <select id="lockByOrderId" resultMap="itemRowMap">
-        SELECT * FROM purchase_order_item
+        SELECT *
+        FROM purchase_order_item
         WHERE deleted = FALSE
           AND purchase_order_id = #{purchaseOrderId}
         ORDER BY id ASC
-        FOR UPDATE
+            FOR UPDATE
     </select>
 
     <select id="lock" resultMap="itemRowMap">
-        SELECT * FROM purchase_order_item WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM purchase_order_item
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <!-- received_quantity 只增不减；**不做上限判定**（上限是运行时 t_config 容差，静态表达不了） -->
@@ -70,8 +75,10 @@
     </update>
 
     <select id="countActiveByOrderId" resultType="int">
-        SELECT count(*) FROM purchase_order_item
-        WHERE deleted = FALSE AND purchase_order_id = #{purchaseOrderId}
+        SELECT count(*)
+        FROM purchase_order_item
+        WHERE deleted = FALSE
+          AND purchase_order_id = #{purchaseOrderId}
     </select>
 
 </mapper>

@@ -37,31 +37,45 @@ public class InventoryReservationEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;
 
-    /** {@code ScmInventorySourceDocumentTypeEnum}；本波次为 {@code SALES_ORDER_ITEM}。 */
+    /**
+     * {@code ScmInventorySourceDocumentTypeEnum}；本波次为 {@code SALES_ORDER_ITEM}。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String sourceDocumentType;
 
-    /** 来源单据 id（头级溯源，不参与防重）。 */
+    /**
+     * 来源单据 id（头级溯源，不参与防重）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long sourceDocumentId;
 
-    /** 来源单据行 id（防重锚点，唯一索引列）。 */
+    /**
+     * 来源单据行 id（防重锚点，唯一索引列）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long sourceDocumentItemId;
 
-    /** 恒为正（DB CHECK）；释放/消耗通过改 status 表达，不改数量。 */
+    /**
+     * 恒为正（DB CHECK）；释放/消耗通过改 status 表达，不改数量。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 
-    /** 预留时的记账单位快照（= 该 (仓库, SKU) 的余额单位）。 */
+    /**
+     * 预留时的记账单位快照（= 该 (仓库, SKU) 的余额单位）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;
 
-    /** {@code ACTIVE / RELEASED / CONSUMED}。 */
+    /**
+     * {@code ACTIVE / RELEASED / CONSUMED}。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;
 
-    /** 预留发生时刻（取来源单据的确认时刻，不是写入时刻）。 */
+    /**
+     * 预留发生时刻（取来源单据的确认时刻，不是写入时刻）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime occurredAt;
 

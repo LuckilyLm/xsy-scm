@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.purchase.domain.vo;
 
 import lombok.Data;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 

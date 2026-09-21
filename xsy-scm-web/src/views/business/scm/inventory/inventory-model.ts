@@ -19,11 +19,11 @@
  * 两个约束的交集就是：**node 可加载的模块只能有 type-only 的相对导入**（会被类型擦除）。
  * 因此枚举文案由调用方传入（见 {@link movementTypeText}），而不是在这里 import 常量。
  */
-import type { Id } from './inventory-types.ts';
+import type {Id} from './inventory-types.ts';
 
 /** 仓库的最小形状（只用到 id，避免把整个 `Warehouse` 类型拖进来）。 */
 export interface WarehouseLike {
-  id: Id;
+    id: Id;
 }
 
 /**
@@ -36,12 +36,12 @@ export interface WarehouseLike {
  * @param warehouses `GET /scm/warehouse/list` 的返回（只含启用仓库）
  */
 export function singleWarehouseDefault(
-  warehouses: WarehouseLike[] | null | undefined
+    warehouses: WarehouseLike[] | null | undefined
 ): Id | undefined {
-  if (!warehouses || warehouses.length !== 1) {
-    return undefined;
-  }
-  return warehouses[0].id;
+    if (!warehouses || warehouses.length !== 1) {
+        return undefined;
+    }
+    return warehouses[0].id;
 }
 
 /**
@@ -51,10 +51,10 @@ export function singleWarehouseDefault(
  * 前端不做二次格式化，否则会与后端口径分叉）。
  */
 export function quantityText(value: string | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-  return value;
+    if (value === null || value === undefined || value === '') {
+        return '—';
+    }
+    return value;
 }
 
 /**
@@ -68,10 +68,10 @@ export function quantityText(value: string | null | undefined): string {
  * 唯一的例外是 `null` → `—`：它表示「没有这个事实」，与 `"0.00"`（真的是零）必须区分。
  */
 export function moneyText(value: string | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-  return value;
+    if (value === null || value === undefined || value === '') {
+        return '—';
+    }
+    return value;
 }
 
 /**
@@ -80,11 +80,11 @@ export function moneyText(value: string | null | undefined): string {
  * 无值或空对象 → `—`。刻意不抛错：规格是展示字段，坏形状不该让整页崩掉。
  */
 export function specText(specValues: Record<string, unknown> | null | undefined): string {
-  if (!specValues) {
-    return '—';
-  }
-  const pairs = Object.entries(specValues).map(([key, value]) => `${key}：${String(value)}`);
-  return pairs.length ? pairs.join('，') : '—';
+    if (!specValues) {
+        return '—';
+    }
+    const pairs = Object.entries(specValues).map(([key, value]) => `${key}：${String(value)}`);
+    return pairs.length ? pairs.join('，') : '—';
 }
 
 /** 枚举文案表的最小结构（`SmartEnum` 的每一项都满足它；刻意不 import 常量，见文件头注释）。 */
@@ -99,11 +99,11 @@ export type EnumLabels = Record<string, { desc?: string } | undefined>;
  * @param labels 枚举文案表（调用方传 `SCM_INVENTORY_MOVEMENT_TYPE_ENUM`）
  */
 export function movementTypeText(
-  value: string | null | undefined,
-  labels: EnumLabels
+    value: string | null | undefined,
+    labels: EnumLabels
 ): string {
-  if (!value) {
-    return '—';
-  }
-  return labels[value]?.desc || value;
+    if (!value) {
+        return '—';
+    }
+    return labels[value]?.desc || value;
 }

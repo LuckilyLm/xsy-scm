@@ -18,18 +18,26 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class InventoryConversionQueryForm extends PageParam {
 
-    /** 转换单号（模糊）。 */
+    /**
+     * 转换单号（模糊）。
+     */
     @Size(max = 64)
     private String conversionNo;
 
-    /** 仓库（精确）。 */
+    /**
+     * 仓库（精确）。
+     */
     private Long warehouseId;
 
-    /** 转换类型：{@code SPLIT} / {@code COMBINE}（精确）。 */
+    /**
+     * 转换类型：{@code SPLIT} / {@code COMBINE}（精确）。
+     */
     @Size(max = 20)
     private String convertType;
 
-    /** 状态：{@code PENDING} / {@code COMPLETED} / {@code REJECTED}（精确）。 */
+    /**
+     * 状态：{@code PENDING} / {@code COMPLETED} / {@code REJECTED}（精确）。
+     */
     @Size(max = 20)
     private String status;
 

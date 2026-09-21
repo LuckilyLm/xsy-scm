@@ -7,56 +7,56 @@
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-drawer
-    :title="form.id ? '编辑采购单' : '新建采购单'"
-    :open="visible"
-    width="min(1280px, 96vw)"
-    @close="visible = false"
+      :title="form.id ? '编辑采购单' : '新建采购单'"
+      :open="visible"
+      width="min(1280px, 96vw)"
+      @close="visible = false"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <a-form :model="form" layout="vertical">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="供应商" name="supplierId" required>
-              <SupplierSelect v-if="!form.id" v-model:value="form.supplierId" />
-              <a-input v-else :value="form.supplierName" disabled />
+              <SupplierSelect v-if="!form.id" v-model:value="form.supplierId"/>
+              <a-input v-else :value="form.supplierName" disabled/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="收货仓库" name="warehouseId" required>
               <a-select
-                v-model:value="form.warehouseId"
-                :options="warehouseOptions"
-                :loading="warehouseLoading"
-                show-search
-                option-filter-prop="label"
-                placeholder="请选择收货仓库"
+                  v-model:value="form.warehouseId"
+                  :options="warehouseOptions"
+                  :loading="warehouseLoading"
+                  show-search
+                  option-filter-prop="label"
+                  placeholder="请选择收货仓库"
               />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="采购员" name="purchaserId">
-              <EmployeeSelect v-model:value="purchaserValue" />
+              <EmployeeSelect v-model:value="purchaserValue"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="计划到货日期" name="plannedArrivalDate">
               <a-date-picker
-                v-model:value="form.plannedArrivalDate"
-                value-format="YYYY-MM-DD"
-                style="width: 100%"
+                  v-model:value="form.plannedArrivalDate"
+                  value-format="YYYY-MM-DD"
+                  style="width: 100%"
               />
             </a-form-item>
           </a-col>
           <a-col :span="24">
             <a-form-item label="备注" name="remark">
-              <a-input v-model:value="form.remark" maxlength="500" />
+              <a-input v-model:value="form.remark" maxlength="500"/>
             </a-form-item>
           </a-col>
         </a-row>
 
         <a-divider orientation="left">采购明细与需求分配</a-divider>
-        <ItemTable :items="form.items ?? []" />
+        <ItemTable :items="form.items ?? []"/>
       </a-form>
     </a-spin>
 
@@ -70,15 +70,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { message } from 'ant-design-vue';
+import {computed, ref} from 'vue';
+import {message} from 'ant-design-vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
-import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import type { Id, Order } from '../purchase-types';
-import { newOrder, payload, validateOrder } from '../purchase-form-model';
-import { purchaseError } from '../purchase-errors';
+import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import type {Id, Order} from '../purchase-types';
+import {newOrder, payload, validateOrder} from '../purchase-form-model';
+import {purchaseError} from '../purchase-errors';
 import ItemTable from './purchase-order-item-editable-table.vue';
 
 const emit = defineEmits<{ saved: [] }>();
@@ -94,10 +94,10 @@ const warehouses = ref<{ id: Id; warehouseCode?: string; name?: string }[]>([]);
 let requestId = 0;
 
 const warehouseOptions = computed(() =>
-  warehouses.value.map((w) => ({
-    value: w.id,
-    label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`,
-  }))
+    warehouses.value.map((w) => ({
+      value: w.id,
+      label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`,
+    }))
 );
 
 /**
@@ -194,5 +194,5 @@ async function save() {
   }
 }
 
-defineExpose({ open });
+defineExpose({open});
 </script>

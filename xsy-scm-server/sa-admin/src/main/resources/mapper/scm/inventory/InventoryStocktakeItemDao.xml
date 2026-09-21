@@ -22,13 +22,14 @@
                i.unit_snapshot,
                i.remark,
                k.sku_code,
-               k.spec_name  AS sku_name,
+               k.spec_name                           AS sku_name,
                k.spec_values,
-               p.name       AS product_name
+               p.name                                AS product_name
         FROM inventory_stocktake_item i
-        LEFT JOIN product_sku k ON k.id = i.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
-        WHERE i.deleted = FALSE AND i.stocktake_id = #{stocktakeId}
+                 LEFT JOIN product_sku k ON k.id = i.sku_id
+                 LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE i.deleted = FALSE
+          AND i.stocktake_id = #{stocktakeId}
         ORDER BY i.id ASC
     </select>
 
@@ -39,7 +40,8 @@
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{operator}
-        WHERE stocktake_id = #{stocktakeId} AND deleted = FALSE
+        WHERE stocktake_id = #{stocktakeId}
+          AND deleted = FALSE
     </update>
 
     <update id="updateUnitSnapshot">
@@ -48,7 +50,8 @@
             version       = version + 1,
             updated_at    = CURRENT_TIMESTAMP,
             updated_by    = #{operator}
-        WHERE id = #{id} AND deleted = FALSE
+        WHERE id = #{id}
+          AND deleted = FALSE
     </update>
 
 </mapper>

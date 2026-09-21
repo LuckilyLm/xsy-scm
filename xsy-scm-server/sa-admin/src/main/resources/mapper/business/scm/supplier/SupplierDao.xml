@@ -4,15 +4,15 @@
 
     <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity">
         SELECT s.id, s.version, s.supplier_code, s.name, s.status,
-               s.contact_name, s.contact_phone, s.address, s.remark,
-               s.created_at, s.updated_at, s.created_by, s.updated_by
+        s.contact_name, s.contact_phone, s.address, s.remark,
+        s.created_at, s.updated_at, s.created_by, s.updated_by
         FROM supplier s
         WHERE s.deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
             AND (s.supplier_code ILIKE CONCAT('%', #{query.keyword}, '%')
-              OR s.name ILIKE CONCAT('%', #{query.keyword}, '%')
-              OR s.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')
-              OR s.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
+            OR s.name ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR s.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR s.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         <if test="query.status != null and query.status != ''">
             AND s.status = #{query.status}
@@ -20,20 +20,31 @@
     </select>
 
     <!-- 写入路径的第一把锁：先锁 supplier，再锁 supplier_sku（锁序固定） -->
-    <select id="selectActiveByIdForUpdate" resultType="net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity">
-        SELECT s.id, s.version, s.supplier_code, s.name, s.status,
-               s.contact_name, s.contact_phone, s.address, s.remark,
-               s.created_at, s.updated_at, s.created_by, s.updated_by
+    <select id="selectActiveByIdForUpdate"
+            resultType="net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity">
+        SELECT s.id,
+               s.version,
+               s.supplier_code,
+               s.name,
+               s.status,
+               s.contact_name,
+               s.contact_phone,
+               s.address,
+               s.remark,
+               s.created_at,
+               s.updated_at,
+               s.created_by,
+               s.updated_by
         FROM supplier s
         WHERE s.id = #{supplierId}
           AND s.deleted = FALSE
-        FOR UPDATE
+            FOR UPDATE
     </select>
 
     <update id="softDelete">
         UPDATE supplier
-        SET deleted = TRUE,
-            version = version + 1,
+        SET deleted    = TRUE,
+            version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{operator}
         WHERE id = #{supplierId}

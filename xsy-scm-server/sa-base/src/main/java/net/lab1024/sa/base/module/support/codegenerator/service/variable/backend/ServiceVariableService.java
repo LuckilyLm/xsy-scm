@@ -23,7 +23,7 @@ public class ServiceVariableService extends CodeGenerateBaseVariableService {
         List<CodeInsertAndUpdateField> updateFieldList = form.getInsertAndUpdate().getFieldList().stream().filter(e -> Boolean.TRUE.equals(e.getInsertFlag())).collect(Collectors.toList());
         List<String> packageList = getPackageList(updateFieldList, form);
 
-        variablesMap.put("packageName", form.getBasic().getJavaPackageName() + ".service" );
+        variablesMap.put("packageName", form.getBasic().getJavaPackageName() + ".service");
         variablesMap.put("importPackageList", packageList);
 
         return variablesMap;
@@ -41,7 +41,7 @@ public class ServiceVariableService extends CodeGenerateBaseVariableService {
         packageSet.addAll(getJavaBeanImportClass(form));
 
         //2、dao
-        packageSet.add("import " + form.getBasic().getJavaPackageName() + ".dao."+ form.getBasic().getModuleName() + "Dao;" );
+        packageSet.add("import " + form.getBasic().getJavaPackageName() + ".dao." + form.getBasic().getModuleName() + "Dao;");
 
         //3、util list
         packageSet.add("import java.util.List;");

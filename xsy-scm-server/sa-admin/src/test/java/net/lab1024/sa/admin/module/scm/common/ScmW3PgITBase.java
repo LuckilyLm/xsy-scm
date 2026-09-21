@@ -59,7 +59,9 @@ public abstract class ScmW3PgITBase {
     @Autowired
     protected ProductSpuService productSpuService;
 
-    /** 每个用例独立的编码前缀，避免与其它用例或既有数据撞 partial unique index。 */
+    /**
+     * 每个用例独立的编码前缀，避免与其它用例或既有数据撞 partial unique index。
+     */
     protected String prefix;
 
     @BeforeEach
@@ -81,7 +83,9 @@ public abstract class ScmW3PgITBase {
     // 断言辅助
     // ------------------------------------------------------------------
 
-    /** 断言动作抛出带指定业务码的 {@link ScmBusinessException}。 */
+    /**
+     * 断言动作抛出带指定业务码的 {@link ScmBusinessException}。
+     */
     protected static void expectCode(Runnable action, int code) {
         assertThatThrownBy(action::run)
                 .isInstanceOfSatisfying(ScmBusinessException.class,
@@ -97,7 +101,9 @@ public abstract class ScmW3PgITBase {
                 "SELECT id FROM customer_type WHERE type_code = ? AND deleted = FALSE", Long.class, typeCode);
     }
 
-    /** 任一可用员工 id，用于业务员 / 默认采购员引用。 */
+    /**
+     * 任一可用员工 id，用于业务员 / 默认采购员引用。
+     */
     protected Long anyEmployeeId() {
         return jdbc.queryForObject(
                 "SELECT employee_id FROM t_employee WHERE deleted_flag = FALSE ORDER BY employee_id LIMIT 1",

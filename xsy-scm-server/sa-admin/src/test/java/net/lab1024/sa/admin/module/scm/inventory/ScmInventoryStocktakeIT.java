@@ -44,7 +44,9 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     @Autowired
     private InventoryReservationService reservations;
 
-    /** 造一个已入库指定数量的 SKU，返回 {@code (warehouseId, skuId)}。 */
+    /**
+     * 造一个已入库指定数量的 SKU，返回 {@code (warehouseId, skuId)}。
+     */
     private Object[] stocked(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture(suffix, skuId, quantity);
@@ -67,7 +69,9 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
                 OffsetDateTime.now(), "test:1");
     }
 
-    /** 某个 (仓库, SKU) 的盘点流水（盘盈 + 盘亏），按业务时刻升序。 */
+    /**
+     * 某个 (仓库, SKU) 的盘点流水（盘盈 + 盘亏），按业务时刻升序。
+     */
     private List<Map<String, Object>> stocktakeMovements(Long wh, Long sku) {
         return movementsOf(wh, sku).stream()
                 .filter(m -> String.valueOf(m.get("movement_type")).startsWith("STOCKTAKE_"))

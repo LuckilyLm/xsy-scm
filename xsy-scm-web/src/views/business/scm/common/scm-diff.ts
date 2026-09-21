@@ -31,72 +31,72 @@
 
 /** 差异表的一行：一个标量字段，或一个数组字段。 */
 export interface DiffField {
-  /** 快照里的原始键名（不翻译，保留可追溯性）。 */
-  key: string;
-  /** 变更前的展示值。 */
-  before: string;
-  /** 变更后的展示值。 */
-  after: string;
-  /** 是否发生变化（数组字段只要内容不同即为 `true`）。 */
-  changed: boolean;
+    /** 快照里的原始键名（不翻译，保留可追溯性）。 */
+    key: string;
+    /** 变更前的展示值。 */
+    before: string;
+    /** 变更后的展示值。 */
+    after: string;
+    /** 是否发生变化（数组字段只要内容不同即为 `true`）。 */
+    changed: boolean;
 }
 
 /** 数组字段展开后的一行。 */
 export interface DiffChild {
-  /** 行标识：优先取业务键（`skuId` / `allocationId` …），取不到则退回下标。 */
-  identity: string;
-  /** 该行在变更前是否存在。 */
-  beforeExists: boolean;
-  /** 该行在变更后是否存在。 */
-  afterExists: boolean;
-  /** 该行内的字段变化。 */
-  fields: DiffField[];
+    /** 行标识：优先取业务键（`skuId` / `allocationId` …），取不到则退回下标。 */
+    identity: string;
+    /** 该行在变更前是否存在。 */
+    beforeExists: boolean;
+    /** 该行在变更后是否存在。 */
+    afterExists: boolean;
+    /** 该行内的字段变化。 */
+    fields: DiffField[];
 }
 
 /** 数组字段的展开结果。 */
 export interface DiffArray {
-  key: string;
-  /** 行集合。新增行 `beforeExists=false`，移除行 `afterExists=false`。 */
-  rows: DiffChild[];
+    key: string;
+    /** 行集合。新增行 `beforeExists=false`，移除行 `afterExists=false`。 */
+    rows: DiffChild[];
 }
 
 /** 一次快照比较的完整结果。 */
 export interface DiffResult {
-  /** 标量字段（含对象字段，拍平成 JSON 串比较）。 */
-  fields: DiffField[];
-  /** 数组字段的逐行展开。 */
-  arrays: DiffArray[];
-  /** 发生变化的标量字段数（不含数组内部行数变化）。 */
-  changedCount: number;
+    /** 标量字段（含对象字段，拍平成 JSON 串比较）。 */
+    fields: DiffField[];
+    /** 数组字段的逐行展开。 */
+    arrays: DiffArray[];
+    /** 发生变化的标量字段数（不含数组内部行数变化）。 */
+    changedCount: number;
 }
 
 /** 值的展示形式：`null` / `undefined` / 空串 → `—`。 */
 function show(value: unknown): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-  if (typeof value === 'object') {
-    // 对象/嵌套数组落到这里说明它没被上层按数组处理（如 `Map` 里塞了个对象）。
-    // 不递归展开，直接给紧凑 JSON，避免展示层出现 `[object Object]`。
-    return JSON.stringify(value);
-  }
-  return String(value);
+    if (value === null || value === undefined || value === '') {
+        return '—';
+    }
+    if (typeof value === 'object') {
+        // 对象/嵌套数组落到这里说明它没被上层按数组处理（如 `Map` 里塞了个对象）。
+        // 不递归展开，直接给紧凑 JSON，避免展示层出现 `[object Object]`。
+        return JSON.stringify(value);
+    }
+    return String(value);
 }
 
 /** 值是否变化。走 `JSON.stringify` 而非 `!==`，以覆盖对象与数组的内容比较。 */
 function differs(a: unknown, b: unknown): boolean {
-  if (a === b) {
-    return false;
-  }
-  if (a === null || a === undefined || b === null || b === undefined) {
-    // 到这里说明两者不相等，且至少有一个是空值 → 视为变化。
-    // 但 `null` 与 `undefined` 之间不算变化（都是「无值」）。
-    return (a ?? null) !== (b ?? null);
-  }
-  if (typeof a !== typeof b) {
-    return true;
-  }
-  return JSON.stringify(a) !== JSON.stringify(b);
+    if (a === b) {
+        return false;
+    }
+    if (a === null || a === undefined || b === null || b === undefined) {
+        // 到这里说明两者不相等，且至少有一个是空值 → 视为变化。
+        // 但 `null` 与 `undefined` 之间不算变化（都是「无值」）。
+        return (a ?? null) !== (b ?? null);
+    }
+    if (typeof a !== typeof b) {
+        return true;
+    }
+    return JSON.stringify(a) !== JSON.stringify(b);
 }
 
 /** 行标识的候选键，按优先级排列。 */
@@ -104,31 +104,31 @@ const IDENTITY_KEYS = ['skuId', 'allocationId', 'demandId', 'id', 'receiptItemId
 
 /** 给数组元素找一个稳定的行标识，用于跨快照配对。 */
 function identityOf(row: unknown, index: number): string {
-  if (row && typeof row === 'object') {
-    const record = row as Record<string, unknown>;
-    for (const key of IDENTITY_KEYS) {
-      const value = record[key];
-      if (value !== null && value !== undefined && value !== '') {
-        return `${key}=${String(value)}`;
-      }
+    if (row && typeof row === 'object') {
+        const record = row as Record<string, unknown>;
+        for (const key of IDENTITY_KEYS) {
+            const value = record[key];
+            if (value !== null && value !== undefined && value !== '') {
+                return `${key}=${String(value)}`;
+            }
+        }
     }
-  }
-  return `#${index}`;
+    return `#${index}`;
 }
 
 /** 把一行对象拍平成 `DiffField[]`（忽略其中的嵌套数组，嵌套数组不再递归展开）。 */
 function fieldsOf(before: unknown, after: unknown): DiffField[] {
-  const b = (before && typeof before === 'object' ? before : {}) as Record<string, unknown>;
-  const a = (after && typeof after === 'object' ? after : {}) as Record<string, unknown>;
-  const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])];
-  return keys
-    .filter((key) => !Array.isArray(a[key]) && !Array.isArray(b[key]))
-    .map((key) => ({
-      key,
-      before: show(b[key]),
-      after: show(a[key]),
-      changed: differs(b[key], a[key]),
-    }));
+    const b = (before && typeof before === 'object' ? before : {}) as Record<string, unknown>;
+    const a = (after && typeof after === 'object' ? after : {}) as Record<string, unknown>;
+    const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])];
+    return keys
+        .filter((key) => !Array.isArray(a[key]) && !Array.isArray(b[key]))
+        .map((key) => ({
+            key,
+            before: show(b[key]),
+            after: show(a[key]),
+            changed: differs(b[key], a[key]),
+        }));
 }
 
 /**
@@ -138,57 +138,57 @@ function fieldsOf(before: unknown, after: unknown): DiffField[] {
  * 再在明细里重复一行 `id 104 → 104` 只是噪音。
  */
 function rowFields(before: unknown, after: unknown): DiffField[] {
-  const identityKey = identityKeyOf(before) ?? identityKeyOf(after);
-  return fieldsOf(before, after).filter((f) => f.key !== identityKey);
+    const identityKey = identityKeyOf(before) ?? identityKeyOf(after);
+    return fieldsOf(before, after).filter((f) => f.key !== identityKey);
 }
 
 /** 找出这一行会用作标识的键名（与 {@link identityOf} 同一优先级）。 */
 function identityKeyOf(row: unknown): string | undefined {
-  if (!row || typeof row !== 'object') {
-    return undefined;
-  }
-  const record = row as Record<string, unknown>;
-  return IDENTITY_KEYS.find((key) => {
-    const value = record[key];
-    return value !== null && value !== undefined && value !== '';
-  });
+    if (!row || typeof row !== 'object') {
+        return undefined;
+    }
+    const record = row as Record<string, unknown>;
+    return IDENTITY_KEYS.find((key) => {
+        const value = record[key];
+        return value !== null && value !== undefined && value !== '';
+    });
 }
 
 /** 数组的逐行比较：按行标识配对，两侧都出现过的做字段级比较。 */
 function arrayOf(key: string, before: unknown, after: unknown): DiffArray {
-  const b = Array.isArray(before) ? before : [];
-  const a = Array.isArray(after) ? after : [];
-  const bSeen = new Set<number>();
-  const aSeen = new Set<number>();
-  const rows: DiffChild[] = [];
+    const b = Array.isArray(before) ? before : [];
+    const a = Array.isArray(after) ? after : [];
+    const bSeen = new Set<number>();
+    const aSeen = new Set<number>();
+    const rows: DiffChild[] = [];
 
-  // 先在 after 里为每个 before 行找同标识的行；找不到即为「被移除」。
-  b.forEach((row, bi) => {
-    const id = identityOf(row, bi);
-    const ai = a.findIndex((candidate, index) => !aSeen.has(index) && identityOf(candidate, index) === id);
-    if (ai >= 0) {
-      aSeen.add(ai);
-      bSeen.add(bi);
-      rows.push({ identity: id, beforeExists: true, afterExists: true, fields: rowFields(row, a[ai]) });
-      return;
-    }
-    rows.push({ identity: id, beforeExists: true, afterExists: false, fields: rowFields(row, undefined) });
-  });
-
-  // after 里剩下的都是「新增」。
-  a.forEach((row, ai) => {
-    if (aSeen.has(ai)) {
-      return;
-    }
-    rows.push({
-      identity: identityOf(row, ai),
-      beforeExists: false,
-      afterExists: true,
-      fields: rowFields(undefined, row),
+    // 先在 after 里为每个 before 行找同标识的行；找不到即为「被移除」。
+    b.forEach((row, bi) => {
+        const id = identityOf(row, bi);
+        const ai = a.findIndex((candidate, index) => !aSeen.has(index) && identityOf(candidate, index) === id);
+        if (ai >= 0) {
+            aSeen.add(ai);
+            bSeen.add(bi);
+            rows.push({identity: id, beforeExists: true, afterExists: true, fields: rowFields(row, a[ai])});
+            return;
+        }
+        rows.push({identity: id, beforeExists: true, afterExists: false, fields: rowFields(row, undefined)});
     });
-  });
 
-  return { key, rows };
+    // after 里剩下的都是「新增」。
+    a.forEach((row, ai) => {
+        if (aSeen.has(ai)) {
+            return;
+        }
+        rows.push({
+            identity: identityOf(row, ai),
+            beforeExists: false,
+            afterExists: true,
+            fields: rowFields(undefined, row),
+        });
+    });
+
+    return {key, rows};
 }
 
 /**
@@ -204,25 +204,25 @@ function arrayOf(key: string, before: unknown, after: unknown): DiffArray {
  * //   arrays: [], changedCount: 1 }
  */
 export function diffSnapshot(before: unknown, after: unknown): DiffResult {
-  const b = (before && typeof before === 'object' ? before : {}) as Record<string, unknown>;
-  const a = (after && typeof after === 'object' ? after : {}) as Record<string, unknown>;
+    const b = (before && typeof before === 'object' ? before : {}) as Record<string, unknown>;
+    const a = (after && typeof after === 'object' ? after : {}) as Record<string, unknown>;
 
-  const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])];
-  const fields: DiffField[] = [];
-  const arrays: DiffArray[] = [];
+    const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])];
+    const fields: DiffField[] = [];
+    const arrays: DiffArray[] = [];
 
-  for (const key of keys) {
-    const isArray = Array.isArray(a[key]) || Array.isArray(b[key]);
-    if (isArray) {
-      const expanded = arrayOf(key, b[key], a[key]);
-      // 空数组对空数组没有可展示内容，跳过以免出现空白分组。
-      if (expanded.rows.length) {
-        arrays.push(expanded);
-      }
-      continue;
+    for (const key of keys) {
+        const isArray = Array.isArray(a[key]) || Array.isArray(b[key]);
+        if (isArray) {
+            const expanded = arrayOf(key, b[key], a[key]);
+            // 空数组对空数组没有可展示内容，跳过以免出现空白分组。
+            if (expanded.rows.length) {
+                arrays.push(expanded);
+            }
+            continue;
+        }
+        fields.push({key, before: show(b[key]), after: show(a[key]), changed: differs(b[key], a[key])});
     }
-    fields.push({ key, before: show(b[key]), after: show(a[key]), changed: differs(b[key], a[key]) });
-  }
 
-  return { fields, arrays, changedCount: fields.filter((f) => f.changed).length };
+    return {fields, arrays, changedCount: fields.filter((f) => f.changed).length};
 }

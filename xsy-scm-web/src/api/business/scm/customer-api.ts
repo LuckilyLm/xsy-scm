@@ -12,30 +12,30 @@
  * - 编辑 / 状态 / 删除全部携带 `version`。
  */
 
-import { getRequest, postRequest } from '/@/lib/axios';
+import {getRequest, postRequest} from '/@/lib/axios';
 import type {
-  CustomerDeletePayload,
-  CustomerDetail,
-  CustomerForm,
-  CustomerOption,
-  CustomerQuery,
-  CustomerRow,
-  CustomerStatusPayload,
-  ScmId,
-  ScmPage,
-  ScmResponse,
+    CustomerDeletePayload,
+    CustomerDetail,
+    CustomerForm,
+    CustomerOption,
+    CustomerQuery,
+    CustomerRow,
+    CustomerStatusPayload,
+    ScmId,
+    ScmPage,
+    ScmResponse,
 } from '/@/types/business/scm/customer';
 
 // SmartAdmin 拦截器已解包 ResponseDTO，与 Axios 声明的返回类型不符，因此逐个断言。
 export const customerApi = {
-  query: (form: CustomerQuery) =>
-    postRequest('/scm/customer/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerRow>>>,
-  detail: (customerId: ScmId) =>
-    getRequest(`/scm/customer/detail/${customerId}`, {}) as unknown as Promise<ScmResponse<CustomerDetail>>,
-  optionList: () =>
-    postRequest('/scm/customer/option/list', {}) as unknown as Promise<ScmResponse<CustomerOption[]>>,
-  add: (form: CustomerForm) => postRequest('/scm/customer/add', form) as unknown as Promise<ScmResponse<ScmId>>,
-  update: (form: CustomerForm) => postRequest('/scm/customer/update', form) as unknown as Promise<ScmResponse<null>>,
-  updateStatus: (payload: CustomerStatusPayload) => postRequest('/scm/customer/updateStatus', payload),
-  delete: (payload: CustomerDeletePayload) => postRequest('/scm/customer/delete', payload),
+    query: (form: CustomerQuery) =>
+        postRequest('/scm/customer/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerRow>>>,
+    detail: (customerId: ScmId) =>
+        getRequest(`/scm/customer/detail/${customerId}`, {}) as unknown as Promise<ScmResponse<CustomerDetail>>,
+    optionList: () =>
+        postRequest('/scm/customer/option/list', {}) as unknown as Promise<ScmResponse<CustomerOption[]>>,
+    add: (form: CustomerForm) => postRequest('/scm/customer/add', form) as unknown as Promise<ScmResponse<ScmId>>,
+    update: (form: CustomerForm) => postRequest('/scm/customer/update', form) as unknown as Promise<ScmResponse<null>>,
+    updateStatus: (payload: CustomerStatusPayload) => postRequest('/scm/customer/updateStatus', payload),
+    delete: (payload: CustomerDeletePayload) => postRequest('/scm/customer/delete', payload),
 };

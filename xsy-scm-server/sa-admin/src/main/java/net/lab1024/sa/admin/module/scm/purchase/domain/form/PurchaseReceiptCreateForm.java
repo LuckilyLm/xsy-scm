@@ -15,7 +15,11 @@ import jakarta.validation.constraints.*;
  */
 @Data
 public class PurchaseReceiptCreateForm {
-    @NotNull private Long purchaseOrderId;
-    @NotNull @Pattern(regexp = "DIRECT|WAREHOUSE_CONFIRM") private String receiptMode;
-    @Size(max=500) private String remark;
+    @NotNull
+    private Long purchaseOrderId;
+    @NotNull
+    @Pattern(regexp = "DIRECT|WAREHOUSE_CONFIRM")
+    private String receiptMode;
+    @Size(max = 500)
+    private String remark;
 }

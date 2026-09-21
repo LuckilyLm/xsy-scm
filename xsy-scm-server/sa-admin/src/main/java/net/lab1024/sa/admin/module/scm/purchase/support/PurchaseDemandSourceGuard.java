@@ -29,7 +29,9 @@ public final class PurchaseDemandSourceGuard {
     private PurchaseDemandSourceGuard() {
     }
 
-    /** 销售订单的「可采购」状态，与 W4 的 `ScmOrderStatusEnum.CONFIRMED` 对齐。 */
+    /**
+     * 销售订单的「可采购」状态，与 W4 的 `ScmOrderStatusEnum.CONFIRMED` 对齐。
+     */
     public static final String CONFIRMED = "CONFIRMED";
 
     /**
@@ -54,7 +56,9 @@ public final class PurchaseDemandSourceGuard {
         }
     }
 
-    /** 布尔形态，便于 `generate` 在流式过滤中复用（不抛异常）。 */
+    /**
+     * 布尔形态，便于 `generate` 在流式过滤中复用（不抛异常）。
+     */
     public static boolean isConfirmed(SalesOrderEntity order) {
         return order != null
                 && !Boolean.TRUE.equals(order.getDeleted())

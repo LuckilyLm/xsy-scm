@@ -28,7 +28,9 @@ import java.util.List;
 @Data
 public class InventoryLossGainAddForm {
 
-    /** 调整类型：{@code LOSS} 报损 / {@code OVERFLOW} 报溢。 */
+    /**
+     * 调整类型：{@code LOSS} 报损 / {@code OVERFLOW} 报溢。
+     */
     @NotBlank
     @Pattern(regexp = "LOSS|OVERFLOW")
     private String adjustType;
@@ -47,7 +49,9 @@ public class InventoryLossGainAddForm {
     @Valid
     private List<Item> items;
 
-    /** 明细行。数量恒为正 —— 方向由单据的 {@code adjustType} 决定。 */
+    /**
+     * 明细行。数量恒为正 —— 方向由单据的 {@code adjustType} 决定。
+     */
     @Data
     public static class Item {
 

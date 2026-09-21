@@ -4,7 +4,8 @@
 
     <!-- 查询reload列表 -->
     <select id="query" resultType="net.lab1024.sa.base.module.support.reload.domain.ReloadItemVO">
-        SELECT tag,args,identification,update_time,create_time FROM t_reload_item
+        SELECT tag, args, identification, update_time, create_time
+        FROM t_reload_item
     </select>
 
 </mapper>

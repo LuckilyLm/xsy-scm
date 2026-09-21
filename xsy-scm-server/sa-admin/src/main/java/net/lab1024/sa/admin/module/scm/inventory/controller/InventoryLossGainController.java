@@ -56,7 +56,9 @@ public class InventoryLossGainController {
         return ResponseDTO.ok(queryService.detail(id));
     }
 
-    /** 新建报损报溢单（创建即待审核），返回新单 id。 */
+    /**
+     * 新建报损报溢单（创建即待审核），返回新单 id。
+     */
     @PostMapping("/create")
     @SaCheckPermission("scm:inventory:loss-gain:add")
     @OperateLog
@@ -64,7 +66,9 @@ public class InventoryLossGainController {
         return ResponseDTO.ok(service.create(form));
     }
 
-    /** 改待审核单据（仅 PENDING）。 */
+    /**
+     * 改待审核单据（仅 PENDING）。
+     */
     @PostMapping("/update/{id}")
     @SaCheckPermission("scm:inventory:loss-gain:update")
     @OperateLog
@@ -89,7 +93,9 @@ public class InventoryLossGainController {
         return ResponseDTO.ok();
     }
 
-    /** 驳回（不产生任何库存影响）；审核意见必填。 */
+    /**
+     * 驳回（不产生任何库存影响）；审核意见必填。
+     */
     @PostMapping("/reject/{id}")
     @SaCheckPermission("scm:inventory:loss-gain:reject")
     @OperateLog
@@ -99,7 +105,9 @@ public class InventoryLossGainController {
         return ResponseDTO.ok();
     }
 
-    /** 删除待审核单据（逻辑删）。已审核的单据不可删除。 */
+    /**
+     * 删除待审核单据（逻辑删）。已审核的单据不可删除。
+     */
     @PostMapping("/delete/{id}")
     @SaCheckPermission("scm:inventory:loss-gain:delete")
     @OperateLog

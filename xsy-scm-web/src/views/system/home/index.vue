@@ -6,7 +6,7 @@
 <template>
   <!--  顶部用户信息-->
   <a-row>
-    <HomeHeader />
+    <HomeHeader/>
   </a-row>
   <!--下方左右布局-->
   <a-row :gutter="[10, 10]">
@@ -15,24 +15,24 @@
       <a-row :gutter="[10, 10]">
         <!--公告信息-->
         <a-col :span="12">
-          <HomeNotice title="公告" :noticeTypeId="1" />
+          <HomeNotice title="公告" :noticeTypeId="1"/>
         </a-col>
         <!--企业动态-->
         <a-col :span="12">
-          <HomeNotice title="通知" :noticeTypeId="2" />
+          <HomeNotice title="通知" :noticeTypeId="2"/>
         </a-col>
         <!--各类报表-->
         <!-- <a-col :span="6">
           <Gauge :percent="saleTargetPercent" />
         </a-col> -->
         <a-col :span="12">
-          <Pie />
+          <Pie/>
         </a-col>
         <a-col :span="12">
-          <Category />
+          <Category/>
         </a-col>
         <a-col :span="24">
-          <Gradient />
+          <Gradient/>
         </a-col>
       </a-row>
     </a-col>
@@ -45,29 +45,29 @@
         </a-col> -->
         <!--更新日志-->
         <a-col :span="24">
-          <ChangelogCard />
+          <ChangelogCard/>
         </a-col>
         <!--待办、已办-->
         <a-col :span="24">
-          <ToBeDoneCard />
+          <ToBeDoneCard/>
         </a-col>
       </a-row>
     </a-col>
-<!--    <AdModal/>-->
+    <!--    <AdModal/>-->
   </a-row>
 </template>
 <script setup lang="ts">
-  import HomeHeader from './home-header.vue';
-  import HomeNotice from './home-notice.vue';
-  import ToBeDoneCard from './components/to-be-done-card/home-to-be-done.vue';
-  import ChangelogCard from './components/changelog-card.vue';
-  import Category from './components/echarts/category.vue';
-  import Pie from './components/echarts/pie.vue';
-  import Gradient from './components/echarts/gradient.vue';
-  // import AdModal from './ad-modal.vue';
+import HomeHeader from './home-header.vue';
+import HomeNotice from './home-notice.vue';
+import ToBeDoneCard from './components/to-be-done-card/home-to-be-done.vue';
+import ChangelogCard from './components/changelog-card.vue';
+import Category from './components/echarts/category.vue';
+import Pie from './components/echarts/pie.vue';
+import Gradient from './components/echarts/gradient.vue';
+// import AdModal from './ad-modal.vue';
 
-  // 业绩完成百分比
+// 业绩完成百分比
 </script>
 <style lang="less" scoped>
-  @import './index.less';
+@import './index.less';
 </style>

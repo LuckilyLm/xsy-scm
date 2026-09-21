@@ -30,7 +30,9 @@ public class InventoryStocktakeQueryService {
 
     private final InventoryStocktakeItemDao itemDao;
 
-    /** 分页查询（不返回明细，明细走 {@link #detail}）。 */
+    /**
+     * 分页查询（不返回明细，明细走 {@link #detail}）。
+     */
     public PageResult<InventoryStocktakeVO> queryPage(InventoryStocktakeQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
@@ -40,7 +42,9 @@ public class InventoryStocktakeQueryService {
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
-    /** 详情（含明细，按录入顺序）。 */
+    /**
+     * 详情（含明细，按录入顺序）。
+     */
     public InventoryStocktakeVO detail(Long id) {
         InventoryStocktakeVO vo = stocktakeDao.detail(id);
         if (vo == null) {

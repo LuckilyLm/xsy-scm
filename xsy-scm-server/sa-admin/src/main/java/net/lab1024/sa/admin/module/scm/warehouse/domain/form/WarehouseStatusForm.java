@@ -12,6 +12,10 @@ import jakarta.validation.constraints.Positive;
  */
 @Data
 public class WarehouseStatusForm {
-    @NotNull @Positive private Long id;
-    @NotNull @Min(0) private Integer version;
+    @NotNull
+    @Positive
+    private Long id;
+    @NotNull
+    @Min(0)
+    private Integer version;
 }

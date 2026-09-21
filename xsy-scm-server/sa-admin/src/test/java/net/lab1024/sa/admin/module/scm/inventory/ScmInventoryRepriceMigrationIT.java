@@ -51,7 +51,9 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     // 夹具
     // ------------------------------------------------------------------
 
-    /** 造一个已按默认采购价（6.2000）入库指定数量到**默认启用仓库**的 SKU。 */
+    /**
+     * 造一个已按默认采购价（6.2000）入库指定数量到**默认启用仓库**的 SKU。
+     */
     private Long stockedInSeed(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = freeInboundFixture(suffix, skuId, quantity, "kg");
@@ -73,7 +75,9 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         return id;
     }
 
-    /** 1 箱 → 10 kg 的整件拆零，审批完成。 */
+    /**
+     * 1 箱 → 10 kg 的整件拆零，审批完成。
+     */
     private void convertOneWay(Long warehouseId, Long source, Long target,
                                String sourceQty, String targetQty) {
         InventoryConversionAddForm.Item item = new InventoryConversionAddForm.Item();
@@ -106,8 +110,8 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         String placeholders = keepSkuIds.stream().map(id -> "?").collect(Collectors.joining(","));
         // 拼进去的只有 "?" 占位符本身，SKU id 一律走绑定参数。
         jdbc.update("UPDATE inventory_balance SET avg_cost = 0.0001 "
-                        + "WHERE deleted = FALSE AND quantity > 0 AND avg_cost = 0 "
-                        + "AND sku_id NOT IN (" + placeholders + ")", keepSkuIds.toArray());
+                + "WHERE deleted = FALSE AND quantity > 0 AND avg_cost = 0 "
+                + "AND sku_id NOT IN (" + placeholders + ")", keepSkuIds.toArray());
     }
 
     private void setAvgCost(Long warehouseId, Long skuId, String avgCost) {
@@ -116,12 +120,16 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         evictMybatisCache();
     }
 
-    /** V37 Step 1：重放候选行的流水并回写 avg_cost。 */
+    /**
+     * V37 Step 1：重放候选行的流水并回写 avg_cost。
+     */
     private void runReprice() {
         jdbc.execute(migrationSection(V37, "-- Step 1", "-- Step 2"));
     }
 
-    /** V37 Step 2：收尾断言（候选集合内不得残留「账本有成本、余额零均价」的行）。 */
+    /**
+     * V37 Step 2：收尾断言（候选集合内不得残留「账本有成本、余额零均价」的行）。
+     */
     private void runRepriceAssertion() {
         String sql = migrationSql(V37);
         int from = sql.indexOf("-- Step 2");
@@ -298,7 +306,9 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
                 .isEqualByComparingTo("0.0000");
     }
 
-    /** 每次调用给一个没用过的来源行 id，避免撞 {@code uk_inventory_movement_source_active}。 */
+    /**
+     * 每次调用给一个没用过的来源行 id，避免撞 {@code uk_inventory_movement_source_active}。
+     */
     private static Long sentinelItemId() {
         return ThreadLocalRandom.current().nextLong(100_000_000L, 1_000_000_000L);
     }

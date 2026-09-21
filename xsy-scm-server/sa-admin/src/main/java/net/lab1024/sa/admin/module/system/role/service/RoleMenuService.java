@@ -70,7 +70,7 @@ public class RoleMenuService {
      */
     public List<MenuVO> getMenuList(List<Long> roleIdList, Boolean administratorFlag) {
         //管理员返回所有菜单
-        if(administratorFlag){
+        if (administratorFlag) {
             List<MenuEntity> menuEntityList = roleMenuDao.selectMenuListByRoleIdList(Lists.newArrayList(), false);
             return SmartBeanUtil.copyList(menuEntityList, MenuVO.class);
         }

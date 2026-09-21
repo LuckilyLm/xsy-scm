@@ -2,36 +2,36 @@
  * 银行卡
  *
  */
-import { postRequest, getRequest } from '/@/lib/axios';
+import {postRequest, getRequest} from '/@/lib/axios';
 
 export const bankApi = {
-  // 新建银行信息
-  create: (param) => {
-    return postRequest('/oa/bank/create', param);
-  },
+    // 新建银行信息
+    create: (param) => {
+        return postRequest('/oa/bank/create', param);
+    },
 
-  // 删除银行信息
-  delete: (bankId) => {
-    return getRequest(`/oa/bank/delete/${bankId}`);
-  },
+    // 删除银行信息
+    delete: (bankId) => {
+        return getRequest(`/oa/bank/delete/${bankId}`);
+    },
 
-  // 查询银行信息详情
-  detail: (bankId) => {
-    return getRequest(`/oa/bank/get/${bankId}`);
-  },
+    // 查询银行信息详情
+    detail: (bankId) => {
+        return getRequest(`/oa/bank/get/${bankId}`);
+    },
 
-  // 分页查询银行信息
-  pageQuery: (param) => {
-    return postRequest('/oa/bank/page/query', param);
-  },
+    // 分页查询银行信息
+    pageQuery: (param) => {
+        return postRequest('/oa/bank/page/query', param);
+    },
 
-  // 编辑银行信息
-  update: (param) => {
-    return postRequest('/oa/bank/update', param);
-  },
+    // 编辑银行信息
+    update: (param) => {
+        return postRequest('/oa/bank/update', param);
+    },
 
-  // 根据企业ID查询不分页的银行列表
-  queryList: (enterpriseId) => {
-    return getRequest(`/oa/bank/query/list/${enterpriseId}`);
-  },
+    // 根据企业ID查询不分页的银行列表
+    queryList: (enterpriseId) => {
+        return getRequest(`/oa/bank/query/list/${enterpriseId}`);
+    },
 };

@@ -37,15 +37,15 @@ const DATE_CN = /^(\d{4})-(\d{2})-(\d{2})/;
  * datetime(null)                               // '—'
  */
 export function datetime(value: string | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-  const matched = DATETIME_CN.exec(value);
-  if (!matched) {
-    return value;
-  }
-  const [, y, mo, d, h, mi, s] = matched;
-  return `${y}-${mo}-${d} ${h}:${mi}:${s}`;
+    if (value === null || value === undefined || value === '') {
+        return '—';
+    }
+    const matched = DATETIME_CN.exec(value);
+    if (!matched) {
+        return value;
+    }
+    const [, y, mo, d, h, mi, s] = matched;
+    return `${y}-${mo}-${d} ${h}:${mi}:${s}`;
 }
 
 /**
@@ -55,13 +55,13 @@ export function datetime(value: string | null | undefined): string {
  * 不该被硬塞一个 `00:00:00`。
  */
 export function dateOnly(value: string | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-  const matched = DATE_CN.exec(value);
-  if (!matched) {
-    return value;
-  }
-  const [, y, mo, d] = matched;
-  return `${y}-${mo}-${d}`;
+    if (value === null || value === undefined || value === '') {
+        return '—';
+    }
+    const matched = DATE_CN.exec(value);
+    if (!matched) {
+        return value;
+    }
+    const [, y, mo, d] = matched;
+    return `${y}-${mo}-${d}`;
 }

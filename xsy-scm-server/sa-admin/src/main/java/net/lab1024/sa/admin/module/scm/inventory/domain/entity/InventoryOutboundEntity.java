@@ -30,25 +30,33 @@ public class InventoryOutboundEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /** 出库单号（业务唯一，软删范围内唯一）。 */
+    /**
+     * 出库单号（业务唯一，软删范围内唯一）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String outboundNo;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long warehouseId;
 
-    /** {@code ScmInventoryOutboundStatusEnum}。 */
+    /**
+     * {@code ScmInventoryOutboundStatusEnum}。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String remark;
 
-    /** 确认时刻；仅 CONFIRMED 非空（DB CHECK 保证）。 */
+    /**
+     * 确认时刻；仅 CONFIRMED 非空（DB CHECK 保证）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime confirmedAt;
 
-    /** 确认人；仅 CONFIRMED 非空。 */
+    /**
+     * 确认人；仅 CONFIRMED 非空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String operator;
 

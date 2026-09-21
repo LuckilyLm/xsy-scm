@@ -14,27 +14,27 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="转换单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.conversionNo" placeholder="转换单号" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.conversionNo" placeholder="转换单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="190px" />
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="190px"/>
       </a-form-item>
       <a-form-item label="类型" class="smart-query-form-item">
         <a-select
-          v-model:value="queryForm.convertType"
-          :options="typeOptions"
-          placeholder="全部"
-          allow-clear
-          style="width: 140px"
+            v-model:value="queryForm.convertType"
+            :options="typeOptions"
+            placeholder="全部"
+            allow-clear
+            style="width: 140px"
         />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <a-select
-          v-model:value="queryForm.status"
-          :options="statusOptions"
-          placeholder="全部"
-          allow-clear
-          style="width: 130px"
+            v-model:value="queryForm.status"
+            :options="statusOptions"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
         />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
@@ -47,7 +47,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -62,24 +64,24 @@
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_CONVERSION"
-          :refresh="queryData"
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_CONVERSION"
+            :refresh="queryData"
         />
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_INVENTORY_TABLE_ID.CONVERSION"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :locale="{ emptyText: '暂无规格转换单' }"
-      :scroll="{ x: 1400 }"
+        :id="SCM_INVENTORY_TABLE_ID.CONVERSION"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :locale="{ emptyText: '暂无规格转换单' }"
+        :scroll="{ x: 1400 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'convertType'">
@@ -94,40 +96,40 @@
           <a-space :size="4">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-              v-if="record.status === 'PENDING'"
-              type="link"
-              size="small"
-              @click="openEdit(record)"
-              v-privilege="'scm:inventory:conversion:update'"
+                v-if="record.status === 'PENDING'"
+                type="link"
+                size="small"
+                @click="openEdit(record)"
+                v-privilege="'scm:inventory:conversion:update'"
             >
               编辑
             </a-button>
             <a-button
-              v-if="record.status === 'PENDING'"
-              type="link"
-              size="small"
-              @click="openAudit(record, 'approve')"
-              v-privilege="'scm:inventory:conversion:approve'"
+                v-if="record.status === 'PENDING'"
+                type="link"
+                size="small"
+                @click="openAudit(record, 'approve')"
+                v-privilege="'scm:inventory:conversion:approve'"
             >
               审批
             </a-button>
             <a-button
-              v-if="record.status === 'PENDING'"
-              type="link"
-              size="small"
-              danger
-              @click="openAudit(record, 'reject')"
-              v-privilege="'scm:inventory:conversion:reject'"
+                v-if="record.status === 'PENDING'"
+                type="link"
+                size="small"
+                danger
+                @click="openAudit(record, 'reject')"
+                v-privilege="'scm:inventory:conversion:reject'"
             >
               驳回
             </a-button>
             <a-button
-              v-if="record.status === 'PENDING'"
-              type="link"
-              size="small"
-              danger
-              @click="onDelete(record)"
-              v-privilege="'scm:inventory:conversion:delete'"
+                v-if="record.status === 'PENDING'"
+                type="link"
+                size="small"
+                danger
+                @click="onDelete(record)"
+                v-privilege="'scm:inventory:conversion:delete'"
             >
               删除
             </a-button>
@@ -139,33 +141,33 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑待审核 -->
   <a-drawer
-    :open="drawerOpen"
-    :title="form.id ? `编辑转换单 ${form.conversionNo}` : '新建转换单'"
-    width="1080"
-    @close="closeDrawer"
+      :open="drawerOpen"
+      :title="form.id ? `编辑转换单 ${form.conversionNo}` : '新建转换单'"
+      width="1080"
+      @close="closeDrawer"
   >
     <a-alert
-      type="info"
-      show-icon
-      style="margin-bottom: 12px"
-      message="折算关系由你显式声明（如 1 箱 = 10 kg），系统不推断。两个单位会与各自 SKU 的库存记账单位比对，不一致会被拒绝。"
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="折算关系由你显式声明（如 1 箱 = 10 kg），系统不推断。两个单位会与各自 SKU 的库存记账单位比对，不一致会被拒绝。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">
-        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px" />
+        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
       <a-form-item label="转换类型" name="convertType">
         <a-radio-group v-model:value="form.convertType" button-style="solid">
@@ -174,49 +176,49 @@
         </a-radio-group>
       </a-form-item>
       <a-form-item label="原因" name="reason">
-        <a-input v-model:value="form.reason" :maxlength="200" show-count placeholder="如：客户要散装 / 整件拆零上架" />
+        <a-input v-model:value="form.reason" :maxlength="200" show-count placeholder="如：客户要散装 / 整件拆零上架"/>
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
       </a-form-item>
       <a-form-item label="转换明细" required>
         <a-table
-          size="small"
-          :data-source="form.items"
-          :columns="itemColumns"
-          row-key="_key"
-          bordered
-          :pagination="false"
-          :scroll="{ x: 900 }"
+            size="small"
+            :data-source="form.items"
+            :columns="itemColumns"
+            row-key="_key"
+            bordered
+            :pagination="false"
+            :scroll="{ x: 900 }"
         >
           <template #bodyCell="{ record, column, index }">
             <template v-if="column.dataIndex === 'sourceSkuId'">
               <SkuSelect
-                :value="record.sourceSkuId"
-                :disabled-statuses="[]"
-                width="200px"
-                @update:value="(v) => (record.sourceSkuId = Array.isArray(v) ? v[0] : v)"
+                  :value="record.sourceSkuId"
+                  :disabled-statuses="[]"
+                  width="200px"
+                  @update:value="(v) => (record.sourceSkuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
             <template v-else-if="column.dataIndex === 'sourceQuantity'">
-              <a-input v-model:value="record.sourceQuantity" placeholder="0.0000" style="width: 110px" />
+              <a-input v-model:value="record.sourceQuantity" placeholder="0.0000" style="width: 110px"/>
             </template>
             <template v-else-if="column.dataIndex === 'sourceUnit'">
-              <a-input v-model:value="record.sourceUnit" placeholder="如 箱" style="width: 80px" />
+              <a-input v-model:value="record.sourceUnit" placeholder="如 箱" style="width: 80px"/>
             </template>
             <template v-else-if="column.dataIndex === 'targetSkuId'">
               <SkuSelect
-                :value="record.targetSkuId"
-                :disabled-statuses="[]"
-                width="200px"
-                @update:value="(v) => (record.targetSkuId = Array.isArray(v) ? v[0] : v)"
+                  :value="record.targetSkuId"
+                  :disabled-statuses="[]"
+                  width="200px"
+                  @update:value="(v) => (record.targetSkuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
             <template v-else-if="column.dataIndex === 'targetQuantity'">
-              <a-input v-model:value="record.targetQuantity" placeholder="0.0000" style="width: 110px" />
+              <a-input v-model:value="record.targetQuantity" placeholder="0.0000" style="width: 110px"/>
             </template>
             <template v-else-if="column.dataIndex === 'targetUnit'">
-              <a-input v-model:value="record.targetUnit" placeholder="如 kg" style="width: 80px" />
+              <a-input v-model:value="record.targetUnit" placeholder="如 kg" style="width: 80px"/>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
@@ -257,14 +259,14 @@
       <a-descriptions-item label="备注">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
     <a-table
-      style="margin-top: 12px"
-      size="small"
-      :data-source="detail.items || []"
-      :columns="detailItemColumns"
-      row-key="id"
-      bordered
-      :pagination="false"
-      :scroll="{ x: 1100 }"
+        style="margin-top: 12px"
+        size="small"
+        :data-source="detail.items || []"
+        :columns="detailItemColumns"
+        row-key="id"
+        bordered
+        :pagination="false"
+        :scroll="{ x: 1100 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'sourceQuantity'">
@@ -284,20 +286,20 @@
 
   <!-- 审批 / 驳回 -->
   <a-modal
-    :open="auditOpen"
-    :title="auditMode === 'approve' ? '审批通过' : '驳回'"
-    :confirm-loading="auditSaving"
-    :ok-text="auditMode === 'approve' ? '确认审批' : '确认驳回'"
-    :ok-type="auditMode === 'approve' ? 'primary' : 'danger'"
-    cancel-text="取消"
-    @ok="onAuditSubmit"
-    @cancel="auditOpen = false"
+      :open="auditOpen"
+      :title="auditMode === 'approve' ? '审批通过' : '驳回'"
+      :confirm-loading="auditSaving"
+      :ok-text="auditMode === 'approve' ? '确认审批' : '确认驳回'"
+      :ok-type="auditMode === 'approve' ? 'primary' : 'danger'"
+      cancel-text="取消"
+      @ok="onAuditSubmit"
+      @cancel="auditOpen = false"
   >
     <a-alert
-      :type="auditMode === 'approve' ? 'warning' : 'info'"
-      show-icon
-      style="margin-bottom: 12px"
-      :message="auditMode === 'approve'
+        :type="auditMode === 'approve' ? 'warning' : 'info'"
+        show-icon
+        style="margin-bottom: 12px"
+        :message="auditMode === 'approve'
         ? '审批通过会立即按本单明细改动两个 SKU 的库存（源出 / 目标入）并生成不可删除的流水，此操作不可撤销。'
         : '驳回不产生任何库存影响；单据将变为终态，不可再修改或删除。'"
     />
@@ -311,11 +313,11 @@
     <a-form layout="vertical">
       <a-form-item :label="auditMode === 'approve' ? '审核意见（可选）' : '审核意见（必填）'">
         <a-textarea
-          v-model:value="auditOpinion"
-          :rows="3"
-          :maxlength="500"
-          show-count
-          :placeholder="auditMode === 'approve' ? '可留空' : '请说明驳回原因，录单人据此修改'"
+            v-model:value="auditOpinion"
+            :rows="3"
+            :maxlength="500"
+            show-count
+            :placeholder="auditMode === 'approve' ? '可留空' : '请说明驳回原因，录单人据此修改'"
         />
       </a-form-item>
     </a-form>
@@ -326,15 +328,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { message, Modal } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {onMounted, reactive, ref} from 'vue';
+import {message, Modal} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
-import { inventoryConversionApi } from '/@/api/business/scm/inventory-conversion-api';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
+import {inventoryConversionApi} from '/@/api/business/scm/inventory-conversion-api';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_INVENTORY_CONVERSION_STATUS_ENUM,
   SCM_INVENTORY_CONVERSION_TYPE_ENUM,
@@ -345,12 +347,12 @@ import type {
   InventoryConversionAdd,
   InventoryConversionQuery,
 } from './inventory-types';
-import type { Warehouse } from '../purchase/purchase-types';
-import { quantityText, singleWarehouseDefault } from './inventory-model';
-import { inventoryError } from './inventory-errors';
-import { datetime } from '../common/scm-display';
+import type {Warehouse} from '../purchase/purchase-types';
+import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {inventoryError} from './inventory-errors';
+import {datetime} from '../common/scm-display';
 
-const queryForm = reactive<InventoryConversionQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<InventoryConversionQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryConversion[]>([]);
 const total = ref(0);
 const loading = ref(false);
@@ -369,36 +371,36 @@ const statusOptions = Object.values(SCM_INVENTORY_CONVERSION_STATUS_ENUM).map((i
 }));
 
 const columns = ref<TableColumnsType<InventoryConversion>>([
-  { title: '转换单号', dataIndex: 'conversionNo', width: 200 },
-  { title: '仓库', dataIndex: 'warehouseName', width: 150 },
-  { title: '类型', dataIndex: 'convertType', align: 'center', width: 120 },
-  { title: '状态', dataIndex: 'status', align: 'center', width: 100 },
-  { title: '原因', dataIndex: 'reason', width: 220, ellipsis: true },
-  { title: '审核人', dataIndex: 'auditor', width: 130 },
-  { title: '审核时间', dataIndex: 'auditedAt', width: 170 },
-  { title: '创建时间', dataIndex: 'createdAt', width: 170 },
-  { title: '操作', dataIndex: 'action', width: 280, fixed: 'right' },
+  {title: '转换单号', dataIndex: 'conversionNo', width: 200},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '类型', dataIndex: 'convertType', align: 'center', width: 120},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 100},
+  {title: '原因', dataIndex: 'reason', width: 220, ellipsis: true},
+  {title: '审核人', dataIndex: 'auditor', width: 130},
+  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
+  {title: '创建时间', dataIndex: 'createdAt', width: 170},
+  {title: '操作', dataIndex: 'action', width: 280, fixed: 'right'},
 ]);
 
 const itemColumns: TableColumnsType = [
-  { title: '源 SKU（转出）', dataIndex: 'sourceSkuId', width: 220 },
-  { title: '源数量', dataIndex: 'sourceQuantity', width: 120 },
-  { title: '源单位', dataIndex: 'sourceUnit', width: 90 },
-  { title: '目标 SKU（转入）', dataIndex: 'targetSkuId', width: 220 },
-  { title: '目标数量', dataIndex: 'targetQuantity', width: 120 },
-  { title: '目标单位', dataIndex: 'targetUnit', width: 90 },
-  { title: '操作', dataIndex: 'action', width: 70 },
+  {title: '源 SKU（转出）', dataIndex: 'sourceSkuId', width: 220},
+  {title: '源数量', dataIndex: 'sourceQuantity', width: 120},
+  {title: '源单位', dataIndex: 'sourceUnit', width: 90},
+  {title: '目标 SKU（转入）', dataIndex: 'targetSkuId', width: 220},
+  {title: '目标数量', dataIndex: 'targetQuantity', width: 120},
+  {title: '目标单位', dataIndex: 'targetUnit', width: 90},
+  {title: '操作', dataIndex: 'action', width: 70},
 ];
 
 const detailItemColumns: TableColumnsType = [
-  { title: '源 SKU', dataIndex: 'sourceSkuCode', width: 150 },
-  { title: '源商品', dataIndex: 'sourceProductName', width: 140 },
-  { title: '源数量', dataIndex: 'sourceQuantity', align: 'right', width: 110 },
-  { title: '源单位', dataIndex: 'sourceUnit', align: 'center', width: 90 },
-  { title: '目标 SKU', dataIndex: 'targetSkuCode', width: 150 },
-  { title: '目标商品', dataIndex: 'targetProductName', width: 140 },
-  { title: '目标数量', dataIndex: 'targetQuantity', align: 'right', width: 110 },
-  { title: '目标单位', dataIndex: 'targetUnit', align: 'center', width: 90 },
+  {title: '源 SKU', dataIndex: 'sourceSkuCode', width: 150},
+  {title: '源商品', dataIndex: 'sourceProductName', width: 140},
+  {title: '源数量', dataIndex: 'sourceQuantity', align: 'right', width: 110},
+  {title: '源单位', dataIndex: 'sourceUnit', align: 'center', width: 90},
+  {title: '目标 SKU', dataIndex: 'targetSkuCode', width: 150},
+  {title: '目标商品', dataIndex: 'targetProductName', width: 140},
+  {title: '目标数量', dataIndex: 'targetQuantity', align: 'right', width: 110},
+  {title: '目标单位', dataIndex: 'targetUnit', align: 'center', width: 90},
 ];
 
 function statusColor(status?: string) {
@@ -414,7 +416,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await inventoryConversionApi.query({ ...queryForm });
+    const r = await inventoryConversionApi.query({...queryForm});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -482,11 +484,11 @@ const form = reactive<{
   reason?: string;
   remark?: string;
   items: EditableItem[];
-}>({ items: [] });
+}>({items: []});
 
 const formRules = {
-  warehouseId: [{ required: true, message: '请选择仓库' }],
-  convertType: [{ required: true, message: '请选择转换类型' }],
+  warehouseId: [{required: true, message: '请选择仓库'}],
+  convertType: [{required: true, message: '请选择转换类型'}],
 };
 
 function addItem() {
@@ -548,7 +550,7 @@ function closeDrawer() {
 /** 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。 */
 function buildPayload(): InventoryConversionAdd | null {
   const items = form.items.filter(
-    (i) => i.sourceSkuId !== undefined && i.sourceSkuId !== null && i.targetSkuId !== undefined && i.targetSkuId !== null
+      (i) => i.sourceSkuId !== undefined && i.sourceSkuId !== null && i.targetSkuId !== undefined && i.targetSkuId !== null
   );
   if (items.length === 0) {
     message.warning('请至少添加一条转换明细（源 SKU 与目标 SKU 都要选）');
@@ -645,7 +647,7 @@ const auditOpinion = ref('');
  * 不重新拉取单据：审批人应当批准自己**看到的那一版**；重新拉取会让乐观锁失效。
  */
 function openAudit(record: InventoryConversion, mode: 'approve' | 'reject') {
-  auditRecord.value = { ...record };
+  auditRecord.value = {...record};
   auditMode.value = mode;
   auditOpinion.value = '';
   auditOpen.value = true;

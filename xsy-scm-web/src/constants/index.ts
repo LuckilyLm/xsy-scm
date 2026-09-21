@@ -9,9 +9,9 @@ import scmInventory from './business/scm/inventory-const';
 import menu from './system/menu-const';
 import goods from './business/erp/goods-const';
 import category from './business/erp/category-const';
-import { LOGIN_DEVICE_ENUM } from './system/login-device-const';
-import { FLAG_NUMBER_ENUM, GENDER_ENUM, USER_TYPE_ENUM } from './common-const';
-import { LAYOUT_ENUM } from './layout-const';
+import {LOGIN_DEVICE_ENUM} from './system/login-device-const';
+import {FLAG_NUMBER_ENUM, GENDER_ENUM, USER_TYPE_ENUM} from './common-const';
+import {LAYOUT_ENUM} from './layout-const';
 import file from './support/file-const';
 import notice from './business/oa/notice-const';
 import loginLog from './support/login-log-const';
@@ -24,32 +24,32 @@ import dictConst from './support/dict-const';
 // SCM 业务枚举（W2 起）：注册进 SmartEnum 插件后，SmartEnumSelect / $smartEnumPlugin 才能取到值
 import scmCustomer from './business/scm/customer-const';
 import scmSupplier from './business/scm/supplier-const';
-import type { SmartEnumWrapper } from '/@/types/smart-enum';
+import type {SmartEnumWrapper} from '/@/types/smart-enum';
 
 const constantsInfo = {
-  FLAG_NUMBER_ENUM,
-  LOGIN_DEVICE_ENUM,
-  GENDER_ENUM,
-  USER_TYPE_ENUM,
-  LAYOUT_ENUM,
-  ...loginLog,
-  ...menu,
-  ...goods,
-  ...category,
-  ...file,
-  ...notice,
-  ...enterprise,
-  ...message,
-  ...codeGeneratorConst,
-  ...changeLogConst,
-  ...jobConst,
-  ...dictConst,
-  ...scmCustomer,
-  ...scmSupplier,
-  ...scmPricing,
-  ...scmOrder,
-  ...scmPurchase,
-  ...scmInventory,
+    FLAG_NUMBER_ENUM,
+    LOGIN_DEVICE_ENUM,
+    GENDER_ENUM,
+    USER_TYPE_ENUM,
+    LAYOUT_ENUM,
+    ...loginLog,
+    ...menu,
+    ...goods,
+    ...category,
+    ...file,
+    ...notice,
+    ...enterprise,
+    ...message,
+    ...codeGeneratorConst,
+    ...changeLogConst,
+    ...jobConst,
+    ...dictConst,
+    ...scmCustomer,
+    ...scmSupplier,
+    ...scmPricing,
+    ...scmOrder,
+    ...scmPurchase,
+    ...scmInventory,
 };
 
 /*

@@ -6,13 +6,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px"/>
       </a-form-item>
       <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="商品名称" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -24,7 +24,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -36,24 +38,24 @@
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_BALANCE"
-          :refresh="queryData"
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_BALANCE"
+            :refresh="queryData"
         />
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_INVENTORY_TABLE_ID.BALANCE"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :locale="{ emptyText: '暂无库存余额' }"
-      :scroll="{ x: 1680 }"
+        :id="SCM_INVENTORY_TABLE_ID.BALANCE"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :locale="{ emptyText: '暂无库存余额' }"
+        :scroll="{ x: 1680 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'specValues'">{{ specText(record.specValues) }}</template>
@@ -80,34 +82,34 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {onMounted, reactive, ref} from 'vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
-import { inventoryBalanceApi } from '/@/api/business/scm/inventory-balance-api';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-import { SCM_INVENTORY_TABLE_ID } from '/@/constants/business/scm/inventory-const';
-import type { InventoryBalance, InventoryBalanceQuery } from './inventory-types';
-import type { Warehouse } from '../purchase/purchase-types';
-import { moneyText, quantityText, singleWarehouseDefault, specText } from './inventory-model';
-import { inventoryError } from './inventory-errors';
-import { datetime } from '../common/scm-display';
+import {inventoryBalanceApi} from '/@/api/business/scm/inventory-balance-api';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
+import type {InventoryBalance, InventoryBalanceQuery} from './inventory-types';
+import type {Warehouse} from '../purchase/purchase-types';
+import {moneyText, quantityText, singleWarehouseDefault, specText} from './inventory-model';
+import {inventoryError} from './inventory-errors';
+import {datetime} from '../common/scm-display';
 
-const queryForm = reactive<InventoryBalanceQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<InventoryBalanceQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryBalance[]>([]);
 const total = ref(0);
 const loading = ref(false);
@@ -117,20 +119,20 @@ const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
 const columns = ref<TableColumnsType<InventoryBalance>>([
-  { title: '仓库编码', dataIndex: 'warehouseCode', width: 130 },
-  { title: '仓库名称', dataIndex: 'warehouseName', width: 160 },
-  { title: 'SKU 编码', dataIndex: 'skuCode', width: 170 },
-  { title: 'SKU 名称', dataIndex: 'skuName', width: 150 },
-  { title: '商品名称', dataIndex: 'productName', width: 180 },
-  { title: '规格', dataIndex: 'specValues', width: 160 },
-  { title: '单位', dataIndex: 'unit', align: 'center', width: 90 },
-  { title: '库存数量', dataIndex: 'quantity', align: 'right', width: 130 },
-  { title: '预留量', dataIndex: 'reservedQuantity', align: 'right', width: 110 },
-  { title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110 },
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+  {title: '仓库名称', dataIndex: 'warehouseName', width: 160},
+  {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
+  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品名称', dataIndex: 'productName', width: 180},
+  {title: '规格', dataIndex: 'specValues', width: 160},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
+  {title: '库存数量', dataIndex: 'quantity', align: 'right', width: 130},
+  {title: '预留量', dataIndex: 'reservedQuantity', align: 'right', width: 110},
+  {title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110},
   // V34 移动加权成本。均价恒有值（NOT NULL DEFAULT 0），金额由后端 quantity × avgCost 派生。
-  { title: '移动加权均价', dataIndex: 'avgCost', align: 'right', width: 140 },
-  { title: '库存金额', dataIndex: 'amount', align: 'right', width: 140 },
-  { title: '更新时间', dataIndex: 'updatedAt', width: 190 },
+  {title: '移动加权均价', dataIndex: 'avgCost', align: 'right', width: 140},
+  {title: '库存金额', dataIndex: 'amount', align: 'right', width: 140},
+  {title: '更新时间', dataIndex: 'updatedAt', width: 190},
 ]);
 
 async function queryData() {
@@ -138,7 +140,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await inventoryBalanceApi.query({ ...queryForm });
+    const r = await inventoryBalanceApi.query({...queryForm});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;

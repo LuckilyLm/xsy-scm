@@ -26,33 +26,47 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmInventoryStocktakeStatusEnum {
 
-    /** 草稿：可录/改实盘量，未产生任何库存影响。 */
+    /**
+     * 草稿：可录/改实盘量，未产生任何库存影响。
+     */
     DRAFT("草稿"),
 
-    /** 已确认：差异已转流水并调整余额，不可再改明细、不可取消。 */
+    /**
+     * 已确认：差异已转流水并调整余额，不可再改明细、不可取消。
+     */
     CONFIRMED("已确认"),
 
-    /** 已取消：仅草稿可取消，未产生任何库存影响。 */
+    /**
+     * 已取消：仅草稿可取消，未产生任何库存影响。
+     */
     CANCELLED("已取消");
 
     private final String desc;
 
-    /** 是否允许编辑明细（只有草稿可以）。 */
+    /**
+     * 是否允许编辑明细（只有草稿可以）。
+     */
     public boolean isEditable() {
         return this == DRAFT;
     }
 
-    /** 是否允许确认盘点（只有草稿可以）。 */
+    /**
+     * 是否允许确认盘点（只有草稿可以）。
+     */
     public boolean isConfirmable() {
         return this == DRAFT;
     }
 
-    /** 是否允许取消（只有草稿可以）。 */
+    /**
+     * 是否允许取消（只有草稿可以）。
+     */
     public boolean isCancellable() {
         return this == DRAFT;
     }
 
-    /** 该值是否允许写入 {@code inventory_stocktake.status}（DB CHECK 白名单的同源判定）。 */
+    /**
+     * 该值是否允许写入 {@code inventory_stocktake.status}（DB CHECK 白名单的同源判定）。
+     */
     public static boolean isSupported(String value) {
         for (ScmInventoryStocktakeStatusEnum item : values()) {
             if (item.name().equals(value)) {

@@ -31,7 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("移动加权成本（PG IT）")
 class ScmInventoryCostingIT extends ScmW6PgITBase {
 
-    /** 造一笔**指定采购单价**的入库，返回 skuId（同一 SKU 可多次调用以构造不同价）。 */
+    /**
+     * 造一笔**指定采购单价**的入库，返回 skuId（同一 SKU 可多次调用以构造不同价）。
+     */
     private void inboundAtPrice(String suffix, Long skuId, String quantity, String price) {
         Long supplierId = newSupplier(suffix);
         linkSupplierSku(supplierId, skuId, DEFAULT_PURCHASE_UNIT);

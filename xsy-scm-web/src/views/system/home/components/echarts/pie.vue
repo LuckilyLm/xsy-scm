@@ -6,73 +6,74 @@
   </default-home-card>
 </template>
 <script setup lang="ts">
-  defineOptions({ name: "HomePieChart" });
-  import DefaultHomeCard from '/@/views/system/home/components/default-home-card.vue';
-  import * as echarts from 'echarts';
-  import { onMounted } from 'vue';
+defineOptions({name: "HomePieChart"});
+import DefaultHomeCard from '/@/views/system/home/components/default-home-card.vue';
+import * as echarts from 'echarts';
+import {onMounted} from 'vue';
 
-  onMounted(() => {
-    init();
-  });
+onMounted(() => {
+  init();
+});
 
-  function init() {
-    let option = {
-      tooltip: {
-        trigger: 'item',
-      },
-      legend: {
-        top: '5%',
-        left: 'center',
-      },
-      series: [
-        {
-          name: '加班次数',
-          type: 'pie',
-          radius: ['40%', '70%'],
-          avoidLabelOverlap: false,
-          itemStyle: {
-            borderRadius: 10,
-            borderColor: '#fff',
-            borderWidth: 2,
-          },
-          label: {
-            show: false,
-            position: 'center',
-          },
-          emphasis: {
-            label: {
-              show: true,
-              fontSize: '40',
-              fontWeight: 'bold',
-            },
-          },
-          labelLine: {
-            show: false,
-          },
-          data: [
-            { value: 10, name: '赵六' },
-            { value: 8, name: '张三' },
-            { value: 3, name: '李四' },
-            { value: 1, name: '孙七' },
-          ],
+function init() {
+  let option = {
+    tooltip: {
+      trigger: 'item',
+    },
+    legend: {
+      top: '5%',
+      left: 'center',
+    },
+    series: [
+      {
+        name: '加班次数',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2,
         },
-      ],
-    };
-    let chartDom = document.getElementById('pie-main');
-    if (chartDom) {
-      let myChart = echarts.init(chartDom);
-      option && myChart.setOption(option);
-    }
+        label: {
+          show: false,
+          position: 'center',
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: '40',
+            fontWeight: 'bold',
+          },
+        },
+        labelLine: {
+          show: false,
+        },
+        data: [
+          {value: 10, name: '赵六'},
+          {value: 8, name: '张三'},
+          {value: 3, name: '李四'},
+          {value: 1, name: '孙七'},
+        ],
+      },
+    ],
+  };
+  let chartDom = document.getElementById('pie-main');
+  if (chartDom) {
+    let myChart = echarts.init(chartDom);
+    option && myChart.setOption(option);
   }
+}
 </script>
 <style lang="less" scoped>
-  .echarts-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    .pie-main {
-      width: 260px;
-      height: 260px;
-    }
+.echarts-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .pie-main {
+    width: 260px;
+    height: 260px;
   }
+}
 </style>

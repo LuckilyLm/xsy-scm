@@ -3,6 +3,10 @@
 <mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductSkuDao">
     <!-- Aggregate SPU version is claimed first. Child versions are checked by subsequent updateById. -->
     <update id="clearDefault">
-        UPDATE product_sku SET is_default=FALSE WHERE spu_id=#{spuId} AND deleted=FALSE AND is_default=TRUE
+        UPDATE product_sku
+        SET is_default= FALSE
+        WHERE spu_id = #{spuId}
+          AND deleted = FALSE
+          AND is_default = TRUE
     </update>
 </mapper>

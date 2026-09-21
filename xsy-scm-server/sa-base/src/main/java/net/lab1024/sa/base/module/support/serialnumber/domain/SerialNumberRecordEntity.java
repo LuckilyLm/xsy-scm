@@ -25,7 +25,7 @@ public class SerialNumberRecordEntity {
     /**
      * 单号id
      */
-    @TableId(type= IdType.NONE)
+    @TableId(type = IdType.NONE)
     private Integer serialNumberId;
 
     /**

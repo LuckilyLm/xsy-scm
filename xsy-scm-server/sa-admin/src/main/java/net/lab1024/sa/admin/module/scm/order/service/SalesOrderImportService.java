@@ -78,7 +78,8 @@ public class SalesOrderImportService {
             var cause = exception.getCause();
             var code = cause instanceof ScmBusinessException business ? String.valueOf(business.getErrorCode().getCode()) : "WRITE_CONFLICT";
             var message = cause instanceof ScmBusinessException business ? business.getErrorCode().getMsg() : "订单数据冲突或金额超出范围，请检查后重试";
-            for (var indexed : group) addError(assembled.result(), indexed.rowNumber(), indexed.row().getOrderKey(), "订单", code, message + "；整批已回滚");
+            for (var indexed : group)
+                addError(assembled.result(), indexed.rowNumber(), indexed.row().getOrderKey(), "订单", code, message + "；整批已回滚");
             return assembled.result();
         }
     }
@@ -116,7 +117,8 @@ public class SalesOrderImportService {
                         addError(result, row.getRowNumber(), null, name, "COLUMN_UNEXPECTED", "模板之外的列不能填写订单数据");
                     } else {
                         // Read the stored number, not its rounded display format.
-                        if (cell.getCellType() == CellType.NUMERIC) value = org.apache.poi.ss.util.NumberToTextConverter.toText(cell.getNumericCellValue());
+                        if (cell.getCellType() == CellType.NUMERIC)
+                            value = org.apache.poi.ss.util.NumberToTextConverter.toText(cell.getNumericCellValue());
                         SETTERS.get(column).accept(row, value);
                     }
                 }
@@ -134,9 +136,11 @@ public class SalesOrderImportService {
     }
 
     private Assembly assemble(List<SalesOrderImportRow> rows, boolean priceOverrideAllowed) {
-        var result = new SalesOrderImportResultVO();result.setTotalRows(rows.size());
+        var result = new SalesOrderImportResultVO();
+        result.setTotalRows(rows.size());
         if (rows.isEmpty()) addError(result, 0, null, "文件", "FILE_EMPTY", "导入文件没有数据行");
-        if (rows.size() > MAX_ROWS) addError(result, 0, null, "文件", "ROW_LIMIT", "数据行不能超过 " + MAX_ROWS + " 行");
+        if (rows.size() > MAX_ROWS)
+            addError(result, 0, null, "文件", "ROW_LIMIT", "数据行不能超过 " + MAX_ROWS + " 行");
 
         var customerCodes = rows.stream().map(SalesOrderImportRow::getCustomerCode).map(this::trim).filter(Objects::nonNull).distinct().toList();
         var skuCodes = rows.stream().map(SalesOrderImportRow::getSkuCode).map(this::trim).filter(Objects::nonNull).distinct().toList();
@@ -145,17 +149,23 @@ public class SalesOrderImportService {
 
         var groups = new LinkedHashMap<String, List<IndexedRow>>();
         for (int index = 0; index < rows.size(); index++) {
-            var row = rows.get(index);var rowNumber = row.getRowNumber();var orderKey = trim(row.getOrderKey());
+            var row = rows.get(index);
+            var rowNumber = row.getRowNumber();
+            var orderKey = trim(row.getOrderKey());
             validateRow(row, rowNumber, orderKey, customerMap, skuMap, priceOverrideAllowed, result);
-            if (orderKey != null) groups.computeIfAbsent(orderKey, ignored -> new ArrayList<>()).add(new IndexedRow(rowNumber, row));
+            if (orderKey != null)
+                groups.computeIfAbsent(orderKey, ignored -> new ArrayList<>()).add(new IndexedRow(rowNumber, row));
         }
         result.setTotalOrders(groups.size());
-        if (groups.size() > MAX_ORDERS) addError(result, 0, null, "导入订单标识", "ORDER_LIMIT", "订单数不能超过 " + MAX_ORDERS + " 张");
+        if (groups.size() > MAX_ORDERS)
+            addError(result, 0, null, "导入订单标识", "ORDER_LIMIT", "订单数不能超过 " + MAX_ORDERS + " 张");
 
         var forms = new ArrayList<SalesOrderAddForm>();
         for (var entry : groups.entrySet()) {
-            var group = entry.getValue();var first = group.getFirst();
-            if (group.size() > MAX_ITEMS_PER_ORDER) addError(result, first.rowNumber(), entry.getKey(), "导入订单标识", "ITEM_LIMIT", "单张订单明细不能超过 " + MAX_ITEMS_PER_ORDER + " 行");
+            var group = entry.getValue();
+            var first = group.getFirst();
+            if (group.size() > MAX_ITEMS_PER_ORDER)
+                addError(result, first.rowNumber(), entry.getKey(), "导入订单标识", "ITEM_LIMIT", "单张订单明细不能超过 " + MAX_ITEMS_PER_ORDER + " 行");
             validateGroup(entry.getKey(), group, result);
             validatePrices(entry.getKey(), group, customerMap, skuMap, result);
             if (result.getTotalErrors() == 0) forms.add(toForm(group, customerMap, skuMap));
@@ -166,7 +176,8 @@ public class SalesOrderImportService {
     private void validatePrices(String orderKey, List<IndexedRow> rows, Map<String, CustomerEntity> customerMap,
                                 Map<String, ProductSkuOptionVO> skuMap, SalesOrderImportResultVO result) {
         var customer = customerMap.get(trim(rows.getFirst().row().getCustomerCode()));
-        if (customer == null || !net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable()) return;
+        if (customer == null || !net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable())
+            return;
         var ids = rows.stream().map(x -> skuMap.get(trim(x.row().getSkuCode()))).filter(Objects::nonNull).map(ProductSkuOptionVO::getSkuId).distinct().toList();
         try {
             var resolved = prices.resolve(customer.getId(), ids, OffsetDateTime.now()).stream().collect(Collectors.toMap(x -> x.getSkuId(), Function.identity()));
@@ -191,17 +202,20 @@ public class SalesOrderImportService {
                 var unitPrice = manualPrice == null ? price.getUnitPrice() : new BigDecimal(manualPrice);
                 var amount = unitPrice.multiply(new BigDecimal(quantity)).setScale(4, RoundingMode.HALF_UP);
                 total = total.add(amount);
-                if (amount.precision() > 18 || total.precision() > 18) addError(result, indexed.rowNumber(), orderKey, "下单数量", "AMOUNT_OVERFLOW", "数量与单价计算的明细金额或订单总额超出范围");
+                if (amount.precision() > 18 || total.precision() > 18)
+                    addError(result, indexed.rowNumber(), orderKey, "下单数量", "AMOUNT_OVERFLOW", "数量与单价计算的明细金额或订单总额超出范围");
             }
         } catch (ScmBusinessException exception) {
-            for (var row : rows) addError(result, row.rowNumber(), orderKey, "客户编码", String.valueOf(exception.getErrorCode().getCode()), exception.getErrorCode().getMsg());
+            for (var row : rows)
+                addError(result, row.rowNumber(), orderKey, "客户编码", String.valueOf(exception.getErrorCode().getCode()), exception.getErrorCode().getMsg());
         }
     }
 
     private void validateRow(SalesOrderImportRow row, int rowNumber, String orderKey, Map<String, CustomerEntity> customerMap,
                              Map<String, ProductSkuOptionVO> skuMap, boolean priceOverrideAllowed, SalesOrderImportResultVO result) {
         required(result, rowNumber, orderKey, "模板版本", row.getTemplateVersion());
-        if (trim(row.getTemplateVersion()) != null && !TEMPLATE_VERSION.equals(trim(row.getTemplateVersion()))) addError(result, rowNumber, orderKey, "模板版本", "TEMPLATE_VERSION", "模板版本不受支持，请重新下载模板");
+        if (trim(row.getTemplateVersion()) != null && !TEMPLATE_VERSION.equals(trim(row.getTemplateVersion())))
+            addError(result, rowNumber, orderKey, "模板版本", "TEMPLATE_VERSION", "模板版本不受支持，请重新下载模板");
         required(result, rowNumber, orderKey, "导入订单标识", row.getOrderKey());
         required(result, rowNumber, orderKey, "客户编码", row.getCustomerCode());
         required(result, rowNumber, orderKey, "收货人", row.getReceiverName());
@@ -216,19 +230,28 @@ public class SalesOrderImportService {
         length(result, rowNumber, orderKey, "改价原因", row.getOverrideReason(), 500);
 
         var customerCode = trim(row.getCustomerCode());
-        if (customerCode != null && !customerMap.containsKey(customerCode)) addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_FOUND", "客户编码不存在");
-        else if(customerCode != null && !net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum.valueOf(customerMap.get(customerCode).getStatus()).tradable()) addError(result,rowNumber,orderKey,"客户编码","CUSTOMER_NOT_TRADABLE","客户状态不可交易");
+        if (customerCode != null && !customerMap.containsKey(customerCode))
+            addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_FOUND", "客户编码不存在");
+        else if (customerCode != null && !net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum.valueOf(customerMap.get(customerCode).getStatus()).tradable())
+            addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_TRADABLE", "客户状态不可交易");
         var skuCode = trim(row.getSkuCode());
-        if (skuCode != null && !skuMap.containsKey(skuCode)) addError(result, rowNumber, orderKey, "SKU编码", "SKU_NOT_FOUND", "SKU 编码不存在");
+        if (skuCode != null && !skuMap.containsKey(skuCode))
+            addError(result, rowNumber, orderKey, "SKU编码", "SKU_NOT_FOUND", "SKU 编码不存在");
         decimal(result, rowNumber, orderKey, "下单数量", row.getOrderedQuantity(), true);
         if (trim(row.getUnitPrice()) != null) {
             decimal(result, rowNumber, orderKey, "人工单价", row.getUnitPrice(), false);
-            if (trim(row.getOverrideReason()) == null) addError(result, rowNumber, orderKey, "改价原因", "OVERRIDE_REASON_REQUIRED", "填写人工单价时必须填写改价原因");
-            if (!priceOverrideAllowed) addError(result, rowNumber, orderKey, "人工单价", "PRICE_OVERRIDE_FORBIDDEN", "当前账号没有订单改价权限");
+            if (trim(row.getOverrideReason()) == null)
+                addError(result, rowNumber, orderKey, "改价原因", "OVERRIDE_REASON_REQUIRED", "填写人工单价时必须填写改价原因");
+            if (!priceOverrideAllowed)
+                addError(result, rowNumber, orderKey, "人工单价", "PRICE_OVERRIDE_FORBIDDEN", "当前账号没有订单改价权限");
         } else if (trim(row.getOverrideReason()) != null) {
             addError(result, rowNumber, orderKey, "人工单价", "OVERRIDE_PRICE_REQUIRED", "填写改价原因时必须填写人工单价");
         }
-        if (trim(row.getExpectDeliveryTime()) != null) try { OffsetDateTime.parse(trim(row.getExpectDeliveryTime())); } catch (DateTimeParseException exception) { addError(result, rowNumber, orderKey, "期望配送时间", "DATE_INVALID", "期望配送时间必须是带时区的 ISO-8601 格式"); }
+        if (trim(row.getExpectDeliveryTime()) != null) try {
+            OffsetDateTime.parse(trim(row.getExpectDeliveryTime()));
+        } catch (DateTimeParseException exception) {
+            addError(result, rowNumber, orderKey, "期望配送时间", "DATE_INVALID", "期望配送时间必须是带时区的 ISO-8601 格式");
+        }
     }
 
     private void validateGroup(String orderKey, List<IndexedRow> rows, SalesOrderImportResultVO result) {
@@ -243,35 +266,86 @@ public class SalesOrderImportService {
             same(result, indexed.rowNumber(), orderKey, "期望配送时间", first.getExpectDeliveryTime(), row.getExpectDeliveryTime());
             same(result, indexed.rowNumber(), orderKey, "订单备注", first.getRemark(), row.getRemark());
             var skuCode = trim(row.getSkuCode());
-            if (skuCode != null && !skuCodes.add(skuCode)) addError(result, indexed.rowNumber(), orderKey, "SKU编码", "SKU_DUPLICATE", "同一订单内 SKU 不能重复");
+            if (skuCode != null && !skuCodes.add(skuCode))
+                addError(result, indexed.rowNumber(), orderKey, "SKU编码", "SKU_DUPLICATE", "同一订单内 SKU 不能重复");
         }
     }
 
     private SalesOrderAddForm toForm(List<IndexedRow> rows, Map<String, CustomerEntity> customerMap, Map<String, ProductSkuOptionVO> skuMap) {
-        var first = rows.getFirst().row();var form = new SalesOrderAddForm();
-        form.setCustomerId(customerMap.get(trim(first.getCustomerCode())).getId());form.setOrderSource("IMPORT");form.setRemark(trim(first.getRemark()));
-        if (trim(first.getExpectDeliveryTime()) != null) form.setExpectDeliveryTime(OffsetDateTime.parse(trim(first.getExpectDeliveryTime())));
-        var address = new OrderAddressForm();address.setReceiverName(trim(first.getReceiverName()));address.setReceiverPhone(trim(first.getReceiverPhone()));address.setAddress(trim(first.getAddress()));form.setAddress(address);
+        var first = rows.getFirst().row();
+        var form = new SalesOrderAddForm();
+        form.setCustomerId(customerMap.get(trim(first.getCustomerCode())).getId());
+        form.setOrderSource("IMPORT");
+        form.setRemark(trim(first.getRemark()));
+        if (trim(first.getExpectDeliveryTime()) != null)
+            form.setExpectDeliveryTime(OffsetDateTime.parse(trim(first.getExpectDeliveryTime())));
+        var address = new OrderAddressForm();
+        address.setReceiverName(trim(first.getReceiverName()));
+        address.setReceiverPhone(trim(first.getReceiverPhone()));
+        address.setAddress(trim(first.getAddress()));
+        form.setAddress(address);
         var items = new ArrayList<SalesOrderItemForm>();
         for (int index = 0; index < rows.size(); index++) {
-            var row = rows.get(index).row();var item = new SalesOrderItemForm();item.setSkuId(skuMap.get(trim(row.getSkuCode())).getSkuId());item.setOrderedQuantity(fixed(row.getOrderedQuantity()));item.setSortOrder(index);
-            var manual = trim(row.getUnitPrice()) != null;item.setManualPriceOverride(manual);item.setUnitPrice(manual ? fixed(row.getUnitPrice()) : null);item.setOverrideReason(manual ? trim(row.getOverrideReason()) : null);items.add(item);
+            var row = rows.get(index).row();
+            var item = new SalesOrderItemForm();
+            item.setSkuId(skuMap.get(trim(row.getSkuCode())).getSkuId());
+            item.setOrderedQuantity(fixed(row.getOrderedQuantity()));
+            item.setSortOrder(index);
+            var manual = trim(row.getUnitPrice()) != null;
+            item.setManualPriceOverride(manual);
+            item.setUnitPrice(manual ? fixed(row.getUnitPrice()) : null);
+            item.setOverrideReason(manual ? trim(row.getOverrideReason()) : null);
+            items.add(item);
         }
-        form.setItems(items);return form;
+        form.setItems(items);
+        return form;
     }
 
-    private void required(SalesOrderImportResultVO result, int row, String key, String column, String value) { if (trim(value) == null) addError(result, row, key, column, "REQUIRED", column + "不能为空"); }
-    private void length(SalesOrderImportResultVO result, int row, String key, String column, String value, int max) { if (trim(value) != null && trim(value).length() > max) addError(result, row, key, column, "TOO_LONG", column + "不能超过 " + max + " 个字符"); }
+    private void required(SalesOrderImportResultVO result, int row, String key, String column, String value) {
+        if (trim(value) == null) addError(result, row, key, column, "REQUIRED", column + "不能为空");
+    }
+
+    private void length(SalesOrderImportResultVO result, int row, String key, String column, String value, int max) {
+        if (trim(value) != null && trim(value).length() > max)
+            addError(result, row, key, column, "TOO_LONG", column + "不能超过 " + max + " 个字符");
+    }
+
     private void decimal(SalesOrderImportResultVO result, int row, String key, String column, String value, boolean positive) {
         if (trim(value) == null) return;
-        try { if (!trim(value).matches("[0-9]{1,14}(\\.[0-9]{1,4})?")) throw new NumberFormatException();var number = new BigDecimal(trim(value));if (positive ? number.signum() <= 0 : number.signum() < 0) throw new NumberFormatException(); }
-        catch (NumberFormatException exception) { addError(result, row, key, column, "DECIMAL_INVALID", column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数"); }
+        try {
+            if (!trim(value).matches("[0-9]{1,14}(\\.[0-9]{1,4})?")) throw new NumberFormatException();
+            var number = new BigDecimal(trim(value));
+            if (positive ? number.signum() <= 0 : number.signum() < 0) throw new NumberFormatException();
+        } catch (NumberFormatException exception) {
+            addError(result, row, key, column, "DECIMAL_INVALID", column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数");
+        }
     }
-    private void same(SalesOrderImportResultVO result, int row, String key, String column, String expected, String actual) { if (!Objects.equals(trim(expected), trim(actual))) addError(result, row, key, column, "HEADER_CONFLICT", "同一导入订单的" + column + "必须一致"); }
-    private String fixed(String value) { return new BigDecimal(trim(value)).setScale(4, RoundingMode.UNNECESSARY).toPlainString(); }
-    private String trim(String value) { if (value == null) return null;var trimmed = value.trim();return trimmed.isEmpty() ? null : trimmed; }
-    private void addError(SalesOrderImportResultVO result, int row, String key, String column, String code, String message) { result.setTotalErrors(result.getTotalErrors() + 1);if (result.getErrors().size() < MAX_ERRORS) result.getErrors().add(new SalesOrderImportErrorVO(row, key, column, code, message)); }
 
-    private record IndexedRow(int rowNumber, SalesOrderImportRow row) {}
-    private record Assembly(SalesOrderImportResultVO result, List<SalesOrderAddForm> forms, List<List<IndexedRow>> groups) {}
+    private void same(SalesOrderImportResultVO result, int row, String key, String column, String expected, String actual) {
+        if (!Objects.equals(trim(expected), trim(actual)))
+            addError(result, row, key, column, "HEADER_CONFLICT", "同一导入订单的" + column + "必须一致");
+    }
+
+    private String fixed(String value) {
+        return new BigDecimal(trim(value)).setScale(4, RoundingMode.UNNECESSARY).toPlainString();
+    }
+
+    private String trim(String value) {
+        if (value == null) return null;
+        var trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void addError(SalesOrderImportResultVO result, int row, String key, String column, String code, String message) {
+        result.setTotalErrors(result.getTotalErrors() + 1);
+        if (result.getErrors().size() < MAX_ERRORS)
+            result.getErrors().add(new SalesOrderImportErrorVO(row, key, column, code, message));
+    }
+
+    private record IndexedRow(int rowNumber, SalesOrderImportRow row) {
+    }
+
+    private record Assembly(SalesOrderImportResultVO result, List<SalesOrderAddForm> forms,
+                            List<List<IndexedRow>> groups) {
+    }
 }

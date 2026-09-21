@@ -21,7 +21,7 @@
  <a-modal title="价格变更详情" :open="!!selected" :footer="null" :width="760" @cancel="selected=undefined"><ScmDiffTable :before="selected?.beforeData" :after="selected?.afterData" /></a-modal>
 </template>
 <script setup lang="ts">
-import {onMounted,reactive,ref} from 'vue';
+import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
@@ -30,12 +30,76 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {formatAmount} from '/@/utils/scm-amount';
-import type {PriceQuery,HistoryRow} from '/@/types/business/scm/pricing';
+import type {PriceQuery, HistoryRow} from '/@/types/business/scm/pricing';
 import {pricingError} from './pricing-errors';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
-import { datetime } from '../common/scm-display';
-const query=reactive<PriceQuery&{source?:string;operationType?:string}>({pageNum:1,pageSize:20}),effective=ref<[string,string]>(),operated=ref<[string,string]>(),rows=ref<HistoryRow[]>([]),total=ref(0),loading=ref(false),error=ref(''),selected=ref<HistoryRow>();let requestId=0;
-const columns=ref<TableColumnsType<HistoryRow>>([{title:'来源',dataIndex:'source',width:140},{title:'客户',dataIndex:'customerName',width:140},{title:'客户类型',dataIndex:'customerTypeName',width:130},{title:'SKU 编码',dataIndex:'skuCode',width:150},{title:'商品',dataIndex:'productName',width:140},{title:'操作',dataIndex:'operationType',width:90},{title:'操作人',dataIndex:'operator',width:100},{title:'操作时间',dataIndex:'operatedAt',width:210, customRender: ({ text }) => datetime(text) },{title:'当前价格',dataIndex:'currentUnitPrice',align:'right',width:120},{title:'当前生效',dataIndex:'currentEffectiveFrom',width:200, customRender: ({ text }) => datetime(text) },{title:'当前结束',dataIndex:'currentEffectiveTo',width:200, customRender: ({ text }) => datetime(text) },{title:'当前记录',dataIndex:'currentDeleted',width:100},{title:'详情',dataIndex:'action',fixed:'right',width:110}]);
-async function load(){const id=++requestId;loading.value=true;error.value='';try{const r=await pricingApi.history({...query,effectiveFrom:effective.value?.[0]||null,effectiveTo:effective.value?.[1]||null,operatedFrom:operated.value?.[0]||null,operatedTo:operated.value?.[1]||null});if(id===requestId){rows.value=r.data.list;total.value=r.data.total;}}catch(e){if(id===requestId)error.value=pricingError(e);}finally{if(id===requestId)loading.value=false;}}
-function search(){query.pageNum=1;load();}onMounted(load);
+import {datetime} from '../common/scm-display';
+
+const query = reactive<PriceQuery & { source?: string; operationType?: string }>({pageNum: 1, pageSize: 20}),
+    effective = ref<[string, string]>(), operated = ref<[string, string]>(), rows = ref<HistoryRow[]>([]),
+    total = ref(0), loading = ref(false), error = ref(''), selected = ref<HistoryRow>();
+let requestId = 0;
+const columns = ref<TableColumnsType<HistoryRow>>([{title: '来源', dataIndex: 'source', width: 140}, {
+  title: '客户',
+  dataIndex: 'customerName',
+  width: 140
+}, {title: '客户类型', dataIndex: 'customerTypeName', width: 130}, {
+  title: 'SKU 编码',
+  dataIndex: 'skuCode',
+  width: 150
+}, {title: '商品', dataIndex: 'productName', width: 140}, {
+  title: '操作',
+  dataIndex: 'operationType',
+  width: 90
+}, {title: '操作人', dataIndex: 'operator', width: 100}, {
+  title: '操作时间',
+  dataIndex: 'operatedAt',
+  width: 210,
+  customRender: ({text}) => datetime(text)
+}, {title: '当前价格', dataIndex: 'currentUnitPrice', align: 'right', width: 120}, {
+  title: '当前生效',
+  dataIndex: 'currentEffectiveFrom',
+  width: 200,
+  customRender: ({text}) => datetime(text)
+}, {
+  title: '当前结束',
+  dataIndex: 'currentEffectiveTo',
+  width: 200,
+  customRender: ({text}) => datetime(text)
+}, {title: '当前记录', dataIndex: 'currentDeleted', width: 100}, {
+  title: '详情',
+  dataIndex: 'action',
+  fixed: 'right',
+  width: 110
+}]);
+
+async function load() {
+  const id = ++requestId;
+  loading.value = true;
+  error.value = '';
+  try {
+    const r = await pricingApi.history({
+      ...query,
+      effectiveFrom: effective.value?.[0] || null,
+      effectiveTo: effective.value?.[1] || null,
+      operatedFrom: operated.value?.[0] || null,
+      operatedTo: operated.value?.[1] || null
+    });
+    if (id === requestId) {
+      rows.value = r.data.list;
+      total.value = r.data.total;
+    }
+  } catch (e) {
+    if (id === requestId) error.value = pricingError(e);
+  } finally {
+    if (id === requestId) loading.value = false;
+  }
+}
+
+function search() {
+  query.pageNum = 1;
+  load();
+}
+
+onMounted(load);
 </script>

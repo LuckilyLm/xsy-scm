@@ -9,4 +9,4 @@ package net.lab1024.sa.admin.module.scm.purchase.constant;
  * <p>A 源的 {@code PARTIALLY_CONFIRMED} 已删除：多次确认被「一采购单多收货单」取代。
  * {@code CONFIRMED} 的判据是**本收货单是否已提交**，不由整张采购单的收货进度决定（修 A-D5）。
  */
-public enum ScmReceiptStatusEnum { DRAFT, CONFIRMED }
+public enum ScmReceiptStatusEnum {DRAFT, CONFIRMED}

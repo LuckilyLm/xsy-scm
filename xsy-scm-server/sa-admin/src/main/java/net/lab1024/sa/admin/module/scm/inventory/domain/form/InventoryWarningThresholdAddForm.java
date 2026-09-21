@@ -26,12 +26,16 @@ public class InventoryWarningThresholdAddForm {
     @NotNull
     private Long skuId;
 
-    /** 预警下限；可为空表示不设下限。 */
+    /**
+     * 预警下限；可为空表示不设下限。
+     */
     @DecimalMin(value = "0", inclusive = true)
     @Digits(integer = 14, fraction = 4)
     private BigDecimal warnMin;
 
-    /** 预警上限；可为空表示不设上限。 */
+    /**
+     * 预警上限；可为空表示不设上限。
+     */
     @DecimalMin(value = "0", inclusive = true)
     @Digits(integer = 14, fraction = 4)
     private BigDecimal warnMax;

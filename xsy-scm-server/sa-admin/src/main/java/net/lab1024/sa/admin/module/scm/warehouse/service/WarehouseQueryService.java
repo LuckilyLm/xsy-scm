@@ -30,7 +30,9 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VA
 @RequiredArgsConstructor
 public class WarehouseQueryService {
 
-    /** 排序白名单：只有这些列允许来自客户端。 */
+    /**
+     * 排序白名单：只有这些列允许来自客户端。
+     */
     private static final Set<String> SORTABLE =
             Set.of("warehouse_code", "name", "status", "created_at", "updated_at");
 
@@ -38,7 +40,9 @@ public class WarehouseQueryService {
 
     private final WarehouseService service;
 
-    /** 下拉选择器：只返回 {@code ENABLED}，按编码排序。 */
+    /**
+     * 下拉选择器：只返回 {@code ENABLED}，按编码排序。
+     */
     public List<WarehouseVO> list() {
         return dao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
                         .eq(WarehouseEntity::getStatus, ScmWarehouseStatusEnum.ENABLED.name())

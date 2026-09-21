@@ -12,15 +12,16 @@
     </sql>
 
     <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity">
-        SELECT <include refid="customerColumns"/>
+        SELECT
+        <include refid="customerColumns"/>
         FROM customer c
         WHERE c.deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
             <!-- 增强（Target Design Q8）：legacy 只搜编码 + 名称，这里追加联系人 / 联系电话 -->
             AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')
-              OR c.name ILIKE CONCAT('%', #{query.keyword}, '%')
-              OR c.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')
-              OR c.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
+            OR c.name ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR c.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR c.contact_phone ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
         <if test="query.customerTypeId != null">
             AND c.customer_type_id = #{query.customerTypeId}
@@ -38,8 +39,8 @@
 
     <update id="softDelete">
         UPDATE customer
-        SET deleted = TRUE,
-            version = version + 1,
+        SET deleted    = TRUE,
+            version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{operator}
         WHERE id = #{customerId}
@@ -55,7 +56,8 @@
     </select>
 
     <select id="selectActiveByCodes" resultType="net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity">
-        SELECT <include refid="customerColumns"/>
+        SELECT
+        <include refid="customerColumns"/>
         FROM customer c
         WHERE c.deleted = FALSE AND c.customer_code IN
         <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>

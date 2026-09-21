@@ -59,13 +59,19 @@ public class InventoryMovementQueryForm extends PageParam {
             + "|LOSS_GAIN_ITEM|TRANSFER_OUT_ITEM|TRANSFER_IN_ITEM|CONVERT_OUT_ITEM|CONVERT_IN_ITEM")
     private String sourceDocumentType;
 
-    /** 来源单据头 id（收货单 / 出库单 / 盘点单 / 报损报溢单 / 调拨单 / 转换单 id），头级溯源过滤。 */
+    /**
+     * 来源单据头 id（收货单 / 出库单 / 盘点单 / 报损报溢单 / 调拨单 / 转换单 id），头级溯源过滤。
+     */
     private Long sourceDocumentId;
 
-    /** {@code occurred_at >= occurredFrom}。 */
+    /**
+     * {@code occurred_at >= occurredFrom}。
+     */
     private OffsetDateTime occurredFrom;
 
-    /** {@code occurred_at < occurredTo}（左闭右开，与 W5 收货时间范围口径一致）。 */
+    /**
+     * {@code occurred_at < occurredTo}（左闭右开，与 W5 收货时间范围口径一致）。
+     */
     private OffsetDateTime occurredTo;
 
     @Override

@@ -1,35 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.pricing.dao.CustomerTypePriceDao">
-<resultMap id="vo" type="net.lab1024.sa.admin.module.scm.pricing.domain.vo.CustomerTypePriceVO" autoMapping="true">
- <id column="price_id" property="customerTypePriceId"/>
- <result column="spec_values" property="specValues" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" javaType="java.util.Map"/>
-</resultMap>
-<sql id="joined">SELECT p.id price_id,p.version,p.customer_type_id,p.sku_id,p.unit_price,p.effective_from,p.effective_to,p.updated_at,
- d.type_code customer_type_code,d.name customer_type_name,s.sku_code,s.spec_name,s.spec_values,sp.name product_name
- FROM customer_type_price p LEFT JOIN customer_type d ON d.id=p.customer_type_id
- LEFT JOIN product_sku s ON s.id=p.sku_id LEFT JOIN product_spu sp ON sp.id=s.spu_id</sql>
-<select id="queryPage" resultMap="vo"><include refid="joined"/> WHERE p.deleted=FALSE
- <if test="query.customerTypeId != null">AND p.customer_type_id=#{query.customerTypeId}</if>
- <if test="query.skuId != null">AND p.sku_id=#{query.skuId}</if>
- <if test="query.keyword != null and query.keyword != ''">AND (d.name ILIKE CONCAT('%',#{query.keyword},'%') OR d.type_code ILIKE CONCAT('%',#{query.keyword},'%') OR s.sku_code ILIKE CONCAT('%',#{query.keyword},'%') OR sp.name ILIKE CONCAT('%',#{query.keyword},'%'))</if>
- <if test="query.effectiveFrom != null">AND (p.effective_to IS NULL OR p.effective_to &gt; #{query.effectiveFrom})</if>
- <if test="query.effectiveTo != null">AND p.effective_from &lt; #{query.effectiveTo}</if>
-</select>
-<select id="detail" resultMap="vo"><include refid="joined"/> WHERE p.id=#{id} AND p.deleted=FALSE</select>
-<select id="lockParent" resultType="long">SELECT id FROM customer_type WHERE id=#{id} AND deleted=FALSE FOR UPDATE</select>
-<select id="countOverlapping" resultType="long">
- SELECT count(*) FROM customer_type_price WHERE customer_type_id=#{dimension} AND sku_id=#{skuId} AND deleted=FALSE
- AND effective_from &lt; COALESCE(#{to,jdbcType=TIMESTAMP_WITH_TIMEZONE},'infinity'::timestamptz)
- AND (effective_to IS NULL OR effective_to &gt; #{from,jdbcType=TIMESTAMP_WITH_TIMEZONE})
- <if test="excludeId != null">AND id != #{excludeId}</if>
-</select>
-<select id="selectEffective" resultType="net.lab1024.sa.admin.module.scm.pricing.domain.entity.CustomerTypePriceEntity">
- SELECT id,customer_type_id,sku_id,unit_price,effective_from,effective_to,version,deleted FROM customer_type_price
- WHERE deleted=FALSE AND customer_type_id=#{dimension} AND effective_from &lt;= #{at} AND (effective_to IS NULL OR effective_to &gt; #{at})
- AND sku_id IN <foreach collection="skuIds" item="sku" open="(" separator="," close=")">#{sku}</foreach>
- ORDER BY effective_from DESC,id DESC
-</select>
-<update id="softDelete">UPDATE customer_type_price SET deleted=TRUE,version=version+1,updated_at=CURRENT_TIMESTAMP,updated_by=#{operator} WHERE id=#{id} AND version=#{version} AND deleted=FALSE</update>
-<insert id="log">INSERT INTO customer_type_price_operation_log(customer_type_price_id,operation_type,operator,before_data,after_data,created_by) VALUES (#{id},#{operation},#{operator},CAST(#{before,jdbcType=VARCHAR} AS jsonb),CAST(#{after,jdbcType=VARCHAR} AS jsonb),#{operator})</insert>
+    <resultMap id="vo" type="net.lab1024.sa.admin.module.scm.pricing.domain.vo.CustomerTypePriceVO" autoMapping="true">
+        <id column="price_id" property="customerTypePriceId"/>
+        <result column="spec_values" property="specValues"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" javaType="java.util.Map"/>
+    </resultMap>
+    <sql id="joined">SELECT p.id        price_id,
+                            p.version,
+                            p.customer_type_id,
+                            p.sku_id,
+                            p.unit_price,
+                            p.effective_from,
+                            p.effective_to,
+                            p.updated_at,
+                            d.type_code customer_type_code,
+                            d.name      customer_type_name,
+                            s.sku_code,
+                            s.spec_name,
+                            s.spec_values,
+                            sp.name     product_name
+                     FROM customer_type_price p
+                              LEFT JOIN customer_type d ON d.id = p.customer_type_id
+                              LEFT JOIN product_sku s ON s.id = p.sku_id
+                              LEFT JOIN product_spu sp ON sp.id = s.spu_id</sql>
+    <select id="queryPage" resultMap="vo">
+        <include refid="joined"/>
+        WHERE p.deleted=FALSE
+        <if test="query.customerTypeId != null">AND p.customer_type_id=#{query.customerTypeId}</if>
+        <if test="query.skuId != null">AND p.sku_id=#{query.skuId}</if>
+        <if test="query.keyword != null and query.keyword != ''">AND (d.name ILIKE CONCAT('%',#{query.keyword},'%') OR
+            d.type_code ILIKE CONCAT('%',#{query.keyword},'%') OR s.sku_code ILIKE CONCAT('%',#{query.keyword},'%') OR
+            sp.name ILIKE CONCAT('%',#{query.keyword},'%'))
+        </if>
+        <if test="query.effectiveFrom != null">AND (p.effective_to IS NULL OR p.effective_to &gt;
+            #{query.effectiveFrom})
+        </if>
+        <if test="query.effectiveTo != null">AND p.effective_from &lt; #{query.effectiveTo}</if>
+    </select>
+    <select id="detail" resultMap="vo">
+        <include refid="joined"/>
+        WHERE p.id=
+        #{id}
+        AND
+        p
+        .
+        deleted
+        =
+        FALSE
+    </select>
+    <select id="lockParent" resultType="long">SELECT id
+                                              FROM customer_type
+                                              WHERE id = #{id}
+                                                AND deleted = FALSE FOR UPDATE</select>
+    <select id="countOverlapping" resultType="long">
+        SELECT count(*) FROM customer_type_price WHERE customer_type_id=#{dimension} AND sku_id=#{skuId} AND
+        deleted=FALSE
+        AND effective_from &lt; COALESCE(#{to,jdbcType=TIMESTAMP_WITH_TIMEZONE},'infinity'::timestamptz)
+        AND (effective_to IS NULL OR effective_to &gt; #{from,jdbcType=TIMESTAMP_WITH_TIMEZONE})
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+    <select id="selectEffective"
+            resultType="net.lab1024.sa.admin.module.scm.pricing.domain.entity.CustomerTypePriceEntity">
+        SELECT id,customer_type_id,sku_id,unit_price,effective_from,effective_to,version,deleted FROM
+        customer_type_price
+        WHERE deleted=FALSE AND customer_type_id=#{dimension} AND effective_from &lt;= #{at} AND (effective_to IS NULL
+        OR effective_to &gt; #{at})
+        AND sku_id IN
+        <foreach collection="skuIds" item="sku" open="(" separator="," close=")">#{sku}</foreach>
+        ORDER BY effective_from DESC,id DESC
+    </select>
+    <update id="softDelete">UPDATE customer_type_price
+                            SET deleted= TRUE,
+                                version=version + 1,
+                                updated_at=CURRENT_TIMESTAMP,
+                                updated_by=#{operator}
+                            WHERE id = #{id}
+                              AND version = #{version}
+                              AND deleted = FALSE</update>
+    <insert id="log">INSERT INTO customer_type_price_operation_log(customer_type_price_id, operation_type, operator,
+                                                                   before_data, after_data, created_by)
+                     VALUES (#{id}, #{operation}, #{operator}, CAST(#{before,jdbcType=VARCHAR} AS jsonb),
+                             CAST(#{after,jdbcType=VARCHAR} AS jsonb), #{operator})</insert>
 </mapper>

@@ -22,7 +22,9 @@ public class InventoryReservationQueryService {
 
     private final InventoryReservationDao reservationDao;
 
-    /** 分页查询。 */
+    /**
+     * 分页查询。
+     */
     public PageResult<InventoryReservationVO> queryPage(InventoryReservationQueryForm query) {
         var page = SmartPageUtil.convert2PageQuery(query);
         List<InventoryReservationVO> list = reservationDao.queryPage(page, query);

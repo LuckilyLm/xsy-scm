@@ -21,14 +21,20 @@ import java.util.List;
 @Mapper
 public interface InventoryTransferItemDao extends BaseMapper<InventoryTransferItemEntity> {
 
-    /** 某单下的明细（含展示字段，按 id 升序 —— 即录入顺序）。 */
+    /**
+     * 某单下的明细（含展示字段，按 id 升序 —— 即录入顺序）。
+     */
     List<InventoryTransferItemVO> listByTransferId(@Param("transferId") Long transferId);
 
-    /** 软删某单下的全部明细（草稿重存时用）。 */
+    /**
+     * 软删某单下的全部明细（草稿重存时用）。
+     */
     int deleteByTransferId(@Param("transferId") Long transferId,
                            @Param("operator") String operator);
 
-    /** 回写单位快照（**发出**时按源仓记账单位写入）。 */
+    /**
+     * 回写单位快照（**发出**时按源仓记账单位写入）。
+     */
     int updateUnitSnapshot(@Param("id") Long id,
                            @Param("unit") String unit,
                            @Param("operator") String operator);

@@ -6,8 +6,10 @@
                type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryLossGainVO"/>
 
     <select id="countByLossGainNo" resultType="int">
-        SELECT COUNT(*) FROM inventory_loss_gain
-        WHERE loss_gain_no = #{lossGainNo} AND deleted = FALSE
+        SELECT COUNT(*)
+        FROM inventory_loss_gain
+        WHERE loss_gain_no = #{lossGainNo}
+          AND deleted = FALSE
     </select>
 
     <select id="nextLossGainNo" resultType="long">
@@ -16,13 +18,19 @@
 
     <select id="selectById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryLossGainEntity">
-        SELECT * FROM inventory_loss_gain WHERE id = #{id} AND deleted = FALSE
+        SELECT *
+        FROM inventory_loss_gain
+        WHERE id = #{id}
+          AND deleted = FALSE
     </select>
 
     <!-- 锁序：单据锁先于余额锁（与收货/出库/盘点确认同一顺序，避免反向拿锁） -->
     <select id="lockById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryLossGainEntity">
-        SELECT * FROM inventory_loss_gain WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM inventory_loss_gain
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <!--
@@ -40,7 +48,10 @@
             version       = version + 1,
             updated_at    = CURRENT_TIMESTAMP,
             updated_by    = #{auditor}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING' AND version = #{version}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'PENDING'
+          AND version = #{version}
     </update>
 
     <update id="markRejected">
@@ -52,7 +63,10 @@
             version       = version + 1,
             updated_at    = CURRENT_TIMESTAMP,
             updated_by    = #{auditor}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING' AND version = #{version}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'PENDING'
+          AND version = #{version}
     </update>
 
     <!-- 回写待审核单据的头；状态守卫保证已完成/已驳回的单据改不动 -->
@@ -65,26 +79,28 @@
             version      = version + 1,
             updated_at   = CURRENT_TIMESTAMP,
             updated_by   = #{operator}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'PENDING'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'PENDING'
     </update>
 
     <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
     <select id="queryPage" resultMap="lossGainVoMap">
         SELECT g.id,
-               g.loss_gain_no,
-               g.warehouse_id,
-               g.adjust_type,
-               g.status,
-               g.reason,
-               g.remark,
-               g.audited_at,
-               g.auditor,
-               g.audit_opinion,
-               g.version,
-               g.created_at,
-               g.updated_at,
-               w.warehouse_code,
-               w.name AS warehouse_name
+        g.loss_gain_no,
+        g.warehouse_id,
+        g.adjust_type,
+        g.status,
+        g.reason,
+        g.remark,
+        g.audited_at,
+        g.auditor,
+        g.audit_opinion,
+        g.version,
+        g.created_at,
+        g.updated_at,
+        w.warehouse_code,
+        w.name AS warehouse_name
         FROM inventory_loss_gain g
         LEFT JOIN warehouse w ON w.id = g.warehouse_id
         WHERE g.deleted = FALSE
@@ -120,8 +136,9 @@
                w.warehouse_code,
                w.name AS warehouse_name
         FROM inventory_loss_gain g
-        LEFT JOIN warehouse w ON w.id = g.warehouse_id
-        WHERE g.deleted = FALSE AND g.id = #{id}
+                 LEFT JOIN warehouse w ON w.id = g.warehouse_id
+        WHERE g.deleted = FALSE
+          AND g.id = #{id}
     </select>
 
 </mapper>

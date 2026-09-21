@@ -2,9 +2,11 @@ package net.lab1024.sa.admin.module.scm.purchase.domain.entity;
 
 import lombok.Data;
 import com.baomidou.mybatisplus.annotation.*;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler;
@@ -19,28 +21,55 @@ import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler
  * 超收上限是**运行时**计算（`planned × (1 + tolerance/100)`），不能表达为静态 CHECK。
  * 这是已知的 DB 级缺口，由 `PurchaseReceiptQuantityCalculator` + 40989 在服务层强制。
  */
-@Data @TableName(value="purchase_order_item",autoResultMap=true)
+@Data
+@TableName(value = "purchase_order_item", autoResultMap = true)
 public class PurchaseOrderItemEntity {
-    @TableId(type=IdType.AUTO) private Long id;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Long purchaseOrderId;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Long spuId;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Long skuId;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String spuCodeSnapshot;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String productNameSnapshot;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String skuCodeSnapshot;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String skuNameSnapshot;
-    @TableField(typeHandler=PurchaseJsonbTypeHandler.class, updateStrategy=FieldStrategy.ALWAYS) private Map<String,Object> specValuesSnapshot;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String purchaseUnitSnapshot;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String productTypeSnapshot;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal plannedQuantity;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal receivedQuantity;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal purchasePrice;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal lineAmount;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Integer sortOrder;
-    @Version private Integer version=0;
-    @TableLogic(value="false",delval="true") private Boolean deleted=false;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private OffsetDateTime createdAt;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private OffsetDateTime updatedAt;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String createdBy;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String updatedBy;
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long purchaseOrderId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long spuId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long skuId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String spuCodeSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String productNameSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String skuCodeSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String skuNameSnapshot;
+    @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    private Map<String, Object> specValuesSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String purchaseUnitSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String productTypeSnapshot;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal plannedQuantity;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal receivedQuantity;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal purchasePrice;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal lineAmount;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer sortOrder;
+    @Version
+    private Integer version = 0;
+    @TableLogic(value = "false", delval = "true")
+    private Boolean deleted = false;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime createdAt;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime updatedAt;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String createdBy;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String updatedBy;
 }

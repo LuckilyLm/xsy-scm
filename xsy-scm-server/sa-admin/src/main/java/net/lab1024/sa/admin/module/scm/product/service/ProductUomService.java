@@ -13,8 +13,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.OffsetDateTime;
 import java.util.*;
+
 import static net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode.*;
 
 /**
@@ -30,7 +32,9 @@ public class ProductUomService {
         return dao.selectWithReference(query == null ? new ProductAssistantQueryForm() : query);
     }
 
-    /** 下拉只出启用单位；停用单位不再出现在新配置里，历史商品字段不受影响。 */
+    /**
+     * 下拉只出启用单位；停用单位不再出现在新配置里，历史商品字段不受影响。
+     */
     public List<ProductUomVO> options() {
         var query = new ProductAssistantQueryForm();
         query.setStatus("ENABLED");
@@ -60,7 +64,11 @@ public class ProductUomService {
         stamp(entity);
         entity.setCreatedAt(entity.getUpdatedAt());
         entity.setCreatedBy(entity.getUpdatedBy());
-        try { dao.insert(entity); } catch (DuplicateKeyException e) { throw duplicate(e); }
+        try {
+            dao.insert(entity);
+        } catch (DuplicateKeyException e) {
+            throw duplicate(e);
+        }
         return entity.getId();
     }
 
@@ -76,7 +84,9 @@ public class ProductUomService {
         if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
-    /** 行锁后复核引用数，避免「校验时为 0、提交时已被并发引用」。 */
+    /**
+     * 行锁后复核引用数，避免「校验时为 0、提交时已被并发引用」。
+     */
     @Transactional
     public void delete(ProductUomKeyForm form) {
         var entity = dao.selectForUpdate(form.getUomId());
@@ -88,12 +98,16 @@ public class ProductUomService {
         dao.deleteById(entity.getId());
     }
 
-    /** 与 uk_scm_uom_code_active / uk_scm_uom_name_active 同域的应用级预检，给出可解释的错误码。 */
+    /**
+     * 与 uk_scm_uom_code_active / uk_scm_uom_name_active 同域的应用级预检，给出可解释的错误码。
+     */
     private void assertUnique(String code, String name, Long self) {
         if (dao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getUomCode, code)
-                .ne(self != null, ProductUomEntity::getId, self)) > 0) throw new ScmBusinessException(UOM_CODE_DUPLICATE);
+                .ne(self != null, ProductUomEntity::getId, self)) > 0)
+            throw new ScmBusinessException(UOM_CODE_DUPLICATE);
         if (dao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getName, name)
-                .ne(self != null, ProductUomEntity::getId, self)) > 0) throw new ScmBusinessException(UOM_NAME_DUPLICATE);
+                .ne(self != null, ProductUomEntity::getId, self)) > 0)
+            throw new ScmBusinessException(UOM_NAME_DUPLICATE);
     }
 
     private ProductUomEntity require(Long id, Integer version) {
@@ -110,7 +124,8 @@ public class ProductUomService {
 
     private ScmBusinessException duplicate(DuplicateKeyException e) {
         String constraint = e.getMostSpecificCause().getMessage();
-        if (constraint != null && constraint.contains("uk_scm_uom_name_active")) return new ScmBusinessException(UOM_NAME_DUPLICATE);
+        if (constraint != null && constraint.contains("uk_scm_uom_name_active"))
+            return new ScmBusinessException(UOM_NAME_DUPLICATE);
         return new ScmBusinessException(UOM_CODE_DUPLICATE);
     }
 }

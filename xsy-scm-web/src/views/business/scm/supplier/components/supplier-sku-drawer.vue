@@ -16,14 +16,14 @@
 <template>
   <a-drawer v-model:open="visible" :title="title" width="1120" @close="close">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
+      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
       <a-alert
-        type="info"
-        show-icon
-        class="smart-margin-bottom10"
-        message="保存时以当前表格内容整体覆盖该供应商的关联关系；清空全部行并保存等于删除所有关联。"
+          type="info"
+          show-icon
+          class="smart-margin-bottom10"
+          message="保存时以当前表格内容整体覆盖该供应商的关联关系；清空全部行并保存等于删除所有关联。"
       />
-      <SupplierSkuEditableTable v-model="drafts" />
+      <SupplierSkuEditableTable v-model="drafts"/>
     </a-spin>
     <template #footer>
       <a-space>
@@ -35,72 +35,72 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, nextTick, ref } from 'vue';
-  import { message } from 'ant-design-vue';
-  import { supplierSkuApi } from '/@/api/business/scm/supplier-sku-api';
-  import type { ScmId, SupplierRow } from '/@/types/business/scm/supplier';
-  import SupplierSkuEditableTable from './supplier-sku-editable-table.vue';
-  import { fromRows, toReplaceItems, validateSkuDrafts } from '../supplier-form-model';
-  import type { SkuDraft } from '../supplier-form-model';
-  import { supplierError } from '../supplier-errors';
+import {computed, nextTick, ref} from 'vue';
+import {message} from 'ant-design-vue';
+import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
+import type {ScmId, SupplierRow} from '/@/types/business/scm/supplier';
+import SupplierSkuEditableTable from './supplier-sku-editable-table.vue';
+import {fromRows, toReplaceItems, validateSkuDrafts} from '../supplier-form-model';
+import type {SkuDraft} from '../supplier-form-model';
+import {supplierError} from '../supplier-errors';
 
-  const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{ saved: [] }>();
 
-  const visible = ref(false);
-  const loading = ref(false);
-  const saving = ref(false);
-  const error = ref('');
-  const drafts = ref<SkuDraft[]>([]);
-  const supplierId = ref<ScmId>();
-  const supplierName = ref('');
+const visible = ref(false);
+const loading = ref(false);
+const saving = ref(false);
+const error = ref('');
+const drafts = ref<SkuDraft[]>([]);
+const supplierId = ref<ScmId>();
+const supplierName = ref('');
 
-  const title = computed(() => (supplierName.value ? `关联商品 · ${supplierName.value}` : '关联商品'));
+const title = computed(() => (supplierName.value ? `关联商品 · ${supplierName.value}` : '关联商品'));
 
-  /** 打开抽屉并加载该供应商当前的活动关联行。 */
-  async function open(row: SupplierRow) {
-    visible.value = true;
-    error.value = '';
-    drafts.value = [];
-    supplierId.value = row.supplierId;
-    supplierName.value = row.name;
-    loading.value = true;
-    try {
-      const response = await supplierSkuApi.listBySupplierId(row.supplierId);
-      drafts.value = fromRows(response.data ?? []);
-    } catch (e) {
-      error.value = supplierError(e);
-    } finally {
-      loading.value = false;
-      await nextTick();
-    }
+/** 打开抽屉并加载该供应商当前的活动关联行。 */
+async function open(row: SupplierRow) {
+  visible.value = true;
+  error.value = '';
+  drafts.value = [];
+  supplierId.value = row.supplierId;
+  supplierName.value = row.name;
+  loading.value = true;
+  try {
+    const response = await supplierSkuApi.listBySupplierId(row.supplierId);
+    drafts.value = fromRows(response.data ?? []);
+  } catch (e) {
+    error.value = supplierError(e);
+  } finally {
+    loading.value = false;
+    await nextTick();
   }
+}
 
-  function close() {
-    error.value = '';
+function close() {
+  error.value = '';
+}
+
+async function submit() {
+  if (supplierId.value == null) {
+    return;
   }
-
-  async function submit() {
-    if (supplierId.value == null) {
-      return;
-    }
-    const problem = validateSkuDrafts(drafts.value);
-    if (problem) {
-      error.value = problem;
-      return;
-    }
-    saving.value = true;
-    error.value = '';
-    try {
-      await supplierSkuApi.replace({ supplierId: supplierId.value, items: toReplaceItems(drafts.value) });
-      message.success('商品关联已保存');
-      visible.value = false;
-      emit('saved');
-    } catch (e) {
-      error.value = supplierError(e);
-    } finally {
-      saving.value = false;
-    }
+  const problem = validateSkuDrafts(drafts.value);
+  if (problem) {
+    error.value = problem;
+    return;
   }
+  saving.value = true;
+  error.value = '';
+  try {
+    await supplierSkuApi.replace({supplierId: supplierId.value, items: toReplaceItems(drafts.value)});
+    message.success('商品关联已保存');
+    visible.value = false;
+    emit('saved');
+  } catch (e) {
+    error.value = supplierError(e);
+  } finally {
+    saving.value = false;
+  }
+}
 
-  defineExpose({ open });
+defineExpose({open});
 </script>

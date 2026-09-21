@@ -6,7 +6,7 @@
   <div class="top-menu-container">
     <!-- 顶部logo区域：直接展示鲜蔬源横版 logo（已含品牌文字） -->
     <div class="logo" @click="onGoHome">
-      <img class="logo-img" :src="logoImg" />
+      <img class="logo-img" :src="logoImg"/>
     </div>
     <!-- 一级菜单展示 -->
     <a-menu :selectedKeys="selectedKeys" mode="inline" :theme="theme">
@@ -14,7 +14,7 @@
         <template v-if="item.visibleFlag">
           <a-menu-item :key="item.menuId.toString()" @click="onSelectMenu(item)">
             <template #icon>
-              <component :is="$antIcons[item.icon]" />
+              <component :is="$antIcons[item.icon]"/>
             </template>
             {{ menuNameAdapter(item.menuName) }}
           </a-menu-item>
@@ -24,74 +24,75 @@
   </div>
 </template>
 <script setup lang="ts">
-  import _ from 'lodash';
-  import { computed, ref } from 'vue';
-  import { HOME_PAGE_NAME } from '/@/constants/system/home-const';
-  import { MENU_TYPE_ENUM } from '/@/constants/system/menu-const';
-  import { router } from '/@/router';
-  import { useAppConfigStore } from '/@/store/modules/system/app-config';
-  import { useUserStore } from '/@/store/modules/system/user';
-  import logoImg from '/@/assets/images/logo/xsy-logo.png';
-  import menuEmitter from './side-expand-menu-mitt';
+import _ from 'lodash';
+import {computed, ref} from 'vue';
+import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
+import {MENU_TYPE_ENUM} from '/@/constants/system/menu-const';
+import {router} from '/@/router';
+import {useAppConfigStore} from '/@/store/modules/system/app-config';
+import {useUserStore} from '/@/store/modules/system/user';
+import logoImg from '/@/assets/images/logo/xsy-logo.png';
+import menuEmitter from './side-expand-menu-mitt';
 
-  const theme = computed(() => useAppConfigStore().$state.sideMenuTheme);
-  const menuTree = computed(() => useUserStore().getMenuTree || []);
+const theme = computed(() => useAppConfigStore().$state.sideMenuTheme);
+const menuTree = computed(() => useUserStore().getMenuTree || []);
 
-  // 展开菜单的顶级目录名字适配，只展示两个字为好
-  function menuNameAdapter(name) {
-    return name.substr(0, 2);
+// 展开菜单的顶级目录名字适配，只展示两个字为好
+function menuNameAdapter(name) {
+  return name.substr(0, 2);
+}
+
+// 选中的顶级菜单
+const selectedKeys = ref([]);
+
+// 选中菜单，页面跳转
+function onSelectMenu(menuItem) {
+  selectedKeys.value = [menuItem.menuId.toString()];
+  if (menuItem.menuType === MENU_TYPE_ENUM.MENU.value && (_.isEmpty(menuItem.children) || menuItem.children.every((e) => !e.visibleFlag))) {
+    useUserStore().deleteKeepAliveIncludes(menuItem.menuId.toString());
+    router.push({name: menuItem.menuId.toString()});
   }
+  menuEmitter.emit('selectTopMenu', menuItem);
+}
 
-  // 选中的顶级菜单
-  const selectedKeys = ref([]);
-
-  // 选中菜单，页面跳转
-  function onSelectMenu(menuItem) {
-    selectedKeys.value = [menuItem.menuId.toString()];
-    if (menuItem.menuType === MENU_TYPE_ENUM.MENU.value && (_.isEmpty(menuItem.children) || menuItem.children.every((e) => !e.visibleFlag))) {
-      useUserStore().deleteKeepAliveIncludes(menuItem.menuId.toString());
-      router.push({ name: menuItem.menuId.toString() });
-    }
-    menuEmitter.emit('selectTopMenu', menuItem);
+// 更新选中的菜单
+function updateSelectKey(key) {
+  selectedKeys.value = [key];
+  let selectMenu = _.find(menuTree.value, {menuId: Number(key)});
+  if (selectMenu) {
+    menuEmitter.emit('selectTopMenu', selectMenu);
   }
+}
 
-  // 更新选中的菜单
-  function updateSelectKey(key) {
-    selectedKeys.value = [key];
-    let selectMenu = _.find(menuTree.value, { menuId: Number(key) });
-    if (selectMenu) {
-      menuEmitter.emit('selectTopMenu', selectMenu);
-    }
-  }
+//点击logo回到首页
+function onGoHome() {
+  router.push({name: HOME_PAGE_NAME});
+}
 
-  //点击logo回到首页
-  function onGoHome() {
-    router.push({ name: HOME_PAGE_NAME });
-  }
-
-  defineExpose({ updateSelectKey });
+defineExpose({updateSelectKey});
 </script>
 <style scoped lang="less">
-  .top-menu-container {
-    height: 100%;
-  }
-  .logo {
-    height: @header-user-height;
-    line-height: @header-user-height;
-    padding: 0px 15px 0px 15px;
-    width: 100%;
-    z-index: 100;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
+.top-menu-container {
+  height: 100%;
+}
 
-    .logo-img {
-      // 鲜蔬源横版 logo（含品牌文字），按高度撑满、宽度自适应
-      height: 30px;
-      width: auto;
-      max-width: 100%;
-      object-fit: contain;
-    }
+.logo {
+  height: @header-user-height;
+  line-height: @header-user-height;
+  padding: 0px 15px 0px 15px;
+  width: 100%;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+
+  .logo-img {
+    // 鲜蔬源横版 logo（含品牌文字），按高度撑满、宽度自适应
+    height: 30px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
   }
+}
 </style>

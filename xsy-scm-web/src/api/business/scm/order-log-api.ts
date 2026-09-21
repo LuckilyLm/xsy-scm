@@ -4,8 +4,9 @@
 适配：四状态、API、权限、四位定点、NULL、version、幂等、错误重试。
 验收：W4 单测、TS 棘轮与 Playwright。 */
 import {postRequest} from '/@/lib/axios';
-import type {ScmResponse,ScmPage} from '/@/types/business/scm/customer';
-import type {LogRow,Query} from '/@/views/business/scm/order/order-types';
-export const orderLogApi={
- query:(data:Query)=>postRequest('/scm/order/log/query',data) as unknown as Promise<ScmResponse<ScmPage<LogRow>>>,
+import type {ScmResponse, ScmPage} from '/@/types/business/scm/customer';
+import type {LogRow, Query} from '/@/views/business/scm/order/order-types';
+
+export const orderLogApi = {
+    query: (data: Query) => postRequest('/scm/order/log/query', data) as unknown as Promise<ScmResponse<ScmPage<LogRow>>>,
 };

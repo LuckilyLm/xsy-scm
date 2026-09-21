@@ -43,7 +43,9 @@
     </select>
 
     <select id="getByFileKey" resultType="net.lab1024.sa.base.module.support.file.domain.vo.FileVO">
-        SELECT * FROM t_file where file_key = #{fileKey}
+        SELECT *
+        FROM t_file
+        where file_key = #{fileKey}
     </select>
 
 

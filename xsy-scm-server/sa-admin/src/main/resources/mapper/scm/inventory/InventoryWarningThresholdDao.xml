@@ -37,8 +37,11 @@
     </sql>
 
     <select id="countByWarehouseAndSku" resultType="int">
-        SELECT COUNT(*) FROM inventory_warning_threshold
-        WHERE warehouse_id = #{warehouseId} AND sku_id = #{skuId} AND deleted = FALSE
+        SELECT COUNT(*)
+        FROM inventory_warning_threshold
+        WHERE warehouse_id = #{warehouseId}
+          AND sku_id = #{skuId}
+          AND deleted = FALSE
     </select>
 
     <!--
@@ -67,22 +70,22 @@
     <!-- 展示字段实时联表；排序写死，不接受客户端排序（联表列名会歧义） -->
     <select id="queryPage" resultMap="thresholdVoMap">
         SELECT t.id,
-               t.warehouse_id,
-               t.sku_id,
-               t.warn_min,
-               t.warn_max,
-               t.remark,
-               t.version,
-               t.created_at,
-               t.updated_at,
-               w.warehouse_code,
-               w.name       AS warehouse_name,
-               k.sku_code,
-               k.spec_name  AS sku_name,
-               k.spec_values,
-               p.name       AS product_name
+        t.warehouse_id,
+        t.sku_id,
+        t.warn_min,
+        t.warn_max,
+        t.remark,
+        t.version,
+        t.created_at,
+        t.updated_at,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        k.spec_values,
+        p.name AS product_name
         FROM inventory_warning_threshold t
-        LEFT JOIN warehouse   w ON w.id = t.warehouse_id
+        LEFT JOIN warehouse w ON w.id = t.warehouse_id
         LEFT JOIN product_sku k ON k.id = t.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
@@ -109,16 +112,17 @@
                t.created_at,
                t.updated_at,
                w.warehouse_code,
-               w.name       AS warehouse_name,
+               w.name      AS warehouse_name,
                k.sku_code,
-               k.spec_name  AS sku_name,
+               k.spec_name AS sku_name,
                k.spec_values,
-               p.name       AS product_name
+               p.name      AS product_name
         FROM inventory_warning_threshold t
-        LEFT JOIN warehouse   w ON w.id = t.warehouse_id
-        LEFT JOIN product_sku k ON k.id = t.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
-        WHERE t.deleted = FALSE AND t.id = #{id}
+                 LEFT JOIN warehouse w ON w.id = t.warehouse_id
+                 LEFT JOIN product_sku k ON k.id = t.sku_id
+                 LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE t.deleted = FALSE
+          AND t.id = #{id}
     </select>
 
     <!--
@@ -129,26 +133,26 @@
     -->
     <select id="queryWarningPage" resultMap="warningVoMap">
         SELECT t.id AS threshold_id,
-               t.warehouse_id,
-               t.sku_id,
-               t.warn_min,
-               t.warn_max,
-               w.warehouse_code,
-               w.name       AS warehouse_name,
-               k.sku_code,
-               k.spec_name  AS sku_name,
-               k.spec_values,
-               p.name       AS product_name,
-               b.unit,
-               COALESCE(b.quantity, 0)          AS quantity,
-               COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
-               COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
+        t.warehouse_id,
+        t.sku_id,
+        t.warn_min,
+        t.warn_max,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        k.spec_values,
+        p.name AS product_name,
+        b.unit,
+        COALESCE(b.quantity, 0) AS quantity,
+        COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
+        COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
         FROM inventory_warning_threshold t
         LEFT JOIN inventory_balance b
-               ON b.warehouse_id = t.warehouse_id
-              AND b.sku_id = t.sku_id
-              AND b.deleted = FALSE
-        LEFT JOIN warehouse   w ON w.id = t.warehouse_id
+        ON b.warehouse_id = t.warehouse_id
+        AND b.sku_id = t.sku_id
+        AND b.deleted = FALSE
+        LEFT JOIN warehouse w ON w.id = t.warehouse_id
         LEFT JOIN product_sku k ON k.id = t.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
@@ -164,18 +168,22 @@
         <!-- status 有值 → 精确过滤；为空 → 只看异常（预警列表的默认语义） -->
         <choose>
             <when test="query.status != null and query.status != ''">
-                AND <include refid="warningStatusExpr"/> = #{query.status}
+                AND
+                <include refid="warningStatusExpr"/>
+                = #{query.status}
             </when>
             <otherwise>
-                AND <include refid="warningStatusExpr"/> &lt;&gt; 'NORMAL'
+                AND
+                <include refid="warningStatusExpr"/> &lt;&gt; 'NORMAL'
             </otherwise>
         </choose>
         <!-- 严重度排序：低于下限（要补货）最急 → 高于上限（积压）次之 → 正常最后 -->
-        ORDER BY CASE <include refid="warningStatusExpr"/>
-                     WHEN 'LOW' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2
-                 END,
-                 t.warehouse_id ASC,
-                 t.id ASC
+        ORDER BY CASE
+        <include refid="warningStatusExpr"/>
+        WHEN 'LOW' THEN 0 WHEN 'HIGH' THEN 1 ELSE 2
+        END,
+        t.warehouse_id ASC,
+        t.id ASC
     </select>
 
 </mapper>

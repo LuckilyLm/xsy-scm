@@ -4,11 +4,15 @@ import net.lab1024.sa.admin.module.scm.common.ScmW3PgITBase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ScmPricingMigrationIT extends ScmW3PgITBase {
-    @Autowired Flyway flyway;
-    @Test void validatesMigrationsAndPricingSchema() {
+    @Autowired
+    Flyway flyway;
+
+    @Test
+    void validatesMigrationsAndPricingSchema() {
         flyway.validate();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE version IN ('10','11') AND success", Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables WHERE table_schema=current_schema() AND table_name IN ('customer_agreement_price','customer_type_price','customer_agreement_price_operation_log','customer_type_price_operation_log','customer_price_batch_audit','customer_sku_visibility')", Integer.class)).isEqualTo(6);

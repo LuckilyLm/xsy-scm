@@ -24,10 +24,14 @@ package net.lab1024.sa.admin.test;
  */
 public interface PgITDatabase {
 
-    /** 未显式指定时使用的默认地址（保留原始值，避免改变既有行为）。 */
+    /**
+     * 未显式指定时使用的默认地址（保留原始值，避免改变既有行为）。
+     */
     String DEFAULT_URL = "jdbc:postgresql://127.0.0.1:15432/xsy_scm?currentSchema=xsy_v2";
 
-    /** 裸 JDBC 连接地址：优先取 {@code XSY_V2_DB_URL}，并剥掉 p6spy 前缀。 */
+    /**
+     * 裸 JDBC 连接地址：优先取 {@code XSY_V2_DB_URL}，并剥掉 p6spy 前缀。
+     */
     static String url() {
         String value = System.getenv("XSY_V2_DB_URL");
         if (value == null || value.isBlank()) {
@@ -36,12 +40,16 @@ public interface PgITDatabase {
         return value.replace("jdbc:p6spy:", "jdbc:");
     }
 
-    /** 数据库用户名。 */
+    /**
+     * 数据库用户名。
+     */
     static String user() {
         return System.getenv().getOrDefault("XSY_V2_DB_USERNAME", "xsy_scm_app");
     }
 
-    /** 数据库口令。 */
+    /**
+     * 数据库口令。
+     */
     static String password() {
         return System.getenv("XSY_V2_DB_PASSWORD");
     }

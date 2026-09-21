@@ -32,29 +32,43 @@ public class InventoryLossGainVO {
 
     private String warehouseName;
 
-    /** {@code LOSS} 报损 / {@code OVERFLOW} 报溢。 */
+    /**
+     * {@code LOSS} 报损 / {@code OVERFLOW} 报溢。
+     */
     private String adjustType;
 
-    /** 调整类型中文描述。 */
+    /**
+     * 调整类型中文描述。
+     */
     private String adjustTypeDesc;
 
     private String status;
 
-    /** 状态中文描述。 */
+    /**
+     * 状态中文描述。
+     */
     private String statusDesc;
 
-    /** 报损报溢原因（必填）。 */
+    /**
+     * 报损报溢原因（必填）。
+     */
     private String reason;
 
     private String remark;
 
-    /** 审核时刻；仅已审核（通过 / 驳回）非空。 */
+    /**
+     * 审核时刻；仅已审核（通过 / 驳回）非空。
+     */
     private OffsetDateTime auditedAt;
 
-    /** 审核人；仅已审核非空。 */
+    /**
+     * 审核人；仅已审核非空。
+     */
     private String auditor;
 
-    /** 审核意见（驳回理由）。 */
+    /**
+     * 审核意见（驳回理由）。
+     */
     private String auditOpinion;
 
     /**
@@ -67,10 +81,14 @@ public class InventoryLossGainVO {
 
     private OffsetDateTime updatedAt;
 
-    /** 明细；仅详情接口填充，列表接口为 null。 */
+    /**
+     * 明细；仅详情接口填充，列表接口为 null。
+     */
     private List<Item> items;
 
-    /** 报损报溢单明细行。 */
+    /**
+     * 报损报溢单明细行。
+     */
     @Data
     public static class Item {
 
@@ -86,11 +104,15 @@ public class InventoryLossGainVO {
 
         private Map<String, String> specValues;
 
-        /** 申报数量，恒为正；方向看单据的 {@code adjustType}。 */
+        /**
+         * 申报数量，恒为正；方向看单据的 {@code adjustType}。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal quantity;
 
-        /** 审批通过时写入的记账单位快照；待审核态为空。 */
+        /**
+         * 审批通过时写入的记账单位快照；待审核态为空。
+         */
         private String unitSnapshot;
 
         private String remark;

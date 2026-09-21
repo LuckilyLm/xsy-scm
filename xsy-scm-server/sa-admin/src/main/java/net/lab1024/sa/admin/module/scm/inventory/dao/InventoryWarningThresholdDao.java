@@ -29,7 +29,9 @@ import java.util.List;
 @Mapper
 public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarningThresholdEntity> {
 
-    /** 该 (仓库, SKU) 是否已有有效配置（新增时的防重锚点，与部分唯一索引同义）。 */
+    /**
+     * 该 (仓库, SKU) 是否已有有效配置（新增时的防重锚点，与部分唯一索引同义）。
+     */
     int countByWarehouseAndSku(@Param("warehouseId") Long warehouseId,
                                @Param("skuId") Long skuId);
 
@@ -50,11 +52,15 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
                         @Param("version") Integer version,
                         @Param("operator") String operator);
 
-    /** 配置列表（联仓库 / SKU / 商品取展示字段）。 */
+    /**
+     * 配置列表（联仓库 / SKU / 商品取展示字段）。
+     */
     List<InventoryWarningThresholdVO> queryPage(Page<?> page,
                                                 @Param("query") InventoryWarningThresholdQueryForm query);
 
-    /** 配置详情（按 id）。 */
+    /**
+     * 配置详情（按 id）。
+     */
     InventoryWarningThresholdVO detail(@Param("id") Long id);
 
     /**

@@ -17,7 +17,7 @@
  * 以及后端 `InventoryMovementQueryForm` 的 `@Pattern` 白名单 ——
  * 漏掉最后一项的表现是「流水写进去了，页面按新类型筛选却报 30001」。
  */
-import type { SmartEnum } from '/@/types/smart-enum';
+import type {SmartEnum} from '/@/types/smart-enum';
 
 /**
  * 库存流水类型。
@@ -27,16 +27,16 @@ import type { SmartEnum } from '/@/types/smart-enum';
  * `quantity` 恒为正。新增类型必须先扩 DB CHECK 白名单。
  */
 export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
-  PURCHASE_IN: { value: 'PURCHASE_IN', desc: '采购入库' },
-  SALES_OUT: { value: 'SALES_OUT', desc: '销售出库' },
-  STOCKTAKE_GAIN: { value: 'STOCKTAKE_GAIN', desc: '盘盈' },
-  STOCKTAKE_LOSS: { value: 'STOCKTAKE_LOSS', desc: '盘亏' },
-  LOSS_REPORT: { value: 'LOSS_REPORT', desc: '报损' },
-  GAIN_REPORT: { value: 'GAIN_REPORT', desc: '报溢' },
-  TRANSFER_OUT: { value: 'TRANSFER_OUT', desc: '调拨转出' },
-  TRANSFER_IN: { value: 'TRANSFER_IN', desc: '调拨转入' },
-  CONVERT_OUT: { value: 'CONVERT_OUT', desc: '规格转换出' },
-  CONVERT_IN: { value: 'CONVERT_IN', desc: '规格转换入' },
+    PURCHASE_IN: {value: 'PURCHASE_IN', desc: '采购入库'},
+    SALES_OUT: {value: 'SALES_OUT', desc: '销售出库'},
+    STOCKTAKE_GAIN: {value: 'STOCKTAKE_GAIN', desc: '盘盈'},
+    STOCKTAKE_LOSS: {value: 'STOCKTAKE_LOSS', desc: '盘亏'},
+    LOSS_REPORT: {value: 'LOSS_REPORT', desc: '报损'},
+    GAIN_REPORT: {value: 'GAIN_REPORT', desc: '报溢'},
+    TRANSFER_OUT: {value: 'TRANSFER_OUT', desc: '调拨转出'},
+    TRANSFER_IN: {value: 'TRANSFER_IN', desc: '调拨转入'},
+    CONVERT_OUT: {value: 'CONVERT_OUT', desc: '规格转换出'},
+    CONVERT_IN: {value: 'CONVERT_IN', desc: '规格转换入'},
 };
 
 /**
@@ -50,15 +50,15 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
  * 共用一个来源类型会让第二条流水插不进去。因此方向被编进了来源类型。
  */
 export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
-  PURCHASE_RECEIPT_ITEM: { value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货行' },
-  SALES_OUTBOUND_ITEM: { value: 'SALES_OUTBOUND_ITEM', desc: '出库单行' },
-  SALES_ORDER_ITEM: { value: 'SALES_ORDER_ITEM', desc: '销售订单行' },
-  STOCKTAKE_ITEM: { value: 'STOCKTAKE_ITEM', desc: '盘点单行' },
-  LOSS_GAIN_ITEM: { value: 'LOSS_GAIN_ITEM', desc: '报损报溢单行' },
-  TRANSFER_OUT_ITEM: { value: 'TRANSFER_OUT_ITEM', desc: '调拨单行（转出）' },
-  TRANSFER_IN_ITEM: { value: 'TRANSFER_IN_ITEM', desc: '调拨单行（转入）' },
-  CONVERT_OUT_ITEM: { value: 'CONVERT_OUT_ITEM', desc: '转换单行（转出）' },
-  CONVERT_IN_ITEM: { value: 'CONVERT_IN_ITEM', desc: '转换单行（转入）' },
+    PURCHASE_RECEIPT_ITEM: {value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货行'},
+    SALES_OUTBOUND_ITEM: {value: 'SALES_OUTBOUND_ITEM', desc: '出库单行'},
+    SALES_ORDER_ITEM: {value: 'SALES_ORDER_ITEM', desc: '销售订单行'},
+    STOCKTAKE_ITEM: {value: 'STOCKTAKE_ITEM', desc: '盘点单行'},
+    LOSS_GAIN_ITEM: {value: 'LOSS_GAIN_ITEM', desc: '报损报溢单行'},
+    TRANSFER_OUT_ITEM: {value: 'TRANSFER_OUT_ITEM', desc: '调拨单行（转出）'},
+    TRANSFER_IN_ITEM: {value: 'TRANSFER_IN_ITEM', desc: '调拨单行（转入）'},
+    CONVERT_OUT_ITEM: {value: 'CONVERT_OUT_ITEM', desc: '转换单行（转出）'},
+    CONVERT_IN_ITEM: {value: 'CONVERT_IN_ITEM', desc: '转换单行（转入）'},
 };
 
 /**
@@ -68,16 +68,16 @@ export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
  * 流水 append-only，冲销必须新增反向流水。
  */
 export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: { value: 'DRAFT', desc: '草稿' },
-  CONFIRMED: { value: 'CONFIRMED', desc: '已确认' },
-  CANCELLED: { value: 'CANCELLED', desc: '已取消' },
+    DRAFT: {value: 'DRAFT', desc: '草稿'},
+    CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
+    CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 
 /** 预留状态（与后端 `ScmInventoryReservationStatusEnum` 逐字对应）。 */
 export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
-  ACTIVE: { value: 'ACTIVE', desc: '生效中' },
-  RELEASED: { value: 'RELEASED', desc: '已释放' },
-  CONSUMED: { value: 'CONSUMED', desc: '已消耗' },
+    ACTIVE: {value: 'ACTIVE', desc: '生效中'},
+    RELEASED: {value: 'RELEASED', desc: '已释放'},
+    CONSUMED: {value: 'CONSUMED', desc: '已消耗'},
 };
 
 /**
@@ -87,9 +87,9 @@ export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
  * 录入实盘数就是草稿态的编辑动作，`DRAFT` 即「盘点进行中」。
  */
 export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: { value: 'DRAFT', desc: '草稿' },
-  CONFIRMED: { value: 'CONFIRMED', desc: '已确认' },
-  CANCELLED: { value: 'CANCELLED', desc: '已取消' },
+    DRAFT: {value: 'DRAFT', desc: '草稿'},
+    CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
+    CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 
 /**
@@ -98,8 +98,8 @@ export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
  * **方向是单据级属性**：一张单要么全报损、要么全报溢，行上的数量恒为正。
  */
 export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
-  LOSS: { value: 'LOSS', desc: '报损' },
-  OVERFLOW: { value: 'OVERFLOW', desc: '报溢' },
+    LOSS: {value: 'LOSS', desc: '报损'},
+    OVERFLOW: {value: 'OVERFLOW', desc: '报溢'},
 };
 
 /**
@@ -108,9 +108,9 @@ export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
  * **没有 DRAFT**：报损报溢创建即提交（待审核），因为「把货从账上抹掉」需要制衡。
  */
 export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
-  PENDING: { value: 'PENDING', desc: '待审核' },
-  COMPLETED: { value: 'COMPLETED', desc: '已完成' },
-  REJECTED: { value: 'REJECTED', desc: '已驳回' },
+    PENDING: {value: 'PENDING', desc: '待审核'},
+    COMPLETED: {value: 'COMPLETED', desc: '已完成'},
+    REJECTED: {value: 'REJECTED', desc: '已驳回'},
 };
 
 /**
@@ -121,10 +121,10 @@ export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
  * 在途期间这批货不在任何余额行里，需用「在途库存」报表查看（不进余额表）。
  */
 export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
-  DRAFT: { value: 'DRAFT', desc: '草稿' },
-  SHIPPED: { value: 'SHIPPED', desc: '在途' },
-  RECEIVED: { value: 'RECEIVED', desc: '已完成' },
-  CANCELLED: { value: 'CANCELLED', desc: '已取消' },
+    DRAFT: {value: 'DRAFT', desc: '草稿'},
+    SHIPPED: {value: 'SHIPPED', desc: '在途'},
+    RECEIVED: {value: 'RECEIVED', desc: '已完成'},
+    CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 
 /**
@@ -135,9 +135,9 @@ export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
  * **取等号算正常**：`可用量 == 下限` 是「不低于下限」，属 `NORMAL`。
  */
 export const SCM_INVENTORY_WARNING_STATUS_ENUM: SmartEnum<string> = {
-  NORMAL: { value: 'NORMAL', desc: '正常' },
-  LOW: { value: 'LOW', desc: '低于下限' },
-  HIGH: { value: 'HIGH', desc: '高于上限' },
+    NORMAL: {value: 'NORMAL', desc: '正常'},
+    LOW: {value: 'LOW', desc: '低于下限'},
+    HIGH: {value: 'HIGH', desc: '高于上限'},
 };
 
 /**
@@ -148,8 +148,8 @@ export const SCM_INVENTORY_WARNING_STATUS_ENUM: SmartEnum<string> = {
  * 一箱到底是 9.5 kg 还是 10 kg 取决于供应商与批次，猜错会直接污染两边余额。
  */
 export const SCM_INVENTORY_CONVERSION_TYPE_ENUM: SmartEnum<string> = {
-  SPLIT: { value: 'SPLIT', desc: '整件拆零' },
-  COMBINE: { value: 'COMBINE', desc: '组合拆分' },
+    SPLIT: {value: 'SPLIT', desc: '整件拆零'},
+    COMBINE: {value: 'COMBINE', desc: '组合拆分'},
 };
 
 /**
@@ -159,9 +159,9 @@ export const SCM_INVENTORY_CONVERSION_TYPE_ENUM: SmartEnum<string> = {
  * 没有审批等于录单人可以单方面决定「一箱等于多少 kg」。
  */
 export const SCM_INVENTORY_CONVERSION_STATUS_ENUM: SmartEnum<string> = {
-  PENDING: { value: 'PENDING', desc: '待审核' },
-  COMPLETED: { value: 'COMPLETED', desc: '已完成' },
-  REJECTED: { value: 'REJECTED', desc: '已驳回' },
+    PENDING: {value: 'PENDING', desc: '待审核'},
+    COMPLETED: {value: 'COMPLETED', desc: '已完成'},
+    REJECTED: {value: 'REJECTED', desc: '已驳回'},
 };
 
 /**
@@ -171,30 +171,30 @@ export const SCM_INVENTORY_CONVERSION_STATUS_ENUM: SmartEnum<string> = {
  * `TABLE_ID_CONST.BUSINESS` 里以既有的扁平 `SCM_*` 命名注册数字 id。
  */
 export const SCM_INVENTORY_TABLE_ID = {
-  BALANCE: 'scm-inventory-balance-table',
-  MOVEMENT: 'scm-inventory-movement-table',
-  OUTBOUND: 'scm-inventory-outbound-table',
-  RESERVATION: 'scm-inventory-reservation-table',
-  STOCKTAKE: 'scm-inventory-stocktake-table',
-  LOSS_GAIN: 'scm-inventory-loss-gain-table',
-  TRANSFER: 'scm-inventory-transfer-table',
-  WARNING: 'scm-inventory-warning-table',
-  WARNING_THRESHOLD: 'scm-inventory-warning-threshold-table',
-  CONVERSION: 'scm-inventory-conversion-table',
+    BALANCE: 'scm-inventory-balance-table',
+    MOVEMENT: 'scm-inventory-movement-table',
+    OUTBOUND: 'scm-inventory-outbound-table',
+    RESERVATION: 'scm-inventory-reservation-table',
+    STOCKTAKE: 'scm-inventory-stocktake-table',
+    LOSS_GAIN: 'scm-inventory-loss-gain-table',
+    TRANSFER: 'scm-inventory-transfer-table',
+    WARNING: 'scm-inventory-warning-table',
+    WARNING_THRESHOLD: 'scm-inventory-warning-threshold-table',
+    CONVERSION: 'scm-inventory-conversion-table',
 } as const;
 
 export default {
-  // 只导出**枚举**：`SCM_INVENTORY_TABLE_ID` 不是枚举，混进 `constantsInfo` 会让
-  // `$smartEnumPlugin.getValueDescList` 拿到一个非枚举对象。
-  SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
-  SCM_INVENTORY_SOURCE_TYPE_ENUM,
-  SCM_INVENTORY_OUTBOUND_STATUS_ENUM,
-  SCM_INVENTORY_RESERVATION_STATUS_ENUM,
-  SCM_INVENTORY_STOCKTAKE_STATUS_ENUM,
-  SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
-  SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
-  SCM_INVENTORY_TRANSFER_STATUS_ENUM,
-  SCM_INVENTORY_WARNING_STATUS_ENUM,
-  SCM_INVENTORY_CONVERSION_TYPE_ENUM,
-  SCM_INVENTORY_CONVERSION_STATUS_ENUM,
+    // 只导出**枚举**：`SCM_INVENTORY_TABLE_ID` 不是枚举，混进 `constantsInfo` 会让
+    // `$smartEnumPlugin.getValueDescList` 拿到一个非枚举对象。
+    SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
+    SCM_INVENTORY_SOURCE_TYPE_ENUM,
+    SCM_INVENTORY_OUTBOUND_STATUS_ENUM,
+    SCM_INVENTORY_RESERVATION_STATUS_ENUM,
+    SCM_INVENTORY_STOCKTAKE_STATUS_ENUM,
+    SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
+    SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
+    SCM_INVENTORY_TRANSFER_STATUS_ENUM,
+    SCM_INVENTORY_WARNING_STATUS_ENUM,
+    SCM_INVENTORY_CONVERSION_TYPE_ENUM,
+    SCM_INVENTORY_CONVERSION_STATUS_ENUM,
 };

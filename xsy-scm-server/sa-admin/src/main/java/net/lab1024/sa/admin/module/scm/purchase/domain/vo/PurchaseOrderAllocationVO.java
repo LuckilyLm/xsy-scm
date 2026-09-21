@@ -1,7 +1,9 @@
 package net.lab1024.sa.admin.module.scm.purchase.domain.vo;
 
 import lombok.Data;
+
 import java.math.BigDecimal;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 
@@ -19,8 +21,11 @@ public class PurchaseOrderAllocationVO {
     private String salesOrderNo;
     private Long salesOrderItemId;
     private Long skuId;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal quantity;
-    /** 需求单位（Q17）：与行上的 `purchaseUnit` 不一致时不允许自动分配。 */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal quantity;
+    /**
+     * 需求单位（Q17）：与行上的 `purchaseUnit` 不一致时不允许自动分配。
+     */
     private String demandUnit;
     private Integer demandVersion;
     private String demandStatus;

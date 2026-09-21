@@ -11,23 +11,23 @@
  *
  * 权限：两个端点共用 `scm:inventory:balance:query`（菜单 811）。
  */
-import { getRequest, postRequest } from '/@/lib/axios';
-import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
+import {getRequest, postRequest} from '/@/lib/axios';
+import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
-  Id,
-  InventoryBalance,
-  InventoryBalanceQuery,
+    Id,
+    InventoryBalance,
+    InventoryBalanceQuery,
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryBalanceApi = {
-  query: (data: InventoryBalanceQuery) =>
-    postRequest('/scm/inventory/balance/query', data) as unknown as Promise<
-      ScmResponse<ScmPage<InventoryBalance>>
-    >,
-  detail: (id: Id) =>
-    getRequest(`/scm/inventory/balance/detail/${id}`, {}) as unknown as Promise<
-      ScmResponse<InventoryBalance>
-    >,
+    query: (data: InventoryBalanceQuery) =>
+        postRequest('/scm/inventory/balance/query', data) as unknown as Promise<
+            ScmResponse<ScmPage<InventoryBalance>>
+        >,
+    detail: (id: Id) =>
+        getRequest(`/scm/inventory/balance/detail/${id}`, {}) as unknown as Promise<
+            ScmResponse<InventoryBalance>
+        >,
 };
 
 export default inventoryBalanceApi;

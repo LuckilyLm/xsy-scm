@@ -32,13 +32,70 @@ import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import type {BatchRow} from '/@/types/business/scm/pricing';
-import {emptyPrice,validateBatch} from './pricing-form-model';
+import {emptyPrice, validateBatch} from './pricing-form-model';
 import {pricingError} from './pricing-errors';
-const router=useRouter(),batchKey=ref('PRICE-'+dayjs().format('YYYYMMDD-HHmmss')),rows=ref<BatchRow[]>([]),failures=ref<{rowNumber:number;message:string}[]>([]),saving=ref(false),error=ref('');let number=0;
-const columns:TableColumnsType<BatchRow>=[{title:'行号',dataIndex:'rowNumber',width:65},{title:'客户类型',dataIndex:'customerTypeId',width:200},{title:'SKU',dataIndex:'skuId',width:280},{title:'单价',dataIndex:'unitPrice',width:140},{title:'有效区间',dataIndex:'effectiveFrom',width:400},{title:'错误',dataIndex:'error',width:230},{title:'操作',dataIndex:'action',width:80}];
-function add(){rows.value.push({...emptyPrice(),rowNumber:++number});}
-function setPeriod(row:BatchRow,value:unknown){const v=value as string[]|null;row.effectiveFrom=v?.[0]||'';row.effectiveTo=v?.[1]||null;}
-async function submit(){error.value='';failures.value=validateBatch(rows.value);if(!batchKey.value.trim()||!rows.value.length){error.value='请填写批次号并至少添加一行';return;}if(failures.value.length){error.value=`${failures.value.length} 项校验失败，整批未提交`;return;}saving.value=true;try{const r=await pricingApi.batch({batchKey:batchKey.value,rows:rows.value});if(!r.data.committed){failures.value=r.data.failures;error.value=`${r.data.failures.length} 项错误，整批未写入`;}else{message.success(`已提交 ${r.data.rowCount} 条价格`);router.push('/pricing/customer-type-price-list');}}catch(e){error.value=pricingError(e);}finally{saving.value=false;}}
+
+const router = useRouter(), batchKey = ref('PRICE-' + dayjs().format('YYYYMMDD-HHmmss')), rows = ref<BatchRow[]>([]),
+    failures = ref<{ rowNumber: number; message: string }[]>([]), saving = ref(false), error = ref('');
+let number = 0;
+const columns: TableColumnsType<BatchRow> = [{title: '行号', dataIndex: 'rowNumber', width: 65}, {
+  title: '客户类型',
+  dataIndex: 'customerTypeId',
+  width: 200
+}, {title: 'SKU', dataIndex: 'skuId', width: 280}, {
+  title: '单价',
+  dataIndex: 'unitPrice',
+  width: 140
+}, {title: '有效区间', dataIndex: 'effectiveFrom', width: 400}, {
+  title: '错误',
+  dataIndex: 'error',
+  width: 230
+}, {title: '操作', dataIndex: 'action', width: 80}];
+
+function add() {
+  rows.value.push({...emptyPrice(), rowNumber: ++number});
+}
+
+function setPeriod(row: BatchRow, value: unknown) {
+  const v = value as string[] | null;
+  row.effectiveFrom = v?.[0] || '';
+  row.effectiveTo = v?.[1] || null;
+}
+
+async function submit() {
+  error.value = '';
+  failures.value = validateBatch(rows.value);
+  if (!batchKey.value.trim() || !rows.value.length) {
+    error.value = '请填写批次号并至少添加一行';
+    return;
+  }
+  if (failures.value.length) {
+    error.value = `${failures.value.length} 项校验失败，整批未提交`;
+    return;
+  }
+  saving.value = true;
+  try {
+    const r = await pricingApi.batch({batchKey: batchKey.value, rows: rows.value});
+    if (!r.data.committed) {
+      failures.value = r.data.failures;
+      error.value = `${r.data.failures.length} 项错误，整批未写入`;
+    } else {
+      message.success(`已提交 ${r.data.rowCount} 条价格`);
+      router.push('/pricing/customer-type-price-list');
+    }
+  } catch (e) {
+    error.value = pricingError(e);
+  } finally {
+    saving.value = false;
+  }
+}
+
 add();
 </script>
-<style scoped>.row-error{color:var(--ant-color-error);} :deep(.failed-row td){background:var(--ant-color-error-bg,#fff2f0);}</style>
+<style scoped>.row-error {
+  color: var(--ant-color-error);
+}
+
+:deep(.failed-row td) {
+  background: var(--ant-color-error-bg, #fff2f0);
+}</style>

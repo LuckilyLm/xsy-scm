@@ -8,27 +8,27 @@
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-drawer
-    :title="form.id ? '编辑收货单备注' : '新建收货单'"
-    :open="visible"
-    width="min(720px, 96vw)"
-    @close="visible = false"
+      :title="form.id ? '编辑收货单备注' : '新建收货单'"
+      :open="visible"
+      width="min(720px, 96vw)"
+      @close="visible = false"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <a-form :model="form" layout="vertical">
         <a-form-item label="采购单" name="purchaseOrderId" required>
           <a-select
-            v-if="!form.id"
-            v-model:value="form.purchaseOrderId"
-            show-search
-            allow-clear
-            :filter-option="false"
-            :loading="orderLoading"
-            :options="orderOptions"
-            placeholder="输入采购单号搜索（只列已提交 / 部分收货的单）"
-            @search="loadOrders"
+              v-if="!form.id"
+              v-model:value="form.purchaseOrderId"
+              show-search
+              allow-clear
+              :filter-option="false"
+              :loading="orderLoading"
+              :options="orderOptions"
+              placeholder="输入采购单号搜索（只列已提交 / 部分收货的单）"
+              @search="loadOrders"
           />
-          <a-input v-else :value="form.purchaseOrderNo" disabled />
+          <a-input v-else :value="form.purchaseOrderNo" disabled/>
         </a-form-item>
 
         <a-form-item v-if="!form.id" label="入库方式" name="receiptMode" required>
@@ -42,14 +42,14 @@
         </a-form-item>
 
         <a-alert
-          v-if="!form.id"
-          type="info"
-          show-icon
-          message="收货明细由服务端按采购单的全部活动行自动生成，无需手工添加"
+            v-if="!form.id"
+            type="info"
+            show-icon
+            message="收货明细由服务端按采购单的全部活动行自动生成，无需手工添加"
         />
 
         <a-form-item label="备注" name="remark">
-          <a-input v-model:value="form.remark" maxlength="500" />
+          <a-input v-model:value="form.remark" maxlength="500"/>
         </a-form-item>
 
         <a-descriptions v-if="form.id" bordered size="small" :column="1">
@@ -80,17 +80,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { message } from 'ant-design-vue';
-import { purchaseOrderApi } from '/@/api/business/scm/purchase-order-api';
-import { purchaseReceiptApi } from '/@/api/business/scm/purchase-receipt-api';
+import {ref} from 'vue';
+import {message} from 'ant-design-vue';
+import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
+import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
 import {
   SCM_PUTAWAY_STATUS_ENUM,
   SCM_RECEIPT_MODE_ENUM,
   SCM_RECEIPT_STATUS_ENUM,
 } from '/@/constants/business/scm/purchase-const';
-import type { Id, Receipt } from '../purchase-types';
-import { purchaseError } from '../purchase-errors';
+import type {Id, Receipt} from '../purchase-types';
+import {purchaseError} from '../purchase-errors';
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -109,10 +109,10 @@ let requestId = 0;
 async function loadOrders(keyword: string) {
   orderLoading.value = true;
   try {
-    const r = await purchaseOrderApi.query({ pageNum: 1, pageSize: 20, orderNo: keyword || undefined });
+    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined});
     orderOptions.value = r.data.list
-      .filter((o) => RECEIVABLE.includes(o.status ?? ''))
-      .map((o) => ({ value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）` }));
+        .filter((o) => RECEIVABLE.includes(o.status ?? ''))
+        .map((o) => ({value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）`}));
   } catch (e) {
     error.value = purchaseError(e);
   } finally {
@@ -182,7 +182,7 @@ async function save() {
   }
 }
 
-defineExpose({ open });
+defineExpose({open});
 </script>
 
 <style scoped>

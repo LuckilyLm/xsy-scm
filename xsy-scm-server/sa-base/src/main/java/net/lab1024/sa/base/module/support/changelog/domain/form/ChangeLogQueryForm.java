@@ -15,7 +15,7 @@ import java.time.LocalDate;
  */
 
 @Data
-public class ChangeLogQueryForm extends PageParam{
+public class ChangeLogQueryForm extends PageParam {
 
     @SchemaEnum(value = ChangeLogTypeEnum.class, desc = "更新类型:[1:特大版本功能更新;2:功能更新;3:bug修复]")
     @CheckEnum(value = ChangeLogTypeEnum.class, message = "更新类型:[1:特大版本功能更新;2:功能更新;3:bug修复] 错误")

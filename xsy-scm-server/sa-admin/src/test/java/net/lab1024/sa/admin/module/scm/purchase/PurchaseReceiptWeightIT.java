@@ -30,7 +30,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("收货重量：非标品实重口径与过秤留痕（PG IT）")
 class PurchaseReceiptWeightIT extends ScmW5PgITBase {
 
-    /** 用「声明量 + 实重」分开给的方式确认收货。 */
+    /**
+     * 用「声明量 + 实重」分开给的方式确认收货。
+     */
     private PurchaseReceiptVO confirm(ReceiptFixture fx, String declared, String actualWeight) {
         PurchaseReceiptVO current = reloadReceipt(fx.receipt().getId());
         PurchaseReceiptItemVO line = current.getItems().getFirst();

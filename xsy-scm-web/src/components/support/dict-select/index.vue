@@ -6,16 +6,17 @@
 <template>
   <div>
     <a-select
-      v-model:value="selectValue"
-      :style="`width: ${width}`"
-      :placeholder="props.placeholder"
-      :allowClear="true"
-      :size="size"
-      :mode="mode"
-      @change="onChange"
-      :disabled="disabled"
+        v-model:value="selectValue"
+        :style="`width: ${width}`"
+        :placeholder="props.placeholder"
+        :allowClear="true"
+        :size="size"
+        :mode="mode"
+        @change="onChange"
+        :disabled="disabled"
     >
-      <a-select-option v-for="item in dictDataList" :key="item.dataValue" :value="item.dataValue" :disabled="disabledOption.includes(item.valueCode)">
+      <a-select-option v-for="item in dictDataList" :key="item.dataValue" :value="item.dataValue"
+                       :disabled="disabledOption.includes(item.valueCode)">
         {{ item.dataLabel }}
       </a-select-option>
     </a-select>
@@ -23,58 +24,58 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
-  import { useDictStore } from '/@/store/modules/system/dict';
+import {computed, ref, watch} from 'vue';
+import {useDictStore} from '/@/store/modules/system/dict';
 
-  const props = defineProps({
-    dictCode: String,
-    value: [Array, String, Number],
-    mode: {
-      type: String,
-      default: 'combobox',
-    },
-    width: {
-      type: String,
-      default: '200px',
-    },
-    placeholder: {
-      type: String,
-      default: '请选择',
-    },
-    size: {
-      type: String,
-      default: 'default',
-    },
-    // 禁用整个下拉选择框
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    // 需要禁用的选项字典值编码
-    disabledOption: {
-      type: Array,
-      default: () => [],
-    },
-    // 需要隐藏的选项字典值编码
-    hiddenOption: {
-      type: Array,
-      default: () => [],
-    },
-  });
+const props = defineProps({
+  dictCode: String,
+  value: [Array, String, Number],
+  mode: {
+    type: String,
+    default: 'combobox',
+  },
+  width: {
+    type: String,
+    default: '200px',
+  },
+  placeholder: {
+    type: String,
+    default: '请选择',
+  },
+  size: {
+    type: String,
+    default: 'default',
+  },
+  // 禁用整个下拉选择框
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+  // 需要禁用的选项字典值编码
+  disabledOption: {
+    type: Array,
+    default: () => [],
+  },
+  // 需要隐藏的选项字典值编码
+  hiddenOption: {
+    type: Array,
+    default: () => [],
+  },
+});
 
-  // -------------------------- 查询 字典数据 --------------------------
+// -------------------------- 查询 字典数据 --------------------------
 
-  const dictDataList = computed(() =>
+const dictDataList = computed(() =>
     useDictStore()
-      .getDictData(props.dictCode)
-      .filter((item) => !props.hiddenOption.includes(item.dataValue) && !item.disabledFlag)
-  );
+        .getDictData(props.dictCode)
+        .filter((item) => !props.hiddenOption.includes(item.dataValue) && !item.disabledFlag)
+);
 
-  // -------------------------- 选中 相关、事件 --------------------------
+// -------------------------- 选中 相关、事件 --------------------------
 
-  const selectValue = ref(props.value);
+const selectValue = ref(props.value);
 
-  watch(
+watch(
     () => props.value,
     (newValue) => {
       // 如果传入的值是被禁用或被隐藏的选项，则移除这些选项
@@ -84,13 +85,13 @@
         selectValue.value = props.hiddenOption.includes(newValue) || props.disabledOption.includes(newValue) ? undefined : newValue;
       }
     },
-    { immediate: true }
-  );
+    {immediate: true}
+);
 
-  const emit = defineEmits(['update:value', 'change']);
+const emit = defineEmits(['update:value', 'change']);
 
-  function onChange(value) {
-    emit('update:value', value);
-    emit('change', value);
-  }
+function onChange(value) {
+  emit('update:value', value);
+  emit('change', value);
+}
 </script>

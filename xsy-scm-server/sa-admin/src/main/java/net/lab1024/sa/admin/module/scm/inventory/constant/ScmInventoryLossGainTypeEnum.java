@@ -20,23 +20,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmInventoryLossGainTypeEnum {
 
-    /** 报损：损耗 / 变质 / 破损 / 丢失，减少库存。 */
+    /**
+     * 报损：损耗 / 变质 / 破损 / 丢失，减少库存。
+     */
     LOSS("报损", ScmInventoryMovementTypeEnum.LOSS_REPORT),
 
-    /** 报溢：溢余（多出来的货），增加库存。 */
+    /**
+     * 报溢：溢余（多出来的货），增加库存。
+     */
     OVERFLOW("报溢", ScmInventoryMovementTypeEnum.GAIN_REPORT);
 
     private final String desc;
 
-    /** 审批通过时写入 {@code inventory_movement.movement_type} 的值。 */
+    /**
+     * 审批通过时写入 {@code inventory_movement.movement_type} 的值。
+     */
     private final ScmInventoryMovementTypeEnum movementType;
 
-    /** 方向：{@code true} = 入（余额增加），{@code false} = 出。 */
+    /**
+     * 方向：{@code true} = 入（余额增加），{@code false} = 出。
+     */
     public boolean isInbound() {
         return movementType.isInbound();
     }
 
-    /** 该值是否允许写入 {@code inventory_loss_gain.adjust_type}（DB CHECK 白名单的同源判定）。 */
+    /**
+     * 该值是否允许写入 {@code inventory_loss_gain.adjust_type}（DB CHECK 白名单的同源判定）。
+     */
     public static boolean isSupported(String value) {
         for (ScmInventoryLossGainTypeEnum item : values()) {
             if (item.name().equals(value)) {
@@ -46,7 +56,9 @@ public enum ScmInventoryLossGainTypeEnum {
         return false;
     }
 
-    /** 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。 */
+    /**
+     * 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。
+     */
     public static ScmInventoryLossGainTypeEnum of(String value) {
         for (ScmInventoryLossGainTypeEnum item : values()) {
             if (item.name().equals(value)) {

@@ -29,7 +29,9 @@ public record SupplierSkuChangeSet(List<Matched> retained,
                                    List<SupplierSkuItemForm> inserted,
                                    List<Long> removedIds) {
 
-    /** 需要更新（含「无 id 但命中已存在 (supplierId, skuId) 而复用」）的一对行。 */
+    /**
+     * 需要更新（含「无 id 但命中已存在 (supplierId, skuId) 而复用」）的一对行。
+     */
     public record Matched(SupplierSkuEntity existing, SupplierSkuItemForm requested) {
     }
 

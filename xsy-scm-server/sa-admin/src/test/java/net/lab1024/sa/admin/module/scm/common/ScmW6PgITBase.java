@@ -52,7 +52,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public abstract class ScmW6PgITBase extends ScmW5PgITBase {
 
-    /** W6 唯一写入路径（收货确认同事务调用；IT 也直接调用它验证命令侧的边界）。 */
+    /**
+     * W6 唯一写入路径（收货确认同事务调用；IT 也直接调用它验证命令侧的边界）。
+     */
     @Autowired
     protected InventoryCommandService inventoryCommandService;
 
@@ -102,12 +104,16 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     protected record W6Fixture(Long skuId, Long supplierId, PurchaseDemandEntity demand,
                                PurchaseOrderVO order, PurchaseReceiptVO receipt) {
 
-        /** 采购单唯一活动行的 id。record 的自定义方法默认包私有，子类在别的包，必须显式 public。 */
+        /**
+         * 采购单唯一活动行的 id。record 的自定义方法默认包私有，子类在别的包，必须显式 public。
+         */
         public Long orderItemId() {
             return order.getItems().getFirst().getId();
         }
 
-        /** 收货行的 id（= 库存流水的 {@code source_document_item_id}）。 */
+        /**
+         * 收货行的 id（= 库存流水的 {@code source_document_item_id}）。
+         */
         public Long receiptItemId() {
             return receipt.getItems().getFirst().getId();
         }
@@ -213,20 +219,26 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     // 断言辅助：余额 / 流水
     // ------------------------------------------------------------------
 
-    /** 余额行（无锁读，不存在返回 {@code null}）。 */
+    /**
+     * 余额行（无锁读，不存在返回 {@code null}）。
+     */
     protected InventoryBalanceEntity balanceRow(Long warehouseId, Long skuId) {
         evictMybatisCache();
         return inventoryBalanceDao.selectByWarehouseAndSku(warehouseId, skuId);
     }
 
-    /** 余额行数（物理行数，含 soft-deleted —— 用来验证「并发下只建了一行」）。 */
+    /**
+     * 余额行数（物理行数，含 soft-deleted —— 用来验证「并发下只建了一行」）。
+     */
     protected int balanceRowCount(Long warehouseId, Long skuId) {
         return jdbc.queryForObject(
                 "SELECT count(*) FROM inventory_balance WHERE warehouse_id = ? AND sku_id = ?",
                 Integer.class, warehouseId, skuId);
     }
 
-    /** 活动流水条数。 */
+    /**
+     * 活动流水条数。
+     */
     protected int movementCount(Long warehouseId, Long skuId) {
         return jdbc.queryForObject(
                 "SELECT count(*) FROM inventory_movement "
@@ -247,25 +259,33 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
                         + "ORDER BY occurred_at ASC, id ASC", warehouseId, skuId);
     }
 
-    /** 某个收货行是否已有活动流水（源身份防重）。 */
+    /**
+     * 某个收货行是否已有活动流水（源身份防重）。
+     */
     protected int movementsOfReceiptItem(Long receiptItemId) {
         return inventoryMovementDao.countActiveBySourceItem(
                 PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE, receiptItemId);
     }
 
-    /** 收货单的确认时刻（{@code purchase_receipt.confirmed_at}）。 */
+    /**
+     * 收货单的确认时刻（{@code purchase_receipt.confirmed_at}）。
+     */
     protected OffsetDateTime receiptConfirmedAt(Long receiptId) {
         return jdbc.queryForObject(
                 "SELECT confirmed_at FROM purchase_receipt WHERE id = ?", OffsetDateTime.class, receiptId);
     }
 
-    /** 收货单的操作者（{@code purchase_receipt.operator}）。 */
+    /**
+     * 收货单的操作者（{@code purchase_receipt.operator}）。
+     */
     protected String receiptOperator(Long receiptId) {
         return jdbc.queryForObject(
                 "SELECT operator FROM purchase_receipt WHERE id = ?", String.class, receiptId);
     }
 
-    /** 采购行累计收货量。 */
+    /**
+     * 采购行累计收货量。
+     */
     protected BigDecimal receivedQuantityOf(Long purchaseOrderItemId) {
         evictMybatisCache();
         return jdbc.queryForObject(
@@ -303,7 +323,9 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     // 迁移 SQL 切段（保证被测的就是上线的那段 SQL）
     // ------------------------------------------------------------------
 
-    /** 读取 classpath 上的迁移文件原文。 */
+    /**
+     * 读取 classpath 上的迁移文件原文。
+     */
     protected static String migrationSql(String fileName) {
         try (InputStream in = ScmW6PgITBase.class.getClassLoader()
                 .getResourceAsStream("db/migration/" + fileName)) {
@@ -333,22 +355,30 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
         return sql.substring(from, to);
     }
 
-    /** V19 Step 1：Q13 单位不变量前置检查（同 (warehouse, sku) 混单位 → RAISE EXCEPTION）。 */
+    /**
+     * V19 Step 1：Q13 单位不变量前置检查（同 (warehouse, sku) 混单位 → RAISE EXCEPTION）。
+     */
     protected void runBackfillUnitPreCheck() {
         jdbc.execute(migrationSection(V19, "-- Step 1", "-- Step 2"));
     }
 
-    /** V19 Step 2：回放历史 CONFIRMED 收货行为 PURCHASE_IN 流水（幂等）。 */
+    /**
+     * V19 Step 2：回放历史 CONFIRMED 收货行为 PURCHASE_IN 流水（幂等）。
+     */
     protected void runBackfillMovements() {
         jdbc.execute(migrationSection(V19, "-- Step 2", "-- Step 3"));
     }
 
-    /** V19 Step 3：由流水汇总余额（幂等）。 */
+    /**
+     * V19 Step 3：由流水汇总余额（幂等）。
+     */
     protected void runBackfillBalances() {
         jdbc.execute(migrationSection(V19, "-- Step 3", "-- Step 4"));
     }
 
-    /** V19 Step 4：对账断言（缺失流水 / 余额与流水不等 → RAISE EXCEPTION）。 */
+    /**
+     * V19 Step 4：对账断言（缺失流水 / 余额与流水不等 → RAISE EXCEPTION）。
+     */
     protected void runBackfillReconciliation() {
         jdbc.execute(migrationSection(V19, "-- Step 4", "COMMENT ON TABLE"));
     }

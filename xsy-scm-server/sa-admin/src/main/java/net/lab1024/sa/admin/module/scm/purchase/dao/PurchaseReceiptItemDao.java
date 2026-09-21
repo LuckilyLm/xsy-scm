@@ -21,16 +21,24 @@ import java.util.List;
 @Mapper
 public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEntity> {
 
-    /** 本收货单全部活动行，按 `sort_order` 排序。 */
+    /**
+     * 本收货单全部活动行，按 `sort_order` 排序。
+     */
     List<PurchaseReceiptItemEntity> listByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
-    /** 锁定本收货单全部行（`ORDER BY id ASC FOR UPDATE`）。 */
+    /**
+     * 锁定本收货单全部行（`ORDER BY id ASC FOR UPDATE`）。
+     */
     List<PurchaseReceiptItemEntity> lockByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
-    /** 单行 `FOR UPDATE`。 */
+    /**
+     * 单行 `FOR UPDATE`。
+     */
     PurchaseReceiptItemEntity lock(@Param("id") Long id);
 
-    /** 按采购行查活动收货行（跨收货单累计对账用）。 */
+    /**
+     * 按采购行查活动收货行（跨收货单累计对账用）。
+     */
     List<PurchaseReceiptItemEntity> listActiveByOrderItemId(@Param("purchaseOrderItemId") Long purchaseOrderItemId);
 
     /**
@@ -52,15 +60,21 @@ public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEn
                              @Param("correctionReason") String correctionReason,
                              @Param("operator") String operator);
 
-    /** 软删单行。 */
+    /**
+     * 软删单行。
+     */
     int softDelete(@Param("id") Long id,
                    @Param("version") Integer version,
                    @Param("operator") String operator);
 
-    /** 软删本收货单全部行。 */
+    /**
+     * 软删本收货单全部行。
+     */
     int softDeleteByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId,
                               @Param("operator") String operator);
 
-    /** 活动行数（`confirm` 必须提交全部明细的判定用，40998）。 */
+    /**
+     * 活动行数（`confirm` 必须提交全部明细的判定用，40998）。
+     */
     int countActiveByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 }

@@ -29,7 +29,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmInventoryTransferStatusEnum {
 
-    /** 草稿：可改明细、可发出、可取消、可删除；未产生任何库存影响。 */
+    /**
+     * 草稿：可改明细、可发出、可取消、可删除；未产生任何库存影响。
+     */
     DRAFT("草稿"),
 
     /**
@@ -40,45 +42,63 @@ public enum ScmInventoryTransferStatusEnum {
      */
     SHIPPED("在途"),
 
-    /** 已收货：目标仓已增加，单据完成（终态）。 */
+    /**
+     * 已收货：目标仓已增加，单据完成（终态）。
+     */
     RECEIVED("已完成"),
 
-    /** 已取消：仅草稿可取消，未产生任何库存影响（终态）。 */
+    /**
+     * 已取消：仅草稿可取消，未产生任何库存影响（终态）。
+     */
     CANCELLED("已取消");
 
     private final String desc;
 
-    /** 是否允许编辑明细（只有草稿可以）。 */
+    /**
+     * 是否允许编辑明细（只有草稿可以）。
+     */
     public boolean isEditable() {
         return this == DRAFT;
     }
 
-    /** 是否允许发出（只有草稿可以）。 */
+    /**
+     * 是否允许发出（只有草稿可以）。
+     */
     public boolean isShippable() {
         return this == DRAFT;
     }
 
-    /** 是否允许收货（只有在途可以）。 */
+    /**
+     * 是否允许收货（只有在途可以）。
+     */
     public boolean isReceivable() {
         return this == SHIPPED;
     }
 
-    /** 是否允许取消（只有草稿可以 —— 在途的货已经出库，只能反向调拨冲回）。 */
+    /**
+     * 是否允许取消（只有草稿可以 —— 在途的货已经出库，只能反向调拨冲回）。
+     */
     public boolean isCancellable() {
         return this == DRAFT;
     }
 
-    /** 是否允许删除（只有草稿可以；已发出/已收货必须留痕）。 */
+    /**
+     * 是否允许删除（只有草稿可以；已发出/已收货必须留痕）。
+     */
     public boolean isDeletable() {
         return this == DRAFT;
     }
 
-    /** 是否为**在途**（源仓已扣、目标仓未加）—— 仓库停用守卫据此阻塞。 */
+    /**
+     * 是否为**在途**（源仓已扣、目标仓未加）—— 仓库停用守卫据此阻塞。
+     */
     public boolean isInTransit() {
         return this == SHIPPED;
     }
 
-    /** 该值是否允许写入 {@code inventory_transfer.status}（DB CHECK 白名单的同源判定）。 */
+    /**
+     * 该值是否允许写入 {@code inventory_transfer.status}（DB CHECK 白名单的同源判定）。
+     */
     public static boolean isSupported(String value) {
         for (ScmInventoryTransferStatusEnum item : values()) {
             if (item.name().equals(value)) {

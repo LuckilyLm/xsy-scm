@@ -16,14 +16,14 @@ import java.time.OffsetDateTime;
  * 若调用方直接传 delta，锁内的 live 就失去了意义，等于把「保存草稿 → 确认」之间的
  * 收货/出库抹掉。
  *
- * @param warehouseId    盘点仓库
- * @param skuId          盘点 SKU
- * @param stocktakeId    盘点单 id（头级溯源，不参与防重）
+ * @param warehouseId     盘点仓库
+ * @param skuId           盘点 SKU
+ * @param stocktakeId     盘点单 id（头级溯源，不参与防重）
  * @param stocktakeItemId 盘点明细行 id（防重锚点，唯一索引列）
- * @param bookQuantity   账面量快照（保存草稿那一刻），差异基线
- * @param actualQuantity 实盘量（清点结果）
- * @param occurredAt     发生时刻 —— 取**盘点确认时刻**，不是写入时刻
- * @param operator       操作者 —— 取盘点单确认人
+ * @param bookQuantity    账面量快照（保存草稿那一刻），差异基线
+ * @param actualQuantity  实盘量（清点结果）
+ * @param occurredAt      发生时刻 —— 取**盘点确认时刻**，不是写入时刻
+ * @param operator        操作者 —— 取盘点单确认人
  */
 public record InventoryStocktakeFact(
         Long warehouseId,

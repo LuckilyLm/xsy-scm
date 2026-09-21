@@ -6,81 +6,82 @@
   <a-modal :open="visible" title="生成单号" ok-text="生成" cancel-text="关闭" @ok="onSubmit" @cancel="onClose">
     <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }">
       <a-form-item label="业务">
-        <a-input v-model:value="form.businessName" :disabled="true" />
+        <a-input v-model:value="form.businessName" :disabled="true"/>
       </a-form-item>
       <a-form-item label="格式">
-        <a-input v-model:value="form.format" :disabled="true" />
+        <a-input v-model:value="form.format" :disabled="true"/>
       </a-form-item>
       <a-form-item label="循环周期">
-        <a-input v-model:value="form.ruleType" :disabled="true" />
+        <a-input v-model:value="form.ruleType" :disabled="true"/>
       </a-form-item>
       <a-form-item label="上次产生单号">
-        <a-input v-model:value="form.lastNumber" :disabled="true" />
+        <a-input v-model:value="form.lastNumber" :disabled="true"/>
       </a-form-item>
       <a-form-item label="生成数量" name="count">
-        <a-input-number v-model:value="form.count" />
+        <a-input-number v-model:value="form.count"/>
       </a-form-item>
       <a-form-item label="生成结果">
-        <a-textarea v-model:value="generateResult" :rows="2" />
+        <a-textarea v-model:value="generateResult" :rows="2"/>
       </a-form-item>
     </a-form>
   </a-modal>
 </template>
 <script setup lang="ts">
-  import { message } from 'ant-design-vue';
-  import { reactive, ref } from 'vue';
-  import { serialNumberApi } from '/@/api/support/serial-number-api';
-  import { SmartLoading } from '/@/components/framework/smart-loading';
-  import _ from 'lodash';
-  import { smartSentry } from '/@/lib/smart-sentry';
+import {message} from 'ant-design-vue';
+import {reactive, ref} from 'vue';
+import {serialNumberApi} from '/@/api/support/serial-number-api';
+import {SmartLoading} from '/@/components/framework/smart-loading';
+import _ from 'lodash';
+import {smartSentry} from '/@/lib/smart-sentry';
 
-  // emit
-  const emit = defineEmits(['refresh']);
-  defineExpose({
-    showModal,
-  });
+// emit
+const emit = defineEmits(['refresh']);
+defineExpose({
+  showModal,
+});
 
-  // ----------------------- 表单 隐藏 与 显示 ------------------------
-  // 是否展示
-  const visible = ref(false);
-  function showModal(data) {
-    form.serialNumberId = data.serialNumberId;
-    form.businessName = data.businessName;
-    form.format = data.format;
-    form.ruleType = data.ruleType;
-    form.lastNumber = data.lastNumber;
-    form.count = 1;
-    generateResult.value = '';
-    visible.value = true;
-  }
+// ----------------------- 表单 隐藏 与 显示 ------------------------
+// 是否展示
+const visible = ref(false);
 
-  function onClose() {
-    visible.value = false;
-    emit('refresh');
-  }
+function showModal(data) {
+  form.serialNumberId = data.serialNumberId;
+  form.businessName = data.businessName;
+  form.format = data.format;
+  form.ruleType = data.ruleType;
+  form.lastNumber = data.lastNumber;
+  form.count = 1;
+  generateResult.value = '';
+  visible.value = true;
+}
 
-  // ----------------------- 表单 ------------------------
-  const rules = {
-    count: [{ required: true, message: '请输入数量' }],
-  };
+function onClose() {
+  visible.value = false;
+  emit('refresh');
+}
 
-  //生成结果
-  const generateResult = ref('');
+// ----------------------- 表单 ------------------------
+const rules = {
+  count: [{required: true, message: '请输入数量'}],
+};
 
-  //  组件
-  const formRef = ref();
+//生成结果
+const generateResult = ref('');
 
-  const form = reactive({
-    serialNumberId: -1,
-    businessName: '',
-    format: '',
-    ruleType: '',
-    lastNumber: -1,
-    count: 1,
-  });
+//  组件
+const formRef = ref();
 
-  function onSubmit() {
-    formRef.value
+const form = reactive({
+  serialNumberId: -1,
+  businessName: '',
+  format: '',
+  ruleType: '',
+  lastNumber: -1,
+  count: 1,
+});
+
+function onSubmit() {
+  formRef.value
       .validate()
       .then(async () => {
         SmartLoading.show();
@@ -98,5 +99,5 @@
         console.log('error', error);
         message.error('参数验证错误，请仔细填写表单数据!');
       });
-  }
+}
 </script>

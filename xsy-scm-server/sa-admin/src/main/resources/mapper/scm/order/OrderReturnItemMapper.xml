@@ -1,22 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.OrderReturnItemDao">
-<resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.OrderReturnItemEntity">
-<result column="id" property="id"/>
-<result column="return_id" property="returnId"/>
-<result column="order_item_id" property="orderItemId"/>
-<result column="requested_quantity" property="requestedQuantity"/>
-<result column="approved_quantity" property="approvedQuantity"/>
-<result column="locked_unit_price" property="lockedUnitPrice"/>
-<result column="approved_amount" property="approvedAmount"/>
-<result column="version" property="version"/>
-<result column="deleted" property="deleted"/>
-<result column="created_at" property="createdAt"/>
-<result column="updated_at" property="updatedAt"/>
-<result column="created_by" property="createdBy"/>
-<result column="updated_by" property="updatedBy"/>
-</resultMap>
-<select id="lock" resultMap="row">SELECT * FROM order_return_item WHERE id=#{id} AND deleted=FALSE FOR UPDATE</select>
-<select id="list" resultMap="row">SELECT * FROM order_return_item WHERE return_id=#{id} AND deleted=FALSE ORDER BY id</select>
-<select id="reserved" resultType="java.math.BigDecimal">SELECT COALESCE(SUM(CASE WHEN r.status='PENDING' THEN i.requested_quantity ELSE i.approved_quantity END),0) FROM order_return_item i JOIN order_return r ON r.id=i.return_id WHERE i.order_item_id=#{id} AND i.deleted=FALSE AND r.deleted=FALSE AND r.status IN ('PENDING','APPROVED')</select>
+    <resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.OrderReturnItemEntity">
+        <result column="id" property="id"/>
+        <result column="return_id" property="returnId"/>
+        <result column="order_item_id" property="orderItemId"/>
+        <result column="requested_quantity" property="requestedQuantity"/>
+        <result column="approved_quantity" property="approvedQuantity"/>
+        <result column="locked_unit_price" property="lockedUnitPrice"/>
+        <result column="approved_amount" property="approvedAmount"/>
+        <result column="version" property="version"/>
+        <result column="deleted" property="deleted"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+    </resultMap>
+    <select id="lock" resultMap="row">SELECT *
+                                      FROM order_return_item
+                                      WHERE id = #{id}
+                                        AND deleted = FALSE FOR UPDATE</select>
+    <select id="list" resultMap="row">SELECT *
+                                      FROM order_return_item
+                                      WHERE return_id = #{id}
+                                        AND deleted = FALSE
+                                      ORDER BY id</select>
+    <select id="reserved" resultType="java.math.BigDecimal">SELECT COALESCE(SUM(CASE
+                                                                                    WHEN r.status = 'PENDING'
+                                                                                        THEN i.requested_quantity
+                                                                                    ELSE i.approved_quantity END), 0)
+                                                            FROM order_return_item i
+                                                                     JOIN order_return r ON r.id = i.return_id
+                                                            WHERE i.order_item_id = #{id}
+                                                              AND i.deleted = FALSE
+                                                              AND r.deleted = FALSE
+                                                              AND r.status IN ('PENDING', 'APPROVED')</select>
 </mapper>

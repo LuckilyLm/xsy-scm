@@ -16,13 +16,19 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class InventoryWarningThresholdQueryForm extends PageParam {
 
-    /** 仓库（精确）。 */
+    /**
+     * 仓库（精确）。
+     */
     private Long warehouseId;
 
-    /** SKU（精确）。 */
+    /**
+     * SKU（精确）。
+     */
     private Long skuId;
 
-    /** SKU 编码模糊匹配（联 {@code product_sku}）。 */
+    /**
+     * SKU 编码模糊匹配（联 {@code product_sku}）。
+     */
     @Size(max = 64)
     private String skuCode;
 

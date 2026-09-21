@@ -6,7 +6,9 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 编辑客户类型。 */
+/**
+ * 编辑客户类型。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomerTypeUpdateForm extends CustomerTypeAddForm {

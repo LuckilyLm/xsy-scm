@@ -23,18 +23,26 @@ import java.util.List;
 @Mapper
 public interface PurchaseDemandAllocationDao extends BaseMapper<PurchaseDemandAllocationEntity> {
 
-    /** 本采购单的全部活动分配（联 purchase_order_item 限定 orderId）。 */
+    /**
+     * 本采购单的全部活动分配（联 purchase_order_item 限定 orderId）。
+     */
     List<PurchaseDemandAllocationEntity> listActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
-    /** 指定采购行的全部活动分配。 */
+    /**
+     * 指定采购行的全部活动分配。
+     */
     List<PurchaseDemandAllocationEntity> listActiveByOrderItemIds(@Param("ids") List<Long> ids);
 
-    /** 指定需求的全部活动分配（**跨采购单**，用于重算 allocated_quantity）。 */
+    /**
+     * 指定需求的全部活动分配（**跨采购单**，用于重算 allocated_quantity）。
+     */
     List<PurchaseDemandAllocationEntity> listActiveByDemandIds(@Param("ids") List<Long> ids);
 
-    /** 按 (itemId, demandId) 集合形态读取，用于差量对账前的旧集合装载。 */
+    /**
+     * 按 (itemId, demandId) 集合形态读取，用于差量对账前的旧集合装载。
+     */
     List<PurchaseDemandAllocationEntity> listActiveByOrderIdAndDemandIds(@Param("purchaseOrderId") Long purchaseOrderId,
-                                                                        @Param("demandIds") List<Long> demandIds);
+                                                                         @Param("demandIds") List<Long> demandIds);
 
     /**
      * 只改数量（**保留的 allocation**，§7.8 B 段第 9 步：不重建行）。
@@ -49,12 +57,16 @@ public interface PurchaseDemandAllocationDao extends BaseMapper<PurchaseDemandAl
                        @Param("allocatedQuantity") BigDecimal allocatedQuantity,
                        @Param("operator") String operator);
 
-    /** 软删单条（**只删这一条**，不波及同一行的其它分配）。 */
+    /**
+     * 软删单条（**只删这一条**，不波及同一行的其它分配）。
+     */
     int softDelete(@Param("id") Long id,
                    @Param("version") Integer version,
                    @Param("operator") String operator);
 
-    /** 软删某个采购行的全部分配（行被删除时调用）。 */
+    /**
+     * 软删某个采购行的全部分配（行被删除时调用）。
+     */
     int softDeleteByOrderItemId(@Param("purchaseOrderItemId") Long purchaseOrderItemId,
                                 @Param("operator") String operator);
 }

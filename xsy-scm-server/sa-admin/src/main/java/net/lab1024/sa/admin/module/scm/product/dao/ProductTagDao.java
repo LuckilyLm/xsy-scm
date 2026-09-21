@@ -6,6 +6,7 @@ import net.lab1024.sa.admin.module.scm.product.domain.form.ProductAssistantQuery
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductTagVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
 import java.util.List;
 
 @Mapper

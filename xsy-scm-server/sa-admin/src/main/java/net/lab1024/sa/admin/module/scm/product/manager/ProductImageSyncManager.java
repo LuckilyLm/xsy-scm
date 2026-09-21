@@ -12,10 +12,12 @@ import net.lab1024.sa.base.module.support.file.service.FileService;
 import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import org.springframework.stereotype.Component;
+
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import static net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode.*;
 
 @Component
@@ -25,12 +27,15 @@ public class ProductImageSyncManager {
     private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
     private final ProductImageDao dao;
     private final FileService files;
+
     public List<ProductImageEntity> existing(Long spuId) {
-        return dao.selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId,spuId)
-                .orderByAsc(ProductImageEntity::getSortOrder,ProductImageEntity::getId));
+        return dao.selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
+                .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
     }
-    public void sync(Long spuId,ProductImageChangeSet changes) {
-        List<ProductImageForm> requested=new ArrayList<>(changes.updated()); requested.addAll(changes.inserted());
+
+    public void sync(Long spuId, ProductImageChangeSet changes) {
+        List<ProductImageForm> requested = new ArrayList<>(changes.updated());
+        requested.addAll(changes.inserted());
         // File module remains the authority for existence, metadata and URL generation.
         Map<String,FileVO> metadata=files.getFileList(requested.stream().map(ProductImageForm::getFileKey).toList())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey,Function.identity(),(a,b)->a));
@@ -38,21 +43,27 @@ public class ProductImageSyncManager {
         Map<Long,String> persistedKeys=existing(spuId).stream().collect(Collectors.toMap(ProductImageEntity::getId,ProductImageEntity::getFileKey));
         for (var form:requested) requirePublicImageKey(form,persistedKeys);
         dao.clearPrimary(spuId);
-        for (var form:changes.updated()) {
-            var entity=entity(spuId,form,metadata.get(form.getFileKey())); entity.setId(form.getImageId()); entity.setVersion(form.getVersion());
-            if (dao.updateById(entity)!=1) throw new ScmBusinessException(VERSION_CONFLICT);
+        for (var form : changes.updated()) {
+            var entity = entity(spuId, form, metadata.get(form.getFileKey()));
+            entity.setId(form.getImageId());
+            entity.setVersion(form.getVersion());
+            if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        for (var form:changes.inserted()) {
-            var entity=entity(spuId,form,metadata.get(form.getFileKey())); entity.setVersion(0);
-            entity.setCreatedAt(entity.getUpdatedAt()); entity.setCreatedBy(entity.getUpdatedBy()); dao.insert(entity);
+        for (var form : changes.inserted()) {
+            var entity = entity(spuId, form, metadata.get(form.getFileKey()));
+            entity.setVersion(0);
+            entity.setCreatedAt(entity.getUpdatedAt());
+            entity.setCreatedBy(entity.getUpdatedBy());
+            dao.insert(entity);
         }
         remove(changes.removedIds());
     }
+
     public void remove(List<Long> ids) {
-        if(ids.isEmpty()) return;
-        dao.update(null,new LambdaUpdateWrapper<ProductImageEntity>().in(ProductImageEntity::getId,ids)
-            .set(ProductImageEntity::getUpdatedAt,OffsetDateTime.now()).set(ProductImageEntity::getUpdatedBy,ScmOperator.current())
-            .setSql("version = version + 1"));
+        if (ids.isEmpty()) return;
+        dao.update(null, new LambdaUpdateWrapper<ProductImageEntity>().in(ProductImageEntity::getId, ids)
+                .set(ProductImageEntity::getUpdatedAt, OffsetDateTime.now()).set(ProductImageEntity::getUpdatedBy, ScmOperator.current())
+                .setSql("version = version + 1"));
         dao.deleteByIds(ids);
     }
     /**

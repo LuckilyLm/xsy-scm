@@ -21,6 +21,7 @@ public class HeartBeatRecordHandler implements IHeartBeatRecordHandler {
 
     /**
      * 心跳日志处理方法
+     *
      * @param heartBeatRecord
      */
     @Override

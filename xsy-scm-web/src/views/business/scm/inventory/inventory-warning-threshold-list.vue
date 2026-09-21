@@ -12,10 +12,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
       </a-form-item>
       <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch" />
+        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -27,7 +27,9 @@
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action><a-button @click="queryData">重试</a-button></template>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
   </a-alert>
 
   <a-card size="small" :bordered="false">
@@ -42,24 +44,24 @@
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD"
-          :refresh="queryData"
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD"
+            :refresh="queryData"
         />
       </div>
     </a-row>
 
     <a-table
-      :id="SCM_INVENTORY_TABLE_ID.WARNING_THRESHOLD"
-      size="small"
-      :data-source="tableData"
-      :columns="columns"
-      row-key="id"
-      bordered
-      :loading="loading"
-      :pagination="false"
-      :locale="{ emptyText: '暂无阈值配置' }"
-      :scroll="{ x: 1250 }"
+        :id="SCM_INVENTORY_TABLE_ID.WARNING_THRESHOLD"
+        size="small"
+        :data-source="tableData"
+        :columns="columns"
+        row-key="id"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :locale="{ emptyText: '暂无阈值配置' }"
+        :scroll="{ x: 1250 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'warnMin'">
@@ -72,19 +74,19 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="4">
             <a-button
-              type="link"
-              size="small"
-              @click="openEdit(record)"
-              v-privilege="'scm:inventory:threshold:update'"
+                type="link"
+                size="small"
+                @click="openEdit(record)"
+                v-privilege="'scm:inventory:threshold:update'"
             >
               编辑
             </a-button>
             <a-button
-              type="link"
-              size="small"
-              danger
-              @click="onDelete(record)"
-              v-privilege="'scm:inventory:threshold:delete'"
+                type="link"
+                size="small"
+                danger
+                @click="onDelete(record)"
+                v-privilege="'scm:inventory:threshold:delete'"
             >
               删除
             </a-button>
@@ -96,50 +98,50 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-        show-size-changer
-        show-quick-jumper
-        v-model:current="queryForm.pageNum"
-        v-model:page-size="queryForm.pageSize"
-        :total="total"
-        @change="queryData"
-        :show-total="(n: number) => `共${n}条`"
+          show-size-changer
+          show-quick-jumper
+          v-model:current="queryForm.pageNum"
+          v-model:page-size="queryForm.pageSize"
+          :total="total"
+          @change="queryData"
+          :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑 -->
   <a-drawer
-    :open="drawerOpen"
-    :title="form.id ? '编辑阈值配置' : '新建阈值配置'"
-    width="620"
-    @close="closeDrawer"
+      :open="drawerOpen"
+      :title="form.id ? '编辑阈值配置' : '新建阈值配置'"
+      width="620"
+      @close="closeDrawer"
   >
     <a-alert
-      type="info"
-      show-icon
-      style="margin-bottom: 12px"
-      message="判定基准是可用量（现有量 − 预留量）：货已被订走就不算有货，因此预留量会把可用量压到下限以下并触发补货预警。"
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="判定基准是可用量（现有量 − 预留量）：货已被订走就不算有货，因此预留量会把可用量压到下限以下并触发补货预警。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">
-        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px" />
+        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
       <a-form-item label="SKU" name="skuId">
         <SkuSelect
-          :value="form.skuId"
-          :disabled-statuses="[]"
-          width="260px"
-          @update:value="(v) => (form.skuId = Array.isArray(v) ? v[0] : v)"
+            :value="form.skuId"
+            :disabled-statuses="[]"
+            width="260px"
+            @update:value="(v) => (form.skuId = Array.isArray(v) ? v[0] : v)"
         />
       </a-form-item>
       <a-form-item label="预警下限" name="warnMin">
-        <a-input v-model:value="form.warnMin" placeholder="留空表示不设下限" style="width: 200px" />
+        <a-input v-model:value="form.warnMin" placeholder="留空表示不设下限" style="width: 200px"/>
       </a-form-item>
       <a-form-item label="预警上限" name="warnMax">
-        <a-input v-model:value="form.warnMax" placeholder="留空表示不设上限" style="width: 200px" />
+        <a-input v-model:value="form.warnMax" placeholder="留空表示不设上限" style="width: 200px"/>
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
       </a-form-item>
     </a-form>
     <template #footer>
@@ -152,27 +154,27 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { message, Modal } from 'ant-design-vue';
-import type { TableColumnsType } from 'ant-design-vue';
+import {onMounted, reactive, ref} from 'vue';
+import {message, Modal} from 'ant-design-vue';
+import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
-import { inventoryWarningThresholdApi } from '/@/api/business/scm/inventory-warning-threshold-api';
-import { warehouseApi } from '/@/api/business/scm/warehouse-api';
-import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-import { SCM_INVENTORY_TABLE_ID } from '/@/constants/business/scm/inventory-const';
+import {inventoryWarningThresholdApi} from '/@/api/business/scm/inventory-warning-threshold-api';
+import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
 import type {
   InventoryWarningThreshold,
   InventoryWarningThresholdAdd,
   InventoryWarningThresholdQuery,
 } from './inventory-types';
-import type { Warehouse } from '../purchase/purchase-types';
-import { quantityText, singleWarehouseDefault } from './inventory-model';
-import { inventoryError } from './inventory-errors';
-import { datetime } from '../common/scm-display';
+import type {Warehouse} from '../purchase/purchase-types';
+import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {inventoryError} from './inventory-errors';
+import {datetime} from '../common/scm-display';
 
-const queryForm = reactive<InventoryWarningThresholdQuery>({ pageNum: 1, pageSize: 20 });
+const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarningThreshold[]>([]);
 const total = ref(0);
 const loading = ref(false);
@@ -181,15 +183,15 @@ const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
 const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
-  { title: '仓库', dataIndex: 'warehouseName', width: 160 },
-  { title: 'SKU 编码', dataIndex: 'skuCode', width: 160 },
-  { title: 'SKU 名称', dataIndex: 'skuName', width: 150 },
-  { title: '商品名称', dataIndex: 'productName', width: 150 },
-  { title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 120 },
-  { title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 120 },
-  { title: '备注', dataIndex: 'remark', width: 200, ellipsis: true },
-  { title: '更新时间', dataIndex: 'updatedAt', width: 170 },
-  { title: '操作', dataIndex: 'action', width: 140, fixed: 'right' },
+  {title: '仓库', dataIndex: 'warehouseName', width: 160},
+  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
+  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品名称', dataIndex: 'productName', width: 150},
+  {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 120},
+  {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 120},
+  {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
+  {title: '更新时间', dataIndex: 'updatedAt', width: 170},
+  {title: '操作', dataIndex: 'action', width: 140, fixed: 'right'},
 ]);
 
 // ------------------------------------------------------------------ 查询
@@ -199,7 +201,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await inventoryWarningThresholdApi.query({ ...queryForm });
+    const r = await inventoryWarningThresholdApi.query({...queryForm});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -255,8 +257,8 @@ const form = reactive<{
 }>({});
 
 const formRules = {
-  warehouseId: [{ required: true, message: '请选择仓库' }],
-  skuId: [{ required: true, message: '请选择 SKU' }],
+  warehouseId: [{required: true, message: '请选择仓库'}],
+  skuId: [{required: true, message: '请选择 SKU'}],
 };
 
 function openCreate() {

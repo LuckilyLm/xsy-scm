@@ -28,11 +28,11 @@
  <PriceDrawer ref="drawer" @saved="load" />
 </template>
 <script setup lang="ts">
-import {onMounted,reactive,ref} from 'vue';
+import {onMounted, reactive, ref} from 'vue';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
-import type {PriceQuery,PriceRow} from '/@/types/business/scm/pricing';
+import type {PriceQuery, PriceRow} from '/@/types/business/scm/pricing';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -40,15 +40,95 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {formatAmount} from '/@/utils/scm-amount';
 import {pricingError} from './pricing-errors';
 import PriceDrawer from './components/agreement-price-form-drawer.vue';
-import { datetime } from '../common/scm-display';
-const api=pricingApi.agreement;
-const query=reactive<PriceQuery>({pageNum:1,pageSize:20});const range=ref<[string,string]|undefined>();
-const rows=ref<PriceRow[]>([]),total=ref(0),loading=ref(false),error=ref('');const drawer=ref<InstanceType<typeof PriceDrawer>>();let requestId=0;
-const columns=ref<TableColumnsType<PriceRow>>([{title:'客户',dataIndex:'customerName',width:160},{title:'客户编码',dataIndex:'customerCode',width:130},{title:'SKU 编码',dataIndex:'skuCode',width:150},{title:'商品',dataIndex:'productName',width:160},{title:'规格',dataIndex:'specName',width:120},{title:'单价',dataIndex:'unitPrice',align:'right',width:120},{title:'生效时间',dataIndex:'effectiveFrom',width:200, customRender: ({ text }) => datetime(text) },{title:'结束时间',dataIndex:'effectiveTo',width:200, customRender: ({ text }) => datetime(text) },{title:'更新时间',dataIndex:'updatedAt',width:200, customRender: ({ text }) => datetime(text) },{title:'操作',dataIndex:'action',align:'right',fixed:'right',width:130}]);
-async function load(){const id=++requestId;loading.value=true;error.value='';try{const r=await api.query({...query,effectiveFrom:range.value?.[0]||null,effectiveTo:range.value?.[1]||null});if(id===requestId){rows.value=r.data.list;total.value=r.data.total;}}catch(e){if(id===requestId)error.value=pricingError(e);}finally{if(id===requestId)loading.value=false;}}
-function search(){query.pageNum=1;load();}
-function reset(){query.keyword=undefined;query.customerId=undefined;query.skuId=undefined;range.value=undefined;search();}
-function remove(row:PriceRow){Modal.confirm({title:'删除这条客户协议价？',content:'删除后保留价格变更记录。',onOk:async()=>{try{await api.delete(row);await load();}catch(e){error.value=pricingError(e);throw e;}}});}
+import {datetime} from '../common/scm-display';
+
+const api = pricingApi.agreement;
+const query = reactive<PriceQuery>({pageNum: 1, pageSize: 20});
+const range = ref<[string, string] | undefined>();
+const rows = ref<PriceRow[]>([]), total = ref(0), loading = ref(false), error = ref('');
+const drawer = ref<InstanceType<typeof PriceDrawer>>();
+let requestId = 0;
+const columns = ref<TableColumnsType<PriceRow>>([{
+  title: '客户',
+  dataIndex: 'customerName',
+  width: 160
+}, {title: '客户编码', dataIndex: 'customerCode', width: 130}, {
+  title: 'SKU 编码',
+  dataIndex: 'skuCode',
+  width: 150
+}, {title: '商品', dataIndex: 'productName', width: 160}, {
+  title: '规格',
+  dataIndex: 'specName',
+  width: 120
+}, {title: '单价', dataIndex: 'unitPrice', align: 'right', width: 120}, {
+  title: '生效时间',
+  dataIndex: 'effectiveFrom',
+  width: 200,
+  customRender: ({text}) => datetime(text)
+}, {
+  title: '结束时间',
+  dataIndex: 'effectiveTo',
+  width: 200,
+  customRender: ({text}) => datetime(text)
+}, {title: '更新时间', dataIndex: 'updatedAt', width: 200, customRender: ({text}) => datetime(text)}, {
+  title: '操作',
+  dataIndex: 'action',
+  align: 'right',
+  fixed: 'right',
+  width: 130
+}]);
+
+async function load() {
+  const id = ++requestId;
+  loading.value = true;
+  error.value = '';
+  try {
+    const r = await api.query({
+      ...query,
+      effectiveFrom: range.value?.[0] || null,
+      effectiveTo: range.value?.[1] || null
+    });
+    if (id === requestId) {
+      rows.value = r.data.list;
+      total.value = r.data.total;
+    }
+  } catch (e) {
+    if (id === requestId) error.value = pricingError(e);
+  } finally {
+    if (id === requestId) loading.value = false;
+  }
+}
+
+function search() {
+  query.pageNum = 1;
+  load();
+}
+
+function reset() {
+  query.keyword = undefined;
+  query.customerId = undefined;
+  query.skuId = undefined;
+  range.value = undefined;
+  search();
+}
+
+function remove(row: PriceRow) {
+  Modal.confirm({
+    title: '删除这条客户协议价？', content: '删除后保留价格变更记录。', onOk: async () => {
+      try {
+        await api.delete(row);
+        await load();
+      } catch (e) {
+        error.value = pricingError(e);
+        throw e;
+      }
+    }
+  });
+}
+
 onMounted(load);
 </script>
-<style scoped>.amount{font-variant-numeric:tabular-nums;white-space:nowrap;}</style>
+<style scoped>.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}</style>

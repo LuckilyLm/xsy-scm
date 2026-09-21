@@ -8,33 +8,33 @@
  * B1 通过独立的 `enable` / `disable` 命令管理状态。`status` 不进入新增或编辑表单，
  * 新建仓库仍一律为 `ENABLED`。
  */
-import { getRequest, postRequest } from '/@/lib/axios';
-import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
+import {getRequest, postRequest} from '/@/lib/axios';
+import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
-  Id,
-  Warehouse,
-  WarehousePayload,
-  WarehouseQuery,
-  WarehouseStatusPayload,
+    Id,
+    Warehouse,
+    WarehousePayload,
+    WarehouseQuery,
+    WarehouseStatusPayload,
 } from '/@/views/business/scm/purchase/purchase-types';
 
 export const warehouseApi = {
-  /** 全量启用仓库（选择器用）。 */
-  list: () => getRequest('/scm/warehouse/list', {}) as unknown as Promise<ScmResponse<Warehouse[]>>,
-  query: (data: WarehouseQuery) =>
-    postRequest('/scm/warehouse/query', data) as unknown as Promise<ScmResponse<ScmPage<Warehouse>>>,
-  detail: (id: Id) =>
-    getRequest(`/scm/warehouse/detail/${id}`, {}) as unknown as Promise<ScmResponse<Warehouse>>,
-  create: (data: WarehousePayload) =>
-    postRequest('/scm/warehouse/create', data) as unknown as Promise<ScmResponse<Id>>,
-  update: (data: WarehousePayload) =>
-    postRequest('/scm/warehouse/update', data) as unknown as Promise<ScmResponse<string>>,
-  /** 启用仓库（B1，HD-B1-01）。 */
-  enable: (data: WarehouseStatusPayload) =>
-    postRequest('/scm/warehouse/enable', data) as unknown as Promise<ScmResponse<string>>,
-  /** 停用仓库（B1，HD-B1-01 严格模式）。 */
-  disable: (data: WarehouseStatusPayload) =>
-    postRequest('/scm/warehouse/disable', data) as unknown as Promise<ScmResponse<string>>,
+    /** 全量启用仓库（选择器用）。 */
+    list: () => getRequest('/scm/warehouse/list', {}) as unknown as Promise<ScmResponse<Warehouse[]>>,
+    query: (data: WarehouseQuery) =>
+        postRequest('/scm/warehouse/query', data) as unknown as Promise<ScmResponse<ScmPage<Warehouse>>>,
+    detail: (id: Id) =>
+        getRequest(`/scm/warehouse/detail/${id}`, {}) as unknown as Promise<ScmResponse<Warehouse>>,
+    create: (data: WarehousePayload) =>
+        postRequest('/scm/warehouse/create', data) as unknown as Promise<ScmResponse<Id>>,
+    update: (data: WarehousePayload) =>
+        postRequest('/scm/warehouse/update', data) as unknown as Promise<ScmResponse<string>>,
+    /** 启用仓库（B1，HD-B1-01）。 */
+    enable: (data: WarehouseStatusPayload) =>
+        postRequest('/scm/warehouse/enable', data) as unknown as Promise<ScmResponse<string>>,
+    /** 停用仓库（B1，HD-B1-01 严格模式）。 */
+    disable: (data: WarehouseStatusPayload) =>
+        postRequest('/scm/warehouse/disable', data) as unknown as Promise<ScmResponse<string>>,
 };
 
 export default warehouseApi;

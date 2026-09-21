@@ -17,17 +17,21 @@ public @interface DataTracerFieldSql {
 
     /**
      * 关联字段名称
+     *
      * @return
      */
     String relateColumn() default "id";
 
     /**
      * 关联显示的字段
+     *
      * @return
      */
     String relateDisplayColumn() default "";
+
     /**
      * 是否关联字段查询Mapper
+     *
      * @return
      */
     Class<? extends BaseMapper> relateMapper() default BaseMapper.class;

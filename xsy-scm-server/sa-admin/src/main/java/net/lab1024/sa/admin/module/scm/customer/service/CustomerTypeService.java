@@ -43,7 +43,9 @@ import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCod
 @RequiredArgsConstructor
 public class CustomerTypeService {
 
-    /** 排序白名单：只有这些列允许来自客户端（修正 legacy D18 / C 缺陷 K14）。 */
+    /**
+     * 排序白名单：只有这些列允许来自客户端（修正 legacy D18 / C 缺陷 K14）。
+     */
     private static final Set<String> SORTABLE = Set.of("type_code", "name", "status", "updated_at");
 
     private final CustomerTypeDao dao;
@@ -52,13 +54,17 @@ public class CustomerTypeService {
     private final net.lab1024.sa.admin.module.scm.customer.dao.CustomerSkuVisibilityDao pricingReferences;
     private final net.lab1024.sa.admin.module.scm.pricing.dao.CustomerTypePriceDao priceDao;
 
-    /** 全量客户类型（含 DISABLED），供内部逻辑使用。 */
+    /**
+     * 全量客户类型（含 DISABLED），供内部逻辑使用。
+     */
     public List<CustomerTypeEntity> all() {
         return dao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
                 .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId));
     }
 
-    /** 读取客户类型，不存在或已删除 → 40431。 */
+    /**
+     * 读取客户类型，不存在或已删除 → 40431。
+     */
     public CustomerTypeEntity require(Long typeId) {
         CustomerTypeEntity entity = typeId == null ? null : dao.selectById(typeId);
         if (entity == null) {
@@ -80,7 +86,9 @@ public class CustomerTypeService {
         return entity;
     }
 
-    /** 下拉选项：只返回 {@code ENABLED}（Target Design Q9），按名称排序。 */
+    /**
+     * 下拉选项：只返回 {@code ENABLED}（Target Design Q9），按名称排序。
+     */
     public List<CustomerTypeVO> optionList() {
         return dao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
                         .eq(CustomerTypeEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())

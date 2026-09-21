@@ -37,7 +37,9 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
     @Autowired
     private InventoryTransferService transferService;
 
-    /** 本类建过的仓库 id，用例结束后软删（否则会破坏「唯一启用仓库」的口径）。 */
+    /**
+     * 本类建过的仓库 id，用例结束后软删（否则会破坏「唯一启用仓库」的口径）。
+     */
     private final List<Long> createdWarehouses = new ArrayList<>();
 
     @Override
@@ -76,7 +78,7 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
     }
 
     private InventoryTransferAddForm twoLineForm(Long from, Long to, Long first, String firstQty,
-                                                Long second, String secondQty) {
+                                                 Long second, String secondQty) {
         InventoryTransferAddForm form = new InventoryTransferAddForm();
         form.setFromWarehouseId(from);
         form.setToWarehouseId(to);

@@ -65,8 +65,7 @@ public class MapperVariableService extends CodeGenerateBaseVariableService {
                         queryField.getFieldName() +
                         "}) > 0";
                 fieldMap.put("likeStr", stringBuilder);
-            }
-            else {
+            } else {
                 fieldMap.put("columnName", queryField.getColumnNameList().get(0));
             }
         }

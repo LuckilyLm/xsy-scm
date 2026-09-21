@@ -4,12 +4,14 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 仓库（列表行 / 下拉 / 详情共用，W5 Target Design §7.2）。 */
+/**
+ * 仓库（列表行 / 下拉 / 详情共用，W5 Target Design §7.2）。
+ */
 @Data
 public class WarehouseVO {
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
     private java.math.BigDecimal longitude;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing=com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
+    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
     private java.math.BigDecimal latitude;
     private String geomCrs;
 

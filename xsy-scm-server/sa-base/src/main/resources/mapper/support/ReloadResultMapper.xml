@@ -4,7 +4,10 @@
 
     <!-- 查询reload列表 -->
     <select id="query" resultType="net.lab1024.sa.base.module.support.reload.domain.ReloadResultVO">
-        SELECT	tag, identification, args, result, exception, create_time FROM	t_reload_result where tag = #{tag} order by create_time desc
+        SELECT tag, identification, args, result, exception, create_time
+        FROM t_reload_result
+        where tag = #{tag}
+        order by create_time desc
     </select>
 
 </mapper>

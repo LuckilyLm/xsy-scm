@@ -32,14 +32,69 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {formatAmount} from '/@/utils/scm-amount';
-import {UNAVAILABLE_REASON_ENUM,SCM_PRICE_SOURCE_ENUM} from '/@/constants/business/scm/pricing-const';
+import {UNAVAILABLE_REASON_ENUM, SCM_PRICE_SOURCE_ENUM} from '/@/constants/business/scm/pricing-const';
 import type {ScmId} from '/@/types/business/scm/customer';
-import type {ResolveResult,ResolvedPrice} from '/@/types/business/scm/pricing';
+import type {ResolveResult, ResolvedPrice} from '/@/types/business/scm/pricing';
 import {pricingError} from './pricing-errors';
-const customerId=ref<ScmId>(),skuIds=ref<ScmId[]>([]),at=ref<string>(),result=ref<ResolveResult>(),loading=ref(false),error=ref('');let requestId=0;
-const columns:TableColumnsType<ResolvedPrice>=[{title:'SKU 编码',dataIndex:'skuCode',width:150},{title:'商品',dataIndex:'productName',width:150},{title:'规格',dataIndex:'specName',width:100},{title:'单价',dataIndex:'unitPrice',align:'right',width:120},{title:'价格状态',dataIndex:'priceStatus',width:100},{title:'来源',dataIndex:'priceSource',width:120},{title:'来源记录',dataIndex:'sourceRecordId',width:100},{title:'可售状态',dataIndex:'sellable',width:100},{title:'不可售原因',dataIndex:'unavailableReason',width:160},{title:'缺价原因',dataIndex:'unpricedReason',width:160}];
-function sourceLabel(value:string|null){return value?SCM_PRICE_SOURCE_ENUM[value]?.desc||value:'—';}
-function reasonLabel(value:string|null){return value?UNAVAILABLE_REASON_ENUM[value]?.desc||value:'—';}
-async function resolve(){if(customerId.value==null||!skuIds.value?.length){error.value='请选择客户和 SKU';return;}const id=++requestId;loading.value=true;error.value='';result.value=undefined;try{const r=await pricingApi.resolve({customerId:customerId.value,skuIds:skuIds.value,at:at.value||null});if(id===requestId)result.value=r.data;}catch(e){if(id===requestId)error.value=pricingError(e);}finally{if(id===requestId)loading.value=false;}}
+
+const customerId = ref<ScmId>(), skuIds = ref<ScmId[]>([]), at = ref<string>(), result = ref<ResolveResult>(),
+    loading = ref(false), error = ref('');
+let requestId = 0;
+const columns: TableColumnsType<ResolvedPrice> = [{title: 'SKU 编码', dataIndex: 'skuCode', width: 150}, {
+  title: '商品',
+  dataIndex: 'productName',
+  width: 150
+}, {title: '规格', dataIndex: 'specName', width: 100}, {
+  title: '单价',
+  dataIndex: 'unitPrice',
+  align: 'right',
+  width: 120
+}, {title: '价格状态', dataIndex: 'priceStatus', width: 100}, {
+  title: '来源',
+  dataIndex: 'priceSource',
+  width: 120
+}, {title: '来源记录', dataIndex: 'sourceRecordId', width: 100}, {
+  title: '可售状态',
+  dataIndex: 'sellable',
+  width: 100
+}, {title: '不可售原因', dataIndex: 'unavailableReason', width: 160}, {
+  title: '缺价原因',
+  dataIndex: 'unpricedReason',
+  width: 160
+}];
+
+function sourceLabel(value: string | null) {
+  return value ? SCM_PRICE_SOURCE_ENUM[value]?.desc || value : '—';
+}
+
+function reasonLabel(value: string | null) {
+  return value ? UNAVAILABLE_REASON_ENUM[value]?.desc || value : '—';
+}
+
+async function resolve() {
+  if (customerId.value == null || !skuIds.value?.length) {
+    error.value = '请选择客户和 SKU';
+    return;
+  }
+  const id = ++requestId;
+  loading.value = true;
+  error.value = '';
+  result.value = undefined;
+  try {
+    const r = await pricingApi.resolve({customerId: customerId.value, skuIds: skuIds.value, at: at.value || null});
+    if (id === requestId) result.value = r.data;
+  } catch (e) {
+    if (id === requestId) error.value = pricingError(e);
+  } finally {
+    if (id === requestId) loading.value = false;
+  }
+}
 </script>
-<style scoped>.amount{font-variant-numeric:tabular-nums;white-space:nowrap;}p{margin:12px 0;}</style>
+<style scoped>.amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+p {
+  margin: 12px 0;
+}</style>

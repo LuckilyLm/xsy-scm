@@ -21,18 +21,23 @@
                 #{quantity}, #{unitSnapshot}, #{status}, #{occurredAt}, #{operator},
                 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{createdBy}, #{updatedBy})
         ON CONFLICT (source_document_type, source_document_item_id)
-            WHERE deleted = FALSE AND source_document_item_id IS NOT NULL
-        DO NOTHING
+        WHERE deleted = FALSE
+          AND source_document_item_id IS NOT NULL
+            DO NOTHING
     </insert>
 
     <select id="selectById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
-        SELECT * FROM inventory_reservation WHERE id = #{id} AND deleted = FALSE
+        SELECT *
+        FROM inventory_reservation
+        WHERE id = #{id}
+          AND deleted = FALSE
     </select>
 
     <select id="selectActiveBySource"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
-        SELECT * FROM inventory_reservation
+        SELECT *
+        FROM inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
           AND source_document_item_id = #{sourceDocumentItemId}
           AND status = 'ACTIVE'
@@ -41,7 +46,8 @@
 
     <select id="listActiveBySourceDocument"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
-        SELECT * FROM inventory_reservation
+        SELECT *
+        FROM inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
           AND source_document_id = #{sourceDocumentId}
           AND status = 'ACTIVE'
@@ -52,7 +58,10 @@
 
     <select id="lockById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
-        SELECT * FROM inventory_reservation WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT *
+        FROM inventory_reservation
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
     </select>
 
     <!-- 带状态条件：重复释放只有一次能成功 -->
@@ -62,7 +71,9 @@
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{operator}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'ACTIVE'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'ACTIVE'
     </update>
 
     <update id="markConsumed">
@@ -71,30 +82,32 @@
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
             updated_by = #{operator}
-        WHERE id = #{id} AND deleted = FALSE AND status = 'ACTIVE'
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'ACTIVE'
     </update>
 
     <select id="queryPage" resultMap="reservationVoMap">
         SELECT r.id,
-               r.warehouse_id,
-               r.sku_id,
-               r.source_document_type,
-               r.source_document_id,
-               r.source_document_item_id,
-               r.quantity,
-               r.unit_snapshot,
-               r.status,
-               r.occurred_at,
-               r.operator,
-               r.created_at,
-               w.warehouse_code,
-               w.name       AS warehouse_name,
-               k.sku_code,
-               k.spec_name  AS sku_name,
-               p.name       AS product_name,
-               s.order_no   AS source_document_no
+        r.warehouse_id,
+        r.sku_id,
+        r.source_document_type,
+        r.source_document_id,
+        r.source_document_item_id,
+        r.quantity,
+        r.unit_snapshot,
+        r.status,
+        r.occurred_at,
+        r.operator,
+        r.created_at,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        p.name AS product_name,
+        s.order_no AS source_document_no
         FROM inventory_reservation r
-        LEFT JOIN warehouse   w ON w.id = r.warehouse_id
+        LEFT JOIN warehouse w ON w.id = r.warehouse_id
         LEFT JOIN product_sku k ON k.id = r.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         LEFT JOIN sales_order s ON s.id = r.source_document_id

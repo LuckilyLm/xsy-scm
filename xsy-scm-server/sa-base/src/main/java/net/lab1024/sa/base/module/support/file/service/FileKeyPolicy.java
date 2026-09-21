@@ -1,8 +1,11 @@
 package net.lab1024.sa.base.module.support.file.service;
 
-/** Strict, canonical object keys. Reject path aliases before local/S3 URL construction. */
+/**
+ * Strict, canonical object keys. Reject path aliases before local/S3 URL construction.
+ */
 public final class FileKeyPolicy {
-    private FileKeyPolicy() { }
+    private FileKeyPolicy() {
+    }
 
     public static boolean isValid(String key) {
         if (key == null || !(key.startsWith("public/") || key.startsWith("private/"))) {

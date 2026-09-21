@@ -2,8 +2,10 @@ package net.lab1024.sa.admin.module.scm.purchase.domain.entity;
 
 import lombok.Data;
 import com.baomidou.mybatisplus.annotation.*;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler;
 
 /**
@@ -20,16 +22,27 @@ import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler
  *
  * <p>`beforeData` / `afterData` 写**全量快照**（修 A-D15），格式与 W4 的 `order_operation_log` 一致。
  */
-@Data @TableName(value="purchase_operation_log",autoResultMap=true)
+@Data
+@TableName(value = "purchase_operation_log", autoResultMap = true)
 public class PurchaseOperationLogEntity {
-    @TableId(type=IdType.AUTO) private Long id;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Long purchaseOrderId;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private Long purchaseReceiptId;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String operationType;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String operator;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String reason;
-    @TableField(typeHandler=PurchaseJsonbTypeHandler.class, updateStrategy=FieldStrategy.ALWAYS) private Map<String,Object> beforeData;
-    @TableField(typeHandler=PurchaseJsonbTypeHandler.class, updateStrategy=FieldStrategy.ALWAYS) private Map<String,Object> afterData;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private OffsetDateTime createdAt;
-    @TableField(updateStrategy=FieldStrategy.ALWAYS) private String createdBy;
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long purchaseOrderId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long purchaseReceiptId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String operationType;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String operator;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String reason;
+    @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    private Map<String, Object> beforeData;
+    @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    private Map<String, Object> afterData;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime createdAt;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String createdBy;
 }

@@ -4,10 +4,11 @@
 <template>
   <div>
     <!-- 编辑 -->
-    <a-modal :open="updateModalShow" :width="650" :title="isAdd ? '添加':'编辑'" ok-text="确认" cancel-text="取消" @cancel="closeUpdateModal" @ok="confirmUpdateJob">
+    <a-modal :open="updateModalShow" :width="650" :title="isAdd ? '添加':'编辑'" ok-text="确认" cancel-text="取消"
+             @cancel="closeUpdateModal" @ok="confirmUpdateJob">
       <a-form ref="updateFormRef" :model="updateForm" :rules="updateRules" :label-col="{ span: 4 }">
         <a-form-item label="任务名称" name="jobName">
-          <a-input placeholder="请输入任务名称" v-model:value="updateForm.jobName" :maxlength="100" :showCount="true" />
+          <a-input placeholder="请输入任务名称" v-model:value="updateForm.jobName" :maxlength="100" :showCount="true"/>
         </a-form-item>
         <a-form-item label="任务描述" name="remark">
           <a-textarea
@@ -73,7 +74,7 @@
           </a-input-number>
         </a-form-item>
         <a-form-item label="是否开启" name="enabledFlag">
-          <a-switch v-model:checked="updateForm.enabledFlag" />
+          <a-switch v-model:checked="updateForm.enabledFlag"/>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -88,17 +89,17 @@
         @cancel="closeExecuteModal"
         @ok="confirmExecuteJob"
     >
-      <br />
+      <br/>
       <a-alert type="info" show-icon style="margin-left: 25px">
-        <template #message> 点击【执行】后会按照【任务参数】，无论任务是否开启，都会立即执行。 </template>
+        <template #message> 点击【执行】后会按照【任务参数】，无论任务是否开启，都会立即执行。</template>
       </a-alert>
-      <br />
+      <br/>
       <a-form :label-col="{ span: 4 }">
         <a-form-item label="任务名称" name="jobName">
-          <a-input v-model:value="executeForm.jobName" :disabled="true" />
+          <a-input v-model:value="executeForm.jobName" :disabled="true"/>
         </a-form-item>
         <a-form-item label="任务类名" name="jobClass">
-          <a-textarea :auto-size="{ minRows: 2, maxRows: 4 }" v-model:value="executeForm.jobClass" :disabled="true" />
+          <a-textarea :auto-size="{ minRows: 2, maxRows: 4 }" v-model:value="executeForm.jobClass" :disabled="true"/>
         </a-form-item>
         <a-form-item label="任务参数" name="param">
           <a-textarea
@@ -114,12 +115,12 @@
   </div>
 </template>
 <script setup lang="ts">
-import { message } from 'ant-design-vue';
-import { reactive, ref } from 'vue';
-import { jobApi } from '/@/api/support/job-api';
-import { smartSentry } from '/@/lib/smart-sentry';
-import { SmartLoading } from '/@/components/framework/smart-loading/index';
-import { TRIGGER_TYPE_ENUM } from '/@/constants/support/job-const';
+import {message} from 'ant-design-vue';
+import {reactive, ref} from 'vue';
+import {jobApi} from '/@/api/support/job-api';
+import {smartSentry} from '/@/lib/smart-sentry';
+import {SmartLoading} from '/@/components/framework/smart-loading/index';
+import {TRIGGER_TYPE_ENUM} from '/@/constants/support/job-const';
 
 // emit
 const emit = defineEmits(['reloadList']);
@@ -141,19 +142,19 @@ const updateFormDefault = {
   remark: '',
   sort: null,
 };
-let updateForm = reactive({ ...updateFormDefault });
+let updateForm = reactive({...updateFormDefault});
 const updateRules = {
-  jobName: [{ required: true, message: '请输入任务名称' }],
-  jobClass: [{ required: true, message: '请输入执行类' }],
-  triggerType: [{ required: true, message: '请选择触发类型' }],
-  sort: [{ required: true, message: '请输入排序' }],
+  jobName: [{required: true, message: '请输入任务名称'}],
+  jobClass: [{required: true, message: '请输入执行类'}],
+  triggerType: [{required: true, message: '请选择触发类型'}],
+  sort: [{required: true, message: '请输入排序'}],
 };
 
 // 打开编辑弹框
 function openUpdateModal(record) {
   isAdd.value = null == record;
   // 更新
-  if(!isAdd.value){
+  if (!isAdd.value) {
     Object.assign(updateForm, record);
     if (TRIGGER_TYPE_ENUM.CRON.value === record.triggerType) {
       updateForm.cron = record.triggerValue;
@@ -184,17 +185,17 @@ async function confirmUpdateJob() {
           updateForm.triggerValue = updateForm.fixedDelay;
         }
 
-        if(!updateForm.triggerValue){
+        if (!updateForm.triggerValue) {
           message.error('请填写 触发时间');
           return;
         }
 
         try {
           SmartLoading.show();
-          if(isAdd.value){
+          if (isAdd.value) {
             await jobApi.addJob(updateForm)
             message.success('添加成功');
-          }else {
+          } else {
             await jobApi.updateJob(updateForm);
             message.success('更新成功');
           }
@@ -220,7 +221,7 @@ const executeFormDefault = {
   jobClass: '',
   param: null,
 };
-let executeForm = reactive({ ...executeFormDefault });
+let executeForm = reactive({...executeFormDefault});
 
 // 打开执行弹框
 function openExecuteModal(record) {

@@ -20,13 +20,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmInventorySourceDocumentTypeEnum {
 
-    /** 采购收货行：{@code source_document_item_id = purchase_receipt_item.id}。 */
+    /**
+     * 采购收货行：{@code source_document_item_id = purchase_receipt_item.id}。
+     */
     PURCHASE_RECEIPT_ITEM("采购收货行"),
 
-    /** 出库单行：{@code source_document_item_id = inventory_outbound_item.id}。 */
+    /**
+     * 出库单行：{@code source_document_item_id = inventory_outbound_item.id}。
+     */
     SALES_OUTBOUND_ITEM("出库单行"),
 
-    /** 销售订单行（预留的来源）：{@code source_document_item_id = sales_order_item.id}。 */
+    /**
+     * 销售订单行（预留的来源）：{@code source_document_item_id = sales_order_item.id}。
+     */
     SALES_ORDER_ITEM("销售订单行"),
 
     /**
@@ -63,7 +69,9 @@ public enum ScmInventorySourceDocumentTypeEnum {
      */
     TRANSFER_OUT_ITEM("调拨单行（转出）"),
 
-    /** 调拨**转入**行的来源类型；与 {@link #TRANSFER_OUT_ITEM} 分开以满足源身份唯一索引。 */
+    /**
+     * 调拨**转入**行的来源类型；与 {@link #TRANSFER_OUT_ITEM} 分开以满足源身份唯一索引。
+     */
     TRANSFER_IN_ITEM("调拨单行（转入）"),
 
     /**
@@ -77,12 +85,16 @@ public enum ScmInventorySourceDocumentTypeEnum {
      */
     CONVERT_OUT_ITEM("转换单行（转出）"),
 
-    /** 规格转换**转入**行的来源类型；与 {@link #CONVERT_OUT_ITEM} 分开以满足源身份唯一索引。 */
+    /**
+     * 规格转换**转入**行的来源类型；与 {@link #CONVERT_OUT_ITEM} 分开以满足源身份唯一索引。
+     */
     CONVERT_IN_ITEM("转换单行（转入）");
 
     private final String desc;
 
-    /** 该值是否允许写入 {@code inventory_movement.source_document_type}。 */
+    /**
+     * 该值是否允许写入 {@code inventory_movement.source_document_type}。
+     */
     public static boolean isSupported(String value) {
         for (ScmInventorySourceDocumentTypeEnum item : values()) {
             if (item.name().equals(value)) {

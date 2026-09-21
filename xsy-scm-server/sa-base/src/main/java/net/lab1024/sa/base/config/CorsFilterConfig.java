@@ -18,12 +18,12 @@ public class CorsFilterConfig {
 
     @Value("${access-control-allow-origin}")
     private String accessControlAllowOrigin;
-    
+
     /**
      * 跨域配置
      */
     @Bean
-    public CorsFilter corsFilter () {
+    public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);

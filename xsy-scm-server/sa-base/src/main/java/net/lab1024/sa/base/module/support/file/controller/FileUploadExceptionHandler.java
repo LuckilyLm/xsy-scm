@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-/** Multipart limits are checked before controller selection; preserve the native error envelope. */
+/**
+ * Multipart limits are checked before controller selection; preserve the native error envelope.
+ */
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class FileUploadExceptionHandler {

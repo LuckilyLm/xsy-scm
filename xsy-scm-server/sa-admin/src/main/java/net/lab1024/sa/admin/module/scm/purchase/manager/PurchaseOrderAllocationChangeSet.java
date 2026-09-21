@@ -42,7 +42,9 @@ public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEnti
                                                List<PurchaseDemandAllocationEntity> updated,
                                                List<PurchaseDemandAllocationEntity> removed) {
 
-    /** allocation 的身份。 */
+    /**
+     * allocation 的身份。
+     */
     public record Key(Long purchaseOrderItemId, Long purchaseDemandId) {
     }
 
@@ -50,7 +52,9 @@ public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEnti
         return new Key(row.getPurchaseOrderItemId(), row.getPurchaseDemandId());
     }
 
-    /** 计算差量。`requested` 的 `purchaseOrderItemId` 由调用方在行落库后回填。 */
+    /**
+     * 计算差量。`requested` 的 `purchaseOrderItemId` 由调用方在行落库后回填。
+     */
     public static PurchaseOrderAllocationChangeSet between(List<PurchaseDemandAllocationEntity> existing,
                                                            List<PurchaseDemandAllocationEntity> requested) {
         var unmatched = new LinkedHashMap<Key, PurchaseDemandAllocationEntity>();
@@ -87,7 +91,9 @@ public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEnti
                 new ArrayList<>(unmatched.values()));
     }
 
-    /** 本次涉及的全部 demandId（**旧集合 ∪ 新集合**），已去重且保持稳定顺序。 */
+    /**
+     * 本次涉及的全部 demandId（**旧集合 ∪ 新集合**），已去重且保持稳定顺序。
+     */
     public List<Long> involvedDemandIds(List<PurchaseDemandAllocationEntity> existing) {
         var ids = new java.util.LinkedHashSet<Long>();
         existing.forEach(row -> ids.add(row.getPurchaseDemandId()));

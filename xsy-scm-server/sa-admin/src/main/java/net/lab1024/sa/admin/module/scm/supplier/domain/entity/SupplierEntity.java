@@ -54,7 +54,9 @@ public class SupplierEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String address;
 
-    /** 省 / 市 / 区编码为国标六位码，名称是同一条选择的快照，展示与导出用，不参与关联。 */
+    /**
+     * 省 / 市 / 区编码为国标六位码，名称是同一条选择的快照，展示与导出用，不参与关联。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer provinceCode;
 

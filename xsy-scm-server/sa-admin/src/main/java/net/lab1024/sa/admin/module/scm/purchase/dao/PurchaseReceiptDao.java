@@ -22,22 +22,34 @@ import java.util.List;
 @Mapper
 public interface PurchaseReceiptDao extends BaseMapper<PurchaseReceiptEntity> {
 
-    /** 分页查询。 */
+    /**
+     * 分页查询。
+     */
     List<PurchaseReceiptVO> query(Page<?> page, @Param("query") PurchaseReceiptQueryForm query);
 
-    /** 详情（单头）。 */
+    /**
+     * 详情（单头）。
+     */
     PurchaseReceiptVO detail(@Param("id") Long id);
 
-    /** 单条 `FOR UPDATE`。 */
+    /**
+     * 单条 `FOR UPDATE`。
+     */
     PurchaseReceiptEntity lock(@Param("id") Long id);
 
-    /** 全局单调递增的收货单号序列（不按日 reset）。 */
+    /**
+     * 全局单调递增的收货单号序列（不按日 reset）。
+     */
     Long nextReceiptNo();
 
-    /** 本采购单的活动收货单（校验「是否已收过」用）。 */
+    /**
+     * 本采购单的活动收货单（校验「是否已收过」用）。
+     */
     List<PurchaseReceiptEntity> listActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
-    /** 软删（仅 DRAFT，由 Service 断言）。 */
+    /**
+     * 软删（仅 DRAFT，由 Service 断言）。
+     */
     int softDelete(@Param("id") Long id,
                    @Param("version") Integer version,
                    @Param("operator") String operator);

@@ -1,8 +1,10 @@
 package net.lab1024.sa.admin.module.scm.purchase.domain.vo;
 
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.util.Map;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 
@@ -23,16 +25,23 @@ public class PurchaseReceiptItemVO {
     private Long skuId;
     private String skuCode;
     private String skuName;
-    private Map<String,Object> specValues;
+    private Map<String, Object> specValues;
     private String purchaseUnit;
     private String productType;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal plannedQuantity;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal receivedQuantity;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal cumulativeReceivedQuantity;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal remainingQuantity;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal overReceiptQuantity;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal receiptDifference;
-    @JsonSerialize(using=ScmFixedScale4Serializer.class,nullsUsing=ScmFixedScale4Serializer.class) private BigDecimal actualWeight;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal plannedQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal receivedQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal cumulativeReceivedQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal remainingQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal overReceiptQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal receiptDifference;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal actualWeight;
     private String weightUnit;
     private String weighingSource;
     private String correctionReason;

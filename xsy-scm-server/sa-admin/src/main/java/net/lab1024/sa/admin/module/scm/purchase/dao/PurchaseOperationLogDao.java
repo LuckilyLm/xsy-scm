@@ -24,18 +24,28 @@ import java.util.List;
 @Mapper
 public interface PurchaseOperationLogDao extends BaseMapper<PurchaseOperationLogEntity> {
 
-    /** 追加一条操作日志。 */
+    /**
+     * 追加一条操作日志。
+     */
     int append(@Param("row") PurchaseOperationLogEntity row);
 
-    /** 某采购单的全部日志，按时间倒序（`GET /scm/purchase/log/{orderId}`）。 */
+    /**
+     * 某采购单的全部日志，按时间倒序（`GET /scm/purchase/log/{orderId}`）。
+     */
     List<PurchaseOperationLogVO> listByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
-    /** 某收货单的全部日志，按时间倒序。 */
+    /**
+     * 某收货单的全部日志，按时间倒序。
+     */
     List<PurchaseOperationLogVO> listByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
-    /** 某需求生成批次的相关日志（按 `after_data.demandIds` 反查；验收与排查用）。 */
+    /**
+     * 某需求生成批次的相关日志（按 `after_data.demandIds` 反查；验收与排查用）。
+     */
     List<PurchaseOperationLogVO> listDemandGenerate();
 
-    /** 按操作类型统计条数（验收断言 12 种类型全部落库）。 */
+    /**
+     * 按操作类型统计条数（验收断言 12 种类型全部落库）。
+     */
     int countByType(@Param("operationType") String operationType);
 }

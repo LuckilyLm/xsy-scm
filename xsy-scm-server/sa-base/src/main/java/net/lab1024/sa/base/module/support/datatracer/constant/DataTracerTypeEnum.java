@@ -19,7 +19,7 @@ public enum DataTracerTypeEnum implements BaseEnum {
     GOODS(1, "商品"),
 
     /**
-     *通知公告
+     * 通知公告
      */
     OA_NOTICE(2, "OA-通知公告"),
 

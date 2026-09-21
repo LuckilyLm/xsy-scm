@@ -52,7 +52,9 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
             "inventory_warning_threshold",
             "inventory_conversion", "inventory_conversion_item");
 
-    /** 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。 */
+    /**
+     * 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。
+     */
     private static final long SENTINEL_SOURCE_ITEM_ID = 9_000_000_000L + (System.nanoTime() % 1_000_000_000L);
 
     private String constraintDef(String table, String constraint) {
@@ -70,9 +72,11 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 String.class, table);
     }
 
-    /** 插一条合法的 PURCHASE_IN 流水，返回 id（用于验证 append-only 与 CHECK）。 */
+    /**
+     * 插一条合法的 PURCHASE_IN 流水，返回 id（用于验证 append-only 与 CHECK）。
+     */
     private Long insertMovement(String unitSnapshot, String movementType, String quantity,
-                               String before, String after) {
+                                String before, String after) {
         return jdbc.queryForObject(
                 "INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, source_document_type, "
                         + "source_document_id, source_document_item_id, quantity, unit_snapshot, unit_cost, "

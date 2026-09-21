@@ -34,7 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("W6 backfill 回放与对账（PG IT）")
 class ScmInventoryBackfillIT extends ScmW6PgITBase {
 
-    /** 全库口径：流水合计 ≠ 余额的 (warehouse, sku) 个数（V19 Step 4 的第二条断言的独立重算）。 */
+    /**
+     * 全库口径：流水合计 ≠ 余额的 (warehouse, sku) 个数（V19 Step 4 的第二条断言的独立重算）。
+     */
     private int ledgerBalanceMismatchCount() {
         return jdbc.queryForObject(
                 "SELECT count(*) FROM ("
@@ -49,7 +51,9 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
                 Integer.class);
     }
 
-    /** 全库口径：已确认且有效数量 > 0 的收货行里，没有对应流水的条数。 */
+    /**
+     * 全库口径：已确认且有效数量 > 0 的收货行里，没有对应流水的条数。
+     */
     private int confirmedLineWithoutMovementCount() {
         return jdbc.queryForObject(
                 "SELECT count(*) FROM purchase_receipt_item ri "

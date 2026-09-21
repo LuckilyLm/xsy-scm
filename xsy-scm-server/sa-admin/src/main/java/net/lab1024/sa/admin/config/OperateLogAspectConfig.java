@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  *
  */
 @Configuration
-public class OperateLogAspectConfig extends OperateLogAspect{
+public class OperateLogAspectConfig extends OperateLogAspect {
 
     /**
      * 配置信息

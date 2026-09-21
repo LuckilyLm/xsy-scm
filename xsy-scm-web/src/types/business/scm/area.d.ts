@@ -7,16 +7,16 @@
 
 /** `a-cascader` 选中路径上的一个节点。 */
 export interface AreaNode {
-  value: number;
-  label: string;
+    value: number;
+    label: string;
 }
 
 /** 一行主档的地理归属列；未选择时整组为 `null`。 */
 export interface AreaColumns {
-  provinceCode: number | null;
-  provinceName: string | null;
-  cityCode: number | null;
-  cityName: string | null;
-  districtCode: number | null;
-  districtName: string | null;
+    provinceCode: number | null;
+    provinceName: string | null;
+    cityCode: number | null;
+    cityName: string | null;
+    districtCode: number | null;
+    districtName: string | null;
 }

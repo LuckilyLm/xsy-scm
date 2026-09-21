@@ -7,6 +7,7 @@ import lombok.Data;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.swagger.SchemaEnum;
 import net.lab1024.sa.base.module.support.message.constant.MessageTypeEnum;
+
 /**
  * 消息发送form
  *

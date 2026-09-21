@@ -43,9 +43,9 @@ public class UrlConfig {
         Map<RequestMappingInfo, HandlerMethod> map = requestMappingHandlerMapping.getHandlerMethods();
         for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : map.entrySet()) {
             RequestMappingInfo requestMappingInfo = entry.getKey();
-           PathPatternsRequestCondition pathPatternsCondition = requestMappingInfo.getPathPatternsCondition();
-            if(pathPatternsCondition == null){
-               continue;
+            PathPatternsRequestCondition pathPatternsCondition = requestMappingInfo.getPathPatternsCondition();
+            if (pathPatternsCondition == null) {
+                continue;
             }
 
             Set<String> urls = pathPatternsCondition.getPatternValues();

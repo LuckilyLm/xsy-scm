@@ -38,7 +38,9 @@ public class WarehouseController {
 
     private final WarehouseQueryService queryService;
 
-    /** 下拉选择器：只返回 ENABLED 仓库。 */
+    /**
+     * 下拉选择器：只返回 ENABLED 仓库。
+     */
     @GetMapping("/list")
     @SaCheckPermission("scm:warehouse:query")
     public ResponseDTO<List<WarehouseVO>> list() {
@@ -72,7 +74,9 @@ public class WarehouseController {
         return ResponseDTO.ok();
     }
 
-    /** 启用仓库（B1，HD-B1-01）。 */
+    /**
+     * 启用仓库（B1，HD-B1-01）。
+     */
     @PostMapping("/enable")
     @SaCheckPermission("scm:warehouse:enable")
     @OperateLog
@@ -81,7 +85,9 @@ public class WarehouseController {
         return ResponseDTO.ok();
     }
 
-    /** 停用仓库（B1，HD-B1-01 严格模式）。 */
+    /**
+     * 停用仓库（B1，HD-B1-01 严格模式）。
+     */
     @PostMapping("/disable")
     @SaCheckPermission("scm:warehouse:disable")
     @OperateLog

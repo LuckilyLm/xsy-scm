@@ -16,7 +16,9 @@ public final class PurchaseEntityStamper {
     private PurchaseEntityStamper() {
     }
 
-    /** 单据头：只打审计字段，不复位 version / deleted（由构造方设置）。 */
+    /**
+     * 单据头：只打审计字段，不复位 version / deleted（由构造方设置）。
+     */
     public static void stamp(PurchaseOrderEntity row, boolean creating) {
         OffsetDateTime now = OffsetDateTime.now();
         row.setUpdatedAt(now);
@@ -27,7 +29,9 @@ public final class PurchaseEntityStamper {
         }
     }
 
-    /** 单据行：审计字段 + 新建时复位 version / deleted。 */
+    /**
+     * 单据行：审计字段 + 新建时复位 version / deleted。
+     */
     public static void stamp(PurchaseOrderItemEntity row, boolean creating) {
         OffsetDateTime now = OffsetDateTime.now();
         row.setUpdatedAt(now);
@@ -40,7 +44,9 @@ public final class PurchaseEntityStamper {
         }
     }
 
-    /** 分配行：审计字段 + 新建时复位 version / deleted。 */
+    /**
+     * 分配行：审计字段 + 新建时复位 version / deleted。
+     */
     public static void stamp(PurchaseDemandAllocationEntity row, boolean creating) {
         OffsetDateTime now = OffsetDateTime.now();
         row.setUpdatedAt(now);

@@ -23,16 +23,24 @@ public final class PurchaseConfigKey {
     private PurchaseConfigKey() {
     }
 
-    /** 采购收货超收容差百分比。V15 已播种该键（{@code ON CONFLICT (config_key) DO NOTHING}）。 */
+    /**
+     * 采购收货超收容差百分比。V15 已播种该键（{@code ON CONFLICT (config_key) DO NOTHING}）。
+     */
     public static final String OVER_RECEIPT_TOLERANCE_PERCENT =
             "scm.purchase.over_receipt_tolerance_percent";
 
-    /** 配置缺失时的回退值。与 V15 的播种值、A 源的默认值三者一致。 */
+    /**
+     * 配置缺失时的回退值。与 V15 的播种值、A 源的默认值三者一致。
+     */
     public static final String OVER_RECEIPT_TOLERANCE_PERCENT_DEFAULT = "10";
 
-    /** 合法范围下界（含）。 */
+    /**
+     * 合法范围下界（含）。
+     */
     public static final int OVER_RECEIPT_TOLERANCE_PERCENT_MIN = 0;
 
-    /** 合法范围上界（含）。越界 → {@code PURCHASE_TOLERANCE_CONFIG_INVALID(40999)}。 */
+    /**
+     * 合法范围上界（含）。越界 → {@code PURCHASE_TOLERANCE_CONFIG_INVALID(40999)}。
+     */
     public static final int OVER_RECEIPT_TOLERANCE_PERCENT_MAX = 100;
 }

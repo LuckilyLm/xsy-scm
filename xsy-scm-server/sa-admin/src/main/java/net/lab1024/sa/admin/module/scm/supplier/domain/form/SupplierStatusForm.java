@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 供应商状态变更（独立端点，S8）。 */
+/**
+ * 供应商状态变更（独立端点，S8）。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class SupplierStatusForm extends SupplierDeleteForm {

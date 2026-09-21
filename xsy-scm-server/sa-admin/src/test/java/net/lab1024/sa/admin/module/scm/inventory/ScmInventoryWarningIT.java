@@ -55,7 +55,7 @@ class ScmInventoryWarningIT extends ScmW6PgITBase {
     }
 
     private static InventoryWarningThresholdAddForm threshold(Long warehouseId, Long skuId,
-                                                             String min, String max) {
+                                                              String min, String max) {
         InventoryWarningThresholdAddForm form = new InventoryWarningThresholdAddForm();
         form.setWarehouseId(warehouseId);
         form.setSkuId(skuId);
@@ -72,7 +72,9 @@ class ScmInventoryWarningIT extends ScmW6PgITBase {
         return form;
     }
 
-    /** 当前仓库的预警行（默认只看异常）。 */
+    /**
+     * 当前仓库的预警行（默认只看异常）。
+     */
     private List<InventoryWarningVO> warnings(Long warehouseId) {
         return warningQueryService.queryWarningPage(warningQuery(warehouseId)).getList();
     }

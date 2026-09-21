@@ -43,11 +43,15 @@ public class InventoryBalanceEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;
 
-    /** Q13 记账单位：首笔入库写入，之后不可变（异单位入库直接失败）。 */
+    /**
+     * Q13 记账单位：首笔入库写入，之后不可变（异单位入库直接失败）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unit;
 
-    /** Q10：{@code quantity >= 0} 本期冻结（DB CHECK）。出库波次明确「不允许负库存」。 */
+    /**
+     * Q10：{@code quantity >= 0} 本期冻结（DB CHECK）。出库波次明确「不允许负库存」。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 

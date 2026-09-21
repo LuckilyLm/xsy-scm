@@ -40,22 +40,30 @@ public class InventoryConversionItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long sourceSkuId;
 
-    /** 源数量，恒为正。 */
+    /**
+     * 源数量，恒为正。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal sourceQuantity;
 
-    /** 源单位（单据显式声明）。 */
+    /**
+     * 源单位（单据显式声明）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String sourceUnit;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long targetSkuId;
 
-    /** 目标数量，恒为正；与源数量构成折算关系。 */
+    /**
+     * 目标数量，恒为正；与源数量构成折算关系。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal targetQuantity;
 
-    /** 目标单位（单据显式声明）。 */
+    /**
+     * 目标单位（单据显式声明）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String targetUnit;
 

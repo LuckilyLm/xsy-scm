@@ -68,7 +68,6 @@
     </select>
 
 
-
     <select id="queryList"
             resultType="net.lab1024.sa.admin.module.business.oa.enterprise.domain.vo.EnterpriseListVO">
         SELECT enterprise_id, enterprise_name
@@ -83,7 +82,8 @@
             resultType="net.lab1024.sa.admin.module.business.oa.enterprise.domain.vo.EnterpriseVO">
         SELECT oe.*
         FROM t_oa_enterprise oe
-        WHERE oe.enterprise_id = #{enterpriseId} AND oe.deleted_flag = #{deletedFlag}
+        WHERE oe.enterprise_id = #{enterpriseId}
+          AND oe.deleted_flag = #{deletedFlag}
     </select>
 
 </mapper>

@@ -10,39 +10,39 @@
  *
  * `confirm` 失败时整单回滚，不存在「盘一半」；重复确认会被状态机拒绝（41020）。
  */
-import { getRequest, postRequest } from '/@/lib/axios';
-import type { ScmPage, ScmResponse } from '/@/types/business/scm/customer';
+import {getRequest, postRequest} from '/@/lib/axios';
+import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
-  Id,
-  InventoryStocktake,
-  InventoryStocktakeAdd,
-  InventoryStocktakeQuery,
+    Id,
+    InventoryStocktake,
+    InventoryStocktakeAdd,
+    InventoryStocktakeQuery,
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryStocktakeApi = {
-  query: (data: InventoryStocktakeQuery) =>
-    postRequest('/scm/inventory/stocktake/query', data) as unknown as Promise<
-      ScmResponse<ScmPage<InventoryStocktake>>
-    >,
-  detail: (id: Id) =>
-    getRequest(`/scm/inventory/stocktake/detail/${id}`, {}) as unknown as Promise<
-      ScmResponse<InventoryStocktake>
-    >,
-  /** 新建草稿，返回新单 id。保存时会从余额行快照账面量。 */
-  create: (data: InventoryStocktakeAdd) =>
-    postRequest('/scm/inventory/stocktake/create', data) as unknown as Promise<ScmResponse<Id>>,
-  /** 改草稿（仅 DRAFT 可改）；会**重新快照账面量**。 */
-  update: (id: Id, data: InventoryStocktakeAdd) =>
-    postRequest(`/scm/inventory/stocktake/update/${id}`, data) as unknown as Promise<ScmResponse<string>>,
-  /** 确认盘点：差异转盘盈 / 盘亏流水并调整余额。 */
-  confirm: (id: Id) =>
-    postRequest(`/scm/inventory/stocktake/confirm/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
-  /** 取消草稿（无库存影响）。 */
-  cancel: (id: Id) =>
-    postRequest(`/scm/inventory/stocktake/cancel/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
-  /** 删除草稿（逻辑删）。 */
-  delete: (id: Id) =>
-    postRequest(`/scm/inventory/stocktake/delete/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
+    query: (data: InventoryStocktakeQuery) =>
+        postRequest('/scm/inventory/stocktake/query', data) as unknown as Promise<
+            ScmResponse<ScmPage<InventoryStocktake>>
+        >,
+    detail: (id: Id) =>
+        getRequest(`/scm/inventory/stocktake/detail/${id}`, {}) as unknown as Promise<
+            ScmResponse<InventoryStocktake>
+        >,
+    /** 新建草稿，返回新单 id。保存时会从余额行快照账面量。 */
+    create: (data: InventoryStocktakeAdd) =>
+        postRequest('/scm/inventory/stocktake/create', data) as unknown as Promise<ScmResponse<Id>>,
+    /** 改草稿（仅 DRAFT 可改）；会**重新快照账面量**。 */
+    update: (id: Id, data: InventoryStocktakeAdd) =>
+        postRequest(`/scm/inventory/stocktake/update/${id}`, data) as unknown as Promise<ScmResponse<string>>,
+    /** 确认盘点：差异转盘盈 / 盘亏流水并调整余额。 */
+    confirm: (id: Id) =>
+        postRequest(`/scm/inventory/stocktake/confirm/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
+    /** 取消草稿（无库存影响）。 */
+    cancel: (id: Id) =>
+        postRequest(`/scm/inventory/stocktake/cancel/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
+    /** 删除草稿（逻辑删）。 */
+    delete: (id: Id) =>
+        postRequest(`/scm/inventory/stocktake/delete/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
 };
 
 export default inventoryStocktakeApi;

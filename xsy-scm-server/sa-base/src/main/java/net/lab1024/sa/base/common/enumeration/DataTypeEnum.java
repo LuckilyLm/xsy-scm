@@ -9,7 +9,7 @@ import lombok.Getter;
 public enum DataTypeEnum implements BaseEnum {
 
     /**
-     *普通数据
+     * 普通数据
      */
     NORMAL(1, "普通数据"),
 

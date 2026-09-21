@@ -157,7 +157,9 @@ public class InventoryReservationService {
         release(active.getId());
     }
 
-    /** 销售订单行维度的释放（便捷入口）。 */
+    /**
+     * 销售订单行维度的释放（便捷入口）。
+     */
     public void releaseBySalesOrderItem(Long salesOrderItemId) {
         releaseBySource(ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderItemId);
     }
@@ -209,7 +211,9 @@ public class InventoryReservationService {
         }
     }
 
-    /** 订单行维度的预留入参（只带预留需要的最小字段）。 */
+    /**
+     * 订单行维度的预留入参（只带预留需要的最小字段）。
+     */
     public record OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity) {
     }
 

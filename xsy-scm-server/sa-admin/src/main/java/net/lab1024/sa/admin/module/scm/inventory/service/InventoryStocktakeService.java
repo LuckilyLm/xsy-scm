@@ -101,7 +101,9 @@ public class InventoryStocktakeService {
         return entity.getId();
     }
 
-    /** 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新），并**重新快照账面量**。 */
+    /**
+     * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新），并**重新快照账面量**。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, InventoryStocktakeAddForm form) {
         requireItems(form);
@@ -163,7 +165,9 @@ public class InventoryStocktakeService {
         }
     }
 
-    /** 取消草稿：不产生任何库存影响。 */
+    /**
+     * 取消草稿：不产生任何库存影响。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long id) {
         String operator = ScmOperator.current();
@@ -174,7 +178,9 @@ public class InventoryStocktakeService {
         }
     }
 
-    /** 删除草稿（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。 */
+    /**
+     * 删除草稿（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         String operator = ScmOperator.current();

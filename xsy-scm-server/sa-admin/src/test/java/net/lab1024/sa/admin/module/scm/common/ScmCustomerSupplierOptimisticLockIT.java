@@ -97,7 +97,9 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
         return supplierSkuDao.selectActiveBySupplierId(supplierId).getFirst().getId();
     }
 
-    /** 断言数据库里的版本号已经被拦截器推进到期望值。 */
+    /**
+     * 断言数据库里的版本号已经被拦截器推进到期望值。
+     */
     private void assertVersion(String table, Long id, int expected) {
         assertThat(jdbc.queryForObject("SELECT version FROM " + table + " WHERE id = ?", Integer.class, id))
                 .as(table + "：@Version 必须由拦截器推进").isEqualTo(expected);

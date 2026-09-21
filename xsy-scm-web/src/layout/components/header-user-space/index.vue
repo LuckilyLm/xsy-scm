@@ -6,10 +6,12 @@
   <a-space :size="10">
     <div class="setting">
       <!---消息通知--->
-      <HeaderMessage ref="headerMessage" />
+      <HeaderMessage ref="headerMessage"/>
       <!---数据大屏--->
       <a-button type="text" @click="openScreen" class="operate-icon" title="数据大屏">
-        <template #icon><dashboard-outlined /></template>
+        <template #icon>
+          <dashboard-outlined/>
+        </template>
       </a-button>
       <!---国际化--->
       <!-- <a-button type="text" @click="showSetting" class="operate-icon">
@@ -18,94 +20,98 @@
       </a-button> -->
       <!---设置--->
       <a-button type="text" @click="showSetting" class="operate-icon">
-        <template #icon><setting-outlined /></template>
+        <template #icon>
+          <setting-outlined/>
+        </template>
       </a-button>
     </div>
     <!---头像信息--->
     <div class="user-space-item">
-      <HeaderAvatar />
+      <HeaderAvatar/>
     </div>
     <!---帮助文档--->
     <div class="user-space-item" @click="showHelpDoc" v-if="showHelpDocFlag">
       <span>帮助文档</span>
-      <DoubleLeftOutlined v-if="!helpDocExpandFlag" />
+      <DoubleLeftOutlined v-if="!helpDocExpandFlag"/>
     </div>
 
-    <HeaderSetting ref="headerSetting" />
+    <HeaderSetting ref="headerSetting"/>
   </a-space>
 </template>
 
 <script setup lang="ts">
-  import HeaderAvatar from './header-avatar.vue';
-  import HeaderSetting from './header-setting.vue';
-  import HeaderMessage from './header-message.vue';
-  import { useAppConfigStore } from '/@/store/modules/system/app-config';
-  import { computed, ref } from 'vue';
-  import { theme } from 'ant-design-vue';
+import HeaderAvatar from './header-avatar.vue';
+import HeaderSetting from './header-setting.vue';
+import HeaderMessage from './header-message.vue';
+import {useAppConfigStore} from '/@/store/modules/system/app-config';
+import {computed, ref} from 'vue';
+import {theme} from 'ant-design-vue';
 
-  // 设置
-  const headerSetting = ref();
-  function showSetting() {
-    headerSetting.value.show();
-  }
+// 设置
+const headerSetting = ref();
 
-  // 数据大屏（新窗口打开）
-  // 注意：本应用是 hash 路由（src/router/index.ts 用 createWebHashHistory），
-  // 必须带上 "#/" 前缀。直接 window.open('/screen') 会请求服务端路径 /screen，
-  // 被 SPA 回退（vite dev 的 html 回退 / nginx 的 try_files ... /index.html）返回 index.html，
-  // 此时 hash 为空，路由落到首页，大屏永远打不开。
-  function openScreen() {
-    const url = `${window.location.origin}${import.meta.env.BASE_URL}#/screen`;
-    window.open(url, '_blank');
-  }
+function showSetting() {
+  headerSetting.value.show();
+}
 
-  //帮助文档
-  function showHelpDoc() {
-    useAppConfigStore().showHelpDoc();
-  }
+// 数据大屏（新窗口打开）
+// 注意：本应用是 hash 路由（src/router/index.ts 用 createWebHashHistory），
+// 必须带上 "#/" 前缀。直接 window.open('/screen') 会请求服务端路径 /screen，
+// 被 SPA 回退（vite dev 的 html 回退 / nginx 的 try_files ... /index.html）返回 index.html，
+// 此时 hash 为空，路由落到首页，大屏永远打不开。
+function openScreen() {
+  const url = `${window.location.origin}${import.meta.env.BASE_URL}#/screen`;
+  window.open(url, '_blank');
+}
 
-  const showHelpDocFlag = computed(() => {
-    return useAppConfigStore().helpDocFlag;
-  });
+//帮助文档
+function showHelpDoc() {
+  useAppConfigStore().showHelpDoc();
+}
 
-  const helpDocExpandFlag = computed(() => {
-    return useAppConfigStore().helpDocExpandFlag;
-  });
+const showHelpDocFlag = computed(() => {
+  return useAppConfigStore().helpDocFlag;
+});
 
-  const { useToken } = theme;
-  const { token } = useToken();
+const helpDocExpandFlag = computed(() => {
+  return useAppConfigStore().helpDocExpandFlag;
+});
+
+const {useToken} = theme;
+const {token} = useToken();
 </script>
 
 <style lang="less" scoped>
-  .user-space-item {
-    height: 100%;
+.user-space-item {
+  height: 100%;
+  color: inherit;
+  padding: 0 12px;
+  cursor: pointer;
+  align-self: center;
+
+  a {
     color: inherit;
-    padding: 0 12px;
-    cursor: pointer;
-    align-self: center;
 
-    a {
-      color: inherit;
-
-      i {
-        font-size: 16px;
-      }
+    i {
+      font-size: 16px;
     }
   }
+}
 
-  .user-space-item:hover {
-    color: v-bind('token.colorPrimary');
-    background-color: @hover-bg-color !important;
-  }
+.user-space-item:hover {
+  color: v-bind('token.colorPrimary');
+  background-color: @hover-bg-color !important;
+}
 
-  .setting {
-    height: @header-user-height;
-    line-height: @header-user-height;
-    vertical-align: middle;
-    display: flex;
-    align-items: center;
-  }
-  .operate-icon {
-    margin-left: 20px;
-  }
+.setting {
+  height: @header-user-height;
+  line-height: @header-user-height;
+  vertical-align: middle;
+  display: flex;
+  align-items: center;
+}
+
+.operate-icon {
+  margin-left: 20px;
+}
 </style>

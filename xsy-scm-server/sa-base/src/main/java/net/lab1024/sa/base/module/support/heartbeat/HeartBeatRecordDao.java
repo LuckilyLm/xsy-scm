@@ -37,6 +37,7 @@ public interface HeartBeatRecordDao extends BaseMapper<HeartBeatRecordEntity> {
 
     /**
      * 分页查询
+     *
      * @param heartBeatRecordQueryForm
      * @return
      */

@@ -29,7 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("入库方式与仓库确认入库（PG IT）")
 class PurchaseReceiptPutawayIT extends ScmW6PgITBase {
 
-    /** 造一张「无需求来源 + WAREHOUSE_CONFIRM」的收货单（可自定义采购单位），返回草稿收货单。 */
+    /**
+     * 造一张「无需求来源 + WAREHOUSE_CONFIRM」的收货单（可自定义采购单位），返回草稿收货单。
+     */
     private PurchaseReceiptVO warehouseConfirmReceipt(String suffix, Long skuId, String quantity,
                                                       String purchaseUnit, Long orderId) {
         PurchaseReceiptCreateForm form = new PurchaseReceiptCreateForm();
@@ -39,7 +41,9 @@ class PurchaseReceiptPutawayIT extends ScmW6PgITBase {
         return purchaseReceiptService.create(form, prefix + ":wc:" + suffix + ":" + orderId);
     }
 
-    /** 一张「无需求来源 + 可自定义采购单位」的已提交采购单。 */
+    /**
+     * 一张「无需求来源 + 可自定义采购单位」的已提交采购单。
+     */
     private PurchaseOrderVO freeSubmittedOrder(String suffix, Long skuId, String quantity,
                                                String purchaseUnit) {
         Long supplierId = newSupplier(suffix);

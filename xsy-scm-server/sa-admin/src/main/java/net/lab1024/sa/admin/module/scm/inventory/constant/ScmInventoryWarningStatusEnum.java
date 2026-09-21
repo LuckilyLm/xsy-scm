@@ -24,13 +24,19 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public enum ScmInventoryWarningStatusEnum {
 
-    /** 正常：在阈值区间内（或没有配置对应的边界）。 */
+    /**
+     * 正常：在阈值区间内（或没有配置对应的边界）。
+     */
     NORMAL("正常"),
 
-    /** 低于下限：触发补货预警。 */
+    /**
+     * 低于下限：触发补货预警。
+     */
     LOW("低于下限"),
 
-    /** 高于上限：触发积压预警。 */
+    /**
+     * 高于上限：触发积压预警。
+     */
     HIGH("高于上限");
 
     private final String desc;
@@ -58,12 +64,16 @@ public enum ScmInventoryWarningStatusEnum {
         return NORMAL;
     }
 
-    /** 是否为异常状态（预警列表默认只看异常）。 */
+    /**
+     * 是否为异常状态（预警列表默认只看异常）。
+     */
     public boolean isAbnormal() {
         return this != NORMAL;
     }
 
-    /** 该值是否允许作为查询参数（与前端枚举同源）。 */
+    /**
+     * 该值是否允许作为查询参数（与前端枚举同源）。
+     */
     public static boolean isSupported(String value) {
         for (ScmInventoryWarningStatusEnum item : values()) {
             if (item.name().equals(value)) {

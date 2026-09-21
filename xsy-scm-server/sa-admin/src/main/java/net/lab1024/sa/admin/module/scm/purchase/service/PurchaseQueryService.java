@@ -107,7 +107,9 @@ public class PurchaseQueryService {
         return SmartPageUtil.convert2PageResult(page, purchaseOrderDao.query(page, form));
     }
 
-    /** 详情 = 单头 + 全部行（含每行分配）+ 单级分配平铺 + 全量日志。 */
+    /**
+     * 详情 = 单头 + 全部行（含每行分配）+ 单级分配平铺 + 全量日志。
+     */
     @Transactional(readOnly = true)
     public PurchaseOrderVO orderDetail(Long id) {
         PurchaseOrderVO vo = purchaseOrderDao.detail(id);
@@ -125,7 +127,9 @@ public class PurchaseQueryService {
         return vo;
     }
 
-    /** 采购单行（含每行的分配集合，**Q13：N allocations**）。 */
+    /**
+     * 采购单行（含每行的分配集合，**Q13：N allocations**）。
+     */
     @Transactional(readOnly = true)
     public List<PurchaseOrderItemVO> orderItems(Long orderId) {
         List<PurchaseOrderItemEntity> rows = purchaseOrderItemDao.listByOrderId(orderId);

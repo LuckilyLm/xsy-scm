@@ -55,5 +55,4 @@ public class DepartmentEntity {
     private LocalDateTime createTime;
 
 
-
 }

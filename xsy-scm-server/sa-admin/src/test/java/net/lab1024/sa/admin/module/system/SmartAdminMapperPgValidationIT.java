@@ -70,7 +70,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "logging.level.root=WARN"})
 class SmartAdminMapperPgValidationIT {
 
-    /** 每个用例独立命名的 prepared statement，避免重名。 */
+    /**
+     * 每个用例独立命名的 prepared statement，避免重名。
+     */
     private static final AtomicInteger SEQ = new AtomicInteger();
 
     /**
@@ -225,7 +227,9 @@ class SmartAdminMapperPgValidationIT {
         return new ParamNameResolver(sqlSessionFactory.getConfiguration(), target).getNamedParams(args);
     }
 
-    /** 解析 {@code interface X extends BaseMapper<Entity>} 里的 {@code T -> Entity}。 */
+    /**
+     * 解析 {@code interface X extends BaseMapper<Entity>} 里的 {@code T -> Entity}。
+     */
     private static Map<TypeVariable<?>, Type> baseMapperTypeArguments(Class<?> mapperInterface) {
         Map<TypeVariable<?>, Type> map = new HashMap<>();
         for (Type t : mapperInterface.getGenericInterfaces()) {
@@ -241,7 +245,9 @@ class SmartAdminMapperPgValidationIT {
         return map;
     }
 
-    /** 为任意类型造一个非空样本值；bean 递归填充字段，保证 OGNL 的 {@code != null} 分支全部打开。 */
+    /**
+     * 为任意类型造一个非空样本值；bean 递归填充字段，保证 OGNL 的 {@code != null} 分支全部打开。
+     */
     @SuppressWarnings("unchecked")
     private Object sample(Type genericType, Class<?> rawType, int depth) {
         if (rawType == null || depth > 3) {
@@ -369,7 +375,9 @@ class SmartAdminMapperPgValidationIT {
     // 工具
     // ------------------------------------------------------------------
 
-    /** {@code #{}} 已被 MyBatis 换成 {@code ?}，这里按顺序换成 PostgreSQL 的 {@code $n}。 */
+    /**
+     * {@code #{}} 已被 MyBatis 换成 {@code ?}，这里按顺序换成 PostgreSQL 的 {@code $n}。
+     */
     private static String toPositional(String sql) {
         StringBuilder sb = new StringBuilder(sql.length() + 16);
         int n = 0;
@@ -388,7 +396,9 @@ class SmartAdminMapperPgValidationIT {
         return s == null ? "null" : s.replaceAll("\\s+", " ").trim();
     }
 
-    /** 未使用，保留以避免 IDE 提示 TreeMap 导入缺失（报告里按 id 排序时使用）。 */
+    /**
+     * 未使用，保留以避免 IDE 提示 TreeMap 导入缺失（报告里按 id 排序时使用）。
+     */
     @SuppressWarnings("unused")
     private static Map<String, String> sorted() {
         return new TreeMap<>();

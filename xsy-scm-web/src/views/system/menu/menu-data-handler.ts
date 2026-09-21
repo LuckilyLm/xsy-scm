@@ -6,6 +6,7 @@
  */
 
 import _ from 'lodash';
+
 /**
  * 过滤菜单
  * @param {*} menuList
@@ -13,39 +14,39 @@ import _ from 'lodash';
  * @returns
  */
 export const filterMenuByQueryForm = (menuList, queryForm) => {
-  if (!menuList || menuList.length === 0) {
-    return [];
-  }
-
-  let filterResult = [];
-  for (const menu of menuList) {
-    if (isMenuExistKeywords(menu, queryForm.keywords) && isMenuExistMenuType(menu, queryForm.menuType) && isMenuExistMenuFlag(menu, queryForm)) {
-      filterResult.push(menu);
+    if (!menuList || menuList.length === 0) {
+        return [];
     }
-  }
-  return filterResult;
+
+    let filterResult = [];
+    for (const menu of menuList) {
+        if (isMenuExistKeywords(menu, queryForm.keywords) && isMenuExistMenuType(menu, queryForm.menuType) && isMenuExistMenuFlag(menu, queryForm)) {
+            filterResult.push(menu);
+        }
+    }
+    return filterResult;
 };
 
 /**
  * 构建菜单表格树形数据
  */
 export const buildMenuTableTree = (menuList) => {
-  let topMenuList = [];
-  const menuIdSet = new Set();
-  for (const menu of menuList) {
-    menuIdSet.add(menu.menuId);
-  }
-
-  for (const menu of menuList) {
-    const parentId = menu.parentId;
-    // 不存在父节点，则为顶级菜单
-    if (!menuIdSet.has(parentId)) {
-      topMenuList.push(menu);
+    let topMenuList = [];
+    const menuIdSet = new Set();
+    for (const menu of menuList) {
+        menuIdSet.add(menu.menuId);
     }
-  }
 
-  recursiveMenuTree(menuList, topMenuList);
-  return topMenuList;
+    for (const menu of menuList) {
+        const parentId = menu.parentId;
+        // 不存在父节点，则为顶级菜单
+        if (!menuIdSet.has(parentId)) {
+            topMenuList.push(menu);
+        }
+    }
+
+    recursiveMenuTree(menuList, topMenuList);
+    return topMenuList;
 };
 
 /**
@@ -54,13 +55,13 @@ export const buildMenuTableTree = (menuList) => {
  * @param {*} parentArray
  */
 function recursiveMenuTree(menuList, parentArray) {
-  for (const parent of parentArray) {
-    const children = menuList.filter((e) => e.parentId === parent.menuId);
-    if (children.length > 0) {
-      parent.children = children;
-      recursiveMenuTree(menuList, parent.children);
+    for (const parent of parentArray) {
+        const children = menuList.filter((e) => e.parentId === parent.menuId);
+        if (children.length > 0) {
+            parent.children = children;
+            recursiveMenuTree(menuList, parent.children);
+        }
     }
-  }
 }
 
 /**
@@ -70,35 +71,35 @@ function recursiveMenuTree(menuList, parentArray) {
  * @returns
  */
 function isMenuExistMenuFlag(menu, queryForm) {
-  let frameFlagCondition = false;
-  if (!_.isNil(queryForm.frameFlag)) {
-    frameFlagCondition = !_.isNil(menu.frameFlag) && menu.frameFlag === (queryForm.frameFlag === 1);
-  } else {
-    frameFlagCondition = true;
-  }
+    let frameFlagCondition = false;
+    if (!_.isNil(queryForm.frameFlag)) {
+        frameFlagCondition = !_.isNil(menu.frameFlag) && menu.frameFlag === (queryForm.frameFlag === 1);
+    } else {
+        frameFlagCondition = true;
+    }
 
-  let cacheFlagCondition = false;
-  if (!_.isNil(queryForm.cacheFlag)) {
-    cacheFlagCondition = !_.isNil(menu.cacheFlag) && menu.cacheFlag === (queryForm.cacheFlag === 1);
-  } else {
-    cacheFlagCondition = true;
-  }
+    let cacheFlagCondition = false;
+    if (!_.isNil(queryForm.cacheFlag)) {
+        cacheFlagCondition = !_.isNil(menu.cacheFlag) && menu.cacheFlag === (queryForm.cacheFlag === 1);
+    } else {
+        cacheFlagCondition = true;
+    }
 
-  let visibleFlagCondition = false;
-  if (!_.isNil(queryForm.visibleFlag)) {
-    visibleFlagCondition = !_.isNil(menu.visibleFlag) && menu.visibleFlag === (queryForm.visibleFlag === 1);
-  } else {
-    visibleFlagCondition = true;
-  }
+    let visibleFlagCondition = false;
+    if (!_.isNil(queryForm.visibleFlag)) {
+        visibleFlagCondition = !_.isNil(menu.visibleFlag) && menu.visibleFlag === (queryForm.visibleFlag === 1);
+    } else {
+        visibleFlagCondition = true;
+    }
 
-  let disabledFlagCondition = false;
-  if (!_.isNil(queryForm.disabledFlag)) {
-    disabledFlagCondition = !_.isNil(menu.disabledFlag) && menu.disabledFlag === (queryForm.disabledFlag === 1);
-  } else {
-    disabledFlagCondition = true;
-  }
+    let disabledFlagCondition = false;
+    if (!_.isNil(queryForm.disabledFlag)) {
+        disabledFlagCondition = !_.isNil(menu.disabledFlag) && menu.disabledFlag === (queryForm.disabledFlag === 1);
+    } else {
+        disabledFlagCondition = true;
+    }
 
-  return frameFlagCondition && cacheFlagCondition && visibleFlagCondition && disabledFlagCondition;
+    return frameFlagCondition && cacheFlagCondition && visibleFlagCondition && disabledFlagCondition;
 }
 
 /**
@@ -108,39 +109,39 @@ function isMenuExistMenuFlag(menu, queryForm) {
  * @returns
  */
 function isMenuExistMenuType(menu, menuType) {
-  if (!menuType) {
-    return true;
-  }
+    if (!menuType) {
+        return true;
+    }
 
-  if (menu.menuType && menu.menuType === menuType) {
-    return true;
-  }
-  return false;
+    if (menu.menuType && menu.menuType === menuType) {
+        return true;
+    }
+    return false;
 }
 
 /**
  * 过滤关键字
  */
 function isMenuExistKeywords(menu, keywords) {
-  if (!keywords) {
-    return true;
-  }
+    if (!keywords) {
+        return true;
+    }
 
-  if (menu.component && menu.component.indexOf(keywords) > -1) {
-    return true;
-  }
+    if (menu.component && menu.component.indexOf(keywords) > -1) {
+        return true;
+    }
 
-  if (menu.menuName && menu.menuName.indexOf(keywords) > -1) {
-    return true;
-  }
-  if (menu.path && menu.path.indexOf(keywords) > -1) {
-    return true;
-  }
-  if (menu.apiPerms && menu.apiPerms.indexOf(keywords) > -1) {
-    return true;
-  }
-  if (menu.webPerms && menu.webPerms.indexOf(keywords) > -1) {
-    return true;
-  }
-  return false;
+    if (menu.menuName && menu.menuName.indexOf(keywords) > -1) {
+        return true;
+    }
+    if (menu.path && menu.path.indexOf(keywords) > -1) {
+        return true;
+    }
+    if (menu.apiPerms && menu.apiPerms.indexOf(keywords) > -1) {
+        return true;
+    }
+    if (menu.webPerms && menu.webPerms.indexOf(keywords) > -1) {
+        return true;
+    }
+    return false;
 }

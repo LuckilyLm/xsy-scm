@@ -19,23 +19,23 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-  import { ref } from 'vue';
+import {ref} from 'vue';
 
-  const visibleFlag = ref(false);
-  const content = ref('');
-  const link = ref('');
+const visibleFlag = ref(false);
+const content = ref('');
+const link = ref('');
 
-  function show(changeLog) {
-    content.value = changeLog.content;
-    link.value = changeLog.link;
-    visibleFlag.value = true;
-  }
+function show(changeLog) {
+  content.value = changeLog.content;
+  link.value = changeLog.link;
+  visibleFlag.value = true;
+}
 
-  function onClose() {
-    visibleFlag.value = false;
-  }
+function onClose() {
+  visibleFlag.value = false;
+}
 
-  defineExpose({
-    show,
-  });
+defineExpose({
+  show,
+});
 </script>

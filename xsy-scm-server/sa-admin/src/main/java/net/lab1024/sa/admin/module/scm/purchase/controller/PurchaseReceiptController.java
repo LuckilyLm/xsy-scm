@@ -94,7 +94,9 @@ public class PurchaseReceiptController {
         return ResponseDTO.ok(purchaseReceiptService.confirm(form, idempotencyKey));
     }
 
-    /** 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
+    /**
+     * 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。
+     */
     @PostMapping("/putaway")
     @SaCheckPermission("scm:purchase:receipt:putaway")
     @OperateLog

@@ -32,10 +32,14 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VA
  */
 public final class ScmDecimalStrings {
 
-    /** 统一小数位。 */
+    /**
+     * 统一小数位。
+     */
     public static final int SCALE = 4;
 
-    /** 整数部分最大位数（与 {@code NUMERIC(18,4)} 的容量一致）。 */
+    /**
+     * 整数部分最大位数（与 {@code NUMERIC(18,4)} 的容量一致）。
+     */
     public static final int MAX_INTEGER_DIGITS = 14;
 
     /**
@@ -87,7 +91,9 @@ public final class ScmDecimalStrings {
         return value;
     }
 
-    /** 入参是否为规范形态（{@code null} 与空白返回 {@code true}，因为二者表示"无值"）。 */
+    /**
+     * 入参是否为规范形态（{@code null} 与空白返回 {@code true}，因为二者表示"无值"）。
+     */
     public static boolean isCanonical(String raw) {
         if (raw == null) {
             return true;

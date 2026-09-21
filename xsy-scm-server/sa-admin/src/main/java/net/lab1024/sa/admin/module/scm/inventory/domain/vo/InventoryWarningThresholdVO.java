@@ -35,11 +35,15 @@ public class InventoryWarningThresholdVO {
 
     private Map<String, String> specValues;
 
-    /** 预警下限；{@code null} = 不设下限。 */
+    /**
+     * 预警下限；{@code null} = 不设下限。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal warnMin;
 
-    /** 预警上限；{@code null} = 不设上限。 */
+    /**
+     * 预警上限；{@code null} = 不设上限。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal warnMax;
 

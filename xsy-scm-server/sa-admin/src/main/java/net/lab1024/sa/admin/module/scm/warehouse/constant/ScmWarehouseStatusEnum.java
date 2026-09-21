@@ -11,4 +11,4 @@ package net.lab1024.sa.admin.module.scm.warehouse.constant;
  * 需要自己的状态词汇，以便 W6 库存域直接依赖它而不反向依赖 common 之外的任何包。
  * 后续若要合并，应作为一次不改变对外行为的纯重构单独提出。
  */
-public enum ScmWarehouseStatusEnum { ENABLED, DISABLED }
+public enum ScmWarehouseStatusEnum {ENABLED, DISABLED}

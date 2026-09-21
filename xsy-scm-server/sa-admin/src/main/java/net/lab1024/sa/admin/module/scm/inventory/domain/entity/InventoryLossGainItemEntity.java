@@ -35,11 +35,15 @@ public class InventoryLossGainItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long skuId;
 
-    /** 申报数量，恒为正（DB CHECK）。 */
+    /**
+     * 申报数量，恒为正（DB CHECK）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 
-    /** 审批通过时写入的记账单位快照；待审核态为空。 */
+    /**
+     * 审批通过时写入的记账单位快照；待审核态为空。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;
 

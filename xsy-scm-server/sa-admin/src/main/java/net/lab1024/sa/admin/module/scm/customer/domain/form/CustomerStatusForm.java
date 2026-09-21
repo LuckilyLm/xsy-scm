@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 客户状态变更（独立端点，C7）。 */
+/**
+ * 客户状态变更（独立端点，C7）。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomerStatusForm extends CustomerDeleteForm {

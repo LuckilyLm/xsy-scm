@@ -10,7 +10,7 @@
     <select id="selectRoleByEmployeeId" resultType="net.lab1024.sa.admin.module.system.role.domain.vo.RoleVO">
         SELECT t_role.*
         FROM t_role_employee
-        left join t_role on t_role_employee.role_id = t_role.role_id
+                 left join t_role on t_role_employee.role_id = t_role.role_id
         WHERE t_role_employee.employee_id = #{employeeId}
     </select>
 
@@ -35,8 +35,8 @@
         t_employee.create_time
         FROM
         t_role_employee
-        left join t_employee  on t_role_employee.employee_id = t_employee.employee_id
-        left join t_role  on t_role_employee.role_id = t_role.role_id
+        left join t_employee on t_role_employee.employee_id = t_employee.employee_id
+        left join t_role on t_role_employee.role_id = t_role.role_id
         <where>
             <if test="queryForm.keywords != null and queryForm.keywords!= ''">
                 AND (
@@ -63,7 +63,7 @@
                t_employee.update_time,
                t_employee.create_time
         FROM t_role_employee
-        left join t_employee  on t_role_employee.employee_id = t_employee.employee_id
+                 left join t_employee on t_role_employee.employee_id = t_employee.employee_id
         WHERE t_role_employee.role_id = #{roleId}
     </select>
 
@@ -99,15 +99,13 @@
         t_role.role_name
         FROM
         t_role_employee
-        LEFT JOIN t_role  ON t_role.role_id = t_role_employee.role_id
+        LEFT JOIN t_role ON t_role.role_id = t_role_employee.role_id
         WHERE
         employee_id in
         <foreach collection="employeeIdList" item="item" open="(" close=")" separator=",">
             #{item}
         </foreach>
     </select>
-
-
 
 
     <delete id="deleteByEmployeeId">

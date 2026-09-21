@@ -8,12 +8,16 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
-/** 客户类型列表查询条件。 */
+/**
+ * 客户类型列表查询条件。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomerTypeQueryForm extends PageParam {
 
-    /** 关键字：类型编码 / 类型名称。 */
+    /**
+     * 关键字：类型编码 / 类型名称。
+     */
     @Size(max = 100)
     private String keyword;
 

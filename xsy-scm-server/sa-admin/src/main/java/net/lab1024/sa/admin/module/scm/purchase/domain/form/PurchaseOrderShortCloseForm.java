@@ -11,7 +11,12 @@ import jakarta.validation.constraints.*;
  */
 @Data
 public class PurchaseOrderShortCloseForm {
-    @NotNull private Long id;
-    @NotNull @Min(0) private Integer version;
-    @NotBlank @Size(max=500) private String shortCloseReason;
+    @NotNull
+    private Long id;
+    @NotNull
+    @Min(0)
+    private Integer version;
+    @NotBlank
+    @Size(max = 500)
+    private String shortCloseReason;
 }

@@ -13,7 +13,7 @@
 
     <div v-else class="scm-map">
       <div class="scm-map-main">
-        <div ref="mapEl" class="scm-map-canvas" />
+        <div ref="mapEl" class="scm-map-canvas"/>
         <div v-if="!cities.length" class="scm-map-empty">暂无已归属到市的客户 / 供应商 / 仓库</div>
       </div>
 
@@ -57,12 +57,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import {computed, nextTick, onMounted, ref, watch} from 'vue';
 import * as echarts from 'echarts';
 import ScreenPanel from './screen-panel.vue';
-import { useEcharts } from '../composables/use-echarts';
-import { formatInt, formatQty, toNumber } from '../format';
-import type { BusinessData, GeoData, GeoCityNode, InventoryData } from '../types';
+import {useEcharts} from '../composables/use-echarts';
+import {formatInt, formatQty, toNumber} from '../format';
+import type {BusinessData, GeoData, GeoCityNode, InventoryData} from '../types';
 
 /**
  * 供应链分布（大屏主视觉，地图 M1）。
@@ -145,26 +145,26 @@ interface GeoFeature {
 function loadBaseMap(): Promise<void> {
   if (!baseMap) {
     baseMap = fetch(`${import.meta.env.BASE_URL}screen/china-province.json`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`底图加载失败（HTTP ${res.status}）`);
-        }
-        return res.json();
-      })
-      .then((geoJson) => {
-        for (const feature of (geoJson as { features?: GeoFeature[] }).features ?? []) {
-          const adcode = Number(feature.properties?.adcode);
-          const name = feature.properties?.name;
-          if (name && Number.isFinite(adcode)) {
-            boundaryNameByAdcode.set(adcode, name);
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`底图加载失败（HTTP ${res.status}）`);
           }
-        }
-        echarts.registerMap(MAP_NAME, geoJson as Parameters<typeof echarts.registerMap>[1]);
-      })
-      .catch((e) => {
-        baseMap = null;
-        throw e;
-      });
+          return res.json();
+        })
+        .then((geoJson) => {
+          for (const feature of (geoJson as { features?: GeoFeature[] }).features ?? []) {
+            const adcode = Number(feature.properties?.adcode);
+            const name = feature.properties?.name;
+            if (name && Number.isFinite(adcode)) {
+              boundaryNameByAdcode.set(adcode, name);
+            }
+          }
+          echarts.registerMap(MAP_NAME, geoJson as Parameters<typeof echarts.registerMap>[1]);
+        })
+        .catch((e) => {
+          baseMap = null;
+          throw e;
+        });
   }
   return baseMap;
 }
@@ -211,8 +211,8 @@ function render() {
   const list = cities.value;
   const maxTotal = list.reduce((acc, city) => Math.max(acc, totalOf(city)), 0);
   const provinceMax = (props.geo.provinces ?? []).reduce(
-    (acc, p) => Math.max(acc, p.customerCount),
-    0
+      (acc, p) => Math.max(acc, p.customerCount),
+      0
   );
 
   chart.setOption({
@@ -220,7 +220,7 @@ function render() {
       trigger: 'item',
       backgroundColor: 'rgba(7, 30, 66, 0.94)',
       borderColor: C.border,
-      textStyle: { color: C.text1, fontSize: 12 },
+      textStyle: {color: C.text1, fontSize: 12},
     },
     // 着色口径固定在「客户数」：大屏上同一张图同时表达三种量，气泡已经带了明细，
     // 底色再换成综合值就会让颜色和位置说两件不同的事。
@@ -233,30 +233,30 @@ function render() {
       itemWidth: 8,
       itemHeight: 60,
       text: [`${provinceMax}`, '0'],
-      textStyle: { color: C.text2, fontSize: 10 },
-      inRange: { color: ['#0b2f52', '#1565b8', C.blue, C.cyan] },
+      textStyle: {color: C.text2, fontSize: 10},
+      inRange: {color: ['#0b2f52', '#1565b8', C.blue, C.cyan]},
     },
     geo: {
       map: MAP_NAME,
       roam: false,
       zoom: 1.16,
-      label: { show: false },
+      label: {show: false},
       itemStyle: {
         areaColor: 'rgba(9, 40, 81, 0.9)',
         borderColor: 'rgba(47, 111, 158, 0.8)',
         borderWidth: 1,
       },
       emphasis: {
-        label: { show: false },
-        itemStyle: { areaColor: 'rgba(27, 77, 122, 1)' },
+        label: {show: false},
+        itemStyle: {areaColor: 'rgba(27, 77, 122, 1)'},
       },
-      select: { disabled: true },
+      select: {disabled: true},
     },
     series: [
       {
         type: 'map',
         geoIndex: 0,
-        tooltip: { formatter: tooltip },
+        tooltip: {formatter: tooltip},
         data: (props.geo.provinces ?? []).map((province) => ({
           // 按码取底图名；字典里冒出底图没有的码时退回原名（宁可少着色，不隐藏数据）
           name: boundaryNameByAdcode.get(province.provinceCode) ?? province.provinceName,
@@ -271,10 +271,10 @@ function render() {
         type: 'effectScatter',
         coordinateSystem: 'geo',
         // 只有真拿到归属数据的市才会成为气泡，图上不会出现空转的涟漪
-        rippleEffect: { brushType: 'stroke', scale: 3 },
+        rippleEffect: {brushType: 'stroke', scale: 3},
         symbolSize: (_value: unknown, params: { data?: { total: number } }) =>
-          bubbleSize(params.data?.total ?? 0, maxTotal),
-        tooltip: { formatter: tooltip },
+            bubbleSize(params.data?.total ?? 0, maxTotal),
+        tooltip: {formatter: tooltip},
         data: list.map((city) => ({
           name: city.cityName,
           value: [toNumber(city.centerLng), toNumber(city.centerLat), totalOf(city)],
@@ -283,7 +283,7 @@ function render() {
           supplierCount: city.supplierCount,
           warehouseCount: city.warehouseCount,
         })),
-        itemStyle: { color: C.cyan, opacity: 0.9 },
+        itemStyle: {color: C.cyan, opacity: 0.9},
       },
     ],
   });

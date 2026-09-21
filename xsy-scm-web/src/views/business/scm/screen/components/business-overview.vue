@@ -1,26 +1,26 @@
 <template>
   <screen-panel title="今日经营" flex>
     <div class="scm-grid2">
-      <metric-card label="今日订单" :value="formatInt(business?.todayOrderCount)" unit="张" size="lg" />
+      <metric-card label="今日订单" :value="formatInt(business?.todayOrderCount)" unit="张" size="lg"/>
       <metric-card
-        label="今日销售额"
-        prefix="¥"
-        :value="formatAmount(business?.todaySettlementAmount)"
-        size="lg"
-        tone="primary"
+          label="今日销售额"
+          prefix="¥"
+          :value="formatAmount(business?.todaySettlementAmount)"
+          size="lg"
+          tone="primary"
       />
-      <metric-card label="成交客户" :value="formatInt(business?.todayCustomerCount)" unit="家" size="lg" />
-      <metric-card label="客单价" prefix="¥" :value="avgOrderText" size="lg" />
+      <metric-card label="成交客户" :value="formatInt(business?.todayCustomerCount)" unit="家" size="lg"/>
+      <metric-card label="客单价" prefix="¥" :value="avgOrderText" size="lg"/>
     </div>
   </screen-panel>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import {computed} from 'vue';
 import ScreenPanel from './screen-panel.vue';
 import MetricCard from './metric-card.vue';
-import { formatAmount, formatInt, toNumber } from '../format';
-import type { BusinessData } from '../types';
+import {formatAmount, formatInt, toNumber} from '../format';
+import type {BusinessData} from '../types';
 
 /**
  * 今日经营 2×2。

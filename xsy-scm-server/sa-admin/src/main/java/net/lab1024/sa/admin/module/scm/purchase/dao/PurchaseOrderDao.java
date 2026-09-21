@@ -20,19 +20,29 @@ import java.util.List;
 @Mapper
 public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
 
-    /** 分页查询（联 supplier / warehouse / 收货进度）。 */
+    /**
+     * 分页查询（联 supplier / warehouse / 收货进度）。
+     */
     List<PurchaseOrderVO> query(Page<?> page, @Param("query") PurchaseOrderQueryForm query);
 
-    /** 详情（单头，联名称与进度）。 */
+    /**
+     * 详情（单头，联名称与进度）。
+     */
     PurchaseOrderVO detail(@Param("id") Long id);
 
-    /** 单条 `FOR UPDATE`（锁序：purchase_demand → purchase_order → purchase_order_item）。 */
+    /**
+     * 单条 `FOR UPDATE`（锁序：purchase_demand → purchase_order → purchase_order_item）。
+     */
     PurchaseOrderEntity lock(@Param("id") Long id);
 
-    /** 全局单调递增的采购单号序列（不按日 reset）。 */
+    /**
+     * 全局单调递增的采购单号序列（不按日 reset）。
+     */
     Long nextOrderNo();
 
-    /** 软删（仅 DRAFT，由 Service 断言）。 */
+    /**
+     * 软删（仅 DRAFT，由 Service 断言）。
+     */
     int softDelete(@Param("id") Long id,
                    @Param("version") Integer version,
                    @Param("operator") String operator);

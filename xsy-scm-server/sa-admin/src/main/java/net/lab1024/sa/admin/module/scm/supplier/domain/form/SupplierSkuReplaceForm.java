@@ -24,7 +24,9 @@ public class SupplierSkuReplaceForm {
     @Positive
     private Long supplierId;
 
-    /** 上限 500：单供应商的关联数量有界，超限返回 40000（Target Design 风险 R2）。 */
+    /**
+     * 上限 500：单供应商的关联数量有界，超限返回 40000（Target Design 风险 R2）。
+     */
     @Valid
     @NotNull
     @Size(max = 500)

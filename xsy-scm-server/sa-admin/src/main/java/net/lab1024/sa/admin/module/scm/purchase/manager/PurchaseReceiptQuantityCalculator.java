@@ -72,29 +72,39 @@ public final class PurchaseReceiptQuantityCalculator {
         return value;
     }
 
-    /** 可收上限 = planned × (1 + tolerance/100)，不取整（见类注释）。 */
+    /**
+     * 可收上限 = planned × (1 + tolerance/100)，不取整（见类注释）。
+     */
     public static BigDecimal ceiling(BigDecimal plannedQuantity, int tolerancePercent) {
         BigDecimal factor = BigDecimal.ONE.add(
                 BigDecimal.valueOf(tolerancePercent).divide(HUNDRED, 4, RoundingMode.HALF_UP));
         return plannedQuantity.multiply(factor);
     }
 
-    /** 本次可收数量 = ceiling − 该采购行已累计收到的数量。 */
+    /**
+     * 本次可收数量 = ceiling − 该采购行已累计收到的数量。
+     */
     public static BigDecimal available(BigDecimal ceiling, BigDecimal alreadyReceivedQuantity) {
         return ceiling.subtract(alreadyReceivedQuantity == null ? BigDecimal.ZERO : alreadyReceivedQuantity);
     }
 
-    /** 剩余可收 = GREATEST(planned − cumulative, 0)。 */
+    /**
+     * 剩余可收 = GREATEST(planned − cumulative, 0)。
+     */
     public static BigDecimal remaining(BigDecimal plannedQuantity, BigDecimal cumulativeReceivedQuantity) {
         return plannedQuantity.subtract(cumulativeReceivedQuantity).max(BigDecimal.ZERO);
     }
 
-    /** 超收量 = GREATEST(cumulative − planned, 0)。 */
+    /**
+     * 超收量 = GREATEST(cumulative − planned, 0)。
+     */
     public static BigDecimal overReceipt(BigDecimal plannedQuantity, BigDecimal cumulativeReceivedQuantity) {
         return cumulativeReceivedQuantity.subtract(plannedQuantity).max(BigDecimal.ZERO);
     }
 
-    /** 收货差异 = cumulative − planned（**可为负**）。 */
+    /**
+     * 收货差异 = cumulative − planned（**可为负**）。
+     */
     public static BigDecimal difference(BigDecimal plannedQuantity, BigDecimal cumulativeReceivedQuantity) {
         return cumulativeReceivedQuantity.subtract(plannedQuantity);
     }
@@ -133,10 +143,10 @@ public final class PurchaseReceiptQuantityCalculator {
      * @throws ScmBusinessException 形态不符（40083）
      */
     public static BigDecimal effectiveQuantity(String productType,
-                                              BigDecimal declaredQuantity,
-                                              BigDecimal actualWeight,
-                                              String weighingSource,
-                                              String correctionReason) {
+                                               BigDecimal declaredQuantity,
+                                               BigDecimal actualWeight,
+                                               String weighingSource,
+                                               String correctionReason) {
         if ("STANDARD".equals(productType)) {
             if (actualWeight != null || weighingSource != null || correctionReason != null) {
                 throw new ScmBusinessException(PURCHASE_RECEIPT_QUANTITY_INVALID);

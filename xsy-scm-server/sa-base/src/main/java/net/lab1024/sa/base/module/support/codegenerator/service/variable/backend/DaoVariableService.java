@@ -23,7 +23,7 @@ public class DaoVariableService extends CodeGenerateBaseVariableService {
         List<CodeInsertAndUpdateField> updateFieldList = form.getInsertAndUpdate().getFieldList().stream().filter(e -> Boolean.TRUE.equals(e.getInsertFlag())).collect(Collectors.toList());
         List<String> packageList = getPackageList(updateFieldList, form);
 
-        variablesMap.put("packageName", form.getBasic().getJavaPackageName() + ".dao" );
+        variablesMap.put("packageName", form.getBasic().getJavaPackageName() + ".dao");
         variablesMap.put("importPackageList", packageList);
 
         return variablesMap;
@@ -38,7 +38,7 @@ public class DaoVariableService extends CodeGenerateBaseVariableService {
         HashSet<String> packageSet = new HashSet<>();
 
         //1、javabean相关的包
-        packageSet.addAll(getJavaBeanImportClass(form).stream().filter( e-> e.contains("QueryForm;") || e.contains("VO;")|| e.contains("Entity;")).collect(Collectors.toList()));
+        packageSet.addAll(getJavaBeanImportClass(form).stream().filter(e -> e.contains("QueryForm;") || e.contains("VO;") || e.contains("Entity;")).collect(Collectors.toList()));
 
         //2、util
         packageSet.add("import java.util.List;");

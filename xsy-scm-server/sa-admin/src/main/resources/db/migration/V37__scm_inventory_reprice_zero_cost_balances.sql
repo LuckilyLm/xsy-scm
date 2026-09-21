@@ -36,93 +36,100 @@
 -- ---------------------------------------------------------------------------
 -- Step 1: 重放候选行的流水并回写 avg_cost
 -- ---------------------------------------------------------------------------
-DO $$
+DO
+$$
     DECLARE
-        target      RECORD;
-        leg         RECORD;
-        v_quantity  NUMERIC(18,4);
-        v_avg       NUMERIC(18,4);
-        v_in_cost   NUMERIC(18,4);
-        v_repaired  integer := 0;
+        target     RECORD;
+        leg        RECORD;
+        v_quantity NUMERIC(18, 4);
+        v_avg      NUMERIC(18, 4);
+        v_in_cost  NUMERIC(18, 4);
+        v_repaired integer := 0;
     BEGIN
         -- 候选：有货、零成本。锁定顺序固定为 (warehouse_id, sku_id) 升序，
         -- 与其它库存写入路径的锁序同一取向（迁移在启动早期执行，通常无人并发）。
         FOR target IN
             SELECT b.id, b.warehouse_id, b.sku_id, b.quantity
-              FROM inventory_balance b
-             WHERE b.deleted = FALSE
-               AND b.quantity > 0
-               AND b.avg_cost = 0
-             ORDER BY b.warehouse_id, b.sku_id
-        LOOP
-            v_quantity := 0;
-            v_avg      := 0;
-
-            FOR leg IN
-                SELECT m.movement_type, m.quantity, m.unit_cost,
-                       m.before_quantity, m.after_quantity,
-                       m.source_document_type, m.source_document_item_id
-                  FROM inventory_movement m
-                 WHERE m.deleted = FALSE
-                   AND m.warehouse_id = target.warehouse_id
-                   AND m.sku_id = target.sku_id
-                 ORDER BY m.occurred_at, m.id
+            FROM inventory_balance b
+            WHERE b.deleted = FALSE
+              AND b.quantity > 0
+              AND b.avg_cost = 0
+            ORDER BY b.warehouse_id, b.sku_id
             LOOP
-                IF leg.after_quantity = leg.before_quantity + leg.quantity THEN
-                    -- 入方向：先按旧量·旧均价加权，再累加数量（顺序不能反，基数是入量之前的账面）
-                    IF leg.movement_type = 'PURCHASE_IN' THEN
-                        v_in_cost := COALESCE(leg.unit_cost, 0);
-                    ELSIF leg.movement_type IN ('TRANSFER_IN', 'CONVERT_IN') THEN
-                        -- 成本事实住在**同一明细行的转出腿**上（与 transferInCost /
-                        -- convertedUnitCost 同一口径）；跨单位守恒的是总成本，不是单价。
-                        -- 源身份唯一索引保证至多一行，因此不聚合。
-                        SELECT CASE
-                                   WHEN leg.movement_type = 'TRANSFER_IN'
-                                       THEN COALESCE(o.unit_cost, 0)
-                                   ELSE round(o.quantity * COALESCE(o.unit_cost, 0) / leg.quantity, 4)
-                               END
-                          INTO v_in_cost
-                          FROM inventory_movement o
-                         WHERE o.deleted = FALSE
-                           AND o.source_document_type =
-                               CASE WHEN leg.movement_type = 'TRANSFER_IN'
-                                    THEN 'TRANSFER_OUT_ITEM' ELSE 'CONVERT_OUT_ITEM' END
-                           AND o.source_document_item_id = leg.source_document_item_id;
-                        IF v_in_cost IS NULL THEN
-                            -- 转入腿找不到转出腿 = 账本本身残缺。按 0 定价正是本迁移要消除的缺陷，
-                            -- 因此这里响亮失败而不是给一个看起来合理的均价。
-                            RAISE EXCEPTION
-                                'V37 cannot price inventory_balance % (warehouse %, sku %): % of source item % has no paired outbound movement',
-                                target.id, target.warehouse_id, target.sku_id,
-                                leg.movement_type, leg.source_document_item_id;
+                v_quantity := 0;
+                v_avg := 0;
+
+                FOR leg IN
+                    SELECT m.movement_type,
+                           m.quantity,
+                           m.unit_cost,
+                           m.before_quantity,
+                           m.after_quantity,
+                           m.source_document_type,
+                           m.source_document_item_id
+                    FROM inventory_movement m
+                    WHERE m.deleted = FALSE
+                      AND m.warehouse_id = target.warehouse_id
+                      AND m.sku_id = target.sku_id
+                    ORDER BY m.occurred_at, m.id
+                    LOOP
+                        IF leg.after_quantity = leg.before_quantity + leg.quantity THEN
+                            -- 入方向：先按旧量·旧均价加权，再累加数量（顺序不能反，基数是入量之前的账面）
+                            IF leg.movement_type = 'PURCHASE_IN' THEN
+                                v_in_cost := COALESCE(leg.unit_cost, 0);
+                            ELSIF leg.movement_type IN ('TRANSFER_IN', 'CONVERT_IN') THEN
+                                -- 成本事实住在**同一明细行的转出腿**上（与 transferInCost /
+                                -- convertedUnitCost 同一口径）；跨单位守恒的是总成本，不是单价。
+                                -- 源身份唯一索引保证至多一行，因此不聚合。
+                                SELECT CASE
+                                           WHEN leg.movement_type = 'TRANSFER_IN'
+                                               THEN COALESCE(o.unit_cost, 0)
+                                           ELSE round(o.quantity * COALESCE(o.unit_cost, 0) / leg.quantity, 4)
+                                           END
+                                INTO v_in_cost
+                                FROM inventory_movement o
+                                WHERE o.deleted = FALSE
+                                  AND o.source_document_type =
+                                      CASE
+                                          WHEN leg.movement_type = 'TRANSFER_IN'
+                                              THEN 'TRANSFER_OUT_ITEM'
+                                          ELSE 'CONVERT_OUT_ITEM' END
+                                  AND o.source_document_item_id = leg.source_document_item_id;
+                                IF v_in_cost IS NULL THEN
+                                    -- 转入腿找不到转出腿 = 账本本身残缺。按 0 定价正是本迁移要消除的缺陷，
+                                    -- 因此这里响亮失败而不是给一个看起来合理的均价。
+                                    RAISE EXCEPTION
+                                        'V37 cannot price inventory_balance % (warehouse %, sku %): % of source item % has no paired outbound movement',
+                                        target.id, target.warehouse_id, target.sku_id,
+                                        leg.movement_type, leg.source_document_item_id;
+                                END IF;
+                            ELSE
+                                -- 其余入方向（盘盈 / 报溢）不带来新成本事实：按现有均价入账，等价于均价不变。
+                                v_in_cost := v_avg;
+                            END IF;
+                            v_avg := round((v_quantity * v_avg + leg.quantity * v_in_cost)
+                                               / (v_quantity + leg.quantity), 4);
+                            v_quantity := v_quantity + leg.quantity;
+                        ELSE
+                            -- 出方向：移动加权平均的性质 —— 出库不改变均价。
+                            v_quantity := v_quantity - leg.quantity;
                         END IF;
-                    ELSE
-                        -- 其余入方向（盘盈 / 报溢）不带来新成本事实：按现有均价入账，等价于均价不变。
-                        v_in_cost := v_avg;
-                    END IF;
-                    v_avg      := round((v_quantity * v_avg + leg.quantity * v_in_cost)
-                                        / (v_quantity + leg.quantity), 4);
-                    v_quantity := v_quantity + leg.quantity;
-                ELSE
-                    -- 出方向：移动加权平均的性质 —— 出库不改变均价。
-                    v_quantity := v_quantity - leg.quantity;
+                    END LOOP;
+
+                -- 本行专属的对账：账本加总与本行存量数量不一致时，这行已经坏到不能用账本定价。
+                -- 必须响亮失败而不是写入一个看起来合理的均价 —— 那会把「账实不符」伪装成「成本已修好」。
+                IF v_quantity <> target.quantity THEN
+                    RAISE EXCEPTION
+                        'V37 cannot price inventory_balance % (warehouse %, sku %): ledger replays to % but balance holds %',
+                        target.id, target.warehouse_id, target.sku_id, v_quantity, target.quantity;
                 END IF;
+
+                UPDATE inventory_balance
+                SET avg_cost = v_avg
+                WHERE id = target.id;
+
+                v_repaired := v_repaired + 1;
             END LOOP;
-
-            -- 本行专属的对账：账本加总与本行存量数量不一致时，这行已经坏到不能用账本定价。
-            -- 必须响亮失败而不是写入一个看起来合理的均价 —— 那会把「账实不符」伪装成「成本已修好」。
-            IF v_quantity <> target.quantity THEN
-                RAISE EXCEPTION
-                    'V37 cannot price inventory_balance % (warehouse %, sku %): ledger replays to % but balance holds %',
-                    target.id, target.warehouse_id, target.sku_id, v_quantity, target.quantity;
-            END IF;
-
-            UPDATE inventory_balance
-               SET avg_cost = v_avg
-             WHERE id = target.id;
-
-            v_repaired := v_repaired + 1;
-        END LOOP;
 
         RAISE NOTICE 'V37 repriced % zero-cost balance row(s) from the movement ledger', v_repaired;
     END
@@ -132,22 +139,24 @@ $$;
 -- Step 2: 收尾断言 —— 候选集合内不得残留「账本有成本、余额零均价」的行
 -- ---------------------------------------------------------------------------
 -- 只校验 Step 1 的处理范围（不引入全库断言，理由见文件头）。
-DO $$
+DO
+$$
     DECLARE
         leftovers integer;
     BEGIN
-        SELECT count(*) INTO leftovers
-          FROM inventory_balance b
-         WHERE b.deleted = FALSE
-           AND b.quantity > 0
-           AND b.avg_cost = 0
-           AND EXISTS (SELECT 1
-                         FROM inventory_movement m
-                        WHERE m.deleted = FALSE
-                          AND m.warehouse_id = b.warehouse_id
-                          AND m.sku_id = b.sku_id
-                          AND m.unit_cost > 0
-                          AND m.after_quantity = m.before_quantity + m.quantity);
+        SELECT count(*)
+        INTO leftovers
+        FROM inventory_balance b
+        WHERE b.deleted = FALSE
+          AND b.quantity > 0
+          AND b.avg_cost = 0
+          AND EXISTS (SELECT 1
+                      FROM inventory_movement m
+                      WHERE m.deleted = FALSE
+                        AND m.warehouse_id = b.warehouse_id
+                        AND m.sku_id = b.sku_id
+                        AND m.unit_cost > 0
+                        AND m.after_quantity = m.before_quantity + m.quantity);
 
         IF leftovers > 0 THEN
             RAISE EXCEPTION

@@ -40,11 +40,13 @@
 -- NOT NULL DEFAULT 0：现有行先拿 0 占位，紧接着用下面的回填覆盖。
 -- 不允许 NULL 是因为「没有均价」与「均价为 0」在本业务里无法区分，
 -- 而让调用方每次都判空会让六条写入路径都多一层分支。
-ALTER TABLE inventory_balance ADD COLUMN avg_cost NUMERIC(18,4) NOT NULL DEFAULT 0;
+ALTER TABLE inventory_balance
+    ADD COLUMN avg_cost NUMERIC(18, 4) NOT NULL DEFAULT 0;
 
 -- 成本不为负（DB 层兜底；服务层在加权计算时也会保证）
-ALTER TABLE inventory_balance ADD CONSTRAINT ck_inventory_balance_avg_cost
-    CHECK (avg_cost >= 0);
+ALTER TABLE inventory_balance
+    ADD CONSTRAINT ck_inventory_balance_avg_cost
+        CHECK (avg_cost >= 0);
 
 COMMENT ON COLUMN inventory_balance.avg_cost IS
     '移动加权平均成本（每记账单位）。入库时按 (旧量·旧均价 + 入量·入价)/新量 重算；出库不变但会写入流水 unit_cost';
@@ -54,27 +56,27 @@ COMMENT ON COLUMN inventory_balance.avg_cost IS
 -- ---------------------------------------------------------------------------
 -- 一次性步骤。只读 inventory_movement（不改历史行），只写 inventory_balance。
 UPDATE inventory_balance b
-SET avg_cost = COALESCE((
-        SELECT m.unit_cost
-        FROM inventory_movement m
-        WHERE m.warehouse_id = b.warehouse_id
-          AND m.sku_id = b.sku_id
-          AND m.movement_type = 'PURCHASE_IN'
-          AND m.unit_cost IS NOT NULL
-          AND m.deleted = FALSE
-        ORDER BY m.occurred_at DESC, m.id DESC
-        LIMIT 1
-    ), 0);
+SET avg_cost = COALESCE((SELECT m.unit_cost
+                         FROM inventory_movement m
+                         WHERE m.warehouse_id = b.warehouse_id
+                           AND m.sku_id = b.sku_id
+                           AND m.movement_type = 'PURCHASE_IN'
+                           AND m.unit_cost IS NOT NULL
+                           AND m.deleted = FALSE
+                         ORDER BY m.occurred_at DESC, m.id DESC
+                         LIMIT 1), 0);
 
 -- ---------------------------------------------------------------------------
 -- 3. 对账断言：回填后不得有负均价（与 CHECK 同义，但给出更可读的失败信息）
 -- ---------------------------------------------------------------------------
-DO $$
-DECLARE
-    bad_count integer;
-BEGIN
-    SELECT count(*) INTO bad_count FROM inventory_balance WHERE avg_cost < 0;
-    IF bad_count > 0 THEN
-        RAISE EXCEPTION 'V34 backfill produced % rows with negative avg_cost', bad_count;
-    END IF;
-END $$;
+DO
+$$
+    DECLARE
+        bad_count integer;
+    BEGIN
+        SELECT count(*) INTO bad_count FROM inventory_balance WHERE avg_cost < 0;
+        IF bad_count > 0 THEN
+            RAISE EXCEPTION 'V34 backfill produced % rows with negative avg_cost', bad_count;
+        END IF;
+    END
+$$;

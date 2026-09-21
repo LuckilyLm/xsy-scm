@@ -26,5 +26,5 @@ public interface DepartmentDao extends BaseMapper<DepartmentEntity> {
      */
     List<DepartmentVO> listAll();
 
-    DepartmentVO selectDepartmentVO(@Param("departmentId")Long departmentId);
+    DepartmentVO selectDepartmentVO(@Param("departmentId") Long departmentId);
 }

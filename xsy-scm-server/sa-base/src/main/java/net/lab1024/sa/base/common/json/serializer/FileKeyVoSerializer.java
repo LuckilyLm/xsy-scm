@@ -29,7 +29,7 @@ public class FileKeyVoSerializer extends JsonSerializer<String> {
             jsonGenerator.writeObject(Lists.newArrayList());
             return;
         }
-        if(fileService == null){
+        if (fileService == null) {
             jsonGenerator.writeString(value);
             return;
         }

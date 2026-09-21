@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("W5 采购域迁移（PG IT）")
 class ScmPurchaseMigrationIT extends ScmW5PgITBase {
 
-    /** V15 新建的 9 张表。 */
+    /**
+     * V15 新建的 9 张表。
+     */
     private static final List<String> V15_TABLES = List.of(
             "warehouse",
             "purchase_demand",

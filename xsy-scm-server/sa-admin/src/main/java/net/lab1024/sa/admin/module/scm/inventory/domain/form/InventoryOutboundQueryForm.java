@@ -15,12 +15,18 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class InventoryOutboundQueryForm extends PageParam {
 
-    /** 出库单号（模糊）。 */
+    /**
+     * 出库单号（模糊）。
+     */
     private String outboundNo;
 
-    /** 仓库（精确）。 */
+    /**
+     * 仓库（精确）。
+     */
     private Long warehouseId;
 
-    /** 状态（精确，{@code ScmInventoryOutboundStatusEnum}）。 */
+    /**
+     * 状态（精确，{@code ScmInventoryOutboundStatusEnum}）。
+     */
     private String status;
 }

@@ -39,10 +39,14 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     List<SalesOrderItemEntity> listSourceItems(@Param("startAt") OffsetDateTime startAt,
                                                @Param("endAt") OffsetDateTime endAt);
 
-    /** 分页查询（联 supplier / warehouse 取名称快照）。 */
+    /**
+     * 分页查询（联 supplier / warehouse 取名称快照）。
+     */
     List<PurchaseDemandVO> query(Page<?> page, @Param("query") PurchaseDemandQueryForm query);
 
-    /** 单条详情（同一套投影，保证列表与详情字段口径一致）。 */
+    /**
+     * 单条详情（同一套投影，保证列表与详情字段口径一致）。
+     */
     PurchaseDemandVO detail(@Param("id") Long id);
 
     /**
@@ -53,13 +57,19 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      */
     List<PurchaseDemandEntity> lockByIds(@Param("ids") List<Long> ids);
 
-    /** 单条 `FOR UPDATE`。 */
+    /**
+     * 单条 `FOR UPDATE`。
+     */
     PurchaseDemandEntity lock(@Param("id") Long id);
 
-    /** 按来源销售订单行查活动需求（去重与「已存在则返回已有 id」用）。 */
+    /**
+     * 按来源销售订单行查活动需求（去重与「已存在则返回已有 id」用）。
+     */
     List<PurchaseDemandEntity> listActiveBySourceItemIds(@Param("ids") List<Long> ids);
 
-    /** INSERT 竞争：冲突（唯一索引）时返回 0，由调用方重读。不返回自增主键。 */
+    /**
+     * INSERT 竞争：冲突（唯一索引）时返回 0，由调用方重读。不返回自增主键。
+     */
     int insertIgnore(@Param("row") PurchaseDemandEntity row);
 
     /**
@@ -75,7 +85,9 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
                          @Param("supplierId") Long supplierId,
                          @Param("operator") String operator);
 
-    /** 软删（需求回退用；仅在没有活动分配时允许）。 */
+    /**
+     * 软删（需求回退用；仅在没有活动分配时允许）。
+     */
     int softDelete(@Param("id") Long id,
                    @Param("version") Integer version,
                    @Param("operator") String operator);

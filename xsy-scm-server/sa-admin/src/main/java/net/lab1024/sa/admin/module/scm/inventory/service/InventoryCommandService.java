@@ -258,7 +258,7 @@ public class InventoryCommandService {
      * 单价必然不同 —— 守恒的是总成本，不是单价。
      */
     public static BigDecimal convertedUnitCost(BigDecimal sourceQuantity, BigDecimal sourceUnitCost,
-                                              BigDecimal targetQuantity) {
+                                               BigDecimal targetQuantity) {
         if (targetQuantity.signum() <= 0) {
             throw new IllegalArgumentException("Conversion target quantity must be positive: " + targetQuantity);
         }
