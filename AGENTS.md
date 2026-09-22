@@ -1531,6 +1531,11 @@ integration tests where affected
 package/build
 ```
 
+触碰 `db/migration/` 时先跑 `python tools/migration_checksum_guard.py check`（`tools/verify.py` 的后端阶段已前置该检查）。
+Flyway 按行 CRC32 校验已应用迁移的内容，源码格式化工具重排这些 SQL 的字节会让**所有存量库在启动期 validate 阶段失败**；
+修复方向是还原为已被真实库应用的字节，而不是 `flyway repair`（repair 是改历史去迁就错误的文件）。
+新增或改号用 `sync` 更新快照，禁止为了让守卫变绿而覆盖既有校验和。
+
 For browser-facing work, verify:
 
 ```text
