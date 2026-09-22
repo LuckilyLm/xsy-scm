@@ -29,4 +29,5 @@ public class ProductImageEntity {
     @TableField("is_primary")
     private Boolean primaryFlag;
     private Integer sortOrder;
+    private String imageType;
 }

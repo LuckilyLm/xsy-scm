@@ -31,6 +31,9 @@
           <a-button v-privilege="'scm:product:batch'" :disabled="!selectedRows.length"
                     @click="batch?.open('TAG', selectedItems)">批量打标签
           </a-button>
+          <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
+          <a-button v-privilege="'scm:product:export'" :loading="exporting" @click="exportCurrent">导出</a-button>
+          <a-button @click="openImageCenter">图片中心</a-button>
           <span v-if="selectedRows.length" class="batch-hint">已选 {{ selectedRows.length }} 个</span>
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load"/>
@@ -93,6 +96,7 @@
     </a-card>
     <ProductDrawer ref="drawer" @saved="load"/>
     <ProductBatchModal ref="batch" :categories="categories" :tag-options="batchTagOptions" @done="batchDone"/>
+    <ProductImportModal ref="importModal" @imported="load"/>
   </section>
 </template>
 <script setup lang="ts">
@@ -128,6 +132,7 @@ import CategorySelect from '/@/components/business/scm/product-category-tree-sel
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ProductDrawer from './components/product-form-drawer.vue';
 import ProductBatchModal from './components/product-batch-modal.vue';
+import ProductImportModal from './components/product-import-modal.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
 import {datetime} from '../common/scm-display';
@@ -139,6 +144,7 @@ const categories = ref<ProductCategory[]>([]), rows = ref<ProductRow[]>([]), tot
 const tagChoices = ref<ProductTag[]>([]), createdRange = ref<[string, string]>();
 const selectedKeys = ref<ProductId[]>([]);
 const drawer = ref<InstanceType<typeof ProductDrawer>>(), batch = ref<InstanceType<typeof ProductBatchModal>>();
+const importModal = ref<InstanceType<typeof ProductImportModal>>(), exporting = ref(false);
 const user = useUserStore();
 const canBatch = computed(() => user.administratorFlag || user.getPointList?.some((point: {
   webPerms: string
@@ -258,6 +264,25 @@ const sortChanged: TableProps<ProductRow>['onChange'] = (_page, _filters, sort) 
 
 function detail(id: ProductId) {
   void router.push({path: '/product/product-detail', query: {spuId: String(id)}});
+}
+
+async function exportCurrent() {
+  exporting.value = true;
+  try {
+    await productApi.exportProducts({
+      ...filters,
+      createdFrom: createdRange.value?.[0] || undefined,
+      createdTo: createdRange.value?.[1] || undefined
+    });
+  } catch (e) {
+    error.value = productError(e);
+  } finally {
+    exporting.value = false;
+  }
+}
+
+function openImageCenter() {
+  void router.push('/product/image-center');
 }
 
 function batchDone() {

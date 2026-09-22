@@ -1,10 +1,16 @@
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getDownload, getRequest, postDownload, postRequest} from '/@/lib/axios';
 import type {
+    ImageBatchBindForm,
+    ImageBatchRemoveForm,
+    ImageCenterView,
+    ImageReorderForm,
+    ImageSetPrimaryForm,
     MasterStatus,
     ProductBatchItem,
     ProductBatchResult,
     ProductForm,
     ProductId,
+    ProductImportResult,
     ProductPage,
     ProductQuery,
     ProductRow,
@@ -39,4 +45,21 @@ export const productApi = {
             tagIds,
             mode
         }) as unknown as Promise<ScmResponse<ProductBatchResult>>,
+    // 导入是「0 错误才写、写失败整批回滚」，所以返回的错误列表永远意味着本次没有商品落库。
+    downloadImportTemplate: () => getDownload('/scm/product/import/template', {}),
+    importProducts: (file: File) => {
+        const data = new FormData();
+        data.append('file', file);
+        return postRequest('/scm/product/import', data) as unknown as Promise<ScmResponse<ProductImportResult>>;
+    },
+    exportProducts: (form: ProductQuery) => postDownload('/scm/product/export', form),
+};
+
+/** 图片中心：查询与四类批量写都以单个 SPU 为上下文，URL 一律由后端按 fileKey 现算。 */
+export const productImageApi = {
+    query: (spuId: ProductId) => getRequest(`/scm/product/image/query?spuId=${spuId}`, {}) as unknown as Promise<ScmResponse<ImageCenterView>>,
+    batchBind: (form: ImageBatchBindForm) => postRequest('/scm/product/image/batch-bind', form) as unknown as Promise<ScmResponse<null>>,
+    batchRemove: (form: ImageBatchRemoveForm) => postRequest('/scm/product/image/batch-remove', form) as unknown as Promise<ScmResponse<null>>,
+    setPrimary: (form: ImageSetPrimaryForm) => postRequest('/scm/product/image/set-primary', form) as unknown as Promise<ScmResponse<null>>,
+    reorder: (form: ImageReorderForm) => postRequest('/scm/product/image/reorder', form) as unknown as Promise<ScmResponse<null>>,
 };

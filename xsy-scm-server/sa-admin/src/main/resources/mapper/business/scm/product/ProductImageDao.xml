@@ -3,7 +3,7 @@
 <mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductImageDao">
     <update id="clearPrimary">
         UPDATE product_image
-        SET is_primary= FALSE
+        SET is_primary= FALSE, image_type = 'DETAIL'
         WHERE spu_id = #{spuId}
           AND deleted = FALSE
           AND is_primary = TRUE

@@ -1,0 +1,256 @@
+package net.lab1024.sa.admin.module.scm.product;
+
+import net.lab1024.sa.admin.AdminApplication;
+import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
+import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageCenterForms;
+import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSkuForm;
+import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuAddForm;
+import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImageCenterVO;
+import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImageVO;
+import net.lab1024.sa.admin.module.scm.product.service.ProductImageCenterService;
+import net.lab1024.sa.admin.module.scm.product.service.ProductSpuService;
+import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
+import net.lab1024.sa.admin.test.PgITPaths;
+import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
+import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
+import net.lab1024.sa.base.module.support.file.service.FileService;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.*;
+
+/**
+ * 图片中心的真实库集成测试：验证写操作全部收敛到既有同步链路，
+ * public/image/ 前缀、每 SPU 至多一张主图、image_type 与 is_primary 同义等约束不被绕过。
+ */
+@SpringBootTest(classes = AdminApplication.class, properties = {
+        "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
+        "file.storage.local.upload-path=" + PgITPaths.DEFAULT_UPLOAD_PATH,
+        "file.storage.local.url-prefix=http://127.0.0.1:18082",
+        "logging.level.root=WARN"})
+@Transactional
+class ProductImageCenterPgIT {
+    @Autowired
+    ProductImageCenterService service;
+    @Autowired
+    ProductSpuService spus;
+    @Autowired
+    FileService files;
+    @Autowired
+    JdbcTemplate jdbc;
+    private String prefix;
+
+    @BeforeEach
+    void operator() {
+        prefix = "IC-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase(Locale.ROOT);
+        var employee = new RequestEmployee();
+        employee.setEmployeeId(1L);
+        employee.setActualName("IC IT");
+        employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        SmartRequestUtil.setRequestUser(employee);
+    }
+
+    @AfterEach
+    void clearOperator() {
+        SmartRequestUtil.remove();
+    }
+
+    private Long newSpu() {
+        return newSpu("");
+    }
+
+    private Long newSpu(String suffix) {
+        String code = prefix + suffix;
+        var form = new ProductSpuAddForm();
+        form.setSpuCode(code);
+        form.setName(code + "商品");
+        form.setCategoryId(jdbc.queryForObject(
+                "SELECT id FROM product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
+        form.setStatus("OFF_SHELF");
+        var sku = new ProductSkuForm();
+        sku.setSkuCode(code + "A");
+        sku.setSpecName("大");
+        sku.setSaleUnit("kg");
+        sku.setProductType("NON_STANDARD");
+        sku.setMarketPrice(new java.math.BigDecimal("1.2000"));
+        sku.setStatus("ON_SHELF");
+        sku.setDefaultFlag(true);
+        sku.setSortOrder(0);
+        form.setSkuList(new ArrayList<>(List.of(sku)));
+        form.setImages(new ArrayList<>(List.of(upload("a"))));
+        return spus.add(form);
+    }
+
+    private ProductImageForm upload(String name) {
+        byte[] png = Base64.getDecoder().decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=");
+        var uploaded = files.fileUpload(new MockMultipartFile("file", "ic-" + name + ".png", "image/png", png),
+                FileFolderTypeEnum.PUBLIC_IMAGE.getValue(), SmartRequestUtil.getRequestUser());
+        assertThat(uploaded.getOk()).isTrue();
+        var image = new ProductImageForm();
+        image.setFileKey(uploaded.getData().getFileKey());
+        image.setPrimaryFlag(true);
+        return image;
+    }
+
+    private String key(String name) {
+        return upload(name).getFileKey();
+    }
+
+    private List<Long> imageIds(Long spuId) {
+        return service.query(spuId).getImages().stream().map(ProductImageVO::getImageId).toList();
+    }
+
+    @Test
+    void queryReturnsDerivedUrlWithoutPersistingIt() {
+        Long spuId = newSpu();
+        ProductImageCenterVO vo = service.query(spuId);
+        assertThat(vo.getSpuCode()).isEqualTo(prefix);
+        assertThat(vo.getImages()).hasSize(1);
+        assertThat(vo.getImages().getFirst().getFileUrl()).isNotBlank();
+        String fileKey = jdbc.queryForObject("SELECT file_key FROM product_image WHERE spu_id=?", String.class, spuId);
+        assertThat(fileKey).startsWith("public/image/");
+        // file_url 列已被删除，URL 只能由 fileKey 现算、绝不入库
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_name='product_image' AND column_name='file_url'",
+                Integer.class)).isZero();
+    }
+
+    @Test
+    void batchBindAddsDetailImageWithoutStealingPrimary() {
+        Long spuId = newSpu();
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(key("b"));
+        item.setPrimaryFlag(false);
+        item.setSortOrder(1);
+        bind.setItems(new ArrayList<>(List.of(item)));
+        service.batchBind(bind);
+        var after = service.query(spuId);
+        assertThat(after.getImages()).hasSize(2);
+        assertThat(after.getImages()).filteredOn(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).hasSize(1);
+        assertThat(after.getImages().getFirst().getPrimaryFlag()).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='PRIMARY' AND deleted=FALSE",
+                Integer.class, spuId)).isEqualTo(1);
+    }
+
+    @Test
+    void setPrimaryDemotesPreviousAndKeepsTieConstraint() {
+        Long spuId = newSpu();
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(key("b"));
+        item.setPrimaryFlag(false);
+        item.setSortOrder(1);
+        bind.setItems(new ArrayList<>(List.of(item)));
+        service.batchBind(bind);
+        Long second = service.query(spuId).getImages().get(1).getImageId();
+        var setPrimary = new ProductImageCenterForms.SetPrimaryForm();
+        setPrimary.setSpuId(spuId);
+        setPrimary.setImageId(second);
+        service.setPrimary(setPrimary);
+        var after = service.query(spuId);
+        assertThat(after.getImages().get(1).getPrimaryFlag()).isTrue();
+        assertThat(after.getImages().get(0).getPrimaryFlag()).isFalse();
+        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, second)).isEqualTo("PRIMARY");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='PRIMARY' AND deleted=FALSE",
+                Integer.class, spuId)).isEqualTo(1);
+    }
+
+    @Test
+    void removingPrimaryPromotesNothingButKeepsSinglePrimaryInvariant() {
+        Long spuId = newSpu();
+        Long only = imageIds(spuId).getFirst();
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(key("c"));
+        item.setPrimaryFlag(false);
+        bind.setItems(new ArrayList<>(List.of(item)));
+        service.batchBind(bind);
+        var remove = new ProductImageCenterForms.BatchRemoveForm();
+        remove.setSpuId(spuId);
+        remove.setImageIds(new ArrayList<>(List.of(only)));
+        service.batchRemove(remove);
+        var after = service.query(spuId);
+        assertThat(after.getImages()).hasSize(1);
+        assertThat(after.getImages().getFirst().getPrimaryFlag()).isFalse();
+    }
+
+    @Test
+    void reorderAppliesTargetOrder() {
+        Long spuId = newSpu();
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(key("d"));
+        item.setSortOrder(1);
+        bind.setItems(new ArrayList<>(List.of(item)));
+        service.batchBind(bind);
+        List<Long> ids = imageIds(spuId);
+        var reorder = new ProductImageCenterForms.ReorderForm();
+        reorder.setSpuId(spuId);
+        reorder.setOrderedImageIds(new ArrayList<>(List.of(ids.get(1), ids.get(0))));
+        service.reorder(reorder);
+        assertThat(imageIds(spuId)).containsExactly(ids.get(1), ids.get(0));
+    }
+
+    @Test
+    void rejectsForeignKeyInRemoveSetPrimaryReorder() {
+        Long spuId = newSpu();
+        Long foreign = newSpu("-F");
+        Long foreignImage = imageIds(foreign).getFirst();
+
+        var remove = new ProductImageCenterForms.BatchRemoveForm();
+        remove.setSpuId(spuId);
+        remove.setImageIds(new ArrayList<>(List.of(foreignImage)));
+        conflict(() -> service.batchRemove(remove), 40922);
+
+        var setPrimary = new ProductImageCenterForms.SetPrimaryForm();
+        setPrimary.setSpuId(spuId);
+        setPrimary.setImageId(foreignImage);
+        conflict(() -> service.setPrimary(setPrimary), 40922);
+
+        var reorder = new ProductImageCenterForms.ReorderForm();
+        reorder.setSpuId(spuId);
+        reorder.setOrderedImageIds(new ArrayList<>(List.of(foreignImage)));
+        conflict(() -> service.reorder(reorder), 40922);
+    }
+
+    @Test
+    void rejectsBindingPrivateDirectoryKey() {
+        Long spuId = newSpu();
+        byte[] png = Base64.getDecoder().decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=");
+        var uploaded = files.fileUpload(new MockMultipartFile("file", "ic-private.png", "image/png", png),
+                FileFolderTypeEnum.COMMON.getValue(), SmartRequestUtil.getRequestUser());
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(uploaded.getData().getFileKey());
+        bind.setItems(new ArrayList<>(List.of(item)));
+        conflict(() -> service.batchBind(bind), 40038);
+    }
+
+    @Test
+    void rejectsUnknownSpu() {
+        var setPrimary = new ProductImageCenterForms.SetPrimaryForm();
+        setPrimary.setSpuId(-999L);
+        setPrimary.setImageId(1L);
+        conflict(() -> service.setPrimary(setPrimary), 40420);
+    }
+
+    private void conflict(Runnable action, int code) {
+        assertThatThrownBy(action::run).isInstanceOfSatisfying(ScmBusinessException.class,
+                e -> assertThat(e.getErrorCode().getCode()).isEqualTo(code));
+    }
+}

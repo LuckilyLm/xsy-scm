@@ -84,6 +84,7 @@ public class ProductImageSyncManager {
         entity.setFileName(file.getFileName());
         entity.setFileSize(file.getFileSize()==null ? null : file.getFileSize().longValue());
         entity.setPrimaryFlag(form.getPrimaryFlag()); entity.setSortOrder(form.getSortOrder());
+        entity.setImageType(Boolean.TRUE.equals(form.getPrimaryFlag()) ? "PRIMARY" : "DETAIL");
         entity.setUpdatedAt(OffsetDateTime.now()); entity.setUpdatedBy(ScmOperator.current()); return entity;
     }
 }

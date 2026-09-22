@@ -248,3 +248,76 @@ test('read-only role cannot mutate products and buttons are hidden', async ({ pa
   await expect(button(page, '批量改状态')).toHaveCount(0);
   await client.get('/login/logout'); await client.dispose();
 });
+
+// PCO-2 商品运营入口：Excel 导入 / 导出按钮、图片中心路由。用真实小 xlsx 字节只验证「选文件前禁止提交、
+// 选后解禁」的结构契约，不实际点「开始导入」，避免向库里写入不可控数据。
+test('PCO-2 excel entry: import modal gates submit until a file is chosen', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await authenticate(page); await page.goto('/#/product/product-list');
+  await expect(button(page, '导入')).toBeVisible();
+  await expect(button(page, '导出')).toBeVisible();
+  await expect(button(page, '图片中心')).toBeVisible();
+  await button(page, '导入').click();
+  const modal = page.locator('.ant-modal:visible');
+  await expect(modal.getByText('导入商品', { exact: true })).toBeVisible();
+  const start = button(modal, '开始导入');
+  // 未选文件时提交入口必须禁用，这就是「禁止重复提交」的第一道闸门
+  await expect(start).toBeDisabled();
+  await modal.locator('input[type=file]').setInputFiles({
+    name: prefix + '.xlsx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: Buffer.from('UEsDBBQAAAAIAA==', 'base64')
+  });
+  await expect(modal.getByText(/已选文件/)).toBeVisible();
+  await expect(start).toBeEnabled();
+  await button(modal, '下载模板').click();
+  await button(modal, '取消').click();
+  await expect(modal).not.toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+// 图片中心：无图商品筛选、单商品维护入口、批量匹配先预览（0 命中时禁止绑定）。
+test('PCO-2 image center: filter no-image products, open single-SPU maintenance, preview batch before binding', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  // 复用「live product pilot」用例已建好的三级叶子分类（workers:1 使本文件串行、模块状态共享）
+  const categoryId = categoryIds[categoryIds.length - 1];
+  const added = await (await api.post('/scm/product/add', { data: {
+    spuCode: prefix + 'IMG', name: prefix + '无图商品', categoryId, status: 'ON_SHELF', images: [],
+    skuList: [{ skuCode: prefix + 'IMGA', specName: '散装', specValues: { 规格: '散装' }, saleUnit: 'kg', productType: 'NON_STANDARD', marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0 }]
+  } })).json();
+  expect(added.code).toBe(0); const spuId = added.data; productIds.push(spuId);
+
+  await authenticate(page); await page.goto('/#/product/image-center');
+  await expect(page).toHaveURL(/product-image-center|image-center/);
+  const noImage = page.locator('.ant-checkbox-wrapper', { hasText: '仅无主图' });
+  await noImage.click();
+  await page.getByPlaceholder('SPU 编码 / 名称 / 助记码').fill(prefix + 'IMG');
+  await button(page, '查询').click();
+  const row = page.getByRole('row').filter({ hasText: prefix + 'IMG' });
+  await expect(row).toBeVisible();
+  // 「仅无主图」命中后，目标行必须显性标记为无主图
+  await expect(row.getByText('无主图', { exact: true })).toBeVisible();
+  await row.click();
+  const batchEntry = button(page, '按文件名批量导入');
+  await expect(batchEntry).toBeVisible();
+  // 上传入口（+ 上传图片）是单商品维护写路径的可见契约
+  await expect(button(page, '上传图片')).toBeVisible();
+  await batchEntry.click();
+  const modal = page.locator('.ant-modal:visible');
+  await expect(modal.getByText('文件名（去扩展名）需等于目标商品的 SPU 编码')).toBeVisible();
+  // 预览优先：没有选择任何文件时命中为 0，绑定按钮必须禁用，绝不静默写入
+  await expect(modal.getByText(/命中 0 · 歧义 0 · 未匹配 0/)).toBeVisible();
+  await expect(button(modal, '绑定 0 张')).toBeDisabled();
+  await button(modal, '取消').click();
+  await expect(modal).not.toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+// 无导入/导出授权的账号看不到这两个入口（图片中心仍可达，但批量写入口按权限隐藏）。
+test('PCO-2 read-only role cannot see import or export entry', async ({ page }) => {
+  const readToken = await login(name + '_read');
+  await authenticate(page, readToken); await page.goto('/#/product/product-list');
+  await expect(button(page, '查询')).toBeVisible();
+  await expect(button(page, '导入')).toHaveCount(0);
+  await expect(button(page, '导出')).toHaveCount(0);
+});

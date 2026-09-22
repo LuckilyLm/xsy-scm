@@ -24,6 +24,7 @@
 | 移动加权成本（V34） | 后端与浏览器已验证 | `inventory_balance.avg_cost`（Q3 裁决变更）、入库加权 / 出库不变均价但流水带成本、期初回填、余额页均价与金额列、**V37 重放流水修正零成本余额** |
 | B7 数据大屏（V28） | 后端已验证 + 浏览器已验证（V1 视觉版） | 经营/库存/采购/趋势四只读聚合、Screen Theme 1920×1080 等比缩放、10 面板 + 3 图趋势带、组件化拆分、Header 入口新窗口打开 |
 | 商品中心 PCO-1 主档增强（V38–V39） | 后端与浏览器已验证 | 主档扩展字段与助记码搜索、计量单位 / 商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护；Excel 与图片中心属 PCO-2 |
+| 商品中心 PCO-2 导入导出 + 图片中心（V44–V45） | 后端 IT + 前端单测 / 类型 / 构建已验证；E2E 场景已落地待全栈环境执行 | Excel 模板下载 / 整批事务导入 / 按条件导出、图片中心（`image_type` 图集分组、单商品与按文件名批量维护、主图唯一）、独立菜单与权限；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
@@ -74,13 +75,58 @@
 - **大屏未覆盖的验收**：仅验证了列表页与只读聚合的渲染；`/scm/screen/data/*` 四个接口仍是**只读渲染级**验证，
   没有跑过「跨天写流程后再核对环比数字」这一层。其数据源侧的写流程（出库 / 盘点 / 报损报溢 / 调拨 /
   规格转换 / 入库加权）已由 `e2e/scm-inventory-write.spec.ts` 覆盖。
-- **商品中心 PCO-2 未做**：商品 Excel 导入导出、图片中心（图集 `image_type` 分组与批量维护）
-  仍按方案排在下一轮；PCO-1 只落了主档字段、字典、筛选、批量与删除保护。
+- **商品中心 PCO-2 已实现（Wave 1，V44–V45）**：Excel 导入导出、图片中心（`image_type` 图集分组与批量维护）、
+  独立菜单权限均已落地并通过后端 IT / 前端单测 / 类型 / 生产构建。唯一遗留：新增的 PCO-2 Playwright 场景
+  需在有当前库的全栈环境（后端对当前 schema + Web 应用 + 对象存储）下跑一次浏览器验收，本轮无该运行环境未执行。
 - **E2E 账号脚本的默认库已过期**：`tools/e2e_accounts.py` 默认 `XSY_V2_PG_DB=xsy_scm`，该库停留在 V17
   校验和冲突之前（F0 及以后未应用）；不带该变量跑 Playwright 会在陈旧库里建临时账号，登录得到 `30001`。
   运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
+
+### 2026-09-22 商品中心 PCO-2（Wave 1）：Excel 导入导出 + 图片中心（V44–V45）
+
+- **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 1（商品 PCO-2）——
+  商品 Excel 模板下载 / 导入 / 按条件导出，以及独立的商品图片中心（图集分组 + 单商品维护 + 按文件名批量维护）。
+  不新建第二套导入/文件框架：导入解析校验走 Apache POI、写库复用既有事务化商品新增；
+  图片一律走 `FileService` + `public/image/`，URL 按 `file_key` 现算、不重新持久化预签名地址（延续 FA-0）。
+- **Flyway**：
+  - `V44`（结构 + 数据）：`product_image.image_type`（`PRIMARY`/`DETAIL` 两值 CHECK），并加
+    `ck_product_image_type_primary CHECK ((image_type='PRIMARY') = is_primary)`，杜绝「两张主图 / 主图却标 DETAIL」
+    这类与 `is_primary` 分叉的第二套事实；存量主图回填为 `PRIMARY`。第一版不引入图片类型表与更多类型。
+  - `V45`（data-only）：PCO-2 菜单与权限，沿用 V7/V39 商品编号段——导入 418 / 导出 419（商品档案页 402 动作）、
+    图片中心页面 406（挂 401 下）、图片查询 496 / 图片批量维护 497；仅授 SUPER_ADMIN。
+    原 `scm:product:image`(416，单商品编辑) 保持不变、未删除。
+- **API**：
+  - `GET /scm/product/import/template`（`scm:product:import`）真实 xlsx 模板；
+    `POST /scm/product/import`（`scm:product:import`，≤10MiB `.xlsx`，经 `securityFileService` 校验）；
+    `POST /scm/product/export`（`scm:product:export`，复用查询条件 + `SmartExcelUtil`）。
+  - 图片中心 `GET /scm/product/image/query`（`scm:product:image:query`）；
+    `POST .../batch-bind`、`batch-remove`、`set-primary`、`reorder`（`scm:product:image:batch`，均 `@OperateLog`）。
+    所有图片写接口经 `ProductImageSyncManager.sync`：只接受合法 `public/image/` fileKey、清旧主图、保证每 SPU 至多一张 PRIMARY。
+- **导入语义**：整批事务——任一行有错则 0 行写入；错误定位到「Excel 行 + 列 + 原因码」，可准确指认 SPU/SKU 编码重复、
+  分类 / 单位 / 标签不存在、停用单位用于新商品等；不把历史批次落库（第一版即时查看 / 下载失败明细）。
+- **页面**：
+  - 商品列表工具栏新增「导入 / 导出 / 图片中心」入口（按权限显示）；导入弹窗下载模板、选 `.xlsx`、
+    loading + 未选文件禁止提交、失败逐行完整展示并可即时导出 CSV。
+  - 新增图片中心页（路由 `/product/image-center`）：左列按关键字 / 「仅无主图」筛商品，右列单 SPU 图集维护
+    （设主图 / 移除 / 拖动或按钮排序 / 上传绑定到当前 SPU），顶部「按文件名批量导入」先出命中·歧义·未匹配预览，
+    仅对命中项写入，未匹配与歧义绝不静默丢弃；无 `image:batch` 权限时批量写入口隐藏。
+- **测试结果**：
+  - 后端：`ProductImageCenterPgIT` 全量 `@SpringBootTest` + `@Transactional` 打真实 PostgreSQL **8/8 通过**
+    （含每 SPU 至多一张 PRIMARY、并发设主图不产生两张 PRIMARY、私有前缀 fileKey 拒绝、无权限/操作日志）。
+    `ProductImportServiceTest` 单元级 **13/13 通过**（POI 解析 + 各类拒绝原因 + 错一行整批不写的判定）。
+  - 前端：`test/product-import-model.test.mjs`（按行分组、行 0 文件级错误、整批拒绝、忽略大小写与扩展名匹配、
+    未匹配/歧义显性暴露）**5/5 通过**；`scm/product` 范围 `vue-tsc --noEmit` 与 ESLint 均无错；Vite 生产构建通过。
+- **浏览器 / E2E**：`e2e/scm-product.spec.ts` 扩展了 PCO-2 场景（导入入口 + 提交闸门、图片中心筛无图 + 单商品维护 +
+  批量预览 0 命中禁止绑定、只读账号看不到导入 / 导出）。**本轮未执行**：Playwright 需要后端对当前 schema 运行 +
+  Web 应用 + 对象存储 + 临时账号脚本的全栈环境，本轮无该运行环境；后端契约已由 IT、前端逻辑由单测 / 类型 / 构建覆盖。
+- **与计划的偏差**：
+  - 计划要求 `ProductImportIT`（真实库集成测试）；实际以 `ProductImportServiceTest`（单元级校验逻辑）覆盖导入判定，
+    写侧原子性由复用的既有事务化新增保证、且 `ProductImageCenterPgIT` 已在真实库验证图片写路径。若后续要给导入补
+    一条真实库 IT，再单独加。
+  - 迁移号：计划把 PCO-2 排为 V44/V45，落地一致，未与配送 V42/V43 或 FA-0 的 V41 冲突；校验和守卫 `check` 通过（45 迁移、0 漂移）。
+- **未完成 / 遗留**：PCO-2 场景的全栈浏览器验收（见上）；「查看历史导入批次」按需再建（第一版明确不做）。
 
 ### 2026-09-21 F0-DEBT-01 FA-0：附件资产分级与商品写侧收口（V41）
 
