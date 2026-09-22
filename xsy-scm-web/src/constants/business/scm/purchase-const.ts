@@ -63,6 +63,29 @@ export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
 };
 
 /**
+ * 库存缺口预览的计算状态（Wave 2A §6A.5，与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对应）。
+ *
+ * 只读辅助决策：`UNIT_MISMATCH` 表示需求单位与余额记账单位不一致（Q13），缺口为 null 不猜折算率；
+ * `NO_BALANCE` 表示该仓库下该 SKU 无余额行。
+ */
+export const SCM_DEMAND_SUMMARY_STATUS_ENUM: SmartEnum<string> = {
+    STOCK_ENOUGH: {value: 'STOCK_ENOUGH', desc: '库存充足'},
+    SHORTAGE: {value: 'SHORTAGE', desc: '存在缺口'},
+    ZERO_STOCK: {value: 'ZERO_STOCK', desc: '零库存'},
+    UNIT_MISMATCH: {value: 'UNIT_MISMATCH', desc: '单位不一致'},
+    NO_BALANCE: {value: 'NO_BALANCE', desc: '无库存记录'},
+};
+
+/** 计算状态对应的 `a-tag` 颜色（缺口的严重度用色区分，纯展示）。 */
+export const SCM_DEMAND_SUMMARY_STATUS_COLOR: Record<string, string> = {
+    STOCK_ENOUGH: 'green',
+    SHORTAGE: 'orange',
+    ZERO_STOCK: 'red',
+    UNIT_MISMATCH: 'purple',
+    NO_BALANCE: 'default',
+};
+
+/**
  * 采购操作日志类型（13 值，与 `ScmPurchaseOperationTypeEnum` 对应）。
  *
  * 归属由操作类型决定（Q14 四分支）：需求类日志没有单据、分配类靠反查、
@@ -105,5 +128,6 @@ export default {
     SCM_WAREHOUSE_STATUS_ENUM,
     SCM_RECEIPT_MODE_ENUM,
     SCM_PUTAWAY_STATUS_ENUM,
+    SCM_DEMAND_SUMMARY_STATUS_ENUM,
     SCM_PURCHASE_OPERATION_ENUM,
 };

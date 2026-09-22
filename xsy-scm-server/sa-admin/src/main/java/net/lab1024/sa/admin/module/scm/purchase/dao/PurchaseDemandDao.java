@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -43,6 +45,19 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * 分页查询（联 supplier / warehouse 取名称快照）。
      */
     List<PurchaseDemandVO> query(Page<?> page, @Param("query") PurchaseDemandQueryForm query);
+
+    /**
+     * 订单汇总 / 库存缺口预览（Wave 2A §6A.4，只读聚合）。
+     *
+     * <p>WHERE 与 {@link #listSourceItems} 同源（已确认订单 + 有实数量 + 同一确认窗口），
+     * 按 {@code sku_id + sale_unit_snapshot} 聚合后左连 {@code inventory_balance}
+     * （{@code warehouse_id} 来自入参）比对可用量。可用量、缺口、状态全在 SQL 里用
+     * {@code NUMERIC} 算好，Java/前端不做浮点运算。
+     *
+     * <p>调用方须关闭 count SQL 优化（GROUP BY 分页），否则自动 count 会按行数而非组数计数。
+     */
+    List<PurchaseDemandSummaryVO> summaryPreview(Page<?> page,
+                                                 @Param("query") PurchaseDemandSummaryPreviewForm query);
 
     /**
      * 单条详情（同一套投影，保证列表与详情字段口径一致）。

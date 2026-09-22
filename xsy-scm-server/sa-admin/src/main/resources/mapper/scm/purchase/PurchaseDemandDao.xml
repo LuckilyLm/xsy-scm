@@ -101,6 +101,84 @@
         ORDER BY d.demand_date DESC, d.id DESC
     </select>
 
+    <!--
+      Wave 2A 订单汇总 / 库存缺口预览（只读聚合，§6A.4）。
+
+      取数口径 WHERE 与 listSourceItems 完全同源：已确认订单 + 有实数量 + 同一确认窗口，
+      因此本预览看到的订单量与将来 generate 生成的需求数量一致（§6A.1 不改写需求语义）。
+
+      仓库只存在于库存/采购侧、订单行不带仓库，故 warehouseId 作为入参进入 inventory_balance
+      的 LEFT JOIN 谓词（放 ON 而非 WHERE，否则左连退化成内连会把无余额的 SKU 整行藏掉）。
+
+      Q13 单位门禁：按 (sku_id, warehouse_id) 连余额，比对 b.unit 与订单销售单位；
+      不一致即 UNIT_MISMATCH 且缺口为 null，绝不换算、绝不猜折算率。
+
+      可用量 / 缺口 / 状态全部用 NUMERIC 在 SQL 里算好（4 位定点），Java/前端不做浮点减法。
+      非聚合列一律显式进 GROUP BY：inventory_balance 的部分唯一索引不构成 PG 的 GROUP BY
+      函数依赖，靠 FD 推断会静默少列报错；每个 SKU 至多一行余额、至多一行主档，分组键不会拆行。
+    -->
+    <select id="summaryPreview"
+            resultType="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO">
+        SELECT oi.sku_id,
+               k.sku_code,
+               p.name                                   AS product_name,
+               k.spec_name                              AS sku_name,
+               cat.name                                 AS category_name,
+               oi.sale_unit_snapshot                    AS demand_unit,
+               b.unit                                   AS inventory_unit,
+               COUNT(DISTINCT oi.order_id)              AS source_order_count,
+               COUNT(oi.id)                             AS source_line_count,
+               SUM(oi.actual_quantity)                  AS order_demand_quantity,
+               COALESCE(b.quantity, 0)                  AS on_hand_quantity,
+               COALESCE(b.reserved_quantity, 0)         AS reserved_quantity,
+               (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) AS available_quantity,
+               CASE
+                   WHEN b.unit IS NOT NULL AND b.unit &lt;&gt; oi.sale_unit_snapshot THEN NULL
+                   ELSE GREATEST(SUM(oi.actual_quantity)
+                                     - (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)), 0)
+               END                                      AS shortage_against_available,
+               CASE
+                   WHEN b.unit IS NULL THEN 'NO_BALANCE'
+                   WHEN b.unit &lt;&gt; oi.sale_unit_snapshot THEN 'UNIT_MISMATCH'
+                   WHEN (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) = 0 THEN 'ZERO_STOCK'
+                   WHEN SUM(oi.actual_quantity) > (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) THEN 'SHORTAGE'
+                   ELSE 'STOCK_ENOUGH'
+               END                                      AS calculation_status
+        FROM sales_order_item oi
+                 JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
+                 LEFT JOIN product_sku k ON k.id = oi.sku_id
+                 LEFT JOIN product_spu p ON p.id = k.spu_id
+                 LEFT JOIN product_category cat ON cat.id = p.category_id
+                 LEFT JOIN inventory_balance b
+                           ON b.sku_id = oi.sku_id
+                               AND b.warehouse_id = #{query.warehouseId}
+                               AND b.deleted = FALSE
+        WHERE o.status = 'CONFIRMED'
+          AND oi.deleted = FALSE
+          AND oi.actual_quantity IS NOT NULL
+          AND oi.actual_quantity &gt; 0
+          AND o.confirmed_at &gt;= #{query.startAt}
+          AND o.confirmed_at &lt; #{query.endAt}
+        <if test="query.categoryId != null">
+            AND p.category_id = #{query.categoryId}
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (p.spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR p.name ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        GROUP BY oi.sku_id,
+                 oi.sale_unit_snapshot,
+                 b.unit,
+                 b.quantity,
+                 b.reserved_quantity,
+                 k.sku_code,
+                 k.spec_name,
+                 p.name,
+                 cat.name
+        ORDER BY shortage_against_available DESC NULLS LAST, oi.sku_id ASC
+    </select>
+
     <select id="detail" resultMap="demandVoMap">
         SELECT d.id,
                d.sales_order_id,

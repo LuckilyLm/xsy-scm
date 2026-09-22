@@ -25,6 +25,7 @@
 | B7 数据大屏（V28） | 后端已验证 + 浏览器已验证（V1 视觉版） | 经营/库存/采购/趋势四只读聚合、Screen Theme 1920×1080 等比缩放、10 面板 + 3 图趋势带、组件化拆分、Header 入口新窗口打开 |
 | 商品中心 PCO-1 主档增强（V38–V39） | 后端与浏览器已验证 | 主档扩展字段与助记码搜索、计量单位 / 商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护；Excel 与图片中心属 PCO-2 |
 | 商品中心 PCO-2 导入导出 + 图片中心（V44–V45） | 后端 IT + 前端单测 / 类型 / 构建已验证；E2E 场景已落地待全栈环境执行 | Excel 模板下载 / 整批事务导入 / 按条件导出、图片中心（`image_type` 图集分组、单商品与按文件名批量维护、主图唯一）、独立菜单与权限；见追加记录 2026-09-22 |
+| 采购订单缺口预览 Wave 2A（无迁移） | 后端 IT + 前端契约 / 类型 / Lint 已验证；E2E 场景已落地待全栈环境执行 | 只读「订单汇总 / 库存缺口预览」并入采购需求页 Tab、`POST /scm/purchase/demand/summary-preview` 复用 `generate()` 取数口径、缺口与可用量后端算好、0 迁移 0 菜单变更；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
@@ -83,6 +84,39 @@
   运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
+
+### 2026-09-22 采购订单缺口预览（Wave 2A）：只读「订单汇总 / 库存缺口预览」
+
+- **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 2A 第一阶段——
+  在采购需求页新增**只读**的「订单汇总 / 库存缺口预览」：按时间窗 + 仓库（可选分类 / 关键字）把已确认销售订单的
+  实发量按 `warehouseId + skuId + demandUnit` 归并，镜像 `PurchaseDemandService.generate()` 的取数 WHERE，
+  与库存余额联表算出可用量与缺口。**第一阶段严格只读**：不生成需求、不改 `generate()` 的采购需求数量语义、
+  不引入「在途采购抵扣缺口」（`openPurchaseQuantity` 刻意缺席，§6A.6 未裁决）。缺口与可用量全部由后端用
+  `BigDecimal` 在 SQL 里算好、以四位定点字符串下发，前端不参与浮点运算、更不重算。
+- **Flyway**：**0 迁移**。预览作为 Tab 并入既有采购需求页，复用其路由 / 菜单 / 权限 `scm:purchase:demand:query`，
+  无新 `t_menu` 行、无表结构变更。
+- **API**：`POST /scm/purchase/demand/summary-preview`（`@SaCheckPermission("scm:purchase:demand:query")`，
+  只读查询、无 `@OperateLog`、无幂等键）。入参 `PurchaseDemandSummaryPreviewForm{startAt,endAt,warehouseId,categoryId?,keyword?,分页}`，
+  出参 `PageResult<PurchaseDemandSummaryVO>`。`calculationStatus` 五值：`STOCK_ENOUGH / SHORTAGE / ZERO_STOCK /
+  UNIT_MISMATCH / NO_BALANCE`；Q13 单位门禁——`demandUnit` 与余额记账单位不一致时判 `UNIT_MISMATCH` 且
+  `shortageAgainstAvailable = null`，禁止猜换算率（与 `generate()` 同口径）。
+- **页面**：`purchase-demand-list.vue` 用 `a-tabs` 把原列表包为「采购需求」页签，新增「订单汇总 / 缺口预览」页签挂
+  新组件 `components/purchase-demand-summary-preview.vue`（自带时间窗 + 仓库选择器 + 关键字 + 表格，行内数量列走
+  `quantity()` 三态渲染、状态列走 `SCM_DEMAND_SUMMARY_STATUS_ENUM`/`_COLOR`）。生成需求 / 分配弹窗留在 Tab 外不变。
+- **测试结果**：
+  - 后端：`PurchaseDemandSummaryPreviewIT`（真实 PostgreSQL、`@Transactional`）**8/8 通过**——含只读语义（跑预览后
+    需求表计数不变）、`generate()` 口径一致、五态判定、`UNIT_MISMATCH → 缺口 null`、`NO_BALANCE`、分页 GROUP BY。
+  - 前端：新增 `test/w2a-demand-summary-preview-contract.test.mjs` **5/5 通过**——枚举 5 值与后端对齐、
+    `summaryPreview` 走只读 `postRequest` 且不带 `purchaseCommand`（写命令仍带）、预览组件渲染后端数量且**从不重算**
+    （无非定点运算 / 无 `availableQuantity ±`）、`openPurchaseQuantity` 缺席、Tab 接线与生成 / 分配权限未动。
+    合并跑 `w2a` + `w5` = **30/30**；改动文件 `vue-tsc --noEmit` 与 ESLint 均无错。
+- **浏览器 / E2E**：`e2e/scm-purchase.spec.ts` 新增用例 10（预览只读且数量后端算好：建单后 `summary-preview` 命中本 SKU、
+  每行状态在五值内且数量匹配四位定点、跑完需求表仍为 0、浏览器切页签渲染 + 截图）。**本轮未执行**：需后端对当前代码
+  重新构建部署 + Web 应用 + 临时账号的全栈环境；端点行为已由 8 条 IT、前端契约由单测 / 类型 / Lint 覆盖。
+- **与计划的偏差**：无。计划 §6A.11 要求「0 迁移、并入既有页」，落地一致。
+- **未完成 / 遗留**：预览场景的全栈浏览器验收（见上）；预览的 Phase 2「一键把缺口转采购需求」不在本 Wave（只读阶段不写库）。
+- **旁注（非本 Wave 引入）**：全量前端测试里 `w4-order-contract.test.mjs` 有一条**既有**正则用例因 `\r\n` 跨行匹配失败
+  （`.` 不匹配换行），与本次改动无关、未纳入 Wave 2A 范围，按 §34「不顺带改无关代码」保持原样。
 
 ### 2026-09-22 商品中心 PCO-2（Wave 1）：Excel 导入导出 + 图片中心（V44–V45）
 

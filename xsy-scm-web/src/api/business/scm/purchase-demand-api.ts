@@ -14,12 +14,25 @@ import type {
     DemandAllocate,
     DemandGenerate,
     DemandQuery,
+    DemandSummaryPreviewQuery,
+    DemandSummaryRow,
     GenerateResult,
 } from '/@/views/business/scm/purchase/purchase-types';
 
 export const purchaseDemandApi = {
     query: (data: DemandQuery) =>
         postRequest('/scm/purchase/demand/query', data) as unknown as Promise<ScmResponse<ScmPage<Demand>>>,
+
+    /**
+     * 订单汇总 / 库存缺口预览（Wave 2A §6A，只读辅助决策）。
+     *
+     * 与 `generate` 同取数口径但不落任何数据、不改需求语义；数量全部后端算好，前端只渲染。
+     * 复用 `scm:purchase:demand:query` 权限，无幂等键（读操作）。
+     */
+    summaryPreview: (data: DemandSummaryPreviewQuery) =>
+        postRequest('/scm/purchase/demand/summary-preview', data) as unknown as Promise<
+            ScmResponse<ScmPage<DemandSummaryRow>>
+        >,
 
     /** 汇总窗口 `[startAt, endAt)` 内的已确认订单行 → 采购需求。 */
     generate: (data: DemandGenerate) => purchaseCommand<GenerateResult>('/scm/purchase/demand/generate', data),

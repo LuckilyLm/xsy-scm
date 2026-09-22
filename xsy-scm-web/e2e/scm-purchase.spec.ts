@@ -235,3 +235,39 @@ test('9 one item serves two demands and editing one leaves the other intact',asy
  await expect(drawer).toContainText('部分分配');await expect(drawer).toContainText('已分配');
  await page.screenshot({path:'../.runtime/w5-order-detail.png',fullPage:true});
 });
+
+/**
+ * Wave 2A：订单汇总 / 库存缺口预览（只读）。
+ *
+ * 契约：读端点按 `[startAt,endAt)` + `warehouseId` 聚合，数量为后端算好的四位定点字符串；
+ * 重复调用**不得**新建需求或流水（只读辅助决策），`calculationStatus` 只落在后端 5 值内。
+ * 注：本用例需要**包含 Wave 2A 端点的后端构建**；18080 上若在跑更早的 fat jar，
+ * 该 `summary-preview` 会 404 —— 属部署版本问题，不是本 Wave 缺陷。
+ */
+const SUMMARY_STATUS=new Set(['STOCK_ENOUGH','SHORTAGE','ZERO_STOCK','UNIT_MISMATCH','NO_BALANCE']);
+test('10 stock shortage preview is read-only and server-computed',async({page})=>{
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ // 用已生成需求的那张销售单所在窗口造一次可命中的查询（soA 已确认且已入库）
+ const so=await confirmedOrder('20.0000','20.0000');
+ const before=await post('/scm/purchase/demand/query',{pageNum:1,pageSize:20,salesOrderNo:so.orderNo});
+ expect(before.total).toBe(0); // 只读预览不建需求：此刻该单还没有需求行
+ const preview=await post('/scm/purchase/demand/summary-preview',{startAt:so.before,endAt:so.after,warehouseId,keyword:name,pageNum:1,pageSize:20});
+ expect(typeof preview.total).toBe('number');expect(Array.isArray(preview.list)).toBe(true);
+ const mine=preview.list.filter((r:any)=>String(r.skuCode??'').startsWith(name.toUpperCase()));
+ expect(mine.length).toBeGreaterThanOrEqual(1);
+ for(const r of preview.list){
+   expect(SUMMARY_STATUS.has(r.calculationStatus),`非法计算状态 ${r.calculationStatus}`).toBe(true);
+   for(const f of ['orderDemandQuantity','availableQuantity','shortageAgainstAvailable']){
+     if(r[f]!==null)expect(r[f],`${f} 必须是四位定点字符串`).toMatch(/^\d+\.\d{4}$/);
+   }
+ }
+ // 缺口/可用量由后端给出，UNIT_MISMATCH 之外的行 available = onHand - reserved 的一致性由后端保证，前端不重算
+ const after=await post('/scm/purchase/demand/query',{pageNum:1,pageSize:20,salesOrderNo:so.orderNo});
+ expect(after.total).toBe(0); // 预览后仍无需求行 → 只读
+ await browse(page,'/purchase/purchase-demand-list');
+ await page.getByRole('tab',{name:'订单汇总 / 缺口预览'}).click();
+ await expect(page.locator('#scm-purchase-demand-summary-preview-table')).toBeVisible();
+ await expect(page.getByText('只读预览')).toBeVisible();
+ await page.screenshot({path:'../.runtime/w2a-summary-preview.png',fullPage:true});
+ expect(consoleErrors).toEqual([]);
+});

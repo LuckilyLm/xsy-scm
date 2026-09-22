@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandAllocateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandGenerateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandVO;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseDemandService;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseQueryService;
@@ -38,6 +40,17 @@ public class PurchaseDemandController {
     @SaCheckPermission("scm:purchase:demand:query")
     public ResponseDTO<PageResult<PurchaseDemandVO>> query(@Valid @RequestBody PurchaseDemandQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.demandQuery(form));
+    }
+
+    /**
+     * 订单汇总 / 库存缺口预览（Wave 2A，只读）。复用 {@code scm:purchase:demand:query} 权限：
+     * 它是一个查询工作台，不新增权限碎片、不写业务表、不做幂等（无副作用）。
+     */
+    @PostMapping("/summary-preview")
+    @SaCheckPermission("scm:purchase:demand:query")
+    public ResponseDTO<PageResult<PurchaseDemandSummaryVO>> summaryPreview(
+            @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
+        return ResponseDTO.ok(purchaseQueryService.summaryPreview(form));
     }
 
     @PostMapping("/generate")

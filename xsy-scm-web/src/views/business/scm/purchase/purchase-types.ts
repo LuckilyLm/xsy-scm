@@ -92,6 +92,48 @@ export interface DemandAllocate {
     version: number;
 }
 
+/**
+ * `PurchaseDemandSummaryPreviewForm` —— 订单汇总 / 库存缺口预览（Wave 2A §6A，只读）。
+ *
+ * 半开区间 `[startAt, endAt)` 与 `generate` 同口径；`warehouseId` 必填（销售订单不携带仓库，
+ * 缺口只能针对一个仓库算）。可选 `categoryId` / `keyword` 只收窄聚合范围。
+ */
+export interface DemandSummaryPreviewQuery extends Page {
+    startAt: string;
+    endAt: string;
+    warehouseId: Id;
+    categoryId?: Id | null;
+    keyword?: string | null;
+}
+
+/**
+ * `PurchaseDemandSummaryVO` —— 预览聚合行。
+ *
+ * 数量全部是后端 SQL 内用 `BigDecimal` 算好的四位定点字符串（`null` 与 `"0.0000"` 语义不同），
+ * 前端**不得**重算 `availableQuantity` / `shortageAgainstAvailable`（§6A.4）。
+ * `UNIT_MISMATCH` 时 `shortageAgainstAvailable` 为 `null`（Q13 单位门禁，不猜折算率）。
+ */
+export interface DemandSummaryRow {
+    skuId: Id;
+    skuCode?: string;
+    productName?: string;
+    skuName?: string;
+    categoryName?: string;
+    /** 需求单位（订单销售单位快照）。 */
+    demandUnit?: string;
+    /** 余额记账单位；`NO_BALANCE` 时为 null。 */
+    inventoryUnit?: string | null;
+    sourceOrderCount?: number;
+    sourceLineCount?: number;
+    orderDemandQuantity?: string | null;
+    onHandQuantity?: string | null;
+    reservedQuantity?: string | null;
+    availableQuantity?: string | null;
+    shortageAgainstAvailable?: string | null;
+    /** STOCK_ENOUGH / SHORTAGE / ZERO_STOCK / UNIT_MISMATCH / NO_BALANCE。 */
+    calculationStatus?: string;
+}
+
 // ------------------------------------------------------------------
 // 采购单
 // ------------------------------------------------------------------

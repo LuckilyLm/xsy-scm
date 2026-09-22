@@ -7,6 +7,8 @@
 分配弹窗**内联在本页**：W5 的文件清单是冻结的 22 个，不新增组件文件。
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
+  <a-tabs v-model:activeKey="activeTab">
+    <a-tab-pane key="list" tab="采购需求">
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="来源销售单号" class="smart-query-form-item">
@@ -103,6 +105,12 @@
       />
     </div>
   </a-card>
+    </a-tab-pane>
+
+    <a-tab-pane key="preview" tab="订单汇总 / 缺口预览">
+      <PurchaseDemandSummaryPreview/>
+    </a-tab-pane>
+  </a-tabs>
 
   <DemandGenerateModal :open="generateOpen" @close="generateOpen = false" @generated="queryData"/>
 
@@ -161,8 +169,12 @@ import type {Demand, DemandQuery, Id} from './purchase-types';
 import {fixed, quantity} from './purchase-form-model';
 import {purchaseError} from './purchase-errors';
 import DemandGenerateModal from './components/purchase-demand-generate-modal.vue';
+import PurchaseDemandSummaryPreview from './components/purchase-demand-summary-preview.vue';
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
+
+/** Wave 2A：本页两个 Tab —— 采购需求列表（既有）与只读缺口预览。 */
+const activeTab = ref('list');
 
 const queryForm = reactive<DemandQuery>({pageNum: 1, pageSize: 20});
 const dateRange = ref<[string, string] | undefined>(undefined);
