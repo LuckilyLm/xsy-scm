@@ -14,14 +14,17 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktak
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktakeItemEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryStocktakeAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeItemVO;
+import net.lab1024.sa.admin.module.scm.inventory.support.StocktakeSnapshotDriftException;
 import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
@@ -99,6 +102,63 @@ public class InventoryStocktakeService {
 
         insertItems(entity.getId(), form, operator);
         return entity.getId();
+    }
+
+    /**
+     * Excel 导入建草稿：在<b>同一事务内</b>先按 {@code (warehouseId, skuId)} 升序锁定并逐项核验每条来源余额，
+     * 全部与导出快照一致后才复用 {@link #create} 落草稿。
+     *
+     * <p><b>为什么锁与创建必须在同一事务</b>：{@code create} 会在保存时重新快照账面量（非加锁读）。
+     * 若「先校验、再另起事务保存」，两次之间任何入出库都会让保存的账面量偏离被核验的快照 ——
+     * 正是要杜绝的「先校验再保存」竞态。这里持锁核验后直接在同一事务内 {@code create}，
+     * 其重新快照读到的是本事务已锁定的行，必然等于核验值。
+     *
+     * <p><b>任一漂移即整批失败</b>：只要有一条来源余额的 id / 版本 / 单位 / 账面量与快照不符，
+     * 就抛 {@link StocktakeSnapshotDriftException} 回滚，不产生任何草稿（计划裁决：版本变化不可忽略，
+     * 即便数量变动后又恢复，版本也已在 {@link #confirm} 链路自增）。
+     *
+     * @return 新草稿单 id
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Long createFromSnapshot(Long warehouseId, List<SnapshotLine> lines) {
+        List<SnapshotLine> ordered = lines.stream()
+                .sorted(Comparator.comparing(SnapshotLine::skuId))
+                .toList();
+        for (SnapshotLine line : ordered) {
+            InventoryBalanceEntity locked = balanceDao.lockByWarehouseAndSku(warehouseId, line.skuId());
+            boolean drifted = locked == null
+                    || !Objects.equals(locked.getId(), line.balanceId())
+                    || !Objects.equals(locked.getVersion(), line.version())
+                    || !Objects.equals(locked.getUnit(), line.unit())
+                    || locked.getQuantity().compareTo(line.bookQuantity()) != 0;
+            if (drifted) {
+                throw new StocktakeSnapshotDriftException(line.skuCode());
+            }
+        }
+
+        InventoryStocktakeAddForm form = new InventoryStocktakeAddForm();
+        form.setWarehouseId(warehouseId);
+        List<InventoryStocktakeAddForm.Item> items = new java.util.ArrayList<>();
+        for (SnapshotLine line : lines) {
+            InventoryStocktakeAddForm.Item item = new InventoryStocktakeAddForm.Item();
+            item.setSkuId(line.skuId());
+            item.setActualQuantity(line.actualQuantity());
+            item.setRemark(line.remark());
+            items.add(item);
+        }
+        form.setItems(items);
+        return create(form);
+    }
+
+    /**
+     * 导入建草稿的一行：既携带受保护快照（核验用），又携带用户填写的实盘量与备注。
+     *
+     * <p>{@code actualQuantity} / {@code remark} 来自用户在 Excel 里的编辑；
+     * 其余四项来自签名凭证，导入方不得信任单元格。
+     */
+    public record SnapshotLine(String skuCode, Long skuId, Long balanceId, String unit,
+                               Integer version, BigDecimal bookQuantity,
+                               BigDecimal actualQuantity, String remark) {
     }
 
     /**

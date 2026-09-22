@@ -47,6 +47,22 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:stocktake:add'">
           新建盘点单
         </a-button>
+        <a-button
+            style="margin-left: 8px"
+            :loading="templateLoading"
+            @click="onDownloadTemplate"
+            v-privilege="'scm:inventory:stocktake:import'"
+        >
+          导出快照模板
+        </a-button>
+        <a-upload
+            :show-upload-list="false"
+            :custom-request="onUploadImport"
+            accept=".xlsx"
+            style="display: inline-block; margin-left: 8px"
+        >
+          <a-button :loading="importing" v-privilege="'scm:inventory:stocktake:import'">导入盘点</a-button>
+        </a-upload>
         <a-typography-text type="secondary" style="margin-left: 12px">
           确认盘点会把差异转成不可删除的盘盈 / 盘亏流水。
         </a-typography-text>
@@ -81,6 +97,14 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="4">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
+            <a-button
+                type="link"
+                size="small"
+                @click="openCopy(record)"
+                v-privilege="'scm:inventory:stocktake:add'"
+            >
+              复制到新建
+            </a-button>
             <a-button
                 v-if="record.status === 'DRAFT'"
                 type="link"
@@ -149,7 +173,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="账面量由系统在保存时自动快照，无需手工填写。实盘量填 0 表示确实一件不剩。"
+        message="本表单尚未保存，点「保存草稿」前不会产生任何单据。账面量由系统在保存时按当前余额自动快照，无需手工填写；实盘量填 0 表示确实一件不剩。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="盘点仓库" name="warehouseId">
@@ -175,6 +199,9 @@
                   width="260px"
                   @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
+            </template>
+            <template v-else-if="column.dataIndex === 'unit'">
+              <a-typography-text type="secondary">{{ record.unit || '—' }}</a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'actualQuantity'">
               <a-input v-model:value="record.actualQuantity" placeholder="0.0000" style="width: 130px"/>
@@ -245,16 +272,53 @@
       因此若在保存草稿之后发生过收货或出库，确认后的账面不会等于实盘量 —— 那笔变动被保留了。
     </a-typography-text>
   </a-drawer>
+
+  <!-- 导入结果：整批校验，任一错误行都不落库（后端返回 code=0 且 totalErrors>0，故按数据判定，不看信封码） -->
+  <a-modal
+      :open="importResultOpen"
+      title="盘点导入结果"
+      :closable="false"
+      width="720"
+      @cancel="importResultOpen = false"
+  >
+    <a-alert
+        v-if="importResult && importResult.stocktakeId"
+        type="success"
+        show-icon
+        :message="`已创建草稿（${importResult.importedItems} 条明细）${importResult.replayed ? '（幂等重放，未重复建单）' : ''}`"
+    />
+    <a-alert
+        v-else-if="importResult"
+        type="error"
+        show-icon
+        :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何草稿`"
+        description="来源行由导出快照锁定，不能增删 / 替换；实盘量不能为空；快照过期或账面版本已变动需重新导出并核对。"
+    />
+    <a-table
+        v-if="importResult && importResult.errors.length"
+        style="margin-top: 12px"
+        size="small"
+        :data-source="importResult.errors"
+        :columns="importErrorColumns"
+        :row-key="(_r: unknown, i: number) => i"
+        :pagination="false"
+        :scroll="{ y: 320 }"
+    />
+    <template #footer>
+      <a-button type="primary" @click="importResultOpen = false">知道了</a-button>
+    </template>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, UploadProps} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {inventoryStocktakeApi} from '/@/api/business/scm/inventory-stocktake-api';
+import {inventoryBalanceApi} from '/@/api/business/scm/inventory-balance-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
@@ -265,6 +329,7 @@ import type {
   InventoryStocktake,
   InventoryStocktakeAdd,
   InventoryStocktakeQuery,
+  StocktakeImportResult,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault} from './inventory-model';
@@ -297,6 +362,7 @@ const columns = ref<TableColumnsType<InventoryStocktake>>([
 
 const itemColumns: TableColumnsType = [
   {title: 'SKU', dataIndex: 'skuId', width: 290},
+  {title: '记账单位', dataIndex: 'unit', align: 'center', width: 100},
   {title: '实盘量', dataIndex: 'actualQuantity', width: 150},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
@@ -386,6 +452,8 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   skuId?: string | number;
+  // 记账单位：仅「复制到新建」时带入，供核对当前余额单位；普通新建为空。
+  unit?: string;
   actualQuantity: string;
   remark?: string;
 }
@@ -448,6 +516,112 @@ async function openEdit(record: InventoryStocktake) {
 function closeDrawer() {
   drawerOpen.value = false;
 }
+
+// ------------------------------------------------------------------ 复制历史盘点（纯前端，不落库）
+
+/**
+ * 把历史盘点的「仓库 + SKU 集合 + 当前余额记账单位」复制进**未保存的新建表单**。
+ *
+ * 刻意不复制历史账面量 / 历史实盘量 / 历史差异 / version：那些是另一时点的事实，
+ * 冒充实盘会让确认阶段把陈旧数字当成本次清点结果。实盘量一律留空，由用户重新填写。
+ * 本动作不创建任何 DRAFT —— 只有用户填完实盘量点「保存草稿」才走既有 create。
+ * 任一 SKU 在当前仓库已无余额时显性报错、整单不复制，绝不悄悄丢弃行。
+ */
+async function openCopy(record: InventoryStocktake) {
+  try {
+    const r = await inventoryStocktakeApi.detail(record.id);
+    const d = r.data;
+    const sourceItems = d.items ?? [];
+    if (sourceItems.length === 0) {
+      message.warning('来源盘点单没有明细，无可复制内容');
+      return;
+    }
+    const whId = d.warehouseId as string | number;
+    // 读当前余额：只为取「当前记账单位」并校验 SKU 仍存在；账面量绝不作为实盘量填入。
+    const bal = await inventoryBalanceApi.query({warehouseId: whId, pageNum: 1, pageSize: 2000});
+    const unitBySku = new Map<string, string>();
+    for (const b of bal.data.list ?? []) {
+      if (b.skuId !== undefined && b.skuId !== null) {
+        unitBySku.set(String(b.skuId), b.unit ?? '');
+      }
+    }
+    const items: EditableItem[] = [];
+    for (const i of sourceItems) {
+      const key = String(i.skuId);
+      if (!unitBySku.has(key)) {
+        message.error(`SKU「${i.skuCode ?? i.skuName ?? key}」在仓库「${d.warehouseName ?? whId}」已无库存余额，无法复制，请改用新建`);
+        return;
+      }
+      items.push({_key: ++keySeq, skuId: i.skuId, unit: unitBySku.get(key), actualQuantity: '', remark: undefined});
+    }
+    form.id = undefined;
+    form.stocktakeNo = undefined;
+    form.warehouseId = whId;
+    form.remark = undefined;
+    form.items = items;
+    drawerOpen.value = true;
+    message.info('已复制到新建表单（未保存）：请重新清点并逐行填写实盘量');
+  } catch (e) {
+    message.error(inventoryError(e));
+  }
+}
+
+// ------------------------------------------------------------------ Excel 快照导入
+
+const templateLoading = ref(false);
+const importing = ref(false);
+const importResultOpen = ref(false);
+const importResult = ref<StocktakeImportResult | null>(null);
+
+const importErrorColumns: TableColumnsType = [
+  {title: '行', dataIndex: 'row', width: 60},
+  {title: 'SKU 编码', dataIndex: 'skuCode', width: 140},
+  {title: '列', dataIndex: 'column', width: 120},
+  {title: '原因', dataIndex: 'message'},
+];
+
+/** 导出快照模板绑定查询条件里的仓库；未选仓库时不导出，避免导错范围。 */
+async function onDownloadTemplate() {
+  if (queryForm.warehouseId === undefined || queryForm.warehouseId === null || queryForm.warehouseId === '') {
+    message.warning('请先在上方查询条件选择仓库，再导出快照模板');
+    return;
+  }
+  templateLoading.value = true;
+  try {
+    await inventoryStocktakeApi.downloadImportTemplate(queryForm.warehouseId);
+  } catch (e) {
+    message.error(inventoryError(e));
+  } finally {
+    templateLoading.value = false;
+  }
+}
+
+/**
+ * customRequest 接管上传：走带 Idempotency-Key 的导入命令，而不是组件默认上传。
+ * 后端整批校验：信封 code=0 但 totalErrors>0 表示「一行都没落库」，据此决定成功还是展示错误表。
+ */
+const onUploadImport: UploadProps['customRequest'] = async (options) => {
+  const file = options.file as File;
+  importing.value = true;
+  try {
+    const r = await inventoryStocktakeApi.importStocktake(file);
+    if (r.code !== 0) {
+      message.error(r.msg || '导入失败');
+    } else {
+      importResult.value = r.data;
+      importResultOpen.value = true;
+      if (r.data.stocktakeId) {
+        queryData();
+      }
+    }
+    options.onSuccess?.(r);
+  } catch (e) {
+    message.error(inventoryError(e));
+    options.onError?.(e as Error);
+  } finally {
+    importing.value = false;
+  }
+};
 
 /** 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。 */
 function buildPayload(): InventoryStocktakeAdd | null {

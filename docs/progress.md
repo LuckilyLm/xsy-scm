@@ -89,6 +89,46 @@
 
 ## 追加记录
 
+### 2026-09-22 盘点效率（Wave 6，V48）：签名快照 Excel 导入 + 复制历史盘点
+
+- **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 6（§10）——盘点单补齐两项效率：
+  ① 按仓库**导出带签名快照凭证的 Excel 模板**、仓管离线填实盘量后**整批导回为草稿**；② 从历史盘点单
+  「复制到新建」。**复用既有 `InventoryStocktakeService.create`、余额锁、append-only 流水与 DRAFT→CONFIRMED 状态机，
+  绝不另造库存账、绝不在导入路径写 `inventory_balance.quantity` 或 `inventory_movement`**——只有后续 `confirm` 才调整库存。
+  改动的核心边界是「导入≠调整」：导入只建草稿，账面量 / 单位 / version 一律不信任单元格、由签名凭证给权威值并与持锁读取的
+  当前余额逐项复核（消除「先校验再保存」竞态）；任一空行 / 空白实盘 / 来源集合增删替换 / 凭证被篡改或过期 / 快照漂移都
+  **整批拒绝且不产生草稿**。
+- **Flyway**：**1 个 data-only 迁移 `V48__scm_stocktake_import_permission.sql`**（选号依据：扫描 `db/migration/`
+  当前最大为 V47，先 `migration_checksum_guard.py sync` 落快照、再 `check` 通过）。仅新增按钮权限菜单
+  `scm:inventory:stocktake:import`（menu 837，挂盘点页 830 下，仅授 SUPER_ADMIN），无表结构变更。
+- **API**（`InventoryStocktakeController`，`/scm/inventory/stocktake`，两端点均 `@SaCheckPermission("scm:inventory:stocktake:import")`）：
+  - `GET /import/template?warehouseId`（只读，返回 xlsx 字节；凭证按当前操作者 + 实时余额签发，TTL 可配默认 240 分钟）；
+  - `POST /import`（multipart `file` + `@RequestHeader Idempotency-Key`，**可选幂等**：响应丢失后同键重发命中重放、不建第二张草稿）。
+  返回 `InventoryStocktakeImportResultVO`——整批语义走信封 `code=0` + `totalErrors>0`（`errors[]` 逐行给 `row/skuCode/column/code/message`），
+  成功时 `stocktakeId` 为新草稿 id、`replayed` 标注重放。错误码是字符串（`BLANK_ACTUAL / CREDENTIAL_INVALID / OPERATOR_MISMATCH /
+  SOURCE_UNKNOWN / SOURCE_MISSING / DUPLICATE_SKU / SNAPSHOT_STALE` 等），不新增 SCM 数字错误码。
+- **页面**（`inventory-stocktake-list.vue` + `inventory-stocktake-api.ts` + `inventory-types.ts`）：工具栏加「导出快照模板」
+  与「导入盘点」（两者均 `v-privilege="scm:inventory:stocktake:import"`）；导入结果用数据驱动弹窗（成功给草稿号、失败给逐行错误表）；
+  同一文件的幂等键用 `WeakMap<File,string>` 稳定复用、仅成功才清除。行内加「复制到新建」（全状态、`scm:inventory:stocktake:add`）——
+  **纯前端**：只读 `detail` + 余额 `query`，把仓库 / SKU 集合 / 当前记账单位带入未保存的新建表单，实盘量一律留空要求重新清点，
+  任一 SKU 已无余额即显性报错、整单不复制、绝不悄悄丢行，也不自动落库。编辑明细表加只读「记账单位」列。
+- **测试结果**：
+  - 后端：`ScmInventoryStocktakeIT` **15/15** 无回归；新增 `ScmStocktakeImportPgIT`（真实 PostgreSQL + 真签名凭证 + 真 POI 读写 xlsx）
+    **7/7**：成功导入只建草稿、余额与盘点流水均不变，确认才写 `STOCKTAKE_LOSS`（证明导入≠写库）；同 `Idempotency-Key` 重放返回同一草稿；
+    空白实盘 `BLANK_ACTUAL`、篡改凭证 `CREDENTIAL_INVALID`、来源替换 `SOURCE_UNKNOWN`+`SOURCE_MISSING`、重复行 `DUPLICATE_SKU`
+    全部整批拒绝且不落草稿；**核心漂移用例**：账面 10 导出 → 出库 2（版本自增）→ 填实盘恰等于当前账面 8 仍 `SNAPSHOT_STALE` 整批拒绝。
+  - 前端：新增 `test/w6-stocktake-import-contract.test.mjs` **4/4**（模板走只读 `getDownload`、导入走带 `Idempotency-Key` 的 POST 且不触达
+    confirm、两端点由 `scm:inventory:stocktake:import` 把关、复制只用 `detail`+余额 `query` 且不建草稿、API 层无后端复制命令）；
+    合并 `npm run test` = **135/135**；改动三文件 ESLint 0 错、`vue-tsc` 本 Wave 文件 0 条诊断（存量 `system/role` / `business/oa` 与本次无关）。
+- **浏览器 / E2E**：新增 `e2e/scm-stocktake-import.spec.ts`（真实管理员令牌下：模板下载受 `import` 权限把关且返回合法 xlsx、
+  未填实盘的模板原样导回整批 `BLANK_ACTUAL` 拒绝且草稿数不变、页面渲染导出 / 导入入口）。**本轮未执行**：需对当前代码重新构建部署
+  后端 + 一次性令牌的全栈环境（共享 E2E 库当前口径过期）；未设 `W6I_E2E_ADMIN_TOKEN` 时整体 skip。
+- **与计划的偏差**：① 迁移选号 **V48**（计划文档写的号以 `db/migration/` 当前最大号之后为准、不改历史 Flyway）；
+  ② 整批拒绝以 `code=0`+`totalErrors` 字符串码回报，**不新增 SCM 数字错误码、不改 `InventoryErrorCode`**（与商品 / 订单导入同一取向）；
+  ③ 「复制历史」严格做成纯前端只读组合（复用 `detail`+余额查询），不引入后端复制命令、不新增幂等端点。
+- **未完成 / 遗留**：Wave 6 场景的全栈浏览器验收（见上）；「导入成功且填好实盘」的端到端建草稿仅由后端 IT 覆盖，浏览器侧只验证
+  权限与拒绝路径（在浏览器里改写签名 xlsx 会引入脆性，不做）。
+
 ### 2026-09-22 配送打印追踪（Wave 5，V47）：按订单 / 按客户双视角 + 幂等打印登记
 
 - **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 5——在既有 L0–L2

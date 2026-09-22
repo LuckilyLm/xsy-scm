@@ -126,4 +126,12 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 余额详情（按 id）。
      */
     InventoryBalanceVO detail(@Param("id") Long id);
+
+    /**
+     * 导出盘点 Excel 模板用：取某仓库全部活动余额行（联 SKU / 商品展示字段），按 {@code sku_id} 升序。
+     *
+     * <p>模板是「这一仓库当前所有可盘点余额」的快照，因此不做分页、不接客户端排序；
+     * 排序固定 {@code sku_id} 与确认阶段的锁序一致，保证凭证来源集合稳定可复核。
+     */
+    List<InventoryBalanceVO> listActiveByWarehouse(@Param("warehouseId") Long warehouseId);
 }

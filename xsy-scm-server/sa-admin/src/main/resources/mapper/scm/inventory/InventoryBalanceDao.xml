@@ -190,4 +190,33 @@
         AND b.id = #{id}
     </select>
 
+    <!--
+      导出盘点模板：某仓库全部活动余额，联 SKU / 商品展示字段。不接客户端排序，
+      固定 b.sku_id 升序 —— 与凭证来源集合、确认阶段锁序同一口径，保证同一仓库两次导出
+      的行顺序稳定可复核。金额 / avg_cost 对模板无用，故不取。
+    -->
+    <select id="listActiveByWarehouse" resultMap="balanceVoMap">
+        SELECT b.id,
+        b.warehouse_id,
+        b.sku_id,
+        b.unit,
+        b.quantity,
+        b.reserved_quantity,
+        b.version,
+        b.updated_at,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        k.spec_values,
+        p.name AS product_name
+        FROM inventory_balance b
+        LEFT JOIN warehouse w ON w.id = b.warehouse_id
+        LEFT JOIN product_sku k ON k.id = b.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE b.deleted = FALSE
+        AND b.warehouse_id = #{warehouseId}
+        ORDER BY b.sku_id
+    </select>
+
 </mapper>
