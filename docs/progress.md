@@ -1,6 +1,6 @@
 # 项目进度
 
-最后更新：2026-09-21
+最后更新：2026-09-22
 
 ## 当前状态
 
@@ -37,6 +37,9 @@
   OA `FileKeyVoSerializer` 收口与代码生成模板、存量商品图搬运到 `public/image/`。
   引入任何非管理员业务角色前必须完成读侧，方案见
   [`plan/attachment-asset-grading-and-file-access-plan.md`](./plan/attachment-asset-grading-and-file-access-plan.md)。
+- **P3-8（待地图波次决定）**：`ScmGeoMigrationIT` 的负向用例一行同时违反多个 CHECK，却断言数据库必须报出
+  V40 那个约束名；PostgreSQL 只报先求值到的一个，所以只要库上同时应用了 V40 与 V42 就恒定失败（见 2026-09-22 记录）。
+  修法应为「每个负向用例只违反一个约束」，而不是放宽成接受任一约束名。
 - 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
 - 库存深化剩余项：**已完成**（入库侧、出库/预留、盘点、报损报溢、调拨、阈值预警、规格转换、移动加权成本）。
   下一阶段顺序见
@@ -247,7 +250,8 @@
   **17 个测试类 / 114 项，Failures 0、Errors 0、Skipped 0，BUILD SUCCESS**（含
   `ScmInventoryRepriceMigrationIT` 8 项）。前端侧：`npm run test` **83/83**，
   `tsc --noEmit` 对新 spec 干净，Playwright 写流程 **6/6**。
-  脏库的 V19 全库对账仍是既有的测试数据隔离缺陷，需由库存波次决定清理测试库还是收窄断言范围。
+  脏库的 V19 全库对账当时仍是既有的测试数据隔离缺陷；2026-09-22 选择**收窄断言范围**而非清理测试库，
+  见下方「2026-09-22 已应用迁移字节还原与库存对账判据收窄」。
 - **环境注记（非本轮引入，未改动）**：开发库现有**两个**启用仓库（WH001 与造数时启用的冷库备用仓），
   启用仓库不唯一时依赖「默认仓库」的路径会直接 41018；本轮 E2E 自建的目标仓已在收尾时反向调回并停用。
 
@@ -674,4 +678,44 @@ Flyway V41 / V42 / V43 均 `success = true`（V42/V43 于 16:22 应用到日常�
 
 跑该批 IT 时暴露一条与本次改动无关的既有问题（记为 P3-7）：`ScmOrderMigrationIT` 断言「订单 8 表所有
 numeric 列 = `NUMERIC(18,4)`」，而 V42 给 `order_address_snapshot` 加了 `NUMERIC(11,8)` / `NUMERIC(10,8)`
-经纬度列，因此该用例自 V42 起在任何已迁移库上常红。修法是把断言收窄到金额 / 数量列，待确认后再改。
+经纬度列，因此该用例自 V42 起在任何已迁移库上常红。已于 2026-09-22 收口：排除项改为 `(表,列)` 组合谓词，
+只豁免 `order_address_snapshot` 的两个坐标列（按列名全局排除会让同名列在任何订单表上逃过金额精度校验），
+并正向断言这两列保持 `11,8` / `10,8`。
+
+### 2026-09-22 已应用迁移字节还原、库存对账判据收窄与校验和守卫
+
+**阻断项（仓库级）**：`8c0ab90`「style: format source files」重排了 41 个**已应用** Flyway 迁移的字节。
+Flyway 校验和按行内容算 CRC32，不看 SQL 语义，因此格式化后的工作副本让**任何**存量库在启动期
+`flyway.validate()` 失败（`FlywayValidateException`），库存 IT 也在 Spring 上下文阶段就报错，看起来像业务缺陷。
+处理方式是仓库侧还原字节：迁移目录恢复后与格式化前逐字节一致，只剩该提交之后新增或改号的迁移不同。
+未执行 `flyway repair` —— 那是改历史去迁就错误的文件字节，方向相反；已应用迁移依旧不可编辑。
+
+**防再犯**：新增 `tools/migration_checksum_guard.py` 与 `tools/migration_checksum_snapshot.json`（冻结 43 条校验和）。
+`check` 把内容漂移与迁移消失判为阻断，改号判失败，重号和非法文件名直接报错，新增未应用的迁移只提示不阻断；
+`sync` 未给 `--force` 时拒绝覆盖已冻结的校验和。算法复刻 Flyway 11 的 `ChecksumCalculator`
+（逐行 UTF-8 字节累计 CRC32、去 BOM、不含行分隔符、末尾 `long → int` 有符号截断），因此与 CRLF/LF 无关，
+`.gitattributes` 按文件钉住迁移 SQL 检出换行的既有约定不受影响。快照不自证：与一台按格式化前字节迁移过的
+长驻开发库的 `flyway_schema_history` 逐条比对，**43/43 相同**。`tools/verify.py` 在后端阶段前跑一次守卫，
+避免把这类失败拖进分钟级的 Surefire 运行；`tools/test_verification.py` 增 6 条守卫自测
+（含「改号必须失败」「重号必须报错」「`sync` 不得为变绿而覆盖基线」）。
+
+**库存对账判据收窄**：`ScmW6PgITBase` 不再重放 V19 Step 4 的全库对账原文，改为按 `(warehouse, sku)` 的方向净额对账
+（方向从 `ck_inventory_movement_snap` 的快照等式推导，不写 `movement_type` 清单，与 V37 同一取向）。
+判据做过可判别性验证：同一份干净库上原全库判据报 3 组、方向净额化后只剩 1 组，而那组是
+`ScmInventoryStocktakeRollbackIT` 故意提交的 `quantity = 3` 夹具 —— 误报来自判据过期，不是脏数据。
+V19 本身不改：出库类流水类型在 V19 之后才出现，Step 4 在它自己的时刻是自洽的。
+同一轮补掉一条**假绿**：`id` 传错时流水与余额两侧聚合皆为 `NULL`，差额判据会静默通过；现在先要求活动余额行存在，
+并把「绕过流水改账面必须报错」「查不存在的 `(warehouse, sku)` 必须报错」固化成用例。
+
+**验证**：定向 `ScmInventory*IT + ScmOrderMigrationIT` 11 项全绿，工具自测 12 项 OK，守卫 `check` 为
+drift 0 / missing 0；全量后端回归 `mvn -pl sa-admin -am test` 在一台从 V1 整链迁移的一次性临时库上
+→ **751 项，Failures 1、Errors 0、Skipped 5**（5 项为未配置对象存储环境的 cloud IT，按既有约定跳过）。
+本轮未跑前端与浏览器验收：改动只落在迁移字节、测试判据与工具链，没有触及页面或接口行为。
+
+**新发现 P3-8（顺延编号，本批未引入也未修）**：唯一失败是
+`ScmGeoMigrationIT.masterGeoColumnsRejectHalfCoordinatesAndUnknownCrs`。它用一行同时违反多个 CHECK
+（`longitude = 181` + `latitude` 有值 + `geom_crs` 为空，同时撞上 V40 的 `ck_*_longitude`、
+`ck_*_crs_with_coordinate` 和 V42 的聚合约束 `ck_*_location_complete`），却断言数据库报出的约束名必须是 V40 那个；
+PostgreSQL 只报它先求值到的那一个，所以这条断言依赖约束求值顺序。V42 之前没有第二个覆盖同列的约束，
+M0 当时验过是绿的。建议修法是让每个负向用例只违反一个约束，而不是放宽成「接受任一约束名」；
+待地图波次决定，本批不顺带改其它波次的测试资产。
