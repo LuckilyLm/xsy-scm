@@ -37,9 +37,6 @@
   OA `FileKeyVoSerializer` 收口与代码生成模板、存量商品图搬运到 `public/image/`。
   引入任何非管理员业务角色前必须完成读侧，方案见
   [`plan/attachment-asset-grading-and-file-access-plan.md`](./plan/attachment-asset-grading-and-file-access-plan.md)。
-- **P3-8（待地图波次决定）**：`ScmGeoMigrationIT` 的负向用例一行同时违反多个 CHECK，却断言数据库必须报出
-  V40 那个约束名；PostgreSQL 只报先求值到的一个，所以只要库上同时应用了 V40 与 V42 就恒定失败（见 2026-09-22 记录）。
-  修法应为「每个负向用例只违反一个约束」，而不是放宽成接受任一约束名。
 - 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
 - 库存深化剩余项：**已完成**（入库侧、出库/预留、盘点、报损报溢、调拨、阈值预警、规格转换、移动加权成本）。
   下一阶段顺序见
@@ -712,10 +709,20 @@ drift 0 / missing 0；全量后端回归 `mvn -pl sa-admin -am test` 在一台�
 → **751 项，Failures 1、Errors 0、Skipped 5**（5 项为未配置对象存储环境的 cloud IT，按既有约定跳过）。
 本轮未跑前端与浏览器验收：改动只落在迁移字节、测试判据与工具链，没有触及页面或接口行为。
 
-**新发现 P3-8（顺延编号，本批未引入也未修）**：唯一失败是
-`ScmGeoMigrationIT.masterGeoColumnsRejectHalfCoordinatesAndUnknownCrs`。它用一行同时违反多个 CHECK
-（`longitude = 181` + `latitude` 有值 + `geom_crs` 为空，同时撞上 V40 的 `ck_*_longitude`、
-`ck_*_crs_with_coordinate` 和 V42 的聚合约束 `ck_*_location_complete`），却断言数据库报出的约束名必须是 V40 那个；
-PostgreSQL 只报它先求值到的那一个，所以这条断言依赖约束求值顺序。V42 之前没有第二个覆盖同列的约束，
-M0 当时验过是绿的。建议修法是让每个负向用例只违反一个约束，而不是放宽成「接受任一约束名」；
-待地图波次决定，本批不顺带改其它波次的测试资产。
+**P3-8 同日修掉（顺延编号，非本批引入）**：全量回归唯一失败是
+`ScmGeoMigrationIT.masterGeoColumnsRejectHalfCoordinatesAndUnknownCrs`。根因不是数据也不是迁移，而是 V42 的聚合约束
+`ck_<table>_location_complete` 把 V40 的成对、取值域与 CRS 白名单规则整体重写了一遍：一行负向数据同时违反
+细粒度约束和聚合约束，而 PostgreSQL 只报它先求值到的那一条，于是「必须报出 V40 那个约束名」的断言变成依赖求值顺序。
+V42 之前没有第二个覆盖同列的约束，所以 M0 当时验过是绿的。
+
+原拟修法「让每个负向用例只违反一个约束」经核对**不可达** —— 越界、半套坐标、未知 CRS 任一种都必然连带违反聚合约束。
+落地改成两层：负向用例断言拒绝出自「该规则的细粒度约束或该表的聚合约束」这一小组合法名字（仍能挡住列名写错、
+语法错误、无关 NOT NULL 这类误因）；另新增 `geoCheckConstraintsExistOnEveryMaster` 逐表钉住 V40 五条细粒度 CHECK
+与 V42 聚合 CHECK 的存在性，删掉任何一条都会变红 —— 放宽名字就必须下面有兜底。同轮补强：经度越界用例配齐合法 CRS
+（让拒绝原因归到取值域本身，而不是掺杂缺 CRS），并新增纬度越界用例（原来只测经度侧）。
+
+修的过程中查出一个此前没人记录的事实：**V42 的聚合约束只加了 `warehouse` / `customer` / `order_address_snapshot`，
+`supplier` 没有**（配送链路不用供应商地址），所以 supplier 的地理守卫只有 V40 细粒度五条 —— 这正是三张主档里只有两张
+报出聚合约束名的原因。该不对称已写成常量与逐表断言，不再靠巧合。
+验证：`ScmGeoMigrationIT` 7/7（一次性临时库，V1→V43 整链）。随后在全新一次性临时库重跑全量后端回归
+→ **752 项，Failures 0、Errors 0、Skipped 5，BUILD SUCCESS**（5 项仍是未配置对象存储环境的 cloud IT）。
