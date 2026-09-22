@@ -1,0 +1,82 @@
+/*
+ * Design Tokens
+ *
+ * 唯一色彩 / 尺寸来源。页面与组件**禁止**再散落硬编码色值，
+ * 新增值一律先在此登记，再引用变量。
+ *
+ * 与 Figma Variables 一一对应（规划文档 §37）：
+ *   color-* / radius-* / space-* / font-size-*
+ *
+ * 命名与 Figma 的对应关系：
+ *   $color-primary       ↔ color/primary
+ *   $color-text-primary  ↔ color/text/primary
+ *   $radius-md           ↔ radius/md
+ *   $space-4             ↔ space/4
+ */
+
+/* ============================ 品牌色 ============================ */
+/* 鲜蔬源绿：生鲜供应链语境下的主色，替代参考工程的蓝色后台视觉 */
+$color-primary: #16a34a;
+$color-primary-dark: #12833c;
+$color-primary-light: #e8f5ec;
+$color-primary-disabled: #a7d8b9;
+
+/* ============================ 语义色 ============================ */
+$color-success: #16a34a;
+$color-success-light: #e8f5ec;
+$color-warning: #f59e0b;
+$color-warning-light: #fef6e7;
+$color-danger: #e5484d;
+$color-danger-light: #fdeced;
+$color-info: #3b82f6;
+$color-info-light: #eaf2fe;
+
+/* ============================ 文字色 ============================ */
+$color-text-primary: #1f2329;
+$color-text-secondary: #646a73;
+$color-text-tertiary: #8f959e;
+$color-text-placeholder: #bbbfc4;
+$color-text-inverse: #ffffff;
+$color-text-link: $color-primary;
+
+/* ============================ 背景色 ============================ */
+$color-bg-page: #f5f6f8;
+$color-bg-card: #ffffff;
+$color-bg-hover: #f2f3f5;
+$color-bg-mask: rgba(0, 0, 0, 0.45);
+
+/* ============================ 边框与分割线 ============================ */
+$color-border: #e5e6eb;
+$color-divider: #f0f1f3;
+
+/* ============================ 圆角 ============================ */
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-pill: 999px;
+
+/* ============================ 间距（4 的倍数） ============================ */
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-6: 24px;
+$space-8: 32px;
+
+/* ============================ 字号 ============================ */
+$font-size-xs: 11px;
+$font-size-sm: 12px;
+$font-size-base: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 20px;
+$font-size-xxl: 24px;
+
+/* ============================ 字重 ============================ */
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-bold: 600;
+
+/* ============================ 层级 ============================ */
+$z-index-sticky: 10;
+$z-index-fixed-bar: 20;
+$z-index-popup: 100;

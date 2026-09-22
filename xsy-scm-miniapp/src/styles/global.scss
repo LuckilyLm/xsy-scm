@@ -1,0 +1,74 @@
+/*
+ * 全局样式
+ *
+ * 只放跨页面复用的基础样式与工具类。页面私有样式一律写在各自的 scoped 块里。
+ *
+ * 说明：原参考工程此处的「后台表单 / 后台详情」大段样式已随 ERP 页面一并移除
+ * （它们引用了已删除的 static 资源，且客户商城不使用 uni-forms 后台布局）。
+ */
+
+page {
+  background-color: $color-bg-page;
+  color: $color-text-primary;
+  font-size: $font-size-base;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* ============================ 工具类 ============================ */
+
+.smart-width-100 {
+  width: 100%;
+}
+
+.smart-margin-top5 {
+  margin-top: $space-1;
+}
+.smart-margin-top10 {
+  margin-top: $space-2;
+}
+.smart-margin-top15 {
+  margin-top: $space-3;
+}
+.smart-margin-top20 {
+  margin-top: $space-4;
+}
+.smart-margin-top30 {
+  margin-top: $space-6;
+}
+.smart-margin-top40 {
+  margin-top: $space-8;
+}
+
+.smart-margin-bottom10 {
+  margin-bottom: $space-2;
+}
+.smart-margin-bottom20 {
+  margin-bottom: $space-4;
+}
+
+.smart-margin-left10 {
+  margin-left: $space-2;
+}
+.smart-margin-right10 {
+  margin-right: $space-2;
+}
+
+/* 文本省略 */
+.smart-ellipsis {
+  @include ellipsis(1);
+}
+.smart-ellipsis-2 {
+  @include ellipsis(2);
+}
+
+/* 金额：等宽数字，避免跳动 */
+.smart-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: $font-weight-medium;
+}
+
+/* 卡片 */
+.smart-card {
+  @include card;
+  margin: $space-3 $space-4;
+}

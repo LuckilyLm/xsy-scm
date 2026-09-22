@@ -1,0 +1,116 @@
+/**
+ * uni.scss
+ *
+ * uni-app 会把本文件自动注入到每个 <style lang="scss"> 块，因此这里是
+ * 「全局可见的 SCSS 变量」的唯一入口。**本文件不得产生 CSS 输出**，
+ * 否则会被复制进每一个组件。
+ *
+ * ⚠️ 这里的 @import 必须用 `@/` 别名，**不能用相对路径**。
+ * 原因：本文件会被注入到任意位置的 style 块中，其中的相对路径会以
+ * 「引入方所在目录」为基准解析。例如写 './styles/tokens.scss' 时，
+ * 在 src/uni.scss 自身看是对的，但被注入到 src/styles/global.scss 后
+ * 就会去找 src/styles/styles/tokens.scss 而报 "Can't find stylesheet to import"。
+ *
+ * 结构：
+ *   1. 引入项目 Design Tokens 与 mixin（见 src/styles/）
+ *   2. 把 uni-app 内置变量与旧变量名映射到 Tokens，保持三方组件兼容
+ *
+ * 新增样式一律优先使用 $color-* / $space-* / $radius-* / $font-size-*。
+ */
+
+@import '@/styles/tokens.scss';
+@import '@/styles/mixins.scss';
+
+/* ==================== uni-app 内置变量（三方组件依赖） ==================== */
+/* 行为相关颜色 —— 跟随品牌主色，避免 uni-ui 组件仍是蓝色 */
+$uni-color-primary: $color-primary;
+$uni-color-success: $color-success;
+$uni-color-warning: $color-warning;
+$uni-color-error: $color-danger;
+
+/* 文字基本颜色 */
+$uni-text-color: $color-text-primary;
+$uni-text-color-inverse: $color-text-inverse;
+$uni-text-color-grey: $color-text-tertiary;
+$uni-text-color-placeholder: $color-text-placeholder;
+$uni-text-color-disable: $color-text-placeholder;
+
+/* 背景颜色 */
+$uni-bg-color: $color-bg-card;
+$uni-bg-color-grey: $color-bg-page;
+$uni-bg-color-hover: $color-bg-hover;
+$uni-bg-color-mask: $color-bg-mask;
+
+/* 边框颜色 */
+$uni-border-color: $color-border;
+
+/* 尺寸 */
+$uni-font-size-sm: $font-size-sm;
+$uni-font-size-base: $font-size-base;
+$uni-font-size-lg: $font-size-lg;
+
+$uni-img-size-sm: 20px;
+$uni-img-size-base: 26px;
+$uni-img-size-lg: 40px;
+
+$uni-border-radius-sm: $radius-sm;
+$uni-border-radius-base: $radius-md;
+$uni-border-radius-lg: $radius-lg;
+$uni-border-radius-circle: 50%;
+
+$uni-spacing-row-sm: $space-1;
+$uni-spacing-row-base: $space-2;
+$uni-spacing-row-lg: $space-3;
+
+$uni-spacing-col-sm: $space-1;
+$uni-spacing-col-base: $space-2;
+$uni-spacing-col-lg: $space-3;
+
+$uni-opacity-disabled: 0.3;
+
+/* 文章场景 */
+$uni-color-title: $color-text-primary;
+$uni-font-size-title: $font-size-xl;
+$uni-color-subtitle: $color-text-secondary;
+$uni-font-size-subtitle: $font-size-lg;
+$uni-color-paragraph: $color-text-secondary;
+$uni-font-size-paragraph: $font-size-base;
+
+/* ==================== 旧变量名别名（兼容尚未改造的组件） ==================== */
+/* 这些名字来自参考工程，保留别名可避免一次性改动所有存量样式；
+   新代码不要再用，请直接用 Tokens。 */
+
+$main-color: $color-primary;
+$main-background: $color-bg-page;
+$main-font-color: $color-text-primary;
+$second-font-color: $color-text-secondary;
+$border-color: $color-border;
+$background-color: $color-bg-page;
+$page-bg-color: $color-bg-page;
+$title-text-color: $color-text-primary;
+$item-text-color: $color-text-primary;
+$auxiliary-color: $color-text-tertiary;
+$error-color: $color-danger;
+
+$main-orange-color: $color-warning;
+$main-orange-background: $color-warning-light;
+$main-green-color: $color-success;
+$main-green-background: $color-success-light;
+$main-red-color: $color-danger;
+
+$toast-color: $color-text-tertiary;
+$toast-color-low: $color-text-placeholder;
+$weak-background-color: $color-bg-page;
+$gray-color-low: $color-text-placeholder;
+$linear-color: linear-gradient(270deg, $color-primary, $color-primary-dark);
+$collapse-bg-color: $color-bg-page;
+
+/* 字号别名 */
+$main-size: $font-size-base;
+$title-size: $font-size-lg;
+$small-size: $font-size-sm;
+
+/* ==================== JS 侧颜色 ==================== */
+/* 本文件不提供 :export。`:export` 是 webpack css-loader 的特性，Vite 不支持，
+ * 写在这里只会被当成非法 CSS 并触发构建警告。
+ * 需要在 JS 中取色时，请用 src/constants/theme-color-const.js。 */

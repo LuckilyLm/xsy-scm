@@ -5,7 +5,8 @@
 > 文件、统一异常、统一响应、前端 Layout 与系统页面全部采用 SmartAdmin；旧 `auth` / `system`
 > 实现不迁移。V2 只迁 xsy-scm 供应链业务域，管理后台统一 Vue3 + TypeScript。
 > V2 正式工作区固定为根目录下的 `xsy-scm-server/` 与 `xsy-scm-web/`；正式工具和文档分别位于
-> `tools/` 与 `docs/`。`xsy-scm-miniapp` 仍为冻结的 legacy 小程序目录。
+> `tools/` 与 `docs/`。`xsy-scm-miniapp` 为 V2 客户端工作区（uni-app + Vue3），
+> 已于 2026-09-22 换成 uni-app 基线，v1 的 Taro + React 客户端退役。
 > 禁止机械复制旧代码，禁止机械把 React 翻译成 Vue。
 > 完整规则见 [`SMARTADMIN_REFERENCE_RULES.md`](./SMARTADMIN_REFERENCE_RULES.md)。
 
@@ -268,7 +269,7 @@ Actual top-level structure:
 xsy-scm/
 ├─ xsy-scm-server/           ← V2 正式后端（Java 21 + PostgreSQL）
 ├─ xsy-scm-web/              ← V2 正式后台（SmartAdmin Vue3 + TypeScript）
-├─ xsy-scm-miniapp/          ← LEGACY，冻结只读（待 W6 迁 uni-app）
+├─ xsy-scm-miniapp/          ← V2 客户端（uni-app + Vue3），Step 1–4.5 已完成，Step 6 垂直切片进行中（§39 第 6–9 项）
 ├─ tools/                    ← V2 正式工具脚本
 ├─ project-reference-examples/
 │  └─ xsy-scm/               ← 上游源码参考（只读，用于同步与比对）
@@ -302,9 +303,18 @@ Do not move responsibilities across these boundaries without a clear architectur
 
 当前不存在根目录 `docker-compose.yml` 和 `xsy-device-agent/`；设备集成章节描述的是未来职责，不代表已有实现。
 
-**Frozen directory.** `xsy-scm-miniapp/` remains frozen and read-only. The root
-`xsy-scm-server/` and `xsy-scm-web/` directories are the official V2 workspaces. Do not create
-a second implementation or compatibility copy elsewhere in the repository.
+**Client workspace.** `xsy-scm-miniapp/` is the official V2 client workspace — uni-app + Vue3,
+WeChat Mini Program first with H5 alongside. On 2026-09-22 its contents were replaced wholesale
+with the SmartAdmin uni-app baseline (`project-reference-examples/xsy-scm/xsy-app`); the previous
+Taro + React v1 client is retired and only recoverable from git history
+(`git show 45412fb:xsy-scm-miniapp/...`). Framework versions are pinned to what uni-app actually
+supports — `vite` is locked to `5.2.8` by `vite-plugin-uni`'s peer dependency and Vue stays on
+`3.4.x` to match uni-app's bundled `3.4.21` compiler, so `vite@8` / `vue@3.5` / `pinia@4` are not
+reachable. Do not "upgrade" them past these bounds without checking the peer requirements first.
+See [`xsy-scm-miniapp/README.md`](./xsy-scm-miniapp/README.md).
+
+The root `xsy-scm-server/` and `xsy-scm-web/` directories are the official V2 workspaces.
+Do not create a second implementation or compatibility copy elsewhere in the repository.
 
 ---
 
@@ -381,9 +391,51 @@ Lombok (no MapStruct)
 ### Mini Program
 
 ```text
-Target: uni-app + Vue3
-Current: xsy-scm-miniapp (Taro + React) — frozen, migrates at W6
+Target:  uni-app + Vue3 (WeChat Mini Program first, H5 alongside)
+Current: xsy-scm-miniapp — 规划 Step 1–4 + Step 4.5 完成 (2026-09-22)
+         Step 1 清理 reference Demo 页面
+         Step 2 重建 pages.json 与 TabBar（5 tab：首页/分类/购物车/订单/我的）
+         Step 3 Design Tokens（src/styles/tokens.scss）
+         Step 4 商城 API Client（src/api/mall/**）
+         Step 4.5 mock 契约层（mock/ 在 src/ 之外，@mock 别名，VITE_APP_USE_MOCK 开关）
+         Step 5 制作 Figma P0 页面      — 待设计侧产出
+         Step 6 垂直切片：§39 第 6–9 项完成（登录 / 首页 / 分类·搜索 / 商品详情）
+                          第 10–13 项未开始（购物车 / 结算 / 订单 / 我的）
+Retired: Taro + React v1 client (git history only, `git show 45412fb:xsy-scm-miniapp/...`)
+Pinned:  vite 5.2.8, vue 3.4.x, pinia 2.1.7 — bounded by uni-app's peer requirements
+Plan:    docs/miniapp/xsy-miniapp-product-information-architecture-plan.md（唯一权威规划）
 ```
+
+Key rules when working on `xsy-scm-miniapp/`:
+
+- The IA plan above is authoritative for page structure, TabBar, status naming and Design Tokens.
+  Do not re-open the Taro-vs-uni-app migration discussion — that decision is closed.
+- `src/uni.scss` is auto-injected into **every** `<style lang="scss">` block, so its `@import`
+  paths must use the `@/` alias. Relative paths get re-resolved against each importing file's
+  directory and fail with "Can't find stylesheet to import".
+- Colours come from `src/styles/tokens.scss` (SCSS) / `src/constants/theme-color-const.js` (JS).
+  Keep the two in sync; do not hardcode colours in pages.
+- Product display rules (stock wording, 询价 instead of ¥0.00, orderable gating, 非标品 wording)
+  live **once** in `src/utils/product-display.js`. `ProductCard` and the detail page both consume
+  it; never re-implement the mapping in a page, or list and detail will drift apart.
+- `src/lib/smart-request.js` must not import a Pinia store — the store imports the api layer,
+  which imports the request layer. Session-expiry handling is injected via
+  `setSessionExpiredHandler()` from `src/store/modules/system/user.js`.
+- Client display statuses (e.g. 待备货) are mapped server-side; never infer them client-side.
+- The client must never compute money. Non-standard (按实重) estimated amounts come from
+  `POST /orders/preview` (plan §17.1), not from `qty × price` in the page.
+- The mall backend `/scm/mall/**` **does not exist yet**. `mock/` supplies a contract-layer
+  fake backend so client work is not blocked; it is switched off by `VITE_APP_USE_MOCK=false`
+  and is verified absent from production bundles. Two traps:
+  (a) `mock/` must stay **outside `src/`** — uni-app mirrors the whole `src/` tree into the build
+  output, so fixtures kept under `src/` ship as dead code;
+  (b) the import specifier is `@mock`, **not** `@/mock` — uni-app's own `@` → `src/` alias has
+  higher precedence and would resolve `@/mock` to the non-existent `src/mock`.
+  See `xsy-scm-miniapp/README.md` → 「Mock 契约层」.
+- Verification gate for any miniapp change: `npm run lint` → `npm run test:mock`
+  → `npm run build:mp-weixin` → `npm run build:h5` → grep the mp-weixin bundle for fixture
+  strings (`海岸城门店` / `本地小白菜` / `dispatchMock`) and confirm no `mock/` directory.
+  Note `123456` is a **false positive** — it matches crypto-js's Base64 alphabet.
 
 ### Device Integration
 

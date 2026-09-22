@@ -28,6 +28,9 @@ local-environment-info.txt
 !/tools/w4_e2e_accounts.py
 !/tools/w5_e2e_accounts.py
 !/tools/w6_e2e_accounts.py
+# 小程序资源生成脚本：纯 repo 相对路径、无凭据，幂等可重跑（见 xsy-scm-miniapp/README.md）
+!/tools/gen_tabbar_icons.py
+!/tools/gen_pages_sub.py
 
 # Reference environment configs contain credentials
 /project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml
@@ -43,6 +46,14 @@ local-environment-info.txt
 .env.*
 !.env.example
 !/xsy-scm-web/.env.production
+# 小程序各环境配置不含凭据，只有接口基址与 mock 开关；
+# 其中 VITE_APP_USE_MOCK 缺失会静默关闭 mock 契约层，导致新克隆直接对着不存在的后端开发，故必须入库。
+!/xsy-scm-miniapp/.env.development
+!/xsy-scm-miniapp/.env.localhost
+!/xsy-scm-miniapp/.env.test
+!/xsy-scm-miniapp/.env.pre
+!/xsy-scm-miniapp/.env.production
+!/xsy-scm-miniapp/.env.docker
 *.log
 .playwright-cli/
 **/test-results/

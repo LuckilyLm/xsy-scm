@@ -1,0 +1,96 @@
+/*
+ * 通用 SCSS mixin
+ *
+ * 只放被多处复用的样式片段。mixin 不产生输出，可安全被 uni.scss 全局引入。
+ */
+
+/* 单行 / 多行省略号 */
+@mixin ellipsis($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  } @else {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: $lines;
+    overflow: hidden;
+  }
+}
+
+/* 布局快捷方式 */
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-start {
+  display: flex;
+  align-items: center;
+}
+
+/* 卡片 */
+@mixin card($padding: $space-4) {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $padding;
+}
+
+/* 1px 细线（适配高 DPI，避免小程序上 1px 过粗） */
+@mixin hairline-bottom($color: $color-border) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background-color: $color;
+    transform: scaleY(0.5);
+    transform-origin: 0 100%;
+  }
+}
+
+/* 底部安全区（iPhone 全面屏 / 小程序自定义 tabBar） */
+@mixin safe-area-bottom($extra: 0px) {
+  padding-bottom: calc(#{$extra} + constant(safe-area-inset-bottom));
+  padding-bottom: calc(#{$extra} + env(safe-area-inset-bottom));
+}
+
+/* 固定底部操作条 */
+@mixin fixed-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: $z-index-fixed-bar;
+  background-color: $color-bg-card;
+  @include hairline-top;
+  @include safe-area-bottom;
+}
+
+/* 1px 细线（顶部） */
+@mixin hairline-top($color: $color-border) {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background-color: $color;
+    transform: scaleY(0.5);
+    transform-origin: 0 0;
+  }
+}
