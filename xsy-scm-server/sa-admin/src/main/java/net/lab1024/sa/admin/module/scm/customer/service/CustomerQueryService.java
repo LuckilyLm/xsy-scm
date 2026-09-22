@@ -5,11 +5,13 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
+import net.lab1024.sa.admin.module.scm.customer.dao.CustomerFrequentSkuDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerTypeEntity;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerQueryForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerDetailVO;
+import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerFrequentSkuVO;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerOptionVO;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerVO;
 import net.lab1024.sa.admin.module.scm.supplier.dao.SupplierDao;
@@ -21,6 +23,10 @@ import net.lab1024.sa.admin.module.system.employee.domain.vo.EmployeeVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,8 +55,22 @@ public class CustomerQueryService {
      */
     private static final Set<String> SORTABLE = Set.of("customer_code", "name", "status", "updated_at");
 
+    /**
+     * 常购商品聚合窗口与行数上限（Wave 7 §11.3）：服务端裁剪，不接受越界的 days / limit。
+     */
+    private static final int FREQUENT_MIN_DAYS = 1;
+    private static final int FREQUENT_MAX_DAYS = 365;
+    private static final int FREQUENT_MIN_LIMIT = 1;
+    private static final int FREQUENT_MAX_LIMIT = 100;
+    private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
+
     private final CustomerDao customers;
     private final CustomerSkuVisibilityService visibility;
+
+    /**
+     * 跨域只读：常购商品由订单事实（sales_order / sales_order_item）现算，不落副本。
+     */
+    private final CustomerFrequentSkuDao frequentSkus;
 
     private final CustomerTypeDao customerTypes;
 
@@ -93,6 +113,25 @@ public class CustomerQueryService {
         vo.setSellerName(context.employeeNames().get(entity.getSellerId()));
         vo.setSupplierName(context.supplierNames().get(entity.getSupplierId()));
         return vo;
+    }
+
+    /**
+     * 客户「常购商品」（Wave 7 客户 360°，只读）：近 {@code days} 天已确认订单按 (SKU, 单位) 现算聚合，不落副本。
+     *
+     * <p>days / limit 一律服务端裁剪到安全区间；窗口按 <b>Asia/Shanghai 日界</b>对齐——「近 N 天含今天」
+     * 下界取当天零点往前 {@code days-1} 天，避免按时分秒滚动窗口导致的边界抖动。客户不存在时与详情同样报 {@code CUSTOMER_NOT_FOUND}。
+     */
+    public List<CustomerFrequentSkuVO> frequentSkus(Long customerId, int days, int limit) {
+        if (customers.selectById(customerId) == null) {
+            throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
+        }
+        int windowDays = Math.min(Math.max(days, FREQUENT_MIN_DAYS), FREQUENT_MAX_DAYS);
+        int rowLimit = Math.min(Math.max(limit, FREQUENT_MIN_LIMIT), FREQUENT_MAX_LIMIT);
+        ZonedDateTime startOfWindow = LocalDate.now(SHANGHAI)
+                .minusDays(windowDays - 1L)
+                .atStartOfDay(SHANGHAI);
+        OffsetDateTime since = startOfWindow.toOffsetDateTime();
+        return frequentSkus.frequentSkus(customerId, since, rowLimit);
     }
 
     /**

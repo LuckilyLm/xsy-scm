@@ -158,3 +158,22 @@ export interface CustomerDeletePayload {
     customerId: ScmId;
     version: number;
 }
+
+/**
+ * 客户「常购商品」聚合行（对应后端 CustomerFrequentSkuVO，Wave 7 只读）。
+ *
+ * 按 (skuId, unit) 分组：同 SKU 历史单位改变时分行展示，绝不跨单位求和。
+ * orderedQuantity 是**订购量**（非实重 / 结算量）；recentUnitPrice 为 §7.5 口径的最近已确认订单价，
+ * 锁定单价缺失时为 {@code null}（前端不兜底为草稿价 / 当前价）。
+ */
+export interface CustomerFrequentSku {
+    skuId: ScmId;
+    skuCode: string | null;
+    productName: string | null;
+    specName: string | null;
+    unit: string;
+    orderCount: number;
+    orderedQuantity: string;
+    lastConfirmedAt: string;
+    recentUnitPrice: string | null;
+}
