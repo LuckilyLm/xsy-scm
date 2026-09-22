@@ -20,7 +20,9 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.sequences WHERE sequence_schema=current_schema() AND sequence_name IN ('sales_order_no_seq','order_return_no_seq','order_refund_no_seq')", Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ") AND column_name IN ('fulfillment_status','pay_status','actual_weight')", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN ('sales_order','sales_order_item') AND column_name IN ('draft_unit_price','draft_price_source','ordered_line_amount','ordered_total_amount') AND is_nullable='YES'", Integer.class)).isEqualTo(4);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ") AND data_type='numeric' AND (numeric_precision<>18 OR numeric_scale<>4)", Integer.class)).isZero();
+        // 精度规则按 (表,列) 排除坐标列：按列名全局排除会让同名列在任何订单表上逃过金额精度校验
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ") AND data_type='numeric' AND (table_name,column_name) NOT IN (('order_address_snapshot','longitude'),('order_address_snapshot','latitude')) AND (numeric_precision<>18 OR numeric_scale<>4)", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='order_address_snapshot' AND data_type='numeric' AND (column_name,numeric_precision,numeric_scale) IN (('longitude',11,8),('latitude',10,8))", Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_constraint WHERE connamespace=current_schema()::regnamespace AND contype='f' AND conrelid IN (SELECT oid FROM pg_class WHERE relname IN (" + TABLES + "))", Integer.class)).isZero();
     }
 
