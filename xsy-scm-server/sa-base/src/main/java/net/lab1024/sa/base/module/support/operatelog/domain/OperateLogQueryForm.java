@@ -36,4 +36,15 @@ public class OperateLogQueryForm extends PageParam {
     @Schema(description = "请求结果 false失败 true成功")
     private Boolean successFlag;
 
+    /**
+     * 可选的结构化业务对象筛选类型：PRODUCT / CUSTOMER / DELIVERY_ROUTE。
+     * 与 {@link #businessId} 成对使用，由 sa-admin 统一入口校验白名单与领域读取权限；
+     * 这里的字段只服务精确匹配，不做全文包含检索。
+     */
+    @Schema(description = "业务对象类型：PRODUCT / CUSTOMER / DELIVERY_ROUTE")
+    private String businessType;
+
+    @Schema(description = "业务对象 ID，与 businessType 成对提供")
+    private Long businessId;
+
 }

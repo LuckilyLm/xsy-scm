@@ -48,6 +48,7 @@
             >取消线路
             </a-button
             >
+            <a-button v-privilege="'support:operateLog:query'" :disabled="routeId == null" @click="openOperateLog">操作日志</a-button>
           </a-space>
         </div>
         <div class="route-summary">
@@ -353,6 +354,7 @@
 </template>
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
+import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import {Modal, message, type TableColumnsType} from 'ant-design-vue';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -389,6 +391,7 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const user = useUserStore();
+const router = useRouter();
 const canEdit = computed(
     () =>
         detail.value?.route.status === 'DRAFT' &&
@@ -665,6 +668,15 @@ async function saveStop() {
   } finally {
     busy.value = false;
   }
+}
+
+// 携带业务上下文跳到通用操作日志页，按线路 id 精确筛选。
+function openOperateLog() {
+  if (routeId.value == null) return;
+  void router.push({
+    path: '/support/operate-log/operate-log-list',
+    query: {businessType: 'DELIVERY_ROUTE', businessId: String(routeId.value)},
+  });
 }
 
 defineExpose({open});

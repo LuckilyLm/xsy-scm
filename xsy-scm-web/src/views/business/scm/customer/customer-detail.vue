@@ -16,6 +16,7 @@
     <a-space class="smart-margin-bottom10">
       <a-button @click="router.push('/customer/customer-list')">返回客户列表</a-button>
       <a-button @click="reloadActive">刷新</a-button>
+      <a-button v-privilege="'support:operateLog:query'" :disabled="!customerId" @click="openOperateLog">操作日志</a-button>
     </a-space>
 
     <a-tabs v-model:activeKey="activeTab">
@@ -347,6 +348,15 @@ function reloadActive(): void {
 
 function onFreqDaysChange(): void {
   if (customerId.value) void frequent.reload();
+}
+
+// 携带业务上下文跳到通用操作日志页，按 customerId 精确筛选。
+function openOperateLog(): void {
+  if (!customerId.value) return;
+  void router.push({
+    path: '/support/operate-log/operate-log-list',
+    query: {businessType: 'CUSTOMER', businessId: customerId.value},
+  });
 }
 
 // 可售商品反查对「全部可见」客户返回一行 SKU 为空的策略行，这里据实拆开：策略文案 + 白名单 SKU 明细。
