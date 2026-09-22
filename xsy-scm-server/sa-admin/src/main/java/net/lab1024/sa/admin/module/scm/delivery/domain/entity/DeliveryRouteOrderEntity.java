@@ -32,4 +32,13 @@ public class DeliveryRouteOrderEntity extends DeliveryRecord {
     private OffsetDateTime expectDeliveryTimeSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String assignmentStatus;
+    /**
+     * 生成打印预览 / 打印任务的历史次数；不代表物理出纸，也不代表当前内容版本已打印。
+     */
+    private Integer printCount;
+    /**
+     * 最后一次生成打印的时间；{@code null} 表示从未生成。
+     */
+    private OffsetDateTime lastPrintedAt;
+    private String lastPrintedBy;
 }

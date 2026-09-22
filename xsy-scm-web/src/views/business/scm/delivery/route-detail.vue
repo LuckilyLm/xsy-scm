@@ -221,6 +221,87 @@
               <ScmMap v-if="tab === 'map'" :points="mapPoints" route/>
             </div>
           </a-tab-pane>
+          <a-tab-pane key="print" tab="配送打印">
+            <div class="smart-table-btn-block">
+              <a-segmented
+                  v-model:value="printMode"
+                  :options="[
+                    { label: '按订单', value: 'orders' },
+                    { label: '按客户', value: 'customers' },
+                  ]"
+              />
+              <a-select
+                  v-if="printMode === 'customers'"
+                  v-model:value="customerFilter"
+                  style="width: 160px"
+                  :options="[
+                    { label: '全部订单', value: 'ALL' },
+                    { label: '仅未打印订单', value: 'UNPRINTED' },
+                    { label: '仅已打印订单', value: 'PRINTED' },
+                  ]"
+              />
+              <a-button
+                  v-if="canPrint"
+                  type="primary"
+                  v-privilege="'scm:delivery:route:print'"
+                  :disabled="busy || !printSelection.length"
+                  @click="recordPrint"
+              >生成打印 · 登记 {{ printSelection.length }}
+              </a-button>
+            </div>
+            <a-alert
+                message="「生成打印」仅登记本次已生成打印预览并累加计次，不代表发货确认，也不扣减库存。"
+                type="info"
+                show-icon
+            />
+            <a-table
+                v-if="printMode === 'orders'"
+                size="small"
+                :columns="orderViewColumns"
+                :data-source="ordersView"
+                row-key="orderId"
+                :loading="printLoading"
+                :pagination="false"
+                :scroll="{ x: 1080 }"
+                :row-selection="orderRowSelection"
+                bordered
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'orderAmount'">{{ money(record.orderAmount) }}</template>
+                <template v-else-if="column.dataIndex === 'printStatus'">
+                  <a-tag :color="printStatuses[record.printStatus as PrintStatus].color">{{
+                      printStatuses[record.printStatus as PrintStatus].label
+                    }}
+                  </a-tag>
+                </template>
+                <template v-else-if="column.dataIndex === 'lastPrintedAt'">
+                  {{ record.lastPrintedAt ? datetime(record.lastPrintedAt) : '—' }}
+                </template>
+              </template>
+            </a-table>
+            <a-table
+                v-else
+                size="small"
+                :columns="customerViewColumns"
+                :data-source="customersView"
+                row-key="customerId"
+                :loading="printLoading"
+                :pagination="false"
+                :scroll="{ x: 760 }"
+                :row-selection="customerRowSelection"
+                bordered
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'totalAmount'">{{ money(record.totalAmount) }}</template>
+                <template v-else-if="column.dataIndex === 'printStatus'">
+                  <a-tag :color="printStatuses[record.printStatus as PrintStatus].color">{{
+                      printStatuses[record.printStatus as PrintStatus].label
+                    }}
+                  </a-tag>
+                </template>
+              </template>
+            </a-table>
+          </a-tab-pane>
         </a-tabs>
       </template>
       <a-empty v-else-if="!loading" description="线路尚未加载"/>
@@ -271,7 +352,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {computed, ref, watch} from 'vue';
 import dayjs from 'dayjs';
 import {Modal, message, type TableColumnsType} from 'ant-design-vue';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -284,7 +365,17 @@ import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
-import {deliveryError, routeStatuses, type Id, type RouteDetail, type DeliveryStop} from './delivery-types';
+import {
+  deliveryError,
+  printStatuses,
+  routeStatuses,
+  type DeliveryStop,
+  type Id,
+  type PrintStatus,
+  type RouteCustomerView,
+  type RouteDetail,
+  type RouteOrderView,
+} from './delivery-types';
 
 const emit = defineEmits<{ changed: [] }>();
 const visible = ref(false),
@@ -330,6 +421,90 @@ const orderColumns: TableColumnsType = [
   {title: '定位', dataIndex: 'location', width: 90},
   {title: '操作', dataIndex: 'action', align: 'right', width: 80},
 ];
+
+const printMode = ref<'orders' | 'customers'>('orders');
+const customerFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED'>('ALL');
+const ordersView = ref<RouteOrderView[]>([]);
+const customersView = ref<RouteCustomerView[]>([]);
+const orderSelection = ref<Id[]>([]);
+const customerSelection = ref<Id[]>([]);
+const printLoading = ref(false);
+const printLoaded = ref(false);
+
+const canPrint = computed(() =>
+    ['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? '')
+);
+const printSelection = computed(() =>
+    printMode.value === 'orders' ? orderSelection.value : customerSelection.value
+);
+const orderRowSelection = computed(() => ({
+  selectedRowKeys: orderSelection.value,
+  onChange: (keys: (string | number)[]) => (orderSelection.value = keys),
+}));
+const customerRowSelection = computed(() => ({
+  selectedRowKeys: customerSelection.value,
+  onChange: (keys: (string | number)[]) => (customerSelection.value = keys),
+}));
+const orderViewColumns: TableColumnsType = [
+  {title: '订单号', dataIndex: 'orderNo', width: 170},
+  {title: '客户', dataIndex: 'customerName', width: 160},
+  {title: '停靠序', dataIndex: 'stopSeq', width: 80, align: 'right'},
+  {title: '商品行', dataIndex: 'itemCount', width: 80, align: 'right'},
+  {title: '订单金额', dataIndex: 'orderAmount', width: 120, align: 'right'},
+  {title: '打印次数', dataIndex: 'printCount', width: 90, align: 'right'},
+  {title: '打印状态', dataIndex: 'printStatus', width: 100, align: 'center'},
+  {title: '最近打印', dataIndex: 'lastPrintedAt', width: 170},
+];
+const customerViewColumns: TableColumnsType = [
+  {title: '客户', dataIndex: 'customerName', width: 200},
+  {title: '订单数', dataIndex: 'orderCount', width: 90, align: 'right'},
+  {title: '商品行', dataIndex: 'itemCount', width: 90, align: 'right'},
+  {title: '金额', dataIndex: 'totalAmount', width: 130, align: 'right'},
+  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 110, align: 'right'},
+  {title: '打印状态', dataIndex: 'printStatus', width: 110, align: 'center'},
+];
+
+async function loadPrint() {
+  if (routeId.value == null) return;
+  printLoading.value = true;
+  try {
+    const [o, c] = await Promise.all([deliveryApi.ordersView(routeId.value), deliveryApi.customersView(routeId.value)]);
+    ordersView.value = o.data;
+    customersView.value = c.data;
+    printLoaded.value = true;
+  } catch (e) {
+    error.value = deliveryError(e);
+  } finally {
+    printLoading.value = false;
+  }
+}
+
+watch(tab, (value) => {
+  if (value === 'print' && !printLoaded.value) loadPrint();
+});
+
+async function recordPrint() {
+  const route = detail.value?.route;
+  if (!route || !printSelection.value.length) return;
+  busy.value = true;
+  error.value = '';
+  try {
+    if (printMode.value === 'orders') {
+      await deliveryApi.printOrders(route.id, route.version, orderSelection.value);
+    } else {
+      await deliveryApi.printCustomers(route.id, route.version, customerSelection.value, customerFilter.value);
+    }
+    message.success('已登记打印');
+    orderSelection.value = [];
+    customerSelection.value = [];
+    await reload();
+  } catch (e) {
+    error.value = deliveryError(e);
+  } finally {
+    busy.value = false;
+  }
+}
+
 let generation = 0;
 
 async function reload() {
@@ -339,7 +514,15 @@ async function reload() {
   error.value = '';
   try {
     const result = await deliveryApi.detail(routeId.value);
-    if (current === generation) detail.value = result.data;
+    if (current === generation) {
+      detail.value = result.data;
+      // 线路结构（ACTIVE 订单集合）变化后，已加载的打印视图与旧选中项即失效，一并刷新。
+      if (printLoaded.value) {
+        orderSelection.value = [];
+        customerSelection.value = [];
+        await loadPrint();
+      }
+    }
   } catch (e) {
     if (current === generation) error.value = deliveryError(e);
   } finally {
@@ -350,6 +533,12 @@ async function reload() {
 function open(id: Id, initialTab = 'base') {
   routeId.value = id;
   detail.value = undefined;
+  printLoaded.value = false;
+  ordersView.value = [];
+  customersView.value = [];
+  orderSelection.value = [];
+  customerSelection.value = [];
+  printMode.value = 'orders';
   visible.value = true;
   tab.value = initialTab;
   reload();

@@ -100,6 +100,44 @@ export interface RouteDetail {
     orders: RouteOrder[];
 }
 
+export type PrintStatus = 'PRINTED' | 'UNPRINTED' | 'PARTIAL';
+
+/** 订单视角：一条 ACTIVE 线路订单的打印状态（订单级只有已打印 / 未打印）。 */
+export interface RouteOrderView {
+    orderId: Id;
+    orderNo: string;
+    customerId: Id;
+    customerName: string;
+    stopId: Id;
+    stopSeq: number;
+    address: string;
+    itemCount: number;
+    orderAmount?: string | null;
+    printCount: number;
+    lastPrintedAt?: string | null;
+    printStatus: 'PRINTED' | 'UNPRINTED';
+}
+
+/** 客户视角：按客户聚合的打印进度；PARTIAL 表示该客户下部分订单已打印。 */
+export interface RouteCustomerView {
+    customerId: Id;
+    customerName: string;
+    orderCount: number;
+    itemCount: number;
+    totalAmount?: string | null;
+    printedOrderCount: number;
+    printStatus: PrintStatus;
+}
+
+/** 正式生成打印命令的返回：本次实际计入的订单集合与汇总。 */
+export interface PrintResult {
+    routeId: Id;
+    generatedAt: string;
+    orderCount: number;
+    totalAmount?: string | null;
+    orders: RouteOrderView[];
+}
+
 export interface PrintItem {
     id: Id;
     orderId: Id;
@@ -143,6 +181,12 @@ export const routeStatuses: Record<RouteStatus, { label: string; color: string }
     DISPATCHED: {label: '已发车', color: 'blue'},
     COMPLETED: {label: '已完成', color: 'cyan'},
     CANCELLED: {label: '已取消', color: 'default'},
+};
+
+export const printStatuses: Record<PrintStatus, { label: string; color: string }> = {
+    PRINTED: {label: '已打印', color: 'green'},
+    UNPRINTED: {label: '未打印', color: 'default'},
+    PARTIAL: {label: '部分打印', color: 'orange'},
 };
 
 export function deliveryError(error: unknown): string {

@@ -184,6 +184,10 @@
     "46": {
       "file": "V46__scm_todo_permission.sql",
       "checksum": -409692477
+    },
+    "47": {
+      "file": "V47__scm_delivery_print_tracking.sql",
+      "checksum": -822385941
     }
   }
 }

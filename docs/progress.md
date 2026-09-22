@@ -29,6 +29,7 @@
 | 采购操作效率 Wave 2B（无迁移） | 后端单元 4/4 + IT 6/6 + 前端契约 8/8 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 批量少收关单（整批原子、version 冲突显式拒绝）、采购单后端算列导出 + 前端本地记忆列勾选、纯前端打印、收货「按单据 / 按商品」双视角只读工作台；0 迁移 0 新权限，复用 `scm:purchase:short-close` / `:query` / `:receipt:query`；见追加记录 2026-09-22 |
 | 订单录单效率 Wave 3（无迁移） | 后端 Web 7/7 + IT 2/2 + 单元 1/1 + 前端契约 5/5 + 模型 6/6 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 草稿本地恢复、历史订单「复用为新单」（只读 detail + 当前价重解，不引后端复制命令）、明细「最近已确认订单价」只读旁证（CONFIRMED-only、confirmed_at 倒序、订单分组 limit、单位不一致仅提示）；0 迁移 0 新权限，复用 `scm:order:query` / `:add`；见追加记录 2026-09-22 |
 | 业务待办与站内提醒 Wave 4（V46） | 后端单元 4/4 + 报损报溢 IT 15/15 + 前端契约 4/4 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 首页「业务待办」只读 Pull（`GET /scm/dashboard/todo`，按登录人权限裁剪卡片、复用各领域既有分页查询读 total，无权卡片省略、有权零任务返回 0，不写任何业务表）；报损报溢驳回经原生 `t_message` 站内信通知录单人（同步写在驳回事务内、恰一条，不新建第二套消息中心/消息表）；1 data-only 迁移（菜单/权限 1100-1101 `scm:todo:query`，仅授 SUPER_ADMIN），库存读写路径 / Q7 / Q13 / 状态机零改动；见追加记录 2026-09-22 |
+| 配送打印追踪 Wave 5（V47） | 后端 IT 5/5（打印 3 + 线路 2）+ 前端契约 4/4 + 合并单测 131/131 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 配送线路详情新增「配送打印」标签：**按订单 / 按客户两个只读视角**（`GET /routes/{id}/orders-view`、`/customers-view`，客户视角聚合打印状态 PRINTED/UNPRINTED/PARTIAL）+ 正式生成打印登记（`POST /routes/{id}/print/orders`、`/print/customers`，带 Idempotency-Key、复用通用 `idempotency_record`）；`delivery_route_order` 加 `print_count/last_printed_at/last_printed_by`（1 迁移、0 新表 0 新菜单/权限，复用 `scm:delivery:route:query`/`:print`）；打印仅计次、**不扣库存、不改线路状态、不做 L3 发车/出库/GPS/签收**；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
@@ -87,6 +88,52 @@
   运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
+
+### 2026-09-22 配送打印追踪（Wave 5，V47）：按订单 / 按客户双视角 + 幂等打印登记
+
+- **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 5——在既有 L0–L2
+  配送静态路线之上补「配送打印」：**按订单 / 按客户两个只读视角** 让调度核对整条线路的打印覆盖度，
+  再以**带幂等键的正式生成打印**登记计次。**只在 `delivery_route_order` 上扩展三列、不新建副本表、
+  不新增菜单或权限、不触碰库存 / 出库 / 发车 / GPS / 签收等 L3 能力**；打印登记仅累加历史计次，
+  既不代表物理出纸、也不改线路状态、不产生任何 `inventory_movement`。
+- **Flyway**：**1 个结构迁移 `V47__scm_delivery_print_tracking.sql`**（选号依据：扫描 `db/migration/`
+  最大已应用为 V46，先 `migration_checksum_guard.py sync` 落快照、再 `check` 通过）。
+  `ALTER TABLE delivery_route_order` 加 `print_count INTEGER NOT NULL DEFAULT 0 CHECK(print_count >= 0)`、
+  `last_printed_at TIMESTAMPTZ`、`last_printed_by VARCHAR(64)`（存 `userType:userId`），并写字段 COMMENT；
+  **无新表、无索引、无 data-only 授权**（打印权限沿用 V43 已有的 `scm:delivery:route:print`）。
+- **API**（`DeliveryRouteController`，`/scm/delivery`）：
+  - `GET /routes/{id}/orders-view`、`GET /routes/{id}/customers-view`（`@SaCheckPermission("scm:delivery:route:query")`，
+    只读、无 `@OperateLog`、无幂等键）；订单视角逐单返回 `printCount / lastPrintedAt / printStatus(PRINTED|UNPRINTED)`；
+    客户视角聚合该客户线路内订单，`printStatus ∈ {PRINTED, UNPRINTED, PARTIAL}`（`partially` = 部分订单已打印）。
+  - `POST /routes/{id}/print/orders`、`POST /routes/{id}/print/customers`（`scm:delivery:route:print` +
+    `@OperateLog` + `@RequestHeader Idempotency-Key`），入参携带 `version` 乐观锁；仅当线路处于
+    `PLANNED / DISPATCHED / COMPLETED` 才可打印，否则拒绝。客户视角 `print/customers` 支持
+    `orderPrintFilter = ALL | PRINTED | UNPRINTED` 过滤本次纳入的订单。**正式入口统一走 POST 计次，
+    既有 `GET /routes/{id}/print` 仅预览、绝不计次**。
+  - 计次经**通用 `idempotency_record`**（`OrderIdempotencyService.claim/replay/complete`，
+    scope `DELIVERY_PRINT_ORDERS:{id}` / `DELIVERY_PRINT_CUSTOMERS:{id}`，按操作者前缀隔离）：
+    同一 Idempotency-Key 重放只累加一次，`markPrinted` 与幂等记录同事务，回滚不留下孤计次。
+- **页面**（`route-detail.vue` 新增「配送打印」`a-tab-pane`，首次进入才拉取；`delivery-api.ts` 复用订单域
+  幂等模式——`printKeys` 命中即复用、仅成功才 `delete` 换新键）：`a-segmented` 切订单 / 客户视角、
+  客户视角支持「全部 / 仅未打印 / 仅已打印」筛选、两 `a-table` 各带行选择与打印状态 `a-tag`、
+  「生成打印 · 登记 N」按钮受 `v-privilege="'scm:delivery:route:print'"` 且 `canPrint`（可打印状态）双门禁。
+- **测试结果**：
+  - 后端（真实 PostgreSQL）：新增 `DeliveryPrintTrackingIT` **3/3**（① 订单视角计数与登记：只读 GET 不计数、
+    `printOrders` 纳入单 +1、同键重放仍 +1、换键再 +1、全程 `inventory_movement` 为 0、状态不变；② 客户视角聚合与
+    PARTIAL：`printCustomers(c1, UNPRINTED)` 只纳入未打印单、兄弟单不受牵动；③ 负向：外线订单 `41101`、
+    version 过期 `40921`、DRAFT 线路不可打印 `41101`），既有 `DeliveryRouteServiceIT` **2/2** 无回归。合计 **5/5**。
+  - 前端：新增 `test/w5-delivery-print-contract.test.mjs` **4/4**（双视角只读 GET 命令带 Idempotency-Key 的 POST、
+    打印仅门控在可打印状态 + `scm:delivery:route:print`、接口层无库存出库 / GPS / 签收 / 发车端点、三态标签一致）；
+    合并 `npm run test` = **131/131**；改动文件 ESLint 0 错、`vue-tsc` 本 Wave 三文件 0 条诊断（仓库
+    `system/role` / `business/oa` 存量诊断与本次无关）、`npm run build`（vite production）通过；迁移校验和守卫 PASS。
+- **浏览器 / E2E**：新增 `e2e/scm-delivery-print.spec.ts`（双视角只读查询不改计次、正式 POST 计次 +1 且同键重放不重复 +1、
+  打印后线路状态不变、页面「配送打印」标签只读浏览阶段无库存 / 出库写请求）。**本轮未执行**：需后端对当前代码重新
+  构建部署 + 一次性令牌的全栈环境（当前共享 E2E 库停在过期 schema，登录返回 `30001`）；未设 `W5_E2E_ADMIN_TOKEN` 时整体 skip。
+- **与计划的偏差**：① 迁移选号 V47（计划文档若写其它号以 `db/migration/` 当前最大号 V46 之后为准、不改历史 Flyway）；
+  ② 打印**不追踪内容版本**——`print_count` 只表「生成过打印」的历史次数，线路改版后不自动清零（本轮明确不做内容指纹）；
+  ③ 严格守 L0–L2：负向契约只针对 **API 端点集合**（无库存出库 / GPS / 签收 / 发车入口），不因表头既有的
+  `planned_departure_time`「计划发车」展示字段而误判为 L3。
+- **未完成 / 遗留**：Wave 5 场景的全栈浏览器验收（见上）；打印内容版本追踪（改版是否清零）留待业务裁决，本轮不做。
 
 ### 2026-09-22 业务待办与站内提醒（Wave 4，V46）：首页只读待办聚合 + 驳回站内信
 

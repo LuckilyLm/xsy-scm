@@ -60,4 +60,16 @@ public class DeliveryRouteQueryService {
         result.setItems(queries.printItems(id));
         return result;
     }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public java.util.List<DeliveryOrderViewVO> orderView(Long id) {
+        if (queries.route(id) == null) throw new ScmBusinessException(NOT_FOUND);
+        return queries.orderView(id);
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public java.util.List<DeliveryCustomerViewVO> customerView(Long id) {
+        if (queries.route(id) == null) throw new ScmBusinessException(NOT_FOUND);
+        return queries.customerView(id);
+    }
 }

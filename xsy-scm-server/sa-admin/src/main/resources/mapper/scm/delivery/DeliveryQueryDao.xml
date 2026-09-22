@@ -124,4 +124,51 @@
         </if>
         ORDER BY c.expect_delivery_time NULLS LAST,c.order_id
     </select>
+    <select id="orderView" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryOrderViewVO">
+        SELECT o.order_id,
+               o.order_no_snapshot                                                   AS order_no,
+               o.customer_id,
+               s.customer_name_snapshot                                              AS customer_name,
+               o.stop_id,
+               s.stop_seq,
+               s.address_snapshot                                                    AS address,
+               (SELECT count(*) FROM sales_order_item i WHERE i.order_id = o.order_id AND i.deleted = FALSE) AS item_count,
+               o.order_amount_snapshot                                               AS order_amount,
+               o.print_count,
+               o.last_printed_at,
+               CASE WHEN o.print_count &gt; 0 THEN 'PRINTED' ELSE 'UNPRINTED' END     AS print_status
+        FROM delivery_route_order o
+                 JOIN delivery_route_stop s ON s.id = o.stop_id AND s.deleted = FALSE
+        WHERE o.route_id = #{id}
+          AND o.deleted = FALSE
+          AND o.assignment_status = 'ACTIVE'
+        ORDER BY s.stop_seq, o.order_id
+    </select>
+    <select id="customerView" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCustomerViewVO">
+        SELECT o.customer_id,
+               min(s.customer_name_snapshot)                                       AS customer_name,
+               count(*)                                                            AS order_count,
+               sum((SELECT count(*) FROM sales_order_item i WHERE i.order_id = o.order_id AND i.deleted = FALSE)) AS item_count,
+               sum(o.order_amount_snapshot)                                        AS total_amount,
+               count(*) FILTER (WHERE o.print_count &gt; 0)                          AS printed_order_count,
+               CASE
+                   WHEN count(*) FILTER (WHERE o.print_count &gt; 0) = count(*) THEN 'PRINTED'
+                   WHEN count(*) FILTER (WHERE o.print_count &gt; 0) = 0 THEN 'UNPRINTED'
+                   ELSE 'PARTIAL' END                                              AS print_status
+        FROM delivery_route_order o
+                 JOIN delivery_route_stop s ON s.id = o.stop_id AND s.deleted = FALSE
+        WHERE o.route_id = #{id}
+          AND o.deleted = FALSE
+          AND o.assignment_status = 'ACTIVE'
+        GROUP BY o.customer_id
+        ORDER BY min(s.customer_name_snapshot), o.customer_id
+    </select>
+    <update id="markPrinted">
+        UPDATE delivery_route_order
+        SET print_count=print_count + 1, last_printed_at=now(), last_printed_by=#{operator}, updated_at=now(), updated_by=#{operator}
+        WHERE deleted = FALSE
+          AND assignment_status = 'ACTIVE'
+          AND id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
+    </update>
 </mapper>
