@@ -1,7 +1,10 @@
 package net.lab1024.sa.admin.module.scm.purchase.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderItemEntity;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptItemWorkbenchQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -69,4 +72,12 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      * 活动行数（DELETE / 状态推导用）。
      */
     int countActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
+
+    /**
+     * 按商品收货工作台（Wave 2B §6.3，只读）：跨「可收货」采购单按 {@code (sku_id, 采购单位)} 归并计划 / 已收量。
+     *
+     * <p>分页 count 必须走聚合组数（调用方置 {@code optimizeCountSql=false}），排序固定，不接受客户端排序。
+     */
+    List<PurchaseReceiptItemWorkbenchVO> workbench(Page<?> page,
+                                                   @Param("query") PurchaseReceiptItemWorkbenchQueryForm form);
 }

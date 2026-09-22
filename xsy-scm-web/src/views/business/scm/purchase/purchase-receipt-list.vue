@@ -10,6 +10,8 @@
       `purchase-errors`（A24）、loading/empty/error/retry（A27）、`v-privilege`（A30）。
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
+  <a-tabs v-model:activeKey="activeTab">
+    <a-tab-pane key="by-order" tab="按单据">
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="收货单号" class="smart-query-form-item">
@@ -129,6 +131,12 @@
       />
     </div>
   </a-card>
+    </a-tab-pane>
+
+    <a-tab-pane key="by-item" tab="按商品">
+      <PurchaseReceiptItemWorkbench/>
+    </a-tab-pane>
+  </a-tabs>
 
   <PurchaseReceiptForm ref="form" @saved="queryData"/>
   <PurchaseReceiptConfirm ref="confirmModal" @saved="queryData"/>
@@ -154,8 +162,11 @@ import type {Receipt, ReceiptQuery} from './purchase-types';
 import {purchaseError} from './purchase-errors';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
 import PurchaseReceiptConfirm from './components/purchase-receipt-confirm-modal.vue';
+import PurchaseReceiptItemWorkbench from './components/purchase-receipt-item-workbench.vue';
 
 const queryForm = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20});
+/** 按单据（既有写流程）为默认 Tab；按商品是 Wave 2B 的只读收货工作台。 */
+const activeTab = ref('by-order');
 /** 用户输入的是**采购单号**（业务视角），请求参数要的是 `purchaseOrderId`。 */
 const orderNoInput = ref<string | undefined>(undefined);
 const tableData = ref<Receipt[]>([]);

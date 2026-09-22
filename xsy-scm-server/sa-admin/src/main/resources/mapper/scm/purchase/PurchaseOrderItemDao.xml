@@ -81,4 +81,55 @@
           AND purchase_order_id = #{purchaseOrderId}
     </select>
 
+    <!--
+      Wave 2B 按商品收货工作台（只读聚合，§6.3）：跨「可收货」采购单把同一 SKU 的计划 / 已收并排展示。
+
+      口径全部来自 purchase_order_item（收货回写的目标行），因此工作台汇总与底层收货单逐行求和恒等
+      （§6.8）；本视图不新增收货事实，确认收货仍走各收货单的既有端点。
+
+      Q13：采购单位进入分组键，同一 SKU 若用了不同单位会拆成多行，绝不跨单位相加。
+      pending / over 逐行裁剪后再求和（不能用 Σ已收与 Σ计划相减，否则欠收行与超收行会互相抵消）。
+      状态过滤固定为可收货的两态，不接收入参；排序固定「欠收降序 → SKU」，不接受客户端排序。
+    -->
+    <select id="workbench"
+            resultType="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO">
+        SELECT oi.sku_id,
+               oi.sku_code_snapshot                           AS sku_code,
+               oi.sku_name_snapshot                           AS sku_name,
+               oi.product_name_snapshot                       AS product_name,
+               oi.purchase_unit_snapshot                      AS purchase_unit,
+               oi.product_type_snapshot                       AS product_type,
+               COUNT(DISTINCT oi.purchase_order_id)           AS order_count,
+               COUNT(oi.id)                                   AS line_count,
+               SUM(oi.planned_quantity)                       AS planned_quantity,
+               SUM(oi.received_quantity)                      AS received_quantity,
+               SUM(GREATEST(oi.planned_quantity - oi.received_quantity, 0)) AS pending_quantity,
+               SUM(GREATEST(oi.received_quantity - oi.planned_quantity, 0)) AS over_receipt_quantity
+        FROM purchase_order_item oi
+                 JOIN purchase_order o ON o.id = oi.purchase_order_id AND o.deleted = FALSE
+        WHERE oi.deleted = FALSE
+          AND o.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED')
+        <if test="query.supplierId != null">
+            AND o.supplier_id = #{query.supplierId}
+        </if>
+        <if test="query.warehouseId != null">
+            AND o.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="query.orderNo != null and query.orderNo != ''">
+            AND o.order_no ILIKE CONCAT('%', #{query.orderNo}, '%')
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (oi.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR oi.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR oi.sku_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        GROUP BY oi.sku_id,
+                 oi.purchase_unit_snapshot,
+                 oi.sku_code_snapshot,
+                 oi.sku_name_snapshot,
+                 oi.product_name_snapshot,
+                 oi.product_type_snapshot
+        ORDER BY pending_quantity DESC NULLS LAST, oi.sku_id ASC
+    </select>
+
 </mapper>

@@ -16,6 +16,8 @@ import type {
     ReceiptCreatePayload,
     ReceiptDeletePayload,
     ReceiptItem,
+    ReceiptItemWorkbenchQuery,
+    ReceiptItemWorkbenchRow,
     ReceiptPutawayPayload,
     ReceiptQuery,
     ReceiptUpdatePayload,
@@ -30,6 +32,11 @@ export const purchaseReceiptApi = {
     items: (receiptId: Id) =>
         getRequest(`/scm/purchase/receipt/item/${receiptId}`, {}) as unknown as Promise<
             ScmResponse<ReceiptItem[]>
+        >,
+    /** 按商品收货工作台（Wave 2B §6.3，只读）：跨可收货采购单按 SKU×采购单位 归并，不新增收货事实。 */
+    itemWorkbench: (data: ReceiptItemWorkbenchQuery) =>
+        postRequest('/scm/purchase/receipt/item-workbench/query', data) as unknown as Promise<
+            ScmResponse<ScmPage<ReceiptItemWorkbenchRow>>
         >,
 
     /** 建草稿收货单：行由服务端按采购单**全部活动行**生成。 */

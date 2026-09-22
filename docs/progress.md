@@ -26,6 +26,7 @@
 | 商品中心 PCO-1 主档增强（V38–V39） | 后端与浏览器已验证 | 主档扩展字段与助记码搜索、计量单位 / 商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护；Excel 与图片中心属 PCO-2 |
 | 商品中心 PCO-2 导入导出 + 图片中心（V44–V45） | 后端 IT + 前端单测 / 类型 / 构建已验证；E2E 场景已落地待全栈环境执行 | Excel 模板下载 / 整批事务导入 / 按条件导出、图片中心（`image_type` 图集分组、单商品与按文件名批量维护、主图唯一）、独立菜单与权限；见追加记录 2026-09-22 |
 | 采购订单缺口预览 Wave 2A（无迁移） | 后端 IT + 前端契约 / 类型 / Lint 已验证；E2E 场景已落地待全栈环境执行 | 只读「订单汇总 / 库存缺口预览」并入采购需求页 Tab、`POST /scm/purchase/demand/summary-preview` 复用 `generate()` 取数口径、缺口与可用量后端算好、0 迁移 0 菜单变更；见追加记录 2026-09-22 |
+| 采购操作效率 Wave 2B（无迁移） | 后端单元 4/4 + IT 6/6 + 前端契约 8/8 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 批量少收关单（整批原子、version 冲突显式拒绝）、采购单后端算列导出 + 前端本地记忆列勾选、纯前端打印、收货「按单据 / 按商品」双视角只读工作台；0 迁移 0 新权限，复用 `scm:purchase:short-close` / `:query` / `:receipt:query`；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
@@ -84,6 +85,45 @@
   运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
+
+### 2026-09-22 采购操作效率（Wave 2B）：批量处理 + 导出 / 打印 + 按商品收货工作台
+
+- **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 2B——采购单列表补齐
+  批量少收关单、批量打印、导出与导出列设置（按登录用户本地记忆），采购收货页拆为「按单据 / 按商品」双视角，
+  新增**只读**的「按商品收货工作台」。不重做采购状态机、不新增第二套收货事实、不引入巨型批量确认收货事务
+  （确认仍走既有 `POST /scm/purchase/receipt/confirm`；计划 §6.4 的批量确认推迟项不在本 Wave 擅自决定）。
+- **Flyway**：**0 迁移**。三个新端点全部复用已有权限（批量少收关单 `scm:purchase:short-close`、
+  导出 `scm:purchase:query`、按商品工作台 `scm:purchase:receipt:query`），无新 `t_menu` 行、无表结构变更；
+  计划 §6.7 的可选 `V46__scm_purchase_efficiency_permissions` 因选择复用权限而未启用。
+- **API**：
+  - `POST /scm/purchase/batch/short-close`（`scm:purchase:short-close`，入参 `PurchaseOrderBatchShortCloseForm`
+    = `@Valid` 采购单版本列表（≤100，每项带 `version`）+ 关单原因；**整批原子**：任一单状态非法或 version 被他人
+    改过即全批回滚并显式冲突，不留中间部分成功）。复用既有少收关单规则，未改状态机、不加幂等键。
+  - `POST /scm/purchase/export`（`scm:purchase:query`，只读，入参 `PurchaseOrderExportForm` 继承列表查询条件 +
+    `exportColumns` 白名单；FastExcel 后端逐列取值导出，强制忽略分页并设上限行数，列目录固定 15 列）。
+  - `POST /scm/purchase/receipt/item-workbench/query`（`scm:purchase:receipt:query`，**只读**、无幂等键、无 `@OperateLog`；
+    跨待收货单按 `skuId + purchaseUnit` 归并计划 / 已收 / 欠收 / 超收量，四位定点字符串下发）。
+- **页面**：
+  - `purchase-order-list.vue`：工具栏加「批量少收关单 / 批量打印 / 导出 / 导出设置」、行内加「打印」；
+    勾选态门禁（批量删除只认 DRAFT、批量少收关单只认 PARTIALLY_RECEIVED）；导出列勾选存 `localStorage`
+    （键含登录用户 + 场景，刷新后保留），弹窗复用采购导出目录常量。
+  - `purchase-receipt-list.vue`：`a-tabs` 包「按单据」原列表 +「按商品」新页签；收货 / 入库确认抽屉与深链、入库守卫不变。
+  - 新增 `components/purchase-receipt-item-workbench.vue`（只读、无重算、`skuId::purchaseUnit` 复合行键）与
+    `purchase-order-print.ts`（无 DOM 的纯字符串 HTML 构建 + 转义，仅 `printPurchaseOrders` 触达浏览器 DOM）。
+- **测试结果**：
+  - 后端：`PurchaseOrderExportSupportTest`（列目录与取值，无库）**4/4 通过**；`PurchaseEfficiencyIT`
+    （真实 PostgreSQL，批量少收关单整批原子 + version 冲突 + 只读工作台跨单聚合）**6/6 通过**。
+  - 前端：新增 `test/w2b-purchase-efficiency-contract.test.mjs` **8/8 通过**——导出走 `postDownload`、
+    批量少收关单走 `postRequest` 不带幂等封装、工作台只读且从不重算、打印工具零网络、导出目录 15 列与常量对齐、
+    收货页 Tab 与既有确认 / 入库权限未动、采购页批量 / 导出 / 打印接线齐备。合并 `npm run test` = **111/111**；
+    改动文件 ESLint 0 错、`vue-tsc` 全库 1946 条既有诊断中本 Wave 文件 0 条、`npm run build` 通过。
+- **浏览器 / E2E**：`e2e/scm-purchase.spec.ts` 新增用例 11（导出只读 xlsx：响应类型 / 附件头 / 非空体、导出后采购状态不变、
+  导出与导出设置入口可见）与用例 12（批量少收关单整批原子 + 混批含草稿单必须被拒且合法单不被部分关单；按商品工作台只读、
+  四位定点数量、欠收与超收互斥、切页签渲染工作台表）。**本轮未执行**：需后端对当前代码重新构建部署 + Web 应用 + 临时账号的
+  全栈环境；端点行为已由 6 条 IT、前端契约由单测 / 类型 / Lint 覆盖。
+- **与计划的偏差**：① §6.4 建议的 `GET /scm/purchase/{id}/print` 落为**纯前端打印**（隐藏 iframe + `contentWindow.print`），
+  零写接口、零新权限，符合 AGENTS §23「不为单页各自造打印设施」；② §6.7 的可选权限迁移 `V46` 未启用，因三端点复用既有权限即达成 0 迁移。
+- **未完成 / 遗留**：Wave 2B 场景的全栈浏览器验收（见上）；批量确认收货（§6.4 推迟项，需另开设计明确失败语义）不在本 Wave。
 
 ### 2026-09-22 采购订单缺口预览（Wave 2A）：只读「订单汇总 / 库存缺口预览」
 

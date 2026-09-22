@@ -15,7 +15,9 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseReceiptIte
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptItemWorkbenchQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOperationLogVO;
@@ -193,6 +195,23 @@ public class PurchaseQueryService {
         return purchaseReceiptItemDao.listByReceiptId(receiptId).stream()
                 .map(PurchaseQueryService::receiptItemVo)
                 .toList();
+    }
+
+    /**
+     * 按商品收货工作台（Wave 2B §6.3，只读）。
+     *
+     * <p>与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、
+     * 排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页 count 按 SKU×单位 组数统计。
+     * 只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseReceiptItemWorkbenchVO> receiptItemWorkbench(PurchaseReceiptItemWorkbenchQueryForm form) {
+        if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        var page = SmartPageUtil.convert2PageQuery(form);
+        page.setOptimizeCountSql(false);
+        return SmartPageUtil.convert2PageResult(page, purchaseOrderItemDao.workbench(page, form));
     }
 
     // ------------------------------------------------------------------

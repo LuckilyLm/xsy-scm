@@ -271,3 +271,61 @@ test('10 stock shortage preview is read-only and server-computed',async({page})=
  await page.screenshot({path:'../.runtime/w2a-summary-preview.png',fullPage:true});
  expect(consoleErrors).toEqual([]);
 });
+
+/**
+ * Wave 2B：采购效率（导出 / 批量少收关单 / 按商品收货工作台）。
+ *
+ * 契约：导出与工作台都是只读端点（无 Idempotency-Key、不改采购状态、不新建收货 / 库存）；
+ * 批量少关整批原子——批内含不可关单据时全部回滚。
+ * 注：这些用例需要**包含 Wave 2B 端点的后端构建**；18080 上若在跑更早的 fat jar，
+ * `export` / `batch/short-close` / `item-workbench` 会 404 —— 属部署版本问题，不是本 Wave 缺陷。
+ */
+const WB_NUMERIC_FIELDS=['plannedQuantity','receivedQuantity','pendingQuantity','overReceiptQuantity'];
+test('11 export is a read-only xlsx download that never changes order state',async({page})=>{
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ // 用测试 2 的已提交单：导出前后状态必须一致，证明导出是纯读取。
+ const snapshot=await orderDetail(orderA.id);
+ const resp=await api.post('/scm/purchase/export',{data:{pageNum:1,pageSize:20,orderNo:orderA.orderNo,exportColumns:['orderNo','status','totalAmount']}});
+ expect(resp.ok()).toBe(true);
+ expect(resp.headers()['content-type']??'').toMatch(/spreadsheet|octet-stream/);
+ expect((resp.headers()['content-disposition']??'').toLowerCase()).toContain('attachment');
+ expect((await resp.body()).length).toBeGreaterThan(0);
+ expect((await orderDetail(orderA.id)).status).toBe(snapshot.status);
+ // 页面接线：导出 / 导出设置 / 批量少收关单按钮 + 每行打印都在（按权限渲染）。
+ await browse(page,'/purchase/purchase-order-list');await expect(page.locator('#scm-purchase-order-table')).toBeVisible();
+ await expect(page.getByRole('button',{name:'导出'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'导出设置'})).toBeVisible();
+ await page.screenshot({path:'../.runtime/w2b-order-export.png',fullPage:true});
+ expect(consoleErrors).toEqual([]);
+});
+
+test('12 batch short-close is atomic and the item workbench stays read-only',async({page})=>{
+ // 两张可关的部分收货单：整批关单后都进入终态。
+ const p1=await submittedPlainOrder('10.0000'),p2=await submittedPlainOrder('10.0000');
+ const r1=await createReceipt(p1.id),r2=await createReceipt(p2.id);
+ await confirmReceipt(r1,[line(r1,'4.0000','4.0000')]);
+ await confirmReceipt(r2,[line(r2,'5.0000','5.0000')]);
+ const v1=(await orderDetail(p1.id)).version,v2=(await orderDetail(p2.id)).version;
+ await post('/scm/purchase/batch/short-close',{orders:[{id:p1.id,version:v1},{id:p2.id,version:v2}],shortCloseReason:'W5 验收批量少收'});
+ expect((await orderDetail(p1.id)).status).toBe('SHORT_CLOSED');
+ expect((await orderDetail(p2.id)).status).toBe('SHORT_CLOSED');
+ // 原子性：混入一张草稿单（不可关）应整批失败，合法的那张保持原状态不回滚生效。
+ const keep=await submittedPlainOrder('10.0000');
+ const rk=await createReceipt(keep.id);await confirmReceipt(rk,[line(rk,'3.0000','3.0000')]);
+ const keepVersion=(await orderDetail(keep.id)).version;
+ const draft=await createOrder([],'5.0000','6.2000'); // DRAFT，不可少收关单
+ const denied=await raw('/scm/purchase/batch/short-close',{orders:[{id:keep.id,version:keepVersion},{id:draft.id,version:draft.version}],shortCloseReason:'原子性验证'});
+ expect(denied.code).not.toBe(0);
+ expect((await orderDetail(keep.id)).status).toBe('PARTIALLY_RECEIVED');
+ // 按商品工作台：只读聚合，四位定点字符串，查询后不新建任何收货 / 库存（读端点无副作用）。
+ const wb=await post('/scm/purchase/receipt/item-workbench/query',{pageNum:1,pageSize:50});
+ expect(Array.isArray(wb.list)).toBe(true);
+ for(const r of wb.list){for(const f of WB_NUMERIC_FIELDS){if(r[f]!==null)expect(r[f],`${f} 必须是四位定点字符串`).toMatch(/^\d+\.\d{4}$/);}
+   // 逐行裁剪后欠收与超收互斥：同一聚合行不会同时大于零。
+   if(Number(r.pendingQuantity??'0')>0&&Number(r.overReceiptQuantity??'0')>0)throw new Error('欠收与超收不应同时大于零');}
+ await browse(page,'/purchase/purchase-receipt-list');
+ await page.getByRole('tab',{name:'按商品'}).click();
+ await expect(page.locator('#scm-purchase-receipt-item-workbench-table')).toBeVisible();
+ await expect(page.getByText('只读工作台')).toBeVisible();
+ await page.screenshot({path:'../.runtime/w2b-item-workbench.png',fullPage:true});
+});

@@ -264,6 +264,26 @@ export interface OrderShortClosePayload extends OrderVersionPayload {
     shortCloseReason: string;
 }
 
+/**
+ * 批量少收关单（Wave 2B §6.3）：整批共享一个关单原因，`orders` 每行携带各自 `version`。
+ *
+ * 服务侧在同一事务内按 id 升序逐单套用与单单完全相同的状态机 / 版本校验，任一单非法即整批回滚。
+ */
+export interface OrderBatchShortClosePayload {
+    orders: OrderVersionPayload[];
+    shortCloseReason: string;
+}
+
+/**
+ * 采购单列表导出入参（Wave 2B §6.4，只读）：筛选复用 {@link OrderQuery}。
+ *
+ * `exportColumns` 只是勾选列的 key 列表，落哪几列、以何顺序由后端
+ * `PurchaseOrderExportSupport` 目录裁决；为空或全部未知即导出整目录。分页由服务端强制改为「第 1 页 + 上限行」。
+ */
+export interface OrderExportPayload extends OrderQuery {
+    exportColumns?: string[];
+}
+
 // ------------------------------------------------------------------
 // 收货单
 // ------------------------------------------------------------------
@@ -377,6 +397,40 @@ export interface ReceiptConfirmPayload {
     id: Id;
     version: number;
     items: ReceiptConfirmItemPayload[];
+}
+
+/**
+ * 按商品收货工作台查询（Wave 2B §6.3，只读）。
+ *
+ * 范围由后端固定为「可收货」采购单（`SUBMITTED` / `PARTIALLY_RECEIVED`），**不开放状态入参**；
+ * 其余筛选仅缩小视图范围，不改变任何聚合口径。
+ */
+export interface ReceiptItemWorkbenchQuery extends Page {
+    supplierId?: Id;
+    warehouseId?: Id;
+    orderNo?: string;
+    keyword?: string;
+}
+
+/**
+ * 按商品收货工作台行（跨待收采购单按 `skuId + 采购单位` 归并的只读聚合）。
+ *
+ * 数量全部是后端逐行裁剪后求和的四位定点字符串，前端**绝不重算**；`pendingQuantity` 与
+ * `overReceiptQuantity` 分别来自 `SUM(max(计划-已收,0))` / `SUM(max(已收-计划,0))`，二者相加不等于计划或已收。
+ */
+export interface ReceiptItemWorkbenchRow {
+    skuId: Id;
+    skuCode?: string;
+    skuName?: string;
+    productName?: string;
+    purchaseUnit?: string;
+    productType?: string;
+    orderCount?: number;
+    lineCount?: number;
+    plannedQuantity?: string | null;
+    receivedQuantity?: string | null;
+    pendingQuantity?: string | null;
+    overReceiptQuantity?: string | null;
 }
 
 // ------------------------------------------------------------------
