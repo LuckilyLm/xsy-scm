@@ -11,6 +11,8 @@ import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/scm/order")
@@ -41,6 +43,17 @@ public class SalesOrderController {
     @SaCheckPermission("scm:order:query")
     public ResponseDTO<net.lab1024.sa.admin.module.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody net.lab1024.sa.admin.module.scm.pricing.domain.form.PriceResolveForm f) {
         return ResponseDTO.ok(prices.preview(f.getCustomerId(), f.getSkuIds(), f.getAt()));
+    }
+
+    /**
+     * 某客户某 SKU 的最近已确认订单价（Wave 3 §7.5，只读）：仅取 CONFIRMED 单的锁定价，只用于录单旁证，不参与定价、不改价格优先级。
+     */
+    @GetMapping("/reference/recent-prices")
+    @SaCheckPermission("scm:order:query")
+    public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId,
+                                                              @RequestParam Long skuId,
+                                                              @RequestParam(defaultValue = "5") int limit) {
+        return ResponseDTO.ok(query.recentPrices(customerId, skuId, limit));
     }
 
     @PostMapping("/create")

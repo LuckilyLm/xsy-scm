@@ -27,6 +27,7 @@
 | 商品中心 PCO-2 导入导出 + 图片中心（V44–V45） | 后端 IT + 前端单测 / 类型 / 构建已验证；E2E 场景已落地待全栈环境执行 | Excel 模板下载 / 整批事务导入 / 按条件导出、图片中心（`image_type` 图集分组、单商品与按文件名批量维护、主图唯一）、独立菜单与权限；见追加记录 2026-09-22 |
 | 采购订单缺口预览 Wave 2A（无迁移） | 后端 IT + 前端契约 / 类型 / Lint 已验证；E2E 场景已落地待全栈环境执行 | 只读「订单汇总 / 库存缺口预览」并入采购需求页 Tab、`POST /scm/purchase/demand/summary-preview` 复用 `generate()` 取数口径、缺口与可用量后端算好、0 迁移 0 菜单变更；见追加记录 2026-09-22 |
 | 采购操作效率 Wave 2B（无迁移） | 后端单元 4/4 + IT 6/6 + 前端契约 8/8 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 批量少收关单（整批原子、version 冲突显式拒绝）、采购单后端算列导出 + 前端本地记忆列勾选、纯前端打印、收货「按单据 / 按商品」双视角只读工作台；0 迁移 0 新权限，复用 `scm:purchase:short-close` / `:query` / `:receipt:query`；见追加记录 2026-09-22 |
+| 订单录单效率 Wave 3（无迁移） | 后端 Web 7/7 + IT 2/2 + 单元 1/1 + 前端契约 5/5 + 模型 6/6 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 草稿本地恢复、历史订单「复用为新单」（只读 detail + 当前价重解，不引后端复制命令）、明细「最近已确认订单价」只读旁证（CONFIRMED-only、confirmed_at 倒序、订单分组 limit、单位不一致仅提示）；0 迁移 0 新权限，复用 `scm:order:query` / `:add`；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
@@ -85,6 +86,51 @@
   运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
+
+### 2026-09-22 订单录单效率（Wave 3）：草稿恢复 + 历史复用 + 最近已确认订单价
+
+- **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 3 §7.5——录单页补齐三项效率：
+  未提交草稿的**本地恢复**、从历史订单「复用为新单」、明细行点开看**最近已确认订单价**旁证。全部接在既有
+  `order-form-drawer` / `order-item-editable-table` / `order-list` 上，无新增路由 / 菜单。**不引入后端「复制订单」
+  命令**（历史复用只读 `GET detail` 后按当前价重新解析，绝不沿用历史锁价），不改订单状态机、不改价格优先级、
+  不新增第二套定价事实。
+- **Flyway**：**0 迁移、0 新权限**。参考端点复用查询权 `scm:order:query`，「复用为新单」按钮复用录单权
+  `scm:order:add`，历史复用走既有 `GET /scm/order/detail/{id}`；草稿为纯前端本地存储，无服务端草稿表。
+- **API**：`GET /scm/order/reference/recent-prices`（`@SaCheckPermission("scm:order:query")`，**只读**、无幂等键、
+  无 `@OperateLog`、不触碰写命令服务与 `PriceResolver`）。入参 `customerId + skuId + limit`（服务层裁剪到 `[1,10]`），
+  出参 `List<OrderRecentPriceVO>`：`itemId / orderId / orderNo / createdAt / confirmedAt / orderSource /
+  orderedQuantity / unitPrice(=locked_unit_price) / priceSource(=locked_price_source) / saleUnit(=sale_unit_snapshot)`，
+  单价与数量按四位定点字符串下发。
+- **§7.5 参考口径（按更新后的计划收紧）**：只取未删除的 **CONFIRMED** 单（排除 DRAFT / PENDING / CANCELLED，
+  取代旧实现的 `status <> 'CANCELLED'`）；按 `confirmed_at DESC, order_id DESC` 稳定倒序；`limit` 约束的是
+  **最近 N 张订单**而非行数（子查询先定 N 张单再回这些单的匹配明细），带 `itemId` 以便同单同 SKU 多行时逐行区分；
+  锁定单价缺失时以 `null` 展示，**不用草稿价 / 当前价兜底**。前端历史单位与当前单位不一致时仅提示「不可直接比较」，
+  不自动换算、不回写解析单价、不前端重算。
+- **页面**：
+  - `order-list.vue`：操作列加「复用为新单」（`v-privilege="scm:order:add"`，仅 CONFIRMED 行），点开抽屉走
+    `openFromHistory(orderId)`。
+  - `order-form-drawer.vue`：新建态进入时若有本地草稿提示「恢复 / 丢弃」（`promptRestoreDraft`）；创建成功
+    （`isNew`）清草稿；统一走 `closeDrawer` 关闭；`defineExpose({open, openFromHistory})`。
+  - `order-item-editable-table.vue`：解析单价列加「历史价」气泡，按「当前客户 + 当前行 SKU」现查现显，
+    每行独立缓存到本次抽屉生命周期；`:key="p.itemId"`、`confirmedAt` 日期、单位后缀与不一致告警。
+- **测试结果**：
+  - 后端：`OrderWebTest` **7/7**（新增只读端点用例：固定定点序列化 + `verifyNoInteractions(service, prices)`
+    证明不触写命令 / 定价）；`SalesOrderQueryRecentPriceTest` **1/1**（`limit` 裁剪到 `[1,10]`）；
+    `SalesOrderRecentPriceIT`（真实 PostgreSQL）**2/2**（CONFIRMED-only 排除 DRAFT/PENDING/CANCELLED、
+    客户维度隔离、订单分组 `limit` 截断）。
+  - 前端：新增 `test/w3-order-entry-contract.test.mjs` **5/5**（只读 `getRequest`、不复用幂等命令封装、
+    草稿恢复 / 历史复用接线 Drawer、创建成功清草稿、只读 `GET detail` 不引入复制命令、明细现查且**不回写
+    `draftUnitPrice` / 不 `Decimal` 重算**、复用为新单沿用 `scm:order:add`）与 `order-form-model.test.mjs` **6/6**；
+    合并 `npm run test` = **123/123**；改动文件 ESLint 0 错、`vue-tsc` 本 Wave 文件 0 条诊断、`npm run build` 通过。
+- **浏览器 / E2E**：`e2e/scm-order.spec.ts` 用例 9（历史复用预填新草稿 + 最近已确认订单价气泡展示锁价与来源订单）
+  与用例 10（未提交草稿本地留存并在重开时提示恢复）。**本轮未执行**：需后端对当前代码重新构建部署 + Web 应用 +
+  临时账号的全栈环境（当前共享 E2E 库停在过期 schema，登录返回 `30001`）；端点行为已由 3 条 IT / Web 用例、
+  前端契约由单测 / 类型 / Lint 覆盖。
+- **与计划的偏差**：① §7.5 参考价从「排除 CANCELLED」收紧为「只取 CONFIRMED」，并按更新后的计划改为按 `confirmed_at`
+  倒序、订单分组 `limit`、暴露 `itemId / saleUnit / confirmedAt`；② 因 `uk_sales_order_item_order_sku_active`（V13）
+  约束每 `(order, sku)` 只有一条活动明细，「同单同 SKU 多行」在当前 schema 下不可能出现，故订单分组 `limit` 与
+  行数在当前库等价（SQL 仍按逐行 `itemId` 返回以防未来放开该唯一键）。
+- **未完成 / 遗留**：Wave 3 场景的全栈浏览器验收（见上）。
 
 ### 2026-09-22 采购操作效率（Wave 2B）：批量处理 + 导出 / 打印 + 按商品收货工作台
 

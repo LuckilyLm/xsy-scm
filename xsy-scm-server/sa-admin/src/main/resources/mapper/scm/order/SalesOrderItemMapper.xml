@@ -53,4 +53,41 @@
                                       WHERE order_id = #{id}
                                         AND deleted = FALSE
                                       ORDER BY id</select>
+
+    <!--
+      Wave 3 §7.5「最近已确认订单价」（只读）：按 (customer, sku) 取历史 CONFIRMED 订单行的锁定单价与单位快照。
+      只取未删除的 CONFIRMED 单（排除 DRAFT / PENDING / CANCELLED），不做 locked_unit_price 非空过滤，
+      锁定价异常缺失时以 null 展示而非用草稿价 / 当前价兜底；limit 约束「最近 N 张包含该 SKU 的订单」而非行数，
+      由分组子查询先定 N 张单，再返回这些单的匹配明细（同单同 SKU 多行各自成行，带 itemId，不任取 / 相加 / 求平均）。
+      排序 confirmed_at DESC, order_id DESC 稳定。纯读快照，不回算当前价格、不参与 PriceResolver 定价。
+    -->
+    <select id="recentPrices"
+            resultType="net.lab1024.sa.admin.module.scm.order.domain.vo.OrderRecentPriceVO">
+        SELECT i.id                  AS item_id,
+               o.id                  AS order_id,
+               o.order_no            AS order_no,
+               o.created_at          AS created_at,
+               o.confirmed_at        AS confirmed_at,
+               o.order_source        AS order_source,
+               i.ordered_quantity    AS ordered_quantity,
+               i.locked_unit_price   AS unit_price,
+               i.locked_price_source AS price_source,
+               i.sale_unit_snapshot  AS sale_unit
+        FROM sales_order o
+                 JOIN sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE AND i.sku_id = #{skuId}
+        WHERE o.deleted = FALSE
+          AND o.status = 'CONFIRMED'
+          AND o.customer_id = #{customerId}
+          AND o.id IN (SELECT o2.id
+                       FROM sales_order o2
+                                JOIN sales_order_item i2
+                                     ON i2.order_id = o2.id AND i2.deleted = FALSE AND i2.sku_id = #{skuId}
+                       WHERE o2.deleted = FALSE
+                         AND o2.status = 'CONFIRMED'
+                         AND o2.customer_id = #{customerId}
+                       GROUP BY o2.id, o2.confirmed_at
+                       ORDER BY o2.confirmed_at DESC, o2.id DESC
+                       LIMIT #{limit})
+        ORDER BY o.confirmed_at DESC, o.id DESC, i.id
+    </select>
 </mapper>

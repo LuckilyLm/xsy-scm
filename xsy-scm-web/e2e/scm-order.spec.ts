@@ -118,3 +118,45 @@ test('8 sample row and manual override rules block the whole batch',async({page}
  await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('填写人工单价时必须填写改价原因');
  expect(await importedTotal()).toBe(beforeC);
 });
+
+test('9 history reuse prefills a new draft and the recent-price popover shows the locked price',async({page})=>{
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ await browse(page);
+ await page.getByPlaceholder('名称或订单号').fill(confirmedOrder.orderNo);
+ await page.getByRole('button',{name:/^查\s*询$/}).click();
+ const row=page.locator('#order-table tbody tr').filter({hasText:confirmedOrder.orderNo}).first();
+ await row.getByRole('button',{name:'复用为新单'}).click();
+ const drawer=page.locator('.ant-drawer:visible');
+ // 复用生成的是「新建」态：只带一行历史商品，价格按当前价重新解析，绝不沿用历史锁价
+ await expect(drawer.getByRole('button',{name:'创建订单'})).toBeVisible();
+ await expect(page.locator('#order-item-table tbody tr')).toHaveCount(1);
+ // 历史价只读旁证：点开后展示该客户该 SKU 的最近已确认订单价与来源订单
+ await page.locator('#order-item-table .recent-btn').click();
+ const pop=page.locator('.ant-popover:visible');
+ await expect(pop).toContainText('3.5000');
+ await expect(pop.locator('.recent-meta')).toContainText(confirmedOrder.orderNo);
+ await page.keyboard.press('Escape');
+ await drawer.locator('.ant-drawer-footer').getByRole('button',{name:'关闭'}).click();
+ await expect(page.locator('.ant-drawer:visible')).toHaveCount(0);
+ expect(consoleErrors).toEqual([]);
+});
+
+test('10 unsaved new-order draft is kept locally and offered for recovery on reopen',async({page})=>{
+ await browse(page);
+ await page.getByRole('button',{name:'新建订单',exact:true}).click();
+ await select(page,'customerId',name);
+ await page.getByRole('button',{name:'添加商品',exact:true}).click();
+ const skuSelect=page.locator('#order-item-table .ant-select-selector');
+ await skuSelect.click();await skuSelect.locator('input').fill(name);
+ await page.locator('.ant-select-dropdown:visible').getByText('散装',{exact:false}).first().click();
+ await page.locator('.ant-drawer:visible').locator('.ant-drawer-footer').getByRole('button',{name:'关闭'}).click();
+ await expect(page.locator('.ant-drawer:visible')).toHaveCount(0);
+ // 重新新建：命中本地草稿恢复提示，选「恢复」回填并按当前价格重新解析
+ await page.getByRole('button',{name:'新建订单',exact:true}).click();
+ const confirmBox=page.locator('.ant-modal-confirm');
+ await expect(confirmBox).toContainText('未提交的订单草稿');
+ await confirmBox.getByRole('button',{name:'恢复'}).click();
+ await expect(page.locator('#order-item-table tbody tr')).toHaveCount(1);
+ await expect(page.locator('#order-item-table .price-cell').first()).toContainText('3.5000');
+ await page.locator('.ant-drawer:visible').locator('.ant-drawer-footer').getByRole('button',{name:'关闭'}).click();
+});

@@ -56,7 +56,7 @@ class OrderWebTest {
                     assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();
                     count++;
                 }
-        assertThat(count).isEqualTo(25);
+        assertThat(count).isEqualTo(26);
     }
 
     @Test
@@ -95,6 +95,33 @@ class OrderWebTest {
         o.setSettlementTotalAmount(new java.math.BigDecimal("0"));
         when(queries.detail(1L)).thenReturn(o);
         mvc.perform(get("/scm/order/detail/1")).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0)).andExpect(jsonPath("$.data.orderedTotalAmount").doesNotExist()).andExpect(jsonPath("$.data.settlementTotalAmount").value("0.0000"));
+    }
+
+    @Test
+    void recentPricesEndpointIsReadOnlyAndSerializesFixedScale() throws Exception {
+        var p = new OrderRecentPriceVO();
+        p.setItemId(100L);
+        p.setOrderId(7L);
+        p.setOrderNo("SO-1");
+        p.setCreatedAt(java.time.OffsetDateTime.parse("2026-09-20T00:00:00Z"));
+        p.setConfirmedAt(java.time.OffsetDateTime.parse("2026-09-20T01:00:00Z"));
+        p.setOrderSource("ADMIN");
+        p.setOrderedQuantity(new java.math.BigDecimal("3"));
+        p.setUnitPrice(new java.math.BigDecimal("8.5"));
+        p.setPriceSource("MARKET");
+        p.setSaleUnit("kg");
+        when(queries.recentPrices(1L, 2L, 5)).thenReturn(java.util.List.of(p));
+        mvc.perform(get("/scm/order/reference/recent-prices").param("customerId", "1").param("skuId", "2").param("limit", "5"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data[0].itemId").value(100))
+                .andExpect(jsonPath("$.data[0].saleUnit").value("kg"))
+                // confirmedAt 是排序键字段；其序列化随 ObjectMapper 时区配置变化，故只断言序列化为字符串，不比字面偏移量
+                .andExpect(jsonPath("$.data[0].confirmedAt").value(org.hamcrest.Matchers.instanceOf(String.class)))
+                .andExpect(jsonPath("$.data[0].unitPrice").value("8.5000"))
+                .andExpect(jsonPath("$.data[0].orderedQuantity").value("3.0000"))
+                .andExpect(jsonPath("$.data[0].priceSource").value("MARKET"));
+        // 只读旁证：不得触碰写命令服务，也不得触发任何定价解析
+        verifyNoInteractions(service, prices);
     }
 
     @Test
