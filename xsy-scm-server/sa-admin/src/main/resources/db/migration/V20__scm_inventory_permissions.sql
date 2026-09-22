@@ -14,34 +14,16 @@
 -- Idempotency: ON CONFLICT (menu_id) DO NOTHING for menus, NOT EXISTS for grants, and the
 -- sequence is advanced with setval(..., max + 1, false) exactly like V16.
 
-INSERT INTO t_menu(menu_id, menu_name, menu_type, parent_id, sort, path, component, perms_type, api_perms, web_perms,
-                   icon, context_menu_id, visible_flag, create_user_id)
-VALUES (800, '库存管理', 1, 0, 800, '/inventory', NULL, NULL, NULL, NULL, 'InboxOutlined', NULL, true, 1)
-ON CONFLICT(menu_id) DO NOTHING;
-INSERT INTO t_menu(menu_id, menu_name, menu_type, parent_id, sort, path, component, perms_type, api_perms, web_perms,
-                   icon, context_menu_id, visible_flag, create_user_id)
-VALUES (801, '库存余额', 2, 800, 801, '/inventory/inventory-balance-list',
-        '/business/scm/inventory/inventory-balance-list.vue', NULL, NULL, NULL, 'ProfileOutlined', NULL, true, 1)
-ON CONFLICT(menu_id) DO NOTHING;
-INSERT INTO t_menu(menu_id, menu_name, menu_type, parent_id, sort, path, component, perms_type, api_perms, web_perms,
-                   icon, context_menu_id, visible_flag, create_user_id)
-VALUES (802, '库存流水', 2, 800, 802, '/inventory/inventory-movement-list',
-        '/business/scm/inventory/inventory-movement-list.vue', NULL, NULL, NULL, 'UnorderedListOutlined', NULL, true, 1)
-ON CONFLICT(menu_id) DO NOTHING;
-INSERT INTO t_menu(menu_id, menu_name, menu_type, parent_id, sort, path, component, perms_type, api_perms, web_perms,
-                   icon, context_menu_id, visible_flag, create_user_id)
-VALUES (811, '查询', 3, 801, 811, NULL, NULL, 1, 'scm:inventory:balance:query', 'scm:inventory:balance:query', NULL,
-        NULL, true, 1)
-ON CONFLICT(menu_id) DO NOTHING;
-INSERT INTO t_menu(menu_id, menu_name, menu_type, parent_id, sort, path, component, perms_type, api_perms, web_perms,
-                   icon, context_menu_id, visible_flag, create_user_id)
-VALUES (821, '查询', 3, 802, 821, NULL, NULL, 1, 'scm:inventory:movement:query', 'scm:inventory:movement:query', NULL,
-        NULL, true, 1)
-ON CONFLICT(menu_id) DO NOTHING;
+INSERT INTO t_menu(menu_id,menu_name,menu_type,parent_id,sort,path,component,perms_type,api_perms,web_perms,icon,context_menu_id,visible_flag,create_user_id)
+VALUES (800,'库存管理',1,0,800,'/inventory',NULL,NULL,NULL,NULL,'InboxOutlined',NULL,true,1) ON CONFLICT(menu_id) DO NOTHING;
+INSERT INTO t_menu(menu_id,menu_name,menu_type,parent_id,sort,path,component,perms_type,api_perms,web_perms,icon,context_menu_id,visible_flag,create_user_id)
+VALUES (801,'库存余额',2,800,801,'/inventory/inventory-balance-list','/business/scm/inventory/inventory-balance-list.vue',NULL,NULL,NULL,'ProfileOutlined',NULL,true,1) ON CONFLICT(menu_id) DO NOTHING;
+INSERT INTO t_menu(menu_id,menu_name,menu_type,parent_id,sort,path,component,perms_type,api_perms,web_perms,icon,context_menu_id,visible_flag,create_user_id)
+VALUES (802,'库存流水',2,800,802,'/inventory/inventory-movement-list','/business/scm/inventory/inventory-movement-list.vue',NULL,NULL,NULL,'UnorderedListOutlined',NULL,true,1) ON CONFLICT(menu_id) DO NOTHING;
+INSERT INTO t_menu(menu_id,menu_name,menu_type,parent_id,sort,path,component,perms_type,api_perms,web_perms,icon,context_menu_id,visible_flag,create_user_id)
+VALUES (811,'查询',3,801,811,NULL,NULL,1,'scm:inventory:balance:query','scm:inventory:balance:query',NULL,NULL,true,1) ON CONFLICT(menu_id) DO NOTHING;
+INSERT INTO t_menu(menu_id,menu_name,menu_type,parent_id,sort,path,component,perms_type,api_perms,web_perms,icon,context_menu_id,visible_flag,create_user_id)
+VALUES (821,'查询',3,802,821,NULL,NULL,1,'scm:inventory:movement:query','scm:inventory:movement:query',NULL,NULL,true,1) ON CONFLICT(menu_id) DO NOTHING;
 
-INSERT INTO t_role_menu(role_id, menu_id)
-SELECT 1, m.menu_id
-FROM t_menu m
-WHERE m.menu_id IN (800, 801, 802, 811, 821)
-  AND NOT EXISTS(SELECT 1 FROM t_role_menu r WHERE r.role_id = 1 AND r.menu_id = m.menu_id);
-SELECT setval(pg_get_serial_sequence('t_menu', 'menu_id'), (SELECT MAX(menu_id) + 1 FROM t_menu), false);
+INSERT INTO t_role_menu(role_id,menu_id) SELECT 1,m.menu_id FROM t_menu m WHERE m.menu_id IN (800,801,802,811,821) AND NOT EXISTS(SELECT 1 FROM t_role_menu r WHERE r.role_id=1 AND r.menu_id=m.menu_id);
+SELECT setval(pg_get_serial_sequence('t_menu','menu_id'),(SELECT MAX(menu_id)+1 FROM t_menu),false);

@@ -17,9 +17,9 @@
 
 ALTER TABLE t_oa_enterprise_employee
     ALTER COLUMN enterprise_id TYPE BIGINT
-        USING enterprise_id::BIGINT,
+    USING enterprise_id::BIGINT,
     ALTER COLUMN employee_id TYPE BIGINT
-        USING employee_id::BIGINT;
+    USING employee_id::BIGINT;
 
 COMMENT ON COLUMN t_oa_enterprise_employee.enterprise_id IS '企业ID';
 COMMENT ON COLUMN t_oa_enterprise_employee.employee_id IS '员工ID';
