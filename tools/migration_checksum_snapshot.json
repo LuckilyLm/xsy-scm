@@ -180,6 +180,10 @@
     "45": {
       "file": "V45__scm_product_pco2_permissions.sql",
       "checksum": 1177282109
+    },
+    "46": {
+      "file": "V46__scm_todo_permission.sql",
+      "checksum": -409692477
     }
   }
 }

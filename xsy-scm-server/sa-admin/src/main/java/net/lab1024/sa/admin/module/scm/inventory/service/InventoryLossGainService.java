@@ -14,6 +14,9 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAd
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAuditForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryLossGainItemVO;
 import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import net.lab1024.sa.base.module.support.message.constant.MessageTypeEnum;
+import net.lab1024.sa.base.module.support.message.domain.MessageSendForm;
+import net.lab1024.sa.base.module.support.message.service.MessageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,6 +70,8 @@ public class InventoryLossGainService {
     private final InventoryCommandService inventoryCommandService;
 
     private final WarehouseService warehouseService;
+
+    private final MessageService messageService;
 
     /**
      * 新建报损报溢单（**创建即待审核**）。
@@ -197,6 +202,9 @@ public class InventoryLossGainService {
         if (lossGainDao.markRejected(id, now, operator, form.getAuditOpinion(), form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
+        // 驳回是唯一把「为什么不行」传达给录单人的渠道；与状态变更同事务写站内信，
+        // 回滚不留通知。并发 / 重复驳回只有一次 markRejected==1 能走到这里，故通知至多一条。
+        notifyMakerRejected(locked, form.getAuditOpinion());
     }
 
     /**
@@ -283,6 +291,34 @@ public class InventoryLossGainService {
                                       ScmInventoryLossGainStatusEnum expected) {
         if (!expected.name().equals(entity.getStatus())) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_STATUS_INVALID);
+        }
+    }
+
+    /**
+     * 驳回后向制单人发一条站内信。制单人取自单据 {@code created_by}
+     * （{@link ScmOperator} 写入的 {@code userType:userId} 串），解析不出合法接收人时跳过——
+     * 不能因为一条历史脏数据把有效的驳回整体回滚。
+     */
+    private void notifyMakerRejected(InventoryLossGainEntity order, String opinion) {
+        String creator = order.getCreatedBy();
+        if (creator == null) {
+            return;
+        }
+        String[] parts = creator.split(":");
+        if (parts.length != 2) {
+            return;
+        }
+        try {
+            MessageSendForm form = new MessageSendForm();
+            form.setMessageType(MessageTypeEnum.MAIL.getValue());
+            form.setReceiverUserType(Integer.parseInt(parts[0]));
+            form.setReceiverUserId(Long.parseLong(parts[1]));
+            form.setTitle("报损报溢单被驳回");
+            form.setContent("您提交的报损报溢单 " + order.getLossGainNo() + " 已被驳回：" + opinion);
+            form.setDataId(order.getId());
+            messageService.sendMessage(form);
+        } catch (NumberFormatException e) {
+            // created_by 非预期的 "userType:userId" 格式：跳过通知，不阻断驳回
         }
     }
 }

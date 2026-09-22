@@ -28,6 +28,7 @@
 | 采购订单缺口预览 Wave 2A（无迁移） | 后端 IT + 前端契约 / 类型 / Lint 已验证；E2E 场景已落地待全栈环境执行 | 只读「订单汇总 / 库存缺口预览」并入采购需求页 Tab、`POST /scm/purchase/demand/summary-preview` 复用 `generate()` 取数口径、缺口与可用量后端算好、0 迁移 0 菜单变更；见追加记录 2026-09-22 |
 | 采购操作效率 Wave 2B（无迁移） | 后端单元 4/4 + IT 6/6 + 前端契约 8/8 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 批量少收关单（整批原子、version 冲突显式拒绝）、采购单后端算列导出 + 前端本地记忆列勾选、纯前端打印、收货「按单据 / 按商品」双视角只读工作台；0 迁移 0 新权限，复用 `scm:purchase:short-close` / `:query` / `:receipt:query`；见追加记录 2026-09-22 |
 | 订单录单效率 Wave 3（无迁移） | 后端 Web 7/7 + IT 2/2 + 单元 1/1 + 前端契约 5/5 + 模型 6/6 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 草稿本地恢复、历史订单「复用为新单」（只读 detail + 当前价重解，不引后端复制命令）、明细「最近已确认订单价」只读旁证（CONFIRMED-only、confirmed_at 倒序、订单分组 limit、单位不一致仅提示）；0 迁移 0 新权限，复用 `scm:order:query` / `:add`；见追加记录 2026-09-22 |
+| 业务待办与站内提醒 Wave 4（V46） | 后端单元 4/4 + 报损报溢 IT 15/15 + 前端契约 4/4 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 首页「业务待办」只读 Pull（`GET /scm/dashboard/todo`，按登录人权限裁剪卡片、复用各领域既有分页查询读 total，无权卡片省略、有权零任务返回 0，不写任何业务表）；报损报溢驳回经原生 `t_message` 站内信通知录单人（同步写在驳回事务内、恰一条，不新建第二套消息中心/消息表）；1 data-only 迁移（菜单/权限 1100-1101 `scm:todo:query`，仅授 SUPER_ADMIN），库存读写路径 / Q7 / Q13 / 状态机零改动；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
@@ -86,6 +87,54 @@
   运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
 
 ## 追加记录
+
+### 2026-09-22 业务待办与站内提醒（Wave 4，V46）：首页只读待办聚合 + 驳回站内信
+
+- **范围**：落地 `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` Wave 4——
+  A. 首页「业务待办」以**只读 Pull** 聚合当前登录人可见的待处理量（四张卡片：库存异常预警、
+  待仓库确认入库、待审批报损报溢、草稿配送线路）；B. 报损报溢**驳回**时经 SmartAdmin 原生站内信
+  通知录单人。**不新建第二套消息中心、不新增 SCM 消息表、不引入 Kafka / MQ / 事件总线 / 定时任务 /
+  去重表**；待办接口不写任何业务表，卡片可见性与计数全由后端按权限决定，前端不重复判权限、不缓存数字。
+- **Flyway**：**1 个 data-only 迁移 `V46__scm_todo_permission.sql`**（选号依据：扫描 `db/migration/`
+  最大已应用为 V45，计划文档写的 V47 已过时；先 `migration_checksum_guard.py sync` 再 `check` 通过）。
+  新增隐藏目录 `1100 业务待办`（`/scm-todo`，`visible_flag=false`）与功能点 `1101 待办查询`
+  （`scm:todo:query`），仅授 `role_id=1` SUPER_ADMIN；`ON CONFLICT DO NOTHING` 幂等，末尾 `setval` 前进序列。
+  **各领域查询 / 操作权限一律不扩大**——待办入口权限 `scm:todo:query` 只用于能否调用聚合接口，卡片是否出现
+  取决于该领域既有权限（如 `scm:inventory:warning:query`、`scm:purchase:receipt:putaway`、
+  `scm:inventory:loss-gain:approve|reject`、`scm:delivery:route:plan`），复用 `LoginManager` 现算的 permissionList。
+- **API**：`GET /scm/dashboard/todo`（`ScmTodoController`，`@SaCheckPermission("scm:todo:query")`，
+  无 `@OperateLog`、无幂等键、只读）。入参无；出参 `List<ScmTodoVO>`：`key / label / count(Long) / route`。
+  `ScmTodoQueryService` 用 `SmartRequestUtil` 取当前员工 → `getUserPermission().getPermissionList()` →
+  逐卡片 `visibleTo`（持全部 allPerms 且（无 anyPerms 或命中任一））判定；可见卡片 count 由**复用既有分页查询**
+  （`queryWarningPage` / `receiptQuery` / 报损报溢 `queryPage` / 线路 `query`）以 `pageSize=1` 读 `total` 得到，
+  不改任何领域算法。**无权卡片直接省略（不返回 0）**，有权且当前无任务返回 `count=0`。
+- **站内信**：`InventoryLossGainService.reject(...)` 在 `markRejected==1` 之后调用私有 `notifyMakerRejected`，
+  解析单据 `createdBy`（`"userType:userId"`）为收件人，用原生 `MessageService.sendMessage`（`MAIL` 站内信、
+  `dataId=单据 id`）落 `t_message`，**在同一 `@Transactional` 内**：驳回回滚即不发消息；并发 / 重复驳回只有
+  抢到 `markRejected==1` 的那次会通知，恰一条。`createdBy` 缺失或格式异常时跳过通知，不影响驳回本身。
+- **页面**：新增 `src/api/business/scm/dashboard-api.ts`（只读 `getRequest('/scm/dashboard/todo', {})` +
+  `ScmTodo` 类型）、`src/views/system/home/components/business-todo-card/home-business-todo.vue`
+  （复用 `DefaultHomeCard`，`onMounted` 拉取、Badge 计数、点击 `router.push(todo.route)` 带条件跳转，
+  计数 0 用中性灰避免误读为异常）；`src/views/system/home/index.vue` 右栏在更新日志下方挂卡片，
+  外层 `a-col` 用 `v-privilege="'scm:todo:query'"` 门禁（无权整卡隐藏、不发请求）。
+- **测试结果**：
+  - 后端：`ScmTodoQueryServiceTest` **4/4**（无 DB，Mockito：仅有待办权限不取任何领域计数、全权限四张卡片
+    各调一次、有权零任务 `count=0` 卡片保留、仅 query 无 approve/reject 时省略报损报溢卡）；
+    `ScmInventoryLossGainIT`（真实 PostgreSQL）**15/15**（驳回用例新增断言：成功驳回后按 `data_id + receiver`
+    查 `t_message` 恰 1 条，终态 41029 的重复驳回不追加消息）。合计 **19/19**。
+  - 前端：新增 `test/w4-business-todo-contract.test.mjs` **4/4**（只读 GET 不引写命令 / 幂等 / sendMessage、
+    卡片挂载即拉取且不做前端权限判断 / 本地缓存、点击直推后端 route 不前端拼状态、入口 `scm:todo:query`
+    门禁 + 复用 `DefaultHomeCard`）；合并 `npm run test` = **127/127**；改动文件 ESLint 0 错、
+    `vue-tsc` 本 Wave 文件 0 条诊断、`npm run build`（vite production）通过。
+- **浏览器 / E2E**：新增 `e2e/scm-dashboard-todo.spec.ts`（待办接口只读数组契约 + route 自带条件、
+  无 `scm:todo:query` 员工被守卫拒、首页点击卡片落到带条件列表页且全程无写请求）。**本轮未执行**：
+  需后端对当前代码重新构建部署 + 一次性令牌的全栈环境（当前共享 E2E 库停在过期 schema，登录返回 `30001`）；
+  端点行为由后端单元 / IT、前端契约由单测 / 类型 / Lint 覆盖。
+- **与计划的偏差**：① 迁移选号 V46（非计划文档写的 V47），按「以当前 `db/migration/` 最大号为准、不改历史
+  Flyway」执行；② 待办入口用**独立 `scm:todo:query`** 门控而非任一领域权限，且明确「不扩大领域权限」——
+  卡片可见性 = 待办入口 ∩ 领域权限，无权卡片省略而非返回 0；③ 站内信同步写在驳回事务内（非异步 / 非事件），
+  与「恰一条、事务原子」的验收一致。
+- **未完成 / 遗留**：Wave 4 场景的全栈浏览器验收（见上）。
 
 ### 2026-09-22 订单录单效率（Wave 3）：草稿恢复 + 历史复用 + 最近已确认订单价
 
