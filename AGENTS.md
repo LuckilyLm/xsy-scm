@@ -426,12 +426,17 @@ Key rules when working on `xsy-scm-miniapp/`:
   `POST /orders/preview` (plan §17.1), not from `qty × price` in the page.
 - The mall backend `/scm/mall/**` **does not exist yet**. `mock/` supplies a contract-layer
   fake backend so client work is not blocked; it is switched off by `VITE_APP_USE_MOCK=false`
-  and is verified absent from production bundles. Two traps:
-  (a) `mock/` must stay **outside `src/`** — uni-app mirrors the whole `src/` tree into the build
-  output, so fixtures kept under `src/` ship as dead code;
-  (b) the import specifier is `@mock`, **not** `@/mock` — uni-app's own `@` → `src/` alias has
-  higher precedence and would resolve `@/mock` to the non-existent `src/mock`.
-  See `xsy-scm-miniapp/README.md` → 「Mock 契约层」.
+  and is verified absent from production bundles. Two rules, both kept as zero-cost
+  defence-in-depth:
+  (a) keep `mock/` **outside `src/`**. Note the original rationale ("uni-app mirrors the whole
+  `src/` tree into the build output") was **disproved by probe files on 2026-09-22** —
+  unreferenced modules are tree-shaken normally. The real cause of the historical fixture leak
+  was (b): the specifier was `@/mock`, uni-app's own `@` → `src/` alias resolved it to
+  `src/mock/index.js`, which made the whole mock graph reachable;
+  (b) the import specifier is `@mock`, **not** `@/mock` — uni-app's `@` alias has higher
+  precedence than user `resolve.alias`.
+  See `xsy-scm-miniapp/README.md` → 「Mock 契约层」and
+  `docs/miniapp/2026-09-22-小程序基线改造问题清单.md` → D-06.
 - Verification gate for any miniapp change: `npm run lint` → `npm run test:mock`
   → `npm run build:mp-weixin` → `npm run build:h5` → grep the mp-weixin bundle for fixture
   strings (`海岸城门店` / `本地小白菜` / `dispatchMock`) and confirm no `mock/` directory.
@@ -1664,6 +1669,12 @@ While editing:
 After editing:
 
 - Review diff.
+- Watch for **silently ignored new files**: the root `.gitignore` is default-deny for `/tools/*`
+  and `.env.*` with an explicit `!` allow-list, so a newly added tool script or env file is
+  swallowed without any warning (it works locally, but is missing for everyone else). If your
+  change adds files under `tools/` or any `.env.*`, confirm with `git status` that they appear,
+  and add a `!` entry if not. See
+  [docs/miniapp/2026-09-22-小程序基线改造问题清单.md](docs/miniapp/2026-09-22-小程序基线改造问题清单.md) → D-07.
 - Run relevant checks.
 - Explain material behavior changes.
 
