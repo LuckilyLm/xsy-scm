@@ -83,9 +83,7 @@ function onPrevFile(fileItem) {
 // 打印
 function print() {
   let bdhtml = window.document.body.innerHTML;
-  let sprnstr = '<!--startprint-->'; //必须在页面添加<!--startprint-->
-  和<!--endprint-->
-  而且需要打印的内容必须在它们之间
+  let sprnstr = '<!--startprint-->'; // 必须在页面添加<!--startprint-->和<!--endprint-->，而且需要打印的内容必须在它们之间
   let eprnstr = '<!--endprint-->';
   let prnhtml = bdhtml.substr(bdhtml.indexOf(sprnstr));
   prnhtml = prnhtml.substring(0, prnhtml.indexOf(eprnstr));

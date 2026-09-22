@@ -18,10 +18,7 @@
           <br/>
           导入: import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
           <br/>
-          使用: {{
-            '
-          <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.XXX" :refresh="queryData"/>
-          ' }}
+          使用: {{ '<TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.XXX" :refresh="queryData"/>' }}
           <br/>
           <br/>
           3. 具体用法可参考员工管理
