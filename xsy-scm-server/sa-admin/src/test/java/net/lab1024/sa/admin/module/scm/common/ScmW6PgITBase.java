@@ -377,10 +377,37 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     }
 
     /**
-     * V19 Step 4：对账断言（缺失流水 / 余额与流水不等 → RAISE EXCEPTION）。
+     * V19 Step 4 对账恒等式的范围内重放：本 (warehouse, sku) 的流水方向净额必须等于余额行。
+     *
+     * <p>不直接执行 Step 4 原文：它的全库判据建立在 V19 时刻的账本形状上 —— 那时只有 {@code PURCHASE_IN}，
+     * 所以 {@code sum(quantity)} 就是净额。V25 起 {@code quantity} 恒为正、方向由 {@code movement_type}
+     * 决定，V22 又让「已确认收货但尚未上架」成为没有流水的合法中间态，因此在任何用过一段时间的真实库上
+     * 重放原文必然误报（迁移当时不受影响：出库类型在 V19 之后才出现，所以 V19 本身不改）。
+     *
+     * <p>方向从流水快照等式推导，不写 {@code movement_type} 清单：{@code ck_inventory_movement_snap}
+     * 已按类型把「入向 after = before + quantity、出向 after = before - quantity」钉成约束，
+     * 而类型清单会随每个库存波次过期（与 V37 同一取向）。
+     *
+     * <p>无流水按净额 0 计；先要求余额行存在 —— 两侧聚合都为 NULL 时差额判据会静默通过，
+     * 传错 id 必须失败而不是算绿。
      */
-    protected void runBackfillReconciliation() {
-        jdbc.execute(migrationSection(V19, "-- Step 4", "COMMENT ON TABLE"));
+    protected void assertLedgerBalanced(Long warehouseId, Long skuId) {
+        assertThat(balanceRow(warehouseId, skuId))
+                .as("warehouse=%s sku=%s 没有活动余额行", warehouseId, skuId)
+                .isNotNull();
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM ("
+                        + "  SELECT sum(CASE WHEN after_quantity = before_quantity + quantity"
+                        + "                   THEN quantity ELSE -quantity END) AS net"
+                        + "  FROM inventory_movement"
+                        + "  WHERE deleted = FALSE AND warehouse_id = ? AND sku_id = ?) mv"
+                        + " FULL OUTER JOIN ("
+                        + "  SELECT quantity AS bal FROM inventory_balance"
+                        + "  WHERE deleted = FALSE AND warehouse_id = ? AND sku_id = ?) bal ON TRUE"
+                        + " WHERE COALESCE(mv.net, 0) IS DISTINCT FROM bal.bal",
+                Integer.class, warehouseId, skuId, warehouseId, skuId))
+                .as("余额与本 (warehouse, sku) 流水的方向净额不一致")
+                .isZero();
     }
 
     /**

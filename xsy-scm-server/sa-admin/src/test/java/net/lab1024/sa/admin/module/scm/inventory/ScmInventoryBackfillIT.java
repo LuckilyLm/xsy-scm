@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Q5 bootstrap backfill（W6 Target Design §12.1 #8 / #9 / #10 / #14 / #15）。
@@ -35,34 +36,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmInventoryBackfillIT extends ScmW6PgITBase {
 
     /**
-     * 全库口径：流水合计 ≠ 余额的 (warehouse, sku) 个数（V19 Step 4 的第二条断言的独立重算）。
+     * 本 SKU 的已确认收货行里，没有对应流水的条数（V19 Step 4 第一条判据的范围内重算）。
+     *
+     * <p>刻意按 SKU 收口而不是全库：V22 之后「已确认收货但尚未上架」是合法中间态，
+     * 那条判据在全库上不再成立，但它对 backfill 负责回放的那批 DIRECT 收货事实仍然成立。
      */
-    private int ledgerBalanceMismatchCount() {
-        return jdbc.queryForObject(
-                "SELECT count(*) FROM ("
-                        + "  SELECT m.warehouse_id, m.sku_id, sum(m.quantity) AS total "
-                        + "  FROM inventory_movement m WHERE m.deleted = FALSE "
-                        + "  GROUP BY m.warehouse_id, m.sku_id) mv "
-                        + "FULL OUTER JOIN ("
-                        + "  SELECT b.warehouse_id, b.sku_id, b.quantity AS total "
-                        + "  FROM inventory_balance b WHERE b.deleted = FALSE) bal "
-                        + "  ON mv.warehouse_id = bal.warehouse_id AND mv.sku_id = bal.sku_id "
-                        + "WHERE mv.total IS DISTINCT FROM bal.total",
-                Integer.class);
-    }
-
-    /**
-     * 全库口径：已确认且有效数量 > 0 的收货行里，没有对应流水的条数。
-     */
-    private int confirmedLineWithoutMovementCount() {
+    private int confirmedLineWithoutMovementCount(Long skuId) {
         return jdbc.queryForObject(
                 "SELECT count(*) FROM purchase_receipt_item ri "
                         + "JOIN purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE "
                         + "WHERE r.status = 'CONFIRMED' AND ri.deleted = FALSE AND ri.received_quantity > 0 "
+                        + "  AND ri.sku_id = ? "
                         + "  AND NOT EXISTS (SELECT 1 FROM inventory_movement m "
                         + "                  WHERE m.source_document_type = 'PURCHASE_RECEIPT_ITEM' "
                         + "                    AND m.source_document_item_id = ri.id AND m.deleted = FALSE)",
-                Integer.class);
+                Integer.class, skuId);
     }
 
     // ------------------------------------------------------------------
@@ -82,11 +70,10 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertThat(movementCount(warehouseId, skuId)).isEqualTo(2);
         assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("10.0000");
 
-        // 完整重放四段：前置检查 / 流水 / 余额 / 对账断言
+        // 重放三段原文：前置检查 / 流水 / 余额（Step 4 的对账判据见 assertLedgerBalanced）
         runBackfillUnitPreCheck();
         runBackfillMovements();
         runBackfillBalances();
-        runBackfillReconciliation();
 
         // 零增量：没有第二条余额行、没有重复流水、数量没有被加第二次
         assertThat(balanceRowCount(warehouseId, skuId)).isEqualTo(1);
@@ -96,8 +83,8 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertThat(movementsOfReceiptItem(second.receiptItemId())).isEqualTo(1);
 
         // 对账恒等式（独立于 V19 的 SQL 重算一遍，避免「迁移自己的断言自己说了算」）
-        assertThat(ledgerBalanceMismatchCount()).isZero();
-        assertThat(confirmedLineWithoutMovementCount()).isZero();
+        assertLedgerBalanced(warehouseId, skuId);
+        assertThat(confirmedLineWithoutMovementCount(skuId)).isZero();
 
         // 本 (warehouse, sku) 的流水合计 = 收货合计
         assertThat(jdbc.queryForObject(
@@ -133,7 +120,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         // 再跑一遍 backfill：新 confirm 的源事实已入库 → 零增量（三条路径互不重复入库）
         runBackfillMovements();
         runBackfillBalances();
-        runBackfillReconciliation();
+        assertLedgerBalanced(warehouseId, skuId);
         assertThat(movementCount(warehouseId, skuId)).isEqualTo(2);
         assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("5.0000");
         assertThat(movementsOfReceiptItem(live.receiptItemId())).isEqualTo(1);
@@ -186,8 +173,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
 
         // 末条 after = 余额；若按 item id 回放，首条会是 6.0000 而 before 仍是 0 → 上面会失败
         assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("10.0000");
-        runBackfillReconciliation();
-        assertThat(ledgerBalanceMismatchCount()).isZero();
+        assertLedgerBalanced(warehouseId, skuId);
     }
 
     // ------------------------------------------------------------------
@@ -274,5 +260,32 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertThat(replayed.get("operator"))
                 .as("回放的 operator 必须等于收货单的操作者，而不是环境里的当前操作者")
                 .isEqualTo("sentinel-operator");
+    }
+
+    // ------------------------------------------------------------------
+    // 对账判据的判别性
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("对账判据可判别：绕过流水改账面必须报错，查不存在的 (wh,sku) 不许静默通过")
+    void reconciliationJudgeDetectsTamperingAndRefusesVacuousPass() {
+        Long warehouseId = seedWarehouseId();
+        Long skuId = newOnShelfSku("JUDGE");
+        W6Fixture fx = inboundFixture("JUDGE", skuId, "6.0000");
+        confirmReceipt(fx.receipt().getId(), "6.0000");
+        assertLedgerBalanced(warehouseId, skuId);
+
+        // 产品侧没有任何「改账面却不写流水」的入口，所以这条违规只能手工造
+        jdbc.update("UPDATE inventory_balance SET quantity = quantity + 1 "
+                        + "WHERE warehouse_id = ? AND sku_id = ? AND deleted = FALSE",
+                warehouseId, skuId);
+        assertThatThrownBy(() -> assertLedgerBalanced(warehouseId, skuId))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("方向净额不一致");
+
+        // 传错 id 时流水与余额两个聚合都是 NULL，差额判据本身无从判别
+        assertThatThrownBy(() -> assertLedgerBalanced(warehouseId, -1L))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("没有活动余额行");
     }
 }
