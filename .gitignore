@@ -32,6 +32,9 @@ local-environment-info.txt
 # Reference environment configs contain credentials
 /project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml
 
+# 本地参考资料（蔬东坡 17.4 操作手册 PDF、流程图等），只留本地不入库
+/docs/reference/
+
 # Build outputs and local environment files
 **/target/
 **/node_modules/
