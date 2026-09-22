@@ -50,6 +50,10 @@ class Verification:
         return result.returncode == 0
 
     def backend(self):
+        # Applied migration bytes break Flyway validate on every existing database; fail fast
+        # here instead of inside a minutes-long Surefire run.
+        self.run("migration-checksums",
+                 [sys.executable, str(ROOT / "tools/migration_checksum_guard.py"), "check"], ROOT)
         started = time.time()
         self.run("backend", ["mvn", "-B", "-pl", "sa-admin", "-am", "test"], SERVER)
         suites = []

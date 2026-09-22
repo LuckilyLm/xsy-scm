@@ -1,0 +1,177 @@
+{
+  "algorithm": "flyway-crc32-readline-v11",
+  "migrations": {
+    "1": {
+      "file": "V1__sa_system_poc_core.sql",
+      "checksum": 2020695199
+    },
+    "2": {
+      "file": "V2__sa_system_login_rbac.sql",
+      "checksum": 664772474
+    },
+    "3": {
+      "file": "V3__sa_system_login_support_and_seed.sql",
+      "checksum": 948915024
+    },
+    "4": {
+      "file": "V4__sa_system_runtime_support.sql",
+      "checksum": 680414715
+    },
+    "5": {
+      "file": "V5__sa_system_remaining_tables.sql",
+      "checksum": 1703536222
+    },
+    "6": {
+      "file": "V6__scm_product.sql",
+      "checksum": 1820501146
+    },
+    "7": {
+      "file": "V7__scm_product_permissions.sql",
+      "checksum": -2047045211
+    },
+    "8": {
+      "file": "V8__scm_customer_supplier.sql",
+      "checksum": -456974555
+    },
+    "9": {
+      "file": "V9__scm_customer_supplier_permissions.sql",
+      "checksum": 81939250
+    },
+    "10": {
+      "file": "V10__scm_pricing.sql",
+      "checksum": -83564911
+    },
+    "11": {
+      "file": "V11__scm_pricing_permissions.sql",
+      "checksum": -1042005945
+    },
+    "12": {
+      "file": "V12__sa_oa_enterprise_employee_bigint.sql",
+      "checksum": 554708256
+    },
+    "13": {
+      "file": "V13__scm_sales_order.sql",
+      "checksum": -945314735
+    },
+    "14": {
+      "file": "V14__scm_sales_order_permissions.sql",
+      "checksum": -160685528
+    },
+    "15": {
+      "file": "V15__scm_purchase.sql",
+      "checksum": 1541405941
+    },
+    "16": {
+      "file": "V16__scm_purchase_permissions.sql",
+      "checksum": 1061512285
+    },
+    "17": {
+      "file": "V17__sa_config_file_upload_size.sql",
+      "checksum": 998995225
+    },
+    "18": {
+      "file": "V18__scm_menu_icons.sql",
+      "checksum": -628217405
+    },
+    "19": {
+      "file": "V19__scm_inventory.sql",
+      "checksum": 602319876
+    },
+    "20": {
+      "file": "V20__scm_inventory_permissions.sql",
+      "checksum": 1019773777
+    },
+    "21": {
+      "file": "V21__scm_inventory_movement_append_only.sql",
+      "checksum": 1078143204
+    },
+    "22": {
+      "file": "V22__scm_receipt_putaway_warehouse.sql",
+      "checksum": -161855593
+    },
+    "23": {
+      "file": "V23__scm_warehouse_putaway_permissions.sql",
+      "checksum": -272407515
+    },
+    "24": {
+      "file": "V24__scm_table_column_comments.sql",
+      "checksum": -1741118640
+    },
+    "25": {
+      "file": "V25__scm_inventory_outbound_reservation.sql",
+      "checksum": 524882576
+    },
+    "26": {
+      "file": "V26__scm_order_reserve_stock_permission.sql",
+      "checksum": -932954433
+    },
+    "27": {
+      "file": "V27__scm_order_log_reserve_stock_type.sql",
+      "checksum": 349612620
+    },
+    "28": {
+      "file": "V28__scm_screen_permissions.sql",
+      "checksum": 1453000465
+    },
+    "29": {
+      "file": "V29__scm_inventory_stocktake.sql",
+      "checksum": -741722945
+    },
+    "30": {
+      "file": "V30__scm_inventory_loss_gain.sql",
+      "checksum": -716867411
+    },
+    "31": {
+      "file": "V31__scm_inventory_transfer.sql",
+      "checksum": 270423225
+    },
+    "32": {
+      "file": "V32__scm_inventory_warning_threshold.sql",
+      "checksum": 396752229
+    },
+    "33": {
+      "file": "V33__scm_inventory_conversion.sql",
+      "checksum": 868644367
+    },
+    "34": {
+      "file": "V34__scm_inventory_avg_cost.sql",
+      "checksum": -212953330
+    },
+    "35": {
+      "file": "V35__scm_sales_order_import.sql",
+      "checksum": 1749430637
+    },
+    "36": {
+      "file": "V36__scm_sales_order_import_permission.sql",
+      "checksum": 971073571
+    },
+    "37": {
+      "file": "V37__scm_inventory_reprice_zero_cost_balances.sql",
+      "checksum": -1758189797
+    },
+    "38": {
+      "file": "V38__scm_product_master_data_enhancement.sql",
+      "checksum": 490159425
+    },
+    "39": {
+      "file": "V39__scm_product_assistant_menu_permissions.sql",
+      "checksum": -2015379296
+    },
+    "40": {
+      "file": "V40__scm_geo_region_and_master_location.sql",
+      "checksum": 1485984004
+    },
+    "41": {
+      "file": "V41__scm_product_image_drop_file_url.sql",
+      "checksum": 1463621935
+    },
+    "42": {
+      "file": "V42__scm_delivery_static_route.sql",
+      "checksum": 2117947799
+    },
+    "43": {
+      "file": "V43__scm_delivery_permissions.sql",
+      "checksum": 19172074
+    }
+  }
+}
