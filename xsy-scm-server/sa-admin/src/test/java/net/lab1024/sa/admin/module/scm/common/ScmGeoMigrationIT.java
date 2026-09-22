@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,14 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     private static final String V40 = "V40__scm_geo_region_and_master_location.sql";
 
     private static final List<String> MASTER_TABLES = List.of("warehouse", "customer", "supplier");
+
+    /**
+     * V42 只给这三张表加了 {@code ck_…_location_complete}：配送链路用到的是仓库、客户与订单地址快照。
+     * supplier 没有这条聚合约束，V40 的细粒度五条是它唯一的地理守卫 —— 所以负向用例的可接受拒绝原因
+     * 逐表不同，不能统一按「细粒度或聚合」两个名字判。
+     */
+    private static final List<String> LOCATION_COMPLETE_TABLES =
+            List.of("warehouse", "customer", "order_address_snapshot");
 
     // ------------------------------------------------------------------
     // 字典种子
@@ -99,24 +108,64 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
             Long id = newMasterRow(table);
 
             // 只有经度没有纬度：既没法画也没法解释，M2 选点拿到这种行无从判断是否被截断过
-            assertRejected("ck_" + table + "_coordinate_pair",
+            assertRejectedBy("半套坐标", rejectReasons(table, "coordinate_pair"),
                     "UPDATE " + table + " SET longitude = 120.155078 WHERE id = ?", id);
 
             // CRS 只能伴随坐标存在：标了 GCJ02 却没坐标，等于声明了一个无法验证的口径
-            assertRejected("ck_" + table + "_crs_with_coordinate",
+            assertRejectedBy("带坐标系却没坐标", rejectReasons(table, "crs_with_coordinate"),
                     "UPDATE " + table + " SET geom_crs = 'GCJ02' WHERE id = ?", id);
 
             // 白名单之外的大小写变体必须进不来，否则两套坐标系会伪装成一套
-            assertRejected("ck_" + table + "_geom_crs",
+            assertRejectedBy("CRS 大小写变体", rejectReasons(table, "geom_crs"),
                     "UPDATE " + table + " SET longitude = 120.155078, latitude = 30.259244, "
                             + "geom_crs = 'gcj-02' WHERE id = ?", id);
 
-            assertRejected("ck_" + table + "_longitude",
-                    "UPDATE " + table + " SET longitude = 181, latitude = 30.259244 WHERE id = ?", id);
+            // 其余字段全合法，只让经度越界：拒绝原因才能归到取值域本身，而不是缺了 CRS
+            assertRejectedBy("经度越界", rejectReasons(table, "longitude"),
+                    "UPDATE " + table + " SET longitude = 181, latitude = 30.259244, "
+                            + "geom_crs = 'GCJ02' WHERE id = ?", id);
+
+            assertRejectedBy("纬度越界", rejectReasons(table, "latitude"),
+                    "UPDATE " + table + " SET longitude = 120.155078, latitude = 91, "
+                            + "geom_crs = 'GCJ02' WHERE id = ?", id);
 
             // 成对 + 白名单 + 域内：这条必须写得进，否则上面的拒绝只是「列根本没法用」
             assertThat(jdbc.update("UPDATE " + table + " SET longitude = 120.155078, latitude = 30.259244, "
                     + "geom_crs = 'GCJ02' WHERE id = ?", id)).isEqualTo(1);
+        }
+    }
+
+    /**
+     * 逐表钉住 V40 的细粒度地理 CHECK 与 V42 的聚合 CHECK 都还在。
+     *
+     * <p>负向用例只能断言「拒绝出自这几条约束之一」，所以某条约束被删掉不会让那里变红，
+     * 必须由这里保证：细粒度约束一旦消失，规则就只剩聚合约束一份，而它并不按列拆分原因。
+     */
+    @Test
+    @DisplayName("主档地理约束：V40 细粒度五条逐表齐备，V42 聚合约束按配送链路分布")
+    void geoCheckConstraintsExistOnEveryMaster() {
+        for (String table : MASTER_TABLES) {
+            List<String> present = jdbc.queryForList(
+                    "SELECT con.conname FROM pg_constraint con "
+                            + "JOIN pg_class c ON c.oid = con.conrelid "
+                            + "JOIN pg_namespace n ON n.oid = c.relnamespace "
+                            + "WHERE con.contype = 'c' AND n.nspname = current_schema() AND c.relname = ?",
+                    String.class, table);
+
+            assertThat(present).as("%s 的 V40 细粒度地理 CHECK 缺失", table).contains(
+                    "ck_" + table + "_geom_crs",
+                    "ck_" + table + "_longitude",
+                    "ck_" + table + "_latitude",
+                    "ck_" + table + "_coordinate_pair",
+                    "ck_" + table + "_crs_with_coordinate");
+
+            // 聚合约束决定负向用例允许哪些拒绝原因，所以它的有无也要钉住，不能只靠常量集合自证
+            String umbrella = "ck_" + table + "_location_complete";
+            if (LOCATION_COMPLETE_TABLES.contains(table)) {
+                assertThat(present).as("%s 缺少 V42 聚合约束 %s", table, umbrella).contains(umbrella);
+            } else {
+                assertThat(present).as("%s 多出 V42 聚合约束 %s", table, umbrella).doesNotContain(umbrella);
+            }
         }
     }
 
@@ -212,10 +261,13 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     /**
      * 在保存点里执行一条期望被拒绝的语句，随后回滚保存点以保持事务可用。
      *
-     * <p>必须断言**具体约束名**：只判「抛异常」的话，列名写错、语法错误同样会拒绝，
-     * 用例会在约束被删掉后依然绿着。
+     * <p>仍然断言拒绝出自哪条约束：只判「抛异常」的话，列名写错、语法错误同样会拒绝，
+     * 用例会在约束被删掉后依然绿着。但允许的是名字集合而不是单个名字 —— V42 的
+     * {@code ck_…_location_complete} 把成对、取值域与 CRS 白名单整体重写了一遍，
+     * 同一行往往同时违反细粒度约束和该聚合约束，而 PostgreSQL 只报它先求值到的那条。
+     * 细粒度约束本身是否还在，由 {@link #geoCheckConstraintsExistOnEveryMaster()} 钉住。
      */
-    private void assertRejected(String constraint, String sql, Object... args) {
+    private void assertRejectedBy(String rule, List<String> allowed, String sql, Object... args) {
         jdbc.execute("SAVEPOINT geo_case");
         String message = null;
         try {
@@ -224,8 +276,19 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
             message = rootMessage(e);
         }
         jdbc.execute("ROLLBACK TO SAVEPOINT geo_case");
-        assertThat(message).as("期望被 %s 拒绝，实际未被拒绝", constraint).isNotNull();
-        assertThat(message).as("拒绝原因不是 %s，实际: %s", constraint, message).contains(constraint);
+        String rejection = message;
+        assertThat(rejection).as("期望按「%s」被拒绝，实际未被拒绝", rule).isNotNull();
+        assertThat(allowed).as("拒绝原因不属于「%s」的任何一条约束，实际: %s", rule, rejection)
+                .anyMatch(rejection::contains);
+    }
+
+    /** 某条细粒度规则的可接受拒绝原因：它自己，加上（该表有的话）覆盖同一条规则的 V42 聚合约束。 */
+    private static List<String> rejectReasons(String table, String constraint) {
+        List<String> allowed = new ArrayList<>(List.of("ck_" + table + "_" + constraint));
+        if (LOCATION_COMPLETE_TABLES.contains(table)) {
+            allowed.add("ck_" + table + "_location_complete");
+        }
+        return allowed;
     }
 
     private static String rootMessage(Throwable throwable) {
