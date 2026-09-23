@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.google.common.collect.Lists;
 import jakarta.annotation.Resource;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
+import net.lab1024.sa.base.module.support.file.service.FileAccessGuard;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.apache.commons.lang3.StringUtils;
 
@@ -22,6 +24,9 @@ public class FileKeyVoSerializer extends JsonSerializer<String> {
     @Resource
     private FileService fileService;
 
+    @Resource
+    private FileAccessGuard fileAccessGuard;
+
 
     @Override
     public void serialize(String value, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
@@ -35,7 +40,15 @@ public class FileKeyVoSerializer extends JsonSerializer<String> {
         }
         String[] fileKeyArray = value.split(",");
         List<String> fileKeyList = Arrays.asList(fileKeyArray);
-        List<FileVO> fileKeyVOList = fileService.getFileList(fileKeyList);
+        // Embedded VO fields must obey the same per-file read policy as the direct
+        // /file/getFileUrl and /file/downLoad endpoints (see FileAccessGuard). Silently drop
+        // keys the current caller may not read rather than failing the whole response, since one
+        // field can legitimately mix files the caller owns with files they don't; fail closed
+        // (empty list) if the guard was not wired in.
+        List<String> readableKeyList = fileAccessGuard == null
+                ? List.of()
+                : fileAccessGuard.filterReadable(fileKeyList, SmartRequestUtil.getRequestUser());
+        List<FileVO> fileKeyVOList = fileService.getFileList(readableKeyList);
         jsonGenerator.writeObject(fileKeyVOList);
     }
 }

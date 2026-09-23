@@ -97,9 +97,13 @@ F0 adds no SCM business domain and no business attachment tables.
 otherwise the edit right would promote someone else's private attachment to all product viewers
 (confirmed data uplift, not a single-record read). `product_image.file_url` was dropped —
 presigned URLs are derived values and are always recomputed from `file_key`.
-The **read side remains open**: `FileKeyVoSerializer` → `FileService.getFileList()` still expands
-attachments server-side **without any per-user permission filtering**, so attachment URLs returned
-through business VO fields bypass the Controller-level read guard. The confirmed target model is a
+The **read-side serializer bypass is mitigated**: `FileKeyVoSerializer` now filters its comma-split
+keys through `FileAccessGuard.filterReadable(...)` before `FileService.getFileList()` — the same
+per-key policy as the Controller `checkRead` guard, but silently dropping unreadable keys instead of
+failing the whole VO — and fails closed (empty list) when there is no authenticated caller or the
+guard is unwired, so business VO fields (e.g. `FeedbackVO`, `EnterpriseVO`) no longer hand back URLs
+for attachments the caller may not read. This is a targeted mitigation, not the confirmed target
+model, which remains a
 **`scm_file_relation` table** (rights to the business object ⇒ rights to its files; upload to
 scratch, bind to create relation rows). Before any non-administrator business role is introduced,
 OA enterprise licences and similar COMMON private assets must move to business-permission +
