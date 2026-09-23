@@ -36,6 +36,7 @@
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收；**F0-DEBT-01 整体未关闭** | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`FileKeyVoSerializer` 旁路已于 2026-09-23 **临时收口**（逐 key 过 `FileAccessGuard.filterReadable`，依赖未注入 / 无身份时 fail closed），但 `FileService.getFileList(keys)` 本身仍是**无身份批量入口**、代码生成模板未改，`scm_file_relation`（FA-2）未落地 |
 | 物流配送 L0–L2（V42–V43） | 已实现，编译 / 构建 + 定向集成验证通过；浏览器与真实地图待验收 | 客户 / 仓库定位、订单地理快照、司机车辆、静态排线、规划锁定、取消释放、固定打印；高德配置待补，L3 未开始 |
+| 报表中心 R0 财务与报表只读地基（V50–V51） | 后端 IT + 前端单测 / Lint / 构建 + 浏览器 E2E 已验证 | 经营概览 / 销售 / 采购 / 收货与入库 / 库存五张只读分析页与 41 个只读端点；不建 receivable / payable / payment / voucher 任何事实表；见追加记录 2026-09-23 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
@@ -1289,3 +1290,86 @@ V42 之前没有第二个覆盖同列的约束，所以 M0 当时验过是绿的
 报出聚合约束名的原因。该不对称已写成常量与逐表断言，不再靠巧合。
 验证：`ScmGeoMigrationIT` 7/7（一次性临时库，V1→V43 整链）。随后在全新一次性临时库重跑全量后端回归
 → **752 项，Failures 0、Errors 0、Skipped 5，BUILD SUCCESS**（5 项仍是未配置对象存储环境的 cloud IT）。
+
+## Finance R0 报表中心（2026-09-23，V50–V51）
+
+按 [`docs/plan/finance-reporting-r0-plan.md`](plan/finance-reporting-r0-plan.md) 实施只读报表地基。
+基线核对：`git fetch` 后本地 HEAD 与 `origin/main` 同为 `c9f6954`，迁移最大号 V49，故选号 V50 / V51。
+
+**交付边界**：新增后端只读域 `module.scm.report`（Controller 1 + Service 5 + DAO 1 + Mapper XML 1，
+41 个只读端点、11 个 Excel 导出）、前端 5 张页面 + 共享报表组件、V50（菜单与权限 1200–1216，
+仅授 SUPER_ADMIN）、V51（`sales_order.confirmed_at` / `order_refund.completed_at` /
+`purchase_receipt.confirmed_at` 三条部分索引）。**新财务事实表数量 = 0**：不建
+receivable / payable / payment / voucher / report_snapshot，不改任何写流程与状态机。
+
+**守住的口径**（这些是本次的实现约束，不是文档承诺）：销售统计固定
+`CONFIRMED + confirmed_at + settlement_*`，采购固定提交后四态按 `submitted_at`；
+收货确认与库存入账分列（`putaway_status` 与 `PURCHASE_IN` 流水是两条生命周期）；
+命名里没有营业收入 / 已收 / 未收 / 应收 / 应付 / 毛利；销售出库成本不猜归到订单；
+数量不跨单位相加（多单位场景返回按单位分组的文本）；收发存不给期初 / 期末，因为流水存的是
+本次 `unit_cost` 而非变动后的 `avg_cost`，且账本不从库存起点完整覆盖；
+金额与数量保持 4 位事实精度；日界一律 Asia/Shanghai 半开区间，跨度上限 366 天。
+
+**权限模型**：`scm:report:{overview,sales,purchase,inventory}:query` 管页面，
+`scm:report:cost:query` 独立管成本（字段级失败关闭抹除为 `null`，前端渲染 `—`；
+「当前库存价值」整页是成本视图故接口直接拦），`scm:report:export` 与对应查询权限 AND。
+导出与列表调用同一查询方法，超过行数上限明确拒绝（41112）而不是静默截断。
+
+验证结果：
+
+- 迁移校验和守卫 `check`：51 条、drift 0 / missing 0 / renamed 0。
+- `ScmReportPgIT` **9/9**（一次性临时库 V1→V51）：25 条报表 SQL 全部在真实 PostgreSQL 执行（空筛选与
+  全筛选各一轮）、DRAFT/PENDING 不进统计、一单多行不放大退款、均价分母为 0 返回 null、
+  366 天边界两侧、无成本权限时成本字段为 null、控制器权限码与 `t_menu.api_perms` 逐条对齐、
+  11 个导出写出合法 xlsx。
+- 项目闸门 `python tools/verify.py all`：migration-checksums / backend / ts-ratchet / frontend-lint /
+  frontend-build / **e2e 全部 exit 0**；后端 **905 项，Failures 0、Errors 0、Skipped 5**（5 项为未配置
+  对象存储环境的 cloud IT，按既有约定跳过）。全量 Playwright 同样 exit 0，其中 7 项是云端存储专用
+  spec 在本地存储下的按设计 skip。闸门整体判 **INCOMPLETE** 而非 PASS，唯一原因就是这两组
+  环境性排除（后端 5 + E2E 7），没有任何失败项。
+- 前端：`npm run lint` 0 错误（3 条既有警告）、`npm run test` 全绿（报表模型 25 项 + 报表契约 22 项）、
+  `npm run build` 通过、
+  TS 棘轮 PASS 且新增 0；5 个菜单 `component` 路径逐条对应到真实 `.vue` 文件。
+**契约测试的收口（同一轮）**：前端 `test/finance-report-contract.test.mjs` 首跑有 4 项红，逐条判定后
+只有页面侧才改页面，其余是检查本身不成立：
+
+- 它引用了一个未定义变量（写文件时被截断），且拿字面 `/scm/report/...` 去比对源码里的
+  `` `${BASE}/...` `` —— 永远匹配不上，已按真实源文本形态匹配；
+- 「每页都要有 `exportQuery()`」对概览页不成立：计划 §30 没有概览导出端点，概览页**有**导出反而是
+  越界，因此改为四张有导出的页必须装配、概览页必须没有；
+- 「导出装配不得带分页」原按「函数体恰好一行 return」匹配，多行写法直接被判成缺装配，改按函数体匹配；
+- 「不得内联流水类型清单」原正则 `` =\s*\[[^\]]*PURCHASE_IN `` 会命中概览页 KPI 卡的提示文案
+  （`hint: 'PURCHASE_IN 流水的 SUM(...)'`），只保留「把枚举名当数组元素」这一真实形态；
+- 「报表页不得出现入库动作」原按词匹配 `确认入库` 会把 `WAREHOUSE_CONFIRM` 的正式中文名
+  「仓库确认入库」说明文案判成违规，改成按 affordance 判（不得调用 `putaway(`、不得有入库按钮）。
+
+- Playwright `e2e/scm-report.spec.ts` **11/11**（真实浏览器，共享夹具断言 0 pageerror）：
+  五张报表页逐个真实渲染（非活动 Tab 面板会留在 DOM 里，因此可见性过滤是必需的）、
+  概览页命名与默认本月、销售只计 CONFIRMED 且金额等于订单结算总额、采购排除 DRAFT/CANCELLED、
+  `WAREHOUSE_CONFIRM` 收货后只出现在收货与待入库、putaway 后进入库明细且成本等于
+  `quantity × unit_cost`、`DIRECT` 同事务即可见、流水方向由枚举派生、损耗只计盘亏与报损、
+  收发存不伪造期初期末、导出为合法 xlsx 且文件名由服务端给出、无权限账号在接口层被拒。
+- 索引：`EXPLAIN` 确认三条新索引谓词匹配且可被选中（含 Index Only Scan），
+  `inventory_movement` 复用既有 `idx_inventory_movement_occurred` 未新增。
+
+过程中由验证暴露并当场修掉的真实缺陷：
+
+1. `salesByCustomer` 引用了 `cat/cat2/cat3` 却漏了分类 JOIN —— 一旦在销售分析里带分类筛选就会
+   `missing FROM-clause entry`。首轮报表 IT 没设 `categoryId` 因而没发现，是「逐分支渲染全部 mapper
+   语句」的门禁抓到的；已把报表 IT 扩为空筛选与全筛选两轮。
+2. FastExcel 没有 `OffsetDateTime` 的 Converter：含时间列的导出在写出那一刻抛
+   `ExcelWriteDataConvertException`，HTTP 200 已发出、异常只体现在下载字节里。已在共享写出层把时间
+   归一化为北京时间字符串、`BigDecimal` 走 `toPlainString()`，11 个导出同时收口。
+
+未覆盖（不得当成已完成）：
+
+- 成本权限的**细粒度**负向（有 `inventory:query` 而无 `cost:query` 的真实角色）只在 IT 层以
+  fail-closed 路径覆盖，浏览器层只验到「无角色被整体拒绝」。
+- 计划 §42 的客户明细下钻原单、供应商 / 采购员抽屉、每日统计 deep-link 未写成浏览器用例；
+  后端接口与前端组件已实现，交互实跑待补。
+- 正式岗位数据范围（§33）未做：**功能权限已验证，正式岗位数据范围未宣称完成**。
+  上线给财务 / 采购员 / 仓管 / 销售前，仍需处理数据范围与 F0 文件授权债（FA-1 / FA-2）。
+- EXPLAIN 跑在数据量极小的一次性库上，只能证明索引「可被选中」，不能据此判断真实数据量下的
+  代价取舍；上线前应在全量库复核一次。
+- 规划稿里的 R0-B 采购价格波动接口已实现（`/scm/report/purchase/price-trend`），
+  销售成交价波动按计划未做。

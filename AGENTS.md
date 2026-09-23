@@ -138,6 +138,16 @@ touched.
 > 完整成本核算、分拣、配送、溯源）**现已全部重新纳入范围**，归属见
 > [`docs/requirements/2026-09-19-需求覆盖与待办清单.md`](./docs/requirements/2026-09-19-需求覆盖与待办清单.md)。
 > 推进原则：**先搭主线功能的后台模块，小程序（W6-2）排在最后**。
+Finance R0 = 报表中心只读地基 (**BACKEND IT + FRONTEND + BROWSER E2E VERIFIED**, 2026-09-23) —
+`module.scm.report`：五张只读分析页、41 个只读端点、11 个 Excel 导出，加 V50 菜单权限 / V51 日期轴索引。
+**Zero new financial fact tables**: no receivable / payable / payment / voucher / report_snapshot, and no write
+path or order state machine was touched. Naming is a hard boundary: 已确认订单金额
+(`CONFIRMED + confirmed_at + settlement_*`) is never called 营业收入; 收货确认 ≠ 库存入账; 销售出库成本
+is never attributed to an order; quantities never sum across units; 历史期初 / 期末成本 is not displayed,
+because movements store the per-movement `unit_cost` rather than the post-change `avg_cost`. Cost columns
+need the separate `scm:report:cost:query` and are masked to `null` (rendered `—`), never to `0`.
+Functional permissions are verified; **formal per-role data scope is NOT claimed** (plan §33).
+
 W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
 [`docs/progress.md`](./docs/progress.md) are adjudicated.
 
@@ -220,6 +230,10 @@ V48  V48__scm_stocktake_import_permission.sql      Wave 6 data-only，盘点导�
 V49  V49__scm_product_image_type_gallery.sql       product PCO-2 图片类型语义收口（审计 §7.1）：
                                                    image_type 改为 GALLERY/DETAIL，主图唯一事实
                                                    回到 is_primary；V44 已应用不可改，故新增一步
+V50  V50__scm_report_center_permissions.sql         report Finance R0 data-only，报表中心菜单与权限
+                                                   （1200–1216，含独立的 scm:report:cost:query，仅授 SUPER_ADMIN）
+V51  V51__scm_report_date_axis_indexes.sql          report 报表日期轴部分索引：sales_order.confirmed_at、
+                                                   order_refund.completed_at、purchase_receipt.confirmed_at
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
