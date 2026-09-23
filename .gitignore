@@ -55,6 +55,7 @@ local-environment-info.txt
 
 # Keep local deployment state private; include only root Compose build assets.
 /deploy/*
+!/deploy/README.md
 !/deploy/minio/
 /deploy/minio/*
 !/deploy/minio/bootstrap.sh
