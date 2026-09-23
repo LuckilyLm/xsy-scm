@@ -8,6 +8,8 @@ import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSkuForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuAddForm;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImageCenterVO;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImageVO;
+import net.lab1024.sa.admin.module.scm.product.manager.ProductImageChangeSet;
+import net.lab1024.sa.admin.module.scm.product.manager.ProductImageSyncManager;
 import net.lab1024.sa.admin.module.scm.product.service.ProductImageCenterService;
 import net.lab1024.sa.admin.module.scm.product.service.ProductSpuService;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
@@ -44,6 +46,8 @@ import static org.assertj.core.api.Assertions.*;
 class ProductImageCenterPgIT {
     @Autowired
     ProductImageCenterService service;
+    @Autowired
+    ProductImageSyncManager syncManager;
     @Autowired
     ProductSpuService spus;
     @Autowired
@@ -299,6 +303,107 @@ class ProductImageCenterPgIT {
         // 唯一索引只看 is_primary：图片归类成详情图也不能绕出「两张主图」
         assertThatThrownBy(() -> jdbc.update("UPDATE product_image SET is_primary=TRUE WHERE id=?", second))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    /**
+     * 把既有行改成详情图：库里历史数据本来就有这个取值，用例用它复现「已存在 DETAIL 行」的前置状态。
+     * 走裸 SQL 是因为当前没有任何写入口会产出详情图，这正是要保护的现状。
+     */
+    private void markDetail(Long imageId) {
+        assertThat(jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", imageId)).isEqualTo(1);
+    }
+
+    private String typeOf(Long imageId) {
+        return jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, imageId);
+    }
+
+    private Long addImage(Long spuId, String name, int sortOrder) {
+        var before = imageIds(spuId);
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(key(name));
+        item.setPrimaryFlag(false);
+        item.setSortOrder(sortOrder);
+        bind.setItems(new ArrayList<>(List.of(item)));
+        service.batchBind(bind);
+        return imageIds(spuId).stream().filter(id -> !before.contains(id)).findFirst().orElseThrow();
+    }
+
+    @Test
+    void setPrimaryOnGalleryKeepsDetailType() {
+        Long spuId = newSpu();
+        Long detail = addImage(spuId, "detail", 1);
+        markDetail(detail);
+        Long gallery = addImage(spuId, "gallery", 2);
+        var setPrimary = new ProductImageCenterForms.SetPrimaryForm();
+        setPrimary.setSpuId(spuId);
+        setPrimary.setImageId(gallery);
+        service.setPrimary(setPrimary);
+        // 换主图只动 is_primary：详情图不能因为整批回写而被归类成图集
+        assertThat(typeOf(detail)).isEqualTo("DETAIL");
+        assertThat(typeOf(gallery)).isEqualTo("GALLERY");
+        assertThat(jdbc.queryForObject("SELECT is_primary FROM product_image WHERE id=?", Boolean.class, gallery)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='DETAIL' AND deleted=FALSE",
+                Integer.class, spuId)).isEqualTo(1);
+    }
+
+    @Test
+    void reorderKeepsEveryImageType() {
+        Long spuId = newSpu();
+        Long gallery = imageIds(spuId).getFirst();
+        Long detail = addImage(spuId, "detail", 1);
+        markDetail(detail);
+        var reorder = new ProductImageCenterForms.ReorderForm();
+        reorder.setSpuId(spuId);
+        reorder.setOrderedImageIds(new ArrayList<>(List.of(detail, gallery)));
+        service.reorder(reorder);
+        assertThat(imageIds(spuId)).containsExactly(detail, gallery);
+        assertThat(typeOf(detail)).isEqualTo("DETAIL");
+        assertThat(typeOf(gallery)).isEqualTo("GALLERY");
+    }
+
+    @Test
+    void bindingNewGalleryImageLeavesExistingDetailType() {
+        Long spuId = newSpu();
+        Long detail = imageIds(spuId).getFirst();
+        markDetail(detail);
+        Long added = addImage(spuId, "fresh", 1);
+        // 新上传的普通商品图仍按图集归类，既存详情图不受整批回写影响
+        assertThat(typeOf(added)).isEqualTo("GALLERY");
+        assertThat(typeOf(detail)).isEqualTo("DETAIL");
+    }
+
+    @Test
+    void batchRemoveLeavesSurvivingDetailType() {
+        Long spuId = newSpu();
+        Long detail = imageIds(spuId).getFirst();
+        markDetail(detail);
+        Long extra = addImage(spuId, "extra", 1);
+        var remove = new ProductImageCenterForms.BatchRemoveForm();
+        remove.setSpuId(spuId);
+        remove.setImageIds(new ArrayList<>(List.of(extra)));
+        service.batchRemove(remove);
+        assertThat(imageIds(spuId)).containsExactly(detail);
+        assertThat(typeOf(detail)).isEqualTo("DETAIL");
+    }
+
+    /** 内容角色是库内事实，不接受表单申报：即使回写行谎称自己是图集图，同步链也必须按现值落库。 */
+    @Test
+    void syncIgnoresImageTypeClaimedByExistingRow() {
+        Long spuId = newSpu();
+        Long detail = imageIds(spuId).getFirst();
+        markDetail(detail);
+        var row = service.query(spuId).getImages().getFirst();
+        var form = new ProductImageForm();
+        form.setImageId(row.getImageId());
+        form.setVersion(row.getVersion());
+        form.setFileKey(row.getFileKey());
+        form.setPrimaryFlag(row.getPrimaryFlag());
+        form.setSortOrder(row.getSortOrder());
+        form.setImageType("GALLERY");
+        syncManager.sync(spuId, ProductImageChangeSet.between(syncManager.existing(spuId), new ArrayList<>(List.of(form))));
+        assertThat(typeOf(detail)).isEqualTo("DETAIL");
     }
 
     private void conflict(Runnable action, int code) {

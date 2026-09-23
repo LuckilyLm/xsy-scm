@@ -26,9 +26,8 @@ public class ProductImageSyncManager {
     /** 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。 */
     private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
     /**
-     * 商品图集：本管理器写入的行都来自商品表单 / 图片中心的图集列表，因此取值固定。
-     * V49 之后 image_type 只表达内容角色，<b>不</b>再派生自 primaryFlag——主图唯一事实是 is_primary，
-     * 否则「切主图」会顺带改写图片类型，等于保留第二个主图事实源。
+     * 图集：新增行的缺省归类。V49 之后 image_type 只表达内容角色，<b>不</b>再派生自 primaryFlag——
+     * 主图唯一事实是 is_primary，否则「切主图」会顺带改写图片类型，等于保留第二个主图事实源。
      */
     private static final String IMAGE_TYPE_GALLERY = "GALLERY";
     private final ProductImageDao dao;
@@ -46,17 +45,18 @@ public class ProductImageSyncManager {
         Map<String,FileVO> metadata=files.getFileList(requested.stream().map(ProductImageForm::getFileKey).toList())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey,Function.identity(),(a,b)->a));
         for (var form:requested) if (!metadata.containsKey(form.getFileKey())) throw new ScmBusinessException(IMAGE_INVALID);
-        Map<Long,String> persistedKeys=existing(spuId).stream().collect(Collectors.toMap(ProductImageEntity::getId,ProductImageEntity::getFileKey));
-        for (var form:requested) requirePublicImageKey(form,persistedKeys);
+        Map<Long,ProductImageEntity> persisted=existing(spuId).stream()
+                .collect(Collectors.toMap(ProductImageEntity::getId,Function.identity()));
+        for (var form:requested) requirePublicImageKey(form,persisted);
         dao.clearPrimary(spuId);
         for (var form : changes.updated()) {
-            var entity = entity(spuId, form, metadata.get(form.getFileKey()));
+            var entity = entity(spuId, form, metadata.get(form.getFileKey()), false);
             entity.setId(form.getImageId());
             entity.setVersion(form.getVersion());
             if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         }
         for (var form : changes.inserted()) {
-            var entity = entity(spuId, form, metadata.get(form.getFileKey()));
+            var entity = entity(spuId, form, metadata.get(form.getFileKey()), true);
             entity.setVersion(0);
             entity.setCreatedAt(entity.getUpdatedAt());
             entity.setCreatedBy(entity.getUpdatedBy());
@@ -79,18 +79,22 @@ public class ProductImageSyncManager {
      * 本裁决之前落库的行仍挂着私有 key，仅「沿用该行原有 key」放行，
      * 否则改排序或切主图会被历史数据挡住，而换绑成另一个私有 key 依旧拒绝。
      */
-    private void requirePublicImageKey(ProductImageForm form,Map<Long,String> persistedKeys) {
+    private void requirePublicImageKey(ProductImageForm form,Map<Long,ProductImageEntity> persisted) {
         String fileKey=form.getFileKey();
-        if (fileKey.startsWith(PUBLIC_IMAGE_FOLDER) || fileKey.equals(persistedKeys.get(form.getImageId()))) return;
+        var row=persisted.get(form.getImageId());
+        if (fileKey.startsWith(PUBLIC_IMAGE_FOLDER) || (row != null && fileKey.equals(row.getFileKey()))) return;
         throw new ScmBusinessException(IMAGE_NOT_PUBLIC);
     }
-    private ProductImageEntity entity(Long spuId,ProductImageForm form,FileVO file) {
+    private ProductImageEntity entity(Long spuId,ProductImageForm form,FileVO file,boolean inserting) {
         if (file.getFileUrl()==null || file.getFileUrl().isBlank()) throw new ScmBusinessException(IMAGE_INVALID);
         var entity=new ProductImageEntity(); entity.setSpuId(spuId); entity.setFileKey(file.getFileKey());
         entity.setFileName(file.getFileName());
         entity.setFileSize(file.getFileSize()==null ? null : file.getFileSize().longValue());
         entity.setPrimaryFlag(form.getPrimaryFlag()); entity.setSortOrder(form.getSortOrder());
-        entity.setImageType(IMAGE_TYPE_GALLERY);
+        // 只有新增行才落内容角色；已有行留 null，让非空更新策略把 image_type 整列排除在 UPDATE 之外。
+        // 回写读到的现值并不安全：同一会话内的旁路改库不会刷新 MyBatis 的一级缓存，
+        // 一旦按过期实体回写，「改个市场价或切主图」就会把详情图静默降级成图集图。
+        if (inserting) entity.setImageType(form.getImageType() == null ? IMAGE_TYPE_GALLERY : form.getImageType());
         entity.setUpdatedAt(OffsetDateTime.now()); entity.setUpdatedBy(ScmOperator.current()); return entity;
     }
 }

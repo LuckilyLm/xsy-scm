@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.product;
 
 import net.lab1024.sa.admin.AdminApplication;
+import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSkuForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuAddForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductTagAddForm;
@@ -12,6 +13,8 @@ import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.admin.test.PgITPaths;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
+import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
+import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +61,8 @@ class ProductImportUpdatePgIT {
     @Autowired
     ProductTagService tags;
     @Autowired
+    FileService files;
+    @Autowired
     JdbcTemplate jdbc;
 
     private String prefix;
@@ -65,6 +70,7 @@ class ProductImportUpdatePgIT {
     private String lastProductName;
     private final List<Long> createdSpuIds = new ArrayList<>();
     private final List<Long> createdTagIds = new ArrayList<>();
+    private final List<String> createdFileKeys = new ArrayList<>();
 
     @BeforeEach
     void operator() {
@@ -86,6 +92,31 @@ class ProductImportUpdatePgIT {
             jdbc.update("DELETE FROM product_spu WHERE id=?", spuId);
         }
         for (var tagId : createdTagIds) jdbc.update("DELETE FROM product_tag WHERE id=?", tagId);
+        // 本类刻意不用测试事务回滚，上传行会真的提交；用例自建的商品图用完即回收，
+        // 只留本地磁盘上的探针文件，不给库留下没有业务引用的附件
+        for (var fileKey : createdFileKeys) jdbc.update("DELETE FROM t_file WHERE file_key=?", fileKey);
+    }
+
+    @Test
+    void priceOnlyUpdateKeepsDetailImageType() throws Exception {
+        var product = product(true);
+        var image = jdbc.queryForList("SELECT id FROM product_image WHERE spu_id=? AND deleted=FALSE ORDER BY id",
+                Long.class, product).getFirst();
+        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, image))
+                .isEqualTo("GALLERY");
+        // 详情图只可能来自历史行或专门的入口：这里用裸 SQL 造出该前置状态
+        assertThat(jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", image)).isEqualTo(1);
+
+        var target = skuIdOf(product, 0);
+        var result = imports.importFile(updateRows(row(product, target, cell(MARKET_PRICE, "9.0000"))), ImportMode.UPDATE);
+        assertThat(result.getTotalErrors()).isZero();
+        assertThat(price(target)).isEqualByComparingTo("9.0000");
+
+        // 改价会带着既有图片走同一条同步链：内容角色与主图事实都必须原样保留
+        var after = jdbc.queryForMap("SELECT image_type, is_primary, version FROM product_image WHERE id=?", image);
+        assertThat(after.get("image_type")).isEqualTo("DETAIL");
+        assertThat(after.get("is_primary")).isEqualTo(true);
+        assertThat((Integer) after.get("version")).isGreaterThan(0);
     }
 
     @Test
@@ -185,6 +216,10 @@ class ProductImportUpdatePgIT {
 
     /** 两 SKU 商品：首个 SKU 为默认且带条码，另带别名、描述与标签，作为「不能被导入抹掉」的原值。 */
     private Long product() {
+        return product(false);
+    }
+
+    private Long product(boolean withImage) {
         productSeq++;
         lastProductName = code("A") + " 商品";
         var form = new ProductSpuAddForm();
@@ -200,9 +235,25 @@ class ProductImportUpdatePgIT {
         var primary = sku(true, "1", "500g/份");
         var extra = sku(false, "2", "1kg/箱");
         form.setSkuList(new ArrayList<>(List.of(primary, extra)));
+        if (withImage) form.setImages(new ArrayList<>(List.of(galleryImage())));
         var id = service.add(form);
         createdSpuIds.add(id);
         return id;
+    }
+
+    /** 商品图必须引用文件模块里真实存在的 public/image/ 对象，所以夹具走真上传而不是编造 fileKey。 */
+    private ProductImageForm galleryImage() {
+        byte[] png = Base64.getDecoder().decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=");
+        var uploaded = files.fileUpload(new MockMultipartFile("file", "iu-" + prefix + productSeq + ".png", "image/png", png),
+                FileFolderTypeEnum.PUBLIC_IMAGE.getValue(), SmartRequestUtil.getRequestUser());
+        assertThat(uploaded.getOk()).isTrue();
+        createdFileKeys.add(uploaded.getData().getFileKey());
+        var image = new ProductImageForm();
+        image.setFileKey(uploaded.getData().getFileKey());
+        image.setPrimaryFlag(true);
+        image.setSortOrder(0);
+        return image;
     }
 
     private ProductSkuForm sku(boolean defaultFlag, String tag, String specName) {
