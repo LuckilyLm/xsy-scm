@@ -77,8 +77,13 @@ export const deliveryApi = {
     customersView: (id: Id) => call<RouteCustomerView[]>('get', `/routes/${id}/customers-view`),
     printOrders: (id: Id, version: number, orderIds: Id[]) =>
         printCommand<PrintResult>(`/routes/${id}/print/orders`, {version, orderIds}),
-    printCustomers: (id: Id, version: number, customerIds: Id[], orderPrintFilter: 'ALL' | 'PRINTED' | 'UNPRINTED') =>
-        printCommand<PrintResult>(`/routes/${id}/print/customers`, {version, customerIds, orderPrintFilter}),
+    printCustomers: (id: Id,
+                     version: number,
+                     customerIds: Id[] | undefined,
+                     customerStatusFilter: 'ALL' | 'PRINTED' | 'UNPRINTED' | 'PARTIAL',
+                     orderPrintFilter: 'ALL' | 'PRINTED' | 'UNPRINTED') =>
+        printCommand<PrintResult>(`/routes/${id}/print/customers`,
+            {version, customerIds, customerStatusFilter, orderPrintFilter}),
     warehouses: () => call<Warehouse[]>('get', '/options/warehouses'),
     drivers: () => call<Driver[]>('get', '/options/drivers'),
     vehicles: () => call<Vehicle[]>('get', '/options/vehicles'),

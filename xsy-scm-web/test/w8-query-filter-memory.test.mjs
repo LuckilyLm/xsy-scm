@@ -45,6 +45,8 @@ test('客户列表页接入查询记忆：查询保存、重置清空、挂载�
   assert.match(vue, /function reset\(\)\s*\{[\s\S]*?queryMemory\.clear\(\);/);
   // 挂载：恢复记忆后强制 pageNum=1，不把用户带回旧页码
   assert.match(vue, /Object\.assign\(filters, queryMemory\.load\(\), \{pageNum: 1\}\);/);
+  // 模板可达性：光有 search() 实现没用，按钮必须真的绑到它（历史上这里是死按钮）
+  assert.match(vue, /<a-button type="primary" @click="search">查询<\/a-button>/);
 });
 
 test('深链详情页不接入查询记忆，避免旧筛选污染 customerId 上下文', () => {

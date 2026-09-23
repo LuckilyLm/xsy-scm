@@ -16,7 +16,7 @@
 -->
 <template>
   <section aria-label="商品-供应商关系">
-    <a-form class="smart-query-form" layout="inline" @finish="search">
+    <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="供应商" class="smart-query-form-item">
           <SupplierSelect v-model:value="filters.supplierId" width="240px" />
@@ -29,7 +29,7 @@
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-space>
-            <a-button type="primary" html-type="submit">查询</a-button>
+            <a-button type="primary" @click="search">查询</a-button>
             <a-button @click="reset">重置</a-button>
           </a-space>
         </a-form-item>

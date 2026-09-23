@@ -3,11 +3,11 @@
     <a-row :gutter="12">
       <a-col :xs="24" :md="9">
         <a-card size="small" title="选择商品" :bordered="false">
-          <a-form layout="inline" class="pick-form" @finish="search">
+          <a-form layout="inline" class="pick-form">
             <a-form-item><a-input v-model:value="keyword" allow-clear placeholder="SPU 编码 / 名称 / 助记码"
                                    style="width: 200px"/></a-form-item>
             <a-form-item><a-checkbox v-model:checked="onlyNoPrimary">仅无主图</a-checkbox></a-form-item>
-            <a-form-item><a-space><a-button type="primary" html-type="submit">查询</a-button>
+            <a-form-item><a-space><a-button type="primary" @click="search">查询</a-button>
               <a-button @click="resetPick">重置</a-button></a-space></a-form-item>
           </a-form>
           <a-alert v-if="pickError" :message="pickError" type="error" show-icon class="gap"/>
@@ -80,25 +80,24 @@
       <a-upload :file-list="[]" :before-upload="stageFiles" accept="image/*" multiple :show-upload-list="false">
         <a-button :loading="staging">选择多张图片</a-button>
       </a-upload>
-      <template v-if="matches.length">
-        <div class="match-summary">
-          命中 {{ matchedCount }} · 歧义 {{ ambiguousCount }} · 未匹配 {{ unmatchedCount }}
-          <a-button size="small" @click="clearMatches">清空</a-button>
-        </div>
-        <a-table :data-source="matches" :columns="matchColumns" row-key="fileKey" size="small"
-                 :pagination="false" :scroll="{ y: 300 }">
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.dataIndex === 'status'">
-              <a-tag :color="statusColor(record.status)">{{ statusText(record.status) }}</a-tag>
-            </template>
-            <template v-else-if="column.dataIndex === 'target'">
-              <span v-if="record.status === 'matched'">{{ record.candidates[0].spuCode }}</span>
-              <span v-else-if="record.status === 'ambiguous'">{{ record.candidates.map((c: SpuTarget) => c.spuCode).join(' / ') }}</span>
-              <span v-else class="muted">—</span>
-            </template>
+      <!-- 计数行始终渲染：一张都没选时也要显性给出「命中 0」，否则「预览确认后才写入」只剩一个禁用按钮 -->
+      <div class="match-summary">
+        命中 {{ matchedCount }} · 歧义 {{ ambiguousCount }} · 未匹配 {{ unmatchedCount }}
+        <a-button v-if="matches.length" size="small" @click="clearMatches">清空</a-button>
+      </div>
+      <a-table v-if="matches.length" :data-source="matches" :columns="matchColumns" row-key="fileKey" size="small"
+               :pagination="false" :scroll="{ y: 300 }">
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'status'">
+            <a-tag :color="statusColor(record.status)">{{ statusText(record.status) }}</a-tag>
           </template>
-        </a-table>
-      </template>
+          <template v-else-if="column.dataIndex === 'target'">
+            <span v-if="record.status === 'matched'">{{ record.candidates[0].spuCode }}</span>
+            <span v-else-if="record.status === 'ambiguous'">{{ record.candidates.map((c: SpuTarget) => c.spuCode).join(' / ') }}</span>
+            <span v-else class="muted">—</span>
+          </template>
+        </template>
+      </a-table>
       <template #footer>
         <a-button @click="closeBatch">取消</a-button>
         <a-button type="primary" :disabled="!matchedCount" :loading="binding" @click="confirmBatch">

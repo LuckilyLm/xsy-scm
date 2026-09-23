@@ -110,8 +110,12 @@ export interface DemandSummaryPreviewQuery extends Page {
  * `PurchaseDemandSummaryVO` —— 预览聚合行。
  *
  * 数量全部是后端 SQL 内用 `BigDecimal` 算好的四位定点字符串（`null` 与 `"0.0000"` 语义不同），
- * 前端**不得**重算 `availableQuantity` / `shortageAgainstAvailable`（§6A.4）。
- * `UNIT_MISMATCH` 时 `shortageAgainstAvailable` 为 `null`（Q13 单位门禁，不猜折算率）。
+ * 前端**不得**重算 `availableQuantity` / `stockComparisonGap`（§6A.4）。
+ * `UNIT_MISMATCH` 时 `stockComparisonGap` 为 `null`（Q13 单位门禁，不猜折算率）。
+ *
+ * 预留分三段：`reservedQuantity` 是全仓该 SKU 的总预留，其中 `selectedOrderReservedQuantity`
+ * 属于本批预览订单自身，`otherReservedQuantity` 才是其他业务的占用。判断本批是否缺料要看
+ * `stockAvailableForSelectedOrders`（= 现有量 − 其他业务预留），不是 `availableQuantity`。
  */
 export interface DemandSummaryRow {
     skuId: Id;
@@ -128,8 +132,12 @@ export interface DemandSummaryRow {
     orderDemandQuantity?: string | null;
     onHandQuantity?: string | null;
     reservedQuantity?: string | null;
+    selectedOrderReservedQuantity?: string | null;
+    otherReservedQuantity?: string | null;
     availableQuantity?: string | null;
-    shortageAgainstAvailable?: string | null;
+    stockAvailableForSelectedOrders?: string | null;
+    /** 已确认订单与当前库存/预留的对比差额，**不是**最终净采购建议（§6A.6 未裁决）。 */
+    stockComparisonGap?: string | null;
     /** STOCK_ENOUGH / SHORTAGE / ZERO_STOCK / UNIT_MISMATCH / NO_BALANCE。 */
     calculationStatus?: string;
 }

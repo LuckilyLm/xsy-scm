@@ -56,7 +56,7 @@
             </a-form-item>
           </a-col>
         </a-row>
-        <ItemTable :items="form.items" :customer-id="form.customerId" @price="preview"/>
+        <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" @price="preview"/>
         <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
       </a-form>
     </a-spin>
@@ -72,7 +72,8 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
-import {ref} from 'vue';
+import {onBeforeUnmount, ref, watch} from 'vue';
+import {onBeforeRouteLeave} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
@@ -148,6 +149,9 @@ async function promptRestoreDraft() {
     okText: '恢复',
     cancelText: '丢弃',
     maskClosable: false,
+    // 本次会话首次打开时，抽屉容器在 Vue 异步更新后才挂到 body，可能排在确认框之后并以同级的 z-index 1000 盖住它；
+    // 抬高一层保证「恢复 / 丢弃」始终可点（与仓库内浮于抽屉之上的对话框取同一量级）。
+    zIndex: 9999,
     onOk: async () => {
       const restored = applyDraft(draft);
       form.value = restored;
@@ -166,13 +170,39 @@ async function promptRestoreDraft() {
   });
 }
 
-/** 关闭 Drawer：仅对「尚未保存的新建单」落本地草稿，编辑既有单不产生草稿。 */
-function closeDrawer() {
+/** 明细表暴露的收起价签入口；只用到这一个契约，不依赖组件实例的具体类型。 */
+const itemTableRef = ref<{ closeRecentPopover: () => void } | null>(null);
+
+// 关闭路径不止一条（关闭按钮、Esc、创建成功自动关），所以在 visible 落 false 时统一收起，
+// 而不是在各处分别补调用。
+watch(visible, opened => {
+  if (opened) window.addEventListener('beforeunload', persistUnsavedDraft);
+  else {
+    window.removeEventListener('beforeunload', persistUnsavedDraft);
+    itemTableRef.value?.closeRecentPopover();
+  }
+});
+
+/** 尚未保存的新建单才落草稿；抽屉已关闭时不写，避免创建成功后又把已保存的单写回草稿。 */
+function persistUnsavedDraft() {
+  if (!visible.value) return;
   if (!form.value.orderId && (form.value.customerId || form.value.items.length)) {
     writeDraft(serializeDraft(form.value));
   }
+}
+
+/** 关闭 Drawer：仅对「尚未保存的新建单」落本地草稿，编辑既有单不产生草稿。 */
+function closeDrawer() {
+  persistUnsavedDraft();
   visible.value = false;
 }
+
+// 刷新、路由切换、组件卸载都不经过 closeDrawer()，所以离页各补一次落草稿。
+onBeforeRouteLeave(() => persistUnsavedDraft());
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', persistUnsavedDraft);
+  persistUnsavedDraft();
+});
 
 /**
  * 历史订单复用（§7.4）：读取历史单，仅复制允许字段构造新的新增草稿，价格 / 可用性重新解析。

@@ -46,16 +46,23 @@ test('summary-preview is a read-only postRequest and does not touch generate', (
   assert.match(api, /purchaseCommand<GenerateResult>\('\/scm\/purchase\/demand\/generate'/);
 });
 
-test('preview component renders backend-derived quantities and never recomputes available or shortage', () => {
+test('preview component renders backend-derived quantities and never recomputes available or gap', () => {
   const src = code('../src/views/business/scm/purchase/components/purchase-demand-summary-preview.vue');
   assert.match(src, /scm-purchase-demand-summary-preview-table/);
   assert.match(src, /purchaseDemandApi\.summaryPreview/);
   assert.match(src, /SCM_DEMAND_SUMMARY_STATUS_ENUM\[record\.calculationStatus\]/);
-  // §6A.4：数量全部后端算好，前端只渲染，绝不自己算可用量 / 缺口
+  // §6A.4：数量全部后端算好，前端只渲染，绝不自己算可用量 / 差额
   assert.doesNotMatch(src, /Decimal/);
   assert.doesNotMatch(src, /availableQuantity\s*[-+]/);
   assert.doesNotMatch(src, /onHandQuantity\s*[-+]\s*reservedQuantity/);
   assert.doesNotMatch(src, /orderDemandQuantity\s*[-+]/);
+  // 审计修复：预留必须分「本批自身 / 其他业务」两段，且旧的 shortageAgainstAvailable 语义已废弃
+  assert.match(src, /selectedOrderReservedQuantity/);
+  assert.match(src, /otherReservedQuantity/);
+  assert.match(src, /stockAvailableForSelectedOrders/);
+  assert.doesNotMatch(src, /shortageAgainstAvailable/);
+  // 差额不是采购建议：文案必须显性说明
+  assert.match(src, /不是最终净采购建议/);
 });
 
 test('undecided in-transit deduction stays out of the Wave 2A frontend contract', () => {

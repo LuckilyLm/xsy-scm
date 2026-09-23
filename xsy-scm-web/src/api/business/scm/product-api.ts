@@ -10,6 +10,7 @@ import type {
     ProductBatchResult,
     ProductForm,
     ProductId,
+    ProductImportMode,
     ProductImportResult,
     ProductPage,
     ProductQuery,
@@ -46,10 +47,13 @@ export const productApi = {
             mode
         }) as unknown as Promise<ScmResponse<ProductBatchResult>>,
     // 导入是「0 错误才写、写失败整批回滚」，所以返回的错误列表永远意味着本次没有商品落库。
-    downloadImportTemplate: () => getDownload('/scm/product/import/template', {}),
-    importProducts: (file: File) => {
+    // UPDATE 会改写既存商品，后端要求 scm:product:update；这里隐藏入口不等于有权限。
+    downloadImportTemplate: (mode: ProductImportMode) =>
+        getDownload('/scm/product/import/template', {mode}),
+    importProducts: (file: File, mode: ProductImportMode) => {
         const data = new FormData();
         data.append('file', file);
+        data.append('mode', mode);
         return postRequest('/scm/product/import', data) as unknown as Promise<ScmResponse<ProductImportResult>>;
     },
     exportProducts: (form: ProductQuery) => postDownload('/scm/product/export', form),

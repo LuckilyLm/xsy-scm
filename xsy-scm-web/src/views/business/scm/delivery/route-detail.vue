@@ -233,6 +233,17 @@
               />
               <a-select
                   v-if="printMode === 'customers'"
+                  v-model:value="customerStatusFilter"
+                  style="width: 150px"
+                  :options="[
+                    { label: '全部客户', value: 'ALL' },
+                    { label: '未打印客户', value: 'UNPRINTED' },
+                    { label: '部分打印客户', value: 'PARTIAL' },
+                    { label: '已打印客户', value: 'PRINTED' },
+                  ]"
+              />
+              <a-select
+                  v-if="printMode === 'customers'"
                   v-model:value="customerFilter"
                   style="width: 160px"
                   :options="[
@@ -245,13 +256,13 @@
                   v-if="canPrint"
                   type="primary"
                   v-privilege="'scm:delivery:route:print'"
-                  :disabled="busy || !printSelection.length"
+                  :disabled="busy || !canRecordPrint"
                   @click="recordPrint"
-              >生成打印 · 登记 {{ printSelection.length }}
+              >生成打印 · 登记 {{ printTargetCount }}
               </a-button>
             </div>
             <a-alert
-                message="「生成打印」仅登记本次已生成打印预览并累加计次，不代表发货确认，也不扣减库存。"
+                message="「生成打印」仅登记本次已生成打印预览并累加计次，不代表发货确认，也不扣减库存。客户与订单的打印状态在生成时由服务端按当前有效订单重新判定，列表状态仅供预览。"
                 type="info"
                 show-icon
             />
@@ -284,7 +295,7 @@
                 v-else
                 size="small"
                 :columns="customerViewColumns"
-                :data-source="customersView"
+                :data-source="customersShown"
                 row-key="customerId"
                 :loading="printLoading"
                 :pagination="false"
@@ -427,6 +438,7 @@ const orderColumns: TableColumnsType = [
 
 const printMode = ref<'orders' | 'customers'>('orders');
 const customerFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED'>('ALL');
+const customerStatusFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED' | 'PARTIAL'>('ALL');
 const ordersView = ref<RouteOrderView[]>([]);
 const customersView = ref<RouteCustomerView[]>([]);
 const orderSelection = ref<Id[]>([]);
@@ -437,8 +449,27 @@ const printLoaded = ref(false);
 const canPrint = computed(() =>
     ['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? '')
 );
-const printSelection = computed(() =>
-    printMode.value === 'orders' ? orderSelection.value : customerSelection.value
+/**
+ * 展示用的客户范围筛选：打印状态的事实在服务端（生成时按当前有效订单重算），
+ * 这里只决定列表可见行与未勾选时的提交范围。
+ */
+const customersShown = computed(() =>
+    customersView.value.filter(
+        (item) => customerStatusFilter.value === 'ALL' || item.printStatus === customerStatusFilter.value
+    )
+);
+const canRecordPrint = computed(() =>
+    printMode.value === 'orders'
+        ? orderSelection.value.length > 0
+        : // 勾选行即候选范围；未勾选时必须给出收窄的状态范围，
+          // 否则一次请求会无选择地重打整条线路。
+          customerSelection.value.length > 0 ||
+          (customerStatusFilter.value !== 'ALL' && customersShown.value.length > 0)
+);
+const printTargetCount = computed(() =>
+    printMode.value === 'orders'
+        ? orderSelection.value.length
+        : customerSelection.value.length || customersShown.value.length
 );
 const orderRowSelection = computed(() => ({
   selectedRowKeys: orderSelection.value,
@@ -488,14 +519,21 @@ watch(tab, (value) => {
 
 async function recordPrint() {
   const route = detail.value?.route;
-  if (!route || !printSelection.value.length) return;
+  if (!route || !canRecordPrint.value) return;
   busy.value = true;
   error.value = '';
   try {
     if (printMode.value === 'orders') {
       await deliveryApi.printOrders(route.id, route.version, orderSelection.value);
     } else {
-      await deliveryApi.printCustomers(route.id, route.version, customerSelection.value, customerFilter.value);
+      // 未勾选行即「本状态范围内整条线路」；勾选时名单只作候选范围，状态由服务端复核。
+      await deliveryApi.printCustomers(
+          route.id,
+          route.version,
+          customerSelection.value.length ? customerSelection.value : undefined,
+          customerStatusFilter.value,
+          customerFilter.value
+      );
     }
     message.success('已登记打印');
     orderSelection.value = [];
@@ -542,6 +580,8 @@ function open(id: Id, initialTab = 'base') {
   orderSelection.value = [];
   customerSelection.value = [];
   printMode.value = 'orders';
+  customerStatusFilter.value = 'ALL';
+  customerFilter.value = 'ALL';
   visible.value = true;
   tab.value = initialTab;
   reload();

@@ -23,6 +23,24 @@
       <a-form-item label="状态" class="smart-query-form-item">
         <SmartEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
       </a-form-item>
+      <a-form-item label="入库方式" class="smart-query-form-item">
+        <a-select
+            v-model:value="queryForm.receiptMode"
+            :options="receiptModeOptions"
+            placeholder="全部"
+            allow-clear
+            style="width: 160px"
+        />
+      </a-form-item>
+      <a-form-item label="入库状态" class="smart-query-form-item">
+        <a-select
+            v-model:value="queryForm.putawayStatus"
+            :options="putawayStatusOptions"
+            placeholder="全部"
+            allow-clear
+            style="width: 130px"
+        />
+      </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:receipt:query'">查询</a-button>
@@ -160,11 +178,14 @@ import {
 } from '/@/constants/business/scm/purchase-const';
 import type {Receipt, ReceiptQuery} from './purchase-types';
 import {purchaseError} from './purchase-errors';
+import {deepLinkFilters} from '/@/lib/query-deep-link';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
 import PurchaseReceiptConfirm from './components/purchase-receipt-confirm-modal.vue';
 import PurchaseReceiptItemWorkbench from './components/purchase-receipt-item-workbench.vue';
 
 const queryForm = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20});
+const receiptModeOptions = Object.values(SCM_RECEIPT_MODE_ENUM).map((i) => ({value: i.value, label: i.desc}));
+const putawayStatusOptions = Object.values(SCM_PUTAWAY_STATUS_ENUM).map((i) => ({value: i.value, label: i.desc}));
 /** 按单据（既有写流程）为默认 Tab；按商品是 Wave 2B 的只读收货工作台。 */
 const activeTab = ref('by-order');
 /** 用户输入的是**采购单号**（业务视角），请求参数要的是 `purchaseOrderId`。 */
@@ -238,6 +259,8 @@ function onSearch() {
 function resetQuery() {
   queryForm.receiptNo = undefined;
   queryForm.status = undefined;
+  queryForm.receiptMode = undefined;
+  queryForm.putawayStatus = undefined;
   queryForm.purchaseOrderId = undefined;
   orderNoInput.value = undefined;
   onSearch();
@@ -297,23 +320,34 @@ async function putaway(row: Receipt) {
   });
 }
 
-// W6：支持从库存流水页「来源单号」直接跳进来（`/purchase/purchase-receipt-list?receiptNo=PR...`）。
-// 只读一个查询参数、填进已有的筛选框，不新增任何后端能力。
+// W6：支持从库存流水页「来源单号」跳进来；W4 待办卡片则带 status/receiptMode/putawayStatus。
+// 两者都只读 URL、填进已有筛选框，不新增任何后端能力——待办数字与列表结果必须同源，
+// 否则「待办 5 条」点进来看到的不是那 5 条。
 // 用 `route.query` 而不是 props：菜单路由不会传 props，而 `query` 是 hash 路由下唯一稳定的传参方式。
+// 取值必须过状态字典白名单：URL 可被手改/收藏转发，不能把任意串透传给查询接口。
+const RECEIPT_DEEP_LINK = {
+  receiptNo: null,
+  status: Object.values(SCM_RECEIPT_STATUS_ENUM).map((i) => i.value),
+  receiptMode: Object.values(SCM_RECEIPT_MODE_ENUM).map((i) => i.value),
+  putawayStatus: Object.values(SCM_PUTAWAY_STATUS_ENUM).map((i) => i.value),
+};
+
 const route = useRoute();
 const receiptRouteName = route.name;
 watch(
-    [() => route.name, () => route.query.receiptNo],
-    ([name, incomingReceiptNo]) => {
+    [() => route.name, () => route.query],
+    ([name, incomingQuery]) => {
       // SmartAdmin caches by route.name. Reapply the source link on reuse, but
       // ignore navigation to other pages while this component stays cached.
       if (name !== receiptRouteName) return;
-      if (typeof incomingReceiptNo === 'string' && incomingReceiptNo.trim()) {
-        queryForm.receiptNo = incomingReceiptNo.trim();
-        queryForm.status = undefined;
-        queryForm.purchaseOrderId = undefined;
-        orderNoInput.value = undefined;
-      }
+      const filters = deepLinkFilters(incomingQuery, RECEIPT_DEEP_LINK);
+      queryForm.receiptNo = filters.receiptNo;
+      queryForm.status = filters.status;
+      queryForm.receiptMode = filters.receiptMode;
+      queryForm.putawayStatus = filters.putawayStatus;
+      // 采购单号需要异步解析成 id，且不属于任何 deep-link 语义：进入页面即回落到未筛选。
+      queryForm.purchaseOrderId = undefined;
+      orderNoInput.value = undefined;
       onSearch();
     },
     {immediate: true}

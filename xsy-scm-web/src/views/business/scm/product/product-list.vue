@@ -1,11 +1,11 @@
 <template>
   <section aria-label="商品档案">
-    <a-form class="smart-query-form" layout="inline" @finish="search">
+    <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="分类" class="smart-query-form-item"><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" /></a-form-item>
         <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名 / 编码 / 条码 / 助记码" style="width: 240px" /></a-form-item>
         <a-form-item label="商品状态" class="smart-query-form-item"><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px" /></a-form-item>
-        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="advanced = !advanced"><template #icon><UpOutlined v-if="advanced" /><DownOutlined v-else /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
+        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="advanced = !advanced"><template #icon><UpOutlined v-if="advanced" aria-hidden="true" /><DownOutlined v-else aria-hidden="true" /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
       </a-row>
       <a-row v-if="advanced" class="smart-query-form-row">
         <a-form-item label="SKU 状态" class="smart-query-form-item"><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px" /></a-form-item>

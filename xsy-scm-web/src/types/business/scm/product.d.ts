@@ -234,11 +234,16 @@ export interface ProductImportError {
     message: string;
 }
 
+/** 导入模式：CREATE 整批新增，UPDATE 按 SPU/SKU 定位键改写既存商品（空白列保持原值）。 */
+export type ProductImportMode = 'CREATE' | 'UPDATE';
+
 export interface ProductImportResult {
+    mode: ProductImportMode;
     totalRows: number;
     totalProducts: number;
     totalErrors: number;
     importedProducts: number;
+    updatedProducts: number;
     spuIds: ProductId[];
     errors: ProductImportError[];
 }

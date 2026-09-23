@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import type {Address, Item, Order} from './order-types.ts';
+import type {Address, Id, Item, Order, RecentPrice} from './order-types.ts';
 
 export function newOrder(): Order {
     return {orderSource: 'ADMIN', items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
@@ -145,4 +145,69 @@ export function payload(f: Order): Order {
 
 export function amount(value: string | null | undefined, unpriced = false): string {
     return value == null ? (unpriced ? '未定价' : '—') : '¥ ' + fixed(value);
+}
+
+/**
+ * 「历史价」旁证的缓存状态（Wave 3 §7.5）。抽成纯模型是因为串数据的代价只有测试能钉死：
+ * 缓存键一旦含行序号，换商品、删行上移、换客户都会静默显示上一个 SKU / 上一个客户的历史成交价。
+ */
+export interface RecentPriceCache {
+    loadingKey: string | null;
+    rowsByKey: Record<string, RecentPrice[]>;
+}
+
+export function createRecentPriceCache(): RecentPriceCache {
+    return {loadingKey: null, rowsByKey: {}};
+}
+
+/** 缓存键 = 客户 + SKU；任一缺失即无键可查，返回 null 让调用方不发起请求。 */
+export function recentPriceKey(customerId: Id | null | undefined, skuId: Id | null | undefined): string | null {
+    if (customerId == null || customerId === '' || skuId == null || skuId === '') {
+        return null;
+    }
+    return `${customerId}:${skuId}`;
+}
+
+/** 已缓存（含「查过但确实没有历史价」）；未查过与空结果必须区分，否则空态与加载态混成一团。 */
+export function hasRecentPrices(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): boolean {
+    const key = recentPriceKey(customerId, skuId);
+    return key != null && cache.rowsByKey[key] != null;
+}
+
+export function recentPriceRows(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): RecentPrice[] {
+    const key = recentPriceKey(customerId, skuId);
+    return (key != null && cache.rowsByKey[key]) || [];
+}
+
+export function isLoadingRecentPrice(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): boolean {
+    const key = recentPriceKey(customerId, skuId);
+    return key != null && cache.loadingKey === key;
+}
+
+/**
+ * 点开「历史价」时取数：命中缓存直接复用不再请求；请求异常照常抛出，但加载态一定落回，
+ * 否则一次网络失败会让该行永久转圈且再也点不动。缓存不写入，因此下次点击仍可重试。
+ */
+export async function loadRecentPrices(
+    cache: RecentPriceCache,
+    customerId: Id | null | undefined,
+    skuId: Id | null | undefined,
+    fetcher: () => Promise<RecentPrice[]>
+): Promise<boolean> {
+    const key = recentPriceKey(customerId, skuId);
+    if (!key) {
+        return false;
+    }
+    if (cache.rowsByKey[key]) {
+        return true;
+    }
+    cache.loadingKey = key;
+    try {
+        cache.rowsByKey[key] = await fetcher();
+        return true;
+    } finally {
+        if (cache.loadingKey === key) {
+            cache.loadingKey = null;
+        }
+    }
 }

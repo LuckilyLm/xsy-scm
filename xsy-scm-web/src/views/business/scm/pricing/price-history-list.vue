@@ -1,6 +1,6 @@
 <!-- W3 新写：双来源价格历史与字段级前后对照。 -->
 <template>
- <a-form layout="inline" class="smart-query-form" @finish="search">
+ <a-form layout="inline" class="smart-query-form">
   <a-row class="smart-query-form-row">
   <a-form-item label="来源" class="smart-query-form-item"><a-select v-model:value="query.source" allow-clear style="width:150px" :options="[{value:'AGREEMENT',label:'客户协议价'},{value:'CUSTOMER_TYPE',label:'客户类型价'}]" /></a-form-item>
   <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="query.customerId" width="180px" /></a-form-item>
@@ -9,7 +9,7 @@
   <a-form-item label="操作" class="smart-query-form-item"><a-select v-model:value="query.operationType" allow-clear style="width:110px" :options="[{value:'CREATE',label:'新增'},{value:'UPDATE',label:'更新'},{value:'DELETE',label:'删除'}]" /></a-form-item>
   <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
   <a-form-item label="操作区间" class="smart-query-form-item"><a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
-  <a-form-item class="smart-query-form-item"><a-button type="primary" html-type="submit" v-privilege="'scm:pricing:history:query'">查询</a-button></a-form-item>
+  <a-form-item class="smart-query-form-item"><a-button type="primary" @click="search" v-privilege="'scm:pricing:history:query'">查询</a-button></a-form-item>
   </a-row>
  </a-form>
  <a-alert v-if="error" type="error" :message="error" />

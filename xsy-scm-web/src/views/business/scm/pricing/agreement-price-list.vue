@@ -4,13 +4,13 @@
  适配：SKU/客户维度、定点字符串、版本、权限、时间区间、请求竞态及错误状态。
  验收：W3 Playwright、TS baseline、ESLint。 -->
 <template>
- <a-form class="smart-query-form" layout="inline" @finish="search">
+ <a-form class="smart-query-form" layout="inline">
   <a-row class="smart-query-form-row">
    <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear /></a-form-item>
    <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="query.customerId" width="190px" /></a-form-item>
    <a-form-item label="SKU" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
    <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
-   <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit" v-privilege="'scm:pricing:agreement:query'">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
+   <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search" v-privilege="'scm:pricing:agreement:query'">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
   </a-row>
  </a-form>
  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error=''" />

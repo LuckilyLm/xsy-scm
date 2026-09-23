@@ -18,13 +18,19 @@
       </a-descriptions-item>
     </a-descriptions>
     <template #footer>
+      <a-typography-text v-if="businessLink" type="secondary" style="float: left">
+        单据内容仍由业务接口按权限返回
+      </a-typography-text>
+      <a-button v-if="businessLink" type="primary" @click="goBusiness">{{ businessLink.label }}</a-button>
       <a-button type="primary" @click="showFlag = false">关闭</a-button>
     </template>
   </a-modal>
 </template>
 <script setup lang="ts">
-import {reactive, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
+import {useRouter} from 'vue-router';
 import {messageApi} from '/@/api/support/message-api';
+import {messageBusinessLink} from '/@/lib/message-business-link';
 
 const emit = defineEmits(['refresh']);
 
@@ -33,9 +39,21 @@ const messageDetail = reactive({
   title: '',
   content: '',
   createTime: '',
+  dataId: '',
 });
 
 const showFlag = ref(false);
+const router = useRouter();
+const businessLink = computed(() => messageBusinessLink(messageDetail.messageType, messageDetail.dataId));
+
+function goBusiness() {
+  const link = businessLink.value;
+  if (!link) {
+    return;
+  }
+  showFlag.value = false;
+  void router.push({path: link.path, query: link.query});
+}
 
 function show(data) {
   Object.assign(messageDetail, data);

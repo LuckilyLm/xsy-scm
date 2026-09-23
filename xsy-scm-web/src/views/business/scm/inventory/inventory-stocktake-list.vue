@@ -332,7 +332,7 @@ import type {
   StocktakeImportResult,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {quantityText, resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 
@@ -538,13 +538,12 @@ async function openCopy(record: InventoryStocktake) {
     }
     const whId = d.warehouseId as string | number;
     // 读当前余额：只为取「当前记账单位」并校验 SKU 仍存在；账面量绝不作为实盘量填入。
-    const bal = await inventoryBalanceApi.query({warehouseId: whId, pageNum: 1, pageSize: 2000});
-    const unitBySku = new Map<string, string>();
-    for (const b of bal.data.list ?? []) {
-      if (b.skuId !== undefined && b.skuId !== null) {
-        unitBySku.set(String(b.skuId), b.unit ?? '');
-      }
-    }
+    // 分页口径在 inventory-model 的 resolveStocktakeCopyUnits 里（后端 @Max(100) 会拒掉更大的
+    // pageSize），因此这里不放宽通用查询上限来喂本页面。
+    const {unitBySku} = await resolveStocktakeCopyUnits(sourceItems.map((i) => i.skuId), async (pageNum, pageSize) => {
+      const bal = await inventoryBalanceApi.query({warehouseId: whId, pageNum, pageSize});
+      return bal.data.list;
+    });
     const items: EditableItem[] = [];
     for (const i of sourceItems) {
       const key = String(i.skuId);

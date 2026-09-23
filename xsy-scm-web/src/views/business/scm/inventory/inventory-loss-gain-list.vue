@@ -309,21 +309,24 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {reactive, ref, watch} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
+import {useRoute} from 'vue-router';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {inventoryLossGainApi} from '/@/api/business/scm/inventory-loss-gain-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {deepLinkFilters, deepLinkId} from '/@/lib/query-deep-link';
 import {
   SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
   SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
   SCM_INVENTORY_TABLE_ID,
 } from '/@/constants/business/scm/inventory-const';
 import type {
+  Id,
   InventoryLossGain,
   InventoryLossGainAdd,
   InventoryLossGainQuery,
@@ -580,14 +583,18 @@ const detailOpen = ref(false);
 // Partial：初始为空对象（还没选中任何单据），打开详情时整体替换为后端返回的 VO
 const detail = ref<Partial<InventoryLossGain>>({});
 
-async function openDetail(record: InventoryLossGain) {
+async function openDetailById(id: Id) {
   try {
-    const r = await inventoryLossGainApi.detail(record.id);
+    const r = await inventoryLossGainApi.detail(id);
     detail.value = r.data;
     detailOpen.value = true;
   } catch (e) {
     message.error(inventoryError(e));
   }
+}
+
+function openDetail(record: InventoryLossGain) {
+  return openDetailById(record.id);
 }
 
 // ------------------------------------------------------------------ 审批 / 驳回
@@ -664,10 +671,43 @@ function onDelete(record: InventoryLossGain) {
   });
 }
 
-onMounted(async () => {
+// 待办卡片带 `?status=PENDING`，驳回消息带 `?id=<单据>`：两者都必须真正落到页面条件上，
+// 否则「待办 5 条」点进来看到的不是那 5 条。取值过状态字典白名单，非法值按未提供处理。
+const LOSS_GAIN_DEEP_LINK = {
+  lossGainNo: null,
+  status: Object.values(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM).map((i) => i.value),
+};
+
+const route = useRoute();
+const lossGainRouteName = route.name;
+
+/** 进入页面（首次挂载与 keep-alive 复用同一条路径）：URL 条件 → 页面默认 → 查询 → 可选详情。 */
+async function enterPage() {
+  const filters = deepLinkFilters(route.query, LOSS_GAIN_DEEP_LINK);
+  queryForm.lossGainNo = filters.lossGainNo;
+  queryForm.adjustType = undefined;
+  queryForm.status = filters.status;
+  queryForm.warehouseId = undefined;
+  queryForm.pageNum = 1;
   await applySingleWarehouseDefault();
   await queryData();
-});
+  // 详情深链优先直进目标单据：详情接口自带 `scm:inventory:loss-gain:detail` 校验，
+  // 失去权限时这里得到 403 提示，跳转本身不绕过任何权限。
+  const id = deepLinkId(route.query);
+  if (id) {
+    await openDetailById(id);
+  }
+}
+
+watch(
+    [() => route.name, () => route.query],
+    ([name]) => {
+      // 组件被缓存时，跳往其他页面不应触发本页查询；回到本页才重新套用来源链接。
+      if (name !== lossGainRouteName) return;
+      void enterPage();
+    },
+    {immediate: true}
+);
 </script>
 
 <style scoped>

@@ -2,13 +2,15 @@
  * W6 库存域的**纯函数**（新增文件，仿 W5 `purchase-form-model.ts` 的取向：把纪律放进可单测的函数，
  * 而不是散在模板里的三元表达式）。
  *
- * 三块职责：
+ * 四块职责：
  * 1. **Q12 默认仓库**：{@link singleWarehouseDefault} —— 恰好只有一个启用仓库时默认带出它，
  *    否则**不自动选任何一个**。这是「多仓下随便选一个仓会让人误以为在看全部库存」的防线，
  *    因此必须是一条可断言的规则，而不是页面里的一个 `if`。
  * 2. **三态展示**（A18 同族）：`null` / `undefined` → `—`，`"0.0000"` → `0.0000`。
  *    「没有值」与「值是零」是两种不同事实，合并显示会掩盖数据问题。
  * 3. **枚举文案**：`movementType` 的中文描述；枚举缺 desc 时回落到原值，不显示空白。
+ * 4. **复制历史盘点的按页解析**：{@link resolveStocktakeCopyUnits} —— 余额查询上限是 `@Max(100)`，
+ *    一次拉 2000 行会被拒成 400；按页找齐即停，找不到的 SKU 显性返回而不是静默丢行。
  *
  * 本文件**不依赖 Vue、不发请求**，因此可以被 `node --test` 直接导入。
  *
@@ -106,4 +108,61 @@ export function movementTypeText(
         return '—';
     }
     return labels[value]?.desc || value;
+}
+
+/**
+ * 「复制历史盘点」按页解析来源 SKU 的当前记账单位（W6 §4.1 pageSize 冲突的修复口径）。
+ *
+ * 余额查询的 `pageSize` 上限是后端 `@Max(100)`，一次拉 2000 行会被直接拒成 400 参数错误；
+ * 这里按页拉取、找齐来源 SKU 即停，既不放宽通用查询上限来喂单个页面，也不静默丢 SKU——
+ * 缺哪个就返回哪个，由调用方整单拒绝。
+ *
+ * `fetchPage` 由调用方注入（真实实现是 `inventoryBalanceApi.query`），本函数不发请求、不碰 UI。
+ */
+export const BALANCE_QUERY_PAGE_SIZE = 100;
+
+/** 余额行里本函数关心的字段：只要编码与单位，账面量刻意不读（历史账面量不是本次实盘量）。 */
+export interface BalanceUnitRow {
+    skuId?: string | number | null;
+    unit?: string | null;
+}
+
+export interface StocktakeCopyUnits {
+    /** 来源 SKU → 当前记账单位；未解析到的 SKU 不出现在这里。 */
+    unitBySku: Map<string, string>;
+    /** 翻完所有页仍找不到余额行的来源 SKU（按来源顺序去重）。 */
+    missingSkuIds: string[];
+}
+
+export async function resolveStocktakeCopyUnits(
+    sourceSkuIds: Array<string | number | null | undefined>,
+    fetchPage: (pageNum: number, pageSize: number) => Promise<BalanceUnitRow[] | undefined>
+): Promise<StocktakeCopyUnits> {
+    const pending = new Set<string>();
+    for (const skuId of sourceSkuIds) {
+        // 空 skuId 不是「待解析」对象：它进不了 unitBySku，调用方逐行检查时会整单拒绝
+        if (skuId !== null && skuId !== undefined && skuId !== '') {
+            pending.add(String(skuId));
+        }
+    }
+    const unitBySku = new Map<string, string>();
+    let pageNum = 1;
+    for (;;) {
+        const rows = (await fetchPage(pageNum, BALANCE_QUERY_PAGE_SIZE)) ?? [];
+        for (const row of rows) {
+            if (row.skuId === null || row.skuId === undefined) {
+                continue;
+            }
+            const key = String(row.skuId);
+            if (pending.delete(key)) {
+                unitBySku.set(key, row.unit ?? '');
+            }
+        }
+        // 来源 SKU 全部命中，或已读到最后一页（不足一页）：都不必再翻页
+        if (pending.size === 0 || rows.length < BALANCE_QUERY_PAGE_SIZE) {
+            break;
+        }
+        pageNum += 1;
+    }
+    return {unitBySku, missingSkuIds: [...pending]};
 }

@@ -147,12 +147,14 @@
   <RoutePrint ref="printer"/>
 </template>
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
+import {useRoute} from 'vue-router';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf} from '../common/scm-area';
+import {deepLinkFilters} from '/@/lib/query-deep-link';
 import type {Warehouse} from '../purchase/purchase-types';
 import {
   deliveryError,
@@ -237,10 +239,15 @@ function changeArea(_value: unknown, nodes: AreaNode[]) {
   Object.assign(query, areaColumnsOf(nodes));
 }
 
-function reset() {
+/** 页面默认查询条件：手动重置与 deep-link 进入共用，避免两处各自维护一份「清空」。 */
+function clearQuery() {
   Object.keys(query).forEach((key) => delete (query as unknown as Record<string, unknown>)[key]);
   Object.assign(query, {pageNum: 1, pageSize: 20});
   area.value = [];
+}
+
+function reset() {
+  clearQuery();
   load();
 }
 
@@ -249,10 +256,28 @@ function created(id: Id) {
   details.value?.open(id, 'orders');
 }
 
-onMounted(() => {
-  load();
-  loadOptions();
-});
+// 待办卡片带 `?status=DRAFT`（待排线线路）：点进来必须看到同一批数据。
+// 进入时先回落到页面默认再落 URL 条件，因此从普通菜单进入不会残留上次 deep-link 的筛选；
+// status 取值过线路状态字典白名单，URL 里写别的值按未筛选处理。
+const ROUTE_DEEP_LINK = {status: Object.keys(routeStatuses)};
+
+const route = useRoute();
+const routesRouteName = route.name;
+
+watch(
+    [() => route.name, () => route.query],
+    ([name, incomingQuery]) => {
+      // 组件被 keep-alive 缓存时，跳往其他页面不能触发本页查询。
+      if (name !== routesRouteName) return;
+      const filters = deepLinkFilters(incomingQuery, ROUTE_DEEP_LINK);
+      clearQuery();
+      query.status = filters.status;
+      load();
+    },
+    {immediate: true}
+);
+
+onMounted(loadOptions);
 </script>
 <style scoped>
 .filter-select {

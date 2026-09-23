@@ -1,8 +1,10 @@
 <!-- Wave 2A §6A 订单汇总 / 库存缺口预览（新增文件，只读辅助决策）。
 只读：不建需求、不改 `PurchaseDemandService.generate()` 语义，取数口径与其一致（实发量 actual_quantity）。
-数量（现有 / 预留 / 可用 / 缺口）全部由后端 SQL 用 BigDecimal 算好、以四位定点字符串下发，
-本页只渲染、绝不重算（§6A.4）；`UNIT_MISMATCH` 行缺口为 null（Q13 单位门禁，不猜折算率）。
-无新增迁移：作为「采购需求」页的一个 Tab 内联渲染，复用其路由 / 菜单 / `scm:purchase:demand:query` 权限。
+数量（现有 / 预留分段 / 本批可用 / 对比差额）全部由后端 SQL 用 BigDecimal 算好、以四位定点字符串下发，
+本页只渲染、绝不重算（§6A.4）；`UNIT_MISMATCH` 行差额为 null（Q13 单位门禁，不猜折算率）。
+接口按 `scm:purchase:demand:query` AND `scm:inventory:balance:query` 鉴权（返回体含库存量），
+这里的按钮 v-privilege 只是体验，不是权限边界。
+无新增迁移：作为「采购需求」页的一个 Tab 内联渲染，复用其路由 / 菜单。
 验收：Wave 2A 后端 IT、TS 棘轮与 Playwright。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
@@ -42,7 +44,7 @@
         type="info"
         show-icon
         message="只读预览"
-        description="按「已确认」销售订单的实发量汇总，与该仓库当前库存可用量比对得出缺口；本操作不生成需求、不改写任何数据。在途采购是否抵扣缺口尚未裁决，故缺口未计入在途量。"
+        description="这是「已确认订单」与当前库存/预留的对比结果，不是最终净采购建议。本批订单自身已预留的量不计入占用（见「其中本批预留」），比对用的是「本批可用」。在途采购是否抵扣、已履约量如何扣减尚未裁决，故均未计入。本操作不生成需求、不改写任何数据。"
     />
     <a-table
         id="scm-purchase-demand-summary-preview-table"
@@ -53,7 +55,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1600 }"
+        :scroll="{ x: 2000 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'calculationStatus'">
@@ -98,7 +100,16 @@ import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 
 /** 这些列是后端下发的四位定点字符串，统一走 `quantity` 渲染（null → —）。 */
-const numericColumns = ['orderDemandQuantity', 'onHandQuantity', 'reservedQuantity', 'availableQuantity', 'shortageAgainstAvailable'];
+const numericColumns = [
+  'orderDemandQuantity',
+  'onHandQuantity',
+  'reservedQuantity',
+  'selectedOrderReservedQuantity',
+  'otherReservedQuantity',
+  'availableQuantity',
+  'stockAvailableForSelectedOrders',
+  'stockComparisonGap',
+];
 
 const range = ref<[string, string] | undefined>(undefined);
 const warehouseId = ref<Id | undefined>(undefined);
@@ -122,9 +133,12 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {title: '订单需求量', dataIndex: 'orderDemandQuantity', align: 'right', width: 120},
   {title: '库存单位', dataIndex: 'inventoryUnit', width: 95},
   {title: '现有量', dataIndex: 'onHandQuantity', align: 'right', width: 110},
-  {title: '已预留', dataIndex: 'reservedQuantity', align: 'right', width: 110},
-  {title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110},
-  {title: '缺口', dataIndex: 'shortageAgainstAvailable', align: 'right', width: 110},
+  {title: '全仓预留', dataIndex: 'reservedQuantity', align: 'right', width: 110},
+  {title: '其中本批预留', dataIndex: 'selectedOrderReservedQuantity', align: 'right', width: 130},
+  {title: '其他业务预留', dataIndex: 'otherReservedQuantity', align: 'right', width: 130},
+  {title: '全仓净可用', dataIndex: 'availableQuantity', align: 'right', width: 110},
+  {title: '本批可用', dataIndex: 'stockAvailableForSelectedOrders', align: 'right', width: 110},
+  {title: '库存对比差额', dataIndex: 'stockComparisonGap', align: 'right', width: 130},
   {title: '计算状态', dataIndex: 'calculationStatus', align: 'center', width: 120},
 ]);
 

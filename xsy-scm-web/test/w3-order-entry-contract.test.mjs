@@ -49,7 +49,9 @@ test('历史复用只读 GET detail，不引入后端复制命令', () => {
 
 test('明细表按客户 + SKU 现查最近已确认订单价，且不回写解析单价、不重算', () => {
   const table = code('../src/views/business/scm/order/components/order-item-editable-table.vue');
-  assert.match(table, /orderApi\.recentPrices\(props\.customerId,\s*record\.skuId/);
+  // 缓存化后调用点带 `as Id` 收窄（模板已保证客户与本行 SKU 都存在）；容许类型断言，
+  // 但两个键的来源必须仍是「当前客户 + 本行 SKU」，跨行/跨客户取值会在这里变红。
+  assert.match(table, /orderApi\.recentPrices\(props\.customerId(?:\s+as\s+Id)?,\s*record\.skuId(?:\s+as\s+Id)?/);
   // 只渲染后端字符串价，绝不前端 Decimal 重算或写回 draftUnitPrice
   assert.doesNotMatch(table, /Decimal/);
   assert.doesNotMatch(table, /record\.draftUnitPrice\s*=/);
