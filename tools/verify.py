@@ -92,6 +92,21 @@ class Verification:
         if missing:
             self.incomplete.append("E2E: local account helpers missing: " + ", ".join(missing))
             return
+        # Upload specs build their xlsx fixtures with Python + openpyxl; without it they fail
+        # mid-run with ModuleNotFoundError, which reads like a broken spec rather than a
+        # missing prerequisite. tools/requirements-dev.txt pins the version.
+        xlsx_helpers = ["patch_product_create_xlsx.py", "patch_product_update_xlsx.py",
+                        "fill_stocktake_template.py"]
+        missing_xlsx = [name for name in xlsx_helpers if not (ROOT / "tools" / name).is_file()]
+        if missing_xlsx:
+            self.incomplete.append("E2E: xlsx fixture helpers missing: " + ", ".join(missing_xlsx))
+            return
+        try:
+            import openpyxl  # noqa: F401
+        except ImportError:
+            self.incomplete.append(
+                "E2E: openpyxl not installed; run: python -m pip install -r tools/requirements-dev.txt")
+            return
         endpoints = {"http://127.0.0.1:18081"}
         endpoints.update(os.environ.get(f"W{wave}_E2E_API_BASE", "http://127.0.0.1:18080")
                          for wave in range(1, 7))

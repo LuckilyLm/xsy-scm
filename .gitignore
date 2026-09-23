@@ -27,6 +27,7 @@ local-environment-info.txt
 !/tools/patch_product_create_xlsx.py
 !/tools/patch_product_update_xlsx.py
 !/tools/fill_stocktake_template.py
+!/tools/requirements-dev.txt
 !/tools/w1_e2e_accounts.py
 !/tools/w2_e2e_accounts.py
 !/tools/w3_e2e_accounts.py

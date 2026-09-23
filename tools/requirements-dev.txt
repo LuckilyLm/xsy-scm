@@ -1,0 +1,12 @@
+# E2E 与工具脚本的 Python 依赖（开发/CI 环境用，不参与后端打包）
+# 安装：python -m pip install -r tools/requirements-dev.txt
+#
+# 使用方：
+#   tools/patch_product_create_xlsx.py   商品导入 CREATE 模板夹具
+#   tools/patch_product_update_xlsx.py   商品导入 UPDATE 模板夹具
+#   tools/fill_stocktake_template.py     盘点导入模板夹具
+#   xsy-scm-web/e2e/scm-order.spec.ts    订单导入用例内联 Python 生成 xlsx
+#
+# 缺少它时上述用例在干净检出的机器上直接 ModuleNotFoundError，
+# 而本机通常已装好，故障会伪装成「用例本身坏了」。
+openpyxl==3.1.5
