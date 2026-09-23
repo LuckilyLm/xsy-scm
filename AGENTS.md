@@ -100,8 +100,10 @@ presigned URLs are derived values and are always recomputed from `file_key`.
 The **read-side serializer bypass is mitigated**: `FileKeyVoSerializer` now filters its comma-split
 keys through `FileAccessGuard.filterReadable(...)` before `FileService.getFileList()` — the same
 per-key policy as the Controller `checkRead` guard, but silently dropping unreadable keys instead of
-failing the whole VO — and fails closed (empty list) when there is no authenticated caller or the
-guard is unwired, so business VO fields (e.g. `FeedbackVO`, `EnterpriseVO`) no longer hand back URLs
+failing the whole VO — and fails closed (empty list) when there is no authenticated caller or when
+*either* injected dependency (`fileService` / `fileAccessGuard`) is unwired. No fallback branch may
+echo the raw `value`: that would still disclose a private attachment's key and existence. So business
+VO fields (e.g. `FeedbackVO`, `EnterpriseVO`) no longer hand back URLs
 for attachments the caller may not read. This is a targeted mitigation, not the confirmed target
 model, which remains a
 **`scm_file_relation` table** (rights to the business object ⇒ rights to its files; upload to
@@ -205,6 +207,19 @@ V42  V42__scm_delivery_static_route.sql           delivery 物流配送 L0–L2�
 V43  V43__scm_delivery_permissions.sql            delivery data-only，物流配送菜单与权限
                                                    （1000–1003 / 1011–1016 / 1021–1022 / 1031–1032，
                                                    仅授 SUPER_ADMIN）；原编号 V42
+V44  V44__scm_product_image_type.sql               product PCO-2：product_image 加 image_type，
+                                                   存量主图回填（语义已由 V49 收口）
+V45  V45__scm_product_pco2_permissions.sql         product PCO-2 data-only，导入/导出 418-419、
+                                                   图片中心页 406 与按钮 496-497
+V46  V46__scm_todo_permission.sql                  Wave 4 data-only，业务待办只读入口 1100-1101
+                                                   （scm:todo:query，仅授入口不隐含领域权限）
+V47  V47__scm_delivery_print_tracking.sql          Wave 5 配送打印追踪：delivery_route_order 加
+                                                   print_count/last_printed_at/last_printed_by
+                                                   （打印仅计次，不代表物理出纸成功）
+V48  V48__scm_stocktake_import_permission.sql      Wave 6 data-only，盘点导入按钮权限 837
+V49  V49__scm_product_image_type_gallery.sql       product PCO-2 图片类型语义收口（审计 §7.1）：
+                                                   image_type 改为 GALLERY/DETAIL，主图唯一事实
+                                                   回到 is_primary；V44 已应用不可改，故新增一步
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

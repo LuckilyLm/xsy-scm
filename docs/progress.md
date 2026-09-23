@@ -34,16 +34,20 @@
 | 操作日志业务上下文与表格 / 查询体验 Wave 8（无迁移） | 后端 PgIT 6/6 + 读权限 Guard 单元 6/6 + 前端契约 9/9 + 合并单测 148/148 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | **A 通用操作日志按业务对象精确下钻**：`OperateLogQueryForm` 加 `businessType`/`businessId`、`OperateLogMapper.xml` 对 PRODUCT/CUSTOMER/DELIVERY_ROUTE 按既有 param/url 结构做 STRPOS 精确匹配（不新建审计表、不改写入侧），`AdminOperateLogController` 按业务类型白名单校验读权限、无匹配类型回 `1=0` 不放全表；前端 `operate-log-list.vue` 接收并校验路由业务类型 / ID，首载 / 刷新 / 换对象三处重套、重置不残留、脏行逐行 try/catch 退化，商品 / 客户 / 配送线路详情各带类型入口，`operate-log-mask.ts` 展示前递归脱敏 password/token 等，并由 `OperateLogParamMask` 在**写入侧服务端**对敏感字段名递归脱敏（结构保持、只处理 param 文本），库里存的即是脱敏值；**B 列表查询条件按用户本地记忆**：`query-filter-key.ts` + `query-filter-memory.ts` 复用既有 `xsy-scm:...:${employeeId}:...` 偏好约定（不建 user_preference 表），customer-list 接入（查询存 / 重置清 / 挂载恢复回第 1 页）、深链详情不接入避免污染；0 迁移 0 新表 0 新权限；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
-| F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
+| F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收；**F0-DEBT-01 整体未关闭** | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`FileKeyVoSerializer` 旁路已于 2026-09-23 **临时收口**（逐 key 过 `FileAccessGuard.filterReadable`，依赖未注入 / 无身份时 fail closed），但 `FileService.getFileList(keys)` 本身仍是**无身份批量入口**、代码生成模板未改，`scm_file_relation`（FA-2）未落地 |
 | 物流配送 L0–L2（V42–V43） | 已实现，编译 / 构建 + 定向集成验证通过；浏览器与真实地图待验收 | 客户 / 仓库定位、订单地理快照、司机车辆、静态排线、规划锁定、取消释放、固定打印；高德配置待补，L3 未开始 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
 
-- **F0-DEBT-01**：写侧绑定期限权与商品图公开化已于 2026-09-21 收口（FA-0 / V41）。
-  剩余 FA-1～FA-3：**受控批量读取**（`getFileList(keys, user)`）、`scm_file_relation` 落地、
-  OA `FileKeyVoSerializer` 收口与代码生成模板、存量商品图搬运到 `public/image/`。
-  引入任何非管理员业务角色前必须完成读侧，方案见
+- **F0-DEBT-01（未关闭）**：分级现状为
+  FA-0 商品图写侧绑定 ✅ 已收口（2026-09-21 / V41）；
+  `FileKeyVoSerializer` 越权旁路 ✅ 已**临时收口**（2026-09-23，逐 key 过 `FileAccessGuard.filterReadable`，
+  依赖未注入 / 无身份时 fail closed）；
+  FA-1 完整受控 `FileService` 🟡 **未完成**（`getFileList(keys)` 仍是无身份批量入口，代码生成模板未改）；
+  FA-2 `scm_file_relation` ❌ 未做；FA-3 存量商品图搬运到 `public/image/` ❌ 未做。
+  `FileAccessGuard` 对 `private/notice/`、`private/help-doc/` 仍是**前缀级放行**，不等于业务对象授权，
+  因此**引入任何非管理员业务角色前 FA-2 仍是门禁**，方案见
   [`plan/attachment-asset-grading-and-file-access-plan.md`](./plan/attachment-asset-grading-and-file-access-plan.md)。
 - 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
 - 库存深化剩余项：**已完成**（入库侧、出库/预留、盘点、报损报溢、调拨、阈值预警、规格转换、移动加权成本）。
@@ -92,6 +96,39 @@
   把「跑在错误的库上」从静默错误变成启动期失败。运行入口仍需带上该变量指向当前开发库。
 
 ## 追加记录
+
+### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）
+
+在远端 `main @ f3b3f20` 基础上做的收尾，不含新业务能力：
+
+- **`FileKeyVoSerializer` 最后一个 fail-open 分支已堵。** 原先 `fileService == null` 时把原始
+  `value` 直接 `writeString` 出去——虽然不生成可访问 URL，但仍把私有附件的 **key 与存在性**
+  回给了调用者，与本类「依赖未注入 / 无身份即 fail closed」的设计目标矛盾。现改为
+  `fileService == null || fileAccessGuard == null` 一律输出空数组，不再有任何回退分支写出 `value`。
+  新增回归 `neverEmitsTheRawKeyIfFileServiceWasNeverWired`（断言 `writeString` 从未被调用），
+  并把 `failsClosedIfTheGuardWasNeverWired` 收紧为「guard 未注入时连 `getFileList` 都不许调」。
+  `FileAccessGuardTest` + `FileKeyVoSerializerTest` 合计 **31/31 通过**（JDK 21）。
+- **文档与代码事实对齐。** `docs/progress.md`、`docs/decisions.md`、`CONTRIBUTING.md`、
+  `PROPOSAL-2026-09-18-团队技术提升方案.md` 与
+  `docs/plan/attachment-asset-grading-and-file-access-plan.md` 中「`FileKeyVoSerializer` →
+  `getFileList()` 无逐用户过滤」一类旧描述，统一改写为「旁路已**临时收口**，但
+  `FileService.getFileList(keys)` 仍是无身份批量入口、代码生成模板未改、`scm_file_relation` 未落地」。
+  `docs/plan/current-module-optimization-from-sdongpo-v17.4.md` 加了醒目状态头并标注其
+  `main @ 45412fb` / `Flyway max V43` / 「待实施计划」三处已过期（实际 `f3b3f20` / V49），
+  防止被当成现行计划再次实施而重复造功能。
+- **E2E 的 Python 依赖显式化。** 三个 xlsx 夹具生成器与订单导入用例内联 Python 都依赖 `openpyxl`，
+  但仓库此前没有任何 requirements 文件，「干净检出可跑」实际隐含「机器上已装好 openpyxl」。
+  新增 `tools/requirements-dev.txt`（`openpyxl==3.1.5`）并加入 `.gitignore` 白名单，
+  安装口径固定为 `python -m pip install -r tools/requirements-dev.txt`；
+  `tools/verify.py` 的 E2E 就绪检查新增该依赖与三个夹具脚本的探测，缺失时计入未覆盖项（退出码 2）
+  而不是让用例跑到一半 `ModuleNotFoundError`——那种失败会被误读成「用例本身坏了」。
+- **迁移守卫自测有一处过期夹具已修。** `test_renumbering_an_applied_migration_fails_the_guard`
+  写死「V43 改号为 V44」，而 Wave 1 已落地真实的 `V44`，于是 `scan_migrations` 先抛
+  「版本号重复」，用例想验的改号路径根本走不到（自测 12 项里报 1 个 ERROR）。
+  改为按临时树现有最大版本号动态取空闲号，断言强度不变。`python tools/test_verification.py` **12/12 通过**。
+- **未覆盖项（如实声明）**：上述 31/31、12/12 均为**本地实跑证据**；仓库当前**没有 GitHub Actions /
+  commit status**，远端 CI 尚未独立复跑过这些数字。E2E 未在本轮执行（本轮无前端与业务流程改动）。
+  F0-DEBT-01 仍未关闭，FA-1 / FA-2 / FA-3 状态见「当前待办」。
 
 ### 2026-09-23 Wave 1–8 审计修复与全栈验收（`docs/xsy-scm-wave1-8-audit-fix-plan.md`）
 
@@ -256,8 +293,9 @@
   0 pageerror / 0 未处理 rejection 由 `scm-test-base.ts` 的 fixture 统一钉死）。后端 product 模块全量 **91/91**
   （0 失败 / 0 错误 / 0 跳过，一次性 IT 库，含 16 条图片中心与 5 条 UPDATE 导入真实库 IT）；前端 `src/` 本轮零改动
   （只改 E2E 用例与文档），故不重跑 lint / build。
-- **入库方式**：本轮四项改动按关注点拆成提交（图片类型保持 / 三级分类前置校验 + E2E / 文档），留在本地 `main`，
-  未推送远程；`§17` 待裁决项与「导出即可回导」契约仍待业务裁决，未随本轮入库。
+- **入库方式**：本轮四项改动按关注点拆成提交（图片类型保持 / 三级分类前置校验 + E2E / 文档），
+  已推送远端 `main`（截至 2026-09-23 远端 HEAD 为 `f3b3f20`，含随后的 VO 附件序列化收口）；
+  `§17` 待裁决项与「导出即可回导」契约仍待业务裁决，未随本轮入库。
 
 ### 2026-09-22 操作日志业务上下文与表格 / 查询体验（Wave 8，无迁移）：按业务对象精确下钻 + 查询条件本地记忆
 

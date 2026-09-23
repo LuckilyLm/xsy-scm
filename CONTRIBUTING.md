@@ -60,7 +60,9 @@
 - [ ] `@Transactional` 是否只在编排层（`*Service`）？
       被抽出的 `*Factory` / `*Calculator` / `*Assembler` **不应**带事务注解。
 - [ ] 是否触碰 F0-DEBT-01 未解决的路径？
-      （`FileKeyVoSerializer` → `FileService.getFileList()` 无逐用户权限过滤，业务附件读取绕过守卫）
+      （`FileKeyVoSerializer` 旁路已临时收口为逐 key 过 `FileAccessGuard.filterReadable`，
+      但 `FileService.getFileList(keys)` 仍是**无身份批量入口**、代码生成模板未改；
+      新代码不得直接调用无身份入口，`scm_file_relation`（FA-2）落地前不视为已关闭）
 - [ ] 业务附件是否走了正确的 fileKey 前缀策略与读取守卫？
 
 ### 测试
@@ -131,6 +133,14 @@ PR 模板里的「验证证据」要求粘贴**实际命令与实际输出**，�
 ## 七、一键验证
 
 前置工具：Python 3.10+、Java 21、Maven、Node 22（既有前端测试使用 strip-types）及已安装的前端依赖。运行前按部署目录配置本地依赖服务，脚本不会自动启动或清理容器。
+
+Python 依赖需显式安装一次（上传类 E2E 用 `openpyxl` 生成 xlsx 夹具，缺它会在用例中途报 `ModuleNotFoundError`，看起来像用例坏了）：
+
+```bash
+python -m pip install -r tools/requirements-dev.txt
+```
+
+`tools/verify.py` 的 E2E 就绪检查会在 `openpyxl` 不可导入或 xlsx 夹具脚本缺失时记为未覆盖（退出码 `2`），不会静默跳过。
 
 ```powershell
 .\verify.ps1           # 后端 + 类型门禁 + lint + 前端单测/构建 + E2E 就绪检查/执行
