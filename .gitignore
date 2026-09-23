@@ -14,7 +14,9 @@ local-environment-info.txt
 
 # Local tooling (machine-specific, keep out of repository)
 # 其余脚本仍含本机绝对路径或明文种子口令（dev_up.sh / verify_screen.mjs 等），脱敏后再评估；
-# 只放行共享校验链（verify / ratchet / 迁移校验和守卫及其快照）与 Playwright 临时账号脚本。
+# 只放行共享校验链（verify / ratchet / 迁移校验和守卫及其快照）、Playwright 临时账号脚本，
+# 以及下面三个 E2E xlsx 夹具生成器（只按 argv 收文件路径，无本机路径与凭据；不入库则干净检出
+# 跑不了商品导入与盘点模板回导用例）。
 /tools/*
 !/tools/ts_baseline_ratchet.py
 !/tools/verify.py
@@ -22,6 +24,9 @@ local-environment-info.txt
 !/tools/migration_checksum_guard.py
 !/tools/migration_checksum_snapshot.json
 !/tools/e2e_accounts.py
+!/tools/patch_product_create_xlsx.py
+!/tools/patch_product_update_xlsx.py
+!/tools/fill_stocktake_template.py
 !/tools/w1_e2e_accounts.py
 !/tools/w2_e2e_accounts.py
 !/tools/w3_e2e_accounts.py

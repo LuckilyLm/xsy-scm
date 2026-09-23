@@ -216,8 +216,10 @@
   「显式主键种子写入后必须同步序列」。
 - **剩余风险**：预留的并发压测、阈值预警推送、M2 地图路线、F0 读侧（FA-1～FA-3）、W6-2 小程序不变；
   本轮全栈验收跑在本地存储 + 本地 PostgreSQL 栈上，F0 云端模式下的 7 条用例仍需在真实云端环境单独执行。
-  另有两项待处理：(1) E2E 生成上传文件所需的 `tools/patch_product_*_xlsx.py` / `tools/fill_stocktake_template.py`
-  落在 `.gitignore` 的 `/tools/*` 之下，干净检出跑不了这几条上传类用例，需要显式入库；(2) 导入的「分类必须是三级」
+  另有两项待处理：(1) **已闭合**——E2E 生成上传文件所需的 `tools/patch_product_create_xlsx.py` /
+  `tools/patch_product_update_xlsx.py` / `tools/fill_stocktake_template.py` 原先落在 `.gitignore` 的
+  `/tools/*` 之下，干净检出跑不了这几条上传类用例；三者只按 argv 收文件路径、不含本机路径与凭据，已加入白名单入库；
+  (2) 导入的「分类必须是三级」
   只在写入路径生效（单元格校验只查存在与 ENABLED），因此填 1/2 级分类编码会表现为整批写入错误而非逐列校验错误。
 
 ### 2026-09-22 操作日志业务上下文与表格 / 查询体验（Wave 8，无迁移）：按业务对象精确下钻 + 查询条件本地记忆
