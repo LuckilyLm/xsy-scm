@@ -74,6 +74,9 @@ function search(text: string) {
   // Do not leave the previous unfiltered options clickable while the debounced
   // server search is pending; that made fast keyboard selection choose SKU #1
   // for every row in the legacy supplier flow.
+  // Clearing rows alone is not enough: an already in-flight response still passes the
+  // load() generation guard and republishes the stale list, so bump the generation first.
+  requestId++;
   rows.value = [];
   timer = setTimeout(() => load(text), 300);
 }

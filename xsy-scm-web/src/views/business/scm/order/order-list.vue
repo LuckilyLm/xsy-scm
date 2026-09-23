@@ -59,6 +59,9 @@
         <template v-else-if="column.dataIndex==='action'">
           <div class="smart-table-operate">
             <a-button type="link" @click="detail?.open(record.orderId)">详情</a-button>
+            <a-button v-if="record.status==='CONFIRMED'" type="link" v-privilege="'scm:order:add'"
+                      @click="drawer?.openFromHistory(record.orderId)">复用为新单
+            </a-button>
             <a-button v-if="record.status==='DRAFT'" type="link" v-privilege="'scm:order:update'"
                       @click="drawer?.open(record.orderId)">编辑
             </a-button>

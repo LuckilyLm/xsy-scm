@@ -48,6 +48,7 @@
             >取消线路
             </a-button
             >
+            <a-button v-privilege="'support:operateLog:query'" :disabled="routeId == null" @click="openOperateLog">操作日志</a-button>
           </a-space>
         </div>
         <div class="route-summary">
@@ -221,6 +222,98 @@
               <ScmMap v-if="tab === 'map'" :points="mapPoints" route/>
             </div>
           </a-tab-pane>
+          <a-tab-pane key="print" tab="配送打印">
+            <div class="smart-table-btn-block">
+              <a-segmented
+                  v-model:value="printMode"
+                  :options="[
+                    { label: '按订单', value: 'orders' },
+                    { label: '按客户', value: 'customers' },
+                  ]"
+              />
+              <a-select
+                  v-if="printMode === 'customers'"
+                  v-model:value="customerStatusFilter"
+                  style="width: 150px"
+                  :options="[
+                    { label: '全部客户', value: 'ALL' },
+                    { label: '未打印客户', value: 'UNPRINTED' },
+                    { label: '部分打印客户', value: 'PARTIAL' },
+                    { label: '已打印客户', value: 'PRINTED' },
+                  ]"
+              />
+              <a-select
+                  v-if="printMode === 'customers'"
+                  v-model:value="customerFilter"
+                  style="width: 160px"
+                  :options="[
+                    { label: '全部订单', value: 'ALL' },
+                    { label: '仅未打印订单', value: 'UNPRINTED' },
+                    { label: '仅已打印订单', value: 'PRINTED' },
+                  ]"
+              />
+              <a-button
+                  v-if="canPrint"
+                  type="primary"
+                  v-privilege="'scm:delivery:route:print'"
+                  :disabled="busy || !canRecordPrint"
+                  @click="recordPrint"
+              >生成打印 · 登记 {{ printTargetCount }}
+              </a-button>
+            </div>
+            <a-alert
+                message="「生成打印」仅登记本次已生成打印预览并累加计次，不代表发货确认，也不扣减库存。客户与订单的打印状态在生成时由服务端按当前有效订单重新判定，列表状态仅供预览。"
+                type="info"
+                show-icon
+            />
+            <a-table
+                v-if="printMode === 'orders'"
+                size="small"
+                :columns="orderViewColumns"
+                :data-source="ordersView"
+                row-key="orderId"
+                :loading="printLoading"
+                :pagination="false"
+                :scroll="{ x: 1080 }"
+                :row-selection="orderRowSelection"
+                bordered
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'orderAmount'">{{ money(record.orderAmount) }}</template>
+                <template v-else-if="column.dataIndex === 'printStatus'">
+                  <a-tag :color="printStatuses[record.printStatus as PrintStatus].color">{{
+                      printStatuses[record.printStatus as PrintStatus].label
+                    }}
+                  </a-tag>
+                </template>
+                <template v-else-if="column.dataIndex === 'lastPrintedAt'">
+                  {{ record.lastPrintedAt ? datetime(record.lastPrintedAt) : '—' }}
+                </template>
+              </template>
+            </a-table>
+            <a-table
+                v-else
+                size="small"
+                :columns="customerViewColumns"
+                :data-source="customersShown"
+                row-key="customerId"
+                :loading="printLoading"
+                :pagination="false"
+                :scroll="{ x: 760 }"
+                :row-selection="customerRowSelection"
+                bordered
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'totalAmount'">{{ money(record.totalAmount) }}</template>
+                <template v-else-if="column.dataIndex === 'printStatus'">
+                  <a-tag :color="printStatuses[record.printStatus as PrintStatus].color">{{
+                      printStatuses[record.printStatus as PrintStatus].label
+                    }}
+                  </a-tag>
+                </template>
+              </template>
+            </a-table>
+          </a-tab-pane>
         </a-tabs>
       </template>
       <a-empty v-else-if="!loading" description="线路尚未加载"/>
@@ -271,7 +364,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {computed, ref, watch} from 'vue';
+import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import {Modal, message, type TableColumnsType} from 'ant-design-vue';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -284,7 +378,17 @@ import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
-import {deliveryError, routeStatuses, type Id, type RouteDetail, type DeliveryStop} from './delivery-types';
+import {
+  deliveryError,
+  printStatuses,
+  routeStatuses,
+  type DeliveryStop,
+  type Id,
+  type PrintStatus,
+  type RouteCustomerView,
+  type RouteDetail,
+  type RouteOrderView,
+} from './delivery-types';
 
 const emit = defineEmits<{ changed: [] }>();
 const visible = ref(false),
@@ -298,6 +402,7 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const user = useUserStore();
+const router = useRouter();
 const canEdit = computed(
     () =>
         detail.value?.route.status === 'DRAFT' &&
@@ -330,6 +435,117 @@ const orderColumns: TableColumnsType = [
   {title: '定位', dataIndex: 'location', width: 90},
   {title: '操作', dataIndex: 'action', align: 'right', width: 80},
 ];
+
+const printMode = ref<'orders' | 'customers'>('orders');
+const customerFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED'>('ALL');
+const customerStatusFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED' | 'PARTIAL'>('ALL');
+const ordersView = ref<RouteOrderView[]>([]);
+const customersView = ref<RouteCustomerView[]>([]);
+const orderSelection = ref<Id[]>([]);
+const customerSelection = ref<Id[]>([]);
+const printLoading = ref(false);
+const printLoaded = ref(false);
+
+const canPrint = computed(() =>
+    ['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? '')
+);
+/**
+ * 展示用的客户范围筛选：打印状态的事实在服务端（生成时按当前有效订单重算），
+ * 这里只决定列表可见行与未勾选时的提交范围。
+ */
+const customersShown = computed(() =>
+    customersView.value.filter(
+        (item) => customerStatusFilter.value === 'ALL' || item.printStatus === customerStatusFilter.value
+    )
+);
+const canRecordPrint = computed(() =>
+    printMode.value === 'orders'
+        ? orderSelection.value.length > 0
+        : // 勾选行即候选范围；未勾选时必须给出收窄的状态范围，
+          // 否则一次请求会无选择地重打整条线路。
+          customerSelection.value.length > 0 ||
+          (customerStatusFilter.value !== 'ALL' && customersShown.value.length > 0)
+);
+const printTargetCount = computed(() =>
+    printMode.value === 'orders'
+        ? orderSelection.value.length
+        : customerSelection.value.length || customersShown.value.length
+);
+const orderRowSelection = computed(() => ({
+  selectedRowKeys: orderSelection.value,
+  onChange: (keys: (string | number)[]) => (orderSelection.value = keys),
+}));
+const customerRowSelection = computed(() => ({
+  selectedRowKeys: customerSelection.value,
+  onChange: (keys: (string | number)[]) => (customerSelection.value = keys),
+}));
+const orderViewColumns: TableColumnsType = [
+  {title: '订单号', dataIndex: 'orderNo', width: 170},
+  {title: '客户', dataIndex: 'customerName', width: 160},
+  {title: '停靠序', dataIndex: 'stopSeq', width: 80, align: 'right'},
+  {title: '商品行', dataIndex: 'itemCount', width: 80, align: 'right'},
+  {title: '订单金额', dataIndex: 'orderAmount', width: 120, align: 'right'},
+  {title: '打印次数', dataIndex: 'printCount', width: 90, align: 'right'},
+  {title: '打印状态', dataIndex: 'printStatus', width: 100, align: 'center'},
+  {title: '最近打印', dataIndex: 'lastPrintedAt', width: 170},
+];
+const customerViewColumns: TableColumnsType = [
+  {title: '客户', dataIndex: 'customerName', width: 200},
+  {title: '订单数', dataIndex: 'orderCount', width: 90, align: 'right'},
+  {title: '商品行', dataIndex: 'itemCount', width: 90, align: 'right'},
+  {title: '金额', dataIndex: 'totalAmount', width: 130, align: 'right'},
+  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 110, align: 'right'},
+  {title: '打印状态', dataIndex: 'printStatus', width: 110, align: 'center'},
+];
+
+async function loadPrint() {
+  if (routeId.value == null) return;
+  printLoading.value = true;
+  try {
+    const [o, c] = await Promise.all([deliveryApi.ordersView(routeId.value), deliveryApi.customersView(routeId.value)]);
+    ordersView.value = o.data;
+    customersView.value = c.data;
+    printLoaded.value = true;
+  } catch (e) {
+    error.value = deliveryError(e);
+  } finally {
+    printLoading.value = false;
+  }
+}
+
+watch(tab, (value) => {
+  if (value === 'print' && !printLoaded.value) loadPrint();
+});
+
+async function recordPrint() {
+  const route = detail.value?.route;
+  if (!route || !canRecordPrint.value) return;
+  busy.value = true;
+  error.value = '';
+  try {
+    if (printMode.value === 'orders') {
+      await deliveryApi.printOrders(route.id, route.version, orderSelection.value);
+    } else {
+      // 未勾选行即「本状态范围内整条线路」；勾选时名单只作候选范围，状态由服务端复核。
+      await deliveryApi.printCustomers(
+          route.id,
+          route.version,
+          customerSelection.value.length ? customerSelection.value : undefined,
+          customerStatusFilter.value,
+          customerFilter.value
+      );
+    }
+    message.success('已登记打印');
+    orderSelection.value = [];
+    customerSelection.value = [];
+    await reload();
+  } catch (e) {
+    error.value = deliveryError(e);
+  } finally {
+    busy.value = false;
+  }
+}
+
 let generation = 0;
 
 async function reload() {
@@ -339,7 +555,15 @@ async function reload() {
   error.value = '';
   try {
     const result = await deliveryApi.detail(routeId.value);
-    if (current === generation) detail.value = result.data;
+    if (current === generation) {
+      detail.value = result.data;
+      // 线路结构（ACTIVE 订单集合）变化后，已加载的打印视图与旧选中项即失效，一并刷新。
+      if (printLoaded.value) {
+        orderSelection.value = [];
+        customerSelection.value = [];
+        await loadPrint();
+      }
+    }
   } catch (e) {
     if (current === generation) error.value = deliveryError(e);
   } finally {
@@ -350,6 +574,14 @@ async function reload() {
 function open(id: Id, initialTab = 'base') {
   routeId.value = id;
   detail.value = undefined;
+  printLoaded.value = false;
+  ordersView.value = [];
+  customersView.value = [];
+  orderSelection.value = [];
+  customerSelection.value = [];
+  printMode.value = 'orders';
+  customerStatusFilter.value = 'ALL';
+  customerFilter.value = 'ALL';
   visible.value = true;
   tab.value = initialTab;
   reload();
@@ -476,6 +708,15 @@ async function saveStop() {
   } finally {
     busy.value = false;
   }
+}
+
+// 携带业务上下文跳到通用操作日志页，按线路 id 精确筛选。
+function openOperateLog() {
+  if (routeId.value == null) return;
+  void router.push({
+    path: '/support/operate-log/operate-log-list',
+    query: {businessType: 'DELIVERY_ROUTE', businessId: String(routeId.value)},
+  });
 }
 
 defineExpose({open});

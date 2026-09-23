@@ -2,22 +2,33 @@ package net.lab1024.sa.admin.module.scm.inventory.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryStocktakeAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryStocktakeQueryForm;
+import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeImportResultVO;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeVO;
+import net.lab1024.sa.admin.module.scm.inventory.service.InventoryStocktakeImportService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryStocktakeQueryService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryStocktakeService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
+import net.lab1024.sa.base.common.util.SmartResponseUtil;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
+import net.lab1024.sa.base.module.support.securityprotect.service.SecurityFileService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.Locale;
 
 /**
  * SCM 库存盘点单。
@@ -40,6 +51,12 @@ public class InventoryStocktakeController {
 
     private final InventoryStocktakeQueryService queryService;
 
+    private final InventoryStocktakeImportService importService;
+
+    private final SecurityFileService securityFileService;
+
+    private static final long MAX_IMPORT_SIZE = 10L * 1024 * 1024;
+
     @PostMapping("/query")
     @SaCheckPermission("scm:inventory:stocktake:query")
     public ResponseDTO<PageResult<InventoryStocktakeVO>> query(@Valid @RequestBody InventoryStocktakeQueryForm form) {
@@ -60,6 +77,49 @@ public class InventoryStocktakeController {
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody InventoryStocktakeAddForm form) {
         return ResponseDTO.ok(service.create(form));
+    }
+
+    /**
+     * 导出某仓库的盘点 Excel 模板（含签名快照凭证）。
+     *
+     * <p>需要导入权限；模板里的账面量 / 单位来自余额，读取受 {@code :import} 约束（计划 §10.6）。
+     */
+    @GetMapping("/import/template")
+    @SaCheckPermission("scm:inventory:stocktake:import")
+    public void importTemplate(@RequestParam Long warehouseId, HttpServletResponse response) throws IOException {
+        var content = importService.buildTemplate(warehouseId);
+        SmartResponseUtil.setDownloadFileHeader(response, "盘点导入模板-" + warehouseId + ".xlsx", (long) content.length);
+        response.getOutputStream().write(content);
+        response.flushBuffer();
+    }
+
+    /**
+     * 导入填好实盘量的 Excel → 新建草稿盘点单。
+     *
+     * <p><b>只建草稿，不改动库存</b>；整批校验或快照核验任一不过即整批拒绝、不落库。
+     * {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张草稿。
+     */
+    @PostMapping("/import")
+    @SaCheckPermission("scm:inventory:stocktake:import")
+    @OperateLog
+    public ResponseDTO<InventoryStocktakeImportResultVO> importStocktake(
+            @RequestParam MultipartFile file,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) throws Exception {
+        if (file.isEmpty()) {
+            return ResponseDTO.userErrorParam("导入文件不能为空");
+        }
+        var name = file.getOriginalFilename();
+        if (name == null || !name.toLowerCase(Locale.ROOT).endsWith(".xlsx")) {
+            return ResponseDTO.userErrorParam("仅支持 .xlsx 文件");
+        }
+        if (file.getSize() > MAX_IMPORT_SIZE) {
+            return ResponseDTO.userErrorParam("导入文件不能超过 10 MiB");
+        }
+        var security = securityFileService.checkFile(file);
+        if (!security.getOk()) {
+            return ResponseDTO.error(security);
+        }
+        return ResponseDTO.ok(importService.importFile(file, idempotencyKey));
     }
 
     /**

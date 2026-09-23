@@ -1,11 +1,11 @@
 <template>
   <section aria-label="商品档案">
-    <a-form class="smart-query-form" layout="inline" @finish="search">
+    <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="分类" class="smart-query-form-item"><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" /></a-form-item>
         <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名 / 编码 / 条码 / 助记码" style="width: 240px" /></a-form-item>
         <a-form-item label="商品状态" class="smart-query-form-item"><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px" /></a-form-item>
-        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="advanced = !advanced"><template #icon><UpOutlined v-if="advanced" /><DownOutlined v-else /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
+        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="advanced = !advanced"><template #icon><UpOutlined v-if="advanced" aria-hidden="true" /><DownOutlined v-else aria-hidden="true" /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
       </a-row>
       <a-row v-if="advanced" class="smart-query-form-row">
         <a-form-item label="SKU 状态" class="smart-query-form-item"><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px" /></a-form-item>
@@ -31,6 +31,9 @@
           <a-button v-privilege="'scm:product:batch'" :disabled="!selectedRows.length"
                     @click="batch?.open('TAG', selectedItems)">批量打标签
           </a-button>
+          <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
+          <a-button v-privilege="'scm:product:export'" :loading="exporting" @click="exportCurrent">导出</a-button>
+          <a-button @click="openImageCenter">图片中心</a-button>
           <span v-if="selectedRows.length" class="batch-hint">已选 {{ selectedRows.length }} 个</span>
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load"/>
@@ -93,6 +96,7 @@
     </a-card>
     <ProductDrawer ref="drawer" @saved="load"/>
     <ProductBatchModal ref="batch" :categories="categories" :tag-options="batchTagOptions" @done="batchDone"/>
+    <ProductImportModal ref="importModal" @imported="load"/>
   </section>
 </template>
 <script setup lang="ts">
@@ -128,6 +132,7 @@ import CategorySelect from '/@/components/business/scm/product-category-tree-sel
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ProductDrawer from './components/product-form-drawer.vue';
 import ProductBatchModal from './components/product-batch-modal.vue';
+import ProductImportModal from './components/product-import-modal.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
 import {datetime} from '../common/scm-display';
@@ -139,6 +144,7 @@ const categories = ref<ProductCategory[]>([]), rows = ref<ProductRow[]>([]), tot
 const tagChoices = ref<ProductTag[]>([]), createdRange = ref<[string, string]>();
 const selectedKeys = ref<ProductId[]>([]);
 const drawer = ref<InstanceType<typeof ProductDrawer>>(), batch = ref<InstanceType<typeof ProductBatchModal>>();
+const importModal = ref<InstanceType<typeof ProductImportModal>>(), exporting = ref(false);
 const user = useUserStore();
 const canBatch = computed(() => user.administratorFlag || user.getPointList?.some((point: {
   webPerms: string
@@ -258,6 +264,25 @@ const sortChanged: TableProps<ProductRow>['onChange'] = (_page, _filters, sort) 
 
 function detail(id: ProductId) {
   void router.push({path: '/product/product-detail', query: {spuId: String(id)}});
+}
+
+async function exportCurrent() {
+  exporting.value = true;
+  try {
+    await productApi.exportProducts({
+      ...filters,
+      createdFrom: createdRange.value?.[0] || undefined,
+      createdTo: createdRange.value?.[1] || undefined
+    });
+  } catch (e) {
+    error.value = productError(e);
+  } finally {
+    exporting.value = false;
+  }
+}
+
+function openImageCenter() {
+  void router.push('/product/image-center');
 }
 
 function batchDone() {

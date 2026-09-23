@@ -288,11 +288,21 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         assertThat(statusOf(id)).isEqualTo("REJECTED");
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(lossGainMovements(wh, sku)).isEmpty();
+        // 驳回通知制单人：与状态变更同事务写入原生消息表，恰一条，dataId 指向本单
+        assertThat(rejectMessagesFor(id)).isEqualTo(1);
 
         // 已驳回是终态
         expectCode(() -> lossGainService.approve(id, audit(id, null)), 41029);
         expectCode(() -> lossGainService.reject(id, audit(id, "再驳一次")), 41029);
         expectCode(() -> lossGainService.delete(id), 41029);
+        // 终态后的再次驳回被状态守卫拒绝，事务回滚，不产生第二条通知
+        assertThat(rejectMessagesFor(id)).isEqualTo(1);
+    }
+
+    private int rejectMessagesFor(Long lossGainId) {
+        return jdbc.queryForObject(
+                "SELECT count(*) FROM t_message WHERE data_id = ? AND receiver_user_id = 1",
+                Integer.class, String.valueOf(lossGainId));
     }
 
     @Test

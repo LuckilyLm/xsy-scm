@@ -53,6 +53,35 @@ public class DeliveryRouteController {
         return ResponseDTO.ok(query.print(id));
     }
 
+    @GetMapping("/routes/{id}/orders-view")
+    @SaCheckPermission("scm:delivery:route:query")
+    public ResponseDTO<List<DeliveryOrderViewVO>> ordersView(@PathVariable Long id) {
+        return ResponseDTO.ok(query.orderView(id));
+    }
+
+    @GetMapping("/routes/{id}/customers-view")
+    @SaCheckPermission("scm:delivery:route:query")
+    public ResponseDTO<List<DeliveryCustomerViewVO>> customersView(@PathVariable Long id) {
+        return ResponseDTO.ok(query.customerView(id));
+    }
+
+    // 正式生成入口统一走 POST 并带 Idempotency-Key；GET /print 只预览不计次。
+    @PostMapping("/routes/{id}/print/orders")
+    @SaCheckPermission("scm:delivery:route:print")
+    @OperateLog
+    public ResponseDTO<DeliveryPrintResultVO> printOrders(@PathVariable Long id, @Valid @RequestBody DeliveryPrintOrdersForm form,
+                                                          @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(service.printOrders(id, form, key));
+    }
+
+    @PostMapping("/routes/{id}/print/customers")
+    @SaCheckPermission("scm:delivery:route:print")
+    @OperateLog
+    public ResponseDTO<DeliveryPrintResultVO> printCustomers(@PathVariable Long id, @Valid @RequestBody DeliveryPrintCustomersForm form,
+                                                             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(service.printCustomers(id, form, key));
+    }
+
     @PostMapping("/routes")
     @SaCheckPermission("scm:delivery:route:add")
     @OperateLog

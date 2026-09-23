@@ -224,3 +224,60 @@ export interface ProductBatchResult {
     failedCount: number;
     failures: { spuId: ProductId; spuCode: string | null; reasonCode: number; reasonMsg: string }[];
 }
+
+/** Excel 导入逐行定位错误：后端 0 错误才写、写失败整批回滚，故这些错误永远代表“本次没有任何商品落库”。 */
+export interface ProductImportError {
+    rowNumber: number;
+    spuCode: string | null;
+    column: string;
+    code: string;
+    message: string;
+}
+
+/** 导入模式：CREATE 整批新增，UPDATE 按 SPU/SKU 定位键改写既存商品（空白列保持原值）。 */
+export type ProductImportMode = 'CREATE' | 'UPDATE';
+
+export interface ProductImportResult {
+    mode: ProductImportMode;
+    totalRows: number;
+    totalProducts: number;
+    totalErrors: number;
+    importedProducts: number;
+    updatedProducts: number;
+    spuIds: ProductId[];
+    errors: ProductImportError[];
+}
+
+/** 图片中心单 SPU 视图：fileUrl 由后端按 fileKey 现算，前端不回传也不入库。 */
+export interface ImageCenterView {
+    spuId: ProductId;
+    spuCode: string;
+    name: string;
+    images: ProductImage[];
+}
+
+export interface ImageBindItem {
+    spuId: ProductId;
+    fileKey: string;
+    primaryFlag?: boolean;
+    sortOrder?: number;
+}
+
+export interface ImageBatchBindForm {
+    items: ImageBindItem[];
+}
+
+export interface ImageBatchRemoveForm {
+    spuId: ProductId;
+    imageIds: ProductId[];
+}
+
+export interface ImageSetPrimaryForm {
+    spuId: ProductId;
+    imageId: ProductId;
+}
+
+export interface ImageReorderForm {
+    spuId: ProductId;
+    orderedImageIds: ProductId[];
+}

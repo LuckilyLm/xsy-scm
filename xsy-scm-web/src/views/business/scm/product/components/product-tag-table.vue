@@ -1,10 +1,10 @@
 <!-- PCO-1 辅助资料「商品标签」Tab：标签被引用后只能停用，历史商品仍保留展示。 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @finish="search">
+  <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" allow-clear placeholder="编码 / 名称" style="width: 200px" /></a-form-item>
       <a-form-item label="状态" class="smart-query-form-item"><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px" /></a-form-item>
-      <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" html-type="submit">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
+      <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
     </a-row>
   </a-form>
   <a-row class="smart-table-btn-block" justify="space-between">

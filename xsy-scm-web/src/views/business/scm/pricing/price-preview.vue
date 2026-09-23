@@ -1,12 +1,12 @@
 <!-- W3 新能力：取价试算。价格状态与可售状态独立展示（Q2）。 -->
 <template>
  <a-card title="取价试算" size="small" :bordered="false">
-  <a-form layout="inline" class="smart-query-form" @finish="resolve">
+  <a-form layout="inline" class="smart-query-form">
    <a-row class="smart-query-form-row">
     <a-form-item label="客户" required class="smart-query-form-item"><CustomerSelect v-model:value="customerId" width="220px" /></a-form-item>
     <a-form-item label="SKU" required class="smart-query-form-item"><SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]" /></a-form-item>
     <a-form-item label="时点" class="smart-query-form-item"><a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" placeholder="当前时点" /></a-form-item>
-    <a-form-item class="smart-query-form-item"><a-button type="primary" html-type="submit" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button></a-form-item>
+    <a-form-item class="smart-query-form-item"><a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button></a-form-item>
    </a-row>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon />

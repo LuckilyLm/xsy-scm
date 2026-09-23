@@ -17,6 +17,12 @@ public enum MessageTypeEnum implements BaseEnum {
     MAIL(1, "站内信"),
 
     ORDER(2, "订单"),
+
+    /**
+     * 库存报损报溢单据消息：{@code dataId} 为报损报溢单 id，前端据此跳回目标单据。
+     * 新增 SCM 业务消息类型时同步前端 {@code message-const.ts} 的数值镜像，否则类型列渲染为空。
+     */
+    SCM_INVENTORY_LOSS_GAIN(3, "库存报损报溢"),
     ;
 
     private final Integer value;

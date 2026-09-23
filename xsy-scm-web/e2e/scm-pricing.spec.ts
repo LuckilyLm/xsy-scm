@@ -2,7 +2,8 @@
  * The fixture helper creates an administrator and a read-only account; secrets
  * remain in process memory and are never written to the report.
  */
-import { test, expect, request, type APIRequestContext } from '@playwright/test';
+import { request, type APIRequestContext } from '@playwright/test';
+import {expect, test} from './scm-test-base';
 import { randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';

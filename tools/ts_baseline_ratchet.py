@@ -30,6 +30,9 @@ Notes
 * Identity deliberately excludes line/column so that harmless line shifts in
   upstream files do not register as "new" errors. Line/column are still stored
   in the baseline for traceability.
+* Absolute paths quoted inside a message are masked to ``<path>`` / ``<webDir>``:
+  without that, the same upstream error recorded under another checkout directory
+  would show up as one "fixed" plus one "new" error, so ``check`` could never pass.
 * ``SCM_PREFIXES`` is the ratchet's "must always be zero" zone.
 """
 
@@ -64,6 +67,25 @@ DIAG_RE = re.compile(
     r"^(?P<file>[^(]+?)\((?P<line>\d+),(?P<col>\d+)\): "
     r"error (?P<code>TS\d+): (?P<msg>.*)$"
 )
+
+# vue-tsc quotes resolved module paths (TS7016) and imported types (TS7053), so the
+# same diagnostic reads differently on another checkout directory.
+QUOTED_ABS_PATH_RES = (
+    re.compile(r"'(?:[A-Za-z]:[\\/]|/)[^']*'"),
+    re.compile(r'"(?:[A-Za-z]:[\\/]|/)[^"]*"'),
+)
+ABS_DRIVE_PATH_RE = re.compile(r"[A-Za-z]:[\\/][^\s\"']+")
+
+
+def normalize_message(message: str) -> str:
+    """Mask absolute filesystem paths so identities stay portable across checkouts."""
+    # A quoted span may contain spaces, which the bare-path pattern below cannot cross.
+    for pattern in QUOTED_ABS_PATH_RES:
+        message = pattern.sub(lambda m: m.group(0)[0] + "<path>" + m.group(0)[-1], message)
+    message = ABS_DRIVE_PATH_RE.sub("<path>", message)
+    for variant in (str(WEB_DIR), str(WEB_DIR).replace("\\", "/")):
+        message = message.replace(variant, "<webDir>")
+    return message
 
 
 # ------------------------------------------------------------------- diagnostics
@@ -111,13 +133,13 @@ def parse_tsc_output(raw: str) -> list[Diagnostic]:
                     line=int(m.group("line")),
                     col=int(m.group("col")),
                     code=m.group("code"),
-                    message=m.group("msg").strip(),
+                    message=normalize_message(m.group("msg").strip()),
                 )
             )
         elif out and line.strip() and not line.startswith("error TS"):
             # continuation of the previous diagnostic
             prev = out[-1]
-            prev.message = f"{prev.message} / {line.strip()}"
+            prev.message = normalize_message(f"{prev.message} / {line.strip()}")
     return out
 
 
@@ -221,7 +243,7 @@ def cmd_check(args) -> int:
     validate_output(raw)
     base_ids: dict[str, dict] = {}
     for d in baseline["diagnostics"]:
-        ident = f"{d['file']}|{d['code']}|{d['message']}"
+        ident = f"{d['file']}|{d['code']}|{normalize_message(d['message'])}"
         base_ids.setdefault(ident, d)
 
     current = parse_tsc_output(raw)
@@ -230,7 +252,9 @@ def cmd_check(args) -> int:
         cur_ids.setdefault(d.identity, d.to_json())
 
     new_ids = [k for k in cur_ids if k not in base_ids]
-    base_counts = Counter(f"{d['file']}|{d['code']}|{d['message']}" for d in baseline["diagnostics"])
+    base_counts = Counter(
+        f"{d['file']}|{d['code']}|{normalize_message(d['message'])}" for d in baseline["diagnostics"]
+    )
     increased = Counter(d.identity for d in current) - base_counts
     fixed_ids = [k for k in base_ids if k not in cur_ids]
 

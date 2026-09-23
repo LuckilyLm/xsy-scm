@@ -29,3 +29,10 @@ server:
 spring:
   profiles:
     active: '@profiles.active@'
+
+# 盘点快照导入凭证的签名密钥：开发环境显式使用代码仓库内的默认值，pre/prod 必须由环境变量注入
+scm:
+  inventory:
+    stocktake:
+      snapshot:
+        secret: xsy-scm-stocktake-snapshot-dev-secret-change-in-production

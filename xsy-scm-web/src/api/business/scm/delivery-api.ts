@@ -7,9 +7,12 @@ import type {
     DeliveryRoute,
     Driver,
     Id,
+    PrintResult,
     Query,
+    RouteCustomerView,
     RouteDetail,
     RouteForm,
+    RouteOrderView,
     RoutePrint,
     Vehicle,
 } from '/@/views/business/scm/delivery/delivery-types';
@@ -19,6 +22,26 @@ function call<T>(method: string, path: string, data?: unknown): Promise<ScmRespo
         url: `/scm/delivery${path}`,
         method, ...(method === 'get' ? {params: data} : {data})
     }) as unknown as Promise<ScmResponse<T>>;
+}
+
+// 打印计次命令带 Idempotency-Key：失败保留同一 UUID 供重试，成功或内容变化后换用新键。
+const printKeys = new Map<string, string>();
+
+async function printCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
+    const signature = path + JSON.stringify(data);
+    let key = printKeys.get(signature);
+    if (!key) {
+        key = crypto.randomUUID();
+        printKeys.set(signature, key);
+    }
+    const result = await request({
+        url: `/scm/delivery${path}`,
+        method: 'post',
+        data,
+        headers: {'Idempotency-Key': key}
+    }) as unknown as ScmResponse<T>;
+    printKeys.delete(signature);
+    return result;
 }
 
 export const deliveryApi = {
@@ -50,6 +73,17 @@ export const deliveryApi = {
     }) =>
         call<string>('put', `/routes/${id}/stops/${stopId}`, form),
     print: (id: Id) => call<RoutePrint>('get', `/routes/${id}/print`),
+    ordersView: (id: Id) => call<RouteOrderView[]>('get', `/routes/${id}/orders-view`),
+    customersView: (id: Id) => call<RouteCustomerView[]>('get', `/routes/${id}/customers-view`),
+    printOrders: (id: Id, version: number, orderIds: Id[]) =>
+        printCommand<PrintResult>(`/routes/${id}/print/orders`, {version, orderIds}),
+    printCustomers: (id: Id,
+                     version: number,
+                     customerIds: Id[] | undefined,
+                     customerStatusFilter: 'ALL' | 'PRINTED' | 'UNPRINTED' | 'PARTIAL',
+                     orderPrintFilter: 'ALL' | 'PRINTED' | 'UNPRINTED') =>
+        printCommand<PrintResult>(`/routes/${id}/print/customers`,
+            {version, customerIds, customerStatusFilter, orderPrintFilter}),
     warehouses: () => call<Warehouse[]>('get', '/options/warehouses'),
     drivers: () => call<Driver[]>('get', '/options/drivers'),
     vehicles: () => call<Vehicle[]>('get', '/options/vehicles'),

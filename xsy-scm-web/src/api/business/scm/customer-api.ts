@@ -17,6 +17,7 @@ import type {
     CustomerDeletePayload,
     CustomerDetail,
     CustomerForm,
+    CustomerFrequentSku,
     CustomerOption,
     CustomerQuery,
     CustomerRow,
@@ -32,6 +33,11 @@ export const customerApi = {
         postRequest('/scm/customer/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerRow>>>,
     detail: (customerId: ScmId) =>
         getRequest(`/scm/customer/detail/${customerId}`, {}) as unknown as Promise<ScmResponse<CustomerDetail>>,
+    /** 常购商品（Wave 7，只读聚合）：近 days 天已确认订单按 (SKU, 单位) 现算，后端裁剪 days/limit 上限。 */
+    frequentSkus: (customerId: ScmId, days = 90, limit = 20) =>
+        getRequest(`/scm/customer/${customerId}/frequent-skus`, {days, limit}) as unknown as Promise<
+            ScmResponse<CustomerFrequentSku[]>
+        >,
     optionList: () =>
         postRequest('/scm/customer/option/list', {}) as unknown as Promise<ScmResponse<CustomerOption[]>>,
     add: (form: CustomerForm) => postRequest('/scm/customer/add', form) as unknown as Promise<ScmResponse<ScmId>>,

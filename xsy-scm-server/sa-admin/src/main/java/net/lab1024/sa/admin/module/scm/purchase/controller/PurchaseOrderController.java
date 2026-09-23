@@ -1,12 +1,16 @@
 package net.lab1024.sa.admin.module.scm.purchase.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.idev.excel.FastExcel;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchDeleteForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchShortCloseForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderCancelForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderDeleteForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderExportForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderShortCloseForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderUpdateForm;
@@ -14,10 +18,12 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderVersion
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOperationLogVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderItemVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
+import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseOrderExportSupport;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseOrderService;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseQueryService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
+import net.lab1024.sa.base.common.util.SmartResponseUtil;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -49,6 +56,8 @@ public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
 
     private final PurchaseQueryService purchaseQueryService;
+
+    private static final int EXPORT_MAX_ROWS = 100000;
 
     // ------------------------------------------------------------------
     // 查询
@@ -76,6 +85,27 @@ public class PurchaseOrderController {
     @SaCheckPermission("scm:purchase:log:query")
     public ResponseDTO<List<PurchaseOperationLogVO>> logs(@PathVariable Long orderId) {
         return ResponseDTO.ok(purchaseQueryService.orderLogs(orderId));
+    }
+
+    /**
+     * 采购单列表导出（Wave 2B §6.4，只读）：复用 {@code scm:purchase:query}，一次取「第 1 页 + 上限行」的
+     * 当前筛选结果，按前端勾选的列（{@link PurchaseOrderExportSupport} 目录裁决）落动态表头 xlsx。
+     * 与列表页共用同一投影，导出内容 == 列表可见内容；<b>不触碰任何采购状态</b>（§6.8）。
+     */
+    @PostMapping("/export")
+    @SaCheckPermission("scm:purchase:query")
+    @OperateLog
+    public void export(@Valid @RequestBody PurchaseOrderExportForm form, HttpServletResponse response)
+            throws IOException {
+        form.setPageNum(1L);
+        form.setPageSize((long) EXPORT_MAX_ROWS);
+        List<PurchaseOrderVO> orders = purchaseQueryService.orderQuery(form).getList();
+        SmartResponseUtil.setDownloadFileHeader(response, "采购单导出.xlsx", null);
+        FastExcel.write(response.getOutputStream())
+                .head(PurchaseOrderExportSupport.head(form.getExportColumns()))
+                .autoCloseStream(Boolean.FALSE)
+                .sheet("采购单")
+                .doWrite(PurchaseOrderExportSupport.rows(form.getExportColumns(), orders));
     }
 
     // ------------------------------------------------------------------
@@ -123,6 +153,18 @@ public class PurchaseOrderController {
             @Valid @RequestBody PurchaseOrderShortCloseForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.shortClose(form, idempotencyKey));
+    }
+
+    /**
+     * 批量少收关单（Wave 2B §6.3）：整批共享原因，在同一事务内逐单套用与单单完全相同的合法性 / 版本校验，
+     * 任一单非法即整批回滚。复用 {@code scm:purchase:short-close} 权限；不接幂等头（批量本身原子）。
+     */
+    @PostMapping("/batch/short-close")
+    @SaCheckPermission("scm:purchase:short-close")
+    @OperateLog
+    public ResponseDTO<String> batchShortClose(@Valid @RequestBody PurchaseOrderBatchShortCloseForm form) {
+        purchaseOrderService.batchShortClose(form);
+        return ResponseDTO.ok();
     }
 
     @PostMapping("/delete")

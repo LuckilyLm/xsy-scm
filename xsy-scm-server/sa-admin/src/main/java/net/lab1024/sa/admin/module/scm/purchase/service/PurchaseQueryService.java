@@ -13,8 +13,12 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEnti
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderItemEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseReceiptItemEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptItemWorkbenchQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO;
+import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOperationLogVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderAllocationVO;
@@ -23,6 +27,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptQuantityCalculator;
+import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
@@ -36,6 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;
@@ -85,6 +91,28 @@ public class PurchaseQueryService {
     public PageResult<PurchaseDemandVO> demandQuery(PurchaseDemandQueryForm form) {
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page, purchaseDemandDao.query(page, form));
+    }
+
+    /**
+     * 订单汇总 / 库存缺口预览（Wave 2A §6A.4）。
+     *
+     * <p><b>只读</b>：不写任何表、不改 {@link PurchaseDemandService#generate} 的需求语义，
+     * 只是把「已确认订单实发量」与「目标仓可用余额」并排算一个缺口供决策。
+     *
+     * <p>拒绝客户端排序的理由与库存余额页一致（join + 聚合，裸列名有歧义），排序固定为
+     * 「缺口降序 → SKU」；{@code optimizeCountSql=false} 让分页 count 按聚合组数而非明细行数统计。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseDemandSummaryVO> summaryPreview(PurchaseDemandSummaryPreviewForm form) {
+        if (!form.getStartAt().isBefore(form.getEndAt())) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        var page = SmartPageUtil.convert2PageQuery(form);
+        page.setOptimizeCountSql(false);
+        return SmartPageUtil.convert2PageResult(page, purchaseDemandDao.summaryPreview(page, form));
     }
 
     @Transactional(readOnly = true)
@@ -167,6 +195,23 @@ public class PurchaseQueryService {
         return purchaseReceiptItemDao.listByReceiptId(receiptId).stream()
                 .map(PurchaseQueryService::receiptItemVo)
                 .toList();
+    }
+
+    /**
+     * 按商品收货工作台（Wave 2B §6.3，只读）。
+     *
+     * <p>与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、
+     * 排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页 count 按 SKU×单位 组数统计。
+     * 只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
+     */
+    @Transactional(readOnly = true)
+    public PageResult<PurchaseReceiptItemWorkbenchVO> receiptItemWorkbench(PurchaseReceiptItemWorkbenchQueryForm form) {
+        if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        var page = SmartPageUtil.convert2PageQuery(form);
+        page.setOptimizeCountSql(false);
+        return SmartPageUtil.convert2PageResult(page, purchaseOrderItemDao.workbench(page, form));
     }
 
     // ------------------------------------------------------------------

@@ -29,4 +29,6 @@ public class ProductImageEntity {
     @TableField("is_primary")
     private Boolean primaryFlag;
     private Integer sortOrder;
+    /** 图片内容角色：GALLERY 图集 / DETAIL 详情图。主图唯一事实是 {@link #primaryFlag}，本列不参与判定。 */
+    private String imageType;
 }

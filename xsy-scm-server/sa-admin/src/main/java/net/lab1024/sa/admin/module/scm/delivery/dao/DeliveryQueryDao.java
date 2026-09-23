@@ -29,4 +29,10 @@ public interface DeliveryQueryDao {
     int bumpStopSequences(@Param("id") Long id);
 
     List<SalesOrderItemEntity> printItems(@Param("id") Long id);
+
+    List<DeliveryOrderViewVO> orderView(@Param("id") Long id);
+
+    List<DeliveryCustomerViewVO> customerView(@Param("id") Long id);
+
+    int markPrinted(@Param("ids") List<Long> assignmentIds, @Param("operator") String operator);
 }

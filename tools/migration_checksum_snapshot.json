@@ -172,6 +172,30 @@
     "43": {
       "file": "V43__scm_delivery_permissions.sql",
       "checksum": 19172074
+    },
+    "44": {
+      "file": "V44__scm_product_image_type.sql",
+      "checksum": 616232967
+    },
+    "45": {
+      "file": "V45__scm_product_pco2_permissions.sql",
+      "checksum": 1177282109
+    },
+    "46": {
+      "file": "V46__scm_todo_permission.sql",
+      "checksum": -409692477
+    },
+    "47": {
+      "file": "V47__scm_delivery_print_tracking.sql",
+      "checksum": -822385941
+    },
+    "48": {
+      "file": "V48__scm_stocktake_import_permission.sql",
+      "checksum": -669756495
+    },
+    "49": {
+      "file": "V49__scm_product_image_type_gallery.sql",
+      "checksum": -525245484
     }
   }
 }

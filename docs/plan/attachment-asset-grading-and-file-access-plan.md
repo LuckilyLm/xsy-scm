@@ -2,8 +2,21 @@
 
 > 适用项目：鲜蔬源智链 `xsy-scm`
 > 目标路径：`docs/plan/attachment-asset-grading-and-file-access-plan.md`
-> 当前状态（2026-09-21）：**FA-0 已落地**（写侧绑定期限权 + 删 `product_image.file_url`，V41）；
-> **FA-1 / FA-2 / FA-3 未开工**。业务裁决见 [`../decisions.md`](../decisions.md)
+> 当前状态（2026-09-23）：**FA-0 已落地**（写侧绑定期限权 + 删 `product_image.file_url`，V41）；
+> **序列化器越权旁路已做临时收口**（`FileKeyVoSerializer` 经 `FileAccessGuard.filterReadable`
+> 按调用者过滤，见 §3）；**FA-1 未完成、FA-2 / FA-3 未开工**。
+>
+> ```text
+> FA-0   商品图片写侧绑定权限收口        ✅ 已落地（V41）
+> 旁路   VO 序列化越权读取 mitigation     ✅ 已落地（临时收口，非 FA-1）
+> FA-1   完整受控 FileService 读侧        🟡 未完成（无身份批量入口仍在，代码生成模板未改）
+> FA-2   scm_file_relation 关系表授权     ❌ 未完成
+> FA-3   存量商品图搬运 public/image      ❌ 未完成
+> ```
+>
+> **F0-DEBT-01 未关闭**：`FileAccessGuard` 对 `private/notice/`、`private/help-doc/` 仍是前缀级放行，
+> 不是「业务对象权限 → 关系表 → 文件权限」。引入任何非管理员业务角色前，FA-2 仍是门禁（§7）。
+> 业务裁决见 [`../decisions.md`](../decisions.md)
 > 「F0-DEBT-01 裁决：附件资产分级与文件读取权限」。
 > 本文的 Flyway 版本号与菜单 id **只是规划期快照**，落地前必须按 `AGENTS.md` 从当前最大号之后整体重排。
 > 规划日期：2026-09-21
@@ -12,21 +25,27 @@
 
 ## 1. 要解决的问题
 
-F0 已经把「上传白名单」和「按目录前缀的读取守卫」建起来了，但两者之间有一条缝：
+F0 已经把「上传白名单」和「按目录前缀的读取守卫」建起来了。写侧的缝已由 FA-0 收口，
+读侧的**序列化器旁路**已做临时收口，剩下的缝是：
 
 ```text
-写侧  业务表单接受任意 fileKey  →  可以把他人私有附件绑到自己的业务对象上
-读侧  业务 VO 展开 fileKey      →  FileService.getFileList() 无用户参数，
-                                  FileAccessGuard 完全不参与
+写侧  ✅ FA-0：绑定他人私有附件已被拒（V41）
+读侧  ✅ 临时收口：FileKeyVoSerializer 逐 key 过 FileAccessGuard.filterReadable，
+        不可读 key 直接剔除；无调用者身份或依赖未注入时输出空列表（不回显原始 key）
+剩余  ❌ FileService.getFileList(keys) 仍是**无身份批量入口**，任何新调用方都能绕过守卫
+      ❌ VOVariableService 代码生成模板未改，新页面仍会生成不安全写法
+      ❌ 前缀级放行（private/notice/、private/help-doc/）不等于业务对象授权
 ```
 
-读侧的入口是 `FileKeyVoSerializer`（`sa-base/common/json/serializer/`），它被
+读侧已收口的入口是 `FileKeyVoSerializer`（`sa-base/common/json/serializer/`），它被
 `oa/enterprise`（营业执照等）、`oa/notice`（公告附件）、`support/helpdoc`、`support/feedback`
-的 VO/Form 引用，并且是**代码生成器的默认模板**，所以不处理就会持续长出新实例。
+的 VO/Form 引用，并且是**代码生成器的默认模板**，所以模板不改就会持续长出新实例。
 商品图片是同一模式的 SCM 实例。
 
-后果不是「越权读一条记录」，而是**数据提升**：只要攻击者对某个业务对象有编辑权，
+原始后果不是「越权读一条记录」，而是**数据提升**：只要攻击者对某个业务对象有编辑权，
 就能把一个只有他自己看得见（甚至完全不该他看得见）的附件，变成该对象所有查看者可读。
+FA-0 关掉了写侧这一半；读侧那一半现在由序列化器过滤挡住，但**只挡这一条路径**——
+`FileService` 的无身份入口还在，所以 §3 的 FA-1 仍是必须完成的收口，不是可选项。
 
 ## 2. 分级模型（裁决已定，本节是可执行判定表）
 
@@ -57,6 +76,10 @@ F0 已经把「上传白名单」和「按目录前缀的读取守卫」建起�
   原有无身份签名保留给内部与公开路径调用，但**不允许业务 VO 序列化器继续使用**。
 - `FileKeyVoSerializer` 改为经请求上下文取当前用户后调用受控入口；同步修改
   `VOVariableService` 的代码生成模板，否则新页面会继续生成不安全写法。
+  **当前状态**：序列化器已按此形态做了临时收口——自取 `SmartRequestUtil.getRequestUser()`
+  后调 `FileAccessGuard.filterReadable`，不可读 key 剔除、无身份或依赖未注入时输出空列表
+  （不回显原始 key），由 `FileKeyVoSerializerTest` 钉住。差别在于受控入口**还没下沉到
+  `FileService`**（无身份批量入口仍是公开 API），且**代码生成模板未改**。
 - 序列化发生在 Jackson 写 JSON 时，拿不到 `RequestUser` 的处境要提前确认：
   如果只能靠 `RequestContext` 线程本地变量，异步导出、`@Async`、定时任务里的序列化路径
   必须显式失败（抛错）而不是静默放行 —— 静默放行等于把洞留在最难发现的地方。

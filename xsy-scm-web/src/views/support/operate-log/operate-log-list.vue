@@ -48,6 +48,15 @@
     </a-row>
   </a-form>
 
+  <a-alert
+      v-if="businessContextActive"
+      class="smart-margin-bottom10"
+      type="info"
+      show-icon
+      message="正在按当前业务对象查看操作记录"
+      description="该视图按业务类型与 ID 精确匹配；操作时未写入该 ID 的记录（如新建类操作或更早的历史数据）无法归属到本对象，因此此处不保证是该对象的全部历史。"
+  />
+
   <a-card size="small" :bordered="false" :hoverable="true">
     <a-row justify="end">
       <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG"
@@ -102,7 +111,8 @@
   </a-card>
 </template>
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {useRoute} from 'vue-router';
 import OperateLogDetailModal from './operate-log-detail-modal.vue';
 import {operateLogApi} from '/@/api/support/operate-log-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
@@ -180,12 +190,38 @@ const queryFormState = {
   successFlag: undefined,
   startDate: undefined,
   endDate: undefined,
+  businessType: undefined as string | undefined,
+  businessId: undefined as number | undefined,
   pageNum: 1,
   pageSize: 10,
 };
 const queryForm = reactive({...queryFormState});
 const createDateRange = ref([]);
 const defaultChooseTimeRange = defaultTimeRanges;
+
+const route = useRoute();
+
+// 与后端 AdminOperateLogController 支持的业务类型白名单保持一致。
+const BUSINESS_TYPES = ['PRODUCT', 'CUSTOMER', 'DELIVERY_ROUTE'];
+
+// 从路由解析业务上下文：类型须在白名单内、ID 须为正整数，否则视为无上下文。
+function routeBusinessContext(): {businessType?: string; businessId?: number} {
+  const businessType = route.query.businessType;
+  const businessId = Number(route.query.businessId);
+  if (typeof businessType === 'string' && BUSINESS_TYPES.includes(businessType) && Number.isInteger(businessId) && businessId > 0) {
+    return {businessType, businessId};
+  }
+  return {};
+}
+
+// 写入业务上下文：始终按当前路由重算，缺失时清空，避免旧的本地筛选覆盖业务视图。
+function applyBusinessContext() {
+  const context = routeBusinessContext();
+  queryForm.businessType = context.businessType;
+  queryForm.businessId = context.businessId;
+}
+
+const businessContextActive = computed(() => Boolean(queryForm.businessType) && Boolean(queryForm.businessId));
 
 // 时间变动
 function changeCreateDate(dates, dateStrings) {
@@ -200,6 +236,7 @@ const total = ref(0);
 function resetQuery() {
   Object.assign(queryForm, queryFormState);
   createDateRange.value = [];
+  applyBusinessContext();
   ajaxQuery();
 }
 
@@ -208,26 +245,35 @@ function onSearch() {
   ajaxQuery();
 }
 
+// 逐行规范化：脏 response 退化为 null、脏 userAgent 忽略，单行异常不影响整页。
+function normalizeRow(row: Record<string, any>) {
+  try {
+    if (row.response) {
+      row.response = JSON.parse(row.response);
+    }
+  } catch (e) {
+    row.response = null;
+  }
+  try {
+    if (row.userAgent) {
+      let ua = uaparser(row.userAgent);
+      row.browser = ua.browser && ua.browser.name;
+      row.os = ua.os && ua.os.name;
+      row.device = ua.device && ua.device.vendor ? ua.device.vendor + ua.device.model : '';
+    }
+  } catch (e) {
+    // 客户端信息解析失败不影响该行其余字段展示
+  }
+}
+
 async function ajaxQuery() {
   try {
     tableLoading.value = true;
     let responseModel = await operateLogApi.queryList(queryForm);
-
-    for (const e of responseModel.data.list) {
-      if (e.response) {
-        e.response = JSON.parse(e.response);
-      }
-
-      if (!e.userAgent) {
-        continue;
-      }
-      let ua = uaparser(e.userAgent);
-      e.browser = ua.browser.name;
-      e.os = ua.os.name;
-      e.device = ua.device.vendor ? ua.device.vendor + ua.device.model : '';
-    }
-
     const list = responseModel.data.list;
+    for (const e of list) {
+      normalizeRow(e);
+    }
     total.value = responseModel.data.total;
     tableData.value = list;
   } catch (e) {
@@ -237,7 +283,20 @@ async function ajaxQuery() {
   }
 }
 
-onMounted(ajaxQuery);
+onMounted(() => {
+  applyBusinessContext();
+  ajaxQuery();
+});
+
+// 刷新或切换业务对象时重新套用路由上下文，并从第一页查询。
+watch(
+  () => [route.query.businessType, route.query.businessId],
+  () => {
+    applyBusinessContext();
+    queryForm.pageNum = 1;
+    ajaxQuery();
+  }
+);
 
 // ---------------------- 详情 ----------------------
 const detailModal = ref();

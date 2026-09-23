@@ -63,6 +63,24 @@ export interface Query {
     operationType?: string
 }
 
+/**
+ * 最近已确认订单价（Wave 3 §7.5，只读）：某客户某 SKU 的历史 CONFIRMED 订单行锁定单价快照。
+ * 仅用于录单旁证，不回算当前价格、不参与定价，故不是第二套价格事实。
+ * limit 约束订单数；同一订单同一 SKU 的多行（受 (order_id,sku_id) 唯一索引限制实际各一行）带 itemId 分别返回。
+ */
+export interface RecentPrice {
+    itemId: Id;
+    orderId: Id;
+    orderNo: string;
+    createdAt: string;
+    confirmedAt: string;
+    orderSource: string;
+    orderedQuantity: string;
+    unitPrice: string;
+    priceSource?: string | null;
+    saleUnit?: string | null
+}
+
 export interface ReturnItem {
     returnItemId?: Id;
     orderItemId: Id;

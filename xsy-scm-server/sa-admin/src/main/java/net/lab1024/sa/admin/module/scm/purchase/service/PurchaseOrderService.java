@@ -14,6 +14,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderEntit
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderItemEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchDeleteForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchShortCloseForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderCancelForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderDeleteForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderShortCloseForm;
@@ -315,6 +316,18 @@ public class PurchaseOrderService {
             return idempotencyService.replay(claim, PurchaseOrderVO.class);
         }
 
+        PurchaseOrderVO result = applyShortClose(form);
+        idempotencyService.complete(claim, "PURCHASE_ORDER", form.getId(), result);
+        return result;
+    }
+
+    /**
+     * 少收关单的核心转换：锁单 → 版本校验 → 状态机 → 「至少一行已收且一行未收齐」→ 落库 → 操作日志。
+     *
+     * <p>单单命令与批量命令共用此方法，二者对合法性 / 版本 / 原因的要求完全一致；区别只在批量命令
+     * 不走每单幂等（整批在同一事务内要么全成要么全回滚，§6.8）。
+     */
+    private PurchaseOrderVO applyShortClose(PurchaseOrderShortCloseForm form) {
         PurchaseOrderEntity order = lockOrder(form.getId());
         version(order.getVersion(), form.getVersion());
         PurchaseOrderStateMachine.transition(order.getStatus(), "SHORT_CLOSED");
@@ -343,7 +356,6 @@ public class PurchaseOrderService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.SHORT_CLOSE, order.getId(), null,
                 order.getShortCloseReason(), before, after));
-        idempotencyService.complete(claim, "PURCHASE_ORDER", order.getId(), result);
         return result;
     }
 
@@ -385,6 +397,26 @@ public class PurchaseOrderService {
         form.getOrders().stream()
                 .sorted(Comparator.comparing(PurchaseOrderVersionForm::getId))
                 .forEach(row -> delete(deleteForm(row)));
+    }
+
+    /**
+     * 批量少收关单（Wave 2B §6.3）。整批共享原因，逐单套用与单单 {@link #applyShortClose} 完全相同的
+     * 合法性 / 版本 / 状态校验；本方法自带 {@code @Transactional}，任一单非法即整批回滚——不存在部分成功。
+     * 锁序按 id 升序（P12），与批量删除一致，避免交叉持锁死锁。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void batchShortClose(PurchaseOrderBatchShortCloseForm form) {
+        form.getOrders().stream()
+                .sorted(Comparator.comparing(PurchaseOrderVersionForm::getId))
+                .forEach(row -> applyShortClose(shortCloseForm(row, form.getShortCloseReason())));
+    }
+
+    private static PurchaseOrderShortCloseForm shortCloseForm(PurchaseOrderVersionForm row, String reason) {
+        PurchaseOrderShortCloseForm form = new PurchaseOrderShortCloseForm();
+        form.setId(row.getId());
+        form.setVersion(row.getVersion());
+        form.setShortCloseReason(reason);
+        return form;
     }
 
     // ------------------------------------------------------------------

@@ -36,6 +36,32 @@
             <if test="query.successFlag != null">
                 AND success_flag = #{query.successFlag}
             </if>
+            <!-- 结构化业务对象筛选：必须落在 <where> 内、分页与 total 之前，且不能用全文包含（否则 ID 12 会命中 112 / 数量字段）。
+                 PRODUCT / CUSTOMER 的对象 ID 由 @OperateLog 切面以 fastjson 写进 param 数组（如 [{"spuId":12,...}]），
+                 因此按「精确 JSON 键 + 逗号 / 右花括号数字边界」匹配，既不误命中同值 skuId / parentCustomerId，也无需解析 JSON（脏值 STRPOS 只返回 0，不报错）。
+                 DELIVERY_ROUTE 的线路 ID 是 @PathVariable，requestURI 已把它替换进 url（如 /scm/delivery/routes/12/plan），故按完整 URL 段比对。
+                 未纳入白名单的类型在 controller 已拒绝，这里 <otherwise> 再兜底 fail-closed，绝不返回全量日志。 -->
+            <if test="query.businessType != null and query.businessType != '' and query.businessId != null">
+                AND (
+                <choose>
+                    <when test="query.businessType == 'PRODUCT'">
+                        STRPOS(param, '"spuId":' || CAST(#{query.businessId} AS text) || ',') &gt; 0
+                        OR STRPOS(param, '"spuId":' || CAST(#{query.businessId} AS text) || '}') &gt; 0
+                    </when>
+                    <when test="query.businessType == 'CUSTOMER'">
+                        STRPOS(param, '"customerId":' || CAST(#{query.businessId} AS text) || ',') &gt; 0
+                        OR STRPOS(param, '"customerId":' || CAST(#{query.businessId} AS text) || '}') &gt; 0
+                    </when>
+                    <when test="query.businessType == 'DELIVERY_ROUTE'">
+                        STRPOS(url, '/scm/delivery/routes/' || CAST(#{query.businessId} AS text) || '/') &gt; 0
+                        OR url = '/scm/delivery/routes/' || CAST(#{query.businessId} AS text)
+                    </when>
+                    <otherwise>
+                        1 = 0
+                    </otherwise>
+                </choose>
+                )
+            </if>
         </where>
         order by create_time desc
     </select>

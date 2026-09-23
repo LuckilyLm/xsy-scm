@@ -18,8 +18,9 @@ SmartAdmin 口令规则（从正式源码反推，勿凭记忆猜）：
   登录时 LoginService 用同一套 generateSaltPassword 复算后做 matches()，
   因此这里必须写**一样的摘要**，否则登录失败。
 
-数据库：本机 docker `xsy-pg-v2`（127.0.0.1:15432），db=xsy_scm，schema=xsy_v2。
-可用环境变量覆盖：XSY_V2_PG_CONTAINER / XSY_V2_PG_DB / XSY_V2_PG_SCHEMA / XSY_V2_PG_USER
+数据库：本机 docker `xsy-pg-v2`（127.0.0.1:15432），schema=xsy_v2；**库名必须由 XSY_V2_PG_DB 显式给出**，
+不给即拒绝执行（默认值会把账号建到过期快照库，登录只报「登录名或密码错误」）。
+可用环境变量覆盖：XSY_V2_PG_CONTAINER / XSY_V2_PG_DB（必填）/ XSY_V2_PG_SCHEMA / XSY_V2_PG_USER
 
 命令行：
     python tools/e2e_accounts.py setup   --prefix w1_e2e_ --name NAME --password PASS
@@ -38,7 +39,7 @@ import subprocess
 import sys
 
 CONTAINER = os.environ.get("XSY_V2_PG_CONTAINER", "xsy-pg-v2")
-DB = os.environ.get("XSY_V2_PG_DB", "xsy_scm")
+DB = os.environ.get("XSY_V2_PG_DB", "")
 SCHEMA = os.environ.get("XSY_V2_PG_SCHEMA", "xsy_v2")
 USER = os.environ.get("XSY_V2_PG_USER", "postgres")
 
@@ -60,10 +61,8 @@ def _arg(flag: str, env_keys: list[str], default: str = "") -> str:
 
 
 ACTION = sys.argv[1] if len(sys.argv) > 1 else ""
-NAME = _arg("--name", ["E2E_NAME", "W1_E2E_NAME", "W2_E2E_NAME", "W3_E2E_NAME",
-                       "W4_E2E_NAME", "W5_E2E_NAME"])
-PASSWORD = _arg("--password", ["E2E_PASSWORD", "W1_E2E_PASSWORD", "W2_E2E_PASSWORD",
-                               "W3_E2E_PASSWORD", "W4_E2E_PASSWORD", "W5_E2E_PASSWORD"])
+NAME = _arg("--name", ["E2E_NAME"] + [f"W{i}_E2E_NAME" for i in range(1, 8)])
+PASSWORD = _arg("--password", ["E2E_PASSWORD"] + [f"W{i}_E2E_PASSWORD" for i in range(1, 8)])
 PREFIX = _arg("--prefix", ["E2E_PREFIX"], "")
 
 # 伴随账号有两种，语义互斥，不能共用一个：
@@ -73,6 +72,19 @@ PREFIX = _arg("--prefix", ["E2E_PREFIX"], "")
 READ_SUFFIX = "_read"
 NONE_SUFFIX = "_none"
 READ_NAME = NAME + READ_SUFFIX if NAME else ""
+
+# 第三个伴随账号（按需创建）：`<NAME>_deny` —— 授权面与只读账号一致，但**显式扣掉**指定权限码。
+# 为什么需要它：AND 模式的双权限读端点（采购缺口预览要求「需求查询 ∧ 库存余额查询」，
+# 客户 360 常购商品要求「客户查询 ∧ 订单查询」）在通用只读角色下两个权限都有，
+# 「缺其中一项必须被拒」这条反例只能由一个「有 A 没 B」的角色来证。
+# 触发方式：`--deny` 或环境变量 `E2E_DENY`，多个权限码用逗号分隔；不传则完全不建这个账号。
+DENY_SUFFIX = "_deny"
+DENY = _arg("--deny", ["E2E_DENY"], "")
+
+
+def deny_codes() -> list[str]:
+    """本次要扣掉的权限码；空列表表示不建扣权账号。"""
+    return [token.strip() for token in DENY.split(",") if token.strip()]
 
 
 def companion_names() -> tuple[str, str]:
@@ -131,10 +143,15 @@ def argon2_encode(salt_password: str) -> str:
 # 守卫
 # ---------------------------------------------------------------------------
 def guard() -> None:
+    if not DB:
+        raise SystemExit(
+            "[e2e-accounts] 必须显式设置 XSY_V2_PG_DB 为后端实际连接的库名。"
+            "写错库时账号照样建成功，但登录只会报「登录名或密码错误」，排查方向会被带偏，因此不接受默认值。"
+        )
     if not NAME or (ACTION == "setup" and not PASSWORD):
         raise SystemExit(
             "[e2e-accounts] 缺少账号参数。请提供 --name/--password（cleanup 只需 --name），或设置 "
-            "W{1..5}_E2E_NAME / W{1..5}_E2E_PASSWORD 环境变量。"
+            "W{1..7}_E2E_NAME / W{1..7}_E2E_PASSWORD 环境变量。"
         )
     if not NAME.startswith("w") or "_e2e_" not in NAME:
         raise SystemExit(
@@ -288,25 +305,80 @@ def ensure_read_only_role(read_login_name: str) -> str:
     if not role_id:
         raise SystemExit(f"[e2e-accounts] 无法建立只读角色 {role_code}")
 
-    # 授权：全部门级菜单 + 只有 query 语义的按钮。
-    # 判定「只读」用权限码里不含写动作关键词，避免误授。batch 必须列进来：
-    # 商品批量维护与协议价批量调价都是纯写命令，权限码里却不含 add/update/delete 等词。
-    psql(
-        f"""
-        DELETE FROM {SCHEMA}.t_role_menu WHERE role_id = {role_id}::bigint;
-        INSERT INTO {SCHEMA}.t_role_menu (role_id, menu_id, update_time, create_time)
-        SELECT {role_id}::bigint, menu_id, now(), now()
-          FROM {SCHEMA}.t_menu
-         WHERE menu_type IN (1, 2)
-            OR (menu_type = 3
-                AND lower(coalesce(web_perms, '')) NOT SIMILAR TO '%(add|update|delete|status|replace|import|export|submit|approve|cancel|confirm|audit|generate|batch)%');
-        """
-    )
+    grant_read_only_menus(role_id)
     granted = psql(
         f"SELECT count(*) FROM {SCHEMA}.t_role_menu WHERE role_id = {role_id}::bigint;",
         value_only=True,
     )
     print(f"[e2e-accounts] read-only role ready  role_code={role_code}  granted_menus={granted}")
+    return role_id
+
+
+def grant_read_only_menus(role_id: str, deny: list[str] | None = None) -> None:
+    """把「页面菜单 + 只读按钮」整套授权写进指定角色，可选再扣掉若干权限码。
+
+    授权：全部门级菜单 + 权限码动作段以 `query` 结尾的按钮。
+    这里刻意用白名单而不是写动词黑名单：本仓库所有只读权限码的动作段都以 query
+    结尾，而写命令（print / plan / edit / ship / receive / release / reject / putaway /
+    allocate / enable 等）都不以它结尾。黑名单靠枚举动词，漏一个词就会把写权限当成
+    只读面授出去，而用例仍会报告「只读账号被正确拒绝」。
+    `deny` 只在这个基础上再挖洞（用于「有 A 没 B」的 AND 权限反例），不放宽任何一条只读规则。
+    """
+    deny_predicate = ""
+    if deny:
+        like = " OR ".join(
+            "lower(coalesce(web_perms, '')) LIKE " + "'%' || " + q(token.lower()) + " || '%'"
+            for token in deny
+        )
+        deny_predicate = f"\n           AND NOT ({like})"
+    psql(
+        f"""
+        DELETE FROM {SCHEMA}.t_role_menu WHERE role_id = {role_id}::bigint;
+        INSERT INTO {SCHEMA}.t_role_menu (role_id, menu_id, update_time, create_time)
+        SELECT {role_id}::bigint, menu_id, now(), now()
+          FROM {SCHEMA}.t_menu m
+         WHERE (menu_type IN (1, 2)
+                OR (m.menu_type = 3
+                    AND NOT EXISTS (
+                        SELECT 1 FROM regexp_split_to_table(lower(coalesce(m.web_perms, '')), ',') c
+                         WHERE c <> '' AND c NOT LIKE '%:query')))  -- 空 web_perms 的按钮行没有权限语义，一并跳过
+        {deny_predicate};
+        """
+    )
+
+
+def ensure_deny_role() -> str:
+    """建（或复用）「只读面 − 指定权限码」角色，供 `<NAME>_deny` 账号挂。
+
+    用途见 DENY 的注释：AND 双权限读端点必须证明「只缺一项也会被整条拒掉」，
+    而通用只读角色两项都有，构不出这个反例。
+    """
+    deny = deny_codes()
+    if not deny:
+        raise SystemExit("[e2e-accounts] ensure_deny_role 需要非空 DENY 权限码列表")
+    role_code = f"{PREFIX.upper()}DENY" if PREFIX else "E2E_DENY"
+    role_name = "E2E扣权角色"
+
+    psql(
+        f"""
+        INSERT INTO {SCHEMA}.t_role (role_name, role_code, remark, update_time, create_time)
+        VALUES ({q(role_name)}, {q(role_code)}, 'e2e 临时扣权角色，脚本自动创建，可随时清理',
+                now(), now())
+        ON CONFLICT (role_code) DO UPDATE SET update_time = now();
+        """
+    )
+    role_id = psql(
+        f"SELECT role_id FROM {SCHEMA}.t_role WHERE role_code = {q(role_code)} LIMIT 1;",
+        value_only=True,
+    )
+    if not role_id:
+        raise SystemExit(f"[e2e-accounts] 无法建立扣权角色 {role_code}")
+    grant_read_only_menus(role_id, deny)
+    granted = psql(
+        f"SELECT count(*) FROM {SCHEMA}.t_role_menu WHERE role_id = {role_id}::bigint;",
+        value_only=True,
+    )
+    print(f"[e2e-accounts] deny role ready  role_code={role_code}  denied={deny}  granted_menus={granted}")
     return role_id
 
 
@@ -331,7 +403,13 @@ def setup() -> None:
     ensure_account(read_name, PASSWORD, administrator=False, role_id=read_role_id)
     ensure_account(none_name, PASSWORD, administrator=False, role_id=None)
 
-    print(f"[e2e-accounts] setup done  admin={NAME}  read_only={read_name}  no_role={none_name}")
+    done = f"[e2e-accounts] setup done  admin={NAME}  read_only={read_name}  no_role={none_name}"
+    if deny_codes():
+        deny_name = NAME + DENY_SUFFIX
+        deny_role_id = ensure_deny_role()
+        ensure_account(deny_name, PASSWORD, administrator=False, role_id=deny_role_id)
+        done += f"  denied={deny_name}"
+    print(done)
 
 
 
@@ -358,22 +436,26 @@ def cleanup_quiet(name: str) -> None:
 
 def cleanup() -> None:
     guard()
-    # 主账号和它带的两个伴随账号一起清理，避免残留。
+    # 主账号和它带的伴随账号一起清理，避免残留。
+    # 扣权账号**无条件**清理：cleanup 调用方漏传 --deny 时也不能把夹具留在库里
+    # （没建过就是 0 行删除，无副作用）。
     read_name, none_name = companion_names()
     cleanup_quiet(NAME)
-    for companion in (read_name, none_name):
+    for companion in (read_name, none_name, NAME + DENY_SUFFIX):
         if companion:
             cleanup_quiet(companion)
-    # 只读角色及其授权也要一起回收，否则会在 t_role / t_role_menu 里越积越多。
-    role_code = f"{PREFIX.upper()}READ" if PREFIX else "E2E_READ"
-    psql(
-        f"""
-        DELETE FROM {SCHEMA}.t_role_menu
-         WHERE role_id IN (SELECT role_id FROM {SCHEMA}.t_role WHERE role_code = {q(role_code)});
-        DELETE FROM {SCHEMA}.t_role WHERE role_code = {q(role_code)};
-        """
-    )
-    print(f"[e2e-accounts] cleanup ok  login_name={NAME} (+{READ_SUFFIX}, +{NONE_SUFFIX}), role={role_code}")
+    # 临时角色及其授权也要一起回收，否则会在 t_role / t_role_menu 里越积越多。
+    role_codes = [f"{PREFIX.upper()}READ" if PREFIX else "E2E_READ",
+                  f"{PREFIX.upper()}DENY" if PREFIX else "E2E_DENY"]
+    for role_code in role_codes:
+        psql(
+            f"""
+            DELETE FROM {SCHEMA}.t_role_menu
+             WHERE role_id IN (SELECT role_id FROM {SCHEMA}.t_role WHERE role_code = {q(role_code)});
+            DELETE FROM {SCHEMA}.t_role WHERE role_code = {q(role_code)};
+            """
+        )
+    print(f"[e2e-accounts] cleanup ok  login_name={NAME} (+{READ_SUFFIX}, +{NONE_SUFFIX}, +{DENY_SUFFIX}), roles={role_codes}")
 
 
 if __name__ == "__main__":
@@ -385,5 +467,5 @@ if __name__ == "__main__":
         raise SystemExit(
             "用法: e2e_accounts.py setup|cleanup "
             "[--name NAME] [--password PASS] [--prefix PREFIX]\n"
-            "  或通过环境变量 W{1..5}_E2E_NAME / W{1..5}_E2E_PASSWORD 传参"
+            "  或通过环境变量 W{1..7}_E2E_NAME / W{1..7}_E2E_PASSWORD 传参"
         )

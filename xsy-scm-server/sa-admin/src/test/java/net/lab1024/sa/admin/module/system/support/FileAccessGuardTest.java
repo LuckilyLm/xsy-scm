@@ -15,6 +15,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -77,6 +79,39 @@ class FileAccessGuardTest {
     void everyKeyInBatchMustBeAuthorized() {
         assertThatThrownBy(() -> guard.checkRead("private/notice/a,private/common/other", employee))
                 .isInstanceOf(FileAccessGuard.AccessDenied.class);
+    }
+
+    @Test
+    void filterReadableKeepsOnlyKeysTheCallerMayRead() {
+        FileVO ownFile = new FileVO();
+        ownFile.setCreatorId(44L);
+        ownFile.setCreatorUserType(UserTypeEnum.ADMIN_EMPLOYEE.getValue());
+        when(dao.getByFileKey("private/common/own")).thenReturn(ownFile);
+
+        FileVO othersFile = new FileVO();
+        othersFile.setCreatorId(45L);
+        othersFile.setCreatorUserType(UserTypeEnum.ADMIN_EMPLOYEE.getValue());
+        when(dao.getByFileKey("private/common/others")).thenReturn(othersFile);
+
+        // Mirrors the exact key set FileKeyVoSerializer would pass through: a mix of shared,
+        // own, someone else's, and a malformed key, all in one VO field.
+        List<String> readable = guard.filterReadable(
+                List.of("public/a", "private/common/own", "private/common/others",
+                        "private/notice/../common/escape"),
+                employee);
+
+        assertThat(readable).containsExactly("public/a", "private/common/own");
+        // Same per-key outcome as the throwing path, just collected instead of failing fast.
+        assertThatCode(() -> guard.checkRead("public/a,private/common/own", employee)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> guard.checkRead("public/a,private/common/others", employee))
+                .isInstanceOf(FileAccessGuard.AccessDenied.class);
+    }
+
+    @Test
+    void filterReadableReturnsEmptyRatherThanThrowingWithNoAuthenticatedCaller() {
+        assertThat(guard.filterReadable(List.of("public/a"), null)).isEmpty();
+        assertThat(guard.filterReadable(null, employee)).isEmpty();
+        assertThat(guard.filterReadable(List.of(), employee)).isEmpty();
     }
 
     @Test

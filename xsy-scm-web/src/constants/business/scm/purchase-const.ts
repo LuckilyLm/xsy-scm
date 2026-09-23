@@ -63,6 +63,29 @@ export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
 };
 
 /**
+ * 库存缺口预览的计算状态（Wave 2A §6A.5，与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对应）。
+ *
+ * 只读辅助决策：`UNIT_MISMATCH` 表示需求单位与余额记账单位不一致（Q13），缺口为 null 不猜折算率；
+ * `NO_BALANCE` 表示该仓库下该 SKU 无余额行。
+ */
+export const SCM_DEMAND_SUMMARY_STATUS_ENUM: SmartEnum<string> = {
+    STOCK_ENOUGH: {value: 'STOCK_ENOUGH', desc: '库存充足'},
+    SHORTAGE: {value: 'SHORTAGE', desc: '存在缺口'},
+    ZERO_STOCK: {value: 'ZERO_STOCK', desc: '零库存'},
+    UNIT_MISMATCH: {value: 'UNIT_MISMATCH', desc: '单位不一致'},
+    NO_BALANCE: {value: 'NO_BALANCE', desc: '无库存记录'},
+};
+
+/** 计算状态对应的 `a-tag` 颜色（缺口的严重度用色区分，纯展示）。 */
+export const SCM_DEMAND_SUMMARY_STATUS_COLOR: Record<string, string> = {
+    STOCK_ENOUGH: 'green',
+    SHORTAGE: 'orange',
+    ZERO_STOCK: 'red',
+    UNIT_MISMATCH: 'purple',
+    NO_BALANCE: 'default',
+};
+
+/**
  * 采购操作日志类型（13 值，与 `ScmPurchaseOperationTypeEnum` 对应）。
  *
  * 归属由操作类型决定（Q14 四分支）：需求类日志没有单据、分配类靠反查、
@@ -85,6 +108,30 @@ export const SCM_PURCHASE_OPERATION_ENUM: SmartEnum<string> = {
 };
 
 /**
+ * 采购单导出列目录（Wave 2B §6.5）——**key 必须与后端 `PurchaseOrderExportSupport` 的列目录逐字一致**。
+ *
+ * 这里只是「导出设置」勾选框的可读标题来源；落哪几列、以何顺序最终由后端目录裁决，
+ * 前端传未知 key 会被忽略、不勾选即导出整目录。此处数组顺序只影响勾选框的展示顺序。
+ */
+export const SCM_PURCHASE_EXPORT_COLUMNS: {key: string; title: string}[] = [
+  {key: 'orderNo', title: '采购单号'},
+  {key: 'supplierName', title: '供应商'},
+  {key: 'supplierCode', title: '供应商编码'},
+  {key: 'purchaserName', title: '采购员'},
+  {key: 'warehouseName', title: '收货仓库'},
+  {key: 'warehouseCode', title: '仓库编码'},
+  {key: 'plannedArrivalDate', title: '计划到货日期'},
+  {key: 'status', title: '状态'},
+  {key: 'totalAmount', title: '采购金额'},
+  {key: 'receivedProgress', title: '收货进度'},
+  {key: 'remark', title: '备注'},
+  {key: 'cancelReason', title: '取消原因'},
+  {key: 'shortCloseReason', title: '少收关单原因'},
+  {key: 'submittedAt', title: '提交时间'},
+  {key: 'createdAt', title: '创建时间'},
+];
+
+/**
  * 表格 DOM id（W5 Target Design §9.4）——**给 Playwright 定位用**，不是 `TableOperator` 的 `tableId`。
  *
  * `TableOperator` 的 `tableId` prop 是 `Number`（列配置持久化用），因此另在
@@ -105,5 +152,7 @@ export default {
     SCM_WAREHOUSE_STATUS_ENUM,
     SCM_RECEIPT_MODE_ENUM,
     SCM_PUTAWAY_STATUS_ENUM,
+    SCM_DEMAND_SUMMARY_STATUS_ENUM,
     SCM_PURCHASE_OPERATION_ENUM,
+    SCM_PURCHASE_EXPORT_COLUMNS,
 };

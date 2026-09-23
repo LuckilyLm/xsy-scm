@@ -41,12 +41,12 @@
     </div>
     <div class="info-box">
       <h4>请求参数：</h4>
-      <JsonViewer :value="detail.param ? JSON.parse(detail.param) : ''" :expanded="true" :expandDepth="10" copyable
+      <JsonViewer :value="maskedJson(detail.param)" :expanded="true" :expandDepth="10" copyable
                   boxed sort theme="light"/>
     </div>
     <div class="info-box" v-if="detail.successFlag">
       <h4>返回结果：</h4>
-      <JsonViewer :value="detail.response ? JSON.parse(detail.response) : ''" :expanded="true" :expandDepth="10"
+      <JsonViewer :value="maskedJson(detail.response)" :expanded="true" :expandDepth="10"
                   copyable boxed sort theme="light"/>
     </div>
     <div class="info-box" v-if="detail.failReason">
@@ -65,6 +65,19 @@ import {operateLogApi} from '/@/api/support/operate-log-api';
 import {smartSentry} from '/@/lib/smart-sentry';
 import {SmartLoading} from '/@/components/framework/smart-loading';
 import uaparser from 'ua-parser-js';
+import {maskSensitive} from './operate-log-mask';
+
+// 解析并脱敏原始 JSON：脏数据或空值退化为空串，避免整块详情渲染失败。
+function maskedJson(raw: string) {
+  if (!raw) {
+    return '';
+  }
+  try {
+    return maskSensitive(JSON.parse(raw));
+  } catch (e) {
+    return '';
+  }
+}
 
 defineExpose({
   show,

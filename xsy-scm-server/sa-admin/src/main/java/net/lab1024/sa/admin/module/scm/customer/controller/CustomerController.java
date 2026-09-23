@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.customer.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerQueryForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerStatusForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerUpdateForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerDetailVO;
+import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerFrequentSkuVO;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerOptionVO;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerVO;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerQueryService;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -52,6 +55,20 @@ public class CustomerController {
     @SaCheckPermission("scm:customer:query")
     public ResponseDTO<CustomerDetailVO> detail(@PathVariable Long customerId) {
         return ResponseDTO.ok(queryService.detail(customerId));
+    }
+
+    /**
+     * 客户「常购商品」（Wave 7 客户 360°，只读聚合）。
+     *
+     * <p>取数源是订单事实，价格字段沿用订单查看规则，因此<b>同时</b>要求 {@code scm:customer:query}
+     * 与 {@code scm:order:query}（{@link SaMode#AND}）：没有订单查看权的人不能仅凭客户权限读到历史成交价。
+     */
+    @GetMapping("/{customerId}/frequent-skus")
+    @SaCheckPermission(value = {"scm:customer:query", "scm:order:query"}, mode = SaMode.AND)
+    public ResponseDTO<List<CustomerFrequentSkuVO>> frequentSkus(@PathVariable Long customerId,
+                                                                 @RequestParam(defaultValue = "90") int days,
+                                                                 @RequestParam(defaultValue = "20") int limit) {
+        return ResponseDTO.ok(queryService.frequentSkus(customerId, days, limit));
     }
 
     @PostMapping("/add")

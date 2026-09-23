@@ -320,6 +320,28 @@ export interface InventoryStocktakeAdd {
     }>;
 }
 
+/**
+ * 盘点导入的单行拒绝原因（后端 `InventoryStocktakeImportErrorVO`）。
+ * 整批校验：任一非空 errors 都不落库，`stocktakeId` 为 null。
+ */
+export interface StocktakeImportError {
+    row?: number;
+    skuCode?: string;
+    column?: string;
+    code: string;
+    message: string;
+}
+
+/** 盘点 Excel 导入结果（后端 `InventoryStocktakeImportResultVO`）。成功时 `stocktakeId` 为新 DRAFT。 */
+export interface StocktakeImportResult {
+    totalRows: number;
+    totalErrors: number;
+    stocktakeId?: Id | null;
+    importedItems: number;
+    replayed: boolean;
+    errors: StocktakeImportError[];
+}
+
 // ------------------------------------------------------------------
 // 报损报溢单（报损报溢波次新增）
 // ------------------------------------------------------------------

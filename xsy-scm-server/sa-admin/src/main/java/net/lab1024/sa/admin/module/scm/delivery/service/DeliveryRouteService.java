@@ -7,16 +7,20 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.delivery.dao.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
+import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
+import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
 
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.*;
@@ -28,6 +32,8 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.*;
 @Service
 @RequiredArgsConstructor
 public class DeliveryRouteService {
+    // 与只读预览 DeliveryRouteQueryService.print 保持同一可打印状态集合。
+    private static final Set<String> PRINTABLE = Set.of("PLANNED", "DISPATCHED", "COMPLETED");
     private final DeliveryRouteDao routes;
     private final DeliveryRouteStopDao stops;
     private final DeliveryRouteOrderDao assignments;
@@ -37,6 +43,7 @@ public class DeliveryRouteService {
     private final WarehouseDao warehouses;
     private final SalesOrderDao orders;
     private final DeliveryEligibilityPolicy eligibility;
+    private final OrderIdempotencyService idempotency;
 
     @Transactional(rollbackFor = Exception.class)
     public Long create(DeliveryRouteForm form) {
@@ -257,6 +264,99 @@ public class DeliveryRouteService {
         route.setStatus("CANCELLED");
         route.setCancelReason(form.getReason().trim());
         save(route);
+    }
+
+    /**
+     * 按订单正式生成打印：只对本次显式提交且当前仍为 ACTIVE 的订单计次。
+     * 持有线路聚合锁，故同一线路的计次串行累加，不丢失；同一幂等键重试只计一次。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
+        var claim = idempotency.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
+        if (claim.replay()) return idempotency.replay(claim, DeliveryPrintResultVO.class);
+        printable(lock(id, form.getVersion()));
+        var wanted = new HashSet<>(form.getOrderIds());
+        var selected = active(id).stream().filter(a -> wanted.contains(a.getOrderId())).toList();
+        // 请求集合必须在锁定的 ACTIVE 集合中一一对应；缺少任一订单说明预览后线路已变化，拒绝旧请求。
+        if (selected.size() != wanted.size()) throw new ScmBusinessException(STATE_INVALID);
+        var result = recordAndBuild(id, selected);
+        idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
+        return result;
+    }
+
+    /**
+     * 按客户正式生成打印：先按客户状态圈定客户，再决定这些客户中打印哪些订单。
+     * 客户状态在线路锁内按当前 ACTIVE 订单重新聚合，前端名单只是候选范围——预览后计数已变的
+     * 客户会被排除，而不是按过期状态重打；展开后无订单则拒绝而非生成零单打印。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
+        var claim = idempotency.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
+        if (claim.replay()) return idempotency.replay(claim, DeliveryPrintResultVO.class);
+        printable(lock(id, form.getVersion()));
+        var statusFilter = form.getCustomerStatusFilter() == null ? "ALL" : form.getCustomerStatusFilter();
+        var candidates = form.getCustomerIds() == null ? Set.<Long>of() : new HashSet<>(form.getCustomerIds());
+        if (candidates.isEmpty() && "ALL".equals(statusFilter)) throw new ScmBusinessException(VALIDATION_ERROR);
+        var orderFilter = form.getOrderPrintFilter() == null ? "ALL" : form.getOrderPrintFilter();
+        var selected = new ArrayList<DeliveryRouteOrderEntity>();
+        // 聚合键用 LinkedHashMap：线路锁内读到的顺序即打印顺序，两次同请求生成同一份清单。
+        for (var entry : active(id).stream()
+                .collect(Collectors.groupingBy(DeliveryRouteOrderEntity::getCustomerId, LinkedHashMap::new, Collectors.toList()))
+                .entrySet()) {
+            if (!candidates.isEmpty() && !candidates.contains(entry.getKey())) continue;
+            if (!matchesCustomerStatus(statusFilter, entry.getValue())) continue;
+            entry.getValue().stream().filter(a -> matchesOrderPrint(orderFilter, a)).forEach(selected::add);
+        }
+        if (selected.isEmpty()) throw new ScmBusinessException(STATE_INVALID);
+        var result = recordAndBuild(id, selected);
+        idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
+        return result;
+    }
+
+    /**
+     * 客户维度打印状态：与只读 customerView 的判定口径一致（已打印有效订单数对比总有效订单数）。
+     */
+    private boolean matchesCustomerStatus(String statusFilter, List<DeliveryRouteOrderEntity> customerOrders) {
+        if ("ALL".equals(statusFilter)) return true;
+        long printed = customerOrders.stream().filter(a -> hasPrinted(a)).count();
+        return switch (statusFilter) {
+            case "PRINTED" -> printed == customerOrders.size();
+            case "UNPRINTED" -> printed == 0;
+            case "PARTIAL" -> printed > 0 && printed < customerOrders.size();
+            default -> throw new ScmBusinessException(VALIDATION_ERROR);
+        };
+    }
+
+    private boolean matchesOrderPrint(String orderFilter, DeliveryRouteOrderEntity assignment) {
+        return switch (orderFilter) {
+            case "PRINTED" -> hasPrinted(assignment);
+            case "UNPRINTED" -> !hasPrinted(assignment);
+            case "ALL" -> true;
+            default -> throw new ScmBusinessException(VALIDATION_ERROR);
+        };
+    }
+
+    private boolean hasPrinted(DeliveryRouteOrderEntity assignment) {
+        return assignment.getPrintCount() != null && assignment.getPrintCount() > 0;
+    }
+
+    private DeliveryPrintResultVO recordAndBuild(Long id, List<DeliveryRouteOrderEntity> selected) {
+        var ids = selected.stream().map(DeliveryRouteOrderEntity::getId).toList();
+        if (queries.markPrinted(ids, ScmOperator.current()) != ids.size()) throw new ScmBusinessException(STATE_INVALID);
+        var orderIds = new HashSet<>(selected.stream().map(DeliveryRouteOrderEntity::getOrderId).toList());
+        var rows = queries.orderView(id).stream().filter(v -> orderIds.contains(v.getOrderId())).toList();
+        var result = new DeliveryPrintResultVO();
+        result.setRouteId(id);
+        result.setGeneratedAt(OffsetDateTime.now());
+        result.setOrderCount(rows.size());
+        result.setTotalAmount(rows.stream().map(DeliveryOrderViewVO::getOrderAmount)
+                .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add));
+        result.setOrders(rows);
+        return result;
+    }
+
+    private void printable(DeliveryRouteEntity route) {
+        if (!PRINTABLE.contains(route.getStatus())) throw new ScmBusinessException(STATE_INVALID);
     }
 
     private List<DeliveryRouteOrderEntity> active(Long id) {

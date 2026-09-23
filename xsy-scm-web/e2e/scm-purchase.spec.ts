@@ -4,6 +4,8 @@ import {randomBytes,randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import smCrypto from 'sm-crypto';
+// 共用的临时账号 + 真实登录链路；本文件已有一个 `login(account)`，故给共用版起别名。
+import {apiClient, authenticate, login as loginAs, provisionTempAccounts} from './scm-e2e-account';
 const apiUrl='http://127.0.0.1:18080';
 const name='w5_e2e_'+Date.now().toString(36),password='W5@'+randomBytes(8).toString('hex');
 const env={...process.env,W5_E2E_NAME:name,W5_E2E_PASSWORD:password};
@@ -234,4 +236,237 @@ test('9 one item serves two demands and editing one leaves the other intact',asy
  await expect(drawer).toContainText(so1.orderNo);await expect(drawer).toContainText(so2.orderNo);
  await expect(drawer).toContainText('部分分配');await expect(drawer).toContainText('已分配');
  await page.screenshot({path:'../.runtime/w5-order-detail.png',fullPage:true});
+});
+
+/**
+ * Wave 2A：订单汇总 / 库存缺口预览（只读）。
+ *
+ * 契约：读端点按 `[startAt,endAt)` + `warehouseId` 聚合，数量为后端算好的四位定点字符串；
+ * 重复调用**不得**新建需求或流水（只读辅助决策），`calculationStatus` 只落在后端 5 值内。
+ * 注：本用例需要**包含 Wave 2A 端点的后端构建**；18080 上若在跑更早的 fat jar，
+ * 该 `summary-preview` 会 404 —— 属部署版本问题，不是本 Wave 缺陷。
+ */
+const SUMMARY_STATUS=new Set(['STOCK_ENOUGH','SHORTAGE','ZERO_STOCK','UNIT_MISMATCH','NO_BALANCE']);
+test('10 stock shortage preview is read-only and server-computed',async({page})=>{
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ // 用已生成需求的那张销售单所在窗口造一次可命中的查询（soA 已确认且已入库）
+ const so=await confirmedOrder('20.0000','20.0000');
+ const before=await post('/scm/purchase/demand/query',{pageNum:1,pageSize:20,salesOrderNo:so.orderNo});
+ expect(before.total).toBe(0); // 只读预览不建需求：此刻该单还没有需求行
+ const preview=await post('/scm/purchase/demand/summary-preview',{startAt:so.before,endAt:so.after,warehouseId,keyword:name,pageNum:1,pageSize:20});
+ expect(typeof preview.total).toBe('number');expect(Array.isArray(preview.list)).toBe(true);
+ const mine=preview.list.filter((r:any)=>String(r.skuCode??'').startsWith(name.toUpperCase()));
+ expect(mine.length).toBeGreaterThanOrEqual(1);
+ for(const r of preview.list){
+   expect(SUMMARY_STATUS.has(r.calculationStatus),`非法计算状态 ${r.calculationStatus}`).toBe(true);
+   for(const f of ['orderDemandQuantity','stockAvailableForSelectedOrders','selectedOrderReservedQuantity','otherReservedQuantity','stockComparisonGap']){
+     if(r[f]!==null)expect(r[f],`${f} 必须是四位定点字符串`).toMatch(/^\d+\.\d{4}$/);
+   }
+ }
+ // 缺口/可用量由后端给出，UNIT_MISMATCH 之外的行 available = onHand - reserved 的一致性由后端保证，前端不重算
+ const after=await post('/scm/purchase/demand/query',{pageNum:1,pageSize:20,salesOrderNo:so.orderNo});
+ expect(after.total).toBe(0); // 预览后仍无需求行 → 只读
+ await browse(page,'/purchase/purchase-demand-list');
+ await page.getByRole('tab',{name:'订单汇总 / 缺口预览'}).click();
+ await expect(page.locator('#scm-purchase-demand-summary-preview-table')).toBeVisible();
+ await expect(page.getByText('只读预览')).toBeVisible();
+ await page.screenshot({path:'../.runtime/w2a-summary-preview.png',fullPage:true});
+ expect(consoleErrors).toEqual([]);
+});
+
+/**
+ * Wave 2B：采购效率（导出 / 批量少收关单 / 按商品收货工作台）。
+ *
+ * 契约：导出与工作台都是只读端点（无 Idempotency-Key、不改采购状态、不新建收货 / 库存）；
+ * 批量少关整批原子——批内含不可关单据时全部回滚。
+ * 注：这些用例需要**包含 Wave 2B 端点的后端构建**；18080 上若在跑更早的 fat jar，
+ * `export` / `batch/short-close` / `item-workbench` 会 404 —— 属部署版本问题，不是本 Wave 缺陷。
+ */
+const WB_NUMERIC_FIELDS=['plannedQuantity','receivedQuantity','pendingQuantity','overReceiptQuantity'];
+test('11 export is a read-only xlsx download that never changes order state',async({page})=>{
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ // 用测试 2 的已提交单：导出前后状态必须一致，证明导出是纯读取。
+ const snapshot=await orderDetail(orderA.id);
+ const resp=await api.post('/scm/purchase/export',{data:{pageNum:1,pageSize:20,orderNo:orderA.orderNo,exportColumns:['orderNo','status','totalAmount']}});
+ expect(resp.ok()).toBe(true);
+ expect(resp.headers()['content-type']??'').toMatch(/spreadsheet|octet-stream/);
+ expect((resp.headers()['content-disposition']??'').toLowerCase()).toContain('attachment');
+ expect((await resp.body()).length).toBeGreaterThan(0);
+ expect((await orderDetail(orderA.id)).status).toBe(snapshot.status);
+ // 页面接线：导出 / 导出设置 / 批量少收关单按钮 + 每行打印都在（按权限渲染）。
+ await browse(page,'/purchase/purchase-order-list');await expect(page.locator('#scm-purchase-order-table')).toBeVisible();
+ await expect(page.getByRole('button',{name:'导出'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'导出设置'})).toBeVisible();
+ await page.screenshot({path:'../.runtime/w2b-order-export.png',fullPage:true});
+ expect(consoleErrors).toEqual([]);
+});
+
+test('12 batch short-close is atomic and the item workbench stays read-only',async({page})=>{
+ // 两张可关的部分收货单：整批关单后都进入终态。
+ const p1=await submittedPlainOrder('10.0000'),p2=await submittedPlainOrder('10.0000');
+ const r1=await createReceipt(p1.id),r2=await createReceipt(p2.id);
+ await confirmReceipt(r1,[line(r1,'4.0000','4.0000')]);
+ await confirmReceipt(r2,[line(r2,'5.0000','5.0000')]);
+ const v1=(await orderDetail(p1.id)).version,v2=(await orderDetail(p2.id)).version;
+ await post('/scm/purchase/batch/short-close',{orders:[{id:p1.id,version:v1},{id:p2.id,version:v2}],shortCloseReason:'W5 验收批量少收'});
+ expect((await orderDetail(p1.id)).status).toBe('SHORT_CLOSED');
+ expect((await orderDetail(p2.id)).status).toBe('SHORT_CLOSED');
+ // 原子性：混入一张草稿单（不可关）应整批失败，合法的那张保持原状态不回滚生效。
+ const keep=await submittedPlainOrder('10.0000');
+ const rk=await createReceipt(keep.id);await confirmReceipt(rk,[line(rk,'3.0000','3.0000')]);
+ const keepVersion=(await orderDetail(keep.id)).version;
+ const draft=await createOrder([],'5.0000','6.2000'); // DRAFT，不可少收关单
+ const denied=await raw('/scm/purchase/batch/short-close',{orders:[{id:keep.id,version:keepVersion},{id:draft.id,version:draft.version}],shortCloseReason:'原子性验证'});
+ expect(denied.code).not.toBe(0);
+ expect((await orderDetail(keep.id)).status).toBe('PARTIALLY_RECEIVED');
+ // 按商品工作台：只读聚合，四位定点字符串，查询后不新建任何收货 / 库存（读端点无副作用）。
+ const wb=await post('/scm/purchase/receipt/item-workbench/query',{pageNum:1,pageSize:50});
+ expect(Array.isArray(wb.list)).toBe(true);
+ for(const r of wb.list){for(const f of WB_NUMERIC_FIELDS){if(r[f]!==null)expect(r[f],`${f} 必须是四位定点字符串`).toMatch(/^\d+\.\d{4}$/);}
+   // 逐行裁剪后欠收与超收互斥：同一聚合行不会同时大于零。
+   if(Number(r.pendingQuantity??'0')>0&&Number(r.overReceiptQuantity??'0')>0)throw new Error('欠收与超收不应同时大于零');}
+ await browse(page,'/purchase/purchase-receipt-list');
+ await page.getByRole('tab',{name:'按商品'}).click();
+ await expect(page.locator('#scm-purchase-receipt-item-workbench-table')).toBeVisible();
+ await expect(page.getByText('只读工作台')).toBeVisible();
+ await page.screenshot({path:'../.runtime/w2b-item-workbench.png',fullPage:true});
+});
+
+/**
+ * Wave 2A §3.1：缺口预览的库存读取权限必须由服务端拒，不能靠前端把 tab 藏掉。
+ *
+ * 用**真实非管理员登录**（只读面 − `scm:inventory:balance:query`）验证 AND 交集：
+ * 缺一侧即整个聚合端点被拒，而该账号自己的采购需求查询照常可用（修权限不把另一侧降掉）。
+ */
+test('13 Wave 2A preview requires both perms: a real non-admin lacking inventory query is refused', async ({page}) => {
+  // 用例自带前置：单跑时不依赖其它用例留下的模块级状态
+  const so = await confirmedOrder('10.0000', '10.0000');
+  await post('/scm/purchase/demand/generate', {startAt: so.before, endAt: so.after, warehouseId, supplierId});
+  expect((await demandOf(so)).salesOrderNoSnapshot, '前置需求行没生成').toBe(so.orderNo);
+  const accounts = provisionTempAccounts('w2', ['scm:inventory:balance:query']);
+  const deniedToken = await loginAs(accounts, accounts.denied!);
+  const deniedApi = await apiClient(deniedToken);
+  try {
+    const refused = await (await deniedApi.post('/scm/purchase/demand/summary-preview', {
+      data: {startAt: so.before, endAt: so.after, warehouseId, keyword: name, pageNum: 1, pageSize: 20},
+    })).json();
+    expect(refused.code, '只有采购查看权也能读到库存数量 = 越权路径仍在').toBe(30005);
+
+    // 同一账号读自己领域的采购需求必须仍然放行：权限交集不能把另一侧顺带降掉
+    const demand = await (await deniedApi.post('/scm/purchase/demand/query', {
+      data: {pageNum: 1, pageSize: 20, salesOrderNo: so.orderNo},
+    })).json();
+    expect(demand.code, '保留 scm:purchase:demand:query 的账号读不到需求列表').toBe(0);
+    expect(demand.data.total).toBeGreaterThanOrEqual(1);
+
+    await authenticate(page, deniedToken);
+    await page.goto('/#/purchase/purchase-demand-list');
+    // 页面与 tab 对无库存权限的登录人照样可达 —— 证明拒绝来自接口而不是 UI 隐藏
+    await page.getByPlaceholder('销售单号').fill(so.orderNo);
+    await page.getByRole('button', {name: /^查\s*询$/}).click();
+    await expect(page.locator('#scm-purchase-demand-table tr').filter({hasText: so.orderNo}).first()).toBeVisible();
+    await page.getByRole('tab', {name: '订单汇总 / 缺口预览'}).click();
+    await expect(page.getByText('只读预览')).toBeVisible();
+    expect(await page.locator('#scm-purchase-demand-summary-preview-table tbody tr.ant-table-row').count(),
+        '预览表在缺权限的账号下出现了数据行').toBe(0);
+    await page.screenshot({path: '../.runtime/w2a-summary-preview-denied.png', fullPage: true});
+
+    // 反向缺一侧：保留库存查询、扣掉采购需求查询，同一端点仍须整条拒 —— AND 不是「任一侧通过」。
+    const inverse = provisionTempAccounts('w2', ['scm:purchase:demand:query']);
+    const inverseToken = await loginAs(inverse, inverse.denied!);
+    const inverseApi = await apiClient(inverseToken);
+    try {
+      const refusedToo = await (await inverseApi.post('/scm/purchase/demand/summary-preview', {
+        data: {startAt: so.before, endAt: so.after, warehouseId, keyword: name, pageNum: 1, pageSize: 20},
+      })).json();
+      expect(refusedToo.code, '只有库存查询权也能读到缺口预览 = 权限交集被写成并集').toBe(30005);
+      const balance = await (await inverseApi.post('/scm/inventory/balance/query', {
+        data: {warehouseId, pageNum: 1, pageSize: 20},
+      })).json();
+      expect(balance.code, '保留 scm:inventory:balance:query 的账号读不到库存余额').toBe(0);
+    } finally {
+      await inverseApi.get('/login/logout');
+      await inverseApi.dispose();
+      inverse.cleanup();
+    }
+  } finally {
+    await deniedApi.get('/login/logout');
+    await deniedApi.dispose();
+    accounts.cleanup();
+  }
+});
+
+/**
+ * §12.3 Wave 2B「打印」要求真实浏览器点一次打印按钮，但无头环境既没有打印对话框，
+ * 打印实现又会在调起 print() 后立即移除 iframe，文档来不及读。
+ * 这里只替换掉最外层的 `print()`：在打印代码读 `iframe.contentWindow` 的那一刻，
+ * 把它换成「先固化渲染结果、再拒绝弹系统窗口」的记录器。
+ * 被测路径不变（同一份 document.write、同一次 print 调用），只是不唤起系统对话框。
+ */
+function capturePrint(page:Page){
+ return page.addInitScript(()=>{
+  const w=window as any;
+  w.__printDocuments=[];
+  const desc=Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,'contentWindow');
+  if(!desc||!desc.get){throw new Error('contentWindow 访问器缺失，无法采集打印文档');}
+  Object.defineProperty(HTMLIFrameElement.prototype,'contentWindow',{configurable:true,enumerable:desc.enumerable,
+   get(){
+    const frameWindow=desc.get.call(this) as (Window&{__printCaptured?:boolean})|null;
+    if(frameWindow&&!frameWindow.__printCaptured){
+     frameWindow.__printCaptured=true;
+     frameWindow.print=function(){
+      const doc=frameWindow.document;
+      w.__printDocuments.push({title:doc.title,text:doc.body.textContent,
+       scripts:doc.querySelectorAll('script').length,rows:doc.querySelectorAll('tbody tr').length});
+     };
+    }
+    return frameWindow;
+   }});
+ });
+}
+
+test('14 print renders the fetched order into the print document and never writes business state',async({page})=>{
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ // 备注带一段脚本标记：打印文档里的数据字段只能作为文本渲染，不能变成可执行标记。
+ const mark='W5打印验收 <script>alert(1)</script>';
+ const created=await post('/scm/purchase/create',{supplierId,warehouseId,purchaserId:null,plannedArrivalDate:null,remark:mark,
+  items:[{skuId,quantity:'7.0000',price:'6.2000',allocations:[]}]});
+ const order=await orderDetail(created.id);
+ expect(order.remark,'服务端未原样保存备注，转义断言的前提不成立').toBe(mark);
+ const statusBefore=order.status;
+ await capturePrint(page);
+ const writes:string[]=[];let printing=false;
+ page.on('request',r=>{if(printing&&r.method()!=='GET')writes.push(`${r.method()} ${r.url()}`);});
+ await browse(page,'/purchase/purchase-order-list');
+ await page.getByPlaceholder('采购单号').fill(order.orderNo);
+ const orderRow=await row(page,'scm-purchase-order-table',order.orderNo);
+ printing=true;
+ await orderRow.getByRole('button',{name:'打印',exact:true}).click();
+ await expect.poll(()=>page.evaluate(()=>(window as any).__printDocuments.length)).toBe(1);
+ // 打印的必须是这一张单的当前详情（表头 + 明细行），而不是空模板
+ const [single]=await page.evaluate(()=>(window as any).__printDocuments) as
+  {title:string,text:string,scripts:number,rows:number}[];
+ expect(single.title).toContain('采购单打印');
+ expect(single.text).toContain(order.orderNo);
+ expect(single.text).toContain(order.supplierName);
+ expect(single.text).toContain(order.items[0].productName);
+ expect(single.text).toContain(order.items[0].plannedQuantity);
+ expect(single.text).toContain(order.items[0].purchasePrice);
+ expect(single.rows).toBe(1);
+ // 备注里的脚本必须仍是文本：文档里一个 script 元素都不该存在
+ expect(single.text).toContain(mark);
+ expect(single.scripts).toBe(0);
+ // 批量打印共用同一份文档生成器：勾上这张单后应再生成一个只含它的文档
+ await page.locator('#scm-purchase-order-table tbody tr.ant-table-row').first().locator('input[type=checkbox]').click();
+ await page.getByRole('button',{name:'批量打印'}).click();
+ await expect.poll(()=>page.evaluate(()=>(window as any).__printDocuments.length)).toBe(2);
+ const batch=await page.evaluate(()=>(window as any).__printDocuments[1]);
+ expect(batch.text).toContain(order.orderNo);
+ expect(batch.rows).toBe(1);
+ expect(batch.scripts).toBe(0);
+ // §1.2：打印不等于收货 / 关单 —— 全程只读，采购状态一位不动
+ expect(writes).toEqual([]);
+ expect((await orderDetail(created.id)).status).toBe(statusBefore);
+ await page.screenshot({path:'../.runtime/w2b-order-print.png',fullPage:true});
+ expect(consoleErrors).toEqual([]);
 });

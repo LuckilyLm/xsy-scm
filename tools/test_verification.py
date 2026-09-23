@@ -127,9 +127,13 @@ class MigrationChecksumGuardTest(unittest.TestCase):
     def test_renumbering_an_applied_migration_fails_the_guard(self):
         with tempfile.TemporaryDirectory() as directory:
             migrations, _, args = self.temp_tree(directory)
-            # 字节没动，只把已应用的 V43 改号为 V44：真实库上的历史行会悬空
+            # 字节没动，只把已应用的 V43 改到一个空闲号：真实库上的历史行会悬空。
+            # 目标号必须现算——写死 V44 之类会与后来落地的真实迁移撞号，
+            # 届时守卫先抛「版本号重复」，本用例想验的改号路径根本走不到。
+            taken = guard.scan_migrations(migrations)
+            free = max(guard.version_key(version)[0] for version in taken) + 1
             (migrations / "V43__scm_delivery_permissions.sql").rename(
-                migrations / "V44__scm_delivery_permissions.sql")
+                migrations / f"V{free}__scm_delivery_permissions.sql")
             self.assertEqual(1, self.assert_quiet(guard.cmd_check, args))
 
     def test_duplicate_version_number_is_an_error(self):

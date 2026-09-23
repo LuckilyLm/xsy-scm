@@ -118,3 +118,181 @@ test('8 sample row and manual override rules block the whole batch',async({page}
  await expect(page.locator('.ant-modal:visible .ant-table')).toContainText('填写人工单价时必须填写改价原因');
  expect(await importedTotal()).toBe(beforeC);
 });
+
+test('9 history reuse prefills a new draft and the recent-price popover shows the locked price',async({page})=>{
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ await browse(page);
+ await page.getByPlaceholder('名称或订单号').fill(confirmedOrder.orderNo);
+ await page.getByRole('button',{name:/^查\s*询$/}).click();
+ const row=page.locator('#order-table tbody tr').filter({hasText:confirmedOrder.orderNo}).first();
+ await row.getByRole('button',{name:'复用为新单'}).click();
+ const drawer=page.locator('.ant-drawer:visible');
+ // 复用生成的是「新建」态：只带一行历史商品，价格按当前价重新解析，绝不沿用历史锁价
+ await expect(drawer.getByRole('button',{name:'创建订单'})).toBeVisible();
+ // 横向滚动表格的 tbody 还含一行零高度测量行，只数真实数据行
+ await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
+ // 历史价只读旁证：点开后展示该客户该 SKU 的最近已确认订单价与来源订单
+ await page.locator('#order-item-table .recent-btn').click();
+ const pop=page.locator('.ant-popover:visible');
+ await expect(pop).toContainText('3.5000');
+ await expect(pop.locator('.recent-meta')).toContainText(confirmedOrder.orderNo);
+ // 价签必须挂在抽屉内部：浮层此前挂在 body 上，抽屉关了它还飘在列表页。
+ // 这里刻意在浮层开着的状态下关抽屉，直接复现该缺陷。
+ await drawer.locator('.ant-drawer-footer').getByRole('button',{name:/^关\s*闭$/}).click();
+ // 关掉的抽屉根节点仍挂在文档里（fixed 定位，:visible 恒真），开合状态只能看 ant-drawer-open。
+ await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
+ await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
+ // 组件实例不销毁，重开抽屉时不能直接冒出上次的价签。仍走复用入口：
+ // 上面那次关闭落了本地草稿，走「新建订单」会先弹草稿恢复框，与本用例要验的东西无关。
+ await row.getByRole('button',{name:'复用为新单'}).click();
+ await expect(drawer.getByRole('button',{name:'创建订单'})).toBeVisible();
+ await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
+ expect(consoleErrors).toEqual([]);
+});
+
+test('10 unsaved new-order draft is kept locally and offered for recovery on reopen',async({page})=>{
+ await browse(page);
+ await page.getByRole('button',{name:'新建订单',exact:true}).click();
+ await select(page,'customerId',name);
+ await page.getByRole('button',{name:'添加商品',exact:true}).click();
+ const skuSelect=page.locator('#order-item-table .ant-select-selector');
+ await skuSelect.click();await skuSelect.locator('input').fill(name);
+ await page.locator('.ant-select-dropdown:visible').getByText('散装',{exact:false}).first().click();
+ await page.locator('.ant-drawer:visible').locator('.ant-drawer-footer').getByRole('button',{name:/^关\s*闭$/}).click();
+ await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
+ // 重新新建：命中本地草稿恢复提示，选「恢复」回填并按当前价格重新解析
+ await page.getByRole('button',{name:'新建订单',exact:true}).click();
+ const confirmBox=page.locator('.ant-modal-confirm');
+ await expect(confirmBox).toContainText('未提交的订单草稿');
+ await confirmBox.getByRole('button',{name:/^恢\s*复$/}).click();
+ await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
+ await expect(page.locator('#order-item-table .price-cell').first()).toContainText('3.5000');
+ await page.locator('.ant-drawer:visible').locator('.ant-drawer-footer').getByRole('button',{name:/^关\s*闭$/}).click();
+});
+
+/** §5.2 离页防丢：两条通道都不经过「关闭」按钮，且各自用不同证据归因，避免把 keep-alive 当成防丢。 */
+test('12 unsaved draft survives a page reload and a route switch',async({page})=>{
+ // 存储键由 order-form-model.draftKey 按登录用户拼出；E2E 不 import 生产代码，按前缀取回唯一一条。
+ const drafts=()=>page.evaluate(()=>Object.entries(localStorage)
+  .filter(([k])=>k.startsWith('xsy-scm:order-draft:'))
+  .map(([,v])=>JSON.parse(v)));
+ const fillDraft=async()=>{
+  await page.getByRole('button',{name:'新建订单',exact:true}).click();
+  await select(page,'customerId',name);
+  await page.getByRole('button',{name:'添加商品',exact:true}).click();
+  const skuSelect=page.locator('#order-item-table .ant-select-selector');
+  await skuSelect.click();await skuSelect.locator('input').fill(name);
+  await page.locator('.ant-select-dropdown:visible').getByText('散装',{exact:false}).first().click();
+  await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
+ };
+ const recover=async()=>{
+  await page.getByRole('button',{name:'新建订单',exact:true}).click();
+  const confirmBox=page.locator('.ant-modal-confirm');
+  await expect(confirmBox).toContainText('未提交的订单草稿');
+  // 刷新后这是本次会话第一次挂载抽屉：确认框必须浮在抽屉之上，否则用户只看到空白抽屉且点不到「恢复」。
+  await confirmBox.getByRole('button',{name:/^恢\s*复$/}).click();
+  // 恢复后按当前价重新解析，价格与明细行都在
+  await expect(page.locator('#order-item-table tbody tr.ant-table-row')).toHaveCount(1);
+  await expect(page.locator('#order-item-table .price-cell').first()).toContainText('3.5000');
+ };
+ await browse(page);
+ await fillDraft();
+ // 通道一（路由切换）：抽屉开着直接切走，全程没点「关闭」，本地草稿只可能由 onBeforeRouteLeave 写入
+ await browse(page,'/purchase/purchase-demand-list');
+ const left=await drafts();
+ expect(left,'切走路由后本地没有草稿 = onBeforeRouteLeave 未落盘').toHaveLength(1);
+ expect(left[0].items).toHaveLength(1);
+ // 通道二（刷新）：改一个只存在于这一版的可辨识字段再刷新，草稿里出现它才说明是 beforeunload 写的
+ await browse(page);
+ const reloadMark='reload_'+Date.now().toString(36);
+ await page.locator('#form_item_remark').fill(reloadMark);
+ await page.reload();
+ await expect(page.getByRole('button',{name:'新建订单',exact:true})).toBeVisible();
+ const reloaded=await drafts();
+ expect(reloaded).toHaveLength(1);
+ expect(reloaded[0].remark,'刷新后草稿仍是切换路由那一版 = beforeunload 未落盘').toBe(reloadMark);
+ await recover();
+ await expect(page.locator('#form_item_remark')).toHaveValue(reloadMark);
+ await page.locator('.ant-drawer:visible').locator('.ant-drawer-footer').getByRole('button',{name:/^关\s*闭$/}).click();
+});
+
+/** 历史价浮层是 trigger=click 的切换语义：先确保关闭再点一次，才能拿到「按当前 (客户,SKU) 现算」的那一版内容。 */
+async function openRecentPopover(page:Page){
+ const pop=page.locator('.ant-popover:visible');
+ if(await pop.count()>0){await page.locator('#order-item-table .recent-btn').first().click();}
+ await expect(pop).toHaveCount(0);
+ await page.locator('#order-item-table .recent-btn').first().click();
+ await expect(pop).toHaveCount(1);
+}
+async function pickSku(page:Page,spec:string){
+ const box=page.locator('#order-item-table .ant-select-selector').first();
+ await box.click();await box.locator('input').fill(name);
+ await page.locator('.ant-select-dropdown:visible').getByText(spec,{exact:false}).first().click();
+}
+/** 自建合作中客户；名称带独立后缀，保证前端按整名搜索时只命中它自己。 */
+async function cooperatingCustomer(suffix:string){
+ const types=(await(await api.post('/scm/customer/type/option/list',{data:{}})).json()).data;
+ const customerName=name+'_'+suffix;
+ const id=await post('/scm/customer/add',{customerCode:customerName.toUpperCase(),name:customerName,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W4验收',contactPhone:'13800000000',address:'验收地址'});
+ const r=await(await api.get('/scm/customer/detail/'+id)).json();
+ await post('/scm/customer/updateStatus',{customerId:id,version:r.data.version,status:'COOPERATING'});
+ return {customerName,customerId:id};
+}
+/** 落一张该客户该 SKU 的已确认单：非标品必须先录入实重才允许确认，改价行必须带原因。 */
+async function confirmedOrderOf(options:{customer:string,sku:string,price?:string,nonStandard?:boolean}){
+ const {customer,sku,price,nonStandard}=options;
+ const item:{skuId:string,orderedQuantity:string,manualPriceOverride:boolean,unitPrice?:string,overrideReason?:string}=
+  {skuId:sku,orderedQuantity:'1.0000',manualPriceOverride:price!==undefined};
+ if(price!==undefined){item.unitPrice=price;item.overrideReason='验收议价';}
+ let o=await post('/scm/order/create',{...draft(sku),customerId:customer,items:[item]});
+ o=await post('/scm/order/submit',{orderId:o.orderId,version:o.version});
+ if(nonStandard)o=await post('/scm/order/item/actual-quantity',{orderId:o.orderId,itemId:o.items[0].itemId,version:o.items[0].version,actualQuantity:'1.0000',reason:'电子秤人工录入'});
+ if(o.status!=='CONFIRMED')o=await post('/scm/order/confirm',{orderId:o.orderId,version:o.version});
+ expect(o.status).toBe('CONFIRMED');
+ return o;
+}
+test('11 recent-price panel is keyed by customer+SKU: switching either never bleeds the other price',async({page})=>{
+ // §12.3 Wave 3「历史价切 SKU 不串 / 切客户不串」。缓存键曾含明细行序号，
+ // 换商品或换客户后重开浮层会直接吐出上一档的价，且不再发请求。
+ // 本用例自建客户与订单，不借用其他用例留下的数据，因此单独跑也成立。
+ const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
+ const customerA=await cooperatingCustomer('r3a');
+ const customerB=await cooperatingCustomer('r3b');
+ const boxA=await confirmedOrderOf({customer:customerA.customerId,sku:standardSkuId,price:'1.3579'});
+ const kgA=await confirmedOrderOf({customer:customerA.customerId,sku:skuId,nonStandard:true});
+ const boxB=await confirmedOrderOf({customer:customerB.customerId,sku:standardSkuId,price:'9.8700'});
+
+ await browse(page);
+ await page.getByRole('button',{name:'新建订单',exact:true}).click();
+ await select(page,'customerId',customerA.customerName);
+ await page.getByRole('button',{name:'添加商品',exact:true}).click();
+ const pop=page.locator('.ant-popover:visible');
+ await pickSku(page,'整箱');
+ await openRecentPopover(page);
+ // 客户 A + 整箱：只有自建的那一档，不能出现同客户散装档的价
+ await expect(pop).toContainText('1.3579');
+ await expect(pop.locator('.recent-meta')).toContainText(boxA.orderNo);
+ await expect(pop).not.toContainText('3.5000');
+ await expect(pop).not.toContainText(kgA.orderNo);
+ // 同一行换商品 → 必须按新 SKU 重新取数，不能沿用行序号缓存
+ await pickSku(page,'散装');
+ await openRecentPopover(page);
+ await expect(pop).toContainText('3.5000');
+ await expect(pop.locator('.recent-meta')).toContainText(kgA.orderNo);
+ await expect(pop).not.toContainText('1.3579');
+ // 换回整箱 → 同一 (客户,SKU) 组合仍然命中，且不是「还没查」的空态
+ await pickSku(page,'整箱');
+ await openRecentPopover(page);
+ await expect(pop).toContainText('1.3579');
+ // 换客户、SKU 不动 → 只能看到该客户自己的历史成交价
+ await select(page,'customerId',customerB.customerName);
+ await openRecentPopover(page);
+ await expect(pop).toContainText('9.8700');
+ await expect(pop.locator('.recent-meta')).toContainText(boxB.orderNo);
+ await expect(pop).not.toContainText('1.3579');
+ await expect(pop).not.toContainText('3.5000');
+ await expect(pop).not.toContainText(boxA.orderNo);
+ await expect(pop).not.toContainText(kgA.orderNo);
+ await page.screenshot({path:'../.runtime/w4-recent-price.png',fullPage:true});
+ expect(consoleErrors).toEqual([]);
+});

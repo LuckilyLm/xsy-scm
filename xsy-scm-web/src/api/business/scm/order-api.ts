@@ -5,7 +5,7 @@
 验收：W4 单测、TS 棘轮与 Playwright。 */
 import {request, getRequest, postRequest, getDownload} from '/@/lib/axios';
 import type {ScmResponse, ScmPage} from '/@/types/business/scm/customer';
-import type {Order, Query, Id, ImportResult} from '/@/views/business/scm/order/order-types';
+import type {Order, Query, Id, ImportResult, RecentPrice} from '/@/views/business/scm/order/order-types';
 import type {ResolveResult} from '/@/types/business/scm/pricing';
 // A failed retry retains its UUID; a changed payload or successful request starts a new command.
 const keys = new Map<string, string>();
@@ -72,4 +72,9 @@ export const orderApi = {
      * 严格语义：任一行可用量不足则整体失败（41011），不会只占一半。
      */
     reserveStock: (orderId: Id) => postRequest('/scm/order/reserve-stock/' + orderId, {}) as unknown as Promise<ScmResponse<string>>,
+    /**
+     * 某客户某 SKU 的最近成交参考价（Wave 3 §7.5，只读）：仅录单旁证，不回算当前价格、不参与定价。
+     * limit 由后端裁剪到 [1,10]，默认 5。
+     */
+    recentPrices: (customerId: Id, skuId: Id, limit = 5) => getRequest('/scm/order/reference/recent-prices', {customerId, skuId, limit}) as unknown as Promise<ScmResponse<RecentPrice[]>>,
 };

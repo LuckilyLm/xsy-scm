@@ -47,6 +47,10 @@
         <a-col :span="24">
           <ChangelogCard/>
         </a-col>
+        <!--业务待办（按登录人权限聚合，无权则整卡隐藏）-->
+        <a-col v-privilege="'scm:todo:query'" :span="24">
+          <HomeBusinessTodo/>
+        </a-col>
         <!--待办、已办-->
         <a-col :span="24">
           <ToBeDoneCard/>
@@ -61,6 +65,7 @@ import HomeHeader from './home-header.vue';
 import HomeNotice from './home-notice.vue';
 import ToBeDoneCard from './components/to-be-done-card/home-to-be-done.vue';
 import ChangelogCard from './components/changelog-card.vue';
+import HomeBusinessTodo from './components/business-todo-card/home-business-todo.vue';
 import Category from './components/echarts/category.vue';
 import Pie from './components/echarts/pie.vue';
 import Gradient from './components/echarts/gradient.vue';

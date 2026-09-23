@@ -21,7 +21,7 @@
 -->
 <template>
   <section aria-label="客户档案">
-    <a-form class="smart-query-form" layout="inline" @finish="search">
+    <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
           <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
@@ -34,7 +34,7 @@
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-space>
-            <a-button type="primary" html-type="submit">查询</a-button>
+            <a-button type="primary" @click="search">查询</a-button>
             <a-button @click="reset">重置</a-button>
             <a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button>
           </a-space>
@@ -143,6 +143,7 @@ import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/
 import CustomerDrawer from './components/customer-form-drawer.vue';
 import {customerError} from './customer-errors';
 import {datetime} from '../common/scm-display';
+import {useQueryFilterMemory} from '/@/lib/query-filter-memory';
 
 const router = useRouter();
 const filters = reactive<CustomerQuery>({pageNum: 1, pageSize: 20});
@@ -152,6 +153,8 @@ const loading = ref(false);
 const error = ref('');
 const advanced = ref(false);
 const drawer = ref<InstanceType<typeof CustomerDrawer>>();
+// 查询条件按「登录用户 + 本页」本地记忆；仅存浏览器，不落业务表。
+const queryMemory = useQueryFilterMemory<CustomerQuery>('scm:customer:list');
 
 /** 状态下拉的可选项：直接展开 SmartEnum，避免手写一份会和后端漂移的文案表。 */
 const statusOptions = Object.values(CUSTOMER_STATUS_ENUM);
@@ -201,12 +204,14 @@ async function load() {
 
 function search() {
   filters.pageNum = 1;
+  queryMemory.save({...filters});
   void load();
 }
 
 function reset() {
   Object.assign(filters, {
     pageNum: 1,
+    pageSize: 20,
     keyword: undefined,
     customerTypeId: undefined,
     status: undefined,
@@ -214,6 +219,7 @@ function reset() {
     parentCustomerId: undefined,
     sortItemList: undefined,
   });
+  queryMemory.clear();
   void load();
 }
 
@@ -260,7 +266,11 @@ async function remove(row: CustomerRow) {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  // 恢复上次筛选条件与分页大小，但强制回到第 1 页：记忆是便利，不该把用户带回深处的旧页码。
+  Object.assign(filters, queryMemory.load(), {pageNum: 1});
+  void load();
+});
 </script>
 
 <style scoped>

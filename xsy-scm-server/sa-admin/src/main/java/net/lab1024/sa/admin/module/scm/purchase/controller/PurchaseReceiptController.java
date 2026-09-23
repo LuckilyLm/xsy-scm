@@ -7,10 +7,12 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptBatch
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptConfirmForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptDeleteForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptItemWorkbenchQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptPutawayForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptUpdateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
+import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseQueryService;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseReceiptService;
@@ -63,6 +65,17 @@ public class PurchaseReceiptController {
     @SaCheckPermission("scm:purchase:receipt:query")
     public ResponseDTO<List<PurchaseReceiptItemVO>> items(@PathVariable Long receiptId) {
         return ResponseDTO.ok(purchaseQueryService.receiptItems(receiptId));
+    }
+
+    /**
+     * 按商品收货工作台（Wave 2B §6.3，只读）：跨可收货采购单按 SKU×采购单位 汇总计划 / 已收 / 欠收 / 超收，
+     * 复用 {@code scm:purchase:receipt:query}。它只是视图，不新增收货事实，确认收货仍走各收货单既有端点。
+     */
+    @PostMapping("/item-workbench/query")
+    @SaCheckPermission("scm:purchase:receipt:query")
+    public ResponseDTO<PageResult<PurchaseReceiptItemWorkbenchVO>> itemWorkbench(
+            @Valid @RequestBody PurchaseReceiptItemWorkbenchQueryForm form) {
+        return ResponseDTO.ok(purchaseQueryService.receiptItemWorkbench(form));
     }
 
     // ------------------------------------------------------------------
