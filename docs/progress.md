@@ -59,7 +59,9 @@
   开发库被清零的 3 行已由 V37 重放流水重算（6.20 / 132.00 / 2.60 回正）。
   链式转换的期初成本基准在审批开始时一次取齐并预解，环状引用按期初均价收敛且不写缓存。
 - 预留的**并发**场景目前只有单线程 IT 覆盖（并发压测待补）。
-- 报损报溢**没有消息通知**：驳回后录单人只能靠自己回来看状态。
+- 消息通知只做了一条事件：**报损报溢驳回**经 SmartAdmin 原生 `t_message` 站内信通知录单人
+  （V46 起，随驳回事务同步写、恰一条），首页「业务待办」是只读 Pull。**其余事件仍无通知**：
+  待审批、待入库、配送等仍靠用户自己进页面看状态；**外部渠道（短信 / 邮件 / 企业微信）未做**。
   **阈值预警同样没有推送**：本波次的「提醒」只是一个可查的列表，推送采购 / 销售待定。
 - **在途库存是否需要在余额上可见**（调拨波次的未决事项）：当前在途货不属于任何仓库余额，
   对账时必须把在途调拨单算进去。三种收敛方式见 `decisions.md`。
@@ -219,8 +221,43 @@
   另有两项待处理：(1) **已闭合**——E2E 生成上传文件所需的 `tools/patch_product_create_xlsx.py` /
   `tools/patch_product_update_xlsx.py` / `tools/fill_stocktake_template.py` 原先落在 `.gitignore` 的
   `/tools/*` 之下，干净检出跑不了这几条上传类用例；三者只按 argv 收文件路径、不含本机路径与凭据，已加入白名单入库；
-  (2) 导入的「分类必须是三级」
-  只在写入路径生效（单元格校验只查存在与 ENABLED），因此填 1/2 级分类编码会表现为整批写入错误而非逐列校验错误。
+  (2) **已闭合**——导入的「分类必须是三级」原先只在写入路径生效（单元格校验只查存在与 ENABLED），因此填 1/2 级
+  分类编码会表现为整批写入错误而非逐列校验错误；第二轮已把同口径的层级判断前置到逐行校验，回
+  `CATEGORY_LEVEL_INVALID` 并指到「分类编码」单元格（见下「第二轮复核追加」）。
+
+#### 第二轮复核追加（同一 Wave 1–8 线，2026-09-23）
+
+- **触发**：对 `main` 的第二次代码级审计给出 1 个新功能缺陷（P1）+ 1 个验收可复现性问题（P1）+ 2 个收尾项（P2）。
+  本轮只做这四项，未触碰任何其他业务功能；`§17` 的待裁决项与「导出即可回导」契约一律未动。
+- **P1｜DETAIL 图被静默改成 GALLERY**：`ProductImageForm` 没有 `imageType`，而 `ProductImageSyncManager.entity()`
+  对**更新行与新增行一律** `setImageType("GALLERY")`，于是「Excel 只改市场价」「切主图」「调整排序」「删除其他图片」
+  都会把库里 `DETAIL` 的详情图降级成图集图——V49 建立的正交模型被写入链破坏。修复取更接近事实的边界：
+  表单加 `imageType`（只约束取值 `GALLERY|DETAIL`），但**已有行不写这一列**——只有新增行落内容角色（缺省 `GALLERY`），
+  更新行留 `null`，让 MyBatis-Plus 的非空更新策略把 `image_type` 整列排除在 UPDATE 之外，库内值天然存活。
+  刻意不采用「读现值再原样回写」：同一 `SqlSession` 内的旁路改库不刷新 MyBatis 一级缓存，按过期实体回写会
+  重新引入同一污染（本轮第一版实现正是被新增回归抓红后才改成列排除）。
+- **回归（审计点名的 5 条 + 1 条加固）**：`ProductImportUpdatePgIT.priceOnlyUpdateKeepsDetailImageType`、
+  `ProductImageCenterPgIT.setPrimaryOnGalleryKeepsDetailType` / `reorderKeepsEveryImageType` /
+  `bindingNewGalleryImageLeavesExistingDetailType` / `batchRemoveLeavesSurvivingDetailType`，另加
+  `syncIgnoresImageTypeClaimedByExistingRow`（已有行谎报 `GALLERY` 也不生效）。**因果核验**：这 6 条在修复前 6/6 全红，
+  修复后商品模块定向 **46/46**（`ProductImageCenterPgIT` 16 / `ProductImportServiceTest` 23 / `ProductImportUpdatePgIT` 5 /
+  `ProductImageChangeSetTest` 2）。
+- **P2｜三级分类前置校验**：Excel 逐行校验补 `level == 3` 判断，回 `CATEGORY_LEVEL_INVALID` 并指到「分类编码」单元格，
+  与写入路径 `ProductCategoryService.requireSelectableCategory` 同口径，填 1/2 级分类不再等到整批写库才收到 40011。
+  浏览器侧同步扩到真实页面：Wave 1 CREATE 用例的拒绝批次增加一个填二级分类的**独立 SPU** 行，断言该行
+  **只有** `CATEGORY_LEVEL_INVALID` 一条诊断——并入同一 SPU 会被「同商品分类必须一致」先炸出无关错误，测不到这一层。
+- **P1｜干净检出可复现**：三个 xlsx 生成器已入库（`5409477`）；本轮把 spec 引用的 `../tools/*.py` 逐条
+  `git ls-files --error-unmatch` 验全，并**实跑一次干净检出**——克隆 `HEAD` 到临时目录后上传类用例 13/13 通过、
+  第二轮版 CREATE 用例 1/1 通过，这几条用例不再依赖任何未入库的本机文件。
+- **P2｜`progress.md` 过期描述**：「报损报溢没有消息通知」按事实改写为「驳回站内信 + 首页只读待办已交付，
+  缺的是其余事件与外部渠道」，避免下一轮重复实现。
+- **本轮实跑证据**：Wave 1 商品 spec 8/8、Wave 6 三条库存 spec 19/19、Playwright 全量 **96 通过 / 7 跳过 / 0 失败**
+  （12.8 分钟、串行 1 worker；7 项 skip 与 `f0-file-storage.spec.ts` 自身 7 条云端用例逐条对得上，Wave 1–8 无一落 skip；
+  0 pageerror / 0 未处理 rejection 由 `scm-test-base.ts` 的 fixture 统一钉死）。后端 product 模块全量 **91/91**
+  （0 失败 / 0 错误 / 0 跳过，一次性 IT 库，含 16 条图片中心与 5 条 UPDATE 导入真实库 IT）；前端 `src/` 本轮零改动
+  （只改 E2E 用例与文档），故不重跑 lint / build。
+- **入库方式**：本轮四项改动按关注点拆成提交（图片类型保持 / 三级分类前置校验 + E2E / 文档），留在本地 `main`，
+  未推送远程；`§17` 待裁决项与「导出即可回导」契约仍待业务裁决，未随本轮入库。
 
 ### 2026-09-22 操作日志业务上下文与表格 / 查询体验（Wave 8，无迁移）：按业务对象精确下钻 + 查询条件本地记忆
 
