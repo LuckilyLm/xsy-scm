@@ -1,7 +1,9 @@
 import { test, expect, request, type Page, type Locator, type APIRequestContext } from '@playwright/test';
 import { randomBytes } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import smCrypto from 'sm-crypto';
 
 const apiUrl = 'http://127.0.0.1:18080';
@@ -250,7 +252,8 @@ test('read-only role cannot mutate products and buttons are hidden', async ({ pa
 });
 
 // PCO-2 商品运营入口：Excel 导入 / 导出按钮、图片中心路由。用真实小 xlsx 字节只验证「选文件前禁止提交、
-// 选后解禁」的结构契约，不实际点「开始导入」，避免向库里写入不可控数据。
+// 选后解禁」的结构契约，本用例刻意不点「开始导入」（无效字节必被后端拒，写库另有代价）；
+// 真正以页面提交走完整链路的是文件末尾的 CREATE / UPDATE 往返两个用例。
 test('PCO-2 excel entry: import modal gates submit until a file is chosen', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await authenticate(page); await page.goto('/#/product/product-list');
@@ -271,7 +274,8 @@ test('PCO-2 excel entry: import modal gates submit until a file is chosen', asyn
   await expect(modal.getByText(/已选文件/)).toBeVisible();
   await expect(start).toBeEnabled();
   await button(modal, '下载模板').click();
-  await button(modal, '取消').click();
+  // 导入弹窗的页脚只有「下载模板 / 选择文件 / 开始导入」，关闭走弹窗自身的 Close 控件
+  await modal.getByRole('button', {name: 'Close'}).click();
   await expect(modal).not.toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -285,7 +289,7 @@ test('PCO-2 image center: filter no-image products, open single-SPU maintenance,
     spuCode: prefix + 'IMG', name: prefix + '无图商品', categoryId, status: 'ON_SHELF', images: [],
     skuList: [{ skuCode: prefix + 'IMGA', specName: '散装', specValues: { 规格: '散装' }, saleUnit: 'kg', productType: 'NON_STANDARD', marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0 }]
   } })).json();
-  expect(added.code).toBe(0); const spuId = added.data; productIds.push(spuId);
+  expect(added.code, `categoryId=${categoryId} ${JSON.stringify(added)}`).toBe(0); const spuId = added.data; productIds.push(spuId);
 
   await authenticate(page); await page.goto('/#/product/image-center');
   await expect(page).toHaveURL(/product-image-center|image-center/);
@@ -300,8 +304,10 @@ test('PCO-2 image center: filter no-image products, open single-SPU maintenance,
   await row.click();
   const batchEntry = button(page, '按文件名批量导入');
   await expect(batchEntry).toBeVisible();
-  // 上传入口（+ 上传图片）是单商品维护写路径的可见契约
-  await expect(button(page, '上传图片')).toBeVisible();
+  // 上传入口的可见文案含前置加号（虚线新增卡片）。a-upload 会把 children 包进同名的
+  // <span class="ant-upload" role="button">，按角色选会命中两个节点，因此定位真实的那个 <button>。
+  await expect(page.locator('button.add-tile')).toBeVisible();
+  await expect(page.locator('button.add-tile')).toHaveText('+ 上传图片');
   await batchEntry.click();
   const modal = page.locator('.ant-modal:visible');
   await expect(modal.getByText('文件名（去扩展名）需等于目标商品的 SPU 编码')).toBeVisible();
@@ -320,4 +326,192 @@ test('PCO-2 read-only role cannot see import or export entry', async ({ page }) 
   await expect(button(page, '查询')).toBeVisible();
   await expect(button(page, '导入')).toHaveCount(0);
   await expect(button(page, '导出')).toHaveCount(0);
+});
+
+// Wave 1 §12.3「商品 Excel UPDATE（修复后）」的真实浏览器闭环。此前的 PCO-2 用例刻意只验到
+// 「选文件前禁止提交」，从没真的用更新模式写过一行，所以计划把它记为验收缺口。
+// 本用例走完整链路：下载更新模板并填入真实定位键 → 只改一格、另一格留空 → 页面以更新模式上传 →
+// 库内见新值且留空列原值仍在 → 同一份旧文件重放必被乐观锁整批拒（不改写、不新增第二条）。
+test('Wave 1 UPDATE import: real page round trip preserves blank columns and rejects a stale file', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  // 复用「live product pilot」建的三级分类：本文件 workers:1 串行，模块状态按用例顺序共享
+  const categoryId = categoryIds[categoryIds.length - 1];
+  expect(categoryIds.length, '更新导入需要同文件首个用例建好的三级分类，请整文件跑本 spec 而不是 -g 单跑').toBeGreaterThan(0);
+  const added = await (await api.post('/scm/product/add', { data: {
+    spuCode: prefix + 'UPD', name: prefix + '更新导入商品', categoryId, status: 'ON_SHELF',
+    alias: '原别名', brandName: '原品牌', images: [],
+    skuList: [{ skuCode: prefix + 'UPDA', specName: '统一', specValues: { 规格: '统一' }, saleUnit: 'kg', productType: 'STANDARD', marketPrice: '8.0000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0 }]
+  } })).json();
+  expect(added.code, JSON.stringify(added)).toBe(0); const spuId = added.data; productIds.push(spuId);
+
+  // 更新导入的定位键（SPU ID / SPU版本 / SKU ID / SKU版本）必须取自库里真值，测试不自己编乐观锁版本。
+  // 输入用服务端的更新模板而不是列表导出：两者列集合刻意不同（导出给人看，含分类路径与标签名称；
+  // 更新模板要分类编码与标签编码），把导出喂给更新导入会被 HEADER_INVALID 整批拒绝。
+  const before = await (await api.get(`/scm/product/detail/${spuId}`)).json();
+  expect(before.code).toBe(0);
+  // 被留空的那一列必须在更新前有真原值，否则「空白列保持原值」会退化成空转断言
+  expect(before.data.brandName, '更新导入的商品没有品牌原值').toBe('原品牌');
+  const template = await api.get('/scm/product/import/template', { params: { mode: 'UPDATE' } });
+  expect(template.status()).toBe(200);
+  const dir = mkdtempSync(join(tmpdir(), 'w1-update-'));
+  try {
+    const templatePath = join(dir, 'template.xlsx'); writeFileSync(templatePath, await template.body());
+    const updatePath = join(dir, 'update.xlsx');
+    const newAlias = prefix + '新别名';
+    const sku = before.data.skuList[0];
+    const patched = JSON.parse(execFileSync('python', ['../tools/patch_product_update_xlsx.py', '--template',
+      '--in', templatePath, '--out', updatePath,
+      '--set', `SPU ID=${before.data.spuId}`, '--set', `SPU版本=${before.data.version}`,
+      '--set', `SKU ID=${sku.skuId}`, '--set', `SKU版本=${sku.version}`, '--set', `别名=${newAlias}`],
+      { encoding: 'utf8' }).trim()) as { rows: number; templateVersion: string };
+    expect(patched.rows).toBe(1);
+    expect(patched.templateVersion, '更新模板没有自带模板版本').toBeTruthy();
+
+    await authenticate(page); await page.goto('/#/product/product-list');
+    await button(page, '导入').click();
+    const modal = page.locator('.ant-modal:visible');
+    await modal.locator('.ant-radio-button-wrapper', { hasText: '更新既存商品' }).click();
+    // 提示语必须把「留空=不改写」讲清楚，否则更新语义只存在于后端
+    await expect(modal.getByText('空白列保持原值')).toBeVisible();
+    let responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
+    await modal.locator('input[type=file]').setInputFiles(updatePath);
+    await expect(modal.getByText(/已选文件/)).toBeVisible();
+    await button(modal, '开始更新').click();
+    const vo = await (await responded).json();
+    expect(vo.code, vo.msg).toBe(0);
+    expect(vo.data.mode).toBe('UPDATE');
+    expect(vo.data.totalErrors, JSON.stringify(vo.data.errors)).toBe(0);
+    expect(vo.data.updatedProducts).toBe(1);
+    await expect(modal.getByText('成功更新 1 个商品')).toBeVisible();
+
+    const detail = await (await api.get(`/scm/product/detail/${spuId}`)).json();
+    expect(detail.code).toBe(0);
+    expect(detail.data.alias).toBe(newAlias);
+    expect(detail.data.brandName, '更新导入把留空列当成清空指令了').toBe('原品牌');
+
+    // 重放同一份文件：更新已经推进过版本，旧定位键必须整批被拒，且一条都不写
+    await modal.getByRole('button', { name: 'Close' }).click();
+    await expect(modal).not.toBeVisible();
+    await button(page, '导入').click();
+    await modal.locator('.ant-radio-button-wrapper', { hasText: '更新既存商品' }).click();
+    responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
+    await modal.locator('input[type=file]').setInputFiles(updatePath);
+    await button(modal, '开始更新').click();
+    const stale = await (await responded).json();
+    expect(stale.code).toBe(0);
+    expect(stale.data.updatedProducts, '过期版本仍被写入了').toBe(0);
+    expect((stale.data.errors as { code: string }[]).map(e => e.code)).toContain('VERSION_CONFLICT');
+    await expect(modal.getByText('本次没有任何商品写入')).toBeVisible();
+    const afterStale = await (await api.get(`/scm/product/detail/${spuId}`)).json();
+    expect(afterStale.data.alias).toBe(newAlias);
+    expect(afterStale.data.version, '被拒的更新仍然推进了乐观锁版本').toBe(detail.data.version);
+    await modal.getByRole('button', { name: 'Close' }).click();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  expect(errors).toEqual([]);
+});
+
+// §12.3 Wave 1「商品 Excel CREATE」此前只有弹窗闸门（见 PCO-2 excel entry 用例），新增模式从没真的
+// 用页面写过一行商品。本用例自建分类与文件，不借用其他用例的数据，单独执行亦成立：
+// 页面以新增模式上传「一个 SPU 两行 SKU」→ 库内见两个 SKU 且默认 SKU 只有一个 → 列表能查到该商品 →
+// 再上传「两行好 + 一行错分类编码」必须整批 0 写入，既存商品不会多出第三个 SKU。
+test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and rejects a batch with one bad row', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  // 新增导入要求分类编码存在且 ENABLED，而写入路径还要求商品只能挂在三级分类
+  // （`ProductCategoryService.lockParent` 对 1/2 级回 40011），所以这里自建一条完整的三级链
+  const categoryCode = prefix + 'CR';
+  let parentId: number | string | undefined;
+  for (const [index, name] of [prefix + '导入一级', prefix + '导入二级', prefix + '导入三级'].entries()) {
+    const created = await (await api.post('/scm/product/category/add', { data: {
+      parentId, categoryCode: categoryCode + (index + 1), name, sortOrder: 0, status: 'ENABLED'
+    } })).json();
+    expect(created.code, JSON.stringify(created)).toBe(0);
+    categoryIds.push(created.data); parentId = created.data;
+  }
+
+  const spuCode = prefix + 'CRE';
+  const leafCategoryCode = categoryCode + 3;
+  const goodRows = [
+    { SPU编码: spuCode, 商品名称: prefix + '导入商品', 分类编码: leafCategoryCode, 品牌: '导入品牌',
+      商品上下架: 'ON_SHELF', SKU编码: spuCode + 'A', 规格名称: '散装', 销售单位: 'kg',
+      商品类型: 'NON_STANDARD', 市场价: '8.0000', SKU上下架: 'ON_SHELF', 默认SKU: '是' },
+    { SPU编码: spuCode, 商品名称: prefix + '导入商品', 分类编码: leafCategoryCode, 商品上下架: 'ON_SHELF',
+      SKU编码: spuCode + 'B', 规格名称: '整箱', 销售单位: 'kg', 商品类型: 'STANDARD',
+      市场价: '96.0000', SKU上下架: 'ON_SHELF', 默认SKU: '否' }
+  ];
+  // 输入用服务端的新增模板而不是更新模板：两者列集合刻意不同，喂错模板由生成器显性拒绝
+  const template = await api.get('/scm/product/import/template', { params: { mode: 'CREATE' } });
+  expect(template.status()).toBe(200);
+  const dir = mkdtempSync(join(tmpdir(), 'w1-create-'));
+  try {
+    const templatePath = join(dir, 'template.xlsx'); writeFileSync(templatePath, await template.body());
+    const fill = (out: string, rows: Record<string, string>[]) => JSON.parse(execFileSync('python',
+      ['../tools/patch_product_create_xlsx.py', '--in', templatePath, '--out', out,
+        ...rows.flatMap(row => ['--row', Object.entries(row).map(([column, value]) => `${column}=${value}`).join(';')])],
+      { encoding: 'utf8' }).trim()) as { rows: number; templateVersion: string };
+
+    const goodPath = join(dir, 'create.xlsx');
+    const filled = fill(goodPath, goodRows);
+    expect(filled.rows).toBe(2);
+    expect(filled.templateVersion, '新增模板没有自带模板版本').toBeTruthy();
+
+    await authenticate(page); await page.goto('/#/product/product-list');
+    await button(page, '导入').click();
+    const modal = page.locator('.ant-modal:visible');
+    // 默认即新增模式，且提示语必须把「整批事务」讲清楚，不能只存在于后端
+    await expect(modal.getByText('任意一行有错都不会写入任何商品')).toBeVisible();
+    let responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
+    await modal.locator('input[type=file]').setInputFiles(goodPath);
+    await expect(modal.getByText(/已选文件/)).toBeVisible();
+    await button(modal, '开始导入').click();
+    const vo = await (await responded).json();
+    expect(vo.code, vo.msg).toBe(0);
+    expect(vo.data.mode).toBe('CREATE');
+    expect(vo.data.totalErrors, JSON.stringify(vo.data.errors)).toBe(0);
+    expect(vo.data.totalRows).toBe(2);
+    expect(vo.data.totalProducts).toBe(1);
+    expect(vo.data.importedProducts, '一个 SPU 的两行 SKU 应只新增一个商品').toBe(1);
+    expect(vo.data.spuIds).toHaveLength(1);
+    const spuId = vo.data.spuIds[0]; productIds.push(spuId);
+    await expect(modal.getByText('成功导入 1 个商品')).toBeVisible();
+
+    const detail = await (await api.get(`/scm/product/detail/${spuId}`)).json();
+    expect(detail.code).toBe(0);
+    expect(detail.data.spuCode).toBe(spuCode);
+    expect(detail.data.brandName).toBe('导入品牌');
+    const skus = detail.data.skuList as { skuCode: string; defaultFlag: boolean }[];
+    expect(skus.map(s => s.skuCode).sort()).toEqual([spuCode + 'A', spuCode + 'B']);
+    expect(skus.filter(s => s.defaultFlag)).toHaveLength(1);
+
+    // 页面闭环：新增结果必须能在列表里查到，而不只是接口回一个 id
+    await modal.getByRole('button', { name: 'Close' }).click();
+    await expect(modal).not.toBeVisible();
+    await page.getByPlaceholder('商品名 / 编码 / 条码 / 助记码').fill(spuCode);
+    await button(page, '查询').click();
+    await expect(page.getByRole('row').filter({ hasText: spuCode })).toHaveCount(1);
+
+    // 同一商品再加一行，但那行的分类编码不存在：整批必须 0 写入，既存商品不会多出第三个 SKU
+    const badPath = join(dir, 'create-bad.xlsx');
+    expect(fill(badPath, [...goodRows, { SPU编码: spuCode, 商品名称: prefix + '导入商品',
+      分类编码: prefix + 'NOCAT', 商品上下架: 'ON_SHELF', SKU编码: spuCode + 'C', 规格名称: '礼盒',
+      销售单位: 'kg', 商品类型: 'STANDARD', 市场价: '199.0000', SKU上下架: 'ON_SHELF', 默认SKU: '否' }
+    ]).rows).toBe(3);
+    await button(page, '导入').click();
+    responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
+    await modal.locator('input[type=file]').setInputFiles(badPath);
+    await button(modal, '开始导入').click();
+    const rejected = await (await responded).json();
+    expect(rejected.code).toBe(0);
+    expect(rejected.data.importedProducts, '含错行的批次仍写入了商品').toBe(0);
+    expect((rejected.data.errors as { code: string }[]).map(e => e.code)).toContain('CATEGORY_NOT_FOUND');
+    await expect(modal.getByText('本次没有任何商品写入')).toBeVisible();
+    const afterBad = await (await api.get(`/scm/product/detail/${spuId}`)).json();
+    expect(afterBad.data.skuList).toHaveLength(2);
+    expect(afterBad.data.version, '被拒的导入仍然推进了乐观锁版本').toBe(detail.data.version);
+    await modal.getByRole('button', { name: 'Close' }).click();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  expect(errors).toEqual([]);
 });
