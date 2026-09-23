@@ -192,6 +192,10 @@
     "48": {
       "file": "V48__scm_stocktake_import_permission.sql",
       "checksum": -669756495
+    },
+    "49": {
+      "file": "V49__scm_product_image_type_gallery.sql",
+      "checksum": -525245484
     }
   }
 }

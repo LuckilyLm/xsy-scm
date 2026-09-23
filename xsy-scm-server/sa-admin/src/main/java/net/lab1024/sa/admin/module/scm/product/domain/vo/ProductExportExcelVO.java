@@ -4,11 +4,20 @@ import cn.idev.excel.annotation.ExcelProperty;
 import lombok.Data;
 
 /**
- * 商品导出行：一行一个 SKU，覆盖列表可见主档字段 + SKU + 分类 + 标签 + 计量单位。
+ * 商品导出行：一行一个 SKU，覆盖列表可见主档字段 + SKU + 分类 + 标签 + 计量单位 + 更新导入定位键。
  * 只用于导出，字段顺序即列顺序，改列需同步导出设置说明。
  */
 @Data
 public class ProductExportExcelVO {
+    /** 更新导入模板的四个定位键列，顺序与 ProductImportService.UPDATE_HEADERS 一致。 */
+    @ExcelProperty("SPU ID")
+    private String spuId;
+    @ExcelProperty("SPU版本")
+    private String spuVersion;
+    @ExcelProperty("SKU ID")
+    private String skuId;
+    @ExcelProperty("SKU版本")
+    private String skuVersion;
     @ExcelProperty("SPU编码")
     private String spuCode;
     @ExcelProperty("商品名称")

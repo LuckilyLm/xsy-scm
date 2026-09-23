@@ -176,11 +176,16 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //   V40 = 地图 M0（scm_region 省市字典 + 三张主档地理归属列 + 存量地址保守解析）
     //   V41 = F0-DEBT-01 写侧收口（删 product_image.file_url：预签名地址不再落库，按 file_key 现算）
     //   V42–V43 = 物流配送 L0–L2（五张配送表 + 地理快照约束；菜单与权限，原编号 V41/V42 因撞号重排）
+    //   V44–V45 = 商品中心 PCO-2（product_image 图集分组列；导入导出与图片中心菜单权限）
+    //   V46 = 业务待办（仅数据，scm:todo:query 菜单与权限）
+    //   V47 = 配送打印追踪（delivery_route_order 打印计次三列）
+    //   V48 = 盘点效率（仅数据，盘点批量导入权限）
+    //   V49 = PCO-2 图片类型语义收口（image_type 改为 GALLERY/DETAIL，主图唯一事实回归 is_primary）
     // V1–V18 的内容与顺序仍被逐条钉死，任何回改/重排都会立刻失败。
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），**不扫描磁盘上的 migration 文件**，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V43 全部 success，V15–V43 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V49 全部 success，V15–V49 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -190,10 +195,10 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
                 "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
-                "36", "37", "38", "39", "40", "41", "42", "43");
+                "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除 43 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除 49 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
     }

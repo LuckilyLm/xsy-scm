@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
@@ -284,29 +285,59 @@ public class DeliveryRouteService {
     }
 
     /**
-     * 按客户正式生成打印：把选定客户展开为其线路内有效订单，再按 {@code orderPrintFilter}
-     * 决定这些客户中打印哪些订单（PARTIAL 客户可只补打未打印订单）。
+     * 按客户正式生成打印：先按客户状态圈定客户，再决定这些客户中打印哪些订单。
+     * 客户状态在线路锁内按当前 ACTIVE 订单重新聚合，前端名单只是候选范围——预览后计数已变的
+     * 客户会被排除，而不是按过期状态重打；展开后无订单则拒绝而非生成零单打印。
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
         var claim = idempotency.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
         if (claim.replay()) return idempotency.replay(claim, DeliveryPrintResultVO.class);
         printable(lock(id, form.getVersion()));
-        var filter = form.getOrderPrintFilter() == null ? "ALL" : form.getOrderPrintFilter();
-        var customers = new HashSet<>(form.getCustomerIds());
-        var selected = active(id).stream()
-                .filter(a -> customers.contains(a.getCustomerId()))
-                .filter(a -> switch (filter) {
-                    case "PRINTED" -> a.getPrintCount() != null && a.getPrintCount() > 0;
-                    case "UNPRINTED" -> a.getPrintCount() == null || a.getPrintCount() == 0;
-                    default -> true;
-                })
-                .toList();
-        // 展开后为空说明所选客户当前无匹配有效订单（线路或集合已变化），拒绝而非静默生成零单。
+        var statusFilter = form.getCustomerStatusFilter() == null ? "ALL" : form.getCustomerStatusFilter();
+        var candidates = form.getCustomerIds() == null ? Set.<Long>of() : new HashSet<>(form.getCustomerIds());
+        if (candidates.isEmpty() && "ALL".equals(statusFilter)) throw new ScmBusinessException(VALIDATION_ERROR);
+        var orderFilter = form.getOrderPrintFilter() == null ? "ALL" : form.getOrderPrintFilter();
+        var selected = new ArrayList<DeliveryRouteOrderEntity>();
+        // 聚合键用 LinkedHashMap：线路锁内读到的顺序即打印顺序，两次同请求生成同一份清单。
+        for (var entry : active(id).stream()
+                .collect(Collectors.groupingBy(DeliveryRouteOrderEntity::getCustomerId, LinkedHashMap::new, Collectors.toList()))
+                .entrySet()) {
+            if (!candidates.isEmpty() && !candidates.contains(entry.getKey())) continue;
+            if (!matchesCustomerStatus(statusFilter, entry.getValue())) continue;
+            entry.getValue().stream().filter(a -> matchesOrderPrint(orderFilter, a)).forEach(selected::add);
+        }
         if (selected.isEmpty()) throw new ScmBusinessException(STATE_INVALID);
         var result = recordAndBuild(id, selected);
         idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
         return result;
+    }
+
+    /**
+     * 客户维度打印状态：与只读 customerView 的判定口径一致（已打印有效订单数对比总有效订单数）。
+     */
+    private boolean matchesCustomerStatus(String statusFilter, List<DeliveryRouteOrderEntity> customerOrders) {
+        if ("ALL".equals(statusFilter)) return true;
+        long printed = customerOrders.stream().filter(a -> hasPrinted(a)).count();
+        return switch (statusFilter) {
+            case "PRINTED" -> printed == customerOrders.size();
+            case "UNPRINTED" -> printed == 0;
+            case "PARTIAL" -> printed > 0 && printed < customerOrders.size();
+            default -> throw new ScmBusinessException(VALIDATION_ERROR);
+        };
+    }
+
+    private boolean matchesOrderPrint(String orderFilter, DeliveryRouteOrderEntity assignment) {
+        return switch (orderFilter) {
+            case "PRINTED" -> hasPrinted(assignment);
+            case "UNPRINTED" -> !hasPrinted(assignment);
+            case "ALL" -> true;
+            default -> throw new ScmBusinessException(VALIDATION_ERROR);
+        };
+    }
+
+    private boolean hasPrinted(DeliveryRouteOrderEntity assignment) {
+        return assignment.getPrintCount() != null && assignment.getPrintCount() > 0;
     }
 
     private DeliveryPrintResultVO recordAndBuild(Long id, List<DeliveryRouteOrderEntity> selected) {

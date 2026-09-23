@@ -1,11 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
 import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
-import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchShortCloseForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderVersionForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptConfirmForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptItemWorkbenchQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
@@ -16,7 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 事务内（默认 REQUIRED 传播，不开 SAVEPOINT），因此「非法成员令前面已处理的合法成员一并回滚」这一
  * 效果在事务内<b>不可观测</b>（要等最外层回滚）。故非法状态 / 版本冲突两例只断言抛出的业务码，
  * 不回读兄弟单的状态 —— 那会误测到同一未提交事务里前一成员残留的写入。原子性由服务方法上的
- * {@code @Transactional(rollbackFor)} 保证，属结构性事实。
+ * {@code @Transactional(rollbackFor)} 保证，属结构性事实；真正的「整批回滚后兄弟单未被部分关单」取证
+ * 在 {@link PurchaseShortCloseRollbackIT}（该类关掉外层测试事务，让批量调用自己成为提交边界）。
  */
 @DisplayName("批量少收关单 + 按商品收货工作台（PG IT）")
 class PurchaseEfficiencyIT extends ScmW5PgITBase {
@@ -43,86 +38,6 @@ class PurchaseEfficiencyIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
     // 造数辅助
     // ------------------------------------------------------------------
-
-    /**
-     * 造一张处于 {@code PARTIALLY_RECEIVED} 的采购单：两行两 SKU，A 收齐、B 欠收。
-     *
-     * <p>单行订单永远满足不了「至少一行已收 且 至少一行未收齐」，批量关单的合法成员必须是这种混合态。
-     */
-    private PurchaseOrderVO partiallyReceivedOrder(String suffix) {
-        Long skuA = newOnShelfSku(suffix);
-        Long skuB = newOnShelfSku(suffix + "b");
-        Long supplierId = newSupplier(suffix);
-        linkSupplierSkus(supplierId, skuA, skuB);
-
-        Long customerId = newCustomer();
-        Long soA = confirmedSalesOrder(customerId, skuA, "4.0000", "4.0000");
-        Long soB = confirmedSalesOrder(customerId, skuB, "6.0000", "6.0000");
-        PurchaseDemandEntity demandA = generateDemandFor(supplierId, soA);
-        PurchaseDemandEntity demandB = generateDemandFor(supplierId, soB);
-
-        PurchaseOrderAddForm form = new PurchaseOrderAddForm();
-        form.setSupplierId(supplierId);
-        form.setWarehouseId(seedWarehouseId());
-        form.setPurchaserId(anyEmployeeId());
-        form.setRemark("Wave2B 批量关单");
-        form.setItems(new ArrayList<>(List.of(
-                item(skuA, "4.0000", "6.2000", allocation(demandA, "4.0000")),
-                item(skuB, "6.0000", "6.2000", allocation(demandB, "6.0000")))));
-        PurchaseOrderVO order = purchaseOrderService.create(form, prefix + ":" + suffix + ":po");
-
-        submitOrder(order.getId());
-        PurchaseReceiptVO created = createReceipt(order.getId());
-        PurchaseReceiptVO receipt = reloadReceipt(created.getId());
-        List<PurchaseReceiptConfirmForm.Item> lines = new ArrayList<>(receipt.getItems().size());
-        for (PurchaseReceiptItemVO line : receipt.getItems()) {
-            // A（4.0000）收齐，B（6.0000）只收 2.0000 → 混合收付
-            String quantity = line.getSkuId().equals(skuA) ? "4.0000" : "2.0000";
-            lines.add(receiptLine(line.getId(), line.getVersion(), quantity));
-        }
-        purchaseReceiptService.confirm(
-                confirmForm(receipt.getId(), receipt.getVersion(),
-                        lines.toArray(new PurchaseReceiptConfirmForm.Item[0])),
-                prefix + ":" + suffix + ":rc");
-
-        PurchaseOrderVO partially = reloadOrder(order.getId());
-        assertThat(partially.getStatus()).isEqualTo("PARTIALLY_RECEIVED");
-        return partially;
-    }
-
-    /**
-     * 造一张 {@code RECEIVED} 的采购单（单 SKU 全收）：状态机不允许再关单，用作批量里的非法成员。
-     */
-    private PurchaseOrderVO fullyReceivedOrder(String suffix) {
-        Long skuId = newOnShelfSku(suffix);
-        Long supplierId = newPurchasableSupplier(suffix, skuId);
-        PurchaseOrderVO order = createDraftOrder(suffix, supplierId, skuId, "5.0000", "6.2000");
-        submitOrder(order.getId());
-        PurchaseReceiptVO created = createReceipt(order.getId());
-        PurchaseReceiptVO receipt = reloadReceipt(created.getId());
-        PurchaseReceiptItemVO line = receipt.getItems().getFirst();
-        purchaseReceiptService.confirm(
-                confirmForm(receipt.getId(), receipt.getVersion(),
-                        receiptLine(line.getId(), line.getVersion(), "5.0000")),
-                prefix + ":" + suffix + ":rc");
-        PurchaseOrderVO received = reloadOrder(order.getId());
-        assertThat(received.getStatus()).isEqualTo("RECEIVED");
-        return received;
-    }
-
-    private PurchaseOrderBatchShortCloseForm batchForm(String reason, PurchaseOrderVO... orders) {
-        List<PurchaseOrderVersionForm> rows = new ArrayList<>(orders.length);
-        for (PurchaseOrderVO order : orders) {
-            PurchaseOrderVersionForm row = new PurchaseOrderVersionForm();
-            row.setId(order.getId());
-            row.setVersion(order.getVersion());
-            rows.add(row);
-        }
-        PurchaseOrderBatchShortCloseForm form = new PurchaseOrderBatchShortCloseForm();
-        form.setOrders(rows);
-        form.setShortCloseReason(reason);
-        return form;
-    }
 
     private PurchaseReceiptItemWorkbenchQueryForm workbench(Long supplierId) {
         PurchaseReceiptItemWorkbenchQueryForm form = new PurchaseReceiptItemWorkbenchQueryForm();

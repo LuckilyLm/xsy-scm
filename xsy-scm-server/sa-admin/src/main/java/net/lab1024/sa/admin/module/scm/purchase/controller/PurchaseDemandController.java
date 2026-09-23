@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.purchase.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandAllocateForm;
@@ -43,11 +44,14 @@ public class PurchaseDemandController {
     }
 
     /**
-     * 订单汇总 / 库存缺口预览（Wave 2A，只读）。复用 {@code scm:purchase:demand:query} 权限：
-     * 它是一个查询工作台，不新增权限碎片、不写业务表、不做幂等（无副作用）。
+     * 订单汇总 / 库存缺口预览（Wave 2A，只读查询工作台：不写业务表、不做幂等）。
+     *
+     * <p>返回体带库存现有量与预留量，因此<b>同时</b>要求 {@code scm:purchase:demand:query} 与
+     * {@code scm:inventory:balance:query}（{@link SaMode#AND}）：只有采购需求查看权的人不能经此聚合接口
+     * 读到库存余额，前端隐藏按钮不作为权限保护。
      */
     @PostMapping("/summary-preview")
-    @SaCheckPermission("scm:purchase:demand:query")
+    @SaCheckPermission(value = {"scm:purchase:demand:query", "scm:inventory:balance:query"}, mode = SaMode.AND)
     public ResponseDTO<PageResult<PurchaseDemandSummaryVO>> summaryPreview(
             @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
         return ResponseDTO.ok(purchaseQueryService.summaryPreview(form));

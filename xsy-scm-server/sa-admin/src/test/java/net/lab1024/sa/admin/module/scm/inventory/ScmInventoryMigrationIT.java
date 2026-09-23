@@ -239,12 +239,13 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         // 出库波次新增 4 个**增量**方法（出库扣减 + 预留增减），仍然没有赋值型方法。
         // V34 新增 1 个：`incrementQuantityAndSetAvgCost` —— 数量仍是**增量**，
         // 只有 avg_cost 是赋值（它是活状态而非流水的净和，见 V34 头注释）。
+        // 盘点波次新增 `listActiveByWarehouse`：仍是只读回查，不改变上面的纪律。
         List<String> balanceDaoMethods = Arrays.stream(InventoryBalanceDao.class.getDeclaredMethods())
                 .map(Method::getName).sorted().toList();
         assertThat(balanceDaoMethods).containsExactly(
                 "decrementQuantity", "decrementReserved", "detail", "incrementQuantity",
                 "incrementQuantityAndSetAvgCost", "incrementReserved", "insertOnConflictDoNothing",
-                "lockByWarehouseAndSku", "queryPage", "selectByWarehouseAndSku");
+                "listActiveByWarehouse", "lockByWarehouseAndSku", "queryPage", "selectByWarehouseAndSku");
         assertThat(balanceDaoMethods)
                 .noneMatch(name -> name.toLowerCase().contains("setquantity"))
                 .noneMatch(name -> name.toLowerCase().contains("updatequantity"));

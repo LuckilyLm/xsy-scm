@@ -94,12 +94,91 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
         expectCode(() -> delivery.printOrders(draft, ordersForm(draft, List.of(d)), "w5:draft"), 41101);
     }
 
+    @Test
+    void customerStatusFilterUsesServerRecomputedStatus() {
+        var ctx = plannedRoute();
+        // 只打印 c1 的 a：c1=PARTIAL、c2=UNPRINTED
+        delivery.printOrders(ctx.route(), ordersForm(ctx.route(), List.of(ctx.a())), "w5:status-start");
+        // 两个客户都作为候选提交，服务端只保留当前确实 PARTIAL 的 c1，并按订单筛选补打 b
+        var form = customersForm(ctx.route(), List.of(ctx.c1(), ctx.c2()), "PARTIAL", "UNPRINTED");
+        var printed = delivery.printCustomers(ctx.route(), form, "w5:status-partial-fill");
+        assertThat(printed.getOrders()).singleElement().satisfies(v -> assertThat(v.getOrderId()).isEqualTo(ctx.b()));
+        assertThat(printCount(ctx.b())).isEqualTo(1);
+        assertThat(printCount(ctx.c())).isZero(); // c2 全部未打印，不属于 PARTIAL
+        assertThat(printCount(ctx.a())).isEqualTo(1); // 本次未选中，计数不变
+    }
+
+    @Test
+    void clientClaimedUnprintedCustomerIsNotReprintedAfterItGotPrinted() {
+        var ctx = plannedRoute();
+        // 前端按「c1 未打印」选好客户，但生成前 c1 已被整批打印完
+        delivery.printCustomers(ctx.route(), customersForm(ctx.route(), List.of(ctx.c1()), "ALL", "ALL"), "w5:stale-fill");
+        assertThat(deliveryQuery.customerView(ctx.route()).stream()
+                .filter(v -> v.getCustomerId().equals(ctx.c1())).findFirst().orElseThrow().getPrintStatus())
+                .isEqualTo("PRINTED");
+        // 仍按 UNPRINTED 提交：c1 被服务端排除，只剩 c2 → 展开只含 c
+        var narrow = customersForm(ctx.route(), List.of(ctx.c1(), ctx.c2()), "UNPRINTED", "ALL");
+        assertThat(delivery.printCustomers(ctx.route(), narrow, "w5:stale-narrow").getOrders())
+                .singleElement().satisfies(v -> assertThat(v.getOrderId()).isEqualTo(ctx.c()));
+        // 候选客户全部不匹配时展开为空：拒绝而不是返回「成功但零单」
+        var empty = customersForm(ctx.route(), List.of(ctx.c1()), "UNPRINTED", "ALL");
+        expectCode(() -> delivery.printCustomers(ctx.route(), empty, "w5:stale-empty"), 41101);
+    }
+
+    @Test
+    void statusScopeWithoutCustomerListPrintsRouteAndAmbiguousRequestIsRejected() {
+        var ctx = plannedRoute();
+        // 无名单 + ALL 等于「无选择重打整条线路」，参数层直接拒绝
+        var ambiguous = customersForm(ctx.route(), null, "ALL", "ALL");
+        expectCode(() -> delivery.printCustomers(ctx.route(), ambiguous, "w5:scope-ambiguous"), 40000);
+        // 收窄到 UNPRINTED 即可整线路补打：三张订单全部命中
+        var scope = customersForm(ctx.route(), null, "UNPRINTED", "ALL");
+        assertThat(delivery.printCustomers(ctx.route(), scope, "w5:scope-unprinted").getOrderCount()).isEqualTo(3);
+        assertThat(printCount(ctx.a())).isEqualTo(1);
+        assertThat(printCount(ctx.b())).isEqualTo(1);
+        assertThat(printCount(ctx.c())).isEqualTo(1);
+    }
+
+    @Test
+    void releasedOrdersAndZeroActiveCustomerStayOutOfCustomerStatus() {
+        var ctx = draftRoute();
+        // 规划前把 c2 的唯一订单移出线路：软删 + RELEASED 后 c2 无有效订单
+        var remove = version(ctx.route());
+        remove.setReason("移出");
+        delivery.removeOrder(ctx.route(), ctx.c(), remove);
+        delivery.plan(ctx.route(), version(ctx.route()));
+        assertThat(deliveryQuery.customerView(ctx.route()))
+                .singleElement().satisfies(v -> assertThat(v.getCustomerId()).isEqualTo(ctx.c1()));
+        // 整线路 UNPRINTED 补打不会带上已移出的 c
+        assertThat(delivery.printCustomers(ctx.route(), customersForm(ctx.route(), null, "UNPRINTED", "ALL"), "w5:released")
+                .getOrders()).extracting("orderId").containsExactlyInAnyOrder(ctx.a(), ctx.b());
+        // 已被移出（零有效订单）的客户不能生成虚假 UNPRINTED 客户
+        var ghost = customersForm(ctx.route(), List.of(ctx.c2()), "UNPRINTED", "ALL");
+        expectCode(() -> delivery.printCustomers(ctx.route(), ghost, "w5:released-ghost"), 41101);
+    }
+
     // ---- fixtures ----
+
+    private DeliveryPrintCustomersForm customersForm(Long id, List<Long> customerIds, String statusFilter, String orderFilter) {
+        var form = new DeliveryPrintCustomersForm();
+        form.setVersion(deliveryQuery.detail(id).getRoute().getVersion());
+        form.setCustomerIds(customerIds);
+        form.setCustomerStatusFilter(statusFilter);
+        form.setOrderPrintFilter(orderFilter);
+        return form;
+    }
 
     private record Ctx(Long route, Long sku, Long c1, Long c2, Long a, Long b, Long c) {
     }
 
     private Ctx plannedRoute() {
+        var ctx = draftRoute();
+        delivery.plan(ctx.route(), version(ctx.route()));
+        return ctx;
+    }
+
+    /** 同样三张订单的线路，但停在 DRAFT：用于验证移出订单后重新组单的聚合口径。 */
+    private Ctx draftRoute() {
         Long sku = newOnShelfSku("PRN");
         Long c1 = newCustomer();
         Long c2 = newCustomer();
@@ -111,7 +190,6 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
         Long c = confirmedSalesOrder(c2, sku, "3.0000", "3.0000");
         Long route = route();
         add(route, List.of(a, b, c));
-        delivery.plan(route, version(route));
         return new Ctx(route, sku, c1, c2, a, b, c);
     }
 

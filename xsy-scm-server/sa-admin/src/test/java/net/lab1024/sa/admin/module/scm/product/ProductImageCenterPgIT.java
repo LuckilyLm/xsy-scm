@@ -19,6 +19,7 @@ import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,10 @@ import static org.assertj.core.api.Assertions.*;
 
 /**
  * 图片中心的真实库集成测试：验证写操作全部收敛到既有同步链路，
- * public/image/ 前缀、每 SPU 至多一张主图、image_type 与 is_primary 同义等约束不被绕过。
+ * public/image/ 前缀与「每 SPU 至多一张主图」不被绕过。
+ *
+ * <p>V49 之后主图唯一事实只有 {@code is_primary}（由部分唯一索引在库里保证）；
+ * {@code image_type} 只表达图集 / 详情图的内容角色，不随主图切换而变。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -124,7 +128,7 @@ class ProductImageCenterPgIT {
     }
 
     @Test
-    void batchBindAddsDetailImageWithoutStealingPrimary() {
+    void batchBindAddsGalleryImageWithoutStealingPrimary() {
         Long spuId = newSpu();
         var bind = new ProductImageCenterForms.BatchBindForm();
         var item = new ProductImageCenterForms.BindItem();
@@ -138,8 +142,9 @@ class ProductImageCenterPgIT {
         assertThat(after.getImages()).hasSize(2);
         assertThat(after.getImages()).filteredOn(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).hasSize(1);
         assertThat(after.getImages().getFirst().getPrimaryFlag()).isTrue();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='PRIMARY' AND deleted=FALSE",
-                Integer.class, spuId)).isEqualTo(1);
+        // 非主图的绑定行不再被降级成 DETAIL：图集 / 详情图是内容角色，与谁是主图无关
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='GALLERY' AND deleted=FALSE",
+                Integer.class, spuId)).isEqualTo(2);
     }
 
     @Test
@@ -161,8 +166,11 @@ class ProductImageCenterPgIT {
         var after = service.query(spuId);
         assertThat(after.getImages().get(1).getPrimaryFlag()).isTrue();
         assertThat(after.getImages().get(0).getPrimaryFlag()).isFalse();
-        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, second)).isEqualTo("PRIMARY");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='PRIMARY' AND deleted=FALSE",
+        // 降级后的旧主图仍是图集图：类型不随主图状态漂移，is_primary 是唯一主图事实
+        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, second)).isEqualTo("GALLERY");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='GALLERY' AND deleted=FALSE",
+                Integer.class, spuId)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND is_primary AND deleted=FALSE",
                 Integer.class, spuId)).isEqualTo(1);
     }
 
@@ -247,6 +255,50 @@ class ProductImageCenterPgIT {
         setPrimary.setSpuId(-999L);
         setPrimary.setImageId(1L);
         conflict(() -> service.setPrimary(setPrimary), 40420);
+    }
+
+    /**
+     * V49 迁移形状：「类型 = 主图」的一致性 CHECK 已移除，主图唯一性改由部分唯一索引保证，
+     * 服务层新写入的行归类为图集图。
+     */
+    @Test
+    void galleryModelConstraintsAreApplied() {
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname='ck_product_image_type_primary'", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE indexname='uq_product_image_primary_spu'", Integer.class)).isEqualTo(1);
+        Long spuId = newSpu();
+        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE spu_id=? AND deleted=FALSE",
+                String.class, spuId)).isEqualTo("GALLERY");
+    }
+
+    @Test
+    void legacyPrimaryValueIsRejectedAndDetailStillWritable() {
+        Long spuId = newSpu();
+        Long image = imageIds(spuId).getFirst();
+        // 详情图仍是合法取值（类型只表达内容角色，与 is_primary 无关）
+        jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", image);
+        // 迁移后写回 PRIMARY 必须直接失败，否则会悄悄出现第二个「主图事实」
+        assertThatThrownBy(() -> jdbc.update("UPDATE product_image SET image_type='PRIMARY' WHERE id=?", image))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void primaryUniquenessIgnoresImageType() {
+        Long spuId = newSpu();
+        var bind = new ProductImageCenterForms.BatchBindForm();
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(key("e"));
+        item.setPrimaryFlag(false);
+        item.setSortOrder(1);
+        bind.setItems(new ArrayList<>(List.of(item)));
+        service.batchBind(bind);
+        Long second = imageIds(spuId).get(1);
+        jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", second);
+        // 唯一索引只看 is_primary：图片归类成详情图也不能绕出「两张主图」
+        assertThatThrownBy(() -> jdbc.update("UPDATE product_image SET is_primary=TRUE WHERE id=?", second))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private void conflict(Runnable action, int code) {

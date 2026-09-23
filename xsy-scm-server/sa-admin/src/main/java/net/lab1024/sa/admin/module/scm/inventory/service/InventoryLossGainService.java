@@ -310,7 +310,8 @@ public class InventoryLossGainService {
         }
         try {
             MessageSendForm form = new MessageSendForm();
-            form.setMessageType(MessageTypeEnum.MAIL.getValue());
+            // 业务类型走 messageType：前端按它决定「查看业务单据」跳转，不解析中文标题。
+            form.setMessageType(MessageTypeEnum.SCM_INVENTORY_LOSS_GAIN.getValue());
             form.setReceiverUserType(Integer.parseInt(parts[0]));
             form.setReceiverUserId(Long.parseLong(parts[1]));
             form.setTitle("报损报溢单被驳回");

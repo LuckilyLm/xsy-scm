@@ -252,7 +252,8 @@ public abstract class OperateLogAspect {
             }
             filterArgs.add(arg);
         }
-        return JSON.toJSONString(filterArgs);
+        // 脱敏集中在切面唯一的序列化出口，避免各业务 Controller 各遮一套
+        return OperateLogParamMask.mask(JSON.toJSONString(filterArgs));
     }
 
 

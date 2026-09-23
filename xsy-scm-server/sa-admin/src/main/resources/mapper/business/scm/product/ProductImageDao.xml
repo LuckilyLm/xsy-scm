@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductImageDao">
+    <!--
+      降级旧主图：只改 is_primary。V49 之后 image_type 表达内容角色（图集 / 详情图），
+      不再随主图状态改写——顺带置成 DETAIL 会把一张图集图静默降级成详情图。
+    -->
     <update id="clearPrimary">
         UPDATE product_image
-        SET is_primary= FALSE, image_type = 'DETAIL'
+        SET is_primary = FALSE
         WHERE spu_id = #{spuId}
           AND deleted = FALSE
           AND is_primary = TRUE

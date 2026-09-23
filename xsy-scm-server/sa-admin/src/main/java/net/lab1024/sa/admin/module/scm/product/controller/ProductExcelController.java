@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.product.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImportResultVO;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuVO;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSpuVO;
 import net.lab1024.sa.admin.module.scm.product.service.ProductImportService;
+import net.lab1024.sa.admin.module.scm.product.service.ProductImportService.ImportMode;
 import net.lab1024.sa.admin.module.scm.product.service.ProductQueryService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 public class ProductExcelController {
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final int EXPORT_MAX_ROWS = 100000;
+    /** 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。 */
+    private static final String PRODUCT_UPDATE_PERMISSION = "scm:product:update";
 
     private final ProductImportService importService;
     private final ProductQueryService query;
@@ -40,9 +44,13 @@ public class ProductExcelController {
 
     @GetMapping("/import/template")
     @SaCheckPermission("scm:product:import")
-    public void template(HttpServletResponse response) throws IOException {
-        var content = importService.buildTemplate();
-        SmartResponseUtil.setDownloadFileHeader(response, "商品导入模板.xlsx", (long) content.length);
+    public void template(@RequestParam(required = false, defaultValue = "CREATE") ImportMode mode,
+                         HttpServletResponse response) throws IOException {
+        // 更新模板带定位键、会改写既存商品，因此下载模板也要编辑权
+        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(PRODUCT_UPDATE_PERMISSION);
+        var content = importService.buildTemplate(mode);
+        SmartResponseUtil.setDownloadFileHeader(response,
+                (mode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
         response.getOutputStream().write(content);
         response.flushBuffer();
     }
@@ -50,7 +58,10 @@ public class ProductExcelController {
     @PostMapping("/import")
     @SaCheckPermission("scm:product:import")
     @OperateLog
-    public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file) throws Exception {
+    public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
+                                                            @RequestParam(required = false, defaultValue = "CREATE") ImportMode mode) throws Exception {
+        // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
+        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(PRODUCT_UPDATE_PERMISSION);
         if (file.isEmpty()) return ResponseDTO.userErrorParam("导入文件不能为空");
         var name = file.getOriginalFilename();
         if (name == null || !name.toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx"))
@@ -58,7 +69,7 @@ public class ProductExcelController {
         if (file.getSize() > MAX_FILE_SIZE) return ResponseDTO.userErrorParam("导入文件不能超过 10 MiB");
         var security = securityFileService.checkFile(file);
         if (!security.getOk()) return ResponseDTO.error(security);
-        return ResponseDTO.ok(importService.importFile(file));
+        return ResponseDTO.ok(importService.importFile(file, mode));
     }
 
     @PostMapping("/export")
@@ -80,6 +91,10 @@ public class ProductExcelController {
         var out = new ArrayList<ProductExportExcelVO>();
         for (var sku : skus) {
             var vo = new ProductExportExcelVO();
+            vo.setSpuId(text(spu.getSpuId()));
+            vo.setSpuVersion(text(spu.getVersion()));
+            vo.setSkuId(text(sku.getSkuId()));
+            vo.setSkuVersion(text(sku.getVersion()));
             vo.setSpuCode(spu.getSpuCode());
             vo.setSpuName(spu.getName());
             vo.setAlias(spu.getAlias());
@@ -108,6 +123,8 @@ public class ProductExcelController {
 
     private ProductExportExcelVO baseRow(ProductSpuVO spu, String tagNames) {
         var vo = new ProductExportExcelVO();
+        vo.setSpuId(text(spu.getSpuId()));
+        vo.setSpuVersion(text(spu.getVersion()));
         vo.setSpuCode(spu.getSpuCode());
         vo.setSpuName(spu.getName());
         vo.setAlias(spu.getAlias());
@@ -120,5 +137,10 @@ public class ProductExcelController {
         vo.setSpuStatus(spu.getStatus());
         vo.setTagNames(tagNames);
         return vo;
+    }
+
+    /** 定位键列取空即为空串：SKU 缺失的兜底行没有 SKU 定位键，不能成为可导入的更新行。 */
+    private String text(Number value) {
+        return value == null ? "" : String.valueOf(value);
     }
 }

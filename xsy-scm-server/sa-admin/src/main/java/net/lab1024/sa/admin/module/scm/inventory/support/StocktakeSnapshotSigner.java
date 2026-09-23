@@ -20,12 +20,16 @@ import java.util.List;
  * 账面量、模板版本、导出人、有效期）编成一段令牌随模板带出，导入时用它做「受保护来源集合」并与持锁读取的
  * 当前余额逐项核验。令牌用 HMAC-SHA256 签名，用户改一个字节即校验失败，故 Excel 里的元数据列不可信也无妨。
  *
- * <p><b>密钥来源</b>：{@code scm.inventory.stocktake.snapshot.secret}，生产必须用环境变量覆盖默认值
- * （AGENTS §24：不把真实密钥写进源码 / 配置）。默认值只保证本地开发与 IT 可运行，
- * 它保护的是「导入完整性」而非外部系统凭据，泄露不构成对外部资源的越权。
+ * <p><b>密钥来源</b>：{@code scm.inventory.stocktake.snapshot.secret}。默认值 {@code DEV_SECRET}
+ * 只保证本地开发与 IT 可运行；pre / prod profile 下缺失或仍等于该公开默认值会让构造直接抛错、
+ * 启动失败（见 {@link #requireNonPublicSecret}），生产必须用环境变量
+ * {@code SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET} 显式配置（AGENTS §24：不把真实密钥写进源码 / 配置）。
  */
 @Component
 public class StocktakeSnapshotSigner {
+
+    /** 仓库里公开的占位密钥：只允许在非生产 profile 下兜底。 */
+    static final String DEV_SECRET = "xsy-scm-stocktake-snapshot-dev-secret-change-in-production";
 
     /**
      * 来源集合里的一行：导入持锁核验时逐项比对的权威事实。
@@ -65,9 +69,28 @@ public class StocktakeSnapshotSigner {
 
     public StocktakeSnapshotSigner(ObjectMapper json,
                                    @Value("${scm.inventory.stocktake.snapshot.secret:"
-                                           + "xsy-scm-stocktake-snapshot-dev-secret-change-in-production}") String secret) {
+                                           + DEV_SECRET + "}") String secret,
+                                   @Value("${spring.profiles.active:dev}") String activeProfiles) {
+        requireNonPublicSecret(secret, activeProfiles);
         this.json = json;
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * pre / prod 下密钥必须显式配置且不等于仓库默认值，否则构造失败即启动失败。
+     *
+     * <p>只看 profile 字符串而不是 {@code SystemEnvironment#isProd()}：后者把 {@code pre} 判为非生产，
+     * 而预发布同样是不能用公开密钥的环境。口径与 {@code FileConfig#validateCloudConfig} 保持一致。
+     */
+    static void requireNonPublicSecret(String secret, String activeProfiles) {
+        boolean production = java.util.Arrays.stream(activeProfiles.split(","))
+                .map(String::trim)
+                .anyMatch(p -> p.equals("pre") || p.equals("prod") || p.equals("production"));
+        if (production && (secret == null || secret.isBlank() || DEV_SECRET.equals(secret))) {
+            throw new IllegalStateException("scm.inventory.stocktake.snapshot.secret must be overridden with a"
+                    + " private value in pre/prod (set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET);"
+                    + " the built-in default is public and would make the snapshot signature unprotected");
+        }
     }
 
     /** 序列化为 {@code base64url(json).base64url(hmac)}。 */

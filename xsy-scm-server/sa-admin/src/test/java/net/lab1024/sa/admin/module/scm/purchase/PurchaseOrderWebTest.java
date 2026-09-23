@@ -107,8 +107,10 @@ class PurchaseOrderWebTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("30 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
-    void allThirtyEndpointsHaveNativePermissions() {
+    @DisplayName("34 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
+    void allEndpointsHaveNativePermissions() {
+        // 计数只是登记增量（30 → 34：缺口预览 / 导出 / 批量少收关单等后续波次端点）；
+        // 真正的不变量是下面逐方法的断言 —— 新增公开端点漏声明权限会立刻失败。
         int count = 0;
         for (Class<?> controller : List.of(PurchaseDemandController.class, PurchaseOrderController.class,
                 PurchaseReceiptController.class, WarehouseController.class)) {
@@ -125,7 +127,7 @@ class PurchaseOrderWebTest {
                 count++;
             }
         }
-        assertThat(count).isEqualTo(30);
+        assertThat(count).isEqualTo(34);
     }
 
     // ------------------------------------------------------------------

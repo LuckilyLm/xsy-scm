@@ -111,72 +111,105 @@
       的 LEFT JOIN 谓词（放 ON 而非 WHERE，否则左连退化成内连会把无余额的 SKU 整行藏掉）。
 
       Q13 单位门禁：按 (sku_id, warehouse_id) 连余额，比对 b.unit 与订单销售单位；
-      不一致即 UNIT_MISMATCH 且缺口为 null，绝不换算、绝不猜折算率。
+      不一致即 UNIT_MISMATCH 且差额为 null，绝不换算、绝不猜折算率。
 
-      可用量 / 缺口 / 状态全部用 NUMERIC 在 SQL 里算好（4 位定点），Java/前端不做浮点减法。
+      预留必须拆成两半，否则缺口虚增：inventory_balance.reserved_quantity 是该 (仓库, SKU) 的
+      全量 ACTIVE 预留，其中就包含「本批订单自己 reserveStock 占用的量」。直接用
+      quantity - reserved_quantity 会把已经为这些订单留好的货当成不可用库存。因此
+      otherReserved = reserved_quantity - selectedOrderReservedQuantity，
+      本批可用 = quantity - otherReserved = available_quantity + selectedOrderReservedQuantity，
+      差额（stock_comparison_gap）= max(本批需求 - 本批可用, 0)。
+      selectedOrderReservedQuantity 只读既有预留事实 inventory_reservation（ACTIVE +
+      SALES_ORDER_ITEM + 来源单落在同一确认窗口），不新造第二套预留记录。它按 oi.sku_id 相关，
+      组内恒等，因此写成标量子查询而不是普通 LEFT JOIN —— 后者会让
+      SUM(oi.actual_quantity) 随预留行数翻倍。
+
+      可用量 / 差额 / 状态全部用 NUMERIC 在 SQL 里算好（4 位定点），Java/前端不做浮点减法。
       非聚合列一律显式进 GROUP BY：inventory_balance 的部分唯一索引不构成 PG 的 GROUP BY
       函数依赖，靠 FD 推断会静默少列报错；每个 SKU 至多一行余额、至多一行主档，分组键不会拆行。
     -->
     <select id="summaryPreview"
             resultType="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO">
-        SELECT oi.sku_id,
-               k.sku_code,
-               p.name                                   AS product_name,
-               k.spec_name                              AS sku_name,
-               cat.name                                 AS category_name,
-               oi.sale_unit_snapshot                    AS demand_unit,
-               b.unit                                   AS inventory_unit,
-               COUNT(DISTINCT oi.order_id)              AS source_order_count,
-               COUNT(oi.id)                             AS source_line_count,
-               SUM(oi.actual_quantity)                  AS order_demand_quantity,
-               COALESCE(b.quantity, 0)                  AS on_hand_quantity,
-               COALESCE(b.reserved_quantity, 0)         AS reserved_quantity,
-               (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) AS available_quantity,
+        SELECT s.*,
+               (s.reserved_quantity - s.selected_order_reserved_quantity)      AS other_reserved_quantity,
+               (s.available_quantity + s.selected_order_reserved_quantity)     AS stock_available_for_selected_orders,
                CASE
-                   WHEN b.unit IS NOT NULL AND b.unit &lt;&gt; oi.sale_unit_snapshot THEN NULL
-                   ELSE GREATEST(SUM(oi.actual_quantity)
-                                     - (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)), 0)
-               END                                      AS shortage_against_available,
+                   WHEN s.inventory_unit IS NOT NULL AND s.inventory_unit &lt;&gt; s.demand_unit THEN NULL
+                   ELSE GREATEST(s.order_demand_quantity
+                                     - (s.available_quantity + s.selected_order_reserved_quantity), 0)
+               END                                                             AS stock_comparison_gap,
                CASE
-                   WHEN b.unit IS NULL THEN 'NO_BALANCE'
-                   WHEN b.unit &lt;&gt; oi.sale_unit_snapshot THEN 'UNIT_MISMATCH'
-                   WHEN (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) = 0 THEN 'ZERO_STOCK'
-                   WHEN SUM(oi.actual_quantity) > (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) THEN 'SHORTAGE'
+                   WHEN s.inventory_unit IS NULL THEN 'NO_BALANCE'
+                   WHEN s.inventory_unit &lt;&gt; s.demand_unit THEN 'UNIT_MISMATCH'
+                   WHEN (s.available_quantity + s.selected_order_reserved_quantity) = 0 THEN 'ZERO_STOCK'
+                   WHEN s.order_demand_quantity
+                            &gt; (s.available_quantity + s.selected_order_reserved_quantity) THEN 'SHORTAGE'
                    ELSE 'STOCK_ENOUGH'
-               END                                      AS calculation_status
-        FROM sales_order_item oi
-                 JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
-                 LEFT JOIN product_sku k ON k.id = oi.sku_id
-                 LEFT JOIN product_spu p ON p.id = k.spu_id
-                 LEFT JOIN product_category cat ON cat.id = p.category_id
-                 LEFT JOIN inventory_balance b
-                           ON b.sku_id = oi.sku_id
-                               AND b.warehouse_id = #{query.warehouseId}
-                               AND b.deleted = FALSE
-        WHERE o.status = 'CONFIRMED'
-          AND oi.deleted = FALSE
-          AND oi.actual_quantity IS NOT NULL
-          AND oi.actual_quantity &gt; 0
-          AND o.confirmed_at &gt;= #{query.startAt}
-          AND o.confirmed_at &lt; #{query.endAt}
-        <if test="query.categoryId != null">
-            AND p.category_id = #{query.categoryId}
-        </if>
-        <if test="query.keyword != null and query.keyword != ''">
-            AND (p.spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
-                OR p.name ILIKE CONCAT('%', #{query.keyword}, '%')
-                OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
-        </if>
-        GROUP BY oi.sku_id,
-                 oi.sale_unit_snapshot,
-                 b.unit,
-                 b.quantity,
-                 b.reserved_quantity,
-                 k.sku_code,
-                 k.spec_name,
-                 p.name,
-                 cat.name
-        ORDER BY shortage_against_available DESC NULLS LAST, oi.sku_id ASC
+               END                                                             AS calculation_status
+        FROM (
+                 SELECT oi.sku_id,
+                        k.sku_code,
+                        p.name                                   AS product_name,
+                        k.spec_name                              AS sku_name,
+                        cat.name                                 AS category_name,
+                        oi.sale_unit_snapshot                    AS demand_unit,
+                        b.unit                                   AS inventory_unit,
+                        COUNT(DISTINCT oi.order_id)              AS source_order_count,
+                        COUNT(oi.id)                             AS source_line_count,
+                        SUM(oi.actual_quantity)                  AS order_demand_quantity,
+                        COALESCE(b.quantity, 0)                  AS on_hand_quantity,
+                        COALESCE(b.reserved_quantity, 0)         AS reserved_quantity,
+                        (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) AS available_quantity,
+                        COALESCE((SELECT SUM(r.quantity)
+                                  FROM inventory_reservation r
+                                  WHERE r.deleted = FALSE
+                                    AND r.status = 'ACTIVE'
+                                    AND r.source_document_type = 'SALES_ORDER_ITEM'
+                                    AND r.warehouse_id = #{query.warehouseId}
+                                    AND r.sku_id = oi.sku_id
+                                    /* 「本批」= 与外层同源的确认窗口内的订单集合 */
+                                    AND r.source_document_id IN
+                                        (SELECT w.id
+                                         FROM sales_order w
+                                         WHERE w.deleted = FALSE
+                                           AND w.status = 'CONFIRMED'
+                                           AND w.confirmed_at &gt;= #{query.startAt}
+                                           AND w.confirmed_at &lt; #{query.endAt})),
+                                 0)                                                          AS selected_order_reserved_quantity
+                 FROM sales_order_item oi
+                          JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
+                          LEFT JOIN product_sku k ON k.id = oi.sku_id
+                          LEFT JOIN product_spu p ON p.id = k.spu_id
+                          LEFT JOIN product_category cat ON cat.id = p.category_id
+                          LEFT JOIN inventory_balance b
+                                    ON b.sku_id = oi.sku_id
+                                        AND b.warehouse_id = #{query.warehouseId}
+                                        AND b.deleted = FALSE
+                 WHERE o.status = 'CONFIRMED'
+                   AND oi.deleted = FALSE
+                   AND oi.actual_quantity IS NOT NULL
+                   AND oi.actual_quantity &gt; 0
+                   AND o.confirmed_at &gt;= #{query.startAt}
+                   AND o.confirmed_at &lt; #{query.endAt}
+                 <if test="query.categoryId != null">
+                     AND p.category_id = #{query.categoryId}
+                 </if>
+                 <if test="query.keyword != null and query.keyword != ''">
+                     AND (p.spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                         OR p.name ILIKE CONCAT('%', #{query.keyword}, '%')
+                         OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+                 </if>
+                 GROUP BY oi.sku_id,
+                          oi.sale_unit_snapshot,
+                          b.unit,
+                          b.quantity,
+                          b.reserved_quantity,
+                          k.sku_code,
+                          k.spec_name,
+                          p.name,
+                          cat.name
+             ) s
+        ORDER BY stock_comparison_gap DESC NULLS LAST, s.sku_id ASC
     </select>
 
     <select id="detail" resultMap="demandVoMap">

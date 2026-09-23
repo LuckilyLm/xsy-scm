@@ -24,6 +24,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandAllo
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandGenerateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchShortCloseForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderUpdateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderVersionForm;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
@@ -815,6 +816,89 @@ public abstract class ScmW5PgITBase {
     protected PurchaseReceiptVO submittedOrderReceipt(Long orderId) {
         submitOrder(orderId);
         return createReceipt(orderId);
+    }
+
+    /**
+     * 造一张处于 {@code PARTIALLY_RECEIVED} 的采购单：两行两 SKU，A 收齐、B 欠收。
+     *
+     * <p>单行订单永远满足不了「至少一行已收 且 至少一行未收齐」，批量关单的合法成员必须是这种混合态。
+     */
+    protected PurchaseOrderVO partiallyReceivedOrder(String suffix) {
+        Long skuA = newOnShelfSku(suffix);
+        Long skuB = newOnShelfSku(suffix + "b");
+        Long supplierId = newSupplier(suffix);
+        linkSupplierSkus(supplierId, skuA, skuB);
+
+        Long customerId = newCustomer();
+        Long soA = confirmedSalesOrder(customerId, skuA, "4.0000", "4.0000");
+        Long soB = confirmedSalesOrder(customerId, skuB, "6.0000", "6.0000");
+        PurchaseDemandEntity demandA = generateDemandFor(supplierId, soA);
+        PurchaseDemandEntity demandB = generateDemandFor(supplierId, soB);
+
+        PurchaseOrderAddForm form = new PurchaseOrderAddForm();
+        form.setSupplierId(supplierId);
+        form.setWarehouseId(seedWarehouseId());
+        form.setPurchaserId(anyEmployeeId());
+        form.setRemark("Wave2B 批量关单");
+        form.setItems(new ArrayList<>(List.of(
+                item(skuA, "4.0000", "6.2000", allocation(demandA, "4.0000")),
+                item(skuB, "6.0000", "6.2000", allocation(demandB, "6.0000")))));
+        PurchaseOrderVO order = purchaseOrderService.create(form, prefix + ":" + suffix + ":po");
+
+        submitOrder(order.getId());
+        PurchaseReceiptVO created = createReceipt(order.getId());
+        PurchaseReceiptVO receipt = reloadReceipt(created.getId());
+        List<PurchaseReceiptConfirmForm.Item> lines = new ArrayList<>(receipt.getItems().size());
+        for (PurchaseReceiptItemVO line : receipt.getItems()) {
+            // A（4.0000）收齐，B（6.0000）只收 2.0000 → 混合收付
+            String quantity = line.getSkuId().equals(skuA) ? "4.0000" : "2.0000";
+            lines.add(receiptLine(line.getId(), line.getVersion(), quantity));
+        }
+        purchaseReceiptService.confirm(
+                confirmForm(receipt.getId(), receipt.getVersion(),
+                        lines.toArray(new PurchaseReceiptConfirmForm.Item[0])),
+                prefix + ":" + suffix + ":rc");
+
+        PurchaseOrderVO partially = reloadOrder(order.getId());
+        assertThat(partially.getStatus()).isEqualTo("PARTIALLY_RECEIVED");
+        return partially;
+    }
+
+    /**
+     * 造一张 {@code RECEIVED} 的采购单（单 SKU 全收）：状态机不允许再关单，用作批量里的非法成员。
+     */
+    protected PurchaseOrderVO fullyReceivedOrder(String suffix) {
+        Long skuId = newOnShelfSku(suffix);
+        Long supplierId = newPurchasableSupplier(suffix, skuId);
+        PurchaseOrderVO order = createDraftOrder(suffix, supplierId, skuId, "5.0000", "6.2000");
+        submitOrder(order.getId());
+        PurchaseReceiptVO created = createReceipt(order.getId());
+        PurchaseReceiptVO receipt = reloadReceipt(created.getId());
+        PurchaseReceiptItemVO line = receipt.getItems().getFirst();
+        purchaseReceiptService.confirm(
+                confirmForm(receipt.getId(), receipt.getVersion(),
+                        receiptLine(line.getId(), line.getVersion(), "5.0000")),
+                prefix + ":" + suffix + ":rc");
+        PurchaseOrderVO received = reloadOrder(order.getId());
+        assertThat(received.getStatus()).isEqualTo("RECEIVED");
+        return received;
+    }
+
+    /**
+     * 批量少收关单请求：多张单共用一个原因，版本取各自回读值。
+     */
+    protected PurchaseOrderBatchShortCloseForm batchForm(String reason, PurchaseOrderVO... orders) {
+        List<PurchaseOrderVersionForm> rows = new ArrayList<>(orders.length);
+        for (PurchaseOrderVO order : orders) {
+            PurchaseOrderVersionForm row = new PurchaseOrderVersionForm();
+            row.setId(order.getId());
+            row.setVersion(order.getVersion());
+            rows.add(row);
+        }
+        PurchaseOrderBatchShortCloseForm form = new PurchaseOrderBatchShortCloseForm();
+        form.setOrders(rows);
+        form.setShortCloseReason(reason);
+        return form;
     }
 
     /**

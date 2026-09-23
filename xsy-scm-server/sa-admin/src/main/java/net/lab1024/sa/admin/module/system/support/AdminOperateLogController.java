@@ -11,6 +11,7 @@ import net.lab1024.sa.base.common.domain.RequestUser;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.constant.SwaggerTagConst;
+import net.lab1024.sa.base.module.support.operatelog.OperateLogBusinessType;
 import net.lab1024.sa.base.module.support.operatelog.OperateLogService;
 import net.lab1024.sa.base.module.support.operatelog.domain.OperateLogQueryForm;
 import net.lab1024.sa.base.module.support.operatelog.domain.OperateLogVO;
@@ -31,9 +32,9 @@ public class AdminOperateLogController extends SupportBaseController {
      * （方法级 {@code @SaCheckPermission}）与对应领域读取权，避免以商品查询权限拿到完整通用日志。
      */
     private static final Map<String, String> BUSINESS_READ_PERMISSIONS = Map.of(
-            "PRODUCT", "scm:product:query",
-            "CUSTOMER", "scm:customer:query",
-            "DELIVERY_ROUTE", "scm:delivery:route:query"
+            OperateLogBusinessType.PRODUCT, "scm:product:query",
+            OperateLogBusinessType.CUSTOMER, "scm:customer:query",
+            OperateLogBusinessType.DELIVERY_ROUTE, "scm:delivery:route:query"
     );
 
     @Resource
@@ -54,12 +55,25 @@ public class AdminOperateLogController extends SupportBaseController {
     @GetMapping("/operateLog/detail/{operateLogId}")
     @SaCheckPermission("support:operateLog:detail")
     public ResponseDTO<OperateLogVO> detail(@PathVariable Long operateLogId) {
-        return operateLogService.detail(operateLogId);
+        ResponseDTO<OperateLogVO> responseDTO = operateLogService.detail(operateLogId);
+        if (!Boolean.TRUE.equals(responseDTO.getOk())) {
+            return responseDTO;
+        }
+        // 日志正文含领域对象明细，能识别归属时必须再要求该领域读取权；识别不出的一律按通用日志权限处理
+        OperateLogVO log = responseDTO.getData();
+        for (String businessType : OperateLogBusinessType.recognize(log.getParam(), log.getUrl())) {
+            StpUtil.checkPermission(BUSINESS_READ_PERMISSIONS.get(businessType));
+        }
+        return responseDTO;
     }
 
     @Operation(summary = "分页查询当前登录人信息")
     @PostMapping("/operateLog/page/query/login")
     public ResponseDTO<PageResult<OperateLogVO>> queryByPageLogin(@RequestBody OperateLogQueryForm queryForm) {
+        ResponseDTO<PageResult<OperateLogVO>> guardResult = checkBusinessFilterPermission(queryForm);
+        if (guardResult != null) {
+            return guardResult;
+        }
         RequestUser requestUser = SmartRequestUtil.getRequestUser();
         queryForm.setOperateUserId(requestUser.getUserId());
         queryForm.setOperateUserType(requestUser.getUserType().getValue());

@@ -25,6 +25,12 @@ import static net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode.
 public class ProductImageSyncManager {
     /** 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。 */
     private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
+    /**
+     * 商品图集：本管理器写入的行都来自商品表单 / 图片中心的图集列表，因此取值固定。
+     * V49 之后 image_type 只表达内容角色，<b>不</b>再派生自 primaryFlag——主图唯一事实是 is_primary，
+     * 否则「切主图」会顺带改写图片类型，等于保留第二个主图事实源。
+     */
+    private static final String IMAGE_TYPE_GALLERY = "GALLERY";
     private final ProductImageDao dao;
     private final FileService files;
 
@@ -84,7 +90,7 @@ public class ProductImageSyncManager {
         entity.setFileName(file.getFileName());
         entity.setFileSize(file.getFileSize()==null ? null : file.getFileSize().longValue());
         entity.setPrimaryFlag(form.getPrimaryFlag()); entity.setSortOrder(form.getSortOrder());
-        entity.setImageType(Boolean.TRUE.equals(form.getPrimaryFlag()) ? "PRIMARY" : "DETAIL");
+        entity.setImageType(IMAGE_TYPE_GALLERY);
         entity.setUpdatedAt(OffsetDateTime.now()); entity.setUpdatedBy(ScmOperator.current()); return entity;
     }
 }
