@@ -1,6 +1,6 @@
 # 项目进度
 
-最后更新：2026-09-22
+最后更新：2026-09-23
 
 ## 当前状态
 
@@ -24,14 +24,14 @@
 | 移动加权成本（V34） | 后端与浏览器已验证 | `inventory_balance.avg_cost`（Q3 裁决变更）、入库加权 / 出库不变均价但流水带成本、期初回填、余额页均价与金额列、**V37 重放流水修正零成本余额** |
 | B7 数据大屏（V28） | 后端已验证 + 浏览器已验证（V1 视觉版） | 经营/库存/采购/趋势四只读聚合、Screen Theme 1920×1080 等比缩放、10 面板 + 3 图趋势带、组件化拆分、Header 入口新窗口打开 |
 | 商品中心 PCO-1 主档增强（V38–V39） | 后端与浏览器已验证 | 主档扩展字段与助记码搜索、计量单位 / 商品标签字典、列表高级筛选、批量上下架 / 改分类 / 打标签、商品与字典删除保护；Excel 与图片中心属 PCO-2 |
-| 商品中心 PCO-2 导入导出 + 图片中心（V44–V45） | 后端 IT + 前端单测 / 类型 / 构建已验证；E2E 场景已落地待全栈环境执行 | Excel 模板下载 / 整批事务导入 / 按条件导出、图片中心（`image_type` 图集分组、单商品与按文件名批量维护、主图唯一）、独立菜单与权限；见追加记录 2026-09-22 |
-| 采购订单缺口预览 Wave 2A（无迁移） | 后端 IT + 前端契约 / 类型 / Lint 已验证；E2E 场景已落地待全栈环境执行 | 只读「订单汇总 / 库存缺口预览」并入采购需求页 Tab、`POST /scm/purchase/demand/summary-preview` 复用 `generate()` 取数口径、缺口与可用量后端算好、0 迁移 0 菜单变更；见追加记录 2026-09-22 |
-| 采购操作效率 Wave 2B（无迁移） | 后端单元 4/4 + IT 6/6 + 前端契约 8/8 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 批量少收关单（整批原子、version 冲突显式拒绝）、采购单后端算列导出 + 前端本地记忆列勾选、纯前端打印、收货「按单据 / 按商品」双视角只读工作台；0 迁移 0 新权限，复用 `scm:purchase:short-close` / `:query` / `:receipt:query`；见追加记录 2026-09-22 |
-| 订单录单效率 Wave 3（无迁移） | 后端 Web 7/7 + IT 2/2 + 单元 1/1 + 前端契约 5/5 + 模型 6/6 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 草稿本地恢复、历史订单「复用为新单」（只读 detail + 当前价重解，不引后端复制命令）、明细「最近已确认订单价」只读旁证（CONFIRMED-only、confirmed_at 倒序、订单分组 limit、单位不一致仅提示）；0 迁移 0 新权限，复用 `scm:order:query` / `:add`；见追加记录 2026-09-22 |
-| 业务待办与站内提醒 Wave 4（V46） | 后端单元 4/4 + 报损报溢 IT 15/15 + 前端契约 4/4 / 类型 / Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 首页「业务待办」只读 Pull（`GET /scm/dashboard/todo`，按登录人权限裁剪卡片、复用各领域既有分页查询读 total，无权卡片省略、有权零任务返回 0，不写任何业务表）；报损报溢驳回经原生 `t_message` 站内信通知录单人（同步写在驳回事务内、恰一条，不新建第二套消息中心/消息表）；1 data-only 迁移（菜单/权限 1100-1101 `scm:todo:query`，仅授 SUPER_ADMIN），库存读写路径 / Q7 / Q13 / 状态机零改动；见追加记录 2026-09-22 |
-| 配送打印追踪 Wave 5（V47） | 后端 IT 5/5（打印 3 + 线路 2）+ 前端契约 4/4 + 合并单测 131/131 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 配送线路详情新增「配送打印」标签：**按订单 / 按客户两个只读视角**（`GET /routes/{id}/orders-view`、`/customers-view`，客户视角聚合打印状态 PRINTED/UNPRINTED/PARTIAL）+ 正式生成打印登记（`POST /routes/{id}/print/orders`、`/print/customers`，带 Idempotency-Key、复用通用 `idempotency_record`）；`delivery_route_order` 加 `print_count/last_printed_at/last_printed_by`（1 迁移、0 新表 0 新菜单/权限，复用 `scm:delivery:route:query`/`:print`）；打印仅计次、**不扣库存、不改线路状态、不做 L3 发车/出库/GPS/签收**；见追加记录 2026-09-22 |
-| 客户 360° 业务上下文 Wave 7（无迁移） | 后端 IT 6/6 + 前端契约 4/4 + 合并单测 139/139 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | 客户详情扩为 5 Tab（基础资料 / 最近订单 / 常购商品 / 协议价 / 可售商品）**只读整合、以同一 customerId 为上下文、复用各领域既有查询接口不建第二套**；仅新增 `GET /scm/customer/{id}/frequent-skus` 只读聚合（CONFIRMED-only、按 SKU+单位分组、订购量标注且**不跨单位求和**、最近成交价取**最新非均值**、空价不回退、同单重复 SKU 不增订单次数）；权限为 `scm:customer:query` ∧ `scm:order:query`（SaMode.AND，不因挂客户页降权）；0 迁移 0 新表 0 新权限；见追加记录 2026-09-22 |
-| 操作日志业务上下文与表格 / 查询体验 Wave 8（无迁移） | 后端 PgIT 6/6 + 读权限 Guard 单元 6/6 + 前端契约 9/9 + 合并单测 148/148 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已落地待全栈环境执行 | **A 通用操作日志按业务对象精确下钻**：`OperateLogQueryForm` 加 `businessType`/`businessId`、`OperateLogMapper.xml` 对 PRODUCT/CUSTOMER/DELIVERY_ROUTE 按既有 param/url 结构做 STRPOS 精确匹配（不新建审计表、不改写入侧），`AdminOperateLogController` 按业务类型白名单校验读权限、无匹配类型回 `1=0` 不放全表；前端 `operate-log-list.vue` 接收并校验路由业务类型 / ID，首载 / 刷新 / 换对象三处重套、重置不残留、脏行逐行 try/catch 退化，商品 / 客户 / 配送线路详情各带类型入口，`operate-log-mask.ts` 展示前递归脱敏 password/token 等；**B 列表查询条件按用户本地记忆**：`query-filter-key.ts` + `query-filter-memory.ts` 复用既有 `xsy-scm:...:${employeeId}:...` 偏好约定（不建 user_preference 表），customer-list 接入（查询存 / 重置清 / 挂载恢复回第 1 页）、深链详情不接入避免污染；0 迁移 0 新表 0 新权限；见追加记录 2026-09-22 |
+| 商品中心 PCO-2 导入导出 + 图片中心（V44–V45） | 后端 IT + 前端单测 / 类型 / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | Excel 模板下载 / 整批事务导入（CREATE + UPDATE 既存商品维护）/ 按条件导出、图片中心（`image_type` 图集 GALLERY / 详情 DETAIL 分组由 V49 重建、主图唯一性回到 `is_primary` 单一事实、单商品与按文件名批量维护）、独立菜单与权限；见追加记录 2026-09-22 |
+| 采购订单缺口预览 Wave 2A（无迁移） | 后端 IT + 前端契约 / 类型 / Lint 已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | 只读「订单汇总 / 库存缺口预览」并入采购需求页 Tab、`POST /scm/purchase/demand/summary-preview` 复用 `generate()` 取数口径、缺口与可用量后端算好、0 迁移 0 菜单变更；见追加记录 2026-09-22 |
+| 采购操作效率 Wave 2B（无迁移） | 后端单元 4/4 + IT 6/6 + 前端契约 8/8 / 类型 / Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | 批量少收关单（整批原子、version 冲突显式拒绝）、采购单后端算列导出 + 前端本地记忆列勾选、纯前端打印、收货「按单据 / 按商品」双视角只读工作台；0 迁移 0 新权限，复用 `scm:purchase:short-close` / `:query` / `:receipt:query`；见追加记录 2026-09-22 |
+| 订单录单效率 Wave 3（无迁移） | 后端 Web 7/7 + IT 2/2 + 单元 1/1 + 前端契约 5/5 + 模型 6/6 / 类型 / Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | 草稿本地恢复、历史订单「复用为新单」（只读 detail + 当前价重解，不引后端复制命令）、明细「最近已确认订单价」只读旁证（CONFIRMED-only、confirmed_at 倒序、订单分组 limit、单位不一致仅提示）；0 迁移 0 新权限，复用 `scm:order:query` / `:add`；见追加记录 2026-09-22 |
+| 业务待办与站内提醒 Wave 4（V46） | 后端单元 4/4 + 报损报溢 IT 15/15 + 前端契约 4/4 / 类型 / Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | 首页「业务待办」只读 Pull（`GET /scm/dashboard/todo`，按登录人权限裁剪卡片、复用各领域既有分页查询读 total，无权卡片省略、有权零任务返回 0，不写任何业务表）；报损报溢驳回经原生 `t_message` 站内信通知录单人（同步写在驳回事务内、恰一条，不新建第二套消息中心/消息表）；1 data-only 迁移（菜单/权限 1100-1101 `scm:todo:query`，仅授 SUPER_ADMIN），库存读写路径 / Q7 / Q13 / 状态机零改动；见追加记录 2026-09-22 |
+| 配送打印追踪 Wave 5（V47） | 后端 IT 5/5（打印 3 + 线路 2）+ 前端契约 4/4 + 合并单测 131/131 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | 配送线路详情新增「配送打印」标签：**按订单 / 按客户两个只读视角**（`GET /routes/{id}/orders-view`、`/customers-view`，客户视角聚合打印状态 PRINTED/UNPRINTED/PARTIAL）+ 正式生成打印登记（`POST /routes/{id}/print/orders`、`/print/customers`，带 Idempotency-Key、复用通用 `idempotency_record`）；`delivery_route_order` 加 `print_count/last_printed_at/last_printed_by`（1 迁移、0 新表 0 新菜单/权限，复用 `scm:delivery:route:query`/`:print`）；打印仅计次、**不扣库存、不改线路状态、不做 L3 发车/出库/GPS/签收**；见追加记录 2026-09-22 |
+| 客户 360° 业务上下文 Wave 7（无迁移） | 后端 IT 6/6 + 前端契约 4/4 + 合并单测 139/139 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | 客户详情扩为 5 Tab（基础资料 / 最近订单 / 常购商品 / 协议价 / 可售商品）**只读整合、以同一 customerId 为上下文、复用各领域既有查询接口不建第二套**；仅新增 `GET /scm/customer/{id}/frequent-skus` 只读聚合（CONFIRMED-only、按 SKU+单位分组、订购量标注且**不跨单位求和**、最近成交价取**最新非均值**、空价不回退、同单重复 SKU 不增订单次数）；权限为 `scm:customer:query` ∧ `scm:order:query`（SaMode.AND，不因挂客户页降权）；0 迁移 0 新表 0 新权限；见追加记录 2026-09-22 |
+| 操作日志业务上下文与表格 / 查询体验 Wave 8（无迁移） | 后端 PgIT 6/6 + 读权限 Guard 单元 6/6 + 前端契约 9/9 + 合并单测 148/148 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | **A 通用操作日志按业务对象精确下钻**：`OperateLogQueryForm` 加 `businessType`/`businessId`、`OperateLogMapper.xml` 对 PRODUCT/CUSTOMER/DELIVERY_ROUTE 按既有 param/url 结构做 STRPOS 精确匹配（不新建审计表、不改写入侧），`AdminOperateLogController` 按业务类型白名单校验读权限、无匹配类型回 `1=0` 不放全表；前端 `operate-log-list.vue` 接收并校验路由业务类型 / ID，首载 / 刷新 / 换对象三处重套、重置不残留、脏行逐行 try/catch 退化，商品 / 客户 / 配送线路详情各带类型入口，`operate-log-mask.ts` 展示前递归脱敏 password/token 等，并由 `OperateLogParamMask` 在**写入侧服务端**对敏感字段名递归脱敏（结构保持、只处理 param 文本），库里存的即是脱敏值；**B 列表查询条件按用户本地记忆**：`query-filter-key.ts` + `query-filter-memory.ts` 复用既有 `xsy-scm:...:${employeeId}:...` 偏好约定（不建 user_preference 表），customer-list 接入（查询存 / 重置清 / 挂载恢复回第 1 页）、深链详情不接入避免污染；0 迁移 0 新表 0 新权限；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
 | F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收，读侧未闭合 | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`getFileList()` 仍无逐用户过滤 |
@@ -82,14 +82,143 @@
 - **大屏未覆盖的验收**：仅验证了列表页与只读聚合的渲染；`/scm/screen/data/*` 四个接口仍是**只读渲染级**验证，
   没有跑过「跨天写流程后再核对环比数字」这一层。其数据源侧的写流程（出库 / 盘点 / 报损报溢 / 调拨 /
   规格转换 / 入库加权）已由 `e2e/scm-inventory-write.spec.ts` 覆盖。
-- **商品中心 PCO-2 已实现（Wave 1，V44–V45）**：Excel 导入导出、图片中心（`image_type` 图集分组与批量维护）、
-  独立菜单权限均已落地并通过后端 IT / 前端单测 / 类型 / 生产构建。唯一遗留：新增的 PCO-2 Playwright 场景
-  需在有当前库的全栈环境（后端对当前 schema + Web 应用 + 对象存储）下跑一次浏览器验收，本轮无该运行环境未执行。
-- **E2E 账号脚本的默认库已过期**：`tools/e2e_accounts.py` 默认 `XSY_V2_PG_DB=xsy_scm`，该库停留在 V17
-  校验和冲突之前（F0 及以后未应用）；不带该变量跑 Playwright 会在陈旧库里建临时账号，登录得到 `30001`。
-  运行入口必须显式带上 `XSY_V2_PG_DB` 指向当前开发库，或把脚本默认值与后端 profile 对齐后去掉这条约束。
+- **商品中心 PCO-2 已实现并通过全栈验收（Wave 1，V44–V45 + V49）**：Excel 导入（CREATE / UPDATE 两种模式）、
+  导出、图片中心（`image_type` 图集 / 详情分组与批量维护）、独立菜单权限均已落地，后端 IT / 前端单测 / 类型 /
+  生产构建 / 真实浏览器场景全部执行通过（见「2026-09-23 Wave 1–8 审计修复与全栈验收」）。
+- **E2E 账号脚本不再猜库**：`tools/e2e_accounts.py` 原先有一个过期的默认库（停在 F0 之前），不带变量运行会在
+  陈旧库里建临时账号、登录得到 `30001`。审计轮已改为**未显式提供 `XSY_V2_PG_DB` 即拒绝运行**（`sys.exit` 并说明原因），
+  把「跑在错误的库上」从静默错误变成启动期失败。运行入口仍需带上该变量指向当前开发库。
 
 ## 追加记录
+
+### 2026-09-23 Wave 1–8 审计修复与全栈验收（`docs/xsy-scm-wave1-8-audit-fix-plan.md`）
+
+- **范围与纪律**：按该审计计划的 §14 固定顺序逐项修复 Wave 1–8 的 P0 / P1 / P2 问题，并补齐 §12 的验收缺口。
+  零历史迁移改写（图片模型冲突以新增 `V49` 追加修正）、零 Sa-Token 绕过、零库存余额直改、零 `inventory_movement` 改写、
+  零第二套业务事实、打印不等于发货 / 出库、缺口预览不升级为采购建议、不进配送 L3。§17 的六条业务规则一律未自行裁决。
+- **Flyway**：新增 **1** 个迁移 `V49__scm_product_image_type_gallery.sql`（结构 + 数据），当前最大版本 V49、连续无空洞；
+  `tools/migration_checksum_guard.py check` 通过（历史迁移 0 漂移 / 0 缺失 / 0 改名）。空库 V1→V49 在一次性 IT 库上实际
+  跑通（`ScmPurchaseMigrationIT` / `ScmInventoryMigrationIT` / `ScmPurchasePermissionMigrationIT` 等迁移级 IT 同一轮全绿）。
+- **逐项修复**：
+  1. **Wave 2A 权限交集（P0）**：`POST /scm/purchase/demand/summary-preview` 原只要 `scm:purchase:demand:query`，
+     返回体却含库存现有量与预留量——只有采购需求查看权的人可经聚合接口读库存。改为
+     `@SaCheckPermission(value={"scm:purchase:demand:query","scm:inventory:balance:query"}, mode=SaMode.AND)`，
+     前端隐藏按钮不再充当权限。测试：`PurchaseDemandSummaryPreviewPermissionTest` 3/3 + 浏览器反例用例 13。
+  2. **Wave 2A 自身预留口径（P0）**：`availableQuantity = quantity - reserved_quantity` 把**本批订单自己**已占的
+     ACTIVE 预留当成不可用库存，缺口虚增。SQL 内拆出 `selectedOrderReservedQuantity`（读既有
+     `inventory_reservation`：ACTIVE + `SALES_ORDER_ITEM` + 来源单落在同一确认窗口）与 `otherReservedQuantity`，
+     本批可用 = `quantity - otherReserved`；派生列改名 `stockComparisonGap` 并注释「不是净采购建议」。
+     全部 PostgreSQL NUMERIC 计算，Java / 前端不做浮点减法。测试：`PurchaseDemandSummaryPreviewIT` 11/11。
+  3. **Wave 6 复制盘点 pageSize（P0）**：复制历史盘点一次拉 2000 行余额，被后端 `@Max(100)` 拒成 400。
+     提取纯函数 `resolveStocktakeCopyUnits`（按页 100 取、找齐即停、翻完仍缺的 SKU 显性返回并整单拒绝），
+     不为单页放宽通用查询上限、不静默丢行。测试：`w6-stocktake-copy-units.test.mjs` + 浏览器复制盘点用例。
+  4. **Wave 6 生产密钥 fail-fast（P1）**：`StocktakeSnapshotSigner` 的仓库内默认密钥在 pre / prod 下会静默充当
+     快照签名密钥。构造期新增 `requireNonPublicSecret(secret, activeProfiles)`：profile 含 `pre` / `prod` /
+     `production` 且密钥缺失或仍等于公开默认值即抛 `IllegalStateException`（启动失败），口径与
+     `FileConfig#validateCloudConfig` 一致；生产用环境变量 `SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET` 配置。
+     计划要求的另外两件交付物本轮补齐：四份 `application.yaml` 显式声明 `scm.inventory.stocktake.snapshot.secret`
+     （`dev` / `test` 取仓库内开发默认值，`pre` / `prod` 取 `${SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET:}` 的空默认值，
+     让缺失在启动期即失败而不是静默退回公开密钥），生产部署说明落在 `deploy/README.md`（变量 → 配置键 → 缺失后果）。
+     测试：`StocktakeSnapshotSignerTest` 11/11。
+  5. **Wave 3 历史价缓存串数据（P0）**：「最近已确认订单价」缓存键含明细行序号，切 SKU / 删行上移 / 切客户会
+     显示上一个 SKU 或上一个客户的价。改为 `customerId:skuId` 复合键纯模型（`recentPriceKey` 及读写函数，
+     区分「未查过」与「查过但为空」，请求异常必落回加载态且不写缓存以便重试），浮层挂到抽屉内部、
+     关抽屉与换客户时收起并作废在途结果。测试：`w3-recent-price-cache.test.mjs` + 浏览器用例 9 / 11（11 专测切 SKU 与
+     切客户两条串数据路径）。
+  6. **Wave 4 待办 deep-link（P1）**：首页卡片跳列表只改路由、目标页不读 query，导致「数字说有 7 条、列表是全量」。
+     新增 `query-deep-link.ts`（逐键白名单解析，白名单外按未提供、绝不把任意串透传给后端；无 query 进入时
+     整体回落默认筛选，不残留上一次 deep-link 条件），列表页首载与再次进入都重套；待办数字与列表条件同源同口径。
+     测试：`w4-todo-deep-link.test.mjs` + `scm-query-form-submit.test.mjs` + 浏览器待办用例。
+  7. **Wave 4 消息 → 业务单据（P1）**：报损报溢驳回消息的 `messageType` 原写死 `MAIL`，前端无法识别跳转。
+     新增 `MessageTypeEnum.SCM_INVENTORY_LOSS_GAIN(3)`（复用原生 `t_message.message_type` + `data_id`，不建第二套
+     消息中心、不加列），发送端改写业务类型；前端 `message-business-link.ts` **只认数值类型**（不用中文标题判断）
+     产出站内路由，目标页接口自带权限校验，用户失去权限后旧消息仍跳不出数据。测试：`w4-message-business-link.test.mjs` + 浏览器驳回消息用例。
+  8. **Wave 1 图片类型模型（P1）**：V44 用 `image_type='PRIMARY'` 与 `is_primary` 同时表达主图，最新计划改为
+     `GALLERY`/`DETAIL`。按「不改历史迁移」新增 V49：移除两条旧 CHECK → 存量 `PRIMARY` 改 `GALLERY` → 加新 CHECK →
+     先降级重复主图（保留同 SPU 内 id 最小的一张并 `RAISE NOTICE`）→ 建「每 SPU 至多一张主图」唯一索引。
+     实体 / DAO / 同步管理器与图片中心页同步改为 `is_primary` 单一事实。测试：`ProductImageCenterPgIT` 11/11。
+  9. **Wave 1 UPDATE 导入（P1）**：原导入只有 CREATE，计划 §7.2 的更新语义整体缺失。新增 `mode=CREATE|UPDATE`：
+     模板带 `模板版本` + 四个定位键（`SPU ID`/`SPU版本`/`SKU ID`/`SKU版本`）、未出现的 SKU 不删、空白列保持原值、
+     `(清空)` 仅放开六列可清空字段、锁定与派生列 `FIELD_LOCKED`、跨 SPU 的 SKU 报 `SKU_NOT_OWNED`、
+     任一行版本冲突整批 `VERSION_CONFLICT(40921)` 0 行写入；UPDATE 额外要求 `scm:product:update`（下载更新模板同样）。
+     弹窗按模式切换文案与模板，结果 VO 带 `mode` / `updatedProducts`。测试：`ProductImportServiceTest` 22/22、
+     `ProductImportUpdatePgIT`（新增真实库）4/4、浏览器 CREATE / UPDATE 两个真实页面往返用例。
+  10. **Wave 5 `customerStatusFilter`（P1）**：按客户正式打印原把客户状态当输入直接用，预览后计数已变仍会按过期状态重打，
+     且零选择 + ALL 会无选择地重打整条线路。改为 `customerIds` 只是候选范围、状态在线路锁内按当前 ACTIVE 订单
+     重新聚合判定（口径与只读 `customerView` 一致），`ALL|PRINTED|UNPRINTED|PARTIAL` 由 `@Pattern` 约束，
+     零选择 + ALL 与展开后空清单一律拒绝；聚合用 `LinkedHashMap` 保证两次同请求生成同一份清单。
+     测试：`DeliveryPrintTrackingIT` 7/7 + 浏览器 PARTIAL 只补未打印用例。
+  11. **Wave 2B 原子回滚 IT（P2）**：补 `PurchaseShortCloseRollbackIT` 2/2（批量少收关单中途失败时整批回滚、
+     已关单与新增关单记录都不残留）。
+  12. **Wave 5 并发打印 IT（P2）**：补 `DeliveryPrintConcurrencyIT` 2/2（并发正式打印不丢计次、幂等键重放只计一次）。
+  13. **Wave 8 权限与服务端脱敏硬化（P2）**：操作日志按业务对象下钻的读权限白名单收敛到
+     `OperateLogBusinessType`（sa-base 单一枚举，前端 `message-const` 同值镜像由单测核对），无匹配业务类型回 `1=0`；
+     新增 `OperateLogParamMask` 挂在 `OperateLogAspect` 唯一的序列化出口，按字段名递归脱敏 password / token /
+     secret 等并保持 JSON 结构，库里存的即脱敏值（此前只在前端展示时脱敏）。测试：`OperateLogParamMaskTest` 5/5、
+     `OperateLogBusinessTypeTest` 3/3、`AdminOperateLogBusinessGuardTest` 6/6、浏览器零权限账号反例用例。
+  14. **Wave 7（仅回归）**：无代码改动，纳入全量回归与真实浏览器验收。
+- **验收基建（§12）**：E2E 不再靠外部注入一次性令牌、缺令牌即整组 skip（那正是「文件存在被当成已验收」的成因），
+  改为 `e2e/scm-e2e-account.ts` 自给自足链路：脚本建临时管理员 / 只读 / 零角色 / 扣权账号、走真实登录
+  （验证码 + SM4 传输加密 + Sa-Token）、令牌只活在内存里、`afterAll` 删账号；`e2e/scm-test-base.ts` 把
+  「0 未捕获异常 / 0 未处理 promise rejection」收敛成 page fixture 的统一口径（rejection 经 init script
+  转成未捕获异常进入同一通道），用例不再各自挂监听导致漏挂；`tools/e2e_accounts.py` 改为未显式提供目标库即拒绝运行，
+  把「跑在过期库上」从静默错误变成启动期失败；`tools/ts_baseline_ratchet.py` 遮蔽绝对路径使基线身份跨检出可移植；
+  `playwright.config.ts` 关闭 `fullyParallel`（文件内用例共享模块级夹具）。
+- **测试结果（本轮实跑）**：后端全量回归 **884 通过 / 0 失败 / 0 错误 / 5 跳过**（跳过的 5 项为需要云端对象存储的
+  F0 IT，与 Wave 1–8 无关），在同一轮内先于空库迁移校验；前端 `node --test` **176/176**（第三轮新增
+  `w3-draft-off-page` 3 条，前两轮为 173/173）、`npm run lint`
+  **0 error**（3 warning 均在未触碰的历史文件）、`tools/ts_baseline_ratchet.py check` **新增诊断 0 / scm 区 0**、
+  `npm run build` 成功。
+- **全栈浏览器验收（§12.3）**：Playwright 全量 **96 通过 / 7 跳过 / 0 失败**（12.8 分钟、串行 1 worker；第三轮按
+  最终代码全量重跑，前一轮为 95/7/0，多出的 1 条即新增的未保存草稿离页用例）。
+  跳过的 7 项是 `f0-file-storage.spec.ts` 在本地存储模式下的按设计跳过（对象存储为云端时才执行），**Wave 1–8 的
+  场景无一 skip**。逐 Wave 覆盖：商品 CREATE / UPDATE 导入（两个模式各自真实上传：CREATE 建一个 SPU 两行 SKU
+  的商品并验证含一行错分类编码的批次整批 0 写入，UPDATE 验证空白列保原值与过期定位键重放被拒）、图片中心
+  GALLERY / DETAIL、设主图、批量维护（8/8）；2A 双权限与缺权限被拒（用例 13）；2B 批量少收 / 导出 /
+  按商品收货 + 真实点击行内与批量打印（用例 14，离线捕获打印文档）；3 草稿恢复 + 刷新与路由切换各自可归因的
+  离页落盘 + 历史复用 + 切 SKU / 切客户不串（12/12）；4 待办数字与列表条件一致、驳回消息、消息进业务单据；5 按订单 / 按客户打印、
+  PARTIAL 只补 UNPRINTED、GET 预览不计次、POST 正式生成计次；6 模板导出、填实盘导入、快照漂移整批拒绝、
+  复制历史盘点、复制后实盘为空（5/5）；7 客户 360° 5 Tab 与权限不足不泄露；8 日志上下文下钻、ID 精确匹配、
+  刷新不丢上下文、查询记忆按用户隔离（4/4）。本轮把 §12.3 逐条与用例清单对表时发现三处「文件存在但场景没真跑」，
+  已各自补成真实浏览器用例（均不借用其他用例留下的数据，单独执行亦成立）：Wave 1 商品 Excel CREATE 原本只验到
+  「选文件前禁止提交」的弹窗闸门、从未真的以新增模式写库；Wave 2B「打印」原本只验到入口按钮；Wave 3 的
+  切 SKU 与切客户两条串数据路径原本没被同一条完整链路同时锁死。统一口径 0 pageerror / 0 未处理 rejection / 0 权限绕过由
+  上述 fixture 与负向用例共同钉死，权限负向均用**真实非管理员临时账号**验证，不只用 SUPER_ADMIN。
+  **第二轮独立复核补的三项不在上面的数字里**：2A 缺口预览的**反向**权限运行时用例（保留库存查询、扣掉采购需求查询）、
+  Wave 3 未保存草稿的**离页三通道**（`beforeunload` / `onBeforeRouteLeave` / `onBeforeUnmount` + 浏览器刷新与路由切换用例
+  + 前端契约单测）、Wave 6 快照密钥的**配置声明与生产部署说明**（四份 `application.yaml` + `deploy/README.md`）。
+  这三项是在那次全量跑之后落进代码的。**定向复跑结果（2026-09-23）据实记录**：后端定向 **18/18**（含真实库
+  `ProductImportUpdatePgIT` 4/4，同时证明新写入的 `test/application.yaml` 配置键下 Spring 上下文与 Flyway 正常启动）、
+  权限注解与快照签名密钥测试全绿；前端契约 `w3-draft-off-page` 3/3。
+  该轮受影响 spec 定向跑 **35 通过 / 1 失败 / 1 未执行**，唯一失败是本轮**新增**的浏览器用例 12，第三轮已定论为
+  **真实界面缺陷而非测试编排问题**：本次会话**首次**挂载订单抽屉时，「发现上次未提交的订单草稿」确认框的「恢复」按钮
+  点不到（截图里抽屉是空白表单且完全看不到确认框）。根因是 `open()` 先置 `visible = true`（Vue 异步更新，抽屉的
+  teleport 容器稍后才挂到 `body`），随后同步调用 `Modal.confirm`——确认框容器反而**先进** `body`，两者 z-index
+  同为 1000，后入的抽屉整体压在确认框之上；同一会话的第二次新建（抽屉容器已存在）不受影响，所以既有的用例 10 一直是绿的。
+  修复是给该确认框显式抬高 `zIndex`（与仓库内 `employee-password-dialog` / `message-receiver-modal` 浮于抽屉之上的
+  同一量级），并做了**因果核验**：临时删掉这一行复跑即恢复为红，加回即绿，确认该断言是承重的而非顺带通过。
+  用例 12 同时重写为两条离页通道**各自可归因**：路由切换后直接读本地草稿存储（全程未点「关闭」，只有
+  `onBeforeRouteLeave` 能写），刷新前先改一个只存在于该版的备注值（刷新后草稿带新值才证明是 `beforeunload` 写的），
+  避免把 keep-alive 保留组件状态误当成防丢已验收。因此 2A 反向权限组、Wave 6 配置/部署交付物与 Wave 3 离页场景
+  **均已取证**，**未取证即不计入已验收**。同一轮还把三处「缺夹具即 `test.skip`」改为硬失败（Wave 6 挑不到带余额仓库、
+  Wave 7 无客户、Wave 8 无商品），全仓 E2E 仅剩 `f0-file-storage.spec.ts` 的云端存储条件 skip。
+- **与审计计划的偏差**：仅一处口径差异——商品**普通列表导出**（24 列，分类路径 + 标签名称）与**可回导的 UPDATE
+  维护模板**（25 列，分类编码 + 标签编码）是刻意不同的两套列集合，回传普通导出会得到逐列 `HEADER_INVALID`。
+  计划未规定二者必须同构，本轮按「安全拒绝」现状保留并提交裁决（见下）。其余 §7 各项均按计划要求落地。
+- **需要业务裁决（未自行实现）**：
+  (a) 商品「导出即可回导」是否作为产品契约（若是，需要第三份「维护导出」口径或让导出携带编码列）；
+  (b) §17 六条（在途采购是否抵扣净采购建议、已履约量入公式、非标品未实重是否入采购、多仓需求分配采购仓、
+  打印是否追踪当前内容版本、是否需要字段级 before/after 审计表）本轮一律未动，缺口预览因此仍只是「库存对比差额」。
+- **本轮另发现的环境侧缺陷（已就地修复，非业务代码）**：带显式主键的旁路种子数据会让 PostgreSQL identity 序列
+  落在最大值之后，后续新增分类撞唯一索引并被 `catch (DuplicateKeyException)` 误映射成「编码重复」
+  （`ProductCategoryService` / `ProductSpuService`）。已用一次性 `setval` 扫描修正序列；**建议**（未改，避免作废
+  本轮已取证的回归结果）：这两处 `catch` 应索引冲突前先判定冲突约束，或在 AGENTS §8 补一条
+  「显式主键种子写入后必须同步序列」。
+- **剩余风险**：预留的并发压测、阈值预警推送、M2 地图路线、F0 读侧（FA-1～FA-3）、W6-2 小程序不变；
+  本轮全栈验收跑在本地存储 + 本地 PostgreSQL 栈上，F0 云端模式下的 7 条用例仍需在真实云端环境单独执行。
+  另有两项待处理：(1) E2E 生成上传文件所需的 `tools/patch_product_*_xlsx.py` / `tools/fill_stocktake_template.py`
+  落在 `.gitignore` 的 `/tools/*` 之下，干净检出跑不了这几条上传类用例，需要显式入库；(2) 导入的「分类必须是三级」
+  只在写入路径生效（单元格校验只查存在与 ENABLED），因此填 1/2 级分类编码会表现为整批写入错误而非逐列校验错误。
 
 ### 2026-09-22 操作日志业务上下文与表格 / 查询体验（Wave 8，无迁移）：按业务对象精确下钻 + 查询条件本地记忆
 
@@ -100,7 +229,7 @@
 - **API**：**无新增端点**，仅扩展既有 `POST /support/operateLog/queryPage`（`OperateLogQueryForm` 新增可选 `businessType`/`businessId`）。`OperateLogMapper.xml` 按业务类型分支做 STRPOS 精确匹配：PRODUCT 命中 `"spuId":<id>,` / `"spuId":<id>}`，CUSTOMER 命中 `"customerId":<id>` 边界，DELIVERY_ROUTE 命中 `/scm/delivery/routes/<id>` 与 `/<id>/` 两种 url 形态；**未知业务类型回 `1=0`，绝不退化成放全表**。`AdminOperateLogController` 以业务类型→读权限白名单校验：带 businessType/businessId 时必须持有一个既有领域读权限（`scm:product:query`/`scm:customer:query`/`scm:delivery:route:query`）才能按对象下钻，`administratorFlag` 仍绕过；无匹配类型即拒绝。
 - **页面**：`operate-log-list.vue` 接收并**校验**路由 `businessType`（须在 `['PRODUCT','CUSTOMER','DELIVERY_ROUTE']`）/ `businessId`（须正整数），首次加载、刷新与切换对象（`watch` 路由业务参数）三处都重套上下文并回第一页，重置只按当前路由重算、旧本地筛选不得覆盖业务视图；把逐行 `JSON.parse(response)` + `uaparser` 提取为 `normalizeRow`，单行脏数据 try/catch 退化为 `null` 而不整页失败。`operate-log-detail-modal.vue` 展示参数 / 返回结果前 `maskedJson → maskSensitive`。商品 `product-detail.vue`、客户 `customer-detail.vue`、配送线路 `route-detail.vue` 各加「操作日志」入口（`v-privilege="'support:operateLog:query'"`），带各自 businessType 跳统一日志页。`customer-list.vue` 接入 `useQueryFilterMemory`（查询 `save`、重置 `clear`、挂载 `load` 后强制 `pageNum:1`）。**新增纯函数**：`operate-log-mask.ts`、`query-filter-key.ts`、`query-filter-memory.ts`（组合式，仅 customer-list 调用；深链 `customer-detail.vue` 刻意不接入，避免旧筛选污染 customerId 上下文）。
 - **测试结果**：后端 `OperateLogBusinessFilterPgIT` **6/6**（三类精确匹配 + 前缀数字不误伤 + 无权限 30005 + 未知类型不放全表）、`AdminOperateLogBusinessGuardTest` **6/6**（读权限白名单）；前端新增 `w8-operate-log-audit-contract.test.mjs`（6）+ `w8-query-filter-memory.test.mjs`（3）= **9/9**，合并 `npm run test` **148/148**；`npm run lint` 0 error（3 warning 均在未触碰的历史文件）；`vue-tsc` 本 Wave 文件无新增诊断（已消除 businessType/businessId 赋值、routeBusinessContext 联合类型、normalizeRow/maskedJson 隐式 any）；`npm run build` 成功（2m）。
-- **浏览器 / E2E 验证**：本环境无全栈后端 + 真实登录态，Playwright 场景**未执行**（与前 7 个 Wave 同口径，标为「已落地待全栈环境执行」）；脱敏、下钻、查询记忆的行为正确性由后端 IT + 前端契约 / 纯函数单测钉死。**关键约束**：本地存储模式下上传/静态资源无 guard，本 Wave 不涉及文件访问。
+- **浏览器 / E2E 验证**：场景为 `e2e/scm-wave8-log-context.spec.ts`（临时账号真实登录：商品详情「操作日志」入口带 PRODUCT 上下文下钻、日志页刷新与重置不丢上下文且返回行落在该客户、零权限账号按业务对象查询被服务端拒绝且不泄露任何行、客户列表查询条件按登录人分别记忆）。执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录（Wave 8 组 4/4 通过、0 pageerror）。脱敏、下钻、查询记忆同时由后端 IT + 前端契约 / 纯函数单测钉死。**关键约束**：本地存储模式下上传/静态资源无 guard，本 Wave 不涉及文件访问。
 - **未完成 / 遗留**：(1) **归属覆盖有天然上限**——操作日志按 `param`/`url` 里是否含该 ID 做 STRPOS 匹配，**新建类操作（对象 ID 尚不存在，如 add 的入参不含 id）与更早的、未写入该 ID 的历史记录无法归属到该对象**，故某对象的时间线**不保证是其全部历史**；已在列表页用 `a-alert` 显性声明该限制，不改写历史日志去「凑齐」。(2) 查询记忆仅接入 customer-list，其余列表页按需增量。(3) 深链 `businessId` 与后端既有权限耦合点：下钻要求持有对应领域读权限，若后续引入正式非管理员角色需连同 §F0-DEBT-01 读侧一并复核。
 - **与计划的偏差**：计划 §12.1/§12.2 明确 Wave 8「0 迁移、0 新表」，实际一致；未新建 `scm_operate_log_relation` 之类关联表，而是复用 `t_operate_log` 既有 `param`/`url` 结构做读侧精确匹配——这是刻意的最小改动，代价即上述归属覆盖上限（已在 UI 显性提示而非假装完整）。查询记忆不落 `user_preference` 表，符合「第一版只放浏览器本地」的计划取向。
 
@@ -115,9 +244,9 @@
 - **测试结果**：
   - 后端：新增 `CustomerFrequentSkuIT`（继承 `ScmW3PgITBase`，真实 PostgreSQL + 直接调 `SalesOrderService` 造单） **6/6**：① 聚合订单次数 / 订购量、**最近成交价取最新（改价单 9.0000）而非均值 5.1 或最旧 1.2**；② 草稿 / 待确认 / 已取消订单**不进入统计**；③ `limit` 按频次高→低截断；④ `confirmed_at` 在窗口外（200 天前）不计数、放宽到 365 天计入；⑤ `locked_unit_price` 为 NULL 时 `recent_unit_price` 返回 null 不回退；⑥ 未知客户 40430。既有 `ScmInventoryStocktakeIT` 等无回归。
   - 前端：新增 `test/w7-customer-360-contract.test.mjs` **4/4**（常购是带 `days/limit` 的只读 GET 且非 POST、5 Tab 复用既有查询接口且不触达 `customerApi` 写方法、各 Tab 锁同一 customerId + `ensure()` 守卫 + watcher 里 `resetAllTabs`、常购数量列为原始 4 位「订购量」+ 单位级 row-key + 价格 `formatAmountOrDash`）；合并 `npm run test` = **139/139**；改动文件 ESLint 0 错、`vue-tsc` **本 Wave 文件 0 条诊断**、`npm run build` **退出码 0**；`python tools/migration_checksum_guard.py check` **PASS**（48 个迁移，drift 0 / missing 0）。
-- **浏览器 / E2E**：新增 `e2e/scm-customer-360.spec.ts`（真实管理员令牌下去客户详情深链、断言 5 Tab 可见、切「常购商品」等 `frequent-skus` 响应且断言为 GET + `code=0`、无 pageerror）。**本轮未执行**：需对当前代码重新构建部署后端 + 一次性令牌的全栈环境（共享 E2E 库当前口径过期）；未设 `W7_E2E_ADMIN_TOKEN` 时整体 skip。
+- **浏览器 / E2E**：`e2e/scm-customer-360.spec.ts`（临时账号真实登录进客户详情深链、断言 5 Tab 可见、切「常购商品」等 `frequent-skus` 响应且断言为 GET + `code=0`、缺 `scm:order:query` 的角色拿不到常购数据、0 pageerror）。原实现靠外部注入的一次性管理员令牌门控、缺令牌即整组 skip，审计轮已改为与其余用例同款的自给自足临时账号链路；执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录。
 - **与计划的偏差**：① 严格零迁移（计划 §11.5 即「默认不需要」），未新建任何快照表；② 常购聚合的订单次数用 `COUNT(DISTINCT order_id)`、最近价用 `ROW_NUMBER()=1` 取最新，均在一条 CTE SQL 内完成，不在 Java 侧二次聚合；③ 「最近订单」直接复用列表页 `orderApi.query` 的既有分页与口径，未新造订单查询端点。
-- **未完成 / 遗留**：Wave 7 场景的全栈浏览器验收（见上，gated）；「无价格权限不泄露敏感价格」目前由**接口级 SaMode.AND 双权限**保证（无 `scm:order:query` 即整个常购端点 403），未做「有订单查询权但价格字段级脱敏」的更细粒度分层——若后续引入正式非管理员业务角色，需连同 §F0-DEBT-01 读侧一并评估。
+- **未完成 / 遗留**：「无价格权限不泄露敏感价格」目前由**接口级 SaMode.AND 双权限**保证（无 `scm:order:query` 即整个常购端点 403），未做「有订单查询权但价格字段级脱敏」的更细粒度分层——若后续引入正式非管理员业务角色，需连同 §F0-DEBT-01 读侧一并评估。
 
 ### 2026-09-22 盘点效率（Wave 6，V48）：签名快照 Excel 导入 + 复制历史盘点
 
@@ -150,14 +279,16 @@
   - 前端：新增 `test/w6-stocktake-import-contract.test.mjs` **4/4**（模板走只读 `getDownload`、导入走带 `Idempotency-Key` 的 POST 且不触达
     confirm、两端点由 `scm:inventory:stocktake:import` 把关、复制只用 `detail`+余额 `query` 且不建草稿、API 层无后端复制命令）；
     合并 `npm run test` = **135/135**；改动三文件 ESLint 0 错、`vue-tsc` 本 Wave 文件 0 条诊断（存量 `system/role` / `business/oa` 与本次无关）。
-- **浏览器 / E2E**：新增 `e2e/scm-stocktake-import.spec.ts`（真实管理员令牌下：模板下载受 `import` 权限把关且返回合法 xlsx、
-  未填实盘的模板原样导回整批 `BLANK_ACTUAL` 拒绝且草稿数不变、页面渲染导出 / 导入入口）。**本轮未执行**：需对当前代码重新构建部署
-  后端 + 一次性令牌的全栈环境（共享 E2E 库当前口径过期）；未设 `W6I_E2E_ADMIN_TOKEN` 时整体 skip。
+- **浏览器 / E2E**：`e2e/scm-stocktake-import.spec.ts`（临时账号真实登录，5 项）：只读账号取模板与导入均被服务端 30005 把关；
+  页面选仓库后导出快照模板并带回该仓库；填好实盘的模板经页面上传 → 建出草稿且逐行实盘量落库；确认改余额后用确认前
+  导出的凭证再导 → `SNAPSHOT_STALE` 整批拒绝且不落草稿；复制历史盘点按 `pageSize<=100` 分页取余额、实盘列整列为空、
+  不新增单据。原一次性令牌门控（缺令牌即整组 skip）已在审计轮改为临时账号真实登录；执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录。
 - **与计划的偏差**：① 迁移选号 **V48**（计划文档写的号以 `db/migration/` 当前最大号之后为准、不改历史 Flyway）；
   ② 整批拒绝以 `code=0`+`totalErrors` 字符串码回报，**不新增 SCM 数字错误码、不改 `InventoryErrorCode`**（与商品 / 订单导入同一取向）；
   ③ 「复制历史」严格做成纯前端只读组合（复用 `detail`+余额查询），不引入后端复制命令、不新增幂等端点。
-- **未完成 / 遗留**：Wave 6 场景的全栈浏览器验收（见上）；「导入成功且填好实盘」的端到端建草稿仅由后端 IT 覆盖，浏览器侧只验证
-  权限与拒绝路径（在浏览器里改写签名 xlsx 会引入脆性，不做）。
+- **未完成 / 遗留**：无。「导入成功且填好实盘」原先只有后端 IT，审计轮已在浏览器里以改写后的真实模板上传并
+  断言建出草稿、逐行实盘量落库（`e2e/scm-stocktake-import.spec.ts`，同文件覆盖权限把关、快照漂移整批拒绝、
+  复制历史盘点），上一版此处写的「不做」已失效。
 
 ### 2026-09-22 配送打印追踪（Wave 5，V47）：按订单 / 按客户双视角 + 幂等打印登记
 
@@ -197,13 +328,12 @@
     合并 `npm run test` = **131/131**；改动文件 ESLint 0 错、`vue-tsc` 本 Wave 三文件 0 条诊断（仓库
     `system/role` / `business/oa` 存量诊断与本次无关）、`npm run build`（vite production）通过；迁移校验和守卫 PASS。
 - **浏览器 / E2E**：新增 `e2e/scm-delivery-print.spec.ts`（双视角只读查询不改计次、正式 POST 计次 +1 且同键重放不重复 +1、
-  打印后线路状态不变、页面「配送打印」标签只读浏览阶段无库存 / 出库写请求）。**本轮未执行**：需后端对当前代码重新
-  构建部署 + 一次性令牌的全栈环境（当前共享 E2E 库停在过期 schema，登录返回 `30001`）；未设 `W5_E2E_ADMIN_TOKEN` 时整体 skip。
+  打印后线路状态不变、页面「配送打印」标签只读浏览阶段无库存 / 出库写请求）。原一次性令牌门控（缺令牌即整组 skip）已在审计轮改为临时账号真实登录；执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录。
 - **与计划的偏差**：① 迁移选号 V47（计划文档若写其它号以 `db/migration/` 当前最大号 V46 之后为准、不改历史 Flyway）；
   ② 打印**不追踪内容版本**——`print_count` 只表「生成过打印」的历史次数，线路改版后不自动清零（本轮明确不做内容指纹）；
   ③ 严格守 L0–L2：负向契约只针对 **API 端点集合**（无库存出库 / GPS / 签收 / 发车入口），不因表头既有的
   `planned_departure_time`「计划发车」展示字段而误判为 L3。
-- **未完成 / 遗留**：Wave 5 场景的全栈浏览器验收（见上）；打印内容版本追踪（改版是否清零）留待业务裁决，本轮不做。
+- **未完成 / 遗留**：打印内容版本追踪（改版是否清零）留待业务裁决，本轮不做。
 
 ### 2026-09-22 业务待办与站内提醒（Wave 4，V46）：首页只读待办聚合 + 驳回站内信
 
@@ -244,14 +374,12 @@
     门禁 + 复用 `DefaultHomeCard`）；合并 `npm run test` = **127/127**；改动文件 ESLint 0 错、
     `vue-tsc` 本 Wave 文件 0 条诊断、`npm run build`（vite production）通过。
 - **浏览器 / E2E**：新增 `e2e/scm-dashboard-todo.spec.ts`（待办接口只读数组契约 + route 自带条件、
-  无 `scm:todo:query` 员工被守卫拒、首页点击卡片落到带条件列表页且全程无写请求）。**本轮未执行**：
-  需后端对当前代码重新构建部署 + 一次性令牌的全栈环境（当前共享 E2E 库停在过期 schema，登录返回 `30001`）；
-  端点行为由后端单元 / IT、前端契约由单测 / 类型 / Lint 覆盖。
+  无 `scm:todo:query` 员工被守卫拒、首页点击卡片落到带条件列表页且全程无写请求）。原一次性令牌门控已在审计轮改为临时账号真实登录；端点行为同时由后端单元 / IT、前端契约由单测 / 类型 / Lint 覆盖。执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录。
 - **与计划的偏差**：① 迁移选号 V46（非计划文档写的 V47），按「以当前 `db/migration/` 最大号为准、不改历史
   Flyway」执行；② 待办入口用**独立 `scm:todo:query`** 门控而非任一领域权限，且明确「不扩大领域权限」——
   卡片可见性 = 待办入口 ∩ 领域权限，无权卡片省略而非返回 0；③ 站内信同步写在驳回事务内（非异步 / 非事件），
   与「恰一条、事务原子」的验收一致。
-- **未完成 / 遗留**：Wave 4 场景的全栈浏览器验收（见上）。
+- **未完成 / 遗留**：浏览器验收已于 2026-09-23 执行通过。
 
 ### 2026-09-22 订单录单效率（Wave 3）：草稿恢复 + 历史复用 + 最近已确认订单价
 
@@ -289,14 +417,15 @@
     `draftUnitPrice` / 不 `Decimal` 重算**、复用为新单沿用 `scm:order:add`）与 `order-form-model.test.mjs` **6/6**；
     合并 `npm run test` = **123/123**；改动文件 ESLint 0 错、`vue-tsc` 本 Wave 文件 0 条诊断、`npm run build` 通过。
 - **浏览器 / E2E**：`e2e/scm-order.spec.ts` 用例 9（历史复用预填新草稿 + 最近已确认订单价气泡展示锁价与来源订单）
-  与用例 10（未提交草稿本地留存并在重开时提示恢复）。**本轮未执行**：需后端对当前代码重新构建部署 + Web 应用 +
-  临时账号的全栈环境（当前共享 E2E 库停在过期 schema，登录返回 `30001`）；端点行为已由 3 条 IT / Web 用例、
-  前端契约由单测 / 类型 / Lint 覆盖。
+  与用例 10（未提交草稿本地留存并在重开时提示恢复）、用例 11（§12.3「切 SKU 不串 / 切客户不串」：自建两个合作中客户
+  与三张已确认单，在真实页面上按「整箱 → 换散装 → 换回整箱 → 换客户」四步逐次开气泡，断言每次只出现当前
+  (客户, SKU) 档的价与来源订单号、且不出现另一档的价与订单号）。用例 11 不借用其他用例留下的数据，单独执行亦成立。
+  端点行为已由 3 条 IT / Web 用例、前端契约由单测 / 类型 / Lint 覆盖；执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录。
 - **与计划的偏差**：① §7.5 参考价从「排除 CANCELLED」收紧为「只取 CONFIRMED」，并按更新后的计划改为按 `confirmed_at`
   倒序、订单分组 `limit`、暴露 `itemId / saleUnit / confirmedAt`；② 因 `uk_sales_order_item_order_sku_active`（V13）
   约束每 `(order, sku)` 只有一条活动明细，「同单同 SKU 多行」在当前 schema 下不可能出现，故订单分组 `limit` 与
   行数在当前库等价（SQL 仍按逐行 `itemId` 返回以防未来放开该唯一键）。
-- **未完成 / 遗留**：Wave 3 场景的全栈浏览器验收（见上）。
+- **未完成 / 遗留**：浏览器验收已于 2026-09-23 执行通过（用例 9 / 10 / 11）。
 
 ### 2026-09-22 采购操作效率（Wave 2B）：批量处理 + 导出 / 打印 + 按商品收货工作台
 
@@ -331,11 +460,13 @@
     改动文件 ESLint 0 错、`vue-tsc` 全库 1946 条既有诊断中本 Wave 文件 0 条、`npm run build` 通过。
 - **浏览器 / E2E**：`e2e/scm-purchase.spec.ts` 新增用例 11（导出只读 xlsx：响应类型 / 附件头 / 非空体、导出后采购状态不变、
   导出与导出设置入口可见）与用例 12（批量少收关单整批原子 + 混批含草稿单必须被拒且合法单不被部分关单；按商品工作台只读、
-  四位定点数量、欠收与超收互斥、切页签渲染工作台表）。**本轮未执行**：需后端对当前代码重新构建部署 + Web 应用 + 临时账号的
-  全栈环境；端点行为已由 6 条 IT、前端契约由单测 / 类型 / Lint 覆盖。
+  四位定点数量、欠收与超收互斥、切页签渲染工作台表）、用例 14（§12.3「打印」：真实页面点行内打印与批量打印，
+  只替换最末端的 `print()` 调用以采集隐藏 iframe 里已渲染的文档，断言文档带出该单的表头、商品名与计划量 / 单价、
+  备注里的脚本标记只作为文本出现（文档内 `script` 元素数为 0）、打印全程不发任何写请求且采购状态一位不动）。
+  端点行为已由 6 条 IT、前端契约由单测 / 类型 / Lint 覆盖；执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录。
 - **与计划的偏差**：① §6.4 建议的 `GET /scm/purchase/{id}/print` 落为**纯前端打印**（隐藏 iframe + `contentWindow.print`），
   零写接口、零新权限，符合 AGENTS §23「不为单页各自造打印设施」；② §6.7 的可选权限迁移 `V46` 未启用，因三端点复用既有权限即达成 0 迁移。
-- **未完成 / 遗留**：Wave 2B 场景的全栈浏览器验收（见上）；批量确认收货（§6.4 推迟项，需另开设计明确失败语义）不在本 Wave。
+- **未完成 / 遗留**：批量确认收货（§6.4 推迟项，需另开设计明确失败语义）不在本 Wave。
 
 ### 2026-09-22 采购订单缺口预览（Wave 2A）：只读「订单汇总 / 库存缺口预览」
 
@@ -363,12 +494,11 @@
     （无非定点运算 / 无 `availableQuantity ±`）、`openPurchaseQuantity` 缺席、Tab 接线与生成 / 分配权限未动。
     合并跑 `w2a` + `w5` = **30/30**；改动文件 `vue-tsc --noEmit` 与 ESLint 均无错。
 - **浏览器 / E2E**：`e2e/scm-purchase.spec.ts` 新增用例 10（预览只读且数量后端算好：建单后 `summary-preview` 命中本 SKU、
-  每行状态在五值内且数量匹配四位定点、跑完需求表仍为 0、浏览器切页签渲染 + 截图）。**本轮未执行**：需后端对当前代码
-  重新构建部署 + Web 应用 + 临时账号的全栈环境；端点行为已由 8 条 IT、前端契约由单测 / 类型 / Lint 覆盖。
+  每行状态在五值内且数量匹配四位定点、跑完需求表仍为 0、浏览器切页签渲染 + 截图）。端点行为已由 8 条 IT、前端契约由单测 / 类型 / Lint 覆盖；执行结果见「2026-09-23 Wave 1–8 审计修复与全栈验收」记录。
 - **与计划的偏差**：无。计划 §6A.11 要求「0 迁移、并入既有页」，落地一致。
-- **未完成 / 遗留**：预览场景的全栈浏览器验收（见上）；预览的 Phase 2「一键把缺口转采购需求」不在本 Wave（只读阶段不写库）。
-- **旁注（非本 Wave 引入）**：全量前端测试里 `w4-order-contract.test.mjs` 有一条**既有**正则用例因 `\r\n` 跨行匹配失败
-  （`.` 不匹配换行），与本次改动无关、未纳入 Wave 2A 范围，按 §34「不顺带改无关代码」保持原样。
+- **未完成 / 遗留**：预览的 Phase 2「一键把缺口转采购需求」不在本 Wave（只读阶段不写库）。
+- **旁注（非本 Wave 引入）**：全量前端测试里 `w4-order-contract.test.mjs` 曾有一条**既有**正则用例因 `\r\n` 跨行匹配失败
+  （`.` 不匹配换行），与本次改动无关；审计轮已按该原因修复，现该类 6/6 通过。
 
 ### 2026-09-22 商品中心 PCO-2（Wave 1）：Excel 导入导出 + 图片中心（V44–V45）
 
@@ -383,15 +513,27 @@
   - `V45`（data-only）：PCO-2 菜单与权限，沿用 V7/V39 商品编号段——导入 418 / 导出 419（商品档案页 402 动作）、
     图片中心页面 406（挂 401 下）、图片查询 496 / 图片批量维护 497；仅授 SUPER_ADMIN。
     原 `scm:product:image`(416，单商品编辑) 保持不变、未删除。
+  - `V49`（结构 + 数据，审计 §7.1 修正）：V44 的 `PRIMARY`/`DETAIL` 与 `(image_type='PRIMARY') = is_primary`
+    让「主图」同时存在两个事实源，最新计划改为 `image_type ∈ {GALLERY, DETAIL}`（图集 / 详情图），
+    主图唯一事实只剩 `is_primary`。历史迁移不可修改，因此在这里新增一步：先移除 V44 两条 CHECK，
+    把存量 `PRIMARY` 改写为 `GALLERY`，再加新 CHECK 与「每 SPU 至多一张主图」的唯一索引；
+    建索引前先按「同 SPU 内 id 非最小的主图行」降级多余主图并 `RAISE NOTICE` 显性提示，不静默改账。
 - **API**：
   - `GET /scm/product/import/template`（`scm:product:import`）真实 xlsx 模板；
     `POST /scm/product/import`（`scm:product:import`，≤10MiB `.xlsx`，经 `securityFileService` 校验）；
+    两者均带 `mode=CREATE|UPDATE`（默认 CREATE），**UPDATE 额外要求 `scm:product:update`**（服务端 `StpUtil.checkPermission` 兜底，下载更新模板同样要求），因为导入权不等于编辑权；
     `POST /scm/product/export`（`scm:product:export`，复用查询条件 + `SmartExcelUtil`）。
   - 图片中心 `GET /scm/product/image/query`（`scm:product:image:query`）；
     `POST .../batch-bind`、`batch-remove`、`set-primary`、`reorder`（`scm:product:image:batch`，均 `@OperateLog`）。
     所有图片写接口经 `ProductImageSyncManager.sync`：只接受合法 `public/image/` fileKey、清旧主图、保证每 SPU 至多一张 PRIMARY。
 - **导入语义**：整批事务——任一行有错则 0 行写入；错误定位到「Excel 行 + 列 + 原因码」，可准确指认 SPU/SKU 编码重复、
   分类 / 单位 / 标签不存在、停用单位用于新商品等；不把历史批次落库（第一版即时查看 / 下载失败明细）。
+- **UPDATE 模式语义（审计 §7.2 要求逐条对齐）**：模板自带 `模板版本` 与四个定位键列（`SPU ID`/`SPU版本`/`SKU ID`/`SKU版本`），
+  定位键缺失或版本不匹配即整批拒绝；**未在 Excel 中出现的 SKU 不等于删除 SKU**（按 SPU 分组只改出现的行）；
+  **空白单元格 = 保持原值**，显式清空只能写 `(清空)` 且仅放开别名 / 助记码 / 品牌 / 产地 / 标签编码 / 条码六列
+  （其余列写该串直接报错）；`SPU编码` / `SKU编码` 等系统派生与锁定列写入即 `FIELD_LOCKED`；
+  SKU 不属于该 SPU 报 `SKU_NOT_OWNED`；写入复用既有商品更新服务的校验与乐观锁，任一行版本冲突则
+  **整批 0 行写入**并返回 `VERSION_CONFLICT(40921)`，不做部分成功。
 - **页面**：
   - 商品列表工具栏新增「导入 / 导出 / 图片中心」入口（按权限显示）；导入弹窗下载模板、选 `.xlsx`、
     loading + 未选文件禁止提交、失败逐行完整展示并可即时导出 CSV。
@@ -399,20 +541,32 @@
     （设主图 / 移除 / 拖动或按钮排序 / 上传绑定到当前 SPU），顶部「按文件名批量导入」先出命中·歧义·未匹配预览，
     仅对命中项写入，未匹配与歧义绝不静默丢弃；无 `image:batch` 权限时批量写入口隐藏。
 - **测试结果**：
-  - 后端：`ProductImageCenterPgIT` 全量 `@SpringBootTest` + `@Transactional` 打真实 PostgreSQL **8/8 通过**
-    （含每 SPU 至多一张 PRIMARY、并发设主图不产生两张 PRIMARY、私有前缀 fileKey 拒绝、无权限/操作日志）。
-    `ProductImportServiceTest` 单元级 **13/13 通过**（POI 解析 + 各类拒绝原因 + 错一行整批不写的判定）。
+  - 后端：`ProductImageCenterPgIT` 全量 `@SpringBootTest` + `@Transactional` 打真实 PostgreSQL **11/11 通过**
+    （含每 SPU 至多一张主图由唯一索引兜底、并发设主图不产生两张主图、`GALLERY`/`DETAIL` 分组语义、
+    私有前缀 fileKey 拒绝、无权限 / 操作日志）。
+    `ProductImportServiceTest` 单元级 **22/22 通过**（POI 解析 + 各类拒绝原因 + 错一行整批不写的判定 +
+    UPDATE 模式的定位键 / 版本 / 锁定列 / `(清空)` 白名单判定）。
+    `ProductImportUpdatePgIT`（审计轮新增，真实库）**4/4 通过**：更新落库且空白列原值保留、
+    旧版本重放整批 `VERSION_CONFLICT` 且库里数字不变、未列出的 SKU 不被删、缺 `scm:product:update` 被拒。
   - 前端：`test/product-import-model.test.mjs`（按行分组、行 0 文件级错误、整批拒绝、忽略大小写与扩展名匹配、
     未匹配/歧义显性暴露）**5/5 通过**；`scm/product` 范围 `vue-tsc --noEmit` 与 ESLint 均无错；Vite 生产构建通过。
-- **浏览器 / E2E**：`e2e/scm-product.spec.ts` 扩展了 PCO-2 场景（导入入口 + 提交闸门、图片中心筛无图 + 单商品维护 +
-  批量预览 0 命中禁止绑定、只读账号看不到导入 / 导出）。**本轮未执行**：Playwright 需要后端对当前 schema 运行 +
-  Web 应用 + 对象存储 + 临时账号脚本的全栈环境，本轮无该运行环境；后端契约已由 IT、前端逻辑由单测 / 类型 / 构建覆盖。
+- **浏览器 / E2E**：`e2e/scm-product.spec.ts` 的 PCO-2 场景（导入入口 + 提交闸门、图片中心筛无图 + 单商品维护 +
+  批量预览 0 命中禁止绑定、只读账号看不到导入 / 导出、**CREATE / UPDATE 导入各自真实往返**）已于 2026-09-23
+  在全栈环境执行通过 **8/8、0 pageerror**。CREATE 用例自建三级分类链与新增模板文件：页面以新增模式上传
+  「一个 SPU 两行 SKU」→ 详情接口见两个 SKU 且默认 SKU 只有一个 + 列表按编码只查到一条商品 → 同商品再加一行
+  但该行分类编码不存在时必须整批 `importedProducts=0`、页面明示「本次没有任何商品写入」且既存商品不会多出第三个 SKU。
+  UPDATE 用例是真实链路而非模拟：下载 UPDATE 模板 → 填入该商品真实的四个定位键且
+  **只改「别名」一列、品牌列留空** → 页面以更新模式上传 → 详情接口断言新别名生效且留空的品牌原值仍在 →
+  同一份文件重放必须 `updatedProducts=0` + `VERSION_CONFLICT` + 页面明示「本次没有任何商品写入」+ 库里版本不变。
 - **与计划的偏差**：
-  - 计划要求 `ProductImportIT`（真实库集成测试）；实际以 `ProductImportServiceTest`（单元级校验逻辑）覆盖导入判定，
-    写侧原子性由复用的既有事务化新增保证、且 `ProductImageCenterPgIT` 已在真实库验证图片写路径。若后续要给导入补
-    一条真实库 IT，再单独加。
-  - 迁移号：计划把 PCO-2 排为 V44/V45，落地一致，未与配送 V42/V43 或 FA-0 的 V41 冲突；校验和守卫 `check` 通过（45 迁移、0 漂移）。
-- **未完成 / 遗留**：PCO-2 场景的全栈浏览器验收（见上）；「查看历史导入批次」按需再建（第一版明确不做）。
+  - 计划要求 `ProductImportIT`（真实库集成测试）；**审计轮已补 `ProductImportUpdatePgIT`**（真实库 4/4），
+    与既有的单元级校验共同覆盖 CREATE / UPDATE 两条写路径。
+  - 迁移号：计划把 PCO-2 排为 V44/V45，落地一致，未与配送 V42/V43 或 FA-0 的 V41 冲突；校验和守卫 `check` 通过。
+    **图片类型模型与最新计划不一致已按「不改历史迁移」原则在 V49 追加修正**（见上），未回改 V44。
+  - **审计发现（待业务裁决，对应修复计划 §17）**：商品列表的普通导出（24 列，含分类路径与标签**名称**）与
+    可回导的 UPDATE 维护模板（25 列，含分类编码与标签**编码**）是两套刻意不同的列集合，
+    把普通导出原样回传会得到逐列 `HEADER_INVALID`。当前行为安全（拒绝而非误写），但「导出即可回导」是否符合业务预期需要裁决。
+- **未完成 / 遗留**：「查看历史导入批次」按需再建（第一版明确不做）；上述「普通导出 / 维护模板列集合差异」待业务裁决。
 
 ### 2026-09-21 F0-DEBT-01 FA-0：附件资产分级与商品写侧收口（V41）
 
