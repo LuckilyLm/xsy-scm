@@ -539,7 +539,7 @@ public class ProductImportService {
         return form;
     }
 
-    /** 图片不经导入编辑，按现状回写即可保持图集与主图事实不变。 */
+    /** 图片不经导入编辑，按现状回写即可保持主图与排序不变；内容角色由同步链不更新该列来保证。 */
     private ProductImageForm toImageForm(ProductImageEntity entity) {
         var form = new ProductImageForm();
         form.setImageId(entity.getId());
@@ -634,6 +634,10 @@ public class ProductImportService {
             addError(result, n, key, "分类编码", "CATEGORY_NOT_FOUND", "分类编码不存在");
         else if (categoryCode != null && !"ENABLED".equals(categoryMap.get(categoryCode).getStatus()))
             addError(result, n, key, "分类编码", "CATEGORY_DISABLED", "分类已停用，不能作为新商品分类");
+        // 层级规则与写入路径的 ProductCategoryService.requireSelectableCategory 同口径；前置到逐行校验，
+        // 免得填了一 / 二级分类要等整批写入才收到 CATEGORY_PARENT_INVALID，看不出是哪个单元格的问题
+        else if (categoryCode != null && !Integer.valueOf(3).equals(categoryMap.get(categoryCode).getLevel()))
+            addError(result, n, key, "分类编码", "CATEGORY_LEVEL_INVALID", "商品只能绑定三级分类，请改填该分类下的三级分类");
 
         enumValue(result, n, key, "商品上下架", row.getSpuStatus(), SHELF);
         enumValue(result, n, key, "SKU上下架", row.getSkuStatus(), SHELF);

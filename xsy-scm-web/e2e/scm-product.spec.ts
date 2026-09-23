@@ -415,11 +415,11 @@ test('Wave 1 UPDATE import: real page round trip preserves blank columns and rej
 // §12.3 Wave 1「商品 Excel CREATE」此前只有弹窗闸门（见 PCO-2 excel entry 用例），新增模式从没真的
 // 用页面写过一行商品。本用例自建分类与文件，不借用其他用例的数据，单独执行亦成立：
 // 页面以新增模式上传「一个 SPU 两行 SKU」→ 库内见两个 SKU 且默认 SKU 只有一个 → 列表能查到该商品 →
-// 再上传「两行好 + 一行错分类编码」必须整批 0 写入，既存商品不会多出第三个 SKU。
-test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and rejects a batch with one bad row', async ({ page }) => {
+// 再上传「两行好 + 一行分类编码不存在 + 一行分类只到二级」必须整批 0 写入，既存商品不会多出第三个 SKU。
+test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and rejects a batch with bad category rows', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  // 新增导入要求分类编码存在且 ENABLED，而写入路径还要求商品只能挂在三级分类
-  // （`ProductCategoryService.lockParent` 对 1/2 级回 40011），所以这里自建一条完整的三级链
+  // 新增导入要求分类编码存在、ENABLED 且是三级分类：层级在逐行预校验就被拦下（与写入路径的
+  // ProductCategoryService.requireSelectableCategory 同口径），不再等到整批写库才收到 40011
   const categoryCode = prefix + 'CR';
   let parentId: number | string | undefined;
   for (const [index, name] of [prefix + '导入一级', prefix + '导入二级', prefix + '导入三级'].entries()) {
@@ -491,12 +491,17 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
     await button(page, '查询').click();
     await expect(page.getByRole('row').filter({ hasText: spuCode })).toHaveCount(1);
 
-    // 同一商品再加一行，但那行的分类编码不存在：整批必须 0 写入，既存商品不会多出第三个 SKU
+    // 再加两行错行：一行给既存商品补个分类编码不存在的 SKU，另一行独立新建一个商品但只填到二级分类。
+    // 二级分类那行刻意不并入同一 SPU，否则「同商品分类必须一致」会先炸出无关诊断，看不出层级校验。
+    // 整批必须 0 写入：既存商品不会多出第三个 SKU，二级分类的新商品也不会落库
     const badPath = join(dir, 'create-bad.xlsx');
     expect(fill(badPath, [...goodRows, { SPU编码: spuCode, 商品名称: prefix + '导入商品',
       分类编码: prefix + 'NOCAT', 商品上下架: 'ON_SHELF', SKU编码: spuCode + 'C', 规格名称: '礼盒',
-      销售单位: 'kg', 商品类型: 'STANDARD', 市场价: '199.0000', SKU上下架: 'ON_SHELF', 默认SKU: '否' }
-    ]).rows).toBe(3);
+      销售单位: 'kg', 商品类型: 'STANDARD', 市场价: '199.0000', SKU上下架: 'ON_SHELF', 默认SKU: '否' },
+      { SPU编码: spuCode + 'L2', 商品名称: prefix + '二级分类商品', 分类编码: categoryCode + 2,
+        商品上下架: 'ON_SHELF', SKU编码: spuCode + 'D', 规格名称: '组合装', 销售单位: 'kg',
+        商品类型: 'STANDARD', 市场价: '299.0000', SKU上下架: 'ON_SHELF', 默认SKU: '是' }
+    ]).rows).toBe(4);
     await button(page, '导入').click();
     responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
     await modal.locator('input[type=file]').setInputFiles(badPath);
@@ -504,7 +509,10 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
     const rejected = await (await responded).json();
     expect(rejected.code).toBe(0);
     expect(rejected.data.importedProducts, '含错行的批次仍写入了商品').toBe(0);
-    expect((rejected.data.errors as { code: string }[]).map(e => e.code)).toContain('CATEGORY_NOT_FOUND');
+    const badErrors = rejected.data.errors as { rowNumber: number; column: string; code: string }[];
+    expect(badErrors.map(e => e.code)).toContain('CATEGORY_NOT_FOUND');
+    expect(badErrors.filter(e => e.rowNumber === 5)).toEqual(
+      [expect.objectContaining({ column: '分类编码', code: 'CATEGORY_LEVEL_INVALID' })]);
     await expect(modal.getByText('本次没有任何商品写入')).toBeVisible();
     const afterBad = await (await api.get(`/scm/product/detail/${spuId}`)).json();
     expect(afterBad.data.skuList).toHaveLength(2);

@@ -80,7 +80,14 @@ class ProductImportServiceTest {
         category.setId(100L);
         category.setCategoryCode("FRESH-FRUIT");
         category.setStatus("ENABLED");
-        when(categories.selectList(any())).thenReturn(List.of(category));
+        category.setLevel(3);
+        // 二级分类：存在且启用，但不能挂商品，用于验证层级在逐行校验就被拦下
+        var parent = new ProductCategoryEntity();
+        parent.setId(99L);
+        parent.setCategoryCode("VEGETABLE");
+        parent.setStatus("ENABLED");
+        parent.setLevel(2);
+        when(categories.selectList(any())).thenReturn(List.of(category, parent));
         var tag = new ProductTagEntity();
         tag.setId(200L);
         tag.setTagCode("HOT");
@@ -185,6 +192,19 @@ class ProductImportServiceTest {
             assertThat(error.getRowNumber()).isEqualTo(3);
             assertThat(error.getColumn()).isEqualTo("商品上下架");
             assertThat(error.getCode()).isEqualTo("ENUM_INVALID");
+        });
+        verifyNoInteractions(writer);
+    }
+
+    @Test
+    void secondLevelCategoryIsReportedPerRowBeforeWrite() throws Exception {
+        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(4).setCellValue("VEGETABLE")),
+                ImportMode.CREATE);
+        // 分类存在且启用，只有层级不合规：必须在逐行校验就指到单元格，而不是等写库报 CATEGORY_PARENT_INVALID
+        assertThat(result.getErrors()).singleElement().satisfies(error -> {
+            assertThat(error.getRowNumber()).isEqualTo(3);
+            assertThat(error.getColumn()).isEqualTo("分类编码");
+            assertThat(error.getCode()).isEqualTo("CATEGORY_LEVEL_INVALID");
         });
         verifyNoInteractions(writer);
     }
