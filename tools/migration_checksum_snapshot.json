@@ -196,6 +196,14 @@
     "49": {
       "file": "V49__scm_product_image_type_gallery.sql",
       "checksum": -525245484
+    },
+    "50": {
+      "file": "V50__scm_report_center_permissions.sql",
+      "checksum": -940121147
+    },
+    "51": {
+      "file": "V51__scm_report_date_axis_indexes.sql",
+      "checksum": -1800548614
     }
   }
 }

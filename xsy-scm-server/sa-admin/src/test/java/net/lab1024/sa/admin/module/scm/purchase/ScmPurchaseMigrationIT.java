@@ -55,7 +55,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         assertThat(sequences).contains("purchase_order_no_seq", "purchase_receipt_no_seq");
 
         // 非主键索引（主键走 pg_constraint，不计入 §6.4 的 31 条；B1 的 V22 追加 1 条部分索引，
-        // V40 的地图归属再追加 1 条 warehouse 部分索引）
+        // V40 的地图归属再追加 1 条 warehouse 部分索引，V51 的报表日期轴追加 1 条 purchase_receipt 部分索引）
         Integer indexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
@@ -63,14 +63,15 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND NOT EXISTS (SELECT 1 FROM pg_constraint c "
                         + "                  WHERE c.conname = i.indexname AND c.contype = 'p')",
                 Integer.class, V15_TABLE_LIST);
-        assertThat(indexes).isEqualTo(33);
+        assertThat(indexes).isEqualTo(34);
 
         Integer partial = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
                         + "  AND i.tablename = ANY (string_to_array(?, ',')) "
                         + "  AND i.indexdef LIKE '%WHERE%'", Integer.class, V15_TABLE_LIST);
-        assertThat(partial).isEqualTo(29);
+        // 29 条为 W5/B1/V40 之后的批准部分索引数，V51 的报表确认日期轴再追加 1 条（purchase_receipt）
+        assertThat(partial).isEqualTo(30);
 
         // 7 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条。
         // 必须排除「约束支撑的索引」：PG 的 PRIMARY KEY / UNIQUE 约束也会生成 CREATE UNIQUE INDEX，
@@ -181,11 +182,13 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //   V47 = 配送打印追踪（delivery_route_order 打印计次三列）
     //   V48 = 盘点效率（仅数据，盘点批量导入权限）
     //   V49 = PCO-2 图片类型语义收口（image_type 改为 GALLERY/DETAIL，主图唯一事实回归 is_primary）
+    //   V50 = 报表中心（仅数据，菜单与 scm:report:* 权限 1200-1216）
+    //   V51 = 报表日期轴索引（sales_order / order_refund / purchase_receipt 三条部分索引）
     // V1–V18 的内容与顺序仍被逐条钉死，任何回改/重排都会立刻失败。
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），**不扫描磁盘上的 migration 文件**，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V49 全部 success，V15–V49 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V51 全部 success，V15–V51 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -195,7 +198,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
                 "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
-                "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49");
+                "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
         // 除 49 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
