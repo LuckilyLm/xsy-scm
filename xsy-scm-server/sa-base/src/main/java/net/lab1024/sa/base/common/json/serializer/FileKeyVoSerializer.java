@@ -34,8 +34,10 @@ public class FileKeyVoSerializer extends JsonSerializer<String> {
             jsonGenerator.writeObject(Lists.newArrayList());
             return;
         }
-        if (fileService == null) {
-            jsonGenerator.writeString(value);
+        // Unwired dependencies fail closed. Emitting the raw key string here would still leak the
+        // existence and path of private attachments to any caller, so no fallback exposes `value`.
+        if (fileService == null || fileAccessGuard == null) {
+            jsonGenerator.writeObject(Lists.newArrayList());
             return;
         }
         String[] fileKeyArray = value.split(",");
@@ -43,11 +45,8 @@ public class FileKeyVoSerializer extends JsonSerializer<String> {
         // Embedded VO fields must obey the same per-file read policy as the direct
         // /file/getFileUrl and /file/downLoad endpoints (see FileAccessGuard). Silently drop
         // keys the current caller may not read rather than failing the whole response, since one
-        // field can legitimately mix files the caller owns with files they don't; fail closed
-        // (empty list) if the guard was not wired in.
-        List<String> readableKeyList = fileAccessGuard == null
-                ? List.of()
-                : fileAccessGuard.filterReadable(fileKeyList, SmartRequestUtil.getRequestUser());
+        // field can legitimately mix files the caller owns with files they don't.
+        List<String> readableKeyList = fileAccessGuard.filterReadable(fileKeyList, SmartRequestUtil.getRequestUser());
         List<FileVO> fileKeyVOList = fileService.getFileList(readableKeyList);
         jsonGenerator.writeObject(fileKeyVOList);
     }

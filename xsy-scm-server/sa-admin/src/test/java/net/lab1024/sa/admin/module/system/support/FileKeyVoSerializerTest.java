@@ -104,6 +104,21 @@ class FileKeyVoSerializerTest {
 
         unwired.serialize("public/a.png", generator, provider);
 
-        verify(fileService).getFileList(List.of());
+        verify(fileService, never()).getFileList(anyList());
+        verify(generator).writeObject(List.of());
+    }
+
+    @Test
+    void neverEmitsTheRawKeyIfFileServiceWasNeverWired() throws Exception {
+        FileKeyVoSerializer unwired = new FileKeyVoSerializer();
+        ReflectionTestUtils.setField(unwired, "fileAccessGuard", guard);
+        // fileService intentionally left null: the old fallback echoed the stored key verbatim,
+        // which still discloses the existence and path of a private attachment.
+        SmartRequestUtil.setRequestUser(employee(44L));
+
+        unwired.serialize("private/common/a.pdf", generator, provider);
+
+        verify(generator, never()).writeString(anyString());
+        verify(generator).writeObject(List.of());
     }
 }
