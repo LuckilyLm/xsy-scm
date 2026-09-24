@@ -73,7 +73,8 @@ F0   Object Storage Activation             COMPLETE
 P0   Baseline closure: FA-1..FA-3 + formal  COMPLETE (2026-09-24); F0-DEBT-01 closed,
      non-admin roles + explicit SCM data scope   object-storage confidentiality proven on MinIO
 W6-1 Inventory (balance/movement/inbound)  BACKEND + BROWSER VERIFIED
-P1   Sorting management (V60-V62)          BACKEND + IT VERIFIED (browser E2E: see docs/progress.md)
+P1   Sorting management (V60-V62)          COMPLETE (2026-09-24): backend + 1057-test full
+                                         regression + 129 browser E2E all green
 W6-2 Mini Program                          NOT STARTED
 ```
 
@@ -209,7 +210,8 @@ two independent gates were added before any non-administrator business role coul
    purchase by purchaser ∩ warehouse), and 供应商 / SKU 主档 have no dimension to narrow on, so they
    stay team-shared by decision rather than by omission.
 
-P1 分拣管理 (**backend + PostgreSQL IT verified, 2026-09-24**; V60–V62, module
+P1 分拣管理 (**COMPLETE — backend + PostgreSQL IT + full regression + browser E2E verified,
+2026-09-24**; V60–V62, module
 `net.lab1024.sa.admin.module.scm.sorting`; rulings recorded in
 [`docs/decisions.md`](./docs/decisions.md)「P1 分拣管理裁决」第 1–22 条) —
 sorting is the **producer of the shipped-quantity fact and nothing else**. Invariants that must not
@@ -233,7 +235,12 @@ delivery eligibility is evaluated on *task status*, not on line results
 reopened orders simply drop out of the candidate pool, and historical `ACTIVE` route assignments are
 never auto-released. Sorting scope is **warehouse ∈ authorized ∧ assignee = self** (intersect, never
 substitute); cross-assignee visibility is implied by `scm:sorting:task:assign` — there is deliberately
-**no** `scm:sorting:scope:all:query` and no sixth scope dimension. Print = preview + counted
+**no** `scm:sorting:scope:all:query` and no sixth scope dimension. `crossAssignee()` is *also* the
+switch that decides whether the list/detail SQL appends `assignee_employee_id = :me`, so it must share
+one break-glass source with the write-side guard (`ScmDataScopeService.isAdministrator()`); bypassing
+only the write side gives an administrator "warehouse visible, assignee invisible" — which is exactly
+what the 1057-test full regression caught after the targeted ITs were already green.
+Print = preview + counted
 registration (count/time/operator only, never a version bump, never a state change); weight is
 manual-only; no gross/tare/net, no unit conversion, no substitution, no tolerance thresholds,
 no automatic re-settlement. One documented exception to the P0 "option lists must be scoped" rule:
