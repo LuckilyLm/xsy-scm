@@ -2,18 +2,21 @@ package net.lab1024.sa.admin.module.scm.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductCategoryDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductImageDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductTagDao;
+import net.lab1024.sa.admin.module.scm.product.dao.ProductUomDao;
 import net.lab1024.sa.admin.module.scm.product.domain.dto.ProductImportRow;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductCategoryEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductImageEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSkuEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductTagEntity;
+import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductUomEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSkuForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuAddForm;
@@ -53,6 +56,7 @@ import java.util.stream.Collectors;
  * <b>留空表示保持原值</b>（不是清空），未出现在 Excel 的 SKU 也不会被删除；
  * 要把可空属性（别名、助记码、品牌、产地、标签编码、条码）清成空，在该单元格填 {@link #CLEAR_TOKEN}。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductImportService {
@@ -102,6 +106,7 @@ public class ProductImportService {
 
     private final ProductCategoryDao categories;
     private final ProductTagDao tags;
+    private final ProductUomDao units;
     private final ProductSpuDao spus;
     private final ProductSkuDao skus;
     private final ProductImageDao images;
@@ -263,6 +268,9 @@ public class ProductImportService {
                 }
             }
         } catch (Exception exception) {
+            // 对调用方仍收敛成稳定的 FILE_INVALID，但服务端必须留下真因：解析循环里的 NPE、越界与 POI
+            // 内部异常若只被改写成「请使用最新模板」，用户会反复重导模板而运维零线索。
+            log.error("商品导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
             addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新模板");
         }
         result.setTotalRows(rows.size());
@@ -280,9 +288,10 @@ public class ProductImportService {
 
         var categoryMap = loadCategories(rows);
         var tagMap = loadTags(rows);
+        var unitMap = loadUnits(rows);
 
         var groups = new LinkedHashMap<String, List<ProductImportRow>>();
-        for (var row : rows) validateCreateRow(row, categoryMap, tagMap, result);
+        for (var row : rows) validateCreateRow(row, categoryMap, tagMap, unitMap, result);
         for (var row : rows) {
             var key = trim(row.getSpuCode());
             if (key != null) groups.computeIfAbsent(key, k -> new ArrayList<>()).add(row);
@@ -571,7 +580,8 @@ public class ProductImportService {
     }
 
     private void validateCreateRow(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
-                                   Map<String, ProductTagEntity> tagMap, ProductImportResultVO result) {
+                                   Map<String, ProductTagEntity> tagMap, Map<String, ProductUomEntity> unitMap,
+                                   ProductImportResultVO result) {
         var n = row.getRowNumber();
         var key = trim(row.getSpuCode());
         required(result, n, key, "模板版本", row.getTemplateVersion());
@@ -588,7 +598,7 @@ public class ProductImportService {
         required(result, n, key, "市场价", row.getMarketPrice());
         required(result, n, key, "SKU上下架", row.getSkuStatus());
         required(result, n, key, "默认SKU", row.getDefaultFlag());
-        validateSharedCells(row, categoryMap, tagMap, result, false);
+        validateSharedCells(row, categoryMap, tagMap, result, false, unitMap);
     }
 
     private void validateUpdateRow(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
@@ -604,7 +614,7 @@ public class ProductImportService {
         positiveId(result, n, key, "SKU ID", row.getSkuId());
         nonNegative(result, n, key, "SPU版本", row.getSpuVersion());
         nonNegative(result, n, key, "SKU版本", row.getSkuVersion());
-        validateSharedCells(row, categoryMap, tagMap, result, true);
+        validateSharedCells(row, categoryMap, tagMap, result, true, Map.of());
         rejectClearMarker(result, row);
     }
 
@@ -620,7 +630,7 @@ public class ProductImportService {
     /** 两模式共用的取值与长度校验；必填口径由各模式的调用方决定。 */
     private void validateSharedCells(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
                                      Map<String, ProductTagEntity> tagMap, ProductImportResultVO result,
-                                     boolean allowClearToken) {
+                                     boolean allowClearToken, Map<String, ProductUomEntity> unitMap) {
         var n = row.getRowNumber();
         var key = trim(row.getSpuCode());
         length(result, n, key, "SPU编码", row.getSpuCode(), 64);
@@ -628,6 +638,12 @@ public class ProductImportService {
         length(result, n, key, "SKU编码", row.getSkuCode(), 64);
         length(result, n, key, "规格名称", row.getSpecName(), 150);
         length(result, n, key, "销售单位", row.getSaleUnit(), 32);
+        // 上限与 ProductSpuAddForm 的 @Size 及库里 VARCHAR 同数值：导入不走 @Valid，
+        // 缺了这几列的逐行上限，超长要等整批写库才被数据库拒掉，定位不到是哪个单元格。
+        length(result, n, key, "别名", row.getAlias(), 150);
+        length(result, n, key, "助记码", row.getMnemonicCode(), 64);
+        length(result, n, key, "品牌", row.getBrandName(), 100);
+        length(result, n, key, "产地", row.getOrigin(), 100);
 
         var categoryCode = trim(row.getCategoryCode());
         if (categoryCode != null && !categoryMap.containsKey(categoryCode))
@@ -646,17 +662,50 @@ public class ProductImportService {
         decimal(result, n, key, "市场价", row.getMarketPrice(), false);
         integer(result, n, key, "保质期天数", row.getShelfLifeDays(), 0, 36500);
         integer(result, n, key, "排序", row.getSortOrder(), 0, Integer.MAX_VALUE);
+        // 单位与标签的「存在 + 启用」只在 CREATE 模式逐行预判。
+        // UPDATE 不预判：写入口劲只复核**变动过**的单位（ProductSpuService.update 的 changedUnits）
+        // 与**新挂**的标签（assertNewBindings 允许已绑的停用标签原样保留），
+        // 在这里照抄「必须在字典且启用」会把合法的历史值误拒成单元格错误。
+        if (!allowClearToken) {
+            var unit = trim(row.getSaleUnit());
+            if (unit != null) {
+                var uom = unitMap.get(unit);
+                if (uom == null)
+                    addError(result, n, key, "销售单位", "UOM_NOT_USABLE", "计量单位不存在，请先在单位字典里维护");
+                else if (!"ENABLED".equals(uom.getStatus()))
+                    addError(result, n, key, "销售单位", "UOM_NOT_USABLE", "计量单位已停用，请改选启用的单位");
+            }
+        }
         validateTagCodes(result, row, tagMap, allowClearToken);
     }
 
-    /** 标签编码列取值：UPDATE 允许显式清空标记（表示解除全部标签），CREATE 没有「原值」可清，标记按非法编码处理。 */
+    /** CREATE 模式的单位字典：与 {@code ProductUomService.assertUsable} 同判据（活动行 + ENABLED）。 */
+    private Map<String, ProductUomEntity> loadUnits(List<ProductImportRow> rows) {
+        var names = rows.stream().map(r -> trim(r.getSaleUnit())).filter(Objects::nonNull).distinct().toList();
+        return names.isEmpty() ? Map.of() : units.selectList(new LambdaQueryWrapper<ProductUomEntity>()
+                .in(ProductUomEntity::getName, names).eq(ProductUomEntity::getDeleted, false))
+                .stream().collect(Collectors.toMap(ProductUomEntity::getName, u -> u, (a, b) -> a));
+    }
+
+    /**
+     * 标签编码列取值：UPDATE 允许显式清空标记（表示解除全部标签），CREATE 没有「原值」可清，标记按非法编码处理。
+     *
+     * <p>CREATE 同时复核启用态：{@code loadTags} 只按 {@code deleted=FALSE} 取行、不看 {@code status}，
+     * 缺了这一步，填了停用标签要等整批写库被 {@code assertUsable} 抛 40028 才知道是哪一行。
+     */
     private void validateTagCodes(ProductImportResultVO result, ProductImportRow row,
                                   Map<String, ProductTagEntity> tagMap, boolean allowClear) {
         var cell = trim(row.getTagCodes());
         if (cell == null || (allowClear && CLEAR_TOKEN.equals(cell))) return;
-        for (var tagCode : splitTags(cell))
-            if (!tagMap.containsKey(tagCode))
+        for (var tagCode : splitTags(cell)) {
+            var tag = tagMap.get(tagCode);
+            if (tag == null) {
                 addError(result, row.getRowNumber(), trim(row.getSpuCode()), "标签编码", "TAG_NOT_FOUND", "标签编码不存在：" + tagCode);
+            } else if (!allowClear && !"ENABLED".equals(tag.getStatus())) {
+                addError(result, row.getRowNumber(), trim(row.getSpuCode()), "标签编码", "TAG_NOT_USABLE",
+                        "标签已停用，请改选启用的标签：" + tagCode);
+            }
+        }
     }
 
     private void validateGroup(String spuCode, List<ProductImportRow> rows, ProductImportResultVO result) {
