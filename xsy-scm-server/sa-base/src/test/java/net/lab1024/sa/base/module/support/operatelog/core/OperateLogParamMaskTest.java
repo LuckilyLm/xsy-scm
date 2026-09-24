@@ -64,12 +64,19 @@ class OperateLogParamMaskTest {
     }
 
     @Test
-    @DisplayName("非 JSON 脏值与空值原样放行，不吞掉整条参数日志")
-    void passesThroughNonJsonInput() {
+    @DisplayName("非 JSON 脏值原样放行；疑似 JSON 但解析失败时不得留下原文")
+    void passesThroughNonJsonButDropsRawTextWhenParseFails() {
         assertThat(OperateLogParamMask.mask(null)).isNull();
         assertThat(OperateLogParamMask.mask("")).isEmpty();
         assertThat(OperateLogParamMask.mask("plain text")).isEqualTo("plain text");
-        // 截断 / 脏 JSON：解析失败留给前端第二层兜底
-        assertThat(OperateLogParamMask.mask("{\"password\":\"x\"")).isEqualTo("{\"password\":\"x\"");
+
+        // 截断 / 脏 JSON：这是写库出口，返回原文等于把凭据明文永久落库，前端第二层遮不住数据库行。
+        // 与 FileKeyVoSerializer「不再有任何分支写出 value」同口径。
+        String truncated = "{\"password\":\"P@ssw0rd\"";
+        assertThat(OperateLogParamMask.mask(truncated)).doesNotContain("P@ssw0rd").doesNotContain(truncated);
+
+        // 结构彻底损坏的数组载荷同样不得回声原文
+        String brokenArray = "[{\"token\":\"rt-secret\"";
+        assertThat(OperateLogParamMask.mask(brokenArray)).doesNotContain("rt-secret");
     }
 }

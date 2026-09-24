@@ -28,11 +28,18 @@ final class OperateLogParamMask {
 
     private static final String MASKED_VALUE = "******";
 
+    /**
+     * 解析不出结构时唯一允许写库的载荷：只留下「这里发生过脱敏失败」的事实，不含任何原文。
+     */
+    private static final String UNPARSEABLE_PAYLOAD = "[{\"operateLogParamMasked\":\"UNPARSEABLE_PAYLOAD\"}]";
+
     private OperateLogParamMask() {
     }
 
     /**
      * 遮蔽 JSON 文本里所有命中敏感键名的值；非 JSON（脏值 / 截断）原样返回，不额外造错误。
+     *
+     * <p>看似 JSON 但解析失败时返回不含原文的占位载荷，而不是原文。
      */
     static String mask(String json) {
         if (json == null || json.isEmpty() || (json.charAt(0) != '{' && json.charAt(0) != '[')) {
@@ -45,8 +52,10 @@ final class OperateLogParamMask {
             }
             return JSON.toJSONString(node);
         } catch (RuntimeException e) {
-            // 解析不了说明已不是本次序列化的产物：宁可留原值让第二层兜底，也不能丢整条参数日志
-            return json;
+            // 本方法在切面唯一的写库出口上：原文一旦落库就永久留存，前端 operate-log-mask.ts 只能遮展示、遮不住数据库行，
+            // 也遮不住持日志读取权的人。所以这里不能沿用「留给第二层兜底」——与 FileKeyVoSerializer、
+            // StocktakeSnapshotSigner 同口径：去掉任何写出原始 value 的分支，宁可丢这条参数的可读性。
+            return UNPARSEABLE_PAYLOAD;
         }
     }
 
