@@ -13,5 +13,5 @@ import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
 @Data
 public class DeliveryPrintVO {
     private DeliveryDetailVO detail;
-    private List<net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity> items;
+    private List<DeliveryPrintItemVO> items;
 }

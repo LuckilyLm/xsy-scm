@@ -55,8 +55,17 @@
         WHERE route_id = #{id}
           AND deleted = FALSE
     </update>
-    <select id="printItems" resultMap="net.lab1024.sa.admin.module.scm.order.dao.SalesOrderItemDao.row">
-        SELECT i.*
+    <select id="printItems" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryPrintItemVO">
+        <!-- 只取打印页真正消费的列；原先 resultMap 复用 SalesOrderItemDao.row 会把 33 列实体整份吐出去 -->
+        SELECT i.id,
+               i.order_id                                                               AS orderId,
+               i.product_name_snapshot                                                  AS productNameSnapshot,
+               i.spec_name_snapshot                                                     AS specNameSnapshot,
+               i.sale_unit_snapshot                                                     AS saleUnitSnapshot,
+               i.ordered_quantity                                                       AS orderedQuantity,
+               i.actual_quantity                                                        AS actualQuantity,
+               i.ordered_line_amount                                                    AS orderedLineAmount,
+               i.settlement_line_amount                                                 AS settlementLineAmount
         FROM sales_order_item i
                  JOIN delivery_route_order o ON o.order_id = i.order_id
         WHERE o.route_id = #{id}
@@ -94,6 +103,11 @@
     </sql>
     <select id="candidate" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) candidate WHERE order_id=#{id}
+    </select>
+    <!-- 加入线路时按订单逐个查快照是 500 次往返；复用 candidateSource，口径不会与单查版漂移。 -->
+    <select id="candidateByIds" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
+        SELECT * FROM (<include refid="candidateSource"/>) candidate WHERE candidate.order_id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
     </select>
     <select id="candidates" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) c WHERE c.status IN

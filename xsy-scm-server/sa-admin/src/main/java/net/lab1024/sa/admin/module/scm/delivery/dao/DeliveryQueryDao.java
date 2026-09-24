@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryQueryForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.*;
-import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
 
 @Mapper
 public interface DeliveryQueryDao {
@@ -24,11 +23,13 @@ public interface DeliveryQueryDao {
 
     DeliveryCandidateVO candidate(@Param("id") Long id);
 
+    List<DeliveryCandidateVO> candidateByIds(@Param("ids") List<Long> ids);
+
     Long nextNumber();
 
     int bumpStopSequences(@Param("id") Long id);
 
-    List<SalesOrderItemEntity> printItems(@Param("id") Long id);
+    List<DeliveryPrintItemVO> printItems(@Param("id") Long id);
 
     List<DeliveryOrderViewVO> orderView(@Param("id") Long id);
 

@@ -70,7 +70,26 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
         expectCode(() -> salesOrderService.cancel(cancelOrder, prefix + ":cancel-assigned"), 40960);
         jdbc.update("UPDATE customer SET address='新地址',longitude=120,latitude=30 WHERE id=?", c1);
         assertThat(deliveryQuery.detail(id).getStops()).allSatisfy(s -> assertThat(s.getAddressSnapshot()).isEqualTo("W5 IT 地址"));
-        assertThat(deliveryQuery.print(id).getItems()).hasSize(3);
+        var items = deliveryQuery.print(id).getItems();
+        assertThat(items).hasSize(3);
+        // 逐字段查值而不是只查 JSON 里有没有键名：只断言 contains("\"orderId\":") 时，
+        // 列别名写错导致映射成 null 也照样通过（键仍在，只是值为 null），等于没钉住。
+        assertThat(items).allSatisfy(item -> {
+            assertThat(item.getId()).isNotNull();
+            assertThat(item.getOrderId()).isNotNull();
+            assertThat(item.getProductNameSnapshot()).isNotBlank();
+            assertThat(item.getSaleUnitSnapshot()).isNotBlank();
+            assertThat(item.getOrderedQuantity()).isNotNull();
+        });
+        // 打印明细原先直出 SalesOrderItemEntity（33 列，含 deleted/version/createdBy 审计列与
+        // draftPriceSourceId/lockedPriceSourceId/manualPriceReason 等价格口径内部字段）。
+        var printedItems = json.writeValueAsString(items);
+        // 出网契约：金额为归一到 4 位的定点字符串。注意 JsonConfig 已全局把 BigDecimal 序列化成
+        // 字符串，所以这条校验的不是下面的注解，注解额外保证的是「补到 4 位」这层语义。
+        assertThat(printedItems).as("定点金额必须是四位小数字符串")
+                .containsPattern("\"orderedQuantity\":\"\\d+\\.\\d{4}\"");
+        assertThat(printedItems).doesNotContain("lockedUnitPrice", "manualPriceReason",
+                "draftPriceSourceId", "lockedPriceSourceId", "\"deleted\":", "\"version\":");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM inventory_movement WHERE sku_id=?", Integer.class, sku)).isZero();
         var cancel = version(id);
         cancel.setReason("调整配送计划");
