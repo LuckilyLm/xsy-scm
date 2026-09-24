@@ -75,10 +75,11 @@ P0   Baseline closure: FA-1..FA-3 + formal  COMPLETE (2026-09-24); F0-DEBT-01 cl
 W6-1 Inventory (balance/movement/inbound)  BACKEND + BROWSER VERIFIED
 P1   Sorting management (V60-V62)          COMPLETE (2026-09-24): backend + 1057-test full
                                          regression + 129 browser E2E all green
-P2   Delivery L3 (dispatch/outbound/sign)  IN PROGRESS (rulings registered 2026-09-25,
-                                         migrations from V63 — rescan the actual max first)
+P2   Delivery L3 (dispatch/outbound/sign)          COMPLETE (2026-09-25): V63-V64, backend
+                                         full regression 1076 tests / 0 failures / 0 errors /
+                                         5 cloud skips, browser 136 passed / 8 designed skips
 W6-2 Mini Program                          NOT STARTED
-Order after P2: P2 -> Finance R1 -> Finance R2 -> marketing/payment/settlement -> W6-2.
+Order after P2: Finance R1 -> Finance R2 -> marketing/payment/settlement -> W6-2.
 ```
 
 W4 = Sales Order (COMPLETE).
@@ -251,6 +252,33 @@ no automatic re-settlement. One documented exception to the P0 "option lists mus
 not narrowed by `seller_id` (it returns no prices or amounts) — see ruling 22 before reusing that
 pattern anywhere else.
 
+P2 物流配送 L3 (**COMPLETE — backend + PostgreSQL IT + concurrency IT + full regression + browser
+E2E verified, 2026-09-25**; module
+`net.lab1024.sa.admin.module.scm.delivery` + `...scm.inventory.service.InventoryFulfillmentService`;
+see 「P2 物流配送 L3 裁决」第 1–23 条 in `docs/decisions.md`) —
+dispatch is the **only producer of the sales-outbound fact** for an order. Invariants that must not be
+regressed: shipped quantity is `sorting_task_item.sorted_quantity`, dispatch never re-reads
+`sales_order_item.actual_quantity`; a route dispatches **atomically** (any order that lost eligibility,
+e.g. a REOPEN, rejects the whole route — there is no partial dispatch); one route = one
+`inventory_outbound`, whose lines keep `sales_order_item_id` **unmerged** (that provenance is what
+closes P1 ruling 21: a line with a `CONFIRMED` outbound line cannot be reopened, and Finance R1 can
+attribute cost per order line). Delivery never writes `inventory_balance` / `inventory_reservation` /
+`inventory_movement` itself — it calls the one inventory command, which releases the reservation
+**before** decrementing stock because `ck_inventory_balance_available` is evaluated per statement
+(10 on hand / 10 reserved / ship 5 fails the other way round). A reservation retires as a **whole row**:
+`CONSUMED` when it shares the shipping warehouse and the line actually shipped, `RELEASED` otherwise
+(including the cross-warehouse case, where the whole row is released and the quantity is taken from the
+route warehouse); there is deliberately no `consumed_quantity` column, because
+`uk_inventory_reservation_source_active` excludes no status and one order line owns exactly one row for
+life. Outbound documents are created directly `CONFIRMED` (manual edit/confirm/cancel all require
+DRAFT). Sign-off is order-level `SIGNED`/`EXCEPTION` with a mandatory reason, terminal, and it **never
+reverses** `SALES_OUT` — returns must later add reverse facts. Dispatch carries `Idempotency-Key` +
+route `version`; sign carries the **row** version and no idempotency header. `sign` is the one delivery
+write action narrowed by `driverScope` (drivers hold sign, so an id-only write would let a driver sign
+another driver's route); `plan/cancel/update` stay deliberately unscoped as in L0–L2. Printing still
+never dispatches. Not in scope: GPS/tracks, route optimisation, driver app, e-signature images, partial
+sign-off, auto-refund, return inbound.
+
 W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
 [`docs/progress.md`](./docs/progress.md) are adjudicated.
 
@@ -366,6 +394,15 @@ V61  V61__scm_sorting_menus_permissions.sql           p1   data-only，分拣菜
                                                    complete/cancel/reopen/print/summary:query）
 V62  V62__scm_sorting_roles.sql                       p1   data-only，正式角色 SCM_SORTER 与
                                                    队列管理权授予 SCM_STOREKEEPER_LEAD（按 role_code 种）
+V63  V63__scm_delivery_fulfillment.sql                p2   配送 L3 履约数据地基：出库单补 source_document_*
+                                                   （一条线路一张出库单的部分唯一索引）、出库明细补
+                                                   sales_order_id / sales_order_item_id（同 SKU 不同订单行
+                                                   不合并）、delivery_route_order 加履约状态
+                                                   （PENDING/IN_TRANSIT/SIGNED/EXCEPTION + 签收时点/人/原因，
+                                                   异常必填原因与终态成对均为 CHECK）、delivery_route 加
+                                                   发车与完成时点（与 status 成对的 CHECK）
+V64  V64__scm_delivery_l3_permissions.sql             p2   data-only，菜单 1017–1019 三个权限点
+                                                   （dispatch / order:sign / route:complete）与角色授权矩阵
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
@@ -375,9 +412,9 @@ V33（规格转换）与 V34（移动加权成本）的**列表页已于 2026-09
 **五条写流程 E2E 已于 2026-09-20 覆盖**（出库确认、盘点确认、报损报溢审批、
 调拨发出/收货、规格转换审批，`e2e/scm-inventory-write.spec.ts` 6/6）。
 V31/V33 的转入成本清零缺陷已由 V37 + 代码修复（成本随货平移）。
-仍未覆盖：**阈值预警推送**（本波只做可查列表）、**配送 L3**（发车 / 正式出库 / 签收，进行中）。
-预留的**并发**压测与分拣已于 P0 / P1 补齐（`ScmInventoryReservationConcurrencyIT` 五条真并发用例
-+ 20× 定向重复闸门；P1 全量回归 + 129 项浏览器 E2E）。见 `docs/progress.md`。
+仍未覆盖：**阈值预警推送**（本波只做可查列表）。预留的**并发**压测、分拣与配送 L3 均已补齐
+（`ScmInventoryReservationConcurrencyIT` 五条真并发用例 + 20× 定向重复闸门；
+P1 全量回归 + 129 项浏览器 E2E；P2 发车整链 + 并发 + 145 项浏览器套件）。见 `docs/progress.md`。
 
 > **B7 数据大屏（V28）已于 2026-09-20 完成 V1 视觉重构**：三列 420/1000/420 + 底部趋势带，
 > 10 个面板、3 张图表，新增 `GET /scm/screen/data/trend?range=7d|30d` 与库存健康度

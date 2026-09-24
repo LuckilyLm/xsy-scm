@@ -8,7 +8,8 @@
 | --- | --- | --- |
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
-| P2 物流配送 L3 | **进行中**（2026-09-25 开工：裁决第 1–20 条已登记，代码与本行验证结论待补） | 发车 + 正式出库 + 订单级签收 + 完成线路；主线顺序 P2 → Finance R1 → Finance R2；裁决见 `decisions.md`「P2 物流配送 L3 裁决」 |
+| P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
+| Finance R1 应收与成本归属 | 未开始 | 前置已具备：订单行 → 实发 → 出库流水 → `unit_cost` 的追溯链由 P2 打通；顺序 P2 → Finance R1 → Finance R2 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -511,6 +512,54 @@
   `XSY_V2_DB_URL=jdbc:p6spy:...:15432/xsy_scm_b0?currentSchema=xsy_v2` 重启后端（V59–V62 由 Flyway 自动应用），
   再 `bash tools/dev_up.sh sync` 同步容器快照，最后
   `XSY_V2_PG_DB=xsy_scm_b0 npx playwright test e2e/scm-sorting.spec.ts`。
+
+### 2026-09-25 P2 物流配送 L3：发车即正式出库（V63–V64）
+
+裁决依据：[`decisions.md`](./decisions.md)「P2 物流配送 L3 裁决（2026-09-25）」第 1–20 条，
+以及实现期补记的第 21–23 条。主线顺序 **P2 → Finance R1 → Finance R2**；本轮不跳 Finance，
+也不回头扩商品 / 采购 / 小程序的业务接口。开工基线：`git fetch` 后本地 HEAD 与 `origin/main`
+同为 `0dfb68a`，Flyway 实际 max = V62，因此迁移从 **V63** 起（不是照抄规划稿的号）。
+
+- **数据模型（V63，含反例取证）**：`inventory_outbound_item` 补 `sales_order_id / sales_order_item_id`
+  （成对 CHECK + 部分索引，**同 SKU 不同订单行不合并**）；`inventory_outbound` 补 `source_document_*`
+  并加部分唯一索引 `uk_inventory_outbound_source_active`，把「一条线路最多一张出库单」钉进库里；
+  `delivery_route_order` 补履约状态 `PENDING / IN_TRANSIT / SIGNED / EXCEPTION` + 签收时点 / 人 / 原因
+  （异常必填原因、终态必留时点与操作人，都是 CHECK）；`delivery_route` 补发车与完成时点，
+  并用「状态到了就必须有时点」的 CHECK 拦住任何绕过服务端的迁移。四条约束各自用一条必然失败的
+  INSERT 探过（`ck_delivery_route_dispatched`、`ck_delivery_order_exception_reason`、
+  `ck_inventory_outbound_item_source_pair`、`uk_inventory_outbound_source_active`）。
+- **权限（V64）**：1017 发车 / 1018 订单签收 / 1019 完成线路。发车授调度 + 仓库主管，
+  签收授调度 + 司机，完成线路授调度；按 `role_code` 种，`ScmBusinessRoleMatrixPgIT` 用查询取证
+  而不是人工推断。**配置要求**：发车走库存域既有的仓库范围守卫，所以调度岗必须有
+  `employee_warehouse_scope` 授权行 —— 浏览器用例先撤授权证 30005、再补授权证成功，
+  两端都在同一条用例里，避免「看着绿其实没跑守卫」。
+- **库存域唯一写入口** `InventoryFulfillmentService`：一条命令在同一事务内完成
+  「锁预留 → 按 (warehouse_id, sku_id) 升序预锁余额（含跨仓预留所在行）→ 整条归还预留 →
+  逐行产生 `SALES_OUT` → 出库单直生 `CONFIRMED`」。`module/scm/delivery` 里没有任何
+  余额 / 预留 / 流水写入（前端契约用例也钉住配送 API 触不到库存域接口）。
+- **实现期发现并修掉的真实缺陷**：发车与分拣重开原本不在同一批行上加锁，可交错到
+  「出库单已 CONFIRMED」与「任务已 SORTING」同时成立，于是已出货的订单行还能改分拣量。
+  现 `reopen` 先按订单 id 升序锁订单行再判定（与 `dispatch` 同序），并发用例把两种合法结局钉死。
+- **验收计数**：后端一次性干净库（V1→V64）全量 **1076 项 / 0 失败 / 0 错误 / 5 云端跳过**
+  （P1 是 1057；新增 19 项 = 履约命令 7 + 发车链路 9 + 发车并发 2 + 角色矩阵 1）；
+  新增 IT 定向复跑 49/49 绿（含 P1 分拣 `SortingTaskPgIT` 20 项未受影响）。
+  前端四闸门：`lint` 0 error（3 条既有 warning）、`npm test` **247/247**、
+  `ts_baseline_ratchet.py check` PASS（SCM 0 / 新增 0 / 修复 29 / 总量 1940 < 基线 1974）、
+  `npm run build` 成功。浏览器全量 **145 项：136 passed / 8 按设计跳过 / 1 failed**，
+  新增 `e2e/scm-delivery-l3.spec.ts` **8/8**（整链：备货→订单→少拣分拣→组单规划→发车→出库与流水取证→
+  签收/异常→完成线路，含幂等重放、重开互斥、非超管与司机范围、履约标签页真实渲染）。
+- **未复现的观察（不当成已修）**：唯一那 1 项失败是 `smartadmin-native.spec.ts` 的
+  「登录登出记录」在 `page.waitForResponse` 上超时 20s —— 该页请求在监听器挂上前就已完成时必然假失败。
+  随后单独把整个 spec 连跑两次都是 **17/17 绿**。P1 收尾时同一处也出现过一次同样的一次性红，
+  因此记为共享夹具的已知脆弱点而不是 P2 回归；没有把它当噪声删断言，也没有谎称已修。
+- **既有 L0–L2 用例的必要改写**：`scm-delivery.spec.ts` 第 6 条原本断言「L3 端点根本不存在」，
+  L3 落地后该断言按定义失效。改成「存在且被守住」：用错误 version 撞发活得 40921、
+  PLANNED 直接完成得 41101、未发车签收得 41101 —— 既证明路由已注册，又不在这条用例里真扣库存。
+- **打印语义未动**：端点、载荷、计次与幂等键全部保持原样；发车是独立端点，
+  契约用例继续钉「打印面板里没有任何 L3 动作」。整条线路实发为 0（全缺）时不生成出库单，
+  `outboundNo` 为 `null` 是**成功**，前端文案必须解释为什么没有单号。
+- **环境**：dev 库 `xsy_scm_b0` 已随重启的 fat jar 自动应用 V63/V64（Flyway 日志
+  `Successfully applied 2 migrations ... now at version v64`），web 容器快照已同步。
 
 ### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）
 
