@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryLossGainStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryLossGainTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryLossGainDao;
@@ -33,6 +34,7 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_PARAM_INVALID;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_REJECT_OPINION_REQUIRED;
+import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_STATUS_INVALID;
 
 /**
@@ -56,6 +58,10 @@ import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorC
  * 录单人改了明细，版本已经前进，审批以 40921 失败并要求刷新。
  * 版本判断在**写流水之前**先做一次（早失败，不做无用功），
  * 同时保留在 SQL 的 {@code WHERE} 里作为并发下的第二道防线。
+ *
+ * <p><b>禁止自建自审</b>：本域只有报损报溢同时存在「录单 + 审批」两个动作，
+ * 因此审批通过与驳回都要求 {@code approver != creator}（41065，P0 基线收口裁决第 8 条）。
+ * 不为此给别的库存单据补审批环节 —— 没有审批动作的单据不存在自审问题。
  */
 @Service
 @RequiredArgsConstructor
@@ -73,6 +79,8 @@ public class InventoryLossGainService {
 
     private final MessageService messageService;
 
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
     /**
      * 新建报损报溢单（**创建即待审核**）。
      *
@@ -86,6 +94,7 @@ public class InventoryLossGainService {
         requireItems(form);
         requireKnownType(form.getAdjustType());
         String operator = ScmOperator.current();
+        warehouseScopeGuard.require(form.getWarehouseId());
         // 仓库不存在时给出准确错误，而不是让审批阶段退化成「没有库存记录」。
         warehouseService.require(form.getWarehouseId());
 
@@ -121,6 +130,8 @@ public class InventoryLossGainService {
         warehouseService.require(form.getWarehouseId());
 
         InventoryLossGainEntity locked = lockAndRequire(id);
+        // 行上的旧仓与表单的新仓都要授权，否则可以把一张待审核单挪到自己管不着的仓
+        warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
 
         if (lossGainDao.updatePending(id, form.getAdjustType(), form.getWarehouseId(),
@@ -143,8 +154,11 @@ public class InventoryLossGainService {
         OffsetDateTime now = OffsetDateTime.now();
 
         InventoryLossGainEntity locked = lockAndRequire(id);
+        // 先判仓库授权再判状态/版本/自审：范围之外的单据不该回答任何其他问题
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
         requireVersion(locked, form);
+        requireNotSelfApproval(locked, operator);
         // 类型未知就不该继续 —— 方向无法确定，不能猜。
         ScmInventoryLossGainTypeEnum type =
                 ScmInventoryLossGainTypeEnum.of(locked.getAdjustType());
@@ -196,8 +210,11 @@ public class InventoryLossGainService {
         }
 
         InventoryLossGainEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
         requireVersion(locked, form);
+        // 驳回同样是审批动作：自驳自单会让「待审核」这一状态形同虚设，故与通过走同一条禁令
+        requireNotSelfApproval(locked, operator);
 
         if (lossGainDao.markRejected(id, now, operator, form.getAuditOpinion(), form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -214,6 +231,7 @@ public class InventoryLossGainService {
     public void delete(Long id) {
         String operator = ScmOperator.current();
         InventoryLossGainEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
         itemDao.deleteByLossGainId(id, operator);
         if (lossGainDao.deleteById(id) != 1) {
@@ -276,6 +294,43 @@ public class InventoryLossGainService {
     private static void requireVersion(InventoryLossGainEntity entity, InventoryLossGainAuditForm form) {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    /**
+     * 禁止自建自审（P0 基线收口裁决第 8 条）：审批人不得是该单的录单人。
+     *
+     * <p>{@code created_by} 与 {@code auditor} 都是 {@link ScmOperator} 写的
+     * {@code "userType:employeeId"} 串，因此<b>只比较员工号那一段</b>：
+     * {@code userType} 只是登录端类型，同一个人换个端登录仍是同一个人，
+     * 拿整串比相等等于给「换个端就能自审」留口子。
+     *
+     * <p>归属解析不出来（历史 {@code created_by} 为空或格式脏）时不阻断：
+     * 无法证明是同一人，就不该用一个业务错误把有效单据卡死；这种情况按审计缺陷单独治理。
+     */
+    private static void requireNotSelfApproval(InventoryLossGainEntity document, String operator) {
+        Long approverId = employeeIdOf(operator);
+        Long creatorId = employeeIdOf(document.getCreatedBy());
+        if (approverId != null && approverId.equals(creatorId)) {
+            throw new ScmBusinessException(INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN);
+        }
+    }
+
+    /**
+     * 取 {@code "userType:employeeId"} 里的员工号；解析不出返回 {@code null}。
+     */
+    private static Long employeeIdOf(String operator) {
+        if (operator == null) {
+            return null;
+        }
+        String[] parts = operator.split(":");
+        if (parts.length != 2) {
+            return null;
+        }
+        try {
+            return Long.parseLong(parts[1].trim());
+        } catch (NumberFormatException notANumber) {
+            return null;
         }
     }
 

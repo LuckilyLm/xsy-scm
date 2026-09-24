@@ -1,5 +1,6 @@
 package net.lab1024.sa.admin.module.scm.order.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
@@ -8,6 +9,9 @@ import net.lab1024.sa.admin.module.scm.order.manager.*;
 import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
@@ -33,6 +37,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 @RequiredArgsConstructor
 public class OrderReturnService {
     private final SalesOrderService orders;
+    private final SalesOrderDao orderRows;
     private final SalesOrderItemDao orderItems;
     private final OrderReturnDao returns;
     private final OrderReturnItemDao items;
@@ -40,10 +45,14 @@ public class OrderReturnService {
     private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService idempotency;
     private final OrderOperationLogRecorder orderLogs;
+    private final ScmDataScopeService scopeService;
 
     public PageResult<OrderReturnVO> query(OrderReturnQueryForm f) {
+        ScmDataScopeContext scope = scopeService.resolve();
+        if (scope.getOrderSellerScope().isEmpty()) return ScmDataScopeService.emptyPage(f);
         var page = SmartPageUtil.convert2PageQuery(f);
-        return SmartPageUtil.convert2PageResult(page, returns.query(page, f).stream().map(this::vo).toList());
+        return SmartPageUtil.convert2PageResult(page,
+                returns.query(page, f, scope.getOrderSellerScope()).stream().map(this::vo).toList());
     }
 
     private OrderReturnVO vo(OrderReturnEntity r) {
@@ -53,18 +62,49 @@ public class OrderReturnService {
         return v;
     }
 
+    /** 退货单详情读（HTTP 入口）：可见性跟随父订单的负责人范围。 */
     public OrderReturnDetailVO detail(Long id) {
+        return detail(id, scopeService.resolve());
+    }
+
+    /**
+     * 退货单详情读 + 显式范围。父订单读不到时同样按 30005 处理：
+     * 退货单本身没有归属列，「看不到订单却能看它的退货」就是绕过。
+     */
+    public OrderReturnDetailVO detail(Long id, ScmDataScopeContext scope) {
         var r = returns.selectById(id);
         if (r == null) throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
+        requireParentOrderVisible(r.getOrderId(), scope.getOrderSellerScope());
+        return detailSnapshot(r);
+    }
+
+    /**
+     * 未收窄的详情快照：审批/驳回/取消等写命令在同一事务里回读自己刚改过的单据，
+     * 归属判定只属于读接口，不给写流程加第二次门槛（写流程的门槛在订单锁与状态机上）。
+     */
+    public OrderReturnDetailVO detailSnapshot(Long id) {
+        var r = returns.selectById(id);
+        if (r == null) throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
+        return detailSnapshot(r);
+    }
+
+    private OrderReturnDetailVO detailSnapshot(OrderReturnEntity r) {
         var v = new OrderReturnDetailVO();
         BeanUtils.copyProperties(vo(r), v);
-        v.setItems(items.list(id).stream().map(x -> {
+        v.setItems(items.list(r.getId()).stream().map(x -> {
             var i = new OrderReturnItemVO();
             BeanUtils.copyProperties(x, i);
             i.setReturnItemId(x.getId());
             return i;
         }).toList());
         return v;
+    }
+
+    private void requireParentOrderVisible(Long orderId, ScmValueScope orderSellerScope) {
+        var order = orderRows.selectById(orderId);
+        if (order == null || !orderSellerScope.allows(order.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -111,7 +151,7 @@ public class OrderReturnService {
             row.setReturnId(r.getId());
             items.insert(row);
         }
-        var result = detail(r.getId());
+        var result = detailSnapshot(r.getId());
         // §7.3：return 与 cancellation / refund 并列，必须留操作日志。日志与业务变更同一事务。
         orderLogs.record(r.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 "退货单 " + r.getReturnNo() + " 建单", null, Map.of("status", result.getStatus()));
@@ -164,7 +204,7 @@ public class OrderReturnService {
         refund.setCreatedBy(ScmOperator.current());
         refund.setUpdatedBy(refund.getCreatedBy());
         refunds.insert(refund);
-        var result = detail(r.getId());
+        var result = detailSnapshot(r.getId());
         orderLogs.record(r.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 "退货单 " + r.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
                 Map.of("status", "PENDING"), Map.of("status", result.getStatus(),
@@ -196,7 +236,7 @@ public class OrderReturnService {
         else r.setCancelledAt(OffsetDateTime.now());
         stamp(r, false);
         if (returns.updateById(r) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
-        var result = detail(r.getId());
+        var result = detailSnapshot(r.getId());
         orderLogs.record(r.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 f.getDecisionReason().trim(), Map.of("status", "PENDING"),
                 Map.of("status", state, "decisionReason", r.getDecisionReason()));

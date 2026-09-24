@@ -24,7 +24,18 @@
                                                                          #{beforeData,typeHandler=net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler},
                                                                          #{afterData,typeHandler=net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler},
                                                                          #{createdBy})</insert>
+    <!-- 操作日志行没有 owner 列（operator/created_by 只回答「谁按的按钮」，不是归属），
+         因此可见性一律跟随父订单：order_id IN (范围内的订单)。日志表与 sales_order 是
+         多对一，用子查询而不是 JOIN，行数不会被放大、也不会因为订单被删而丢日志副本。 -->
     <select id="query" resultMap="row">SELECT * FROM order_operation_log WHERE TRUE
+        <if test="scope != null and scope.all == false">
+            AND order_id IN (SELECT so.id FROM sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            )
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.operationType != null and query.operationType != ''">AND operation_type=#{query.operationType}
         </if>
         <if test="query.orderId != null">AND order_id=#{query.orderId}</if>

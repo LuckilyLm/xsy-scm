@@ -17,6 +17,8 @@ import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
 import net.lab1024.sa.admin.module.scm.pricing.manager.PriceValidation;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
@@ -28,6 +30,7 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VE
 public class CustomerSkuVisibilityService {
     private final CustomerSkuVisibilityDao dao;
     private final ProductSkuOptionDao skus;
+    private final ScmDataScopeService scopeService;
 
     public List<CustomerSkuVisibilityVO> list(Long id) {
         return existing(id).stream().map(e -> new CustomerSkuVisibilityVO(e.getId(), e.getVersion(), e.getSkuId())).toList();
@@ -38,9 +41,14 @@ public class CustomerSkuVisibilityService {
     }
 
     public PageResult<CustomerSkuVisibilityReverseVO> reverse(CustomerVisibilityQueryForm form) {
+        // 反向列表的主体是客户，因此与客户列表同一套归属范围：读不到客户的人也不该看到它的商品白名单。
+        ScmDataScopeContext scope = scopeService.resolve();
+        if (scope.getCustomerSellerScope().isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
         form.setSortItemList(List.of());
         var page = SmartPageUtil.convert2PageQuery(form);
-        return SmartPageUtil.convert2PageResult(page, dao.reverse(page, form));
+        return SmartPageUtil.convert2PageResult(page, dao.reverse(page, form, scope.getCustomerSellerScope()));
     }
 
     @Transactional(rollbackFor = Exception.class)

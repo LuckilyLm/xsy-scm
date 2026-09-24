@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
@@ -25,6 +28,10 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VA
  *
  * <p>`GET /scm/warehouse/list` 只返回 **ENABLED** 仓库：它是给采购单/收货单的**下拉选择器**用的，
  * 与 W2 {@code CustomerTypeService.optionList()} 的口径一致；管理页用 {@code POST /query}。
+ *
+ * <p><b>三个读入口都按仓库授权范围收窄</b>（P0-H 裁决第 3 条）：未授权仓库的 id、名称、地址一律不给，
+ * 否则选择器就成了绕过仓库范围的旁门 —— 拿到别人仓库的 id 就能提交别人的入库单。
+ * 历史单据不受影响：它们展示的是自己行上的仓库名称快照，不经过本类。
  */
 @Service
 @RequiredArgsConstructor
@@ -40,13 +47,22 @@ public class WarehouseQueryService {
 
     private final WarehouseService service;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
-     * 下拉选择器：只返回 {@code ENABLED}，按编码排序。
+     * 下拉选择器：只返回 {@code ENABLED} 且落在授权范围内的仓库，按编码排序。
      */
     public List<WarehouseVO> list() {
-        return dao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
-                        .eq(WarehouseEntity::getStatus, ScmWarehouseStatusEnum.ENABLED.name())
-                        .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId))
+        ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
+        if (scope.isEmpty()) {
+            return List.of();
+        }
+        LambdaQueryWrapper<WarehouseEntity> query = new LambdaQueryWrapper<WarehouseEntity>()
+                .eq(WarehouseEntity::getStatus, ScmWarehouseStatusEnum.ENABLED.name());
+        if (!scope.isAll()) {
+            query.in(WarehouseEntity::getId, scope.getIds());
+        }
+        return dao.selectList(query.orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId))
                 .stream()
                 .map(WarehouseQueryService::toVO)
                 .toList();
@@ -54,18 +70,30 @@ public class WarehouseQueryService {
 
     public PageResult<WarehouseVO> query(WarehouseQueryForm form) {
         assertSortable(form);
+        ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
+        if (scope.isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.asc("warehouse_code"), OrderItem.asc("id"));
         }
-        List<WarehouseEntity> rows = dao.queryPage(page, form);
+        List<WarehouseEntity> rows = dao.queryPage(page, form, scope);
         List<WarehouseVO> list = new ArrayList<>(rows.size());
         rows.forEach(row -> list.add(toVO(row)));
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
+    /**
+     * 仓库详情；未授权的仓按无权限回答（30005），不按「不存在」回答，
+     * 否则探测仓库编号与探测授权可以分辨出来。
+     */
     public WarehouseVO detail(Long id) {
-        return toVO(service.require(id));
+        WarehouseEntity entity = service.require(id);
+        if (!dataScopeService.resolve().getWarehouseScope().allows(entity.getId())) {
+            throw new ScmDataScopeException();
+        }
+        return toVO(entity);
     }
 
     private void assertSortable(WarehouseQueryForm form) {

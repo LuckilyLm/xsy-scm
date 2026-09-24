@@ -62,6 +62,16 @@
         <if test="query.createdTo != null">
             AND o.created_at &lt; #{query.createdTo}
         </if>
+        <!-- 采购员数据范围：谓词落在驱动表 o 上（上面 agg 是明细聚合子查询，写进去只会改数字）。
+             scope.all 不拼谓词 → purchaser_id IS NULL 的未分配行对全量范围仍可见；
+             scope 为 null 是调用方漏传，按失败关闭返回 0 行，绝不退化成全量。 -->
+        <if test="scope != null and scope.all == false">
+            AND o.purchaser_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         ORDER BY o.created_at DESC, o.id DESC
     </select>
 

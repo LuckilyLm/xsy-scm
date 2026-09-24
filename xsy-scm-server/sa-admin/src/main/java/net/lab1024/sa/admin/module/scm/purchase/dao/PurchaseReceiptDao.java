@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.purchase.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseReceiptEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
@@ -24,8 +25,13 @@ public interface PurchaseReceiptDao extends BaseMapper<PurchaseReceiptEntity> {
 
     /**
      * 分页查询。
+     *
+     * <p>收货单本身没有采购员列，{@code scope}（采购员维度）在 Mapper 里按
+     * {@code EXISTS} 半连父采购单的 {@code purchaser_id} 判定；{@code null} 失败关闭返回 0 行。
+     * 仓库维度的收窄属库存/仓库侧口径，不在本语句里重复实现。
      */
-    List<PurchaseReceiptVO> query(Page<?> page, @Param("query") PurchaseReceiptQueryForm query);
+    List<PurchaseReceiptVO> query(Page<?> page, @Param("query") PurchaseReceiptQueryForm query,
+                                  @Param("scope") ScmValueScope scope);
 
     /**
      * 详情（单头）。

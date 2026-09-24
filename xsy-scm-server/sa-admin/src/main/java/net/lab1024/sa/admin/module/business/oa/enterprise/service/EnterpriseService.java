@@ -23,10 +23,13 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import net.lab1024.sa.base.module.support.datatracer.constant.DataTracerTypeEnum;
 import net.lab1024.sa.base.module.support.datatracer.domain.form.DataTracerForm;
 import net.lab1024.sa.base.module.support.datatracer.service.DataTracerService;
+import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
+import net.lab1024.sa.base.module.support.file.service.FileRelationService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -53,6 +56,9 @@ public class EnterpriseService {
 
     @Resource
     private DepartmentService departmentService;
+
+    @Resource
+    private FileRelationService fileRelationService;
 
     /**
      * 分页查询企业模块
@@ -96,6 +102,8 @@ public class EnterpriseService {
         // 数据插入
         EnterpriseEntity insertEnterprise = SmartBeanUtil.copy(createVO, EnterpriseEntity.class);
         enterpriseDao.insert(insertEnterprise);
+        rebindAttachments(insertEnterprise.getEnterpriseId(), insertEnterprise.getEnterpriseLogo(),
+                insertEnterprise.getBusinessLicense());
         dataTracerService.insert(insertEnterprise.getEnterpriseId(), DataTracerTypeEnum.OA_ENTERPRISE);
         return ResponseDTO.ok();
     }
@@ -121,6 +129,10 @@ public class EnterpriseService {
         EnterpriseEntity updateEntity = SmartBeanUtil.copy(enterpriseDetail, EnterpriseEntity.class);
         SmartBeanUtil.copyProperties(updateVO, updateEntity);
         enterpriseDao.updateById(updateEntity);
+        // updateById 跳过 null 列，因此按实际落库值换绑：表单未提交该列时不能收回旧附件的读取权
+        rebindAttachments(enterpriseId,
+                updateEntity.getEnterpriseLogo() == null ? enterpriseDetail.getEnterpriseLogo() : updateEntity.getEnterpriseLogo(),
+                updateEntity.getBusinessLicense() == null ? enterpriseDetail.getBusinessLicense() : updateEntity.getBusinessLicense());
 
         //变更记录
         DataTracerForm dataTracerForm = DataTracerForm.builder()
@@ -133,6 +145,15 @@ public class EnterpriseService {
 
         dataTracerService.addTrace(dataTracerForm);
         return ResponseDTO.ok();
+    }
+
+    /**
+     * 企业两处附件列共用一份授权集合：只按其中一处换绑会把另一处仍在引用的 key 判成「不再引用」。
+     */
+    private void rebindAttachments(Long enterpriseId, String enterpriseLogo, String businessLicense) {
+        List<String> fileKeys = new ArrayList<>(FileRelationService.splitKeys(enterpriseLogo));
+        fileKeys.addAll(FileRelationService.splitKeys(businessLicense));
+        fileRelationService.rebind(FileRelationBizTypeEnum.ENTERPRISE, enterpriseId, fileKeys);
     }
 
 

@@ -87,6 +87,14 @@
         FROM inventory_stocktake s
         LEFT JOIN warehouse w ON w.id = s.warehouse_id
         WHERE s.deleted = FALSE
+        <!-- 仓库数据范围：盘点单是整仓口径，未授权仓的盘点存在性都不应暴露；scope 缺失时恒假。 -->
+        <if test="scope != null and scope.all == false">
+            AND s.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.stocktakeNo != null and query.stocktakeNo != ''">
             AND s.stocktake_no ILIKE CONCAT('%', #{query.stocktakeNo}, '%')
         </if>

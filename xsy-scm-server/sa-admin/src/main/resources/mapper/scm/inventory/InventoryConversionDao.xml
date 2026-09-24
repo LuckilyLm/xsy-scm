@@ -98,6 +98,14 @@
         FROM inventory_conversion t
         LEFT JOIN warehouse w ON w.id = t.warehouse_id
         WHERE t.deleted = FALSE
+        <!-- 仓库数据范围：规格转换只发生在一个仓内，未授权仓的单据不可见；scope 缺失时恒假。 -->
+        <if test="scope != null and scope.all == false">
+            AND t.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.conversionNo != null and query.conversionNo != ''">
             AND t.conversion_no ILIKE CONCAT('%', #{query.conversionNo}, '%')
         </if>

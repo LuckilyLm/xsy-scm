@@ -24,7 +24,7 @@
         <a-range-picker v-model:value="timeRange" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" @change="changeTime"
         />
       </a-form-item>
-      <a-form-item label="金额"
+      <a-form-item v-if="canViewAmount" label="金额"
       >
         <a-input-number v-model:value="query.minAmount" string-mode :min="0" placeholder="最低"/>
         <span>至</span
@@ -90,7 +90,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {reactive, ref} from 'vue';
+import {computed, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
@@ -99,9 +99,11 @@ import {areaColumnsOf} from '../../common/scm-area';
 import {isLocated} from '/@/components/business/scm/map/types';
 import {datetime} from '../../common/scm-display';
 import {money} from '../delivery-display';
+import {useDeliveryPermission} from '../use-delivery-permission';
 import {deliveryError, type CandidateOrder, type DeliveryRoute, type Id, type Query} from '../delivery-types';
 
 const emit = defineEmits<{ saved: [] }>();
+const {canViewAmount} = useDeliveryPermission();
 const visible = ref(false),
     loading = ref(false),
     saving = ref(false),
@@ -115,15 +117,16 @@ const rows = ref<CandidateOrder[]>([]),
 const route = ref<DeliveryRoute>(),
     reason = ref('');
 let generation = 0;
-const columns: TableColumnsType = [
+// 候选池是调度能力，金额列仍按调用者的金额权限出现（服务端已把无权时的值抹成 null）。
+const columns = computed<TableColumnsType>(() => [
   {title: '订单号', dataIndex: 'orderNo', width: 170},
   {title: '客户', dataIndex: 'customerName', width: 160},
   {title: '配送地址', dataIndex: 'address', width: 230},
   {title: '期望配送', dataIndex: 'expectDeliveryTime', width: 170},
-  {title: '金额', dataIndex: 'orderAmount', align: 'right', width: 120},
-  {title: '商品行数', dataIndex: 'itemCount', align: 'right', width: 90},
+  ...(canViewAmount.value ? [{title: '金额', dataIndex: 'orderAmount', align: 'right' as const, width: 120}] : []),
+  {title: '商品行数', dataIndex: 'itemCount', align: 'right' as const, width: 90},
   {title: '定位', dataIndex: 'location', width: 90},
-];
+]);
 
 function select(keys: (string | number)[]) {
   selected.value = keys;

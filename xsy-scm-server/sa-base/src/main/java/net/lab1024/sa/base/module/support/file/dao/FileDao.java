@@ -42,4 +42,19 @@ public interface FileDao extends BaseMapper<FileEntity> {
      */
     List<FileVO> queryPage(Page page, @Param("queryForm") FileQueryForm queryForm);
 
+    /**
+     * 某用户上传后仍未绑定任何业务对象的暂存件数量（用于「每用户最多 100 个」的上限判断）。
+     */
+    int countUnboundScratchByCreator(@Param("creatorId") Long creatorId,
+                                     @Param("creatorUserType") Integer creatorUserType);
+
+    /**
+     * 可回收暂存件候选：超过保留窗口且**没有任何活动关系行**。
+     *
+     * <p>这里只判关系行；「是否仍被业务表直接引用」由回收任务再确认一次 ——
+     * 两条件都在，才允许物理删除。
+     */
+    List<FileVO> listScratchCandidates(@Param("retentionDays") int retentionDays,
+                                       @Param("limit") int limit);
+
 }

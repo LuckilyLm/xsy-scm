@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryBalanceVO;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeImportErrorVO;
@@ -66,6 +67,7 @@ public class InventoryStocktakeImportService {
     private final WarehouseService warehouseService;
     private final StocktakeSnapshotSigner signer;
     private final InventoryStocktakeImportTxService txService;
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     @Value("${scm.inventory.stocktake.snapshot.ttl-minutes:240}")
     private long ttlMinutes;
@@ -148,6 +150,8 @@ public class InventoryStocktakeImportService {
                     "该模板由他人导出，请用本人重新导出的模板导入");
             return result;
         }
+        // 仓库授权必须在幂等认领之前判：认领本身就是写，越权的导入请求不能在库里留下任何痕迹
+        warehouseScopeGuard.require(payload.warehouseId());
 
         // 来源集合必须与凭证完全一致：不能增删 / 替换行。
         Map<String, StocktakeSnapshotSigner.Entry> authoritative = new LinkedHashMap<>();

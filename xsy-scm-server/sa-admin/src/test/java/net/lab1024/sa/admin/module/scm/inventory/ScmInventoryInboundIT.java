@@ -358,7 +358,12 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(movement.getSourceDocumentType())
                 .isEqualTo(PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE);
         assertThat(movement.getUnitSnapshot()).isEqualTo(DEFAULT_PURCHASE_UNIT);
-        assertThat(movement.getUnitCost()).isEqualByComparingTo("6.2000");
+        // unit_cost 是采购价派生的成本事实：无 scm:report:cost:query 时 VO 给 null 而不是 0，
+        // 账本本身不受影响，成本仍可从流水行读回（可见性收口在 VO 层，不动账本）。
+        assertThat(movement.getUnitCost()).isNull();
+        assertThat(inventoryMovementDao
+                .selectBySourceItem(PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE, fx.receiptItemId())
+                .getUnitCost()).isEqualByComparingTo("6.2000");
         assertThat(movement.getBeforeQuantity()).isEqualByComparingTo("0.0000");
         assertThat(movement.getAfterQuantity()).isEqualByComparingTo("7.0000");
         assertThat(movement.getOperator()).isEqualTo(receiptOperator(fx.receipt().getId()));

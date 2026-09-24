@@ -21,6 +21,12 @@ public class DeliveryDriverEntity extends DeliveryRecord {
     private String driverName;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String phone;
+    /**
+     * 绑定的系统员工 id：把登录人映射回司机档案，是线路数据范围的唯一依据。
+     * {@code ALWAYS} 更新策略是解绑（改回 NULL）能落库的前提。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long employeeId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

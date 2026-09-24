@@ -63,7 +63,8 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1500 }"
+        :locale="{ emptyText }"
+        :scroll="{ x: 1560 }"
         :row-selection="{
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
@@ -90,6 +91,7 @@
           <div class="smart-table-operate">
             <a-button type="link" @click="detail?.open(record.id)">详情</a-button>
             <a-button type="link" @click="printRow(record)">打印</a-button>
+            <a-button type="link" v-privilege="'scm:purchase:assign'" @click="openReassign(record)">改派</a-button>
             <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:purchase:update'"
                       @click="drawer?.open(record.id)">
               编辑
@@ -139,6 +141,27 @@
   <PurchaseOrderForm ref="drawer" @saved="queryData"/>
   <PurchaseOrderDetail ref="detail" @saved="queryData"/>
 
+  <a-modal
+      v-model:open="reassignVisible"
+      title="改派采购员"
+      :confirm-loading="reassignSaving"
+      :ok-button-props="{ disabled: reassignSaving }"
+      @ok="submitReassign"
+  >
+    <a-alert v-if="reassignError" type="error" :message="reassignError" show-icon class="smart-margin-bottom10"/>
+    <p>采购单：<strong>{{ reassignTarget?.orderNo }}</strong>（{{ reassignTarget?.supplierName }}）</p>
+    <p>当前采购员：{{ reassignTarget?.purchaserName || '未分配' }}</p>
+    <a-form layout="vertical">
+      <a-form-item label="新采购员">
+        <EmployeeSelect v-model:value="reassignPurchaser" placeholder="留空即收回为未分配" width="100%"/>
+        <div class="ant-form-item-extra">留空表示收回为未分配，未分配单据仅持分配权或全量范围者可见。</div>
+      </a-form-item>
+      <a-form-item label="改派原因">
+        <a-textarea v-model:value="reassignReason" :maxlength="500" :rows="2" placeholder="选填，用于审计留痕"/>
+      </a-form-item>
+    </a-form>
+  </a-modal>
+
   <a-modal v-model:open="exportSettingsOpen" title="导出列设置" width="520px" @ok="saveExportSettings">
     <p class="export-hint">勾选需要导出的列；设置按当前登录用户本地记忆，刷新后仍保留。不勾选任何列时后端导出全部目录。</p>
     <a-checkbox-group v-model:value="exportColumns">
@@ -159,6 +182,7 @@ import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
@@ -168,6 +192,7 @@ import {
 } from '/@/constants/business/scm/purchase-const';
 import type {Order, OrderQuery} from './purchase-types';
 import {amount, progress} from './purchase-form-model';
+import {hasPermission} from '../common/scm-permission';
 import {datetime} from '../common/scm-display';
 import {purchaseError} from './purchase-errors';
 import {printPurchaseOrders} from './purchase-order-print';
@@ -182,6 +207,55 @@ const error = ref('');
 const selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof PurchaseOrderForm>>();
 const detail = ref<InstanceType<typeof PurchaseOrderDetail>>();
+
+/** 改派采购归属：独立动作、独立权限（scm:purchase:assign），带乐观锁 version；reason 可选留痕。 */
+const reassignVisible = ref(false);
+const reassignSaving = ref(false);
+const reassignError = ref('');
+const reassignTarget = ref<Order>();
+/** EmployeeSelect 的 value 不接受 null（[Number, Array]），用 undefined 桥接「收回为未分配」。 */
+const reassignPurchaser = ref<number | undefined>(undefined);
+const reassignReason = ref('');
+
+/** 无全量采购范围权限时，空表可能是授权范围所致而非系统无数据。 */
+const canSeeAllPurchase = computed(() => hasPermission('scm:purchase:scope:all:query'));
+const emptyText = computed(() =>
+  canSeeAllPurchase.value
+    ? '暂无数据'
+    : '当前仅显示您授权范围内的采购单；若无数据，可能是尚未分配采购员或授权范围未配置，请联系管理员确认。'
+);
+
+function openReassign(row: Order) {
+  reassignTarget.value = row;
+  reassignPurchaser.value = row.purchaserId == null ? undefined : Number(row.purchaserId);
+  reassignReason.value = '';
+  reassignError.value = '';
+  reassignVisible.value = true;
+}
+
+async function submitReassign() {
+  const row = reassignTarget.value;
+  if (!row) {
+    return;
+  }
+  reassignSaving.value = true;
+  reassignError.value = '';
+  try {
+    await purchaseOrderApi.reassign({
+      id: row.id!,
+      version: row.version!,
+      purchaserId: reassignPurchaser.value ?? null,
+      reason: reassignReason.value.trim() || null,
+    });
+    message.success('归属已改派');
+    reassignVisible.value = false;
+    await queryData();
+  } catch (e) {
+    reassignError.value = purchaseError(e);
+  } finally {
+    reassignSaving.value = false;
+  }
+}
 
 const userStore = useUserStore();
 /** 导出列偏好按「登录用户 + 场景」本地记忆（Wave 2B §6.5），不建后端表；缺失 / 损坏回落到整目录。 */
@@ -228,7 +302,7 @@ const columns = ref<TableColumnsType<Order>>([
   {title: '采购金额', dataIndex: 'totalAmount', align: 'right', width: 140},
   {title: '收货进度', dataIndex: 'receivedProgress', align: 'right', width: 110},
   {title: '创建时间', dataIndex: 'createdAt', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 360},
+  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 420},
 ]);
 
 async function queryData() {

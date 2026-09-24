@@ -16,6 +16,15 @@
         <include refid="customerColumns"/>
         FROM customer c
         WHERE c.deleted = FALSE
+        <!-- 数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭。
+             scope.all 时不拼谓词，因此 seller_id IS NULL 的未分配客户只对持全量/分配权者可见。 -->
+        <if test="scope != null and scope.all == false">
+            AND c.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.keyword != null and query.keyword != ''">
             <!-- 增强（Target Design Q8）：legacy 只搜编码 + 名称，这里追加联系人 / 联系电话 -->
             AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')

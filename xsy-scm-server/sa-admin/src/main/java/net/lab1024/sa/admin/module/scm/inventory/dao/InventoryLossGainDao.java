@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryLossGainEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryLossGainVO;
@@ -88,7 +89,8 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
     /**
      * 分页查询（联仓库取展示字段）。
      */
-    List<InventoryLossGainVO> queryPage(Page<?> page, @Param("query") InventoryLossGainQueryForm query);
+    List<InventoryLossGainVO> queryPage(Page<?> page, @Param("query") InventoryLossGainQueryForm query,
+                                        @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

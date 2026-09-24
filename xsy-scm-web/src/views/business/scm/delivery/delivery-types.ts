@@ -9,6 +9,13 @@ export interface Driver {
     driverCode: string;
     driverName: string;
     phone: string;
+    /**
+     * 绑定的系统员工 id：把登录人映射回司机档案，是线路数据范围的唯一依据。
+     * 启用状态必须绑定（后端 requireBindableEmployee）；历史停用行可为空。
+     */
+    employeeId?: Id | null;
+    /** 绑定员工姓名快照，仅展示；范围判定仍用 employeeId 本身。 */
+    employeeName?: string | null;
     status: string;
     remark?: string | null;
 }

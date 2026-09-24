@@ -264,20 +264,22 @@ class ProductPgIT {
         conflict(() -> service.add(form),40038);
     }
     /**
-     * 本裁决之前落库的存量行沿用原 key 时放行，否则历史商品连改排序都保存不了；
-     * 但换绑成另一个私有 key 依旧拒绝。
+     * FA-3 之后只剩一条口径：商品图只能引用 public 前缀。此前给「沿用本行原有私有 key」留的过渡例外
+     * 已随 V58 删除，两层各自取证：换绑私有 key 由 Java 侧拒绝（40038，前端提示可定位），
+     * 绕过服务层直写私有 key 由数据库 CHECK 拒绝 —— 只有 Java 判断时，任何旁路写入都能重新造出
+     * 「私有 key 的活商品图」，而读侧会按公开资产把它展示给所有查看者。
      */
-    @Test void allowsLegacyPrivateKeyButRejectsRebindingToAnother() {
+    @Test void rejectsPrivateKeyOnBothLayers() {
         var legacyKey=upload("w1-legacy-private.png",FileFolderTypeEnum.COMMON.getValue()).getFileKey();
         var form=product(); form.setImages(new ArrayList<>(List.of(upload("w1-public.png"))));
         Long id=service.add(form);
-        jdbc.update("UPDATE product_image SET file_key=? WHERE spu_id=?",legacyKey,id);
 
-        var edit=update(id); edit.getImages().getFirst().setSortOrder(5); service.update(edit);
-        assertThat(query.detail(id).getImages().getFirst().getFileKey()).isEqualTo(legacyKey);
-
-        var rebind=update(id); rebind.getImages().getFirst().setFileKey(upload("w1-other-private.png",FileFolderTypeEnum.COMMON.getValue()).getFileKey());
+        var rebind=update(id); rebind.getImages().getFirst().setFileKey(legacyKey);
         conflict(() -> service.update(rebind),40038);
+        // 裸 SQL 探针放在最后：它会让本用例的 Spring 事务进入 25P02，之后的任何语句都只会拿到
+        // "current transaction is aborted"，看起来像 CHECK 没生效
+        assertThatThrownBy(() -> jdbc.update("UPDATE product_image SET file_key=? WHERE spu_id=?",legacyKey,id))
+                .hasMessageContaining("ck_product_image_public_file_key");
     }
     private Long category(Long parent,String suffix) {
         var form=new ProductCategoryAddForm(); form.setParentId(parent); form.setCategoryCode(prefix+suffix); form.setName(suffix); form.setStatus("ENABLED"); return categories.add(form);

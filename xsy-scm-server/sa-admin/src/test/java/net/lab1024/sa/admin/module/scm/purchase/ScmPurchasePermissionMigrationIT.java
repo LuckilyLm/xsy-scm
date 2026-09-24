@@ -124,11 +124,13 @@ class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
             }
         }
 
-        // 4（需求，含缺口预览）+ 13（采购单，含单笔/批量少收关单）+ 10（收货，B1 加 putaway）
-        // + 7（仓库，B1 加 enable/disable）= 34 个端点
-        assertThat(endpointCount).isEqualTo(34);
-        // 权限码去重后 23 个：3 + 8 + 6 + 5 + 1（缺口预览叠加 scm:inventory:balance:query，AND 模式）
-        assertThat(declared).hasSize(23);
+        // 4（需求，含缺口预览）+ 14（采购单，含单笔/批量少收关单、P0-F 加 reassign 改派归属）
+        // + 10（收货，B1 加 putaway）+ 7（仓库，B1 加 enable/disable）= 35 个端点
+        assertThat(endpointCount).isEqualTo(35);
+        // 权限码去重后 24 个：3 + 9 + 6 + 5 + 1（缺口预览叠加 scm:inventory:balance:query，AND 模式）；
+        // 改派只多出一个 scm:purchase:assign —— 它是「能把单据换成谁」的分配权，
+        // 与 B1 的 putaway / enable 一样是新增动作而非新维度，所以端点与权限码同步 +1
+        assertThat(declared).hasSize(24);
         assertThat(declared).contains("scm:inventory:balance:query");
 
         List<String> seeded = jdbc.queryForList(

@@ -40,6 +40,22 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
 };
 
 /**
+ * 「入」方向的流水类型（与后端 `ScmInventoryMovementTypeEnum.getInbound()` 同集合）。
+ *
+ * 流水表没有 `direction` 列、`quantity` 恒为正，所以任何要展示「入 / 出」的页面
+ * （库存流水列表、报表中心的流水 Tab）都**只能**从这里派生方向。
+ * 在别处再写一份 IN / OUT 判断，就是计划 §22 禁止的第二份真相：
+ * 后端加类型时改了这个集合，方向立刻判反，而数字看起来完全正常。
+ */
+export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [
+    'PURCHASE_IN',
+    'STOCKTAKE_GAIN',
+    'GAIN_REPORT',
+    'TRANSFER_IN',
+    'CONVERT_IN',
+];
+
+/**
  * 流水来源单据类型。
  *
  * 与 `sourceDocumentItemId` 一起构成**稳定唯一源键**（防重锚点）；

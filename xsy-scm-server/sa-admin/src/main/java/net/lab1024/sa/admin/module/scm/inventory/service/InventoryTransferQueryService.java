@@ -1,7 +1,11 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryTransferStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferItemDao;
@@ -31,11 +35,17 @@ public class InventoryTransferQueryService {
 
     private final InventoryTransferItemDao itemDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
      * 在途库存报表（只读聚合，不进 inventory_balance）。
      */
     public List<InventoryInTransitVO> queryInTransit() {
-        return transferDao.queryInTransit();
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return List.of();
+        }
+        return transferDao.queryInTransit(scope.getWarehouseScope());
     }
 
     /**
@@ -44,19 +54,27 @@ public class InventoryTransferQueryService {
     public PageResult<InventoryTransferVO> queryPage(InventoryTransferQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是双联表结果（warehouse 联了两次），客户端传入的排序列名会与 join 列产生歧义。
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryTransferVO> list = transferDao.queryPage(page, query);
+        List<InventoryTransferVO> list = transferDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryTransferQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
     /**
-     * 详情（含明细，按录入顺序）。
+     * 详情（含明细，按录入顺序）。调拨两端任一到授权仓即可见，两端都不授权时按无权限回答。
      */
     public InventoryTransferVO detail(Long id) {
         InventoryTransferVO vo = transferDao.detail(id);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_NOT_FOUND);
+        }
+        ScmValueScope warehouseScope = dataScopeService.resolve().getWarehouseScope();
+        if (!warehouseScope.allows(vo.getFromWarehouseId()) && !warehouseScope.allows(vo.getToWarehouseId())) {
+            throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
         List<InventoryTransferItemVO> items = itemDao.listByTransferId(id);

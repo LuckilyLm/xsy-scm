@@ -56,4 +56,29 @@
         </foreach>
     </select>
 
+    <select id="countUnboundScratchByCreator" resultType="int">
+        SELECT count(*)
+        FROM t_file f
+        WHERE f.folder_type = 6
+          AND f.creator_id = #{creatorId}
+          AND f.creator_user_type = #{creatorUserType}
+          AND NOT EXISTS (SELECT 1
+                          FROM t_file_relation r
+                          WHERE r.deleted_flag = FALSE
+                            AND r.file_key = f.file_key)
+    </select>
+
+    <select id="listScratchCandidates" resultType="net.lab1024.sa.base.module.support.file.domain.vo.FileVO">
+        SELECT f.*
+        FROM t_file f
+        WHERE f.folder_type = 6
+          AND f.create_time &lt; (CURRENT_TIMESTAMP - (#{retentionDays} * INTERVAL '1 day'))
+          AND NOT EXISTS (SELECT 1
+                          FROM t_file_relation r
+                          WHERE r.deleted_flag = FALSE
+                            AND r.file_key = f.file_key)
+        ORDER BY f.create_time
+        LIMIT #{limit}
+    </select>
+
 </mapper>

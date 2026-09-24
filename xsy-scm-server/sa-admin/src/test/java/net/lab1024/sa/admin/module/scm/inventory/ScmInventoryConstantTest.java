@@ -279,9 +279,9 @@ class ScmInventoryConstantTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("错误码：恰好 57 个、码值冻结、段内无重复")
+    @DisplayName("错误码：恰好 58 个、码值冻结、段内无重复")
     void errorCodesAreFrozenAndUniqueWithinTheDomain() {
-        assertThat(InventoryErrorCode.values()).hasSize(57);
+        assertThat(InventoryErrorCode.values()).hasSize(58);
 
         // W6-1 的 4 个码值冻结不变
         assertThat(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND.getCode()).isEqualTo(40486);
@@ -355,13 +355,17 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_CONVERSION_REJECT_OPINION_REQUIRED.getCode()).isEqualTo(41063);
         assertThat(InventoryErrorCode.INVENTORY_CONVERSION_WAREHOUSE_DISABLED.getCode()).isEqualTo(41064);
 
+        // P0 裁决第 8 条：报损报溢禁止自建自审（41065 是现查 410xx 占用后紧邻库存块的空位）
+        assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN.getCode())
+                .isEqualTo(41065);
+
         Set<Integer> codes = Arrays.stream(InventoryErrorCode.values())
                 .map(InventoryErrorCode::getCode).collect(Collectors.toCollection(LinkedHashSet::new));
-        assertThat(codes).as("库存域段内出现重复码值").hasSize(57);
+        assertThat(codes).as("库存域段内出现重复码值").hasSize(58);
 
-        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 五十六个（业务冲突 / 参数非法）
+        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 五十七个（业务冲突 / 参数非法）
         assertThat(codes.stream().filter(code -> code / 100 == 404).count()).isEqualTo(1L);
-        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(56L);
+        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(57L);
         // 消息不得为空 —— 错误码没有可读消息等于没有错误码
         Arrays.stream(InventoryErrorCode.values())
                 .forEach(code -> assertThat(code.getMsg()).isNotBlank());

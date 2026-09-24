@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryReservationStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
@@ -47,6 +48,8 @@ public class InventoryReservationService {
     private final InventoryBalanceDao balanceDao;
 
     private final WarehouseService warehouseService;
+
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
      * 预留库存。
@@ -113,28 +116,15 @@ public class InventoryReservationService {
      *
      * <p>只有 {@code ACTIVE} 可释放；重复释放会因状态条件失败（41009），
      * 避免「释放两次」把可用量虚增。
+     *
+     * <p>这是预留页上的显式动作，归还是<b>某个仓</b>的可用量，因此仓库必须在授权范围内。
      */
     @Transactional(rollbackFor = Exception.class)
     public void release(Long reservationId) {
         String operator = ScmOperator.current();
-        InventoryReservationEntity locked = reservationDao.lockById(reservationId);
-        if (locked == null || !ScmInventoryReservationStatusEnum.ACTIVE.name().equals(locked.getStatus())) {
-            throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
-        }
-
-        InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(locked.getWarehouseId(), locked.getSkuId());
-        if (balance == null) {
-            // 余额行不该消失（append-only 语义下余额只增减、不删除）；这里 fail-fast 暴露数据异常。
-            throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
-        }
-
-        if (reservationDao.markReleased(reservationId, operator) != 1) {
-            throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
-        }
-        if (balanceDao.decrementReserved(balance.getId(), locked.getQuantity(), operator) != 1) {
-            throw new ScmBusinessException(VERSION_CONFLICT);
-        }
+        InventoryReservationEntity locked = lockActiveReservation(reservationId);
+        warehouseScopeGuard.require(locked.getWarehouseId());
+        applyRelease(locked, operator);
     }
 
     /**
@@ -154,7 +144,7 @@ public class InventoryReservationService {
         if (active == null) {
             return;
         }
-        release(active.getId());
+        releaseCascade(active.getId());
     }
 
     /**
@@ -207,7 +197,45 @@ public class InventoryReservationService {
         List<InventoryReservationEntity> actives = reservationDao.listActiveBySourceDocument(
                 ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId);
         for (InventoryReservationEntity active : actives) {
-            release(active.getId());
+            releaseCascade(active.getId());
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // 内部
+    // ------------------------------------------------------------------
+
+    /**
+     * 订单域级联释放：不判仓库范围。
+     *
+     * <p>取消订单的授权依据是订单归属（{@code sales_order.seller_id}），释放预留只是它的副作用；
+     * 预留所在的那个默认启用仓未必在操作者的仓库范围内，套上仓库判据会让「取消自己的订单」
+     * 变成 30005。仓管在预留页点名释放走 {@link #release}，那条必须判。
+     */
+    private void releaseCascade(Long reservationId) {
+        applyRelease(lockActiveReservation(reservationId), ScmOperator.current());
+    }
+
+    private InventoryReservationEntity lockActiveReservation(Long reservationId) {
+        InventoryReservationEntity locked = reservationDao.lockById(reservationId);
+        if (locked == null || !ScmInventoryReservationStatusEnum.ACTIVE.name().equals(locked.getStatus())) {
+            throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
+        }
+        return locked;
+    }
+
+    private void applyRelease(InventoryReservationEntity locked, String operator) {
+        InventoryBalanceEntity balance =
+                balanceDao.lockByWarehouseAndSku(locked.getWarehouseId(), locked.getSkuId());
+        if (balance == null) {
+            // 余额行不该消失（append-only 语义下余额只增减、不删除）；这里 fail-fast 暴露数据异常。
+            throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
+        }
+        if (reservationDao.markReleased(locked.getId(), operator) != 1) {
+            throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
+        }
+        if (balanceDao.decrementReserved(balance.getId(), locked.getQuantity(), operator) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
 

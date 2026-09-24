@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryDriverService;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.DeliveryDriverEntity;
+import net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryDriverVO;
 import net.lab1024.sa.base.common.domain.*;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 
@@ -19,7 +20,7 @@ public class DeliveryDriverController {
 
     @GetMapping
     @SaCheckPermission("scm:delivery:driver:query")
-    public ResponseDTO<PageResult<DeliveryDriverEntity>> query(@Valid @ModelAttribute DeliveryQueryForm form) {
+    public ResponseDTO<PageResult<DeliveryDriverVO>> query(@Valid @ModelAttribute DeliveryQueryForm form) {
         return ResponseDTO.ok(service.query(form));
     }
 

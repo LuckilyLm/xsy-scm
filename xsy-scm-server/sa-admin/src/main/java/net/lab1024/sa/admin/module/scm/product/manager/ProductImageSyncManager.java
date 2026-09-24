@@ -9,9 +9,12 @@ import net.lab1024.sa.admin.module.scm.product.dao.ProductImageDao;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductImageEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.base.module.support.file.service.FileService;
+import net.lab1024.sa.base.module.support.file.service.FileRelationService;
 import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
+import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.*;
@@ -30,24 +33,28 @@ public class ProductImageSyncManager {
      * 主图唯一事实是 is_primary，否则「切主图」会顺带改写图片类型，等于保留第二个主图事实源。
      */
     private static final String IMAGE_TYPE_GALLERY = "GALLERY";
+    /** 公开前缀按 {@code FOLDER_PUBLIC} 判定，不用 PUBLIC_IMAGE 的完整目录，新增公开目录时这里不必跟着改。 */
+    private static final String PUBLIC_FOLDER_PREFIX = FileFolderTypeEnum.FOLDER_PUBLIC + "/";
     private final ProductImageDao dao;
     private final FileService files;
+    private final FileRelationService relations;
 
     public List<ProductImageEntity> existing(Long spuId) {
         return dao.selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
                 .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public void sync(Long spuId, ProductImageChangeSet changes) {
         List<ProductImageForm> requested = new ArrayList<>(changes.updated());
         requested.addAll(changes.inserted());
-        // File module remains the authority for existence, metadata and URL generation.
-        Map<String,FileVO> metadata=files.getFileList(requested.stream().map(ProductImageForm::getFileKey).toList())
+        // File module remains the authority for existence and metadata; URLs are never resolved on
+        // the write path (the caller may not own these keys — resolving them would be an ungarded
+        // read). Public-prefix binding is enforced by requirePublicImageKey, not by URL resolution.
+        Map<String,FileVO> metadata=files.getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey,Function.identity(),(a,b)->a));
         for (var form:requested) if (!metadata.containsKey(form.getFileKey())) throw new ScmBusinessException(IMAGE_INVALID);
-        Map<Long,ProductImageEntity> persisted=existing(spuId).stream()
-                .collect(Collectors.toMap(ProductImageEntity::getId,Function.identity()));
-        for (var form:requested) requirePublicImageKey(form,persisted);
+        for (var form:requested) requirePublicImageKey(form);
         dao.clearPrimary(spuId);
         for (var form : changes.updated()) {
             var entity = entity(spuId, form, metadata.get(form.getFileKey()), false);
@@ -63,6 +70,11 @@ public class ProductImageSyncManager {
             dao.insert(entity);
         }
         remove(changes.removedIds());
+        // 商品图全部落在公开前缀后（FA-3 / V58），这里恒为空清单，rebind 的作用是把历史私有 key 的
+        // 关系行收回来：删图或搬到公开前缀后都必须同时收回读取权，只增不减会让已删附件长期可读。
+        relations.rebind(FileRelationBizTypeEnum.PRODUCT, spuId, existing(spuId).stream()
+                .map(ProductImageEntity::getFileKey)
+                .filter(key -> !key.startsWith(PUBLIC_FOLDER_PREFIX)).toList());
     }
 
     public void remove(List<Long> ids) {
@@ -76,17 +88,18 @@ public class ProductImageSyncManager {
      * 商品图是面向客户的展示资产，新增或换绑只能引用公开图片目录。
      * 只读 fileKey 前缀不够：存在性由文件模块证明，而「谁的附件」不在这条链上——
      * 少了这道判断，改商品权限就等于把他人私有附件晋升为所有查看者可读。
-     * 本裁决之前落库的行仍挂着私有 key，仅「沿用该行原有 key」放行，
-     * 否则改排序或切主图会被历史数据挡住，而换绑成另一个私有 key 依旧拒绝。
+     *
+     * <p>这里不再给「沿用本行原有私有 key」留过渡例外：FA-3（V58）已把存量 key 搬到
+     * {@code public/image/} 并把同一判据落成数据库 CHECK {@code ck_product_image_public_file_key}，
+     * 「私有前缀的活商品图」已经不是可能存在的状态。例外若留着，任何一次编辑都会把它重新养大 ——
+     * 判据与库约束不一致时，绕过服务层的写入就能造出只有这里拒、库里却收下的行。
      */
-    private void requirePublicImageKey(ProductImageForm form,Map<Long,ProductImageEntity> persisted) {
-        String fileKey=form.getFileKey();
-        var row=persisted.get(form.getImageId());
-        if (fileKey.startsWith(PUBLIC_IMAGE_FOLDER) || (row != null && fileKey.equals(row.getFileKey()))) return;
-        throw new ScmBusinessException(IMAGE_NOT_PUBLIC);
+    private void requirePublicImageKey(ProductImageForm form) {
+        if (!form.getFileKey().startsWith(PUBLIC_IMAGE_FOLDER)) {
+            throw new ScmBusinessException(IMAGE_NOT_PUBLIC);
+        }
     }
     private ProductImageEntity entity(Long spuId,ProductImageForm form,FileVO file,boolean inserting) {
-        if (file.getFileUrl()==null || file.getFileUrl().isBlank()) throw new ScmBusinessException(IMAGE_INVALID);
         var entity=new ProductImageEntity(); entity.setSpuId(spuId); entity.setFileKey(file.getFileKey());
         entity.setFileName(file.getFileName());
         entity.setFileSize(file.getFileSize()==null ? null : file.getFileSize().longValue());

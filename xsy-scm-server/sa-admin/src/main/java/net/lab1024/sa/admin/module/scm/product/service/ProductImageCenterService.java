@@ -12,6 +12,7 @@ import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImageVO;
 import net.lab1024.sa.admin.module.scm.product.manager.ProductAggregateValidator;
 import net.lab1024.sa.admin.module.scm.product.manager.ProductImageChangeSet;
 import net.lab1024.sa.admin.module.scm.product.manager.ProductImageSyncManager;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.beans.BeanUtils;
@@ -41,7 +42,8 @@ public class ProductImageCenterService {
     public ProductImageCenterVO query(Long spuId) {
         ProductSpuEntity spu = requireSpu(spuId);
         List<ProductImageEntity> rows = syncManager.existing(spuId);
-        Map<String, String> urls = files.getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList())
+        Map<String, String> urls = files.getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+                        SmartRequestUtil.getRequestUser())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
         List<ProductImageVO> images = rows.stream().map(i -> {
             ProductImageVO vo = new ProductImageVO();

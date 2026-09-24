@@ -16,7 +16,9 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
     void approvedSchemaHasEightTablesNoDeadFieldsAndNullableDraftPrices() {
         flyway.validate();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ")", Integer.class)).isEqualTo(8);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(25);
+        // 25 条是订单域批准形态；V51 为报表日期轴追加 2 条部分索引（sales_order.confirmed_at、
+        // order_refund.completed_at），二者都在本用例的表清单内
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(27);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.sequences WHERE sequence_schema=current_schema() AND sequence_name IN ('sales_order_no_seq','order_return_no_seq','order_refund_no_seq')", Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ") AND column_name IN ('fulfillment_status','pay_status','actual_weight')", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN ('sales_order','sales_order_item') AND column_name IN ('draft_unit_price','draft_price_source','ordered_line_amount','ordered_total_amount') AND is_nullable='YES'", Integer.class)).isEqualTo(4);

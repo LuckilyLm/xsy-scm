@@ -25,7 +25,8 @@ class SalesOrderQueryRecentPriceTest {
 
     private SalesOrderQueryService serviceWith(SalesOrderItemDao items) {
         return new SalesOrderQueryService(mock(SalesOrderDao.class), items, mock(OrderAddressSnapshotDao.class),
-                mock(OrderOperationLogDao.class), mock(EmployeeDao.class));
+                mock(OrderOperationLogDao.class), mock(EmployeeDao.class),
+                mock(net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService.class));
     }
 
     @Test

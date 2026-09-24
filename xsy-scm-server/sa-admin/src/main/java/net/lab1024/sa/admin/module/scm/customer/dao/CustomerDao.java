@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.customer.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerQueryForm;
 import org.apache.ibatis.annotations.Mapper;
@@ -14,8 +15,12 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
 
     /**
      * 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。
+     *
+     * <p>{@code scope} 是 {@code customer.seller_id} 维度的授权取值：由 Service 显式解析后下传，
+     * 传 {@code null} 在 SQL 里渲染成恒假谓词而不是「不加限制」。
      */
-    List<CustomerEntity> queryPage(Page<?> page, @Param("query") CustomerQueryForm query);
+    List<CustomerEntity> queryPage(Page<?> page, @Param("query") CustomerQueryForm query,
+                                   @Param("scope") ScmValueScope scope);
 
     /**
      * 原子软删：{@code id + version} 双谓词，返回 0 即冲突（legacy 不变量 C8）。

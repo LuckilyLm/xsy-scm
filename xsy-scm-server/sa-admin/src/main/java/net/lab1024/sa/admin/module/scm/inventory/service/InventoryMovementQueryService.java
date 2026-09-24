@@ -1,13 +1,18 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
 import lombok.RequiredArgsConstructor;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryMovementQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryMovementVO;
+import net.lab1024.sa.admin.module.scm.report.support.ScmReportAccess;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 库存流水只读查询（W6 Target Design §10.1）。
@@ -28,10 +33,20 @@ public class InventoryMovementQueryService {
 
     private final InventoryMovementDao movementDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     @Transactional(readOnly = true)
     public PageResult<InventoryMovementVO> query(InventoryMovementQueryForm form) {
         InventoryBalanceQueryService.rejectClientSort(form);
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
         var page = SmartPageUtil.convert2PageQuery(form);
-        return SmartPageUtil.convert2PageResult(page, movementDao.queryPage(page, form));
+        List<InventoryMovementVO> list = movementDao.queryPage(page, form, scope.getWarehouseScope());
+        // unit_cost 就是这一笔入库的采购价快照，属于成本事实；可见性只按仓库判定，
+        // 与 created_by 是否为空无关（Q5 回填行的 created_by 是 NULL）。
+        ScmReportAccess.maskCost(list, scope.isCostVisible(), vo -> vo.setUnitCost(null));
+        return SmartPageUtil.convert2PageResult(page, list);
     }
 }

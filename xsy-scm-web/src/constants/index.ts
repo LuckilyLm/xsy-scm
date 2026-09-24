@@ -24,6 +24,7 @@ import dictConst from './support/dict-const';
 // SCM 业务枚举（W2 起）：注册进 SmartEnum 插件后，SmartEnumSelect / $smartEnumPlugin 才能取到值
 import scmCustomer from './business/scm/customer-const';
 import scmSupplier from './business/scm/supplier-const';
+import scmReport from './business/scm/report-const';
 import type {SmartEnumWrapper} from '/@/types/smart-enum';
 
 const constantsInfo = {
@@ -50,6 +51,7 @@ const constantsInfo = {
     ...scmOrder,
     ...scmPurchase,
     ...scmInventory,
+    ...scmReport,
 };
 
 /*

@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryWarningThresholdDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryWarningThresholdEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryWarningThresholdAddForm;
@@ -42,6 +43,8 @@ public class InventoryWarningThresholdService {
 
     private final ProductSkuDao productSkuDao;
 
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
     /**
      * 新建阈值配置。
      *
@@ -54,6 +57,7 @@ public class InventoryWarningThresholdService {
     public Long create(InventoryWarningThresholdAddForm form) {
         requireRange(form);
         String operator = ScmOperator.current();
+        warehouseScopeGuard.require(form.getWarehouseId());
         warehouseService.require(form.getWarehouseId());
         requireSkuExists(form.getSkuId());
 
@@ -92,6 +96,8 @@ public class InventoryWarningThresholdService {
 
         // 改了 (仓库, SKU) 就要重新防重：否则会把两条配置合成一条，撞唯一索引时报出的
         // 是 DB 错误而不是可读的业务错误。
+        // 阈值是按仓生效的配置：行上的旧仓与表单的新仓都要授权，否则等于允许往别人仓塞阈值
+        warehouseScopeGuard.requireAll(existing.getWarehouseId(), form.getWarehouseId());
         if (!Objects.equals(existing.getWarehouseId(), form.getWarehouseId())
                 || !Objects.equals(existing.getSkuId(), form.getSkuId())) {
             if (thresholdDao.countByWarehouseAndSku(form.getWarehouseId(), form.getSkuId()) > 0) {
@@ -118,6 +124,8 @@ public class InventoryWarningThresholdService {
         if (existing == null) {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_NOT_FOUND);
         }
+        // 删的是「某个仓的阈值」，判据取行上的仓库：阈值配置本身就是按仓生效的
+        warehouseScopeGuard.require(existing.getWarehouseId());
         if (thresholdDao.deleteById(id) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }

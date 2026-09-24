@@ -23,6 +23,11 @@ public class DeliveryDriverForm {
     @Size(max = 32)
     @Pattern(regexp = "[0-9+() -]{5,32}")
     private String phone;
+    /**
+     * 绑定的系统员工 id；启用状态必填（历史行可为空，但一旦保存为 ENABLED 就必须有归属）。
+     */
+    @Positive
+    private Long employeeId;
     @NotNull
     @Pattern(regexp = "ENABLED|DISABLED")
     private String status = "ENABLED";
