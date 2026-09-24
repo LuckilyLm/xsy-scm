@@ -6,6 +6,7 @@ import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import org.springframework.web.bind.annotation.*;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -39,17 +40,28 @@ public class SalesOrderController {
         return ResponseDTO.ok(query.logs(f));
     }
 
+    /**
+     * 录单时的价格解析预览。
+     *
+     * <p>返回体是定价域的 {@code PriceResolveResultVO}，与 {@code PriceResolveController#preview} 调用
+     * 同一个 {@link net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver#preview}，因此<b>同时</b>要求
+     * {@code scm:order:query} 与 {@code scm:pricing:resolve:query}（{@link SaMode#AND}）：只有订单查看权的人
+     * 不能经此旁路批量读到客户协议价与类型价解析结果，那本来需要单独的定价查看权。
+     */
     @PostMapping("/price/preview")
-    @SaCheckPermission("scm:order:query")
+    @SaCheckPermission(value = {"scm:order:query", "scm:pricing:resolve:query"}, mode = SaMode.AND)
     public ResponseDTO<net.lab1024.sa.admin.module.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody net.lab1024.sa.admin.module.scm.pricing.domain.form.PriceResolveForm f) {
         return ResponseDTO.ok(prices.preview(f.getCustomerId(), f.getSkuIds(), f.getAt()));
     }
 
     /**
      * 某客户某 SKU 的最近已确认订单价（Wave 3 §7.5，只读）：仅取 CONFIRMED 单的锁定价，只用于录单旁证，不参与定价、不改价格优先级。
+     *
+     * <p>取数源是指定客户的历史成交事实，与客户 360 的 {@code frequent-skus} 同数据面，因此门禁口径一致：
+     * <b>同时</b>要求 {@code scm:order:query} 与 {@code scm:customer:query}（{@link SaMode#AND}）。
      */
     @GetMapping("/reference/recent-prices")
-    @SaCheckPermission("scm:order:query")
+    @SaCheckPermission(value = {"scm:order:query", "scm:customer:query"}, mode = SaMode.AND)
     public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId,
                                                               @RequestParam Long skuId,
                                                               @RequestParam(defaultValue = "5") int limit) {
