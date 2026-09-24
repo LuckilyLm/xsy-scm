@@ -2,20 +2,37 @@
 
 > 适用项目：鲜蔬源智链 `xsy-scm`
 > 目标路径：`docs/plan/attachment-asset-grading-and-file-access-plan.md`
-> 当前状态（2026-09-23）：**FA-0 已落地**（写侧绑定期限权 + 删 `product_image.file_url`，V41）；
-> **序列化器越权旁路已做临时收口**（`FileKeyVoSerializer` 经 `FileAccessGuard.filterReadable`
-> 按调用者过滤，见 §3）；**FA-1 未完成、FA-2 / FA-3 未开工**。
+> 当前状态（2026-09-24）：**FA-0 / FA-1 / FA-2 / FA-2b / FA-3 全部落地**，
+> 对象存储（MinIO）模式下的保密性也已实测（后端 IT + 浏览器 E2E 双链）。
+> 序列化器越权旁路已收口为唯一受控入口（§3）。
 >
 > ```text
 > FA-0   商品图片写侧绑定权限收口        ✅ 已落地（V41）
-> 旁路   VO 序列化越权读取 mitigation     ✅ 已落地（临时收口，非 FA-1）
-> FA-1   完整受控 FileService 读侧        🟡 未完成（无身份批量入口仍在，代码生成模板未改）
-> FA-2   scm_file_relation 关系表授权     ❌ 未完成
-> FA-3   存量商品图搬运 public/image      ❌ 未完成
+> 旁路   VO 序列化越权读取 mitigation     ✅ 已收口为唯一受控入口（不再有绕过守卫的批量读）
+> FA-1   完整受控 FileService 读侧        ✅ 已落地（getFileList 带调用者；无身份只解析 public/；
+>                                            元数据改走 getFileMetadata，写路径不再产出 URL）
+> FA-2   t_file_relation 关系表授权       ✅ 已落地（V52，SCM 与 OA 同批；未知 biz_type 不放行）
+> FA-2b  暂存前缀 + 回收任务               ✅ 已落地（V53；7 天 / 每用户 100 上限；双确认后才删）
+> FA-3   存量商品图搬运 public/image      ✅ 已落地（V58：t_file + product_image + 收回关系行，可重入；
+>                                            并落库 CHECK ck_product_image_public_file_key，
+>                                            Java 侧「沿用本行原有私有 key」的过渡例外已删除）
+> 取证   对象存储模式下的保密性            ✅ 已实测（MinIO 栈；F0FileStorageCloudIT 5/5 +
+>                                            f0-file-storage.spec.ts 8/8，含私有 403 / 预签名可读 /
+>                                            public/image 静态可缓存）
 > ```
 >
-> **F0-DEBT-01 未关闭**：`FileAccessGuard` 对 `private/notice/`、`private/help-doc/` 仍是前缀级放行，
-> 不是「业务对象权限 → 关系表 → 文件权限」。引入任何非管理员业务角色前，FA-2 仍是门禁（§7）。
+> **本环境实测的存量口径**：`xsy_scm_b0` 与全部一次性 IT 库里「活行且非 public 前缀」的
+> `product_image` 行数都是 **0**，所以 FA-3 的数据改写在这里是空操作；搬运机制由
+> `ScmProductImageKeyMigrationPgIT` 按迁移文件里的标记重放同一段 SQL 取证（含折叠冲突与重跑）。
+>
+> **FA-2 期间由对象存储取证发现并修复的真实缺陷**：`FileRelationService.rebind()` 原本只做清理、
+> 不补授权行，而公告 / 帮助文档 / 企业档案 / 商品图的写路径都只用 `rebind`，结果是**新建带私有附件的
+> 对象对任何非上传者都读不到**（本地模式下这条被 `/upload/**` 静态直出掩盖）。现在 `rebind`
+> 同步成「当前引用的这一组 key」，缺的补、多的收回，并由 `FileRelationPgIT` 钉住。
+>
+> **前缀级放行已收口**：`FileAccessGuard` 不再对 `private/notice/`、`private/help-doc/` 按目录放行，
+> 判定改为「公开前缀 / 管理员 / 任一业务对象可读 / 上传者本人」，业务可见性由 sa-admin 侧
+> `biz_type` 策略回答（sa-base 不依赖业务模块）。引入非管理员业务角色的门禁因此已解除。
 > 业务裁决见 [`../decisions.md`](../decisions.md)
 > 「F0-DEBT-01 裁决：附件资产分级与文件读取权限」。
 > 本文的 Flyway 版本号与菜单 id **只是规划期快照**，落地前必须按 `AGENTS.md` 从当前最大号之后整体重排。

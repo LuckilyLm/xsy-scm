@@ -1,11 +1,12 @@
 # 项目进度
 
-最后更新：2026-09-23
+最后更新：2026-09-24
 
 ## 当前状态
 
 | 阶段 | 状态 | 记录 |
 | --- | --- | --- |
+| P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -97,6 +98,292 @@
   把「跑在错误的库上」从静默错误变成启动期失败。运行入口仍需带上该变量指向当前开发库。
 
 ## 追加记录
+
+### 2026-09-24 P0 基线收口（第一批）：预留并发、FA-1 读侧收口、FA-2 关系授权、Delivery L0–L2 浏览器验收
+
+- **基线与裁决**：`git fetch` 后本地 HEAD 与 `origin/main` 同为 `742f3a7`。本轮按用户 15 条正式裁决实施
+  （写入 [`decisions.md`](./decisions.md)「P0 基线收口裁决」），其中 FA 上线顺序定为
+  **FA-1 → FA-2 → 回归 → FA-3**，取代此前「先搬运再收口」的倾向；数据范围机制定为
+  「显式、集中、fail-closed 的 SCM Scope Resolver」，不扩展底座 `@DataScope`。
+- **Flyway**：新增 **1** 个迁移 `V52__sa_file_relation.sql`（`t_file_relation` 建表 + 五段存量关系回填），
+  当前最大版本 V52、连续无空洞；`migration_checksum_guard.py check` PASS（历史 0 漂移 / 0 缺失 / 0 改名，
+  新增号已 `sync` 落快照）。`ScmPurchaseMigrationIT` 的冻结版本清单同步追加 `52`。
+  列宽按真实来源取 `VARCHAR(200)`（对齐 `t_file.file_key`），未沿用规划稿的 250。
+- **P0-A 库存预留并发**：新增 `ScmInventoryReservationConcurrencyIT` **5 例**（真并发、`NOT_SUPPORTED` 无外层事务、
+  多线程独立事务）：3×4 抢 10 只有 2 笔成功且第三笔报 41011；同一订单行并发重复预留只落 1 行 ACTIVE、
+  占用不双计；并发释放同一预留恰一次回补；并发释放两条预留不丢失更新且可用量恢复后可出满 10；
+  预留与出库并发争同一余额行时「可用量 = 现有量 − 预留量」口径唯一。
+  每个用例都断言「成功数 + 失败错误码 + 最终账」三者一致，并用 `assertLedgerBalanced` 复核余额仍是流水净额。
+- **FA-1 读侧收口**：`FileService` 现在是服务端展开 URL 的唯一受控入口 ——
+  `getFileList(keys, requestUser)` 逐 key 过 `FileAccessGuard`，**不可读的 key 不出现**（不返回空 URL）；
+  无身份 `getFileList(keys)` 只服务 `public/` 前缀，私有 key 不查询、不解析、不返回；
+  写路径改用新的 `getFileMetadata(keys)`（只证存在性，永不产出 URL）。
+  商品详情与图片中心的读路径改传当前请求人；`ProductImageSyncManager` 不再要求元数据里带 URL。
+  删除了无引用且会把原始 key 回显给调用方的 `FileKeySerializer`；`FileKeyVoSerializer` 收口为调用受控入口
+  （原直连 `FileService` 的批量入口已不存在于任何业务 VO 链路）。
+  同步修掉一处真实缺陷：`AdminFileAccessIdentity` 在无 Sa-Token 上下文的线程（异步导出 / SmartJob / IT）
+  调 `StpUtil` 会抛「上下文未初始化」，现按 fail-closed 返回非超管，不再让异常冒泡。
+- **FA-2 关系授权（SCM + OA 一起做，不留半成品）**：`t_file_relation (file_key, biz_type, biz_id)` +
+  三元组部分唯一索引 + 双向部分索引；`FileRelationBizTypeEnum` 白名单与 DB CHECK 同值；
+  读判定改为「公开前缀 / 管理员 / 任一业务对象可读 / 上传者本人」四条，
+  **`private/notice/`、`private/help-doc/` 的前缀级放行已移除**（原断言相应改写为负向用例）；
+  「任一」而非「全部」，共享附件不会因某一方无权而对所有人不可见；库里出现未知 `biz_type` 时按不放行处理。
+  业务可见性由 sa-admin 侧策略回答（sa-base 不依赖业务模块）：
+  `PRODUCT` 取 `scm:product:query` **且 SPU 未删除**（删除商品不回收关系行，只看权限会留孤儿授权）、
+  `NOTICE` 复用公告既有可见范围（全部可见或员工/部门命中）、`HELP_DOC` 要求确有该文档、
+  `FEEDBACK`/`ENTERPRISE` 不额外放行（维持上传者/管理员，企业档案的查看权随正式业务角色一起落地）。
+  五条写入链路在同一事务内绑定/换绑关系：商品图同步、公告新增与更新、企业新增与更新、帮助文档新增与更新、
+  反馈新增；更新按**实际落库值**换绑（MyBatis-Plus 跳过 null 列，照表单值换绑会误收回旧附件的读取权）。
+- **P0-B Delivery L0–L2 最终验收**：新增 `xsy-scm-web/e2e/scm-delivery.spec.ts`（8 条，真实浏览器 + 真实 PG，
+  夹具全部自建、`afterAll` 取消线路而非删除）。**0 迁移、0 新权限、0 新端点。**
+- **验证（本轮实跑）**：受影响类定向 **93 项全绿 / 0 失败 / 0 错误 / 0 跳过**（一次性干净库 V1→V52）——
+  `ScmInventoryReservationConcurrencyIT` 5、`FileRelationPgIT` 6、`FileAccessGuardTest` 32、
+  `FileServiceReadTest` 4、`FileKeyVoSerializerTest` 4、`ProductPgIT` 21、`ProductImageCenterPgIT` 16、
+  `ScmPurchaseMigrationIT` 4、`SmartAdminMapperPgValidationIT` 1（该校验器把每条 mapper 语句拿去 PostgreSQL
+  `PREPARE`，正是它抓出我新写的 `IS NOT NULL` 裸参数无法推断类型）。
+  前端 `npm run lint` 0 error（3 条既有 warning）、`npm run test` 全绿、
+  `tools/ts_baseline_ratchet.py check` PASS 且新增诊断 0；新 spec 单独 `tsc --noEmit` 干净。
+  后端全量回归与浏览器执行结果见本节末「最终闸门」。
+- **过程中由验证暴露的自身缺陷（都已改，不改断言强度）**：`-Dtest` 用 `+` 分隔不生效（必须逗号）；
+  裸 SQL 里的 `?`（含 PostgreSQL `?:` 简写）会被 JDBC 当参数占位符；
+  `TransactionTemplate` 缺失会让「命令服务要求调用方持事务」的异常冒充 41011 业务拒绝（假绿）；
+  旁路 `UPDATE` 后仍用 mapper 读回会命中 MyBatis 一级缓存。
+- **未完成 / 明确不算已验收**（本条写于第一批，其中 ① 与 ⑤ 已在第二批完成，见下一节）：
+  ① FA-2 的第二段未做——`private/common/scratch/` 暂存前缀当前**无法经上传接口产生**
+  （`folderType` 白名单 1–5，`COMMON` 固定落 `private/common/`），D-2 的「7 天回收 + 每用户 100 上限」
+  需要一个新枚举值与 SmartJob 清理任务，尚未实现；
+  ② FA-3 存量商品图搬运未开始（按裁决排在 FA-2 回归之后），因此 Java 侧「新绑定必须公开」的判断
+  与 `ProductImageSyncManager` 的历史 key 例外都还在；
+  ③ 删除类入口不回收关系行（商品/公告/帮助文档/企业删除后行仍在），当前靠策略侧的
+  「对象必须存活」判定失效，属可接受但不是目标形态；
+  ④ **权限行为的保密性仍未在对象存储模式下取证**：本轮全部断言跑在本地存储 + 本地 PostgreSQL 上，
+  本地模式 `/upload/**` 静态直出无守卫，`t_notice` 一类预签名语义要等 MinIO 模式单独跑一轮；
+  ⑤ ~~正式非管理员角色与 `employee_warehouse_scope`、`delivery_driver.employee_id`、
+  `purchaser_id`/`seller_id` 服务端强制等 schema 变更均未开始~~ → 第二批已交付。
+
+### 2026-09-24 P0 基线收口（第二批）：FA-2b 暂存回收、正式非管理员角色与显式数据范围
+
+- **基线**：`git fetch` 后本地 HEAD 与 `origin/main` 同为 `742f3a7`（远端是本地祖先）。
+  本轮开工前最大 Flyway 为 V51，第一批补到 V52，本轮再加 V53–V56，**V52 及以前 0 改动**。
+- **FA-2b 暂存生命周期（裁决 D-2）**：新增 `FileFolderTypeEnum.SCRATCH(6)` → `private/common/scratch/`
+  成为唯一可产生「未绑定暂存」的目录；上传时按用户统计未绑定暂存数，
+  **超过 100 直接拒绝**（`SCRATCH_MAX_UNBOUND_PER_USER`，超限不会静默覆盖旧暂存）；
+  `FileScratchCleanupJob`（SmartJob，V53 幂等种子：cron `0 30 3 * * ?`、参数保留天数默认 7、启用）
+  每批 200 条，删除前**双重确认**「无任何关系行」且「没有任何业务表直接引用该 key」
+  （业务列清单在代码里显式登记，含 `product_image.file_key`、`t_notice.attachment`、`t_help_doc.attachment`、
+  `t_feedback.feedback_attachment`、`t_oa_enterprise.enterprise_logo/business_license`、`t_employee.avatar`），
+  先删对象再删 `t_file` 行。`FileScratchCleanupPgIT` 3 例钉住这三条不可逆语义。
+- **P0-F schema（V54）**：`employee_warehouse_scope`（一人一仓一行、活动行部分唯一索引、
+  反向部分索引、无外键）+ `delivery_driver.employee_id`（`CHECK > 0`、
+  `uk_delivery_driver_active_employee ... WHERE deleted = FALSE AND employee_id IS NOT NULL`）。
+- **P0-F 权限点（V55，菜单块 1300–1349）**：分配权 `scm:customer:assign` / `scm:purchase:assign`；
+  范围放宽 `scm:customer|order|purchase|inventory|delivery:scope:all:query`；
+  仓库授权维护 `scm:warehouse:scope:query|update`；司机金额独立可见性 `scm:delivery:amount:query`。
+  全部 `api_perms == web_perms`，只授 SUPER_ADMIN，正式角色在 V56 按需分配。
+- **P0-F 正式角色（V56，按 role_code 种、不硬编码 role_id）**：
+  `SCM_SALES` / `SCM_SALES_LEAD` / `SCM_PURCHASER` / `SCM_PURCHASER_LEAD` /
+  `SCM_STOREKEEPER` / `SCM_STOREKEEPER_LEAD` / `SCM_DISPATCHER` / `SCM_DRIVER` / `SCM_FINANCE`
+  九个角色与逐域菜单授权矩阵；**分拣角色按裁决第 11 条不建**。
+  授权矩阵是本轮按既有领域边界配置出来的实现基线，需业务复核（见 decisions 未决事项）。
+- **范围解析机制**：`common/scope/ScmValueScope`（`all` 与 `none` 都是显式值，无「null = 全部」第三态）+
+  `ScmDataScopeContext`（仓库 / 客户业务员 / 订单业务员 / 采购员 / 司机五个维度 + `costVisible`）+
+  `ScmDataScopeService.resolve()`（集中解析、每请求一次、无登录态即 fail-closed、
+  `administratorFlag` 保留 break-glass）+ `ScmDataScopeException`
+  （由 `ScmExceptionHandler` 映射为 30005，与功能权限不足同一信封，不给探测主键的差异化信号）。
+  刻意**不用**底座 `@DataScope`：实测空清单与 `ALL` 返回空串即不加限制、`ME` 硬编码
+  `create_user_id`（SCM 全库只有 `created_by VARCHAR(64)` 存 `"userType:employeeId"`）、
+  且其 SQL 改写在 CTE 语句上不安全。
+- **读侧下传**：18 个 mapper 语句 + 报表 `ReportDao.xml` 的 17 条聚合/明细语句按上式收口，
+  报表的三条共享片段（`purchaseFilters` / `purchaseInboundMovementFrom` / `lossMovementWhere`）
+  承载范围谓词并注明别名契约；无授权直接返回空分页（`total=0`、`emptyFlag=true`）而不是 `IN ()`；
+  聚合类端点在「本维度必然为空」时把归属字段留 `null`（页面渲染 `—`），不写 0。
+  销售类报表**刻意不按仓库收窄**：`sales_order` 没有仓库列，且不允许拿 `created_by` 顶替。
+- **写侧守卫**：`ScmWarehouseScopeGuard.require/requireAll/requireAny` 挂到库存族 33 个命令调用点
+  （出库建/改/确认/取消/删、盘点建/改/确认/取消/删/导入入口、报损报溢建/改/审/驳/删、
+  规格转换建/改/审/驳/删、预留释放、阈值建/改/删、收货上架），
+  判定一律取**已落库行**的仓库而非表单值；调拨按裁决分裂：建/改要求两端、`ship` 只看 `from`、
+  `receive` 只看 `to`、草稿取消/删除沿用查询侧的任一端语义。守卫在状态/版本/自审校验之前，
+  越界请求不会先 answers 更精确的问题。
+- **负责人口径修正（裁决第 6、7 条）**：新建客户的 `seller_id` 与新建采购单/需求的 `purchaser_id`
+  由服务端强制为当前员工，客户端传入值被忽略；改派走独立端点
+  `POST /scm/customer/reassignSeller`、`POST /scm/purchase/reassign`
+  （`@SaCheckPermission` 分配权 + `@OperateLog` + 乐观锁 `version`，冲突 40921）；
+  `/update` 一律不再顺手改归属。订单创建时若所选客户不在调用者业务员范围内则拒绝。
+- **字段级管控**：库存余额 / 流水 / 报表的成本与金额列在无 `scm:report:cost:query` 时置 `null`（复用
+  `ScmReportAccess.maskCost`，语义是「无权知道」而非「确实是 0」）；
+  配送读接口新增 `DeliveryVisibility`，缺 `scm:delivery:amount:query` 时把线路合计、
+  停靠点合计、订单金额快照、候选订单金额一并抹为 `null`，前端 `money()` 渲染 `—`。
+- **API 新增**：`GET /scm/warehouse/scope/employees`、`GET /scm/warehouse/scope/warehouses`、
+  `POST /scm/warehouse/scope/update`（整组替换语义，空数组即回收全部）；
+  客户/采购改派端点；司机表单新增 `employeeId` 且「启用前必须绑定员工」在服务端判定。
+- **前端**：仓库管理页新增「授权维护 / 授权员工」（`warehouse-scope-modal.vue`，员工维度整组替换）；
+  客户列表与采购单列表新增「改派」动作并把表单里的业务员/采购员字段改成诚实态
+  （无分配权时新建不可编辑、编辑只读并指向改派）；司机管理新增「绑定员工」列与启用前必填校验；
+  客户/采购/线路三页的空态文案区分「授权范围内没有」与「系统没有数据」。
+  顺带修掉一处会**直接打断构建**的缺陷：`candidate-order-modal.vue` 引用了未导入的
+  `useDeliveryPermission`（SCM 零错误区 TS2304）。
+- **E2E 账号能力**：`tools/e2e_accounts.py` 支持 `E2E_BUSINESS_ROLES` 为**已存在的正式角色**
+  建 `administrator_flag=false` 的临时账号（角色缺失即拒绝执行，避免「全 30005」假绿），
+  并支持 `E2E_SECOND_ADMIN` 建第二个管理员账号（报损报溢禁止自建自审后，审批链用例必须有第二个人）；
+  `tools/w8_e2e_accounts.py` 为本波次薄封装；TS 侧 `provisionTempAccounts` 解析脚本回显拿到
+  `角色码 → login_name / employee_id`，不在两边重复实现名字派生规则。
+- **最终闸门（本轮实跑，第二批）**：
+  - 后端全量回归 **988 项 / 1 失败 / 0 错误 / 5 跳过**（一次性干净库 V1→V56）。唯一失败是
+    `ScmDeliveryDataScopePgIT.employeeSeesOnlyRoutesOfBoundDriver` 的**测试自身隔离缺陷**：
+    全量范围分支用 `containsExactlyInAnyOrder` 断言「库里线路恰好等于本用例的三条夹具」，
+    而同一 IT 库里其他类留下的线路本就应该被全量范围看到 —— 已改成 `contains(r1, r2, r3)`
+    （产品语义没被削弱：普通司机的 `containsExactly(自己那一条)` 与逐接口 30005 断言原样保留）。
+  - 浏览器：本轮 8 个 spec 复跑 **55 通过 / 2 失败**，两处都已定位为夹具问题并修正 ——
+    `scm-delivery` 用例 2 里「重复编码」的反例被新增的「启用必须绑定员工」校验抢先返回 41113
+    （改为以 DISABLED 提交，唯一性判定才是被验的那一条），且 `scm-report` 用例 2 的
+    **既有 UTC 日期缺陷**（`toISOString().slice(0,10)`）在东八区跨天时把当天确认的订单正当排除，
+    改为 Asia/Shanghai 业务日后 11/11 通过。修正后单独复跑：报表 11 条全绿。
+  - 之前一轮全量浏览器（18 个 spec / 67 条）为 **39 通过 / 5 失败 / 23 未跑**，
+    其中 3 处是本轮新规则打到的旧夹具（自建自审 ×2、司机必须绑定 ×1，均已修），
+    2 处是并发跑 IT 时的资源竞争（订单导入与报表在 10s 断言窗口内没跑完），
+    复跑时订单与其余 spec 全绿、后端日志全程 0 条 ERROR。
+  - 修正后在同一构建上复跑：`ScmDeliveryDataScopePgIT` **8/8**、`scm-delivery.spec.ts` **8/8**、
+    `scm-report.spec.ts` **11/11**；连同此前的 `scm-dashboard-todo` 8/8、`scm-inventory-write` 6/6、
+    `scm-data-scope` 6/6、`scm-delivery-print` 6/6，P0-F 相关 IT 与浏览器用例已全绿。
+    全量后端回归的 988 项只输在那一个 IT 隔离缺陷上（改的是断言不是产品语义）。
+    **随后在另一座一次性干净库（V1→V56，库名 `xsy_scm_it_p0all`）重跑全量：988 项 / 0 失败 / 0 错误 / 5 跳过，BUILD SUCCESS** —— 这是第二批的整库口径。 为**已存在的正式角色**
+  建 `administrator_flag=false` 的临时账号（角色缺失即拒绝执行，避免「全 30005」假绿），
+  `tools/w8_e2e_accounts.py` 为本波次薄封装；TS 侧 `provisionTempAccounts` 解析脚本回显拿到
+  `角色码 → login_name / employee_id`，不在两边重复实现名字派生规则。
+- **验证（本轮实跑）**：
+  - 新增 `e2e/scm-data-scope.spec.ts` **6/6 全绿**（真实浏览器 + 真实登录 + 真实 PG，
+    断言账号全部 `administrator_flag=false`）：授权维护换仓即换可见行且**不重登立即生效**、
+    无授权空分页、仓管看不到「授权维护」按钮、用户自带 `warehouseId` 只能缩小、
+    `*:scope:all:query` 是显式授予的范围值而非默认、客户改派可见性翻转与过期 `version` 被拒、
+    司机绑定唯一（第二条撞约束）、司机只看自己线路且查不到全量候选、
+    成本权限与仓库范围互不隐含、财务报表随授权仓收窄。
+  - 既有配送两条 spec 一起跑 **14/14 全绿**（`scm-delivery.spec.ts` 8 + `scm-delivery-print.spec.ts` 6）。
+  - **角色授权矩阵取证**（查 `t_role_menu × t_menu`，非人工推断）：五个基础业务角色
+    `SCM_SALES` / `SCM_PURCHASER` / `SCM_STOREKEEPER` / `SCM_DRIVER` 均**不**持有任何
+    `*:scope:all:query`；`scm:report:cost:query` 只在 `SCM_FINANCE` 与 `SCM_STOREKEEPER_LEAD`；
+    两个分配权各只落在自己的主管角色；`scm:delivery:amount|scope:all:query` 只在 `SCM_DISPATCHER`；
+    `SCM_FINANCE` 持三条跨负责人范围但**不持** `scm:inventory:scope:all:query`
+    ——它的仓库范围只能由授权行配置出来，正是裁决第 10 条要的「范围是配置值，不是代码写死」。
+  - 新增数据范围/写守卫 IT：`ScmInventoryDataScopePgIT` 8/8、`ScmInventoryWriteScopePgIT` 10/10、
+    `ScmPurchaseDataScopePgIT` 13/13、`ScmDeliveryDataScopePgIT` 8/8、`ScmReportDataScopePgIT` 8/8、
+    `ScmOrderCustomerDataScopePgIT` 17 例。
+  - 前端：`npm run lint` 0 error（3 条既有 warning）、`npm run test` **223/223**、
+    `tools/ts_baseline_ratchet.py check` PASS（新增 0、SCM 区 0、附带修掉 26 条既有诊断）、
+    `npm run build` 成功。
+  - 后端全量回归见本节末「最终闸门」。
+- **过程中由验证暴露的缺陷（都已改，不改断言强度）**：
+  `BusinessException(UserErrorCode.NO_PERMISSION)` 经底座全局处理器会降级成 **10001** 而不是 30005
+  （构造器只取 msg、丢弃 code）——改为专用 `ScmDataScopeException` + SCM 自己的 `@ExceptionHandler`；
+  数据范围测试夹具以 `employeeId=1` 建 `RequestEmployee` 却没带 `administratorFlag`，
+  与新写守卫冲突（并发用例被守卫挡住，等于没测到竞态）；
+  一条 IT 断言写成 `isExactlyInstanceOf(BusinessException)`，其子类出现即红；
+  xlsx 用 `ZipInputStream` 读会因 data descriptor 抛 `invalid entry size`，改 `ZipFile`；
+  同一员工并发会话（Playwright 里二次登录）会把已建客户端顶成 30007；
+  `CustomerVO` 的行键是 `customerId` 而非 `id`，写成 `id` 得到的是 NaN 路径 + 「参数错误」；
+  分页上限 100，`pageSize: 500` 直接 30001。
+- **未完成 / 明确不算已验收**：
+  ① **FA-3 存量商品图搬运仍未做**，因此 Java 侧「新绑定必须公开」判断与历史 key 例外保留；
+  ② **对象存储模式下的保密性取证未跑**（当前全部断言在本地存储 + 本地 PG；
+  本地 `/upload/**` 静态直出无守卫，「private」在本地不等于保密）；
+  ③ 数据大屏 `module/scm/screen` 的聚合读**尚未接范围**：今天 `scm:screen:query` 只授 SUPER_ADMIN
+  因此无实际泄漏路径，但任何业务角色一旦被授大屏权限，这条就是洞，必须在其之前补；
+  ④ 采购的两条聚合读**已收口**（`summaryPreview` 整页短路 + `receiptItemWorkbench` 按授权仓过滤，
+  `generate()` 命令路径显式传 `all()` 不受影响，IT 从 13 例扩到 17 例）；
+  收口过程中暴露出两处**需要业务裁决而不能自行实现**的边界：
+  (a) 收货确认 `receipt.confirm` 在 `DIRECT` 模式下同事务写 `PURCHASE_IN`，
+  但仓库守卫只挂在 `putaway` 上 —— 第 8 条把「收货」列进必须落在授权仓内的清单，
+  而第 7 条把采购员的可见性定义为 `purchaser_id`；若给 `confirm` 加仓库守卫，
+  未配授权仓行的采购员就**无法确认自己创建的收货单**，因此留给人裁决，不自行选边；
+  (b) `GET /scm/warehouse/list` 仍不按授权仓收窄（它是所有表单的仓库选择器，
+  收窄后任何新单据都无法选仓），代价是该接口会披露调用者读不到数据的仓库名称与存在性；
+  (c) `purchase_receipt` / `purchase_demand` 的列表与明细只按 purchaser 收窄、不按仓库收窄，
+  与 (a) 是同一条口径问题。
+  ⑤ 删除类入口仍不回收 `t_file_relation` 行（靠策略侧「对象必须存活」失效）；
+  ⑥ 预留的**触发点**仍按裁决未挂订单确认（`reserve` 不做仓库守卫，其仓库来自
+  「唯一启用仓库」解析，见 decisions 未决事项）。
+
+### 2026-09-24 P0 基线收口（第三批）：三条新裁决落地、FA-3 收口、对象存储保密性取证
+
+> P0 的两道遗留入口（FA-3、对象存储模式取证）在本批关闭，另有三条口径由用户裁决后落地。
+> 全量闸门数字见本节末「验证」。
+
+- **基线**：HEAD 仍为 `742f3a7`，**全部改动未提交、未推送**（用户禁令）。工作树约 209 项变更。
+  Flyway：本轮开工前最大 V56，新增 **V57**（角色矩阵增量，data-only）与 **V58**（FA-3 商品图 key 搬运
+  + `ck_product_image_public_file_key`），`migration_checksum_guard.py sync` 已把 57/58 冻进快照
+  （frozen=58，`check` PASS），`ScmPurchaseMigrationIT` 的冻结版本清单同步追加。
+- **三条裁决已落地**（全文见 [`decisions.md`](./decisions.md)「P0 基线收口裁决（第二批，2026-09-24）」
+  第 16–19 条）：
+  1. 「活动司机」= `deleted=false`：**V54 保持现状，没有新迁移**；`DISABLED` 不解除绑定，
+     而「停用司机不得分配新线路」由 `DeliveryRouteService` 的 `MASTER_DISABLED` 判据承担（已核实存在）。
+  2. 角色矩阵：V56 不可改，差值补在 **V57** —— 销售主管补退货批准(623)/驳回(624)/退款完成(632)，
+     财务补 `scm:inventory:scope:all:query`(1331)；采购员的库存**数量**权 V56 已给（811），
+     成本列由独立的 `scm:report:cost:query`(1215) 控制且采购员不持有 → 「数量权 ≠ 成本权」无需变更，
+     只在迁移注释与 `ScmBusinessRoleMatrixPgIT` 里钉住口径。
+  3. `receipt.confirm` 的 `DIRECT` 取「采购范围 ∩ 仓库范围」交集：新增
+     `PurchaseOwnerResolver#requireVisible`，并落在 `PurchaseOrderService#lockOrder`
+     （一次覆盖编辑/改派/提交/取消/少收关单）+ `delete`、收货单 create/update/confirm/delete、
+     需求分配的**两头**；`WAREHOUSE_CONFIRM` 模式确认时不写库存，仓库判定仍留在 `putaway`。
+  4. 仓库选择器收窄：`/scm/warehouse/list`、`/query`、`/detail` 三个读入口都按仓库授权范围过滤，
+     未授权仓的 id / 名称 / 地址一律不给；历史单据继续读自己行上的
+     `warehouse_name_snapshot`（`ProductPgIT` 之外由 `WarehouseDataScopePgIT` 取证）。
+     **连带后果**：`/scm/delivery/options/warehouses` 同样收窄，调度岗若需跨仓选仓必须配授权行。
+  5. 数据大屏接范围：`ScreenDataService` 每次请求解析一次上下文，作为单个 `scope` 参数下传
+     27 条 Dao 方法；谓词按各面板的事实维度落点（经营与趋势销售序列=业务员、库存/地理仓库段=仓库、
+     采购面板=采购归属 ∩ 仓库），`inventoryHealthRows` 两支各自落谓词，`trendByDay` 只能落进
+     7 个标量子查询；供应商与 SKU 主档没有范围维度，**保持共享读是决定不是漏判**。
+- **FA-3 的实测结论与用户前提不一致（重要）**：跨全部库取证
+  `count(*) FILTER (WHERE deleted=FALSE AND file_key NOT LIKE 'public/%')` 在
+  `xsy_scm_b0`（26 行活商品图）与所有一次性 IT 库里都是 **0**，且 `file_key IS NULL` 也是 0；
+  早前子代理报的「dev 库有 5 行私有商品图」不成立（那是 IT 夹具形态）。
+  所以「先复制 5 个对象」这一步在本环境没有对象可搬。V58 仍然按裁决落地为
+  **可重入的搬运 + 数据库 CHECK**（含折叠冲突与目标占用预检、`t_file.folder_type` 同步、
+  私有 key 关系行软删），搬运正确性由 `ScmProductImageKeyMigrationPgIT` 重放迁移里的同一段 SQL 取证；
+  Java 侧「沿用本行原有私有 key」的过渡例外已删除（`ProductImageSyncManager#requirePublicImageKey`
+  只看 public 前缀），`ProductPgIT` 改成两层各证一次。
+  **上线约束不变**：真实部署若存在私有商品图，必须先 `CopyObject` 到 `public/image/` 再应用 V58。
+- **对象存储（MinIO）取证已跑通，并抓到一个真实缺陷**：
+  - 现场：本机对象存储栈按 [`../deploy/README.md`](../deploy/README.md) 与 `deploy/minio/bootstrap.sh`
+    的同一份 bucket 策略起（匿名只放通 `public/*` 的 GetObject），后端以 `XSY_FILE_STORAGE_MODE=cloud`
+    + path-style + `SEND_OBJECT_ACL=false` 连接；桶名与凭据都是本机占位值，只出现在启动命令里、**不入库**。
+  - 结果：`F0FileStorageCloudIT` **5/5 绿**（此前一直按设计 skip 的那 5 项），
+    `e2e/f0-file-storage.spec.ts` 在 cloud 模式下 **8/8 绿**。
+  - **抓到的缺陷**：`FileRelationService.rebind()` 原本只做「收回不再引用的 key」，
+    **不补新增的 key**，而公告 / 帮助文档 / 企业档案 / 商品图五条写链路都只用 `rebind`
+    → 新建带私有附件的对象对任何非上传者都永远 30005，即 FA-2 的「能看对象即可看其附件」
+    在授权方向上根本没生效（本地模式被 `/upload/**` 静态直出掩盖，只在对象存储模式下暴露）。
+    已改为「同步成当前这一组 key：缺的补、多的收回」，并新增
+    `FileRelationPgIT#rebindGrantsCurrentKeysAndReclaimsRemovedOnes` 钉住。
+  - 顺带修掉的取证夹具问题：预签名地址必须用**不带 `Authorization` 头**的上下文取
+    （否则 S3 判「多种鉴权并存」直接 400，看着像权限坏了）；文件页预览遮罩拦截整页点击，
+    下载断言改到预览之前；`f0` 用例改为自建临时账号（原先依赖外部注入令牌）。
+    为此新增 `tools/f0_e2e_accounts.py`、`WavePrefix` 增 `'f0'`、`tools/e2e_accounts.py`
+    的登录名守卫放宽为 `^[a-z][a-z0-9]*_e2e_`，并把 `.gitignore` 白名单补上
+    `w7 / w8 / f0` 三个封装脚本 —— **此前 `scm-customer-360` 与 `scm-data-scope` 在干净检出上跑不了**。
+- **验证（本轮实跑数字）**：
+  - **后端全量**：一次性干净库（V1→V58）上 `mvn -o -pl sa-admin -am test` =
+    **1018 项 / 0 失败 / 0 错误 / 5 跳过，BUILD SUCCESS**。这 5 项跳过按设计就是 cloud 门控的
+    `F0FileStorageCloudIT`，而它已在对象存储栈上单独实跑 **5/5 绿** —— 两者相加才是文件域完整口径。
+  - **前端**：`npm run lint` 0 error（3 条既有 warning）、`npm run test` 223/223、
+    `tools/ts_baseline_ratchet.py check` PASS、`npm run build` 成功；
+    改动过的 spec 单独 `tsc --noEmit --skipLibCheck` 干净。
+  - **浏览器全量（本地模式）**：**121 passed / 0 failed / 8 skipped**（15.8 分钟）；
+    8 项 skipped 就是 `f0-file-storage.spec.ts`，它在 cloud 模式下单独实跑 **8/8 绿**，
+    所以 129 项在本轮全部有真实执行记录。
+  - 定向 IT 也逐域跑过：采购交集 / 仓库可见性 / 大屏范围 / 角色矩阵 / 库存读写范围 / 配送 /
+    订单客户 / 商品与图片中心 / FA-3 搬运 / FA-2 与 FA-2b 文件层。
+  - 期间修掉四处真因：`ScmInventoryConcurrencyIT` 子线程身份缺 `administratorFlag=true`
+    （会被两条新守卫双双拒掉而「测不到竞态」）；`t_role` **没有** `administrator_flag` 列，
+    角色验收只能按 `role_code` 判；`scm-data-scope.spec.ts` 第 6 条仍按「财务靠授权行收窄报表」
+    断言（V57 之后财务显式持有全部仓库，属用例漂移，已改成「扣权账号证收窄 + 财务证显式全量」）；
+    以及上面那条 `rebind` 授权缺陷。
+- **剩余（都不是 P0 阻塞项）**：
+  1. 本轮新建的一次性 IT 库与 dev 库里 `f0_e2e_*` / `w8_e2e_*` 临时账号尚未回收，等确认后按类别删。
+  2. 数据大屏是否开放给某个正式角色，仍是业务决定（范围已经接好，`scm:screen:query` 目前只授超管）。
+  3. 调度等岗位若需跨仓选仓，走 `employee_warehouse_scope` 授权行，不把选择器改回全量。
+- **复现口径**：后端全量与定向 IT 用一次性库 + `XSY_V2_DB_URL` 的 `jdbc:p6spy:` 前缀；
+  对象存储取证需先起 MinIO 并按 `deploy/minio/bootstrap.sh` 配好 bucket 策略，
+  再以 `XSY_FILE_STORAGE_MODE=cloud` 重启后端，然后跑 `e2e/f0-file-storage.spec.ts`
+  （同一环境变量既是 Playwright 的门控，也是后端存储模式开关）。
 
 ### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）
 
