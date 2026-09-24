@@ -77,6 +77,9 @@ export const TABLE_ID_CONST = {
         SCM_REPORT_INVENTORY_LOSS: 50042,
         SCM_REPORT_INVENTORY_VALUE: 50043,
         SCM_REPORT_INVENTORY_FLOW_SUMMARY: 50044,
+        // P1 分拣管理：任务列表与按商品汇总（两张都是列表页，列配置沿用同一套数字 id）
+        SCM_SORTING_TASK: 50045,
+        SCM_SORTING_SUMMARY: 50046,
         OA: {
             NOTICE: businessOAInitTableId + 1, //通知公告
             ENTERPRISE: businessOAInitTableId + 2, //企业信息
