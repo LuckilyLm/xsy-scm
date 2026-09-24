@@ -33,6 +33,12 @@ public interface DeliveryQueryDao {
 
     List<DeliveryCandidateVO> candidateByIds(@Param("ids") List<Long> ids);
 
+    /**
+     * 尚未被「已完成」分拣任务覆盖的有效明细行数；0 才允许进入配送候选。
+     * 与 {@code candidateSource} 里的覆盖谓词同一条口径，两处必须一起改。
+     */
+    int unsortedItemCount(@Param("orderId") Long orderId);
+
     Long nextNumber();
 
     int bumpStopSequences(@Param("id") Long id);

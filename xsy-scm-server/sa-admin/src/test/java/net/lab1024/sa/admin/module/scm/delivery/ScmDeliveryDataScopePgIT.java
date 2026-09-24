@@ -135,7 +135,20 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
 
     /** 组单：走写侧路径把订单编进线路，线路版本按原始行回读，不依赖被测的读取门禁。 */
     private Long orderInRoute(Long routeId, Long customerId, Long skuId) {
+        return attach(routeId, sortedOrder(customerId, skuId));
+    }
+
+    /**
+     * 已确认且**分拣已完成**的订单 —— P1 之后这是配送候选的硬前置（裁决第 11 条与补充第 18 条）。
+     * 分拣这一步必须在有仓库授权的身份下做，因此需要时与 {@link #attach} 分开调用。
+     */
+    private Long sortedOrder(Long customerId, Long skuId) {
         Long orderId = confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000");
+        sortingCompletedFor(orderId);
+        return orderId;
+    }
+
+    private Long attach(Long routeId, Long orderId) {
         var form = new DeliveryOrdersForm();
         form.setVersion(versionOf(routeId));
         form.setOrderIds(List.of(orderId));
@@ -331,6 +344,8 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
         Long sku = newOnShelfSku("SCOPE");
         Long customer = newLocatedCustomer();
         Long confirmed = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
+        // 候选池的门槛里有「分拣已完成」这一条（P1 补充第 18 条），前置放在换身份之前做。
+        sortingCompletedFor(confirmed);
         loginAs(newEmployee("H"));
 
         var filter = new DeliveryQueryForm();
@@ -441,12 +456,15 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
         Long ownRoute = newRoute(warehouse, newDriver("D10", driverEmployee, "ENABLED"));
         Long foreignRoute = newRoute(warehouse, null);
 
+        // 分拣前置放在默认身份下做：司机侧账号没有仓库授权，写不了分拣任务，
+        // 而本用例要断的是「组单这条写路径不受司机维度收窄」，不是分拣权。
+        Long sortedOrder = sortedOrder(newLocatedCustomer(), newOnShelfSku("WRITE"));
         loginAs(driverEmployee);
         try (var stp = grant()) {
             // 读侧：未分配司机的线路越权。
             assertDenied(() -> routeQuery.detail(foreignRoute));
             // 写侧：组单要锁线路、读候选、重排停靠点，任何一步被司机维度挡掉都会静默废掉调度。
-            orderInRoute(foreignRoute, newLocatedCustomer(), newOnShelfSku("WRITE"));
+            attach(foreignRoute, sortedOrder);
             assertThat(jdbc.queryForObject("SELECT count(*) FROM delivery_route_order WHERE route_id = ?",
                     Integer.class, foreignRoute)).isEqualTo(1);
             assertThat(routeQuery.detail(ownRoute)).isNotNull();

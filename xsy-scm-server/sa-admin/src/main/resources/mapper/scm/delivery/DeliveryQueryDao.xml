@@ -117,6 +117,23 @@
                  LEFT JOIN customer c ON c.id = o.customer_id AND c.deleted = FALSE AND c.address = a.address AND
                                          btrim(a.address) &lt;&gt; ''
         WHERE o.deleted = FALSE
+          <!--
+            分拣覆盖门槛（P1 裁决第 11 条与补充第 18 条）：订单每条有效明细行都必须落在
+            状态为 COMPLETED 的分拣任务里，少一行都不能进候选；任务被重开后立刻掉出候选。
+            与 DeliveryEligibilityPolicy#eligible 用的 unsortedItemCount 同一条口径。
+          -->
+          AND NOT EXISTS (SELECT 1
+                          FROM sales_order_item i
+                          WHERE i.order_id = o.id
+                            AND i.deleted = FALSE
+                            AND NOT EXISTS (SELECT 1
+                                            FROM sorting_task_item si
+                                                     JOIN sorting_task t ON t.id = si.task_id
+                                            WHERE si.sales_order_item_id = i.id
+                                              AND si.deleted = FALSE
+                                              AND si.occupation_status = 'ACTIVE'
+                                              AND t.deleted = FALSE
+                                              AND t.status = 'COMPLETED'))
     </sql>
     <select id="candidate" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) candidate WHERE order_id=#{id}
@@ -125,6 +142,21 @@
     <select id="candidateByIds" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) candidate WHERE candidate.order_id IN
         <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
+    </select>
+    <!-- 与 candidateSource 里的分拣覆盖谓词一一对应：服务侧要给出可分辨的拒绝理由时用计数版。 -->
+    <select id="unsortedItemCount" resultType="int">
+        SELECT count(*)
+        FROM sales_order_item i
+        WHERE i.order_id = #{orderId}
+          AND i.deleted = FALSE
+          AND NOT EXISTS (SELECT 1
+                          FROM sorting_task_item si
+                                   JOIN sorting_task t ON t.id = si.task_id
+                          WHERE si.sales_order_item_id = i.id
+                            AND si.deleted = FALSE
+                            AND si.occupation_status = 'ACTIVE'
+                            AND t.deleted = FALSE
+                            AND t.status = 'COMPLETED')
     </select>
     <select id="candidates" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) c WHERE c.status IN

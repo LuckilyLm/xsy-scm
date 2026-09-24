@@ -72,7 +72,7 @@ public class ScmDataScopeService {
         }
         Long employeeId = employee.getEmployeeId();
         boolean costVisible = hasPermission(ScmReportAccess.COST_QUERY_PERM);
-        if (Boolean.TRUE.equals(employee.getAdministratorFlag())) {
+        if (isAdministrator()) {
             return ScmDataScopeContext.unrestricted(employeeId, costVisible);
         }
         return new ScmDataScopeContextBuilder(employeeId, costVisible)
@@ -87,6 +87,19 @@ public class ScmDataScopeService {
                 .driver(hasPermission(DELIVERY_ALL_PERM) ? ScmValueScope.all()
                         : ScmValueScope.of(scopeDao.listDriverIdsByEmployee(employeeId)))
                 .build();
+    }
+
+    /**
+     * break-glass 判定的唯一出处：{@code administratorFlag=true} 绕过 SCM 数据范围。
+     *
+     * <p>维度落在 {@link ScmValueScope} 里的（仓库、负责人、司机）由 {@link #resolve()} 返回
+     * {@code all()} 天然放行；**不落在范围值对象里的维度**（例如分拣的「受指派人 = 本人」是
+     * 与员工 id 直接比等值）必须显式调用本方法同等放行，否则同一个超管账号会出现
+     * 「仓库看得见、人看不见」这种半开半关的口径。
+     */
+    public static boolean isAdministrator() {
+        return SmartRequestUtil.getRequestUser() instanceof RequestEmployee employee
+                && Boolean.TRUE.equals(employee.getAdministratorFlag());
     }
 
     /**

@@ -177,6 +177,8 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
     }
 
     private void add(Long id, List<Long> ids) {
+        // P1 之后：未分拣完成的订单不再是配送候选，组单前先把它们做到 COMPLETED。
+        sortingCompletedFor(ids.toArray(Long[]::new));
         var f = new DeliveryOrdersForm();
         f.setVersion(version(id).getVersion());
         f.setOrderIds(ids);

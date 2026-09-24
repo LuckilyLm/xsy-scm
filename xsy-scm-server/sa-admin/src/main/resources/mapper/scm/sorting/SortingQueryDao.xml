@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.sorting.dao.SortingQueryDao">
+    <!--
+      分拣范围（裁决第 7 条与补充第 15 条）：授权仓 ∩ 可见指派人，两维取交集、失败关闭。
+      * scope 为 null 渲染 AND FALSE：漏传范围必须是「查不到」，不能是「查全部」。
+      * 仓库维度只能来自 employee_warehouse_scope（或其显式放宽权限），没有授权行即无仓可看。
+      * 持建单与指派权者（crossAssignee）跨指派人可见；否则恒等于派给本人。
+        未指派任务（assignee_employee_id IS NULL）天然落在「= 本人」之外，因此只对前者可见。
+    -->
+    <sql id="taskScopeGuard">
+        <choose>
+            <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
+            <otherwise>
+                <if test="scope.warehouseScope.all == false">
+                    AND t.warehouse_id IN
+                    <foreach collection="scope.warehouseScope.ids" item="scopeWarehouseId" open="(" separator=","
+                             close=")">#{scopeWarehouseId}</foreach>
+                </if>
+                <if test="crossAssignee == false">AND t.assignee_employee_id=#{scope.employeeId}</if>
+            </otherwise>
+        </choose>
+    </sql>
+    <sql id="taskColumns">
+        t.*,
+        e.actual_name AS assignee_name,
+        (SELECT count(*) FROM sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE) AS item_count,
+        (SELECT count(*) FROM sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
+        AND i.occupation_status='ACTIVE' AND i.result IS NOT NULL) AS processed_count
+    </sql>
+    <select id="lockTask" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.entity.SortingTaskEntity">
+        SELECT *
+        FROM sorting_task
+        WHERE id = #{id}
+          AND deleted = FALSE FOR UPDATE
+    </select>
+    <select id="nextNumber" resultType="long">
+        SELECT nextval('sorting_task_no_seq')
+    </select>
+    <select id="tasks" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingTaskVO">
+        SELECT
+        <include refid="taskColumns"/>
+        FROM sorting_task t
+        LEFT JOIN t_employee e ON e.employee_id=t.assignee_employee_id AND e.deleted_flag=FALSE
+        WHERE t.deleted=FALSE
+        <if test="q.status != null and q.status != ''">AND t.status=#{q.status}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        <if test="q.assigneeEmployeeId != null">AND t.assignee_employee_id=#{q.assigneeEmployeeId}</if>
+        <if test="q.unassignedOnly != null and q.unassignedOnly">AND t.assignee_employee_id IS NULL</if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (t.task_no ILIKE concat('%',#{q.keyword},'%')
+            OR t.warehouse_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR e.actual_name ILIKE concat('%',#{q.keyword},'%')
+            OR EXISTS (SELECT 1 FROM sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
+            AND (i.order_no_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%'))))
+        </if>
+        <include refid="taskScopeGuard"/>
+        ORDER BY t.created_at DESC,t.id DESC    </select>
+    <select id="task" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingTaskVO">
+        SELECT
+        <include refid="taskColumns"/>
+        FROM sorting_task t
+        LEFT JOIN t_employee e ON e.employee_id=t.assignee_employee_id AND e.deleted_flag=FALSE
+        WHERE t.id=#{id} AND t.deleted=FALSE
+        <include refid="taskScopeGuard"/>
+    </select>
+    <select id="items" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingTaskItemVO">
+        SELECT i.*
+        FROM sorting_task_item i
+        WHERE i.task_id = #{taskId}
+          AND i.deleted = FALSE
+        ORDER BY i.id
+    </select>
+    <!--
+      按商品汇总（只读视角，裁决补充第 19 条）：分组键含销售单位，量只在同单位内相加。
+      occupation_status='ACTIVE' 把已取消任务的历史行排除在汇总之外——它们不再代表待办或已发量。
+    -->
+    <select id="skuSummary" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingSkuSummaryVO">
+        SELECT i.sku_id,
+        i.spu_code_snapshot,
+        i.product_name_snapshot,
+        i.sku_code_snapshot,
+        i.spec_name_snapshot,
+        i.sale_unit_snapshot,
+        count(*) AS line_count,
+        count(DISTINCT i.sales_order_id) AS order_count,
+        count(DISTINCT t.id) AS task_count,
+        sum(i.planned_quantity_snapshot) AS planned_quantity,
+        sum(i.sorted_quantity) AS sorted_quantity,
+        sum(CASE WHEN i.result IS NULL THEN 1 ELSE 0 END) AS unprocessed_count
+        FROM sorting_task_item i
+        JOIN sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
+        WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
+        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.sku_code_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.spu_code_snapshot ILIKE concat('%',#{q.keyword},'%'))
+        </if>
+        <include refid="taskScopeGuard"/>
+        GROUP BY i.sku_id,i.spu_code_snapshot,i.product_name_snapshot,i.sku_code_snapshot,i.spec_name_snapshot,
+        i.sale_unit_snapshot
+        ORDER BY i.product_name_snapshot,i.sale_unit_snapshot,i.sku_code_snapshot
+    </select>
+    <!--
+      候选订单行（裁决补充第 22 条）：这是**分拣队列视图**，不按订单业务员维度收窄 ——
+      仓库岗位默认不持任何订单范围，若沿用 seller_id 收窄会一个也选不到，建单根本无法发生。
+      不收窄的代价由两点兑住：入口只授建单权（现状仅仓库主管与超管），
+      且本语句只取队列必需列，**不取任何价格与金额**。
+      已确认订单的有效明细，且尚未被任何活动任务占用（裁决第 1、2 条）。
+      actual_quantity IS NOT NULL 是防御性重复：标品在提交时按订购量落值、非标在确认前必须已录实重，
+      因此 CONFIRMED 的行必然有值；写下这条是为了让「计划量快照 > 0」的前提在 SQL 里也看得出来。
+    -->
+    <select id="candidateLines" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingCandidateLineVO">
+        SELECT i.id AS sales_order_item_id,
+        o.id AS sales_order_id,
+        o.order_no,
+        o.customer_id,
+        o.customer_name_snapshot AS customer_name,
+        i.spu_id,
+        i.sku_id,
+        i.spu_code_snapshot,
+        i.product_name_snapshot,
+        i.sku_code_snapshot,
+        i.spec_name_snapshot,
+        i.sale_unit_snapshot,
+        i.product_type_snapshot,
+        i.ordered_quantity,
+        i.actual_quantity,
+        o.confirmed_at,
+        o.expect_delivery_time
+        FROM sales_order o
+        JOIN sales_order_item i ON i.order_id=o.id AND i.deleted=FALSE
+        WHERE o.deleted=FALSE AND o.status='CONFIRMED' AND i.actual_quantity IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM sorting_task_item si WHERE si.sales_order_item_id=i.id AND si.deleted=FALSE
+        AND si.occupation_status='ACTIVE')
+        <if test="q.customerId != null">AND o.customer_id=#{q.customerId}</if>
+        <if test="q.orderId != null">AND o.id=#{q.orderId}</if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (o.order_no ILIKE concat('%',#{q.keyword},'%')
+            OR o.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%'))
+        </if>
+        ORDER BY o.expect_delivery_time NULLS LAST,o.id DESC,i.sort_order,i.id
+    </select>
+    <select id="orderLines" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.dto.SortingOrderLineSnapshot">
+        SELECT i.id AS sales_order_item_id,
+        o.id AS sales_order_id,
+        o.status AS order_status,
+        o.deleted AS order_deleted,
+        i.deleted AS item_deleted,
+        o.order_no,
+        o.customer_id,
+        o.customer_name_snapshot AS customer_name,
+        i.spu_id,
+        i.sku_id,
+        i.spu_code_snapshot,
+        i.product_name_snapshot,
+        i.sku_code_snapshot,
+        i.spec_name_snapshot,
+        i.sale_unit_snapshot,
+        i.product_type_snapshot,
+        i.actual_quantity
+        FROM sales_order_item i
+        JOIN sales_order o ON o.id=i.order_id
+        WHERE i.id IN
+        <foreach collection="ids" item="lineId" open="(" separator="," close=")">#{lineId}</foreach>
+    </select>
+    <!--
+      打印只登记计次：不改状态、不动明细、也不 bump version ——
+      打印不代表内容变了，让计次把别人的编辑顶成版本冲突是假冲突。
+      计次累加由调用方的任务聚合锁串行化。
+    -->
+    <update id="markPrinted">
+        UPDATE sorting_task
+        SET print_count=print_count + 1, last_printed_at=now(), last_printed_by=#{operator},
+            updated_at=now(), updated_by=#{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+    <update id="releaseItems">
+        UPDATE sorting_task_item
+        SET occupation_status='RELEASED', version=version + 1, updated_at=now(), updated_by=#{operator}
+        WHERE task_id = #{taskId}
+          AND deleted = FALSE
+          AND occupation_status = 'ACTIVE'
+    </update>
+</mapper>

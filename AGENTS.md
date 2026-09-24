@@ -73,6 +73,7 @@ F0   Object Storage Activation             COMPLETE
 P0   Baseline closure: FA-1..FA-3 + formal  COMPLETE (2026-09-24); F0-DEBT-01 closed,
      non-admin roles + explicit SCM data scope   object-storage confidentiality proven on MinIO
 W6-1 Inventory (balance/movement/inbound)  BACKEND + BROWSER VERIFIED
+P1   Sorting management (V60-V62)          BACKEND + IT VERIFIED (browser E2E: see docs/progress.md)
 W6-2 Mini Program                          NOT STARTED
 ```
 
@@ -208,6 +209,38 @@ two independent gates were added before any non-administrator business role coul
    purchase by purchaser ∩ warehouse), and 供应商 / SKU 主档 have no dimension to narrow on, so they
    stay team-shared by decision rather than by omission.
 
+P1 分拣管理 (**backend + PostgreSQL IT verified, 2026-09-24**; V60–V62, module
+`net.lab1024.sa.admin.module.scm.sorting`; rulings recorded in
+[`docs/decisions.md`](./docs/decisions.md)「P1 分拣管理裁决」第 1–22 条) —
+sorting is the **producer of the shipped-quantity fact and nothing else**. Invariants that must not
+be regressed: sorting never writes back `sales_order_item.actual_quantity` / `settlement_*` (a
+short-pick or an out-of-stock line leaves the order untouched — the difference lives only in
+`sorting_task_item`), never writes `inventory_balance` / `inventory_movement`, never creates an
+outbound document and never moves the reservation trigger (`SALES_OUT` belongs to Delivery L3/P2).
+`planned_quantity_snapshot` is frozen from `actual_quantity` at task-creation time — every valid line
+of a `CONFIRMED` order necessarily has it > 0 (standard lines are filled at submit, non-standard
+lines must be weighed before confirm), so the snapshot is `NOT NULL` and `> 0` in the database.
+One `sales_order_item` may be occupied by at most one **active** task, enforced by partial unique
+index `uk_sorting_task_item_active_line` on `sorting_task_item.occupation_status = 'ACTIVE'`: the
+occupation flag lives on the line (the index cannot see the parent's status), so **cancelling a task
+must flip all of its lines to `RELEASED` in the same transaction** — any new task-status transition
+entry point has to maintain that, or the index silently diverges from the task state. Task states are
+only `PENDING / SORTING / COMPLETED / CANCELLED` (no `RELEASED` task state); `COMPLETED` requires
+every active line to carry a result, and only `REOPEN` (own permission + mandatory reason + version)
+gets a completed task back to work — reopening **keeps** the recorded quantities and reasons, because
+delivery eligibility is evaluated on *task status*, not on line results
+(`DeliveryEligibilityPolicy` = `CONFIRMED` ∧ every valid line covered by a `COMPLETED` task);
+reopened orders simply drop out of the candidate pool, and historical `ACTIVE` route assignments are
+never auto-released. Sorting scope is **warehouse ∈ authorized ∧ assignee = self** (intersect, never
+substitute); cross-assignee visibility is implied by `scm:sorting:task:assign` — there is deliberately
+**no** `scm:sorting:scope:all:query` and no sixth scope dimension. Print = preview + counted
+registration (count/time/operator only, never a version bump, never a state change); weight is
+manual-only; no gross/tare/net, no unit conversion, no substitution, no tolerance thresholds,
+no automatic re-settlement. One documented exception to the P0 "option lists must be scoped" rule:
+`GET /scm/sorting/candidate-lines` is a sorting **queue** view gated by the create-task permission and
+not narrowed by `seller_id` (it returns no prices or amounts) — see ruling 22 before reusing that
+pattern anywhere else.
+
 W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
 [`docs/progress.md`](./docs/progress.md) are adjudicated.
 
@@ -310,6 +343,19 @@ V57  V57__scm_business_role_matrix_delta.sql         p0   data-only，角色矩�
 V58  V58__scm_product_image_public_file_key.sql      f0   FA-3：存量私有商品图 key 搬 public/image/
                                                    （t_file + product_image + 收回关系行，可重入）
                                                    + ck_product_image_public_file_key CHECK
+V59  V59__scm_order_log_return_refund_type.sql        order 订单操作日志白名单加 RETURN / REFUND
+                                                   （远端合并带入，原编号 V50 与上游冲突后改号）
+V60  V60__scm_sorting_task.sql                        p1   分拣数据地基：sorting_task +
+                                                   sorting_task_item（计划量冻结快照、结果与量成对
+                                                   CHECK、差异必填原因）、明细行占用位
+                                                   （ACTIVE/RELEASED）上的部分唯一索引
+                                                   uk_sorting_task_item_active_line、
+                                                   sorting_task_no_seq 全局非重置序列（SRT 前缀）
+V61  V61__scm_sorting_menus_permissions.sql           p1   data-only，分拣菜单与 9 个权限点
+                                                   （1400–1421：query/add/assign/item:update/
+                                                   complete/cancel/reopen/print/summary:query）
+V62  V62__scm_sorting_roles.sql                       p1   data-only，正式角色 SCM_SORTER 与
+                                                   队列管理权授予 SCM_STOREKEEPER_LEAD（按 role_code 种）
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
