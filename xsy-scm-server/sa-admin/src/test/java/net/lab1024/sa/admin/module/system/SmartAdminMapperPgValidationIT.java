@@ -195,6 +195,27 @@ class SmartAdminMapperPgValidationIT {
         assertThat(knownFailures).as("已知失败基线应恰好为 %s 条", KNOWN_FAILURES.size())
                 .hasSize(KNOWN_FAILURES.size());
         assertThat(validated).as("应至少校验到一批语句").isGreaterThan(100);
+
+        // skipped 原先只 println，等于给这套校验留了一个无声的逃逸口：任何在 getBoundSql 抛错的
+        // 语句整条跳过 PG 解析，failures 仍为空、用例照样绿。实测 433 条跳过全部来自
+        // MyBatis-Plus BaseMapper 继承的泛型 CRUD（SQL 由框架生成，不是本仓库手写的）。
+        // 真正要防的是「有人在 mapper XML 里写了与继承方法同名的自定义语句」——
+        // 那会被这套按方法名枚举的机制静默跳过，所以钉两条：
+        //   1) 每条跳过项的方法名必须在 BaseMapper 自身的方法集合内（运行时取，不另抄一份清单）；
+        //   2) 跳过总数不得超过基线，新增 mapper 时要显式改这个数字才会过。
+        var inheritedCrudMethods = new java.util.HashSet<String>();
+        for (Method base : com.baomidou.mybatisplus.core.mapper.BaseMapper.class.getMethods()) {
+            inheritedCrudMethods.add(base.getName());
+        }
+        for (String s : skipped) {
+            String statementId = s.substring(0, s.indexOf("  -> "));
+            String methodName = statementId.substring(statementId.lastIndexOf('.') + 1);
+            assertThat(inheritedCrudMethods)
+                    .as("手写 mapper 语句不允许被跳过（它是 BaseMapper 之外的自定义语句，"
+                            + "按方法名枚举会漏掉）: %s", statementId)
+                    .contains(methodName);
+        }
+        assertThat(skipped).as("跳过项基线 433 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(433);
     }
 
     // ------------------------------------------------------------------
