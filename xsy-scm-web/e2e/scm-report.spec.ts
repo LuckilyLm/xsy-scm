@@ -22,7 +22,10 @@ const apiUrl = 'http://127.0.0.1:18080';
 const name = 'w6_e2e_' + Date.now().toString(36);
 const password = 'RPT@' + randomBytes(8).toString('hex');
 const env = {...process.env, W6_E2E_NAME: name, W6_E2E_PASSWORD: password};
-const today = new Date().toISOString().slice(0, 10);
+// 报表按业务日界（Asia/Shanghai）取窗口：toISOString() 给的是 UTC 日期，
+// 在 UTC 16:00 之后跑用例时，当天确认的订单其 confirmed_at（东八区）已落在「明天」，
+// 窗口就会把这条事实正当排除，表现为 0 行的假失败。
+const today = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai'}).format(new Date());
 
 let api: APIRequestContext;
 let anonApi: APIRequestContext;

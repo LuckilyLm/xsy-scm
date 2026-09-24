@@ -18,8 +18,11 @@ import {apiClient, accessibleName, authenticate, login, provisionTempAccounts, t
 
 type Row = Record<string, any>;
 
-/** 扣掉 `scm:inventory:loss-gain:query`：§6.2 要求「旧消息还在但权限已失去」时跳转仍被服务端拒。 */
-const accounts: TempAccounts = provisionTempAccounts('w4', ['scm:inventory:loss-gain:query']);
+/**
+ * 扣掉 `scm:inventory:loss-gain:query`：§6.2 要求「旧消息还在但权限已失去」时跳转仍被服务端拒。
+ * 再建一个第二管理员：报损报溢禁止自建自审（裁决第 8 条制衡），驳回不能由录单人自己发起。
+ */
+const accounts: TempAccounts = provisionTempAccounts('w4', ['scm:inventory:loss-gain:query'], undefined, true);
 const runName = accounts.admin;
 const draftRouteName = runName + '待办线路';
 
@@ -36,6 +39,8 @@ const LOSS_GAIN_QUERY_PATH = CARDS['loss-gain-audit'].queryPath;
 let api: APIRequestContext;
 let adminToken = '';
 let deniedToken = '';
+/** 第二管理员的客户端：只用于审批类写操作，避免被 41065 自建自审挡下。 */
+let auditorApi: APIRequestContext;
 let warehouseId = '';
 let skuId = '';
 let lossGainId = '';
@@ -111,6 +116,8 @@ test.beforeAll(async () => {
   adminToken = await login(accounts, accounts.admin);
   deniedToken = await login(accounts, accounts.denied!);
   api = await apiClient(adminToken);
+  // 审批人是另一个人：录单人自己驳回会被 41065 挡下（裁决第 8 条）
+  auditorApi = await apiClient(await login(accounts, accounts.secondAdmin!));
 
   const warehouses = await get<Row[]>('/scm/warehouse/list');
   const warehouse = warehouses.find((w) => w.status === 'ENABLED');
@@ -134,6 +141,8 @@ test.afterAll(async () => {
     // 草稿线路留在库里会一直抬高「草稿配送线路」待办数字，收尾取消它
     if (draftRouteId && api) await ok(api, 'post', `/scm/delivery/routes/${draftRouteId}/cancel`, {version: await routeVersion(), reason: 'E2E 收尾'});
   } finally {
+    await auditorApi?.get('/login/logout');
+    await auditorApi?.dispose();
     await api?.get('/login/logout');
     await api?.dispose();
     accounts.cleanup();
@@ -215,9 +224,10 @@ test('§6.1-5 keep-alive 复用时重新套用新 query', async ({page}) => {
 });
 
 test('§6.2 报损报溢驳回消息：按业务标识直达目标单据，不靠中文标题猜业务', async ({page}) => {
+  // 驳回由另一个账号发起：同一人审批会被 41065 自建自审禁令挡下（裁决第 8 条制衡）；站内信仍按 created_by 落到 admin 收件箱
   await post(`/scm/inventory/loss-gain/reject/${lossGainId}`, {
     version: (await get(`/scm/inventory/loss-gain/detail/${lossGainId}`)).version, auditOpinion: '数量与验收单不符，请核对',
-  });
+  }, auditorApi);
   expect((await get(`/scm/inventory/loss-gain/detail/${lossGainId}`)).status).toBe('REJECTED');
 
   // 消息落库必须带 messageType + dataId：前端据此决定跳转，解析标题只是文案

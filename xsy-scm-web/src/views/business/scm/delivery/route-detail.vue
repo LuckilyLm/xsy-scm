@@ -56,8 +56,7 @@
           >停靠点 <strong>{{ detail.route.stopCount }}</strong></span
           ><span
         >订单 <strong>{{ detail.route.orderCount }}</strong></span
-        ><span
-        >订单金额 <strong>{{ money(detail.route.totalAmount) }}</strong></span
+        ><span v-if="canViewAmount">订单金额 <strong>{{ money(detail.route.totalAmount) }}</strong></span
         ><span
         >停靠点定位 <strong>{{ detail.route.locatedCount }} / {{ detail.route.stopCount }}</strong></span
         >
@@ -191,7 +190,7 @@
                     <p>{{ stop.addressSnapshot }}</p>
                     <p>{{ stop.receiverNameSnapshot || '—' }} · {{ stop.receiverPhoneSnapshot || '—' }}</p>
                     <p>
-                      {{ stop.orderCount }} 张订单 · {{ money(stop.totalAmount) }}<span
+                      {{ stop.orderCount }} 张订单<span v-if="canViewAmount"> · {{ money(stop.totalAmount) }}</span><span
                         v-if="stop.geomCrs"> · {{ stop.geomCrs }}</span>
                     </p>
                     <p v-if="stop.plannedArrivalTime">计划到达：{{ datetime(stop.plannedArrivalTime) }}</p>
@@ -378,6 +377,7 @@ import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
+import {useDeliveryPermission} from './use-delivery-permission';
 import {
   deliveryError,
   printStatuses,
@@ -402,6 +402,7 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const user = useUserStore();
+const {canViewAmount} = useDeliveryPermission();
 const router = useRouter();
 const canEdit = computed(
     () =>
@@ -423,18 +424,21 @@ const mapPoints = computed<MapPoint[]>(() => [
   ...(detail.value?.stops.map((s) => ({
     ...s,
     label: `${s.stopSeq} ${s.customerNameSnapshot}`,
-    description: `${s.addressSnapshot}\n${s.receiverPhoneSnapshot ?? ''} · ${s.orderCount} 张订单 · ${money(s.totalAmount)}`,
+    description: `${s.addressSnapshot}\n${s.receiverPhoneSnapshot ?? ''} · ${s.orderCount} 张订单${
+        canViewAmount.value ? ` · ${money(s.totalAmount)}` : ''}`,
   })) ?? []),
 ]);
-const orderColumns: TableColumnsType = [
+const orderColumns = computed<TableColumnsType>(() => [
   {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
   {title: '停靠点 / 客户', dataIndex: 'stop', width: 200},
   {title: '配送地址', dataIndex: 'address', width: 240},
   {title: '期望配送', dataIndex: 'expectDeliveryTimeSnapshot', width: 180},
-  {title: '订单金额', dataIndex: 'orderAmountSnapshot', align: 'right', width: 120},
+  ...(canViewAmount.value
+      ? [{title: '订单金额', dataIndex: 'orderAmountSnapshot', align: 'right' as const, width: 120}]
+      : []),
   {title: '定位', dataIndex: 'location', width: 90},
-  {title: '操作', dataIndex: 'action', align: 'right', width: 80},
-];
+  {title: '操作', dataIndex: 'action', align: 'right' as const, width: 80},
+]);
 
 const printMode = ref<'orders' | 'customers'>('orders');
 const customerFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED'>('ALL');
@@ -479,24 +483,24 @@ const customerRowSelection = computed(() => ({
   selectedRowKeys: customerSelection.value,
   onChange: (keys: (string | number)[]) => (customerSelection.value = keys),
 }));
-const orderViewColumns: TableColumnsType = [
+const orderViewColumns = computed<TableColumnsType>(() => [
   {title: '订单号', dataIndex: 'orderNo', width: 170},
   {title: '客户', dataIndex: 'customerName', width: 160},
-  {title: '停靠序', dataIndex: 'stopSeq', width: 80, align: 'right'},
-  {title: '商品行', dataIndex: 'itemCount', width: 80, align: 'right'},
-  {title: '订单金额', dataIndex: 'orderAmount', width: 120, align: 'right'},
-  {title: '打印次数', dataIndex: 'printCount', width: 90, align: 'right'},
-  {title: '打印状态', dataIndex: 'printStatus', width: 100, align: 'center'},
+  {title: '停靠序', dataIndex: 'stopSeq', width: 80, align: 'right' as const},
+  {title: '商品行', dataIndex: 'itemCount', width: 80, align: 'right' as const},
+  ...(canViewAmount.value ? [{title: '订单金额', dataIndex: 'orderAmount', width: 120, align: 'right' as const}] : []),
+  {title: '打印次数', dataIndex: 'printCount', width: 90, align: 'right' as const},
+  {title: '打印状态', dataIndex: 'printStatus', width: 100, align: 'center' as const},
   {title: '最近打印', dataIndex: 'lastPrintedAt', width: 170},
-];
-const customerViewColumns: TableColumnsType = [
+]);
+const customerViewColumns = computed<TableColumnsType>(() => [
   {title: '客户', dataIndex: 'customerName', width: 200},
-  {title: '订单数', dataIndex: 'orderCount', width: 90, align: 'right'},
-  {title: '商品行', dataIndex: 'itemCount', width: 90, align: 'right'},
-  {title: '金额', dataIndex: 'totalAmount', width: 130, align: 'right'},
-  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 110, align: 'right'},
-  {title: '打印状态', dataIndex: 'printStatus', width: 110, align: 'center'},
-];
+  {title: '订单数', dataIndex: 'orderCount', width: 90, align: 'right' as const},
+  {title: '商品行', dataIndex: 'itemCount', width: 90, align: 'right' as const},
+  ...(canViewAmount.value ? [{title: '金额', dataIndex: 'totalAmount', width: 130, align: 'right' as const}] : []),
+  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 110, align: 'right' as const},
+  {title: '打印状态', dataIndex: 'printStatus', width: 110, align: 'center' as const},
+]);
 
 async function loadPrint() {
   if (routeId.value == null) return;

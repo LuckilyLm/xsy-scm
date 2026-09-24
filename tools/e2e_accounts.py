@@ -29,12 +29,13 @@ SmartAdmin 口令规则（从正式源码反推，勿凭记忆猜）：
     W1_E2E_NAME / W1_E2E_PASSWORD  + argv[1] = setup|cleanup
 
 安全约束：
-  · login_name 必须以 `w<wave>_e2e_` 开头（`_e2e_` 是硬性标记），否则拒绝执行；
+  · login_name 必须以 `<波次>_e2e_` 开头（`_e2e_` 是硬性标记，波次如 w1 / w8 / f0），否则拒绝执行；
   · 永不触碰种子管理员行（login_name = 'admin' / employee_id = 1）；
   · cleanup 只按 login_name 精确删除，不做任何前缀通配删除。
 """
 
 import os
+import re
 import subprocess
 import sys
 
@@ -80,6 +81,38 @@ READ_NAME = NAME + READ_SUFFIX if NAME else ""
 # 触发方式：`--deny` 或环境变量 `E2E_DENY`，多个权限码用逗号分隔；不传则完全不建这个账号。
 DENY_SUFFIX = "_deny"
 DENY = _arg("--deny", ["E2E_DENY"], "")
+
+
+# 正式业务角色账号（按需创建）：`<NAME>_<角色短名>`，administrator_flag=false 且挂 V56 种下的正式角色。
+# 为什么不能拿上面的只读夹具代替：只读角色是**功能权限**反例用的合成角色——它持有所有以
+# `:query` 结尾的按钮权限，因此 `scm:*:scope:all:query` 也在内，数据范围对它等于不收窄。
+# 数据范围的正反例只能由「真实角色 + 真实授权行」的账号来证（裁决第 5 条：超管通过不算证据）。
+BUSINESS_ROLES = _arg("--roles", ["E2E_BUSINESS_ROLES"], "")
+
+# t_employee.login_name 是 VARCHAR(30)，角色短名按剩余长度截断，宁可难看也不能溢出列宽
+LOGIN_NAME_MAX = 30
+
+
+def business_role_codes() -> list[str]:
+    """本次要挂的正式角色码；空列表表示不建业务角色账号。"""
+    return [token.strip() for token in BUSINESS_ROLES.split(",") if token.strip()]
+
+
+# 第二个管理员账号（按需创建）：`<NAME>_two`。
+# 为什么需要它：报损报溢 / 规格转换现在禁止「录单人自己审批」（裁决第 8 条），
+# 单个管理员账号既录单又审批会被 41065 挡下，审批类浏览器用例因此必须有第二个人。
+# 刻意仍用 administrator_flag=true 而不是正式角色：正式仓管角色没有仓库授权行，
+# 会被同一轮的写侧范围守卫挡住，那样测的就不是「换人审批」而是范围守卫了。
+SECOND_ADMIN = _arg("--second-admin", ["E2E_SECOND_ADMIN"], "")
+SECOND_ADMIN_SUFFIX = "_two"
+
+
+def business_role_login_name(role_code: str) -> str:
+    """角色码 → 伴随账号 login_name；去掉 SCM_ 前缀后按列宽截断。"""
+    short = role_code[4:] if role_code.startswith("SCM_") else role_code
+    short = short.lower()
+    budget = LOGIN_NAME_MAX - len(NAME) - 1
+    return f"{NAME}_{short[:max(budget, 1)]}"
 
 
 def deny_codes() -> list[str]:
@@ -153,9 +186,13 @@ def guard() -> None:
             "[e2e-accounts] 缺少账号参数。请提供 --name/--password（cleanup 只需 --name），或设置 "
             "W{1..7}_E2E_NAME / W{1..7}_E2E_PASSWORD 环境变量。"
         )
-    if not NAME.startswith("w") or "_e2e_" not in NAME:
+    # 波次令牌可以是 w1…w9（按交付波次）或 f0（对象存储取证），但 `_e2e_` 这个硬标记必须有：
+    # 它是「临时账号」与正式账号之间唯一的判据，cleanup 按精确前缀删人，缺了这道标记
+    # 一个写错的 --name 就能把正式员工的登录名扫进删除范围。
+    if not re.match(r"^[a-z][a-z0-9]*_e2e_", NAME):
         raise SystemExit(
-            f"[e2e-accounts] 拒绝执行：login_name 必须是形如 w1_e2e_xxx 的临时账号，当前为 {NAME!r}"
+            "[e2e-accounts] 拒绝执行：login_name 必须是形如 <波次>_e2e_xxx 的临时账号"
+            f"（波次如 w1 / w8 / f0），当前为 {NAME!r}"
         )
     if PREFIX and not NAME.startswith(PREFIX):
         raise SystemExit(f"[e2e-accounts] 拒绝执行：login_name 必须以 {PREFIX!r} 开头，当前为 {NAME!r}")
@@ -409,6 +446,28 @@ def setup() -> None:
         deny_role_id = ensure_deny_role()
         ensure_account(deny_name, PASSWORD, administrator=False, role_id=deny_role_id)
         done += f"  denied={deny_name}"
+
+    role_summary = []
+    for role_code in business_role_codes():
+        role_id = psql(
+            f"SELECT role_id FROM {SCHEMA}.t_role WHERE role_code = {q(role_code)} LIMIT 1;",
+            value_only=True,
+        )
+        if not role_id:
+            raise SystemExit(
+                f"[e2e-accounts] 拒绝执行：角色 {role_code} 不存在。正式业务角色由 Flyway 种子建立，"
+                f"缺角色即说明 {DB} 还没应用到那个版本；此时建出来的账号没有任何权限，"
+                f"用例只会得到「全部 30005」的假绿。"
+            )
+        role_login = business_role_login_name(role_code)
+        ensure_account(role_login, PASSWORD, administrator=False, role_id=role_id)
+        role_summary.append(f"{role_code}={role_login}")
+    if role_summary:
+        done += "  roles=" + ",".join(role_summary)
+    if SECOND_ADMIN:
+        second_name = NAME + SECOND_ADMIN_SUFFIX
+        ensure_account(second_name, PASSWORD, administrator=True, role_id=admin_role_id)
+        done += f"  second_admin={second_name}"
     print(done)
 
 
@@ -444,6 +503,19 @@ def cleanup() -> None:
     for companion in (read_name, none_name, NAME + DENY_SUFFIX):
         if companion:
             cleanup_quiet(companion)
+    # 业务角色伴随账号的名字由角色码派生，cleanup 不重新派生（清理时角色清单未必传），
+    # 因此按本轮随机 NAME 精确前缀删除：NAME 含时间戳且不可猜，也不是通配匹配。
+    psql(
+        f"""
+        DELETE FROM {SCHEMA}.t_role_employee
+         WHERE employee_id IN (SELECT employee_id FROM {SCHEMA}.t_employee
+                                WHERE employee_id <> {SEED_EMPLOYEE_ID}
+                                  AND left(login_name, {len(NAME) + 1}) = {q(NAME + '_')});
+        DELETE FROM {SCHEMA}.t_employee
+         WHERE employee_id <> {SEED_EMPLOYEE_ID}
+           AND left(login_name, {len(NAME) + 1}) = {q(NAME + '_')};
+        """
+    )
     # 临时角色及其授权也要一起回收，否则会在 t_role / t_role_menu 里越积越多。
     role_codes = [f"{PREFIX.upper()}READ" if PREFIX else "E2E_READ",
                   f"{PREFIX.upper()}DENY" if PREFIX else "E2E_DENY"]

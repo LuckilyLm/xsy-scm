@@ -45,6 +45,12 @@
           </a-tag>
         </template
         >
+        <template v-else-if="column.dataIndex === 'employeeName'"
+        >
+          <span v-if="record.employeeName">{{ record.employeeName }}</span>
+          <a-tag v-else color="orange">未绑定</a-tag>
+        </template
+        >
         <template v-else-if="column.dataIndex === 'action'"
         >
           <a-button type="link" v-privilege="editPermission" @click="open(record)">编辑</a-button>
@@ -75,6 +81,10 @@
         </a-form-item>
         <a-form-item label="联系电话" required>
           <a-input v-model:value="form.phone" :maxlength="32"/>
+        </a-form-item>
+        <a-form-item label="绑定员工" required>
+          <EmployeeSelect v-model:value="employeeValue" placeholder="请选择绑定的系统员工" width="100%"/>
+          <div class="ant-form-item-extra">启用司机必须绑定员工：它把登录人映射回司机档案，是其线路数据范围的唯一依据。</div>
         </a-form-item>
       </template>
       <template v-else>
@@ -115,6 +125,7 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
+import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {deliveryError, type Driver, type Vehicle, type Query} from '../delivery-types';
 
@@ -137,12 +148,27 @@ const visible = ref(false),
 const form = ref<Partial<Driver & Vehicle>>({status: 'ENABLED'});
 let originalStatus = '',
     generation = 0;
+
+/**
+ * 绑定员工下拉的桥接。
+ *
+ * V2 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，直接绑 `Id | null`
+ * 会因 `string` / `null` 报 TS2322；这里把 `null` 折成 `undefined`，清空写回 `null`（解绑）。
+ */
+const employeeValue = computed<number | undefined>({
+  get: () => (form.value.employeeId == null ? undefined : Number(form.value.employeeId)),
+  set: (value) => {
+    form.value.employeeId = value ?? null;
+  },
+});
+
 const columns = computed<TableColumnsType>(() => [
   ...(isDriver.value
       ? [
         {title: '司机编码', dataIndex: 'driverCode'},
         {title: '姓名', dataIndex: 'driverName'},
         {title: '电话', dataIndex: 'phone'},
+        {title: '绑定员工', dataIndex: 'employeeName'},
       ]
       : [
         {title: '车牌号', dataIndex: 'vehicleNo'},
@@ -194,6 +220,11 @@ function save() {
   formError.value = '';
   if (isDriver.value && (!form.value.driverCode?.trim() || !form.value.driverName?.trim() || !/^[0-9+() -]{5,32}$/.test(form.value.phone ?? ''))) {
     formError.value = '请填写司机编码、姓名及有效联系电话';
+    return;
+  }
+  // 启用即要求绑定：与服务端 requireBindableEmployee 同一口径，提前挡掉必然失败的提交。
+  if (isDriver.value && form.value.status === 'ENABLED' && form.value.employeeId == null) {
+    formError.value = '启用司机必须绑定系统员工';
     return;
   }
   if (!isDriver.value && !form.value.vehicleNo?.trim()) {

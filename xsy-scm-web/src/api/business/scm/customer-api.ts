@@ -21,6 +21,7 @@ import type {
     CustomerOption,
     CustomerQuery,
     CustomerRow,
+    CustomerSellerReassignPayload,
     CustomerStatusPayload,
     ScmId,
     ScmPage,
@@ -43,5 +44,11 @@ export const customerApi = {
     add: (form: CustomerForm) => postRequest('/scm/customer/add', form) as unknown as Promise<ScmResponse<ScmId>>,
     update: (form: CustomerForm) => postRequest('/scm/customer/update', form) as unknown as Promise<ScmResponse<null>>,
     updateStatus: (payload: CustomerStatusPayload) => postRequest('/scm/customer/updateStatus', payload),
+    /**
+     * 改派业务归属（{@code scm:customer:assign}）：独立端点、独立权限，带乐观锁 version。
+     * `/update` 不触碰 seller_id，归属变更只能走这里，才会留下单独的操作日志。
+     */
+    reassignSeller: (payload: CustomerSellerReassignPayload) =>
+        postRequest('/scm/customer/reassignSeller', payload) as unknown as Promise<ScmResponse<null>>,
     delete: (payload: CustomerDeletePayload) => postRequest('/scm/customer/delete', payload),
 };

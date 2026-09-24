@@ -496,3 +496,49 @@ export interface WarehouseStatusPayload {
     id: Id;
     version: number;
 }
+
+// ------------------------------------------------------------------
+// 仓库授权（employee_warehouse_scope）
+// ------------------------------------------------------------------
+
+/** `WarehouseScopeEmployeeVO`：某仓库下被授权的员工行（只读）。 */
+export interface WarehouseScopeEmployee {
+    employeeId: Id;
+    loginName: string;
+    actualName: string;
+    /** 员工是否已停用：授权行可能早于离职，维护页必须看得出来，否则会出现「仓只有离职人能看」。 */
+    disabledFlag: boolean;
+}
+
+/** `WarehouseScopeWarehouseVO`：某员工被授权的仓库行（只读）。 */
+export interface WarehouseScopeWarehouse {
+    warehouseId: Id;
+    warehouseCode: string;
+    warehouseName: string;
+    /** 仓库当前启停状态：授权到已停用仓库不立刻出问题，但维护页应看得见。 */
+    warehouseStatus: string;
+}
+
+/**
+ * `WarehouseScopeUpdateForm`：设置某员工可访问的仓库集合。
+ *
+ * 语义是**整体替换**（不是增量追加）——增量没有任何办法回收一次错误授权，
+ * 而回收（失败关闭）恰是这套机制存在的意义。空清单即回收该员工的全部仓库授权。
+ */
+export interface WarehouseScopeUpdatePayload {
+    employeeId: Id;
+    warehouseIds: Id[];
+}
+
+/**
+ * `PurchaseOrderReassignForm`：改派采购归属（{@code scm:purchase:assign}）。
+ *
+ * `purchaserId` 为 `null` 即「收回归属、留作未分配」（未分配单据只有全量采购范围者可见）；
+ * `version` 是乐观锁，编辑接口 `/update` 永不改归属，改派只有 `/reassign` 一条路。
+ */
+export interface OrderReassignPayload {
+    id: Id;
+    version: number;
+    purchaserId: Id | null;
+    reason?: string | null;
+}

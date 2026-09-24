@@ -16,10 +16,14 @@ import smCrypto from 'sm-crypto';
 const apiUrl='http://127.0.0.1:18080';
 const name='w6_e2e_'+Date.now().toString(36);
 const password='W6W@'+randomBytes(9).toString('hex');
-const env={...process.env,W6_E2E_NAME:name,W6_E2E_PASSWORD:password};
+// E2E_SECOND_ADMIN：额外建 `<name>_two` 第二管理员。报损报溢禁止自建自审（裁决第 8 条制衡），
+// 审批必须由录单人以外的账号发起；仍是管理员，避免把写侧仓库守卫卷进本用例。
+const env={...process.env,W6_E2E_NAME:name,W6_E2E_PASSWORD:password,E2E_SECOND_ADMIN:'1'};
 const purchasePrice='6.2000';
 
 let api:APIRequestContext,token:string;
+/** 第二管理员客户端：只用于报损报溢的审批/驳回调用。 */
+let auditor:APIRequestContext;
 let warehouseId:string,supplierId:string,categoryId:string;
 /** 每个流程独占一个 SKU：余额与流水断言都按 (仓库, SKU) 收敛，互不干扰。 */
 const sku=new Map<string,{id:string;code:string}>();
@@ -38,10 +42,19 @@ async function login(account:string,secret:string){
 }
 /** 每次调用都换新幂等键：同一把键会命中幂等回放，拿不到「重复操作应被拒」的真实错误码。 */
 async function raw(path:string,data:unknown=null,key=randomUUID()){
-  return await(await api.post(path,{data:data??{},headers:{'Idempotency-Key':key}})).json();
+  return await rawAs(api,path,data,key);
+}
+/** 用指定账号发同一个请求：报损报溢审批要由录单人以外的人发起（裁决第 8 条制衡）。 */
+async function rawAs(client:APIRequestContext,path:string,data:unknown=null,key=randomUUID()){
+  return await(await client.post(path,{data:data??{},headers:{'Idempotency-Key':key}})).json();
 }
 async function post(path:string,data:unknown=null){
   const r=await raw(path,data);
+  expect(r.code,`${path}: ${r.msg}`).toBe(0);
+  return r.data;
+}
+async function postAs(client:APIRequestContext,path:string,data:unknown=null){
+  const r=await rawAs(client,path,data);
   expect(r.code,`${path}: ${r.msg}`).toBe(0);
   return r.data;
 }
@@ -126,6 +139,8 @@ test.beforeAll(async()=>{
   execFileSync('python',['../tools/w6_e2e_accounts.py','setup'],{env,stdio:'pipe'});
   token=await login(name,password);
   api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
+  // 审批账号与录单账号分开：同一人审批报损报溢会被 41065 挡下（裁决第 8 条制衡）
+  auditor=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${await login(name+'_two',password)}`}});
   // Q12：订单链路依赖「恰好一个启用仓库」，因此取用并断言 WH001，不假设它。
   const warehouses=await get('/scm/warehouse/list');
   warehouseId=String((warehouses.find((w:any)=>w.warehouseCode==='WH001')??warehouses[0]).id);
@@ -139,6 +154,7 @@ test.beforeAll(async()=>{
 });
 
 test.afterAll(async()=>{
+  if(auditor){await auditor.get('/login/logout');await auditor.dispose();}
   if(api){await api.get('/login/logout');await api.dispose();}
   execFileSync('python',['../tools/w6_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});
 });
@@ -247,10 +263,11 @@ test('3 loss report approval enforces opinion, optimistic lock and then deducts 
     items:[{skuId:Number(id),quantity:'3.0000'}]});
 
   const rejected=await create();
+  // 本组审批调用一律走 auditor（`<name>_two` 第二管理员）：录单人自己驳回会被 41065 挡下（裁决第 8 条制衡）
   // 驳回不带意见 → 拒绝：沟通成本不该转嫁给录单人
-  expect((await raw(`/scm/inventory/loss-gain/reject/${rejected}`,
+  expect((await rawAs(auditor,`/scm/inventory/loss-gain/reject/${rejected}`,
     {version:await version('/scm/inventory/loss-gain',rejected)})).code).toBe(41037);
-  await post(`/scm/inventory/loss-gain/reject/${rejected}`,
+  await postAs(auditor,`/scm/inventory/loss-gain/reject/${rejected}`,
     {version:await version('/scm/inventory/loss-gain',rejected),auditOpinion:'数量与验收单不符，请核对'});
   const rejectedDoc=await get('/scm/inventory/loss-gain/detail/'+rejected);
   expect(rejectedDoc.status).toBe('REJECTED');
@@ -259,10 +276,11 @@ test('3 loss report approval enforces opinion, optimistic lock and then deducts 
 
   // 乐观锁：版本对不上先失败，不会静默覆盖别人的编辑
   const stale=await create();
-  expect((await raw(`/scm/inventory/loss-gain/approve/${stale}`,{version:9999})).code).toBe(40921);
+  // 审批人同样换人（裁决第 8 条制衡）：换人后下面的 40921 / 41029 才分别来自乐观锁与状态判定，而不是自审禁令
+  expect((await rawAs(auditor,`/scm/inventory/loss-gain/approve/${stale}`,{version:9999})).code).toBe(40921);
   expect((await get('/scm/inventory/loss-gain/detail/'+stale)).status).toBe('PENDING');
 
-  await post(`/scm/inventory/loss-gain/approve/${stale}`,
+  await postAs(auditor,`/scm/inventory/loss-gain/approve/${stale}`,
     {version:await version('/scm/inventory/loss-gain',stale),auditOpinion:'已核对'});
   const done=await get('/scm/inventory/loss-gain/detail/'+stale);
   expect(done.status).toBe('COMPLETED');
@@ -271,7 +289,7 @@ test('3 loss report approval enforces opinion, optimistic lock and then deducts 
   expect(loss.unitCost).toBe('6.2000');
   expect(loss.beforeQuantity).toBe('20.0000');
   expect(loss.afterQuantity).toBe('17.0000');
-  expect((await raw(`/scm/inventory/loss-gain/approve/${stale}`,{version:done.version})).code).toBe(41029);
+  expect((await rawAs(auditor,`/scm/inventory/loss-gain/approve/${stale}`,{version:done.version})).code).toBe(41029);
 
   await browse(page,'/inventory/inventory-loss-gain-list');
   await page.getByPlaceholder('单据号').fill(done.lossGainNo);

@@ -160,6 +160,19 @@ export interface CustomerDeletePayload {
 }
 
 /**
+ * 改派客户业务归属（对应后端 CustomerSellerReassignForm，{@code POST /scm/customer/reassignSeller}）。
+ *
+ * 与 {@link CustomerForm} 分离：归属只能通过本端点变更（{@code /update} 一律不动 seller_id），
+ * 且必须携带读到的 {@link CustomerRow.version} 做乐观锁，`sellerId` 为 `null` 即收回为未分配。
+ */
+export interface CustomerSellerReassignPayload {
+    customerId: ScmId;
+    /** 新负责人（员工 id）；`null` 表示收回为未分配（未分配客户仅授权 / 全量范围者可见）。 */
+    sellerId: number | null;
+    version: number;
+}
+
+/**
  * 客户「常购商品」聚合行（对应后端 CustomerFrequentSkuVO，Wave 7 只读）。
  *
  * 按 (skuId, unit) 分组：同 SKU 历史单位改变时分行展示，绝不跨单位求和。

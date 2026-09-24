@@ -15,6 +15,9 @@ import type {
     Warehouse,
     WarehousePayload,
     WarehouseQuery,
+    WarehouseScopeEmployee,
+    WarehouseScopeUpdatePayload,
+    WarehouseScopeWarehouse,
     WarehouseStatusPayload,
 } from '/@/views/business/scm/purchase/purchase-types';
 
@@ -35,6 +38,21 @@ export const warehouseApi = {
     /** 停用仓库（B1，HD-B1-01 严格模式）。 */
     disable: (data: WarehouseStatusPayload) =>
         postRequest('/scm/warehouse/disable', data) as unknown as Promise<ScmResponse<string>>,
+
+    // 员工—仓库授权维护（WarehouseScopeController）：与仓库主数据是两个独立权限点。
+    /** 某仓库下被授权的员工（只读，{@code scm:warehouse:scope:query}）。 */
+    scopeEmployees: (warehouseId: Id) =>
+        getRequest('/scm/warehouse/scope/employees', {warehouseId}) as unknown as Promise<
+            ScmResponse<WarehouseScopeEmployee[]>
+        >,
+    /** 某员工被授权的仓库（只读，{@code scm:warehouse:scope:query}）。 */
+    scopeWarehouses: (employeeId: Id) =>
+        getRequest('/scm/warehouse/scope/warehouses', {employeeId}) as unknown as Promise<
+            ScmResponse<WarehouseScopeWarehouse[]>
+        >,
+    /** 整体替换某员工的活动授权（{@code scm:warehouse:scope:update}）；空清单即全部回收。 */
+    scopeUpdate: (data: WarehouseScopeUpdatePayload) =>
+        postRequest('/scm/warehouse/scope/update', data) as unknown as Promise<ScmResponse<string>>,
 };
 
 export default warehouseApi;
