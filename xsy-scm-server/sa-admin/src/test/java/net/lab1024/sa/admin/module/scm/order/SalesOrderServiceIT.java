@@ -324,6 +324,40 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         expectCode(() -> refunds.complete(complete, prefix + "staleRefund"), 40921);
         expectCode(() -> returns.approve(approve, prefix + "staleReturn"), 40921);
         assertThat(query.detail(o.getOrderId()).getStatus()).isEqualTo("CONFIRMED");
+
+        // §7.3 要求 return / refund 与 cancellation 一样留操作日志。建单 + 审批 = 两条 RETURN，
+        // 退款只有一条 REFUND —— 上面那笔 complete 用同一个 Idempotency-Key 调了两次，
+        // 第二次是重放，因此日志条数同时钉住「重放不重复记日志」。
+        assertThat(logCount(o.getOrderId(), "RETURN")).isEqualTo(2);
+        assertThat(logCount(o.getOrderId(), "REFUND")).isEqualTo(1);
+    }
+
+    @Test
+    void rejectedReturnIsAuditableOnTheOrder() {
+        var o = confirmed(customer(), newOnShelfSku("RJ"));
+        var f = new OrderReturnAddForm();
+        f.setOrderId(o.getOrderId());
+        f.setReason("错发");
+        var row = new OrderReturnItemForm();
+        row.setOrderItemId(o.getItems().getFirst().getItemId());
+        row.setRequestedQuantity("1.0000");
+        f.setItems(List.of(row));
+        var r = returns.create(f, prefix + "rj");
+        var decision = new OrderReturnDecisionForm();
+        decision.setReturnId(r.getReturnId());
+        decision.setVersion(r.getVersion());
+        decision.setDecisionReason("不在受理范围");
+        assertThat(returns.reject(decision, prefix + "reject").getStatus()).isEqualTo("REJECTED");
+        assertThat(logCount(o.getOrderId(), "RETURN")).isEqualTo(2);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM order_operation_log WHERE order_id = ? AND operation_type = 'RETURN'"
+                        + " AND after_data ->> 'status' = 'REJECTED'",
+                Integer.class, o.getOrderId())).as("驳回这条要把状态迁移记进日志").isEqualTo(1);
+    }
+
+    private int logCount(Long orderId, String operation) {
+        return jdbc.queryForObject("SELECT count(*) FROM order_operation_log WHERE order_id = ?"
+                + " AND operation_type = ?", Integer.class, orderId, operation);
     }
 
     @Test

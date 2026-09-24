@@ -33,4 +33,25 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         assertThat(jdbc.queryForObject("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_sales_order_source'", String.class)).contains("IMPORT");
         assertThat(net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao.class.getMethods()).extracting(java.lang.reflect.Method::getName).containsExactlyInAnyOrder("insert", "query");
     }
+
+    /**
+     * 操作日志的 operation_type：Java 枚举与库里的 CHECK 白名单必须**逐项相等**。
+     *
+     * <p>V27 的注释把这类耦合列成五处硬编码（业务枚举、DB CHECK、前端常量、查询表单 @Pattern、
+     * 日志 operation_type 白名单），而当年就是漏了第五处，导致 reserveStock 写日志直接
+     * DataIntegrityViolation。这里把最容易漏的两处钉成可执行的：加枚举不写迁移、或迁移加了
+     * 取值而枚举没有，都会在这里变红，而不是等第一次写日志时在线上炸。
+     */
+    @Test
+    void operationLogTypeWhitelistMatchesJavaEnum() {
+        String def = jdbc.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_order_operation_log_type'",
+                String.class);
+        var allowed = new java.util.HashSet<String>();
+        var matcher = java.util.regex.Pattern.compile("'([A-Z_]+)'").matcher(def);
+        while (matcher.find()) allowed.add(matcher.group(1));
+        assertThat(allowed).containsExactlyInAnyOrderElementsOf(
+                java.util.Arrays.stream(net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum.values())
+                        .map(Enum::name).toList());
+    }
 }

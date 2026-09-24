@@ -5,6 +5,7 @@ import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.order.dao.*;
 import net.lab1024.sa.admin.module.scm.order.manager.*;
+import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
@@ -26,7 +27,6 @@ import java.util.function.Function;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
 import net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.ResolvedPriceVO;
@@ -42,7 +42,7 @@ public class SalesOrderService {
     private final SalesOrderDao orders;
     private final SalesOrderItemDao items;
     private final OrderAddressSnapshotDao addresses;
-    private final OrderOperationLogDao logs;
+    private final OrderOperationLogRecorder orderLogs;
     private final CustomerService customers;
     private final PriceResolver prices;
     private final ProductSkuOptionDao skus;
@@ -54,7 +54,6 @@ public class SalesOrderService {
      */
     private final InventoryReservationService reservations;
     private final SalesOrderQueryService query;
-    private final ObjectMapper json;
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm f, String key) {
@@ -156,7 +155,7 @@ public class SalesOrderService {
         }
         addresses.insert(a);
         var result = query.detail(o.getId());
-        log(o.getId(), "CREATE", null, null, result);
+        log(o.getId(), ScmOrderOperationTypeEnum.CREATE, null, null, result);
         return result;
     }
 
@@ -189,7 +188,7 @@ public class SalesOrderService {
         o.setOrderedTotalAmount(total(requested));
         save(o);
         var result = query.detail(o.getId());
-        log(o.getId(), "UPDATE", null, before, result);
+        log(o.getId(), ScmOrderOperationTypeEnum.UPDATE, null, before, result);
         return result;
     }
 
@@ -236,7 +235,7 @@ public class SalesOrderService {
         o.setSubmittedAt(OffsetDateTime.now());
         save(o);
         var result = query.detail(o.getId());
-        log(o.getId(), "SUBMIT", null, before, result);
+        log(o.getId(), ScmOrderOperationTypeEnum.SUBMIT, null, before, result);
         return result;
     }
 
@@ -260,7 +259,7 @@ public class SalesOrderService {
         // Advance the aggregate version too: stale confirm forms must refresh after any item change.
         save(o);
         var result = query.detail(o.getId());
-        log(o.getId(), "ACTUAL_QUANTITY", f.getReason(), before, result);
+        log(o.getId(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY, f.getReason(), before, result);
         idempotency.complete(claim, "SALES_ORDER", o.getId(), result);
         return result;
     }
@@ -292,7 +291,7 @@ public class SalesOrderService {
         save(o);
         // 订单确认不自动预留库存；当前主链是先接单、再采购和收货，预留由后续显式动作完成。
         var result = query.detail(o.getId());
-        log(o.getId(), "CONFIRM", null, before, result);
+        log(o.getId(), ScmOrderOperationTypeEnum.CONFIRM, null, before, result);
         return result;
     }
 
@@ -313,7 +312,7 @@ public class SalesOrderService {
         // 保留这行是为了让「预留一旦启用」时取消路径自动正确，不需要再改这里。
         reservations.releaseBySalesOrder(o.getId());
         var result = query.detail(o.getId());
-        log(o.getId(), "CANCEL", f.getReason(), before, result);
+        log(o.getId(), ScmOrderOperationTypeEnum.CANCEL, f.getReason(), before, result);
         idempotency.complete(claim, "SALES_ORDER", o.getId(), result);
         return result;
     }
@@ -328,7 +327,7 @@ public class SalesOrderService {
         for (var row : items.list(o.getId())) removeItem(row);
         if (orders.softDelete(o.getId(), o.getVersion(), ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        log(o.getId(), "UPDATE", "删除草稿", before, Map.of("deleted", true, "version", o.getVersion() + 1));
+        log(o.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除草稿", before, Map.of("deleted", true, "version", o.getVersion() + 1));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -361,7 +360,7 @@ public class SalesOrderService {
                         .map(r -> new InventoryReservationService.OrderReserveLine(r.getId(), r.getSkuId(), r.getActualQuantity()))
                         .toList(),
                 OffsetDateTime.now());
-        log(o.getId(), "RESERVE_STOCK", null, null, Map.of("reservedLines", rows.size()));
+        log(o.getId(), ScmOrderOperationTypeEnum.RESERVE_STOCK, null, null, Map.of("reservedLines", rows.size()));
     }
 
     public SalesOrderEntity lock(Long id) {
@@ -440,17 +439,7 @@ public class SalesOrderService {
             throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
     }
 
-    private void log(Long id, String operation, String reason, Object before, Object after) {
-        var l = new OrderOperationLogEntity();
-        l.setOrderId(id);
-        l.setOperationType(operation);
-        l.setOperator(ScmOperator.current());
-        l.setCreatedBy(l.getOperator());
-        l.setReason(reason);
-        l.setBeforeData(before == null ? null : json.convertValue(before, new TypeReference<Map<String, Object>>() {
-        }));
-        l.setAfterData(json.convertValue(after, new TypeReference<Map<String, Object>>() {
-        }));
-        logs.insert(l);
+    private void log(Long id, ScmOrderOperationTypeEnum operation, String reason, Object before, Object after) {
+        orderLogs.record(id, operation, reason, before, after);
     }
 }

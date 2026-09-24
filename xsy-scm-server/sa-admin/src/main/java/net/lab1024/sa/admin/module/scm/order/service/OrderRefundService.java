@@ -5,6 +5,7 @@ import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.order.dao.*;
 import net.lab1024.sa.admin.module.scm.order.manager.*;
+import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 
@@ -31,6 +32,7 @@ public class OrderRefundService {
     private final OrderRefundDao refunds;
     private final SalesOrderService orders;
     private final OrderIdempotencyService idempotency;
+    private final OrderOperationLogRecorder orderLogs;
 
     public PageResult<OrderRefundVO> query(OrderRefundQueryForm f) {
         var page = SmartPageUtil.convert2PageQuery(f);
@@ -70,6 +72,10 @@ public class OrderRefundService {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
         }
         var result = detail(r.getId());
+        // §7.3：退款完成同样是必须留痕的订单状态变更。
+        orderLogs.record(r.getOrderId(), ScmOrderOperationTypeEnum.REFUND,
+                "退款单 " + r.getRefundNo() + " 已完成", Map.of("status", before.getStatus()),
+                Map.of("status", result.getStatus()));
         idempotency.complete(claim, "ORDER_REFUND", r.getId(), result);
         return result;
     }

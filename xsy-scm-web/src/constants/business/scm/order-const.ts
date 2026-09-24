@@ -39,7 +39,10 @@ export const SCM_ORDER_OPERATION_ENUM: SmartEnum<string> = {
     SUBMIT: {value: 'SUBMIT', desc: '提交'},
     ACTUAL_QUANTITY: {value: 'ACTUAL_QUANTITY', desc: '实重录入'},
     CONFIRM: {value: 'CONFIRM', desc: '确认'},
-    CANCEL: {value: 'CANCEL', desc: '取消'}
+    CANCEL: {value: 'CANCEL', desc: '取消'},
+    RESERVE_STOCK: {value: 'RESERVE_STOCK', desc: '预留库存'},
+    RETURN: {value: 'RETURN', desc: '退货'},
+    REFUND: {value: 'REFUND', desc: '退款'}
 };
 export default {
     SCM_ORDER_STATUS_ENUM,

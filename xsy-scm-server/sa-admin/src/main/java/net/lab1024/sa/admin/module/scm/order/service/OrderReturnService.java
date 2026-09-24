@@ -5,6 +5,7 @@ import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.order.dao.*;
 import net.lab1024.sa.admin.module.scm.order.manager.*;
+import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 
@@ -38,6 +39,7 @@ public class OrderReturnService {
     private final OrderRefundDao refunds;
     private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService idempotency;
+    private final OrderOperationLogRecorder orderLogs;
 
     public PageResult<OrderReturnVO> query(OrderReturnQueryForm f) {
         var page = SmartPageUtil.convert2PageQuery(f);
@@ -110,6 +112,9 @@ public class OrderReturnService {
             items.insert(row);
         }
         var result = detail(r.getId());
+        // §7.3：return 与 cancellation / refund 并列，必须留操作日志。日志与业务变更同一事务。
+        orderLogs.record(r.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
+                "退货单 " + r.getReturnNo() + " 建单", null, Map.of("status", result.getStatus()));
         idempotency.complete(claim, "ORDER_RETURN", r.getId(), result);
         return result;
     }
@@ -160,6 +165,10 @@ public class OrderReturnService {
         refund.setUpdatedBy(refund.getCreatedBy());
         refunds.insert(refund);
         var result = detail(r.getId());
+        orderLogs.record(r.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
+                "退货单 " + r.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
+                Map.of("status", "PENDING"), Map.of("status", result.getStatus(),
+                        "approvedAmount", String.valueOf(refund.getRefundAmount())));
         idempotency.complete(claim, "ORDER_RETURN", r.getId(), result);
         return result;
     }
@@ -188,6 +197,9 @@ public class OrderReturnService {
         stamp(r, false);
         if (returns.updateById(r) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         var result = detail(r.getId());
+        orderLogs.record(r.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
+                f.getDecisionReason().trim(), Map.of("status", "PENDING"),
+                Map.of("status", state, "decisionReason", r.getDecisionReason()));
         idempotency.complete(claim, "ORDER_RETURN", r.getId(), result);
         return result;
     }
