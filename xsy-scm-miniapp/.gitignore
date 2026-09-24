@@ -19,3 +19,45 @@ dist
 *.njsproj
 *.sln
 *.sw?
+
+# ============================================================================
+# 商品图（mock 占位素材）
+#
+# 完整素材（82 张真实白底商品图）在开发机本地与 xsy-data，**不入库**：
+#   D:\Browser Download\xsy-data\测试图片\{蔬菜,水果,肉禽蛋类,水产,粮油,调味}
+# 需要时用 tools 侧 gen-assets.cjs 从该目录重新生成（幂等）。
+#
+# 仓库只保留**每个品类少量样本**，够干净检出时演示 UI、跑浏览器验证、覆盖
+# ProductCard 的全部状态（有图 / 无图 / 协议价 / 类型价 / 库存不足 / 缺货 / 询价 / 三位数价格）。
+# 缺图不会裂图：ProductCard 与 FlashSale 的 image 都挂了 @error，加载失败退回首字占位。
+#
+# 新增样本时：在这里补一条 ! 放行，并在 mock/fixtures.js 里确认对应商品的 imageUrl。
+# ============================================================================
+src/static/images/products/*.jpg
+# 蔬菜
+!src/static/images/products/shanghaiqing.jpg
+!src/static/images/products/caixin.jpg
+!src/static/images/products/shenglai.jpg
+!src/static/images/products/kongxincai.jpg
+!src/static/images/products/yangcong.jpg
+!src/static/images/products/tudou.jpg
+# 水果
+!src/static/images/products/pingguo.jpg
+!src/static/images/products/hongxinhuolongguo.jpg
+!src/static/images/products/qianxibanli.jpg
+# 肉禽蛋
+!src/static/images/products/zhurou.jpg
+!src/static/images/products/jidan.jpg
+!src/static/images/products/jichi.jpg
+# 水产
+!src/static/images/products/jiweixia.jpg
+!src/static/images/products/sanwenyu.jpg
+!src/static/images/products/luyu.jpg
+# 粮油
+!src/static/images/products/dami.jpg
+!src/static/images/products/huashengyou.jpg
+!src/static/images/products/heimi.jpg
+# 调味
+!src/static/images/products/jiangyou.jpg
+!src/static/images/products/huajiao.jpg
+!src/static/images/products/yan.jpg

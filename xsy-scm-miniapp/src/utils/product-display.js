@@ -103,3 +103,31 @@ export function priceSourceLabel(product) {
   }
   return product.priceSourceLabel || product.priceSource || '';
 }
+
+/**
+ * 价格来源语义档位：agreement / type / standard / unpriced。
+ *
+ * 与 stockLevel 同一套路：这里只给语义名，各组件自己映射成 BEM 类名与配色，
+ * 避免把色值或类名写进展示口径层。
+ */
+export function priceSourceLevel(product) {
+  const source = product && product.priceSource;
+  if (source === 'AGREEMENT') {
+    return 'agreement';
+  }
+  if (source === 'CUSTOMER_TYPE') {
+    return 'type';
+  }
+  if (source === 'UNPRICED') {
+    return 'unpriced';
+  }
+  return 'standard';
+}
+
+/** 规格 / 分类合并展示，如「500g/份 · 叶菜类」 */
+export function specCategoryText(product) {
+  if (!product) {
+    return '';
+  }
+  return [product.spec, product.categoryName].filter(Boolean).join(' · ');
+}

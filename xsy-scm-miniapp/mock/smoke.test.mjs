@@ -36,6 +36,7 @@ globalThis.uni = {
 };
 
 const { dispatchMock, listMockRoutes, USE_MOCK } = await import('./index.js');
+const { MOCK_PRODUCTS, findProduct } = await import('./fixtures.js');
 
 const TOKEN_KEY = 'xsy_mall_token';
 const call = (method, url, data) => dispatchMock(url, method, data);
@@ -95,15 +96,18 @@ check('子分类 level 为 2', cats.data[0].children[0].level === 2);
 
 const page1 = await call('GET', '/scm/mall/catalog/products', { pageNum: 1, pageSize: 10 });
 check('商品分页返回 10 条', page1.code === 1 && page1.data.list.length === 10);
-check('分页 total 正确', page1.data.total === 33, `实际 ${page1.data.total}`);
+check('分页 total 正确', page1.data.total === 84, `实际 ${page1.data.total}`);
 check('分页回显 pageNum', page1.data.pageNum === 1);
 
-const page4 = await call('GET', '/scm/mall/catalog/products', { pageNum: 4, pageSize: 10 });
-check('第 4 页只剩 3 条', page4.data.list.length === 3, `实际 ${page4.data.list.length}`);
+// 84 条 / 每页 10 → 共 9 页，最后一页 4 条
+const lastPage = await call('GET', '/scm/mall/catalog/products', { pageNum: 9, pageSize: 10 });
+check('最后一页只剩 4 条', lastPage.data.list.length === 4, `实际 ${lastPage.data.list.length}`);
+const beyond = await call('GET', '/scm/mall/catalog/products', { pageNum: 10, pageSize: 10 });
+check('超出页码返回空列表', beyond.data.list.length === 0);
 
 // 蔬菜 = categoryId 100，其下 4 个子类
 const veg = await call('GET', '/scm/mall/catalog/products', { categoryId: 100, pageSize: 50 });
-check('一级分类含全部子类商品', veg.data.total === 15, `实际 ${veg.data.total}`);
+check('一级分类含全部子类商品', veg.data.total === 20, `实际 ${veg.data.total}`);
 check(
   '一级分类结果不含其他分类',
   veg.data.list.every((p) => ['叶菜类', '根茎类', '瓜果类', '菌菇类'].includes(p.categoryName))
@@ -134,6 +138,18 @@ check('详情含商品描述', !!detail.data.description);
 const hot = await call('GET', '/scm/mall/catalog/hot-keywords');
 check('热词返回数组', hot.code === 1 && Array.isArray(hot.data) && hot.data.length > 0);
 
+/* 热词一旦指向已下架商品，用户点进去就是空结果，所以逐个校验必须能命中 */
+const hotHits = [];
+for (const word of hot.data) {
+  const r = await call('GET', '/scm/mall/catalog/products', { keyword: word });
+  hotHits.push(`${word}:${r.data.total}`);
+}
+check(
+  '每个热词都能命中商品',
+  hotHits.every((x) => Number(x.split(':')[1]) > 0),
+  hotHits.join(' ')
+);
+
 const fav = await call('GET', '/scm/mall/catalog/favorites', { pageNum: 1, pageSize: 20 });
 check('常购商品返回列表', fav.code === 1 && fav.data.list.length > 0);
 check(
@@ -146,18 +162,61 @@ check(
 console.log('\n价格与非标品契约：');
 check('价格为字符串', typeof page1.data.list[0].price === 'string');
 check('带价格来源标签', !!page1.data.list[0].priceSourceLabel);
-const unpriced = (await call('GET', '/scm/mall/catalog/products', { keyword: '榴莲' })).data.list[0];
+const unpriced = (await call('GET', '/scm/mall/catalog/products', { keyword: '火龙果' })).data.list[0];
 check('无报价商品 priceSource 为 UNPRICED', unpriced.priceSource === 'UNPRICED');
 check('无报价商品标签为「暂无报价」', unpriced.priceSourceLabel === '暂无报价');
 const nonStd = (await call('GET', '/scm/mall/catalog/products', { keyword: '土豆' })).data.list[0];
 check('非标品标记正确', nonStd.isNonStandard === true);
 check('非标品详情含实重说明', (await call('GET', `/scm/mall/catalog/products/${nonStd.skuId}`)).data.nonStandardTip.length > 0);
 
+/* 商品卡边界态必须有真实样本，否则 UI 只能靠测试注入验证 */
+const priced3 = MOCK_PRODUCTS.find((p) => Number(p.price) >= 100);
+check('存在三位数价格商品', !!priced3, priced3 ? `${priced3.productName} ¥${priced3.price}/${priced3.unit}` : '无');
+check('三位数价格单位为「盒」', priced3 && priced3.unit === '盒');
+
+/* 六个一级分类都必须有 SKU，否则分类页点进去就是空态 */
+const LEAF_CATS = [
+  '叶菜类',
+  '根茎类',
+  '瓜果类',
+  '菌菇类',
+  '国产水果',
+  '进口水果',
+  '时令鲜果',
+  '猪肉',
+  '牛羊肉',
+  '禽类',
+  '蛋品',
+  '活鲜',
+  '冰鲜',
+  '米面',
+  '食用油',
+  '基础调味',
+  '复合调味',
+  '香辛料',
+];
+check(
+  '商品全部落在已知二级分类下',
+  MOCK_PRODUCTS.every((p) => LEAF_CATS.includes(p.categoryName))
+);
+
+const TOP_CATS = ['蔬菜', '水果', '肉禽蛋', '水产', '粮油', '调味'];
+const catTotals = {};
+for (const c of cats.data) {
+  const r = await call('GET', '/scm/mall/catalog/products', { categoryId: c.categoryId, pageSize: 200 });
+  catTotals[c.categoryName] = r.data.total;
+}
+check(
+  '六个一级分类全部有商品',
+  TOP_CATS.every((n) => catTotals[n] > 0),
+  JSON.stringify(catTotals)
+);
+
 /* ============================ 首页 ============================ */
 
 console.log('\n首页：');
 const home = await call('GET', '/scm/mall/home');
-check('首页返回楼层', home.code === 1 && home.data.sections.length === 6);
+check('首页返回楼层', home.code === 1 && home.data.sections.length === 8);
 check(
   '楼层含 CATEGORY_NAV',
   home.data.sections.some((s) => s.type === 'CATEGORY_NAV')
@@ -167,6 +226,35 @@ check(
   home.data.sections.some((s) => s.type === 'FAVORITE')
 );
 check('首页带 store 信息', home.data.store.customerName === '海岸城门店');
+
+/* Home V2 新增楼层（规划 §9.1 / §9.2） */
+const banner = home.data.sections.find((s) => s.type === 'BANNER');
+check('楼层含 BANNER', !!banner && banner.items.length > 0);
+check('BANNER 带图片与跳转配置', !!banner.items[0].imageUrl && !!banner.items[0].linkType);
+
+const flash = home.data.sections.find((s) => s.type === 'FLASH_SALE');
+check('楼层含 FLASH_SALE', !!flash && flash.items.length > 0);
+check('FLASH_SALE 带活动结束时间', typeof flash.endTime === 'string' && !Number.isNaN(Date.parse(flash.endTime)));
+check(
+  'FLASH_SALE 活动价为字符串且不改写商品基础价',
+  flash.items.every((it) => typeof it.activityPrice === 'string' && it.price !== it.activityPrice)
+);
+check(
+  'FLASH_SALE 选品来自真实 SKU',
+  flash.items.every((it) => !!findProduct(it.skuId))
+);
+
+/* 商品图：精确对应的商品必须有图，未覆盖的必须为空以验证 fallback */
+const withImage = MOCK_PRODUCTS.filter((p) => p.imageUrl);
+check('部分商品带真实图片', withImage.length >= 9);
+check(
+  '商品图落在 static 目录',
+  withImage.every((p) => p.imageUrl.startsWith('/static/images/products/'))
+);
+check(
+  '仍保留无图商品以验证 fallback',
+  MOCK_PRODUCTS.some((p) => !p.imageUrl)
+);
 
 /* ============================ 回落与登出 ============================ */
 

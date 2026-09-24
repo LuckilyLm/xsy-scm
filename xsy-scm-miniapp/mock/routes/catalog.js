@@ -26,7 +26,10 @@ function categoryIdWithDescendants(categoryId) {
   return [id];
 }
 
-const HOT_KEYWORDS = ['小白菜', '土豆', '鸡蛋', '五花肉', '苹果', '基围虾', '大米', '食用油'];
+// 搜索热词。**每个词都必须能命中至少一个在售商品**，
+// 否则用户点热词直接得到空结果（smoke 里有对应断言守着）。
+// 覆盖蔬菜 / 水果 / 肉禽蛋 / 水产 / 粮油 / 调味 各至少一个。
+const HOT_KEYWORDS = ['菜心', '土豆', '西红柿', '荔枝', '苹果', '猪肉', '鸡蛋', '三文鱼', '大米', '花椒'];
 
 export const catalogRoutes = [
   {
