@@ -9,6 +9,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryReservationV
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -48,6 +49,17 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
     List<InventoryReservationEntity> listActiveBySourceDocument(
             @Param("sourceDocumentType") String sourceDocumentType,
             @Param("sourceDocumentId") Long sourceDocumentId);
+
+    /**
+     * 按来源**行** id 批量查有效预留（发车一次性取整条线路的预留，不逐行往返）。
+     *
+     * <p>不锁；调用方随后按返回顺序逐行 {@link #lockById}。排序取
+     * {@code (warehouse_id, sku_id, id)} 升序，与 §8.1 的余额锁序一致 ——
+     * 归还预留要拿余额锁，顺序在这里定好，服务层就不必再排一次。
+     */
+    List<InventoryReservationEntity> listActiveBySourceItemIds(
+            @Param("sourceDocumentType") String sourceDocumentType,
+            @Param("sourceDocumentItemIds") Collection<Long> sourceDocumentItemIds);
 
     /**
      * 锁定预留行（{@code SELECT ... FOR UPDATE}）。

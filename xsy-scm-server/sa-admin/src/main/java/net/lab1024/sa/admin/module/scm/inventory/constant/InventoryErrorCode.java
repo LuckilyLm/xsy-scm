@@ -446,7 +446,15 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 比对的是 {@code created_by} / {@code auditor} 里的员工号那一段，不是整串
      * （见 {@code InventoryLossGainService#requireNotSelfApproval}）。
      */
-    INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN(41065, "报损报溢单不能由录单人自己审批，请由他人审核");
+    INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN(41065, "报损报溢单不能由录单人自己审批，请由他人审核"),
+
+    /**
+     * 41066：一条来源单据已经有一张出库单。
+     *
+     * <p>兜的是部分唯一索引 {@code uk_inventory_outbound_source_active}，正常情况下由调用方的
+     * 状态机与幂等键先挡住；走到这里说明有并发或旁路，必须让它显式失败而不是再生成一张扣库存的单。
+     */
+    INVENTORY_SOURCE_ALREADY_OUTBOUND(41066, "该来源单据已产生出库单，不能重复出库");
 
     private final int code;
     private final String msg;

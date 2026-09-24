@@ -248,6 +248,14 @@
     "62": {
       "file": "V62__scm_sorting_roles.sql",
       "checksum": -1991995476
+    },
+    "63": {
+      "file": "V63__scm_delivery_fulfillment.sql",
+      "checksum": 1408903283
+    },
+    "64": {
+      "file": "V64__scm_delivery_l3_permissions.sql",
+      "checksum": -1903227630
     }
   }
 }

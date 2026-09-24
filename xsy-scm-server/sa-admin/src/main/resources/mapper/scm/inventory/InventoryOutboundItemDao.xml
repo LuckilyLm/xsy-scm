@@ -27,9 +27,24 @@
         ORDER BY i.id ASC
     </select>
 
+    <!--
+      分拣 REOPEN 守卫的判据（P2 裁决第 11 条）：只认父单 CONFIRMED 的出库行。
+      走 idx_inventory_outbound_item_order_line 这个部分索引，谓词与索引列一致。
+    -->
+    <select id="listOrderLinesWithConfirmedOutbound" resultType="java.lang.Long">
+        SELECT DISTINCT i.sales_order_item_id
+        FROM inventory_outbound_item i
+                 JOIN inventory_outbound o ON o.id = i.outbound_id AND o.deleted = FALSE
+        WHERE i.deleted = FALSE
+          AND o.status = 'CONFIRMED'
+          AND i.sales_order_item_id IN
+        <foreach collection="salesOrderItemIds" item="orderItemId" open="(" separator="," close=")">
+            #{orderItemId}
+        </foreach>
+    </select>
+
     <!-- 草稿重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
-    <update id="deleteByOutboundId">
-        UPDATE inventory_outbound_item
+    <update id="deleteByOutboundId">        UPDATE inventory_outbound_item
         SET deleted    = TRUE,
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,

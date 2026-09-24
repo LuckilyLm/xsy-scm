@@ -41,4 +41,20 @@ public class DeliveryRouteOrderEntity extends DeliveryRecord {
      */
     private OffsetDateTime lastPrintedAt;
     private String lastPrintedBy;
+    /**
+     * 订单级履约状态：{@code PENDING → IN_TRANSIT → SIGNED | EXCEPTION}。
+     *
+     * <p>与 {@code assignmentStatus} 正交：一个说「货到没到手」，一个说「这单还在不在线路上」。
+     * 不拿 RELEASED 表达签收 —— 取消线路也会写 RELEASED，那与拒收不是同一个事实。
+     */
+    private String fulfillmentStatus;
+    /**
+     * 签收或异常登记时点，服务端写入；终态必填（DB CHECK）。
+     */
+    private OffsetDateTime signedAt;
+    private String signedBy;
+    /**
+     * 异常签收必填原因；正常签收可留空备注。
+     */
+    private String signReason;
 }

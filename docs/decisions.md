@@ -631,9 +631,11 @@ P1 的实现里混进未经确认的权限模型（第二条范围权限）、�
 13. **签收不产生任何库存事实**：`EXCEPTION`（含拒收）**不反冲 `SALES_OUT`、不改历史流水**
     （Q7 追加式账本）。退货应由后续退货流程以**新增反向事实**处理。
     主线计划第 165 行的「配送取消后库存如何处理」据此回答：**L3 不处理，只保证不破坏账本**。
-14. **发车后线路不可逆**：`DISPATCHED` / `COMPLETED` 线路禁止取消，也禁止改停靠点、增删订单
-    （既有 `cancel / update / addOrders / removeOrder / stops reorder` 全部补状态守卫）。
-    要纠正只能走后续退货 / 补单，不给「把已发车的线路退回去」留口子。
+14. **发车后线路不可逆**：`DISPATCHED` / `COMPLETED` 线路禁止取消，也禁止改停靠点、增删订单。
+    **现状核对（写裁决时先读过代码）**：`update / addOrders / removeOrder / reorder / locate / plan`
+    全部经过只认 `DRAFT` 的 `draft()`，`cancel` 只认 `{DRAFT, PLANNED}`，所以这条约束**已经成立**，
+    L3 不需要新增守卫 —— 但**不得为了发车而放宽它们**：任何「让 `PLANNED` 也能改单」的改动
+    都会同时打开这条不可逆约束。要纠正已发车的错误只能走后续退货 / 补单。
 15. **打印与发车彻底分开**（沿用 P1 第 8 条与 L0–L2 既有口径）：打印只计次，
     不创建出库单、不推进任何状态；发车只由 `POST /scm/delivery/routes/{id}/dispatch` 触发。
 16. **权限与角色**：新增 `scm:delivery:route:dispatch`、`scm:delivery:order:sign`、
