@@ -72,14 +72,24 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     }
 
     /**
-     * 每个用例一个新种子，保证来源行 id 在本类多次运行之间不重复。
+     * 造来源行号用的种子：必须**只增不减**，且落在库里已用行号之上。
+     *
+     * <p>原先写 {@code MAX(id) + 100000}，但预留表被别的用例部分清理过，{@code MAX(id)} 会回落：
+     * 实测遗留行号已到 100778，而下一颗种子只算到 100740 —— 于是新一轮造出的行号与上一轮遗留的
+     * ACTIVE 行重合，{@code uk_inventory_reservation_source_active} 生效，reserve() 报 41016
+     * 「预留不合法」，看着像超卖判定写坏了，其实是造数串台（表现为偶发红，且隔离连跑几乎必红）。
+     *
+     * <p>改用预留表自己的序列取值：序列值不回收，乘 100 拉开间距，保证相邻两次调用至少差 100，
+     * 够每个用例取 +1..+3 而互不重叠；再与 {@code MAX(行号)} 取 GREATEST，跨过改动前就已在库里的遗留行。
      *
      * <p>用 {@code COALESCE} 而不是 SQL 的 {@code ?:} 简写：简写里的 {@code ?}
      * 会被 JDBC 驱动当成参数占位符，StatementCallback 直接报语法错误。
      */
     private Long sourceIdSeed() {
         return jdbc.queryForObject(
-                "SELECT COALESCE(MAX(id), 0) + 100000 FROM inventory_reservation", Long.class);
+                "SELECT GREATEST(nextval('inventory_reservation_id_seq'), "
+                        + "(SELECT COALESCE(MAX(source_document_item_id), 0) FROM inventory_reservation) / 100 + 1) * 100",
+                Long.class);
     }
 
     @Override
@@ -189,7 +199,11 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
         return count == null ? 0 : count;
     }
 
-    private int activeReservationRowsForItem(Long itemId) {
+    /**
+     * 该来源订单行留下的未删除预留行数。故意<b>不按 status 过滤</b>：
+     * 「被拒的那笔不该留任何行」要比「不该留 ACTIVE 行」更严——留一行 RELEASED 同样是漏写。
+     */
+    private int reservationRowsForItem(Long itemId) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM inventory_reservation "
                         + "WHERE source_document_type = 'SALES_ORDER_ITEM' "
@@ -231,9 +245,14 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
 
         assertThat(reserved(warehouseId, skuId)).isEqualByComparingTo("8.0000");
         assertThat(onHand(warehouseId, skuId)).as("预留不改变物理库存").isEqualByComparingTo("10.0000");
-        assertThat(activeReservationRowsForItem(items.get(2)))
-                .as("被拒的那笔不得留下预留行")
-                .isZero();
+        // 哪一笔被拒取决于哪个线程最后抢到余额行锁，不能假定就是提交顺序里的最后一笔：
+        // outcomes 与 itemIds 按下标一一对应，据此定位真正失败的那几笔来查残留。
+        for (int i = 0; i < items.size(); i++) {
+            if (!outcomes.get(i).success())
+                assertThat(reservationRowsForItem(items.get(i)))
+                        .as("被拒的那笔（%s）不得留下预留行", items.get(i))
+                        .isZero();
+        }
         assertThat(reserved(warehouseId, skuId))
                 .as("ck_inventory_balance_available 的口径：占用不得超过现有量")
                 .isLessThan(onHand(warehouseId, skuId));
@@ -255,7 +274,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
         assertThat(outcomes.stream().filter(Outcome::success).count())
                 .as("重复预留必须恰一成功")
                 .isEqualTo(1);
-        assertThat(activeReservationRowsForItem(itemId))
+        assertThat(reservationRowsForItem(itemId))
                 .as("软删也算第二行：同一来源行只能有一条活动预留")
                 .isEqualTo(1);
         assertThat(reserved(warehouseId, skuId))
