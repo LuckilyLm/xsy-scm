@@ -10,10 +10,10 @@
 - [requirements/2026-09-19-高德地图与数据大屏技术调研.md](requirements/2026-09-19-高德地图与数据大屏技术调研.md)：配送模块接高德地图与可视化大屏的依赖/方案调研及待决策清单。**其中的现状描述已过时**，实施口径以 09-21 方案为准。
 - [requirements/2026-09-20-规格转换与成本核算设计.md](requirements/2026-09-20-规格转换与成本核算设计.md)：规格转换（V33）与移动加权成本（V34 / V37）的设计与口径。
 - [requirements/2026-09-21-地图模块分期实施方案.md](requirements/2026-09-21-地图模块分期实施方案.md)：地图能力拆成 M0 地理数据地基 / M1 大屏真实地图 / M2 底图与选点 / M3 配送排线四期；M0 与 M1 已于 2026-09-21 完成，M2 底图路线 A/B/C 待裁决（含高德配额与商用授权的如实口径）。
-- [plan/attachment-asset-grading-and-file-access-plan.md](plan/attachment-asset-grading-and-file-access-plan.md)：附件资产分级与文件读取权限（F0-DEBT-01）的分批方案 —— FA-0 写侧收口已落地（V41），FA-1 受控批量读取 / FA-2 `scm_file_relation` / FA-3 存量商品图搬运待开工。
-- [plan/logistics-delivery-static-route-plan.md](plan/logistics-delivery-static-route-plan.md)：物流配送 L0–L2 静态排线的实施方案（V42–V43 已落地）；L3 实发量来源与角色授权仍待裁决。
-- [plan/finance-reporting-r0-plan.md](plan/finance-reporting-r0-plan.md)：Finance R0 只读报表地基（V50–V51 已落地）；R1 应收 / 应付与 R2 利润的前置裁决清单见该文件末节。
-- [plan/product-center-optimization-plan.md](plan/product-center-optimization-plan.md)：商品中心优化的多轮方案（PCO-1 已落地、PCO-2 待开工）。`plan/` 目录专门存放**面向未来的规划稿**：其中的 Flyway 版本号只是规划期快照，落地实施前必须按 `AGENTS.md` 从当前最大号之后整体重排。
+- [plan/attachment-asset-grading-and-file-access-plan.md](plan/attachment-asset-grading-and-file-access-plan.md)：附件资产分级与文件读取权限（F0-DEBT-01）的分批方案 —— **FA-0 至 FA-3 已全部落地（V41、V52–V53、V58），该债已于 2026-09-24 关闭**；文件保留作方案与顺序约束（先搬对象再改库 key）的依据。
+- [plan/logistics-delivery-static-route-plan.md](plan/logistics-delivery-static-route-plan.md)：物流配送 L0–L2 静态排线的实施方案（V42–V43、V47 已落地）。**L3 的实发量来源与角色授权已在 2026-09-25 裁决完毕**，见 `decisions.md`「P2 物流配送 L3 裁决」；该文件第 1385–1409 行的 L3 设想只是规划期草稿，其中「签收不在 L3 范围」的划分已被本次裁决取代。
+- [plan/finance-reporting-r0-plan.md](plan/finance-reporting-r0-plan.md)：Finance R0 只读报表地基（V50–V51 已落地）；R1 应收 / 应付与 R2 利润的前置裁决清单见该文件末节，其中依赖配送事实的条目由 P2 提供。
+- [plan/product-center-optimization-plan.md](plan/product-center-optimization-plan.md)：商品中心优化的多轮方案（**PCO-1 与 PCO-2 均已落地**：V38–V39、V44–V45、V49）。`plan/` 目录专门存放**面向未来的规划稿**：其中的 Flyway 版本号只是规划期快照，落地实施前必须按 `AGENTS.md` 从当前最大号之后整体重排。
 - [test-report/](test-report/)：按版本归档的部署后验收报告。只写矩阵、计数与可复核结论（接口 / 数据 / 日志证据的**类别**），本机运行目录与脚本不作为引用对象。
 
 业务需求、旧系统语义、页面参考和历史方案以只读目录

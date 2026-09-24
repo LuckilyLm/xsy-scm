@@ -75,7 +75,10 @@ P0   Baseline closure: FA-1..FA-3 + formal  COMPLETE (2026-09-24); F0-DEBT-01 cl
 W6-1 Inventory (balance/movement/inbound)  BACKEND + BROWSER VERIFIED
 P1   Sorting management (V60-V62)          COMPLETE (2026-09-24): backend + 1057-test full
                                          regression + 129 browser E2E all green
+P2   Delivery L3 (dispatch/outbound/sign)  IN PROGRESS (rulings registered 2026-09-25,
+                                         migrations from V63 — rescan the actual max first)
 W6-2 Mini Program                          NOT STARTED
+Order after P2: P2 -> Finance R1 -> Finance R2 -> marketing/payment/settlement -> W6-2.
 ```
 
 W4 = Sales Order (COMPLETE).
@@ -372,7 +375,9 @@ V33（规格转换）与 V34（移动加权成本）的**列表页已于 2026-09
 **五条写流程 E2E 已于 2026-09-20 覆盖**（出库确认、盘点确认、报损报溢审批、
 调拨发出/收货、规格转换审批，`e2e/scm-inventory-write.spec.ts` 6/6）。
 V31/V33 的转入成本清零缺陷已由 V37 + 代码修复（成本随货平移）。
-仍未覆盖：预留的**并发**压测、阈值预警推送、分拣与配送。见 `docs/progress.md`。
+仍未覆盖：**阈值预警推送**（本波只做可查列表）、**配送 L3**（发车 / 正式出库 / 签收，进行中）。
+预留的**并发**压测与分拣已于 P0 / P1 补齐（`ScmInventoryReservationConcurrencyIT` 五条真并发用例
++ 20× 定向重复闸门；P1 全量回归 + 129 项浏览器 E2E）。见 `docs/progress.md`。
 
 > **B7 数据大屏（V28）已于 2026-09-20 完成 V1 视觉重构**：三列 420/1000/420 + 底部趋势带，
 > 10 个面板、3 张图表，新增 `GET /scm/screen/data/trend?range=7d|30d` 与库存健康度
