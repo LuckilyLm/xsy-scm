@@ -7,6 +7,7 @@ import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
 import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryOutboundItemDao;
+import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
 import net.lab1024.sa.admin.module.scm.sorting.dao.SortingQueryDao;
 import net.lab1024.sa.admin.module.scm.sorting.dao.SortingTaskDao;
@@ -79,6 +80,10 @@ public class SortingTaskService {
     private static final int MAX_LINES_PER_TASK = 500;
 
     private final InventoryOutboundItemDao outboundItems;
+    /**
+     * 只为重开前锁订单行而注入：发车与重开必须在同一批订单行上互相排队。
+     */
+    private final SalesOrderDao orders;
     private final SortingTaskDao tasks;
     private final SortingTaskItemDao itemRows;
     private final SortingQueryDao queries;
@@ -230,10 +235,14 @@ public class SortingTaskService {
         requireVersion(task, form.getVersion());
         if (!COMPLETED.equals(task.getStatus())) throw new ScmBusinessException(STATE_INVALID);
         requireReason(form.getReason());
-        var orderLineIds = activeItems(id).values().stream()
-                .map(SortingTaskItemEntity::getSalesOrderItemId)
-                .filter(Objects::nonNull)
-                .toList();
+        var items = activeItems(id).values();
+        // 先锁订单行再查出库，否则「发车提交」与「重开提交」可以交错到两边都成功：
+        // 结果是一张已真实出库的订单行还能继续改分拣量，而这正是本条守卫要拦的事。
+        // 配送侧同样按订单 id 升序加锁（DeliveryRouteService#dispatch），因此这里不会构成反向锁序。
+        items.stream().map(SortingTaskItemEntity::getSalesOrderId).filter(Objects::nonNull).distinct().sorted()
+                .forEach(orders::lock);
+        var orderLineIds = items.stream().map(SortingTaskItemEntity::getSalesOrderItemId)
+                .filter(Objects::nonNull).toList();
         if (!orderLineIds.isEmpty() && !outboundItems.listOrderLinesWithConfirmedOutbound(orderLineIds).isEmpty()) {
             throw new ScmBusinessException(OUTBOUND_EXISTS);
         }

@@ -96,7 +96,9 @@ class ScmInventoryConstantTest {
         // 调拨转出行 / 调拨转入行 / 转换转出行 / 转换转入行 ——
         // 调拨与转换各占两个是**被迫的**：它们的同一条明细行会产生两条流水，
         // 共用一个来源类型会撞上 uk_inventory_movement_source_active。
-        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(9);
+        // DELIVERY_ROUTE 是唯一**不出现在流水里**的来源类型：它只标在出库单头上回答
+        // 「这张单是哪条线路发车的」，流水仍按 SALES_OUTBOUND_ITEM 记账。
+        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(10);
     }
 
     @Test
@@ -279,9 +281,9 @@ class ScmInventoryConstantTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("错误码：恰好 58 个、码值冻结、段内无重复")
+    @DisplayName("错误码：恰好 59 个、码值冻结、段内无重复")
     void errorCodesAreFrozenAndUniqueWithinTheDomain() {
-        assertThat(InventoryErrorCode.values()).hasSize(58);
+        assertThat(InventoryErrorCode.values()).hasSize(59);
 
         // W6-1 的 4 个码值冻结不变
         assertThat(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND.getCode()).isEqualTo(40486);
@@ -359,13 +361,16 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN.getCode())
                 .isEqualTo(41065);
 
+        // P2 发车出库：来源单据已有出库单时重复出库必须被拒（兜 uk_inventory_outbound_source_active）。
+        assertThat(InventoryErrorCode.INVENTORY_SOURCE_ALREADY_OUTBOUND.getCode()).isEqualTo(41066);
+
         Set<Integer> codes = Arrays.stream(InventoryErrorCode.values())
                 .map(InventoryErrorCode::getCode).collect(Collectors.toCollection(LinkedHashSet::new));
-        assertThat(codes).as("库存域段内出现重复码值").hasSize(58);
+        assertThat(codes).as("库存域段内出现重复码值").hasSize(59);
 
-        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 五十七个（业务冲突 / 参数非法）
+        // 段归属：404xx 一个（NOT_FOUND）+ 410xx 五十八个（业务冲突 / 参数非法）
         assertThat(codes.stream().filter(code -> code / 100 == 404).count()).isEqualTo(1L);
-        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(57L);
+        assertThat(codes.stream().filter(code -> code / 100 == 410).count()).isEqualTo(58L);
         // 消息不得为空 —— 错误码没有可读消息等于没有错误码
         Arrays.stream(InventoryErrorCode.values())
                 .forEach(code -> assertThat(code.getMsg()).isNotBlank());
