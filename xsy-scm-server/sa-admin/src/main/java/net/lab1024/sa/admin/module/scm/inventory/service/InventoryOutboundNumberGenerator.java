@@ -1,13 +1,10 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryOutboundDao;
-import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * 出库单号生成。
@@ -19,14 +16,13 @@ import java.util.Locale;
  * <p>与采购/收货同口径：序列来自 PG sequence，**全局单调递增、不按日 reset**；
  * 日期段只是可读性装饰，唯一性由序列保证；补零用 {@code %06d}，超过 999999 自然扩位。
  *
- * <p>日期取 {@link PurchaseSnapshotFactory#ASIA_SHANGHAI}，与 Q6a 的 {@code demand_date}
+ * <p>日期取 {@link ScmDocumentNumbers} 的 Asia/Shanghai 业务时区，与 Q6a 的 {@code demand_date}
  * 及采购单号共用同一个 ZoneId 常量，避免跨零点错位。
  */
 @Service
 @RequiredArgsConstructor
 public class InventoryOutboundNumberGenerator {
 
-    private static final DateTimeFormatter DATE = DateTimeFormatter.BASIC_ISO_DATE;
 
     /**
      * 出库单号前缀。
@@ -46,8 +42,6 @@ public class InventoryOutboundNumberGenerator {
      * 单号拼接的纯函数（单测直接覆盖，不需要 DB）。
      */
     public static String format(String prefix, long number) {
-        return prefix
-                + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI).format(DATE)
-                + String.format(Locale.ROOT, "%06d", number);
+        return ScmDocumentNumbers.format(prefix, number);
     }
 }

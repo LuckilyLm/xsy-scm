@@ -16,28 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class InventoryStocktakeNumberGeneratorTest {
 
-    @Test
-    @DisplayName("单号 = STK + yyyyMMdd + 6 位补零")
-    void formatPadsToSixDigits() {
-        String no = InventoryStocktakeNumberGenerator.format("STK", 1L);
-        assertThat(no).startsWith("STK");
-        assertThat(no).hasSize("STK".length() + 8 + 6);
-        assertThat(no).endsWith("000001");
-    }
-
-    @Test
-    @DisplayName("超过 999999 自然扩位，不截断")
-    void formatExpandsBeyondSixDigits() {
-        String no = InventoryStocktakeNumberGenerator.format("STK", 1_000_000L);
-        assertThat(no).endsWith("1000000");
-        assertThat(no).hasSize("STK".length() + 8 + 7);
-    }
-
-    @Test
-    @DisplayName("前缀可配置，便于未来复用到其他单据")
-    void formatHonoursPrefix() {
-        assertThat(InventoryStocktakeNumberGenerator.format("XX", 42L)).contains("000042");
-    }
+    // 拼接规则本身（补零 / 扩位 / 前缀）已在 ScmDocumentNumbersTest 统一断言；
+    // 这里只留每个单据各自的前缀防撞检查。
 
     @Test
     @DisplayName("盘点单号前缀与出库单号前缀不得相同")

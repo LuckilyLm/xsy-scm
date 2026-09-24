@@ -1,13 +1,10 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryLossGainDao;
-import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * 报损报溢单号生成。
@@ -28,7 +25,6 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class InventoryLossGainNumberGenerator {
 
-    private static final DateTimeFormatter DATE = DateTimeFormatter.BASIC_ISO_DATE;
 
     /**
      * 报损报溢单号前缀。
@@ -48,8 +44,6 @@ public class InventoryLossGainNumberGenerator {
      * 单号拼接的纯函数（单测直接覆盖，不需要 DB）。
      */
     public static String format(String prefix, long number) {
-        return prefix
-                + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI).format(DATE)
-                + String.format(Locale.ROOT, "%06d", number);
+        return ScmDocumentNumbers.format(prefix, number);
     }
 }

@@ -16,28 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class InventoryLossGainNumberGeneratorTest {
 
-    @Test
-    @DisplayName("单号 = LGR + yyyyMMdd + 6 位补零")
-    void formatPadsToSixDigits() {
-        String no = InventoryLossGainNumberGenerator.format("LGR", 1L);
-        assertThat(no).startsWith("LGR");
-        assertThat(no).hasSize("LGR".length() + 8 + 6);
-        assertThat(no).endsWith("000001");
-    }
-
-    @Test
-    @DisplayName("超过 999999 自然扩位，不截断")
-    void formatExpandsBeyondSixDigits() {
-        String no = InventoryLossGainNumberGenerator.format("LGR", 1_000_000L);
-        assertThat(no).endsWith("1000000");
-        assertThat(no).hasSize("LGR".length() + 8 + 7);
-    }
-
-    @Test
-    @DisplayName("前缀可配置，便于未来复用到其他单据")
-    void formatHonoursPrefix() {
-        assertThat(InventoryLossGainNumberGenerator.format("XX", 42L)).contains("000042");
-    }
+    // 拼接规则本身（补零 / 扩位 / 前缀）已在 ScmDocumentNumbersTest 统一断言；
+    // 这里只留每个单据各自的前缀防撞检查。
 
     @Test
     @DisplayName("单据号前缀在出库 / 盘点 / 报损报溢之间互不相同")

@@ -1,5 +1,6 @@
 package net.lab1024.sa.admin.module.scm.order.service;
 
+import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,6 @@ public class OrderNumberGenerator {
     }
 
     public static String format(String prefix, long number) {
-        return prefix + java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai")).format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE) + String.format(java.util.Locale.ROOT, "%06d", number);
+        return ScmDocumentNumbers.format(prefix, number);
     }
 }

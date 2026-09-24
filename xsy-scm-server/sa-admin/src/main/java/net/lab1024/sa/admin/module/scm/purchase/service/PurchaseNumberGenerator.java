@@ -1,14 +1,11 @@
 package net.lab1024.sa.admin.module.scm.purchase.service;
 
+import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOrderDao;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseReceiptDao;
-import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * 采购单号 / 收货单号生成（W5 Target Design §5.1 / §5.7）。
@@ -27,14 +24,13 @@ import java.util.Locale;
  *       与 W4 的 {@code OrderNumberGenerator} 完全一致。</li>
  * </ol>
  *
- * <p>日期取 {@link PurchaseSnapshotFactory#ASIA_SHANGHAI}，与 Q6a 的
+ * <p>日期取 {@link ScmDocumentNumbers} 的 Asia/Shanghai 业务时区，与 Q6a 的
  * `demand_date` 时区口径保持同一个 ZoneId 常量，避免「单号日期」与「需求日期」跨零点错位。
  */
 @Service
 @RequiredArgsConstructor
 public class PurchaseNumberGenerator {
 
-    private static final DateTimeFormatter DATE = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final PurchaseOrderDao purchaseOrderDao;
 
@@ -58,8 +54,6 @@ public class PurchaseNumberGenerator {
      * 单号拼接的纯函数（单测直接覆盖，不需要 DB）。
      */
     public static String format(String prefix, long number) {
-        return prefix
-                + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI).format(DATE)
-                + String.format(Locale.ROOT, "%06d", number);
+        return ScmDocumentNumbers.format(prefix, number);
     }
 }
