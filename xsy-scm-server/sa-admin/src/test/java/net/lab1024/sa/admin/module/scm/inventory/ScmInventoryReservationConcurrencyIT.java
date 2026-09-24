@@ -74,12 +74,17 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     /**
      * 每个用例一个新种子，保证来源行 id 在本类多次运行之间不重复。
      *
+     * <p>种子必须建立在**已用来源行 id 的最大值**上，而不是 {@code MAX(id)}：一行预留只消耗
+     * 一个主键，但一个用例消耗 {@code seed+1..seed+3} 三个来源行 id，按主键推进的seed
+     * 会在下一轮与本轮成功落地的行相撞，让「防重索引生效」以 41016 的形式冒充竞态结果。
+     *
      * <p>用 {@code COALESCE} 而不是 SQL 的 {@code ?:} 简写：简写里的 {@code ?}
      * 会被 JDBC 驱动当成参数占位符，StatementCallback 直接报语法错误。
      */
     private Long sourceIdSeed() {
         return jdbc.queryForObject(
-                "SELECT COALESCE(MAX(id), 0) + 100000 FROM inventory_reservation", Long.class);
+                "SELECT COALESCE(MAX(source_document_item_id), 0) + 1000 FROM inventory_reservation",
+                Long.class);
     }
 
     @Override
@@ -224,16 +229,22 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
         assertThat(succeeded)
                 .as("总需求 12 > 现有量 10：只允许 2 笔落地，成功数不是 2 说明可用量判断跑在锁之外")
                 .isEqualTo(2);
-        outcomes.stream().filter(outcome -> !outcome.success()).forEach(outcome ->
+        // 竞态里输的是哪一笔不固定，不能按提交顺序假定第三笔被拒；逐笔对齐结果与落库行数才可重复。
+        for (int i = 0; i < outcomes.size(); i++) {
+            Outcome outcome = outcomes.get(i);
+            if (!outcome.success()) {
                 assertThat(SCM_ERROR_CODE.apply(outcome.error()))
-                        .as("被拒的那笔必须是可用量不足（41011），不能是死锁或版本冲突", outcome.error())
-                        .isEqualTo(41011));
+                        .as("被拒的那笔必须是可用量不足（41011），不能是死锁、版本冲突或上一轮的重复行",
+                                outcome.error())
+                        .isEqualTo(41011);
+            }
+            assertThat(activeReservationRowsForItem(items.get(i)))
+                    .as("{}：成功必须恰留一行，被拒不许留行", items.get(i))
+                    .isEqualTo(outcome.success() ? 1 : 0);
+        }
 
         assertThat(reserved(warehouseId, skuId)).isEqualByComparingTo("8.0000");
         assertThat(onHand(warehouseId, skuId)).as("预留不改变物理库存").isEqualByComparingTo("10.0000");
-        assertThat(activeReservationRowsForItem(items.get(2)))
-                .as("被拒的那笔不得留下预留行")
-                .isZero();
         assertThat(reserved(warehouseId, skuId))
                 .as("ck_inventory_balance_available 的口径：占用不得超过现有量")
                 .isLessThan(onHand(warehouseId, skuId));
