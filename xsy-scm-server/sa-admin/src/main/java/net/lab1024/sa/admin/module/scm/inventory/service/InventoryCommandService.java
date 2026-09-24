@@ -150,9 +150,10 @@ public class InventoryCommandService {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_INBOUND);
         }
 
-        // V34：采购入库是**唯一**会改变均价的路径，按 (旧量·旧均价 + 入量·入价) / 新量 重算。
+        // V34：均价（加权）由三条入方向腿更新 —— 采购入库、调拨转入、规格转换转入，口径见类 Javadoc；
+        // 本方法是其中的采购入库腿，按 (旧量·旧均价 + 入量·入价) / 新量 重算。
         // 数量增量与均价写入合并成**一条**语句 —— 一次逻辑行变更只自增一次 version。
-        // 其余入库（调拨转入 / 转换转入 / 报溢）走普通的 incrementQuantity，均价不变；
+        // 报溢等不带成本依据的入库走普通的 incrementQuantity，均价不变；
         // 出库更不改均价，只把当时的均价写进流水。
         if (balanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
                 inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
@@ -419,7 +420,9 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.stocktakeItemId());
         movement.setQuantity(quantity);
         movement.setUnitSnapshot(unit);
-        // 盘盈/盘亏没有成本依据，unit_cost 留空（V19 的 ck_inventory_movement_cost 允许 NULL）。
+        // unit_cost 记的是本笔移动**当时**的余额均价，盘盈与盘亏两条腿都写，不留空。
+        // （「盘点没有成本依据、unit_cost 留空」是移动加权平均上线前的旧语义；V19 的
+        //  ck_inventory_movement_cost 允许 NULL 只是容忍历史行，不代表新腿该写空。）
         movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(live);
         movement.setAfterQuantity(after);
@@ -517,7 +520,9 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.lossGainItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(unit);
-        // 报损报溢没有成本依据，unit_cost 留空（V19 的 ck_inventory_movement_cost 允许 NULL）。
+        // unit_cost 记的是本笔移动**当时**的余额均价，报损与报溢两条腿都写，不留空。
+        // 「报损报溢没有成本依据、留 NULL」是移动加权平均（V34）上线前的旧语义；
+        // 出方向因「出库不改变均价」，事后再读余额拿到的仍是同一个值。
         movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(live);
         movement.setAfterQuantity(after);
