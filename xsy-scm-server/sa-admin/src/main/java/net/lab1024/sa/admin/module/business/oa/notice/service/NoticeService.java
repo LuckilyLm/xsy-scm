@@ -28,8 +28,11 @@ import net.lab1024.sa.base.common.util.SmartBeanUtil;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import net.lab1024.sa.base.module.support.datatracer.constant.DataTracerTypeEnum;
 import net.lab1024.sa.base.module.support.datatracer.service.DataTracerService;
+import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
+import net.lab1024.sa.base.module.support.file.service.FileRelationService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -66,6 +69,9 @@ public class NoticeService {
     @Resource
     private DataTracerService dataTracerService;
 
+    @Resource
+    private FileRelationService fileRelationService;
+
     /**
      * 查询 通知、公告
      *
@@ -81,6 +87,7 @@ public class NoticeService {
     /**
      * 添加
      */
+    @Transactional(rollbackFor = Exception.class)
     public ResponseDTO<String> add(NoticeAddForm addForm) {
         // 校验并获取可见范围
         ResponseDTO<String> validate = this.checkAndBuildVisibleRange(addForm);
@@ -96,6 +103,9 @@ public class NoticeService {
         }
         // 保存数据
         noticeManager.save(noticeEntity, addForm.getVisibleRangeList());
+        // 私有附件的读取权由关系行决定：存了 fileKey 却不绑定，其他有权查看者永远读不到它
+        fileRelationService.rebind(FileRelationBizTypeEnum.NOTICE, noticeEntity.getNoticeId(),
+                FileRelationService.splitKeys(noticeEntity.getAttachment()));
         return ResponseDTO.ok();
     }
 
@@ -158,6 +168,7 @@ public class NoticeService {
      * 更新
      *
      */
+    @Transactional(rollbackFor = Exception.class)
     public ResponseDTO<String> update(NoticeUpdateForm updateForm) {
 
         NoticeEntity oldNoticeEntity = noticeDao.selectById(updateForm.getNoticeId());
@@ -174,6 +185,11 @@ public class NoticeService {
         // 更新
         NoticeEntity noticeEntity = SmartBeanUtil.copy(updateForm, NoticeEntity.class);
         noticeManager.update(oldNoticeEntity, noticeEntity, updateForm.getVisibleRangeList());
+        // 用 rebind 而不是 bind：更新可以删掉附件，被删掉的 key 必须同时失去授权。
+        // updateById 跳过 null 列，所以按实际落库值换绑，否则未提交该列时会误收回旧附件的读取权。
+        String attachment = noticeEntity.getAttachment() == null ? oldNoticeEntity.getAttachment() : noticeEntity.getAttachment();
+        fileRelationService.rebind(FileRelationBizTypeEnum.NOTICE, noticeEntity.getNoticeId(),
+                FileRelationService.splitKeys(attachment));
         return ResponseDTO.ok();
     }
 

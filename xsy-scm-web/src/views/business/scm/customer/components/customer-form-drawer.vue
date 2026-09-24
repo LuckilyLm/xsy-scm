@@ -77,8 +77,10 @@
 
         <a-row :gutter="16">
           <a-col :span="12">
-            <a-form-item label="归属业务员" name="sellerId">
-              <EmployeeSelect v-model:value="sellerValue" placeholder="请选择业务员" width="100%"/>
+            <a-form-item label="归属业务员">
+              <a-input v-if="isEdit" :value="sellerName || '未分配'" disabled/>
+              <EmployeeSelect v-else v-model:value="sellerValue" :disabled="!canAssign" placeholder="请选择业务员" width="100%"/>
+              <div class="ant-form-item-extra">{{ sellerHint }}</div>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -215,6 +217,7 @@ import {
   validateCustomer,
 } from '../customer-form-model';
 import {customerError} from '../customer-errors';
+import {hasPermission} from '../../common/scm-permission';
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -226,6 +229,23 @@ const formRef = ref<FormInstance>();
 
 /** 详情里的状态（只读展示用）。新建时后端固定给「潜在」。 */
 const status = ref<CustomerStatus>('POTENTIAL');
+/** 编辑态回显的当前负责人姓名；归属只能通过列表「改派业务员」变更，编辑不动它。 */
+const sellerName = ref('');
+
+/** 分配/改派权：与服务端 resolveSellerOnCreate 同一口径 —— 无此权者新建一律落自己名下。 */
+const canAssign = computed(() => hasPermission('scm:customer:assign'));
+const isEdit = computed(() => form.customerId != null);
+
+/** 业务员字段的形态说明：编辑只读、无分配权自动归属自己、有分配权可指定或留空。 */
+const sellerHint = computed(() => {
+  if (isEdit.value) {
+    return '归属变更请使用列表中的「改派业务员」；编辑保存不会改动负责人。';
+  }
+  if (!canAssign.value) {
+    return '无分配权限，新建后将自动归属当前账号。';
+  }
+  return '留空表示暂不分配（未分配客户仅持分配权或全量范围者可见）。';
+});
 
 const form = reactive<CustomerForm>(emptyCustomer());
 
@@ -259,6 +279,7 @@ async function open(customerId?: ScmId) {
   Object.assign(form, emptyCustomer());
   area.value = [];
   status.value = 'POTENTIAL';
+  sellerName.value = '';
   if (customerId == null) {
     await nextTick();
     formRef.value?.clearValidate();
@@ -300,6 +321,7 @@ async function open(customerId?: ScmId) {
       remark: detail.remark ?? '',
     });
     status.value = detail.status;
+    sellerName.value = detail.sellerName ?? '';
   } catch (e) {
     error.value = customerError(e);
   } finally {

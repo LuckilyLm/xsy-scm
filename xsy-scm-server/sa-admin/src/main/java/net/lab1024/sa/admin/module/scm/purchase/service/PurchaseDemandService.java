@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
@@ -24,6 +25,7 @@ import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseDemandAllocator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderValidator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseDemandSourceGuard;
+import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseOwnerResolver;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseWarehouseReferenceGuard;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,6 +85,8 @@ public class PurchaseDemandService {
 
     private final PurchaseOrderValidator purchaseOrderValidator;
 
+    private final PurchaseOwnerResolver ownerResolver;
+
     /**
      * `generate` 的返回体。
      *
@@ -120,8 +124,12 @@ public class PurchaseDemandService {
             purchaseOrderValidator.requireEnabledSupplier(form.getSupplierId());
         }
 
+        // 命令取数不按仓库范围收窄：来源行是销售订单行，本身不带仓库，本次需求落哪个仓由
+        // form.warehouseId 显式给出并由 warehouseReferenceGuard 校验启用态；「这个仓归不归他管」
+        // 是收货上架 / 出库这些改库存事实的写路径的判据（ScmWarehouseScopeGuard），不在这里重复。
+        // 传 all() 而不是省略参数，是为了让 Dao 的 scope 语义在两处调用点都显式可查。
         List<SalesOrderItemEntity> sourceItems =
-                purchaseDemandDao.listSourceItems(form.getStartAt(), form.getEndAt());
+                purchaseDemandDao.listSourceItems(form.getStartAt(), form.getEndAt(), ScmValueScope.all());
 
         GenerateResult result = new GenerateResult();
         result.setSourceLineCount(sourceItems.size());
@@ -144,7 +152,10 @@ public class PurchaseDemandService {
                 }
 
                 PurchaseDemandEntity demand = PurchaseSnapshotFactory.demand(
-                        source, order, form.getSupplierId(), form.getWarehouseId(), form.getPurchaserId());
+                        source, order, form.getSupplierId(), form.getWarehouseId(),
+                        // 需求上的采购员同样是归属依据（generate 的「默认采购员」只是建议值）：
+                        // 无分配权时一律落成当前员工，否则列表范围可以被一个表单字段放大
+                        ownerResolver.resolveForCreate(form.getPurchaserId()));
                 if (purchaseDemandDao.insertIgnore(demand) == 1) {
                     result.getDemandIds().add(demand.getId());
                     result.setCreatedCount(result.getCreatedCount() + 1);
@@ -195,6 +206,9 @@ public class PurchaseDemandService {
         }
         PurchaseDemandAllocator.assignable(demand.getStatus());
         PurchaseDemandAllocator.demandVersion(form.getVersion(), demand.getVersion());
+        // 归属守卫：分配会把需求量并进别人名下的采购单，两头都必须在调用者范围内。
+        // 只判需求会留下一条侧门——用自己的采购单接住别人的需求，两边数字同时被改。
+        ownerResolver.requireVisible(demand.getPurchaserId());
 
         PurchaseOrderItemEntity orderItem = purchaseOrderItemDao.selectById(form.getPurchaseOrderItemId());
         if (orderItem == null) {
@@ -204,6 +218,7 @@ public class PurchaseDemandService {
         if (order == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
+        ownerResolver.requireVisible(order.getPurchaserId());
         // 只有 SUBMITTED 的采购单可以继续接需求：DRAFT 还没定稿，RECEIVED/SHORT_CLOSED/CANCELLED 已结束。
         // 这里沿用设计 §7.4 指定的 40980（PURCHASE_DEMAND_SOURCE_INVALID）——
         // 语义上「来源不允许再产生/变更需求关联」，与来源订单状态校验同源。
@@ -264,7 +279,7 @@ public class PurchaseDemandService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.DEMAND_ALLOCATE, order.getId(), null, null, before, after));
 
-        PurchaseDemandVO result = queryService.demandDetail(demand.getId());
+        PurchaseDemandVO result = queryService.demandDetailForCommand(demand.getId());
         idempotencyService.complete(claim, "PURCHASE_DEMAND", demand.getId(), result);
         return result;
     }

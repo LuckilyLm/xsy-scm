@@ -17,6 +17,8 @@ import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
 import net.lab1024.sa.admin.module.scm.pricing.manager.PriceValidation;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
@@ -28,6 +30,7 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VE
 public class CustomerSkuVisibilityService {
     private final CustomerSkuVisibilityDao dao;
     private final ProductSkuOptionDao skus;
+    private final ScmDataScopeService scopeService;
 
     public List<CustomerSkuVisibilityVO> list(Long id) {
         return existing(id).stream().map(e -> new CustomerSkuVisibilityVO(e.getId(), e.getVersion(), e.getSkuId())).toList();
@@ -38,14 +41,23 @@ public class CustomerSkuVisibilityService {
     }
 
     public PageResult<CustomerSkuVisibilityReverseVO> reverse(CustomerVisibilityQueryForm form) {
+        // 反向列表的主体是客户，因此与客户列表同一套归属范围：读不到客户的人也不该看到它的商品白名单。
+        ScmDataScopeContext scope = scopeService.resolve();
+        if (scope.getCustomerSellerScope().isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
         form.setSortItemList(List.of());
         var page = SmartPageUtil.convert2PageQuery(form);
-        return SmartPageUtil.convert2PageResult(page, dao.reverse(page, form));
+        return SmartPageUtil.convert2PageResult(page, dao.reverse(page, form, scope.getCustomerSellerScope()));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void replace(Long customerId, String policy, List<CustomerSkuVisibilityItemForm> requested) {
-        if (requested == null || (!"ALL_ENABLED".equals(policy) && !"ALLOWLIST".equals(policy)))
+        // 调用方在「只改可见性策略、不动清单」时不会带 visibilities，此时 null 与空清单同义：
+        // 按空清单收敛，否则切回 ALL_ENABLED 这个唯一合法请求会被 40034 拒掉，
+        // 而那个错误码描述的是清单项非法，与真实原因无关。策略取值本身仍要校验。
+        if (requested == null) requested = List.of();
+        if (!"ALL_ENABLED".equals(policy) && !"ALLOWLIST".equals(policy))
             throw new ScmBusinessException(VISIBILITY_ITEM_INVALID);
         if ("ALL_ENABLED".equals(policy) && !requested.isEmpty())
             throw new ScmBusinessException(VISIBILITY_POLICY_CONFLICT);

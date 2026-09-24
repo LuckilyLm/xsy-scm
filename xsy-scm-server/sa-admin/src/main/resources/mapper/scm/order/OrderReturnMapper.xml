@@ -24,7 +24,17 @@
                                       FROM order_return
                                       WHERE id = #{id}
                                         AND deleted = FALSE FOR UPDATE</select>
+    <!-- order_return 没有自己的 owner 列，可见性一律跟随父订单的 sales_order.seller_id。
+         用 order_id IN (子查询) 而不是 JOIN：so.id 是主键，既不会放大行数，也不必为锁路径改语句。 -->
     <select id="query" resultMap="row">SELECT * FROM order_return WHERE deleted=FALSE
+        <if test="scope != null and scope.all == false">
+            AND order_id IN (SELECT so.id FROM sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            )
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if>
         <if test="query.status != null and query.status != ''">AND status=#{query.status}</if>
         <if test="query.orderId != null">AND order_id=#{query.orderId}</if>

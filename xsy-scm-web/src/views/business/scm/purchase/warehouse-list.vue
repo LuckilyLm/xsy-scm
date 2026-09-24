@@ -35,6 +35,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:warehouse:add'" @click="open()">新建仓库</a-button>
+        <a-button v-privilege="'scm:warehouse:scope:update'" @click="scopeModal?.open()">授权维护</a-button>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_WAREHOUSE" :refresh="queryData"/>
@@ -50,7 +51,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1200 }"
+        :scroll="{ x: 1350 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -63,6 +64,9 @@
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button type="link" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
+            <a-button type="link" v-privilege="'scm:warehouse:scope:query'" @click="scopeModal?.openEmployees(record.id, record.name)">
+              授权员工
+            </a-button>
             <a-button
                 v-if="record.status === 'ENABLED'"
                 danger
@@ -134,6 +138,8 @@
       </a-form-item>
     </a-form>
   </a-modal>
+
+  <WarehouseScopeModal ref="scopeModal"/>
 </template>
 
 <script setup lang="ts">
@@ -146,6 +152,7 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import WarehouseScopeModal from './components/warehouse-scope-modal.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -165,6 +172,8 @@ const formError = ref('');
 const form = ref<WarehousePayload>({warehouseCode: '', name: ''});
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);
+/** 员工—仓库授权维护（独立权限点，与仓库主数据编辑分开）。 */
+const scopeModal = ref<InstanceType<typeof WarehouseScopeModal>>();
 
 function onAreaChange(_value: unknown, nodes: AreaNode[]) {
   Object.assign(form.value, areaColumnsOf(nodes), emptyLocation());
@@ -179,7 +188,7 @@ const columns = ref<TableColumnsType<Warehouse>>([
   {title: '地址', dataIndex: 'address', width: 260},
   {title: '备注', dataIndex: 'remark', width: 200},
   {title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 100},
+  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 210},
 ]);
 
 async function queryData() {

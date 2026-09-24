@@ -111,12 +111,23 @@ public class DeliveryRouteService {
         }
         var routeStops = new ArrayList<>(stops.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
                 .eq(DeliveryRouteStopEntity::getRouteId, id).orderByAsc(DeliveryRouteStopEntity::getStopSeq)));
+        // ACTIVE 占用判断与订单快照读取各合成一条：原先逐单查，500 单就是 1000 次往返。
+        // 上面已把所有请求订单加锁，这里读到的是稳定快照；ids 受 LIMIT_EXCEEDED 约束在 500 以内。
+        var alreadyAssigned = new HashSet<Long>();
+        var snapshots = new HashMap<Long, DeliveryCandidateVO>();
+        if (!ids.isEmpty()) {
+            assignments.selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
+                            .select(DeliveryRouteOrderEntity::getOrderId)
+                            .in(DeliveryRouteOrderEntity::getOrderId, ids)
+                            .eq(DeliveryRouteOrderEntity::getAssignmentStatus, "ACTIVE"))
+                    .forEach(assigned -> alreadyAssigned.add(assigned.getOrderId()));
+            queries.candidateByIds(ids).forEach(snapshot -> snapshots.put(snapshot.getOrderId(), snapshot));
+        }
         int seq = routeStops.stream().mapToInt(DeliveryRouteStopEntity::getStopSeq).max().orElse(0);
         for (Long orderId : ids) {
-            if (assignments.selectCount(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
-                    .eq(DeliveryRouteOrderEntity::getOrderId, orderId).eq(DeliveryRouteOrderEntity::getAssignmentStatus, "ACTIVE")) > 0)
+            if (alreadyAssigned.contains(orderId))
                 throw new ScmBusinessException(ORDER_ASSIGNED);
-            var candidate = queries.candidate(orderId);
+            var candidate = snapshots.get(orderId);
             if (candidate == null || candidate.getAddress() == null || candidate.getAddress().isBlank())
                 throw new ScmBusinessException(ORDER_INELIGIBLE);
             var stop = routeStops.stream().filter(s -> Objects.equals(s.getCustomerId(), candidate.getCustomerId())
@@ -273,7 +284,9 @@ public class DeliveryRouteService {
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
         var claim = idempotency.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
-        if (claim.replay()) return idempotency.replay(claim, DeliveryPrintResultVO.class);
+        // 重放结果取自幂等记录里的原始明细，金额同样要在返回前过一遍可见性口径。
+        if (claim.replay())
+            return DeliveryVisibility.current().printResult(idempotency.replay(claim, DeliveryPrintResultVO.class));
         printable(lock(id, form.getVersion()));
         var wanted = new HashSet<>(form.getOrderIds());
         var selected = active(id).stream().filter(a -> wanted.contains(a.getOrderId())).toList();
@@ -281,7 +294,7 @@ public class DeliveryRouteService {
         if (selected.size() != wanted.size()) throw new ScmBusinessException(STATE_INVALID);
         var result = recordAndBuild(id, selected);
         idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
-        return result;
+        return DeliveryVisibility.current().printResult(result);
     }
 
     /**
@@ -292,7 +305,8 @@ public class DeliveryRouteService {
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
         var claim = idempotency.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
-        if (claim.replay()) return idempotency.replay(claim, DeliveryPrintResultVO.class);
+        if (claim.replay())
+            return DeliveryVisibility.current().printResult(idempotency.replay(claim, DeliveryPrintResultVO.class));
         printable(lock(id, form.getVersion()));
         var statusFilter = form.getCustomerStatusFilter() == null ? "ALL" : form.getCustomerStatusFilter();
         var candidates = form.getCustomerIds() == null ? Set.<Long>of() : new HashSet<>(form.getCustomerIds());
@@ -310,7 +324,7 @@ public class DeliveryRouteService {
         if (selected.isEmpty()) throw new ScmBusinessException(STATE_INVALID);
         var result = recordAndBuild(id, selected);
         idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
-        return result;
+        return DeliveryVisibility.current().printResult(result);
     }
 
     /**

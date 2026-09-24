@@ -12,6 +12,7 @@ import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -165,6 +166,8 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     private void add(Long route, List<Long> orderIds) {
+        // 组单前把订单做到分拣完成：P1 之后这是配送候选的硬前置。
+        sortingCompletedFor(orderIds.toArray(Long[]::new));
         var form = new DeliveryOrdersForm();
         form.setVersion(currentVersion(route));
         form.setOrderIds(orderIds);
@@ -191,13 +194,23 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
 
     /**
      * 子线程没有请求上下文，必须自带身份（{@code ScmOperator.current()} 与幂等 scope 都依赖它）。
+     *
+     * <p>{@code administratorFlag=true} 不是为了「测超管」，而是 {@code mockStatic} 只在创建它的线程生效，
+     * 桩不到子线程里的 Sa-Token 判定；本类只测并发计次，线路读取以全范围上下文通过即可。
+     * 主线程同样要用这个身份，所以 {@link #useUnrestrictedOperator()} 在基类之后再生成一次。
      */
     private static void setThreadOperator() {
         var employee = new RequestEmployee();
         employee.setEmployeeId(1L);
         employee.setActualName("W5 concurrent IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        employee.setAdministratorFlag(true);
         SmartRequestUtil.setRequestUser(employee);
+    }
+
+    @BeforeEach
+    void useUnrestrictedOperator() {
+        setThreadOperator();
     }
 
     private record Outcome(Throwable error) {

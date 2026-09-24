@@ -1,7 +1,10 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryConversionStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryConversionTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryConversionDao;
@@ -31,25 +34,34 @@ public class InventoryConversionQueryService {
 
     private final InventoryConversionItemDao itemDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
      * 分页查询（不返回明细）。
      */
     public PageResult<InventoryConversionVO> queryPage(InventoryConversionQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryConversionVO> list = conversionDao.queryPage(page, query);
+        List<InventoryConversionVO> list = conversionDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryConversionQueryService::fillDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
     /**
-     * 详情（含明细，按录入顺序）。
+     * 详情（含明细，按录入顺序）；仓库未授权时按无权限回答，不用「不存在」。
      */
     public InventoryConversionVO detail(Long id) {
         InventoryConversionVO vo = conversionDao.detail(id);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_CONVERSION_NOT_FOUND);
+        }
+        if (!dataScopeService.resolve().getWarehouseScope().allows(vo.getWarehouseId())) {
+            throw new ScmDataScopeException();
         }
         fillDesc(vo);
         List<InventoryConversionItemVO> items = itemDao.listByConversionId(id);

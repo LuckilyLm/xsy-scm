@@ -17,8 +17,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 缺口预览的权限交集（Wave 2A 审计修复）。
  *
  * <p>预览返回库存现有量与预留量，因此单靠采购需求查看权就是越权读取余额的旁路。
- * 这里的断言针对**注解形状**：两条权限 + {@code AND}。运行时拦截由底座 Sa-Token
- * 过滤器承担（W6 权限 IT 已验收），业务 Web 测试不复刻框架行为，因此不在此处重测。
+ * 这里的断言针对**注解形状**：两条权限 + {@code AND}。运行时拦截由底座 Sa-Token 过滤器承担，
+ * 按 §31「不复刻框架行为」的口径不在此重测 —— 也说明现状：仓库里**没有**任何用例实际发出过
+ * 无权限请求去验证 403（{@code ScmPurchasePermissionMigrationIT} 只核对代码声明的权限码
+ * 是否存在于 {@code t_menu.api_perms}，那是代码与菜单不脱节的检查，不是运行时拦截）。
  */
 @DisplayName("缺口预览权限交集：采购需求查看权 AND 库存余额查看权")
 class PurchaseDemandSummaryPreviewPermissionTest {

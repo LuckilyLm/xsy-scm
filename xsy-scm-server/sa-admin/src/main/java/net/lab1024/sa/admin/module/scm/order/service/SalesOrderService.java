@@ -1,12 +1,15 @@
 package net.lab1024.sa.admin.module.scm.order.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.order.dao.*;
 import net.lab1024.sa.admin.module.scm.order.manager.*;
+import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
 
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
@@ -26,7 +29,6 @@ import java.util.function.Function;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
 import net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.ResolvedPriceVO;
@@ -42,7 +44,7 @@ public class SalesOrderService {
     private final SalesOrderDao orders;
     private final SalesOrderItemDao items;
     private final OrderAddressSnapshotDao addresses;
-    private final OrderOperationLogDao logs;
+    private final OrderOperationLogRecorder orderLogs;
     private final CustomerService customers;
     private final PriceResolver prices;
     private final ProductSkuOptionDao skus;
@@ -54,7 +56,8 @@ public class SalesOrderService {
      */
     private final InventoryReservationService reservations;
     private final SalesOrderQueryService query;
-    private final ObjectMapper json;
+    /** SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。 */
+    private final ScmDataScopeService scopeService;
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm f, String key) {
@@ -122,6 +125,13 @@ public class SalesOrderService {
     private SalesOrderDetailVO createDraft(SalesOrderAddForm f) {
         OrderValidator.draft(f);
         var customer = customers.requireTradable(f.getCustomerId());
+        // 裁决「P0 基线收口裁决」第 6 条：不能对自己读不到的客户开单。订单负责人取自客户快照，
+        // 只收窄列表等于「看不见但仍然能往别人名下塞单」，行级范围就不成立；因此新建入口按同一范围判定。
+        // 分配权（scm:customer:assign）与全量订单范围同等放行：主管刚把客户指定给某人，
+        // 就该能替他录单，否则「主管建客户 + 指定负责人」这条路会把主管自己挡在门外。
+        if (!scopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
+                && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))
+            throw new ScmDataScopeException();
         validateOriginal(f);
         if (f.getItems().stream().anyMatch(x -> x.getItemId() != null))
             throw new ScmBusinessException(ORDER_ITEM_NOT_OWNED);
@@ -155,8 +165,8 @@ public class SalesOrderService {
             }
         }
         addresses.insert(a);
-        var result = query.detail(o.getId());
-        log(o.getId(), "CREATE", null, null, result);
+        var result = query.detailSnapshot(o.getId());
+        log(o.getId(), ScmOrderOperationTypeEnum.CREATE, null, null, result);
         return result;
     }
 
@@ -174,7 +184,7 @@ public class SalesOrderService {
         var oldAddress = addresses.list(o.getId()).getFirst();
         if (!Objects.equals(oldAddress.getReceiverName(), f.getAddress().getReceiverName()) || !Objects.equals(oldAddress.getReceiverPhone(), f.getAddress().getReceiverPhone()) || !Objects.equals(oldAddress.getAddress(), f.getAddress().getAddress()))
             throw new ScmBusinessException(ORDER_STATE_INVALID);
-        var before = query.detail(o.getId());
+        var before = query.detailSnapshot(o.getId());
         var existing = items.list(o.getId());
         var requested = materialize(f);
         var changes = SalesOrderItemChangeSet.between(existing, requested);
@@ -188,8 +198,8 @@ public class SalesOrderService {
         header(o, f);
         o.setOrderedTotalAmount(total(requested));
         save(o);
-        var result = query.detail(o.getId());
-        log(o.getId(), "UPDATE", null, before, result);
+        var result = query.detailSnapshot(o.getId());
+        log(o.getId(), ScmOrderOperationTypeEnum.UPDATE, null, before, result);
         return result;
     }
 
@@ -206,7 +216,7 @@ public class SalesOrderService {
         var o = lock(orderId);
         version(o.getVersion(), expectedVersion);
         OrderStateMachine.transition(o.getStatus(), "PENDING");
-        var before = query.detail(o.getId());
+        var before = query.detailSnapshot(o.getId());
         var rows = items.list(o.getId());
         var automatic = rows.stream().filter(x -> !x.getManualPriceOverride()).map(SalesOrderItemEntity::getSkuId).toList();
         customers.requireTradable(o.getCustomerId());
@@ -235,8 +245,8 @@ public class SalesOrderService {
         o.setStatus("PENDING");
         o.setSubmittedAt(OffsetDateTime.now());
         save(o);
-        var result = query.detail(o.getId());
-        log(o.getId(), "SUBMIT", null, before, result);
+        var result = query.detailSnapshot(o.getId());
+        log(o.getId(), ScmOrderOperationTypeEnum.SUBMIT, null, before, result);
         return result;
     }
 
@@ -252,15 +262,15 @@ public class SalesOrderService {
         if (!Objects.equals(row.getVersion(), f.getVersion()))
             throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
         OrderValidator.reason(f.getReason(), ORDER_ACTUAL_REASON_REQUIRED);
-        var before = query.detail(o.getId());
+        var before = query.detailSnapshot(o.getId());
         row.setActualQuantity(OrderValidator.decimal(f.getActualQuantity(), true));
         row.setActualQuantitySource("MANUAL");
         row.setActualQuantityReason(f.getReason().trim());
         saveItem(row);
         // Advance the aggregate version too: stale confirm forms must refresh after any item change.
         save(o);
-        var result = query.detail(o.getId());
-        log(o.getId(), "ACTUAL_QUANTITY", f.getReason(), before, result);
+        var result = query.detailSnapshot(o.getId());
+        log(o.getId(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY, f.getReason(), before, result);
         idempotency.complete(claim, "SALES_ORDER", o.getId(), result);
         return result;
     }
@@ -278,7 +288,7 @@ public class SalesOrderService {
         var o = lock(orderId);
         version(o.getVersion(), expectedVersion);
         OrderStateMachine.transition(o.getStatus(), "CONFIRMED");
-        var before = query.detail(o.getId());
+        var before = query.detailSnapshot(o.getId());
         var rows = items.list(o.getId());
         for (var row : rows) {
             if (row.getActualQuantity() == null || row.getActualQuantity().signum() <= 0)
@@ -291,8 +301,8 @@ public class SalesOrderService {
         o.setConfirmedAt(OffsetDateTime.now());
         save(o);
         // 订单确认不自动预留库存；当前主链是先接单、再采购和收货，预留由后续显式动作完成。
-        var result = query.detail(o.getId());
-        log(o.getId(), "CONFIRM", null, before, result);
+        var result = query.detailSnapshot(o.getId());
+        log(o.getId(), ScmOrderOperationTypeEnum.CONFIRM, null, before, result);
         return result;
     }
 
@@ -304,7 +314,7 @@ public class SalesOrderService {
         version(o.getVersion(), f.getVersion());
         OrderStateMachine.transition(o.getStatus(), "CANCELLED");
         OrderValidator.reason(f.getReason(), ORDER_CANCEL_REASON_REQUIRED);
-        var before = query.detail(o.getId());
+        var before = query.detailSnapshot(o.getId());
         o.setStatus("CANCELLED");
         o.setCancelReason(f.getReason().trim());
         o.setCancelledAt(OffsetDateTime.now());
@@ -312,8 +322,8 @@ public class SalesOrderService {
         // 取消时释放该订单的预留（若存在）。当前没有触发点会创建预留，因此通常是空操作；
         // 保留这行是为了让「预留一旦启用」时取消路径自动正确，不需要再改这里。
         reservations.releaseBySalesOrder(o.getId());
-        var result = query.detail(o.getId());
-        log(o.getId(), "CANCEL", f.getReason(), before, result);
+        var result = query.detailSnapshot(o.getId());
+        log(o.getId(), ScmOrderOperationTypeEnum.CANCEL, f.getReason(), before, result);
         idempotency.complete(claim, "SALES_ORDER", o.getId(), result);
         return result;
     }
@@ -324,11 +334,11 @@ public class SalesOrderService {
         if (o == null) return;
         version(o.getVersion(), f.getVersion());
         if (!"DRAFT".equals(o.getStatus())) throw new ScmBusinessException(ORDER_DELETE_STATE_INVALID);
-        var before = query.detail(o.getId());
+        var before = query.detailSnapshot(o.getId());
         for (var row : items.list(o.getId())) removeItem(row);
         if (orders.softDelete(o.getId(), o.getVersion(), ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        log(o.getId(), "UPDATE", "删除草稿", before, Map.of("deleted", true, "version", o.getVersion() + 1));
+        log(o.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除草稿", before, Map.of("deleted", true, "version", o.getVersion() + 1));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -361,7 +371,7 @@ public class SalesOrderService {
                         .map(r -> new InventoryReservationService.OrderReserveLine(r.getId(), r.getSkuId(), r.getActualQuantity()))
                         .toList(),
                 OffsetDateTime.now());
-        log(o.getId(), "RESERVE_STOCK", null, null, Map.of("reservedLines", rows.size()));
+        log(o.getId(), ScmOrderOperationTypeEnum.RESERVE_STOCK, null, null, Map.of("reservedLines", rows.size()));
     }
 
     public SalesOrderEntity lock(Long id) {
@@ -440,17 +450,7 @@ public class SalesOrderService {
             throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
     }
 
-    private void log(Long id, String operation, String reason, Object before, Object after) {
-        var l = new OrderOperationLogEntity();
-        l.setOrderId(id);
-        l.setOperationType(operation);
-        l.setOperator(ScmOperator.current());
-        l.setCreatedBy(l.getOperator());
-        l.setReason(reason);
-        l.setBeforeData(before == null ? null : json.convertValue(before, new TypeReference<Map<String, Object>>() {
-        }));
-        l.setAfterData(json.convertValue(after, new TypeReference<Map<String, Object>>() {
-        }));
-        logs.insert(l);
+    private void log(Long id, ScmOrderOperationTypeEnum operation, String reason, Object before, Object after) {
+        orderLogs.record(id, operation, reason, before, after);
     }
 }

@@ -196,6 +196,58 @@
     "49": {
       "file": "V49__scm_product_image_type_gallery.sql",
       "checksum": -525245484
+    },
+    "50": {
+      "file": "V50__scm_report_center_permissions.sql",
+      "checksum": -940121147
+    },
+    "51": {
+      "file": "V51__scm_report_date_axis_indexes.sql",
+      "checksum": -1800548614
+    },
+    "52": {
+      "file": "V52__sa_file_relation.sql",
+      "checksum": 1622780845
+    },
+    "53": {
+      "file": "V53__sa_file_scratch_cleanup_job.sql",
+      "checksum": -1993282381
+    },
+    "54": {
+      "file": "V54__scm_data_scope_schema.sql",
+      "checksum": -1116270531
+    },
+    "55": {
+      "file": "V55__scm_data_scope_permissions.sql",
+      "checksum": 974924331
+    },
+    "56": {
+      "file": "V56__scm_business_roles.sql",
+      "checksum": 539418972
+    },
+    "57": {
+      "file": "V57__scm_business_role_matrix_delta.sql",
+      "checksum": 164332728
+    },
+    "58": {
+      "file": "V58__scm_product_image_public_file_key.sql",
+      "checksum": 1958516408
+    },
+    "59": {
+      "file": "V59__scm_order_log_return_refund_type.sql",
+      "checksum": -2121272703
+    },
+    "60": {
+      "file": "V60__scm_sorting_task.sql",
+      "checksum": -2002128454
+    },
+    "61": {
+      "file": "V61__scm_sorting_menus_permissions.sql",
+      "checksum": 468570149
+    },
+    "62": {
+      "file": "V62__scm_sorting_roles.sql",
+      "checksum": -1991995476
     }
   }
 }

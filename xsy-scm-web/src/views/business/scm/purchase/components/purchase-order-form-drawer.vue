@@ -35,8 +35,10 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="采购员" name="purchaserId">
-              <EmployeeSelect v-model:value="purchaserValue"/>
+            <a-form-item label="采购员">
+              <a-input v-if="form.id" :value="form.purchaserName || '未分配'" disabled/>
+              <EmployeeSelect v-else v-model:value="purchaserValue" :disabled="!canAssign"/>
+              <div class="ant-form-item-extra">{{ purchaserHint }}</div>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -79,6 +81,7 @@ import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import type {Id, Order} from '../purchase-types';
 import {newOrder, payload, validateOrder} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {hasPermission} from '../../common/scm-permission';
 import ItemTable from './purchase-order-item-editable-table.vue';
 
 const emit = defineEmits<{ saved: [] }>();
@@ -113,6 +116,20 @@ const purchaserValue = computed<number | undefined>({
   set: (value) => {
     form.value.purchaserId = value ?? null;
   },
+});
+
+/** 分配/改派权：与服务端 PurchaseOwnerResolver 同一口径 —— 无此权者新建一律落自己名下。 */
+const canAssign = computed(() => hasPermission('scm:purchase:assign'));
+
+/** 采购员字段的形态说明：编辑只读（/update 永不动归属）、无分配权自动归属自己、有分配权可指定或留空。 */
+const purchaserHint = computed(() => {
+  if (form.value.id) {
+    return '归属变更请使用列表中的「改派采购员」；编辑保存不会改动采购员。';
+  }
+  if (!canAssign.value) {
+    return '无分配权限，新建后将自动归属当前账号。';
+  }
+  return '留空表示暂不分配（未分配单据仅持分配权或全量范围者可见）。';
 });
 
 async function loadWarehouses() {

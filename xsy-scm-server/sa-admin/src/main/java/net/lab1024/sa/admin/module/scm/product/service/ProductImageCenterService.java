@@ -9,8 +9,10 @@ import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageCenterFor
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImageCenterVO;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductImageVO;
+import net.lab1024.sa.admin.module.scm.product.manager.ProductAggregateValidator;
 import net.lab1024.sa.admin.module.scm.product.manager.ProductImageChangeSet;
 import net.lab1024.sa.admin.module.scm.product.manager.ProductImageSyncManager;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.beans.BeanUtils;
@@ -34,12 +36,14 @@ import static net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode.
 public class ProductImageCenterService {
     private final ProductSpuDao spus;
     private final ProductImageSyncManager syncManager;
+    private final ProductAggregateValidator validator;
     private final FileService files;
 
     public ProductImageCenterVO query(Long spuId) {
         ProductSpuEntity spu = requireSpu(spuId);
         List<ProductImageEntity> rows = syncManager.existing(spuId);
-        Map<String, String> urls = files.getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList())
+        Map<String, String> urls = files.getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+                        SmartRequestUtil.getRequestUser())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
         List<ProductImageVO> images = rows.stream().map(i -> {
             ProductImageVO vo = new ProductImageVO();
@@ -63,16 +67,29 @@ public class ProductImageCenterService {
         for (var entry : bySpu.entrySet()) {
             Long spuId = entry.getKey();
             requireSpu(spuId);
-            List<ProductImageForm> requested = formsOf(spuId);
-            for (var item : entry.getValue()) {
-                ProductImageForm add = new ProductImageForm();
-                add.setFileKey(item.getFileKey());
-                add.setPrimaryFlag(Boolean.TRUE.equals(item.getPrimaryFlag()));
-                add.setSortOrder(item.getSortOrder() == null ? 0 : item.getSortOrder());
-                requested.add(add);
-            }
-            syncManager.sync(spuId, ProductImageChangeSet.between(syncManager.existing(spuId), requested));
+            syncManager.sync(spuId, ProductImageChangeSet.between(syncManager.existing(spuId),
+                    requestedWithBinds(spuId, entry.getValue())));
         }
+    }
+
+    /**
+     * 换绑前按 SPU 汇总「现有 + 本次新增」的完整图片集合再过一遍校验。
+     *
+     * <p>{@link ProductImageSyncManager#sync} 只保证 public/image/ 前缀与文件存在性；数量上限、
+     * 主图至多一张与 fileKey 去重原先只在 {@code validateSpu} 里，而图片中心不经那条路径，
+     * 两张主图会直接顶到 V49 唯一索引上抛出未捕获的 {@code DuplicateKeyException}（500）。
+     */
+    private List<ProductImageForm> requestedWithBinds(Long spuId, List<ProductImageCenterForms.BindItem> binds) {
+        List<ProductImageForm> requested = formsOf(spuId);
+        for (var item : binds) {
+            ProductImageForm add = new ProductImageForm();
+            add.setFileKey(item.getFileKey());
+            add.setPrimaryFlag(Boolean.TRUE.equals(item.getPrimaryFlag()));
+            add.setSortOrder(item.getSortOrder() == null ? 0 : item.getSortOrder());
+            requested.add(add);
+        }
+        validator.validateImages(requested);
+        return requested;
     }
 
     @Transactional(rollbackFor = Exception.class)

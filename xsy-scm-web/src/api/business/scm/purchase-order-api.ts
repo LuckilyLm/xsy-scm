@@ -17,6 +17,7 @@ import type {
     OrderExportPayload,
     OrderPayload,
     OrderQuery,
+    OrderReassignPayload,
     OrderShortClosePayload,
     OrderVersionPayload,
 } from '/@/views/business/scm/purchase/purchase-types';
@@ -63,6 +64,12 @@ export const purchaseOrderApi = {
     create: (data: OrderPayload) => purchaseCommand<Order>('/scm/purchase/create', data),
     update: (data: OrderPayload) =>
         postRequest('/scm/purchase/update', data) as unknown as Promise<ScmResponse<Order>>,
+    /**
+     * 改派采购归属（{@code scm:purchase:assign}）：独立端点、独立权限，带乐观锁 version。
+     * `/update` 永不改归属，改派只有这一条路；不接幂等头（与 `/update` 同一取向，重复提交由 id+version 挡）。
+     */
+    reassign: (data: OrderReassignPayload) =>
+        postRequest('/scm/purchase/reassign', data) as unknown as Promise<ScmResponse<Order>>,
     submit: (data: OrderVersionPayload) => purchaseCommand<Order>('/scm/purchase/submit', data),
     cancel: (data: OrderCancelPayload) => purchaseCommand<Order>('/scm/purchase/cancel', data),
     shortClose: (data: OrderShortClosePayload) =>

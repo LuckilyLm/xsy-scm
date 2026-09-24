@@ -71,7 +71,10 @@ W4   Sales Order                           COMPLETE
 W5   Purchase                              COMPLETE
 W5.5 SmartAdmin Native Feature Parity      COMPLETE
 F0   Object Storage Activation             COMPLETE
+P0   Baseline closure: FA-1..FA-3 + formal  COMPLETE (2026-09-24); F0-DEBT-01 closed,
+     non-admin roles + explicit SCM data scope   object-storage confidentiality proven on MinIO
 W6-1 Inventory (balance/movement/inbound)  BACKEND + BROWSER VERIFIED
+P1   Sorting management (V60-V62)          BACKEND + IT VERIFIED (browser E2E: see docs/progress.md)
 W6-2 Mini Program                          NOT STARTED
 ```
 
@@ -105,14 +108,16 @@ failing the whole VO — and fails closed (empty list) when there is no authenti
 *either* injected dependency (`fileService` / `fileAccessGuard`) is unwired. No fallback branch may
 echo the raw `value`: that would still disclose a private attachment's key and existence. So business
 VO fields (e.g. `FeedbackVO`, `EnterpriseVO`) no longer hand back URLs
-for attachments the caller may not read. This is a targeted mitigation, not the confirmed target
-model, which remains a
-**`scm_file_relation` table** (rights to the business object ⇒ rights to its files; upload to
-scratch, bind to create relation rows). Before any non-administrator business role is introduced,
-OA enterprise licences and similar COMMON private assets must move to business-permission +
-ownership/relation + FileService reads. Note that local storage mode maps `/upload/**` statically
-with no guard, so "private" is not confidential locally; permission behaviour must be verified in
-object-storage mode. Plan: [`docs/plan/attachment-asset-grading-and-file-access-plan.md`](./docs/plan/attachment-asset-grading-and-file-access-plan.md);
+for attachments the caller may not read. The target model it was mitigating toward has landed:
+**`t_file_relation` in the generic `support/file` layer** (rights to the business object ⇒ rights to
+its files; upload to `private/common/scratch/`, bind to create relation rows), with FA-1 making
+`FileService` the only server-side URL resolver and FA-3 moving every live product image to
+`public/image/` under a database CHECK. Non-administrator business roles therefore exist on top of
+closed gates rather than on top of directory-prefix allowances. Note that local storage mode maps
+`/upload/**` statically with no guard, so "private" is not confidential locally; permission
+behaviour must be verified in object-storage mode (that evidence is on file since 2026-09-24:
+`F0FileStorageCloudIT` + `e2e/f0-file-storage.spec.ts` run against MinIO).
+Plan: [`docs/plan/attachment-asset-grading-and-file-access-plan.md`](./docs/plan/attachment-asset-grading-and-file-access-plan.md);
 decision rationale: [`docs/decisions.md`](./docs/decisions.md).
 W6-1 = Inventory phase 1 (**BACKEND + BROWSER VERIFIED**) — `inventory_balance` +
 `inventory_movement` (append-only ledger), `DIRECT` confirmation or `WAREHOUSE_CONFIRM` putaway →
@@ -139,6 +144,104 @@ touched.
 > 完整成本核算、分拣、配送、溯源）**现已全部重新纳入范围**，归属见
 > [`docs/requirements/2026-09-19-需求覆盖与待办清单.md`](./docs/requirements/2026-09-19-需求覆盖与待办清单.md)。
 > 推进原则：**先搭主线功能的后台模块，小程序（W6-2）排在最后**。
+Finance R0 = 报表中心只读地基 (**BACKEND IT + FRONTEND + BROWSER E2E VERIFIED**, 2026-09-23) —
+`module.scm.report`：五张只读分析页、41 个只读端点、11 个 Excel 导出，加 V50 菜单权限 / V51 日期轴索引。
+**Zero new financial fact tables**: no receivable / payable / payment / voucher / report_snapshot, and no write
+path or order state machine was touched. Naming is a hard boundary: 已确认订单金额
+(`CONFIRMED + confirmed_at + settlement_*`) is never called 营业收入; 收货确认 ≠ 库存入账; 销售出库成本
+is never attributed to an order; quantities never sum across units; 历史期初 / 期末成本 is not displayed,
+because movements store the per-movement `unit_cost` rather than the post-change `avg_cost`. Cost columns
+need the separate `scm:report:cost:query` and are masked to `null` (rendered `—`), never to `0`.
+Functional permissions are verified. As of P0 (2026-09-24) formal non-administrator business
+roles and an explicit SCM data scope exist, so report visibility is now range-limited per
+employee; **formal per-role data scope is verified only for the roles seeded in V56 + V57** (plan §33).
+
+P0 基线收口 (**COMPLETE — FA-1 / FA-2 / FA-2b / FA-3 + formal roles and explicit data scope landed,
+2026-09-24**; whole-tree gates recorded at backend 1018 tests / 0 failures / 0 errors / 5 cloud-gated
+skips and Playwright 121 passed / 0 failed / 8 cloud-only skips, with those 8 + 5 executed separately
+against a real MinIO) —
+two independent gates were added before any non-administrator business role could exist:
+
+1. **Attachment read side is closed.** `FileService` is the only server-side URL resolver:
+   `getFileList(keys, requestUser)` filters every key through `FileAccessGuard`,
+   `getFileList(keys)` without an identity resolves `public/` only, and write paths use the new
+   `getFileMetadata(keys)` (existence, never URLs). Object rights live in the generic
+   `t_file_relation (file_key, biz_type, biz_id)` table — in the `support/file` layer, so OA and
+   SCM share it and OA never depends on `module/scm`. Business visibility is answered by a
+   `biz_type` policy registry in sa-admin (never a permission string stored in the database).
+   Unbound uploads land in `private/common/scratch/` with a 7-day / 100-per-user cap and a SmartJob
+   cleanup that re-confirms "no relation row **and** no direct business-column reference"
+   before deleting anything. `FA-3` (V58) moved legacy private product-image keys to
+   `public/image/` and pushed the rule into the database:
+   `ck_product_image_public_file_key` allows only a `public/` key on a live `product_image` row
+   (soft-deleted rows keep their pre-move key as history). The Java transitional allowance —
+   "reuse the key this row already had" — was deleted with it, so there is exactly one prefix rule
+   and no bypass branch left. Measured on this environment: 0 live non-public product-image rows
+   existed in the dev DB and in every one-shot IT database, so the move itself was a no-op;
+   `ScmProductImageKeyMigrationPgIT` therefore reconstructs the pre-move state and replays the
+   same SQL section to prove the rewrite, the `t_file` sync, the relation reclaim and re-entrancy.
+2. **SCM data scope is explicit, central and fail-closed.** `ScmDataScopeService` resolves the
+   caller into `ScmDataScopeContext` (warehouse / customer-seller / order-seller / purchaser /
+   driver dimensions) and Services pass it down to the Mappers. SmartAdmin `@DataScope` is **not**
+   used in SCM and must not be: it is fail-open on empty id lists and `ALL`, its `ME` strategy
+   hard-codes `create_user_id` (every SCM table carries only `created_by VARCHAR(64)`), and its
+   string-spliced SQL rewrite is unsafe on the CTE statements in `ReportDao.xml` /
+   `DeliveryQueryDao.xml`. Rules that must not be regressed: **no "null means everything"**,
+   a caller-supplied `warehouseId` / `sellerId` may only narrow the authorized set, "self" is the
+   business owner column (`customer.seller_id`, `sales_order.seller_id`,
+   `purchase_order.purchaser_id`, `delivery_driver.employee_id`) and never `created_by`,
+   warehouse access comes only from `employee_warehouse_scope` rows, widening a dimension is an
+   explicit `*:scope:all:query` grant (so 财务 is not "all data by being 财务"), pages and Excel
+   exports share one range, and cost/amount columns mask to `null` (rendered `—`) — never `0`.
+   Both read **and** write paths check it (`ScmWarehouseScopeGuard`; transfers need `from` to
+   ship and `to` to receive). `administrator_flag` still bypasses the scope as break-glass, so
+   **an administrator passing a permission check is not evidence** — role acceptance uses
+   `administrator_flag=false` accounts.
+   Three consequences of the second adjudication round that must not be re-loosened:
+   **dimensions intersect, they never substitute** — `receipt.confirm` in `DIRECT` mode needs the
+   order inside the caller's purchaser scope **and** the receipt's `warehouse_id` inside the
+   authorized warehouses (purchase rights prove "this order is yours", never "you may write stock
+   into any warehouse"), and the same intersection applies to purchase-order commands, receipt
+   create/update/delete and demand allocation on both ends; **the warehouse selector is scoped too** —
+   `/scm/warehouse/list`, `/query` and `/detail` return only authorized warehouses so a picker can't
+   leak another warehouse's id/name/address, while a historical document keeps showing its own
+   `warehouse_name_snapshot` (a recorded fact, not a read grant); **the data screen is scoped** —
+   every panel narrows by its own fact dimension (sales by seller, inventory/geo by warehouse,
+   purchase by purchaser ∩ warehouse), and 供应商 / SKU 主档 have no dimension to narrow on, so they
+   stay team-shared by decision rather than by omission.
+
+P1 分拣管理 (**backend + PostgreSQL IT verified, 2026-09-24**; V60–V62, module
+`net.lab1024.sa.admin.module.scm.sorting`; rulings recorded in
+[`docs/decisions.md`](./docs/decisions.md)「P1 分拣管理裁决」第 1–22 条) —
+sorting is the **producer of the shipped-quantity fact and nothing else**. Invariants that must not
+be regressed: sorting never writes back `sales_order_item.actual_quantity` / `settlement_*` (a
+short-pick or an out-of-stock line leaves the order untouched — the difference lives only in
+`sorting_task_item`), never writes `inventory_balance` / `inventory_movement`, never creates an
+outbound document and never moves the reservation trigger (`SALES_OUT` belongs to Delivery L3/P2).
+`planned_quantity_snapshot` is frozen from `actual_quantity` at task-creation time — every valid line
+of a `CONFIRMED` order necessarily has it > 0 (standard lines are filled at submit, non-standard
+lines must be weighed before confirm), so the snapshot is `NOT NULL` and `> 0` in the database.
+One `sales_order_item` may be occupied by at most one **active** task, enforced by partial unique
+index `uk_sorting_task_item_active_line` on `sorting_task_item.occupation_status = 'ACTIVE'`: the
+occupation flag lives on the line (the index cannot see the parent's status), so **cancelling a task
+must flip all of its lines to `RELEASED` in the same transaction** — any new task-status transition
+entry point has to maintain that, or the index silently diverges from the task state. Task states are
+only `PENDING / SORTING / COMPLETED / CANCELLED` (no `RELEASED` task state); `COMPLETED` requires
+every active line to carry a result, and only `REOPEN` (own permission + mandatory reason + version)
+gets a completed task back to work — reopening **keeps** the recorded quantities and reasons, because
+delivery eligibility is evaluated on *task status*, not on line results
+(`DeliveryEligibilityPolicy` = `CONFIRMED` ∧ every valid line covered by a `COMPLETED` task);
+reopened orders simply drop out of the candidate pool, and historical `ACTIVE` route assignments are
+never auto-released. Sorting scope is **warehouse ∈ authorized ∧ assignee = self** (intersect, never
+substitute); cross-assignee visibility is implied by `scm:sorting:task:assign` — there is deliberately
+**no** `scm:sorting:scope:all:query` and no sixth scope dimension. Print = preview + counted
+registration (count/time/operator only, never a version bump, never a state change); weight is
+manual-only; no gross/tare/net, no unit conversion, no substitution, no tolerance thresholds,
+no automatic re-settlement. One documented exception to the P0 "option lists must be scoped" rule:
+`GET /scm/sorting/candidate-lines` is a sorting **queue** view gated by the create-task permission and
+not narrowed by `seller_id` (it returns no prices or amounts) — see ruling 22 before reusing that
+pattern anywhere else.
+
 W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
 [`docs/progress.md`](./docs/progress.md) are adjudicated.
 
@@ -221,6 +324,39 @@ V48  V48__scm_stocktake_import_permission.sql      Wave 6 data-only，盘点导�
 V49  V49__scm_product_image_type_gallery.sql       product PCO-2 图片类型语义收口（审计 §7.1）：
                                                    image_type 改为 GALLERY/DETAIL，主图唯一事实
                                                    回到 is_primary；V44 已应用不可改，故新增一步
+V50  V50__scm_report_center_permissions.sql         report Finance R0 data-only，报表中心菜单与权限
+                                                   （1200–1216，含独立的 scm:report:cost:query，仅授 SUPER_ADMIN）
+V51  V51__scm_report_date_axis_indexes.sql          report 报表日期轴部分索引：sales_order.confirmed_at、
+                                                   order_refund.completed_at、purchase_receipt.confirmed_at
+V52  V52__sa_file_relation.sql                      f0   FA-2：t_file_relation 对象级附件授权 +
+                                                   五段存量关系回填（商品图仅非公开 key 建关系）
+V53  V53__sa_file_scratch_cleanup_job.sql           f0   FA-2b data-only，暂存回收 SmartJob 种子
+                                                   （cron 0 30 3 * * ?，保留 7 天）
+V54  V54__scm_data_scope_schema.sql                 p0   employee_warehouse_scope（一人一仓一行）+
+                                                   delivery_driver.employee_id 绑定与「未删除唯一」索引
+                                                   （裁决：「活动司机」= deleted=false，停用不解绑）
+V55  V55__scm_data_scope_permissions.sql            p0   data-only，分配权 / *:scope:all:query 范围放宽 /
+                                                   仓库授权维护 / 配送金额可见（菜单 1301–1342）
+V56  V56__scm_business_roles.sql                    p0   data-only，九个正式非管理员业务角色与授权矩阵
+                                                   （按 role_code 种，不硬编码 role_id；分拣按裁决留给 P1）
+V57  V57__scm_business_role_matrix_delta.sql         p0   data-only，角色矩阵裁决增量：销售主管补退货
+                                                   批准/驳回与退款完成、财务补全部仓库范围（1331）
+V58  V58__scm_product_image_public_file_key.sql      f0   FA-3：存量私有商品图 key 搬 public/image/
+                                                   （t_file + product_image + 收回关系行，可重入）
+                                                   + ck_product_image_public_file_key CHECK
+V59  V59__scm_order_log_return_refund_type.sql        order 订单操作日志白名单加 RETURN / REFUND
+                                                   （远端合并带入，原编号 V50 与上游冲突后改号）
+V60  V60__scm_sorting_task.sql                        p1   分拣数据地基：sorting_task +
+                                                   sorting_task_item（计划量冻结快照、结果与量成对
+                                                   CHECK、差异必填原因）、明细行占用位
+                                                   （ACTIVE/RELEASED）上的部分唯一索引
+                                                   uk_sorting_task_item_active_line、
+                                                   sorting_task_no_seq 全局非重置序列（SRT 前缀）
+V61  V61__scm_sorting_menus_permissions.sql           p1   data-only，分拣菜单与 9 个权限点
+                                                   （1400–1421：query/add/assign/item:update/
+                                                   complete/cancel/reopen/print/summary:query）
+V62  V62__scm_sorting_roles.sql                       p1   data-only，正式角色 SCM_SORTER 与
+                                                   队列管理权授予 SCM_STOREKEEPER_LEAD（按 role_code 种）
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

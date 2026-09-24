@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.base.module.support.file.dao.FileRelationDao">
+
+    <select id="listActiveByFileKeys" resultType="net.lab1024.sa.base.module.support.file.domain.entity.FileRelationEntity">
+        SELECT relation_id, file_key, biz_type, biz_id, deleted_flag, create_time, update_time
+        FROM t_file_relation
+        WHERE deleted_flag = FALSE
+          AND file_key IN
+        <foreach collection="fileKeys" item="key" open="(" separator="," close=")">#{key}</foreach>
+    </select>
+
+    <!--
+      幂等绑定：同一 (key, 类型, 对象) 重复保存不报错也不产生第二行。
+      冲突目标逐字匹配部分唯一索引 uk_t_file_relation_active（含 WHERE 谓词），
+      否则 PostgreSQL 会报 "there is no unique or exclusion constraint matching"。
+    -->
+    <insert id="insertIgnoreBatch">
+        INSERT INTO t_file_relation (file_key, biz_type, biz_id)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.fileKey}, #{item.bizType}, #{item.bizId})
+        </foreach>
+        ON CONFLICT (file_key, biz_type, biz_id) WHERE deleted_flag = FALSE DO NOTHING
+    </insert>
+
+    <update id="softDeleteExcluding">
+        UPDATE t_file_relation
+        SET deleted_flag = TRUE,
+            update_time  = CURRENT_TIMESTAMP
+        WHERE deleted_flag = FALSE
+          AND biz_type = #{bizType}
+          AND biz_id = #{bizId}
+        <if test="keepFileKeys != null and keepFileKeys.size() > 0">
+            AND file_key NOT IN
+            <foreach collection="keepFileKeys" item="key" open="(" separator="," close=")">#{key}</foreach>
+        </if>
+    </update>
+
+</mapper>

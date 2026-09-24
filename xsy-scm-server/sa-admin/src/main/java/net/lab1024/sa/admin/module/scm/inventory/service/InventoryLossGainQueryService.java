@@ -1,7 +1,10 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryLossGainStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryLossGainTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryLossGainDao;
@@ -32,25 +35,34 @@ public class InventoryLossGainQueryService {
 
     private final InventoryLossGainItemDao itemDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
      * 分页查询（不返回明细，明细走 {@link #detail}）。
      */
     public PageResult<InventoryLossGainVO> queryPage(InventoryLossGainQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryLossGainVO> list = lossGainDao.queryPage(page, query);
+        List<InventoryLossGainVO> list = lossGainDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryLossGainQueryService::fillDescs);
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
     /**
-     * 详情（含明细，按录入顺序）。
+     * 详情（含明细，按录入顺序）；仓库未授权时按无权限回答，不用「不存在」。
      */
     public InventoryLossGainVO detail(Long id) {
         InventoryLossGainVO vo = lossGainDao.detail(id);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_NOT_FOUND);
+        }
+        if (!dataScopeService.resolve().getWarehouseScope().allows(vo.getWarehouseId())) {
+            throw new ScmDataScopeException();
         }
         fillDescs(vo);
         List<InventoryLossGainItemVO> items = itemDao.listByLossGainId(id);

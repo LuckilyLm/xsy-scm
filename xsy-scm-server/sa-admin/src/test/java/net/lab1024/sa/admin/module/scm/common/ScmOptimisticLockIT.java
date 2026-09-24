@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * G1 gate: real PostgreSQL + production interceptor; no permanent fixture table.
  */
-class ScmOptimisticLockTest {
+class ScmOptimisticLockIT {
     @Data
     @TableName("w1_version_probe")
     public static class Probe {

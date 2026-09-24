@@ -45,6 +45,15 @@
         FROM customer c LEFT JOIN customer_type t ON t.id=c.customer_type_id
         LEFT JOIN customer_sku_visibility v ON v.customer_id=c.id AND v.deleted=FALSE
         LEFT JOIN product_sku s ON s.id=v.sku_id LEFT JOIN product_spu p ON p.id=s.spu_id WHERE c.deleted=FALSE
+        <!-- 反向可见性列表的主体是客户，因此按客户归属收窄：读不到客户的人也不该看到它的商品白名单。
+             谓词落在驱动表 c 上，后面的 LEFT JOIN 不因范围条件放大或丢行。 -->
+        <if test="scope != null and scope.all == false">
+            AND c.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.customerId != null">AND c.id=#{query.customerId}</if>
         <if test="query.skuId != null">AND v.sku_id=#{query.skuId}</if>
         <if test="query.visibilityPolicy != null">AND c.visibility_policy=#{query.visibilityPolicy}</if>

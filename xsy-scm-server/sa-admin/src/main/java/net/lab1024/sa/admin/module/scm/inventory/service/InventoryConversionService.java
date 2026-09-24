@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmEnableStatusEnum;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryConversionStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryConversionTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryConversionDao;
@@ -74,6 +75,8 @@ public class InventoryConversionService {
 
     private final WarehouseService warehouseService;
 
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
     /**
      * 新建规格转换单（**创建即待审核**）。
      *
@@ -86,6 +89,7 @@ public class InventoryConversionService {
     public Long create(InventoryConversionAddForm form) {
         requireForm(form);
         String operator = ScmOperator.current();
+        warehouseScopeGuard.require(form.getWarehouseId());
         warehouseService.require(form.getWarehouseId());
 
         InventoryConversionEntity entity = new InventoryConversionEntity();
@@ -119,6 +123,8 @@ public class InventoryConversionService {
         warehouseService.require(form.getWarehouseId());
 
         InventoryConversionEntity locked = lockAndRequire(id);
+        // 行上的旧仓与表单的新仓都要授权，否则可以把一张待审核转换单挪出授权范围
+        warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
 
         if (conversionDao.updatePending(id, form.getWarehouseId(), form.getConvertType(),
@@ -141,6 +147,8 @@ public class InventoryConversionService {
         OffsetDateTime now = OffsetDateTime.now();
 
         InventoryConversionEntity locked = lockAndRequire(id);
+        // 两条腿都落在这一行的仓库上：CONVERT_OUT / CONVERT_IN 任一腿都不该写进未授权仓
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
         requireVersion(locked, form);
         requireEnabled(locked.getWarehouseId());
@@ -209,6 +217,7 @@ public class InventoryConversionService {
         }
 
         InventoryConversionEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
         requireVersion(locked, form);
 
@@ -225,6 +234,7 @@ public class InventoryConversionService {
     public void delete(Long id) {
         String operator = ScmOperator.current();
         InventoryConversionEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
         itemDao.deleteByConversionId(id, operator);
         if (conversionDao.deleteById(id) != 1) {

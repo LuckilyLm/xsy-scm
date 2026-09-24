@@ -7,10 +7,12 @@ import net.lab1024.sa.admin.module.scm.product.dao.ProductImageDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductTagDao;
+import net.lab1024.sa.admin.module.scm.product.dao.ProductUomDao;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductCategoryEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSkuEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductTagEntity;
+import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductUomEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSkuForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuAddForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuUpdateForm;
@@ -42,12 +44,22 @@ import static org.mockito.Mockito.*;
 class ProductImportServiceTest {
     private final ProductCategoryDao categories = mock(ProductCategoryDao.class);
     private final ProductTagDao tags = mock(ProductTagDao.class);
+    private final ProductUomDao units = mock(ProductUomDao.class);
     private final ProductSpuDao spus = mock(ProductSpuDao.class);
     private final ProductSkuDao skus = mock(ProductSkuDao.class);
     private final ProductImageDao images = mock(ProductImageDao.class);
     private final ProductTagService productTags = mock(ProductTagService.class);
     private final ProductImportWriteService writer = mock(ProductImportWriteService.class);
-    private final ProductImportService service = new ProductImportService(categories, tags, spus, skus, images, productTags, writer);
+    private final ProductImportService service = new ProductImportService(categories, tags, units, spus, skus, images, productTags, writer);
+
+    {
+        // CREATE 逐行会预判单位「在字典且 ENABLED」（与 ProductUomService.assertUsable 同判据），
+        // 夹具里用到的计量单位都得存在，否则每条用例都会先撞上 UOM_NOT_USABLE。
+        var kg = new ProductUomEntity();
+        kg.setName("份");
+        kg.setStatus("ENABLED");
+        when(units.selectList(any())).thenReturn(java.util.List.of(kg));
+    }
 
     private static final String[] HEADERS = {"模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码",
             "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称",
@@ -91,6 +103,7 @@ class ProductImportServiceTest {
         var tag = new ProductTagEntity();
         tag.setId(200L);
         tag.setTagCode("HOT");
+        tag.setStatus("ENABLED");
         when(tags.selectList(any())).thenReturn(List.of(tag));
         when(spus.selectList(any())).thenReturn(List.of(currentSpu()));
         when(skus.selectList(any())).thenReturn(List.of(currentSku()));
@@ -206,6 +219,57 @@ class ProductImportServiceTest {
             assertThat(error.getColumn()).isEqualTo("分类编码");
             assertThat(error.getCode()).isEqualTo("CATEGORY_LEVEL_INVALID");
         });
+        verifyNoInteractions(writer);
+    }
+
+    /**
+     * 单位与标签的「在字典 + 启用」必须在逐行阶段指到单元格。
+     *
+     * <p>写入口 {@code ProductSpuService.add} 走 {@code uom.assertUsable} 与
+     * {@code tags.assertUsable}，此前逐行只查单位的长度与标签的存在性：填了停用单位/标签，
+     * 要等整批写库抛 40027/40028 才知道是哪一行 —— 与 071bcc7 修掉的分类层级缺口同型。
+     */
+    @Test
+    void unknownSaleUnitIsReportedPerRowBeforeWrite() throws Exception {
+        // 列下标 15 是 CREATE 模板里的「销售单位」；常量 SALE_UNIT=19 是更新模板（前置 5 个定位键）的偏移
+        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(15).setCellValue("吨")),
+                ImportMode.CREATE);
+        assertThat(result.getErrors()).singleElement().satisfies(error -> {
+            assertThat(error.getRowNumber()).isEqualTo(3);
+            assertThat(error.getColumn()).isEqualTo("销售单位");
+            assertThat(error.getCode()).isEqualTo("UOM_NOT_USABLE");
+        });
+        verifyNoInteractions(writer);
+    }
+
+    @Test
+    void disabledTagIsReportedPerRowBeforeWrite() throws Exception {
+        var disabled = new ProductTagEntity();
+        disabled.setId(200L);
+        disabled.setTagCode("HOT");
+        disabled.setStatus("DISABLED");
+        when(tags.selectList(any())).thenReturn(List.of(disabled));
+
+        var result = service.importFile(workbook(b -> {
+        }), ImportMode.CREATE);
+        assertThat(result.getErrors()).singleElement().satisfies(error -> {
+            assertThat(error.getRowNumber()).isEqualTo(3);
+            assertThat(error.getColumn()).isEqualTo("标签编码");
+            assertThat(error.getCode()).isEqualTo("TAG_NOT_USABLE");
+        });
+        verifyNoInteractions(writer);
+    }
+
+    /** 别名 / 助记码 / 品牌 / 产地的逐行上限与 ProductSpuAddForm 的 @Size 及库里 VARCHAR 同数值。 */
+    @Test
+    void overlongOptionalSpuColumnsAreReportedPerRow() throws Exception {
+        var result = service.importFile(workbook(b -> {
+            b.getSheetAt(0).getRow(2).getCell(3).setCellValue("长".repeat(151));
+            b.getSheetAt(0).getRow(2).getCell(6).setCellValue("牌".repeat(101));
+        }), ImportMode.CREATE);
+        assertThat(result.getErrors()).hasSize(2).extracting("column")
+                .containsExactlyInAnyOrder("别名", "品牌");
+        assertThat(result.getErrors()).allSatisfy(error -> assertThat(error.getCode()).isEqualTo("TOO_LONG"));
         verifyNoInteractions(writer);
     }
 

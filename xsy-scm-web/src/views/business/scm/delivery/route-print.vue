@@ -16,8 +16,8 @@
             }}
           </p>
           <p>
-            订单 {{ data.detail.route.orderCount }} 张 · 停靠点 {{ data.detail.route.stopCount }} 个 · 订单金额
-            {{ money(data.detail.route.totalAmount) }}
+            订单 {{ data.detail.route.orderCount }} 张 · 停靠点 {{ data.detail.route.stopCount }} 个<span
+              v-if="canViewAmount"> · 订单金额 {{ money(data.detail.route.totalAmount) }}</span>
           </p>
           <p v-if="data.detail.route.remark">备注：{{ data.detail.route.remark }}</p>
         </div>
@@ -28,9 +28,8 @@
             }}</p>
           <template v-for="order in ordersOf(stop.id)" :key="order.orderId">
             <h3>
-              {{ order.orderNoSnapshot }}　期望配送：{{ datetime(order.expectDeliveryTimeSnapshot) }}　订单金额：{{
-                money(order.orderAmountSnapshot)
-              }}
+              {{ order.orderNoSnapshot }}　期望配送：{{ datetime(order.expectDeliveryTimeSnapshot) }}<span
+                v-if="canViewAmount">　订单金额：{{ money(order.orderAmountSnapshot) }}</span>
             </h3>
             <table>
               <thead>
@@ -39,8 +38,8 @@
                 <th>单位</th>
                 <th>订购数量</th>
                 <th>实重 / 实际量</th>
-                <th>订单金额</th>
-                <th>结算金额</th>
+                <th v-if="canViewAmount">订单金额</th>
+                <th v-if="canViewAmount">结算金额</th>
               </tr>
               </thead>
               <tbody>
@@ -49,8 +48,8 @@
                 <td>{{ item.saleUnitSnapshot }}</td>
                 <td class="numeric">{{ item.orderedQuantity }}</td>
                 <td class="numeric">{{ item.actualQuantity ?? '—' }}</td>
-                <td class="numeric">{{ money(item.orderedLineAmount) }}</td>
-                <td class="numeric">{{ money(item.settlementLineAmount) }}</td>
+                <td v-if="canViewAmount" class="numeric">{{ money(item.orderedLineAmount) }}</td>
+                <td v-if="canViewAmount" class="numeric">{{ money(item.settlementLineAmount) }}</td>
               </tr>
               </tbody>
             </table>
@@ -67,7 +66,10 @@ import {nextTick, ref} from 'vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {deliveryError, type Id, type RoutePrint} from './delivery-types';
 import {money} from './delivery-display';
+import {useDeliveryPermission} from './use-delivery-permission';
 import {datetime} from '../common/scm-display';
+
+const {canViewAmount} = useDeliveryPermission();
 
 const visible = ref(false),
     loading = ref(false),

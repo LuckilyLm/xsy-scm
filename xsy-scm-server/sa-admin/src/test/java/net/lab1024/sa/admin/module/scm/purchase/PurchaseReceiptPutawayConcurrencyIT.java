@@ -49,6 +49,9 @@ class PurchaseReceiptPutawayConcurrencyIT extends ScmW6PgITBase {
         employee.setEmployeeId(1L);
         employee.setActualName("B1 concurrent IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        // 与种子员工 1 的真实行一致：本用例测的是并发两次上架的竞态，不是仓库授权。
+        // 缺了这一位，上架的仓库范围守卫会按「无任何授权」拒掉两次调用，竞态根本发生不了。
+        employee.setAdministratorFlag(true);
         SmartRequestUtil.setRequestUser(employee);
     }
 

@@ -79,6 +79,7 @@
         bordered
         :loading="loading"
         :pagination="false"
+        :locale="{ emptyText }"
         :scroll="{ x: 1660 }"
     >
       <template #bodyCell="{ column, record }">
@@ -147,7 +148,7 @@
   <RoutePrint ref="printer"/>
 </template>
 <script setup lang="ts">
-import {onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, reactive, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
@@ -167,11 +168,20 @@ import {
   type RouteStatus,
 } from './delivery-types';
 import {money} from './delivery-display';
+import {useDeliveryPermission} from './use-delivery-permission';
 import RouteFormDrawer from './components/route-form-drawer.vue';
 import RouteDetail from './route-detail.vue';
 import RoutePrint from './route-print.vue';
 
 const query = reactive<Query>({pageNum: 1, pageSize: 20});
+const {canViewAmount, hasPerm} = useDeliveryPermission();
+// 无全量配送范围权限（调度岗）时，普通司机看到空表可能是「线路没排到自己」而非「没有线路」，
+// 文案要提示是授权/绑定问题，而不是一句「暂无数据」把配置缺口盖掉。
+const emptyText = computed(() =>
+  hasPerm('scm:delivery:scope:all:query')
+    ? '暂无数据'
+    : '当前仅显示您负责的线路；若无数据，可能是司机未绑定员工或线路未排到您名下，请联系调度确认。'
+);
 const rows = ref<DeliveryRoute[]>([]),
     total = ref(0),
     loading = ref(false),
@@ -185,20 +195,23 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     details = ref<InstanceType<typeof RouteDetail>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
-const columns: TableColumnsType = [
+// 金额列按权限出现：服务端已把无权限的 totalAmount 抹成 null，这里决定要不要留这一格。
+const columns = computed<TableColumnsType>(() => [
   {title: '配送日期', dataIndex: 'deliveryDate', width: 120},
   {title: '线路编号', dataIndex: 'routeNo', width: 180},
   {title: '线路名称', dataIndex: 'routeName', width: 180},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '司机', dataIndex: 'driverNameSnapshot', width: 110},
   {title: '车辆', dataIndex: 'vehicleNoSnapshot', width: 120},
-  {title: '停靠点', dataIndex: 'stopCount', align: 'right', width: 80},
-  {title: '订单数', dataIndex: 'orderCount', align: 'right', width: 80},
-  {title: '订单金额', dataIndex: 'totalAmount', align: 'right', width: 140},
-  {title: '停靠点定位', dataIndex: 'coverage', align: 'center', width: 110},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '操作', dataIndex: 'action', fixed: 'right', align: 'right', width: 220},
-];
+  {title: '停靠点', dataIndex: 'stopCount', align: 'right' as const, width: 80},
+  {title: '订单数', dataIndex: 'orderCount', align: 'right' as const, width: 80},
+  ...(canViewAmount.value
+      ? [{title: '订单金额', dataIndex: 'totalAmount', align: 'right' as const, width: 140}]
+      : []),
+  {title: '停靠点定位', dataIndex: 'coverage', align: 'center' as const, width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center' as const, width: 100},
+  {title: '操作', dataIndex: 'action', fixed: 'right' as const, align: 'right' as const, width: 220},
+]);
 let generation = 0;
 
 async function load() {

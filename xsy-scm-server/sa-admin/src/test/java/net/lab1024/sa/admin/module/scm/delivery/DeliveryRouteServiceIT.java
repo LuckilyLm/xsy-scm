@@ -1,6 +1,10 @@
 package net.lab1024.sa.admin.module.scm.delivery;
 
+import cn.dev33.satoken.stp.StpUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -15,9 +19,15 @@ import net.lab1024.sa.admin.module.scm.order.domain.form.OrderCancelForm;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * Small PostgreSQL smoke suite; use an isolated DB on local Docker Desktop. No external map calls.
+ *
+ * <p>本类测组单 / 规划 / 打印的业务行为，不测数据范围，因此调用者要拿「全部范围 + 全部功能点」：
+ * 只读接口现在按司机维度收口，未绑定司机的登录人（基类的 employeeId=1）会看到 0 条线路。
+ * 范围口径本身由 {@code ScmDeliveryDataScopePgIT} 负责。
  */
 class DeliveryRouteServiceIT extends ScmW5PgITBase {
     @Autowired
@@ -26,6 +36,19 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
     DeliveryRouteQueryService deliveryQuery;
     @Autowired
     DeliveryCandidateOrderQueryService candidates;
+
+    private MockedStatic<StpUtil> permissions;
+
+    @BeforeEach
+    void grantEveryDeliveryPermission() {
+        permissions = mockStatic(StpUtil.class);
+        permissions.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
+    }
+
+    @AfterEach
+    void releasePermissions() {
+        permissions.close();
+    }
 
     @Test
     void groupReorderFreezePrintAndRelease() throws Exception {
@@ -70,7 +93,26 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
         expectCode(() -> salesOrderService.cancel(cancelOrder, prefix + ":cancel-assigned"), 40960);
         jdbc.update("UPDATE customer SET address='新地址',longitude=120,latitude=30 WHERE id=?", c1);
         assertThat(deliveryQuery.detail(id).getStops()).allSatisfy(s -> assertThat(s.getAddressSnapshot()).isEqualTo("W5 IT 地址"));
-        assertThat(deliveryQuery.print(id).getItems()).hasSize(3);
+        var items = deliveryQuery.print(id).getItems();
+        assertThat(items).hasSize(3);
+        // 逐字段查值而不是只查 JSON 里有没有键名：只断言 contains("\"orderId\":") 时，
+        // 列别名写错导致映射成 null 也照样通过（键仍在，只是值为 null），等于没钉住。
+        assertThat(items).allSatisfy(item -> {
+            assertThat(item.getId()).isNotNull();
+            assertThat(item.getOrderId()).isNotNull();
+            assertThat(item.getProductNameSnapshot()).isNotBlank();
+            assertThat(item.getSaleUnitSnapshot()).isNotBlank();
+            assertThat(item.getOrderedQuantity()).isNotNull();
+        });
+        // 打印明细原先直出 SalesOrderItemEntity（33 列，含 deleted/version/createdBy 审计列与
+        // draftPriceSourceId/lockedPriceSourceId/manualPriceReason 等价格口径内部字段）。
+        var printedItems = json.writeValueAsString(items);
+        // 出网契约：金额为归一到 4 位的定点字符串。注意 JsonConfig 已全局把 BigDecimal 序列化成
+        // 字符串，所以这条校验的不是下面的注解，注解额外保证的是「补到 4 位」这层语义。
+        assertThat(printedItems).as("定点金额必须是四位小数字符串")
+                .containsPattern("\"orderedQuantity\":\"\\d+\\.\\d{4}\"");
+        assertThat(printedItems).doesNotContain("lockedUnitPrice", "manualPriceReason",
+                "draftPriceSourceId", "lockedPriceSourceId", "\"deleted\":", "\"version\":");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM inventory_movement WHERE sku_id=?", Integer.class, sku)).isZero();
         var cancel = version(id);
         cancel.setReason("调整配送计划");
@@ -135,6 +177,8 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
     }
 
     private void add(Long id, List<Long> ids) {
+        // P1 之后：未分拣完成的订单不再是配送候选，组单前先把它们做到 COMPLETED。
+        sortingCompletedFor(ids.toArray(Long[]::new));
         var f = new DeliveryOrdersForm();
         f.setVersion(version(id).getVersion());
         f.setOrderIds(ids);

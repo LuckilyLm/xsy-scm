@@ -8,6 +8,10 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAd
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAuditForm;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryLossGainService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
+import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
+import net.lab1024.sa.base.common.domain.RequestUser;
+import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +40,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DisplayName("报损报溢（PG IT）")
 class ScmInventoryLossGainIT extends ScmW6PgITBase {
+
+    /**
+     * 审批人身份：与基类的录单人（employee 1）刻意不同，用于满足「禁止自建自审」。
+     */
+    private static final Long AUDITOR_EMPLOYEE_ID = 90011L;
 
     @Autowired
     private InventoryLossGainService lossGainService;
@@ -94,6 +103,41 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
     }
 
     /**
+     * 审批必须换一个人：报损报溢禁止自建自审（41065，P0 基线收口裁决第 8 条），
+     * 而本类通篇是「录单人建单 → 审批」，因此把审批动作切到另一个员工身份、跑完立即恢复，
+     * 其余断言仍按录单人视角执行。库里没有指向 {@code t_employee} 的外键，
+     * 审批人用合成 id 即可（它只落进审计字段）。
+     */
+    private void asAuditor(Runnable auditAction) {
+        RequestUser maker = SmartRequestUtil.getRequestUser();
+        RequestEmployee auditor = new RequestEmployee();
+        auditor.setEmployeeId(AUDITOR_EMPLOYEE_ID);
+        auditor.setActualName("W6 IT 审核员");
+        auditor.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        // 与基类同一取向：夹具操作者不受数据范围约束，本用例只测「审批人 != 录单人」这条身份规则，
+        // 不顺带把仓库授权也当被测对象（那属于数据范围用例）。
+        auditor.setAdministratorFlag(true);
+        SmartRequestUtil.setRequestUser(auditor);
+        try {
+            auditAction.run();
+        } finally {
+            if (maker == null) {
+                SmartRequestUtil.remove();
+            } else {
+                SmartRequestUtil.setRequestUser(maker);
+            }
+        }
+    }
+
+    private void approveAsAuditor(Long id, InventoryLossGainAuditForm form) {
+        asAuditor(() -> lossGainService.approve(id, form));
+    }
+
+    private void rejectAsAuditor(Long id, InventoryLossGainAuditForm form) {
+        asAuditor(() -> lossGainService.reject(id, form));
+    }
+
+    /**
      * 某个 (仓库, SKU) 的报损报溢流水，按业务时刻升序。
      */
     private List<Map<String, Object>> lossGainMovements(Long wh, Long sku) {
@@ -127,7 +171,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(lossGainMovements(wh, sku)).isEmpty();
 
-        lossGainService.approve(id, audit(id, null));
+        approveAsAuditor(id, audit(id, null));
 
         assertThat(statusOf(id)).isEqualTo("COMPLETED");
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("7.0000");
@@ -158,7 +202,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         Long sku = (Long) s[1];
 
         Long id = lossGainService.create(form("OVERFLOW", wh, sku, "5.0000", "盘点外发现多出一批"));
-        lossGainService.approve(id, audit(id, null));
+        approveAsAuditor(id, audit(id, null));
 
         assertThat(statusOf(id)).isEqualTo("COMPLETED");
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("15.0000");
@@ -183,7 +227,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
 
         // 10 − 5 = 5 < 已预留 8
         Long id = lossGainService.create(form("LOSS", wh, sku, "5.0000", "破损"));
-        expectCode(() -> lossGainService.approve(id, audit(id, null)), 41034);
+        expectCode(() -> approveAsAuditor(id, audit(id, null)), 41034);
 
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(balanceRow(wh, sku).getReservedQuantity()).isEqualByComparingTo("8.0000");
@@ -200,7 +244,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         Long sku = (Long) s[1];
 
         Long id = lossGainService.create(form("LOSS", wh, sku, "6.0000", "变质"));
-        expectCode(() -> lossGainService.approve(id, audit(id, null)), 41033);
+        expectCode(() -> approveAsAuditor(id, audit(id, null)), 41033);
 
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("5.0000");
         assertThat(lossGainMovements(wh, sku)).isEmpty();
@@ -217,7 +261,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         Long id = lossGainService.create(form("LOSS", wh, skuId, "1.0000", "丢失"));
 
         // 审批时才失败：记账单位只能来自余额行，从未入库的 SKU 无账可调
-        expectCode(() -> lossGainService.approve(id, audit(id, null)), 41032);
+        expectCode(() -> approveAsAuditor(id, audit(id, null)), 41032);
         assertThat(balanceRowCount(wh, skuId)).isZero();
         assertThat(statusOf(id)).isEqualTo("PENDING");
     }
@@ -234,11 +278,11 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         Long sku = (Long) s[1];
 
         Long id = lossGainService.create(form("LOSS", wh, sku, "3.0000", "变质"));
-        lossGainService.approve(id, audit(id, null));
+        approveAsAuditor(id, audit(id, null));
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("7.0000");
 
         // 再审批：状态已变（不是版本问题）→ 41029
-        expectCode(() -> lossGainService.approve(id, audit(id, null)), 41029);
+        expectCode(() -> approveAsAuditor(id, audit(id, null)), 41029);
         expectCode(() -> lossGainService.update(id, form("LOSS", wh, sku, "99.0000", "改大一点")), 41029);
         expectCode(() -> lossGainService.delete(id), 41029);
 
@@ -260,13 +304,13 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         lossGainService.update(id, form("LOSS", wh, sku, "9.0000", "变质"));
 
         // 审批人用他看到的版本提交 → 必须失败，否则他批准的是一个自己没看过的数量
-        expectCode(() -> lossGainService.approve(id, audit(id, null, seenByAuditor)), 40921);
+        expectCode(() -> approveAsAuditor(id, audit(id, null, seenByAuditor)), 40921);
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(lossGainMovements(wh, sku)).isEmpty();
         assertThat(statusOf(id)).isEqualTo("PENDING");
 
         // 刷新后重新审批（用新版本）即可通过，且按**改后**的数量执行
-        lossGainService.approve(id, audit(id, null));
+        approveAsAuditor(id, audit(id, null));
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("1.0000");
     }
 
@@ -280,10 +324,10 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         Long id = lossGainService.create(form("LOSS", wh, sku, "3.0000", "变质"));
 
         // 空意见的驳回必须被拒 —— 驳回是唯一把「为什么不行」传达给录单人的渠道
-        expectCode(() -> lossGainService.reject(id, audit(id, null)), 41037);
-        expectCode(() -> lossGainService.reject(id, audit(id, "   ")), 41037);
+        expectCode(() -> rejectAsAuditor(id, audit(id, null)), 41037);
+        expectCode(() -> rejectAsAuditor(id, audit(id, "   ")), 41037);
 
-        lossGainService.reject(id, audit(id, "请附变质照片"));
+        rejectAsAuditor(id, audit(id, "请附变质照片"));
 
         assertThat(statusOf(id)).isEqualTo("REJECTED");
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
@@ -292,8 +336,8 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         assertThat(rejectMessagesFor(id)).isEqualTo(1);
 
         // 已驳回是终态
-        expectCode(() -> lossGainService.approve(id, audit(id, null)), 41029);
-        expectCode(() -> lossGainService.reject(id, audit(id, "再驳一次")), 41029);
+        expectCode(() -> approveAsAuditor(id, audit(id, null)), 41029);
+        expectCode(() -> rejectAsAuditor(id, audit(id, "再驳一次")), 41029);
         expectCode(() -> lossGainService.delete(id), 41029);
         // 终态后的再次驳回被状态守卫拒绝，事务回滚，不产生第二条通知
         assertThat(rejectMessagesFor(id)).isEqualTo(1);
@@ -318,7 +362,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         lossGainService.update(id, form("LOSS", wh, sku, "4.0000", "变质（数量核对后修正）"));
 
         assertThat(versionOf(id)).isGreaterThan(v0);
-        lossGainService.approve(id, audit(id, null));
+        approveAsAuditor(id, audit(id, null));
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("6.0000");
         assertThat(decimal(lossGainMovements(wh, sku).getFirst(), "quantity")).isEqualByComparingTo("4.0000");
     }
@@ -349,7 +393,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
 
         assertThat(jdbc.queryForObject(
                 "SELECT deleted FROM inventory_loss_gain WHERE id = ?", Boolean.class, id)).isTrue();
-        expectCode(() -> lossGainService.approve(id, audit(id, null)), 41028);
+        expectCode(() -> approveAsAuditor(id, audit(id, null)), 41028);
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
     }
 
@@ -396,7 +440,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         Long sku = (Long) s[1];
 
         Long id = lossGainService.create(form("LOSS", wh, sku, "3.0000", "变质"));
-        lossGainService.approve(id, audit(id, null));
+        approveAsAuditor(id, audit(id, null));
 
         Long movementId = ((Number) lossGainMovements(wh, sku).getFirst().get("id")).longValue();
         expectSqlFailure("UPDATE inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
@@ -416,7 +460,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
                 new BigDecimal("4.0000"), OffsetDateTime.now(), null));
 
         Long id = lossGainService.create(form("OVERFLOW", wh, sku, "5.0000", "多出一批"));
-        lossGainService.approve(id, audit(id, null));
+        approveAsAuditor(id, audit(id, null));
 
         InventoryBalanceEntity balance = balanceRow(wh, sku);
         assertThat(balance.getQuantity()).isEqualByComparingTo("15.0000");

@@ -14,7 +14,8 @@ public interface CustomerSkuVisibilityDao extends com.baomidou.mybatisplus.core.
 
     long typeReferences(@Param("id") Long id);
 
-    List<net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO> reverse(com.baomidou.mybatisplus.extension.plugins.pagination.Page<?> page, @Param("query") net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerVisibilityQueryForm query);
+    /** 反向白名单列表读；范围按客户归属（{@code customer.seller_id}）收窄，传 null 即恒假谓词。 */
+    List<net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO> reverse(com.baomidou.mybatisplus.extension.plugins.pagination.Page<?> page, @Param("query") net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerVisibilityQueryForm query, @Param("scope") net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope scope);
 
     String policy(@Param("customerId") Long customerId);
 

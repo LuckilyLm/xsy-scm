@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.dao.*;
@@ -10,6 +11,7 @@ import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuQueryForm;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.*;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,8 @@ import static net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode.
 @Service
 @RequiredArgsConstructor
 public class ProductQueryService {
+    /** 单条 IN 的分片上限，见 {@link #enrich}。 */
+    private static final int IN_BATCH = 500;
     private final ProductSpuDao spus;
     private final ProductSkuDao skus;
     private final ProductImageDao images;
@@ -53,24 +57,38 @@ public class ProductQueryService {
     private List<ProductSpuDetailVO> enrich(List<ProductSpuEntity> rows, List<ProductCategoryEntity> categoryRows) {
         if (rows.isEmpty()) return List.of();
         var ids = rows.stream().map(ProductSpuEntity::getId).toList();
-        var skuRows = skus.selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, ids)
-                .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId));
-        var imageRows = images.selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, ids)
-                .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
+        // 分片取关联数据：导出把 pageSize 强设为 10 万，整表 id 直接进一条 IN 会撞上
+        // PostgreSQL 扩展协议单语句 65535 个绑定参数的上限（约 6.5 万商品处直接报错）。
+        // 按 spuId 分片保证每个 SPU 完整落在同一片内，组内 sortOrder/id 次序不受影响。
+        var skuRows = new ArrayList<ProductSkuEntity>();
+        var imageRows = new ArrayList<ProductImageEntity>();
+        for (var batch : Lists.partition(ids, IN_BATCH)) {
+            skuRows.addAll(skus.selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, batch)
+                    .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId)));
+            imageRows.addAll(images.selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, batch)
+                    .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId)));
+        }
         var skuMap = skuRows.stream().collect(Collectors.groupingBy(ProductSkuEntity::getSpuId));
         var imageMap = imageRows.stream().collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
-        var tagMap = tags.bySpuIds(ids);
+        var tagMap = new LinkedHashMap<Long, List<ProductSpuTagVO>>();
+        for (var batch : Lists.partition(ids, IN_BATCH))
+            tags.bySpuIds(batch).forEach((spuId, bound) ->
+                    tagMap.computeIfAbsent(spuId, k -> new ArrayList<>()).addAll(bound));
         Map<String, String> urls = new HashMap<>();
-        files.getFileList(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList())
-                .stream().filter(Objects::nonNull).forEach(f -> urls.put(f.getFileKey(), f.getFileUrl()));
+        // 分批取私有 URL：一次传整页 fileKey 会顶到 PostgreSQL 单语句 65535 个绑定参数上限。
+        for (var batch : Lists.partition(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList(), IN_BATCH))
+            files.getFileList(batch, SmartRequestUtil.getRequestUser()).stream().filter(Objects::nonNull)
+                    .forEach(f -> urls.put(f.getFileKey(), f.getFileUrl()));
         Map<Long, String> names = categoryRows.stream().collect(Collectors.toMap(ProductCategoryEntity::getId, ProductCategoryEntity::getName));
+        // 分类索引在循环外建一次：path(id, rows) 每次都会整表重建，放循环里是 O(页大小 × 分类总数)
+        var categoryById = ProductCategoryService.indexById(categoryRows);
         List<ProductSpuDetailVO> result = new ArrayList<>();
         for (var row : rows) {
             var vo = new ProductSpuDetailVO();
             BeanUtils.copyProperties(row, vo);
             vo.setSpuId(row.getId());
             vo.setCategoryName(names.get(row.getCategoryId()));
-            vo.setCategoryPath(ProductCategoryService.path(row.getCategoryId(), categoryRows));
+            vo.setCategoryPath(ProductCategoryService.path(row.getCategoryId(), categoryById));
             vo.setTags(tagMap.getOrDefault(row.getId(), List.of()));
             List<ProductSkuVO> children = skuMap.getOrDefault(row.getId(), List.of()).stream().map(s -> {
                 var child = new ProductSkuVO();

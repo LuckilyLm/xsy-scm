@@ -16,7 +16,9 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
     void approvedSchemaHasEightTablesNoDeadFieldsAndNullableDraftPrices() {
         flyway.validate();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.tables WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ")", Integer.class)).isEqualTo(8);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(25);
+        // 25 条是订单域批准形态；V51 为报表日期轴追加 2 条部分索引（sales_order.confirmed_at、
+        // order_refund.completed_at），二者都在本用例的表清单内
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_indexes WHERE schemaname=current_schema() AND tablename IN (" + TABLES + ") AND indexname NOT LIKE '%_pkey'", Integer.class)).isEqualTo(27);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.sequences WHERE sequence_schema=current_schema() AND sequence_name IN ('sales_order_no_seq','order_return_no_seq','order_refund_no_seq')", Integer.class)).isEqualTo(3);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN (" + TABLES + ") AND column_name IN ('fulfillment_status','pay_status','actual_weight')", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name IN ('sales_order','sales_order_item') AND column_name IN ('draft_unit_price','draft_price_source','ordered_line_amount','ordered_total_amount') AND is_nullable='YES'", Integer.class)).isEqualTo(4);
@@ -32,5 +34,26 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(23);
         assertThat(jdbc.queryForObject("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_sales_order_source'", String.class)).contains("IMPORT");
         assertThat(net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao.class.getMethods()).extracting(java.lang.reflect.Method::getName).containsExactlyInAnyOrder("insert", "query");
+    }
+
+    /**
+     * 操作日志的 operation_type：Java 枚举与库里的 CHECK 白名单必须**逐项相等**。
+     *
+     * <p>V27 的注释把这类耦合列成五处硬编码（业务枚举、DB CHECK、前端常量、查询表单 @Pattern、
+     * 日志 operation_type 白名单），而当年就是漏了第五处，导致 reserveStock 写日志直接
+     * DataIntegrityViolation。这里把最容易漏的两处钉成可执行的：加枚举不写迁移、或迁移加了
+     * 取值而枚举没有，都会在这里变红，而不是等第一次写日志时在线上炸。
+     */
+    @Test
+    void operationLogTypeWhitelistMatchesJavaEnum() {
+        String def = jdbc.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_order_operation_log_type'",
+                String.class);
+        var allowed = new java.util.HashSet<String>();
+        var matcher = java.util.regex.Pattern.compile("'([A-Z_]+)'").matcher(def);
+        while (matcher.find()) allowed.add(matcher.group(1));
+        assertThat(allowed).containsExactlyInAnyOrderElementsOf(
+                java.util.Arrays.stream(net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum.values())
+                        .map(Enum::name).toList());
     }
 }

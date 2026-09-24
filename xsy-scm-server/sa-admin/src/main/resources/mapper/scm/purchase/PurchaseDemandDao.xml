@@ -25,7 +25,11 @@
                 typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- §7.4 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。 -->
+    <!-- §7.4 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。
+         仓库数据范围：来源行所在的 sales_order / sales_order_item 都没有仓库列，按仓库无从收窄
+         （与 ReportDao.xml 销售侧同一口径）。本次命令落哪个仓由表单显式给出，边界在
+         PurchaseWarehouseReferenceGuard 与后续收货/出库的仓库守卫上，不在这里重复实现。
+         scope 为 null 仍是调用方漏传，失败关闭返回 0 行，绝不静默读全量。 -->
     <select id="listSourceItems" resultMap="sourceItemMap">
         SELECT oi.id,
                oi.order_id,
@@ -54,6 +58,9 @@
           AND oi.actual_quantity &gt; 0
           AND o.confirmed_at &gt;= #{startAt}
           AND o.confirmed_at &lt; #{endAt}
+        <if test="scope == null">
+            AND FALSE
+        </if>
         ORDER BY oi.sku_id ASC, o.confirmed_at ASC, oi.id ASC
     </select>
 
@@ -98,6 +105,15 @@
         <if test="query.demandDateTo != null">
             AND d.demand_date &lt; #{query.demandDateTo}
         </if>
+        <!-- 采购员数据范围（与 purchase_order 同一维度）：谓词落在驱动表 d 上，
+             供应商 / 仓库都是 N:1 左连，不放大行数；scope 为 null 按失败关闭。 -->
+        <if test="scope != null and scope.all == false">
+            AND d.purchaser_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         ORDER BY d.demand_date DESC, d.id DESC
     </select>
 
@@ -127,6 +143,9 @@
       可用量 / 差额 / 状态全部用 NUMERIC 在 SQL 里算好（4 位定点），Java/前端不做浮点减法。
       非聚合列一律显式进 GROUP BY：inventory_balance 的部分唯一索引不构成 PG 的 GROUP BY
       函数依赖，靠 FD 推断会静默少列报错；每个 SKU 至多一行余额、至多一行主档，分组键不会拆行。
+
+      仓库数据范围（docs/decisions.md「P0 基线收口裁决」第 8 条）：谓词落在内层 WHERE 的「请求仓」
+      标量上，见 GROUP BY 前那段说明——它必须是行集判据，不能是数字判据。
     -->
     <select id="summaryPreview"
             resultType="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO">
@@ -198,6 +217,20 @@
                      AND (p.spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
                          OR p.name ILIKE CONCAT('%', #{query.keyword}, '%')
                          OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+                 </if>
+                 <!-- 仓库数据范围：本页的行集由销售订单行驱动（没有仓库列），仓库只出现在余额左连与
+                      预留子查询的 warehouse_id = 请求仓 上。因此范围判据落在「请求仓是否被授权」这个
+                      标量上：判据为假时内层一行都不取，GROUP BY 出 0 组，调用者拿到空分页。
+                      写成 b.warehouse_id IN (...) 进左连 ON 是错的——那只会把余额打成 NULL，
+                      整页订单需求量照发，改的是一个数字而不是一组行。
+                      空授权清单由 Service 短路成空分页，不会把 IN () 送进数据库；
+                      scope 为 null 是调用方漏传，按失败关闭返回 0 行。 -->
+                 <if test="scope != null and scope.all == false">
+                     AND #{query.warehouseId} IN
+                     <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                 </if>
+                 <if test="scope == null">
+                     AND FALSE
                  </if>
                  GROUP BY oi.sku_id,
                           oi.sale_unit_snapshot,

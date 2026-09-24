@@ -89,6 +89,14 @@
         LEFT JOIN product_sku k ON k.id = t.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
+        <!-- 仓库数据范围：阈值配置属于它所约束的那个仓库；scope 缺失时恒假。 -->
+        <if test="scope != null and scope.all == false">
+            AND t.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.warehouseId != null">
             AND t.warehouse_id = #{query.warehouseId}
         </if>
@@ -156,6 +164,15 @@
         LEFT JOIN product_sku k ON k.id = t.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
+        <!-- 预警列表按**阈值配置所在仓**判定：余额列是 LEFT JOIN 进来的，未授权仓的配置
+             即使有余额也不出现。scope 缺失时恒假。 -->
+        <if test="scope != null and scope.all == false">
+            AND t.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.warehouseId != null">
             AND t.warehouse_id = #{query.warehouseId}
         </if>

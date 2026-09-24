@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.purchase.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderQueryForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
@@ -22,8 +23,13 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
 
     /**
      * 分页查询（联 supplier / warehouse / 收货进度）。
+     *
+     * <p>{@code scope} 是采购员维度的授权范围，由 Service 显式下传（裁决「P0 基线收口裁决」第 2 条）：
+     * {@code null} 在 Mapper 里按失败关闭处理（0 行），不表示「全部」；
+     * {@code detail} / {@code lock} 刻意不带范围，读取范围只在查询端点判定，命令侧由写权限把关。
      */
-    List<PurchaseOrderVO> query(Page<?> page, @Param("query") PurchaseOrderQueryForm query);
+    List<PurchaseOrderVO> query(Page<?> page, @Param("query") PurchaseOrderQueryForm query,
+                                @Param("scope") ScmValueScope scope);
 
     /**
      * 详情（单头，联名称与进度）。

@@ -64,8 +64,9 @@ public class ProductCategoryService {
             map.put(row.getId(), vo);
         }
         List<ProductCategoryTreeVO> roots = new ArrayList<>();
+        var byId = indexById(rows);
         for (var vo : map.values()) {
-            vo.setCategoryPath(path(vo.getCategoryId(), rows));
+            vo.setCategoryPath(path(vo.getCategoryId(), byId));
             if (vo.getParentId() == null || !map.containsKey(vo.getParentId())) roots.add(vo);
             else map.get(vo.getParentId()).getChildren().add(vo);
         }
@@ -82,12 +83,24 @@ public class ProductCategoryService {
     }
 
     public static String path(Long id, List<ProductCategoryEntity> rows) {
+        return path(id, indexById(rows));
+    }
+
+    /**
+     * 供循环调用方复用的分类索引：{@link #path(Long, List)} 每次都要整表重建索引，
+     * 在逐行组装 VO 的地方会让复杂度变成 O(行数 × 分类总数)。
+     */
+    public static Map<Long, ProductCategoryEntity> indexById(List<ProductCategoryEntity> rows) {
         Map<Long, ProductCategoryEntity> map = new HashMap<>();
         rows.forEach(c -> map.put(c.getId(), c));
+        return map;
+    }
+
+    public static String path(Long id, Map<Long, ProductCategoryEntity> byId) {
         LinkedList<String> names = new LinkedList<>();
         Set<Long> seen = new HashSet<>();
-        while (id != null && seen.add(id) && map.containsKey(id)) {
-            var row = map.get(id);
+        while (id != null && seen.add(id) && byId.containsKey(id)) {
+            var row = byId.get(id);
             names.addFirst(row.getName());
             id = row.getParentId();
         }
@@ -96,15 +109,23 @@ public class ProductCategoryService {
 
     /**
      * Q3 V2 Enhancement: selected category plus all descendants, not legacy exact-match semantics.
+     *
+     * <p>父→子索引 + 逐层展开，每个节点只访问一次。原先的定点迭代每收敛一层都要重扫全表，
+     * 分类树越深越接近 O(层数 × 分类总数)，而它挂在商品列表的筛选路径上。
+     * 用集合去重同时兜住历史脏数据里的父子环。
      */
     public List<Long> descendantIds(Long id, List<ProductCategoryEntity> rows) {
+        Map<Long, List<Long>> children = new HashMap<>();
+        for (var row : rows)
+            if (row.getParentId() != null)
+                children.computeIfAbsent(row.getParentId(), k -> new ArrayList<>()).add(row.getId());
         Set<Long> result = new LinkedHashSet<>();
+        Deque<Long> pending = new ArrayDeque<>();
         result.add(id);
-        boolean changed;
-        do {
-            changed = false;
-            for (var row : rows) if (result.contains(row.getParentId())) changed |= result.add(row.getId());
-        } while (changed);
+        pending.add(id);
+        while (!pending.isEmpty())
+            for (var child : children.getOrDefault(pending.poll(), List.of()))
+                if (result.add(child)) pending.add(child);
         return List.copyOf(result);
     }
 

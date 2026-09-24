@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktakeEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryStocktakeQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeVO;
@@ -68,7 +69,8 @@ public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEnti
     /**
      * 分页查询（联仓库取展示字段）。
      */
-    List<InventoryStocktakeVO> queryPage(Page<?> page, @Param("query") InventoryStocktakeQueryForm query);
+    List<InventoryStocktakeVO> queryPage(Page<?> page, @Param("query") InventoryStocktakeQueryForm query,
+                                         @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

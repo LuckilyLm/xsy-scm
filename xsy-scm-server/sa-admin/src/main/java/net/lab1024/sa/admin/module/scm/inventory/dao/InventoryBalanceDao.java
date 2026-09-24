@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryBalanceQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryBalanceVO;
@@ -119,8 +120,12 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
 
     /**
      * 余额分页（联仓库 / SKU / 商品取展示字段，§2.1「余额是活状态」）。
+     *
+     * <p>{@code scope} 为 null 时 SQL 退化为恒假谓词：数据范围必须由调用方显式下传，
+     * 「没传就等于全部」会让任何漏传的新调用点变成越权入口。
      */
-    List<InventoryBalanceVO> queryPage(Page<?> page, @Param("query") InventoryBalanceQueryForm query);
+    List<InventoryBalanceVO> queryPage(Page<?> page, @Param("query") InventoryBalanceQueryForm query,
+                                       @Param("scope") ScmValueScope scope);
 
     /**
      * 余额详情（按 id）。

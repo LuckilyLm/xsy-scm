@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversionEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryConversionQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryConversionVO;
@@ -82,7 +83,8 @@ public interface InventoryConversionDao extends BaseMapper<InventoryConversionEn
     /**
      * 分页查询（联仓库取展示字段）。
      */
-    List<InventoryConversionVO> queryPage(Page<?> page, @Param("query") InventoryConversionQueryForm query);
+    List<InventoryConversionVO> queryPage(Page<?> page, @Param("query") InventoryConversionQueryForm query,
+                                          @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

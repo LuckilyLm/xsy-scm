@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.order.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.admin.module.scm.pricing.constant.ScmPriceStatusEnum;
@@ -37,6 +38,7 @@ import java.util.function.Function;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SalesOrderImportService {
@@ -129,6 +131,9 @@ public class SalesOrderImportService {
                 }
             }
         } catch (Exception exception) {
+            // 对调用方仍收敛成稳定的 FILE_INVALID，但服务端必须留下真因：解析循环里的 NPE、越界与 POI
+            // 内部异常若只被改写成「请使用最新模板」，用户会反复重导模板而运维零线索。
+            log.error("订单导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
             addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新模板");
         }
         result.setTotalRows(rows.size());

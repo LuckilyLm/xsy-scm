@@ -113,8 +113,10 @@ public class DeliveryRouteController {
         return ResponseDTO.ok();
     }
 
+    // 候选池是「尚未分配」的订单 + 客户地址电话，只有调度/规划岗可查；司机即使有线路查询权也拿不到。
+    // 服务层还要再判一次组单权 + 授权仓库：那才是权威判定，本注解只是把无权请求挡在接口边界。
     @GetMapping("/candidate-orders")
-    @SaCheckPermission("scm:delivery:route:query")
+    @SaCheckPermission("scm:delivery:route:plan")
     public ResponseDTO<PageResult<DeliveryCandidateVO>> candidates(@Valid @ModelAttribute DeliveryQueryForm form) {
         return ResponseDTO.ok(candidates.query(form));
     }

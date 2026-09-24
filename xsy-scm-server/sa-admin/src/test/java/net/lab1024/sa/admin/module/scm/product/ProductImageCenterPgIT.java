@@ -406,6 +406,45 @@ class ProductImageCenterPgIT {
         assertThat(typeOf(detail)).isEqualTo("DETAIL");
     }
 
+    /**
+     * 换绑自己就要把「两张主图」和「同一 fileKey 重复绑」挡在写库之前。
+     *
+     * <p>这两条规则原先只在 {@code validateSpu} 里，图片中心不经那条路径，于是主图唯一只能靠 V49 的
+     * {@code uq_product_image_primary_spu} 在库里炸出来——抛的是未捕获的
+     * {@code DataIntegrityViolationException}（HTTP 500），而不是稳定的 IMAGE_INVALID；
+     * 重复 key 则根本没有库级约束，会静默插成两张同图。
+     */
+    @Test
+    void batchBindRejectsSecondPrimaryAndDuplicateKeyBeforeHittingTheUniqueIndex() {
+        Long spuId = newSpu();
+        var before = imageIds(spuId);
+        assertThat(before).as("夹具新建的 SPU 自带一张主图").hasSize(1);
+
+        var secondPrimary = new ProductImageCenterForms.BatchBindForm();
+        secondPrimary.setItems(new ArrayList<>(List.of(bindItem(spuId, key("second-primary"), true))));
+        assertThatThrownBy(() -> service.batchBind(secondPrimary))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        e -> assertThat(e.getErrorCode().getCode()).isEqualTo(40026))
+                .isNotInstanceOf(DataIntegrityViolationException.class);
+        assertThat(imageIds(spuId)).as("被拒的换绑不得留下任何图片").isEqualTo(before);
+
+        var duplicateKey = new ProductImageCenterForms.BatchBindForm();
+        String same = key("same-key");
+        duplicateKey.setItems(new ArrayList<>(List.of(
+                bindItem(spuId, same, false), bindItem(spuId, same, false))));
+        conflict(() -> service.batchBind(duplicateKey), 40026);
+        assertThat(imageIds(spuId)).as("重复 key 不能静默插成两张同图").isEqualTo(before);
+    }
+
+    private ProductImageCenterForms.BindItem bindItem(Long spuId, String fileKey, boolean primary) {
+        var item = new ProductImageCenterForms.BindItem();
+        item.setSpuId(spuId);
+        item.setFileKey(fileKey);
+        item.setPrimaryFlag(primary);
+        item.setSortOrder(0);
+        return item;
+    }
+
     private void conflict(Runnable action, int code) {
         assertThatThrownBy(action::run).isInstanceOfSatisfying(ScmBusinessException.class,
                 e -> assertThat(e.getErrorCode().getCode()).isEqualTo(code));

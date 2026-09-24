@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryMovementQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryMovementVO;
@@ -45,7 +46,8 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
     /**
      * 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转，Q9）。
      */
-    List<InventoryMovementVO> queryPage(Page<?> page, @Param("query") InventoryMovementQueryForm query);
+    List<InventoryMovementVO> queryPage(Page<?> page, @Param("query") InventoryMovementQueryForm query,
+                                        @Param("scope") ScmValueScope scope);
 
     /**
      * 按来源行读回那一条活动流水。

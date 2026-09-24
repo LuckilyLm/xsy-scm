@@ -67,9 +67,10 @@
           row-key="customerId"
           :loading="loading"
           :pagination="false"
+          :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1800 }"
+          :scroll="{ x: 1860 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
@@ -89,6 +90,9 @@
             <a-button type="link" size="small" @click="detail(record.customerId)">详情</a-button>
             <a-button v-privilege="'scm:customer:update'" type="link" size="small"
                       @click="drawer?.open(record.customerId)">编辑
+            </a-button>
+            <a-button v-privilege="'scm:customer:assign'" type="link" size="small" @click="openReassign(record)">
+              改派
             </a-button>
             <a-dropdown>
               <a-button v-privilege="'scm:customer:status'" type="link" size="small">状态</a-button>
@@ -124,11 +128,29 @@
     </a-card>
 
     <CustomerDrawer ref="drawer" @saved="load"/>
+
+    <a-modal
+        v-model:open="reassignVisible"
+        title="改派业务员"
+        :confirm-loading="reassignSaving"
+        :ok-button-props="{ disabled: reassignSaving }"
+        @ok="submitReassign"
+    >
+      <a-alert v-if="reassignError" type="error" :message="reassignError" show-icon class="smart-margin-bottom10"/>
+      <p>客户：<strong>{{ reassignTarget?.name }}</strong>（{{ reassignTarget?.customerCode }}）</p>
+      <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
+      <a-form layout="vertical">
+        <a-form-item label="新负责人">
+          <EmployeeSelect v-model:value="reassignSeller" placeholder="留空即收回为未分配" width="100%"/>
+          <div class="ant-form-item-extra">留空表示收回为未分配，未分配客户仅持分配权或全量范围者可见。</div>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </section>
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref, computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
@@ -140,8 +162,10 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
+import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerDrawer from './components/customer-form-drawer.vue';
 import {customerError} from './customer-errors';
+import {hasPermission} from '../common/scm-permission';
 import {datetime} from '../common/scm-display';
 import {useQueryFilterMemory} from '/@/lib/query-filter-memory';
 
@@ -155,6 +179,53 @@ const advanced = ref(false);
 const drawer = ref<InstanceType<typeof CustomerDrawer>>();
 // 查询条件按「登录用户 + 本页」本地记忆；仅存浏览器，不落业务表。
 const queryMemory = useQueryFilterMemory<CustomerQuery>('scm:customer:list');
+
+/** 改派归属：独立动作、独立权限（scm:customer:assign），带乐观锁 version。 */
+const reassignVisible = ref(false);
+const reassignSaving = ref(false);
+const reassignError = ref('');
+const reassignTarget = ref<CustomerRow>();
+/** EmployeeSelect 的 value prop 不接受 null（声明 [Number, Array]），用 undefined 桥接「收回为未分配」。 */
+const reassignSeller = ref<number | undefined>(undefined);
+
+/** 无全量客户范围权限时，空表可能是「授权范围内确实没有」而非「系统没有数据」，文案要能区分。 */
+const canSeeAllCustomers = computed(() => hasPermission('scm:customer:scope:all:query'));
+const emptyText = computed(() =>
+  canSeeAllCustomers.value
+    ? '暂无数据'
+    : '当前仅显示您授权范围内的客户；若无数据，可能是尚未分配业务员或授权范围未配置，请联系管理员确认。'
+);
+
+function openReassign(row: CustomerRow) {
+  reassignTarget.value = row;
+  reassignSeller.value = row.sellerId ?? undefined;
+  reassignError.value = '';
+  reassignVisible.value = true;
+}
+
+async function submitReassign() {
+  const row = reassignTarget.value;
+  if (!row) {
+    return;
+  }
+  reassignSaving.value = true;
+  reassignError.value = '';
+  try {
+    await customerApi.reassignSeller({
+      customerId: row.customerId,
+      sellerId: reassignSeller.value ?? null,
+      version: row.version,
+    });
+    message.success('归属已改派');
+    reassignVisible.value = false;
+    await load();
+  } catch (e) {
+    // 版本冲突（40921）走 customerError 的同一句话，提示刷新后重试而不是静默覆盖。
+    reassignError.value = customerError(e);
+  } finally {
+    reassignSaving.value = false;
+  }
+}
 
 /** 状态下拉的可选项：直接展开 SmartEnum，避免手写一份会和后端漂移的文案表。 */
 const statusOptions = Object.values(CUSTOMER_STATUS_ENUM);
@@ -180,7 +251,7 @@ const columns = ref<TableColumnsType<CustomerRow>>([
   {title: '授信额度', dataIndex: 'creditLimit', width: 140, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'action', width: 220, align: 'right', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: 280, align: 'right', fixed: 'right'},
 ]);
 
 let requestId = 0;

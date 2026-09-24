@@ -104,6 +104,14 @@
         FROM inventory_loss_gain g
         LEFT JOIN warehouse w ON w.id = g.warehouse_id
         WHERE g.deleted = FALSE
+        <!-- 仓库数据范围：报损报溢按发生仓判定，未授权仓的单据不可见也不可被枚举；scope 缺失时恒假。 -->
+        <if test="scope != null and scope.all == false">
+            AND g.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.lossGainNo != null and query.lossGainNo != ''">
             AND g.loss_gain_no ILIKE CONCAT('%', #{query.lossGainNo}, '%')
         </if>

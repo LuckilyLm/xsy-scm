@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.warehouse.dao.EmployeeWarehouseScopeDao">
+
+    <!--
+      授权行只按活动谓词读：部分唯一索引 uk_employee_warehouse_scope_active 建的正是
+      (employee_id, warehouse_id) WHERE deleted_flag = FALSE，不带同样的条件既用不上索引，
+      也会把已回收的历史授权读成有效。
+      t_employee 用 deleted_flag = FALSE 排除已删除人员；停用人员保留在结果里，由 VO 的
+      disabledFlag 显性提示，不在这里静默藏掉一行真实授权。
+    -->
+    <select id="listEmployeesByWarehouse"
+            resultType="net.lab1024.sa.admin.module.scm.warehouse.domain.vo.WarehouseScopeEmployeeVO">
+        SELECT e.employee_id,
+               e.login_name,
+               e.actual_name,
+               e.disabled_flag
+        FROM employee_warehouse_scope s
+                 JOIN t_employee e ON e.employee_id = s.employee_id AND e.deleted_flag = FALSE
+        WHERE s.deleted_flag = FALSE
+          AND s.warehouse_id = #{warehouseId}
+        ORDER BY e.employee_id
+    </select>
+
+    <!-- 已软删仓库不出现在授权清单里：它已经不能再承载任何业务数据。 -->
+    <select id="listWarehousesByEmployee"
+            resultType="net.lab1024.sa.admin.module.scm.warehouse.domain.vo.WarehouseScopeWarehouseVO">
+        SELECT w.id            AS warehouse_id,
+               w.warehouse_code,
+               w.name          AS warehouse_name,
+               w.status        AS warehouse_status
+        FROM employee_warehouse_scope s
+                 JOIN warehouse w ON w.id = s.warehouse_id AND w.deleted = FALSE
+        WHERE s.deleted_flag = FALSE
+          AND s.employee_id = #{employeeId}
+        ORDER BY w.warehouse_code, w.id
+    </select>
+
+    <update id="deactivateByEmployee">
+        UPDATE employee_warehouse_scope
+        SET deleted_flag = TRUE,
+            update_time  = CURRENT_TIMESTAMP
+        WHERE employee_id = #{employeeId}
+          AND deleted_flag = FALSE
+    </update>
+
+    <!--
+      整批一条语句：逐行 insert 会让「替换」在两条语句之间呈现半套授权，
+      同事务内的其它读（例如同一请求里的范围解析）可能按半成品算出可见范围。
+      活动组合的唯一性由部分唯一索引兜底，重复 id 在服务层已先去重。
+    -->
+    <insert id="insertBatch">
+        INSERT INTO employee_warehouse_scope (employee_id, warehouse_id, deleted_flag, create_time, update_time)
+        VALUES
+        <foreach collection="warehouseIds" item="warehouseId" separator=",">
+            (#{employeeId}, #{warehouseId}, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        </foreach>
+    </insert>
+
+    <select id="listExistingWarehouseIds" resultType="java.lang.Long">
+        SELECT id
+        FROM warehouse
+        WHERE deleted = FALSE
+          AND id IN
+        <foreach collection="warehouseIds" item="warehouseId" open="(" separator="," close=")">
+            #{warehouseId}
+        </foreach>
+    </select>
+
+</mapper>

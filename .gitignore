@@ -37,6 +37,10 @@ local-environment-info.txt
 # 小程序资源生成脚本：纯 repo 相对路径、无凭据，幂等可重跑（见 xsy-scm-miniapp/README.md）
 !/tools/gen_tabbar_icons.py
 !/tools/gen_pages_sub.py
+!/tools/w7_e2e_accounts.py
+!/tools/w8_e2e_accounts.py
+!/tools/f0_e2e_accounts.py
+!/tools/p1_e2e_accounts.py
 
 # Reference environment configs contain credentials
 /project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml

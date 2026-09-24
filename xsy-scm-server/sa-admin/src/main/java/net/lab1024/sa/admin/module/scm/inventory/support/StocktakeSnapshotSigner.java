@@ -58,6 +58,20 @@ public class StocktakeSnapshotSigner {
         public SnapshotCredentialException(String message) {
             super(message);
         }
+
+        public SnapshotCredentialException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * 验签通过后仍解析不出载荷：body 是本服务自己签出去的字节，所以这只可能是服务端故障，
+     * 不是用户凭证坏了。调用方必须与真正的凭证类失败分开处理，否则会把用户推进「重导模板」的死循环。
+     */
+    public static class SnapshotPayloadUnreadable extends SnapshotCredentialException {
+        public SnapshotPayloadUnreadable(Throwable cause) {
+            super("快照凭证内容无法解析", cause);
+        }
     }
 
     private static final String HMAC_ALGORITHM = "HmacSHA256";
@@ -96,7 +110,11 @@ public class StocktakeSnapshotSigner {
     /** 序列化为 {@code base64url(json).base64url(hmac)}。 */
     public String sign(Payload payload) {
         try {
-            byte[] body = json.writeValueAsBytes(payload);
+            // 载荷先压缩再 base64：快照要为仓库里每一条活跃余额带上 skuCode / 单位 / 账面量，
+            // 而凭证会被写进模板每一行的单元格。POI 的单元格上限是 32767 字符，实测约 200 多个
+            // SKU 就会把未压缩的 JSON 顶过这条线，导致大仓库根本导不出盘点模板。
+            // 载荷内容不变、校验语义不变，只是编码多一层 DEFLATE。
+            byte[] body = deflate(json.writeValueAsBytes(payload));
             byte[] mac = hmac(body);
             return ENCODER.encodeToString(body) + "." + ENCODER.encodeToString(mac);
         } catch (Exception exception) {
@@ -104,9 +122,46 @@ public class StocktakeSnapshotSigner {
         }
     }
 
+    private static byte[] deflate(byte[] raw) {
+        var deflater = new java.util.zip.Deflater(java.util.zip.Deflater.BEST_COMPRESSION, true);
+        try {
+            deflater.setInput(raw);
+            deflater.finish();
+            var out = new java.io.ByteArrayOutputStream(Math.max(64, raw.length / 8));
+            var buffer = new byte[8192];
+            while (!deflater.finished()) out.write(buffer, 0, deflater.deflate(buffer));
+            return out.toByteArray();
+        } finally {
+            deflater.end();
+        }
+    }
+
+    /** 只在 MAC 校验通过后调用：不解压未经认证的字节。 */
+    private static byte[] inflate(byte[] packed) {
+        var inflater = new java.util.zip.Inflater(true);
+        try {
+            inflater.setInput(packed);
+            var out = new java.io.ByteArrayOutputStream(Math.max(64, packed.length * 4));
+            var buffer = new byte[8192];
+            while (!inflater.finished()) {
+                int read = inflater.inflate(buffer);
+                // 推进不了就停：宁可让上层把这段载荷判成「无法解析」而整批拒绝，也不带着未结束的解压循环转圈。
+                if (read == 0) break;
+                out.write(buffer, 0, read);
+            }
+            return out.toByteArray();
+        } catch (java.util.zip.DataFormatException exception) {
+            throw new IllegalStateException("无法解压盘点快照载荷", exception);
+        } finally {
+            inflater.end();
+        }
+    }
+
     /**
      * 验签并反序列化；签名不符、结构损坏或 {@code expiresAtEpochSec < nowEpochSec} 均抛
-     * {@link SnapshotCredentialException}。模板版本 / 仓库 / 操作者的匹配由调用方负责。
+     * {@link SnapshotCredentialException}。验签<b>通过之后</b>仍解析不出载荷时抛
+     * {@link SnapshotPayloadUnreadable}——那是服务端故障，调用方不得按「用户凭证坏了」处理。
+     * 模板版本 / 仓库 / 操作者的匹配由调用方负责。
      */
     public Payload verify(String token, long nowEpochSec) {
         if (token == null) {
@@ -129,9 +184,14 @@ public class StocktakeSnapshotSigner {
         }
         Payload payload;
         try {
-            payload = json.readValue(body, Payload.class);
+            // 解压只在上面 MAC 比对通过之后发生：未经认证的字节不进 Inflater。
+            // 解压失败与解析失败同类——载荷是我们自己签出去的，属服务端故障。
+            payload = json.readValue(inflate(body), Payload.class);
         } catch (Exception exception) {
-            throw new SnapshotCredentialException("快照凭证内容损坏");
+            // 走到这里签名已经验过，body 就是我们自己签出去的那段字节 —— 解析不出来不可能是用户造成的，
+            // 只可能是服务端（Jackson 版本 / record 结构 / 序列化配置）漂移。报成「凭证损坏，请重导模板」
+            // 会让用户空转，且 cause 被丢弃后运维零线索。
+            throw new SnapshotPayloadUnreadable(exception);
         }
         if (payload.expiresAtEpochSec() < nowEpochSec) {
             throw new SnapshotCredentialException("快照凭证已过期，请重新导出模板");

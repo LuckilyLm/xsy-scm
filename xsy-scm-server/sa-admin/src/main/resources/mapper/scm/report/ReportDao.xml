@@ -1,0 +1,1258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Finance R0 报表只读 SQL。
+
+  全文件共同遵守的纪律：
+  1. 只读冻结事实（销售 settlement_* / 采购 purchase_price 与 line_amount /
+     流水 unit_cost / 余额 avg_cost），绝不调用定价解析或成本重算 —— 否则今天的规则
+     一变，昨天的报表数字就跟着变。
+  2. 时间条件只有 `>= startAt AND < endAt` 一种写法，区间由 ScmReportTimeRangeResolver 生成。
+  3. 跨明细的聚合先各自成 CTE/派生表，再按业务主键合并，绝不「订单 × 行 × 退款」直接 JOIN 后求和。
+  4. 数量一律与单位同组返回；无法同单位合并的（多单位收货、跨单位入库）用文本表达，不给无量纲合计。
+  5. 金额/数量的精度交给 NUMERIC 与 ScmFixedScale4Serializer，本文件不做 2 位收敛。
+  6. `scope` 是调用者的仓库数据范围（`ScmValueScope`），由 Service 层显式下传，谓词一律落在
+     被聚合的事实表行上（`purchase_order` / `purchase_receipt` / `inventory_movement` /
+     `inventory_balance`），不落在维度表 JOIN 上、也不落在聚合之后 —— 报表里放错位置改的是
+     一个数字而不是一组行，事后看不出破绽。`scope == null` 恒假（失败关闭），`scope.all` 时
+     不拼任何谓词。销售侧事实（`sales_order` / `sales_order_item` / `order_refund`）
+     没有仓库列，因此相关语句按仓库不收窄 —— 见 `ScmSalesReportQueryForm` 的类注释。
+-->
+<mapper namespace="net.lab1024.sa.admin.module.scm.report.dao.ReportDao">
+
+    <!-- ============ 销售口径片段 ============ -->
+
+    <sql id="salesConfirmed">
+        o.deleted = FALSE
+        AND o.status = 'CONFIRMED'
+        AND o.confirmed_at &gt;= #{startAt}
+        AND o.confirmed_at &lt; #{endAt}
+    </sql>
+
+    <!-- product_category 固定三级且无 path 列，因此上卷两级只能自连接 parent_id。 -->
+    <sql id="salesCategoryJoins">
+        LEFT JOIN product_spu spu ON spu.id = i.spu_id
+        LEFT JOIN product_category cat ON cat.id = spu.category_id AND cat.deleted = FALSE
+        LEFT JOIN product_category cat2 ON cat2.id = cat.parent_id
+        LEFT JOIN product_category cat3 ON cat3.id = cat2.parent_id
+    </sql>
+
+    <sql id="salesFilters">
+        <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
+        <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
+        <if test="query.orderSource != null and query.orderSource != ''">
+            AND o.order_source = #{query.orderSource}
+        </if>
+        <if test="query.categoryId != null">
+            AND (cat.id = #{query.categoryId} OR cat2.id = #{query.categoryId} OR cat3.id = #{query.categoryId})
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (i.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR i.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR i.spu_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+    </sql>
+
+    <!-- ============ 采购口径片段：只认提交后的采购事实 ============ -->
+
+    <sql id="purchaseSubmitted">
+        o.deleted = FALSE
+        AND o.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
+        <if test="query.status != null and query.status != ''">AND o.status = #{query.status}</if>
+        AND o.submitted_at &gt;= #{startAt}
+        AND o.submitted_at &lt; #{endAt}
+    </sql>
+
+    <!--
+      采购分析的共用谓词，同时承载仓库数据范围：五个消费方（purchaseByProduct /
+      purchaseBySupplier / purchaseByPurchaser / purchaseItemList / purchasePriceTrend）
+      都把 `o` 绑给 purchase_order、`oi` 绑给 purchase_order_item，新增消费方必须守住同一
+      别名契约，否则这里会收窄错表。范围落在采购单事实行上，与调用方的 warehouseId 筛选同级。
+    -->
+    <sql id="purchaseFilters">
+        <if test="query.supplierId != null">AND o.supplier_id = #{query.supplierId}</if>
+        <if test="query.purchaserId != null">AND o.purchaser_id = #{query.purchaserId}</if>
+        <if test="query.warehouseId != null">AND o.warehouse_id = #{query.warehouseId}</if>
+        <if test="scope != null and scope.all == false">
+            AND o.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
+        <if test="query.skuId != null">AND oi.sku_id = #{query.skuId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (oi.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR oi.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR oi.spu_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+            OR o.order_no ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+    </sql>
+
+    <!-- 采购入库成本锚点：流水 → 收货行 → 收货单 → 采购行 → 采购单。 -->
+    <sql id="purchaseInboundMovementFrom">
+        FROM inventory_movement m
+        JOIN purchase_receipt_item ri ON ri.id = m.source_document_item_id AND ri.deleted = FALSE
+        JOIN purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE
+        JOIN purchase_order_item poi ON poi.id = ri.purchase_order_item_id AND poi.deleted = FALSE
+        JOIN purchase_order po ON po.id = poi.purchase_order_id AND po.deleted = FALSE
+        WHERE m.deleted = FALSE
+        AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+        AND m.movement_type = 'PURCHASE_IN'
+        AND m.occurred_at &gt;= #{startAt}
+        AND m.occurred_at &lt; #{endAt}
+        <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+        <if test="query.purchaserId != null">AND po.purchaser_id = #{query.purchaserId}</if>
+        <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+        <!-- 范围按流水自身的仓库，与调用方筛选的收货仓同源（PURCHASE_IN 的仓库即收货单的仓库）。 -->
+        <if test="scope != null and scope.all == false">
+            AND m.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
+    </sql>
+
+    <!-- ============ 经营概览 ============ -->
+
+    <!--
+      每个派生表都是单行聚合，CROSS JOIN 不会产生行数放大。
+      客户 / 销售员 / 来源 / 分类 / 商品筛选只作用于销售侧三个指标；
+      采购与库存指标本来就不带这些维度，因此页面必须让人看清「卡片之间筛选范围不同」。
+    -->
+    <select id="overviewKpi" resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReportOverviewVO">
+        SELECT ord.confirmedOrderCount,
+               ord.customerCount,
+               ord.confirmedOrderAmount,
+               rf.completedRefundAmount,
+               po.submittedOrderCount,
+               po.submittedAmount                       AS submittedPurchaseAmount,
+               mv.purchaseInCostAmount,
+               mv.purchaseInCostMissingCount,
+               bal.inventoryBookValue,
+               bal.stockedSkuCount,
+               CURRENT_TIMESTAMP                        AS snapshotAt
+        FROM (SELECT COUNT(*)                            AS confirmedOrderCount,
+                     COUNT(DISTINCT o.customer_id)      AS customerCount,
+                     COALESCE(SUM(o.settlement_total_amount), 0) AS confirmedOrderAmount
+              FROM sales_order o
+              WHERE o.deleted = FALSE
+                AND o.status = 'CONFIRMED'
+                AND o.confirmed_at &gt;= #{startAt}
+                AND o.confirmed_at &lt; #{endAt}
+                <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
+                <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
+                <if test="query.orderSource != null and query.orderSource != ''">
+                    AND o.order_source = #{query.orderSource}
+                </if>) ord
+                 CROSS JOIN (SELECT COALESCE(SUM(r.refund_amount), 0) AS completedRefundAmount
+                             FROM order_refund r
+                             WHERE r.deleted = FALSE
+                               AND r.status = 'COMPLETED'
+                               AND r.completed_at &gt;= #{startAt}
+                               AND r.completed_at &lt; #{endAt}) rf
+                 CROSS JOIN (SELECT COUNT(*)                        AS submittedOrderCount,
+                                      COALESCE(SUM(o2.total_amount), 0) AS submittedAmount
+                               FROM purchase_order o2
+                               WHERE o2.deleted = FALSE
+                                 AND o2.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
+                                 AND o2.submitted_at &gt;= #{startAt}
+                                 AND o2.submitted_at &lt; #{endAt}
+                               <if test="query.warehouseId != null">AND o2.warehouse_id = #{query.warehouseId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND o2.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) po
+                 CROSS JOIN (SELECT COALESCE(SUM(m.quantity * m.unit_cost), 0)               AS purchaseInCostAmount,
+                                      COUNT(*) FILTER (WHERE m.unit_cost IS NULL)             AS purchaseInCostMissingCount
+                               FROM inventory_movement m
+                               WHERE m.deleted = FALSE
+                                 AND m.movement_type = 'PURCHASE_IN'
+                                 AND m.occurred_at &gt;= #{startAt}
+                                 AND m.occurred_at &lt; #{endAt}
+                               <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND m.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) mv
+                 CROSS JOIN (SELECT COALESCE(SUM(b.quantity * b.avg_cost), 0)               AS inventoryBookValue,
+                                      COUNT(*) FILTER (WHERE b.quantity &gt; 0)              AS stockedSkuCount
+                               FROM inventory_balance b
+                               WHERE b.deleted = FALSE
+                               <if test="query.warehouseId != null">AND b.warehouse_id = #{query.warehouseId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND b.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) bal
+    </select>
+
+    <!--
+      日期轴用 generate_series 补齐，没有单据的日子也返回零值行；
+      四个派生表各自单遍分组，合并后按日一行，行数被 366 天的跨度上限天然约束住。
+    -->
+    <select id="dailyStat" resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReportDailyStatVO">
+        SELECT TO_CHAR(d.day, 'YYYY-MM-DD')                             AS bizDate,
+               COALESCE(so.order_count, 0)                              AS confirmedOrderCount,
+               COALESCE(so.customer_count, 0)                           AS customerCount,
+               COALESCE(so.order_amount, 0)                             AS confirmedOrderAmount,
+               COALESCE(rf.refund_amount, 0)                            AS completedRefundAmount,
+               COALESCE(po.purchase_amount, 0)                          AS submittedPurchaseAmount,
+               COALESCE(mv.cost_amount, 0)                              AS purchaseInCostAmount,
+               COALESCE(mv.cost_missing_count, 0)                       AS purchaseInCostMissingCount
+        FROM generate_series(#{startDate}::date, #{endDate}::date, INTERVAL '1 day') AS d(day)
+                 LEFT JOIN (SELECT (o.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                                   COUNT(*)                                AS order_count,
+                                   COUNT(DISTINCT o.customer_id)           AS customer_count,
+                                   SUM(o.settlement_total_amount)          AS order_amount
+                            FROM sales_order o
+                            WHERE o.deleted = FALSE
+                              AND o.status = 'CONFIRMED'
+                              AND o.confirmed_at &gt;= #{startAt}
+                              AND o.confirmed_at &lt; #{endAt}
+                              <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
+                              <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
+                              <if test="query.orderSource != null and query.orderSource != ''">
+                                  AND o.order_source = #{query.orderSource}
+                              </if>
+                            GROUP BY 1) so ON so.day = CAST(d.day AS date)
+                 LEFT JOIN (SELECT (r.completed_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                                   SUM(r.refund_amount) AS refund_amount
+                            FROM order_refund r
+                            WHERE r.deleted = FALSE
+                              AND r.status = 'COMPLETED'
+                              AND r.completed_at &gt;= #{startAt}
+                              AND r.completed_at &lt; #{endAt}
+                            GROUP BY 1) rf ON rf.day = CAST(d.day AS date)
+                 LEFT JOIN (SELECT (o2.submitted_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                                   SUM(o2.total_amount) AS purchase_amount
+                            FROM purchase_order o2
+                            WHERE o2.deleted = FALSE
+                              AND o2.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
+                              AND o2.submitted_at &gt;= #{startAt}
+                              AND o2.submitted_at &lt; #{endAt}
+                              <if test="query.warehouseId != null">AND o2.warehouse_id = #{query.warehouseId}</if>
+                              <if test="scope != null and scope.all == false">
+                                  AND o2.warehouse_id IN
+                                  <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                              </if>
+                              <if test="scope == null">
+                                  AND FALSE
+                              </if>
+                            GROUP BY 1) po ON po.day = CAST(d.day AS date)
+                 LEFT JOIN (SELECT (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                                   SUM(m.quantity * m.unit_cost)                   AS cost_amount,
+                                   COUNT(*) FILTER (WHERE m.unit_cost IS NULL)     AS cost_missing_count
+                            FROM inventory_movement m
+                            WHERE m.deleted = FALSE
+                              AND m.movement_type = 'PURCHASE_IN'
+                              AND m.occurred_at &gt;= #{startAt}
+                              AND m.occurred_at &lt; #{endAt}
+                              <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+                              <if test="scope != null and scope.all == false">
+                                  AND m.warehouse_id IN
+                                  <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                              </if>
+                              <if test="scope == null">
+                                  AND FALSE
+                              </if>
+                            GROUP BY 1) mv ON mv.day = CAST(d.day AS date)
+        ORDER BY d.day
+    </select>
+
+    <!-- ============ 销售分析 ============ -->
+
+    <!--
+      一行 = SKU × 销售单位快照。
+      排名用窗口函数：它在 LIMIT 之前算完，所以第 N 页看到的仍是全局排名。
+      成交均价是「金额合计 / 数量合计」，不是各笔单价的算术平均；分母为 0 或全 NULL 时返回 NULL。
+    -->
+    <select id="salesByProduct"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$ProductRow">
+        SELECT i.sku_id                                            AS skuId,
+               i.spu_code_snapshot                                 AS spuCode,
+               i.product_name_snapshot                             AS productName,
+               i.sku_code_snapshot                                 AS skuCode,
+               i.spec_name_snapshot                                AS specName,
+               i.sale_unit_snapshot                                AS saleUnit,
+               MAX(COALESCE(cat3.name, cat2.name, cat.name))       AS rootCategoryName,
+               MAX(cat.name)                                       AS leafCategoryName,
+               COUNT(DISTINCT i.order_id)                          AS orderCount,
+               COUNT(DISTINCT o.customer_id)                       AS customerCount,
+               SUM(i.actual_quantity)                              AS confirmedQuantity,
+               ROUND(SUM(i.settlement_line_amount)
+                         / NULLIF(SUM(i.actual_quantity), 0), 4)   AS avgTransactionPrice,
+               SUM(i.settlement_line_amount)                       AS settlementAmount,
+               RANK() OVER (ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST) AS amountRank
+        FROM sales_order_item i
+                 JOIN sales_order o ON o.id = i.order_id
+            <include refid="salesCategoryJoins"/>
+        WHERE i.deleted = FALSE
+          AND <include refid="salesConfirmed"/>
+            <include refid="salesFilters"/>
+        GROUP BY i.sku_id, i.spu_code_snapshot, i.product_name_snapshot,
+                 i.sku_code_snapshot, i.spec_name_snapshot, i.sale_unit_snapshot
+        ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST, i.sku_id
+    </select>
+
+    <select id="topSalesProduct"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+        SELECT i.sku_id                       AS id,
+               MAX(i.product_name_snapshot)   AS name,
+               SUM(i.settlement_line_amount)  AS amount
+        FROM sales_order_item i
+                 JOIN sales_order o ON o.id = i.order_id
+            <include refid="salesCategoryJoins"/>
+        WHERE i.deleted = FALSE
+          AND <include refid="salesConfirmed"/>
+            <include refid="salesFilters"/>
+        GROUP BY i.sku_id
+        ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST, i.sku_id
+        LIMIT #{limit}
+    </select>
+
+    <select id="salesByCategory"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$CategoryRow">
+        SELECT cat.id                                            AS categoryId,
+               MAX(cat.name)                                     AS leafCategoryName,
+               MAX(COALESCE(cat3.name, cat2.name, cat.name))     AS rootCategoryName,
+               SUM(i.settlement_line_amount)                     AS settlementAmount,
+               COUNT(DISTINCT o.id)                              AS orderCount,
+               COUNT(DISTINCT o.customer_id)                     AS customerCount,
+               RANK() OVER (ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST) AS amountRank
+        FROM sales_order_item i
+                 JOIN sales_order o ON o.id = i.order_id
+            <include refid="salesCategoryJoins"/>
+        WHERE i.deleted = FALSE
+          AND cat.id IS NOT NULL
+          AND <include refid="salesConfirmed"/>
+            <include refid="salesFilters"/>
+        GROUP BY cat.id
+        ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST, cat.id
+    </select>
+
+    <select id="topSalesCategory"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+        SELECT cat.id                      AS id,
+               MAX(cat.name)               AS name,
+               SUM(i.settlement_line_amount) AS amount
+        FROM sales_order_item i
+                 JOIN sales_order o ON o.id = i.order_id
+            <include refid="salesCategoryJoins"/>
+        WHERE i.deleted = FALSE
+          AND cat.id IS NOT NULL
+          AND <include refid="salesConfirmed"/>
+            <include refid="salesFilters"/>
+        GROUP BY cat.id
+        ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST, cat.id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      退款按 order_refund.customer_id 独立聚合：该表自带客户列，因此既不需要经订单 JOIN，
+      也不可能被订单行数量放大。客户编码/名称取主档当前值（分组键是 id，快照只服务明细行）。
+    -->
+    <select id="salesByCustomer"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$CustomerRow">
+        WITH rf AS (SELECT r.customer_id, SUM(r.refund_amount) AS refund_amount
+                    FROM order_refund r
+                    WHERE r.deleted = FALSE
+                      AND r.status = 'COMPLETED'
+                      AND r.completed_at &gt;= #{startAt}
+                      AND r.completed_at &lt; #{endAt}
+                    GROUP BY r.customer_id)
+        SELECT o.customer_id                                             AS customerId,
+               MAX(cu.customer_code)                                     AS customerCode,
+               MAX(cu.name)                                              AS customerName,
+               MAX(e.actual_name)                                        AS sellerName,
+               COUNT(DISTINCT o.id)                                      AS orderCount,
+               COUNT(DISTINCT i.sku_id)                                  AS skuKindCount,
+               SUM(i.settlement_line_amount)                             AS settlementAmount,
+               COALESCE(MAX(rf.refund_amount), 0)                        AS completedRefundAmount,
+               MAX(o.confirmed_at)                                       AS lastConfirmedAt,
+               RANK() OVER (ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST) AS amountRank
+        FROM sales_order o
+                 JOIN sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE
+                 LEFT JOIN customer cu ON cu.id = o.customer_id AND cu.deleted = FALSE
+                 LEFT JOIN t_employee e ON e.employee_id = o.seller_id AND e.deleted_flag = FALSE
+                 LEFT JOIN rf ON rf.customer_id = o.customer_id
+            <include refid="salesCategoryJoins"/>
+        WHERE <include refid="salesConfirmed"/>
+            <include refid="salesFilters"/>
+        GROUP BY o.customer_id
+        ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST, o.customer_id
+    </select>
+
+    <select id="topSalesCustomer"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+        SELECT o.customer_id                   AS id,
+               MAX(o.customer_name_snapshot)   AS name,
+               SUM(i.settlement_line_amount)   AS amount
+        FROM sales_order o
+                 JOIN sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE
+            <include refid="salesCategoryJoins"/>
+        WHERE <include refid="salesConfirmed"/>
+            <include refid="salesFilters"/>
+        GROUP BY o.customer_id
+        ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST, o.customer_id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      一行 = 订单的聚合（ord），因此按销售员合并退款时不会重复计退款：
+      rf 先按订单聚合，再经订单回到销售员。seller_id 为 NULL 用 IS NOT DISTINCT FROM 才能匹配上。
+    -->
+    <select id="salesBySeller"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$SellerRow">
+        WITH ord AS (SELECT o.id,
+                            o.seller_id,
+                            o.customer_id,
+                            o.confirmed_at,
+                            SUM(i.settlement_line_amount) AS line_amount
+                     FROM sales_order o
+                              JOIN sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE
+                        <include refid="salesCategoryJoins"/>
+                     WHERE <include refid="salesConfirmed"/>
+                        <include refid="salesFilters"/>
+                     GROUP BY o.id, o.seller_id, o.customer_id, o.confirmed_at),
+             rf AS (SELECT o2.seller_id, SUM(r.refund_amount) AS refund_amount
+                    FROM order_refund r
+                             JOIN sales_order o2 ON o2.id = r.order_id AND o2.deleted = FALSE
+                    WHERE r.deleted = FALSE
+                      AND r.status = 'COMPLETED'
+                      AND r.completed_at &gt;= #{startAt}
+                      AND r.completed_at &lt; #{endAt}
+                    GROUP BY o2.seller_id)
+        SELECT ord.seller_id                              AS sellerId,
+               COALESCE(MAX(e.actual_name), '未分配销售员') AS sellerName,
+               COUNT(*)                                   AS orderCount,
+               COUNT(DISTINCT ord.customer_id)            AS customerCount,
+               SUM(ord.line_amount)                       AS settlementAmount,
+               COALESCE(MAX(rf.refund_amount), 0)         AS completedRefundAmount,
+               MAX(ord.confirmed_at)                      AS lastConfirmedAt
+        FROM ord
+                 LEFT JOIN rf ON rf.seller_id IS NOT DISTINCT FROM ord.seller_id
+                 LEFT JOIN t_employee e ON e.employee_id = ord.seller_id AND e.deleted_flag = FALSE
+        GROUP BY ord.seller_id
+        ORDER BY SUM(ord.line_amount) DESC NULLS LAST, ord.seller_id
+    </select>
+
+    <select id="salesItemList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$ItemRow">
+        SELECT o.id                          AS orderId,
+               i.id                          AS orderItemId,
+               o.order_no                    AS orderNo,
+               o.confirmed_at                AS confirmedAt,
+               o.customer_code_snapshot      AS customerCode,
+               o.customer_name_snapshot      AS customerName,
+               e.actual_name                 AS sellerName,
+               o.order_source                AS orderSource,
+               o.settle_mode_snapshot        AS settleMode,
+               i.spu_code_snapshot           AS spuCode,
+               i.product_name_snapshot       AS productName,
+               i.sku_code_snapshot           AS skuCode,
+               i.spec_name_snapshot          AS specName,
+               i.product_type_snapshot       AS productType,
+               i.sale_unit_snapshot          AS saleUnit,
+               i.ordered_quantity            AS orderedQuantity,
+               i.actual_quantity             AS actualQuantity,
+               i.locked_unit_price           AS lockedUnitPrice,
+               i.locked_price_source         AS lockedPriceSource,
+               i.settlement_line_amount      AS settlementLineAmount,
+               i.manual_price_override       AS manualPriceOverride,
+               i.manual_price_reason         AS manualPriceReason
+        FROM sales_order o
+                 JOIN sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE
+                 LEFT JOIN t_employee e ON e.employee_id = o.seller_id AND e.deleted_flag = FALSE
+            <include refid="salesCategoryJoins"/>
+        WHERE <include refid="salesConfirmed"/>
+            <include refid="salesFilters"/>
+        ORDER BY o.confirmed_at DESC, o.id DESC, i.sort_order, i.id
+    </select>
+
+    <!-- ============ 采购分析 ============ -->
+
+    <select id="purchaseOverview"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$Overview">
+        SELECT po.submittedOrderCount,
+               po.submittedAmount,
+               rc.confirmedReceiptCount,
+               rc.receiptReferenceAmount,
+               mv.purchaseInCostAmount,
+               mv.purchaseInCostMissingCount,
+               pd.pendingPutawayReceiptCount
+        FROM (SELECT COUNT(*)                            AS submittedOrderCount,
+                     COALESCE(SUM(o.total_amount), 0)   AS submittedAmount
+              FROM purchase_order o
+              WHERE o.deleted = FALSE
+                AND o.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
+                AND o.submitted_at &gt;= #{startAt}
+                AND o.submitted_at &lt; #{endAt}
+                <if test="query.supplierId != null">AND o.supplier_id = #{query.supplierId}</if>
+                <if test="query.purchaserId != null">AND o.purchaser_id = #{query.purchaserId}</if>
+                <if test="query.warehouseId != null">AND o.warehouse_id = #{query.warehouseId}</if>
+                <if test="scope != null and scope.all == false">
+                    AND o.warehouse_id IN
+                    <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                </if>
+                <if test="scope == null">
+                    AND FALSE
+                </if>) po
+                 CROSS JOIN (SELECT COUNT(DISTINCT r.id)                                    AS confirmedReceiptCount,
+                                      COALESCE(SUM(ri.received_quantity * oi.purchase_price), 0) AS receiptReferenceAmount
+                             FROM purchase_receipt r
+                                      JOIN purchase_receipt_item ri
+                                           ON ri.purchase_receipt_id = r.id AND ri.deleted = FALSE
+                                      JOIN purchase_order_item oi
+                                           ON oi.id = ri.purchase_order_item_id AND oi.deleted = FALSE
+                                      JOIN purchase_order o2
+                                           ON o2.id = oi.purchase_order_id AND o2.deleted = FALSE
+                             WHERE r.deleted = FALSE
+                               AND r.status = 'CONFIRMED'
+                               AND r.confirmed_at &gt;= #{startAt}
+                               AND r.confirmed_at &lt; #{endAt}
+                               <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+                               <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+                               <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND r.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) rc
+                 CROSS JOIN (SELECT COALESCE(SUM(m.quantity * m.unit_cost), 0)          AS purchaseInCostAmount,
+                                      COUNT(*) FILTER (WHERE m.unit_cost IS NULL)        AS purchaseInCostMissingCount
+                             FROM inventory_movement m
+                                      JOIN purchase_receipt_item ri
+                                           ON ri.id = m.source_document_item_id AND ri.deleted = FALSE
+                                      JOIN purchase_receipt r
+                                           ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE
+                                      JOIN purchase_order_item oi
+                                           ON oi.id = ri.purchase_order_item_id AND oi.deleted = FALSE
+                                      JOIN purchase_order o2
+                                           ON o2.id = oi.purchase_order_id AND o2.deleted = FALSE
+                             WHERE m.deleted = FALSE
+                               AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+                               AND m.movement_type = 'PURCHASE_IN'
+                               AND m.occurred_at &gt;= #{startAt}
+                               AND m.occurred_at &lt; #{endAt}
+                               <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+                               <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+                               <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                               <!-- 范围取流水自身的仓库：入库流水落在哪个仓，就是哪个仓的库存事实。 -->
+                               <if test="scope != null and scope.all == false">
+                                   AND m.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) mv
+                 <!-- 待入库是「当前积压」，不是区间量，所以刻意不带日期条件。 -->
+                 CROSS JOIN (SELECT COUNT(*) AS pendingPutawayReceiptCount
+                             FROM purchase_receipt r2
+                             WHERE r2.deleted = FALSE
+                               AND r2.status = 'CONFIRMED'
+                               AND r2.receipt_mode = 'WAREHOUSE_CONFIRM'
+                               AND r2.putaway_status = 'PENDING'
+                               <if test="scope != null and scope.all == false">
+                                   AND r2.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) pd
+    </select>
+
+    <!--
+      入库侧数量按库存记账单位分组后用文本给出：采购入库量落在库存单位上，
+      与采购单位的行合计相加会得到无量纲数字，所以这里不给单一数量。
+    -->
+    <select id="purchaseByProduct"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$ProductRow">
+        WITH po AS (SELECT oi.sku_id,
+                           oi.purchase_unit_snapshot,
+                           MAX(oi.spu_code_snapshot)             AS spu_code,
+                           MAX(oi.product_name_snapshot)         AS product_name,
+                           MAX(oi.sku_code_snapshot)             AS sku_code,
+                           MAX(oi.sku_name_snapshot)             AS sku_name,
+                           COUNT(DISTINCT oi.purchase_order_id)  AS order_count,
+                           SUM(oi.planned_quantity)              AS planned_quantity,
+                           SUM(oi.received_quantity)             AS received_quantity,
+                           SUM(oi.line_amount)                   AS order_amount
+                    FROM purchase_order_item oi
+                             JOIN purchase_order o ON o.id = oi.purchase_order_id
+                    WHERE oi.deleted = FALSE
+                      AND <include refid="purchaseSubmitted"/>
+                        <include refid="purchaseFilters"/>
+                    GROUP BY oi.sku_id, oi.purchase_unit_snapshot),
+             ic AS (SELECT q.sku_id,
+                           STRING_AGG(q.unit_snapshot || ' ' || CAST(q.qty AS TEXT),
+                                      ' / ' ORDER BY q.unit_snapshot) AS inbound_quantity_text,
+                           SUM(q.cost_amount)                          AS inbound_cost_amount,
+                           SUM(q.cost_missing_count)                   AS inbound_cost_missing_count
+                    FROM (SELECT m.sku_id,
+                                 m.unit_snapshot,
+                                 SUM(m.quantity)                             AS qty,
+                                 COALESCE(SUM(m.quantity * m.unit_cost), 0)  AS cost_amount,
+                                 COUNT(*) FILTER (WHERE m.unit_cost IS NULL) AS cost_missing_count
+                          <include refid="purchaseInboundMovementFrom"/>
+                          <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
+                          GROUP BY m.sku_id, m.unit_snapshot) q
+                    GROUP BY q.sku_id)
+        SELECT po.sku_id                                     AS skuId,
+               po.spu_code                                   AS spuCode,
+               po.product_name                               AS productName,
+               po.sku_code                                   AS skuCode,
+               po.sku_name                                   AS skuName,
+               po.purchase_unit_snapshot                     AS purchaseUnit,
+               po.order_count                                AS orderCount,
+               po.planned_quantity                           AS plannedQuantity,
+               po.received_quantity                          AS receivedQuantity,
+               po.order_amount                               AS orderAmount,
+               ROUND(po.order_amount / NULLIF(po.planned_quantity, 0), 4) AS avgPurchasePrice,
+               ic.inbound_quantity_text                      AS inboundQuantityText,
+               COALESCE(ic.inbound_cost_amount, 0)           AS inboundCostAmount,
+               COALESCE(ic.inbound_cost_missing_count, 0)    AS inboundCostMissingCount
+        FROM po
+                 LEFT JOIN ic ON ic.sku_id = po.sku_id
+        ORDER BY po.order_amount DESC NULLS LAST, po.sku_id
+    </select>
+
+    <!--
+      供应商维度不给「计划采购数量」单一数字：一个供应商可以供多种单位，
+      合计没有意义（AGENTS 与 R0 计划的「数量不跨单位总计」纪律）。
+      数量看抽屉（该供应商的按商品明细，按单位分组）。
+    -->
+    <select id="purchaseBySupplier"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$SupplierRow">
+        WITH po AS (SELECT o.supplier_id,
+                           COUNT(DISTINCT o.id)            AS order_count,
+                           COUNT(DISTINCT oi.sku_id)       AS sku_kind_count,
+                           SUM(oi.line_amount)             AS order_amount,
+                           MAX(o.submitted_at)             AS last_submitted_at
+                    FROM purchase_order o
+                             JOIN purchase_order_item oi ON oi.purchase_order_id = o.id AND oi.deleted = FALSE
+                    WHERE <include refid="purchaseSubmitted"/>
+                        <include refid="purchaseFilters"/>
+                    GROUP BY o.supplier_id),
+             rc AS (SELECT r.supplier_id,
+                           COALESCE(SUM(ri.received_quantity * oi.purchase_price), 0) AS receipt_reference_amount
+                    FROM purchase_receipt r
+                             JOIN purchase_receipt_item ri
+                                  ON ri.purchase_receipt_id = r.id AND ri.deleted = FALSE
+                             JOIN purchase_order_item oi ON oi.id = ri.purchase_order_item_id AND oi.deleted = FALSE
+                             JOIN purchase_order o2 ON o2.id = oi.purchase_order_id AND o2.deleted = FALSE
+                    WHERE r.deleted = FALSE
+                      AND r.status = 'CONFIRMED'
+                      AND r.confirmed_at &gt;= #{startAt}
+                      AND r.confirmed_at &lt; #{endAt}
+                      <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+                      <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+                      <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                      <if test="scope != null and scope.all == false">
+                          AND r.warehouse_id IN
+                          <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                      </if>
+                      <if test="scope == null">
+                          AND FALSE
+                      </if>
+                    GROUP BY r.supplier_id),
+             ic AS (SELECT q.supplier_id,
+                           SUM(q.cost_amount)        AS inbound_cost_amount,
+                           SUM(q.cost_missing_count) AS inbound_cost_missing_count
+                    FROM (SELECT m.source_document_id,
+                                 r2.supplier_id,
+                                 COALESCE(SUM(m.quantity * m.unit_cost), 0)  AS cost_amount,
+                                 COUNT(*) FILTER (WHERE m.unit_cost IS NULL) AS cost_missing_count
+                          FROM inventory_movement m
+                                   JOIN purchase_receipt_item ri
+                                        ON ri.id = m.source_document_item_id AND ri.deleted = FALSE
+                                   JOIN purchase_receipt r2
+                                        ON r2.id = ri.purchase_receipt_id AND r2.deleted = FALSE
+                                   JOIN purchase_order_item poi
+                                        ON poi.id = ri.purchase_order_item_id AND poi.deleted = FALSE
+                                   JOIN purchase_order po2
+                                        ON po2.id = poi.purchase_order_id AND po2.deleted = FALSE
+                          WHERE m.deleted = FALSE
+                            AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+                            AND m.movement_type = 'PURCHASE_IN'
+                            AND m.occurred_at &gt;= #{startAt}
+                            AND m.occurred_at &lt; #{endAt}
+                            <if test="query.warehouseId != null">AND r2.warehouse_id = #{query.warehouseId}</if>
+                            <if test="query.purchaserId != null">AND po2.purchaser_id = #{query.purchaserId}</if>
+                            <if test="scope != null and scope.all == false">
+                                AND m.warehouse_id IN
+                                <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                            </if>
+                            <if test="scope == null">
+                                AND FALSE
+                            </if>
+                          GROUP BY m.source_document_id, r2.supplier_id) q
+                    GROUP BY q.supplier_id)
+        SELECT po.supplier_id                              AS supplierId,
+               sp.supplier_code                            AS supplierCode,
+               sp.name                                     AS supplierName,
+               po.order_count                              AS orderCount,
+               po.sku_kind_count                           AS skuKindCount,
+               po.order_amount                             AS orderAmount,
+               COALESCE(rc.receipt_reference_amount, 0)    AS receiptReferenceAmount,
+               COALESCE(ic.inbound_cost_amount, 0)         AS inboundCostAmount,
+               COALESCE(ic.inbound_cost_missing_count, 0)  AS inboundCostMissingCount,
+               po.last_submitted_at                        AS lastSubmittedAt,
+               RANK() OVER (ORDER BY po.order_amount DESC NULLS LAST) AS amountRank
+        FROM po
+                 LEFT JOIN supplier sp ON sp.id = po.supplier_id AND sp.deleted = FALSE
+                 LEFT JOIN rc ON rc.supplier_id = po.supplier_id
+                 LEFT JOIN ic ON ic.supplier_id = po.supplier_id
+        ORDER BY po.order_amount DESC NULLS LAST, po.supplier_id
+    </select>
+
+    <!-- 供应商 TOP 榜走「采购入库成本」而不是采购单金额：成本才是已发生的入库事实。 -->
+    <select id="topPurchaseSupplierInbound"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+        SELECT r.supplier_id                                        AS id,
+               MAX(r.supplier_name_snapshot)                        AS name,
+               COALESCE(SUM(m.quantity * m.unit_cost), 0)           AS amount
+        FROM inventory_movement m
+                 JOIN purchase_receipt_item ri ON ri.id = m.source_document_item_id AND ri.deleted = FALSE
+                 JOIN purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE
+        WHERE m.deleted = FALSE
+          AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+          AND m.movement_type = 'PURCHASE_IN'
+          AND m.occurred_at &gt;= #{startAt}
+          AND m.occurred_at &lt; #{endAt}
+          <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
+        GROUP BY r.supplier_id
+        ORDER BY SUM(m.quantity * m.unit_cost) DESC NULLS LAST, r.supplier_id
+        LIMIT #{limit}
+    </select>
+
+    <select id="purchaseByPurchaser"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$PurchaserRow">
+        WITH po AS (SELECT o.purchaser_id,
+                           COUNT(DISTINCT o.id)      AS order_count,
+                           COUNT(DISTINCT oi.sku_id) AS sku_kind_count,
+                           SUM(oi.line_amount)       AS order_amount,
+                           MAX(o.submitted_at)       AS last_submitted_at
+                    FROM purchase_order o
+                             JOIN purchase_order_item oi ON oi.purchase_order_id = o.id AND oi.deleted = FALSE
+                    WHERE <include refid="purchaseSubmitted"/>
+                        <include refid="purchaseFilters"/>
+                    GROUP BY o.purchaser_id),
+             rc AS (SELECT o2.purchaser_id,
+                           COALESCE(SUM(ri.received_quantity * oi.purchase_price), 0) AS receipt_reference_amount
+                    FROM purchase_receipt r
+                             JOIN purchase_receipt_item ri
+                                  ON ri.purchase_receipt_id = r.id AND ri.deleted = FALSE
+                             JOIN purchase_order_item oi ON oi.id = ri.purchase_order_item_id AND oi.deleted = FALSE
+                             JOIN purchase_order o2 ON o2.id = oi.purchase_order_id AND o2.deleted = FALSE
+                    WHERE r.deleted = FALSE
+                      AND r.status = 'CONFIRMED'
+                      AND r.confirmed_at &gt;= #{startAt}
+                      AND r.confirmed_at &lt; #{endAt}
+                      <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+                      <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+                      <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                      <if test="scope != null and scope.all == false">
+                          AND r.warehouse_id IN
+                          <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                      </if>
+                      <if test="scope == null">
+                          AND FALSE
+                      </if>
+                    GROUP BY o2.purchaser_id),
+             ic AS (SELECT q.purchaser_id,
+                           SUM(q.cost_amount)        AS inbound_cost_amount,
+                           SUM(q.cost_missing_count) AS inbound_cost_missing_count
+                    FROM (SELECT po2.purchaser_id,
+                                 COALESCE(SUM(m.quantity * m.unit_cost), 0)  AS cost_amount,
+                                 COUNT(*) FILTER (WHERE m.unit_cost IS NULL) AS cost_missing_count
+                          FROM inventory_movement m
+                                   JOIN purchase_receipt_item ri
+                                        ON ri.id = m.source_document_item_id AND ri.deleted = FALSE
+                                   JOIN purchase_receipt r2
+                                        ON r2.id = ri.purchase_receipt_id AND r2.deleted = FALSE
+                                   JOIN purchase_order_item poi
+                                        ON poi.id = ri.purchase_order_item_id AND poi.deleted = FALSE
+                                   JOIN purchase_order po2
+                                        ON po2.id = poi.purchase_order_id AND po2.deleted = FALSE
+                          WHERE m.deleted = FALSE
+                            AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+                            AND m.movement_type = 'PURCHASE_IN'
+                            AND m.occurred_at &gt;= #{startAt}
+                            AND m.occurred_at &lt; #{endAt}
+                            <if test="query.supplierId != null">AND r2.supplier_id = #{query.supplierId}</if>
+                            <if test="query.warehouseId != null">AND r2.warehouse_id = #{query.warehouseId}</if>
+                            <if test="query.purchaserId != null">AND po2.purchaser_id = #{query.purchaserId}</if>
+                            <if test="scope != null and scope.all == false">
+                                AND m.warehouse_id IN
+                                <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                            </if>
+                            <if test="scope == null">
+                                AND FALSE
+                            </if>
+                          GROUP BY po2.purchaser_id, m.id) q
+                    GROUP BY q.purchaser_id)
+        SELECT po.purchaser_id                             AS purchaserId,
+               COALESCE(MAX(e.actual_name), '未分配采购员') AS purchaserName,
+               MAX(po.order_count)                         AS orderCount,
+               MAX(po.sku_kind_count)                      AS skuKindCount,
+               MAX(po.order_amount)                        AS orderAmount,
+               COALESCE(MAX(rc.receipt_reference_amount), 0) AS receiptReferenceAmount,
+               COALESCE(MAX(ic.inbound_cost_amount), 0)    AS inboundCostAmount,
+               COALESCE(MAX(ic.inbound_cost_missing_count), 0) AS inboundCostMissingCount,
+               MAX(po.last_submitted_at)                   AS lastSubmittedAt
+        FROM po
+                 LEFT JOIN t_employee e ON e.employee_id = po.purchaser_id AND e.deleted_flag = FALSE
+                 LEFT JOIN rc ON rc.purchaser_id IS NOT DISTINCT FROM po.purchaser_id
+                 LEFT JOIN ic ON ic.purchaser_id IS NOT DISTINCT FROM po.purchaser_id
+        GROUP BY po.purchaser_id
+        ORDER BY MAX(po.order_amount) DESC NULLS LAST, po.purchaser_id
+    </select>
+
+    <select id="purchaseItemList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$ItemRow">
+        SELECT o.id                     AS purchaseOrderId,
+               oi.id                    AS purchaseOrderItemId,
+               o.order_no               AS orderNo,
+               o.submitted_at           AS submittedAt,
+               o.status                 AS status,
+               o.supplier_name_snapshot AS supplierName,
+               e.actual_name            AS purchaserName,
+               o.warehouse_name_snapshot AS warehouseName,
+               o.planned_arrival_date   AS plannedArrivalDate,
+               oi.spu_code_snapshot     AS spuCode,
+               oi.product_name_snapshot AS productName,
+               oi.sku_code_snapshot     AS skuCode,
+               oi.sku_name_snapshot     AS skuName,
+               oi.purchase_unit_snapshot AS purchaseUnit,
+               oi.planned_quantity      AS plannedQuantity,
+               oi.received_quantity     AS receivedQuantity,
+               oi.purchase_price        AS purchasePrice,
+               oi.line_amount           AS lineAmount
+        FROM purchase_order o
+                 JOIN purchase_order_item oi ON oi.purchase_order_id = o.id AND oi.deleted = FALSE
+                 LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id AND e.deleted_flag = FALSE
+        WHERE <include refid="purchaseSubmitted"/>
+            <include refid="purchaseFilters"/>
+        ORDER BY o.submitted_at DESC, o.id DESC, oi.sort_order, oi.id
+    </select>
+
+    <!--
+      R0-B 价格波动：同一天多笔按数量加权平均，且按 SKU × 采购单位分组，
+      所以箱价与公斤价不可能落进同一条线。GROUP BY 用序号，与 SELECT 表达式一一对应。
+    -->
+    <select id="purchasePriceTrend"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$PriceTrendPoint">
+        SELECT TO_CHAR((o.submitted_at AT TIME ZONE 'Asia/Shanghai')::date, 'YYYY-MM-DD') AS bizDate,
+               oi.sku_id                                                                  AS skuId,
+               MAX(oi.sku_code_snapshot)                                                  AS skuCode,
+               MAX(oi.product_name_snapshot)                                              AS productName,
+               oi.purchase_unit_snapshot                                                   AS purchaseUnit,
+               ROUND(SUM(oi.purchase_price * oi.planned_quantity)
+                         / NULLIF(SUM(oi.planned_quantity), 0), 4)                        AS weightedAvgPrice,
+               COUNT(*)                                                                   AS sampleLineCount
+        FROM purchase_order_item oi
+                 JOIN purchase_order o ON o.id = oi.purchase_order_id
+        WHERE oi.deleted = FALSE
+          AND <include refid="purchaseSubmitted"/>
+            <include refid="purchaseFilters"/>
+        GROUP BY 1, 2, 5
+        ORDER BY 1, 2, 5
+    </select>
+
+    <!-- ============ 收货 / 入库 ============ -->
+
+    <select id="receiptItemList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReceiptReportVO$ReceiptRow">
+        SELECT r.id                            AS receiptId,
+               ri.id                           AS receiptItemId,
+               r.receipt_no                    AS receiptNo,
+               r.purchase_order_no_snapshot    AS purchaseOrderNo,
+               r.purchase_order_id             AS purchaseOrderId,
+               r.supplier_name_snapshot        AS supplierName,
+               r.warehouse_name_snapshot       AS warehouseName,
+               r.receipt_mode                  AS receiptMode,
+               r.putaway_status                AS putawayStatus,
+               r.confirmed_at                  AS confirmedAt,
+               ri.spu_code_snapshot            AS spuCode,
+               ri.product_name_snapshot        AS productName,
+               ri.sku_code_snapshot            AS skuCode,
+               ri.sku_name_snapshot            AS skuName,
+               ri.purchase_unit_snapshot       AS purchaseUnit,
+               ri.received_quantity            AS receivedQuantity,
+               ri.cumulative_received_quantity AS cumulativeReceivedQuantity,
+               ri.remaining_quantity           AS remainingQuantity,
+               ri.over_receipt_quantity        AS overReceiptQuantity,
+               ri.receipt_difference           AS receiptDifference,
+               oi.purchase_price               AS purchasePrice,
+               ROUND(ri.received_quantity * oi.purchase_price, 4) AS receiptReferenceAmount
+        FROM purchase_receipt r
+                 JOIN purchase_receipt_item ri ON ri.purchase_receipt_id = r.id AND ri.deleted = FALSE
+                 JOIN purchase_order_item oi ON oi.id = ri.purchase_order_item_id AND oi.deleted = FALSE
+        WHERE r.deleted = FALSE
+          AND r.status = 'CONFIRMED'
+          AND r.confirmed_at &gt;= #{startAt}
+          AND r.confirmed_at &lt; #{endAt}
+          <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+          <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND r.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
+          <if test="query.purchaseOrderId != null">AND r.purchase_order_id = #{query.purchaseOrderId}</if>
+          <if test="query.receiptMode != null and query.receiptMode != ''">
+              AND r.receipt_mode = #{query.receiptMode}
+          </if>
+          <if test="query.putawayStatus != null and query.putawayStatus != ''">
+              AND r.putaway_status = #{query.putawayStatus}
+          </if>
+          <if test="query.keyword != null and query.keyword != ''">
+              AND (r.receipt_no ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR r.purchase_order_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR ri.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR ri.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+          </if>
+        ORDER BY r.confirmed_at DESC, r.id DESC, ri.sort_order, ri.id
+    </select>
+
+    <!--
+      入库明细的事实源是 PURCHASE_IN 流水，不是收货单：
+      WAREHOUSE_CONFIRM 模式下「已确认收货但尚未入库」的行在这里天然不出现，
+      这正是收货与入库必须分开的意义。成本缺失（unit_cost IS NULL）返回 null 并置 costMissing，
+      绝不显示成 0。
+    -->
+    <select id="inboundList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReceiptReportVO$InboundRow">
+        SELECT m.id                                              AS movementId,
+               m.occurred_at                                     AS occurredAt,
+               w.name                                            AS warehouseName,
+               r.receipt_no                                      AS receiptNo,
+               r.purchase_order_no_snapshot                      AS purchaseOrderNo,
+               r.supplier_name_snapshot                          AS supplierName,
+               spu.name                                          AS productName,
+               k.sku_code                                        AS skuCode,
+               m.unit_snapshot                                   AS unit,
+               m.quantity                                        AS quantity,
+               m.unit_cost                                       AS unitCost,
+               ROUND(m.quantity * m.unit_cost, 4)                AS costAmount,
+               (m.unit_cost IS NULL)                             AS costMissing,
+               m.operator                                        AS operator
+        FROM inventory_movement m
+                 JOIN purchase_receipt_item ri ON ri.id = m.source_document_item_id AND ri.deleted = FALSE
+                 JOIN purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE
+                 LEFT JOIN warehouse w ON w.id = m.warehouse_id AND w.deleted = FALSE
+                 LEFT JOIN product_sku k ON k.id = m.sku_id
+                 LEFT JOIN product_spu spu ON spu.id = k.spu_id
+        WHERE m.deleted = FALSE
+          AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
+          AND m.movement_type = 'PURCHASE_IN'
+          AND m.occurred_at &gt;= #{startAt}
+          AND m.occurred_at &lt; #{endAt}
+          <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+          <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
+          <if test="query.purchaseOrderId != null">AND r.purchase_order_id = #{query.purchaseOrderId}</if>
+          <if test="query.keyword != null and query.keyword != ''">
+              AND (r.receipt_no ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR r.purchase_order_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+          </if>
+        ORDER BY m.occurred_at DESC, m.id DESC
+    </select>
+
+    <!-- 待入库：只可能是 WAREHOUSE_CONFIRM + CONFIRMED + PENDING；本页不提供入库写入口。 -->
+    <select id="pendingPutawayList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReceiptReportVO$PendingPutawayRow">
+        SELECT r.id                         AS receiptId,
+               r.receipt_no                 AS receiptNo,
+               r.purchase_order_no_snapshot AS purchaseOrderNo,
+               r.purchase_order_id          AS purchaseOrderId,
+               r.supplier_name_snapshot     AS supplierName,
+               r.warehouse_name_snapshot    AS warehouseName,
+               r.confirmed_at               AS confirmedAt,
+               COALESCE(MAX(it.sku_kind_count), 0) AS skuKindCount,
+               STRING_AGG(it.unit_snapshot || ' ' || CAST(it.qty AS TEXT),
+                          ' / ' ORDER BY it.unit_snapshot) AS quantityText
+        FROM purchase_receipt r
+                 LEFT JOIN (SELECT ri.purchase_receipt_id,
+                                   ri.purchase_unit_snapshot AS unit_snapshot,
+                                   COUNT(DISTINCT ri.sku_id) AS sku_kind_count,
+                                   SUM(ri.received_quantity) AS qty
+                            FROM purchase_receipt_item ri
+                            WHERE ri.deleted = FALSE
+                            GROUP BY ri.purchase_receipt_id, ri.purchase_unit_snapshot) it
+                           ON it.purchase_receipt_id = r.id
+        WHERE r.deleted = FALSE
+          AND r.status = 'CONFIRMED'
+          AND r.receipt_mode = 'WAREHOUSE_CONFIRM'
+          AND r.putaway_status = 'PENDING'
+          <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
+          <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND r.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
+          <if test="query.keyword != null and query.keyword != ''">
+              AND (r.receipt_no ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR r.purchase_order_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+          </if>
+        GROUP BY r.id
+        ORDER BY r.confirmed_at DESC, r.id DESC
+    </select>
+
+    <!-- ============ 库存分析 ============ -->
+
+    <sql id="movementSourceJoins">
+        <!--
+          一条流水只有一个来源类型，所以每个 JOIN 的 ON 上都带类型谓词：
+          非该类型的行不会被这张表参与，也就不会出现多来源同 ID 的串号。
+        -->
+        LEFT JOIN purchase_receipt src_receipt
+                  ON m.source_document_type = 'PURCHASE_RECEIPT_ITEM' AND src_receipt.id = m.source_document_id
+        LEFT JOIN inventory_outbound src_outbound
+                  ON m.source_document_type = 'SALES_OUTBOUND_ITEM' AND src_outbound.id = m.source_document_id
+        LEFT JOIN inventory_stocktake src_stocktake
+                  ON m.source_document_type = 'STOCKTAKE_ITEM' AND src_stocktake.id = m.source_document_id
+        LEFT JOIN inventory_loss_gain src_loss_gain
+                  ON m.source_document_type = 'LOSS_GAIN_ITEM' AND src_loss_gain.id = m.source_document_id
+        LEFT JOIN inventory_transfer src_transfer
+                  ON m.source_document_type IN ('TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM')
+                      AND src_transfer.id = m.source_document_id
+        LEFT JOIN inventory_conversion src_conversion
+                  ON m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
+                      AND src_conversion.id = m.source_document_id
+    </sql>
+
+    <sql id="movementSourceNo">
+        COALESCE(src_receipt.receipt_no, src_outbound.outbound_no, src_stocktake.stocktake_no,
+                 src_loss_gain.loss_gain_no, src_transfer.transfer_no, src_conversion.conversion_no)
+    </sql>
+
+    <select id="movementList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$MovementRow">
+        SELECT m.id                    AS movementId,
+               m.occurred_at           AS occurredAt,
+               m.warehouse_id          AS warehouseId,
+               w.name                  AS warehouseName,
+               m.sku_id                AS skuId,
+               spu.name                AS productName,
+               k.sku_code              AS skuCode,
+               m.movement_type         AS movementType,
+               m.source_document_type  AS sourceDocumentType,
+               <include refid="movementSourceNo"/> AS sourceDocumentNo,
+               m.source_document_id    AS sourceDocumentId,
+               m.source_document_item_id AS sourceDocumentItemId,
+               m.quantity              AS quantity,
+               m.unit_snapshot         AS unit,
+               m.unit_cost             AS unitCost,
+               ROUND(m.quantity * m.unit_cost, 4) AS costAmount,
+               m.before_quantity       AS beforeQuantity,
+               m.after_quantity        AS afterQuantity,
+               m.operator              AS operator
+        FROM inventory_movement m
+                 LEFT JOIN warehouse w ON w.id = m.warehouse_id AND w.deleted = FALSE
+                 LEFT JOIN product_sku k ON k.id = m.sku_id
+                 LEFT JOIN product_spu spu ON spu.id = k.spu_id
+            <include refid="movementSourceJoins"/>
+        WHERE m.deleted = FALSE
+          AND m.occurred_at &gt;= #{startAt}
+          AND m.occurred_at &lt; #{endAt}
+          <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
+          <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
+          <if test="query.movementType != null and query.movementType != ''">
+              AND m.movement_type = #{query.movementType}
+          </if>
+          <if test="query.sourceDocumentType != null and query.sourceDocumentType != ''">
+              AND m.source_document_type = #{query.sourceDocumentType}
+          </if>
+          <if test="query.keyword != null and query.keyword != ''">
+              AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+          </if>
+        ORDER BY m.occurred_at DESC, m.id DESC
+    </select>
+
+    <sql id="lossMovementWhere">
+        m.deleted = FALSE
+        AND m.movement_type IN ('STOCKTAKE_LOSS', 'LOSS_REPORT')
+        AND m.occurred_at &gt;= #{startAt}
+        AND m.occurred_at &lt; #{endAt}
+        <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+        <!-- lossSummary 与 lossList 共用本片段，两者的流水别名都必须是 m。 -->
+        <if test="scope != null and scope.all == false">
+            AND m.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
+        <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
+             OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+    </sql>
+
+    <!-- 损耗 = 盘亏 + 手工报损。盘盈 / 报溢不是损耗，不在这两个码里。 -->
+    <select id="lossSummary"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$LossSummary">
+        SELECT COUNT(*) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS')          AS stocktakeLossCount,
+               COUNT(*) FILTER (WHERE m.movement_type = 'LOSS_REPORT')             AS lossReportCount,
+               COALESCE(SUM(m.quantity * m.unit_cost) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'), 0)
+                                                                                   AS stocktakeLossCostAmount,
+               COALESCE(SUM(m.quantity * m.unit_cost) FILTER (WHERE m.movement_type = 'LOSS_REPORT'), 0)
+                                                                                   AS lossReportCostAmount,
+               COALESCE(SUM(m.quantity * m.unit_cost), 0)                          AS totalLossCostAmount,
+               COUNT(*) FILTER (WHERE m.unit_cost IS NULL)                         AS costMissingCount
+        FROM inventory_movement m
+                 LEFT JOIN product_sku k ON k.id = m.sku_id
+                 LEFT JOIN product_spu spu ON spu.id = k.spu_id
+        WHERE <include refid="lossMovementWhere"/>
+    </select>
+
+    <select id="lossList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$LossRow">
+        SELECT m.id                          AS movementId,
+               m.occurred_at                 AS occurredAt,
+               m.warehouse_id                AS warehouseId,
+               w.name                        AS warehouseName,
+               spu.name                      AS productName,
+               k.sku_code                    AS skuCode,
+               m.movement_type               AS lossType,
+               m.quantity                    AS quantity,
+               m.unit_snapshot               AS unit,
+               m.unit_cost                   AS unitCost,
+               ROUND(m.quantity * m.unit_cost, 4) AS costAmount,
+               <include refid="movementSourceNo"/> AS sourceDocumentNo,
+               m.operator                    AS operator
+        FROM inventory_movement m
+                 LEFT JOIN warehouse w ON w.id = m.warehouse_id AND w.deleted = FALSE
+                 LEFT JOIN product_sku k ON k.id = m.sku_id
+                 LEFT JOIN product_spu spu ON spu.id = k.spu_id
+            <include refid="movementSourceJoins"/>
+        WHERE <include refid="lossMovementWhere"/>
+        ORDER BY m.occurred_at DESC, m.id DESC
+    </select>
+
+    <select id="inventoryValueList"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$ValueRow">
+        SELECT b.id                                        AS balanceId,
+               b.warehouse_id                              AS warehouseId,
+               w.name                                      AS warehouseName,
+               b.sku_id                                    AS skuId,
+               spu.name                                    AS productName,
+               k.sku_code                                  AS skuCode,
+               b.unit                                      AS unit,
+               b.quantity                                  AS quantity,
+               b.reserved_quantity                         AS reservedQuantity,
+               b.quantity - b.reserved_quantity            AS availableQuantity,
+               b.avg_cost                                  AS avgCost,
+               ROUND(b.quantity * b.avg_cost, 4)           AS bookAmount
+        FROM inventory_balance b
+                 LEFT JOIN warehouse w ON w.id = b.warehouse_id AND w.deleted = FALSE
+                 LEFT JOIN product_sku k ON k.id = b.sku_id
+                 LEFT JOIN product_spu spu ON spu.id = k.spu_id
+        WHERE b.deleted = FALSE
+          <if test="query.warehouseId != null">AND b.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND b.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
+          <if test="query.skuId != null">AND b.sku_id = #{query.skuId}</if>
+          <if test="query.keyword != null and query.keyword != ''">
+              AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+          </if>
+        ORDER BY ROUND(b.quantity * b.avg_cost, 4) DESC NULLS LAST, b.warehouse_id, b.sku_id
+    </select>
+
+    <!--
+      收发存数量版：按 仓库 × SKU × 记账单位 分组，净变动量的方向来自 Java 传入的
+      inboundTypes（由 ScmInventoryMovementTypeEnum.isInbound() 派生），本文件不再自建一份方向表。
+    -->
+    <select id="flowSummary"
+            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$FlowSummaryRow">
+        SELECT m.warehouse_id AS warehouseId,
+               MAX(w.name)    AS warehouseName,
+               MAX(spu.name)  AS productName,
+               MAX(k.sku_code) AS skuCode,
+               m.unit_snapshot  AS unit,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'PURCHASE_IN'), 0)    AS purchaseInQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'SALES_OUT'), 0)      AS salesOutQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'STOCKTAKE_GAIN'), 0) AS stocktakeGainQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'), 0) AS stocktakeLossQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'GAIN_REPORT'), 0)    AS gainReportQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'LOSS_REPORT'), 0)    AS lossReportQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'TRANSFER_IN'), 0)    AS transferInQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'TRANSFER_OUT'), 0)   AS transferOutQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'CONVERT_IN'), 0)     AS convertInQuantity,
+               COALESCE(SUM(m.quantity) FILTER (WHERE m.movement_type = 'CONVERT_OUT'), 0)    AS convertOutQuantity,
+               COALESCE(SUM(CASE WHEN m.movement_type IN
+                    <foreach collection="inboundTypes" item="t" open="(" separator="," close=")">#{t}</foreach>
+                    THEN m.quantity ELSE -m.quantity END), 0) AS netChangeQuantity
+        FROM inventory_movement m
+                 LEFT JOIN warehouse w ON w.id = m.warehouse_id AND w.deleted = FALSE
+                 LEFT JOIN product_sku k ON k.id = m.sku_id
+                 LEFT JOIN product_spu spu ON spu.id = k.spu_id
+        WHERE m.deleted = FALSE
+          AND m.occurred_at &gt;= #{startAt}
+          AND m.occurred_at &lt; #{endAt}
+          <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
+          <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
+          <if test="query.keyword != null and query.keyword != ''">
+              AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
+               OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+          </if>
+        GROUP BY m.warehouse_id, m.sku_id, m.unit_snapshot
+        ORDER BY m.warehouse_id, m.sku_id
+    </select>
+</mapper>

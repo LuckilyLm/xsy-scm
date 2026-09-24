@@ -51,15 +51,19 @@ public final class PurchaseSnapshotFactory {
      * 采购单头快照。`orderNo` 由 {@code PurchaseNumberGenerator} 在事务内生成后回填。
      *
      * <p>供应商 / 仓库快照在创建 / 编辑时刷新（DRAFT 可刷新），`submit` 后不再回读。
+     *
+     * <p>{@code purchaserId} 必须是服务端裁决出的归属（见 {@code PurchaseOwnerResolver}），
+     * 不能传 {@code form.getPurchaserId()}：表单值是一个客户端可任意填写的数字，
+     * 而它同时是采购员数据范围的行归属依据。
      */
     public static PurchaseOrderEntity order(String supplierCode, String supplierName,
                                             String warehouseCode, String warehouseName,
-                                            PurchaseOrderAddForm form) {
+                                            Long purchaserId, PurchaseOrderAddForm form) {
         PurchaseOrderEntity order = new PurchaseOrderEntity();
         order.setSupplierId(form.getSupplierId());
         order.setSupplierCodeSnapshot(supplierCode);
         order.setSupplierNameSnapshot(supplierName);
-        order.setPurchaserId(form.getPurchaserId());
+        order.setPurchaserId(purchaserId);
         order.setWarehouseId(form.getWarehouseId());
         order.setWarehouseCodeSnapshot(warehouseCode);
         order.setWarehouseNameSnapshot(warehouseName);

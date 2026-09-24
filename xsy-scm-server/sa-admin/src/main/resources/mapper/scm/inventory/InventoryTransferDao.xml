@@ -112,6 +112,19 @@
         LEFT JOIN warehouse fw ON fw.id = t.from_warehouse_id
         LEFT JOIN warehouse tw ON tw.id = t.to_warehouse_id
         WHERE t.deleted = FALSE
+        <!-- 调拨的可见口径是「任一端授权即可见」：只授权源仓或只授权目标仓的人都需要看见这张单，
+             否则在途期间的单据对其中一方完全消失。发出/收货的动作口径不在此处（写路径另行判权限）。
+             scope 缺失时恒假。 -->
+        <if test="scope != null and scope.all == false">
+            AND (t.from_warehouse_id IN
+            <foreach collection="scope.ids" item="fromScopeId" open="(" separator="," close=")">#{fromScopeId}</foreach>
+            OR t.to_warehouse_id IN
+            <foreach collection="scope.ids" item="toScopeId" open="(" separator="," close=")">#{toScopeId}</foreach>
+            )
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.transferNo != null and query.transferNo != ''">
             AND t.transfer_no ILIKE CONCAT('%', #{query.transferNo}, '%')
         </if>
@@ -173,6 +186,18 @@
                  LEFT JOIN product_spu spu ON spu.id = sku.spu_id
         WHERE t.deleted = FALSE
           AND t.status = 'SHIPPED'
+        <!-- 在途口径与调拨列表一致：任一端授权即可见，否则对只授权目标仓的一方，
+             「货已在路上」这件事完全不可见，而它正是目标仓最需要知道的。scope 缺失时恒假。 -->
+        <if test="scope != null and scope.all == false">
+            AND (t.from_warehouse_id IN
+            <foreach collection="scope.ids" item="fromScopeId" open="(" separator="," close=")">#{fromScopeId}</foreach>
+            OR t.to_warehouse_id IN
+            <foreach collection="scope.ids" item="toScopeId" open="(" separator="," close=")">#{toScopeId}</foreach>
+            )
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         ORDER BY t.transfer_no DESC, item.sku_id
     </select>
 

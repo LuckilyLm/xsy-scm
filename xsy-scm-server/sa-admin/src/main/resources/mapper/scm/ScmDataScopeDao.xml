@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeDao">
+
+    <!-- 授权行是部分唯一索引 (employee_id, warehouse_id) WHERE deleted_flag = FALSE 的谓词形态，
+         这里必须带同样的 deleted_flag 条件，否则索引失效且会读到已回收的授权。 -->
+    <select id="listAuthorizedWarehouseIds" resultType="java.lang.Long">
+        SELECT warehouse_id
+        FROM employee_warehouse_scope
+        WHERE deleted_flag = FALSE
+          AND employee_id = #{employeeId}
+        ORDER BY warehouse_id
+    </select>
+
+    <select id="listDriverIdsByEmployee" resultType="java.lang.Long">
+        SELECT id
+        FROM delivery_driver
+        WHERE deleted = FALSE
+          AND employee_id = #{employeeId}
+        ORDER BY id
+    </select>
+
+</mapper>

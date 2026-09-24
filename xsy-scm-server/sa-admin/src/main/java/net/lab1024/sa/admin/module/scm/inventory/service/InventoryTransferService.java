@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmEnableStatusEnum;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryTransferStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferItemDao;
@@ -66,6 +67,8 @@ public class InventoryTransferService {
 
     private final WarehouseService warehouseService;
 
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
     /**
      * 新建草稿调拨单。
      *
@@ -77,6 +80,8 @@ public class InventoryTransferService {
     public Long create(InventoryTransferAddForm form) {
         requireForm(form);
         String operator = ScmOperator.current();
+        // 两端都要授权：能建一张通往未授权仓的单，等于往自己读不到的仓库里塞一张待发出的单
+        warehouseScopeGuard.requireAll(form.getFromWarehouseId(), form.getToWarehouseId());
 
         InventoryTransferEntity entity = new InventoryTransferEntity();
         entity.setTransferNo(numberGenerator.next());
@@ -108,6 +113,9 @@ public class InventoryTransferService {
         String operator = ScmOperator.current();
 
         InventoryTransferEntity locked = lockAndRequire(id);
+        // 行上的两端 + 表单新选的两端：改单可以把任一端换仓，换进换出都必须在授权范围内
+        warehouseScopeGuard.requireAll(locked.getFromWarehouseId(), locked.getToWarehouseId(),
+                form.getFromWarehouseId(), form.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
 
         if (transferDao.updateDraft(id, form.getFromWarehouseId(), form.getToWarehouseId(),
@@ -132,6 +140,8 @@ public class InventoryTransferService {
         OffsetDateTime now = OffsetDateTime.now();
 
         InventoryTransferEntity locked = lockAndRequire(id);
+        // 调拨三个动作的范围判据互不相同：查询任一端命中即可见、发出只看 from、收货只看 to
+        warehouseScopeGuard.require(locked.getFromWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
         requireEnabled(locked.getFromWarehouseId());
 
@@ -175,6 +185,8 @@ public class InventoryTransferService {
         OffsetDateTime now = OffsetDateTime.now();
 
         InventoryTransferEntity locked = lockAndRequire(id);
+        // 收货只要求 to 端授权：货进的是目标仓的账，源仓的仓管不需要、也不应该能替它收货
+        warehouseScopeGuard.require(locked.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.SHIPPED);
         requireEnabled(locked.getToWarehouseId());
 
@@ -208,6 +220,8 @@ public class InventoryTransferService {
     public void cancel(Long id) {
         String operator = ScmOperator.current();
         InventoryTransferEntity locked = lockAndRequire(id);
+        // 撤销草稿不碰任何余额，判据与查询同一条 OR：看得见这张单，就能撤掉它
+        warehouseScopeGuard.requireAny(locked.getFromWarehouseId(), locked.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
         if (transferDao.markCancelled(id, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -221,6 +235,7 @@ public class InventoryTransferService {
     public void delete(Long id) {
         String operator = ScmOperator.current();
         InventoryTransferEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.requireAny(locked.getFromWarehouseId(), locked.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
         itemDao.deleteByTransferId(id, operator);
         if (transferDao.deleteById(id) != 1) {
