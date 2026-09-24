@@ -519,16 +519,19 @@ test('6｜L2 确认规划：状态迁移、重复请求与后续编辑全部封�
     }, 'put');
     expect(edit.code, '规划后不得改头信息').toBe(41101);
 
-    for (const path of ['dispatch', 'complete', 'sign']) {
-        const absent = await envelope(`/scm/delivery/routes/${routeId}/${path}`, {version: await routeVersion()});
-        // L3 未实现：这些路径必须不存在（不是「存在但被权限挡住」），
-        // 否则等于悄悄开了一条没有实发量口径的发货入口。
-        expect(absent.ok, `L3 端点 /${path} 不该可用：${absent.status} code=${absent.code} ${absent.msg}`)
-            .toBe(false);
-        expect([404, 405].includes(absent.status) || ![0, 30005].includes(Number(absent.code)),
-            `L3 端点 /${path} 必须是「不存在」，实际 ${absent.status} code=${absent.code} ${absent.msg}`)
-            .toBe(true);
-    }
+    // L3 端点在 P2 已经真实存在，因此这段断言的目标从「不存在」换成「存在且被守住」：
+    // 用错误版本 / 错误状态去撞，拿到的是乐观锁或状态拒绝，而不是 404 —— 既证明路由已注册，
+    // 又不会在这条 L0–L2 用例里真的扣库存。
+    const staleVersion = (await routeVersion()) + 7;
+    const dispatchGuard = await envelope(`/scm/delivery/routes/${routeId}/dispatch`, {version: staleVersion});
+    expect(dispatchGuard.code, `发车端点应已注册并被乐观锁守住：${dispatchGuard.msg}`).toBe(40921);
+
+    const completeGuard = await envelope(`/scm/delivery/routes/${routeId}/complete`, {version: await routeVersion()});
+    expect(completeGuard.code, 'PLANNED 线路不能直接完成').toBe(41101);
+
+    const signGuard = await envelope(`/scm/delivery/routes/${routeId}/orders/${orders[0].id}/sign`,
+        {version: 1, result: 'SIGNED'});
+    expect(signGuard.code, '未发车的线路不能签收').toBe(41101);
 
     const order = await get<Row>(`/scm/order/detail/${orders[0].id}`);
     expect(order.status, '确认规划不改变订单状态').toBe('CONFIRMED');
