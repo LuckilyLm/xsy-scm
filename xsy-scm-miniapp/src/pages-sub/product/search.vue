@@ -68,6 +68,7 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { onReachBottom } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
   import PagePlaceholder from '@/components/common/page-placeholder.vue';
   import { mallCatalogApi } from '@/api/mall';
@@ -167,6 +168,19 @@
     }
   }
 
+  /**
+   * 触底加载下一页。
+   * 本页是页面级滚动（结果区没有内层 scroll-view），因此用 uni-app 的页面生命周期
+   * onReachBottom —— 与分类页的 scroll-view + scrolltolower 同属项目既有方案，不引入新组件。
+   * 三道拦截：未发起过搜索 / loading 中 / 已取满 total，都不再请求。
+   */
+  function loadMore() {
+    if (!searched.value || loading.value || !hasMore.value) {
+      return;
+    }
+    loadProducts(false);
+  }
+
   function doSearch(word) {
     const kw = String(word === undefined ? keyword.value : word).trim();
     if (!kw) {
@@ -188,6 +202,8 @@
     // 加购属 §39 第 10 项（购物车），cart 契约接入后替换这里
     uni.showToast({ title: `加入购物车：${product.productName}`, icon: 'none' });
   }
+
+  onReachBottom(loadMore);
 
   loadHotKeywords();
 </script>

@@ -145,6 +145,18 @@
     }
   }
 
+  /**
+   * 触底加载下一页（本页是 scroll-view 内滚动，故用 @scrolltolower）。
+   * 两道拦截：loading 期间不重复请求；已取满 total 时不再请求。
+   * 这里只避免「无意义请求」，真正的分页边界仍以服务端返回的 total 为准。
+   */
+  function loadMore() {
+    if (loading.value || !hasMore.value) {
+      return;
+    }
+    loadProducts(false);
+  }
+
   function selectPrimary(item) {
     if (activePrimaryId.value === item.categoryId) {
       return;
