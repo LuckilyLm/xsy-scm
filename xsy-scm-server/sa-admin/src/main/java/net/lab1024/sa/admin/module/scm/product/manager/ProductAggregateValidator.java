@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.product.manager;
 
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuAddForm;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,18 @@ public class ProductAggregateValidator {
                 throw new ScmBusinessException(SKU_PRICE_INVALID);
         }
         var images = form.getImages();
+        validateImages(images);
+    }
+
+    /**
+     * 图片集合自身的规则：数量上限、主图至多一张、fileKey 不得重复。
+     *
+     * <p>单独成一是因为图片中心的批量换绑不经 {@link #validateSpu}，只走
+     * {@link ProductImageSyncManager#sync}；口径若留在 SPU 表单里，那条链路就会把两张主图
+     * 直接顶到 V49 的 {@code uq_product_image_primary_spu} 上，抛出未捕获的
+     * {@code DuplicateKeyException}（HTTP 500）而不是稳定的 IMAGE_INVALID。
+     */
+    public void validateImages(List<ProductImageForm> images) {
         if (images == null || images.size() > 20 || images.stream().filter(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).count() > 1)
             throw new ScmBusinessException(IMAGE_INVALID);
         Set<String> keys = new HashSet<>();
