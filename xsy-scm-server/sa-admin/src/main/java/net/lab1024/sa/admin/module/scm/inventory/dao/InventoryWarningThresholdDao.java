@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryWarningThresholdEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryWarningQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryWarningThresholdQueryForm;
@@ -56,7 +57,8 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      * 配置列表（联仓库 / SKU / 商品取展示字段）。
      */
     List<InventoryWarningThresholdVO> queryPage(Page<?> page,
-                                                @Param("query") InventoryWarningThresholdQueryForm query);
+                                                @Param("query") InventoryWarningThresholdQueryForm query,
+                                                @Param("scope") ScmValueScope scope);
 
     /**
      * 配置详情（按 id）。
@@ -73,5 +75,6 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      * 状态表达式与过滤谓词共用 XML 里的同一个 {@code <sql>} 片段，
      * 避免「判定规则写两遍」这种必然漂移的写法。
      */
-    List<InventoryWarningVO> queryWarningPage(Page<?> page, @Param("query") InventoryWarningQueryForm query);
+    List<InventoryWarningVO> queryWarningPage(Page<?> page, @Param("query") InventoryWarningQueryForm query,
+                                              @Param("scope") ScmValueScope scope);
 }

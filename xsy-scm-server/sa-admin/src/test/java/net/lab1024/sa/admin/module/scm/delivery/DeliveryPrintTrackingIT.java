@@ -1,6 +1,10 @@
 package net.lab1024.sa.admin.module.scm.delivery;
 
+import cn.dev33.satoken.stp.StpUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
@@ -13,16 +17,34 @@ import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteService;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * Wave 5 配送打印追踪的 PostgreSQL 验收：订单/客户双视角聚合、正式生成计次、幂等与并发累加、
  * 版本 / 集合变化拒绝旧请求，以及「生成打印绝不扣库存、绝不推进状态」的负向断言。
+ *
+ * <p>只读视图现在按司机维度收口并按权限抹金额，本类的调用者因此需要「全部范围 + 全部功能点」；
+ * 范围与金额口径由 {@code ScmDeliveryDataScopePgIT} 专门覆盖。
  */
 class DeliveryPrintTrackingIT extends ScmW5PgITBase {
     @Autowired
     DeliveryRouteService delivery;
     @Autowired
     DeliveryRouteQueryService deliveryQuery;
+
+    private MockedStatic<StpUtil> permissions;
+
+    @BeforeEach
+    void grantEveryDeliveryPermission() {
+        permissions = mockStatic(StpUtil.class);
+        permissions.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
+    }
+
+    @AfterEach
+    void releasePermissions() {
+        permissions.close();
+    }
 
     @Test
     void ordersViewCountMatchesAssignmentsAndPrintIncrementsOnlyIncluded() {

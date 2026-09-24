@@ -6,6 +6,10 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAd
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAuditForm;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryLossGainService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
+import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
+import net.lab1024.sa.base.common.domain.RequestUser;
+import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,6 +96,31 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
                 .toList();
     }
 
+    /**
+     * 审批必须换一个人（41065 禁止自建自审，P0 基线收口裁决第 8 条）：切到另一个员工身份跑完
+     * 再恢复。库里没有指向 {@code t_employee} 的外键，审批人用合成 id 即可（只落进审计字段）。
+     */
+    private void approveAsAuditor(Long id, InventoryLossGainAuditForm form) {
+        RequestUser maker = SmartRequestUtil.getRequestUser();
+        RequestEmployee auditor = new RequestEmployee();
+        auditor.setEmployeeId(90011L);
+        auditor.setActualName("W6 IT 审核员");
+        auditor.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        // 与基类同一取向：夹具操作者不受数据范围约束，本用例只测「审批人 != 录单人」这条身份规则，
+        // 不顺带把仓库授权也当被测对象（那属于数据范围用例）。
+        auditor.setAdministratorFlag(true);
+        SmartRequestUtil.setRequestUser(auditor);
+        try {
+            lossGainService.approve(id, form);
+        } finally {
+            if (maker == null) {
+                SmartRequestUtil.remove();
+            } else {
+                SmartRequestUtil.setRequestUser(maker);
+            }
+        }
+    }
+
     @Test
     @DisplayName("前一行已写流水、后一行失败 → 整单回滚：余额零变化、流水零残留、单据仍是待审核")
     void failingLineRollsBackTheWholeDocument() {
@@ -109,7 +138,7 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
                 new BigDecimal("10.0000"), OffsetDateTime.now(), null));
 
         Long id = lossGainService.create(form(wh, first, "2.0000", second, "1.0000"));
-        expectCode(() -> lossGainService.approve(id, audit(id)), 41034);
+        expectCode(() -> approveAsAuditor(id, audit(id)), 41034);
 
         // first 那一行本已在同一事务内写下了报损流水与余额扣减，必须随整单一起消失
         assertThat(balanceRow(wh, first).getQuantity()).isEqualByComparingTo("10.0000");
@@ -122,7 +151,7 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
 
         // 失败原因是那一行，不是别的东西坏了：释放预留后重试即通过
         reservations.release(reservationId);
-        lossGainService.approve(id, audit(id));
+        approveAsAuditor(id, audit(id));
 
         assertThat(balanceRow(wh, first).getQuantity()).isEqualByComparingTo("8.0000");
         assertThat(balanceRow(wh, second).getQuantity()).isEqualByComparingTo("9.0000");

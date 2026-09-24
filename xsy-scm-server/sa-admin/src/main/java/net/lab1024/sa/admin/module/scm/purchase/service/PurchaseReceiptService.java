@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.purchase.service;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseConfigKey;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
@@ -32,6 +33,7 @@ import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptPutawayGu
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptQuantityCalculator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
+import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseOwnerResolver;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseWarehouseReferenceGuard;
 import net.lab1024.sa.base.module.support.config.ConfigService;
 import net.lab1024.sa.base.module.support.config.domain.ConfigVO;
@@ -121,6 +123,18 @@ public class PurchaseReceiptService {
      */
     private final PurchaseWarehouseReferenceGuard warehouseReferenceGuard;
 
+    /**
+     * 仓库维度的写侧守卫：{@code DIRECT} 收货确认与 {@code WAREHOUSE_CONFIRM} 的上架都会写
+     * {@code PURCHASE_IN}，因此两条路径都要判仓库授权；不写库存的收货单编辑/删除不判。
+     */
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
+    /**
+     * 采购归属维度的写侧守卫：收货单挂在采购单上，父单归属不在调用者范围内即拒绝。
+     * 与 {@link #warehouseScopeGuard} 是两条独立边界，DIRECT 确认要求同时成立。
+     */
+    private final PurchaseOwnerResolver ownerResolver;
+
     // ------------------------------------------------------------------
     // receipt.create
     // ------------------------------------------------------------------
@@ -143,6 +157,7 @@ public class PurchaseReceiptService {
         if (order == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
+        ownerResolver.requireVisible(order.getPurchaserId());
         if (!PurchaseOrderStateMachine.receivable(order.getStatus())) {
             // RECEIVED / SHORT_CLOSED / CANCELLED / DRAFT 都不允许新收货（T8）
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
@@ -171,7 +186,7 @@ public class PurchaseReceiptService {
             items.add(item);
         }
 
-        PurchaseReceiptVO result = queryService.receiptDetail(receipt.getId());
+        PurchaseReceiptVO result = queryService.receiptDetailForCommand(receipt.getId());
         Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("receiptNo", receipt.getReceiptNo());
         after.put("items", items.stream().map(PurchaseReceiptService::receiptItemSnapshot).toList());
@@ -189,6 +204,7 @@ public class PurchaseReceiptService {
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO update(PurchaseReceiptUpdateForm form) {
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
+        ownerResolver.requireVisible(orderPurchaserId(receipt));
         version(receipt.getVersion(), form.getVersion());
         if (!"DRAFT".equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
@@ -210,7 +226,7 @@ public class PurchaseReceiptService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.RECEIPT_UPDATE, receipt.getPurchaseOrderId(),
                 receipt.getId(), null, before, after));
-        return queryService.receiptDetail(receipt.getId());
+        return queryService.receiptDetailForCommand(receipt.getId());
     }
 
     // ------------------------------------------------------------------
@@ -236,6 +252,16 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
+        // B1：入库方式决定 confirm 是否同事务入库（HD-B1-01/03）。
+        boolean direct = ScmReceiptModeEnum.DIRECT.name().equals(receipt.getReceiptMode());
+        // 两条边界取交集（裁决「P0 基线收口裁决」第 16 条）：采购范围回答「这张采购单归不归他操作」，
+        // 仓库范围回答「货允许不允许落进这个仓」，前者不能替代后者 —— 否则握着采购按钮的人可以往
+        // 自己无权管理的仓库里写 PURCHASE_IN。WAREHOUSE_CONFIRM 在 confirm 时不写库存，
+        // 因此仓库维度由后续的 putaway 判，不在这里提前收权。
+        ownerResolver.requireVisible(order.getPurchaserId());
+        if (direct) {
+            warehouseScopeGuard.require(receipt.getWarehouseId());
+        }
         version(receipt.getVersion(), form.getVersion());
         if (!"DRAFT".equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
@@ -349,8 +375,6 @@ public class PurchaseReceiptService {
         }
 
         OffsetDateTime now = OffsetDateTime.now();
-        // B1：入库方式决定 confirm 是否同事务入库（HD-B1-01/03）。
-        boolean direct = ScmReceiptModeEnum.DIRECT.name().equals(receipt.getReceiptMode());
         receipt.setStatus("CONFIRMED");
         receipt.setReceivedAt(now);
         receipt.setConfirmedAt(now);
@@ -382,7 +406,7 @@ public class PurchaseReceiptService {
             postInbound(order, receipt, inboundLines, receipt.getConfirmedAt(), receipt.getOperator());
         }
 
-        PurchaseReceiptVO result = queryService.receiptDetail(receipt.getId());
+        PurchaseReceiptVO result = queryService.receiptDetailForCommand(receipt.getId());
         idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
         return result;
     }
@@ -414,6 +438,9 @@ public class PurchaseReceiptService {
         }
 
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
+        // 上架是唯一写 PURCHASE_IN 的采购动作，因此只有它要判仓库授权：判据取收货行上的仓库，
+        // 不取请求参数（表单也没有仓库字段）。幂等认领已插入，但随本事务一起回滚，不留痕迹。
+        warehouseScopeGuard.require(receipt.getWarehouseId());
         version(receipt.getVersion(), form.getVersion());
         if (!PurchaseReceiptPutawayGuard.putawayAllowed(
                 receipt.getStatus(), receipt.getReceiptMode(), receipt.getPutawayStatus())) {
@@ -465,7 +492,7 @@ public class PurchaseReceiptService {
         // 位置固定：putaway 状态落库之后、幂等 complete 之前（与 confirm 同纪律）。
         postInbound(order, receipt, inboundLines, now, operator);
 
-        PurchaseReceiptVO result = queryService.receiptDetail(receipt.getId());
+        PurchaseReceiptVO result = queryService.receiptDetailForCommand(receipt.getId());
         idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
         return result;
     }
@@ -481,11 +508,12 @@ public class PurchaseReceiptService {
             // 幂等：已删除视为成功（同 W4 的 delete 语义）
             return;
         }
+        ownerResolver.requireVisible(orderPurchaserId(receipt));
         if (!"DRAFT".equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_DELETE_STATE_INVALID);
         }
 
-        PurchaseReceiptVO before = queryService.receiptDetail(receipt.getId());
+        PurchaseReceiptVO before = queryService.receiptDetailForCommand(receipt.getId());
         purchaseReceiptItemDao.softDeleteByReceiptId(receipt.getId(), ScmOperator.current());
         if (purchaseReceiptDao.softDelete(
                 receipt.getId(), receipt.getVersion(), ScmOperator.current()) != 1) {
@@ -636,6 +664,20 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_RECEIPT_NOT_FOUND);
         }
         return receipt;
+    }
+
+    /**
+     * 收货单上没有归属列，采购归属只在父单头上，因此写侧守卫要先读父单的 {@code purchaser_id}。
+     *
+     * <p>刻意用非锁定读：归属只能经 {@code /scm/purchase/reassign} 移动，而那条路径自身受分配权
+     * 与改派审计约束；在这里锁父单会把一次普通的备注编辑拖进采购单的锁序里。
+     */
+    private Long orderPurchaserId(PurchaseReceiptEntity receipt) {
+        PurchaseOrderEntity order = purchaseOrderDao.selectById(receipt.getPurchaseOrderId());
+        if (order == null) {
+            throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
+        }
+        return order.getPurchaserId();
     }
 
     private static void version(Integer actual, Integer expected) {

@@ -17,6 +17,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchDe
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderBatchShortCloseForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderCancelForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderDeleteForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderReassignForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderShortCloseForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderUpdateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderVersionForm;
@@ -29,6 +30,7 @@ import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderStateMachin
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderValidator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseOrderAllocationService.RequestedRow;
+import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseOwnerResolver;
 import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
 import org.springframework.stereotype.Service;
@@ -85,6 +87,8 @@ public class PurchaseOrderService {
 
     private final PurchaseOrderAllocationService allocationService;
 
+    private final PurchaseOwnerResolver ownerResolver;
+
     // ------------------------------------------------------------------
     // T1 create
     // ------------------------------------------------------------------
@@ -115,7 +119,9 @@ public class PurchaseOrderService {
 
         PurchaseOrderEntity order = PurchaseSnapshotFactory.order(
                 supplier.getSupplierCode(), supplier.getName(),
-                warehouse.getWarehouseCode(), warehouse.getName(), form);
+                warehouse.getWarehouseCode(), warehouse.getName(),
+                // 归属由服务端裁决：普通新建一律是当前员工，表单里的 purchaser_id 不采信（裁决第 7 条）
+                ownerResolver.resolveForCreate(form.getPurchaserId()), form);
         order.setOrderNo(numberGenerator.order());
         order.setTotalAmount(totalAmount(rows));
         PurchaseEntityStamper.stamp(order, true);
@@ -133,7 +139,7 @@ public class PurchaseOrderService {
         // 本单此前不存在任何分配 → oldTotals 为空
         allocationService.recomputeDemands(demands, Map.of(), newTotals, form.getSupplierId());
 
-        PurchaseOrderVO result = queryService.orderDetail(order.getId());
+        PurchaseOrderVO result = queryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.CREATE, order.getId(), null, null, null,
                 PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
@@ -195,7 +201,7 @@ public class PurchaseOrderService {
         PurchaseOrderItemChangeSet itemChanges = PurchaseOrderItemChangeSet.between(
                 existing, rows.stream().map(row -> row.item).toList());
 
-        PurchaseOrderVO before = queryService.orderDetail(order.getId());
+        PurchaseOrderVO before = queryService.orderDetailForCommand(order.getId());
 
         // 先删后插：被删行的 SKU 允许在同一次请求里作为新行重新出现，
         // 否则会撞 uk_purchase_order_item_order_sku_active（同 W4 的处理）
@@ -228,7 +234,8 @@ public class PurchaseOrderService {
         order.setSupplierId(form.getSupplierId());
         order.setSupplierCodeSnapshot(supplier.getSupplierCode());
         order.setSupplierNameSnapshot(supplier.getName());
-        order.setPurchaserId(form.getPurchaserId());
+        // 归属不在编辑接口里移动：order 是锁出来的库中行，purchaser_id 原样写回，
+        // 表单值对任何角色（含分配权持有者）都不采信 —— 改派只有 /reassign 一条路（裁决第 7 条）。
         order.setWarehouseId(form.getWarehouseId());
         order.setWarehouseCodeSnapshot(warehouse.getWarehouseCode());
         order.setWarehouseNameSnapshot(warehouse.getName());
@@ -237,10 +244,46 @@ public class PurchaseOrderService {
         order.setTotalAmount(totalAmount(rows));
         save(order);
 
-        PurchaseOrderVO result = queryService.orderDetail(order.getId());
+        PurchaseOrderVO result = queryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.UPDATE, order.getId(), null, null,
                 PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(before), PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
+        return result;
+    }
+
+    // ------------------------------------------------------------------
+    // T2.1 reassign（改派采购归属）
+    // ------------------------------------------------------------------
+
+    /**
+     * 改派采购归属：只有持 {@code scm:purchase:assign} 的调用方能到达（权限在控制器上）。
+     *
+     * <p>刻意不按单据状态设限：裁决只要求「有分配权才可指定 / 改派」，
+     * 而单据在途时换人（离职、调岗）恰恰是本端点的主要用途。
+     *
+     * <p>乐观锁沿用本模块既有纪律：先 {@code FOR UPDATE} 锁单，比对 {@code id + version}，
+     * 再由 {@code @Version} 的 {@code updateById} 做并发下的第二道防线（0 行 → 40921）。
+     * 改派必须留操作日志：归属是数据范围依据，换了谁必须可追溯。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PurchaseOrderVO reassign(PurchaseOrderReassignForm form) {
+        PurchaseOrderEntity order = lockOrder(form.getId());
+        version(order.getVersion(), form.getVersion());
+        if (Objects.equals(order.getPurchaserId(), form.getPurchaserId())) {
+            // 同值改派不推进版本，也不留一条 before == after 的噪声日志
+            return queryService.orderDetailForCommand(order.getId());
+        }
+
+        Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        before.put("purchaserId", order.getPurchaserId());
+        order.setPurchaserId(form.getPurchaserId());
+        save(order);
+
+        Map<String, Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        after.put("purchaserId", order.getPurchaserId());
+        PurchaseOrderVO result = queryService.orderDetailForCommand(order.getId());
+        purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
+                ScmPurchaseOperationTypeEnum.UPDATE, order.getId(), null, form.getReason(), before, after));
         return result;
     }
 
@@ -268,7 +311,7 @@ public class PurchaseOrderService {
         order.setSubmittedAt(OffsetDateTime.now());
         save(order);
 
-        PurchaseOrderVO result = queryService.orderDetail(order.getId());
+        PurchaseOrderVO result = queryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.SUBMIT, order.getId(), null, null,
                 before, PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order)));
@@ -300,7 +343,7 @@ public class PurchaseOrderService {
 
         Map<String, Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         after.put("cancelReason", order.getCancelReason());
-        PurchaseOrderVO result = queryService.orderDetail(order.getId());
+        PurchaseOrderVO result = queryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.CANCEL, order.getId(), null, order.getCancelReason(),
                 before, after));
@@ -352,7 +395,7 @@ public class PurchaseOrderService {
 
         Map<String, Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         after.put("shortCloseReason", order.getShortCloseReason());
-        PurchaseOrderVO result = queryService.orderDetail(order.getId());
+        PurchaseOrderVO result = queryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.SHORT_CLOSE, order.getId(), null,
                 order.getShortCloseReason(), before, after));
@@ -366,11 +409,13 @@ public class PurchaseOrderService {
             // 幂等：已删除视为成功（同 W4 的 delete 语义）
             return;
         }
+        // 删除没走 lockOrder，归属守卫单独补一次；批量删除逐单委托本方法，因此同样生效
+        ownerResolver.requireVisible(order.getPurchaserId());
         if (!PurchaseOrderStateMachine.editable(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_ORDER_DELETE_STATE_INVALID);
         }
 
-        PurchaseOrderVO before = queryService.orderDetail(order.getId());
+        PurchaseOrderVO before = queryService.orderDetailForCommand(order.getId());
         allocationService.releaseAllocations(order);
 
         for (PurchaseOrderItemEntity row : purchaseOrderItemDao.listByOrderId(order.getId())) {
@@ -433,6 +478,9 @@ public class PurchaseOrderService {
         if (order == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
+        // 写侧归属：本方法是五条单据命令（编辑/改派/提交/取消/少收关单）的唯一取单入口，
+        // 判在这里等于「看不到就动不了」，新增命令只要沿用 lockOrder 即自动带上这条边界。
+        ownerResolver.requireVisible(order.getPurchaserId());
         return order;
     }
 

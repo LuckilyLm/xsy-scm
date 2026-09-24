@@ -19,6 +19,20 @@
         <if test="query.status != null and query.status != ''">
             AND t.status = #{query.status}
         </if>
+        <!--
+          仓库主档按授权范围收窄（P0-H 裁决第 3 条）：非管理员不得从未授权仓库拿到 id、名称或地址。
+          `all` 不拼谓词；scope 为空或没有授权值即 AND FALSE —— 与库存族读侧同一条失败关闭口径。
+        -->
+        <choose>
+            <when test="scope == null or scope.empty">AND FALSE</when>
+            <when test="scope.all"></when>
+            <otherwise>
+                AND t.id IN
+                <foreach collection="scope.ids" item="warehouseScopeId" open="(" separator="," close=")">
+                    #{warehouseScopeId}
+                </foreach>
+            </otherwise>
+        </choose>
     </select>
 
 </mapper>

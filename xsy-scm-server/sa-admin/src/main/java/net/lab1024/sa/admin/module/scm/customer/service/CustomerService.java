@@ -1,18 +1,24 @@
 package net.lab1024.sa.admin.module.scm.customer.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerAddForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerDeleteForm;
+import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerSellerReassignForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerStatusForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerUpdateForm;
 import net.lab1024.sa.admin.module.scm.customer.manager.CustomerValidator;
+import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
+import net.lab1024.sa.base.common.domain.RequestUser;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +104,7 @@ public class CustomerService {
 
         CustomerEntity entity = new CustomerEntity();
         apply(entity, form);
+        entity.setSellerId(resolveSellerOnCreate(form.getSellerId()));
         entity.setStatus(INITIAL_STATUS);
         entity.setVersion(0);
         entity.setDeleted(false);
@@ -126,6 +133,9 @@ public class CustomerService {
         }
 
         // 注意：apply 不触碰 status —— 状态只能通过 updateStatus 变更（C7）
+        // 也不触碰 seller_id —— 归属只能通过 reassignSeller 变更（裁决 P0 第 6 条）：
+        // 编辑表单里的 sellerId 对任何角色都只是回显值，否则普通销售把客户回传成别人的 id
+        // 就能把它挪出自己的范围（或挪进别人的范围），行级范围随之失效。
         apply(entity, form);
         entity.setVersion(form.getVersion());
         stamp(entity, false);
@@ -138,6 +148,48 @@ public class CustomerService {
         }
         if (form.getVisibilityPolicy() != null || form.getVisibilities() != null)
             visibility.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
+    }
+
+    /**
+     * 改派客户业务归属（独立端点，权限 {@code scm:customer:assign}）。
+     *
+     * <p>与 {@link #update} 同一把客户行锁 + 同一套版本比对，改派与编辑因此互斥：
+     * 两个动作都在动「这行归谁」这件事的两种口径，不能一个走乐观锁一个不走。
+     *
+     * <p>权限判定在 Controller 的 {@code @SaCheckPermission} 上，本方法不再重复判断：
+     * Service 被别的写路径复用时，调用方必须自己带着范围判定。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void reassignSeller(CustomerSellerReassignForm form) {
+        visibilityDao.lockCustomer(form.getCustomerId());
+        CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
+        entity.setSellerId(form.getSellerId());
+        entity.setVersion(form.getVersion());
+        stamp(entity, false);
+        if (dao.updateById(entity) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    /**
+     * 新建客户的归属：无分配权者一律记在当前员工名下，客户端传来的 {@code sellerId} 忽略。
+     *
+     * <p>这是行级范围能成立的前提——否则「建在别人名下、再按列表去读别人的客户」就是留着的口子。
+     * 有分配权者（销售主管 / 超管）可以指定别人，也可以留空表示<b>暂不分配</b>；
+     * 未分配客户只对持分配权或全量范围者可见（见 {@code ScmValueScope#allows}）。
+     *
+     * <p>取不到当前员工时直接拒绝而不是落成未分配：落成 NULL 会让这条客户对建它的人自己不可见。
+     */
+    private Long resolveSellerOnCreate(Long submittedSellerId) {
+        if (ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM)) {
+            return submittedSellerId;
+        }
+        RequestUser requestUser = SmartRequestUtil.getRequestUser();
+        Long employeeId = requestUser instanceof RequestEmployee employee ? employee.getEmployeeId() : null;
+        if (employeeId == null) {
+            throw new ScmDataScopeException();
+        }
+        return employeeId;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -198,7 +250,7 @@ public class CustomerService {
         entity.setCustomerTypeId(form.getCustomerTypeId());
         entity.setSettleMode(form.getSettleMode());
         entity.setParentCustomerId(form.getParentCustomerId());
-        entity.setSellerId(form.getSellerId());
+        // 归属不在此处赋值：新建走 resolveSellerOnCreate，改派走 reassignSeller（裁决 P0 第 6 条）
         entity.setSupplierId(form.getSupplierId());
         entity.setContactName(CustomerValidator.normalizeOptional(form.getContactName()));
         entity.setContactPhone(CustomerValidator.normalizeOptional(form.getContactPhone()));

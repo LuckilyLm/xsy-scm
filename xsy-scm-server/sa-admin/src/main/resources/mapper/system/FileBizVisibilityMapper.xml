@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.system.support.FileBizVisibilityDao">
+
+    <!--
+      公告可见性口径与公告列表一致：全部可见标记，或 t_notice_visible_range 命中
+      该员工本人（data_type=1）或其部门（data_type=2）。这里只做布尔判定，
+      不复用公告分页查询，避免把展示字段与权限判定绑在一起。
+
+      部门条件不写「departmentId 非空」守卫：参数为 null 时 `r.data_id = ?` 本身即为
+      未知 → 不命中；裸参数出现在 IS NOT NULL 里会让 PostgreSQL 无法推断参数类型，
+      PREPARE 阶段直接报错。
+    -->
+    <select id="countVisibleNotice" resultType="int">
+        SELECT count(*)
+        FROM t_notice n
+        WHERE n.notice_id = #{noticeId}
+          AND n.deleted_flag = FALSE
+          AND (n.all_visible_flag = TRUE
+            OR EXISTS (SELECT 1
+                       FROM t_notice_visible_range r
+                       WHERE r.notice_id = n.notice_id
+                         AND ((r.data_type = 1 AND r.data_id = #{employeeId})
+                           OR (r.data_type = 2 AND r.data_id = #{departmentId})))
+          )
+    </select>
+
+    <!-- t_help_doc 没有软删除列（SmartAdmin 原生表），因此存在即活动；
+         这仍然比原先「private/help-doc/ 前缀一律放行」严格：必须确有这份文档的关系行。 -->
+    <select id="countHelpDoc" resultType="int">
+        SELECT count(*)
+        FROM t_help_doc h
+        WHERE h.help_doc_id = #{helpDocId}
+    </select>
+    <select id="countLiveSpu" resultType="int">
+        SELECT count(*)
+        FROM product_spu p
+        WHERE p.id = #{spuId}
+          AND p.deleted = FALSE
+    </select>
+
+</mapper>

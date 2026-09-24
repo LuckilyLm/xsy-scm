@@ -100,6 +100,15 @@
         LEFT JOIN product_sku k ON k.id = m.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
         WHERE m.deleted = FALSE
+        <!-- 仓库数据范围：流水按所属仓库判定，与 created_by 无关（历史回填行 created_by 为 NULL
+             也照常可见）。scope 缺失时必须是恒假，否则漏传范围的调用点会静默变成全仓可见。 -->
+        <if test="scope != null and scope.all == false">
+            AND m.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.warehouseId != null">
             AND m.warehouse_id = #{query.warehouseId}
         </if>

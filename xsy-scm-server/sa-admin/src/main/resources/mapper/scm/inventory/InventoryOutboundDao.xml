@@ -87,6 +87,14 @@
         FROM inventory_outbound o
         LEFT JOIN warehouse w ON w.id = o.warehouse_id
         WHERE o.deleted = FALSE
+        <!-- 仓库数据范围：出库单按其仓库整体可见，scope 缺失时必须是恒假而不是不收窄。 -->
+        <if test="scope != null and scope.all == false">
+            AND o.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.outboundNo != null and query.outboundNo != ''">
             AND o.outbound_no ILIKE CONCAT('%', #{query.outboundNo}, '%')
         </if>

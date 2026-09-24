@@ -273,7 +273,9 @@ public class DeliveryRouteService {
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
         var claim = idempotency.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
-        if (claim.replay()) return idempotency.replay(claim, DeliveryPrintResultVO.class);
+        // 重放结果取自幂等记录里的原始明细，金额同样要在返回前过一遍可见性口径。
+        if (claim.replay())
+            return DeliveryVisibility.current().printResult(idempotency.replay(claim, DeliveryPrintResultVO.class));
         printable(lock(id, form.getVersion()));
         var wanted = new HashSet<>(form.getOrderIds());
         var selected = active(id).stream().filter(a -> wanted.contains(a.getOrderId())).toList();
@@ -281,7 +283,7 @@ public class DeliveryRouteService {
         if (selected.size() != wanted.size()) throw new ScmBusinessException(STATE_INVALID);
         var result = recordAndBuild(id, selected);
         idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
-        return result;
+        return DeliveryVisibility.current().printResult(result);
     }
 
     /**
@@ -292,7 +294,8 @@ public class DeliveryRouteService {
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
         var claim = idempotency.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
-        if (claim.replay()) return idempotency.replay(claim, DeliveryPrintResultVO.class);
+        if (claim.replay())
+            return DeliveryVisibility.current().printResult(idempotency.replay(claim, DeliveryPrintResultVO.class));
         printable(lock(id, form.getVersion()));
         var statusFilter = form.getCustomerStatusFilter() == null ? "ALL" : form.getCustomerStatusFilter();
         var candidates = form.getCustomerIds() == null ? Set.<Long>of() : new HashSet<>(form.getCustomerIds());
@@ -310,7 +313,7 @@ public class DeliveryRouteService {
         if (selected.isEmpty()) throw new ScmBusinessException(STATE_INVALID);
         var result = recordAndBuild(id, selected);
         idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
-        return result;
+        return DeliveryVisibility.current().printResult(result);
     }
 
     /**

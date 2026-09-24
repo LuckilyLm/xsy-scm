@@ -1,6 +1,8 @@
 package net.lab1024.sa.admin.module.scm.screen.service;
 
 import lombok.RequiredArgsConstructor;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryWarningStatusEnum;
 import net.lab1024.sa.admin.module.scm.screen.dao.ScreenDataDao;
@@ -28,6 +30,13 @@ import java.util.Map;
  * 数据大屏只读聚合服务。
  *
  * <p>只查询，不写业务表；所有统计基于现有业务域，不维护独立副本。
+ *
+ * <p><b>大屏同样受数据范围约束</b>：它是业务列表的聚合视图，如果这里不收范围，
+ * 一个只有 A 仓授权的人拿到 {@code scm:screen:query} 就能读到全公司的成交额、库存量和采购额 ——
+ * 聚合值比明细更容易被误当成「已经授权过的数据」。每个入口解析一次上下文再下传给各 Dao，
+ * 一次页面加载发十几个 Dao 调用也只解析一次（授权行改动必须立即生效，所以不缓存在登录态里）。
+ * 各面板按自己的事实维度收：经营/趋势的销售序列按业务员，采购面板按「采购归属 ∩ 仓库」，
+ * 库存与地理的仓库段按仓库；供应商与 SKU 主档没有任何范围维度，按团队共享读处理。
  */
 @Service
 @RequiredArgsConstructor
@@ -74,6 +83,8 @@ public class ScreenDataService {
 
     private final ScreenDataDao screenDataDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
      * 今日起止（北京时间日界，转成带 +08:00 偏移的瞬间，与库中 TIMESTAMPTZ 可比）。
      */
@@ -90,36 +101,42 @@ public class ScreenDataService {
 
     public ScreenBusinessVO getBusinessData() {
         OffsetDateTime[] range = todayRange();
+        ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenBusinessVO vo = new ScreenBusinessVO();
-        vo.setTodayOrderCount(nullToZero(screenDataDao.countConfirmedOrders(range[0], range[1])));
-        vo.setTodayOrderedAmount(nullToZero(screenDataDao.sumOrderedAmount(range[0], range[1])));
-        vo.setTodaySettlementAmount(nullToZero(screenDataDao.sumSettlementAmount(range[0], range[1])));
-        vo.setTotalOrderCount(nullToZero(screenDataDao.countTotalConfirmedOrders()));
-        vo.setTotalSettlementAmount(nullToZero(screenDataDao.sumTotalSettlementAmount()));
-        vo.setCustomerCount(nullToZero(screenDataDao.countCustomers()));
+        vo.setTodayOrderCount(nullToZero(screenDataDao.countConfirmedOrders(range[0], range[1], scope)));
+        vo.setTodayOrderedAmount(nullToZero(screenDataDao.sumOrderedAmount(range[0], range[1], scope)));
+        vo.setTodaySettlementAmount(nullToZero(screenDataDao.sumSettlementAmount(range[0], range[1], scope)));
+        vo.setTotalOrderCount(nullToZero(screenDataDao.countTotalConfirmedOrders(scope)));
+        vo.setTotalSettlementAmount(nullToZero(screenDataDao.sumTotalSettlementAmount(scope)));
+        vo.setCustomerCount(nullToZero(screenDataDao.countCustomers(scope)));
         vo.setSupplierCount(nullToZero(screenDataDao.countSuppliers()));
         vo.setSkuCount(nullToZero(screenDataDao.countSkus()));
-        vo.setTodayCustomerCount(nullToZero(screenDataDao.countCustomersWithOrdersInRange(range[0], range[1])));
-        vo.setTodaySupplierCount(nullToZero(screenDataDao.countSuppliersWithOrdersInRange(range[0], range[1])));
-        vo.setTopCustomers(nullToEmpty(screenDataDao.topCustomersBySettlement(range[0], range[1], TOP_RANK_LIMIT)));
-        vo.setTopProducts(nullToEmpty(screenDataDao.topProductsBySettlement(range[0], range[1], TOP_RANK_LIMIT)));
+        vo.setTodayCustomerCount(
+                nullToZero(screenDataDao.countCustomersWithOrdersInRange(range[0], range[1], scope)));
+        vo.setTodaySupplierCount(
+                nullToZero(screenDataDao.countSuppliersWithOrdersInRange(range[0], range[1], scope)));
+        vo.setTopCustomers(
+                nullToEmpty(screenDataDao.topCustomersBySettlement(range[0], range[1], TOP_RANK_LIMIT, scope)));
+        vo.setTopProducts(
+                nullToEmpty(screenDataDao.topProductsBySettlement(range[0], range[1], TOP_RANK_LIMIT, scope)));
         return vo;
     }
 
     public ScreenInventoryVO getInventoryData() {
         OffsetDateTime[] range = todayRange();
+        ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenInventoryVO vo = new ScreenInventoryVO();
-        vo.setTotalQuantity(nullToZero(screenDataDao.sumInventoryQuantity()));
-        vo.setSkuCount(nullToZero(screenDataDao.countInventorySkus()));
-        vo.setWarehouseCount(nullToZero(screenDataDao.countEnabledWarehouses()));
+        vo.setTotalQuantity(nullToZero(screenDataDao.sumInventoryQuantity(scope)));
+        vo.setSkuCount(nullToZero(screenDataDao.countInventorySkus(scope)));
+        vo.setWarehouseCount(nullToZero(screenDataDao.countEnabledWarehouses(scope)));
         vo.setTodayInboundCount(nullToZero(
-                screenDataDao.countMovementsByTypeAndRange(INBOUND_MOVEMENT_TYPES, range[0], range[1])));
+                screenDataDao.countMovementsByTypeAndRange(INBOUND_MOVEMENT_TYPES, range[0], range[1], scope)));
         vo.setTodayOutboundCount(nullToZero(
-                screenDataDao.countMovementsByTypeAndRange(OUTBOUND_MOVEMENT_TYPES, range[0], range[1])));
-        vo.setWarehouseDistribution(nullToEmpty(screenDataDao.inventoryDistributionByWarehouse()));
-        vo.setHealth(buildHealth());
+                screenDataDao.countMovementsByTypeAndRange(OUTBOUND_MOVEMENT_TYPES, range[0], range[1], scope)));
+        vo.setWarehouseDistribution(nullToEmpty(screenDataDao.inventoryDistributionByWarehouse(scope)));
+        vo.setHealth(buildHealth(scope));
         vo.setWarehouseNodes(nullToEmpty(
-                screenDataDao.warehouseNetworkNodes(range[0], range[1], OUTBOUND_MOVEMENT_TYPES)));
+                screenDataDao.warehouseNetworkNodes(range[0], range[1], OUTBOUND_MOVEMENT_TYPES, scope)));
         return vo;
     }
 
@@ -140,8 +157,8 @@ public class ScreenDataService {
      *   <li>预警 / 积压 / 正常 —— 由 {@code evaluate} 给出的 LOW / HIGH / NORMAL。</li>
      * </ol>
      */
-    private ScreenInventoryVO.InventoryHealth buildHealth() {
-        List<ScreenInventoryHealthRow> rows = nullToEmpty(screenDataDao.inventoryHealthRows());
+    private ScreenInventoryVO.InventoryHealth buildHealth(ScmDataScopeContext scope) {
+        List<ScreenInventoryHealthRow> rows = nullToEmpty(screenDataDao.inventoryHealthRows(scope));
         long normal = 0L;
         long low = 0L;
         long high = 0L;
@@ -181,12 +198,13 @@ public class ScreenDataService {
 
     public ScreenPurchaseVO getPurchaseData() {
         OffsetDateTime[] range = todayRange();
+        ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenPurchaseVO vo = new ScreenPurchaseVO();
-        vo.setTodayPurchaseOrderCount(nullToZero(screenDataDao.countPurchaseOrders(range[0], range[1])));
-        vo.setTodayPurchaseAmount(nullToZero(screenDataDao.sumPurchaseAmount(range[0], range[1])));
-        vo.setTotalPurchaseOrderCount(nullToZero(screenDataDao.countTotalPurchaseOrders()));
-        vo.setTotalPurchaseAmount(nullToZero(screenDataDao.sumTotalPurchaseAmount()));
-        vo.setTodayReceiptCount(nullToZero(screenDataDao.countReceipts(range[0], range[1])));
+        vo.setTodayPurchaseOrderCount(nullToZero(screenDataDao.countPurchaseOrders(range[0], range[1], scope)));
+        vo.setTodayPurchaseAmount(nullToZero(screenDataDao.sumPurchaseAmount(range[0], range[1], scope)));
+        vo.setTotalPurchaseOrderCount(nullToZero(screenDataDao.countTotalPurchaseOrders(scope)));
+        vo.setTotalPurchaseAmount(nullToZero(screenDataDao.sumTotalPurchaseAmount(scope)));
+        vo.setTodayReceiptCount(nullToZero(screenDataDao.countReceipts(range[0], range[1], scope)));
         return vo;
     }
 
@@ -204,8 +222,8 @@ public class ScreenDataService {
         LocalDate end = LocalDate.now(BUSINESS_ZONE);
         LocalDate start = end.minusDays(thirty ? 29L : 6L);
 
-        List<ScreenTrendVO.Point> points = nullToEmpty(
-                screenDataDao.trendByDay(start, end, INBOUND_MOVEMENT_TYPES, OUTBOUND_MOVEMENT_TYPES));
+        List<ScreenTrendVO.Point> points = nullToEmpty(screenDataDao.trendByDay(start, end,
+                INBOUND_MOVEMENT_TYPES, OUTBOUND_MOVEMENT_TYPES, dataScopeService.resolve()));
 
         List<String> dates = new ArrayList<>(points.size());
         List<String> fullDates = new ArrayList<>(points.size());
@@ -253,11 +271,12 @@ public class ScreenDataService {
      * 必须让用户看到差额，而不是以为看到的分布等于全部业务量。
      */
     public ScreenGeoVO getGeoData() {
-        List<ScreenGeoVO.CityNode> cities = nullToEmpty(screenDataDao.geoCityRows());
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        List<ScreenGeoVO.CityNode> cities = nullToEmpty(screenDataDao.geoCityRows(scope));
         ScreenGeoVO vo = new ScreenGeoVO();
         vo.setCities(cities);
         vo.setProvinces(rollUpProvinces(cities));
-        vo.setCoverage(screenDataDao.geoCoverage());
+        vo.setCoverage(screenDataDao.geoCoverage(scope));
         return vo;
     }
 

@@ -16,6 +16,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.report.constant.ReportErrorCode;
 import net.lab1024.sa.admin.module.scm.report.controller.ScmReportController;
 import net.lab1024.sa.admin.module.scm.report.dao.ReportDao;
@@ -59,6 +60,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * {@code ScmReportAccess#canViewCost()} 失败关闭返回 false，因此这里断言的是
  * 「无权限即不给成本」，而不是成本算法本身；成本金额的正确性由
  * {@code ScmInventory*IT} 与流水表的 {@code unit_cost} 直接证明。
+ *
+ * <p><b>本类跑在「不受仓库范围约束」的身份上</b>：基类的 {@code administratorFlag=true} 登录让
+ * {@code ScmDataScopeService#resolve()} 返回全范围，因此这里的报表口径断言与仓库授权无关。
+ * 范围本身（谁能看到哪个仓）由 {@code ScmReportDataScopePgIT} 用
+ * {@code administratorFlag=false} 的账号取证（裁决第 5 条：超管通过不算权限证据）。
  *
  * <p>读夹具一律先 {@code evictMybatisCache()}：本类的口径测试靠 jdbc 改状态后再读报表，
  * 而同一测试事务内的 MyBatis 一级缓存会按「语句 + 参数」命中旧结果，不清缓存会把
@@ -362,8 +368,10 @@ class ScmReportPgIT extends ScmW6PgITBase {
     @DisplayName("无成本权限时流水与入库的成本字段为 null，不回落成 0")
     void costFieldsAreMaskedWhenPermissionAbsent() {
         Page<Object> page = new Page<>(1, 5);
+        // 直连 DAO 时必须显式给范围：这里要的是「未抹除的原始映射」，与仓库范围无关，
+        // 因此传 all()，而不是留 null —— null 在 SQL 侧是恒假谓词（失败关闭）。
         List<InventoryReportVO.MovementRow> rows = reportDao.movementList(page, at(start()),
-                at(end().plusDays(1)), List.of("PURCHASE_IN"), inventoryForm());
+                at(end().plusDays(1)), List.of("PURCHASE_IN"), inventoryForm(), ScmValueScope.all());
         // 走 DAO 才能看到未抹除的原始映射；服务层在无登录上下文时必须给 null
         inventoryReportService.movementList(inventoryForm()).getList()
                 .forEach(row -> assertThat(row.getUnitCost()).isNull());

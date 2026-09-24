@@ -55,6 +55,21 @@
         <if test="query.receivedTo != null">
             AND r.received_at &lt; #{query.receivedTo}
         </if>
+        <!-- 采购员数据范围：purchase_receipt 没有 purchaser 列（V15 只快照供应商与仓库），
+             归属只能沿父采购单继承。这里用 EXISTS 半连而不是 JOIN：父单按主键命中，
+             行数与分页 count 都不变，也不会把「一单多收货」的既有语义搅进来。
+             不加 po.deleted = FALSE —— 父单归档不改变「这条收货属于谁的采购」这个事实，
+             加进去等于顺手多造一条可见性规则。scope 为 null 时按失败关闭返回 0 行。 -->
+        <if test="scope != null and scope.all == false">
+            AND EXISTS (SELECT 1 FROM purchase_order po
+            WHERE po.id = r.purchase_order_id
+            AND po.purchaser_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            )
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         ORDER BY r.created_at DESC, r.id DESC
     </select>
 

@@ -59,12 +59,18 @@ class ScmInventoryConcurrencyIT extends ScmW6PgITBase {
 
     /**
      * 子线程没有请求上下文，必须自己塞一个身份（{@code ScmOperator.current()} 依赖它）。
+     *
+     * <p>{@code administratorFlag=true} 与本类主线程身份一致：本用例测的是<b>锁序与并发账</b>，
+     * 收货确认 / 出库确认在 P0 之后带上了数据范围守卫，若这里给一个非超管且没有授权仓行的身份，
+     * 两个线程会双双被 {@code ScmDataScopeException} 挡在业务逻辑之前 —— 测到的只是「都被拒」，
+     * 而不是「只有一个抢到余额行」。范围本身由 {@code ScmInventoryWriteScopePgIT} 等专用例取证。
      */
     private static void setThreadOperator() {
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);
         employee.setActualName("W6 concurrent IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        employee.setAdministratorFlag(true);
         SmartRequestUtil.setRequestUser(employee);
     }
 

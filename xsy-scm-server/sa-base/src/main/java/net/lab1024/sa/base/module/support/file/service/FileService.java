@@ -44,6 +44,11 @@ public class FileService {
      */
     private static final int FILE_NAME_MAX_LENGTH = 100;
 
+    /**
+     * 每个用户同时存在的未绑定暂存件上限（docs/decisions.md「P0 基线收口裁决」第 14 条）。
+     */
+    public static final int SCRATCH_MAX_UNBOUND_PER_USER = 100;
+
     @Resource
     private IFileStorageService fileStorageService;
 
@@ -52,6 +57,9 @@ public class FileService {
 
     @Resource
     private SecurityFileService securityFileService;
+
+    @Resource
+    private FileAccessGuard fileAccessGuard;
 
     /**
      * 文件上传服务
@@ -90,6 +98,15 @@ public class FileService {
         if (!FileKeyPolicy.isValid(folderTypeEnum.getFolder())) {
             return ResponseDTO.error(UserErrorCode.NO_PERMISSION);
         }
+        // 暂存件必须有界：上传成功但表单没保存的垃圾若不清理会永久堆积，
+        // 因此除定时回收外再加一道在制上限（超出即拒绝，让用户先完成绑定或等待回收）。
+        if (folderTypeEnum == FileFolderTypeEnum.SCRATCH && requestUser != null
+                && fileDao.countUnboundScratchByCreator(requestUser.getUserId(),
+                requestUser.getUserType().getValue()) >= SCRATCH_MAX_UNBOUND_PER_USER) {
+            return ResponseDTO.userErrorParam("未完成的暂存文件已达 " + SCRATCH_MAX_UNBOUND_PER_USER
+                    + " 个上限，请先完成表单保存或等待系统清理");
+        }
+
         // 进行上传
         ResponseDTO<FileUploadVO> response = fileStorageService.upload(file, folderTypeEnum.getFolder());
         if (!response.getOk()) {
@@ -116,12 +133,45 @@ public class FileService {
     }
 
     /**
-     * 批量获取文件信息
+     * 按调用者身份批量读取文件信息（服务端展开 URL 的唯一受控入口）。
      *
-     * @param fileKeyList
-     * @return
+     * <p>可读性判定与 {@code /support/file/getFileUrl} 等 HTTP 读接口共用
+     * {@link FileAccessGuard} 一份规则；不可读的 key **不出现在结果里**
+     * （而不是返回空 URL），否则「这个 key 存在」本身就成了旁路信号。
+     */
+    public List<FileVO> getFileList(List<String> fileKeyList, RequestUser requestUser) {
+        return resolveWithUrl(fileAccessGuard.filterReadable(fileKeyList, requestUser));
+    }
+
+    /**
+     * 无调用者身份的批量读取：只服务公开目录。
+     *
+     * <p>本方法没有任何主体可以用来判断授权，若照旧解析私有 key 的 URL，等于替调用方
+     * 假设「他有权读」。因此非 {@code public/} 前缀一律不查询、不解析、不返回；
+     * 业务读路径必须改用 {@link #getFileList(List, RequestUser)}。
      */
     public List<FileVO> getFileList(List<String> fileKeyList) {
+        if (CollectionUtils.isEmpty(fileKeyList)) {
+            return Lists.newArrayList();
+        }
+        String publicFolder = FileFolderTypeEnum.FOLDER_PUBLIC + StringConst.SEPARATOR_SLASH;
+        return resolveWithUrl(fileKeyList.stream().filter(key -> key != null && key.startsWith(publicFolder)).toList());
+    }
+
+    /**
+     * 只要元数据（存在性 / 文件名 / 大小），**永不生成 URL**。
+     *
+     * <p>给写路径回答「这个 key 真的存在吗」。它不需要、也不应该拿到 URL：
+     * 拿到 URL 就意味着要替一个可能没有读取权的人解析私有附件。
+     */
+    public List<FileVO> getFileMetadata(List<String> fileKeyList) {
+        if (CollectionUtils.isEmpty(fileKeyList)) {
+            return Lists.newArrayList();
+        }
+        return fileDao.selectByFileKeyList(new HashSet<>(fileKeyList));
+    }
+
+    private List<FileVO> resolveWithUrl(List<String> fileKeyList) {
         if (CollectionUtils.isEmpty(fileKeyList)) {
             return Lists.newArrayList();
         }

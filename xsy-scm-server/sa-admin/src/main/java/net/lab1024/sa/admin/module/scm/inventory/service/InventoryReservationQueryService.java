@@ -1,6 +1,8 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
 import lombok.RequiredArgsConstructor;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryReservationStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryReservationDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryReservationQueryForm;
@@ -22,12 +24,18 @@ public class InventoryReservationQueryService {
 
     private final InventoryReservationDao reservationDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
      * 分页查询。
      */
     public PageResult<InventoryReservationVO> queryPage(InventoryReservationQueryForm query) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryReservationVO> list = reservationDao.queryPage(page, query);
+        List<InventoryReservationVO> list = reservationDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryReservationQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }

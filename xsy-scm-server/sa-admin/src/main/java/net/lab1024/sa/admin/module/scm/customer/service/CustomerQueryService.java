@@ -1,9 +1,12 @@
 package net.lab1024.sa.admin.module.scm.customer.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerFrequentSkuDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
@@ -84,27 +87,58 @@ public class CustomerQueryService {
      */
     private final EmployeeDao employees;
 
+    /**
+     * SCM 数据范围解析入口：客户读路径唯一允许「能看哪些行」的判断来源。
+     */
+    private final ScmDataScopeService scopeService;
+
     public PageResult<CustomerVO> query(CustomerQueryForm form) {
         assertSortable(form);
+        ScmDataScopeContext scope = scopeService.resolve();
+        // 维度里一个授权 id 都没有 → 直接空分页，既不给数据库跑恒假谓词，也不会把空集合送进 IN ()。
+        if (scope.getCustomerSellerScope().isEmpty()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.desc("updated_at"), OrderItem.desc("id"));
         }
-        List<CustomerEntity> rows = customers.queryPage(page, form);
+        List<CustomerEntity> rows = customers.queryPage(page, form, scope.getCustomerSellerScope());
         List<CustomerVO> list = new ArrayList<>(rows.size());
         rows.forEach(row -> list.add(toVO(row, context(rows))));
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
+    /** 客户详情读（HTTP 入口）：按当前调用者的客户负责人范围判定，越权 30005。 */
     public CustomerDetailVO detail(Long customerId) {
+        return detail(customerId, scopeService.resolve());
+    }
+
+    /**
+     * 客户详情读 + 显式范围。
+     *
+     * <p>不存在与越权分得很清：不存在仍按 {@code CUSTOMER_NOT_FOUND}，存在但负责人不在范围内
+     * 按 30005 拒绝。列表收窄不等于读不到，猜 id 直连详情必须是拒绝，否则整套行级范围只是隐藏。
+     *
+     * <p>上级集团客户名仍由 {@code context()} 单行取回，<b>不做也不校验集团展开</b>：
+     * 集团统一结算不代表跨业务员互见（裁决第 6 条）。
+     */
+    public CustomerDetailVO detail(Long customerId, ScmDataScopeContext scope) {
         CustomerEntity entity = customers.selectById(customerId);
         if (entity == null) {
             throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
         }
+        if (!scope.getCustomerSellerScope().allows(entity.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
+        return detail(entity);
+    }
+
+    private CustomerDetailVO detail(CustomerEntity entity) {
         CustomerDetailVO vo = new CustomerDetailVO();
         BeanUtils.copyProperties(entity, vo);
         vo.setCustomerId(entity.getId());
-        vo.setVisibilities(visibility.list(customerId));
+        vo.setVisibilities(visibility.list(entity.getId()));
 
         List<CustomerEntity> rows = List.of(entity);
         EnrichmentContext context = context(rows);
@@ -120,10 +154,16 @@ public class CustomerQueryService {
      *
      * <p>days / limit 一律服务端裁剪到安全区间；窗口按 <b>Asia/Shanghai 日界</b>对齐——「近 N 天含今天」
      * 下界取当天零点往前 {@code days-1} 天，避免按时分秒滚动窗口导致的边界抖动。客户不存在时与详情同样报 {@code CUSTOMER_NOT_FOUND}。
+     *
+     * <p>取数源是别人的成交价与用量，因此与详情同一套归属判定：读不到该客户就 30005。
      */
     public List<CustomerFrequentSkuVO> frequentSkus(Long customerId, int days, int limit) {
-        if (customers.selectById(customerId) == null) {
+        CustomerEntity customer = customers.selectById(customerId);
+        if (customer == null) {
             throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
+        }
+        if (!scopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+            throw new ScmDataScopeException();
         }
         int windowDays = Math.min(Math.max(days, FREQUENT_MIN_DAYS), FREQUENT_MAX_DAYS);
         int rowLimit = Math.min(Math.max(limit, FREQUENT_MIN_LIMIT), FREQUENT_MAX_LIMIT);
@@ -139,6 +179,10 @@ public class CustomerQueryService {
      *
      * <p>返回全部活动客户（按名称排序）。客户状态是四态业务状态而不是启用位，因此不像供应商那样
      * 只筛 {@code ENABLED}；调用方（例如「上级集团客户」选择器）按 {@code customerTypeCode} 过滤。
+     *
+     * <p><b>刻意不按数据范围收窄</b>：它是「选一个客户」的选择器入口（上级集团、订单录入等都用它），
+     * 收窄会让主数据下拉在某些角色下整框落空。真正的读边界在列表与详情上，
+     * 且「能否对该客户建单」在服务端另有归属判定。
      */
     public List<CustomerOptionVO> optionList() {
         List<CustomerEntity> rows = customers.selectList(new LambdaQueryWrapper<CustomerEntity>()

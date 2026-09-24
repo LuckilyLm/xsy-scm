@@ -12,7 +12,10 @@ import net.lab1024.sa.base.module.support.feedback.domain.FeedbackAddForm;
 import net.lab1024.sa.base.module.support.feedback.domain.FeedbackEntity;
 import net.lab1024.sa.base.module.support.feedback.domain.FeedbackQueryForm;
 import net.lab1024.sa.base.module.support.feedback.domain.FeedbackVO;
+import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
+import net.lab1024.sa.base.module.support.file.service.FileRelationService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -26,6 +29,9 @@ public class FeedbackService {
 
     @Resource
     private FeedbackDao feedbackDao;
+
+    @Resource
+    private FileRelationService fileRelationService;
 
     /**
      * 分页查询
@@ -44,12 +50,16 @@ public class FeedbackService {
     /**
      * 新建
      */
+    @Transactional(rollbackFor = Exception.class)
     public ResponseDTO<String> add(FeedbackAddForm addForm, RequestUser requestUser) {
         FeedbackEntity feedback = SmartBeanUtil.copy(addForm, FeedbackEntity.class);
         feedback.setUserType(requestUser.getUserType().getValue());
         feedback.setUserId(requestUser.getUserId());
         feedback.setUserName(requestUser.getUserName());
         feedbackDao.insert(feedback);
+        // 反馈行只增不改，绑定即可：不绑定的话处理人看不到用户自己上传的截图
+        fileRelationService.bind(FileRelationBizTypeEnum.FEEDBACK, feedback.getFeedbackId(),
+                FileRelationService.splitKeys(feedback.getFeedbackAttachment()));
         return ResponseDTO.ok();
     }
 }

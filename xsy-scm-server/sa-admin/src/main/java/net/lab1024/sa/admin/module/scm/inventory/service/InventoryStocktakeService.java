@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryStocktakeStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryStocktakeDao;
@@ -71,6 +72,8 @@ public class InventoryStocktakeService {
 
     private final WarehouseService warehouseService;
 
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
     /**
      * 新建草稿盘点单。
      *
@@ -86,6 +89,7 @@ public class InventoryStocktakeService {
     public Long create(InventoryStocktakeAddForm form) {
         requireItems(form);
         String operator = ScmOperator.current();
+        warehouseScopeGuard.require(form.getWarehouseId());
         // 仓库不存在时给出准确错误，而不是让下面退化成「没有库存记录」。
         warehouseService.require(form.getWarehouseId());
 
@@ -121,6 +125,8 @@ public class InventoryStocktakeService {
      */
     @Transactional(rollbackFor = Exception.class)
     public Long createFromSnapshot(Long warehouseId, List<SnapshotLine> lines) {
+        // 凭证里的仓库来自签名，但仍要过授权范围：模板可以被转交，签名只证明「谁导出的」
+        warehouseScopeGuard.require(warehouseId);
         List<SnapshotLine> ordered = lines.stream()
                 .sorted(Comparator.comparing(SnapshotLine::skuId))
                 .toList();
@@ -171,6 +177,8 @@ public class InventoryStocktakeService {
         warehouseService.require(form.getWarehouseId());
 
         InventoryStocktakeEntity locked = lockAndRequire(id);
+        // 行上的旧仓与表单的新仓都要授权：否则可以把一张草稿盘点单挪到自己管不着的仓
+        warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
 
         if (stocktakeDao.updateDraft(id, form.getWarehouseId(), form.getRemark(), operator) != 1) {
@@ -194,6 +202,8 @@ public class InventoryStocktakeService {
         OffsetDateTime now = OffsetDateTime.now();
 
         InventoryStocktakeEntity locked = lockAndRequire(id);
+        // 授权判定取锁到的行上的仓库：盘盈盘亏流水按这一行记账，不取表单值
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
 
         List<InventoryStocktakeItemVO> items = itemDao.listByStocktakeId(id);
@@ -232,6 +242,7 @@ public class InventoryStocktakeService {
     public void cancel(Long id) {
         String operator = ScmOperator.current();
         InventoryStocktakeEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
         if (stocktakeDao.markCancelled(id, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -245,6 +256,7 @@ public class InventoryStocktakeService {
     public void delete(Long id) {
         String operator = ScmOperator.current();
         InventoryStocktakeEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
         itemDao.deleteByStocktakeId(id, operator);
         if (stocktakeDao.deleteById(id) != 1) {

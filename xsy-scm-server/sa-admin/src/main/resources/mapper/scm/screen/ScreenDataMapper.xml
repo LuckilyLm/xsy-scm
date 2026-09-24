@@ -4,50 +4,173 @@
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="net.lab1024.sa.admin.module.scm.screen.dao.ScreenDataDao">
 
+    <!--
+      ================= 数据范围谓词 =================
+      三条纪律与报表 / 库存族同源（docs/decisions.md「P0 基线收口裁决」第 2、4、8、16 条）：
+        * 谓词落在**被聚合的事实行**上，不落在维度 join 上，也不在聚合之后补 —— 先聚合再过滤
+          等于把授权外的量算进聚合值，事后 WHERE 改不回来。
+        * `scope == null` 或该维度没有任何授权值 → `AND FALSE`。这里没有「参数为空即全部」。
+        * `scope.*.all` 为真时不拼谓词，因此 `seller_id IS NULL` / `purchaser_id IS NULL` 的未分配行
+          对该维度持全部范围者照常可见，对普通业务员天然不可见（`IN` 排除 NULL）。
+      每段的 foreach item 名互不相同：trendByDay 一条语句要拼 7 段，重名会互相遮蔽。
+
+      supplier 与 product_sku 没有任何范围维度（既无仓库列也无归属列，采购归属在 supplier_sku 上），
+      按裁决第 7 条它们是采购团队共享读，因此对它们**不收窄** —— 这不是漏判。
+    -->
+    <sql id="scopeSo">
+        <choose>
+            <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
+            <when test="scope.orderSellerScope.all"></when>
+            <otherwise>AND so.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="orderSellerId" open="(" separator=","
+                         close=")">#{orderSellerId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="scopeC">
+        <choose>
+            <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
+            <when test="scope.customerSellerScope.all"></when>
+            <otherwise>AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="customerSellerId" open="(" separator=","
+                         close=")">#{customerSellerId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 采购：归属维度与仓库维度同时成立，取交集（与收货确认同一条口径） -->
+    <sql id="scopePo">
+        <choose>
+            <when test="scope == null or scope.purchaserScope.empty or scope.warehouseScope.empty">AND FALSE</when>
+            <otherwise>
+                <if test="scope.purchaserScope.all == false">AND po.purchaser_id IN
+                    <foreach collection="scope.purchaserScope.ids" item="purchaserScopeId" open="(" separator=","
+                             close=")">#{purchaserScopeId}
+                    </foreach>
+                </if>
+                <if test="scope.warehouseScope.all == false">AND po.warehouse_id IN
+                    <foreach collection="scope.warehouseScope.ids" item="purchaseWarehouseId" open="(" separator=","
+                             close=")">#{purchaseWarehouseId}
+                    </foreach>
+                </if>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="scopePr">
+        <choose>
+            <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
+            <when test="scope.warehouseScope.all"></when>
+            <otherwise>AND pr.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids" item="receiptWarehouseId" open="(" separator=","
+                         close=")">#{receiptWarehouseId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="scopeB">
+        <choose>
+            <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
+            <when test="scope.warehouseScope.all"></when>
+            <otherwise>AND b.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids" item="balanceWarehouseId" open="(" separator=","
+                         close=")">#{balanceWarehouseId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="scopeM">
+        <choose>
+            <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
+            <when test="scope.warehouseScope.all"></when>
+            <otherwise>AND m.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids" item="movementWarehouseId" open="(" separator=","
+                         close=")">#{movementWarehouseId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="scopeT">
+        <choose>
+            <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
+            <when test="scope.warehouseScope.all"></when>
+            <otherwise>AND t.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids" item="thresholdWarehouseId" open="(" separator=","
+                         close=")">#{thresholdWarehouseId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- warehouse 主档没有 warehouse_id 列，主键就是 id -->
+    <sql id="scopeW">
+        <choose>
+            <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
+            <when test="scope.warehouseScope.all"></when>
+            <otherwise>AND w.id IN
+                <foreach collection="scope.warehouseScope.ids" item="warehouseNodeId" open="(" separator=","
+                         close=")">#{warehouseNodeId}
+                </foreach>
+            </otherwise>
+        </choose>
+    </sql>
+
     <!-- 经营：订单统计（已确认口径） -->
     <select id="countConfirmedOrders" resultType="long">
         SELECT COUNT(*)
-        FROM sales_order
-        WHERE deleted = FALSE
-        AND status = 'CONFIRMED'
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND so.created_at &gt;= #{startTime}
+        AND so.created_at &lt; #{endTime}
+        <include refid="scopeSo"/>
     </select>
 
     <select id="sumOrderedAmount" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(ordered_total_amount), 0)
-        FROM sales_order
-        WHERE deleted = FALSE
-        AND status = 'CONFIRMED'
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        SELECT COALESCE(SUM(so.ordered_total_amount), 0)
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND so.created_at &gt;= #{startTime}
+        AND so.created_at &lt; #{endTime}
+        <include refid="scopeSo"/>
     </select>
 
     <select id="sumSettlementAmount" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(settlement_total_amount), 0)
-        FROM sales_order
-        WHERE deleted = FALSE
-        AND status = 'CONFIRMED'
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        SELECT COALESCE(SUM(so.settlement_total_amount), 0)
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND so.created_at &gt;= #{startTime}
+        AND so.created_at &lt; #{endTime}
+        <include refid="scopeSo"/>
     </select>
 
     <select id="countTotalConfirmedOrders" resultType="long">
         SELECT COUNT(*)
-        FROM sales_order
-        WHERE deleted = FALSE
-        AND status = 'CONFIRMED'
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        <include refid="scopeSo"/>
     </select>
 
     <select id="sumTotalSettlementAmount" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(settlement_total_amount), 0)
-        FROM sales_order
-        WHERE deleted = FALSE
-        AND status = 'CONFIRMED'
+        SELECT COALESCE(SUM(so.settlement_total_amount), 0)
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        <include refid="scopeSo"/>
     </select>
 
     <select id="countCustomers" resultType="long">
-        SELECT COUNT(*) FROM customer WHERE deleted = FALSE
+        SELECT COUNT(*) FROM customer c WHERE c.deleted = FALSE
+        <include refid="scopeC"/>
     </select>
 
     <select id="countSuppliers" resultType="long">
@@ -59,24 +182,26 @@
     </select>
 
     <select id="countCustomersWithOrdersInRange" resultType="long">
-        SELECT COUNT(DISTINCT customer_id)
-        FROM sales_order
-        WHERE deleted = FALSE
-        AND status = 'CONFIRMED'
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        SELECT COUNT(DISTINCT so.customer_id)
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND so.created_at &gt;= #{startTime}
+        AND so.created_at &lt; #{endTime}
+        <include refid="scopeSo"/>
     </select>
 
     <select id="topCustomersBySettlement"
             resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
-        SELECT customer_name_snapshot AS name,
-        COALESCE(SUM(settlement_total_amount), 0) AS amount
-        FROM sales_order
-        WHERE deleted = FALSE
-        AND status = 'CONFIRMED'
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
-        GROUP BY customer_id, customer_name_snapshot
+        SELECT so.customer_name_snapshot AS name,
+        COALESCE(SUM(so.settlement_total_amount), 0) AS amount
+        FROM sales_order so
+        WHERE so.deleted = FALSE
+        AND so.status = 'CONFIRMED'
+        AND so.created_at &gt;= #{startTime}
+        AND so.created_at &lt; #{endTime}
+        <include refid="scopeSo"/>
+        GROUP BY so.customer_id, so.customer_name_snapshot
         ORDER BY amount DESC
         LIMIT #{limit}
     </select>
@@ -87,6 +212,7 @@
       按 sku_id 分组会让同一个商品名在榜单里出现两次（两条各带自己的金额），
       看起来像数据重复。榜单的口径是「商品」，所以按 spu_id 合并金额。
       展示名用快照列 product_name_snapshot（历史单据的商品名可能已被改名）。
+      范围谓词落在父单 so 上：明细行自己没有业务员列，归属只随父单走。
     -->
     <select id="topProductsBySettlement"
             resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
@@ -99,6 +225,7 @@
         AND so.status = 'CONFIRMED'
         AND so.created_at &gt;= #{startTime}
         AND so.created_at &lt; #{endTime}
+        <include refid="scopeSo"/>
         GROUP BY item.spu_id, item.product_name_snapshot
         ORDER BY amount DESC
         LIMIT #{limit}
@@ -106,32 +233,36 @@
 
     <!-- 库存 -->
     <select id="sumInventoryQuantity" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(quantity), 0)
-        FROM inventory_balance
-        WHERE deleted = FALSE
+        SELECT COALESCE(SUM(b.quantity), 0)
+        FROM inventory_balance b
+        WHERE b.deleted = FALSE
+        <include refid="scopeB"/>
     </select>
 
     <select id="countInventorySkus" resultType="long">
-        SELECT COUNT(DISTINCT sku_id)
-        FROM inventory_balance
-        WHERE deleted = FALSE
+        SELECT COUNT(DISTINCT b.sku_id)
+        FROM inventory_balance b
+        WHERE b.deleted = FALSE
+        <include refid="scopeB"/>
     </select>
 
     <select id="countEnabledWarehouses" resultType="long">
         SELECT COUNT(*)
-        FROM warehouse
-        WHERE deleted = FALSE
-        AND status = 'ENABLED'
+        FROM warehouse w
+        WHERE w.deleted = FALSE
+        AND w.status = 'ENABLED'
+        <include refid="scopeW"/>
     </select>
 
     <select id="countMovementsByTypeAndRange" resultType="long">
         SELECT COUNT(*)
-        FROM inventory_movement
-        WHERE deleted = FALSE
-        AND movement_type IN
+        FROM inventory_movement m
+        WHERE m.deleted = FALSE
+        AND m.movement_type IN
         <foreach collection="movementTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-        AND occurred_at &gt;= #{startTime}
-        AND occurred_at &lt; #{endTime}
+        AND m.occurred_at &gt;= #{startTime}
+        AND m.occurred_at &lt; #{endTime}
+        <include refid="scopeM"/>
     </select>
 
     <select id="inventoryDistributionByWarehouse"
@@ -142,6 +273,7 @@
         JOIN warehouse w ON w.id = b.warehouse_id
         WHERE b.deleted = FALSE
         AND w.deleted = FALSE
+        <include refid="scopeB"/>
         GROUP BY b.warehouse_id, w.name
         ORDER BY quantity DESC
     </select>
@@ -153,6 +285,8 @@
       两个分支：
         ① 有阈值配置的 (仓库, SKU) —— 以阈值表为准，左连余额（可能还没有余额行）
         ② 有余额但没有阈值配置的 (仓库, SKU) —— 有货但无判定依据，需单列
+      两段是 UNION ALL，范围谓词必须各自落在自己的驱动表上（① t、② b）：写在末尾只会绑到第二支，
+      于是第一支把授权外仓库的阈值也算进健康度，四档之和不再等于大屏展示的 SKU 总数。
     -->
     <select id="inventoryHealthRows"
             resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow">
@@ -165,12 +299,14 @@
         AND b.sku_id = t.sku_id
         AND b.deleted = FALSE
         WHERE t.deleted = FALSE
+        <include refid="scopeT"/>
         UNION ALL
         SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
         CAST(NULL AS numeric) AS warnMin,
         CAST(NULL AS numeric) AS warnMax
         FROM inventory_balance b
         WHERE b.deleted = FALSE
+        <include refid="scopeB"/>
         AND NOT EXISTS (
         SELECT 1
         FROM inventory_warning_threshold t
@@ -180,7 +316,11 @@
         )
     </select>
 
-    <!-- 供应链网络节点：只取启用仓库（停用仓不属于「当前网络」） -->
+    <!--
+      供应链网络节点：只取启用仓库（停用仓不属于「当前网络」）。
+      谓词落在 w.id 而不是余额的 join 条件里：只收窄 b 会让授权外的仓以「0 库存节点」继续画在图上，
+      看起来像那个仓真的没有货。
+    -->
     <select id="warehouseNetworkNodes"
             resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
         SELECT w.name AS warehouseName,
@@ -199,6 +339,7 @@
         AND b.deleted = FALSE
         WHERE w.deleted = FALSE
         AND w.status = 'ENABLED'
+        <include refid="scopeW"/>
         GROUP BY w.id, w.name
         ORDER BY quantity DESC
     </select>
@@ -212,6 +353,8 @@
       inventoryQuantity 是**当日期末库存量**（当日及之前所有流水净额累加），不是当日变动量。
       出入库方向的类型清单**不在这里硬编码**，由调用方从 ScmInventoryMovementTypeEnum 的
       方向位派生后传入 —— 类型清单只有一处来源，新增流水类型时不会静默少算。
+      外层是 generate_series，没有任何 WHERE 可写：范围谓词只能落进 7 个标量子查询各自内部。
+      收范围后 inventoryQuantity 的口径变为「授权仓的期末累计库存」，与其余序列同一条边界。
     -->
     <select id="trendByDay" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO$Point">
         SELECT to_char(d, 'YYYY-MM-DD') AS date,
@@ -220,38 +363,45 @@
         FROM sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
-        AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS orders,
+        AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="scopeSo"/>), 0) AS orders,
         COALESCE((SELECT SUM(so.settlement_total_amount)
         FROM sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
-        AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS sales,
+        AND (so.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="scopeSo"/>), 0) AS sales,
         COALESCE((SELECT COUNT(*)
         FROM purchase_order po
         WHERE po.deleted = FALSE
-        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseOrders,
+        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="scopePo"/>), 0) AS purchaseOrders,
         COALESCE((SELECT SUM(po.total_amount)
         FROM purchase_order po
         WHERE po.deleted = FALSE
-        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS purchaseAmounts,
+        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="scopePo"/>), 0) AS purchaseAmounts,
         COALESCE((SELECT SUM(CASE WHEN m.movement_type IN
         <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
         THEN m.quantity ELSE -m.quantity END)
         FROM inventory_movement m
         WHERE m.deleted = FALSE
-        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= d::date), 0) AS inventoryQuantity,
+        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= d::date
+        <include refid="scopeM"/>), 0) AS inventoryQuantity,
         COALESCE((SELECT SUM(m.quantity)
         FROM inventory_movement m
         WHERE m.deleted = FALSE
         AND m.movement_type IN
         <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS inboundQuantity,
+        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="scopeM"/>), 0) AS inboundQuantity,
         COALESCE((SELECT SUM(m.quantity)
         FROM inventory_movement m
         WHERE m.deleted = FALSE
         AND m.movement_type IN
         <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date), 0) AS outboundQuantity
+        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="scopeM"/>), 0) AS outboundQuantity
         FROM generate_series(#{startDate}::date, #{endDate}::date, INTERVAL '1 day') AS gs(d)
         ORDER BY d
     </select>
@@ -259,46 +409,53 @@
     <!-- 采购 -->
     <select id="countPurchaseOrders" resultType="long">
         SELECT COUNT(*)
-        FROM purchase_order
-        WHERE deleted = FALSE
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        FROM purchase_order po
+        WHERE po.deleted = FALSE
+        AND po.created_at &gt;= #{startTime}
+        AND po.created_at &lt; #{endTime}
+        <include refid="scopePo"/>
     </select>
 
     <select id="sumPurchaseAmount" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(total_amount), 0)
-        FROM purchase_order
-        WHERE deleted = FALSE
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        SELECT COALESCE(SUM(po.total_amount), 0)
+        FROM purchase_order po
+        WHERE po.deleted = FALSE
+        AND po.created_at &gt;= #{startTime}
+        AND po.created_at &lt; #{endTime}
+        <include refid="scopePo"/>
     </select>
 
     <select id="countTotalPurchaseOrders" resultType="long">
         SELECT COUNT(*)
-        FROM purchase_order
-        WHERE deleted = FALSE
+        FROM purchase_order po
+        WHERE po.deleted = FALSE
+        <include refid="scopePo"/>
     </select>
 
     <select id="sumTotalPurchaseAmount" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(total_amount), 0)
-        FROM purchase_order
-        WHERE deleted = FALSE
+        SELECT COALESCE(SUM(po.total_amount), 0)
+        FROM purchase_order po
+        WHERE po.deleted = FALSE
+        <include refid="scopePo"/>
     </select>
 
+    <!-- purchase_receipt 有 warehouse_id 但没有采购员列，仓库是唯一可用的范围维度 -->
     <select id="countReceipts" resultType="long">
         SELECT COUNT(*)
-        FROM purchase_receipt
-        WHERE deleted = FALSE
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        FROM purchase_receipt pr
+        WHERE pr.deleted = FALSE
+        AND pr.created_at &gt;= #{startTime}
+        AND pr.created_at &lt; #{endTime}
+        <include refid="scopePr"/>
     </select>
 
     <select id="countSuppliersWithOrdersInRange" resultType="long">
-        SELECT COUNT(DISTINCT supplier_id)
-        FROM purchase_order
-        WHERE deleted = FALSE
-        AND created_at &gt;= #{startTime}
-        AND created_at &lt; #{endTime}
+        SELECT COUNT(DISTINCT po.supplier_id)
+        FROM purchase_order po
+        WHERE po.deleted = FALSE
+        AND po.created_at &gt;= #{startTime}
+        AND po.created_at &lt; #{endTime}
+        <include refid="scopePo"/>
     </select>
 
     <!--
@@ -307,11 +464,14 @@
       如果各写一份 WHERE，覆盖度与气泡就会在两份 SQL 里各自漂移，而差异在图上看不出来。
       `located` 只表示「解析出了市级归属」；仓库沿用大屏网络节点口径（仅启用仓），
       否则地图上少掉的停用仓会被算进「已归属」，让差额看起来像数据缺失。
+      范围谓词同样只能写在这三段里：每段被气泡与覆盖度各 include 一次，写在外层就等于一个数字收范围、
+      另一个不收，而这两组数字必须精确相等（ScmScreenDataIT 钉住了这一点）。
     -->
     <sql id="geoCustomerPopulation">
         SELECT c.city_code IS NOT NULL AS located, c.city_code AS city_code
         FROM customer c
         WHERE c.deleted = FALSE
+        <include refid="scopeC"/>
     </sql>
 
     <sql id="geoSupplierPopulation">
@@ -325,6 +485,7 @@
         FROM warehouse w
         WHERE w.deleted = FALSE
         AND w.status = 'ENABLED'
+        <include refid="scopeW"/>
     </sql>
 
     <!--

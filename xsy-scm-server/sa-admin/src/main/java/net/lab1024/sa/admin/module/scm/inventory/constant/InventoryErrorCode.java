@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
 
 /**
- * 库存域错误码（45 个）。
+ * 库存域错误码（58 个）。
  *
  * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加，
  * 盘点、报损报溢、调拨、阈值预警依次追加。
@@ -18,6 +18,8 @@ import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
  * 41028–41037           报损报溢波次 10 个
  * 41038–41048           调拨波次 11 个
  * 41049–41052           阈值预警波次 4 个
+ * 41053–41064           规格转换波次 12 个
+ * 41065                 P0-F 自建自审禁令 1 个
  * </pre>
  *
  * <p><b>为什么是 40486 / 41xxx</b>：2026-09-18 与全域码表核对，全仓 {@code 4xxxx} 已占用
@@ -27,7 +29,11 @@ import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
  *
  * <p><b>410xx 段的实际占用必须现查现用</b>：41004–41007 属 warehouse、41008 属 purchase、
  * 41009 属 warehouse（调拨波次新增的在途阻塞码）、41018 亦属 warehouse，
- * 因此库存域只能取 41001–41003 / 41011–41017 / 41019–41052。
+ * 因此库存域只能取 41001–41003 / 41011–41017 / 41019–41065（41010 至今无人使用）。
+ * 2026-09-24 为 41065 再查一次：全仓 {@code 410xx} 的定义点是
+ * {@code ScmCommonErrorCode} / 各域 {@code *ErrorCode} 枚举，逐个核对后
+ * 41065–41099 空闲，41100–41109 已属 delivery、41110–41112 已属 report，
+ * 故新码落在紧邻库存自有块的 41065，不开新段。
  * 不要相信任何注释里写的「本段空闲」—— 那是写下时的状态，会过期。
  *
  * <p><b>刻意不放进本枚举的码</b>：{@code WarehouseErrorCode.WAREHOUSE_NOT_FOUND(40485)} ——
@@ -430,7 +436,17 @@ public enum InventoryErrorCode implements ScmErrorCode {
     /**
      * 41064：仓库已停用，不能用于新的规格转换。
      */
-    INVENTORY_CONVERSION_WAREHOUSE_DISABLED(41064, "仓库已停用，不能用于新的规格转换业务");
+    INVENTORY_CONVERSION_WAREHOUSE_DISABLED(41064, "仓库已停用，不能用于新的规格转换业务"),
+
+    /**
+     * 41065：禁止自建自审 —— 审批人不得是报损报溢单的录单人（P0 基线收口裁决第 8 条）。
+     *
+     * <p>报损报溢是「会直接改账面数量」的单据，且本域只有它同时存在「录单 + 审批」两个动作，
+     * 因此只有它要求 {@code approver != creator}；同一个人走完两步时，审批环节不再构成任何约束。
+     * 比对的是 {@code created_by} / {@code auditor} 里的员工号那一段，不是整串
+     * （见 {@code InventoryLossGainService#requireNotSelfApproval}）。
+     */
+    INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN(41065, "报损报溢单不能由录单人自己审批，请由他人审核");
 
     private final int code;
     private final String msg;

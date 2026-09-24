@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryOutboundStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryOutboundDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryOutboundItemDao;
@@ -52,6 +53,8 @@ public class InventoryOutboundService {
 
     private final InventoryCommandService inventoryCommandService;
 
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
     /**
      * 新建草稿出库单。
      *
@@ -64,6 +67,8 @@ public class InventoryOutboundService {
     public Long create(InventoryOutboundAddForm form) {
         requireItems(form);
         String operator = ScmOperator.current();
+        // 新单还没有库存行，表单的仓库就是即将落库的仓库，按它判等价于按行判
+        warehouseScopeGuard.require(form.getWarehouseId());
 
         InventoryOutboundEntity entity = new InventoryOutboundEntity();
         entity.setOutboundNo(numberGenerator.next());
@@ -89,6 +94,8 @@ public class InventoryOutboundService {
         String operator = ScmOperator.current();
 
         InventoryOutboundEntity locked = lockAndRequire(id);
+        // 旧仓与新仓都要授权：只判旧仓等于允许把一张单搬进自己管不着的仓
+        warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
 
         if (outboundDao.updateDraft(id, form.getWarehouseId(), form.getRemark(), operator) != 1) {
@@ -110,6 +117,8 @@ public class InventoryOutboundService {
         OffsetDateTime now = OffsetDateTime.now();
 
         InventoryOutboundEntity locked = lockAndRequire(id);
+        // 授权判定取锁到的行上的仓库，不取任何入参：SALES_OUT 流水按这一行记账
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
 
         List<InventoryOutboundItemVO> items = itemDao.listByOutboundId(id);
@@ -147,6 +156,7 @@ public class InventoryOutboundService {
     public void cancel(Long id) {
         String operator = ScmOperator.current();
         InventoryOutboundEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
         if (outboundDao.markCancelled(id, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -160,6 +170,7 @@ public class InventoryOutboundService {
     public void delete(Long id) {
         String operator = ScmOperator.current();
         InventoryOutboundEntity locked = lockAndRequire(id);
+        warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
         itemDao.deleteByOutboundId(id, operator);
         if (outboundDao.deleteById(id) != 1) {

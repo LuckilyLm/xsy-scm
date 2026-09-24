@@ -1,6 +1,10 @@
 package net.lab1024.sa.admin.module.scm.delivery;
 
+import cn.dev33.satoken.stp.StpUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -15,9 +19,15 @@ import net.lab1024.sa.admin.module.scm.order.domain.form.OrderCancelForm;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
 /**
  * Small PostgreSQL smoke suite; use an isolated DB on local Docker Desktop. No external map calls.
+ *
+ * <p>本类测组单 / 规划 / 打印的业务行为，不测数据范围，因此调用者要拿「全部范围 + 全部功能点」：
+ * 只读接口现在按司机维度收口，未绑定司机的登录人（基类的 employeeId=1）会看到 0 条线路。
+ * 范围口径本身由 {@code ScmDeliveryDataScopePgIT} 负责。
  */
 class DeliveryRouteServiceIT extends ScmW5PgITBase {
     @Autowired
@@ -26,6 +36,19 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
     DeliveryRouteQueryService deliveryQuery;
     @Autowired
     DeliveryCandidateOrderQueryService candidates;
+
+    private MockedStatic<StpUtil> permissions;
+
+    @BeforeEach
+    void grantEveryDeliveryPermission() {
+        permissions = mockStatic(StpUtil.class);
+        permissions.when(() -> StpUtil.hasPermission(anyString())).thenReturn(true);
+    }
+
+    @AfterEach
+    void releasePermissions() {
+        permissions.close();
+    }
 
     @Test
     void groupReorderFreezePrintAndRelease() throws Exception {

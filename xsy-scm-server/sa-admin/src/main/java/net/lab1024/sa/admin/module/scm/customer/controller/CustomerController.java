@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerAddForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerDeleteForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerQueryForm;
+import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerSellerReassignForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerStatusForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerUpdateForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerDetailVO;
@@ -91,6 +92,20 @@ public class CustomerController {
     @OperateLog
     public ResponseDTO<String> updateStatus(@Valid @RequestBody CustomerStatusForm form) {
         service.updateStatus(form);
+        return ResponseDTO.ok();
+    }
+
+    /**
+     * 改派客户业务归属。
+     *
+     * <p>独立端点 + 独立权限（{@code scm:customer:assign}）：{@code /update} 一律不改 {@code seller_id}，
+     * 归属变更必须带着乐观锁版本走这里，才能留下单独的操作日志并且不让编辑表单顺带挪走数据。
+     */
+    @PostMapping("/reassignSeller")
+    @SaCheckPermission("scm:customer:assign")
+    @OperateLog
+    public ResponseDTO<String> reassignSeller(@Valid @RequestBody CustomerSellerReassignForm form) {
+        service.reassignSeller(form);
         return ResponseDTO.ok();
     }
 

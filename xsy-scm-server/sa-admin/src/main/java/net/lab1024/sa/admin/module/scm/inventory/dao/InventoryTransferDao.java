@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryTransferQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryInTransitVO;
@@ -83,8 +84,11 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
 
     /**
      * 分页查询（联两次 warehouse 取源仓 / 目标仓展示字段）。
+     *
+     * <p>调拨的可见口径是「源仓或目标仓任一被授权」，只授权一端的人看不见在途单就没法对账。
      */
-    List<InventoryTransferVO> queryPage(Page<?> page, @Param("query") InventoryTransferQueryForm query);
+    List<InventoryTransferVO> queryPage(Page<?> page, @Param("query") InventoryTransferQueryForm query,
+                                        @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。
@@ -96,5 +100,5 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      *
      * <p>只读聚合，不修改任何业务表；结果按 (transfer_no, sku_id) 展开。
      */
-    List<InventoryInTransitVO> queryInTransit();
+    List<InventoryInTransitVO> queryInTransit(@Param("scope") ScmValueScope scope);
 }

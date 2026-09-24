@@ -200,6 +200,10 @@ public abstract class ScmW5PgITBase {
         employee.setEmployeeId(1L);
         employee.setActualName("W5 IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+        // 本夹具代表「不受数据范围约束的操作者」，不是某个正式业务角色：W1–W5 的造数链路会
+        // 为每个用例新建仓库，逐仓授权既无意义也会把夹具变成被测对象。
+        // 数据范围本身用例（ScmInventoryDataScopePgIT）自己构造 administratorFlag=false 的员工。
+        employee.setAdministratorFlag(true);
         SmartRequestUtil.setRequestUser(employee);
     }
 

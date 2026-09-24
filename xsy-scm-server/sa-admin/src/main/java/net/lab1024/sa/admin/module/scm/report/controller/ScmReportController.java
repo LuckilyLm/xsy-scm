@@ -56,6 +56,8 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
  * </ul>
  *
  * <p>导出与列表调用<b>同一个</b>查询方法，口径不可能分叉；超过行数上限时明确拒绝而不是静默截断。
+ * 因此导出继承列表的仓库数据范围 —— {@code scm:report:export} 只代表允许导出，绝不扩大可见范围
+ * （裁决「P0 基线收口裁决」第 10 条：财务不等于全组织可见，能看哪几个仓就只能导哪几个仓）。
  */
 @RestController
 @RequestMapping("/scm/report")

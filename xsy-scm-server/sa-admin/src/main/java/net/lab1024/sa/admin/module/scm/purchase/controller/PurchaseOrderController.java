@@ -12,6 +12,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderCancelF
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderDeleteForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderExportForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderQueryForm;
+import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderReassignForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderShortCloseForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderUpdateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderVersionForm;
@@ -126,6 +127,20 @@ public class PurchaseOrderController {
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> update(@Valid @RequestBody PurchaseOrderUpdateForm form) {
         return ResponseDTO.ok(purchaseOrderService.update(form));
+    }
+
+    /**
+     * 改派采购归属（{@code scm:purchase:assign}，与「新建时指定别人」同一项权利）。
+     *
+     * <p>单独一个端点，而不是把改派混在 {@code /update} 里：归属同时是**数据范围依据**，
+     * 谁把它换成了谁必须是一个显式、单独可授权、可审计的动作。
+     * 不接幂等头，与 {@code /update} 同一取向 —— 重复提交由 {@code id + version} 乐观锁挡住。
+     */
+    @PostMapping("/reassign")
+    @SaCheckPermission("scm:purchase:assign")
+    @OperateLog
+    public ResponseDTO<PurchaseOrderVO> reassign(@Valid @RequestBody PurchaseOrderReassignForm form) {
+        return ResponseDTO.ok(purchaseOrderService.reassign(form));
     }
 
     @PostMapping("/submit")

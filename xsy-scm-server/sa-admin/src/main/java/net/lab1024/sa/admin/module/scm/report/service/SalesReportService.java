@@ -23,6 +23,13 @@ import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VA
  *
  * <p>不接受客户端排序：这些查询都是 join + group by，裸列名在多张表里同名，交给框架拼
  * ORDER BY 会产生歧义列；排序语义由 SQL 固定，因此对 {@code sortItemList} 显式报错而不是静默忽略。
+ *
+ * <p><b>本类刻意不按仓库范围收窄</b>：销售事实 {@code sales_order} / {@code sales_order_item} /
+ * {@code order_refund} 上没有仓库列（订单可跨仓履约，见 {@code ScmSalesReportQueryForm} 类注释），
+ * 而 {@code created_by} 是审计字段、不得当作数据范围依据（裁决第 3 条），
+ * 按 {@code seller_id} 收窄又会把「财务看全组织销售额」变成「只看自己名下」——那是角色口径，
+ * 不是仓库范围。因此销售侧报表的可见性只由页面权限
+ * （{@code scm:report:sales:query}）承担；等订单有真实履约仓库事实后再纳入仓库范围。
  */
 @Service
 @RequiredArgsConstructor

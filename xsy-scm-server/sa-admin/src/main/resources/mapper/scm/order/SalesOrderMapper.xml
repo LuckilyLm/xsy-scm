@@ -45,7 +45,18 @@
                                       WHERE id = #{id}
                                         AND deleted = FALSE FOR UPDATE</select>
     <select id="query" resultMap="row">SELECT * FROM sales_order WHERE deleted=FALSE
+        <!-- 数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭，绝不允许「不传 = 全量」。
+             scope.all 时不拼任何谓词，因此 seller_id IS NULL 的未分配单对持全量范围者可见，这是有意口径。 -->
+        <if test="scope != null and scope.all == false">
+            AND seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if>
+        <!-- 用户自选的业务员筛选只能进一步缩小范围：范围谓词已在上面无条件 AND 过 -->
+        <if test="query.sellerId != null">AND seller_id=#{query.sellerId}</if>
         <if test="query.status != null and query.status != ''">AND status=#{query.status}</if>
         <if test="query.orderSource != null and query.orderSource != ''">AND order_source=#{query.orderSource}</if>
         <if test="query.orderId != null">AND id=#{query.orderId}</if>

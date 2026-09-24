@@ -22,7 +22,16 @@
                                       FROM order_refund
                                       WHERE id = #{id}
                                         AND deleted = FALSE FOR UPDATE</select>
+    <!-- 与退货单同口径：order_refund 无 owner 列，可见性跟随父订单的 sales_order.seller_id（子查询，不放大行数）。 -->
     <select id="query" resultMap="row">SELECT * FROM order_refund WHERE deleted=FALSE
+        <if test="scope != null and scope.all == false">
+            AND order_id IN (SELECT so.id FROM sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            )
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if>
         <if test="query.status != null and query.status != ''">AND status=#{query.status}</if>
         <if test="query.orderId != null">AND order_id=#{query.orderId}</if>

@@ -12,6 +12,12 @@
   3. 跨明细的聚合先各自成 CTE/派生表，再按业务主键合并，绝不「订单 × 行 × 退款」直接 JOIN 后求和。
   4. 数量一律与单位同组返回；无法同单位合并的（多单位收货、跨单位入库）用文本表达，不给无量纲合计。
   5. 金额/数量的精度交给 NUMERIC 与 ScmFixedScale4Serializer，本文件不做 2 位收敛。
+  6. `scope` 是调用者的仓库数据范围（`ScmValueScope`），由 Service 层显式下传，谓词一律落在
+     被聚合的事实表行上（`purchase_order` / `purchase_receipt` / `inventory_movement` /
+     `inventory_balance`），不落在维度表 JOIN 上、也不落在聚合之后 —— 报表里放错位置改的是
+     一个数字而不是一组行，事后看不出破绽。`scope == null` 恒假（失败关闭），`scope.all` 时
+     不拼任何谓词。销售侧事实（`sales_order` / `sales_order_item` / `order_refund`）
+     没有仓库列，因此相关语句按仓库不收窄 —— 见 `ScmSalesReportQueryForm` 的类注释。
 -->
 <mapper namespace="net.lab1024.sa.admin.module.scm.report.dao.ReportDao">
 
@@ -58,10 +64,23 @@
         AND o.submitted_at &lt; #{endAt}
     </sql>
 
+    <!--
+      采购分析的共用谓词，同时承载仓库数据范围：五个消费方（purchaseByProduct /
+      purchaseBySupplier / purchaseByPurchaser / purchaseItemList / purchasePriceTrend）
+      都把 `o` 绑给 purchase_order、`oi` 绑给 purchase_order_item，新增消费方必须守住同一
+      别名契约，否则这里会收窄错表。范围落在采购单事实行上，与调用方的 warehouseId 筛选同级。
+    -->
     <sql id="purchaseFilters">
         <if test="query.supplierId != null">AND o.supplier_id = #{query.supplierId}</if>
         <if test="query.purchaserId != null">AND o.purchaser_id = #{query.purchaserId}</if>
         <if test="query.warehouseId != null">AND o.warehouse_id = #{query.warehouseId}</if>
+        <if test="scope != null and scope.all == false">
+            AND o.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.skuId != null">AND oi.sku_id = #{query.skuId}</if>
         <if test="query.keyword != null and query.keyword != ''">
             AND (oi.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
@@ -86,6 +105,14 @@
         <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
         <if test="query.purchaserId != null">AND po.purchaser_id = #{query.purchaserId}</if>
         <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+        <!-- 范围按流水自身的仓库，与调用方筛选的收货仓同源（PURCHASE_IN 的仓库即收货单的仓库）。 -->
+        <if test="scope != null and scope.all == false">
+            AND m.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
     </sql>
 
     <!-- ============ 经营概览 ============ -->
@@ -133,7 +160,14 @@
                                  AND o2.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
                                  AND o2.submitted_at &gt;= #{startAt}
                                  AND o2.submitted_at &lt; #{endAt}
-                               <if test="query.warehouseId != null">AND o2.warehouse_id = #{query.warehouseId}</if>) po
+                               <if test="query.warehouseId != null">AND o2.warehouse_id = #{query.warehouseId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND o2.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) po
                  CROSS JOIN (SELECT COALESCE(SUM(m.quantity * m.unit_cost), 0)               AS purchaseInCostAmount,
                                       COUNT(*) FILTER (WHERE m.unit_cost IS NULL)             AS purchaseInCostMissingCount
                                FROM inventory_movement m
@@ -141,12 +175,26 @@
                                  AND m.movement_type = 'PURCHASE_IN'
                                  AND m.occurred_at &gt;= #{startAt}
                                  AND m.occurred_at &lt; #{endAt}
-                               <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>) mv
+                               <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND m.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) mv
                  CROSS JOIN (SELECT COALESCE(SUM(b.quantity * b.avg_cost), 0)               AS inventoryBookValue,
                                       COUNT(*) FILTER (WHERE b.quantity &gt; 0)              AS stockedSkuCount
                                FROM inventory_balance b
                                WHERE b.deleted = FALSE
-                               <if test="query.warehouseId != null">AND b.warehouse_id = #{query.warehouseId}</if>) bal
+                               <if test="query.warehouseId != null">AND b.warehouse_id = #{query.warehouseId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND b.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) bal
     </select>
 
     <!--
@@ -194,6 +242,13 @@
                               AND o2.submitted_at &gt;= #{startAt}
                               AND o2.submitted_at &lt; #{endAt}
                               <if test="query.warehouseId != null">AND o2.warehouse_id = #{query.warehouseId}</if>
+                              <if test="scope != null and scope.all == false">
+                                  AND o2.warehouse_id IN
+                                  <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                              </if>
+                              <if test="scope == null">
+                                  AND FALSE
+                              </if>
                             GROUP BY 1) po ON po.day = CAST(d.day AS date)
                  LEFT JOIN (SELECT (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
                                    SUM(m.quantity * m.unit_cost)                   AS cost_amount,
@@ -204,6 +259,13 @@
                               AND m.occurred_at &gt;= #{startAt}
                               AND m.occurred_at &lt; #{endAt}
                               <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+                              <if test="scope != null and scope.all == false">
+                                  AND m.warehouse_id IN
+                                  <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                              </if>
+                              <if test="scope == null">
+                                  AND FALSE
+                              </if>
                             GROUP BY 1) mv ON mv.day = CAST(d.day AS date)
         ORDER BY d.day
     </select>
@@ -438,7 +500,14 @@
                 AND o.submitted_at &lt; #{endAt}
                 <if test="query.supplierId != null">AND o.supplier_id = #{query.supplierId}</if>
                 <if test="query.purchaserId != null">AND o.purchaser_id = #{query.purchaserId}</if>
-                <if test="query.warehouseId != null">AND o.warehouse_id = #{query.warehouseId}</if>) po
+                <if test="query.warehouseId != null">AND o.warehouse_id = #{query.warehouseId}</if>
+                <if test="scope != null and scope.all == false">
+                    AND o.warehouse_id IN
+                    <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                </if>
+                <if test="scope == null">
+                    AND FALSE
+                </if>) po
                  CROSS JOIN (SELECT COUNT(DISTINCT r.id)                                    AS confirmedReceiptCount,
                                       COALESCE(SUM(ri.received_quantity * oi.purchase_price), 0) AS receiptReferenceAmount
                              FROM purchase_receipt r
@@ -454,7 +523,14 @@
                                AND r.confirmed_at &lt; #{endAt}
                                <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
                                <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
-                               <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>) rc
+                               <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                               <if test="scope != null and scope.all == false">
+                                   AND r.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) rc
                  CROSS JOIN (SELECT COALESCE(SUM(m.quantity * m.unit_cost), 0)          AS purchaseInCostAmount,
                                       COUNT(*) FILTER (WHERE m.unit_cost IS NULL)        AS purchaseInCostMissingCount
                              FROM inventory_movement m
@@ -473,14 +549,29 @@
                                AND m.occurred_at &lt; #{endAt}
                                <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
                                <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
-                               <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>) mv
+                               <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                               <!-- 范围取流水自身的仓库：入库流水落在哪个仓，就是哪个仓的库存事实。 -->
+                               <if test="scope != null and scope.all == false">
+                                   AND m.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) mv
                  <!-- 待入库是「当前积压」，不是区间量，所以刻意不带日期条件。 -->
                  CROSS JOIN (SELECT COUNT(*) AS pendingPutawayReceiptCount
                              FROM purchase_receipt r2
                              WHERE r2.deleted = FALSE
                                AND r2.status = 'CONFIRMED'
                                AND r2.receipt_mode = 'WAREHOUSE_CONFIRM'
-                               AND r2.putaway_status = 'PENDING') pd
+                               AND r2.putaway_status = 'PENDING'
+                               <if test="scope != null and scope.all == false">
+                                   AND r2.warehouse_id IN
+                                   <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                               </if>
+                               <if test="scope == null">
+                                   AND FALSE
+                               </if>) pd
     </select>
 
     <!--
@@ -569,6 +660,13 @@
                       <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
                       <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
                       <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                      <if test="scope != null and scope.all == false">
+                          AND r.warehouse_id IN
+                          <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                      </if>
+                      <if test="scope == null">
+                          AND FALSE
+                      </if>
                     GROUP BY r.supplier_id),
              ic AS (SELECT q.supplier_id,
                            SUM(q.cost_amount)        AS inbound_cost_amount,
@@ -593,6 +691,13 @@
                             AND m.occurred_at &lt; #{endAt}
                             <if test="query.warehouseId != null">AND r2.warehouse_id = #{query.warehouseId}</if>
                             <if test="query.purchaserId != null">AND po2.purchaser_id = #{query.purchaserId}</if>
+                            <if test="scope != null and scope.all == false">
+                                AND m.warehouse_id IN
+                                <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                            </if>
+                            <if test="scope == null">
+                                AND FALSE
+                            </if>
                           GROUP BY m.source_document_id, r2.supplier_id) q
                     GROUP BY q.supplier_id)
         SELECT po.supplier_id                              AS supplierId,
@@ -628,6 +733,13 @@
           AND m.occurred_at &gt;= #{startAt}
           AND m.occurred_at &lt; #{endAt}
           <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
         GROUP BY r.supplier_id
         ORDER BY SUM(m.quantity * m.unit_cost) DESC NULLS LAST, r.supplier_id
         LIMIT #{limit}
@@ -659,6 +771,13 @@
                       <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
                       <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
                       <if test="query.purchaserId != null">AND o2.purchaser_id = #{query.purchaserId}</if>
+                      <if test="scope != null and scope.all == false">
+                          AND r.warehouse_id IN
+                          <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                      </if>
+                      <if test="scope == null">
+                          AND FALSE
+                      </if>
                     GROUP BY o2.purchaser_id),
              ic AS (SELECT q.purchaser_id,
                            SUM(q.cost_amount)        AS inbound_cost_amount,
@@ -683,6 +802,13 @@
                             <if test="query.supplierId != null">AND r2.supplier_id = #{query.supplierId}</if>
                             <if test="query.warehouseId != null">AND r2.warehouse_id = #{query.warehouseId}</if>
                             <if test="query.purchaserId != null">AND po2.purchaser_id = #{query.purchaserId}</if>
+                            <if test="scope != null and scope.all == false">
+                                AND m.warehouse_id IN
+                                <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                            </if>
+                            <if test="scope == null">
+                                AND FALSE
+                            </if>
                           GROUP BY po2.purchaser_id, m.id) q
                     GROUP BY q.purchaser_id)
         SELECT po.purchaser_id                             AS purchaserId,
@@ -788,6 +914,13 @@
           AND r.confirmed_at &lt; #{endAt}
           <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
           <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND r.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
           <if test="query.purchaseOrderId != null">AND r.purchase_order_id = #{query.purchaseOrderId}</if>
           <if test="query.receiptMode != null and query.receiptMode != ''">
               AND r.receipt_mode = #{query.receiptMode}
@@ -839,6 +972,13 @@
           AND m.occurred_at &lt; #{endAt}
           <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
           <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
           <if test="query.purchaseOrderId != null">AND r.purchase_order_id = #{query.purchaseOrderId}</if>
           <if test="query.keyword != null and query.keyword != ''">
               AND (r.receipt_no ILIKE CONCAT('%', #{query.keyword}, '%')
@@ -877,6 +1017,13 @@
           AND r.putaway_status = 'PENDING'
           <if test="query.supplierId != null">AND r.supplier_id = #{query.supplierId}</if>
           <if test="query.warehouseId != null">AND r.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND r.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
           <if test="query.keyword != null and query.keyword != ''">
               AND (r.receipt_no ILIKE CONCAT('%', #{query.keyword}, '%')
                OR r.purchase_order_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
@@ -943,6 +1090,13 @@
           AND m.occurred_at &gt;= #{startAt}
           AND m.occurred_at &lt; #{endAt}
           <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
           <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
           <if test="query.movementType != null and query.movementType != ''">
               AND m.movement_type = #{query.movementType}
@@ -963,6 +1117,14 @@
         AND m.occurred_at &gt;= #{startAt}
         AND m.occurred_at &lt; #{endAt}
         <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+        <!-- lossSummary 与 lossList 共用本片段，两者的流水别名都必须是 m。 -->
+        <if test="scope != null and scope.all == false">
+            AND m.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
         <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
         <if test="query.keyword != null and query.keyword != ''">
             AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
@@ -1031,6 +1193,13 @@
                  LEFT JOIN product_spu spu ON spu.id = k.spu_id
         WHERE b.deleted = FALSE
           <if test="query.warehouseId != null">AND b.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND b.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
           <if test="query.skuId != null">AND b.sku_id = #{query.skuId}</if>
           <if test="query.keyword != null and query.keyword != ''">
               AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
@@ -1071,6 +1240,13 @@
           AND m.occurred_at &gt;= #{startAt}
           AND m.occurred_at &lt; #{endAt}
           <if test="query.warehouseId != null">AND m.warehouse_id = #{query.warehouseId}</if>
+          <if test="scope != null and scope.all == false">
+              AND m.warehouse_id IN
+              <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+          </if>
+          <if test="scope == null">
+              AND FALSE
+          </if>
           <if test="query.skuId != null">AND m.sku_id = #{query.skuId}</if>
           <if test="query.keyword != null and query.keyword != ''">
               AND (spu.name ILIKE CONCAT('%', #{query.keyword}, '%')

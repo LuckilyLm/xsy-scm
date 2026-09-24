@@ -10,6 +10,7 @@ import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuQueryForm;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.*;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -61,7 +62,8 @@ public class ProductQueryService {
         var imageMap = imageRows.stream().collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
         var tagMap = tags.bySpuIds(ids);
         Map<String, String> urls = new HashMap<>();
-        files.getFileList(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList())
+        files.getFileList(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+                        SmartRequestUtil.getRequestUser())
                 .stream().filter(Objects::nonNull).forEach(f -> urls.put(f.getFileKey(), f.getFileUrl()));
         Map<Long, String> names = categoryRows.stream().collect(Collectors.toMap(ProductCategoryEntity::getId, ProductCategoryEntity::getName));
         List<ProductSpuDetailVO> result = new ArrayList<>();

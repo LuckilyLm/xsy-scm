@@ -1,15 +1,21 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryBalanceQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryBalanceVO;
+import net.lab1024.sa.admin.module.scm.report.support.ScmReportAccess;
 import net.lab1024.sa.base.common.domain.PageParam;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND;
@@ -36,15 +42,23 @@ public class InventoryBalanceQueryService {
 
     private final InventoryBalanceDao balanceDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     @Transactional(readOnly = true)
     public PageResult<InventoryBalanceVO> query(InventoryBalanceQueryForm form) {
         rejectClientSort(form);
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
         var page = SmartPageUtil.convert2PageQuery(form);
-        return SmartPageUtil.convert2PageResult(page, balanceDao.queryPage(page, form));
+        List<InventoryBalanceVO> list = balanceDao.queryPage(page, form, scope.getWarehouseScope());
+        ScmReportAccess.maskCost(list, scope.isCostVisible(), InventoryBalanceQueryService::clearCost);
+        return SmartPageUtil.convert2PageResult(page, list);
     }
 
     /**
-     * 余额详情；不存在 → 40486。
+     * 余额详情；不存在 → 40486，仓库未授权 → 无权限（不按「不存在」回答，否则等于把存在性告诉对方）。
      */
     @Transactional(readOnly = true)
     public InventoryBalanceVO detail(Long id) {
@@ -52,7 +66,21 @@ public class InventoryBalanceQueryService {
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_BALANCE_NOT_FOUND);
         }
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (!scope.getWarehouseScope().allows(vo.getWarehouseId())) {
+            throw new ScmDataScopeException();
+        }
+        ScmReportAccess.maskCost(List.of(vo), scope.isCostVisible(), InventoryBalanceQueryService::clearCost);
         return vo;
+    }
+
+    /**
+     * 均价与账面金额同源（都来自 {@code avg_cost}），无成本权限时一并抹成 null；
+     * 抹成 0 会被读成「这批货没有成本」，那是一个事实，不是无权知道。
+     */
+    private static void clearCost(InventoryBalanceVO vo) {
+        vo.setAvgCost(null);
+        vo.setAmount(null);
     }
 
     /**

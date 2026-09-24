@@ -1,7 +1,10 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryWarningStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryWarningThresholdDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryWarningQueryForm;
@@ -34,22 +37,32 @@ public class InventoryWarningQueryService {
 
     private final InventoryWarningThresholdDao thresholdDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
      * 阈值配置分页（联仓库 / SKU / 商品取展示字段）。
      */
     public PageResult<InventoryWarningThresholdVO> queryThresholdPage(InventoryWarningThresholdQueryForm query) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryWarningThresholdVO> list = thresholdDao.queryPage(page, query);
+        List<InventoryWarningThresholdVO> list =
+                thresholdDao.queryPage(page, query, scope.getWarehouseScope());
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
     /**
-     * 阈值配置详情（按 id）。
+     * 阈值配置详情（按 id）；仓库未授权时按无权限回答，不用「不存在」。
      */
     public InventoryWarningThresholdVO detail(Long id) {
         InventoryWarningThresholdVO vo = thresholdDao.detail(id);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_NOT_FOUND);
+        }
+        if (!dataScopeService.resolve().getWarehouseScope().allows(vo.getWarehouseId())) {
+            throw new ScmDataScopeException();
         }
         return vo;
     }
@@ -64,8 +77,12 @@ public class InventoryWarningQueryService {
      * 而「数字 vs 阈值 → 状态」这条规则只在枚举里实现一次。
      */
     public PageResult<InventoryWarningVO> queryWarningPage(InventoryWarningQueryForm query) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryWarningVO> list = thresholdDao.queryWarningPage(page, query);
+        List<InventoryWarningVO> list = thresholdDao.queryWarningPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryWarningQueryService::fillStatus);
         return SmartPageUtil.convert2PageResult(page, list);
     }

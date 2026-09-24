@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.OrderRefundEntity;
 import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderQueryForm;
 
@@ -13,5 +14,7 @@ import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderQueryForm;
 public interface OrderRefundDao extends BaseMapper<OrderRefundEntity> {
     OrderRefundEntity lock(@Param("id") Long id);
 
-    List<OrderRefundEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query);
+    /** 列表读；范围按父订单的 {@code sales_order.seller_id} 收窄，见 OrderRefundMapper.xml。 */
+    List<OrderRefundEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
+                                  @Param("scope") ScmValueScope scope);
 }

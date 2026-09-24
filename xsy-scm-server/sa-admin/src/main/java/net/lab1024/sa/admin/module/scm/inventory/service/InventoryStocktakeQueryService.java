@@ -1,7 +1,10 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryStocktakeStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryStocktakeDao;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryStocktakeItemDao;
@@ -30,25 +33,34 @@ public class InventoryStocktakeQueryService {
 
     private final InventoryStocktakeItemDao itemDao;
 
+    private final ScmDataScopeService dataScopeService;
+
     /**
      * 分页查询（不返回明细，明细走 {@link #detail}）。
      */
     public PageResult<InventoryStocktakeVO> queryPage(InventoryStocktakeQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryStocktakeVO> list = stocktakeDao.queryPage(page, query);
+        List<InventoryStocktakeVO> list = stocktakeDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryStocktakeQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
     /**
-     * 详情（含明细，按录入顺序）。
+     * 详情（含明细，按录入顺序）；仓库未授权时按无权限回答，不用「不存在」。
      */
     public InventoryStocktakeVO detail(Long id) {
         InventoryStocktakeVO vo = stocktakeDao.detail(id);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_NOT_FOUND);
+        }
+        if (!dataScopeService.resolve().getWarehouseScope().allows(vo.getWarehouseId())) {
+            throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
         List<InventoryStocktakeItemVO> items = itemDao.listByStocktakeId(id);

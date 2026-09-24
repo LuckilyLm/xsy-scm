@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryReservationQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryReservationVO;
@@ -68,5 +69,6 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
     /**
      * 分页查询（联仓库 / SKU / 商品取展示字段）。
      */
-    List<InventoryReservationVO> queryPage(Page<?> page, @Param("query") InventoryReservationQueryForm query);
+    List<InventoryReservationVO> queryPage(Page<?> page, @Param("query") InventoryReservationQueryForm query,
+                                           @Param("scope") ScmValueScope scope);
 }

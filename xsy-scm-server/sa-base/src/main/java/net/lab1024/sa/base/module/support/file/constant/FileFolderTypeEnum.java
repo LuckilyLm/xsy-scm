@@ -38,6 +38,15 @@ public enum FileFolderTypeEnum implements BaseEnum {
      */
     PUBLIC_IMAGE(5, FileFolderTypeEnum.FOLDER_PUBLIC + "/image/", "公开图片"),
 
+    /**
+     * 上传后尚未绑定任何业务对象的暂存目录。
+     *
+     * <p>两段式生命周期的第一段：先入暂存，业务表单保存时才建 {@code t_file_relation}；
+     * 超期仍无关系行的由 {@code FileScratchCleanupJob} 回收（见 docs/decisions.md
+     * 「P0 基线收口裁决」第 14 条）。
+     */
+    SCRATCH(6, FileFolderTypeEnum.FOLDER_PRIVATE + "/common/scratch/", "未绑定暂存"),
+
     ;
 
     /**

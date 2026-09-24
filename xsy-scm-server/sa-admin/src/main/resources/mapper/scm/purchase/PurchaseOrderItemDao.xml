@@ -90,6 +90,12 @@
       Q13：采购单位进入分组键，同一 SKU 若用了不同单位会拆成多行，绝不跨单位相加。
       pending / over 逐行裁剪后再求和（不能用 Σ已收与 Σ计划相减，否则欠收行与超收行会互相抵消）。
       状态过滤固定为可收货的两态，不接收入参；排序固定「欠收降序 → SKU」，不接受客户端排序。
+
+      仓库数据范围（docs/decisions.md「P0 基线收口裁决」第 8 条）：谓词落在驱动事实行
+      purchase_order.warehouse_id 上，与 ReportDao.xml 的 purchaseFilters 同一位置。
+      收货单的仓库在建单时从采购单继承（PurchaseSnapshotFactory.receipt），因此这一列就是
+      已收量所属的那个仓；范围外的采购单整单不参与分组，聚合数字随行集收缩后重算，
+      不是「先按全量算完再把行藏掉」。scope 为 null 按失败关闭返回 0 行。
     -->
     <select id="workbench"
             resultType="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO">
@@ -114,6 +120,13 @@
         </if>
         <if test="query.warehouseId != null">
             AND o.warehouse_id = #{query.warehouseId}
+        </if>
+        <if test="scope != null and scope.all == false">
+            AND o.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
         </if>
         <if test="query.orderNo != null and query.orderNo != ''">
             AND o.order_no ILIKE CONCAT('%', #{query.orderNo}, '%')
