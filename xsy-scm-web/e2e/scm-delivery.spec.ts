@@ -255,7 +255,8 @@ test.beforeAll(async () => {
         await post(`/scm/sorting/tasks/${created.task.id}/entry`, {items: entries});
         const ready = await get<Row>(`/scm/sorting/tasks/${created.task.id}`);
         await post(`/scm/sorting/tasks/${created.task.id}/complete`, {version: ready.task.version});
-        expect(ready.task.status, '前置分拣任务必须已完成').toBe('COMPLETED');
+        const done = await get<Row>(`/scm/sorting/tasks/${created.task.id}`);
+        expect(done.task.status, '前置分拣任务必须已完成').toBe('COMPLETED');
     }
 
     for (const [tag, customerId, skuId] of [
@@ -311,6 +312,12 @@ test('2｜L1 司机与车辆在主档页新建并落库，重复编码被服务�
         employeeId: accounts.employeeIds[accounts.readOnly], status: 'ENABLED',
     });
     await page.reload();
+    // 主档列表按 driver_code 升序分页（pageSize 20），而 E2E 按既有约定只回收临时账号、
+    // 不删业务行 —— 开发库累计到 20+ 条司机后，新行会落到第一页之外。
+    // 所以这里必须按编码搜索再断言「唯一一行」：断的是服务端唯一性与列表渲染，
+    // 而不是「它恰好排在第一页」。
+    await page.locator('.smart-query-form input').first().fill(driverCode);
+    await page.locator('.smart-query-form input').first().press('Enter');
     await expect(page.locator('#scm-delivery-driver-table tbody tr.ant-table-row')
         .filter({hasText: driverCode}), '列表应只出现这一条新建司机').toHaveCount(1);
     // 绑定关系的证据在下面按接口回读 employeeId（列表里显示的是员工姓名，
