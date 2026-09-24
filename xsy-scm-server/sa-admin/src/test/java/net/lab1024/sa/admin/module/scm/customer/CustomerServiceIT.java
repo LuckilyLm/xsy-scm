@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.customer;
 import net.lab1024.sa.admin.module.scm.common.ScmW2PgITBase;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerAddForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerDeleteForm;
+import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerSkuVisibilityItemForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerStatusForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerUpdateForm;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
@@ -291,5 +292,33 @@ class CustomerServiceIT extends ScmW2PgITBase {
     void missingCustomerIs40430() {
         expectCode(() -> service.require(-1L), 40430);
         expectCode(() -> service.require(null), 40430);
+    }
+
+    /**
+     * 只声明策略、不带清单时必须按空清单处理。
+     *
+     * <p>{@code CustomerService.add/update} 的条件是「策略或清单任一非空就送进 replace」，
+     * 所以「切到 ALL_ENABLED 且不动清单」这一唯一合法请求会以 {@code visibilities == null} 抵达
+     * replace；原先 null 被当成 40034「明细行不合法」拒掉，而真实原因与任何明细行无关。
+     */
+    @Test
+    @DisplayName("只改可见性策略、visibilities 留空时不得被 40034 拒掉")
+    void policyOnlyWithoutVisibilityListIsAccepted() {
+        var form = form("VIS-POLICY-ONLY");
+        form.setVisibilityPolicy("ALL_ENABLED");
+        Long id = service.add(form);
+        assertThat(jdbc.queryForObject(
+                "SELECT visibility_policy FROM customer WHERE id = ?", String.class, id)).isEqualTo("ALL_ENABLED");
+    }
+
+    @Test
+    @DisplayName("归一化 null 不放宽冲突判定：ALL_ENABLED 带上明细仍按 40033 拒绝")
+    void allEnabledWithExplicitItemsStillConflicts() {
+        var form = form("VIS-CONFLICT");
+        form.setVisibilityPolicy("ALL_ENABLED");
+        var item = new CustomerSkuVisibilityItemForm();
+        item.setSkuId(1L);
+        form.setVisibilities(new java.util.ArrayList<>(java.util.List.of(item)));
+        expectCode(() -> service.add(form), 40033);
     }
 }

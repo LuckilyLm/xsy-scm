@@ -45,7 +45,11 @@ public class CustomerSkuVisibilityService {
 
     @Transactional(rollbackFor = Exception.class)
     public void replace(Long customerId, String policy, List<CustomerSkuVisibilityItemForm> requested) {
-        if (requested == null || (!"ALL_ENABLED".equals(policy) && !"ALLOWLIST".equals(policy)))
+        // 调用方在「只改可见性策略、不动清单」时不会带 visibilities，此时 null 与空清单同义：
+        // 按空清单收敛，否则切回 ALL_ENABLED 这个唯一合法请求会被 40034 拒掉，
+        // 而那个错误码描述的是清单项非法，与真实原因无关。策略取值本身仍要校验。
+        if (requested == null) requested = List.of();
+        if (!"ALL_ENABLED".equals(policy) && !"ALLOWLIST".equals(policy))
             throw new ScmBusinessException(VISIBILITY_ITEM_INVALID);
         if ("ALL_ENABLED".equals(policy) && !requested.isEmpty())
             throw new ScmBusinessException(VISIBILITY_POLICY_CONFLICT);
