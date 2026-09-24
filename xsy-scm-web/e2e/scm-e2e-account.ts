@@ -20,7 +20,7 @@ import smCrypto from 'sm-crypto';
 export const apiUrl = process.env.SCM_E2E_API_BASE || 'http://127.0.0.1:18080';
 
 /** `tools/wN_e2e_accounts.py` 的波次前缀；脚本按 `<prefix>e2e_<随机>` 建管理员 + 只读 + 零角色（可选扣权）账号。 */
-export type WavePrefix = 'f0' | 'w1' | 'w2' | 'w3' | 'w4' | 'w5' | 'w6' | 'w7' | 'w8';
+export type WavePrefix = 'f0' | 'p1' | 'w1' | 'w2' | 'w3' | 'w4' | 'w5' | 'w6' | 'w7' | 'w8';
 
 export type TempAccounts = {
   /** 临时管理员 login_name（administrator_flag，菜单全开） */

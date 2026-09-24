@@ -229,7 +229,33 @@ test.beforeAll(async () => {
         const after = await get<Row>(`/scm/order/detail/${order.orderId}`);
         const confirmed = await post<Row>('/scm/order/confirm', {orderId: order.orderId, version: after.version});
         expect(confirmed.status).toBe('CONFIRMED');
+        await sortingCompleted(order.orderId, after);
         return {id: String(order.orderId), no: String(confirmed.orderNo ?? after.orderNo)};
+    }
+
+    /**
+     * P1 之后「已确认」不再等于「可配送」：候选要求订单每条有效明细行都被**已完成**的分拣任务覆盖
+     * （`docs/decisions.md`「P1 分拣管理裁决」第 11 条与补充第 18 条）。组单夹具因此必须走一遍
+     * 真实分拣命令链（建单 → 录入 → 完成），不能靠改订单状态糊过去 —— 那正是被验收的口径本身。
+     */
+    async function sortingCompleted(orderId: string | number, detail: Row) {
+        const itemIds = (detail.items as Row[]).map(i => Number(i.itemId));
+        expect(itemIds.length, '订单至少要有一行明细').toBeGreaterThan(0);
+        const created = await post<Row>('/scm/sorting/tasks', {
+            warehouseId: Number(warehouse.id),
+            salesOrderItemIds: itemIds,
+            remark: `${name} 配送前置分拣`,
+        });
+        const entries = (created.items as Row[]).map(line => ({
+            id: line.id,
+            version: line.version,
+            sortedQuantity: line.plannedQuantitySnapshot,
+            result: 'NORMAL',
+        }));
+        await post(`/scm/sorting/tasks/${created.task.id}/entry`, {items: entries});
+        const ready = await get<Row>(`/scm/sorting/tasks/${created.task.id}`);
+        await post(`/scm/sorting/tasks/${created.task.id}/complete`, {version: ready.task.version});
+        expect(ready.task.status, '前置分拣任务必须已完成').toBe('COMPLETED');
     }
 
     for (const [tag, customerId, skuId] of [

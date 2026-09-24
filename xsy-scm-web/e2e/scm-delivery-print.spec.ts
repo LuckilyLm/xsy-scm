@@ -10,11 +10,14 @@ import {type APIRequestContext} from '@playwright/test';
 import {expect, test} from './scm-test-base';
 import {randomUUID} from 'node:crypto';
 import {accessibleName, apiClient, authenticate, login, provisionTempAccounts, type TempAccounts} from './scm-e2e-account';
+import {createDeliveryReadyOrder, createLocatedCustomer, createSku} from './scm-delivery-fixtures';
 
 type Row = Record<string, any>;
 
 const accounts: TempAccounts = provisionTempAccounts('w5');
 const routeName = accounts.admin + '配送线路';
+/** 本轮夹具编码前缀：临时账号名本身就是逐次唯一的，拿它当标识避免与上一轮的商品/客户撞码。 */
+const routeTag = accounts.admin.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 /** 停靠点坐标与仓库起点同坐标系（GCJ02）即可规划，取值只服务几何展示。 */
 const STOP_COORDS = [{lng: '113.22000000', lat: '23.28000000'}, {lng: '113.23000000', lat: '23.29000000'}];
 
@@ -58,17 +61,20 @@ test.beforeAll(async () => {
   const warehouse = warehouses.find((w) => w.status === 'ENABLED' && w.longitude != null);
   expect(warehouse, '候选仓库里需要至少一个已定位（含经纬度）且启用的仓库').toBeTruthy();
 
-  const candidates = (await get<Row>(`/scm/delivery/candidate-orders?pageSize=200`)).list as Row[];
-  const byCustomer = new Map<string, Row[]>();
-  for (const row of candidates) {
-    byCustomer.set(String(row.customerId), [...(byCustomer.get(String(row.customerId)) ?? []), row]);
-  }
-  const multi = [...byCustomer.entries()].filter(([, list]) => list.length >= 2).sort((a, b) => b[1].length - a[1].length);
-  expect(multi.length, '候选池需要一个客户持有两张以上已确认订单，才能造出 PARTIAL 分支').toBeGreaterThan(0);
-  const other = [...byCustomer.entries()].find(([id]) => id !== multi[0][0]);
-  expect(other, '候选池需要第二个客户，才能验证按客户筛选不外溢').toBeTruthy();
-  primaryCustomerId = multi[0][0];
-  picked = [multi[0][1][0], multi[0][1][1], other![1][0]];
+  // 订单全部自建并完成分拣：P1 之后候选池里的历史订单不会因为「已确认」就变成可配送，
+  // 借用池子等于把本用例的成立与否交给上一轮留下的数据。
+  const skuId = await createSku(api, routeTag, 'P');
+  primaryCustomerId = await createLocatedCustomer(api, routeTag, 'A', '打印验收路A号');
+  const otherCustomerId = await createLocatedCustomer(api, routeTag, 'B', '打印验收路B号');
+  // 同一客户两张（构成 PARTIAL）+ 另一客户一张（证明按客户筛选不外溢）。
+  picked = [
+    await createDeliveryReadyOrder(api, {runTag: routeTag, customerId: primaryCustomerId, skuId,
+      address: '打印验收路A号', warehouseId: warehouse!.id}),
+    await createDeliveryReadyOrder(api, {runTag: routeTag, customerId: primaryCustomerId, skuId,
+      address: '打印验收路A号', warehouseId: warehouse!.id}),
+    await createDeliveryReadyOrder(api, {runTag: routeTag, customerId: otherCustomerId, skuId,
+      address: '打印验收路B号', warehouseId: warehouse!.id}),
+  ];
 
   routeId = String(await ok(api, 'post', '/scm/delivery/routes', {
     routeName, deliveryDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10), warehouseId: warehouse!.id,
