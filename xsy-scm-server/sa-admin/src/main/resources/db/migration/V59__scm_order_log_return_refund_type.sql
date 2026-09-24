@@ -1,4 +1,4 @@
--- V50: 订单操作日志类型白名单加 RETURN / REFUND，2026-09-23。
+-- V59: 订单操作日志类型白名单加 RETURN / REFUND，2026-09-23。
 --
 -- 背景：AGENTS.md §7.3 规定订单状态变更必须显式可审计，并把 cancellation / refund / return
 -- 三类并列；`CANCEL` 早在建表白名单里，但退货与退款一直没有对应的 operation_type，

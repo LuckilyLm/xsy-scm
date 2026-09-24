@@ -197,9 +197,9 @@
       "file": "V49__scm_product_image_type_gallery.sql",
       "checksum": -525245484
     },
-    "50": {
-      "file": "V50__scm_order_log_return_refund_type.sql",
-      "checksum": -935968798
+    "59": {
+      "file": "V59__scm_order_log_return_refund_type.sql",
+      "checksum": -2121272703
     }
   }
 }
