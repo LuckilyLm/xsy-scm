@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryBalanceVO;
@@ -44,6 +45,7 @@ import java.util.Set;
  * <p><b>单元格里的账面量 / 单位 / 版本一律不信任</b>：它们只是给人看的快照，权威值来自签名凭证，
  * 并在导入时与持锁读取的当前余额逐项复核（消除「先校验、再保存」竞态）。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class InventoryStocktakeImportService {
@@ -126,6 +128,12 @@ public class InventoryStocktakeImportService {
         StocktakeSnapshotSigner.Payload payload;
         try {
             payload = signer.verify(sheet.credential, OffsetDateTime.now().toEpochSecond());
+        } catch (StocktakeSnapshotSigner.SnapshotPayloadUnreadable exception) {
+            // 载荷是我们自己签出去的，解析失败属于服务端故障：留下真因，且不能叫用户重导模板空转。
+            log.error("盘点快照凭证验签通过但载荷解析失败，属服务端缺陷", exception);
+            addError(result, 0, null, "快照凭证", "SNAPSHOT_UNREADABLE",
+                    "快照凭证无法解析，请联系运维查看服务端日志");
+            return result;
         } catch (StocktakeSnapshotSigner.SnapshotCredentialException exception) {
             addError(result, 0, null, "快照凭证", "CREDENTIAL_INVALID",
                     exception.getMessage() + "；请重新导出模板");
@@ -290,6 +298,9 @@ public class InventoryStocktakeImportService {
                 rows.add(new FilledRow(rowNumber, skuCode, new BigDecimal(actualText), remark));
             }
         } catch (Exception exception) {
+            // 对调用方仍收敛成稳定的 FILE_INVALID，但服务端必须留下真因：解析循环里的 NPE、越界与 POI
+            // 内部异常若只被改写成「请使用最新模板」，用户会反复重导模板而运维零线索。
+            log.error("盘点快照导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
             addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新模板");
         }
         if (rows.isEmpty()) {
