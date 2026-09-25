@@ -774,16 +774,20 @@ write_off.amount       = 登记值，CHECK > 0
 
 ## 16. 权限矩阵（规划词汇表；按阶段发布，见 §21）
 
-> **本节是设计稿冻结的权限词汇与号段规划，不是「F1-1 已发布」的清单。**
+> **本节是设计稿冻结的权限词汇与号段规划，不是「已全部发布」的清单。**
 > F1-1 只交付 V65（纯 DDL），**一条 `t_menu` 行都没有种**：没有 Controller 就没有受保护的端点，
 > 没有 `.vue` 就没有可以点开的页面。每一行在下表标注的发布阶段才落库（§21 的发布纪律）。
 > 号段 1500–1531 是 2026-09-26 实测空闲后的规划值，每次落库前必须重扫。
+>
+> **截至 F1-3A 的实际占用**：V66 已发布 **1500（隐藏目录，无 `component`）+ 1521
+> `scm:finance:receipt:add`** 两行，其余仍是规划值。下表 1500 与 1513 的「发布阶段」
+> 已按此回改（本表的规则就是「以第一次被真实端点使用为准」）。
 
 菜单号段取 **1500**（实测 1422–1499 与 1500+ 均空闲；沿用 `MIG/V55:13-14` 的四条种子约定）。
 
 | menu_id | 类型 | 名称 / 权限串 | 发布阶段 | 授予 |
 | --- | --- | --- | --- | --- |
-| 1500 | 目录 | 财务管理 | F1-6 | SUPER_ADMIN、SCM_FINANCE |
+| 1500 | 目录 | 财务管理（`visible_flag = false`，无组件） | **F1-3A（V66 已发布）**：能力点必须有 `parent_id`，而目录本身不出入口 | SUPER_ADMIN、SCM_FINANCE |
 | 1501 | 页面 | 应收管理 `/finance/receivables` | F1-6（`.vue` 同阶段） | 同上 |
 | 1502 | 页面 | 应付管理 `/finance/payables` | F1-6 | 同上 |
 | 1503 | 页面 | 收款管理 `/finance/receipts` | F1-6 | 同上 |
@@ -791,11 +795,11 @@ write_off.amount       = 登记值，CHECK > 0
 | 1505 | 页面 | 核销管理 `/finance/write-offs` | F1-6 | 同上 |
 | 1511 | 按钮 | `scm:finance:receivable:query` | F1-5 | 同上 |
 | 1512 | 按钮 | `scm:finance:payable:query` | F1-5 | 同上 |
-| 1513 | 按钮 | `scm:finance:receipt:query` | F1-3 | 同上 |
-| 1514 | 按钮 | `scm:finance:payment:query` | F1-3 | 同上 |
+| 1513 | 按钮 | `scm:finance:receipt:query` | F1-5（原规划 F1-3，见下方说明） | 同上 |
+| 1514 | 按钮 | `scm:finance:payment:query` | F1-3B | 同上 |
 | 1515 | 按钮 | `scm:finance:write-off:query` | F1-4 | 同上 |
-| 1521 | 按钮 | `scm:finance:receipt:add` | F1-3 | 同上 |
-| 1522 | 按钮 | `scm:finance:payment:add` | F1-3 | 同上 |
+| 1521 | 按钮 | `scm:finance:receipt:add` | **F1-3A（V66 已发布）** | 同上 |
+| 1522 | 按钮 | `scm:finance:payment:add` | F1-3B | 同上 |
 | 1523 | 按钮 | `scm:finance:write-off:add` | F1-4 | 同上 |
 | 1524 | 按钮 | `scm:finance:write-off:reverse` | F1-4 | 同上 |
 | 1525 | 按钮 | `scm:finance:payable:red` | F1-4 | 同上 |
@@ -803,9 +807,16 @@ write_off.amount       = 登记值，CHECK > 0
 | 1527 | 按钮 | `scm:finance:payment:reverse` | F1-4 | 同上 |
 | 1531 | 按钮 | `scm:finance:export` | F1-5 | 同上 |
 
-查询权限跟随**首个能读到该对象的端点**所在阶段，因此 1513/1514 属 F1-3（收付款登记页要能查）、
-1515 属 F1-4、1511/1512 属 F1-5（应收应付的只读查询端点在 F1-5 才出现）。
+查询权限跟随**首个能读到该对象的端点**所在阶段：1515 属 F1-4、1511/1512 属 F1-5（应收应付的只读
+查询端点在 F1-5 才出现）。**1513 原定 F1-3 已回改为 F1-5** —— F1-3A 只交付 `POST /receipt/add`，
+登记接口自己返回刚写入的那一张单，库里不存在任何读收款的端点，因此没有可授权的读取动作；
+提前种 `receipt:query` 会得到一条「已授权但没有任何端点使用它」的权限。1514 随 F1-3B（付款）判断。
 若某阶段的实现顺序与此不同，以「该权限第一次被真实端点使用」为准，并回改本表。
+
+- **1500 为什么在 F1-3A 就要种**：SmartAdmin 的能力点行需要一个 `parent_id`，而原生
+  `menu_type=1` 目录是唯一的合法父级（V28 的数据大屏目录、V46 的业务待办入口是同一范式）。
+  它带 `visible_flag = false` 且 `component IS NULL`，因此既不在侧栏出现，也不注册路由 ——
+  与「发布指向不存在 `.vue` 的页面菜单」是两件事，后者由 `SmartAdminMenuComponentPgIT` 拒绝。
 
 - **1526 / 1527 是 D-3 裁决带来的两个独立破坏性权限**（Q20 要求破坏性动作独立权限）：
   反向收款与反向付款各自一条，**不合并**成 `scm:finance:reverse`，也不隐含在 `*:add` 里 ——
@@ -969,13 +980,15 @@ src/views/business/scm/finance/finance-write-off-list.vue
 | 版本 | 阶段 | 内容 |
 | --- | --- | --- |
 | **V65**（已落地） | F1-1 | `V65__scm_finance.sql`：**8 张表** + 5 条序列（`finance_receivable_no_seq` 等，全局非重置）+ 全部 CHECK（含**七张事实表**的 `CHECK (deleted = FALSE)` append-only 约束；`finance_operation_log` 刻意不设 `deleted` 列）/ 5 条来源唯一索引 / 3 条反向唯一索引 / 全列 COMMENT；形态照 `V60__scm_sorting_task.sql`。**纯 DDL，零 t_menu 写入** |
-| V66+（待各阶段重扫取号） | F1-3 | 收付款登记首次出现受保护 API：`scm:finance:receipt:add` / `payment:add` 与对应查询权限 |
+| **V66**（已落地） | F1-3A | `V66__scm_finance_receipt_permission.sql`：data-only，只发布 **1500 隐藏目录 + 1521 `scm:finance:receipt:add`**，按 `role_code` 授 SUPER_ADMIN 兜底与 `SCM_FINANCE`。**不发布**任何页面菜单、也不发布 `receipt:query`（1513）—— 本阶段唯一的端点是登记接口，它返回刚写入的那一张单 |
+| V67+（待各阶段重扫取号） | F1-3B | 付款登记首次出现受保护 API：`scm:finance:payment:add`(1522) 与其查询权限（若该阶段确实提供读取端点） |
 | 同上 | F1-4 | 核销 / 反向核销 / 手工红字应付 / 收付款反向：`write-off:add`、`write-off:reverse`、`payable:red`、`receipt:reverse`(1526 同形)、`payment:reverse` |
 | 同上 | F1-5 | 五个 `*:query` 与 `scm:finance:export` |
-| 同上 | F1-6 | 目录 1500 + 五个页面菜单 1501–1505（`component` 必须真实存在）+ `SCM_FINANCE` 页面授权 + 超管兜底，与 browser / deep-link 验证同一阶段落地 |
+| 同上 | F1-6 | 五个页面菜单 1501–1505（`component` 必须真实存在）+ `SCM_FINANCE` 页面授权，与 browser / deep-link 验证同一阶段落地；1500 目录已在 V66 发布，届时把 `visible_flag` 翻开而不是再种一行 |
 
-**号段 1500–1531 是规划值，不是已占用事实**：F1-1 实测 `t_menu` 里没有任何
-`scm:finance:*` 权限串、没有任何 1500–1599 的菜单行、没有任何财务角色授权。
+**号段 1500–1531 是规划值，不是已占用事实**：F1-1 实测 `t_menu` 里没有任何 `scm:finance:*` 权限串、
+没有任何 1500–1599 的菜单行。**F1-3A 之后占用变为 1500 与 1521 两行**（由 `ScmFinanceSchemaPgIT`
+按 `containsExactly(1500, 1521)` 收紧，多一行就必须多一个真实端点或真实页面）。
 每次落库前必须重扫 `t_menu` 实际占用（AGENTS.md 同一条纪律）。
 
 执行纪律：
@@ -1023,7 +1036,9 @@ F1-1 只交付 schema 与骨架，因此测试只钉契约，**不提前写 F1-2
 
 | 测试类 | 断言 |
 | --- | --- |
-| `ScmFinanceSchemaPgIT`（17 项，真实 PostgreSQL） | 8 张 `finance_*` 表 + 5 条序列存在、零外键；不得出现 `status` / `settled_amount` / `open_amount` / `due_date` / `approver` / 币种 / 税列；**七张事实表**的 `deleted = FALSE` append-only CHECK 实测拒绝软删，`finance_operation_log` 无 `deleted` 与 `version` 列；金额与数量恒正、单价非负、`version >= 0`、**全部 numeric 列逐列断言 (18,4)**；四类配对 CHECK 以 SAVEPOINT 隔离的坏数据实测拒绝（含「手工红字带 `source_id`」「反向付款沿用 `ORDER_REFUND` 来源」「来源与方向错配」「收付款跨侧核销」「日志类型越界」「JSONB 非 object」）；来源唯一索引谓词逐字核对且实测重复生成被拒；三条反向唯一索引实测「一条 NORMAL 只能反向一次」；实测 `external_reference` **不唯一**、手工红字可并存；**13 个 Java 枚举与 DB CHECK 白名单双向逐值相等**；**阶段边界**：`t_menu` 内不存在任何 1500–1599 菜单、任何 `scm:finance:*` 权限串、任何财务角色授权行，且全库 `*:scope:all:query` 仍恰好是 V55 的五个维度（D-5 未新增放宽点） |
+| `ScmFinanceSchemaPgIT`（17 项，真实 PostgreSQL） | 8 张 `finance_*` 表 + 5 条序列存在、零外键；不得出现 `status` / `settled_amount` / `open_amount` / `due_date` / `approver` / 币种 / 税列；**七张事实表**的 `deleted = FALSE` append-only CHECK 实测拒绝软删，`finance_operation_log` 无 `deleted` 与 `version` 列；金额与数量恒正、单价非负、`version >= 0`、**全部 numeric 列逐列断言 (18,4)**；四类配对 CHECK 以 SAVEPOINT 隔离的坏数据实测拒绝（含「手工红字带 `source_id`」「反向付款沿用 `ORDER_REFUND` 来源」「来源与方向错配」「收付款跨侧核销」「日志类型越界」「JSONB 非 object」）；来源唯一索引谓词逐字核对且实测重复生成被拒；三条反向唯一索引实测「一条 NORMAL 只能反向一次」；实测 `external_reference` **不唯一**、手工红字可并存；**13 个 Java 枚举与 DB CHECK 白名单双向逐值相等**；**阶段边界**：财务段 `t_menu` 恰好是 1500（隐藏目录、`component IS NULL`、无 `menu_type = 2` 行）
+与 1521 两行，`scm:finance:*` 权限串恰好只有 `receipt:add` 一个，授权行数 2 × 2；
+且全库 `*:scope:all:query` 仍恰好是 V55 的五个维度（D-5 未新增放宽点） |
 | `FinanceReadOnlyContractTest`（4 项，静态扫描，不依赖数据库） | `module/scm/finance` 的 Java 字符串字面量与 mapper XML 内**不存在**针对 `sales_order*` / `order_return*` / `order_refund` / `purchase_*` / `inventory_*` / `delivery_*` / `sorting_*` 的 INSERT / UPDATE / DELETE / TRUNCATE；mapper 注解里不写 SQL（AGENTS.md §8）；**8 个实体的 `@TableName` 全部以 `finance_` 开头**（最强边界证据：BaseMapper 的写方法因此够不到业务表）；不 `import` report 包 |
 | `SmartAdminMenuComponentPgIT`（3 项，**全仓门禁**，非财务专属） | 每个已发布页面菜单（`menu_type = 2`、`component` 非空、未删除、非外链）的 `component` 都必须能在 `xsy-scm-web/src/views` 下找到；既有两处历史缺口走**只减不增**的显式基线，且基线条目一旦被修好就必须删除；财务段本阶段不存在任何页面菜单。这条门禁就是为防止「授权页面菜单 → `component` 不存在」再次发生而加的（§21 发布纪律） |
 

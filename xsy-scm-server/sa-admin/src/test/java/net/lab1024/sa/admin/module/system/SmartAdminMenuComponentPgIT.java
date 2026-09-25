@@ -33,7 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p><b>阶段纪律</b>：一个阶段只发布它已经真实具备的能力。后端骨架阶段（无 Controller）
  * 既不种 action 权限，也不种页面菜单；action 权限随首个受保护 API 所在阶段的迁移落库，
- * 页面菜单随页面实现的阶段落库。Finance R1 的 F1-1 即按此办理（V65 是纯 DDL）。
+ * 页面菜单随页面实现的阶段落库。Finance R1 的 F1-1 即按此办理（V65 是纯 DDL），
+ * F1-3A 交付第一个受保护端点后由 V66 只补一行能力点（外加它必需的隐藏目录父级）。
  *
  * <p><b>基线只减不增</b>：{@link #LEGACY_MISSING_COMPONENTS} 是本门禁**加入之前**就已存在的缺口，
  * 逐条注明出处与处置。新增缺口一律让本用例失败；补上页面或下线菜单后，从基线里删掉对应条目。
@@ -113,15 +114,24 @@ class SmartAdminMenuComponentPgIT {
     }
 
     @Test
-    @DisplayName("Finance R1 的 F1-1 没有留下任何「授权页面菜单 → component 不存在」的状态")
+    @DisplayName("Finance 段至今没有任何页面菜单：能力点可以先行，带 component 的行必须等 .vue")
     void financeHasNoPublishedPageMenuInThisPhase() {
-        // F1-1 只有 V65（纯 DDL），没有任何 Controller，也没有任何 .vue；
-        // 因此财务段既不该有页面菜单，也不该有任何 scm:finance:* 权限串。
+        // F1-1 / F1-2 一行都没种（那时没有 Controller）；F1-3A 的 V66 只发布
+        // 1500 隐藏目录 + 1521 能力点，两类都没有 component。
+        // 本用例钉的是这条边界：**能力点可以先行，页面菜单必须等 .vue**，
+        // 而具体发布了哪几行由 ScmFinanceSchemaPgIT 按 containsExactly 收紧。
         assertThat(jdbc.queryForList(
-                "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 "
-                        + "OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%' "
-                        + "OR path LIKE '/finance/%'", Long.class))
-                .as("Finance 的页面菜单随 F1-6 的 .vue 一起落库，action 权限随首个受保护 API 落库")
+                "SELECT menu_id FROM t_menu WHERE (menu_id BETWEEN 1500 AND 1599"
+                        + " OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%'"
+                        + " OR path LIKE '/finance/%') AND menu_type = 2", Long.class))
+                .as("财务的五个页面菜单（1501–1505）随 F1-6 的 .vue 一起落库，现在一个都不许存在")
+                .isEmpty();
+
+        assertThat(jdbc.queryForList(
+                "SELECT menu_id FROM t_menu WHERE (menu_id BETWEEN 1500 AND 1599"
+                        + " OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%')"
+                        + " AND component IS NOT NULL", Long.class))
+                .as("component 非空即会注册路由；财务段现在没有任何一行可以注册")
                 .isEmpty();
     }
 

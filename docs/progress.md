@@ -9,7 +9,7 @@
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
 | P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
-| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付 + F1-2B 应收 + F1-2C 红字应收完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`，页面菜单随 F1-6、action 权限随首个受保护 API 所在阶段落库。F1-2A / F1-2B / F1-2C：均 **0 迁移、0 菜单、0 权限**，派生写全部在触发命令的同一事务内）；F1-3…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」（注意：第二批 Q27 里「累计红字不得超过可冲金额」一句已被**第三批 D-2 / D-4 取代**，最终口径是无上限）；设计见 `docs/plan/finance-r1-design.md`；落地记录见「F1-1 数据地基」「F1-2A」「F1-2B」「F1-2C」四段 |
+| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付 + F1-2B 应收 + F1-2C 红字应收 + F1-3A 收款登记完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`。F1-2A / F1-2B / F1-2C：均 **0 迁移、0 菜单、0 权限**，派生写全部在触发命令的同一事务内。**F1-3A 是第一条用户命令**：`POST /scm/finance/receipt/add` + V66（data-only，只发布 1500 隐藏目录与 1521 `scm:finance:receipt:add`，**不**发布页面菜单与 `receipt:query`））；F1-3B…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」（注意：第二批 Q27 里「累计红字不得超过可冲金额」一句已被**第三批 D-2 / D-4 取代**，最终口径是无上限）；设计见 `docs/plan/finance-r1-design.md`；落地记录见「F1-1 数据地基」「F1-2A」「F1-2B」「F1-2C」「F1-3A」五段 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -871,7 +871,8 @@ F1-3 收款付款、F1-4 核销、F1-5 查询导出、F1-6 前端、F1-8 R0 接�
 已被**第三批 D-2 / D-4 取代**（红字不扣既有核销额、允许超过正常应收、允许净应收为负），
 因此本轮实现里**不存在任何金额上限校验**，也**不使用** `FINANCE_RED_AMOUNT_EXCEEDED(41137)`
 —— 该码在 F1-2C 之后仍然零使用者，留给 F1-4 的手工红字应付。
-`decisions.md` 本轮按指令未修改，该 supersede 关系已在「F1-2A 落地补充」之前的 D 段写明。
+该 supersede 关系已在「F1-2A 落地补充」之前的 D 段写明，并已回填进 `decisions.md` 的 Q27 原文
+（F1-3A 轮的文档一致性修订：原句就地标注为「已被 D-2 / D-4 取代」，不另立新裁决）。
 
 **接入点**
 - `OrderReturnService.approve`：在 `returns.updateById(r)`（状态 `APPROVED`）与 `refunds.insert(...)`
@@ -953,6 +954,100 @@ SmartAdminMapperPgValidationIT / SmartAdminMenuComponentPgIT / PurchaseReceipt*I
 - 死锁自由性靠锁序审计 + 既有 `DeliveryDispatchConcurrencyPgIT` /
   `ScmInventoryReservationConcurrencyIT` 全绿支撑，未新增专门的死锁探测用例。
 - 前端与浏览器 E2E 未跑：本轮无前端改动。
+
+
+### 2026-09-26 P3 Finance R1 F1-3A：收款登记（V66，仅 NORMAL 一条命令）
+
+**本轮范围**：`POST /scm/finance/receipt/add` 登记一笔 `NORMAL` 收款 —— 一条 `finance_receipt`
+事实 + 一条 `RECEIVE` 操作日志，同一事务，请求级 `Idempotency-Key`。
+F1-3B（付款）、F1-3C（反向收款）、F1-4（核销 / 手工红字）、F1-5（查询 / 导出）、
+F1-6（前端）、F1-8（R0 接轨）**未开始**；本轮**不做**任何自动核销、不改 `finance_receivable`、
+不改 `sales_order`、不改 `customer.credit_limit`，也不新增业务裁决
+（`docs/decisions.md` 只补了一处文档一致性说明，见下）。
+
+**权限发布前置调查（本轮先查证再动手，结论决定了 V66 的形态）**：SmartAdmin 的接口权限
+不需要页面菜单承载 —— `module/system/login/manager/LoginManager#loadUserPermission` 的权限集合
+来自 `t_role → t_role_menu → t_menu.api_perms`，只看 `api_perms` 串，与 `menu_type` / `component`
+无关；因此存在**第三种**既有形态：隐藏目录（`menu_type=1`、`component` 为 NULL）+ 挂在其下的
+能力点（`menu_type=3`），V28（900/901 数据大屏）与 V46（1100/1101 业务待办）已经是这个形状。
+V66 照此办理，因此**没有**创建任何占位页面、**没有**重新发布 F1-1 撤下的五个空页面菜单、
+**没有**新造权限存储、**没有**任何 `role == SCM_FINANCE` 代码旁路。
+只发布 **1500 + 1521** 两行：`scm:finance:receipt:query`（1513）虽然原规划属 F1-3，
+但本阶段没有任何读取端点，种下去就是「已授权但无端点使用它」，因此**推迟到 F1-5**，
+设计稿 §16 / §21 已按「第一次被真实端点使用」这条自身规则回改。
+
+**命令形态**（`FinanceReceiptService#add`）：`claim(FINANCE_RECEIPT_ADD, key, form)` →
+`replay()` 短路 → `register(form)` → `operationLogs.record(RECEIPT, id, RECEIVE, null, null, snapshot)`
+→ `complete(claim, "FINANCE_RECEIPT", id, vo)`，五步全在 `@Transactional(rollbackFor = Exception.class)`
+里，复用既有 `OrderIdempotencyService`，不建第二套幂等基建（Q26）。
+缺键 40069、同键异内容 40966，都是既有语义。
+`register` 刻意拆成私有本体：F1-3C 的反向收款需要 `reverse_of_id` 与「已用额 = 0」前置，
+是另一条命令，不复用它。
+
+**字段与校验来源**：`customer_id` 只经财务自己的只读 DAO
+（`FinanceReceiptSourceDao.selectCustomer`，`WHERE id = ? AND deleted = FALSE`）取一次事实，
+用途限于范围判定与名称快照冻结；**不校验客户状态、不要求存在应收**（Q16 预收合法）。
+`amount` 走 `ScmDecimalStrings.parseScale4Required` + `ScmStrictDecimalStringDeserializer`
+（JSON number 字面量直接拒绝），形态不合法 40000、`signum() <= 0` 40000，
+库级 `CHECK (amount > 0)` 是第二层；`method` 以 `ScmFinancePaymentMethodEnum` 三值为唯一来源，
+越界 41140（P5 的 `BALANCE` / `ONLINE_PAYMENT` / `COD` 一律进不来，Java 与 DB 双层各有取证）；
+`received_at` 是调用方给的业务时点，逐值落库、服务端绝不改成 `now()`，
+本期也**没有**「不得晚于当前时间」这条规则（未来时点照收）。
+`entry_type='NORMAL'` 且 `reverse_of_id` / `reason` 为 NULL（`ck_finance_receipt_entry_pairing`）。
+`external_reference` 只是资金凭据文本：跨客户重复合法，只建普通索引，
+IT 里同时断言「该列上没有唯一索引」，防止将来误加。
+
+**数据范围（第三批 D-5）**：`customer_id → customer.seller_id → customerSellerScope`。
+越权与不存在共用同一个 `ScmDataScopeException`（对外 30005 信封），因此主键探测不是可用信号；
+未分配业务员的客户对非超管**失败关闭**（不放宽成「都能收」）。
+取证一律 `administrator_flag = false` 的账号。付款侧的 SUPPLIER 不收窄这条属 F1-3B。
+
+**测试矩阵**：
+- `ScmFinanceReceiptPgIT` 16 例：三种方式各登记成功、方式越界双层拒绝（服务层 41140 + 直插被
+  `ck_finance_receipt_method` 拒）、金额形态（0 / 负 / 5 位小数 / `1e5` / `NaN` 全拒，
+  `123.4567` 原样保存、`"10"` 补齐到 scale 4）、`external_reference` 重复放行、
+  预收放行、**已有应收时登记收款不产生任何核销行且不改应收与订单**（金额 / `version` /
+  `updated_at` 三项逐值不变）、幂等重放返回同一张单且库里一张日志一条、同键异内容 40966 零残留、
+  缺键 40069 零残留、客户名称快照冻结（改主档名后快照不动，且先证明主档确实已改名使断言有判别性）、
+  范围正 / 反 / 未分配三态、`received_at` 逐值落库与未来时点。
+- `ScmFinanceReceiptRollbackPgIT` 2 例（类级 `NOT_SUPPORTED`，真回滚取证）：
+  用 `BEFORE INSERT` 触发器只在带本次标记的日志行上抛异常 → 收款单 / 日志 / claim 三件零残留，
+  摘掉触发器后同一 key 还能正常登记一次（证明上一条不是假象）；
+  预先占掉下一次将要使用的单号让失败发生在插入时 → 日志与 claim 零残留。
+- `ScmFinanceReceiptPermissionPgIT` 3 例：**不 mock `StpUtil`**，直接走
+  `LoginManager#loadUserPermission` 这条生产装配路径证明 SCM_FINANCE 持有、SCM_DRIVER 不持有，
+  再证明 `t_menu` 发布的串与 Controller 上 `@SaCheckPermission` 的串逐字一致，
+  最后证明本阶段没有提前发布任何其它财务权限或页面菜单。
+- `ScmFinanceSchemaPgIT` 的阶段边界用例改为**正向收紧**：财务段 `1500–1599` 必须
+  `containsExactly(1500, 1521)`、零 `menu_type = 2`、零非空 `component`、1500 保持隐藏、
+  `scm:finance:*` 串集合恰好一个、财务段内 `api_perms == web_perms`、授权行 2 × 2 = 4。
+
+**顺带修掉两处真实缺陷（都是被本轮暴露出来的，不是削弱既有断言）**：
+① `finance_operation_log` 的 `business_id` **只在同一 `business_type` 内唯一**（各事实表各有
+自己的 id 序列）。F1-2C 的「红字日志操作人必须是批准人」用例当时按
+`WHERE l.business_id = ?` 查而不带类型，一旦库里同号的 PAYABLE / RECEIPT 日志存在就会
+`IncorrectResultSize`（本轮真跑到 2 行）。谓词已补 `business_type = 'RECEIVABLE'`。
+② `SmartAdminMenuComponentPgIT` 的财务用例原意是「财务段一行都不许有」，
+但 F1-3A 之后发布能力点是**正当**的。收窄为本门禁真正关心的两件事：
+财务段不得有 `menu_type = 2` 页面菜单、不得有任何非空 `component`；
+「具体发布了哪几行」由 `ScmFinanceSchemaPgIT` 的 `containsExactly` 负责，职责不重复也不缺位。
+另外本轮多条按客户 / 按标记收窄计数（`NOT_SUPPORTED` 类提交的真实事实会污染全表计数），
+与 F1-2C 已知的两处同类脆弱性同一条纪律。
+
+**验证结果**：定向 `ScmFinanceReceipt* / ScmFinanceSchema / ScmFinanceReceivableRed* /
+SmartAdminMenuComponentPgIT` = **52 项 0 失败 0 错误**；
+`python tools/verify.py backend` 全量与 `migration_checksum_guard.py check`（66 冻结）结果见下条
+（一次性库 `xsy_v2_f13a` 上 Flyway 真实应用 V1→V66，且该库带着前几轮的已提交事实，
+所以上面那两条污染型缺陷是被真测出来的，不是被顺序侥幸躲过的）。
+
+未覆盖（不得当成已完成）：
+- **收款单至今没有任何读侧**：没有查询 / 详情 / 导出端点，页面也没有入口。
+  因此「这笔钱能用来核销哪张应收」在库里既看不到也查不到，那是 F1-5 的活。
+- **未核销 / 待核销 / 超额核销一律没有实现**：`finance_write_off` 零行是本轮的断言之一，
+  不是本轮的功能。D-3 的「反向前已用额必须 = 0」也还没有任何代码去查它（F1-3C / F1-4）。
+- 浏览器 E2E 未跑：本轮无前端改动。
+- `Idempotency-Key` 的**并发**双送（同键两请求同时到）未新增压测：由既有
+  `idempotency_record` 唯一约束与三段式承担，与 delivery / inventory / sorting 同一机制。
 
 
 ### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）

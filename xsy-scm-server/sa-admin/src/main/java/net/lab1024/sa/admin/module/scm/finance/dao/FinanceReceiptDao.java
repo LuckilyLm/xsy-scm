@@ -17,4 +17,10 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
+
+    /**
+     * 收款单号序列（全局非重置，不按日归零）。必须在事务内调用：
+     * {@code nextval} 不随事务回滚，跳号是可接受的代价（与应付单号同一条纪律）。
+     */
+    long nextReceiptNo();
 }

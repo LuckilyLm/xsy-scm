@@ -116,7 +116,21 @@ P3   Finance R1  F1-2C red receivable     COMPLETE (2026-09-26): order_return AP
                                          on the sales_order row lock (sign now takes
                                          route -> sales_order, matching dispatch), so the
                                          concurrent pair converges.
-P3   Finance R1  F1-3..F1-8              NOT STARTED (receipt+payment / write-off / query+export /
+P3   Finance R1  F1-3A receipt registration COMPLETE (2026-09-26): POST
+                                         /scm/finance/receipt/add -> one NORMAL finance_receipt
+                                         + one RECEIVE log, same transaction, Idempotency-Key
+                                         claim, V66 (data-only) publishes **only** menu 1500
+                                         hidden directory + 1521 scm:finance:receipt:add.
+                                         No auto write-off, no receivable / order / customer
+                                         mutation, no advance-payment restriction; amount is
+                                         a strict scale-4 positive string, method is the
+                                         DB-whitelisted CASH / BANK_TRANSFER / OTHER, and
+                                         receipt follows D-5 customer.seller_id scope
+                                         (out-of-scope and nonexistent fail closed with the
+                                         same 30005 envelope). scm:finance:receipt:query
+                                         (1513) stays unpublished: this phase has no read
+                                         endpoint.
+P3   Finance R1  F1-3B..F1-8             NOT STARTED (payment / reverse / write-off / query+export /
                                          frontend / E2E / R0
                                          hand-off); each phase
                                          seeds only the permissions its own first protected API
@@ -389,7 +403,12 @@ green. `visible_flag = false` does **not** paper over this — it only feeds `me
 its `component` are registered regardless. `SmartAdminMenuComponentPgIT` is the repo-wide gate that enforces
 this (every published page menu's `component` must resolve to a real file; the two pre-existing gaps —
 V11's `customer-sku-visibility-list.vue` and V3's SmartAdmin `support/demonstration/index.vue` — sit in an
-explicit shrink-only baseline). Menu ids 1500–1531 are therefore still a **plan**, not an occupied range.
+explicit shrink-only baseline). Menu ids 1500–1531 were a **plan**, and only two of them are now occupied
+facts: V66 (F1-3A) publishes exactly 1500 (hidden directory, `component IS NULL`, needed as the
+`parent_id` of a capability row — the V28 / V46 pattern) and 1521 `scm:finance:receipt:add`.
+`ScmFinanceSchemaPgIT` pins that pair with `containsExactly`, so a further row must arrive with a real
+endpoint or a real `.vue`; `scm:finance:receipt:query` (1513) is deliberately **not** published yet,
+because F1-3A has no read endpoint and an unused grant is the same mistake as an unresolvable page menu.
 Not in scope, and not to be started before their own phase: Finance R2 (利润 / 毛利 /
 账龄 / 客户对账 / 供应商对账), P5 (优惠券 / 满减 / 在线支付 / 余额 / 充值 / COD), invoices and tax,
 vouchers and general ledger, finance approval workflows, finance attachments, `due_date`, supplier
@@ -533,6 +552,16 @@ V65  V65__scm_finance.sql                             p3   Finance R1 数据地�
                                                    刻意只建普通索引。**财务菜单与权限一条都没种**：
                                                    F1-1 无 Controller 也无 .vue，按「哪个阶段第一次出现
                                                    受保护 API 或真实页面，就由那个阶段的迁移种」推进
+V66  V66__scm_finance_receipt_permission.sql           p3   Finance R1 F1-3A data-only，只发布两行：
+                                                   1500 财务隐藏目录（menu_type=1、component 为 NULL、
+                                                   visible_flag=false，仅作为能力点的 parent_id，
+                                                   照 V28/V46 范式）与 1521 能力点
+                                                   scm:finance:receipt:add（api_perms == web_perms）。
+                                                   按 role_code 授 SUPER_ADMIN 兜底与 SCM_FINANCE，
+                                                   不硬编码 role_id；ON CONFLICT DO NOTHING 可重入。
+                                                   **不发布**任何财务页面菜单，也**不发布** 1513
+                                                   receipt:query —— 本阶段唯一受保护端点是登记接口，
+                                                   没有可授权的读取动作；页面菜单仍随 F1-6 的 .vue 落库
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

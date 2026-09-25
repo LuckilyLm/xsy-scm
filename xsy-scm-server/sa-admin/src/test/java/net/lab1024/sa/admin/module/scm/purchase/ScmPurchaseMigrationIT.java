@@ -191,11 +191,14 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     // 注意：本用例只读 flyway_schema_history（DB 侧），**不扫描磁盘上的 migration 文件**，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
     //   V65 = Finance R1 数据地基（8 张财务事实表 + 5 条单号序列，零既有表改动）。
-    //         Finance R1 **到此为止不含任何 data-only 迁移**：F1-1 没有 Controller，
+    //         F1-1 / F1-2 **不含任何 data-only 迁移**：那几轮没有 Controller，
     //         因此没有需要授权的菜单与权限点；财务菜单/权限按「哪个阶段第一次出现受保护 API
     //         或真实页面，就由那个阶段的迁移种」推进（页面菜单随 F1-6 的 .vue 一起落库），
     //         见 docs/plan/finance-r1-design.md §16 / §21。
-    @DisplayName("flyway_schema_history：V1–V65 全部 success，V15–V65 只追加（V1–V14 未被改写）")
+    //   V66 = Finance R1 F1-3A（仅数据）：F1-3A 交付第一个受保护端点 POST /scm/finance/receipt/add，
+    //         因此只发布 1500 隐藏目录 + 1521 scm:finance:receipt:add（形态照 V28 / V46），
+    //         仍然不发布任何财务页面菜单。
+    @DisplayName("flyway_schema_history：V1–V66 全部 success，V15–V66 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -206,10 +209,10 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
                 "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
                 "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52",
-                "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65");
+                "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除 62 条版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除上面逐条列举的版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
     }

@@ -512,45 +512,73 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 阶段边界：F1-1 不发布任何财务菜单与权限
+    // 阶段边界：财务菜单/权限只发布「已经真实存在的能力」
     // ------------------------------------------------------------------
 
     /**
-     * F1-1 只有 schema 与骨架，**没有任何 Controller**，因此既不存在需要授权的受保护端点，
-     * 也不存在可以点开的页面。据此本阶段一条 {@code t_menu} 行都不种。
+     * F1-1 与 F1-2 一条财务菜单都没种（那时没有 Controller）；F1-3A 交付了第一条受保护端点
+     * {@code POST /scm/finance/receipt/add}，因此 V66 只发布这一条能力：
+     * 1500 隐藏目录（无组件）+ 1521 {@code scm:finance:receipt:add}。
      *
-     * <p><b>为什么值得单独钉一条断言</b>：本轮一度把设计稿 §16 的 1500–1531 全部种了下去，
-     * 结果是「已授权的页面菜单指向不存在的 {@code .vue}」—— {@code src/router/index.ts} 的
-     * {@code route.component = modules[relativePath]} 在文件缺失时得到 {@code undefined}，
-     * 于是 SUPER_ADMIN 与 SCM_FINANCE 会看到五个点开即空白的菜单项。
-     * {@code visible_flag = false} 掩盖不了它：那只影响 {@code meta.hideInMenu}，
-     * 路由与 {@code component} 照样注册。正确做法是**不发布** ——
-     * 页面菜单随 F1-6 的 {@code .vue} 一起落库，action 权限随首个受保护 API 所在阶段落库。
-     *
-     * <p>因此号段 1500–1531 仍是**空闲的规划值**，不是已占用事实；每次落库前必须重扫。
+     * <p><b>为什么这条断言必须随阶段收紧而不是删掉</b>：本轮一度把设计稿 §16 的 1500–1531
+     * 全部种了下去，结果是「已授权的页面菜单指向不存在的 {@code .vue}」——
+     * {@code src/router/index.ts} 的 {@code route.component = modules[relativePath]} 在文件缺失时
+     * 得到 {@code undefined}，菜单点开是空白页，而构建 / 类型检查 / 后端测试全绿。
+     * {@code visible_flag = false} 掩盖不了它：那只影响 {@code meta.hideInMenu}。
+     * 所以下面钉的是「能力可以先行、页面菜单必须等 {@code .vue}」这条边界仍然成立。
      */
     @Test
-    @DisplayName("F1-1 阶段边界：不发布任何财务菜单、权限点与角色授权")
-    void financePublishesNoMenuOrPermissionYet() {
+    @DisplayName("阶段边界：财务只发布 1500 隐藏目录 + 1521 收款登记能力，不存在任何财务页面菜单")
+    void financePublishesOnlyTheReceiptAddCapability() {
         assertThat(jdbc.queryForList(
-                "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599", Long.class))
-                .as("F1-1 无 Controller 也无页面，不得种任何财务菜单")
-                .isEmpty();
+                "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 ORDER BY menu_id", Long.class))
+                .as("V66 之后财务段只允许这两行；新增一行必须同时带来一个真实端点或一个真实页面")
+                .containsExactly(1500L, 1521L);
 
-        // 换一个 menu_id 段种同样会造成「已授权但无任何端点使用它」，因此按权限串再查一遍。
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
+                Integer.class))
+                .as("页面菜单（menu_type=2）随 F1-6 的 .vue 一起落库，本阶段一个都没有")
+                .isZero();
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND component IS NOT NULL",
+                Integer.class))
+                .as("没有任何一行财务菜单可以声明组件路径")
+                .isZero();
+        assertThat(jdbc.queryForObject(
+                "SELECT visible_flag FROM t_menu WHERE menu_id = 1500", Boolean.class))
+                .as("目录本身也要保持隐藏，侧栏出现入口就等于出现空目录")
+                .isFalse();
+
+        // 权限串按内容再查一遍：换号段种同样会造成「已授权但无任何端点使用它」。
         assertThat(jdbc.queryForList(
-                "SELECT menu_id FROM t_menu WHERE api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%'",
-                Long.class))
-                .as("库内不得存在任何 scm:finance:* 权限串")
-                .isEmpty();
+                "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:%' ORDER BY api_perms",
+                String.class))
+                .containsExactly("scm:finance:receipt:add");
+        // 四条种子约定之一：api_perms == web_perms，前端按钮与服务端鉴权读的是同一个串。
+        // 作用域限制在财务段：底座原生菜单行本就允许两者不对称，全库断言会误伤。
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu "
+                        + "WHERE menu_id BETWEEN 1500 AND 1599 AND api_perms IS DISTINCT FROM web_perms",
+                Integer.class))
+                .isZero();
 
-        // 没有菜单就不该有任何角色拿到财务授权（含超管兜底与 SCM_FINANCE）。
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
-                        + "WHERE m.api_perms LIKE 'scm:finance:%' OR m.menu_id BETWEEN 1500 AND 1599",
-                Integer.class))
-                .as("不得存在任何财务角色授权行")
-                .isZero();
+                        + "WHERE m.menu_id BETWEEN 1500 AND 1599", Integer.class))
+                .as("财务段两行菜单（1500 目录 + 1521 能力）各授超管兜底与 SCM_FINANCE，共 2 × 2 行")
+                .isEqualTo(4);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "WHERE m.menu_id = 1521", Integer.class))
+                .as("能力点 1521 恰好两条授权行，多一条就是多授了一个角色")
+                .isEqualTo(2);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "JOIN t_role r ON r.role_id = rm.role_id "
+                        + "WHERE m.menu_id = 1521 AND r.role_code = 'SCM_FINANCE'", Integer.class))
+                .as("SCM_FINANCE 按 role_code 授权（V56 口径），不硬编码 role_id")
+                .isEqualTo(1);
     }
 
     /**
