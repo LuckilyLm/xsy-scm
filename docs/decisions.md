@@ -694,11 +694,9 @@ P1 的实现里混进未经确认的权限模型（第二条范围权限）、�
 
 ## P3 Finance R1 裁决（2026-09-25）
 
-主线顺序 P2 → Finance R1 → Finance R2。现状调研与候选并列见
-[`plan/finance-r1-requirement-and-design-investigation.md`](plan/finance-r1-requirement-and-design-investigation.md)，
-第一批裁决表见 [`plan/finance-r1-first-decision-sheet.md`](plan/finance-r1-first-decision-sheet.md)，
-第二批 13 问的裁决表见 [`plan/finance-r1-second-decision-sheet.md`](plan/finance-r1-second-decision-sheet.md)，
-正式设计稿见 [`plan/finance-r1-design.md`](plan/finance-r1-design.md)。
+主线顺序 P2 → Finance R1 → Finance R2。规划、调研结论、候选并列与正式设计统一见
+[`plan/finance-r1-design.md`](plan/finance-r1-design.md)（单文档收口版；2026-09-25 之前的
+调研稿与两批裁决表已并入该稿后删除，过程留痕在提交 `76904ea`）。
 
 条目编号**沿用裁决表 Q 号**，以便与调研稿 §11 的 26 问逐条对照；不按波次顺序重编号。
 第二批为 Q5 Q7 Q8 Q12 Q15 Q20–Q26，另加 **Q27**（不在调研稿原 26 问内，是第一批裁决后暴露的缺口：
