@@ -13,6 +13,7 @@
 - [plan/attachment-asset-grading-and-file-access-plan.md](plan/attachment-asset-grading-and-file-access-plan.md)：附件资产分级与文件读取权限（F0-DEBT-01）的分批方案 —— **FA-0 至 FA-3 已全部落地（V41、V52–V53、V58），该债已于 2026-09-24 关闭**；文件保留作方案与顺序约束（先搬对象再改库 key）的依据。
 - [plan/logistics-delivery-static-route-plan.md](plan/logistics-delivery-static-route-plan.md)：物流配送 L0–L2 静态排线的实施方案（V42–V43、V47 已落地）。**L3 的实发量来源与角色授权已在 2026-09-25 裁决完毕**，见 `decisions.md`「P2 物流配送 L3 裁决」；该文件第 1385–1409 行的 L3 设想只是规划期草稿，其中「签收不在 L3 范围」的划分已被本次裁决取代。
 - [plan/finance-reporting-r0-plan.md](plan/finance-reporting-r0-plan.md)：Finance R0 只读报表地基（V50–V51 已落地）；R1 应收 / 应付与 R2 利润的前置裁决清单见该文件末节，其中依赖配送事实的条目由 P2 提供。
+- [plan/finance-r1-design.md](plan/finance-r1-design.md)：Finance R1（P3）的**唯一规划文档** —— 调研结论、裁决索引、正式设计、D-1…D-5 收口落点、R0 接轨与 F1-1~F1-8 实施计划。裁决权威全文在 `decisions.md`「P3 Finance R1 裁决」；**27 条 Q 裁决与 D-1…D-5 均已收口，本稿无待裁决项**。其中的 Flyway 版本号与菜单号段是规划期快照，开工前必须重扫。
 - [plan/product-center-optimization-plan.md](plan/product-center-optimization-plan.md)：商品中心优化的多轮方案（**PCO-1 与 PCO-2 均已落地**：V38–V39、V44–V45、V49）。`plan/` 目录专门存放**面向未来的规划稿**：其中的 Flyway 版本号只是规划期快照，落地实施前必须按 `AGENTS.md` 从当前最大号之后整体重排。
 - [test-report/](test-report/)：按版本归档的部署后验收报告。只写矩阵、计数与可复核结论（接口 / 数据 / 日志证据的**类别**），本机运行目录与脚本不作为引用对象。
 
