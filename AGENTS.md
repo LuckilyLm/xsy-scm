@@ -73,7 +73,13 @@ F0   Object Storage Activation             COMPLETE
 P0   Baseline closure: FA-1..FA-3 + formal  COMPLETE (2026-09-24); F0-DEBT-01 closed,
      non-admin roles + explicit SCM data scope   object-storage confidentiality proven on MinIO
 W6-1 Inventory (balance/movement/inbound)  BACKEND + BROWSER VERIFIED
+P1   Sorting management (V60-V62)          COMPLETE (2026-09-24): backend + 1057-test full
+                                         regression + 129 browser E2E all green
+P2   Delivery L3 (dispatch/outbound/sign)          COMPLETE (2026-09-25): V63-V64, backend
+                                         full regression 1076 tests / 0 failures / 0 errors /
+                                         5 cloud skips, browser 136 passed / 8 designed skips
 W6-2 Mini Program                          NOT STARTED
+Order after P2: Finance R1 -> Finance R2 -> marketing/payment/settlement -> W6-2.
 ```
 
 W4 = Sales Order (COMPLETE).
@@ -208,6 +214,71 @@ two independent gates were added before any non-administrator business role coul
    purchase by purchaser ∩ warehouse), and 供应商 / SKU 主档 have no dimension to narrow on, so they
    stay team-shared by decision rather than by omission.
 
+P1 分拣管理 (**COMPLETE — backend + PostgreSQL IT + full regression + browser E2E verified,
+2026-09-24**; V60–V62, module
+`net.lab1024.sa.admin.module.scm.sorting`; rulings recorded in
+[`docs/decisions.md`](./docs/decisions.md)「P1 分拣管理裁决」第 1–22 条) —
+sorting is the **producer of the shipped-quantity fact and nothing else**. Invariants that must not
+be regressed: sorting never writes back `sales_order_item.actual_quantity` / `settlement_*` (a
+short-pick or an out-of-stock line leaves the order untouched — the difference lives only in
+`sorting_task_item`), never writes `inventory_balance` / `inventory_movement`, never creates an
+outbound document and never moves the reservation trigger (`SALES_OUT` belongs to Delivery L3/P2).
+`planned_quantity_snapshot` is frozen from `actual_quantity` at task-creation time — every valid line
+of a `CONFIRMED` order necessarily has it > 0 (standard lines are filled at submit, non-standard
+lines must be weighed before confirm), so the snapshot is `NOT NULL` and `> 0` in the database.
+One `sales_order_item` may be occupied by at most one **active** task, enforced by partial unique
+index `uk_sorting_task_item_active_line` on `sorting_task_item.occupation_status = 'ACTIVE'`: the
+occupation flag lives on the line (the index cannot see the parent's status), so **cancelling a task
+must flip all of its lines to `RELEASED` in the same transaction** — any new task-status transition
+entry point has to maintain that, or the index silently diverges from the task state. Task states are
+only `PENDING / SORTING / COMPLETED / CANCELLED` (no `RELEASED` task state); `COMPLETED` requires
+every active line to carry a result, and only `REOPEN` (own permission + mandatory reason + version)
+gets a completed task back to work — reopening **keeps** the recorded quantities and reasons, because
+delivery eligibility is evaluated on *task status*, not on line results
+(`DeliveryEligibilityPolicy` = `CONFIRMED` ∧ every valid line covered by a `COMPLETED` task);
+reopened orders simply drop out of the candidate pool, and historical `ACTIVE` route assignments are
+never auto-released. Sorting scope is **warehouse ∈ authorized ∧ assignee = self** (intersect, never
+substitute); cross-assignee visibility is implied by `scm:sorting:task:assign` — there is deliberately
+**no** `scm:sorting:scope:all:query` and no sixth scope dimension. `crossAssignee()` is *also* the
+switch that decides whether the list/detail SQL appends `assignee_employee_id = :me`, so it must share
+one break-glass source with the write-side guard (`ScmDataScopeService.isAdministrator()`); bypassing
+only the write side gives an administrator "warehouse visible, assignee invisible" — which is exactly
+what the 1057-test full regression caught after the targeted ITs were already green.
+Print = preview + counted
+registration (count/time/operator only, never a version bump, never a state change); weight is
+manual-only; no gross/tare/net, no unit conversion, no substitution, no tolerance thresholds,
+no automatic re-settlement. One documented exception to the P0 "option lists must be scoped" rule:
+`GET /scm/sorting/candidate-lines` is a sorting **queue** view gated by the create-task permission and
+not narrowed by `seller_id` (it returns no prices or amounts) — see ruling 22 before reusing that
+pattern anywhere else.
+
+P2 物流配送 L3 (**COMPLETE — backend + PostgreSQL IT + concurrency IT + full regression + browser
+E2E verified, 2026-09-25**; module
+`net.lab1024.sa.admin.module.scm.delivery` + `...scm.inventory.service.InventoryFulfillmentService`;
+see 「P2 物流配送 L3 裁决」第 1–23 条 in `docs/decisions.md`) —
+dispatch is the **only producer of the sales-outbound fact** for an order. Invariants that must not be
+regressed: shipped quantity is `sorting_task_item.sorted_quantity`, dispatch never re-reads
+`sales_order_item.actual_quantity`; a route dispatches **atomically** (any order that lost eligibility,
+e.g. a REOPEN, rejects the whole route — there is no partial dispatch); one route = one
+`inventory_outbound`, whose lines keep `sales_order_item_id` **unmerged** (that provenance is what
+closes P1 ruling 21: a line with a `CONFIRMED` outbound line cannot be reopened, and Finance R1 can
+attribute cost per order line). Delivery never writes `inventory_balance` / `inventory_reservation` /
+`inventory_movement` itself — it calls the one inventory command, which releases the reservation
+**before** decrementing stock because `ck_inventory_balance_available` is evaluated per statement
+(10 on hand / 10 reserved / ship 5 fails the other way round). A reservation retires as a **whole row**:
+`CONSUMED` when it shares the shipping warehouse and the line actually shipped, `RELEASED` otherwise
+(including the cross-warehouse case, where the whole row is released and the quantity is taken from the
+route warehouse); there is deliberately no `consumed_quantity` column, because
+`uk_inventory_reservation_source_active` excludes no status and one order line owns exactly one row for
+life. Outbound documents are created directly `CONFIRMED` (manual edit/confirm/cancel all require
+DRAFT). Sign-off is order-level `SIGNED`/`EXCEPTION` with a mandatory reason, terminal, and it **never
+reverses** `SALES_OUT` — returns must later add reverse facts. Dispatch carries `Idempotency-Key` +
+route `version`; sign carries the **row** version and no idempotency header. `sign` is the one delivery
+write action narrowed by `driverScope` (drivers hold sign, so an id-only write would let a driver sign
+another driver's route); `plan/cancel/update` stay deliberately unscoped as in L0–L2. Printing still
+never dispatches. Not in scope: GPS/tracks, route optimisation, driver app, e-signature images, partial
+sign-off, auto-refund, return inbound.
+
 W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
 [`docs/progress.md`](./docs/progress.md) are adjudicated.
 
@@ -310,6 +381,28 @@ V57  V57__scm_business_role_matrix_delta.sql         p0   data-only，角色矩�
 V58  V58__scm_product_image_public_file_key.sql      f0   FA-3：存量私有商品图 key 搬 public/image/
                                                    （t_file + product_image + 收回关系行，可重入）
                                                    + ck_product_image_public_file_key CHECK
+V59  V59__scm_order_log_return_refund_type.sql        order 订单操作日志白名单加 RETURN / REFUND
+                                                   （远端合并带入，原编号 V50 与上游冲突后改号）
+V60  V60__scm_sorting_task.sql                        p1   分拣数据地基：sorting_task +
+                                                   sorting_task_item（计划量冻结快照、结果与量成对
+                                                   CHECK、差异必填原因）、明细行占用位
+                                                   （ACTIVE/RELEASED）上的部分唯一索引
+                                                   uk_sorting_task_item_active_line、
+                                                   sorting_task_no_seq 全局非重置序列（SRT 前缀）
+V61  V61__scm_sorting_menus_permissions.sql           p1   data-only，分拣菜单与 9 个权限点
+                                                   （1400–1421：query/add/assign/item:update/
+                                                   complete/cancel/reopen/print/summary:query）
+V62  V62__scm_sorting_roles.sql                       p1   data-only，正式角色 SCM_SORTER 与
+                                                   队列管理权授予 SCM_STOREKEEPER_LEAD（按 role_code 种）
+V63  V63__scm_delivery_fulfillment.sql                p2   配送 L3 履约数据地基：出库单补 source_document_*
+                                                   （一条线路一张出库单的部分唯一索引）、出库明细补
+                                                   sales_order_id / sales_order_item_id（同 SKU 不同订单行
+                                                   不合并）、delivery_route_order 加履约状态
+                                                   （PENDING/IN_TRANSIT/SIGNED/EXCEPTION + 签收时点/人/原因，
+                                                   异常必填原因与终态成对均为 CHECK）、delivery_route 加
+                                                   发车与完成时点（与 status 成对的 CHECK）
+V64  V64__scm_delivery_l3_permissions.sql             p2   data-only，菜单 1017–1019 三个权限点
+                                                   （dispatch / order:sign / route:complete）与角色授权矩阵
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
@@ -319,7 +412,9 @@ V33（规格转换）与 V34（移动加权成本）的**列表页已于 2026-09
 **五条写流程 E2E 已于 2026-09-20 覆盖**（出库确认、盘点确认、报损报溢审批、
 调拨发出/收货、规格转换审批，`e2e/scm-inventory-write.spec.ts` 6/6）。
 V31/V33 的转入成本清零缺陷已由 V37 + 代码修复（成本随货平移）。
-仍未覆盖：预留的**并发**压测、阈值预警推送、分拣与配送。见 `docs/progress.md`。
+仍未覆盖：**阈值预警推送**（本波只做可查列表）。预留的**并发**压测、分拣与配送 L3 均已补齐
+（`ScmInventoryReservationConcurrencyIT` 五条真并发用例 + 20× 定向重复闸门；
+P1 全量回归 + 129 项浏览器 E2E；P2 发车整链 + 并发 + 145 项浏览器套件）。见 `docs/progress.md`。
 
 > **B7 数据大屏（V28）已于 2026-09-20 完成 V1 视觉重构**：三列 420/1000/420 + 底部趋势带，
 > 10 个面板、3 张图表，新增 `GET /scm/screen/data/trend?range=7d|30d` 与库存健康度

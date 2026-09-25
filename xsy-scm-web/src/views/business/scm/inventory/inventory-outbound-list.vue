@@ -225,7 +225,8 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
+import {useRoute} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -234,6 +235,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {inventoryOutboundApi} from '/@/api/business/scm/inventory-outbound-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {deepLinkFilters, type DeepLinkQuery} from '/@/lib/query-deep-link';
 import {
   SCM_INVENTORY_OUTBOUND_STATUS_ENUM,
   SCM_INVENTORY_TABLE_ID,
@@ -340,6 +342,32 @@ function resetQuery() {
   queryForm.status = undefined;
   onSearch();
 }
+
+/**
+ * URL 带入的筛选条件：P2 配送线路详情页的「跳出库单」带 `?outboundNo=`。
+ *
+ * 只把值填进**已有**筛选项，不新增任何后端能力；出库单号是自由文本（`null` 白名单），
+ * 但仍经 `deepLinkFilters` 做 trim 与空值收口，避免 `?outboundNo=` 空串被当成有效条件。
+ * 用 `route.query` 而不是 props：菜单路由不传 props，hash 路由下 query 是唯一稳定通道。
+ */
+const OUTBOUND_DEEP_LINK = {outboundNo: null};
+
+const route = useRoute();
+const outboundRouteName = route.name;
+
+function applyDeepLink(incomingQuery: DeepLinkQuery) {
+  queryForm.outboundNo = deepLinkFilters(incomingQuery, OUTBOUND_DEEP_LINK).outboundNo;
+}
+
+watch(
+    () => route.query,
+    (incomingQuery) => {
+      // 组件被 keep-alive 缓存时，跳往其他页面不能把别人的 URL 当成本页条件。
+      if (route.name !== outboundRouteName) return;
+      applyDeepLink(incomingQuery);
+      onSearch();
+    }
+);
 
 // ------------------------------------------------------------------ 表单
 
@@ -531,6 +559,8 @@ function onDelete(record: InventoryOutbound) {
 }
 
 onMounted(async () => {
+  // 首屏先落 URL 条件再查，否则从配送页跳进来会先闪一次全量列表。
+  applyDeepLink(route.query);
   await applySingleWarehouseDefault();
   await queryData();
 });

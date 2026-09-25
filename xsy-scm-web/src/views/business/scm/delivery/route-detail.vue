@@ -33,10 +33,27 @@
             </a-button
             >
             <a-button
+                v-if="detail.route.status === 'PLANNED'"
+                type="primary"
+                v-privilege="DELIVERY_PERM.ROUTE_DISPATCH"
+                :disabled="busy"
+                @click="dispatch"
+            >发车
+            </a-button
+            >
+            <a-button
                 v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.route.status)"
                 v-privilege="'scm:delivery:route:print'"
                 @click="printer?.open(detail.route.id)"
             >打印发货单
+            </a-button
+            >
+            <a-button
+                v-if="detail.route.status === 'DISPATCHED'"
+                v-privilege="DELIVERY_PERM.ROUTE_COMPLETE"
+                :disabled="busy"
+                @click="complete"
+            >完成线路
             </a-button
             >
             <a-button
@@ -83,6 +100,19 @@
                 }}
               </a-descriptions-item>
               <a-descriptions-item label="备注">{{ detail.route.remark || '—' }}</a-descriptions-item>
+              <a-descriptions-item v-if="detail.route.dispatchedAt" label="发车">
+                {{ datetime(detail.route.dispatchedAt) }} · {{ detail.route.dispatchedBy || '—' }}
+              </a-descriptions-item>
+              <a-descriptions-item v-if="detail.route.completedAt" label="完成">
+                {{ datetime(detail.route.completedAt) }} · {{ detail.route.completedBy || '—' }}
+              </a-descriptions-item>
+              <!-- 出库单是发车在库存域留下的事实，配送侧只读编号：数量与金额口径归库存页，这里不复制一份。 -->
+              <a-descriptions-item v-if="showOutbound" label="出库单">
+                <a-button v-if="detail.route.outboundNo" type="link" size="small" @click="goOutbound(detail.route.outboundNo)">
+                  {{ detail.route.outboundNo }}
+                </a-button>
+                <span v-else>—（整条线路实发为 0，未生成出库单）</span>
+              </a-descriptions-item>
               <a-descriptions-item v-if="detail.route.cancelReason" label="取消原因" :span="2">
                 {{ detail.route.cancelReason }}
               </a-descriptions-item>
@@ -313,6 +343,68 @@
               </template>
             </a-table>
           </a-tab-pane>
+          <a-tab-pane key="fulfillment" tab="履约">
+            <a-alert
+                message="发车后订单进入在途，客户到手才登记签收；「异常签收」含拒收，但货已真实出库，因此不冲减库存——冲销必须走后续退货流程新增反向事实。完成线路要求全部在途订单都已登记结果。"
+                type="info"
+                show-icon
+            />
+            <a-table
+                id="scm-delivery-route-fulfillment"
+                size="small"
+                :columns="fulfillmentColumns"
+                :data-source="activeOrders"
+                row-key="id"
+                :loading="loading"
+                :pagination="false"
+                :locale="{emptyText: fulfillmentEmptyText}"
+                :scroll="{x: 1160}"
+                bordered
+            >
+              <template #bodyCell="{ column, record }">
+                <template v-if="column.dataIndex === 'customer'">
+                  {{ stopOf(record.stopId)?.customerNameSnapshot || '—' }}
+                </template>
+                <template v-else-if="column.dataIndex === 'fulfillmentStatus'">
+                  <a-tag :color="fulfillmentStatuses[record.fulfillmentStatus as FulfillmentStatus].color">{{
+                      fulfillmentStatuses[record.fulfillmentStatus as FulfillmentStatus].label
+                    }}
+                  </a-tag>
+                </template>
+                <template v-else-if="column.dataIndex === 'signedAt'">
+                  {{ datetime(record.signedAt) }}
+                </template>
+                <template v-else-if="column.dataIndex === 'signedBy'">
+                  {{ record.signedBy || '—' }}
+                </template>
+                <template v-else-if="column.dataIndex === 'signReason'">
+                  {{ record.signReason || '—' }}
+                </template>
+                <template v-else-if="column.dataIndex === 'action'">
+                  <a-space :size="0">
+                    <a-button
+                        v-if="signable(record)"
+                        type="link"
+                        v-privilege="DELIVERY_PERM.ORDER_SIGN"
+                        :disabled="busy"
+                        @click="openSign(record, 'SIGNED')"
+                    >签收
+                    </a-button>
+                    <a-button
+                        v-if="signable(record)"
+                        type="link"
+                        danger
+                        v-privilege="DELIVERY_PERM.ORDER_SIGN"
+                        :disabled="busy"
+                        @click="openSign(record, 'EXCEPTION')"
+                    >异常签收
+                    </a-button>
+                    <span v-else>{{ signHintOf(record) }}</span>
+                  </a-space>
+                </template>
+              </template>
+            </a-table>
+          </a-tab-pane>
         </a-tabs>
       </template>
       <a-empty v-else-if="!loading" description="线路尚未加载"/>
@@ -361,13 +453,40 @@
       />
     </template>
   </a-modal>
+  <a-modal
+      v-model:open="signVisible"
+      :title="signResults[signForm.result].label"
+      ok-text="确认登记"
+      :confirm-loading="busy"
+      @ok="submitSign"
+  >
+    <template v-if="signTarget">
+      <p>{{ signTarget.orderNoSnapshot }} · {{ signTarget.customerName }}</p>
+      <a-alert
+          v-if="signForm.result === 'EXCEPTION'"
+          message="异常签收（含拒收）只登记到货事实：库存已按实发出库，此处不冲减，也不改动订单结算量。"
+          type="warning"
+          show-icon
+      />
+      <a-form layout="vertical">
+        <a-form-item label="原因" :required="signForm.result === 'EXCEPTION'">
+          <a-textarea
+              v-model:value="signForm.reason"
+              :maxlength="500"
+              :rows="3"
+              :placeholder="signForm.result === 'EXCEPTION' ? '拒收 / 破损 / 缺货争议等，必填' : '可留一句备注，如客户不在由邻居代收'"
+          />
+        </a-form-item>
+      </a-form>
+      <a-alert v-if="signError" type="error" :message="signError" show-icon/>
+    </template>
+  </a-modal>
 </template>
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import {Modal, message, type TableColumnsType} from 'ant-design-vue';
-import {useUserStore} from '/@/store/modules/system/user';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import ScmMap from '/@/components/business/scm/map/scm-map.vue';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
@@ -377,17 +496,23 @@ import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
-import {useDeliveryPermission} from './use-delivery-permission';
+import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import {
   deliveryError,
+  fulfillmentStatuses,
   printStatuses,
   routeStatuses,
+  SIGNABLE_FULFILLMENT,
+  signResults,
   type DeliveryStop,
+  type FulfillmentStatus,
   type Id,
   type PrintStatus,
   type RouteCustomerView,
   type RouteDetail,
+  type RouteOrder,
   type RouteOrderView,
+  type SignResult,
 } from './delivery-types';
 
 const emit = defineEmits<{ changed: [] }>();
@@ -401,16 +526,11 @@ const routeId = ref<Id>(),
 const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
-const user = useUserStore();
-const {canViewAmount} = useDeliveryPermission();
+const {canViewAmount, canSign, hasPerm} = useDeliveryPermission();
 const router = useRouter();
-const canEdit = computed(
-    () =>
-        detail.value?.route.status === 'DRAFT' &&
-        (user.administratorFlag || user.getPointList?.some((point: {
-          webPerms: string
-        }) => point.webPerms === 'scm:delivery:route:update'))
-);
+// 编辑权 = 草稿态 ∧ route:update；权限判定与 v-privilege 共用 hasPerm 一份口径
+// （超管在其内部放行），不在这里再抄一次 administratorFlag。
+const canEdit = computed(() => detail.value?.route.status === 'DRAFT' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE));
 const startPoint = computed<MapPoint>(() => ({
   longitude: detail.value?.route.startLongitude,
   latitude: detail.value?.route.startLatitude,
@@ -502,6 +622,37 @@ const customerViewColumns = computed<TableColumnsType>(() => [
   {title: '打印状态', dataIndex: 'printStatus', width: 110, align: 'center' as const},
 ]);
 
+/** 出库单只在发车之后存在；DRAFT / PLANNED 显示它只会让人以为漏了什么没填。 */
+const showOutbound = computed(() => ['DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? ''));
+
+/**
+ * 履约视图只看仍挂在线路上的订单：CANCELLED 线路的详情会连 RELEASED 行一起返回，
+ * 那些行已退出履约流程，留着它们会让人对着一条已取消的订单去点签收。
+ */
+const activeOrders = computed<RouteOrder[]>(() =>
+    (detail.value?.orders ?? []).filter((order) => order.assignmentStatus === 'ACTIVE')
+);
+
+const fulfillmentColumns = computed<TableColumnsType>(() => [
+  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 180},
+  {title: '客户', dataIndex: 'customer', width: 200},
+  {title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center' as const},
+  {title: '签收时间', dataIndex: 'signedAt', width: 170},
+  {title: '签收人', dataIndex: 'signedBy', width: 140},
+  {title: '原因', dataIndex: 'signReason', width: 240, ellipsis: true},
+  // 无签收权时整列消失（指令只能删列里的节点，删不掉列头），留下一个全空的表头比没有更糟。
+  ...(canSign.value
+      ? [{title: '操作', dataIndex: 'action', width: 160, align: 'right' as const, fixed: 'right' as const}]
+      : []),
+]);
+
+// 「没有行」有三种原因，文案要能区分：线路没订单 / 线路已取消，用户下一步要做的事完全不同。
+const fulfillmentEmptyText = computed(() =>
+  detail.value?.route.status === 'CANCELLED'
+    ? '线路已取消，不再有履约动作'
+    : '线路还没有订单，请先在「线路订单」页加入订单'
+);
+
 async function loadPrint() {
   if (routeId.value == null) return;
   printLoading.value = true;
@@ -586,6 +737,11 @@ function open(id: Id, initialTab = 'base') {
   printMode.value = 'orders';
   customerStatusFilter.value = 'ALL';
   customerFilter.value = 'ALL';
+  // 换线路时签收弹窗一起关掉并清掉目标行：里面带的是上一条线路的**行版本与订单号**，
+  // 留着会把签收登记到另一条线路的订单上。
+  signVisible.value = false;
+  signTarget.value = undefined;
+  signError.value = '';
   visible.value = true;
   tab.value = initialTab;
   reload();
@@ -594,6 +750,140 @@ function open(id: Id, initialTab = 'base') {
 async function changed() {
   await reload();
   emit('changed');
+}
+
+/**
+ * 发车：PLANNED → DISPATCHED，服务端在同一事务内按分拣实发量生成一张出库单并扣库存。
+ * 之后不能回退（要修正只能走退货新增反向事实），因此必须二次确认。
+ */
+function dispatch() {
+  const route = detail.value?.route;
+  if (!route) return;
+  Modal.confirm({
+    title: '确认发车？',
+    content: '发车将按分拣实发量生成出库单并扣减库存，线路上全部活动订单进入在途。此操作不可撤销。',
+    okText: '确认发车',
+    onOk: async () => {
+      busy.value = true;
+      error.value = '';
+      try {
+        const result = await deliveryApi.dispatch(route.id, route.version);
+        // 整条线路实发为 0 时不存在出库单，那是合法成功：文案必须说清「为什么没有单号」，
+        // 否则用户会把空号当成发车失败再点一次。
+        message.success(
+            result.data.outboundNo
+                ? `已发车：${result.data.orderCount} 张订单进入在途，出库单 ${result.data.outboundNo}`
+                : '已发车：本线路实发为 0，未生成出库单'
+        );
+        await changed();
+      } catch (e) {
+        error.value = deliveryError(e);
+      } finally {
+        busy.value = false;
+      }
+    },
+  });
+}
+
+/**
+ * 完成线路：DISPATCHED → COMPLETED。未全部签收时由服务端 41117 拒绝 ——
+ * 刻意不在前端按当前行数预先禁用按钮：详情可能是别人签收前的旧快照，
+ * 按旧快照禁用会把「其实已经能完成」的线路锁死在本页。
+ */
+function complete() {
+  const route = detail.value?.route;
+  if (!route) return;
+  Modal.confirm({
+    title: '确认完成线路？',
+    content: '完成后线路进入终态，不能再为订单登记签收，也不再产生任何库存影响。',
+    okText: '确认完成',
+    onOk: async () => {
+      busy.value = true;
+      error.value = '';
+      try {
+        await deliveryApi.complete(route.id, route.version);
+        message.success('线路已完成');
+        await changed();
+      } catch (e) {
+        error.value = deliveryError(e);
+      } finally {
+        busy.value = false;
+      }
+    },
+  });
+}
+
+function goOutbound(outboundNo: string) {
+  // 出库单归库存域：这里只带走编号一个筛选条件，跳过去看 SALES_OUT 事实，
+  // 不在配送页复制数量或金额口径。
+  void router.push({path: '/inventory/inventory-outbound-list', query: {outboundNo}});
+}
+
+const signVisible = ref(false),
+    signError = ref(''),
+    signForm = ref<{ result: SignResult; reason: string }>({result: 'SIGNED', reason: ''}),
+    signTarget = ref<RouteOrder & { customerName: string }>();
+
+function openSign(record: RouteOrder, result: SignResult) {
+  signTarget.value = {...record, customerName: stopOf(record.stopId)?.customerNameSnapshot ?? ''};
+  signForm.value = {result, reason: ''};
+  signError.value = '';
+  signVisible.value = true;
+}
+
+async function submitSign() {
+  const target = signTarget.value;
+  const route = detail.value?.route;
+  if (!target || !route) return;
+  const reason = signForm.value.reason.trim();
+  // 异常签收无原因在前端就拦住：后端 41118 是同一口径，但要等一次往返才看得见，
+  // 而弹窗若已被关掉，这句话只能重录一遍。
+  if (signForm.value.result === 'EXCEPTION' && !reason) {
+    signError.value = '异常签收必须填写原因';
+    return;
+  }
+  busy.value = true;
+  signError.value = '';
+  try {
+    // version 用的是这一行打开弹窗时读到的**行版本**：同一线路上不同订单要能并发签收，
+    // 传线路版本等于用线路版本覆盖别人对这一行的签收。
+    await deliveryApi.sign(route.id, target.orderId, {
+      version: target.version,
+      result: signForm.value.result,
+      reason: reason || undefined,
+    });
+    message.success(signForm.value.result === 'EXCEPTION' ? '已登记异常签收' : '已签收');
+    signVisible.value = false;
+    await changed();
+  } catch (e) {
+    // 版本冲突写进弹窗而不是全局横幅：用户大概率还想补那句原因。
+    signError.value = deliveryError(e);
+  } finally {
+    busy.value = false;
+  }
+}
+
+/**
+ * 可签收 = 线路在途 ∧ 该行在途未签，两者缺一服务端都会拒。
+ * 权限由 v-privilege 摘节点，这里只判状态，避免留下「能点但必然失败」的入口。
+ */
+function signable(record: RouteOrder): boolean {
+  return detail.value?.route.status === 'DISPATCHED' && SIGNABLE_FULFILLMENT.includes(record.fulfillmentStatus);
+}
+
+/** 不可签收的行要说清原因：终态已登记、未发车、线路已取消是三件不同的事。 */
+function signHintOf(record: RouteOrder): string {
+  if (record.fulfillmentStatus === 'SIGNED' || record.fulfillmentStatus === 'EXCEPTION') {
+    return '已登记';
+  }
+  const status = detail.value?.route.status;
+  if (status === 'COMPLETED') {
+    return '线路已完成';
+  }
+  if (status === 'CANCELLED') {
+    return '线路已取消';
+  }
+  return '发车后可签收';
 }
 
 function stopOf(id: Id) {

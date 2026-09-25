@@ -1,6 +1,9 @@
 <!--
   * 员工下拉选择框
   *
+  * `option-filter-prop="label"` + 每个 option 绑 `label`：a-select 默认按 value 过滤，而 value 是
+  * employeeId，按姓名搜索会永远「暂无数据」（展示文本带部门后缀，也不能当过滤键）。
+  * 与 `warehouse-select` 同一做法。
 -->
 <template>
   <a-select
@@ -8,11 +11,13 @@
       :style="`width: ${width}`"
       :placeholder="props.placeholder"
       :showSearch="true"
+      option-filter-prop="label"
       :allowClear="true"
       :size="size"
       @change="onChange"
   >
-    <a-select-option v-for="item in employeeList" :key="item.employeeId" :value="item.employeeId">
+    <!-- label 是过滤键，展示仍带部门：只绑 actualName 才能让「按姓名搜」命中带后缀的渲染文本。 -->
+    <a-select-option v-for="item in employeeList" :key="item.employeeId" :value="item.employeeId" :label="item.actualName">
       {{ item.actualName }}
       <template v-if="item.departmentName"> （{{ item.departmentName }}）</template>
     </a-select-option>
@@ -57,7 +62,8 @@ const emit = defineEmits(['update:value', 'change']);
 // =========== 查询数据 =============
 
 //员工列表数据
-const employeeList = ref([]);
+// 只声明模板真正消费的字段：接口返回的是未类型化的 any，靠字面量 [] 推导会变成 never[]。
+const employeeList = ref<{employeeId: number; actualName: string; departmentName?: string}[]>([]);
 
 async function query() {
   try {

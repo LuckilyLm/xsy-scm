@@ -37,6 +37,7 @@ local-environment-info.txt
 !/tools/w7_e2e_accounts.py
 !/tools/w8_e2e_accounts.py
 !/tools/f0_e2e_accounts.py
+!/tools/p1_e2e_accounts.py
 
 # Reference environment configs contain credentials
 /project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml

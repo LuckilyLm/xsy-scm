@@ -230,6 +230,8 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
     }
 
     private void add(Long id, List<Long> ids) {
+        // 组单的前置条件是分拣已完成（P1 裁决第 11 条与补充第 18 条）。
+        sortingCompletedFor(ids.toArray(Long[]::new));
         var f = new DeliveryOrdersForm();
         f.setVersion(version(id).getVersion());
         f.setOrderIds(ids);

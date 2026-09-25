@@ -1,12 +1,15 @@
 # 项目进度
 
-最后更新：2026-09-24
+最后更新：2026-09-25
 
 ## 当前状态
 
 | 阶段 | 状态 | 记录 |
 | --- | --- | --- |
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
+| P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
+| P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
+| Finance R1 应收与成本归属 | 未开始 | 前置已具备：订单行 → 实发 → 出库流水 → `unit_cost` 的追溯链由 P2 打通；顺序 P2 → Finance R1 → Finance R2 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -16,7 +19,7 @@
 | W5.5 原生功能同步 | 完成 | SmartAdmin 原生功能与 SCM 品牌配置 |
 | F0 对象存储 | 完成 | FileService、S3/MinIO 和访问保护 |
 | W6-1 库存第一阶段 | 后端与浏览器已验证 | 余额、不可变流水、双入库模式、仓库生命周期、历史回填和只读查询页 |
-| 出库 / 预留（V25–V27） | 写流程 E2E 已验证（并发压测待补） | 独立出库单、`SALES_OUT` 流水、可用量门槛、预留与释放、订单「预留库存」显式动作 |
+| 出库 / 预留（V25–V27） | 写流程 E2E + 并发 IT 已验证 | 独立出库单、`SALES_OUT` 流水、可用量门槛、预留与释放、订单「预留库存」显式动作；**预留只有 `ACTIVE / RELEASED` 两个状态被真正产生，`CONSUMED` 无生产者**，消费端由 P2 收口 |
 | 盘点（V29） | 写流程 E2E 已验证 | 盘点单、盘盈 / 盘亏流水、差异施加到确认瞬间的账面量、双下限保护 |
 | 报损报溢（V30） | 写流程 E2E 已验证 | 报损报溢单、`LOSS_REPORT` / `GAIN_REPORT` 流水、审批状态机（待审核 → 已完成 / 已驳回）、审批乐观锁 |
 | 调拨（V31） | 写流程 E2E 已验证 | 调拨单、两步式（发出 → 在途 → 收货）、`TRANSFER_OUT` / `TRANSFER_IN` 流水、两仓单位一致性、在途阻塞仓库停用、**成本随货平移（V37 修正转入清零）** |
@@ -35,27 +38,29 @@
 | 操作日志业务上下文与表格 / 查询体验 Wave 8（无迁移） | 后端 PgIT 6/6 + 读权限 Guard 单元 6/6 + 前端契约 9/9 + 合并单测 148/148 / 类型（本 Wave 文件）/ Lint / 构建已验证；E2E 场景已于 2026-09-23 在全栈环境真实浏览器执行通过（见「Wave 1–8 审计修复与全栈验收」记录） | **A 通用操作日志按业务对象精确下钻**：`OperateLogQueryForm` 加 `businessType`/`businessId`、`OperateLogMapper.xml` 对 PRODUCT/CUSTOMER/DELIVERY_ROUTE 按既有 param/url 结构做 STRPOS 精确匹配（不新建审计表、不改写入侧），`AdminOperateLogController` 按业务类型白名单校验读权限、无匹配类型回 `1=0` 不放全表；前端 `operate-log-list.vue` 接收并校验路由业务类型 / ID，首载 / 刷新 / 换对象三处重套、重置不残留、脏行逐行 try/catch 退化，商品 / 客户 / 配送线路详情各带类型入口，`operate-log-mask.ts` 展示前递归脱敏 password/token 等，并由 `OperateLogParamMask` 在**写入侧服务端**对敏感字段名递归脱敏（结构保持、只处理 param 文本），库里存的即是脱敏值；**B 列表查询条件按用户本地记忆**：`query-filter-key.ts` + `query-filter-memory.ts` 复用既有 `xsy-scm:...:${employeeId}:...` 偏好约定（不建 user_preference 表），customer-list 接入（查询存 / 重置清 / 挂载恢复回第 1 页）、深链详情不接入避免污染；0 迁移 0 新表 0 新权限；见追加记录 2026-09-22 |
 | 地图 M0 地理数据地基（V40） | 后端与浏览器已验证 | `scm_region` 省市两级字典（34 省 + 414 市，带区划质心 GCJ-02）、三张主档六列省市区快照 + `longitude/latitude/geom_crs`（成对与 CRS CHECK、市级部分索引）、迁移内保守地址解析回填、客户 / 供应商 / 仓库表单升级为省市区三级 |
 | 地图 M1 大屏真实地图（无迁移） | 后端与浏览器已验证 | 官方省界 GeoJSON 存档进仓库、`GET /scm/screen/data/geo` 只读聚合（省级在 Java 侧由市上卷）、省界着色 + 市级气泡 + 未归属覆盖度；流向层 `lines` 未做 |
-| F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收；**F0-DEBT-01 整体未关闭** | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`，存量行沿用原 key 放行）、删除 `product_image.file_url` 改为按 `file_key` 现算；`FileKeyVoSerializer` 旁路已于 2026-09-23 **临时收口**（逐 key 过 `FileAccessGuard.filterReadable`，依赖未注入 / 无身份时 fail closed），但 `FileService.getFileList(keys)` 本身仍是**无身份批量入口**、代码生成模板未改，`scm_file_relation`（FA-2）未落地 |
-| 物流配送 L0–L2（V42–V43） | 已实现，编译 / 构建 + 定向集成验证通过；浏览器与真实地图待验收 | 客户 / 仓库定位、订单地理快照、司机车辆、静态排线、规划锁定、取消释放、固定打印；高德配置待补，L3 未开始 |
+| F0-DEBT-01 FA-0 附件分级与写侧收口（V41） | 后端 + 浏览器已验收；**F0-DEBT-01 已随 FA-1～FA-3 于 2026-09-24 整体关闭** | 商品图片改上传 `public/image/`（新增 `PUBLIC_IMAGE(5)`）、`product_image` 新增/换绑只能引用公开前缀（`40038`）、删除 `product_image.file_url` 改为按 `file_key` 现算；`FileKeyVoSerializer` 旁路逐 key 过 `FileAccessGuard.filterReadable`（依赖未注入 / 无身份时 fail closed）；其后 FA-1 把 `FileService` 收成唯一受控入口、FA-2 落地 `t_file_relation`（V52）、FA-3 搬存量并加 CHECK（V58）—— 本行「未落地」的三项均已完成，见「2026-09-24 P0 基线收口（第三批）」 |
+| 物流配送 L0–L2（V42–V43、V47） | **完成**（后端 IT + 真实浏览器 E2E 已验收，见「2026-09-24 P0 基线收口（第三批）」与下方 P0-B 记录） | 客户 / 仓库定位、订单地理快照、司机车辆、静态排线、规划锁定、取消释放、固定打印与打印计次；`DISPATCHED / COMPLETED` 只是 CHECK 里预留的值，L0–L2 无任何写入路径 —— 由 P2 承接 |
 | 报表中心 R0 财务与报表只读地基（V50–V51） | 后端 IT + 前端单测 / Lint / 构建 + 浏览器 E2E 已验证 | 经营概览 / 销售 / 采购 / 收货与入库 / 库存五张只读分析页与 41 个只读端点；不建 receivable / payable / payment / voucher 任何事实表；见追加记录 2026-09-23 |
 | W6-2 小程序 | 未开始 | 需先处理下方待办 |
 
 ## 当前待办
 
-- **F0-DEBT-01（未关闭）**：分级现状为
-  FA-0 商品图写侧绑定 ✅ 已收口（2026-09-21 / V41）；
-  `FileKeyVoSerializer` 越权旁路 ✅ 已**临时收口**（2026-09-23，逐 key 过 `FileAccessGuard.filterReadable`，
-  依赖未注入 / 无身份时 fail closed）；
-  FA-1 完整受控 `FileService` 🟡 **未完成**（`getFileList(keys)` 仍是无身份批量入口，代码生成模板未改）；
-  FA-2 `scm_file_relation` ❌ 未做；FA-3 存量商品图搬运到 `public/image/` ❌ 未做。
-  `FileAccessGuard` 对 `private/notice/`、`private/help-doc/` 仍是**前缀级放行**，不等于业务对象授权，
-  因此**引入任何非管理员业务角色前 FA-2 仍是门禁**，方案见
-  [`plan/attachment-asset-grading-and-file-access-plan.md`](./plan/attachment-asset-grading-and-file-access-plan.md)。
-- 明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则；本次 E2E 临时账号不等同正式业务角色。
+- ~~**F0-DEBT-01（未关闭）**~~ **已关闭**（2026-09-24，FA-1 / FA-2 / FA-2b / FA-3 全部落地，V52–V58）：
+  商品图写侧绑定（V41）→ `FileService` 成为服务端展开 URL 的唯一受控入口（FA-1）→
+  对象级授权落在通用 `support/file` 层的 `t_file_relation`（FA-2，V52）→
+  未绑定上传落 `private/common/scratch/` 并按「无关系行且无业务列直接引用」双确认回收（FA-2b，V53）→
+  存量商品图搬 `public/image/` 并下沉为数据库 CHECK（FA-3，V58）。
+  `private/notice/`、`private/help-doc/` 的前缀级放行已移除。
+  **仍然有效的两条约束**：对象搬运必须先成功再改库里的 key，顺序错了商品图静默 404；
+  附件权限行为只在对象存储模式下取证（本地存储把 `/upload/**` 静态直出，「private」在本地不等于保密）。
+- ~~明确正式非管理员角色、数据范围、多角色库存验证和多仓默认选择规则~~ **角色与数据范围已收口**
+  （P0，V54–V57；P1 再补 `SCM_SORTER` / `SCM_STOREKEEPER_LEAD` 分拣授权，V62）。
+  **仍未裁决**：多仓默认选择规则（订单无仓库字段，靠「唯一启用仓库」解析，见 41018）；
+  E2E 临时账号只是取证手段，不等同正式业务角色。
 - 库存深化剩余项：**已完成**（入库侧、出库/预留、盘点、报损报溢、调拨、阈值预警、规格转换、移动加权成本）。
-  下一阶段顺序见
-  [`requirements/2026-09-19-需求覆盖与待办清单.md`](./requirements/2026-09-19-需求覆盖与待办清单.md)：
-  财务与报表 → 分拣 → 物流配送 → 营销 → 后台补缺 → 订单助手 → 溯源 → 小程序。
+  **主线顺序以 [`plan/pre-enhancement-mainline-development-guide.md`](./plan/pre-enhancement-mainline-development-guide.md)
+  第 8–19 行为准**：… → P1 分拣 → **P2 物流配送 L3 → P3 Finance R1 → P4 Finance R2** → 营销 / 支付结算 → W6-2 小程序。
+  早期需求清单里「财务与报表 → 分拣 → 物流配送 → 营销 …」那一行是分期方案成形前的旧排序，已失效。
 - 出库 / 预留 / 盘点 / 报损报溢 / 调拨 / 阈值预警的**列表页**浏览器验收已于 2026-09-20 执行
   （与余额 / 流水 / 规格转换 / 数据大屏共 11 页全绿、0 pageerror）。
   **五条写流程 E2E 已于 2026-09-20 覆盖**（出库确认、盘点确认、报损报溢审批、调拨发出/收货、
@@ -64,7 +69,11 @@
   `unit_cost`**，并与采购入库同样加权；规格转换的转入腿改为按转出腿**总成本 ÷ 目标数量**折算。
   开发库被清零的 3 行已由 V37 重放流水重算（6.20 / 132.00 / 2.60 回正）。
   链式转换的期初成本基准在审批开始时一次取齐并预解，环状引用按期初均价收敛且不写缓存。
-- 预留的**并发**场景目前只有单线程 IT 覆盖（并发压测待补）。
+- ~~预留的**并发**场景目前只有单线程 IT 覆盖（并发压测待补）~~ **已补**：
+  `ScmInventoryReservationConcurrencyIT` 五条真并发用例（`Propagation.NOT_SUPPORTED` + 各自事务），
+  并按用户要求定向重复 20 次作为进 P1 前的稳定性闸门；最初那次红是**用例自身的缺陷**
+  （按下标对齐输赢方 + 非单调的 `source_document_item_id` 种子），已只改测试修好，产品不变量未动。
+  仍然真实存在的缺口是**预留的消费端**：发车前没有任何流程产生 `CONSUMED`，由 P2 收口。
 - 消息通知只做了一条事件：**报损报溢驳回**经 SmartAdmin 原生 `t_message` 站内信通知录单人
   （V46 起，随驳回事务同步写、恰一条），首页「业务待办」是只读 Pull。**其余事件仍无通知**：
   待审批、待入库、配送等仍靠用户自己进页面看状态；**外部渠道（短信 / 邮件 / 企业微信）未做**。
@@ -246,7 +255,8 @@
     `scm-report.spec.ts` **11/11**；连同此前的 `scm-dashboard-todo` 8/8、`scm-inventory-write` 6/6、
     `scm-data-scope` 6/6、`scm-delivery-print` 6/6，P0-F 相关 IT 与浏览器用例已全绿。
     全量后端回归的 988 项只输在那一个 IT 隔离缺陷上（改的是断言不是产品语义）。
-    **随后在另一座一次性干净库（V1→V56，库名 `xsy_scm_it_p0all`）重跑全量：988 项 / 0 失败 / 0 错误 / 5 跳过，BUILD SUCCESS** —— 这是第二批的整库口径。 为**已存在的正式角色**
+    **随后在另一座一次性干净库（V1→V56，库名 `xsy_scm_it_p0all`）重跑全量：988 项 / 0 失败 / 0 错误 / 5 跳过，BUILD SUCCESS** —— 这是第二批的整库口径。
+- 为**已存在的正式角色**
   建 `administrator_flag=false` 的临时账号（角色缺失即拒绝执行，避免「全 30005」假绿），
   `tools/w8_e2e_accounts.py` 为本波次薄封装；TS 侧 `provisionTempAccounts` 解析脚本回显拿到
   `角色码 → login_name / employee_id`，不在两边重复实现名字派生规则。
@@ -384,6 +394,172 @@
   对象存储取证需先起 MinIO 并按 `deploy/minio/bootstrap.sh` 配好 bucket 策略，
   再以 `XSY_FILE_STORAGE_MODE=cloud` 重启后端，然后跑 `e2e/f0-file-storage.spec.ts`
   （同一环境变量既是 Playwright 的门控，也是后端存储模式开关）。
+
+### 2026-09-24 P0 追加：预留并发用例重开并定位（进入 P1 前的 20× 稳定性闸门）
+
+远端合并记录里 `ScmInventoryReservationConcurrencyIT#concurrentReservesCannotOversell` 出现过
+「一次红、复跑绿」，因此按裁决在同步后的新基线上把该用例定向重复 20 次。**第 2 次即复现**，
+按「任意一次失败就停止 P1、重开 P0 定位」执行，结论如下。
+
+- **产品语义在每一次跑里都成立**：3×4 抢 10 恒为「恰 2 笔落地、`reserved_quantity = 8.0000`、
+  `quantity` 仍是 10.0000、被拒的那笔不留行」——没有出现超卖、双计或残留，锁一直持有到事务结束。
+- **红的是用例本身，两处缺陷都由「重复跑」暴露**（单次跑与全量各跑一次都可能碰不到）：
+  1. `sourceIdSeed()` 用 `MAX(id) + 100000` 取种：一行预留只消耗一个主键，而一个用例消耗
+     `seed+1..seed+3` 三个来源行 id，seed 每轮只前进成功笔数（≈2），下一轮就与上一轮
+     **已成功落地的行同号**。第 3 次跑的失败是 expected 41011 / was **41016**——即防重索引
+     对「上一轮的真实活动行」正确报错，却被本用例当成竞态结果。已改为
+     `MAX(source_document_item_id) + 1000`：种子严格高于库内已用来源行 id，跨轮不重叠。
+  2. 断言写死了「第三笔就是被拒的那笔」（`activeReservationRowsForItem(items.get(2))`）。
+     竞态里输的是哪一笔不固定，第 2、5 次跑输的是第一笔，于是成功那笔留下一行 →「不得留行」假红。
+     已改为**逐笔对齐** `outcomes[i]` 与 `items[i]`：被拒必须 0 行、成功必须恰 1 行，
+     并保留原有 41011 与余额断言。这比原写法更强，因为它同时证「不超卖」和「谁被拒都不留痕」。
+- **判定**：不是库存域回归，是用例的幂等性与断言定位问题；只改测试，产品代码零改动。
+- **闸门执行口径**：一次性干净库 `xsy_scm_it_p1conc`（V1→V59），
+  `-Dtest='ScmInventoryReservationConcurrencyIT'`（整类 5 条）连跑 20 次，任一红立即中断并回报。
+  结果：**修复后 20/20 全绿，100 项用例 0 失败 0 错误**。修复前的对照同样有据：
+  旧写法在**同一份产品代码**上第 2、3、5 次分别红（两种失败信息正是上面两处缺陷的指纹），
+  第 1、4 次绿 —— 即「一次红一次绿」来自用例自身，与库存域无关。**P0 的库存预留并发结论维持不变**，
+  本条按「测试债当场修、产品代码零改动」收口，P1 前置条件重新成立。
+- **过程中另踩到一条运维口径**：后台闸门被停止时，只有包装 shell 退出，
+  已 fork 的 `mvn → surefire java` 子树仍在跑，导致两份闸门并发写同一库与同一 `target/`；
+  本轮因此作废一次闸门并重建库重跑。判据只能是按命令行枚举活进程，不能是停止通知的状态。
+
+### 2026-09-24 P1 分拣管理：实发事实的产生地（V60–V62）
+
+裁决依据：[`decisions.md`](./decisions.md)「P1 分拣管理裁决（2026-09-24）」第 1–14 条 +
+「P1 分拣管理裁决补充」第 15–22 条（后一批是本轮实现过程中提问、用户当日答复的口径）。
+
+- **落地范围**：新模块 `module/scm/sorting`（`sorting_task` + `sorting_task_item` 两张表、
+  控制器 / 服务 / Dao / Mapper XML、9 个权限点、正式角色 `SCM_SORTER` 与仓库主管的队列管理权）。
+  按计划 P1 首期范围交付：按客户订单分拣（写入口）、按商品汇总分拣（只读）、标品数量确认、
+  非标品实重手工录入、分拣标签与小票打印、分拣操作日志、权限与数据范围。
+- **四条"越界即违反裁决"的边界已钉进实现与用例**：不回写 `sales_order_item.actual_quantity` /
+  `settlement_*`（第 1、3 条）；不写余额与流水、不出库单、不动预留触发点（第 6 条，用例断
+  `inventory_movement` 总数在整条分拣链前后不变）；一条订单行只被一条活动明细占用
+  （第 2 条，部分唯一索引 + 真并发用例）；打印只计次且**不 bump version**（第 8 条，
+  否则会把别人的编辑顶成假冲突）。
+- **占用位写在明细行上**（`occupation_status`，与 `delivery_route_order.assignment_status` 同形态），
+  因为部分唯一索引的谓词不能跨表看任务状态。代价是同一条纪律：
+  **取消任务必须在同一事务里把该任务全部明细置为 `RELEASED`**，任务锁是唯一入口，
+  新增任何状态迁移路径都必须一并维护它。
+- **配送资格交接**（第 11 条与补充第 18 条）：`CONFIRMED` ∧「订单每条有效明细行都被
+  `COMPLETED` 任务覆盖」，判定落在**任务状态**而不是明细有没有结果 —— 这样重开只需把任务退回
+  `SORTING` 就能让订单掉出候选，不必清空已录入的实重与原因（清空等于破坏审计）。
+  历史 `ACTIVE` 配送占用一律不自动释放；已排线订单允许重开，接受"已排线但不合格"的中间态（第 20 条）。
+- **本轮由实现发现、经用户当日裁决的三处口径**（都是我不自行选边的地方）：
+  1. 第 10 条的「已有真实出库则禁止重开」在 P1 **不实现**，整条推给 P2（补充第 21 条）——
+     现状没有任何数据链路把 `SALES_OUT` 归到订单行：出库单行不带订单行来源，
+     `inventory_reservation.status='CONSUMED'` 全库无生产者。任何写法都只能是
+     「按仓库+SKU+时间窗」近似，会把别的订单出库算到本任务头上，宁可不造判据。
+  2. 建单用的「候选订单行」是**分拣队列视图**，不按 `seller_id` 收窄（补充第 22 条）：
+     仓库岗位默认不持任何订单范围，沿用收窄会让主管一个候选行都选不到，第 15 条的
+     「主管建单并指派」直接无法执行。代价由两头兑住 —— 入口只授建单权、返回列不含任何价格金额。
+     这是 P0「option 列表要问它隐含哪个维度」的**唯一显式例外**，不是可复用范式。
+  3. `CONFIRMED` 订单每条有效行的 `actual_quantity` 必然非空且 `> 0`（标品提交时按订购量落
+     SYSTEM 值、非标确认前必须已录实重），因此"计划量 = 冻结实发量"不会遇到 null，
+     V60 直接把它定为 `NOT NULL CHECK (> 0)`。这条是查出来的，不是猜的。
+- **一处 P0 口径缺口被本轮暴露并补上**：「受指派人 = 本人」是直接比员工 id、
+  不在 `ScmValueScope` 里，所以 `administrator_flag` 的 break-glass 原本不会作用到它 ——
+  同一个超管账号会「仓库看得见、人看不见」。已把超管判定收成
+  `ScmDataScopeService.isAdministrator()` 单一出处，`resolve()` 与分拣守卫共用，
+  并补一条 IT 同时取证「超管可读 / 同一任务对分拣员仍是 30005」。
+- **验证（定向）**：`SortingTaskPgIT` 19 项 + `SortingTaskConcurrencyPgIT` 3 项真并发
+  （无外层事务，独立事务抢同一订单行 / 同一明细 / 同一任务完成，断"成功数 + 失败码 + 最终账"三者一致）；
+  配送四个 IT 改走「先分拣完成再组单」的真实前置链后与分拣用例同批跑 **41/41 绿**；
+  `ScmBusinessRoleMatrixPgIT` 7/7（含 `SCM_SORTER` 与队列管理权的授权断言，
+  以及"库里不存在 `scm:sorting:scope*` 第二个范围权限"这条负向）；
+  `SmartAdminMapperPgValidationIT` 通过（新增两张表的 DAO 使跳过基线 443 → 453，逐条确认全是
+  `BaseMapper` 泛型 CRUD）；迁移冻结清单与校验和快照同步到 V62。
+  竞态用例的两处断言写法教训（不许按提交顺序假定谁输、重复跑的种子必须建立在已用最大值上）
+  见上面「P0 追加」一节。
+- **前端**：`sorting-api.ts` + `sorting-task-list.vue`（任务列表 + 详情抽屉逐行录入 +
+  建单弹窗 + 打印预览/登记）+ `sorting-summary.vue`（只读汇总）+ 契约用例 13 项；
+  录入载荷逐行带自己的 `version`、`Idempotency-Key` 只加在建单与登记打印、
+  完成条件不在前端复刻（服务端 41125 是唯一真相）。四道闸门见下方最终数字。
+
+- **最终验证数字**：
+  * 后端全量：一次性干净库（V1→V62）`mvn -o -pl sa-admin -am test` =
+    **1057 项 / 0 失败 / 0 错误 / 5 跳过，BUILD SUCCESS**（5 项跳过仍是 cloud 门控的
+    `F0FileStorageCloudIT`，它已在对象存储栈上单独实跑过，见 P0 第三批）。
+  * 浏览器全量：`npx playwright test` = **129 passed / 0 failed / 8 skipped**，
+    8 项是云端对象存储专用 spec 在本地存储下的按设计 skip。dev 库已随重启应用到 V62。
+  * 前端四闸门（改过共享组件后重跑）：`npm run lint` 0 error（3 条既有 warning）、
+    `npm run test` 237/237、`ts_baseline_ratchet.py check` **PASS（新增 0，SCM 区 0）**、
+    `npm run build` 成功。棘轮现值 1946 < 基线 1974，另有 29 条已消失项可收编（未擅自改基线快照）。
+- **验收过程中抓到的三件事（都不算 P1 产品缺陷，但都是真问题）**：
+  1. **读侧可见性开关漏了 break-glass**：`SortingAccess.crossAssignee()` 原来只看权限码，
+     而它同时是「未指派队列在列表/详情 SQL 里拼不拼 `assignee = 本人`」的那个布尔参数。
+     定向 IT 全绿、**1057 项全量跑才红 1 条**。现与写侧守卫共用 `ScmDataScopeService.isAdministrator()`，
+     并保留「同一行对角色账号仍 30005」的反向断言，避免把 break-glass 做成单向放宽。
+  2. **共享组件 `EmployeeSelect` 按姓名搜索永远「暂无数据」**：`a-select` 默认按 `value` 过滤，
+     而它的 `value` 是 `employeeId`。建单弹窗要按姓名挑受指派人，于是直接挑不出来。
+     已按 `warehouse-select` 既有做法补 `:label` + `option-filter-prop="label"`，
+     并把 `ref([])`（推成 `never[]`）显式定型，闸门重新全绿。这条影响所有用它的页面（客户、采购）。
+  3. **两处 E2E 断言把「dev 库只有本轮数据」当前提**（测试债，已改成可重跑的写法）：
+     主档司机列表按 `driver_code` 升序分页且 E2E 只回收临时账号、不回收业务行，
+     dev 库累计 29 条司机后新行落到第一页之外 → 改成先按编码搜索再断「唯一一行」；
+     分拣任务页同理，点行内按钮前先按单号筛。另修一处自己写反的时序：
+     前置分拣的「必须已完成」断言读在了 `complete` 调用之前。
+- **一条未复现的观察项**：`smartadmin-native.spec.ts` 缓存管理页在整跑里出现过一次
+  `waitForResponse` 20s 超时，单独重跑该 spec + `scm-delivery` 共 25/25 绿，后续两次整跑也未再出现。
+  按口径记为观察，不当成已定位缺陷；若再次出现，先查后端冷启动/JIT 而不是直接改断言。
+- **未完成 / 刻意不做（不得当成已完成）**：
+  1. 第 10 条的「已产生真实出库则禁止 REOPEN」整条推给 P2（补充第 21 条：没有可精确归属的链路）。
+  2. 列配置（`TableOperator`）已接，但两页的枚举未注册进 `src/constants/index.ts` 的 SmartEnum 聚合，
+     因此 `$smartEnumPlugin` 取不到分拣枚举 —— 现在页面直接用枚举常量渲染，不影响功能，属后续统一整理。
+  3. 分拣绩效大屏、预包装状态、一键分拣批量动作、可配置打印模板、设备称重均未做（按计划属 P6 / 设备波次）。
+- **复现口径**：P1 定向 IT 与全量同上；浏览器侧需先重建 fat jar 并以
+  `XSY_V2_DB_URL=jdbc:p6spy:...:15432/xsy_scm_b0?currentSchema=xsy_v2` 重启后端（V59–V62 由 Flyway 自动应用），
+  再 `bash tools/dev_up.sh sync` 同步容器快照，最后
+  `XSY_V2_PG_DB=xsy_scm_b0 npx playwright test e2e/scm-sorting.spec.ts`。
+
+### 2026-09-25 P2 物流配送 L3：发车即正式出库（V63–V64）
+
+裁决依据：[`decisions.md`](./decisions.md)「P2 物流配送 L3 裁决（2026-09-25）」第 1–20 条，
+以及实现期补记的第 21–23 条。主线顺序 **P2 → Finance R1 → Finance R2**；本轮不跳 Finance，
+也不回头扩商品 / 采购 / 小程序的业务接口。开工基线：`git fetch` 后本地 HEAD 与 `origin/main`
+同为 `0dfb68a`，Flyway 实际 max = V62，因此迁移从 **V63** 起（不是照抄规划稿的号）。
+
+- **数据模型（V63，含反例取证）**：`inventory_outbound_item` 补 `sales_order_id / sales_order_item_id`
+  （成对 CHECK + 部分索引，**同 SKU 不同订单行不合并**）；`inventory_outbound` 补 `source_document_*`
+  并加部分唯一索引 `uk_inventory_outbound_source_active`，把「一条线路最多一张出库单」钉进库里；
+  `delivery_route_order` 补履约状态 `PENDING / IN_TRANSIT / SIGNED / EXCEPTION` + 签收时点 / 人 / 原因
+  （异常必填原因、终态必留时点与操作人，都是 CHECK）；`delivery_route` 补发车与完成时点，
+  并用「状态到了就必须有时点」的 CHECK 拦住任何绕过服务端的迁移。四条约束各自用一条必然失败的
+  INSERT 探过（`ck_delivery_route_dispatched`、`ck_delivery_order_exception_reason`、
+  `ck_inventory_outbound_item_source_pair`、`uk_inventory_outbound_source_active`）。
+- **权限（V64）**：1017 发车 / 1018 订单签收 / 1019 完成线路。发车授调度 + 仓库主管，
+  签收授调度 + 司机，完成线路授调度；按 `role_code` 种，`ScmBusinessRoleMatrixPgIT` 用查询取证
+  而不是人工推断。**配置要求**：发车走库存域既有的仓库范围守卫，所以调度岗必须有
+  `employee_warehouse_scope` 授权行 —— 浏览器用例先撤授权证 30005、再补授权证成功，
+  两端都在同一条用例里，避免「看着绿其实没跑守卫」。
+- **库存域唯一写入口** `InventoryFulfillmentService`：一条命令在同一事务内完成
+  「锁预留 → 按 (warehouse_id, sku_id) 升序预锁余额（含跨仓预留所在行）→ 整条归还预留 →
+  逐行产生 `SALES_OUT` → 出库单直生 `CONFIRMED`」。`module/scm/delivery` 里没有任何
+  余额 / 预留 / 流水写入（前端契约用例也钉住配送 API 触不到库存域接口）。
+- **实现期发现并修掉的真实缺陷**：发车与分拣重开原本不在同一批行上加锁，可交错到
+  「出库单已 CONFIRMED」与「任务已 SORTING」同时成立，于是已出货的订单行还能改分拣量。
+  现 `reopen` 先按订单 id 升序锁订单行再判定（与 `dispatch` 同序），并发用例把两种合法结局钉死。
+- **验收计数**：后端一次性干净库（V1→V64）全量 **1076 项 / 0 失败 / 0 错误 / 5 云端跳过**
+  （P1 是 1057；新增 19 项 = 履约命令 7 + 发车链路 9 + 发车并发 2 + 角色矩阵 1）；
+  新增 IT 定向复跑 49/49 绿（含 P1 分拣 `SortingTaskPgIT` 20 项未受影响）。
+  前端四闸门：`lint` 0 error（3 条既有 warning）、`npm test` **247/247**、
+  `ts_baseline_ratchet.py check` PASS（SCM 0 / 新增 0 / 修复 29 / 总量 1940 < 基线 1974）、
+  `npm run build` 成功。浏览器全量 **145 项：136 passed / 8 按设计跳过 / 1 failed**，
+  新增 `e2e/scm-delivery-l3.spec.ts` **8/8**（整链：备货→订单→少拣分拣→组单规划→发车→出库与流水取证→
+  签收/异常→完成线路，含幂等重放、重开互斥、非超管与司机范围、履约标签页真实渲染）。
+- **未复现的观察（不当成已修）**：唯一那 1 项失败是 `smartadmin-native.spec.ts` 的
+  「登录登出记录」在 `page.waitForResponse` 上超时 20s —— 该页请求在监听器挂上前就已完成时必然假失败。
+  随后单独把整个 spec 连跑两次都是 **17/17 绿**。P1 收尾时同一处也出现过一次同样的一次性红，
+  因此记为共享夹具的已知脆弱点而不是 P2 回归；没有把它当噪声删断言，也没有谎称已修。
+- **既有 L0–L2 用例的必要改写**：`scm-delivery.spec.ts` 第 6 条原本断言「L3 端点根本不存在」，
+  L3 落地后该断言按定义失效。改成「存在且被守住」：用错误 version 撞发活得 40921、
+  PLANNED 直接完成得 41101、未发车签收得 41101 —— 既证明路由已注册，又不在这条用例里真扣库存。
+- **打印语义未动**：端点、载荷、计次与幂等键全部保持原样；发车是独立端点，
+  契约用例继续钉「打印面板里没有任何 L3 动作」。整条线路实发为 0（全缺）时不生成出库单，
+  `outboundNo` 为 `null` 是**成功**，前端文案必须解释为什么没有单号。
+- **环境**：dev 库 `xsy_scm_b0` 已随重启的 fat jar 自动应用 V63/V64（Flyway 日志
+  `Successfully applied 2 migrations ... now at version v64`），web 容器快照已同步。
 
 ### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）
 

@@ -38,12 +38,13 @@ class ScmBusinessRoleMatrixPgIT extends ScmW5PgITBase {
     private static final String SCREEN_QUERY = "scm:screen:query";
 
     @Test
-    @DisplayName("九个正式业务角色都存在，且授权矩阵非空")
+    @DisplayName("十个正式业务角色都存在，且授权矩阵非空")
     void formalRolesExistWithNonEmptyGrants() {
         List<String> roleCodes = jdbc.queryForList(
                 "SELECT role_code FROM t_role WHERE role_code LIKE 'SCM\\_%' ORDER BY role_code", String.class);
         assertThat(roleCodes).containsExactly("SCM_DISPATCHER", "SCM_DRIVER", "SCM_FINANCE", "SCM_PURCHASER",
-                "SCM_PURCHASER_LEAD", "SCM_SALES", "SCM_SALES_LEAD", "SCM_STOREKEEPER", "SCM_STOREKEEPER_LEAD");
+                "SCM_PURCHASER_LEAD", "SCM_SALES", "SCM_SALES_LEAD", "SCM_SORTER", "SCM_STOREKEEPER",
+                "SCM_STOREKEEPER_LEAD");
         // t_role 上根本没有 administrator_flag 这一列：超管位是员工的属性，不是角色的属性，
         // 所以「正式角色必须用 administrator_flag=false 的账号验收」只能由 E2E 的登录账号保证。
         assertThat(jdbc.queryForObject("""
@@ -57,6 +58,59 @@ class ScmBusinessRoleMatrixPgIT extends ScmW5PgITBase {
                 ORDER BY r.role_code""", String.class))
                 .as("没有任何正式角色是空壳")
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("配送 L3 矩阵：发车给调度与仓库主管，签收含司机，完成线路只给调度")
+    void dispatchSignAndCompleteAreSplitAcrossRoles() {
+        assertThat(holds("SCM_DISPATCHER", "scm:delivery:route:dispatch")).isTrue();
+        assertThat(holds("SCM_STOREKEEPER_LEAD", "scm:delivery:route:dispatch")).isTrue();
+        // 司机不持发车：发车会在库存域触发仓库范围守卫，而司机岗没有仓库授权。
+        assertThat(holds("SCM_DRIVER", "scm:delivery:route:dispatch")).isFalse();
+        // 司机持签收，同时读侧仍受 driverScope 收窄 —— 两条一起才等于「只能签自己在的线」。
+        assertThat(holds("SCM_DRIVER", "scm:delivery:order:sign")).isTrue();
+        assertThat(holds("SCM_DISPATCHER", "scm:delivery:order:sign")).isTrue();
+        assertThat(holds("SCM_STOREKEEPER", "scm:delivery:order:sign")).isFalse();
+        assertThat(holds("SCM_DISPATCHER", "scm:delivery:route:complete")).isTrue();
+        assertThat(holds("SCM_DRIVER", "scm:delivery:route:complete")).isFalse();
+        // 发车会改库存，因此不与「确认规划」同权，也不给销售岗：排线不等于有权发货。
+        assertThat(holds("SCM_SALES", "scm:delivery:route:dispatch")).isFalse();
+        assertThat(holds("SCM_SALES", "scm:delivery:order:sign")).isFalse();
+    }
+
+    @Test
+    @DisplayName("分拣矩阵：分拣员只有干活的权限，队列管理权全部在仓库主管")
+    void sortingRightsSplitBetweenSorterAndStorekeeperLead() {
+        assertThat(holds("SCM_SORTER", "scm:sorting:task:query")).isTrue();
+        assertThat(holds("SCM_SORTER", "scm:sorting:item:update")).isTrue();
+        assertThat(holds("SCM_SORTER", "scm:sorting:task:complete")).isTrue();
+        assertThat(holds("SCM_SORTER", "scm:sorting:task:print")).isTrue();
+        // 任务页要展示与筛选仓库名，缺这条会在加载时 30005 —— 属于「页面必需」而不是顺带放宽。
+        assertThat(holds("SCM_SORTER", "scm:warehouse:query")).isTrue();
+        assertThat(holds("SCM_SORTER", "scm:sorting:task:add")).isFalse();
+        assertThat(holds("SCM_SORTER", "scm:sorting:task:assign")).isFalse();
+        assertThat(holds("SCM_SORTER", "scm:sorting:task:cancel")).isFalse();
+        assertThat(holds("SCM_SORTER", "scm:sorting:task:reopen")).isFalse();
+        assertThat(holds("SCM_SORTER", "scm:sorting:summary:query")).isFalse();
+
+        for (String perm : List.of("scm:sorting:task:query", "scm:sorting:task:add", "scm:sorting:task:assign",
+                "scm:sorting:item:update", "scm:sorting:task:complete", "scm:sorting:task:cancel",
+                "scm:sorting:task:reopen", "scm:sorting:task:print", "scm:sorting:summary:query")) {
+            assertThat(holds("SCM_STOREKEEPER_LEAD", perm)).as("仓库主管拿到完整队列管理权：%s", perm).isTrue();
+        }
+        // 普通仓管员不在 P1 的分拣岗位里：裁决第 7 条选的是新增 SCM_SORTER，而不是给既有岗位顺带放行。
+        assertThat(holds("SCM_STOREKEEPER", "scm:sorting:task:query")).isFalse();
+
+        // 跨指派人可见性由 scm:sorting:task:assign 隐含：库里根本不该有第二条分拣范围权限。
+        assertThat(jdbc.queryForList("SELECT web_perms FROM t_menu WHERE web_perms LIKE 'scm:sorting:scope%'",
+                String.class)).as("裁决补充第 15 条：不设 scm:sorting:scope:all:query").isEmpty();
+        // 任何正式角色都不靠「角色名分支」放宽分拣范围：分拣维度只有仓库与员工两个。
+        assertThat(jdbc.queryForList("""
+                SELECT DISTINCT m.web_perms FROM t_role_menu rm
+                JOIN t_menu m ON m.menu_id = rm.menu_id
+                JOIN t_role r ON r.role_id = rm.role_id
+                WHERE r.role_code = 'SCM_SORTER' AND m.web_perms LIKE '%scope:all%'""", String.class))
+                .as("分拣员不持任何维度的全量范围权限").isEmpty();
     }
 
     @Test

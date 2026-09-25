@@ -140,6 +140,13 @@ public abstract class ScmW5PgITBase {
     @Autowired
     protected SalesOrderService salesOrderService;
 
+    /**
+     * P1 之后配送候选要求「订单每条有效明细行都被已完成分拣任务覆盖」，
+     * 因此线路类用例都依赖分拣服务做前置（见 {@link #sortingCompletedFor}）。
+     */
+    @Autowired
+    protected net.lab1024.sa.admin.module.scm.sorting.service.SortingTaskService sortingTaskService;
+
     // ---- W5 自身（需求 / 采购单 / 只读查询）----
 
     @Autowired
@@ -972,4 +979,58 @@ public abstract class ScmW5PgITBase {
         form.setVersion(order.getVersion());
         return form;
     }
+
+    /**
+     * 把订单做到「可进配送候选」：建一个分拣任务、逐行按快照量正常收口、完成任务。
+     *
+     * <p>P1 之后这是线路类用例的**前置条件**（裁决第 11 条与补充第 18 条：候选 = CONFIRMED ∧
+     * 每条有效明细行都被 {@code COMPLETED} 任务覆盖）。走真实分拣命令服务而不是直插行 ——
+     * 直插正好绕过被验收的那条口径，会让「资格判定改没改」在 IT 里看不出来。
+     *
+     * <p>任务派给**当前登录人**：分拣范围是「授权仓 ∩ 受指派人」，派给别人会让调用方
+     * 读不到自己刚造出来的行。仓库取种子仓 —— 分拣仓库与线路仓库是两个独立维度，
+     * 线路侧不校验二者一致（那是 P2 的部分发货口径）。
+     */
+    protected void sortingCompletedFor(Long... orderIds) {
+        var user = SmartRequestUtil.getRequestUser();
+        Long actor = user instanceof RequestEmployee employee ? employee.getEmployeeId() : null;
+        for (Long orderId : orderIds) {
+            // 只挑「尚未被已完成任务覆盖、且订单仍处于可分拣状态」的行：
+            // 同一张单被重复组单（移除后再加回、断言重复占用被拒）时，夹具不能去抢第二个任务。
+            var itemIds = jdbc.queryForList("SELECT i.id FROM sales_order_item i"
+                    + " JOIN sales_order o ON o.id = i.order_id"
+                    + " WHERE i.order_id = ? AND i.deleted = FALSE AND o.deleted = FALSE"
+                    + " AND o.status = 'CONFIRMED' AND NOT EXISTS (SELECT 1 FROM sorting_task_item si"
+                    + " JOIN sorting_task t ON t.id = si.task_id WHERE si.sales_order_item_id = i.id"
+                    + " AND si.deleted = FALSE AND si.occupation_status = 'ACTIVE'"
+                    + " AND t.deleted = FALSE AND t.status = 'COMPLETED') ORDER BY i.id", Long.class, orderId);
+            if (itemIds.isEmpty()) continue;
+            var create = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingTaskCreateForm();
+            create.setWarehouseId(seedWarehouseId());
+            create.setAssigneeEmployeeId(actor);
+            create.setRemark("配送资格前置夹具");
+            create.setSalesOrderItemIds(new ArrayList<>(itemIds));
+            var detail = sortingTaskService.create(create,
+                    prefix + ":sort-fixture:" + (++sortingFixtureSequence) + ":" + orderId);
+            Long taskId = detail.getTask().getId();
+            var entries = new ArrayList<net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryItemForm>();
+            for (var line : detail.getItems()) {
+                var entry = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryItemForm();
+                entry.setId(line.getId());
+                entry.setVersion(line.getVersion());
+                entry.setSortedQuantity(line.getPlannedQuantitySnapshot());
+                entry.setResult("NORMAL");
+                entries.add(entry);
+            }
+            var entryForm = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryForm();
+            entryForm.setItems(entries);
+            sortingTaskService.enter(taskId, entryForm);
+            var complete = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingActionForm();
+            complete.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?",
+                    Integer.class, taskId));
+            sortingTaskService.complete(taskId, complete);
+        }
+    }
+
+    private int sortingFixtureSequence;
 }

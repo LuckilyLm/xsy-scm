@@ -166,6 +166,8 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     private void add(Long route, List<Long> orderIds) {
+        // 组单前把订单做到分拣完成：P1 之后这是配送候选的硬前置。
+        sortingCompletedFor(orderIds.toArray(Long[]::new));
         var form = new DeliveryOrdersForm();
         form.setVersion(currentVersion(route));
         form.setOrderIds(orderIds);
