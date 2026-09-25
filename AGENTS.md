@@ -78,6 +78,13 @@ P1   Sorting management (V60-V62)          COMPLETE (2026-09-24): backend + 1057
 P2   Delivery L3 (dispatch/outbound/sign)          COMPLETE (2026-09-25): V63-V64, backend
                                          full regression 1076 tests / 0 failures / 0 errors /
                                          5 cloud skips, browser 136 passed / 8 designed skips
+P3   Finance R1  F1-0.5 decisions/design  COMPLETE (2026-09-26): D-1..D-5 all ruled A, design
+                                         doc self-consistent, zero "pending ruling" left
+P3   Finance R1  F1-1 schema + skeleton   COMPLETE (2026-09-26): V65-V67, 8 finance tables,
+                                         13 permission points, Java skeleton, schema/permission
+                                         contract IT + finance read-only contract test
+P3   Finance R1  F1-2..F1-8               NOT STARTED (generators / receipt+payment / write-off /
+                                         query+export / frontend / E2E / R0 hand-off)
 W6-2 Mini Program                          NOT STARTED
 Order after P2: Finance R1 -> Finance R2 -> marketing/payment/settlement -> W6-2.
 ```
@@ -279,6 +286,66 @@ another driver's route); `plan/cancel/update` stay deliberately unscoped as in L
 never dispatches. Not in scope: GPS/tracks, route optimisation, driver app, e-signature images, partial
 sign-off, auto-refund, return inbound.
 
+P3 Finance R1 (**F1-0.5 decisions + F1-1 foundation COMPLETE, 2026-09-26**; V65–V67, module
+`net.lab1024.sa.admin.module.scm.finance`; 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 in
+[`docs/decisions.md`](./docs/decisions.md)「P3 Finance R1 裁决」, design in
+[`docs/plan/finance-r1-design.md`](./docs/plan/finance-r1-design.md)) —
+Finance R1 is **the place where financial facts are produced**: it consumes facts that already hold
+(sign-off, receipt confirmation, return approval) and produces its own (receivable / payable / receipt /
+payment / write-off / log). Invariants that must not be regressed: **finance never writes business or
+inventory tables** — `module/scm/finance` gets read-only DAOs over `sales_order*` / `order_return*` /
+`order_refund` / `purchase_*` / `inventory_*` / `delivery_*`, and `FinanceReadOnlyContractTest` fails the
+build on any INSERT/UPDATE/DELETE against them (a static scan, because at F1-1 there is not a single write
+path yet — waiting for F1-2 would miss the only review moment where "is this new code out of bounds?" is
+cheap to answer); **finance has no state machine** — no `status` / `settled_amount` / `open_amount` /
+`approver` column anywhere, and 已核销 / 未核销 / 超额核销 / 结清 / 有效额 are all derived at read time
+(a stored derived value is a second authority that will drift); **direction lives in the type, amounts are
+always positive** — `NORMAL/RED` for receivable and payable, `NORMAL/REVERSE` for receipt, payment and
+write-off, deliberately two enums rather than one because 红冲一张单据 and 反向一条登记/分配 carry
+different pairing CHECKs; **corrections append, never mutate** — seven fact tables carry
+`CHECK (deleted = FALSE)` and `finance_operation_log` has no `deleted` column at all (append-only is
+structural there), so entities must not use `@TableLogic` (it means "soft-deletable", the opposite of a
+financial fact) and reads spell `deleted = FALSE` in SQL, the same trade-off `InventoryMovementEntity`
+already made — **this was evaluated and there is no MyBatis-Plus conflict**, `@TableLogic` is per-entity
+here and `inventory_movement` already runs with the identical CHECK.
+Three rulings shape the write paths that F1-2…F1-4 will add, and each is a place where the obvious
+shortcut is wrong: **automatic red receivables have no amount cap** (D-2/D-4) — the generatable amount does
+not deduct existing write-offs, a short-pick order whose return exceeds the receivable still generates the
+full RED, `netAmount` may go negative, and the generator must never throw, because it runs inside
+`OrderReturnService.approve`'s transaction and throwing would roll back a legitimate order-domain action
+(finance does not control the order state machine). Negative values surface only as the read-only derived
+`openAmount = max(net − writtenOff, 0)` / `overAppliedAmount = max(writtenOff − net, 0)`, the latter
+labelled 「超额核销待处理」 and **never** 「客户余额 / 钱包余额 / 可用余额」 (those are P5).
+`FINANCE_RED_AMOUNT_EXCEEDED(41137)` therefore has exactly one user left — manual red payables, where
+fail-loud is legitimate because rejecting a human finance action rolls back no business state machine.
+**Receipt/payment corrections are reverse facts with a hard precondition** (D-3): `entry_type` +
+`reverse_of_id` + `reason`, amount still positive, one NORMAL reversed at most once
+(`uk_finance_*_single_reverse`), and 已用额 must be 0 before reversing — otherwise 已用 > 有效额 produces a
+negative pending balance that stacks with D-4's negative receivable and becomes unexplainable. A reversed
+payment's `source_type`/`source_id` **must be NULL**, because `uk_finance_payment_source_active` is
+predicated on `source_id IS NOT NULL`: a reverse row carrying the original `ORDER_REFUND` source would
+compete for the same unique key, making a mis-keyed refund payment permanently unreversible.
+**`external_reference` is not unique and is not an idempotency key** — it is free-text fund-voucher
+reference, bank statement numbers genuinely repeat across customers, and de-duplication is
+`Idempotency-Key` plus the source unique index. **Data scope** (D-5): receipt follows
+`customer_id → customer.seller_id → customerSellerScope`, payment's SUPPLIER side is not narrowed (no
+supplier dimension exists; P0 ruling 7 keeps supplier master data team-shared) while its CUSTOMER side
+matches receipt, and write-off follows its **target** (`RECEIVABLE → orderSellerScope`,
+`PAYABLE → purchaserScope`) — a write-off row is not an independently-owned object, so its visibility is
+the visibility of the document it settles. `if role == FINANCE then bypass scope` is forbidden: SCM_FINANCE's
+full range comes from explicit grants (1302/1311/1322/1331), never from a role check in code.
+**D-1: no backfill** — facts that already existed before go-live (`SIGNED` orders, `CONFIRMED` receipts,
+`APPROVED` returns) are not retro-generated, there is no backfill API and no backfill permission; the
+generators still have to be replayable and source-idempotent, because that is what concurrent
+double-triggering and transaction retry require, not a back door for backfill. F1-1 delivered schema,
+permissions, roles, entities, DAOs, enums, error codes 41130–41143, `FinanceOperationLogRecorder` and five
+empty Services; it deliberately has **no form/VO classes, no read-only business DAO and no mapper XML**,
+because untested SQL with no caller is dead code — those land in F1-2/F1-5 next to their first caller and
+their first test. Not in scope, and not to be started before their own phase: Finance R2 (利润 / 毛利 /
+账龄 / 客户对账 / 供应商对账), P5 (优惠券 / 满减 / 在线支付 / 余额 / 充值 / COD), invoices and tax,
+vouchers and general ledger, finance approval workflows, finance attachments, `due_date`, supplier
+settlement terms, multi-currency, customer wallets, supplier fund accounts.
+
 W6-2 = Mini Program — **NOT STARTED**; do not begin before the W6-1 open items in
 [`docs/progress.md`](./docs/progress.md) are adjudicated.
 
@@ -403,6 +470,22 @@ V63  V63__scm_delivery_fulfillment.sql                p2   配送 L3 履约数�
                                                    发车与完成时点（与 status 成对的 CHECK）
 V64  V64__scm_delivery_l3_permissions.sql             p2   data-only，菜单 1017–1019 三个权限点
                                                    （dispatch / order:sign / route:complete）与角色授权矩阵
+V65  V65__scm_finance.sql                             p3   Finance R1 数据地基：8 张财务事实表
+                                                   （receivable/_item、payable/_item、receipt、payment、
+                                                   write_off、operation_log）+ 5 条单号序列；
+                                                   **零既有表改动**，无外键，无状态列 / 余额列 / due_date
+                                                   （结清与已核销一律读时派生）；方向编码在 entry_type
+                                                   （NORMAL/RED 与 NORMAL/REVERSE 两套），金额恒 > 0；
+                                                   七张事实表带 CHECK (deleted = FALSE) 的 append-only 约束，
+                                                   operation_log 连 deleted 列都没有（结构性不可删）；
+                                                   5 条来源唯一索引（应付 / 应付明细 / 付款的谓词含
+                                                   source_id IS NOT NULL）+ 3 条「一条 NORMAL 最多一条
+                                                   REVERSE」反向唯一索引；external_reference 刻意只建普通索引
+V66  V66__scm_finance_menus_permissions.sql            p3   data-only，财务管理菜单与 13 个权限点
+                                                   （1500–1505 目录与五页 / 1511–1515 查询 /
+                                                   1521–1527 写与四个破坏性动作 / 1531 导出），仅授 SUPER_ADMIN
+V67  V67__scm_finance_roles.sql                        p3   data-only，按 role_code 把 Finance R1 全部权限授
+                                                   SCM_FINANCE；销售 / 采购 / 仓库 / 配送 / 分拣 / 司机一个都不给
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

@@ -1,6 +1,6 @@
 # 项目进度
 
-最后更新：2026-09-25
+最后更新：2026-09-26
 
 ## 当前状态
 
@@ -9,7 +9,7 @@
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
 | P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
-| Finance R1 应收与成本归属 | **调研 / 裁决 / F1-0 设计完成，待 D-1…D-5 裁决后进入 F1-1** | 27 条负责人裁决与 10 条全局不变量见 `docs/decisions.md`「P3 Finance R1 裁决（2026-09-25）」；单文档规划与设计见 `docs/plan/finance-r1-design.md`（2026-09-25 评审修订 + 收口）；未写代码 / 迁移 / 前端 |
+| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基完成**（V65–V67：8 张财务事实表、13 个权限点、SCM_FINANCE 授权、Java 骨架、schema/权限契约 IT + 财务域只读契约测试）；F1-2…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」；设计见 `docs/plan/finance-r1-design.md`；落地记录见「2026-09-26 P3 Finance R1 F1-0.5 + F1-1」 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -560,6 +560,115 @@
   `outboundNo` 为 `null` 是**成功**，前端文案必须解释为什么没有单号。
 - **环境**：dev 库 `xsy_scm_b0` 已随重启的 fat jar 自动应用 V63/V64（Flyway 日志
   `Successfully applied 2 migrations ... now at version v64`），web 容器快照已同步。
+
+### 2026-09-26 P3 Finance R1：F1-0.5 裁决收口 + F1-1 数据地基（V65–V67）
+
+裁决依据：[`decisions.md`](./decisions.md)「P3 Finance R1 裁决（2026-09-25）」27 条 Q + 10 条全局不变量，
+以及本轮新增的「第三批正式裁决（D-1 … D-5，2026-09-26）」；设计依据
+[`plan/finance-r1-design.md`](./plan/finance-r1-design.md)（F1-0.5 收口版）。
+**本轮只做 F1-0.5 与 F1-1，F1-2…F1-8 一律未开始。**
+
+**F1-0.5｜D-1…D-5 全部裁决为 A，设计稿收口为无待裁决状态。** 五条落点：D-1 不回填上线前既有的
+`SIGNED` / `CONFIRMED` / `APPROVED` 事实（本期无补生成 API、无回填权限，生成器仍须可重放）；
+D-2 自动红字的可生成额度**不扣**已核销额；D-3 收付款纠错走 append-only 反向事实
+（`entry_type` / `reverse_of_id` / `reason` + 一条 NORMAL 最多一条 REVERSE + 反向前已用额必须为 0）；
+D-4 少拣导致的超额合法退货**全额**生成 RED、净应收可为负、以 `openAmount` / `overAppliedAmount`
+两个只读派生值表达（页面文案禁用「客户余额 / 钱包余额 / 可用余额」）；D-5 收款按
+`customerSellerScope`、付款供应商侧沿用采购团队共享读、核销随 target，禁止 `if role == FINANCE then bypass`。
+
+同时修掉设计稿五处内部不一致：应付 MANUAL 红字的来源唯一索引谓词必须带 `source_id IS NOT NULL`
+（少了它，`NULL` 不等于任何值，PostgreSQL 会**放行任意多条**手工红字）；删除 `external_reference`
+的 UNIQUE 设计（它只是资金凭据文本，银行流水号跨客户重复是真实存在的，也不得当幂等键）；
+作废「自动红字超额 → 41137 → `OrderReturn approve` 回滚」这条旧测试口径（41137 只剩手工红字应付
+一个使用者）；R0 接轨必须区分发生额 Flow 与期末余额 Stock（否则「8 月形成应收 100、9 月核销 100」
+查询 9 月会得到待收 −100），且数据源是 `finance_write_off` 的指标一律叫「已核销金额」而不是
+「已收款 / 已付款」；财务事实表禁止用 `deleted = true` 模拟删除。
+
+**F1-1｜Flyway**：新增 3 个迁移，当前最大版本 **V67**、连续无空洞。开工前 `git fetch` 重扫确认
+本地 HEAD 与 `origin/main` 同为 `caace54a`，`db/migration/` 实际 max = V64、`t_menu` 种子实际
+max = 1421、SCM 错误码实际 max = 41128，故 V65–V67 / 菜单 1500–1531 / 错误码 41130–41143 均为实扫空闲，
+不是沿用规划稿的假定值。`migration_checksum_guard.py check` PASS（**67 冻结 / 0 漂移 / 0 缺失 /
+0 改名 / 0 未入快照**，新增三号已 `sync`，既有校验和一字未动）。
+
+- **V65（8 张表 + 5 条序列）**：`finance_receivable(_item)` / `finance_payable(_item)` /
+  `finance_receipt` / `finance_payment` / `finance_write_off` / `finance_operation_log`。
+  **零既有表改动**、无外键、**无状态列与余额列**（`status` / `settled_amount` / `open_amount` /
+  `due_date` / `approver` 一律不存在，结清与已核销读时派生）。方向编码在 `entry_type`
+  （应收应付 `NORMAL/RED`、收付款与核销 `NORMAL/REVERSE`，刻意两套枚举），金额与数量恒 `> 0`、
+  `unit_price >= 0`、全表 `NUMERIC(18,4)`。七张事实表带 `CHECK (deleted = FALSE)`，
+  `finance_operation_log` 连 `deleted` 列都没有（结构性不可删）。
+  **5 条来源唯一索引**（应付 / 应付明细 / 付款的谓词含 `source_id IS NOT NULL`）+
+  **3 条反向唯一索引**（`uk_finance_{write_off,receipt,payment}_single_reverse`）+
+  5 条单号唯一索引 + 18 条查询索引；`external_reference` 只建普通索引。
+- **V66（仅数据）**：财务管理目录 1500 + 五个页面 1501–1505 + 13 个权限点
+  （查询 1511–1515、写与破坏性动作 1521–1527、导出 1531），四条种子约定逐条满足
+  （`menu_id == sort`、`context_menu_id == parent`、`api_perms == web_perms`、`perms_type = 1`），仅授 SUPER_ADMIN。
+- **V67（仅数据）**：按 `role_code` 把 19 个菜单全部授 `SCM_FINANCE`（不硬编码 `role_id`）；
+  销售 / 采购 / 仓库 / 配送 / 分拣 / 司机**一个财务权限都没有**（审批过退货不代表能操作资金）。
+
+**F1-1｜后端骨架**：`module/scm/finance` 下 9 个 entity（含审计基类 `FinanceRecord`，
+**刻意不带 `@TableLogic`** —— 它表达「可被软删的实体」，与 append-only 语义相反，沿用
+`InventoryMovementEntity` 的同一取舍）、8 个 DAO、13 个枚举、`FinanceConstant`、
+`FinanceErrorCode`（41130–41143）、`FinanceOperationLogRecorder`（唯一写入口，八值白名单）、
+5 个 Service 空骨架。共享层新增 `common/json/JsonbObjectMapTypeHandler`（日志 before/after 快照用，
+不复用 `order/support` 里那份以避免 finance → order 耦合）。
+
+**刻意的取舍**：本轮**不建** form / VO / 只读业务 DAO / mapper XML。指令允许建，但那些 SQL 在 F1-1
+一个调用方都没有、也无法被测试覆盖，属「无调用方的死代码」；它们随 F1-2 / F1-5 的第一个调用方与
+第一个测试一起落地。**未接触**任何业务触发点：`DeliveryRouteService.sign` /
+`PurchaseReceiptService.confirm` / `OrderReturnService.approve` 一行未改，
+`generateOnSign` / `generateOnReceiptConfirm` / `generateRedOnReturnApproved` 未实现（属 F1-2）。
+
+**F1-1｜测试（本轮只测 schema / permission 契约，未提前写 F1-2 业务 IT）**：
+
+- `ScmFinanceSchemaPgIT` **18/18**（真实 PostgreSQL）：8 表 + 5 序列存在、零外键；
+  不得出现状态 / 余额 / 账期 / 币种 / 税列；七张表 append-only CHECK 生效（软删被库级拒绝）、
+  日志表无 `deleted` 与 `version` 列；金额与数量恒正、单价非负、`version >= 0`、
+  **全部 numeric 列精度逐列断言为 (18,4)**；应收 / 应付 / 收付款 / 核销四类配对 CHECK 逐条以
+  SAVEPOINT 隔离的坏数据验证真的会拒绝（含「手工红字带 `source_id`」「反向付款沿用
+  `ORDER_REFUND` 来源」「来源与方向错配」「收付款跨侧核销」「日志类型越界」「JSONB 非 object」）；
+  来源唯一索引谓词逐字核对、并实测重复生成被拒；三条反向唯一索引实测「一条 NORMAL 只能反向一次」；
+  **`external_reference` 实测不唯一**（同凭据号两笔收款都成功，防止有人把 UNIQUE 加回去）；
+  **手工红字应付实测不受来源唯一索引约束**（两条 MANUAL 并存）；
+  **13 个 Java 枚举与 DB CHECK 白名单双向逐值相等**（少一个值＝Java 能造出库不接受的事实，
+  多一个值＝库放行了页面无法解释的取值），并断言方式枚举不含任何 P5 支付能力；
+  V66 种子四条约定 + 19 个菜单 + 13 个权限串逐条核对、页面 path 与 component 逐条对应设计稿、
+  **不存在任何回填 / 补生成 / 金额字段级 / `scope:all` 权限**；V67 授权实测
+  （`SCM_FINANCE` 19 条含四个破坏性动作、超管 19 条、九个非财务角色 0 条）。
+- `FinanceReadOnlyContractTest` **4/4**（静态扫描，不依赖数据库）：finance 包的 Java 字符串字面量与
+  mapper XML 内**不存在**针对 `sales_order*` / `order_return*` / `order_refund` / `purchase_*` /
+  `inventory_*` / `delivery_*` / `sorting_*` 的 INSERT / UPDATE / DELETE / TRUNCATE；
+  mapper 注解里不写 SQL（AGENTS.md §8）；**8 个实体的 `@TableName` 全部以 `finance_` 开头**
+  （这条是最强的边界证据：BaseMapper 的写方法因此够不到业务表）；finance 包不 `import` report 包。
+  刻意做成静态扫描而不是运行时拦截：F1-1 一条写路径都还没有，等 F1-2 接上生成器再补断言，
+  恰好错过唯一一次「新增代码是否越界」的廉价评审时机。
+
+**本轮实跑证据**：`mvn -B -pl sa-admin -am test` 全量 **1106 项 / 0 失败 / 0 错误 / 5 跳过**
+（5 项跳过为 `F0FileStorageCloudIT` 的云端门控用例，与 P2 基线同一口径，需对象存储单独跑）；
+`migration_checksum_guard.py check` PASS。V65–V67 是在一个**一次性干净库**上随 V1→V67 全链
+由 Flyway 真实应用后取证的（用完即删），因此「8 张表 / 序列 / CHECK / 唯一索引 / 菜单与角色种子」
+全部是实测而非纸面推演。开发库当时停在 V59，**未被本轮触碰**。
+两处既有门禁因本轮新增而按设计变红、并已按其「只增不减需显式确认」的口径显式更新：
+`ScmPurchaseMigrationIT.flywayHistoryIsAppendOnly` 的冻结版本清单追加 65/66/67（与 P2 追加 63/64 同一做法），
+`SmartAdminMapperPgValidationIT` 的跳过项基线 453 → **493**（8 个新 DAO × 5 条 BaseMapper 泛型方法，
+与 P1「每张表 5 条」同一形态；该用例另一条断言已保证跳过项方法名必属 BaseMapper，
+故增量不可能是手写语句被漏掉）。
+
+未覆盖（不得当成已完成）：
+
+- **F1-1 没有任何业务行为可测**：应收 / 应付 / 收付款 / 核销的生成与写入路径一条都没实现，
+  因此「金额公式对不对」「红字会不会阻塞 approve」「并发核销会不会超额」全部**尚未取证**，属 F1-2…F1-4。
+- **前端未动**：V66 已种下五个页面的菜单与 `component` 路径，但对应 `.vue` 文件属 F1-6。
+  在 F1-6 落地前，超管与 `SCM_FINANCE` 账号在侧栏点这五个页面会落到空组件 ——
+  这是本轮按指令拆分阶段的**已知中间态**，不是缺陷；本轮未擅自用 `visible_flag = false` 掩盖它，
+  因为设计稿 §16 没有这一条，改它等于就地新增未裁决的口径。
+- **浏览器 / E2E 未跑**：本轮无前端改动，`verify.py frontend` 与 `e2e` 未执行。
+- 错误码 41130–41143 已声明但**全部无使用者**（写路径在 F1-2…F1-4）；提前声明是为了一次占齐码段，
+  避免后续各阶段各自取号造成冲突或重排。
+- `JsonbObjectMapTypeHandler` 与 `order/support/OrderJsonbTypeHandler` 是等价的两份；
+  合并到 `common/json` 是一次纯 Java 重构（不涉及 migration、不改对外行为），
+  与 `ScmCommonErrorCode` 里记录的 40921 重复声明同一处置取向：先记为已知技术债，不顺手重构。
+
 
 ### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）
 

@@ -217,8 +217,10 @@ class SmartAdminMapperPgValidationIT {
         }
         // 基线 433 → 443：合并进来的报表中心 / 文件授权 / 数据范围三批新 DAO 各带若干 BaseMapper
         // 泛型方法。基线 443 → 453：P1 分拣新增 sorting_task / sorting_task_item 两张表的 BaseMapper。
+        // 基线 453 → 493：P3 Finance R1 的 F1-1 新增 8 张财务表的 BaseMapper（8 × 5 = 40 条，
+        // 与 P1 的「每张表 5 条」同一形态）。
         // 上面第 1) 条已保证跳过项方法名必属 BaseMapper，故这些增量不可能是手写语句被漏掉。
-        assertThat(skipped).as("跳过项基线 453 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(453);
+        assertThat(skipped).as("跳过项基线 493 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(493);
     }
 
     // ------------------------------------------------------------------
