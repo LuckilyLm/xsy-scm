@@ -110,6 +110,7 @@
   import { mallHomeApi, mallCatalogApi } from '@/api/mall';
   import { smartSentry } from '@/lib/smart-sentry';
   import { useUserStore } from '@/store/modules/system/user';
+  import { useMallNavigationStore } from '@/store/modules/mall/navigation';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const { statusBarHeight } = useSystemLayout();
@@ -258,17 +259,20 @@
   }
 
   /**
-   * 切到分类 Tab。
+   * 切到分类 Tab，并带上要选中的一级分类。
    *
-   * GAP：分类页当前不接受「预选某个一级分类」的参数（pages.json 是 tabBar 页，
-   * switchTab 也不支持 query）。要做到「点蔬菜就落在蔬菜」，
-   * 需要分类页 Redesign 时补 onLoad/query 支持——本轮不改分类页，先只切 Tab。
+   * `uni.switchTab` 不支持 query，所以目标分类只能通过一个瞬时的内存状态带过去
+   * （`mall/navigation` store，不持久化）；分类页在 onShow 里消费它并选中对应分类。
+   * 只传 categoryId，不传分类对象——分类清单始终以服务端 getCategories() 为准。
    */
   function goCategoryTab() {
     uni.switchTab({ url: '/pages/category/index' });
   }
 
-  function onCategory() {
+  function onCategory(item) {
+    if (item && item.categoryId) {
+      useMallNavigationStore().setPendingCategoryId(item.categoryId);
+    }
     goCategoryTab();
   }
 

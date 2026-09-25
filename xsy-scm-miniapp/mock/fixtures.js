@@ -143,7 +143,9 @@ const PRODUCT_TABLE = [
   ['牛油果', '6个/盒', '盒', '进口水果', false, '29.90', 'AGREEMENT', 'AVAILABLE', 60, 'niuyouguo'],
   ['黑美人西瓜', '净重', '斤', '进口水果', true, '3.60', 'STANDARD', 'AVAILABLE', 320, 'heimeirenxigua'],
   // 无客户价：用于验证「询价」状态（规划 §11.3 绝不显示 ¥0.00）
-  ['红心火龙果', '净重', '斤', '进口水果', true, '9.80', 'UNPRICED', 'AVAILABLE', 70, 'hongxinhuolongguo'],
+  // 无客户价样本：price 必须为 null —— price 是「是否存在客户价」的单一事实，
+  // priceSource 只表达来源语义，不能变成第二套价格真相（否则会被渲染成 ¥9.80 + 加购）
+  ['红心火龙果', '净重', '斤', '进口水果', true, null, 'UNPRICED', 'AVAILABLE', 70, 'hongxinhuolongguo'],
   ['紫葡萄', '净重', '斤', '进口水果', true, '14.50', 'AGREEMENT', 'AVAILABLE', 110, 'ziputao'],
 
   /* ---- 水果 / 时令鲜果 ---- */

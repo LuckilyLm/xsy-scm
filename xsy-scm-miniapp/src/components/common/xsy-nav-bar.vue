@@ -17,6 +17,8 @@
     </view>
 
     <!-- 标题栏下方的扩展区（如首页搜索框、分类搜索框） -->
+    <view v-if="divider" class="nav-bar__divider" />
+
     <slot name="bottom"></slot>
   </view>
 </template>
@@ -29,6 +31,16 @@
     title: {
       type: String,
       default: '',
+    },
+    /**
+     * 是否在标题栏与底部扩展区之间渲染 1px 分割线。
+     *
+     * 默认 false —— 只有设计稿明确要求分割线的页面（当前仅 Category / Final）才传，
+     * 避免影响购物车 / 订单等既有页面的视觉。
+     */
+    divider: {
+      type: Boolean,
+      default: false,
     },
   });
 
@@ -64,6 +76,12 @@
       font-weight: $font-weight-medium;
       color: $color-text-primary;
       @include ellipsis;
+    }
+
+    /* 标题栏下方的 1px 分割线（可选，见 divider prop） */
+    &__divider {
+      height: 1px;
+      background-color: $color-divider;
     }
   }
 </style>
