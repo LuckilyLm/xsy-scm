@@ -22,4 +22,21 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity> {
+
+    /**
+     * 应收单号序列（全局非重置，不按日归零）。
+     *
+     * <p>必须在事务内调用：{@code nextval} 不随事务回滚，跳号是可接受的代价。
+     */
+    long nextReceivableNo();
+
+    /**
+     * 插入正常应收，来源订单已生成过应收时什么都不做。
+     *
+     * <p>冲突目标与 {@code uk_finance_receivable_source_active} 的列和谓词逐字一致
+     * （Q11 纪律；本索引刻意<b>不含</b> {@code source_id IS NOT NULL} —— 应收来源恒非空）。
+     *
+     * @return 1 = 本次生成了应收（{@code id} 已回填）；0 = 该订单已有应收，调用方按「已生成」成功返回
+     */
+    int insertOnConflictDoNothing(FinanceReceivableEntity entity);
 }

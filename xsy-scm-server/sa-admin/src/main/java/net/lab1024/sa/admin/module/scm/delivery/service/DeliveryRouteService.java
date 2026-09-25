@@ -22,6 +22,7 @@ import net.lab1024.sa.admin.module.scm.delivery.domain.dto.DeliverySortedLine;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
+import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceivableService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryFulfillmentService;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
@@ -56,6 +57,12 @@ public class DeliveryRouteService {
      * 只为「签收」这一件事注入：司机维度收窄必须与读侧同源，见 {@link #sign} 里的说明。
      */
     private final ScmDataScopeService scopeService;
+    /**
+     * 应收生成器（Finance R1 F1-2B）：签收成功即在同一事务内派生正常应收。
+     * 依赖方向是 delivery → finance，finance 对配送 / 订单 / 库存表只读、不反向 import 配送域，
+     * 因此不构成环；生成失败即整笔签收回滚（与 {@link #fulfillment} 的库存写入同一条纪律）。
+     */
+    private final FinanceReceivableService financeReceivableService;
 
     @Transactional(rollbackFor = Exception.class)
     public Long create(DeliveryRouteForm form) {
@@ -357,10 +364,16 @@ public class DeliveryRouteService {
     /**
      * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}（P2 裁决第 12、13 条）。
      *
-     * <p><b>为什么这里不锁线路聚合行</b>：签收是单向推进（{@code PENDING / IN_TRANSIT} 只能走向终态），
-     * 完成线路所要求的「全部活动订单已终态」因此对并发签收是单调的 —— 别人签得更快只会让它更早成立，
-     * 不会让它失效。反过来，若在这里抢线路锁，一条 500 单的线路就没法多点同时签收了。
-     * 行级并发由 {@code version} 乐观锁 + 条件更新兜底。
+     * <p><b>锁的实况</b>：本方法第一行就是 {@code lockRoute}（{@code SELECT … FOR UPDATE}），
+     * 所以同一线路的签收是串行的；线路内某一单的行级并发另外由 {@code version} 乐观锁 +
+     * 条件更新兜底（{@code markSigned} 返回 0 即「有人比你先签了」）。
+     * 签收是单向推进（{@code PENDING / IN_TRANSIT} 只能走向终态），因此完成线路所要求的
+     * 「全部活动订单已终态」对并发签收是单调的。
+     *
+     * <p>Finance R1 F1-2B 接在这里之后没有引入任何新的锁：应收生成只 INSERT 自己的两张表，
+     * 不锁业务表也不锁余额（全局不变量 4），只是把线路锁的持有时长延长几条 INSERT；
+     * 跨线路对同一订单的重复签收由 {@code uk_finance_receivable_source_active} 仲裁，
+     * 后到者命中唯一索引即按「已生成」静默返回，不会产生第二张应收。
      *
      * <p>异常签收<b>不反冲</b> {@code SALES_OUT}：库存已真实出库，冲销必须由后续退货流程新增反向事实。
      */
@@ -385,6 +398,15 @@ public class DeliveryRouteService {
         // 状态条件与 version 一起进 WHERE：受影响行数 != 1 就是「有人比你先签了」或「这单已不在线路上」。
         if (queries.markSigned(assignment.getId(), form.getVersion(), form.getResult(), reason, ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
+
+        // Finance R1（第一批 Q1）：客户签收是订单级终态，也是应收的形成时点。
+        // 只有 markSigned 真的改到那一行才生成 —— 返回 0 已经先抛 VERSION_CONFLICT，
+        // 那一笔应收归那次成功的签收所有，绝不出现两笔。EXCEPTION 不形成应收（第二批 Q6），
+        // 也不反冲 SALES_OUT；签收时刻与签收人由生成器回读 delivery_route_order，
+        // 因为 markSigned 的 signed_at 是数据库时钟，在这里现取 now() 会造出第二个时点事实。
+        if (!exception) {
+            financeReceivableService.generateOnSign(assignment.getId());
+        }
     }
 
     /**

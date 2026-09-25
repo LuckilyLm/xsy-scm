@@ -92,9 +92,20 @@ P3   Finance R1  F1-2A payable generator  COMPLETE (2026-09-26): receipt CONFIRM
                                          uk_finance_payable_source_active is the duplicate
                                          arbiter, and Propagation.MANDATORY keeps the generator
                                          from ever self-committing a payable on its own
-P3   Finance R1  F1-2B..F1-8              NOT STARTED (SIGNED -> receivable / return -> red
-                                         receivable / receipt+payment / write-off / query+export /
-                                         frontend / E2E / R0 hand-off); each phase
+P3   Finance R1  F1-2B receivable generator COMPLETE (2026-09-26): delivery_route_order
+                                         SIGNED -> one NORMAL receivable + items, same
+                                         transaction, 0 new migration and 0 menu / permission
+                                         rows. event_at is read back from
+                                         delivery_route_order.signed_at (markSigned writes the
+                                         database clock), quantity comes only from
+                                         inventory_outbound_item.quantity, price only from
+                                         sales_order_item.locked_unit_price; EXCEPTION generates
+                                         nothing and never reverses SALES_OUT; zero-outbound and
+                                         zero-amount orders skip successfully without rolling back
+                                         the sign
+P3   Finance R1  F1-2C..F1-8              NOT STARTED (return -> red receivable / receipt+payment
+                                         / write-off / query+export / frontend / E2E / R0
+                                         hand-off); each phase
                                          seeds only the permissions its own first protected API
                                          needs, and F1-6 seeds the 5 page menus together with the
                                          .vue files

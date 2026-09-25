@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinanceReceivableItemDao">
+
+    <!--
+      冲突目标与 uk_finance_receivable_item_source_active 逐字一致（Q11）。
+      行级来源是出库行主键而不是订单行 id：V63 刻意不为 sales_order_item_id 建唯一索引
+      （一条订单行将来可能再出一行），所以一条订单行允许多行应收明细，合并就会丢掉追溯链。
+      返回 0 不是重放：单头是本次刚插入的，因此同一条出库行撞键意味着它已挂在别的应收单上，
+      属于数据异常，由服务侧失败并整体回滚。
+    -->
+    <insert id="insertOnConflictDoNothing"
+            parameterType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinanceReceivableItemEntity">
+        INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, order_item_id,
+                                             sku_id, sku_name_snapshot, unit_snapshot,
+                                             quantity, unit_price, amount,
+                                             version, deleted, created_at, updated_at, created_by, updated_by)
+        VALUES (#{receivableId}, #{sourceType}, #{sourceId}, #{orderItemId},
+                #{skuId}, #{skuNameSnapshot}, #{unitSnapshot},
+                #{quantity}, #{unitPrice}, #{amount},
+                0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (source_type, source_id)
+            WHERE deleted = FALSE DO NOTHING
+    </insert>
+</mapper>

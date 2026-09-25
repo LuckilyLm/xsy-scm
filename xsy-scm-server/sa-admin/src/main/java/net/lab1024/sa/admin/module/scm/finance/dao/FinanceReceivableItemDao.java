@@ -13,4 +13,13 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface FinanceReceivableItemDao extends BaseMapper<FinanceReceivableItemEntity> {
+
+    /**
+     * 插入应收明细，来源出库行已入账时什么都不做。
+     *
+     * <p>冲突目标与 {@code uk_finance_receivable_item_source_active} 逐字一致（Q11 纪律）。
+     * 与单头不同：调用方只在「单头刚刚由本次调用插入」之后才写明细，此时返回 0
+     * 不可能是重放，而是同一条出库行被挂到了两张应收单上 —— 属于数据异常，必须失败。
+     */
+    int insertOnConflictDoNothing(FinanceReceivableItemEntity entity);
 }

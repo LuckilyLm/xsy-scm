@@ -9,7 +9,7 @@
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
 | P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
-| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付生成完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`，页面菜单随 F1-6、action 权限随首个受保护 API 所在阶段落库。F1-2A：**0 迁移**，收货确认 → 正常应付已在同一事务内生成并取证）；F1-2B（签收 → 应收）/ F1-2C（退货批准 → 红字应收）与 F1-3…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」；设计见 `docs/plan/finance-r1-design.md`；落地记录与阶段边界纠偏见「2026-09-26 P3 Finance R1：F1-0.5 裁决收口 + F1-1 数据地基（V65）」，应付生成见「2026-09-26 F1-2A 收货确认生成应付」 |
+| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付生成 + F1-2B 应收生成完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`，页面菜单随 F1-6、action 权限随首个受保护 API 所在阶段落库。F1-2A / F1-2B：均 **0 迁移**，收货确认 → 应付、签收 → 应收已在各自触发事务内生成并取证）；F1-2C（退货批准 → 红字应收）与 F1-3…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」；设计见 `docs/plan/finance-r1-design.md`；落地记录与阶段边界纠偏见「2026-09-26 P3 Finance R1：F1-0.5 裁决收口 + F1-1 数据地基（V65）」，应付生成见「F1-2A」，应收生成见「F1-2B」 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -772,6 +772,90 @@ schema 与「零菜单零权限」阶段边界仍成立）= **33 项 0 失败 0 
 - **并发双触发未做真并发压测**：设计稿 §14 判定「并发的两笔 confirm 竞争同一收货单」在
   `purchase_receipt` 行锁上就已经串行化，来源唯一索引只是兜底；本轮按此判断只做了同事务内的
   重复调用取证（第二次命中索引、不产生第二张单），`ScmFinanceConcurrencyPgIT` 属 F1-4。
+- 前端与浏览器 E2E 未跑：本轮无前端改动。
+
+
+### 2026-09-26 P3 Finance R1 F1-2B：签收 → 应收（0 迁移）
+
+**本轮范围只有一条**：`delivery_route_order` 从 `PENDING / IN_TRANSIT` 成功进入 `SIGNED` 时，
+在同一事务内生成 `finance_receivable` + `finance_receivable_item` + `finance_operation_log`。
+F1-2C（退货批准 → 红字应收）、收付款登记、核销、手工红字、查询页、前端、R0 接轨**未开始**；
+`OrderReturnService` 一字未改。0 新迁移、0 菜单、0 权限点。
+
+**接入点**：`DeliveryRouteService.sign` 在 `queries.markSigned(...) == 1` **之后**、且只在
+`result != EXCEPTION` 时调用 `financeReceivableService.generateOnSign(assignmentId)`。
+`markSigned` 返回 0 继续走既有 `VERSION_CONFLICT(40921)`，不触发财务生成 ——
+「谁真的把这一行签掉了，那一笔应收才归谁」，并发重复签收因此不可能生成两张单。
+签收的既有锁语义一字未改：`sign` 第一行就 `lockRoute`（`SELECT … FOR UPDATE`），同一线路的签收本来就串行，
+应收生成只 INSERT 财务自己的两张表、不获取任何业务锁，只是把线路锁的持有时长延长几条 INSERT；
+跨线路重复签同一订单由 `uk_finance_receivable_source_active` 仲裁（后到者静默返回）。
+
+**签名与设计稿 §3.3 的偏差已回写设计稿**：规划稿写 `generateOnSign(orderId, signedAt, operator)`，
+但 `markSigned` 的 `signed_at = now()` 是数据库时钟，调用方手里没有这个值。
+现取 `OffsetDateTime.now()` 会让 `event_at` 成为比签收时刻更晚的近似值，因此入参收成
+`deliveryRouteOrderId` 一个，时点与签收人由财务侧只读 DAO 回读 `delivery_route_order` 本行。
+IT 用 PostgreSQL 自己的列比较取证（不是 Java 侧比 `toInstant()`）：
+`r.event_at = ro.signed_at`、`r.created_by = ro.signed_by`、`l.operator = ro.signed_by`、
+`i.unit_price = oi.locked_unit_price` 四条**逐值**断言。
+
+**取数**（新增只读 `FinanceReceivableSourceDao`，同样不继承 `BaseMapper`）：
+
+```text
+单头：delivery_route_order JOIN sales_order WHERE fulfillment_status = 'SIGNED' AND deleted = FALSE
+      -> order_id / customer_id / customer_name_snapshot / signed_at / signed_by
+明细：inventory_outbound_item JOIN sales_order_item
+      -> quantity = 出库行数量   unit_price = 订单行 locked_unit_price
+         unit_snapshot = 订单行 sale_unit_snapshot（发车链路不写出库行的 unit_snapshot）
+      谓词 sales_order_item_id IS NOT NULL 排除手工出库（第二批 Q5）
+```
+
+数量唯一来源是 `inventory_outbound_item.quantity`（第一批 Q2）：IT 里造了「下单 10 / 订单结算量 10 /
+分拣 7」的三值不一致形状，断言应收数量是 7，并断言行级 `source_id` 是出库行主键而不是订单行 id。
+价格唯一来源是 `sales_order_item.locked_unit_price`（第一批 Q3），同时断言采购入库成本 6.2000
+没有被当成售价（否则金额会是 62.0000 而不是 81.2340）。
+金额逐行 `ROUND(量 × 价, 4, HALF_UP)`，单头 = 已舍入行之和。
+
+**一条订单行多条出库行**：V63 刻意不为 `sales_order_item_id` 建唯一索引，因此应收明细逐条成行、
+不合并（受控夹具补第二条合法出库行取证）。红字的行级追溯只靠单头 `original_receivable_id` +
+明细 `order_item_id`，本轮**不**引入 `original_receivable_item_id`。
+
+**跳过语义（不是失败）**：零实发（无有效出库行）与整单金额为 0 → 生成器 `return`，
+签收照常成功、不留单头 / 明细 / 日志；`EXCEPTION` 不生成任何财务事实，也**不**反冲 `SALES_OUT`。
+
+**同事务与回滚**：`Propagation.MANDATORY`。`ScmFinanceReceivableRollbackPgIT` 以 `NOT_SUPPORTED`
+真实提交/回滚取证：先占掉某出库行的应收来源键 → `sign` 抛错 →
+`delivery_route_order` 仍是 `IN_TRANSIT`、`signed_at` / `signed_by` 仍为 `NULL`、
+`version` 未被消耗、没有半张应收、没有孤儿明细、没有生成日志、发车时那条 `SALES_OUT` 不受影响。
+另取证「无事务直接调用生成器」被 `IllegalTransactionStateException` 拒绝。
+
+**测试**：`ScmFinanceReceivablePgIT` 12 例 + `ScmFinanceReceivableRollbackPgIT` 2 例，
+加上回归重跑的 `ScmFinancePayablePgIT` 10 / `ScmFinancePayableRollbackPgIT` 2 /
+`ScmFinanceSchemaPgIT` 17 / `FinanceReadOnlyContractTest` 4 /
+`DeliveryDispatchPgIT` 9 / `DeliveryDispatchConcurrencyPgIT` 2 / `InventoryFulfillmentPgIT` 7 /
+`PurchaseReceiptServiceIT` 5 —— 定向合计 **70 项 0 失败 0 错误**。
+应收场景另有：正常链路单头+明细+日志、`AR` 单号形态、重复生成仍是一张单一份日志、
+同线路两单各一张应收、在途就调用生成器被拒。
+
+**一条跨用例的夹具约束（本轮实测踩到并修好）**：`NOT_SUPPORTED` 的回滚用例会把它新建的
+**启用仓库**随造数事务提交，而「启用仓库恰好唯一一个」是订单默认仓库解析（41018）与
+`ScmInventoryOutboundIT` 等既有用例的前置假设 —— 第一次全量跑因此出现 9 个 error
+（`当前启用仓库不是唯一一个，无法确定默认仓库`），而定向跑完全看不出来。
+处理方式与 `DeliveryPrintConcurrencyIT` 的既有做法一致：回滚用例在 `finally` 里
+`disableWarehouse(...)`，**不**是扩大 skip、也**不**是改那个用例的断言。
+同一轮还修掉两处会「空转通过」的写法：受控软删出库行必须 `assertThat(update) == 1`，
+以及财务断言一律按来源订单 / 按 SKU 作用域而不是全表计数。
+修好后的受影响面定向复跑：应收 12+2、`ScmInventoryOutboundIT` 9、
+`DeliveryDispatchPgIT` 9、`DeliveryDispatchConcurrencyPgIT` 2、`DeliveryPrintConcurrencyIT` 2、
+`ScmInventoryReservationConcurrencyIT` 5 —— **41 项 0 失败 0 错误**。
+
+未覆盖（不得当成已完成）：
+
+- **`t_menu` 仍然没有任何财务入口**：F1-2B 无 Controller，因此没有受保护端点需要授权，
+  本轮一条菜单与权限都没种（`ScmFinanceSchemaPgIT` 的「零菜单零权限」边界断言继续成立）。
+- **红字与「先退后签」补生成未实现**（F1-2C），因此 `overAppliedAmount` / 负净应收这条链
+  目前**没有任何生产者**，不得提前当成已有能力。
+- **签收并发矩阵只做语义不变性验证**（既有 `DeliveryDispatchConcurrencyPgIT` 全绿 + 本轮
+  `markSigned` 乐观锁仲裁），设计稿 §22 规划的 `ScmFinanceConcurrencyPgIT` 属 F1-4。
 - 前端与浏览器 E2E 未跑：本轮无前端改动。
 
 

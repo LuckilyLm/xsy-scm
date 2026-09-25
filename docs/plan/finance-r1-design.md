@@ -246,8 +246,16 @@ P2 已明确一条 `sales_order_item` 未来可能对应多条 `inventory_outbou
 
 ### 3.3 生成规则（正常应收）
 
-触发：`DeliveryRouteService.sign` 将某订单置 `SIGNED` 的**同一事务**内，调用
-`FinanceReceivableService.generateOnSign(orderId, signedAt, operator)`。
+触发：`DeliveryRouteService.sign` 将某订单置 `SIGNED` 的**同一事务**内、且**只在
+`queries.markSigned(...) == 1` 之后**调用
+`FinanceReceivableService.generateOnSign(deliveryRouteOrderId)`（F1-2B 落地形态）。
+
+> **签名与规划稿不同，且刻意不同**：原写 `(orderId, signedAt, operator)`，但 `markSigned` 的
+> `signed_at` 是数据库时钟 `now()`，调用方手里没有这个值 —— 由 Java 侧传 `now()` 会让
+> `receivable.event_at` 成为一个比签收时刻更晚的近似值，违反 §3.1「event_at = 签收时刻」。
+> 因此入参只有 `delivery_route_order.id`，时点与签收人由财务侧只读 DAO 回读该行的
+> `signed_at` / `signed_by`。`markSigned` 返回 0 时既有 `VERSION_CONFLICT` 语义不变，
+> 不触发财务生成。
 
 1. 读 `delivery_route_order`（已 `SIGNED`）→ 取 `order_id`；
 2. 读该订单的 `inventory_outbound_item`（`sales_order_item_id IS NOT NULL`）；

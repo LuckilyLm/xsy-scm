@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinanceReceivableSourceDao">
+
+    <!--
+      财务域对配送 / 订单 / 库存表只读（设计稿 §0 第 2 条）：本文件只有 SELECT。
+      读取一律显式写 deleted = FALSE，与 uk_finance_receivable_source_active 的谓词同口径；
+      唯一例外是 JOIN 进来的 sales_order：它是这张应收的**来源主体**，主档被软删也不能让
+      一次真实签收静默变成「什么都不生成」（漏账比多读一行危险），缺行时结果集为空、
+      由服务侧的 null 判据失败并让签收回滚。
+    -->
+    <select id="selectSignedAssignment"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReceivableSourceDto">
+        SELECT ro.id                    AS deliveryRouteOrderId,
+               ro.order_id              AS salesOrderId,
+               ro.signed_at             AS signedAt,
+               ro.signed_by             AS signedBy,
+               o.customer_id            AS customerId,
+               o.customer_name_snapshot AS customerNameSnapshot
+        FROM delivery_route_order ro
+                 JOIN sales_order o ON o.id = ro.order_id
+        WHERE ro.id = #{deliveryRouteOrderId}
+          AND ro.deleted = FALSE
+          AND ro.fulfillment_status = 'SIGNED'
+    </select>
+
+    <!--
+      量取出库行、价取订单行（出库行没有价格列，订单行没有实发量列——两张表各持一半事实）。
+
+      不加 assignment_status 条件：已登记为 SIGNED 这一事实不因分配行后续被移出线路而消失。
+      订单行**不加 deleted 过滤**（与 FinancePayableSourceDao 同一条理由）：
+      sales_order_item_id 是发车时按订单行解析好的引用，加了过滤只会把「少一行 = 少算一笔应收」
+      变成静默漏账。单位取订单行的 sale_unit_snapshot：发车链路不写出库行的 unit_snapshot，
+      而 locked_unit_price 正是按订单行销售单位计价的。
+    -->
+    <select id="selectOutboundLines"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReceivableSourceLineDto">
+        SELECT ob.id                  AS inventoryOutboundItemId,
+               ob.sales_order_item_id AS salesOrderItemId,
+               oi.sku_id              AS skuId,
+               oi.product_name_snapshot AS skuNameSnapshot,
+               oi.sale_unit_snapshot  AS unitSnapshot,
+               ob.quantity            AS quantity,
+               oi.locked_unit_price   AS unitPrice
+        FROM inventory_outbound_item ob
+                 JOIN sales_order_item oi ON oi.id = ob.sales_order_item_id
+        WHERE ob.deleted = FALSE
+          AND ob.sales_order_id = #{salesOrderId}
+          AND ob.sales_order_item_id IS NOT NULL
+          AND ob.quantity > 0
+        ORDER BY ob.id
+    </select>
+</mapper>
