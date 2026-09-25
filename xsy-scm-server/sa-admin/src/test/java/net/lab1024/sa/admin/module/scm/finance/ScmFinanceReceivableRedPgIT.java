@@ -417,9 +417,12 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         assertThat(logs.getFirst().get("operation_type")).isEqualTo("RED_GENERATE");
         assertThat(logs.getFirst().get("before_data")).isNull();
         assertThat(logs.getFirst().get("reason")).isEqualTo(red.get("reason"));
-        // 操作人必须追溯到本次批准的人（order_return.updated_by），不是财务侧现取的请求身份
+        // 操作人必须追溯到本次批准的人（order_return.updated_by），不是财务侧现取的请求身份。
+        // 谓词必须带 business_type：business_id 只在同一 business_type 内唯一（各事实表各有自己的
+        // id 序列），只按 business_id 查会把同号的 PAYABLE / RECEIPT 日志一起捞出来。
         assertThat(sameAs("l.operator = rt.updated_by FROM finance_operation_log l"
-                        + " JOIN order_return rt ON rt.id = ? WHERE l.business_id = ?",
+                        + " JOIN order_return rt ON rt.id = ?"
+                        + " WHERE l.business_type = 'RECEIVABLE' AND l.business_id = ?",
                 returned.getReturnId(), longOf(red, "id")))
                 .as("红字日志的操作人必须是批准人本人").isTrue();
         assertThat(String.valueOf(logs.getFirst().get("after_data")))
