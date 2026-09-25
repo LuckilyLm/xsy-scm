@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
 
 /**
- * 分拣域错误码。码段按本轮全库 {@code grep} 的 41xxx 实际占用取号（配送段止于 41115），
+ * 分拣域错误码。码段按本轮全库 {@code grep} 的 41xxx 实际占用取号（配送段止于 41119），
  * 新增前先现查，不相信自己注释里的「本段空闲」。
  *
  * <p>「不属于你的任务」一律不走这里的业务码：那等于回答「这个 id 存在但你不该看」，
@@ -21,7 +21,13 @@ public enum SortingErrorCode implements ScmErrorCode {
     ORDER_NOT_SORTABLE(41124, "只有已确认订单的有效明细可以进入分拣"),
     RESULT_INCOMPLETE(41125, "仍有未处理的分拣明细，任务不能完成"),
     ASSIGNEE_INVALID(41126, "受指派员工不存在或已停用"),
-    WAREHOUSE_INVALID(41127, "仓库不存在或已停用");
+    WAREHOUSE_INVALID(41127, "仓库不存在或未启用"),
+
+    /**
+     * 本任务的订单行已经过发车产生 {@code CONFIRMED} 出库单，实物已离仓，不允许再改分拣结果。
+     * 判据见 {@code SortingTaskService#reopen} 与 P2 裁决第 11 条。
+     */
+    OUTBOUND_EXISTS(41128, "该分拣任务对应的订单已发车出库，不能重开");
 
     private final int code;
     private final String msg;

@@ -15,10 +15,14 @@ import java.util.stream.Collectors;
 
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.delivery.dao.*;
+import net.lab1024.sa.admin.module.scm.delivery.domain.dto.DeliverySortedLine;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
+import net.lab1024.sa.admin.module.scm.inventory.service.InventoryFulfillmentService;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
@@ -44,6 +48,14 @@ public class DeliveryRouteService {
     private final SalesOrderDao orders;
     private final DeliveryEligibilityPolicy eligibility;
     private final OrderIdempotencyService idempotency;
+    /**
+     * 库存域唯一的写入口：本类不出现任何直接改余额 / 预留 / 流水的代码（P2 裁决第 4 条）。
+     */
+    private final InventoryFulfillmentService fulfillment;
+    /**
+     * 只为「签收」这一件事注入：司机维度收窄必须与读侧同源，见 {@link #sign} 里的说明。
+     */
+    private final ScmDataScopeService scopeService;
 
     @Transactional(rollbackFor = Exception.class)
     public Long create(DeliveryRouteForm form) {
@@ -274,6 +286,118 @@ public class DeliveryRouteService {
         }
         route.setStatus("CANCELLED");
         route.setCancelReason(form.getReason().trim());
+        save(route);
+    }
+
+    /**
+     * 发车：整条线路原子出库，{@code PLANNED → DISPATCHED}（P2 裁决第 1、2、9 条）。
+     *
+     * <p>实发量一律取分拣的 {@code sorted_quantity}，本方法不读 {@code actual_quantity}、
+     * 不重新计算差异。锁序：线路聚合锁 → 逐订单行锁 → 库存命令内部的预留锁与余额锁。
+     *
+     * <p>线路内任一订单在锁上复核后不再合格（例如分拣被重开）就<b>整条拒绝</b>，
+     * 不做「先发能发的」；库存不足同样整条回滚，一行库存都不扣。
+     * 全部订单都实发 0（整线 OUT_OF_STOCK）时不生成出库单，{@code outboundId} 返回 null ——
+     * 没有实物离开仓库，不该留下一张空出库单。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public DeliveryDispatchResultVO dispatch(Long id, DeliveryVersionForm form, String key) {
+        var claim = idempotency.claim("DELIVERY_DISPATCH:" + id, key, form);
+        if (claim.replay()) {
+            return idempotency.replay(claim, DeliveryDispatchResultVO.class);
+        }
+        var route = lock(id, form.getVersion());
+        if (!"PLANNED".equals(route.getStatus())) throw new ScmBusinessException(STATE_INVALID);
+        var assigned = active(id);
+        if (assigned.isEmpty()) throw new ScmBusinessException(EMPTY_ROUTE);
+        // 发车前在锁上重查资格：PLANNED 之后分拣任务可能被重开，规划那一刻的结论不算数。
+        for (var orderId : assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).sorted().toList()) {
+            if (!eligibility.eligible(orders.lock(orderId))) throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
+        }
+
+        var orderIds = assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).toList();
+        var linesByOrder = queries.sortedLines(orderIds).stream()
+                .collect(Collectors.groupingBy(DeliverySortedLine::getOrderId, LinkedHashMap::new, Collectors.toList()));
+        var lines = new ArrayList<InventoryFulfillmentService.Line>();
+        for (var orderId : orderIds) {
+            var sorted = linesByOrder.get(orderId);
+            // 一条行都取不到 = 该订单其实没有被分拣覆盖，与上面的资格判定矛盾，宁可不发。
+            if (sorted == null || sorted.isEmpty()) throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
+            for (var line : sorted) {
+                if (line.getSortedQuantity() == null) throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
+                lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(),
+                        line.getSkuId(), line.getSortedQuantity()));
+            }
+        }
+
+        var now = OffsetDateTime.now();
+        var operator = ScmOperator.current();
+        var outbound = fulfillment.dispatchOutbound(new InventoryFulfillmentService.Command(
+                id, route.getWarehouseId(), now, operator, lines));
+
+        route.setStatus("DISPATCHED");
+        route.setOutboundId(outbound.outboundId());
+        route.setDispatchedAt(now);
+        route.setDispatchedBy(operator);
+        save(route);
+        if (queries.markInTransit(id, operator) != assigned.size()) throw new ScmBusinessException(STATE_INVALID);
+
+        var result = new DeliveryDispatchResultVO();
+        result.setRouteId(id);
+        result.setStatus(route.getStatus());
+        result.setDispatchedAt(now);
+        result.setOutboundId(outbound.outboundId());
+        result.setOutboundNo(outbound.outboundNo());
+        result.setOrderCount(assigned.size());
+        result.setShippedLineCount(outbound.shippedLineCount());
+        idempotency.complete(claim, "DELIVERY_ROUTE", id, result);
+        return result;
+    }
+
+    /**
+     * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}（P2 裁决第 12、13 条）。
+     *
+     * <p><b>为什么这里不锁线路聚合行</b>：签收是单向推进（{@code PENDING / IN_TRANSIT} 只能走向终态），
+     * 完成线路所要求的「全部活动订单已终态」因此对并发签收是单调的 —— 别人签得更快只会让它更早成立，
+     * 不会让它失效。反过来，若在这里抢线路锁，一条 500 单的线路就没法多点同时签收了。
+     * 行级并发由 {@code version} 乐观锁 + 条件更新兜底。
+     *
+     * <p>异常签收<b>不反冲</b> {@code SALES_OUT}：库存已真实出库，冲销必须由后续退货流程新增反向事实。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void sign(Long routeId, Long orderId, DeliverySignForm form) {
+        var route = queries.lockRoute(routeId);
+        if (route == null) throw new ScmBusinessException(NOT_FOUND);
+        // 签收要按司机维度收窄，与本域其它写动作不同：plan / cancel 的执行者是持全量范围的调度岗，
+        // 而 SCM_DRIVER 也持签收权。不在这一步收口，任何司机都能凭一个 routeId 替别人的线路签收。
+        if (!scopeService.resolve().getDriverScope().allows(route.getDriverId())) throw new ScmDataScopeException();
+        if (!"DISPATCHED".equals(route.getStatus())) throw new ScmBusinessException(STATE_INVALID);
+        boolean exception = "EXCEPTION".equals(form.getResult());
+        if (!"SIGNED".equals(form.getResult()) && !exception) throw new ScmBusinessException(SIGN_RESULT_INVALID);
+        if (exception && (form.getReason() == null || form.getReason().isBlank()))
+            throw new ScmBusinessException(SIGN_REASON_REQUIRED);
+        var assignment = assignments.selectOne(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
+                .eq(DeliveryRouteOrderEntity::getRouteId, routeId)
+                .eq(DeliveryRouteOrderEntity::getOrderId, orderId)
+                .eq(DeliveryRouteOrderEntity::getAssignmentStatus, "ACTIVE"));
+        if (assignment == null) throw new ScmBusinessException(NOT_FOUND);
+        String reason = form.getReason() == null ? null : form.getReason().trim();
+        // 状态条件与 version 一起进 WHERE：受影响行数 != 1 就是「有人比你先签了」或「这单已不在线路上」。
+        if (queries.markSigned(assignment.getId(), form.getVersion(), form.getResult(), reason, ScmOperator.current()) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
+    }
+
+    /**
+     * 完成线路：{@code DISPATCHED → COMPLETED}，硬前置是全部活动订单已进入终态。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void complete(Long id, DeliveryVersionForm form) {
+        var route = lock(id, form.getVersion());
+        if (!"DISPATCHED".equals(route.getStatus())) throw new ScmBusinessException(STATE_INVALID);
+        if (queries.countUnfinished(id) != 0) throw new ScmBusinessException(ROUTE_NOT_ALL_SIGNED);
+        route.setStatus("COMPLETED");
+        route.setCompletedAt(OffsetDateTime.now());
+        route.setCompletedBy(ScmOperator.current());
         save(route);
     }
 

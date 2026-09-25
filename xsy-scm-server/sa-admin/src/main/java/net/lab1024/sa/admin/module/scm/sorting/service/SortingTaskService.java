@@ -6,6 +6,8 @@ import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
 import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
+import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryOutboundItemDao;
+import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
 import net.lab1024.sa.admin.module.scm.sorting.dao.SortingQueryDao;
 import net.lab1024.sa.admin.module.scm.sorting.dao.SortingTaskDao;
@@ -50,6 +52,7 @@ import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.ITEM_NOT_IN_TASK;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.ORDER_LINE_TAKEN;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.ORDER_NOT_SORTABLE;
+import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.OUTBOUND_EXISTS;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.RESULT_INCOMPLETE;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
@@ -59,19 +62,28 @@ import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.
  * 分拣任务的全部写侧动作。<b>任务行是聚合锁</b>：每个动作先锁 {@code sorting_task}，
  * 再动明细，因此「任务状态」与「明细占用位」不会各自漂移——后者是部分唯一索引成立的前提。
  *
- * <p>这个类不碰订单、库存与配送：不回写 {@code sales_order_item} 的实发量与结算金额，
+ * <p>这个类不写订单、库存与配送：不回写 {@code sales_order_item} 的实发量与结算金额，
  * 不写余额与流水，不创建出库单，也不动预留触发点（裁决第 1、3、6 条）。
  * 取消与重开的理由只进通用 {@code t_operate_log} 的请求参数，不另建分拣审计表（第 12 条）。
+ *
+ * <p>唯一的例外是<b>读</b>库存：重开前要查这些订单行是否已经过发车真实出库
+ * （{@code reopen} 与 P2 裁决第 11 条）。读侧不产生任何库存事实，方向也是单向的 ——
+ * 库存域不认识分拣，分拣只在守卫上读它。
  */
 @Service
 @RequiredArgsConstructor
 public class SortingTaskService {
 
     /**
-     * 一次建单并入的订单行上限：与配送线路同一口径，避免生成上千行的巨型任务。
+     * 一次建单并入的订单行上限，避免生成上千行的巨型任务。
      */
     private static final int MAX_LINES_PER_TASK = 500;
 
+    private final InventoryOutboundItemDao outboundItems;
+    /**
+     * 只为重开前锁订单行而注入：发车与重开必须在同一批订单行上互相排队。
+     */
+    private final SalesOrderDao orders;
     private final SortingTaskDao tasks;
     private final SortingTaskItemDao itemRows;
     private final SortingQueryDao queries;
@@ -206,9 +218,14 @@ public class SortingTaskService {
      * 重开：已完成任务回到分拣中，已录入的量与原因**保留**继续修改（裁决补充第 18 条）。
      * 订单在配送资格上立刻不合格，靠的是资格按任务状态判定，而不是靠清数据。
      *
-     * <p>裁决第 10 条里「已产生真实出库则禁止重开」这一半在 P1 刻意未实现：
-     * 现状没有任何数据链路把 {@code SALES_OUT} 归到订单行（出库单行不带订单行来源，
-     * 预留的 {@code CONSUMED} 也没有生产者），任何判据都只能是猜测，故整条推给 P2。
+     * <p><b>已产生真实出库则禁止重开</b>（P1 裁决第 10 条的后半，由 P2 裁决第 11 条补回）：
+     * 判据是「本任务某条明细对应的订单行上存在<b>父单为 CONFIRMED</b> 的出库行」。
+     * 只认 CONFIRMED 是因为出库单的取消只在 DRAFT 可用且不发任何流水，
+     * 没扣过库存的出库行不构成「货已出去」这个事实。仍然不使用「仓库 + SKU + 时间窗」近似判据。
+     *
+     * <p>与发车的交错：发车在线路锁内重查资格并把任务所在订单行写进出库单，
+     * 因此「先重开成功 → 发车整条被拒」与「先发车成功 → 重开被本条拦住」都是自洽的串行结果；
+     * 反过来若本方法早于发车提交，发车侧的资格复核会把它挡在线路之外。
      */
     @Transactional(rollbackFor = Exception.class)
     public void reopen(Long id, SortingActionForm form) {
@@ -218,6 +235,17 @@ public class SortingTaskService {
         requireVersion(task, form.getVersion());
         if (!COMPLETED.equals(task.getStatus())) throw new ScmBusinessException(STATE_INVALID);
         requireReason(form.getReason());
+        var items = activeItems(id).values();
+        // 先锁订单行再查出库，否则「发车提交」与「重开提交」可以交错到两边都成功：
+        // 结果是一张已真实出库的订单行还能继续改分拣量，而这正是本条守卫要拦的事。
+        // 配送侧同样按订单 id 升序加锁（DeliveryRouteService#dispatch），因此这里不会构成反向锁序。
+        items.stream().map(SortingTaskItemEntity::getSalesOrderId).filter(Objects::nonNull).distinct().sorted()
+                .forEach(orders::lock);
+        var orderLineIds = items.stream().map(SortingTaskItemEntity::getSalesOrderItemId)
+                .filter(Objects::nonNull).toList();
+        if (!orderLineIds.isEmpty() && !outboundItems.listOrderLinesWithConfirmedOutbound(orderLineIds).isEmpty()) {
+            throw new ScmBusinessException(OUTBOUND_EXISTS);
+        }
         task.setStatus(SORTING);
         save(task);
     }

@@ -6,7 +6,9 @@
         (SELECT count(*) FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE) AS stop_count,
         (SELECT count(*) FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE AND s.geom_crs IS NOT NULL) AS located_count,
         (SELECT count(*) FROM delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS order_count,
-        (SELECT sum(o.order_amount_snapshot) FROM delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS total_amount
+        (SELECT sum(o.order_amount_snapshot) FROM delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS total_amount,
+        -- 发车后的出库单号：按主键取一条，只为让配送页能跳到库存出库单看 SALES_OUT，不参与任何判定
+        (SELECT b.outbound_no FROM inventory_outbound b WHERE b.id=r.outbound_id) AS outbound_no
     </sql>
     <!--
       司机维度收口（裁决「P0 基线收口裁决」第 9 条）：driver_id 来自 delivery_driver.employee_id 反查，
@@ -158,6 +160,27 @@
                             AND t.deleted = FALSE
                             AND t.status = 'COMPLETED')
     </select>
+    <!--
+      发车的实发量取数：与上面 unsortedItemCount 同一条覆盖条件的正反面（DAO 注释里写了必须一起改）。
+      uk_sorting_task_item_active_line 保证一条订单行最多只有一条 ACTIVE 明细，因此这里是一行对一行，
+      不需要 GROUP BY 把重复行合并掉 —— 真出现两行说明那个部分唯一索引被绕过了，应当让它暴露出来。
+      全缺（OUT_OF_STOCK）的行照样返回，sorted_quantity = 0，由库存命令侧决定不生成出库行。
+    -->
+    <select id="sortedLines"
+            resultType="net.lab1024.sa.admin.module.scm.delivery.domain.dto.DeliverySortedLine">
+        SELECT i.order_id             AS orderId,
+               i.id                   AS salesOrderItemId,
+               i.sku_id               AS skuId,
+               si.sorted_quantity     AS sortedQuantity
+        FROM sales_order_item i
+                 JOIN sorting_task_item si
+                      ON si.sales_order_item_id = i.id AND si.deleted = FALSE AND si.occupation_status = 'ACTIVE'
+                 JOIN sorting_task t ON t.id = si.task_id AND t.deleted = FALSE AND t.status = 'COMPLETED'
+        WHERE i.deleted = FALSE
+          AND i.order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" close=")" separator=",">#{orderId}</foreach>
+        ORDER BY i.order_id ASC, i.id ASC
+    </select>
     <select id="candidates" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) c WHERE c.status IN
         <foreach collection="statuses" item="status" open="(" close=")" separator=",">#{status}</foreach>
@@ -240,4 +263,44 @@
           AND id IN
         <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
     </update>
+    <!-- 发车：整条线路的活动订单一起进在途。已 IN_TRANSIT 的行不重复推进（幂等重放走服务侧的回放分支） -->
+    <update id="markInTransit">
+        UPDATE delivery_route_order
+        SET fulfillment_status = 'IN_TRANSIT',
+            version            = version + 1,
+            updated_at         = now(),
+            updated_by         = #{operator}
+        WHERE route_id = #{routeId}
+          AND deleted = FALSE
+          AND assignment_status = 'ACTIVE'
+          AND fulfillment_status = 'PENDING'
+    </update>
+    <!--
+      签收：version + 状态 + 仍在线路上三个条件都在 WHERE 里，所以并发重复签收只有一个能成功，
+      不需要先 SELECT ... FOR UPDATE 再改。signed_at 用写入时刻：签收时刻就是这次登记发生的时刻，
+      与 inventory_movement 那条「occurred_at 必须来自单据而不是 now()」的纪律无关。
+    -->
+    <update id="markSigned">
+        UPDATE delivery_route_order
+        SET fulfillment_status = #{result},
+            signed_at          = now(),
+            signed_by          = #{operator},
+            sign_reason        = #{reason},
+            version            = version + 1,
+            updated_at         = now(),
+            updated_by         = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND assignment_status = 'ACTIVE'
+          AND fulfillment_status IN ('PENDING', 'IN_TRANSIT')
+          AND version = #{version}
+    </update>
+    <select id="countUnfinished" resultType="int">
+        SELECT count(*)
+        FROM delivery_route_order
+        WHERE route_id = #{routeId}
+          AND deleted = FALSE
+          AND assignment_status = 'ACTIVE'
+          AND fulfillment_status NOT IN ('SIGNED', 'EXCEPTION')
+    </select>
 </mapper>

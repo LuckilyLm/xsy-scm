@@ -47,6 +47,20 @@ public class InventoryOutboundItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String remark;
 
+    /**
+     * 来源销售订单 id，手工出库行为 null；与 {@link #salesOrderItemId} 成对（DB CHECK）。
+     * 刻意不加 {@code ALWAYS} —— 来源写入后不允许被整行更新抹掉。
+     */
+    private Long salesOrderId;
+
+    /**
+     * 来源销售订单行 id：本行的 {@code quantity} 就是这一行的实发量。
+     *
+     * <p><b>同 SKU 的不同订单行不合并</b>，否则「哪张订单实发了多少」在库里失去答案，
+     * 分拣的 REOPEN 守卫与 Finance R1 的成本归属都无从判定。
+     */
+    private Long salesOrderItemId;
+
     @Version
     private Integer version = 0;
 

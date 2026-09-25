@@ -52,6 +52,7 @@ let leadClient: APIRequestContext;
 let sorterEmployeeId = 0;
 let leadEmployeeId = 0;
 let warehouseId = 0;
+let warehouseName = '';
 let routeId = '';
 let customerId = '';
 let skuId = '';
@@ -102,8 +103,20 @@ const routeVersion = async () => Number((await get<Row>(`/scm/delivery/routes/${
 const candidateOf = async (orderNo: string) =>
     (await ok<Paged>(api, 'get', `/scm/delivery/candidate-orders?pageNum=1&pageSize=50&keyword=${orderNo}`)).list;
 const movementTotal = () =>
-    ok<Paged>(api, 'get', '/scm/inventory/movement/query?pageNum=1&pageSize=1').then(p => Number(p.total));
+    ok<Paged>(api, 'post', '/scm/inventory/movement/query', {pageNum: 1, pageSize: 1}).then(p => Number(p.total));
 const button = (scope: Page | Locator, text: string) => scope.getByRole('button', {name: accessibleName(text)});
+
+/**
+ * 任务列表按创建时间倒序分页，而 E2E 按既有约定只回收临时账号、不回收任务行 ——
+ * 开发库累计几十条任务后目标行会落到第一页之外。所以点行内按钮前先按单号筛，
+ * 断的是「筛出来唯一一行」，不是「它恰好排在第一页」。
+ */
+async function filterTaskRow(page: Page) {
+    const keyword = page.locator('.smart-query-form input').first();
+    await keyword.fill(taskNo);
+    await keyword.press('Enter');
+    await expect(page.locator('.ant-table-tbody tr').filter({hasText: taskNo})).toHaveCount(1);
+}
 
 async function confirmedOrder(quantity: string, seq: number): Promise<Fixture> {
     let order = await post<Row>('/scm/order/create', {
@@ -122,7 +135,10 @@ async function confirmedOrder(quantity: string, seq: number): Promise<Fixture> {
     });
     const detail = await get<Row>(`/scm/order/detail/${order.orderId}`);
     const confirmed = await post<Row>('/scm/order/confirm', {orderId: order.orderId, version: detail.version});
-    const item = (detail.items as Row[]).find(i => String(i.itemId) === String(line.itemId));
+    // 基线必须取在确认**之后**：结算额是确认动作算出来的，取在确认前会拿到 null，
+    // 于是「分拣不得改写结算额」这条断言会被自己造的时序差判红。
+    const settled = await get<Row>(`/scm/order/detail/${order.orderId}`);
+    const item = (settled.items as Row[]).find(i => String(i.itemId) === String(line.itemId));
     expect(item, '订单明细在确认后可回读').toBeTruthy();
     return {
         orderId: String(order.orderId),
@@ -148,6 +164,8 @@ test.beforeAll(async () => {
     const enabled = warehouses.find(w => w.status === 'ENABLED');
     expect(enabled, '开发库需要至少一个启用仓库').toBeTruthy();
     warehouseId = Number(enabled.id ?? enabled.warehouseId);
+    warehouseName = String(enabled.name ?? '');
+    expect(warehouseName, '仓库名要能作为下拉筛选关键字').not.toBe('');
     // 两维范围都要靠授权行才成立：两个角色账号都授到同一个仓。
     await grantWarehouses(sorterEmployeeId, [warehouseId]);
     await grantWarehouses(leadEmployeeId, [warehouseId]);
@@ -193,12 +211,25 @@ test('主管在页面上建单并派给分拣员，任务以 PENDING 落库', as
     await page.goto('/#/sorting/tasks');
     await button(page, '新建分拣任务').click();
     const modal = page.locator('.ant-modal-content').last();
-    // 仓库与受指派人都是下拉：先按占位符定位，避免误点候选行表格里的复选框。
-    await modal.locator('.ant-form-item:has-text("仓库") .ant-select-selector').first().click();
-    await page.locator('.ant-select-dropdown:visible .ant-select-item-option-content').first().click();
-    await modal.locator('.ant-form-item:has-text("受指派人") .ant-select-selector').first().click();
-    await page.locator('.ant-select-dropdown:visible .ant-select-item-option-content')
-        .filter({hasText: accounts.roleAccounts.SCM_SORTER}).first().click();
+    // antd 的下拉在关闭后仍留在 DOM 里，`:visible` / role 都会命中上一个刚收起的下拉；
+    // 因此统一取「最后一个 dropdown」并在里面按 option 文案点选，失败时把面板实际内容带进断言消息。
+    const pickOption = async (label: string, keyword: string, search: boolean) => {
+        const select = modal.locator(`.ant-form-item:has-text("${label}") .ant-select`).first();
+        await select.click();
+        const dropdown = page.locator('.ant-select-dropdown').last();
+        await expect(dropdown).toBeVisible();
+        if (search) {
+            // 员工列表在开发库里有上百行，虚拟滚动下目标项不在 DOM 里，必须先过滤。
+            await select.locator('.ant-select-selection-search-input').first().type(keyword, {delay: 20});
+        }
+        const option = dropdown.locator('.ant-select-item-option-content').filter({hasText: keyword}).first();
+        await expect(option,
+            `「${label}」下拉过滤 ${keyword} 后没有命中项；面板实际内容：${await dropdown.innerText()}`)
+            .toBeVisible({timeout: 8000});
+        await option.click();
+    };
+    await pickOption('仓库', warehouseName, false);
+    await pickOption('受指派人', accounts.roleAccounts.SCM_SORTER, true);
     await modal.getByPlaceholder('可选').fill(REMARK);
 
     for (const orderNo of [taskOne.orderNo, taskTwo.orderNo]) {
@@ -308,6 +339,7 @@ test('分拣不回写订单、不写库存；完成后的订单成为配送候�
 test('重开保留已录内容并让订单立刻掉出配送候选', async ({page}) => {
     authenticate(page, leadToken);
     await page.goto('/#/sorting/tasks');
+    await filterTaskRow(page);
     await page.locator('.ant-table-tbody tr').filter({hasText: taskNo}).first()
         .getByRole('button', {name: accessibleName('重开')}).click();
     const modal = page.locator('.ant-modal-content').last();
@@ -320,7 +352,7 @@ test('重开保留已录内容并让订单立刻掉出配送候选', async ({pag
     expect(detail.task.status).toBe('SORTING');
     expect(detail.task.completedAt, '曾完成的时间要留下来').toBeTruthy();
     expect(detail.items.map((i: Row) => i.result)).toEqual(['SHORT', 'NORMAL']);
-    expect(detail.items.map(i => String(i.reason)).filter(Boolean)).toEqual(['当日到货不足']);
+    expect(detail.items.map(i => i.reason).filter(Boolean), '只有差异行才带原因').toEqual(['当日到货不足']);
 
     expect(await candidateOf(taskOne.orderNo), '重开只改任务状态就应让订单掉出候选').toEqual([]);
 });
@@ -332,6 +364,7 @@ test('打印只计次：预览不计数，登记后累加且状态与版本都�
 
     authenticate(page, sorterToken);
     await page.goto('/#/sorting/tasks');
+    await filterTaskRow(page);
     await page.locator('.ant-table-tbody tr').filter({hasText: taskNo}).first()
         .getByRole('button', {name: accessibleName('打印')}).click();
     const preview = page.locator('.ant-modal-content').last();

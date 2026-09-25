@@ -255,7 +255,8 @@ test.beforeAll(async () => {
         await post(`/scm/sorting/tasks/${created.task.id}/entry`, {items: entries});
         const ready = await get<Row>(`/scm/sorting/tasks/${created.task.id}`);
         await post(`/scm/sorting/tasks/${created.task.id}/complete`, {version: ready.task.version});
-        expect(ready.task.status, '前置分拣任务必须已完成').toBe('COMPLETED');
+        const done = await get<Row>(`/scm/sorting/tasks/${created.task.id}`);
+        expect(done.task.status, '前置分拣任务必须已完成').toBe('COMPLETED');
     }
 
     for (const [tag, customerId, skuId] of [
@@ -311,6 +312,12 @@ test('2｜L1 司机与车辆在主档页新建并落库，重复编码被服务�
         employeeId: accounts.employeeIds[accounts.readOnly], status: 'ENABLED',
     });
     await page.reload();
+    // 主档列表按 driver_code 升序分页（pageSize 20），而 E2E 按既有约定只回收临时账号、
+    // 不删业务行 —— 开发库累计到 20+ 条司机后，新行会落到第一页之外。
+    // 所以这里必须按编码搜索再断言「唯一一行」：断的是服务端唯一性与列表渲染，
+    // 而不是「它恰好排在第一页」。
+    await page.locator('.smart-query-form input').first().fill(driverCode);
+    await page.locator('.smart-query-form input').first().press('Enter');
     await expect(page.locator('#scm-delivery-driver-table tbody tr.ant-table-row')
         .filter({hasText: driverCode}), '列表应只出现这一条新建司机').toHaveCount(1);
     // 绑定关系的证据在下面按接口回读 employeeId（列表里显示的是员工姓名，
@@ -512,16 +519,19 @@ test('6｜L2 确认规划：状态迁移、重复请求与后续编辑全部封�
     }, 'put');
     expect(edit.code, '规划后不得改头信息').toBe(41101);
 
-    for (const path of ['dispatch', 'complete', 'sign']) {
-        const absent = await envelope(`/scm/delivery/routes/${routeId}/${path}`, {version: await routeVersion()});
-        // L3 未实现：这些路径必须不存在（不是「存在但被权限挡住」），
-        // 否则等于悄悄开了一条没有实发量口径的发货入口。
-        expect(absent.ok, `L3 端点 /${path} 不该可用：${absent.status} code=${absent.code} ${absent.msg}`)
-            .toBe(false);
-        expect([404, 405].includes(absent.status) || ![0, 30005].includes(Number(absent.code)),
-            `L3 端点 /${path} 必须是「不存在」，实际 ${absent.status} code=${absent.code} ${absent.msg}`)
-            .toBe(true);
-    }
+    // L3 端点在 P2 已经真实存在，因此这段断言的目标从「不存在」换成「存在且被守住」：
+    // 用错误版本 / 错误状态去撞，拿到的是乐观锁或状态拒绝，而不是 404 —— 既证明路由已注册，
+    // 又不会在这条 L0–L2 用例里真的扣库存。
+    const staleVersion = (await routeVersion()) + 7;
+    const dispatchGuard = await envelope(`/scm/delivery/routes/${routeId}/dispatch`, {version: staleVersion});
+    expect(dispatchGuard.code, `发车端点应已注册并被乐观锁守住：${dispatchGuard.msg}`).toBe(40921);
+
+    const completeGuard = await envelope(`/scm/delivery/routes/${routeId}/complete`, {version: await routeVersion()});
+    expect(completeGuard.code, 'PLANNED 线路不能直接完成').toBe(41101);
+
+    const signGuard = await envelope(`/scm/delivery/routes/${routeId}/orders/${orders[0].id}/sign`,
+        {version: 1, result: 'SIGNED'});
+    expect(signGuard.code, '未发车的线路不能签收').toBe(41101);
 
     const order = await get<Row>(`/scm/order/detail/${orders[0].id}`);
     expect(order.status, '确认规划不改变订单状态').toBe('CONFIRMED');

@@ -113,6 +113,32 @@ public class DeliveryRouteController {
         return ResponseDTO.ok();
     }
 
+    // 发车会产生库存事实，因此必须带 Idempotency-Key：重复请求回放原结果，不重复扣库存。
+    @PostMapping("/routes/{id}/dispatch")
+    @SaCheckPermission("scm:delivery:route:dispatch")
+    @OperateLog
+    public ResponseDTO<DeliveryDispatchResultVO> dispatch(@PathVariable Long id, @Valid @RequestBody DeliveryVersionForm form,
+                                                          @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(service.dispatch(id, form, key));
+    }
+
+    // 签收落在订单上而不是线路上，因此权限点也是订单维度；司机维度收窄在服务层按读侧同源判定。
+    @PostMapping("/routes/{id}/orders/{orderId}/sign")
+    @SaCheckPermission("scm:delivery:order:sign")
+    @OperateLog
+    public ResponseDTO<String> sign(@PathVariable Long id, @PathVariable Long orderId, @Valid @RequestBody DeliverySignForm form) {
+        service.sign(id, orderId, form);
+        return ResponseDTO.ok();
+    }
+
+    @PostMapping("/routes/{id}/complete")
+    @SaCheckPermission("scm:delivery:route:complete")
+    @OperateLog
+    public ResponseDTO<String> complete(@PathVariable Long id, @Valid @RequestBody DeliveryVersionForm form) {
+        service.complete(id, form);
+        return ResponseDTO.ok();
+    }
+
     // 候选池是「尚未分配」的订单 + 客户地址电话，只有调度/规划岗可查；司机即使有线路查询权也拿不到。
     // 服务层还要再判一次组单权 + 授权仓库：那才是权威判定，本注解只是把无权请求挡在接口边界。
     @GetMapping("/candidate-orders")

@@ -168,7 +168,7 @@ import {
   type RouteStatus,
 } from './delivery-types';
 import {money} from './delivery-display';
-import {useDeliveryPermission} from './use-delivery-permission';
+import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import RouteFormDrawer from './components/route-form-drawer.vue';
 import RouteDetail from './route-detail.vue';
 import RoutePrint from './route-print.vue';
@@ -178,7 +178,7 @@ const {canViewAmount, hasPerm} = useDeliveryPermission();
 // 无全量配送范围权限（调度岗）时，普通司机看到空表可能是「线路没排到自己」而非「没有线路」，
 // 文案要提示是授权/绑定问题，而不是一句「暂无数据」把配置缺口盖掉。
 const emptyText = computed(() =>
-  hasPerm('scm:delivery:scope:all:query')
+  hasPerm(DELIVERY_PERM.SCOPE_ALL_QUERY)
     ? '暂无数据'
     : '当前仅显示您负责的线路；若无数据，可能是司机未绑定员工或线路未排到您名下，请联系调度确认。'
 );

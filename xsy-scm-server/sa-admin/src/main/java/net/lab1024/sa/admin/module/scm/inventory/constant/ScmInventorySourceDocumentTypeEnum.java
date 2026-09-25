@@ -88,7 +88,18 @@ public enum ScmInventorySourceDocumentTypeEnum {
     /**
      * 规格转换**转入**行的来源类型；与 {@link #CONVERT_OUT_ITEM} 分开以满足源身份唯一索引。
      */
-    CONVERT_IN_ITEM("转换单行（转入）");
+    CONVERT_IN_ITEM("转换单行（转入）"),
+
+    /**
+     * 配送线路：{@code source_document_item_id} 不用（本类型只出现在
+     * {@code inventory_outbound.source_document_id = delivery_route.id} 上）。
+     *
+     * <p><b>为什么流水里看不到它</b>：发车产生的仍然是 {@code SALES_OUT}，来源类型按
+     * {@link #SALES_OUTBOUND_ITEM}（出库单行）记账 —— 流水的唯一锚点与成本口径都在出库单行上，
+     * 线路只是「谁创建了这张出库单」。多一条追溯走
+     * {@code inventory_outbound_item.sales_order_item_id}，不给流水表再加第二套来源语义。
+     */
+    DELIVERY_ROUTE("配送线路");
 
     private final String desc;
 

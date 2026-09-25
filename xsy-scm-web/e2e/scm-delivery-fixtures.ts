@@ -100,7 +100,14 @@ export async function createDeliveryReadyOrder(client: APIRequestContext, input:
     address: string;
     warehouseId: number | string;
     quantity?: string;
-}): Promise<{ orderId: string; customerId: string; orderNo: string }> {
+    /**
+     * 少拣夹具用：把某条明细的实发量改成这个值并带上结果码与原因。
+     * 省略就是「全量正常」，与 P1 交付时的默认口径一致。
+     */
+    sortedQuantity?: string;
+    sortedResult?: 'NORMAL' | 'SHORT' | 'OUT_OF_STOCK' | 'OVER';
+    sortReason?: string;
+}): Promise<{ orderId: string; customerId: string; orderNo: string; sortingTaskId: string }> {
     const quantity = input.quantity ?? '1.0000';
     let order = await call<Row>(client, 'post', '/scm/order/create', {
         customerId: input.customerId,
@@ -119,9 +126,9 @@ export async function createDeliveryReadyOrder(client: APIRequestContext, input:
     const confirmed = await call<Row>(client, 'post', '/scm/order/confirm', {
         orderId: order.orderId, version: detail.version,
     });
-    await completeSorting(client, detail, input.warehouseId, input.runTag);
+    const sortingTaskId = await completeSorting(client, detail, input.warehouseId, input.runTag, input);
     return {orderId: String(order.orderId), customerId: String(input.customerId),
-        orderNo: String(confirmed.orderNo ?? detail.orderNo)};
+        orderNo: String(confirmed.orderNo ?? detail.orderNo), sortingTaskId};
 }
 
 /**
@@ -129,20 +136,25 @@ export async function createDeliveryReadyOrder(client: APIRequestContext, input:
  * 「按任务状态判定资格」这条口径本身也要被跑到。
  */
 async function completeSorting(client: APIRequestContext, orderDetail: Row, warehouseId: number | string,
-                               runTag: string) {
+                               runTag: string,
+                               override: {sortedQuantity?: string; sortedResult?: string; sortReason?: string} = {}) {
     const itemIds = (orderDetail.items as Row[]).map(i => Number(i.itemId));
     const created = await call<Row>(client, 'post', '/scm/sorting/tasks', {
         warehouseId: Number(warehouseId),
         salesOrderItemIds: itemIds,
         remark: `${runTag} 配送前置分拣`,
     });
+    // 少拣要改「已完成后重开再录入」才是真实链路；直接在首次录入里给小量同样成立，
+    // 因为 COMPLETED 只要求每行都有结果与量，不要求等于计划量。
     const entries = (created.items as Row[]).map(line => ({
         id: line.id,
         version: line.version,
-        sortedQuantity: line.plannedQuantitySnapshot,
-        result: 'NORMAL',
+        sortedQuantity: override.sortedQuantity ?? line.plannedQuantitySnapshot,
+        result: override.sortedResult ?? 'NORMAL',
+        ...(override.sortReason ? {reason: override.sortReason} : {}),
     }));
     await call(client, 'post', `/scm/sorting/tasks/${created.task.id}/entry`, {items: entries});
     const ready = await call<Row>(client, 'get', `/scm/sorting/tasks/${created.task.id}`);
     await call(client, 'post', `/scm/sorting/tasks/${created.task.id}/complete`, {version: ready.task.version});
+    return String(created.task.id);
 }

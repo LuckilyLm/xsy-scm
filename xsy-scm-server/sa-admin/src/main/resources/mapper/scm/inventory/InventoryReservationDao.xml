@@ -56,6 +56,21 @@
         ORDER BY warehouse_id ASC, sku_id ASC
     </select>
 
+    <!-- 发车一次性取整条线路的预留；排序同上，为的是与余额锁序对齐 -->
+    <select id="listActiveBySourceItemIds"
+            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+        SELECT *
+        FROM inventory_reservation
+        WHERE source_document_type = #{sourceDocumentType}
+          AND source_document_item_id IN
+        <foreach collection="sourceDocumentItemIds" item="sourceItemId" open="(" separator="," close=")">
+            #{sourceItemId}
+        </foreach>
+          AND status = 'ACTIVE'
+          AND deleted = FALSE
+        ORDER BY warehouse_id ASC, sku_id ASC, id ASC
+    </select>
+
     <select id="lockById"
             resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *

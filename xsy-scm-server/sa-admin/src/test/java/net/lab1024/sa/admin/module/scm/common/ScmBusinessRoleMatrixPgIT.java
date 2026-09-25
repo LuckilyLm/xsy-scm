@@ -61,6 +61,24 @@ class ScmBusinessRoleMatrixPgIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("配送 L3 矩阵：发车给调度与仓库主管，签收含司机，完成线路只给调度")
+    void dispatchSignAndCompleteAreSplitAcrossRoles() {
+        assertThat(holds("SCM_DISPATCHER", "scm:delivery:route:dispatch")).isTrue();
+        assertThat(holds("SCM_STOREKEEPER_LEAD", "scm:delivery:route:dispatch")).isTrue();
+        // 司机不持发车：发车会在库存域触发仓库范围守卫，而司机岗没有仓库授权。
+        assertThat(holds("SCM_DRIVER", "scm:delivery:route:dispatch")).isFalse();
+        // 司机持签收，同时读侧仍受 driverScope 收窄 —— 两条一起才等于「只能签自己在的线」。
+        assertThat(holds("SCM_DRIVER", "scm:delivery:order:sign")).isTrue();
+        assertThat(holds("SCM_DISPATCHER", "scm:delivery:order:sign")).isTrue();
+        assertThat(holds("SCM_STOREKEEPER", "scm:delivery:order:sign")).isFalse();
+        assertThat(holds("SCM_DISPATCHER", "scm:delivery:route:complete")).isTrue();
+        assertThat(holds("SCM_DRIVER", "scm:delivery:route:complete")).isFalse();
+        // 发车会改库存，因此不与「确认规划」同权，也不给销售岗：排线不等于有权发货。
+        assertThat(holds("SCM_SALES", "scm:delivery:route:dispatch")).isFalse();
+        assertThat(holds("SCM_SALES", "scm:delivery:order:sign")).isFalse();
+    }
+
+    @Test
     @DisplayName("分拣矩阵：分拣员只有干活的权限，队列管理权全部在仓库主管")
     void sortingRightsSplitBetweenSorterAndStorekeeperLead() {
         assertThat(holds("SCM_SORTER", "scm:sorting:task:query")).isTrue();
