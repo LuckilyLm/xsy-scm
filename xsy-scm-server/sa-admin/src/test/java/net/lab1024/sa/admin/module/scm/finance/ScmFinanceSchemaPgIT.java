@@ -30,19 +30,20 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V65–V67 的 schema 与权限契约（F1-1 唯一新增的 PG IT，设计稿 §22.1）。
+ * V65 的 schema 契约与 F1-1 的阶段边界（F1-1 唯一新增的 PG IT，设计稿 §22.1）。
  *
- * <p>本类是 Finance R1 **唯一直接断言 schema 形状**的地方（表 / 序列 / 列 / 约束 / 索引谓词 /
- * 菜单种子 / 角色授权），其余财务 IT 只断言行为。schema 一旦被后续阶段悄悄改动，这里会先失败
+ * <p>本类是 Finance R1 **唯一直接断言 schema 形状**的地方（表 / 序列 / 列 / 约束 / 索引谓词），
+ * 其余财务 IT 只断言行为。schema 一旦被后续阶段悄悄改动，这里会先失败
  * （与 {@code ScmInventoryMigrationIT} / {@code ScmPurchaseMigrationIT} 同一分工）。
  *
  * <p><b>只测 F1-1 的契约，不提前写 F1-2 的业务 IT</b>：本类不生成任何应收 / 应付，
- * 只验证「库会把不合法的事实挡在外面」与「权限种子与设计稿 §16 逐条一致」。
+ * 只验证「库会把不合法的事实挡在外面」，以及「本阶段没有越界发布菜单与权限」
+ * （见 {@link #financePublishesNoMenuOrPermissionYet()}）。
  *
  * <p><b>不修改任何数据</b>：只读元数据 + 用 {@code expectSqlFailure}（SAVEPOINT 隔离）
  * 验证约束真的会拒绝坏数据。用例整体在一个事务里，结束回滚。
  */
-@DisplayName("Finance R1 迁移与权限契约（PG IT）")
+@DisplayName("Finance R1 迁移契约与阶段边界（PG IT）")
 class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     /**
@@ -66,34 +67,6 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     private static final List<String> FINANCE_SEQUENCES = List.of(
             "finance_receivable_no_seq", "finance_payable_no_seq", "finance_receipt_no_seq",
             "finance_payment_no_seq", "finance_write_off_no_seq");
-
-    /**
-     * 财务段的全部菜单与权限点（设计稿 §16）。
-     */
-    private static final List<Long> FINANCE_MENU_IDS = List.of(
-            1500L, 1501L, 1502L, 1503L, 1504L, 1505L,
-            1511L, 1512L, 1513L, 1514L, 1515L,
-            1521L, 1522L, 1523L, 1524L, 1525L, 1526L, 1527L,
-            1531L);
-
-    /**
-     * 13 个权限串；与 {@code FinanceConstant.ALL_PERMS} 是同一份真值的两种表达，
-     * 由 {@link #permissionSeedsMatchDesign()} 交叉核对。
-     */
-    private static final List<String> FINANCE_PERMS = List.of(
-            "scm:finance:receivable:query", "scm:finance:payable:query", "scm:finance:receipt:query",
-            "scm:finance:payment:query", "scm:finance:write-off:query",
-            "scm:finance:receipt:add", "scm:finance:payment:add", "scm:finance:write-off:add",
-            "scm:finance:write-off:reverse", "scm:finance:payable:red",
-            "scm:finance:receipt:reverse", "scm:finance:payment:reverse",
-            "scm:finance:export");
-
-    /**
-     * 本期**不得**获得任何财务权限的正式角色（设计稿 §16、V67 注释）。
-     */
-    private static final List<String> NON_FINANCE_ROLES = List.of(
-            "SCM_SALES", "SCM_SALES_LEAD", "SCM_PURCHASER", "SCM_PURCHASER_LEAD",
-            "SCM_STOREKEEPER", "SCM_STOREKEEPER_LEAD", "SCM_DISPATCHER", "SCM_DRIVER", "SCM_SORTER");
 
     private String no(String prefix) {
         return prefix + UUID.randomUUID().toString().substring(0, 16).toUpperCase(java.util.Locale.ROOT);
@@ -539,103 +512,61 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // V66 / V67：菜单与权限种子、角色授权
+    // 阶段边界：F1-1 不发布任何财务菜单与权限
     // ------------------------------------------------------------------
 
+    /**
+     * F1-1 只有 schema 与骨架，**没有任何 Controller**，因此既不存在需要授权的受保护端点，
+     * 也不存在可以点开的页面。据此本阶段一条 {@code t_menu} 行都不种。
+     *
+     * <p><b>为什么值得单独钉一条断言</b>：本轮一度把设计稿 §16 的 1500–1531 全部种了下去，
+     * 结果是「已授权的页面菜单指向不存在的 {@code .vue}」—— {@code src/router/index.ts} 的
+     * {@code route.component = modules[relativePath]} 在文件缺失时得到 {@code undefined}，
+     * 于是 SUPER_ADMIN 与 SCM_FINANCE 会看到五个点开即空白的菜单项。
+     * {@code visible_flag = false} 掩盖不了它：那只影响 {@code meta.hideInMenu}，
+     * 路由与 {@code component} 照样注册。正确做法是**不发布** ——
+     * 页面菜单随 F1-6 的 {@code .vue} 一起落库，action 权限随首个受保护 API 所在阶段落库。
+     *
+     * <p>因此号段 1500–1531 仍是**空闲的规划值**，不是已占用事实；每次落库前必须重扫。
+     */
     @Test
-    @DisplayName("V66 的菜单种子符合四条既有约定（menu_id == sort、context == parent、api == web、perms_type = 1）")
-    void permissionSeedsMatchDesign() {
-        // 逗号拼接后用 string_to_array 在 SQL 里切开：JdbcTemplate 的 queryForList(sql, Class, Object...)
-        // 会把数组当成**可变参数展开**（19 个 menu_id → 19 个参数），而 SQL 里只有 1 个 ?，
-        // 于是报「栏位索引超过许可范围」。与 ScmPurchaseMigrationIT 记录的是同一个坑。
-        String menuIdList = FINANCE_MENU_IDS.stream().map(String::valueOf).collect(Collectors.joining(","));
+    @DisplayName("F1-1 阶段边界：不发布任何财务菜单、权限点与角色授权")
+    void financePublishesNoMenuOrPermissionYet() {
         assertThat(jdbc.queryForList(
-                "SELECT menu_id FROM t_menu WHERE menu_id = ANY (string_to_array(?, ',')::bigint[]) "
-                        + "ORDER BY menu_id",
-                Long.class, menuIdList))
-                .hasSameSizeAs(FINANCE_MENU_IDS);
+                "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599", Long.class))
+                .as("F1-1 无 Controller 也无页面，不得种任何财务菜单")
+                .isEmpty();
 
-        // 按钮（menu_type = 3）必须逐条满足既有约定，否则前端 v-privilege 与后端
-        // @SaCheckPermission 会各拿一份不同的权限串。
-        Integer violating = jdbc.queryForObject(
-                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 3 "
-                        + "AND (menu_id <> sort OR context_menu_id <> parent_id "
-                        + "     OR api_perms IS DISTINCT FROM web_perms OR perms_type <> 1 "
-                        + "     OR btrim(COALESCE(api_perms,'')) = '')",
-                Integer.class);
-        assertThat(violating).isZero();
+        // 换一个 menu_id 段种同样会造成「已授权但无任何端点使用它」，因此按权限串再查一遍。
+        assertThat(jdbc.queryForList(
+                "SELECT menu_id FROM t_menu WHERE api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%'",
+                Long.class))
+                .as("库内不得存在任何 scm:finance:* 权限串")
+                .isEmpty();
 
-        List<String> seeded = jdbc.queryForList(
-                "SELECT api_perms FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 3 "
-                        + "ORDER BY api_perms", String.class);
-        assertThat(seeded).containsExactlyInAnyOrderElementsOf(FINANCE_PERMS);
-
-        // 目录与五个页面各一条，路径与设计稿 §20 一致。
-        assertThat(jdbc.queryForList(
-                "SELECT path FROM t_menu WHERE menu_id IN (1501,1502,1503,1504,1505) ORDER BY menu_id",
-                String.class))
-                .containsExactly("/finance/receivables", "/finance/payables", "/finance/receipts",
-                        "/finance/payments", "/finance/write-offs");
-        assertThat(jdbc.queryForList(
-                "SELECT component FROM t_menu WHERE menu_id IN (1501,1502,1503,1504,1505) ORDER BY menu_id",
-                String.class))
-                .allSatisfy(component -> assertThat(component)
-                        .startsWith("/business/scm/finance/finance-")
-                        .endsWith("-list.vue"));
-
-        // D-1 不回填：不得存在任何历史补生成权限点。
-        assertThat(jdbc.queryForList(
-                "SELECT api_perms FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND api_perms IS NOT NULL",
-                String.class))
-                .noneMatch(perm -> perm.contains("backfill") || perm.contains("regenerate")
-                        || perm.contains("history"));
-        // Q24：不新增金额字段级权限与 masking。
-        assertThat(jdbc.queryForList(
-                "SELECT api_perms FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND api_perms IS NOT NULL",
-                String.class))
-                .noneMatch(perm -> perm.contains("amount") || perm.contains("cost") || perm.contains("mask"));
+        // 没有菜单就不该有任何角色拿到财务授权（含超管兜底与 SCM_FINANCE）。
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "WHERE m.api_perms LIKE 'scm:finance:%' OR m.menu_id BETWEEN 1500 AND 1599",
+                Integer.class))
+                .as("不得存在任何财务角色授权行")
+                .isZero();
     }
 
+    /**
+     * D-5 的边界在 F1-1 只体现为「没有新增任何范围放宽点」：V65 是纯 DDL，
+     * 因此全库的 {@code *:scope:all:query} 仍恰好是 V55 种的五个维度。
+     * 财务的全范围继续只能来自既有显式授权，等 F1-3…F1-6 开始种权限时这条依然成立。
+     */
     @Test
-    @DisplayName("V67 只授 SCM_FINANCE 与超管；销售/采购/仓库/配送/分拣一个财务权限都没有")
-    void onlyFinanceAndSuperAdminAreGranted() {
-        Integer financeGrants = jdbc.queryForObject(
-                "SELECT count(*) FROM t_role_menu rm JOIN t_role r ON r.role_id = rm.role_id "
-                        + "WHERE r.role_code = 'SCM_FINANCE' AND rm.menu_id BETWEEN 1500 AND 1599",
-                Integer.class);
-        assertThat(financeGrants).isEqualTo(FINANCE_MENU_IDS.size());
-
-        // SCM_FINANCE 必须真的拿到四个破坏性动作权限（Q20 / D-3），否则纠错流程无法执行。
-        assertThat(jdbc.queryForList(
-                "SELECT api_perms FROM t_role_menu rm JOIN t_role r ON r.role_id = rm.role_id "
-                        + "JOIN t_menu m ON m.menu_id = rm.menu_id "
-                        + "WHERE r.role_code = 'SCM_FINANCE' AND m.menu_id BETWEEN 1500 AND 1599 "
-                        + "AND m.api_perms IS NOT NULL", String.class))
-                .contains("scm:finance:write-off:reverse", "scm:finance:payable:red",
-                        "scm:finance:receipt:reverse", "scm:finance:payment:reverse");
-
-        Integer superAdminGrants = jdbc.queryForObject(
-                "SELECT count(*) FROM t_role_menu WHERE role_id = 1 AND menu_id BETWEEN 1500 AND 1599",
-                Integer.class);
-        assertThat(superAdminGrants).isEqualTo(FINANCE_MENU_IDS.size());
-
-        // 审批过退货不代表能操作资金（Q19 / V57 同一条纪律）。
-        for (String role : NON_FINANCE_ROLES) {
-            Integer grants = jdbc.queryForObject(
-                    "SELECT count(*) FROM t_role_menu rm JOIN t_role r ON r.role_id = rm.role_id "
-                            + "WHERE r.role_code = ? AND rm.menu_id BETWEEN 1500 AND 1599",
-                    Integer.class, role);
-            assertThat(grants).as("%s 不得获得任何财务权限", role).isZero();
-        }
-    }
-
-    @Test
-    @DisplayName("D-5：财务段没有任何范围放宽权限点（全范围只能来自既有显式授权）")
+    @DisplayName("D-5：本轮没有新增任何 *:scope:all:query 范围放宽权限点")
     void noNewScopeWideningPermission() {
         assertThat(jdbc.queryForList(
-                "SELECT api_perms FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND api_perms IS NOT NULL",
+                "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE '%:scope:all:query' ORDER BY api_perms",
                 String.class))
-                .noneMatch(perm -> perm.contains("scope:all"));
+                .containsExactly("scm:customer:scope:all:query", "scm:delivery:scope:all:query",
+                        "scm:inventory:scope:all:query", "scm:order:scope:all:query",
+                        "scm:purchase:scope:all:query");
     }
 
     // ------------------------------------------------------------------

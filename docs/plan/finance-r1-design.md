@@ -747,42 +747,53 @@ write_off.amount       = 登记值，CHECK > 0
 - `administrator_flag` 仍为 break-glass，**权限取证必须用 `administrator_flag = false` 账号**。
 - 导出与列表共用同一次 `resolve()` 结果（P0 裁决 10）。
 
-## 16. 权限矩阵
+## 16. 权限矩阵（规划词汇表；按阶段发布，见 §21）
+
+> **本节是设计稿冻结的权限词汇与号段规划，不是「F1-1 已发布」的清单。**
+> F1-1 只交付 V65（纯 DDL），**一条 `t_menu` 行都没有种**：没有 Controller 就没有受保护的端点，
+> 没有 `.vue` 就没有可以点开的页面。每一行在下表标注的发布阶段才落库（§21 的发布纪律）。
+> 号段 1500–1531 是 2026-09-26 实测空闲后的规划值，每次落库前必须重扫。
 
 菜单号段取 **1500**（实测 1422–1499 与 1500+ 均空闲；沿用 `MIG/V55:13-14` 的四条种子约定）。
 
-| menu_id | 类型 | 名称 / 权限串 | 授予 |
-| --- | --- | --- | --- |
-| 1500 | 目录 | 财务管理 | SUPER_ADMIN、SCM_FINANCE |
-| 1501 | 页面 | 应收管理 `/finance/receivables` | 同上 |
-| 1502 | 页面 | 应付管理 `/finance/payables` | 同上 |
-| 1503 | 页面 | 收款管理 `/finance/receipts` | 同上 |
-| 1504 | 页面 | 付款管理 `/finance/payments` | 同上 |
-| 1505 | 页面 | 核销管理 `/finance/write-offs` | 同上 |
-| 1511 | 按钮 | `scm:finance:receivable:query` | 同上 |
-| 1512 | 按钮 | `scm:finance:payable:query` | 同上 |
-| 1513 | 按钮 | `scm:finance:receipt:query` | 同上 |
-| 1514 | 按钮 | `scm:finance:payment:query` | 同上 |
-| 1515 | 按钮 | `scm:finance:write-off:query` | 同上 |
-| 1521 | 按钮 | `scm:finance:receipt:add` | 同上 |
-| 1522 | 按钮 | `scm:finance:payment:add` | 同上 |
-| 1523 | 按钮 | `scm:finance:write-off:add` | 同上 |
-| 1524 | 按钮 | `scm:finance:write-off:reverse` | 同上 |
-| 1525 | 按钮 | `scm:finance:payable:red` | 同上 |
-| 1526 | 按钮 | `scm:finance:receipt:reverse` | 同上 |
-| 1527 | 按钮 | `scm:finance:payment:reverse` | 同上 |
-| 1531 | 按钮 | `scm:finance:export` | 同上 |
+| menu_id | 类型 | 名称 / 权限串 | 发布阶段 | 授予 |
+| --- | --- | --- | --- | --- |
+| 1500 | 目录 | 财务管理 | F1-6 | SUPER_ADMIN、SCM_FINANCE |
+| 1501 | 页面 | 应收管理 `/finance/receivables` | F1-6（`.vue` 同阶段） | 同上 |
+| 1502 | 页面 | 应付管理 `/finance/payables` | F1-6 | 同上 |
+| 1503 | 页面 | 收款管理 `/finance/receipts` | F1-6 | 同上 |
+| 1504 | 页面 | 付款管理 `/finance/payments` | F1-6 | 同上 |
+| 1505 | 页面 | 核销管理 `/finance/write-offs` | F1-6 | 同上 |
+| 1511 | 按钮 | `scm:finance:receivable:query` | F1-5 | 同上 |
+| 1512 | 按钮 | `scm:finance:payable:query` | F1-5 | 同上 |
+| 1513 | 按钮 | `scm:finance:receipt:query` | F1-3 | 同上 |
+| 1514 | 按钮 | `scm:finance:payment:query` | F1-3 | 同上 |
+| 1515 | 按钮 | `scm:finance:write-off:query` | F1-4 | 同上 |
+| 1521 | 按钮 | `scm:finance:receipt:add` | F1-3 | 同上 |
+| 1522 | 按钮 | `scm:finance:payment:add` | F1-3 | 同上 |
+| 1523 | 按钮 | `scm:finance:write-off:add` | F1-4 | 同上 |
+| 1524 | 按钮 | `scm:finance:write-off:reverse` | F1-4 | 同上 |
+| 1525 | 按钮 | `scm:finance:payable:red` | F1-4 | 同上 |
+| 1526 | 按钮 | `scm:finance:receipt:reverse` | F1-4 | 同上 |
+| 1527 | 按钮 | `scm:finance:payment:reverse` | F1-4 | 同上 |
+| 1531 | 按钮 | `scm:finance:export` | F1-5 | 同上 |
+
+查询权限跟随**首个能读到该对象的端点**所在阶段，因此 1513/1514 属 F1-3（收付款登记页要能查）、
+1515 属 F1-4、1511/1512 属 F1-5（应收应付的只读查询端点在 F1-5 才出现）。
+若某阶段的实现顺序与此不同，以「该权限第一次被真实端点使用」为准，并回改本表。
 
 - **1526 / 1527 是 D-3 裁决带来的两个独立破坏性权限**（Q20 要求破坏性动作独立权限）：
   反向收款与反向付款各自一条，**不合并**成 `scm:finance:reverse`，也不隐含在 `*:add` 里 ——
-  能登一笔款的人不必然是能冲掉一笔款的人。V66 正式包含这两行。
+  能登一笔款的人不必然是能冲掉一笔款的人。
 - 授权写法照 `V64:32-40` 的 `grant_matrix(menu_id, role_code)` CTE 按 `role_code` 种，不硬编码 `role_id`。
 - **不新增**金额 / 成本字段级权限与 masking（第二批 Q24）：有对应 `*:query` 即可见金额；
   成本可见性仍由既有 `scm:report:cost:query` 管报表域，财务域不借用。
 - 导出端点要求「对应 `*:query` **AND** `scm:finance:export`」（P0 裁决 10 同形）。
 - 生成器（应收 / 应付 / 红字应收）**不挂权限点**：它们是业务事务内的派生写，
-  权限由触发命令（签收 / 收货确认 / 退货批准）既有权限承担。
+  权限由触发命令（签收 / 收货确认 / 退货批准）既有权限承担。因此 **F1-2 不种任何权限**。
 - **D-1 不新增任何回填 / 历史补生成权限**（§19）。
+- **不新增任何 `*:scope:all:query`**（D-5）：财务的全范围来自既有显式授权
+  （1302 / 1311 / 1322 / 1331），本期不新增范围放宽点。
 
 错误码取 **41130–41149**（顺延分拣块，不重排已发布码值）：
 
@@ -914,21 +925,46 @@ src/views/business/scm/finance/finance-write-off-list.vue
   两者都**不得**被文案叫作「客户余额」「钱包余额」「可用余额」—— 那是 P5 的概念，本期不存在。
 - 收付款与核销列表**默认不隐藏反向行**（D-3），以方向列区分；否则纠错动作在页面上不可见。
 
-## 21. Flyway 规划（只规划，不生成）
+## 21. Flyway 规划（按阶段发布，不提前占号）
 
-| 版本 | 名称 | 内容 |
+**发布纪律（2026-09-26 修订，取代原「V65–V67 一次种完」的规划）**：
+一个阶段只发布它**已经真实具备**的能力。`main` 每个阶段都必须保持可部署，因此：
+
+- **没有 Controller 就不种 action 权限点** —— 提前种只会让生产库里出现
+  「已授权但无任何端点使用它」的权限串，而 `menu_id` 一旦被真实库应用就不可回收，
+  等于用一个永久号段去换一个不存在的能力。
+- **没有 `.vue` 就不种页面菜单** —— `src/router/index.ts` 的
+  `route.component = modules[relativePath]` 在文件缺失时得到 `undefined`，
+  路由照样注册、菜单照样出现在侧栏，用户点开是空白页，而构建 / 类型检查 / 后端测试全绿。
+  `visible_flag = false` **不是**解法：它只映射到 `meta.hideInMenu`，路由与 `component` 依然注册，
+  深链依然落到空白页。
+- 该纪律由 `SmartAdminMenuComponentPgIT` 全仓门禁强制：任何已发布的页面菜单，
+  其 `component` 必须能在 `xsy-scm-web/src/views` 下找到（既有两处历史缺口走只减不增的显式基线）。
+
+| 版本 | 阶段 | 内容 |
 | --- | --- | --- |
-| V65 | `V65__scm_finance.sql` | **8 张表** + 5 条序列（`finance_receivable_no_seq` 等，全局非重置）+ 全部 CHECK（含八张表的 `CHECK (deleted = FALSE)` append-only 约束）/ 来源唯一索引 / 反向唯一索引 / 全列 COMMENT；形态照 `V60__scm_sorting_task.sql` |
-| V66 | `V66__scm_finance_menus_permissions.sql` | data-only：1500–1531 菜单与权限点（含 D-3 的 1526 / 1527）；形态照 `V61__scm_sorting_menus_permissions.sql`（含末尾 `setval`） |
-| V67 | `V67__scm_finance_roles.sql` | data-only：`grant_matrix` CTE 按 `role_code` 授 `SCM_FINANCE` 与超管兜底；形态照 `V64:32-40` |
+| **V65**（已落地） | F1-1 | `V65__scm_finance.sql`：**8 张表** + 5 条序列（`finance_receivable_no_seq` 等，全局非重置）+ 全部 CHECK（含**七张事实表**的 `CHECK (deleted = FALSE)` append-only 约束；`finance_operation_log` 刻意不设 `deleted` 列）/ 5 条来源唯一索引 / 3 条反向唯一索引 / 全列 COMMENT；形态照 `V60__scm_sorting_task.sql`。**纯 DDL，零 t_menu 写入** |
+| V66+（待各阶段重扫取号） | F1-3 | 收付款登记首次出现受保护 API：`scm:finance:receipt:add` / `payment:add` 与对应查询权限 |
+| 同上 | F1-4 | 核销 / 反向核销 / 手工红字应付 / 收付款反向：`write-off:add`、`write-off:reverse`、`payable:red`、`receipt:reverse`(1526 同形)、`payment:reverse` |
+| 同上 | F1-5 | 五个 `*:query` 与 `scm:finance:export` |
+| 同上 | F1-6 | 目录 1500 + 五个页面菜单 1501–1505（`component` 必须真实存在）+ `SCM_FINANCE` 页面授权 + 超管兜底，与 browser / deep-link 验证同一阶段落地 |
+
+**号段 1500–1531 是规划值，不是已占用事实**：F1-1 实测 `t_menu` 里没有任何
+`scm:finance:*` 权限串、没有任何 1500–1599 的菜单行、没有任何财务角色授权。
+每次落库前必须重扫 `t_menu` 实际占用（AGENTS.md 同一条纪律）。
 
 执行纪律：
 
 1. 开工前 `git fetch`，确认 `origin/main` 是本地 HEAD 的祖先或相等，重扫 `db/migration/` 最大版本与
    `t_menu` 最大 `menu_id`；基线落后或分叉时不选号（P1/P2 裁决同条纪律）。
 2. 新增 / 改号后运行 `python tools/migration_checksum_guard.py sync`；**禁止**为让守卫变绿覆盖既有校验和。
+   删除尚未发布的迁移要加 `--prune`（守卫默认拒绝丢弃快照条目），且**不得**用 `--force`。
 3. 不 ALTER 任何既有表；不编辑任何已应用迁移。
-4. 单号格式沿用 `ScmDocumentNumbers.format(prefix, number)`（前缀 + `yyyyMMdd`(Asia/Shanghai) + `%06d`），
+4. **删除迁移源文件后必须清理 `sa-admin/target/classes/db/migration/` 里的同名产物**：
+   Flyway 的 `locations` 是 `classpath:db/migration`，读的是编译产物而不是源目录，
+   Maven 的资源拷贝又不会删除已消失的文件 —— 否则「已删除」的迁移会继续被应用，
+   而 `mvn test` 全绿，只有真实库里的 `t_menu` 会暴露它。
+5. 单号格式沿用 `ScmDocumentNumbers.format(prefix, number)`（前缀 + `yyyyMMdd`(Asia/Shanghai) + `%06d`），
    各表只保留自己的前缀常量与序列取号（照 `SortingConstant.TASK_NO_PREFIX` 形态）。
 
 ## 22. PostgreSQL IT 计划
@@ -956,18 +992,18 @@ D-2 / D-4 裁决为 A 之后，自动红字**没有金额上限**，抛错阻塞
 - 每条 SQL 分支（空筛选 / 全筛选）都要在真实 PostgreSQL 执行，照 `ScmReportPgIT` 的「逐分支渲染全部 mapper 语句」门禁。
 - 并发 IT 的「定向重复执行」是**验证流程**（命令行层面重复 N 次），不是代码里的循环 —— 仓库现有并发 IT 无重复轮次实现。
 
-### 22.1 F1-1 的 schema / 权限契约 IT（本轮唯一新增的测试）
+### 22.1 F1-1 实际交付的契约测试
 
-F1-1 只交付 schema 与骨架，因此 IT 只钉契约，**不提前写 F1-2 的业务 IT**：
+F1-1 只交付 schema 与骨架，因此测试只钉契约，**不提前写 F1-2 的业务 IT**。三个类：
 
-| 断言 | 内容 |
+| 测试类 | 断言 |
 | --- | --- |
-| 表与序列 | 8 张 `finance_*` 表全部存在；5 条 `finance_*_no_seq` 序列存在且为全局非重置 |
-| CHECK | 金额 / 数量 `> 0`、`unit_price >= 0`、`version >= 0`、各枚举白名单、NORMAL/RED 与 NORMAL/REVERSE 字段配对、MANUAL 与 ORDER_REFUND 来源配对、`reverse_of_id` 与 `reason` 规则、`source_id` NULL / NOT NULL 规则、JSONB `jsonb_typeof = 'object'`、八张表的 `deleted = FALSE` |
-| UNIQUE | 5 条来源唯一索引 + 3 条反向唯一索引存在，且谓词逐字匹配（含 `source_id IS NOT NULL`） |
-| 权限种子 | 1500–1531 全部存在，`api_perms == web_perms`、`menu_id == sort`、按钮 `context_menu_id == parent`；`SCM_FINANCE` 与超管授权正确；销售 / 采购 / 仓库 / 配送角色**未**获得任何 finance 权限 |
-| 只读契约 | `module/scm/finance` 包内不存在针对业务表与 `inventory_*` 的 INSERT / UPDATE / DELETE（静态扫描 Java + mapper XML） |
-| 零漂移 | 既有迁移校验和不变；既有 SCM 回归无新增失败 |
+| `ScmFinanceSchemaPgIT`（17 项，真实 PostgreSQL） | 8 张 `finance_*` 表 + 5 条序列存在、零外键；不得出现 `status` / `settled_amount` / `open_amount` / `due_date` / `approver` / 币种 / 税列；**七张事实表**的 `deleted = FALSE` append-only CHECK 实测拒绝软删，`finance_operation_log` 无 `deleted` 与 `version` 列；金额与数量恒正、单价非负、`version >= 0`、**全部 numeric 列逐列断言 (18,4)**；四类配对 CHECK 以 SAVEPOINT 隔离的坏数据实测拒绝（含「手工红字带 `source_id`」「反向付款沿用 `ORDER_REFUND` 来源」「来源与方向错配」「收付款跨侧核销」「日志类型越界」「JSONB 非 object」）；来源唯一索引谓词逐字核对且实测重复生成被拒；三条反向唯一索引实测「一条 NORMAL 只能反向一次」；实测 `external_reference` **不唯一**、手工红字可并存；**13 个 Java 枚举与 DB CHECK 白名单双向逐值相等**；**阶段边界**：`t_menu` 内不存在任何 1500–1599 菜单、任何 `scm:finance:*` 权限串、任何财务角色授权行，且全库 `*:scope:all:query` 仍恰好是 V55 的五个维度（D-5 未新增放宽点） |
+| `FinanceReadOnlyContractTest`（4 项，静态扫描，不依赖数据库） | `module/scm/finance` 的 Java 字符串字面量与 mapper XML 内**不存在**针对 `sales_order*` / `order_return*` / `order_refund` / `purchase_*` / `inventory_*` / `delivery_*` / `sorting_*` 的 INSERT / UPDATE / DELETE / TRUNCATE；mapper 注解里不写 SQL（AGENTS.md §8）；**8 个实体的 `@TableName` 全部以 `finance_` 开头**（最强边界证据：BaseMapper 的写方法因此够不到业务表）；不 `import` report 包 |
+| `SmartAdminMenuComponentPgIT`（3 项，**全仓门禁**，非财务专属） | 每个已发布页面菜单（`menu_type = 2`、`component` 非空、未删除、非外链）的 `component` 都必须能在 `xsy-scm-web/src/views` 下找到；既有两处历史缺口走**只减不增**的显式基线，且基线条目一旦被修好就必须删除；财务段本阶段不存在任何页面菜单。这条门禁就是为防止「授权页面菜单 → `component` 不存在」再次发生而加的（§21 发布纪律） |
+
+**为什么只读契约做成静态扫描而不是运行时拦截**：F1-1 一条写路径都没有，运行时拦截抓不到任何东西；
+等 F1-2 接上生成器再补断言，恰好错过唯一一次「新增代码是否越界」的廉价评审时机。
 
 ## 23. E2E 验收矩阵
 
@@ -990,14 +1026,14 @@ F1-1 只交付 schema 与骨架，因此 IT 只钉契约，**不提前写 F1-2 �
 
 | 阶段 | 内容 | 交付物 | 验收 | 依赖 |
 | --- | --- | --- | --- | --- |
-| F1-1 | V65–V67 + 后端骨架（entity / dao / 只读业务 DAO / 常量 / 错误码 / 日志 recorder / Service 空骨架） | 迁移 + 骨架编译通过 + §22.1 契约 IT | `migration_checksum_guard check` + `verify.py backend` + schema / 只读契约 IT | F1-0.5 收口（已完成） |
+| F1-1 | **只有 V65（纯 DDL）** + 后端骨架（entity / dao / 常量 / 枚举 / 错误码 / 日志 recorder / Service 空骨架）。**不种任何菜单与权限**，不建 form / VO / 只读业务 DAO / mapper XML（随各自首个调用方与首个测试落地） | 迁移 + 骨架编译通过 + §22.1 三个契约测试类 | `migration_checksum_guard check` + `verify.py backend` + schema / 只读 / 菜单组件契约 IT | F1-0.5 收口（已完成） |
 | F1-2 | 生成器：签收 → 应收、收货确认 → 应付、退货批准 → 红字应收（含补生成） | 三个触发点接入 + `ScmFinanceReceivablePgIT` / `ScmFinancePayablePgIT` | IT 全绿；触发事务回滚时财务事实同回滚 | F1-1 |
 | F1-3 | 收款 / 付款登记（含退款付款来源校验） | 写命令 + 幂等 + `finance_operation_log` | IT；权限负向 | F1-1 |
 | F1-4 | 核销与反向核销、手工红字应付、收付款反向（D-3） | 写命令 + 锁序 + 并发 IT | `ScmFinanceWriteOffPgIT` + `ScmFinanceReversePgIT` + `ScmFinanceConcurrencyPgIT` | F1-2、F1-3 |
 | F1-5 | 查询与导出（5 页后端 + Excel） | 只读端点 + 派生列（含 `openAmount` / `overAppliedAmount` / `effectiveAmount`） | IT 逐分支；导出 xlsx 校验 | F1-4 |
 | F1-6 | 前端 5 页 + 契约测试 + 权限矩阵 IT | 页面 / api / const / 契约 mjs | `lint` / `test` / `ts-ratchet` / `build` 全绿；`ScmFinanceRoleMatrixPgIT` | F1-5 |
 | F1-7 | E2E 七条 + 全量回归 + 文档收口 | `e2e/scm-finance-*.spec.ts`、`docs/progress.md` 记录 | `verify.py all`；浏览器全量 0 pageerror | F1-6 |
-| F1-8 | Finance R0 接轨：往来概览页 + 只读端点 + 导出（§27） | 菜单 1217 / 权限 1218 的 data-only 迁移（届时重扫号段，不进 V66）+ report 域只读 finance 的 DAO | 页面 / 接口 / 导出三口径一致；A 类指标名与口径零变化；§27.2 的 stock / flow 口径成立 | F1-7 |
+| F1-8 | Finance R0 接轨：往来概览页 + 只读端点 + 导出（§27） | 菜单 1217 / 权限 1218 的 data-only 迁移（届时重扫号段；F1-1 只用了 V65，故本阶段从实际最大号 +1 起）+ report 域只读 finance 的 DAO | 页面 / 接口 / 导出三口径一致；A 类指标名与口径零变化；§27.2 的 stock / flow 口径成立 | F1-7 |
 
 每阶段完成即停，不顺带实现 R2 / P5 的任何指标（对齐 P1 裁决 14 的写法）。
 **D-1…D-5 已全部收口，不再有「暂定口径」或「待确认」标注**：
@@ -1137,7 +1173,7 @@ POST /scm/report/finance/overview/export 等三个导出
 菜单与权限：页面 `menu_id = 1217`（报表中心 1200 目录下新页）、权限点 `1218 = scm:report:finance:query`；
 导出沿用 `scm:report:export` AND 新查询权限。**初始只授 `SCM_FINANCE` 与超管**，
 与第二批 Q24「财务数据只面向财务权限用户」一致；`SCM_FINANCE` 已持 1200–1216，追加 1217/1218 即可。
-（1217 / 1218 在 F1-8 开工时仍须重扫号段，不进 V66。）
+（1217 / 1218 在 F1-8 开工时仍须重扫号段；报表中心 1200–1216 已由 V50 占用。）
 
 ### 27.3 明确不开始
 

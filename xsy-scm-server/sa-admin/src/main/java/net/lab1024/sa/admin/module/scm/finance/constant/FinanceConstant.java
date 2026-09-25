@@ -1,7 +1,5 @@
 package net.lab1024.sa.admin.module.scm.finance.constant;
 
-import java.util.Set;
-
 /**
  * 财务域的固定口径：单号前缀、权限码与锁序 rank。
  *
@@ -65,21 +63,27 @@ public final class FinanceConstant {
      */
     public static final String EXPORT_PERM = "scm:finance:export";
 
-    /**
-     * 财务域的全部权限点，供契约测试与前端 {@code v-privilege} 字面量校验共用一份真值。
+    /*
+     * 以上权限串是设计稿 §16 冻结的**词汇表**，本阶段（F1-1）一条都还没有发布到 t_menu：
+     * F1-1 只有 schema 与骨架，没有任何 Controller，因此不存在需要授权的受保护端点。
+     * 提前种权限点会让「已授权但无任何端点使用它」出现在生产库里，而 menu_id 一旦被真实库
+     * 应用就不可回收，等于用一个永久的号段去换一个不存在的能力。
      *
-     * <p>刻意不含任何 {@code *:scope:all:query}：财务的全范围来自既有显式授权
+     * 发布时机（每个阶段只种自己第一次真正用到的那些）：
+     *   F1-2 生成器      —— 不挂权限点：应收 / 应付 / 红字应收是业务事务内的派生写，
+     *                       权限由触发命令（签收 / 收货确认 / 退货批准）的既有权限承担。
+     *   F1-3 收付款登记  —— RECEIPT_ADD_PERM / PAYMENT_ADD_PERM 及其查询权限
+     *   F1-4 核销与红字  —— WRITE_OFF_ADD_PERM / WRITE_OFF_REVERSE_PERM / PAYABLE_RED_PERM /
+     *                       RECEIPT_REVERSE_PERM / PAYMENT_REVERSE_PERM
+     *   F1-5 查询与导出  —— 五个 *_QUERY_PERM 与 EXPORT_PERM
+     *   F1-6 前端页面    —— 五个页面菜单（1501–1505）与目录 1500，且 component 必须真实存在
+     *
+     * 刻意不含任何 {@code *:scope:all:query}：财务的全范围来自既有显式授权
      * （1302 / 1311 / 1322 / 1331），本期不新增范围放宽点（D-5）。
-     * 也不含生成器权限：应收 / 应付 / 红字应收是业务事务内的派生写，
-     * 权限由触发命令（签收 / 收货确认 / 退货批准）的既有权限承担。
      * D-1 不回填，因此也没有任何历史补生成权限。
+     *
+     * 号段 1500–1531 只是**规划**，每次落库前必须重扫 t_menu 实际占用（AGENTS.md 同一条纪律）。
      */
-    public static final Set<String> ALL_PERMS = Set.of(
-            RECEIVABLE_QUERY_PERM, PAYABLE_QUERY_PERM, RECEIPT_QUERY_PERM,
-            PAYMENT_QUERY_PERM, WRITE_OFF_QUERY_PERM,
-            RECEIPT_ADD_PERM, PAYMENT_ADD_PERM, WRITE_OFF_ADD_PERM, PAYABLE_RED_PERM,
-            WRITE_OFF_REVERSE_PERM, RECEIPT_REVERSE_PERM, PAYMENT_REVERSE_PERM,
-            EXPORT_PERM);
 
     /**
      * 写命令的加锁层级（设计稿 §14）：插入既有纪律「单据锁先于余额锁、余额锁最后」之后。

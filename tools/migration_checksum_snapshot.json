@@ -260,14 +260,6 @@
     "65": {
       "file": "V65__scm_finance.sql",
       "checksum": 666047934
-    },
-    "66": {
-      "file": "V66__scm_finance_menus_permissions.sql",
-      "checksum": -205380389
-    },
-    "67": {
-      "file": "V67__scm_finance_roles.sql",
-      "checksum": 702270866
     }
   }
 }

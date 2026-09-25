@@ -80,11 +80,16 @@ P2   Delivery L3 (dispatch/outbound/sign)          COMPLETE (2026-09-25): V63-V6
                                          5 cloud skips, browser 136 passed / 8 designed skips
 P3   Finance R1  F1-0.5 decisions/design  COMPLETE (2026-09-26): D-1..D-5 all ruled A, design
                                          doc self-consistent, zero "pending ruling" left
-P3   Finance R1  F1-1 schema + skeleton   COMPLETE (2026-09-26): V65-V67, 8 finance tables,
-                                         13 permission points, Java skeleton, schema/permission
-                                         contract IT + finance read-only contract test
+P3   Finance R1  F1-1 schema + skeleton   COMPLETE (2026-09-26): V65 only (pure DDL, 8 finance
+                                         tables), Java skeleton, 3 contract test classes;
+                                         **zero menu / permission / role rows published** —
+                                         no Controller and no .vue exist yet, so there is nothing
+                                         to authorize or to open
 P3   Finance R1  F1-2..F1-8               NOT STARTED (generators / receipt+payment / write-off /
-                                         query+export / frontend / E2E / R0 hand-off)
+                                         query+export / frontend / E2E / R0 hand-off); each phase
+                                         seeds only the permissions its own first protected API
+                                         needs, and F1-6 seeds the 5 page menus together with the
+                                         .vue files
 W6-2 Mini Program                          NOT STARTED
 Order after P2: Finance R1 -> Finance R2 -> marketing/payment/settlement -> W6-2.
 ```
@@ -286,7 +291,7 @@ another driver's route); `plan/cancel/update` stay deliberately unscoped as in L
 never dispatches. Not in scope: GPS/tracks, route optimisation, driver app, e-signature images, partial
 sign-off, auto-refund, return inbound.
 
-P3 Finance R1 (**F1-0.5 decisions + F1-1 foundation COMPLETE, 2026-09-26**; V65–V67, module
+P3 Finance R1 (**F1-0.5 decisions + F1-1 foundation COMPLETE, 2026-09-26**; V65 only, module
 `net.lab1024.sa.admin.module.scm.finance`; 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 in
 [`docs/decisions.md`](./docs/decisions.md)「P3 Finance R1 裁决」, design in
 [`docs/plan/finance-r1-design.md`](./docs/plan/finance-r1-design.md)) —
@@ -338,10 +343,21 @@ full range comes from explicit grants (1302/1311/1322/1331), never from a role c
 `APPROVED` returns) are not retro-generated, there is no backfill API and no backfill permission; the
 generators still have to be replayable and source-idempotent, because that is what concurrent
 double-triggering and transaction retry require, not a back door for backfill. F1-1 delivered schema,
-permissions, roles, entities, DAOs, enums, error codes 41130–41143, `FinanceOperationLogRecorder` and five
+entities, DAOs, enums, error codes 41130–41143, `FinanceOperationLogRecorder` and five
 empty Services; it deliberately has **no form/VO classes, no read-only business DAO and no mapper XML**,
 because untested SQL with no caller is dead code — those land in F1-2/F1-5 next to their first caller and
-their first test. Not in scope, and not to be started before their own phase: Finance R2 (利润 / 毛利 /
+their first test. **It also publishes no menu, no permission point and no role grant**: F1-1 has no
+Controller and no `.vue`, so there is nothing to authorize and nothing to open. A phase publishes only the
+capabilities it actually has — an action permission lands in the migration of whichever phase first exposes
+a protected API, and the five page menus (1501–1505) land in F1-6 together with their `.vue` files, because
+`route.component = modules[relativePath]` yields `undefined` for a missing file: the route still registers,
+the menu still shows, and the user gets a blank page while build, typecheck and backend tests all stay
+green. `visible_flag = false` does **not** paper over this — it only feeds `meta.hideInMenu`, the route and
+its `component` are registered regardless. `SmartAdminMenuComponentPgIT` is the repo-wide gate that enforces
+this (every published page menu's `component` must resolve to a real file; the two pre-existing gaps —
+V11's `customer-sku-visibility-list.vue` and V3's SmartAdmin `support/demonstration/index.vue` — sit in an
+explicit shrink-only baseline). Menu ids 1500–1531 are therefore still a **plan**, not an occupied range.
+Not in scope, and not to be started before their own phase: Finance R2 (利润 / 毛利 /
 账龄 / 客户对账 / 供应商对账), P5 (优惠券 / 满减 / 在线支付 / 余额 / 充值 / COD), invoices and tax,
 vouchers and general ledger, finance approval workflows, finance attachments, `due_date`, supplier
 settlement terms, multi-currency, customer wallets, supplier fund accounts.
@@ -473,19 +489,17 @@ V64  V64__scm_delivery_l3_permissions.sql             p2   data-only，菜单 10
 V65  V65__scm_finance.sql                             p3   Finance R1 数据地基：8 张财务事实表
                                                    （receivable/_item、payable/_item、receipt、payment、
                                                    write_off、operation_log）+ 5 条单号序列；
-                                                   **零既有表改动**，无外键，无状态列 / 余额列 / due_date
-                                                   （结清与已核销一律读时派生）；方向编码在 entry_type
-                                                   （NORMAL/RED 与 NORMAL/REVERSE 两套），金额恒 > 0；
-                                                   七张事实表带 CHECK (deleted = FALSE) 的 append-only 约束，
-                                                   operation_log 连 deleted 列都没有（结构性不可删）；
-                                                   5 条来源唯一索引（应付 / 应付明细 / 付款的谓词含
-                                                   source_id IS NOT NULL）+ 3 条「一条 NORMAL 最多一条
-                                                   REVERSE」反向唯一索引；external_reference 刻意只建普通索引
-V66  V66__scm_finance_menus_permissions.sql            p3   data-only，财务管理菜单与 13 个权限点
-                                                   （1500–1505 目录与五页 / 1511–1515 查询 /
-                                                   1521–1527 写与四个破坏性动作 / 1531 导出），仅授 SUPER_ADMIN
-V67  V67__scm_finance_roles.sql                        p3   data-only，按 role_code 把 Finance R1 全部权限授
-                                                   SCM_FINANCE；销售 / 采购 / 仓库 / 配送 / 分拣 / 司机一个都不给
+                                                   **纯 DDL：零既有表改动、零 t_menu 写入**，无外键，
+                                                   无状态列 / 余额列 / due_date（结清与已核销一律读时派生）；
+                                                   方向编码在 entry_type（NORMAL/RED 与 NORMAL/REVERSE 两套），
+                                                   金额恒 > 0；七张事实表带 CHECK (deleted = FALSE) 的
+                                                   append-only 约束，operation_log 连 deleted 列都没有
+                                                   （结构性不可删）；5 条来源唯一索引（应付 / 应付明细 /
+                                                   付款的谓词含 source_id IS NOT NULL）+ 3 条「一条 NORMAL
+                                                   最多一条 REVERSE」反向唯一索引；external_reference
+                                                   刻意只建普通索引。**财务菜单与权限一条都没种**：
+                                                   F1-1 无 Controller 也无 .vue，按「哪个阶段第一次出现
+                                                   受保护 API 或真实页面，就由那个阶段的迁移种」推进
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.
