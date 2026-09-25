@@ -50,4 +50,55 @@
           AND ob.quantity > 0
         ORDER BY ob.id
     </select>
+
+    <!--
+      退货批准事实（单头）。reason 是建单时填写的退货原因，红字直接继承，
+      财务侧不另造原因、不现取 now()（第三批 D-2：红字是已成立业务事实的映射）。
+    -->
+    <select id="selectApprovedReturn"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReturnSourceDto">
+        SELECT rt.id           AS orderReturnId,
+               rt.return_no    AS returnNo,
+               rt.order_id     AS orderId,
+               rt.approved_at  AS approvedAt,
+               rt.updated_by   AS approvedBy,
+               rt.reason       AS reason
+        FROM order_return rt
+        WHERE rt.id = #{orderReturnId}
+          AND rt.deleted = FALSE
+          AND rt.status = 'APPROVED'
+    </select>
+
+    <select id="selectApprovedReturnIds" resultType="long">
+        SELECT rt.id
+        FROM order_return rt
+        WHERE rt.order_id = #{salesOrderId}
+          AND rt.deleted = FALSE
+          AND rt.status = 'APPROVED'
+        ORDER BY rt.id
+    </select>
+
+    <!--
+      有效红字行：逐行跳过非正金额（设计稿 §8.2）。金额原样取 approved_amount，
+      不在 SQL 里乘回来 —— 订单域已按 round(approved_quantity × locked_unit_price, 4) 落库。
+      商品三件套从来源订单行取（order_return_item 不存快照）。
+    -->
+    <select id="selectApprovedReturnLines"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReturnSourceLineDto">
+        SELECT ri.id                AS orderReturnItemId,
+               ri.order_item_id     AS orderItemId,
+               oi.sku_id            AS skuId,
+               oi.product_name_snapshot AS skuNameSnapshot,
+               oi.sale_unit_snapshot AS unitSnapshot,
+               ri.approved_quantity AS approvedQuantity,
+               ri.locked_unit_price AS lockedUnitPrice,
+               ri.approved_amount   AS approvedAmount
+        FROM order_return_item ri
+                 JOIN sales_order_item oi ON oi.id = ri.order_item_id
+        WHERE ri.return_id = #{orderReturnId}
+          AND ri.deleted = FALSE
+          AND ri.approved_quantity &gt; 0
+          AND ri.approved_amount &gt; 0
+        ORDER BY ri.id
+    </select>
 </mapper>

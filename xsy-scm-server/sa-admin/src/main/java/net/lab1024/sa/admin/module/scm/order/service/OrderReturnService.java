@@ -12,6 +12,7 @@ import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
 import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceivableService;
 
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
 import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
@@ -46,6 +47,12 @@ public class OrderReturnService {
     private final OrderIdempotencyService idempotency;
     private final OrderOperationLogRecorder orderLogs;
     private final ScmDataScopeService scopeService;
+    /**
+     * 红字应收生成器（Finance R1 F1-2C）。依赖方向是 order → finance，
+     * finance 对订单与退货表只读、不反向 import 订单域，因此不构成环；
+     * 生成失败即整笔批准回滚（与库存/幂等写入同一事务纪律）。
+     */
+    private final FinanceReceivableService financeReceivableService;
 
     public PageResult<OrderReturnVO> query(OrderReturnQueryForm f) {
         ScmDataScopeContext scope = scopeService.resolve();
@@ -209,6 +216,14 @@ public class OrderReturnService {
                 "退货单 " + r.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
                 Map.of("status", "PENDING"), Map.of("status", result.getStatus(),
                         "approvedAmount", String.valueOf(refund.getRefundAmount())));
+
+        // Finance R1（第二批 Q27、第三批 D-2 / D-4）：退货批准是红字应收的业务来源，位置固定在
+        // 退货事实与退款单都已成立之后、幂等 complete 之前 —— 红字失败要整笔 approve 回滚，
+        // 但「正常应收还不存在」是成功跳过（签收时补生成），绝不阻塞这里。
+        // 生成器不做任何金额上限校验：财务规则不得反向控制订单域状态机。
+        // 本类持有的 sales_order 行锁（lock() 里 orders.lock）就是它与签收之间的串行点。
+        financeReceivableService.generateRedOnReturnApproved(r.getId());
+
         idempotency.complete(claim, "ORDER_RETURN", r.getId(), result);
         return result;
     }

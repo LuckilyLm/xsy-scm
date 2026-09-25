@@ -364,16 +364,16 @@ public class DeliveryRouteService {
     /**
      * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}（P2 裁决第 12、13 条）。
      *
-     * <p><b>锁的实况</b>：本方法第一行就是 {@code lockRoute}（{@code SELECT … FOR UPDATE}），
-     * 所以同一线路的签收是串行的；线路内某一单的行级并发另外由 {@code version} 乐观锁 +
-     * 条件更新兜底（{@code markSigned} 返回 0 即「有人比你先签了」）。
+     * <p><b>锁的实况</b>：本方法先 {@code lockRoute}（{@code SELECT … FOR UPDATE}），
+     * 再按 {@code route → sales_order} 锁住被签的那张订单（F1-2C 新增，用来与退货批准定序），
+     * 线路内某一单的行级并发另外由 {@code version} 乐观锁 + 条件更新兜底
+     * （{@code markSigned} 返回 0 即「有人比你先签了」）。
      * 签收是单向推进（{@code PENDING / IN_TRANSIT} 只能走向终态），因此完成线路所要求的
      * 「全部活动订单已终态」对并发签收是单调的。
      *
-     * <p>Finance R1 F1-2B 接在这里之后没有引入任何新的锁：应收生成只 INSERT 自己的两张表，
-     * 不锁业务表也不锁余额（全局不变量 4），只是把线路锁的持有时长延长几条 INSERT；
-     * 跨线路对同一订单的重复签收由 {@code uk_finance_receivable_source_active} 仲裁，
-     * 后到者命中唯一索引即按「已生成」静默返回，不会产生第二张应收。
+     * <p>Finance R1 的应收生成不获取任何业务锁（全局不变量 4）：订单行锁由本方法这个调用方持有，
+     * 生成器只 INSERT 财务自己的表；跨线路重复签同一订单由
+     * {@code uk_finance_receivable_source_active} 仲裁，后到者命中唯一索引即按「已生成」静默返回。
      *
      * <p>异常签收<b>不反冲</b> {@code SALES_OUT}：库存已真实出库，冲销必须由后续退货流程新增反向事实。
      */
@@ -394,6 +394,12 @@ public class DeliveryRouteService {
                 .eq(DeliveryRouteOrderEntity::getOrderId, orderId)
                 .eq(DeliveryRouteOrderEntity::getAssignmentStatus, "ACTIVE"));
         if (assignment == null) throw new ScmBusinessException(NOT_FOUND);
+        // Finance R1（F1-2C）：签收与退货批准必须在一个共享串行点上定序，否则两边都可能看不见对方 ——
+        // 批准方在 orders.lock 之后才写 APPROVED，签收方若不锁同一行就可能在 APPROVED 提交前完成
+        // 「查已批准退货」这一步，红字于是永久漏生成（来源唯一索引修不了「没人尝试 INSERT」）。
+        // 锁序 route → sales_order 与本域 dispatch / plan / addOrders 完全一致；
+        // 订单、退货、退款域都只锁 sales_order 及其子行，从不锁 delivery_route，因此不存在反向路径。
+        orders.lock(orderId);
         String reason = form.getReason() == null ? null : form.getReason().trim();
         // 状态条件与 version 一起进 WHERE：受影响行数 != 1 就是「有人比你先签了」或「这单已不在线路上」。
         if (queries.markSigned(assignment.getId(), form.getVersion(), form.getResult(), reason, ScmOperator.current()) != 1)

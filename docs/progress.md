@@ -9,7 +9,7 @@
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
 | P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
-| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付生成 + F1-2B 应收生成完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`，页面菜单随 F1-6、action 权限随首个受保护 API 所在阶段落库。F1-2A / F1-2B：均 **0 迁移**，收货确认 → 应付、签收 → 应收已在各自触发事务内生成并取证）；F1-2C（退货批准 → 红字应收）与 F1-3…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」；设计见 `docs/plan/finance-r1-design.md`；落地记录与阶段边界纠偏见「2026-09-26 P3 Finance R1：F1-0.5 裁决收口 + F1-1 数据地基（V65）」，应付生成见「F1-2A」，应收生成见「F1-2B」 |
+| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付 + F1-2B 应收 + F1-2C 红字应收完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`，页面菜单随 F1-6、action 权限随首个受保护 API 所在阶段落库。F1-2A / F1-2B / F1-2C：均 **0 迁移、0 菜单、0 权限**，派生写全部在触发命令的同一事务内）；F1-3…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」（注意：第二批 Q27 里「累计红字不得超过可冲金额」一句已被**第三批 D-2 / D-4 取代**，最终口径是无上限）；设计见 `docs/plan/finance-r1-design.md`；落地记录见「F1-1 数据地基」「F1-2A」「F1-2B」「F1-2C」四段 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -856,6 +856,102 @@ IT 用 PostgreSQL 自己的列比较取证（不是 Java 侧比 `toInstant()`）
   目前**没有任何生产者**，不得提前当成已有能力。
 - **签收并发矩阵只做语义不变性验证**（既有 `DeliveryDispatchConcurrencyPgIT` 全绿 + 本轮
   `markSigned` 乐观锁仲裁），设计稿 §22 规划的 `ScmFinanceConcurrencyPgIT` 属 F1-4。
+- 前端与浏览器 E2E 未跑：本轮无前端改动。
+
+
+### 2026-09-26 P3 Finance R1 F1-2C：退货批准 → 红字应收（0 迁移）
+
+**本轮范围**：`order_return` 进入 `APPROVED` 时在同一事务派生红字应收（单头 + 明细 + 日志），
+并一并交付「先退后签」的补生成与「签收 / 退货批准」的真并发收敛。
+F1-3 收款付款、F1-4 核销、F1-5 查询导出、F1-6 前端、F1-8 R0 接轨**未开始**；
+`finance_payment` 与退款付款无关（红字只冲应收，真实资金退付留给 F1-3，避免双重冲减）；
+库存侧 `RETURN_IN` 与退货库存规则一字未动（第二批 Q27）。0 迁移、0 菜单、0 权限点。
+
+**最终口径以第三批为准**：第二批 Q27 里「累计红字金额不得超过对应原应收的可冲金额」一句
+已被**第三批 D-2 / D-4 取代**（红字不扣既有核销额、允许超过正常应收、允许净应收为负），
+因此本轮实现里**不存在任何金额上限校验**，也**不使用** `FINANCE_RED_AMOUNT_EXCEEDED(41137)`
+—— 该码在 F1-2C 之后仍然零使用者，留给 F1-4 的手工红字应付。
+`decisions.md` 本轮按指令未修改，该 supersede 关系已在「F1-2A 落地补充」之前的 D 段写明。
+
+**接入点**
+- `OrderReturnService.approve`：在 `returns.updateById(r)`（状态 `APPROVED`）与 `refunds.insert(...)`
+  之后、`orderLogs.record` 之后、`idempotency.complete` 之前，调用
+  `financeReceivableService.generateRedOnReturnApproved(returnId)`。
+  位置与 W5/W6 的「业务日志之后、幂等 complete 之前」同一条纪律。
+- `DeliveryRouteService.sign`：`markSigned(...) == 1` 且结果非 `EXCEPTION` 时调用
+  `generateOnSign(assignmentId)`（F1-2B 既有），本轮把它改成
+  「确保正常应收 → 遍历该订单全部 `APPROVED` 退货 → 逐张调用同一个 `generateRed`」。
+
+**红字只有一份算法**：`generateRed(returnFact, normalReceivable)` 是私有本体，
+批准直接触发与签收补生成共用它（不复制第二套）。因此
+「正常应收已存在但红字缺失」这种状态可以靠**重跑同一个派生生成器**收敛回来
+（`ScmFinanceReceivableRedPgIT.signGeneratorReplayRepairsAMissingRed` 实测：
+删掉红字三件 → 再跑 `generateOnSign` → 红字恢复、正常应收一字未改、仍然只有一张）。
+这不是回填：没有回填 API、没有补生成权限、没有人工入口（D-1 不变）。
+
+**字段来源**：单头 `source_type='ORDER_RETURN'` / `source_id=order_return.id`、
+`order_id` 继承退货、`customer_id` 与 `customer_name_snapshot` **继承原正常应收**（不从主档重解析，
+避免同一笔债权出现两个对方身份）、`entry_type='RED'`、`original_receivable_id` 指向原正常应收、
+`event_at = order_return.approved_at`、`reason = order_return.reason`
+（`ck_order_return_reason` 在库级保证非空白，所以红字的非空原因要求永远可满足，
+不存在「财务 CHECK 反过来挡住批准」的路径）、`created_by / updated_by = order_return.updated_by`
+（`approve` 在同一条 UPDATE 里落批准人，且 `APPROVED` 之后无任何命令再改这一行）。
+明细逐行：`source_type='ORDER_RETURN_ITEM'`、`source_id=order_return_item.id`、
+`order_item_id` 回填、数量 `approved_quantity`、单价 `locked_unit_price`、
+**金额直接采用已落库的 `approved_amount`**；不存 `original_receivable_item_id`
+（一条订单行可对应多条出库行，不存在唯一原明细）。
+逐行跳过 `approved_quantity <= 0` 或 `approved_amount <= 0` 的合法 0 批准行；
+整张无有效行时成功跳过（不留 0 元红字、不影响已成立的批准）。
+
+**并发（本轮最重要的一条）**：唯一索引只能仲裁「有人尝试插入」，修不了
+「签收方查不到未提交的批准、批准方查不到未提交的签收 ⇒ 两边都跳过」。
+因此让两条路径共享订单行锁：`OrderReturnService.lock` 一开始就 `orders.lock(orderId)`，
+本轮给 `DeliveryRouteService.sign` 在 `markSigned` 之前补上同一张订单的行锁，
+锁序 `route → sales_order` 与本域 `addOrders / plan / dispatch` 逐字一致。
+锁序审计结论：`delivery_route` 的 `FOR UPDATE` 只存在于 `DeliveryRouteService` 内部，
+订单 / 退货 / 退款域从不锁配送行，因此不存在 `sales_order → delivery_route` 的反向路径；
+分拣只锁 `sorting_task`。财务侧仍然一条业务表 `SELECT … FOR UPDATE` 都没有。
+并发 IT（`ScmFinanceReceivableRedRacePgIT`）：两线程 `CountDownLatch` 同一起跑线、
+各自独立事务（类级 `NOT_SUPPORTED`），断言只看最终事实且两边异常都必须为空：
+1 张正常 + 1 张红字、`original_receivable_id` 正确、红字金额正确、
+`GENERATE` 与 `RED_GENERATE` 各恰一条、退货 `APPROVED`、签收 `SIGNED`、退款单 `PENDING`。
+
+**失败传播的边界（两条容易混的裁决，本轮同时取证）**：
+D-2 / D-4 禁的是「金额上限校验回滚批准」；而「财务写入真的失败」必须整笔回滚批准，
+否则留下退货已批准、红字永久缺失的账。`ScmFinanceReceivableRedRollbackPgIT` 用
+先占掉 `uk_finance_receivable_item_source_active` 的方式让失败发生在数据库层，
+证明回滚后：退货仍 `PENDING`、`approved_at` 为空、`approved_amount` 为 0、
+退货行的批准量仍 `NULL`、退款单 0 条、订单操作日志只剩建单那一条、
+红字与红字日志 0 条、正常应收金额与 version 未变、签收与 `SALES_OUT` 不受影响。
+
+**测试矩阵**（`ScmFinanceReceivableRedPgIT` 9 例）：先签后退、先退后签（含两张退货先于签收）、
+红字金额取自 `approved_amount` 的**判别性**取证（把落库值改成与「量 × 价」不等的合法值后重跑生成器，
+重算实现会得到 14.0000、采用落库值得到 9.9900）、0 批准行只跳该行、
+D-2 已全额核销仍生成 RED 20（净额 SQL 读出 80.0000）、D-4 红字 50 > 正常 30 全额保留
+（净额 −20.0000，读侧表达属 F1-5 未提前实现）、重放不产生第二张红字与第二份日志、
+漏账修复、`EXCEPTION` 不造正常也不造孤立红字。
+
+**本轮实测踩到并修掉的两处测试脆弱性**（都是我自己新写的测试，不是既有断言被削弱）：
+① 全表计数 `count(*) FROM finance_receivable WHERE source_type='ORDER_RETURN'` 会被
+`NOT_SUPPORTED` 类提交的合法红字污染，改为按 `order_id` 作用域；
+② 上两轮已知的「`NOT_SUPPORTED` 用例新建的启用仓库必须停用」在本轮两个新类里同样执行
+（`disableWarehouse`），否则 `ScmInventoryOutboundIT` 的默认仓库前置会崩。
+
+**验证结果**：定向 `ScmFinance* / Delivery* / SalesOrderServiceIT / ScmOrderCustomerDataScopePgIT /
+OrderUnpricedIT / OrderWebTest / InventoryFulfillmentPgIT / ScmInventoryOutboundIT /
+SmartAdminMapperPgValidationIT / SmartAdminMenuComponentPgIT / PurchaseReceipt*IT`
+= **175 项 0 失败 0 错误**（一次性干净库，Flyway 真实应用 V1→V65）。
+`python tools/verify.py backend` 全量 = **1145 项 0 失败 0 错误 / 5 跳过**
+（5 项是 `F0FileStorageCloudIT` 云端门控基线）；
+`migration_checksum_guard.py check` PASS（65 冻结 / 0 漂移 / 0 缺失 / 0 未入快照，本轮零迁移）。
+
+未覆盖（不得当成已完成）：
+- **净额、`openAmount` / `overAppliedAmount`、结清状态一律没有读侧实现**：本轮只用 SQL 直接算
+  证明事实正确，查询层属 F1-5；页面也不会出现任何财务入口（0 菜单 0 权限）。
+- **并发用例是单次真并发，不是重复压测**：设计稿 §22 规划的 `ScmFinanceConcurrencyPgIT`
+  完整矩阵（并发核销 / 反向 / 退款双付款等）仍属 F1-4；本轮只钉「签收 × 退货批准」这一对。
+- 死锁自由性靠锁序审计 + 既有 `DeliveryDispatchConcurrencyPgIT` /
+  `ScmInventoryReservationConcurrencyIT` 全绿支撑，未新增专门的死锁探测用例。
 - 前端与浏览器 E2E 未跑：本轮无前端改动。
 
 

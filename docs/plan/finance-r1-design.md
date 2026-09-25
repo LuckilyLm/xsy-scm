@@ -265,6 +265,9 @@ P2 已明确一条 `sales_order_item` 未来可能对应多条 `inventory_outbou
 5. 插入单头 + 明细，`insertOnConflictDoNothing` 语义：来源唯一索引命中即视为已生成，直接返回（幂等）。
 6. 读该订单**此前已 `APPROVED` 且尚未生成红字应收**的 `order_return`，逐单执行 §8 的红字生成
    （第二批 Q27 的 ①②③）。
+   **F1-2C 落地形态**：`generateOnSign` = 「确保正常应收」+「按 `order_return.id` 升序遍历该订单全部
+   `APPROVED` 退货并逐张调用同一个 `generateRed` 实现」，红字算法只有一份；正常应收已存在时
+   重跑 `generateOnSign` 会把漏掉的红字补回来（可重放即自然收敛，不是回填 API）。
 
 不在 `EXCEPTION` 分支调用（第二批 Q6：`EXCEPTION` 不形成应收）。
 
@@ -534,8 +537,14 @@ overAppliedAmount > 0 时页面**另外**标注「超额核销待处理」，它
 
 ### 8.2 应收红字（第二批 Q27；2026-09-25 评审修订）
 
-触发：`OrderReturnService.approve` 将退货置 `APPROVED` 的**同一事务**内，调用
-`FinanceReceivableService.generateRedOnReturnApproved(orderId, returnId, approvedAt, operator)`。
+触发：`OrderReturnService.approve` 将退货置 `APPROVED` 的**同一事务**内调用
+`FinanceReceivableService.generateRedOnReturnApproved(orderReturnId)`（F1-2C 落地形态）。
+
+> **签名与规划稿不同，理由与 §3.3 同一条**：`approved_at` 与批准人都是 `order_return` 行上
+> 已落库的列（`approve` 用 `stamp()` 把批准人写进 `updated_by`，而 `APPROVED` 之后没有任何
+> 命令再改这一行），由调用方传 `now()` 或传 `ScmOperator.current()` 都会造出第二个时点与人。
+> 位置固定在退货事实与退款单都已成立之后、幂等 `complete` 之前：写入失败（约束、数据异常）
+> 仍整笔回滚批准 —— D-2 / D-4 禁止的是**金额上限校验**阻塞批准，不是禁止失败回滚。
 
 生成规则：
 
@@ -716,6 +725,14 @@ write_off.amount       = 登记值，CHECK > 0
 
 - 生成器（应收 / 应付 / 红字）只 INSERT，不锁业务表（业务表锁已由调用方持有）；
   并发双触发由来源唯一索引仲裁，第二个事务 `DO NOTHING` 后成功返回。
+- **但唯一索引修不了「两边都没尝试 INSERT」**（F1-2C）：签收与退货批准是两条独立事务，
+  各自都可能看不到对方未提交的事实，于是签收方查不到已批准退货、批准方查不到正常应收，
+  提交后红字永久缺失。因此两者必须共享一个串行点：`OrderReturnService.lock` 一开始就
+  `orders.lock(orderId)`，F1-2C 让 `DeliveryRouteService.sign` 在 `markSigned` 之前按
+  `route → sales_order` 锁同一张订单（与本域 `addOrders / plan / dispatch` 完全同序；
+  订单 / 退货 / 退款域从不锁 `delivery_route`，因此不存在反向锁序）。
+  后拿到锁的一方在 `READ COMMITTED` 下必然看见先提交的一方，两条路径于是都调用同一个红字算法，
+  一次真生成、另一次命中来源唯一索引静默返回。财务自身仍不做任何业务表 `SELECT … FOR UPDATE`。
 - 核销 / 反向核销 / 红字登记 / **收付款反向（D-3）**是**用户命令**，必须按上述 rank 升序
   `SELECT … FOR UPDATE` 锁住 source 与全部 target 后再校验余额并写入；两个并发核销对同一目标会串行，
   第二个看到更新后的 `openAmount`，超额即 `FINANCE_WRITE_OFF_AMOUNT_EXCEEDED`。

@@ -29,4 +29,17 @@
         ON CONFLICT (source_type, source_id)
             WHERE deleted = FALSE DO NOTHING
     </insert>
+
+    <!-- 一订单的正常应收最多一张（uk_finance_receivable_source_active 的同一口径）。 -->
+    <select id="selectNormalByOrder"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinanceReceivableEntity">
+        SELECT id, receivable_no, source_type, source_id, order_id, customer_id,
+               customer_name_snapshot, entry_type, original_receivable_id, amount, event_at,
+               reason, version, deleted, created_at, updated_at, created_by, updated_by
+        FROM finance_receivable
+        WHERE source_type = 'SALES_ORDER'
+          AND source_id = #{salesOrderId}
+          AND entry_type = 'NORMAL'
+          AND deleted = FALSE
+    </select>
 </mapper>

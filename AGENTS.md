@@ -103,8 +103,21 @@ P3   Finance R1  F1-2B receivable generator COMPLETE (2026-09-26): delivery_rout
                                          nothing and never reverses SALES_OUT; zero-outbound and
                                          zero-amount orders skip successfully without rolling back
                                          the sign
-P3   Finance R1  F1-2C..F1-8              NOT STARTED (return -> red receivable / receipt+payment
-                                         / write-off / query+export / frontend / E2E / R0
+P3   Finance R1  F1-2C red receivable     COMPLETE (2026-09-26): order_return APPROVED -> one RED
+                                         receivable + items, same transaction, 0 new migration
+                                         and 0 menu / permission rows. Red amount is the stored
+                                         order_return_item.approved_amount (finance never
+                                         recomputes); NO cap of any kind - it does not deduct
+                                         write-offs and may exceed the NORMAL receivable (D-2 /
+                                         D-4), and the generator never throws 41137. Return before
+                                         sign skips at approve and is backfilled at sign through
+                                         the one shared red generator; re-running generateOnSign
+                                         repairs a missing red row. SIGN and APPROVE are serialised
+                                         on the sales_order row lock (sign now takes
+                                         route -> sales_order, matching dispatch), so the
+                                         concurrent pair converges.
+P3   Finance R1  F1-3..F1-8              NOT STARTED (receipt+payment / write-off / query+export /
+                                         frontend / E2E / R0
                                          hand-off); each phase
                                          seeds only the permissions its own first protected API
                                          needs, and F1-6 seeds the 5 page menus together with the

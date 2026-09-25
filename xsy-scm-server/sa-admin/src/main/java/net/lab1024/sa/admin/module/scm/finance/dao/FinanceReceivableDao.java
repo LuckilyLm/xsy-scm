@@ -3,6 +3,7 @@ package net.lab1024.sa.admin.module.scm.finance.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import net.lab1024.sa.admin.module.scm.finance.domain.entity.FinanceReceivableEntity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 应收单头读写。
@@ -39,4 +40,14 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
      * @return 1 = 本次生成了应收（{@code id} 已回填）；0 = 该订单已有应收，调用方按「已生成」成功返回
      */
     int insertOnConflictDoNothing(FinanceReceivableEntity entity);
+
+    /**
+     * 该订单的正常应收单头。红字的 {@code original_receivable_id}、结算对方与对方名称快照
+     * 都必须来自这一行（第三批 Q27「必须引用原 Receivable」）。
+     *
+     * <p><b>这不是防重手段</b>：防重仍然只有 {@code uk_finance_receivable_source_active} +
+     * {@code ON CONFLICT DO NOTHING}（§12）。本查询只在插入尝试之后取「已存在那一张」的 id，
+     * 因为补生成红字时必须拿到 NORMAL 单头才能挂 {@code original_receivable_id}。
+     */
+    FinanceReceivableEntity selectNormalByOrder(@Param("salesOrderId") Long salesOrderId);
 }
