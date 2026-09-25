@@ -72,6 +72,10 @@
 
     &__content {
       position: relative;
+      /* 显式声明内容盒：height:100% + padding 必须走 border-box，
+         否则 content-box 下 padding 会撑出卡片造成横向溢出 / 文本裁切 */
+      box-sizing: border-box;
+      width: 100%;
       height: 100%;
       padding: $space-4;
       display: flex;
@@ -82,6 +86,8 @@
 
     &__eyebrow {
       padding: 0 $space-2;
+      max-width: 100%;
+      box-sizing: border-box;
       height: 32rpx;
       line-height: 32rpx;
       border-radius: $radius-pill;
@@ -90,10 +96,13 @@
       color: $color-text-inverse;
       font-size: $font-size-xs;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     &__title {
       margin-top: $space-2;
+      max-width: 100%;
       font-size: $font-size-xl;
       font-weight: $font-weight-bold;
       color: $color-text-inverse;
@@ -103,6 +112,7 @@
 
     &__subtitle {
       margin-top: $space-1;
+      max-width: 100%;
       font-size: $font-size-sm;
       color: rgba(255, 255, 255, 0.88);
       @include ellipsis;
@@ -111,6 +121,8 @@
     &__cta {
       margin-top: $space-3;
       padding: 0 $space-4;
+      max-width: 100%;
+      box-sizing: border-box;
       height: 56rpx;
       border-radius: $radius-pill;
       background-color: $color-primary;
@@ -122,6 +134,8 @@
       font-weight: $font-weight-medium;
       color: $color-text-inverse;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 </style>

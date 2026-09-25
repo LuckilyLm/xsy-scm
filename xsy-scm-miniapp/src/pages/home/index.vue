@@ -4,18 +4,18 @@
     <view class="home__header" :style="{ paddingTop: statusBarHeight + 'px' }">
       <text class="home__brand">鲜蔬源商城 · 客户采购</text>
 
-      <!-- 门店身份 + 切换门店 -->
+      <!-- 门店身份 + 切换门店：仅「已登录且已绑定客户/门店」时显示切换门店 -->
       <view class="home__store-row">
-        <text class="home__store">{{ storeLabel }}</text>
-        <view v-if="!userStore.isLogin" class="home__store-action" @click="goLogin">
-          <text class="home__store-action-text">登录</text>
-        </view>
-        <view v-else class="home__store-action" @click="onSwitchStore">
+        <text class="home__store">{{ hasStore ? userStore.customerName : '欢迎光临' }}</text>
+        <view v-if="hasStore" class="home__store-action" @click="onSwitchStore">
           <text class="home__store-action-text">切换门店</text>
+        </view>
+        <view v-else class="home__store-action" @click="goLogin">
+          <text class="home__store-action-text">登录</text>
         </view>
       </view>
 
-      <text class="home__greeting">{{ greeting }}，{{ displayName }}</text>
+      <text class="home__greeting">{{ hasStore ? `${greeting}，${displayName}` : '登录后查看客户价格' }}</text>
 
       <!-- 配送地址 -->
       <view class="home__address" @click="goAddressList">
@@ -24,9 +24,9 @@
         <text class="home__address-arrow">›</text>
       </view>
 
-      <!-- 商品 / SKU 搜索 -->
+      <!-- 商品 / SKU 搜索：图标 20px、内边距 12px、图文间距 8px，对齐 Figma Home / Final 的 SearchOutlined 定位 -->
       <view class="home__search" @click="goSearch">
-        <text class="home__search-mark">搜</text>
+        <uni-icons type="search" :size="20" :color="COLOR_TEXT_TERTIARY" />
         <text class="home__search-ph">搜商品 / SKU</text>
       </view>
     </view>
@@ -110,6 +110,7 @@
   import { mallHomeApi, mallCatalogApi } from '@/api/mall';
   import { smartSentry } from '@/lib/smart-sentry';
   import { useUserStore } from '@/store/modules/system/user';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const { statusBarHeight } = useSystemLayout();
   const userStore = useUserStore();
@@ -210,14 +211,11 @@
 
   /* ===================== 展示文案 ===================== */
 
-  const displayName = computed(() => {
-    if (!userStore.isLogin) {
-      return '欢迎光临';
-    }
-    return userStore.contactName || userStore.customerName || '客户';
-  });
+  /** 已登录且存在当前客户 / 门店：只有此时才显示门店名与「切换门店」 */
+  const hasStore = computed(() => userStore.isLogin && !!userStore.customerName);
 
-  const storeLabel = computed(() => userStore.customerName || '未绑定客户');
+  /** 已绑定状态下问候语称呼：联系人优先 */
+  const displayName = computed(() => userStore.contactName || userStore.customerName || '客户');
 
   const greeting = computed(() => {
     const hour = new Date().getHours();
@@ -412,11 +410,6 @@
       background-color: $color-bg-card;
     }
 
-    &__search-mark {
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
-    }
-
     &__search-ph {
       margin-left: $space-2;
       font-size: $font-size-base;
@@ -468,7 +461,8 @@
       line-height: 32rpx;
       border-radius: $radius-sm;
       background-color: $color-warning;
-      color: $color-text-inverse;
+      /* 深色字：白字在 warning 橙底上仅 2.15:1，不达 AA */
+      color: $color-text-primary;
       font-size: $font-size-xs;
     }
 
@@ -477,7 +471,8 @@
       min-width: 0;
       margin-left: $space-2;
       font-size: $font-size-xs;
-      color: $color-warning;
+      /* 正文 text-secondary：warning 橙在 warning-light 底上仅约 2.00:1，实测此处 5.08:1 */
+      color: $color-text-secondary;
       @include ellipsis;
     }
 
