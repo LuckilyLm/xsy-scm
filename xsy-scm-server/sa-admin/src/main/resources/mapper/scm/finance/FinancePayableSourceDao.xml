@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePayableSourceDao">
+
+    <!--
+      财务域对采购表只读（设计稿 §0 第 2 条）：本文件只有 SELECT。
+      读取一律显式写 deleted = FALSE，与 uk_finance_payable_source_active 的谓词同口径。
+    -->
+    <select id="selectConfirmedReceipt"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinancePayableSourceDto">
+        SELECT r.id                     AS purchaseReceiptId,
+               r.purchase_order_id      AS purchaseOrderId,
+               r.supplier_id            AS supplierId,
+               r.supplier_name_snapshot AS supplierNameSnapshot,
+               r.confirmed_at           AS confirmedAt
+        FROM purchase_receipt r
+        WHERE r.id = #{purchaseReceiptId}
+          AND r.deleted = FALSE
+          AND r.status = 'CONFIRMED'
+    </select>
+
+    <!--
+      量取收货行、价取采购行（收货行不存价格，A-D8）。
+
+      采购行**不加 deleted 过滤**：purchase_order_item_id 是收货单创建时解析好的引用，采购单提交后
+      行不可变（W5 §7.5），在这条 JOIN 上再加一道 deleted 只会把「少一行 = 少算一笔债务」变成
+      静默漏账 —— 加与不加在缺行时结果相同，但不加就不会把「主档被软删」这种运维动作算成免税。
+      全部行都取不到时金额为 0，由服务侧「不产生 0 元财务事实」的判据跳过，不会留一张空单头。
+    -->
+    <select id="selectConfirmedReceiptLines"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinancePayableSourceLineDto">
+        SELECT ri.id                     AS purchaseReceiptItemId,
+               ri.purchase_order_item_id AS purchaseOrderItemId,
+               ri.sku_id                 AS skuId,
+               ri.sku_name_snapshot      AS skuNameSnapshot,
+               ri.purchase_unit_snapshot AS unitSnapshot,
+               ri.received_quantity      AS quantity,
+               oi.purchase_price         AS unitPrice
+        FROM purchase_receipt_item ri
+                 JOIN purchase_order_item oi ON oi.id = ri.purchase_order_item_id
+        WHERE ri.purchase_receipt_id = #{purchaseReceiptId}
+          AND ri.deleted = FALSE
+          AND ri.received_quantity > 0
+        ORDER BY ri.sort_order, ri.id
+    </select>
+</mapper>

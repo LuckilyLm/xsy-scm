@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePayableDao">
+
+    <select id="nextPayableNo" resultType="long">
+        SELECT nextval('finance_payable_no_seq')
+    </select>
+
+    <!--
+      正常应付的插入（append-only：version 从 0 起、deleted 恒 FALSE，由
+      ck_finance_payable_append_only 在库级锁死，不给调用方留写别的值的机会）。
+
+      ON CONFLICT 的列与 WHERE 谓词必须与 uk_finance_payable_source_active 逐字一致（Q11）：
+      少写谓词会命中「无索引可仲裁」而直接报错，多写目标列会让 payable_no 撞号被一起吞掉。
+      返回 0 = 这张收货单已经生成过应付，由服务侧按「已生成」成功返回（生成器不是用户命令）。
+    -->
+    <insert id="insertOnConflictDoNothing"
+            parameterType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinancePayableEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id,
+                                     supplier_id, supplier_name_snapshot, entry_type,
+                                     original_payable_id, amount, event_at, reason,
+                                     version, deleted, created_at, updated_at, created_by, updated_by)
+        VALUES (#{payableNo}, #{sourceType}, #{sourceId}, #{purchaseOrderId},
+                #{supplierId}, #{supplierNameSnapshot}, #{entryType},
+                #{originalPayableId}, #{amount}, #{eventAt}, #{reason},
+                0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (source_type, source_id)
+            WHERE deleted = FALSE AND source_id IS NOT NULL DO NOTHING
+    </insert>
+</mapper>

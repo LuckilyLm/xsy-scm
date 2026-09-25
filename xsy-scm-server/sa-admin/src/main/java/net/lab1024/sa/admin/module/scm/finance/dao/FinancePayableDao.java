@@ -13,4 +13,22 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
+
+    /**
+     * 应付单号序列（全局非重置，不按日归零）。
+     *
+     * <p>必须在事务内调用：{@code nextval} 不随事务回滚，跳号是可接受的代价。
+     */
+    long nextPayableNo();
+
+    /**
+     * 插入正常应付，来源身份已存在时什么都不做。
+     *
+     * <p>冲突目标与 {@code uk_finance_payable_source_active} 的列和谓词**逐字一致**（Q11 纪律），
+     * 不使用无目标的 {@code ON CONFLICT DO NOTHING} —— 无目标写法会把 {@code payable_no} 撞号
+     * 也一起吞掉，那是一笔永远不会被发现的单号异常。
+     *
+     * @return 1 = 本次生成了应付（{@code id} 已回填）；0 = 该收货单已有应付，调用方按「已生成」成功返回
+     */
+    int insertOnConflictDoNothing(FinancePayableEntity entity);
 }

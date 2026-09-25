@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
+import net.lab1024.sa.admin.module.scm.finance.service.FinancePayableService;
 import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseConfigKey;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
@@ -87,6 +88,11 @@ import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCod
  * {@link PurchaseInventoryContract#postInbound}，**在同一个事务内**。
  * 本类只依赖 W5 已定义的接口，**不 import inventory 模块任何类** ——
  * purchase → inventory 的编译期依赖为零，真实实现由 Spring 在装配期注入。
+ *
+ * <p><b>Finance R1 应付接线</b>：{@code confirm} 把收货单置为 {@code CONFIRMED} 之后调用
+ * {@link FinancePayableService#generateOnReceiptConfirm}，与库存写入同一个事务（第一批 Q9）。
+ * 这里不需要 W6 那样的接口：依赖方向是 purchase → finance，而 finance 对采购表只读、
+ * 不反向 import 采购域，因此不存在环。
  */
 @Service
 @RequiredArgsConstructor
@@ -134,6 +140,12 @@ public class PurchaseReceiptService {
      * 与 {@link #warehouseScopeGuard} 是两条独立边界，DIRECT 确认要求同时成立。
      */
     private final PurchaseOwnerResolver ownerResolver;
+
+    /**
+     * 应付生成器（Finance R1 F1-2A）：收货确认在同一事务内派生正常应付。
+     * 生成失败即整笔收货确认回滚 —— 财务侧不接「业务已确认但账上什么都没有」这个缺口。
+     */
+    private final FinancePayableService financePayableService;
 
     // ------------------------------------------------------------------
     // receipt.create
@@ -405,6 +417,12 @@ public class PurchaseReceiptService {
         if (direct) {
             postInbound(order, receipt, inboundLines, receipt.getConfirmedAt(), receipt.getOperator());
         }
+
+        // Finance R1（第一批 Q9）：企业确认收到货即形成供应商债务，仓库何时 putaway 不决定应付时点，
+        // 因此 DIRECT 与 WAREHOUSE_CONFIRM 两条路径都只在这里生成一次，putaway 不再调用。
+        // 位置在库存写入之后：财务只消费已经成立的收货事实，自身不锁业务表也不锁余额（全局不变量 4），
+        // 并发的重复触发由 finance_payable 的来源唯一索引仲裁。抛错即整笔 confirm 回滚。
+        financePayableService.generateOnReceiptConfirm(receipt.getId());
 
         PurchaseReceiptVO result = queryService.receiptDetailForCommand(receipt.getId());
         idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);

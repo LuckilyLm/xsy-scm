@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePayableItemDao">
+
+    <!--
+      冲突目标与 uk_finance_payable_item_source_active 逐字一致（Q11）。
+      返回 0 不是重放：单头只在「本收货单还没有应付」时才会走到这里，因此明细撞键
+      意味着同一张收货行被挂到了两张应付单上，属于数据异常，由服务侧失败并整体回滚。
+    -->
+    <insert id="insertOnConflictDoNothing"
+            parameterType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinancePayableItemEntity">
+        INSERT INTO finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,
+                                          sku_id, sku_name_snapshot, unit_snapshot,
+                                          quantity, unit_price, amount,
+                                          version, deleted, created_at, updated_at, created_by, updated_by)
+        VALUES (#{payableId}, #{sourceType}, #{sourceId}, #{purchaseOrderItemId},
+                #{skuId}, #{skuNameSnapshot}, #{unitSnapshot},
+                #{quantity}, #{unitPrice}, #{amount},
+                0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (source_type, source_id)
+            WHERE deleted = FALSE AND source_id IS NOT NULL DO NOTHING
+    </insert>
+</mapper>

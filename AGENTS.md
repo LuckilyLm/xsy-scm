@@ -85,8 +85,16 @@ P3   Finance R1  F1-1 schema + skeleton   COMPLETE (2026-09-26): V65 only (pure 
                                          **zero menu / permission / role rows published** —
                                          no Controller and no .vue exist yet, so there is nothing
                                          to authorize or to open
-P3   Finance R1  F1-2..F1-8               NOT STARTED (generators / receipt+payment / write-off /
-                                         query+export / frontend / E2E / R0 hand-off); each phase
+P3   Finance R1  F1-2A payable generator  COMPLETE (2026-09-26): receipt CONFIRMED -> one NORMAL
+                                         payable + items, same transaction, 0 new migration and
+                                         0 menu / permission rows. Finance reads purchase_* only
+                                         through its own scoped read-only DAO (no BaseMapper),
+                                         uk_finance_payable_source_active is the duplicate
+                                         arbiter, and Propagation.MANDATORY keeps the generator
+                                         from ever self-committing a payable on its own
+P3   Finance R1  F1-2B..F1-8              NOT STARTED (SIGNED -> receivable / return -> red
+                                         receivable / receipt+payment / write-off / query+export /
+                                         frontend / E2E / R0 hand-off); each phase
                                          seeds only the permissions its own first protected API
                                          needs, and F1-6 seeds the 5 page menus together with the
                                          .vue files
@@ -345,8 +353,9 @@ generators still have to be replayable and source-idempotent, because that is wh
 double-triggering and transaction retry require, not a back door for backfill. F1-1 delivered schema,
 entities, DAOs, enums, error codes 41130–41143, `FinanceOperationLogRecorder` and five
 empty Services; it deliberately has **no form/VO classes, no read-only business DAO and no mapper XML**,
-because untested SQL with no caller is dead code — those land in F1-2/F1-5 next to their first caller and
-their first test. **It also publishes no menu, no permission point and no role grant**: F1-1 has no
+because untested SQL with no caller is dead code — they land next to their first caller and their first
+test: F1-2A brought the payable source DAO, its mapper XML and two DTOs, while the receivable and
+query-side ones are still F1-2B/F1-5 work. **It also publishes no menu, no permission point and no role grant**: F1-1 has no
 Controller and no `.vue`, so there is nothing to authorize and nothing to open. A phase publishes only the
 capabilities it actually has — an action permission lands in the migration of whichever phase first exposes
 a protected API, and the five page menus (1501–1505) land in F1-6 together with their `.vue` files, because

@@ -1076,6 +1076,44 @@ overAppliedAmount   = max(writtenOffAmount − netAmount, 0)
 第 3 条要求任何 IT / E2E 里都不再出现「自动红字被 41137 拒绝」的断言；
 第 4 条在 F1-8 实现时生效，本期只锁口径不写代码。
 
+### F1-2A 落地补充（2026-09-26，收货确认 → 应付生成器）
+
+五条都是实现期遇到的、裁决文本没有替我回答的问题。**没有一条新增业务能力或错误码。**
+
+1. **应付侧沿用第二批 Q8 的「不产生 0 元财务事实」纪律，但只作用于单头。**
+   单价合法为 0（`ck_purchase_order_item_purchase_price CHECK (purchase_price >= 0)`）且整单金额合计为 0
+   时，生成器**成功跳过**：不造空单头、不留 0 元事实。而**单行 0 元明细照实入账** ——
+   `finance_payable_item` 的 CHECK 刻意是 `amount >= 0`（不是 `> 0`），这就是它的用途；
+   丢掉一行赠品行等于少算债务并断开该行级追溯。
+   「一行收货量为 0」在本仓库**不可达**：`PurchaseReceiptQuantityCalculator.declared/effectiveQuantity`
+   对两条入库模式都要求有效量 > 0，因此 SQL 里的 `received_quantity > 0` 是把这条既有不变量
+   与 `finance_payable_item.quantity > 0` 对齐的谓词，不是一条会走到的分支。
+2. **两处 fail-loud 用 `IllegalStateException`，不新增业务错误码。**
+   ① 来源收货单不处于 `CONFIRMED`（等于调用点用错了对象）；② 单头刚由本次插入、明细却撞
+   `uk_finance_payable_item_source_active`（等于同一收货行被挂到两张应付单上）。
+   两者都不是用户能自行纠正的业务规则，而是「继续记账就会留下解释不了的账」的数据异常，
+   必须让整笔收货确认回滚；给它们配一个 4xxxx 码反而会造出一个无人能兑现的对外合同。
+3. **生成器是 `Propagation.MANDATORY`，不是 `REQUIRED`。** `REQUIRED` 会在没有外层事务时
+   **自己提交**，那正好造出本裁决要禁止的孤立事实（收货单还是草稿、应付已经入账），
+   且 `confirm` 后续的库存写入失败时也没有回滚它的机会。脱离事务调用即抛
+   `IllegalTransactionStateException`，这条已由 IT 取证。
+4. **`created_by` 与操作日志的 `operator` 取同一来源（请求上下文），不一个取事实、一个取上下文。**
+   在 `confirm` 事务内 `purchase_receipt.operator` 与上下文身份本来就是同一个值；
+   但在同一个方法里混用两个来源，会在任何复用路径下产出「单头归属一个人、日志归属另一个人」
+   这种无法解释的证据链。事实列（`event_at = confirmed_at`）与身份列（谁写了这条记录）因此各归其位。
+5. **应付生成器不吃 `Idempotency-Key`，防重的最终仲裁是数据库唯一索引。**
+   单头走 `insertOnConflictDoNothing`（冲突目标与 `uk_finance_payable_source_active` 逐字一致），
+   命中即按「已生成」静默成功、**不重复留日志**；不使用「先 SELECT 再 INSERT」的乐观写法，
+   也不写无目标的 `ON CONFLICT DO NOTHING`（那会把 `payable_no` 撞号一起吞掉）。
+
+**Why:** 这五条的错法都能让收货确认照常返回成功、页面照常绿，只在库里多出一张核销不掉的 0 元单、
+一条没人授权的孤立应付、或一份单头与日志互相矛盾的审计链。
+
+**How to apply:** F1-2B（签收 → 应收）与 F1-2C（退货批准 → 红字应收）逐条同形复用：
+0 元跳过只作用于单头、生成器 `MANDATORY`、来源唯一索引当最终仲裁、重放不留第二条日志。
+红字应收**不得**在这里加金额上限校验（D-2 / D-4 已裁：自动红字永不抛错阻塞 `approve`）。
+
+
 ## 未决事项
 
 - **在途库存是否需要在余额上可见（2026-09-19 调拨波次提出）**。两步式调拨让货在途中

@@ -9,7 +9,7 @@
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
 | P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
-| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基完成**（**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 本阶段无 Controller 也无 `.vue`，页面菜单随 F1-6、action 权限随首个受保护 API 所在阶段落库）；F1-2…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」；设计见 `docs/plan/finance-r1-design.md`；落地记录与阶段边界纠偏见「2026-09-26 P3 Finance R1：F1-0.5 裁决收口 + F1-1 数据地基（V65）」 |
+| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付生成完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`，页面菜单随 F1-6、action 权限随首个受保护 API 所在阶段落库。F1-2A：**0 迁移**，收货确认 → 正常应付已在同一事务内生成并取证）；F1-2B（签收 → 应收）/ F1-2C（退货批准 → 红字应收）与 F1-3…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」；设计见 `docs/plan/finance-r1-design.md`；落地记录与阶段边界纠偏见「2026-09-26 P3 Finance R1：F1-0.5 裁决收口 + F1-1 数据地基（V65）」，应付生成见「2026-09-26 F1-2A 收货确认生成应付」 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -695,6 +695,84 @@ V65 是在**一次性干净库**上随 V1→V65 全链由 Flyway 真实应用后
 - `JsonbObjectMapTypeHandler` 与 `order/support/OrderJsonbTypeHandler` 是等价的两份；
   合并到 `common/json` 是一次纯 Java 重构（不涉及 migration、不改对外行为），
   与 `ScmCommonErrorCode` 里记录的 40921 重复声明同一处置取向：先记为已知技术债，不顺手重构。
+
+
+### 2026-09-26 P3 Finance R1 F1-2A：收货确认 → 应付（0 迁移）
+
+**本轮范围只有一条**：`purchase_receipt` 进入 `CONFIRMED` 时，在同一事务内生成
+`finance_payable` + `finance_payable_item` + `finance_operation_log`。
+F1-2B（签收 → 应收）、F1-2C（退货批准 → 红字应收）、收付款登记、核销、手工红字应付、
+财务查询页、前端、Finance R0 接轨**全部未开始**。0 新迁移、0 菜单、0 权限点
+（生成器不是用户命令，权限由触发命令「收货确认」的既有 `scm:purchase:receipt:confirm` 承担）。
+
+**接入点**：`PurchaseReceiptService.confirm` 在收货单置 `CONFIRMED` 落库、采购操作日志与
+`postInbound`（DIRECT）之后、幂等 `complete` 之前调用
+`FinancePayableService.generateOnReceiptConfirm(receipt.getId())`。
+`DIRECT` 与 `WAREHOUSE_CONFIRM` **共用这一个调用点**（两条模式都在 confirm 里置 CONFIRMED），
+`putaway` 不调用生成器 —— 第一批 Q9「仓库内部入库作业不决定应付时点」。
+位置在库存写入之后是有意的：财务只消费已经成立的收货事实，自身不获取任何业务锁或余额锁（§14）。
+
+**取数收进财务域**（设计稿 §0 第 2 条）：新增 `finance/dao/FinancePayableSourceDao`
+（**刻意不继承 `BaseMapper`** —— 没有实体可写，越界写在这里是够不着的能力而不是纪律）
+与 `mapper/scm/finance/FinancePayableSourceDao.xml` 两条 SELECT：
+
+```text
+单头：purchase_receipt WHERE id = ? AND deleted = FALSE AND status = 'CONFIRMED'
+      -> purchase_order_id / supplier_id / supplier_name_snapshot / confirmed_at
+明细：purchase_receipt_item JOIN purchase_order_item
+      -> quantity = received_quantity（有效量）  unit_price = purchase_price
+         unit_snapshot = 收货行自己的 purchase_unit_snapshot（与 quantity 同一行同一单位）
+```
+
+金额逐行 `ROUND(quantity × unit_price, 4, HALF_UP)`，**单头 = 已按 4 位舍入的行金额之和**
+（先求和再舍入会让单头与明细对不上账）；不使用 `purchase_order.total_amount`，
+不使用 `inventory_movement.unit_cost`。
+
+**幂等与并发**：生成器**不吃 `Idempotency-Key`**（§13）。防重复事实由库级
+`uk_finance_payable_source_active` 仲裁，单头走 `insertOnConflictDoNothing`，冲突目标与该索引的
+列 + 谓词逐字一致（Q11 纪律，不用无目标 `DO NOTHING`，否则会连 `payable_no` 撞号一起吞掉）；
+命中即「已生成」静默成功且**不重复留日志**。明细撞键不是重放（单头刚由本次插入），
+按数据异常 fail-loud。生成器不新增任何跨域锁，`confirm` 既有锁序一字未改。
+
+**0 元口径**：整单金额合计为 0（单价合法为 0 是真实业务形状，
+`ck_purchase_order_item_purchase_price` 允许 `>= 0`）→ 成功跳过，不造空单头也不留 0 元事实
+（与第二批 Q8 同纪律）；**单行 0 元明细照实入账**，因为 `finance_payable_item.amount` 的 CHECK
+刻意是 `>= 0`。裁决理由与两条 fail-loud 的取值见 `docs/decisions.md`「F1-2A 落地补充」。
+
+**同事务成败**：`@Transactional(propagation = MANDATORY)` —— `REQUIRED` 会在无外层事务时自己提交，
+正好造出「收货单还是草稿、应付已入账」的孤立事实。
+`ScmFinancePayableRollbackPgIT` 用 `NOT_SUPPORTED`（真实提交/回滚）取证：
+先占掉某条收货行的应付来源键，让财务写入在**数据库层**失败 →
+收货单仍 `DRAFT`、`confirmed_at` 仍 `NULL`、采购行累计量仍 `0.0000`、采购单仍 `SUBMITTED`、
+`PURCHASE_IN` 流水与余额行数均为 0、`finance_payable` 没有单头、也没有生成日志。
+
+**操作日志**：`business_type = PAYABLE`、`operation_type = GENERATE`、`before_data = NULL`、
+`after_data` 为单头快照（金额与时间按仓库既有纪律存字符串 —— JSONB 侧的
+`JsonbObjectMapTypeHandler` 用的是未注册 JavaTimeModule 的裸 ObjectMapper）。
+
+**测试**（一次性干净库，Flyway 真实应用 V1→V65）：
+`ScmFinancePayablePgIT` 10 用例 + `ScmFinancePayableRollbackPgIT` 2 用例 +
+`FinanceReadOnlyContractTest` 4 项（财务包对业务表只读的静态扫描，本轮新增的
+`FinancePayableSourceDao.xml` 已在扫描范围内）+ `ScmFinanceSchemaPgIT` 17 项（F1-1 的
+schema 与「零菜单零权限」阶段边界仍成立）= **33 项 0 失败 0 错误**。
+应收场景覆盖：DIRECT 与 WAREHOUSE_CONFIRM 两条路径、`event_at = confirmed_at` 且 putaway 不改时点、
+`3.3333 × 2.2222 = 7.40725926 → 7.4073` 的 HALF_UP 取证、容差内超收全额进应付、
+少收只按实收量且不留差异事实、整单 0 元跳过、0 元明细保留、重复生成仍是一张单一份日志、
+分次到货各生成一张单、草稿单调用生成器被拒。
+**全量回归**：`python tools/verify.py backend` = **1112 项 0 失败 0 错误 / 5 跳过**
+（5 项跳过是 `F0FileStorageCloudIT` 的云端门控基线，需真实 MinIO 单独跑，与 P1/P2 同一口径）；
+`migration_checksum_guard.py check` PASS（65 冻结 / 0 漂移 / 0 缺失 / 0 改名 —— **本轮零迁移**）。
+`SmartAdminMapperPgValidationIT` 与 `SmartAdminMenuComponentPgIT` 同时绿：
+新增的手写财务语句逐条被真实 PostgreSQL `PREPARE` 解析通过，且 F1-1 的「零菜单零权限」阶段边界未被破坏。
+
+未覆盖（不得当成已完成）：
+
+- **财务侧仍然没有任何可看的页面**：F1-2A 没有 Controller，因此没有受保护 API 需要授权，
+  本轮一条菜单与权限都没种（`ScmFinanceSchemaPgIT` 的边界断言继续成立）。
+- **并发双触发未做真并发压测**：设计稿 §14 判定「并发的两笔 confirm 竞争同一收货单」在
+  `purchase_receipt` 行锁上就已经串行化，来源唯一索引只是兜底；本轮按此判断只做了同事务内的
+  重复调用取证（第二次命中索引、不产生第二张单），`ScmFinanceConcurrencyPgIT` 属 F1-4。
+- 前端与浏览器 E2E 未跑：本轮无前端改动。
 
 
 ### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）
