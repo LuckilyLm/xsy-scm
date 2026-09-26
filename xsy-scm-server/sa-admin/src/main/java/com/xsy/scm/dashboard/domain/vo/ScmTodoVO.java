@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.dashboard.domain.vo;
+package com.xsy.scm.dashboard.domain.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

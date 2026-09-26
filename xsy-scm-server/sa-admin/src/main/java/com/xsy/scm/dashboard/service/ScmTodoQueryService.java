@@ -1,8 +1,8 @@
-package net.lab1024.sa.admin.module.scm.dashboard.service;
+package com.xsy.scm.dashboard.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.dashboard.constant.ScmTodoCardEnum;
-import net.lab1024.sa.admin.module.scm.dashboard.domain.vo.ScmTodoVO;
+import com.xsy.scm.dashboard.constant.ScmTodoCardEnum;
+import com.xsy.scm.dashboard.domain.vo.ScmTodoVO;
 import com.xsy.scm.delivery.domain.form.DeliveryQueryForm;
 import com.xsy.scm.delivery.service.DeliveryRouteQueryService;
 import com.xsy.scm.inventory.domain.form.InventoryLossGainQueryForm;

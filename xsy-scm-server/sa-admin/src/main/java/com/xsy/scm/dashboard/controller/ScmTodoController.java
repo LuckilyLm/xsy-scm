@@ -1,11 +1,11 @@
-package net.lab1024.sa.admin.module.scm.dashboard.controller;
+package com.xsy.scm.dashboard.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.dashboard.domain.vo.ScmTodoVO;
-import net.lab1024.sa.admin.module.scm.dashboard.service.ScmTodoQueryService;
+import com.xsy.scm.dashboard.domain.vo.ScmTodoVO;
+import com.xsy.scm.dashboard.service.ScmTodoQueryService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.dashboard.constant;
+package com.xsy.scm.dashboard.constant;
 
 import java.util.List;
 
