@@ -104,8 +104,9 @@ class ExcludedFilesTest(unittest.TestCase):
     """
 
     def test_architecture_test_is_excluded(self) -> None:
+        """Q1 收口后该文件随 `_root` 条目移到 com/xsy/scm/，排除条目跟着它走。"""
         path = (mig.ROOT / "xsy-scm-server" / "sa-admin" / "src" / "test" / "java"
-                / "net" / "lab1024" / "sa" / "admin" / "module" / "scm"
+                / "com" / "xsy" / "scm"
                 / "ScmArchitectureTest.java")
         self.assertTrue(mig.is_excluded(path))
 

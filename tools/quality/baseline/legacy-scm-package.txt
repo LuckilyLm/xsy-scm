@@ -3,5 +3,4 @@
 # detection : 每个旧包文件记一条 identity。因此向旧 namespace **新增**文件就是 NEW DEFECT（这条路径从未被记录过），而**移出**旧包是 improvement、不会失败。新包一侧的文件数不做门禁，由 scan/check 末尾的 package migration progress 报表可见；旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管。注：baseline 里已存在的旧路径被「删掉又新建同名文件」仍可放行，所以 Q1 每完成一个域要 capture 一次让账本收缩
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 1 occurrences in 1 identities
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/ScmArchitectureTest.java	unmigrated-file
+# captured  : 0 occurrences in 0 identities

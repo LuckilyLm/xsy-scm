@@ -82,9 +82,12 @@ SCAN_ROOTS = (
 # 就指向不存在的包，测试编译直接失败（order 域迁移时真实踩到）。
 #
 # 因此语义是「只排除字面量，不排除 import」：这些文件里只改写 import 行。
+#
+# Q1 收口后该文件自身已随 `_root` 条目移到 com/xsy/scm/，路径随之更新。
+# 条目保留：文件里的 `LEGACY_SCM_PACKAGE` 字面量与「旧包为空」分支是设计意图，
+# 任何重跑本工具的场合都不该把它们改掉。
 EXCLUDED_RELATIVE = {
-    "xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/"
-    "ScmArchitectureTest.java",
+    "xsy-scm-server/sa-admin/src/test/java/com/xsy/scm/ScmArchitectureTest.java",
 }
 
 

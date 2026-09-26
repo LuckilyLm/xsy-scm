@@ -734,6 +734,15 @@ def assert_domain_migrated(domain: str) -> list[str]:
         source_root = guard.MAIN_SOURCE_ROOT if source_set == "main" else guard.TEST_SOURCE_ROOT
 
         def relative_set(package_path: Path) -> set[str]:
+            # `_root` 是 scan_domain_file_set() 的哨兵值，表示「直接躺在包根下」的文件
+            # （如 ScmArchitectureTest.java 之于 com/xsy/scm/），**不是**字面的
+            # `com/xsy/scm/_root/` 目录。两者必须用同一个语义，否则 manifest 生成端
+            # 说 `_root: [X.java]`、断言端去找 `_root/X.java`，永远对不上。
+            if domain == ROOT_KEY:
+                root = source_root / package_path
+                if not root.is_dir():
+                    return set()
+                return {path.name for path in root.glob(f"*{SERVER_JAVA_SUFFIX}")}
             directory = source_root / package_path / domain
             if not directory.is_dir():
                 return set()

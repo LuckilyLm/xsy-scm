@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm;
+package com.xsy.scm;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -11,6 +11,7 @@ import com.xsy.scm.order.service.OrderIdempotencyService;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
@@ -23,13 +24,14 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * 这条 SQL 级事实；这里看编译产物的类型依赖，钉住分层方向与跨域引用。两者不重叠 ——
  * 一句 {@code UPDATE sales_order} 不产生任何类型依赖，而一次注入 DAO 也不产生任何 SQL 文本。
  *
- * <p><b>Q1 迁包后必须补的规则</b>（现在启用会让整个项目全红，因此本轮不写）：
- * <pre>{@code
- * classes().should().resideInAPackage("com.xsy.scm..")
- * noClasses().should().resideInAPackage("net.lab1024.sa.admin.module.scm..")
- * }</pre>
- * 届时 {@code AdminApplication.COMPONENT_SCAN} 与 {@code @MapperScan} 必须同时覆盖
- * {@code net.lab1024.sa} 与 {@code com.xsy}，否则迁移后的 Bean 与 Mapper 会静默不被扫描。
+ * <p><b>Q1 迁包已完成</b>（2026-09-26）：旧包 {@code net.lab1024.sa.admin.module.scm} 下已无任何
+ * 源码，SCM 全部落在 {@code com.xsy.scm}。本类随 {@code _root} 条目一起从
+ * {@code net/lab1024/.../scm/ScmArchitectureTest.java} 移到
+ * {@code com/xsy/scm/ScmArchitectureTest.java}，故自身 package 也已改写为 {@code com.xsy.scm}。
+ * {@link #LEGACY_SCM_PACKAGE} 常量与 {@link #importedSourceSetIsNotEmpty} 里的
+ * 「旧包为空」分支**刻意保留**：它是这条断言的全部意义所在 —— 若哪天有人把旧包名重新引入，
+ * 或把分析包集改错，这里仍要能发现。{@code AdminApplication.COMPONENT_SCAN} 与
+ * {@code @MapperScan} 仍同时覆盖 {@code net.lab1024.sa} 与 {@code com.xsy}。
  */
 @AnalyzeClasses(
         packages = {
@@ -163,4 +165,26 @@ class ScmArchitectureTest {
     static final ArchRule productionCodeDoesNotUseTestLibraries =
             noClasses().should().dependOnClassesThat().resideInAnyPackage(TEST_ONLY_LIBRARIES)
                     .because("测试库以 compile 作用域泄漏到生产 classpath，编译器不会拦，只能由这条规则拦");
+
+    /**
+     * Q1 迁包的正向收口：SCM 具体业务域必须全部落在 {@code com.xsy.scm}。
+     *
+     * <p>与 {@link #importedSourceSetIsNotEmpty} 互补：那条防「一条规则都没跑到」的空扫描假绿，
+     * 这条防「迁了一半就停下」——逐域迁移的中间态两边并存是预期的，但 15 个域全部搬完之后，
+     * 旧包再出现业务域代码都说明有代码被漏搬或被重新引入。
+     *
+     * <p>2026-09-26 收口时启用，此时旧包已无生产类。
+     *
+     * <p><b>为什么不写「旧包必须为空」的 noClasses 规则</b>：那条规则在旧包归零后
+     * {@code that()} 子句匹配到 0 个类，ArchUnit 默认 {@code failOnEmptyShould=true} 会判它
+     * 「failed to check any classes」而失败（实测踩到）。空集合上的「没有类违反」是恒真的，
+     * 写成规则反而要靠 {@code allowEmptyShould(true)} 关掉保护，那就把断言变成装饰。
+     * 旧包是否为空的判据由 {@link #importedSourceSetIsNotEmpty} 的
+     * {@code sawLegacyPackage} 分支与 readiness 脚本的 domain-completeness 共同承担。
+     */
+    @ArchTest
+    static final ArchRule scmProductionCodeLivesInXsyPackage =
+            classes().that().resideInAnyPackage(CONCRETE_DOMAINS)
+                    .should().resideInAPackage(XSY_SCM_PACKAGE + "..")
+                    .because("Q1 已收口：具体业务域只应存在于新包 " + XSY_SCM_PACKAGE);
 }
