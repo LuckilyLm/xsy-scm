@@ -220,6 +220,46 @@ class DomainMappingTest(unittest.TestCase):
         self.assertIn("legacy-scm-package", migrate.SKIPPED_FAMILIES)
 
 
+class BaselineFileSelectionTest(unittest.TestCase):
+    """Only rule baselines may be rewritten, never a neighbouring ledger.
+
+    ``domain-counts.txt`` holds ``domain<TAB>corner<TAB>count`` records and lives in
+    the same directory. A ``*.txt`` glob picks it up, parses it as a malformed
+    four-field baseline record, and turns every migration run into ``INVALID`` /
+    ``RESULT: FAIL`` - which reads as "the rewriter is broken" rather than "the glob
+    is too wide".
+    """
+
+    def test_only_known_families_are_selected(self) -> None:
+        with tempfile.TemporaryDirectory() as workspace:
+            original = migrate.BASELINE_DIR
+            migrate.BASELINE_DIR = Path(workspace)
+            try:
+                (migrate.BASELINE_DIR / "stage-comment.txt").write_text("", encoding="utf-8")
+                (migrate.BASELINE_DIR / "domain-counts.txt").write_text(
+                    "common\tlegacy_main\t27\n", encoding="utf-8")
+                (migrate.BASELINE_DIR / "notes.md").write_text("", encoding="utf-8")
+                selected = {path.name for path in migrate.baseline_files()}
+            finally:
+                migrate.BASELINE_DIR = original
+        self.assertEqual(selected, {"stage-comment.txt"})
+
+    def test_the_domain_count_ledger_is_not_parsed_as_a_baseline(self) -> None:
+        """The three-field ledger must not raise the four-field record error."""
+        with tempfile.TemporaryDirectory() as workspace:
+            original = migrate.BASELINE_DIR
+            migrate.BASELINE_DIR = Path(workspace)
+            try:
+                (migrate.BASELINE_DIR / "domain-counts.txt").write_text(
+                    "common\tlegacy_main\t27\ncommon\tlegacy_test\t14\n", encoding="utf-8")
+                report = migrate.run(migrate.whole_package_mappings(),
+                                     apply_changes=False, verify_moves=False)
+            finally:
+                migrate.BASELINE_DIR = original
+        self.assertEqual(report.invalid_lines, [])
+        self.assertEqual(report.files, [])
+
+
 @contextlib.contextmanager
 def temp_repo():
     """Point the module at a scratch tree so path checks do not touch the real repo."""

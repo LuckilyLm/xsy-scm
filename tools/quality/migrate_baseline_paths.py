@@ -65,6 +65,10 @@ ROOT_PAIRS = ((MAIN_LEGACY, MAIN_NEW), (TEST_LEGACY, TEST_NEW))
 # shrinks by itself as files move out, and ``capture`` trims it per domain.
 SKIPPED_FAMILIES = frozenset({"legacy-scm-package"})
 
+# A baseline file is named after its family, so the family list is also the
+# whitelist of files this tool may touch.
+FAMILY_NAMES = frozenset(family.name for family in guard.FAMILIES)
+
 
 @dataclass
 class Report:
@@ -232,7 +236,15 @@ def migrate_file(path: Path, mappings: tuple[tuple[str, str], ...], report: Repo
 
 
 def baseline_files() -> list[Path]:
-    return sorted(BASELINE_DIR.glob("*.txt"))
+    """The rule baseline files, never other ``.txt`` ledgers that live beside them.
+
+    ``domain-counts.txt`` holds ``domain<TAB>corner<TAB>count`` - three fields, no
+    path - and is a different kind of ledger. Picking it up here would parse it as a
+    malformed baseline record and fail every migration run, which is precisely the
+    outcome that looks like "the tool is broken" rather than "the glob is too wide".
+    """
+    return sorted(path for path in BASELINE_DIR.glob("*.txt")
+                  if path.stem in FAMILY_NAMES)
 
 
 def run(mappings: tuple[tuple[str, str], ...], apply_changes: bool,

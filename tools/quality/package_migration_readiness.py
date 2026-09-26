@@ -26,13 +26,18 @@ import argparse
 import contextlib
 from dataclasses import dataclass, field
 import fnmatch
+import inspect
+import json
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import quality_guard as guard
+
+from quality_guard import Finding
 
 ROOT = guard.ROOT
 POM = guard.SERVER / "pom.xml"
@@ -286,11 +291,469 @@ def check_stocktake_fixture_is_isolated() -> Check:
     return check
 
 
+def check_capture_is_identity_safe() -> Check:
+    """Execute the laundering scenario: 1 fixed + 1 new, total unchanged.
+
+    Asserting "capture calls ledger_breaches" would pass on a mangled call. The
+    property that matters is behavioural, so this builds the exact swap that a
+    total-only rule reports as ``+0`` and requires it to be rejected - including
+    the part that is easy to get wrong: the refusal must leave the ledger alone.
+    """
+    check = Check("capture-identity-safe",
+                  "capture 只允许账本收缩：等量替换（修 1 新增 1）必须被拒绝且不写盘")
+    guard_module = guard
+    original_dir = guard_module.BASELINE_DIR
+    temp = tempfile.TemporaryDirectory()
+    try:
+        guard_module.BASELINE_DIR = Path(temp.name)
+        rule = "magic-string-domain-literal"
+        guard_module.write_baseline(
+            next(f for f in guard_module.FAMILIES if f.name == rule),
+            [Finding(rule, "a/Foo.java", 'Foo#"ENABLED"', "old")])
+        before = guard_module.baseline_path(rule).read_text(encoding="utf-8")
+
+        swapped = [Finding(rule, "b/Bar.java", 'Bar#"CONFIRMED"', "new")]
+        breaches = guard_module.ledger_breaches(rule, swapped)
+        if not breaches:
+            check.failures.append(
+                "an equal-total swap (1 recorded defect removed, 1 unrecorded defect "
+                "added) was accepted; a total-only comparison is back")
+        if guard_module.baseline_path(rule).read_text(encoding="utf-8") != before:
+            check.failures.append("the ledger was rewritten during a breach check")
+        # And the allow-list that capture is allowed to reduce must still work.
+        if guard_module.ledger_breaches(rule, []):
+            check.failures.append("a pure subset of the baseline was rejected; "
+                                  "capture could never shrink a ledger")
+    finally:
+        guard_module.BASELINE_DIR = original_dir
+        temp.cleanup()
+    return check
+
+
+def check_domain_completeness_contract() -> Check:
+    """The completeness check must be able to see a file with no recorded debt.
+
+    A file with zero findings has no baseline identity anywhere, so the path
+    rewriter cannot notice that it was left behind. Only the manifest's exact path
+    set can, and a count cannot stand in for it: ``{A,B,C}`` and ``{A,B,D}`` are the
+    same size. This asserts the manifest is the comparison source, that the
+    comparison is set-based, and that recording it is refused once Q1 has started.
+    """
+    check = Check("domain-completeness-contract",
+                  "domain 完整迁移契约存在：manifest 记录精确文件集合、按集合断言、"
+                  "且 Q1 开始后禁止重建")
+    source = inspect.getsource(sys.modules[__name__])
+
+    if "MANIFEST_PATH" not in source or "package-migration-manifest.json" not in source:
+        check.failures.append("the manifest path is not declared")
+    if "class Manifest" not in source:
+        check.failures.append("the Manifest record type is missing")
+
+    # The assertion must compare sets of relative paths, not counts.
+    assertion = inspect.getsource(assert_domain_migrated)
+    for required in ("expected", "still_missing", "unexpected", "legacy & new"):
+        if required not in assertion:
+            check.failures.append(
+                f"assert_domain_migrated no longer checks {required!r};"
+                " a count-equivalent swap could pass")
+    if "domain_counts" in assertion or "recorded[" in assertion:
+        check.failures.append("assert_domain_migrated still compares counts")
+
+    # Recording must be refused when the new package is already populated.
+    preconditions = inspect.getsource(check_manifest_preconditions)
+    for required in ("already has already started" if False else "already holds",
+                     "uncommitted tracked change", "no domains discovered",
+                     "duplicated relative path", "not tracked by git"):
+        if required not in preconditions:
+            check.failures.append(f"manifest precondition missing: {required!r}")
+
+    recorder = inspect.getsource(record_migration_manifest)
+    if "--force does not authorise rewriting an existing manifest" not in recorder:
+        check.failures.append(
+            "--force can overwrite an existing manifest while Q1 preconditions fail;"
+            " a half-migrated tree could be blessed as the new baseline")
+    return check
+
+
+
 def check_probe_is_configured() -> Check:
     check = Check("probe-evidence", "com.xsy.scm 能被三个门禁识别（--with-probe 可复现）")
     if not READINESS_DOC.is_file():
         check.failures.append("docs/quality/package-migration-readiness.md is missing")
     return check
+
+
+# ------------------------------------------- Q1 package migration manifest (Q0.3)
+
+SERVER_JAVA_SUFFIX = ".java"
+MANIFEST_PATH = guard.BASELINE_DIR / "package-migration-manifest.json"
+
+# SCM classes that sit directly in the package root belong to no domain. They are
+# not "common" and must not be folded into it: a file moved under the wrong domain
+# still satisfies every count, which is the whole class of failure this manifest
+# exists to catch.
+ROOT_KEY = "_root"
+
+# The manifest records a known set of paths, so the tool can tell one difference in
+# kind from another. Reaching from the tooling to this one read-only git query is a
+# deliberate exception, and its output is still trusted only over the narrower claim
+# of *tracking status*: the set that must move and the check that nothing unexpected
+# appeared both come from the filesystem, so neither has a knowledge source in git.
+GIT_TRACKED = ("git", "ls-files", "--cached")
+# Batch size for `git ls-files`: 100 repo-relative paths (~90 chars each) stay well
+# under the Windows command-line limit while keeping the process count small.
+GIT_BATCH_SIZE = 100
+
+
+@dataclass
+class Manifest:
+    """The exact SCM file set Q1 must move, per domain and source set.
+
+    It records *paths*, not counts. A count cannot tell ``{A, B, C}`` from
+    ``{A, B, D}``: both are three files, and only one of them is a correct
+    migration. Comparing paths is what makes "the domain is finished" a claim the
+    machine can check rather than a number a human later reinterprets.
+    """
+
+    domains: dict[str, dict[str, list[str]]]
+    generated_from_commit: str = ""
+    generated_at: str = ""
+
+    def expected(self, domain: str, source_set: str) -> list[str]:
+        return sorted(self.domains.get(domain, {}).get(source_set, []))
+
+    @property
+    def total_main(self) -> int:
+        return sum(len(entry.get("main", [])) for entry in self.domains.values())
+
+    @property
+    def total_test(self) -> int:
+        return sum(len(entry.get("test", [])) for entry in self.domains.values())
+
+    def as_json(self) -> dict[str, object]:
+        return {
+            "_comment": (
+                "Q1 migration ledger. Generated by "
+                "package_migration_readiness.py --record-migration-manifest from a "
+                "filesystem scan; never hand-edited. It is deleted once Q1 completes."
+            ),
+            "generated_from_commit": self.generated_from_commit,
+            "generated_at": self.generated_at,
+            "totals": {
+                "main": self.total_main,
+                "test": self.total_test,
+                "domains": len([d for d in self.domains if d != ROOT_KEY]),
+            },
+            "domains": {
+                domain: {source_set: sorted(paths) for source_set, paths in entry.items()}
+                for domain, entry in sorted(self.domains.items())
+            },
+        }
+
+
+def scan_domain_file_set(source_root: Path, package_path: Path) -> dict[str, list[str]]:
+    """Group every ``.java`` file under a package into domains, by first path segment.
+
+    Paths are recorded relative to the package root (``common/util/Foo.java``), which
+    is what stays comparable across the ``git mv``: only the package prefix changes.
+    """
+    root = source_root / package_path
+    grouped: dict[str, list[str]] = {}
+    if not root.is_dir():
+        return grouped
+    for path in sorted(root.rglob(f"*{SERVER_JAVA_SUFFIX}")):
+        parts = path.relative_to(root).parts
+        domain = parts[0] if len(parts) > 1 else ROOT_KEY
+        grouped.setdefault(domain, []).append(Path(*parts[1:]).as_posix()
+                                             if len(parts) > 1 else parts[0])
+    return grouped
+
+
+def current_manifest() -> Manifest:
+    """Rebuild the manifest from the filesystem without any of the guards.
+
+    Used by the assertion, which must work *after* files have moved and therefore
+    cannot reuse the generator's pre-conditions. The generator is the guarded entry
+    point; this is the raw measurement both share.
+    """
+    domains: dict[str, dict[str, list[str]]] = {}
+    for source_set, source_root in (("main", guard.MAIN_SOURCE_ROOT),
+                                    ("test", guard.TEST_SOURCE_ROOT)):
+        for package_path in (guard.LEGACY_SCM_PACKAGE_PATH, guard.NEW_SCM_PACKAGE_PATH):
+            for domain, paths in scan_domain_file_set(source_root, package_path).items():
+                domains.setdefault(domain, {}).setdefault(source_set, [])
+                # A path present under both packages is a copy, not a move. It is
+                # reported by the assertion, so keep both of them visible here
+                # rather than silently de-duplicating one away.
+                domains[domain][source_set].extend(paths)
+    return Manifest({domain: {k: sorted(v) for k, v in entry.items()}
+                     for domain, entry in domains.items()})
+
+
+def git_tracked_paths(paths: list[str]) -> set[str]:
+    """The subset of ``paths`` that git actually tracks.
+
+    Two constraints, both learned the hard way:
+
+    * ``git ls-files`` has no ``--stdin`` (exit 129, "unknown option"), so paths go
+      on the command line.
+    * 847 absolute repo paths blow past the Windows command-line limit
+      (``FileNotFoundError: [WinError 206] 文件名或扩展名太长``), so the batch is
+      chunked instead of sent in one call.
+    """
+    if not paths:
+        return set()
+    tracked: set[str] = set()
+    for start in range(0, len(paths), GIT_BATCH_SIZE):
+        batch = paths[start:start + GIT_BATCH_SIZE]
+        result = subprocess.run(
+            [*GIT_TRACKED, "--", *batch], cwd=ROOT,
+            capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
+        if result.returncode != 0:
+            raise CheckResolutionError(
+                f"git ls-files failed (exit {result.returncode}): "
+                f"{(result.stderr or '').strip().splitlines()[:1]}")
+        tracked.update(line.strip().replace("\\", "/")
+                       for line in result.stdout.splitlines() if line.strip())
+    return tracked
+
+
+def git_head_commit() -> str:
+    result = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace", check=False)
+    return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def read_manifest() -> Manifest:
+    """Load the committed manifest, or fail with an actionable message."""
+    if not MANIFEST_PATH.is_file():
+        raise SystemExit(
+            f"ERROR: {guard.relative(MANIFEST_PATH)} does not exist.\n"
+            "       Q1 must not start without it. Generate it once, before any file moves:\n"
+            "       python tools/quality/package_migration_readiness.py --record-migration-manifest")
+    payload = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    return Manifest(
+        domains={domain: {source_set: sorted(paths) for source_set, paths in entry.items()}
+                 for domain, entry in payload.get("domains", {}).items()},
+        generated_from_commit=payload.get("generated_from_commit", ""),
+        generated_at=payload.get("generated_at", ""),
+    )
+
+
+def report_domain_inventory() -> None:
+    """Print the current domain/file-set inventory, for picking a migration order.
+
+    Domains are discovered from the tree, never listed by hand: a hard-coded list is
+    a second source of truth that goes stale the moment the repository changes.
+    """
+    current = current_manifest()
+    recorded: Manifest | None = None
+    try:
+        recorded = read_manifest()
+    except SystemExit:
+        pass
+
+    print(f"{'domain':16s} {'main':>6s} {'test':>6s}   {'in manifest':>12s}")
+    for domain in sorted(current.domains):
+        main = len(current.expected(domain, "main"))
+        test = len(current.expected(domain, "test"))
+        mark = "-"
+        if recorded is not None:
+            mark = "yes" if domain in recorded.domains else "MISSING"
+        label = f"{domain} (root-level)" if domain == ROOT_KEY else domain
+        print(f"{label:16s} {main:6d} {test:6d}   {mark:>12s}")
+    print(f"{'TOTAL':16s} {current.total_main:6d} {current.total_test:6d}")
+    if recorded is not None:
+        print(f"\nmanifest: {guard.relative(MANIFEST_PATH)}"
+              f"  (from {recorded.generated_from_commit[:12]},"
+              f" {recorded.total_main} main / {recorded.total_test} test)")
+
+
+def check_manifest_preconditions() -> list[str]:
+    """Everything that must hold before the manifest may be created.
+
+    Each item here exists because the manifest is only meaningful at exactly one
+    moment: before the first ``git mv``. Recording it later would take a partly moved
+    tree as ground truth and permanently bless whatever was left behind.
+    """
+    failures: list[str] = []
+
+    # 1. The new package must have no SCM Java. Anything there means migration began,
+    #    and a manifest captured now would encode the half-migrated state.
+    for source_set, source_root in (("main", guard.MAIN_SOURCE_ROOT),
+                                    ("test", guard.TEST_SOURCE_ROOT)):
+        existing = sorted((source_root / guard.NEW_SCM_PACKAGE_PATH).rglob("*.java")) \
+            if (source_root / guard.NEW_SCM_PACKAGE_PATH).is_dir() else []
+        if existing:
+            failures.append(
+                f"{source_set}: {guard.NEW_SCM_PACKAGE_PATH} already holds {len(existing)} "
+                f".java file(s), first: {guard.relative(existing[0])}"
+                " -> Q1 has already started; a manifest recorded now would bless a"
+                " partly moved tree")
+
+    # 2. A failing working tree would record files that are not what will be moved.
+    working = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT, capture_output=True,
+                             text=True, encoding="utf-8", errors="replace", check=False)
+    if working.returncode != 0:
+        failures.append("git status failed; cannot establish that the tree is clean")
+    else:
+        dirty = [line for line in working.stdout.splitlines()
+                 if len(line) > 3 and not line.startswith("??")]
+        if dirty:
+            failures.append(
+                f"working tree has {len(dirty)} uncommitted tracked change(s), e.g. "
+                f"{dirty[0][3:].strip()} -> commit them first, so the manifest matches"
+                " the commit the migration starts from")
+
+    # 3-6. The scan itself must have found something sane.
+    legacy_domains = scan_domain_file_set(guard.MAIN_SOURCE_ROOT,
+                                          guard.LEGACY_SCM_PACKAGE_PATH)
+    legacy_test = scan_domain_file_set(guard.TEST_SOURCE_ROOT,
+                                       guard.LEGACY_SCM_PACKAGE_PATH)
+    if not legacy_domains and not legacy_test:
+        failures.append("the legacy SCM package has no .java files; nothing to migrate")
+    found = {d for d in (*legacy_domains, *legacy_test) if d != ROOT_KEY}
+    if not found:
+        failures.append("no domains discovered under the legacy SCM package")
+
+    # 5. A duplicated relative path inside one (domain, source set) means the scan
+    #    could not tell two files apart, so the recorded set would be lossy.
+    for label, grouped in (("main", legacy_domains), ("test", legacy_test)):
+        for domain, paths in grouped.items():
+            duplicates = sorted({p for p in paths if paths.count(p) > 1})
+            if duplicates:
+                failures.append(f"{label}/{domain}: duplicated relative path(s): {duplicates}")
+
+    # 6. Untracked files would move with the ``git mv`` but are invisible to review,
+    #    so they cannot be part of a committed ledger. The repo-relative path is
+    #    rebuilt from (source root, package, domain, relative), with the root-level
+    #    bucket contributing no directory segment of its own.
+    all_paths = sorted(
+        guard.relative(root / guard.LEGACY_SCM_PACKAGE_PATH
+                       / ("" if domain == ROOT_KEY else domain) / rel)
+        for root, grouped in ((guard.MAIN_SOURCE_ROOT, legacy_domains),
+                              (guard.TEST_SOURCE_ROOT, legacy_test))
+        for domain, paths in grouped.items() for rel in paths)
+    try:
+        untracked = sorted(set(all_paths) - git_tracked_paths(all_paths))
+    except CheckResolutionError as error:
+        failures.append(str(error))
+        untracked = []
+    if untracked:
+        failures.append(
+            f"{len(untracked)} legacy SCM .java file(s) are not tracked by git, e.g. "
+            f"{untracked[0]} -> add them or remove them before recording the manifest")
+
+    return failures
+
+
+def record_migration_manifest(force: bool = False) -> None:
+    """Generate the manifest. Refuses once Q1 has started unless ``--force``.
+
+    The refusal is the point. If the manifest could be regenerated mid-migration, a
+    forgotten file would simply become part of the new "correct" baseline and the
+    completeness assertion would confirm a move that never happened.
+    """
+    existing = MANIFEST_PATH.is_file()
+    failures = check_manifest_preconditions()
+    if failures and not force:
+        print("ERROR: refusing to record the migration manifest.", file=sys.stderr)
+        for failure in failures:
+            print(f"       - {failure}", file=sys.stderr)
+        raise SystemExit(1)
+    if failures and existing:
+        # --force with real preconditions violated is still refused: it exists to let
+        # a developer regenerate an *uncommitted* manifest, not to overwrite the ledger.
+        print("ERROR: --force does not authorise rewriting an existing manifest while"
+              " Q1 preconditions fail.", file=sys.stderr)
+        for failure in failures:
+            print(f"       - {failure}", file=sys.stderr)
+        raise SystemExit(1)
+
+    from datetime import datetime, timezone
+    manifest = Manifest(
+        domains={},
+        generated_from_commit=git_head_commit(),
+        generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    for source_set, source_root in (("main", guard.MAIN_SOURCE_ROOT),
+                                    ("test", guard.TEST_SOURCE_ROOT)):
+        for domain, paths in scan_domain_file_set(source_root,
+                                                  guard.LEGACY_SCM_PACKAGE_PATH).items():
+            manifest.domains.setdefault(domain, {})[source_set] = sorted(paths)
+
+    MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    MANIFEST_PATH.write_text(
+        json.dumps(manifest.as_json(), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8", newline="\n")
+
+    print(f"recorded the migration manifest -> {guard.relative(MANIFEST_PATH)}")
+    print(f"  base commit : {manifest.generated_from_commit}")
+    print(f"  {'domain':14s} {'main':>6s} {'test':>6s}")
+    for domain in sorted(manifest.domains):
+        print(f"  {domain:14s} {len(manifest.expected(domain, 'main')):6d}"
+              f" {len(manifest.expected(domain, 'test')):6d}")
+    print(f"  {'TOTAL':14s} {manifest.total_main:6d} {manifest.total_test:6d}")
+    root_main = manifest.expected(ROOT_KEY, "main")
+    root_test = manifest.expected(ROOT_KEY, "test")
+    print(f"  root-level   : main {len(root_main)} / test {len(root_test)}"
+          + (f"  {root_test}" if root_test else ""))
+
+
+def assert_domain_migrated(domain: str) -> list[str]:
+    """Exact-set completeness: is *this* domain, and only this domain, moved?
+
+    Every comparison is on paths, never on counts. A count-equivalent swap
+    (``A,B,C`` -> ``A,B,D``) is the failure a count cannot see, and a file the
+    manifest never listed must not appear on the new side at all: Q1 is a namespace
+    migration, so no SCM Java file may be *added* anywhere.
+    """
+    manifest = read_manifest()
+    failures: list[str] = []
+    if domain not in manifest.domains:
+        return [f"{domain}: not present in {guard.relative(MANIFEST_PATH)}"
+                f" (domains recorded: {', '.join(sorted(manifest.domains))})"]
+
+    for source_set in ("main", "test"):
+        expected = manifest.expected(domain, source_set)
+        source_root = guard.MAIN_SOURCE_ROOT if source_set == "main" else guard.TEST_SOURCE_ROOT
+
+        def relative_set(package_path: Path) -> set[str]:
+            directory = source_root / package_path / domain
+            if not directory.is_dir():
+                return set()
+            return {path.relative_to(directory).as_posix()
+                    for path in directory.rglob(f"*{SERVER_JAVA_SUFFIX}")}
+
+        legacy = relative_set(guard.LEGACY_SCM_PACKAGE_PATH)
+        new = relative_set(guard.NEW_SCM_PACKAGE_PATH)
+
+        if legacy:
+            failures.append(
+                f"{domain} {source_set}: {len(legacy)} file(s) still under the legacy"
+                f" package, e.g. {sorted(legacy)[0]}")
+        both = sorted(legacy & new)
+        if both:
+            failures.append(
+                f"{domain} {source_set}: {len(both)} file(s) present under BOTH packages"
+                f" ({both[0]}); Q1 must move files, never copy them")
+
+        still_missing = sorted(set(expected) - new)
+        unexpected = sorted(new - set(expected))
+        if still_missing:
+            failures.append(
+                f"{domain} {source_set}: {len(still_missing)} expected file(s) not on the"
+                f" new side, e.g. {still_missing[0]}")
+        if unexpected:
+            failures.append(
+                f"{domain} {source_set}: {len(unexpected)} file(s) on the new side are not"
+                f" in the manifest, e.g. {unexpected[0]}"
+                " -> Q1 moves files, it does not add them")
+
+        print(f"  {domain:14s} {source_set:4s} legacy {len(legacy):4d}   new {len(new):4d}"
+              f"   expected {len(expected):4d}"
+              + ("   OK" if not (legacy or still_missing or unexpected) else "   FAIL"))
+    return failures
 
 
 # ------------------------------------------------------------------------------- probe
@@ -491,6 +954,8 @@ def build_checks() -> list[Check]:
         check_archunit_analyzes_both_packages,
         check_archunit_finance_exception_stays_exact,
         check_baseline_migration_tooling,
+        check_capture_is_identity_safe,
+        check_domain_completeness_contract,
         check_editorconfig_is_markdown_safe,
         check_stocktake_fixture_is_isolated,
         check_probe_is_configured,
@@ -510,6 +975,8 @@ def _unused_checks() -> list[Check]:
         check_archunit_analyzes_both_packages(),
         check_archunit_finance_exception_stays_exact(),
         check_baseline_migration_tooling(),
+        check_capture_is_identity_safe(),
+        check_domain_completeness_contract(),
         check_editorconfig_is_markdown_safe(),
         check_stocktake_fixture_is_isolated(),
         check_probe_is_configured(),
@@ -525,7 +992,41 @@ def main() -> int:
         action="store_true",
         help="also compile a throwaway class under com.xsy.scm and require the gates to see it",
     )
+    parser.add_argument(
+        "--assert-domain-migrated",
+        metavar="DOMAIN",
+        help="require that one Q1 domain has moved completely, compared against the "
+             "manifest's exact file set (not counts). This is the only check that can "
+             "see a file with no recorded debt.",
+    )
+    parser.add_argument(
+        "--record-migration-manifest",
+        action="store_true",
+        help="generate tools/quality/baseline/package-migration-manifest.json from a "
+             "filesystem scan. Run ONCE before Q1 starts: it refuses when the new "
+             "package already holds SCM Java, when the tree is dirty, and on any "
+             "inconsistent scan.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="regenerate an uncommitted manifest. Never used in the normal Q1 flow, and "
+             "it cannot overwrite a committed manifest while preconditions fail.",
+    )
+    parser.add_argument(
+        "--list-domains",
+        action="store_true",
+        help="print the current domain/file-set inventory, then exit",
+    )
     args = parser.parse_args()
+
+    if args.list_domains:
+        report_domain_inventory()
+        return 0
+
+    if args.record_migration_manifest:
+        record_migration_manifest(force=args.force)
+        return 0
 
     checks = build_checks()
     print("=== Q1 package migration readiness ===")
@@ -534,6 +1035,19 @@ def main() -> int:
         print(f"[{status}] {check.name}: {check.requirement}")
         for failure in check.failures:
             print(f"       - {failure}")
+
+    if args.assert_domain_migrated:
+        domain = args.assert_domain_migrated
+        print(f"\n--- domain completeness: {domain} ---")
+        failures = assert_domain_migrated(domain)
+        checks.append(Check(
+            "domain-completeness",
+            f"{domain} 域在新旧两包间完整迁移且文件总数守恒",
+            failures,
+        ))
+        print("[PASS]" if not failures else "[FAIL]",
+              f"domain-completeness: {domain}",
+              "" if not failures else f"({len(failures)} failure(s), listed above)")
 
     if args.with_probe:
         try:

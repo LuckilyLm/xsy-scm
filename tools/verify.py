@@ -108,6 +108,13 @@ class Verification:
         self.run("baseline-migration-selftest",
                  [sys.executable, str(ROOT / "tools/quality/test_baseline_path_migration.py")],
                  ROOT / "tools/quality")
+        self.run("ledger-safety-selftest",
+                 [sys.executable, str(ROOT / "tools/quality/test_quality_guard_ledger.py")],
+                 ROOT / "tools/quality")
+        self.run("migration-manifest-selftest",
+                 [sys.executable,
+                  str(ROOT / "tools/quality/test_package_migration_manifest.py")],
+                 ROOT / "tools/quality")
         self.run("package-migration-readiness",
                  [sys.executable, str(ROOT / "tools/quality/package_migration_readiness.py")],
                  ROOT)

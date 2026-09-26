@@ -19,13 +19,23 @@ difference can be trusted with a blocking gate.
 Modes
 -----
 ``scan``     print current findings and counts; never writes anything.
-``capture``  rewrite the baselines of the families that were scanned.
+``capture``  shrink the baselines of the families that were scanned.
 ``check``    compare against the baselines and exit non-zero on any growth.
 
 ``capture`` refuses to enlarge a baseline unless ``--allow-growth`` is given, so
 "a new rule fires everywhere, just baseline it" cannot happen by accident. A
 family that was not scanned is never rewritten, so forgetting ``--checkstyle``
 cannot silently empty that baseline.
+
+``capture`` is *identity-safe*: before writing anything it applies the same
+identity-level test as ``check`` - every current identity must already be in the
+baseline, and every current count must be at most the recorded one. Comparing
+totals is not enough, and the gap was not academic: fixing one recorded defect
+while introducing one new defect elsewhere leaves the total unchanged, so a
+total-only rule reports ``+0 PASS`` and writes the new defect straight into the
+ledger. The next ``check`` then passes too, because the new debt is now part of
+the baseline - the ledger launders exactly what it exists to prevent. Under the
+identity rule that run fails, and ``capture`` writes nothing.
 """
 
 from __future__ import annotations
@@ -624,37 +634,84 @@ def command_scan(args: argparse.Namespace) -> int:
     return 0
 
 
+@dataclass(frozen=True)
+class LedgerBreach:
+    """A current finding the recorded baseline does not already permit.
+
+    ``kind`` is ``new-identity`` (this rule+path+locator was never recorded) or
+    ``grown-count`` (it was recorded, but the current count exceeds the allowed
+    one). Both are blocking, and ``capture`` treats them exactly as ``check`` does.
+    """
+
+    identity: str
+    allowed: int
+    current: int
+
+    @property
+    def kind(self) -> str:
+        return "new-identity" if self.allowed == 0 else "grown-count"
+
+
+def ledger_breaches(family: str, findings: list[Finding]) -> list[LedgerBreach]:
+    """Current findings for one family that the recorded baseline does not permit.
+
+    This is the identity-level comparison, and it is deliberately the *only*
+    place that decides whether a baseline may be rewritten. A total is a
+    coincidence waiting to happen: fix one defect, add one defect, total
+    unchanged, and a total-only rule sees nothing wrong. Identities do not
+    cancel like that, so a swap cannot hide behind a matching arithmetic.
+    """
+    allowed = read_baseline(family)
+    breaches: list[LedgerBreach] = []
+    for identity, count in counts_by_identity(findings).items():
+        permitted = allowed.get(identity, 0)
+        if count > permitted:
+            breaches.append(LedgerBreach(identity, permitted, count))
+    return sorted(breaches, key=lambda breach: (breach.kind, breach.identity))
+
+
 def command_capture(args: argparse.Namespace) -> int:
     scan = collect(args.checkstyle)
     grouped = group_by_rule(scan.findings)
-    grew: list[str] = []
+    detail_by_identity = {finding.identity: finding for finding in scan.findings}
+
     initialised: list[str] = []
+    breaches: dict[str, list[LedgerBreach]] = {}
+    pending: list[tuple[RuleFamily, list[Finding], int, int]] = []
     print(f"{'family':34s} {'before':>8s} {'after':>8s}")
+
     for family in FAMILIES:
         if family.name not in scan.scanned:
             print(f"{family.name:34s} {'-':>8s} {'-':>8s}  (not scanned, baseline untouched)")
             continue
+        findings = grouped.get(family.name, [])
         established = baseline_path(family.name).is_file()
-        before = sum(read_baseline(family.name).values())
-        after = write_baseline(family, grouped.get(family.name, []))
-        note = f"({after - before:+d})" if established else "(INITIAL CAPTURE)"
-        print(f"{family.name:34s} {before:8d} {after:8d}  {note}")
+        # The arithmetic is computed but never trusted on its own: it is printed
+        # for humans, while `ledger_breaches` decides whether the file is written.
+        false_pass = sum(read_baseline(family.name).values())
+        after = occurrences(findings)
+        note = f"({after - false_pass:+d})" if established else "(INITIAL CAPTURE)"
+        blocked = ledger_breaches(family.name, findings) if established else []
+        if blocked:
+            note = f"BLOCKED ({len(blocked)} unrecorded findings)"
+            breaches[family.name] = blocked
+        print(f"{family.name:34s} {false_pass:8d} {after:8d}  {note}")
         if not established:
             # The ratchet needs a committed baseline to compare against; creating the
             # first one is not "growth". Deleting a baseline to re-capture it freely
             # is visible in review, which is the intended control.
             initialised.append(family.name)
-        elif after > before:
-            grew.append(family.name)
+        pending.append((family, findings, false_pass, after))
+
     sys.stdout.flush()
-    if grew and not args.allow_growth:
-        print(
-            "\nERROR: baseline would grow for: " + ", ".join(grew) + "\n"
-            "A baseline may only shrink. Fix the new findings, or re-run with\n"
-            "--allow-growth and record the reason under docs/quality/.",
-            file=sys.stderr,
-        )
+    if breaches:
+        _print_capture_breaches(breaches, detail_by_identity, args.limit)
         return 1
+    # Nothing is written until every established family has cleared its identity
+    # check, so a run that fails on one family cannot leave the others rewritten.
+    for family, findings, before, after in pending:
+        if family.name in scan.scanned:
+            write_baseline(family, findings)
     if initialised:
         print(
             "\ninitial capture (no previous baseline): " + ", ".join(initialised)
@@ -662,6 +719,40 @@ def command_capture(args: argparse.Namespace) -> int:
         )
     print(f"\nbaselines written to {relative(BASELINE_DIR)}/")
     return 0
+
+
+def _print_capture_breaches(
+    breaches: dict[str, list[LedgerBreach]],
+    detail_by_identity: dict[str, Finding],
+    limit: int,
+) -> None:
+    """Explain the refusal, using the same vocabulary ``check`` uses."""
+    total = sum(len(items) for items in breaches.values())
+    print(
+        f"\nERROR: refusing to write {total} finding(s) that the baseline does not "
+        "already permit.\n"
+        "       A baseline may only shrink: every current identity must be recorded and\n"
+        "       every count must be at most the recorded one. A total that happens to be\n"
+        "       unchanged does not permit a swap - fix the new finding, or record the\n"
+        "       reason under docs/quality/ before using --allow-growth for a new rule.",
+        file=sys.stderr,
+    )
+    for family, items in breaches.items():
+        print(f"\n--- {family} ({len(items)} unrecorded) ---", file=sys.stderr)
+        for breach in items[:limit]:
+            finding = detail_by_identity.get(breach.identity)
+            if finding is None:
+                continue
+            position = f":{finding.line}" if finding.line else ""
+            if breach.kind == "new-identity":
+                print(f"  {finding.path}{position}  [{finding.locator}]  {finding.detail}",
+                      file=sys.stderr)
+            else:
+                print(f"  {finding.path}{position}  [{finding.locator}]"
+                      f"  {breach.allowed} -> {breach.current}", file=sys.stderr)
+        if len(items) > limit:
+            print(f"  ... and {len(items) - limit} more", file=sys.stderr)
+
 
 
 def command_check(args: argparse.Namespace) -> int:
@@ -762,12 +853,13 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("scan", parents=[shared], help="report current findings")
     capture = subparsers.add_parser(
-        "capture", parents=[shared], help="rewrite the baselines of the scanned families"
+        "capture", parents=[shared], help="shrink the baselines of the scanned families"
     )
     capture.add_argument(
         "--allow-growth",
         action="store_true",
-        help="permit a larger baseline (the reason must be recorded under docs/quality/)",
+        help="permit unrecorded findings; only for initialising a brand-new rule "
+             "(the reason must be recorded under docs/quality/)",
     )
     subparsers.add_parser("check", parents=[shared], help="fail on any new or grown finding")
     return parser

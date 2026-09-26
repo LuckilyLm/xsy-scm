@@ -199,26 +199,89 @@ python tools/quality/migrate_baseline_paths.py --domain common --apply
 
 ## 3. Q1 执行顺序建议
 
+### 3.0 Q1 开始前：一次性生成迁移清单（Q0.3）
+
+```bash
+python tools/quality/package_migration_readiness.py --record-migration-manifest
+```
+
+只在**全部**满足时才能执行（否则脚本拒绝）：
+
+| # | 前置 | 为什么 |
+| --- | --- | --- |
+| 1 | `com/xsy/scm` 没有正式 SCM `.java` | 有就说明 Q1 已开始，此时记录会把「迁了一半」固化成正确基线 |
+| 2 | `git status` 无未提交的已跟踪改动 | 清单必须对应一个确定的 commit，否则记的不是将要移动的那批文件 |
+| 3 | 旧 SCM 包非空 | 空包没有可迁对象 |
+| 4 | 能发现至少一个 domain | 一个都没发现说明扫描范围写错了 |
+| 5 | 无重复相对路径 | 扫描分不清两个文件时，记录的集合是有损的 |
+| 6 | 旧包 `.java` 全部已被 git 跟踪 | 未跟踪文件会随 `git mv` 一起走，却不在评审视野里 |
+
+生成产物 `tools/quality/baseline/package-migration-manifest.json`，**记录精确文件路径集合**，不是数量。
+
+> **为什么必须是集合而不是数量**：`{A.java, B.java, C.java}` 和 `{A.java, B.java, D.java}`
+> 都是 3 个文件，但只有一个是正确迁移。数量相等不能证明集合相等，
+> 而「漏了 A、多了 D」这类错误恰恰在数量上完全隐形。
+
+**Q1 开始后禁止重建。** `--record-migration-manifest` 在前置条件失败时一律拒绝；
+`--force` 只能重写**尚未提交**的清单，且在前置失败时仍然拒绝覆盖已存在的清单。
+理由：如果清单能在迁移中途重新生成，一个被漏掉的文件就会自动变成「新的正确基线」，
+完整性断言会为一个从未发生的迁移背书。正常 Q1 流程**绝不使用 `--force`**。
+
+### 3.1 各域顺序
+
 1. 先落 `AdminApplication.COMPONENT_SCAN` → `{net.lab1024.sa, com.xsy}` 双根
    （`@ComponentScan` 与 `@MapperScan` **都要**改，只改前者 Mapper 会静默注不进），
    验证一次启动与全量后端测试。此时新包还不存在，双根无副作用。
-2. 按域整体移动，一域一次 commit，顺序建议 `common → warehouse → product → supplier →
+2. 确认 manifest 已存在（§3.0）。
+3. 按域整体移动，一域一次 commit，顺序建议 `common → warehouse → product → supplier →
    customer → pricing → order → purchase → inventory → sorting → delivery → finance →
-   report → screen → dashboard`。每域结束后跑：`verify.py quality` + 该域定向 IT。
-3. 每域的移动顺序（**同一 commit 内**完成四步）：
+   report → screen → dashboard`。每域结束后跑 `verify.py quality` + 该域定向 IT。
+4. 每域正式顺序（**同一 commit 内**，顺序不可换）：
+
    ```bash
-   git mv .../net/lab1024/sa/admin/module/scm/<domain> .../com/xsy/scm/<domain>   # main + test
-   python tools/quality/migrate_baseline_paths.py --domain <domain> --dry-run   # 先看数字
+   # ① git mv 该域的 main + test
+   git mv .../net/lab1024/sa/admin/module/scm/<domain> .../com/xsy/scm/<domain>
+
+   # ② 同步修改 package 声明、imports、XML namespace / type 引用、
+   #    以及必要的包名字符串引用
+
+   # ③ baseline 路径改写演练，确认四个数字
+   python tools/quality/migrate_baseline_paths.py --domain <domain> --dry-run
+   #    identity before == after，occurrence before == after，
+   #    collision == 0，unmoved == 0        <- 四者全中才继续
    python tools/quality/migrate_baseline_paths.py --domain <domain> --apply
-   python tools/quality/quality_guard.py capture && python tools/quality/quality_guard.py check --checkstyle
+
+   # ④ 先证明没有新债
+   python tools/quality/quality_guard.py check --checkstyle
+
+   # ⑤ 域完整性：按 manifest 的精确文件集合比对
+   python tools/quality/package_migration_readiness.py --assert-domain-migrated <domain>
+
+   # ⑥ 定向测试
+
+   # ⑦ 确认无新债之后才收缩账本
+   python tools/quality/quality_guard.py capture --checkstyle
+   python tools/quality/quality_guard.py check --checkstyle
+
+   # ⑧ 总门禁 + 该域定向后端测试
+   python tools/verify.py quality
    ```
-   `capture` 在这里是**收缩**旧包账本（该域的 41 条之类退出账本），
-   四个债务 family 必须保持 `+0`；若 `capture` 报出增长，说明这次移动带进了新债务，
-   必须修代码而不是放过去。
-4. 旧包文件数归零后：删除 `legacy-scm-package` family 及其 baseline、
+
+   **顺序是 `check → capture`，不是 `capture → check`。** 这个区别在 Q0.3 之前是真的会出事的：
+   旧版 `capture` 只比较 occurrence 总数，于是「修掉 1 条旧债 + 新增 1 条等量新债」总数不变，
+   它报 `+0 PASS` 并把新债写进账本，紧随其后的 `check` 自然也是 PASS —— 新债务被洗白。
+   Q0.3 之后 `capture` 自身也做 identity 级校验（见 §10），`capture` 先跑不再直接导致洗债，
+   但先 `check` 仍是正确顺序：它让「这次移动没有带进新债」由一个**独立于账本改写**的步骤证明，
+   而不是依赖 `capture` 自己的判断。
+
+   `capture` 在这里是**收缩**该域在旧包账本里的记录；四个债务 family 必须是 `+0`，
+   若报出 `BLOCKED (... unrecorded findings)`，说明这次移动带进了新债，
+   必须修代码，不能用 `--allow-growth` 放过去。
+5. 旧包文件数归零后：确认 `旧 SCM package = 0` 且 `新 SCM package = manifest 全集合`，
+   然后删除 `package-migration-manifest.json`、`legacy-scm-package` family 及其 baseline、
    收缩 `SCM_PACKAGE_PATHS` 为单条、去掉 pom 的旧 includes、
    启用 ArchUnit 的 `com.xsy.scm..` 正向规则，并同步 readiness 脚本的断言。
-5. 迁包 commit 与 formatter commit 必须分开（计划 §17 Q1）。
+6. 迁包 commit 与 formatter commit 必须分开（计划 §17 Q1）。
 
 ---
 
@@ -275,6 +338,8 @@ N 为 0 时写入 `incomplete`，退出码变 2（verify.py 里 2 的既有语�
 | 4 | ArchUnit 双包 + 非空 | 注解引用两个常量、常量值正确、存在空扫描断言 |
 | 5 | Finance 例外未扩大 | 必须仍是 `belongToAnyOf(OrderIdempotencyService.class)`；出现按包排除即失败 |
 | 6 | baseline 迁移工具 | 工具与自测都在，两条映射各自命中且只命中一个源根 |
+| 6a | `capture` identity 安全（Q0.3） | **执行**：构造「修 1 条 + 新增 1 条等量新债」的等总数替换，要求被 `ledger_breaches` 拒绝、账本未被改写，且纯子集仍被接受（否则 `capture` 永远无法收缩） |
+| 6b | domain 完整迁移契约（Q0.3） | 断言 manifest 是该契约的比较源，比较必须是**集合**而非计数（检查 `expected` / `still_missing` / `unexpected` / `legacy & new` 四者都在），并确认 `--force` 无法在 Q1 前置失败时覆盖已存在清单 |
 | 7 | `.editorconfig` 对 md 安全 | **按 editorconfig 语义求值** `*.md` 的有效值（后段覆盖前段），要求 trim=false 且 charset/EOL/final-newline 仍在，同时确认 Java 侧没被顺手放宽 |
 | 8 | 盘点 IT 已脱离共享仓库 | IT 内不得再出现 `seedWarehouseId()`，必须有 `fixtureWarehouseId` 覆盖 + `newWarehouse(`，基类仍 `@Transactional` |
 
@@ -537,3 +602,231 @@ git diff --check                           clean
 > 是在**什么都没移动**的状态下测的；当时工具不校验磁盘，所以它只证明「前缀替换是双射」，
 > 并没有、也不可能证明这次改写与真实迁移一致。加上磁盘校验之后，这种状态下必然失败——
 > 这正是要的行为。有意义的演练必须先真移动、再 `--dry-run`/`--apply`，见 §8.1。
+
+---
+
+## 9. Q1 Package Migration Manifest
+
+### 9.1 为什么不是「每域迁移前记一次数量」
+
+原先的候选方案是每个域迁移前手工执行一次 `--record-domain-counts`。它有两个问题：
+
+1. **依赖操作时序。** 如果某个域已经部分迁移后才记录，中间状态就被固化成「正确基线」，
+   而之后所有断言都会为这个错误状态背书。
+2. **数量本身不够。** 见 §9.3。
+
+所以改成 Q1 开始前**一次性**生成 manifest，记录**精确文件路径集合**。
+
+### 9.2 当前真实基线（manifest 生成时实测）
+
+```text
+domain             main   test
+_root (root-level)      0      1     <- ScmArchitectureTest.java，不属于任何 domain
+common               27     14
+customer             36      8
+dashboard             4      1
+delivery             46      7
+finance              57     16
+inventory           122     27
+order                78     10
+pricing              46      4
+product              78     11
+purchase             87     37
+report               26      2
+screen                9      3
+sorting              28      2
+supplier             27      7
+warehouse            21      5
+TOTAL               692    155
+```
+
+`692 / 155 / 847` 三者互相解释：`692 + 155 = 847`，正是 `legacy-scm-package`
+family 的 identity 数，也与磁盘逐一核对无误（baseline 有而磁盘没有 = 0，反之 = 0）。
+
+**这些数字不是硬编码的真理**，它们由扫描得出。domain 列表同样由代码自动发现
+（扫描旧包的一级子目录），没有任何一处写死域名 ——
+自测 `test_manifest_is_discovered_from_the_tree_not_hard_coded` 会直接检查源码里
+不存在 `"inventory"` / `"purchase"` / `"warehouse"` 这类字面量。
+
+### 9.3 记录精确文件集合，不是数量
+
+```json
+{
+  "domains": {
+    "common": {
+      "main": ["constant/ScmEnableStatusEnum.java", "scope/ScmDataScopeService.java", ...],
+      "test": ["ScmW5PgITBase.java", ...]
+    },
+    "_root": { "main": [], "test": ["ScmArchitectureTest.java"] }
+  }
+}
+```
+
+**数量相等不能证明集合相等**：预期 `{A,B,C}`、实际 `{A,B,D}`，数量仍然是 3，
+但迁移显然错误。只有比较集合才看得见。
+
+### 9.4 root-level 文件单独处理
+
+`ScmArchitectureTest.java` 直接位于 SCM 包根下，不属于任何 domain。
+它既不遗漏、也不硬塞进 `common` —— 归入 `_root`，在 Q1 收尾阶段单独迁移。
+把一个文件移进错误的 domain 仍能满足所有数量，这正是本 manifest 要消灭的一类错误。
+
+### 9.5 断言：`--assert-domain-migrated`
+
+```bash
+python tools/quality/package_migration_readiness.py --assert-domain-migrated common
+```
+
+直接读取 manifest，对该域做**精确集合**断言：
+
+```text
+OLD main/common/*.java  == 0
+OLD test/common/*.java  == 0
+NEW main/common/*.java  == manifest.common.main   （集合相等）
+NEW test/common/*.java  == manifest.common.test   （集合相等）
+old ∩ new                == ∅                       （只能 move，不能 copy）
+```
+
+并且**不允许 unexpected file**：manifest 里没有 `common/Foo.java`，
+而迁移后新包出现 `com/xsy/scm/common/Foo.java` → FAIL，
+**即使文件数量刚好没变**。理由：Q1 是纯 namespace migration，不是业务开发，
+Q1 期间不应该新增任何 SCM Java 文件。
+
+### 9.6 攻击测试（A–H）
+
+`tools/quality/test_package_migration_manifest.py` 直接把 `assert_domain_migrated`
+跑在临时构造的目录树上（不改动真实 checkout）：
+
+| 用例 | 场景 | 期望 |
+| --- | --- | --- |
+| A | 漏迁 1 个文件（仍在旧包） | FAIL |
+| B | 漏 `A.java`、却新增 `D.java`，数量仍相等 | **FAIL**（集合不等） |
+| C | 旧包与新包同时保留同一文件 | FAIL（copy 而非 move） |
+| D | 新包多一个 manifest 不存在的文件 | FAIL（Q1 不新增文件） |
+| E | 文件全部精确迁移 | **PASS**（唯一允许通过的情形） |
+| F | 迁移中途重新 record manifest | FAIL（拒绝，`--force` 也不能覆盖已提交清单） |
+| G | `capture`：修 1 + 新 1 | FAIL 且 baseline **字节不变** |
+| H | `capture`：修 2 + 新 1 | FAIL 且 baseline **字节不变** |
+
+外加一条反向用例：纯收缩（子集）仍必须被写入 —— 否则 `capture` 永远无法收缩账本。
+
+---
+
+## 10. Q0.3 复核修正
+
+### 10.1 `capture` 可以洗掉「等量替换」的新债务
+
+**问题**：旧版 `command_capture()` 判断能不能写账本，只比较 `before` / `after` 两个
+**occurrence 总数**，不看 identity 是否发生替换。
+
+**实测复现**（真实仓库、真实缺陷）：在 `CustomerTypeAddForm.java` 上修掉 1 条已记录的
+`magic-string-domain-literal`（`"ENABLED"`），同时新增 1 条等量的 `"CONFIRMED"`：
+
+```text
+python tools/quality/quality_guard.py capture
+  magic-string-domain-literal             191      191  (+0)      <- 总数不变
+  exit = 0
+  baseline 被改写: True
+  CONFIRMED 已进 baseline: True
+
+python tools/quality/quality_guard.py check
+  RESULT: PASS                                                   <- 新债已被账本接纳
+```
+
+「修掉 2 条 + 新增 1 条」更糟：总数 191 → 190 会被读成「账本下降」，新债照洗。
+这与最初定的「历史债务允许，新增债务必须为 0」直接冲突。
+
+**修法**：`capture` 写盘前执行与 `check` 完全相同的 identity 级判定
+（`ledger_breaches`）：
+
+```text
+每个 current identity 必须已在 baseline 中
+每个 current count  必须 <= 记录的 count
+```
+
+不满足即**整轮拒绝写盘**（不是只跳过那个 family）—— 一次只写了一半的 `capture`
+会留下一个「部分更新」的账本，而没有任何检查能可靠发现这件事：
+
+```text
+magic-string-domain-literal             191      191  BLOCKED (1 unrecorded findings)
+ERROR: refusing to write 1 finding(s) that the baseline does not already permit.
+exit = 1
+baseline 被改写: False
+随后 check: RESULT: FAIL
+```
+
+**`--allow-growth` 的边界被收窄了**：
+
+| 情形 | Q0.2 行为 | Q0.3 行为 |
+| --- | --- | --- |
+| 修 1 条 + 新增 1 条（总数不变） | 静默洗白 | **FAIL，不写盘** |
+| 修 2 条 + 新增 1 条（总数下降） | 静默洗白 | **FAIL，不写盘** |
+| 修 1 条 + 新增 2 条（总数上升） | FAIL | FAIL |
+| 同一文件同一 checkstyle 命中 2 次 | 允许 | **允许**（identity 已记录，count 未超） |
+| 给已有规则**新增**一条 identity | 需 `--allow-growth` | 需 `--allow-growth` |
+
+最后一条必须保留：Checkstyle 确实会对同一文件重复报同一条 check，
+也是 `Finding.count` 存在的原因。`--allow-growth` 只覆盖**新 identity 的初始建账**，
+不覆盖任何 grown count —— 那永远是无条件失败。
+
+### 10.2 没有机器保证「一个域已完整迁完」
+
+**问题**：`--domain <domain>` 只验证**有 baseline record 的文件**确实移动了。
+一个完全干净的文件（无 magic string、无坏命名、无阶段注释、无 Checkstyle 债务）
+可能根本没有普通 baseline identity，`legacy-scm-package` 又对该文件被
+`SKIPPED_FAMILIES` 跳过，于是它忘迁了也没人发现。
+
+**实测**：`common` 有 41 个 Java 文件（main 27 / test 14），
+与全部五个债务 family 交叉比对后：
+
+```text
+common 旧包文件总数        : 41
+其中至少有一条普通 baseline identity: 1   <- 仅 4 条 checkstyle / stage-comment 记录，落在 1 个文件上
+完全干净（无任何普通 debt）  : 40
+```
+
+也就是说「完全干净的文件」在 `common` 里不是假设，而是**几乎全部**。
+`--domain common` 实际只覆盖了 1 个文件。实测漏迁：
+
+```text
+模拟：common 迁 26/27（漏 1 个干净文件），test 迁 14/14
+--domain common 输出中该文件名出现次数: 0        <- 工具完全看不到它
+```
+
+**修法**：见 §9 —— 用 manifest 的精确文件集合替代数量比较。
+
+### 10.3 实现过程中被真实仓库纠正的三处
+
+三处都是先写错、被实际运行纠正的，记录下来因为它们都是「看起来对」的错误：
+
+1. **`git ls-files` 没有 `--stdin`。** 首版用 `ls-files --cached --stdin` 批量喂路径，
+   实际返回 exit 129 / `unknown option 'stdin'`。改成命令行传路径。
+2. **847 个绝对路径超过 Windows 命令行长度上限。**
+   改命令行后立刻撞上 `FileNotFoundError: [WinError 206] 文件名或扩展名太长`。
+   必须分批（`GIT_BATCH_SIZE = 100`）。首版注释里我写的是「847 个路径远在限制内」，
+   实测证明是错的。
+3. **root-level 路径被拼错。** 组装 repo-relative 路径时给 `_root` 桶也加了一段目录名，
+   得到 `.../scm/_root/ScmArchitectureTest.java` 这种不存在的路径，
+   导致所有测试文件都被误报为「未被 git 跟踪」。修法是 `_root` 不贡献目录段。
+
+### 10.4 顺带修掉的一个自伤：glob 太宽
+
+早期版本加入 `domain-counts.txt`（Q0.3 已移除）后，
+`migrate_baseline_paths.baseline_files()` 的 `BASELINE_DIR.glob("*.txt")`
+把这个三字段账本也当成 baseline 解析：
+
+```text
+INVALID: domain-counts.txt:9 expected 4 tab-separated fields, got 3
+RESULT: FAIL
+```
+
+后果是**每一次**迁移演练都变红，读起来像「改写器坏了」而不是「glob 太宽了」。
+修法是把选择收窄到 family 白名单（`path.stem in FAMILY_NAMES`），
+并加两条自测钉住（只选已知 family、`domain-counts.txt` 不产生 invalid line）。
+manifest 是 `.json`，不受这条 glob 影响。
+
+### 10.5 零源码改动声明
+
+**本轮没有触碰任何 Java 源码与 baseline 内容**：
+`git diff --stat -- xsy-scm-server/` 为空，六个 family 的 current 与 baseline 全部相等。
+
