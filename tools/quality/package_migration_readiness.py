@@ -36,14 +36,12 @@ import quality_guard as guard
 
 ROOT = guard.ROOT
 POM = guard.SERVER / "pom.xml"
-ARCHITECTURE_TEST = (
-    guard.SERVER / "sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/ScmArchitectureTest.java"
-)
-STOCKTAKE_IT = (
-    guard.SERVER
-    / "sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/inventory/ScmStocktakeImportPgIT.java"
-)
-W5_BASE = guard.SERVER / "sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/common/ScmW5PgITBase.java"
+# 这三个文件都会被 Q1 搬走，所以只记「相对包根的相对路径」，用 old/new 双根解析。
+# 写死旧路径的话，common 一迁完，W5_BASE 就变成不存在的路径，text() 返回空串，
+# readiness 会因为「找不到被检查文件」而失败 —— 而它本该在迁移全程继续有效。
+ARCHITECTURE_TEST_RELATIVE = "ScmArchitectureTest.java"
+W5_BASE_RELATIVE = "common/ScmW5PgITBase.java"
+STOCKTAKE_IT_RELATIVE = "inventory/ScmStocktakeImportPgIT.java"
 MIGRATION_TOOL = Path(__file__).resolve().parent / "migrate_baseline_paths.py"
 MIGRATION_SELFTEST = Path(__file__).resolve().parent / "test_baseline_path_migration.py"
 EDITORCONFIG = ROOT / ".editorconfig"
@@ -64,6 +62,32 @@ class Result:
     @property
     def ok(self) -> bool:
         return not any(check.failures for check in self.checks)
+
+
+def resolve_migrating_file(relative_path: str) -> Path:
+    """Find a test source by its path relative to the SCM package, in either package.
+
+    Exactly one of the two locations may exist. Both existing means a copy rather
+    than a move (the file would be compiled twice and scanned twice), and neither
+    existing means this check has silently lost its subject.
+    """
+    candidates = [
+        guard.TEST_SOURCE_ROOT / package_path / relative_path
+        for package_path in (guard.LEGACY_SCM_PACKAGE_PATH, guard.NEW_SCM_PACKAGE_PATH)
+    ]
+    present = [path for path in candidates if path.is_file()]
+    if len(present) == 1:
+        return present[0]
+    if not present:
+        raise CheckResolutionError(
+            f"{relative_path}: found in neither SCM package; this check has lost its subject")
+    raise CheckResolutionError(
+        f"{relative_path}: present in both SCM packages ({len(present)} copies);"
+        " Q1 must move files, not duplicate them")
+
+
+class CheckResolutionError(RuntimeError):
+    """A precondition could not be evaluated at all, which is not the same as passing."""
 
 
 def text(path: Path) -> str:
@@ -125,9 +149,11 @@ def check_guard_rejects_empty_source_set() -> Check:
     check = Check("guard-non-empty", "生产源码集为空时 Quality Guard 必须失败，而不是 0 finding PASS")
     original_paths = guard.SCM_PACKAGE_PATHS
     try:
-        guard.SCM_PACKAGE_PATHS = (guard.NEW_SCM_PACKAGE_PATH,)
+        # 用一条两边都不存在的路径来制造空集。曾经这里用的是「只有新包」，
+        # 但 Q1 迁到一半时新包已经有文件，那条断言就会在迁移中途假失败。
+        guard.SCM_PACKAGE_PATHS = (Path("net/lab1024/sa/admin/module/scm-quietly-renamed"),)
         if guard.scm_main_sources():
-            check.failures.append("com/xsy/scm unexpectedly already holds production sources")
+            check.failures.append("the sentinel package unexpectedly resolved to sources")
         try:
             guard.collect(None)
             check.failures.append("collect() returned findings for an empty source set")
@@ -159,7 +185,7 @@ def check_checkstyle_scans_both_packages() -> Check:
 
 def check_archunit_analyzes_both_packages() -> Check:
     check = Check("archunit-dual-package", "ArchUnit 同时分析旧包与 com.xsy.scm 且拒绝空扫描")
-    source = text(ARCHITECTURE_TEST)
+    source = text(resolve_migrating_file(ARCHITECTURE_TEST_RELATIVE))
     annotation = re.search(r"@AnalyzeClasses\((.*?)\nclass\s", source, re.DOTALL)
     if not annotation:
         check.failures.append("could not locate the @AnalyzeClasses annotation block")
@@ -187,7 +213,7 @@ def check_archunit_finance_exception_stays_exact() -> Check:
     domain, which is exactly how such an exception silently becomes no exception.
     """
     check = Check("archunit-finance-exception", "Finance 历史例外保持精确到类")
-    source = text(ARCHITECTURE_TEST)
+    source = text(resolve_migrating_file(ARCHITECTURE_TEST_RELATIVE))
     if "belongToAnyOf(OrderIdempotencyService.class)" not in source:
         check.failures.append("the class-level allowlist is gone or renamed")
     for widening in ("resideInAnyPackage(\"..scm.finance..\")", "resideInAPackage(\"..finance..\")"):
@@ -200,7 +226,8 @@ def check_archunit_finance_exception_stays_exact() -> Check:
 
 
 def check_baseline_migration_tooling() -> Check:
-    check = Check("baseline-migration-tool", "baseline 路径迁移工具存在且映射覆盖 main+test")
+    check = Check("baseline-migration-tool",
+                  "baseline 迁移支持按域改写、跳过旧包账本、并拒绝改写未移动的文件")
     if not MIGRATION_TOOL.is_file():
         check.failures.append("tools/quality/migrate_baseline_paths.py is missing")
         return check
@@ -208,21 +235,21 @@ def check_baseline_migration_tooling() -> Check:
         check.failures.append("the rewriter's self-test is missing")
         return check
     module = __import__("migrate_baseline_paths")
-    if len(module.DEFAULT_MAPPINGS) != 2:
-        check.failures.append("expected exactly one mapping per SCM source root (main + test)")
     source_roots = (guard.relative(guard.MAIN_SOURCE_ROOT), guard.relative(guard.TEST_SOURCE_ROOT))
-    covered: set[str] = set()
-    for from_prefix, to_prefix in module.DEFAULT_MAPPINGS:
+    covered = {prefix for pair in module.whole_package_mappings()
+                for prefix in source_roots if pair[0].startswith(prefix + "/")}
+    if len(covered) != 2:
+        check.failures.append(f"whole-package mapping covers {len(covered)} source roots, expected 2")
+    for from_prefix, to_prefix in module.whole_package_mappings():
         if not to_prefix.endswith("com/xsy/scm/"):
             check.failures.append(f"mapping target is not the new SCM package: {to_prefix}")
-        matched = [root for root in source_roots if from_prefix.startswith(root + "/")]
-        if len(matched) != 1:
-            check.failures.append(f"mapping source matches {len(matched)} source roots: {from_prefix}")
-            continue
-        covered.add(matched[0])
-    for root in source_roots:
-        if root not in covered:
-            check.failures.append(f"no prefix mapping covers {root}; migrated files there would look new")
+    # Q1 是按域迁的，所以工具必须能只改一个域；否则迁完 common 就改写全仓 baseline，
+    # 未迁移的域会集体变成 NEW DEFECT。
+    domain = module.domain_mappings("common")
+    if len(domain) != 2 or not all(to.endswith("/com/xsy/scm/common/") for _, to in domain):
+        check.failures.append("--domain must yield exactly the main and test prefixes for that domain")
+    if "legacy-scm-package" not in module.SKIPPED_FAMILIES:
+        check.failures.append("legacy-scm-package must be skipped: it is the old-namespace ledger")
     return check
 
 
@@ -246,7 +273,7 @@ def check_editorconfig_is_markdown_safe() -> Check:
 
 def check_stocktake_fixture_is_isolated() -> Check:
     check = Check("stocktake-fixture", "ScmStocktakeImportPgIT 使用独占 warehouse")
-    source = text(STOCKTAKE_IT)
+    source = text(resolve_migrating_file(STOCKTAKE_IT_RELATIVE))
     if not source:
         check.failures.append("stocktake import IT not found")
         return check
@@ -254,7 +281,7 @@ def check_stocktake_fixture_is_isolated() -> Check:
         check.failures.append("the IT still binds its fixture to the shared seed warehouse")
     if "fixtureWarehouseId" not in source or "newWarehouse(" not in source:
         check.failures.append("no dedicated warehouse override found")
-    if "@Transactional" not in text(W5_BASE):
+    if "@Transactional" not in text(resolve_migrating_file(W5_BASE_RELATIVE)):
         check.failures.append("the IT base no longer rolls back per method; fixtures would leak")
     return check
 
@@ -450,6 +477,32 @@ def run_bad_probe() -> list[str]:
 
 
 def build_checks() -> list[Check]:
+    """Evaluate every precondition, turning a lost subject into a failure, not a crash.
+
+    A readiness check that throws is indistinguishable from a green run to a script
+    that only reads the exit code, so resolution errors are reported against the
+    check that could not be evaluated.
+    """
+    results: list[Check] = []
+    for evaluate in (
+        check_guard_scans_both_packages,
+        check_guard_rejects_empty_source_set,
+        check_checkstyle_scans_both_packages,
+        check_archunit_analyzes_both_packages,
+        check_archunit_finance_exception_stays_exact,
+        check_baseline_migration_tooling,
+        check_editorconfig_is_markdown_safe,
+        check_stocktake_fixture_is_isolated,
+        check_probe_is_configured,
+    ):
+        try:
+            results.append(evaluate())
+        except CheckResolutionError as error:
+            results.append(Check(evaluate.__name__, "被检查文件可解析", [str(error)]))
+    return results
+
+
+def _unused_checks() -> list[Check]:
     return [
         check_guard_scans_both_packages(),
         check_guard_rejects_empty_source_set(),

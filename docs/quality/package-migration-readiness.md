@@ -98,6 +98,13 @@ Checkstyle 仍然 `failOnViolation=false`：它是**报告器**，判定权在 g
 ### 1.5 迁移进度可见指标
 
 `legacy-scm-package` 仍是唯一被门禁的包数规则（旧包文件数只降不升）。
+`legacy-scm-package` 的记录粒度是**每个旧包文件一条 identity**（Q0.2 改的）。
+原先是两个聚合计数（`main 692 / test 155`）当上限比较，于是「只允许下降」名不副实：
+降到 810 后 baseline 仍是 847，再往旧包**新增 5 个文件**、当前 815 ≤ 847 照样 PASS。
+它表达的是「不比 Q0 差」，不是「旧 namespace 禁止进新代码」—— 两者读起来像，效果不同。
+改成逐文件 identity 后，没被记录过的旧包路径就是 NEW DEFECT，移出旧包是 improvement。
+残留缺口是「把账本里已有的旧路径删掉再建同名文件」仍可放行，所以每域收尾要 `capture` 收缩账本。
+
 新包一侧**不设门禁**，改为 scan/check 末尾的报表：
 
 ```text
@@ -146,16 +153,47 @@ baseline identity 是 `rule<TAB>path<TAB>locator`。`git mv` 之后 defect 本�
 最典型的误配（把 main 和 test 两个前缀指向同一个目标）会被折叠检测抓到 —— 这是唯一
 能真正造成静默丢债的情形，所以专门写成一条测试。
 
-### 2.3 Q1 的正确用法
+### 2.3 必须按域，不能整包
 
-```bash
-python tools/quality/migrate_baseline_paths.py --dry-run     # 先看
-python tools/quality/migrate_baseline_paths.py --apply       # 迁包那次 commit 里执行
-python tools/quality/quality_guard.py check --checkstyle     # 必须仍然 PASS 且 +0
+Q1 一域一域地迁，所以改写也必须一域一域地做。**整包映射 + 只迁了 `common`** 是自我破坏：
+`product / order / purchase / inventory / finance ...` 这些**还没动**的文件，
+它们的 baseline path 会被提前搬到新包，于是下一轮扫描时
+
+```text
+源码还在旧路径  →  该条 finding 的 identity 在 baseline 里不存在  →  NEW DEFECT
+baseline 指向新路径 → 那条记录对应的文件并不存在 → 只是 improvement（不会失败）
 ```
 
-禁止用 `capture --allow-growth` 作为迁包手段，也禁止「迁完重建 baseline」：
-那等于放弃 Q0 的全部账本。
+也就是说：**第一个域做完，账本就整体爆红**。
+两道独立的防线：
+
+```bash
+python tools/quality/migrate_baseline_paths.py --domain common --dry-run
+python tools/quality/migrate_baseline_paths.py --domain common --apply
+```
+
+1. **`--domain <域>`**：一次同时给出 main 与 test 两条精确前缀，
+   不需要人手抄路径（抄错前缀是这类工具最典型的静默失效）。
+   域在**两个包任一处**存在即接受 —— 迁移发生在 `git mv` 之后，
+   这时旧目录本来就已经没了；只认旧包会把这个工具存在的唯一时刻判成非法。
+   两边都不存在（拼错域）直接拒绝。
+2. **改写前先在磁盘上核实这次移动真的发生了**：旧路径必须不存在、新路径必须存在。
+   任一不满足就把该条记为 `UNMOVED` 并**拒绝写盘**。
+   这条让 `--all` 也变成安全的：即使在只迁了 `common` 的状态下执行 `--all`，
+   它会因为上千条「文件还在旧路径」的记录而失败，而不是悄悄把账本搬到前面去。
+
+### 2.4 旧包账本不参与路径改写
+
+`legacy-scm-package` 记的是「**仍然留在旧 namespace** 的文件」，
+它的 path 语义与其他 family 相反。若把它一起改到新路径，
+防回流的账本就等于被 Q1 自己抹掉了。所以它被显式列入 `SKIPPED_FAMILIES`，
+在报告里单独计为 `skipped (own ledger)`，既不重写也不算失败。
+
+### 2.5 禁止的用法
+
+- 禁止用 `capture --allow-growth` 当迁包手段；禁止「迁完重建 baseline」—— 那等于放弃 Q0 账本。
+- 禁止把 `--all` 当成日常步骤；它只在**全部** SCM 文件都已移动的那一次才是正确的。
+- 禁止手改 baseline 文本让 `check` 变绿。
 
 ---
 
@@ -167,8 +205,16 @@ python tools/quality/quality_guard.py check --checkstyle     # 必须仍然 PASS
 2. 按域整体移动，一域一次 commit，顺序建议 `common → warehouse → product → supplier →
    customer → pricing → order → purchase → inventory → sorting → delivery → finance →
    report → screen → dashboard`。每域结束后跑：`verify.py quality` + 该域定向 IT。
-3. 每次移动的同时，对 baseline 做一次 `migrate_baseline_paths.py --apply`，
-   然后 `check` 必须 `+0`。
+3. 每域的移动顺序（**同一 commit 内**完成四步）：
+   ```bash
+   git mv .../net/lab1024/sa/admin/module/scm/<domain> .../com/xsy/scm/<domain>   # main + test
+   python tools/quality/migrate_baseline_paths.py --domain <domain> --dry-run   # 先看数字
+   python tools/quality/migrate_baseline_paths.py --domain <domain> --apply
+   python tools/quality/quality_guard.py capture && python tools/quality/quality_guard.py check --checkstyle
+   ```
+   `capture` 在这里是**收缩**旧包账本（该域的 41 条之类退出账本），
+   四个债务 family 必须保持 `+0`；若 `capture` 报出增长，说明这次移动带进了新债务，
+   必须修代码而不是放过去。
 4. 旧包文件数归零后：删除 `legacy-scm-package` family 及其 baseline、
    收缩 `SCM_PACKAGE_PATHS` 为单条、去掉 pom 的旧 includes、
    启用 ArchUnit 的 `com.xsy.scm..` 正向规则，并同步 readiness 脚本的断言。
@@ -231,6 +277,15 @@ N 为 0 时写入 `incomplete`，退出码变 2（verify.py 里 2 的既有语�
 | 6 | baseline 迁移工具 | 工具与自测都在，两条映射各自命中且只命中一个源根 |
 | 7 | `.editorconfig` 对 md 安全 | **按 editorconfig 语义求值** `*.md` 的有效值（后段覆盖前段），要求 trim=false 且 charset/EOL/final-newline 仍在，同时确认 Java 侧没被顺手放宽 |
 | 8 | 盘点 IT 已脱离共享仓库 | IT 内不得再出现 `seedWarehouseId()`，必须有 `fixtureWarehouseId` 覆盖 + `newWarehouse(`，基类仍 `@Transactional` |
+
+第 3、4、5、8 条里出现的 `ScmArchitectureTest.java` / `common/ScmW5PgITBase.java` /
+`inventory/ScmStocktakeImportPgIT.java` **都按 old/new 双根动态解析**（Q0.2 修的）。
+原先它们被写死成旧包路径，而 `common` 恰是建议迁移顺序里的第一域：
+`common` 一搬走，`ScmW5PgITBase.java` 的旧路径就不存在，`text()` 返回空串，
+`verify.py quality` 会因为 readiness **自己找不到被检查文件**而失败 ——
+一个在迁移第一步就触发的自伤。规则是「两边恰好存在一处」：
+两边都有意味着那是复制而不是移动，两边都没有意味着这条检查已经失去对象，
+两种都必须报 FAIL，而不是静默通过。
 | 9 | 探针证据 | 本文存在；`--with-probe` 可复现 |
 
 `--with-probe` 额外做两件事，因为「坏探针触发了规则」并不等于「扫描器看见了新路径」：
@@ -392,3 +447,93 @@ ScmStocktakeImportPgIT 连续 20 次（每次独立 mvn 调用、独立 Spring �
 > 盘点用例失败，当时我按「凭证触顶」假说写进了审计报告 §11.2。本轮把夹具改成独占仓库后
 > 20 次全绿，但那**不构成对原根因的证明** —— 它只证明该用例不再受共享数据影响。
 > §11.2 已按这个口径改写，不再把假说写成结论。
+
+---
+
+## 8. Q0.2 复核修正（评审后）
+
+评审指出三处会让 Q1 第一步就出事的问题，全部确认成立并已修；本节记录实测。
+
+### 8.1 整包 baseline 改写 vs 按域迁移（原 §2.3 的用法自相矛盾）
+
+在一次性 worktree 里模拟「只迁 `common`」，对照两种做法。
+
+| 步骤 | 修复前的行为 | 修复后的行为 |
+| --- | --- | --- |
+| `git mv common` → 旧 common 文件在新包被扫到 | baseline 仍指旧路径 → **NEW DEFECT**；旧记录变 improvement | — |
+| 执行整包 `--all --apply` | 旧版 dry-run 报 `collisions=0 / RESULT: PASS`，**看起来完全安全** | `unmoved files: 1182`，**拒绝写盘**，`RESULT: FAIL` |
+| 执行 `--domain common --apply` | 工具不支持 | 见下表，`RESULT: PASS` |
+
+`--domain common --apply` 在真实移动之后：
+
+```text
+identities before/after    : 2029 / 2029
+occurrences before/after   : 2960 / 2960
+rewritten records          : 4      （只有 common 的债务记录）
+unchanged records          : 1178   （其余各域一字未动）
+skipped (own ledger)       : 847    （legacy-scm-package 不参与改写）
+unmoved files / collisions / collapsed / invalid : 0 / 0 / 0 / 0
+RESULT: PASS
+```
+
+随后 `quality_guard.py check`：四个债务 family 全部 `+0`，
+`legacy-scm-package 806 vs 847 (-41)` 只算 improvement 不失败，`RESULT: PASS`；
+`capture` 收缩账本后 `806 vs 806 (+0)` 仍 PASS。
+mid-migration 跑 `package_migration_readiness.py` 亦 `RESULT: PASS`。
+
+两处实现细节本身也是被测出来才对的：
+
+- **域存在性判定必须两边都看。** 最初只检查旧包目录下有没有该域，于是
+  「已经迁完再来改账本」这个本工具唯一存在的理由被自己判成非法（`git mv` 之后旧目录本就不在了）。
+- **occurrence 统计必须覆盖未改写的记录。** 只给改写与跳过的分支累加 `occurrences_after`，
+  会让一次完全正确的按域改写报成 `2960 → 851`「疑似丢数据」。
+  补了一条混合用例（改写 / 未改 / 跳过三类记录混在一起）把这条钉住。
+
+### 8.2 readiness 自身写死旧包路径
+
+`ScmArchitectureTest.java`、`common/ScmW5PgITBase.java`、
+`inventory/ScmStocktakeImportPgIT.java` 改为按 old/new 双根解析，
+规则是**恰好一处存在**：两处都在＝复制而非移动，两处都不在＝检查失去对象，两者都判 FAIL。
+
+这条不是假想伤害。在「只迁了 `common`」的 worktree 里跑修复前的 readiness：
+
+```text
+[FAIL] stocktake-fixture   ← W5 基类找不到（旧路径已空），text() 返回 ""，@Transactional 断言空转失败
+```
+
+而 `common` 正是建议顺序的第一域。修复后同一状态下 `resolve_migrating_file` 解析到
+`com/xsy/scm/common/ScmW5PgITBase.java`，readiness 全表 `RESULT: PASS`。
+
+### 8.3 `legacy-scm-package` 不是真单调
+
+改成逐文件 identity 后实测：在旧 namespace 放一个**内容完全合规**的新文件
+（无任何其它命中）→
+
+```text
+legacy-scm-package  current 848  baseline 847  (+1)
+NEW DEFECTS: .../module/scm/common/LegacyReflowProbe.java  [unmigrated-file]
+RESULT: FAIL
+```
+
+删掉该文件 → `847 / 847 (+0)` `RESULT: PASS`。
+mid-migration 状态（`common` 已在新包）下往 `order` 放同样合规的文件，同样 FAIL。
+残留缺口「账本里已存在的旧路径删掉又新建同名文件」按 §1.5 说明由每域 `capture` 收口。
+
+### 8.4 Q0.2 门禁与后端
+
+```text
+test_baseline_path_migration.py            17 tests, OK
+quality_guard check --checkstyle           6 family 全部 +0，PASS
+package_migration_readiness.py             9 项 PASS
+verify.py quality                          RESULT: PASS (exit 0)
+migrate --all --dry-run（未移动时）         unmoved 1182 → RESULT: FAIL（正确的拒绝）
+migrate --domain common --dry-run（未移动）  unmoved 4    → RESULT: FAIL（正确的拒绝）
+migration_checksum_guard.py check          PASS
+verify.py backend（一次性干净库）           1201 tests / 0 failures / 0 errors / 5 skipped
+git diff --check                           clean
+```
+
+> **一处口径更正**：§30 的「dry-run 演练」在 Q0.1 给出的 `collisions=0 / 2960→2960` 那组数字，
+> 是在**什么都没移动**的状态下测的；当时工具不校验磁盘，所以它只证明「前缀替换是双射」，
+> 并没有、也不可能证明这次改写与真实迁移一致。加上磁盘校验之后，这种状态下必然失败——
+> 这正是要的行为。有意义的演练必须先真移动、再 `--dry-run`/`--apply`，见 §8.1。

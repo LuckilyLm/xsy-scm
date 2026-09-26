@@ -372,30 +372,36 @@ def java_file_count(root: Path) -> int:
     return sum(1 for path in root.rglob("*.java") if path.is_file()) if root.is_dir() else 0
 
 
-def legacy_package_file_counts() -> list[Finding]:
-    """Measure how many files still sit under the pre-Q1 SCM package.
+def legacy_package_files() -> list[Finding]:
+    """One identity per file still under the pre-Q1 SCM package.
 
-    Reported as one aggregate finding per source root, so the baseline stores two
-    numbers instead of 846 paths. The count may only fall; Q1 replaces this rule
-    with an ArchUnit rule on ``com.xsy.scm..``.
+    This used to be two aggregate counts (``main 692 / test 155``) compared as a
+    ceiling. That did **not** enforce "only decreasing": drop to 810 and the
+    baseline stays 847, so adding 5 new files under the old namespace still
+    passed at 815. It expressed "no worse than Q0", not "no new code in the old
+    namespace", and those read the same in prose but not in effect.
 
-    Both roots are always emitted, with 0 when the directory is gone: an identity
-    that silently disappears reads as "fixed", and would let the last directory
-    deletion masquerade as an improvement instead of a planned migration step.
+    Per-file identities fix that with the existing ratchet: a path that was never
+    recorded is a NEW DEFECT, so new files cannot enter the legacy namespace;
+    moving files out is an improvement. The residual gap is deliberate and cheap
+    - recreating a file at a path that is still listed in the baseline passes -
+    so each completed Q1 domain should ``capture`` to shrink the ledger.
     """
-    return [
-        Finding(
-            "legacy-scm-package",
-            relative(root),
-            "java-file-count",
-            "files under the pre-migration SCM package",
-            count=java_file_count(root),
+    findings: list[Finding] = []
+    for root in (MAIN_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH,
+                 TEST_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH):
+        if not root.is_dir():
+            continue
+        findings.extend(
+            Finding(
+                "legacy-scm-package",
+                relative(path),
+                "unmigrated-file",
+                "still under the pre-migration SCM package",
+            )
+            for path in sorted(root.rglob("*.java"))
         )
-        for root in (
-            MAIN_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH,
-            TEST_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH,
-        )
-    ]
+    return findings
 
 
 def package_migration_progress() -> list[tuple[str, str, int]]:
@@ -490,11 +496,14 @@ FAMILIES: tuple[RuleFamily, ...] = (
     ),
     RuleFamily(
         "legacy-scm-package",
-        "迁移前 SCM 包下的 Java 文件数",
-        "只统计旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根，各一条聚合记录",
-        "按源根统计 .java 文件数；只允许下降。新包一侧的文件数不做门禁，"
-        "由 scan/check 末尾的 package migration progress 报表可见；"
-        "旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管",
+        "仍留在迁移前 SCM 包下的文件",
+        "旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根，逐个 .java 文件一条 identity",
+        "每个旧包文件记一条 identity。因此向旧 namespace **新增**文件就是 NEW DEFECT（这条路径"
+        "从未被记录过），而**移出**旧包是 improvement、不会失败。"
+        "新包一侧的文件数不做门禁，由 scan/check 末尾的 package migration progress 报表可见；"
+        "旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管。"
+        "注：baseline 里已存在的旧路径被「删掉又新建同名文件」仍可放行，"
+        "所以 Q1 每完成一个域要 capture 一次让账本收缩",
     ),
     RuleFamily(
         "checkstyle",
@@ -535,7 +544,7 @@ def collect(checkstyle_result: Path | None) -> Scan:
         findings.extend(magic_string_literals(source, vocabulary))
         findings.extend(raw_permission_literals(source))
         findings.extend(stage_comments(source))
-    findings.extend(legacy_package_file_counts())
+    findings.extend(legacy_package_files())
     scanned = set(PYTHON_FAMILIES)
 
     if checkstyle_result is not None:

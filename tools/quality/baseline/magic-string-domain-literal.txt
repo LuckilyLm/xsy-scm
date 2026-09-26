@@ -1,6 +1,6 @@
 # rule      : magic-string-domain-literal — 已有 Enum 却硬编码的领域字面量
-# scope     : SCM 生产代码
-# detection : 非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围
+# scope     : SCM 生产代码（新旧两个包都扫）
+# detection : 非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由新旧两侧生产源码一起构建，否则迁移中途只在新包引用的 enum 常量会漏判；*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 191 occurrences in 110 identities

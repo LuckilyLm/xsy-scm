@@ -1,5 +1,5 @@
 # rule      : raw-permission-literal — 裸权限串注解
-# scope     : SCM 生产代码
+# scope     : SCM 生产代码（新旧两个包都扫）
 # detection : @SaCheckPermission(...) 参数里出现的 "scm:..." 字面量，每个字面量一条；权限目录常量类里的字面量定义不算（它不是注解）
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0

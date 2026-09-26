@@ -47,11 +47,11 @@
 | --- | ---: | ---: | ---: |
 | checkstyle | 363 | 871 | 369 |
 | generic-dependency-field | 71 | 71 | 77 |
-| legacy-scm-package | 2 | 847 | 8 |
+| legacy-scm-package | 847 | 847 | 853 |
 | magic-string-domain-literal | 110 | 191 | 116 |
 | raw-permission-literal | 169 | 285 | 175 |
 | stage-comment | 469 | 695 | 475 |
-| **合计** | **1,184** | **2,960** | **1,220** |
+| **合计** | **2,029** | **2,960** | **2,065** |
 
 - **identity** = `rule<TAB>仓库相对路径<TAB>locator` 的去重条数，也就是 baseline 文件里的数据行数；
 - **occurrence** = 各 identity 的计数之和，才是**真实债务数量**；
@@ -60,6 +60,17 @@
 两者不等的直接后果：`legacy-scm-package` 只有 2 条 identity 却计 847 处（它是按源根聚合的预算），
 `stage-comment` 469 条 identity 计 695 处（同一文件里同一条阶段编号出现多次）。
 `check` 报的 `current / baseline (+n)` 一律是 **occurrence**，不是行数。
+
+> **Q0.2 更正**：上面这张表里 `legacy-scm-package` 的「2 条 identity / 847 处」已经改成
+> **847 条 identity / 847 处**，合计随之变成 2,029 / 2,960 / 2,065（occurrence 总数不变）。
+> 原因不是排版，而是聚合口径让「只允许下降」失效：按源根计数再跟 847 比，
+> 实质只是「不比 Q0 差」。降到 810 之后 baseline 仍是 847，此时往旧 namespace
+> **新增 5 个文件**、当前 815 ≤ 847 照样 PASS —— 而这恰恰是 Q1 全程最需要拦的动作。
+> 改成逐文件 identity 后，未记录过的旧包路径直接就是 NEW DEFECT。
+> 已实测：迁走 `common`（-41）之后在旧包放一个**内容完全合规**的新文件，
+> `check` 报 `legacy-scm-package [unmigrated-file] … RESULT: FAIL`；删掉该文件回到 PASS。
+> 残留缺口与处置（每域收尾 `capture` 收缩账本）见
+> [`package-migration-readiness.md`](./package-migration-readiness.md) §1.5。
 
 ### 1.3 baseline 增长记录（工具要求写明理由）
 

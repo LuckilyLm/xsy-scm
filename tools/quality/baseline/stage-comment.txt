@@ -1,5 +1,5 @@
 # rule      : stage-comment — 阶段流水注释
-# scope     : SCM 生产代码
+# scope     : SCM 生产代码（新旧两个包都扫）
 # detection : 注释文本命中 F<n>-<n> / Wave <n> / Q<n> / D-<n> / §<n> / 设计稿 / 本轮 / 下一阶段 / 此次；`提交`、`测试` 不在规则内（业务用语，会误报）
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0

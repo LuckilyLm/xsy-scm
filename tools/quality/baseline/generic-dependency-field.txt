@@ -1,5 +1,5 @@
 # rule      : generic-dependency-field — 语义贫乏的依赖字段名
-# scope     : SCM 生产代码（src/main/java 下 module/scm）
+# scope     : SCM 生产代码：sa-admin/src/main/java 下的 net/lab1024/sa/admin/module/scm 与 com/xsy/scm 两个包
 # detection : 字段声明行匹配 private/protected [final] <Type> <name>;，name 属于 {dao,service,query,manager,validator,repository,mapper,reader,writer,client}，且类型简单名小写后不等于该字段名
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
