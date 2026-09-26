@@ -1,6 +1,6 @@
-# rule      : legacy-scm-package — 仍留在迁移前 SCM 包下的文件
-# scope     : 旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根，逐个 .java 文件一条 identity
-# detection : 每个旧包文件记一条 identity。因此向旧 namespace **新增**文件就是 NEW DEFECT（这条路径从未被记录过），而**移出**旧包是 improvement、不会失败。新包一侧的文件数不做门禁，由 scan/check 末尾的 package migration progress 报表可见；旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管。注：baseline 里已存在的旧路径被「删掉又新建同名文件」仍可放行，所以 Q1 每完成一个域要 capture 一次让账本收缩
+# rule      : legacy-scm-package — 旧包回流检测（迁移债务已归零，防回流保留）
+# scope     : 旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根；Q1 收口后实际为 0
+# detection : 【迁移债务已退役 2026-09-26，防回流检测保留】Q1 收口前：每个旧包文件记一条 identity，向旧 namespace **新增**文件即 NEW DEFECT，**移出**旧包是 improvement。Q1 收口后旧包 .java = 0、baseline 已归零，因此本 family 的**结果**恒为 0 条 —— 但**结果是 0，不等于扫描被写死为 0**：legacy_package_files() 仍逐文件真实扫描旧包两个源根，任何重新出现在旧 namespace 下的 .java 都会当场记为 NEW DEFECT 并使 quality guard FAIL。这与 ScmArchitectureTest 里被否掉的 ArchUnit 空集规则不同：那条规则在空集上无法失败（failOnEmptyShould），而这里的扫描本身在空集上也仍然有效，回流一旦发生立即显形。不要把真实扫描改写成 `return []`，那会把旧包复活静默掉，比退役前更危险。另有两条更强的机制：ArchUnit scmProductionCodeLivesInXsyPackage，以及 readiness 的 domain-completeness。
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 0 occurrences in 0 identities

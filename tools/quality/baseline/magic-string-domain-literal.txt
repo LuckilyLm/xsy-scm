@@ -1,9 +1,9 @@
 # rule      : magic-string-domain-literal — 已有 Enum 却硬编码的领域字面量
-# scope     : SCM 生产代码（新旧两个包都扫）
-# detection : 非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由新旧两侧生产源码一起构建，否则迁移中途只在新包引用的 enum 常量会漏判；*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围
+# scope     : SCM 生产代码（com/xsy/scm；迁移期新旧两个包都扫）
+# detection : 非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由扫描根下的生产源码构建，否则引用了新包 enum 的常量会漏判；*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 191 occurrences in 110 identities
+# captured  : 169 occurrences in 99 identities
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerAddForm.java	CustomerAddForm#"INDEPENDENT"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerTypeAddForm.java	CustomerTypeAddForm#"ENABLED"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/manager/CustomerValidator.java	CustomerValidator#"GROUP"
@@ -73,18 +73,7 @@
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceHistoryQueryService.java	PriceHistoryQueryService#"CUSTOMER_TYPE"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	PriceResolver#"ENABLED"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductExcelController.java	ProductExcelController#"CREATE"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductBatchService.java	ProductBatchService#"ON_SHELF"
-2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductCategoryService.java	ProductCategoryService#"ENABLED"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	ProductImportService#"CATEGORY_DISABLED"
-3	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	ProductImportService#"ENABLED"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	ProductImportService#"NON_STANDARD"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	ProductImportService#"OFF_SHELF"
-5	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	ProductImportService#"ON_SHELF"
-3	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	ProductImportService#"STANDARD"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductSpuService.java	ProductSpuService#"ENABLED"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductSpuService.java	ProductSpuService#"ON_SHELF"
-2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductTagService.java	ProductTagService#"ENABLED"
-2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductUomService.java	ProductUomService#"ENABLED"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptConfirmForm.java	PurchaseReceiptConfirmForm#"MANUAL"
 3	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderStateMachine.java	PurchaseOrderStateMachine#"CANCELLED"
 3	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderStateMachine.java	PurchaseOrderStateMachine#"DRAFT"
