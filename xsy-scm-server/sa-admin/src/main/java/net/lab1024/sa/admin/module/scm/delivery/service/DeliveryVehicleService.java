@@ -9,14 +9,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import net.lab1024.sa.admin.module.scm.delivery.dao.DeliveryVehicleDao;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.DeliveryVehicleEntity;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
 import java.util.*;
 
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.*;
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 @Service
 @RequiredArgsConstructor

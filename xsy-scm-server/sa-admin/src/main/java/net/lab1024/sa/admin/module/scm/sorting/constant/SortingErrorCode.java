@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.sorting.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
  * 分拣域错误码。码段按本轮全库 {@code grep} 的 41xxx 实际占用取号（配送段止于 41119），

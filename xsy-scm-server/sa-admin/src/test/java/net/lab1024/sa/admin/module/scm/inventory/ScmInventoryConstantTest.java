@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.inventory;
 
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmErrorCode;
 import net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryConversionStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryConversionTypeEnum;
@@ -436,7 +436,7 @@ class ScmInventoryConstantTest {
      * 而那种漏放不会以任何形式报警。
      */
     private static final List<String> FALLBACK = List.of(
-            "net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode",
+            "com.xsy.scm.common.error.ScmCommonErrorCode",
             "net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode",
             "net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode",
             "net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode",

@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.finance.domain.form.FinanceReceiptAddForm;
 import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceiptService;
 import org.junit.jupiter.api.DisplayName;

@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.finance.domain.form.FinancePaymentAddForm;
 import net.lab1024.sa.admin.module.scm.finance.domain.vo.FinancePaymentVO;
 import net.lab1024.sa.admin.module.scm.finance.service.FinancePaymentService;
@@ -251,7 +251,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     private static String currentOperator() {
-        return net.lab1024.sa.admin.module.scm.common.constant.ScmOperator.current();
+        return com.xsy.scm.common.constant.ScmOperator.current();
     }
 
     /**
@@ -496,7 +496,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(paymentRow(firstId).get("source_id")).isEqualTo(refund.refundId());
         // 异常必须是业务码，不能把 DuplicateKeyException / 约束名泄漏到接口
         assertThatThrownBy(() -> add(refundForm(refund.customerId(), exact, refund.refundId()), key("k3")))
-                .isInstanceOf(net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException.class)
+                .isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class)
                 .hasMessageNotContaining("uk_finance_payment_source_active")
                 .hasMessageNotContaining("DuplicateKey");
     }

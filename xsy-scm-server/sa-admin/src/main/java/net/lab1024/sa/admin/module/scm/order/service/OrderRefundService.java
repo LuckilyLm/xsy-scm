@@ -1,19 +1,19 @@
 package net.lab1024.sa.admin.module.scm.order.service;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.order.dao.*;
 import net.lab1024.sa.admin.module.scm.order.manager.*;
 import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

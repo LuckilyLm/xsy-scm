@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandAllocationDao;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandDao;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandAllocationEntity;

@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.delivery.service.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;

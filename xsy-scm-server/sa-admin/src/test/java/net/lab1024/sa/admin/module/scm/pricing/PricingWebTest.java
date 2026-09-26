@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.pricing;
 
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
 import net.lab1024.sa.admin.module.scm.customer.controller.CustomerVisibilityController;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerSkuVisibilityService;
 import net.lab1024.sa.admin.module.scm.product.controller.ProductSkuController;

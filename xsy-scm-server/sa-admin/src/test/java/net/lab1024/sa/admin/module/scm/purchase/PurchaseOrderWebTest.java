@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
 import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseDemandController;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseOrderController;

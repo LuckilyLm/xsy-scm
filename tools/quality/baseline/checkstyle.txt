@@ -3,10 +3,10 @@
 # detection : 每个 (文件, check) 一条聚合记录，occurrences = 该 check 在该文件的违规数；消息文本不参与 identity，因为 Checkstyle 按 JVM locale 输出消息
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 871 occurrences in 363 identities
-1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/common/domain/ScmLocationForm.java	AvoidStarImport
-1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/common/json/JsonbStringMapTypeHandler.java	AvoidStarImport
-1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/common/json/JsonbStringMapTypeHandler.java	LineLength
+# captured  : 869 occurrences in 362 identities
+1	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/domain/ScmLocationForm.java	AvoidStarImport
+1	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/json/JsonbStringMapTypeHandler.java	AvoidStarImport
+1	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/json/JsonbStringMapTypeHandler.java	LineLength
 2	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerVisibilityController.java	AvoidStarImport
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerVisibilityController.java	LineLength
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/dao/CustomerSkuVisibilityDao.java	AvoidStarImport
@@ -15,7 +15,7 @@
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/entity/CustomerSkuVisibilityEntity.java	AvoidStarImport
 2	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/vo/CustomerDetailVO.java	LineLength
 2	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerQueryService.java	UnusedImports
-2	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerService.java	LineLength
+1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerService.java	LineLength
 4	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerSkuVisibilityService.java	AvoidStarImport
 6	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerSkuVisibilityService.java	LineLength
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerSkuVisibilityService.java	UnusedImports
@@ -366,4 +366,3 @@
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/entity/WarehouseEntity.java	AvoidStarImport
 5	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/entity/WarehouseEntity.java	LineLength
 2	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/vo/WarehouseVO.java	LineLength
-1	checkstyle	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/service/WarehouseService.java	LineLength

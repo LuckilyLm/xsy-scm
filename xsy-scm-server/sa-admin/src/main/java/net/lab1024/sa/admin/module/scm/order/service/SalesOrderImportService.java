@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.order.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.admin.module.scm.pricing.constant.ScmPriceStatusEnum;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
@@ -181,7 +181,7 @@ public class SalesOrderImportService {
     private void validatePrices(String orderKey, List<IndexedRow> rows, Map<String, CustomerEntity> customerMap,
                                 Map<String, ProductSkuOptionVO> skuMap, SalesOrderImportResultVO result) {
         var customer = customerMap.get(trim(rows.getFirst().row().getCustomerCode()));
-        if (customer == null || !net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable())
+        if (customer == null || !com.xsy.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable())
             return;
         var ids = rows.stream().map(x -> skuMap.get(trim(x.row().getSkuCode()))).filter(Objects::nonNull).map(ProductSkuOptionVO::getSkuId).distinct().toList();
         try {
@@ -237,7 +237,7 @@ public class SalesOrderImportService {
         var customerCode = trim(row.getCustomerCode());
         if (customerCode != null && !customerMap.containsKey(customerCode))
             addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_FOUND", "客户编码不存在");
-        else if (customerCode != null && !net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum.valueOf(customerMap.get(customerCode).getStatus()).tradable())
+        else if (customerCode != null && !com.xsy.scm.common.constant.ScmCustomerStatusEnum.valueOf(customerMap.get(customerCode).getStatus()).tradable())
             addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_TRADABLE", "客户状态不可交易");
         var skuCode = trim(row.getSkuCode());
         if (skuCode != null && !skuMap.containsKey(skuCode))

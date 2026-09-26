@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.order;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW3PgITBase;
+import com.xsy.scm.common.ScmW3PgITBase;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

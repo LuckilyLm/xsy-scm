@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.supplier;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
 import net.lab1024.sa.admin.module.scm.supplier.controller.SupplierController;
 import net.lab1024.sa.admin.module.scm.supplier.domain.form.SupplierUpdateForm;
 import net.lab1024.sa.admin.module.scm.supplier.domain.vo.SupplierVO;
@@ -24,7 +24,7 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode.SUPPLIER_CODE_DUPLICATE;
 import static net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;

@@ -10,7 +10,7 @@ import net.lab1024.sa.admin.module.scm.delivery.dao.DeliveryDriverDao;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.DeliveryDriverEntity;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryDriverVO;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.*;
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 @Service
 @RequiredArgsConstructor

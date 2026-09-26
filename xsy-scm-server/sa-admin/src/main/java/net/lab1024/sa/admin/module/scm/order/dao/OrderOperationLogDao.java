@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.OrderOperationLogEntity;
 import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderQueryForm;
 

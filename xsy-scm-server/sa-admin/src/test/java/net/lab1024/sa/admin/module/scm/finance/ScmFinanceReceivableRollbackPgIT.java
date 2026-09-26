@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryOrdersForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryRouteForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliverySignForm;

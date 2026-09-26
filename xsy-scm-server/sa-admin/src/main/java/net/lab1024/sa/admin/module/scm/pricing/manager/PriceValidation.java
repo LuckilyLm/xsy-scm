@@ -9,8 +9,8 @@ import java.util.List;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuOptionDao;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
 import net.lab1024.sa.admin.module.scm.pricing.constant.ScmUnavailableReasonEnum;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.util.ScmDecimalStrings;
 
 import static net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.*;
 

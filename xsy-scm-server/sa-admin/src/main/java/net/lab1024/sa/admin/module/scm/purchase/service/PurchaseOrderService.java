@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.purchase.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandAllocationDao;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOperationLogDao;
@@ -47,7 +47,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_CANCEL_REASON_REQUIRED;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_DELETE_STATE_INVALID;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_EMPTY;

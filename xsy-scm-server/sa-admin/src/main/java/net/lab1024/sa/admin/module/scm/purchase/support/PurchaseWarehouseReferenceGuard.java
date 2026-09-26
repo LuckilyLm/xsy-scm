@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.purchase.support;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmEnableStatusEnum;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
 import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Component;

@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.purchase.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandQueryForm;

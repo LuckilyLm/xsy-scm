@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.system.support;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW3PgITBase;
+import com.xsy.scm.common.ScmW3PgITBase;
 import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.dao.FileDao;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;

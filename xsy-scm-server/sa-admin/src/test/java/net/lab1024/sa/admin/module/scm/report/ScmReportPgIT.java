@@ -14,9 +14,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.report.constant.ReportErrorCode;
 import net.lab1024.sa.admin.module.scm.report.controller.ScmReportController;
 import net.lab1024.sa.admin.module.scm.report.dao.ReportDao;

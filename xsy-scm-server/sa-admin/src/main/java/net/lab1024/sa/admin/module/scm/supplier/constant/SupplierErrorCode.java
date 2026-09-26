@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.supplier.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
  * 供应商域错误码。

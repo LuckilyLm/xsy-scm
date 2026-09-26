@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.supplier.manager;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierSkuEntity;
 import net.lab1024.sa.admin.module.scm.supplier.domain.form.SupplierSkuItemForm;
 
@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLICATE;
 
 /**

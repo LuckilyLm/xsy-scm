@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase.service;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandAllocationDao;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandDao;
@@ -30,9 +30,9 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptQuantityCalculator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
@@ -46,7 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;

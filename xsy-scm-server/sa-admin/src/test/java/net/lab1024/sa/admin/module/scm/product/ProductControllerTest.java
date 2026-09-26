@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.product;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
 import net.lab1024.sa.admin.module.scm.product.controller.ProductController;
 import net.lab1024.sa.admin.module.scm.product.service.*;
 import net.lab1024.sa.base.common.domain.*;

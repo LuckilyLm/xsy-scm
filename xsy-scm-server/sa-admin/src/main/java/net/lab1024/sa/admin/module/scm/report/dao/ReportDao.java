@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmInventoryReportQueryForm;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmOverviewReportQueryForm;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmPurchaseReportQueryForm;

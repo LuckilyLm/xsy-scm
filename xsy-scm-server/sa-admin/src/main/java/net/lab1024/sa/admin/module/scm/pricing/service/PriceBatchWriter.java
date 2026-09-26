@@ -14,8 +14,8 @@ import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuOptionDao;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerTypeEntity;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.PRICE_BATCH_KEY_DUPLICATE;
 

@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.finance.domain.form.FinancePaymentAddForm;
 import net.lab1024.sa.admin.module.scm.finance.service.FinancePaymentService;
 import net.lab1024.sa.admin.module.scm.order.domain.form.OrderRefundCompleteForm;
@@ -194,7 +194,7 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
 
         assertThatThrownBy(() -> financePaymentService.add(
                 form(customerId, amount, "重复付款", "ORDER_REFUND", refundId), secondKey))
-                .isInstanceOf(net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException.class);
+                .isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class);
 
         assertThat(count("SELECT count(*) FROM finance_payment")).isEqualTo(paymentsBefore);
         assertThat(count("SELECT count(*) FROM finance_payment WHERE source_id = ?", refundId)).isEqualTo(1);

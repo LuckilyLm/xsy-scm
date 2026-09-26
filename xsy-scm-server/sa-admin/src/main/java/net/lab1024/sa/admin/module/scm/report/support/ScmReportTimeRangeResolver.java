@@ -4,8 +4,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
-import net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.error.ScmCommonErrorCode;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.report.constant.ReportErrorCode;
 
 /**

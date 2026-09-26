@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.finance.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import net.lab1024.sa.admin.module.scm.finance.constant.FinanceConstant;
 import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceEntryTypeEnum;

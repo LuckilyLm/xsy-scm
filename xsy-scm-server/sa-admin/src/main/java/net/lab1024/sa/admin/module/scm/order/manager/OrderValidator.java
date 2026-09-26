@@ -2,8 +2,8 @@ package net.lab1024.sa.admin.module.scm.order.manager;
 
 import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.util.ScmDecimalStrings;
 
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
 
@@ -18,7 +18,7 @@ public final class OrderValidator {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    public static void reason(String value, net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode code) {
+    public static void reason(String value, com.xsy.scm.common.error.ScmErrorCode code) {
         if (trim(value) == null) throw new ScmBusinessException(code);
     }
 

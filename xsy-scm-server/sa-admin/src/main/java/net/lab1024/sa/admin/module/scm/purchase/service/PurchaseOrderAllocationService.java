@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.purchase.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuOptionDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity;
@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_SUPPLIER_SKU_DISABLED;
 

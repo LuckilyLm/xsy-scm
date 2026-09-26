@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.supplier;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW2PgITBase;
+import com.xsy.scm.common.ScmW2PgITBase;
 import net.lab1024.sa.admin.module.scm.supplier.domain.form.SupplierAddForm;
 import net.lab1024.sa.admin.module.scm.supplier.domain.form.SupplierDeleteForm;
 import net.lab1024.sa.admin.module.scm.supplier.domain.form.SupplierSkuItemForm;

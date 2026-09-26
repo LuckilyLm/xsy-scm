@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.customer.manager;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmCreditPeriodTypeEnum;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmCreditPeriodUnitEnum;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmCreditPeriodTypeEnum;
+import com.xsy.scm.common.constant.ScmCreditPeriodUnitEnum;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_PARENT_INVALID;
 

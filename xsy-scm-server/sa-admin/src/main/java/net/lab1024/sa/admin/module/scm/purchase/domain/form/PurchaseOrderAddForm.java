@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
+import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
 /**
  * 新建采购单（W5 Target Design §7.2 / §7.4）。

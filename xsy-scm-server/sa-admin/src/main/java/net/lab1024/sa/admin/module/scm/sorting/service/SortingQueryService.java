@@ -2,10 +2,10 @@ package net.lab1024.sa.admin.module.scm.sorting.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.sorting.dao.SortingQueryDao;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingCandidateQueryForm;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingSummaryQueryForm;
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingConstant.PRINTABLE;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
 

@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.pricing;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW3PgITBase;
+import com.xsy.scm.common.ScmW3PgITBase;
 import net.lab1024.sa.admin.module.scm.pricing.service.*;
 import net.lab1024.sa.admin.module.scm.pricing.domain.form.*;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.PriceBatchRowFailureVO;
@@ -255,7 +255,7 @@ class PricingIT extends ScmW3PgITBase {
                 future.get();
                 successes++;
             } catch (java.util.concurrent.ExecutionException e) {
-                if (e.getCause() instanceof net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException ex && ex.getErrorCode().getCode() == 40933)
+                if (e.getCause() instanceof com.xsy.scm.common.exception.ScmBusinessException ex && ex.getErrorCode().getCode() == 40933)
                     overlaps++;
                 else throw e;
             }

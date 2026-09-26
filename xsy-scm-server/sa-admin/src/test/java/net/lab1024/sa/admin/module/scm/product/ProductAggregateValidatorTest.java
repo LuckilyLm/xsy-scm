@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.product;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.domain.form.*;
 import net.lab1024.sa.admin.module.scm.product.manager.ProductAggregateValidator;
 import org.junit.jupiter.api.Test;

@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.order.manager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.OrderOperationLogEntity;

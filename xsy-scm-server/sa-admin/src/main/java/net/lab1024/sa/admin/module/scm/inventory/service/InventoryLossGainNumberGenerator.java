@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
-import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryLossGainDao;
 import org.springframework.stereotype.Service;

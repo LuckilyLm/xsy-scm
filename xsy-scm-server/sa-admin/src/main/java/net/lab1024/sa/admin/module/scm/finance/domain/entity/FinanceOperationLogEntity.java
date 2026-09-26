@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-import net.lab1024.sa.admin.module.scm.common.json.JsonbObjectMapTypeHandler;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 
 import java.time.OffsetDateTime;
 import java.util.Map;

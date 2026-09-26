@@ -2,9 +2,9 @@ package net.lab1024.sa.admin.module.scm.purchase.service;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
@@ -259,7 +259,7 @@ public class PurchaseDemandService {
         if (purchaseDemandDao.updateAllocation(demand.getId(), demand.getVersion(),
                 finalAllocated, status, supplierId, ScmOperator.current()) != 1) {
             throw new ScmBusinessException(
-                    net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
+                    com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
         }
 
         // Q14：DEMAND_ALLOCATE 的 purchase_order_id 由 purchaseOrderItemId **反查**得到，非空；

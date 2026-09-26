@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * 称重记录（W5 Target Design §5.9）。

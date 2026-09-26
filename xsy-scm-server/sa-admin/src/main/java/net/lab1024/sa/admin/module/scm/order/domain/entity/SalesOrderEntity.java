@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler;
 
 @Data

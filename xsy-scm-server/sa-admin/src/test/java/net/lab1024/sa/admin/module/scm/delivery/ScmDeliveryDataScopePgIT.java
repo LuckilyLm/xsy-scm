@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.delivery;
 
 import cn.dev33.satoken.stp.StpUtil;
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryDriverForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryOrdersForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryPrintOrdersForm;

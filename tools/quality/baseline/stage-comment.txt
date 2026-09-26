@@ -4,7 +4,7 @@
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 695 occurrences in 469 identities
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/common/constant/ScmCustomerStatusEnum.java	Q1
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/constant/ScmCustomerStatusEnum.java	Q1
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	Wave <n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/dao/CustomerFrequentSkuDao.java	Wave <n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/entity/CustomerEntity.java	Q6

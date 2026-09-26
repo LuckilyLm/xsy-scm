@@ -21,6 +21,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +66,14 @@ public class DataScopeSqlConfigService {
      * 刷新 所有添加数据范围注解的接口方法配置<class.method,DataScopeSqlConfigDTO></>
      */
     private Map<String, DataScopeSqlConfig> refreshDataScopeMethodMap() {
-        Reflections reflections = new Reflections(new ConfigurationBuilder().setUrls(ClasspathHelper.forPackage(AdminApplication.COMPONENT_SCAN)).setScanners(new MethodAnnotationsScanner()));
+        // 扫描根必须与 @ComponentScan / @MapperScan 同源（AdminApplication.COMPONENT_SCAN_PATHS）。
+        // 迁包期间是双根；只扫旧根会让迁入 com.xsy.scm 的 @DataScope 方法
+        // 静默从数据权限注册表里消失 —— 不报错，只是该接口的数据权限不再生效。
+        Set<URL> scanUrls = new LinkedHashSet<>();
+        for (String basePackage : AdminApplication.COMPONENT_SCAN_PATHS) {
+            scanUrls.addAll(ClasspathHelper.forPackage(basePackage));
+        }
+        Reflections reflections = new Reflections(new ConfigurationBuilder().setUrls(scanUrls).setScanners(new MethodAnnotationsScanner()));
         Set<Method> methods = reflections.getMethodsAnnotatedWith(DataScope.class);
         for (Method method : methods) {
             DataScope dataScopeAnnotation = method.getAnnotation(DataScope.class);

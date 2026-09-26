@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmErrorCode;
 import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -49,7 +49,7 @@ class PurchaseErrorCodeTest {
      * 回退清单：classpath 不是展开目录时使用。新域的错误码枚举要在这里补一行。
      */
     private static final List<String> FALLBACK = List.of(
-            "net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode",
+            "com.xsy.scm.common.error.ScmCommonErrorCode",
             "net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode",
             "net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode",
             "net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode",

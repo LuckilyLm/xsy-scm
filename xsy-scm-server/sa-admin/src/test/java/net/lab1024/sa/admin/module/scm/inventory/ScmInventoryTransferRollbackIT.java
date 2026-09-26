@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.inventory;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryTransferAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryTransferService;
 import org.junit.jupiter.api.AfterEach;

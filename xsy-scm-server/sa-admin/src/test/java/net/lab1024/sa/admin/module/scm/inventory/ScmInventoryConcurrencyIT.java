@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.inventory;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;

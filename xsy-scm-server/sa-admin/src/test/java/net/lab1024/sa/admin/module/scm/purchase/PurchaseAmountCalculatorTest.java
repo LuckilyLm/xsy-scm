@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseAmountCalculator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

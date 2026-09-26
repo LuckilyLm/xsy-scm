@@ -2,8 +2,8 @@ package net.lab1024.sa.admin.module.scm.product;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import net.lab1024.sa.admin.AdminApplication;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.controller.*;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuOptionDao;
 import net.lab1024.sa.admin.module.scm.product.domain.form.*;

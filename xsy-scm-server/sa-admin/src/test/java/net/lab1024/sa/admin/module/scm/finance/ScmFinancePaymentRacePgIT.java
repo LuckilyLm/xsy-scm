@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.finance.domain.form.FinancePaymentAddForm;
 import net.lab1024.sa.admin.module.scm.finance.service.FinancePaymentService;
 import net.lab1024.sa.admin.module.scm.order.domain.form.OrderRefundCompleteForm;

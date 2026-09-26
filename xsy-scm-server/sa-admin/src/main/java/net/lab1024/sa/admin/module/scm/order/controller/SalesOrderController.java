@@ -153,7 +153,7 @@ public class SalesOrderController {
 
     private void overridePermission(SalesOrderAddForm f) {
         if (!java.util.Set.of("ADMIN", "SUPPLEMENT").contains(f.getOrderSource()))
-            throw new net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException(net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
+            throw new com.xsy.scm.common.exception.ScmBusinessException(net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
         if (f.getItems().stream().anyMatch(x -> Boolean.TRUE.equals(x.getManualPriceOverride())))
             cn.dev33.satoken.stp.StpUtil.checkPermission("scm:order:price-override");
     }

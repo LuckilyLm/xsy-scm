@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseConfigKey;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseAmountCalculator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseReceiptQuantityCalculator;

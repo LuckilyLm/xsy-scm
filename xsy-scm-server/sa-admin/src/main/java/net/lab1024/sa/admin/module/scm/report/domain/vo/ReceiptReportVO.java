@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * 收货与入库三张报表行（收货明细 / 入库明细 / 待入库）。

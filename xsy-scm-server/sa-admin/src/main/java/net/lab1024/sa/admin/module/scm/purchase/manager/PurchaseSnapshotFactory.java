@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase.manager;
 
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;

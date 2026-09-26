@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 import net.lab1024.sa.admin.module.scm.pricing.constant.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * Price availability and sale eligibility are independent. Zero is a price.

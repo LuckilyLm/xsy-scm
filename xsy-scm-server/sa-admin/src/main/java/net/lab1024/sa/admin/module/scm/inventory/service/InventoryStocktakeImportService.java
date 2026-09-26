@@ -2,8 +2,8 @@ package net.lab1024.sa.admin.module.scm.inventory.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryBalanceVO;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeImportErrorVO;

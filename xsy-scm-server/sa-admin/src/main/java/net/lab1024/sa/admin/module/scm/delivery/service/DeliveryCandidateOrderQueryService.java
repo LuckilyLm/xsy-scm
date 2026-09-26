@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.delivery.service;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.delivery.dao.DeliveryQueryDao;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryQueryForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO;

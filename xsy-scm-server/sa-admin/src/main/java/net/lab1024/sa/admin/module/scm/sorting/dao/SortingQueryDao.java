@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
 import net.lab1024.sa.admin.module.scm.sorting.domain.dto.SortingOrderLineSnapshot;
 import net.lab1024.sa.admin.module.scm.sorting.domain.entity.SortingTaskEntity;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingCandidateQueryForm;

@@ -1,10 +1,10 @@
 package net.lab1024.sa.admin.module.scm.warehouse.manager;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
  * 仓库单条业务规则（纯函数，无 Spring 依赖，可被单测直接覆盖）。

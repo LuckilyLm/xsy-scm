@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.delivery.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
  * 配送域错误码。码段占用必须现查现用（{@code grep} 全库 411xx），不要相信任何注释里的「本段空闲」。

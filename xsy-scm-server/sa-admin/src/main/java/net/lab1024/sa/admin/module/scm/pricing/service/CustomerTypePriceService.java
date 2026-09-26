@@ -15,12 +15,12 @@ import net.lab1024.sa.admin.module.scm.pricing.domain.form.*;
 import net.lab1024.sa.admin.module.scm.pricing.manager.PriceValidation;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerTypeService;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.util.ScmDecimalStrings;
 
 import static net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.*;
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 @Service
 @RequiredArgsConstructor

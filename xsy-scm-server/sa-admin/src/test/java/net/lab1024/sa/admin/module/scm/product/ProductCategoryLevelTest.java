@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.product;
 import net.lab1024.sa.admin.module.scm.product.dao.*;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductCategoryEntity;
 import net.lab1024.sa.admin.module.scm.product.service.ProductCategoryService;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;

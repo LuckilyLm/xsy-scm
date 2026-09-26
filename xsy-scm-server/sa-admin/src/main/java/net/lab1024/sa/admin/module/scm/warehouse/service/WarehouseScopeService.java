@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.warehouse.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.EmployeeWarehouseScopeDao;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseScopeUpdateForm;
@@ -17,7 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
  * 员工—仓库授权维护（{@code employee_warehouse_scope}）。

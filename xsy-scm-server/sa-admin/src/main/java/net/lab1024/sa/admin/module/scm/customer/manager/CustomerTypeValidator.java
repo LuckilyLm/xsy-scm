@@ -1,10 +1,10 @@
 package net.lab1024.sa.admin.module.scm.customer.manager;
 
-import net.lab1024.sa.admin.module.scm.common.constant.ScmEnableStatusEnum;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerTypeAddForm;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
  * 客户类型单条业务规则。

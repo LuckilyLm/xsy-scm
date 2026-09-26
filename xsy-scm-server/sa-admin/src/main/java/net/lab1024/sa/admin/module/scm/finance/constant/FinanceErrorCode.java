@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.finance.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
  * 财务域错误码，取 41130–41149（顺延分拣块 41120–41128，不重排任何已发布码值）。

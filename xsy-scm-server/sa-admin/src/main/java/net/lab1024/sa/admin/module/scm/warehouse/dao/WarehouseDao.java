@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.warehouse.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseQueryForm;
 import org.apache.ibatis.annotations.Mapper;

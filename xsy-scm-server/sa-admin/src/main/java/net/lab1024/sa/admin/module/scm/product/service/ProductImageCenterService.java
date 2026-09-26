@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.product.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductImageEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity;

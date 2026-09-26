@@ -9,7 +9,7 @@ import java.util.List;
 import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
+import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
 @Data
 public class OrderReturnDecisionForm {

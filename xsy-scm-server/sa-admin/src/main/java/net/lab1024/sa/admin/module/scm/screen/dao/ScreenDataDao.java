@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.screen.dao;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow;

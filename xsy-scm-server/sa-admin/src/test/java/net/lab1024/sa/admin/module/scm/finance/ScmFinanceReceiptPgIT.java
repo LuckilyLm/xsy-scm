@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
@@ -485,7 +485,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     private static String currentOperator() {
-        return net.lab1024.sa.admin.module.scm.common.constant.ScmOperator.current();
+        return com.xsy.scm.common.constant.ScmOperator.current();
     }
 
     /**

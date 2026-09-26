@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.warehouse;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseUpdateForm;
@@ -8,7 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

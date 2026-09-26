@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.order.manager;
 
 import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
 

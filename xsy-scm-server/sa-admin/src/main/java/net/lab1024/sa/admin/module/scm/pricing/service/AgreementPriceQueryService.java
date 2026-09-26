@@ -8,10 +8,10 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import net.lab1024.sa.admin.module.scm.pricing.dao.AgreementPriceDao;
 import net.lab1024.sa.admin.module.scm.pricing.domain.form.AgreementPriceQueryForm;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.AgreementPriceVO;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.AGREEMENT_PRICE_NOT_FOUND;
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 @Service
 @RequiredArgsConstructor

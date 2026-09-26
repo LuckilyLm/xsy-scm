@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * 按业务日聚合的统计行，同时服务趋势折线（按日画三条线）与每日统计表。

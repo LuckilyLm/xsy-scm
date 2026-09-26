@@ -6,7 +6,7 @@ import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.constant.*;
 import net.lab1024.sa.admin.module.scm.order.service.OrderNumberGenerator;
 import net.lab1024.sa.admin.module.scm.order.support.OrderIdempotencyRequestHasher;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -129,7 +129,7 @@ class OrderRulesTest {
         for (var c : net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.values()) seen.add(c.getCode());
         for (var c : net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.values())
             seen.add(c.getCode());
-        for (var c : net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.values()) seen.add(c.getCode());
+        for (var c : com.xsy.scm.common.error.ScmCommonErrorCode.values()) seen.add(c.getCode());
         for (var c : OrderErrorCode.values()) assertThat(seen.add(c.getCode())).as(c.name()).isTrue();
     }
 }

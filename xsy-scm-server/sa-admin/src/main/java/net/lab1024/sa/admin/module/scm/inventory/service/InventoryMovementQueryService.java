@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.inventory.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryMovementQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryMovementVO;

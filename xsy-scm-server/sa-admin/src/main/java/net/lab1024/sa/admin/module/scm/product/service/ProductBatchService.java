@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.product.service;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.error.ScmErrorCode;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.form.*;

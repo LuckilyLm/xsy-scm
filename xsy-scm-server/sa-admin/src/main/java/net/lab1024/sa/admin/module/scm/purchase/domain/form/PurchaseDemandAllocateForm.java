@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.purchase.domain.form;
 import lombok.Data;
 import jakarta.validation.constraints.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
+import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
 /**
  * 把一条采购需求分配到某个采购单行（W5 Target Design §7.4）。

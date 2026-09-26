@@ -7,7 +7,7 @@ import jakarta.validation.constraints.*;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
+import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
 /**
  * 确认采购收货（W5 Target Design §4.3 / §7.2）。

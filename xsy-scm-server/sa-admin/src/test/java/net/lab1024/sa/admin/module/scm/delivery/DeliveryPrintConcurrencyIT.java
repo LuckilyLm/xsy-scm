@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.delivery;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryOrdersForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryPrintOrdersForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryRouteForm;

@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.order.service;
 
-import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
+import com.xsy.scm.common.util.ScmDocumentNumbers;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;

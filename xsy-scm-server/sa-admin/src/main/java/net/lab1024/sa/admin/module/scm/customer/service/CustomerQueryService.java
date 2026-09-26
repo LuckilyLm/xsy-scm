@@ -1,12 +1,12 @@
 package net.lab1024.sa.admin.module.scm.customer.service;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerFrequentSkuDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
@@ -40,7 +40,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 
 /**

@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.report.dao.ReportDao;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmPurchaseReportQueryForm;
 import net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO;

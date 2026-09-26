@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler;
+import com.xsy.scm.common.json.JsonbStringMapTypeHandler;
 
 @Data
 @TableName(value = "product_sku", autoResultMap = true)

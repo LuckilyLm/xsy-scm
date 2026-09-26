@@ -8,7 +8,7 @@ import java.util.List;
 import java.math.BigDecimal;
 
 @Data
-public class DeliveryStopForm extends net.lab1024.sa.admin.module.scm.common.domain.ScmLocationForm {
+public class DeliveryStopForm extends com.xsy.scm.common.domain.ScmLocationForm {
     @NotNull
     @Min(0)
     private Integer version;

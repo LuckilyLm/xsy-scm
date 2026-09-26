@@ -3,10 +3,10 @@ package net.lab1024.sa.admin.module.scm.warehouse.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmValueScope;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmValueScope;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
 import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
  * 仓库查询（只读，不开事务）。

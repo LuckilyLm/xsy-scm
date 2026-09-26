@@ -5,7 +5,7 @@
     <resultMap id="itemVoMap"
                type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeItemVO">
         <result column="spec_values" property="specValues"
-                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
     <!--

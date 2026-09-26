@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.inventory;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryConversionAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryConversionAuditForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryTransferAddForm;

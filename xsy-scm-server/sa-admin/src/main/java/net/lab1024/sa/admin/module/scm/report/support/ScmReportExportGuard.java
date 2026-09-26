@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.report.support;
 import java.util.List;
 import java.util.function.Function;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.report.constant.ReportErrorCode;
 
 /**

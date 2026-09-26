@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.supplier;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
 import net.lab1024.sa.admin.module.scm.supplier.controller.SupplierSkuController;
 import net.lab1024.sa.admin.module.scm.supplier.domain.form.SupplierSkuReplaceForm;
 import net.lab1024.sa.admin.module.scm.supplier.domain.vo.SupplierSkuVO;
@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode.SKU_DISABLED;
 import static net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLICATE;
 import static org.assertj.core.api.Assertions.assertThat;

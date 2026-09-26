@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * 采购分析返回行（采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动）。

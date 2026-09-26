@@ -5,8 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
-import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
+import com.xsy.scm.common.util.ScmDecimalStrings;
 
 import java.time.OffsetDateTime;
 

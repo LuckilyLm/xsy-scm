@@ -5,7 +5,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED;
 

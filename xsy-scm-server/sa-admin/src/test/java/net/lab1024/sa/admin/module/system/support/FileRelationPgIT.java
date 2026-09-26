@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.system.support;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW3PgITBase;
+import com.xsy.scm.common.ScmW3PgITBase;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.domain.RequestUser;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;

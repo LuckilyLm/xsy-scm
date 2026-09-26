@@ -14,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import cn.dev33.satoken.stp.StpUtil;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseOrderService;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;

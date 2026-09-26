@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.purchase;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseDemandController;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseOrderController;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseReceiptController;

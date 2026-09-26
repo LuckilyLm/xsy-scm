@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.product;
 
 import net.lab1024.sa.admin.AdminApplication;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageCenterForms;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSkuForm;

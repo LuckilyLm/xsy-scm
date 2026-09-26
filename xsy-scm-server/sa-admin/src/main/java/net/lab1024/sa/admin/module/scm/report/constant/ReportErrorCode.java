@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.report.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
  * Finance R0 报表域错误码。只读域，因此只有「查询边界不合法」与「导出规模超限」两类，没有写入冲突码。

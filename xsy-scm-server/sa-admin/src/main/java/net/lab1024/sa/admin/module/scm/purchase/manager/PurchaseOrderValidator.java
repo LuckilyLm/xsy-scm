@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.purchase.manager;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmEnableStatusEnum;
-import net.lab1024.sa.admin.module.scm.common.error.ScmErrorCode;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
+import com.xsy.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
 import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity;
 import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierSkuEntity;

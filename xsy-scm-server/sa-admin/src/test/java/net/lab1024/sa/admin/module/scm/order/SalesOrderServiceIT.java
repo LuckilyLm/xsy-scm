@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.order;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW3PgITBase;
+import com.xsy.scm.common.ScmW3PgITBase;
 import net.lab1024.sa.admin.module.scm.order.service.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
@@ -416,7 +416,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
                     barrier.await();
                     returns.create(r, UUID.randomUUID().toString());
                     return 0;
-                } catch (net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException e) {
+                } catch (com.xsy.scm.common.exception.ScmBusinessException e) {
                     return e.getErrorCode().getCode();
                 } finally {
                     net.lab1024.sa.base.common.util.SmartRequestUtil.remove();

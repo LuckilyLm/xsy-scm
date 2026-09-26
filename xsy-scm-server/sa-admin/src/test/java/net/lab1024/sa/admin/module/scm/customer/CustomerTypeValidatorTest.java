@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.customer;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerTypeAddForm;
 import net.lab1024.sa.admin.module.scm.customer.manager.CustomerTypeValidator;
 import org.junit.jupiter.api.DisplayName;

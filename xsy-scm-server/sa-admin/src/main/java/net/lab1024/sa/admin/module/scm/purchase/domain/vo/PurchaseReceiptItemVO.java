@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * 采购收货单行（W5 Target Design §7.2）。

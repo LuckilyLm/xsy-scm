@@ -1,13 +1,13 @@
 package net.lab1024.sa.admin.module.scm.customer.service;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmCustomerStatusEnum;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
-import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.common.constant.ScmCustomerStatusEnum;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.util.ScmDecimalStrings;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerAddForm;
@@ -27,7 +27,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_CODE_DUPLICATE;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADABLE;
@@ -262,7 +262,7 @@ public class CustomerService {
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(CustomerValidator.normalizeOptional(form.getDistrictName()));
         if (!form.isLocationComplete())
-            throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+            throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
         entity.setLongitude(form.getLongitude());
         entity.setLatitude(form.getLatitude());
         entity.setGeomCrs(form.getGeomCrs());

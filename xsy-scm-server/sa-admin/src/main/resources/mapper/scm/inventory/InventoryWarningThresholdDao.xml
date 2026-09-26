@@ -5,13 +5,13 @@
     <resultMap id="thresholdVoMap"
                type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryWarningThresholdVO">
         <result column="spec_values" property="specValues"
-                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
     <resultMap id="warningVoMap"
                type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryWarningVO">
         <result column="spec_values" property="specValues"
-                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
     <!--

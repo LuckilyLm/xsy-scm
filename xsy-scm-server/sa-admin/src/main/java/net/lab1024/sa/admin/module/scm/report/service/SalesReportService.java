@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.report.dao.ReportDao;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmSalesReportQueryForm;
 import net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO;
@@ -16,7 +16,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
  * 销售分析（只读）。全部维度固定使用 {@code CONFIRMED + confirmed_at + settlement_*} 口径。

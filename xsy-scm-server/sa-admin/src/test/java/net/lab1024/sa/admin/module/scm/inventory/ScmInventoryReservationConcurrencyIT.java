@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.inventory;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.ReserveInventoryFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
@@ -408,7 +408,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
      * 从异常里取 SCM 业务错误码；非业务异常返回哨兵值，让断言报出真实原因而不是 NPE。
      */
     private static final java.util.function.Function<Throwable, Integer> SCM_ERROR_CODE = error -> {
-        if (error instanceof net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException e) {
+        if (error instanceof com.xsy.scm.common.exception.ScmBusinessException e) {
             return e.getErrorCode().getCode();
         }
         return -1;

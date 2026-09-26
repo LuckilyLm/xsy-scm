@@ -10,7 +10,7 @@ import java.util.Map;
 
 import net.lab1024.sa.admin.module.scm.pricing.dao.PriceBatchAuditDao;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.PriceBatchRowFailureVO;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmOperator;
 
 @Service
 @RequiredArgsConstructor

@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.warehouse;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandGenerateForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;

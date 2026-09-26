@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * 采购单行上的单条需求分配（W5 Target Design §7.2 / Q13）。

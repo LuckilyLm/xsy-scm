@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.inventory;
 
 import cn.dev33.satoken.stp.StpUtil;
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.domain.ReserveInventoryFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryConversionAddForm;

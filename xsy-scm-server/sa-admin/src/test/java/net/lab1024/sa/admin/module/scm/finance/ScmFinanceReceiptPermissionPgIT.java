@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.finance.constant.FinanceConstant;
 import net.lab1024.sa.admin.module.scm.finance.controller.FinanceReceiptController;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;

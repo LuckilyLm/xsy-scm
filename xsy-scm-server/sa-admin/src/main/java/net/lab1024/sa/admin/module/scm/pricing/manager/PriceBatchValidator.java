@@ -4,7 +4,7 @@ import java.util.*;
 
 import net.lab1024.sa.admin.module.scm.pricing.domain.form.*;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.*;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 
 public final class PriceBatchValidator {
     private PriceBatchValidator() {

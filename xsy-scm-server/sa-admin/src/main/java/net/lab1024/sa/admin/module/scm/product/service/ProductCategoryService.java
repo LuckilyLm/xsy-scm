@@ -2,8 +2,8 @@ package net.lab1024.sa.admin.module.scm.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.dao.*;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.*;
 import net.lab1024.sa.admin.module.scm.product.domain.form.*;

@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.customer;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.handler.ScmExceptionHandler;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.handler.ScmExceptionHandler;
 import net.lab1024.sa.admin.module.scm.customer.controller.CustomerController;
 import net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerVO;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerQueryService;
@@ -22,7 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_CODE_DUPLICATE;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADABLE;

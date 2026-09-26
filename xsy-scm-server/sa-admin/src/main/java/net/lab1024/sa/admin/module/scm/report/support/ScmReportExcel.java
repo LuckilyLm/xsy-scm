@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.lab1024.sa.admin.module.scm.common.json.ScmOffsetDateTimeSerializer;
+import com.xsy.scm.common.json.ScmOffsetDateTimeSerializer;
 
 import cn.idev.excel.FastExcel;
 import jakarta.servlet.http.HttpServletResponse;

@@ -10,7 +10,7 @@ import net.lab1024.sa.admin.module.scm.pricing.dao.PriceBatchAuditDao;
 import net.lab1024.sa.admin.module.scm.pricing.domain.form.PriceBatchForm;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.pricing.manager.PriceBatchValidator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.*;
 

@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.customer;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;

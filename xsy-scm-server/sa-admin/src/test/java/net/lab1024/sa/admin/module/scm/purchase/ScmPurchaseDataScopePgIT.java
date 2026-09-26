@@ -19,9 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAuditForm;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryLossGainService;

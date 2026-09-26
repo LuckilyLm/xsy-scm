@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import net.lab1024.sa.admin.module.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
  * 线路「按客户」视角的一行：仅聚合当前线路内有效关联订单，移出 / 取消释放的历史关系不计入。

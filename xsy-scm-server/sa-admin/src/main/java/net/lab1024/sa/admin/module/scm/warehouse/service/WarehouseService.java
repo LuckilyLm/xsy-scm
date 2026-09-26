@@ -2,8 +2,8 @@ package net.lab1024.sa.admin.module.scm.warehouse.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 /**
  * 仓库读写（W5 Target Design §2.1 / §5.2 / §7.1）。
@@ -213,7 +213,7 @@ public class WarehouseService {
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(form.getDistrictName());
         if (!form.isLocationComplete())
-            throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+            throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
         entity.setLongitude(form.getLongitude());
         entity.setLatitude(form.getLatitude());
         entity.setGeomCrs(form.getGeomCrs());

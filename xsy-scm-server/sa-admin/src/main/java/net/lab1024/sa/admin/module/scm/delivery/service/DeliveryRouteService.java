@@ -13,10 +13,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.delivery.dao.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.dto.DeliverySortedLine;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.*;
@@ -29,7 +29,7 @@ import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
 import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
 
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.*;
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.*;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.*;
 
 /**
  * Route is the aggregate lock. Order rows are locked in ID order before assignment/plan/release.

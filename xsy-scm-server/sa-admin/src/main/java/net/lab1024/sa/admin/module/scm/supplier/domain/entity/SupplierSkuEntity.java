@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
-import net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler;
+import com.xsy.scm.common.json.JsonbStringMapTypeHandler;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

@@ -20,7 +20,7 @@
         <id column="id" property="id"/>
         <result column="is_default" property="defaultFlag"/>
         <result column="spec_values_snapshot" property="specValuesSnapshot"
-                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
     <select id="selectActiveBySupplierId" resultMap="supplierSkuMap">
@@ -111,7 +111,7 @@
         <result column="sku_code" property="skuCode"/>
         <result column="product_name" property="productName"/>
         <result column="spec_values" property="specValues"
-                typeHandler="net.lab1024.sa.admin.module.scm.common.json.JsonbStringMapTypeHandler"/>
+                typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
     <!-- 名称取 SPU 名称（productName），不是 SKU 的 specName（legacy R4） -->

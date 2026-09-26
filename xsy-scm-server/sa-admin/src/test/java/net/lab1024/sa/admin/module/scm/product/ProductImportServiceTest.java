@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.product;
 
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductCategoryDao;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductImageDao;

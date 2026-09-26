@@ -9,8 +9,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import net.lab1024.sa.admin.module.scm.common.json.ScmStrictDecimalStringDeserializer;
-import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
+import com.xsy.scm.common.util.ScmDecimalStrings;
 
 /**
  * 新增客户。
@@ -19,7 +19,7 @@ import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;
  * （legacy 不变量 C7）。新增客户的初始状态由 Service 固定为 {@code POTENTIAL}（Q13）。
  */
 @Data
-public class CustomerAddForm extends net.lab1024.sa.admin.module.scm.common.domain.ScmLocationForm {
+public class CustomerAddForm extends com.xsy.scm.common.domain.ScmLocationForm {
     @Pattern(regexp = "ALL_ENABLED|ALLOWLIST")
     private String visibilityPolicy;
     @jakarta.validation.Valid

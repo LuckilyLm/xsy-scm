@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.sorting.support;
 
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeContext;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.sorting.constant.SortingConstant;
 import net.lab1024.sa.admin.module.scm.sorting.domain.entity.SortingTaskEntity;
 import org.springframework.stereotype.Component;

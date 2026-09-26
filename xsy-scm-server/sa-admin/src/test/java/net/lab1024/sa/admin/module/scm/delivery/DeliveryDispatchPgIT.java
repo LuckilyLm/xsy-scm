@@ -1,8 +1,8 @@
 package net.lab1024.sa.admin.module.scm.delivery;
 
 import cn.dev33.satoken.stp.StpUtil;
-import net.lab1024.sa.admin.module.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.ScmW6PgITBase;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryDriverForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryOrdersForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryRouteForm;
@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import static net.lab1024.sa.admin.module.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.DISPATCH_ROUTE_INELIGIBLE;
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.ROUTE_NOT_ALL_SIGNED;
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.SIGN_REASON_REQUIRED;

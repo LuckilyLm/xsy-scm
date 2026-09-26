@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.delivery.service;
 import java.util.List;
 import java.util.function.Consumer;
 
-import net.lab1024.sa.admin.module.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCustomerViewVO;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryDetailVO;

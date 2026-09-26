@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.customer;
 
-import net.lab1024.sa.admin.module.scm.common.ScmW2PgITBase;
+import com.xsy.scm.common.ScmW2PgITBase;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerTypeEntity;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerAddForm;
 import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerDeleteForm;

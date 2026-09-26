@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.config;
 
-import net.lab1024.sa.admin.module.scm.common.json.ScmOffsetDateTimeDeserializer;
-import net.lab1024.sa.admin.module.scm.common.json.ScmOffsetDateTimeSerializer;
+import com.xsy.scm.common.json.ScmOffsetDateTimeDeserializer;
+import com.xsy.scm.common.json.ScmOffsetDateTimeSerializer;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

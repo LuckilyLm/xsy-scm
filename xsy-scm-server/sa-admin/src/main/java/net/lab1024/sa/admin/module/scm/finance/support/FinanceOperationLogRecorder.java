@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.finance.support;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.finance.dao.FinanceOperationLogDao;

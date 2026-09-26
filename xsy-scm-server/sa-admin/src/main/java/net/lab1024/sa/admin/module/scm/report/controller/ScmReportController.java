@@ -15,7 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.report.constant.ReportErrorCode;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmInventoryReportQueryForm;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmOverviewReportQueryForm;

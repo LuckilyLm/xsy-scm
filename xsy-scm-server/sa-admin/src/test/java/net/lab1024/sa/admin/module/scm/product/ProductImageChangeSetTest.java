@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.product;
 import net.lab1024.sa.admin.module.scm.product.domain.entity.ProductImageEntity;
 import net.lab1024.sa.admin.module.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.admin.module.scm.product.manager.ProductImageChangeSet;
-import net.lab1024.sa.admin.module.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
