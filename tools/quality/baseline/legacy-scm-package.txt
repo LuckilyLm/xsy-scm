@@ -3,7 +3,7 @@
 # detection : 每个旧包文件记一条 identity。因此向旧 namespace **新增**文件就是 NEW DEFECT（这条路径从未被记录过），而**移出**旧包是 improvement、不会失败。新包一侧的文件数不做门禁，由 scan/check 末尾的 package migration progress 报表可见；旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管。注：baseline 里已存在的旧路径被「删掉又新建同名文件」仍可放行，所以 Q1 每完成一个域要 capture 一次让账本收缩
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 691 occurrences in 691 identities
+# captured  : 657 occurrences in 657 identities
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/constant/CustomerErrorCode.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerTypeController.java	unmigrated-file
@@ -543,33 +543,6 @@
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/sorting/service/SortingQueryService.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/sorting/service/SortingTaskService.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/sorting/support/SortingAccess.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/constant/SupplierErrorCode.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/controller/SupplierController.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/controller/SupplierSkuController.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/dao/SupplierDao.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/dao/SupplierSkuDao.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/entity/SupplierEntity.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/entity/SupplierSkuEntity.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierAddForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierDeleteForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierQueryForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierSkuItemForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierSkuQueryForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierSkuReplaceForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierStatusForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/form/SupplierUpdateForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/vo/OrderableSkuVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/vo/SupplierDetailVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/vo/SupplierOptionVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/vo/SupplierSkuCountVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/vo/SupplierSkuVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/domain/vo/SupplierVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/manager/SupplierSkuChangeSet.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/manager/SupplierSkuSyncManager.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/manager/SupplierValidator.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/service/SupplierQueryService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/service/SupplierService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/service/SupplierSkuService.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/ScmArchitectureTest.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/customer/CustomerControllerTest.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/customer/CustomerFrequentSkuIT.java	unmigrated-file
@@ -688,10 +661,3 @@
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/screen/ScmScreenPermissionMigrationIT.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/sorting/SortingTaskConcurrencyPgIT.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/sorting/SortingTaskPgIT.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/supplier/SupplierControllerTest.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/supplier/SupplierQueryServiceIT.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/supplier/SupplierServiceIT.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/supplier/SupplierSkuChangeSetTest.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/supplier/SupplierSkuControllerTest.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/supplier/SupplierSkuServiceIT.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/supplier/SupplierValidatorTest.java	unmigrated-file

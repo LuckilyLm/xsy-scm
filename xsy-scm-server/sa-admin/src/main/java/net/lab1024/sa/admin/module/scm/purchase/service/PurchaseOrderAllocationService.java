@@ -20,7 +20,7 @@ import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseEntityStamper;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderAllocationChangeSet;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderValidator;
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
-import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierSkuEntity;
+import com.xsy.scm.supplier.domain.entity.SupplierSkuEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;

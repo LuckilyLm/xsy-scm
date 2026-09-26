@@ -13,7 +13,7 @@ import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderItemE
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseReceiptEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseReceiptItemEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
-import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierSkuEntity;
+import com.xsy.scm.supplier.domain.entity.SupplierSkuEntity;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

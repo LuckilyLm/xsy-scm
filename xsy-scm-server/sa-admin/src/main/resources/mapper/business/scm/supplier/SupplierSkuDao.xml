@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.supplier.dao.SupplierSkuDao">
+<mapper namespace="com.xsy.scm.supplier.dao.SupplierSkuDao">
 
     <sql id="supplierSkuColumns">
         ss.id, ss.version, ss.supplier_id, ss.sku_id,
@@ -16,7 +16,7 @@
       `is_default` 必须显式映射：自动映射会把它折成 `isDefault`（实体属性名是 `defaultFlag`），
       列名与属性名不同源，不写这一行读路径会静默返回 null。
     -->
-    <resultMap id="supplierSkuMap" type="net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierSkuEntity">
+    <resultMap id="supplierSkuMap" type="com.xsy.scm.supplier.domain.entity.SupplierSkuEntity">
         <id column="id" property="id"/>
         <result column="is_default" property="defaultFlag"/>
         <result column="spec_values_snapshot" property="specValuesSnapshot"
@@ -97,7 +97,7 @@
     </select>
 
     <select id="countActiveBySupplierIds"
-            resultType="net.lab1024.sa.admin.module.scm.supplier.domain.vo.SupplierSkuCountVO">
+            resultType="com.xsy.scm.supplier.domain.vo.SupplierSkuCountVO">
         SELECT ss.supplier_id AS supplierId, COUNT(*) AS skuCount
         FROM supplier_sku ss
         WHERE ss.deleted = FALSE
@@ -106,7 +106,7 @@
         GROUP BY ss.supplier_id
     </select>
 
-    <resultMap id="orderableSkuMap" type="net.lab1024.sa.admin.module.scm.supplier.domain.vo.OrderableSkuVO">
+    <resultMap id="orderableSkuMap" type="com.xsy.scm.supplier.domain.vo.OrderableSkuVO">
         <id column="sku_id" property="skuId"/>
         <result column="sku_code" property="skuCode"/>
         <result column="product_name" property="productName"/>

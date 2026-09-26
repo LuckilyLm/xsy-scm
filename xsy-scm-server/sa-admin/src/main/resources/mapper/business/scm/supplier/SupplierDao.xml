@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.supplier.dao.SupplierDao">
+<mapper namespace="com.xsy.scm.supplier.dao.SupplierDao">
 
-    <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity">
+    <select id="queryPage" resultType="com.xsy.scm.supplier.domain.entity.SupplierEntity">
         SELECT s.id, s.version, s.supplier_code, s.name, s.status,
         s.contact_name, s.contact_phone, s.address, s.remark,
         s.created_at, s.updated_at, s.created_by, s.updated_by
@@ -21,7 +21,7 @@
 
     <!-- 写入路径的第一把锁：先锁 supplier，再锁 supplier_sku（锁序固定） -->
     <select id="selectActiveByIdForUpdate"
-            resultType="net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity">
+            resultType="com.xsy.scm.supplier.domain.entity.SupplierEntity">
         SELECT s.id,
                s.version,
                s.supplier_code,
