@@ -14,7 +14,7 @@ import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteQueryService;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteService;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
+import com.xsy.scm.warehouse.domain.form.WarehouseAddForm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;

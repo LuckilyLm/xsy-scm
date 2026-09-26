@@ -5,7 +5,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.ReserveInventoryFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

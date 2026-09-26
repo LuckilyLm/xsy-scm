@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao">
+<mapper namespace="com.xsy.scm.warehouse.dao.WarehouseDao">
 
     <!-- 显式列出全部列：不用 SELECT *，避免新增列时静默进入自动驼峰映射。 -->
-    <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity">
+    <select id="queryPage" resultType="com.xsy.scm.warehouse.domain.entity.WarehouseEntity">
         SELECT t.id, t.warehouse_code, t.name, t.status, t.address, t.remark,
         t.province_code, t.province_name, t.city_code, t.city_name,
         t.district_code, t.district_name, t.longitude, t.latitude, t.geom_crs,

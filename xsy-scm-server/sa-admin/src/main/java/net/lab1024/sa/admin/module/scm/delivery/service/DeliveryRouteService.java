@@ -26,7 +26,7 @@ import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceivableService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryFulfillmentService;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
-import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
+import com.xsy.scm.warehouse.dao.WarehouseDao;
 
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.*;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.*;

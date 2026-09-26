@@ -3,8 +3,8 @@ package net.lab1024.sa.admin.module.scm.purchase.support;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.domain.entity.WarehouseEntity;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Component;
 
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_WAREHOUSE_DISABLED;

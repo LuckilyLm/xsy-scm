@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.purchase;
 
 import com.xsy.scm.common.error.ScmErrorCode;
 import net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode;
-import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
+import com.xsy.scm.warehouse.constant.WarehouseErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

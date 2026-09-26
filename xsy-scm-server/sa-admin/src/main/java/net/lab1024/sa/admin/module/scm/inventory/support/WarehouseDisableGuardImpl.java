@@ -11,8 +11,8 @@ import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOrderDao;
 import net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseReceiptDao;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseReceiptEntity;
-import net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode;
-import net.lab1024.sa.admin.module.scm.warehouse.support.WarehouseDisableGuard;
+import com.xsy.scm.warehouse.constant.WarehouseErrorCode;
+import com.xsy.scm.warehouse.support.WarehouseDisableGuard;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

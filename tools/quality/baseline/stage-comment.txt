@@ -5,6 +5,18 @@
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 695 occurrences in 469 identities
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/constant/ScmCustomerStatusEnum.java	Q1
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/constant/ScmWarehouseStatusEnum.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/constant/WarehouseErrorCode.java	Q11
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/constant/WarehouseErrorCode.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/dao/WarehouseDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/entity/WarehouseEntity.java	Q1
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/entity/WarehouseEntity.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/form/WarehouseAddForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/form/WarehouseQueryForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/form/WarehouseUpdateForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/vo/WarehouseVO.java	§<n>
+5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseService.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	Wave <n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/dao/CustomerFrequentSkuDao.java	Wave <n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/entity/CustomerEntity.java	Q6
@@ -461,15 +473,3 @@
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/screen/service/ScreenDataService.java	设计稿
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/sorting/constant/SortingErrorCode.java	本轮
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/service/SupplierService.java	Q4
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/constant/ScmWarehouseStatusEnum.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/constant/WarehouseErrorCode.java	Q11
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/constant/WarehouseErrorCode.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseController.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/dao/WarehouseDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/entity/WarehouseEntity.java	Q1
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/entity/WarehouseEntity.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/form/WarehouseAddForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/form/WarehouseQueryForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/form/WarehouseUpdateForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/domain/vo/WarehouseVO.java	§<n>
-5	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/service/WarehouseService.java	§<n>

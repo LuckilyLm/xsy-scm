@@ -16,7 +16,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktak
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryStocktakeAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeItemVO;
 import net.lab1024.sa.admin.module.scm.inventory.support.StocktakeSnapshotDriftException;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

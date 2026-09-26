@@ -7,7 +7,7 @@ import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryRouteForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryVersionForm;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteQueryService;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteService;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
+import com.xsy.scm.warehouse.domain.form.WarehouseAddForm;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;

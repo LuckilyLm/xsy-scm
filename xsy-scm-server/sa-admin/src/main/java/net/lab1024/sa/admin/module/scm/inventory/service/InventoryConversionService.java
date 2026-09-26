@@ -15,8 +15,8 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversi
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryConversionAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryConversionAuditForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryConversionItemVO;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.domain.entity.WarehouseEntity;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

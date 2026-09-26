@@ -11,7 +11,7 @@ import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryReservationDao;
 import net.lab1024.sa.admin.module.scm.inventory.domain.ReserveInventoryFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.IllegalTransactionStateException;

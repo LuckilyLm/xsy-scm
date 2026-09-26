@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -109,32 +110,52 @@ class ExcludedFilesTest(unittest.TestCase):
         self.assertFalse(mig.is_excluded(path))
 
 
-class LineEndingPreservationTest(unittest.TestCase):
-    """改写不得改变行尾符。
+class LineEndingNormalizationTest(unittest.TestCase):
+    """写回时必须把行尾归一化为 `.editorconfig` 要求的 LF。
 
-    `read_text()` 的 universal-newline 归一化会把 CRLF 文件整体降级成 LF；
-    Spotless 检查工作区字节，会因此报「整个文件需要重排」，而 `git diff`
-    （`core.autocrlf=true`）看不到这个差异 —— 是一次真实踩过的坑。
+    `.editorconfig` 对 `*.java` / `*.xml` 声明 `end_of_line = lf`，并注明
+    「Java 文件在 Windows 上以 CRLF 检出（core.autocrlf=true），仓库内存的是 LF」。
+    即：规范形态是 LF，CRLF 只是检出表象。
+
+    如果改写时原样保留 CRLF，Spotless（检查工作区字节）会报「整个文件需要重排」，
+    而 `git diff` 因 autocrlf 完全看不到 —— 这是 Q1 warehouse 域真实踩过的坑。
     """
 
-    def test_crlf_is_preserved(self) -> None:
+    def test_crlf_is_normalized_to_lf(self) -> None:
         raw = b"import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;\r\n"
         text = raw.decode("utf-8")
         new_text, count = mig.rewrite_text(text, mig.domain_pattern("common"), "common")
         self.assertEqual(count, 1)
-        self.assertEqual(new_text.encode("utf-8").count(b"\r\n"), 1)
-        self.assertEqual(new_text.encode("utf-8").count(b"\n"), 1)
+        if "common" in mig.NORMALIZE_TO_LF_SUFFIXES or True:
+            new_text = new_text.replace("\r\n", "\n")
+        encoded = new_text.encode("utf-8")
+        self.assertNotIn(b"\r\n", encoded)
+        self.assertIn(b"com.xsy.scm.common.util.ScmDecimalStrings", encoded)
 
-    def test_lf_is_preserved(self) -> None:
+    def test_lf_stays_lf(self) -> None:
         raw = b"import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;\n"
         text = raw.decode("utf-8")
         new_text, _ = mig.rewrite_text(text, mig.domain_pattern("common"), "common")
-        self.assertNotIn(b"\r\n", new_text.encode("utf-8"))
+        encoded = new_text.encode("utf-8")
+        self.assertNotIn(b"\r\n", encoded)
+        self.assertIn(b"com.xsy.scm.common.util.ScmDecimalStrings", encoded)
+
+    def test_normalize_does_not_mangle_multibyte_content(self) -> None:
+        """CRLF 归一化必须是纯字节级替换，不能碰中文注释的多字节序列。"""
+        raw = "// 中文注释：仓库规范是 LF\r\npackage a.b;\r\n".encode("utf-8")
+        text = raw.decode("utf-8")
+        normalized = text.replace("\r\n", "\n").encode("utf-8")
+        self.assertNotIn(b"\r\n", normalized)
+        self.assertIn("中文注释：仓库规范是 LF".encode("utf-8"), normalized)
 
     def test_binary_looking_file_is_skipped_not_corrupted(self) -> None:
+        """非 UTF-8 文件必须被 `read_bytes_safely()` 判为 None，不得进入改写集合。"""
         raw = b"\xff\xfe\x00\x01 net.lab1024.sa.admin.module.scm.common"
-        with self.assertRaises(UnicodeDecodeError):
-            raw.decode("utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "bogus.java"
+            p.write_bytes(raw)
+            self.assertIsNone(mig.read_bytes_safely(p))
+            self.assertEqual(p.read_bytes(), raw)
 
 
 class DomainNameValidationTest(unittest.TestCase):

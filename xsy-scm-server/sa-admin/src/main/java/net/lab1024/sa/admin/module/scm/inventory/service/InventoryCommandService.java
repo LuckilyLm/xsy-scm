@@ -16,7 +16,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryTransferFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;

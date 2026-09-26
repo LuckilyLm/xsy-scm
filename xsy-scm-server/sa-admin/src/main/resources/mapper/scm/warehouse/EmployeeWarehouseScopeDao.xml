@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.warehouse.dao.EmployeeWarehouseScopeDao">
+<mapper namespace="com.xsy.scm.warehouse.dao.EmployeeWarehouseScopeDao">
 
     <!--
       授权行只按活动谓词读：部分唯一索引 uk_employee_warehouse_scope_active 建的正是
@@ -10,7 +10,7 @@
       disabledFlag 显性提示，不在这里静默藏掉一行真实授权。
     -->
     <select id="listEmployeesByWarehouse"
-            resultType="net.lab1024.sa.admin.module.scm.warehouse.domain.vo.WarehouseScopeEmployeeVO">
+            resultType="com.xsy.scm.warehouse.domain.vo.WarehouseScopeEmployeeVO">
         SELECT e.employee_id,
                e.login_name,
                e.actual_name,
@@ -24,7 +24,7 @@
 
     <!-- 已软删仓库不出现在授权清单里：它已经不能再承载任何业务数据。 -->
     <select id="listWarehousesByEmployee"
-            resultType="net.lab1024.sa.admin.module.scm.warehouse.domain.vo.WarehouseScopeWarehouseVO">
+            resultType="com.xsy.scm.warehouse.domain.vo.WarehouseScopeWarehouseVO">
         SELECT w.id            AS warehouse_id,
                w.warehouse_code,
                w.name          AS warehouse_name,

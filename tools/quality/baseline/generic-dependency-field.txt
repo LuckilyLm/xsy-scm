@@ -4,6 +4,11 @@
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 71 occurrences in 71 identities
+1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	WarehouseController#service:WarehouseService
+1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseScopeController.java	WarehouseScopeController#service:WarehouseScopeService
+1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseQueryService.java	WarehouseQueryService#dao:WarehouseDao
+1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseQueryService.java	WarehouseQueryService#service:WarehouseService
+1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseService.java	WarehouseService#dao:WarehouseDao
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	CustomerController#service:CustomerService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerTypeController.java	CustomerTypeController#service:CustomerTypeService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerVisibilityController.java	CustomerVisibilityController#service:CustomerSkuVisibilityService
@@ -70,8 +75,3 @@
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/controller/SupplierSkuController.java	SupplierSkuController#service:SupplierSkuService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/service/SupplierService.java	SupplierService#dao:SupplierDao
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/service/SupplierSkuService.java	SupplierSkuService#dao:SupplierSkuDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseController.java	WarehouseController#service:WarehouseService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseScopeController.java	WarehouseScopeController#service:WarehouseScopeService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/service/WarehouseQueryService.java	WarehouseQueryService#dao:WarehouseDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/service/WarehouseQueryService.java	WarehouseQueryService#service:WarehouseService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/service/WarehouseService.java	WarehouseService#dao:WarehouseDao

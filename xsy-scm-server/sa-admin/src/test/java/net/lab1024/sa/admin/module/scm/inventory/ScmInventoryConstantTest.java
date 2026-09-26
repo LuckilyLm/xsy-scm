@@ -443,7 +443,7 @@ class ScmInventoryConstantTest {
             "net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode",
             "net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode",
             "net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode",
-            "net.lab1024.sa.admin.module.scm.warehouse.constant.WarehouseErrorCode",
+            "com.xsy.scm.warehouse.constant.WarehouseErrorCode",
             InventoryErrorCode.class.getName());
 
     /**

@@ -14,7 +14,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryLossGain
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAddForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainAuditForm;
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryLossGainItemVO;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import net.lab1024.sa.base.module.support.message.constant.MessageTypeEnum;
 import net.lab1024.sa.base.module.support.message.domain.MessageSendForm;
 import net.lab1024.sa.base.module.support.message.service.MessageService;

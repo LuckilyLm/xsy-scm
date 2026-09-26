@@ -11,8 +11,8 @@ import net.lab1024.sa.admin.module.scm.delivery.service.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.entity.*;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseQueryService;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.vo.WarehouseVO;
+import com.xsy.scm.warehouse.service.WarehouseQueryService;
+import com.xsy.scm.warehouse.domain.vo.WarehouseVO;
 import net.lab1024.sa.base.common.domain.*;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 

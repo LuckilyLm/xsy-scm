@@ -4,6 +4,13 @@
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 285 occurrences in 169 identities
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:add
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:disable
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:enable
+3	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:query
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:update
+2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseScopeController.java	scm:warehouse:scope:query
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseScopeController.java	scm:warehouse:scope:update
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:add
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:assign
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:delete
@@ -166,10 +173,3 @@
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/controller/SupplierController.java	scm:supplier:update
 2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/controller/SupplierSkuController.java	scm:supplier:sku:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/supplier/controller/SupplierSkuController.java	scm:supplier:sku:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseController.java	scm:warehouse:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseController.java	scm:warehouse:disable
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseController.java	scm:warehouse:enable
-3	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseController.java	scm:warehouse:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseController.java	scm:warehouse:update
-2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseScopeController.java	scm:warehouse:scope:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/warehouse/controller/WarehouseScopeController.java	scm:warehouse:scope:update

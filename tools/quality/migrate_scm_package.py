@@ -50,6 +50,20 @@ XSY_PREFIX = "com.xsy.scm"
 
 SCAN_SUFFIXES = (".java", ".xml")
 
+# 本仓库 `.editorconfig` 对 `*.java` / `*.xml` 声明 `end_of_line = lf`，
+# 且明确说明「Java 文件在 Windows 上以 CRLF 检出（core.autocrlf=true），
+# 仓库内存的是 LF，因此这里声明 lf 与索引中的规范形式一致」。
+#
+# 结论：**规范形态是 LF**。CRLF 只是 core.autocrlf=true 检出时的工作区表象。
+# 因此改写写回时必须把 CRLF 归一化为 LF —— 否则 Spotless（检查工作区字节）
+# 会报「整个文件需要重排」，而 `git diff` 因为 autocrlf 归一化完全看不见，
+# 排查成本极高（Q1 warehouse 域踩过一次）。
+#
+# 注意不要用 `read_text()`：它的 universal-newline 会把 CRLF 静默降级成 LF，
+# 看似「没问题」，但那是隐式副作用，一旦换回 `newline=""` 写入就恢复成 CRLF。
+# 这里显式归一化，让行为可读、可测。
+NORMALIZE_TO_LF_SUFFIXES = SCAN_SUFFIXES
+
 # 扫描范围：只碰 sa-admin 的源码与资源。sa-base 是 SmartAdmin 底座，不在 Q1 范围内。
 SCAN_ROOTS = (
     SERVER / "sa-admin" / "src" / "main" / "java",
@@ -184,27 +198,41 @@ def report(edits: list[FileEdit], domain: str, mode: str) -> int:
 
 
 def apply_edits(edits: list[FileEdit], domain: str) -> int:
-    """按字节改写，**不触碰行尾符**。
+    """改写引用，并把行尾归一化为 `.editorconfig` 要求的 LF。
 
-    `read_text()` 会做 universal-newline 归一化（`\\r\\n` -> `\\n`），再用
-    `newline=""` 写回就会把 CRLF 文件整体降级成 LF —— Spotless 检查的是工作区
-    字节，会因此报「整个文件需要重排」，而 git diff（core.autocrlf=true）看不到，
-    排查成本很高。这里一律读原始字节、只替换 ASCII 前缀、原样写回。
+    两件事必须同时做对：
+
+    1. **替换**：用 `rewrite_text()` 把旧全限定前缀换成新的。
+    2. **行尾归一化**：`.editorconfig` 对 `*.java` / `*.xml` 声明 `end_of_line = lf`。
+       工作区文件可能因 `core.autocrlf=true` 是 CRLF 检出形态，若不归一化就写回，
+       Spotless 会报「整个文件需要重排」。`git diff` 看不到这个差异，因为
+       autocrlf 在读索引时就把 LF 转换成了 CRLF，两边看起来一样。
+
+    为什么不直接 `read_text()`：它的 universal-newline 会隐式把 CRLF 降级成 LF，
+    行为上"碰巧正确"，但那是副作用而非契约 —— 一旦有人改成 `newline=""` 就会静默
+    退回 CRLF。这里显式归一化，行为可读、可测（见 `LineEndingNormalizationTest`）。
+
+    非 UTF-8 文件（`read_bytes_safely()` 返回 None）不会进入 `edits`，无需在此再判。
     """
     pattern = domain_pattern(domain)
     written = 0
     total = 0
+    normalized = 0
     for edit in edits:
         raw = edit.path.read_bytes()
         text = raw.decode("utf-8")
         new_text, count = rewrite_text(text, pattern, domain)
         if count == 0:
             continue
+        if edit.path.suffix in NORMALIZE_TO_LF_SUFFIXES and "\r\n" in new_text:
+            new_text = new_text.replace("\r\n", "\n")
+            normalized += 1
         edit.path.write_bytes(new_text.encode("utf-8"))
         written += 1
         total += count
     print()
-    print(f"RESULT: APPLIED ({written} files, {total} occurrences)")
+    suffix = f", {normalized} normalized to LF" if normalized else ""
+    print(f"RESULT: APPLIED ({written} files, {total} occurrences{suffix})")
     return total
 
 

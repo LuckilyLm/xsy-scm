@@ -16,7 +16,7 @@ import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryCandidateOrderQu
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryDriverService;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteQueryService;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteService;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
+import com.xsy.scm.warehouse.domain.form.WarehouseAddForm;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.code.UserErrorCode;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;

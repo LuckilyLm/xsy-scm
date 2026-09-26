@@ -15,7 +15,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceE
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryOutboundEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryOutboundItemEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

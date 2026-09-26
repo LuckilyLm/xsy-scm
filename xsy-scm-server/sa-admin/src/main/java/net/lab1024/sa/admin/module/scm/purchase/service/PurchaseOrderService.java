@@ -32,7 +32,7 @@ import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseOrderAllocationService.RequestedRow;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseOwnerResolver;
 import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
+import com.xsy.scm.warehouse.domain.entity.WarehouseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

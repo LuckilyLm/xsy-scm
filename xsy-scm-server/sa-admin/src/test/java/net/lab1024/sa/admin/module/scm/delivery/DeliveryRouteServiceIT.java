@@ -16,7 +16,7 @@ import net.lab1024.sa.admin.module.scm.delivery.service.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.OrderCancelForm;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.form.WarehouseAddForm;
+import com.xsy.scm.warehouse.domain.form.WarehouseAddForm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;

@@ -1,0 +1,73 @@
+package com.xsy.scm.warehouse.constant;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.error.ScmErrorCode;
+
+/**
+ * 仓库域错误码（6 个）。
+ *
+ * <p>设计依据：W5 Target Design §7.7（Q11 / F5）。**必须**独立于 {@code PurchaseErrorCode}：
+ * {@code module/scm/warehouse/**} 要能独立抛错，否则会形成 {@code warehouse → purchase}
+ * 的反向依赖 —— 而把 warehouse 独立成域的唯一理由就是避免这种反向依赖（W6 库存域要直接依赖它）。
+ *
+ * <p>与 {@code PurchaseErrorCode}（38 个）合计 **40** 个，与 W1–W4 全部错误码零交集
+ * （由 {@code PurchaseErrorCodeTest} 门禁强制）。
+ */
+@Getter
+@RequiredArgsConstructor
+public enum WarehouseErrorCode implements ScmErrorCode {
+
+    /**
+     * 40485：落在已占用段 40464–40499 的空档内。
+     */
+    WAREHOUSE_NOT_FOUND(40485, "仓库不存在"),
+
+    /**
+     * 40996：落在已占用段（最大 40970）之后的空档内。
+     */
+    WAREHOUSE_CODE_DUPLICATE(40996, "仓库编码已存在"),
+
+    // ---- B1 仓库启停（41004–41007，410xx 新段）----
+    /**
+     * 41004：启停方向非法（已 ENABLED 再 enable / 已 DISABLED 再 disable）。
+     */
+    WAREHOUSE_STATE_INVALID(41004, "仓库当前状态不允许该启停操作"),
+    /**
+     * 41005：停用被库存余额阻塞（HD-B1-01 第一条）。
+     */
+    WAREHOUSE_DISABLE_HAS_BALANCE(41005, "仓库仍有库存余额，不能停用"),
+    /**
+     * 41006：停用被在途采购单阻塞（HD-B1-01 第二条）。
+     */
+    WAREHOUSE_DISABLE_HAS_INBOUND(41006, "仓库存在在途采购单，不能停用"),
+    /**
+     * 41007：停用被待入库收货单阻塞（HD-B1-01 第三条）。
+     */
+    WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY(41007, "仓库存在待入库收货单，不能停用"),
+
+    /**
+     * 41018：当前没有唯一启用的仓库，无法解析「默认仓库」。
+     *
+     * <p>G-03 是单仓库口径，销售订单**没有仓库字段**，因此订单预留库存时必须有一个
+     * 明确的落点。启用仓库数为 0 或大于 1 时都不能猜 —— 猜错会把货占在错误的仓库上，
+     * 而且要到出库/盘点才会暴露。
+     */
+    WAREHOUSE_DEFAULT_AMBIGUOUS(41018, "当前启用仓库不是唯一一个，无法确定默认仓库"),
+
+    /**
+     * 41009：仓库存在**在途调拨单**（已发出未收货），不能停用。
+     *
+     * <p>调拨波次新增的第四条停用阻塞条件。放在这里而不是 {@code InventoryErrorCode}：
+     * 「停用阻塞条件」是仓库域自身的不变量，与 41005/41006/41007 同一族；
+     * 而 41048（仓库停用不能用于调拨）是**调拨侧**的规则，因此留在库存域。
+     * 两者方向相反、归属不同，不能混为一谈。
+     *
+     * <p>源仓与目标仓**都算**：源仓的货已经出去了但账上还没落地到目标仓，
+     * 目标仓则还欠着一批要入库的货。任一被停用都会让在途调拨无处可收 / 无据可查。
+     */
+    WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009, "仓库存在在途调拨单，不能停用");
+
+    private final int code;
+    private final String msg;
+}

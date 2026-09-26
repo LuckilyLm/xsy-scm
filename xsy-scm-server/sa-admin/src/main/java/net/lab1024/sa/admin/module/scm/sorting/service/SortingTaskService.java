@@ -24,7 +24,7 @@ import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingTaskCreateForm
 import net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingPrintResultVO;
 import net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingTaskDetailVO;
 import net.lab1024.sa.admin.module.scm.sorting.support.SortingAccess;
-import net.lab1024.sa.admin.module.scm.warehouse.dao.WarehouseDao;
+import com.xsy.scm.warehouse.dao.WarehouseDao;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
 import org.springframework.dao.DuplicateKeyException;

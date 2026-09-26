@@ -5,7 +5,7 @@ import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseDemandController;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseOrderController;
 import net.lab1024.sa.admin.module.scm.purchase.controller.PurchaseReceiptController;
-import net.lab1024.sa.admin.module.scm.warehouse.controller.WarehouseController;
+import com.xsy.scm.warehouse.controller.WarehouseController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -9,8 +9,8 @@ import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierEntity;
 import net.lab1024.sa.admin.module.scm.supplier.domain.entity.SupplierSkuEntity;
 import net.lab1024.sa.admin.module.scm.supplier.service.SupplierService;
 import net.lab1024.sa.admin.module.scm.supplier.service.SupplierSkuService;
-import net.lab1024.sa.admin.module.scm.warehouse.domain.entity.WarehouseEntity;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.domain.entity.WarehouseEntity;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

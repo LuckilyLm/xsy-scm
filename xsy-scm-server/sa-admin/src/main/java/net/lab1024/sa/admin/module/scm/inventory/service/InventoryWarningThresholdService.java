@@ -8,7 +8,7 @@ import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryWarningThresholdDa
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryWarningThresholdEntity;
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryWarningThresholdAddForm;
 import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuDao;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

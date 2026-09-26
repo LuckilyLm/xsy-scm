@@ -10,7 +10,7 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeImp
 import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeImportResultVO;
 import net.lab1024.sa.admin.module.scm.inventory.support.StocktakeSnapshotDriftException;
 import net.lab1024.sa.admin.module.scm.inventory.support.StocktakeSnapshotSigner;
-import net.lab1024.sa.admin.module.scm.warehouse.service.WarehouseService;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.WorkbookFactory;

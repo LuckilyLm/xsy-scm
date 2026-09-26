@@ -1,6 +1,6 @@
 package net.lab1024.sa.admin.module.scm.purchase.constant;
 
-import net.lab1024.sa.admin.module.scm.warehouse.constant.ScmWarehouseStatusEnum;
+import com.xsy.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
