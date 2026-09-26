@@ -34,8 +34,13 @@ class ScmBigDecimalNullSemanticsTest {
 
     /**
      * SCM 业务代码根包；任何新增 SCM 代码都必须落在这个包下。
+     *
+     * <p>Q1 迁包收口（2026-09-26）：SCM 已整体从
+     * {@code net.lab1024.sa.admin.module.scm} 迁到 {@code com.xsy.scm}，旧包下已无任何
+     * 生产类，因此扫描根必须跟着换 —— 继续指向旧包会扫到 0 个类，
+     * 而下面 {@code isNotEmpty()} 断言会让它当场失败（这正是该断言存在的意义）。
      */
-    private static final String SCM_ROOT_PACKAGE = "net.lab1024.sa.admin.module.scm";
+    private static final String SCM_ROOT_PACKAGE = "com.xsy.scm";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

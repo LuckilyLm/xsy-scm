@@ -55,14 +55,19 @@ SERVER = ROOT / "xsy-scm-server"
 MAIN_SOURCE_ROOT = SERVER / "sa-admin/src/main/java"
 TEST_SOURCE_ROOT = SERVER / "sa-admin/src/test/java"
 
-# Q1 把 SCM 从旧包迁到 com.xsy.scm，期间两边必然并存：一个域一个域地搬，
-# 不会出现「某天全部就位」的原子时刻。所以扫描范围必须是两条包路径的并集，
-# 而不是把旧路径换成新路径 —— 那样在迁移进行中会漏掉另一半，
-# 表现恰恰是「0 findings / PASS」，也就是最危险的假绿。
-# 旧包归零后本表可以收缩成一条，由 Q1 的 readiness 检查把关。
+# Q1 迁包于 2026-09-26 收口：旧包 net/lab1024/sa/admin/module/scm 下已无任何 .java，
+# SCM 全部落在 com.xsy.scm（847 个文件 = manifest main 692 + test 155）。
+# 因此**扫描范围**从「两条路径的并集」收缩为单条，旧包路径不再参与扫描。
+# 收缩的依据不是「迁移做完了」这句话，而是 readiness 的 domain-completeness 断言：
+# 15 个域 + _root 逐个比对精确文件集合，且 legacy-scm-package 账本归零。
+# 「旧包不得复活」由 ScmArchitectureTest 的 ArchUnit 规则接管，不再靠宽扫描兜底。
+#
+# LEGACY_SCM_PACKAGE_PATH 常量**保留**：它仍是「旧包在哪」的唯一出处，
+# readiness / metrics / baseline 迁移工具都需要它来表达历史路径，
+# 只是不再出现在 SCM_PACKAGE_PATHS 里。
 LEGACY_SCM_PACKAGE_PATH = Path("net/lab1024/sa/admin/module/scm")
 NEW_SCM_PACKAGE_PATH = Path("com/xsy/scm")
-SCM_PACKAGE_PATHS = (LEGACY_SCM_PACKAGE_PATH, NEW_SCM_PACKAGE_PATH)
+SCM_PACKAGE_PATHS = (NEW_SCM_PACKAGE_PATH,)
 
 BASELINE_DIR = Path(__file__).resolve().parent / "baseline"
 CHECKSTYLE_RESULT = SERVER / "target/checkstyle-result.xml"
@@ -383,23 +388,26 @@ def java_file_count(root: Path) -> int:
 
 
 def legacy_package_files() -> list[Finding]:
-    """One identity per file still under the pre-Q1 SCM package.
+    """旧包下仍存在的 .java 文件。Q1 收口后为空 —— 但**是扫出来的空，不是写死的空**。
 
-    This used to be two aggregate counts (``main 692 / test 155``) compared as a
-    ceiling. That did **not** enforce "only decreasing": drop to 810 and the
-    baseline stays 847, so adding 5 new files under the old namespace still
-    passed at 815. It expressed "no worse than Q0", not "no new code in the old
-    namespace", and those read the same in prose but not in effect.
+    这个 family 曾经「每个旧包文件一条 identity」，用 ratchet 保证没有新代码进入
+    旧 namespace（早期用两个聚合计数做上限是错的：降到 810 后旧包仍留 847 上限，
+    再塞 5 个文件照样过）。
 
-    Per-file identities fix that with the existing ratchet: a path that was never
-    recorded is a NEW DEFECT, so new files cannot enter the legacy namespace;
-    moving files out is an improvement. The residual gap is deliberate and cheap
-    - recreating a file at a path that is still listed in the baseline passes -
-    so each completed Q1 domain should ``capture`` to shrink the ledger.
+    Q1 收口后旧包 .java = 0，「新增一条」在空集合上恒真 —— 与 ScmArchitectureTest
+    里那条被否掉的 ArchUnit 规则是同一个陷阱：**空集合上的合规不能当断言**。
+    因此这里刻意**保留真实扫描**，而不是 `return []`：
+    写死返回空会把「旧包复活了一堆文件」这件事静默掉，那比退役前更危险。
+    旧包目录仍在（空壳），扫描结果是 0 条，这是事实而非约定。
+
+    「旧包不得复活」另有两条更强的机制：
+      * ArchUnit ``scmProductionCodeLivesInXsyPackage``（具体业务域必须在 com.xsy.scm）；
+      * ``ScmArchitectureTest.importedSourceSetIsNotEmpty`` 的 ``sawLegacyPackage`` 分支；
+      * readiness 的 domain-completeness 逐个域比对精确文件集合。
+    本 family 在 baseline 里已归零，任何新增旧包文件都会以 NEW DEFECT 形式当场失败。
     """
     findings: list[Finding] = []
-    for root in (MAIN_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH,
-                 TEST_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH):
+    for root in legacy_package_paths():
         if not root.is_dir():
             continue
         findings.extend(
@@ -412,6 +420,26 @@ def legacy_package_files() -> list[Finding]:
             for path in sorted(root.rglob("*.java"))
         )
     return findings
+
+
+def legacy_package_paths() -> tuple[Path, ...]:
+    """旧包源根（main + test）。迁移已收口，正常返回的目录都不存在。
+
+    保留为函数而不是常量，是为了让「旧包路径」这件事在收缩 SCM_PACKAGE_PATHS 之后
+    仍有唯一出处，readiness 与测试都不必自己拼路径字符串。
+    """
+    return (MAIN_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH,
+            TEST_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH)
+
+
+def legacy_package_files_retired() -> bool:
+    """本 family 是否已退役：旧包两个源根下**不再有 .java 文件**即为真。
+
+    判据是「没有 .java」而不是「目录不存在」：`git mv` 之后 Git 不跟踪空目录，
+    但 checkout 出来的工作树里可能留着空壳目录（实测就是如此）。
+    拿目录是否存在当判据会把正常收口判成未退役。
+    """
+    return not legacy_package_files()
 
 
 def package_migration_progress() -> list[tuple[str, str, int]]:
@@ -506,14 +534,15 @@ FAMILIES: tuple[RuleFamily, ...] = (
     ),
     RuleFamily(
         "legacy-scm-package",
-        "仍留在迁移前 SCM 包下的文件",
-        "旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根，逐个 .java 文件一条 identity",
-        "每个旧包文件记一条 identity。因此向旧 namespace **新增**文件就是 NEW DEFECT（这条路径"
-        "从未被记录过），而**移出**旧包是 improvement、不会失败。"
-        "新包一侧的文件数不做门禁，由 scan/check 末尾的 package migration progress 报表可见；"
-        "旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管。"
-        "注：baseline 里已存在的旧路径被「删掉又新建同名文件」仍可放行，"
-        "所以 Q1 每完成一个域要 capture 一次让账本收缩",
+        "仍留在迁移前 SCM 包下的文件（已退役）",
+        "旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根；Q1 收口后为空",
+        "【已退役 2026-09-26】Q1 收口前：每个旧包文件记一条 identity，向旧 namespace "
+        "**新增**文件即 NEW DEFECT，**移出**旧包是 improvement。"
+        "Q1 收口后旧包 .java = 0，identity 集合为空，本 family 恒返回空集合并退役 —— "
+        "空集合上的「没有违规」是恒真的，不能继续当断言。"
+        "「旧包不得复活」改由 ScmArchitectureTest 的 ArchUnit 规则"
+        "（scmProductionCodeLivesInXsyPackage + importedSourceSetIsNotEmpty 的 "
+        "sawLegacyPackage 分支）与 readiness 的 domain-completeness 承担。",
     ),
     RuleFamily(
         "checkstyle",

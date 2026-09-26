@@ -131,17 +131,44 @@ def editorconfig_value(filename: str) -> dict[str, str]:
 
 
 def check_guard_scans_both_packages() -> Check:
-    check = Check("guard-dual-package", "Quality Guard 同时扫描旧包与 com.xsy/scm")
+    """Q1 收口后的扫描范围断言（原「必须同时扫两条路径」已随收口反转）。
+
+    迁移进行中「只扫一条」是错的：另一条里的文件会静默漏掉，表现为 0 findings / PASS。
+    迁移收口后「只扫一条」才是对的：旧包已空，继续把旧路径挂在扫描表里会让
+    `SCM_PACKAGE_PATHS` 表达一个不存在的位置，未来有人往旧包塞文件时反而被当作
+    「已知来源」而不是新债。
+
+    所以这里断言的是收口态的三件事，而不是当年那个数字 2：
+      1. 扫描表恰好一条，且就是 com/xsy/scm；
+      2. 旧包两个源根下确实没有 .java（扫出来的空，不是写死的空）；
+      3. 新包确实能被扫到（否则收缩成了假绿）。
+    """
+    check = Check("guard-single-package-post-q1",
+                  "Q1 收口后 Quality Guard 只扫 com.xsy/scm，且旧包已确实归零")
+    paths = tuple(guard.SCM_PACKAGE_PATHS)
+    if paths != (guard.NEW_SCM_PACKAGE_PATH,):
+        check.failures.append(
+            f"expected exactly (com/xsy/scm,) after Q1 close-out, got {paths}")
     roots = guard.package_roots(guard.MAIN_SOURCE_ROOT)
-    if len(roots) != 2:
-        check.failures.append(f"expected 2 main source roots, got {len(roots)}")
-    if not any(root.as_posix().endswith("com/xsy/scm") for root in roots):
-        check.failures.append("no root under com/xsy/scm; migrated files would be invisible")
-    if not any(root.as_posix().endswith("net/lab1024/sa/admin/module/scm") for root in roots):
-        check.failures.append("no root under the legacy SCM package; unmigrated files leak")
+    if len(roots) != 1 or not roots[0].as_posix().endswith("com/xsy/scm"):
+        check.failures.append(
+            f"expected exactly 1 main source root (com/xsy/scm), got {roots}")
     test_roots = guard.package_roots(guard.TEST_SOURCE_ROOT)
-    if len(test_roots) != 2:
-        check.failures.append(f"expected 2 test source roots, got {len(test_roots)}")
+    if len(test_roots) != 1 or not test_roots[0].as_posix().endswith("com/xsy/scm"):
+        check.failures.append(
+            f"expected exactly 1 test source root (com/xsy/scm), got {test_roots}")
+
+    leftovers = guard.legacy_package_files()
+    if leftovers:
+        check.failures.append(
+            f"{len(leftovers)} .java file(s) still under the legacy SCM package, "
+            f"e.g. {leftovers[0].path}; Q1 is not actually closed out")
+    if not guard.legacy_package_files_retired():
+        check.failures.append("legacy-package family is not reported as retired")
+
+    if not guard.scm_main_sources():
+        check.failures.append(
+            "com/xsy/scm resolves to 0 main sources; the shrink produced a vacuous scan")
     return check
 
 
@@ -386,7 +413,19 @@ def check_probe_is_configured() -> Check:
 # ------------------------------------------- Q1 package migration manifest (Q0.3)
 
 SERVER_JAVA_SUFFIX = ".java"
-MANIFEST_PATH = guard.BASELINE_DIR / "package-migration-manifest.json"
+
+# Q1 已收口（2026-09-26）：manifest 从 tools/quality/baseline/ 移出，归档到
+# docs/quality/ 作为**只读历史快照**。它记录的是「迁移前那一刻 847 个文件的精确归属」
+# （main 692 + test 155），用于事后复核「迁移是逐个文件搬家，不是等量替换」。
+#
+# 为什么不再放在 baseline/ 下：baseline 目录被 quality_guard 当作门禁数据源读取，
+# 而 manifest 在收口后已无门禁语义 —— 它描述的是一个**已经结束的状态**，
+# 不是一条需要持续满足的规则。留在门禁目录里会让人误以为它还在把关。
+#
+# 为什么保留而不是删除：它是「精确迁移」的唯一可复核证据。删掉之后
+# 「847 = 692 + 155 且每个文件都在预期域下」就只能靠翻 git 历史，
+# 无法用脚本一遍复核。归档在 docs/ 下，与门禁彻底分离。
+MANIFEST_PATH = guard.ROOT / "docs/quality/q1-package-migration-manifest.json"
 
 # SCM classes that sit directly in the package root belong to no domain. They are
 # not "common" and must not be folded into it: a file moved under the wrong domain

@@ -47,7 +47,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("W6 库存域常量与错误码（单元）")
 class ScmInventoryConstantTest {
 
-    private static final String SCM_PACKAGE = "net.lab1024.sa.admin.module.scm";
+    /**
+     * SCM 根包。Q1 迁包收口（2026-09-26）后 SCM 全部在 {@code com.xsy.scm}。
+     *
+     * <p>刻意写成常量而不是从类反推：这个值同时被用来拼 classpath 资源路径
+     * （见 {@link #discoverErrorCodeEnums()}），两处必须一致，
+     * 而从 {@code ScmErrorCode.class.getPackageName()} 反推会引入「包名对了但基础目录不对」
+     * 的隐患 —— 本测试的立场是「包名是一个必须显式声明的契约」。
+     */
+    private static final String SCM_PACKAGE = "com.xsy.scm";
 
     // ------------------------------------------------------------------
     // 常量一致性
@@ -457,7 +465,7 @@ class ScmInventoryConstantTest {
     private static List<Class<?>> discoverErrorCodeEnums() {
         List<Class<?>> found = new ArrayList<>();
         try {
-            URL root = ScmErrorCode.class.getResource("/net/lab1024/sa/admin/module/scm");
+            URL root = ScmErrorCode.class.getResource("/" + SCM_PACKAGE.replace('.', '/'));
             if (root != null && "file".equals(root.getProtocol())) {
                 Path base = Paths.get(root.toURI());
                 try (Stream<Path> walk = Files.walk(base)) {

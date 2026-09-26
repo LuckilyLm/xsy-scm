@@ -43,7 +43,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class PurchaseErrorCodeTest {
 
-    private static final String SCM_PACKAGE = "net.lab1024.sa.admin.module.scm";
+    /**
+     * SCM 根包。Q1 迁包收口（2026-09-26）后 SCM 全部在 {@code com.xsy.scm}；
+     * 下面的 {@link #FALLBACK} 从一开始写的就是新包名，本常量此前指向旧包，
+     * 是收口时漏改的最后一处（旧包扫到 0 个类会回退到 FALLBACK，
+     * 于是「扫描失败」被静默降级成「清单可用」，属于典型的假绿面）。
+     */
+    private static final String SCM_PACKAGE = "com.xsy.scm";
 
     /**
      * 回退清单：classpath 不是展开目录时使用。新域的错误码枚举要在这里补一行。
@@ -153,7 +159,7 @@ class PurchaseErrorCodeTest {
 
     private static List<Class<?>> discover() {
         try {
-            URL root = ScmErrorCode.class.getResource("/net/lab1024/sa/admin/module/scm");
+            URL root = ScmErrorCode.class.getResource("/" + SCM_PACKAGE.replace('.', '/'));
             if (root != null && "file".equals(root.getProtocol())) {
                 Path base = Paths.get(root.toURI());
                 List<Class<?>> found = new ArrayList<>();
