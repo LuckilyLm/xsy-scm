@@ -303,6 +303,11 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
    ```bash
    # ① git mv 该域的 main + test
    git mv .../net/lab1024/sa/admin/module/scm/<domain> .../com/xsy/scm/<domain>
+   #   ⚠ 目标目录**只预建到 com/xsy/scm**，不要先 mkdir 出 `<domain>` 那一级：
+   #   mkdir -p com/xsy/scm/<domain> 会让 Git 把已存在的空目录当目标容器，
+   #   把源目录整个塞进去，得到 com/xsy/scm/<domain>/<domain>/ 多一层嵌套。
+   #   自查：find src -type d -name '<domain>' | grep '<domain>/<domain>' 必须为空；
+   #   或看下一步 dry-run 打印的路径里有没有重复域名。
 
    # ② 同步修改 package 声明、imports、XML namespace / type 引用、
    #    以及必要的包名字符串引用
@@ -322,6 +327,9 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
    # ⑥ 定向测试
 
    # ⑦ 确认无新债之后才收缩账本
+   #    ⚠ 若本轮做过 mvn clean，`xsy-scm-server/target/checkstyle-result.xml` 会被删掉，
+   #    capture 会报 "checkstyle-result.xml not found"。先补跑一次
+   #    `mvn -B -N checkstyle:check`（幂等）再 capture。
    python tools/quality/quality_guard.py capture --checkstyle
    python tools/quality/quality_guard.py check --checkstyle
 
@@ -603,7 +611,7 @@ ScmStocktakeImportPgIT 连续 20 次（每次独立 mvn 调用、独立 Spring �
    > |---|---|
    > | `GetConnectionTimeoutException`，`url jdbc:postgresql://...` 与 `P6SpyDriver` 并排 | `XSY_V2_DB_URL` 少了 `jdbc:p6spy:` 前缀 |
    > | `PSQLException: The server requested SCRAM-based authentication, but no password was provided` | `XSY_V2_DB_PASSWORD` 未注入 |
-   > | `RedisAuthRequiredException: NOAUTH Authentication required` | `SPRING_DATA_REDIS_PASSWORD` 未注入 |
+   > | `RedisAuthRequiredException: NOAUTH Authentication required` | `SPRING_DATA_REDIS_PASSWORD` 未注入（取值来自 `.env` 的 `REDIS_PASSWORD`，两者名字不同，勿混） |
    >
    > 三者都表现为 **682 errors** 加满屏 `ApplicationContext failure threshold (1) exceeded`，
    > 极易误判成代码回归；真实根因只在 `sa-admin/target/surefire-reports/*.txt` 的
