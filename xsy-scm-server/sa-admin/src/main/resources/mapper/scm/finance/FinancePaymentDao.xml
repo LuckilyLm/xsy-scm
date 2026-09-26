@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePaymentDao">
+<mapper namespace="com.xsy.scm.finance.dao.FinancePaymentDao">
 
     <select id="nextPaymentNo" resultType="long">
         SELECT nextval('finance_payment_no_seq')
@@ -16,7 +16,7 @@
       供应商付款的 source_id 为 NULL，根本不在这个索引里，所以 0 行只可能是「退款已付过」。
     -->
     <insert id="insertNormalOnConflictDoNothing"
-            parameterType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinancePaymentEntity"
+            parameterType="com.xsy.scm.finance.domain.entity.FinancePaymentEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,
                                      counterparty_name_snapshot, amount, method, paid_at,

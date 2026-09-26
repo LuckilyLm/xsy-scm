@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinanceReceivableDao">
+<mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableDao">
 
     <select id="nextReceivableNo" resultType="long">
         SELECT nextval('finance_receivable_no_seq')
@@ -16,7 +16,7 @@
       由服务侧按「已生成」成功返回（生成器不是用户命令）。
     -->
     <insert id="insertOnConflictDoNothing"
-            parameterType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinanceReceivableEntity"
+            parameterType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,
                                         customer_id, customer_name_snapshot, entry_type,
@@ -32,7 +32,7 @@
 
     <!-- 一订单的正常应收最多一张（uk_finance_receivable_source_active 的同一口径）。 -->
     <select id="selectNormalByOrder"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinanceReceivableEntity">
+            resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity">
         SELECT id, receivable_no, source_type, source_id, order_id, customer_id,
                customer_name_snapshot, entry_type, original_receivable_id, amount, event_at,
                reason, version, deleted, created_at, updated_at, created_by, updated_by

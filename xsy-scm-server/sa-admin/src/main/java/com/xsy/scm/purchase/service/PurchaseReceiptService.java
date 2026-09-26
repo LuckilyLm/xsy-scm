@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
-import net.lab1024.sa.admin.module.scm.finance.service.FinancePayableService;
+import com.xsy.scm.finance.service.FinancePayableService;
 import com.xsy.scm.purchase.constant.PurchaseConfigKey;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;

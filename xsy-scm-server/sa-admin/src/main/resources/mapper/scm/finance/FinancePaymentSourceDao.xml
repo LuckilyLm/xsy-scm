@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePaymentSourceDao">
+<mapper namespace="com.xsy.scm.finance.dao.FinancePaymentSourceDao">
 
     <!--
       财务域对 order_refund 只读：本文件只有 SELECT。
@@ -10,7 +10,7 @@
       财务付款凭据号必须独立登记（设计稿 §6 / Q25）。
     -->
     <select id="selectOrderRefund"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceRefundFactDto">
+            resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
         SELECT r.id             AS refundId,
                r.customer_id    AS customerId,
                r.status         AS status,

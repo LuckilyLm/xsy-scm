@@ -12,7 +12,7 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmValueScope;
-import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceivableService;
+import com.xsy.scm.finance.service.FinanceReceivableService;
 
 import static com.xsy.scm.order.constant.OrderErrorCode.*;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;

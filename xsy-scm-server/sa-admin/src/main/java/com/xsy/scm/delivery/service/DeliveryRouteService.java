@@ -22,7 +22,7 @@ import com.xsy.scm.delivery.domain.dto.DeliverySortedLine;
 import com.xsy.scm.delivery.domain.entity.*;
 import com.xsy.scm.delivery.domain.form.*;
 import com.xsy.scm.delivery.domain.vo.*;
-import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceivableService;
+import com.xsy.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.inventory.service.InventoryFulfillmentService;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.service.OrderIdempotencyService;

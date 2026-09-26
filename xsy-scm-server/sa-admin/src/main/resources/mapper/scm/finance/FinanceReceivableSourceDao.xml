@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinanceReceivableSourceDao">
+<mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableSourceDao">
 
     <!--
       财务域对配送 / 订单 / 库存表只读（设计稿 §0 第 2 条）：本文件只有 SELECT。
@@ -10,7 +10,7 @@
       由服务侧的 null 判据失败并让签收回滚。
     -->
     <select id="selectSignedAssignment"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReceivableSourceDto">
+            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableSourceDto">
         SELECT ro.id                    AS deliveryRouteOrderId,
                ro.order_id              AS salesOrderId,
                ro.signed_at             AS signedAt,
@@ -34,7 +34,7 @@
       而 locked_unit_price 正是按订单行销售单位计价的。
     -->
     <select id="selectOutboundLines"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReceivableSourceLineDto">
+            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableSourceLineDto">
         SELECT ob.id                  AS inventoryOutboundItemId,
                ob.sales_order_item_id AS salesOrderItemId,
                oi.sku_id              AS skuId,
@@ -56,7 +56,7 @@
       财务侧不另造原因、不现取 now()（第三批 D-2：红字是已成立业务事实的映射）。
     -->
     <select id="selectApprovedReturn"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReturnSourceDto">
+            resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceDto">
         SELECT rt.id           AS orderReturnId,
                rt.return_no    AS returnNo,
                rt.order_id     AS orderId,
@@ -84,7 +84,7 @@
       商品三件套从来源订单行取（order_return_item 不存快照）。
     -->
     <select id="selectApprovedReturnLines"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceReturnSourceLineDto">
+            resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto">
         SELECT ri.id                AS orderReturnItemId,
                ri.order_item_id     AS orderItemId,
                oi.sku_id            AS skuId,

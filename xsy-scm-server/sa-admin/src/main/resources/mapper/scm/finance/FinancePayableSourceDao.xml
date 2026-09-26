@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePayableSourceDao">
+<mapper namespace="com.xsy.scm.finance.dao.FinancePayableSourceDao">
 
     <!--
       财务域对采购表只读（设计稿 §0 第 2 条）：本文件只有 SELECT。
       读取一律显式写 deleted = FALSE，与 uk_finance_payable_source_active 的谓词同口径。
     -->
     <select id="selectConfirmedReceipt"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinancePayableSourceDto">
+            resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceDto">
         SELECT r.id                     AS purchaseReceiptId,
                r.purchase_order_id      AS purchaseOrderId,
                r.supplier_id            AS supplierId,
@@ -28,7 +28,7 @@
       全部行都取不到时金额为 0，由服务侧「不产生 0 元财务事实」的判据跳过，不会留一张空单头。
     -->
     <select id="selectConfirmedReceiptLines"
-            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinancePayableSourceLineDto">
+            resultType="com.xsy.scm.finance.domain.dto.FinancePayableSourceLineDto">
         SELECT ri.id                     AS purchaseReceiptItemId,
                ri.purchase_order_item_id AS purchaseOrderItemId,
                ri.sku_id                 AS skuId,

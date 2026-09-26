@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePayableDao">
+<mapper namespace="com.xsy.scm.finance.dao.FinancePayableDao">
 
     <select id="nextPayableNo" resultType="long">
         SELECT nextval('finance_payable_no_seq')
@@ -15,7 +15,7 @@
       返回 0 = 这张收货单已经生成过应付，由服务侧按「已生成」成功返回（生成器不是用户命令）。
     -->
     <insert id="insertOnConflictDoNothing"
-            parameterType="net.lab1024.sa.admin.module.scm.finance.domain.entity.FinancePayableEntity"
+            parameterType="com.xsy.scm.finance.domain.entity.FinancePayableEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id,
                                      supplier_id, supplier_name_snapshot, entry_type,
