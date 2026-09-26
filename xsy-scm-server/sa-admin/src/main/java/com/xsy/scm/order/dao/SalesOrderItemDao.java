@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.dao;
+package com.xsy.scm.order.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -6,9 +6,9 @@ import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
-import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
-import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderQueryForm;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.OrderRecentPriceVO;
+import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
+import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
+import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
 
 @Mapper
 public interface SalesOrderItemDao extends BaseMapper<SalesOrderItemEntity> {

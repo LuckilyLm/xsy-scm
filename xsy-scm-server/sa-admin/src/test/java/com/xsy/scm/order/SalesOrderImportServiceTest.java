@@ -1,12 +1,12 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
 import com.xsy.scm.customer.dao.CustomerDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
-import net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode;
-import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderAddForm;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.SalesOrderImportResultVO;
-import net.lab1024.sa.admin.module.scm.order.service.SalesOrderImportService;
-import net.lab1024.sa.admin.module.scm.order.service.SalesOrderService;
+import com.xsy.scm.order.constant.OrderErrorCode;
+import com.xsy.scm.order.domain.form.SalesOrderAddForm;
+import com.xsy.scm.order.domain.vo.SalesOrderImportResultVO;
+import com.xsy.scm.order.service.SalesOrderImportService;
+import com.xsy.scm.order.service.SalesOrderService;
 import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.service.PriceResolver;

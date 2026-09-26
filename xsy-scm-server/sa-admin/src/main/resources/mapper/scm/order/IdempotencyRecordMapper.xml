@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.IdempotencyRecordDao">
-    <resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.IdempotencyRecordEntity">
+<mapper namespace="com.xsy.scm.order.dao.IdempotencyRecordDao">
+    <resultMap id="row" type="com.xsy.scm.order.domain.entity.IdempotencyRecordEntity">
         <result column="id" property="id"/>
         <result column="operation_scope" property="operationScope"/>
         <result column="idempotency_key" property="idempotencyKey"/>
@@ -9,7 +9,7 @@
         <result column="result_type" property="resultType"/>
         <result column="result_id" property="resultId"/>
         <result column="result_data" property="resultData"
-                typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
         <result column="version" property="version"/>
         <result column="deleted" property="deleted"/>
         <result column="created_at" property="createdAt"/>

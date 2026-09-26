@@ -1,10 +1,10 @@
-package net.lab1024.sa.admin.module.scm.order.support;
+package com.xsy.scm.order.support;
 
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
-import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED;

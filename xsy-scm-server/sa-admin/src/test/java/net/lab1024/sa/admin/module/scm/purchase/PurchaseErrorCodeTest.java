@@ -54,7 +54,7 @@ class PurchaseErrorCodeTest {
             "com.xsy.scm.customer.constant.CustomerErrorCode",
             "com.xsy.scm.supplier.constant.SupplierErrorCode",
             "com.xsy.scm.pricing.constant.PricingErrorCode",
-            "net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode",
+            "com.xsy.scm.order.constant.OrderErrorCode",
             PurchaseErrorCode.class.getName(),
             WarehouseErrorCode.class.getName(),
             // W6 库存域（V19/V20）：本类只断言「W5 的 40 个码不撞车」，

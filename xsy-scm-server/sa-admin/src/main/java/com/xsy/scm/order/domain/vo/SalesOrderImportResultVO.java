@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.domain.vo;
+package com.xsy.scm.order.domain.vo;
 
 import lombok.Data;
 

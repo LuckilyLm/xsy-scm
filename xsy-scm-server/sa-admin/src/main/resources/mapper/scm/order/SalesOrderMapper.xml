@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao">
+<mapper namespace="com.xsy.scm.order.dao.SalesOrderDao">
     <select id="customerReferences" resultType="long">SELECT count(*)
                                                       FROM sales_order
                                                       WHERE customer_id = #{id}
@@ -13,7 +13,7 @@
                             WHERE id = #{id}
                               AND version = #{version}
                               AND deleted = FALSE</update>
-    <resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity">
+    <resultMap id="row" type="com.xsy.scm.order.domain.entity.SalesOrderEntity">
         <result column="id" property="id"/>
         <result column="order_no" property="orderNo"/>
         <result column="customer_id" property="customerId"/>

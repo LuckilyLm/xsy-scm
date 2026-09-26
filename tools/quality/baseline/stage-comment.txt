@@ -17,6 +17,21 @@
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerService.java	Q13
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	Q3
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	Q9
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/dao/SalesOrderItemDao.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/dao/SalesOrderItemDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/domain/vo/OrderRecentPriceVO.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/domain/vo/OrderRecentPriceVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/manager/OrderOperationLogRecorder.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderRefundService.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderReturnService.java	D-2
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderReturnService.java	D-4
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderReturnService.java	F1-2C
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderReturnService.java	Q27
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderReturnService.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderQueryService.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderQueryService.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	Q2
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/dao/ProductTagRelationDao.java	Q11
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductBatchService.java	§<n>
@@ -316,21 +331,6 @@
 2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/inventory/service/InventoryStocktakeService.java	Q13
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/inventory/support/PurchaseInventoryContractImpl.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/inventory/support/StocktakeSnapshotSigner.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/controller/SalesOrderController.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/controller/SalesOrderController.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/dao/SalesOrderItemDao.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/dao/SalesOrderItemDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/domain/vo/OrderRecentPriceVO.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/domain/vo/OrderRecentPriceVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/manager/OrderOperationLogRecorder.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/OrderRefundService.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/OrderReturnService.java	D-2
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/OrderReturnService.java	D-4
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/OrderReturnService.java	F1-2C
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/OrderReturnService.java	Q27
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/OrderReturnService.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/SalesOrderQueryService.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/SalesOrderQueryService.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseConfigKey.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseErrorCode.java	Q11
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseErrorCode.java	§<n>

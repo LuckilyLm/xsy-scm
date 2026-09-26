@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
 import com.xsy.scm.common.ScmW3PgITBase;
 import org.flywaydb.core.Flyway;
@@ -33,7 +33,7 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM t_menu WHERE menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(23);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM t_role_menu WHERE role_id=1 AND menu_id IN (601,602,603,604,605,611,612,613,614,615,616,617,618,619,621,622,623,624,625,631,632,641,642)", Integer.class)).isEqualTo(23);
         assertThat(jdbc.queryForObject("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='ck_sales_order_source'", String.class)).contains("IMPORT");
-        assertThat(net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao.class.getMethods()).extracting(java.lang.reflect.Method::getName).containsExactlyInAnyOrder("insert", "query");
+        assertThat(com.xsy.scm.order.dao.OrderOperationLogDao.class.getMethods()).extracting(java.lang.reflect.Method::getName).containsExactlyInAnyOrder("insert", "query");
     }
 
     /**
@@ -53,7 +53,7 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
         var matcher = java.util.regex.Pattern.compile("'([A-Z_]+)'").matcher(def);
         while (matcher.find()) allowed.add(matcher.group(1));
         assertThat(allowed).containsExactlyInAnyOrderElementsOf(
-                java.util.Arrays.stream(net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum.values())
+                java.util.Arrays.stream(com.xsy.scm.order.constant.ScmOrderOperationTypeEnum.values())
                         .map(Enum::name).toList());
     }
 }

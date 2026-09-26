@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.support;
+package com.xsy.scm.order.support;
 
 /**
  * Contract placeholder only. No W4 order command invokes these methods.

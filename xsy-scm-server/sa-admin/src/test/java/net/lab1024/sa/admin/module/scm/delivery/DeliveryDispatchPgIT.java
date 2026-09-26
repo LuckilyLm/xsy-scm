@@ -39,8 +39,8 @@ import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCod
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.ROUTE_NOT_ALL_SIGNED;
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.SIGN_REASON_REQUIRED;
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
-import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.ORDER_IDEMPOTENCY_CONFLICT;
-import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.ORDER_IDEMPOTENCY_KEY_REQUIRED;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_IDEMPOTENCY_CONFLICT;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_IDEMPOTENCY_KEY_REQUIRED;
 import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.OUTBOUND_EXISTS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;

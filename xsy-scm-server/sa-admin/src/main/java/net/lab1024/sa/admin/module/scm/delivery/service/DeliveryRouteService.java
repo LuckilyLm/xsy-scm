@@ -24,8 +24,8 @@ import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceivableService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryFulfillmentService;
-import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
-import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.service.OrderIdempotencyService;
 import com.xsy.scm.warehouse.dao.WarehouseDao;
 
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.*;

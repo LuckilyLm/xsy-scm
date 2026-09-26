@@ -19,7 +19,7 @@ import cn.dev33.satoken.stp.StpUtil;
 
 import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryEligibilityPolicy;
-import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.dao.SalesOrderDao;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingActionForm;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingAssignForm;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryForm;

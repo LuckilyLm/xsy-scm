@@ -1,8 +1,8 @@
-package net.lab1024.sa.admin.module.scm.order.controller;
+package com.xsy.scm.order.controller;
 
-import net.lab1024.sa.admin.module.scm.order.service.*;
-import net.lab1024.sa.admin.module.scm.order.domain.form.*;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
+import com.xsy.scm.order.service.*;
+import com.xsy.scm.order.domain.form.*;
+import com.xsy.scm.order.domain.vo.*;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import cn.dev33.satoken.annotation.SaCheckPermission;
@@ -153,7 +153,7 @@ public class SalesOrderController {
 
     private void overridePermission(SalesOrderAddForm f) {
         if (!java.util.Set.of("ADMIN", "SUPPLEMENT").contains(f.getOrderSource()))
-            throw new com.xsy.scm.common.exception.ScmBusinessException(net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
+            throw new com.xsy.scm.common.exception.ScmBusinessException(com.xsy.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
         if (f.getItems().stream().anyMatch(x -> Boolean.TRUE.equals(x.getManualPriceOverride())))
             cn.dev33.satoken.stp.StpUtil.checkPermission("scm:order:price-override");
     }

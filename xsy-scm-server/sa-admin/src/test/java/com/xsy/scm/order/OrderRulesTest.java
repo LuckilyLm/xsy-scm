@@ -1,11 +1,11 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
-import net.lab1024.sa.admin.module.scm.order.manager.*;
-import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
-import net.lab1024.sa.admin.module.scm.order.domain.form.*;
-import net.lab1024.sa.admin.module.scm.order.constant.*;
-import net.lab1024.sa.admin.module.scm.order.service.OrderNumberGenerator;
-import net.lab1024.sa.admin.module.scm.order.support.OrderIdempotencyRequestHasher;
+import com.xsy.scm.order.manager.*;
+import com.xsy.scm.order.domain.entity.*;
+import com.xsy.scm.order.domain.form.*;
+import com.xsy.scm.order.constant.*;
+import com.xsy.scm.order.service.OrderNumberGenerator;
+import com.xsy.scm.order.support.OrderIdempotencyRequestHasher;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

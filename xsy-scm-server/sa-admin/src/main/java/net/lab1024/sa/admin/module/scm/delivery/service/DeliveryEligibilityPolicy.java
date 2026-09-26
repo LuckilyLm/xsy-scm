@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.delivery.service;
 
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.delivery.dao.DeliveryQueryDao;
-import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity;
+import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

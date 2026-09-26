@@ -15,7 +15,7 @@ import com.xsy.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.delivery.service.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.*;
 import net.lab1024.sa.admin.module.scm.delivery.domain.vo.*;
-import net.lab1024.sa.admin.module.scm.order.domain.form.OrderCancelForm;
+import com.xsy.scm.order.domain.form.OrderCancelForm;
 import com.xsy.scm.warehouse.domain.form.WarehouseAddForm;
 
 import static org.assertj.core.api.Assertions.assertThat;

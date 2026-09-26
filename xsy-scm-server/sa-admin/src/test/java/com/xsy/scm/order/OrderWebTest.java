@@ -1,11 +1,11 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
-import net.lab1024.sa.admin.module.scm.order.controller.*;
-import net.lab1024.sa.admin.module.scm.order.service.*;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
+import com.xsy.scm.order.controller.*;
+import com.xsy.scm.order.service.*;
+import com.xsy.scm.order.domain.vo.*;
 import com.xsy.scm.common.handler.ScmExceptionHandler;
 import com.xsy.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode;
+import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.base.common.domain.SystemEnvironment;
 import net.lab1024.sa.base.handler.GlobalExceptionHandler;

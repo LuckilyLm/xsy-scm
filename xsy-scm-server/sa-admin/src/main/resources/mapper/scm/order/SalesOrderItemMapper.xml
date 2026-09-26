@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.SalesOrderItemDao">
+<mapper namespace="com.xsy.scm.order.dao.SalesOrderItemDao">
     <update id="softDelete">UPDATE sales_order_item
                             SET deleted= TRUE,
                                 version=version + 1,
@@ -9,7 +9,7 @@
                             WHERE id = #{id}
                               AND version = #{version}
                               AND deleted = FALSE</update>
-    <resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity">
+    <resultMap id="row" type="com.xsy.scm.order.domain.entity.SalesOrderItemEntity">
         <result column="id" property="id"/>
         <result column="order_id" property="orderId"/>
         <result column="spu_id" property="spuId"/>
@@ -19,7 +19,7 @@
         <result column="sku_code_snapshot" property="skuCodeSnapshot"/>
         <result column="spec_name_snapshot" property="specNameSnapshot"/>
         <result column="spec_values_snapshot" property="specValuesSnapshot"
-                typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
         <result column="sale_unit_snapshot" property="saleUnitSnapshot"/>
         <result column="product_type_snapshot" property="productTypeSnapshot"/>
         <result column="ordered_quantity" property="orderedQuantity"/>
@@ -62,7 +62,7 @@
       排序 confirmed_at DESC, order_id DESC 稳定。纯读快照，不回算当前价格、不参与 PriceResolver 定价。
     -->
     <select id="recentPrices"
-            resultType="net.lab1024.sa.admin.module.scm.order.domain.vo.OrderRecentPriceVO">
+            resultType="com.xsy.scm.order.domain.vo.OrderRecentPriceVO">
         SELECT i.id                  AS item_id,
                o.id                  AS order_id,
                o.order_no            AS order_no,

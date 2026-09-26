@@ -19,10 +19,10 @@
 
     <!-- 来源行属于 W4 的 sales_order_item，其 JSONB 处理器是 W4 的 OrderJsonbTypeHandler；
          这里只以字符串引用，不产生 purchase → order 的编译期依赖。 -->
-    <resultMap id="sourceItemMap" type="net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity">
+    <resultMap id="sourceItemMap" type="com.xsy.scm.order.domain.entity.SalesOrderItemEntity">
         <id column="id" property="id"/>
         <result column="spec_values_snapshot" property="specValuesSnapshot"
-                typeHandler="net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
     </resultMap>
 
     <!-- §7.4 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。

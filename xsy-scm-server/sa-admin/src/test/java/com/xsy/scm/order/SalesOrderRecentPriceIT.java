@@ -1,19 +1,19 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
 import com.xsy.scm.common.ScmW3PgITBase;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.service.CustomerService;
-import net.lab1024.sa.admin.module.scm.order.domain.form.OrderAddressForm;
-import net.lab1024.sa.admin.module.scm.order.domain.form.OrderActualQuantityForm;
-import net.lab1024.sa.admin.module.scm.order.domain.form.OrderCancelForm;
-import net.lab1024.sa.admin.module.scm.order.domain.form.OrderVersionForm;
-import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderAddForm;
-import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderItemForm;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.OrderRecentPriceVO;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.SalesOrderDetailVO;
-import net.lab1024.sa.admin.module.scm.order.service.SalesOrderQueryService;
-import net.lab1024.sa.admin.module.scm.order.service.SalesOrderService;
+import com.xsy.scm.order.domain.form.OrderAddressForm;
+import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
+import com.xsy.scm.order.domain.form.OrderCancelForm;
+import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.SalesOrderAddForm;
+import com.xsy.scm.order.domain.form.SalesOrderItemForm;
+import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
+import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
+import com.xsy.scm.order.service.SalesOrderQueryService;
+import com.xsy.scm.order.service.SalesOrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

@@ -1,11 +1,11 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
-import net.lab1024.sa.admin.module.scm.order.dao.OrderAddressSnapshotDao;
-import net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao;
-import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
-import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderItemDao;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.OrderRecentPriceVO;
-import net.lab1024.sa.admin.module.scm.order.service.SalesOrderQueryService;
+import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
+import com.xsy.scm.order.dao.OrderOperationLogDao;
+import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.dao.SalesOrderItemDao;
+import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
+import com.xsy.scm.order.service.SalesOrderQueryService;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
 import org.junit.jupiter.api.Test;
 

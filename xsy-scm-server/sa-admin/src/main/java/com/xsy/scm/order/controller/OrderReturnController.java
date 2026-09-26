@@ -1,8 +1,8 @@
-package net.lab1024.sa.admin.module.scm.order.controller;
+package com.xsy.scm.order.controller;
 
-import net.lab1024.sa.admin.module.scm.order.service.*;
-import net.lab1024.sa.admin.module.scm.order.domain.form.*;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
+import com.xsy.scm.order.service.*;
+import com.xsy.scm.order.domain.form.*;
+import com.xsy.scm.order.domain.vo.*;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import cn.dev33.satoken.annotation.SaCheckPermission;

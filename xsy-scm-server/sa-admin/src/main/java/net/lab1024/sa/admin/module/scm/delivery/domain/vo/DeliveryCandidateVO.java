@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 @Data
-public class DeliveryCandidateVO extends net.lab1024.sa.admin.module.scm.order.domain.vo.OrderAddressSnapshotVO {
+public class DeliveryCandidateVO extends com.xsy.scm.order.domain.vo.OrderAddressSnapshotVO {
     private String orderNo;
     private String customerName;
     private String status;

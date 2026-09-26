@@ -1,8 +1,8 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
 import com.xsy.scm.common.ScmW3PgITBase;
-import net.lab1024.sa.admin.module.scm.order.service.*;
-import net.lab1024.sa.admin.module.scm.order.domain.form.*;
+import com.xsy.scm.order.service.*;
+import com.xsy.scm.order.domain.form.*;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.domain.form.*;
 import com.xsy.scm.pricing.service.PriceResolver;

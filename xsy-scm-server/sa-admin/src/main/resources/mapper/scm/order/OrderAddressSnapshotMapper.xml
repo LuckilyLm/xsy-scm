@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.order.dao.OrderAddressSnapshotDao">
-    <resultMap id="row" type="net.lab1024.sa.admin.module.scm.order.domain.entity.OrderAddressSnapshotEntity">
+<mapper namespace="com.xsy.scm.order.dao.OrderAddressSnapshotDao">
+    <resultMap id="row" type="com.xsy.scm.order.domain.entity.OrderAddressSnapshotEntity">
         <result column="id" property="id"/>
         <result column="order_id" property="orderId"/>
         <result column="customer_id" property="customerId"/>

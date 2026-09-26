@@ -1,17 +1,17 @@
-package net.lab1024.sa.admin.module.scm.order.service;
+package com.xsy.scm.order.service;
 
 import com.xsy.scm.common.scope.ScmDataScopeException;
-import net.lab1024.sa.admin.module.scm.order.domain.entity.*;
-import net.lab1024.sa.admin.module.scm.order.domain.form.*;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
-import net.lab1024.sa.admin.module.scm.order.dao.*;
-import net.lab1024.sa.admin.module.scm.order.manager.*;
+import com.xsy.scm.order.domain.entity.*;
+import com.xsy.scm.order.domain.form.*;
+import com.xsy.scm.order.domain.vo.*;
+import com.xsy.scm.order.dao.*;
+import com.xsy.scm.order.manager.*;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 
-import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
+import static com.xsy.scm.order.constant.OrderErrorCode.*;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 import lombok.RequiredArgsConstructor;

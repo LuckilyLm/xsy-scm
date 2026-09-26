@@ -1,11 +1,11 @@
-package net.lab1024.sa.admin.module.scm.order.controller;
+package com.xsy.scm.order.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.SalesOrderImportResultVO;
-import net.lab1024.sa.admin.module.scm.order.service.SalesOrderImportService;
+import com.xsy.scm.order.domain.vo.SalesOrderImportResultVO;
+import com.xsy.scm.order.service.SalesOrderImportService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;

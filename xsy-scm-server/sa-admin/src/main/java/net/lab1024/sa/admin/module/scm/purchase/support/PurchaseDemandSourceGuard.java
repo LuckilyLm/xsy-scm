@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.purchase.support;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
-import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity;
+import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 
 import static net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SOURCE_INVALID;
 

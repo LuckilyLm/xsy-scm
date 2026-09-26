@@ -1,9 +1,9 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
 import com.xsy.scm.common.ScmW3PgITBase;
-import net.lab1024.sa.admin.module.scm.order.service.*;
-import net.lab1024.sa.admin.module.scm.order.domain.form.*;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
+import com.xsy.scm.order.service.*;
+import com.xsy.scm.order.domain.form.*;
+import com.xsy.scm.order.domain.vo.*;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.domain.form.*;
 import org.junit.jupiter.api.Test;
@@ -167,7 +167,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var first = importRow("A", customerCode, standardCode);
         var second = importRow("B", customerCode, nonStandardCode);
         var bytes = new java.io.ByteArrayOutputStream();
-        cn.idev.excel.FastExcel.write(bytes, net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(first, second));
+        cn.idev.excel.FastExcel.write(bytes, com.xsy.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(first, second));
         var file = new org.springframework.mock.web.MockMultipartFile("file", "orders.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes.toByteArray());
         var result = orderImports.importFile(file, prefix + "import", true);
         assertThat(result.getConfirmedOrders()).isOne();
@@ -178,7 +178,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var bad = importRow("C", "MISSING", standardCode);
         bad.setOrderedQuantity("0");
         bytes = new java.io.ByteArrayOutputStream();
-        cn.idev.excel.FastExcel.write(bytes, net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(bad));
+        cn.idev.excel.FastExcel.write(bytes, com.xsy.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(bad));
         file = new org.springframework.mock.web.MockMultipartFile("file", "bad.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes.toByteArray());
         var before = jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE order_source='IMPORT'", Integer.class);
         var invalid = orderImports.importFile(file, prefix + "bad", true);
@@ -186,8 +186,8 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE order_source='IMPORT'", Integer.class)).isEqualTo(before);
     }
 
-    private net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow importRow(String key, String customerCode, String skuCode) {
-        var row = new net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow();
+    private com.xsy.scm.order.domain.dto.SalesOrderImportRow importRow(String key, String customerCode, String skuCode) {
+        var row = new com.xsy.scm.order.domain.dto.SalesOrderImportRow();
         row.setTemplateVersion(SalesOrderImportService.TEMPLATE_VERSION);
         row.setOrderKey(key);
         row.setCustomerCode(customerCode);

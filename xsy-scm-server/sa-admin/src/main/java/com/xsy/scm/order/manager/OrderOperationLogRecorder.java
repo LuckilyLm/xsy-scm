@@ -1,12 +1,12 @@
-package net.lab1024.sa.admin.module.scm.order.manager;
+package com.xsy.scm.order.manager;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
-import net.lab1024.sa.admin.module.scm.order.constant.ScmOrderOperationTypeEnum;
-import net.lab1024.sa.admin.module.scm.order.dao.OrderOperationLogDao;
-import net.lab1024.sa.admin.module.scm.order.domain.entity.OrderOperationLogEntity;
+import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
+import com.xsy.scm.order.dao.OrderOperationLogDao;
+import com.xsy.scm.order.domain.entity.OrderOperationLogEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

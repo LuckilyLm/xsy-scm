@@ -1,8 +1,8 @@
-package net.lab1024.sa.admin.module.scm.order;
+package com.xsy.scm.order;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
-import net.lab1024.sa.admin.module.scm.order.controller.SalesOrderController;
+import com.xsy.scm.order.controller.SalesOrderController;
 import com.xsy.scm.pricing.domain.form.PriceResolveForm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ class OrderAggregatePermissionTest {
     @DisplayName("定价解析接口自身的权限未被下调，订单列表权限未被扩宽")
     void neighbouringPermissionsUnchanged() throws NoSuchMethodException {
         Method orderQuery = SalesOrderController.class.getMethod("query",
-                net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderQueryForm.class);
+                com.xsy.scm.order.domain.form.SalesOrderQueryForm.class);
         assertThat(List.of(orderQuery.getAnnotation(SaCheckPermission.class).value())).containsExactly(ORDER_QUERY);
     }
 }

@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.domain.vo;
+package com.xsy.scm.order.domain.vo;
 
 import lombok.Data;
 import com.baomidou.mybatisplus.annotation.*;
@@ -9,7 +9,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import net.lab1024.sa.admin.module.scm.order.support.OrderJsonbTypeHandler;
+import com.xsy.scm.order.support.OrderJsonbTypeHandler;
 
 @Data
 public class OrderAddressSnapshotVO {

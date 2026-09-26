@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.support;
+package com.xsy.scm.order.support;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

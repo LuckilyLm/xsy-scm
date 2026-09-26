@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.constant;
+package com.xsy.scm.order.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

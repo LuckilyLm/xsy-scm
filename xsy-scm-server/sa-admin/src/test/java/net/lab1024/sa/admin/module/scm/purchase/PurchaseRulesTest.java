@@ -8,7 +8,7 @@ import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseOrderStateMachin
 import net.lab1024.sa.admin.module.scm.purchase.manager.PurchaseSnapshotFactory;
 import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseNumberGenerator;
 import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseDemandSourceGuard;
-import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity;
+import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

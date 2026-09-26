@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.domain.dto;
+package com.xsy.scm.order.domain.dto;
 
 import cn.idev.excel.annotation.ExcelProperty;
 import cn.idev.excel.annotation.ExcelIgnore;

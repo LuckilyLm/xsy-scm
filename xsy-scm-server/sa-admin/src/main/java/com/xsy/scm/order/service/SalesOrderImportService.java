@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.order.service;
+package com.xsy.scm.order.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,12 +7,12 @@ import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.pricing.constant.ScmPriceStatusEnum;
 import com.xsy.scm.customer.dao.CustomerDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
-import net.lab1024.sa.admin.module.scm.order.domain.dto.SalesOrderImportRow;
-import net.lab1024.sa.admin.module.scm.order.domain.form.OrderAddressForm;
-import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderAddForm;
-import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderItemForm;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.SalesOrderImportErrorVO;
-import net.lab1024.sa.admin.module.scm.order.domain.vo.SalesOrderImportResultVO;
+import com.xsy.scm.order.domain.dto.SalesOrderImportRow;
+import com.xsy.scm.order.domain.form.OrderAddressForm;
+import com.xsy.scm.order.domain.form.SalesOrderAddForm;
+import com.xsy.scm.order.domain.form.SalesOrderItemForm;
+import com.xsy.scm.order.domain.vo.SalesOrderImportErrorVO;
+import com.xsy.scm.order.domain.vo.SalesOrderImportResultVO;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import org.springframework.stereotype.Service;

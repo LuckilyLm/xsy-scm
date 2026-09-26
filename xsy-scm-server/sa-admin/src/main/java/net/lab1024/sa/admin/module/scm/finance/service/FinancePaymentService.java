@@ -25,7 +25,7 @@ import net.lab1024.sa.admin.module.scm.finance.domain.entity.FinancePaymentEntit
 import net.lab1024.sa.admin.module.scm.finance.domain.form.FinancePaymentAddForm;
 import net.lab1024.sa.admin.module.scm.finance.domain.vo.FinancePaymentVO;
 import net.lab1024.sa.admin.module.scm.finance.support.FinanceOperationLogRecorder;
-import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.order.service.OrderIdempotencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
