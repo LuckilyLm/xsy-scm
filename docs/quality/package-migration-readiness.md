@@ -504,6 +504,33 @@ ScmStocktakeImportPgIT 连续 20 次（每次独立 mvn 调用、独立 Spring �
    **1201 tests / 0 failures / 0 errors / 5 skipped（既有云端门控）**，
    随后 `DROP DATABASE`。
 
+   > **一次性库跑全量的环境变量配方**（Q0.3 实测，缺一不可）。`test` profile 下
+   > `sa-base.yaml` 的 `driver-class-name` 是 `com.p6spy.engine.spy.P6SpyDriver`，
+   > 只认 `jdbc:p6spy:` 开头的 URL；`username` / `password` 与 `spring.data.redis.password`
+   > 在 yaml 里**默认都是空值**，凭证必须由环境变量注入。实测三种错配的指纹：
+   >
+   > | 症状 | 真实根因 |
+   > |---|---|
+   > | `GetConnectionTimeoutException`，`url jdbc:postgresql://...` 与 `P6SpyDriver` 并排 | `XSY_V2_DB_URL` 少了 `jdbc:p6spy:` 前缀 |
+   > | `PSQLException: The server requested SCRAM-based authentication, but no password was provided` | `XSY_V2_DB_PASSWORD` 未注入 |
+   > | `RedisAuthRequiredException: NOAUTH Authentication required` | `SPRING_DATA_REDIS_PASSWORD` 未注入 |
+   >
+   > 三者都表现为 **682 errors** 加满屏 `ApplicationContext failure threshold (1) exceeded`，
+   > 极易误判成代码回归；真实根因只在 `sa-admin/target/surefire-reports/*.txt` 的
+   > 第一层 `Caused by`，不要只看 Maven 的 `tail`。正确调用形如：
+   >
+   > ```bash
+   > export XSY_V2_DB_URL='jdbc:p6spy:postgresql://127.0.0.1:15432/xsy_q03_clean?currentSchema=xsy_v2&ApplicationName=xsy-scm-v2-test'
+   > export XSY_V2_DB_USERNAME='xsy_scm_app'
+   > export XSY_V2_DB_PASSWORD="$(grep -m1 '^POSTGRES_PASSWORD=' .env | cut -d= -f2-)"
+   > export SPRING_DATA_REDIS_PASSWORD="$(grep -m1 '^REDIS_PASSWORD=' .env | cut -d= -f2-)"
+   > mvn -B -pl sa-admin -am test
+   > ```
+   >
+   > 另注：`.env` 的 `JAVA_OPTS` 未加引号，直接 `source .env` 会在该行中断并让后面的
+   > `POSTGRES_*` 变空，取凭据请用上面的 `grep` 方式。Q0.3 以此配方跑出的结果是
+   > **1193 tests / 0 failures / 0 errors / 5 skipped**，`BUILD SUCCESS`。
+
 结论：那是**环境数据残留**，不是本轮改动引入的回归，也不是 `PurchaseDemandSummaryPreviewIT`
 自身的顺序耦合。本轮没有修改该测试、没有扩大 skip、没有弱化任何断言。
 这条排查配方（以及「脚本改文件会静默改行尾、被 Spotless 抓到」那次）已单独记入项目记忆。
