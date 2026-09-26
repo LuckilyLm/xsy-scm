@@ -74,6 +74,8 @@
 | `8d588602` `refactor(product): replace domain magic strings with enums` | §10–§12 魔法串整改（见 3.4） |
 | `bb762290` `chore(quality): shrink the naming and magic-string baselines` | §15 capture：记录收缩后的 baseline |
 | `f3a0611b` `chore(quality): add the Q2.1 naming / type-safety audit tool` | §17 审计工具（只读） |
+| `b842c6b5` `refactor(product): keep renamed lines within the 120-column limit` | 改名顶破 120 列 → 折行修复（见 3.5） |
+| `4eff6795` `docs(quality): record the Q2.1 naming and type-safety pilot` | §28 本文档 |
 
 ### 3.2 §3 过期文档修正（独立提交）
 
@@ -129,6 +131,19 @@
 
 **未发明的枚举**（B 类，只记录不新建）：本轮 product 无需新增枚举；命中 B 类的领域词留待后续域统一评估。
 
+### 3.5 折行修复（`b842c6b5`）
+
+改名与新枚举写法**变长了行**（`dao`→`productSpuDao`、`"ENABLED"`→`ScmEnableStatusEnum.ENABLED.name()`），
+使 6 个 product 文件顶破 120 列 Checkstyle 上限，被 guard 判成 3 条 NEW + 3 条 GROWN `LineLength`。
+
+修法是**只折这些行**，行为不变（单行 `if` 守卫改成块、包装器链在自己行断开）。
+副产品：`ProductImportService` 的 28 条**存量** `LineLength` 一并修掉，
+故 `checkstyle` family 由 867 → 839。
+
+> **教训（写进后续域的操作清单）**：改名/换枚举提交后**必须重跑 `checkstyle` + guard**，
+> 因为变长会当场变成阻断项；折行**必须手写**，脚本机械断点会切在 `foo.\n method(` 与字符串里
+> （实测 10 处语法损坏），每轮折行后都要 `mvn compile` 验证。
+
 ---
 
 ## 4. 试点后数据（after）
@@ -152,9 +167,13 @@
 | `raw-permission-literal` | 285 | 285 | 0 |
 | `stage-comment` | 695 | 695 | 0 |
 | `legacy-scm-package` | 0 | 0 | 0 |
-| `checkstyle` | 867 | 867 | 0 |
+| `checkstyle` | 867 | **839** | **−28** |
 
-**无任何 family 增长**，`RESULT: PASS`。
+**无任何 family 增长（全部持平或下降）**，`RESULT: PASS`。
+
+> 期间 guard **确实**拦下过一次增长：改名/换枚举使 6 个文件顶破 120 列，
+> 报 3 条 NEW + 3 条 GROWN `LineLength`；折行修复后归零（见 3.5）。这条链
+> 证明了「baseline 只降不升、`--allow-growth` 未使用」的棘轮真的在起作用。
 
 ---
 
@@ -205,6 +224,30 @@
 
 ---
 
+## 7. 本轮验证结果（§26）
+
+| 验证 | 结果 |
+| --- | --- |
+| 工具单测 `python -m unittest discover -s quality -p 'test_*.py'` | 64 / 64 OK |
+| `quality_guard.py check --checkstyle` | PASS（无 NEW / GROWN） |
+| `mvn spotless:check` | PASS |
+| 定向 `mvn test -Dtest='Product*'` | 95 tests / 0 failures / 0 errors |
+| `python tools/migration_checksum_guard.py check` | PASS（drift 0 / missing 0 / renamed 0 / unbaked 0） |
+| `python tools/verify.py quality` | PASS |
+| `python tools/verify.py backend`（一次性干净库） | **sa-base 8 + sa-admin 1194 = 1202 tests / 0 failures / 0 errors / 5 skipped** |
+
+> 5 skipped 全部来自 `F0FileStorageCloudIT` —— **设计内的云存储跳过**（无云凭据），
+> 与历史基线一致。1202 与 `da7103ee` 记录的参考值完全相符。
+>
+> **环境备注**：`verify.py backend` 必须注入三件套（`XSY_V2_DB_URL` 带 `jdbc:p6spy:` 前缀、
+> `XSY_V2_DB_PASSWORD`、`SPRING_DATA_REDIS_PASSWORD`），且**要用一次性干净库**。
+> 长跑共享库 `xsy_scm` 累积的 `inventory_reservation` ACTIVE 行会让
+> `PurchaseDemandSummaryPreviewIT` 在全量中偶发红、单跑绿 —— 这是已定性的跨测试数据污染，
+> 不是本轮回归（本轮未触碰 purchase / inventory 任何文件）。配方见
+> [`package-migration-readiness.md`](./package-migration-readiness.md) §7.5。
+
+---
+
 ## 附录 A：复现命令
 
 ```bash
@@ -215,7 +258,16 @@ python tools/quality/q2_audit.py --domain product --json
 # 门禁
 python tools/quality/quality_guard.py check --checkstyle
 python tools/quality/quality_guard.py capture --checkstyle   # 仅在确认无增长后
+# 注意：check 读的是已生成的 checkstyle result.xml，改了 Java 要先重跑：
+#   cd xsy-scm-server && mvn -N checkstyle:check
 
 # 工具单测
 cd tools && python -m unittest discover -s quality -p 'test_*.py'
+
+# 后端全量（一次性干净库 + 三件套）
+export XSY_V2_DB_URL='jdbc:p6spy:postgresql://127.0.0.1:15432/<fresh_db>?currentSchema=xsy_v2&ApplicationName=xsy-scm-v2-test'
+export XSY_V2_DB_USERNAME='xsy_scm_app'
+export XSY_V2_DB_PASSWORD="$(grep -m1 '^POSTGRES_PASSWORD=' .env | cut -d= -f2-)"
+export SPRING_DATA_REDIS_PASSWORD="$(grep -m1 '^REDIS_PASSWORD=' .env | cut -d= -f2-)"
+python tools/verify.py backend
 ```
