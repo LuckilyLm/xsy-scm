@@ -1,6 +1,7 @@
 package com.xsy.scm.product.service;
 
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmErrorCode;
 import com.xsy.scm.product.dao.ProductSpuDao;
@@ -46,7 +47,7 @@ public class ProductBatchService {
             }
             // 归档即退出经营：批量入口同样不能造出「已归档还在架」的组合。
             var status = form.getStatus() != null ? form.getStatus() : entity.getStatus();
-            if ("ARCHIVED".equals(form.getMasterStatus()) && "ON_SHELF".equals(status))
+            if ("ARCHIVED".equals(form.getMasterStatus()) && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
                 failures.add(failure(entity, MASTER_STATUS_SALE_CONFLICT));
         }
         return commit(failures, form.getItems(), (ids) -> spus.batchApply(ids, form.getStatus(), form.getMasterStatus(), null, ScmOperator.current()));

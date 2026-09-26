@@ -3,6 +3,7 @@ package com.xsy.scm.product.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductTagDao;
 import com.xsy.scm.product.dao.ProductTagRelationDao;
@@ -36,7 +37,7 @@ public class ProductTagService {
 
     public List<ProductTagVO> options() {
         var query = new ProductAssistantQueryForm();
-        query.setStatus("ENABLED");
+        query.setStatus(ScmEnableStatusEnum.ENABLED.name());
         return productTagDao.selectWithProductCount(query);
     }
 
@@ -150,7 +151,7 @@ public class ProductTagService {
         if (ids.isEmpty()) return;
         var found = productTagDao.lockByIds(ids);
         if (found.size() != ids.size()) throw new ScmBusinessException(TAG_NOT_FOUND);
-        if (found.stream().anyMatch(t -> !"ENABLED".equals(t.getStatus())))
+        if (found.stream().anyMatch(t -> !ScmEnableStatusEnum.ENABLED.name().equals(t.getStatus())))
             throw new ScmBusinessException(TAG_NOT_USABLE);
     }
 

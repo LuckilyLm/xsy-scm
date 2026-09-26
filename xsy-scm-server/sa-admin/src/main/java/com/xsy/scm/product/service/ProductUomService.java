@@ -3,6 +3,7 @@ package com.xsy.scm.product.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductUomDao;
 import com.xsy.scm.product.domain.entity.ProductUomEntity;
@@ -37,7 +38,7 @@ public class ProductUomService {
      */
     public List<ProductUomVO> options() {
         var query = new ProductAssistantQueryForm();
-        query.setStatus("ENABLED");
+        query.setStatus(ScmEnableStatusEnum.ENABLED.name());
         return productUomDao.selectWithReference(query);
     }
 
@@ -49,7 +50,7 @@ public class ProductUomService {
         var names = unitNames.stream().filter(n -> n != null && !n.isBlank()).map(String::trim).distinct().toList();
         if (names.isEmpty()) return;
         var found = productUomDao.selectNamesForUpdate(names);
-        if (found.size() != names.size() || found.stream().anyMatch(u -> !"ENABLED".equals(u.getStatus()))) {
+        if (found.size() != names.size() || found.stream().anyMatch(u -> !ScmEnableStatusEnum.ENABLED.name().equals(u.getStatus()))) {
             throw new ScmBusinessException(UOM_NOT_USABLE);
         }
     }

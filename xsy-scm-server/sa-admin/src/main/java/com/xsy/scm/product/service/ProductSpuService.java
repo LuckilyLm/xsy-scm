@@ -2,6 +2,8 @@ package com.xsy.scm.product.service;
 
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
+import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductSpuDao;
 import com.xsy.scm.product.domain.entity.ProductSkuEntity;
@@ -118,13 +120,13 @@ public class ProductSpuService {
         entity.setTaxCategoryCode(trimToNull(form.getTaxCategoryCode()));
         // 主档状态与在售状态正交：表单不传就是「不改」，新增时才落到 ENABLED。
         if (form.getMasterStatus() != null) entity.setMasterStatus(form.getMasterStatus());
-        if (entity.getMasterStatus() == null) entity.setMasterStatus("ENABLED");
+        if (entity.getMasterStatus() == null) entity.setMasterStatus(ScmEnableStatusEnum.ENABLED.name());
         assertSaleCompatible(entity.getMasterStatus(), entity.getStatus());
         stamp(entity);
     }
 
     private void assertSaleCompatible(String masterStatus, String status) {
-        if ("ARCHIVED".equals(masterStatus) && "ON_SHELF".equals(status))
+        if ("ARCHIVED".equals(masterStatus) && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
             throw new ScmBusinessException(MASTER_STATUS_SALE_CONFLICT);
     }
 

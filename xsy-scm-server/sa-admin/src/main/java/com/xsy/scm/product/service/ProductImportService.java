@@ -3,6 +3,9 @@ package com.xsy.scm.product.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
+import com.xsy.scm.common.constant.ScmProductTypeEnum;
+import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductCategoryDao;
 import com.xsy.scm.product.dao.ProductImageDao;
@@ -99,8 +102,8 @@ public class ProductImportService {
             ProductImportRow::setSpecName, ProductImportRow::setSaleUnit, ProductImportRow::setProductType,
             ProductImportRow::setMarketPrice, ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag,
             ProductImportRow::setSortOrder);
-    private static final Set<String> SHELF = Set.of("ON_SHELF", "OFF_SHELF");
-    private static final Set<String> PRODUCT_TYPE = Set.of("STANDARD", "NON_STANDARD");
+    private static final Set<String> SHELF = Set.of(ScmShelfStatusEnum.ON_SHELF.name(), ScmShelfStatusEnum.OFF_SHELF.name());
+    private static final Set<String> PRODUCT_TYPE = Set.of(ScmProductTypeEnum.STANDARD.name(), ScmProductTypeEnum.NON_STANDARD.name());
     private static final Set<String> STORAGE = Set.of("AMBIENT", "CHILLED", "FROZEN");
     private static final Set<String> TRUTHY = Set.of("是", "Y", "YES", "TRUE", "1");
 
@@ -189,13 +192,13 @@ public class ProductImportService {
                 case 8 -> "FRESH-FRUIT";
                 case 11 -> "本地";
                 case 12 -> "CHILLED";
-                case 15 -> "ON_SHELF";
+                case 15 -> ScmShelfStatusEnum.ON_SHELF.name();
                 case 16 -> "SKU0001";
                 case 18 -> "500g/份";
                 case 19 -> "份";
-                case 20 -> "STANDARD";
+                case 20 -> ScmProductTypeEnum.STANDARD.name();
                 case 21 -> "9.9000";
-                case 22 -> "ON_SHELF";
+                case 22 -> ScmShelfStatusEnum.ON_SHELF.name();
                 case 23 -> "是";
                 case 24 -> "0";
                 default -> "";
@@ -208,13 +211,13 @@ public class ProductImportService {
             case 4 -> "FRESH-FRUIT";
             case 7 -> "本地";
             case 8 -> "CHILLED";
-            case 11 -> "ON_SHELF";
+            case 11 -> ScmShelfStatusEnum.ON_SHELF.name();
             case 12 -> "SKU0001";
             case 14 -> "500g/份";
             case 15 -> "份";
-            case 16 -> "STANDARD";
+            case 16 -> ScmProductTypeEnum.STANDARD.name();
             case 17 -> "9.9000";
-            case 18 -> "ON_SHELF";
+            case 18 -> ScmShelfStatusEnum.ON_SHELF.name();
             case 19 -> "是";
             case 20 -> "0";
             default -> "";
@@ -648,7 +651,7 @@ public class ProductImportService {
         var categoryCode = trim(row.getCategoryCode());
         if (categoryCode != null && !categoryMap.containsKey(categoryCode))
             addError(result, rowNumber, key, "分类编码", "CATEGORY_NOT_FOUND", "分类编码不存在");
-        else if (categoryCode != null && !"ENABLED".equals(categoryMap.get(categoryCode).getStatus()))
+        else if (categoryCode != null && !ScmEnableStatusEnum.ENABLED.name().equals(categoryMap.get(categoryCode).getStatus()))
             addError(result, rowNumber, key, "分类编码", "CATEGORY_DISABLED", "分类已停用，不能作为新商品分类");
         // 层级规则与写入路径的 ProductCategoryService.requireSelectableCategory 同口径；前置到逐行校验，
         // 免得填了一 / 二级分类要等整批写入才收到 CATEGORY_PARENT_INVALID，看不出是哪个单元格的问题
@@ -672,7 +675,7 @@ public class ProductImportService {
                 var uom = unitMap.get(unit);
                 if (uom == null)
                     addError(result, rowNumber, key, "销售单位", "UOM_NOT_USABLE", "计量单位不存在，请先在单位字典里维护");
-                else if (!"ENABLED".equals(uom.getStatus()))
+                else if (!ScmEnableStatusEnum.ENABLED.name().equals(uom.getStatus()))
                     addError(result, rowNumber, key, "销售单位", "UOM_NOT_USABLE", "计量单位已停用，请改选启用的单位");
             }
         }
@@ -701,7 +704,7 @@ public class ProductImportService {
             var tag = tagMap.get(tagCode);
             if (tag == null) {
                 addError(result, row.getRowNumber(), trim(row.getSpuCode()), "标签编码", "TAG_NOT_FOUND", "标签编码不存在：" + tagCode);
-            } else if (!allowClear && !"ENABLED".equals(tag.getStatus())) {
+            } else if (!allowClear && !ScmEnableStatusEnum.ENABLED.name().equals(tag.getStatus())) {
                 addError(result, row.getRowNumber(), trim(row.getSpuCode()), "标签编码", "TAG_NOT_USABLE",
                         "标签已停用，请改选启用的标签：" + tagCode);
             }

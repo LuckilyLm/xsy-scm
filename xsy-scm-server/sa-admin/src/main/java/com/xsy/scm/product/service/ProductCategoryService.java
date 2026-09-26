@@ -2,6 +2,7 @@ package com.xsy.scm.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.*;
@@ -39,7 +40,7 @@ public class ProductCategoryService {
         // Serialize category deletion with creation/moving of a product referencing it.
         var category = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
         if (category == null) throw new ScmBusinessException(CATEGORY_NOT_FOUND);
-        if (category.getLevel() != 3 || !"ENABLED".equals(category.getStatus()))
+        if (category.getLevel() != 3 || !ScmEnableStatusEnum.ENABLED.name().equals(category.getStatus()))
             throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         return category;
     }
@@ -49,7 +50,7 @@ public class ProductCategoryService {
         if (parentId.equals(self)) throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         var parent = require(parentId);
         if (parent.getLevel() >= 3) throw new ScmBusinessException(CATEGORY_LEVEL_INVALID);
-        if (!"ENABLED".equals(parent.getStatus())) throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
+        if (!ScmEnableStatusEnum.ENABLED.name().equals(parent.getStatus())) throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         return parent.getLevel() + 1;
     }
 
