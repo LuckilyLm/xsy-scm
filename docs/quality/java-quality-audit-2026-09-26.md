@@ -822,8 +822,10 @@ ScmStocktakeImportPgIT 连续 20 次独立运行   20 ok / 0 failed   每次 7/7
 同一套取证方法（单跑 → 读抛点 → 查库 → 换一次性干净库重跑）在 Q0.1 里
 另抓到并排除了一次同类偶发：`PurchaseDemandSummaryPreviewIT` 在全量中抛
 `INVENTORY_RESERVATION_INVALID`，单跑 11/11 绿，干净库上全量
-**1201 tests / 0 failures / 0 errors / 5 skips** 绿 —— 那是长跑共享开发库里
-142 条残留 ACTIVE 预留行造成的环境数据问题，与代码改动无关。
+**两模块合计 1201 tests / 0 failures / 0 errors / 5 skips** 绿
+（= sa-base 8 + sa-admin 1193，口径见
+[`package-migration-readiness.md`](./package-migration-readiness.md) §7.5）——
+那是长跑共享开发库里 142 条残留 ACTIVE 预留行造成的环境数据问题，与代码改动无关。
 两次都没有用扩大 skip、弱化断言或删用例的方式换绿。
 
 ### 11.3 未在本轮执行的验证

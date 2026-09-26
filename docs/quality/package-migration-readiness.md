@@ -1,16 +1,23 @@
 # Q1 迁包就绪（Quality Q0.1）
 
 > 阶段：Quality Q0.1 — Package Migration Readiness
+>
 > 前置：QUALITY Q0 已完成（`b30d879b` 门禁 / `94bd00b2` 审计与整改基线）
+>
 > 本轮性质：只加固门禁，**不迁任何一个正式文件**
+>
 > 业务状态：F1-3B COMPLETE；F1-3C / F1-4 / F1-5 / F1-6 / F1-8 继续暂停
 
 Q1 会把 `net.lab1024.sa.admin.module.scm.*` 迁到 `com.xsy.scm.*`。
+
 迁包真正的风险不是门禁太严，而是**门禁静默停止看代码**：扫描范围只钉在旧包，迁完就报
+
 「0 findings」；baseline 的 identity 全部指向已消失的路径，`check` 就报「全部改善」；
+
 ArchUnit 的包名写错时在空类集上没有任何规则会失败。三者都显示绿色，而实际什么都没检查。
 
 所以 Q0.1 的唯一目标，是让 Quality Guard / Checkstyle / ArchUnit / baseline 棘轮
+
 在**新旧双包并存**的整个迁移过程中都仍然有效，并提供确定性的 baseline 路径迁移能力。
 
 ---
@@ -28,20 +35,27 @@ SCM_PACKAGE_PATHS = (LEGACY_SCM_PACKAGE_PATH, NEW_SCM_PACKAGE_PATH)
 ```
 
 `package_roots(source_root)` 对 main / test 两个源根各展开两条路径，`load_sources(roots)`
+
 按**解析后的绝对路径去重**，所以两条根路径将来即使嵌套也不会把同一文件计两次。
 
 关键点不只是「两边都扫」，还有 **enum 词汇表必须由两侧生产源码一起构建**：
+
 magic-string 规则判定的是「这个字面量是否等于某个已有 enum 常量」。如果词汇表只从旧包构建，
+
 那么在 Q1 中途，一个已经迁进 `com.xsy.scm` 的 enum 就不在词汇表里，
+
 所有仍写它的 Service 会**从 A 类（有 enum 却硬编码）掉到不报**——
+
 门禁会在迁移进行中静默松掉，而这正是它最该盯住的时候。
 
 `scm_metrics.py` 的度量范围同步改为两侧并集，域归属解析同时认
+
 `/module/scm/` 与 `/com/xsy/scm/` 两种前缀。
 
 ### 1.2 防「空源码集 = PASS」
 
 `collect()` 在生产源码集为空时抛 `ScanConfigurationError`，`main()` 把它变成
+
 exit 2 并打印：
 
 ```text
@@ -49,10 +63,13 @@ SCM production source set is empty; quality scan is likely misconfigured.
 ```
 
 `scan` / `check` / `capture` 三个模式一视同仁 —— `capture` 尤其重要，
+
 否则一次配置错误就能把 baseline 写成空文件，之后所有 `check` 永久全绿。
 
 这条不是「代码里存在一个 if」，而是被执行验证的：
+
 `package_migration_readiness.py` 把 `SCM_PACKAGE_PATHS` 临时换成**只有新包**
+
 （今天它是空的），然后要求 `collect()` 抛出该异常。见 §5。
 
 ### 1.3 Checkstyle
@@ -64,18 +81,25 @@ SCM production source set is empty; quality scan is likely misconfigured.
 ```
 
 `sourceDirectories` 已限定为 `sa-admin/src/main/java`，所以这里不能用
+
 `src/main/java/**` 这种全树通配 —— 那会把 SmartAdmin 底座的债务一并灌进 SCM baseline，
+
 让「871」这个数不再代表我们的账。
 
 Checkstyle 仍然 `failOnViolation=false`：它是**报告器**，判定权在 guard。
+
 把 Maven 侧改成 `true` 会让历史 871 条直接红掉构建，等于用另一种方式废掉棘轮。
+
 新包里的新违规仍然会被阻断，路径是
+
 `checkstyle-result.xml → quality_guard(checkstyle family) → NEW/GROWN 判定`，
+
 这条链由 §5 的坏探针实证。
 
 ### 1.4 ArchUnit
 
 `@AnalyzeClasses` 的 `packages` 改成引用两个常量（注解里写常量、常量里写值，
+
 是为了让「分析了两边」这件事既可断言又可复用）：
 
 ```java
@@ -87,22 +111,33 @@ Checkstyle 仍然 `failOnViolation=false`：它是**报告器**，判定权在 g
 只改成 `com.xsy.scm` 是错的：Q1 期间两边并存，只分析新包意味着所有未迁的域不再受约束。
 
 新增一条**防空扫描**的断言 `importedSourceSetIsNotEmpty(JavaClasses)`：
+
 抓到 0 个 SCM 类就失败。它的价值在于把「注解写对了」从假设变成被检查的事实 ——
+
 包名一旦拼错，其余 7 条规则会在空集上全体通过。
+
 旧包归零后它仍然成立（只看两边之和），所以不需要在 Q1 结束时删掉。
 
 `financeDoesNotDependOnOtherDomains` 的历史例外**继续精确到类**
+
 （`belongToAnyOf(OrderIdempotencyService.class)`）。改成排除 `..finance..` 整域
+
 等于让这条规则对财务域永久失效，而它是这条规则唯一需要例外的地方。
 
 ### 1.5 迁移进度可见指标
 
 `legacy-scm-package` 仍是唯一被门禁的包数规则（旧包文件数只降不升）。
+
 `legacy-scm-package` 的记录粒度是**每个旧包文件一条 identity**（Q0.2 改的）。
+
 原先是两个聚合计数（`main 692 / test 155`）当上限比较，于是「只允许下降」名不副实：
+
 降到 810 后 baseline 仍是 847，再往旧包**新增 5 个文件**、当前 815 ≤ 847 照样 PASS。
+
 它表达的是「不比 Q0 差」，不是「旧 namespace 禁止进新代码」—— 两者读起来像，效果不同。
+
 改成逐文件 identity 后，没被记录过的旧包路径就是 NEW DEFECT，移出旧包是 improvement。
+
 残留缺口是「把账本里已有的旧路径删掉再建同名文件」仍可放行，所以每域收尾要 `capture` 收缩账本。
 
 新包一侧**不设门禁**，改为 scan/check 末尾的报表：
@@ -116,7 +151,9 @@ Checkstyle 仍然 `failOnViolation=false`：它是**报告器**，判定权在 g
 ```
 
 不设门禁的理由：「新包必须增长」不是长期质量规则 —— Q1 结束后新包数就等于总数、旧包数为 0，
+
 把它永久钉成断言只会在之后每次改动里误报。真正需要的是迁移期间能同时看到
+
 OLD 降、NEW 升，因为「只改了一边」或「复制而非移动」在其他任何规则眼里都是干净的。
 
 ---
@@ -126,7 +163,9 @@ OLD 降、NEW 升，因为「只改了一边」或「复制而非移动」在其
 ### 2.1 问题
 
 baseline identity 是 `rule<TAB>path<TAB>locator`。`git mv` 之后 defect 本身没变，变的只是地址：
+
 旧 identity 消失 → 报 IMPROVEMENT；新路径上同一条 → 报 NEW DEFECT。
+
 一次纯改名就会同时「改善」和「新增」，把 Q1 卡在门禁上。
 
 ### 2.2 解法：只做前缀 1:1 替换
@@ -134,29 +173,35 @@ baseline identity 是 `rule<TAB>path<TAB>locator`。`git mv` 之后 defect 本�
 `tools/quality/migrate_baseline_paths.py` 只重写 path 字段，**绝不重扫源码**。
 
 这个限制就是它的意义：`capture` 在迁包后重扫会把所有「当前 findings」写进 baseline，
+
 其中也包括迁移过程中真正新写进来的 magic string、坏命名、裸权限、阶段注释 ——
+
 一次重扫会把它们全洗进账本。确定性的路径重写做不到这件事：那些 identity 是新出现的，
+
 `check` 照样会拦。
 
 安全性靠断言而不是靠小心：
 
-| 属性 | 处理 |
-| --- | --- |
-| rule / locator / occurrence / family 变动 | 视为非法行，直接 FAIL |
-| 两条旧 identity 折叠成同一条新 identity | FAIL（会静默抹掉记录在案的债务） |
-| 目标 path 已存在于 baseline | FAIL（collision） |
-| occurrence 总数迁移前后不等 | FAIL |
-| identity 总数迁移前后不等 | FAIL |
-| 格式非法的行 | 收集并 FAIL，且不丢弃原文 |
-| 默认模式 | dry-run，`--apply` 才写；不 ok 时拒绝写盘 |
+| 属性                                      | 处理                              |
+| --------------------------------------- | ------------------------------- |
+| rule / locator / occurrence / family 变动 | 视为非法行，直接 FAIL                   |
+| 两条旧 identity 折叠成同一条新 identity           | FAIL（会静默抹掉记录在案的债务）              |
+| 目标 path 已存在于 baseline                   | FAIL（collision）                 |
+| occurrence 总数迁移前后不等                     | FAIL                            |
+| identity 总数迁移前后不等                       | FAIL                            |
+| 格式非法的行                                  | 收集并 FAIL，且不丢弃原文                 |
+| 默认模式                                    | dry-run，`--apply` 才写；不 ok 时拒绝写盘 |
 
 最典型的误配（把 main 和 test 两个前缀指向同一个目标）会被折叠检测抓到 —— 这是唯一
+
 能真正造成静默丢债的情形，所以专门写成一条测试。
 
 ### 2.3 必须按域，不能整包
 
 Q1 一域一域地迁，所以改写也必须一域一域地做。**整包映射 + 只迁了 `common`** 是自我破坏：
+
 `product / order / purchase / inventory / finance ...` 这些**还没动**的文件，
+
 它们的 baseline path 会被提前搬到新包，于是下一轮扫描时
 
 ```text
@@ -165,6 +210,7 @@ baseline 指向新路径 → 那条记录对应的文件并不存在 → 只是 
 ```
 
 也就是说：**第一个域做完，账本就整体爆红**。
+
 两道独立的防线：
 
 ```bash
@@ -173,20 +219,30 @@ python tools/quality/migrate_baseline_paths.py --domain common --apply
 ```
 
 1. **`--domain <域>`**：一次同时给出 main 与 test 两条精确前缀，
+
    不需要人手抄路径（抄错前缀是这类工具最典型的静默失效）。
+
    域在**两个包任一处**存在即接受 —— 迁移发生在 `git mv` 之后，
+
    这时旧目录本来就已经没了；只认旧包会把这个工具存在的唯一时刻判成非法。
+
    两边都不存在（拼错域）直接拒绝。
 2. **改写前先在磁盘上核实这次移动真的发生了**：旧路径必须不存在、新路径必须存在。
+
    任一不满足就把该条记为 `UNMOVED` 并**拒绝写盘**。
+
    这条让 `--all` 也变成安全的：即使在只迁了 `common` 的状态下执行 `--all`，
+
    它会因为上千条「文件还在旧路径」的记录而失败，而不是悄悄把账本搬到前面去。
 
 ### 2.4 旧包账本不参与路径改写
 
 `legacy-scm-package` 记的是「**仍然留在旧 namespace** 的文件」，
+
 它的 path 语义与其他 family 相反。若把它一起改到新路径，
+
 防回流的账本就等于被 Q1 自己抹掉了。所以它被显式列入 `SKIPPED_FAMILIES`，
+
 在报告里单独计为 `skipped (own ledger)`，既不重写也不算失败。
 
 ### 2.5 禁止的用法
@@ -207,37 +263,43 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
 
 只在**全部**满足时才能执行（否则脚本拒绝）：
 
-| # | 前置 | 为什么 |
-| --- | --- | --- |
-| 1 | `com/xsy/scm` 没有正式 SCM `.java` | 有就说明 Q1 已开始，此时记录会把「迁了一半」固化成正确基线 |
-| 2 | `git status` 无未提交的已跟踪改动 | 清单必须对应一个确定的 commit，否则记的不是将要移动的那批文件 |
-| 3 | 旧 SCM 包非空 | 空包没有可迁对象 |
-| 4 | 能发现至少一个 domain | 一个都没发现说明扫描范围写错了 |
-| 5 | 无重复相对路径 | 扫描分不清两个文件时，记录的集合是有损的 |
-| 6 | 旧包 `.java` 全部已被 git 跟踪 | 未跟踪文件会随 `git mv` 一起走，却不在评审视野里 |
+| # | 前置                             | 为什么                                |
+| - | ------------------------------ | ---------------------------------- |
+| 1 | `com/xsy/scm` 没有正式 SCM `.java` | 有就说明 Q1 已开始，此时记录会把「迁了一半」固化成正确基线    |
+| 2 | `git status` 无未提交的已跟踪改动        | 清单必须对应一个确定的 commit，否则记的不是将要移动的那批文件 |
+| 3 | 旧 SCM 包非空                      | 空包没有可迁对象                           |
+| 4 | 能发现至少一个 domain                 | 一个都没发现说明扫描范围写错了                    |
+| 5 | 无重复相对路径                        | 扫描分不清两个文件时，记录的集合是有损的               |
+| 6 | 旧包 `.java` 全部已被 git 跟踪         | 未跟踪文件会随 `git mv` 一起走，却不在评审视野里      |
 
 生成产物 `tools/quality/baseline/package-migration-manifest.json`，**记录精确文件路径集合**，不是数量。
 
 > **为什么必须是集合而不是数量**：`{A.java, B.java, C.java}` 和 `{A.java, B.java, D.java}`
+>
 > 都是 3 个文件，但只有一个是正确迁移。数量相等不能证明集合相等，
+>
 > 而「漏了 A、多了 D」这类错误恰恰在数量上完全隐形。
 
 **Q1 开始后禁止重建。** `--record-migration-manifest` 在前置条件失败时一律拒绝；
+
 `--force` 只能重写**尚未提交**的清单，且在前置失败时仍然拒绝覆盖已存在的清单。
+
 理由：如果清单能在迁移中途重新生成，一个被漏掉的文件就会自动变成「新的正确基线」，
+
 完整性断言会为一个从未发生的迁移背书。正常 Q1 流程**绝不使用 `--force`**。
 
 ### 3.1 各域顺序
 
 1. 先落 `AdminApplication.COMPONENT_SCAN` → `{net.lab1024.sa, com.xsy}` 双根
+
    （`@ComponentScan` 与 `@MapperScan` **都要**改，只改前者 Mapper 会静默注不进），
+
    验证一次启动与全量后端测试。此时新包还不存在，双根无副作用。
 2. 确认 manifest 已存在（§3.0）。
 3. 按域整体移动，一域一次 commit，顺序建议 `common → warehouse → product → supplier →
    customer → pricing → order → purchase → inventory → sorting → delivery → finance →
    report → screen → dashboard`。每域结束后跑 `verify.py quality` + 该域定向 IT。
 4. 每域正式顺序（**同一 commit 内**，顺序不可换）：
-
    ```bash
    # ① git mv 该域的 main + test
    git mv .../net/lab1024/sa/admin/module/scm/<domain> .../com/xsy/scm/<domain>
@@ -266,20 +328,29 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
    # ⑧ 总门禁 + 该域定向后端测试
    python tools/verify.py quality
    ```
-
    **顺序是 `check → capture`，不是 `capture → check`。** 这个区别在 Q0.3 之前是真的会出事的：
+
    旧版 `capture` 只比较 occurrence 总数，于是「修掉 1 条旧债 + 新增 1 条等量新债」总数不变，
+
    它报 `+0 PASS` 并把新债写进账本，紧随其后的 `check` 自然也是 PASS —— 新债务被洗白。
+
    Q0.3 之后 `capture` 自身也做 identity 级校验（见 §10），`capture` 先跑不再直接导致洗债，
+
    但先 `check` 仍是正确顺序：它让「这次移动没有带进新债」由一个**独立于账本改写**的步骤证明，
+
    而不是依赖 `capture` 自己的判断。
 
    `capture` 在这里是**收缩**该域在旧包账本里的记录；四个债务 family 必须是 `+0`，
+
    若报出 `BLOCKED (... unrecorded findings)`，说明这次移动带进了新债，
+
    必须修代码，不能用 `--allow-growth` 放过去。
 5. 旧包文件数归零后：确认 `旧 SCM package = 0` 且 `新 SCM package = manifest 全集合`，
+
    然后删除 `package-migration-manifest.json`、`legacy-scm-package` family 及其 baseline、
+
    收缩 `SCM_PACKAGE_PATHS` 为单条、去掉 pom 的旧 includes、
+
    启用 ArchUnit 的 `com.xsy.scm..` 正向规则，并同步 readiness 脚本的断言。
 6. 迁包 commit 与 formatter commit 必须分开（计划 §17 Q1）。
 
@@ -289,22 +360,23 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
 
 `ratchetFrom` 的语义是「只看相对该 ref 发生变更的文件」。本轮实测（不是推断）：
 
-| 条件 | Spotless 实际处理数 |
-| --- | --- |
-| ref = `HEAD`，工作树有 3 个已修改文件 | **3 个**（`keeping 3 files clean`） |
-| ref = `HEAD~2` | 同上，且日志显示 `3 were skipped because caching determined they were already clean` |
-| ref = `origin/main`，且 `origin/main == HEAD`、工作树干净 | **0 个** —— 此时才是 vacuous PASS |
+| 条件                                                | Spotless 实际处理数                                                               |
+| ------------------------------------------------- | ---------------------------------------------------------------------------- |
+| ref = `HEAD`，工作树有 3 个已修改文件                        | **3 个**（`keeping 3 files clean`）                                             |
+| ref = `HEAD~2`                                    | 同上，且日志显示 `3 were skipped because caching determined they were already clean` |
+| ref = `origin/main`，且 `origin/main == HEAD`、工作树干净 | **0 个** —— 此时才是 vacuous PASS                                                 |
+
 
 两个先前设想都不成立，必须按实测修正：
 
-1. **`ref == HEAD` 并不等于「什么都不检查」。** ratchet 比较的是 ref 与**工作树**，
-   所以本地未提交的改动照样在范围内。真正空转的只有「工作树干净 + ref 就是当前 commit」这一种，
+1. **`ref == HEAD` 并不等于「什么都不检查」。** ratchet 比较的是 ref 与**工作树**，     
+   所以本地未提交的改动照样在范围内。真正空转的只有「工作树干净 + ref 就是当前 commit」这一种，     
    而它恰好就是 **merge 之后的 CI 状态** —— 那才是需要防的假绿。
-2. **Spotless 自己的汇总行不能当覆盖率信号。** 它有增量缓存（`target/` 下的 index），
-   第二次跑同一批文件会报「skipped because caching determined they were already clean」。
+2. **Spotless 自己的汇总行不能当覆盖率信号。** 它有增量缓存（`target/` 下的 index），     
+   第二次跑同一批文件会报「skipped because caching determined they were already clean」。     
    也就是说「keeping N files」的 N 会受缓存影响，不保证等于本轮真正被判定过的文件数。
 
-因此 `verify.py quality` 的 sanity check **自己用 `git diff --name-only <ref>` 数文件**，
+因此 `verify.py quality` 的 sanity check **自己用 `git diff --name-only <ref>` 数文件**，  
 不看 Spotless 的输出：
 
 ```text
@@ -313,10 +385,11 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
 
 N 为 0 时写入 `incomplete`，退出码变 2（verify.py 里 2 的既有语义正是「验证不完整」）。
 
-**选择：warning + 记 INCOMPLETE，不 fail-fast。** 理由：干净树上增量格式化器确实无事可做，
-判失败是错的；但也不能让它被读成「质量已完整检查」。
-覆盖率损失的范围有限且明确：Checkstyle、quality guard、ArchUnit 都是**全树扫描 + baseline 比对**，
+**选择：warning + 记 INCOMPLETE，不 fail-fast。** 理由：干净树上增量格式化器确实无事可做，  
+判失败是错的；但也不能让它被读成「质量已完整检查」。  
+覆盖率损失的范围有限且明确：Checkstyle、quality guard、ArchUnit 都是**全树扫描 + baseline 比对**，  
 与 git ref 无关，失去的只有 Spotless 那条行尾空白/末尾换行的重写检查。
+
 
 未来 CI 更稳的做法是显式传 PR 的 merge-base / 目标分支 SHA
 （`-Dquality.ratchet.from=<sha>`，属性已在父 pom 里留出），
@@ -486,7 +559,7 @@ ScmStocktakeImportPgIT 连续 20 次（每次独立 mvn 调用、独立 Spring �
 
 ### 7.5 一次「全量偶发红」的定位过程与结论
 
-第一次全量后端（含本轮改动）：1193 tests / 0 failures / **1 error**，
+第一次全量后端（含本轮改动）：sa-admin **1193 tests / 0 failures / 1 error**，
 `PurchaseDemandSummaryPreviewIT.aggregatesMultipleOrdersOfSameSku` 抛
 `INVENTORY_RESERVATION_INVALID`。
 
@@ -501,9 +574,26 @@ ScmStocktakeImportPgIT 连续 20 次（每次独立 mvn 调用、独立 Spring �
    长跑共享开发库累积了此前中断运行留下的、已提交的预留行。
 4. **决定性验证**：新建一次性干净库（Flyway 自 V1 应用整条链），
    把 `XSY_V2_DB_URL` 指过去重跑全量 →
-   **1201 tests / 0 failures / 0 errors / 5 skipped（既有云端门控）**，
+   **两模块合计 1201 tests / 0 failures / 0 errors / 5 skipped（既有云端门控）**，
    随后 `DROP DATABASE`。
 
+   > **1201 与 1193 的口径说明（Q0.3 验收核对）**：`tools/verify.py backend` 的命令是
+   > `mvn -B -pl sa-admin -am test`，`-am` 使 Maven **先构建 sa-base 再构建 sa-admin**，
+   > 两个模块**各报一次 surefire 汇总**：
+   >
+   > | 模块 | suite | tests | failures | errors | skipped |
+   > |---|---|---|---|---|---|
+   > | sa-base（含 `OperateLogBusinessTypeTest` 3 + `OperateLogParamMaskTest` 5） | 2 | **8** | 0 | 0 | 0 |
+   > | sa-admin | 164 | **1193** | 0 | 0 | 5 |
+   > | 合计 | 166 | **1201** | 0 | 0 | 5 |
+   >
+   > 因此 **1201 = 1193 + 8，是同一个命令一次跑出的两模块之和**，不是人为相加、
+   > 也不是两次运行。Maven stdout 最后一行（`[WARNING] Tests run: 1193`）只是
+   > **sa-admin 模块的汇总**，不含 sa-base。此前把 `1193` 和 `1201` 当成
+   > 「同一口径下少了 8 个测试」，是把模块汇总误读成全局汇总，Q0.3 已核对更正。
+   > `ScmArchitectureTest` 的 8 个 ArchUnit 测试**位于 sa-admin 模块**，
+   > 已包含在 1193 之内，**不构成单独的 quality suite**，也不得与 1193 再相加。
+   >
    > **一次性库跑全量的环境变量配方**（Q0.3 实测，缺一不可）。`test` profile 下
    > `sa-base.yaml` 的 `driver-class-name` 是 `com.p6spy.engine.spy.P6SpyDriver`，
    > 只认 `jdbc:p6spy:` 开头的 URL；`username` / `password` 与 `spring.data.redis.password`
@@ -528,8 +618,9 @@ ScmStocktakeImportPgIT 连续 20 次（每次独立 mvn 调用、独立 Spring �
    > ```
    >
    > 另注：`.env` 的 `JAVA_OPTS` 未加引号，直接 `source .env` 会在该行中断并让后面的
-   > `POSTGRES_*` 变空，取凭据请用上面的 `grep` 方式。Q0.3 以此配方跑出的结果是
-   > **1193 tests / 0 failures / 0 errors / 5 skipped**，`BUILD SUCCESS`。
+   > `POSTGRES_*` 变空，取凭据请用上面的 `grep` 方式。Q0.3 以此配方复跑的结果是
+   > **sa-base 8 + sa-admin 1193 = 1201 tests / 0 failures / 0 errors / 5 skipped**，
+   > `BUILD SUCCESS`，与本节记录的 1201 完全一致。
 
 结论：那是**环境数据残留**，不是本轮改动引入的回归，也不是 `PurchaseDemandSummaryPreviewIT`
 自身的顺序耦合。本轮没有修改该测试、没有扩大 skip、没有弱化任何断言。
@@ -556,6 +647,7 @@ ScmStocktakeImportPgIT 连续 20 次（每次独立 mvn 调用、独立 Spring �
 | 执行整包 `--all --apply` | 旧版 dry-run 报 `collisions=0 / RESULT: PASS`，**看起来完全安全** | `unmoved files: 1182`，**拒绝写盘**，`RESULT: FAIL` |
 | 执行 `--domain common --apply` | 工具不支持 | 见下表，`RESULT: PASS` |
 
+
 `--domain common --apply` 在真实移动之后：
 
 ```text
@@ -580,6 +672,7 @@ mid-migration 跑 `package_migration_readiness.py` 亦 `RESULT: PASS`。
 - **occurrence 统计必须覆盖未改写的记录。** 只给改写与跳过的分支累加 `occurrences_after`，
   会让一次完全正确的按域改写报成 `2960 → 851`「疑似丢数据」。
   补了一条混合用例（改写 / 未改 / 跳过三类记录混在一起）把这条钉住。
+
 
 ### 8.2 readiness 自身写死旧包路径
 
@@ -622,6 +715,7 @@ migrate --all --dry-run（未移动时）         unmoved 1182 → RESULT: FAIL�
 migrate --domain common --dry-run（未移动）  unmoved 4    → RESULT: FAIL（正确的拒绝）
 migration_checksum_guard.py check          PASS
 verify.py backend（一次性干净库）           1201 tests / 0 failures / 0 errors / 5 skipped
+                                          = sa-base 8 + sa-admin 1193（模块口径见 §7.5）
 git diff --check                           clean
 ```
 
