@@ -3,7 +3,7 @@
 # detection : 每个 (文件, check) 一条聚合记录，occurrences = 该 check 在该文件的违规数；消息文本不参与 identity，因为 Checkstyle 按 JVM locale 输出消息
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 867 occurrences in 361 identities
+# captured  : 839 occurrences in 360 identities
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/domain/ScmLocationForm.java	AvoidStarImport
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/json/JsonbStringMapTypeHandler.java	AvoidStarImport
 1	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/json/JsonbStringMapTypeHandler.java	LineLength
@@ -322,7 +322,6 @@
 5	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductCategoryService.java	LineLength
 2	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImageCenterService.java	AvoidStarImport
 3	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImageCenterService.java	LineLength
-28	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	LineLength
 5	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductQueryService.java	AvoidStarImport
 8	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductQueryService.java	LineLength
 4	checkstyle	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductSpuService.java	AvoidStarImport

@@ -50,7 +50,8 @@ public class ProductUomService {
         var names = unitNames.stream().filter(n -> n != null && !n.isBlank()).map(String::trim).distinct().toList();
         if (names.isEmpty()) return;
         var found = productUomDao.selectNamesForUpdate(names);
-        if (found.size() != names.size() || found.stream().anyMatch(u -> !ScmEnableStatusEnum.ENABLED.name().equals(u.getStatus()))) {
+        var enabled = ScmEnableStatusEnum.ENABLED.name();
+        if (found.size() != names.size() || found.stream().anyMatch(u -> !enabled.equals(u.getStatus()))) {
             throw new ScmBusinessException(UOM_NOT_USABLE);
         }
     }
@@ -93,7 +94,9 @@ public class ProductUomService {
         var entity = productUomDao.selectForUpdate(form.getUomId());
         if (entity == null) throw new ScmBusinessException(UOM_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-        if (productUomDao.selectVoById(entity.getId()).getReferencedCount() > 0) throw new ScmBusinessException(UOM_REFERENCED);
+        if (productUomDao.selectVoById(entity.getId()).getReferencedCount() > 0) {
+            throw new ScmBusinessException(UOM_REFERENCED);
+        }
         stamp(entity);
         if (productUomDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         productUomDao.deleteById(entity.getId());

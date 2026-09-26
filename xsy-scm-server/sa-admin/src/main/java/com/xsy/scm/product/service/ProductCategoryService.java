@@ -50,7 +50,9 @@ public class ProductCategoryService {
         if (parentId.equals(self)) throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         var parent = require(parentId);
         if (parent.getLevel() >= 3) throw new ScmBusinessException(CATEGORY_LEVEL_INVALID);
-        if (!ScmEnableStatusEnum.ENABLED.name().equals(parent.getStatus())) throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
+        if (!ScmEnableStatusEnum.ENABLED.name().equals(parent.getStatus())) {
+            throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
+        }
         return parent.getLevel() + 1;
     }
 
@@ -181,7 +183,8 @@ public class ProductCategoryService {
     }
 
     private long countProducts(Long id) {
-        return productSpuDao.selectCount(new LambdaQueryWrapper<ProductSpuEntity>().eq(ProductSpuEntity::getCategoryId, id));
+        return productSpuDao.selectCount(new LambdaQueryWrapper<ProductSpuEntity>()
+                .eq(ProductSpuEntity::getCategoryId, id));
     }
 
     private void lockParent(Long id) {

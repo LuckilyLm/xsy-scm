@@ -40,7 +40,8 @@ public class ProductImageSyncManager {
     private final FileRelationService fileRelationService;
 
     public List<ProductImageEntity> existing(Long spuId) {
-        return productImageDao.selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
+        return productImageDao.selectList(new LambdaQueryWrapper<ProductImageEntity>()
+                .eq(ProductImageEntity::getSpuId, spuId)
                 .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
     }
 
@@ -51,7 +52,8 @@ public class ProductImageSyncManager {
         // File module remains the authority for existence and metadata; URLs are never resolved on
         // the write path (the caller may not own these keys — resolving them would be an ungarded
         // read). Public-prefix binding is enforced by requirePublicImageKey, not by URL resolution.
-        Map<String,FileVO> metadata=fileService.getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList())
+        Map<String,FileVO> metadata=fileService.getFileMetadata(
+                        requested.stream().map(ProductImageForm::getFileKey).toList())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey,Function.identity(),(a,b)->a));
         for (var form:requested) if (!metadata.containsKey(form.getFileKey())) throw new ScmBusinessException(IMAGE_INVALID);
         for (var form:requested) requirePublicImageKey(form);

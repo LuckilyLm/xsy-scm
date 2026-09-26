@@ -94,7 +94,9 @@ public class ProductTagService {
         var entity = productTagDao.selectForUpdate(form.getTagId());
         if (entity == null) throw new ScmBusinessException(TAG_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-        if (productTagDao.selectVoById(entity.getId()).getProductCount() > 0) throw new ScmBusinessException(TAG_REFERENCED);
+        if (productTagDao.selectVoById(entity.getId()).getProductCount() > 0) {
+            throw new ScmBusinessException(TAG_REFERENCED);
+        }
         stamp(entity);
         if (productTagDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         productTagDao.deleteById(entity.getId());

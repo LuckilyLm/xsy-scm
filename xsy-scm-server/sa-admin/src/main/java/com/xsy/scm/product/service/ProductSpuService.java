@@ -90,7 +90,9 @@ public class ProductSpuService {
     @Transactional
     public void delete(ProductDeleteForm form) {
         var entity = require(form.getSpuId(), form.getVersion());
-        if (productSpuDao.hasBusinessReference(entity.getId())) throw new ScmBusinessException(PRODUCT_BUSINESS_REFERENCED);
+        if (productSpuDao.hasBusinessReference(entity.getId())) {
+            throw new ScmBusinessException(PRODUCT_BUSINESS_REFERENCED);
+        }
         stamp(entity);
         if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         tags.untagProducts(List.of(entity.getId()));
