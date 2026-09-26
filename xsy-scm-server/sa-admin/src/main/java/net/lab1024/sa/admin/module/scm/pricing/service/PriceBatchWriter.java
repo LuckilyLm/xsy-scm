@@ -10,10 +10,10 @@ import net.lab1024.sa.admin.module.scm.pricing.dao.*;
 import net.lab1024.sa.admin.module.scm.pricing.domain.form.*;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.*;
 import net.lab1024.sa.admin.module.scm.pricing.manager.PriceValidation;
-import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
+import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
-import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerTypeEntity;
+import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 

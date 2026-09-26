@@ -1,13 +1,13 @@
 package com.xsy.scm.common;
 
-import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
-import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
-import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
-import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerTypeEntity;
-import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerAddForm;
-import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerTypeAddForm;
-import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
-import net.lab1024.sa.admin.module.scm.customer.service.CustomerTypeService;
+import com.xsy.scm.customer.dao.CustomerDao;
+import com.xsy.scm.customer.dao.CustomerTypeDao;
+import com.xsy.scm.customer.domain.entity.CustomerEntity;
+import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
+import com.xsy.scm.customer.domain.form.CustomerAddForm;
+import com.xsy.scm.customer.domain.form.CustomerTypeAddForm;
+import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.supplier.dao.SupplierDao;
 import com.xsy.scm.supplier.dao.SupplierSkuDao;
 import com.xsy.scm.supplier.domain.entity.SupplierEntity;

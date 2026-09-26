@@ -5,6 +5,18 @@
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 695 occurrences in 469 identities
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/common/constant/ScmCustomerStatusEnum.java	Q1
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/dao/CustomerFrequentSkuDao.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/entity/CustomerEntity.java	Q6
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerAddForm.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerTypeDeleteForm.java	Q3
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/vo/CustomerFrequentSkuVO.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/vo/CustomerFrequentSkuVO.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerQueryService.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerQueryService.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerService.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	Q3
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	Q9
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/dao/ProductTagRelationDao.java	Q11
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductBatchService.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductCategoryService.java	Q3
@@ -21,18 +33,6 @@
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/form/WarehouseUpdateForm.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/domain/vo/WarehouseVO.java	§<n>
 5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseService.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/dao/CustomerFrequentSkuDao.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/entity/CustomerEntity.java	Q6
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/form/CustomerAddForm.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/form/CustomerTypeDeleteForm.java	Q3
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/vo/CustomerFrequentSkuVO.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/vo/CustomerFrequentSkuVO.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerQueryService.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerQueryService.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerService.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerTypeService.java	Q3
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/service/CustomerTypeService.java	Q9
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/delivery/service/DeliveryRouteService.java	F1-2B
 2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/delivery/service/DeliveryRouteService.java	F1-2C
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/delivery/service/DeliveryRouteService.java	Q1

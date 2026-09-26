@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.order;
 
-import net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao;
-import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
+import com.xsy.scm.customer.dao.CustomerDao;
+import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode;
 import net.lab1024.sa.admin.module.scm.order.domain.form.SalesOrderAddForm;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.SalesOrderImportResultVO;

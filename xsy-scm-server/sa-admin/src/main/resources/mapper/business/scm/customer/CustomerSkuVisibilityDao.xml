@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.customer.dao.CustomerSkuVisibilityDao">
+<mapper namespace="com.xsy.scm.customer.dao.CustomerSkuVisibilityDao">
     <select id="policy" resultType="string">SELECT visibility_policy
                                             FROM customer
                                             WHERE id = #{customerId}
@@ -38,7 +38,7 @@
                                                   FROM customer_type_price
                                                   WHERE customer_type_id = #{id}
                                                     AND deleted = FALSE</select>
-    <select id="reverse" resultType="net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO">
+    <select id="reverse" resultType="com.xsy.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO">
         SELECT c.id customer_id,c.customer_code,c.name customer_name,t.name
         customer_type_name,c.visibility_policy,v.sku_id,s.sku_code,p.name product_name,s.spec_name,s.status
         sku_status,p.status spu_status,v.created_at,v.created_by

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import net.lab1024.sa.admin.module.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.common.exception.ScmBusinessException;
 
-import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED;
+import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED;
 
 /**
  * Order-owned reference adapter. W2 source remains frozen; its transaction and customer lock are reused.
@@ -18,7 +18,7 @@ import static net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCod
 public class OrderCustomerReferenceGuard {
     private final SalesOrderDao orders;
 
-    @Before("execution(* net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao.softDelete(..)) && args(id,..)")
+    @Before("execution(* com.xsy.scm.customer.dao.CustomerDao.softDelete(..)) && args(id,..)")
     public void beforeCustomerDelete(Long id) {
         if (orders.customerReferences(id) > 0) throw new ScmBusinessException(CUSTOMER_REFERENCED);
     }

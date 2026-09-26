@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.order;
 
 import com.xsy.scm.common.ScmW3PgITBase;
-import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerAddForm;
-import net.lab1024.sa.admin.module.scm.customer.domain.form.CustomerStatusForm;
-import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
+import com.xsy.scm.customer.domain.form.CustomerAddForm;
+import com.xsy.scm.customer.domain.form.CustomerStatusForm;
+import com.xsy.scm.customer.service.CustomerService;
 import net.lab1024.sa.admin.module.scm.order.domain.form.OrderAddressForm;
 import net.lab1024.sa.admin.module.scm.order.domain.form.OrderActualQuantityForm;
 import net.lab1024.sa.admin.module.scm.order.domain.form.OrderCancelForm;

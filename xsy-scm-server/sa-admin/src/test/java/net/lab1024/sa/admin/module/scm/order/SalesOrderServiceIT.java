@@ -4,8 +4,8 @@ import com.xsy.scm.common.ScmW3PgITBase;
 import net.lab1024.sa.admin.module.scm.order.service.*;
 import net.lab1024.sa.admin.module.scm.order.domain.form.*;
 import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
-import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
-import net.lab1024.sa.admin.module.scm.customer.domain.form.*;
+import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.customer.domain.form.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

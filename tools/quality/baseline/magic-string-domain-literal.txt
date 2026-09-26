@@ -4,6 +4,9 @@
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 191 occurrences in 110 identities
+1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerAddForm.java	CustomerAddForm#"INDEPENDENT"
+1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerTypeAddForm.java	CustomerTypeAddForm#"ENABLED"
+1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/manager/CustomerValidator.java	CustomerValidator#"GROUP"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductExcelController.java	ProductExcelController#"CREATE"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductBatchService.java	ProductBatchService#"ON_SHELF"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductCategoryService.java	ProductCategoryService#"ENABLED"
@@ -17,9 +20,6 @@
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductSpuService.java	ProductSpuService#"ON_SHELF"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductTagService.java	ProductTagService#"ENABLED"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductUomService.java	ProductUomService#"ENABLED"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/form/CustomerAddForm.java	CustomerAddForm#"INDEPENDENT"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/domain/form/CustomerTypeAddForm.java	CustomerTypeAddForm#"ENABLED"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/manager/CustomerValidator.java	CustomerValidator#"GROUP"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/service/ScmTodoQueryService.java	ScmTodoQueryService#"CONFIRMED"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/service/ScmTodoQueryService.java	ScmTodoQueryService#"DRAFT"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/service/ScmTodoQueryService.java	ScmTodoQueryService#"PENDING"

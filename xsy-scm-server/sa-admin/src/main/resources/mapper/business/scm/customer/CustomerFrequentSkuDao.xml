@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.customer.dao.CustomerFrequentSkuDao">
+<mapper namespace="com.xsy.scm.customer.dao.CustomerFrequentSkuDao">
 
     <!--
       Wave 7 客户「常购商品」只读聚合（不落副本，纯读订单事实）。
@@ -13,7 +13,7 @@
       商品快照同样取自这一最新行（l.*），保证名称与价格同源。@TableLogic 在原生 SQL 不生效，故显式 deleted = FALSE。
     -->
     <select id="frequentSkus"
-            resultType="net.lab1024.sa.admin.module.scm.customer.domain.vo.CustomerFrequentSkuVO">
+            resultType="com.xsy.scm.customer.domain.vo.CustomerFrequentSkuVO">
         WITH base AS (SELECT o.id                 AS order_id,
                              o.confirmed_at       AS confirmed_at,
                              i.sku_id             AS sku_id,

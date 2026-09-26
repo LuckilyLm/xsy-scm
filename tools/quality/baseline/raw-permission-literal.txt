@@ -4,6 +4,18 @@
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
 # captured  : 285 occurrences in 169 identities
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:add
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:assign
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:delete
+4	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:query
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:status
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:update
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:order:query
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:add
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:delete
+2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:query
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:update
+1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerVisibilityController.java	scm:customer:visibility:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductCategoryController.java	scm:product:category:add
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductCategoryController.java	scm:product:category:delete
 2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductCategoryController.java	scm:product:category:query
@@ -43,18 +55,6 @@
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:update
 2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseScopeController.java	scm:warehouse:scope:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseScopeController.java	scm:warehouse:scope:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:assign
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:delete
-4	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:status
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:customer:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerController.java	scm:order:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerTypeController.java	scm:customer:type:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerTypeController.java	scm:customer:type:delete
-2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerTypeController.java	scm:customer:type:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerTypeController.java	scm:customer:type:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/customer/controller/CustomerVisibilityController.java	scm:customer:visibility:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/controller/ScmTodoController.java	scm:todo:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/delivery/controller/DeliveryDriverController.java	scm:delivery:driver:edit
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/delivery/controller/DeliveryDriverController.java	scm:delivery:driver:query

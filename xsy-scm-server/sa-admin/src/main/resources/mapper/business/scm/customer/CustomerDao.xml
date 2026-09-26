@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.customer.dao.CustomerDao">
+<mapper namespace="com.xsy.scm.customer.dao.CustomerDao">
 
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
@@ -11,7 +11,7 @@
         c.settle_day, c.remark, c.created_at, c.updated_at, c.created_by, c.updated_by
     </sql>
 
-    <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity">
+    <select id="queryPage" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT
         <include refid="customerColumns"/>
         FROM customer c
@@ -64,7 +64,7 @@
           AND deleted = FALSE
     </select>
 
-    <select id="selectActiveByCodes" resultType="net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity">
+    <select id="selectActiveByCodes" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT
         <include refid="customerColumns"/>
         FROM customer c

@@ -29,7 +29,7 @@ import java.util.function.Function;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
+import com.xsy.scm.customer.service.CustomerService;
 import net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;

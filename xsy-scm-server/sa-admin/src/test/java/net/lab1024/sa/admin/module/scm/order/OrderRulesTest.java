@@ -127,7 +127,7 @@ class OrderRulesTest {
     void newCodesDoNotCollideWithExistingDomains() {
         var seen = new HashSet<Integer>();
         for (var c : net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.values()) seen.add(c.getCode());
-        for (var c : net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode.values())
+        for (var c : com.xsy.scm.customer.constant.CustomerErrorCode.values())
             seen.add(c.getCode());
         for (var c : com.xsy.scm.common.error.ScmCommonErrorCode.values()) seen.add(c.getCode());
         for (var c : OrderErrorCode.values()) assertThat(seen.add(c.getCode())).as(c.name()).isTrue();
