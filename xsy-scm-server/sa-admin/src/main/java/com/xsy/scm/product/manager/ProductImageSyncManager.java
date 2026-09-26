@@ -35,12 +35,12 @@ public class ProductImageSyncManager {
     private static final String IMAGE_TYPE_GALLERY = "GALLERY";
     /** 公开前缀按 {@code FOLDER_PUBLIC} 判定，不用 PUBLIC_IMAGE 的完整目录，新增公开目录时这里不必跟着改。 */
     private static final String PUBLIC_FOLDER_PREFIX = FileFolderTypeEnum.FOLDER_PUBLIC + "/";
-    private final ProductImageDao dao;
-    private final FileService files;
-    private final FileRelationService relations;
+    private final ProductImageDao productImageDao;
+    private final FileService fileService;
+    private final FileRelationService fileRelationService;
 
     public List<ProductImageEntity> existing(Long spuId) {
-        return dao.selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
+        return productImageDao.selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
                 .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
     }
 
@@ -51,38 +51,38 @@ public class ProductImageSyncManager {
         // File module remains the authority for existence and metadata; URLs are never resolved on
         // the write path (the caller may not own these keys — resolving them would be an ungarded
         // read). Public-prefix binding is enforced by requirePublicImageKey, not by URL resolution.
-        Map<String,FileVO> metadata=files.getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList())
+        Map<String,FileVO> metadata=fileService.getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey,Function.identity(),(a,b)->a));
         for (var form:requested) if (!metadata.containsKey(form.getFileKey())) throw new ScmBusinessException(IMAGE_INVALID);
         for (var form:requested) requirePublicImageKey(form);
-        dao.clearPrimary(spuId);
+        productImageDao.clearPrimary(spuId);
         for (var form : changes.updated()) {
             var entity = entity(spuId, form, metadata.get(form.getFileKey()), false);
             entity.setId(form.getImageId());
             entity.setVersion(form.getVersion());
-            if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productImageDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         }
         for (var form : changes.inserted()) {
             var entity = entity(spuId, form, metadata.get(form.getFileKey()), true);
             entity.setVersion(0);
             entity.setCreatedAt(entity.getUpdatedAt());
             entity.setCreatedBy(entity.getUpdatedBy());
-            dao.insert(entity);
+            productImageDao.insert(entity);
         }
         remove(changes.removedIds());
         // 商品图全部落在公开前缀后（FA-3 / V58），这里恒为空清单，rebind 的作用是把历史私有 key 的
         // 关系行收回来：删图或搬到公开前缀后都必须同时收回读取权，只增不减会让已删附件长期可读。
-        relations.rebind(FileRelationBizTypeEnum.PRODUCT, spuId, existing(spuId).stream()
+        fileRelationService.rebind(FileRelationBizTypeEnum.PRODUCT, spuId, existing(spuId).stream()
                 .map(ProductImageEntity::getFileKey)
                 .filter(key -> !key.startsWith(PUBLIC_FOLDER_PREFIX)).toList());
     }
 
     public void remove(List<Long> ids) {
         if (ids.isEmpty()) return;
-        dao.update(null, new LambdaUpdateWrapper<ProductImageEntity>().in(ProductImageEntity::getId, ids)
+        productImageDao.update(null, new LambdaUpdateWrapper<ProductImageEntity>().in(ProductImageEntity::getId, ids)
                 .set(ProductImageEntity::getUpdatedAt, OffsetDateTime.now()).set(ProductImageEntity::getUpdatedBy, ScmOperator.current())
                 .setSql("version = version + 1"));
-        dao.deleteByIds(ids);
+        productImageDao.deleteByIds(ids);
     }
     /**
      * 商品图是面向客户的展示资产，新增或换绑只能引用公开图片目录。

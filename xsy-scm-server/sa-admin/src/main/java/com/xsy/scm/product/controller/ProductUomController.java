@@ -18,12 +18,12 @@ import java.util.List;
 @Tag(name = "SCM 计量单位")
 @RequiredArgsConstructor
 public class ProductUomController {
-    private final ProductUomService service;
+    private final ProductUomService productUomService;
 
     @PostMapping("/list")
     @SaCheckPermission("scm:product:uom:query")
     public ResponseDTO<List<ProductUomVO>> list(@Valid @RequestBody ProductAssistantQueryForm form) {
-        return ResponseDTO.ok(service.list(form));
+        return ResponseDTO.ok(productUomService.list(form));
     }
 
     /**
@@ -32,21 +32,21 @@ public class ProductUomController {
     @GetMapping("/options")
     @SaCheckPermission("scm:product:query")
     public ResponseDTO<List<ProductUomVO>> options() {
-        return ResponseDTO.ok(service.options());
+        return ResponseDTO.ok(productUomService.options());
     }
 
     @PostMapping("/add")
     @SaCheckPermission("scm:product:uom:add")
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody ProductUomAddForm form) {
-        return ResponseDTO.ok(service.add(form));
+        return ResponseDTO.ok(productUomService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission("scm:product:uom:update")
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody ProductUomUpdateForm form) {
-        service.update(form);
+        productUomService.update(form);
         return ResponseDTO.ok();
     }
 
@@ -54,7 +54,7 @@ public class ProductUomController {
     @SaCheckPermission("scm:product:uom:delete")
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody ProductUomKeyForm form) {
-        service.delete(form);
+        productUomService.delete(form);
         return ResponseDTO.ok();
     }
 }

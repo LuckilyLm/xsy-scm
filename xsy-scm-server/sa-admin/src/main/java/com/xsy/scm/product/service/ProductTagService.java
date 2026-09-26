@@ -27,17 +27,17 @@ import static com.xsy.scm.product.constant.ProductErrorCode.*;
 @Service
 @RequiredArgsConstructor
 public class ProductTagService {
-    private final ProductTagDao dao;
-    private final ProductTagRelationDao relationDao;
+    private final ProductTagDao productTagDao;
+    private final ProductTagRelationDao productTagRelationDao;
 
     public List<ProductTagVO> list(ProductAssistantQueryForm query) {
-        return dao.selectWithProductCount(query == null ? new ProductAssistantQueryForm() : query);
+        return productTagDao.selectWithProductCount(query == null ? new ProductAssistantQueryForm() : query);
     }
 
     public List<ProductTagVO> options() {
         var query = new ProductAssistantQueryForm();
         query.setStatus("ENABLED");
-        return dao.selectWithProductCount(query);
+        return productTagDao.selectWithProductCount(query);
     }
 
     /**
@@ -46,7 +46,7 @@ public class ProductTagService {
     public Map<Long, List<ProductSpuTagVO>> bySpuIds(Collection<Long> spuIds) {
         if (spuIds == null || spuIds.isEmpty()) return Map.of();
         Map<Long, List<ProductSpuTagVO>> grouped = new LinkedHashMap<>();
-        for (var row : relationDao.selectBySpuIds(List.copyOf(spuIds)))
+        for (var row : productTagRelationDao.selectBySpuIds(List.copyOf(spuIds)))
             grouped.computeIfAbsent(row.getSpuId(), k -> new ArrayList<>()).add(row);
         return grouped;
     }
@@ -62,7 +62,7 @@ public class ProductTagService {
         entity.setCreatedAt(entity.getUpdatedAt());
         entity.setCreatedBy(entity.getUpdatedBy());
         try {
-            dao.insert(entity);
+            productTagDao.insert(entity);
         } catch (DuplicateKeyException e) {
             throw duplicate(e);
         }
@@ -82,7 +82,7 @@ public class ProductTagService {
         entity.setVersion(form.getVersion());
         stamp(entity);
         try {
-            if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productTagDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (DuplicateKeyException e) {
             throw duplicate(e);
         }
@@ -90,13 +90,13 @@ public class ProductTagService {
 
     @Transactional
     public void delete(ProductTagKeyForm form) {
-        var entity = dao.selectForUpdate(form.getTagId());
+        var entity = productTagDao.selectForUpdate(form.getTagId());
         if (entity == null) throw new ScmBusinessException(TAG_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-        if (dao.selectVoById(entity.getId()).getProductCount() > 0) throw new ScmBusinessException(TAG_REFERENCED);
+        if (productTagDao.selectVoById(entity.getId()).getProductCount() > 0) throw new ScmBusinessException(TAG_REFERENCED);
         stamp(entity);
-        if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
-        dao.deleteById(entity.getId());
+        if (productTagDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        productTagDao.deleteById(entity.getId());
     }
 
     /**
@@ -110,8 +110,8 @@ public class ProductTagService {
         if (targets.isEmpty()) return;
         var tags = distinct(tagIds);
         var operator = ScmOperator.current();
-        relationDao.softDeleteExcept(targets, tags, operator);
-        if (!tags.isEmpty()) relationDao.insertIgnore(targets, tags, operator);
+        productTagRelationDao.softDeleteExcept(targets, tags, operator);
+        if (!tags.isEmpty()) productTagRelationDao.insertIgnore(targets, tags, operator);
     }
 
     @Transactional
@@ -120,7 +120,7 @@ public class ProductTagService {
         var tags = distinct(tagIds);
         if (targets.isEmpty() || tags.isEmpty()) return;
         assertUsable(tags);
-        relationDao.insertIgnore(targets, tags, ScmOperator.current());
+        productTagRelationDao.insertIgnore(targets, tags, ScmOperator.current());
     }
 
     /**
@@ -131,7 +131,7 @@ public class ProductTagService {
         var targets = distinct(spuIds);
         var tags = distinct(tagIds);
         if (targets.isEmpty() || tags.isEmpty()) return;
-        relationDao.softDelete(targets, tags, ScmOperator.current());
+        productTagRelationDao.softDelete(targets, tags, ScmOperator.current());
     }
 
     /**
@@ -139,7 +139,7 @@ public class ProductTagService {
      */
     public void untagProducts(Collection<Long> spuIds) {
         var targets = distinct(spuIds);
-        if (!targets.isEmpty()) relationDao.softDeleteBySpuIds(targets, ScmOperator.current());
+        if (!targets.isEmpty()) productTagRelationDao.softDeleteBySpuIds(targets, ScmOperator.current());
     }
 
     /**
@@ -148,7 +148,7 @@ public class ProductTagService {
     public void assertUsable(Collection<Long> tagIds) {
         var ids = distinct(tagIds);
         if (ids.isEmpty()) return;
-        var found = dao.lockByIds(ids);
+        var found = productTagDao.lockByIds(ids);
         if (found.size() != ids.size()) throw new ScmBusinessException(TAG_NOT_FOUND);
         if (found.stream().anyMatch(t -> !"ENABLED".equals(t.getStatus())))
             throw new ScmBusinessException(TAG_NOT_USABLE);
@@ -160,7 +160,7 @@ public class ProductTagService {
      */
     public void assertNewBindings(Long spuId, Collection<Long> tagIds) {
         if (tagIds == null || tagIds.isEmpty()) return;
-        var retained = new HashSet<>(relationDao.selectTagIds(spuId));
+        var retained = new HashSet<>(productTagRelationDao.selectTagIds(spuId));
         assertUsable(tagIds.stream().filter(id -> !retained.contains(id)).toList());
     }
 
@@ -168,16 +168,16 @@ public class ProductTagService {
      * 与 uk_product_tag_code_active / uk_product_tag_name_active 同域的应用级预检。
      */
     private void assertUnique(String code, String name, Long self) {
-        if (dao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getTagCode, code)
+        if (productTagDao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getTagCode, code)
                 .ne(self != null, ProductTagEntity::getId, self)) > 0)
             throw new ScmBusinessException(TAG_CODE_DUPLICATE);
-        if (dao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getName, name)
+        if (productTagDao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getName, name)
                 .ne(self != null, ProductTagEntity::getId, self)) > 0)
             throw new ScmBusinessException(TAG_NAME_DUPLICATE);
     }
 
     private ProductTagEntity require(Long id, Integer version) {
-        var entity = dao.selectById(id);
+        var entity = productTagDao.selectById(id);
         if (entity == null) throw new ScmBusinessException(TAG_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), version)) throw new ScmBusinessException(VERSION_CONFLICT);
         return entity;

@@ -19,20 +19,20 @@ import java.util.*;
 @Tag(name = "SCM 商品档案")
 @RequiredArgsConstructor
 public class ProductController {
-    private final ProductSpuService service;
-    private final ProductQueryService query;
-    private final ProductBatchService batch;
+    private final ProductSpuService productSpuService;
+    private final ProductQueryService productQueryService;
+    private final ProductBatchService productBatchService;
 
     @PostMapping("/query")
     @SaCheckPermission("scm:product:query")
     public ResponseDTO<PageResult<ProductSpuVO>> query(@Valid @RequestBody ProductSpuQueryForm form) {
-        return ResponseDTO.ok(query.query(form));
+        return ResponseDTO.ok(productQueryService.query(form));
     }
 
     @GetMapping("/detail/{spuId}")
     @SaCheckPermission("scm:product:query")
     public ResponseDTO<ProductSpuDetailVO> detail(@PathVariable Long spuId) {
-        return ResponseDTO.ok(query.detail(spuId));
+        return ResponseDTO.ok(productQueryService.detail(spuId));
     }
 
     @PostMapping("/add")
@@ -40,18 +40,18 @@ public class ProductController {
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody ProductSpuAddForm form) {
         if (!form.getImages().isEmpty()) StpUtil.checkPermission("scm:product:image");
-        return ResponseDTO.ok(service.add(form));
+        return ResponseDTO.ok(productSpuService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission("scm:product:update")
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody ProductSpuUpdateForm form) {
-        var existing = query.detail(form.getSpuId()).getImages();
+        var existing = productQueryService.detail(form.getSpuId()).getImages();
         var before = existing.stream().map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
         var after = form.getImages().stream().map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
         if (!before.equals(after)) StpUtil.checkPermission("scm:product:image");
-        service.update(form);
+        productSpuService.update(form);
         return ResponseDTO.ok();
     }
 
@@ -59,7 +59,7 @@ public class ProductController {
     @SaCheckPermission("scm:product:status")
     @OperateLog
     public ResponseDTO<String> updateStatus(@Valid @RequestBody ProductStatusForm form) {
-        service.updateStatus(form);
+        productSpuService.updateStatus(form);
         return ResponseDTO.ok();
     }
 
@@ -67,7 +67,7 @@ public class ProductController {
     @SaCheckPermission("scm:product:delete")
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody ProductDeleteForm form) {
-        service.delete(form);
+        productSpuService.delete(form);
         return ResponseDTO.ok();
     }
 
@@ -75,20 +75,20 @@ public class ProductController {
     @SaCheckPermission("scm:product:batch")
     @OperateLog
     public ResponseDTO<ProductBatchResultVO> batchStatus(@Valid @RequestBody ProductSpuBatchStatusForm form) {
-        return ResponseDTO.ok(batch.updateStatus(form));
+        return ResponseDTO.ok(productBatchService.updateStatus(form));
     }
 
     @PostMapping("/batch/updateCategory")
     @SaCheckPermission("scm:product:batch")
     @OperateLog
     public ResponseDTO<ProductBatchResultVO> batchCategory(@Valid @RequestBody ProductSpuBatchCategoryForm form) {
-        return ResponseDTO.ok(batch.updateCategory(form));
+        return ResponseDTO.ok(productBatchService.updateCategory(form));
     }
 
     @PostMapping("/batch/updateTags")
     @SaCheckPermission("scm:product:batch")
     @OperateLog
     public ResponseDTO<ProductBatchResultVO> batchTags(@Valid @RequestBody ProductSpuBatchTagForm form) {
-        return ResponseDTO.ok(batch.updateTags(form));
+        return ResponseDTO.ok(productBatchService.updateTags(form));
     }
 }

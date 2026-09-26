@@ -10,8 +10,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ProductCategoryLevelTest {
-    private final ProductCategoryDao dao = mock(ProductCategoryDao.class);
-    private final ProductCategoryService service = new ProductCategoryService(dao, mock(ProductSpuDao.class));
+    private final ProductCategoryDao productCategoryDao = mock(ProductCategoryDao.class);
+    private final ProductCategoryService productCategoryService = new ProductCategoryService(productCategoryDao, mock(ProductSpuDao.class));
 
     @Test
     void derivesLevelFromEnabledParent() {
@@ -19,9 +19,9 @@ class ProductCategoryLevelTest {
         parent.setId(1L);
         parent.setLevel(2);
         parent.setStatus("ENABLED");
-        when(dao.selectById(1L)).thenReturn(parent);
-        assertThat(service.resolveLevel(1L, null)).isEqualTo(3);
-        assertThat(service.resolveLevel(null, null)).isEqualTo(1);
+        when(productCategoryDao.selectById(1L)).thenReturn(parent);
+        assertThat(productCategoryService.resolveLevel(1L, null)).isEqualTo(3);
+        assertThat(productCategoryService.resolveLevel(null, null)).isEqualTo(1);
     }
 
     @Test
@@ -30,7 +30,7 @@ class ProductCategoryLevelTest {
         parent.setId(1L);
         parent.setLevel(3);
         parent.setStatus("ENABLED");
-        when(dao.selectById(1L)).thenReturn(parent);
+        when(productCategoryDao.selectById(1L)).thenReturn(parent);
         rejects(1L, null, 40010);
         parent.setLevel(1);
         parent.setStatus("DISABLED");
@@ -40,7 +40,7 @@ class ProductCategoryLevelTest {
     }
 
     private void rejects(Long parent, Long self, int code) {
-        assertThatThrownBy(() -> service.resolveLevel(parent, self)).isInstanceOfSatisfying(ScmBusinessException.class,
+        assertThatThrownBy(() -> productCategoryService.resolveLevel(parent, self)).isInstanceOfSatisfying(ScmBusinessException.class,
                 e -> assertThat(e.getErrorCode().getCode()).isEqualTo(code));
     }
 }

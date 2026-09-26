@@ -42,15 +42,15 @@ import static org.mockito.Mockito.*;
  * 验证「0 错误才写、写失败整批回滚」，以及更新模式「空白列保持原值、未列出 SKU 保留」的合并语义。
  */
 class ProductImportServiceTest {
-    private final ProductCategoryDao categories = mock(ProductCategoryDao.class);
-    private final ProductTagDao tags = mock(ProductTagDao.class);
-    private final ProductUomDao units = mock(ProductUomDao.class);
-    private final ProductSpuDao spus = mock(ProductSpuDao.class);
-    private final ProductSkuDao skus = mock(ProductSkuDao.class);
-    private final ProductImageDao images = mock(ProductImageDao.class);
-    private final ProductTagService productTags = mock(ProductTagService.class);
-    private final ProductImportWriteService writer = mock(ProductImportWriteService.class);
-    private final ProductImportService service = new ProductImportService(categories, tags, units, spus, skus, images, productTags, writer);
+    private final ProductCategoryDao productCategoryDao = mock(ProductCategoryDao.class);
+    private final ProductTagDao productTagDao = mock(ProductTagDao.class);
+    private final ProductUomDao productUomDao = mock(ProductUomDao.class);
+    private final ProductSpuDao productSpuDao = mock(ProductSpuDao.class);
+    private final ProductSkuDao productSkuDao = mock(ProductSkuDao.class);
+    private final ProductImageDao productImageDao = mock(ProductImageDao.class);
+    private final ProductTagService productTagService = mock(ProductTagService.class);
+    private final ProductImportWriteService productImportWriteService = mock(ProductImportWriteService.class);
+    private final ProductImportService productImportService = new ProductImportService(productCategoryDao, productTagDao, productUomDao, productSpuDao, productSkuDao, productImageDao, productTagService, productImportWriteService);
 
     {
         // CREATE 逐行会预判单位「在字典且 ENABLED」（与 ProductUomService.assertUsable 同判据），
@@ -58,7 +58,7 @@ class ProductImportServiceTest {
         var kg = new ProductUomEntity();
         kg.setName("份");
         kg.setStatus("ENABLED");
-        when(units.selectList(any())).thenReturn(java.util.List.of(kg));
+        when(productUomDao.selectList(any())).thenReturn(java.util.List.of(kg));
     }
 
     private static final String[] HEADERS = {"模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码",
@@ -99,19 +99,19 @@ class ProductImportServiceTest {
         parent.setCategoryCode("VEGETABLE");
         parent.setStatus("ENABLED");
         parent.setLevel(2);
-        when(categories.selectList(any())).thenReturn(List.of(category, parent));
+        when(productCategoryDao.selectList(any())).thenReturn(List.of(category, parent));
         var tag = new ProductTagEntity();
         tag.setId(200L);
         tag.setTagCode("HOT");
         tag.setStatus("ENABLED");
-        when(tags.selectList(any())).thenReturn(List.of(tag));
-        when(spus.selectList(any())).thenReturn(List.of(currentSpu()));
-        when(skus.selectList(any())).thenReturn(List.of(currentSku()));
-        when(images.selectList(any())).thenReturn(List.of());
+        when(productTagDao.selectList(any())).thenReturn(List.of(tag));
+        when(productSpuDao.selectList(any())).thenReturn(List.of(currentSpu()));
+        when(productSkuDao.selectList(any())).thenReturn(List.of(currentSku()));
+        when(productImageDao.selectList(any())).thenReturn(List.of());
         var binding = new ProductSpuTagVO();
         binding.setSpuId(7L);
         binding.setTagId(200L);
-        when(productTags.bySpuIds(any())).thenReturn(Map.of(7L, List.of(binding)));
+        when(productTagService.bySpuIds(any())).thenReturn(Map.of(7L, List.of(binding)));
     }
 
     private ProductSpuEntity currentSpu() {
@@ -182,13 +182,13 @@ class ProductImportServiceTest {
 
     @Test
     void validSingleSkuWritesThroughOnce() throws Exception {
-        when(writer.writeAll(anyList())).thenReturn(List.of(5001L));
-        var result = service.importFile(workbook(book -> {
+        when(productImportWriteService.writeAll(anyList())).thenReturn(List.of(5001L));
+        var result = productImportService.importFile(workbook(book -> {
         }), ImportMode.CREATE);
         assertThat(result.getTotalErrors()).isZero();
         assertThat(result.getImportedProducts()).isEqualTo(1);
         assertThat(result.getSpuIds()).containsExactly(5001L);
-        verify(writer).writeAll(argThat((List<ProductSpuAddForm> forms) -> {
+        verify(productImportWriteService).writeAll(argThat((List<ProductSpuAddForm> forms) -> {
             var form = forms.getFirst();
             return form.getSpuCode().equals("SPU0001")
                     && form.getCategoryId().equals(100L)
@@ -200,18 +200,18 @@ class ProductImportServiceTest {
 
     @Test
     void blankRowDoesNotShiftRowDiagnosis() throws Exception {
-        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(11).setCellValue("MAYBE")), ImportMode.CREATE);
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(11).setCellValue("MAYBE")), ImportMode.CREATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);
             assertThat(error.getColumn()).isEqualTo("商品上下架");
             assertThat(error.getCode()).isEqualTo("ENUM_INVALID");
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void secondLevelCategoryIsReportedPerRowBeforeWrite() throws Exception {
-        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(4).setCellValue("VEGETABLE")),
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(4).setCellValue("VEGETABLE")),
                 ImportMode.CREATE);
         // 分类存在且启用，只有层级不合规：必须在逐行校验就指到单元格，而不是等写库报 CATEGORY_PARENT_INVALID
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
@@ -219,27 +219,27 @@ class ProductImportServiceTest {
             assertThat(error.getColumn()).isEqualTo("分类编码");
             assertThat(error.getCode()).isEqualTo("CATEGORY_LEVEL_INVALID");
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     /**
      * 单位与标签的「在字典 + 启用」必须在逐行阶段指到单元格。
      *
      * <p>写入口 {@code ProductSpuService.add} 走 {@code uom.assertUsable} 与
-     * {@code tags.assertUsable}，此前逐行只查单位的长度与标签的存在性：填了停用单位/标签，
+     * {@code productTagDao.assertUsable}，此前逐行只查单位的长度与标签的存在性：填了停用单位/标签，
      * 要等整批写库抛 40027/40028 才知道是哪一行 —— 与 071bcc7 修掉的分类层级缺口同型。
      */
     @Test
     void unknownSaleUnitIsReportedPerRowBeforeWrite() throws Exception {
         // 列下标 15 是 CREATE 模板里的「销售单位」；常量 SALE_UNIT=19 是更新模板（前置 5 个定位键）的偏移
-        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(15).setCellValue("吨")),
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(15).setCellValue("吨")),
                 ImportMode.CREATE);
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);
             assertThat(error.getColumn()).isEqualTo("销售单位");
             assertThat(error.getCode()).isEqualTo("UOM_NOT_USABLE");
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
@@ -248,72 +248,72 @@ class ProductImportServiceTest {
         disabled.setId(200L);
         disabled.setTagCode("HOT");
         disabled.setStatus("DISABLED");
-        when(tags.selectList(any())).thenReturn(List.of(disabled));
+        when(productTagDao.selectList(any())).thenReturn(List.of(disabled));
 
-        var result = service.importFile(workbook(b -> {
+        var result = productImportService.importFile(workbook(b -> {
         }), ImportMode.CREATE);
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);
             assertThat(error.getColumn()).isEqualTo("标签编码");
             assertThat(error.getCode()).isEqualTo("TAG_NOT_USABLE");
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     /** 别名 / 助记码 / 品牌 / 产地的逐行上限与 ProductSpuAddForm 的 @Size 及库里 VARCHAR 同数值。 */
     @Test
     void overlongOptionalSpuColumnsAreReportedPerRow() throws Exception {
-        var result = service.importFile(workbook(b -> {
+        var result = productImportService.importFile(workbook(b -> {
             b.getSheetAt(0).getRow(2).getCell(3).setCellValue("长".repeat(151));
             b.getSheetAt(0).getRow(2).getCell(6).setCellValue("牌".repeat(101));
         }), ImportMode.CREATE);
         assertThat(result.getErrors()).hasSize(2).extracting("column")
                 .containsExactlyInAnyOrder("别名", "品牌");
         assertThat(result.getErrors()).allSatisfy(error -> assertThat(error.getCode()).isEqualTo("TOO_LONG"));
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void headerMismatchBlocksBeforeWrite() throws Exception {
-        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(0).getCell(1).setCellValue("错误列")), ImportMode.CREATE);
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(0).getCell(1).setCellValue("错误列")), ImportMode.CREATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getRowNumber()).isEqualTo(1);
             assertThat(error.getCode()).isEqualTo("HEADER_INVALID");
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void formulaCellIsRejected() throws Exception {
-        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(17).setCellFormula("1+1")), ImportMode.CREATE);
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(17).setCellFormula("1+1")), ImportMode.CREATE);
         assertThat(result.getErrors()).extracting("code").contains("CELL_INVALID");
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void extraSheetIsRejected() throws Exception {
-        var result = service.importFile(workbook(b -> b.createSheet("更多")), ImportMode.CREATE);
+        var result = productImportService.importFile(workbook(b -> b.createSheet("更多")), ImportMode.CREATE);
         assertThat(result.getErrors()).extracting("code").contains("SHEET_COUNT");
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void unknownCategoryCodeIsRejected() throws Exception {
-        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(4).setCellValue("NOPE")), ImportMode.CREATE);
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(4).setCellValue("NOPE")), ImportMode.CREATE);
         assertThat(result.getErrors()).anySatisfy(error -> assertThat(error.getCode()).isEqualTo("CATEGORY_NOT_FOUND"));
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void missingDefaultSkuIsRejected() throws Exception {
-        var result = service.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(19).setCellValue("否")), ImportMode.CREATE);
+        var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(19).setCellValue("否")), ImportMode.CREATE);
         assertThat(result.getErrors()).anySatisfy(error -> assertThat(error.getCode()).isEqualTo("DEFAULT_SKU_INVALID"));
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void duplicateSkuCodeWithinProductIsRejected() throws Exception {
-        var result = service.importFile(workbook(book -> {
+        var result = productImportService.importFile(workbook(book -> {
             var sheet = book.getSheetAt(0);
             var second = sheet.createRow(3);
             String[] data = {"1.0", "SPU0001", "示例蔬菜", "", "FRESH-FRUIT", "", "", "本地", "CHILLED",
@@ -324,12 +324,12 @@ class ProductImportServiceTest {
             assertThat(error.getCode()).isEqualTo("SKU_CODE_DUPLICATE");
             assertThat(error.getRowNumber()).isEqualTo(4);
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void inconsistentGroupFieldsRejected() throws Exception {
-        var result = service.importFile(workbook(book -> {
+        var result = productImportService.importFile(workbook(book -> {
             var sheet = book.getSheetAt(0);
             var second = sheet.createRow(3);
             String[] data = {"1.0", "SPU0001", "示例蔬菜", "", "FRESH-PRODUCE", "", "", "本地", "CHILLED",
@@ -337,14 +337,14 @@ class ProductImportServiceTest {
             for (int i = 0; i < data.length; i++) second.createCell(i).setCellValue(data[i]);
         }), ImportMode.CREATE);
         assertThat(result.getErrors()).anySatisfy(error -> assertThat(error.getCode()).isEqualTo("HEADER_CONFLICT"));
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void writeFailureRollsBackWholeBatchAndLocatesGroup() throws Exception {
-        when(writer.writeAll(anyList())).thenThrow(new ProductImportWriteService.ImportProductException(0,
+        when(productImportWriteService.writeAll(anyList())).thenThrow(new ProductImportWriteService.ImportProductException(0,
                 new ScmBusinessException(ProductErrorCode.PRODUCT_CODE_DUPLICATE)));
-        var result = service.importFile(workbook(book -> {
+        var result = productImportService.importFile(workbook(book -> {
         }), ImportMode.CREATE);
         assertThat(result.getImportedProducts()).isZero();
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
@@ -356,23 +356,23 @@ class ProductImportServiceTest {
 
     @Test
     void emptyDataIsRejected() throws Exception {
-        var result = service.importFile(workbook(book -> book.getSheetAt(0).removeRow(book.getSheetAt(0).getRow(2))), ImportMode.CREATE);
+        var result = productImportService.importFile(workbook(book -> book.getSheetAt(0).removeRow(book.getSheetAt(0).getRow(2))), ImportMode.CREATE);
         assertThat(result.getErrors()).extracting("code").contains("FILE_EMPTY");
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void malformedFileIsRejected() throws Exception {
         var file = new MockMultipartFile("file", "broken.xlsx", "application/octet-stream", new byte[]{1, 2, 3});
-        assertThat(service.importFile(file, ImportMode.CREATE).getErrors()).extracting("code").contains("FILE_INVALID");
-        verifyNoInteractions(writer);
+        assertThat(productImportService.importFile(file, ImportMode.CREATE).getErrors()).extracting("code").contains("FILE_INVALID");
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void templateHeaderRoundTripsAndIsParseable() throws Exception {
-        byte[] template = service.buildTemplate(ImportMode.CREATE);
-        when(writer.writeAll(anyList())).thenReturn(List.of(1L));
-        var result = service.importFile(new MockMultipartFile("file", "t.xlsx",
+        byte[] template = productImportService.buildTemplate(ImportMode.CREATE);
+        when(productImportWriteService.writeAll(anyList())).thenReturn(List.of(1L));
+        var result = productImportService.importFile(new MockMultipartFile("file", "t.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", template), ImportMode.CREATE);
         // 模板示例行自带合法编码，能进入校验阶段（分类编码在 mock 目录里不存在 → 只报 CATEGORY_NOT_FOUND，无 HEADER 错误）
         assertThat(result.getErrors()).noneMatch(e -> e.getCode().equals("HEADER_INVALID") || e.getCode().equals("SHEET_COUNT"));
@@ -380,14 +380,14 @@ class ProductImportServiceTest {
 
     @Test
     void updateModeKeepsBlankColumnsAtCurrentValue() throws Exception {
-        when(writer.writeUpdates(anyList())).thenReturn(1);
-        var result = service.importFile(updateWorkbook(book -> {
+        when(productImportWriteService.writeUpdates(anyList())).thenReturn(1);
+        var result = productImportService.importFile(updateWorkbook(book -> {
         }), ImportMode.UPDATE);
         assertThat(result.getMode()).isEqualTo("UPDATE");
         assertThat(result.getTotalErrors()).isZero();
         assertThat(result.getUpdatedProducts()).isEqualTo(1);
         assertThat(result.getSpuIds()).containsExactly(7L);
-        verify(writer).writeUpdates(argThat((List<ProductSpuUpdateForm> forms) -> {
+        verify(productImportWriteService).writeUpdates(argThat((List<ProductSpuUpdateForm> forms) -> {
             var form = forms.getFirst();
             var sku = form.getSkuList().getFirst();
             // 文件只填了市场价：名称、描述、分类、标签与 SKU 其余列都必须回到库内原值
@@ -409,23 +409,23 @@ class ProductImportServiceTest {
 
     @Test
     void updateModeClearsOnlyMarkedNullableAttributes() throws Exception {
-        when(writer.writeUpdates(anyList())).thenReturn(1);
+        when(productImportWriteService.writeUpdates(anyList())).thenReturn(1);
         var spu = currentSpu();
         spu.setAlias("原别名");
         spu.setBrandName("原品牌");
-        when(spus.selectList(any())).thenReturn(List.of(spu));
+        when(productSpuDao.selectList(any())).thenReturn(List.of(spu));
         var sku = currentSku();
         sku.setBarcode("BC-0001");
-        when(skus.selectList(any())).thenReturn(List.of(sku));
+        when(productSkuDao.selectList(any())).thenReturn(List.of(sku));
 
-        var result = service.importFile(updateWorkbook(book -> {
+        var result = productImportService.importFile(updateWorkbook(book -> {
             var row = book.getSheetAt(0).getRow(1);
             for (int column : new int[]{ALIAS, BRAND_NAME, TAG_CODES, BARCODE})
                 row.getCell(column).setCellValue(ProductImportService.CLEAR_TOKEN);
         }), ImportMode.UPDATE);
 
         assertThat(result.getTotalErrors()).isZero();
-        verify(writer).writeUpdates(argThat((List<ProductSpuUpdateForm> forms) -> {
+        verify(productImportWriteService).writeUpdates(argThat((List<ProductSpuUpdateForm> forms) -> {
             var form = forms.getFirst();
             var merged = form.getSkuList().getFirst();
             // 只有带标记的列被清；名称、编码与规格等未标记列仍是库内原值
@@ -438,19 +438,19 @@ class ProductImportServiceTest {
 
     @Test
     void updateModeRejectsClearMarkerOnGuardedColumn() throws Exception {
-        var result = service.importFile(updateWorkbook(book -> book.getSheetAt(0).getRow(1)
+        var result = productImportService.importFile(updateWorkbook(book -> book.getSheetAt(0).getRow(1)
                 .getCell(DEFAULT_SKU).setCellValue(ProductImportService.CLEAR_TOKEN)), ImportMode.UPDATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getCode()).isEqualTo("CLEAR_NOT_ALLOWED");
             assertThat(error.getColumn()).isEqualTo("默认SKU");
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void updateModeKeepsUnlistedExistingSkuAsDefault() throws Exception {
-        when(writer.writeUpdates(anyList())).thenReturn(1);
-        var result = service.importFile(updateWorkbook(book -> {
+        when(productImportWriteService.writeUpdates(anyList())).thenReturn(1);
+        var result = productImportService.importFile(updateWorkbook(book -> {
             var row = book.getSheetAt(0).getRow(1);
             // 整份文件只登记一个新 SKU：既存默认 SKU 70 没出现，仍要保留且继续算默认，否则会把补规格变成删原规格
             row.getCell(SKU_ID).setCellValue("");
@@ -464,7 +464,7 @@ class ProductImportServiceTest {
             row.getCell(DEFAULT_SKU).setCellValue("否");
         }), ImportMode.UPDATE);
         assertThat(result.getTotalErrors()).isZero();
-        verify(writer).writeUpdates(argThat((List<ProductSpuUpdateForm> forms) -> {
+        verify(productImportWriteService).writeUpdates(argThat((List<ProductSpuUpdateForm> forms) -> {
             var merged = forms.getFirst().getSkuList();
             return merged.size() == 2 && Long.valueOf(70L).equals(merged.getFirst().getSkuId())
                     && Boolean.TRUE.equals(merged.getFirst().getDefaultFlag())
@@ -475,19 +475,19 @@ class ProductImportServiceTest {
 
     @Test
     void updateModeRejectsStaleVersionWithoutWriting() throws Exception {
-        var result = service.importFile(updateWorkbook(book -> book.getSheetAt(0).getRow(1)
+        var result = productImportService.importFile(updateWorkbook(book -> book.getSheetAt(0).getRow(1)
                 .getCell(SPU_VERSION).setCellValue("4")), ImportMode.UPDATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getCode()).isEqualTo("VERSION_CONFLICT");
             assertThat(error.getColumn()).isEqualTo("SPU版本");
             assertThat(error.getRowNumber()).isEqualTo(2);
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void updateModeRefusesToRetypeBusinessCodes() throws Exception {
-        var result = service.importFile(updateWorkbook(book -> {
+        var result = productImportService.importFile(updateWorkbook(book -> {
             var row = book.getSheetAt(0).getRow(1);
             row.getCell(SPU_CODE).setCellValue("SPU9999");
             row.getCell(SKU_CODE).setCellValue("SKU9999");
@@ -497,22 +497,22 @@ class ProductImportServiceTest {
             if (error.getCode().equals("FIELD_LOCKED"))
                 assertThat(List.of("SPU编码", "SKU编码")).contains(error.getColumn());
         });
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void createFileCannotBeImportedAsUpdate() throws Exception {
-        var result = service.importFile(workbook(book -> {
+        var result = productImportService.importFile(workbook(book -> {
         }), ImportMode.UPDATE);
         assertThat(result.getErrors()).extracting("code").contains("HEADER_INVALID");
-        verifyNoInteractions(writer);
+        verifyNoInteractions(productImportWriteService);
     }
 
     @Test
     void updateWriteFailureRollsBackWholeBatchAndLocatesRow() throws Exception {
-        when(writer.writeUpdates(anyList())).thenThrow(new ProductImportWriteService.ImportProductException(0,
+        when(productImportWriteService.writeUpdates(anyList())).thenThrow(new ProductImportWriteService.ImportProductException(0,
                 new ScmBusinessException(ProductErrorCode.VERSION_CONFLICT)));
-        var result = service.importFile(updateWorkbook(book -> {
+        var result = productImportService.importFile(updateWorkbook(book -> {
         }), ImportMode.UPDATE);
         assertThat(result.getUpdatedProducts()).isZero();
         assertThat(result.getErrors()).singleElement().satisfies(error -> {
@@ -524,9 +524,9 @@ class ProductImportServiceTest {
 
     @Test
     void updateTemplateRoundTripsAgainstOwnHeaders() throws Exception {
-        when(writer.writeUpdates(anyList())).thenReturn(1);
-        byte[] template = service.buildTemplate(ImportMode.UPDATE);
-        var result = service.importFile(new MockMultipartFile("file", "u.xlsx",
+        when(productImportWriteService.writeUpdates(anyList())).thenReturn(1);
+        byte[] template = productImportService.buildTemplate(ImportMode.UPDATE);
+        var result = productImportService.importFile(new MockMultipartFile("file", "u.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", template), ImportMode.UPDATE);
         // 示例行按更新表头解析成功即无 HEADER 错；定位键在 mock 现状里不存在 → 只报业务错
         assertThat(result.getErrors()).noneMatch(e -> e.getCode().equals("HEADER_INVALID") || e.getCode().equals("SHEET_COUNT"));

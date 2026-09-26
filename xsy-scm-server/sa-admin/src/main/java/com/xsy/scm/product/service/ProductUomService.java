@@ -26,10 +26,10 @@ import static com.xsy.scm.product.constant.ProductErrorCode.*;
 @Service
 @RequiredArgsConstructor
 public class ProductUomService {
-    private final ProductUomDao dao;
+    private final ProductUomDao productUomDao;
 
     public List<ProductUomVO> list(ProductAssistantQueryForm query) {
-        return dao.selectWithReference(query == null ? new ProductAssistantQueryForm() : query);
+        return productUomDao.selectWithReference(query == null ? new ProductAssistantQueryForm() : query);
     }
 
     /**
@@ -38,7 +38,7 @@ public class ProductUomService {
     public List<ProductUomVO> options() {
         var query = new ProductAssistantQueryForm();
         query.setStatus("ENABLED");
-        return dao.selectWithReference(query);
+        return productUomDao.selectWithReference(query);
     }
 
     /**
@@ -48,7 +48,7 @@ public class ProductUomService {
     public void assertUsable(Collection<String> unitNames) {
         var names = unitNames.stream().filter(n -> n != null && !n.isBlank()).map(String::trim).distinct().toList();
         if (names.isEmpty()) return;
-        var found = dao.selectNamesForUpdate(names);
+        var found = productUomDao.selectNamesForUpdate(names);
         if (found.size() != names.size() || found.stream().anyMatch(u -> !"ENABLED".equals(u.getStatus()))) {
             throw new ScmBusinessException(UOM_NOT_USABLE);
         }
@@ -65,7 +65,7 @@ public class ProductUomService {
         entity.setCreatedAt(entity.getUpdatedAt());
         entity.setCreatedBy(entity.getUpdatedBy());
         try {
-            dao.insert(entity);
+            productUomDao.insert(entity);
         } catch (DuplicateKeyException e) {
             throw duplicate(e);
         }
@@ -81,7 +81,7 @@ public class ProductUomService {
         entity.setSortOrder(form.getSortOrder());
         entity.setVersion(form.getVersion());
         stamp(entity);
-        if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productUomDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
     /**
@@ -89,29 +89,29 @@ public class ProductUomService {
      */
     @Transactional
     public void delete(ProductUomKeyForm form) {
-        var entity = dao.selectForUpdate(form.getUomId());
+        var entity = productUomDao.selectForUpdate(form.getUomId());
         if (entity == null) throw new ScmBusinessException(UOM_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-        if (dao.selectVoById(entity.getId()).getReferencedCount() > 0) throw new ScmBusinessException(UOM_REFERENCED);
+        if (productUomDao.selectVoById(entity.getId()).getReferencedCount() > 0) throw new ScmBusinessException(UOM_REFERENCED);
         stamp(entity);
-        if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
-        dao.deleteById(entity.getId());
+        if (productUomDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        productUomDao.deleteById(entity.getId());
     }
 
     /**
      * 与 uk_scm_uom_code_active / uk_scm_uom_name_active 同域的应用级预检，给出可解释的错误码。
      */
     private void assertUnique(String code, String name, Long self) {
-        if (dao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getUomCode, code)
+        if (productUomDao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getUomCode, code)
                 .ne(self != null, ProductUomEntity::getId, self)) > 0)
             throw new ScmBusinessException(UOM_CODE_DUPLICATE);
-        if (dao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getName, name)
+        if (productUomDao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getName, name)
                 .ne(self != null, ProductUomEntity::getId, self)) > 0)
             throw new ScmBusinessException(UOM_NAME_DUPLICATE);
     }
 
     private ProductUomEntity require(Long id, Integer version) {
-        var entity = dao.selectById(id);
+        var entity = productUomDao.selectById(id);
         if (entity == null) throw new ScmBusinessException(UOM_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), version)) throw new ScmBusinessException(VERSION_CONFLICT);
         return entity;

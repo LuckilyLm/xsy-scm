@@ -22,22 +22,22 @@ import static com.xsy.scm.product.constant.ProductErrorCode.*;
 @Service
 @RequiredArgsConstructor
 public class ProductCategoryService {
-    private final ProductCategoryDao dao;
-    private final ProductSpuDao spuDao;
+    private final ProductCategoryDao productCategoryDao;
+    private final ProductSpuDao productSpuDao;
 
     public List<ProductCategoryEntity> all() {
-        return dao.selectList(new LambdaQueryWrapper<ProductCategoryEntity>().orderByAsc(ProductCategoryEntity::getSortOrder, ProductCategoryEntity::getId));
+        return productCategoryDao.selectList(new LambdaQueryWrapper<ProductCategoryEntity>().orderByAsc(ProductCategoryEntity::getSortOrder, ProductCategoryEntity::getId));
     }
 
     public ProductCategoryEntity require(Long id) {
-        var category = dao.selectById(id);
+        var category = productCategoryDao.selectById(id);
         if (category == null) throw new ScmBusinessException(CATEGORY_NOT_FOUND);
         return category;
     }
 
     public ProductCategoryEntity requireSelectableCategory(Long id) {
         // Serialize category deletion with creation/moving of a product referencing it.
-        var category = dao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
+        var category = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
         if (category == null) throw new ScmBusinessException(CATEGORY_NOT_FOUND);
         if (category.getLevel() != 3 || !"ENABLED".equals(category.getStatus()))
             throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
@@ -137,7 +137,7 @@ public class ProductCategoryService {
         entity.setCreatedAt(entity.getUpdatedAt());
         entity.setCreatedBy(entity.getUpdatedBy());
         try {
-            dao.insert(entity);
+            productCategoryDao.insert(entity);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(PRODUCT_CODE_DUPLICATE);
         }
@@ -159,7 +159,7 @@ public class ProductCategoryService {
         apply(entity, form, entity.getId());
         entity.setVersion(form.getVersion());
         try {
-            if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productCategoryDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(PRODUCT_CODE_DUPLICATE);
         }
@@ -167,24 +167,24 @@ public class ProductCategoryService {
 
     @Transactional
     public void delete(ProductCategoryDeleteForm form) {
-        var entity = dao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, form.getCategoryId()).last("FOR UPDATE"));
+        var entity = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, form.getCategoryId()).last("FOR UPDATE"));
         if (entity == null) throw new ScmBusinessException(CATEGORY_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-        if (dao.selectCount(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getParentId, entity.getId())) > 0)
+        if (productCategoryDao.selectCount(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getParentId, entity.getId())) > 0)
             throw new ScmBusinessException(CATEGORY_HAS_CHILDREN);
         if (countProducts(entity.getId()) > 0) throw new ScmBusinessException(CATEGORY_HAS_PRODUCTS);
         entity.setUpdatedAt(OffsetDateTime.now());
         entity.setUpdatedBy(ScmOperator.current());
-        if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
-        dao.deleteById(entity.getId());
+        if (productCategoryDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        productCategoryDao.deleteById(entity.getId());
     }
 
     private long countProducts(Long id) {
-        return spuDao.selectCount(new LambdaQueryWrapper<ProductSpuEntity>().eq(ProductSpuEntity::getCategoryId, id));
+        return productSpuDao.selectCount(new LambdaQueryWrapper<ProductSpuEntity>().eq(ProductSpuEntity::getCategoryId, id));
     }
 
     private void lockParent(Long id) {
-        if (id != null && dao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE")) == null)
+        if (id != null && productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE")) == null)
             throw new ScmBusinessException(CATEGORY_NOT_FOUND);
     }
 

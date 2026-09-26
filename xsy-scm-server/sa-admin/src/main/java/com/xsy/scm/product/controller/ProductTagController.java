@@ -18,32 +18,32 @@ import java.util.List;
 @Tag(name = "SCM 商品标签")
 @RequiredArgsConstructor
 public class ProductTagController {
-    private final ProductTagService service;
+    private final ProductTagService productTagService;
 
     @PostMapping("/list")
     @SaCheckPermission("scm:product:tag:query")
     public ResponseDTO<List<ProductTagVO>> list(@Valid @RequestBody ProductAssistantQueryForm form) {
-        return ResponseDTO.ok(service.list(form));
+        return ResponseDTO.ok(productTagService.list(form));
     }
 
     @GetMapping("/options")
     @SaCheckPermission("scm:product:query")
     public ResponseDTO<List<ProductTagVO>> options() {
-        return ResponseDTO.ok(service.options());
+        return ResponseDTO.ok(productTagService.options());
     }
 
     @PostMapping("/add")
     @SaCheckPermission("scm:product:tag:add")
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody ProductTagAddForm form) {
-        return ResponseDTO.ok(service.add(form));
+        return ResponseDTO.ok(productTagService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission("scm:product:tag:update")
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody ProductTagUpdateForm form) {
-        service.update(form);
+        productTagService.update(form);
         return ResponseDTO.ok();
     }
 
@@ -51,7 +51,7 @@ public class ProductTagController {
     @SaCheckPermission("scm:product:tag:delete")
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody ProductTagKeyForm form) {
-        service.delete(form);
+        productTagService.delete(form);
         return ResponseDTO.ok();
     }
 }

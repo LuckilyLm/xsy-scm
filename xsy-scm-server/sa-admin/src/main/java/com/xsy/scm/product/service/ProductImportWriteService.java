@@ -17,14 +17,14 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProductImportWriteService {
-    private final ProductSpuService service;
+    private final ProductSpuService productSpuService;
 
     @Transactional(rollbackFor = Exception.class)
     public List<Long> writeAll(List<ProductSpuAddForm> forms) {
         var ids = new ArrayList<Long>();
         for (int index = 0; index < forms.size(); index++) {
             try {
-                ids.add(service.add(forms.get(index)));
+                ids.add(productSpuService.add(forms.get(index)));
             } catch (RuntimeException exception) {
                 // 让异常穿过事务代理，整批回滚；调用方按 productIndex 回填定位错误。
                 throw new ImportProductException(index, exception);
@@ -37,7 +37,7 @@ public class ProductImportWriteService {
     public int writeUpdates(List<ProductSpuUpdateForm> forms) {
         for (int index = 0; index < forms.size(); index++) {
             try {
-                service.update(forms.get(index));
+                productSpuService.update(forms.get(index));
             } catch (RuntimeException exception) {
                 throw new ImportProductException(index, exception);
             }

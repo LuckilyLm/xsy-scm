@@ -32,7 +32,7 @@ public class ProductQueryService {
     private final ProductImageDao images;
     private final ProductCategoryService categories;
     private final ProductTagService tags;
-    private final FileService files;
+    private final FileService fileService;
 
     public PageResult<ProductSpuVO> query(ProductSpuQueryForm form) {
         if (form.getSortItemList() != null) {
@@ -77,7 +77,7 @@ public class ProductQueryService {
         Map<String, String> urls = new HashMap<>();
         // 分批取私有 URL：一次传整页 fileKey 会顶到 PostgreSQL 单语句 65535 个绑定参数上限。
         for (var batch : Lists.partition(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList(), IN_BATCH))
-            files.getFileList(batch, SmartRequestUtil.getRequestUser()).stream().filter(Objects::nonNull)
+            fileService.getFileList(batch, SmartRequestUtil.getRequestUser()).stream().filter(Objects::nonNull)
                     .forEach(f -> urls.put(f.getFileKey(), f.getFileUrl()));
         Map<Long, String> names = categoryRows.stream().collect(Collectors.toMap(ProductCategoryEntity::getId, ProductCategoryEntity::getName));
         // 分类索引在循环外建一次：path(id, rows) 每次都会整表重建，放循环里是 O(页大小 × 分类总数)

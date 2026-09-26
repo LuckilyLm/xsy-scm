@@ -22,9 +22,9 @@ import static com.xsy.scm.product.manager.ProductAggregateValidator.trimToNull;
 @Service
 @RequiredArgsConstructor
 public class ProductSpuService {
-    private final ProductSpuDao dao;
+    private final ProductSpuDao productSpuDao;
     private final ProductCategoryService categories;
-    private final ProductAggregateValidator validator;
+    private final ProductAggregateValidator productAggregateValidator;
     private final ProductSkuSyncManager skus;
     private final ProductImageSyncManager images;
     private final ProductUomService uom;
@@ -32,7 +32,7 @@ public class ProductSpuService {
 
     @Transactional
     public Long add(ProductSpuAddForm form) {
-        validator.validateSpu(form);
+        productAggregateValidator.validateSpu(form);
         categories.requireSelectableCategory(form.getCategoryId());
         uom.assertUsable(form.getSkuList().stream().map(ProductSkuForm::getSaleUnit).toList());
         tags.assertUsable(form.getTagIds());
@@ -43,7 +43,7 @@ public class ProductSpuService {
         entity.setCreatedAt(entity.getUpdatedAt());
         entity.setCreatedBy(entity.getUpdatedBy());
         try {
-            dao.insert(entity);
+            productSpuDao.insert(entity);
             skus.sync(entity.getId(), skuChanges);
             images.sync(entity.getId(), imageChanges);
         } catch (DuplicateKeyException e) {
@@ -55,7 +55,7 @@ public class ProductSpuService {
 
     @Transactional
     public void update(ProductSpuUpdateForm form) {
-        validator.validateSpu(form);
+        productAggregateValidator.validateSpu(form);
         categories.requireSelectableCategory(form.getCategoryId());
         var entity = require(form.getSpuId(), form.getVersion());
         var existing = skus.existing(entity.getId());
@@ -66,7 +66,7 @@ public class ProductSpuService {
         apply(entity, form);
         entity.setVersion(form.getVersion());
         try {
-            if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
             skus.sync(entity.getId(), skuChanges);
             images.sync(entity.getId(), imageChanges);
         } catch (DuplicateKeyException e) {
@@ -82,23 +82,23 @@ public class ProductSpuService {
         assertSaleCompatible(entity.getMasterStatus(), form.getStatus());
         entity.setStatus(form.getStatus());
         stamp(entity);
-        if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
     @Transactional
     public void delete(ProductDeleteForm form) {
         var entity = require(form.getSpuId(), form.getVersion());
-        if (dao.hasBusinessReference(entity.getId())) throw new ScmBusinessException(PRODUCT_BUSINESS_REFERENCED);
+        if (productSpuDao.hasBusinessReference(entity.getId())) throw new ScmBusinessException(PRODUCT_BUSINESS_REFERENCED);
         stamp(entity);
-        if (dao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         tags.untagProducts(List.of(entity.getId()));
         skus.remove(skus.existing(entity.getId()).stream().map(s -> s.getId()).toList());
         images.remove(images.existing(entity.getId()).stream().map(i -> i.getId()).toList());
-        dao.deleteById(entity.getId());
+        productSpuDao.deleteById(entity.getId());
     }
 
     private ProductSpuEntity require(Long id, Integer version) {
-        var entity = dao.selectById(id);
+        var entity = productSpuDao.selectById(id);
         if (entity == null) throw new ScmBusinessException(PRODUCT_NOT_FOUND);
         if (version == null || !Objects.equals(entity.getVersion(), version))
             throw new ScmBusinessException(VERSION_CONFLICT);

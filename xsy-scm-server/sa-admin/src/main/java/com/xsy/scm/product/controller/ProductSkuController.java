@@ -13,11 +13,11 @@ import com.xsy.scm.product.service.ProductSkuOptionQueryService;
 @RequiredArgsConstructor
 @RequestMapping("/scm/product/sku")
 public class ProductSkuController {
-    private final ProductSkuOptionQueryService service;
+    private final ProductSkuOptionQueryService productSkuOptionQueryService;
 
     @PostMapping("/option-list")
     @SaCheckPermission("scm:product:sku:query")
     public ResponseDTO<ProductSkuOptionListVO> options(@Valid @RequestBody ProductSkuOptionQueryForm form) {
-        return ResponseDTO.ok(service.optionList(form));
+        return ResponseDTO.ok(productSkuOptionQueryService.optionList(form));
     }
 }

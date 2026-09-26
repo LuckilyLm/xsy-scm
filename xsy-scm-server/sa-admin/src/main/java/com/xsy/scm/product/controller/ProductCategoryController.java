@@ -18,32 +18,32 @@ import java.util.List;
 @Tag(name = "SCM 商品分类")
 @RequiredArgsConstructor
 public class ProductCategoryController {
-    private final ProductCategoryService service;
+    private final ProductCategoryService productCategoryService;
 
     @PostMapping("/tree")
     @SaCheckPermission("scm:product:category:query")
     public ResponseDTO<List<ProductCategoryTreeVO>> tree() {
-        return ResponseDTO.ok(service.tree());
+        return ResponseDTO.ok(productCategoryService.tree());
     }
 
     @GetMapping("/{categoryId}")
     @SaCheckPermission("scm:product:category:query")
     public ResponseDTO<ProductCategoryVO> detail(@PathVariable Long categoryId) {
-        return ResponseDTO.ok(service.detail(categoryId));
+        return ResponseDTO.ok(productCategoryService.detail(categoryId));
     }
 
     @PostMapping("/add")
     @SaCheckPermission("scm:product:category:add")
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody ProductCategoryAddForm form) {
-        return ResponseDTO.ok(service.add(form));
+        return ResponseDTO.ok(productCategoryService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission("scm:product:category:update")
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody ProductCategoryUpdateForm form) {
-        service.update(form);
+        productCategoryService.update(form);
         return ResponseDTO.ok();
     }
 
@@ -51,7 +51,7 @@ public class ProductCategoryController {
     @SaCheckPermission("scm:product:category:delete")
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody ProductCategoryDeleteForm form) {
-        service.delete(form);
+        productCategoryService.delete(form);
         return ResponseDTO.ok();
     }
 }

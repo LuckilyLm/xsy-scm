@@ -11,7 +11,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 
 class ProductAggregateValidatorTest {
-    private final ProductAggregateValidator validator = new ProductAggregateValidator();
+    private final ProductAggregateValidator productAggregateValidator = new ProductAggregateValidator();
 
     static ProductSkuForm sku(String code, boolean primary, String spec) {
         var sku = new ProductSkuForm();
@@ -29,7 +29,7 @@ class ProductAggregateValidatorTest {
     }
 
     void rejects(ProductSpuAddForm form, int code) {
-        assertThatThrownBy(() -> validator.validateSpu(form)).isInstanceOfSatisfying(ScmBusinessException.class,
+        assertThatThrownBy(() -> productAggregateValidator.validateSpu(form)).isInstanceOfSatisfying(ScmBusinessException.class,
                 e -> assertThat(e.getErrorCode().getCode()).isEqualTo(code));
     }
 
@@ -40,7 +40,7 @@ class ProductAggregateValidatorTest {
         a.setBarcode(" ");
         var b = sku("B", false, "小");
         b.setBarcode(null);
-        assertThatCode(() -> validator.validateSpu(form(a, b))).doesNotThrowAnyException();
+        assertThatCode(() -> productAggregateValidator.validateSpu(form(a, b))).doesNotThrowAnyException();
     }
 
     @Test

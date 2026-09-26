@@ -34,15 +34,15 @@ import static com.xsy.scm.product.constant.ProductErrorCode.*;
 @Service
 @RequiredArgsConstructor
 public class ProductImageCenterService {
-    private final ProductSpuDao spus;
-    private final ProductImageSyncManager syncManager;
-    private final ProductAggregateValidator validator;
-    private final FileService files;
+    private final ProductSpuDao productSpuDao;
+    private final ProductImageSyncManager productImageSyncManager;
+    private final ProductAggregateValidator productAggregateValidator;
+    private final FileService fileService;
 
     public ProductImageCenterVO query(Long spuId) {
         ProductSpuEntity spu = requireSpu(spuId);
-        List<ProductImageEntity> rows = syncManager.existing(spuId);
-        Map<String, String> urls = files.getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+        List<ProductImageEntity> rows = productImageSyncManager.existing(spuId);
+        Map<String, String> urls = fileService.getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
                         SmartRequestUtil.getRequestUser())
                 .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
         List<ProductImageVO> images = rows.stream().map(i -> {
@@ -67,7 +67,7 @@ public class ProductImageCenterService {
         for (var entry : bySpu.entrySet()) {
             Long spuId = entry.getKey();
             requireSpu(spuId);
-            syncManager.sync(spuId, ProductImageChangeSet.between(syncManager.existing(spuId),
+            productImageSyncManager.sync(spuId, ProductImageChangeSet.between(productImageSyncManager.existing(spuId),
                     requestedWithBinds(spuId, entry.getValue())));
         }
     }
@@ -88,7 +88,7 @@ public class ProductImageCenterService {
             add.setSortOrder(item.getSortOrder() == null ? 0 : item.getSortOrder());
             requested.add(add);
         }
-        validator.validateImages(requested);
+        productAggregateValidator.validateImages(requested);
         return requested;
     }
 
@@ -96,7 +96,7 @@ public class ProductImageCenterService {
     public void batchRemove(ProductImageCenterForms.BatchRemoveForm form) {
         Long spuId = form.getSpuId();
         requireSpu(spuId);
-        List<ProductImageEntity> existing = syncManager.existing(spuId);
+        List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
         Set<Long> owned = existing.stream().map(ProductImageEntity::getId).collect(Collectors.toSet());
         for (Long id : form.getImageIds()) {
             if (!owned.contains(id)) throw new ScmBusinessException(IMAGE_NOT_OWNED);
@@ -104,26 +104,26 @@ public class ProductImageCenterService {
         Set<Long> removing = new HashSet<>(form.getImageIds());
         List<ProductImageForm> requested = existing.stream().filter(e -> !removing.contains(e.getId()))
                 .map(this::toForm).collect(Collectors.toList());
-        syncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
+        productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void setPrimary(ProductImageCenterForms.SetPrimaryForm form) {
         Long spuId = form.getSpuId();
         requireSpu(spuId);
-        List<ProductImageEntity> existing = syncManager.existing(spuId);
+        List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
         boolean owned = existing.stream().anyMatch(e -> e.getId().equals(form.getImageId()));
         if (!owned) throw new ScmBusinessException(IMAGE_NOT_OWNED);
         List<ProductImageForm> requested = existing.stream().map(this::toForm).peek(f ->
                 f.setPrimaryFlag(f.getImageId().equals(form.getImageId()))).collect(Collectors.toList());
-        syncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
+        productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void reorder(ProductImageCenterForms.ReorderForm form) {
         Long spuId = form.getSpuId();
         requireSpu(spuId);
-        List<ProductImageEntity> existing = syncManager.existing(spuId);
+        List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
         Map<Long, ProductImageEntity> byId = existing.stream()
                 .collect(Collectors.toMap(ProductImageEntity::getId, Function.identity()));
         List<Long> ordered = form.getOrderedImageIds();
@@ -135,11 +135,11 @@ public class ProductImageCenterService {
         for (int i = 0; i < ordered.size(); i++) {
             forms.get(ordered.get(i)).setSortOrder(i);
         }
-        syncManager.sync(spuId, ProductImageChangeSet.between(existing, new ArrayList<>(forms.values())));
+        productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, new ArrayList<>(forms.values())));
     }
 
     private List<ProductImageForm> formsOf(Long spuId) {
-        return syncManager.existing(spuId).stream().map(this::toForm).collect(Collectors.toList());
+        return productImageSyncManager.existing(spuId).stream().map(this::toForm).collect(Collectors.toList());
     }
 
     private ProductImageForm toForm(ProductImageEntity e) {
@@ -155,7 +155,7 @@ public class ProductImageCenterService {
     }
 
     private ProductSpuEntity requireSpu(Long spuId) {
-        ProductSpuEntity spu = spus.selectById(spuId);
+        ProductSpuEntity spu = productSpuDao.selectById(spuId);
         if (spu == null) throw new ScmBusinessException(PRODUCT_NOT_FOUND);
         return spu;
     }

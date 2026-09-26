@@ -38,8 +38,8 @@ public class ProductExcelController {
     /** 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。 */
     private static final String PRODUCT_UPDATE_PERMISSION = "scm:product:update";
 
-    private final ProductImportService importService;
-    private final ProductQueryService query;
+    private final ProductImportService productImportService;
+    private final ProductQueryService productQueryService;
     private final SecurityFileService securityFileService;
 
     @GetMapping("/import/template")
@@ -48,7 +48,7 @@ public class ProductExcelController {
                          HttpServletResponse response) throws IOException {
         // 更新模板带定位键、会改写既存商品，因此下载模板也要编辑权
         if (mode == ImportMode.UPDATE) StpUtil.checkPermission(PRODUCT_UPDATE_PERMISSION);
-        var content = importService.buildTemplate(mode);
+        var content = productImportService.buildTemplate(mode);
         SmartResponseUtil.setDownloadFileHeader(response,
                 (mode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
         response.getOutputStream().write(content);
@@ -69,7 +69,7 @@ public class ProductExcelController {
         if (file.getSize() > MAX_FILE_SIZE) return ResponseDTO.userErrorParam("导入文件不能超过 10 MiB");
         var security = securityFileService.checkFile(file);
         if (!security.getOk()) return ResponseDTO.error(security);
-        return ResponseDTO.ok(importService.importFile(file, mode));
+        return ResponseDTO.ok(productImportService.importFile(file, mode));
     }
 
     @PostMapping("/export")
@@ -78,7 +78,7 @@ public class ProductExcelController {
     public void export(@RequestBody ProductSpuQueryForm form, HttpServletResponse response) throws IOException {
         form.setPageNum(1L);
         form.setPageSize((long) EXPORT_MAX_ROWS);
-        PageResult<ProductSpuVO> page = query.query(form);
+        PageResult<ProductSpuVO> page = productQueryService.query(form);
         var rows = new ArrayList<ProductExportExcelVO>();
         for (var spu : page.getList()) rows.addAll(flatten(spu));
         SmartExcelUtil.exportExcel(response, "商品档案导出.xlsx", "商品", ProductExportExcelVO.class, rows);
