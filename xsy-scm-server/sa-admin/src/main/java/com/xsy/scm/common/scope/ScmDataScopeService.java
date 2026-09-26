@@ -3,7 +3,7 @@ package com.xsy.scm.common.scope;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.report.support.ScmReportAccess;
+import com.xsy.scm.report.support.ScmReportAccess;
 import net.lab1024.sa.base.common.domain.PageParam;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;

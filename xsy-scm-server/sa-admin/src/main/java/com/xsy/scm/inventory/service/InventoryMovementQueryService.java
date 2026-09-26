@@ -6,7 +6,7 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.inventory.dao.InventoryMovementDao;
 import com.xsy.scm.inventory.domain.form.InventoryMovementQueryForm;
 import com.xsy.scm.inventory.domain.vo.InventoryMovementVO;
-import net.lab1024.sa.admin.module.scm.report.support.ScmReportAccess;
+import com.xsy.scm.report.support.ScmReportAccess;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;

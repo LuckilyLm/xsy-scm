@@ -19,7 +19,7 @@
      不拼任何谓词。销售侧事实（`sales_order` / `sales_order_item` / `order_refund`）
      没有仓库列，因此相关语句按仓库不收窄 —— 见 `ScmSalesReportQueryForm` 的类注释。
 -->
-<mapper namespace="net.lab1024.sa.admin.module.scm.report.dao.ReportDao">
+<mapper namespace="com.xsy.scm.report.dao.ReportDao">
 
     <!-- ============ 销售口径片段 ============ -->
 
@@ -122,7 +122,7 @@
       客户 / 销售员 / 来源 / 分类 / 商品筛选只作用于销售侧三个指标；
       采购与库存指标本来就不带这些维度，因此页面必须让人看清「卡片之间筛选范围不同」。
     -->
-    <select id="overviewKpi" resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReportOverviewVO">
+    <select id="overviewKpi" resultType="com.xsy.scm.report.domain.vo.ReportOverviewVO">
         SELECT ord.confirmedOrderCount,
                ord.customerCount,
                ord.confirmedOrderAmount,
@@ -201,7 +201,7 @@
       日期轴用 generate_series 补齐，没有单据的日子也返回零值行；
       四个派生表各自单遍分组，合并后按日一行，行数被 366 天的跨度上限天然约束住。
     -->
-    <select id="dailyStat" resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReportDailyStatVO">
+    <select id="dailyStat" resultType="com.xsy.scm.report.domain.vo.ReportDailyStatVO">
         SELECT TO_CHAR(d.day, 'YYYY-MM-DD')                             AS bizDate,
                COALESCE(so.order_count, 0)                              AS confirmedOrderCount,
                COALESCE(so.customer_count, 0)                           AS customerCount,
@@ -278,7 +278,7 @@
       成交均价是「金额合计 / 数量合计」，不是各笔单价的算术平均；分母为 0 或全 NULL 时返回 NULL。
     -->
     <select id="salesByProduct"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$ProductRow">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$ProductRow">
         SELECT i.sku_id                                            AS skuId,
                i.spu_code_snapshot                                 AS spuCode,
                i.product_name_snapshot                             AS productName,
@@ -306,7 +306,7 @@
     </select>
 
     <select id="topSalesProduct"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$TopItem">
         SELECT i.sku_id                       AS id,
                MAX(i.product_name_snapshot)   AS name,
                SUM(i.settlement_line_amount)  AS amount
@@ -322,7 +322,7 @@
     </select>
 
     <select id="salesByCategory"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$CategoryRow">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$CategoryRow">
         SELECT cat.id                                            AS categoryId,
                MAX(cat.name)                                     AS leafCategoryName,
                MAX(COALESCE(cat3.name, cat2.name, cat.name))     AS rootCategoryName,
@@ -342,7 +342,7 @@
     </select>
 
     <select id="topSalesCategory"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$TopItem">
         SELECT cat.id                      AS id,
                MAX(cat.name)               AS name,
                SUM(i.settlement_line_amount) AS amount
@@ -363,7 +363,7 @@
       也不可能被订单行数量放大。客户编码/名称取主档当前值（分组键是 id，快照只服务明细行）。
     -->
     <select id="salesByCustomer"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$CustomerRow">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$CustomerRow">
         WITH rf AS (SELECT r.customer_id, SUM(r.refund_amount) AS refund_amount
                     FROM order_refund r
                     WHERE r.deleted = FALSE
@@ -394,7 +394,7 @@
     </select>
 
     <select id="topSalesCustomer"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$TopItem">
         SELECT o.customer_id                   AS id,
                MAX(o.customer_name_snapshot)   AS name,
                SUM(i.settlement_line_amount)   AS amount
@@ -413,7 +413,7 @@
       rf 先按订单聚合，再经订单回到销售员。seller_id 为 NULL 用 IS NOT DISTINCT FROM 才能匹配上。
     -->
     <select id="salesBySeller"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$SellerRow">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$SellerRow">
         WITH ord AS (SELECT o.id,
                             o.seller_id,
                             o.customer_id,
@@ -448,7 +448,7 @@
     </select>
 
     <select id="salesItemList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$ItemRow">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$ItemRow">
         SELECT o.id                          AS orderId,
                i.id                          AS orderItemId,
                o.order_no                    AS orderNo,
@@ -483,7 +483,7 @@
     <!-- ============ 采购分析 ============ -->
 
     <select id="purchaseOverview"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$Overview">
+            resultType="com.xsy.scm.report.domain.vo.PurchaseReportVO$Overview">
         SELECT po.submittedOrderCount,
                po.submittedAmount,
                rc.confirmedReceiptCount,
@@ -579,7 +579,7 @@
       与采购单位的行合计相加会得到无量纲数字，所以这里不给单一数量。
     -->
     <select id="purchaseByProduct"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$ProductRow">
+            resultType="com.xsy.scm.report.domain.vo.PurchaseReportVO$ProductRow">
         WITH po AS (SELECT oi.sku_id,
                            oi.purchase_unit_snapshot,
                            MAX(oi.spu_code_snapshot)             AS spu_code,
@@ -635,7 +635,7 @@
       数量看抽屉（该供应商的按商品明细，按单位分组）。
     -->
     <select id="purchaseBySupplier"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$SupplierRow">
+            resultType="com.xsy.scm.report.domain.vo.PurchaseReportVO$SupplierRow">
         WITH po AS (SELECT o.supplier_id,
                            COUNT(DISTINCT o.id)            AS order_count,
                            COUNT(DISTINCT oi.sku_id)       AS sku_kind_count,
@@ -720,7 +720,7 @@
 
     <!-- 供应商 TOP 榜走「采购入库成本」而不是采购单金额：成本才是已发生的入库事实。 -->
     <select id="topPurchaseSupplierInbound"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.SalesReportVO$TopItem">
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$TopItem">
         SELECT r.supplier_id                                        AS id,
                MAX(r.supplier_name_snapshot)                        AS name,
                COALESCE(SUM(m.quantity * m.unit_cost), 0)           AS amount
@@ -746,7 +746,7 @@
     </select>
 
     <select id="purchaseByPurchaser"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$PurchaserRow">
+            resultType="com.xsy.scm.report.domain.vo.PurchaseReportVO$PurchaserRow">
         WITH po AS (SELECT o.purchaser_id,
                            COUNT(DISTINCT o.id)      AS order_count,
                            COUNT(DISTINCT oi.sku_id) AS sku_kind_count,
@@ -829,7 +829,7 @@
     </select>
 
     <select id="purchaseItemList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$ItemRow">
+            resultType="com.xsy.scm.report.domain.vo.PurchaseReportVO$ItemRow">
         SELECT o.id                     AS purchaseOrderId,
                oi.id                    AS purchaseOrderItemId,
                o.order_no               AS orderNo,
@@ -861,7 +861,7 @@
       所以箱价与公斤价不可能落进同一条线。GROUP BY 用序号，与 SELECT 表达式一一对应。
     -->
     <select id="purchasePriceTrend"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.PurchaseReportVO$PriceTrendPoint">
+            resultType="com.xsy.scm.report.domain.vo.PurchaseReportVO$PriceTrendPoint">
         SELECT TO_CHAR((o.submitted_at AT TIME ZONE 'Asia/Shanghai')::date, 'YYYY-MM-DD') AS bizDate,
                oi.sku_id                                                                  AS skuId,
                MAX(oi.sku_code_snapshot)                                                  AS skuCode,
@@ -882,7 +882,7 @@
     <!-- ============ 收货 / 入库 ============ -->
 
     <select id="receiptItemList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReceiptReportVO$ReceiptRow">
+            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$ReceiptRow">
         SELECT r.id                            AS receiptId,
                ri.id                           AS receiptItemId,
                r.receipt_no                    AS receiptNo,
@@ -944,7 +944,7 @@
       绝不显示成 0。
     -->
     <select id="inboundList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReceiptReportVO$InboundRow">
+            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$InboundRow">
         SELECT m.id                                              AS movementId,
                m.occurred_at                                     AS occurredAt,
                w.name                                            AS warehouseName,
@@ -991,7 +991,7 @@
 
     <!-- 待入库：只可能是 WAREHOUSE_CONFIRM + CONFIRMED + PENDING；本页不提供入库写入口。 -->
     <select id="pendingPutawayList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.ReceiptReportVO$PendingPutawayRow">
+            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$PendingPutawayRow">
         SELECT r.id                         AS receiptId,
                r.receipt_no                 AS receiptNo,
                r.purchase_order_no_snapshot AS purchaseOrderNo,
@@ -1061,7 +1061,7 @@
     </sql>
 
     <select id="movementList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$MovementRow">
+            resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$MovementRow">
         SELECT m.id                    AS movementId,
                m.occurred_at           AS occurredAt,
                m.warehouse_id          AS warehouseId,
@@ -1134,7 +1134,7 @@
 
     <!-- 损耗 = 盘亏 + 手工报损。盘盈 / 报溢不是损耗，不在这两个码里。 -->
     <select id="lossSummary"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$LossSummary">
+            resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$LossSummary">
         SELECT COUNT(*) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS')          AS stocktakeLossCount,
                COUNT(*) FILTER (WHERE m.movement_type = 'LOSS_REPORT')             AS lossReportCount,
                COALESCE(SUM(m.quantity * m.unit_cost) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'), 0)
@@ -1150,7 +1150,7 @@
     </select>
 
     <select id="lossList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$LossRow">
+            resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$LossRow">
         SELECT m.id                          AS movementId,
                m.occurred_at                 AS occurredAt,
                m.warehouse_id                AS warehouseId,
@@ -1174,7 +1174,7 @@
     </select>
 
     <select id="inventoryValueList"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$ValueRow">
+            resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$ValueRow">
         SELECT b.id                                        AS balanceId,
                b.warehouse_id                              AS warehouseId,
                w.name                                      AS warehouseName,
@@ -1213,7 +1213,7 @@
       inboundTypes（由 ScmInventoryMovementTypeEnum.isInbound() 派生），本文件不再自建一份方向表。
     -->
     <select id="flowSummary"
-            resultType="net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO$FlowSummaryRow">
+            resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$FlowSummaryRow">
         SELECT m.warehouse_id AS warehouseId,
                MAX(w.name)    AS warehouseName,
                MAX(spu.name)  AS productName,

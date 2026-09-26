@@ -3,37 +3,11 @@
 # detection : 每个旧包文件记一条 identity。因此向旧 namespace **新增**文件就是 NEW DEFECT（这条路径从未被记录过），而**移出**旧包是 improvement、不会失败。新包一侧的文件数不做门禁，由 scan/check 末尾的 package migration progress 报表可见；旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管。注：baseline 里已存在的旧路径被「删掉又新建同名文件」仍可放行，所以 Q1 每完成一个域要 capture 一次让账本收缩
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 46 occurrences in 46 identities
+# captured  : 18 occurrences in 18 identities
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/constant/ScmTodoCardEnum.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/controller/ScmTodoController.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/domain/vo/ScmTodoVO.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/service/ScmTodoQueryService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/constant/ReportErrorCode.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/controller/ScmReportController.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/dao/ReportDao.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/form/ScmInventoryReportQueryForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/form/ScmOverviewReportQueryForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/form/ScmPurchaseReportQueryForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/form/ScmReceiptReportQueryForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/form/ScmReportDateForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/form/ScmSalesReportQueryForm.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/vo/InventoryReportVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/vo/PurchaseReportVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/vo/ReceiptReportVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/vo/ReportDailyStatVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/vo/ReportOverviewVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/vo/SalesReportVO.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/service/InventoryReportService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/service/OverviewReportService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/service/PurchaseReportService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/service/ReceiptReportService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/service/SalesReportService.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportAccess.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportDateFilter.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportExcel.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportExportGuard.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportTimeRange.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportTimeRangeResolver.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/screen/controller/ScreenDataController.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/screen/dao/ScreenDataDao.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/screen/domain/vo/ScreenBusinessVO.java	unmigrated-file
@@ -45,8 +19,6 @@
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/screen/service/ScreenDataService.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/ScmArchitectureTest.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/dashboard/service/ScmTodoQueryServiceTest.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/report/ScmReportDataScopePgIT.java	unmigrated-file
-1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/report/ScmReportPgIT.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/screen/ScmScreenDataIT.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/screen/ScmScreenDataScopePgIT.java	unmigrated-file
 1	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/screen/ScmScreenPermissionMigrationIT.java	unmigrated-file

@@ -8,7 +8,7 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.inventory.dao.InventoryBalanceDao;
 import com.xsy.scm.inventory.domain.form.InventoryBalanceQueryForm;
 import com.xsy.scm.inventory.domain.vo.InventoryBalanceVO;
-import net.lab1024.sa.admin.module.scm.report.support.ScmReportAccess;
+import com.xsy.scm.report.support.ScmReportAccess;
 import net.lab1024.sa.base.common.domain.PageParam;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;

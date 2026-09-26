@@ -13,7 +13,7 @@ import com.xsy.scm.inventory.domain.vo.InventoryBalanceVO;
 import com.xsy.scm.inventory.domain.vo.InventoryMovementVO;
 import com.xsy.scm.inventory.service.InventoryTransferQueryService;
 import com.xsy.scm.inventory.service.InventoryTransferService;
-import net.lab1024.sa.admin.module.scm.report.support.ScmReportAccess;
+import com.xsy.scm.report.support.ScmReportAccess;
 import com.xsy.scm.warehouse.domain.form.WarehouseScopeUpdateForm;
 import com.xsy.scm.warehouse.service.WarehouseScopeService;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
