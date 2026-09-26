@@ -174,6 +174,25 @@ class ManifestTreeTest(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 readiness.record_migration_manifest(force=True)
 
+    def test_F_an_existing_manifest_is_never_regenerated_without_force(self) -> None:
+        """F: re-recording would take the current tree as the new truth.
+
+        Preconditions can still hold here (new package empty, tree clean), so the
+        precondition check alone does not stop a re-record: a file quietly deleted
+        from the ledger would simply become "correct". The existence of the manifest
+        must be its own refusal.
+        """
+        self.write_manifest(["A.java", "B.java"], [])
+        before = readiness.MANIFEST_PATH.read_bytes()
+        self.legacy("main", "A.java")  # only one of the two is present on disk
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                readiness.record_migration_manifest(force=False)
+
+        self.assertEqual(readiness.MANIFEST_PATH.read_bytes(), before,
+                         "a refused re-record must leave the manifest untouched")
+
     def test_manifest_is_discovered_from_the_tree_not_hard_coded(self) -> None:
         """The domain list must come from the filesystem, never a literal in code."""
         self.legacy("main", "A.java")

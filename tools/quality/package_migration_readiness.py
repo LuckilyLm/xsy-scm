@@ -655,6 +655,21 @@ def record_migration_manifest(force: bool = False) -> None:
     completeness assertion would confirm a move that never happened.
     """
     existing = MANIFEST_PATH.is_file()
+    if existing and not force:
+        # An existing manifest is already the agreement about what Q1 must move.
+        # Regenerating it would take whatever the tree looks like *now* as the new
+        # truth, so a file quietly deleted from the ledger - or a tree that has
+        # drifted - becomes "correct" without anyone deciding that.
+        print(
+            f"ERROR: {guard.relative(MANIFEST_PATH)} already exists; refusing to "
+            "regenerate it.\n"
+            "       The manifest is generated once, before Q1 starts. Re-recording it\n"
+            "       mid-migration would bless whatever the tree looks like now.\n"
+            "       If it was never committed and is genuinely wrong, delete it and\n"
+            "       re-record - that is visible in review. --force is for that case only.",
+            file=sys.stderr)
+        raise SystemExit(1)
+
     failures = check_manifest_preconditions()
     if failures and not force:
         print("ERROR: refusing to record the migration manifest.", file=sys.stderr)
