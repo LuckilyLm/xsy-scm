@@ -3,7 +3,8 @@
     <!-- 搜索栏 -->
     <view class="search__bar">
       <view class="search__input-wrap">
-        <text class="search__input-mark">搜</text>
+        <!-- 与 Home / Category Final 同款 SearchOutlined 图标槽：20px、xRel=12 -->
+        <uni-icons type="search" :size="20" :color="COLOR_TEXT_TERTIARY" />
         <input
           class="search__input"
           type="text"
@@ -49,7 +50,7 @@
     <!-- 搜索结果 -->
     <view v-else class="search__result">
       <view v-if="products.length" class="search__list">
-        <ProductCard v-for="p in products" :key="p.skuId" :product="p" @click="goDetail" @add="onAdd" />
+        <ProductCard v-for="p in products" :key="p.skuId" :product="p" @click="goDetail" @add="onAdd" @inquiry="onInquiry" />
         <view class="search__more">
           <text class="search__more-text">{{ loadMoreText }}</text>
         </view>
@@ -59,7 +60,11 @@
         <PagePlaceholder mark="无结果" title="没有找到相关商品" desc="换个关键词试试；商品是否可见由服务端按客户权限过滤。" plan-ref="规划 §13" />
       </view>
 
-      <view v-if="loading" class="search__loading">
+      <!--
+        页面级 loading 只在「首次搜索、尚无任何结果」时出现（搜索中…）；
+        分页时已有列表，只由列表底部的 loadMoreText 呈现「加载中…」，两处不同时出现。
+      -->
+      <view v-if="loading && !products.length" class="search__loading">
         <text class="search__loading-text">搜索中…</text>
       </view>
     </view>
@@ -74,6 +79,7 @@
   import { mallCatalogApi } from '@/api/mall';
   import { SEARCH_HISTORY } from '@/constants/local-storage-key-const';
   import { smartSentry } from '@/lib/smart-sentry';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const PAGE_SIZE = 10;
   const MAX_HISTORY = 10;
@@ -203,6 +209,11 @@
     uni.showToast({ title: `加入购物车：${product.productName}`, icon: 'none' });
   }
 
+  /** 无客户价商品不进入加购，改为引导询价（与 Home / Category 保持同一交互，不新增接口/页面） */
+  function onInquiry(product) {
+    uni.showToast({ title: `${product.productName} 暂无客户价，请联系业务员询价`, icon: 'none' });
+  }
+
   onReachBottom(loadMore);
 
   loadHotKeywords();
@@ -217,25 +228,24 @@
       @include flex-start;
       padding: $space-3 $space-4;
       background-color: $color-bg-card;
-      @include hairline-bottom;
+      /* Figma 工具栏分割线为 1px #F0F1F3（$color-divider），不是默认的 $color-border */
+      @include hairline-bottom($color-divider);
     }
 
     &__input-wrap {
       flex: 1;
+      min-width: 0;
       @include flex-start;
-      height: 68rpx;
+      /* 390 主稿输入区 36px → 70rpx ≈ 36.4px（与 Home / Category 搜索框同一取值） */
+      height: 70rpx;
       padding: 0 $space-3;
       border-radius: $radius-pill;
       background-color: $color-bg-page;
     }
 
-    &__input-mark {
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
-    }
-
     &__input {
       flex: 1;
+      min-width: 0;
       margin-left: $space-2;
       height: 100%;
       font-size: $font-size-base;
@@ -265,12 +275,15 @@
     }
 
     &__section {
-      margin-bottom: $space-6;
+      /* Figma：上一区最后一行 tag 底 → 下一区标题顶 = 46px；
+         tag 自带 8px 下边距，故此处 38px */
+      margin-bottom: 38px;
     }
 
     &__section-head {
       @include flex-between;
-      margin-bottom: $space-3;
+      /* Figma：标题底 → 首行 tag 顶 = 8px */
+      margin-bottom: $space-2;
     }
 
     &__section-title {
@@ -291,12 +304,21 @@
 
     &__tag {
       margin: 0 $space-2 $space-2 0;
-      padding: $space-1 $space-3;
+      /* Figma：tag 高 32px、左右内边距 16px（2 字 56px / 3 字 68px）。
+         uni-app 默认 content-box，历史 tag 的 1px 描边会额外撑高 2px，故显式声明 border-box */
+      box-sizing: border-box;
+      height: 62rpx;
+      padding: 0 $space-4;
       border-radius: $radius-pill;
       background-color: $color-bg-card;
+      /* 历史 tag：白底 + 1px #F0F1F3 描边 */
+      border: 1px solid $color-divider;
+      @include flex-center;
 
       &--hot {
+        /* 热门 tag：浅绿底、无描边 */
         background-color: $color-primary-light;
+        border: none;
       }
     }
 
