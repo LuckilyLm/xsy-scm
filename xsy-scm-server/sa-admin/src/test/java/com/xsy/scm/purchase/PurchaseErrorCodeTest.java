@@ -59,7 +59,7 @@ class PurchaseErrorCodeTest {
             WarehouseErrorCode.class.getName(),
             // W6 库存域（V19/V20）：本类只断言「W5 的 40 个码不撞车」，
             // W6 与其余域的撞码由 ScmInventoryConstantTest 的全库唯一性判据负责。
-            "net.lab1024.sa.admin.module.scm.inventory.constant.InventoryErrorCode");
+            "com.xsy.scm.inventory.constant.InventoryErrorCode");
 
     /**
      * W1–W4 已存在的错误码枚举，必须被扫描到（防止扫描静默失效）。

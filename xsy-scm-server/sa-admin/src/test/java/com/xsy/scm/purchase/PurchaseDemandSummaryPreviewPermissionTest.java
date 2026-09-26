@@ -2,7 +2,7 @@ package com.xsy.scm.purchase;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
-import net.lab1024.sa.admin.module.scm.inventory.controller.InventoryBalanceController;
+import com.xsy.scm.inventory.controller.InventoryBalanceController;
 import com.xsy.scm.purchase.controller.PurchaseDemandController;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
 import org.junit.jupiter.api.DisplayName;
@@ -55,7 +55,7 @@ class PurchaseDemandSummaryPreviewPermissionTest {
     @DisplayName("库存余额接口自身的权限未被下调或改写（修权限不能靠放宽另一侧）")
     void inventoryBalancePermissionUnchanged() throws NoSuchMethodException {
         Method query = InventoryBalanceController.class.getMethod("query",
-                net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryBalanceQueryForm.class);
+                com.xsy.scm.inventory.domain.form.InventoryBalanceQueryForm.class);
         assertThat(List.of(query.getAnnotation(SaCheckPermission.class).value())).containsExactly(BALANCE_QUERY);
     }
 }

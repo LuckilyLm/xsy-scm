@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryMovementDao">
 
     <resultMap id="movementVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryMovementVO">
+               type="com.xsy.scm.inventory.domain.vo.InventoryMovementVO">
         <id column="id" property="id"/>
         <result column="spec_values" property="specValues"
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
@@ -17,7 +17,7 @@
       返回 0 = 源身份已存在；实时路径视为数据异常（41002），backfill 视为幂等跳过。
     -->
     <insert id="insertOnConflictDoNothing"
-            parameterType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity">
+            parameterType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">
         INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type,
                                         source_document_type, source_document_id, source_document_item_id,
                                         quantity, unit_snapshot, unit_cost,
@@ -146,7 +146,7 @@
       deleted = FALSE 谓词与 uk_inventory_movement_source_active 逐字一致（Q11），走同一个索引。
     -->
     <select id="selectBySourceItem"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryMovementEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">
         SELECT *
         FROM inventory_movement
         WHERE deleted = FALSE

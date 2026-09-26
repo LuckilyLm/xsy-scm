@@ -1,8 +1,8 @@
 package com.xsy.scm.purchase;
 
 import com.xsy.scm.common.ScmW5PgITBase;
-import net.lab1024.sa.admin.module.scm.inventory.domain.ReserveInventoryFact;
-import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
+import com.xsy.scm.inventory.domain.ReserveInventoryFact;
+import com.xsy.scm.inventory.service.InventoryReservationService;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
 import com.xsy.scm.purchase.service.PurchaseQueryService;

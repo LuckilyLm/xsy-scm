@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryBalanceDao">
 
     <resultMap id="balanceVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryBalanceVO">
+               type="com.xsy.scm.inventory.domain.vo.InventoryBalanceVO">
         <id column="id" property="id"/>
         <result column="spec_values" property="specValues"
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
@@ -25,7 +25,7 @@
 
     <!-- 锁序 §8.1：余额锁是事务里最后获取的锁；调用方负责按 (warehouse_id, sku_id) 升序调用 -->
     <select id="lockByWarehouseAndSku"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity">
         SELECT *
         FROM inventory_balance
         WHERE warehouse_id = #{warehouseId}
@@ -35,7 +35,7 @@
     </select>
 
     <select id="selectByWarehouseAndSku"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity">
         SELECT *
         FROM inventory_balance
         WHERE warehouse_id = #{warehouseId}

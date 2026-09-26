@@ -6,7 +6,7 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
-import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryOutboundItemDao;
+import com.xsy.scm.inventory.dao.InventoryOutboundItemDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.service.OrderIdempotencyService;
 import net.lab1024.sa.admin.module.scm.sorting.dao.SortingQueryDao;

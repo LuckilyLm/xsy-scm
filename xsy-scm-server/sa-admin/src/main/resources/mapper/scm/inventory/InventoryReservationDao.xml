@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryReservationDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryReservationDao">
 
     <resultMap id="reservationVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryReservationVO"/>
+               type="com.xsy.scm.inventory.domain.vo.InventoryReservationVO"/>
 
     <!--
       Q11：冲突目标与部分唯一索引 uk_inventory_reservation_source_active 完全匹配
       （列 + WHERE 谓词）。返回 0 = 该来源行已有有效预留，由服务层按业务语义处理。
     -->
     <insert id="insertOnConflictDoNothing"
-            parameterType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity"
+            parameterType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO inventory_reservation (warehouse_id, sku_id,
                                            source_document_type, source_document_id, source_document_item_id,
@@ -27,7 +27,7 @@
     </insert>
 
     <select id="selectById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM inventory_reservation
         WHERE id = #{id}
@@ -35,7 +35,7 @@
     </select>
 
     <select id="selectActiveBySource"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
@@ -45,7 +45,7 @@
     </select>
 
     <select id="listActiveBySourceDocument"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
@@ -58,7 +58,7 @@
 
     <!-- 发车一次性取整条线路的预留；排序同上，为的是与余额锁序对齐 -->
     <select id="listActiveBySourceItemIds"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM inventory_reservation
         WHERE source_document_type = #{sourceDocumentType}
@@ -72,7 +72,7 @@
     </select>
 
     <select id="lockById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryReservationEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryReservationEntity">
         SELECT *
         FROM inventory_reservation
         WHERE id = #{id}

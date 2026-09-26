@@ -1,11 +1,11 @@
 package com.xsy.scm.common;
 
-import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryBalanceDao;
-import net.lab1024.sa.admin.module.scm.inventory.dao.InventoryMovementDao;
-import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
-import net.lab1024.sa.admin.module.scm.inventory.service.InventoryBalanceQueryService;
-import net.lab1024.sa.admin.module.scm.inventory.service.InventoryCommandService;
-import net.lab1024.sa.admin.module.scm.inventory.service.InventoryMovementQueryService;
+import com.xsy.scm.inventory.dao.InventoryBalanceDao;
+import com.xsy.scm.inventory.dao.InventoryMovementDao;
+import com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity;
+import com.xsy.scm.inventory.service.InventoryBalanceQueryService;
+import com.xsy.scm.inventory.service.InventoryCommandService;
+import com.xsy.scm.inventory.service.InventoryMovementQueryService;
 import com.xsy.scm.product.domain.form.ProductSkuForm;
 import com.xsy.scm.product.domain.form.ProductSpuAddForm;
 import com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity;

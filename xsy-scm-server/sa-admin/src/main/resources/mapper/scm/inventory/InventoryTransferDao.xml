@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryTransferDao">
 
     <resultMap id="transferVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferVO"/>
+               type="com.xsy.scm.inventory.domain.vo.InventoryTransferVO"/>
 
     <select id="countByTransferNo" resultType="int">
         SELECT COUNT(*)
@@ -17,7 +17,7 @@
     </select>
 
     <select id="selectById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryTransferEntity">
         SELECT *
         FROM inventory_transfer
         WHERE id = #{id}
@@ -26,7 +26,7 @@
 
     <!-- 锁序：单据锁先于余额锁（与收货 / 出库 / 盘点 / 报损报溢同一顺序，避免反向拿锁） -->
     <select id="lockById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryTransferEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryTransferEntity">
         SELECT *
         FROM inventory_transfer
         WHERE id = #{id}
@@ -167,7 +167,7 @@
 
     <!-- 在途库存：把 SHIPPED 调拨单展开成 (单号, SKU) 粒度，供对账与库存查询页使用 -->
     <select id="queryInTransit"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryInTransitVO">
+            resultType="com.xsy.scm.inventory.domain.vo.InventoryInTransitVO">
         SELECT t.transfer_no,
                t.from_warehouse_id,
                fw.name            AS from_warehouse_name,

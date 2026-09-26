@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryTransferItemDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryTransferItemDao">
 
     <resultMap id="itemVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryTransferItemVO">
+               type="com.xsy.scm.inventory.domain.vo.InventoryTransferItemVO">
         <result column="spec_values" property="specValues"
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>

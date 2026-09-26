@@ -8,7 +8,7 @@ package com.xsy.scm.purchase.support;
  * {@code PurchaseInventoryContractAbsenceIT} 断言。
  *
  * <p><b>W6 现状</b>：真实实现是
- * {@code net.lab1024.sa.admin.module.scm.inventory.support.PurchaseInventoryContractImpl}
+ * {@code com.xsy.scm.inventory.support.PurchaseInventoryContractImpl}
  * （唯一注册的 Bean），调用点是 {@code PurchaseReceiptService.confirm} 的同一事务内。
  * {@code PurchaseInventoryContractAbsenceIT} 已按 Q6 废止，容器断言由 W6 的
  * {@code ScmInventoryMigrationIT}（Bean 恰好 1 个）接替。

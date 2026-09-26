@@ -10,7 +10,7 @@ import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
+import com.xsy.scm.inventory.service.InventoryReservationService;
 
 import static com.xsy.scm.order.constant.OrderErrorCode.*;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;

@@ -1,9 +1,9 @@
 package net.lab1024.sa.admin.module.scm.screen;
 
 import com.xsy.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryWarningQueryForm;
-import net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryWarningVO;
-import net.lab1024.sa.admin.module.scm.inventory.service.InventoryWarningQueryService;
+import com.xsy.scm.inventory.domain.form.InventoryWarningQueryForm;
+import com.xsy.scm.inventory.domain.vo.InventoryWarningVO;
+import com.xsy.scm.inventory.service.InventoryWarningQueryService;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;

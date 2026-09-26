@@ -51,7 +51,7 @@ public class ScreenInventoryVO {
      *
      * <p><b>分档规则完全复用库存预警阈值（V32），不另起一套算法</b>：基准是
      * {@code 可用量 = 现有量 − 预留量}，判定只有
-     * {@link net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryWarningStatusEnum#evaluate}
+     * {@link com.xsy.scm.inventory.constant.ScmInventoryWarningStatusEnum#evaluate}
      * 一处实现（正常 / 低于下限 / 高于上限）。
      *
      * <p>{@code outOfStockCount}（缺货 = 可用量 ≤ 0）是**单列指标**，与上面三档**可能重叠**：

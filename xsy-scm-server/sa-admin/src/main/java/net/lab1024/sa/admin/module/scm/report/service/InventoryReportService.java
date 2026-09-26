@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTypeEnum;
+import com.xsy.scm.inventory.constant.ScmInventoryMovementTypeEnum;
 import net.lab1024.sa.admin.module.scm.report.dao.ReportDao;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmInventoryReportQueryForm;
 import net.lab1024.sa.admin.module.scm.report.domain.vo.InventoryReportVO;

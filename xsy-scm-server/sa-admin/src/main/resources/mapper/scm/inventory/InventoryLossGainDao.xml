@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryLossGainDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryLossGainDao">
 
     <resultMap id="lossGainVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryLossGainVO"/>
+               type="com.xsy.scm.inventory.domain.vo.InventoryLossGainVO"/>
 
     <select id="countByLossGainNo" resultType="int">
         SELECT COUNT(*)
@@ -17,7 +17,7 @@
     </select>
 
     <select id="selectById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryLossGainEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryLossGainEntity">
         SELECT *
         FROM inventory_loss_gain
         WHERE id = #{id}
@@ -26,7 +26,7 @@
 
     <!-- 锁序：单据锁先于余额锁（与收货/出库/盘点确认同一顺序，避免反向拿锁） -->
     <select id="lockById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryLossGainEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryLossGainEntity">
         SELECT *
         FROM inventory_loss_gain
         WHERE id = #{id}

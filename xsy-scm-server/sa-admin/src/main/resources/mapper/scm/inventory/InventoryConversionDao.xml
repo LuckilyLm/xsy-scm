@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryConversionDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryConversionDao">
 
     <resultMap id="conversionVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryConversionVO"/>
+               type="com.xsy.scm.inventory.domain.vo.InventoryConversionVO"/>
 
     <select id="countByConversionNo" resultType="int">
         SELECT COUNT(*)
@@ -17,7 +17,7 @@
     </select>
 
     <select id="selectById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversionEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryConversionEntity">
         SELECT *
         FROM inventory_conversion
         WHERE id = #{id}
@@ -26,7 +26,7 @@
 
     <!-- 锁序：单据锁先于余额锁（与收货 / 出库 / 盘点 / 报损报溢 / 调拨同一顺序） -->
     <select id="lockById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryConversionEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryConversionEntity">
         SELECT *
         FROM inventory_conversion
         WHERE id = #{id}

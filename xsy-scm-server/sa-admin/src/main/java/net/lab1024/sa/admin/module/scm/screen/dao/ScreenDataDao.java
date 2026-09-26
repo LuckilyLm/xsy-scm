@@ -72,7 +72,7 @@ public interface ScreenDataDao {
      * 按流水类型集合统计条数。
      *
      * <p>接收集合而不是单个类型：调用方传的是**方向集合**（入库方向 / 出库方向），
-     * 由 {@link net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTypeEnum}
+     * 由 {@link com.xsy.scm.inventory.constant.ScmInventoryMovementTypeEnum}
      * 的方向位派生 —— 不要在 SQL 里抄一份类型清单，新增流水类型时那种副本会静默少算。
      */
     Long countMovementsByTypeAndRange(@Param("movementTypes") List<String> movementTypes,

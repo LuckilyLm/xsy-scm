@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.inventory.dao.InventoryStocktakeDao">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryStocktakeDao">
 
     <resultMap id="stocktakeVoMap"
-               type="net.lab1024.sa.admin.module.scm.inventory.domain.vo.InventoryStocktakeVO"/>
+               type="com.xsy.scm.inventory.domain.vo.InventoryStocktakeVO"/>
 
     <select id="countByStocktakeNo" resultType="int">
         SELECT COUNT(*)
@@ -17,7 +17,7 @@
     </select>
 
     <select id="selectById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktakeEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryStocktakeEntity">
         SELECT *
         FROM inventory_stocktake
         WHERE id = #{id}
@@ -26,7 +26,7 @@
 
     <!-- 锁序：单据锁先于余额锁（与收货/出库确认同一顺序，避免反向拿锁） -->
     <select id="lockById"
-            resultType="net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryStocktakeEntity">
+            resultType="com.xsy.scm.inventory.domain.entity.InventoryStocktakeEntity">
         SELECT *
         FROM inventory_stocktake
         WHERE id = #{id}
