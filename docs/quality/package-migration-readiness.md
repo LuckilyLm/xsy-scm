@@ -1152,3 +1152,29 @@ ArchUnit 空集、family 退役），都放了一条**非空依赖**的检查：
 枚举词汇表由新旧两侧共建、baseline identity 双计数、空集改由 `sawLegacyPackage` 观察、
 退役 family 继续真扫描。绿色的含义因此始终是「检查真的跑了」，而不是「检查没报错」。
 
+### 11.7 收口后的全量后端回归
+
+收口提交全部落地后，在一次性库上跑完整回归（`mvn -B -pl sa-admin -am test`）：
+
+```text
+sa-base   :    8 tests / 0F / 0E / 0S
+sa-admin  : 1194 tests / 0F / 0E / 5S
+合计      : 1202 tests / 0 failures / 0 errors / 5 skipped   BUILD SUCCESS
+```
+
+三点值得记录：
+
+- **5 个 skipped 全部来自 `F0FileStorageCloudIT`**，是**设计内的云存储跳过**
+  （本地无云凭据），与历史基线一致，不是回归。
+- 与历史基准 **1201** 相比为 **+1 例**：口径差已由 `51037a45` 理清，
+  这 +1 来自此后新增的测试，非迁移引入。
+- **此前 finance 轮记录的 1 例存量污染没有复现**。
+  当时在定向集合里 `ScmFinanceReceivableRollbackPgIT` 报
+  `expected: 0 but was: 1`，并与迁移前提交的同集合结果逐条一致，
+  据此判为跨测试污染（依赖执行顺序/共享残留）。全量、全新库下它**通过**，
+  与「污染而非回归」的定性吻合 —— 这也是当初坚持用对照组而不是改业务代码凑绿的价值：
+  若当时顺手「修」了它，今天就无法知道它本来是好的。
+- 运行期活证据：全量日志中 `ScmArchitectureTest` 打印
+  `[ScmArchitectureTest] legacy SCM package is empty; Q1 migration finished`，
+  且所有 SCM 测试类名均显示为 `com.xsy.scm.*`。
+
