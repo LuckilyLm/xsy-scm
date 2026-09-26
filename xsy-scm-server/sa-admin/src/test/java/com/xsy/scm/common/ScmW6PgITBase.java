@@ -6,8 +6,8 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceE
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryBalanceQueryService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryCommandService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryMovementQueryService;
-import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSkuForm;
-import net.lab1024.sa.admin.module.scm.product.domain.form.ProductSpuAddForm;
+import com.xsy.scm.product.domain.form.ProductSkuForm;
+import com.xsy.scm.product.domain.form.ProductSpuAddForm;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
 import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;

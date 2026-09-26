@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductSpuDao">
+<mapper namespace="com.xsy.scm.product.dao.ProductSpuDao">
     <sql id="ownSkuIds">SELECT s.id
                         FROM product_sku s
                         WHERE s.spu_id = #{spuId}</sql>
-    <select id="queryPage" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity">
+    <select id="queryPage" resultType="com.xsy.scm.product.domain.entity.ProductSpuEntity">
         SELECT p.* FROM product_spu p WHERE p.deleted = FALSE
         <if test="query.keyword != null and query.keyword != ''">
             AND (p.spu_code ILIKE CONCAT('%',#{query.keyword},'%')
@@ -82,7 +82,7 @@
         OR EXISTS (SELECT 1 FROM customer_type_price WHERE sku_id IN (<include refid="ownSkuIds"/>))
     </select>
     <!-- 批量命令按 id 升序加锁，避免多标签/多批次交叉持锁造成死锁；版本号在锁后复核。 -->
-    <select id="lockByIds" resultType="net.lab1024.sa.admin.module.scm.product.domain.entity.ProductSpuEntity">
+    <select id="lockByIds" resultType="com.xsy.scm.product.domain.entity.ProductSpuEntity">
         SELECT * FROM product_spu WHERE deleted=FALSE AND id IN
         <foreach collection="spuIds" item="spuId" open="(" separator="," close=")">#{spuId}</foreach>
         ORDER BY id FOR UPDATE

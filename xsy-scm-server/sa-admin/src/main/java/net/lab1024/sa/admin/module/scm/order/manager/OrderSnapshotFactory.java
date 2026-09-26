@@ -9,7 +9,7 @@ import static net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode.*;
 import java.math.BigDecimal;
 import java.util.*;
 
-import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
+import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.ResolvedPriceVO;
 import net.lab1024.sa.admin.module.scm.customer.domain.entity.CustomerEntity;
 

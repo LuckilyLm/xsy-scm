@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuOptionDao;
-import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
+import com.xsy.scm.product.dao.ProductSkuOptionDao;
+import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import net.lab1024.sa.admin.module.scm.pricing.constant.ScmUnavailableReasonEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.util.ScmDecimalStrings;

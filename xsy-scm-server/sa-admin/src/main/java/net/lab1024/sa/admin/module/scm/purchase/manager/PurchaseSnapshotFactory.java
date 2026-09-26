@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.purchase.manager;
 import com.xsy.scm.common.constant.ScmOperator;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderEntity;
 import net.lab1024.sa.admin.module.scm.order.domain.entity.SalesOrderItemEntity;
-import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
+import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmPurchaseDemandStatusEnum;
 import net.lab1024.sa.admin.module.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.product.dao.ProductSkuOptionDao">
-    <resultMap id="sku" type="net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO" autoMapping="true">
+<mapper namespace="com.xsy.scm.product.dao.ProductSkuOptionDao">
+    <resultMap id="sku" type="com.xsy.scm.product.domain.vo.ProductSkuOptionVO" autoMapping="true">
         <id column="sku_id" property="skuId"/>
         <result column="spec_values" property="specValues"
                 typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" javaType="java.util.Map"/>

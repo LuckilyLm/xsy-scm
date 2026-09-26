@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import net.lab1024.sa.admin.module.scm.pricing.domain.vo.ResolvedPriceVO;
 import net.lab1024.sa.admin.module.scm.pricing.constant.*;
 import net.lab1024.sa.admin.module.scm.pricing.manager.PriceValidation;
-import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
+import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

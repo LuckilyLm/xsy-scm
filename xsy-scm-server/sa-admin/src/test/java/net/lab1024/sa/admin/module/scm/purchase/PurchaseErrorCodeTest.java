@@ -50,7 +50,7 @@ class PurchaseErrorCodeTest {
      */
     private static final List<String> FALLBACK = List.of(
             "com.xsy.scm.common.error.ScmCommonErrorCode",
-            "net.lab1024.sa.admin.module.scm.product.constant.ProductErrorCode",
+            "com.xsy.scm.product.constant.ProductErrorCode",
             "net.lab1024.sa.admin.module.scm.customer.constant.CustomerErrorCode",
             "net.lab1024.sa.admin.module.scm.supplier.constant.SupplierErrorCode",
             "net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode",

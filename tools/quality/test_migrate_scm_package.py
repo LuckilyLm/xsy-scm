@@ -110,43 +110,74 @@ class ExcludedFilesTest(unittest.TestCase):
         self.assertFalse(mig.is_excluded(path))
 
 
-class LineEndingNormalizationTest(unittest.TestCase):
-    """写回时必须把行尾归一化为 `.editorconfig` 要求的 LF。
+class EditorConfigConformanceTest(unittest.TestCase):
+    """写回时必须满足 `.editorconfig` 对 `*.java` / `*.xml` 的声明。
 
-    `.editorconfig` 对 `*.java` / `*.xml` 声明 `end_of_line = lf`，并注明
-    「Java 文件在 Windows 上以 CRLF 检出（core.autocrlf=true），仓库内存的是 LF」。
-    即：规范形态是 LF，CRLF 只是检出表象。
+    `.editorconfig` 声明了两条会被 Spotless 直接检查的规则：
 
-    如果改写时原样保留 CRLF，Spotless（检查工作区字节）会报「整个文件需要重排」，
-    而 `git diff` 因 autocrlf 完全看不到 —— 这是 Q1 warehouse 域真实踩过的坑。
+    - `end_of_line = lf`
+      并注明「Java 文件在 Windows 上以 CRLF 检出（core.autocrlf=true），
+      仓库内存的是 LF」。即规范形态是 LF，CRLF 只是检出表象。
+      不归一化 → Spotless 报「整个文件需要重排」，而 `git diff` 因 autocrlf 看不到。
+      （Q1 warehouse 域真实踩过。）
+    - `insert_final_newline = true`
+      只影响最后一个字节，diff 形态是 `-}` / `+}`，看着"没区别"。
+      仓库里有末尾缺换行的存量文件，被 Spotless 的 `ratchetFrom` 跳过而长期不报，
+      一旦因迁包被判为"已改动"就会当场失败。（Q1 product 域真实踩过：
+      `PriceResolverTest.java`。）
+
+    两条都在 `conform_to_editorconfig()` 里统一处理，行为可测。
     """
 
+    def _conform(self, name: str, raw: bytes) -> tuple[bytes, bool, bool]:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / name
+            p.write_bytes(raw)
+            text, eol, eof = mig.conform_to_editorconfig(p, raw.decode("utf-8"))
+            return text.encode("utf-8"), eol, eof
+
     def test_crlf_is_normalized_to_lf(self) -> None:
-        raw = b"import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;\r\n"
-        text = raw.decode("utf-8")
-        new_text, count = mig.rewrite_text(text, mig.domain_pattern("common"), "common")
-        self.assertEqual(count, 1)
-        if "common" in mig.NORMALIZE_TO_LF_SUFFIXES or True:
-            new_text = new_text.replace("\r\n", "\n")
-        encoded = new_text.encode("utf-8")
-        self.assertNotIn(b"\r\n", encoded)
-        self.assertIn(b"com.xsy.scm.common.util.ScmDecimalStrings", encoded)
+        out, eol, eof = self._conform(
+            "A.java", b"package a;\r\nclass A {}\r\n")
+        self.assertTrue(eol)
+        self.assertFalse(eof)
+        self.assertNotIn(b"\r\n", out)
 
-    def test_lf_stays_lf(self) -> None:
-        raw = b"import net.lab1024.sa.admin.module.scm.common.util.ScmDecimalStrings;\n"
-        text = raw.decode("utf-8")
-        new_text, _ = mig.rewrite_text(text, mig.domain_pattern("common"), "common")
-        encoded = new_text.encode("utf-8")
-        self.assertNotIn(b"\r\n", encoded)
-        self.assertIn(b"com.xsy.scm.common.util.ScmDecimalStrings", encoded)
+    def test_lf_is_left_alone(self) -> None:
+        out, eol, eof = self._conform("A.java", b"package a;\nclass A {}\n")
+        self.assertFalse(eol)
+        self.assertFalse(eof)
+        self.assertEqual(out, b"package a;\nclass A {}\n")
 
-    def test_normalize_does_not_mangle_multibyte_content(self) -> None:
+    def test_missing_final_newline_is_added(self) -> None:
+        """末尾缺换行必须补齐 —— 这是 product 域 Spotless 失败的真实原因。"""
+        out, eol, eof = self._conform("A.java", b"package a;\nclass A {}")
+        self.assertFalse(eol)
+        self.assertTrue(eof)
+        self.assertTrue(out.endswith(b"}\n"))
+
+    def test_crlf_and_missing_newline_are_both_fixed(self) -> None:
+        out, eol, eof = self._conform("A.java", b"package a;\r\nclass A {}")
+        self.assertTrue(eol)
+        self.assertTrue(eof)
+        self.assertNotIn(b"\r\n", out)
+        self.assertTrue(out.endswith(b"}\n"))
+
+    def test_other_suffixes_are_not_touched(self) -> None:
+        """`.sql` 不在 `NORMALIZE_TO_LF_SUFFIXES` 里：Flyway 按行 CRC32 校验，
+        行尾由 .gitattributes 钉死，绝不能被迁包脚本改写。"""
+        raw = b"SELECT 1;\r\n"
+        out, eol, eof = self._conform("V1__x.sql", raw)
+        self.assertFalse(eol)
+        self.assertFalse(eof)
+        self.assertEqual(out, raw)
+
+    def test_crlf_normalize_does_not_mangle_multibyte_content(self) -> None:
         """CRLF 归一化必须是纯字节级替换，不能碰中文注释的多字节序列。"""
-        raw = "// 中文注释：仓库规范是 LF\r\npackage a.b;\r\n".encode("utf-8")
-        text = raw.decode("utf-8")
-        normalized = text.replace("\r\n", "\n").encode("utf-8")
-        self.assertNotIn(b"\r\n", normalized)
-        self.assertIn("中文注释：仓库规范是 LF".encode("utf-8"), normalized)
+        out, _, _ = self._conform(
+            "A.java", "// 中文注释：仓库规范是 LF\r\npackage a;\r\n".encode("utf-8"))
+        self.assertNotIn(b"\r\n", out)
+        self.assertIn("中文注释：仓库规范是 LF".encode("utf-8"), out)
 
     def test_binary_looking_file_is_skipped_not_corrupted(self) -> None:
         """非 UTF-8 文件必须被 `read_bytes_safely()` 判为 None，不得进入改写集合。"""

@@ -16,8 +16,8 @@ import net.lab1024.sa.admin.module.scm.pricing.manager.PriceValidation;
 import net.lab1024.sa.admin.module.scm.customer.service.CustomerService;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerTypeDao;
 import net.lab1024.sa.admin.module.scm.customer.dao.CustomerSkuVisibilityDao;
-import net.lab1024.sa.admin.module.scm.product.dao.ProductSkuOptionDao;
-import net.lab1024.sa.admin.module.scm.product.domain.vo.ProductSkuOptionVO;
+import com.xsy.scm.product.dao.ProductSkuOptionDao;
+import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.*;

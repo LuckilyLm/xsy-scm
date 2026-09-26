@@ -197,41 +197,86 @@ def report(edits: list[FileEdit], domain: str, mode: str) -> int:
     return total
 
 
-def apply_edits(edits: list[FileEdit], domain: str) -> int:
-    """改写引用，并把行尾归一化为 `.editorconfig` 要求的 LF。
+def conform_to_editorconfig(path: Path, text: str) -> tuple[str, bool, bool]:
+    """按 `.editorconfig` 对 `*.java` / `*.xml` 的声明规整文本。
 
-    两件事必须同时做对：
+    返回 `(新文本, 是否改了行尾, 是否补了末尾换行)`。
+
+    `.editorconfig` 对这两个后缀声明了三条会直接影响 Spotless 的规则：
+
+    - `end_of_line = lf`
+    - `insert_final_newline = true`
+    - `trim_trailing_whitespace = true`（由 Spotless 自己管，这里不碰）
+
+    前两条必须在这里做，否则写回的文件会带着检出形态的 CRLF 或缺失的末尾换行，
+    Spotless 报「format violation」而 `git diff` 因 `core.autocrlf=true` 看不见。
+
+    末尾换行这条尤其阴险：`insert_final_newline` 只影响文件最后**一个字节**，
+    所以 diff 形态是 `-}` / `+}` 这种看起来"没区别"的一行。仓库里确实存在
+    末尾缺换行的存量文件（例如 `PriceResolverTest.java`），它们平时被 Spotless
+    的 `ratchetFrom` 跳过、一直不报；一旦因迁包被判定为"已改动"就立刻暴露。
+    在这里统一补齐，迁包就不会顺手把这类存量问题带进门禁失败。
+    """
+    if path.suffix not in NORMALIZE_TO_LF_SUFFIXES:
+        return text, False, False
+
+    line_ending_fixed = False
+    if "\r\n" in text:
+        text = text.replace("\r\n", "\n")
+        line_ending_fixed = True
+
+    final_newline_added = False
+    if text and not text.endswith("\n"):
+        text = text + "\n"
+        final_newline_added = True
+
+    return text, line_ending_fixed, final_newline_added
+
+
+def apply_edits(edits: list[FileEdit], domain: str) -> int:
+    """改写引用，并按 `.editorconfig` 规整行尾与末尾换行。
+
+    三件事必须同时做对：
 
     1. **替换**：用 `rewrite_text()` 把旧全限定前缀换成新的。
     2. **行尾归一化**：`.editorconfig` 对 `*.java` / `*.xml` 声明 `end_of_line = lf`。
        工作区文件可能因 `core.autocrlf=true` 是 CRLF 检出形态，若不归一化就写回，
        Spotless 会报「整个文件需要重排」。`git diff` 看不到这个差异，因为
        autocrlf 在读索引时就把 LF 转换成了 CRLF，两边看起来一样。
+    3. **末尾换行**：同样来自 `.editorconfig` 的 `insert_final_newline = true`。
+       存量文件里确实有末尾缺换行的，被 `ratchetFrom` 跳过后一直没暴露；
+       迁包把它们拉进门禁范围时会当场失败。详见 `conform_to_editorconfig()`。
 
     为什么不直接 `read_text()`：它的 universal-newline 会隐式把 CRLF 降级成 LF，
     行为上"碰巧正确"，但那是副作用而非契约 —— 一旦有人改成 `newline=""` 就会静默
-    退回 CRLF。这里显式归一化，行为可读、可测（见 `LineEndingNormalizationTest`）。
+    退回 CRLF。这里显式规整，行为可读、可测（见 `EditorConfigConformanceTest`）。
 
     非 UTF-8 文件（`read_bytes_safely()` 返回 None）不会进入 `edits`，无需在此再判。
     """
     pattern = domain_pattern(domain)
     written = 0
     total = 0
-    normalized = 0
+    fixed_eol = 0
+    fixed_eof = 0
     for edit in edits:
         raw = edit.path.read_bytes()
         text = raw.decode("utf-8")
         new_text, count = rewrite_text(text, pattern, domain)
         if count == 0:
             continue
-        if edit.path.suffix in NORMALIZE_TO_LF_SUFFIXES and "\r\n" in new_text:
-            new_text = new_text.replace("\r\n", "\n")
-            normalized += 1
+        new_text, eol_fixed, eof_added = conform_to_editorconfig(edit.path, new_text)
+        fixed_eol += int(eol_fixed)
+        fixed_eof += int(eof_added)
         edit.path.write_bytes(new_text.encode("utf-8"))
         written += 1
         total += count
     print()
-    suffix = f", {normalized} normalized to LF" if normalized else ""
+    notes = []
+    if fixed_eol:
+        notes.append(f"{fixed_eol} LF-normalized")
+    if fixed_eof:
+        notes.append(f"{fixed_eof} final-newline added")
+    suffix = f", {', '.join(notes)}" if notes else ""
     print(f"RESULT: APPLIED ({written} files, {total} occurrences{suffix})")
     return total
 
