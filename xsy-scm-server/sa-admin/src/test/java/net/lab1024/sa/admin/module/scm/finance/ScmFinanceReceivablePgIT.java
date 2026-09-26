@@ -1,11 +1,11 @@
 package net.lab1024.sa.admin.module.scm.finance;
 
 import com.xsy.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryOrdersForm;
-import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryRouteForm;
-import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliverySignForm;
-import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryVersionForm;
-import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteService;
+import com.xsy.scm.delivery.domain.form.DeliveryOrdersForm;
+import com.xsy.scm.delivery.domain.form.DeliveryRouteForm;
+import com.xsy.scm.delivery.domain.form.DeliverySignForm;
+import com.xsy.scm.delivery.domain.form.DeliveryVersionForm;
+import com.xsy.scm.delivery.service.DeliveryRouteService;
 import net.lab1024.sa.admin.module.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.sorting.domain.form.SortingActionForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;

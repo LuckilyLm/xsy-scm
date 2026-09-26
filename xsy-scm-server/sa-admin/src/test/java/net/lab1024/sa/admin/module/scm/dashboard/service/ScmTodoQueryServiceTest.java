@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.dashboard.service;
 
 import net.lab1024.sa.admin.module.scm.dashboard.domain.vo.ScmTodoVO;
-import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteQueryService;
+import com.xsy.scm.delivery.service.DeliveryRouteQueryService;
 import com.xsy.scm.inventory.service.InventoryLossGainQueryService;
 import com.xsy.scm.inventory.service.InventoryWarningQueryService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;

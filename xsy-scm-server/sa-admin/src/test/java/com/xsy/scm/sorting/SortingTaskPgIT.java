@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import cn.dev33.satoken.stp.StpUtil;
 
 import com.xsy.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryEligibilityPolicy;
+import com.xsy.scm.delivery.service.DeliveryEligibilityPolicy;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.sorting.domain.form.SortingActionForm;
 import com.xsy.scm.sorting.domain.form.SortingAssignForm;

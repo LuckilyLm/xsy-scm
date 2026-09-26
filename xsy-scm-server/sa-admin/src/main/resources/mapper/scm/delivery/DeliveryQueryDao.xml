@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.delivery.dao.DeliveryQueryDao">
+<mapper namespace="com.xsy.scm.delivery.dao.DeliveryQueryDao">
     <sql id="routeColumns">
         r.*,
         (SELECT count(*) FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE) AS stop_count,
@@ -25,7 +25,7 @@
             AND FALSE
         </if>
     </sql>
-    <select id="routes" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryRouteVO">
+    <select id="routes" resultType="com.xsy.scm.delivery.domain.vo.DeliveryRouteVO">
         SELECT
         <include refid="routeColumns"/>
         FROM delivery_route r WHERE r.deleted=FALSE
@@ -46,19 +46,19 @@
         <include refid="driverScopeGuard"/>
         ORDER BY r.delivery_date DESC,r.id DESC
     </select>
-    <select id="route" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryRouteVO">
+    <select id="route" resultType="com.xsy.scm.delivery.domain.vo.DeliveryRouteVO">
         SELECT
         <include refid="routeColumns"/>
         FROM delivery_route r WHERE r.id=#{id} AND r.deleted=FALSE
         <include refid="driverScopeGuard"/>
     </select>
-    <select id="lockRoute" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.entity.DeliveryRouteEntity">
+    <select id="lockRoute" resultType="com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity">
         SELECT *
         FROM delivery_route
         WHERE id = #{id}
           AND deleted = FALSE FOR UPDATE
     </select>
-    <select id="stops" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryStopVO">
+    <select id="stops" resultType="com.xsy.scm.delivery.domain.vo.DeliveryStopVO">
         SELECT s.*, count(o.id) AS order_count, sum(o.order_amount_snapshot) AS total_amount
         FROM delivery_route_stop s
                  LEFT JOIN delivery_route_order o ON o.stop_id = s.id AND o.deleted = FALSE
@@ -74,7 +74,7 @@
         WHERE route_id = #{id}
           AND deleted = FALSE
     </update>
-    <select id="printItems" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryPrintItemVO">
+    <select id="printItems" resultType="com.xsy.scm.delivery.domain.vo.DeliveryPrintItemVO">
         <!-- 只取打印页真正消费的列；原先 resultMap 复用 SalesOrderItemDao.row 会把 33 列实体整份吐出去 -->
         SELECT i.id,
                i.order_id                                                               AS orderId,
@@ -137,11 +137,11 @@
                                               AND t.deleted = FALSE
                                               AND t.status = 'COMPLETED'))
     </sql>
-    <select id="candidate" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
+    <select id="candidate" resultType="com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) candidate WHERE order_id=#{id}
     </select>
     <!-- 加入线路时按订单逐个查快照是 500 次往返；复用 candidateSource，口径不会与单查版漂移。 -->
-    <select id="candidateByIds" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
+    <select id="candidateByIds" resultType="com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) candidate WHERE candidate.order_id IN
         <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
     </select>
@@ -167,7 +167,7 @@
       全缺（OUT_OF_STOCK）的行照样返回，sorted_quantity = 0，由库存命令侧决定不生成出库行。
     -->
     <select id="sortedLines"
-            resultType="net.lab1024.sa.admin.module.scm.delivery.domain.dto.DeliverySortedLine">
+            resultType="com.xsy.scm.delivery.domain.dto.DeliverySortedLine">
         SELECT i.order_id             AS orderId,
                i.id                   AS salesOrderItemId,
                i.sku_id               AS skuId,
@@ -181,7 +181,7 @@
         <foreach collection="orderIds" item="orderId" open="(" close=")" separator=",">#{orderId}</foreach>
         ORDER BY i.order_id ASC, i.id ASC
     </select>
-    <select id="candidates" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCandidateVO">
+    <select id="candidates" resultType="com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) c WHERE c.status IN
         <foreach collection="statuses" item="status" open="(" close=")" separator=",">#{status}</foreach>
         AND NOT EXISTS (SELECT 1 FROM delivery_route_order d WHERE d.order_id=c.order_id AND
@@ -216,7 +216,7 @@
         <if test="scope == null">AND FALSE</if>
         ORDER BY c.expect_delivery_time NULLS LAST,c.order_id
     </select>
-    <select id="orderView" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryOrderViewVO">
+    <select id="orderView" resultType="com.xsy.scm.delivery.domain.vo.DeliveryOrderViewVO">
         SELECT o.order_id,
                o.order_no_snapshot                                                   AS order_no,
                o.customer_id,
@@ -236,7 +236,7 @@
           AND o.assignment_status = 'ACTIVE'
         ORDER BY s.stop_seq, o.order_id
     </select>
-    <select id="customerView" resultType="net.lab1024.sa.admin.module.scm.delivery.domain.vo.DeliveryCustomerViewVO">
+    <select id="customerView" resultType="com.xsy.scm.delivery.domain.vo.DeliveryCustomerViewVO">
         SELECT o.customer_id,
                min(s.customer_name_snapshot)                                       AS customer_name,
                count(*)                                                            AS order_count,
