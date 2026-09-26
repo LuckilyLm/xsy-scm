@@ -77,3 +77,6 @@ __pycache__/
 !/deploy/minio/
 /deploy/minio/*
 !/deploy/minio/bootstrap.sh
+
+# 质量工具单测的临时工作目录（必须在仓库根下，见 test_package_migration_manifest.py）
+.tmp-quality-*/

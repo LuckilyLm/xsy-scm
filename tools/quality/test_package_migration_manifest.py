@@ -31,6 +31,7 @@ import argparse
 import contextlib
 import io
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -222,13 +223,25 @@ class CaptureAttackTest(unittest.TestCase):
     def setUp(self) -> None:
         # The temporary ledger must live *under* the repo root: ``capture`` ends by
         # printing ``relative(BASELINE_DIR)``, which cannot express a path outside it.
+        #
+        # 目录名固定且带 `.` 前缀 + 明确的 rm 收尾，不用 `tempfile.TemporaryDirectory`：
+        # 它在 Windows 上会退化成 `tmpXXXXXXXX/` 落在仓库根**且**在句柄竞争时
+        # cleanup() 静默失败，于是每次跑测试都在仓库根留下一堆 tmp 目录，
+        # 被后续 `git add -A` 顺手提交进去（2026-09-26 收口提交真实踩到）。
         self._real = guard.BASELINE_DIR
-        self._temp = tempfile.TemporaryDirectory(dir=guard.ROOT)
-        guard.BASELINE_DIR = Path(self._temp.name)
+        self._temp_dir = guard.ROOT / ".tmp-quality-capture-attack"
+        shutil.rmtree(self._temp_dir, ignore_errors=True)
+        self._temp_dir.mkdir(parents=True, exist_ok=True)
+        guard.BASELINE_DIR = self._temp_dir
 
     def tearDown(self) -> None:
         guard.BASELINE_DIR = self._real
-        self._temp.cleanup()
+        # 收尾必须重试：capture 刚写完文件，Windows 上杀毒/索引可能短暂持有句柄。
+        # 删不掉也要留下**带点前缀**的目录，而不是混进仓库根的 tmp* 垃圾。
+        for _ in range(3):
+            if not self._temp_dir.exists():
+                break
+            shutil.rmtree(self._temp_dir, ignore_errors=True)
 
     def run_capture(self, findings: list[Finding],
                     families: tuple[str, ...] = ("magic-string-domain-literal",)) -> int:
