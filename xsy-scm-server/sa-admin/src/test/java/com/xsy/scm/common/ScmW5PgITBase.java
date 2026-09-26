@@ -145,7 +145,7 @@ public abstract class ScmW5PgITBase {
      * 因此线路类用例都依赖分拣服务做前置（见 {@link #sortingCompletedFor}）。
      */
     @Autowired
-    protected net.lab1024.sa.admin.module.scm.sorting.service.SortingTaskService sortingTaskService;
+    protected com.xsy.scm.sorting.service.SortingTaskService sortingTaskService;
 
     // ---- W5 自身（需求 / 采购单 / 只读查询）----
 
@@ -1023,7 +1023,7 @@ public abstract class ScmW5PgITBase {
                     + " AND si.deleted = FALSE AND si.occupation_status = 'ACTIVE'"
                     + " AND t.deleted = FALSE AND t.status = 'COMPLETED') ORDER BY i.id", Long.class, orderId);
             if (itemIds.isEmpty()) continue;
-            var create = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingTaskCreateForm();
+            var create = new com.xsy.scm.sorting.domain.form.SortingTaskCreateForm();
             create.setWarehouseId(fixtureWarehouseId());
             create.setAssigneeEmployeeId(actor);
             create.setRemark("配送资格前置夹具");
@@ -1031,19 +1031,19 @@ public abstract class ScmW5PgITBase {
             var detail = sortingTaskService.create(create,
                     prefix + ":sort-fixture:" + (++sortingFixtureSequence) + ":" + orderId);
             Long taskId = detail.getTask().getId();
-            var entries = new ArrayList<net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryItemForm>();
+            var entries = new ArrayList<com.xsy.scm.sorting.domain.form.SortingEntryItemForm>();
             for (var line : detail.getItems()) {
-                var entry = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryItemForm();
+                var entry = new com.xsy.scm.sorting.domain.form.SortingEntryItemForm();
                 entry.setId(line.getId());
                 entry.setVersion(line.getVersion());
                 entry.setSortedQuantity(line.getPlannedQuantitySnapshot());
                 entry.setResult("NORMAL");
                 entries.add(entry);
             }
-            var entryForm = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryForm();
+            var entryForm = new com.xsy.scm.sorting.domain.form.SortingEntryForm();
             entryForm.setItems(entries);
             sortingTaskService.enter(taskId, entryForm);
-            var complete = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingActionForm();
+            var complete = new com.xsy.scm.sorting.domain.form.SortingActionForm();
             complete.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?",
                     Integer.class, taskId));
             sortingTaskService.complete(taskId, complete);

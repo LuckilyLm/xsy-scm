@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.sorting.dao.SortingQueryDao">
+<mapper namespace="com.xsy.scm.sorting.dao.SortingQueryDao">
     <!--
       分拣范围（裁决第 7 条与补充第 15 条）：授权仓 ∩ 可见指派人，两维取交集、失败关闭。
       * scope 为 null 渲染 AND FALSE：漏传范围必须是「查不到」，不能是「查全部」。
@@ -28,7 +28,7 @@
         (SELECT count(*) FROM sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
         AND i.occupation_status='ACTIVE' AND i.result IS NOT NULL) AS processed_count
     </sql>
-    <select id="lockTask" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.entity.SortingTaskEntity">
+    <select id="lockTask" resultType="com.xsy.scm.sorting.domain.entity.SortingTaskEntity">
         SELECT *
         FROM sorting_task
         WHERE id = #{id}
@@ -37,7 +37,7 @@
     <select id="nextNumber" resultType="long">
         SELECT nextval('sorting_task_no_seq')
     </select>
-    <select id="tasks" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingTaskVO">
+    <select id="tasks" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskVO">
         SELECT
         <include refid="taskColumns"/>
         FROM sorting_task t
@@ -58,7 +58,7 @@
         </if>
         <include refid="taskScopeGuard"/>
         ORDER BY t.created_at DESC,t.id DESC    </select>
-    <select id="task" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingTaskVO">
+    <select id="task" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskVO">
         SELECT
         <include refid="taskColumns"/>
         FROM sorting_task t
@@ -66,7 +66,7 @@
         WHERE t.id=#{id} AND t.deleted=FALSE
         <include refid="taskScopeGuard"/>
     </select>
-    <select id="items" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingTaskItemVO">
+    <select id="items" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskItemVO">
         SELECT i.*
         FROM sorting_task_item i
         WHERE i.task_id = #{taskId}
@@ -77,7 +77,7 @@
       按商品汇总（只读视角，裁决补充第 19 条）：分组键含销售单位，量只在同单位内相加。
       occupation_status='ACTIVE' 把已取消任务的历史行排除在汇总之外——它们不再代表待办或已发量。
     -->
-    <select id="skuSummary" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingSkuSummaryVO">
+    <select id="skuSummary" resultType="com.xsy.scm.sorting.domain.vo.SortingSkuSummaryVO">
         SELECT i.sku_id,
         i.spu_code_snapshot,
         i.product_name_snapshot,
@@ -114,7 +114,7 @@
       actual_quantity IS NOT NULL 是防御性重复：标品在提交时按订购量落值、非标在确认前必须已录实重，
       因此 CONFIRMED 的行必然有值；写下这条是为了让「计划量快照 > 0」的前提在 SQL 里也看得出来。
     -->
-    <select id="candidateLines" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.vo.SortingCandidateLineVO">
+    <select id="candidateLines" resultType="com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO">
         SELECT i.id AS sales_order_item_id,
         o.id AS sales_order_id,
         o.order_no,
@@ -146,7 +146,7 @@
         </if>
         ORDER BY o.expect_delivery_time NULLS LAST,o.id DESC,i.sort_order,i.id
     </select>
-    <select id="orderLines" resultType="net.lab1024.sa.admin.module.scm.sorting.domain.dto.SortingOrderLineSnapshot">
+    <select id="orderLines" resultType="com.xsy.scm.sorting.domain.dto.SortingOrderLineSnapshot">
         SELECT i.id AS sales_order_item_id,
         o.id AS sales_order_id,
         o.status AS order_status,

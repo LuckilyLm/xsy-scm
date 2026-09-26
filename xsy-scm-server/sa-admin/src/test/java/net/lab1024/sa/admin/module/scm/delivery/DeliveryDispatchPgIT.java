@@ -11,11 +11,11 @@ import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryVersionForm;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryDriverService;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteService;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
-import net.lab1024.sa.admin.module.scm.sorting.domain.entity.SortingTaskEntity;
-import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingActionForm;
-import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryForm;
-import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryItemForm;
-import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingTaskCreateForm;
+import com.xsy.scm.sorting.domain.entity.SortingTaskEntity;
+import com.xsy.scm.sorting.domain.form.SortingActionForm;
+import com.xsy.scm.sorting.domain.form.SortingEntryForm;
+import com.xsy.scm.sorting.domain.form.SortingEntryItemForm;
+import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
@@ -41,7 +41,7 @@ import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCod
 import static net.lab1024.sa.admin.module.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_IDEMPOTENCY_CONFLICT;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_IDEMPOTENCY_KEY_REQUIRED;
-import static net.lab1024.sa.admin.module.scm.sorting.constant.SortingErrorCode.OUTBOUND_EXISTS;
+import static com.xsy.scm.sorting.constant.SortingErrorCode.OUTBOUND_EXISTS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 
