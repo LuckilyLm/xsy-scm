@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinancePaymentSourceDao">
+
+    <!--
+      财务域对 order_refund 只读：本文件只有 SELECT。
+      不带 status 过滤，让服务层能把「退款尚未完成」和「退款不存在」区分成可解释的 41139，
+      而不是让一条 SQL 悄悄把 PENDING 变成「查不到」。
+      刻意不读 order_refund.external_reference：那是订单侧的凭据文本，
+      财务付款凭据号必须独立登记（设计稿 §6 / Q25）。
+    -->
+    <select id="selectOrderRefund"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceRefundFactDto">
+        SELECT r.id             AS refundId,
+               r.customer_id    AS customerId,
+               r.status         AS status,
+               r.refund_amount  AS refundAmount
+        FROM order_refund r
+        WHERE r.id = #{refundId}
+          AND r.deleted = FALSE
+    </select>
+</mapper>

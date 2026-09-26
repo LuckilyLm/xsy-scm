@@ -248,9 +248,11 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     @DisplayName("external_reference 重复：两次合法登记都成功，各一张收款单（它不是幂等键）")
     void duplicateExternalReferenceIsAllowed() {
         Long customerId = customerOwnedBy(null);
+        // 三件全部相同：金额、凭据号、时点。真实业务里「同一账号同日两笔等额同流水号引用」就是
+        // 两笔钱，任何按字段组合的自然唯一键都会把第二笔合法收款挡在库外。
         FinanceReceiptAddForm first = form(customerId, "50.0000", "BANK_TRANSFER", PAST);
         first.setExternalReference("BANK-STATEMENT-001");
-        FinanceReceiptAddForm second = form(customerId, "60.0000", "BANK_TRANSFER", PAST);
+        FinanceReceiptAddForm second = form(customerId, "50.0000", "BANK_TRANSFER", PAST);
         second.setExternalReference("BANK-STATEMENT-001");
 
         Long firstId = add(first).getReceiptId();
@@ -262,6 +264,17 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         // external_reference 上有普通索引、没有唯一约束（V65）：银行流水号跨客户重复是真实存在的
         assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'finance_receipt'"
                 + " AND indexdef ILIKE '%unique%' AND indexdef ILIKE '%external_reference%'")).isZero();
+        // 收款表根本没有来源列，所以也没有任何业务来源唯一索引可依赖；
+        // 全部唯一索引只有主键、单据号与 F1-3C 的反向唯一，三者都不是业务事实幂等键。
+        assertThat(jdbc.queryForList(
+                "SELECT indexdef FROM pg_indexes WHERE tablename = 'finance_receipt'"
+                        + " AND indexdef ILIKE '%unique%'", String.class))
+                .as("finance_receipt 的全部唯一索引")
+                .allSatisfy(indexDef -> assertThat(indexDef)
+                        .satisfiesAnyOf(
+                                def -> assertThat(def).contains("receipt_no"),
+                                def -> assertThat(def).contains("reverse_of_id"),
+                                def -> assertThat(def).contains("finance_receipt_pkey")));
     }
 
     // ------------------------------------------------------------------

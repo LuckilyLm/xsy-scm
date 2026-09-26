@@ -3,7 +3,8 @@ package net.lab1024.sa.admin.module.scm.finance;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import net.lab1024.sa.admin.module.scm.common.ScmW5PgITBase;
 import net.lab1024.sa.admin.module.scm.finance.constant.FinanceConstant;
-import net.lab1024.sa.admin.module.scm.finance.controller.FinanceReceiptController;
+import net.lab1024.sa.admin.module.scm.finance.controller.FinancePaymentController;
+import net.lab1024.sa.admin.module.scm.finance.domain.form.FinancePaymentAddForm;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.admin.module.system.login.manager.LoginManager;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
@@ -19,22 +20,20 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@code scm:finance:receipt:add} 的正式权限取证（F1-3A）。
+ * {@code scm:finance:payment:add} 的正式权限取证（F1-3B）。
  *
- * <p><b>要证明的是「产品权限真的发布了」，不是「mock 里通过了」。</b>
- * 因此三条断言分别覆盖交付链的三段，没有一条依赖 {@code MockedStatic<StpUtil>}：
+ * <p>与收款侧同一套三段证据，且<b>不依赖 {@code MockedStatic<StpUtil>}</b>：
  * <ol>
- *   <li>V66 把能力点种进了 {@code t_menu}，并按 {@code role_code} 授给 SCM_FINANCE（配置事实）；</li>
- *   <li>真实登录用户的权限集合里出现 / 不出现这个串（{@link LoginManager} 走的就是
- *       {@code t_role → t_role_menu → t_menu.api_perms} 那条生产路径，是产品机制本身）；</li>
- *   <li>Controller 上的 {@code @SaCheckPermission} 声明的正是同一个串（防止权限串发布在库里、
- *       端点却挂着另一个串或压根没挂）。</li>
+ *   <li>V67 把能力点种进 {@code t_menu}，并按 {@code role_code} 授给 SCM_FINANCE（配置事实）；</li>
+ *   <li>真实登录用户的权限集合里出现 / 不出现这个串 —— 走 {@link LoginManager} 的
+ *       {@code t_role → t_role_menu → t_menu.api_perms} 生产装配路径，即产品机制本身；</li>
+ *   <li>Controller 上 {@code @SaCheckPermission} 声明的正是同一个串。</li>
  * </ol>
  *
  * <p>取证账号一律 {@code administrator_flag = false}：超管绕过权限校验，用它取证等于什么都没测。
  */
-@DisplayName("收款登记权限发布（F1-3A，PG IT）")
-class ScmFinanceReceiptPermissionPgIT extends ScmW5PgITBase {
+@DisplayName("付款登记权限发布（F1-3B，PG IT）")
+class ScmFinancePaymentPermissionPgIT extends ScmW5PgITBase {
 
     @Autowired
     private LoginManager loginManager;
@@ -59,7 +58,7 @@ class ScmFinanceReceiptPermissionPgIT extends ScmW5PgITBase {
     private List<String> permissionsOf(Long employeeId) {
         var employee = new RequestEmployee();
         employee.setEmployeeId(employeeId);
-        employee.setActualName("F1-3A 权限取证");
+        employee.setActualName("F1-3B 权限取证");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
         employee.setAdministratorFlag(false);
         SmartRequestUtil.setRequestUser(employee);
@@ -68,49 +67,49 @@ class ScmFinanceReceiptPermissionPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("SCM_FINANCE 持有收款登记权限；SCM_DRIVER 不持有")
-    void financeRoleHoldsReceiptAddPermission() {
+    @DisplayName("SCM_FINANCE 持有付款登记权限；SCM_DRIVER 不持有")
+    void financeRoleHoldsPaymentAddPermission() {
         Long financeEmployee = employeeWithRole("FIN", "SCM_FINANCE");
         Long driverEmployee = employeeWithRole("DRV", "SCM_DRIVER");
 
-        assertThat(permissionsOf(financeEmployee)).contains(FinanceConstant.RECEIPT_ADD_PERM);
-        assertThat(permissionsOf(driverEmployee)).doesNotContain(FinanceConstant.RECEIPT_ADD_PERM);
+        assertThat(permissionsOf(financeEmployee)).contains(FinanceConstant.PAYMENT_ADD_PERM);
+        assertThat(permissionsOf(driverEmployee)).doesNotContain(FinanceConstant.PAYMENT_ADD_PERM);
     }
 
     @Test
-    @DisplayName("库里发布的串与 Controller 注解声明的串逐字一致")
+    @DisplayName("库里发布的串与 Controller 注解声明的串逐字一致，且只授财务岗")
     void publishedPermissionStringMatchesTheControllerAnnotation() throws Exception {
-        Method endpoint = FinanceReceiptController.class
-                .getDeclaredMethod("add",
-                        net.lab1024.sa.admin.module.scm.finance.domain.form.FinanceReceiptAddForm.class,
-                        String.class);
+        Method endpoint = FinancePaymentController.class
+                .getDeclaredMethod("add", FinancePaymentAddForm.class, String.class);
         SaCheckPermission annotation = endpoint.getAnnotation(SaCheckPermission.class);
-        assertThat(annotation).as("收款登记端点必须挂功能权限注解").isNotNull();
-        assertThat(annotation.value()).containsExactly(FinanceConstant.RECEIPT_ADD_PERM);
+        assertThat(annotation).as("付款登记端点必须挂功能权限注解").isNotNull();
+        assertThat(annotation.value()).containsExactly(FinanceConstant.PAYMENT_ADD_PERM);
 
-        // 交付链第一段：t_menu 里发布的串必须与注解一致，且只有 SCM_FINANCE 与超管拿到
-        assertThat(jdbc.queryForList(
-                "SELECT api_perms FROM t_menu WHERE api_perms = ?", String.class,
-                FinanceConstant.RECEIPT_ADD_PERM))
-                .containsExactly(FinanceConstant.RECEIPT_ADD_PERM);
+        assertThat(jdbc.queryForList("SELECT api_perms FROM t_menu WHERE api_perms = ?", String.class,
+                FinanceConstant.PAYMENT_ADD_PERM))
+                .containsExactly(FinanceConstant.PAYMENT_ADD_PERM);
         assertThat(jdbc.queryForList(
                 "SELECT r.role_code FROM t_role_menu rm JOIN t_role r ON r.role_id = rm.role_id"
                         + " JOIN t_menu m ON m.menu_id = rm.menu_id WHERE m.api_perms = ?"
                         + " AND r.role_code <> 'SUPER_ADMIN' ORDER BY r.role_code",
-                String.class, FinanceConstant.RECEIPT_ADD_PERM))
+                String.class, FinanceConstant.PAYMENT_ADD_PERM))
                 .containsExactly("SCM_FINANCE");
+        // 能力点必须挂在隐藏目录下、自身不带组件：这条串不该让侧栏多出任何入口
+        assertThat(jdbc.queryForMap(
+                "SELECT parent_id, menu_type, component FROM t_menu WHERE api_perms = ?",
+                FinanceConstant.PAYMENT_ADD_PERM))
+                .containsEntry("parent_id", 1500L)
+                .containsEntry("component", null);
     }
 
     @Test
-    @DisplayName("本阶段没有提前发布任何其它收款侧权限或财务页面菜单")
+    @DisplayName("本阶段没有提前发布任何付款侧查询 / 反向权限，也没有财务页面菜单")
     void nothingElseIsPublishedYet() {
-        // 只钉「收款侧」：整个财务段发布了哪几行由 ScmFinanceSchemaPgIT 按 containsExactly 负责，
-        // 在这里重复一份会随下一个阶段（F1-3B 的付款能力）无谓变红。
         assertThat(jdbc.queryForList(
-                "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:receipt:%'"
+                "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:payment:%'"
                         + " ORDER BY api_perms", String.class))
-                .as("receipt:reverse 属 F1-3C、receipt:query 属 F1-5，都不该提前出现")
-                .containsExactly(FinanceConstant.RECEIPT_ADD_PERM);
+                .as("payment:query 属 F1-5、payment:reverse 属 F1-3C，都不该提前出现")
+                .containsExactly(FinanceConstant.PAYMENT_ADD_PERM);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
                 Integer.class))

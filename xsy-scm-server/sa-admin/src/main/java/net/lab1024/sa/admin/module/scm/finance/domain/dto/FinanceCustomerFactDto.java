@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.finance.domain.dto;
 import lombok.Data;
 
 /**
- * 登记收款所需的**客户事实**，由 {@code FinanceReceiptSourceDao} 只读取得。
+ * 收付款共用的**客户事实**，由 {@code FinanceCounterpartySourceDao} 只读取得。
  *
  * <p>{@code customerNameSnapshot} 在收款事实生成时冻结（历史账不受主档改名影响），
  * {@code sellerId} 只用于数据范围判定，不落进 {@code finance_receipt}

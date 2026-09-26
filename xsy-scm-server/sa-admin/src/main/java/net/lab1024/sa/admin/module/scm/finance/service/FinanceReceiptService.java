@@ -11,11 +11,11 @@ import net.lab1024.sa.admin.module.scm.common.util.ScmDocumentNumbers;
 import net.lab1024.sa.admin.module.scm.finance.constant.FinanceConstant;
 import net.lab1024.sa.admin.module.scm.finance.constant.FinanceErrorCode;
 import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceBusinessTypeEnum;
-import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinancePaymentMethodEnum;
+import net.lab1024.sa.admin.module.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
+import net.lab1024.sa.admin.module.scm.finance.dao.FinanceCounterpartySourceDao;
 import net.lab1024.sa.admin.module.scm.finance.dao.FinanceReceiptDao;
-import net.lab1024.sa.admin.module.scm.finance.dao.FinanceReceiptSourceDao;
 import net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceCustomerFactDto;
 import net.lab1024.sa.admin.module.scm.finance.domain.entity.FinanceReceiptEntity;
 import net.lab1024.sa.admin.module.scm.finance.domain.form.FinanceReceiptAddForm;
@@ -54,7 +54,7 @@ import java.util.Map;
 public class FinanceReceiptService {
 
     private final FinanceReceiptDao receipts;
-    private final FinanceReceiptSourceDao receiptSource;
+    private final FinanceCounterpartySourceDao counterpartySource;
     private final FinanceOperationLogRecorder operationLogs;
     private final ScmDataScopeService scopeService;
     private final OrderIdempotencyService idempotency;
@@ -93,7 +93,7 @@ public class FinanceReceiptService {
      * 反向要带 {@code reverse_of_id} 与原行「已用额 = 0」前置，是另一条命令。
      */
     private FinanceReceiptEntity register(FinanceReceiptAddForm form) {
-        FinanceCustomerFactDto customer = receiptSource.selectCustomer(form.getCustomerId());
+        FinanceCustomerFactDto customer = counterpartySource.selectCustomer(form.getCustomerId());
         if (customer == null
                 || !scopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             throw new ScmDataScopeException();
@@ -116,7 +116,7 @@ public class FinanceReceiptService {
         receipt.setAmount(amount);
         receipt.setMethod(method(form.getMethod()));
         receipt.setReceivedAt(form.getReceivedAt());
-        receipt.setEntryType(ScmFinanceEntryTypeEnum.NORMAL.name());
+        receipt.setEntryType(ScmFinanceReverseEntryTypeEnum.NORMAL.name());
         // REVERSE 专用列在 NORMAL 行上必须为空（ck_finance_receipt_entry_pairing）。
         receipt.setReverseOfId(null);
         receipt.setReason(null);

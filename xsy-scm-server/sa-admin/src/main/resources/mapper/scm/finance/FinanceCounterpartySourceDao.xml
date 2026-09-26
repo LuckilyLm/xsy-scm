@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lab1024.sa.admin.module.scm.finance.dao.FinanceCounterpartySourceDao">
+
+    <!--
+      财务域对客户表只读：本文件只有 SELECT。
+      范围判定要拿到 seller_id 才能判 customerSellerScope，因此一次读足三列，
+      不在服务层再走 CustomerService（那会带来第二套校验与写能力）。
+      收款与退款付款的 CUSTOMER 侧共用这一条，范围口径不留两处实现。
+    -->
+    <select id="selectCustomer"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceCustomerFactDto">
+        SELECT c.id         AS customerId,
+               c.name       AS customerName,
+               c.seller_id  AS sellerId
+        FROM customer c
+        WHERE c.id = #{customerId}
+          AND c.deleted = FALSE
+    </select>
+
+    <!--
+      供应商只读存在性与名称：D-5 不为此新增 supplier 范围维度（P0 裁决 7 共享读取），
+      status 也不作为付款前置条件 —— 已停用供应商结清历史债务没有被裁决禁止。
+    -->
+    <select id="selectSupplier"
+            resultType="net.lab1024.sa.admin.module.scm.finance.domain.dto.FinanceSupplierFactDto">
+        SELECT s.id   AS supplierId,
+               s.name AS supplierName
+        FROM supplier s
+        WHERE s.id = #{supplierId}
+          AND s.deleted = FALSE
+    </select>
+</mapper>

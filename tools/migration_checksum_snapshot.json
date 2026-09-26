@@ -264,6 +264,10 @@
     "66": {
       "file": "V66__scm_finance_receipt_permission.sql",
       "checksum": -796585250
+    },
+    "67": {
+      "file": "V67__scm_finance_payment_permission.sql",
+      "checksum": 248118692
     }
   }
 }

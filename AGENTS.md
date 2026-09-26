@@ -130,7 +130,23 @@ P3   Finance R1  F1-3A receipt registration COMPLETE (2026-09-26): POST
                                          same 30005 envelope). scm:finance:receipt:query
                                          (1513) stays unpublished: this phase has no read
                                          endpoint.
-P3   Finance R1  F1-3B..F1-8             NOT STARTED (payment / reverse / write-off / query+export /
+P3   Finance R1  F1-3B payment registration COMPLETE (2026-09-26): POST
+                                         /scm/finance/payment/add -> one NORMAL finance_payment
+                                         + one PAY log, same transaction, Idempotency-Key claim.
+                                         Exactly two shapes: SUPPLIER with source NULL (payment or
+                                         prepayment, no payable required, Q16) and CUSTOMER +
+                                         ORDER_REFUND (must be COMPLETED, amount and counterparty
+                                         equal order_refund's values, Q19). Anything else is 41139.
+                                         V67 (data-only) publishes **only** menu 1522
+                                         scm:finance:payment:add; payment:query (1514) stays
+                                         unpublished. No auto write-off, no second receivable
+                                         reduction (Q27 - Return already reversed the receivable),
+                                         supplier side takes no scope (D-5) while customer side
+                                         follows customerSellerScope. Concurrent double-pay of one
+                                         refund converges to one fact via
+                                         uk_finance_payment_source_active (41139, never a raw
+                                         DuplicateKeyException).
+P3   Finance R1  F1-3C..F1-8             NOT STARTED (receipt/payment reverse / write-off / query+export /
                                          frontend / E2E / R0
                                          hand-off); each phase
                                          seeds only the permissions its own first protected API
@@ -377,8 +393,14 @@ payment's `source_type`/`source_id` **must be NULL**, because `uk_finance_paymen
 predicated on `source_id IS NOT NULL`: a reverse row carrying the original `ORDER_REFUND` source would
 compete for the same unique key, making a mis-keyed refund payment permanently unreversible.
 **`external_reference` is not unique and is not an idempotency key** — it is free-text fund-voucher
-reference, bank statement numbers genuinely repeat across customers, and de-duplication is
-`Idempotency-Key` plus the source unique index. **Data scope** (D-5): receipt follows
+reference, bank statement numbers genuinely repeat across customers. A NORMAL receipt is a manually
+registered money fact: `finance_receipt` has **no** `source_type` / `source_id` at all, so there is no
+business-source unique index behind it; duplicate-request protection for receipt registration is the
+request-level `Idempotency-Key` alone, and `uk_finance_receipt_no` is only a document-number
+uniqueness constraint, never a business idempotency key. Two genuinely distinct receipts may share
+amount, `external_reference` and `received_at` as long as they come from separate commands. Only the
+refund **payment** has a second layer (`uk_finance_payment_source_active`), because it does carry a
+source. **Data scope** (D-5): receipt follows
 `customer_id → customer.seller_id → customerSellerScope`, payment's SUPPLIER side is not narrowed (no
 supplier dimension exists; P0 ruling 7 keeps supplier master data team-shared) while its CUSTOMER side
 matches receipt, and write-off follows its **target** (`RECEIVABLE → orderSellerScope`,
@@ -403,12 +425,14 @@ green. `visible_flag = false` does **not** paper over this — it only feeds `me
 its `component` are registered regardless. `SmartAdminMenuComponentPgIT` is the repo-wide gate that enforces
 this (every published page menu's `component` must resolve to a real file; the two pre-existing gaps —
 V11's `customer-sku-visibility-list.vue` and V3's SmartAdmin `support/demonstration/index.vue` — sit in an
-explicit shrink-only baseline). Menu ids 1500–1531 were a **plan**, and only two of them are now occupied
-facts: V66 (F1-3A) publishes exactly 1500 (hidden directory, `component IS NULL`, needed as the
-`parent_id` of a capability row — the V28 / V46 pattern) and 1521 `scm:finance:receipt:add`.
-`ScmFinanceSchemaPgIT` pins that pair with `containsExactly`, so a further row must arrive with a real
-endpoint or a real `.vue`; `scm:finance:receipt:query` (1513) is deliberately **not** published yet,
-because F1-3A has no read endpoint and an unused grant is the same mistake as an unresolvable page menu.
+explicit shrink-only baseline). Menu ids 1500–1531 were a **plan**, and only three of them are now
+occupied facts: V66 (F1-3A) publishes 1500 (hidden directory, `component IS NULL`, needed as the
+`parent_id` of a capability row — the V28 / V46 pattern) plus 1521 `scm:finance:receipt:add`, and
+V67 (F1-3B) adds 1522 `scm:finance:payment:add`.
+`ScmFinanceSchemaPgIT` pins that trio with `containsExactly`, so a further row must arrive with a real
+endpoint or a real `.vue`; `scm:finance:receipt:query` (1513) and `scm:finance:payment:query` (1514)
+are deliberately **not** published yet, because F1-3A / F1-3B have no read endpoint and an unused grant
+is the same mistake as an unresolvable page menu.
 Not in scope, and not to be started before their own phase: Finance R2 (利润 / 毛利 /
 账龄 / 客户对账 / 供应商对账), P5 (优惠券 / 满减 / 在线支付 / 余额 / 充值 / COD), invoices and tax,
 vouchers and general ledger, finance approval workflows, finance attachments, `due_date`, supplier
@@ -562,6 +586,14 @@ V66  V66__scm_finance_receipt_permission.sql           p3   Finance R1 F1-3A dat
                                                    **不发布**任何财务页面菜单，也**不发布** 1513
                                                    receipt:query —— 本阶段唯一受保护端点是登记接口，
                                                    没有可授权的读取动作；页面菜单仍随 F1-6 的 .vue 落库
+V67  V67__scm_finance_payment_permission.sql         p3   Finance R1 F1-3B data-only，只补一行：
+                                                   1522 能力点 scm:finance:payment:add
+                                                   （menu_type=3、component 为 NULL、父级 1500 已在
+                                                   V66 建好，api_perms == web_perms）。
+                                                   按 role_code 授 SUPER_ADMIN 兜底与 SCM_FINANCE，
+                                                   不硬编码 role_id；ON CONFLICT DO NOTHING 可重入。
+                                                   **不发布** 1514 payment:query（本阶段没有读取
+                                                   端点）、不发布任何页面菜单或反向权限
 ```
 
 W6-1/B1 changes are **BACKEND + BROWSER VERIFIED**; see `docs/progress.md`.

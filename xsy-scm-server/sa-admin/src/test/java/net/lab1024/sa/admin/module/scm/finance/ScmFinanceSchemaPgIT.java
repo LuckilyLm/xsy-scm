@@ -516,24 +516,26 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * F1-1 与 F1-2 一条财务菜单都没种（那时没有 Controller）；F1-3A 交付了第一条受保护端点
-     * {@code POST /scm/finance/receipt/add}，因此 V66 只发布这一条能力：
-     * 1500 隐藏目录（无组件）+ 1521 {@code scm:finance:receipt:add}。
+     * F1-1 与 F1-2 一条财务菜单都没种（那时没有 Controller）；F1-3A 交付第一条受保护端点
+     * {@code POST /scm/finance/receipt/add}（V66 发布 1500 隐藏目录 + 1521），
+     * F1-3B 交付第二条 {@code POST /scm/finance/payment/add}（V67 只补 1522，父目录已存在）。
      *
-     * <p><b>为什么这条断言必须随阶段收紧而不是删掉</b>：本轮一度把设计稿 §16 的 1500–1531
+     * <p><b>为什么这条断言必须随阶段收紧而不是删掉</b>：F1-1 那轮一度把设计稿 §16 的 1500–1531
      * 全部种了下去，结果是「已授权的页面菜单指向不存在的 {@code .vue}」——
      * {@code src/router/index.ts} 的 {@code route.component = modules[relativePath]} 在文件缺失时
      * 得到 {@code undefined}，菜单点开是空白页，而构建 / 类型检查 / 后端测试全绿。
      * {@code visible_flag = false} 掩盖不了它：那只影响 {@code meta.hideInMenu}。
-     * 所以下面钉的是「能力可以先行、页面菜单必须等 {@code .vue}」这条边界仍然成立。
+     * 反过来，提前种一条<b>没有端点使用的权限串</b>（如 F1-3 阶段的 {@code receipt:query}）
+     * 是同一类错误的镜像：menu_id 一旦被真实库应用就不可回收。
+     * 所以下面逐值钉的是「已发布集合 == 已有真实端点的能力集合」。
      */
     @Test
-    @DisplayName("阶段边界：财务只发布 1500 隐藏目录 + 1521 收款登记能力，不存在任何财务页面菜单")
+    @DisplayName("阶段边界：财务只发布 1500 隐藏目录 + 1521 收款登记 + 1522 付款登记，无任何页面菜单")
     void financePublishesOnlyTheReceiptAddCapability() {
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 ORDER BY menu_id", Long.class))
-                .as("V66 之后财务段只允许这两行；新增一行必须同时带来一个真实端点或一个真实页面")
-                .containsExactly(1500L, 1521L);
+                .as("V67 之后财务段只允许这三行；新增一行必须同时带来一个真实端点或一个真实页面")
+                .containsExactly(1500L, 1521L, 1522L);
 
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
@@ -554,7 +556,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:%' ORDER BY api_perms",
                 String.class))
-                .containsExactly("scm:finance:receipt:add");
+                .as("query / reverse / write-off / export 一律还没发布")
+                .containsExactly("scm:finance:payment:add", "scm:finance:receipt:add");
         // 四条种子约定之一：api_perms == web_perms，前端按钮与服务端鉴权读的是同一个串。
         // 作用域限制在财务段：底座原生菜单行本就允许两者不对称，全库断言会误伤。
         assertThat(jdbc.queryForObject(
@@ -566,8 +569,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "WHERE m.menu_id BETWEEN 1500 AND 1599", Integer.class))
-                .as("财务段两行菜单（1500 目录 + 1521 能力）各授超管兜底与 SCM_FINANCE，共 2 × 2 行")
-                .isEqualTo(4);
+                .as("财务段三行菜单（1500 目录 + 1521 / 1522 能力）各授超管兜底与 SCM_FINANCE，共 3 × 2 行")
+                .isEqualTo(6);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "WHERE m.menu_id = 1521", Integer.class))
@@ -575,9 +578,19 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 .isEqualTo(2);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "WHERE m.menu_id = 1522", Integer.class))
+                .as("能力点 1522 同样恰好两条授权行")
+                .isEqualTo(2);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "JOIN t_role r ON r.role_id = rm.role_id "
                         + "WHERE m.menu_id = 1521 AND r.role_code = 'SCM_FINANCE'", Integer.class))
                 .as("SCM_FINANCE 按 role_code 授权（V56 口径），不硬编码 role_id")
+                .isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "JOIN t_role r ON r.role_id = rm.role_id "
+                        + "WHERE m.menu_id = 1522 AND r.role_code = 'SCM_FINANCE'", Integer.class))
                 .isEqualTo(1);
     }
 

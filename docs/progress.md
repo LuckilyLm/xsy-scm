@@ -9,7 +9,7 @@
 | P0 基线收口 | **完成**（FA-1 / FA-2 / FA-2b / FA-3 全部落地；对象存储模式保密性已实测并据此修掉一处真实授权缺陷；正式非管理员角色、显式数据范围、库存并发与 Delivery L0–L2 均已通过真实角色浏览器验收） | 见「2026-09-24 P0 基线收口（第三批）」「（第二批）」「（第一批）」 |
 | P1 分拣管理 | **完成**（V60–V62；后端全量 1057 项 0 失败 0 错误、浏览器 129/0/8、前端四闸门全绿；实发事实不回写订单、不写库存；配送资格接分拣完成事实） | 见「2026-09-24 P1 分拣管理」；裁决第 1–22 条 |
 | P2 物流配送 L3 | **完成**（V63–V64；后端全量 1076 项 0 失败 0 错误、浏览器 136/8 按设计跳过（1 项未复现的既有夹具脆弱）、前端四闸门全绿；实发量取分拣 sorted_quantity，库存事实只由库存域一条原子命令产生） | 见「2026-09-25 P2 物流配送 L3」；裁决第 1–23 条 |
-| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付 + F1-2B 应收 + F1-2C 红字应收 + F1-3A 收款登记完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`。F1-2A / F1-2B / F1-2C：均 **0 迁移、0 菜单、0 权限**，派生写全部在触发命令的同一事务内。**F1-3A 是第一条用户命令**：`POST /scm/finance/receipt/add` + V66（data-only，只发布 1500 隐藏目录与 1521 `scm:finance:receipt:add`，**不**发布页面菜单与 `receipt:query`））；F1-3B…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」（注意：第二批 Q27 里「累计红字不得超过可冲金额」一句已被**第三批 D-2 / D-4 取代**，最终口径是无上限）；设计见 `docs/plan/finance-r1-design.md`；落地记录见「F1-1 数据地基」「F1-2A」「F1-2B」「F1-2C」「F1-3A」五段 |
+| Finance R1 应收与成本归属 | **F1-0.5 裁决收口 + F1-1 数据地基 + F1-2A 应付 + F1-2B 应收 + F1-2C 红字应收 + F1-3A 收款登记 + F1-3B 付款登记完成**（F1-1：**仅 V65**，纯 DDL：8 张财务事实表 + Java 骨架 + 3 个契约测试类；**未发布任何菜单 / 权限点 / 角色授权** —— 无 Controller 也无 `.vue`。F1-2A / F1-2B / F1-2C：均 **0 迁移、0 菜单、0 权限**，派生写全部在触发命令的同一事务内。**F1-3A**：`POST /receipt/add` + V66（1500 隐藏目录 + 1521 `receipt:add`）。**F1-3B**：`POST /payment/add` + V67（只补 1522 `payment:add`）—— 只有 `SUPPLIER`+无来源（预付）与 `CUSTOMER`+`ORDER_REFUND`（须 COMPLETED、金额与对方逐值相等）两种成立方式，其余一律 41139；不自动核销、不二次冲减应收）；F1-3C…F1-8 未开始 | 27 条 Q 裁决 + 10 条全局不变量 + D-1…D-5 见 `docs/decisions.md`「P3 Finance R1 裁决」（注意：第二批 Q27 里「累计红字不得超过可冲金额」一句已被**第三批 D-2 / D-4 取代**，最终口径是无上限）；设计见 `docs/plan/finance-r1-design.md`；落地记录见「F1-1 数据地基」「F1-2A」「F1-2B」「F1-2C」「F1-3A」「F1-3B」六段 |
 | W0 底座 | 完成 | SmartAdmin 原生系统能力作为 V2 底座 |
 | W1 商品 | 完成 | 商品、SKU、分类和价格基础能力 |
 | W2 客户与供应商 | 完成 | 客户、供应商及关联主数据 |
@@ -984,8 +984,9 @@ V66 照此办理，因此**没有**创建任何占位页面、**没有**重新�
 `register` 刻意拆成私有本体：F1-3C 的反向收款需要 `reverse_of_id` 与「已用额 = 0」前置，
 是另一条命令，不复用它。
 
-**字段与校验来源**：`customer_id` 只经财务自己的只读 DAO
-（`FinanceReceiptSourceDao.selectCustomer`，`WHERE id = ? AND deleted = FALSE`）取一次事实，
+**字段与校验来源**：`customer_id` 只经财务自己的只读 DAO 取一次事实
+（客户名 + `seller_id`，`WHERE id = ? AND deleted = FALSE`；F1-3B 起该读取收口在
+`FinanceCounterpartySourceDao.selectCustomer`，收款与退款付款共用同一条范围口径），
 用途限于范围判定与名称快照冻结；**不校验客户状态、不要求存在应收**（Q16 预收合法）。
 `amount` 走 `ScmDecimalStrings.parseScale4Required` + `ScmStrictDecimalStringDeserializer`
 （JSON number 字面量直接拒绝），形态不合法 40000、`signum() <= 0` 40000，
@@ -1048,6 +1049,146 @@ SmartAdminMenuComponentPgIT` = **52 项 0 失败 0 错误**；
 - 浏览器 E2E 未跑：本轮无前端改动。
 - `Idempotency-Key` 的**并发**双送（同键两请求同时到）未新增压测：由既有
   `idempotency_record` 唯一约束与三段式承担，与 delivery / inventory / sorting 同一机制。
+
+
+### 2026-09-26 P3 Finance R1 F1-3B：付款登记（V67，仅 NORMAL 一条命令）
+
+**本轮范围**：`POST /scm/finance/payment/add` 登记一笔 `NORMAL` 付款 —— 一条 `finance_payment`
+事实 + 一条 `PAY` 操作日志，同一事务，请求级 `Idempotency-Key`。
+F1-3C（收付款反向）、F1-4（核销 / 手工红字）、F1-5（查询 / 导出）、F1-6（前端）、
+F1-8（R0 接轨）**未开始**；本轮不写 `finance_write_off`、不改任何 `finance_receivable` /
+`finance_payable` 行、不改 `order_refund` 状态机（`OrderRefundService.complete` 一字未动）。
+
+**只有两种成立方式**（第三批 D-5 + 第一批 Q19 + 第二批 Q16 / Q27）：
+
+```text
+A  SUPPLIER  + source_type/source_id 均 NULL   供应商付款 / 预付，允许当前没有任何应付
+B  CUSTOMER  + ORDER_REFUND + source_id       客户退款付款，且该退款必须已 COMPLETED
+```
+
+不支持 `CUSTOMER + 无来源`（客户提现 / 余额退款 / 营销返现都没有需求基线，属 P5），
+不支持 `SUPPLIER + 来源`（模式配对错误，`ck_finance_payment_source_pairing` 同向），
+本期唯一的来源类型就是 `ORDER_REFUND`（`ck_finance_payment_source_type` 在库层同样只放这一个值）。
+付款与应付的对应关系以后只能由 `finance_write_off` 表达，因此 Form 里刻意
+**没有** `payableId` / `writeOffAmount` / `status` / `approver` / `accountId` / `currency` /
+`attachment` / `balance` / `refundStatus` 任何一个。
+
+**模式 B 的四条校验与「同码收敛」**：来源必须是 `ORDER_REFUND` 且 `sourceId` 非空 →
+读 `order_refund`（`deleted = FALSE`）→ 读其客户事实并判范围 → `status = COMPLETED` →
+`counterpartyId == order_refund.customer_id` → **`amount` 与 `refund_amount` 按 scale 4 逐值判等**
+（`compareTo`，不四舍五入到 2 位；夹具因此必须造出末位非零的金额才有判别性）。
+任一条不满足一律 `FINANCE_PAYMENT_SOURCE_INVALID(41139)`。
+这里有一个刻意的偏离 F1-3A 的选择：**越权也用 41139，不用范围异常**。
+F1-3A 的 `customer_id` 由调用方直接提交，所以「不存在」与「不是你的」共用 30005；
+本命令调用方提交的是 `sourceId`，若「退款不存在」给 41139 而「退款不是你的」给 30005，
+两个码就构成「这张退款存在且不属于你」的探测信号 —— 因此 CUSTOMER 侧的一切不通过
+（不存在 / 越权 / 未 COMPLETED / 金额或对方不符 / 已付过）**收敛为同一个 41139**。
+
+**范围（D-5）**：`SUPPLIER` 侧不应用任何范围 —— 供应商主档无 owner 列、按采购团队共享读取
+（P0 裁决 7），本期也不新增 `supplierScope`，因此实现里既不读 `purchaserScope` 也不读
+`orderSellerScope`；「无行级收窄」来自裁决而不是角色 bypass（`if role == FINANCE then bypass` 禁止）。
+`CUSTOMER` 侧与收款同口径：`order_refund.customer_id → customer.seller_id → customerSellerScope`，
+失败关闭。IT 用两个非超管账号分别取证：无范围账号也能登记供应商付款（U），
+退款付款的自有 / 他人 / 未分配三态（T）。
+
+**双层防重与真并发**：请求级 `Idempotency-Key`（scope `FINANCE_PAYMENT_ADD`，复用
+`OrderIdempotencyService` 三段式同一事务）只防「同一请求重发」；
+「两个人各发一次付同一张退款」必须由 `uk_finance_payment_source_active`
+（`(source_type, source_id) WHERE deleted = FALSE AND source_id IS NOT NULL`）仲裁。
+写入走 `insertNormalOnConflictDoNothing`，其 `ON CONFLICT` 的列与谓词与该索引**逐字一致**（Q11）：
+用无目标写法会把 `payment_no` 撞号一起吞掉，而供应商付款 `source_id` 为 NULL、根本不在这个索引里，
+所以 0 行返回值**只可能**意味着「这张退款已经付过了」。
+`ScmFinancePaymentRacePgIT` 用两线程 + `CountDownLatch` + 类级 `NOT_SUPPORTED`（各自独立事务、
+两把不同幂等键）钉住：恰好一笔付款 + 恰好一条 `PAY` 日志 + 恰好一侧失败且失败是
+`ScmBusinessException(41139)`，并且显式断言它**不是** `DataAccessException` ——
+不把约束名与 SQLState 泄漏到接口。这个场景属 Q26 核心要求，本轮按负责人指示直接补，不等 F1-4。
+
+**供应商预付没有业务来源唯一索引**（与收款同一形态）：两笔 counterparty / 金额 / `paid_at` /
+`external_reference` 四项全同的供应商付款，只要是两条命令就都成立（C 用例），
+并额外按 `pg_indexes` 断言 `finance_payment` 的全部唯一索引只有主键 / 单据号 / 来源 / 反向四个，
+没有按业务字段组合偷偷建起来的自然键。
+
+**`external_reference` 绝不从订单侧复制**：`order_refund.external_reference` 属于退款业务事实，
+`finance_payment.external_reference` 属于财务真实付出的凭据，两者职责不同，
+D 用例显式断言付款单上的该列不等于订单侧的值。
+顺带记下一个反向差异：`order_refund.external_reference` **有**部分唯一索引
+（`uk_order_refund_external_reference_active`），而财务侧刻意**没有** —— 见下面的夹具教训。
+
+**不自动核销、不二次冲减**（B / M 用例）：已有等额应付时登记付款，应付的
+`amount / version / updated_at` 三项逐值不变、`finance_write_off` 全库零行；
+先按 schema 造一张正常应收 + 一张红字应收，再登记该退货的退款付款，
+两张应收一字未改、也不出现第二张红字 —— Return 已经红冲过一次，钱付出去不再动应收（Q27）。
+
+**测试矩阵**：
+- `ScmFinancePaymentPgIT` 21 例：A–X 全谱 —— 预付、等额应付不核销、同事实两笔合法、
+  退款付款成功、PENDING 拒绝、金额差 0.0001 拒绝、对方不一致拒绝、
+  `CUSTOMER`+无来源与半套来源拒绝、`SUPPLIER`+来源拒绝、未知来源类型双层拒绝（Java 41139 +
+  直插被库 CHECK 拒）、同一退款顺序重复被来源唯一拒、付款不动应收、
+  `paid_at` 逐值与未来时点、方式三值与越界双层、金额严格十进制造、
+  范围正 / 反 / 未分配 / 供应商不受 purchaser 影响、幂等重放与冲突与缺键、`PAY` 日志快照、
+  单号来自全局序列且跳号单调。
+- `ScmFinancePaymentRollbackPgIT` 2 例（`NOT_SUPPORTED` 真回滚取证）：
+  日志阶段失败（触发器只在带本轮标记的日志行抛错）→ 付款 / 日志 / claim 三件零残留，
+  摘掉触发器后同一 key 能正常登记；来源唯一冲突 → 原付款保持、无第二笔、无第二份日志，
+  且失败请求的 claim **随事务回滚为 0 行**（按 `OrderIdempotencyService` 的真实语义断言，不猜）。
+- `ScmFinancePaymentRacePgIT` 1 例：真并发双付（见上）。
+- `ScmFinancePaymentPermissionPgIT` 3 例：不 mock `StpUtil`，走
+  `LoginManager.loadUserPermission` 生产装配路径证明 SCM_FINANCE 持有、SCM_DRIVER 不持有；
+  `t_menu` 发布的串与 Controller 注解逐字一致且能力点挂在 1500 下、`component` 为 NULL；
+  本阶段不提前发布 `payment:query` / `payment:reverse` / 页面菜单。
+- `ScmFinanceSchemaPgIT` 阶段边界收紧为正向 `containsExactly(1500, 1521, 1522)`、
+  `scm:finance:*` 串恰好 `{receipt:add, payment:add}`、授权行 3 × 2 = 6。
+
+**权限发布**：`V67`（data-only）只补 1522 `scm:finance:payment:add`，父目录 1500 已在 V66 建好，
+不再新增目录行。选号前重扫：本地 `db/migration/` 最大 V66、`origin/main` 最大 V64，
+`t_menu` 财务段只有 1500 / 1521 ⇒ V67 与 1522 都空闲。**不发布** 1514 `payment:query`
+（本阶段没有任何读取端点）、不发布反向与核销权限、不发布页面菜单。
+设计稿 §16 / §21 已把 1514 的原规划「F1-3B」按其自身判据改到 F1-5。
+
+**修正的一处实现说明表述**（不是新裁决）：F1-3A 的 `FinanceReceiptAddForm` 注释与 `AGENTS.md`
+都写过「防重是 `Idempotency-Key` + 来源唯一索引」，这对收款**不成立** ——
+`finance_receipt` 根本没有 `source_type/source_id` 列，因此没有任何业务来源唯一索引，
+重复请求防护只有 `Idempotency-Key` 一层，`uk_finance_receipt_no` 只是单据号唯一。
+两处均已改为正式口径，并给收款 IT 补上对应取证：
+金额 / 凭据号 / 时点三项全同的两笔真实收款各自成立，且按 `pg_indexes` 断言
+该表的全部唯一索引只有主键 / 单据号 / 反向三个。
+
+**本轮在自己新写的 IT 里踩到并修掉的三处脆弱性**（都是夹具问题，不是削弱断言）：
+① `counterparty_id` 是**多态**列（供应商 id 或客户 id，两条独立 identity 序列数值会重叠），
+最初按 `WHERE counterparty_id = ?` 计数会把同号的另一类付款算进来，
+改为 `counterparty_type + counterparty_id` 一起判的具名助手；
+`finance_operation_log.business_id` 同理（上一轮已记过一次）。
+② 退款夹具最初用 `refunds.query(...).getFirst()` 取行，改为按 `order_id` 直查
+（`SELECT id, version FROM order_refund WHERE order_id = ? AND deleted = FALSE`）——
+那个分页读接口按 `orderSellerScope` 收窄，夹具不该把自己的可用性建立在读侧范围上。
+**但这不是上面那次失败的成因**，成因是 ③；本轮先按猜测改了一处、真正原因稍后才定位，
+这个顺序值得记下来，免得后人把 ② 当成病因。
+③ **真正的失败原因**是 `uk_order_refund_external_reference_active`：
+夹具给 `order_refund.external_reference` 用了固定文本，`NOT_SUPPORTED` 类把它**提交**了，
+于是同一库上第二遍跑就在 `refunds.complete` 的 `updateById` 撞唯一索引，
+并被既有分支映射成「当前退款状态不允许此操作」。
+夹具值改为每次唯一。教训值得留着：**财务侧 `external_reference` 可重复不等于订单侧也可重复**，
+两者边界不同就必须让夹具也不同，否则「真提交」的用例会在自己的上一轮上自我锁死。
+
+**验证结果**：定向 `ScmFinancePayment* / ScmFinanceReceipt* / ScmFinancePayable* /
+ScmFinanceReceivable*(含 Red 与 Race) / ScmFinanceSchema / FinanceReadOnlyContract /
+SmartAdminMenuComponentPgIT / ScmPurchaseMigrationIT / SalesOrderServiceIT`
+= **99 项 0 失败 0 错误**；付款四类 27 项另在**同一个已被前几轮真提交污染的库上重复跑过**并全绿
+（即类执行顺序与库里已存在的已提交事实都不影响结果）。
+`migration_checksum_guard.py sync` 后 `frozen: 67 / drift 0 / missing 0`，`check` PASS；
+一次性干净库 `xsy_v2_f13b_final` 上 Flyway 真实应用 V1→**V67**（head=67、财务菜单行=3）。
+`python tools/verify.py backend` 全量 = **1185 项 0 失败 0 错误 / 5 跳过**
+（5 项是 `F0FileStorageCloudIT` 云端门控基线，未扩大），较 F1-3A 的 1158 项正好多出本轮 27 个付款用例。
+
+未覆盖（不得当成已完成）：
+- **付款单至今没有任何读侧**：无查询 / 详情 / 导出端点，页面也没有入口。
+- **`usedAmount` / 待核销 / 超额核销一律没有实现**：`finance_write_off` 零行是本轮的断言而不是功能；
+  D-3 的「反向前已用额必须 = 0」也还没有任何代码去查（F1-3C / F1-4）。
+- **一张退款最多一笔付款是本期口径**（Q19），分期 / 部分 / 多渠道拆分付款未实现，
+  也没有为它预留列。
+- `Idempotency-Key` 的**同键并发双送**未压测（本轮压测的是「两个不同键付同一退款」，
+  那才是财务上有意义的重复事实场景）；同键竞态由既有 `idempotency_record` 唯一约束承担。
+- 浏览器 E2E 未跑：本轮无前端改动。
 
 
 ### 2026-09-23 第三轮复核收尾（P2 三项 + 一处自测夹具过期）
