@@ -1,7 +1,7 @@
 package net.lab1024.sa.admin.module.scm.inventory;
 
 import com.xsy.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;

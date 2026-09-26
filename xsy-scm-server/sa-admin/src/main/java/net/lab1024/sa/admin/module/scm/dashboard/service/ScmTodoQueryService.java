@@ -9,8 +9,8 @@ import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryLossGainQu
 import net.lab1024.sa.admin.module.scm.inventory.domain.form.InventoryWarningQueryForm;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryLossGainQueryService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryWarningQueryService;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptQueryForm;
-import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseQueryService;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptQueryForm;
+import com.xsy.scm.purchase.service.PurchaseQueryService;
 import net.lab1024.sa.admin.module.system.login.manager.LoginManager;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.RequestUser;

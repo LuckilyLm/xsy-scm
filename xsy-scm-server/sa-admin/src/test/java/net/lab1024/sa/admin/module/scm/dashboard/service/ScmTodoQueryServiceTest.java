@@ -4,7 +4,7 @@ import net.lab1024.sa.admin.module.scm.dashboard.domain.vo.ScmTodoVO;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteQueryService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryLossGainQueryService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryWarningQueryService;
-import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseQueryService;
+import com.xsy.scm.purchase.service.PurchaseQueryService;
 import net.lab1024.sa.admin.module.system.login.manager.LoginManager;
 import net.lab1024.sa.base.common.domain.PageResult;
 import org.junit.jupiter.api.DisplayName;

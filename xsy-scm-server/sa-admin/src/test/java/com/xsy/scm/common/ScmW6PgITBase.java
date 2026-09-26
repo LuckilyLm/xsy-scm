@@ -8,11 +8,11 @@ import net.lab1024.sa.admin.module.scm.inventory.service.InventoryCommandService
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryMovementQueryService;
 import com.xsy.scm.product.domain.form.ProductSkuForm;
 import com.xsy.scm.product.domain.form.ProductSpuAddForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
-import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
+import com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.support.PurchaseInventoryContract;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;

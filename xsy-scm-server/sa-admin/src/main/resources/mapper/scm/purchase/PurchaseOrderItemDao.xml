@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOrderItemDao">
+<mapper namespace="com.xsy.scm.purchase.dao.PurchaseOrderItemDao">
 
     <resultMap id="itemRowMap"
-               type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOrderItemEntity">
+               type="com.xsy.scm.purchase.domain.entity.PurchaseOrderItemEntity">
         <id column="id" property="id"/>
         <result column="spec_values_snapshot" property="specValuesSnapshot"
-                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
     <select id="listByOrderId" resultMap="itemRowMap">
@@ -98,7 +98,7 @@
       不是「先按全量算完再把行藏掉」。scope 为 null 按失败关闭返回 0 行。
     -->
     <select id="workbench"
-            resultType="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO">
+            resultType="com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO">
         SELECT oi.sku_id,
                oi.sku_code_snapshot                           AS sku_code,
                oi.sku_name_snapshot                           AS sku_name,

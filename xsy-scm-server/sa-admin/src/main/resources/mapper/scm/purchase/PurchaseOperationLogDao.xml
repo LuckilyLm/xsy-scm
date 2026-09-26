@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseOperationLogDao">
+<mapper namespace="com.xsy.scm.purchase.dao.PurchaseOperationLogDao">
 
     <resultMap id="logRowMap"
-               type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseOperationLogEntity">
+               type="com.xsy.scm.purchase.domain.entity.PurchaseOperationLogEntity">
         <id column="id" property="id"/>
         <result column="before_data" property="beforeData"
-                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
         <result column="after_data" property="afterData"
-                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
     <resultMap id="logVoMap"
-               type="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOperationLogVO">
+               type="com.xsy.scm.purchase.domain.vo.PurchaseOperationLogVO">
         <id column="id" property="id"/>
         <result column="before_data" property="beforeData"
-                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
         <result column="after_data" property="afterData"
-                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
     <!-- 归属（Q14）由 ck_purchase_operation_log_owner 在 DB 层强制：
@@ -28,8 +28,8 @@
                                             before_data, after_data, created_by)
         VALUES (#{row.purchaseOrderId}, #{row.purchaseReceiptId}, #{row.operationType},
                 #{row.operator}, #{row.reason},
-                #{row.beforeData,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
-                #{row.afterData,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
+                #{row.beforeData,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+                #{row.afterData,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
                 #{row.createdBy})
     </insert>
 

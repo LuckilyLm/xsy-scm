@@ -2,7 +2,7 @@ package net.lab1024.sa.admin.module.scm.inventory.support;
 
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryCommandService;
-import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
+import com.xsy.scm.purchase.support.PurchaseInventoryContract;
 import org.springframework.stereotype.Component;
 
 /**

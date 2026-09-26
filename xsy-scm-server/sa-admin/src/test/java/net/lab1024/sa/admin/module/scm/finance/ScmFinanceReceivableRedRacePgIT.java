@@ -12,7 +12,7 @@ import com.xsy.scm.order.domain.form.OrderReturnApproveItemForm;
 import com.xsy.scm.order.domain.form.OrderReturnItemForm;
 import com.xsy.scm.order.domain.vo.OrderReturnDetailVO;
 import com.xsy.scm.order.service.OrderReturnService;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingActionForm;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryForm;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryItemForm;

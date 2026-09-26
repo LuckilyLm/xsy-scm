@@ -29,10 +29,10 @@ import cn.dev33.satoken.stp.StpUtil;
 
 import com.xsy.scm.common.ScmW6PgITBase;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptCreateForm;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.scm.report.controller.ScmReportController;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmInventoryReportQueryForm;
 import net.lab1024.sa.admin.module.scm.report.domain.form.ScmOverviewReportQueryForm;

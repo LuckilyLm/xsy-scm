@@ -36,6 +36,141 @@
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/dao/ProductTagRelationDao.java	Q11
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductBatchService.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductCategoryService.java	Q3
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/PurchaseConfigKey.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/PurchaseErrorCode.java	Q11
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/PurchaseErrorCode.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseDemandStatusEnum.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	Q14
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseQuantitySourceEnum.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseStatusEnum.java	Q2
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseStatusEnum.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmReceiptStatusEnum.java	Q7
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmReceiptStatusEnum.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmWeighingSourceEnum.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/controller/PurchaseDemandController.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/controller/PurchaseDemandController.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/controller/PurchaseOrderController.java	Wave <n>
+6	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/controller/PurchaseOrderController.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/controller/PurchaseReceiptController.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/controller/PurchaseReceiptController.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseDemandAllocationDao.java	Q13
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseDemandAllocationDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseDemandDao.java	Wave <n>
+5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseDemandDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseOperationLogDao.java	Q14
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseOperationLogDao.java	§<n>
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseOrderDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseOrderItemDao.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseOrderItemDao.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseOrderItemDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseReceiptDao.java	Q7
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseReceiptDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/PurchaseReceiptItemDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/ReceiptWeighingRecordDao.java	Q15
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/ReceiptWeighingRecordDao.java	Q16
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/dao/ReceiptWeighingRecordDao.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseDemandAllocationEntity.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseDemandAllocationEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseDemandEntity.java	Q17
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseDemandEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseOperationLogEntity.java	Q14
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseOperationLogEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseOrderEntity.java	Q2
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseOrderEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseOrderItemEntity.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseOrderItemEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseReceiptEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/PurchaseReceiptItemEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/entity/ReceiptWeighingRecordEntity.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseDemandAllocateForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseDemandGenerateForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseDemandQueryForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseDemandSummaryPreviewForm.java	Q12
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseDemandSummaryPreviewForm.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseDemandSummaryPreviewForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderAddForm.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderAddForm.java	Q17
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderAddForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderBatchDeleteForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderBatchShortCloseForm.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderBatchShortCloseForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderCancelForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderDeleteForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderExportForm.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderExportForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderQueryForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderShortCloseForm.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderUpdateForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseOrderVersionForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptBatchDeleteForm.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptConfirmForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptCreateForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptDeleteForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptItemWorkbenchQueryForm.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptItemWorkbenchQueryForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptQueryForm.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptUpdateForm.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseDemandSummaryVO.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseDemandSummaryVO.java	Wave <n>
+6	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseDemandSummaryVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseDemandVO.java	Q17
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseDemandVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOperationLogVO.java	Q14
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOperationLogVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOrderAllocationVO.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOrderAllocationVO.java	Q17
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOrderAllocationVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOrderItemVO.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOrderItemVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseOrderVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseReceiptItemVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseReceiptItemWorkbenchVO.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseReceiptItemWorkbenchVO.java	Wave <n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseReceiptItemWorkbenchVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/vo/PurchaseReceiptVO.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseAmountCalculator.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseDemandAllocator.java	Q17
+6	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseDemandAllocator.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderAllocationChangeSet.java	Q13
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderAllocationChangeSet.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderAuditSnapshotFactory.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderItemChangeSet.java	Q13
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderItemChangeSet.java	§<n>
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderStateMachine.java	§<n>
+6	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseOrderValidator.java	§<n>
+5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseReceiptQuantityCalculator.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseSnapshotFactory.java	Q14
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseSnapshotFactory.java	Q17
+5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/manager/PurchaseSnapshotFactory.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseDemandService.java	Q13
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseDemandService.java	Q14
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseDemandService.java	Q17
+5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseDemandService.java	§<n>
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseNumberGenerator.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderAllocationService.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderAllocationService.java	Q17
+4	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderAllocationService.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderExportSupport.java	Wave <n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderExportSupport.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderService.java	Wave <n>
+5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderService.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseQueryService.java	Q13
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseQueryService.java	Wave <n>
+5	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseQueryService.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseReceiptService.java	F1-2A
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseReceiptService.java	Q13
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseReceiptService.java	Q7
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseReceiptService.java	Q9
+17	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseReceiptService.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/NoOpPurchaseInventoryContract.java	Q6
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/NoOpPurchaseInventoryContract.java	§<n>
+2	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseDemandSourceGuard.java	§<n>
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseIdempotencyRequestHasher.java	§<n>
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseInventoryContract.java	Q13
+3	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseInventoryContract.java	Q5
+4	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseInventoryContract.java	§<n>
+4	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseWarehouseReferenceGuard.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/service/SupplierService.java	Q4
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/constant/ScmWarehouseStatusEnum.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/constant/WarehouseErrorCode.java	Q11
@@ -331,141 +466,6 @@
 2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/inventory/service/InventoryStocktakeService.java	Q13
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/inventory/support/PurchaseInventoryContractImpl.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/inventory/support/StocktakeSnapshotSigner.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseConfigKey.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseErrorCode.java	Q11
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseErrorCode.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmPurchaseDemandStatusEnum.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	Q14
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmPurchaseQuantitySourceEnum.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmPurchaseStatusEnum.java	Q2
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmPurchaseStatusEnum.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmReceiptStatusEnum.java	Q7
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmReceiptStatusEnum.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/ScmWeighingSourceEnum.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/controller/PurchaseDemandController.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/controller/PurchaseDemandController.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/controller/PurchaseOrderController.java	Wave <n>
-6	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/controller/PurchaseOrderController.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/controller/PurchaseReceiptController.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/controller/PurchaseReceiptController.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseDemandAllocationDao.java	Q13
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseDemandAllocationDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseDemandDao.java	Wave <n>
-5	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseDemandDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseOperationLogDao.java	Q14
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseOperationLogDao.java	§<n>
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseOrderDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseOrderItemDao.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseOrderItemDao.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseOrderItemDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseReceiptDao.java	Q7
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseReceiptDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/PurchaseReceiptItemDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/ReceiptWeighingRecordDao.java	Q15
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/ReceiptWeighingRecordDao.java	Q16
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/dao/ReceiptWeighingRecordDao.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseDemandAllocationEntity.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseDemandAllocationEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseDemandEntity.java	Q17
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseDemandEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseOperationLogEntity.java	Q14
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseOperationLogEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseOrderEntity.java	Q2
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseOrderEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseOrderItemEntity.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseOrderItemEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseReceiptEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/PurchaseReceiptItemEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/entity/ReceiptWeighingRecordEntity.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseDemandAllocateForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseDemandGenerateForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseDemandQueryForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseDemandSummaryPreviewForm.java	Q12
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseDemandSummaryPreviewForm.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseDemandSummaryPreviewForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderAddForm.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderAddForm.java	Q17
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderAddForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderBatchDeleteForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderBatchShortCloseForm.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderBatchShortCloseForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderCancelForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderDeleteForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderExportForm.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderExportForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderQueryForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderShortCloseForm.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderUpdateForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseOrderVersionForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptBatchDeleteForm.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptConfirmForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptCreateForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptDeleteForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptItemWorkbenchQueryForm.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptItemWorkbenchQueryForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptQueryForm.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/form/PurchaseReceiptUpdateForm.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseDemandSummaryVO.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseDemandSummaryVO.java	Wave <n>
-6	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseDemandSummaryVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseDemandVO.java	Q17
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseDemandVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOperationLogVO.java	Q14
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOperationLogVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOrderAllocationVO.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOrderAllocationVO.java	Q17
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOrderAllocationVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOrderItemVO.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOrderItemVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseOrderVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseReceiptItemVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseReceiptItemWorkbenchVO.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseReceiptItemWorkbenchVO.java	Wave <n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseReceiptItemWorkbenchVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/domain/vo/PurchaseReceiptVO.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseAmountCalculator.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseDemandAllocator.java	Q17
-6	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseDemandAllocator.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseOrderAllocationChangeSet.java	Q13
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseOrderAllocationChangeSet.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseOrderAuditSnapshotFactory.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseOrderItemChangeSet.java	Q13
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseOrderItemChangeSet.java	§<n>
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseOrderStateMachine.java	§<n>
-6	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseOrderValidator.java	§<n>
-5	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseReceiptQuantityCalculator.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseSnapshotFactory.java	Q14
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseSnapshotFactory.java	Q17
-5	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/manager/PurchaseSnapshotFactory.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseDemandService.java	Q13
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseDemandService.java	Q14
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseDemandService.java	Q17
-5	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseDemandService.java	§<n>
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseNumberGenerator.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseOrderAllocationService.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseOrderAllocationService.java	Q17
-4	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseOrderAllocationService.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseOrderExportSupport.java	Wave <n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseOrderExportSupport.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseOrderService.java	Wave <n>
-5	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseOrderService.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseQueryService.java	Q13
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseQueryService.java	Wave <n>
-5	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseQueryService.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseReceiptService.java	F1-2A
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseReceiptService.java	Q13
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseReceiptService.java	Q7
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseReceiptService.java	Q9
-17	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/service/PurchaseReceiptService.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/NoOpPurchaseInventoryContract.java	Q6
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/NoOpPurchaseInventoryContract.java	§<n>
-2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/PurchaseDemandSourceGuard.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/PurchaseIdempotencyRequestHasher.java	§<n>
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/PurchaseInventoryContract.java	Q13
-3	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/PurchaseInventoryContract.java	Q5
-4	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/PurchaseInventoryContract.java	§<n>
-4	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/support/PurchaseWarehouseReferenceGuard.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/domain/form/ScmSalesReportQueryForm.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportAccess.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/report/support/ScmReportExcel.java	§<n>

@@ -1,11 +1,11 @@
 package com.xsy.scm.warehouse;
 
 import com.xsy.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseDemandGenerateForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
+import com.xsy.scm.purchase.domain.form.PurchaseDemandGenerateForm;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptCreateForm;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import com.xsy.scm.warehouse.domain.form.WarehouseStatusForm;
 import com.xsy.scm.warehouse.service.WarehouseQueryService;
 import org.junit.jupiter.api.DisplayName;

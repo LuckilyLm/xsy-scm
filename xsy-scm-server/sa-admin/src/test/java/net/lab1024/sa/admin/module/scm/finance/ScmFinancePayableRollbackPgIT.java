@@ -2,11 +2,11 @@ package net.lab1024.sa.admin.module.scm.finance;
 
 import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.finance.service.FinancePayableService;
-import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptItemVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptCreateForm;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

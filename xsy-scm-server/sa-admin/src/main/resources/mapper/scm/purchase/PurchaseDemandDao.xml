@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.PurchaseDemandDao">
+<mapper namespace="com.xsy.scm.purchase.dao.PurchaseDemandDao">
 
     <!-- 约定（同 W1–W3）：只显式声明 <id> 与 JSONB 列，其余列走下划线→驼峰自动映射。
          W5 的 8 张表列名与属性名全部是干净的单射（无 is_default→defaultFlag 这类错位），
          因此不需要逐列罗列；JSONB 列必须显式 typeHandler，否则 PGobject 无法转成 Map。 -->
-    <resultMap id="demandRowMap" type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.PurchaseDemandEntity">
+    <resultMap id="demandRowMap" type="com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity">
         <id column="id" property="id"/>
         <result column="spec_values_snapshot" property="specValuesSnapshot"
-                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <resultMap id="demandVoMap" type="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandVO">
+    <resultMap id="demandVoMap" type="com.xsy.scm.purchase.domain.vo.PurchaseDemandVO">
         <id column="id" property="id"/>
         <result column="spec_values" property="specValues"
-                typeHandler="net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler"/>
+                typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
     <!-- 来源行属于 W4 的 sales_order_item，其 JSONB 处理器是 W4 的 OrderJsonbTypeHandler；
@@ -148,7 +148,7 @@
       标量上，见 GROUP BY 前那段说明——它必须是行集判据，不能是数字判据。
     -->
     <select id="summaryPreview"
-            resultType="net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseDemandSummaryVO">
+            resultType="com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO">
         SELECT s.*,
                (s.reserved_quantity - s.selected_order_reserved_quantity)      AS other_reserved_quantity,
                (s.available_quantity + s.selected_order_reserved_quantity)     AS stock_available_for_selected_orders,
@@ -313,7 +313,7 @@
         VALUES (#{row.salesOrderId}, #{row.salesOrderItemId}, #{row.spuId}, #{row.skuId},
                 #{row.salesOrderNoSnapshot}, #{row.spuCodeSnapshot}, #{row.productNameSnapshot},
                 #{row.skuCodeSnapshot}, #{row.skuNameSnapshot},
-                #{row.specValuesSnapshot,typeHandler=net.lab1024.sa.admin.module.scm.purchase.support.PurchaseJsonbTypeHandler},
+                #{row.specValuesSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
                 #{row.demandUnitSnapshot}, #{row.productTypeSnapshot},
                 #{row.requiredQuantity}, 0, #{row.supplierId}, #{row.warehouseId}, #{row.purchaserId},
                 #{row.status}, #{row.demandDate}, #{row.sourceConfirmedAt}, #{row.createdBy})

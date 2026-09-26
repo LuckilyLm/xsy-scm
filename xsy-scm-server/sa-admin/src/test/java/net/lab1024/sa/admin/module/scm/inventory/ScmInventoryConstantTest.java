@@ -10,7 +10,7 @@ import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryMovementTy
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryTransferStatusEnum;
 import net.lab1024.sa.admin.module.scm.inventory.constant.ScmInventoryWarningStatusEnum;
-import net.lab1024.sa.admin.module.scm.purchase.support.PurchaseInventoryContract;
+import com.xsy.scm.purchase.support.PurchaseInventoryContract;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -442,7 +442,7 @@ class ScmInventoryConstantTest {
             "com.xsy.scm.supplier.constant.SupplierErrorCode",
             "com.xsy.scm.pricing.constant.PricingErrorCode",
             "com.xsy.scm.order.constant.OrderErrorCode",
-            "net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode",
+            "com.xsy.scm.purchase.constant.PurchaseErrorCode",
             "com.xsy.scm.warehouse.constant.WarehouseErrorCode",
             InventoryErrorCode.class.getName());
 

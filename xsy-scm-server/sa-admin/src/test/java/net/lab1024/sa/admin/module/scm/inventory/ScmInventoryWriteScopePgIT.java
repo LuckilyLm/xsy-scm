@@ -21,11 +21,11 @@ import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationSer
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryStocktakeService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryTransferService;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryWarningThresholdService;
-import net.lab1024.sa.admin.module.scm.purchase.constant.ScmReceiptModeEnum;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptCreateForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseReceiptPutawayForm;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptCreateForm;
+import com.xsy.scm.purchase.domain.form.PurchaseReceiptPutawayForm;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.code.UserErrorCode;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;

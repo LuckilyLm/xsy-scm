@@ -16,8 +16,8 @@ import cn.dev33.satoken.stp.StpUtil;
 
 import com.xsy.scm.common.ScmW5PgITBase;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import net.lab1024.sa.admin.module.scm.purchase.domain.form.PurchaseOrderAddForm;
-import net.lab1024.sa.admin.module.scm.purchase.service.PurchaseOrderService;
+import com.xsy.scm.purchase.domain.form.PurchaseOrderAddForm;
+import com.xsy.scm.purchase.service.PurchaseOrderService;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
 import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;

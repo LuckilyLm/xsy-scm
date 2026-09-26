@@ -10,7 +10,7 @@ import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliverySignForm;
 import net.lab1024.sa.admin.module.scm.delivery.domain.form.DeliveryVersionForm;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryDriverService;
 import net.lab1024.sa.admin.module.scm.delivery.service.DeliveryRouteService;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import net.lab1024.sa.admin.module.scm.sorting.domain.entity.SortingTaskEntity;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingActionForm;
 import net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingEntryForm;

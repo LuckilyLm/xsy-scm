@@ -8,7 +8,7 @@ import net.lab1024.sa.admin.module.scm.inventory.service.InventoryFulfillmentSer
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryFulfillmentService.Line;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryFulfillmentService.Result;
 import net.lab1024.sa.admin.module.scm.inventory.service.InventoryReservationService;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -3,8 +3,8 @@ package net.lab1024.sa.admin.module.scm.inventory;
 import com.xsy.scm.common.ScmW6PgITBase;
 import net.lab1024.sa.admin.module.scm.inventory.domain.InventoryOutboundFact;
 import net.lab1024.sa.admin.module.scm.inventory.domain.entity.InventoryBalanceEntity;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseOrderVO;
-import net.lab1024.sa.admin.module.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

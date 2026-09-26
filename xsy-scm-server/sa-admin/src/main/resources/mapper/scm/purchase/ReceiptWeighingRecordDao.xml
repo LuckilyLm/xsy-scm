@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.purchase.dao.ReceiptWeighingRecordDao">
+<mapper namespace="com.xsy.scm.purchase.dao.ReceiptWeighingRecordDao">
 
     <!-- 只追加表：无 version / deleted / updated_* 列，因此没有 update / delete 语句。
          缺少这些语句本身就是「审计事实不可篡改」的实现。 -->
     <resultMap id="weighingRowMap"
-               type="net.lab1024.sa.admin.module.scm.purchase.domain.entity.ReceiptWeighingRecordEntity">
+               type="com.xsy.scm.purchase.domain.entity.ReceiptWeighingRecordEntity">
         <id column="id" property="id"/>
     </resultMap>
 
