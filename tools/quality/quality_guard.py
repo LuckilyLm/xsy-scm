@@ -60,7 +60,10 @@ TEST_SOURCE_ROOT = SERVER / "sa-admin/src/test/java"
 # 因此**扫描范围**从「两条路径的并集」收缩为单条，旧包路径不再参与扫描。
 # 收缩的依据不是「迁移做完了」这句话，而是 readiness 的 domain-completeness 断言：
 # 15 个域 + _root 逐个比对精确文件集合，且 legacy-scm-package 账本归零。
-# 「旧包不得复活」由 ScmArchitectureTest 的 ArchUnit 规则接管，不再靠宽扫描兜底。
+# 「旧包不得复活」**继续由 legacy-scm-package family 自己承担**：它照旧逐文件真实扫描
+# 旧包两个源根（见 legacy_package_files()），只是 baseline 已归零、正常结果为 0 条。
+# 注意不要指望 ScmArchitectureTest 里那种 `noClasses().resideInAPackage(legacy)`：
+# 空包上它的 that() 匹配 0 类，ArchUnit 的 failOnEmptyShould 会让它无法成为可用的断言。
 #
 # LEGACY_SCM_PACKAGE_PATH 常量**保留**：它仍是「旧包在哪」的唯一出处，
 # readiness / metrics / baseline 迁移工具都需要它来表达历史路径，
@@ -400,7 +403,7 @@ def legacy_package_files() -> list[Finding]:
     写死返回空会把「旧包复活了一堆文件」这件事静默掉，那比退役前更危险。
     旧包目录仍在（空壳），扫描结果是 0 条，这是事实而非约定。
 
-    「旧包不得复活」另有两条更强的机制：
+    「旧包不得复活」另有两条更强的机制（但**都不替代本扫描**）：
       * ArchUnit ``scmProductionCodeLivesInXsyPackage``（具体业务域必须在 com.xsy.scm）；
       * ``ScmArchitectureTest.importedSourceSetIsNotEmpty`` 的 ``sawLegacyPackage`` 分支；
       * readiness 的 domain-completeness 逐个域比对精确文件集合。
@@ -423,7 +426,12 @@ def legacy_package_files() -> list[Finding]:
 
 
 def legacy_package_paths() -> tuple[Path, ...]:
-    """旧包源根（main + test）。迁移已收口，正常返回的目录都不存在。
+    """旧包源根（main + test）。
+
+    迁移已收口，两条路径下都没有 .java；但**目录可能仍然是空壳**（实测就是如此：
+    `git mv` 之后 Git 不跟踪空目录，checkout 出来的工作树里仍留 empty dir）。
+    所以任何「旧包是否干净」的判断都必须看 `.java`，不能看目录是否存在 ——
+    `legacy_package_files_retired()` 就是这么做的。
 
     保留为函数而不是常量，是为了让「旧包路径」这件事在收缩 SCM_PACKAGE_PATHS 之后
     仍有唯一出处，readiness 与测试都不必自己拼路径字符串。
@@ -505,7 +513,8 @@ FAMILIES: tuple[RuleFamily, ...] = (
     RuleFamily(
         "generic-dependency-field",
         "语义贫乏的依赖字段名",
-        "SCM 生产代码：sa-admin/src/main/java 下的 net/lab1024/sa/admin/module/scm 与 com/xsy/scm 两个包",
+        "SCM 生产代码：sa-admin/src/main/java 下的 com/xsy/scm（Q1 收口后唯一扫描根；"
+        "迁移期曾是 net/lab1024/.../scm 与 com/xsy/scm 两个包）",
         "字段声明行匹配 private/protected [final] <Type> <name>;，name 属于 "
         "{dao,service,query,manager,validator,repository,mapper,reader,writer,client}，"
         "且类型简单名小写后不等于该字段名",
@@ -513,36 +522,40 @@ FAMILIES: tuple[RuleFamily, ...] = (
     RuleFamily(
         "magic-string-domain-literal",
         "已有 Enum 却硬编码的领域字面量",
-        "SCM 生产代码（新旧两个包都扫）",
-        "非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由新旧"
-        "两侧生产源码一起构建，否则迁移中途只在新包引用的 enum 常量会漏判；"
+        "SCM 生产代码（com/xsy/scm；迁移期新旧两个包都扫）",
+        "非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由扫描根"
+        "下的生产源码构建，否则引用了新包 enum 的常量会漏判；"
         "*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围",
     ),
     RuleFamily(
         "raw-permission-literal",
         "裸权限串注解",
-        "SCM 生产代码（新旧两个包都扫）",
+        "SCM 生产代码（com/xsy/scm；迁移期新旧两个包都扫）",
         "@SaCheckPermission(...) 参数里出现的 \"scm:...\" 字面量，每个字面量一条；"
         "权限目录常量类里的字面量定义不算（它不是注解）",
     ),
     RuleFamily(
         "stage-comment",
         "阶段流水注释",
-        "SCM 生产代码（新旧两个包都扫）",
+        "SCM 生产代码（com/xsy/scm；迁移期新旧两个包都扫）",
         "注释文本命中 F<n>-<n> / Wave <n> / Q<n> / D-<n> / §<n> / 设计稿 / 本轮 / "
         "下一阶段 / 此次；`提交`、`测试` 不在规则内（业务用语，会误报）",
     ),
     RuleFamily(
         "legacy-scm-package",
-        "仍留在迁移前 SCM 包下的文件（已退役）",
-        "旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根；Q1 收口后为空",
-        "【已退役 2026-09-26】Q1 收口前：每个旧包文件记一条 identity，向旧 namespace "
-        "**新增**文件即 NEW DEFECT，**移出**旧包是 improvement。"
-        "Q1 收口后旧包 .java = 0，identity 集合为空，本 family 恒返回空集合并退役 —— "
-        "空集合上的「没有违规」是恒真的，不能继续当断言。"
-        "「旧包不得复活」改由 ScmArchitectureTest 的 ArchUnit 规则"
-        "（scmProductionCodeLivesInXsyPackage + importedSourceSetIsNotEmpty 的 "
-        "sawLegacyPackage 分支）与 readiness 的 domain-completeness 承担。",
+        "旧包回流检测（迁移债务已归零，防回流保留）",
+        "旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根；Q1 收口后实际为 0",
+        "【迁移债务已退役 2026-09-26，防回流检测保留】Q1 收口前：每个旧包文件记一条 "
+        "identity，向旧 namespace **新增**文件即 NEW DEFECT，**移出**旧包是 improvement。"
+        "Q1 收口后旧包 .java = 0、baseline 已归零，因此本 family 的**结果**恒为 0 条 —— "
+        "但**结果是 0，不等于扫描被写死为 0**：legacy_package_files() 仍逐文件真实扫描旧包"
+        "两个源根，任何重新出现在旧 namespace 下的 .java 都会当场记为 NEW DEFECT 并使 "
+        "quality guard FAIL。这与 ScmArchitectureTest 里被否掉的 ArchUnit 空集规则不同："
+        "那条规则在空集上无法失败（failOnEmptyShould），而这里的扫描本身在空集上也仍然"
+        "有效，回流一旦发生立即显形。不要把真实扫描改写成 `return []`，那会把旧包复活"
+        "静默掉，比退役前更危险。"
+        "另有两条更强的机制：ArchUnit scmProductionCodeLivesInXsyPackage，"
+        "以及 readiness 的 domain-completeness。",
     ),
     RuleFamily(
         "checkstyle",
