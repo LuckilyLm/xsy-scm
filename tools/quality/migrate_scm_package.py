@@ -71,9 +71,17 @@ SCAN_ROOTS = (
     SERVER / "sa-admin" / "src" / "test" / "java",
 )
 
-# 这些文件里的旧包名是**设计意图**，不能改：
+# 这些文件里的旧包名是**设计意图**，不能整文件改写：
 # - ScmArchitectureTest 同时分析 `net.lab1024.sa.admin.module.scm` 与 `com.xsy.scm`，
-#   并在旧包归零时打印迁移完成。它必须继续用旧包名字面量。
+#   并在旧包归零时打印迁移完成。它必须继续用旧包名字面量
+#   （`LEGACY_SCM_PACKAGE = "net.lab1024.sa.admin.module.scm"`）。
+#
+# 但「排除整文件」是错的：该文件同时有**编译期 import**，例如
+#     import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
+# 用于 `belongToAnyOf(OrderIdempotencyService.class)`。域一旦迁走，这个 import
+# 就指向不存在的包，测试编译直接失败（order 域迁移时真实踩到）。
+#
+# 因此语义是「只排除字面量，不排除 import」：这些文件里只改写 import 行。
 EXCLUDED_RELATIVE = {
     "xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm/"
     "ScmArchitectureTest.java",
@@ -88,12 +96,29 @@ class FileEdit:
 
 
 def is_excluded(path: Path) -> bool:
-    """判断文件是否在禁止改写的名单里（按仓库相对路径，正斜杠）。"""
+    """文件是否只允许改写 import 行（字面量保持旧包名）。"""
     try:
         rel = path.relative_to(ROOT).as_posix()
     except ValueError:
         return False
     return rel in EXCLUDED_RELATIVE
+
+
+def rewrite_imports_only(text: str, pattern: re.Pattern[str], domain: str) -> tuple[str, int]:
+    """只改写 import 行，其余（含字符串字面量）原样保留。
+
+    用于 EXCLUDED_RELATIVE 中的文件：它们的旧包名字面量是设计意图，
+    但 import 必须跟着类一起走，否则域迁走后测试编译失败。
+    """
+    new_prefix = f"{XSY_PREFIX}.{domain}"
+    out: list[str] = []
+    replacements = 0
+    for line in text.splitlines(keepends=True):
+        if line.lstrip().startswith("import ") and pattern.search(line):
+            line, n = pattern.subn(new_prefix, line)
+            replacements += n
+        out.append(line)
+    return "".join(out), replacements
 
 
 def domain_pattern(domain: str) -> re.Pattern[str]:
@@ -135,8 +160,6 @@ def collect_edits(domain: str) -> list[FileEdit]:
         for path in sorted(scan_root.rglob("*")):
             if not path.is_file() or path.suffix not in SCAN_SUFFIXES:
                 continue
-            if is_excluded(path):
-                continue
             raw = read_bytes_safely(path)
             if raw is None:
                 continue
@@ -144,13 +167,21 @@ def collect_edits(domain: str) -> list[FileEdit]:
             if not pattern.search(text):
                 continue
 
+            # 排除名单里的文件只改 import 行：它们的旧包名字面量是设计意图
+            # （ScmArchitectureTest 的 LEGACY_SCM_PACKAGE），但 import 必须跟着类走。
+            import_only = is_excluded(path)
             count = 0
             kinds: set[str] = set()
-            for line in text.splitlines():
-                hits = len(pattern.findall(line))
-                if hits:
-                    count += hits
-                    kinds.add(classify(line))
+            if import_only:
+                _, count = rewrite_imports_only(text, pattern, domain)
+                if count:
+                    kinds.add("import")
+            else:
+                for line in text.splitlines():
+                    hits = len(pattern.findall(line))
+                    if hits:
+                        count += hits
+                        kinds.add(classify(line))
             if count:
                 edits.append(FileEdit(path, count, kinds))
 
@@ -261,7 +292,10 @@ def apply_edits(edits: list[FileEdit], domain: str) -> int:
     for edit in edits:
         raw = edit.path.read_bytes()
         text = raw.decode("utf-8")
-        new_text, count = rewrite_text(text, pattern, domain)
+        if is_excluded(edit.path):
+            new_text, count = rewrite_imports_only(text, pattern, domain)
+        else:
+            new_text, count = rewrite_text(text, pattern, domain)
         if count == 0:
             continue
         new_text, eol_fixed, eof_added = conform_to_editorconfig(edit.path, new_text)

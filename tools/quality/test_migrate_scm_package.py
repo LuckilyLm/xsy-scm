@@ -95,7 +95,13 @@ class RewriteTest(unittest.TestCase):
 
 
 class ExcludedFilesTest(unittest.TestCase):
-    """`ScmArchitectureTest` 的旧包名是断言的一部分，必须保留。"""
+    """`ScmArchitectureTest` 的旧包名**字面量**是断言的一部分，必须保留；
+    但它对具体域类的 **import** 必须跟着类走。
+
+    这两件事此前被混为「排除整文件」，导致 order 域迁移时测试编译失败：
+        import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;
+    域迁走后该包不存在 → `程序包 ... 不存在`。
+    """
 
     def test_architecture_test_is_excluded(self) -> None:
         path = (mig.ROOT / "xsy-scm-server" / "sa-admin" / "src" / "test" / "java"
@@ -108,6 +114,41 @@ class ExcludedFilesTest(unittest.TestCase):
                 / "net" / "lab1024" / "sa" / "admin" / "module" / "scm" / "common"
                 / "util" / "ScmDecimalStringsTest.java")
         self.assertFalse(mig.is_excluded(path))
+
+    def test_imports_are_rewritten_but_literals_are_kept(self) -> None:
+        """排除文件里：import 行改写，`LEGACY_SCM_PACKAGE` 字面量原样保留。"""
+        text = (
+            'package net.lab1024.sa.admin.module.scm;\n'
+            '\n'
+            'import net.lab1024.sa.admin.module.scm.order.service.OrderIdempotencyService;\n'
+            '\n'
+            'class ScmArchitectureTest {\n'
+            '    static final String LEGACY_SCM_PACKAGE = "net.lab1024.sa.admin.module.scm";\n'
+            '    static final String XSY_SCM_PACKAGE = "com.xsy.scm";\n'
+            '}\n'
+        )
+        pattern = mig.domain_pattern("order")
+        out, count = mig.rewrite_imports_only(text, pattern, "order")
+        self.assertEqual(count, 1)
+        self.assertIn(
+            "import com.xsy.scm.order.service.OrderIdempotencyService;", out)
+        # 字面量必须原封不动
+        self.assertIn(
+            '"net.lab1024.sa.admin.module.scm"', out)
+        # package 行也不动
+        self.assertIn("package net.lab1024.sa.admin.module.scm;", out)
+
+    def test_non_import_line_reference_is_not_touched(self) -> None:
+        """非 import 行的引用（含字符串常量）不改写。"""
+        text = (
+            'class X {\n'
+            '    static final String P = "net.lab1024.sa.admin.module.scm.order";\n'
+            '}\n'
+        )
+        pattern = mig.domain_pattern("order")
+        out, count = mig.rewrite_imports_only(text, pattern, "order")
+        self.assertEqual(count, 0)
+        self.assertEqual(out, text)
 
 
 class EditorConfigConformanceTest(unittest.TestCase):
