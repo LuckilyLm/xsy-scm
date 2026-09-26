@@ -41,11 +41,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>漂移用例是本波次的裁决核心</b>（计划 §10.3）：账面 10 → 导出快照 → 出库 2（版本自增）→
  * 填实盘导回，即使「当前账面恰好等于要填的实盘」也必须因版本变化整批拒绝，不接受「先校验再保存」竞态。
  *
- * <p><b>为什么每个用例都填写全表实盘量</b>：模板是<b>整仓</b>余额快照，共享种子仓库还带着其它
- * (仓库, SKU) 的历史余额行，无法只针对本次造的 SKU 出一张「单行模板」。因此非目标行也必须填
- * 合法实盘（否则会在解析阶段就报 BLANK 而挡住它之后才做的凭证 / 来源核验），并在会走
- * {@code confirm} 的成功用例里把非目标行的实盘填成各自的账面快照（差异 0，确认时不产生流水、
- * 也不会因外键约束误伤别的行）。断言因此全部按 SKU 收窄，不用全仓计数。
+ * <p><b>为什么每个用例都填写全表实盘量</b>：模板是<b>整仓</b>余额快照，不是「本次这几行」的快照。
+ * 本类因此使用自己独占的仓库（覆盖 {@code fixtureWarehouseId()}），快照规模不再受别的测试
+ * 在播种仓库里留下的余额行影响 —— 这条链路的签名凭证要为仓库里<b>每条</b>活跃余额带上
+ * skuCode / 单位 / 账面量，并被逐行写进模板单元格，而 POI 单元格上限是 32767 字符，
+ * 仓库行数不可控就等于凭证长度不可控。
+ *
+ * <p>独占仓库里仍然可能不止一行（一个用例会备多个 SKU），所以非目标行也必须填合法实盘，
+ * 否则会在解析阶段就报 BLANK 而挡住它之后才做的凭证 / 来源核验；会走 {@code confirm} 的成功用例
+ * 把非目标行的实盘填成各自的账面快照（差异 0，确认时不产生流水）。断言全部按 SKU 收窄，不用全仓计数。
  */
 @DisplayName("盘点 Excel 导入（PG IT）")
 class ScmStocktakeImportPgIT extends ScmW6PgITBase {
@@ -60,11 +64,27 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
     // 夹具：把一个 (仓库, SKU) 备货成指定账面量
     // ------------------------------------------------------------------
 
+    /**
+     * 本类独占的仓库：快照凭证按整仓出，规模必须只由本用例自己决定。
+     *
+     * <p>JUnit 5 默认逐方法新建实例，所以这个字段天然每个用例重新求值；基类 {@code @Transactional}
+     * 逐方法回滚，仓库行连同它的余额与流水都不会留到下一个用例。
+     */
+    private Long exclusiveWarehouseId;
+
+    @Override
+    protected Long fixtureWarehouseId() {
+        if (exclusiveWarehouseId == null) {
+            exclusiveWarehouseId = newWarehouse("stocktake-import");
+        }
+        return exclusiveWarehouseId;
+    }
+
     private Object[] stocked(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
         W6Fixture fixture = inboundFixture(suffix, skuId, quantity);
         confirmReceipt(fixture.receipt().getId(), quantity);
-        return new Object[]{seedWarehouseId(), skuId};
+        return new Object[]{fixtureWarehouseId(), skuId};
     }
 
     private String skuCode(Long skuId) {

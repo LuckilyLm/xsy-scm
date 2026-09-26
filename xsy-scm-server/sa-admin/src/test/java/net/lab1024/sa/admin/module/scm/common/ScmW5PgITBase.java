@@ -295,6 +295,24 @@ public abstract class ScmW5PgITBase {
         return warehouseId(SEED_WAREHOUSE_CODE);
     }
 
+    /**
+     * 本类夹具（需求 / 采购单 / 收货单 / 分拣任务）落库时使用的仓库。
+     *
+     * <p>默认就是 V15 播种的 {@code WH001}，因此对所有既有测试行为不变。存在这个可覆盖点的原因是：
+     * 播种仓库是全测试体系共享的，任何一处给它新增一个 (warehouse, sku) 余额行，都会改变
+     * 「按整仓出快照」的那类夹具的输出规模。盘点 Excel 导入正是这样的夹具 —— 它的快照凭证
+     * 要为仓库里每条活跃余额带上 skuCode / 单位 / 账面量，并被逐行写进模板单元格，
+     * 而 POI 单元格有 32767 字符上限（见 {@code StocktakeSnapshotSigner#sign} 的压缩说明）。
+     * 也就是说这条链路对「共享仓库里有多少别人留下的行」敏感，一旦行数被别的执行顺序改变，
+     * 验签就可能失败，症状是把 {@code SNAPSHOT_STALE} 变成 {@code CREDENTIAL_INVALID}。
+     *
+     * <p>需要数据规模可预期的测试类覆盖本方法返回自己独占的仓库（{@link #newWarehouse}），
+     * 而不是去削弱凭证校验或改成 mock。
+     */
+    protected Long fixtureWarehouseId() {
+        return seedWarehouseId();
+    }
+
     protected Long warehouseId(String warehouseCode) {
         return jdbc.queryForObject(
                 "SELECT id FROM warehouse WHERE warehouse_code = ? AND deleted = FALSE",
@@ -559,7 +577,7 @@ public abstract class ScmW5PgITBase {
         PurchaseDemandGenerateForm form = new PurchaseDemandGenerateForm();
         form.setStartAt(confirmedAt);
         form.setEndAt(confirmedAt.plusSeconds(1));
-        form.setWarehouseId(seedWarehouseId());
+        form.setWarehouseId(fixtureWarehouseId());
         form.setSupplierId(supplierId);
         purchaseDemandService.generate(form, prefix + ":gen:" + salesOrderId);
         return demandOfSourceItem(confirmedSalesOrderItemId(salesOrderId));
@@ -635,7 +653,7 @@ public abstract class ScmW5PgITBase {
                                                String itemQuantity, String price,
                                                PurchaseOrderAddForm.Allocation... allocations) {
         return purchaseOrderService.create(
-                orderForm(supplierId, seedWarehouseId(), skuId, itemQuantity, price, allocations),
+                orderForm(supplierId, fixtureWarehouseId(), skuId, itemQuantity, price, allocations),
                 prefix + ":" + suffix + ":po");
     }
 
@@ -848,7 +866,7 @@ public abstract class ScmW5PgITBase {
 
         PurchaseOrderAddForm form = new PurchaseOrderAddForm();
         form.setSupplierId(supplierId);
-        form.setWarehouseId(seedWarehouseId());
+        form.setWarehouseId(fixtureWarehouseId());
         form.setPurchaserId(anyEmployeeId());
         form.setRemark("Wave2B 批量关单");
         form.setItems(new ArrayList<>(List.of(
@@ -1006,7 +1024,7 @@ public abstract class ScmW5PgITBase {
                     + " AND t.deleted = FALSE AND t.status = 'COMPLETED') ORDER BY i.id", Long.class, orderId);
             if (itemIds.isEmpty()) continue;
             var create = new net.lab1024.sa.admin.module.scm.sorting.domain.form.SortingTaskCreateForm();
-            create.setWarehouseId(seedWarehouseId());
+            create.setWarehouseId(fixtureWarehouseId());
             create.setAssigneeEmployeeId(actor);
             create.setRemark("配送资格前置夹具");
             create.setSalesOrderItemIds(new ArrayList<>(itemIds));
