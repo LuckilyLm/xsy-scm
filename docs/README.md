@@ -16,6 +16,8 @@
 - [plan/finance-r1-design.md](plan/finance-r1-design.md)：Finance R1（P3）的**唯一规划文档** —— 调研结论、裁决索引、正式设计、D-1…D-5 收口落点、R0 接轨与 F1-1~F1-8 实施计划。裁决权威全文在 `decisions.md`「P3 Finance R1 裁决」；**27 条 Q 裁决与 D-1…D-5 均已收口，本稿无待裁决项**。其中的 Flyway 版本号与菜单号段是规划期快照，开工前必须重扫。
 - [plan/product-center-optimization-plan.md](plan/product-center-optimization-plan.md)：商品中心优化的多轮方案（**PCO-1 与 PCO-2 均已落地**：V38–V39、V44–V45、V49）。`plan/` 目录专门存放**面向未来的规划稿**：其中的 Flyway 版本号只是规划期快照，落地实施前必须按 `AGENTS.md` 从当前最大号之后整体重排。
 - [test-report/](test-report/)：按版本归档的部署后验收报告。只写矩阵、计数与可复核结论（接口 / 数据 / 日志证据的**类别**），本机运行目录与脚本不作为引用对象。
+- [quality/java-code-quality-remediation-plan.md](quality/java-code-quality-remediation-plan.md)：Java 工程规范整改的**正式基线**（Q0 门禁 → Q1 迁包 → Q2 类型/命名/权限 → Q3 注释/架构/Service → Q4 文档与仓库）。业务功能开发在其收口前暂停。
+- [quality/java-quality-audit-2026-09-26.md](quality/java-quality-audit-2026-09-26.md)：Q0 全仓审计，含各门禁的检测规则与实测数字、baseline 增长记录、检测局限（§7）、Q1 迁包精确影响面与 Q2–Q4 backlog。
 
 业务需求、旧系统语义、页面参考和历史方案以只读目录
 [`project-reference-examples/xsy-scm/`](../project-reference-examples/xsy-scm/) 为主要参考来源。
