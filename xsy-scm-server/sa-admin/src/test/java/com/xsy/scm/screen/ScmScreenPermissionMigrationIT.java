@@ -1,8 +1,8 @@
-package net.lab1024.sa.admin.module.scm.screen;
+package com.xsy.scm.screen;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.common.ScmW6PgITBase;
-import net.lab1024.sa.admin.module.scm.screen.controller.ScreenDataController;
+import com.xsy.scm.screen.controller.ScreenDataController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -1,17 +1,17 @@
-package net.lab1024.sa.admin.module.scm.screen.service;
+package com.xsy.scm.screen.service;
 
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.inventory.constant.ScmInventoryMovementTypeEnum;
 import com.xsy.scm.inventory.constant.ScmInventoryWarningStatusEnum;
-import net.lab1024.sa.admin.module.scm.screen.dao.ScreenDataDao;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenPurchaseVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO;
+import com.xsy.scm.screen.dao.ScreenDataDao;
+import com.xsy.scm.screen.domain.vo.ScreenBusinessVO;
+import com.xsy.scm.screen.domain.vo.ScreenGeoVO;
+import com.xsy.scm.screen.domain.vo.ScreenInventoryHealthRow;
+import com.xsy.scm.screen.domain.vo.ScreenInventoryVO;
+import com.xsy.scm.screen.domain.vo.ScreenPurchaseVO;
+import com.xsy.scm.screen.domain.vo.ScreenTrendVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

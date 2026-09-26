@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.screen.dao.ScreenDataDao">
+<mapper namespace="com.xsy.scm.screen.dao.ScreenDataDao">
 
     <!--
       ================= 数据范围谓词 =================
@@ -192,7 +192,7 @@
     </select>
 
     <select id="topCustomersBySettlement"
-            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
+            resultType="com.xsy.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
         SELECT so.customer_name_snapshot AS name,
         COALESCE(SUM(so.settlement_total_amount), 0) AS amount
         FROM sales_order so
@@ -215,7 +215,7 @@
       范围谓词落在父单 so 上：明细行自己没有业务员列，归属只随父单走。
     -->
     <select id="topProductsBySettlement"
-            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
+            resultType="com.xsy.scm.screen.domain.vo.ScreenBusinessVO$RankItem">
         SELECT item.product_name_snapshot AS name,
         COALESCE(SUM(item.settlement_line_amount), 0) AS amount
         FROM sales_order_item item
@@ -266,7 +266,7 @@
     </select>
 
     <select id="inventoryDistributionByWarehouse"
-            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
+            resultType="com.xsy.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
         SELECT w.name AS warehouseName,
         COALESCE(SUM(b.quantity), 0) AS quantity
         FROM inventory_balance b
@@ -289,7 +289,7 @@
       于是第一支把授权外仓库的阈值也算进健康度，四档之和不再等于大屏展示的 SKU 总数。
     -->
     <select id="inventoryHealthRows"
-            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow">
+            resultType="com.xsy.scm.screen.domain.vo.ScreenInventoryHealthRow">
         SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
         t.warn_min AS warnMin,
         t.warn_max AS warnMax
@@ -322,7 +322,7 @@
       看起来像那个仓真的没有货。
     -->
     <select id="warehouseNetworkNodes"
-            resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
+            resultType="com.xsy.scm.screen.domain.vo.ScreenInventoryVO$WarehouseNode">
         SELECT w.name AS warehouseName,
         COALESCE(SUM(b.quantity), 0) AS quantity,
         COALESCE((SELECT SUM(m.quantity)
@@ -356,7 +356,7 @@
       外层是 generate_series，没有任何 WHERE 可写：范围谓词只能落进 7 个标量子查询各自内部。
       收范围后 inventoryQuantity 的口径变为「授权仓的期末累计库存」，与其余序列同一条边界。
     -->
-    <select id="trendByDay" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO$Point">
+    <select id="trendByDay" resultType="com.xsy.scm.screen.domain.vo.ScreenTrendVO$Point">
         SELECT to_char(d, 'YYYY-MM-DD') AS date,
         to_char(d, 'MM-DD') AS label,
         COALESCE((SELECT COUNT(*)
@@ -493,7 +493,7 @@
       这类行宁可不在 cities 里出现，也要让它留在 coverage 的「总数 − 已归属」差额里可见。
       区划字典本身按 (region_code) 唯一（uk_scm_region_code_active），JOIN 不会放大计数。
     -->
-    <select id="geoCityRows" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO$CityNode">
+    <select id="geoCityRows" resultType="com.xsy.scm.screen.domain.vo.ScreenGeoVO$CityNode">
         SELECT city.region_code AS cityCode,
         city.region_name AS cityName,
         city.parent_code AS provinceCode,
@@ -524,7 +524,7 @@
     </select>
 
     <!-- 覆盖度：一次返回三张主档的「总数 / 已归属数」，与气泡共用上面三段口径。 -->
-    <select id="geoCoverage" resultType="net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO$Coverage">
+    <select id="geoCoverage" resultType="com.xsy.scm.screen.domain.vo.ScreenGeoVO$Coverage">
         SELECT c.total AS customerTotal,
         c.located AS customerLocated,
         s.total AS supplierTotal,

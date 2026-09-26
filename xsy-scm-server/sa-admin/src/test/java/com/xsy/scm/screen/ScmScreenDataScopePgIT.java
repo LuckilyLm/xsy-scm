@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.screen;
+package com.xsy.scm.screen;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -18,12 +18,12 @@ import com.xsy.scm.common.ScmW5PgITBase;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.purchase.domain.form.PurchaseOrderAddForm;
 import com.xsy.scm.purchase.service.PurchaseOrderService;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenPurchaseVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO;
-import net.lab1024.sa.admin.module.scm.screen.service.ScreenDataService;
+import com.xsy.scm.screen.domain.vo.ScreenBusinessVO;
+import com.xsy.scm.screen.domain.vo.ScreenGeoVO;
+import com.xsy.scm.screen.domain.vo.ScreenInventoryVO;
+import com.xsy.scm.screen.domain.vo.ScreenPurchaseVO;
+import com.xsy.scm.screen.domain.vo.ScreenTrendVO;
+import com.xsy.scm.screen.service.ScreenDataService;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;

@@ -1,11 +1,11 @@
-package net.lab1024.sa.admin.module.scm.screen.dao;
+package com.xsy.scm.screen.dao;
 
 import com.xsy.scm.common.scope.ScmDataScopeContext;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryHealthRow;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO;
+import com.xsy.scm.screen.domain.vo.ScreenBusinessVO;
+import com.xsy.scm.screen.domain.vo.ScreenGeoVO;
+import com.xsy.scm.screen.domain.vo.ScreenInventoryHealthRow;
+import com.xsy.scm.screen.domain.vo.ScreenInventoryVO;
+import com.xsy.scm.screen.domain.vo.ScreenTrendVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

@@ -1,15 +1,15 @@
-package net.lab1024.sa.admin.module.scm.screen;
+package com.xsy.scm.screen;
 
 import com.xsy.scm.common.ScmW6PgITBase;
 import com.xsy.scm.inventory.domain.form.InventoryWarningQueryForm;
 import com.xsy.scm.inventory.domain.vo.InventoryWarningVO;
 import com.xsy.scm.inventory.service.InventoryWarningQueryService;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenPurchaseVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO;
-import net.lab1024.sa.admin.module.scm.screen.service.ScreenDataService;
+import com.xsy.scm.screen.domain.vo.ScreenBusinessVO;
+import com.xsy.scm.screen.domain.vo.ScreenGeoVO;
+import com.xsy.scm.screen.domain.vo.ScreenInventoryVO;
+import com.xsy.scm.screen.domain.vo.ScreenPurchaseVO;
+import com.xsy.scm.screen.domain.vo.ScreenTrendVO;
+import com.xsy.scm.screen.service.ScreenDataService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

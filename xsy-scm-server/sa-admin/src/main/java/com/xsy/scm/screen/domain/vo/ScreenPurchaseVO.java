@@ -1,4 +1,4 @@
-package net.lab1024.sa.admin.module.scm.screen.domain.vo;
+package com.xsy.scm.screen.domain.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

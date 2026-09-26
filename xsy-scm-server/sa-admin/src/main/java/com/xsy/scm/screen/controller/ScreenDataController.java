@@ -1,14 +1,14 @@
-package net.lab1024.sa.admin.module.scm.screen.controller;
+package com.xsy.scm.screen.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenBusinessVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenGeoVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenInventoryVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenPurchaseVO;
-import net.lab1024.sa.admin.module.scm.screen.domain.vo.ScreenTrendVO;
-import net.lab1024.sa.admin.module.scm.screen.service.ScreenDataService;
+import com.xsy.scm.screen.domain.vo.ScreenBusinessVO;
+import com.xsy.scm.screen.domain.vo.ScreenGeoVO;
+import com.xsy.scm.screen.domain.vo.ScreenInventoryVO;
+import com.xsy.scm.screen.domain.vo.ScreenPurchaseVO;
+import com.xsy.scm.screen.domain.vo.ScreenTrendVO;
+import com.xsy.scm.screen.service.ScreenDataService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
