@@ -311,6 +311,12 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
 
    # ② 同步修改 package 声明、imports、XML namespace / type 引用、
    #    以及必要的包名字符串引用
+   #   ⚠ 别漏「文件系统路径」形态的旧包名。改写工具只认 `net.lab1024...`（点号）形式，
+   #     字符串里的 `src/main/java/net/lab1024/...`（斜杠）是**路径**，工具故意不动，
+   #     但测试若用它定位源码目录（静态扫描型测试），包一移就抛
+   #     IllegalStateException（如 FinanceReadOnlyContractTest 的 moduleRoot）。
+   #     自查：grep -rn 'src/main/java/net/lab1024' src/ —— 命中即需随迁移改成新路径。
+   #     这是「自引用路径」，属于同一 commit 的必要修正，不是业务逻辑改动。
 
    # ③ baseline 路径改写演练，确认四个数字
    python tools/quality/migrate_baseline_paths.py --domain <domain> --dry-run
@@ -325,6 +331,16 @@ python tools/quality/package_migration_readiness.py --record-migration-manifest
    python tools/quality/package_migration_readiness.py --assert-domain-migrated <domain>
 
    # ⑥ 定向测试
+
+   #   ⚠ 出现失败时，先分清「真回归」还是「既有跨测试污染」，不要顺手改业务代码：
+   #     1) 单类隔离跑（新一次性库）—— 若 PASS，说明失败来自同库内其它用例的数据残留；
+   #     2) git worktree add /tmp/xsy-pre <迁移前 commit>，在**未迁移**的树上用
+   #        **同一个 -Dtest= 集合** + 新建一次性库跑一遍；
+   #     3) 两边总数与失败项完全一致（同 run/failures/errors，甚至同一行）⇒ 既有问题，
+   #        本次迁移零影响，按事实记录并继续；
+   #     4) 迁移前 errors=0 而迁移后有 errors ⇒ 那是 ② 的路径类自引用没改干净。
+   #   清 worktree：Windows 下真路径是 C:/Users/<u>/AppData/Local/Temp/...，
+   #   传 /tmp/... 会 remove 失败；目录已手工删掉时 git worktree prune 即可。
 
    # ⑦ 确认无新债之后才收缩账本
    #    ⚠ 若本轮做过 mvn clean，`xsy-scm-server/target/checkstyle-result.xml` 会被删掉，
