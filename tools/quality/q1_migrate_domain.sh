@@ -69,9 +69,12 @@ case "$STEP" in
   # --- ⑤ domain completeness ---
   $PY tools/quality/package_migration_readiness.py --assert-domain-migrated "$DOMAIN" | tail -6
 
-  # --- ⑥ compile ---
-  ( cd xsy-scm-server && mvn -B -q -pl sa-admin -am clean compile -DskipTests )
-  echo "[ok] compile clean"
+  # --- ⑥ compile (main AND test sources) ---
+  # test-compile is NOT redundant: `mvn compile` skips src/test, so an
+  # unresolved import in a test file (e.g. ScmArchitectureTest's import of a
+  # migrated domain class) stays invisible until the test run. Compile both.
+  ( cd xsy-scm-server && mvn -B -q -pl sa-admin -am clean test-compile -DskipTests )
+  echo "[ok] main + test compile clean"
   echo
   echo "NEXT: run targeted tests:  $PY tools/quality/q1_migrate_domain.sh $DOMAIN test ${PATTERN:-<Pattern>*}"
   echo "      then:                 $PY tools/quality/q1_migrate_domain.sh $DOMAIN 2"
