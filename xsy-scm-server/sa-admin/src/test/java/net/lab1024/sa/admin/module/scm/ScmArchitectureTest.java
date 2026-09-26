@@ -1,5 +1,7 @@
 package net.lab1024.sa.admin.module.scm;
 
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
@@ -30,9 +32,16 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * {@code net.lab1024.sa} 与 {@code com.xsy}，否则迁移后的 Bean 与 Mapper 会静默不被扫描。
  */
 @AnalyzeClasses(
-        packages = "net.lab1024.sa.admin.module.scm",
+        packages = {
+                ScmArchitectureTest.LEGACY_SCM_PACKAGE,
+                ScmArchitectureTest.XSY_SCM_PACKAGE,
+        },
         importOptions = ImportOption.DoNotIncludeTests.class)
 class ScmArchitectureTest {
+
+    /** Q1 迁移的两侧：迁包是逐域进行的，中间态必然两边同时有 SCM 代码。 */
+    static final String LEGACY_SCM_PACKAGE = "net.lab1024.sa.admin.module.scm";
+    static final String XSY_SCM_PACKAGE = "com.xsy.scm";
 
     /**
      * SCM 具体业务域。{@code common} 不在其中：它是被所有域依赖的一侧，
@@ -118,6 +127,37 @@ class ScmArchitectureTest {
                             resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
                                     .and(not(belongToAnyOf(OrderIdempotencyService.class))))
                     .because("财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止");
+
+    /**
+     * 防止「一条规则都没跑到」被读成「所有规则都过了」。
+     *
+     * <p>包名写错时 ArchUnit 会分析到 0 个类，而「没有类违反规则」在空集合上恒真 ——
+     * 每条 {@link ArchRule} 都会绿。Q1 恰好要改这两个包名，所以这一条必须与它们同时存在：
+     * 它把「确实抓到了 SCM 类」变成断言，而不是依赖注解本身正确。
+     */
+    @ArchTest
+    static void importedSourceSetIsNotEmpty(JavaClasses classes) {
+        long scmClasses = 0;
+        boolean sawLegacyPackage = false;
+        for (JavaClass clazz : classes) {
+            String packageName = clazz.getPackageName();
+            if (packageName.startsWith(LEGACY_SCM_PACKAGE)) {
+                sawLegacyPackage = true;
+            } else if (!packageName.startsWith(XSY_SCM_PACKAGE)) {
+                continue;
+            }
+            scmClasses++;
+        }
+        if (scmClasses == 0) {
+            throw new AssertionError("ArchUnit imported 0 SCM classes from {"
+                    + LEGACY_SCM_PACKAGE + ", " + XSY_SCM_PACKAGE
+                    + "}; the analyzed package set is misconfigured, not clean");
+        }
+        // 迁移完成（旧包归零）后本断言仍成立：此时只剩 com.xsy.scm，故不要求旧包存在。
+        if (!sawLegacyPackage) {
+            System.out.println("[ScmArchitectureTest] legacy SCM package is empty; Q1 migration finished");
+        }
+    }
 
     @ArchTest
     static final ArchRule productionCodeDoesNotUseTestLibraries =

@@ -42,12 +42,37 @@ from java_source import JavaSource
 
 ROOT = Path(__file__).resolve().parents[2]
 SERVER = ROOT / "xsy-scm-server"
-SCM_PACKAGE_PATH = Path("net/lab1024/sa/admin/module/scm")
-SCM_MAIN_ROOT = SERVER / "sa-admin/src/main/java" / SCM_PACKAGE_PATH
-SCM_TEST_ROOT = SERVER / "sa-admin/src/test/java" / SCM_PACKAGE_PATH
+MAIN_SOURCE_ROOT = SERVER / "sa-admin/src/main/java"
+TEST_SOURCE_ROOT = SERVER / "sa-admin/src/test/java"
+
+# Q1 把 SCM 从旧包迁到 com.xsy.scm，期间两边必然并存：一个域一个域地搬，
+# 不会出现「某天全部就位」的原子时刻。所以扫描范围必须是两条包路径的并集，
+# 而不是把旧路径换成新路径 —— 那样在迁移进行中会漏掉另一半，
+# 表现恰恰是「0 findings / PASS」，也就是最危险的假绿。
+# 旧包归零后本表可以收缩成一条，由 Q1 的 readiness 检查把关。
+LEGACY_SCM_PACKAGE_PATH = Path("net/lab1024/sa/admin/module/scm")
+NEW_SCM_PACKAGE_PATH = Path("com/xsy/scm")
+SCM_PACKAGE_PATHS = (LEGACY_SCM_PACKAGE_PATH, NEW_SCM_PACKAGE_PATH)
+
 BASELINE_DIR = Path(__file__).resolve().parent / "baseline"
 CHECKSTYLE_RESULT = SERVER / "target/checkstyle-result.xml"
 IMPROVEMENT_PRINT_LIMIT = 20
+
+EMPTY_SOURCE_SET_MESSAGE = (
+    "SCM production source set is empty; quality scan is likely misconfigured."
+)
+
+
+class ScanConfigurationError(RuntimeError):
+    """扫描范围没抓到任何生产代码。
+
+    这时 0 findings 是配置错误的结果，不是代码干净的证据，必须让所有模式失败，
+    不能让 `scan` / `check` / `capture` 顺势产出「全绿」或一份空 baseline。
+    """
+
+
+def package_roots(source_root: Path) -> list[Path]:
+    return [source_root / package_path for package_path in SCM_PACKAGE_PATHS]
 
 
 def relative(path: Path) -> str:
@@ -174,10 +199,28 @@ def enum_vocabulary(sources: list[JavaSource]) -> dict[str, set[str]]:
 # ----------------------------------------------------------------------------- rules
 
 
-def load_sources(root: Path) -> list[JavaSource]:
-    if not root.is_dir():
-        return []
-    return [JavaSource.read(path, ROOT) for path in sorted(root.rglob("*.java"))]
+def load_sources(roots: list[Path]) -> list[JavaSource]:
+    """Read every Java file under any of ``roots``.
+
+    Missing directories are legal (``com/xsy/scm`` does not exist before Q1), and
+    roots that overlap cannot double-count a file because identity is the
+    resolved path.
+    """
+    seen: dict[Path, None] = {}
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in sorted(root.rglob("*.java")):
+            seen.setdefault(path.resolve(), None)
+    return [JavaSource.read(path, ROOT) for path in seen]
+
+
+def scm_main_sources() -> list[JavaSource]:
+    return load_sources(package_roots(MAIN_SOURCE_ROOT))
+
+
+def scm_test_sources() -> list[JavaSource]:
+    return load_sources(package_roots(TEST_SOURCE_ROOT))
 
 
 _FIELD_DECLARATION = re.compile(
@@ -325,25 +368,57 @@ def stage_comments(source: JavaSource) -> list[Finding]:
     return findings
 
 
-def legacy_package_file_count(root: Path) -> list[Finding]:
+def java_file_count(root: Path) -> int:
+    return sum(1 for path in root.rglob("*.java") if path.is_file()) if root.is_dir() else 0
+
+
+def legacy_package_file_counts() -> list[Finding]:
     """Measure how many files still sit under the pre-Q1 SCM package.
 
     Reported as one aggregate finding per source root, so the baseline stores two
     numbers instead of 846 paths. The count may only fall; Q1 replaces this rule
     with an ArchUnit rule on ``com.xsy.scm..``.
+
+    Both roots are always emitted, with 0 when the directory is gone: an identity
+    that silently disappears reads as "fixed", and would let the last directory
+    deletion masquerade as an improvement instead of a planned migration step.
     """
-    if not root.is_dir():
-        return []
-    files = sum(1 for path in root.rglob("*.java") if path.is_file())
     return [
         Finding(
             "legacy-scm-package",
             relative(root),
             "java-file-count",
             "files under the pre-migration SCM package",
-            count=files,
+            count=java_file_count(root),
+        )
+        for root in (
+            MAIN_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH,
+            TEST_SOURCE_ROOT / LEGACY_SCM_PACKAGE_PATH,
         )
     ]
+
+
+def package_migration_progress() -> list[tuple[str, str, int]]:
+    """The Q1 move as a visible counter: (source set, package side, file count).
+
+    Deliberately **not** a gated family. "The new package must grow" is not a
+    standing quality rule - when Q1 finishes, the new side simply holds every SCM
+    file and the old side is empty. What must be visible while the move is under
+    way is that OLD falls *and* NEW rises by the same amount, because a migration
+    that renames only one side, or that copies instead of moving, looks clean to
+    every other rule.
+    """
+    rows: list[tuple[str, str, int]] = []
+    for source_set, source_root in (("main", MAIN_SOURCE_ROOT), ("test", TEST_SOURCE_ROOT)):
+        rows.append((source_set, "legacy", java_file_count(source_root / LEGACY_SCM_PACKAGE_PATH)))
+        rows.append((source_set, "new", java_file_count(source_root / NEW_SCM_PACKAGE_PATH)))
+    return rows
+
+
+def print_migration_progress() -> None:
+    print("--- Q1 package migration progress (report only) ---")
+    for source_set, side, count in package_migration_progress():
+        print(f"  {source_set:5s} {side:7s} {count:5d}")
 
 
 def checkstyle_findings(result_file: Path) -> list[Finding]:
@@ -386,7 +461,7 @@ FAMILIES: tuple[RuleFamily, ...] = (
     RuleFamily(
         "generic-dependency-field",
         "语义贫乏的依赖字段名",
-        "SCM 生产代码（src/main/java 下 module/scm）",
+        "SCM 生产代码：sa-admin/src/main/java 下的 net/lab1024/sa/admin/module/scm 与 com/xsy/scm 两个包",
         "字段声明行匹配 private/protected [final] <Type> <name>;，name 属于 "
         "{dao,service,query,manager,validator,repository,mapper,reader,writer,client}，"
         "且类型简单名小写后不等于该字段名",
@@ -394,30 +469,32 @@ FAMILIES: tuple[RuleFamily, ...] = (
     RuleFamily(
         "magic-string-domain-literal",
         "已有 Enum 却硬编码的领域字面量",
-        "SCM 生产代码",
-        "非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；"
+        "SCM 生产代码（新旧两个包都扫）",
+        "非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由新旧"
+        "两侧生产源码一起构建，否则迁移中途只在新包引用的 enum 常量会漏判；"
         "*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围",
     ),
     RuleFamily(
         "raw-permission-literal",
         "裸权限串注解",
-        "SCM 生产代码",
+        "SCM 生产代码（新旧两个包都扫）",
         "@SaCheckPermission(...) 参数里出现的 \"scm:...\" 字面量，每个字面量一条；"
         "权限目录常量类里的字面量定义不算（它不是注解）",
     ),
     RuleFamily(
         "stage-comment",
         "阶段流水注释",
-        "SCM 生产代码",
+        "SCM 生产代码（新旧两个包都扫）",
         "注释文本命中 F<n>-<n> / Wave <n> / Q<n> / D-<n> / §<n> / 设计稿 / 本轮 / "
         "下一阶段 / 此次；`提交`、`测试` 不在规则内（业务用语，会误报）",
     ),
     RuleFamily(
         "legacy-scm-package",
         "迁移前 SCM 包下的 Java 文件数",
-        "SCM main 与 test 源根，各一条聚合记录",
-        "按源根统计 .java 文件数；只允许下降。Q1 迁包后改由 ArchUnit 的 "
-        "com.xsy.scm.. 规则接管",
+        "只统计旧包（net/lab1024/sa/admin/module/scm）的 main 与 test 源根，各一条聚合记录",
+        "按源根统计 .java 文件数；只允许下降。新包一侧的文件数不做门禁，"
+        "由 scan/check 末尾的 package migration progress 报表可见；"
+        "旧包归零后本 family 退役，改由 ArchUnit 的 com.xsy.scm.. 规则接管",
     ),
     RuleFamily(
         "checkstyle",
@@ -447,7 +524,9 @@ class Scan:
 
 
 def collect(checkstyle_result: Path | None) -> Scan:
-    main_sources = load_sources(SCM_MAIN_ROOT)
+    main_sources = scm_main_sources()
+    if not main_sources:
+        raise ScanConfigurationError(EMPTY_SOURCE_SET_MESSAGE)
     vocabulary = enum_vocabulary(main_sources)
 
     findings: list[Finding] = []
@@ -456,8 +535,7 @@ def collect(checkstyle_result: Path | None) -> Scan:
         findings.extend(magic_string_literals(source, vocabulary))
         findings.extend(raw_permission_literals(source))
         findings.extend(stage_comments(source))
-    findings.extend(legacy_package_file_count(SCM_MAIN_ROOT))
-    findings.extend(legacy_package_file_count(SCM_TEST_ROOT))
+    findings.extend(legacy_package_file_counts())
     scanned = set(PYTHON_FAMILIES)
 
     if checkstyle_result is not None:
@@ -532,6 +610,8 @@ def command_scan(args: argparse.Namespace) -> int:
     scan = collect(args.checkstyle)
     print_summary(scan.findings, args.verbose, args.limit)
     print(f"\ntotal occurrences: {occurrences(scan.findings)}")
+    print()
+    print_migration_progress()
     return 0
 
 
@@ -632,6 +712,8 @@ def command_check(args: argparse.Namespace) -> int:
         print("  re-run `capture` to record the smaller baseline")
 
     passed = not new_identities and not grown
+    print()
+    print_migration_progress()
     print("\nRESULT:", "PASS" if passed else "FAIL")
     return 0 if passed else 1
 
@@ -699,11 +781,17 @@ def resolve_checkstyle(requested: Path | None) -> Path | None:
 def main() -> int:
     args = build_parser().parse_args()
     args.checkstyle = resolve_checkstyle(args.checkstyle)
-    if args.command == "scan":
-        return command_scan(args)
-    if args.command == "capture":
-        return command_capture(args)
-    return command_check(args)
+    try:
+        if args.command == "scan":
+            return command_scan(args)
+        if args.command == "capture":
+            return command_capture(args)
+        return command_check(args)
+    except ScanConfigurationError as error:
+        # Never degrade to "0 findings, PASS": an empty source set means the scan
+        # range is wrong, which is exactly what a green result would hide.
+        print(f"ERROR: {error}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

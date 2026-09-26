@@ -36,7 +36,30 @@
 | `tools/quality/scm_metrics.py` | 本报告全部数字的测量脚本 | 审计工具，不阻断 |
 | `tools/quality/checkstyle.xml` | 规则集 | 质量基础设施 |
 | `ScmArchitectureTest.java` | 7 条 ArchUnit 规则 | 测试 |
-| `tools/quality/baseline/*.txt` | 6 个 baseline，共 1,221 行 | 历史债务账本 |
+| `tools/quality/baseline/*.txt` | 6 个 baseline 文件 | 历史债务账本（口径见 §1.4） |
+
+### 1.4 Baseline 口径：identity 数 ≠ occurrence 数 ≠ 文件行数
+
+「baseline 有 1,221 行」不是债务数量，只是物理行数，其中还包含每个文件的 6 行表头说明。
+三个口径必须分清：
+
+| family | identity 数 | occurrence 数 | 物理行数 |
+| --- | ---: | ---: | ---: |
+| checkstyle | 363 | 871 | 369 |
+| generic-dependency-field | 71 | 71 | 77 |
+| legacy-scm-package | 2 | 847 | 8 |
+| magic-string-domain-literal | 110 | 191 | 116 |
+| raw-permission-literal | 169 | 285 | 175 |
+| stage-comment | 469 | 695 | 475 |
+| **合计** | **1,184** | **2,960** | **1,220** |
+
+- **identity** = `rule<TAB>仓库相对路径<TAB>locator` 的去重条数，也就是 baseline 文件里的数据行数；
+- **occurrence** = 各 identity 的计数之和，才是**真实债务数量**；
+- **物理行数** = occurrence 口径下还要加每文件 6 行表头，不能当指标用。
+
+两者不等的直接后果：`legacy-scm-package` 只有 2 条 identity 却计 847 处（它是按源根聚合的预算），
+`stage-comment` 469 条 identity 计 695 处（同一文件里同一条阶段编号出现多次）。
+`check` 报的 `current / baseline (+n)` 一律是 **occurrence**，不是行数。
 
 ### 1.3 baseline 增长记录（工具要求写明理由）
 
@@ -647,10 +670,14 @@ inventory → sorting → delivery → finance → report`，每一项单独 com
 1. 测试源码是否纳入 guard 与 Checkstyle（§7 第 4 条）；
 2. Checkstyle / Spotless 绑定到默认生命周期（现在只有 `verify.py quality` 会跑，
    直接 `mvn test` 不跑）。等 §9.1 第 10–12 项做完、违规数从 871 降到可控范围再绑。
-3. **测试隔离**：`ScmStocktakeImportPgIT` 依赖「共享种子仓库的余额行数」，
-   而快照凭证是逐行写进模板单元格的签名串、受 POI 32,767 字符上限约束
-   （见 §11.2 的实测过程）。仓库行数一变，用例就会从 `SNAPSHOT_STALE` 掉到
-   `CREDENTIAL_INVALID`。这类耦合不会在单跑时暴露，只在顺序变化时暴露。
+3. ~~**测试隔离**：`ScmStocktakeImportPgIT` 依赖「共享种子仓库的余额行数」~~
+   **已于 Q0.1 处理完毕**：该 IT 改用独占 warehouse，20 次连续全量单跑 20/20 绿。
+   处置过程、边界与一条被纠正的根因表述见
+   [`package-migration-readiness.md`](./package-migration-readiness.md) §6 / §7.4 与本文 §11.2。
+
+Q0.1 另外补上了迁包前的三处范围缺陷（Guard / Checkstyle / ArchUnit 原来只认旧包，
+迁移中或迁移后会静默失去覆盖），并加了「空源码集必须失败而不是 0 finding PASS」的硬保护、
+确定性的 baseline 路径迁移工具，与一份机器执行的 Q1 就绪契约。见同文档 §1–§5。
 
 ---
 
@@ -750,31 +777,46 @@ python tools/verify.py backend                      1200 tests / 0 failures / 0 
 INCOMPLETE。判据是 `failures` 与 `errors` 均为 0，且 5 与整改前记的「5 cloud skips」一致 ——
 **没有扩大 skip、没有删测试、没有降低断言强度**（计划 §32 的红线）。
 
-### 11.2 一次未复现的失败，如实记录
+### 11.2 一次「全量偶发红」：已修的耦合，与一条被纠正的过度断言
 
 第一次 `verify.py backend`（本轮改动全部就位后）：**1200 tests / 1 failure**，
 失败用例 `ScmStocktakeImportPgIT.versionDriftRejectsWholeBatch` ——
 断言实际拿到 `CREDENTIAL_INVALID`，期望 `SNAPSHOT_STALE`。
 
-排查过程与结论：
+当时确认的事实是：单跑该类 7/7 通过；`CREDENTIAL_INVALID` 只有四条触发路径
+（验签失败 / 格式非法 / 已过期 / 模板版本不受支持，见 `InventoryStocktakeImportService.java:132-146`）；
+基类带 `@Transactional` 逐方法回滚，所以不是跨次运行累积。
+随后三次完整全量均未复现。
 
-| 检查 | 结果 |
-| --- | --- |
-| 单跑该测试类 | 7 tests / 0 failures（通过） |
-| 该链路是否跨用例累积状态 | 否。基类 `ScmW5PgITBase` 带 `@Transactional`，逐方法回滚 |
-| `CREDENTIAL_INVALID` 的触发面 | 只有 4 条：验签失败 / 格式非法 / 已过期 / 模板版本不受支持（`InventoryStocktakeImportService.java:132-146`） |
-| 凭证的形态 | 签名串**逐行写进模板每个单元格**；`StocktakeSnapshotSigner.sign()` 的注释记着 POI 单元格 32,767 字符上限，并为此专门加了一层 DEFLATE（未压缩时约 200 多个 SKU 就会顶破） |
-| 复现尝试 | 随后**两次完整全量**（含本轮全部改动）均为 sa-admin 1192 / 0 / 0 / 5 + sa-base，BUILD SUCCESS；再跑一次 `verify.py backend` 亦为 1200 / 0 / 0 / 5 |
+> **本节原来把「快照凭证随整仓行数变长、触到 POI 单元格 32,767 字符上限」写成了根因。
+> 那是假说，不是结论，Q0.1 已按这个口径改写。** 它当时只能解释症状形态，没有任何一次
+> 观测直接抓到「凭证因共享仓库行数而超限」。
 
-因此「快照行数变化 → 凭证长度触顶 → 验签失败」与该用例的表现一致，
-根因是**测试夹具对共享种子仓库行数的顺序敏感耦合**，已记入 §9.4 第 3 条。
+Q0.1 的处置不是解释它，而是**消除该用例对共享状态的依赖**：让 `ScmStocktakeImportPgIT`
+使用自己独占的 warehouse，而不是全测试体系共享的播种仓库 `WH001`。
+改法与边界见 [`package-migration-readiness.md`](./package-migration-readiness.md) §6。
 
-本轮没有改过任何业务代码、SQL、测试断言或依赖作用域（唯一的新依赖是
-test 作用域的 `archunit-junit5`），不存在把该用例改坏的路径；可能的影响面只有
-新增一个 JUnit 引擎导致 surefire 执行顺序变化，从而**暴露**（而非制造）上述既有耦合。
-按 §32 的红线，本轮**没有为了变绿去动这个测试**。
+改完的实测（同文档 §7.4 / §7.5）：
+
+```text
+ScmStocktakeImportPgIT 连续 20 次独立运行   20 ok / 0 failed   每次 7/7
+```
+
+独占化之后 20 次全绿，**证明的是「该用例不再受共享数据影响」，
+仍然不是对当年那一次失败根因的证明** —— 一次无法复现的偶发，不能被事后修一处就反推出原因。
+把它记在这里，是为了让「凭证长度受整仓余额行数影响」这条真实的结构脆弱性
+（POI 32767 上限 + 逐行写单元格 + 为它加的 DEFLATE）不被遗忘：
+它现在是**已隔离的风险**，不是已归零的缺陷。
+
+同一套取证方法（单跑 → 读抛点 → 查库 → 换一次性干净库重跑）在 Q0.1 里
+另抓到并排除了一次同类偶发：`PurchaseDemandSummaryPreviewIT` 在全量中抛
+`INVENTORY_RESERVATION_INVALID`，单跑 11/11 绿，干净库上全量
+**1201 tests / 0 failures / 0 errors / 5 skips** 绿 —— 那是长跑共享开发库里
+142 条残留 ACTIVE 预留行造成的环境数据问题，与代码改动无关。
+两次都没有用扩大 skip、弱化断言或删用例的方式换绿。
 
 ### 11.3 未在本轮执行的验证
+
 
 - **前端 / 浏览器 E2E 未跑**：本轮没有触碰 `xsy-scm-web/` 的任何文件，
   整改计划 §0 也禁止新页面与新 API。

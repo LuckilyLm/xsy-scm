@@ -18,6 +18,7 @@
 - [test-report/](test-report/)：按版本归档的部署后验收报告。只写矩阵、计数与可复核结论（接口 / 数据 / 日志证据的**类别**），本机运行目录与脚本不作为引用对象。
 - [quality/java-code-quality-remediation-plan.md](quality/java-code-quality-remediation-plan.md)：Java 工程规范整改的**正式基线**（Q0 门禁 → Q1 迁包 → Q2 类型/命名/权限 → Q3 注释/架构/Service → Q4 文档与仓库）。业务功能开发在其收口前暂停。
 - [quality/java-quality-audit-2026-09-26.md](quality/java-quality-audit-2026-09-26.md)：Q0 全仓审计，含各门禁的检测规则与实测数字、baseline 增长记录、检测局限（§7）、Q1 迁包精确影响面与 Q2–Q4 backlog。
+- [quality/package-migration-readiness.md](quality/package-migration-readiness.md)：Q0.1 迁包就绪 —— 门禁的新旧双包扫描与防「空扫描假绿」、baseline 路径迁移工具与 dry-run 演练、Spotless ratchet 实测、盘点 IT 夹具隔离、探针证据，以及 `package_migration_readiness.py` 机器执行的 Q1 前置契约。
 
 业务需求、旧系统语义、页面参考和历史方案以只读目录
 [`project-reference-examples/xsy-scm/`](../project-reference-examples/xsy-scm/) 为主要参考来源。

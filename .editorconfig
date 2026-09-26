@@ -15,12 +15,21 @@ indent_size = 4
 # 换行、行尾空白与文件末尾换行只对可安全重写的文本类型生效。
 # Java 文件在 Windows 上以 CRLF 检出（core.autocrlf=true），仓库内存的是 LF，
 # 因此这里声明 lf 与索引中的规范形式一致，不会让 git 产生差异。
-[{*.java,*.xml,*.yml,*.yaml,*.md,*.ts,*.vue,*.js,*.json,*.py}]
+[{*.java,*.xml,*.yml,*.yaml,*.ts,*.vue,*.js,*.json,*.py}]
 end_of_line = lf
 trim_trailing_whitespace = true
 insert_final_newline = true
 
-[{*.yml,*.yaml,*.ts,*.vue,*.js,*.json,*.md}]
+# Markdown 用行尾两个空格表示硬换行，修剪它会直接改写文档内容的呈现；
+# 本仓库的裁决与进度文档正是这样排版的。保留 charset / LF / 末尾换行，
+# 只对 trim_trailing_whitespace 开这一条例外。
+[*.md]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = false
+indent_size = 2
+
+[{*.yml,*.yaml,*.ts,*.vue,*.js,*.json}]
 indent_size = 2
 
 [*.sql]

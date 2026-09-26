@@ -49,6 +49,45 @@ class Verification:
             print(tail.encode(encoding, errors="replace").decode(encoding))
         return result.returncode == 0
 
+    def spotless_coverage(self):
+        """Report how many files the Spotless ratchet will actually look at.
+
+        Spotless is configured with `ratchetFrom`, which by definition restricts it
+        to files differing from that git ref. Once `origin/main` *is* HEAD and the
+        tree is clean, that set is empty and `spotless:check` passes without having
+        examined anything - a green result that means "nothing to do", not "checked".
+
+        Chosen behaviour: warn and mark the run INCOMPLETE rather than fail-fast.
+        On a clean tree an incremental formatter genuinely has nothing to do, so
+        failing there would be wrong; but the run must not be reported as fully
+        verified either. The other three gates are not affected - Checkstyle, the
+        quality guard and ArchUnit all scan the whole tree and only compare against
+        a baseline - so the lost coverage is exactly Spotless's whitespace rewrite,
+        not the quality gate as a whole.
+        """
+        ref = os.environ.get("QUALITY_RATCHET_FROM", "origin/main")
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT,
+                              capture_output=True, text=True, encoding="utf-8")
+        resolved = subprocess.run(["git", "rev-parse", ref], cwd=ROOT,
+                                  capture_output=True, text=True, encoding="utf-8")
+        changed = subprocess.run(["git", "diff", "--name-only", ref], cwd=ROOT,
+                                 capture_output=True, text=True, encoding="utf-8")
+        if changed.returncode != 0:
+            self.incomplete.append(f"Spotless ratchet ref {ref} cannot be resolved; "
+                                   "pass -Dquality.ratchet.from=<ref>")
+            print(f"[spotless-coverage] unresolvable ref: {ref}")
+            return ref, None
+        files = [line for line in changed.stdout.splitlines() if line.strip()]
+        same_as_head = (head.stdout.strip() == resolved.stdout.strip())
+        print(f"[spotless-coverage] ref={ref} changed-files={len(files)} "
+              f"ref_equals_HEAD={same_as_head}")
+        if not files:
+            self.incomplete.append(
+                f"Spotless covered 0 files (ratchet ref {ref}"
+                + (" == HEAD" if same_as_head else "")
+                + "); its PASS says nothing about the rest of the tree")
+        return ref, len(files)
+
     def quality(self):
         """Java 质量门禁（整改计划 §27）。
 
@@ -58,6 +97,7 @@ class Verification:
         `backend` / `frontend` / `e2e` 保持原样，本 scope 只新增、不改既有入口
         （§27 的硬约束）。ArchUnit 不在这里：它是 `*Test`，已随 `mvn test` 执行。
         """
+        self.spotless_coverage()
         self.run("checkstyle-report", ["mvn", "-B", "-N", "checkstyle:check"], SERVER)
         self.run("spotless-check", ["mvn", "-B", "spotless:check"], SERVER)
         self.run(
@@ -65,6 +105,12 @@ class Verification:
             [sys.executable, str(ROOT / "tools/quality/quality_guard.py"), "check", "--checkstyle"],
             ROOT,
         )
+        self.run("baseline-migration-selftest",
+                 [sys.executable, str(ROOT / "tools/quality/test_baseline_path_migration.py")],
+                 ROOT / "tools/quality")
+        self.run("package-migration-readiness",
+                 [sys.executable, str(ROOT / "tools/quality/package_migration_readiness.py")],
+                 ROOT)
 
     def backend(self):
         # Applied migration bytes break Flyway validate on every existing database; fail fast

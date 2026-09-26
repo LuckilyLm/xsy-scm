@@ -455,8 +455,12 @@
                     <sourceDirectories>
                         <sourceDirectory>${project.basedir}/sa-admin/src/main/java</sourceDirectory>
                     </sourceDirectories>
-                    <!-- check 目标的 includes 是逗号分隔字符串，不是列表 -->
-                    <includes>**/module/scm/**/*.java</includes>
+                    <!-- check 目标的 includes 是逗号分隔字符串，不是列表。
+                         两条模式分别覆盖 Q1 迁移的两侧：只留旧路径会让迁进 com/xsy/scm 的代码
+                         静默脱离 Checkstyle 检查，而 Checkstyle 是 baseline 棘轮的一路输入，
+                         表现是「违规数下降」这种假改善。sourceDirectories 已限定在
+                         sa-admin/src/main/java，所以这里不会把 SmartAdmin 底座扫进来。 -->
+                    <includes>**/module/scm/**/*.java,**/com/xsy/scm/**/*.java</includes>
                     <includeTestSourceDirectory>false</includeTestSourceDirectory>
                     <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
                     <!-- 历史债务由 tools/quality/quality_guard.py 的 baseline 承接；

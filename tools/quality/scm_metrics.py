@@ -28,8 +28,9 @@ from java_source import JavaSource
 ROOT = guard.ROOT
 SERVER = guard.SERVER
 SA_ADMIN_MAIN = SERVER / "sa-admin/src/main/java"
-SCM_MAIN = guard.SCM_MAIN_ROOT
-SCM_TEST = guard.SCM_TEST_ROOT
+# 度量范围与门禁一致：Q1 迁移期新旧两个包都要统计，否则「已迁移部分」在审计数字里隐身。
+LEGACY_MAIN_ROOT = guard.MAIN_SOURCE_ROOT / guard.LEGACY_SCM_PACKAGE_PATH
+LEGACY_TEST_ROOT = guard.TEST_SOURCE_ROOT / guard.LEGACY_SCM_PACKAGE_PATH
 # 自定义 SQL 目前落在两套目录约定下（mapper/business/scm/** 与 mapper/scm/**）。
 # 只统计后者会把 Q1 迁包影响面少算 18 个文件，所以这里扫整个 mapper 树。
 MAPPER_ROOT = SERVER / "sa-admin/src/main/resources/mapper"
@@ -124,16 +125,15 @@ class Metrics:
 
 def _domain_of(relative_path: str) -> str:
     """The SCM domain a file belongs to: the package segment right after ``scm``."""
-    marker = "/module/scm/"
-    if marker not in relative_path:
-        return "(outside scm)"
-    remainder = relative_path.split(marker, 1)[1]
-    parts = remainder.split("/")
-    return parts[0] if len(parts) > 1 else "(scm root)"
+    for marker in ("/module/scm/", "/com/xsy/scm/", "/xsy/scm/"):
+        if marker in relative_path:
+            parts = relative_path.split(marker, 1)[1].split("/")
+            return parts[0] if len(parts) > 1 else "(scm root)"
+    return "(outside scm)"
 
 
-def load_sources(root: Path) -> list[JavaSource]:
-    return [JavaSource.read(path, ROOT) for path in sorted(root.rglob("*.java"))]
+def load_sources(roots: list[Path]) -> list[JavaSource]:
+    return guard.load_sources(roots)
 
 
 # ------------------------------------------------------------------ structure & enums
@@ -466,13 +466,13 @@ def measure_utilities(metrics: Metrics, main: list[JavaSource]) -> None:
 
 def measure_package_migration(metrics: Metrics) -> None:
     """Exact blast radius of the Q1 ``net.lab1024.sa.admin.module.scm -> com.xsy.scm`` move."""
-    main_files = sorted(SCM_MAIN.rglob("*.java"))
-    test_files = sorted(SCM_TEST.rglob("*.java"))
+    main_files = sorted(LEGACY_MAIN_ROOT.rglob("*.java"))
+    test_files = sorted(LEGACY_TEST_ROOT.rglob("*.java"))
     # 迁移目录之外仍引用旧包名的生产/测试文件：迁包时必须一起改，否则编译失败。
     outside = [
         path
         for path in list((SA_ADMIN_MAIN).rglob("*.java"))
-        if SCM_MAIN not in path.parents
+        if LEGACY_MAIN_ROOT not in path.parents
     ]
     outside_referencing = [
         path.relative_to(ROOT).as_posix()
@@ -482,7 +482,7 @@ def measure_package_migration(metrics: Metrics) -> None:
     test_outside = [
         path
         for path in (SERVER / "sa-admin/src/test/java").rglob("*.java")
-        if SCM_TEST not in path.parents
+        if LEGACY_TEST_ROOT not in path.parents
     ]
     test_outside_referencing = [
         path.relative_to(ROOT).as_posix()
@@ -562,11 +562,11 @@ def measure_docs(metrics: Metrics) -> None:
 
 def build() -> Metrics:
     metrics = Metrics()
-    main = load_sources(SCM_MAIN)
-    test = load_sources(SCM_TEST)
+    main = guard.scm_main_sources()
+    test = guard.scm_test_sources()
     metrics.scope = {
-        "production": guard.relative(SCM_MAIN) + "/**/*.java",
-        "tests": guard.relative(SCM_TEST) + "/**/*.java",
+        "production": " + ".join(guard.relative(root) + "/**/*.java" for root in guard.package_roots(guard.MAIN_SOURCE_ROOT)),
+        "tests": " + ".join(guard.relative(root) + "/**/*.java" for root in guard.package_roots(guard.TEST_SOURCE_ROOT)),
         "mapperXml": guard.relative(MAPPER_ROOT) + "/**/*.xml",
         "excluded": [
             "project-reference-examples/**",
