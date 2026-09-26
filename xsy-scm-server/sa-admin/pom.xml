@@ -23,6 +23,13 @@
             <version>3.0.0</version>
         </dependency>
 
+        <!-- 分层与跨域边界的可执行规则，见 ScmArchitectureTest -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

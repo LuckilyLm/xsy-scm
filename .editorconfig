@@ -1,0 +1,35 @@
+root = true
+
+# 规则覆盖面按《Java 代码质量整改计划》§10 / §15 列出。
+#
+# 刻意不给 `*` 设默认值：`xsy-scm-server/.../db/migration/*.sql` 的字节必须与已应用版本
+# 完全一致（Flyway 按行 CRC32 校验，任何空白或换行改写都会让所有存量库在 validate 阶段失败），
+# 且 .gitattributes 把 V3/V6/V7/V10/V11/V13/V14/V18 钉成 CRLF 检出。
+# 对 `*` 声明 end_of_line / trim_trailing_whitespace 会让编辑器在打开这些文件时静默重写它们。
+
+[{*.java,*.xml,*.yml,*.yaml,*.md,*.ts,*.vue,*.js,*.json,*.py,*.sql,*.sh}]
+charset = utf-8
+indent_style = space
+indent_size = 4
+
+# 换行、行尾空白与文件末尾换行只对可安全重写的文本类型生效。
+# Java 文件在 Windows 上以 CRLF 检出（core.autocrlf=true），仓库内存的是 LF，
+# 因此这里声明 lf 与索引中的规范形式一致，不会让 git 产生差异。
+[{*.java,*.xml,*.yml,*.yaml,*.md,*.ts,*.vue,*.js,*.json,*.py}]
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[{*.yml,*.yaml,*.ts,*.vue,*.js,*.json,*.md}]
+indent_size = 2
+
+[*.sql]
+# 迁移 SQL 的换行由 .gitattributes 决定，空白字节由 tools/migration_checksum_guard.py 守护。
+# 这里刻意不声明 end_of_line / trim_trailing_whitespace / insert_final_newline。
+indent_size = 4
+
+[*.sh]
+end_of_line = lf
+
+[Makefile]
+indent_style = tab

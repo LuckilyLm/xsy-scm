@@ -38,6 +38,14 @@ local-environment-info.txt
 !/tools/w8_e2e_accounts.py
 !/tools/f0_e2e_accounts.py
 !/tools/p1_e2e_accounts.py
+# Java 质量门禁：守卫脚本、Java 源分段器、Checkstyle 规则与 baseline 都必须入库，
+# 否则干净检出跑不了 `python tools/verify.py quality`。
+# `/tools/*` 排除的是目录本身，所以必须先放行目录，里面的文件才不会被一并忽略。
+!/tools/quality/
+
+# Python 字节码（tools/quality 被上面整目录放行，必须单独排除）
+__pycache__/
+*.pyc
 
 # Reference environment configs contain credentials
 /project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-base/src/main/resources/*/sa-base.yaml

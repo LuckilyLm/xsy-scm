@@ -53,6 +53,13 @@
         <jsoup.version>1.21.1</jsoup.version>
         <tika.version>3.1.0</tika.version>
         <httpcomponents.version>5.5</httpcomponents.version>
+        <!-- 质量门禁工具链版本（整改计划 §13 / §16 / §17 / §22） -->
+        <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+        <checkstyle.version>10.21.1</checkstyle.version>
+        <spotless-maven-plugin.version>2.44.3</spotless-maven-plugin.version>
+        <archunit.version>1.4.1</archunit.version>
+        <!-- Spotless 棘轮基准：只格式化相对该 ref 变更过的文件 -->
+        <quality.ratchet.from>origin/main</quality.ratchet.from>
     </properties>
 
     <dependencyManagement>
@@ -328,6 +335,14 @@
                 <version>${httpcomponents.version}</version>
             </dependency>
 
+            <!-- 分层与跨域边界的可执行规则；只在测试期使用 -->
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
         </dependencies>
 
     </dependencyManagement>
@@ -409,6 +424,81 @@
                         <include>**/*TestCase.java</include>
                         <include>**/*IT.java</include>
                     </includes>
+                </configuration>
+            </plugin>
+
+            <!--
+              质量门禁（整改计划 §16 / §17）。两个插件都刻意不绑定到默认生命周期：
+              Q0 的硬约束是不破坏开发者现有的 backend / frontend / browser 验证入口，
+              因此它们由 `python tools/verify.py quality` 显式调用。
+              绑定到 validate 留到历史 baseline 收敛之后（Q2 / Q3）再决定。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven-checkstyle-plugin.version}</version>
+                <!-- configLocation 按模块 basedir 解析，子模块继承后会指向不存在的路径；
+                     因此不继承，统一以 `mvn -N checkstyle:check` 在聚合模块上跑一次。 -->
+                <inherited>false</inherited>
+                <dependencies>
+                    <!-- 插件默认绑定的 Checkstyle 版本不认识 Java 21 语法。 -->
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <!-- 只在聚合模块上执行一次：本模块是 pom 打包，没有自己的源码，
+                         因此显式指向 sa-admin 的 SCM 生产代码，避免底座与业务混在一个 baseline 里。 -->
+                    <configLocation>${project.basedir}/../tools/quality/checkstyle.xml</configLocation>
+                    <sourceDirectories>
+                        <sourceDirectory>${project.basedir}/sa-admin/src/main/java</sourceDirectory>
+                    </sourceDirectories>
+                    <!-- check 目标的 includes 是逗号分隔字符串，不是列表 -->
+                    <includes>**/module/scm/**/*.java</includes>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                    <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
+                    <!-- 历史债务由 tools/quality/quality_guard.py 的 baseline 承接；
+                         这里失败会让 mvn 本身变红，把「新增 0」的棘轮语义丢掉。 -->
+                    <failOnViolation>false</failOnViolation>
+                    <consoleOutput>false</consoleOutput>
+                    <logViolationsToConsole>false</logViolationsToConsole>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless-maven-plugin.version}</version>
+                <configuration>
+                    <!-- 棘轮：只检查相对该 git ref 变更过的文件，历史文件一条都不重写。
+                         可用 -Dquality.ratchet.from=<ref> 覆盖（例如新克隆没有 origin 时）。 -->
+                    <ratchetFrom>${quality.ratchet.from}</ratchetFrom>
+                    <!-- 换行统一按 LF 判定。
+                         GIT_ATTRIBUTES 在没有匹配属性时回退到「平台默认」，Windows 上就是 CRLF：
+                         同一个文件在 Linux 通过、在 Windows 失败，门禁本身变得不可移植，
+                         而且新写的每个文件都会被判成需要整篇重写。
+                         选 LF 不会改动仓库内容：本仓库 core.autocrlf=true，工作区以 CRLF 检出、
+                         索引里存 LF，把被改动的文件规范化成 LF 在 git 看来字节等价，
+                         因此既没有 diff，也不会重写存量文件（ratchetFrom 只放行变更文件）。 -->
+                    <lineEndings>UNIX</lineEndings>
+                    <!-- 只管 Java：Markdown 与 pom 多数位于 Maven 模块之外，在这里配置
+                         会造成「已覆盖」的错觉。它们的空白策略由根 .editorconfig 声明，
+                         仓库级强制留到 Q4 文档归位时再定。
+                         刻意不启用 removeUnusedImports / importOrder / 完整 formatter：
+                         google-java-format 在 JDK 21 上要求通过 .mvn/jvm.config 追加
+                         add-exports 参数，那会改变本项目每一次 Maven 调用的 JVM 参数；
+                         且它的 100 列硬上限与本项目 120 列标准冲突。
+                         未使用 import 由 Checkstyle 检出、Q2 清理。 -->
+                    <java>
+                        <includes>
+                            <include>src/main/java/**/*.java</include>
+                            <include>src/test/java/**/*.java</include>
+                        </includes>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                    </java>
                 </configuration>
             </plugin>
 

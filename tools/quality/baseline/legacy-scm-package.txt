@@ -1,0 +1,8 @@
+# rule      : legacy-scm-package — 迁移前 SCM 包下的 Java 文件数
+# scope     : SCM main 与 test 源根，各一条聚合记录
+# detection : 按源根统计 .java 文件数；只允许下降。Q1 迁包后改由 ArchUnit 的 com.xsy.scm.. 规则接管
+# identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
+# format    : occurrences<TAB>identity。只允许下降，新增必须为 0
+# captured  : 847 occurrences in 2 identities
+692	legacy-scm-package	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm	java-file-count
+155	legacy-scm-package	xsy-scm-server/sa-admin/src/test/java/net/lab1024/sa/admin/module/scm	java-file-count

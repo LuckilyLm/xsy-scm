@@ -49,6 +49,23 @@ class Verification:
             print(tail.encode(encoding, errors="replace").decode(encoding))
         return result.returncode == 0
 
+    def quality(self):
+        """Java 质量门禁（整改计划 §27）。
+
+        顺序有依赖：Checkstyle 必须先跑，它产出的 result.xml 是 quality guard 的
+        一路输入；guard 自己不会代跑 Maven。
+
+        `backend` / `frontend` / `e2e` 保持原样，本 scope 只新增、不改既有入口
+        （§27 的硬约束）。ArchUnit 不在这里：它是 `*Test`，已随 `mvn test` 执行。
+        """
+        self.run("checkstyle-report", ["mvn", "-B", "-N", "checkstyle:check"], SERVER)
+        self.run("spotless-check", ["mvn", "-B", "spotless:check"], SERVER)
+        self.run(
+            "quality-guard",
+            [sys.executable, str(ROOT / "tools/quality/quality_guard.py"), "check", "--checkstyle"],
+            ROOT,
+        )
+
     def backend(self):
         # Applied migration bytes break Flyway validate on every existing database; fail fast
         # here instead of inside a minutes-long Surefire run.
@@ -157,9 +174,13 @@ class Verification:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("scope", nargs="?", choices=("all", "backend", "frontend", "e2e"), default="all")
+    parser.add_argument("scope", nargs="?", choices=("all", "quality", "backend", "frontend", "e2e"), default="all")
     args = parser.parse_args()
     verification = Verification()
+    # Quality runs first in `all`: it is seconds-long and fails fast, so a style or
+    # ratchet break does not surface only after a minutes-long backend regression.
+    if args.scope in ("all", "quality"):
+        verification.quality()
     if args.scope in ("all", "backend"):
         verification.backend()
     if args.scope in ("all", "frontend"):
