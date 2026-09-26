@@ -6,7 +6,7 @@ import net.lab1024.sa.admin.module.scm.order.domain.vo.*;
 import com.xsy.scm.common.handler.ScmExceptionHandler;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode;
-import net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver;
+import com.xsy.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.base.common.domain.SystemEnvironment;
 import net.lab1024.sa.base.handler.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;

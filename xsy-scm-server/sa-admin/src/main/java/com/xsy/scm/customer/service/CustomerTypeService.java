@@ -52,7 +52,7 @@ public class CustomerTypeService {
 
     private final CustomerDao customerDao;
     private final com.xsy.scm.customer.dao.CustomerSkuVisibilityDao pricingReferences;
-    private final net.lab1024.sa.admin.module.scm.pricing.dao.CustomerTypePriceDao priceDao;
+    private final com.xsy.scm.pricing.dao.CustomerTypePriceDao priceDao;
 
     /**
      * 全量客户类型（含 DISABLED），供内部逻辑使用。

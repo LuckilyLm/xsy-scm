@@ -20,7 +20,7 @@ import java.util.List;
 public class SalesOrderController {
     private final SalesOrderService service;
     private final SalesOrderQueryService query;
-    private final net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver prices;
+    private final com.xsy.scm.pricing.service.PriceResolver prices;
 
     @PostMapping("/query")
     @SaCheckPermission("scm:order:query")
@@ -44,13 +44,13 @@ public class SalesOrderController {
      * 录单时的价格解析预览。
      *
      * <p>返回体是定价域的 {@code PriceResolveResultVO}，与 {@code PriceResolveController#preview} 调用
-     * 同一个 {@link net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver#preview}，因此<b>同时</b>要求
+     * 同一个 {@link com.xsy.scm.pricing.service.PriceResolver#preview}，因此<b>同时</b>要求
      * {@code scm:order:query} 与 {@code scm:pricing:resolve:query}（{@link SaMode#AND}）：只有订单查看权的人
      * 不能经此旁路批量读到客户协议价与类型价解析结果，那本来需要单独的定价查看权。
      */
     @PostMapping("/price/preview")
     @SaCheckPermission(value = {"scm:order:query", "scm:pricing:resolve:query"}, mode = SaMode.AND)
-    public ResponseDTO<net.lab1024.sa.admin.module.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody net.lab1024.sa.admin.module.scm.pricing.domain.form.PriceResolveForm f) {
+    public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm f) {
         return ResponseDTO.ok(prices.preview(f.getCustomerId(), f.getSkuIds(), f.getAt()));
     }
 

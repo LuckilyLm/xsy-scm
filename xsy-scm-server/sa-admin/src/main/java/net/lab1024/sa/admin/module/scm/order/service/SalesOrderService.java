@@ -30,8 +30,8 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xsy.scm.customer.service.CustomerService;
-import net.lab1024.sa.admin.module.scm.pricing.service.PriceResolver;
-import net.lab1024.sa.admin.module.scm.pricing.domain.vo.ResolvedPriceVO;
+import com.xsy.scm.pricing.service.PriceResolver;
+import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.dao.ProductSpuDao;
 
@@ -224,7 +224,7 @@ public class SalesOrderService {
         var manual = rows.stream().filter(SalesOrderItemEntity::getManualPriceOverride).map(SalesOrderItemEntity::getSkuId).toList();
         var manualResolved = prices.resolve(o.getCustomerId(), manual, OffsetDateTime.now());
         if (manualResolved.stream().anyMatch(x -> !x.isSellable()))
-            throw new ScmBusinessException(net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode.SKU_NOT_SELLABLE);
+            throw new ScmBusinessException(com.xsy.scm.pricing.constant.PricingErrorCode.SKU_NOT_SELLABLE);
         for (var row : rows) {
             if (!row.getManualPriceOverride()) OrderSnapshotFactory.applyPrice(row, resolved.get(row.getSkuId()));
             else {

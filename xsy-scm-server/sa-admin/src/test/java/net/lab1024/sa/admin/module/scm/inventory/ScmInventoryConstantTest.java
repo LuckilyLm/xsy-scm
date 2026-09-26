@@ -440,7 +440,7 @@ class ScmInventoryConstantTest {
             "com.xsy.scm.product.constant.ProductErrorCode",
             "com.xsy.scm.customer.constant.CustomerErrorCode",
             "com.xsy.scm.supplier.constant.SupplierErrorCode",
-            "net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode",
+            "com.xsy.scm.pricing.constant.PricingErrorCode",
             "net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode",
             "net.lab1024.sa.admin.module.scm.purchase.constant.PurchaseErrorCode",
             "com.xsy.scm.warehouse.constant.WarehouseErrorCode",

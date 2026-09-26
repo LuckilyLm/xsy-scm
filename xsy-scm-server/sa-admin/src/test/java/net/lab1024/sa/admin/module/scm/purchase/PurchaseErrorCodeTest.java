@@ -53,7 +53,7 @@ class PurchaseErrorCodeTest {
             "com.xsy.scm.product.constant.ProductErrorCode",
             "com.xsy.scm.customer.constant.CustomerErrorCode",
             "com.xsy.scm.supplier.constant.SupplierErrorCode",
-            "net.lab1024.sa.admin.module.scm.pricing.constant.PricingErrorCode",
+            "com.xsy.scm.pricing.constant.PricingErrorCode",
             "net.lab1024.sa.admin.module.scm.order.constant.OrderErrorCode",
             PurchaseErrorCode.class.getName(),
             WarehouseErrorCode.class.getName(),

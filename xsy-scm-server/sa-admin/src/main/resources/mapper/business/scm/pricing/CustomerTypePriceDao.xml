@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lab1024.sa.admin.module.scm.pricing.dao.CustomerTypePriceDao">
-    <resultMap id="vo" type="net.lab1024.sa.admin.module.scm.pricing.domain.vo.CustomerTypePriceVO" autoMapping="true">
+<mapper namespace="com.xsy.scm.pricing.dao.CustomerTypePriceDao">
+    <resultMap id="vo" type="com.xsy.scm.pricing.domain.vo.CustomerTypePriceVO" autoMapping="true">
         <id column="price_id" property="customerTypePriceId"/>
         <result column="spec_values" property="specValues"
                 typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" javaType="java.util.Map"/>
@@ -61,7 +61,7 @@
         <if test="excludeId != null">AND id != #{excludeId}</if>
     </select>
     <select id="selectEffective"
-            resultType="net.lab1024.sa.admin.module.scm.pricing.domain.entity.CustomerTypePriceEntity">
+            resultType="com.xsy.scm.pricing.domain.entity.CustomerTypePriceEntity">
         SELECT id,customer_type_id,sku_id,unit_price,effective_from,effective_to,version,deleted FROM
         customer_type_price
         WHERE deleted=FALSE AND customer_type_id=#{dimension} AND effective_from &lt;= #{at} AND (effective_to IS NULL

@@ -17,6 +17,7 @@
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerService.java	Q13
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	Q3
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	Q9
+1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	Q2
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/dao/ProductTagRelationDao.java	Q11
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductBatchService.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductCategoryService.java	Q3
@@ -330,7 +331,6 @@
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/OrderReturnService.java	§<n>
 2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/SalesOrderQueryService.java	Wave <n>
 2	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/order/service/SalesOrderQueryService.java	§<n>
-1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/pricing/service/PriceResolver.java	Q2
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseConfigKey.java	§<n>
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseErrorCode.java	Q11
 1	stage-comment	xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/purchase/constant/PurchaseErrorCode.java	§<n>

@@ -3,7 +3,7 @@ package net.lab1024.sa.admin.module.scm.order;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import net.lab1024.sa.admin.module.scm.order.controller.SalesOrderController;
-import net.lab1024.sa.admin.module.scm.pricing.domain.form.PriceResolveForm;
+import com.xsy.scm.pricing.domain.form.PriceResolveForm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

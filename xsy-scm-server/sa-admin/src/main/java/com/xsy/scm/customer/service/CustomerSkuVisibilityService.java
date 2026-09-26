@@ -14,7 +14,7 @@ import com.xsy.scm.customer.domain.form.*;
 import com.xsy.scm.customer.domain.vo.*;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
-import net.lab1024.sa.admin.module.scm.pricing.manager.PriceValidation;
+import com.xsy.scm.pricing.manager.PriceValidation;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
