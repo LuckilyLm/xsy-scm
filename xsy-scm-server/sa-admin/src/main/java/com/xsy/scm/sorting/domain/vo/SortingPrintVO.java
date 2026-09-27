@@ -17,5 +17,6 @@ public class SortingPrintVO {
     private String status;
     private Integer printCount;
     private OffsetDateTime generatedAt;
-    private List<SortingTaskItemVO> items;
+    private List<
+            SortingTaskItemVO> items;
 }

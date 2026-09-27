@@ -27,5 +27,6 @@ public class SortingTaskCreateForm {
     private String remark;
 
     @NotEmpty(message = "订单明细不能为空")
-    private List<@NotNull(message = "订单明细 ID 不能为空") @Positive(message = "订单明细 ID 必须大于0") Long> salesOrderItemIds;
+    private List<
+            @NotNull(message = "订单明细 ID 不能为空") @Positive(message = "订单明细 ID 必须大于0") Long> salesOrderItemIds;
 }

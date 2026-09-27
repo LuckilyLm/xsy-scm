@@ -283,7 +283,10 @@ public class SortingTaskService {
     /**
      * 校验并冻结候选订单行：一次读回全部请求行，行数不等即说明有 id 根本不存在。
      */
-    private List<SortingOrderLineSnapshot> sortableLines(List<Long> requested) {
+    private List<
+            SortingOrderLineSnapshot> sortableLines(
+                    List<
+                            Long> requested) {
         var ids = requested.stream().filter(Objects::nonNull).distinct().sorted().toList();
         if (ids.isEmpty() || ids.size() > MAX_LINES_PER_TASK)
             throw new ScmBusinessException(VALIDATION_ERROR);
@@ -326,12 +329,16 @@ public class SortingTaskService {
     /**
      * 任务当前的活动明细，按明细 id 索引。已随取消释放的行不在其中：它们不再代表待办量。
      */
-    private Map<Long, SortingTaskItemEntity> activeItems(Long taskId) {
-        var map = new LinkedHashMap<Long, SortingTaskItemEntity>();
-        sortingTaskItemDao
-                .selectList(new LambdaQueryWrapper<SortingTaskItemEntity>().eq(SortingTaskItemEntity::getTaskId, taskId)
-                        .eq(SortingTaskItemEntity::getOccupationStatus, ScmSortingOccupationStatusEnum.ACTIVE.name())
-                        .orderByAsc(SortingTaskItemEntity::getId))
+    private Map<
+            Long,
+            SortingTaskItemEntity> activeItems(Long taskId) {
+        var map = new LinkedHashMap<
+                Long,
+                SortingTaskItemEntity>();
+        sortingTaskItemDao.selectList(new LambdaQueryWrapper<
+                SortingTaskItemEntity>().eq(SortingTaskItemEntity::getTaskId, taskId)
+                .eq(SortingTaskItemEntity::getOccupationStatus, ScmSortingOccupationStatusEnum.ACTIVE.name())
+                .orderByAsc(SortingTaskItemEntity::getId))
                 .forEach(sortingTaskItem -> map.put(sortingTaskItem.getId(), sortingTaskItem));
         return map;
     }
