@@ -94,11 +94,13 @@ public class PurchaseOrderValidator {
      * 不重复（40090）。
      */
     public static void draft(PurchaseOrderAddForm form) {
-        List<PurchaseOrderAddForm.Item> items = form.getItems();
+        List<
+                PurchaseOrderAddForm.Item> items = form.getItems();
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_EMPTY);
         }
-        Set<Long> skus = new HashSet<>();
+        Set<
+                Long> skus = new HashSet<>();
         for (PurchaseOrderAddForm.Item item : items) {
             if (item.getSkuId() == null || !skus.add(item.getSkuId())) {
                 throw new ScmBusinessException(PURCHASE_ORDER_ITEM_DUPLICATE_SKU);
@@ -108,7 +110,8 @@ public class PurchaseOrderValidator {
             if (item.getAllocations() == null) {
                 continue;
             }
-            Set<Long> demands = new HashSet<>();
+            Set<
+                    Long> demands = new HashSet<>();
             for (PurchaseOrderAddForm.Allocation allocation : item.getAllocations()) {
                 if (allocation.getDemandId() == null || !demands.add(allocation.getDemandId())) {
                     throw new ScmBusinessException(PURCHASE_DEMAND_ALLOCATION_DUPLICATE);

@@ -24,13 +24,19 @@ import java.util.Map;
  * **刻意不复用 {@code OrderJsonbTypeHandler}**：跨域复用会让 {@code purchase} 依赖 {@code order} 域， 而 对 只有「只读引用 {@code sales_order} /
  * {@code sales_order_item}」这一条依赖方向。
  */
-public class PurchaseJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> {
+public class PurchaseJsonbTypeHandler
+        extends
+            BaseTypeHandler<
+                    Map<
+                            String,
+                            Object>> {
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
-    public void setNonNullParameter(PreparedStatement statement, int index, Map<String, Object> jsonValue,
-            JdbcType jdbcType) throws SQLException {
+    public void setNonNullParameter(PreparedStatement statement, int index, Map<
+            String,
+            Object> jsonValue, JdbcType jdbcType) throws SQLException {
         try {
             PGobject pg = new PGobject();
             pg.setType("jsonb");
@@ -41,7 +47,9 @@ public class PurchaseJsonbTypeHandler extends BaseTypeHandler<Map<String, Object
         }
     }
 
-    private Map<String, Object> read(String jsonText) throws SQLException {
+    private Map<
+            String,
+            Object> read(String jsonText) throws SQLException {
         if (jsonText == null) {
             return null;
         }
@@ -54,17 +62,23 @@ public class PurchaseJsonbTypeHandler extends BaseTypeHandler<Map<String, Object
     }
 
     @Override
-    public Map<String, Object> getNullableResult(ResultSet resultSet, String columnName) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(ResultSet resultSet, String columnName) throws SQLException {
         return read(resultSet.getString(columnName));
     }
 
     @Override
-    public Map<String, Object> getNullableResult(ResultSet resultSet, int columnIndex) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(ResultSet resultSet, int columnIndex) throws SQLException {
         return read(resultSet.getString(columnIndex));
     }
 
     @Override
-    public Map<String, Object> getNullableResult(CallableStatement statement, int columnIndex) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(CallableStatement statement, int columnIndex) throws SQLException {
         return read(statement.getString(columnIndex));
     }
 }

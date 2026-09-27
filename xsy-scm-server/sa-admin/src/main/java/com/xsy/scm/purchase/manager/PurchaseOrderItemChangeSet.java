@@ -33,20 +33,31 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
  * <li>被删除的行若已收货（`received_quantity > 0`）→ {@code PURCHASE_ORDER_STATE_INVALID}。</li>
  * </ol>
  */
-public record PurchaseOrderItemChangeSet(List<PurchaseOrderItemEntity> inserted, List<PurchaseOrderItemEntity> updated,
-        List<PurchaseOrderItemEntity> removed) {
+public record PurchaseOrderItemChangeSet(List<
+        PurchaseOrderItemEntity> inserted,
+        List<
+                PurchaseOrderItemEntity> updated,
+        List<
+                PurchaseOrderItemEntity> removed) {
 
     /**
      * 计算差量。`requested` 里的 `id` / `version` 由表单带入，其余字段已由 {@code PurchaseSnapshotFactory} 装配完成。
      */
-    public static PurchaseOrderItemChangeSet between(List<PurchaseOrderItemEntity> existing,
-            List<PurchaseOrderItemEntity> requested) {
-        var unmatched = new LinkedHashMap<Long, PurchaseOrderItemEntity>();
+    public static PurchaseOrderItemChangeSet between(List<
+            PurchaseOrderItemEntity> existing,
+            List<
+                    PurchaseOrderItemEntity> requested) {
+        var unmatched = new LinkedHashMap<
+                Long,
+                PurchaseOrderItemEntity>();
         existing.forEach(row -> unmatched.put(row.getId(), row));
 
-        var skus = new java.util.HashSet<Long>();
-        var inserted = new ArrayList<PurchaseOrderItemEntity>();
-        var updated = new ArrayList<PurchaseOrderItemEntity>();
+        var skus = new java.util.HashSet<
+                Long>();
+        var inserted = new ArrayList<
+                PurchaseOrderItemEntity>();
+        var updated = new ArrayList<
+                PurchaseOrderItemEntity>();
 
         for (PurchaseOrderItemEntity row : requested) {
             if (row.getSkuId() == null || !skus.add(row.getSkuId())) {
@@ -76,7 +87,8 @@ public record PurchaseOrderItemChangeSet(List<PurchaseOrderItemEntity> inserted,
             updated.add(row);
         }
 
-        var removed = new ArrayList<PurchaseOrderItemEntity>(unmatched.values());
+        var removed = new ArrayList<
+                PurchaseOrderItemEntity>(unmatched.values());
         for (PurchaseOrderItemEntity row : removed) {
             BigDecimal received = row.getReceivedQuantity();
             if (received != null && received.signum() > 0) {

@@ -57,7 +57,8 @@ public final class PurchaseAmountCalculator {
     /**
      * 单头金额；任一行金额为 {@code null} 时返回 {@code null}。
      */
-    public static BigDecimal totalAmount(List<BigDecimal> lineAmounts) {
+    public static BigDecimal totalAmount(List<
+            BigDecimal> lineAmounts) {
         if (lineAmounts == null || lineAmounts.isEmpty()) {
             return BigDecimal.ZERO.setScale(SCALE, RoundingMode.HALF_UP);
         }

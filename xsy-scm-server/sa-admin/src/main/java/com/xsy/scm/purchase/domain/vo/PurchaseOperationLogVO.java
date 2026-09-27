@@ -20,7 +20,11 @@ public class PurchaseOperationLogVO {
     private String operationType;
     private String operator;
     private String reason;
-    private Map<String, Object> beforeData;
-    private Map<String, Object> afterData;
+    private Map<
+            String,
+            Object> beforeData;
+    private Map<
+            String,
+            Object> afterData;
     private OffsetDateTime createdAt;
 }

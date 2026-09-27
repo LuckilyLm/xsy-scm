@@ -68,25 +68,32 @@ public class PurchaseOrderController {
 
     @PostMapping("/query")
     @SaCheckPermission(PurchasePermission.QUERY)
-    public ResponseDTO<PageResult<PurchaseOrderVO>> query(@Valid @RequestBody PurchaseOrderQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    PurchaseOrderVO>> query(@Valid @RequestBody PurchaseOrderQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.orderQuery(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(PurchasePermission.QUERY)
-    public ResponseDTO<PurchaseOrderVO> detail(@PathVariable("id") Long purchaseOrderId) {
+    public ResponseDTO<
+            PurchaseOrderVO> detail(@PathVariable("id") Long purchaseOrderId) {
         return ResponseDTO.ok(purchaseQueryService.orderDetail(purchaseOrderId));
     }
 
     @GetMapping("/item/{orderId}")
     @SaCheckPermission(PurchasePermission.QUERY)
-    public ResponseDTO<List<PurchaseOrderItemVO>> items(@PathVariable Long orderId) {
+    public ResponseDTO<
+            List<
+                    PurchaseOrderItemVO>> items(@PathVariable Long orderId) {
         return ResponseDTO.ok(purchaseQueryService.orderItems(orderId));
     }
 
     @GetMapping("/log/{orderId}")
     @SaCheckPermission(PurchasePermission.LOG_QUERY)
-    public ResponseDTO<List<PurchaseOperationLogVO>> logs(@PathVariable Long orderId) {
+    public ResponseDTO<
+            List<
+                    PurchaseOperationLogVO>> logs(@PathVariable Long orderId) {
         return ResponseDTO.ok(purchaseQueryService.orderLogs(orderId));
     }
 
@@ -101,7 +108,8 @@ public class PurchaseOrderController {
             throws IOException {
         form.setPageNum(1L);
         form.setPageSize((long) EXPORT_MAX_ROWS);
-        List<PurchaseOrderVO> orders = purchaseQueryService.orderQuery(form).getList();
+        List<
+                PurchaseOrderVO> orders = purchaseQueryService.orderQuery(form).getList();
         SmartResponseUtil.setDownloadFileHeader(response, "采购单导出.xlsx", null);
         FastExcel.write(response.getOutputStream()).head(PurchaseOrderExportSupport.head(form.getExportColumns()))
                 .autoCloseStream(Boolean.FALSE).sheet("采购单")
@@ -115,15 +123,17 @@ public class PurchaseOrderController {
     @PostMapping("/create")
     @SaCheckPermission(PurchasePermission.ADD)
     @OperateLog
-    public ResponseDTO<PurchaseOrderVO> create(@Valid @RequestBody PurchaseOrderAddForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            PurchaseOrderVO> create(@Valid @RequestBody PurchaseOrderAddForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.create(form, idempotencyKey));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(PurchasePermission.UPDATE)
     @OperateLog
-    public ResponseDTO<PurchaseOrderVO> update(@Valid @RequestBody PurchaseOrderUpdateForm form) {
+    public ResponseDTO<
+            PurchaseOrderVO> update(@Valid @RequestBody PurchaseOrderUpdateForm form) {
         return ResponseDTO.ok(purchaseOrderService.update(form));
     }
 
@@ -137,31 +147,35 @@ public class PurchaseOrderController {
     @PostMapping("/reassign")
     @SaCheckPermission(PurchasePermission.ASSIGN)
     @OperateLog
-    public ResponseDTO<PurchaseOrderVO> reassign(@Valid @RequestBody PurchaseOrderReassignForm form) {
+    public ResponseDTO<
+            PurchaseOrderVO> reassign(@Valid @RequestBody PurchaseOrderReassignForm form) {
         return ResponseDTO.ok(purchaseOrderService.reassign(form));
     }
 
     @PostMapping("/submit")
     @SaCheckPermission(PurchasePermission.SUBMIT)
     @OperateLog
-    public ResponseDTO<PurchaseOrderVO> submit(@Valid @RequestBody PurchaseOrderVersionForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            PurchaseOrderVO> submit(@Valid @RequestBody PurchaseOrderVersionForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.submit(form, idempotencyKey));
     }
 
     @PostMapping("/cancel")
     @SaCheckPermission(PurchasePermission.CANCEL)
     @OperateLog
-    public ResponseDTO<PurchaseOrderVO> cancel(@Valid @RequestBody PurchaseOrderCancelForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            PurchaseOrderVO> cancel(@Valid @RequestBody PurchaseOrderCancelForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.cancel(form, idempotencyKey));
     }
 
     @PostMapping("/short-close")
     @SaCheckPermission(PurchasePermission.SHORT_CLOSE)
     @OperateLog
-    public ResponseDTO<PurchaseOrderVO> shortClose(@Valid @RequestBody PurchaseOrderShortCloseForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            PurchaseOrderVO> shortClose(@Valid @RequestBody PurchaseOrderShortCloseForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.shortClose(form, idempotencyKey));
     }
 
@@ -171,7 +185,8 @@ public class PurchaseOrderController {
     @PostMapping("/batch/short-close")
     @SaCheckPermission(PurchasePermission.SHORT_CLOSE)
     @OperateLog
-    public ResponseDTO<String> batchShortClose(@Valid @RequestBody PurchaseOrderBatchShortCloseForm form) {
+    public ResponseDTO<
+            String> batchShortClose(@Valid @RequestBody PurchaseOrderBatchShortCloseForm form) {
         purchaseOrderService.batchShortClose(form);
         return ResponseDTO.ok();
     }
@@ -179,7 +194,8 @@ public class PurchaseOrderController {
     @PostMapping("/delete")
     @SaCheckPermission(PurchasePermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody PurchaseOrderDeleteForm form) {
+    public ResponseDTO<
+            String> delete(@Valid @RequestBody PurchaseOrderDeleteForm form) {
         purchaseOrderService.delete(form);
         return ResponseDTO.ok();
     }
@@ -187,7 +203,8 @@ public class PurchaseOrderController {
     @PostMapping("/batch-delete")
     @SaCheckPermission(PurchasePermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> batchDelete(@Valid @RequestBody PurchaseOrderBatchDeleteForm form) {
+    public ResponseDTO<
+            String> batchDelete(@Valid @RequestBody PurchaseOrderBatchDeleteForm form) {
         purchaseOrderService.batchDelete(form);
         return ResponseDTO.ok();
     }

@@ -17,7 +17,8 @@ public class PurchaseReceiptBatchDeleteForm {
     @Valid
     @NotEmpty(message = "收货单列表不能为空")
     @Size(max = 100, message = "收货单列表不能超过100项")
-    private List<PurchaseReceiptVersionForm> receipts;
+    private List<
+            PurchaseReceiptVersionForm> receipts;
 
     /**
      * `id + version` 双谓词。

@@ -249,8 +249,12 @@ public final class PurchaseSnapshotFactory {
      * 作用：让每条 allocation **自带证据**，即使需求行之后被改/被删， 也能从分配行回答「当初挂的是哪张订单行、什么单位、多少量」。 数量按 的 4 位定点**字符串**存（不是 JSON 数字）—— 避免 JSON
      * 数字的 浮点语义污染定点纪律。
      */
-    public static Map<String, Object> allocationDemandSnapshot(PurchaseDemandEntity demand) {
-        Map<String, Object> snapshot = new LinkedHashMap<>();
+    public static Map<
+            String,
+            Object> allocationDemandSnapshot(PurchaseDemandEntity demand) {
+        Map<
+                String,
+                Object> snapshot = new LinkedHashMap<>();
         snapshot.put("demandId", demand.getId());
         snapshot.put("salesOrderId", demand.getSalesOrderId());
         snapshot.put("salesOrderItemId", demand.getSalesOrderItemId());
@@ -284,8 +288,12 @@ public final class PurchaseSnapshotFactory {
      *            变更后快照
      */
     public static PurchaseOperationLogEntity operationLog(ScmPurchaseOperationTypeEnum operationType,
-            Long purchaseOrderId, Long purchaseReceiptId, String reason, Map<String, Object> before,
-            Map<String, Object> after) {
+            Long purchaseOrderId, Long purchaseReceiptId, String reason, Map<
+                    String,
+                    Object> before,
+            Map<
+                    String,
+                    Object> after) {
         PurchaseOperationLogEntity log = new PurchaseOperationLogEntity();
         log.setOperationType(operationType.name());
         log.setPurchaseOrderId(purchaseOrderId);
@@ -301,18 +309,27 @@ public final class PurchaseSnapshotFactory {
     /**
      * 可变的 JSONB 快照容器（`Map.of` 不可变，日志快照需要逐项 put）。
      */
-    public static Map<String, Object> snapshot() {
+    public static Map<
+            String,
+            Object> snapshot() {
         return new LinkedHashMap<>();
     }
 
     /**
      * DB 列是 `NOT NULL DEFAULT '{}'::JSONB`，因此空值统一落成空 Map 而不是 null。
      */
-    public static Map<String, Object> copySpecValues(Map<?, ?> source) {
+    public static Map<
+            String,
+            Object> copySpecValues(
+                    Map<
+                            ?,
+                            ?> source) {
         if (source == null || source.isEmpty()) {
             return new LinkedHashMap<>();
         }
-        Map<String, Object> copy = new LinkedHashMap<>();
+        Map<
+                String,
+                Object> copy = new LinkedHashMap<>();
         source.forEach((key, value) -> copy.put(String.valueOf(key), value));
         return copy;
     }

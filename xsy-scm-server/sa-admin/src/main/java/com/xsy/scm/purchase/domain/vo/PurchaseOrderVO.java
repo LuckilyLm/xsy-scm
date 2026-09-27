@@ -57,7 +57,10 @@ public class PurchaseOrderVO {
     private Integer version;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private List<PurchaseOrderItemVO> items;
-    private List<PurchaseOrderAllocationVO> allocations;
-    private List<PurchaseOperationLogVO> logs;
+    private List<
+            PurchaseOrderItemVO> items;
+    private List<
+            PurchaseOrderAllocationVO> allocations;
+    private List<
+            PurchaseOperationLogVO> logs;
 }

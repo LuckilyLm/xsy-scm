@@ -41,7 +41,8 @@ public class PurchaseOrderAddForm {
     @Valid
     @NotEmpty(message = "采购明细不能为空")
     @Size(max = 500, message = "采购明细不能超过500项")
-    private List<Item> items;
+    private List<
+            Item> items;
 
     /**
      * 采购单行：一个 SKU，可挂 N 条需求分配。
@@ -67,7 +68,8 @@ public class PurchaseOrderAddForm {
         private String price;
         @Valid
         @Size(max = 100, message = "需求分配列表不能超过100项")
-        private List<Allocation> allocations;
+        private List<
+                Allocation> allocations;
     }
 
     /**

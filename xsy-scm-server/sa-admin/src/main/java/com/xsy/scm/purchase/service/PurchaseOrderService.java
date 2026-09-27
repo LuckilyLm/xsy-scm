@@ -107,14 +107,19 @@ public class PurchaseOrderService {
         SupplierEntity supplier = purchaseOrderValidator.requireEnabledSupplier(form.getSupplierId());
         WarehouseEntity warehouse = purchaseOrderValidator.requireEnabledWarehouse(form.getWarehouseId());
 
-        List<RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
+        List<
+                RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
 
         // 锁序第 1 层：purchase_demand（按 id 升序），必须早于采购单写入
-        Map<Long, PurchaseDemandEntity> demands = purchaseOrderAllocationService
-                .lockDemands(PurchaseOrderAllocationService.requestedDemandIds(rows));
+        Map<
+                Long,
+                PurchaseDemandEntity> demands = purchaseOrderAllocationService
+                        .lockDemands(PurchaseOrderAllocationService.requestedDemandIds(rows));
         // 新建：本单此前不存在任何分配 → 旧合计为空
-        Map<Long, BigDecimal> newTotals = purchaseOrderAllocationService.validateAllocations(rows, demands,
-                form.getSupplierId(), form.getWarehouseId(), Map.of());
+        Map<
+                Long,
+                BigDecimal> newTotals = purchaseOrderAllocationService.validateAllocations(rows, demands,
+                        form.getSupplierId(), form.getWarehouseId(), Map.of());
 
         PurchaseOrderEntity order = PurchaseSnapshotFactory.order(supplier.getSupplierCode(), supplier.getName(),
                 warehouse.getWarehouseCode(), warehouse.getName(),
@@ -164,13 +169,20 @@ public class PurchaseOrderService {
         WarehouseEntity warehouse = purchaseOrderValidator.requireEnabledWarehouse(form.getWarehouseId());
 
         // 锁序：采购单 → 采购行（按 id 升序）→ 现有分配
-        List<PurchaseOrderItemEntity> existing = purchaseOrderItemDao.lockByOrderId(order.getId());
-        Map<Long, PurchaseOrderItemEntity> existingById = existing.stream()
-                .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
-        Map<Long, List<PurchaseDemandAllocationEntity>> existingAllocations = purchaseOrderAllocationService
-                .loadAllocations(existing);
+        List<
+                PurchaseOrderItemEntity> existing = purchaseOrderItemDao.lockByOrderId(order.getId());
+        Map<
+                Long,
+                PurchaseOrderItemEntity> existingById = existing.stream()
+                        .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
+        Map<
+                Long,
+                List<
+                        PurchaseDemandAllocationEntity>> existingAllocations = purchaseOrderAllocationService
+                                .loadAllocations(existing);
 
-        List<RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
+        List<
+                RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
         // 保留行沿用库中的已收数量：请求只表达「计划量」，不表达「已收量」。
         // （DRAFT 单的已收恒为 0，但把不变量写出来比依赖它更安全 —— 否则一个可编辑状态
         // 的松动就会把 received_quantity 静默清 0。）
@@ -183,17 +195,24 @@ public class PurchaseOrderService {
 
         // 锁序：需求（旧 ∪ 新，按 id 升序）—— 并集是硬要求，只在旧集合出现的 demand
         // 也必须锁，否则删除后 allocated 不会回落（C 段）
-        Collection<Long> involved = new LinkedHashSet<>(PurchaseOrderAllocationService.requestedDemandIds(rows));
+        Collection<
+                Long> involved = new LinkedHashSet<>(PurchaseOrderAllocationService.requestedDemandIds(rows));
         existingAllocations.values()
                 .forEach(list -> list.forEach(allocation -> involved.add(allocation.getPurchaseDemandId())));
-        Map<Long, PurchaseDemandEntity> demands = purchaseOrderAllocationService.lockDemands(involved);
+        Map<
+                Long,
+                PurchaseDemandEntity> demands = purchaseOrderAllocationService.lockDemands(involved);
 
         // 本单**已有**的分配合计（按 demandId）。校验新请求时必须先把它减掉 ——
         // 库里的 `demand.allocated_quantity` 已经包含了本单的旧分配，直接相加会把自己数两遍，
         // 于是「数量没变的一次编辑」也会撞 40082。
-        Map<Long, BigDecimal> oldTotals = PurchaseOrderAllocationService.totals(existingAllocations.values());
-        Map<Long, BigDecimal> newTotals = purchaseOrderAllocationService.validateAllocations(rows, demands,
-                form.getSupplierId(), form.getWarehouseId(), oldTotals);
+        Map<
+                Long,
+                BigDecimal> oldTotals = PurchaseOrderAllocationService.totals(existingAllocations.values());
+        Map<
+                Long,
+                BigDecimal> newTotals = purchaseOrderAllocationService.validateAllocations(rows, demands,
+                        form.getSupplierId(), form.getWarehouseId(), oldTotals);
 
         PurchaseOrderItemChangeSet itemChanges = PurchaseOrderItemChangeSet.between(existing,
                 rows.stream().map(row -> row.item).toList());
@@ -271,12 +290,16 @@ public class PurchaseOrderService {
             return purchaseQueryService.orderDetailForCommand(order.getId());
         }
 
-        Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        Map<
+                String,
+                Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         before.put("purchaserId", order.getPurchaserId());
         order.setPurchaserId(form.getPurchaserId());
         save(order);
 
-        Map<String, Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        Map<
+                String,
+                Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         after.put("purchaserId", order.getPurchaserId());
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.UPDATE,
@@ -302,7 +325,9 @@ public class PurchaseOrderService {
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_EMPTY);
         }
 
-        Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        Map<
+                String,
+                Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         order.setStatus(ScmPurchaseStatusEnum.SUBMITTED.name());
         order.setSubmittedAt(OffsetDateTime.now());
         save(order);
@@ -329,13 +354,17 @@ public class PurchaseOrderService {
         // 释放本单的全部分配并重算需求（C 段不变量：allocated 必须能回落）
         purchaseOrderAllocationService.releaseAllocations(order);
 
-        Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        Map<
+                String,
+                Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         order.setStatus(ScmPurchaseStatusEnum.CANCELLED.name());
         order.setCancelReason(PurchaseOrderValidator.trim(form.getCancelReason()));
         order.setCancelledAt(OffsetDateTime.now());
         save(order);
 
-        Map<String, Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        Map<
+                String,
+                Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         after.put("cancelReason", order.getCancelReason());
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CANCEL,
@@ -369,7 +398,8 @@ public class PurchaseOrderService {
         PurchaseOrderStateMachine.transition(order.getStatus(), ScmPurchaseStatusEnum.SHORT_CLOSED.name());
         PurchaseOrderValidator.reason(form.getShortCloseReason(), PURCHASE_SHORT_CLOSE_REASON_REQUIRED);
 
-        List<PurchaseOrderItemEntity> rows = purchaseOrderItemDao.listByOrderId(order.getId());
+        List<
+                PurchaseOrderItemEntity> rows = purchaseOrderItemDao.listByOrderId(order.getId());
         boolean anyReceived = rows.stream()
                 .anyMatch(row -> row.getReceivedQuantity() != null && row.getReceivedQuantity().signum() > 0);
         boolean anyOutstanding = rows.stream().anyMatch(row -> row.getReceivedQuantity() == null
@@ -379,13 +409,17 @@ public class PurchaseOrderService {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
         }
 
-        Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        Map<
+                String,
+                Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         order.setStatus(ScmPurchaseStatusEnum.SHORT_CLOSED.name());
         order.setShortCloseReason(PurchaseOrderValidator.trim(form.getShortCloseReason()));
         order.setShortClosedAt(OffsetDateTime.now());
         save(order);
 
-        Map<String, Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
+        Map<
+                String,
+                Object> after = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
         after.put("shortCloseReason", order.getShortCloseReason());
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.SHORT_CLOSE,
@@ -418,7 +452,9 @@ public class PurchaseOrderService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
 
-        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<
+                String,
+                Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("deleted", true);
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.DELETE,
                 order.getId(), null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(before), after));
@@ -453,7 +489,8 @@ public class PurchaseOrderService {
     // 内部工具
     // ------------------------------------------------------------------
 
-    private static BigDecimal totalAmount(List<RequestedRow> rows) {
+    private static BigDecimal totalAmount(List<
+            RequestedRow> rows) {
         return PurchaseAmountCalculator.totalAmount(rows.stream().map(row -> row.item.getLineAmount()).toList());
     }
 

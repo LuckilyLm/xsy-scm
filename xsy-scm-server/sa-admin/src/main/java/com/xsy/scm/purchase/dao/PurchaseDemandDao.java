@@ -29,7 +29,10 @@ import java.util.List;
  * </ul>
  */
 @Mapper
-public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
+public interface PurchaseDemandDao
+        extends
+            BaseMapper<
+                    PurchaseDemandEntity> {
 
     /**
      * 来源行（`generate` 取数）：已确认订单 + 有实数量，确定性排序。
@@ -42,8 +45,9 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * 命令路径必须显式传 {@link ScmValueScope#all()}（见 {@code PurchaseDemandService#generate}）， {@code null}
      * 仍失败关闭。要收的是这条命令写入哪个仓，那道边界在 {@code PurchaseWarehouseReferenceGuard} 与后续收货/出库的仓库守卫上。
      */
-    List<SalesOrderItemEntity> listSourceItems(@Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmValueScope scope);
+    List<
+            SalesOrderItemEntity> listSourceItems(@Param("startAt") OffsetDateTime startAt,
+                    @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmValueScope scope);
 
     /**
      * 分页查询（联 supplier / warehouse 取名称快照）。
@@ -52,8 +56,11 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * {@code scope} 是采购员维度的授权范围（{@code purchase_demand.purchaser_id}）， 与 {@code PurchaseOrderDao.query}
      * 同一口径；{@code null} 在 Mapper 里失败关闭，不表示「全部」。
      */
-    List<PurchaseDemandVO> query(Page<?> page, @Param("query") PurchaseDemandQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseDemandVO> query(
+                    Page<
+                            ?> page,
+                    @Param("query") PurchaseDemandQueryForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 订单汇总 / 库存缺口预览（只读聚合）。
@@ -69,8 +76,11 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * <p>
      * 调用方须关闭 count SQL 优化（GROUP BY 分页），否则自动 count 会按行数而非组数计数。
      */
-    List<PurchaseDemandSummaryVO> summaryPreview(Page<?> page, @Param("query") PurchaseDemandSummaryPreviewForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseDemandSummaryVO> summaryPreview(
+                    Page<
+                            ?> page,
+                    @Param("query") PurchaseDemandSummaryPreviewForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 单条详情（同一套投影，保证列表与详情字段口径一致）。
@@ -83,7 +93,10 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * <p>
      * 调用方必须先经 {@code PurchaseDemandAllocator.ascendingDemandIds} 去重排序， 否则不同事务可能以不同顺序取锁而成环。
      */
-    List<PurchaseDemandEntity> lockByIds(@Param("ids") List<Long> ids);
+    List<
+            PurchaseDemandEntity> lockByIds(
+                    @Param("ids") List<
+                            Long> ids);
 
     /**
      * 单条 `FOR UPDATE`。
@@ -93,7 +106,10 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     /**
      * 按来源销售订单行查活动需求（去重与「已存在则返回已有 id」用）。
      */
-    List<PurchaseDemandEntity> listActiveBySourceItemIds(@Param("ids") List<Long> ids);
+    List<
+            PurchaseDemandEntity> listActiveBySourceItemIds(
+                    @Param("ids") List<
+                            Long> ids);
 
     /**
      * INSERT 竞争：冲突（唯一索引）时返回 0，由调用方重读。不返回自增主键。

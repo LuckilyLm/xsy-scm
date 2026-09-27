@@ -42,9 +42,13 @@ public class PurchaseOperationLogEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String reason;
     @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<String, Object> beforeData;
+    private Map<
+            String,
+            Object> beforeData;
     @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<String, Object> afterData;
+    private Map<
+            String,
+            Object> afterData;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime createdAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

@@ -19,7 +19,10 @@ import java.util.List;
  * {@code PurchaseNumberGenerator} 负责拼接与补零。
  */
 @Mapper
-public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
+public interface PurchaseOrderDao
+        extends
+            BaseMapper<
+                    PurchaseOrderEntity> {
 
     /**
      * 分页查询（联 supplier / warehouse / 收货进度）。
@@ -28,8 +31,11 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
      * {@code scope} 是采购员维度的授权范围，由 Service 显式下传： {@code null} 在 Mapper 里按失败关闭处理（0 行），不表示「全部」； {@code detail} /
      * {@code lock} 刻意不带范围，读取范围只在查询端点判定，命令侧由写权限把关。
      */
-    List<PurchaseOrderVO> query(Page<?> page, @Param("query") PurchaseOrderQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseOrderVO> query(
+                    Page<
+                            ?> page,
+                    @Param("query") PurchaseOrderQueryForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 详情（单头，联名称与进度）。

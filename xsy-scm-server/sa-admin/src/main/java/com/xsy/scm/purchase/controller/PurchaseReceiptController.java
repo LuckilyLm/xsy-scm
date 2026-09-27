@@ -52,19 +52,24 @@ public class PurchaseReceiptController {
 
     @PostMapping("/query")
     @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
-    public ResponseDTO<PageResult<PurchaseReceiptVO>> query(@Valid @RequestBody PurchaseReceiptQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    PurchaseReceiptVO>> query(@Valid @RequestBody PurchaseReceiptQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.receiptQuery(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
-    public ResponseDTO<PurchaseReceiptVO> detail(@PathVariable("id") Long receiptId) {
+    public ResponseDTO<
+            PurchaseReceiptVO> detail(@PathVariable("id") Long receiptId) {
         return ResponseDTO.ok(purchaseQueryService.receiptDetail(receiptId));
     }
 
     @GetMapping("/item/{receiptId}")
     @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
-    public ResponseDTO<List<PurchaseReceiptItemVO>> items(@PathVariable Long receiptId) {
+    public ResponseDTO<
+            List<
+                    PurchaseReceiptItemVO>> items(@PathVariable Long receiptId) {
         return ResponseDTO.ok(purchaseQueryService.receiptItems(receiptId));
     }
 
@@ -74,8 +79,10 @@ public class PurchaseReceiptController {
      */
     @PostMapping("/item-workbench/query")
     @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
-    public ResponseDTO<PageResult<PurchaseReceiptItemWorkbenchVO>> itemWorkbench(
-            @Valid @RequestBody PurchaseReceiptItemWorkbenchQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    PurchaseReceiptItemWorkbenchVO>> itemWorkbench(
+                            @Valid @RequestBody PurchaseReceiptItemWorkbenchQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.receiptItemWorkbench(form));
     }
 
@@ -86,23 +93,26 @@ public class PurchaseReceiptController {
     @PostMapping("/create")
     @SaCheckPermission(PurchasePermission.RECEIPT_ADD)
     @OperateLog
-    public ResponseDTO<PurchaseReceiptVO> create(@Valid @RequestBody PurchaseReceiptCreateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            PurchaseReceiptVO> create(@Valid @RequestBody PurchaseReceiptCreateForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseReceiptService.create(form, idempotencyKey));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(PurchasePermission.RECEIPT_UPDATE)
     @OperateLog
-    public ResponseDTO<PurchaseReceiptVO> update(@Valid @RequestBody PurchaseReceiptUpdateForm form) {
+    public ResponseDTO<
+            PurchaseReceiptVO> update(@Valid @RequestBody PurchaseReceiptUpdateForm form) {
         return ResponseDTO.ok(purchaseReceiptService.update(form));
     }
 
     @PostMapping("/confirm")
     @SaCheckPermission(PurchasePermission.RECEIPT_CONFIRM)
     @OperateLog
-    public ResponseDTO<PurchaseReceiptVO> confirm(@Valid @RequestBody PurchaseReceiptConfirmForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            PurchaseReceiptVO> confirm(@Valid @RequestBody PurchaseReceiptConfirmForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseReceiptService.confirm(form, idempotencyKey));
     }
 
@@ -112,15 +122,17 @@ public class PurchaseReceiptController {
     @PostMapping("/putaway")
     @SaCheckPermission(PurchasePermission.RECEIPT_PUTAWAY)
     @OperateLog
-    public ResponseDTO<PurchaseReceiptVO> putaway(@Valid @RequestBody PurchaseReceiptPutawayForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            PurchaseReceiptVO> putaway(@Valid @RequestBody PurchaseReceiptPutawayForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseReceiptService.putaway(form, idempotencyKey));
     }
 
     @PostMapping("/delete")
     @SaCheckPermission(PurchasePermission.RECEIPT_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody PurchaseReceiptDeleteForm form) {
+    public ResponseDTO<
+            String> delete(@Valid @RequestBody PurchaseReceiptDeleteForm form) {
         purchaseReceiptService.delete(form);
         return ResponseDTO.ok();
     }
@@ -128,7 +140,8 @@ public class PurchaseReceiptController {
     @PostMapping("/batch-delete")
     @SaCheckPermission(PurchasePermission.RECEIPT_DELETE)
     @OperateLog
-    public ResponseDTO<String> batchDelete(@Valid @RequestBody PurchaseReceiptBatchDeleteForm form) {
+    public ResponseDTO<
+            String> batchDelete(@Valid @RequestBody PurchaseReceiptBatchDeleteForm form) {
         purchaseReceiptService.batchDelete(form);
         return ResponseDTO.ok();
     }

@@ -58,7 +58,8 @@ public class PurchaseIdempotencyService {
     /**
      * 返回首次执行的结果，不重新执行业务写入。
      */
-    public <T> T replay(Claim claim, Class<T> resultType) {
+    public <T> T replay(Claim claim, Class<
+            T> resultType) {
         return idempotencyService.replay(new ScmIdempotencyService.Claim(claim.record(), claim.replay()), resultType,
                 RESULT_JSON);
     }

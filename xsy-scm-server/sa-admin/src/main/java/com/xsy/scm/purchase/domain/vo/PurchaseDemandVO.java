@@ -27,7 +27,9 @@ public class PurchaseDemandVO {
     private String skuCode;
     private String skuName;
     private String productName;
-    private Map<String, Object> specValues;
+    private Map<
+            String,
+            Object> specValues;
     private String demandUnit;
     private String productType;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
