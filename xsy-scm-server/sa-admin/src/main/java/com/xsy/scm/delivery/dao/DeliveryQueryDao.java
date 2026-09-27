@@ -20,20 +20,33 @@ import com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity;
  */
 @Mapper
 public interface DeliveryQueryDao {
-    List<DeliveryRouteVO> routes(Page<?> page, @Param("q") DeliveryQueryForm q, @Param("scope") ScmValueScope scope);
+    List<
+            DeliveryRouteVO> routes(
+                    Page<
+                            ?> page,
+                    @Param("q") DeliveryQueryForm q, @Param("scope") ScmValueScope scope);
 
     DeliveryRouteVO route(@Param("id") Long id, @Param("scope") ScmValueScope scope);
 
     DeliveryRouteEntity lockRoute(@Param("id") Long id);
 
-    List<DeliveryStopVO> stops(@Param("id") Long id);
+    List<
+            DeliveryStopVO> stops(@Param("id") Long id);
 
-    List<DeliveryCandidateVO> candidates(Page<?> page, @Param("q") DeliveryQueryForm q,
-            @Param("statuses") List<String> statuses, @Param("scope") ScmValueScope scope);
+    List<
+            DeliveryCandidateVO> candidates(
+                    Page<
+                            ?> page,
+                    @Param("q") DeliveryQueryForm q, @Param("statuses") List<
+                            String> statuses,
+                    @Param("scope") ScmValueScope scope);
 
     DeliveryCandidateVO candidate(@Param("id") Long id);
 
-    List<DeliveryCandidateVO> candidateByIds(@Param("ids") List<Long> ids);
+    List<
+            DeliveryCandidateVO> candidateByIds(
+                    @Param("ids") List<
+                            Long> ids);
 
     /**
      * 尚未被「已完成」分拣任务覆盖的有效明细行数；0 才允许进入配送候选。 与 {@code candidateSource} 里的覆盖谓词同一条口径，两处必须一起改。
@@ -47,20 +60,26 @@ public interface DeliveryQueryDao {
      * 与 {@link #unsortedItemCount} 是**同一条件的正反两面**，两处必须一起改：资格判定说 「每行都被覆盖」，这里就保证「每行都能取到一行量」。只改一边会出现
      * 「订单合格、发车却静默少发一行」。未被覆盖的订单行不出现在结果里，由服务侧逐单核对行数。
      */
-    List<com.xsy.scm.delivery.domain.dto.DeliverySortedLine> sortedLines(
-            @Param("orderIds") java.util.Collection<Long> orderIds);
+    List<
+            com.xsy.scm.delivery.domain.dto.DeliverySortedLine> sortedLines(
+                    @Param("orderIds") java.util.Collection<
+                            Long> orderIds);
 
     Long nextNumber();
 
     int bumpStopSequences(@Param("id") Long id);
 
-    List<DeliveryPrintItemVO> printItems(@Param("id") Long id);
+    List<
+            DeliveryPrintItemVO> printItems(@Param("id") Long id);
 
-    List<DeliveryOrderViewVO> orderView(@Param("id") Long id);
+    List<
+            DeliveryOrderViewVO> orderView(@Param("id") Long id);
 
-    List<DeliveryCustomerViewVO> customerView(@Param("id") Long id);
+    List<
+            DeliveryCustomerViewVO> customerView(@Param("id") Long id);
 
-    int markPrinted(@Param("ids") List<Long> assignmentIds, @Param("operator") String operator);
+    int markPrinted(@Param("ids") List<
+            Long> assignmentIds, @Param("operator") String operator);
 
     /**
      * 发车时把该线路全部活动订单推到 {@code IN_TRANSIT}。

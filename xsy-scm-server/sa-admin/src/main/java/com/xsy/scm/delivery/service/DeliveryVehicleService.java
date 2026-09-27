@@ -26,11 +26,13 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 public class DeliveryVehicleService {
     private final DeliveryVehicleDao deliveryVehicleDao;
 
-    public PageResult<DeliveryVehicleEntity> query(DeliveryQueryForm form) {
+    public PageResult<
+            DeliveryVehicleEntity> query(DeliveryQueryForm form) {
         var requested = DeliveryRouteQueryService.page(form);
-        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryVehicleEntity>(
-                requested.getCurrent(), requested.getSize(), requested.searchCount());
-        var wrapper = new LambdaQueryWrapper<DeliveryVehicleEntity>();
+        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<
+                DeliveryVehicleEntity>(requested.getCurrent(), requested.getSize(), requested.searchCount());
+        var wrapper = new LambdaQueryWrapper<
+                DeliveryVehicleEntity>();
         if (form.getKeyword() != null && !form.getKeyword().isBlank())
             wrapper.like(DeliveryVehicleEntity::getVehicleNo, form.getKeyword());
         if (form.getStatus() != null && !form.getStatus().isBlank())
@@ -40,9 +42,10 @@ public class DeliveryVehicleService {
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
-    public List<DeliveryVehicleEntity> options() {
-        return deliveryVehicleDao.selectList(new LambdaQueryWrapper<DeliveryVehicleEntity>()
-                .eq(DeliveryVehicleEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+    public List<
+            DeliveryVehicleEntity> options() {
+        return deliveryVehicleDao.selectList(new LambdaQueryWrapper<
+                DeliveryVehicleEntity>().eq(DeliveryVehicleEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
                 .orderByAsc(DeliveryVehicleEntity::getVehicleNo));
     }
 

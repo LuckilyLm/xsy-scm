@@ -40,11 +40,13 @@ public class DeliveryDriverService {
     private final DeliveryDriverDao deliveryDriverDao;
     private final EmployeeDao employeeDao;
 
-    public PageResult<DeliveryDriverVO> query(DeliveryQueryForm form) {
+    public PageResult<
+            DeliveryDriverVO> query(DeliveryQueryForm form) {
         var requested = DeliveryRouteQueryService.page(form);
-        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryDriverEntity>(
-                requested.getCurrent(), requested.getSize(), requested.searchCount());
-        var wrapper = new LambdaQueryWrapper<DeliveryDriverEntity>();
+        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<
+                DeliveryDriverEntity>(requested.getCurrent(), requested.getSize(), requested.searchCount());
+        var wrapper = new LambdaQueryWrapper<
+                DeliveryDriverEntity>();
         if (form.getKeyword() != null && !form.getKeyword().isBlank())
             wrapper.like(DeliveryDriverEntity::getDriverCode, form.getKeyword());
         if (form.getStatus() != null && !form.getStatus().isBlank())
@@ -61,9 +63,10 @@ public class DeliveryDriverService {
         }).toList());
     }
 
-    public List<DeliveryDriverEntity> options() {
-        return deliveryDriverDao.selectList(new LambdaQueryWrapper<DeliveryDriverEntity>()
-                .eq(DeliveryDriverEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+    public List<
+            DeliveryDriverEntity> options() {
+        return deliveryDriverDao.selectList(new LambdaQueryWrapper<
+                DeliveryDriverEntity>().eq(DeliveryDriverEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
                 .orderByAsc(DeliveryDriverEntity::getDriverCode));
     }
 
@@ -108,7 +111,11 @@ public class DeliveryDriverService {
     }
 
     /** 绑定员工姓名；已删除的员工不显示名字（列表留空即提示这条绑定需要重新处理）。 */
-    private Map<Long, String> employeeNames(Set<Long> employeeIds) {
+    private Map<
+            Long,
+            String> employeeNames(
+                    Set<
+                            Long> employeeIds) {
         if (employeeIds.isEmpty())
             return Map.of();
         var found = employeeDao.selectBatchIds(employeeIds);

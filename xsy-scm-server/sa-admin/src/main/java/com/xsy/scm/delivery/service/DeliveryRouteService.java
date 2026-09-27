@@ -167,16 +167,20 @@ public class DeliveryRouteService {
             if (!eligibility.eligible(salesOrderDao.lock(orderId)))
                 throw new ScmBusinessException(ORDER_INELIGIBLE);
         }
-        var routeStops = new ArrayList<>(
-                deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
-                        .eq(DeliveryRouteStopEntity::getRouteId, id).orderByAsc(DeliveryRouteStopEntity::getStopSeq)));
+        var routeStops = new ArrayList<>(deliveryRouteStopDao.selectList(new LambdaQueryWrapper<
+                DeliveryRouteStopEntity>().eq(DeliveryRouteStopEntity::getRouteId, id)
+                .orderByAsc(DeliveryRouteStopEntity::getStopSeq)));
         // ACTIVE 占用判断与订单快照读取各合成一条：原先逐单查，500 单就是 1000 次往返。
         // 上面已把所有请求订单加锁，这里读到的是稳定快照；ids 受 LIMIT_EXCEEDED 约束在 500 以内。
-        var alreadyAssigned = new HashSet<Long>();
-        var snapshots = new HashMap<Long, DeliveryCandidateVO>();
+        var alreadyAssigned = new HashSet<
+                Long>();
+        var snapshots = new HashMap<
+                Long,
+                DeliveryCandidateVO>();
         if (!ids.isEmpty()) {
-            deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
-                    .select(DeliveryRouteOrderEntity::getOrderId).in(DeliveryRouteOrderEntity::getOrderId, ids)
+            deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<
+                    DeliveryRouteOrderEntity>().select(DeliveryRouteOrderEntity::getOrderId)
+                    .in(DeliveryRouteOrderEntity::getOrderId, ids)
                     .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name()))
                     .forEach(assigned -> alreadyAssigned.add(assigned.getOrderId()));
             deliveryQueryDao.candidateByIds(ids).forEach(snapshot -> snapshots.put(snapshot.getOrderId(), snapshot));
@@ -234,8 +238,8 @@ public class DeliveryRouteService {
         stamp(assignment, false);
         deliveryRouteOrderDao.updateById(assignment);
         deliveryRouteOrderDao.deleteById(assignment.getId());
-        if (deliveryRouteOrderDao.selectCount(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
-                .eq(DeliveryRouteOrderEntity::getStopId, assignment.getStopId())
+        if (deliveryRouteOrderDao.selectCount(new LambdaQueryWrapper<
+                DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getStopId, assignment.getStopId())
                 .eq(DeliveryRouteOrderEntity::getAssignmentStatus,
                         ScmDeliveryAssignmentStatusEnum.ACTIVE.name())) == 0) {
             deliveryRouteStopDao.deleteById(assignment.getStopId());
@@ -256,15 +260,17 @@ public class DeliveryRouteService {
     public void reorder(Long id, DeliveryReorderForm form) {
         var route = lock(id, form.getVersion());
         draft(route);
-        var existing = deliveryRouteStopDao.selectList(
-                new LambdaQueryWrapper<DeliveryRouteStopEntity>().eq(DeliveryRouteStopEntity::getRouteId, id));
+        var existing = deliveryRouteStopDao.selectList(new LambdaQueryWrapper<
+                DeliveryRouteStopEntity>().eq(DeliveryRouteStopEntity::getRouteId, id));
         var ids = new HashSet<>(form.getStopIds());
         if (ids.size() != form.getStopIds().size() || ids.size() != existing.size()
                 || !ids.equals(new HashSet<>(existing.stream().map(DeliveryRouteStopEntity::getId).toList())))
             throw new ScmBusinessException(STOP_ORDER_INVALID);
         // Move to a disjoint positive sequence range before swapping; partial unique index remains active.
         deliveryQueryDao.bumpStopSequences(id);
-        var byId = new HashMap<Long, DeliveryRouteStopEntity>();
+        var byId = new HashMap<
+                Long,
+                DeliveryRouteStopEntity>();
         existing.forEach(s -> byId.put(s.getId(), s));
         int seq = 0;
         for (Long stopId : form.getStopIds()) {
@@ -379,7 +385,8 @@ public class DeliveryRouteService {
         var orderIds = assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).toList();
         var linesByOrder = deliveryQueryDao.sortedLines(orderIds).stream().collect(
                 Collectors.groupingBy(DeliverySortedLine::getOrderId, LinkedHashMap::new, Collectors.toList()));
-        var lines = new ArrayList<InventoryFulfillmentService.Line>();
+        var lines = new ArrayList<
+                InventoryFulfillmentService.Line>();
         for (var orderId : orderIds) {
             var sorted = linesByOrder.get(orderId);
             // 一条行都取不到 = 该订单其实没有被分拣覆盖，与上面的资格判定矛盾，宁可不发。
@@ -449,8 +456,9 @@ public class DeliveryRouteService {
             throw new ScmBusinessException(SIGN_RESULT_INVALID);
         if (exception && (form.getReason() == null || form.getReason().isBlank()))
             throw new ScmBusinessException(SIGN_REASON_REQUIRED);
-        var assignment = deliveryRouteOrderDao.selectOne(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
-                .eq(DeliveryRouteOrderEntity::getRouteId, routeId).eq(DeliveryRouteOrderEntity::getOrderId, orderId)
+        var assignment = deliveryRouteOrderDao.selectOne(new LambdaQueryWrapper<
+                DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, routeId)
+                .eq(DeliveryRouteOrderEntity::getOrderId, orderId)
                 .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name()));
         if (assignment == null)
             throw new ScmBusinessException(NOT_FOUND);
@@ -509,12 +517,12 @@ public class DeliveryRouteService {
         return deliveryRoutePrintService.printCustomers(id, form, key);
     }
 
-    private List<DeliveryRouteOrderEntity> active(Long id) {
-        return deliveryRouteOrderDao.selectList(
-                new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, id)
-                        .eq(DeliveryRouteOrderEntity::getAssignmentStatus,
-                                ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
-                        .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
+    private List<
+            DeliveryRouteOrderEntity> active(Long id) {
+        return deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<
+                DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, id)
+                .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
+                .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
     }
 
     private DeliveryRouteEntity lock(Long id, Integer version) {

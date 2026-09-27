@@ -24,7 +24,8 @@ public class DeliveryPrintCustomersForm {
     @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
     @Size(max = 500, message = "客户数量不能超过500个")
-    private List<@NotNull(message = "客户编号不能为空") @Positive(message = "客户编号必须为正数") Long> customerIds;
+    private List<
+            @NotNull(message = "客户编号不能为空") @Positive(message = "客户编号必须为正数") Long> customerIds;
     /**
      * ALL / PRINTED / UNPRINTED / PARTIAL，默认 ALL；缺省 {@code customerIds} 时不允许 ALL， 否则一次请求会无选择地重打整条线路。
      */

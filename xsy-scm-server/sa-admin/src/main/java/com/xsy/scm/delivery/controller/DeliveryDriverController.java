@@ -27,14 +27,17 @@ public class DeliveryDriverController {
 
     @GetMapping
     @SaCheckPermission(DeliveryPermission.DRIVER_QUERY)
-    public ResponseDTO<PageResult<DeliveryDriverVO>> query(@Valid @ModelAttribute DeliveryQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    DeliveryDriverVO>> query(@Valid @ModelAttribute DeliveryQueryForm form) {
         return ResponseDTO.ok(deliveryDriverService.query(form));
     }
 
     @PostMapping
     @SaCheckPermission(DeliveryPermission.DRIVER_EDIT)
     @OperateLog
-    public ResponseDTO<Long> save(@Valid @RequestBody DeliveryDriverForm form) {
+    public ResponseDTO<
+            Long> save(@Valid @RequestBody DeliveryDriverForm form) {
         return ResponseDTO.ok(deliveryDriverService.save(form));
     }
 }
