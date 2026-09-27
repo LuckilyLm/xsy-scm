@@ -2,6 +2,7 @@ package com.xsy.scm.order.constant;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 @Getter
@@ -16,8 +17,6 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_PRICE_INVALID(40066, "价格必须为非负、至多 4 位小数的定点数"),
     ORDER_ACTUAL_REASON_REQUIRED(40067, "实重修改原因不能为空"),
     ORDER_CANCEL_REASON_REQUIRED(40068, "取消原因不能为空"),
-    ORDER_IDEMPOTENCY_KEY_REQUIRED(40069, "Idempotency-Key 不能为空"),
-    ORDER_IDEMPOTENCY_KEY_INVALID(40070, "Idempotency-Key 长度不能超过 200 个字符"),
     ORDER_ITEM_VERSION_REQUIRED(40071, "保留订单明细必须携带版本"),
     ORDER_SOURCE_INVALID(40075, "后台订单来源仅允许后台录单或补单"),
     ORDER_RETURN_APPROVAL_INVALID(40072, "批准数量无效或未批准任何商品"),
@@ -34,7 +33,6 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_ACTUAL_QUANTITY_REQUIRED(40963, "确认前所有订单明细必须具有有效实数量"),
     ORDER_ITEM_NOT_OWNED(40964, "订单明细不属于当前订单"),
     ORDER_ITEM_VERSION_CONFLICT(40965, "订单明细版本冲突"),
-    ORDER_IDEMPOTENCY_CONFLICT(40966, "相同幂等键的请求内容不一致"),
     ORDER_RETURN_STATUS_INVALID(40967, "当前退货状态不允许此操作"),
     ORDER_REFUND_STATUS_INVALID(40968, "当前退款状态不允许此操作"),
     ORDER_RETURN_QUANTITY_EXCEEDED(40969, "退货数量超过可退数量"),
@@ -49,6 +47,15 @@ public enum OrderErrorCode implements ScmErrorCode {
      * <p>40945 已核对空闲（409xx 段在 40944 与 40946 之间有空档）。
      */
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");
+
+    /** Compatibility aliases; idempotency errors are owned by the shared SCM layer. */
+    @Deprecated
+    public static final ScmErrorCode ORDER_IDEMPOTENCY_KEY_REQUIRED = ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED;
+    @Deprecated
+    public static final ScmErrorCode ORDER_IDEMPOTENCY_KEY_INVALID = ScmCommonErrorCode.IDEMPOTENCY_KEY_INVALID;
+    @Deprecated
+    public static final ScmErrorCode ORDER_IDEMPOTENCY_CONFLICT = ScmCommonErrorCode.IDEMPOTENCY_CONFLICT;
+
     private final int code;
     private final String msg;
 }
