@@ -2,7 +2,6 @@ package com.xsy.scm.finance.domain.dto;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
