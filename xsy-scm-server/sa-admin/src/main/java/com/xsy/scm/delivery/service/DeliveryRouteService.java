@@ -58,7 +58,7 @@ import com.xsy.scm.delivery.domain.vo.DeliveryPrintResultVO;
 import com.xsy.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.inventory.service.InventoryFulfillmentService;
 import com.xsy.scm.order.dao.SalesOrderDao;
-import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.warehouse.dao.WarehouseDao;
 
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DISPATCH_ROUTE_INELIGIBLE;
@@ -91,7 +91,7 @@ public class DeliveryRouteService {
     private final WarehouseDao warehouseDao;
     private final SalesOrderDao salesOrderDao;
     private final DeliveryEligibilityPolicy eligibility;
-    private final OrderIdempotencyService orderIdempotencyService;
+    private final ScmIdempotencyService idempotencyService;
     /**
      * 库存域唯一的写入口：本类不直接修改余额、预留或库存流水。
      */
@@ -363,9 +363,9 @@ public class DeliveryRouteService {
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryDispatchResultVO dispatch(Long id, DeliveryVersionForm form, String key) {
-        var claim = orderIdempotencyService.claim("DELIVERY_DISPATCH:" + id, key, form);
+        var claim = idempotencyService.claim("DELIVERY_DISPATCH:" + id, key, form);
         if (claim.replay()) {
-            return orderIdempotencyService.replay(claim, DeliveryDispatchResultVO.class);
+            return idempotencyService.replay(claim, DeliveryDispatchResultVO.class);
         }
         var route = lock(id, form.getVersion());
         if (!ScmDeliveryRouteStatusEnum.PLANNED.name().equals(route.getStatus()))
@@ -414,7 +414,7 @@ public class DeliveryRouteService {
         result.setOutboundNo(outbound.outboundNo());
         result.setOrderCount(assigned.size());
         result.setShippedLineCount(outbound.shippedLineCount());
-        orderIdempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
+        idempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
         return result;
     }
 
@@ -496,18 +496,18 @@ public class DeliveryRouteService {
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
-        var claim = orderIdempotencyService.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
+        var claim = idempotencyService.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
         // 重放结果取自幂等记录里的原始明细，金额同样要在返回前过一遍可见性口径。
         if (claim.replay())
             return DeliveryVisibility.current().printResult(
-                    orderIdempotencyService.replay(claim, DeliveryPrintResultVO.class));
+                    idempotencyService.replay(claim, DeliveryPrintResultVO.class));
         printable(lock(id, form.getVersion()));
         var wanted = new HashSet<>(form.getOrderIds());
         var selected = active(id).stream().filter(a -> wanted.contains(a.getOrderId())).toList();
         // 请求集合必须在锁定的 ACTIVE 集合中一一对应；缺少任一订单说明预览后线路已变化，拒绝旧请求。
         if (selected.size() != wanted.size()) throw new ScmBusinessException(STATE_INVALID);
         var result = recordAndBuild(id, selected);
-        orderIdempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
+        idempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
         return DeliveryVisibility.current().printResult(result);
     }
 
@@ -518,10 +518,10 @@ public class DeliveryRouteService {
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
-        var claim = orderIdempotencyService.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
+        var claim = idempotencyService.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
         if (claim.replay())
             return DeliveryVisibility.current().printResult(
-                    orderIdempotencyService.replay(claim, DeliveryPrintResultVO.class));
+                    idempotencyService.replay(claim, DeliveryPrintResultVO.class));
         printable(lock(id, form.getVersion()));
         var customerStatusFilter = customerPrintFilter(form.getCustomerStatusFilter(),
                 ScmDeliveryCustomerPrintFilterEnum.ALL);
@@ -540,7 +540,7 @@ public class DeliveryRouteService {
         }
         if (selected.isEmpty()) throw new ScmBusinessException(STATE_INVALID);
         var result = recordAndBuild(id, selected);
-        orderIdempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
+        idempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
         return DeliveryVisibility.current().printResult(result);
     }
 
