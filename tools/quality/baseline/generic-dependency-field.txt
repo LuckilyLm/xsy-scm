@@ -3,14 +3,7 @@
 # detection : 字段声明行匹配 private/protected [final] <Type> <name>;，name 属于 {dao,service,query,manager,validator,repository,mapper,reader,writer,client}，且类型简单名小写后不等于该字段名
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 52 occurrences in 52 identities
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	CustomerController#service:CustomerService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	CustomerTypeController#service:CustomerTypeService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerVisibilityController.java	CustomerVisibilityController#service:CustomerSkuVisibilityService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerService.java	CustomerService#dao:CustomerDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerService.java	CustomerService#validator:CustomerValidator
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerSkuVisibilityService.java	CustomerSkuVisibilityService#dao:CustomerSkuVisibilityDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/service/CustomerTypeService.java	CustomerTypeService#dao:CustomerTypeDao
+# captured  : 28 occurrences in 28 identities
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryDriverController.java	DeliveryDriverController#service:DeliveryDriverService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryRouteController.java	DeliveryRouteController#query:DeliveryRouteQueryService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryRouteController.java	DeliveryRouteController#service:DeliveryRouteService
@@ -32,25 +25,8 @@
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderIdempotencyService.java	OrderIdempotencyService#dao:IdempotencyRecordDao
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderNumberGenerator.java	OrderNumberGenerator#dao:SalesOrderDao
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	SalesOrderService#query:SalesOrderQueryService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/AgreementPriceController.java	AgreementPriceController#service:AgreementPriceService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/CustomerTypePriceController.java	CustomerTypePriceController#service:CustomerTypePriceService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/PriceBatchController.java	PriceBatchController#service:PriceBatchService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/PriceHistoryController.java	PriceHistoryController#service:PriceHistoryQueryService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/PriceResolveController.java	PriceResolveController#service:PriceResolver
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/AgreementPriceQueryService.java	AgreementPriceQueryService#dao:AgreementPriceDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/AgreementPriceService.java	AgreementPriceService#dao:AgreementPriceDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/CustomerTypePriceQueryService.java	CustomerTypePriceQueryService#dao:CustomerTypePriceDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/CustomerTypePriceService.java	CustomerTypePriceService#dao:CustomerTypePriceDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchAuditService.java	PriceBatchAuditService#dao:PriceBatchAuditDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchService.java	PriceBatchService#writer:PriceBatchWriter
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchWriter.java	PriceBatchWriter#service:CustomerTypePriceService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceHistoryQueryService.java	PriceHistoryQueryService#dao:PriceHistoryDao
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/controller/SortingTaskController.java	SortingTaskController#query:SortingQueryService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/controller/SortingTaskController.java	SortingTaskController#service:SortingTaskService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierController.java	SupplierController#service:SupplierService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierSkuController.java	SupplierSkuController#service:SupplierSkuService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/service/SupplierService.java	SupplierService#dao:SupplierDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/service/SupplierSkuService.java	SupplierSkuService#dao:SupplierSkuDao
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	WarehouseController#service:WarehouseService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseScopeController.java	WarehouseScopeController#service:WarehouseScopeService
 1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseQueryService.java	WarehouseQueryService#dao:WarehouseDao

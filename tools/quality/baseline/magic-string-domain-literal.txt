@@ -3,10 +3,7 @@
 # detection : 非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由扫描根下的生产源码构建，否则引用了新包 enum 的常量会漏判；*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 169 occurrences in 99 identities
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerAddForm.java	CustomerAddForm#"INDEPENDENT"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/domain/form/CustomerTypeAddForm.java	CustomerTypeAddForm#"ENABLED"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/manager/CustomerValidator.java	CustomerValidator#"GROUP"
+# captured  : 152 occurrences in 84 identities
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/service/ScmTodoQueryService.java	ScmTodoQueryService#"CONFIRMED"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/service/ScmTodoQueryService.java	ScmTodoQueryService#"DRAFT"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/service/ScmTodoQueryService.java	ScmTodoQueryService#"PENDING"
@@ -60,18 +57,6 @@
 6	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	SalesOrderService#"SALES_ORDER"
 3	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	SalesOrderService#"STANDARD"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	SalesOrderService#"SYSTEM"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/manager/PriceValidation.java	PriceValidation#"ENABLED"
-2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/manager/PriceValidation.java	PriceValidation#"ON_SHELF"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/AgreementPriceService.java	AgreementPriceService#"CREATE"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/AgreementPriceService.java	AgreementPriceService#"DELETE"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/AgreementPriceService.java	AgreementPriceService#"UPDATE"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/CustomerTypePriceService.java	CustomerTypePriceService#"CREATE"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/CustomerTypePriceService.java	CustomerTypePriceService#"DELETE"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/CustomerTypePriceService.java	CustomerTypePriceService#"UPDATE"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchWriter.java	PriceBatchWriter#"ENABLED"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceHistoryQueryService.java	PriceHistoryQueryService#"AGREEMENT"
-1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceHistoryQueryService.java	PriceHistoryQueryService#"CUSTOMER_TYPE"
-2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	PriceResolver#"ENABLED"
 2	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductExcelController.java	ProductExcelController#"CREATE"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java	ProductImportService#"CATEGORY_DISABLED"
 1	magic-string-domain-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptConfirmForm.java	PurchaseReceiptConfirmForm#"MANUAL"

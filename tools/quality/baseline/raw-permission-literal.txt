@@ -3,19 +3,7 @@
 # detection : @SaCheckPermission(...) 参数里出现的 "scm:..." 字面量，每个字面量一条；权限目录常量类里的字面量定义不算（它不是注解）
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 285 occurrences in 169 identities
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:assign
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:delete
-4	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:status
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:customer:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerController.java	scm:order:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:delete
-2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerTypeController.java	scm:customer:type:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/controller/CustomerVisibilityController.java	scm:customer:visibility:query
+# captured  : 246 occurrences in 139 identities
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/controller/ScmTodoController.java	scm:todo:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryDriverController.java	scm:delivery:driver:edit
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryDriverController.java	scm:delivery:driver:query
@@ -88,17 +76,6 @@
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java	scm:order:update
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java	scm:pricing:resolve:query
 2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderImportController.java	scm:order:import
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/AgreementPriceController.java	scm:pricing:agreement:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/AgreementPriceController.java	scm:pricing:agreement:delete
-2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/AgreementPriceController.java	scm:pricing:agreement:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/AgreementPriceController.java	scm:pricing:agreement:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/CustomerTypePriceController.java	scm:pricing:type-price:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/CustomerTypePriceController.java	scm:pricing:type-price:delete
-2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/CustomerTypePriceController.java	scm:pricing:type-price:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/CustomerTypePriceController.java	scm:pricing:type-price:update
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/PriceBatchController.java	scm:pricing:type-price:batch
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/PriceHistoryController.java	scm:pricing:history:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/controller/PriceResolveController.java	scm:pricing:resolve:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductCategoryController.java	scm:product:category:add
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductCategoryController.java	scm:product:category:delete
 2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/controller/ProductCategoryController.java	scm:product:category:query
@@ -159,13 +136,6 @@
 2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/controller/SortingTaskController.java	scm:sorting:task:print
 2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/controller/SortingTaskController.java	scm:sorting:task:query
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/controller/SortingTaskController.java	scm:sorting:task:reopen
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierController.java	scm:supplier:add
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierController.java	scm:supplier:delete
-3	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierController.java	scm:supplier:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierController.java	scm:supplier:status
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierController.java	scm:supplier:update
-2	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierSkuController.java	scm:supplier:sku:query
-1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/supplier/controller/SupplierSkuController.java	scm:supplier:sku:update
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:add
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:disable
 1	raw-permission-literal	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	scm:warehouse:enable
