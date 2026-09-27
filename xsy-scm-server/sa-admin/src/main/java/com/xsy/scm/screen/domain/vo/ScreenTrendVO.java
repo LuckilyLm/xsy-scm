@@ -29,31 +29,40 @@ public class ScreenTrendVO {
     private String range;
 
     @Schema(description = "日期轴（MM-DD）")
-    private List<String> dates;
+    private List<
+            String> dates;
 
     @Schema(description = "日期轴（YYYY-MM-DD，用于 tooltip 完整展示）")
-    private List<String> fullDates;
+    private List<
+            String> fullDates;
 
     @Schema(description = "每日结算金额（CONFIRMED）")
-    private List<BigDecimal> sales;
+    private List<
+            BigDecimal> sales;
 
     @Schema(description = "每日订单数（CONFIRMED）")
-    private List<Long> orders;
+    private List<
+            Long> orders;
 
     @Schema(description = "每日采购金额")
-    private List<BigDecimal> purchaseAmounts;
+    private List<
+            BigDecimal> purchaseAmounts;
 
     @Schema(description = "每日采购单数")
-    private List<Long> purchaseOrders;
+    private List<
+            Long> purchaseOrders;
 
     @Schema(description = "每日期末库存量（累计净额，非当日变动）")
-    private List<BigDecimal> inventoryQuantity;
+    private List<
+            BigDecimal> inventoryQuantity;
 
     @Schema(description = "每日入库数量（五个入方向流水求和）")
-    private List<BigDecimal> inboundQuantity;
+    private List<
+            BigDecimal> inboundQuantity;
 
     @Schema(description = "每日出库数量（五个出方向流水求和）")
-    private List<BigDecimal> outboundQuantity;
+    private List<
+            BigDecimal> outboundQuantity;
 
     /**
      * 单日聚合行（SQL 直接映射，再由服务层转置成上面的数组）。

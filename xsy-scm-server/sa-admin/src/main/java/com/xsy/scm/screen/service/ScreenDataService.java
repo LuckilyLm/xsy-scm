@@ -68,11 +68,13 @@ public class ScreenDataService {
      * 方向位本身已被 {@code ScmInventoryConstantTest#movementDirectionMatchesSnapshotConstraint} 钉住（10 个类型恰好分成两组、每组 5 个，且与
      * {@code ck_inventory_movement_snap} 的方向分支同源）， 所以从这里派生等于把这三处口径一并接进那道契约守卫。
      */
-    private static final List<String> INBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
-            .filter(ScmInventoryMovementTypeEnum::isInbound).map(type -> type.name()).toList();
+    private static final List<
+            String> INBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
+                    .filter(ScmInventoryMovementTypeEnum::isInbound).map(type -> type.name()).toList();
 
-    private static final List<String> OUTBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
-            .filter(type -> !type.isInbound()).map(type -> type.name()).toList();
+    private static final List<
+            String> OUTBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
+                    .filter(type -> !type.isInbound()).map(type -> type.name()).toList();
 
     private final ScreenDataDao screenDataDao;
 
@@ -151,7 +153,8 @@ public class ScreenDataService {
      * </ol>
      */
     private ScreenInventoryVO.InventoryHealth buildHealth(ScmDataScopeContext scope) {
-        List<ScreenInventoryHealthRow> rows = nullToEmpty(screenDataDao.inventoryHealthRows(scope));
+        List<
+                ScreenInventoryHealthRow> rows = nullToEmpty(screenDataDao.inventoryHealthRows(scope));
         long normal = 0L;
         long low = 0L;
         long high = 0L;
@@ -219,18 +222,28 @@ public class ScreenDataService {
         LocalDate end = LocalDate.now(BUSINESS_ZONE);
         LocalDate start = end.minusDays(thirty ? 29L : 6L);
 
-        List<ScreenTrendVO.Point> points = nullToEmpty(screenDataDao.trendByDay(start, end, INBOUND_MOVEMENT_TYPES,
-                OUTBOUND_MOVEMENT_TYPES, dataScopeService.resolve()));
+        List<
+                ScreenTrendVO.Point> points = nullToEmpty(screenDataDao.trendByDay(start, end, INBOUND_MOVEMENT_TYPES,
+                        OUTBOUND_MOVEMENT_TYPES, dataScopeService.resolve()));
 
-        List<String> dates = new ArrayList<>(points.size());
-        List<String> fullDates = new ArrayList<>(points.size());
-        List<BigDecimal> sales = new ArrayList<>(points.size());
-        List<Long> orders = new ArrayList<>(points.size());
-        List<BigDecimal> purchaseAmounts = new ArrayList<>(points.size());
-        List<Long> purchaseOrders = new ArrayList<>(points.size());
-        List<BigDecimal> inventoryQuantity = new ArrayList<>(points.size());
-        List<BigDecimal> inboundQuantity = new ArrayList<>(points.size());
-        List<BigDecimal> outboundQuantity = new ArrayList<>(points.size());
+        List<
+                String> dates = new ArrayList<>(points.size());
+        List<
+                String> fullDates = new ArrayList<>(points.size());
+        List<
+                BigDecimal> sales = new ArrayList<>(points.size());
+        List<
+                Long> orders = new ArrayList<>(points.size());
+        List<
+                BigDecimal> purchaseAmounts = new ArrayList<>(points.size());
+        List<
+                Long> purchaseOrders = new ArrayList<>(points.size());
+        List<
+                BigDecimal> inventoryQuantity = new ArrayList<>(points.size());
+        List<
+                BigDecimal> inboundQuantity = new ArrayList<>(points.size());
+        List<
+                BigDecimal> outboundQuantity = new ArrayList<>(points.size());
 
         for (ScreenTrendVO.Point p : points) {
             dates.add(p.getLabel());
@@ -269,7 +282,8 @@ public class ScreenDataService {
      */
     public ScreenGeoVO getGeoData() {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        List<ScreenGeoVO.CityNode> cities = nullToEmpty(screenDataDao.geoCityRows(scope));
+        List<
+                ScreenGeoVO.CityNode> cities = nullToEmpty(screenDataDao.geoCityRows(scope));
         ScreenGeoVO vo = new ScreenGeoVO();
         vo.setCities(cities);
         vo.setProvinces(rollUpProvinces(cities));
@@ -280,8 +294,13 @@ public class ScreenDataService {
     /**
      * 省级上卷：只累加市级事实，不引入任何新的判定。
      */
-    private static List<ScreenGeoVO.ProvinceNode> rollUpProvinces(List<ScreenGeoVO.CityNode> cities) {
-        Map<Integer, ScreenGeoVO.ProvinceNode> byProvince = new LinkedHashMap<>();
+    private static List<
+            ScreenGeoVO.ProvinceNode> rollUpProvinces(
+                    List<
+                            ScreenGeoVO.CityNode> cities) {
+        Map<
+                Integer,
+                ScreenGeoVO.ProvinceNode> byProvince = new LinkedHashMap<>();
         for (ScreenGeoVO.CityNode city : cities) {
             ScreenGeoVO.ProvinceNode province = byProvince.computeIfAbsent(city.getProvinceCode(), code -> {
                 ScreenGeoVO.ProvinceNode created = new ScreenGeoVO.ProvinceNode();
@@ -298,13 +317,17 @@ public class ScreenDataService {
             province.setSupplierCount(province.getSupplierCount() + city.getSupplierCount());
             province.setWarehouseCount(province.getWarehouseCount() + city.getWarehouseCount());
         }
-        List<ScreenGeoVO.ProvinceNode> provinces = new ArrayList<>(byProvince.values());
+        List<
+                ScreenGeoVO.ProvinceNode> provinces = new ArrayList<>(byProvince.values());
         provinces.sort(Comparator.comparingLong(ScreenGeoVO.ProvinceNode::getCustomerCount).reversed()
                 .thenComparing(ScreenGeoVO.ProvinceNode::getProvinceCode));
         return provinces;
     }
 
-    private static <T> List<T> nullToEmpty(List<T> value) {
+    private static <T> List<
+            T> nullToEmpty(
+                    List<
+                            T> value) {
         return value == null ? List.of() : value;
     }
 }

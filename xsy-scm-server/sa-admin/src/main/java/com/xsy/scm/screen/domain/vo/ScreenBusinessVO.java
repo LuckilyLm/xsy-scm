@@ -48,10 +48,12 @@ public class ScreenBusinessVO {
     private Long todaySupplierCount;
 
     @Schema(description = "客户销售额排行（今日，前10）")
-    private List<RankItem> topCustomers;
+    private List<
+            RankItem> topCustomers;
 
     @Schema(description = "商品销售额排行（今日，前10）")
-    private List<RankItem> topProducts;
+    private List<
+            RankItem> topProducts;
 
     @Data
     @Schema(description = "排行项")

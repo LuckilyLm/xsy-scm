@@ -48,13 +48,15 @@ public interface ScreenDataDao {
 
     Long countSkus();
 
-    List<ScreenBusinessVO.RankItem> topCustomersBySettlement(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("limit") int limit,
-            @Param("scope") ScmDataScopeContext scope);
+    List<
+            ScreenBusinessVO.RankItem> topCustomersBySettlement(@Param("startTime") OffsetDateTime startTime,
+                    @Param("endTime") OffsetDateTime endTime, @Param("limit") int limit,
+                    @Param("scope") ScmDataScopeContext scope);
 
-    List<ScreenBusinessVO.RankItem> topProductsBySettlement(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("limit") int limit,
-            @Param("scope") ScmDataScopeContext scope);
+    List<
+            ScreenBusinessVO.RankItem> topProductsBySettlement(@Param("startTime") OffsetDateTime startTime,
+                    @Param("endTime") OffsetDateTime endTime, @Param("limit") int limit,
+                    @Param("scope") ScmDataScopeContext scope);
 
     // ---------- 库存 ----------
 
@@ -71,12 +73,13 @@ public interface ScreenDataDao {
      * 接收集合而不是单个类型：调用方传的是**方向集合**（入库方向 / 出库方向）， 由 {@link com.xsy.scm.inventory.constant.ScmInventoryMovementTypeEnum}
      * 的方向位派生 —— 不要在 SQL 里抄一份类型清单，新增流水类型时那种副本会静默少算。
      */
-    Long countMovementsByTypeAndRange(@Param("movementTypes") List<String> movementTypes,
-            @Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
-            @Param("scope") ScmDataScopeContext scope);
+    Long countMovementsByTypeAndRange(@Param("movementTypes") List<
+            String> movementTypes, @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
 
-    List<ScreenInventoryVO.WarehouseDistribution> inventoryDistributionByWarehouse(
-            @Param("scope") ScmDataScopeContext scope);
+    List<
+            ScreenInventoryVO.WarehouseDistribution> inventoryDistributionByWarehouse(
+                    @Param("scope") ScmDataScopeContext scope);
 
     /**
      * 库存健康度判定输入行。
@@ -85,14 +88,17 @@ public interface ScreenDataDao {
      * 返回的集合是「有阈值的 (仓库, SKU)」∪「有余额但无阈值的 (仓库, SKU)」—— 前者以阈值配置为准（左连余额，可能没有余额行），后者只有余额没有判定依据。 **不在这里分类**，分类由 Java
      * 侧调用预警枚举完成（见 {@link ScreenInventoryHealthRow}）。
      */
-    List<ScreenInventoryHealthRow> inventoryHealthRows(@Param("scope") ScmDataScopeContext scope);
+    List<
+            ScreenInventoryHealthRow> inventoryHealthRows(@Param("scope") ScmDataScopeContext scope);
 
     /**
      * 供应链网络节点：仅启用仓库，带库存量与今日出库量（出库方向的全部流水类型）。
      */
-    List<ScreenInventoryVO.WarehouseNode> warehouseNetworkNodes(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("outboundTypes") List<String> outboundTypes,
-            @Param("scope") ScmDataScopeContext scope);
+    List<
+            ScreenInventoryVO.WarehouseNode> warehouseNetworkNodes(@Param("startTime") OffsetDateTime startTime,
+                    @Param("endTime") OffsetDateTime endTime, @Param("outboundTypes") List<
+                            String> outboundTypes,
+                    @Param("scope") ScmDataScopeContext scope);
 
     // ---------- 趋势 ----------
 
@@ -105,9 +111,14 @@ public interface ScreenDataDao {
      * <p>
      * {@code inboundTypes} / {@code outboundTypes} 由调用方从流水类型枚举的方向位派生， **不在 SQL 里硬编码类型名**。
      */
-    List<ScreenTrendVO.Point> trendByDay(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
-            @Param("inboundTypes") List<String> inboundTypes, @Param("outboundTypes") List<String> outboundTypes,
-            @Param("scope") ScmDataScopeContext scope);
+    List<
+            ScreenTrendVO.Point> trendByDay(
+                    @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
+                    @Param("inboundTypes") List<
+                            String> inboundTypes,
+                    @Param("outboundTypes") List<
+                            String> outboundTypes,
+                    @Param("scope") ScmDataScopeContext scope);
 
     // ---------- 采购 ----------
 
@@ -144,7 +155,8 @@ public interface ScreenDataDao {
      * <p>
      * 只返回**已解析出市级归属、且编码能在区划字典里查到**的行；省级分布由调用方在这里 的结果上向上卷一层，避免两份 SQL 各自演算导致省界与气泡对不上。
      */
-    List<ScreenGeoVO.CityNode> geoCityRows(@Param("scope") ScmDataScopeContext scope);
+    List<
+            ScreenGeoVO.CityNode> geoCityRows(@Param("scope") ScmDataScopeContext scope);
 
     /**
      * 三张主档各自的「总数 / 已归属数」，与 {@link #geoCityRows(ScmDataScopeContext)} 共用同一份口径片段。
