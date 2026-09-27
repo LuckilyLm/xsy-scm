@@ -236,7 +236,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         assertThat(log.get("operator")).isEqualTo(ScmOperator.current());
         // after_data 走 JSON 解析而不是字符串包含：JSONB 的存储形态会重排键序与空白，
         // 按子串断言等于把测试绑在序列化器的排版细节上。
-        Map<String, Object> after = json.readValue(String.valueOf(log.get("after_data")),
+        Map<String, Object> after = objectMapper.readValue(String.valueOf(log.get("after_data")),
                 new TypeReference<Map<String, Object>>() {
                 });
         assertThat(after)

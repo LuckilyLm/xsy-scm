@@ -65,7 +65,7 @@ class OrderUnpricedIT extends ScmW3PgITBase {
         assertThat(draft.getOrderedTotalAmount()).isNull();
         assertThat(draft.getItems().getFirst().getDraftPriceSource()).isNull();
         assertThat(draft.getItems().getFirst().getOrderedLineAmount()).isNull();
-        assertThat(json.readTree(json.writeValueAsString(draft)).get("orderedTotalAmount").isNull()).isTrue();
+        assertThat(objectMapper.readTree(objectMapper.writeValueAsString(draft)).get("orderedTotalAmount").isNull()).isTrue();
         var submit = new OrderVersionForm();
         submit.setOrderId(draft.getOrderId());
         submit.setVersion(draft.getVersion());

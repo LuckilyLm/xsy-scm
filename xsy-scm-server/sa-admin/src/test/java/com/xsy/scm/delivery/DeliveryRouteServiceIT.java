@@ -67,7 +67,7 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
         assertThat(detail.getOrders()).hasSize(3);
         assertThat(detail.getRoute().getLocatedCount()).isEqualTo(2);
         assertThat(detail.getStops().getFirst().getLongitude()).isEqualByComparingTo("113.94");
-        assertThat(json.writeValueAsString(detail)).contains("113.94");
+        assertThat(objectMapper.writeValueAsString(detail)).contains("113.94");
         var filter = new DeliveryQueryForm();
         filter.setCustomerId(c1);
         assertThat(candidates.query(filter).getList()).isEmpty();
@@ -106,7 +106,7 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
         });
         // 打印明细原先直出 SalesOrderItemEntity（33 列，含 deleted/version/createdBy 审计列与
         // draftPriceSourceId/lockedPriceSourceId/manualPriceReason 等价格口径内部字段）。
-        var printedItems = json.writeValueAsString(items);
+        var printedItems = objectMapper.writeValueAsString(items);
         // 出网契约：金额为归一到 4 位的定点字符串。注意 JsonConfig 已全局把 BigDecimal 序列化成
         // 字符串，所以这条校验的不是下面的注解，注解额外保证的是「补到 4 位」这层语义。
         assertThat(printedItems).as("定点金额必须是四位小数字符串")

@@ -295,7 +295,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         replace(supplierId, List.of(item));
 
         SupplierSkuVO vo = skuService.listBySupplierId(supplierId).getFirst();
-        JsonNode node = json.readTree(json.writeValueAsString(vo));
+        JsonNode node = objectMapper.readTree(objectMapper.writeValueAsString(vo));
         assertThat(node.get("referencePrice").asText()).isEqualTo("7.5000");
         assertThat(node.get("specValuesSnapshot").get("规格").asText()).isEqualTo("M1");
 
@@ -305,7 +305,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         replace(supplierId, List.of(cleared));
         assertThat(jdbc.queryForObject(
                 "SELECT reference_price FROM supplier_sku WHERE id = ?", BigDecimal.class, vo.getId())).isNull();
-        JsonNode after = json.readTree(json.writeValueAsString(
+        JsonNode after = objectMapper.readTree(objectMapper.writeValueAsString(
                 skuService.listBySupplierId(supplierId).getFirst()));
         assertThat(after.get("referencePrice").isNull()).as("null 不得被写成 0.0000").isTrue();
     }

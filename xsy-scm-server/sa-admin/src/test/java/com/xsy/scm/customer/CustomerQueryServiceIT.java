@@ -163,7 +163,7 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         form.setCreditLimit("1234.5");
         Long id = service.add(form);
 
-        JsonNode detail = json.readTree(json.writeValueAsString(queryService.detail(id)));
+        JsonNode detail = objectMapper.readTree(objectMapper.writeValueAsString(queryService.detail(id)));
         assertThat(detail.get("creditLimit").asText()).isEqualTo("1234.5000");
         assertThat(detail.get("creditAmountThreshold").isNull())
                 .as("null 不得被序列化成 0.0000").isTrue();
@@ -172,7 +172,7 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         withThreshold.setCreditPeriodType("BY_AMOUNT");
         withThreshold.setCreditAmountThreshold("0");
         Long thresholdId = service.add(withThreshold);
-        JsonNode threshold = json.readTree(json.writeValueAsString(queryService.detail(thresholdId)));
+        JsonNode threshold = objectMapper.readTree(objectMapper.writeValueAsString(queryService.detail(thresholdId)));
         assertThat(threshold.get("creditAmountThreshold").asText()).isEqualTo("0.0000");
     }
 

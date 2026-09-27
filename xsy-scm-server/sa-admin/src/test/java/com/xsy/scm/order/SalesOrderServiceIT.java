@@ -134,7 +134,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
             assertThat(l.getOperator()).isEqualTo("1:1");
             assertThat(l.getAfterData()).isNotEmpty();
         });
-        var jsonValue = json.valueToTree(o);
+        var jsonValue = objectMapper.valueToTree(o);
         assertThat(jsonValue.get("settlementTotalAmount").asText()).isEqualTo("5.3085");
     }
 

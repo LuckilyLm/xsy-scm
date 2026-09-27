@@ -736,7 +736,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(log.get("operator")).isEqualTo(currentOperator());
         assertThat(log.get("reason")).isNull();
 
-        Map<String, Object> after = json.readValue(String.valueOf(log.get("after_data")),
+        Map<String, Object> after = objectMapper.readValue(String.valueOf(log.get("after_data")),
                 new TypeReference<Map<String, Object>>() {
                 });
         assertThat(after)

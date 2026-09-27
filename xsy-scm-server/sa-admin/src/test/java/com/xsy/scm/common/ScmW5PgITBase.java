@@ -120,7 +120,7 @@ public abstract class ScmW5PgITBase {
     protected JdbcTemplate jdbc;
 
     @Autowired
-    protected ObjectMapper json;
+    protected ObjectMapper objectMapper;
 
     @Autowired
     protected ProductSpuService productSpuService;

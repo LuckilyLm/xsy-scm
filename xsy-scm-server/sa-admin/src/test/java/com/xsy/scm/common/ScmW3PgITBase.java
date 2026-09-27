@@ -54,7 +54,7 @@ public abstract class ScmW3PgITBase {
     protected JdbcTemplate jdbc;
 
     @Autowired
-    protected ObjectMapper json;
+    protected ObjectMapper objectMapper;
 
     @Autowired
     protected ProductSpuService productSpuService;
