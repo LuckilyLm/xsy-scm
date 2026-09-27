@@ -84,7 +84,7 @@ public class InventoryStocktakeController {
     /**
      * 导出某仓库的盘点 Excel 模板（含签名快照凭证）。
      *
-     * <p>需要导入权限；模板里的账面量 / 单位来自余额，读取受 {@code :import} 约束（计划 §10.6）。
+     * <p>需要导入权限；模板里的账面量 / 单位来自余额，读取受 {@code:import} 约束（计划）。
      */
     @GetMapping("/import/template")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)

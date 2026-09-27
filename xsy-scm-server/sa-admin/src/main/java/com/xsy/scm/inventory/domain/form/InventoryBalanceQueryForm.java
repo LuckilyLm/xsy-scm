@@ -8,9 +8,9 @@ import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * 库存余额列表查询条件（W6 Target Design §10.1）。
+ * 库存余额列表查询条件。
  *
- * <p><b>Q12 已裁决：后端不做任何隐式默认</b>。{@code warehouseId} 为空即不按仓库过滤，
+ * <p>后端不为 {@code warehouseId} 设置隐式默认值；为空时不按仓库过滤，
  * 返回的是<b>当前调用者被授权的那些仓库</b>的余额行，而不是全库 —— 服务端既不会替你选仓库，
  * 也不会因为你没筛就绕过数据范围。
  * 「恰好只有 1 个启用仓库时默认带出」是**前端**行为，落在余额页加载时。

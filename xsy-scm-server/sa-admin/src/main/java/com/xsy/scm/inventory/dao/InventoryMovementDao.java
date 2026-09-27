@@ -12,10 +12,10 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 库存流水读写（W6 Target Design §2.2 / §4.3）。
+ * 库存流水读写。
  *
  * <p><b>append-only 的接口形态</b>：本接口只有 **insert + select**，没有任何 update / delete 方法
- * —— 这不是「忘了写」，而是 Q7 硬化后的契约。表上还有
+ * —— 这不是「忘了写」，而是 硬化后的契约。表上还有
  * {@code ck_inventory_movement_append_only CHECK (deleted = FALSE)} 在数据库层兜底，
  * 因此即使有人绕过 DAO 写 SQL 去改历史流水，也会被 PG 拒绝。
  *
@@ -29,9 +29,9 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
      *
      * <p>冲突目标与部分唯一索引 {@code uk_inventory_movement_source_active} 完全匹配：
      * {@code ON CONFLICT (source_document_type, source_document_item_id)
-     * WHERE deleted = FALSE AND source_document_item_id IS NOT NULL DO NOTHING}（Q11）。
+     * WHERE deleted = FALSE AND source_document_item_id IS NOT NULL DO NOTHING}。
      *
-     * <p><b>返回值的语义由调用方区分</b>（§4.3）：
+     * <p><b>返回值的语义由调用方区分</b>：
      * <ul>
      *   <li>实时 confirm 路径：返回 0 = 该源事实已入库，属于**不可能发生的数据异常**
      *       → 抛 {@code INVENTORY_DUPLICATE_INBOUND(41002)} 让事务整体回滚（fail-fast，
@@ -44,7 +44,7 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
     int insertOnConflictDoNothing(InventoryMovementEntity entity);
 
     /**
-     * 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转，Q9）。
+     * 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转）。
      */
     List<InventoryMovementVO> queryPage(Page<?> page, @Param("query") InventoryMovementQueryForm query,
                                         @Param("scope") ScmValueScope scope);
@@ -52,7 +52,7 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
     /**
      * 按来源行读回那一条活动流水。
      *
-     * <p>流水是 append-only（V21），跨事务的两步动作（调拨「发出 → 收货」）拿不到上一步的
+     * <p>流水是 append-only，跨事务的两步动作（调拨「发出 → 收货」）拿不到上一步的
      * 内存值，只能回读**已冻结的事实**。列对 {@code (source_document_type, source_document_item_id)}
      * 上的部分唯一索引 {@code uk_inventory_movement_source_active} 逐字匹配，因此至多一行。
      */

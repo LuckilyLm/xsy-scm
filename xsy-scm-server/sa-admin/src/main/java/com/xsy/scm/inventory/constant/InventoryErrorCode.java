@@ -5,40 +5,10 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * 库存域错误码（58 个）。
+ * 库存域错误码。
  *
- * <p>设计依据：W6 Target Design §10.2 / 裁决 Q13；出库与预留的码在出库波次追加，
- * 盘点、报损报溢、调拨、阈值预警依次追加。
- *
- * <pre>
- * 40486                 NOT_FOUND   1
- * 41001–41003           既有 3 个
- * 41011–41017           出库波次 7 个
- * 41019–41027           盘点波次 9 个
- * 41028–41037           报损报溢波次 10 个
- * 41038–41048           调拨波次 11 个
- * 41049–41052           阈值预警波次 4 个
- * 41053–41064           规格转换波次 12 个
- * 41065                 P0-F 自建自审禁令 1 个
- * </pre>
- *
- * <p><b>为什么是 40486 / 41xxx</b>：2026-09-18 与全域码表核对，全仓 {@code 4xxxx} 已占用
- * {@code 40000–40091 / 40410–40499 / 40910–40999}，其中 {@code 40486} 落在 4048x 段的空档内、
- * {@code 41000+} 完全空闲。与 W1–W5 的全部错误码**零交集**
- * （由 {@code ScmInventoryConstantTest} 门禁强制）。
- *
- * <p><b>410xx 段的实际占用必须现查现用</b>：41004–41007 属 warehouse、41008 属 purchase、
- * 41009 属 warehouse（调拨波次新增的在途阻塞码）、41018 亦属 warehouse，
- * 因此库存域只能取 41001–41003 / 41011–41017 / 41019–41065（41010 至今无人使用）。
- * 2026-09-24 为 41065 再查一次：全仓 {@code 410xx} 的定义点是
- * {@code ScmCommonErrorCode} / 各域 {@code *ErrorCode} 枚举，逐个核对后
- * 41065–41099 空闲，41100–41109 已属 delivery、41110–41112 已属 report，
- * 故新码落在紧邻库存自有块的 41065，不开新段。
- * 不要相信任何注释里写的「本段空闲」—— 那是写下时的状态，会过期。
- *
- * <p><b>刻意不放进本枚举的码</b>：{@code WarehouseErrorCode.WAREHOUSE_NOT_FOUND(40485)} ——
- * 仓库不存在是 warehouse 域的事实，库存域直接复用（AGENTS §9 稳定码纪律：可复用的既有码
- * 不复制语义），这样也不会形成 {@code inventory → warehouse} 之外的反向依赖。
+ * <p>错误码按业务域归属。仓库不存在复用
+ * {@link com.xsy.scm.warehouse.constant.WarehouseErrorCode#WAREHOUSE_NOT_FOUND}，避免重复定义同一业务错误。
  */
 @Getter
 @RequiredArgsConstructor
@@ -53,7 +23,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_BALANCE_NOT_FOUND(40486, "库存余额不存在"),
 
     /**
-     * 41001（Q13 单位不变量）：同一 {@code (warehouse_id, sku_id)} 的入库单位与既有余额不一致。
+     * 41001（单位不变量）：同一 {@code (warehouse_id, sku_id)} 的入库单位与既有余额不一致。
      *
      * <p>这是**显式失败**而不是自动换算：{@code SupplierSku.purchaseUnit} 是 supplier + sku 维度，
      * 同一 SKU 经不同供应商入库时理论上可以是不同单位；静默把「箱」与「kg」相加会得到一个
@@ -65,7 +35,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 41002：源身份重复入库。
      *
      * <p>实时 confirm 路径下这属于**不可能发生的数据异常**（claim 幂等 + 收货单状态机已挡住），
-     * 因此 fail-fast 暴露问题，**不静默吞掉**（A 源 spec §8.2：不能通过捕获异常后继续写入
+     * 因此 fail-fast 暴露问题，**不静默吞掉**（A 源 spec：不能通过捕获异常后继续写入
      * 来掩盖库存不一致）。backfill 路径下「影响行数 = 0」是预期值，由 backfill 自身区分处理。
      */
     INVENTORY_DUPLICATE_INBOUND(41002, "该来源单据已入库，不能重复入库"),
@@ -137,14 +107,14 @@ public enum InventoryErrorCode implements ScmErrorCode {
     /**
      * 41023：该 {@code (warehouse, sku)} 没有余额行，无法盘点。
      *
-     * <p>记账单位（Q13）只能来自余额行，因此「从未入库过的 SKU」不能在盘点里凭空盘盈 ——
+     * <p>记账单位只能来自余额行，因此「从未入库过的 SKU」不能在盘点里凭空盘盈 ——
      * 那需要先有入库事实来确定单位。这不是能力缺失，而是刻意不让盘点成为
      * 「绕过入库、凭空造库存」的入口。
      */
     INVENTORY_STOCKTAKE_BALANCE_MISSING(41023, "该仓库与 SKU 尚无库存记录，请先办理入库再盘点"),
 
     /**
-     * 41024（Q10）：盘点调整后数量为负。
+     * 41024：盘点调整后数量为负。
      *
      * <p>出现这种组合说明「清点差异」与「确认瞬间账面量」指向了矛盾的事实
      * （例如盘亏量大于确认时的账面量），此时**必须失败**而不是写出负库存 ——
@@ -183,8 +153,8 @@ public enum InventoryErrorCode implements ScmErrorCode {
     /**
      * 41029：报损报溢单当前状态不允许该操作。
      *
-     * <p>只有「待审核」可改 / 可删 / 可审批。已完成的单据已写流水，改它会让账与单对不上；
-     * 已驳回的单据必须留痕。参考项目对 update / delete 没有状态守卫，本波次刻意补上。
+     * <p>只有待审核单据可修改、删除或审批。已完成的单据已经写入流水，修改会造成账单不一致；
+     * 已驳回的单据保留作为审计记录。
      */
     INVENTORY_LOSS_GAIN_STATUS_INVALID(41029,
             "报损报溢单当前状态不允许该操作（仅待审核可改、可删、可审批）"),
@@ -209,7 +179,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_LOSS_GAIN_BALANCE_MISSING(41032, "该仓库与 SKU 尚无库存记录，请先办理入库再报损报溢"),
 
     /**
-     * 41033（Q10）：报损后库存数量为负。
+     * 41033：报损后库存数量为负。
      */
     INVENTORY_LOSS_GAIN_NEGATIVE_AFTER(41033, "报损数量超过现有库存，请核对后重填"),
 
@@ -237,7 +207,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     /**
      * 41037：驳回时必须填写审核意见。
      *
-     * <p>驳回是**唯一会把「为什么不行」传达给录单人的渠道**（本波次没有消息通知）。
+     * <p>驳回原因是录单人了解处理结果并修正单据的唯一信息来源。
      * 允许空意见的驳回会让录单人只知道被拒、不知道改什么，只能反复试 ——
      * 那是把沟通成本转移给了最不该承担的人。
      */
@@ -287,10 +257,10 @@ public enum InventoryErrorCode implements ScmErrorCode {
     /**
      * 41044：目标仓的记账单位与调拨单位不一致。
      *
-     * <p>Q13 规定一个 {@code (warehouse, sku)} 只锁一个记账单位，且**不做隐式换算**：
+     * <p> 规定一个 {@code (warehouse, sku)} 只锁一个记账单位，且**不做隐式换算**：
      * 源仓按「箱」记账、目标仓按「kg」记账时，把 10 箱直接加成 10 kg 会得到一个
      * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。
-     * 换算能力属「单位转换」波次，本波次显式失败。
+     * 当前不支持单位换算，单位不匹配时显式失败。
      */
     INVENTORY_TRANSFER_UNIT_MISMATCH(41044,
             "目标仓库该 SKU 的记账单位与调拨单位不一致，库存不做自动换算：请先统一两仓的采购单位"),
@@ -398,7 +368,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     /**
      * 41059：源 SKU 的余额记账单位与单据声明的源单位不一致。
      *
-     * <p>Q13 规定一个 {@code (warehouse, sku)} 只锁一个记账单位且**不做隐式换算**。
+     * <p> 规定一个 {@code (warehouse, sku)} 只锁一个记账单位且**不做隐式换算**。
      * 单位是单据显式声明的（折算关系本身含单位），因此不一致时只能失败，
      * 不能「按声明改记账单位」—— 那会让既有余额的含义漂移。
      */
@@ -439,7 +409,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_CONVERSION_WAREHOUSE_DISABLED(41064, "仓库已停用，不能用于新的规格转换业务"),
 
     /**
-     * 41065：禁止自建自审 —— 审批人不得是报损报溢单的录单人（P0 基线收口裁决第 8 条）。
+     * 41065：禁止自建自审，审批人不得是报损报溢单的录单人。
      *
      * <p>报损报溢是「会直接改账面数量」的单据，且本域只有它同时存在「录单 + 审批」两个动作，
      * 因此只有它要求 {@code approver != creator}；同一个人走完两步时，审批环节不再构成任何约束。

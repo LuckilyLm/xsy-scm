@@ -57,7 +57,7 @@ public class InventoryOutboundItemEntity {
      * 来源销售订单行 id：本行的 {@code quantity} 就是这一行的实发量。
      *
      * <p><b>同 SKU 的不同订单行不合并</b>，否则「哪张订单实发了多少」在库里失去答案，
-     * 分拣的 REOPEN 守卫与 Finance R1 的成本归属都无从判定。
+     * 分拣的 REOPEN 守卫与 的成本归属都无从判定。
      */
     private Long salesOrderItemId;
 

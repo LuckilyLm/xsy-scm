@@ -13,22 +13,23 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 库存余额（W6 Target Design §2.1，粒度 = warehouse + sku）。
+ * 库存余额（粒度 = warehouse + sku）。
  *
  * <p><b>余额是活状态，不是单据</b>：因此**没有**任何商品/仓库快照列，
  * 展示用的编码与名称由查询服务实时联 {@code product_sku} / {@code product_spu} / {@code warehouse} 取
- * （与 W5 {@code warehouse} 列表同一取向）。单据侧的快照纪律不受影响。
+ * （与 {@code warehouse} 列表同一取向）。单据侧的快照纪律不受影响。
  *
- * <p><b>没有的列（都是裁决结果，不是遗漏）</b>：
+ * <p>余额按仓库和 SKU 记录当前数量、预留量及移动加权成本；商品展示信息通过查询实时关联主数据。
+ *
+ * <p>每个仓库与 SKU 组合只有一个记账单位，其他业务维度由各自单据或配置记录：
  * <ul>
- *   <li>{@code weight} —— Q2：数量 = 采购单位口径（非标品实重即数量），双记账属分拣波次；</li>
- *   <li>{@code avg_cost} / {@code total_cost} —— Q3：成本事实由 movement 的 {@code unit_cost} 承载；</li>
- *   <li>{@code warn_min} / {@code warn_max} —— Q4：预警能力整体延后；</li>
- *   <li>{@code batch_id} —— G-03：批次/保质期永久不启用，不留死列。</li>
+ *   <li>商品和仓库名称不做快照，读取时关联主数据；</li>
+ *   <li>预警阈值由独立配置记录维护；</li>
+ *   <li>批次与保质期信息不属于余额记录。</li>
  * </ul>
  *
- * <p><b>{@code unit} 是 Q13 的单位不变量载体</b>：一个 {@code (warehouse_id, sku_id)} 锁定一个记账单位，
- * 后续异单位入库必须显式失败（41001），绝不静默相加。
+ * <p>{@code unit} 是单位不变量载体：一个 {@code (warehouse_id, sku_id)} 锁定一个记账单位，
+ * 后续异单位入库必须显式失败（41001），不能静默相加。
  */
 @Data
 @TableName(value = "inventory_balance", autoResultMap = true)
@@ -44,19 +45,19 @@ public class InventoryBalanceEntity {
     private Long skuId;
 
     /**
-     * Q13 记账单位：首笔入库写入，之后不可变（异单位入库直接失败）。
+     * 记账单位：首笔入库写入，之后不可变（异单位入库直接失败）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unit;
 
     /**
-     * Q10：{@code quantity >= 0} 本期冻结（DB CHECK）。出库波次明确「不允许负库存」。
+     * 当前账面数量，数据库约束保证其不小于零。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 
     /**
-     * 已预留量（出库波次新增）。**可用量 = {@code quantity - reserved_quantity}**。
+     * 已预留量；可用量为 {@code quantity - reserved_quantity}。
      *
      * <p>预留不改变物理库存，因此这里是一个独立计数，而不是从流水推导 ——
      * 它由 {@code InventoryReservationService} 在**持有本行锁之后**增减，
@@ -67,15 +68,11 @@ public class InventoryBalanceEntity {
     private BigDecimal reservedQuantity;
 
     /**
-     * 移动加权平均成本（每记账单位，V34 新增）。
+     * 移动加权平均成本，按记账单位计。
      *
-     * <p><b>为什么这里最终加了成本列</b>：Q3 原本裁决「成本事实由 movement 的 unit_cost 承载，
-     * 余额表不加列」。本波次改变了该裁决，因为 movement 的 unit_cost 不足以表达移动加权：
-     * 移动加权是**顺序相关**的，且出库成本必须在**出库那一刻**确定 ——
-     * 事后从流水反推需要重放整条历史，而重放的前提是所有出库流水都已带成本，
-     * 那正是本波次要建立的东西（鸡生蛋）。
+     * <p>平均成本随余额一同维护，因为移动加权依赖入库顺序，出库成本必须在出库时确定。
      *
-     * <p><b>维护纪律</b>：由六条写入路径在**持有余额行锁之后**维护（与 quantity 同一时机）。
+     * <p>由库存写入路径在持有余额行锁之后维护（与数量同一时机）。
      * 入库按 {@code (旧量·旧均价 + 入量·入价) / 新量} 重算；出库**不变**。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

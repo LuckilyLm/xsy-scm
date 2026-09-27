@@ -78,7 +78,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_M
  * 八者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额
  * （{@code incrementQuantity} / {@code decrementQuantity}），从不做「读-改-写」赋值。
  *
- * <p><b>均价（V34）只由三条入方向腿按加权公式更新</b>：采购入库、调拨转入、规格转换转入
+ * <p><b>均价只由三条入方向腿按加权公式更新</b>：采购入库、调拨转入、规格转换转入
  * （{@link #inboundAvgCost}）。三者的成本来源分别是采购单价、{@link #transferInCost} 回读的
  * 发出腿事实，以及调用方在写腿之前解好的成本基准（{@link #lockCostBasis} 的期初快照 +
  * 链式求解）。出方向与其它入库都不改均价，只把当时的均价写进流水。
@@ -150,7 +150,7 @@ public class InventoryCommandService {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_INBOUND);
         }
 
-        // V34：均价（加权）由三条入方向腿更新 —— 采购入库、调拨转入、规格转换转入，口径见类 Javadoc；
+        //：均价（加权）由三条入方向腿更新 —— 采购入库、调拨转入、规格转换转入，口径见类 Javadoc；
         // 本方法是其中的采购入库腿，按 (旧量·旧均价 + 入量·入价) / 新量 重算。
         // 数量增量与均价写入合并成**一条**语句 —— 一次逻辑行变更只自增一次 version。
         // 报溢等不带成本依据的入库走普通的 incrementQuantity，均价不变；
@@ -162,7 +162,7 @@ public class InventoryCommandService {
     }
 
     /**
-     * 采购入库后的移动加权均价（V34）。**纯计算，不落库** ——
+     * 采购入库后的移动加权均价。**纯计算，不落库** ——
      * 结果由 {@link InventoryBalanceDao#incrementQuantityAndSetAvgCost} 与数量增量一起写入，
      * 让一次逻辑行变更只自增一次 {@code version}。
      *
@@ -186,7 +186,7 @@ public class InventoryCommandService {
      *
      * <p>均价为空按 0 计入 —— 那意味着「这批货没有成本事实」。把它当作 0 会把均价拉低，
      * 这是**刻意的**：宁可在均价上体现「有一批货成本未知」，也不要凭空编一个价格。
-     * 采购收货的 unit_cost 一定非空；实际会走到空值分支的只有成本核算（V34）上线前已发出、
+     * 采购收货的 unit_cost 一定非空；实际会走到空值分支的只有成本核算上线前已发出、
      * 上线后才收货的在途调拨。
      */
     public static BigDecimal weightedAvgCost(BigDecimal beforeQuantity, BigDecimal beforeAvgCost,
@@ -280,7 +280,7 @@ public class InventoryCommandService {
      *       {@code ck_inventory_movement_snap} 的出库分支一致。</li>
      * </ol>
      *
-     * <p><b>单位由余额决定，不由调用方传入</b>：Q13 规定 {@code (warehouse_id, sku_id)} 的记账单位
+     * <p><b>单位由余额决定，不由调用方传入</b>： 规定 {@code (warehouse_id, sku_id)} 的记账单位
      * 以余额为准。让调用方传一个单位再与余额比对，等于要求调用方先查一次余额，
      * 既多一次查询、又把「谁是权威」搞反。这里直接取余额单位写入流水快照，
      * 并把该单位返回给调用方回写单据行。
@@ -324,7 +324,7 @@ public class InventoryCommandService {
         movement.setSourceDocumentItemId(fact.outboundItemId());
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(unit);
-        // V34：出库**按当时的移动加权均价**记成本（此前留空）。
+        //：出库**按当时的移动加权均价**记成本（此前留空）。
         // 出库不改变均价，所以余额不动，只把成本写进流水 —— 这是成本核算的核心语义变更。
         movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(onHand);
@@ -348,7 +348,7 @@ public class InventoryCommandService {
     /**
      * 按盘点结果调整余额并追加盘盈 / 盘亏流水，必须参与调用方事务。
      *
-     * <p><b>差异施加到「当前账面量」而不是「快照」</b>（本波次的核心口径）：
+     * <p><b>差异施加到当前账面量而不是快照</b>：
      * <pre>
      * delta = actualQuantity - bookQuantity   // 清点发现的差异，基线是保存草稿时的快照
      * after = live + delta                    // live 是**此刻持锁读到的**账面量
@@ -362,7 +362,7 @@ public class InventoryCommandService {
      * 写不出「零差异」的流水；强行写一条 0 会让「一行一流水」的防重索引语义变脏。
      * 调用方据 {@code movementWritten} 区分「调整了 0」与「无需调整」。
      *
-     * <p><b>不建零余额行</b>：记账单位（Q13）只能来自余额行，因此从未入库过的 SKU
+     * <p><b>不建零余额行</b>：记账单位只能来自余额行，因此从未入库过的 SKU
      * 不能在盘点里凭空盘盈 —— 那需要先有入库事实来确定单位（41023）。
      *
      * @return 本次调整的结果（记账单位 + 差异 + 调整前后量 + 是否写了流水）
@@ -392,7 +392,7 @@ public class InventoryCommandService {
         BigDecimal delta = fact.actualQuantity().subtract(fact.bookQuantity());
         BigDecimal after = live.add(delta);
 
-        // Q10：盘亏不得把库存推成负数。DB 的 ck_inventory_balance_quantity 也会拦，
+        //：盘亏不得把库存推成负数。DB 的 ck_inventory_balance_quantity 也会拦，
         // 但这里先给出可归因的错误码。
         if (after.signum() < 0) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_NEGATIVE_AFTER);
@@ -421,7 +421,7 @@ public class InventoryCommandService {
         movement.setQuantity(quantity);
         movement.setUnitSnapshot(unit);
         // unit_cost 记的是本笔移动**当时**的余额均价，盘盈与盘亏两条腿都写，不留空。
-        // （「盘点没有成本依据、unit_cost 留空」是移动加权平均上线前的旧语义；V19 的
+        // （「盘点没有成本依据、unit_cost 留空」是移动加权平均上线前的旧语义； 的
         //  ck_inventory_movement_cost 允许 NULL 只是容忍历史行，不代表新腿该写空。）
         movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(live);
@@ -456,11 +456,11 @@ public class InventoryCommandService {
      *
      * <p><b>报损有两条下限，报溢没有上限</b>：
      * <ul>
-     *   <li>Q10：{@code after >= 0}，报损不得把库存推成负数（41033）；</li>
+     *   <li>：{@code after >= 0}，报损不得把库存推成负数（41033）；</li>
      *   <li>可用量：{@code after >= reserved}，报损不得吃掉已预留的货（41034）——
      *       预留代表对下游（销售订单）的承诺，报损不能单方面让它落空。</li>
      * </ul>
-     * 报溢只增不减，因此不需要下限判断；但它**不建零余额行**：记账单位（Q13）只能来自
+     * 报溢只增不减，因此不需要下限判断；但它**不建零余额行**：记账单位只能来自
      * 余额行，从未入库过的 SKU 报 41032（与盘点同一约束）。
      *
      * <p><b>用审核时刻与审核人</b>，不是创建时刻与创建人：库存是在审核那一刻变的，
@@ -501,7 +501,7 @@ public class InventoryCommandService {
             after = live.add(fact.quantity());
         } else {
             after = live.subtract(fact.quantity());
-            // Q10：报损不得把库存推成负数。
+            //：报损不得把库存推成负数。
             if (after.signum() < 0) {
                 throw new ScmBusinessException(INVENTORY_LOSS_GAIN_NEGATIVE_AFTER);
             }
@@ -521,7 +521,7 @@ public class InventoryCommandService {
         movement.setQuantity(fact.quantity());
         movement.setUnitSnapshot(unit);
         // unit_cost 记的是本笔移动**当时**的余额均价，报损与报溢两条腿都写，不留空。
-        // 「报损报溢没有成本依据、留 NULL」是移动加权平均（V34）上线前的旧语义；
+        // 「报损报溢没有成本依据、留 NULL」是移动加权平均上线前的旧语义；
         // 出方向因「出库不改变均价」，事后再读余额拿到的仍是同一个值。
         movement.setUnitCost(balance.getAvgCost());
         movement.setBeforeQuantity(live);
@@ -551,7 +551,7 @@ public class InventoryCommandService {
      * （没有余额行 = 从未入库 = 无货可调），先判可用量，再持锁扣减。
      * 可用量 = {@code quantity − reserved_quantity}：调拨不得吃掉源仓已预留的货。
      *
-     * <p><b>单位由源仓余额决定，不由调用方传入</b>（Q13）：直接取余额单位写入流水快照，
+     * <p><b>单位由源仓余额决定，不由调用方传入</b>：直接取余额单位写入流水快照，
      * 并返回给调用方回写到明细行 —— 那正是收货时用来断言目标仓单位一致的那个值。
      *
      * @return 本次转出使用的记账单位（= 源仓记账单位）
@@ -622,7 +622,7 @@ public class InventoryCommandService {
      * （= 发出时记录的源仓单位）。
      *
      * <p><b>单位必须与目标仓既有记账单位一致</b>：不一致直接 41044，绝不隐式换算
-     * （Q13）。源仓按「箱」记账、目标仓按「kg」记账时把 10 箱加成 10 kg 会得到一个
+     *。源仓按「箱」记账、目标仓按「kg」记账时把 10 箱加成 10 kg 会得到一个
      * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。
      *
      * <p><b>转入成本取发出腿的事实，不取目标仓均价</b>：调拨只是把货换个仓库，总成本必须守恒
@@ -645,7 +645,7 @@ public class InventoryCommandService {
         warehouseService.require(fact.warehouseId());
 
         // 入方向允许首建余额行：单位取调拨明细的快照（= 源仓记账单位）。
-        // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引（Q11）。
+        // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引。
         inventoryBalanceDao.insertOnConflictDoNothing(
                 fact.warehouseId(), fact.skuId(), fact.unitSnapshot(), fact.operator());
         InventoryBalanceEntity balance =
@@ -698,7 +698,7 @@ public class InventoryCommandService {
      * <p>发出与收货是两个事务（两步式），收货时内存里什么都没有，只能回读已冻结的流水；
      * 不在调拨明细行上另存一份成本副本，否则同一事实有两处可各自漂移。
      *
-     * <p>发出腿 {@code unit_cost} 为空只可能发生在成本核算（V34）上线前已发出、上线后才收货的
+     * <p>发出腿 {@code unit_cost} 为空只可能发生在成本核算上线前已发出、上线后才收货的
      * 在途单上 —— 那批货确实没有成本事实，按 0 计入，与 {@link #inboundAvgCost} 对无成本入库的
      * 同一取向：宁可在均价上体现「有一批货成本未知」，也不凭空编一个价格。
      *
@@ -802,7 +802,7 @@ public class InventoryCommandService {
         warehouseService.require(fact.warehouseId());
 
         // 入方向允许首建余额行：单位取单据声明的目标单位。
-        // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引（Q11）。
+        // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引。
         inventoryBalanceDao.insertOnConflictDoNothing(
                 fact.warehouseId(), fact.skuId(), fact.unit(), fact.operator());
         InventoryBalanceEntity balance =
@@ -846,7 +846,7 @@ public class InventoryCommandService {
     /**
      * 查询可用量；缺少查询标识或余额不存在时返回零，不返回表示能力未启用的 {@code null}。
      *
-     * <p>出库波次起 {@code reserved} 返回**真实预留量**（此前恒为零）。
+     * <p>{@code reserved} 返回当前真实预留量。
      */
     public PurchaseInventoryContract.Availability queryAvailability(Long skuId, Long warehouseId) {
         if (skuId == null || warehouseId == null) {

@@ -13,7 +13,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
 import java.time.OffsetDateTime;
 
 /**
- * 库存流水列表查询条件（W6 Target Design §10.1）。
+ * 库存流水列表查询条件。
  *
  * <p>时间范围过滤的是 {@code occurred_at}（业务发生时刻 = 收货确认时刻），
  * **不是** {@code created_at}（写入时刻）：backfill 回放历史收货时两者相差很远，
@@ -32,7 +32,7 @@ public class InventoryMovementQueryForm extends PageParam {
      *
      * <p><b>为什么必须有它</b>：流水页的筛选不能只给 {@code skuId} ——
      * 用户在页面上看到的是 SKU 编码，手上也只有编码。只提供 id 筛选等于要求用户先知道 id，
-     * 那是一个只对开发者成立的筛选条件（W6 Target Design §12.3 #5 的「sku 编码关键字」）。
+     * 那是一个只对开发者成立的筛选条件（#5 的「sku 编码关键字」）。
      */
     @Size(max = 64, message = "SKU 编码不能超过64个字符")
     private String skuCode;
@@ -70,7 +70,7 @@ public class InventoryMovementQueryForm extends PageParam {
     private OffsetDateTime occurredFrom;
 
     /**
-     * {@code occurred_at < occurredTo}（左闭右开，与 W5 收货时间范围口径一致）。
+     * {@code occurred_at < occurredTo}（左闭右开，与 收货时间范围口径一致）。
      */
     private OffsetDateTime occurredTo;
 

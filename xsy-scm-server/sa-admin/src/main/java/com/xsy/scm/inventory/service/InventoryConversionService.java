@@ -43,7 +43,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVER
 /**
  * 规格转换单命令侧：创建 / 改待审核 / 审批 / 驳回 / 删除。
  *
- * <p><b>本波次的核心难点：一次转换要在同一事务里改动同一仓库的**两行**余额</b>
+ * <p><b>一次转换要在同一事务里改动同一仓库的两行余额</b>
  * （源 SKU 与目标 SKU）。既有六条写入路径每个事务只碰一行，锁序天然成立；
  * 这里第一次碰两行，**必须显式排序**，否则「行 1 先锁 A 再锁 B、行 2 先锁 B 再锁 A」
  * 会死锁。
@@ -259,7 +259,7 @@ public class InventoryConversionService {
      * <p>不能直接拿期初均价当基准：腿的执行顺序保证同一 SKU **先入后出**，所以一个在本单里
      * 既收又发的 SKU（链式转换 A→B 且 B→C 里的 B），它的转出腿在真实账本上看到的均价是
      * 「进完之后」的加权值。B 没有期初行时期初均价为 0，直接取 0 会把 C 记成零成本 ——
-     * 与本轮修掉的「调拨转入清零」是同一个缺陷。
+     * 与修掉的「调拨转入清零」是同一个缺陷。
      */
     private Map<Long, BigDecimal> resolveOutboundCostBasis(
             List<InventoryConversionItemVO> items,

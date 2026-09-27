@@ -12,7 +12,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 出库单（独立出库单，W6-1 之后的出库波次）。
+ * 库存域出库单。
  *
  * <p><b>两种产生方式</b>：仓库自己开草稿单再确认（{@code InventoryOutboundService}），
  * 以及配送发车一次性生成已确认单（{@code InventoryFulfillmentService}）。后者把

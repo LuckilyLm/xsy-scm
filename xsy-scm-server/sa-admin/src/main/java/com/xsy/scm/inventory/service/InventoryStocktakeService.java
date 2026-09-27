@@ -81,7 +81,7 @@ public class InventoryStocktakeService {
      * 那是确认盘点时的判断。草稿允许「先录实盘数再调整预留」，提前卡住反而让录单不可用。
      *
      * <p>但**账面量必须读得到**：读不到余额行说明该 (仓库, SKU) 从未入库，
-     * 既没有可对比的账面量，也无法确定记账单位（Q13），此时直接失败（41023）。
+     * 既没有可对比的账面量，也无法确定记账单位，此时直接失败（41023）。
      *
      * @return 新单 id
      */
@@ -118,7 +118,7 @@ public class InventoryStocktakeService {
      * 其重新快照读到的是本事务已锁定的行，必然等于核验值。
      *
      * <p><b>任一漂移即整批失败</b>：只要有一条来源余额的 id / 版本 / 单位 / 账面量与快照不符，
-     * 就抛 {@link StocktakeSnapshotDriftException} 回滚，不产生任何草稿（计划裁决：版本变化不可忽略，
+     * 就抛 {@link StocktakeSnapshotDriftException} 回滚，不产生任何草稿（版本变化不可忽略，
      * 即便数量变动后又恢复，版本也已在 {@link #confirm} 链路自增）。
      *
      * @return 新草稿单 id
@@ -226,7 +226,7 @@ public class InventoryStocktakeService {
                             operator);
                     InventoryStocktakeAdjustment adjustment =
                             inventoryCommandService.postStocktakeAdjust(fact);
-                    // 单位以余额记账单位为准（Q13），由命令服务返回，这里回写到明细行
+                    // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
                     inventoryStocktakeItemDao.updateUnitSnapshot(item.getId(), adjustment.unit(), operator);
                 });
 

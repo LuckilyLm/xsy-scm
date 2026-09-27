@@ -46,7 +46,7 @@ public class InventoryWarningVO {
     private Map<String, String> specValues;
 
     /**
-     * Q13 记账单位；没有余额行时为空。
+     * 记账单位；没有余额行时为空。
      */
     private String unit;
 

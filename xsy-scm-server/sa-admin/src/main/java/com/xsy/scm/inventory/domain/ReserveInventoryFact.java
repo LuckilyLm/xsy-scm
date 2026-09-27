@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 /**
  * 预留事实（库存域入参记录）。
  *
- * <p>本波次的来源是**销售订单行**（{@code sourceDocumentType = SALES_ORDER_ITEM}，
+ * <p>预留来源是销售订单行（{@code sourceDocumentType = SALES_ORDER_ITEM}，
  * {@code sourceDocumentItemId = sales_order_item.id}）。
  * 用「来源单据类型 + 行 id」而不是直接写死 {@code salesOrderItemId}，
  * 是为了让未来「预留挂在别的单据上」时不必改表结构与防重索引。

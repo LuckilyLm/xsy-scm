@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 库存流水类型（W6 Target Design §2.2）。
+ * 库存流水类型。
  *
  * <p><b>方向编码在类型里</b>：{@code PURCHASE_IN} 即「入」、{@code SALES_OUT} 即「出」，
  * 因此 {@code inventory_movement} 没有独立的 {@code direction} 列，{@code quantity} 恒为正
@@ -15,16 +15,13 @@ import lombok.RequiredArgsConstructor;
  * （入库 {@code after = before + quantity}，出库 {@code after = before - quantity}）。
  * 新增类型时必须同时：
  * <ol>
- *   <li>扩 {@code ck_inventory_movement_type} 白名单（新迁移，不改 V19）；</li>
+ *   <li>扩 {@code ck_inventory_movement_type} 白名单（新迁移，不改）；</li>
  *   <li>若方向与已有类型不同，同步扩 {@code ck_inventory_movement_snap} 的方向分支；</li>
  *   <li>在本枚举加值；</li>
- *   <li>复用同一套「先锁单据、后按 (warehouse_id, sku_id) 升序锁余额」的锁序规则（§8.1）。</li>
+ *   <li>复用同一套「先锁单据、后按 (warehouse_id, sku_id) 升序锁余额」的锁序规则。</li>
  * </ol>
  *
- * <p><b>已实现</b>：W6-1 的 {@code PURCHASE_IN}；出库波次新增 {@code SALES_OUT}；
- * 盘点波次新增 {@code STOCKTAKE_GAIN} / {@code STOCKTAKE_LOSS}；
- * 报损报溢波次新增 {@code LOSS_REPORT} / {@code GAIN_REPORT}；
- * 调拨波次新增 {@code TRANSFER_OUT} / {@code TRANSFER_IN}。规格转换仍待后续波次。
+ * <p>每个流水类型同时表达业务来源与库存方向；数据库约束与本枚举保持一致。
  */
 @Getter
 @RequiredArgsConstructor

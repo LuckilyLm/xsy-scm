@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  * 在途库存报表行（按调拨单明细聚合，不进 inventory_balance）。
  *
  * <p>用于把「在途调拨量」以报表形式暴露给对账与库存查询页，
- * 避免引入虚拟在途仓（decisions.md 未决事项裁决方案②）。
+ * 在途数量按调拨单独立汇总，不映射为虚拟仓库。
  */
 @Data
 @Schema(description = "在途库存行")

@@ -34,7 +34,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERVATION_INVALID;
 
 /**
- * 订单履约出库命令 —— 配送 L3 发车时库存域唯一的写入口（P2 裁决第 3、4、5、6、7、8、9 条）。
+ * 订单履约出库命令，是配送发车时库存域唯一的写入口。
  *
  * <p>与手工出库单（{@link InventoryOutboundService}）的分工：那条链路是「仓库自己开草稿再确认」，
  * 本命令是「外部单据一次性产生已确认出库单」。出库单**直接以 {@code CONFIRMED} 落库、不经过
@@ -48,13 +48,13 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERV
  * 这也解释了为什么不能直接复用 {@code InventoryOutboundService.confirm}：那条链路要求调用方
  * 自己先把预留释放干净，顺序错了就是自己预留了自己出不了库。
  *
- * <p><b>锁序</b>：沿用 §8.1「单据锁先于余额锁，余额锁按 {@code (warehouse_id, sku_id)} 升序」。
+ * <p><b>锁序</b>：沿用 「单据锁先于余额锁，余额锁按 {@code (warehouse_id, sku_id)} 升序」。
  * 本命令的「单据锁」是调用方持有的配送线路行锁，因此这里先按既定顺序锁预留，
  * 再把<strong>预留所在仓</strong>与<strong>发货仓</strong>两侧涉及的余额行一次性按升序预锁；
  * 之后 {@code decrementReserved} 与 {@link InventoryCommandService#postSalesOutbound} 只是
  * 重复获取本事务已持有的锁。并发两条线路在同一 SKU 上交错时不会互为逆序。
  *
- * <p><b>少拣与跨仓</b>：预留按整条生命周期收口（裁决第 6 条）—— 同一事务里整条归还
+ * <p><b>少拣与跨仓</b>：预留按整条生命周期收口——同一事务里整条归还
  * {@code reserved_quantity}，实发量只从发货仓的可用量扣；差额不另存字段，
  * 由「{@code inventory_reservation.quantity} − 对应 {@code SALES_OUT.quantity}」现算。
  * 预留仓与发货仓一致且本行确有出库时置 {@code CONSUMED}，否则置 {@code RELEASED}

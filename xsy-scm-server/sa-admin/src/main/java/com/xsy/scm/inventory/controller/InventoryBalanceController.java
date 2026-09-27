@@ -19,14 +19,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * SCM 库存余额（W6 Target Design §10.1）——**全只读**。
+ * SCM 库存余额——**全只读**。
  *
  * <p>没有手工写 API：库存余额不是可以被直接赋值的状态，它只能是流水的净和。
- * W6-1 的唯一写入路径是「收货确认 → {@code PURCHASE_IN}」（同事务）。
+ * 的唯一写入路径是「收货确认 → {@code PURCHASE_IN}」（同事务）。
  *
  * <p>两个端点共用同一个权限码 {@code scm:inventory:balance:query}
- * （菜单 811 与之逐字对应，由 W6 权限 IT 校验代码与菜单不脱节）。
- * 只读端点不加 {@code @OperateLog}（与 W5 查询端点一致）。
+ * （菜单 811 与之逐字对应，由 权限 IT 校验代码与菜单不脱节）。
+ * 只读端点不加 {@code @OperateLog}（与 查询端点一致）。
  */
 @RestController
 @RequestMapping("/scm/inventory/balance")

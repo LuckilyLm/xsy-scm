@@ -139,7 +139,7 @@ public class InventoryOutboundService {
                             null,
                             now,
                             operator);
-                    // 单位以余额记账单位为准（Q13），由命令服务返回，这里回写到明细行
+                    // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
                     String unit = inventoryCommandService.postSalesOutbound(fact);
                     inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, operator);
                 });

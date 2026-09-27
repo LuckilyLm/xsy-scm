@@ -21,18 +21,18 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 /**
- * {@link WarehouseDisableGuard} 实现（B1，HD-B1-01；调拨波次新增第四条）。
+ * {@link WarehouseDisableGuard} 实现。
  *
  * <p>放在 inventory 域是因为停用要同时读 inventory_balance、purchase_order、purchase_receipt
  * 与 inventory_transfer，而 inventory → purchase → warehouse 是本仓库既有的单向依赖方向，
  * 不会反向成环。
  *
- * <p>四条阻塞条件按 HD-B1-01 严格模式逐条短路：
+ * <p>四条阻塞条件按 严格模式逐条短路：
  * <ol>
  *   <li>库存余额 &gt; 0；</li>
  *   <li>在途采购单；</li>
  *   <li>待入库收货单；</li>
- *   <li><b>在途调拨单</b>（调拨波次新增）—— 源仓与目标仓**都算**：源仓的货已经出去了
+ *   <li><b>在途调拨单</b>——源仓与目标仓都计入：源仓的货已经出去了
  *       但账上还没落地到目标仓，目标仓则还欠着一批要入库的货。
  *       任一被停用都会让在途调拨无处可收 / 无据可查。</li>
  * </ol>

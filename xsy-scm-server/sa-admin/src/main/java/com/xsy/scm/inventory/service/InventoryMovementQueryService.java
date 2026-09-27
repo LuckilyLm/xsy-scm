@@ -15,9 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * 库存流水只读查询（W6 Target Design §10.1）。
+ * 库存流水只读查询。
  *
- * <p><b>只读</b>：流水表是 append-only 账本（Q7），本类只查不改；
+ * <p><b>只读</b>：流水表是 append-only 账本，本类只查不改；
  * 全库范围内也没有任何端点能修改历史流水。
  *
  * <p>时间范围过滤的是 {@code occurred_at}（业务发生时刻 = 收货确认时刻），
@@ -45,7 +45,7 @@ public class InventoryMovementQueryService {
         var page = SmartPageUtil.convert2PageQuery(form);
         List<InventoryMovementVO> list = inventoryMovementDao.queryPage(page, form, scope.getWarehouseScope());
         // unit_cost 就是这一笔入库的采购价快照，属于成本事实；可见性只按仓库判定，
-        // 与 created_by 是否为空无关（Q5 回填行的 created_by 是 NULL）。
+        // 与 created_by 是否为空无关（回填行的 created_by 是 NULL）。
         ScmReportAccess.maskCost(list, scope.isCostVisible(), vo -> vo.setUnitCost(null));
         return SmartPageUtil.convert2PageResult(page, list);
     }

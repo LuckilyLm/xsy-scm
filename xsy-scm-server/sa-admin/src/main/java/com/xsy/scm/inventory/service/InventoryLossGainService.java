@@ -60,7 +60,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
  * 同时保留在 SQL 的 {@code WHERE} 里作为并发下的第二道防线。
  *
  * <p><b>禁止自建自审</b>：本域只有报损报溢同时存在「录单 + 审批」两个动作，
- * 因此审批通过与驳回都要求 {@code approver != creator}（41065，P0 基线收口裁决第 8 条）。
+ * 因此审批通过与驳回都要求 {@code approver != creator}（41065）。
  * 不为此给别的库存单据补审批环节 —— 没有审批动作的单据不存在自审问题。
  */
 @Service
@@ -184,7 +184,7 @@ public class InventoryLossGainService {
                             item.getQuantity(),
                             now,
                             operator);
-                    // 单位以余额记账单位为准（Q13），由命令服务返回，这里回写到明细行
+                    // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
                     String unit = inventoryCommandService.postLossGainAdjust(fact);
                     inventoryLossGainItemDao.updateUnitSnapshot(item.getId(), unit, operator);
                 });
@@ -302,7 +302,7 @@ public class InventoryLossGainService {
     }
 
     /**
-     * 禁止自建自审（P0 基线收口裁决第 8 条）：审批人不得是该单的录单人。
+     * 禁止自建自审：审批人不得是该单的录单人。
      *
      * <p>{@code created_by} 与 {@code auditor} 都是 {@link ScmOperator} 写的
      * {@code "userType:employeeId"} 串，因此<b>只比较员工号那一段</b>：

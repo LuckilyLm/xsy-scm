@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 库存流水的来源单据类型（W6 Target Design §2.2 / §4.1）。
+ * 库存流水的来源单据类型。
  *
  * <p>该值持久化到 {@code inventory_movement.source_document_type}，并与
- * {@code source_document_item_id} 一起构成**稳定唯一源键**（W5 TD §8.5 冻结的口径），
+ * {@code source_document_item_id} 一起构成**稳定唯一源键**（TD 冻结的口径），
  * 由部分唯一索引 {@code uk_inventory_movement_source_active} 在 DB 层兜底防重。
  *
  * <p><b>为什么不直接引用 {@code PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE}</b>：
@@ -62,7 +62,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * —— 两条流水引用的是**同一个明细行 id**，若共用同一个来源类型，第二条插入必然冲突，
      * 收货就永远做不成。
      *
-     * <p>该索引是 V19 冻结的 Q7/Q11 契约，不能为了调拨去放宽它。因此改用
+     * <p>该索引是 冻结的 / 契约，不能为了调拨去放宽它。因此改用
      * 「来源类型本身编码方向」：转出与转入各占一个来源类型，各自在自己的
      * {@code (type, itemId)} 空间里唯一。副作用是正向的 ——
      * 可以直接按来源类型查出「所有转出流水」或「所有转入流水」。
@@ -81,7 +81,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * （转出写源 SKU、转入写目标 SKU），而防重锚点是部分唯一索引
      * {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)}
      * —— 两条流水引用同一个明细行 id，共用一个来源类型第二条就插不进去。
-     * 该索引是 V19 冻结的 Q7/Q11 契约，不为新能力放宽。
+     * 该索引是 冻结的 / 契约，不为新能力放宽。
      */
     CONVERT_OUT_ITEM("转换单行（转出）"),
 

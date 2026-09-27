@@ -12,7 +12,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 盘点单（库存管理深化 · 盘点波次）。
+ * 库存盘点单。
  *
  * <p><b>差异不落库到明细的「差异列」上</b>：差异是 {@code actual_quantity - book_quantity}
  * 的派生值，不另设列（冗余列会与两个真值列失去同步）。确认时真正写下来的是

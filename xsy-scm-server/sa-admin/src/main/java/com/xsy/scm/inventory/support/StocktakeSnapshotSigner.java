@@ -23,7 +23,7 @@ import java.util.List;
  * <p><b>密钥来源</b>：{@code scm.inventory.stocktake.snapshot.secret}。默认值 {@code DEV_SECRET}
  * 只保证本地开发与 IT 可运行；pre / prod profile 下缺失或仍等于该公开默认值会让构造直接抛错、
  * 启动失败（见 {@link #requireNonPublicSecret}），生产必须用环境变量
- * {@code SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET} 显式配置（AGENTS §24：不把真实密钥写进源码 / 配置）。
+ * {@code SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET} 显式配置（AGENTS：不把真实密钥写进源码 / 配置）。
  */
 @Component
 public class StocktakeSnapshotSigner {

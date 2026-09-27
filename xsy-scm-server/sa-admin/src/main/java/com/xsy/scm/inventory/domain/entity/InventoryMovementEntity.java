@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 库存流水（W6 Target Design §2.2，**append-only 账本**）。
+ * 库存流水（**append-only 账本**）。
  *
- * <p><b>Q7 硬化后的纪律</b>：表上有 {@code deleted} 列（为了与 W5 TD §8.5 预留的部分唯一索引
+ * <p><b> 硬化后的纪律</b>：表上有 {@code deleted} 列（为了与 TD 预留的部分唯一索引
  * {@code WHERE deleted = FALSE AND source_document_item_id IS NOT NULL} 逐字匹配），
  * 但 DB 约束 {@code ck_inventory_movement_append_only CHECK (deleted = FALSE)} 把它锁死为 FALSE。
  * 因此：
@@ -29,7 +29,7 @@ import java.time.OffsetDateTime;
  *
  * <p><b>溯源三件套</b>：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点，
  * {@code sourceDocumentId} 是头级溯源（列表页跳转收货单用，不参与唯一索引）。
- * 人类可读的来源单号由查询侧联 {@code purchase_receipt.receipt_no} 取得（Q9：不设 movement_no）。
+ * 人类可读的来源单号由查询侧联 {@code purchase_receipt.receipt_no} 取得（不设 movement_no）。
  */
 @Data
 @TableName(value = "inventory_movement", autoResultMap = true)
@@ -43,12 +43,12 @@ public class InventoryMovementEntity {
     private Long skuId;
 
     /**
-     * {@code ScmInventoryMovementTypeEnum}；W6-1 仅 {@code PURCHASE_IN}（DB CHECK 白名单）。
+     * {@code ScmInventoryMovementTypeEnum}； 仅 {@code PURCHASE_IN}（DB CHECK 白名单）。
      */
     private String movementType;
 
     /**
-     * {@code ScmInventorySourceDocumentTypeEnum}；W6-1 仅 {@code PURCHASE_RECEIPT_ITEM}。
+     * {@code ScmInventorySourceDocumentTypeEnum}； 仅 {@code PURCHASE_RECEIPT_ITEM}。
      */
     private String sourceDocumentType;
 
@@ -73,7 +73,7 @@ public class InventoryMovementEntity {
     private String unitSnapshot;
 
     /**
-     * Q3：采购成本事实快照；可空只为未来的无成本 movement 类型预留表达空间。
+     *：采购成本事实快照；可空只为未来的无成本 movement 类型预留表达空间。
      */
     private BigDecimal unitCost;
 

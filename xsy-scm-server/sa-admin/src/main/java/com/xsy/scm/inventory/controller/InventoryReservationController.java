@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  * SCM 库存预留（查询 + 释放）。
  *
  * <p><b>为什么没有「新建预留」端点</b>：预留是**业务动作的副产物**，不是人手工录的单据。
- * 本波次由销售订单确认触发（走 {@code InventoryReservationService.reserve}），
+ * 预留由销售订单确认时通过 {@code InventoryReservationService.reserve} 创建，
  * 对外只暴露查询与释放。开放手工预留会让「谁占了这批货」失去业务依据。
  */
 @RestController

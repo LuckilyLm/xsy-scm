@@ -38,7 +38,7 @@ public class InventoryReservationEntity {
     private Long skuId;
 
     /**
-     * {@code ScmInventorySourceDocumentTypeEnum}；本波次为 {@code SALES_ORDER_ITEM}。
+     * {@code ScmInventorySourceDocumentTypeEnum}；当前来源为 {@code SALES_ORDER_ITEM}。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String sourceDocumentType;
