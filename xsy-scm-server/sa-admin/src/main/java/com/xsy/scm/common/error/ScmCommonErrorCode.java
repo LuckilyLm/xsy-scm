@@ -27,7 +27,10 @@ public enum ScmCommonErrorCode implements ScmErrorCode {
      * Bean Validation 的场景（内部调用、批量导入、工具类解析）。MVC 入口的校验失败仍由
      * SmartAdmin 的 {@code GlobalExceptionHandler} 以 30001 返回，SCM 不重复接管。
      */
-    VALIDATION_ERROR(40000, "请求参数不正确");
+    VALIDATION_ERROR(40000, "请求参数不正确"),
+    IDEMPOTENCY_KEY_REQUIRED(40069, "Idempotency-Key 不能为空"),
+    IDEMPOTENCY_KEY_INVALID(40070, "Idempotency-Key 长度不能超过 200 个字符"),
+    IDEMPOTENCY_CONFLICT(40966, "相同幂等键的请求内容不一致");
 
     private final int code;
     private final String msg;
