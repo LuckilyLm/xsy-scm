@@ -15,5 +15,6 @@ package com.xsy.scm.purchase.constant;
  * </ul>
  */
 public enum ScmPutawayStatusEnum {
-    PENDING, COMPLETED
+    PENDING,
+    COMPLETED
 }

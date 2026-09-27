@@ -15,5 +15,6 @@ package com.xsy.scm.purchase.constant;
  * 创建收货单时必须显式二选一，**没有系统默认值** —— 不允许隐藏成隐式行为。
  */
 public enum ScmReceiptModeEnum {
-    DIRECT, WAREHOUSE_CONFIRM
+    DIRECT,
+    WAREHOUSE_CONFIRM
 }

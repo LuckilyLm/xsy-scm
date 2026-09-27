@@ -11,5 +11,7 @@ package com.xsy.scm.purchase.constant;
  * 0 &lt; allocated &lt; required · {@code ALLOCATED} = allocated == required。
  */
 public enum ScmPurchaseDemandStatusEnum {
-    PENDING, PARTIALLY_ALLOCATED, ALLOCATED
+    PENDING,
+    PARTIALLY_ALLOCATED,
+    ALLOCATED
 }

@@ -11,5 +11,6 @@ package com.xsy.scm.purchase.constant;
  * {@link #DEVICE} 当前不被收货命令接受；接入电子秤前不得写入该来源。
  */
 public enum ScmWeighingSourceEnum {
-    MANUAL, DEVICE
+    MANUAL,
+    DEVICE
 }

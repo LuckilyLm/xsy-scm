@@ -15,13 +15,22 @@ package com.xsy.scm.purchase.constant;
 public enum ScmPurchaseOperationTypeEnum {
 
     // ---- 采购单 ----
-    CREATE, UPDATE, SUBMIT, CANCEL, SHORT_CLOSE, DELETE,
+    CREATE,
+    UPDATE,
+    SUBMIT,
+    CANCEL,
+    SHORT_CLOSE,
+    DELETE,
 
     // ---- 采购需求（无采购单 / 收货单可挂）----
-    DEMAND_GENERATE, DEMAND_ALLOCATE,
+    DEMAND_GENERATE,
+    DEMAND_ALLOCATE,
 
     // ---- 采购收货（必属采购单）----
-    RECEIPT_CREATE, RECEIPT_UPDATE, RECEIPT_CONFIRM, RECEIPT_DELETE,
+    RECEIPT_CREATE,
+    RECEIPT_UPDATE,
+    RECEIPT_CONFIRM,
+    RECEIPT_DELETE,
 
     // ---- 入库确认（必须关联采购单与收货单）----
     RECEIPT_PUTAWAY

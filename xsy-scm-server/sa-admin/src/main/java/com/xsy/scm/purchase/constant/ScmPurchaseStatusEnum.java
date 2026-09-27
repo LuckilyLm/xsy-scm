@@ -11,5 +11,10 @@ package com.xsy.scm.purchase.constant;
  * {@code shortClose}。
  */
 public enum ScmPurchaseStatusEnum {
-    DRAFT, SUBMITTED, PARTIALLY_RECEIVED, RECEIVED, SHORT_CLOSED, CANCELLED
+    DRAFT,
+    SUBMITTED,
+    PARTIALLY_RECEIVED,
+    RECEIVED,
+    SHORT_CLOSED,
+    CANCELLED
 }

@@ -16,5 +16,6 @@ package com.xsy.scm.purchase.constant;
  * 内「数量来源」词汇一致；本枚举描述的是**有效数量的取值方式**， 与 {@link ScmWeighingSourceEnum}（称重设备来源）是两个不同维度。
  */
 public enum ScmPurchaseQuantitySourceEnum {
-    SYSTEM, MANUAL
+    SYSTEM,
+    MANUAL
 }
