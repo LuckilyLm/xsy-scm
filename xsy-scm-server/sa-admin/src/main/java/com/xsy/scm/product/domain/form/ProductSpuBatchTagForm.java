@@ -28,7 +28,7 @@ public class ProductSpuBatchTagForm {
     @NotNull(message = "标签 ID 列表不能为空")
     @Size(max = 50, message = "标签 ID 列表不能超过50项")
     private List<
-            @NotNull(message = "标签 ID 列表不能为空") @Positive(message = "标签 ID 列表必须大于0") Long> tagIds = new ArrayList<>();
+            @NotNull(message = "标签 ID 不能为空") @Positive(message = "标签 ID 必须大于0") Long> tagIds = new ArrayList<>();
     @NotBlank(message = "标签维护方式不能为空")
     @ScmEnumValue(enumClass = ScmProductTagUpdateModeEnum.class, message = "标签维护方式取值无效")
     private String mode;
