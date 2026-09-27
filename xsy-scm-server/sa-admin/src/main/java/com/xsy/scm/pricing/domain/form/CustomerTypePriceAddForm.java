@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.util.ScmDecimalStrings;
-import net.lab1024.sa.base.common.domain.PageParam;
 
 import java.time.OffsetDateTime;
 
