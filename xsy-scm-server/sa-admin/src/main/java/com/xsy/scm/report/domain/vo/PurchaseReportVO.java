@@ -11,8 +11,8 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 采购分析返回行（采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动）。
  *
- * <p>本报表刻意<b>不返回应付金额</b>。采购单金额是采购承诺，收货参考金额是履约事实，
- * 两者都不等于应付；应付应从财务应付事实读取，不能由采购或收货金额推算。
+ * <p>
+ * 本报表刻意<b>不返回应付金额</b>。采购单金额是采购承诺，收货参考金额是履约事实， 两者都不等于应付；应付应从财务应付事实读取，不能由采购或收货金额推算。
  */
 @Data
 public class PurchaseReportVO {
@@ -37,8 +37,8 @@ public class PurchaseReportVO {
     /**
      * 粒度 = SKU × 采购单位快照。
      *
-     * <p>采购入库数量以 {@link #inboundQuantityText} 表达（按库存记账单位分组），
-     * 因为它与 {@link #purchaseUnit} 可能不同单位；把两者相加会得到无量纲的合计数。
+     * <p>
+     * 采购入库数量以 {@link #inboundQuantityText} 表达（按库存记账单位分组）， 因为它与 {@link #purchaseUnit} 可能不同单位；把两者相加会得到无量纲的合计数。
      */
     @Data
     public static class ProductRow {
@@ -131,7 +131,8 @@ public class PurchaseReportVO {
     /**
      * 价格波动点：粒度 = 业务日 × SKU × 采购单位。
      *
-     * <p>同一天多笔按数量加权平均；不同单位永不合并成一条线（箱价与公斤价混画没有意义）。
+     * <p>
+     * 同一天多笔按数量加权平均；不同单位永不合并成一条线（箱价与公斤价混画没有意义）。
      */
     @Data
     public static class PriceTrendPoint {

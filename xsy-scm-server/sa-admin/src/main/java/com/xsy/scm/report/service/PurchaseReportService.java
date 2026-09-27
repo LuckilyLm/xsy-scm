@@ -20,10 +20,11 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 /**
  * 采购分析（只读）。业务日期是 {@code submitted_at}，状态只认提交后的四个值。
  *
- * <p>本报表不展示「应付金额」：采购单金额是承诺、收货参考金额是履约事实，只有财务应付事实才能作为应付。
+ * <p>
+ * 本报表不展示「应付金额」：采购单金额是承诺、收货参考金额是履约事实，只有财务应付事实才能作为应付。
  *
- * <p><b>整页按仓库授权范围取数</b>：采购单、收货单与入库流水三张事实表都有 {@code warehouse_id}，
- * 所以每条语句的每个派生表都带范围谓词，调用方的 {@code warehouseId}
+ * <p>
+ * <b>整页按仓库授权范围取数</b>：采购单、收货单与入库流水三张事实表都有 {@code warehouse_id}， 所以每条语句的每个派生表都带范围谓词，调用方的 {@code warehouseId}
  * 筛选只能在授权范围内进一步收窄。范围为空即返回空结果，而不是跑一次恒假查询换回一堆 0。
  */
 @Service
@@ -65,8 +66,7 @@ public class PurchaseReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         PageResult<PurchaseReportVO.ProductRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseByProduct(page, range.startAt(), range.endAt(), form,
-                        context.getWarehouseScope()));
+                reportDao.purchaseByProduct(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         maskProductCost(result, context.isCostVisible());
         return result;
     }
@@ -81,8 +81,7 @@ public class PurchaseReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         PageResult<PurchaseReportVO.SupplierRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseBySupplier(page, range.startAt(), range.endAt(), form,
-                        context.getWarehouseScope()));
+                reportDao.purchaseBySupplier(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         maskSupplierCost(result, context.isCostVisible());
         return result;
     }
@@ -107,8 +106,7 @@ public class PurchaseReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         PageResult<PurchaseReportVO.PurchaserRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseByPurchaser(page, range.startAt(), range.endAt(), form,
-                        context.getWarehouseScope()));
+                reportDao.purchaseByPurchaser(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         List<PurchaseReportVO.PurchaserRow> rows = result.getList();
         if (!context.isCostVisible()) {
             rows.forEach(row -> {
@@ -128,8 +126,7 @@ public class PurchaseReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseItemList(page, range.startAt(), range.endAt(), form,
-                        context.getWarehouseScope()));
+                reportDao.purchaseItemList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
     }
 
     public List<PurchaseReportVO.PriceTrendPoint> priceTrend(ScmPurchaseReportQueryForm form) {

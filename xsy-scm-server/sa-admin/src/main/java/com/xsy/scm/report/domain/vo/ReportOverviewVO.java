@@ -11,8 +11,8 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 经营概览的指标卡与每日统计行。
  *
- * <p>命名即口径：把已确认订单金额叫成收入会把「承诺」说成「已实现」，因此只允许
- * {@code confirmedOrderAmount} / 前端「已确认订单金额」这套命名。
+ * <p>
+ * 命名即口径：把已确认订单金额叫成收入会把「承诺」说成「已实现」，因此只允许 {@code confirmedOrderAmount} / 前端「已确认订单金额」这套命名。
  */
 @Data
 public class ReportOverviewVO {
@@ -44,15 +44,16 @@ public class ReportOverviewVO {
     /**
      * 上述成本金额里被跳过的无成本流水行数。
      *
-     * <p>&gt; 0 表示 {@link #purchaseInCostAmount} 是<b>不完整</b>的和，前端必须显性提示，
-     * 不能让用户把它当成全部入库成本。
+     * <p>
+     * &gt; 0 表示 {@link #purchaseInCostAmount} 是<b>不完整</b>的和，前端必须显性提示， 不能让用户把它当成全部入库成本。
      */
     private Integer purchaseInCostMissingCount;
 
     /**
      * 当前库存账面金额：{@code SUM(inventory_balance.quantity * avg_cost)}。
      *
-     * <p>不受查询历史区间影响，配 {@link #snapshotAt} 一起读才是完整事实。
+     * <p>
+     * 不受查询历史区间影响，配 {@link #snapshotAt} 一起读才是完整事实。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal inventoryBookValue;

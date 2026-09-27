@@ -10,8 +10,8 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 按业务日聚合的统计行，同时服务趋势折线（按日画三条线）与每日统计表。
  *
- * <p>日期轴由 SQL 的 {@code generate_series} 补齐，因此「某天没有任何单据」也会返回一行零值，
- * 而不是让折线自己跳过那天。
+ * <p>
+ * 日期轴由 SQL 的 {@code generate_series} 补齐，因此「某天没有任何单据」也会返回一行零值， 而不是让折线自己跳过那天。
  */
 @Data
 public class ReportDailyStatVO {

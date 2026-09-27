@@ -11,10 +11,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 收货与入库三张报表行（收货明细 / 入库明细 / 待入库）。
  *
- * <p>收货确认是商业事实，
- * 库存入账是另一条生命周期（{@code receipt_mode} + {@code putaway_status}），
- * 因此这里同时暴露 {@link ReceiptRow#receiptMode} 与 {@link ReceiptRow#putawayStatus}，
- * 页面不得把「已确认收货」显示成「已入库」。
+ * <p>
+ * 收货确认是商业事实， 库存入账是另一条生命周期（{@code receipt_mode} + {@code putaway_status}）， 因此这里同时暴露 {@link ReceiptRow#receiptMode} 与
+ * {@link ReceiptRow#putawayStatus}， 页面不得把「已确认收货」显示成「已入库」。
  */
 @Data
 public class ReceiptReportVO {
@@ -94,7 +93,8 @@ public class ReceiptReportVO {
         /**
          * 按采购单位分组后的数量文本（如 {@code 12kg / 3箱}）。
          *
-         * <p>刻意不是单个数字：一张收货单可以包含多种单位，相加得到的是无量纲合计。
+         * <p>
+         * 刻意不是单个数字：一张收货单可以包含多种单位，相加得到的是无量纲合计。
          */
         private String quantityText;
     }

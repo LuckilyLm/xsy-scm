@@ -11,9 +11,9 @@ import com.xsy.scm.report.constant.ReportErrorCode;
 /**
  * 报表唯一允许的日界换算入口。
  *
- * <p>库中时间列是 {@code TIMESTAMPTZ}，而用户选的是「哪几天」。两者之间的换算规则就是口径本身：
- * 起始日 00:00（含）到结束日次日 00:00（不含）。这里刻意用固定的 Asia/Shanghai 而不是 JVM 默认时区——
- * 应用容器时区一变，同一份报表的历史数字就会集体漂移一位，且很难归因。
+ * <p>
+ * 库中时间列是 {@code TIMESTAMPTZ}，而用户选的是「哪几天」。两者之间的换算规则就是口径本身： 起始日 00:00（含）到结束日次日 00:00（不含）。这里刻意用固定的 Asia/Shanghai 而不是 JVM
+ * 默认时区—— 应用容器时区一变，同一份报表的历史数字就会集体漂移一位，且很难归因。
  */
 public final class ScmReportTimeRangeResolver {
 
@@ -21,8 +21,7 @@ public final class ScmReportTimeRangeResolver {
     public static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
     /**
-     * 最大查询跨度（含首尾两天）。超过这个范围的历史聚合没有可用的索引边界，
-     * 且趋势图与每日统计的行数也不再是可读的。
+     * 最大查询跨度（含首尾两天）。超过这个范围的历史聚合没有可用的索引边界， 且趋势图与每日统计的行数也不再是可读的。
      */
     public static final int MAX_SPAN_DAYS = 366;
 
@@ -32,7 +31,8 @@ public final class ScmReportTimeRangeResolver {
     /**
      * 校验并把闭区间日期解析成半开区间瞬间。
      *
-     * @throws ScmBusinessException 日期缺失 / 倒序（40000），或跨度超限（41111）
+     * @throws ScmBusinessException
+     *             日期缺失 / 倒序（40000），或跨度超限（41111）
      */
     public static ScmReportTimeRange resolve(ScmReportDateFilter filter) {
         LocalDate startDate = filter.getStartDate();
@@ -43,8 +43,7 @@ public final class ScmReportTimeRangeResolver {
         if (ChronoUnit.DAYS.between(startDate, endDate) + 1 > MAX_SPAN_DAYS) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_DATE_RANGE_TOO_LARGE);
         }
-        return new ScmReportTimeRange(startDate, endDate,
-                startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
+        return new ScmReportTimeRange(startDate, endDate, startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
                 endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime());
     }
 }

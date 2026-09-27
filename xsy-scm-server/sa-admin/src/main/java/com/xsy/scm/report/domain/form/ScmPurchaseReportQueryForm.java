@@ -11,8 +11,8 @@ import com.xsy.scm.report.support.ScmReportDateFilter;
 /**
  * 采购分析页的共用筛选条件（采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动）。
  *
- * <p><b>日期是「提交日期」</b>：采购事实从提交起才成立，草稿没有承诺量也没有价格事实。
- * 默认统计 {@code SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED}，
+ * <p>
+ * <b>日期是「提交日期」</b>：采购事实从提交起才成立，草稿没有承诺量也没有价格事实。 默认统计 {@code SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED}，
  * 排除 {@code DRAFT} 与 {@code CANCELLED}（由 SQL 固定，不开放给调用方改写）。
  */
 @Data

@@ -9,8 +9,8 @@ import com.xsy.scm.report.support.ScmReportDateFilter;
 /**
  * 非分页报表查询表单的公共日期字段（指标卡、趋势、每日统计、价格波动）。
  *
- * <p>分页表单必须继承 {@code PageParam}，无法继承本类，因此它们各自实现
- * {@link ScmReportDateFilter}；日期语义由该接口统一约束。
+ * <p>
+ * 分页表单必须继承 {@code PageParam}，无法继承本类，因此它们各自实现 {@link ScmReportDateFilter}；日期语义由该接口统一约束。
  */
 @Data
 public abstract class ScmReportDateForm implements ScmReportDateFilter {
