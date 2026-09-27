@@ -37,7 +37,7 @@ import java.util.List;
 public class ScmDataScopeService {
 
     /** 查看全部仓库（总部仓管主管、审计类岗位）；否则仓库维度只认授权行。 */
-    public static final String WAREHOUSE_ALL_PERM = "scm:inventory:scope:all:query";
+    public static final String WAREHOUSE_ALL_PERM = ScmCrossDomainPermission.INVENTORY_SCOPE_ALL_QUERY;
 
     /** 查看全部业务员名下客户（销售主管、财务）。 */
     public static final String CUSTOMER_ALL_PERM = "scm:customer:scope:all:query";
