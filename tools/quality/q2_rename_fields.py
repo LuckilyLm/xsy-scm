@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Q2.1.1 —— 依赖字段改名：只改「声明处」与「接收者位置」，不做整文件文本替换。
+"""Q2.1.1 —— 依赖字段改名：token-aware 精确声明 / 接收者改名工具，保护字符串与注解。
+
+**定位**：这是一个**基于行的精确文本改名工具**，不是 AST symbol rename，
+也不是通用 Java 重构引擎。它只依据「字段声明位置」与「`<field>.` 接收者位置」
+两个 token 形态做替换，并把字符串字面量与注解名划为保护区。真正的符号级改名
+仍应优先用 IDE Rename Symbol / AST-aware refactor / JavaParser；本工具只是
+在环境确实无法符号改名时的**项目内兜底**。
 
 背景（写进 docs/quality/java-code-quality-remediation-plan.md 的规则）：
 Q2.1 用整文件正则改 `query` / `batch` 时，把权限字面量、@PostMapping 的 URL、
@@ -12,8 +18,8 @@ Q2.1 用整文件正则改 `query` / `batch` 时，把权限字面量、@PostMap
   3. 改完必须能编译（由 verify.py backend 兜底），且改名前后
      `grep -c '\b<old>\b'` 在目标文件里必须归零。
 
-用法（默认 dry-run）：
-    python tools/quality/q2_rename_fields.py --check
+用法（不带参数即 dry-run，只打印改动与残留引用）：
+    python tools/quality/q2_rename_fields.py
     python tools/quality/q2_rename_fields.py --apply
 """
 

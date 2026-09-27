@@ -6,7 +6,7 @@
 > 试点范围：**仅** `com.xsy.scm.common` 与 `com.xsy.scm.product` 两个域的生产与测试代码
 > 门禁流程：`code → check → capture → check`（§15）；baseline 只允许**下降**，禁用 `--allow-growth`，不手改 baseline
 > 审计工具：[`tools/quality/q2_audit.py`](../../tools/quality/q2_audit.py)（只读，不参与门禁）
-> 改名工具：[`tools/quality/q2_rename_fields.py`](../../tools/quality/q2_rename_fields.py)（AST 感知，保护字符串/注解）
+> 改名工具：[`tools/quality/q2_rename_fields.py`](../../tools/quality/q2_rename_fields.py)（token-aware 精确声明/接收者改名工具，保护字符串与注解；**不是 AST symbol rename**，只是环境无法符号改名时的项目内兜底）
 >
 > **状态：Q2.1 NAMING + TYPE SAFETY PILOT COMPLETE**
 > （Q2.1 首轮功能回归与门禁已通过，但命名判定**过宽**；经 Q2.1.1 Naming Standard Closure
@@ -144,8 +144,8 @@ FileRelationService    -> fileRelationService
 | `4eff6795` `docs(quality): record the Q2.1 naming and type-safety pilot` | §28 本文档 |
 | `c142a1e3` `docs(quality): add the Q2.1 verification results and line-length fix record` | 验证结果与折行记录 |
 | —— 以下为 **Q2.1.1 Naming Standard Closure** —— | |
-| `refactor(common,product): complete dependency naming cleanup` | 收紧标准后补齐 14 处遗留缩写字段（见 3.6） |
-| `chore(quality): harden naming audit against semantic abbreviations` | 加固审计工具 + 新增自测（见 3.7） |
+| `661b7118` `refactor(common,product): complete dependency naming cleanup` | 收紧标准后补齐 14 处遗留缩写字段（见 3.6） |
+| `c7536008` `chore(quality): harden naming audit against semantic abbreviations` | 加固审计工具 + 新增自测（见 3.7） |
 
 ### 3.2 §3 过期文档修正（独立提交）
 
@@ -241,12 +241,13 @@ FileRelationService    -> fileRelationService
 | `common/exception/ScmBusinessException.java` | `ScmErrorCode` | `errorCode` | —— | C 合法别名（角色语义） |
 | `common/.../ScmW5PgITBase.java`（测试） | `PlatformTransactionManager` | `transactionManager` | —— | C 合法别名（角色语义） |
 | `common/.../ScmW5PgITBase.java`（测试） | `SqlSessionFactory` | `sqlSessionFactory` | —— | C（已是类型名小写） |
-| `common/.../ScmW2/W3/W5PgITBase.java`（测试） | `ObjectMapper` | `json` | —— | **MANUAL_REVIEW**（单列，不计入 0） |
+| `common/.../ScmW2/W3/W5PgITBase.java`（测试） | `ObjectMapper` | `json` | `objectMapper` | 原为 **MANUAL_REVIEW**；Q2.1 收口已真实改名（见 §4） |
 | `product/manager/ProductImageSyncManager.java` | `FileService` | `fileService` | —— | C（已是类型名小写） |
 | `product/manager/ProductImageSyncManager.java` | `FileRelationService` | `fileRelationService` | —— | C（已是类型名小写） |
 | `product/**` 各 Controller / Service / Manager | `Product*Service/Dao/Validator` | `product*Service/Dao/Validator` | —— | C（已是类型名小写） |
 
-**结果**：A 档 0 处、B 档 **14 处**、C 档为合法命名、`MANUAL_REVIEW` 3 处（仅 common 测试的 `json`）。
+**结果**：A 档 0 处、B 档 **14 处**、C 档为合法命名。`MANUAL_REVIEW` 当时 3 处（仅 common 测试的 `json`），
+已在 Q2.1 FINAL CLOSE-OUT 真实改名为 `objectMapper`（见 §4）。
 B 档 14 处即下面的整改清单。
 
 > 说明：`product` 域 `FileService files` / `FileRelationService relations` 在 Q2.1 首轮
@@ -309,15 +310,19 @@ Q2.1 首轮把「缩写」判据定得过窄（见 §1.1），漏掉 14 处真�
 | 协作方字段（判定范围） | 35 | 62 |
 | **裸角色字段（A，必须改）** | **0** | **0** |
 | **缩写型字段（B，必须改）** | **0**（4 → 0） | **0**（13 → 0） |
-| 合法角色别名（C，不算债） | 32 | 62 |
-| `MANUAL_REVIEW`（不计入 0） | 3（`ObjectMapper json` ×3） | 0 |
+| 合法角色别名（C，不算债） | 35 | 62 |
+| `MANUAL_REVIEW` | **0** | **0** |
 | 无信息局部变量 | 0 | **1**（余 1 处在测试 `ProductPgIT`） |
 | magic string 主代码 | 0 | **3**（25 → 3，余下即 §3.4 有意保留） |
 | magic string 测试代码 | 28 | 67 |
 
 > **验收口径（§8）**：`common` + `product` 的**高置信度语义缩写依赖字段必须为 0**。
-> 上表两域 B 档均为 0 → 满足。`MANUAL_REVIEW` 单列，**不计入 0**：本轮的 3 条都是测试里的
-> `ObjectMapper json`（既非类型名、也非已知角色别名，工具按约定交人工，不自动放行）。
+> 上表两域 A / B / `MANUAL_REVIEW` 均为 0 → 满足。
+> **Q2.1 FINAL CLOSE-OUT 补充**：Q2.1.1 收口时 common 测试残留 3 条
+> `ObjectMapper json`（`ScmW2/W3/W5PgITBase`）被判 `MANUAL_REVIEW`，本轮已按 §2 规则
+> **真实改名**为 `objectMapper`（并同步更新继承该字段的各测试文件的 `json.` 接收者），
+> 故 `MANUAL_REVIEW` 由 3 → 0。**未**通过放宽审计白名单达成（`json` 未被加入任何 CLEAN 白名单，
+> `tools/quality/q2_audit.py` 一字未改）。
 
 > before 口径见 §2。Q2.1 首轮用旧算法测得 product「缩写 = 0」是**假阴性**（§1.1），
 > 真实 before 是 13 处；Q2.1.1 补齐后归零。
@@ -362,8 +367,11 @@ Q2.1.1 复查后 `common` 的结论：
   - `ScmErrorCode errorCode` —— 角色语义（错误码），保留。
   - `ScmDataScopeService dataScopeService` —— 已是类型名小写（`ScmWarehouseScopeGuard` 内），保留。
   - `PlatformTransactionManager transactionManager`（测试）—— 角色语义，保留。
-- **`MANUAL_REVIEW` = 3**：均为测试里的 `ObjectMapper json`（`ScmW2/W3/W5PgITBase`）。
-  既不等于类型名也不属白名单角色别名，工具按约定交人工、不自动判 CLEAN；本轮不改名。
+- **`MANUAL_REVIEW` = 0**：Q2.1.1 收口时此处曾有 3 条测试里的 `ObjectMapper json`
+  （`ScmW2/W3/W5PgITBase`），既不等于类型名也不属白名单角色别名，工具按约定交人工。
+  Q2.1 FINAL CLOSE-OUT 已按 §2 规则将其**真实改名**为 `objectMapper`（每类仅一个
+  `ObjectMapper`，无需按角色区分），并同步更新继承该字段的测试文件里的 `json.` 接收者，
+  故归零。**不是**通过放宽白名单实现的（见 §4 说明）。
 - **magic string = 28，全部在测试源码**（主代码 0）。测试里的枚举字面量是**夹具**（fixture），
   不是裸露的业务逻辑；门禁只约束主代码，故不构成本轮 gated 债务。
 - **无信息局部变量 = 0**。
@@ -385,7 +393,7 @@ Q2.1.1 复查后 `common` 的结论：
 | `"CATEGORY_DISABLED"` 消息 token | 不是状态判断 |
 | `stage-comment`（695） | Q3 范围，本轮不动 |
 | 新增 `ScmAllConstants` / 大量 `XXXConstant` / 双份「枚举 + 字符串」 | §27 禁止项 |
-| `MANUAL_REVIEW` 的 `ObjectMapper json`（3 处，测试） | 非类型名、非白名单角色别名；工具交人工，本轮不改 |
+| ~~`MANUAL_REVIEW` 的 `ObjectMapper json`（3 处，测试）~~ | **已处理**：Q2.1 FINAL CLOSE-OUT 按 §2 规则真实改名为 `objectMapper`（原判「工具交人工、本轮不改」已作废） |
 
 ### 6.2 重复枚举检查（§14，只记录不合并）
 
@@ -410,7 +418,7 @@ Q2.1.1 复查后 `common` 的结论：
 | 验证 | 结果 |
 | --- | --- |
 | 工具单测 `python -m unittest discover -s quality -p 'test_*.py'` | **85 / 85 OK**（Q2.1 为 64；Q2.1.1 新增 21 条命名判定用例） |
-| `python tools/quality/q2_audit.py` | common B=0 / product B=0；`MANUAL_REVIEW` 3（common 测试） |
+| `python tools/quality/q2_audit.py` | common A=0 / B=0 / MANUAL_REVIEW=0；product A=0 / B=0 / MANUAL_REVIEW=0 |
 | `quality_guard.py check --checkstyle` | PASS（无 NEW / GROWN，未用 `--allow-growth`） |
 | `mvn -pl sa-admin -am -o compile` | 成功（改名后语法有效） |
 | `mvn -pl sa-admin spotless:check` | PASS |
@@ -419,6 +427,27 @@ Q2.1.1 复查后 `common` 的结论：
 | `python tools/migration_checksum_guard.py check` | PASS（drift 0 / missing 0 / renamed 0 / unbaked 0） |
 | `python tools/verify.py quality` | PASS |
 | `python tools/verify.py backend`（一次性干净库） | **sa-base 8 + sa-admin 1194 = 1202 tests / 0 failures / 0 errors / 5 skipped** |
+
+### 7.1 Q2.1 FINAL CLOSE-OUT 验证（本轮）
+
+在 Q2.1.1 之上只做了 3 件事：`ObjectMapper json` ×3 真实改名、`q2_rename_fields.py`
+描述纠正（token-aware、非 AST）、本文档数字与提交 SHA 回填。回归口径：
+
+| 验证 | 结果 |
+| --- | --- |
+| `python tools/quality/q2_audit.py --domain common --table` | **A=0 / B=0 / MANUAL_REVIEW=0**（原 3 已改名） |
+| `python tools/quality/q2_audit.py --domain product --table` | **A=0 / B=0 / MANUAL_REVIEW=0** |
+| `tools/quality/q2_audit.py` 是否被改动（§10 白名单） | **未改动**（`git diff tools/quality/q2_audit.py` 为空；`json` 未进任何白名单） |
+| 工具单测 `python -m unittest discover -s quality -p 'test_*.py'` | **85 / 85 OK** |
+| common 单元测试（4 个类显式列表） | **22 tests / 0 failures / 0 errors / 0 skipped** |
+| `mvn -pl sa-admin -am -o test-compile` | 成功（改名后测试代码可编译） |
+| `mvn -pl sa-admin spotless:check` | PASS（0 needs changes） |
+| `mvn -N checkstyle:check` → `quality_guard.py check --checkstyle` | checkstyle 839（基线 839，+0）；**6 个 family 全部 +0，PASS**，未用 `--allow-growth` |
+| `git diff --check` | 无空白错误 |
+| `python tools/migration_checksum_guard.py check` | **PASS**（67 迁移，drift 0 / missing 0 / renamed 0 / unbaked 0） |
+| `python tools/verify.py backend`（新一次性干净库，仅 `CREATE DATABASE`） | **1202 tests / 0 failures / 0 errors / 5 skipped**（5 为 `F0FileStorageCloudIT` 设计内云跳过） |
+
+> 收口只改测试源码与文档/工具注释，**未触碰**任何迁移文件，故 checksum 与 6 个 guard family 均无变化。
 
 > 5 skipped 全部来自 `F0FileStorageCloudIT` —— **设计内的云存储跳过**（无云凭据），
 > 与历史基线一致。1202 与 `da7103ee` 记录的参考值完全相符。
@@ -449,7 +478,9 @@ Q2.1 NAMING + TYPE SAFETY PILOT COMPLETE
 
 依据：
 
-1. `common` + `product` 的**高置信度语义缩写依赖字段 = 0**（A 档 0、B 档 0，§4）。
+1. `common` + `product` 的**高置信度语义缩写依赖字段 = 0**（A 档 0、B 档 0，§4），
+   且 `MANUAL_REVIEW` 亦已 **0**（Q2.1 FINAL CLOSE-OUT 将残留 3 条 `ObjectMapper json`
+   真实改名为 `objectMapper`，未放宽白名单）。
 2. 命名标准已**收紧成文**（§1.1）并同时写入整改计划 §4.11，后续域有可执行的判据。
 3. **整文件正则改名被明令禁止**（§1.2 + 整改计划 §4.12），并有参考实现与自测兜底。
 4. 门禁无任何 family 增长，`--allow-growth` 未使用。
