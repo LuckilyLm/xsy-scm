@@ -28,7 +28,7 @@ import com.xsy.scm.order.manager.OrderValidator;
 import com.xsy.scm.order.manager.SalesOrderItemChangeSet;
 
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
-import com.xsy.scm.order.constant.ScmOrderProductTypeEnum;
+import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderQuantitySourceEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
@@ -119,7 +119,7 @@ public class SalesOrderService {
         var result = createDraft(salesOrderAddForm);
         result = submitOrder(result.getOrderId(), result.getVersion());
         if (result.getItems().stream().allMatch(
-                orderItem -> ScmOrderProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
+                orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
             result = confirmOrder(result.getOrderId(), result.getVersion());
         }
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
@@ -141,7 +141,7 @@ public class SalesOrderService {
                 var order = createDraft(forms.get(index));
                 order = submitOrder(order.getOrderId(), order.getVersion());
                 if (order.getItems().stream().allMatch(
-                        orderItem -> ScmOrderProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot())))
+                        orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot())))
                     order = confirmOrder(order.getOrderId(), order.getVersion());
                 imported.add(order);
             } catch (ScmBusinessException | org.springframework.dao.DataIntegrityViolationException exception) {
@@ -301,7 +301,7 @@ public class SalesOrderService {
             row.setLockedPriceSource(row.getDraftPriceSource());
             row.setLockedPriceSourceId(row.getDraftPriceSourceId());
             row.setOrderedLineAmount(OrderAmountCalculator.lineAmount(row.getOrderedQuantity(), row.getLockedUnitPrice()));
-            if (ScmOrderProductTypeEnum.STANDARD.name().equals(row.getProductTypeSnapshot())) {
+            if (ScmProductTypeEnum.STANDARD.name().equals(row.getProductTypeSnapshot())) {
                 row.setActualQuantity(row.getOrderedQuantity());
                 row.setActualQuantitySource(ScmOrderQuantitySourceEnum.SYSTEM.name());
             }
@@ -329,7 +329,7 @@ public class SalesOrderService {
                 .filter(salesOrderItem -> Objects.equals(salesOrderItem.getId(), orderActualQuantityForm.getItemId()))
                 .findFirst()
                 .orElseThrow(() -> new ScmBusinessException(ORDER_ITEM_NOT_OWNED));
-        if (!ScmOrderProductTypeEnum.NON_STANDARD.name().equals(row.getProductTypeSnapshot()))
+        if (!ScmProductTypeEnum.NON_STANDARD.name().equals(row.getProductTypeSnapshot()))
             throw new ScmBusinessException(ORDER_ACTUAL_NOT_ALLOWED);
         if (!Objects.equals(row.getVersion(), orderActualQuantityForm.getVersion()))
             throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
