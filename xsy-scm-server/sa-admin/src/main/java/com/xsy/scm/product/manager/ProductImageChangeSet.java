@@ -4,9 +4,14 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.domain.entity.ProductImageEntity;
 import com.xsy.scm.product.domain.form.ProductImageForm;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_OWNED;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 public record ProductImageChangeSet(List<ProductImageForm> inserted, List<ProductImageForm> updated,
                                     List<Long> removedIds) {

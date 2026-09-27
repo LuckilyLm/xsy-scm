@@ -4,9 +4,14 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.domain.entity.ProductSkuEntity;
 import com.xsy.scm.product.domain.form.ProductSkuForm;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_NOT_OWNED;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 public record ProductSkuChangeSet(List<ProductSkuForm> inserted, List<ProductSkuForm> updated, List<Long> removedIds) {
     public static ProductSkuChangeSet between(List<ProductSkuEntity> existing, List<ProductSkuForm> requested) {

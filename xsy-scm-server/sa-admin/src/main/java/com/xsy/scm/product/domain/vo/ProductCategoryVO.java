@@ -3,7 +3,6 @@ package com.xsy.scm.product.domain.vo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 

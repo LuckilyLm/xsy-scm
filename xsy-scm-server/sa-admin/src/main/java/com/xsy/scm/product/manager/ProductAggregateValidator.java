@@ -6,9 +6,19 @@ import com.xsy.scm.product.domain.form.ProductSpuAddForm;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.DEFAULT_SKU_INVALID;
+import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_INVALID;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_BARCODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_CODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_PRICE_INVALID;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_REQUIRED;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_SPEC_DUPLICATE;
 
 @Component
 public class ProductAggregateValidator {

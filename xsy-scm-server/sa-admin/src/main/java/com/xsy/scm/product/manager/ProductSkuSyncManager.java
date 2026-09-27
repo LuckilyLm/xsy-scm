@@ -12,9 +12,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.List;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 @Component
 @RequiredArgsConstructor

@@ -5,10 +5,15 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.product.dao.*;
-import com.xsy.scm.product.domain.entity.*;
-import com.xsy.scm.product.domain.form.*;
-import com.xsy.scm.product.domain.vo.*;
+import com.xsy.scm.product.dao.ProductCategoryDao;
+import com.xsy.scm.product.dao.ProductSpuDao;
+import com.xsy.scm.product.domain.entity.ProductCategoryEntity;
+import com.xsy.scm.product.domain.entity.ProductSpuEntity;
+import com.xsy.scm.product.domain.form.ProductCategoryAddForm;
+import com.xsy.scm.product.domain.form.ProductCategoryDeleteForm;
+import com.xsy.scm.product.domain.form.ProductCategoryUpdateForm;
+import com.xsy.scm.product.domain.vo.ProductCategoryTreeVO;
+import com.xsy.scm.product.domain.vo.ProductCategoryVO;
 import com.xsy.scm.product.manager.ProductAggregateValidator;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -16,9 +21,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.CATEGORY_HAS_CHILDREN;
+import static com.xsy.scm.product.constant.ProductErrorCode.CATEGORY_HAS_PRODUCTS;
+import static com.xsy.scm.product.constant.ProductErrorCode.CATEGORY_LEVEL_INVALID;
+import static com.xsy.scm.product.constant.ProductErrorCode.CATEGORY_NOT_FOUND;
+import static com.xsy.scm.product.constant.ProductErrorCode.CATEGORY_PARENT_INVALID;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_CODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 @Service
 @RequiredArgsConstructor

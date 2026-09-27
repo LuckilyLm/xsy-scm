@@ -5,10 +5,19 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.product.dao.*;
-import com.xsy.scm.product.domain.entity.*;
+import com.xsy.scm.product.dao.ProductImageDao;
+import com.xsy.scm.product.dao.ProductSkuDao;
+import com.xsy.scm.product.dao.ProductSpuDao;
+import com.xsy.scm.product.domain.entity.ProductCategoryEntity;
+import com.xsy.scm.product.domain.entity.ProductImageEntity;
+import com.xsy.scm.product.domain.entity.ProductSkuEntity;
+import com.xsy.scm.product.domain.entity.ProductSpuEntity;
 import com.xsy.scm.product.domain.form.ProductSpuQueryForm;
-import com.xsy.scm.product.domain.vo.*;
+import com.xsy.scm.product.domain.vo.ProductImageVO;
+import com.xsy.scm.product.domain.vo.ProductSkuVO;
+import com.xsy.scm.product.domain.vo.ProductSpuDetailVO;
+import com.xsy.scm.product.domain.vo.ProductSpuTagVO;
+import com.xsy.scm.product.domain.vo.ProductSpuVO;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
@@ -17,10 +26,16 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor

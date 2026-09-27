@@ -1,44 +1,54 @@
 package com.xsy.scm.product.domain.form;
 
+import com.xsy.scm.common.constant.ScmProductTypeEnum;
+import com.xsy.scm.common.constant.ScmShelfStatusEnum;
+import com.xsy.scm.common.validation.ScmEnumValue;
+
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.math.BigDecimal;
 
 @Data
 public class ProductSkuForm {
     private Long skuId;
     private Integer version;
-    @NotBlank
-    @Size(max = 64)
+    @NotBlank(message = "SKU 编码不能为空")
+    @Size(max = 64, message = "SKU 编码不能超过64个字符")
     private String skuCode;
-    @Size(max = 64)
+    @Size(max = 64, message = "条形码不能超过64个字符")
     private String barcode;
-    @NotBlank
-    @Size(max = 150)
+    @NotBlank(message = "规格名称不能为空")
+    @Size(max = 150, message = "规格名称不能超过150个字符")
     private String specName;
-    @NotNull
-    @Size(max = 30)
-    private Map<@NotBlank @Size(max = 100) String, @NotBlank @Size(max = 150) String> specValues = new LinkedHashMap<>();
-    @NotBlank
-    @Size(max = 32)
+    @NotNull(message = "规格属性值不能为空")
+    @Size(max = 30, message = "规格属性值不能超过30个字符")
+    private Map<@NotBlank(message = "规格属性名不能为空") @Size(max = 100, message = "规格属性名不能超过100个字符") String, @NotBlank(message = "规格属性值不能为空") @Size(max = 150, message = "规格属性值不能超过150个字符") String> specValues = new LinkedHashMap<>();
+    @NotBlank(message = "销售单位不能为空")
+    @Size(max = 32, message = "销售单位不能超过32个字符")
     private String saleUnit;
-    @NotNull
-    @Pattern(regexp = "STANDARD|NON_STANDARD")
+    @NotNull(message = "商品类型不能为空")
+    @ScmEnumValue(enumClass = ScmProductTypeEnum.class, message = "商品类型无效")
     private String productType;
-    @NotNull
-    @DecimalMin("0.0000")
-    @Digits(integer = 14, fraction = 4)
+    @NotNull(message = "市场价不能为空")
+    @DecimalMin(value = "0.0000", message = "市场价不能小于0.0000")
+    @Digits(integer = 14, fraction = 4, message = "市场价最多14位整数和4位小数")
     private BigDecimal marketPrice;
-    @NotNull
-    @Pattern(regexp = "ON_SHELF|OFF_SHELF")
+    @NotNull(message = "SKU 状态不能为空")
+    @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "SKU 状态无效")
     private String status;
-    @NotNull
+    @NotNull(message = "默认 SKU 标记不能为空")
     private Boolean defaultFlag;
-    @NotNull
-    @Min(0)
+    @NotNull(message = "排序值不能为空")
+    @Min(value = 0, message = "排序值不能小于0")
     private Integer sortOrder = 0;
 }

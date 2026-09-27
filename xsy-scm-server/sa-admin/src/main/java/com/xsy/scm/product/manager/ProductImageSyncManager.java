@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductImageDao;
+import com.xsy.scm.product.constant.ScmProductImageTypeEnum;
 import com.xsy.scm.product.domain.entity.ProductImageEntity;
 import com.xsy.scm.product.domain.form.ProductImageForm;
 import net.lab1024.sa.base.module.support.file.service.FileService;
@@ -17,11 +18,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_INVALID;
+import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_PUBLIC;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 @Component
 @RequiredArgsConstructor
@@ -32,7 +38,6 @@ public class ProductImageSyncManager {
      * 图集：新增行的缺省归类。V49 之后 image_type 只表达内容角色，<b>不</b>再派生自 primaryFlag——
      * 主图唯一事实是 is_primary，否则「切主图」会顺带改写图片类型，等于保留第二个主图事实源。
      */
-    private static final String IMAGE_TYPE_GALLERY = "GALLERY";
     /** 公开前缀按 {@code FOLDER_PUBLIC} 判定，不用 PUBLIC_IMAGE 的完整目录，新增公开目录时这里不必跟着改。 */
     private static final String PUBLIC_FOLDER_PREFIX = FileFolderTypeEnum.FOLDER_PUBLIC + "/";
     private final ProductImageDao productImageDao;
@@ -109,7 +114,11 @@ public class ProductImageSyncManager {
         // 只有新增行才落内容角色；已有行留 null，让非空更新策略把 image_type 整列排除在 UPDATE 之外。
         // 回写读到的现值并不安全：同一会话内的旁路改库不会刷新 MyBatis 的一级缓存，
         // 一旦按过期实体回写，「改个市场价或切主图」就会把详情图静默降级成图集图。
-        if (inserting) entity.setImageType(form.getImageType() == null ? IMAGE_TYPE_GALLERY : form.getImageType());
+        if (inserting) {
+            entity.setImageType(form.getImageType() == null
+                    ? ScmProductImageTypeEnum.GALLERY.name()
+                    : form.getImageType());
+        }
         entity.setUpdatedAt(OffsetDateTime.now()); entity.setUpdatedBy(ScmOperator.current()); return entity;
     }
 }

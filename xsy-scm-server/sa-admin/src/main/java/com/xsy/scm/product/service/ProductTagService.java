@@ -8,7 +8,10 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductTagDao;
 import com.xsy.scm.product.dao.ProductTagRelationDao;
 import com.xsy.scm.product.domain.entity.ProductTagEntity;
-import com.xsy.scm.product.domain.form.*;
+import com.xsy.scm.product.domain.form.ProductAssistantQueryForm;
+import com.xsy.scm.product.domain.form.ProductTagAddForm;
+import com.xsy.scm.product.domain.form.ProductTagKeyForm;
+import com.xsy.scm.product.domain.form.ProductTagUpdateForm;
 import com.xsy.scm.product.domain.vo.ProductSpuTagVO;
 import com.xsy.scm.product.domain.vo.ProductTagVO;
 import com.xsy.scm.product.manager.ProductAggregateValidator;
@@ -18,9 +21,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.TAG_CODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.TAG_NAME_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.TAG_NOT_FOUND;
+import static com.xsy.scm.product.constant.ProductErrorCode.TAG_NOT_USABLE;
+import static com.xsy.scm.product.constant.ProductErrorCode.TAG_REFERENCED;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
  * 商品标签字典与打标关系。标签是独立关系表，商品扩展字段一律不退化成 tag1/tag2 列。

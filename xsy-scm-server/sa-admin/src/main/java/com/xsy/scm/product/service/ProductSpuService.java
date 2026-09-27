@@ -8,17 +8,37 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductSpuDao;
 import com.xsy.scm.product.domain.entity.ProductSkuEntity;
 import com.xsy.scm.product.domain.entity.ProductSpuEntity;
-import com.xsy.scm.product.domain.form.*;
-import com.xsy.scm.product.manager.*;
+import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
+import com.xsy.scm.product.domain.form.ProductDeleteForm;
+import com.xsy.scm.product.domain.form.ProductSkuForm;
+import com.xsy.scm.product.domain.form.ProductSpuAddForm;
+import com.xsy.scm.product.domain.form.ProductSpuUpdateForm;
+import com.xsy.scm.product.domain.form.ProductStatusForm;
+import com.xsy.scm.product.manager.ProductAggregateValidator;
+import com.xsy.scm.product.manager.ProductImageChangeSet;
+import com.xsy.scm.product.manager.ProductImageSyncManager;
+import com.xsy.scm.product.manager.ProductSkuChangeSet;
+import com.xsy.scm.product.manager.ProductSkuSyncManager;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.MASTER_STATUS_SALE_CONFLICT;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_BUSINESS_REFERENCED;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_CODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_BARCODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.SKU_CODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.product.manager.ProductAggregateValidator.trimToNull;
 
 @Service
@@ -131,7 +151,8 @@ public class ProductSpuService {
     }
 
     private void assertSaleCompatible(String masterStatus, String status) {
-        if ("ARCHIVED".equals(masterStatus) && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
+        if (ScmProductMasterStatusEnum.ARCHIVED.name().equals(masterStatus)
+                && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
             throw new ScmBusinessException(MASTER_STATUS_SALE_CONFLICT);
     }
 

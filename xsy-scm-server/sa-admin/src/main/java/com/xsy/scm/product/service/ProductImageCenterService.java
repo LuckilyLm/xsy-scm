@@ -19,11 +19,18 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_OWNED;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 
 /**
  * 图片中心：脱离商品编辑弹窗、按 SPU 单独维护图片的服务。

@@ -3,7 +3,8 @@ package com.xsy.scm.product.domain.vo;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 批量命令的结果：预校验失败时 updatedCount 为 0 且没有任何写入，失败行可逐条定位；

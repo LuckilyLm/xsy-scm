@@ -13,6 +13,7 @@ import com.xsy.scm.product.domain.vo.ProductSkuVO;
 import com.xsy.scm.product.domain.vo.ProductSpuVO;
 import com.xsy.scm.product.service.ProductImportService;
 import com.xsy.scm.product.service.ProductImportService.ImportMode;
+import com.xsy.scm.product.permission.ProductPermission;
 import com.xsy.scm.product.service.ProductQueryService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -20,7 +21,12 @@ import net.lab1024.sa.base.common.util.SmartExcelUtil;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 import net.lab1024.sa.base.module.support.securityprotect.service.SecurityFileService;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -36,18 +42,17 @@ public class ProductExcelController {
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final int EXPORT_MAX_ROWS = 100000;
     /** 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。 */
-    private static final String PRODUCT_UPDATE_PERMISSION = "scm:product:update";
 
     private final ProductImportService productImportService;
     private final ProductQueryService productQueryService;
     private final SecurityFileService securityFileService;
 
     @GetMapping("/import/template")
-    @SaCheckPermission("scm:product:import")
+    @SaCheckPermission(ProductPermission.IMPORT)
     public void template(@RequestParam(required = false, defaultValue = "CREATE") ImportMode mode,
                          HttpServletResponse response) throws IOException {
         // 更新模板带定位键、会改写既存商品，因此下载模板也要编辑权
-        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(PRODUCT_UPDATE_PERMISSION);
+        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
         var content = productImportService.buildTemplate(mode);
         SmartResponseUtil.setDownloadFileHeader(response,
                 (mode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
@@ -56,12 +61,12 @@ public class ProductExcelController {
     }
 
     @PostMapping("/import")
-    @SaCheckPermission("scm:product:import")
+    @SaCheckPermission(ProductPermission.IMPORT)
     @OperateLog
     public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
                                                             @RequestParam(required = false, defaultValue = "CREATE") ImportMode mode) throws Exception {
         // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
-        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(PRODUCT_UPDATE_PERMISSION);
+        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
         if (file.isEmpty()) return ResponseDTO.userErrorParam("导入文件不能为空");
         var name = file.getOriginalFilename();
         if (name == null || !name.toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx"))
@@ -73,7 +78,7 @@ public class ProductExcelController {
     }
 
     @PostMapping("/export")
-    @SaCheckPermission("scm:product:export")
+    @SaCheckPermission(ProductPermission.EXPORT)
     @OperateLog
     public void export(@RequestBody ProductSpuQueryForm form, HttpServletResponse response) throws IOException {
         form.setPageNum(1L);

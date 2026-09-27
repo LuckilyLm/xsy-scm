@@ -1,24 +1,30 @@
 package com.xsy.scm.product.domain.form;
 
+import com.xsy.scm.common.constant.ScmShelfStatusEnum;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-import java.util.*;
+import java.util.List;
 
 /**
  * 批量上下架（status）与批量主档启停（masterStatus）共用一个入口，至少给一个目标状态。
  */
 @Data
 public class ProductSpuBatchStatusForm {
-    @NotEmpty
-    @Size(max = 200)
+    @NotEmpty(message = "批量项目列表不能为空")
+    @Size(max = 200, message = "批量项目列表不能超过200项")
     @Valid
     private List<ProductBatchItemForm> items;
-    @Pattern(regexp = "ON_SHELF|OFF_SHELF")
+    @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品销售状态无效")
     private String status;
-    @Pattern(regexp = "ENABLED|DISABLED|ARCHIVED")
+    @ScmEnumValue(enumClass = ScmProductMasterStatusEnum.class, message = "商品主档状态无效")
     private String masterStatus;
 
     /**

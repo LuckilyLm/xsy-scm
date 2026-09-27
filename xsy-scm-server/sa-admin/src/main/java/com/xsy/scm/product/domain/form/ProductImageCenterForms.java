@@ -16,9 +16,9 @@ public final class ProductImageCenterForms {
 
     @Data
     public static class BindItem {
-        @NotNull @Positive
+        @NotNull(message = "SPU ID不能为空") @Positive(message = "SPU ID必须大于0")
         private Long spuId;
-        @NotNull
+        @NotNull(message = "图片文件标识不能为空")
         private String fileKey;
         private Boolean primaryFlag = false;
         private Integer sortOrder = 0;
@@ -26,32 +26,38 @@ public final class ProductImageCenterForms {
 
     @Data
     public static class BatchBindForm {
-        @NotEmpty @Valid
+        @NotEmpty(message = "批量项目列表不能为空") @Valid
         private List<BindItem> items = new ArrayList<>();
     }
 
     @Data
     public static class BatchRemoveForm {
-        @NotNull @Positive
+        @NotNull(message = "SPU ID不能为空") @Positive(message = "SPU ID必须大于0")
         private Long spuId;
-        @NotEmpty
-        private List<@NotNull @Positive Long> imageIds = new ArrayList<>();
+        @NotEmpty(message = "图片 ID 列表不能为空")
+        private List<
+                @NotNull(message = "图片 ID 列表不能为空")
+                @Positive(message = "图片 ID 列表必须大于0")
+                Long> imageIds = new ArrayList<>();
     }
 
     @Data
     public static class SetPrimaryForm {
-        @NotNull @Positive
+        @NotNull(message = "SPU ID不能为空") @Positive(message = "SPU ID必须大于0")
         private Long spuId;
-        @NotNull @Positive
+        @NotNull(message = "图片 ID不能为空") @Positive(message = "图片 ID必须大于0")
         private Long imageId;
     }
 
     @Data
     public static class ReorderForm {
-        @NotNull @Positive
+        @NotNull(message = "SPU ID不能为空") @Positive(message = "SPU ID必须大于0")
         private Long spuId;
         /** 该 SPU 全部现存图片的目标顺序，必须与集合一一对应。 */
-        @NotEmpty
-        private List<@NotNull @Positive Long> orderedImageIds = new ArrayList<>();
+        @NotEmpty(message = "排序图片 ID 列表不能为空")
+        private List<
+                @NotNull(message = "排序图片 ID 列表不能为空")
+                @Positive(message = "排序图片 ID 列表必须大于0")
+                Long> orderedImageIds = new ArrayList<>();
     }
 }

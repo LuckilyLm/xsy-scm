@@ -5,18 +5,27 @@ import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmErrorCode;
 import com.xsy.scm.product.dao.ProductSpuDao;
+import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
 import com.xsy.scm.product.domain.entity.ProductSpuEntity;
-import com.xsy.scm.product.domain.form.*;
+import com.xsy.scm.product.domain.form.ProductBatchItemForm;
+import com.xsy.scm.product.domain.form.ProductSpuBatchCategoryForm;
+import com.xsy.scm.product.domain.form.ProductSpuBatchStatusForm;
+import com.xsy.scm.product.domain.form.ProductSpuBatchTagForm;
 import com.xsy.scm.product.domain.vo.ProductBatchResultVO;
 import com.xsy.scm.product.domain.vo.ProductBatchResultVO.Failure;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.MASTER_STATUS_SALE_CONFLICT;
+import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
  * 商品批量维护：上下架、主档启停、改分类、打标签。
@@ -47,7 +56,8 @@ public class ProductBatchService {
             }
             // 归档即退出经营：批量入口同样不能造出「已归档还在架」的组合。
             var status = form.getStatus() != null ? form.getStatus() : entity.getStatus();
-            if ("ARCHIVED".equals(form.getMasterStatus()) && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
+            if (ScmProductMasterStatusEnum.ARCHIVED.name().equals(form.getMasterStatus())
+                    && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
                 failures.add(failure(entity, MASTER_STATUS_SALE_CONFLICT));
         }
         return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, form.getStatus(), form.getMasterStatus(), null, ScmOperator.current()));

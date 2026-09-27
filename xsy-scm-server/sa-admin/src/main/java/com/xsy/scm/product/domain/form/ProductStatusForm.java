@@ -1,17 +1,19 @@
 package com.xsy.scm.product.domain.form;
 
+import com.xsy.scm.common.constant.ScmShelfStatusEnum;
+import com.xsy.scm.common.validation.ScmEnumValue;
+
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.*;
 import java.math.BigDecimal;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ProductStatusForm extends ProductDeleteForm {
-    @NotNull
-    @Pattern(regexp = "ON_SHELF|OFF_SHELF")
+    @NotNull(message = "商品销售状态不能为空")
+    @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品销售状态无效")
     private String status;
 }

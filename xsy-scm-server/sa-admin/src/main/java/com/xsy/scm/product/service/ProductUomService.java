@@ -7,7 +7,10 @@ import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductUomDao;
 import com.xsy.scm.product.domain.entity.ProductUomEntity;
-import com.xsy.scm.product.domain.form.*;
+import com.xsy.scm.product.domain.form.ProductAssistantQueryForm;
+import com.xsy.scm.product.domain.form.ProductUomAddForm;
+import com.xsy.scm.product.domain.form.ProductUomKeyForm;
+import com.xsy.scm.product.domain.form.ProductUomUpdateForm;
 import com.xsy.scm.product.domain.vo.ProductUomVO;
 import com.xsy.scm.product.manager.ProductAggregateValidator;
 import org.springframework.beans.BeanUtils;
@@ -16,9 +19,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 
-import static com.xsy.scm.product.constant.ProductErrorCode.*;
+import static com.xsy.scm.product.constant.ProductErrorCode.UOM_CODE_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.UOM_NAME_DUPLICATE;
+import static com.xsy.scm.product.constant.ProductErrorCode.UOM_NOT_FOUND;
+import static com.xsy.scm.product.constant.ProductErrorCode.UOM_NOT_USABLE;
+import static com.xsy.scm.product.constant.ProductErrorCode.UOM_REFERENCED;
+import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
  * 计量单位辅助资料。字典只作为商品销售单位、供应商采购单位的取值来源，业务字段仍存名称字符串，
