@@ -28,7 +28,7 @@ public enum DeliveryErrorCode implements ScmErrorCode {
     DRIVER_EMPLOYEE_BOUND(41115, "该员工已绑定其他司机"),
 
     /**
-     * 整条线路原子发车（P2 裁决第 2 条）：线路上任一订单不再合格就整条拒绝，
+     * 整条线路原子发车：线路上任一订单不再合格就整条拒绝，
      * 因此报错必须指向「线路里有单子不合格」而不是「这一单不合格」。
      */
     DISPATCH_ROUTE_INELIGIBLE(41116, "线路上有订单已不符合配送条件（分拣未完成或被重开），整条线路不能发车"),

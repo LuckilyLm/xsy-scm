@@ -14,14 +14,13 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 /**
  * 全量候选订单（待排线池）的只读入口。
  *
- * <p>调度 / 线路规划员与司机不是同一个角色（裁决「P0 基线收口裁决」第 9 条）：候选池暴露的是
- * <b>尚未分配</b>的订单、客户地址与电话，普通司机不得查询，因此这里要求的不是线路查询权，
- * 而是组单权 {@code scm:delivery:route:plan} 加上「调用者至少有一个授权仓库」。
+ * <p>候选池暴露<b>尚未分配</b>的订单、客户地址与电话，因此需要线路规划权限和至少一个授权仓库；
+ * 司机只持签收权限，不能读取候选池。
  */
 @Service
 @RequiredArgsConstructor
 public class DeliveryCandidateOrderQueryService {
-    /** 组单 / 规划权；与 V43 种下的功能点逐字一致。 */
+    /** 读取候选池前必须持有线路规划权限。 */
 
     private final DeliveryQueryDao deliveryQueryDao;
     private final DeliveryEligibilityPolicy policy;

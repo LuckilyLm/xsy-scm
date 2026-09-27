@@ -34,7 +34,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @Service
 @RequiredArgsConstructor
 public class DeliveryDriverService {
-    /** V54 的「一个员工最多绑一个活动司机」部分唯一索引；冲突消息按索引名区分，避免把绑定冲突报成编码重复。 */
+    /** 一个员工最多绑定一个活动司机；冲突消息按索引名区分，避免把绑定冲突报成编码重复。 */
     private static final String EMPLOYEE_BINDING_INDEX = "uk_delivery_driver_active_employee";
 
     private final DeliveryDriverDao deliveryDriverDao;

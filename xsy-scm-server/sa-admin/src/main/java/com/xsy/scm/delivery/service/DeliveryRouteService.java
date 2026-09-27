@@ -93,7 +93,7 @@ public class DeliveryRouteService {
     private final DeliveryEligibilityPolicy eligibility;
     private final OrderIdempotencyService orderIdempotencyService;
     /**
-     * 库存域唯一的写入口：本类不出现任何直接改余额 / 预留 / 流水的代码（P2 裁决第 4 条）。
+     * 库存域唯一的写入口：本类不直接修改余额、预留或库存流水。
      */
     private final InventoryFulfillmentService inventoryFulfillmentService;
     /**
@@ -101,9 +101,9 @@ public class DeliveryRouteService {
      */
     private final ScmDataScopeService dataScopeService;
     /**
-     * 应收生成器（Finance R1 F1-2B）：签收成功即在同一事务内派生正常应收。
+     * 应收生成器：签收成功即在同一事务内派生正常应收。
      * 依赖方向是 delivery → finance，finance 对配送 / 订单 / 库存表只读、不反向 import 配送域，
-     * 因此不构成环；生成失败即整笔签收回滚（与 {@link #fulfillment} 的库存写入同一条纪律）。
+     * 因此不构成环；生成失败即整笔签收回滚，与 {@link #inventoryFulfillmentService} 的库存写入同事务。
      */
     private final FinanceReceivableService financeReceivableService;
 
@@ -351,7 +351,7 @@ public class DeliveryRouteService {
     }
 
     /**
-     * 发车：整条线路原子出库，{@code PLANNED → DISPATCHED}（P2 裁决第 1、2、9 条）。
+     * 发车：整条线路原子出库，{@code PLANNED → DISPATCHED}。
      *
      * <p>实发量一律取分拣的 {@code sorted_quantity}，本方法不读 {@code actual_quantity}、
      * 不重新计算差异。锁序：线路聚合锁 → 逐订单行锁 → 库存命令内部的预留锁与余额锁。
@@ -419,16 +419,16 @@ public class DeliveryRouteService {
     }
 
     /**
-     * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}（P2 裁决第 12、13 条）。
+     * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}。
      *
-     * <p><b>锁的实况</b>：本方法先 {@code lockRoute}（{@code SELECT … FOR UPDATE}），
-     * 再按 {@code route → sales_order} 锁住被签的那张订单（F1-2C 新增，用来与退货批准定序），
+     * <p>本方法先锁线路行，再按 {@code route → sales_order} 的顺序锁被签订单行。
+     * 与退货批准共用订单行锁，确保签收与批准按同一顺序串行，避免遗漏红字应收。
      * 线路内某一单的行级并发另外由 {@code version} 乐观锁 + 条件更新兜底
      * （{@code markSigned} 返回 0 即「有人比你先签了」）。
      * 签收是单向推进（{@code PENDING / IN_TRANSIT} 只能走向终态），因此完成线路所要求的
      * 「全部活动订单已终态」对并发签收是单调的。
      *
-     * <p>Finance R1 的应收生成不获取任何业务锁（全局不变量 4）：订单行锁由本方法这个调用方持有，
+     * <p>应收生成不获取业务行锁：订单行锁由本方法这个调用方持有，
      * 生成器只 INSERT 财务自己的表；跨线路重复签同一订单由
      * {@code uk_finance_receivable_source_active} 仲裁，后到者命中唯一索引即按「已生成」静默返回。
      *
@@ -453,7 +453,7 @@ public class DeliveryRouteService {
                 .eq(DeliveryRouteOrderEntity::getOrderId, orderId)
                 .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name()));
         if (assignment == null) throw new ScmBusinessException(NOT_FOUND);
-        // Finance R1（F1-2C）：签收与退货批准必须在一个共享串行点上定序，否则两边都可能看不见对方 ——
+        // 签收与退货批准必须在同一订单行锁上串行，否则两边都可能看不见对方：
         // 批准方在 salesOrderDao.lock 之后才写 APPROVED，签收方若不锁同一行就可能在 APPROVED 提交前完成
         // 「查已批准退货」这一步，红字于是永久漏生成（来源唯一索引修不了「没人尝试 INSERT」）。
         // 锁序 route → sales_order 与本域 dispatch / plan / addOrders 完全一致；
@@ -465,9 +465,9 @@ public class DeliveryRouteService {
                 ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
 
-        // Finance R1（第一批 Q1）：客户签收是订单级终态，也是应收的形成时点。
+        // 客户签收是订单级终态，也是应收的形成时点。
         // 只有 markSigned 真的改到那一行才生成 —— 返回 0 已经先抛 VERSION_CONFLICT，
-        // 那一笔应收归那次成功的签收所有，绝不出现两笔。EXCEPTION 不形成应收（第二批 Q6），
+        // 那一笔应收归那次成功的签收所有，绝不出现两笔。EXCEPTION 不形成应收，
         // 也不反冲 SALES_OUT；签收时刻与签收人由生成器回读 delivery_route_order，
         // 因为 markSigned 的 signed_at 是数据库时钟，在这里现取 now() 会造出第二个时点事实。
         if (!exception) {
