@@ -12,11 +12,10 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 供应商（W2 聚合根）。
+ * 供应商（聚合根）。
  *
- * <p>legacy 只有 4 个业务列（编码 / 名称 / 状态 / 备注）；联系人、电话、地址是 W2 新增能力。
- * 可空列显式声明 {@code FieldStrategy.ALWAYS}，否则 MyBatis-Plus 的默认 {@code NOT_NULL} 会让
- * 「清空联系人」静默失败（Target Design 风险 R7）。
+ * <p>可空联系人、电话和地址使用 {@code FieldStrategy.ALWAYS}，以便编辑时通过 {@code null}
+ * 清空字段；MyBatis-Plus 默认 {@code NOT_NULL} 会忽略这些更新。
  */
 @Data
 @TableName(value = "supplier", autoResultMap = true)

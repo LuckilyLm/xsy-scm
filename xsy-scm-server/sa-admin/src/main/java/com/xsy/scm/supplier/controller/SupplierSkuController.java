@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * SCM 商品-供应商关系（SKU 级）。
  *
- * <p>写入口只有 {@code /replace} 一个：整表替换（legacy 不变量 R5）。不提供行级
+ * <p>唯一写入口是 {@code /replace}，使用整表替换；不提供行级
  * add / update / delete，避免两套规则漂移。
  */
 @RestController

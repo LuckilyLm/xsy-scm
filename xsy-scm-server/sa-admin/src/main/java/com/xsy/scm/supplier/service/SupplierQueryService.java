@@ -29,14 +29,14 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND
 /**
  * 供应商读路径。
  *
- * <p>管理列表返回全部状态（S11），下拉只返回 {@code ENABLED}；{@code skuCount} 一次查询批量补全。
+ * <p>管理列表返回全部状态，下拉只返回 {@code ENABLED}；{@code skuCount} 一次查询批量补全。
  */
 @Service
 @RequiredArgsConstructor
 public class SupplierQueryService {
 
     /**
-     * 排序白名单（修正 legacy D18）。
+     * 排序白名单：客户端不能把任意字段名带入 SQL。
      */
     private static final Set<String> SORTABLE = Set.of("supplier_code", "name", "status", "updated_at");
 
@@ -77,7 +77,7 @@ public class SupplierQueryService {
     }
 
     /**
-     * 下拉选项：只返回 {@code ENABLED}（S11），按名称排序。
+     * 下拉选项：只返回 {@code ENABLED}，按名称排序。
      */
     public List<SupplierOptionVO> optionList() {
         List<SupplierEntity> rows = supplierDao.selectList(

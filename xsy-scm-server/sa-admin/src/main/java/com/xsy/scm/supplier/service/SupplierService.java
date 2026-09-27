@@ -29,10 +29,10 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND
 /**
  * 供应商写路径。
  *
- * <p>两条 legacy 不变量在方法签名层面就固化下来：
+ * <p>状态字段只由专用命令维护：
  * <ul>
- *   <li>S6：{@link #update} 不触碰 {@code status}——表单里根本没有该字段；</li>
- *   <li>S7：{@link #add} 强制 {@code ENABLED}——不接受客户端指定初始状态。</li>
+ *   <li>{@link #update} 不触碰 {@code status}，更新表单不含该字段；</li>
+ *   <li>{@link #add} 固定使用 {@code ENABLED}，不接受客户端指定初始状态。</li>
  * </ul>
  */
 @Service
@@ -66,7 +66,7 @@ public class SupplierService {
     }
 
     /**
-     * 读取「可用」供应商：必须存在且 {@code ENABLED}（legacy 不变量 S3）。
+     * 读取可用供应商；记录必须存在且状态为 {@code ENABLED}。
      */
     public SupplierEntity requireEnabled(Long supplierId) {
         SupplierEntity entity = require(supplierId);
@@ -84,7 +84,7 @@ public class SupplierService {
         }
         SupplierEntity entity = new SupplierEntity();
         apply(entity, form);
-        // S7：新建供应商强制启用，不接受客户端指定
+        // 新建供应商强制启用，不接受客户端指定状态。
         entity.setStatus(ScmEnableStatusEnum.ENABLED.name());
         entity.setVersion(0);
         entity.setDeleted(false);
@@ -105,7 +105,7 @@ public class SupplierService {
             throw new ScmBusinessException(SUPPLIER_CODE_DUPLICATE);
         }
         apply(entity, form);
-        // S6：apply 不触碰 status —— 状态只能通过 updateStatus 变更
+        // apply 不触碰 status；状态只能通过 updateStatus 变更。
         entity.setVersion(form.getVersion());
         stamp(entity, false);
         try {
@@ -131,7 +131,7 @@ public class SupplierService {
     /**
      * 删除供应商。
      *
-     * <p>legacy 没有删除端点，W2 新增（Target Design Q4）。被活动 {@code supplier_sku} 引用时拒绝——
+     * <p>被活动 {@code supplier_sku} 引用时拒绝删除——
      * 否则商品关联会指向一个不存在的供应商。
      */
     @Transactional(rollbackFor = Exception.class)

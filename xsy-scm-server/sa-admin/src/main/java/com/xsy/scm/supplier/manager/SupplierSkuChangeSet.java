@@ -16,14 +16,14 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLICATE;
 
 /**
- * 整表替换的差量计算结果（legacy 不变量 R5 / R7–R11）。
+ * 整表替换的差量计算结果。
  *
  * <p>把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断——
- * 这样「先全部校验、再统一写」（R6）才能成立：只要 {@link #between} 返回成功，
+ * 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功，
  * 后续写库就不会因为业务规则失败而回滚一半。
  *
  * <p><b>刻意不做的事：</b>不校验 {@code defaultFlag} 的基数。同一供应商允许多条默认来源
- * （R12），任何「只允许一条默认」的假设都会与 legacy 冲突。
+ * 同一供应商允许多个默认来源，因此这里不检查默认标记的数量。
  */
 public record SupplierSkuChangeSet(List<Matched> retained,
                                    List<SupplierSkuItemForm> inserted,
@@ -47,7 +47,7 @@ public record SupplierSkuChangeSet(List<Matched> retained,
                                                List<SupplierSkuItemForm> requested) {
         List<SupplierSkuItemForm> items = requested == null ? List.of() : requested;
 
-        // 校验段 A：请求内 skuId 不得重复（R7）
+        // 校验段 A：请求内 skuId 不得重复。
         Set<Long> requestedSkuIds = new HashSet<>();
         for (SupplierSkuItemForm item : items) {
             if (!requestedSkuIds.add(item.getSkuId())) {
@@ -69,11 +69,11 @@ public record SupplierSkuChangeSet(List<Matched> retained,
         for (SupplierSkuItemForm item : items) {
             if (item.getId() != null) {
                 SupplierSkuEntity row = existingById.get(item.getId());
-                // 带 id 但不在该供应商名下 → 40943（R8）
+                // 带 id 但不在该供应商名下时拒绝整次替换。
                 if (row == null) {
                     throw new ScmBusinessException(SUPPLIER_SKU_DUPLICATE);
                 }
-                // 已存在行的 skuId 不允许变更（R8）——变更等价于换一条记录，应删旧增新
+                // 已存在行的 skuId 不允许变更；换 SKU 应删旧增新。
                 if (!Objects.equals(row.getSkuId(), item.getSkuId())) {
                     throw new ScmBusinessException(SUPPLIER_SKU_DUPLICATE);
                 }
@@ -85,7 +85,7 @@ public record SupplierSkuChangeSet(List<Matched> retained,
                 continue;
             }
 
-            // 无 id：先尝试按 (supplierId, skuId) 复用既有行（R10），避免撞唯一索引
+            // 无 id：先按 (supplierId, skuId) 复用既有行，避免撞唯一索引。
             SupplierSkuEntity row = existingBySkuId.get(item.getSkuId());
             if (row != null) {
                 // 复用路径的版本号是可选的：客户端可能并不知道这一行已经存在
@@ -99,7 +99,7 @@ public record SupplierSkuChangeSet(List<Matched> retained,
             }
         }
 
-        // 库中有、请求里没有 → 软删（R11：空请求即清空全部）
+        // 库中有、请求里没有的行软删；空请求会清空全部关联。
         List<Long> removedIds = new ArrayList<>();
         for (SupplierSkuEntity row : existing) {
             if (!retainedIds.contains(row.getId())) {

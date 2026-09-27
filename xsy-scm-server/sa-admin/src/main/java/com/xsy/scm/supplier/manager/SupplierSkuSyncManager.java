@@ -36,7 +36,7 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_PURCH
 /**
  * {@code supplier_sku} 的差量落库。
  *
- * <p><b>严格保留 legacy 的四段式（R2 / R6）：</b>
+ * <p><b>整表替换分四段执行：</b>
  * <ol>
  *   <li><b>校验段 A</b>：请求内一致性（skuId 不重复、id 归属正确）——由
  *       {@link SupplierSkuChangeSet#between} 完成；</li>
@@ -62,7 +62,7 @@ public class SupplierSkuSyncManager {
     /**
      * 用请求列表整表替换某供应商的商品关联。
      *
-     * <p>空列表表示清空全部关联（R11），不是「无操作」。
+     * <p>空列表表示清空全部关联，不表示「无操作」。
      */
     public void replace(Long supplierId, List<SupplierSkuItemForm> items) {
         // ---- 锁段 ----
@@ -222,13 +222,13 @@ public class SupplierSkuSyncManager {
         entity.setSupplierCodeSnapshot(supplier.getSupplierCode());
         entity.setSupplierNameSnapshot(supplier.getName());
         entity.setSkuCodeSnapshot(sku.getSkuCode());
-        // 名称取 SPU 名称而不是 SKU 规格名（legacy 不变量 R4）
+        // 供应商商品名称取 SPU 名称，而不是 SKU 规格名。
         entity.setSkuNameSnapshot(sku.getProductName());
         entity.setSpecValuesSnapshot(sku.getSpecValues() == null ? Map.of() : sku.getSpecValues());
         entity.setPurchaseUnit(item.getPurchaseUnit());
         entity.setReferencePrice(ScmDecimalStrings.parseScale4(item.getReferencePrice()));
         entity.setPurchaserId(item.getPurchaserId());
-        // 刻意不做「只允许一条默认」的校验：同一供应商允许多条默认来源（R12）
+        // 同一供应商允许多个默认来源，因此不校验默认标记的数量。
         entity.setDefaultFlag(Boolean.TRUE.equals(item.getDefaultFlag()));
         entity.setStatus(item.getStatus() == null ? ScmEnableStatusEnum.ENABLED.name() : item.getStatus());
         entity.setUpdatedAt(now);

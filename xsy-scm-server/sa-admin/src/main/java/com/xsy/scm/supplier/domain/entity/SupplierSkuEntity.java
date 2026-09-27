@@ -17,8 +17,7 @@ import java.util.Map;
 /**
  * 商品-供应商关系（SKU 级）。
  *
- * <p>沿用 legacy 的 SKU 级建模，而不是 C 的 SPU 级 {@code t_product_supplier} + {@code supply_price}
- * （Target Design 建模冲突裁决）。快照列冻结供应商与 SKU 的展示信息，使主数据改名后关联行仍然可读。
+ * <p>关系以 SKU 为粒度；快照列冻结供应商与 SKU 的展示信息，使主数据改名后关联行仍然可读。
  */
 @Data
 @TableName(value = "supplier_sku", autoResultMap = true)
@@ -67,8 +66,7 @@ public class SupplierSkuEntity {
     /**
      * 是否默认采购来源。
      *
-     * <p>同一供应商允许存在多条 {@code TRUE}（legacy 不变量 R12）——这里刻意不写任何唯一性校验，
-     * 也刻意不建 partial unique 索引，因为 legacy 有专门的测试禁止发明基数策略。
+     * <p>同一供应商允许多个默认来源，因此这里不做互斥校验，也不建立限制基数的唯一索引。
      */
     @TableField("is_default")
     private Boolean defaultFlag;

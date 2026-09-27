@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * 新增供应商。
  *
- * <p><b>刻意不含 {@code status}</b>：legacy 不变量 S7 要求新建供应商强制为 {@code ENABLED}，
+ * <p><b>刻意不含 {@code status}</b>：新建供应商强制为 {@code ENABLED}，
  * 由 Service 显式设置，不接受客户端指定。
  */
 @Data

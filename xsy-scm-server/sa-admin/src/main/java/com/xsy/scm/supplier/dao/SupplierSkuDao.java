@@ -24,15 +24,15 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
      * 加行锁读取某供应商的全部活动关联行（写入路径的<b>第二把锁</b>）。
      *
      * <p>{@code ORDER BY id ... FOR UPDATE} 保证多行加锁顺序确定，配合 {@code supplier} 行锁形成
-     * 固定锁序（legacy 不变量 S4 / R2）。
+     * 固定锁序。
      */
     List<SupplierSkuEntity> selectActiveBySupplierIdForUpdate(@Param("supplierId") Long supplierId);
 
     /**
-     * 「可采购来源」四表联动查询（legacy 不变量 R16）。
+     * 检查某个 SKU 是否有可采购的供应商来源。
      *
-     * <p>W2 不提供消费该结果的端点；查询先落地并测试，供 W3 采购域直接复用——
-     * 这样「SPU 下架即不可采购」的判定不会在 W3 被重新发明一遍。
+     * <p>该查询统一检查供应商、供应商 SKU、商品 SPU 与 SKU 的启用状态，供
+     * {@code SupplierSkuService.requireEnabledForPurchasing} 复用。
      */
     List<SupplierSkuEntity> selectEnabledBySkuId(@Param("skuId") Long skuId);
 
@@ -42,7 +42,7 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
     List<SupplierSkuEntity> queryPage(Page<?> page, @Param("query") SupplierSkuQueryForm query);
 
     /**
-     * 原子软删：{@code supplier_id + id + version} 三谓词（R15）。
+     * 原子软删：{@code supplier_id + id + version} 三谓词。
      *
      * <p>{@code supplier_id} 谓词保证不会误删其他供应商的行——即使调用方传错了 id。
      */
@@ -52,7 +52,7 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
                                    @Param("operator") String operator);
 
     /**
-     * 删除供应商前的引用检查（S9）。
+     * 删除供应商前的活动关联检查。
      */
     long countActiveBySupplierId(@Param("supplierId") Long supplierId);
 

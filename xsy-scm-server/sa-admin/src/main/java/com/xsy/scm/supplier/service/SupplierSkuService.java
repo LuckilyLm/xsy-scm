@@ -82,8 +82,8 @@ public class SupplierSkuService {
     /**
      * 校验「某 SKU 可以由某供应商供货」。
      *
-     * <p>W2 没有采购域，因此当前没有生产调用方；方法先落地，作为 W3 采购下单的唯一判定入口
-     * （legacy 不变量 R17）——不允许 W3 旁路主数据直接查 {@code supplier_sku} 表。
+     * <p>采购写路径通过此方法确认供应商与 SKU 均可采购，避免采购服务绕过主数据直接查
+     * {@code supplier_sku} 表。
      */
     public SupplierSkuEntity requireEnabledForPurchasing(Long supplierId, Long skuId) {
         supplierService.requireEnabled(supplierId);
