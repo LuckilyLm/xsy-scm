@@ -1,9 +1,9 @@
 package com.xsy.scm.pricing.domain.form;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import lombok.Data;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import net.lab1024.sa.base.common.domain.PageParam;
@@ -12,15 +12,15 @@ import java.time.OffsetDateTime;
 
 @Data
 public class AgreementPriceAddForm {
-    @NotNull
+    @NotNull(message = "客户不能为空")
     private Long customerId;
-    @NotNull
+    @NotNull(message = "SKU 不能为空")
     private Long skuId;
-    @NotNull
-    @Pattern(regexp = ScmDecimalStrings.PATTERN)
+    @NotNull(message = "协议价不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "协议价格式不正确")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String unitPrice;
-    @NotNull
+    @NotNull(message = "生效开始时间不能为空")
     private OffsetDateTime effectiveFrom;
     private OffsetDateTime effectiveTo;
 }

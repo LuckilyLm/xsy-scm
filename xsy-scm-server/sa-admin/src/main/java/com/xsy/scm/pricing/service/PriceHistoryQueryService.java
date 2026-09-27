@@ -7,18 +7,22 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import com.xsy.scm.pricing.dao.PriceHistoryDao;
 import com.xsy.scm.pricing.domain.form.PriceHistoryQueryForm;
 import com.xsy.scm.pricing.domain.vo.PriceHistoryVO;
+import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 
 @Service
 @RequiredArgsConstructor
 public class PriceHistoryQueryService {
-    private final PriceHistoryDao dao;
+    private final PriceHistoryDao priceHistoryDao;
 
     public PageResult<PriceHistoryVO> query(PriceHistoryQueryForm form) {
-        if (!"AGREEMENT".equals(form.getSource()) && !"CUSTOMER_TYPE".equals(form.getSource())) form.setSource(null);
+        if (!ScmPriceSourceEnum.AGREEMENT.name().equals(form.getSource())
+                && !ScmPriceSourceEnum.CUSTOMER_TYPE.name().equals(form.getSource())) {
+            form.setSource(null);
+        }
         if (form.getOperationType() != null && form.getOperationType().isBlank()) form.setOperationType(null);
         // History has a stable audit ordering; user supplied ordering is not accepted.
         form.setSortItemList(java.util.List.of());
         var page = SmartPageUtil.convert2PageQuery(form);
-        return SmartPageUtil.convert2PageResult(page, dao.query(page, form));
+        return SmartPageUtil.convert2PageResult(page, priceHistoryDao.query(page, form));
     }
 }

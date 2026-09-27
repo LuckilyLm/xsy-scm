@@ -4,9 +4,12 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-import com.xsy.scm.pricing.constant.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
+import com.xsy.scm.pricing.constant.ScmPriceStatusEnum;
+import com.xsy.scm.pricing.constant.ScmUnavailableReasonEnum;
+import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 
 /**
  * Price availability and sale eligibility are independent. Zero is a price.
@@ -26,11 +29,11 @@ public class ResolvedPriceVO {
     private boolean sellable;
     private ScmUnavailableReasonEnum unavailableReason;
 
-    public void price(BigDecimal amount, ScmPriceSourceEnum source, Long recordId) {
-        unitPrice = amount;
-        priceStatus = amount == null ? ScmPriceStatusEnum.UNPRICED : ScmPriceStatusEnum.PRICED;
-        priceSource = amount == null ? null : source;
-        sourceRecordId = amount == null ? null : recordId;
-        unpricedReason = amount == null ? ScmUnpricedReasonEnum.NO_PRICE_SOURCE : null;
+    public void price(BigDecimal unitPrice, ScmPriceSourceEnum priceSource, Long sourceRecordId) {
+        this.unitPrice = unitPrice;
+        priceStatus = unitPrice == null ? ScmPriceStatusEnum.UNPRICED : ScmPriceStatusEnum.PRICED;
+        this.priceSource = unitPrice == null ? null : priceSource;
+        this.sourceRecordId = unitPrice == null ? null : sourceRecordId;
+        unpricedReason = unitPrice == null ? ScmUnpricedReasonEnum.NO_PRICE_SOURCE : null;
     }
 }
