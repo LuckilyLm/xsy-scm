@@ -38,9 +38,11 @@ public class PriceBatchWriter {
     private final PriceBatchAuditDao priceBatchAuditDao;
 
     public static class Rejected extends RuntimeException {
-        public final List<PriceBatchRowFailureVO> failures;
+        public final List<
+                PriceBatchRowFailureVO> failures;
 
-        public Rejected(List<PriceBatchRowFailureVO> failures) {
+        public Rejected(List<
+                PriceBatchRowFailureVO> failures) {
             this.failures = List.copyOf(failures);
         }
     }
@@ -54,14 +56,19 @@ public class PriceBatchWriter {
                 .toList();
         priceBatchRows.stream().map(PriceBatchRowForm::getCustomerTypeId).distinct()
                 .forEach(customerTypePriceDao::lockParent);
-        var customerTypeById = new HashMap<Long, CustomerTypeEntity>();
+        var customerTypeById = new HashMap<
+                Long,
+                CustomerTypeEntity>();
         customerTypeDao
                 .selectByIds(priceBatchRows.stream().map(PriceBatchRowForm::getCustomerTypeId).distinct().toList())
                 .forEach(customerType -> customerTypeById.put(customerType.getId(), customerType));
-        var productSkuOptionById = new HashMap<Long, ProductSkuOptionVO>();
+        var productSkuOptionById = new HashMap<
+                Long,
+                ProductSkuOptionVO>();
         productSkuOptionDao.selectByIds(priceBatchRows.stream().map(PriceBatchRowForm::getSkuId).distinct().toList())
                 .forEach(skuOption -> productSkuOptionById.put(skuOption.getSkuId(), skuOption));
-        List<PriceBatchRowFailureVO> rowFailures = new ArrayList<>();
+        List<
+                PriceBatchRowFailureVO> rowFailures = new ArrayList<>();
         for (var priceBatchRow : priceBatchRows) {
             var customerType = customerTypeById.get(priceBatchRow.getCustomerTypeId());
             if (customerType == null || !ScmEnableStatusEnum.ENABLED.name().equals(customerType.getStatus())) {
@@ -80,7 +87,8 @@ public class PriceBatchWriter {
         }
         if (!rowFailures.isEmpty())
             throw new Rejected(rowFailures);
-        List<Long> createdPriceIds = new ArrayList<>();
+        List<
+                Long> createdPriceIds = new ArrayList<>();
         for (var priceBatchRow : priceBatchRows) {
             var customerTypePriceForm = new CustomerTypePriceAddForm();
             customerTypePriceForm.setCustomerTypeId(priceBatchRow.getCustomerTypeId());

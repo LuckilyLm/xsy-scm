@@ -14,7 +14,8 @@ import com.xsy.scm.pricing.constant.ScmPriceSourceEnum;
 public class PriceHistoryQueryService {
     private final PriceHistoryDao priceHistoryDao;
 
-    public PageResult<PriceHistoryVO> query(PriceHistoryQueryForm form) {
+    public PageResult<
+            PriceHistoryVO> query(PriceHistoryQueryForm form) {
         if (!ScmPriceSourceEnum.AGREEMENT.name().equals(form.getSource())
                 && !ScmPriceSourceEnum.CUSTOMER_TYPE.name().equals(form.getSource())) {
             form.setSource(null);

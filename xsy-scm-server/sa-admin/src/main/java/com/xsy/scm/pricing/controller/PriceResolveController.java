@@ -21,7 +21,8 @@ public class PriceResolveController {
 
     @PostMapping
     @SaCheckPermission(PricingPermission.RESOLVE_QUERY)
-    public ResponseDTO<PriceResolveResultVO> resolve(@Valid @RequestBody PriceResolveForm form) {
+    public ResponseDTO<
+            PriceResolveResultVO> resolve(@Valid @RequestBody PriceResolveForm form) {
         return ResponseDTO.ok(priceResolver.preview(form.getCustomerId(), form.getSkuIds(), form.getAt()));
     }
 }

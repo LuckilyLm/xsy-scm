@@ -13,10 +13,16 @@ public final class PriceBatchValidator {
     private PriceBatchValidator() {
     }
 
-    public static List<PriceBatchRowFailureVO> validate(List<PriceBatchRowForm> rows) {
-        List<PriceBatchRowFailureVO> failures = new ArrayList<>();
-        Set<String> keys = new HashSet<>();
-        Set<Integer> numbers = new HashSet<>();
+    public static List<
+            PriceBatchRowFailureVO> validate(
+                    List<
+                            PriceBatchRowForm> rows) {
+        List<
+                PriceBatchRowFailureVO> failures = new ArrayList<>();
+        Set<
+                String> keys = new HashSet<>();
+        Set<
+                Integer> numbers = new HashSet<>();
         for (int i = 0; i < rows.size(); i++) {
             var priceBatchRow = rows.get(i);
             int rowNumber = priceBatchRow == null || priceBatchRow.getRowNumber() == null

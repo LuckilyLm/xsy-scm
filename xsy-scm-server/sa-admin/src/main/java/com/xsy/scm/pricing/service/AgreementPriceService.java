@@ -110,7 +110,9 @@ public class AgreementPriceService {
     }
 
     private String snapshot(AgreementPriceEntity agreementPrice) {
-        var fields = new java.util.LinkedHashMap<String, Object>();
+        var fields = new java.util.LinkedHashMap<
+                String,
+                Object>();
         fields.put("id", agreementPrice.getId());
         fields.put("customerId", agreementPrice.getCustomerId());
         fields.put("skuId", agreementPrice.getSkuId());

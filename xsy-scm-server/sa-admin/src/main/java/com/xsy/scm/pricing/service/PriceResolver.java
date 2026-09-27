@@ -41,7 +41,8 @@ public class PriceResolver {
     private final ProductSkuOptionDao productSkuOptionDao;
     private final CustomerSkuVisibilityDao customerSkuVisibilityDao;
 
-    public PriceResolveResultVO preview(Long customerId, List<Long> skuIds, OffsetDateTime requestedAt) {
+    public PriceResolveResultVO preview(Long customerId, List<
+            Long> skuIds, OffsetDateTime requestedAt) {
         var customer = customerService.requireTradable(customerId);
         var customerType = customerTypeDao.selectById(customer.getCustomerTypeId());
         if (customerType == null || !ScmEnableStatusEnum.ENABLED.name().equals(customerType.getStatus()))
@@ -51,7 +52,11 @@ public class PriceResolver {
                 resolve(customerId, skuIds, priceAt));
     }
 
-    public List<ResolvedPriceVO> resolve(Long customerId, List<Long> skuIds, OffsetDateTime requestedAt) {
+    public List<
+            ResolvedPriceVO> resolve(Long customerId,
+                    List<
+                            Long> skuIds,
+                    OffsetDateTime requestedAt) {
         if (skuIds.isEmpty())
             return List.of();
         var customer = customerService.requireTradable(customerId);
@@ -68,9 +73,10 @@ public class PriceResolver {
                         (first, next) -> first));
         boolean allEnabledVisibility = CustomerVisibilityPolicy.ALL_ENABLED
                 .equals(customerSkuVisibilityDao.policy(customerId));
-        Set<Long> visibleSkuIds = allEnabledVisibility
-                ? Set.of()
-                : new HashSet<>(customerSkuVisibilityDao.visibleIds(customerId, skuIds));
+        Set<
+                Long> visibleSkuIds = allEnabledVisibility
+                        ? Set.of()
+                        : new HashSet<>(customerSkuVisibilityDao.visibleIds(customerId, skuIds));
         return skuIds.stream().map(skuId -> {
             var resolvedPrice = new ResolvedPriceVO();
             resolvedPrice.setSkuId(skuId);
@@ -101,7 +107,11 @@ public class PriceResolver {
         }).toList();
     }
 
-    public List<ResolvedPriceVO> requireResolvable(Long customerId, List<Long> skuIds, OffsetDateTime requestedAt) {
+    public List<
+            ResolvedPriceVO> requireResolvable(Long customerId,
+                    List<
+                            Long> skuIds,
+                    OffsetDateTime requestedAt) {
         var resolvedPrices = resolve(customerId, skuIds, requestedAt);
         if (resolvedPrices.stream().anyMatch(resolvedPrice -> !resolvedPrice.isSellable()
                 || resolvedPrice.getPriceStatus() == ScmPriceStatusEnum.UNPRICED))

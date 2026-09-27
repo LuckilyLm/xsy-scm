@@ -14,5 +14,6 @@ public class PriceBatchForm {
     private String batchKey;
     @NotEmpty(message = "批量调价行不能为空")
     @Size(max = 500, message = "批量调价不能超过500行")
-    private List<PriceBatchRowForm> rows;
+    private List<
+            PriceBatchRowForm> rows;
 }

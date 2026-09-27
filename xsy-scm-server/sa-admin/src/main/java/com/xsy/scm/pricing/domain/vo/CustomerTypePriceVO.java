@@ -20,7 +20,9 @@ public class CustomerTypePriceVO {
     private String skuCode;
     private String productName;
     private String specName;
-    private Map<String, String> specValues;
+    private Map<
+            String,
+            String> specValues;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal unitPrice;
     private OffsetDateTime effectiveFrom;

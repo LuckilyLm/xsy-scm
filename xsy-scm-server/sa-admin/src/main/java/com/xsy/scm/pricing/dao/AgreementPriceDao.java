@@ -13,8 +13,15 @@ import com.xsy.scm.pricing.domain.form.AgreementPriceQueryForm;
 import com.xsy.scm.pricing.domain.vo.AgreementPriceVO;
 
 @Mapper
-public interface AgreementPriceDao extends BaseMapper<AgreementPriceEntity> {
-    List<AgreementPriceVO> queryPage(Page<?> page, @Param("query") AgreementPriceQueryForm query);
+public interface AgreementPriceDao
+        extends
+            BaseMapper<
+                    AgreementPriceEntity> {
+    List<
+            AgreementPriceVO> queryPage(
+                    Page<
+                            ?> page,
+                    @Param("query") AgreementPriceQueryForm query);
 
     AgreementPriceVO detail(@Param("id") Long agreementPriceId);
 
@@ -24,8 +31,11 @@ public interface AgreementPriceDao extends BaseMapper<AgreementPriceEntity> {
             @Param("from") OffsetDateTime effectiveFrom, @Param("to") OffsetDateTime effectiveTo,
             @Param("excludeId") Long excludedAgreementPriceId);
 
-    List<AgreementPriceEntity> selectEffective(@Param("dimension") Long customerId, @Param("skuIds") List<Long> skuIds,
-            @Param("at") OffsetDateTime priceAt);
+    List<
+            AgreementPriceEntity> selectEffective(@Param("dimension") Long customerId,
+                    @Param("skuIds") List<
+                            Long> skuIds,
+                    @Param("at") OffsetDateTime priceAt);
 
     int softDelete(@Param("id") Long agreementPriceId, @Param("version") Integer version,
             @Param("operator") String operator);
