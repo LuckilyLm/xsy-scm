@@ -30,14 +30,13 @@ import java.util.Objects;
 /**
  * 数据大屏只读聚合服务。
  *
- * <p>只查询，不写业务表；所有统计基于现有业务域，不维护独立副本。
+ * <p>
+ * 只查询，不写业务表；所有统计基于现有业务域，不维护独立副本。
  *
- * <p><b>大屏同样受数据范围约束</b>：它是业务列表的聚合视图，如果这里不收范围，
- * 一个只有 A 仓授权的人拿到 {@code scm:screen:query} 就能读到全公司的成交额、库存量和采购额 ——
- * 聚合值比明细更容易被误当成「已经授权过的数据」。每个入口解析一次上下文再下传给各 Dao，
- * 一次页面加载发十几个 Dao 调用也只解析一次（授权行改动必须立即生效，所以不缓存在登录态里）。
- * 各面板按自己的事实维度收：经营/趋势的销售序列按业务员，采购面板按「采购归属 ∩ 仓库」，
- * 库存与地理的仓库段按仓库；供应商与 SKU 主档没有任何范围维度，按团队共享读处理。
+ * <p>
+ * <b>大屏同样受数据范围约束</b>：它是业务列表的聚合视图，如果这里不收范围， 一个只有 A 仓授权的人拿到 {@code scm:screen:query} 就能读到全公司的成交额、库存量和采购额 ——
+ * 聚合值比明细更容易被误当成「已经授权过的数据」。每个入口解析一次上下文再下传给各 Dao， 一次页面加载发十几个 Dao 调用也只解析一次（授权行改动必须立即生效，所以不缓存在登录态里）。
+ * 各面板按自己的事实维度收：经营/趋势的销售序列按业务员，采购面板按「采购归属 ∩ 仓库」， 库存与地理的仓库段按仓库；供应商与 SKU 主档没有任何范围维度，按团队共享读处理。
  */
 @Service
 @RequiredArgsConstructor
@@ -49,10 +48,9 @@ public class ScreenDataService {
     /**
      * 业务时区。
      *
-     * <p><b>「今日」必须是北京时间的今天</b>。早先这里用的是 {@code ZoneOffset.UTC} 的日界，
-     * 实际窗口变成「北京时间 08:00 → 次日 08:00」—— 早上 07:00 下的单会被算进前一天，
-     * 而 08:00 之后的单才落进当天。这不是显示问题而是口径错误，与需求日期
-     * {@code demand_date} 显式使用 {@code AT TIME ZONE 'Asia/Shanghai'} 的约定也不一致。
+     * <p>
+     * <b>「今日」必须是北京时间的今天</b>。早先这里用的是 {@code ZoneOffset.UTC} 的日界， 实际窗口变成「北京时间 08:00 → 次日 08:00」—— 早上 07:00 下的单会被算进前一天， 而
+     * 08:00 之后的单才落进当天。这不是显示问题而是口径错误，与需求日期 {@code demand_date} 显式使用 {@code AT TIME ZONE 'Asia/Shanghai'} 的约定也不一致。
      */
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
@@ -62,25 +60,19 @@ public class ScreenDataService {
     /**
      * 入库 / 出库方向的流水类型名，**由枚举的方向位派生**。
      *
-     * <p>大屏有三处口径都表达「入库」或「出库」：今日出入库次数、趋势的出入库量、
-     * 供应链网络节点的今日出库量。若各自在 SQL 里抄一份类型清单，新增第 11 个流水类型时
-     * 会**静默少算**（数字看起来正常，只是偏小）—— 这是本项目最忌讳的失败方式。
+     * <p>
+     * 大屏有三处口径都表达「入库」或「出库」：今日出入库次数、趋势的出入库量、 供应链网络节点的今日出库量。若各自在 SQL 里抄一份类型清单，新增第 11 个流水类型时 会**静默少算**（数字看起来正常，只是偏小）——
+     * 这是本项目最忌讳的失败方式。
      *
-     * <p>方向位本身已被 {@code ScmInventoryConstantTest#movementDirectionMatchesSnapshotConstraint}
-     * 钉住（10 个类型恰好分成两组、每组 5 个，且与 {@code ck_inventory_movement_snap} 的方向分支同源），
-     * 所以从这里派生等于把这三处口径一并接进那道契约守卫。
+     * <p>
+     * 方向位本身已被 {@code ScmInventoryConstantTest#movementDirectionMatchesSnapshotConstraint} 钉住（10 个类型恰好分成两组、每组 5 个，且与
+     * {@code ck_inventory_movement_snap} 的方向分支同源）， 所以从这里派生等于把这三处口径一并接进那道契约守卫。
      */
-    private static final List<String> INBOUND_MOVEMENT_TYPES = Arrays
-            .stream(ScmInventoryMovementTypeEnum.values())
-            .filter(ScmInventoryMovementTypeEnum::isInbound)
-            .map(type -> type.name())
-            .toList();
+    private static final List<String> INBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
+            .filter(ScmInventoryMovementTypeEnum::isInbound).map(type -> type.name()).toList();
 
-    private static final List<String> OUTBOUND_MOVEMENT_TYPES = Arrays
-            .stream(ScmInventoryMovementTypeEnum.values())
-            .filter(type -> !type.isInbound())
-            .map(type -> type.name())
-            .toList();
+    private static final List<String> OUTBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
+            .filter(type -> !type.isInbound()).map(type -> type.name()).toList();
 
     private final ScreenDataDao screenDataDao;
 
@@ -94,34 +86,30 @@ public class ScreenDataService {
     }
 
     private OffsetDateTime[] dayRange(LocalDate day) {
-        return new OffsetDateTime[]{
-                day.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                day.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime()
-        };
+        return new OffsetDateTime[]{day.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
+                day.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime()};
     }
 
     public ScreenBusinessVO getBusinessData() {
         OffsetDateTime[] range = todayRange();
         ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenBusinessVO vo = new ScreenBusinessVO();
-        vo.setTodayOrderCount(Objects.requireNonNullElse(
-                screenDataDao.countConfirmedOrders(range[0], range[1], scope), 0L));
-        vo.setTodayOrderedAmount(Objects.requireNonNullElse(
-                screenDataDao.sumOrderedAmount(range[0], range[1], scope), BigDecimal.ZERO));
-        vo.setTodaySettlementAmount(Objects.requireNonNullElse(
-                screenDataDao.sumSettlementAmount(range[0], range[1], scope), BigDecimal.ZERO));
+        vo.setTodayOrderCount(
+                Objects.requireNonNullElse(screenDataDao.countConfirmedOrders(range[0], range[1], scope), 0L));
+        vo.setTodayOrderedAmount(
+                Objects.requireNonNullElse(screenDataDao.sumOrderedAmount(range[0], range[1], scope), BigDecimal.ZERO));
+        vo.setTodaySettlementAmount(Objects
+                .requireNonNullElse(screenDataDao.sumSettlementAmount(range[0], range[1], scope), BigDecimal.ZERO));
         vo.setTotalOrderCount(Objects.requireNonNullElse(screenDataDao.countTotalConfirmedOrders(scope), 0L));
-        vo.setTotalSettlementAmount(Objects.requireNonNullElse(
-                screenDataDao.sumTotalSettlementAmount(scope), BigDecimal.ZERO));
+        vo.setTotalSettlementAmount(
+                Objects.requireNonNullElse(screenDataDao.sumTotalSettlementAmount(scope), BigDecimal.ZERO));
         vo.setCustomerCount(Objects.requireNonNullElse(screenDataDao.countCustomers(scope), 0L));
         vo.setSupplierCount(Objects.requireNonNullElse(screenDataDao.countSuppliers(), 0L));
         vo.setSkuCount(Objects.requireNonNullElse(screenDataDao.countSkus(), 0L));
-        vo.setTodayCustomerCount(
-                Objects.requireNonNullElse(
-                        screenDataDao.countCustomersWithOrdersInRange(range[0], range[1], scope), 0L));
-        vo.setTodaySupplierCount(
-                Objects.requireNonNullElse(
-                        screenDataDao.countSuppliersWithOrdersInRange(range[0], range[1], scope), 0L));
+        vo.setTodayCustomerCount(Objects
+                .requireNonNullElse(screenDataDao.countCustomersWithOrdersInRange(range[0], range[1], scope), 0L));
+        vo.setTodaySupplierCount(Objects
+                .requireNonNullElse(screenDataDao.countSuppliersWithOrdersInRange(range[0], range[1], scope), 0L));
         vo.setTopCustomers(
                 nullToEmpty(screenDataDao.topCustomersBySettlement(range[0], range[1], TOP_RANK_LIMIT, scope)));
         vo.setTopProducts(
@@ -142,26 +130,24 @@ public class ScreenDataService {
                 screenDataDao.countMovementsByTypeAndRange(OUTBOUND_MOVEMENT_TYPES, range[0], range[1], scope), 0L));
         vo.setWarehouseDistribution(nullToEmpty(screenDataDao.inventoryDistributionByWarehouse(scope)));
         vo.setHealth(buildHealth(scope));
-        vo.setWarehouseNodes(nullToEmpty(
-                screenDataDao.warehouseNetworkNodes(range[0], range[1], OUTBOUND_MOVEMENT_TYPES, scope)));
+        vo.setWarehouseNodes(
+                nullToEmpty(screenDataDao.warehouseNetworkNodes(range[0], range[1], OUTBOUND_MOVEMENT_TYPES, scope)));
         return vo;
     }
 
     /**
      * 库存健康度分档。
      *
-     * <p><b>判定完全交给预警枚举</b>（{@link ScmInventoryWarningStatusEnum#evaluate}），
-     * 这里只做计数。SQL 只提供「可用量 + 上下限」三个事实，不参与分类 ——
-     * 一旦 SQL 里也写一份「正常/低于下限/高于上限」，两份规则漂移后
-     * 大屏的健康度就会和预警列表对不上。
+     * <p>
+     * <b>判定完全交给预警枚举</b>（{@link ScmInventoryWarningStatusEnum#evaluate}）， 这里只做计数。SQL 只提供「可用量 + 上下限」三个事实，不参与分类 —— 一旦 SQL
+     * 里也写一份「正常/低于下限/高于上限」，两份规则漂移后 大屏的健康度就会和预警列表对不上。
      *
-     * <p><b>四档互斥且之和等于 {@code totalSkuCount}</b>：缺货单独分档，其余 SKU 再按库存阈值分为三档，
-     * 使四档占比合计为 100%：
+     * <p>
+     * <b>四档互斥且之和等于 {@code totalSkuCount}</b>：缺货单独分档，其余 SKU 再按库存阈值分为三档， 使四档占比合计为 100%：
      * <ol>
-     *   <li>缺货 —— 可用量 ≤ 0。**优先于其它档**，且不依赖阈值配置，
-     *       否则「配了阈值但一件都没有」会被算成预警，而缺货段恒为 0。</li>
-     *   <li>未配置阈值 —— 有余额但没配阈值，无法判定，单独成档而不是塞进「正常」。</li>
-     *   <li>预警 / 积压 / 正常 —— 由 {@code evaluate} 给出的 LOW / HIGH / NORMAL。</li>
+     * <li>缺货 —— 可用量 ≤ 0。**优先于其它档**，且不依赖阈值配置， 否则「配了阈值但一件都没有」会被算成预警，而缺货段恒为 0。</li>
+     * <li>未配置阈值 —— 有余额但没配阈值，无法判定，单独成档而不是塞进「正常」。</li>
+     * <li>预警 / 积压 / 正常 —— 由 {@code evaluate} 给出的 LOW / HIGH / NORMAL。</li>
      * </ol>
      */
     private ScreenInventoryVO.InventoryHealth buildHealth(ScmDataScopeContext scope) {
@@ -182,8 +168,8 @@ public class ScreenDataService {
                 unconfigured++;
                 continue;
             }
-            ScmInventoryWarningStatusEnum status = ScmInventoryWarningStatusEnum.evaluate(
-                    available, row.getWarnMin(), row.getWarnMax());
+            ScmInventoryWarningStatusEnum status = ScmInventoryWarningStatusEnum.evaluate(available, row.getWarnMin(),
+                    row.getWarnMax());
             if (status == ScmInventoryWarningStatusEnum.LOW) {
                 low++;
             } else if (status == ScmInventoryWarningStatusEnum.HIGH) {
@@ -207,25 +193,25 @@ public class ScreenDataService {
         OffsetDateTime[] range = todayRange();
         ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenPurchaseVO vo = new ScreenPurchaseVO();
-        vo.setTodayPurchaseOrderCount(Objects.requireNonNullElse(
-                screenDataDao.countPurchaseOrders(range[0], range[1], scope), 0L));
-        vo.setTodayPurchaseAmount(Objects.requireNonNullElse(
-                screenDataDao.sumPurchaseAmount(range[0], range[1], scope), BigDecimal.ZERO));
+        vo.setTodayPurchaseOrderCount(
+                Objects.requireNonNullElse(screenDataDao.countPurchaseOrders(range[0], range[1], scope), 0L));
+        vo.setTodayPurchaseAmount(Objects.requireNonNullElse(screenDataDao.sumPurchaseAmount(range[0], range[1], scope),
+                BigDecimal.ZERO));
         vo.setTotalPurchaseOrderCount(Objects.requireNonNullElse(screenDataDao.countTotalPurchaseOrders(scope), 0L));
-        vo.setTotalPurchaseAmount(Objects.requireNonNullElse(
-                screenDataDao.sumTotalPurchaseAmount(scope), BigDecimal.ZERO));
-        vo.setTodayReceiptCount(Objects.requireNonNullElse(
-                screenDataDao.countReceipts(range[0], range[1], scope), 0L));
+        vo.setTotalPurchaseAmount(
+                Objects.requireNonNullElse(screenDataDao.sumTotalPurchaseAmount(scope), BigDecimal.ZERO));
+        vo.setTodayReceiptCount(Objects.requireNonNullElse(screenDataDao.countReceipts(range[0], range[1], scope), 0L));
         return vo;
     }
 
     /**
      * 趋势数据（近 7 / 30 天，含今天）。
      *
-     * <p>DAO 返回「一天一行」，这里**转置成按序列的数组**：ECharts 的 series 是按序列组织的，
-     * 转置放在服务层可以让 SQL 保持「一天一行」这种最好读也最好核对的形状。
+     * <p>
+     * DAO 返回「一天一行」，这里**转置成按序列的数组**：ECharts 的 series 是按序列组织的， 转置放在服务层可以让 SQL 保持「一天一行」这种最好读也最好核对的形状。
      *
-     * <p>区间是**闭区间且含今天**：{@code 7d} = 今天往前数 6 天到 今天，共 7 个点。
+     * <p>
+     * 区间是**闭区间且含今天**：{@code 7d} = 今天往前数 6 天到 今天，共 7 个点。
      */
     public ScreenTrendVO getTrendData(String range) {
         boolean thirty = RANGE_30D.equalsIgnoreCase(range);
@@ -233,8 +219,8 @@ public class ScreenDataService {
         LocalDate end = LocalDate.now(BUSINESS_ZONE);
         LocalDate start = end.minusDays(thirty ? 29L : 6L);
 
-        List<ScreenTrendVO.Point> points = nullToEmpty(screenDataDao.trendByDay(start, end,
-                INBOUND_MOVEMENT_TYPES, OUTBOUND_MOVEMENT_TYPES, dataScopeService.resolve()));
+        List<ScreenTrendVO.Point> points = nullToEmpty(screenDataDao.trendByDay(start, end, INBOUND_MOVEMENT_TYPES,
+                OUTBOUND_MOVEMENT_TYPES, dataScopeService.resolve()));
 
         List<String> dates = new ArrayList<>(points.size());
         List<String> fullDates = new ArrayList<>(points.size());
@@ -275,11 +261,11 @@ public class ScreenDataService {
     /**
      * 地理分布（地图 M1）。
      *
-     * <p>气泡取市级聚合行，省界着色由这批行**在 Java 侧上卷**得到：两者因此恒等，
-     * 不存在「省级图例与市级气泡对不上」这种两份 SQL 各自演算的漂移。
+     * <p>
+     * 气泡取市级聚合行，省界着色由这批行**在 Java 侧上卷**得到：两者因此恒等， 不存在「省级图例与市级气泡对不上」这种两份 SQL 各自演算的漂移。
      *
-     * <p>覆盖度原样透出：{@code 总数 − 已归属} 就是地图上找不到位置的业务量，
-     * 必须让用户看到差额，而不是以为看到的分布等于全部业务量。
+     * <p>
+     * 覆盖度原样透出：{@code 总数 − 已归属} 就是地图上找不到位置的业务量， 必须让用户看到差额，而不是以为看到的分布等于全部业务量。
      */
     public ScreenGeoVO getGeoData() {
         ScmDataScopeContext scope = dataScopeService.resolve();

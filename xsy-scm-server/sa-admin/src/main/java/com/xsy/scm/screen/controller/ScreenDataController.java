@@ -42,7 +42,8 @@ public class ScreenDataController {
     /**
      * 地理分布（地图 M1）：按市聚合的客户 / 供应商 / 仓库气泡与按省上卷的着色值。
      *
-     * <p>与其余面板一样属于只读聚合，受 {@code scm:screen:query} 权限保护。
+     * <p>
+     * 与其余面板一样属于只读聚合，受 {@code scm:screen:query} 权限保护。
      */
     @GetMapping("/data/geo")
     @SaCheckPermission(ScreenPermission.QUERY)
@@ -59,10 +60,11 @@ public class ScreenDataController {
     /**
      * 趋势数据（近 7 / 30 天）。
      *
-     * <p>三张趋势图共用这一个接口：分开调用不仅要多发十几次请求，
-     * 更麻烦的是各接口的「今天」可能落在不同的毫秒上，导致三条日期轴对不齐。
+     * <p>
+     * 三张趋势图共用这一个接口：分开调用不仅要多发十几次请求， 更麻烦的是各接口的「今天」可能落在不同的毫秒上，导致三条日期轴对不齐。
      *
-     * @param range 7d（默认）或 30d，其余取值按 7d 处理（不抛错，大屏不应因参数笔误而空白）
+     * @param range
+     *            7d（默认）或 30d，其余取值按 7d 处理（不抛错，大屏不应因参数笔误而空白）
      */
     @GetMapping("/data/trend")
     @SaCheckPermission(ScreenPermission.QUERY)
