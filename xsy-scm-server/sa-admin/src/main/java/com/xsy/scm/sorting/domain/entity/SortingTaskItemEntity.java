@@ -14,9 +14,9 @@ import java.time.OffsetDateTime;
 /**
  * 分拣任务明细：一条订单行在本任务里的一次分拣。
  *
- * <p>计划量是建单时冻结的快照，永不回写订单行的 {@code actual_quantity} 与结算金额；
- * 分拣量与结果成对出现（库里 {@code ck_sorting_task_item_processed_pairing} 强制），
- * 因此「未处理」与「已处理」是仅有的两态，不存在有量无结果的中间状态。
+ * <p>
+ * 计划量是建单时冻结的快照，永不回写订单行的 {@code actual_quantity} 与结算金额； 分拣量与结果成对出现（库里 {@code ck_sorting_task_item_processed_pairing}
+ * 强制）， 因此「未处理」与「已处理」是仅有的两态，不存在有量无结果的中间状态。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

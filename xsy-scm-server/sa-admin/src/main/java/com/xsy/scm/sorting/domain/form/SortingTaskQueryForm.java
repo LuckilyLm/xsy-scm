@@ -8,8 +8,7 @@ import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * 分拣任务列表（按客户订单视角）。范围永远是「授权仓 ∩ 可见指派人」，
- * 这里的筛选条件只能在范围内再收窄，不能放宽。
+ * 分拣任务列表（按客户订单视角）。范围永远是「授权仓 ∩ 可见指派人」， 这里的筛选条件只能在范围内再收窄，不能放宽。
  */
 @Data
 public class SortingTaskQueryForm extends PageParam {

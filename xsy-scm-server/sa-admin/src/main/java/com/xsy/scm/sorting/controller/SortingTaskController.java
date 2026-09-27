@@ -33,8 +33,7 @@ import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 
 /**
- * 分拣管理。写侧全部经服务端权限 + 数据范围（授权仓 ∩ 可见指派人）双重判定；
- * 生成入口带 {@code Idempotency-Key}，预览类入口只读、不计次。
+ * 分拣管理。写侧全部经服务端权限 + 数据范围（授权仓 ∩ 可见指派人）双重判定； 生成入口带 {@code Idempotency-Key}，预览类入口只读、不计次。
  */
 @RestController
 @RequestMapping("/scm/sorting")
@@ -84,7 +83,7 @@ public class SortingTaskController {
     @SaCheckPermission(SortingPermission.TASK_ADD)
     @OperateLog
     public ResponseDTO<SortingTaskDetailVO> create(@Valid @RequestBody SortingTaskCreateForm form,
-                                                  @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(sortingTaskService.create(form, key));
     }
 
@@ -132,7 +131,7 @@ public class SortingTaskController {
     @SaCheckPermission(SortingPermission.TASK_PRINT)
     @OperateLog
     public ResponseDTO<SortingPrintResultVO> print(@PathVariable Long id, @Valid @RequestBody SortingActionForm form,
-                                                   @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(sortingTaskService.print(id, form, key));
     }
 }

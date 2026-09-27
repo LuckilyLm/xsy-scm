@@ -14,8 +14,7 @@ import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import java.math.BigDecimal;
 
 /**
- * 一行明细的分拣结果。非标品这里录的是实重，单位即明细行上的销售单位快照
- * （不做单位换算，也不记毛重 / 皮重 / 净重）。
+ * 一行明细的分拣结果。非标品这里录的是实重，单位即明细行上的销售单位快照 （不做单位换算，也不记毛重 / 皮重 / 净重）。
  */
 @Data
 public class SortingEntryItemForm {

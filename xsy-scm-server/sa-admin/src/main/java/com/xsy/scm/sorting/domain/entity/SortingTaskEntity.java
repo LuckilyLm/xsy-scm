@@ -11,9 +11,9 @@ import java.time.OffsetDateTime;
 /**
  * 分拣任务：某仓库内派给某位分拣员的一批订单行。
  *
- * <p>任务状态即「是否占用订单行」的聚合答案，但**占用位写在明细行上**
- * （{@code occupation_status}），因为部分唯一索引不能跨表判断任务状态；
- * 代价是取消任务必须在同一事务里把该任务全部明细置为 {@code RELEASED}。
+ * <p>
+ * 任务状态即「是否占用订单行」的聚合答案，但**占用位写在明细行上** （{@code occupation_status}），因为部分唯一索引不能跨表判断任务状态； 代价是取消任务必须在同一事务里把该任务全部明细置为
+ * {@code RELEASED}。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
