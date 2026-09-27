@@ -36,11 +36,11 @@ public final class PurchaseAmountCalculator {
     /**
      * 规范化到 4 位小数并做容量校验；{@code null} 透传。溢出 → 40081。
      */
-    public static BigDecimal bounded(BigDecimal value) {
-        if (value == null) {
+    public static BigDecimal bounded(BigDecimal amount) {
+        if (amount == null) {
             return null;
         }
-        BigDecimal normalized = value.setScale(SCALE, RoundingMode.HALF_UP);
+        BigDecimal normalized = amount.setScale(SCALE, RoundingMode.HALF_UP);
         if (normalized.abs().compareTo(MAX) > 0) {
             throw new ScmBusinessException(PURCHASE_PRICE_INVALID);
         }

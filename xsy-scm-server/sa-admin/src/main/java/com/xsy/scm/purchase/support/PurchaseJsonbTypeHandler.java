@@ -28,24 +28,25 @@ public class PurchaseJsonbTypeHandler extends BaseTypeHandler<Map<String, Object
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
-    public void setNonNullParameter(PreparedStatement statement, int index, Map<String, Object> value, JdbcType type)
+    public void setNonNullParameter(
+            PreparedStatement statement, int index, Map<String, Object> jsonValue, JdbcType jdbcType)
             throws SQLException {
         try {
             PGobject pg = new PGobject();
             pg.setType("jsonb");
-            pg.setValue(JSON.writeValueAsString(value));
+            pg.setValue(JSON.writeValueAsString(jsonValue));
             statement.setObject(index, pg);
         } catch (JsonProcessingException e) {
             throw new SQLException("Invalid purchase JSON", e);
         }
     }
 
-    private Map<String, Object> read(String value) throws SQLException {
-        if (value == null) {
+    private Map<String, Object> read(String jsonText) throws SQLException {
+        if (jsonText == null) {
             return null;
         }
         try {
-            return JSON.readValue(value, new TypeReference<>() {
+            return JSON.readValue(jsonText, new TypeReference<>() {
             });
         } catch (JsonProcessingException e) {
             throw new SQLException("Invalid purchase JSON", e);

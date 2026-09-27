@@ -22,6 +22,7 @@ import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.service.PurchaseOrderExportSupport;
 import com.xsy.scm.purchase.service.PurchaseOrderService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
+import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
@@ -65,25 +66,25 @@ public class PurchaseOrderController {
     // ------------------------------------------------------------------
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:purchase:query")
+    @SaCheckPermission(PurchasePermission.QUERY)
     public ResponseDTO<PageResult<PurchaseOrderVO>> query(@Valid @RequestBody PurchaseOrderQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.orderQuery(form));
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:purchase:query")
-    public ResponseDTO<PurchaseOrderVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(purchaseQueryService.orderDetail(id));
+    @SaCheckPermission(PurchasePermission.QUERY)
+    public ResponseDTO<PurchaseOrderVO> detail(@PathVariable("id") Long purchaseOrderId) {
+        return ResponseDTO.ok(purchaseQueryService.orderDetail(purchaseOrderId));
     }
 
     @GetMapping("/item/{orderId}")
-    @SaCheckPermission("scm:purchase:query")
+    @SaCheckPermission(PurchasePermission.QUERY)
     public ResponseDTO<List<PurchaseOrderItemVO>> items(@PathVariable Long orderId) {
         return ResponseDTO.ok(purchaseQueryService.orderItems(orderId));
     }
 
     @GetMapping("/log/{orderId}")
-    @SaCheckPermission("scm:purchase:log:query")
+    @SaCheckPermission(PurchasePermission.LOG_QUERY)
     public ResponseDTO<List<PurchaseOperationLogVO>> logs(@PathVariable Long orderId) {
         return ResponseDTO.ok(purchaseQueryService.orderLogs(orderId));
     }
@@ -94,7 +95,7 @@ public class PurchaseOrderController {
      * 与列表页共用同一投影，导出内容 == 列表可见内容；<b>不触碰任何采购状态</b>（§6.8）。
      */
     @PostMapping("/export")
-    @SaCheckPermission("scm:purchase:query")
+    @SaCheckPermission(PurchasePermission.QUERY)
     @OperateLog
     public void export(@Valid @RequestBody PurchaseOrderExportForm form, HttpServletResponse response)
             throws IOException {
@@ -114,7 +115,7 @@ public class PurchaseOrderController {
     // ------------------------------------------------------------------
 
     @PostMapping("/create")
-    @SaCheckPermission("scm:purchase:add")
+    @SaCheckPermission(PurchasePermission.ADD)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> create(
             @Valid @RequestBody PurchaseOrderAddForm form,
@@ -123,7 +124,7 @@ public class PurchaseOrderController {
     }
 
     @PostMapping("/update")
-    @SaCheckPermission("scm:purchase:update")
+    @SaCheckPermission(PurchasePermission.UPDATE)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> update(@Valid @RequestBody PurchaseOrderUpdateForm form) {
         return ResponseDTO.ok(purchaseOrderService.update(form));
@@ -137,14 +138,14 @@ public class PurchaseOrderController {
      * 不接幂等头，与 {@code /update} 同一取向 —— 重复提交由 {@code id + version} 乐观锁挡住。
      */
     @PostMapping("/reassign")
-    @SaCheckPermission("scm:purchase:assign")
+    @SaCheckPermission(PurchasePermission.ASSIGN)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> reassign(@Valid @RequestBody PurchaseOrderReassignForm form) {
         return ResponseDTO.ok(purchaseOrderService.reassign(form));
     }
 
     @PostMapping("/submit")
-    @SaCheckPermission("scm:purchase:submit")
+    @SaCheckPermission(PurchasePermission.SUBMIT)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> submit(
             @Valid @RequestBody PurchaseOrderVersionForm form,
@@ -153,7 +154,7 @@ public class PurchaseOrderController {
     }
 
     @PostMapping("/cancel")
-    @SaCheckPermission("scm:purchase:cancel")
+    @SaCheckPermission(PurchasePermission.CANCEL)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> cancel(
             @Valid @RequestBody PurchaseOrderCancelForm form,
@@ -162,7 +163,7 @@ public class PurchaseOrderController {
     }
 
     @PostMapping("/short-close")
-    @SaCheckPermission("scm:purchase:short-close")
+    @SaCheckPermission(PurchasePermission.SHORT_CLOSE)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> shortClose(
             @Valid @RequestBody PurchaseOrderShortCloseForm form,
@@ -175,7 +176,7 @@ public class PurchaseOrderController {
      * 任一单非法即整批回滚。复用 {@code scm:purchase:short-close} 权限；不接幂等头（批量本身原子）。
      */
     @PostMapping("/batch/short-close")
-    @SaCheckPermission("scm:purchase:short-close")
+    @SaCheckPermission(PurchasePermission.SHORT_CLOSE)
     @OperateLog
     public ResponseDTO<String> batchShortClose(@Valid @RequestBody PurchaseOrderBatchShortCloseForm form) {
         purchaseOrderService.batchShortClose(form);
@@ -183,7 +184,7 @@ public class PurchaseOrderController {
     }
 
     @PostMapping("/delete")
-    @SaCheckPermission("scm:purchase:delete")
+    @SaCheckPermission(PurchasePermission.DELETE)
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody PurchaseOrderDeleteForm form) {
         purchaseOrderService.delete(form);
@@ -191,7 +192,7 @@ public class PurchaseOrderController {
     }
 
     @PostMapping("/batch-delete")
-    @SaCheckPermission("scm:purchase:delete")
+    @SaCheckPermission(PurchasePermission.DELETE)
     @OperateLog
     public ResponseDTO<String> batchDelete(@Valid @RequestBody PurchaseOrderBatchDeleteForm form) {
         purchaseOrderService.batchDelete(form);

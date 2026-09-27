@@ -9,6 +9,7 @@ import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.purchase.dao.PurchaseDemandAllocationDao;
 import com.xsy.scm.purchase.dao.PurchaseDemandDao;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
@@ -77,15 +78,15 @@ public class PurchaseDemandService {
 
     private final SalesOrderDao salesOrderDao;
 
-    private final PurchaseQueryService queryService;
+    private final PurchaseQueryService purchaseQueryService;
 
-    private final PurchaseIdempotencyService idempotencyService;
+    private final PurchaseIdempotencyService purchaseIdempotencyService;
 
-    private final PurchaseWarehouseReferenceGuard warehouseReferenceGuard;
+    private final PurchaseWarehouseReferenceGuard purchaseWarehouseReferenceGuard;
 
     private final PurchaseOrderValidator purchaseOrderValidator;
 
-    private final PurchaseOwnerResolver ownerResolver;
+    private final PurchaseOwnerResolver purchaseOwnerResolver;
 
     /**
      * `generate` 的返回体。
@@ -113,13 +114,13 @@ public class PurchaseDemandService {
      */
     @Transactional(rollbackFor = Exception.class)
     public GenerateResult generate(PurchaseDemandGenerateForm form, String idempotencyKey) {
-        var claim = idempotencyService.claim(SCOPE_GENERATE, idempotencyKey, form);
+        var claim = purchaseIdempotencyService.claim(SCOPE_GENERATE, idempotencyKey, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, GenerateResult.class);
+            return purchaseIdempotencyService.replay(claim, GenerateResult.class);
         }
 
         validateWindow(form);
-        warehouseReferenceGuard.requireEnabled(form.getWarehouseId());
+        purchaseWarehouseReferenceGuard.requireEnabled(form.getWarehouseId());
         if (form.getSupplierId() != null) {
             purchaseOrderValidator.requireEnabledSupplier(form.getSupplierId());
         }
@@ -155,7 +156,7 @@ public class PurchaseDemandService {
                         source, order, form.getSupplierId(), form.getWarehouseId(),
                         // 需求上的采购员同样是归属依据（generate 的「默认采购员」只是建议值）：
                         // 无分配权时一律落成当前员工，否则列表范围可以被一个表单字段放大
-                        ownerResolver.resolveForCreate(form.getPurchaserId()));
+                        purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()));
                 if (purchaseDemandDao.insertIgnore(demand) == 1) {
                     result.getDemandIds().add(demand.getId());
                     result.setCreatedCount(result.getCreatedCount() + 1);
@@ -177,7 +178,7 @@ public class PurchaseDemandService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.DEMAND_GENERATE, null, null, null, null, after));
 
-        idempotencyService.complete(claim, "PURCHASE_DEMAND_GENERATE", null, result);
+        purchaseIdempotencyService.complete(claim, "PURCHASE_DEMAND_GENERATE", null, result);
         return result;
     }
 
@@ -193,10 +194,10 @@ public class PurchaseDemandService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseDemandVO allocate(PurchaseDemandAllocateForm form, String idempotencyKey) {
-        var claim = idempotencyService.claim(
+        var claim = purchaseIdempotencyService.claim(
                 "PURCHASE_DEMAND_ALLOCATE:" + form.getDemandId(), idempotencyKey, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, PurchaseDemandVO.class);
+            return purchaseIdempotencyService.replay(claim, PurchaseDemandVO.class);
         }
 
         // 锁序第 1 层：purchase_demand（单条）
@@ -208,7 +209,7 @@ public class PurchaseDemandService {
         PurchaseDemandAllocator.demandVersion(form.getVersion(), demand.getVersion());
         // 归属守卫：分配会把需求量并进别人名下的采购单，两头都必须在调用者范围内。
         // 只判需求会留下一条侧门——用自己的采购单接住别人的需求，两边数字同时被改。
-        ownerResolver.requireVisible(demand.getPurchaserId());
+        purchaseOwnerResolver.requireVisible(demand.getPurchaserId());
 
         PurchaseOrderItemEntity orderItem = purchaseOrderItemDao.selectById(form.getPurchaseOrderItemId());
         if (orderItem == null) {
@@ -218,11 +219,11 @@ public class PurchaseDemandService {
         if (order == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
-        ownerResolver.requireVisible(order.getPurchaserId());
+        purchaseOwnerResolver.requireVisible(order.getPurchaserId());
         // 只有 SUBMITTED 的采购单可以继续接需求：DRAFT 还没定稿，RECEIVED/SHORT_CLOSED/CANCELLED 已结束。
         // 这里沿用设计 §7.4 指定的 40980（PURCHASE_DEMAND_SOURCE_INVALID）——
         // 语义上「来源不允许再产生/变更需求关联」，与来源订单状态校验同源。
-        if (!"SUBMITTED".equals(order.getStatus())) {
+        if (!ScmPurchaseStatusEnum.SUBMITTED.name().equals(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
         }
 
@@ -279,8 +280,8 @@ public class PurchaseDemandService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.DEMAND_ALLOCATE, order.getId(), null, null, before, after));
 
-        PurchaseDemandVO result = queryService.demandDetailForCommand(demand.getId());
-        idempotencyService.complete(claim, "PURCHASE_DEMAND", demand.getId(), result);
+        PurchaseDemandVO result = purchaseQueryService.demandDetailForCommand(demand.getId());
+        purchaseIdempotencyService.complete(claim, "PURCHASE_DEMAND", demand.getId(), result);
         return result;
     }
 

@@ -61,7 +61,7 @@ public final class PurchaseIdempotencyRequestHasher {
             var sorted = objectMapper.createObjectNode();
             node.properties().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> sorted.set(e.getKey(), canonicalNode(e.getValue())));
+                    .forEach(property -> sorted.set(property.getKey(), canonicalNode(property.getValue())));
             return objectMapper.writeValueAsString(sorted);
         }
         return objectMapper.writeValueAsString(canonicalNode(node));
@@ -72,12 +72,12 @@ public final class PurchaseIdempotencyRequestHasher {
             var sorted = objectMapper.createObjectNode();
             node.properties().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(e -> sorted.set(e.getKey(), canonicalNode(e.getValue())));
+                    .forEach(property -> sorted.set(property.getKey(), canonicalNode(property.getValue())));
             return sorted;
         }
         if (node.isArray()) {
             var result = objectMapper.createArrayNode();
-            node.forEach(v -> result.add(canonicalNode(v)));
+            node.forEach(arrayValue -> result.add(canonicalNode(arrayValue)));
             return result;
         }
         if (node.isNumber()) {

@@ -97,7 +97,7 @@ public class PurchaseQueryService {
 
     private final PurchaseOperationLogDao purchaseOperationLogDao;
 
-    private final ScmDataScopeService scmDataScopeService;
+    private final ScmDataScopeService dataScopeService;
 
     // ------------------------------------------------------------------
     // 采购需求
@@ -109,7 +109,7 @@ public class PurchaseQueryService {
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseDemandVO> demandQuery(PurchaseDemandQueryForm form) {
-        ScmValueScope purchaserScope = scmDataScopeService.resolve().getPurchaserScope();
+        ScmValueScope purchaserScope = dataScopeService.resolve().getPurchaserScope();
         if (purchaserScope.isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
         }
@@ -139,7 +139,7 @@ public class PurchaseQueryService {
         if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        ScmValueScope warehouseScope = scmDataScopeService.resolve().getWarehouseScope();
+        ScmValueScope warehouseScope = dataScopeService.resolve().getWarehouseScope();
         if (!warehouseScope.allows(form.getWarehouseId())) {
             return ScmDataScopeService.emptyPage(form);
         }
@@ -150,23 +150,23 @@ public class PurchaseQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PurchaseDemandVO demandDetail(Long id) {
-        return demandDetail(id, scmDataScopeService.resolve().getPurchaserScope());
+    public PurchaseDemandVO demandDetail(Long demandId) {
+        return demandDetail(demandId, dataScopeService.resolve().getPurchaserScope());
     }
 
     /**
      * 需求详情，按给定采购员范围判定可见性；越界抛 30005。
      */
     @Transactional(readOnly = true)
-    public PurchaseDemandVO demandDetail(Long id, ScmValueScope purchaserScope) {
-        PurchaseDemandVO vo = purchaseDemandDao.detail(id);
+    public PurchaseDemandVO demandDetail(Long demandId, ScmValueScope purchaserScope) {
+        PurchaseDemandVO vo = purchaseDemandDao.detail(demandId);
         if (vo == null) {
             throw new ScmBusinessException(PURCHASE_DEMAND_NOT_FOUND);
         }
         if (!purchaserScope.isAll()) {
             // 详情投影与列表同源、刻意不带 purchaser_id（列表按范围整行过滤，不需要展示归属列），
             // 因此归属从实体行按主键读一次；selectById 不参与范围过滤，只是取归属值。
-            PurchaseDemandEntity row = purchaseDemandDao.selectById(id);
+            PurchaseDemandEntity row = purchaseDemandDao.selectById(demandId);
             requirePurchaserVisible(purchaserScope, row == null ? null : row.getPurchaserId());
         }
         return vo;
@@ -176,8 +176,8 @@ public class PurchaseQueryService {
      * 命令侧投影：不做读取范围判定（见类说明）。
      */
     @Transactional(readOnly = true)
-    public PurchaseDemandVO demandDetailForCommand(Long id) {
-        return demandDetail(id, ScmValueScope.all());
+    public PurchaseDemandVO demandDetailForCommand(Long demandId) {
+        return demandDetail(demandId, ScmValueScope.all());
     }
 
     /**
@@ -209,7 +209,7 @@ public class PurchaseQueryService {
     @Transactional(readOnly = true)
     public PageResult<PurchaseOrderVO> orderQuery(PurchaseOrderQueryForm form) {
         ScmValueScope purchaserScope =
-                scmDataScopeService.resolve().getPurchaserScope().narrow(form.getPurchaserId());
+                dataScopeService.resolve().getPurchaserScope().narrow(form.getPurchaserId());
         if (purchaserScope.isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
         }
@@ -221,28 +221,28 @@ public class PurchaseQueryService {
      * 详情 = 单头 + 全部行（含每行分配）+ 单级分配平铺 + 全量日志。
      */
     @Transactional(readOnly = true)
-    public PurchaseOrderVO orderDetail(Long id) {
-        return orderDetail(id, scmDataScopeService.resolve().getPurchaserScope());
+    public PurchaseOrderVO orderDetail(Long purchaseOrderId) {
+        return orderDetail(purchaseOrderId, dataScopeService.resolve().getPurchaserScope());
     }
 
     /**
      * 采购单详情，按给定采购员范围判定可见性；越界抛 30005。
      */
     @Transactional(readOnly = true)
-    public PurchaseOrderVO orderDetail(Long id, ScmValueScope purchaserScope) {
-        PurchaseOrderVO vo = purchaseOrderDao.detail(id);
+    public PurchaseOrderVO orderDetail(Long purchaseOrderId, ScmValueScope purchaserScope) {
+        PurchaseOrderVO vo = purchaseOrderDao.detail(purchaseOrderId);
         if (vo == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         requirePurchaserVisible(purchaserScope, vo.getPurchaserId());
         // 归属已在本方法判定过，子读不再重复取父行
-        List<PurchaseOrderItemVO> items = orderItems(id, ScmValueScope.all());
+        List<PurchaseOrderItemVO> items = orderItems(purchaseOrderId, ScmValueScope.all());
         vo.setItems(items);
         // 单级平铺：前端「分配明细」区直接消费，不需要自己扁平化 items[].allocations[]
         vo.setAllocations(items.stream()
                 .flatMap(item -> item.getAllocations().stream())
                 .toList());
-        vo.setLogs(orderLogs(id, ScmValueScope.all()));
+        vo.setLogs(orderLogs(purchaseOrderId, ScmValueScope.all()));
         return vo;
     }
 
@@ -250,8 +250,8 @@ public class PurchaseQueryService {
      * 命令侧投影：不做读取范围判定（见类说明）。
      */
     @Transactional(readOnly = true)
-    public PurchaseOrderVO orderDetailForCommand(Long id) {
-        return orderDetail(id, ScmValueScope.all());
+    public PurchaseOrderVO orderDetailForCommand(Long purchaseOrderId) {
+        return orderDetail(purchaseOrderId, ScmValueScope.all());
     }
 
     /**
@@ -262,7 +262,7 @@ public class PurchaseQueryService {
      */
     @Transactional(readOnly = true)
     public List<PurchaseOrderItemVO> orderItems(Long orderId) {
-        return orderItems(orderId, scmDataScopeService.resolve().getPurchaserScope());
+        return orderItems(orderId, dataScopeService.resolve().getPurchaserScope());
     }
 
     @Transactional(readOnly = true)
@@ -279,7 +279,7 @@ public class PurchaseQueryService {
      */
     @Transactional(readOnly = true)
     public List<PurchaseOperationLogVO> orderLogs(Long orderId) {
-        return orderLogs(orderId, scmDataScopeService.resolve().getPurchaserScope());
+        return orderLogs(orderId, dataScopeService.resolve().getPurchaserScope());
     }
 
     @Transactional(readOnly = true)
@@ -300,7 +300,7 @@ public class PurchaseQueryService {
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseReceiptVO> receiptQuery(PurchaseReceiptQueryForm form) {
-        ScmValueScope purchaserScope = scmDataScopeService.resolve().getPurchaserScope();
+        ScmValueScope purchaserScope = dataScopeService.resolve().getPurchaserScope();
         if (purchaserScope.isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
         }
@@ -309,16 +309,16 @@ public class PurchaseQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PurchaseReceiptVO receiptDetail(Long id) {
-        return receiptDetail(id, scmDataScopeService.resolve().getPurchaserScope());
+    public PurchaseReceiptVO receiptDetail(Long receiptId) {
+        return receiptDetail(receiptId, dataScopeService.resolve().getPurchaserScope());
     }
 
     /**
      * 收货单详情，按父采购单的采购员范围判定可见性；越界抛 30005。
      */
     @Transactional(readOnly = true)
-    public PurchaseReceiptVO receiptDetail(Long id, ScmValueScope purchaserScope) {
-        PurchaseReceiptVO vo = purchaseReceiptDao.detail(id);
+    public PurchaseReceiptVO receiptDetail(Long receiptId, ScmValueScope purchaserScope) {
+        PurchaseReceiptVO vo = purchaseReceiptDao.detail(receiptId);
         if (vo == null) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_NOT_FOUND);
         }
@@ -326,7 +326,7 @@ public class PurchaseQueryService {
             requirePurchaserVisible(purchaserScope, orderPurchaserId(vo.getPurchaseOrderId()));
         }
         // 归属已按父单判定过，明细不再重复取父行
-        vo.setItems(receiptItems(id, ScmValueScope.all()));
+        vo.setItems(receiptItems(receiptId, ScmValueScope.all()));
         return vo;
     }
 
@@ -335,8 +335,8 @@ public class PurchaseQueryService {
      * 且父单归属不该让一次合法的收货确认回滚（见类说明）。
      */
     @Transactional(readOnly = true)
-    public PurchaseReceiptVO receiptDetailForCommand(Long id) {
-        return receiptDetail(id, ScmValueScope.all());
+    public PurchaseReceiptVO receiptDetailForCommand(Long receiptId) {
+        return receiptDetail(receiptId, ScmValueScope.all());
     }
 
     /**
@@ -344,7 +344,7 @@ public class PurchaseQueryService {
      */
     @Transactional(readOnly = true)
     public List<PurchaseReceiptItemVO> receiptItems(Long receiptId) {
-        return receiptItems(receiptId, scmDataScopeService.resolve().getPurchaserScope());
+        return receiptItems(receiptId, dataScopeService.resolve().getPurchaserScope());
     }
 
     @Transactional(readOnly = true)
@@ -377,7 +377,7 @@ public class PurchaseQueryService {
         if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        ScmValueScope warehouseScope = scmDataScopeService.resolve().getWarehouseScope();
+        ScmValueScope warehouseScope = dataScopeService.resolve().getWarehouseScope();
         if (warehouseScope.isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
         }

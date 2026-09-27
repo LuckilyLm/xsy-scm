@@ -19,7 +19,7 @@ public final class PurchaseOrderExportSupport {
     private PurchaseOrderExportSupport() {
     }
 
-    public record Column(String key, String title, Function<PurchaseOrderVO, Object> value) {
+    public record Column(String key, String title, Function<PurchaseOrderVO, Object> valueExtractor) {
     }
 
     private static final List<Column> CATALOG = List.of(
@@ -69,14 +69,14 @@ public final class PurchaseOrderExportSupport {
         for (PurchaseOrderVO order : orders) {
             List<Object> line = new ArrayList<>(columns.size());
             for (Column column : columns) {
-                line.add(text(column.value().apply(order)));
+                line.add(text(column.valueExtractor().apply(order)));
             }
             data.add(line);
         }
         return data;
     }
 
-    private static String text(Object value) {
-        return value == null ? "" : String.valueOf(value);
+    private static String text(Object exportValue) {
+        return exportValue == null ? "" : String.valueOf(exportValue);
     }
 }

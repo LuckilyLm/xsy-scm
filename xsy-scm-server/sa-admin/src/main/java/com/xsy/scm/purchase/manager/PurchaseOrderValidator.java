@@ -12,6 +12,7 @@ import com.xsy.scm.supplier.service.SupplierSkuService;
 import com.xsy.scm.warehouse.domain.entity.WarehouseEntity;
 import com.xsy.scm.warehouse.service.WarehouseService;
 import org.springframework.stereotype.Component;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -67,15 +68,15 @@ public class PurchaseOrderValidator {
     /**
      * 去首尾空白；空白视作 {@code null}。
      */
-    public static String trim(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+    public static String trim(String inputText) {
+        return StringUtils.isBlank(inputText) ? null : StringUtils.trimToNull(inputText);
     }
 
     /**
      * 必填文本（原因类字段），缺失 → 传入的错误码。
      */
-    public static void reason(String value, ScmErrorCode code) {
-        if (trim(value) == null) {
+    public static void reason(String reasonText, ScmErrorCode code) {
+        if (trim(reasonText) == null) {
             throw new ScmBusinessException(code);
         }
     }
@@ -86,12 +87,12 @@ public class PurchaseOrderValidator {
      * @param positive {@code true} = 数量（必须 &gt; 0，否则 40080）；
      *                 {@code false} = 单价（必须 &ge; 0，否则 40081）
      */
-    public static BigDecimal decimal(String value, boolean positive) {
+    public static BigDecimal decimal(String decimalText, boolean positive) {
         ScmErrorCode code = positive ? PURCHASE_QUANTITY_INVALID : PURCHASE_PRICE_INVALID;
-        if (value == null || !value.matches("[0-9]{1,14}\\.[0-9]{4}")) {
+        if (decimalText == null || !decimalText.matches("[0-9]{1,14}\\.[0-9]{4}")) {
             throw new ScmBusinessException(code);
         }
-        BigDecimal result = new BigDecimal(value);
+        BigDecimal result = new BigDecimal(decimalText);
         if (positive && result.signum() <= 0) {
             throw new ScmBusinessException(code);
         }

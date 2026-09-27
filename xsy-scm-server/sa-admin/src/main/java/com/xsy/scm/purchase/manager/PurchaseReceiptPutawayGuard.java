@@ -2,6 +2,7 @@ package com.xsy.scm.purchase.manager;
 
 import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
 import com.xsy.scm.purchase.constant.ScmPutawayStatusEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptStatusEnum;
 
 /**
  * 仓库确认入库的前置判定（B1，HD-B1-03）。
@@ -14,8 +15,8 @@ public final class PurchaseReceiptPutawayGuard {
     private PurchaseReceiptPutawayGuard() {
     }
 
-    public static boolean putawayAllowed(String status, String receiptMode, String putawayStatus) {
-        return "CONFIRMED".equals(status)
+    public static boolean putawayAllowed(String receiptStatus, String receiptMode, String putawayStatus) {
+        return ScmReceiptStatusEnum.CONFIRMED.name().equals(receiptStatus)
                 && ScmReceiptModeEnum.WAREHOUSE_CONFIRM.name().equals(receiptMode)
                 && ScmPutawayStatusEnum.PENDING.name().equals(putawayStatus);
     }

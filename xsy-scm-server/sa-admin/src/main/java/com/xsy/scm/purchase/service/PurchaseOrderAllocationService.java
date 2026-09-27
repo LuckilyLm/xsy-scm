@@ -47,9 +47,9 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_SUPPLIER_
 @RequiredArgsConstructor
 public class PurchaseOrderAllocationService {
 
-    private final ProductSkuOptionDao skus;
+    private final ProductSkuOptionDao productSkuOptionDao;
 
-    private final ProductSpuDao spus;
+    private final ProductSpuDao productSpuDao;
 
     private final PurchaseDemandDao purchaseDemandDao;
 
@@ -74,8 +74,8 @@ public class PurchaseOrderAllocationService {
 
         final List<PurchaseDemandAllocationEntity> allocations = new ArrayList<>();
 
-        private RequestedRow(PurchaseOrderItemEntity item, List<PurchaseOrderAddForm.Allocation> forms) {
-            this.item = item;
+        private RequestedRow(PurchaseOrderItemEntity purchaseOrderItem, List<PurchaseOrderAddForm.Allocation> forms) {
+            this.purchaseOrderItem = purchaseOrderItem;
             this.forms = forms == null ? List.of() : forms;
         }
     }
@@ -85,7 +85,7 @@ public class PurchaseOrderAllocationService {
                 .map(PurchaseOrderAddForm.Item::getSkuId)
                 .distinct()
                 .toList();
-        Map<Long, ProductSkuOptionVO> products = skus.selectByIds(skuIds).stream()
+        Map<Long, ProductSkuOptionVO> products = productSkuOptionDao.selectByIds(skuIds).stream()
                 .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity(), (a, b) -> a));
         List<Long> spuIds = products.values().stream()
                 .map(ProductSkuOptionVO::getSpuId)
@@ -94,7 +94,7 @@ public class PurchaseOrderAllocationService {
                 .toList();
         Map<Long, String> spuCodes = spuIds.isEmpty()
                 ? Map.of()
-                : spus.selectBatchIds(spuIds).stream().collect(Collectors.toMap(
+                : productSpuDao.selectBatchIds(spuIds).stream().collect(Collectors.toMap(
                 ProductSpuEntity::getId, ProductSpuEntity::getSpuCode, (a, b) -> a));
 
         List<RequestedRow> rows = new ArrayList<>(form.getItems().size());

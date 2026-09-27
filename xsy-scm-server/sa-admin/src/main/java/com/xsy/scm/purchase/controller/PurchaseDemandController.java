@@ -12,6 +12,8 @@ import com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandVO;
 import com.xsy.scm.purchase.service.PurchaseDemandService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
+import com.xsy.scm.purchase.permission.PurchasePermission;
+import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -38,7 +40,7 @@ public class PurchaseDemandController {
     private final PurchaseQueryService purchaseQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:purchase:demand:query")
+    @SaCheckPermission(PurchasePermission.DEMAND_QUERY)
     public ResponseDTO<PageResult<PurchaseDemandVO>> query(@Valid @RequestBody PurchaseDemandQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.demandQuery(form));
     }
@@ -51,14 +53,16 @@ public class PurchaseDemandController {
      * 读到库存余额，前端隐藏按钮不作为权限保护。
      */
     @PostMapping("/summary-preview")
-    @SaCheckPermission(value = {"scm:purchase:demand:query", "scm:inventory:balance:query"}, mode = SaMode.AND)
+    @SaCheckPermission(
+            value = {PurchasePermission.DEMAND_QUERY, ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY},
+            mode = SaMode.AND)
     public ResponseDTO<PageResult<PurchaseDemandSummaryVO>> summaryPreview(
             @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
         return ResponseDTO.ok(purchaseQueryService.summaryPreview(form));
     }
 
     @PostMapping("/generate")
-    @SaCheckPermission("scm:purchase:demand:generate")
+    @SaCheckPermission(PurchasePermission.DEMAND_GENERATE)
     @OperateLog
     public ResponseDTO<PurchaseDemandService.GenerateResult> generate(
             @Valid @RequestBody PurchaseDemandGenerateForm form,
@@ -67,7 +71,7 @@ public class PurchaseDemandController {
     }
 
     @PostMapping("/allocate")
-    @SaCheckPermission("scm:purchase:demand:allocate")
+    @SaCheckPermission(PurchasePermission.DEMAND_ALLOCATE)
     @OperateLog
     public ResponseDTO<PurchaseDemandVO> allocate(
             @Valid @RequestBody PurchaseDemandAllocateForm form,

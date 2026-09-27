@@ -22,24 +22,24 @@ public class PurchaseReceiptItemWorkbenchQueryForm extends PageParam {
 
     private Long warehouseId;
 
-    @Size(max = 64)
+    @Size(max = 64, message = "采购单号不能超过64个字符")
     private String orderNo;
 
     /**
      * 模糊匹配商品名 / SKU 编码 / SKU 名称快照。
      */
-    @Size(max = 64)
+    @Size(max = 64, message = "搜索关键词不能超过64个字符")
     private String keyword;
 
     @Override
-    @Min(1)
+    @Min(value = 1, message = "页码必须至少为1")
     public Long getPageNum() {
         return super.getPageNum();
     }
 
     @Override
-    @Min(1)
-    @Max(100)
+    @Min(value = 1, message = "每页条数必须至少为1")
+    @Max(value = 100, message = "每页条数不能超过100")
     public Long getPageSize() {
         return super.getPageSize();
     }

@@ -2,7 +2,11 @@ package com.xsy.scm.purchase.domain.form;
 
 import lombok.Data;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,17 +29,17 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
  */
 @Data
 public class PurchaseOrderAddForm {
-    @NotNull
+    @NotNull(message = "供应商不能为空")
     private Long supplierId;
     private Long purchaserId;
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
     private LocalDate plannedArrivalDate;
-    @Size(max = 500)
+    @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
     @Valid
-    @NotEmpty
-    @Size(max = 500)
+    @NotEmpty(message = "采购明细不能为空")
+    @Size(max = 500, message = "采购明细不能超过500项")
     private List<Item> items;
 
     /**
@@ -50,18 +54,18 @@ public class PurchaseOrderAddForm {
         /**
          * 保留行必填（`PURCHASE_ITEM_VERSION_REQUIRED`）。
          */
-        @Min(0)
+        @Min(value = 0, message = "版本号不能小于0")
         private Integer version;
-        @NotNull
+        @NotNull(message = "SKU不能为空")
         private Long skuId;
-        @NotBlank
+        @NotBlank(message = "采购数量不能为空")
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String quantity;
-        @NotBlank
+        @NotBlank(message = "采购单价不能为空")
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String price;
         @Valid
-        @Size(max = 100)
+        @Size(max = 100, message = "需求分配列表不能超过100项")
         private List<Allocation> allocations;
     }
 
@@ -70,16 +74,16 @@ public class PurchaseOrderAddForm {
      */
     @Data
     public static class Allocation {
-        @NotNull
+        @NotNull(message = "采购需求不能为空")
         private Long demandId;
-        @NotBlank
+        @NotBlank(message = "采购数量不能为空")
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String quantity;
         /**
          * 需求版本，必填（`PURCHASE_DEMAND_VERSION_REQUIRED`）。
          */
-        @NotNull
-        @Min(0)
+        @NotNull(message = "需求版本不能为空")
+        @Min(value = 0, message = "需求版本不能小于0")
         private Integer demandVersion;
     }
 }

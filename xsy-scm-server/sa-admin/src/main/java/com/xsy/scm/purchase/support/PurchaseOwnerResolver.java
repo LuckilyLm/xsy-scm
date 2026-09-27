@@ -4,6 +4,7 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.base.common.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +23,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PurchaseOwnerResolver {
 
-    private final ScmDataScopeService scmDataScopeService;
+    private final ScmDataScopeService dataScopeService;
 
     /**
      * 新建（采购单 / 采购需求）时的归属。
@@ -36,7 +37,7 @@ public class PurchaseOwnerResolver {
         if (canAssign()) {
             return requestedPurchaserId;
         }
-        ScmDataScopeContext context = scmDataScopeService.resolve();
+        ScmDataScopeContext context = dataScopeService.resolve();
         if (context.getEmployeeId() == null) {
             throw new ScmDataScopeException();
         }
@@ -54,7 +55,7 @@ public class PurchaseOwnerResolver {
      * 持有者认领的对象，普通采购员既看不到也不该改。
      */
     public void requireVisible(Long purchaserId) {
-        if (!scmDataScopeService.resolve().getPurchaserScope().allows(purchaserId)) {
+        if (!dataScopeService.resolve().getPurchaserScope().allows(purchaserId)) {
             throw new ScmDataScopeException();
         }
     }
@@ -67,6 +68,6 @@ public class PurchaseOwnerResolver {
      * 「一次整单编辑顺带换人」就会藏在一次普通保存里，审计与授权都失去着力点。
      */
     public boolean canAssign() {
-        return ScmDataScopeService.hasPermission(ScmDataScopeService.PURCHASE_ASSIGN_PERM);
+        return ScmDataScopeService.hasPermission(PurchasePermission.ASSIGN);
     }
 }

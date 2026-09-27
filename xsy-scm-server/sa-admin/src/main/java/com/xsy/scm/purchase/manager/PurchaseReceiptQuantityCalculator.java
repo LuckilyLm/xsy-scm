@@ -1,6 +1,8 @@
 package com.xsy.scm.purchase.manager;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmProductTypeEnum;
+import com.xsy.scm.purchase.constant.ScmWeighingSourceEnum;
 import com.xsy.scm.purchase.constant.PurchaseConfigKey;
 
 import java.math.BigDecimal;
@@ -119,11 +121,11 @@ public final class PurchaseReceiptQuantityCalculator {
      *
      * @throws ScmBusinessException 形态不符或 &le; 0（40083）
      */
-    public static BigDecimal declared(String value) {
-        if (value == null || !value.matches("[0-9]{1,14}\\.[0-9]{4}")) {
+    public static BigDecimal declared(String declaredQuantityText) {
+        if (declaredQuantityText == null || !declaredQuantityText.matches("[0-9]{1,14}\\.[0-9]{4}")) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_QUANTITY_INVALID);
         }
-        BigDecimal parsed = new BigDecimal(value);
+        BigDecimal parsed = new BigDecimal(declaredQuantityText);
         if (parsed.signum() <= 0) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_QUANTITY_INVALID);
         }
@@ -147,7 +149,7 @@ public final class PurchaseReceiptQuantityCalculator {
                                                BigDecimal actualWeight,
                                                String weighingSource,
                                                String correctionReason) {
-        if ("STANDARD".equals(productType)) {
+        if (ScmProductTypeEnum.STANDARD.name().equals(productType)) {
             if (actualWeight != null || weighingSource != null || correctionReason != null) {
                 throw new ScmBusinessException(PURCHASE_RECEIPT_QUANTITY_INVALID);
             }
@@ -156,11 +158,11 @@ public final class PurchaseReceiptQuantityCalculator {
             }
             return declaredQuantity;
         }
-        if ("NON_STANDARD".equals(productType)) {
+        if (ScmProductTypeEnum.NON_STANDARD.name().equals(productType)) {
             if (actualWeight == null || actualWeight.signum() <= 0) {
                 throw new ScmBusinessException(PURCHASE_RECEIPT_QUANTITY_INVALID);
             }
-            if (!"MANUAL".equals(weighingSource)) {
+            if (!ScmWeighingSourceEnum.MANUAL.name().equals(weighingSource)) {
                 throw new ScmBusinessException(PURCHASE_RECEIPT_QUANTITY_INVALID);
             }
             return actualWeight;

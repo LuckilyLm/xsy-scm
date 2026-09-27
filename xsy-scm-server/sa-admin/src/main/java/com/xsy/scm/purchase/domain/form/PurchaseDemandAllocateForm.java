@@ -1,7 +1,10 @@
 package com.xsy.scm.purchase.domain.form;
 
 import lombok.Data;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
@@ -14,18 +17,18 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
  */
 @Data
 public class PurchaseDemandAllocateForm {
-    @NotNull
+    @NotNull(message = "采购需求不能为空")
     private Long demandId;
-    @NotNull
+    @NotNull(message = "采购单明细不能为空")
     private Long purchaseOrderItemId;
-    @NotBlank
+    @NotBlank(message = "分配数量不能为空")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String quantity;
-    @NotNull
+    @NotNull(message = "供应商不能为空")
     private Long supplierId;
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
-    @NotNull
-    @Min(0)
+    @NotNull(message = "需求版本不能为空")
+    @Min(value = 0, message = "需求版本不能小于0")
     private Integer version;
 }

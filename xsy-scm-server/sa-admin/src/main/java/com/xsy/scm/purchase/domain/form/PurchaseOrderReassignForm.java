@@ -17,15 +17,15 @@ import lombok.Data;
 @Data
 public class PurchaseOrderReassignForm {
 
-    @NotNull
+    @NotNull(message = "采购单 ID 不能为空")
     private Long id;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "版本号不能为空")
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
 
     private Long purchaserId;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "改派原因不能超过500个字符")
     private String reason;
 }

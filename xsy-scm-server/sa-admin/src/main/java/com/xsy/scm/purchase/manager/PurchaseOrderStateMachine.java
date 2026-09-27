@@ -1,6 +1,7 @@
 package com.xsy.scm.purchase.manager;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 
 import java.util.Set;
 
@@ -33,18 +34,31 @@ public final class PurchaseOrderStateMachine {
      * 状态图：只有表里列出的 (from, to) 是合法的。
      */
     public static boolean canTransition(String from, String to) {
-        if (to == null) {
-            // Set.of(...).contains(null) 会抛 NPE（ImmutableCollections 拒绝 null 查询），
-            // 因此必须在这里显式短路：null 目标状态是「非法」，不是「程序错误」。
+        ScmPurchaseStatusEnum fromStatus = parseStatus(from);
+        ScmPurchaseStatusEnum toStatus = parseStatus(to);
+        if (fromStatus == null || toStatus == null) {
             return false;
         }
-        return switch (from == null ? "" : from) {
-            case "DRAFT" -> Set.of("SUBMITTED", "CANCELLED").contains(to);
-            case "SUBMITTED" -> Set.of("PARTIALLY_RECEIVED", "RECEIVED", "CANCELLED").contains(to);
+        return switch (fromStatus) {
+            case DRAFT -> Set.of(ScmPurchaseStatusEnum.SUBMITTED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
+            case SUBMITTED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED,
+                    ScmPurchaseStatusEnum.RECEIVED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
             // 同一状态到自身是合法的：第二次收货后仍是 PARTIALLY_RECEIVED
-            case "PARTIALLY_RECEIVED" -> Set.of("PARTIALLY_RECEIVED", "RECEIVED", "SHORT_CLOSED").contains(to);
+            case PARTIALLY_RECEIVED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED,
+                    ScmPurchaseStatusEnum.RECEIVED, ScmPurchaseStatusEnum.SHORT_CLOSED).contains(toStatus);
             default -> false;   // RECEIVED / SHORT_CLOSED / CANCELLED 为终态
         };
+    }
+
+    private static ScmPurchaseStatusEnum parseStatus(String statusText) {
+        if (statusText == null) {
+            return null;
+        }
+        try {
+            return ScmPurchaseStatusEnum.valueOf(statusText);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 
     /**
@@ -59,36 +73,40 @@ public final class PurchaseOrderStateMachine {
     /**
      * 只有 {@code DRAFT} 可编辑行与需求分配（T2）。
      */
-    public static boolean editable(String status) {
-        return "DRAFT".equals(status);
+    public static boolean editable(String purchaseOrderStatus) {
+        return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus);
     }
 
     /**
      * 可建 / 可确认收货：{@code SUBMITTED} 或 {@code PARTIALLY_RECEIVED}（T7/T8）。
      */
-    public static boolean receivable(String status) {
-        return "SUBMITTED".equals(status) || "PARTIALLY_RECEIVED".equals(status);
+    public static boolean receivable(String purchaseOrderStatus) {
+        return ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus)
+                || ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name().equals(purchaseOrderStatus);
     }
 
     /**
      * 可取消：{@code DRAFT} 或 {@code SUBMITTED}（T4）。**不含** {@code PARTIALLY_RECEIVED}（P14）。
      */
-    public static boolean cancellable(String status) {
-        return "DRAFT".equals(status) || "SUBMITTED".equals(status);
+    public static boolean cancellable(String purchaseOrderStatus) {
+        return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus)
+                || ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus);
     }
 
     /**
      * 可少收关单：仅 {@code PARTIALLY_RECEIVED}（T5）。
      */
-    public static boolean shortClosable(String status) {
-        return "PARTIALLY_RECEIVED".equals(status);
+    public static boolean shortClosable(String purchaseOrderStatus) {
+        return ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name().equals(purchaseOrderStatus);
     }
 
     /**
      * 是否终态（只读）。
      */
-    public static boolean terminal(String status) {
-        return "RECEIVED".equals(status) || "SHORT_CLOSED".equals(status) || "CANCELLED".equals(status);
+    public static boolean terminal(String purchaseOrderStatus) {
+        return ScmPurchaseStatusEnum.RECEIVED.name().equals(purchaseOrderStatus)
+                || ScmPurchaseStatusEnum.SHORT_CLOSED.name().equals(purchaseOrderStatus)
+                || ScmPurchaseStatusEnum.CANCELLED.name().equals(purchaseOrderStatus);
     }
 
     /**
@@ -98,6 +116,8 @@ public final class PurchaseOrderStateMachine {
      * {@code received >= planned} 就是 {@code RECEIVED}，否则 {@code PARTIALLY_RECEIVED}。
      */
     public static String afterReceipt(boolean allLinesFulfilled) {
-        return allLinesFulfilled ? "RECEIVED" : "PARTIALLY_RECEIVED";
+        return allLinesFulfilled
+                ? ScmPurchaseStatusEnum.RECEIVED.name()
+                : ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name();
     }
 }

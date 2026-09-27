@@ -1,6 +1,7 @@
 package com.xsy.scm.purchase.support;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SOURCE_INVALID;
@@ -32,8 +33,6 @@ public final class PurchaseDemandSourceGuard {
     /**
      * 销售订单的「可采购」状态，与 W4 的 `ScmOrderStatusEnum.CONFIRMED` 对齐。
      */
-    public static final String CONFIRMED = "CONFIRMED";
-
     /**
      * 断言来源销售订单可产生采购需求。
      *
@@ -51,7 +50,7 @@ public final class PurchaseDemandSourceGuard {
         if (order == null || Boolean.TRUE.equals(order.getDeleted())) {
             throw new ScmBusinessException(PURCHASE_DEMAND_SOURCE_INVALID);
         }
-        if (!CONFIRMED.equals(order.getStatus())) {
+        if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_DEMAND_SOURCE_INVALID);
         }
     }
@@ -62,6 +61,6 @@ public final class PurchaseDemandSourceGuard {
     public static boolean isConfirmed(SalesOrderEntity order) {
         return order != null
                 && !Boolean.TRUE.equals(order.getDeleted())
-                && CONFIRMED.equals(order.getStatus());
+                && ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus());
     }
 }

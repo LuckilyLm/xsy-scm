@@ -6,6 +6,8 @@ import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import com.xsy.scm.purchase.constant.ScmPurchaseDemandStatusEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptStatusEnum;
 import com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity;
 import com.xsy.scm.purchase.domain.entity.PurchaseOperationLogEntity;
 import com.xsy.scm.purchase.domain.entity.PurchaseOrderEntity;
@@ -69,7 +71,7 @@ public final class PurchaseSnapshotFactory {
         order.setWarehouseNameSnapshot(warehouseName);
         order.setPlannedArrivalDate(form.getPlannedArrivalDate());
         order.setRemark(PurchaseOrderValidator.trim(form.getRemark()));
-        order.setStatus("DRAFT");
+        order.setStatus(ScmPurchaseStatusEnum.DRAFT.name());
         order.setVersion(0);
         order.setDeleted(false);
         return order;
@@ -125,7 +127,7 @@ public final class PurchaseSnapshotFactory {
         receipt.setWarehouseId(order.getWarehouseId());
         receipt.setWarehouseCodeSnapshot(order.getWarehouseCodeSnapshot());
         receipt.setWarehouseNameSnapshot(order.getWarehouseNameSnapshot());
-        receipt.setStatus("DRAFT");
+        receipt.setStatus(ScmReceiptStatusEnum.DRAFT.name());
         receipt.setRemark(PurchaseOrderValidator.trim(remark));
         receipt.setVersion(0);
         receipt.setDeleted(false);
@@ -247,8 +249,8 @@ public final class PurchaseSnapshotFactory {
     /**
      * 4 位定点字符串；`null` 保持 `null`（不写成 `"0.0000"`）。
      */
-    public static String fixed(BigDecimal value) {
-        return value == null ? null : value.setScale(PurchaseAmountCalculator.SCALE, RoundingMode.HALF_UP)
+    public static String fixed(BigDecimal amount) {
+        return amount == null ? null : amount.setScale(PurchaseAmountCalculator.SCALE, RoundingMode.HALF_UP)
                 .toPlainString();
     }
 
@@ -263,14 +265,14 @@ public final class PurchaseSnapshotFactory {
      * @param before 变更前快照；`null` 表示「无前态」（如 `CREATE` / `DEMAND_GENERATE`）
      * @param after  变更后快照
      */
-    public static PurchaseOperationLogEntity operationLog(ScmPurchaseOperationTypeEnum type,
+    public static PurchaseOperationLogEntity operationLog(ScmPurchaseOperationTypeEnum operationType,
                                                           Long purchaseOrderId,
                                                           Long purchaseReceiptId,
                                                           String reason,
                                                           Map<String, Object> before,
                                                           Map<String, Object> after) {
         PurchaseOperationLogEntity log = new PurchaseOperationLogEntity();
-        log.setOperationType(type.name());
+        log.setOperationType(operationType.name());
         log.setPurchaseOrderId(purchaseOrderId);
         log.setPurchaseReceiptId(purchaseReceiptId);
         log.setOperator(ScmOperator.current());

@@ -26,13 +26,13 @@ import java.time.OffsetDateTime;
 @EqualsAndHashCode(callSuper = true)
 public class PurchaseDemandSummaryPreviewForm extends PageParam {
 
-    @NotNull
+    @NotNull(message = "开始时间不能为空")
     private OffsetDateTime startAt;
 
-    @NotNull
+    @NotNull(message = "结束时间不能为空")
     private OffsetDateTime endAt;
 
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
 
     /**
@@ -43,18 +43,18 @@ public class PurchaseDemandSummaryPreviewForm extends PageParam {
     /**
      * 可选：模糊匹配 SPU 编码 / 商品名 / SKU 编码。
      */
-    @Size(max = 64)
+    @Size(max = 64, message = "搜索关键词不能超过64个字符")
     private String keyword;
 
     @Override
-    @Min(1)
+    @Min(value = 1, message = "页码必须至少为1")
     public Long getPageNum() {
         return super.getPageNum();
     }
 
     @Override
-    @Min(1)
-    @Max(100)
+    @Min(value = 1, message = "每页条数必须至少为1")
+    @Max(value = 100, message = "每页条数不能超过100")
     public Long getPageSize() {
         return super.getPageSize();
     }

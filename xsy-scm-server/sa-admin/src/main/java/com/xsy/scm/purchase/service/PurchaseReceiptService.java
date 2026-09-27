@@ -9,6 +9,9 @@ import com.xsy.scm.purchase.constant.PurchaseConfigKey;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
 import com.xsy.scm.purchase.constant.ScmPutawayStatusEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptStatusEnum;
+import com.xsy.scm.purchase.constant.ScmWeighingSourceEnum;
+import com.xsy.scm.finance.constant.ScmFinancePayableSourceTypeEnum;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderItemDao;
@@ -112,9 +115,9 @@ public class PurchaseReceiptService {
 
     private final PurchaseNumberGenerator numberGenerator;
 
-    private final PurchaseIdempotencyService idempotencyService;
+    private final PurchaseIdempotencyService purchaseIdempotencyService;
 
-    private final PurchaseQueryService queryService;
+    private final PurchaseQueryService purchaseQueryService;
 
     private final ConfigService configService;
 
@@ -127,7 +130,7 @@ public class PurchaseReceiptService {
     /**
      * 仓库引用守卫：收货单创建 / 入库确认前断言仓库仍启用（40987）。
      */
-    private final PurchaseWarehouseReferenceGuard warehouseReferenceGuard;
+    private final PurchaseWarehouseReferenceGuard purchaseWarehouseReferenceGuard;
 
     /**
      * 仓库维度的写侧守卫：{@code DIRECT} 收货确认与 {@code WAREHOUSE_CONFIRM} 的上架都会写
@@ -139,7 +142,7 @@ public class PurchaseReceiptService {
      * 采购归属维度的写侧守卫：收货单挂在采购单上，父单归属不在调用者范围内即拒绝。
      * 与 {@link #warehouseScopeGuard} 是两条独立边界，DIRECT 确认要求同时成立。
      */
-    private final PurchaseOwnerResolver ownerResolver;
+    private final PurchaseOwnerResolver purchaseOwnerResolver;
 
     /**
      * 应付生成器（Finance R1 F1-2A）：收货确认在同一事务内派生正常应付。
@@ -159,23 +162,23 @@ public class PurchaseReceiptService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO create(PurchaseReceiptCreateForm form, String idempotencyKey) {
-        var claim = idempotencyService.claim(
+        var claim = purchaseIdempotencyService.claim(
                 "PURCHASE_RECEIPT_CREATE:" + form.getPurchaseOrderId(), idempotencyKey, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, PurchaseReceiptVO.class);
+            return purchaseIdempotencyService.replay(claim, PurchaseReceiptVO.class);
         }
 
         PurchaseOrderEntity order = purchaseOrderDao.lock(form.getPurchaseOrderId());
         if (order == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
-        ownerResolver.requireVisible(order.getPurchaserId());
+        purchaseOwnerResolver.requireVisible(order.getPurchaserId());
         if (!PurchaseOrderStateMachine.receivable(order.getStatus())) {
             // RECEIVED / SHORT_CLOSED / CANCELLED / DRAFT 都不允许新收货（T8）
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
         // 仓库可能在采购单创建后被停用：收货单创建是「新引用」，必须重查启用态（HD-B1-01）。
-        warehouseReferenceGuard.requireEnabled(order.getWarehouseId());
+        purchaseWarehouseReferenceGuard.requireEnabled(order.getWarehouseId());
         List<PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId());
         if (orderItems.isEmpty()) {
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_EMPTY);
@@ -198,14 +201,15 @@ public class PurchaseReceiptService {
             items.add(item);
         }
 
-        PurchaseReceiptVO result = queryService.receiptDetailForCommand(receipt.getId());
+        PurchaseReceiptVO result = purchaseQueryService.receiptDetailForCommand(receipt.getId());
         Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("receiptNo", receipt.getReceiptNo());
         after.put("items", items.stream().map(PurchaseReceiptService::receiptItemSnapshot).toList());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.RECEIPT_CREATE, order.getId(), receipt.getId(),
                 null, null, after));
-        idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
+        purchaseIdempotencyService.complete(
+                claim, ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name(), receipt.getId(), result);
         return result;
     }
 
@@ -216,9 +220,9 @@ public class PurchaseReceiptService {
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO update(PurchaseReceiptUpdateForm form) {
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
-        ownerResolver.requireVisible(orderPurchaserId(receipt));
+        purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
         version(receipt.getVersion(), form.getVersion());
-        if (!"DRAFT".equals(receipt.getStatus())) {
+        if (!ScmReceiptStatusEnum.DRAFT.name().equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
         }
 
@@ -238,7 +242,7 @@ public class PurchaseReceiptService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.RECEIPT_UPDATE, receipt.getPurchaseOrderId(),
                 receipt.getId(), null, before, after));
-        return queryService.receiptDetailForCommand(receipt.getId());
+        return purchaseQueryService.receiptDetailForCommand(receipt.getId());
     }
 
     // ------------------------------------------------------------------
@@ -247,10 +251,10 @@ public class PurchaseReceiptService {
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO confirm(PurchaseReceiptConfirmForm form, String idempotencyKey) {
-        var claim = idempotencyService.claim(
+        var claim = purchaseIdempotencyService.claim(
                 "PURCHASE_RECEIPT_CONFIRM:" + form.getId(), idempotencyKey, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, PurchaseReceiptVO.class);
+            return purchaseIdempotencyService.replay(claim, PurchaseReceiptVO.class);
         }
 
         // 锁序（§7.9）：采购单 → 收货单 → 采购行 → 收货行。
@@ -270,12 +274,12 @@ public class PurchaseReceiptService {
         // 仓库范围回答「货允许不允许落进这个仓」，前者不能替代后者 —— 否则握着采购按钮的人可以往
         // 自己无权管理的仓库里写 PURCHASE_IN。WAREHOUSE_CONFIRM 在 confirm 时不写库存，
         // 因此仓库维度由后续的 putaway 判，不在这里提前收权。
-        ownerResolver.requireVisible(order.getPurchaserId());
+        purchaseOwnerResolver.requireVisible(order.getPurchaserId());
         if (direct) {
             warehouseScopeGuard.require(receipt.getWarehouseId());
         }
         version(receipt.getVersion(), form.getVersion());
-        if (!"DRAFT".equals(receipt.getStatus())) {
+        if (!ScmReceiptStatusEnum.DRAFT.name().equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
         }
         if (!PurchaseOrderStateMachine.receivable(order.getStatus())) {
@@ -387,7 +391,7 @@ public class PurchaseReceiptService {
         }
 
         OffsetDateTime now = OffsetDateTime.now();
-        receipt.setStatus("CONFIRMED");
+        receipt.setStatus(ScmReceiptStatusEnum.CONFIRMED.name());
         receipt.setReceivedAt(now);
         receipt.setConfirmedAt(now);
         receipt.setOperator(ScmOperator.current());
@@ -424,8 +428,9 @@ public class PurchaseReceiptService {
         // 并发的重复触发由 finance_payable 的来源唯一索引仲裁。抛错即整笔 confirm 回滚。
         financePayableService.generateOnReceiptConfirm(receipt.getId());
 
-        PurchaseReceiptVO result = queryService.receiptDetailForCommand(receipt.getId());
-        idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
+        PurchaseReceiptVO result = purchaseQueryService.receiptDetailForCommand(receipt.getId());
+        purchaseIdempotencyService.complete(
+                claim, ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name(), receipt.getId(), result);
         return result;
     }
 
@@ -449,10 +454,10 @@ public class PurchaseReceiptService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO putaway(PurchaseReceiptPutawayForm form, String idempotencyKey) {
-        var claim = idempotencyService.claim(
+        var claim = purchaseIdempotencyService.claim(
                 "PURCHASE_RECEIPT_PUTAWAY:" + form.getId(), idempotencyKey, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, PurchaseReceiptVO.class);
+            return purchaseIdempotencyService.replay(claim, PurchaseReceiptVO.class);
         }
 
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
@@ -510,8 +515,9 @@ public class PurchaseReceiptService {
         // 位置固定：putaway 状态落库之后、幂等 complete 之前（与 confirm 同纪律）。
         postInbound(order, receipt, inboundLines, now, operator);
 
-        PurchaseReceiptVO result = queryService.receiptDetailForCommand(receipt.getId());
-        idempotencyService.complete(claim, "PURCHASE_RECEIPT", receipt.getId(), result);
+        PurchaseReceiptVO result = purchaseQueryService.receiptDetailForCommand(receipt.getId());
+        purchaseIdempotencyService.complete(
+                claim, ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name(), receipt.getId(), result);
         return result;
     }
 
@@ -526,12 +532,12 @@ public class PurchaseReceiptService {
             // 幂等：已删除视为成功（同 W4 的 delete 语义）
             return;
         }
-        ownerResolver.requireVisible(orderPurchaserId(receipt));
-        if (!"DRAFT".equals(receipt.getStatus())) {
+        purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
+        if (!ScmReceiptStatusEnum.DRAFT.name().equals(receipt.getStatus())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_DELETE_STATE_INVALID);
         }
 
-        PurchaseReceiptVO before = queryService.receiptDetailForCommand(receipt.getId());
+        PurchaseReceiptVO before = purchaseQueryService.receiptDetailForCommand(receipt.getId());
         purchaseReceiptItemDao.softDeleteByReceiptId(receipt.getId(), ScmOperator.current());
         if (purchaseReceiptDao.softDelete(
                 receipt.getId(), receipt.getVersion(), ScmOperator.current()) != 1) {
@@ -667,7 +673,7 @@ public class PurchaseReceiptService {
         record.setRawReading(actualWeight);
         record.setConfirmedReading(actualWeight);
         record.setUnit(weightUnit);
-        record.setSource("MANUAL");
+        record.setSource(ScmWeighingSourceEnum.MANUAL.name());
         record.setModificationReason(correctionReason);
         record.setRecordedAt(OffsetDateTime.now());
         record.setOperator(ScmOperator.current());
@@ -676,8 +682,8 @@ public class PurchaseReceiptService {
         receiptWeighingRecordDao.append(record);
     }
 
-    private PurchaseReceiptEntity lockReceipt(Long id) {
-        PurchaseReceiptEntity receipt = purchaseReceiptDao.lock(id);
+    private PurchaseReceiptEntity lockReceipt(Long purchaseReceiptId) {
+        PurchaseReceiptEntity receipt = purchaseReceiptDao.lock(purchaseReceiptId);
         if (receipt == null) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_NOT_FOUND);
         }

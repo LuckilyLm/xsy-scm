@@ -2,7 +2,12 @@ package com.xsy.scm.purchase.domain.form;
 
 import lombok.Data;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -20,14 +25,14 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
  */
 @Data
 public class PurchaseReceiptConfirmForm {
-    @NotNull
+    @NotNull(message = "收货单 ID 不能为空")
     private Long id;
-    @NotNull
-    @Min(0)
+    @NotNull(message = "版本号不能为空")
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
     @Valid
-    @NotEmpty
-    @Size(max = 500)
+    @NotEmpty(message = "收货明细不能为空")
+    @Size(max = 500, message = "收货明细不能超过500项")
     private List<Item> items;
 
     /**
@@ -35,12 +40,12 @@ public class PurchaseReceiptConfirmForm {
      */
     @Data
     public static class Item {
-        @NotNull
+        @NotNull(message = "收货单明细不能为空")
         private Long receiptItemId;
-        @NotNull
-        @Min(0)
+        @NotNull(message = "版本号不能为空")
+        @Min(value = 0, message = "版本号不能小于0")
         private Integer version;
-        @NotBlank
+        @NotBlank(message = "本次收货数量不能为空")
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String receivedQuantity;
         /**
@@ -51,9 +56,9 @@ public class PurchaseReceiptConfirmForm {
         /**
          * 非标品必须为 `MANUAL`；标品必须为空。
          */
-        @Pattern(regexp = "MANUAL")
+        @Pattern(regexp = "MANUAL", message = "非标品称重来源当前只允许手工录入")
         private String weightSource;
-        @Size(max = 500)
+        @Size(max = 500, message = "修正原因不能超过500个字符")
         private String correctionReason;
     }
 }

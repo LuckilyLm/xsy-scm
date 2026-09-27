@@ -1,7 +1,10 @@
 package com.xsy.scm.purchase.domain.form;
 
 import lombok.Data;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * 少收关单（W5 Target Design §4.2 T5 / Q2a）。
@@ -11,12 +14,12 @@ import jakarta.validation.constraints.*;
  */
 @Data
 public class PurchaseOrderShortCloseForm {
-    @NotNull
+    @NotNull(message = "采购单 ID 不能为空")
     private Long id;
-    @NotNull
-    @Min(0)
+    @NotNull(message = "版本号不能为空")
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
-    @NotBlank
-    @Size(max = 500)
+    @NotBlank(message = "少收关单原因不能为空")
+    @Size(max = 500, message = "少收关单原因不能超过500个字符")
     private String shortCloseReason;
 }

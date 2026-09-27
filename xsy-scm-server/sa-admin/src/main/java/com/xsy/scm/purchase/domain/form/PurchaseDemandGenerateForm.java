@@ -1,7 +1,7 @@
 package com.xsy.scm.purchase.domain.form;
 
 import lombok.Data;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.OffsetDateTime;
 
@@ -16,11 +16,11 @@ import java.time.OffsetDateTime;
  */
 @Data
 public class PurchaseDemandGenerateForm {
-    @NotNull
+    @NotNull(message = "开始时间不能为空")
     private OffsetDateTime startAt;
-    @NotNull
+    @NotNull(message = "结束时间不能为空")
     private OffsetDateTime endAt;
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
     /**
      * 可选：指定后直接写入需求的 supplier_id；留空则待第一次分配时固定。

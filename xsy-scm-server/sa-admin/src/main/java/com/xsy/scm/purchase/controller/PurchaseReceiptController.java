@@ -16,6 +16,7 @@ import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemWorkbenchVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
 import com.xsy.scm.purchase.service.PurchaseReceiptService;
+import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -49,20 +50,20 @@ public class PurchaseReceiptController {
     // ------------------------------------------------------------------
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:purchase:receipt:query")
+    @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
     public ResponseDTO<PageResult<PurchaseReceiptVO>> query(
             @Valid @RequestBody PurchaseReceiptQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.receiptQuery(form));
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:purchase:receipt:query")
-    public ResponseDTO<PurchaseReceiptVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(purchaseQueryService.receiptDetail(id));
+    @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
+    public ResponseDTO<PurchaseReceiptVO> detail(@PathVariable("id") Long receiptId) {
+        return ResponseDTO.ok(purchaseQueryService.receiptDetail(receiptId));
     }
 
     @GetMapping("/item/{receiptId}")
-    @SaCheckPermission("scm:purchase:receipt:query")
+    @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
     public ResponseDTO<List<PurchaseReceiptItemVO>> items(@PathVariable Long receiptId) {
         return ResponseDTO.ok(purchaseQueryService.receiptItems(receiptId));
     }
@@ -72,7 +73,7 @@ public class PurchaseReceiptController {
      * 复用 {@code scm:purchase:receipt:query}。它只是视图，不新增收货事实，确认收货仍走各收货单既有端点。
      */
     @PostMapping("/item-workbench/query")
-    @SaCheckPermission("scm:purchase:receipt:query")
+    @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
     public ResponseDTO<PageResult<PurchaseReceiptItemWorkbenchVO>> itemWorkbench(
             @Valid @RequestBody PurchaseReceiptItemWorkbenchQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.receiptItemWorkbench(form));
@@ -83,7 +84,7 @@ public class PurchaseReceiptController {
     // ------------------------------------------------------------------
 
     @PostMapping("/create")
-    @SaCheckPermission("scm:purchase:receipt:add")
+    @SaCheckPermission(PurchasePermission.RECEIPT_ADD)
     @OperateLog
     public ResponseDTO<PurchaseReceiptVO> create(
             @Valid @RequestBody PurchaseReceiptCreateForm form,
@@ -92,14 +93,14 @@ public class PurchaseReceiptController {
     }
 
     @PostMapping("/update")
-    @SaCheckPermission("scm:purchase:receipt:update")
+    @SaCheckPermission(PurchasePermission.RECEIPT_UPDATE)
     @OperateLog
     public ResponseDTO<PurchaseReceiptVO> update(@Valid @RequestBody PurchaseReceiptUpdateForm form) {
         return ResponseDTO.ok(purchaseReceiptService.update(form));
     }
 
     @PostMapping("/confirm")
-    @SaCheckPermission("scm:purchase:receipt:confirm")
+    @SaCheckPermission(PurchasePermission.RECEIPT_CONFIRM)
     @OperateLog
     public ResponseDTO<PurchaseReceiptVO> confirm(
             @Valid @RequestBody PurchaseReceiptConfirmForm form,
@@ -111,7 +112,7 @@ public class PurchaseReceiptController {
      * 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。
      */
     @PostMapping("/putaway")
-    @SaCheckPermission("scm:purchase:receipt:putaway")
+    @SaCheckPermission(PurchasePermission.RECEIPT_PUTAWAY)
     @OperateLog
     public ResponseDTO<PurchaseReceiptVO> putaway(
             @Valid @RequestBody PurchaseReceiptPutawayForm form,
@@ -120,7 +121,7 @@ public class PurchaseReceiptController {
     }
 
     @PostMapping("/delete")
-    @SaCheckPermission("scm:purchase:receipt:delete")
+    @SaCheckPermission(PurchasePermission.RECEIPT_DELETE)
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody PurchaseReceiptDeleteForm form) {
         purchaseReceiptService.delete(form);
@@ -128,7 +129,7 @@ public class PurchaseReceiptController {
     }
 
     @PostMapping("/batch-delete")
-    @SaCheckPermission("scm:purchase:receipt:delete")
+    @SaCheckPermission(PurchasePermission.RECEIPT_DELETE)
     @OperateLog
     public ResponseDTO<String> batchDelete(@Valid @RequestBody PurchaseReceiptBatchDeleteForm form) {
         purchaseReceiptService.batchDelete(form);

@@ -2,7 +2,10 @@ package com.xsy.scm.purchase.domain.form;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Size;
+
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.purchase.constant.ScmPurchaseDemandStatusEnum;
 
 import java.time.LocalDate;
 
@@ -14,12 +17,12 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class PurchaseDemandQueryForm extends PageParam {
-    @Size(max = 64)
+    @Size(max = 64, message = "销售订单号不能超过64个字符")
     private String salesOrderNo;
     private Long skuId;
     private Long supplierId;
     private Long warehouseId;
-    @Pattern(regexp = "PENDING|PARTIALLY_ALLOCATED|ALLOCATED")
+    @ScmEnumValue(enumClass = ScmPurchaseDemandStatusEnum.class, message = "采购需求状态无效")
     private String status;
     /**
      * 需求日期区间（含端点）。Q6a：demand_date 来自 source_confirmed_at 的 Asia/Shanghai 日期。

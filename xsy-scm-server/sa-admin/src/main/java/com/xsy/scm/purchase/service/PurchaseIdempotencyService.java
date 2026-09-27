@@ -37,11 +37,11 @@ public class PurchaseIdempotencyService {
 
     private final IdempotencyRecordDao idempotencyRecordDao;
 
-    private final ObjectMapper json;
+    private final ObjectMapper objectMapper;
 
     /**
      * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。
-     * 请求哈希仍使用 {@link #json}，避免改变既有幂等键的内容判定。
+     * 请求哈希仍使用 {@link #objectMapper}，避免改变既有幂等键的内容判定。
      */
     static final ObjectMapper RESULT_JSON = JsonMapper.builder()
             .addModule(new JavaTimeModule())
@@ -74,7 +74,7 @@ public class PurchaseIdempotencyService {
         String operator = ScmOperator.current();
         // 按操作者隔离幂等键，防止跨用户重放结果。
         scope = operator + ":" + scope;
-        String hash = new PurchaseIdempotencyRequestHasher(json).hash(request);
+        String hash = new PurchaseIdempotencyRequestHasher(objectMapper).hash(request);
 
         IdempotencyRecordEntity row = new IdempotencyRecordEntity();
         row.setOperationScope(scope);
@@ -100,17 +100,17 @@ public class PurchaseIdempotencyService {
     /**
      * 返回首次执行的结果，不重新执行业务写入。
      */
-    public <T> T replay(Claim claim, Class<T> type) {
-        return RESULT_JSON.convertValue(claim.record().getResultData().get("value"), type);
+    public <T> T replay(Claim claim, Class<T> resultType) {
+        return RESULT_JSON.convertValue(claim.record().getResultData().get("value"), resultType);
     }
 
     /**
      * 保存结果，与调用方的业务写入一起提交或回滚。
      */
-    public void complete(Claim claim, String type, Long id, Object result) {
+    public void complete(Claim claim, String resourceType, Long resourceId, Object result) {
         IdempotencyRecordEntity row = claim.record();
-        row.setResultId(id);
-        row.setResultType(type);
+        row.setResultId(resourceId);
+        row.setResultType(resourceType);
         Map<String, Object> value = new LinkedHashMap<>();
         value.put("value", RESULT_JSON.convertValue(result, Object.class));
         row.setResultData(value);

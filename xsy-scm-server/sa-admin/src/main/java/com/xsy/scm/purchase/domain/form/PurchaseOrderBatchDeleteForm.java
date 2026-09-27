@@ -2,7 +2,8 @@ package com.xsy.scm.purchase.domain.form;
 
 import lombok.Data;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
 @Data
 public class PurchaseOrderBatchDeleteForm {
     @Valid
-    @NotEmpty
-    @Size(max = 100)
+    @NotEmpty(message = "采购单列表不能为空")
+    @Size(max = 100, message = "采购单列表不能超过100项")
     private List<PurchaseOrderVersionForm> orders;
 }
