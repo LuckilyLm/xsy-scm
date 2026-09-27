@@ -26,6 +26,7 @@ product 域因此报出「abbreviated = 0」的假阴性。
     python tools/quality/q2_audit.py                 # 默认 common + product
     python tools/quality/q2_audit.py --domain product
     python tools/quality/q2_audit.py --json
+    python tools/quality/q2_audit.py --domain customer --source main
 """
 
 from __future__ import annotations
@@ -45,8 +46,12 @@ Q2_DOMAINS = ("common", "product")
 
 # 依赖字段：类型首字母大写，字段名小写开头，带 private/protected/public [final]
 _FIELD_DECLARATION = re.compile(
-    r"^\s*(?:private|protected|public)\s+(?:final\s+)?"
-    r"(?P<type>[A-Z][\w.]*(?:<[^;]*>)?)\s+(?P<name>[a-z]\w*)\s*(?:=[^;]*)?;\s*$"
+    # SCM and SmartAdmin tests commonly use package-private @Autowired fields.
+    # At the project's four-space class-member indentation, include those too
+    # without treating method-local collaborator variables as injected fields.
+    r"^ {4}(?:(?:private|protected|public)\s+)?(?:final\s+)?"
+    r"(?P<type>(?:[A-Za-z_]\w*\.)*[A-Z][\w.]*(?:<[^;]*>)?)\s+"
+    r"(?P<name>[a-z]\w*)\s*(?:=[^;]*)?;\s*$"
 )
 
 # 裸角色名（与 guard 的 GENERIC_DEPENDENCY_NAMES 同源）
@@ -54,8 +59,8 @@ GENERIC_NAMES = guard.GENERIC_DEPENDENCY_NAMES
 
 _CAMEL_BOUNDARY = re.compile(r"(?<=[a-z0-9])(?=[A-Z])")
 
-# 单字母 / 无信息局部变量名
-_MEANINGLESS_LOCALS = frozenset({"c", "p", "r", "x", "y", "z", "o", "e", "i", "j", "k", "v", "d", "s", "t", "m", "n"})
+# 单字母局部变量名：计划只允许短小索引循环使用 i / j。
+_MEANINGLESS_LOCALS = frozenset("abcdefghijklmnopqrstuvwxyz") - {"i", "j"}
 
 # 只有以这些角色后缀收尾的类型才按「注入协作方」检查命名。
 # 值对象 / 表单 / 实体 / 枚举不在本工具的判定范围内（它们的字段名本就该是业务名）。
@@ -228,15 +233,28 @@ def classify_field(simple_type: str, name: str) -> tuple[str, str]:
     return "MANUAL_REVIEW", ""
 
 
-def audit_domain(domain: str, vocabulary: dict[str, set[str]]) -> dict:
+def audit_domain(
+    domain: str,
+    vocabulary: dict[str, set[str]],
+    source_scope: str = "all",
+) -> dict:
     """统计一个域的命名债与 magic-string 债。"""
+    if source_scope not in {"all", "main", "test"}:
+        raise ValueError(f"Unsupported source scope: {source_scope}")
+
     sources: list = []
-    for directory in domain_dirs(domain):
+    directories = domain_dirs(domain)
+    if source_scope == "main":
+        directories = directories[:1]
+    elif source_scope == "test":
+        directories = directories[1:]
+    for directory in directories:
         if directory.is_dir():
             sources.extend(guard.load_sources((directory,)))
 
     result = {
         "domain": domain,
+        "source_scope": source_scope,
         "files": len(sources),
         "dependency_fields_total": 0,
         "collaborator_fields_total": 0,
@@ -301,12 +319,13 @@ def audit_domain(domain: str, vocabulary: dict[str, set[str]]) -> dict:
         for _finding in guard.magic_string_literals(source, vocabulary):
             magic_enum += 1
 
-        # 无信息局部变量：var c = / var p = 之类
-        for match in re.finditer(r"\bvar\s+([a-z]\w*)\s*=", source.code):
+        # 单字母 var 声明（赋值或 for-each），索引循环 i / j 除外。
+        for match in re.finditer(r"\bvar\s+([a-z]\w*)\s*(?:=|:)", source.code):
             if match.group(1) in _MEANINGLESS_LOCALS:
                 meaningless[source.relative_path] += 1
 
     result["magic_string_count"] = magic_enum
+    result["magic_string_with_enum_count"] = magic_enum
     result["meaningless_local_count"] = sum(meaningless.values())
     result["meaningless_local_samples"] = [
         f"{path} x{count}" for path, count in sorted(meaningless.items())
@@ -326,6 +345,12 @@ def build_vocabulary() -> dict[str, set[str]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Q2.1 naming / type-safety audit")
     parser.add_argument("--domain", action="append", default=None)
+    parser.add_argument(
+        "--source",
+        choices=("all", "main", "test"),
+        default="all",
+        help="只审计生产源码、测试源码，或两者（默认）",
+    )
     parser.add_argument("--json", action="store_true")
     parser.add_argument(
         "--table",
@@ -337,7 +362,7 @@ def main() -> int:
     domains = tuple(args.domain) if args.domain else Q2_DOMAINS
     vocabulary = build_vocabulary()
 
-    reports = [audit_domain(domain, vocabulary) for domain in domains]
+    reports = [audit_domain(domain, vocabulary, args.source) for domain in domains]
 
     if args.json:
         print(json.dumps(reports, ensure_ascii=False, indent=2))
@@ -345,6 +370,8 @@ def main() -> int:
 
     for report in reports:
         print(f"=== {report['domain']} ===")
+        if args.source != "all":
+            print(f"  source scope                  : {report['source_scope']}")
         print(f"  files scanned                 : {report['files']}")
         print(f"  dependency fields total       : {report['dependency_fields_total']}")
         print(f"  collaborator fields           : {report['collaborator_fields_total']}")
