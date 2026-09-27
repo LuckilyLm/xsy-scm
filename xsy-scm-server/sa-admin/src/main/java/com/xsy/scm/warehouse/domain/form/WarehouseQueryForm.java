@@ -2,10 +2,11 @@ package com.xsy.scm.warehouse.domain.form;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
@@ -21,7 +22,7 @@ public class WarehouseQueryForm extends PageParam {
     @Size(max = 150)
     private String name;
 
-    @Pattern(regexp = "ENABLED|DISABLED")
+    @ScmEnumValue(enumClass = ScmWarehouseStatusEnum.class, message = "仓库状态无效")
     private String status;
 
     @Override
