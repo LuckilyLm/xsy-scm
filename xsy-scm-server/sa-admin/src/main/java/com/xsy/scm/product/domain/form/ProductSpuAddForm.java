@@ -80,5 +80,7 @@ public class ProductSpuAddForm {
     private String masterStatus;
     @Size(max = 50, message = "标签 ID 列表不能超过50项")
     @NotNull(message = "标签 ID 列表不能为空")
-    private List<@NotNull(message = "标签 ID 列表不能为空") @Positive(message = "标签 ID 列表必须大于0") Long> tagIds = new ArrayList<>();
+    private List<
+            @NotNull(message = "标签 ID 列表不能为空")
+            @Positive(message = "标签 ID 列表必须大于0") Long> tagIds = new ArrayList<>();
 }

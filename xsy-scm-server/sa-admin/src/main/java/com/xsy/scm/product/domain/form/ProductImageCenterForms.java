@@ -38,7 +38,9 @@ public final class ProductImageCenterForms {
         @Positive(message = "SPU ID必须大于0")
         private Long spuId;
         @NotEmpty(message = "图片 ID 列表不能为空")
-        private List<@NotNull(message = "图片 ID 列表不能为空") @Positive(message = "图片 ID 列表必须大于0") Long> imageIds = new ArrayList<>();
+        private List<
+                @NotNull(message = "图片 ID 列表不能为空")
+                @Positive(message = "图片 ID 列表必须大于0") Long> imageIds = new ArrayList<>();
     }
 
     @Data
@@ -58,6 +60,8 @@ public final class ProductImageCenterForms {
         private Long spuId;
         /** 该 SPU 全部现存图片的目标顺序，必须与集合一一对应。 */
         @NotEmpty(message = "排序图片 ID 列表不能为空")
-        private List<@NotNull(message = "排序图片 ID 列表不能为空") @Positive(message = "排序图片 ID 列表必须大于0") Long> orderedImageIds = new ArrayList<>();
+        private List<
+                @NotNull(message = "排序图片 ID 列表不能为空")
+                @Positive(message = "排序图片 ID 列表必须大于0") Long> orderedImageIds = new ArrayList<>();
     }
 }
