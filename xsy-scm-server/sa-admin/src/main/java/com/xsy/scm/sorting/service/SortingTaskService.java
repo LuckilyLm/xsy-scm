@@ -1,6 +1,7 @@
 package com.xsy.scm.sorting.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import org.apache.commons.lang3.StringUtils;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
@@ -112,7 +113,7 @@ public class SortingTaskService {
         task.setWarehouseNameSnapshot(warehouse.getName());
         task.setAssigneeEmployeeId(form.getAssigneeEmployeeId());
         task.setStatus(ScmSortingTaskStatusEnum.PENDING.name());
-        task.setRemark(trimToNull(form.getRemark()));
+        task.setRemark(StringUtils.trimToNull(form.getRemark()));
         task.setPrintCount(0);
         stamp(task, true);
         sortingTaskDao.insert(task);
@@ -157,11 +158,12 @@ public class SortingTaskService {
             var row = rows.get(entry.getId());
             if (row == null) throw new ScmBusinessException(ITEM_NOT_IN_TASK);
             if (!Objects.equals(row.getVersion(), entry.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-            if (!ScmSortingResultEnum.NORMAL.name().equals(entry.getResult()) && trimToNull(entry.getReason()) == null)
+            if (!ScmSortingResultEnum.NORMAL.name().equals(entry.getResult())
+                    && StringUtils.trimToNull(entry.getReason()) == null)
                 throw new ScmBusinessException(VALIDATION_ERROR);
             row.setSortedQuantity(entry.getSortedQuantity());
             row.setResult(entry.getResult());
-            row.setReason(trimToNull(entry.getReason()));
+            row.setReason(StringUtils.trimToNull(entry.getReason()));
             row.setSortedBy(ScmOperator.current());
             row.setSortedAt(OffsetDateTime.now());
             stamp(row, false);
@@ -352,11 +354,7 @@ public class SortingTaskService {
     }
 
     private void requireReason(String reason) {
-        if (trimToNull(reason) == null) throw new ScmBusinessException(VALIDATION_ERROR);
-    }
-
-    private static String trimToNull(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
+        if (StringUtils.trimToNull(reason) == null) throw new ScmBusinessException(VALIDATION_ERROR);
     }
 
     private static void stamp(SortingRecord row, boolean creating) {
