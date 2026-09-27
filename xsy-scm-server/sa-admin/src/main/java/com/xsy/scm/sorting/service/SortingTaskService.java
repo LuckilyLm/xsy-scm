@@ -113,7 +113,8 @@ public class SortingTaskService {
         task.setWarehouseNameSnapshot(warehouse.getName());
         task.setAssigneeEmployeeId(form.getAssigneeEmployeeId());
         task.setStatus(ScmSortingTaskStatusEnum.PENDING.name());
-        task.setRemark(StringUtils.trimToNull(form.getRemark()));
+        String remark = form.getRemark();
+        task.setRemark(StringUtils.isBlank(remark) ? null : StringUtils.trim(remark));
         task.setPrintCount(0);
         stamp(task, true);
         sortingTaskDao.insert(task);
@@ -156,14 +157,15 @@ public class SortingTaskService {
         var rows = activeItems(id);
         for (var entry : form.getItems()) {
             var row = rows.get(entry.getId());
+            String reason = entry.getReason();
             if (row == null) throw new ScmBusinessException(ITEM_NOT_IN_TASK);
             if (!Objects.equals(row.getVersion(), entry.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
             if (!ScmSortingResultEnum.NORMAL.name().equals(entry.getResult())
-                    && StringUtils.trimToNull(entry.getReason()) == null)
+                    && StringUtils.isBlank(reason))
                 throw new ScmBusinessException(VALIDATION_ERROR);
             row.setSortedQuantity(entry.getSortedQuantity());
             row.setResult(entry.getResult());
-            row.setReason(StringUtils.trimToNull(entry.getReason()));
+            row.setReason(StringUtils.isBlank(reason) ? null : StringUtils.trim(reason));
             row.setSortedBy(ScmOperator.current());
             row.setSortedAt(OffsetDateTime.now());
             stamp(row, false);
@@ -354,7 +356,7 @@ public class SortingTaskService {
     }
 
     private void requireReason(String reason) {
-        if (StringUtils.trimToNull(reason) == null) throw new ScmBusinessException(VALIDATION_ERROR);
+        if (StringUtils.isBlank(reason)) throw new ScmBusinessException(VALIDATION_ERROR);
     }
 
     private static void stamp(SortingRecord row, boolean creating) {
