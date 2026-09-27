@@ -428,10 +428,9 @@
             </plugin>
 
             <!--
-              质量门禁（整改计划 §16 / §17）。两个插件都刻意不绑定到默认生命周期：
-              Q0 的硬约束是不破坏开发者现有的 backend / frontend / browser 验证入口，
-              因此它们由 `python tools/verify.py quality` 显式调用。
-              绑定到 validate 留到历史 baseline 收敛之后（Q2 / Q3）再决定。
+              SCM 静态质量检查在 validate 阶段运行。Checkstyle 只生成 baseline 输入，
+              新增债务由 quality_guard 在 `python tools/verify.py quality` 中阻断；
+              Spotless 只格式化 com.xsy.scm 生产源码，不触碰测试或 SmartAdmin 底座。
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -469,6 +468,15 @@
                     <consoleOutput>false</consoleOutput>
                     <logViolationsToConsole>false</logViolationsToConsole>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>scm-checkstyle-report</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -491,7 +499,7 @@
                          不需要改 Maven JVM 参数。仅格式化生产源码；测试类由用户要求保持不动。 -->
                     <java>
                         <includes>
-                            <include>src/main/java/**/*.java</include>
+                            <include>src/main/java/com/xsy/scm/**/*.java</include>
                         </includes>
                         <eclipse>
                             <version>4.31</version>
@@ -501,6 +509,15 @@
                         <endWithNewline/>
                     </java>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>scm-spotless-check</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
