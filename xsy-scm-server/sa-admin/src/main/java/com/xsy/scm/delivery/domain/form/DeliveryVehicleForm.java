@@ -11,7 +11,6 @@ import jakarta.validation.constraints.Size;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 
-import java.util.List;
 import java.math.BigDecimal;
 
 @Data

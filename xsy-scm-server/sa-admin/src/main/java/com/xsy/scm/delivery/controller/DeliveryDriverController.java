@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.xsy.scm.delivery.service.DeliveryDriverService;
 import com.xsy.scm.delivery.domain.form.DeliveryDriverForm;
 import com.xsy.scm.delivery.domain.form.DeliveryQueryForm;
-import com.xsy.scm.delivery.domain.entity.DeliveryDriverEntity;
 import com.xsy.scm.delivery.domain.vo.DeliveryDriverVO;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;

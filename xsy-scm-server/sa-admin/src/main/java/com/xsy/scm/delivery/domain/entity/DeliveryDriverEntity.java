@@ -5,10 +5,6 @@ import lombok.EqualsAndHashCode;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.math.BigDecimal;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.NullSerializer;
-import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

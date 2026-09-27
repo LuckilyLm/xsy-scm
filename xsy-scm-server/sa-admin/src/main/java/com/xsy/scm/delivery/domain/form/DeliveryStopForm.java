@@ -5,8 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.math.BigDecimal;
 
 @Data
 public class DeliveryStopForm extends com.xsy.scm.common.domain.ScmLocationForm {

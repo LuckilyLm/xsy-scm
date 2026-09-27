@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 @Data
