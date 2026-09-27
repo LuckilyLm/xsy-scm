@@ -43,14 +43,16 @@ public class InventoryBalanceQueryService {
     private final ScmDataScopeService dataScopeService;
 
     @Transactional(readOnly = true)
-    public PageResult<InventoryBalanceVO> query(InventoryBalanceQueryForm form) {
+    public PageResult<
+            InventoryBalanceVO> query(InventoryBalanceQueryForm form) {
         rejectClientSort(form);
         ScmDataScopeContext scope = dataScopeService.resolve();
         if (scope.warehouseNowhere()) {
             return ScmDataScopeService.emptyPage(form);
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        List<InventoryBalanceVO> list = inventoryBalanceDao.queryPage(page, form, scope.getWarehouseScope());
+        List<
+                InventoryBalanceVO> list = inventoryBalanceDao.queryPage(page, form, scope.getWarehouseScope());
         ScmReportAccess.maskCost(list, scope.isCostVisible(), InventoryBalanceQueryService::clearCost);
         return SmartPageUtil.convert2PageResult(page, list);
     }

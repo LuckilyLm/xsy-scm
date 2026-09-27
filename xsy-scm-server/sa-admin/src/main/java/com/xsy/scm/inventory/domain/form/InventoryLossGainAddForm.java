@@ -49,7 +49,8 @@ public class InventoryLossGainAddForm {
 
     @NotEmpty(message = "调整明细不能为空")
     @Valid
-    private List<Item> items;
+    private List<
+            Item> items;
 
     /**
      * 明细行。数量恒为正 —— 方向由单据的 {@code adjustType} 决定。

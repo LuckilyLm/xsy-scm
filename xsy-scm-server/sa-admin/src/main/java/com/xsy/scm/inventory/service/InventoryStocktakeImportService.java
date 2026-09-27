@@ -51,7 +51,8 @@ import java.util.Map;
 public class InventoryStocktakeImportService {
 
     public static final String TEMPLATE_VERSION = "1.0";
-    private static final List<String> HEADERS = List.of("快照凭证", "SKU编码", "商品名称", "规格", "记账单位", "账面数量快照", "实盘数量", "备注");
+    private static final List<
+            String> HEADERS = List.of("快照凭证", "SKU编码", "商品名称", "规格", "记账单位", "账面数量快照", "实盘数量", "备注");
     private static final int COL_CREDENTIAL = 0;
     private static final int COL_SKU_CODE = 1;
     private static final int COL_ACTUAL = 6;
@@ -78,9 +79,11 @@ public class InventoryStocktakeImportService {
     public byte[] buildTemplate(Long warehouseId) throws IOException {
         warehouseService.require(warehouseId);
         String operator = ScmOperator.current();
-        List<InventoryBalanceVO> balances = inventoryBalanceDao.listActiveByWarehouse(warehouseId);
+        List<
+                InventoryBalanceVO> balances = inventoryBalanceDao.listActiveByWarehouse(warehouseId);
 
-        List<StocktakeSnapshotSigner.Entry> entries = new ArrayList<>(balances.size());
+        List<
+                StocktakeSnapshotSigner.Entry> entries = new ArrayList<>(balances.size());
         for (InventoryBalanceVO balance : balances) {
             entries.add(new StocktakeSnapshotSigner.Entry(balance.getSkuCode(), balance.getSkuId(), balance.getId(),
                     balance.getUnit(), balance.getVersion(), balance.getQuantity()));
@@ -151,11 +154,14 @@ public class InventoryStocktakeImportService {
         warehouseScopeGuard.require(payload.warehouseId());
 
         // 来源集合必须与凭证完全一致：不能增删 / 替换行。
-        Map<String, StocktakeSnapshotSigner.Entry> authoritative = new LinkedHashMap<>();
+        Map<
+                String,
+                StocktakeSnapshotSigner.Entry> authoritative = new LinkedHashMap<>();
         for (var entry : payload.entries()) {
             authoritative.put(entry.skuCode(), entry);
         }
-        var sheetCodes = new HashSet<String>();
+        var sheetCodes = new HashSet<
+                String>();
         for (var filled : sheet.rows) {
             if (!authoritative.containsKey(filled.skuCode)) {
                 addError(result, filled.rowNumber, filled.skuCode, "SKU编码", "SOURCE_UNKNOWN",
@@ -172,7 +178,8 @@ public class InventoryStocktakeImportService {
             return result;
         }
 
-        var lines = new ArrayList<InventoryStocktakeService.SnapshotLine>();
+        var lines = new ArrayList<
+                InventoryStocktakeService.SnapshotLine>();
         for (var filled : sheet.rows) {
             var entry = authoritative.get(filled.skuCode);
             lines.add(new InventoryStocktakeService.SnapshotLine(entry.skuCode(), entry.skuId(), entry.balanceId(),
@@ -201,14 +208,17 @@ public class InventoryStocktakeImportService {
     private record FilledRow(int rowNumber, String skuCode, BigDecimal actualQuantity, String remark) {
     }
 
-    private record Sheet(String credential, List<FilledRow> rows) {
+    private record Sheet(String credential, List<
+            FilledRow> rows) {
     }
 
     private Sheet parseRows(byte[] bytes, InventoryStocktakeImportResultVO result) {
-        var rows = new ArrayList<FilledRow>();
+        var rows = new ArrayList<
+                FilledRow>();
         String credential = null;
         var formatter = new DataFormatter(java.util.Locale.ROOT);
-        var seenSkuCodes = new HashSet<String>();
+        var seenSkuCodes = new HashSet<
+                String>();
         try (var workbook = WorkbookFactory.create(new ByteArrayInputStream(bytes))) {
             if (workbook.getNumberOfSheets() != 1) {
                 addError(result, 0, null, "文件", "SHEET_COUNT", "请保留模板中的一个工作表，避免遗漏来源行");
@@ -232,7 +242,9 @@ public class InventoryStocktakeImportService {
                     continue;
                 }
                 int rowNumber = excelRow.getRowNum() + 1;
-                Map<Integer, String> cells = new LinkedHashMap<>();
+                Map<
+                        Integer,
+                        String> cells = new LinkedHashMap<>();
                 boolean hasData = false;
                 for (var cell : excelRow) {
                     if (cell.getCellType() == CellType.FORMULA || cell.getCellType() == CellType.ERROR) {
@@ -311,17 +323,24 @@ public class InventoryStocktakeImportService {
     }
 
     /** 参与幂等哈希的指纹：凭证 + 每行（skuCode / 实盘量 / 备注）的稳定序列，内容变即视为不同请求。 */
-    private static Object fingerprint(StocktakeSnapshotSigner.Payload payload,
-            List<InventoryStocktakeService.SnapshotLine> lines) {
-        var actual = new ArrayList<Map<String, Object>>();
+    private static Object fingerprint(StocktakeSnapshotSigner.Payload payload, List<
+            InventoryStocktakeService.SnapshotLine> lines) {
+        var actual = new ArrayList<
+                Map<
+                        String,
+                        Object>>();
         for (var line : lines) {
-            Map<String, Object> row = new LinkedHashMap<>();
+            Map<
+                    String,
+                    Object> row = new LinkedHashMap<>();
             row.put("skuCode", line.skuCode());
             row.put("actual", line.actualQuantity().toPlainString());
             row.put("remark", line.remark());
             actual.add(row);
         }
-        Map<String, Object> request = new LinkedHashMap<>();
+        Map<
+                String,
+                Object> request = new LinkedHashMap<>();
         request.put("warehouseId", payload.warehouseId());
         request.put("entries", payload.entries());
         request.put("actual", actual);

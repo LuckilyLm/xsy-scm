@@ -42,7 +42,9 @@ public class InventoryMovementVO {
 
     private String productName;
 
-    private Map<String, String> specValues;
+    private Map<
+            String,
+            String> specValues;
 
     private String movementType;
 

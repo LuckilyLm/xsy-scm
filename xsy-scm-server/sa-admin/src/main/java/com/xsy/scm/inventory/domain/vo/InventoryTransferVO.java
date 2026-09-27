@@ -73,7 +73,8 @@ public class InventoryTransferVO {
     /**
      * 明细；仅详情接口填充，列表接口为 null。
      */
-    private List<Item> items;
+    private List<
+            Item> items;
 
     /**
      * 调拨单明细行。
@@ -91,7 +92,9 @@ public class InventoryTransferVO {
 
         private String productName;
 
-        private Map<String, String> specValues;
+        private Map<
+                String,
+                String> specValues;
 
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal quantity;

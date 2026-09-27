@@ -27,7 +27,10 @@ import java.util.List;
  * 这道控制就形同虚设，因此审批用乐观锁把这种情形变成 40921。 而两个人同时改同一张草稿属于录单碰撞，与全仓其它单据（出库单 / 盘点单）处理方式一致 —— 本项目在那一类场景上不引入乐观锁，保持一致比局部更严更重要。
  */
 @Mapper
-public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity> {
+public interface InventoryLossGainDao
+        extends
+            BaseMapper<
+                    InventoryLossGainEntity> {
 
     /**
      * 单号是否存在（软删范围内）。生成单号时用于冲突重试。
@@ -78,8 +81,11 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
     /**
      * 分页查询（联仓库取展示字段）。
      */
-    List<InventoryLossGainVO> queryPage(Page<?> page, @Param("query") InventoryLossGainQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            InventoryLossGainVO> queryPage(
+                    Page<
+                            ?> page,
+                    @Param("query") InventoryLossGainQueryForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

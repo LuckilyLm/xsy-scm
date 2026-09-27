@@ -42,7 +42,9 @@ public class InventoryBalanceVO {
      */
     private String productName;
 
-    private Map<String, String> specValues;
+    private Map<
+            String,
+            String> specValues;
 
     /**
      * 记账单位：一个仓库 + SKU 只可能有一个。

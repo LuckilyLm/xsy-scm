@@ -31,7 +31,8 @@ public class InventoryOutboundAddForm {
 
     @NotEmpty(message = "出库明细不能为空")
     @Valid
-    private List<Item> items;
+    private List<
+            Item> items;
 
     /**
      * 出库明细行。

@@ -122,10 +122,12 @@ public class InventoryStocktakeService {
      * @return 新草稿单 id
      */
     @Transactional(rollbackFor = Exception.class)
-    public Long createFromSnapshot(Long warehouseId, List<SnapshotLine> lines) {
+    public Long createFromSnapshot(Long warehouseId, List<
+            SnapshotLine> lines) {
         // 凭证里的仓库来自签名，但仍要过授权范围：模板可以被转交，签名只证明「谁导出的」
         warehouseScopeGuard.require(warehouseId);
-        List<SnapshotLine> ordered = lines.stream().sorted(Comparator.comparing(SnapshotLine::skuId)).toList();
+        List<
+                SnapshotLine> ordered = lines.stream().sorted(Comparator.comparing(SnapshotLine::skuId)).toList();
         for (SnapshotLine line : ordered) {
             InventoryBalanceEntity locked = inventoryBalanceDao.lockByWarehouseAndSku(warehouseId, line.skuId());
             boolean drifted = locked == null || !Objects.equals(locked.getId(), line.balanceId())
@@ -139,7 +141,8 @@ public class InventoryStocktakeService {
 
         InventoryStocktakeAddForm form = new InventoryStocktakeAddForm();
         form.setWarehouseId(warehouseId);
-        List<InventoryStocktakeAddForm.Item> items = new java.util.ArrayList<>();
+        List<
+                InventoryStocktakeAddForm.Item> items = new java.util.ArrayList<>();
         for (SnapshotLine line : lines) {
             InventoryStocktakeAddForm.Item item = new InventoryStocktakeAddForm.Item();
             item.setSkuId(line.skuId());
@@ -201,7 +204,8 @@ public class InventoryStocktakeService {
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
 
-        List<InventoryStocktakeItemVO> items = inventoryStocktakeItemDao.listByStocktakeId(stocktakeId);
+        List<
+                InventoryStocktakeItemVO> items = inventoryStocktakeItemDao.listByStocktakeId(stocktakeId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_EMPTY_ITEMS);
         }
@@ -291,7 +295,8 @@ public class InventoryStocktakeService {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_EMPTY_ITEMS);
         }
-        Set<Long> seen = new HashSet<>();
+        Set<
+                Long> seen = new HashSet<>();
         for (InventoryStocktakeAddForm.Item item : form.getItems()) {
             if (item == null || item.getSkuId() == null || !seen.add(item.getSkuId())) {
                 throw new ScmBusinessException(INVENTORY_STOCKTAKE_DUPLICATE_SKU);

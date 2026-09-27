@@ -95,8 +95,8 @@ public class InventoryFulfillmentService {
      * @param operator
      *            发车操作人，同时作为流水与单据的操作者
      */
-    public record Command(Long routeId, Long warehouseId, java.time.OffsetDateTime occurredAt, String operator,
-            List<Line> lines) {
+    public record Command(Long routeId, Long warehouseId, java.time.OffsetDateTime occurredAt, String operator, List<
+            Line> lines) {
     }
 
     /**
@@ -121,12 +121,17 @@ public class InventoryFulfillmentService {
         // 授权判定取本次真正要扣减的仓库，不信任调用方传来的任何其它仓库
         warehouseScopeGuard.require(command.warehouseId());
 
-        Map<Long, InventoryReservationEntity> reservations = lockReservations(command);
-        Map<String, InventoryBalanceEntity> balances = lockBalances(command, reservations);
+        Map<
+                Long,
+                InventoryReservationEntity> reservations = lockReservations(command);
+        Map<
+                String,
+                InventoryBalanceEntity> balances = lockBalances(command, reservations);
         retireReservations(command, reservations, balances);
 
-        List<Line> shipped = command.lines().stream().filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
-                .sorted(Comparator.comparing(Line::skuId).thenComparing(Line::salesOrderItemId)).toList();
+        List<
+                Line> shipped = command.lines().stream().filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
+                        .sorted(Comparator.comparing(Line::skuId).thenComparing(Line::salesOrderItemId)).toList();
         // 全部订单行都缺：没有实物离开仓库，因此**不是一张空出库单**，outbound 相关字段留空。
         if (shipped.isEmpty()) {
             return new Result(null, null, 0);
@@ -156,7 +161,8 @@ public class InventoryFulfillmentService {
                 || command.lines() == null || command.lines().isEmpty()) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
         }
-        Set<Long> seenOrderLines = new HashSet<>();
+        Set<
+                Long> seenOrderLines = new HashSet<>();
         for (Line line : command.lines()) {
             if (line.salesOrderId() == null || line.salesOrderItemId() == null || line.skuId() == null
                     || line.quantity() == null || line.quantity().compareTo(BigDecimal.ZERO) < 0
@@ -169,11 +175,17 @@ public class InventoryFulfillmentService {
     /**
      * 按 (warehouse_id, sku_id, id) 升序逐行加锁，返回「订单行 → 有效预留」。
      */
-    private Map<Long, InventoryReservationEntity> lockReservations(Command command) {
-        List<Long> orderLineIds = command.lines().stream().map(Line::salesOrderItemId).toList();
-        List<InventoryReservationEntity> found = inventoryReservationDao
-                .listActiveBySourceItemIds(ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), orderLineIds);
-        Map<Long, InventoryReservationEntity> locked = new LinkedHashMap<>();
+    private Map<
+            Long,
+            InventoryReservationEntity> lockReservations(Command command) {
+        List<
+                Long> orderLineIds = command.lines().stream().map(Line::salesOrderItemId).toList();
+        List<
+                InventoryReservationEntity> found = inventoryReservationDao.listActiveBySourceItemIds(
+                        ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), orderLineIds);
+        Map<
+                Long,
+                InventoryReservationEntity> locked = new LinkedHashMap<>();
         for (InventoryReservationEntity candidate : found) {
             InventoryReservationEntity row = inventoryReservationDao.lockById(candidate.getId());
             if (row != null) {
@@ -186,9 +198,15 @@ public class InventoryFulfillmentService {
     /**
      * 预锁本事务要用到的全部余额行：发货仓的每个出库 SKU，加上每条预留自己所在仓的 SKU。 跨仓释放与本地扣减因此落在同一把升序锁序里。
      */
-    private Map<String, InventoryBalanceEntity> lockBalances(Command command,
-            Map<Long, InventoryReservationEntity> reservations) {
-        Map<String, long[]> wanted = new HashMap<>();
+    private Map<
+            String,
+            InventoryBalanceEntity> lockBalances(Command command,
+                    Map<
+                            Long,
+                            InventoryReservationEntity> reservations) {
+        Map<
+                String,
+                long[]> wanted = new HashMap<>();
         for (Line line : command.lines()) {
             wanted.putIfAbsent(balanceKey(command.warehouseId(), line.skuId()),
                     new long[]{command.warehouseId(), line.skuId()});
@@ -197,9 +215,13 @@ public class InventoryFulfillmentService {
             wanted.putIfAbsent(balanceKey(reservation.getWarehouseId(), reservation.getSkuId()),
                     new long[]{reservation.getWarehouseId(), reservation.getSkuId()});
         }
-        List<long[]> ordered = wanted.values().stream()
-                .sorted(Comparator.comparingLong((long[] pair) -> pair[0]).thenComparingLong(pair -> pair[1])).toList();
-        Map<String, InventoryBalanceEntity> locked = new HashMap<>();
+        List<
+                long[]> ordered = wanted.values().stream()
+                        .sorted(Comparator.comparingLong((long[] pair) -> pair[0]).thenComparingLong(pair -> pair[1]))
+                        .toList();
+        Map<
+                String,
+                InventoryBalanceEntity> locked = new HashMap<>();
         for (long[] pair : ordered) {
             InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(pair[0], pair[1]);
             if (balance != null) {
@@ -212,10 +234,16 @@ public class InventoryFulfillmentService {
     /**
      * 整条归还预留：先动 {@code reserved_quantity}（必须早于任何实物扣减，见类注释），再收口状态。
      */
-    private void retireReservations(Command command, Map<Long, InventoryReservationEntity> reservations,
-            Map<String, InventoryBalanceEntity> balances) {
-        Set<Long> shippedHere = command.lines().stream().filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
-                .map(Line::salesOrderItemId).collect(java.util.stream.Collectors.toSet());
+    private void retireReservations(Command command, Map<
+            Long,
+            InventoryReservationEntity> reservations,
+            Map<
+                    String,
+                    InventoryBalanceEntity> balances) {
+        Set<
+                Long> shippedHere = command.lines().stream()
+                        .filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0).map(Line::salesOrderItemId)
+                        .collect(java.util.stream.Collectors.toSet());
         for (InventoryReservationEntity reservation : reservations.values()) {
             InventoryBalanceEntity balance = balances
                     .get(balanceKey(reservation.getWarehouseId(), reservation.getSkuId()));

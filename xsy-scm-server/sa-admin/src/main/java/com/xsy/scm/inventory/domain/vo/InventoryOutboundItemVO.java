@@ -29,7 +29,9 @@ public class InventoryOutboundItemVO {
 
     private String productName;
 
-    private Map<String, String> specValues;
+    private Map<
+            String,
+            String> specValues;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;

@@ -38,7 +38,8 @@ public class InventoryStocktakeQueryService {
     /**
      * 分页查询（不返回明细，明细走 {@link #detail}）。
      */
-    public PageResult<InventoryStocktakeVO> queryPage(InventoryStocktakeQueryForm query) {
+    public PageResult<
+            InventoryStocktakeVO> queryPage(InventoryStocktakeQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
         ScmDataScopeContext scope = dataScopeService.resolve();
@@ -46,7 +47,8 @@ public class InventoryStocktakeQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryStocktakeVO> list = inventoryStocktakeDao.queryPage(page, query, scope.getWarehouseScope());
+        List<
+                InventoryStocktakeVO> list = inventoryStocktakeDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryStocktakeQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -63,7 +65,8 @@ public class InventoryStocktakeQueryService {
             throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
-        List<InventoryStocktakeItemVO> items = inventoryStocktakeItemDao.listByStocktakeId(stocktakeId);
+        List<
+                InventoryStocktakeItemVO> items = inventoryStocktakeItemDao.listByStocktakeId(stocktakeId);
         vo.setItems(items.stream().map(InventoryStocktakeQueryService::toItem).toList());
         return vo;
     }

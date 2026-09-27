@@ -38,13 +38,16 @@ public class InventoryBalanceController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.BALANCE_QUERY)
-    public ResponseDTO<PageResult<InventoryBalanceVO>> query(@Valid @RequestBody InventoryBalanceQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    InventoryBalanceVO>> query(@Valid @RequestBody InventoryBalanceQueryForm form) {
         return ResponseDTO.ok(inventoryBalanceQueryService.query(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(InventoryPermission.BALANCE_QUERY)
-    public ResponseDTO<InventoryBalanceVO> detail(@PathVariable("id") Long balanceId) {
+    public ResponseDTO<
+            InventoryBalanceVO> detail(@PathVariable("id") Long balanceId) {
         return ResponseDTO.ok(inventoryBalanceQueryService.detail(balanceId));
     }
 }

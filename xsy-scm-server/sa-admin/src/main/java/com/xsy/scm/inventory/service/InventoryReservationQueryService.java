@@ -30,13 +30,16 @@ public class InventoryReservationQueryService {
     /**
      * 分页查询。
      */
-    public PageResult<InventoryReservationVO> queryPage(InventoryReservationQueryForm query) {
+    public PageResult<
+            InventoryReservationVO> queryPage(InventoryReservationQueryForm query) {
         ScmDataScopeContext scope = dataScopeService.resolve();
         if (scope.warehouseNowhere()) {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryReservationVO> list = inventoryReservationDao.queryPage(page, query, scope.getWarehouseScope());
+        List<
+                InventoryReservationVO> list = inventoryReservationDao.queryPage(page, query,
+                        scope.getWarehouseScope());
         list.forEach(InventoryReservationQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }

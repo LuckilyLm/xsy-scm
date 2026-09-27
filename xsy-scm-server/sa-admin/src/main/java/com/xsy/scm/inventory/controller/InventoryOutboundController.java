@@ -43,13 +43,16 @@ public class InventoryOutboundController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.OUTBOUND_QUERY)
-    public ResponseDTO<PageResult<InventoryOutboundVO>> query(@Valid @RequestBody InventoryOutboundQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    InventoryOutboundVO>> query(@Valid @RequestBody InventoryOutboundQueryForm form) {
         return ResponseDTO.ok(inventoryOutboundQueryService.queryPage(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_QUERY)
-    public ResponseDTO<InventoryOutboundVO> detail(@PathVariable("id") Long outboundId) {
+    public ResponseDTO<
+            InventoryOutboundVO> detail(@PathVariable("id") Long outboundId) {
         return ResponseDTO.ok(inventoryOutboundQueryService.detail(outboundId));
     }
 
@@ -59,7 +62,8 @@ public class InventoryOutboundController {
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.OUTBOUND_ADD)
     @OperateLog
-    public ResponseDTO<Long> create(@Valid @RequestBody InventoryOutboundAddForm form) {
+    public ResponseDTO<
+            Long> create(@Valid @RequestBody InventoryOutboundAddForm form) {
         return ResponseDTO.ok(inventoryOutboundService.create(form));
     }
 
@@ -69,8 +73,8 @@ public class InventoryOutboundController {
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@PathVariable("id") Long outboundId,
-            @Valid @RequestBody InventoryOutboundAddForm form) {
+    public ResponseDTO<
+            String> update(@PathVariable("id") Long outboundId, @Valid @RequestBody InventoryOutboundAddForm form) {
         inventoryOutboundService.update(outboundId, form);
         return ResponseDTO.ok();
     }
@@ -84,7 +88,8 @@ public class InventoryOutboundController {
     @PostMapping("/confirm/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_CONFIRM)
     @OperateLog
-    public ResponseDTO<String> confirm(@PathVariable("id") Long outboundId) {
+    public ResponseDTO<
+            String> confirm(@PathVariable("id") Long outboundId) {
         inventoryOutboundService.confirm(outboundId);
         return ResponseDTO.ok();
     }
@@ -95,7 +100,8 @@ public class InventoryOutboundController {
     @PostMapping("/cancel/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
     @OperateLog
-    public ResponseDTO<String> cancel(@PathVariable("id") Long outboundId) {
+    public ResponseDTO<
+            String> cancel(@PathVariable("id") Long outboundId) {
         inventoryOutboundService.cancel(outboundId);
         return ResponseDTO.ok();
     }
@@ -106,7 +112,8 @@ public class InventoryOutboundController {
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@PathVariable("id") Long outboundId) {
+    public ResponseDTO<
+            String> delete(@PathVariable("id") Long outboundId) {
         inventoryOutboundService.delete(outboundId);
         return ResponseDTO.ok();
     }

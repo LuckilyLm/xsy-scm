@@ -42,7 +42,9 @@ public class InventoryWarningController {
      */
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.WARNING_QUERY)
-    public ResponseDTO<PageResult<InventoryWarningVO>> query(@Valid @RequestBody InventoryWarningQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    InventoryWarningVO>> query(@Valid @RequestBody InventoryWarningQueryForm form) {
         return ResponseDTO.ok(inventoryWarningQueryService.queryWarningPage(form));
     }
 }

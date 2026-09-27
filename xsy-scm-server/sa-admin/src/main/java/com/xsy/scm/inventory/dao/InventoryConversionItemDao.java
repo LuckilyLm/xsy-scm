@@ -18,12 +18,16 @@ import java.util.List;
  * 注意**没有** {@code updateUnitSnapshot}：与调拨不同，转换的单位不是「从余额读出来回写」的， 而是**单据自己声明的**（折算关系的一部分）。执行时只做比对，不改写。
  */
 @Mapper
-public interface InventoryConversionItemDao extends BaseMapper<InventoryConversionItemEntity> {
+public interface InventoryConversionItemDao
+        extends
+            BaseMapper<
+                    InventoryConversionItemEntity> {
 
     /**
      * 某单下的明细（含源 / 目标两套展示字段，按 id 升序 —— 即录入顺序）。
      */
-    List<InventoryConversionItemVO> listByConversionId(@Param("conversionId") Long conversionId);
+    List<
+            InventoryConversionItemVO> listByConversionId(@Param("conversionId") Long conversionId);
 
     /**
      * 软删某单下的全部明细（待审核重存时用）。

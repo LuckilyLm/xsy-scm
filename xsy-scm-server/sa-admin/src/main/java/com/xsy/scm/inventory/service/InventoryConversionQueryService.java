@@ -39,7 +39,8 @@ public class InventoryConversionQueryService {
     /**
      * 分页查询（不返回明细）。
      */
-    public PageResult<InventoryConversionVO> queryPage(InventoryConversionQueryForm query) {
+    public PageResult<
+            InventoryConversionVO> queryPage(InventoryConversionQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
         ScmDataScopeContext scope = dataScopeService.resolve();
@@ -47,7 +48,8 @@ public class InventoryConversionQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryConversionVO> list = inventoryConversionDao.queryPage(page, query, scope.getWarehouseScope());
+        List<
+                InventoryConversionVO> list = inventoryConversionDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryConversionQueryService::fillDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -64,7 +66,8 @@ public class InventoryConversionQueryService {
             throw new ScmDataScopeException();
         }
         fillDesc(vo);
-        List<InventoryConversionItemVO> items = inventoryConversionItemDao.listByConversionId(conversionId);
+        List<
+                InventoryConversionItemVO> items = inventoryConversionItemDao.listByConversionId(conversionId);
         vo.setItems(items.stream().map(InventoryConversionQueryService::toItem).toList());
         return vo;
     }

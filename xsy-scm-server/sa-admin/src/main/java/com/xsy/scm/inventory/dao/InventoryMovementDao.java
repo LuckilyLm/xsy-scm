@@ -22,7 +22,10 @@ import java.util.List;
  * 未来冲销（采购退货等）必须**新增反向 movement**，而不是修改/删除历史行。
  */
 @Mapper
-public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity> {
+public interface InventoryMovementDao
+        extends
+            BaseMapper<
+                    InventoryMovementEntity> {
 
     /**
      * 追加一条流水，源身份冲突时**不做任何事**（防重）。
@@ -47,8 +50,11 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
     /**
      * 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转）。
      */
-    List<InventoryMovementVO> queryPage(Page<?> page, @Param("query") InventoryMovementQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            InventoryMovementVO> queryPage(
+                    Page<
+                            ?> page,
+                    @Param("query") InventoryMovementQueryForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 按来源行读回那一条活动流水。

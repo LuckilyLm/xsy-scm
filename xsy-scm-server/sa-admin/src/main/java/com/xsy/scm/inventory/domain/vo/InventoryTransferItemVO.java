@@ -28,7 +28,9 @@ public class InventoryTransferItemVO {
 
     private String productName;
 
-    private Map<String, String> specValues;
+    private Map<
+            String,
+            String> specValues;
 
     /**
      * 调拨数量，恒为正。

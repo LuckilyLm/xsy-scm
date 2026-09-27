@@ -27,7 +27,10 @@ import java.util.List;
  * {@code created_at} 是 {@code null}， 直接违反 NOT NULL。手写 SQL 只更新真正该变的列，与全仓其它模块一致。
  */
 @Mapper
-public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarningThresholdEntity> {
+public interface InventoryWarningThresholdDao
+        extends
+            BaseMapper<
+                    InventoryWarningThresholdEntity> {
 
     /**
      * 该 (仓库, SKU) 是否已有有效配置（新增时的防重锚点，与部分唯一索引同义）。
@@ -49,8 +52,11 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
     /**
      * 配置列表（联仓库 / SKU / 商品取展示字段）。
      */
-    List<InventoryWarningThresholdVO> queryPage(Page<?> page, @Param("query") InventoryWarningThresholdQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            InventoryWarningThresholdVO> queryPage(
+                    Page<
+                            ?> page,
+                    @Param("query") InventoryWarningThresholdQueryForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 配置详情（按 id）。
@@ -66,6 +72,9 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      * <p>
      * {@code status} 为空时只返回异常项（LOW / HIGH）—— 预警列表的默认语义。 状态表达式与过滤谓词共用 XML 里的同一个 {@code <sql>} 片段， 避免「判定规则写两遍」这种必然漂移的写法。
      */
-    List<InventoryWarningVO> queryWarningPage(Page<?> page, @Param("query") InventoryWarningQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            InventoryWarningVO> queryWarningPage(
+                    Page<
+                            ?> page,
+                    @Param("query") InventoryWarningQueryForm query, @Param("scope") ScmValueScope scope);
 }

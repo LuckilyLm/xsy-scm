@@ -48,13 +48,16 @@ public class InventoryLossGainController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_QUERY)
-    public ResponseDTO<PageResult<InventoryLossGainVO>> query(@Valid @RequestBody InventoryLossGainQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    InventoryLossGainVO>> query(@Valid @RequestBody InventoryLossGainQueryForm form) {
         return ResponseDTO.ok(inventoryLossGainQueryService.queryPage(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_QUERY)
-    public ResponseDTO<InventoryLossGainVO> detail(@PathVariable("id") Long lossGainId) {
+    public ResponseDTO<
+            InventoryLossGainVO> detail(@PathVariable("id") Long lossGainId) {
         return ResponseDTO.ok(inventoryLossGainQueryService.detail(lossGainId));
     }
 
@@ -64,7 +67,8 @@ public class InventoryLossGainController {
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_ADD)
     @OperateLog
-    public ResponseDTO<Long> create(@Valid @RequestBody InventoryLossGainAddForm form) {
+    public ResponseDTO<
+            Long> create(@Valid @RequestBody InventoryLossGainAddForm form) {
         return ResponseDTO.ok(inventoryLossGainService.create(form));
     }
 
@@ -74,8 +78,8 @@ public class InventoryLossGainController {
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@PathVariable("id") Long lossGainId,
-            @Valid @RequestBody InventoryLossGainAddForm form) {
+    public ResponseDTO<
+            String> update(@PathVariable("id") Long lossGainId, @Valid @RequestBody InventoryLossGainAddForm form) {
         inventoryLossGainService.update(lossGainId, form);
         return ResponseDTO.ok();
     }
@@ -89,8 +93,8 @@ public class InventoryLossGainController {
     @PostMapping("/approve/{id}")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_APPROVE)
     @OperateLog
-    public ResponseDTO<String> approve(@PathVariable("id") Long lossGainId,
-            @Valid @RequestBody InventoryLossGainAuditForm form) {
+    public ResponseDTO<
+            String> approve(@PathVariable("id") Long lossGainId, @Valid @RequestBody InventoryLossGainAuditForm form) {
         inventoryLossGainService.approve(lossGainId, form);
         return ResponseDTO.ok();
     }
@@ -101,8 +105,8 @@ public class InventoryLossGainController {
     @PostMapping("/reject/{id}")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_REJECT)
     @OperateLog
-    public ResponseDTO<String> reject(@PathVariable("id") Long lossGainId,
-            @Valid @RequestBody InventoryLossGainAuditForm form) {
+    public ResponseDTO<
+            String> reject(@PathVariable("id") Long lossGainId, @Valid @RequestBody InventoryLossGainAuditForm form) {
         inventoryLossGainService.reject(lossGainId, form);
         return ResponseDTO.ok();
     }
@@ -113,7 +117,8 @@ public class InventoryLossGainController {
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@PathVariable("id") Long lossGainId) {
+    public ResponseDTO<
+            String> delete(@PathVariable("id") Long lossGainId) {
         inventoryLossGainService.delete(lossGainId);
         return ResponseDTO.ok();
     }

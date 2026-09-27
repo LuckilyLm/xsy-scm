@@ -209,11 +209,17 @@ public class InventoryCommandService {
      *            本单涉及的源与目标 SKU（重复与无序都可以，内部按升序去重锁定）
      * @return {@code skuId -> 期初数量与均价}；没有余额行的 SKU 不在结果里，调用方按 0 处理
      */
-    public Map<Long, CostBasis> lockCostBasis(Long warehouseId, Collection<Long> skuIds) {
+    public Map<
+            Long,
+            CostBasis> lockCostBasis(Long warehouseId,
+                    Collection<
+                            Long> skuIds) {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalTransactionStateException("Cost basis snapshot requires the caller's transaction");
         }
-        Map<Long, CostBasis> basis = new HashMap<>();
+        Map<
+                Long,
+                CostBasis> basis = new HashMap<>();
         skuIds.stream().filter(Objects::nonNull).distinct().sorted().forEach(skuId -> {
             InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(warehouseId, skuId);
             // 没有余额行 = 从未入库 = 没有成本事实：出库腿会因此在后面失败（41058），

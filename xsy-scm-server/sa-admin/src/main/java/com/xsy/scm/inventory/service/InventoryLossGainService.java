@@ -165,7 +165,8 @@ public class InventoryLossGainService {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_PARAM_INVALID);
         }
 
-        List<InventoryLossGainItemVO> items = inventoryLossGainItemDao.listByLossGainId(lossGainId);
+        List<
+                InventoryLossGainItemVO> items = inventoryLossGainItemDao.listByLossGainId(lossGainId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_EMPTY_ITEMS);
         }
@@ -260,7 +261,8 @@ public class InventoryLossGainService {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_EMPTY_ITEMS);
         }
-        Set<Long> seen = new HashSet<>();
+        Set<
+                Long> seen = new HashSet<>();
         for (InventoryLossGainAddForm.Item item : form.getItems()) {
             if (item == null || item.getSkuId() == null || !seen.add(item.getSkuId())) {
                 throw new ScmBusinessException(INVENTORY_LOSS_GAIN_DUPLICATE_SKU);

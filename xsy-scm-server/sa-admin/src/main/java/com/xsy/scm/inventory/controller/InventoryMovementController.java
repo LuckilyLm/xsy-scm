@@ -35,7 +35,9 @@ public class InventoryMovementController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.MOVEMENT_QUERY)
-    public ResponseDTO<PageResult<InventoryMovementVO>> query(@Valid @RequestBody InventoryMovementQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    InventoryMovementVO>> query(@Valid @RequestBody InventoryMovementQueryForm form) {
         return ResponseDTO.ok(inventoryMovementQueryService.query(form));
     }
 }

@@ -55,26 +55,28 @@ public class WarehouseDisableGuardImpl implements WarehouseDisableGuard {
     @Override
     public WarehouseErrorCode disableBlocker(Long warehouseId) {
         // 1. 库存余额 > 0 → 禁止停用。
-        if (inventoryBalanceDao.selectCount(
-                new LambdaQueryWrapper<InventoryBalanceEntity>().eq(InventoryBalanceEntity::getWarehouseId, warehouseId)
-                        .gt(InventoryBalanceEntity::getQuantity, BigDecimal.ZERO)) > 0) {
+        if (inventoryBalanceDao.selectCount(new LambdaQueryWrapper<
+                InventoryBalanceEntity>().eq(InventoryBalanceEntity::getWarehouseId, warehouseId)
+                .gt(InventoryBalanceEntity::getQuantity, BigDecimal.ZERO)) > 0) {
             return WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_BALANCE;
         }
         // 2. 在途采购单（SUBMITTED / PARTIALLY_RECEIVED）→ 禁止停用。
-        if (purchaseOrderDao.selectCount(new LambdaQueryWrapper<PurchaseOrderEntity>()
-                .eq(PurchaseOrderEntity::getWarehouseId, warehouseId).in(PurchaseOrderEntity::getStatus,
-                        ScmPurchaseStatusEnum.SUBMITTED.name(), ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name())) > 0) {
+        if (purchaseOrderDao.selectCount(new LambdaQueryWrapper<
+                PurchaseOrderEntity>().eq(PurchaseOrderEntity::getWarehouseId, warehouseId)
+                .in(PurchaseOrderEntity::getStatus, ScmPurchaseStatusEnum.SUBMITTED.name(),
+                        ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name())) > 0) {
             return WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_INBOUND;
         }
         // 3. 待入库收货单（CONFIRMED 且 putaway_status=PENDING）→ 禁止停用。
-        if (purchaseReceiptDao.selectCount(
-                new LambdaQueryWrapper<PurchaseReceiptEntity>().eq(PurchaseReceiptEntity::getWarehouseId, warehouseId)
-                        .eq(PurchaseReceiptEntity::getStatus, ScmReceiptStatusEnum.CONFIRMED.name())
-                        .eq(PurchaseReceiptEntity::getPutawayStatus, ScmPutawayStatusEnum.PENDING.name())) > 0) {
+        if (purchaseReceiptDao.selectCount(new LambdaQueryWrapper<
+                PurchaseReceiptEntity>().eq(PurchaseReceiptEntity::getWarehouseId, warehouseId)
+                .eq(PurchaseReceiptEntity::getStatus, ScmReceiptStatusEnum.CONFIRMED.name())
+                .eq(PurchaseReceiptEntity::getPutawayStatus, ScmPutawayStatusEnum.PENDING.name())) > 0) {
             return WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY;
         }
         // 4. 在途调拨单（SHIPPED）→ 禁止停用；源仓与目标仓都要挡。
-        if (inventoryTransferDao.selectCount(new LambdaQueryWrapper<InventoryTransferEntity>()
+        if (inventoryTransferDao.selectCount(new LambdaQueryWrapper<
+                InventoryTransferEntity>()
                 .eq(InventoryTransferEntity::getStatus, ScmInventoryTransferStatusEnum.SHIPPED.name())
                 .and(wrapper -> wrapper.eq(InventoryTransferEntity::getFromWarehouseId, warehouseId).or()
                         .eq(InventoryTransferEntity::getToWarehouseId, warehouseId))) > 0) {

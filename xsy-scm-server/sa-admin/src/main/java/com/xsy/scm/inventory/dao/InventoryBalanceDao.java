@@ -24,7 +24,10 @@ import java.util.List;
  * {@code WHERE deleted = FALSE} 谓词）。 业务代码不制造任何 PG 版本分支；该 SQL 由 PG IT 在真实 PostgreSQL 上执行验证。
  */
 @Mapper
-public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> {
+public interface InventoryBalanceDao
+        extends
+            BaseMapper<
+                    InventoryBalanceEntity> {
 
     /**
      * 并发安全的「首建余额行」：冲突目标与部分唯一索引完全匹配。
@@ -112,8 +115,11 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * <p>
      * {@code scope} 为 null 时 SQL 退化为恒假谓词：数据范围必须由调用方显式下传， 「没传就等于全部」会让任何漏传的新调用点变成越权入口。
      */
-    List<InventoryBalanceVO> queryPage(Page<?> page, @Param("query") InventoryBalanceQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            InventoryBalanceVO> queryPage(
+                    Page<
+                            ?> page,
+                    @Param("query") InventoryBalanceQueryForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 余额详情（按 id）。
@@ -126,5 +132,6 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * <p>
      * 模板是「这一仓库当前所有可盘点余额」的快照，因此不做分页、不接客户端排序； 排序固定 {@code sku_id} 与确认阶段的锁序一致，保证凭证来源集合稳定可复核。
      */
-    List<InventoryBalanceVO> listActiveByWarehouse(@Param("warehouseId") Long warehouseId);
+    List<
+            InventoryBalanceVO> listActiveByWarehouse(@Param("warehouseId") Long warehouseId);
 }

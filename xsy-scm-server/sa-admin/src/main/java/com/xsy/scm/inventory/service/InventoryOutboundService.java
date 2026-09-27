@@ -122,7 +122,8 @@ public class InventoryOutboundService {
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
 
-        List<InventoryOutboundItemVO> items = inventoryOutboundItemDao.listByOutboundId(outboundId);
+        List<
+                InventoryOutboundItemVO> items = inventoryOutboundItemDao.listByOutboundId(outboundId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_EMPTY_ITEMS);
         }

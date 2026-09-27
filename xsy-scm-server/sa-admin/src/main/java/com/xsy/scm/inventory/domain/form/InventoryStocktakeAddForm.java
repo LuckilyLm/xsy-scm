@@ -34,7 +34,8 @@ public class InventoryStocktakeAddForm {
 
     @NotEmpty(message = "盘点明细不能为空")
     @Valid
-    private List<Item> items;
+    private List<
+            Item> items;
 
     /**
      * 盘点明细行。
