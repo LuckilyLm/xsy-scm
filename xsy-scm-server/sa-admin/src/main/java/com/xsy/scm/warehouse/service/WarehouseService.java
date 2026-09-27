@@ -36,7 +36,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @RequiredArgsConstructor
 public class WarehouseService {
 
-    private final WarehouseDao dao;
+    private final WarehouseDao warehouseDao;
 
     /**
      * 停用前置守卫由库存域实现，避免仓库域反向依赖库存域。
@@ -47,7 +47,7 @@ public class WarehouseService {
      * 读取仓库，不存在或已删除 → 40485。
      */
     public WarehouseEntity require(Long id) {
-        WarehouseEntity entity = id == null ? null : dao.selectById(id);
+        WarehouseEntity entity = id == null ? null : warehouseDao.selectById(id);
         if (entity == null) {
             throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_NOT_FOUND);
         }
@@ -68,7 +68,7 @@ public class WarehouseService {
      * 全量仓库（含 DISABLED），供内部逻辑使用。
      */
     public List<WarehouseEntity> all() {
-        return dao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
+        return warehouseDao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
                 .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
     }
 
@@ -109,7 +109,7 @@ public class WarehouseService {
         entity.setDeleted(false);
         stamp(entity, true);
         try {
-            dao.insert(entity);
+            warehouseDao.insert(entity);
         } catch (DuplicateKeyException e) {
             // 并发兜底：显式查重与插入之间存在窗口，由 uk_warehouse_code_active 兜住
             throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE);
@@ -138,7 +138,7 @@ public class WarehouseService {
         entity.setVersion(form.getVersion());
         stamp(entity, false);
         try {
-            if (dao.updateById(entity) != 1) {
+            if (warehouseDao.updateById(entity) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
         } catch (DuplicateKeyException e) {
@@ -162,7 +162,7 @@ public class WarehouseService {
         }
         entity.setStatus(ScmWarehouseStatusEnum.ENABLED.name());
         stamp(entity, false);
-        if (dao.updateById(entity) != 1) {
+        if (warehouseDao.updateById(entity) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -188,7 +188,7 @@ public class WarehouseService {
         }
         entity.setStatus(ScmWarehouseStatusEnum.DISABLED.name());
         stamp(entity, false);
-        if (dao.updateById(entity) != 1) {
+        if (warehouseDao.updateById(entity) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -199,7 +199,7 @@ public class WarehouseService {
         if (excludeId != null) {
             wrapper.ne(WarehouseEntity::getId, excludeId);
         }
-        return dao.selectCount(wrapper) > 0;
+        return warehouseDao.selectCount(wrapper) > 0;
     }
 
     /**

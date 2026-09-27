@@ -36,7 +36,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WarehouseScopeController {
 
-    private final WarehouseScopeService service;
+    private final WarehouseScopeService warehouseScopeService;
 
     /**
      * 某仓库下被授权的员工。
@@ -44,7 +44,7 @@ public class WarehouseScopeController {
     @GetMapping("/employees")
     @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
     public ResponseDTO<List<WarehouseScopeEmployeeVO>> employees(@RequestParam Long warehouseId) {
-        return ResponseDTO.ok(service.listEmployees(warehouseId));
+        return ResponseDTO.ok(warehouseScopeService.listEmployees(warehouseId));
     }
 
     /**
@@ -53,7 +53,7 @@ public class WarehouseScopeController {
     @GetMapping("/warehouses")
     @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
     public ResponseDTO<List<WarehouseScopeWarehouseVO>> warehouses(@RequestParam Long employeeId) {
-        return ResponseDTO.ok(service.listWarehouses(employeeId));
+        return ResponseDTO.ok(warehouseScopeService.listWarehouses(employeeId));
     }
 
     /**
@@ -63,7 +63,7 @@ public class WarehouseScopeController {
     @SaCheckPermission(WarehousePermission.SCOPE_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody WarehouseScopeUpdateForm form) {
-        service.update(form);
+        warehouseScopeService.update(form);
         return ResponseDTO.ok();
     }
 }

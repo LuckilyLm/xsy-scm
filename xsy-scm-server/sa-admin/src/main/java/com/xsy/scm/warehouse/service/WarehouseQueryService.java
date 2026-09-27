@@ -43,9 +43,9 @@ public class WarehouseQueryService {
     private static final Set<String> SORTABLE =
             Set.of("warehouse_code", "name", "status", "created_at", "updated_at");
 
-    private final WarehouseDao dao;
+    private final WarehouseDao warehouseDao;
 
-    private final WarehouseService service;
+    private final WarehouseService warehouseService;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -62,7 +62,7 @@ public class WarehouseQueryService {
         if (!scope.isAll()) {
             query.in(WarehouseEntity::getId, scope.getIds());
         }
-        return dao.selectList(query.orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId))
+        return warehouseDao.selectList(query.orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId))
                 .stream()
                 .map(WarehouseQueryService::toVO)
                 .toList();
@@ -78,7 +78,7 @@ public class WarehouseQueryService {
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.asc("warehouse_code"), OrderItem.asc("id"));
         }
-        List<WarehouseEntity> rows = dao.queryPage(page, form, scope);
+        List<WarehouseEntity> rows = warehouseDao.queryPage(page, form, scope);
         List<WarehouseVO> list = new ArrayList<>(rows.size());
         rows.forEach(row -> list.add(toVO(row)));
         return SmartPageUtil.convert2PageResult(page, list);
@@ -89,7 +89,7 @@ public class WarehouseQueryService {
      * 否则探测仓库编号与探测授权可以分辨出来。
      */
     public WarehouseVO detail(Long id) {
-        WarehouseEntity entity = service.require(id);
+        WarehouseEntity entity = warehouseService.require(id);
         if (!dataScopeService.resolve().getWarehouseScope().allows(entity.getId())) {
             throw new ScmDataScopeException();
         }

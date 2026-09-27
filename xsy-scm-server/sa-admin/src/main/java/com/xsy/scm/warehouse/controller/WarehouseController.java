@@ -35,9 +35,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WarehouseController {
 
-    private final WarehouseService service;
+    private final WarehouseService warehouseService;
 
-    private final WarehouseQueryService queryService;
+    private final WarehouseQueryService warehouseQueryService;
 
     /**
      * 下拉选择器：只返回 ENABLED 仓库。
@@ -45,33 +45,33 @@ public class WarehouseController {
     @GetMapping("/list")
     @SaCheckPermission(WarehousePermission.QUERY)
     public ResponseDTO<List<WarehouseVO>> list() {
-        return ResponseDTO.ok(queryService.list());
+        return ResponseDTO.ok(warehouseQueryService.list());
     }
 
     @PostMapping("/query")
     @SaCheckPermission(WarehousePermission.QUERY)
     public ResponseDTO<PageResult<WarehouseVO>> query(@Valid @RequestBody WarehouseQueryForm form) {
-        return ResponseDTO.ok(queryService.query(form));
+        return ResponseDTO.ok(warehouseQueryService.query(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(WarehousePermission.QUERY)
     public ResponseDTO<WarehouseVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(queryService.detail(id));
+        return ResponseDTO.ok(warehouseQueryService.detail(id));
     }
 
     @PostMapping("/create")
     @SaCheckPermission(WarehousePermission.ADD)
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody WarehouseAddForm form) {
-        return ResponseDTO.ok(service.create(form));
+        return ResponseDTO.ok(warehouseService.create(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(WarehousePermission.UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody WarehouseUpdateForm form) {
-        service.update(form);
+        warehouseService.update(form);
         return ResponseDTO.ok();
     }
 
@@ -82,7 +82,7 @@ public class WarehouseController {
     @SaCheckPermission(WarehousePermission.ENABLE)
     @OperateLog
     public ResponseDTO<String> enable(@Valid @RequestBody WarehouseStatusForm form) {
-        service.enable(form);
+        warehouseService.enable(form);
         return ResponseDTO.ok();
     }
 
@@ -93,7 +93,7 @@ public class WarehouseController {
     @SaCheckPermission(WarehousePermission.DISABLE)
     @OperateLog
     public ResponseDTO<String> disable(@Valid @RequestBody WarehouseStatusForm form) {
-        service.disable(form);
+        warehouseService.disable(form);
         return ResponseDTO.ok();
     }
 }
