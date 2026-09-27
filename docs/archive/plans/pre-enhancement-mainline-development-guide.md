@@ -40,7 +40,7 @@ P0 基线收口
 - 补库存预留并发测试
 - 对 Delivery L0-L2 做最终 E2E 验收
 - 同步：
-  - `docs/progress.md`
+  - `docs/status.md`
   - `docs/decisions.md`
   - 需求覆盖文档
   - `AGENTS.md`
@@ -92,7 +92,7 @@ P0 基线收口
 - 分拣结果如何关联订单实际履约数量
 
 以上六问连同分拣与配送 / 库存 / 权限模型的衔接口径，已由用户逐条裁决，
-见 [`docs/decisions.md`](../decisions.md)「P1 分拣管理裁决（2026-09-24）」第 1–14 条；
+见 [`docs/decisions.md`](../../decisions.md)「P1 分拣管理裁决（2026-09-24）」第 1–14 条；
 实现与验收以该节为准，本节保留范围与完成标准。
 
 完成标准：

@@ -1,8 +1,8 @@
 # 商品中心优化方案（Product Center Optimization Plan）
 
 > 适用项目：鲜蔬源智链 `xsy-scm`  
-> 目标路径：`docs/plan/product-center-optimization-plan.md`  
-> 当前状态（2026-09-21）：**PCO-1 已落地**，但落地时用的是 **V38–V39**（不是本文的 V37）；PCO-2（Excel 导入导出 / 图片中心）未开始；V40 已被地图模块 M0 占用。本文的分期编号仅作规划期快照保留，**实施前必须从当前最大号之后整体重排**，见 [`../requirements/2026-09-21-地图模块分期实施方案.md`](../requirements/2026-09-21-地图模块分期实施方案.md) §9 D-3。  
+> 目标路径：`docs/plan/active/product-center-optimization-plan.md`  
+> 当前状态（2026-09-21）：**PCO-1 已落地**，但落地时用的是 **V38–V39**（不是本文的 V37）；PCO-2（Excel 导入导出 / 图片中心）未开始；V40 已被地图模块 M0 占用。本文的分期编号仅作规划期快照保留，**实施前必须从当前最大号之后整体重排**，见 [`../../requirements/2026-09-21-地图模块分期实施方案.md`](../../requirements/2026-09-21-地图模块分期实施方案.md) §9 D-3。
 > 规划日期：2026-09-20  
 > 仓库基线：`main @ 9143e09a0b57d69b408e59cdf6bd049813fd46c9`  
 > 基线最后提交：`feat(screen): 数据大屏 V1 — 视觉与信息架构重构（按设计稿）`  

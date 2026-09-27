@@ -1,11 +1,11 @@
 # Finance R0 — 财务与报表只读地基实施方案（最终版）
 
-> 目标路径：`docs/plan/finance-reporting-r0-plan.md`  
+> 目标路径：`docs/plan/active/finance-reporting-r0-plan.md`  
 > 项目：`LuckilyLm/xsy-scm`  
 > 规划日期：2026-09-23  
 > 规划基线：`main @ c9f6954ded09f1c0c037e4bd00816381ad7202a9`  
 > 规划时 Flyway 最大版本：`V49`  
-> 状态：**R0 Core 已实施（2026-09-23，V50–V51；验证与未覆盖项见 `docs/progress.md` 同名记录）**  
+> 状态：**R0 Core 已实施（2026-09-23，V50–V51；验证与未覆盖项见 `docs/status.md` 同名记录）**  
 > 参考来源：当前 `xsy-scm` 真实代码/数据库结构 + 项目需求文档 + 蔬东坡参考页面截图  
 > 核心原则：**参考交互与信息组织，不机械复制对方财务口径。所有数字必须能由当前 XSY 已存在事实证明。**
 
@@ -1907,7 +1907,7 @@ F0 FA-1 / FA-2 文件授权债
 成本敏感字段权限
 ```
 
-完成前 `docs/progress.md` 必须写：
+完成前 `docs/status.md` 必须写：
 
 ```text
 “功能权限已验证，正式岗位数据范围未宣称完成。”
@@ -2491,7 +2491,7 @@ Playwright
 ## R0-9：文档
 
 ```text
-docs/progress.md
+docs/status.md
 需求覆盖清单
 必要的 decisions
 ```
@@ -2530,7 +2530,7 @@ Finance R0 只有同时满足以下条件才算完成：
 - [ ] 前端测试 / lint / build 通过；
 - [ ] Playwright 核心流程通过；
 - [ ] 0 pageerror；
-- [ ] docs/progress.md 据实更新。
+- [ ] docs/status.md 据实更新。
 
 ---
 
@@ -2563,14 +2563,14 @@ AI 不得自行决定
 # 47. 给 AI 的执行指令
 
 ```text
-请实施 docs/plan/finance-reporting-r0-plan.md。
+请实施 docs/plan/active/finance-reporting-r0-plan.md。
 
 这是 Finance R0：只读报表地基，不是完整财务模块。
 
 开工前必须：
 1. git fetch；
 2. 确认 origin/main 最新 HEAD；
-3. 阅读 AGENTS.md、docs/progress.md、docs/decisions.md；
+3. 阅读 AGENTS.md、docs/status.md、docs/decisions.md；
 4. 阅读本计划；
 5. 重新确认最大 Flyway；
 6. 以当前代码 / 表结构 / 状态机为事实源。
@@ -2596,7 +2596,7 @@ AI 不得自行决定
 - export 同时要求 query + export 权限；
 - 核心行为必须有真实 PostgreSQL IT；
 - 关键用户路径必须 Playwright 实跑；
-- 完成后据实更新 docs/progress.md。
+- 完成后据实更新 docs/status.md。
 
 如果实现中发现必须决定：
 应收、应付、签收、核销、财务利润、费用、正式收入确认，

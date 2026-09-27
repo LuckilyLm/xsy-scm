@@ -2,13 +2,13 @@
 
 > ## ⚠️ 状态：历史实施计划，Wave 1～8 已于 2026-09-23 落地
 >
-> **当前事实以 [`docs/progress.md`](../progress.md)、[`AGENTS.md`](../../AGENTS.md) 和最新代码为准。**
+> **当前事实以 [`docs/status.md`](../../status.md)、[`AGENTS.md`](../../AGENTS.md) 和最新代码为准。**
 > 本文仅保留设计背景，**不得直接按原 Flyway / API / 权限编号再次实施**——正文里的版本号、
 > 菜单 id、接口路径与表结构大多已被实际实现取代或重排，照抄会撞号或重复造功能。
-> 需要继续推进时，先读 `docs/progress.md` 的已完成清单与 `db/migration/` 的真实编号上限，
+> 需要继续推进时，先读 `docs/status.md` 的已完成清单与 `db/migration/` 的真实编号上限，
 > 再另开一份计划。
 
-> 文件：`docs/plan/current-module-optimization-from-sdongpo-v17.4.md`  
+> 文件：`docs/plan/active/current-module-optimization-from-sdongpo-v17.4.md`  
 > 项目：鲜蔬源智链 `xsy-scm`  
 > 规划日期：2026-09-22  
 > 规划时仓库基线：`main @ 45412fb946b79fec7779f5a8d63190119567d014`（**已过期**）  
@@ -2351,9 +2351,9 @@ GET /scm/customer/{customerId}/frequent-skus
 
 ```text
 AGENTS.md
-docs/progress.md
+docs/status.md
 docs/decisions.md
-SMARTADMIN_REFERENCE_RULES.md
+docs/architecture/smartadmin-foundation.md
 本文件
 对应已有设计文档
 对应已有 E2E / IT
@@ -2362,13 +2362,13 @@ SMARTADMIN_REFERENCE_RULES.md
 商品必须额外读：
 
 ```text
-docs/plan/product-center-optimization-plan.md
+docs/plan/active/product-center-optimization-plan.md
 ```
 
 配送必须额外读：
 
 ```text
-docs/plan/logistics-delivery-static-route-plan.md
+docs/plan/active/logistics-delivery-static-route-plan.md
 docs/delivery-static-route-implementation.md
 ```
 
@@ -2423,7 +2423,7 @@ git fetch
 权限正向/反向验证通过
 Flyway 连续且可从空库执行
 关键负向用例通过
-更新 docs/progress.md
+更新 docs/status.md
 必要时更新 docs/decisions.md
 ```
 
@@ -2444,17 +2444,17 @@ Flyway 连续且可从空库执行
 后续把某一个 Wave 交给 AI 时，可以直接使用下面的指令骨架：
 
 ```text
-请实施 docs/plan/current-module-optimization-from-sdongpo-v17.4.md 的 Wave X。
+请实施 docs/plan/active/current-module-optimization-from-sdongpo-v17.4.md 的 Wave X。
 
 要求：
-1. 先读取 AGENTS.md、docs/progress.md、docs/decisions.md、本 Wave 涉及的现有设计与测试；
+1. 先读取 AGENTS.md、docs/status.md、docs/decisions.md、本 Wave 涉及的现有设计与测试；
 2. git fetch 并确认当前 main、当前最大 Flyway，按实际需要从 max + 1 连续分配，跳过可选迁移时不留空号；
 3. 只实施本 Wave，不顺手实现下一 Wave；
 4. 保留现有领域模型和状态机，不创建第二套事实；
 5. 后端、前端、权限、迁移、测试、E2E 一起交付；
 6. 所有新写接口加 Sa-Token 权限与必要的 @OperateLog；
 7. 高风险写操作必须覆盖负向、并发/版本冲突、权限越界；
-8. 完成后更新 docs/progress.md，并给出：
+8. 完成后更新 docs/status.md，并给出：
    - 改了什么
    - 没改什么
    - DB/Flyway

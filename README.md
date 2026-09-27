@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-截至 2026-09-18，W0–W5、W5.5 与 F0 已完成对应阶段交付。W6-1 已完成后端与浏览器验证，覆盖库存余额、不可变流水、`DIRECT` / `WAREHOUSE_CONFIRM` 双入库模式、仓库启停和历史收货回填。W6-2 小程序未启动，仍需裁决遗留项后再开工。详见 [项目进度](docs/progress.md)。
+截至 2026-09-28，供应链核心域与 Finance R1 F1-3B 已交付；Java 质量整改 Q0–Q4 的实施已完成。Finance R1 后续阶段和 W6-2 小程序尚未开始。当前事项与验证记录见 [项目状态](docs/status.md)。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
@@ -14,14 +14,14 @@
 | --- | --- |
 | `xsy-scm-server/` | 正式后端：Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway |
 | `xsy-scm-web/` | 正式后台：Vue3、TypeScript、Ant Design Vue、Vite、Pinia |
-| `docs/` | 当前进度和少量项目决策 |
-| `tools/` | 本地工具，已排除 Git 跟踪（克隆后不会自动获得） |
+| `docs/` | 状态、架构、需求、决策、计划、质量和归档文档 |
+| `tools/` | 版本控制的质量、迁移、E2E 与验证工具 |
 | `deploy/minio/` | F0 本地对象存储与集成验证环境 |
 | `deploy/postgres/` | 本地 PostgreSQL 容器配置与操作说明 |
 | `xsy-scm-miniapp/` | 冻结的 Taro + React legacy 小程序，后续目标为 uni-app + Vue3 |
 | `project-reference-examples/` | 纳入 Git 的只读上游参考；含凭据的环境配置仍忽略 |
 
-系统登录、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现。规则见 [AGENTS.md](AGENTS.md) 与 [SmartAdmin 底座规则](SMARTADMIN_REFERENCE_RULES.md)。
+系统登录、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现。规则见 [AGENTS.md](AGENTS.md) 与 [SmartAdmin 底座规则](docs/architecture/smartadmin-foundation.md)。
 
 ## 本地开发
 
@@ -64,7 +64,7 @@ npm test
 npm run build
 ```
 
-浏览器验证须先启动 PostgreSQL、Redis、后端 18080 与前端 18081；`verify.ps1` / `verify.sh` 只执行门禁，不管理服务生命周期。完整入口从仓库根目录运行 `./verify.ps1`，结果保存在 `.runtime/verify/<timestamp>/summary.json` 与 `.runtime/playwright-result.json`。没有执行或因环境跳过的检查不能报告为通过。
+浏览器验证须先启动 PostgreSQL、Redis、后端与前端；`tools/verify.ps1` / `tools/verify.sh` 只执行门禁，不管理服务生命周期。完整入口从仓库根目录运行 `./tools/verify.ps1`，结果保存在 `.runtime/verify/<timestamp>/summary.json` 与 `.runtime/playwright-result.json`。没有执行或因环境跳过的检查不能报告为通过。
 
 ## Docker 第一版部署
 

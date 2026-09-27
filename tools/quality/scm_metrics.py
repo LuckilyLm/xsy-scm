@@ -529,14 +529,18 @@ DOCS_FILES = (
     "CONTRIBUTING.md",
     "README.md",
     "NOTICE.md",
-    "SMARTADMIN_REFERENCE_RULES.md",
-    "PROPOSAL-2026-09-18-团队技术提升方案.md",
+    "docs/architecture/smartadmin-foundation.md",
+    "docs/archive/proposals/PROPOSAL-2026-09-18-团队技术提升方案.md",
     "docs/README.md",
-    "docs/progress.md",
+    "docs/status.md",
     "docs/decisions.md",
+    "docs/adr/001-data-scope-and-file-access.md",
+    "docs/adr/002-sorting-fact-boundary.md",
+    "docs/adr/003-delivery-outbound-and-signoff.md",
+    "docs/adr/004-finance-r1-facts.md",
     "docs/quality/java-code-quality-remediation-plan.md",
-    "docs/delivery-static-route-implementation.md",
-    "docs/xsy-scm-wave1-8-audit-fix-plan.md",
+    "docs/quality/q3-service-architecture-review.md",
+    "docs/plan/active/finance-r1-design.md",
 )
 
 

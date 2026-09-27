@@ -1,6 +1,6 @@
 # XSY-SCM Java 代码质量与工程规范整改计划
 
-> 状态：执行中  
+> 状态：Q0–Q4 整改实施完成；最终验证按用户本轮要求未运行  
 > 基线：`main @ a93a7772b2f56107778e834559d427176e3af0da`  
 > 当前业务阶段：`F1-3B COMPLETE`  
 > 当前暂停：`F1-3C / F1-4 / F1-5 / F1-6 / F1-8`
@@ -1321,7 +1321,7 @@ project-reference-examples/
 ## 15.2 迁移
 
 ```text
-SMARTADMIN_REFERENCE_RULES.md
+docs/architecture/smartadmin-foundation.md
 → docs/architecture/smartadmin-foundation.md
 
 PROPOSAL-2026-09-18-团队技术提升方案.md

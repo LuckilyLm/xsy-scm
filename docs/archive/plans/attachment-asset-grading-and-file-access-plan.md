@@ -1,7 +1,7 @@
 # 附件资产分级与文件读取权限方案（Attachment Asset Grading & File Access Plan）
 
 > 适用项目：鲜蔬源智链 `xsy-scm`
-> 目标路径：`docs/plan/attachment-asset-grading-and-file-access-plan.md`
+> 目标路径：`docs/plan/active/attachment-asset-grading-and-file-access-plan.md`
 > 当前状态（2026-09-24）：**FA-0 / FA-1 / FA-2 / FA-2b / FA-3 全部落地**，
 > 对象存储（MinIO）模式下的保密性也已实测（后端 IT + 浏览器 E2E 双链）。
 > 序列化器越权旁路已收口为唯一受控入口（§3）。
@@ -33,7 +33,7 @@
 > **前缀级放行已收口**：`FileAccessGuard` 不再对 `private/notice/`、`private/help-doc/` 按目录放行，
 > 判定改为「公开前缀 / 管理员 / 任一业务对象可读 / 上传者本人」，业务可见性由 sa-admin 侧
 > `biz_type` 策略回答（sa-base 不依赖业务模块）。引入非管理员业务角色的门禁因此已解除。
-> 业务裁决见 [`../decisions.md`](../decisions.md)
+> 业务裁决见 [`../../decisions.md`](../../decisions.md)
 > 「F0-DEBT-01 裁决：附件资产分级与文件读取权限」。
 > 本文的 Flyway 版本号与菜单 id **只是规划期快照**，落地前必须按 `AGENTS.md` 从当前最大号之后整体重排。
 > 规划日期：2026-09-21

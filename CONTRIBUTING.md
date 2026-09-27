@@ -1,7 +1,7 @@
 # 代码评审与贡献约定
 
 > 面向**人**的评审约定。面向 AI 编码代理的仓库规则见 [`AGENTS.md`](./AGENTS.md)，
-> 技术栈边界见 [`SMARTADMIN_REFERENCE_RULES.md`](./SMARTADMIN_REFERENCE_RULES.md)。
+> 技术栈边界见 [`docs/architecture/smartadmin-foundation.md`](./docs/architecture/smartadmin-foundation.md)。
 > 本文只讲一件事：**怎么评审，才能让这个项目的真实风险被挡住。**
 
 ---
@@ -108,7 +108,7 @@
 
 PR 模板里的「验证证据」要求粘贴**实际命令与实际输出**，不接受结论性描述。
 
-这不是形式主义。`docs/progress.md` 里出现过这样的记录：
+这不是形式主义。`docs/status.md` 里出现过这样的记录：
 
 > W6-1 后续修复（含 V21）提交后尚未重新运行测试、构建、迁移或浏览器验证。
 
@@ -143,14 +143,14 @@ python -m pip install -r tools/requirements-dev.txt
 `tools/verify.py` 的 E2E 就绪检查会在 `openpyxl` 不可导入或 xlsx 夹具脚本缺失时记为未覆盖（退出码 `2`），不会静默跳过。
 
 ```powershell
-.\verify.ps1           # 后端 + 类型门禁 + lint + 前端单测/构建 + E2E 就绪检查/执行
-.\verify.ps1 backend   # 后端单测与 IT
-.\verify.ps1 frontend  # 前端检查、构建与 E2E
-.\verify.ps1 e2e       # 仅 E2E
+.\tools\verify.ps1           # 后端 + 类型门禁 + lint + 前端单测/构建 + E2E 就绪检查/执行
+.\tools\verify.ps1 backend   # 后端单测与 IT
+.\tools\verify.ps1 frontend  # 前端检查、构建与 E2E
+.\tools\verify.ps1 e2e       # 仅 E2E
 python tools/test_verification.py
 ```
 
-macOS / Linux 对应使用 `bash verify.sh [scope]`。两种入口共享 `tools/verify.py`。
+macOS / Linux 对应使用 `bash tools/verify.sh [scope]`。两种入口共享 `tools/verify.py`。
 
 E2E 需先启动既有 Playwright 配置对应的服务（默认前端 18081、后端 18080），提供本机账号脚本；F0 云场景还需临时管理员与普通员工 token。前置条件不足时明确列出未覆盖项，不自动供给正式角色。
 

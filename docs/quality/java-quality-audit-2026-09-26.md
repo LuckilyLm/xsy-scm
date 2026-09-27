@@ -732,21 +732,11 @@ docs/plan/**                                  -> docs/plan/active/**
 tools/**                                      -> tools/{quality,migration,e2e,data}/ + tools/verify.py
 ```
 
-### 10.3 一条必须在搬家前先定的规则（本轮实测发现）
+### 10.3 Markdown 行尾空白
 
-`.editorconfig` 对 `*.md` 声明了 `trim_trailing_whitespace = true`（计划 §15 明确要求这条）。
-但仓库内的 Markdown **依赖行尾双空格做硬换行** —— 整改计划自己的文件头就是
-`> 状态：执行中␣␣` 这种写法。也就是说：谁在遵守 `.editorconfig` 的编辑器里保存这些文档，
-就会把它们的重排变成一次内容修改。
-
-本轮**没有**擅自把 `*.md` 改成 `trim_trailing_whitespace = false`（那是删减已确认规则），
-而是把冲突记录在这里。**Q4 搬家前需要先裁决**，可选：
-
-```text
-A. *.md 关行尾空白修剪（最省事，代价是不再满足计划 §15 的「至少」清单）
-B. 先把所有依赖行尾双空格的 Markdown 改写成空行分段，再保留 trim = true
-C. 保持现状，靠 review 兜（不推荐：这是一次会在别人手里静默发生的内容改动）
-```
+当前 `.editorconfig` 已为 `*.md` 明确设置 `trim_trailing_whitespace = false`，保留文档中有意使用的硬换行；
+该规则早已存在，本次复核确认它与 Markdown 内容一致。归档时原样移动历史记录，活动索引和新文档使用普通段落，
+没有批量改写文档正文，也没有放宽 Java、配置或脚本文件的空白规则。
 
 ### 10.4 AGENTS.md 瘦身口径
 
@@ -754,6 +744,14 @@ C. 保持现状，靠 review 兜（不推荐：这是一次会在别人手里静
 移出（历史细节，不进代码注释）：每阶段测试数量、每次提交记录、已完成流水、
 Finance 每一步的历史。
 计划给的目标是 ~500 行，且明确「不是硬性 CI 数字，但必须显著瘦身」。
+
+### 10.5 Q4 实施记录（2026-09-28）
+
+- SmartAdmin 底座规则已移至 `docs/architecture/smartadmin-foundation.md`；团队技术提升提案、已结束的 Wave 1–8 审计计划、旧进度、旧决策和配送实现记录已归档。
+- 活动计划统一位于 `docs/plan/active/`；当前状态、决策索引和 ADR 已建立；`AGENTS.md` 已收敛为稳定项目规则。
+- 平台验证入口位于 `tools/verify.ps1` / `tools/verify.sh` / `tools/verify.py`，README 与 CONTRIBUTING 已同步。
+- Q3 服务审查见 `q3-service-architecture-review.md`；商品导入已将工作簿 I/O 与领域编排、整批写入分开。
+- 本轮按用户要求未执行测试、构建或质量门禁；没有修改测试类或数据库迁移。
 
 ---
 

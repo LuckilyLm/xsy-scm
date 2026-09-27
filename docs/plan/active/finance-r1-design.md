@@ -3,15 +3,16 @@
 > 状态：**F1-0.5 已收口；D-1…D-5 全部为 A，本文再无待裁决项，F1-1 可开工**。本文是 Finance R1 的
 > **唯一规划文档**：调研结论摘要（§0.1）、裁决索引（§1.3）、正式设计（§2–§25）、
 > D-1…D-5 收口落点（§26）、R0 接轨（§27）与实施计划（§24）全部在此。
-> **27 条 Q 裁决、10 条全局不变量与 D-1…D-5 的权威全文在 `docs/decisions.md`
-> 「P3 Finance R1 裁决（2026-09-25）」及其「第三批（2026-09-26）」**，
+> **27 条 Q 裁决、10 条全局不变量与 D-1…D-5 的完整记录见
+> [`2026-09-28 决策归档`](../../archive/decisions/decisions-2026-09-28.md)；当前摘要见
+> [`ADR-004`](../../adr/004-finance-r1-facts.md)**，
 > 本稿只索引与落实，不重复裁决原文。
 > 2026-09-25 的四份过程稿（调研稿、第一批裁决表、第二批裁决表、最终裁决表）已并入本稿后删除，
 > 裁决前的候选并列过程保留在 git 历史（提交 `76904ea`）；D-1…D-5 的候选并列过程保留在提交 `caace54a`。
 > 基线：`origin/main @ caace54a`（2026-09-26 重扫确认 `db/migration/` 最大 **V64**、`t_menu` 最大
 > **1421**、SCM 错误码最大 **41128**）。选号与选迁移版本前必须重新 `git fetch` 并重扫。
 >
-> 依据（按优先级）：当前代码与数据库 → `docs/decisions.md` P3 裁决 → 本稿 →
+> 依据（按优先级）：当前代码与数据库 → ADR-004 与决策归档 → 本稿 →
 > `docs/requirements/产品功能需求基线.md`。**不参考**蔬东坡或其他系统增加任何功能。
 >
 > 硬约束：27 条 Q 裁决 + D-1…D-5 全部已收口；本稿**只落实裁决，不新增裁决未要求的对象、状态、权限或列**。
@@ -100,7 +101,7 @@ FastExcel 导出层（`ScmReportExcel` 形态）、`ScmDocumentNumbers.format`�
   幂等基建重构 / TTL / cleanup job（第二批 Q26）、退货库存处理与 `RETURN_IN`、部分签收模型（第二批 Q27）。
 - **不修改**任何既有业务行为：订单状态机与 `settlement_*`、分拣、配送、库存、采购、退货退款的状态机与金额。
 
-### 1.3 裁决索引（权威全文在 `docs/decisions.md`「P3 Finance R1 裁决（2026-09-25）」及其「第三批正式裁决（D-1 … D-5，2026-09-26）」）
+### 1.3 裁决索引（当前摘要见 [ADR-004](../../adr/004-finance-r1-facts.md)，完整记录见决策归档）
 
 | Q | 一句话结论 | 本稿落点 |
 | --- | --- | --- |
@@ -1074,7 +1075,7 @@ F1-1 只交付 schema 与骨架，因此测试只钉契约，**不提前写 F1-2
 | F1-4 | 核销与反向核销、手工红字应付、收付款反向（D-3） | 写命令 + 锁序 + 并发 IT | `ScmFinanceWriteOffPgIT` + `ScmFinanceReversePgIT` + `ScmFinanceConcurrencyPgIT` | F1-2、F1-3 |
 | F1-5 | 查询与导出（5 页后端 + Excel） | 只读端点 + 派生列（含 `openAmount` / `overAppliedAmount` / `effectiveAmount`） | IT 逐分支；导出 xlsx 校验 | F1-4 |
 | F1-6 | 前端 5 页 + 契约测试 + 权限矩阵 IT | 页面 / api / const / 契约 mjs | `lint` / `test` / `ts-ratchet` / `build` 全绿；`ScmFinanceRoleMatrixPgIT` | F1-5 |
-| F1-7 | E2E 七条 + 全量回归 + 文档收口 | `e2e/scm-finance-*.spec.ts`、`docs/progress.md` 记录 | `verify.py all`；浏览器全量 0 pageerror | F1-6 |
+| F1-7 | E2E 七条 + 全量回归 + 文档收口 | `e2e/scm-finance-*.spec.ts`、`docs/status.md` 记录 | `verify.py all`；浏览器全量 0 pageerror | F1-6 |
 | F1-8 | Finance R0 接轨：往来概览页 + 只读端点 + 导出（§27） | 菜单 1217 / 权限 1218 的 data-only 迁移（届时重扫号段；F1-1 只用了 V65，故本阶段从实际最大号 +1 起）+ report 域只读 finance 的 DAO | 页面 / 接口 / 导出三口径一致；A 类指标名与口径零变化；§27.2 的 stock / flow 口径成立 | F1-7 |
 
 每阶段完成即停，不顺带实现 R2 / P5 的任何指标（对齐 P1 裁决 14 的写法）。
@@ -1117,7 +1118,7 @@ F1-5 / F1-6 的收付款与核销读侧范围按 §15 的 D-5 口径实现，无
 
 ## 26. D-1 … D-5 收口落点（2026-09-26 负责人裁决，五条全部为 A）
 
-> 权威全文在 `docs/decisions.md`「P3 Finance R1 裁决（第三批，2026-09-26）」。
+> 完整记录见 [`2026-09-28 决策归档`](../../archive/decisions/decisions-2026-09-28.md)。
 > 本节只给落点索引，**不再保留候选并列表**；候选过程见提交 `caace54a` 的本稿历史版本。
 > 本稿已无「待裁决 / 待补裁决 / 暂定口径 / 待确认」表述。
 
