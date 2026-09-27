@@ -24,12 +24,14 @@ public enum ScmFinanceEntryTypeEnum {
     /**
      * 正常事实：应收来自已签收订单，应付来自已确认收货单。
      */
-    NORMAL("正常"),
+    NORMAL(
+            "正常"),
 
     /**
      * 红字事实：应收来自已批准退货（自动），应付来自手工登记。必须引用原单并填原因。
      */
-    RED("红字");
+    RED(
+            "红字");
 
     private final String desc;
 }

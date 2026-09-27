@@ -28,7 +28,8 @@ public enum ScmFinancePaymentSourceTypeEnum {
      * {@code order_refund.COMPLETED} 只是订单域的业务事实，<b>不等于真实资金已付出</b>； 付款也<b>不冲减应收</b>—— Return 负责红冲，Refund Payment
      * 只负责真实资金退付。
      */
-    ORDER_REFUND("订单退款");
+    ORDER_REFUND(
+            "订单退款");
 
     private final String desc;
 }

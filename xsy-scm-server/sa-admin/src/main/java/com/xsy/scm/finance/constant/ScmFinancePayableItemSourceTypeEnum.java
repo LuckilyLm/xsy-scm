@@ -13,12 +13,14 @@ public enum ScmFinancePayableItemSourceTypeEnum {
     /**
      * 正常明细：{@code source_id} = {@code purchase_receipt_item.id}。
      */
-    PURCHASE_RECEIPT_ITEM("采购收货明细"),
+    PURCHASE_RECEIPT_ITEM(
+            "采购收货明细"),
 
     /**
      * 手工红字明细：{@code source_id} 必须为 {@code null}，行级追溯靠 {@code purchase_order_item_id} 与单头的 {@code original_payable_id}。
      */
-    MANUAL("手工登记");
+    MANUAL(
+            "手工登记");
 
     private final String desc;
 }

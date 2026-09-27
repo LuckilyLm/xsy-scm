@@ -16,12 +16,14 @@ public enum ScmFinanceWriteOffSourceTypeEnum {
     /**
      * 收款：{@code source_id} = {@code finance_receipt.id}，只能核 {@code RECEIVABLE}。
      */
-    RECEIPT("收款"),
+    RECEIPT(
+            "收款"),
 
     /**
      * 付款：{@code source_id} = {@code finance_payment.id}，只能核 {@code PAYABLE}。
      */
-    PAYMENT("付款");
+    PAYMENT(
+            "付款");
 
     private final String desc;
 }

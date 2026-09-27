@@ -16,12 +16,14 @@ public enum ScmFinanceWriteOffTargetTypeEnum {
     /**
      * 应收：{@code target_id} = {@code finance_receivable.id}。
      */
-    RECEIVABLE("应收"),
+    RECEIVABLE(
+            "应收"),
 
     /**
      * 应付：{@code target_id} = {@code finance_payable.id}。
      */
-    PAYABLE("应付");
+    PAYABLE(
+            "应付");
 
     private final String desc;
 }
