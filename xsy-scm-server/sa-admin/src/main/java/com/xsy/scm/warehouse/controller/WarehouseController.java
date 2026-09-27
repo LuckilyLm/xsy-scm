@@ -45,33 +45,40 @@ public class WarehouseController {
      */
     @GetMapping("/list")
     @SaCheckPermission(WarehousePermission.QUERY)
-    public ResponseDTO<List<WarehouseVO>> list() {
+    public ResponseDTO<
+            List<
+                    WarehouseVO>> list() {
         return ResponseDTO.ok(warehouseQueryService.list());
     }
 
     @PostMapping("/query")
     @SaCheckPermission(WarehousePermission.QUERY)
-    public ResponseDTO<PageResult<WarehouseVO>> query(@Valid @RequestBody WarehouseQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    WarehouseVO>> query(@Valid @RequestBody WarehouseQueryForm form) {
         return ResponseDTO.ok(warehouseQueryService.query(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(WarehousePermission.QUERY)
-    public ResponseDTO<WarehouseVO> detail(@PathVariable Long id) {
+    public ResponseDTO<
+            WarehouseVO> detail(@PathVariable Long id) {
         return ResponseDTO.ok(warehouseQueryService.detail(id));
     }
 
     @PostMapping("/create")
     @SaCheckPermission(WarehousePermission.ADD)
     @OperateLog
-    public ResponseDTO<Long> create(@Valid @RequestBody WarehouseAddForm form) {
+    public ResponseDTO<
+            Long> create(@Valid @RequestBody WarehouseAddForm form) {
         return ResponseDTO.ok(warehouseService.create(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(WarehousePermission.UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@Valid @RequestBody WarehouseUpdateForm form) {
+    public ResponseDTO<
+            String> update(@Valid @RequestBody WarehouseUpdateForm form) {
         warehouseService.update(form);
         return ResponseDTO.ok();
     }
@@ -82,7 +89,8 @@ public class WarehouseController {
     @PostMapping("/enable")
     @SaCheckPermission(WarehousePermission.ENABLE)
     @OperateLog
-    public ResponseDTO<String> enable(@Valid @RequestBody WarehouseStatusForm form) {
+    public ResponseDTO<
+            String> enable(@Valid @RequestBody WarehouseStatusForm form) {
         warehouseService.enable(form);
         return ResponseDTO.ok();
     }
@@ -93,7 +101,8 @@ public class WarehouseController {
     @PostMapping("/disable")
     @SaCheckPermission(WarehousePermission.DISABLE)
     @OperateLog
-    public ResponseDTO<String> disable(@Valid @RequestBody WarehouseStatusForm form) {
+    public ResponseDTO<
+            String> disable(@Valid @RequestBody WarehouseStatusForm form) {
         warehouseService.disable(form);
         return ResponseDTO.ok();
     }

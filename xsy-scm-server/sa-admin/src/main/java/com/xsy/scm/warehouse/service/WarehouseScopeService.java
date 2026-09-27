@@ -39,7 +39,8 @@ public class WarehouseScopeService {
     /**
      * 某仓库下被授权的员工。
      */
-    public List<WarehouseScopeEmployeeVO> listEmployees(Long warehouseId) {
+    public List<
+            WarehouseScopeEmployeeVO> listEmployees(Long warehouseId) {
         if (warehouseId == null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
@@ -49,7 +50,8 @@ public class WarehouseScopeService {
     /**
      * 某员工被授权的仓库。
      */
-    public List<WarehouseScopeWarehouseVO> listWarehouses(Long employeeId) {
+    public List<
+            WarehouseScopeWarehouseVO> listWarehouses(Long employeeId) {
         if (employeeId == null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
@@ -65,7 +67,8 @@ public class WarehouseScopeService {
     @Transactional(rollbackFor = Exception.class)
     public void update(WarehouseScopeUpdateForm form) {
         requireEmployee(form.getEmployeeId());
-        Set<Long> target = distinctIds(form.getWarehouseIds());
+        Set<
+                Long> target = distinctIds(form.getWarehouseIds());
         requireWarehousesExist(target);
         scopeDao.deactivateByEmployee(form.getEmployeeId());
         if (!target.isEmpty()) {
@@ -83,12 +86,15 @@ public class WarehouseScopeService {
     /**
      * 批量存在性校验：一次查回真实存在的 id 再比集合， 逐个 require 会把一次维护变成 N 次查询，而且报错时说不清是哪几个 id。
      */
-    private void requireWarehousesExist(Set<Long> warehouseIds) {
+    private void requireWarehousesExist(Set<
+            Long> warehouseIds) {
         if (warehouseIds.isEmpty()) {
             return;
         }
-        List<Long> found = scopeDao.listExistingWarehouseIds(warehouseIds);
-        Set<Long> existing = found == null ? Set.of() : new LinkedHashSet<>(found);
+        List<
+                Long> found = scopeDao.listExistingWarehouseIds(warehouseIds);
+        Set<
+                Long> existing = found == null ? Set.of() : new LinkedHashSet<>(found);
         if (!existing.containsAll(warehouseIds)) {
             throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_NOT_FOUND);
         }
@@ -97,8 +103,12 @@ public class WarehouseScopeService {
     /**
      * 去重并剔除 null：清单里的 {@code null} 不是「未填」而是会写成一行 {@code warehouse_id IS NULL} 的授权，而部分唯一索引不收 NULL 之外的重复值，这类行既查不到数据也删不掉。
      */
-    private static Set<Long> distinctIds(Collection<Long> ids) {
-        Set<Long> distinct = new LinkedHashSet<>();
+    private static Set<
+            Long> distinctIds(
+                    Collection<
+                            Long> ids) {
+        Set<
+                Long> distinct = new LinkedHashSet<>();
         if (ids == null) {
             return distinct;
         }

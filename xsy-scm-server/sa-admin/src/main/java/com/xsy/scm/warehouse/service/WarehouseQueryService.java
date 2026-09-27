@@ -41,7 +41,8 @@ public class WarehouseQueryService {
     /**
      * 排序白名单：只有这些列允许来自客户端。
      */
-    private static final Set<String> SORTABLE = Set.of("warehouse_code", "name", "status", "created_at", "updated_at");
+    private static final Set<
+            String> SORTABLE = Set.of("warehouse_code", "name", "status", "created_at", "updated_at");
 
     private final WarehouseDao warehouseDao;
 
@@ -52,13 +53,15 @@ public class WarehouseQueryService {
     /**
      * 下拉选择器：只返回 {@code ENABLED} 且落在授权范围内的仓库，按编码排序。
      */
-    public List<WarehouseVO> list() {
+    public List<
+            WarehouseVO> list() {
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
         if (scope.isEmpty()) {
             return List.of();
         }
-        LambdaQueryWrapper<WarehouseEntity> query = new LambdaQueryWrapper<WarehouseEntity>()
-                .eq(WarehouseEntity::getStatus, ScmWarehouseStatusEnum.ENABLED.name());
+        LambdaQueryWrapper<
+                WarehouseEntity> query = new LambdaQueryWrapper<
+                        WarehouseEntity>().eq(WarehouseEntity::getStatus, ScmWarehouseStatusEnum.ENABLED.name());
         if (!scope.isAll()) {
             query.in(WarehouseEntity::getId, scope.getIds());
         }
@@ -66,7 +69,8 @@ public class WarehouseQueryService {
                 .stream().map(WarehouseQueryService::toVO).toList();
     }
 
-    public PageResult<WarehouseVO> query(WarehouseQueryForm form) {
+    public PageResult<
+            WarehouseVO> query(WarehouseQueryForm form) {
         assertSortable(form);
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
         if (scope.isEmpty()) {
@@ -76,8 +80,10 @@ public class WarehouseQueryService {
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.asc("warehouse_code"), OrderItem.asc("id"));
         }
-        List<WarehouseEntity> rows = warehouseDao.queryPage(page, form, scope);
-        List<WarehouseVO> list = new ArrayList<>(rows.size());
+        List<
+                WarehouseEntity> rows = warehouseDao.queryPage(page, form, scope);
+        List<
+                WarehouseVO> list = new ArrayList<>(rows.size());
         rows.forEach(row -> list.add(toVO(row)));
         return SmartPageUtil.convert2PageResult(page, list);
     }

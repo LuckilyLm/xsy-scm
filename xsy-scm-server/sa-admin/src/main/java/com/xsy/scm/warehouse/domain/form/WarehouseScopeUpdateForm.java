@@ -23,5 +23,6 @@ public class WarehouseScopeUpdateForm {
      */
     @NotNull(message = "授权仓库清单不能为空，清空请传空数组")
     @Size(max = 200, message = "单个员工最多授权 200 个仓库")
-    private List<Long> warehouseIds;
+    private List<
+            Long> warehouseIds;
 }
