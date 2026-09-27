@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.report.support.ScmReportAccess;
+import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 import net.lab1024.sa.base.common.domain.PageParam;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -45,7 +46,7 @@ public class ScmDataScopeService {
     public static final String ORDER_ALL_PERM = "scm:order:scope:all:query";
 
     /** 查看全部采购员的采购单与采购需求。 */
-    public static final String PURCHASE_ALL_PERM = "scm:purchase:scope:all:query";
+    public static final String PURCHASE_ALL_PERM = ScmCrossDomainPermission.PURCHASE_SCOPE_ALL_QUERY;
 
     /** 查看全部司机与线路（调度岗）；普通司机只看绑定到自己名下的线路。 */
     public static final String DELIVERY_ALL_PERM = "scm:delivery:scope:all:query";
@@ -54,7 +55,7 @@ public class ScmDataScopeService {
     public static final String CUSTOMER_ASSIGN_PERM = "scm:customer:assign";
 
     /** 采购负责人分配/改派权，语义同上。 */
-    public static final String PURCHASE_ASSIGN_PERM = "scm:purchase:assign";
+    public static final String PURCHASE_ASSIGN_PERM = ScmCrossDomainPermission.PURCHASE_ASSIGN;
 
     /** 配送订单金额可见权：司机默认隐藏金额，需要时由这个独立权限开放。 */
     public static final String DELIVERY_AMOUNT_PERM = "scm:delivery:amount:query";
