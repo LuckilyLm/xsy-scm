@@ -105,6 +105,11 @@ class Verification:
             [sys.executable, str(ROOT / "tools/quality/quality_guard.py"), "check", "--checkstyle"],
             ROOT,
         )
+        self.run(
+            "cross-domain-dao-boundary",
+            [sys.executable, str(ROOT / "tools/quality/scm_cross_domain_dao_guard.py")],
+            ROOT,
+        )
         self.run("baseline-migration-selftest",
                  [sys.executable, str(ROOT / "tools/quality/test_baseline_path_migration.py")],
                  ROOT / "tools/quality")
