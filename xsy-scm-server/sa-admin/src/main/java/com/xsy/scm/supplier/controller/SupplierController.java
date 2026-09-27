@@ -12,6 +12,7 @@ import com.xsy.scm.supplier.domain.form.SupplierUpdateForm;
 import com.xsy.scm.supplier.domain.vo.SupplierDetailVO;
 import com.xsy.scm.supplier.domain.vo.SupplierOptionVO;
 import com.xsy.scm.supplier.domain.vo.SupplierVO;
+import com.xsy.scm.supplier.permission.SupplierPermission;
 import com.xsy.scm.supplier.service.SupplierQueryService;
 import com.xsy.scm.supplier.service.SupplierService;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -38,56 +39,56 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SupplierController {
 
-    private final SupplierService service;
+    private final SupplierService supplierService;
 
-    private final SupplierQueryService queryService;
+    private final SupplierQueryService supplierQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:supplier:query")
+    @SaCheckPermission(SupplierPermission.QUERY)
     public ResponseDTO<PageResult<SupplierVO>> query(@Valid @RequestBody SupplierQueryForm form) {
-        return ResponseDTO.ok(queryService.query(form));
+        return ResponseDTO.ok(supplierQueryService.query(form));
     }
 
     @GetMapping("/detail/{supplierId}")
-    @SaCheckPermission("scm:supplier:query")
+    @SaCheckPermission(SupplierPermission.QUERY)
     public ResponseDTO<SupplierDetailVO> detail(@PathVariable Long supplierId) {
-        return ResponseDTO.ok(queryService.detail(supplierId));
+        return ResponseDTO.ok(supplierQueryService.detail(supplierId));
     }
 
     @PostMapping("/add")
-    @SaCheckPermission("scm:supplier:add")
+    @SaCheckPermission(SupplierPermission.ADD)
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody SupplierAddForm form) {
-        return ResponseDTO.ok(service.add(form));
+        return ResponseDTO.ok(supplierService.add(form));
     }
 
     @PostMapping("/update")
-    @SaCheckPermission("scm:supplier:update")
+    @SaCheckPermission(SupplierPermission.UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody SupplierUpdateForm form) {
-        service.update(form);
+        supplierService.update(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/updateStatus")
-    @SaCheckPermission("scm:supplier:status")
+    @SaCheckPermission(SupplierPermission.STATUS)
     @OperateLog
     public ResponseDTO<String> updateStatus(@Valid @RequestBody SupplierStatusForm form) {
-        service.updateStatus(form);
+        supplierService.updateStatus(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/delete")
-    @SaCheckPermission("scm:supplier:delete")
+    @SaCheckPermission(SupplierPermission.DELETE)
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody SupplierDeleteForm form) {
-        service.delete(form);
+        supplierService.delete(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/option/list")
-    @SaCheckPermission("scm:supplier:query")
+    @SaCheckPermission(SupplierPermission.QUERY)
     public ResponseDTO<List<SupplierOptionVO>> optionList() {
-        return ResponseDTO.ok(queryService.optionList());
+        return ResponseDTO.ok(supplierQueryService.optionList());
     }
 }

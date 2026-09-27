@@ -10,6 +10,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
+import com.xsy.scm.common.validation.ScmEnumValue;
 
 /**
  * 关联表中的一行。
@@ -29,42 +31,42 @@ public class SupplierSkuItemForm {
     /**
      * 既有行主键；新增行为 {@code null}。
      */
-    @Positive
+    @Positive(message = "供应商商品关系 ID 必须大于0")
     private Long id;
 
     /**
      * 既有行版本号；新增行为 {@code null}。
      */
-    @Min(0)
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
 
-    @NotNull
-    @Positive
+    @NotNull(message = "SKU ID 不能为空")
+    @Positive(message = "SKU ID 必须大于0")
     private Long skuId;
 
-    @NotBlank
-    @Size(max = 32)
+    @NotBlank(message = "采购单位不能为空")
+    @Size(max = 32, message = "采购单位不能超过32个字符")
     private String purchaseUnit;
 
     /**
      * 参考价，4 位定点字符串；可空。
      */
-    @Pattern(regexp = ScmDecimalStrings.PATTERN)
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "参考价格式不正确")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String referencePrice;
 
     /**
      * 默认采购员，引用 SmartAdmin {@code t_employee.employee_id}。
      */
-    @Positive
+    @Positive(message = "默认采购员 ID 必须大于0")
     private Long purchaserId;
 
-    @NotNull
+    @NotNull(message = "是否为默认采购商品不能为空")
     private Boolean defaultFlag = false;
 
     /**
      * 缺省为 {@code ENABLED}（R20）。
      */
-    @Pattern(regexp = "ENABLED|DISABLED")
+    @ScmEnumValue(enumClass = ScmEnableStatusEnum.class, message = "供应商商品状态无效")
     private String status;
 }

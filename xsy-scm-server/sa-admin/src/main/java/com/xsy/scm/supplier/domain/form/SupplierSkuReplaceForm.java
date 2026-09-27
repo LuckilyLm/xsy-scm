@@ -20,15 +20,15 @@ import java.util.List;
 @Data
 public class SupplierSkuReplaceForm {
 
-    @NotNull
-    @Positive
+    @NotNull(message = "供应商 ID 不能为空")
+    @Positive(message = "供应商 ID 必须大于0")
     private Long supplierId;
 
     /**
      * 上限 500：单供应商的关联数量有界，超限返回 40000（Target Design 风险 R2）。
      */
     @Valid
-    @NotNull
-    @Size(max = 500)
+    @NotNull(message = "供应商商品清单不能为空")
+    @Size(max = 500, message = "供应商商品清单不能超过500项")
     private List<SupplierSkuItemForm> items = new ArrayList<>();
 }

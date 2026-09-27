@@ -39,7 +39,7 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND
 @RequiredArgsConstructor
 public class SupplierService {
 
-    private final SupplierDao dao;
+    private final SupplierDao supplierDao;
 
     private final SupplierSkuDao supplierSkuDao;
 
@@ -47,7 +47,7 @@ public class SupplierService {
      * 读取供应商，不存在或已删除 → 40440。
      */
     public SupplierEntity require(Long supplierId) {
-        SupplierEntity entity = supplierId == null ? null : dao.selectById(supplierId);
+        SupplierEntity entity = supplierId == null ? null : supplierDao.selectById(supplierId);
         if (entity == null) {
             throw new ScmBusinessException(SUPPLIER_NOT_FOUND);
         }
@@ -90,7 +90,7 @@ public class SupplierService {
         entity.setDeleted(false);
         stamp(entity, true);
         try {
-            dao.insert(entity);
+            supplierDao.insert(entity);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(SUPPLIER_CODE_DUPLICATE);
         }
@@ -109,7 +109,7 @@ public class SupplierService {
         entity.setVersion(form.getVersion());
         stamp(entity, false);
         try {
-            if (dao.updateById(entity) != 1) {
+            if (supplierDao.updateById(entity) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
         } catch (DuplicateKeyException e) {
@@ -123,7 +123,7 @@ public class SupplierService {
         entity.setStatus(form.getStatus());
         entity.setVersion(form.getVersion());
         stamp(entity, false);
-        if (dao.updateById(entity) != 1) {
+        if (supplierDao.updateById(entity) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -140,7 +140,7 @@ public class SupplierService {
         if (supplierSkuDao.countActiveBySupplierId(form.getSupplierId()) > 0) {
             throw new ScmBusinessException(SUPPLIER_IN_USE);
         }
-        if (dao.softDelete(form.getSupplierId(), form.getVersion(), ScmOperator.current()) != 1) {
+        if (supplierDao.softDelete(form.getSupplierId(), form.getVersion(), ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -154,7 +154,7 @@ public class SupplierService {
         if (excludeId != null) {
             wrapper.ne(SupplierEntity::getId, excludeId);
         }
-        return dao.selectCount(wrapper) > 0;
+        return supplierDao.selectCount(wrapper) > 0;
     }
 
     private void apply(SupplierEntity entity, SupplierAddForm form) {

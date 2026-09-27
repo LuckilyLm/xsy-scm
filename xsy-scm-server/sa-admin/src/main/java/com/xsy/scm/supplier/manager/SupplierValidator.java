@@ -1,5 +1,7 @@
 package com.xsy.scm.supplier.manager;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * 供应商字段归一化。
  *
@@ -33,10 +35,6 @@ public final class SupplierValidator {
      * 返回空串会让「清空备注」变成「备注为 ''」，两种形态在搜索与展示上表现不一致。
      */
     public static String normalizeOptional(String raw) {
-        if (raw == null) {
-            return null;
-        }
-        String trimmed = raw.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+        return StringUtils.trimToNull(raw);
     }
 }

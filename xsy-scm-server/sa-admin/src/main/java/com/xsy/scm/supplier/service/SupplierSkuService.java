@@ -39,13 +39,13 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_NOT_F
 @RequiredArgsConstructor
 public class SupplierSkuService {
 
-    private final SupplierSkuDao dao;
+    private final SupplierSkuDao supplierSkuDao;
 
-    private final SupplierSkuSyncManager syncManager;
+    private final SupplierSkuSyncManager supplierSkuSyncManager;
 
     private final SupplierService supplierService;
 
-    private final EmployeeDao employees;
+    private final EmployeeDao employeeDao;
 
     /**
      * 按供应商列出活动关联行，供替换编辑页回填。
@@ -53,7 +53,7 @@ public class SupplierSkuService {
     public List<SupplierSkuVO> listBySupplierId(Long supplierId) {
         // 供应商必须存在，否则回填一个不存在的供应商会得到「空列表」这种歧义结果
         supplierService.require(supplierId);
-        List<SupplierSkuEntity> rows = dao.selectActiveBySupplierId(supplierId);
+        List<SupplierSkuEntity> rows = supplierSkuDao.selectActiveBySupplierId(supplierId);
         return enrich(rows);
     }
 
@@ -65,7 +65,7 @@ public class SupplierSkuService {
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.desc("is_default"), OrderItem.asc("id"));
         }
-        List<SupplierSkuEntity> rows = dao.queryPage(page, form);
+        List<SupplierSkuEntity> rows = supplierSkuDao.queryPage(page, form);
         return SmartPageUtil.convert2PageResult(page, enrich(rows));
     }
 
@@ -76,7 +76,7 @@ public class SupplierSkuService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void replace(SupplierSkuReplaceForm form) {
-        syncManager.replace(form.getSupplierId(), form.getItems());
+        supplierSkuSyncManager.replace(form.getSupplierId(), form.getItems());
     }
 
     /**
@@ -87,7 +87,7 @@ public class SupplierSkuService {
      */
     public SupplierSkuEntity requireEnabledForPurchasing(Long supplierId, Long skuId) {
         supplierService.requireEnabled(supplierId);
-        SupplierSkuEntity entity = dao.selectOne(new LambdaQueryWrapper<SupplierSkuEntity>()
+        SupplierSkuEntity entity = supplierSkuDao.selectOne(new LambdaQueryWrapper<SupplierSkuEntity>()
                 .eq(SupplierSkuEntity::getSupplierId, supplierId)
                 .eq(SupplierSkuEntity::getSkuId, skuId)
                 .eq(SupplierSkuEntity::getStatus, ScmEnableStatusEnum.ENABLED.name()));
@@ -95,7 +95,7 @@ public class SupplierSkuService {
             throw new ScmBusinessException(SUPPLIER_SKU_NOT_FOUND);
         }
         // SKU 与 SPU 必须同时上架，否则视为不可采购
-        boolean orderable = dao.selectEnabledBySkuId(skuId).stream()
+        boolean orderable = supplierSkuDao.selectEnabledBySkuId(skuId).stream()
                 .anyMatch(row -> Objects.equals(row.getSupplierId(), supplierId));
         if (!orderable) {
             throw new ScmBusinessException(SKU_DISABLED);
@@ -129,7 +129,7 @@ public class SupplierSkuService {
         if (ids.isEmpty()) {
             return names;
         }
-        List<EmployeeVO> found = employees.getEmployeeByIds(ids);
+        List<EmployeeVO> found = employeeDao.getEmployeeByIds(ids);
         if (found != null) {
             found.stream().filter(e -> e != null && e.getEmployeeId() != null)
                     .forEach(e -> names.put(e.getEmployeeId(), e.getActualName()));

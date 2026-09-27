@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.supplier.domain.form.SupplierSkuQueryForm;
 import com.xsy.scm.supplier.domain.form.SupplierSkuReplaceForm;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuVO;
+import com.xsy.scm.supplier.permission.SupplierPermission;
 import com.xsy.scm.supplier.service.SupplierSkuService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -32,31 +33,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SupplierSkuController {
 
-    private final SupplierSkuService service;
+    private final SupplierSkuService supplierSkuService;
 
     /**
      * 按供应商列出活动关联行，供替换编辑页回填。
      */
     @GetMapping("/list/{supplierId}")
-    @SaCheckPermission("scm:supplier:sku:query")
+    @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<List<SupplierSkuVO>> listBySupplierId(@PathVariable Long supplierId) {
-        return ResponseDTO.ok(service.listBySupplierId(supplierId));
+        return ResponseDTO.ok(supplierSkuService.listBySupplierId(supplierId));
     }
 
     /**
      * 只读反查：按 SKU 找供应商。
      */
     @PostMapping("/query")
-    @SaCheckPermission("scm:supplier:sku:query")
+    @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<PageResult<SupplierSkuVO>> query(@Valid @RequestBody SupplierSkuQueryForm form) {
-        return ResponseDTO.ok(service.query(form));
+        return ResponseDTO.ok(supplierSkuService.query(form));
     }
 
     @PostMapping("/replace")
-    @SaCheckPermission("scm:supplier:sku:update")
+    @SaCheckPermission(SupplierPermission.SKU_UPDATE)
     @OperateLog
     public ResponseDTO<String> replace(@Valid @RequestBody SupplierSkuReplaceForm form) {
-        service.replace(form);
+        supplierSkuService.replace(form);
         return ResponseDTO.ok();
     }
 }
