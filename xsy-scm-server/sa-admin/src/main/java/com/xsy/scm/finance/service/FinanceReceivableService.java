@@ -32,12 +32,12 @@ import java.util.Map;
 /**
  * 应收域服务：正常应收（签收派生）与红字应收（退货批准派生）。
  *
- * <p><b>红字没有金额上限</b>：红字金额直接取已批准退货事实，不扣既有核销额，也不受原应收余额限制。
- * 生成器失败不能反过来阻止订单域批准退货。允许净应收为负，{@code openAmount} 与
+ * <p>
+ * <b>红字没有金额上限</b>：红字金额直接取已批准退货事实，不扣既有核销额，也不受原应收余额限制。 生成器失败不能反过来阻止订单域批准退货。允许净应收为负，{@code openAmount} 与
  * {@code overAppliedAmount} 均为读侧派生值。
  *
- * <p>来源 DAO 只读订单、退货、库存和配送事实；本服务只写财务应收记录与操作日志。
- * 应收由签收和退货批准命令触发，不提供历史回填接口；收付款事实由各自登记命令负责。
+ * <p>
+ * 来源 DAO 只读订单、退货、库存和配送事实；本服务只写财务应收记录与操作日志。 应收由签收和退货批准命令触发，不提供历史回填接口；收付款事实由各自登记命令负责。
  */
 @Service
 @RequiredArgsConstructor
@@ -51,17 +51,16 @@ public class FinanceReceivableService {
     /**
      * 签收后生成正常应收，并补生成该订单此前已批准退货的红字。
      *
-     * <p>两步必须在这里连续做：{@code sign} 与 {@code approve} 是两条独立事务，
-     * 只靠「退货批准时看一眼有没有正常应收」会漏账 —— 批准的那一方看不到尚未提交的签收，
-     * 签收的一方也可能看不到刚刚提交的批准。共享串行点是订单行锁
-     * （{@code OrderReturnService.lock} 与 {@code DeliveryRouteService.sign} 都先锁
+     * <p>
+     * 两步必须在这里连续做：{@code sign} 与 {@code approve} 是两条独立事务， 只靠「退货批准时看一眼有没有正常应收」会漏账 —— 批准的那一方看不到尚未提交的签收，
+     * 签收的一方也可能看不到刚刚提交的批准。共享串行点是订单行锁 （{@code OrderReturnService.lock} 与 {@code DeliveryRouteService.sign} 都先锁
      * {@code sales_order}），后拿到锁的一方在 {@code READ COMMITTED} 下一定能看见先提交的一方。
      *
-     * <p><b>必须与签收同事务同成败</b>（{@code MANDATORY}）；跳过语义（零实发 / 整单 0 元）
-     * 是成功返回，不回滚签收。
+     * <p>
+     * <b>必须与签收同事务同成败</b>（{@code MANDATORY}）；跳过语义（零实发 / 整单 0 元） 是成功返回，不回滚签收。
      *
-     * @param deliveryRouteOrderId 刚被置为 {@code SIGNED} 的 {@code delivery_route_order.id}；
-     *                             时点与操作人只存在于这一行，不能由调用方现取
+     * @param deliveryRouteOrderId
+     *            刚被置为 {@code SIGNED} 的 {@code delivery_route_order.id}； 时点与操作人只存在于这一行，不能由调用方现取
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateOnSign(Long deliveryRouteOrderId) {
@@ -69,8 +68,7 @@ public class FinanceReceivableService {
         if (source == null) {
             // 调用点把没签收（或不存在）的分配行当成签收事实。静默跳过会留下
             // 「配送以为已挂账、财务什么都没记」的缺口，因此必须失败并让签收回滚。
-            throw new IllegalStateException(
-                    "配送分配行未处于 SIGNED 状态，不能生成应收: " + deliveryRouteOrderId);
+            throw new IllegalStateException("配送分配行未处于 SIGNED 状态，不能生成应收: " + deliveryRouteOrderId);
         }
 
         ensureNormalFromSigning(source);
@@ -84,22 +82,22 @@ public class FinanceReceivableService {
     /**
      * 退货批准 → 红字应收。
      *
-     * <p><b>正常应收尚不存在时成功跳过</b>：不创建孤立红字、不抛「原应收不存在」、不引入待处理状态，
-     * 更不阻塞 {@code approve} —— 退货与退款单是订单域已经成立的事实。该订单后续签收时由
+     * <p>
+     * <b>正常应收尚不存在时成功跳过</b>：不创建孤立红字、不抛「原应收不存在」、不引入待处理状态， 更不阻塞 {@code approve} —— 退货与退款单是订单域已经成立的事实。该订单后续签收时由
      * {@link #generateOnSign} 补生成（同一套实现，不复制第二份算法）。
      *
-     * <p>重复执行（批准幂等重放、签收补生成、生成器重放）都收敛到「一张退货一张红字」：
-     * 防重是 {@code uk_finance_receivable_source_active} 与 {@code..._item_source_active}，
-     * 本方法不吃 {@code Idempotency-Key}。
+     * <p>
+     * 重复执行（批准幂等重放、签收补生成、生成器重放）都收敛到「一张退货一张红字」： 防重是 {@code uk_finance_receivable_source_active} 与
+     * {@code..._item_source_active}， 本方法不吃 {@code Idempotency-Key}。
      *
-     * @param orderReturnId 刚被置为 {@code APPROVED} 的 {@code order_return.id}
+     * @param orderReturnId
+     *            刚被置为 {@code APPROVED} 的 {@code order_return.id}
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateRedOnReturnApproved(Long orderReturnId) {
         FinanceReturnSourceDto returned = financeReceivableSourceDao.selectApprovedReturn(orderReturnId);
         if (returned == null) {
-            throw new IllegalStateException(
-                    "退货单未处于 APPROVED 状态，不能生成红字应收: " + orderReturnId);
+            throw new IllegalStateException("退货单未处于 APPROVED 状态，不能生成红字应收: " + orderReturnId);
         }
         FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(returned.getOrderId());
         if (normal == null) {
@@ -112,14 +110,14 @@ public class FinanceReceivableService {
     /**
      * 确保该订单的正常应收存在：本次插入，或已被并发的另一次签收插入（那一次才是事实的产生者）。
      *
-     * <p>零实发与整单金额为 0 时什么都不写、静默返回 —— 跳过是成功语义，不是失败。
+     * <p>
+     * 零实发与整单金额为 0 时什么都不写、静默返回 —— 跳过是成功语义，不是失败。
      */
     private void ensureNormalFromSigning(FinanceReceivableSourceDto source) {
         List<FinanceReceivableItemEntity> items = toNormalItems(source,
                 financeReceivableSourceDao.selectOutboundLines(source.getSalesOrderId()));
-        BigDecimal amount = items.stream()
-                .map(FinanceReceivableItemEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
 
         if (amount.signum() <= 0) {
             // 两种形状都在这里跳过：① 签收成功但零实发；② 售价全为 0。
@@ -138,21 +136,20 @@ public class FinanceReceivableService {
             item.setReceivableId(receivable.getId());
             if (financeReceivableItemDao.insertOnConflictDoNothing(item) != 1) {
                 // 单头是本次刚插入的，因此这里撞键不是重放，而是同一出库行被挂到了两张应收单上。
-                throw new IllegalStateException(
-                        "出库行已挂在别的应收单上，本次生成整体回滚: " + item.getSourceId());
+                throw new IllegalStateException("出库行已挂在别的应收单上，本次生成整体回滚: " + item.getSourceId());
             }
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIVABLE, receivable.getId(),
-                ScmFinanceOperationTypeEnum.GENERATE, null, null,
-                generatedSnapshot(receivable, items.size()), source.getSignedBy());
+                ScmFinanceOperationTypeEnum.GENERATE, null, null, generatedSnapshot(receivable, items.size()),
+                source.getSignedBy());
     }
 
     /**
      * 补生成该订单全部已批准退货的红字（的第三种时序）。
      *
-     * <p>逐张走与「批准时直接触发」完全相同的那一个 {@link #generateRed} 实现：
-     * 只有一份红字算法，两条触发路径的差别只在「什么时候被叫到」。
+     * <p>
+     * 逐张走与「批准时直接触发」完全相同的那一个 {@link #generateRed} 实现： 只有一份红字算法，两条触发路径的差别只在「什么时候被叫到」。
      */
     private void backfillRedForApprovedReturns(Long salesOrderId, FinanceReceivableEntity normal) {
         for (Long returnId : financeReceivableSourceDao.selectApprovedReturnIds(salesOrderId)) {
@@ -168,16 +165,14 @@ public class FinanceReceivableService {
     /**
      * 红字生成算法本体（唯一实现）。
      *
-     * <p>结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上，
-     * 从订单或退货行重新解析快照会让同一笔债权出现两个对方身份
-     * （「必须引用原 {@code Receivable}」的含意之一）。
+     * <p>
+     * 结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上， 从订单或退货行重新解析快照会让同一笔债权出现两个对方身份 （「必须引用原 {@code Receivable}」的含意之一）。
      */
     private void generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
         List<FinanceReceivableItemEntity> items = toRedItems(returned,
                 financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()));
-        BigDecimal amount = items.stream()
-                .map(FinanceReceivableItemEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
 
         if (amount.signum() <= 0) {
             // 整张退货没有有效红字行（全部非正金额行）：成功跳过，
@@ -192,8 +187,7 @@ public class FinanceReceivableService {
         for (FinanceReceivableItemEntity item : items) {
             item.setReceivableId(red.getId());
             if (financeReceivableItemDao.insertOnConflictDoNothing(item) != 1) {
-                throw new IllegalStateException(
-                        "退货行已挂在别的应收单上，本次红字生成整体回滚: " + item.getSourceId());
+                throw new IllegalStateException("退货行已挂在别的应收单上，本次红字生成整体回滚: " + item.getSourceId());
             }
         }
 
@@ -203,15 +197,15 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 正常应收单头。{@code originalReceivableId} 与 {@code reason} 保持 {@code null}
-     * （{@code ck_finance_receivable_entry_pairing} 对 NORMAL 的要求）。
+     * 正常应收单头。{@code originalReceivableId} 与 {@code reason} 保持 {@code null} （{@code ck_finance_receivable_entry_pairing}
+     * 对 NORMAL 的要求）。
      */
     private FinanceReceivableEntity normalHeader(FinanceReceivableSourceDto source, BigDecimal amount) {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinanceReceivableEntity receivable = new FinanceReceivableEntity();
-        receivable.setReceivableNo(ScmDocumentNumbers.format(
-                FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
+        receivable.setReceivableNo(ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX,
+                financeReceivableDao.nextReceivableNo()));
         receivable.setSourceType(ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name());
         receivable.setSourceId(source.getSalesOrderId());
         receivable.setOrderId(source.getSalesOrderId());
@@ -228,16 +222,15 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字应收单头。事件时点与原因继承退货业务事实，金额取已批准红字行之和；
-     * **不做任何上限比较**。
+     * 红字应收单头。事件时点与原因继承退货业务事实，金额取已批准红字行之和； **不做任何上限比较**。
      */
-    private FinanceReceivableEntity redHeader(FinanceReturnSourceDto returned,
-                                              FinanceReceivableEntity normal, BigDecimal amount) {
+    private FinanceReceivableEntity redHeader(FinanceReturnSourceDto returned, FinanceReceivableEntity normal,
+            BigDecimal amount) {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinanceReceivableEntity red = new FinanceReceivableEntity();
-        red.setReceivableNo(ScmDocumentNumbers.format(
-                FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
+        red.setReceivableNo(ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX,
+                financeReceivableDao.nextReceivableNo()));
         red.setSourceType(ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name());
         red.setSourceId(returned.getOrderReturnId());
         red.setOrderId(returned.getOrderId());
@@ -258,16 +251,15 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 正常明细：量取出库行、价取订单行的冻结售价，金额 {@code ROUND(量 × 价, 4, HALF_UP)}
-     *；单头是**已舍入行金额之和**。一条订单行对应多条出库行时逐条成行、不合并。
+     * 正常明细：量取出库行、价取订单行的冻结售价，金额 {@code ROUND(量 × 价, 4, HALF_UP)} ；单头是**已舍入行金额之和**。一条订单行对应多条出库行时逐条成行、不合并。
      */
     private List<FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
-                                                            List<FinanceReceivableSourceLineDto> lines) {
+            List<FinanceReceivableSourceLineDto> lines) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return lines.stream().map(line -> {
-            BigDecimal amount = line.getQuantity().multiply(line.getUnitPrice())
-                    .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
+            BigDecimal amount = line.getQuantity().multiply(line.getUnitPrice()).setScale(FinanceConstant.AMOUNT_SCALE,
+                    RoundingMode.HALF_UP);
 
             FinanceReceivableItemEntity item = newItem(source.getSignedBy(), now);
             item.setSourceType(ScmFinanceReceivableItemSourceTypeEnum.INVENTORY_OUTBOUND_ITEM.name());
@@ -284,12 +276,11 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字明细：金额直接采用订单域已落库的 {@code approved_amount}，
-     * **不重算** {@code quantity × unit_price}；也不存行级原明细指针
+     * 红字明细：金额直接采用订单域已落库的 {@code approved_amount}， **不重算** {@code quantity × unit_price}；也不存行级原明细指针
      * ——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
      */
     private List<FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
-                                                         List<FinanceReturnSourceLineDto> lines) {
+            List<FinanceReturnSourceLineDto> lines) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return lines.stream().map(line -> {
@@ -302,8 +293,7 @@ public class FinanceReceivableService {
             item.setUnitSnapshot(line.getUnitSnapshot());
             item.setQuantity(line.getApprovedQuantity());
             item.setUnitPrice(line.getLockedUnitPrice());
-            item.setAmount(line.getApprovedAmount()
-                    .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP));
+            item.setAmount(line.getApprovedAmount().setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP));
             return item;
         }).toList();
     }
@@ -318,8 +308,8 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 生成类动作的 {@code after_data} 单头快照。金额与时间落成字符串：JSONB 侧的
-     * {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的裸 ObjectMapper。
+     * 生成类动作的 {@code after_data} 单头快照。金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的裸
+     * ObjectMapper。
      */
     private Map<String, Object> generatedSnapshot(FinanceReceivableEntity receivable, int itemCount) {
         Map<String, Object> snapshot = baseSnapshot(receivable);
@@ -328,11 +318,10 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字的 {@code after_data}：除单头快照外必须能直接看出它冲的是哪张原应收、来源是哪张退货单
-     *，否则事后核对要连表跳三次。
+     * 红字的 {@code after_data}：除单头快照外必须能直接看出它冲的是哪张原应收、来源是哪张退货单 ，否则事后核对要连表跳三次。
      */
-    private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red,
-                                                     FinanceReturnSourceDto returned, int itemCount) {
+    private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red, FinanceReturnSourceDto returned,
+            int itemCount) {
         Map<String, Object> snapshot = baseSnapshot(red);
         snapshot.put("sourceReturnId", returned.getOrderReturnId());
         snapshot.put("returnNo", returned.getReturnNo());

@@ -39,16 +39,16 @@ import java.util.Map;
 /**
  * 付款域服务。
  *
- * <p>只接受 {@code NORMAL} 付款，且只有两种合法组合：
- * {@code SUPPLIER} + 无来源（供应商付款 / 预付），{@code CUSTOMER} + {@code ORDER_REFUND}
+ * <p>
+ * 只接受 {@code NORMAL} 付款，且只有两种合法组合： {@code SUPPLIER} + 无来源（供应商付款 / 预付），{@code CUSTOMER} + {@code ORDER_REFUND}
  * （客户退款付款）。客户付款必须对应退款来源；不接受无来源的客户付款。
  *
- * <p><b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收，
- * 本命令只表达「钱真的付出去了」，因此绝不写 {@code finance_write_off}、绝不改任何
+ * <p>
+ * <b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收， 本命令只表达「钱真的付出去了」，因此绝不写 {@code finance_write_off}、绝不改任何
  * {@code finance_receivable} 行 —— 否则同一笔退货被冲减两次。
  *
- * <p><b>不设第二套幂等基建</b>：复用既有 {@code idempotency_record} 与
- * {@link ScmIdempotencyService}（三段式同一事务）。
+ * <p>
+ * <b>不设第二套幂等基建</b>：复用既有 {@code idempotency_record} 与 {@link ScmIdempotencyService}（三段式同一事务）。
  */
 @Service
 @RequiredArgsConstructor
@@ -64,14 +64,15 @@ public class FinancePaymentService {
     /**
      * 登记一笔 {@code NORMAL} 付款。
      *
-     * <p><b>整条链必须同事务</b>：幂等 claim、付款事实、操作日志、幂等 complete 要么一起成，
-     * 要么一起不成。退款来源撞 {@code uk_finance_payment_source_active} 时同样整笔回滚 ——
-     * 留下「已付款但无日志」或「claim 已占但无结果」都是不可接受的半成品。
+     * <p>
+     * <b>整条链必须同事务</b>：幂等 claim、付款事实、操作日志、幂等 complete 要么一起成， 要么一起不成。退款来源撞 {@code uk_finance_payment_source_active}
+     * 时同样整笔回滚 —— 留下「已付款但无日志」或「claim 已占但无结果」都是不可接受的半成品。
      *
-     * <p>本命令<b>不获取</b>任何业务表行锁或财务余额锁；并发双付款的仲裁点是来源唯一索引：
-     * 后到者在该索引上等前者提交后重新检查谓词，插入返回 0 即按 41139 拒绝。
+     * <p>
+     * 本命令<b>不获取</b>任何业务表行锁或财务余额锁；并发双付款的仲裁点是来源唯一索引： 后到者在该索引上等前者提交后重新检查谓词，插入返回 0 即按 41139 拒绝。
      *
-     * @param idempotencyKey 请求级幂等键；同键同内容重放首次结果，同键异内容按既有语义报冲突
+     * @param idempotencyKey
+     *            请求级幂等键；同键同内容重放首次结果，同键异内容按既有语义报冲突
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentVO add(FinancePaymentAddForm form, String idempotencyKey) {
@@ -81,8 +82,8 @@ public class FinancePaymentService {
         }
 
         FinancePaymentEntity payment = register(form);
-        operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(),
-                ScmFinanceOperationTypeEnum.PAY, null, null, snapshot(payment));
+        operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(), ScmFinanceOperationTypeEnum.PAY, null,
+                null, snapshot(payment));
 
         FinancePaymentVO result = vo(payment);
         idempotencyService.complete(claim, "FINANCE_PAYMENT", payment.getId(), result);
@@ -92,11 +93,9 @@ public class FinancePaymentService {
     /**
      * 付款事实本身（不含幂等三段式）。
      *
-     * <p>两种模式的判定顺序刻意是「先形态、后来源、再范围、最后落库」，并且
-     * <b>CUSTOMER 侧的一切不通过都收敛到同一个 41139</b>：退款不存在、退款不属于我、
-     * 状态未完成、金额或对方不符、已付过 —— 全部同一个码。若把「不属于我」换成
-     * 范围异常（30005）而「不存在」保持 41139，就等于是给调用者一个「这张退款存在且不是你的」
-     * 的探测信号，因此客户范围校验也使用相同的失败响应。
+     * <p>
+     * 两种模式的判定顺序刻意是「先形态、后来源、再范围、最后落库」，并且 <b>CUSTOMER 侧的一切不通过都收敛到同一个 41139</b>：退款不存在、退款不属于我、 状态未完成、金额或对方不符、已付过 ——
+     * 全部同一个码。若把「不属于我」换成 范围异常（30005）而「不存在」保持 41139，就等于是给调用者一个「这张退款存在且不是你的」 的探测信号，因此客户范围校验也使用相同的失败响应。
      */
     private FinancePaymentEntity register(FinancePaymentAddForm form) {
         String counterpartyType = counterpartyType(form.getCounterpartyType());
@@ -122,8 +121,8 @@ public class FinancePaymentService {
 
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
-        payment.setPaymentNo(ScmDocumentNumbers.format(
-                FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+        payment.setPaymentNo(
+                ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
         payment.setCreatedAt(now);
         payment.setUpdatedAt(now);
         payment.setCreatedBy(operator);
@@ -138,8 +137,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 模式 A：供应商付款 / 预付。<b>没有任何应付、没有采购单也可以付</b>（预付），
-     * 因此这里不接受也不校验 payableId / purchaseOrderId / purchaseReceiptId。
+     * 模式 A：供应商付款 / 预付。<b>没有任何应付、没有采购单也可以付</b>（预付）， 因此这里不接受也不校验 payableId / purchaseOrderId / purchaseReceiptId。
      * 只判供应商存在性与 deleted；{@code status} 不做前置（停用的供应商也可能要结清历史债务）。
      */
     private void fillSupplier(FinancePaymentEntity payment, FinancePaymentAddForm form) {
@@ -160,11 +158,9 @@ public class FinancePaymentService {
     }
 
     /**
-     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}，
-     * 金额与对方必须与 {@code order_refund} **逐值一致**。
+     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}， 金额与对方必须与 {@code order_refund} **逐值一致**。
      */
-    private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form,
-                                    BigDecimal amount) {
+    private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form, BigDecimal amount) {
         if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(StringUtils.trimToNull(form.getSourceType()))
                 || form.getSourceId() == null) {
             // 客户付款必须关联已完成退款；无来源的客户付款不符合受支持的业务形态。
@@ -175,8 +171,7 @@ public class FinancePaymentService {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(refund.getCustomerId());
-        if (customer == null
-                || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+        if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             // 越权与「退款指向的客户不存在」同码：见 register() 的说明
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }

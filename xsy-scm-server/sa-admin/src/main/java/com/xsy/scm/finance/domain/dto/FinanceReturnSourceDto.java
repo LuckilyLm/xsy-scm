@@ -7,9 +7,9 @@ import java.time.OffsetDateTime;
 /**
  * 红字应收所需的**退货批准事实**（单头维度），由 {@code FinanceReceivableSourceDao} 只读取得。
  *
- * <p>{@code approvedAt} / {@code approvedBy} 取 {@code order_return} 上已落库的列：
- * 红字是「已经成立的 {@code OrderReturn APPROVED} 在财务域中的事实映射」（原则），
- * 时点与操作人属于那个业务事实，不能由财务侧现取 {@code now()} 或现取请求上下文。
+ * <p>
+ * {@code approvedAt} / {@code approvedBy} 取 {@code order_return} 上已落库的列： 红字是「已经成立的 {@code OrderReturn APPROVED}
+ * 在财务域中的事实映射」（原则）， 时点与操作人属于那个业务事实，不能由财务侧现取 {@code now()} 或现取请求上下文。
  */
 @Data
 public class FinanceReturnSourceDto {
@@ -29,8 +29,7 @@ public class FinanceReturnSourceDto {
     private OffsetDateTime approvedAt;
 
     /**
-     * 批准人。{@code approve} 在把状态写成 {@code APPROVED} 的同一条 UPDATE 里落
-     * {@code updated_by}，且 {@code APPROVED} 之后没有任何命令再改这一行
+     * 批准人。{@code approve} 在把状态写成 {@code APPROVED} 的同一条 UPDATE 里落 {@code updated_by}，且 {@code APPROVED} 之后没有任何命令再改这一行
      * （{@code reject / cancel} 要求 {@code PENDING}），所以这一列就是批准人本身。
      */
     private String approvedBy;

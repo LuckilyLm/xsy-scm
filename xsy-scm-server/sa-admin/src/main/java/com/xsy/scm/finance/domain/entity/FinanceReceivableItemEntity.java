@@ -9,13 +9,13 @@ import java.math.BigDecimal;
 /**
  * 应收明细：正常一条 {@code inventory_outbound_item} 一行，红字一条 {@code order_return_item} 一行。
  *
- * <p><b>来源锚点是出库行主键，不是 {@code sales_order_item_id}</b>：一条订单行可能对应多条出库行，
- * 因此唯一索引 {@code uk_finance_receivable_item_source_active} 按 {@code inventory_outbound_item.id} 去重。
+ * <p>
+ * <b>来源锚点是出库行主键，不是 {@code sales_order_item_id}</b>：一条订单行可能对应多条出库行， 因此唯一索引
+ * {@code uk_finance_receivable_item_source_active} 按 {@code inventory_outbound_item.id} 去重。
  *
- * <p><b>红字明细不存行级原明细指针</b>：一条 {@code sales_order_item} 可能对应多条
- * 出库行，不存在唯一的「原正常明细行」，假设 1:1 会造出一个指错行的外键语义。红字的行级追溯链是
- * {@code RED receivable → original_receivable_id（单头级）} +
- * {@code RED item → order_return_item → orderItemId}。
+ * <p>
+ * <b>红字明细不存行级原明细指针</b>：一条 {@code sales_order_item} 可能对应多条 出库行，不存在唯一的「原正常明细行」，假设 1:1 会造出一个指错行的外键语义。红字的行级追溯链是
+ * {@code RED receivable → original_receivable_id（单头级）} + {@code RED item → order_return_item → orderItemId}。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -54,14 +54,13 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
     private BigDecimal quantity;
 
     /**
-     * 正常 = {@code sales_order_item.locked_unit_price}（唯一价格源）；红字 = 退货行锁定单价。
-     * <b>禁止</b>取 {@code inventory_movement.unit_cost} —— 那是出库时的库存移动加权均价，不是售价。
+     * 正常 = {@code sales_order_item.locked_unit_price}（唯一价格源）；红字 = 退货行锁定单价。 <b>禁止</b>取
+     * {@code inventory_movement.unit_cost} —— 那是出库时的库存移动加权均价，不是售价。
      */
     private BigDecimal unitPrice;
 
     /**
-     * 正常 = {@code ROUND(quantity × unitPrice, 4)}；红字 = {@code order_return_item.approved_amount}
-     * （订单域已算，财务不重算、不改写）。
+     * 正常 = {@code ROUND(quantity × unitPrice, 4)}；红字 = {@code order_return_item.approved_amount} （订单域已算，财务不重算、不改写）。
      */
     private BigDecimal amount;
 }

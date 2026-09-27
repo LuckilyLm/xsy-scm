@@ -7,9 +7,9 @@ import java.math.BigDecimal;
 /**
  * 红字应收所需的**退货批准事实**（明细维度）：一条 {@code order_return_item} 一行红字明细。
  *
- * <p>{@code amount} 直接取订单域已落库的 {@code approved_amount}
- * （{@code OrderReturnService.approve} 按 {@code round(approved_quantity × locked_unit_price, 4)} 算好），
- * 财务**不重算** —— 重算就是给同一个金额造第二个权威来源。
+ * <p>
+ * {@code amount} 直接取订单域已落库的 {@code approved_amount} （{@code OrderReturnService.approve} 按
+ * {@code round(approved_quantity × locked_unit_price, 4)} 算好）， 财务**不重算** —— 重算就是给同一个金额造第二个权威来源。
  */
 @Data
 public class FinanceReturnSourceLineDto {

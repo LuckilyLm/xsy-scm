@@ -13,16 +13,16 @@ import java.util.Map;
 /**
  * 财务操作日志：一次财务写动作一行，形态照 {@code OrderOperationLogEntity}。
  *
- * <p><b>不继承 {@link FinanceRecord}</b>：本表连 {@code deleted} 与 {@code version} 都没有 ——
- * append-only 是结构性的，不存在删除或修改入口，因此不需要一列恒为 {@code FALSE} 的
- * {@code deleted} 来表达它（对照 {@code order_operation_log}）。
+ * <p>
+ * <b>不继承 {@link FinanceRecord}</b>：本表连 {@code deleted} 与 {@code version} 都没有 —— append-only 是结构性的，不存在删除或修改入口，因此不需要一列恒为
+ * {@code FALSE} 的 {@code deleted} 来表达它（对照 {@code order_operation_log}）。
  *
- * <p><b>不复用 {@code t_operate_log}</b>：通用日志不保证与业务事务同成同败，也不带金额快照与
- * 类型白名单。财务需要的是「改前 / 改后金额级证据」，
- * 因此 {@code beforeData} / {@code afterData} 是本表存在的理由。
+ * <p>
+ * <b>不复用 {@code t_operate_log}</b>：通用日志不保证与业务事务同成同败，也不带金额快照与 类型白名单。财务需要的是「改前 / 改后金额级证据」， 因此 {@code beforeData} /
+ * {@code afterData} 是本表存在的理由。
  *
- * <p>唯一写入口是 {@code FinanceOperationLogRecorder}，<b>必须与业务写同一事务</b>，
- * 否则会出现「库已改、日志没落」。
+ * <p>
+ * 唯一写入口是 {@code FinanceOperationLogRecorder}，<b>必须与业务写同一事务</b>， 否则会出现「库已改、日志没落」。
  */
 @Data
 @TableName(value = "finance_operation_log", autoResultMap = true)
