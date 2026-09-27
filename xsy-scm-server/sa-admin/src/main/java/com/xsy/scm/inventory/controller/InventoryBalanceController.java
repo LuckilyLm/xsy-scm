@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,18 +34,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InventoryBalanceController {
 
-    private final InventoryBalanceQueryService queryService;
+    private final InventoryBalanceQueryService inventoryBalanceQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:balance:query")
+    @SaCheckPermission(InventoryPermission.BALANCE_QUERY)
     public ResponseDTO<PageResult<InventoryBalanceVO>> query(
             @Valid @RequestBody InventoryBalanceQueryForm form) {
-        return ResponseDTO.ok(queryService.query(form));
+        return ResponseDTO.ok(inventoryBalanceQueryService.query(form));
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:inventory:balance:query")
-    public ResponseDTO<InventoryBalanceVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(queryService.detail(id));
+    @SaCheckPermission(InventoryPermission.BALANCE_QUERY)
+    public ResponseDTO<InventoryBalanceVO> detail(@PathVariable("id") Long balanceId) {
+        return ResponseDTO.ok(inventoryBalanceQueryService.detail(balanceId));
     }
 }

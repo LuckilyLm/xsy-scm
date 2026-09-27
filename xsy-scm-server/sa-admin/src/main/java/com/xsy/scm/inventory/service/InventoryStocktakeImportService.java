@@ -63,10 +63,10 @@ public class InventoryStocktakeImportService {
     /** 实盘量：非负、整数位 ≤14、小数 ≤4；空白由 required 单独挡（空白不等于 0）。 */
     private static final String ACTUAL_PATTERN = "[0-9]{1,14}(\\.[0-9]{1,4})?";
 
-    private final InventoryBalanceDao balanceDao;
+    private final InventoryBalanceDao inventoryBalanceDao;
     private final WarehouseService warehouseService;
     private final StocktakeSnapshotSigner signer;
-    private final InventoryStocktakeImportTxService txService;
+    private final InventoryStocktakeImportTxService inventoryStocktakeImportTxService;
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     @Value("${scm.inventory.stocktake.snapshot.ttl-minutes:240}")
@@ -80,7 +80,7 @@ public class InventoryStocktakeImportService {
     public byte[] buildTemplate(Long warehouseId) throws IOException {
         warehouseService.require(warehouseId);
         String operator = ScmOperator.current();
-        List<InventoryBalanceVO> balances = balanceDao.listActiveByWarehouse(warehouseId);
+        List<InventoryBalanceVO> balances = inventoryBalanceDao.listActiveByWarehouse(warehouseId);
 
         List<StocktakeSnapshotSigner.Entry> entries = new ArrayList<>(balances.size());
         for (InventoryBalanceVO balance : balances) {
@@ -185,7 +185,7 @@ public class InventoryStocktakeImportService {
         }
 
         try {
-            var commit = txService.commit(payload.warehouseId(), lines, idempotencyKey,
+            var commit = inventoryStocktakeImportTxService.commit(payload.warehouseId(), lines, idempotencyKey,
                     fingerprint(payload, lines));
             result.setStocktakeId(commit.stocktakeId());
             result.setReplayed(commit.replayed());
@@ -332,15 +332,15 @@ public class InventoryStocktakeImportService {
         return request;
     }
 
-    private static String nullToEmpty(String value) {
-        return value == null ? "" : value;
+    private static String nullToEmpty(String cellValue) {
+        return cellValue == null ? "" : cellValue;
     }
 
-    private static String trim(String value) {
-        if (value == null) {
+    private static String trim(String cellValue) {
+        if (cellValue == null) {
             return null;
         }
-        var trimmed = value.trim();
+        var trimmed = cellValue.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 

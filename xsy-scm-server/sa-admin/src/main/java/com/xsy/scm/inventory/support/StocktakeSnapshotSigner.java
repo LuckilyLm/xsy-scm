@@ -78,7 +78,7 @@ public class StocktakeSnapshotSigner {
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final Base64.Decoder DECODER = Base64.getUrlDecoder();
 
-    private final ObjectMapper json;
+    private final ObjectMapper objectMapper;
     private final byte[] secret;
 
     public StocktakeSnapshotSigner(ObjectMapper json,
@@ -99,7 +99,7 @@ public class StocktakeSnapshotSigner {
     static void requireNonPublicSecret(String secret, String activeProfiles) {
         boolean production = java.util.Arrays.stream(activeProfiles.split(","))
                 .map(String::trim)
-                .anyMatch(p -> p.equals("pre") || p.equals("prod") || p.equals("production"));
+                .anyMatch(profile -> profile.equals("pre") || profile.equals("prod") || profile.equals("production"));
         if (production && (secret == null || secret.isBlank() || DEV_SECRET.equals(secret))) {
             throw new IllegalStateException("scm.inventory.stocktake.snapshot.secret must be overridden with a"
                     + " private value in pre/prod (set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET);"
@@ -114,7 +114,7 @@ public class StocktakeSnapshotSigner {
             // 而凭证会被写进模板每一行的单元格。POI 的单元格上限是 32767 字符，实测约 200 多个
             // SKU 就会把未压缩的 JSON 顶过这条线，导致大仓库根本导不出盘点模板。
             // 载荷内容不变、校验语义不变，只是编码多一层 DEFLATE。
-            byte[] body = deflate(json.writeValueAsBytes(payload));
+            byte[] body = deflate(objectMapper.writeValueAsBytes(payload));
             byte[] mac = hmac(body);
             return ENCODER.encodeToString(body) + "." + ENCODER.encodeToString(mac);
         } catch (Exception exception) {
@@ -186,7 +186,7 @@ public class StocktakeSnapshotSigner {
         try {
             // 解压只在上面 MAC 比对通过之后发生：未经认证的字节不进 Inflater。
             // 解压失败与解析失败同类——载荷是我们自己签出去的，属服务端故障。
-            payload = json.readValue(inflate(body), Payload.class);
+            payload = objectMapper.readValue(inflate(body), Payload.class);
         } catch (Exception exception) {
             // 走到这里签名已经验过，body 就是我们自己签出去的那段字节 —— 解析不出来不可能是用户造成的，
             // 只可能是服务端（Jackson 版本 / record 结构 / 序列化配置）漂移。报成「凭证损坏，请重导模板」

@@ -57,9 +57,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 @RequiredArgsConstructor
 public class InventoryTransferService {
 
-    private final InventoryTransferDao transferDao;
+    private final InventoryTransferDao inventoryTransferDao;
 
-    private final InventoryTransferItemDao itemDao;
+    private final InventoryTransferItemDao inventoryTransferItemDao;
 
     private final InventoryTransferNumberGenerator numberGenerator;
 
@@ -98,7 +98,7 @@ public class InventoryTransferService {
         entity.setDeleted(false);
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
-        transferDao.insert(entity);
+        inventoryTransferDao.insert(entity);
 
         insertItems(entity.getId(), form, operator);
         return entity.getId();
@@ -108,22 +108,22 @@ public class InventoryTransferService {
      * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, InventoryTransferAddForm form) {
+    public void update(Long transferId, InventoryTransferAddForm form) {
         requireForm(form);
         String operator = ScmOperator.current();
 
-        InventoryTransferEntity locked = lockAndRequire(id);
+        InventoryTransferEntity locked = lockAndRequire(transferId);
         // 行上的两端 + 表单新选的两端：改单可以把任一端换仓，换进换出都必须在授权范围内
         warehouseScopeGuard.requireAll(locked.getFromWarehouseId(), locked.getToWarehouseId(),
                 form.getFromWarehouseId(), form.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
 
-        if (transferDao.updateDraft(id, form.getFromWarehouseId(), form.getToWarehouseId(),
+        if (inventoryTransferDao.updateDraft(transferId, form.getFromWarehouseId(), form.getToWarehouseId(),
                 form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        itemDao.deleteByTransferId(id, operator);
-        insertItems(id, form, operator);
+        inventoryTransferItemDao.deleteByTransferId(transferId, operator);
+        insertItems(transferId, form, operator);
     }
 
     /**
@@ -135,17 +135,17 @@ public class InventoryTransferService {
      * <p>源仓必须**启用**：停用仓库不能用于新的调拨业务（41048）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void ship(Long id) {
+    public void ship(Long transferId) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
-        InventoryTransferEntity locked = lockAndRequire(id);
+        InventoryTransferEntity locked = lockAndRequire(transferId);
         // 调拨三个动作的范围判据互不相同：查询任一端命中即可见、发出只看 from、收货只看 to
         warehouseScopeGuard.require(locked.getFromWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
         requireEnabled(locked.getFromWarehouseId());
 
-        List<InventoryTransferItemVO> items = itemDao.listByTransferId(id);
+        List<InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_EMPTY_ITEMS);
         }
@@ -165,10 +165,10 @@ public class InventoryTransferService {
                             now,
                             operator);
                     String unit = inventoryCommandService.postTransferOut(fact);
-                    itemDao.updateUnitSnapshot(item.getId(), unit, operator);
+                    inventoryTransferItemDao.updateUnitSnapshot(item.getId(), unit, operator);
                 });
 
-        if (transferDao.markShipped(id, now, operator) != 1) {
+        if (inventoryTransferDao.markShipped(transferId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -180,17 +180,17 @@ public class InventoryTransferService {
      * 由本次调入建立（单位取明细快照）；已有则断言单位一致，不一致直接 41044。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void receive(Long id) {
+    public void receive(Long transferId) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
-        InventoryTransferEntity locked = lockAndRequire(id);
+        InventoryTransferEntity locked = lockAndRequire(transferId);
         // 收货只要求 to 端授权：货进的是目标仓的账，源仓的仓管不需要、也不应该能替它收货
         warehouseScopeGuard.require(locked.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.SHIPPED);
         requireEnabled(locked.getToWarehouseId());
 
-        List<InventoryTransferItemVO> items = itemDao.listByTransferId(id);
+        List<InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_EMPTY_ITEMS);
         }
@@ -208,7 +208,7 @@ public class InventoryTransferService {
                         now,
                         operator)));
 
-        if (transferDao.markReceived(id, now, operator) != 1) {
+        if (inventoryTransferDao.markReceived(transferId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -217,13 +217,13 @@ public class InventoryTransferService {
      * 取消草稿：不产生任何库存影响。在途不可取消（货已出库，只能反向调拨冲回）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void cancel(Long id) {
+    public void cancel(Long transferId) {
         String operator = ScmOperator.current();
-        InventoryTransferEntity locked = lockAndRequire(id);
+        InventoryTransferEntity locked = lockAndRequire(transferId);
         // 撤销草稿不碰任何余额，判据与查询同一条 OR：看得见这张单，就能撤掉它
         warehouseScopeGuard.requireAny(locked.getFromWarehouseId(), locked.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
-        if (transferDao.markCancelled(id, operator) != 1) {
+        if (inventoryTransferDao.markCancelled(transferId, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -232,13 +232,13 @@ public class InventoryTransferService {
      * 删除草稿（逻辑删）。已发出 / 已收货的单不可删 —— 它们已产生流水，必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
+    public void delete(Long transferId) {
         String operator = ScmOperator.current();
-        InventoryTransferEntity locked = lockAndRequire(id);
+        InventoryTransferEntity locked = lockAndRequire(transferId);
         warehouseScopeGuard.requireAny(locked.getFromWarehouseId(), locked.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
-        itemDao.deleteByTransferId(id, operator);
-        if (transferDao.deleteById(id) != 1) {
+        inventoryTransferItemDao.deleteByTransferId(transferId, operator);
+        if (inventoryTransferDao.deleteById(transferId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -258,7 +258,7 @@ public class InventoryTransferService {
             row.setDeleted(false);
             row.setCreatedBy(operator);
             row.setUpdatedBy(operator);
-            itemDao.insert(row);
+            inventoryTransferItemDao.insert(row);
         }
     }
 
@@ -299,8 +299,8 @@ public class InventoryTransferService {
         }
     }
 
-    private InventoryTransferEntity lockAndRequire(Long id) {
-        InventoryTransferEntity locked = transferDao.lockById(id);
+    private InventoryTransferEntity lockAndRequire(Long transferId) {
+        InventoryTransferEntity locked = inventoryTransferDao.lockById(transferId);
         if (locked == null) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_NOT_FOUND);
         }

@@ -31,9 +31,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 @RequiredArgsConstructor
 public class InventoryTransferQueryService {
 
-    private final InventoryTransferDao transferDao;
+    private final InventoryTransferDao inventoryTransferDao;
 
-    private final InventoryTransferItemDao itemDao;
+    private final InventoryTransferItemDao inventoryTransferItemDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -45,7 +45,7 @@ public class InventoryTransferQueryService {
         if (scope.warehouseNowhere()) {
             return List.of();
         }
-        return transferDao.queryInTransit(scope.getWarehouseScope());
+        return inventoryTransferDao.queryInTransit(scope.getWarehouseScope());
     }
 
     /**
@@ -59,7 +59,7 @@ public class InventoryTransferQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryTransferVO> list = transferDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryTransferVO> list = inventoryTransferDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryTransferQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -67,8 +67,8 @@ public class InventoryTransferQueryService {
     /**
      * 详情（含明细，按录入顺序）。调拨两端任一到授权仓即可见，两端都不授权时按无权限回答。
      */
-    public InventoryTransferVO detail(Long id) {
-        InventoryTransferVO vo = transferDao.detail(id);
+    public InventoryTransferVO detail(Long transferId) {
+        InventoryTransferVO vo = inventoryTransferDao.detail(transferId);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_NOT_FOUND);
         }
@@ -77,7 +77,7 @@ public class InventoryTransferQueryService {
             throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
-        List<InventoryTransferItemVO> items = itemDao.listByTransferId(id);
+        List<InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
         vo.setItems(items.stream().map(InventoryTransferQueryService::toItem).toList());
         return vo;
     }

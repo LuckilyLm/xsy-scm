@@ -106,9 +106,9 @@ public enum ScmInventorySourceDocumentTypeEnum {
     /**
      * 该值是否允许写入 {@code inventory_movement.source_document_type}。
      */
-    public static boolean isSupported(String value) {
+    public static boolean isSupported(String sourceDocumentType) {
         for (ScmInventorySourceDocumentTypeEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(sourceDocumentType)) {
                 return true;
             }
         }

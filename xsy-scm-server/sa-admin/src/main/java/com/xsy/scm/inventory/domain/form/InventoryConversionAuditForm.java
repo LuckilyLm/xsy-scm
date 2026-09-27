@@ -20,13 +20,13 @@ public class InventoryConversionAuditForm {
     /**
      * 审批人看到的单据版本号（{@code InventoryConversionVO.version}）。
      */
-    @NotNull
-    @Min(0)
+    @NotNull(message = "版本号不能为空")
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
 
     /**
      * 审核意见（驳回时必填）。
      */
-    @Size(max = 500)
+    @Size(max = 500, message = "审核意见不能超过500个字符")
     private String auditOpinion;
 }

@@ -66,13 +66,13 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERV
 @RequiredArgsConstructor
 public class InventoryFulfillmentService {
 
-    private final InventoryOutboundDao outboundDao;
+    private final InventoryOutboundDao inventoryOutboundDao;
 
-    private final InventoryOutboundItemDao itemDao;
+    private final InventoryOutboundItemDao inventoryOutboundItemDao;
 
-    private final InventoryReservationDao reservationDao;
+    private final InventoryReservationDao inventoryReservationDao;
 
-    private final InventoryBalanceDao balanceDao;
+    private final InventoryBalanceDao inventoryBalanceDao;
 
     private final InventoryOutboundNumberGenerator numberGenerator;
 
@@ -139,7 +139,7 @@ public class InventoryFulfillmentService {
             String unit = inventoryCommandService.postSalesOutbound(new InventoryOutboundFact(
                     command.warehouseId(), line.skuId(), outbound.getId(), item.getId(),
                     line.quantity(), null, command.occurredAt(), command.operator()));
-            itemDao.updateUnitSnapshot(item.getId(), unit, command.operator());
+            inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, command.operator());
         }
         return new Result(outbound.getId(), outbound.getOutboundNo(), shipped.size());
     }
@@ -172,11 +172,11 @@ public class InventoryFulfillmentService {
      */
     private Map<Long, InventoryReservationEntity> lockReservations(Command command) {
         List<Long> orderLineIds = command.lines().stream().map(Line::salesOrderItemId).toList();
-        List<InventoryReservationEntity> found = reservationDao.listActiveBySourceItemIds(
+        List<InventoryReservationEntity> found = inventoryReservationDao.listActiveBySourceItemIds(
                 ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), orderLineIds);
         Map<Long, InventoryReservationEntity> locked = new LinkedHashMap<>();
         for (InventoryReservationEntity candidate : found) {
-            InventoryReservationEntity row = reservationDao.lockById(candidate.getId());
+            InventoryReservationEntity row = inventoryReservationDao.lockById(candidate.getId());
             if (row != null) {
                 locked.put(row.getSourceDocumentItemId(), row);
             }
@@ -204,7 +204,7 @@ public class InventoryFulfillmentService {
                 .toList();
         Map<String, InventoryBalanceEntity> locked = new HashMap<>();
         for (long[] pair : ordered) {
-            InventoryBalanceEntity balance = balanceDao.lockByWarehouseAndSku(pair[0], pair[1]);
+            InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(pair[0], pair[1]);
             if (balance != null) {
                 locked.put(balanceKey(pair[0], pair[1]), balance);
             }
@@ -227,14 +227,15 @@ public class InventoryFulfillmentService {
             if (balance == null) {
                 throw new ScmBusinessException(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND);
             }
-            if (balanceDao.decrementReserved(balance.getId(), reservation.getQuantity(), command.operator()) != 1) {
+            if (inventoryBalanceDao.decrementReserved(
+                    balance.getId(), reservation.getQuantity(), command.operator()) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
             boolean consumed = command.warehouseId().equals(reservation.getWarehouseId())
                     && shippedHere.contains(reservation.getSourceDocumentItemId());
             int affected = consumed
-                    ? reservationDao.markConsumed(reservation.getId(), command.operator())
-                    : reservationDao.markReleased(reservation.getId(), command.operator());
+                    ? inventoryReservationDao.markConsumed(reservation.getId(), command.operator())
+                    : inventoryReservationDao.markReleased(reservation.getId(), command.operator());
             if (affected != 1) {
                 throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
             }
@@ -256,7 +257,7 @@ public class InventoryFulfillmentService {
         entity.setCreatedBy(command.operator());
         entity.setUpdatedBy(command.operator());
         try {
-            outboundDao.insert(entity);
+            inventoryOutboundDao.insert(entity);
         } catch (DuplicateKeyException e) {
             // 线路行锁已经串行化了正常路径；撞到这里说明有并发或旁路在重复生成同一张单。
             throw new ScmBusinessException(InventoryErrorCode.INVENTORY_SOURCE_ALREADY_OUTBOUND);
@@ -275,7 +276,7 @@ public class InventoryFulfillmentService {
         item.setDeleted(false);
         item.setCreatedBy(operator);
         item.setUpdatedBy(operator);
-        itemDao.insert(item);
+        inventoryOutboundItemDao.insert(item);
         return item;
     }
 

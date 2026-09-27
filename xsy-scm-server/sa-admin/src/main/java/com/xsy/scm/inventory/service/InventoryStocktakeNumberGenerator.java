@@ -29,13 +29,13 @@ public class InventoryStocktakeNumberGenerator {
      */
     public static final String PREFIX = "STK";
 
-    private final InventoryStocktakeDao stocktakeDao;
+    private final InventoryStocktakeDao inventoryStocktakeDao;
 
     /**
      * 盘点单号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。
      */
     public String next() {
-        return format(PREFIX, stocktakeDao.nextStocktakeNo());
+        return format(PREFIX, inventoryStocktakeDao.nextStocktakeNo());
     }
 
     /**

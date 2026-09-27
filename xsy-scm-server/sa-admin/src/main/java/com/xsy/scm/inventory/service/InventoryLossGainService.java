@@ -67,9 +67,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
 @RequiredArgsConstructor
 public class InventoryLossGainService {
 
-    private final InventoryLossGainDao lossGainDao;
+    private final InventoryLossGainDao inventoryLossGainDao;
 
-    private final InventoryLossGainItemDao itemDao;
+    private final InventoryLossGainItemDao inventoryLossGainItemDao;
 
     private final InventoryLossGainNumberGenerator numberGenerator;
 
@@ -113,7 +113,7 @@ public class InventoryLossGainService {
         entity.setDeleted(false);
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
-        lossGainDao.insert(entity);
+        inventoryLossGainDao.insert(entity);
 
         insertItems(entity.getId(), form, operator);
         return entity.getId();
@@ -123,23 +123,23 @@ public class InventoryLossGainService {
      * 改待审核单据：只允许 PENDING；明细整表替换（逻辑删旧 + 插新）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, InventoryLossGainAddForm form) {
+    public void update(Long lossGainId, InventoryLossGainAddForm form) {
         requireItems(form);
         requireKnownType(form.getAdjustType());
         String operator = ScmOperator.current();
         warehouseService.require(form.getWarehouseId());
 
-        InventoryLossGainEntity locked = lockAndRequire(id);
+        InventoryLossGainEntity locked = lockAndRequire(lossGainId);
         // 行上的旧仓与表单的新仓都要授权，否则可以把一张待审核单挪到自己管不着的仓
         warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
 
-        if (lossGainDao.updatePending(id, form.getAdjustType(), form.getWarehouseId(),
+        if (inventoryLossGainDao.updatePending(lossGainId, form.getAdjustType(), form.getWarehouseId(),
                 form.getReason(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        itemDao.deleteByLossGainId(id, operator);
-        insertItems(id, form, operator);
+        inventoryLossGainItemDao.deleteByLossGainId(lossGainId, operator);
+        insertItems(lossGainId, form, operator);
     }
 
     /**
@@ -149,11 +149,11 @@ public class InventoryLossGainService {
      * 明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 待审核态它为空。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void approve(Long id, InventoryLossGainAuditForm form) {
+    public void approve(Long lossGainId, InventoryLossGainAuditForm form) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
-        InventoryLossGainEntity locked = lockAndRequire(id);
+        InventoryLossGainEntity locked = lockAndRequire(lossGainId);
         // 先判仓库授权再判状态/版本/自审：范围之外的单据不该回答任何其他问题
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
@@ -166,7 +166,7 @@ public class InventoryLossGainService {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_PARAM_INVALID);
         }
 
-        List<InventoryLossGainItemVO> items = itemDao.listByLossGainId(id);
+        List<InventoryLossGainItemVO> items = inventoryLossGainItemDao.listByLossGainId(lossGainId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_EMPTY_ITEMS);
         }
@@ -186,10 +186,12 @@ public class InventoryLossGainService {
                             operator);
                     // 单位以余额记账单位为准（Q13），由命令服务返回，这里回写到明细行
                     String unit = inventoryCommandService.postLossGainAdjust(fact);
-                    itemDao.updateUnitSnapshot(item.getId(), unit, operator);
+                    inventoryLossGainItemDao.updateUnitSnapshot(item.getId(), unit, operator);
                 });
 
-        if (lossGainDao.markCompleted(id, now, operator, form.getAuditOpinion(), form.getVersion()) != 1) {
+        if (inventoryLossGainDao.markCompleted(
+                lossGainId, now, operator, form.getAuditOpinion(), form.getVersion())
+                != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -201,7 +203,7 @@ public class InventoryLossGainService {
      * 允许空意见的驳回会让录单人只能反复试。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void reject(Long id, InventoryLossGainAuditForm form) {
+    public void reject(Long lossGainId, InventoryLossGainAuditForm form) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -209,14 +211,16 @@ public class InventoryLossGainService {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_REJECT_OPINION_REQUIRED);
         }
 
-        InventoryLossGainEntity locked = lockAndRequire(id);
+        InventoryLossGainEntity locked = lockAndRequire(lossGainId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
         requireVersion(locked, form);
         // 驳回同样是审批动作：自驳自单会让「待审核」这一状态形同虚设，故与通过走同一条禁令
         requireNotSelfApproval(locked, operator);
 
-        if (lossGainDao.markRejected(id, now, operator, form.getAuditOpinion(), form.getVersion()) != 1) {
+        if (inventoryLossGainDao.markRejected(
+                lossGainId, now, operator, form.getAuditOpinion(), form.getVersion())
+                != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         // 驳回是唯一把「为什么不行」传达给录单人的渠道；与状态变更同事务写站内信，
@@ -228,13 +232,13 @@ public class InventoryLossGainService {
      * 删除待审核单据（逻辑删）。已审核的单不可删 —— 它们必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
+    public void delete(Long lossGainId) {
         String operator = ScmOperator.current();
-        InventoryLossGainEntity locked = lockAndRequire(id);
+        InventoryLossGainEntity locked = lockAndRequire(lossGainId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
-        itemDao.deleteByLossGainId(id, operator);
-        if (lossGainDao.deleteById(id) != 1) {
+        inventoryLossGainItemDao.deleteByLossGainId(lossGainId, operator);
+        if (inventoryLossGainDao.deleteById(lossGainId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -254,7 +258,7 @@ public class InventoryLossGainService {
             row.setDeleted(false);
             row.setCreatedBy(operator);
             row.setUpdatedBy(operator);
-            itemDao.insert(row);
+            inventoryLossGainItemDao.insert(row);
         }
     }
 
@@ -334,8 +338,8 @@ public class InventoryLossGainService {
         }
     }
 
-    private InventoryLossGainEntity lockAndRequire(Long id) {
-        InventoryLossGainEntity locked = lossGainDao.lockById(id);
+    private InventoryLossGainEntity lockAndRequire(Long lossGainId) {
+        InventoryLossGainEntity locked = inventoryLossGainDao.lockById(lossGainId);
         if (locked == null) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_NOT_FOUND);
         }

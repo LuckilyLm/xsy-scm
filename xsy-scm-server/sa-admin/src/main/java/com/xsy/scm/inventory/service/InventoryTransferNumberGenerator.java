@@ -26,13 +26,13 @@ public class InventoryTransferNumberGenerator {
      */
     public static final String PREFIX = "TRF";
 
-    private final InventoryTransferDao transferDao;
+    private final InventoryTransferDao inventoryTransferDao;
 
     /**
      * 单据号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。
      */
     public String next() {
-        return format(PREFIX, transferDao.nextTransferNo());
+        return format(PREFIX, inventoryTransferDao.nextTransferNo());
     }
 
     /**

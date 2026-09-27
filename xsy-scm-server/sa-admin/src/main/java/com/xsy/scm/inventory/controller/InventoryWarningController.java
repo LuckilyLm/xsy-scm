@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -31,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InventoryWarningController {
 
-    private final InventoryWarningQueryService queryService;
+    private final InventoryWarningQueryService inventoryWarningQueryService;
 
     /**
      * 预警列表。
@@ -40,8 +42,8 @@ public class InventoryWarningController {
      * 传 {@code NORMAL} 才看正常项。
      */
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:warning:query")
+    @SaCheckPermission(InventoryPermission.WARNING_QUERY)
     public ResponseDTO<PageResult<InventoryWarningVO>> query(@Valid @RequestBody InventoryWarningQueryForm form) {
-        return ResponseDTO.ok(queryService.queryWarningPage(form));
+        return ResponseDTO.ok(inventoryWarningQueryService.queryWarningPage(form));
     }
 }

@@ -23,13 +23,13 @@ import java.util.List;
 @Data
 public class InventoryOutboundAddForm {
 
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 
-    @NotEmpty
+    @NotEmpty(message = "出库明细不能为空")
     @Valid
     private List<Item> items;
 
@@ -39,15 +39,15 @@ public class InventoryOutboundAddForm {
     @Data
     public static class Item {
 
-        @NotNull
+        @NotNull(message = "SKU 不能为空")
         private Long skuId;
 
-        @NotNull
-        @DecimalMin(value = "0", inclusive = false)
-        @Digits(integer = 14, fraction = 4)
+        @NotNull(message = "出库数量不能为空")
+        @DecimalMin(value = "0", inclusive = false, message = "出库数量必须大于0")
+        @Digits(integer = 14, fraction = 4, message = "出库数量最多14位整数和4位小数")
         private BigDecimal quantity;
 
-        @Size(max = 500)
+        @Size(max = 500, message = "备注不能超过500个字符")
         private String remark;
     }
 }

@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,15 +32,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InventoryReservationController {
 
-    private final InventoryReservationService service;
+    private final InventoryReservationService inventoryReservationService;
 
-    private final InventoryReservationQueryService queryService;
+    private final InventoryReservationQueryService inventoryReservationQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:reservation:query")
+    @SaCheckPermission(InventoryPermission.RESERVATION_QUERY)
     public ResponseDTO<PageResult<InventoryReservationVO>> query(
             @Valid @RequestBody InventoryReservationQueryForm form) {
-        return ResponseDTO.ok(queryService.queryPage(form));
+        return ResponseDTO.ok(inventoryReservationQueryService.queryPage(form));
     }
 
     /**
@@ -47,10 +49,10 @@ public class InventoryReservationController {
      * <p>只有生效中的预留可释放；重复释放会失败（41009），不会把可用量虚增。
      */
     @PostMapping("/release/{id}")
-    @SaCheckPermission("scm:inventory:reservation:release")
+    @SaCheckPermission(InventoryPermission.RESERVATION_RELEASE)
     @OperateLog
-    public ResponseDTO<String> release(@PathVariable Long id) {
-        service.release(id);
+    public ResponseDTO<String> release(@PathVariable("id") Long reservationId) {
+        inventoryReservationService.release(reservationId);
         return ResponseDTO.ok();
     }
 }

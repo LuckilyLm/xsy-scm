@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -40,50 +42,50 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InventoryTransferController {
 
-    private final InventoryTransferService service;
+    private final InventoryTransferService inventoryTransferService;
 
-    private final InventoryTransferQueryService queryService;
+    private final InventoryTransferQueryService inventoryTransferQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:transfer:query")
+    @SaCheckPermission(InventoryPermission.TRANSFER_QUERY)
     public ResponseDTO<PageResult<InventoryTransferVO>> query(@Valid @RequestBody InventoryTransferQueryForm form) {
-        return ResponseDTO.ok(queryService.queryPage(form));
+        return ResponseDTO.ok(inventoryTransferQueryService.queryPage(form));
     }
 
     /**
      * 在途库存报表（只读聚合，把 SHIPPED 调拨单展开成明细行）。
      */
     @GetMapping("/in-transit")
-    @SaCheckPermission("scm:inventory:transfer:query")
+    @SaCheckPermission(InventoryPermission.TRANSFER_QUERY)
     public ResponseDTO<List<InventoryInTransitVO>> inTransit() {
-        return ResponseDTO.ok(queryService.queryInTransit());
+        return ResponseDTO.ok(inventoryTransferQueryService.queryInTransit());
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:inventory:transfer:query")
-    public ResponseDTO<InventoryTransferVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(queryService.detail(id));
+    @SaCheckPermission(InventoryPermission.TRANSFER_QUERY)
+    public ResponseDTO<InventoryTransferVO> detail(@PathVariable("id") Long transferId) {
+        return ResponseDTO.ok(inventoryTransferQueryService.detail(transferId));
     }
 
     /**
      * 新建草稿调拨单，返回新单 id。
      */
     @PostMapping("/create")
-    @SaCheckPermission("scm:inventory:transfer:add")
+    @SaCheckPermission(InventoryPermission.TRANSFER_ADD)
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody InventoryTransferAddForm form) {
-        return ResponseDTO.ok(service.create(form));
+        return ResponseDTO.ok(inventoryTransferService.create(form));
     }
 
     /**
      * 改草稿（仅 DRAFT）。
      */
     @PostMapping("/update/{id}")
-    @SaCheckPermission("scm:inventory:transfer:update")
+    @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@PathVariable Long id,
+    public ResponseDTO<String> update(@PathVariable("id") Long transferId,
                                       @Valid @RequestBody InventoryTransferAddForm form) {
-        service.update(id, form);
+        inventoryTransferService.update(transferId, form);
         return ResponseDTO.ok();
     }
 
@@ -94,10 +96,10 @@ public class InventoryTransferController {
      * 期间这批货不在任何余额行里（没有虚拟在途仓），全仓总库存会暂时减少。
      */
     @PostMapping("/ship/{id}")
-    @SaCheckPermission("scm:inventory:transfer:ship")
+    @SaCheckPermission(InventoryPermission.TRANSFER_SHIP)
     @OperateLog
-    public ResponseDTO<String> ship(@PathVariable Long id) {
-        service.ship(id);
+    public ResponseDTO<String> ship(@PathVariable("id") Long transferId) {
+        inventoryTransferService.ship(transferId);
         return ResponseDTO.ok();
     }
 
@@ -107,10 +109,10 @@ public class InventoryTransferController {
      * <p>目标仓的记账单位必须与调拨单位一致（41044）—— 库存不做自动换算。
      */
     @PostMapping("/receive/{id}")
-    @SaCheckPermission("scm:inventory:transfer:receive")
+    @SaCheckPermission(InventoryPermission.TRANSFER_RECEIVE)
     @OperateLog
-    public ResponseDTO<String> receive(@PathVariable Long id) {
-        service.receive(id);
+    public ResponseDTO<String> receive(@PathVariable("id") Long transferId) {
+        inventoryTransferService.receive(transferId);
         return ResponseDTO.ok();
     }
 
@@ -118,10 +120,10 @@ public class InventoryTransferController {
      * 取消草稿（不产生任何库存影响）。在途不可取消 —— 货已出库，只能反向调拨冲回。
      */
     @PostMapping("/cancel/{id}")
-    @SaCheckPermission("scm:inventory:transfer:update")
+    @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
     @OperateLog
-    public ResponseDTO<String> cancel(@PathVariable Long id) {
-        service.cancel(id);
+    public ResponseDTO<String> cancel(@PathVariable("id") Long transferId) {
+        inventoryTransferService.cancel(transferId);
         return ResponseDTO.ok();
     }
 
@@ -129,10 +131,10 @@ public class InventoryTransferController {
      * 删除草稿（逻辑删）。已发出 / 已收货的单不可删除。
      */
     @PostMapping("/delete/{id}")
-    @SaCheckPermission("scm:inventory:transfer:delete")
+    @SaCheckPermission(InventoryPermission.TRANSFER_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseDTO<String> delete(@PathVariable("id") Long transferId) {
+        inventoryTransferService.delete(transferId);
         return ResponseDTO.ok();
     }
 }

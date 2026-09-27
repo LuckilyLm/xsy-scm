@@ -22,7 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InventoryReservationQueryService {
 
-    private final InventoryReservationDao reservationDao;
+    private final InventoryReservationDao inventoryReservationDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -35,7 +35,7 @@ public class InventoryReservationQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryReservationVO> list = reservationDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryReservationVO> list = inventoryReservationDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryReservationQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }

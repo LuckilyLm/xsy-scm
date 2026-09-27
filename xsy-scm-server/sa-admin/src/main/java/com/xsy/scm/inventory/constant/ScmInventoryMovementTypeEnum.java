@@ -111,9 +111,9 @@ public enum ScmInventoryMovementTypeEnum {
     /**
      * 该值是否允许写入 {@code inventory_movement.movement_type}（DB CHECK 白名单的同源判定）。
      */
-    public static boolean isSupported(String value) {
+    public static boolean isSupported(String movementType) {
         for (ScmInventoryMovementTypeEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(movementType)) {
                 return true;
             }
         }
@@ -123,9 +123,9 @@ public enum ScmInventoryMovementTypeEnum {
     /**
      * 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。
      */
-    public static ScmInventoryMovementTypeEnum of(String value) {
+    public static ScmInventoryMovementTypeEnum of(String movementType) {
         for (ScmInventoryMovementTypeEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(movementType)) {
                 return item;
             }
         }

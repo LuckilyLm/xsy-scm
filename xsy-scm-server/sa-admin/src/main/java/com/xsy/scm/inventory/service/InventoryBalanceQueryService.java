@@ -40,7 +40,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_BALANC
 @RequiredArgsConstructor
 public class InventoryBalanceQueryService {
 
-    private final InventoryBalanceDao balanceDao;
+    private final InventoryBalanceDao inventoryBalanceDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -52,7 +52,7 @@ public class InventoryBalanceQueryService {
             return ScmDataScopeService.emptyPage(form);
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        List<InventoryBalanceVO> list = balanceDao.queryPage(page, form, scope.getWarehouseScope());
+        List<InventoryBalanceVO> list = inventoryBalanceDao.queryPage(page, form, scope.getWarehouseScope());
         ScmReportAccess.maskCost(list, scope.isCostVisible(), InventoryBalanceQueryService::clearCost);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -61,8 +61,8 @@ public class InventoryBalanceQueryService {
      * 余额详情；不存在 → 40486，仓库未授权 → 无权限（不按「不存在」回答，否则等于把存在性告诉对方）。
      */
     @Transactional(readOnly = true)
-    public InventoryBalanceVO detail(Long id) {
-        InventoryBalanceVO vo = id == null ? null : balanceDao.detail(id);
+    public InventoryBalanceVO detail(Long balanceId) {
+        InventoryBalanceVO vo = balanceId == null ? null : inventoryBalanceDao.detail(balanceId);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_BALANCE_NOT_FOUND);
         }

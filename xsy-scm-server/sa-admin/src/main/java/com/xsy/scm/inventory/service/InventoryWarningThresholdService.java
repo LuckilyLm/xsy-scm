@@ -37,7 +37,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNIN
 @RequiredArgsConstructor
 public class InventoryWarningThresholdService {
 
-    private final InventoryWarningThresholdDao thresholdDao;
+    private final InventoryWarningThresholdDao inventoryWarningThresholdDao;
 
     private final WarehouseService warehouseService;
 
@@ -61,7 +61,7 @@ public class InventoryWarningThresholdService {
         warehouseService.require(form.getWarehouseId());
         requireSkuExists(form.getSkuId());
 
-        if (thresholdDao.countByWarehouseAndSku(form.getWarehouseId(), form.getSkuId()) > 0) {
+        if (inventoryWarningThresholdDao.countByWarehouseAndSku(form.getWarehouseId(), form.getSkuId()) > 0) {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_DUPLICATE);
         }
 
@@ -75,7 +75,7 @@ public class InventoryWarningThresholdService {
         entity.setDeleted(false);
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
-        thresholdDao.insert(entity);
+        inventoryWarningThresholdDao.insert(entity);
         return entity.getId();
     }
 
@@ -83,13 +83,13 @@ public class InventoryWarningThresholdService {
      * 编辑阈值配置。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, InventoryWarningThresholdAddForm form) {
+    public void update(Long warningThresholdId, InventoryWarningThresholdAddForm form) {
         requireRange(form);
         String operator = ScmOperator.current();
         warehouseService.require(form.getWarehouseId());
         requireSkuExists(form.getSkuId());
 
-        InventoryWarningThresholdEntity existing = thresholdDao.selectById(id);
+        InventoryWarningThresholdEntity existing = inventoryWarningThresholdDao.selectById(warningThresholdId);
         if (existing == null) {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_NOT_FOUND);
         }
@@ -100,7 +100,7 @@ public class InventoryWarningThresholdService {
         warehouseScopeGuard.requireAll(existing.getWarehouseId(), form.getWarehouseId());
         if (!Objects.equals(existing.getWarehouseId(), form.getWarehouseId())
                 || !Objects.equals(existing.getSkuId(), form.getSkuId())) {
-            if (thresholdDao.countByWarehouseAndSku(form.getWarehouseId(), form.getSkuId()) > 0) {
+            if (inventoryWarningThresholdDao.countByWarehouseAndSku(form.getWarehouseId(), form.getSkuId()) > 0) {
                 throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_DUPLICATE);
             }
         }
@@ -108,7 +108,7 @@ public class InventoryWarningThresholdService {
         // 手写 SQL 而不是 updateById：实体的 updateStrategy = ALWAYS 会把 created_at 等
         // 也写进 SET 子句（更新实体里它们是 null → 违反 NOT NULL）。
         // 手写 SQL 同时天然支持把 warn_min / warn_max 清空成 NULL（取消该方向的预警）。
-        if (thresholdDao.updateThreshold(id, form.getWarehouseId(), form.getSkuId(),
+        if (inventoryWarningThresholdDao.updateThreshold(warningThresholdId, form.getWarehouseId(), form.getSkuId(),
                 form.getWarnMin(), form.getWarnMax(), form.getRemark(),
                 existing.getVersion(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -119,14 +119,14 @@ public class InventoryWarningThresholdService {
      * 删除阈值配置（逻辑删）。删除后该 (仓库, SKU) 不再产生预警。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
-        InventoryWarningThresholdEntity existing = thresholdDao.selectById(id);
+    public void delete(Long warningThresholdId) {
+        InventoryWarningThresholdEntity existing = inventoryWarningThresholdDao.selectById(warningThresholdId);
         if (existing == null) {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_NOT_FOUND);
         }
         // 删的是「某个仓的阈值」，判据取行上的仓库：阈值配置本身就是按仓生效的
         warehouseScopeGuard.require(existing.getWarehouseId());
-        if (thresholdDao.deleteById(id) != 1) {
+        if (inventoryWarningThresholdDao.deleteById(warningThresholdId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }

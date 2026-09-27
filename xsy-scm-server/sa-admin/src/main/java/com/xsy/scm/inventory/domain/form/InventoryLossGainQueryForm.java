@@ -24,7 +24,7 @@ public class InventoryLossGainQueryForm extends PageParam {
     /**
      * 单据号（模糊）。
      */
-    @Size(max = 64)
+    @Size(max = 64, message = "调整单号不能超过64个字符")
     private String lossGainNo;
 
     /**
@@ -35,24 +35,24 @@ public class InventoryLossGainQueryForm extends PageParam {
     /**
      * 调整类型：{@code LOSS} / {@code OVERFLOW}（精确）。
      */
-    @Size(max = 20)
+    @Size(max = 20, message = "调整类型不能超过20个字符")
     private String adjustType;
 
     /**
      * 状态：{@code PENDING} / {@code COMPLETED} / {@code REJECTED}（精确）。
      */
-    @Size(max = 20)
+    @Size(max = 20, message = "调整状态不能超过20个字符")
     private String status;
 
     @Override
-    @Min(1)
+    @Min(value = 1, message = "页码必须至少为1")
     public Long getPageNum() {
         return super.getPageNum();
     }
 
     @Override
-    @Min(1)
-    @Max(100)
+    @Min(value = 1, message = "每页条数必须至少为1")
+    @Max(value = 100, message = "每页条数不能超过100")
     public Long getPageSize() {
         return super.getPageSize();
     }

@@ -31,9 +31,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
 @RequiredArgsConstructor
 public class InventoryLossGainQueryService {
 
-    private final InventoryLossGainDao lossGainDao;
+    private final InventoryLossGainDao inventoryLossGainDao;
 
-    private final InventoryLossGainItemDao itemDao;
+    private final InventoryLossGainItemDao inventoryLossGainItemDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -48,7 +48,7 @@ public class InventoryLossGainQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryLossGainVO> list = lossGainDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryLossGainVO> list = inventoryLossGainDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryLossGainQueryService::fillDescs);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -56,8 +56,8 @@ public class InventoryLossGainQueryService {
     /**
      * 详情（含明细，按录入顺序）；仓库未授权时按无权限回答，不用「不存在」。
      */
-    public InventoryLossGainVO detail(Long id) {
-        InventoryLossGainVO vo = lossGainDao.detail(id);
+    public InventoryLossGainVO detail(Long lossGainId) {
+        InventoryLossGainVO vo = inventoryLossGainDao.detail(lossGainId);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_NOT_FOUND);
         }
@@ -65,7 +65,7 @@ public class InventoryLossGainQueryService {
             throw new ScmDataScopeException();
         }
         fillDescs(vo);
-        List<InventoryLossGainItemVO> items = itemDao.listByLossGainId(id);
+        List<InventoryLossGainItemVO> items = inventoryLossGainItemDao.listByLossGainId(lossGainId);
         vo.setItems(items.stream().map(InventoryLossGainQueryService::toItem).toList());
         return vo;
     }

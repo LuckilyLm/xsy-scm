@@ -43,9 +43,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERV
 @RequiredArgsConstructor
 public class InventoryReservationService {
 
-    private final InventoryReservationDao reservationDao;
+    private final InventoryReservationDao inventoryReservationDao;
 
-    private final InventoryBalanceDao balanceDao;
+    private final InventoryBalanceDao inventoryBalanceDao;
 
     private final WarehouseService warehouseService;
 
@@ -68,7 +68,7 @@ public class InventoryReservationService {
         warehouseService.require(fact.warehouseId());
 
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
         }
@@ -99,13 +99,13 @@ public class InventoryReservationService {
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
 
-        if (reservationDao.insertOnConflictDoNothing(entity) != 1) {
+        if (inventoryReservationDao.insertOnConflictDoNothing(entity) != 1) {
             // 同一来源行已有有效预留：视为幂等成功还是错误，由调用方语义决定。
             // 这里 fail-fast —— 静默返回会让「订单重复确认」看起来成功。
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
 
-        if (balanceDao.incrementReserved(balance.getId(), fact.quantity(), operator) != 1) {
+        if (inventoryBalanceDao.incrementReserved(balance.getId(), fact.quantity(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         return entity.getId();
@@ -140,7 +140,7 @@ public class InventoryReservationService {
             return;
         }
         InventoryReservationEntity active =
-                reservationDao.selectActiveBySource(sourceDocumentType, sourceDocumentItemId);
+                inventoryReservationDao.selectActiveBySource(sourceDocumentType, sourceDocumentItemId);
         if (active == null) {
             return;
         }
@@ -194,7 +194,7 @@ public class InventoryReservationService {
         if (salesOrderId == null) {
             return;
         }
-        List<InventoryReservationEntity> actives = reservationDao.listActiveBySourceDocument(
+        List<InventoryReservationEntity> actives = inventoryReservationDao.listActiveBySourceDocument(
                 ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId);
         for (InventoryReservationEntity active : actives) {
             releaseCascade(active.getId());
@@ -217,7 +217,7 @@ public class InventoryReservationService {
     }
 
     private InventoryReservationEntity lockActiveReservation(Long reservationId) {
-        InventoryReservationEntity locked = reservationDao.lockById(reservationId);
+        InventoryReservationEntity locked = inventoryReservationDao.lockById(reservationId);
         if (locked == null || !ScmInventoryReservationStatusEnum.ACTIVE.name().equals(locked.getStatus())) {
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
@@ -226,15 +226,15 @@ public class InventoryReservationService {
 
     private void applyRelease(InventoryReservationEntity locked, String operator) {
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(locked.getWarehouseId(), locked.getSkuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(locked.getWarehouseId(), locked.getSkuId());
         if (balance == null) {
             // 余额行不该消失（append-only 语义下余额只增减、不删除）；这里 fail-fast 暴露数据异常。
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
-        if (reservationDao.markReleased(locked.getId(), operator) != 1) {
+        if (inventoryReservationDao.markReleased(locked.getId(), operator) != 1) {
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
-        if (balanceDao.decrementReserved(balance.getId(), locked.getQuantity(), operator) != 1) {
+        if (inventoryBalanceDao.decrementReserved(balance.getId(), locked.getQuantity(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }

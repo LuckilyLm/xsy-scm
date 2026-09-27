@@ -35,7 +35,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNIN
 @RequiredArgsConstructor
 public class InventoryWarningQueryService {
 
-    private final InventoryWarningThresholdDao thresholdDao;
+    private final InventoryWarningThresholdDao inventoryWarningThresholdDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -49,15 +49,15 @@ public class InventoryWarningQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(query);
         List<InventoryWarningThresholdVO> list =
-                thresholdDao.queryPage(page, query, scope.getWarehouseScope());
+                inventoryWarningThresholdDao.queryPage(page, query, scope.getWarehouseScope());
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
     /**
      * 阈值配置详情（按 id）；仓库未授权时按无权限回答，不用「不存在」。
      */
-    public InventoryWarningThresholdVO detail(Long id) {
-        InventoryWarningThresholdVO vo = thresholdDao.detail(id);
+    public InventoryWarningThresholdVO detail(Long warningThresholdId) {
+        InventoryWarningThresholdVO vo = inventoryWarningThresholdDao.detail(warningThresholdId);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_NOT_FOUND);
         }
@@ -82,7 +82,8 @@ public class InventoryWarningQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryWarningVO> list = thresholdDao.queryWarningPage(page, query, scope.getWarehouseScope());
+        List<InventoryWarningVO> list = inventoryWarningThresholdDao.queryWarningPage(
+                page, query, scope.getWarehouseScope());
         list.forEach(InventoryWarningQueryService::fillStatus);
         return SmartPageUtil.convert2PageResult(page, list);
     }

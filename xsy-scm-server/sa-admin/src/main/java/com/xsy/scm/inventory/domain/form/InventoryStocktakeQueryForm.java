@@ -35,18 +35,18 @@ public class InventoryStocktakeQueryForm extends PageParam {
      * 非法状态值在这里只会筛出空列表（无害），而加白名单会引入
      * 「前端把『全部』提交成空串 → 400/30001」这一类与业务无关的失败。
      */
-    @Size(max = 20)
+    @Size(max = 20, message = "盘点状态不能超过20个字符")
     private String status;
 
     @Override
-    @Min(1)
+    @Min(value = 1, message = "页码必须至少为1")
     public Long getPageNum() {
         return super.getPageNum();
     }
 
     @Override
-    @Min(1)
-    @Max(100)
+    @Min(value = 1, message = "每页条数必须至少为1")
+    @Max(value = 100, message = "每页条数不能超过100")
     public Long getPageSize() {
         return super.getPageSize();
     }

@@ -29,9 +29,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKT
 @RequiredArgsConstructor
 public class InventoryStocktakeQueryService {
 
-    private final InventoryStocktakeDao stocktakeDao;
+    private final InventoryStocktakeDao inventoryStocktakeDao;
 
-    private final InventoryStocktakeItemDao itemDao;
+    private final InventoryStocktakeItemDao inventoryStocktakeItemDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -46,7 +46,7 @@ public class InventoryStocktakeQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryStocktakeVO> list = stocktakeDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryStocktakeVO> list = inventoryStocktakeDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryStocktakeQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -54,8 +54,8 @@ public class InventoryStocktakeQueryService {
     /**
      * 详情（含明细，按录入顺序）；仓库未授权时按无权限回答，不用「不存在」。
      */
-    public InventoryStocktakeVO detail(Long id) {
-        InventoryStocktakeVO vo = stocktakeDao.detail(id);
+    public InventoryStocktakeVO detail(Long stocktakeId) {
+        InventoryStocktakeVO vo = inventoryStocktakeDao.detail(stocktakeId);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_NOT_FOUND);
         }
@@ -63,7 +63,7 @@ public class InventoryStocktakeQueryService {
             throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
-        List<InventoryStocktakeItemVO> items = itemDao.listByStocktakeId(id);
+        List<InventoryStocktakeItemVO> items = inventoryStocktakeItemDao.listByStocktakeId(stocktakeId);
         vo.setItems(items.stream().map(InventoryStocktakeQueryService::toItem).toList());
         return vo;
     }

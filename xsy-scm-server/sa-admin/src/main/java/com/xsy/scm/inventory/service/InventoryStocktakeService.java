@@ -60,15 +60,15 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKT
 @RequiredArgsConstructor
 public class InventoryStocktakeService {
 
-    private final InventoryStocktakeDao stocktakeDao;
+    private final InventoryStocktakeDao inventoryStocktakeDao;
 
-    private final InventoryStocktakeItemDao itemDao;
+    private final InventoryStocktakeItemDao inventoryStocktakeItemDao;
 
     private final InventoryStocktakeNumberGenerator numberGenerator;
 
     private final InventoryCommandService inventoryCommandService;
 
-    private final InventoryBalanceDao balanceDao;
+    private final InventoryBalanceDao inventoryBalanceDao;
 
     private final WarehouseService warehouseService;
 
@@ -102,7 +102,7 @@ public class InventoryStocktakeService {
         entity.setDeleted(false);
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
-        stocktakeDao.insert(entity);
+        inventoryStocktakeDao.insert(entity);
 
         insertItems(entity.getId(), form, operator);
         return entity.getId();
@@ -131,7 +131,7 @@ public class InventoryStocktakeService {
                 .sorted(Comparator.comparing(SnapshotLine::skuId))
                 .toList();
         for (SnapshotLine line : ordered) {
-            InventoryBalanceEntity locked = balanceDao.lockByWarehouseAndSku(warehouseId, line.skuId());
+            InventoryBalanceEntity locked = inventoryBalanceDao.lockByWarehouseAndSku(warehouseId, line.skuId());
             boolean drifted = locked == null
                     || !Objects.equals(locked.getId(), line.balanceId())
                     || !Objects.equals(locked.getVersion(), line.version())
@@ -171,21 +171,21 @@ public class InventoryStocktakeService {
      * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新），并**重新快照账面量**。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, InventoryStocktakeAddForm form) {
+    public void update(Long stocktakeId, InventoryStocktakeAddForm form) {
         requireItems(form);
         String operator = ScmOperator.current();
         warehouseService.require(form.getWarehouseId());
 
-        InventoryStocktakeEntity locked = lockAndRequire(id);
+        InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
         // 行上的旧仓与表单的新仓都要授权：否则可以把一张草稿盘点单挪到自己管不着的仓
         warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
 
-        if (stocktakeDao.updateDraft(id, form.getWarehouseId(), form.getRemark(), operator) != 1) {
+        if (inventoryStocktakeDao.updateDraft(stocktakeId, form.getWarehouseId(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        itemDao.deleteByStocktakeId(id, operator);
-        insertItems(id, form, operator);
+        inventoryStocktakeItemDao.deleteByStocktakeId(stocktakeId, operator);
+        insertItems(stocktakeId, form, operator);
     }
 
     /**
@@ -197,16 +197,16 @@ public class InventoryStocktakeService {
      * <p>差异为 0 的行**不写流水**（数量恒为正），但仍会回写单位快照。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void confirm(Long id) {
+    public void confirm(Long stocktakeId) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
-        InventoryStocktakeEntity locked = lockAndRequire(id);
+        InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
         // 授权判定取锁到的行上的仓库：盘盈盘亏流水按这一行记账，不取表单值
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
 
-        List<InventoryStocktakeItemVO> items = itemDao.listByStocktakeId(id);
+        List<InventoryStocktakeItemVO> items = inventoryStocktakeItemDao.listByStocktakeId(stocktakeId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_EMPTY_ITEMS);
         }
@@ -227,10 +227,10 @@ public class InventoryStocktakeService {
                     InventoryStocktakeAdjustment adjustment =
                             inventoryCommandService.postStocktakeAdjust(fact);
                     // 单位以余额记账单位为准（Q13），由命令服务返回，这里回写到明细行
-                    itemDao.updateUnitSnapshot(item.getId(), adjustment.unit(), operator);
+                    inventoryStocktakeItemDao.updateUnitSnapshot(item.getId(), adjustment.unit(), operator);
                 });
 
-        if (stocktakeDao.markConfirmed(id, now, operator) != 1) {
+        if (inventoryStocktakeDao.markConfirmed(stocktakeId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -239,12 +239,12 @@ public class InventoryStocktakeService {
      * 取消草稿：不产生任何库存影响。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void cancel(Long id) {
+    public void cancel(Long stocktakeId) {
         String operator = ScmOperator.current();
-        InventoryStocktakeEntity locked = lockAndRequire(id);
+        InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
-        if (stocktakeDao.markCancelled(id, operator) != 1) {
+        if (inventoryStocktakeDao.markCancelled(stocktakeId, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -253,13 +253,13 @@ public class InventoryStocktakeService {
      * 删除草稿（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
+    public void delete(Long stocktakeId) {
         String operator = ScmOperator.current();
-        InventoryStocktakeEntity locked = lockAndRequire(id);
+        InventoryStocktakeEntity locked = lockAndRequire(stocktakeId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryStocktakeStatusEnum.DRAFT);
-        itemDao.deleteByStocktakeId(id, operator);
-        if (stocktakeDao.deleteById(id) != 1) {
+        inventoryStocktakeItemDao.deleteByStocktakeId(stocktakeId, operator);
+        if (inventoryStocktakeDao.deleteById(stocktakeId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -279,7 +279,7 @@ public class InventoryStocktakeService {
     private void insertItems(Long stocktakeId, InventoryStocktakeAddForm form, String operator) {
         for (InventoryStocktakeAddForm.Item item : form.getItems()) {
             InventoryBalanceEntity balance =
-                    balanceDao.selectByWarehouseAndSku(form.getWarehouseId(), item.getSkuId());
+                    inventoryBalanceDao.selectByWarehouseAndSku(form.getWarehouseId(), item.getSkuId());
             if (balance == null) {
                 throw new ScmBusinessException(INVENTORY_STOCKTAKE_BALANCE_MISSING);
             }
@@ -293,7 +293,7 @@ public class InventoryStocktakeService {
             row.setDeleted(false);
             row.setCreatedBy(operator);
             row.setUpdatedBy(operator);
-            itemDao.insert(row);
+            inventoryStocktakeItemDao.insert(row);
         }
     }
 
@@ -315,8 +315,8 @@ public class InventoryStocktakeService {
         }
     }
 
-    private InventoryStocktakeEntity lockAndRequire(Long id) {
-        InventoryStocktakeEntity locked = stocktakeDao.lockById(id);
+    private InventoryStocktakeEntity lockAndRequire(Long stocktakeId) {
+        InventoryStocktakeEntity locked = inventoryStocktakeDao.lockById(stocktakeId);
         if (locked == null) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_NOT_FOUND);
         }

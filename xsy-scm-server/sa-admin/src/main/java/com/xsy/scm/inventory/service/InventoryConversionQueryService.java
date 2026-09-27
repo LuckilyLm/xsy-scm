@@ -30,9 +30,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVER
 @RequiredArgsConstructor
 public class InventoryConversionQueryService {
 
-    private final InventoryConversionDao conversionDao;
+    private final InventoryConversionDao inventoryConversionDao;
 
-    private final InventoryConversionItemDao itemDao;
+    private final InventoryConversionItemDao inventoryConversionItemDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -47,7 +47,7 @@ public class InventoryConversionQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryConversionVO> list = conversionDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryConversionVO> list = inventoryConversionDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryConversionQueryService::fillDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -55,8 +55,8 @@ public class InventoryConversionQueryService {
     /**
      * 详情（含明细，按录入顺序）；仓库未授权时按无权限回答，不用「不存在」。
      */
-    public InventoryConversionVO detail(Long id) {
-        InventoryConversionVO vo = conversionDao.detail(id);
+    public InventoryConversionVO detail(Long conversionId) {
+        InventoryConversionVO vo = inventoryConversionDao.detail(conversionId);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_CONVERSION_NOT_FOUND);
         }
@@ -64,7 +64,7 @@ public class InventoryConversionQueryService {
             throw new ScmDataScopeException();
         }
         fillDesc(vo);
-        List<InventoryConversionItemVO> items = itemDao.listByConversionId(id);
+        List<InventoryConversionItemVO> items = inventoryConversionItemDao.listByConversionId(conversionId);
         vo.setItems(items.stream().map(InventoryConversionQueryService::toItem).toList());
         return vo;
     }

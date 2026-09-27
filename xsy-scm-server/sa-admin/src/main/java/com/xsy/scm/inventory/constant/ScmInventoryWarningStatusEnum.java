@@ -74,9 +74,9 @@ public enum ScmInventoryWarningStatusEnum {
     /**
      * 该值是否允许作为查询参数（与前端枚举同源）。
      */
-    public static boolean isSupported(String value) {
+    public static boolean isSupported(String warningStatus) {
         for (ScmInventoryWarningStatusEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(warningStatus)) {
                 return true;
             }
         }

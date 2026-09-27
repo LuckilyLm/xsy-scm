@@ -26,13 +26,13 @@ public class InventoryConversionNumberGenerator {
      */
     public static final String PREFIX = "CVT";
 
-    private final InventoryConversionDao conversionDao;
+    private final InventoryConversionDao inventoryConversionDao;
 
     /**
      * 单据号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。
      */
     public String next() {
-        return format(PREFIX, conversionDao.nextConversionNo());
+        return format(PREFIX, inventoryConversionDao.nextConversionNo());
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,12 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InventoryMovementController {
 
-    private final InventoryMovementQueryService queryService;
+    private final InventoryMovementQueryService inventoryMovementQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:movement:query")
+    @SaCheckPermission(InventoryPermission.MOVEMENT_QUERY)
     public ResponseDTO<PageResult<InventoryMovementVO>> query(
             @Valid @RequestBody InventoryMovementQueryForm form) {
-        return ResponseDTO.ok(queryService.query(form));
+        return ResponseDTO.ok(inventoryMovementQueryService.query(form));
     }
 }

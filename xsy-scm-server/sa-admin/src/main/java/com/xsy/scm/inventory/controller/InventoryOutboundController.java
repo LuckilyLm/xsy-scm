@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,41 +37,41 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InventoryOutboundController {
 
-    private final InventoryOutboundService service;
+    private final InventoryOutboundService inventoryOutboundService;
 
-    private final InventoryOutboundQueryService queryService;
+    private final InventoryOutboundQueryService inventoryOutboundQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:outbound:query")
+    @SaCheckPermission(InventoryPermission.OUTBOUND_QUERY)
     public ResponseDTO<PageResult<InventoryOutboundVO>> query(@Valid @RequestBody InventoryOutboundQueryForm form) {
-        return ResponseDTO.ok(queryService.queryPage(form));
+        return ResponseDTO.ok(inventoryOutboundQueryService.queryPage(form));
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:inventory:outbound:query")
-    public ResponseDTO<InventoryOutboundVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(queryService.detail(id));
+    @SaCheckPermission(InventoryPermission.OUTBOUND_QUERY)
+    public ResponseDTO<InventoryOutboundVO> detail(@PathVariable("id") Long outboundId) {
+        return ResponseDTO.ok(inventoryOutboundQueryService.detail(outboundId));
     }
 
     /**
      * 新建草稿出库单，返回新单 id。
      */
     @PostMapping("/create")
-    @SaCheckPermission("scm:inventory:outbound:add")
+    @SaCheckPermission(InventoryPermission.OUTBOUND_ADD)
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody InventoryOutboundAddForm form) {
-        return ResponseDTO.ok(service.create(form));
+        return ResponseDTO.ok(inventoryOutboundService.create(form));
     }
 
     /**
      * 改草稿（仅 DRAFT）。
      */
     @PostMapping("/update/{id}")
-    @SaCheckPermission("scm:inventory:outbound:update")
+    @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@PathVariable Long id,
+    public ResponseDTO<String> update(@PathVariable("id") Long outboundId,
                                       @Valid @RequestBody InventoryOutboundAddForm form) {
-        service.update(id, form);
+        inventoryOutboundService.update(outboundId, form);
         return ResponseDTO.ok();
     }
 
@@ -79,10 +81,10 @@ public class InventoryOutboundController {
      * <p>这是本模块唯一会改变库存的端点，失败整单回滚，不存在「出一半」。
      */
     @PostMapping("/confirm/{id}")
-    @SaCheckPermission("scm:inventory:outbound:confirm")
+    @SaCheckPermission(InventoryPermission.OUTBOUND_CONFIRM)
     @OperateLog
-    public ResponseDTO<String> confirm(@PathVariable Long id) {
-        service.confirm(id);
+    public ResponseDTO<String> confirm(@PathVariable("id") Long outboundId) {
+        inventoryOutboundService.confirm(outboundId);
         return ResponseDTO.ok();
     }
 
@@ -90,10 +92,10 @@ public class InventoryOutboundController {
      * 取消草稿（不产生任何库存影响）。
      */
     @PostMapping("/cancel/{id}")
-    @SaCheckPermission("scm:inventory:outbound:update")
+    @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
     @OperateLog
-    public ResponseDTO<String> cancel(@PathVariable Long id) {
-        service.cancel(id);
+    public ResponseDTO<String> cancel(@PathVariable("id") Long outboundId) {
+        inventoryOutboundService.cancel(outboundId);
         return ResponseDTO.ok();
     }
 
@@ -101,10 +103,10 @@ public class InventoryOutboundController {
      * 删除草稿（逻辑删）。已确认的单不可删。
      */
     @PostMapping("/delete/{id}")
-    @SaCheckPermission("scm:inventory:outbound:delete")
+    @SaCheckPermission(InventoryPermission.OUTBOUND_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseDTO<String> delete(@PathVariable("id") Long outboundId) {
+        inventoryOutboundService.delete(outboundId);
         return ResponseDTO.ok();
     }
 }

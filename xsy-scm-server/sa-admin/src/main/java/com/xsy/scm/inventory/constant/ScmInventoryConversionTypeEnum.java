@@ -32,9 +32,9 @@ public enum ScmInventoryConversionTypeEnum {
     /**
      * 该值是否允许写入 {@code inventory_conversion.convert_type}（DB CHECK 白名单的同源判定）。
      */
-    public static boolean isSupported(String value) {
+    public static boolean isSupported(String conversionType) {
         for (ScmInventoryConversionTypeEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(conversionType)) {
                 return true;
             }
         }
@@ -44,9 +44,9 @@ public enum ScmInventoryConversionTypeEnum {
     /**
      * 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。
      */
-    public static ScmInventoryConversionTypeEnum of(String value) {
+    public static ScmInventoryConversionTypeEnum of(String conversionType) {
         for (ScmInventoryConversionTypeEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(conversionType)) {
                 return item;
             }
         }

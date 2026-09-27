@@ -29,13 +29,13 @@ public class InventoryOutboundNumberGenerator {
      */
     public static final String PREFIX = "OUT";
 
-    private final InventoryOutboundDao outboundDao;
+    private final InventoryOutboundDao inventoryOutboundDao;
 
     /**
      * 出库单号。必须在事务内调用（序列 nextval 不回滚，跳号可接受）。
      */
     public String next() {
-        return format(PREFIX, outboundDao.nextOutboundNo());
+        return format(PREFIX, inventoryOutboundDao.nextOutboundNo());
     }
 
     /**

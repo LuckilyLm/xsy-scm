@@ -65,9 +65,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVER
 @RequiredArgsConstructor
 public class InventoryConversionService {
 
-    private final InventoryConversionDao conversionDao;
+    private final InventoryConversionDao inventoryConversionDao;
 
-    private final InventoryConversionItemDao itemDao;
+    private final InventoryConversionItemDao inventoryConversionItemDao;
 
     private final InventoryConversionNumberGenerator numberGenerator;
 
@@ -107,7 +107,7 @@ public class InventoryConversionService {
         entity.setDeleted(false);
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
-        conversionDao.insert(entity);
+        inventoryConversionDao.insert(entity);
 
         insertItems(entity.getId(), form, operator);
         return entity.getId();
@@ -117,22 +117,22 @@ public class InventoryConversionService {
      * 改待审核单据：只允许 PENDING；明细整表替换（逻辑删旧 + 插新）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, InventoryConversionAddForm form) {
+    public void update(Long conversionId, InventoryConversionAddForm form) {
         requireForm(form);
         String operator = ScmOperator.current();
         warehouseService.require(form.getWarehouseId());
 
-        InventoryConversionEntity locked = lockAndRequire(id);
+        InventoryConversionEntity locked = lockAndRequire(conversionId);
         // 行上的旧仓与表单的新仓都要授权，否则可以把一张待审核转换单挪出授权范围
         warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
 
-        if (conversionDao.updatePending(id, form.getWarehouseId(), form.getConvertType(),
+        if (inventoryConversionDao.updatePending(conversionId, form.getWarehouseId(), form.getConvertType(),
                 form.getReason(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        itemDao.deleteByConversionId(id, operator);
-        insertItems(id, form, operator);
+        inventoryConversionItemDao.deleteByConversionId(conversionId, operator);
+        insertItems(conversionId, form, operator);
     }
 
     /**
@@ -142,18 +142,18 @@ public class InventoryConversionService {
      * 不允许「转了一半」—— 那会让源 SKU 的货凭空消失。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void approve(Long id, InventoryConversionAuditForm form) {
+    public void approve(Long conversionId, InventoryConversionAuditForm form) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
-        InventoryConversionEntity locked = lockAndRequire(id);
+        InventoryConversionEntity locked = lockAndRequire(conversionId);
         // 两条腿都落在这一行的仓库上：CONVERT_OUT / CONVERT_IN 任一腿都不该写进未授权仓
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
         requireVersion(locked, form);
         requireEnabled(locked.getWarehouseId());
 
-        List<InventoryConversionItemVO> items = itemDao.listByConversionId(id);
+        List<InventoryConversionItemVO> items = inventoryConversionItemDao.listByConversionId(conversionId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_CONVERSION_EMPTY_ITEMS);
         }
@@ -198,7 +198,7 @@ public class InventoryConversionService {
             }
         }
 
-        if (conversionDao.markCompleted(id, now, operator, form.getAuditOpinion(),
+        if (inventoryConversionDao.markCompleted(conversionId, now, operator, form.getAuditOpinion(),
                 form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -208,7 +208,7 @@ public class InventoryConversionService {
      * 驳回：只允许 PENDING，**不产生任何库存影响**。审核意见必填（41063）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void reject(Long id, InventoryConversionAuditForm form) {
+    public void reject(Long conversionId, InventoryConversionAuditForm form) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -216,12 +216,12 @@ public class InventoryConversionService {
             throw new ScmBusinessException(INVENTORY_CONVERSION_REJECT_OPINION_REQUIRED);
         }
 
-        InventoryConversionEntity locked = lockAndRequire(id);
+        InventoryConversionEntity locked = lockAndRequire(conversionId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
         requireVersion(locked, form);
 
-        if (conversionDao.markRejected(id, now, operator, form.getAuditOpinion(),
+        if (inventoryConversionDao.markRejected(conversionId, now, operator, form.getAuditOpinion(),
                 form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -231,13 +231,13 @@ public class InventoryConversionService {
      * 删除待审核单据（逻辑删）。已审核的单不可删 —— 它们必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
+    public void delete(Long conversionId) {
         String operator = ScmOperator.current();
-        InventoryConversionEntity locked = lockAndRequire(id);
+        InventoryConversionEntity locked = lockAndRequire(conversionId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
-        itemDao.deleteByConversionId(id, operator);
-        if (conversionDao.deleteById(id) != 1) {
+        inventoryConversionItemDao.deleteByConversionId(conversionId, operator);
+        if (inventoryConversionDao.deleteById(conversionId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -338,7 +338,7 @@ public class InventoryConversionService {
             row.setDeleted(false);
             row.setCreatedBy(operator);
             row.setUpdatedBy(operator);
-            itemDao.insert(row);
+            inventoryConversionItemDao.insert(row);
         }
     }
 
@@ -392,8 +392,8 @@ public class InventoryConversionService {
         }
     }
 
-    private InventoryConversionEntity lockAndRequire(Long id) {
-        InventoryConversionEntity locked = conversionDao.lockById(id);
+    private InventoryConversionEntity lockAndRequire(Long conversionId) {
+        InventoryConversionEntity locked = inventoryConversionDao.lockById(conversionId);
         if (locked == null) {
             throw new ScmBusinessException(INVENTORY_CONVERSION_NOT_FOUND);
         }

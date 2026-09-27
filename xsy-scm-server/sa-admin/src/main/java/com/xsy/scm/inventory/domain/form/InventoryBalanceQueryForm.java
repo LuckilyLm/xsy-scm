@@ -26,24 +26,24 @@ public class InventoryBalanceQueryForm extends PageParam {
     /**
      * SKU 编码模糊匹配。
      */
-    @Size(max = 64)
+    @Size(max = 64, message = "SKU 编码不能超过64个字符")
     private String skuCode;
 
     /**
      * 商品名称模糊匹配（{@code product_spu.name}）。
      */
-    @Size(max = 150)
+    @Size(max = 150, message = "商品名称不能超过150个字符")
     private String productName;
 
     @Override
-    @Min(1)
+    @Min(value = 1, message = "页码必须至少为1")
     public Long getPageNum() {
         return super.getPageNum();
     }
 
     @Override
-    @Min(1)
-    @Max(100)
+    @Min(value = 1, message = "每页条数必须至少为1")
+    @Max(value = 100, message = "每页条数不能超过100")
     public Long getPageSize() {
         return super.getPageSize();
     }

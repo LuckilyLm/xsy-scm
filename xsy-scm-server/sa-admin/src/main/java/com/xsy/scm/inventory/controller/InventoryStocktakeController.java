@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,36 +49,36 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class InventoryStocktakeController {
 
-    private final InventoryStocktakeService service;
+    private final InventoryStocktakeService inventoryStocktakeService;
 
-    private final InventoryStocktakeQueryService queryService;
+    private final InventoryStocktakeQueryService inventoryStocktakeQueryService;
 
-    private final InventoryStocktakeImportService importService;
+    private final InventoryStocktakeImportService inventoryStocktakeImportService;
 
     private final SecurityFileService securityFileService;
 
     private static final long MAX_IMPORT_SIZE = 10L * 1024 * 1024;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:stocktake:query")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_QUERY)
     public ResponseDTO<PageResult<InventoryStocktakeVO>> query(@Valid @RequestBody InventoryStocktakeQueryForm form) {
-        return ResponseDTO.ok(queryService.queryPage(form));
+        return ResponseDTO.ok(inventoryStocktakeQueryService.queryPage(form));
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:inventory:stocktake:query")
-    public ResponseDTO<InventoryStocktakeVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(queryService.detail(id));
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_QUERY)
+    public ResponseDTO<InventoryStocktakeVO> detail(@PathVariable("id") Long stocktakeId) {
+        return ResponseDTO.ok(inventoryStocktakeQueryService.detail(stocktakeId));
     }
 
     /**
      * 新建草稿盘点单，返回新单 id。
      */
     @PostMapping("/create")
-    @SaCheckPermission("scm:inventory:stocktake:add")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_ADD)
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody InventoryStocktakeAddForm form) {
-        return ResponseDTO.ok(service.create(form));
+        return ResponseDTO.ok(inventoryStocktakeService.create(form));
     }
 
     /**
@@ -85,9 +87,9 @@ public class InventoryStocktakeController {
      * <p>需要导入权限；模板里的账面量 / 单位来自余额，读取受 {@code :import} 约束（计划 §10.6）。
      */
     @GetMapping("/import/template")
-    @SaCheckPermission("scm:inventory:stocktake:import")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
     public void importTemplate(@RequestParam Long warehouseId, HttpServletResponse response) throws IOException {
-        var content = importService.buildTemplate(warehouseId);
+        var content = inventoryStocktakeImportService.buildTemplate(warehouseId);
         SmartResponseUtil.setDownloadFileHeader(response, "盘点导入模板-" + warehouseId + ".xlsx", (long) content.length);
         response.getOutputStream().write(content);
         response.flushBuffer();
@@ -100,7 +102,7 @@ public class InventoryStocktakeController {
      * {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张草稿。
      */
     @PostMapping("/import")
-    @SaCheckPermission("scm:inventory:stocktake:import")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
     @OperateLog
     public ResponseDTO<InventoryStocktakeImportResultVO> importStocktake(
             @RequestParam MultipartFile file,
@@ -119,18 +121,18 @@ public class InventoryStocktakeController {
         if (!security.getOk()) {
             return ResponseDTO.error(security);
         }
-        return ResponseDTO.ok(importService.importFile(file, idempotencyKey));
+        return ResponseDTO.ok(inventoryStocktakeImportService.importFile(file, idempotencyKey));
     }
 
     /**
      * 改草稿（仅 DRAFT）；会重新快照账面量。
      */
     @PostMapping("/update/{id}")
-    @SaCheckPermission("scm:inventory:stocktake:update")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@PathVariable Long id,
+    public ResponseDTO<String> update(@PathVariable("id") Long stocktakeId,
                                       @Valid @RequestBody InventoryStocktakeAddForm form) {
-        service.update(id, form);
+        inventoryStocktakeService.update(stocktakeId, form);
         return ResponseDTO.ok();
     }
 
@@ -140,10 +142,10 @@ public class InventoryStocktakeController {
      * <p>这是本模块唯一会改变库存的端点，失败整单回滚，不存在「盘一半」。
      */
     @PostMapping("/confirm/{id}")
-    @SaCheckPermission("scm:inventory:stocktake:confirm")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_CONFIRM)
     @OperateLog
-    public ResponseDTO<String> confirm(@PathVariable Long id) {
-        service.confirm(id);
+    public ResponseDTO<String> confirm(@PathVariable("id") Long stocktakeId) {
+        inventoryStocktakeService.confirm(stocktakeId);
         return ResponseDTO.ok();
     }
 
@@ -151,10 +153,10 @@ public class InventoryStocktakeController {
      * 取消草稿（不产生任何库存影响）。
      */
     @PostMapping("/cancel/{id}")
-    @SaCheckPermission("scm:inventory:stocktake:update")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
     @OperateLog
-    public ResponseDTO<String> cancel(@PathVariable Long id) {
-        service.cancel(id);
+    public ResponseDTO<String> cancel(@PathVariable("id") Long stocktakeId) {
+        inventoryStocktakeService.cancel(stocktakeId);
         return ResponseDTO.ok();
     }
 
@@ -162,10 +164,10 @@ public class InventoryStocktakeController {
      * 删除草稿（逻辑删）。已确认的单不可删。
      */
     @PostMapping("/delete/{id}")
-    @SaCheckPermission("scm:inventory:stocktake:delete")
+    @SaCheckPermission(InventoryPermission.STOCKTAKE_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseDTO<String> delete(@PathVariable("id") Long stocktakeId) {
+        inventoryStocktakeService.delete(stocktakeId);
         return ResponseDTO.ok();
     }
 }

@@ -99,9 +99,9 @@ public enum ScmInventoryTransferStatusEnum {
     /**
      * 该值是否允许写入 {@code inventory_transfer.status}（DB CHECK 白名单的同源判定）。
      */
-    public static boolean isSupported(String value) {
+    public static boolean isSupported(String transferStatus) {
         for (ScmInventoryTransferStatusEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(transferStatus)) {
                 return true;
             }
         }

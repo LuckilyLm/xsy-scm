@@ -1,5 +1,7 @@
 package com.xsy.scm.inventory.controller;
 
+import com.xsy.scm.inventory.permission.InventoryPermission;
+
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -36,42 +38,42 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InventoryWarningThresholdController {
 
-    private final InventoryWarningThresholdService service;
+    private final InventoryWarningThresholdService inventoryWarningThresholdService;
 
-    private final InventoryWarningQueryService queryService;
+    private final InventoryWarningQueryService inventoryWarningQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:inventory:threshold:query")
+    @SaCheckPermission(InventoryPermission.THRESHOLD_QUERY)
     public ResponseDTO<PageResult<InventoryWarningThresholdVO>> query(
             @Valid @RequestBody InventoryWarningThresholdQueryForm form) {
-        return ResponseDTO.ok(queryService.queryThresholdPage(form));
+        return ResponseDTO.ok(inventoryWarningQueryService.queryThresholdPage(form));
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:inventory:threshold:query")
-    public ResponseDTO<InventoryWarningThresholdVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(queryService.detail(id));
+    @SaCheckPermission(InventoryPermission.THRESHOLD_QUERY)
+    public ResponseDTO<InventoryWarningThresholdVO> detail(@PathVariable("id") Long warningThresholdId) {
+        return ResponseDTO.ok(inventoryWarningQueryService.detail(warningThresholdId));
     }
 
     /**
      * 新建阈值配置；同一 (仓库, SKU) 只允许一条。
      */
     @PostMapping("/create")
-    @SaCheckPermission("scm:inventory:threshold:add")
+    @SaCheckPermission(InventoryPermission.THRESHOLD_ADD)
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody InventoryWarningThresholdAddForm form) {
-        return ResponseDTO.ok(service.create(form));
+        return ResponseDTO.ok(inventoryWarningThresholdService.create(form));
     }
 
     /**
      * 编辑阈值配置（可把某个边界清空 —— 传 null 即清空）。
      */
     @PostMapping("/update/{id}")
-    @SaCheckPermission("scm:inventory:threshold:update")
+    @SaCheckPermission(InventoryPermission.THRESHOLD_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@PathVariable Long id,
+    public ResponseDTO<String> update(@PathVariable("id") Long warningThresholdId,
                                       @Valid @RequestBody InventoryWarningThresholdAddForm form) {
-        service.update(id, form);
+        inventoryWarningThresholdService.update(warningThresholdId, form);
         return ResponseDTO.ok();
     }
 
@@ -79,10 +81,10 @@ public class InventoryWarningThresholdController {
      * 删除阈值配置（逻辑删）。删除后该 (仓库, SKU) 不再产生预警。
      */
     @PostMapping("/delete/{id}")
-    @SaCheckPermission("scm:inventory:threshold:delete")
+    @SaCheckPermission(InventoryPermission.THRESHOLD_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseDTO<String> delete(@PathVariable("id") Long warningThresholdId) {
+        inventoryWarningThresholdService.delete(warningThresholdId);
         return ResponseDTO.ok();
     }
 }

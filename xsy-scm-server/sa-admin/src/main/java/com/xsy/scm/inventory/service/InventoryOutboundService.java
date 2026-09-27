@@ -45,9 +45,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 @RequiredArgsConstructor
 public class InventoryOutboundService {
 
-    private final InventoryOutboundDao outboundDao;
+    private final InventoryOutboundDao inventoryOutboundDao;
 
-    private final InventoryOutboundItemDao itemDao;
+    private final InventoryOutboundItemDao inventoryOutboundItemDao;
 
     private final InventoryOutboundNumberGenerator numberGenerator;
 
@@ -79,7 +79,7 @@ public class InventoryOutboundService {
         entity.setDeleted(false);
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
-        outboundDao.insert(entity);
+        inventoryOutboundDao.insert(entity);
 
         insertItems(entity.getId(), form, operator);
         return entity.getId();
@@ -89,20 +89,20 @@ public class InventoryOutboundService {
      * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新）。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void update(Long id, InventoryOutboundAddForm form) {
+    public void update(Long outboundId, InventoryOutboundAddForm form) {
         requireItems(form);
         String operator = ScmOperator.current();
 
-        InventoryOutboundEntity locked = lockAndRequire(id);
+        InventoryOutboundEntity locked = lockAndRequire(outboundId);
         // 旧仓与新仓都要授权：只判旧仓等于允许把一张单搬进自己管不着的仓
         warehouseScopeGuard.requireAll(locked.getWarehouseId(), form.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
 
-        if (outboundDao.updateDraft(id, form.getWarehouseId(), form.getRemark(), operator) != 1) {
+        if (inventoryOutboundDao.updateDraft(outboundId, form.getWarehouseId(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        itemDao.deleteByOutboundId(id, operator);
-        insertItems(id, form, operator);
+        inventoryOutboundItemDao.deleteByOutboundId(outboundId, operator);
+        insertItems(outboundId, form, operator);
     }
 
     /**
@@ -112,16 +112,16 @@ public class InventoryOutboundService {
      * 明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 草稿态它为空。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void confirm(Long id) {
+    public void confirm(Long outboundId) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
-        InventoryOutboundEntity locked = lockAndRequire(id);
+        InventoryOutboundEntity locked = lockAndRequire(outboundId);
         // 授权判定取锁到的行上的仓库，不取任何入参：SALES_OUT 流水按这一行记账
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
 
-        List<InventoryOutboundItemVO> items = itemDao.listByOutboundId(id);
+        List<InventoryOutboundItemVO> items = inventoryOutboundItemDao.listByOutboundId(outboundId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_EMPTY_ITEMS);
         }
@@ -141,10 +141,10 @@ public class InventoryOutboundService {
                             operator);
                     // 单位以余额记账单位为准（Q13），由命令服务返回，这里回写到明细行
                     String unit = inventoryCommandService.postSalesOutbound(fact);
-                    itemDao.updateUnitSnapshot(item.getId(), unit, operator);
+                    inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, operator);
                 });
 
-        if (outboundDao.markConfirmed(id, now, operator) != 1) {
+        if (inventoryOutboundDao.markConfirmed(outboundId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -153,12 +153,12 @@ public class InventoryOutboundService {
      * 取消草稿：不产生任何库存影响。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void cancel(Long id) {
+    public void cancel(Long outboundId) {
         String operator = ScmOperator.current();
-        InventoryOutboundEntity locked = lockAndRequire(id);
+        InventoryOutboundEntity locked = lockAndRequire(outboundId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
-        if (outboundDao.markCancelled(id, operator) != 1) {
+        if (inventoryOutboundDao.markCancelled(outboundId, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -167,13 +167,13 @@ public class InventoryOutboundService {
      * 删除草稿（逻辑删）。已确认的单不可删 —— 它已产生流水，必须留痕。
      */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long id) {
+    public void delete(Long outboundId) {
         String operator = ScmOperator.current();
-        InventoryOutboundEntity locked = lockAndRequire(id);
+        InventoryOutboundEntity locked = lockAndRequire(outboundId);
         warehouseScopeGuard.require(locked.getWarehouseId());
         requireStatus(locked, ScmInventoryOutboundStatusEnum.DRAFT);
-        itemDao.deleteByOutboundId(id, operator);
-        if (outboundDao.deleteById(id) != 1) {
+        inventoryOutboundItemDao.deleteByOutboundId(outboundId, operator);
+        if (inventoryOutboundDao.deleteById(outboundId) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -193,7 +193,7 @@ public class InventoryOutboundService {
             row.setDeleted(false);
             row.setCreatedBy(operator);
             row.setUpdatedBy(operator);
-            itemDao.insert(row);
+            inventoryOutboundItemDao.insert(row);
         }
     }
 
@@ -203,8 +203,8 @@ public class InventoryOutboundService {
         }
     }
 
-    private InventoryOutboundEntity lockAndRequire(Long id) {
-        InventoryOutboundEntity locked = outboundDao.lockById(id);
+    private InventoryOutboundEntity lockAndRequire(Long outboundId) {
+        InventoryOutboundEntity locked = inventoryOutboundDao.lockById(outboundId);
         if (locked == null) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_NOT_FOUND);
         }

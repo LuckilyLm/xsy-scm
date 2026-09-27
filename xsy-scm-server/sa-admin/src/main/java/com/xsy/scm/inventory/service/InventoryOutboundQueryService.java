@@ -29,9 +29,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 @RequiredArgsConstructor
 public class InventoryOutboundQueryService {
 
-    private final InventoryOutboundDao outboundDao;
+    private final InventoryOutboundDao inventoryOutboundDao;
 
-    private final InventoryOutboundItemDao itemDao;
+    private final InventoryOutboundItemDao inventoryOutboundItemDao;
 
     private final ScmDataScopeService dataScopeService;
 
@@ -46,7 +46,7 @@ public class InventoryOutboundQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<InventoryOutboundVO> list = outboundDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryOutboundVO> list = inventoryOutboundDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryOutboundQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -54,8 +54,8 @@ public class InventoryOutboundQueryService {
     /**
      * 详情（含明细，按录入顺序）；仓库未授权时按无权限回答，不用「不存在」。
      */
-    public InventoryOutboundVO detail(Long id) {
-        InventoryOutboundVO vo = outboundDao.detail(id);
+    public InventoryOutboundVO detail(Long outboundId) {
+        InventoryOutboundVO vo = inventoryOutboundDao.detail(outboundId);
         if (vo == null) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_NOT_FOUND);
         }
@@ -63,7 +63,7 @@ public class InventoryOutboundQueryService {
             throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
-        List<InventoryOutboundItemVO> items = itemDao.listByOutboundId(id);
+        List<InventoryOutboundItemVO> items = inventoryOutboundItemDao.listByOutboundId(outboundId);
         vo.setItems(items.stream().map(InventoryOutboundQueryService::toItem).toList());
         return vo;
     }

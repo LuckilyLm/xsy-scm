@@ -24,9 +24,9 @@ public class InventoryStocktakeImportTxService {
     public record CommitResult(Long stocktakeId, boolean replayed) {
     }
 
-    private final InventoryStocktakeService stocktakeService;
+    private final InventoryStocktakeService inventoryStocktakeService;
 
-    private final OrderIdempotencyService idempotency;
+    private final OrderIdempotencyService orderIdempotencyService;
 
     /**
      * @param fingerprint 参与哈希的请求指纹（凭证令牌 + 各行实盘量）：内容变了即视为不同请求，
@@ -35,13 +35,13 @@ public class InventoryStocktakeImportTxService {
     @Transactional(rollbackFor = Exception.class)
     public CommitResult commit(Long warehouseId, List<InventoryStocktakeService.SnapshotLine> lines,
                                String idempotencyKey, Object fingerprint) {
-        var claim = idempotency.claim("STOCKTAKE_IMPORT", idempotencyKey, fingerprint);
+        var claim = orderIdempotencyService.claim("STOCKTAKE_IMPORT", idempotencyKey, fingerprint);
         if (claim.replay()) {
-            Long existing = idempotency.replay(claim, Long.class);
+            Long existing = orderIdempotencyService.replay(claim, Long.class);
             return new CommitResult(existing, true);
         }
-        Long stocktakeId = stocktakeService.createFromSnapshot(warehouseId, lines);
-        idempotency.complete(claim, "STOCKTAKE_IMPORT_DRAFT", stocktakeId, stocktakeId);
+        Long stocktakeId = inventoryStocktakeService.createFromSnapshot(warehouseId, lines);
+        orderIdempotencyService.complete(claim, "STOCKTAKE_IMPORT_DRAFT", stocktakeId, stocktakeId);
         return new CommitResult(stocktakeId, false);
     }
 }

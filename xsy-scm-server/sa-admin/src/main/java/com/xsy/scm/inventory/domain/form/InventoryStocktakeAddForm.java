@@ -26,13 +26,13 @@ import java.util.List;
 @Data
 public class InventoryStocktakeAddForm {
 
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 
-    @NotEmpty
+    @NotEmpty(message = "盘点明细不能为空")
     @Valid
     private List<Item> items;
 
@@ -42,18 +42,18 @@ public class InventoryStocktakeAddForm {
     @Data
     public static class Item {
 
-        @NotNull
+        @NotNull(message = "SKU 不能为空")
         private Long skuId;
 
         /**
          * 实盘量：允许 0，不允许负。
          */
-        @NotNull
-        @DecimalMin(value = "0", inclusive = true)
-        @Digits(integer = 14, fraction = 4)
+        @NotNull(message = "实盘数量不能为空")
+        @DecimalMin(value = "0", inclusive = true, message = "实盘数量不能小于0")
+        @Digits(integer = 14, fraction = 4, message = "实盘数量最多14位整数和4位小数")
         private BigDecimal actualQuantity;
 
-        @Size(max = 500)
+        @Size(max = 500, message = "备注不能超过500个字符")
         private String remark;
     }
 }

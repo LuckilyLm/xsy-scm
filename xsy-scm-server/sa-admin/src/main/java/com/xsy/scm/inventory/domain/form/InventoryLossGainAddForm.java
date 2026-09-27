@@ -6,8 +6,9 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.inventory.constant.ScmInventoryLossGainTypeEnum;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -31,21 +32,21 @@ public class InventoryLossGainAddForm {
     /**
      * 调整类型：{@code LOSS} 报损 / {@code OVERFLOW} 报溢。
      */
-    @NotBlank
-    @Pattern(regexp = "LOSS|OVERFLOW")
+    @NotBlank(message = "调整类型不能为空")
+    @ScmEnumValue(enumClass = ScmInventoryLossGainTypeEnum.class, message = "调整类型无效")
     private String adjustType;
 
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
 
-    @NotBlank
-    @Size(max = 200)
+    @NotBlank(message = "调整原因不能为空")
+    @Size(max = 200, message = "调整原因不能超过200个字符")
     private String reason;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 
-    @NotEmpty
+    @NotEmpty(message = "调整明细不能为空")
     @Valid
     private List<Item> items;
 
@@ -55,15 +56,15 @@ public class InventoryLossGainAddForm {
     @Data
     public static class Item {
 
-        @NotNull
+        @NotNull(message = "SKU 不能为空")
         private Long skuId;
 
-        @NotNull
-        @DecimalMin(value = "0", inclusive = false)
-        @Digits(integer = 14, fraction = 4)
+        @NotNull(message = "调整数量不能为空")
+        @DecimalMin(value = "0", inclusive = false, message = "调整数量必须大于0")
+        @Digits(integer = 14, fraction = 4, message = "调整数量最多14位整数和4位小数")
         private BigDecimal quantity;
 
-        @Size(max = 500)
+        @Size(max = 500, message = "备注不能超过500个字符")
         private String remark;
     }
 }

@@ -47,9 +47,9 @@ public enum ScmInventoryLossGainTypeEnum {
     /**
      * 该值是否允许写入 {@code inventory_loss_gain.adjust_type}（DB CHECK 白名单的同源判定）。
      */
-    public static boolean isSupported(String value) {
+    public static boolean isSupported(String adjustmentType) {
         for (ScmInventoryLossGainTypeEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(adjustmentType)) {
                 return true;
             }
         }
@@ -59,9 +59,9 @@ public enum ScmInventoryLossGainTypeEnum {
     /**
      * 按持久化值取枚举；未知值返回 {@code null}（调用方自行判定为参数错误）。
      */
-    public static ScmInventoryLossGainTypeEnum of(String value) {
+    public static ScmInventoryLossGainTypeEnum of(String adjustmentType) {
         for (ScmInventoryLossGainTypeEnum item : values()) {
-            if (item.name().equals(value)) {
+            if (item.name().equals(adjustmentType)) {
                 return item;
             }
         }

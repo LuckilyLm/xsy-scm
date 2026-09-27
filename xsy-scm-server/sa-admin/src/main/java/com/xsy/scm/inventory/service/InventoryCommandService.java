@@ -91,9 +91,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_M
 @RequiredArgsConstructor
 public class InventoryCommandService {
 
-    private final InventoryBalanceDao balanceDao;
+    private final InventoryBalanceDao inventoryBalanceDao;
 
-    private final InventoryMovementDao movementDao;
+    private final InventoryMovementDao inventoryMovementDao;
 
     private final WarehouseService warehouseService;
 
@@ -111,10 +111,10 @@ public class InventoryCommandService {
         warehouseService.require(fact.warehouseId());
 
         // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引。
-        balanceDao.insertOnConflictDoNothing(
+        inventoryBalanceDao.insertOnConflictDoNothing(
                 fact.warehouseId(), fact.skuId(), fact.unit(), fact.operator());
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
         }
@@ -146,7 +146,7 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_INBOUND);
         }
 
@@ -155,7 +155,7 @@ public class InventoryCommandService {
         // 数量增量与均价写入合并成**一条**语句 —— 一次逻辑行变更只自增一次 version。
         // 报溢等不带成本依据的入库走普通的 incrementQuantity，均价不变；
         // 出库更不改均价，只把当时的均价写进流水。
-        if (balanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
+        if (inventoryBalanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
                 inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -224,7 +224,7 @@ public class InventoryCommandService {
         }
         Map<Long, CostBasis> basis = new HashMap<>();
         skuIds.stream().filter(Objects::nonNull).distinct().sorted().forEach(skuId -> {
-            InventoryBalanceEntity balance = balanceDao.lockByWarehouseAndSku(warehouseId, skuId);
+            InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(warehouseId, skuId);
             // 没有余额行 = 从未入库 = 没有成本事实：出库腿会因此在后面失败（41058），
             // 建行的入腿则以 0 起步，随后被本次转入的均价覆盖。
             if (balance != null) {
@@ -297,7 +297,7 @@ public class InventoryCommandService {
 
         // 出库不建行：没有余额行 = 从未入库 = 无货可出。
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
         }
@@ -335,11 +335,11 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_OUTBOUND);
         }
 
-        if (balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+        if (inventoryBalanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         return unit;
@@ -377,7 +377,7 @@ public class InventoryCommandService {
 
         // 盘点不建行：没有余额行 = 从未入库 = 无账可盘，也无法确定记账单位。
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_STOCKTAKE_BALANCE_MISSING);
         }
@@ -432,13 +432,13 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_STOCKTAKE);
         }
 
         int rows = gain
-                ? balanceDao.incrementQuantity(balance.getId(), quantity, fact.operator())
-                : balanceDao.decrementQuantity(balance.getId(), quantity, fact.operator());
+                ? inventoryBalanceDao.incrementQuantity(balance.getId(), quantity, fact.operator())
+                : inventoryBalanceDao.decrementQuantity(balance.getId(), quantity, fact.operator());
         if (rows != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -484,7 +484,7 @@ public class InventoryCommandService {
 
         // 不建零余额行：没有余额行 = 从未入库 = 既无账可调，也无法确定记账单位。
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_BALANCE_MISSING);
         }
@@ -531,13 +531,13 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_LOSS_GAIN);
         }
 
         int rows = type.isInbound()
-                ? balanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator())
-                : balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator());
+                ? inventoryBalanceDao.incrementQuantity(balance.getId(), fact.quantity(), fact.operator())
+                : inventoryBalanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator());
         if (rows != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -566,7 +566,7 @@ public class InventoryCommandService {
 
         // 转出不建行：没有余额行 = 从未入库 = 无货可调。
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING);
         }
@@ -604,11 +604,11 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_TRANSFER);
         }
 
-        if (balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+        if (inventoryBalanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         return unit;
@@ -646,10 +646,10 @@ public class InventoryCommandService {
 
         // 入方向允许首建余额行：单位取调拨明细的快照（= 源仓记账单位）。
         // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引（Q11）。
-        balanceDao.insertOnConflictDoNothing(
+        inventoryBalanceDao.insertOnConflictDoNothing(
                 fact.warehouseId(), fact.skuId(), fact.unitSnapshot(), fact.operator());
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
         }
@@ -682,11 +682,11 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_TRANSFER);
         }
 
-        if (balanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
+        if (inventoryBalanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
                 inboundAvgCost(balance, fact.quantity(), transferredCost), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -706,7 +706,7 @@ public class InventoryCommandService {
      * 真缺了就是账实不一致，必须响亮失败 —— 按 0 静默入账会把「成本清零」这个缺陷重新引进来。
      */
     private BigDecimal transferInCost(Long transferItemId) {
-        InventoryMovementEntity shipped = movementDao.selectBySourceItem(
+        InventoryMovementEntity shipped = inventoryMovementDao.selectBySourceItem(
                 ScmInventorySourceDocumentTypeEnum.TRANSFER_OUT_ITEM.name(), transferItemId);
         if (shipped == null) {
             throw new IllegalStateException(
@@ -735,7 +735,7 @@ public class InventoryCommandService {
         warehouseService.require(fact.warehouseId());
 
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_CONVERSION_SOURCE_BALANCE_MISSING);
         }
@@ -772,10 +772,10 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_CONVERSION);
         }
-        if (balanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+        if (inventoryBalanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -803,10 +803,10 @@ public class InventoryCommandService {
 
         // 入方向允许首建余额行：单位取单据声明的目标单位。
         // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引（Q11）。
-        balanceDao.insertOnConflictDoNothing(
+        inventoryBalanceDao.insertOnConflictDoNothing(
                 fact.warehouseId(), fact.skuId(), fact.unit(), fact.operator());
         InventoryBalanceEntity balance =
-                balanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+                inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
         }
@@ -834,10 +834,10 @@ public class InventoryCommandService {
         movement.setDeleted(false);
         movement.setCreatedBy(fact.operator());
 
-        if (movementDao.insertOnConflictDoNothing(movement) != 1) {
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
             throw new ScmBusinessException(INVENTORY_DUPLICATE_CONVERSION);
         }
-        if (balanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
+        if (inventoryBalanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
                 inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
@@ -852,7 +852,7 @@ public class InventoryCommandService {
         if (skuId == null || warehouseId == null) {
             return new PurchaseInventoryContract.Availability(BigDecimal.ZERO, BigDecimal.ZERO);
         }
-        InventoryBalanceEntity balance = balanceDao.selectByWarehouseAndSku(warehouseId, skuId);
+        InventoryBalanceEntity balance = inventoryBalanceDao.selectByWarehouseAndSku(warehouseId, skuId);
         if (balance == null) {
             return new PurchaseInventoryContract.Availability(BigDecimal.ZERO, BigDecimal.ZERO);
         }

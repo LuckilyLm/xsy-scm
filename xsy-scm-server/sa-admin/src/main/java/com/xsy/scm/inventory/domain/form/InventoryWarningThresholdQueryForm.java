@@ -29,18 +29,18 @@ public class InventoryWarningThresholdQueryForm extends PageParam {
     /**
      * SKU 编码模糊匹配（联 {@code product_sku}）。
      */
-    @Size(max = 64)
+    @Size(max = 64, message = "SKU 编码不能超过64个字符")
     private String skuCode;
 
     @Override
-    @Min(1)
+    @Min(value = 1, message = "页码必须至少为1")
     public Long getPageNum() {
         return super.getPageNum();
     }
 
     @Override
-    @Max(100)
-    @Min(1)
+    @Max(value = 100, message = "每页条数不能超过100")
+    @Min(value = 1, message = "每页条数必须至少为1")
     public Long getPageSize() {
         return super.getPageSize();
     }

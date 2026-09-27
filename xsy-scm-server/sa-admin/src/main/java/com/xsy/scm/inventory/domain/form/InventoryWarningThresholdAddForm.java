@@ -20,26 +20,26 @@ import java.math.BigDecimal;
 @Data
 public class InventoryWarningThresholdAddForm {
 
-    @NotNull
+    @NotNull(message = "仓库不能为空")
     private Long warehouseId;
 
-    @NotNull
+    @NotNull(message = "SKU 不能为空")
     private Long skuId;
 
     /**
      * 预警下限；可为空表示不设下限。
      */
-    @DecimalMin(value = "0", inclusive = true)
-    @Digits(integer = 14, fraction = 4)
+    @DecimalMin(value = "0", inclusive = true, message = "最低预警数量不能小于0")
+    @Digits(integer = 14, fraction = 4, message = "最低预警数量最多14位整数和4位小数")
     private BigDecimal warnMin;
 
     /**
      * 预警上限；可为空表示不设上限。
      */
-    @DecimalMin(value = "0", inclusive = true)
-    @Digits(integer = 14, fraction = 4)
+    @DecimalMin(value = "0", inclusive = true, message = "最高预警数量不能小于0")
+    @Digits(integer = 14, fraction = 4, message = "最高预警数量最多14位整数和4位小数")
     private BigDecimal warnMax;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 }
