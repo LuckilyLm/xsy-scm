@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 
 /**
- * 报表的同步 Excel 导出写出（Finance R0 计划 §38）。
+ * 报表的同步 Excel 导出写出。
  *
  * <p>用 FastExcel 的动态表头而不是给每张报表建一个 {@code @ExcelProperty} 模型：
  * 报表列是「口径」的一部分，与查询 SQL 一一对应，做成两个平行结构后两边很容易长歪。
@@ -76,7 +76,7 @@ public final class ScmReportExcel {
      * 用户看到的是「点了导出没反应」）。字符串也顺带保证导出与接口显示同一套北京时间格式。
      *
      * <p>{@code BigDecimal} 走 {@code toPlainString()}：科学计数法形态与位数交给文本固定下来，
-     * 不让 Excel 按单元格默认格式重新收敛小数位（R0 的 4 位定点口径）。
+     * 不让 Excel 按单元格默认格式重新收敛小数位，保留金额和数量的四位精度。
      */
     private static Object cell(Object value) {
         if (value == null) {

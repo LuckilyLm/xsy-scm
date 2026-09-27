@@ -7,14 +7,14 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.report.constant.ScmReportPermission;
 
 /**
- * 报表的字段级权限收口（Finance R0 计划 §32）。
+ * 报表的字段级权限收口。
  *
  * <p>成本权限必须<b>独立存在</b>：普通仓管要看数量流水，但不必然能看单位成本与账面金额。
  * 同一个流水查询服务两类人，因此成本列只能在服务端按字段抹掉，不能靠前端隐藏列——
  * 前端隐藏挡不住直接调接口。
  *
  * <p>抹除是<b>失败关闭</b>的：取不到权限（未登录、依赖未装配）时按「无权限」处理，
- * 与 F0 读侧守卫同一取向。宁可少给数字，不可多给。
+ * 与文件读取守卫同一取向。宁可少给数字，不可多给。
  *
  * <p>已经解析过数据范围的调用方应直接读 {@code ScmDataScopeContext#isCostVisible()}
  * （同一个权限码、同一次解析），不要在一次请求里重复问 Sa-Token；本类的
@@ -22,7 +22,7 @@ import com.xsy.scm.report.constant.ScmReportPermission;
  */
 public final class ScmReportAccess {
 
-    /** 成本查看权限码；必须与 V50 种下的 {@code t_menu.api_perms} 逐字一致。 */
+    /** 报表成本查看权限，集中定义在 {@link ScmReportPermission}。 */
     public static final String COST_QUERY_PERM = ScmReportPermission.COST_QUERY;
 
     private ScmReportAccess() {

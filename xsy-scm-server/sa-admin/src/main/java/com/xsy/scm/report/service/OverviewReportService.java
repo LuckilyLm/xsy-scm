@@ -21,7 +21,7 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
  *
  * <p><b>仓库范围只收窄能按仓库归属的指标</b>：采购与库存四个派生表按调用者的仓库授权范围取数，
  * 而销售与退款指标所在的 {@code sales_order} / {@code order_refund} 没有仓库列，
- * 既不能按仓库收窄，也不得拿 {@code created_by} 之类的字段顶替（裁决第 3 条）。
+ * 既不能按仓库收窄，也不得拿 {@code created_by} 之类的审计字段顶替。
  * 因此仓库范围为空时，采购与库存指标返回 {@code null}（页面显示 {@code —}）而不是 0 ——
  * 0 会把它谎报成「这些仓库里没有数据」，而真实原因是「你没有可看的仓库」。
  * 两个方法抹的字段必须一致，否则指标卡与趋势图会对不上。

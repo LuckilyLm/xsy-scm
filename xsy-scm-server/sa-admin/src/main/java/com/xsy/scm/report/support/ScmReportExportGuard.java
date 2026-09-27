@@ -7,7 +7,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.report.constant.ReportErrorCode;
 
 /**
- * 报表同步导出的规模守卫（Finance R0 计划 §38）。
+ * 报表同步导出的规模守卫。
  *
  * <p>取 {@code EXPORT_MAX_ROWS + 1} 行而不是先数一遍：只要多取一行就能判定「是否超限」，
  * 省掉一次与真实查询同样昂贵的 {@code count(*)}。判定依据是<b>当前筛选的完整结果</b>，

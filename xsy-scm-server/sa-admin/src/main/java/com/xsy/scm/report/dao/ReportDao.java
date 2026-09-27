@@ -23,14 +23,13 @@ import com.xsy.scm.report.domain.vo.ReportOverviewVO;
 import com.xsy.scm.report.domain.vo.SalesReportVO;
 
 /**
- * Finance R0 报表只读 DAO。SQL 全部在 {@code mapper/scm/report/ReportDao.xml}。
+ * 报表只读 DAO。SQL 全部在 {@code mapper/scm/report/ReportDao.xml}。
  *
  * <p>只声明 select，不声明任何写方法；每个查询的时间参数已由
  * {@code ScmReportTimeRangeResolver} 收敛成 Asia/Shanghai 的半开区间瞬间，
  * 因此 XML 里只出现 {@code >= startAt AND < endAt} 一种日界写法。
  *
- * <p><b>{@code scope} 是调用者的仓库数据范围，必须由 Service 显式下传</b>（裁决
- * {@code docs/decisions.md}「P0 基线收口裁决」第 2、10 条）：为 {@code null} 时 XML 退化为
+ * <p><b>{@code scope} 是调用者的仓库数据范围，必须由 Service 显式下传</b>：为 {@code null} 时 XML 退化为
  * 恒假谓词，即「没有授权范围就查不到数据」，不允许用 {@code null} 表达「全部」。
  * 空授权清单（{@code ScmValueScope#none()}）会渲染成非法的 {@code IN ()}，
  * 所以调用方要么先短路成空结果，要么（仅概览两条，因为它同时带着不受仓库范围约束的销售指标）

@@ -5,10 +5,9 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * Finance R0 报表域错误码。只读域，因此只有「查询边界不合法」与「导出规模超限」两类，没有写入冲突码。
+ * 报表域错误码。只读域，因此只有「查询边界不合法」与「导出规模超限」两类，没有写入冲突码。
  *
- * <p>码段 41110–41112，紧邻 delivery 的 41100–41109。<b>411xx 的实际占用必须现查现用</b>
- * （与 {@code InventoryErrorCode} 同一纪律）：那是写下时的状态，会过期。
+ * <p>报表域的专属错误码使用 41110–41112，与配送域的 41100–41109 分开。
  */
 @Getter
 @RequiredArgsConstructor

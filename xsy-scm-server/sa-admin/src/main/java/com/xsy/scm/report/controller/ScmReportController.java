@@ -43,10 +43,10 @@ import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 
 /**
- * Finance R0 报表中心（只读）。
+ * 报表中心（只读）。
  *
- * <p><b>本类没有任何写端点</b>，也不出现「营业收入 / 已收款 / 应收 / 应付 / 毛利」：
- * 当前系统还没有签收、应收、应付与核销事实，报表只能展示已经成立的事实。
+ * <p><b>本类没有任何写端点</b>。金额字段只使用报表对应的已成立事实，不把确认订单额当作收入，
+ * 也不把采购金额或收货参考金额标成应付。
  *
  * <p>权限分三层，彼此不隐含：
  * <ul>
@@ -58,8 +58,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
  * </ul>
  *
  * <p>导出与列表调用<b>同一个</b>查询方法，口径不可能分叉；超过行数上限时明确拒绝而不是静默截断。
- * 因此导出继承列表的仓库数据范围 —— {@code scm:report:export} 只代表允许导出，绝不扩大可见范围
- * （裁决「P0 基线收口裁决」第 10 条：财务不等于全组织可见，能看哪几个仓就只能导哪几个仓）。
+ * 因此导出继承列表的仓库数据范围；{@code scm:report:export} 只代表允许导出，绝不扩大可见范围。
  */
 @RestController
 @RequestMapping("/scm/report")
