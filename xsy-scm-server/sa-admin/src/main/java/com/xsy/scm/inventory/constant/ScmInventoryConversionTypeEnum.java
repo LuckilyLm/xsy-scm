@@ -19,12 +19,14 @@ public enum ScmInventoryConversionTypeEnum {
     /**
      * 整件拆零：1 箱 → 10 kg（源数量少、目标数量多）。
      */
-    SPLIT("整件拆零"),
+    SPLIT(
+            "整件拆零"),
 
     /**
      * 组合拆分：若干散装 → 1 个组合品（源数量多、目标数量少）。
      */
-    COMBINE("组合拆分");
+    COMBINE(
+            "组合拆分");
 
     private final String desc;
 

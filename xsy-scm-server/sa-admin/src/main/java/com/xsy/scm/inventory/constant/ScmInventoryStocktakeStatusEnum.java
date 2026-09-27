@@ -29,17 +29,20 @@ public enum ScmInventoryStocktakeStatusEnum {
     /**
      * 草稿：可录/改实盘量，未产生任何库存影响。
      */
-    DRAFT("草稿"),
+    DRAFT(
+            "草稿"),
 
     /**
      * 已确认：差异已转流水并调整余额，不可再改明细、不可取消。
      */
-    CONFIRMED("已确认"),
+    CONFIRMED(
+            "已确认"),
 
     /**
      * 已取消：仅草稿可取消，未产生任何库存影响。
      */
-    CANCELLED("已取消");
+    CANCELLED(
+            "已取消");
 
     private final String desc;
 

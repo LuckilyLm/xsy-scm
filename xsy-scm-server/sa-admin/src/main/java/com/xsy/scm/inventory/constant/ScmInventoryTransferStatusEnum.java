@@ -31,7 +31,8 @@ public enum ScmInventoryTransferStatusEnum {
     /**
      * 草稿：可改明细、可发出、可取消、可删除；未产生任何库存影响。
      */
-    DRAFT("草稿"),
+    DRAFT(
+            "草稿"),
 
     /**
      * 在途：源仓已扣减、目标仓未增加。
@@ -39,17 +40,20 @@ public enum ScmInventoryTransferStatusEnum {
      * <p>
      * 此期间这批货**不在任何余额行里**（`inventory_balance` 只表达「在仓库里的货」， 没有虚拟在途仓），因此全仓总库存会暂时减少。这是两步式的必然结果，不是缺陷。
      */
-    SHIPPED("在途"),
+    SHIPPED(
+            "在途"),
 
     /**
      * 已收货：目标仓已增加，单据完成（终态）。
      */
-    RECEIVED("已完成"),
+    RECEIVED(
+            "已完成"),
 
     /**
      * 已取消：仅草稿可取消，未产生任何库存影响（终态）。
      */
-    CANCELLED("已取消");
+    CANCELLED(
+            "已取消");
 
     private final String desc;
 

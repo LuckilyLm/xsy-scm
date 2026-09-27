@@ -23,17 +23,20 @@ public enum ScmInventoryOutboundStatusEnum {
     /**
      * 草稿：可改明细，未产生任何库存影响。
      */
-    DRAFT("草稿"),
+    DRAFT(
+            "草稿"),
 
     /**
      * 已确认：已写流水并扣减余额，不可再改明细、不可取消。
      */
-    CONFIRMED("已确认"),
+    CONFIRMED(
+            "已确认"),
 
     /**
      * 已取消：仅草稿可取消，未产生任何库存影响。
      */
-    CANCELLED("已取消");
+    CANCELLED(
+            "已取消");
 
     private final String desc;
 

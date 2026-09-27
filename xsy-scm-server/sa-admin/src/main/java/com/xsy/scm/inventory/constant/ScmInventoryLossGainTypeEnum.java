@@ -22,12 +22,16 @@ public enum ScmInventoryLossGainTypeEnum {
     /**
      * 报损：损耗 / 变质 / 破损 / 丢失，减少库存。
      */
-    LOSS("报损", ScmInventoryMovementTypeEnum.LOSS_REPORT),
+    LOSS(
+            "报损",
+            ScmInventoryMovementTypeEnum.LOSS_REPORT),
 
     /**
      * 报溢：溢余（多出来的货），增加库存。
      */
-    OVERFLOW("报溢", ScmInventoryMovementTypeEnum.GAIN_REPORT);
+    OVERFLOW(
+            "报溢",
+            ScmInventoryMovementTypeEnum.GAIN_REPORT);
 
     private final String desc;
 
