@@ -9,6 +9,7 @@ import com.xsy.scm.warehouse.domain.form.WarehouseQueryForm;
 import com.xsy.scm.warehouse.domain.form.WarehouseStatusForm;
 import com.xsy.scm.warehouse.domain.form.WarehouseUpdateForm;
 import com.xsy.scm.warehouse.domain.vo.WarehouseVO;
+import com.xsy.scm.warehouse.permission.WarehousePermission;
 import com.xsy.scm.warehouse.service.WarehouseQueryService;
 import com.xsy.scm.warehouse.service.WarehouseService;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -42,32 +43,32 @@ public class WarehouseController {
      * 下拉选择器：只返回 ENABLED 仓库。
      */
     @GetMapping("/list")
-    @SaCheckPermission("scm:warehouse:query")
+    @SaCheckPermission(WarehousePermission.QUERY)
     public ResponseDTO<List<WarehouseVO>> list() {
         return ResponseDTO.ok(queryService.list());
     }
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:warehouse:query")
+    @SaCheckPermission(WarehousePermission.QUERY)
     public ResponseDTO<PageResult<WarehouseVO>> query(@Valid @RequestBody WarehouseQueryForm form) {
         return ResponseDTO.ok(queryService.query(form));
     }
 
     @GetMapping("/detail/{id}")
-    @SaCheckPermission("scm:warehouse:query")
+    @SaCheckPermission(WarehousePermission.QUERY)
     public ResponseDTO<WarehouseVO> detail(@PathVariable Long id) {
         return ResponseDTO.ok(queryService.detail(id));
     }
 
     @PostMapping("/create")
-    @SaCheckPermission("scm:warehouse:add")
+    @SaCheckPermission(WarehousePermission.ADD)
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody WarehouseAddForm form) {
         return ResponseDTO.ok(service.create(form));
     }
 
     @PostMapping("/update")
-    @SaCheckPermission("scm:warehouse:update")
+    @SaCheckPermission(WarehousePermission.UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody WarehouseUpdateForm form) {
         service.update(form);
@@ -78,7 +79,7 @@ public class WarehouseController {
      * 启用仓库。
      */
     @PostMapping("/enable")
-    @SaCheckPermission("scm:warehouse:enable")
+    @SaCheckPermission(WarehousePermission.ENABLE)
     @OperateLog
     public ResponseDTO<String> enable(@Valid @RequestBody WarehouseStatusForm form) {
         service.enable(form);
@@ -89,7 +90,7 @@ public class WarehouseController {
      * 停用仓库。
      */
     @PostMapping("/disable")
-    @SaCheckPermission("scm:warehouse:disable")
+    @SaCheckPermission(WarehousePermission.DISABLE)
     @OperateLog
     public ResponseDTO<String> disable(@Valid @RequestBody WarehouseStatusForm form) {
         service.disable(form);

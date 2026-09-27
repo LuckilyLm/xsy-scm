@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.warehouse.domain.form.WarehouseScopeUpdateForm;
 import com.xsy.scm.warehouse.domain.vo.WarehouseScopeEmployeeVO;
 import com.xsy.scm.warehouse.domain.vo.WarehouseScopeWarehouseVO;
+import com.xsy.scm.warehouse.permission.WarehousePermission;
 import com.xsy.scm.warehouse.service.WarehouseScopeService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -41,7 +42,7 @@ public class WarehouseScopeController {
      * 某仓库下被授权的员工。
      */
     @GetMapping("/employees")
-    @SaCheckPermission("scm:warehouse:scope:query")
+    @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
     public ResponseDTO<List<WarehouseScopeEmployeeVO>> employees(@RequestParam Long warehouseId) {
         return ResponseDTO.ok(service.listEmployees(warehouseId));
     }
@@ -50,7 +51,7 @@ public class WarehouseScopeController {
      * 某员工被授权的仓库。
      */
     @GetMapping("/warehouses")
-    @SaCheckPermission("scm:warehouse:scope:query")
+    @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
     public ResponseDTO<List<WarehouseScopeWarehouseVO>> warehouses(@RequestParam Long employeeId) {
         return ResponseDTO.ok(service.listWarehouses(employeeId));
     }
@@ -59,7 +60,7 @@ public class WarehouseScopeController {
      * 整体替换某员工的活动授权；空清单即全部回收。
      */
     @PostMapping("/update")
-    @SaCheckPermission("scm:warehouse:scope:update")
+    @SaCheckPermission(WarehousePermission.SCOPE_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody WarehouseScopeUpdateForm form) {
         service.update(form);
