@@ -18,6 +18,7 @@ import com.xsy.scm.order.manager.OrderValidator;
 import com.xsy.scm.order.support.OrderIdempotencyRequestHasher;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xsy.scm.common.error.ScmErrorCode;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
@@ -31,9 +32,17 @@ public class OrderIdempotencyService {
     }
 
     public Claim claim(String operationScope, String idempotencyKey, Object request) {
-        OrderValidator.reason(idempotencyKey, ORDER_IDEMPOTENCY_KEY_REQUIRED);
+        return claim(operationScope, idempotencyKey, request, ORDER_IDEMPOTENCY_KEY_REQUIRED,
+                ORDER_IDEMPOTENCY_KEY_INVALID, ORDER_IDEMPOTENCY_CONFLICT,
+                "Incomplete committed idempotency claim");
+    }
+
+    public Claim claim(String operationScope, String idempotencyKey, Object request,
+            ScmErrorCode missingKeyError, ScmErrorCode invalidKeyError, ScmErrorCode conflictError,
+            String incompleteResultMessage) {
+        OrderValidator.reason(idempotencyKey, missingKeyError);
         idempotencyKey = idempotencyKey.trim();
-        if (idempotencyKey.length() > 200) throw new ScmBusinessException(ORDER_IDEMPOTENCY_KEY_INVALID);
+        if (idempotencyKey.length() > 200) throw new ScmBusinessException(invalidKeyError);
         // Scope by authenticated actor as well as command: unrelated operators cannot replay each other's data.
         operationScope = ScmOperator.current() + ":" + operationScope;
         var hash = new OrderIdempotencyRequestHasher(objectMapper).hash(request);
@@ -46,21 +55,29 @@ public class OrderIdempotencyService {
             return new Claim(idempotencyRecordDao.find(operationScope, idempotencyKey), false);
         }
         row = idempotencyRecordDao.find(operationScope, idempotencyKey);
-        if (!Objects.equals(hash, row.getRequestHash())) throw new ScmBusinessException(ORDER_IDEMPOTENCY_CONFLICT);
-        if (row.getResultData() == null) throw new IllegalStateException("Incomplete committed idempotency claim");
+        if (!Objects.equals(hash, row.getRequestHash())) throw new ScmBusinessException(conflictError);
+        if (row.getResultData() == null) throw new IllegalStateException(incompleteResultMessage);
         return new Claim(row, true);
     }
 
     public <T> T replay(Claim claim, Class<T> resultType) {
-        return objectMapper.convertValue(claim.record().getResultData().get("value"), resultType);
+        return replay(claim.record(), resultType, objectMapper);
     }
 
     public void complete(Claim claim, String resourceType, Long resourceId, Object result) {
-        var row = claim.record();
+        complete(claim.record(), resourceType, resourceId, result, objectMapper);
+    }
+
+    public <T> T replay(IdempotencyRecordEntity record, Class<T> resultType, ObjectMapper resultMapper) {
+        return resultMapper.convertValue(record.getResultData().get("value"), resultType);
+    }
+
+    public void complete(IdempotencyRecordEntity row, String resourceType, Long resourceId, Object result,
+            ObjectMapper resultMapper) {
         row.setResultId(resourceId);
         row.setResultType(resourceType);
         var value = new LinkedHashMap<String, Object>();
-        value.put("value", objectMapper.convertValue(result, Object.class));
+        value.put("value", resultMapper.convertValue(result, Object.class));
         row.setResultData(value);
         row.setUpdatedAt(java.time.OffsetDateTime.now());
         row.setUpdatedBy(ScmOperator.current());
