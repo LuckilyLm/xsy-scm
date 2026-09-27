@@ -3,7 +3,9 @@ package com.xsy.scm.order.domain.form;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 import java.time.OffsetDateTime;
@@ -15,16 +17,16 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 public class SalesOrderItemForm {
     private Long itemId;
     private Integer version;
-    @NotNull
+    @NotNull(message = "商品 SKU 不能为空")
     private Long skuId;
-    @NotBlank
+    @NotBlank(message = "下单数量不能为空")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String orderedQuantity;
-    @NotNull
+    @NotNull(message = "是否人工改价不能为空")
     private Boolean manualPriceOverride;
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String unitPrice;
-    @Size(max = 500)
+    @Size(max = 500, message = "改价原因不能超过500个字符")
     private String overrideReason;
     private Integer sortOrder;
 }

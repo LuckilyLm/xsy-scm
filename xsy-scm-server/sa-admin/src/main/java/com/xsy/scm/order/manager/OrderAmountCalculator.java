@@ -1,13 +1,14 @@
 package com.xsy.scm.order.manager;
 
-import com.xsy.scm.order.domain.entity.*;
-import com.xsy.scm.order.domain.form.*;
+
+
 import com.xsy.scm.common.exception.ScmBusinessException;
 
-import static com.xsy.scm.order.constant.OrderErrorCode.*;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_INVALID;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 public final class OrderAmountCalculator {
     public static final int SCALE = 4;
@@ -16,11 +17,11 @@ public final class OrderAmountCalculator {
     private OrderAmountCalculator() {
     }
 
-    public static BigDecimal bounded(BigDecimal value) {
-        if (value == null) return null;
-        value = value.setScale(SCALE, java.math.RoundingMode.HALF_UP);
-        if (value.abs().compareTo(MAX) > 0) throw new ScmBusinessException(ORDER_PRICE_INVALID);
-        return value;
+    public static BigDecimal bounded(BigDecimal amount) {
+        if (amount == null) return null;
+        amount = amount.setScale(SCALE, java.math.RoundingMode.HALF_UP);
+        if (amount.abs().compareTo(MAX) > 0) throw new ScmBusinessException(ORDER_PRICE_INVALID);
+        return amount;
     }
 
     public static BigDecimal lineAmount(BigDecimal quantity, BigDecimal price) {

@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.order.domain.vo.SalesOrderImportResultVO;
 import com.xsy.scm.order.service.SalesOrderImportService;
+import com.xsy.scm.order.permission.OrderPermission;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -32,11 +33,11 @@ public class SalesOrderImportController {
     private static final String TEMPLATE_RESOURCE = "template/sales-order-import.xlsx";
     private static final String TEMPLATE_FILE_NAME = "销售订单导入模板.xlsx";
 
-    private final SalesOrderImportService service;
+    private final SalesOrderImportService salesOrderImportService;
     private final SecurityFileService securityFileService;
 
     @GetMapping("/template")
-    @SaCheckPermission("scm:order:import")
+    @SaCheckPermission(OrderPermission.IMPORT)
     public void template(HttpServletResponse response) throws IOException {
         var template = new ClassPathResource(TEMPLATE_RESOURCE);
         if (!template.exists()) {
@@ -52,7 +53,7 @@ public class SalesOrderImportController {
     }
 
     @PostMapping
-    @SaCheckPermission("scm:order:import")
+    @SaCheckPermission(OrderPermission.IMPORT)
     @OperateLog
     public ResponseDTO<SalesOrderImportResultVO> importOrders(@RequestParam MultipartFile file,
                                                               @RequestHeader(value = "Idempotency-Key", required = false) String key) throws Exception {
@@ -63,6 +64,7 @@ public class SalesOrderImportController {
         if (file.getSize() > MAX_FILE_SIZE) return ResponseDTO.userErrorParam("导入文件不能超过 5 MiB");
         var security = securityFileService.checkFile(file);
         if (!security.getOk()) return ResponseDTO.error(security);
-        return ResponseDTO.ok(service.importFile(file, key, StpUtil.hasPermission("scm:order:price-override")));
+        return ResponseDTO.ok(salesOrderImportService.importFile(file, key,
+            StpUtil.hasPermission(OrderPermission.PRICE_OVERRIDE)));
     }
 }

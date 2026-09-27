@@ -16,10 +16,10 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCE
 @Component
 @RequiredArgsConstructor
 public class OrderCustomerReferenceGuard {
-    private final SalesOrderDao orders;
+    private final SalesOrderDao salesOrderDao;
 
-    @Before("execution(* com.xsy.scm.customer.dao.CustomerDao.softDelete(..)) && args(id,..)")
-    public void beforeCustomerDelete(Long id) {
-        if (orders.customerReferences(id) > 0) throw new ScmBusinessException(CUSTOMER_REFERENCED);
+    @Before("execution(* com.xsy.scm.customer.dao.CustomerDao.softDelete(..)) && args(customerId,..)")
+    public void beforeCustomerDelete(Long customerId) {
+        if (salesOrderDao.customerReferences(customerId) > 0) throw new ScmBusinessException(CUSTOMER_REFERENCED);
     }
 }

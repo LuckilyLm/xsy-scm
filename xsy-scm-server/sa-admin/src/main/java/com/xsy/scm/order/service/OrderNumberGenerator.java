@@ -8,18 +8,18 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class OrderNumberGenerator {
-    private final SalesOrderDao dao;
+    private final SalesOrderDao salesOrderDao;
 
     public String order() {
-        return format("SO", dao.nextOrder());
+        return format("SO", salesOrderDao.nextOrder());
     }
 
     public String returned() {
-        return format("RT", dao.nextReturn());
+        return format("RT", salesOrderDao.nextReturn());
     }
 
     public String refund() {
-        return format("RF", dao.nextRefund());
+        return format("RF", salesOrderDao.nextRefund());
     }
 
     public static String format(String prefix, long number) {

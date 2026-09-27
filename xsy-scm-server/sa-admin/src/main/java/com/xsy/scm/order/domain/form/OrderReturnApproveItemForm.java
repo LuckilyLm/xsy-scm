@@ -3,7 +3,8 @@ package com.xsy.scm.order.domain.form;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 import java.time.OffsetDateTime;
@@ -13,9 +14,9 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
 @Data
 public class OrderReturnApproveItemForm {
-    @NotNull
+    @NotNull(message = "订单明细 ID 不能为空")
     private Long orderItemId;
-    @NotBlank
+    @NotBlank(message = "批准数量不能为空")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String approvedQuantity;
 }

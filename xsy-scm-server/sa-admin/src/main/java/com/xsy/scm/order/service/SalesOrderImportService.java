@@ -5,9 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.pricing.constant.ScmPriceStatusEnum;
+import com.xsy.scm.pricing.constant.ScmUnavailableReasonEnum;
 import com.xsy.scm.customer.dao.CustomerDao;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.order.domain.dto.SalesOrderImportRow;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.domain.form.OrderAddressForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderItemForm;
@@ -55,10 +57,10 @@ public class SalesOrderImportService {
             SalesOrderImportRow::setExpectDeliveryTime, SalesOrderImportRow::setSkuCode, SalesOrderImportRow::setOrderedQuantity,
             SalesOrderImportRow::setUnitPrice, SalesOrderImportRow::setOverrideReason, SalesOrderImportRow::setRemark);
 
-    private final CustomerDao customers;
-    private final ProductSkuOptionDao skus;
-    private final SalesOrderService orders;
-    private final PriceResolver prices;
+    private final CustomerDao customerDao;
+    private final ProductSkuOptionDao productSkuOptionDao;
+    private final SalesOrderService salesOrderService;
+    private final PriceResolver priceResolver;
 
     public SalesOrderImportResultVO importFile(MultipartFile file, String key, boolean priceOverrideAllowed) throws Exception {
         var result = new SalesOrderImportResultVO();
@@ -73,7 +75,7 @@ public class SalesOrderImportService {
         var assembled = assemble(rows, priceOverrideAllowed);
         if (assembled.result().getTotalErrors() > 0) return assembled.result();
         try {
-            return orders.importOrders(assembled.forms(), fileHash, key, rows.size());
+            return salesOrderService.importOrders(assembled.forms(), fileHash, key, rows.size());
         } catch (SalesOrderService.ImportOrderException exception) {
             // importOrders is a separate proxied bean: its entire transaction has rolled back here.
             var group = assembled.groups().get(exception.getOrderIndex());
@@ -149,8 +151,8 @@ public class SalesOrderImportService {
 
         var customerCodes = rows.stream().map(SalesOrderImportRow::getCustomerCode).map(this::trim).filter(Objects::nonNull).distinct().toList();
         var skuCodes = rows.stream().map(SalesOrderImportRow::getSkuCode).map(this::trim).filter(Objects::nonNull).distinct().toList();
-        var customerMap = customerCodes.isEmpty() ? Map.<String, CustomerEntity>of() : customers.selectActiveByCodes(customerCodes).stream().collect(Collectors.toMap(CustomerEntity::getCustomerCode, Function.identity()));
-        var skuMap = skuCodes.isEmpty() ? Map.<String, ProductSkuOptionVO>of() : skus.selectByCodes(skuCodes).stream().collect(Collectors.toMap(ProductSkuOptionVO::getSkuCode, Function.identity()));
+        var customerMap = customerCodes.isEmpty() ? Map.<String, CustomerEntity>of() : customerDao.selectActiveByCodes(customerCodes).stream().collect(Collectors.toMap(CustomerEntity::getCustomerCode, Function.identity()));
+        var skuMap = skuCodes.isEmpty() ? Map.<String, ProductSkuOptionVO>of() : productSkuOptionDao.selectByCodes(skuCodes).stream().collect(Collectors.toMap(ProductSkuOptionVO::getSkuCode, Function.identity()));
 
         var groups = new LinkedHashMap<String, List<IndexedRow>>();
         for (int index = 0; index < rows.size(); index++) {
@@ -183,9 +185,9 @@ public class SalesOrderImportService {
         var customer = customerMap.get(trim(rows.getFirst().row().getCustomerCode()));
         if (customer == null || !com.xsy.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable())
             return;
-        var ids = rows.stream().map(x -> skuMap.get(trim(x.row().getSkuCode()))).filter(Objects::nonNull).map(ProductSkuOptionVO::getSkuId).distinct().toList();
+        var ids = rows.stream().map(indexedRow -> skuMap.get(trim(indexedRow.row().getSkuCode()))).filter(Objects::nonNull).map(ProductSkuOptionVO::getSkuId).distinct().toList();
         try {
-            var resolved = prices.resolve(customer.getId(), ids, OffsetDateTime.now()).stream().collect(Collectors.toMap(x -> x.getSkuId(), Function.identity()));
+            var resolved = priceResolver.resolve(customer.getId(), ids, OffsetDateTime.now()).stream().collect(Collectors.toMap(resolvedPrice -> resolvedPrice.getSkuId(), Function.identity()));
             var total = BigDecimal.ZERO;
             for (var indexed : rows) {
                 var row = indexed.row();
@@ -197,7 +199,8 @@ public class SalesOrderImportService {
                     continue;
                 }
                 if (trim(row.getUnitPrice()) == null && price.getPriceStatus() == ScmPriceStatusEnum.UNPRICED) {
-                    addError(result, indexed.rowNumber(), orderKey, "人工单价", "UNPRICED", "商品没有可用价格，请维护价格或由有改价权限的人员填写人工单价及原因");
+            addError(result, indexed.rowNumber(), orderKey, "人工单价", ScmPriceStatusEnum.UNPRICED.name(),
+                "商品没有可用价格，请维护价格或由有改价权限的人员填写人工单价及原因");
                     continue;
                 }
                 var quantity = trim(row.getOrderedQuantity());
@@ -241,7 +244,7 @@ public class SalesOrderImportService {
             addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_TRADABLE", "客户状态不可交易");
         var skuCode = trim(row.getSkuCode());
         if (skuCode != null && !skuMap.containsKey(skuCode))
-            addError(result, rowNumber, orderKey, "SKU编码", "SKU_NOT_FOUND", "SKU 编码不存在");
+            addError(result, rowNumber, orderKey, "SKU编码", ScmUnavailableReasonEnum.SKU_NOT_FOUND.name(), "SKU 编码不存在");
         decimal(result, rowNumber, orderKey, "下单数量", row.getOrderedQuantity(), true);
         if (trim(row.getUnitPrice()) != null) {
             decimal(result, rowNumber, orderKey, "人工单价", row.getUnitPrice(), false);
@@ -280,7 +283,7 @@ public class SalesOrderImportService {
         var first = rows.getFirst().row();
         var form = new SalesOrderAddForm();
         form.setCustomerId(customerMap.get(trim(first.getCustomerCode())).getId());
-        form.setOrderSource("IMPORT");
+        form.setOrderSource(ScmOrderSourceEnum.IMPORT.name());
         form.setRemark(trim(first.getRemark()));
         if (trim(first.getExpectDeliveryTime()) != null)
             form.setExpectDeliveryTime(OffsetDateTime.parse(trim(first.getExpectDeliveryTime())));
@@ -306,20 +309,20 @@ public class SalesOrderImportService {
         return form;
     }
 
-    private void required(SalesOrderImportResultVO result, int row, String key, String column, String value) {
-        if (trim(value) == null) addError(result, row, key, column, "REQUIRED", column + "不能为空");
+    private void required(SalesOrderImportResultVO result, int row, String key, String column, String cellValue) {
+        if (trim(cellValue) == null) addError(result, row, key, column, "REQUIRED", column + "不能为空");
     }
 
-    private void length(SalesOrderImportResultVO result, int row, String key, String column, String value, int max) {
-        if (trim(value) != null && trim(value).length() > max)
+    private void length(SalesOrderImportResultVO result, int row, String key, String column, String cellValue, int max) {
+        if (trim(cellValue) != null && trim(cellValue).length() > max)
             addError(result, row, key, column, "TOO_LONG", column + "不能超过 " + max + " 个字符");
     }
 
-    private void decimal(SalesOrderImportResultVO result, int row, String key, String column, String value, boolean positive) {
-        if (trim(value) == null) return;
+    private void decimal(SalesOrderImportResultVO result, int row, String key, String column, String decimalText, boolean positive) {
+        if (trim(decimalText) == null) return;
         try {
-            if (!trim(value).matches("[0-9]{1,14}(\\.[0-9]{1,4})?")) throw new NumberFormatException();
-            var number = new BigDecimal(trim(value));
+            if (!trim(decimalText).matches("[0-9]{1,14}(\\.[0-9]{1,4})?")) throw new NumberFormatException();
+            var number = new BigDecimal(trim(decimalText));
             if (positive ? number.signum() <= 0 : number.signum() < 0) throw new NumberFormatException();
         } catch (NumberFormatException exception) {
             addError(result, row, key, column, "DECIMAL_INVALID", column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数");
@@ -331,13 +334,13 @@ public class SalesOrderImportService {
             addError(result, row, key, column, "HEADER_CONFLICT", "同一导入订单的" + column + "必须一致");
     }
 
-    private String fixed(String value) {
-        return new BigDecimal(trim(value)).setScale(4, RoundingMode.UNNECESSARY).toPlainString();
+    private String fixed(String decimalText) {
+        return new BigDecimal(trim(decimalText)).setScale(4, RoundingMode.UNNECESSARY).toPlainString();
     }
 
-    private String trim(String value) {
-        if (value == null) return null;
-        var trimmed = value.trim();
+    private String trim(String inputText) {
+        if (inputText == null) return null;
+        var trimmed = inputText.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 

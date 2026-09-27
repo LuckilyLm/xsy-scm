@@ -1,13 +1,40 @@
 package com.xsy.scm.order.controller;
 
-import com.xsy.scm.order.service.*;
-import com.xsy.scm.order.domain.form.*;
-import com.xsy.scm.order.domain.vo.*;
+import com.xsy.scm.order.service.SalesOrderQueryService;
+import com.xsy.scm.order.service.SalesOrderService;
+
+import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
+import com.xsy.scm.order.domain.form.OrderBatchDeleteForm;
+import com.xsy.scm.order.domain.form.OrderCancelForm;
+import com.xsy.scm.order.domain.form.OrderLogQueryForm;
+import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.SalesOrderAddForm;
+import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
+import com.xsy.scm.order.domain.form.SalesOrderUpdateForm;
+
+import com.xsy.scm.order.domain.vo.OrderOperationLogVO;
+import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
+import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
+import com.xsy.scm.order.domain.vo.SalesOrderVO;
+
+import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.pricing.permission.PricingPermission;
+import com.xsy.scm.customer.permission.CustomerPermission;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
+import com.xsy.scm.pricing.service.PriceResolver;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -18,26 +45,26 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/scm/order")
 public class SalesOrderController {
-    private final SalesOrderService service;
-    private final SalesOrderQueryService query;
-    private final com.xsy.scm.pricing.service.PriceResolver prices;
+    private final SalesOrderService salesOrderService;
+    private final SalesOrderQueryService salesOrderQueryService;
+    private final PriceResolver priceResolver;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:order:query")
-    public ResponseDTO<PageResult<SalesOrderVO>> query(@Valid @RequestBody SalesOrderQueryForm f) {
-        return ResponseDTO.ok(query.query(f));
+    @SaCheckPermission(OrderPermission.QUERY)
+    public ResponseDTO<PageResult<SalesOrderVO>> query(@Valid @RequestBody SalesOrderQueryForm salesOrderQueryForm) {
+        return ResponseDTO.ok(salesOrderQueryService.query(salesOrderQueryForm));
     }
 
     @GetMapping("/detail/{orderId}")
-    @SaCheckPermission("scm:order:query")
+    @SaCheckPermission(OrderPermission.QUERY)
     public ResponseDTO<SalesOrderDetailVO> detail(@PathVariable Long orderId) {
-        return ResponseDTO.ok(query.detail(orderId));
+        return ResponseDTO.ok(salesOrderQueryService.detail(orderId));
     }
 
     @PostMapping("/log/query")
-    @SaCheckPermission("scm:order:log:query")
-    public ResponseDTO<PageResult<OrderOperationLogVO>> logs(@Valid @RequestBody OrderLogQueryForm f) {
-        return ResponseDTO.ok(query.logs(f));
+    @SaCheckPermission(OrderPermission.LOG_QUERY)
+    public ResponseDTO<PageResult<OrderOperationLogVO>> logs(@Valid @RequestBody OrderLogQueryForm orderLogQueryForm) {
+        return ResponseDTO.ok(salesOrderQueryService.logs(orderLogQueryForm));
     }
 
     /**
@@ -49,9 +76,10 @@ public class SalesOrderController {
      * 不能经此旁路批量读到客户协议价与类型价解析结果，那本来需要单独的定价查看权。
      */
     @PostMapping("/price/preview")
-    @SaCheckPermission(value = {"scm:order:query", "scm:pricing:resolve:query"}, mode = SaMode.AND)
-    public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm f) {
-        return ResponseDTO.ok(prices.preview(f.getCustomerId(), f.getSkuIds(), f.getAt()));
+    @SaCheckPermission(value = {OrderPermission.QUERY, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
+    public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
+        return ResponseDTO.ok(priceResolver.preview(priceResolveForm.getCustomerId(),
+            priceResolveForm.getSkuIds(), priceResolveForm.getAt()));
     }
 
     /**
@@ -61,78 +89,82 @@ public class SalesOrderController {
      * <b>同时</b>要求 {@code scm:order:query} 与 {@code scm:customer:query}（{@link SaMode#AND}）。
      */
     @GetMapping("/reference/recent-prices")
-    @SaCheckPermission(value = {"scm:order:query", "scm:customer:query"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {OrderPermission.QUERY, CustomerPermission.QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId,
                                                               @RequestParam Long skuId,
                                                               @RequestParam(defaultValue = "5") int limit) {
-        return ResponseDTO.ok(query.recentPrices(customerId, skuId, limit));
+        return ResponseDTO.ok(salesOrderQueryService.recentPrices(customerId, skuId, limit));
     }
 
     @PostMapping("/create")
-    @SaCheckPermission("scm:order:add")
+    @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody SalesOrderAddForm f, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        overridePermission(f);
-        return ResponseDTO.ok(service.create(f, key));
+    public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        overridePermission(salesOrderAddForm);
+        return ResponseDTO.ok(salesOrderService.create(salesOrderAddForm, key));
     }
 
     @PostMapping("/create-and-progress")
-    @SaCheckPermission("scm:order:add")
+    @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm f, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        overridePermission(f);
-        return ResponseDTO.ok(service.createAndProgress(f, key));
+    public ResponseDTO<SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        overridePermission(salesOrderAddForm);
+        return ResponseDTO.ok(salesOrderService.createAndProgress(salesOrderAddForm, key));
     }
 
     @PostMapping("/update")
-    @SaCheckPermission("scm:order:update")
+    @SaCheckPermission(OrderPermission.UPDATE)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> update(@Valid @RequestBody SalesOrderUpdateForm f) {
-        overridePermission(f);
-        return ResponseDTO.ok(service.update(f));
+    public ResponseDTO<SalesOrderDetailVO> update(@Valid @RequestBody SalesOrderUpdateForm salesOrderUpdateForm) {
+        overridePermission(salesOrderUpdateForm);
+        return ResponseDTO.ok(salesOrderService.update(salesOrderUpdateForm));
     }
 
     @PostMapping("/submit")
-    @SaCheckPermission("scm:order:submit")
+    @SaCheckPermission(OrderPermission.SUBMIT)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> submit(@Valid @RequestBody OrderVersionForm f, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.submit(f, key));
+    public ResponseDTO<SalesOrderDetailVO> submit(@Valid @RequestBody OrderVersionForm orderVersionForm,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(salesOrderService.submit(orderVersionForm, key));
     }
 
     @PostMapping("/confirm")
-    @SaCheckPermission("scm:order:confirm")
+    @SaCheckPermission(OrderPermission.CONFIRM)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> confirm(@Valid @RequestBody OrderVersionForm f, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.confirm(f, key));
+    public ResponseDTO<SalesOrderDetailVO> confirm(@Valid @RequestBody OrderVersionForm orderVersionForm,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(salesOrderService.confirm(orderVersionForm, key));
     }
 
     @PostMapping("/cancel")
-    @SaCheckPermission("scm:order:cancel")
+    @SaCheckPermission(OrderPermission.CANCEL)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> cancel(@Valid @RequestBody OrderCancelForm f, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.cancel(f, key));
+    public ResponseDTO<SalesOrderDetailVO> cancel(@Valid @RequestBody OrderCancelForm orderCancelForm,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(salesOrderService.cancel(orderCancelForm, key));
     }
 
     @PostMapping("/item/actual-quantity")
-    @SaCheckPermission("scm:order:actual-quantity")
+    @SaCheckPermission(OrderPermission.ACTUAL_QUANTITY)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> actual(@Valid @RequestBody OrderActualQuantityForm f, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.actualQuantity(f, key));
+    public ResponseDTO<SalesOrderDetailVO> actual(@Valid @RequestBody OrderActualQuantityForm orderActualQuantityForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(salesOrderService.actualQuantity(orderActualQuantityForm, key));
     }
 
     @PostMapping("/delete")
-    @SaCheckPermission("scm:order:delete")
+    @SaCheckPermission(OrderPermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody OrderVersionForm f) {
-        service.delete(f);
+    public ResponseDTO<String> delete(@Valid @RequestBody OrderVersionForm orderVersionForm) {
+        salesOrderService.delete(orderVersionForm);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/batch-delete")
-    @SaCheckPermission("scm:order:delete")
+    @SaCheckPermission(OrderPermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> batchDelete(@Valid @RequestBody OrderBatchDeleteForm f) {
-        service.batchDelete(f);
+    public ResponseDTO<String> batchDelete(@Valid @RequestBody OrderBatchDeleteForm batchDeleteForm) {
+        salesOrderService.batchDelete(batchDeleteForm);
         return ResponseDTO.ok();
     }
 
@@ -144,17 +176,18 @@ public class SalesOrderController {
      * 货到之后由业务人员对本单执行预留，占用可用量。
      */
     @PostMapping("/reserve-stock/{orderId}")
-    @SaCheckPermission("scm:order:reserve-stock")
+    @SaCheckPermission(OrderPermission.RESERVE_STOCK)
     @OperateLog
     public ResponseDTO<String> reserveStock(@PathVariable Long orderId) {
-        service.reserveStock(orderId);
+        salesOrderService.reserveStock(orderId);
         return ResponseDTO.ok();
     }
 
-    private void overridePermission(SalesOrderAddForm f) {
-        if (!java.util.Set.of("ADMIN", "SUPPLEMENT").contains(f.getOrderSource()))
+    private void overridePermission(SalesOrderAddForm salesOrderForm) {
+        if (!java.util.Set.of(ScmOrderSourceEnum.ADMIN.name(), ScmOrderSourceEnum.SUPPLEMENT.name())
+                .contains(salesOrderForm.getOrderSource()))
             throw new com.xsy.scm.common.exception.ScmBusinessException(com.xsy.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
-        if (f.getItems().stream().anyMatch(x -> Boolean.TRUE.equals(x.getManualPriceOverride())))
-            cn.dev33.satoken.stp.StpUtil.checkPermission("scm:order:price-override");
+        if (salesOrderForm.getItems().stream().anyMatch(orderItemForm -> Boolean.TRUE.equals(orderItemForm.getManualPriceOverride())))
+            cn.dev33.satoken.stp.StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
     }
 }

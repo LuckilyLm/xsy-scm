@@ -23,8 +23,8 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 public class OrderOperationLogRecorder {
-    private final OrderOperationLogDao logs;
-    private final ObjectMapper json;
+    private final OrderOperationLogDao orderOperationLogDao;
+    private final ObjectMapper objectMapper;
 
     public void record(Long orderId, ScmOrderOperationTypeEnum operation, String reason,
                        Object before, Object after) {
@@ -34,10 +34,11 @@ public class OrderOperationLogRecorder {
         entry.setOperator(ScmOperator.current());
         entry.setCreatedBy(entry.getOperator());
         entry.setReason(reason);
-        entry.setBeforeData(before == null ? null : json.convertValue(before, new TypeReference<Map<String, Object>>() {
+        entry.setBeforeData(before == null ? null : objectMapper.convertValue(before,
+            new TypeReference<Map<String, Object>>() {
         }));
-        entry.setAfterData(json.convertValue(after, new TypeReference<Map<String, Object>>() {
-        }));
-        logs.insert(entry);
+        entry.setAfterData(
+                objectMapper.convertValue(after, new TypeReference<Map<String, Object>>() {}));
+        orderOperationLogDao.insert(entry);
     }
 }

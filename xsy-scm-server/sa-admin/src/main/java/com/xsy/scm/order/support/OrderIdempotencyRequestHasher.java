@@ -29,7 +29,7 @@ public final class OrderIdempotencyRequestHasher {
     private String canonical(JsonNode node) throws JsonProcessingException {
         if (node.isObject()) {
             var sorted = objectMapper.createObjectNode();
-            node.properties().stream().sorted(java.util.Map.Entry.comparingByKey()).forEach(e -> sorted.set(e.getKey(), canonicalNode(e.getValue())));
+            node.properties().stream().sorted(java.util.Map.Entry.comparingByKey()).forEach(property -> sorted.set(property.getKey(), canonicalNode(property.getValue())));
             return objectMapper.writeValueAsString(sorted);
         }
         return objectMapper.writeValueAsString(canonicalNode(node));
@@ -38,12 +38,12 @@ public final class OrderIdempotencyRequestHasher {
     private JsonNode canonicalNode(JsonNode node) {
         if (node.isObject()) {
             var sorted = objectMapper.createObjectNode();
-            node.properties().stream().sorted(java.util.Map.Entry.comparingByKey()).forEach(e -> sorted.set(e.getKey(), canonicalNode(e.getValue())));
+            node.properties().stream().sorted(java.util.Map.Entry.comparingByKey()).forEach(property -> sorted.set(property.getKey(), canonicalNode(property.getValue())));
             return sorted;
         }
         if (node.isArray()) {
             var result = objectMapper.createArrayNode();
-            node.forEach(v -> result.add(canonicalNode(v)));
+            node.forEach(arrayValue -> result.add(canonicalNode(arrayValue)));
             return result;
         }
         if (node.isNumber()) return objectMapper.getNodeFactory().numberNode(node.decimalValue().stripTrailingZeros());

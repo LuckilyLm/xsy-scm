@@ -1,7 +1,6 @@
 package com.xsy.scm.order.domain.vo;
 
 import lombok.Data;
-import com.baomidou.mybatisplus.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
