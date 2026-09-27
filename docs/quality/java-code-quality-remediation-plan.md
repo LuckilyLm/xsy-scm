@@ -634,6 +634,88 @@ Map<Long, ProductCategoryEntity> categoryById
 - 新增问题必须为 0
 - baseline 只能下降，不能无理由增加
 
+## 4.11 注入依赖字段的命名标准
+
+上一节的裸角色名只是最明显的一档。**「语义缩写」同样不合格**：
+字段名把类型的业务名词裁掉，只留一个复数或缩短的尾巴，读代码时无法判断
+「这是哪个领域对象」。Q2.1.1 起按下列标准判定。
+
+默认规则：
+
+```text
+<Type Simple Name 去掉项目级冗余前缀后的 lowerCamelCase>
+```
+
+其中「项目级冗余前缀」只指根命名空间 `Scm`——它出现在几乎每个类型上，
+对「这是哪个领域对象」零信息量，剥离后字段名反而更短更好读：
+
+```java
+ScmDataScopeDao      -> dataScopeDao
+ScmWarehouseScopeGuard -> warehouseScopeGuard
+```
+
+`Product` / `Purchase` / `Delivery` 等**领域词不是冗余前缀**，必须保留，
+否则字段名会丢失领域信息：
+
+```java
+ProductTagService    -> productTagService     // 不能写成 tagService
+ProductCategoryService -> productCategoryService
+```
+
+判定档位：
+
+| 档位 | 形态 | 判定 | 例 |
+| --- | --- | --- | --- |
+| A | 裸技术角色名 | **必须改** | `ProductCategoryDao dao` |
+| B | 类型业务名被明显裁剪 | **必须改** | `ProductTagService tags`、`ProductSkuSyncManager skus`、`ProductImageDao images`、`ProductUomService uom`、`ProductSpuDao spus`、`ProductCategoryService categories`、`ScmDataScopeDao scopeDao` |
+| C | 合法角色别名 | 不算债 | `DataSource readOnlyDataSource`、`PlatformTransactionManager transactionManager`、`ScmErrorCode errorCode` |
+
+档位 C 的判据是**角色语义**而非偷懒：同一个类型在同一类里以不同角色出现时
+（只读库/主库、事务管理器、错误码），前缀限定词表达的是「对象在本类里的角色」，
+这是必要信息，保留。
+
+自动工具无法高置信度判断时一律落到 `MANUAL_REVIEW`，**不得自动判 CLEAN**。
+历史事故：Q2.1 的审计算法用「字段名 token 恰为类型名 token 的后缀」判定缩写，
+于是 `ProductTagService tags`（`tags` 与类型后缀 `Service` 毫无 token 关系）根本不匹配，
+`product` 域因此报出 `abbreviated = 0` 的假阴性——报告看着干净，代码里仍是缩写。
+
+## 4.12 Java 符号改名禁止整文件正则 / 字符串替换
+
+**默认手段必须是符号级改名**：
+
+```text
+IDE Rename Symbol（Shift+F6）
+AST-aware refactor
+JavaParser / 编译器感知的重命名
+```
+
+只有在环境确实无法做符号改名时，才退化为
+**「精确声明 + 精确引用」替换**，且必须满足：
+
+- 只改 `private final <Type> <old>;` 这类声明处
+- 只改 `<old>.` 这类成员访问接收者（词边界 + 紧跟点号）
+- 改完在目标文件内 `\b<old>\b` 必须归零，且必须能编译
+
+**禁止**整文件 `\bword\b` 正则 / 字符串替换。以下位置默认不可改动，
+除非它们本身就是改名目标：
+
+```text
+字符串字面量
+注解参数（@SaCheckPermission / @RequestMapping / @RequestParam ...）
+URL / 路由
+权限码
+package / import 路径
+与字段同名的其它方法
+```
+
+原因不是理论洁癖，是 Q2.1 已经真实发生的事故：当时对 `query` 做整文件正则，
+把权限字面量、`@PostMapping` 的 URL、同名方法一起改坏；对 `batch` 的替换
+同时污染了权限码与端点。这类改造在单文件里肉眼可查，一旦铺到全仓库
+（supplier / customer / purchase / inventory / delivery / finance）就是不可控事故。
+
+参考实现：`tools/quality/q2_rename_fields.py`——它把字符串字面量与注解区间
+标为保护区，只在保护区之外做接收者替换，源文本残留引用不为 0 时报错退出。
+
 ---
 
 # 5. Magic String / Domain Enum

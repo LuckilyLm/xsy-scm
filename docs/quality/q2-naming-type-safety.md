@@ -6,6 +6,11 @@
 > 试点范围：**仅** `com.xsy.scm.common` 与 `com.xsy.scm.product` 两个域的生产与测试代码
 > 门禁流程：`code → check → capture → check`（§15）；baseline 只允许**下降**，禁用 `--allow-growth`，不手改 baseline
 > 审计工具：[`tools/quality/q2_audit.py`](../../tools/quality/q2_audit.py)（只读，不参与门禁）
+> 改名工具：[`tools/quality/q2_rename_fields.py`](../../tools/quality/q2_rename_fields.py)（AST 感知，保护字符串/注解）
+>
+> **状态：Q2.1 NAMING + TYPE SAFETY PILOT COMPLETE**
+> （Q2.1 首轮功能回归与门禁已通过，但命名判定**过宽**；经 Q2.1.1 Naming Standard Closure
+> 收紧标准并补齐遗留缩写字段后，才在 §8 写下 COMPLETE。详见 §1.1 与 §5。）
 
 本文件只记录 Q2.1 试点**做了什么、为什么、剩下什么**。质量体系的全景与数字口径见
 [`java-quality-audit-2026-09-26.md`](./java-quality-audit-2026-09-26.md)。
@@ -21,14 +26,75 @@
 | N3 | 常量 UPPER_SNAKE_CASE | `static final` |
 | N4 | 名字必须表达**完整业务语义** | 不允许只表达角色 |
 | N5 | 禁止依赖字段裸角色名 | `dao` / `service` / `query` / `manager` / `validator` / `repository` / `mapper` / `reader` / `writer` / `client` |
-| N6 | 禁止「类型名去掉领域前缀」的缩写字段 | `ProductSpuDao spuDao` → `productSpuDao`；`ProductCategoryDao categoryDao` → `productCategoryDao` |
-| N7 | 不做形式主义改名 | 字段名已是类型名小写（`dataScopeService`）或语义已完整（`errorCode`）时不动 |
+| N6 | 禁止「类型业务名被裁剪」的缩写字段 | `ProductTagService tags` → `productTagService`；`ProductSpuDao spus` → `productSpuDao`；`ScmDataScopeDao scopeDao` → `dataScopeDao` |
+| N7 | 不做形式主义改名 | 合法角色别名（`transactionManager` / `errorCode` / `readOnlyDataSource`）与类型名小写（`dataScopeService`）不动 |
 | N8 | 标准缩写保留常规驼峰 | `SKU` / `SPU` / `UOM` / `ID` / `URL` / `API` / `DTO` / `VO` / `DAO` 不拆、不强制大写 |
 | N9 | `var` 继续允许 | 不因改名禁用 `var`（§27 禁止项） |
+| N10 | 改名不得用整文件正则 | 见 §1.2；Q2.1 已因 `query` / `batch` 的整文件替换造成权限串与 URL 损坏 |
 
 **标准样例**：`ProductCategoryService` —— 字段 `dao` → `productCategoryDao`、`spuDao` → `productSpuDao`，
 枚举使用 `ScmEnableStatusEnum.ENABLED.name().equals(field)`（常量在前，天然 null-safe），
 不新增枚举 helper，不新增 `ScmAllConstants`。
+
+### 1.1 注入依赖字段的默认命名规则（Q2.1.1 收紧）
+
+Q2.1 首轮把「字段名 = 类型名 token 后缀」当缩写判据，判据本身有问题：
+`ProductTagService tags` 的字段名与类型后缀 `Service` 毫无 token 关系，于是根本不被识别，
+`product` 域报出 `abbreviated = 0` 的**假阴性**。Q2.1.1 起改用下列标准：
+
+**默认规则**
+
+```text
+<Type Simple Name 去掉项目级冗余前缀后的 lowerCamelCase>
+```
+
+「项目级冗余前缀」**只指根命名空间 `Scm`**（每个类型都有，零信息量）：
+
+```java
+ScmDataScopeDao        -> dataScopeDao
+ScmWarehouseScopeGuard -> warehouseScopeGuard
+```
+
+`Product` / `Purchase` / `Delivery` 是**领域词，不是冗余前缀**，必须保留，
+否则字段名丢失领域信息（`ProductTagService` 写成 `tagService` 就分不清商品标签还是采购标签）：
+
+```java
+ProductTagService      -> productTagService
+ProductCategoryService -> productCategoryService
+FileService            -> fileService
+FileRelationService    -> fileRelationService
+```
+
+**三档判定**
+
+| 档位 | 形态 | 判定 | 例 |
+| --- | --- | --- | --- |
+| A | 裸技术角色名 | **必须改** | `ProductCategoryDao dao` |
+| B | 类型业务名被明显裁剪 | **必须改** | `tags` / `categories` / `skus` / `spus` / `images` / `uom` / `scopeDao` |
+| C | 合法角色别名 | 不算债 | `readOnlyDataSource` / `transactionManager` / `errorCode` |
+
+档位 C 是**角色语义**而非偷懒：只读库 / 主库、事务管理器、错误码前缀表达的是
+「同一类型在本类里扮演的角色」，属必要信息。判据不是「机械要求 `varName == typeName lowerCamel`」。
+
+**自动规则无法高置信度判断 → `MANUAL_REVIEW`，绝不自动判 `CLEAN`。**
+
+### 1.2 Java 符号改名禁用整文件正则 / 字符串替换（Q2.1.1 起强制）
+
+**默认手段**：IDE Rename Symbol（Shift+F6）/ AST-aware refactor / JavaParser。
+
+环境确实无法符号改名时，才退化为**「精确声明 + 精确引用」替换**：只改
+`private final <Type> <old>;` 声明处与 `<old>.` 接收者位置；改完目标文件内
+`\b<old>\b` 必须归零且必须能编译。
+
+**禁止**改动：字符串字面量、注解参数、URL / 路由、权限码、`package` / `import` 路径、
+与字段同名的其它方法——除非它们本身就是改名目标。
+
+依据是 Q2.1 的**真实事故**：整文件正则改 `query` 时污染了权限字面量、`@PostMapping` URL
+与同名方法；改 `batch` 时污染了权限码与端点。参考实现见
+`tools/quality/q2_rename_fields.py`（把字符串字面量与注解区间标为保护区，残留引用不为 0 即报错退出）。
+
+> 同样的规则已写入 [`java-code-quality-remediation-plan.md`](./java-code-quality-remediation-plan.md)
+> §4.11 / §4.12，作为后续全仓库改名（supplier / customer / purchase / inventory / delivery / finance）的硬约束。
 
 ---
 
@@ -76,6 +142,10 @@
 | `f3a0611b` `chore(quality): add the Q2.1 naming / type-safety audit tool` | §17 审计工具（只读） |
 | `b842c6b5` `refactor(product): keep renamed lines within the 120-column limit` | 改名顶破 120 列 → 折行修复（见 3.5） |
 | `4eff6795` `docs(quality): record the Q2.1 naming and type-safety pilot` | §28 本文档 |
+| `c142a1e3` `docs(quality): add the Q2.1 verification results and line-length fix record` | 验证结果与折行记录 |
+| —— 以下为 **Q2.1.1 Naming Standard Closure** —— | |
+| `refactor(common,product): complete dependency naming cleanup` | 收紧标准后补齐 14 处遗留缩写字段（见 3.6） |
+| `chore(quality): harden naming audit against semantic abbreviations` | 加固审计工具 + 新增自测（见 3.7） |
 
 ### 3.2 §3 过期文档修正（独立提交）
 
@@ -144,56 +214,162 @@
 > 因为变长会当场变成阻断项；折行**必须手写**，脚本机械断点会切在 `foo.\n method(` 与字符串里
 > （实测 10 处语法损坏），每轮折行后都要 `mvn compile` 验证。
 
+### 3.6 Q2.1.1 命名标准收紧后的补齐（`refactor(common,product)`）
+
+#### 3.6.1 §3 复扫表（严格标准，基于改动前真实代码）
+
+按 §1.1 的标准对 `common` + `product` 的 `private final` / `protected final` 依赖字段**手工 + 工具**双向复扫，
+输出 `file / type / currentName / recommendedName / decision`（`q2_audit.py --table` 同口径）：
+
+| file | type | currentName | recommendedName | decision |
+| --- | --- | --- | --- | --- |
+| `common/scope/ScmDataScopeService.java` | `ScmDataScopeDao` | `scopeDao` | `dataScopeDao` | **B 必须改** |
+| `product/service/ProductBatchService.java` | `ProductSpuDao` | `spus` | `productSpuDao` | **B 必须改** |
+| `product/service/ProductBatchService.java` | `ProductCategoryService` | `categories` | `productCategoryService` | **B 必须改** |
+| `product/service/ProductBatchService.java` | `ProductTagService` | `tags` | `productTagService` | **B 必须改** |
+| `product/service/ProductQueryService.java` | `ProductSpuDao` | `spus` | `productSpuDao` | **B 必须改** |
+| `product/service/ProductQueryService.java` | `ProductSkuDao` | `skus` | `productSkuDao` | **B 必须改** |
+| `product/service/ProductQueryService.java` | `ProductImageDao` | `images` | `productImageDao` | **B 必须改** |
+| `product/service/ProductQueryService.java` | `ProductCategoryService` | `categories` | `productCategoryService` | **B 必须改** |
+| `product/service/ProductQueryService.java` | `ProductTagService` | `tags` | `productTagService` | **B 必须改** |
+| `product/service/ProductSpuService.java` | `ProductCategoryService` | `categories` | `productCategoryService` | **B 必须改** |
+| `product/service/ProductSpuService.java` | `ProductSkuSyncManager` | `skus` | `productSkuSyncManager` | **B 必须改** |
+| `product/service/ProductSpuService.java` | `ProductImageSyncManager` | `images` | `productImageSyncManager` | **B 必须改** |
+| `product/service/ProductSpuService.java` | `ProductUomService` | `uom` | `productUomService` | **B 必须改** |
+| `product/service/ProductSpuService.java` | `ProductTagService` | `tags` | `productTagService` | **B 必须改** |
+| `common/scope/ScmWarehouseScopeGuard.java` | `ScmDataScopeService` | `dataScopeService` | —— | C 合法别名（已是类型名小写） |
+| `common/exception/ScmBusinessException.java` | `ScmErrorCode` | `errorCode` | —— | C 合法别名（角色语义） |
+| `common/.../ScmW5PgITBase.java`（测试） | `PlatformTransactionManager` | `transactionManager` | —— | C 合法别名（角色语义） |
+| `common/.../ScmW5PgITBase.java`（测试） | `SqlSessionFactory` | `sqlSessionFactory` | —— | C（已是类型名小写） |
+| `common/.../ScmW2/W3/W5PgITBase.java`（测试） | `ObjectMapper` | `json` | —— | **MANUAL_REVIEW**（单列，不计入 0） |
+| `product/manager/ProductImageSyncManager.java` | `FileService` | `fileService` | —— | C（已是类型名小写） |
+| `product/manager/ProductImageSyncManager.java` | `FileRelationService` | `fileRelationService` | —— | C（已是类型名小写） |
+| `product/**` 各 Controller / Service / Manager | `Product*Service/Dao/Validator` | `product*Service/Dao/Validator` | —— | C（已是类型名小写） |
+
+**结果**：A 档 0 处、B 档 **14 处**、C 档为合法命名、`MANUAL_REVIEW` 3 处（仅 common 测试的 `json`）。
+B 档 14 处即下面的整改清单。
+
+> 说明：`product` 域 `FileService files` / `FileRelationService relations` 在 Q2.1 首轮
+> 已随 `45343732` 改为 `fileService` / `fileRelationService`（见 §3.3），本轮复扫已确认无残留。
+
+#### 3.6.2 整改清单
+
+Q2.1 首轮把「缩写」判据定得过窄（见 §1.1），漏掉 14 处真实缩写字段。Q2.1.1 按新标准补齐：
+
+| 文件 | 旧字段名 | 新字段名 | 类型 |
+| --- | --- | --- | --- |
+| `common/scope/ScmDataScopeService` | `scopeDao` | `dataScopeDao` | `ScmDataScopeDao` |
+| `product/service/ProductBatchService` | `spus` | `productSpuDao` | `ProductSpuDao` |
+| `product/service/ProductBatchService` | `categories` | `productCategoryService` | `ProductCategoryService` |
+| `product/service/ProductBatchService` | `tags` | `productTagService` | `ProductTagService` |
+| `product/service/ProductQueryService` | `spus` | `productSpuDao` | `ProductSpuDao` |
+| `product/service/ProductQueryService` | `skus` | `productSkuDao` | `ProductSkuDao` |
+| `product/service/ProductQueryService` | `images` | `productImageDao` | `ProductImageDao` |
+| `product/service/ProductQueryService` | `categories` | `productCategoryService` | `ProductCategoryService` |
+| `product/service/ProductQueryService` | `tags` | `productTagService` | `ProductTagService` |
+| `product/service/ProductSpuService` | `categories` | `productCategoryService` | `ProductCategoryService` |
+| `product/service/ProductSpuService` | `skus` | `productSkuSyncManager` | `ProductSkuSyncManager` |
+| `product/service/ProductSpuService` | `images` | `productImageSyncManager` | `ProductImageSyncManager` |
+| `product/service/ProductSpuService` | `uom` | `productUomService` | `ProductUomService` |
+| `product/service/ProductSpuService` | `tags` | `productTagService` | `ProductTagService` |
+
+**改名方式**：未走整文件正则（§1.2）。环境无 IDE 符号改名，故退化为
+**精确声明 + 精确接收者**替换，由 `tools/quality/q2_rename_fields.py` 执行：
+它把行内字符串字面量与注解区间标为保护区，只在保护区之外替换 `name.` 接收者。
+首次 dry-run 就当场拦下 `ProductBatchService:71`
+（`if (!"REMOVE".equals(...)) tags.assertUsable(...)` —— 同一行既有字面量又有接收者），
+正是 Q2.1 事故的同一类位置；确认字面量 `"REMOVE"` / `"ADD"` 与
+`ProductUomController` 的 `/scm/product/uom`、`scm:product:uom:*` 全部**原样未动**。
+
+**顺带处理**：新增字段名变长，使 `ProductBatchService:88`、`ProductSpuService:67/99/100`
+共 4 行**新**顶破 120 列（其余超长行均为存量、已在 baseline 上）。按「baseline 只降不升」
+手写折行后，4 行全部归零；`ProductQueryService` 的存量超长行未动
+（checkstyle baseline identity 不含行号，行移动不让 baseline 失效）。
+
+### 3.7 审计工具加固（`chore(quality)`）
+
+`tools/quality/q2_audit.py` 的命名检测被重写：
+
+- 新增协作方过滤（只检查 `*Service` / `*Dao` / `*Manager` / `*Validator` 等注入类型，
+  值对象 / 表单 / 实体的业务字段名不在范围内）。
+- 三档判定 A / B / C（§1.1），并新增 `MANUAL_REVIEW` 兜底——**自动规则判不了的一律交人工，
+  绝不自动判 CLEAN**。
+- 输出 `file / type / currentName / recommendedName / decision` 明细表（`--table`）。
+- 新增 `tools/quality/test_q2_audit_naming.py`：21 条用例钉住三档边界与
+  「unknown 不得判 CLEAN」的回归守卫。
+
 ---
 
 ## 4. 试点后数据（after）
 
-`python tools/quality/q2_audit.py`（after）：
+`python tools/quality/q2_audit.py`（Q2.1.1 加固后重测）：
 
 | 指标 | common | product |
 | --- | ---: | ---: |
-| 裸角色字段 | 0 | **0**（24 → 0） |
-| 缩写型字段 | 4 | **0**（4 → 0） |
-| 无信息局部变量 | 0 | **1**（15 → 1，余 1 处在测试 `ProductPgIT`） |
-| magic string 主代码 | 0 | **3**（25 → 3，余下即上面两处有意保留） |
+| 协作方字段（判定范围） | 35 | 62 |
+| **裸角色字段（A，必须改）** | **0** | **0** |
+| **缩写型字段（B，必须改）** | **0**（4 → 0） | **0**（13 → 0） |
+| 合法角色别名（C，不算债） | 32 | 62 |
+| `MANUAL_REVIEW`（不计入 0） | 3（`ObjectMapper json` ×3） | 0 |
+| 无信息局部变量 | 0 | **1**（余 1 处在测试 `ProductPgIT`） |
+| magic string 主代码 | 0 | **3**（25 → 3，余下即 §3.4 有意保留） |
 | magic string 测试代码 | 28 | 67 |
 
-门禁口径（`quality_guard.py check --checkstyle`，capture 后）：
+> **验收口径（§8）**：`common` + `product` 的**高置信度语义缩写依赖字段必须为 0**。
+> 上表两域 B 档均为 0 → 满足。`MANUAL_REVIEW` 单列，**不计入 0**：本轮的 3 条都是测试里的
+> `ObjectMapper json`（既非类型名、也非已知角色别名，工具按约定交人工，不自动放行）。
 
-| family | before | after | Δ |
-| --- | ---: | ---: | ---: |
-| `generic-dependency-field` | 71 | **52** | **−19** |
-| `magic-string-domain-literal` | 191 | **169** | **−22** |
-| `raw-permission-literal` | 285 | 285 | 0 |
-| `stage-comment` | 695 | 695 | 0 |
-| `legacy-scm-package` | 0 | 0 | 0 |
-| `checkstyle` | 867 | **839** | **−28** |
+> before 口径见 §2。Q2.1 首轮用旧算法测得 product「缩写 = 0」是**假阴性**（§1.1），
+> 真实 before 是 13 处；Q2.1.1 补齐后归零。
 
-**无任何 family 增长（全部持平或下降）**，`RESULT: PASS`。
+门禁口径（`quality_guard.py check --checkstyle`，Q2.1.1 capture 后）：
 
-> 期间 guard **确实**拦下过一次增长：改名/换枚举使 6 个文件顶破 120 列，
+| family | before | Q2.1 after | Q2.1.1 after | Δ(总) |
+| --- | ---: | ---: | ---: | ---: |
+| `generic-dependency-field` | 71 | 52 | **52** | **−19** |
+| `magic-string-domain-literal` | 191 | 169 | **169** | **−22** |
+| `raw-permission-literal` | 285 | 285 | 285 | 0 |
+| `stage-comment` | 695 | 695 | 695 | 0 |
+| `legacy-scm-package` | 0 | 0 | 0 | 0 |
+| `checkstyle` | 867 | 839 | **839** | **−28** |
+
+**无任何 family 增长（全部持平或下降）**，`RESULT: PASS`，**未使用 `--allow-growth`**。
+
+> Q2.1.1 的这些改名不改变 `generic-dependency-field` 计数：该 family 只抓**裸角色名**
+> （档位 A），而本轮清理的是档位 B（业务名被裁剪）——它从来不在 guard 的账上，
+> 只在 `q2_audit.py` 的审计里可见。这也是为什么 §1.1 要单独收紧审计规则。
+
+> 期间 guard **确实**拦下过一次增长：Q2.1 改名/换枚举使 6 个文件顶破 120 列，
 > 报 3 条 NEW + 3 条 GROWN `LineLength`；折行修复后归零（见 3.5）。这条链
 > 证明了「baseline 只降不升、`--allow-growth` 未使用」的棘轮真的在起作用。
 
 ---
 
-## 5. common 域的判定：无必须改动（记录不硬改）
+## 5. common 域的判定（**Q2.1.1 已推翻首轮结论**）
 
-试点范围内的 `common` 复查结论：
+> **⚠️ 首轮结论已作废。** Q2.1 曾判定 `common` 「无必须改动」，并把 4 条
+> 缩写字段全部当作「诚实命名」放行。Q2.1.1 收紧标准后，其中
+> **`ScmDataScopeDao scopeDao` 被确认是真实缩写，已改名 `dataScopeDao`**。
+> 作废理由：首轮把「去掉 `Data` 是正确简写」当作领域判断，但按 §1.1 的默认规则，
+> `ScmDataScopeDao` 去 `Scm` 前缀后就是 `dataScopeDao`——`scopeDao` 丢掉了
+> 类型里那个 `Data` 业务词，属**档位 B，必须改**。
 
-- **裸角色字段 = 0**（本来就没有）。
-- **缩写型字段 = 4，全部为诚实命名，不改**：
-  - `ScmErrorCode errorCode` —— 叶子名词就是 `errorCode`，类型不是字段「是什么」。
-  - `ScmDataScopeDao scopeDao` —— 这里的领域名词是「scope」（数据范围），去掉 `Data` 是正确简写。
-  - `ScmDataScopeService dataScopeService` —— 它**本来就是类型名小写**，被标为「缩写」是 token 匹配假象。
-  - `PlatformTransactionManager transactionManager`（测试）—— 同样是类型名小写。
+Q2.1.1 复查后 `common` 的结论：
+
+- **裸角色字段（A）= 0**。
+- **缩写型字段（B）= 0**（原 1 处 `scopeDao` 已改名为 `dataScopeDao`）。
+- **合法角色别名（C）保留不改**：
+  - `ScmErrorCode errorCode` —— 角色语义（错误码），保留。
+  - `ScmDataScopeService dataScopeService` —— 已是类型名小写（`ScmWarehouseScopeGuard` 内），保留。
+  - `PlatformTransactionManager transactionManager`（测试）—— 角色语义，保留。
+- **`MANUAL_REVIEW` = 3**：均为测试里的 `ObjectMapper json`（`ScmW2/W3/W5PgITBase`）。
+  既不等于类型名也不属白名单角色别名，工具按约定交人工、不自动判 CLEAN；本轮不改名。
 - **magic string = 28，全部在测试源码**（主代码 0）。测试里的枚举字面量是**夹具**（fixture），
   不是裸露的业务逻辑；门禁只约束主代码，故不构成本轮 gated 债务。
 - **无信息局部变量 = 0**。
 
-因此按 §4 / §10 / §29 与「**如果 common 有独立变更：Commit 4**」的条件，
-**common 没有产出独立的生产代码变更，Commit 4 不成立**。上述 4 + 28 条作为**已记录、待后续域统一治理**项处理，
-而非本轮强行改名（§27 禁止形式主义）。
+因此 Q2.1.1 为 `common` 产出了**1 处独立生产变更**（`ScmDataScopeService.scopeDao` → `dataScopeDao`），
+并随 `refactor(common,product)` 提交。
 
 ---
 
@@ -209,6 +385,7 @@
 | `"CATEGORY_DISABLED"` 消息 token | 不是状态判断 |
 | `stage-comment`（695） | Q3 范围，本轮不动 |
 | 新增 `ScmAllConstants` / 大量 `XXXConstant` / 双份「枚举 + 字符串」 | §27 禁止项 |
+| `MANUAL_REVIEW` 的 `ObjectMapper json`（3 处，测试） | 非类型名、非白名单角色别名；工具交人工，本轮不改 |
 
 ### 6.2 重复枚举检查（§14，只记录不合并）
 
@@ -222,16 +399,23 @@
 建议后续按依赖方向由内向外推进：`customer` / `supplier` → `pricing` → `purchase` →
 `inventory` / `sorting` / `delivery` → `finance`。**每完成一个域即 `capture` 一次**，让账本单调收缩。
 
+> 后续域推进时**必须沿用 §1.1 的收紧标准与 §1.2 的改名方式**：把 `q2_audit.py`
+> 指向目标域（`--domain ...`）先出 `MANUAL_REVIEW` 清单，再用符号级改名清理，
+> **不要**用整文件正则。历史遗留域里的缩写字段预计远多于 product（本轮 product 一域就有 13 处）。
+
 ---
 
 ## 7. 本轮验证结果（§26）
 
 | 验证 | 结果 |
 | --- | --- |
-| 工具单测 `python -m unittest discover -s quality -p 'test_*.py'` | 64 / 64 OK |
-| `quality_guard.py check --checkstyle` | PASS（无 NEW / GROWN） |
-| `mvn spotless:check` | PASS |
-| 定向 `mvn test -Dtest='Product*'` | 95 tests / 0 failures / 0 errors |
+| 工具单测 `python -m unittest discover -s quality -p 'test_*.py'` | **85 / 85 OK**（Q2.1 为 64；Q2.1.1 新增 21 条命名判定用例） |
+| `python tools/quality/q2_audit.py` | common B=0 / product B=0；`MANUAL_REVIEW` 3（common 测试） |
+| `quality_guard.py check --checkstyle` | PASS（无 NEW / GROWN，未用 `--allow-growth`） |
+| `mvn -pl sa-admin -am -o compile` | 成功（改名后语法有效） |
+| `mvn -pl sa-admin spotless:check` | PASS |
+| 定向 `mvn test -Dtest='Product*'` | **95 tests / 0 failures / 0 errors / 0 skipped** |
+| 定向 `mvn test`（common 显式类列表） | **29 tests / 0 failures / 0 errors / 0 skipped** |
 | `python tools/migration_checksum_guard.py check` | PASS（drift 0 / missing 0 / renamed 0 / unbaked 0） |
 | `python tools/verify.py quality` | PASS |
 | `python tools/verify.py backend`（一次性干净库） | **sa-base 8 + sa-admin 1194 = 1202 tests / 0 failures / 0 errors / 5 skipped** |
@@ -245,6 +429,33 @@
 > `PurchaseDemandSummaryPreviewIT` 在全量中偶发红、单跑绿 —— 这是已定性的跨测试数据污染，
 > 不是本轮回归（本轮未触碰 purchase / inventory 任何文件）。配方见
 > [`package-migration-readiness.md`](./package-migration-readiness.md) §7.5。
+>
+> **建库注意（本轮新踩到）**：一次性库**不要预建 `xsy_v2` schema**。
+> 必须只 `CREATE DATABASE`，让 Flyway 自己建 schema —— 否则
+> `flyway_schema_history` 里不会出现那条 `version IS NULL` 的
+> `<< Flyway Schema Creation >>` 基线行，
+> `ScmPurchaseMigrationIT.flywayHistoryIsAppendOnly` 的 `isEqualTo(1)` 会失败。
+> 该失败与命名改动无关（本轮未触碰 purchase / 任何迁移文件），是建库方式导致的。
+> 另外：DB 容器超级用户是 **`xsy_scm_app`**（不是 `postgres`），建库要
+> `docker exec xsy-scm-postgres-1 psql -U xsy_scm_app -d postgres -c "CREATE DATABASE <db> OWNER xsy_scm_app;"`。
+
+---
+
+## 8. 阶段判定
+
+```text
+Q2.1 NAMING + TYPE SAFETY PILOT COMPLETE
+```
+
+依据：
+
+1. `common` + `product` 的**高置信度语义缩写依赖字段 = 0**（A 档 0、B 档 0，§4）。
+2. 命名标准已**收紧成文**（§1.1）并同时写入整改计划 §4.11，后续域有可执行的判据。
+3. **整文件正则改名被明令禁止**（§1.2 + 整改计划 §4.12），并有参考实现与自测兜底。
+4. 门禁无任何 family 增长，`--allow-growth` 未使用。
+5. 功能回归（定向 + 后端全量）全绿。
+
+**停止条件**：本节写定后即停止。**不自动进入 `supplier` / `customer`，不继续 Finance，不 push。**
 
 ---
 
@@ -253,7 +464,12 @@
 ```bash
 # 命名 / 类型安全审计（只读，不阻断）
 python tools/quality/q2_audit.py
+python tools/quality/q2_audit.py --table            # file / type / currentName / recommendedName / decision
 python tools/quality/q2_audit.py --domain product --json
+
+# 依赖字段改名（默认 dry-run；只改声明 + 接收者，保护字符串/注解）
+python tools/quality/q2_rename_fields.py            # 预览
+python tools/quality/q2_rename_fields.py --apply    # 写回
 
 # 门禁
 python tools/quality/quality_guard.py check --checkstyle
