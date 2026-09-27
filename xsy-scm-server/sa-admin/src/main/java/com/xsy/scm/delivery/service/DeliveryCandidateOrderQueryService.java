@@ -7,6 +7,7 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.delivery.dao.DeliveryQueryDao;
 import com.xsy.scm.delivery.domain.form.DeliveryQueryForm;
 import com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO;
+import com.xsy.scm.delivery.permission.DeliveryPermission;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
@@ -21,21 +22,20 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 @RequiredArgsConstructor
 public class DeliveryCandidateOrderQueryService {
     /** 组单 / 规划权；与 V43 种下的功能点逐字一致。 */
-    public static final String ROUTE_PLAN_PERM = "scm:delivery:route:plan";
 
-    private final DeliveryQueryDao queries;
+    private final DeliveryQueryDao deliveryQueryDao;
     private final DeliveryEligibilityPolicy policy;
-    private final ScmDataScopeService scopeService;
+    private final ScmDataScopeService dataScopeService;
 
     public PageResult<DeliveryCandidateVO> query(DeliveryQueryForm form) {
-        if (!ScmDataScopeService.hasPermission(ROUTE_PLAN_PERM))
+        if (!ScmDataScopeService.hasPermission(DeliveryPermission.ROUTE_PLAN))
             throw new ScmDataScopeException();
         var page = DeliveryRouteQueryService.page(form);
         // sales_order 上没有仓库列，因此仓库维度是「能不能取候选」的前置条件而非行级过滤；
         // 无任何授权仓的调用者拿不到候选行，也就无法把订单编进线路。
-        var warehouseScope = scopeService.resolve().getWarehouseScope();
+        var warehouseScope = dataScopeService.resolve().getWarehouseScope();
         if (warehouseScope.isEmpty()) return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page, DeliveryVisibility.current()
-                .candidates(queries.candidates(page, form, policy.candidateStatuses(), warehouseScope)));
+                .candidates(deliveryQueryDao.candidates(page, form, policy.candidateStatuses(), warehouseScope)));
     }
 }

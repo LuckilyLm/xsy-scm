@@ -2,6 +2,7 @@ package com.xsy.scm.delivery.service;
 
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.delivery.dao.DeliveryQueryDao;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import org.springframework.stereotype.Component;
 
@@ -22,10 +23,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DeliveryEligibilityPolicy {
 
-    private final DeliveryQueryDao queries;
+    private final DeliveryQueryDao deliveryQueryDao;
 
     public List<String> candidateStatuses() {
-        return List.of("CONFIRMED");
+        return List.of(ScmOrderStatusEnum.CONFIRMED.name());
     }
 
     /**
@@ -35,6 +36,6 @@ public class DeliveryEligibilityPolicy {
     public boolean eligible(SalesOrderEntity order) {
         return order != null && !Boolean.TRUE.equals(order.getDeleted())
                 && candidateStatuses().contains(order.getStatus())
-                && queries.unsortedItemCount(order.getId()) == 0;
+                && deliveryQueryDao.unsortedItemCount(order.getId()) == 0;
     }
 }

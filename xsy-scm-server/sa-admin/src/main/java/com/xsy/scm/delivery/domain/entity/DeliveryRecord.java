@@ -1,8 +1,10 @@
 package com.xsy.scm.delivery.domain.entity;
 
 import lombok.Data;
-import com.baomidou.mybatisplus.annotation.*;
-
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.Version;
 import java.time.OffsetDateTime;
 
 @Data

@@ -8,18 +8,27 @@ import org.springframework.dao.DuplicateKeyException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xsy.scm.delivery.dao.DeliveryDriverDao;
 import com.xsy.scm.delivery.domain.entity.DeliveryDriverEntity;
-import com.xsy.scm.delivery.domain.form.*;
+import com.xsy.scm.delivery.domain.form.DeliveryDriverForm;
+import com.xsy.scm.delivery.domain.form.DeliveryQueryForm;
 import com.xsy.scm.delivery.domain.vo.DeliveryDriverVO;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.xsy.scm.delivery.constant.DeliveryErrorCode.*;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DRIVER_EMPLOYEE_BOUND;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DRIVER_EMPLOYEE_INVALID;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DRIVER_EMPLOYEE_REQUIRED;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DUPLICATE;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.NOT_FOUND;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 @Service
@@ -28,8 +37,8 @@ public class DeliveryDriverService {
     /** V54 的「一个员工最多绑一个活动司机」部分唯一索引；冲突消息按索引名区分，避免把绑定冲突报成编码重复。 */
     private static final String EMPLOYEE_BINDING_INDEX = "uk_delivery_driver_active_employee";
 
-    private final DeliveryDriverDao dao;
-    private final EmployeeDao employees;
+    private final DeliveryDriverDao deliveryDriverDao;
+    private final EmployeeDao employeeDao;
 
     public PageResult<DeliveryDriverVO> query(DeliveryQueryForm form) {
         var requested = DeliveryRouteQueryService.page(form);
@@ -40,7 +49,7 @@ public class DeliveryDriverService {
         if (form.getStatus() != null && !form.getStatus().isBlank())
             wrapper.eq(DeliveryDriverEntity::getStatus, form.getStatus());
         wrapper.orderByAsc(DeliveryDriverEntity::getDriverCode, DeliveryDriverEntity::getId);
-        var rows = dao.selectList(page, wrapper);
+        var rows = deliveryDriverDao.selectList(page, wrapper);
         var names = employeeNames(rows.stream().map(DeliveryDriverEntity::getEmployeeId).filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
         return SmartPageUtil.convert2PageResult(page, rows.stream().map(row -> {
@@ -52,12 +61,14 @@ public class DeliveryDriverService {
     }
 
     public List<DeliveryDriverEntity> options() {
-        return dao.selectList(new LambdaQueryWrapper<DeliveryDriverEntity>().eq(DeliveryDriverEntity::getStatus, "ENABLED").orderByAsc(DeliveryDriverEntity::getDriverCode));
+        return deliveryDriverDao.selectList(new LambdaQueryWrapper<DeliveryDriverEntity>()
+                .eq(DeliveryDriverEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+                .orderByAsc(DeliveryDriverEntity::getDriverCode));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public Long save(DeliveryDriverForm form) {
-        var row = form.getId() == null ? new DeliveryDriverEntity() : dao.selectById(form.getId());
+        var row = form.getId() == null ? new DeliveryDriverEntity() : deliveryDriverDao.selectById(form.getId());
         if (row == null) throw new ScmBusinessException(NOT_FOUND);
         if (form.getId() != null && !Objects.equals(row.getVersion(), form.getVersion()))
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -66,8 +77,8 @@ public class DeliveryDriverService {
         row.setDriverCode(form.getDriverCode().trim().toUpperCase(Locale.ROOT));
         DeliveryRouteService.stamp(row, form.getId() == null);
         try {
-            if (form.getId() == null) dao.insert(row);
-            else if (dao.updateById(row) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (form.getId() == null) deliveryDriverDao.insert(row);
+            else if (deliveryDriverDao.updateById(row) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(isBindingConflict(e) ? DRIVER_EMPLOYEE_BOUND : DUPLICATE);
         }
@@ -80,10 +91,10 @@ public class DeliveryDriverService {
      */
     private void requireBindableEmployee(Long employeeId, String status) {
         if (employeeId == null) {
-            if ("ENABLED".equals(status)) throw new ScmBusinessException(DRIVER_EMPLOYEE_REQUIRED);
+            if (ScmEnableStatusEnum.ENABLED.name().equals(status)) throw new ScmBusinessException(DRIVER_EMPLOYEE_REQUIRED);
             return;
         }
-        EmployeeEntity employee = employees.selectById(employeeId);
+        EmployeeEntity employee = employeeDao.selectById(employeeId);
         if (employee == null || Boolean.TRUE.equals(employee.getDeletedFlag()))
             throw new ScmBusinessException(DRIVER_EMPLOYEE_INVALID);
     }
@@ -95,7 +106,7 @@ public class DeliveryDriverService {
     /** 绑定员工姓名；已删除的员工不显示名字（列表留空即提示这条绑定需要重新处理）。 */
     private Map<Long, String> employeeNames(Set<Long> employeeIds) {
         if (employeeIds.isEmpty()) return Map.of();
-        var found = employees.selectBatchIds(employeeIds);
+        var found = employeeDao.selectBatchIds(employeeIds);
         if (found == null) return Map.of();
         return found.stream()
                 .filter(e -> e != null && e.getEmployeeId() != null && !Boolean.TRUE.equals(e.getDeletedFlag()))

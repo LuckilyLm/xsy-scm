@@ -1,7 +1,13 @@
 package com.xsy.scm.delivery.domain.form;
 
 import lombok.Data;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.delivery.constant.ScmDeliveryCustomerPrintFilterEnum;
+import com.xsy.scm.delivery.constant.ScmDeliveryOrderPrintFilterEnum;
 
 import java.util.List;
 
@@ -13,20 +19,20 @@ import java.util.List;
  */
 @Data
 public class DeliveryPrintCustomersForm {
-    @NotNull
-    @Min(0)
+    @NotNull(message = "版本号不能为空")
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
-    @Size(max = 500)
-    private List<@NotNull @Positive Long> customerIds;
+    @Size(max = 500, message = "客户数量不能超过500个")
+    private List<@NotNull(message = "客户编号不能为空") @Positive(message = "客户编号必须为正数") Long> customerIds;
     /**
      * ALL / PRINTED / UNPRINTED / PARTIAL，默认 ALL；缺省 {@code customerIds} 时不允许 ALL，
      * 否则一次请求会无选择地重打整条线路。
      */
-    @Pattern(regexp = "ALL|PRINTED|UNPRINTED|PARTIAL")
-    private String customerStatusFilter = "ALL";
+    @ScmEnumValue(enumClass = ScmDeliveryCustomerPrintFilterEnum.class, message = "客户打印状态筛选值无效")
+    private String customerStatusFilter = ScmDeliveryCustomerPrintFilterEnum.ALL.name();
     /**
      * ALL / PRINTED / UNPRINTED，默认 ALL；不接受 PARTIAL（PARTIAL 是客户维度状态，不是订单筛选）。
      */
-    @Pattern(regexp = "ALL|PRINTED|UNPRINTED")
-    private String orderPrintFilter = "ALL";
+    @ScmEnumValue(enumClass = ScmDeliveryOrderPrintFilterEnum.class, message = "订单打印状态筛选值无效")
+    private String orderPrintFilter = ScmDeliveryOrderPrintFilterEnum.ALL.name();
 }

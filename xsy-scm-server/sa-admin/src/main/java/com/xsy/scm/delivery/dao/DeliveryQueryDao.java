@@ -1,15 +1,19 @@
 package com.xsy.scm.delivery.dao;
 
-import org.apache.ibatis.annotations.*;
-
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.delivery.domain.form.DeliveryQueryForm;
-import com.xsy.scm.delivery.domain.vo.*;
-import com.xsy.scm.delivery.domain.entity.*;
-
+import com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO;
+import com.xsy.scm.delivery.domain.vo.DeliveryCustomerViewVO;
+import com.xsy.scm.delivery.domain.vo.DeliveryOrderViewVO;
+import com.xsy.scm.delivery.domain.vo.DeliveryPrintItemVO;
+import com.xsy.scm.delivery.domain.vo.DeliveryRouteVO;
+import com.xsy.scm.delivery.domain.vo.DeliveryStopVO;
+import com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity;
 /**
  * 配送读侧取数。带 {@code scope} 参数的语句是**只读列表 / 详情**，必须由 Service 显式下传数据范围，
  * 传 {@code null} 在 Mapper 里渲染成恒假谓词（失败关闭）；写侧用的
