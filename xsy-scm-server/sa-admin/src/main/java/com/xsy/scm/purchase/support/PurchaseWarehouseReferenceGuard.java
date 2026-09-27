@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_WAREHOUSE_DISABLED;
 
 /**
- * 仓库引用的**服务层外键替代**（W5 Target Design §3.1「外键」行 / §5.2 / §7.7）。
+ * 仓库引用的服务层完整性守卫。
  *
  * <p>`AGENTS.md` 明文禁止数据库外键，因此
  * `purchase_order.warehouse_id` · `purchase_receipt.warehouse_id` ·
@@ -27,10 +27,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_WAREHOUSE
  * 收货单创建）的引用守卫。两者共享同一错误码语义，但**不共享实现** ——
  * 采购单路径需要同时返回实体供快照装配，需求 / 收货路径只需要通过 / 拒绝。
  *
- * <p><b>为什么不校验「仓库是否被引用」（反向引用）</b>：W5 没有仓库删除端点，
- * 也没有仓库停用端点（§7.2 的 5 个端点中不含 status 变更），因此反向引用在 W5
- * **没有可达的拦截点**。该缺口已登记为验收报告 G1，不在 W5 擅自新增端点或错误码
- * （W5 错误码总数被冻结为 38 + 2 = 40）。
+ * <p>仓库停用的反向引用检查由 {@code WarehouseDisableGuard} 统一完成，
+ * 本类只校验新采购引用的仓库是否存在且启用。
  */
 @Component
 @RequiredArgsConstructor

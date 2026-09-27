@@ -39,16 +39,16 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * 采购单端点（W5 Target Design §7.1 的 11 个端点）。
+ * 采购单端点（的 11 个端点）。
  *
  * <p>查询类走 `scm:purchase:query`，日志单独一个 `scm:purchase:log:query`
- * （审计数据与业务数据分权，与 W4 的 `scm:order:log:query` 一致）。
+ * （审计数据与业务数据分权，与 的 `scm:order:log:query` 一致）。
  *
  * <p>`Idempotency-Key` 头一律声明为 {@code required = false}：缺失时由
  * {@code PurchaseIdempotencyService} 抛 40084，若标成必填会被框架转成 30001，
- * 与 §7.7 的错误码契约不符（同 {@code PurchaseDemandController}）。
+ * 与 的错误码契约不符（同 {@code PurchaseDemandController}）。
  *
- * <p>`update` **不带**幂等头 —— 它靠行级 `@Version` 保证重复提交安全（§4.2 T2）。
+ * <p>`update` **不带**幂等头 —— 它靠行级 `@Version` 保证重复提交安全。
  */
 @RestController
 @RequiredArgsConstructor
@@ -90,9 +90,9 @@ public class PurchaseOrderController {
     }
 
     /**
-     * 采购单列表导出（Wave 2B §6.4，只读）：复用 {@code scm:purchase:query}，一次取「第 1 页 + 上限行」的
-     * 当前筛选结果，按前端勾选的列（{@link PurchaseOrderExportSupport} 目录裁决）落动态表头 xlsx。
-     * 与列表页共用同一投影，导出内容 == 列表可见内容；<b>不触碰任何采购状态</b>（§6.8）。
+     * 采购单列表导出（只读）：复用 {@code scm:purchase:query}，一次取「第 1 页 + 上限行」的
+     * 当前筛选结果，按前端勾选列和 {@link PurchaseOrderExportSupport} 的列目录生成动态表头 xlsx。
+     * 与列表页共用同一投影，导出内容 == 列表可见内容；<b>不触碰任何采购状态</b>。
      */
     @PostMapping("/export")
     @SaCheckPermission(PurchasePermission.QUERY)
@@ -172,7 +172,7 @@ public class PurchaseOrderController {
     }
 
     /**
-     * 批量少收关单（Wave 2B §6.3）：整批共享原因，在同一事务内逐单套用与单单完全相同的合法性 / 版本校验，
+     * 批量少收关单：整批共享原因，在同一事务内逐单套用与单单完全相同的合法性 / 版本校验，
      * 任一单非法即整批回滚。复用 {@code scm:purchase:short-close} 权限；不接幂等头（批量本身原子）。
      */
     @PostMapping("/batch/short-close")

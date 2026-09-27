@@ -19,7 +19,7 @@ public final class PurchaseOrderAuditSnapshotFactory {
     }
 
     /**
-     * `SUBMIT` / `CANCEL` / `SHORT_CLOSE` 的轻量状态快照（§7.12）。
+     * `SUBMIT` / `CANCEL` / `SHORT_CLOSE` 的轻量状态快照。
      */
     public static Map<String, Object> orderStateSnapshot(PurchaseOrderEntity order) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
@@ -29,7 +29,7 @@ public final class PurchaseOrderAuditSnapshotFactory {
     }
 
     /**
-     * `CREATE` / `UPDATE` / `DELETE` 的「全量 header + items」快照（§7.12）。
+     * `CREATE` / `UPDATE` / `DELETE` 的「全量 header + items」快照。
      */
     public static Map<String, Object> orderAuditSnapshot(PurchaseOrderVO vo) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();

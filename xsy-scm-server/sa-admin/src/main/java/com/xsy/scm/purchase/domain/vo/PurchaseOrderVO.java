@@ -11,10 +11,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
- * 采购单（W5 Target Design §7.2）。
+ * 采购单。
  *
  * <p>**没有 `confirmedAt`**：`purchase_order` 表没有 `confirmed_at` 列，
- * 收货完成时间见各收货单的 `confirmed_at`（F4）。`submittedAt` / `cancelledAt` / `shortClosedAt`
+ * 收货完成时间见各收货单的 `confirmed_at`。`submittedAt` / `cancelledAt` / `shortClosedAt`
  * 与状态时间戳 CHECK 一一对应。
  *
  * <p>`receivedProgress` 是**汇总进度**（派生量，不落库），用于列表展示。
@@ -41,8 +41,7 @@ public class PurchaseOrderVO {
     /**
      * 派生：Σreceived / Σplanned（比例，scale 4，HALF_UP），用于列表进度展示。
      *
-     * <p>**无活动行时为 {@code null}**，而不是 {@code "0.0000"} —— 与 W3/W4 的三态纪律一致
-     * （「无值」不等于「值为零」）。超收时比例可大于 1。
+     * <p>无活动收货行时为 {@code null}，表示尚无进度值；超收时比例可大于 1。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal receivedProgress;

@@ -6,11 +6,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 采购收货单（W5 Target Design §7.2；B1 扩展）。
+ * 采购收货单。
  *
- * <p>2 状态 `DRAFT` / `CONFIRMED`；`receivedAt` 与 `confirmedAt` 同时写入，
- * `operator` 由 `ScmOperator.current()` 写入（修 A-D12 的 `SYSTEM` 硬编码）。
- * B1 增加入库方式 / 入库状态 / 入库时间 / 入库操作人（与 `status` 解耦）。
+ * <p>状态为 `DRAFT` / `CONFIRMED`。确认时间与确认操作人单独记录；入库方式、入库状态与入库时间
+ * 独立于收货单的商业状态。
  */
 @Data
 public class PurchaseReceiptVO {

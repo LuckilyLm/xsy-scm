@@ -69,32 +69,32 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_P
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_STATE_INVALID;
 
 /**
- * 采购收货命令服务（W5 Target Design §4.3 / §7.5 / §7.9）。
+ * 采购收货命令服务。
  *
- * <p><b>收货单只有 2 个状态</b>（Q7/Q7a）：`DRAFT` 不产生任何副作用，`CONFIRMED` 只读。
- * 「多次收货」由「一采购单多收货单」表达，不是同一张单反复确认（修 A-D5）。
+ * <p><b>收货单只有 2 个状态</b>：`DRAFT` 不产生任何副作用，`CONFIRMED` 只读。
+ * 「多次收货」由「一采购单多收货单」表达，不是同一张单反复确认（修）。
  *
- * <p><b>容差走 SmartAdmin 原生 Config（Q3a）</b>：{@link ConfigService#getConfig(String)}
+ * <p><b>容差走 SmartAdmin 原生 Config</b>：{@link ConfigService#getConfig(String)}
  * 读 `t_config`，缺失 → 回退 10，非法 → 40999。SCM **不自建缓存、不建配置表**
  * （`ConfigService` 自带 `ConcurrentHashMap` + `@SmartReload(CONFIG_RELOAD)`）。
  *
- * <p><b>标品 / 非标品（P21/P22）</b>：标品的有效数量 = 本次申报数量，且实重三字段必须全空；
+ * <p><b>标品 / 非标品</b>：标品的有效数量 = 本次申报数量，且实重三字段必须全空；
  * 非标品的有效数量 = 本次实重（必填 &gt; 0，来源必须 `MANUAL`）。
  * **`planned_quantity` 永不被覆盖**。
  *
- * <p><b>锁序（§7.9 对 `receipt.confirm` 明列的次序）</b>：
+ * <p><b>锁序（对 `receipt.confirm` 明列的次序）</b>：
  * 采购单 → 收货单 → 采购行（按 id 升序）→ 收货行（按 id 升序）。
  * 全库只有本类同时持有「收货单」与「采购行」两把锁，因此与 `order.create`
  * （需求 → 采购单 → 采购行）不构成环。
  *
- * <p><b>W6 库存接线</b>：{@code confirm} 的最后一步（§4.3 第 15 步）调用
+ * <p><b> 库存接线</b>：{@code confirm} 的最后一步（第 15 步）调用
  * {@link PurchaseInventoryContract#postInbound}，**在同一个事务内**。
- * 本类只依赖 W5 已定义的接口，**不 import inventory 模块任何类** ——
+ * 本类只依赖 已定义的接口，**不 import inventory 模块任何类** ——
  * purchase → inventory 的编译期依赖为零，真实实现由 Spring 在装配期注入。
  *
- * <p><b>Finance R1 应付接线</b>：{@code confirm} 把收货单置为 {@code CONFIRMED} 之后调用
- * {@link FinancePayableService#generateOnReceiptConfirm}，与库存写入同一个事务（第一批 Q9）。
- * 这里不需要 W6 那样的接口：依赖方向是 purchase → finance，而 finance 对采购表只读、
+ * <p><b> 应付接线</b>：{@code confirm} 把收货单置为 {@code CONFIRMED} 之后调用
+ * {@link FinancePayableService#generateOnReceiptConfirm}，与库存写入同一个事务。
+ * 这里不需要 那样的接口：依赖方向是 purchase → finance，而 finance 对采购表只读、
  * 不反向 import 采购域，因此不存在环。
  */
 @Service
@@ -122,8 +122,8 @@ public class PurchaseReceiptService {
     private final ConfigService configService;
 
     /**
-     * 库存契约（W6 接线）。运行时注入的是 {@code inventory.support.PurchaseInventoryContractImpl}；
-     * W5 期间容器里没有该类型的 Bean，本字段是 W6 新增的唯一依赖。
+     * 库存契约（接线）。运行时注入的是 {@code inventory.support.PurchaseInventoryContractImpl}；
+     * 期间容器里没有该类型的 Bean，本字段是 新增的唯一依赖。
      */
     private final PurchaseInventoryContract purchaseInventoryContract;
 
@@ -145,7 +145,7 @@ public class PurchaseReceiptService {
     private final PurchaseOwnerResolver purchaseOwnerResolver;
 
     /**
-     * 应付生成器（Finance R1 F1-2A）：收货确认在同一事务内派生正常应付。
+     * 应付生成器：收货确认在同一事务内派生正常应付。
      * 生成失败即整笔收货确认回滚 —— 财务侧不接「业务已确认但账上什么都没有」这个缺口。
      */
     private final FinancePayableService financePayableService;
@@ -174,10 +174,10 @@ public class PurchaseReceiptService {
         }
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
         if (!PurchaseOrderStateMachine.receivable(order.getStatus())) {
-            // RECEIVED / SHORT_CLOSED / CANCELLED / DRAFT 都不允许新收货（T8）
+            // RECEIVED / SHORT_CLOSED / CANCELLED / DRAFT 都不允许新收货
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
-        // 仓库可能在采购单创建后被停用：收货单创建是「新引用」，必须重查启用态（HD-B1-01）。
+        // 仓库可能在采购单创建后被停用：收货单创建是「新引用」，必须重查启用态。
         purchaseWarehouseReferenceGuard.requireEnabled(order.getWarehouseId());
         List<PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId());
         if (orderItems.isEmpty()) {
@@ -186,7 +186,7 @@ public class PurchaseReceiptService {
 
         PurchaseReceiptEntity receipt =
                 PurchaseSnapshotFactory.receipt(order, numberGenerator.receipt(), form.getRemark());
-        // B1：入库方式由调用方显式二选一（无默认）；DRAFT 期入库状态恒 PENDING。
+        //：入库方式由调用方显式二选一（无默认）；DRAFT 期入库状态恒 PENDING。
         receipt.setReceiptMode(form.getReceiptMode());
         receipt.setPutawayStatus(ScmPutawayStatusEnum.PENDING.name());
         stamp(receipt, true);
@@ -246,7 +246,7 @@ public class PurchaseReceiptService {
     }
 
     // ------------------------------------------------------------------
-    // receipt.confirm（§4.3 的 15 步）
+    // receipt.confirm（的 15 步）
     // ------------------------------------------------------------------
 
     @Transactional(rollbackFor = Exception.class)
@@ -257,7 +257,7 @@ public class PurchaseReceiptService {
             return purchaseIdempotencyService.replay(claim, PurchaseReceiptVO.class);
         }
 
-        // 锁序（§7.9）：采购单 → 收货单 → 采购行 → 收货行。
+        // 锁序：采购单 → 收货单 → 采购行 → 收货行。
         // 先无锁读一次只为拿到 purchaseOrderId（随后会被 FOR UPDATE 的读覆盖并重新校验）。
         PurchaseReceiptEntity probe = purchaseReceiptDao.selectById(form.getId());
         if (probe == null) {
@@ -268,9 +268,9 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
-        // B1：入库方式决定 confirm 是否同事务入库（HD-B1-01/03）。
+        // 入库方式决定确认收货时是否同时写入库存。
         boolean direct = ScmReceiptModeEnum.DIRECT.name().equals(receipt.getReceiptMode());
-        // 两条边界取交集（裁决「P0 基线收口裁决」第 16 条）：采购范围回答「这张采购单归不归他操作」，
+        // 两条边界取交集：采购范围回答「这张采购单归不归他操作」，
         // 仓库范围回答「货允许不允许落进这个仓」，前者不能替代后者 —— 否则握着采购按钮的人可以往
         // 自己无权管理的仓库里写 PURCHASE_IN。WAREHOUSE_CONFIRM 在 confirm 时不写库存，
         // 因此仓库维度由后续的 putaway 判，不在这里提前收权。
@@ -292,14 +292,14 @@ public class PurchaseReceiptService {
         List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.lockByReceiptId(receipt.getId());
         Map<Long, PurchaseReceiptConfirmForm.Item> requested = requestedLines(form, receiptItems);
 
-        // Q3a：容差来自 SmartAdmin 原生 Config；缺失回退 10，非法 40999
+        //：容差来自 SmartAdmin 原生 Config；缺失回退 10，非法 40999
         ConfigVO toleranceConfig = configService.getConfig(PurchaseConfigKey.OVER_RECEIPT_TOLERANCE_PERCENT);
         int tolerance = PurchaseReceiptQuantityCalculator.tolerance(
                 toleranceConfig == null ? null : toleranceConfig.getConfigValue());
 
         List<Map<String, Object>> beforeItems = new ArrayList<>(receiptItems.size());
         List<Map<String, Object>> afterItems = new ArrayList<>(receiptItems.size());
-        // W6：本行入库事实的最小元组（行 / 采购行 / 有效数量）。**循环内只收集，不调用契约** ——
+        //：本行入库事实的最小元组（行 / 采购行 / 有效数量）。**循环内只收集，不调用契约** ——
         // 事实装配必须发生在收货单 CONFIRMED 落库之后（occurredAt/operator 取自那一刻的冻结事实）。
         List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
 
@@ -375,11 +375,11 @@ public class PurchaseReceiptService {
             afterLine.put("difference", PurchaseSnapshotFactory.fixed(difference));
             afterItems.add(afterLine);
 
-            // W6：收集入库事实元组（不在此处调用契约，见 inboundLines 声明处的说明）
+            //：收集入库事实元组（不在此处调用契约，见 inboundLines 声明处的说明）
             inboundLines.add(new InboundLine(line, orderItem, effective));
         }
 
-        // T7：全部活动行收齐 → RECEIVED，否则 PARTIALLY_RECEIVED
+        //：全部活动行收齐 → RECEIVED，否则 PARTIALLY_RECEIVED
         boolean allFulfilled = orderItems.values().stream().allMatch(item ->
                 item.getReceivedQuantity().compareTo(item.getPlannedQuantity()) >= 0);
         String nextStatus = PurchaseOrderStateMachine.afterReceipt(allFulfilled);
@@ -415,14 +415,14 @@ public class PurchaseReceiptService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
                 ScmPurchaseOperationTypeEnum.RECEIPT_CONFIRM, order.getId(), receipt.getId(),
                 null, before, after));
-        // §4.3 第 15 步（W6）：库存入库 —— 与采购侧写入同事务。
+        // 第 15 步：库存入库 —— 与采购侧写入同事务。
         // 位置固定：操作日志之后、幂等 complete 之前。幂等 complete 落在库存写入之后，
         // 保证「重放返回的结果」= 库存已写入的成功结果。
         if (direct) {
             postInbound(order, receipt, inboundLines, receipt.getConfirmedAt(), receipt.getOperator());
         }
 
-        // Finance R1（第一批 Q9）：企业确认收到货即形成供应商债务，仓库何时 putaway 不决定应付时点，
+        //：企业确认收到货即形成供应商债务，仓库何时 putaway 不决定应付时点，
         // 因此 DIRECT 与 WAREHOUSE_CONFIRM 两条路径都只在这里生成一次，putaway 不再调用。
         // 位置在库存写入之后：财务只消费已经成立的收货事实，自身不锁业务表也不锁余额（全局不变量 4），
         // 并发的重复触发由 finance_payable 的来源唯一索引仲裁。抛错即整笔 confirm 回滚。
@@ -435,21 +435,21 @@ public class PurchaseReceiptService {
     }
 
     // ------------------------------------------------------------------
-    // receipt.putaway（B1：仓库二次确认入库，独立事务，HD-B1-03）
+    // receipt.putaway（仓库二次确认入库，独立事务）
     // ------------------------------------------------------------------
 
     /**
      * 仓库确认入库：仅适用于 {@code WAREHOUSE_CONFIRM} 且 {@code putaway_status=PENDING} 的已确认收货单。
      *
-     * <p><b>锁序（§9）</b>：收货单（行锁）→ 余额（按 (warehouseId, skuId) 升序）。收货单锁始终先于
+     * <p><b>锁序</b>：收货单（行锁）→ 余额（按 (warehouseId, skuId) 升序）。收货单锁始终先于
      * 余额锁，且 confirm 路径同样是「收货单锁在余额锁之前」，因此不存在 {@code balance → receipt}
-     * 的反向路径，与 P12 全局锁序兼容，不会成环。
+     * 的反向路径，与 全局锁序兼容，不会成环。
      *
      * <p><b>并发两次 putaway</b>：只有先拿到收货单锁的那次能通过 {@code putaway_status=PENDING} 校验并
      * 写入库存；后到者读到 {@code COMPLETED} 抛 41008（或由幂等 claim 重放）。数据库侧
      * {@code uk_inventory_movement_source_active} 兜底，绝不重复 PURCHASE_IN。
      *
-     * <p><b>occurred_at / operator</b>：流水取本次 putaway 的物理入库时刻与操作人（HD-B1-03），
+     * <p><b>occurred_at / operator</b>：流水取本次 putaway 的物理入库时刻与操作人，
      * **不得**写成 receipt.confirmed_at。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -529,7 +529,7 @@ public class PurchaseReceiptService {
     public void delete(PurchaseReceiptDeleteForm form) {
         PurchaseReceiptEntity receipt = purchaseReceiptDao.lock(form.getId());
         if (receipt == null) {
-            // 幂等：已删除视为成功（同 W4 的 delete 语义）
+            // 幂等：已删除视为成功（同 的 delete 语义）
             return;
         }
         purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
@@ -553,7 +553,7 @@ public class PurchaseReceiptService {
 
     @Transactional(rollbackFor = Exception.class)
     public void batchDelete(PurchaseReceiptBatchDeleteForm form) {
-        // 按 id 升序：批量删除也必须遵守确定性锁序（P12）
+        // 按 id 升序：批量删除也必须遵守确定性锁序
         form.getReceipts().stream()
                 .sorted(Comparator.comparing(PurchaseReceiptBatchDeleteForm.PurchaseReceiptVersionForm::getId))
                 .forEach(row -> delete(deleteForm(row)));
@@ -564,7 +564,7 @@ public class PurchaseReceiptService {
     // ------------------------------------------------------------------
 
     /**
-     * 请求行集合必须**恰好等于**本收货单的全部活动行集合（修 A-D5/G11）。
+     * 请求行集合必须**恰好等于**本收货单的全部活动行集合（修 /G11）。
      *
      * <p>不允许只提交子集：否则「确认了但仍有 0 数量行」的歧义会一直存在，
      * 而 `received_quantity` 的累计口径也会变得不可推理。
@@ -586,14 +586,14 @@ public class PurchaseReceiptService {
     }
 
     /**
-     * §4.3 第 15 步（W6）：把本次确认的收货行交给库存域入库。
+     * 把本次确认的收货行交给库存域入库。
      *
-     * <p><b>事实装配的取值纪律（Q13-附）</b>：{@code occurredAt} / {@code operator} 一律取
+     * <p>{@code occurredAt} 与 {@code operator} 一律取
      * **已落库的收货确认事实**（{@code receipt.getConfirmedAt()} / {@code receipt.getOperator()}），
      * 而不是在库存侧现取 {@code now()} 或 ambient operator。因此本方法必须在
      * 「收货单 → CONFIRMED 落库」之后调用（调用点见 {@code confirm}）。
      *
-     * <p><b>锁序（§8.1 / §8.4）</b>：余额锁是事务里最后获取的锁，且多把余额锁之间必须按
+     * <p><b>锁序</b>：余额锁是事务里最后获取的锁，且多把余额锁之间必须按
      * {@code (warehouseId, skuId)} **升序**获取 —— 任意两个并发 confirm 的加锁顺序因此一致，
      * 这是防死锁的关键，也是「排序发生在调用方而不是实现侧」的原因
      * （实现侧内部缓冲会把事务状态留在契约实现里）。
@@ -619,7 +619,7 @@ public class PurchaseReceiptService {
                         receipt.getWarehouseNameSnapshot(),
                         line.line().getSkuCodeSnapshot(),
                         line.line().getSkuNameSnapshot(),
-                        // 审计提醒（Legacy Audit §7.3）：单位统一取 purchase_unit_snapshot，
+                        // 单位统一取 purchase_unit_snapshot，
                         // **不得**用 confirm 循环里的 weightUnit（标品时为 null）
                         line.orderItem().getPurchaseUnitSnapshot(),
                         line.effective(),
@@ -635,7 +635,7 @@ public class PurchaseReceiptService {
     }
 
     /**
-     * 余额加锁顺序（W6 §8.1 / §8.4）：按 {@code (warehouseId, skuId)} 字典序升序。
+     * 余额加锁顺序：按 {@code (warehouseId, skuId)} 字典序升序。
      *
      * <p><b>为什么必须排好序再逐条调用</b>：库存余额锁是整个事务里**最后**获取的锁。
      * 如果两个并发事务各自按「采购单行的自然顺序」去锁余额，就可能出现
@@ -644,9 +644,7 @@ public class PurchaseReceiptService {
      * （表现为「偶发的收货失败」，最难排查的一类缺陷）。统一升序后任意两个事务的
      * 加锁方向一致，环不可能形成。
      *
-     * <p><b>为什么抽成具名方法而不是内联 lambda</b>：这条纪律的正确性由单测
-     * {@code PurchaseInboundLockOrderTest} 锁住，而内联 lambda 无法被直接断言 ——
-     * 「不可测的纪律」等于「没有纪律」。
+     * <p>集中成具名比较器，确保每个入库调用都按相同顺序获取余额锁。
      */
     static Comparator<PurchaseInventoryContract.InboundFact> inboundLockOrder() {
         return Comparator.comparing(PurchaseInventoryContract.InboundFact::warehouseId)
@@ -654,7 +652,7 @@ public class PurchaseReceiptService {
     }
 
     /**
-     * 一行入库事实的最小元组（W6 §6.3）。
+     * 一行入库事实的最小元组。
      *
      * <p>刻意**不**在收货循环里直接装配 {@code InboundFact}：那时 {@code receipt} 还没落库成
      * CONFIRMED，{@code confirmedAt} / {@code operator} 仍是 null —— 用它装配出来的流水
@@ -669,7 +667,7 @@ public class PurchaseReceiptService {
                                       String weightUnit, String correctionReason) {
         ReceiptWeighingRecordEntity record = new ReceiptWeighingRecordEntity();
         record.setPurchaseReceiptItemId(receiptItemId);
-        // G-05（手工录入）：原始读数与确认读数同值；`DEVICE` 是 W6+ 的扩展点（CHECK 目前只允许 MANUAL）
+        // （手工录入）：原始读数与确认读数同值；`DEVICE` 是 + 的扩展点（CHECK 目前只允许 MANUAL）
         record.setRawReading(actualWeight);
         record.setConfirmedReading(actualWeight);
         record.setUnit(weightUnit);
@@ -762,7 +760,7 @@ public class PurchaseReceiptService {
     }
 
     /**
-     * `RECEIPT_DELETE` 的「全量」前态（§7.12）。
+     * `RECEIPT_DELETE` 的「全量」前态。
      */
     private static Map<String, Object> receiptSnapshot(PurchaseReceiptVO vo) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();

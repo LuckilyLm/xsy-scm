@@ -1,9 +1,9 @@
 package com.xsy.scm.purchase.constant;
 
 /**
- * 入库状态（2 值，HD-B1-03）。
+ * 入库状态（2 值）。
  *
- * <p>取值与 V22 的 {@code ck_purchase_receipt_putaway_status} 白名单逐字一致。
+ * <p>取值与 的 {@code ck_purchase_receipt_putaway_status} 白名单逐字一致。
  *
  * <p>与 {@code purchase_receipt.status}（DRAFT/CONFIRMED 商业生命周期）**刻意解耦**：
  * {@code CONFIRMED} 只表示「收货已被确认」，不等于「库存已经入账」。

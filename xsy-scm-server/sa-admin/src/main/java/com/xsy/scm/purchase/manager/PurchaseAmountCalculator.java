@@ -10,15 +10,15 @@ import java.util.Objects;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_PRICE_INVALID;
 
 /**
- * 采购金额计算（W5 Target Design §7.5 P6）。
+ * 采购金额计算。
  *
  * <pre>
  * line_amount  = round(planned_quantity × purchase_price, 4, HALF_UP)
  * total_amount = Σ line_amount（create / update 时重算）
  * </pre>
  *
- * <p>收货**不改变** {@code total_amount}：W5 没有「实际金额」字段（A-D8）。
- * 与 W4 的 {@code OrderAmountCalculator} 同口径：{@code null} 参与运算时结果保持 {@code null}，
+ * <p>收货**不改变** {@code total_amount}： 没有「实际金额」字段。
+ * 与 的 {@code OrderAmountCalculator} 同口径：{@code null} 参与运算时结果保持 {@code null}，
  * 不把「无值」静默变成 {@code 0.0000}。
  */
 public final class PurchaseAmountCalculator {

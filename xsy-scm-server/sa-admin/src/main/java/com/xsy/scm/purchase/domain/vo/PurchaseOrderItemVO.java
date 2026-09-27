@@ -9,12 +9,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
- * 采购单行（W5 Target Design §7.2）。
+ * 采购单行。
  *
  * <p>`remainingQuantity` / `overReceiptQuantity` 是**派生量**（不落库），
- * 与 P24 恒等式同口径：`remaining = max(planned − received, 0)`、`over = max(received − planned, 0)`。
+ * 与 恒等式同口径：`remaining = max(planned − received, 0)`、`over = max(received − planned, 0)`。
  *
- * <p>`allocations` 是该行挂的全部需求分配（**Q13：一行多需求**），每项一个 `demandId`。
+ * <p>`allocations` 是该行挂的全部需求分配（**：一行多需求**），每项一个 `demandId`。
  */
 @Data
 public class PurchaseOrderItemVO {

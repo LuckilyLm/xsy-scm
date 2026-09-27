@@ -14,13 +14,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
- * 称重记录（W5 Target Design §5.9）。
+ * 称重记录。
  *
  * <p>**只追加的审计事实**：没有 `version` / `deleted` / `updated_*` ——
  * 与 A 源自己的 `inventory_movement` 只追加纪律一致，也意味着 MP 不会对它加 `deleted` 过滤。
  *
- * <p>W5 只允许 `source = MANUAL`（G-05 手工录入），由 `ck_receipt_weighing_record_source` 收紧；
- * `DEVICE` 是 W6+ 接入电子秤时的扩展点。`scale_precision` 已删除（A-D4：W5 无设备精度来源）。
+ * <p> 只允许 `source = MANUAL`（手工录入），由 `ck_receipt_weighing_record_source` 收紧；
+ * `DEVICE` 是 + 接入电子秤时的扩展点。`scale_precision` 已删除（无设备精度来源）。
  */
 @Data
 @TableName(value = "receipt_weighing_record", autoResultMap = true)

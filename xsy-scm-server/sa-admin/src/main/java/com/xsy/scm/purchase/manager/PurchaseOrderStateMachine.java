@@ -8,10 +8,10 @@ import java.util.Set;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
 /**
- * 采购单状态机（6 状态，W5 Target Design §4.1 / §4.2）。
+ * 采购单状态机（6 状态）。
  *
- * <p>实现为**声明式策略**，不是散落的 if。转换表与 V15 的 `ck_purchase_order_status` 白名单、
- * 以及 §4.2 的 T1–T8 逐条对应。
+ * <p>实现为**声明式策略**，不是散落的 if。转换表与 的 `ck_purchase_order_status` 白名单、
+ * 以及 的 – 逐条对应。
  *
  * <pre>
  * DRAFT ──submit──→ SUBMITTED ──收货确认──→ PARTIALLY_RECEIVED ──收货确认──→ RECEIVED
@@ -21,8 +21,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
  * CANCELLED ←────────────┘                     SHORT_CLOSED
  * </pre>
  *
- * <p><b>P14</b>：{@code PARTIALLY_RECEIVED} **不允许 cancel**；需要终止时用 {@link #shortClosable}
- * 对应的 {@code shortClose}（Q2a）。
+ * <p><b></b>：{@code PARTIALLY_RECEIVED} **不允许 cancel**；需要终止时用 {@link #shortClosable}
+ * 对应的 {@code shortClose}。
  * <p>{@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED} 是**终态**。
  */
 public final class PurchaseOrderStateMachine {
@@ -71,14 +71,14 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 只有 {@code DRAFT} 可编辑行与需求分配（T2）。
+     * 只有 {@code DRAFT} 可编辑行与需求分配。
      */
     public static boolean editable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus);
     }
 
     /**
-     * 可建 / 可确认收货：{@code SUBMITTED} 或 {@code PARTIALLY_RECEIVED}（T7/T8）。
+     * 可建 / 可确认收货：{@code SUBMITTED} 或 {@code PARTIALLY_RECEIVED}。
      */
     public static boolean receivable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus)
@@ -86,7 +86,7 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}（T4）。**不含** {@code PARTIALLY_RECEIVED}（P14）。
+     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}。**不含** {@code PARTIALLY_RECEIVED}。
      */
     public static boolean cancellable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus)
@@ -94,7 +94,7 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 可少收关单：仅 {@code PARTIALLY_RECEIVED}（T5）。
+     * 可少收关单：仅 {@code PARTIALLY_RECEIVED}。
      */
     public static boolean shortClosable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name().equals(purchaseOrderStatus);
@@ -110,7 +110,7 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 收货确认后由「全部行是否收齐」推导出的采购单新状态（T7）。
+     * 收货确认后由「全部行是否收齐」推导出的采购单新状态。
      *
      * <p>注意：**已收满的采购单不再回到 {@code PARTIALLY_RECEIVED}**；只要所有活动行
      * {@code received >= planned} 就是 {@code RECEIVED}，否则 {@code PARTIALLY_RECEIVED}。

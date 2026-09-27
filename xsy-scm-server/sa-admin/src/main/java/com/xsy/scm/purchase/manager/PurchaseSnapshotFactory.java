@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 采购快照装配（W5 Target Design §5.11 快照矩阵）。
+ * 采购快照装配（快照矩阵）。
  *
  * <p>快照矩阵的四个冻结时点：
  * <table border="1">
@@ -37,12 +37,12 @@ import java.util.Map;
  *   <tr><td>Purchase price</td><td>{@code purchase_order_item.purchase_price} + {@code line_amount}</td><td>创建 / 编辑时（人工确认值）</td></tr>
  * </table>
  *
- * <p>**`submit` 后永不回读主数据**（P4）；**收货单行不存价格**（A-D8）。
+ * <p>**`submit` 后永不回读主数据**；**收货单行不存价格**。
  */
 public final class PurchaseSnapshotFactory {
 
     /**
-     * 与 V15 的 `AT TIME ZONE 'Asia/Shanghai'` 字面量保持一致（Q6a）。
+     * 与 的 `AT TIME ZONE 'Asia/Shanghai'` 字面量保持一致。
      */
     public static final ZoneId ASIA_SHANGHAI = ZoneId.of("Asia/Shanghai");
 
@@ -54,7 +54,7 @@ public final class PurchaseSnapshotFactory {
      *
      * <p>供应商 / 仓库快照在创建 / 编辑时刷新（DRAFT 可刷新），`submit` 后不再回读。
      *
-     * <p>{@code purchaserId} 必须是服务端裁决出的归属（见 {@code PurchaseOwnerResolver}），
+     * <p>{@code purchaserId} 必须由服务端的 {@code PurchaseOwnerResolver} 确定，
      * 不能传 {@code form.getPurchaserId()}：表单值是一个客户端可任意填写的数字，
      * 而它同时是采购员数据范围的行归属依据。
      */
@@ -80,12 +80,12 @@ public final class PurchaseSnapshotFactory {
     /**
      * 采购单行快照。
      *
-     * <p><b>Q17</b>：`purchaseUnitSnapshot` 来自 `supplier_sku.purchase_unit`，
+     * <p><b></b>：`purchaseUnitSnapshot` 来自 `supplier_sku.purchase_unit`，
      * **不是** `product_sku.sale_unit` —— 需求单位（销售单位）与采购单位是两个独立快照，
      * 生成时冻结、永不互相覆盖。
      *
      * <p>`purchasePrice` 取表单值（人工确认值）；`supplier_sku.reference_price` 只作**建议值**，
-     * **不自动写入**（K7）。
+     * **不自动写入**。
      */
     public static PurchaseOrderItemEntity item(PurchaseOrderAddForm.Item form,
                                                ProductSkuOptionVO sku,
@@ -99,7 +99,7 @@ public final class PurchaseSnapshotFactory {
         item.setSpuCodeSnapshot(spuCode);
         item.setProductNameSnapshot(sku.getProductName());
         item.setSkuCodeSnapshot(sku.getSkuCode());
-        // 与 W2 一致：名称取 SPU 名称而不是 SKU 规格名（legacy 不变量 R4）
+        // 供应商关联行的 SKU 展示名称使用 SPU 名称。
         item.setSkuNameSnapshot(sku.getProductName());
         item.setSpecValuesSnapshot(copySpecValues(sku.getSpecValues()));
         item.setPurchaseUnitSnapshot(supplierSku.getPurchaseUnit());
@@ -143,7 +143,7 @@ public final class PurchaseSnapshotFactory {
      * difference = 0 − planned = −planned      （与 ck_purchase_receipt_item_reconciliation 一致）
      * </pre>
      *
-     * <p>**不复制价格**：收货只记数量 / 重量（A-D8）。
+     * <p>**不复制价格**：收货只记数量 / 重量。
      */
     public static PurchaseReceiptItemEntity receiptItem(PurchaseReceiptEntity receipt,
                                                         PurchaseOrderItemEntity orderItem,
@@ -172,10 +172,10 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * Q6a：`demand_date` = `source_confirmed_at` 在 **Asia/Shanghai** 下的日期。
+     *：`demand_date` = `source_confirmed_at` 在 **Asia/Shanghai** 下的日期。
      *
      * <p>**禁止**用汇总窗口的第一天（`date(startAt)`）—— 跨多日窗口会把全部需求压平成同一天。
-     * 结果由 V15 的 `ck_purchase_demand_date` 在 DB 层复核，两侧口径必须一致。
+     * 结果由 的 `ck_purchase_demand_date` 在 DB 层复核，两侧口径必须一致。
      */
     public static LocalDate demandDate(OffsetDateTime sourceConfirmedAt) {
         return sourceConfirmedAt.atZoneSameInstant(ASIA_SHANGHAI).toLocalDate();
@@ -184,14 +184,14 @@ public final class PurchaseSnapshotFactory {
     /**
      * 需求快照装配（`generate` 用）。
      *
-     * <p><b>Q17</b>：`demandUnitSnapshot` 取 `sales_order_item.sale_unit_snapshot`（**销售单位**），
+     * <p><b></b>：`demandUnitSnapshot` 取 `sales_order_item.sale_unit_snapshot`（**销售单位**），
      * 生成时冻结、**永不改写**。它**不是**采购单位 —— 采购单位来自 `supplier_sku.purchase_unit`
      * 并落在 `purchase_order_item.purchase_unit_snapshot`，两者在分配时做一致性校验。
      *
      * <p>`requiredQuantity` 取 **`actual_quantity`（实数量）** 而不是 `ordered_quantity`，
-     * 与 A 源口径一致（§7.4 订单集成表）。
+     * 与 A 源口径一致（订单集成表）。
      *
-     * <p>`status` 固定从 `PENDING` 起（V15 的默认值也一致）；`allocatedQuantity` 从 0 起。
+     * <p>`status` 固定从 `PENDING` 起（的默认值也一致）；`allocatedQuantity` 从 0 起。
      */
     public static PurchaseDemandEntity demand(SalesOrderItemEntity source,
                                               SalesOrderEntity order,
@@ -207,10 +207,10 @@ public final class PurchaseSnapshotFactory {
         demand.setSpuCodeSnapshot(source.getSpuCodeSnapshot());
         demand.setProductNameSnapshot(source.getProductNameSnapshot());
         demand.setSkuCodeSnapshot(source.getSkuCodeSnapshot());
-        // 与 W2 / W4 一致：SKU 名称取 SPU 名称（legacy 不变量 R4）
+        // SKU 展示名称取 SPU 名称。
         demand.setSkuNameSnapshot(source.getProductNameSnapshot());
         demand.setSpecValuesSnapshot(copySpecValues(source.getSpecValuesSnapshot()));
-        demand.setDemandUnitSnapshot(source.getSaleUnitSnapshot());       // Q17
+        demand.setDemandUnitSnapshot(source.getSaleUnitSnapshot());
         demand.setProductTypeSnapshot(source.getProductTypeSnapshot());
         demand.setRequiredQuantity(source.getActualQuantity());
         demand.setAllocatedQuantity(zero());
@@ -219,18 +219,18 @@ public final class PurchaseSnapshotFactory {
         demand.setPurchaserId(purchaserId);
         demand.setStatus(ScmPurchaseDemandStatusEnum.PENDING.name());
         demand.setSourceConfirmedAt(order.getConfirmedAt());
-        demand.setDemandDate(demandDate(order.getConfirmedAt()));          // Q6a
+        demand.setDemandDate(demandDate(order.getConfirmedAt()));
         demand.setVersion(0);
         demand.setDeleted(false);
         return demand;
     }
 
     /**
-     * 分配行上的 `demand_snapshot`（§5.4，A 源只有 `{demandId}`）。
+     * 分配行上的 `demand_snapshot`（A 源只有 `{demandId}`）。
      *
      * <p>作用：让每条 allocation **自带证据**，即使需求行之后被改/被删，
      * 也能从分配行回答「当初挂的是哪张订单行、什么单位、多少量」。
-     * 数量按 §7.2 的 4 位定点**字符串**存（不是 JSON 数字）—— 避免 JSON 数字的
+     * 数量按 的 4 位定点**字符串**存（不是 JSON 数字）—— 避免 JSON 数字的
      * 浮点语义污染定点纪律。
      */
     public static Map<String, Object> allocationDemandSnapshot(PurchaseDemandEntity demand) {
@@ -255,9 +255,9 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 操作日志行（§7.12）。
+     * 操作日志行。
      *
-     * <p><b>Q14 的归属由调用方决定，本方法不做推断</b>：
+     * <p><b> 的归属由调用方决定，本方法不做推断</b>：
      * `DEMAND_GENERATE` 传两个 `null`；`DEMAND_ALLOCATE` 传反查得到的 `purchaseOrderId` + `null`；
      * `RECEIPT_*` 传两个非空。DB 的 `ck_purchase_operation_log_owner` 会复核 ——
      * 传错就写不进去，这是**故意**的（让错误在写入点暴露，而不是留一条脏日志）。

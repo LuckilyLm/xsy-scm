@@ -7,10 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * 取消采购单（W5 Target Design §4.2 T4）。
+ * 取消采购单。
  *
- * <p>允许 `DRAFT` 与 `SUBMITTED`；**`PARTIALLY_RECEIVED` 不允许取消**（P14），
- * 需要终止时用 `shortClose`（Q2a）。原因必填，否则 40086。
+ * <p>允许 `DRAFT` 与 `SUBMITTED`；**`PARTIALLY_RECEIVED` 不允许取消**，
+ * 需要终止时用 `shortClose`。原因必填，否则 40086。
  */
 @Data
 public class PurchaseOrderCancelForm {

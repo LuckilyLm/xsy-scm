@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * `id + version` 双谓词表单：提交 / 删除等只需要乐观锁的命令共用（W5 Target Design §7.2）。
+ * `id + version` 双谓词表单：提交 / 删除等只需要乐观锁的命令共用。
  */
 @Data
 public class PurchaseOrderVersionForm {

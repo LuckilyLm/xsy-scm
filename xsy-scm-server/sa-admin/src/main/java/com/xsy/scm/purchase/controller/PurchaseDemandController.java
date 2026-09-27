@@ -24,11 +24,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 采购需求端点（W5 Target Design §7.1 的 3 个端点）。
+ * 采购需求端点（的 3 个端点）。
  *
  * <p>权限码三段式 `scm:purchase:demand:<action>`；两个写命令都要求 `Idempotency-Key` 头
  * （缺失 → 40084，由 {@code PurchaseIdempotencyService} 抛出，因此**不能**把该头标成
- * {@code required = true} —— 那会变成 30001，与 §7.7 的错误码契约不符）。
+ * {@code required = true} —— 那会变成 30001，与 的错误码契约不符）。
  */
 @RestController
 @RequiredArgsConstructor
@@ -46,7 +46,7 @@ public class PurchaseDemandController {
     }
 
     /**
-     * 订单汇总 / 库存缺口预览（Wave 2A，只读查询工作台：不写业务表、不做幂等）。
+     * 订单汇总 / 库存缺口预览（只读查询工作台：不写业务表、不做幂等）。
      *
      * <p>返回体带库存现有量与预留量，因此<b>同时</b>要求 {@code scm:purchase:demand:query} 与
      * {@code scm:inventory:balance:query}（{@link SaMode#AND}）：只有采购需求查看权的人不能经此聚合接口

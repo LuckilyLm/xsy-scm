@@ -12,9 +12,9 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 收货单（W5 Target Design §5.7 / §4.3，Q7：一个采购单 → 多张独立收货单）。
+ * 收货单：一个采购单可以对应多张独立收货单。
  *
- * <p>收货单**继承并快照**采购单的供应商 / 仓库（P5），因此这里没有任何
+ * <p>收货单**继承并快照**采购单的供应商 / 仓库，因此这里没有任何
  * 「按入参改供应商 / 仓库」的写方法 —— 跨仓收货在结构上不可能发生。
  *
  * <p>{@link #nextReceiptNo()} 取全局序列（不按日 reset），由

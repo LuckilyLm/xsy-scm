@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 /**
- * 批量删除采购收货单（W5 Target Design §7.2）。
+ * 批量删除采购收货单。
  */
 @Data
 public class PurchaseReceiptBatchDeleteForm {

@@ -30,26 +30,13 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_SUPPLIER_
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_WAREHOUSE_DISABLED;
 
 /**
- * 采购单业务规则（W5 Target Design §4.2 T1 / §7.2 / §7.4）。
+ * 采购单输入与主数据引用校验。
  *
- * <p>分两层：
- * <ul>
- *   <li><b>静态纯函数</b>（{@link #trim} / {@link #reason} / {@link #decimal} / {@link #draft}）——
- *       无 Spring、无 DB，可被单测直接调用；</li>
- *   <li><b>引用校验</b>（{@link #requireEnabledSupplier} / {@link #requireEnabledWarehouse} /
- *       {@link #requirePurchasableSku}）—— 需要读主数据，因此注入 W2 / W5 的 Service，
- *       但**不开事务**（manager 层纪律，§2.2）。</li>
- * </ul>
+ * <p>标量和集合规则在写入前统一校验；供应商、仓库与可采购 SKU 通过各自的域服务读取。
+ * 数量与单价使用严格四位小数格式，并映射到采购域错误码。
  *
- * <p><b>为什么不用 {@code ScmDecimalStrings} 解析数量/金额</b>：它抛的是通用的
- * {@code VALIDATION_ERROR(40000)}，而 W5 的错误码契约要求数量 → {@code 40080}、
- * 单价 → {@code 40081}（§7.7）。因此这里用与 W4 相同的严格形态
- * {@code [0-9]{1,14}\.[0-9]{4}} —— 恰好 4 位小数，与 §7.2「请求/响应均为 4 位小数字符串」一致。
- *
- * <p><b>错误码的防腐层</b>：{@code SupplierSkuService.requireEnabledForPurchasing} 是 W2 为采购域
- * 预留的**唯一判定入口**（legacy 不变量 R17，禁止旁路直查 {@code supplier_sku} 表），
- * 但它抛的是 W2 的码（40940 / 40442 / 40942）。W5 对外只暴露自己的码，
- * 因此在边界处把 W2 的失败翻译成 {@code PURCHASE_SUPPLIER_SKU_DISABLED(40992)}。
+ * <p>{@code SupplierSkuService.requireEnabledForPurchasing} 是可采购性唯一入口；本类将供应商域错误
+ * 映射为采购域错误，避免采购调用方依赖供应商错误码。
  */
 @Component
 @RequiredArgsConstructor
@@ -140,7 +127,7 @@ public class PurchaseOrderValidator {
     /**
      * 供应商必须存在且启用，否则 40986。
      *
-     * <p>存在性走 W2 的 {@code require}（40440），**启用判定用 W5 的码** —— 因为
+     * <p>存在性走 的 {@code require}（40440），**启用判定用 的码** —— 因为
      * 「供应商已停用，不能用于新采购单」是采购侧规则，不是供应商域自身的不变量。
      */
     public SupplierEntity requireEnabledSupplier(Long supplierId) {
@@ -163,11 +150,11 @@ public class PurchaseOrderValidator {
     }
 
     /**
-     * 该 SKU 必须能由该供应商供货（W2 的唯一判定入口，R17）。
+     * 该 SKU 必须能由该供应商供货（的唯一判定入口）。
      *
-     * <p>返回的 {@code supplier_sku} 提供 W5 需要的 `purchase_unit`（→
-     * `purchase_order_item.purchase_unit_snapshot`）与 `reference_price`（只作建议值，K7）。
-     * W2 的失败码在这里被翻译成 40992。
+     * <p>返回的 {@code supplier_sku} 提供 需要的 `purchase_unit`（→
+     * `purchase_order_item.purchase_unit_snapshot`）与 `reference_price`（只作建议值）。
+     * 的失败码在这里被翻译成 40992。
      */
     public SupplierSkuEntity requirePurchasableSku(Long supplierId, Long skuId) {
         try {

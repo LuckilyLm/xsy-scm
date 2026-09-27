@@ -17,17 +17,16 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 采购需求（W5 Target Design §7.4 / §5.3）。
+ * 采购需求。
  *
  * <p>三个要点：
  * <ul>
- *   <li>{@link #listSourceItems} 是 `generate` 的**取数口径**，返回 W4 的 {@code SalesOrderItemEntity}
+ *   <li>{@link #listSourceItems} 是 `generate` 的**取数口径**，返回 {@code SalesOrderItemEntity}
  *       （需求快照的 8 个商品字段全部来自 {@code sales_order_item}，无需自建投影类型）；
  *       订单号与确认时间由调用方用 {@code SalesOrderDao.selectBatchIds} 批量补齐（2 次查询，无 N+1）；</li>
- *   <li>{@link #lockByIds} 强制 {@code ORDER BY id ASC FOR UPDATE} —— **P12 锁序**，
- *       避免与 `order.create` 路径交叉成环；</li>
+ *   <li>{@link #lockByIds} 按 id 升序加行锁，避免与订单写路径形成反向锁序；</li>
  *   <li>{@link #insertIgnore} 用 {@code ON CONFLICT DO NOTHING} 做 INSERT 竞争
- *       （不先查后插，修 A-D17），冲突时由调用方重读收敛到同一行。</li>
+ *       （不先查后插），冲突时由调用方重读收敛到同一行。</li>
  * </ul>
  */
 @Mapper
@@ -36,8 +35,7 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     /**
      * 来源行（`generate` 取数）：已确认订单 + 有实数量，确定性排序。
      *
-     * <p>排序 `sku_id ASC, confirmed_at ASC, id ASC` 与 §7.4 第 3 步一致 ——
-     * 确定性顺序让「同一窗口重复 generate」的结果可复现（幂等重放的前提）。
+     * <p>按 SKU、订单确认时间与行 id 排序，使同一窗口的重复 generate 得到相同结果。
      *
      * <p>{@code scope} 是仓库维度的授权范围，但本口径取的是 {@code sales_order} 与
      * {@code sales_order_item}，两张表都没有仓库列（仓库在需求/库存侧才出现），因此按仓库不收窄；
@@ -59,7 +57,7 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
                                  @Param("scope") ScmValueScope scope);
 
     /**
-     * 订单汇总 / 库存缺口预览（Wave 2A §6A.4，只读聚合）。
+     * 订单汇总 / 库存缺口预览（只读聚合）。
      *
      * <p>WHERE 与 {@link #listSourceItems} 同源（已确认订单 + 有实数量 + 同一确认窗口），
      * 按 {@code sku_id + sale_unit_snapshot} 聚合后左连 {@code inventory_balance}
@@ -82,7 +80,7 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     PurchaseDemandVO detail(@Param("id") Long id);
 
     /**
-     * 按 id 升序逐个 `FOR UPDATE` 锁定需求（**P12 锁序**）。
+     * 按 id 升序逐个 `FOR UPDATE` 锁定需求（** 锁序**）。
      *
      * <p>调用方必须先经 {@code PurchaseDemandAllocator.ascendingDemandIds} 去重排序，
      * 否则不同事务可能以不同顺序取锁而成环。
@@ -105,7 +103,7 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     int insertIgnore(@Param("row") PurchaseDemandEntity row);
 
     /**
-     * 重算分配（§7.8 C 段）。
+     * 重算分配（C 段）。
      *
      * <p>同时更新 `allocated_quantity` / `status` / `supplier_id`（首次分配固定）与 `version + 1`；
      * 用 `version` 做乐观锁，影响行数为 0 表示并发冲突。

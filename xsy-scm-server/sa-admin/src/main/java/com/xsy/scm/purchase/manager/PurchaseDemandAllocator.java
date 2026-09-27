@@ -17,15 +17,13 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_VE
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_UNIT_CONVERSION_REQUIRED;
 
 /**
- * 采购需求分配规则（W5 Target Design §7.4 分配段 / §7.8 B–C 段 / §4.4）。
+ * 采购需求分配规则。
  *
- * <p>全部为**静态纯函数**，无 Spring、无 DB、无事务 —— 因此
- * 「超需求 / 跨 (supplier,warehouse) 冲突 / 按 demandId 升序 / 单位不一致拒绝」都能被单测直接覆盖。
+ * <p>全部为静态纯函数，无 Spring、无 DB、无事务；需求超量、跨供应商或仓库冲突、需求 ID 排序和单位匹配
+ * 规则集中在此处判定。
  *
- * <p><b>Q17 是这个类存在的主要理由</b>：需求单位（销售单位）与采购单位
- * （{@code supplier_sku.purchase_unit}）是两个独立快照。两者不一致时**拒绝自动分配**（40971）；
- * **不允许**把「100 kg」仅替换单位字符串变成「100 箱」，也不允许猜换算系数。
- * 将来若需要换算，单独新增 Unit Conversion 能力（独立波次）。
+ * <p>需求单位（销售单位）与采购单位（{@code supplier_sku.purchase_unit}）是两个独立快照。
+ * 两者不一致时拒绝自动分配（40971）；仅替换单位字符串或猜测换算系数都会产生错误数量。
  */
 public final class PurchaseDemandAllocator {
 
@@ -33,7 +31,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * Q17：需求单位必须与采购单位一致，否则 40971。
+     * 需求单位必须与采购单位一致，否则返回 40971。
      *
      * <p>比较是**大小写敏感的字符串相等**：单位是主数据里冻结的展示值，
      * 不做归一化（归一化会把 `kg` 与 `KG` 视为可互换，从而掩盖真实的单位不一致）。
@@ -54,7 +52,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * 需求状态必须允许分配（§7.4：`PENDING` / `PARTIALLY_ALLOCATED` / `ALLOCATED` 三者都允许）。
+     * 需求状态必须允许分配（`PENDING` / `PARTIALLY_ALLOCATED` / `ALLOCATED` 三者都允许）。
      *
      * <p>这是对**未知取值**的白名单防护，不是业务上的「不可分配」判定 ——
      * 分配本身可以重复发生（补分配）。
@@ -129,7 +127,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * §4.4：由 `allocated` 与 `required` 推导需求状态。
+     *：由 `allocated` 与 `required` 推导需求状态。
      *
      * <pre>
      * allocated == 0        → PENDING
@@ -138,7 +136,7 @@ public final class PurchaseDemandAllocator {
      * </pre>
      *
      * <p>**必须能回落**：编辑采购单删掉某个 demand 的全部分配后，`allocated` 归零、
-     * 状态必须从 `ALLOCATED` 退回 `PENDING`（§7.8 C 段的并集遍历就是为此）。
+     * 状态必须从 `ALLOCATED` 退回 `PENDING`（C 段的并集遍历就是为此）。
      */
     public static String statusFor(BigDecimal requiredQuantity, BigDecimal allocatedQuantity) {
         if (allocatedQuantity == null || allocatedQuantity.signum() == 0) {
@@ -151,13 +149,10 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * P12 锁序：需求必须**按 demandId 升序**逐个 `SELECT ... FOR UPDATE`，
+     * 锁序：需求必须**按 demandId 升序**逐个 `SELECT... FOR UPDATE`，
      * 避免与 `order.create` 路径交叉成环。返回去重后的升序列表。
      *
-     * <p>{@code null} 元素被过滤而不是抛 {@code NullPointerException}：`demandId` 为空
-     * 已在 {@code PurchaseOrderValidator.draft} 以 40090 拦下，走到锁序阶段时它只可能是
-     * 上游漏检的脏数据 —— 此时抛 NPE 会掩盖真实的校验缺口，静默丢弃又不可接受，
-     * 因此这里只做**归一化**，由调用方的 `demandId != null` 断言负责报错。
+     * <p>调用方在锁定前校验需求 ID。这里过滤空值并去重，保证后续锁始终按升序获取。
      */
     public static List<Long> ascendingDemandIds(Collection<Long> demandIds) {
         return demandIds.stream().filter(Objects::nonNull).distinct().sorted().toList();

@@ -9,14 +9,14 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 收货单行（W5 Target Design §5.8，**P24 对账恒等式**）。
+ * 收货单行（** 对账恒等式**）。
  *
  * <p>五个对账数量（`received` / `cumulative_received` / `remaining` / `over_receipt` / `receipt_difference`）
  * 由 {@code ck_purchase_receipt_item_reconciliation} 在 DB 层强制，
  * 因此 {@link #updateReconciliation} **必须一次写全五个值** —— 少写一个就会撞 CHECK。
  *
  * <p>{@link #updateReconciliation} 显式传 `plannedQuantity` 是为了让 CHECK 恒等式可被 DB 复核；
- * `planned_quantity` 本身**永不被覆盖**（P22），传的是从采购行继承的同一个值。
+ * `planned_quantity` 本身**永不被覆盖**，传的是从采购行继承的同一个值。
  */
 @Mapper
 public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEntity> {

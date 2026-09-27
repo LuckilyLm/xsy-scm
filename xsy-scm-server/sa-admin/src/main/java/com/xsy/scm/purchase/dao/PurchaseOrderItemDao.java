@@ -13,14 +13,14 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 采购单行（W5 Target Design §5.6，**Q13**）。
+ * 采购单行（****）。
  *
  * <p>行身份 = {@code (purchase_order_id, sku_id)}，由
  * {@code uk_purchase_order_item_order_sku_active} 强制。
  *
  * <p>**`received_quantity` 只增不减**，且**不受 `planned_quantity` 上限约束** ——
  * 超收上限是运行时 `t_config` 容差值（`planned × (1 + tolerance/100)`），
- * 静态 CHECK 表达不了（见 V15 的注释）。累计的唯一入口是
+ * 静态 CHECK 表达不了（见 的注释）。累计的唯一入口是
  * {@link #accumulateReceived}，且必须持有行锁（{@link #lockByOrderId}）。
  */
 @Mapper
@@ -75,7 +75,7 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
     int countActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
     /**
-     * 按商品收货工作台（Wave 2B §6.3，只读）：跨「可收货」采购单按 {@code (sku_id, 采购单位)} 归并计划 / 已收量。
+     * 按商品收货工作台（只读）：跨「可收货」采购单按 {@code (sku_id, 采购单位)} 归并计划 / 已收量。
      *
      * <p>分页 count 必须走聚合组数（调用方置 {@code optimizeCountSql=false}），排序固定，不接受客户端排序。
      *

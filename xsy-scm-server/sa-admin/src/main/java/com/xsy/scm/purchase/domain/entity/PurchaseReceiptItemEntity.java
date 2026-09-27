@@ -18,16 +18,16 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
 /**
- * 采购收货单行（W5 Target Design §5.8）。
+ * 采购收货单行。
  *
- * <p>含 **5 个对账数量**，恒等式由 `ck_purchase_receipt_item_reconciliation` 在 DB 层强制（P24）：
+ * <p>含 **5 个对账数量**，恒等式由 `ck_purchase_receipt_item_reconciliation` 在 DB 层强制：
  * <pre>
  * remaining_quantity      = GREATEST(planned_quantity − cumulative_received_quantity, 0)
  * over_receipt_quantity   = GREATEST(cumulative_received_quantity − planned_quantity, 0)
  * receipt_difference      = cumulative_received_quantity − planned_quantity      （可为负）
  * </pre>
  *
- * <p>**不存价格**：收货只记数量 / 重量，金额由采购行派生（A-D8）。
+ * <p>**不存价格**：收货只记数量 / 重量，金额由采购行派生。
  *
  * <p>`actualWeight` / `weightUnit` / `weighingSource` 三字段**同生同灭**：
  * 标品全为 `null`（不是 `0.0000`），非标品三者齐全且 `weighingSource = MANUAL`。

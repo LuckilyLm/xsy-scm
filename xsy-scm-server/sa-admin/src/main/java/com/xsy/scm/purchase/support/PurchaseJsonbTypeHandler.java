@@ -14,14 +14,14 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * 采购域 JSONB ↔ {@code Map<String,Object>} 映射（与 W4 {@code OrderJsonbTypeHandler} 同构）。
+ * 采购域 JSONB ↔ {@code Map<String,Object>} 映射（与 {@code OrderJsonbTypeHandler} 同构）。
  *
  * <p>为什么需要它：PG 的 {@code jsonb} 列经 JDBC 读出来是 {@link PGobject}，
  * MyBatis 默认拿不到 {@code Map}；写入时也需要显式包成 {@code jsonb} 类型，
  * 否则会被当成 {@code varchar} 而触发 {@code column is of type jsonb but expression is of type character varying}。
  *
  * <p>**刻意不复用 {@code OrderJsonbTypeHandler}**：跨域复用会让 {@code purchase} 依赖 {@code order} 域，
- * 而 W5 对 W4 只有「只读引用 {@code sales_order} / {@code sales_order_item}」这一条依赖方向。
+ * 而 对 只有「只读引用 {@code sales_order} / {@code sales_order_item}」这一条依赖方向。
  */
 public class PurchaseJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> {
 

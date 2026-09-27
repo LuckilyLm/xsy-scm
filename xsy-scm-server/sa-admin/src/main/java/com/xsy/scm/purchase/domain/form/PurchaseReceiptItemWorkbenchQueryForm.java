@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * 按商品收货工作台查询条件（Wave 2B §6.3，只读）。
+ * 按商品收货工作台查询条件（只读）。
  *
  * <p>范围固定为「可收货」的采购单（{@code SUBMITTED} / {@code PARTIALLY_RECEIVED}），
  * 不额外开放状态入参 —— 已收货完成 / 短关 / 取消 / 草稿单都不该出现在收货工作台上。

@@ -52,32 +52,13 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;
 
 /**
- * 采购域只读查询（W5 Target Design §7.1 的 7 个只读端点）。
+ * 采购域只读查询。
  *
- * <p>**只读**：本类不写任何表、不开写事务，也不抛业务冲突码（只抛 4048x 的「不存在」）。
- * 三个命令服务都通过本类取详情 VO 作为返回值 —— 这样「列表、详情、命令返回值」三处
- * 永远是同一套投影，不会出现「命令返回的 VO 少一个字段」的漂移（W4 的
- * {@code SalesOrderQueryService} 就是这个角色）。
+ * <p>列表与详情按采购员范围收窄，工作台汇总按仓库范围收窄；命令结果快照由已授权的写命令调用。
+ * 空范围返回空分页，不把无权数据伪装成零值。
  *
- * <p>**日志只有采购单一个端点**（{@code GET /scm/purchase/log/{orderId}}）：
- * §7.1 的端点清单是 3（需求）+ 11（采购单）+ 8（收货）+ 5（仓库）= **27**，
- * 与 §11.3 / DoD 第 8 条一致 —— 因此本类**不提供** `receiptLogs`（没有端点消费它）。
- * 收货单的日志通过 `purchase_receipt_id` 直接查 `purchase_operation_log`
- * （见 {@code idx_purchase_operation_log_receipt_created}），不需要额外的 HTTP 入口。
- *
- * <p>**派生字段一律在这里算，不在 SQL 里算**：`remaining` / `overReceipt` 走
- * {@link PurchaseReceiptQuantityCalculator} 的同一个纯函数，与 DB 的
- * {@code ck_purchase_receipt_item_reconciliation} 用同一套公式；
- * 若 SQL 与 Java 各写一遍，两边会在边界上悄悄分叉。
- *
- * <p><b>数据范围（P0-F 裁决第 2、7、8 条）</b>：列表与详情按调用者的<b>采购员</b>维度收窄，
- * 由 {@link ScmDataScopeService#resolve()} 一次解析后显式下传 Mapper；越界的详情读抛 30005。
- * 三个 {@code *ForCommand} 方法刻意<b>不</b>收窄：命令服务用它们取返回值与审计前后快照，
- * 「能不能对这张单做这次操作」由写权限与状态机把关，读取范围一旦掺进来，
- * 主管替他人改一张单就会把自己合法的编辑整个回滚。
- * 两条聚合工作台按<b>仓库</b>维度收窄（裁决第 8 条）：{@link #summaryPreview} 的整页数字归属到
- * 入参那一个仓库，{@link #receiptItemWorkbench} 归属到采购单／收货单的仓库；
- * 授权仓库为空时短路成空分页，绝不返回一堆 0 让人误读成「这些仓没有数据」。
+ * <p>收货余量与超收量统一由 {@link PurchaseReceiptQuantityCalculator} 计算，
+ * 避免列表和详情使用不同的数量口径。
  */
 @Service
 @RequiredArgsConstructor
@@ -118,7 +99,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 订单汇总 / 库存缺口预览（Wave 2A §6A.4）。
+     * 订单汇总 / 库存缺口预览。
      *
      * <p><b>只读</b>：不写任何表、不改 {@link PurchaseDemandService#generate} 的需求语义，
      * 只是把「已确认订单实发量」与「目标仓可用余额」并排算一个缺口供决策。
@@ -204,7 +185,7 @@ public class PurchaseQueryService {
 
     /**
      * 采购单列表：先按调用者范围，再与表单的 {@code purchaserId} 取交集
-     * （用户筛选只能缩小范围，不能放大；裁决第 4 条）。
+     * （用户筛选只能缩小授权范围，不能放大）。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseOrderVO> orderQuery(PurchaseOrderQueryForm form) {
@@ -255,7 +236,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 采购单行（含每行的分配集合，**Q13：N allocations**）。
+     * 采购单行（含每行的分配集合，**：N allocations**）。
      *
      * <p>它是独立端点 {@code GET /scm/purchase/item/{orderId}} 的实现，因此与详情同样受范围约束：
      * 只挡详情、放行行清单等于把别人单据的价格与数量照样端出去。
@@ -361,13 +342,13 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 按商品收货工作台（Wave 2B §6.3，只读）。
+     * 按商品收货工作台（只读）。
      *
      * <p>与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、
      * 排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页 count 按 SKU×单位 组数统计。
      * 只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
      *
-     * <p><b>仓库范围（裁决第 8 条）</b>：计划量与已收量归属的仓库就是采购单的 {@code warehouse_id}
+     * <p><b>仓库范围</b>：计划量与已收量归属的仓库就是采购单的 {@code warehouse_id}
      * （收货单建单时从采购单继承，因此不需要另判收货侧的仓），范围谓词落在采购单事实行上、
      * 分组之前，未授权仓的采购单整单不参与聚合。表单的 {@code warehouseId} 只能进一步缩小范围。
      * 一个授权仓都没有时给空分页：0 会被读成「这些仓没收过货」，而真实原因是「你没有可看的仓」。
@@ -433,7 +414,7 @@ public class PurchaseQueryService {
         vo.setProductType(row.getProductTypeSnapshot());
         vo.setPlannedQuantity(row.getPlannedQuantity());
         vo.setReceivedQuantity(row.getReceivedQuantity());
-        // P24：与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
+        //：与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
         vo.setRemainingQuantity(PurchaseReceiptQuantityCalculator.remaining(
                 row.getPlannedQuantity(), row.getReceivedQuantity()));
         vo.setOverReceiptQuantity(PurchaseReceiptQuantityCalculator.overReceipt(
@@ -451,7 +432,7 @@ public class PurchaseQueryService {
      *
      * <p>`demandUnit` / `demandVersion` / `demandStatus` 取自**需求当前值**（不是分配行上的快照）：
      * 它们表达的是「这条分配现在挂在一个什么状态的需求上」，快照表达不了「需求已补齐」。
-     * `quantity` 取分配行自己的数量（Q13：一条分配一个数量）。
+     * `quantity` 取分配行自己的数量（一条分配一个数量）。
      */
     private static PurchaseOrderAllocationVO allocationVo(PurchaseDemandAllocationEntity row,
                                                           PurchaseDemandEntity demand) {

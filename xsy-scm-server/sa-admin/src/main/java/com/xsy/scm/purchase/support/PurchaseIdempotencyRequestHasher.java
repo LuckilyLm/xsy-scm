@@ -13,27 +13,10 @@ import java.util.HexFormat;
 import java.util.Map;
 
 /**
- * 规范化请求哈希（幂等重放判定）。
+ * Canonical request hashing for idempotency replay comparison.
  *
- * <p>设计依据：W5 Target Design §7.11 —— 「复用 {@code OrderIdempotencyRequestHasher} 的纪律
- * （键排序 / 数字 {@code stripTrailingZeros} / 数字字符串归一），复制为
- * {@code PurchaseIdempotencyRequestHasher}」。
- *
- * <p><b>为什么复制而不是复用 W4 的类</b>：与 {@code PurchaseJsonbTypeHandler} 同一理由 ——
- * 复用会让 {@code purchase} 域在**支撑设施**层面依赖 {@code order} 域。W4 的幂等实现已验收冻结，
- * 复制纪律比引入跨域耦合更便宜。
- *
- * <p>规范化规则（三条，缺一不可，否则「同 key 同内容」会被误判为冲突）：
- * <ol>
- *   <li><b>键排序</b>：对象键按字典序重建，Map 的迭代顺序不影响哈希；</li>
- *   <li><b>数字归一</b>：JSON 数字 {@code stripTrailingZeros}（{@code 1.5000} → {@code 1.5}）；</li>
- *   <li><b>数字字符串归一</b>：形如数字的**字符串**同样 {@code stripTrailingZeros}，
- *       因为 W5 的定点数字段（数量 / 单价）在请求体里就是字符串
- *       （{@code "1.5000"} 与 {@code "1.5"} 必须视为同一请求）。</li>
- * </ol>
- *
- * <p><b>{@code null} 与 {@code "0.0000"} 必须哈希不同</b>：W5 的三态语义要求
- * 「无值」与「值为零」是两个不同请求，绝不能归一化成同一个键。
+ * <p>Uses the same normalization rules as the order hasher without making the purchase support layer depend on order.
+ * Object keys sort lexically; JSON numbers and numeric strings strip trailing zeros; null remains distinct from zero.
  */
 public final class PurchaseIdempotencyRequestHasher {
 

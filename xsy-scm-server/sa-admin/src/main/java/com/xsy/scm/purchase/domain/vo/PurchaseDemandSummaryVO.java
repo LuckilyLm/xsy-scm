@@ -7,18 +7,17 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 
 /**
- * 订单汇总 / 库存缺口预览行（Wave 2A §6A.4，只读聚合，按 {@code warehouseId + skuId + demandUnit} 归并）。
+ * 订单汇总 / 库存缺口预览行（只读聚合，按 {@code warehouseId + skuId + demandUnit} 归并）。
  *
  * <p><b>口径</b>：{@code orderDemandQuantity} 取来源销售订单行的<b>实发量</b>（{@code actual_quantity}），
- * 与 {@code PurchaseDemandService.generate()} 的取数完全一致（§6A.1 —— 本预览不改写需求语义，只镜像其 WHERE）。
+ * 与需求生成使用同一数据范围和筛选条件。
  * {@code availableQuantity} 与 {@code stockComparisonGap} 均由<b>后端</b>用 {@code BigDecimal}
- * 在 SQL 里算好、以四位定点字符串下发，前端不参与浮点运算（§6A.4）。
+ * 在 SQL 里算好、以四位定点字符串下发，前端不参与浮点运算。
  *
- * <p><b>Q13 单位门禁</b>：{@code demandUnit}（订单销售单位）与 {@code inventoryUnit}（余额记账单位）不一致时
+ * <p><b>单位门禁</b>：{@code demandUnit}（订单销售单位）与 {@code inventoryUnit}（余额记账单位）不一致时
  * {@code calculationStatus = UNIT_MISMATCH} 且 {@code stockComparisonGap = null}，禁止换算/猜折算率。
  *
- * <p><b>{@code openPurchaseQuantity}（在途采购量）刻意缺席</b>：§6A.6 明确「在途是否抵扣采购缺口」尚未裁决，
- * 第一阶段不臆造哪些采购状态算在途，因此不返回、更不从缺口公式里扣。
+ * <p>本视图不计算在途采购量；缺口只反映订单需求与当前仓库可用量。
  */
 @Data
 public class PurchaseDemandSummaryVO {
@@ -42,7 +41,7 @@ public class PurchaseDemandSummaryVO {
     private String demandUnit;
 
     /**
-     * 余额记账单位（Q13）；{@code NO_BALANCE} 时为 null。
+     * 余额记账单位；{@code NO_BALANCE} 时为 null。
      */
     private String inventoryUnit;
 
@@ -88,10 +87,10 @@ public class PurchaseDemandSummaryVO {
 
     /**
      * 库存对比差额 = {@code max(orderDemandQuantity - stockAvailableForSelectedOrders, 0)}；
-     * {@code UNIT_MISMATCH} 时为 null（不返回伪造差额，§6A.5）。
+     * {@code UNIT_MISMATCH} 时为 null（不返回伪造差额）。
      *
-     * <p>这是<b>已确认订单与当前库存/预留的对比结果，不是最终净采购建议</b>：在途采购是否抵扣、
-     * 已履约量如何扣减等仍未裁决（§6A.6），因此刻意不叫「建议采购量」。
+     * <p>这是<b>已确认订单与当前库存/预留的对比结果，不是最终净采购建议</b>；
+     * 本视图不扣减未收采购单数量或已履约量。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal stockComparisonGap;

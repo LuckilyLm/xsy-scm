@@ -12,7 +12,7 @@ import com.baomidou.mybatisplus.annotation.Version;
 import java.time.OffsetDateTime;
 
 /**
- * 采购收货单头（W5 Target Design §5.7；B1 扩展 HD-B1-01/02/03）。
+ * 采购收货单头（扩展 /02/03）。
  *
  * <p>商业状态 `status`（`DRAFT/CONFIRMED`）与入库生命周期 `receiptMode` /
  * `putawayStatus` **解耦**：`CONFIRMED` 只表示收货已确认，不等于库存已入账。

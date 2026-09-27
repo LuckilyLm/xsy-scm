@@ -91,7 +91,7 @@ public class PurchaseOrderService {
     private final PurchaseOwnerResolver purchaseOwnerResolver;
 
     // ------------------------------------------------------------------
-    // T1 create
+    // create
     // ------------------------------------------------------------------
 
     @Transactional(rollbackFor = Exception.class)
@@ -103,7 +103,7 @@ public class PurchaseOrderService {
 
         PurchaseOrderValidator.draft(form);
         if (form.getItems().stream().anyMatch(item -> item.getId() != null)) {
-            // 新建不接受任何既有行 id（同 W4 的 ORDER_ITEM_NOT_OWNED）
+            // 新建不接受任何既有行 id（同 的 ORDER_ITEM_NOT_OWNED）
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_NOT_OWNED);
         }
         SupplierEntity supplier = purchaseOrderValidator.requireEnabledSupplier(form.getSupplierId());
@@ -111,7 +111,7 @@ public class PurchaseOrderService {
 
         List<RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
 
-        // P12 锁序第 1 层：purchase_demand（按 id 升序），必须早于采购单写入
+        // 锁序第 1 层：purchase_demand（按 id 升序），必须早于采购单写入
         Map<Long, PurchaseDemandEntity> demands =
                 purchaseOrderAllocationService.lockDemands(PurchaseOrderAllocationService.requestedDemandIds(rows));
         // 新建：本单此前不存在任何分配 → 旧合计为空
@@ -121,7 +121,7 @@ public class PurchaseOrderService {
         PurchaseOrderEntity order = PurchaseSnapshotFactory.order(
                 supplier.getSupplierCode(), supplier.getName(),
                 warehouse.getWarehouseCode(), warehouse.getName(),
-                // 归属由服务端裁决：普通新建一律是当前员工，表单里的 purchaser_id 不采信（裁决第 7 条）
+        // 归属由服务端确定：普通新建一律是当前员工，表单里的 purchaser_id 不采信。
                 purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()), form);
         order.setOrderNo(numberGenerator.order());
         order.setTotalAmount(totalAmount(rows));
@@ -149,7 +149,7 @@ public class PurchaseOrderService {
     }
 
     // ------------------------------------------------------------------
-    // T2 update（§7.8 A–D 四段）
+    // update（A–D 四段）
     // ------------------------------------------------------------------
 
     @Transactional(rollbackFor = Exception.class)
@@ -157,7 +157,7 @@ public class PurchaseOrderService {
         PurchaseOrderValidator.draft(form);
         PurchaseOrderEntity order = lockOrder(form.getId());
         version(order.getVersion(), form.getVersion());
-        // 只有 DRAFT 可编辑行与分配（T2）。注意这里**必须判返回值**：
+        // 只有 DRAFT 可编辑行与分配。注意这里**必须判返回值**：
         // `editable(...)` 是纯布尔判定，写成裸语句会静默放过 SUBMITTED / 终态单，
         // 让后续的分配校验（40082）抢先抛出，把一个状态错误伪装成数量错误。
         if (!PurchaseOrderStateMachine.editable(order.getStatus())) {
@@ -186,7 +186,7 @@ public class PurchaseOrderService {
         }
 
         // 锁序：需求（旧 ∪ 新，按 id 升序）—— 并集是硬要求，只在旧集合出现的 demand
-        // 也必须锁，否则删除后 allocated 不会回落（§7.8 C 段）
+        // 也必须锁，否则删除后 allocated 不会回落（C 段）
         Collection<Long> involved = new LinkedHashSet<>(PurchaseOrderAllocationService.requestedDemandIds(rows));
         existingAllocations.values().forEach(list ->
                 list.forEach(allocation -> involved.add(allocation.getPurchaseDemandId())));
@@ -205,7 +205,7 @@ public class PurchaseOrderService {
         PurchaseOrderVO before = purchaseQueryService.orderDetailForCommand(order.getId());
 
         // 先删后插：被删行的 SKU 允许在同一次请求里作为新行重新出现，
-        // 否则会撞 uk_purchase_order_item_order_sku_active（同 W4 的处理）
+        // 否则会撞 uk_purchase_order_item_order_sku_active（同 的处理）
         for (PurchaseOrderItemEntity removed : itemChanges.removed()) {
             purchaseDemandAllocationDao.softDeleteByOrderItemId(removed.getId(), ScmOperator.current());
             if (purchaseOrderItemDao.softDelete(
@@ -236,7 +236,7 @@ public class PurchaseOrderService {
         order.setSupplierCodeSnapshot(supplier.getSupplierCode());
         order.setSupplierNameSnapshot(supplier.getName());
         // 归属不在编辑接口里移动：order 是锁出来的库中行，purchaser_id 原样写回，
-        // 表单值对任何角色（含分配权持有者）都不采信 —— 改派只有 /reassign 一条路（裁决第 7 条）。
+        // 表单值对任何角色（含分配权持有者）都不采信；改派只能通过 /reassign 命令。
         order.setWarehouseId(form.getWarehouseId());
         order.setWarehouseCodeSnapshot(warehouse.getWarehouseCode());
         order.setWarehouseNameSnapshot(warehouse.getName());
@@ -253,13 +253,13 @@ public class PurchaseOrderService {
     }
 
     // ------------------------------------------------------------------
-    // T2.1 reassign（改派采购归属）
+    //.1 reassign（改派采购归属）
     // ------------------------------------------------------------------
 
     /**
      * 改派采购归属：只有持 {@code scm:purchase:assign} 的调用方能到达（权限在控制器上）。
      *
-     * <p>刻意不按单据状态设限：裁决只要求「有分配权才可指定 / 改派」，
+     * <p>不按单据状态设限；只要调用者有分配权即可指定或改派负责人，
      * 而单据在途时换人（离职、调岗）恰恰是本端点的主要用途。
      *
      * <p>乐观锁沿用本模块既有纪律：先 {@code FOR UPDATE} 锁单，比对 {@code id + version}，
@@ -289,7 +289,7 @@ public class PurchaseOrderService {
     }
 
     // ------------------------------------------------------------------
-    // T3 submit / T4 cancel / T5 shortClose / T6 delete
+    // submit / cancel / shortClose / delete
     // ------------------------------------------------------------------
 
     @Transactional(rollbackFor = Exception.class)
@@ -333,7 +333,7 @@ public class PurchaseOrderService {
         PurchaseOrderStateMachine.transition(order.getStatus(), ScmPurchaseStatusEnum.CANCELLED.name());
         PurchaseOrderValidator.reason(form.getCancelReason(), PURCHASE_CANCEL_REASON_REQUIRED);
 
-        // 释放本单的全部分配并重算需求（§7.8 C 段不变量：allocated 必须能回落）
+        // 释放本单的全部分配并重算需求（C 段不变量：allocated 必须能回落）
         purchaseOrderAllocationService.releaseAllocations(order);
 
         Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);
@@ -369,7 +369,7 @@ public class PurchaseOrderService {
      * 少收关单的核心转换：锁单 → 版本校验 → 状态机 → 「至少一行已收且一行未收齐」→ 落库 → 操作日志。
      *
      * <p>单单命令与批量命令共用此方法，二者对合法性 / 版本 / 原因的要求完全一致；区别只在批量命令
-     * 不走每单幂等（整批在同一事务内要么全成要么全回滚，§6.8）。
+     * 不走每单幂等（整批在同一事务内要么全成要么全回滚）。
      */
     private PurchaseOrderVO applyShortClose(PurchaseOrderShortCloseForm form) {
         PurchaseOrderEntity order = lockOrder(form.getId());
@@ -407,7 +407,7 @@ public class PurchaseOrderService {
     public void delete(PurchaseOrderDeleteForm form) {
         PurchaseOrderEntity order = purchaseOrderDao.lock(form.getId());
         if (order == null) {
-            // 幂等：已删除视为成功（同 W4 的 delete 语义）
+            // 幂等：已删除视为成功（同 的 delete 语义）
             return;
         }
         // 删除没走 lockOrder，归属守卫单独补一次；批量删除逐单委托本方法，因此同样生效
@@ -439,16 +439,16 @@ public class PurchaseOrderService {
 
     @Transactional(rollbackFor = Exception.class)
     public void batchDelete(PurchaseOrderBatchDeleteForm form) {
-        // 按 id 升序：批量删除也必须遵守确定性锁序（P12）
+        // 按 id 升序：批量删除也必须遵守确定性锁序
         form.getOrders().stream()
                 .sorted(Comparator.comparing(PurchaseOrderVersionForm::getId))
                 .forEach(row -> delete(deleteForm(row)));
     }
 
     /**
-     * 批量少收关单（Wave 2B §6.3）。整批共享原因，逐单套用与单单 {@link #applyShortClose} 完全相同的
+     * 批量少收关单。整批共享原因，逐单套用与单单 {@link #applyShortClose} 完全相同的
      * 合法性 / 版本 / 状态校验；本方法自带 {@code @Transactional}，任一单非法即整批回滚——不存在部分成功。
-     * 锁序按 id 升序（P12），与批量删除一致，避免交叉持锁死锁。
+     * 锁序按 id 升序，与批量删除一致，避免交叉持锁死锁。
      */
     @Transactional(rollbackFor = Exception.class)
     public void batchShortClose(PurchaseOrderBatchShortCloseForm form) {

@@ -9,16 +9,16 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 采购操作日志（W5 Target Design §5.10 / §7.12，**只追加**）。
+ * 采购操作日志，只追加不修改。
  *
- * <p>**Q14 的归属规则由 DB 的 `ck_purchase_operation_log_owner` 强制**，
+ * <p>日志归属规则由 DB 的 `ck_purchase_operation_log_owner` 强制，
  * 本 Dao 不做任何归属推断 —— 它只负责把调用方算好的
  * `purchase_order_id` / `purchase_receipt_id` 原样写入。
  * `DEMAND_GENERATE` 时两者都是 `null`；`DEMAND_ALLOCATE` 由调用方用
  * `purchaseOrderItemId` **反查** `purchase_order_id` 后写入。
  *
- * <p>**刻意没有 update / delete 方法**：日志不可篡改（与 W4 的
- * {@code OrderOperationLogDao} 一致）。日志**没有** `deleted` 列，
+ * <p>刻意没有 update / delete 方法：日志不可篡改，与 {@code OrderOperationLogDao} 一致。
+ * 日志**没有** `deleted` 列，
  * 所以不需要 `WHERE deleted = FALSE`。
  */
 @Mapper

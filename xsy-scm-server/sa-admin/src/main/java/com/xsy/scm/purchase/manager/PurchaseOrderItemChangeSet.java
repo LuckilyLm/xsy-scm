@@ -16,14 +16,14 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITE
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
 /**
- * 采购单**行级**差量（W5 Target Design §7.8 A 段）。
+ * 采购单**行级**差量（A 段）。
  *
  * <p><b>行身份 = {@code (purchase_order_id, sku_id)}</b>，由
- * {@code uk_purchase_order_item_order_sku_active} 强制（Q13 修订后**保留**该索引）。
+ * {@code uk_purchase_order_item_order_sku_active} 强制（修订后**保留**该索引）。
  * 这与 allocation 身份 `(purchase_order_item_id, purchase_demand_id)` 是两个层次，
  * 必须区分（见 {@link PurchaseOrderAllocationChangeSet}）。
  *
- * <p>规则（逐条对应 §7.8 步骤 1–4）：
+ * <p>规则（逐条对应 步骤 1–4）：
  * <ol>
  *   <li>请求内同一 `skuId` 出现两次 → {@code PURCHASE_ORDER_ITEM_DUPLICATE_SKU}；</li>
  *   <li>保留行（`id` 非空）必须属于本单 → 否则 {@code PURCHASE_ORDER_ITEM_NOT_OWNED}；</li>

@@ -60,11 +60,10 @@ public class PurchaseOrderAllocationService {
     private final PurchaseOrderValidator purchaseOrderValidator;
 
     /**
-     * 请求行 + 请求分配（Q13：一行 N 条分配）。
+     * 请求行 + 请求分配（一行 N 条分配）。
      *
-     * <p>`allocations` 在校验阶段被填充为真正的 {@link PurchaseDemandAllocationEntity}
-     * —— 因为快照字段（`salesOrderId` / `salesOrderItemId` / `skuId` / `demandSnapshot`）
-     * 只能从**已锁定的需求行**取，不能在装配商品时凭空造。
+     * <p>{@code allocations} 中保存已关联的 {@link PurchaseDemandAllocationEntity}。
+     * 快照字段只能从已锁定的需求行读取，避免装配采购商品时生成来源不明的数据。
      */
     public static final class RequestedRow {
 
@@ -101,8 +100,8 @@ public class PurchaseOrderAllocationService {
         for (PurchaseOrderAddForm.Item itemForm : form.getItems()) {
             ProductSkuOptionVO sku = products.get(itemForm.getSkuId());
             if (sku == null) {
-                // 商品不存在 / 不可售：与 W2 的采购判定入口共用同一个对外码（40992），
-                // 不让 W1 的内部码从采购 API 泄漏出去
+                // 商品不存在 / 不可售：与 的采购判定入口共用同一个对外码（40992），
+                // 不让 的内部码从采购 API 泄漏出去
                 throw new ScmBusinessException(PURCHASE_SUPPLIER_SKU_DISABLED);
             }
             SupplierSkuEntity supplierSku =
@@ -117,7 +116,7 @@ public class PurchaseOrderAllocationService {
     /**
      * 校验分配集合并补全快照字段；返回「本次请求按 demandId 的合计」。
      *
-     * <p>逐条对应 §7.8 B 段第 7 步与 §7.4 的分配校验表。
+     * <p>逐条对应 B 段第 7 步与 的分配校验表。
      *
      * <p><b>累计上限必须扣除本单旧值</b>：`demand.allocated_quantity` 是**全库**已分配合计，
      * 其中已含本单上一次提交的量。`create` 时本单尚无分配（传空 Map），`update` 时必须传入
@@ -140,7 +139,7 @@ public class PurchaseOrderAllocationService {
                 PurchaseDemandAllocator.demandVersion(allocationForm.getDemandVersion(), demand.getVersion());
                 // 同一 SKU 才能挂（40995）
                 PurchaseDemandAllocator.itemMatchesDemand(row.item.getSkuId(), demand.getSkuId());
-                // Q17：需求单位必须等于采购单位，W5 不换算（40971）
+                //：需求单位必须等于采购单位， 不换算（40971）
                 PurchaseDemandAllocator.unitCompatible(
                         demand.getDemandUnitSnapshot(), row.item.getPurchaseUnitSnapshot());
                 // (supplier, warehouse) 一致性；首次分配时由调用方固定 supplier（40981）
@@ -174,7 +173,7 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * §7.8 C 段：按 `旧 ∪ 新` 的 demandId 升序逐个重算需求侧。
+     * C 段：按 `旧 ∪ 新` 的 demandId 升序逐个重算需求侧。
      *
      * <p>**必须遍历并集**：只在旧集合出现的 demand（被删空 / 整单取消）也要重算，
      * 否则 `allocated_quantity` 不会回落、`status` 也不会从 `ALLOCATED` 退回 `PENDING`。
@@ -198,7 +197,7 @@ public class PurchaseOrderAllocationService {
 
             Long supplierId = demand.getSupplierId();
             if (PurchaseDemandAllocator.shouldFixSupplier(demand) && finalAllocated.signum() > 0) {
-                // supplier 由「第一次分配」固定，之后不得改变（§7.4）
+                // supplier 由「第一次分配」固定，之后不得改变
                 supplierId = orderSupplierId;
             }
             String status = PurchaseDemandAllocator.statusFor(
@@ -211,7 +210,7 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * 单行内的分配集合差量（Q13：**禁止**「一个 item 对一个 allocation」的算法）。
+     * 单行内的分配集合差量（**禁止**「一个 item 对一个 allocation」的算法）。
      */
     public void applyAllocationChanges(RequestedRow row,
                                        List<PurchaseDemandAllocationEntity> existing) {
@@ -300,7 +299,7 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * P12 锁序第 1 层：需求必须**按 id 升序**一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
+     * 锁序第 1 层：需求必须**按 id 升序**一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
      */
     public Map<Long, PurchaseDemandEntity> lockDemands(Collection<Long> demandIds) {
         List<Long> ascending = PurchaseDemandAllocator.ascendingDemandIds(demandIds);

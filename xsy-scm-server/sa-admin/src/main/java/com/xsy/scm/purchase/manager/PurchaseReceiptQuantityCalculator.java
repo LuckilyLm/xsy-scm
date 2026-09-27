@@ -12,11 +12,10 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_Q
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_TOLERANCE_CONFIG_INVALID;
 
 /**
- * 收货数量与对账恒等式（W5 Target Design §7.5 / §4.3 / P24）。
+ * 收货数量与对账恒等式。
  *
- * <p><b>容差配置解析是一个纯函数</b>（{@link #tolerance(String)}），
- * 因此「缺失回退 10 / 非法 / 越界」都能被单测直接覆盖，不需要 Spring 或 DB。
- * 载体是 SmartAdmin 原生 Config（{@code t_config}），key 见 {@link PurchaseConfigKey}。
+ * <p><b>容差配置解析是一个纯函数</b>（{@link #tolerance(String)}）：缺失配置回退到 10，
+ * 非数字或超出 0–100 的值会报错。配置存储在 SmartAdmin {@code t_config} 中。
  *
  * <pre>
  * tolerance  = config("scm.purchase.over_receipt_tolerance_percent")  默认 10，范围 0–100
@@ -116,7 +115,7 @@ public final class PurchaseReceiptQuantityCalculator {
      *
      * <p><b>为什么不复用 {@code PurchaseOrderValidator.decimal}</b>：那个方法的失败码是
      * {@code PURCHASE_QUANTITY_INVALID(40080)}（采购数量），而收货侧的错误码契约是
-     * {@code PURCHASE_RECEIPT_QUANTITY_INVALID(40083)}（§7.7）。两个码必须各归其位 ——
+     * {@code PURCHASE_RECEIPT_QUANTITY_INVALID(40083)}。两个码必须各归其位 ——
      * 否则前端无法区分「建单时数量写错」与「收货时数量写错」。
      *
      * @throws ScmBusinessException 形态不符或 &le; 0（40083）
@@ -133,14 +132,14 @@ public final class PurchaseReceiptQuantityCalculator {
     }
 
     /**
-     * 本次有效数量（§4.3 第 6 步 / §7.5 标品 vs 非标品）。
+     * 本次有效数量（第 6 步 / 标品 vs 非标品）。
      *
      * <pre>
      * STANDARD      有效数量 = declaredQuantity；actualWeight / weighingSource / correctionReason 必须全空
      * NON_STANDARD  有效数量 = actualWeight（必填且 &gt; 0）；weighingSource 必须 == MANUAL
      * </pre>
      *
-     * <p>{@code planned_quantity} 永不被覆盖（P22）。
+     * <p>{@code planned_quantity} 永不被覆盖。
      *
      * @throws ScmBusinessException 形态不符（40083）
      */

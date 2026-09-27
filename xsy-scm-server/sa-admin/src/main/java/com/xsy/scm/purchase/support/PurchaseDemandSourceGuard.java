@@ -7,7 +7,7 @@ import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SOURCE_INVALID;
 
 /**
- * 采购需求的**来源合法性**守卫（W5 Target Design §7.4 第 3 步 / §7.7 的 40980）。
+ * 采购需求来源守卫：拒绝无法采购的销售订单。
  *
  * <p>为什么需要它：`purchase_demand` 的来源唯一索引
  * （`uk_purchase_demand_source_active`）只保证「一个销售订单行只产生一条活动需求」，
@@ -16,9 +16,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SO
  * 数据库层没有外键（`AGENTS.md` 明文禁止），因此这条不变量只能由服务层承担 ——
  * 本类就是那个唯一入口。
  *
- * <p><b>实现为纯函数</b>：只依赖传入的实体，不注入 DAO、不开事务。这样
- * 「已取消订单不得生成需求」可以在单测里毫秒级断言，也便于 `generate` 在
- * 逐行循环中复用（不产生 N 次查询）。
+ * <p><b>实现为纯函数</b>：只依赖传入的实体，不注入 DAO、不开事务，供需求生成逐行复用。
  *
  * <p><b>为什么不用 SQL 里已有的 {@code o.status = 'CONFIRMED'} 过滤</b>：那是
  * `generate` 的**取数口径**（决定「取哪些行」），本类是**不变量断言**（决定「取到的行是否可信」）。
@@ -30,9 +28,6 @@ public final class PurchaseDemandSourceGuard {
     private PurchaseDemandSourceGuard() {
     }
 
-    /**
-     * 销售订单的「可采购」状态，与 W4 的 `ScmOrderStatusEnum.CONFIRMED` 对齐。
-     */
     /**
      * 断言来源销售订单可产生采购需求。
      *

@@ -9,12 +9,12 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 采购需求分配（W5 Target Design §5.4 / §7.8 B 段，**Q13**）。
+ * 采购需求分配（B 段，****）。
  *
  * <p>allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}，
  * 由 {@code uk_purchase_demand_allocation_source_active} 强制。
  *
- * <p>**这里没有「按 itemId 查单条 allocation」的方法** —— 那是 A 源的错误形状（A-D23）。
+ * <p>**这里没有「按 itemId 查单条 allocation」的方法** —— 那是 A 源的错误形状。
  * 所有查询都是**集合形态**，让调用方按 allocation 集合做差量对账。
  *
  * <p>{@link #listActiveByDemandIds} 返回的是**跨采购单的全部活动分配**：
@@ -45,7 +45,7 @@ public interface PurchaseDemandAllocationDao extends BaseMapper<PurchaseDemandAl
                                                                          @Param("demandIds") List<Long> demandIds);
 
     /**
-     * 只改数量（**保留的 allocation**，§7.8 B 段第 9 步：不重建行）。
+     * 只改数量（**保留的 allocation**， B 段第 9 步：不重建行）。
      *
      * <p>**刻意不用 MP 的 `updateById`**：`@Version` 的乐观锁要求实体上的 `version` 非空，
      * 而差量对象是从「请求」构造出来的（请求不带 allocation 版本），一旦漏设 version，

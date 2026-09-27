@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 采购收货端点（W5 Target Design §7.1 的 8 个端点）。
+ * 采购收货端点（的 8 个端点）。
  *
  * <p>`create` 与 `confirm` 要求 `Idempotency-Key` 头（缺失 → 40084，因此声明为
  * {@code required = false}）；`update` 只改备注，靠行级 `@Version` 保证重复提交安全。
@@ -69,7 +69,7 @@ public class PurchaseReceiptController {
     }
 
     /**
-     * 按商品收货工作台（Wave 2B §6.3，只读）：跨可收货采购单按 SKU×采购单位 汇总计划 / 已收 / 欠收 / 超收，
+     * 按商品收货工作台（只读）：跨可收货采购单按 SKU×采购单位 汇总计划 / 已收 / 欠收 / 超收，
      * 复用 {@code scm:purchase:receipt:query}。它只是视图，不新增收货事实，确认收货仍走各收货单既有端点。
      */
     @PostMapping("/item-workbench/query")
@@ -109,7 +109,7 @@ public class PurchaseReceiptController {
     }
 
     /**
-     * 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。
+     * 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。
      */
     @PostMapping("/putaway")
     @SaCheckPermission(PurchasePermission.RECEIPT_PUTAWAY)

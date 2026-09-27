@@ -6,9 +6,9 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 /**
- * 采购操作日志（W5 Target Design §7.2 / §7.12）。
+ * 采购操作日志。
  *
- * <p>`purchaseOrderId` / `purchaseReceiptId` 的取值由 `operationType` 决定（Q14）：
+ * <p>`purchaseOrderId` / `purchaseReceiptId` 的取值由 `operationType` 决定：
  * `DEMAND_GENERATE` 两者皆空 · `DEMAND_ALLOCATE` 只有采购单 id · `RECEIPT_*` 双 id 非空。
  * `beforeData` / `afterData` 是全量快照。
  */

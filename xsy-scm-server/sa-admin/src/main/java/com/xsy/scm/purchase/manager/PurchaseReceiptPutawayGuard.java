@@ -5,9 +5,9 @@ import com.xsy.scm.purchase.constant.ScmPutawayStatusEnum;
 import com.xsy.scm.purchase.constant.ScmReceiptStatusEnum;
 
 /**
- * 仓库确认入库的前置判定（B1，HD-B1-03）。
+ * 仓库确认入库的前置判定。
  *
- * <p>纯函数，供 {@code PurchaseReceiptService.putaway} 调用，也便于单测锁住状态迁移矩阵：
+ * <p>纯函数，由 {@code PurchaseReceiptService.putaway} 调用，集中校验入库状态前置条件：
  * 只有「已确认 + WAREHOUSE_CONFIRM + 待入库」三者同时成立才允许入库。
  */
 public final class PurchaseReceiptPutawayGuard {

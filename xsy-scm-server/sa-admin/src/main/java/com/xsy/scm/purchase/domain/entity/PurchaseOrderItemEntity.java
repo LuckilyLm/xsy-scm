@@ -18,9 +18,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
 /**
- * 采购单行（W5 Target Design §5.6）。
+ * 采购单行。
  *
- * <p>**行身份** = `(purchase_order_id, sku_id)`（`uk_purchase_order_item_order_sku_active`，Q13 保留）；
+ * <p>**行身份** = `(purchase_order_id, sku_id)`（`uk_purchase_order_item_order_sku_active`， 保留）；
  * **allocation 身份** = `(purchase_order_item_id, purchase_demand_id)`。两者必须区分。
  *
  * <p>**不引入 `received_quantity <= planned_quantity` 约束**：容差内超收合法，

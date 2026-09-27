@@ -5,10 +5,9 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * 采购域错误码（38 个）。
+ * 采购域错误码。
  *
- * <p>设计依据：W5 Target Design §7.7（Q11）。与仓库域的 {@code WarehouseErrorCode}（2 个）
- * 合计 **40** 个，与 W1–W4 全部错误码**零交集**（由 {@code PurchaseErrorCodeTest} 门禁强制）。
+ * <p>采购专属错误码与 {@code WarehouseErrorCode} 分域定义，避免跨域反向依赖。
  *
  * <pre>
  * 40080–40091 BAD_REQUEST  12
@@ -19,7 +18,7 @@ import com.xsy.scm.common.error.ScmErrorCode;
  * <p>**刻意不放进本枚举的码**：{@code WAREHOUSE_NOT_FOUND(40485)} 与
  * {@code WAREHOUSE_CODE_DUPLICATE(40996)} —— 它们属于 {@code warehouse} 域，
  * 放在这里会让 warehouse 域反向依赖 purchase 域。{@code PURCHASE_WAREHOUSE_DISABLED(40987)}
- * **留在本枚举**：它是**采购侧规则**（不允许用停用仓库建单），不是仓库域自身的不变量。
+ * **留在本枚举**：它是采购侧规则（不允许用停用仓库建单），不是仓库域自身的不变量。
  *
  * <p>复用（不重复定义）：{@code ScmCommonErrorCode.VERSION_CONFLICT(40921)} ·
  * {@code ScmCommonErrorCode.VALIDATION_ERROR(40000)}。
@@ -50,7 +49,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_RECEIPT_ITEM_NOT_FOUND(40484, "收货明细不存在"),
 
     // ---- 40971–40999 CONFLICT ----
-    PURCHASE_UNIT_CONVERSION_REQUIRED(40971, "需求单位与采购单位不一致，W5 不支持自动换算"),
+    PURCHASE_UNIT_CONVERSION_REQUIRED(40971, "需求单位与采购单位不一致，无法自动换算"),
     PURCHASE_DEMAND_VERSION_CONFLICT(40972, "采购需求版本冲突，请刷新后重试"),
     PURCHASE_DEMAND_SOURCE_INVALID(40980, "销售订单状态不允许生成采购需求"),
     PURCHASE_DEMAND_ALLOCATION_CONFLICT(40981, "采购需求分配冲突"),
@@ -72,7 +71,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_RECEIPT_ITEM_INCOMPLETE(40998, "确认收货必须提交本收货单的全部明细"),
     PURCHASE_TOLERANCE_CONFIG_INVALID(40999, "采购超收容差配置无效"),
 
-    // ---- B1 入库确认（41008，410xx 新段）----
+    // ---- 收货入库确认 ----
     PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID(41008, "收货单当前状态不允许入库确认");
 
     private final int code;

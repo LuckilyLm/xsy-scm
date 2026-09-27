@@ -17,13 +17,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 /**
- * 采购单头（W5 Target Design §5.5）。
+ * 采购单头。
  *
- * <p>6 状态 `DRAFT/SUBMITTED/PARTIALLY_RECEIVED/RECEIVED/SHORT_CLOSED/CANCELLED`（Q2），
+ * <p>6 状态 `DRAFT/SUBMITTED/PARTIALLY_RECEIVED/RECEIVED/SHORT_CLOSED/CANCELLED`，
  * 由 {@code ck_purchase_order_status} 与 `PurchaseOrderStateMachine` 双重强制。
  *
- * <p>**没有 `confirmed_at`**：采购单的收货完成时间分散在各收货单的 `confirmed_at` 上（F4）。
- * 供应商 / 仓库快照在创建 / 编辑时刷新，`submit` 后永不回读主数据（P4）。
+ * <p>**没有 `confirmed_at`**：采购单的收货完成时间分散在各收货单的 `confirmed_at` 上。
+ * 供应商 / 仓库快照在创建 / 编辑时刷新，`submit` 后永不回读主数据。
  */
 @Data
 @TableName(value = "purchase_order", autoResultMap = true)

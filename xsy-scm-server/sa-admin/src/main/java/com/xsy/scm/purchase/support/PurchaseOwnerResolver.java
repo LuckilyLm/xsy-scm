@@ -9,10 +9,10 @@ import net.lab1024.sa.base.common.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
 /**
- * 采购归属（{@code purchaser_id}）的服务端裁决（P0 基线收口裁决第 7 条）。
+ * 采购归属（{@code purchaser_id}）的服务端解析器。
  *
- * <p>在 P0-F 之前 {@code purchaser_id} 取自表单，是一个可以任意填写的值，因此不能被当作
- * 数据范围依据。本类把口径收口成一条：<b>普通新建时归属一律是当前员工，表单值一律不采信</b>；
+ * <p>表单中的 {@code purchaser_id} 是客户端提供值，不能直接作为数据范围依据。
+ * <b>普通新建时归属一律是当前员工，表单值一律不采信</b>；
  * 只有持 {@code scm:purchase:assign} 的人才可以把归属写成别人（留空即「未分配」）。
  * 已存在的单据只能经 {@code /scm/purchase/reassign} 改派，见 {@link #canAssign()}。
  *

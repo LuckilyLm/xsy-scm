@@ -1,9 +1,9 @@
 package com.xsy.scm.purchase.constant;
 
 /**
- * 收货入库方式（2 值，HD-B1-02）。
+ * 收货入库方式（2 值）。
  *
- * <p>取值与 V22 的 {@code ck_purchase_receipt_mode} 白名单逐字一致。
+ * <p>取值与 的 {@code ck_purchase_receipt_mode} 白名单逐字一致。
  *
  * <ul>
  *   <li>{@link #DIRECT}：收货确认即物理入库（confirm 同事务写 PURCHASE_IN）；</li>
