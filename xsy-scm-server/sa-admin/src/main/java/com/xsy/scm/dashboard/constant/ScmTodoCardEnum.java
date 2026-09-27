@@ -3,11 +3,10 @@ package com.xsy.scm.dashboard.constant;
 import java.util.List;
 
 /**
- * 业务待办卡片定义：入口权限 {@code scm:todo:query} 只授权访问待办接口本身，
- * 每张卡片的可见性由「待办权限 ∩ 本卡片所需领域权限」决定。
+ * 业务待办卡片定义：入口权限 {@code scm:todo:query} 只授权访问待办接口本身， 每张卡片的可见性由「待办权限 ∩ 本卡片所需领域权限」决定。
  *
- * <p>{@code allPerms} 必须全部持有，{@code anyPerms} 非空时至少要持有一项；
- * 计数口径与所列权限对应的领域列表一致（复用其查询服务，不另写一套统计）。
+ * <p>
+ * {@code allPerms} 必须全部持有，{@code anyPerms} 非空时至少要持有一项； 计数口径与所列权限对应的领域列表一致（复用其查询服务，不另写一套统计）。
  */
 public enum ScmTodoCardEnum {
 
@@ -23,8 +22,7 @@ public enum ScmTodoCardEnum {
             List.of("scm:inventory:loss-gain:approve", "scm:inventory:loss-gain:reject")),
 
     DELIVERY_ROUTE_DRAFT("delivery-route-draft", "草稿配送线路", "/delivery/routes?status=DRAFT",
-            List.of("scm:delivery:route:query", "scm:delivery:route:plan"), List.of()),
-    ;
+            List.of("scm:delivery:route:query", "scm:delivery:route:plan"), List.of()),;
 
     private final String key;
     private final String label;
