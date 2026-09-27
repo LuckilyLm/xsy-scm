@@ -2,7 +2,6 @@ package com.xsy.scm.product.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
@@ -27,15 +26,9 @@ import com.xsy.scm.product.domain.form.ProductSpuUpdateForm;
 import com.xsy.scm.product.domain.vo.ProductImportErrorVO;
 import com.xsy.scm.product.domain.vo.ProductImportResultVO;
 import com.xsy.scm.product.manager.ProductAggregateValidator;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.DataFormatter;
-import org.apache.poi.ss.util.CellReference;
-import org.apache.poi.ss.util.NumberToTextConverter;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -46,12 +39,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 商品 Excel 导入：解析 + 全量校验（0 错误才写）+ 交给 {@link ProductImportWriteService} 整批回滚写入。
+ * 商品 Excel 导入编排：工作簿读写由 {@link ProductImportWorkbookSupport} 负责，领域校验通过后
+ * 交给 {@link ProductImportWriteService} 整批回滚写入。
  * 复用既有 ProductSpuService.add / update 的全部领域校验与保护，不新建导入旁路。
  *
  * <p>两种模式语义互斥且必须显式选择：
@@ -59,7 +52,6 @@ import java.util.stream.Collectors;
  * <b>留空表示保持原值</b>（不是清空），未出现在 Excel 的 SKU 也不会被删除；
  * 要把可空属性（别名、助记码、品牌、产地、标签编码、条码）清成空，在该单元格填 {@link #CLEAR_TOKEN}。
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductImportService {
@@ -73,35 +65,10 @@ public class ProductImportService {
             Map.entry("规格名称", ProductImportRow::getSpecName),
             Map.entry("销售单位", ProductImportRow::getSaleUnit),
             Map.entry("默认SKU", ProductImportRow::getDefaultFlag));
-    private static final int MAX_ROWS = 20000;
+    static final int MAX_ROWS = 20000;
     private static final int MAX_PRODUCTS = 5000;
     private static final int MAX_SKUS_PER_PRODUCT = 200;
-    private static final int MAX_ERRORS = 1000;
-    private static final List<String> CREATE_HEADERS = List.of("模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码",
-            "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称",
-            "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
-    /** UPDATE 把定位键放在最前面；SPU / SKU 编码是业务身份，只能核对不能改。 */
-    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本",
-            "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码",
-            "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
-    private static final List<BiConsumer<ProductImportRow, String>> CREATE_SETTERS = List.of(
-            ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
-            ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
-            ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
-            ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
-            ProductImportRow::setSkuCode, ProductImportRow::setBarcode, ProductImportRow::setSpecName,
-            ProductImportRow::setSaleUnit, ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
-            ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
-    private static final List<BiConsumer<ProductImportRow, String>> UPDATE_SETTERS = List.of(
-            ProductImportRow::setTemplateVersion, ProductImportRow::setSpuId, ProductImportRow::setSpuVersion,
-            ProductImportRow::setSkuId, ProductImportRow::setSkuVersion, ProductImportRow::setSpuCode,
-            ProductImportRow::setSpuName, ProductImportRow::setAlias, ProductImportRow::setCategoryCode,
-            ProductImportRow::setMnemonicCode, ProductImportRow::setBrandName, ProductImportRow::setOrigin,
-            ProductImportRow::setStorageMethod, ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes,
-            ProductImportRow::setSpuStatus, ProductImportRow::setSkuCode, ProductImportRow::setBarcode,
-            ProductImportRow::setSpecName, ProductImportRow::setSaleUnit, ProductImportRow::setProductType,
-            ProductImportRow::setMarketPrice, ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag,
-            ProductImportRow::setSortOrder);
+    static final int MAX_ERRORS = 1000;
     private static final Set<String> SHELF = Set.of(
             ScmShelfStatusEnum.ON_SHELF.name(), ScmShelfStatusEnum.OFF_SHELF.name());
     private static final Set<String> PRODUCT_TYPE = Set.of(
@@ -116,6 +83,7 @@ public class ProductImportService {
     private final ProductSkuDao productSkuDao;
     private final ProductImageDao productImageDao;
     private final ProductTagService productTagService;
+    private final ProductImportWorkbookSupport productImportWorkbookSupport;
     private final ProductImportWriteService productImportWriteService;
 
     /** CREATE 整批新增；UPDATE 按定位键改写既存商品，两者语义不可混用。 */
@@ -126,7 +94,7 @@ public class ProductImportService {
     public ProductImportResultVO importFile(MultipartFile file, ImportMode mode) throws Exception {
         var result = new ProductImportResultVO();
         result.setMode(mode.name());
-        var rows = readRows(file.getBytes(), mode, result);
+        var rows = productImportWorkbookSupport.readRows(file.getBytes(), mode, result);
         if (result.getTotalErrors() > 0) return result;
         if (mode == ImportMode.CREATE) {
             var assembled = assembleCreates(rows, result);
@@ -165,130 +133,8 @@ public class ProductImportService {
             addError(result, row.getRowNumber(), trim(row.getSpuCode()), "商品", code, message + "；整批已回滚");
     }
 
-    /** 真实 xlsx 模板：一行表头 + 一行示例，表头与解析口径单一来源，避免模板与校验漂移。 */
     public byte[] buildTemplate(ImportMode mode) throws IOException {
-        var headers = headers(mode);
-        try (var workbook = new XSSFWorkbook(); var out = new ByteArrayOutputStream()) {
-            var sheet = workbook.createSheet("商品导入");
-            var header = sheet.createRow(0);
-            var sample = sheet.createRow(1);
-            for (int column = 0; column < headers.size(); column++) {
-                header.createCell(column).setCellValue(headers.get(column));
-                sample.createCell(column).setCellValue(sampleValue(mode, column));
-            }
-            workbook.write(out);
-            return out.toByteArray();
-        }
-    }
-
-    private List<String> headers(ImportMode mode) {
-        return mode == ImportMode.CREATE ? CREATE_HEADERS : UPDATE_HEADERS;
-    }
-
-    private String sampleValue(ImportMode mode, int column) {
-        if (mode == ImportMode.UPDATE) {
-            return switch (column) {
-                case 0 -> TEMPLATE_VERSION;
-                case 1 -> "1001";
-                case 2 -> "0";
-                case 3 -> "2001";
-                case 4 -> "0";
-                case 5 -> "SPU0001";
-                case 6 -> "示例蔬菜";
-                case 8 -> "FRESH-FRUIT";
-                case 11 -> "本地";
-                case 12 -> "CHILLED";
-                case 15 -> ScmShelfStatusEnum.ON_SHELF.name();
-                case 16 -> "SKU0001";
-                case 18 -> "500g/份";
-                case 19 -> "份";
-                case 20 -> ScmProductTypeEnum.STANDARD.name();
-                case 21 -> "9.9000";
-                case 22 -> ScmShelfStatusEnum.ON_SHELF.name();
-                case 23 -> "是";
-                case 24 -> "0";
-                default -> "";
-            };
-        }
-        return switch (column) {
-            case 0 -> TEMPLATE_VERSION;
-            case 1 -> "SPU0001";
-            case 2 -> "示例蔬菜";
-            case 4 -> "FRESH-FRUIT";
-            case 7 -> "本地";
-            case 8 -> "CHILLED";
-            case 11 -> ScmShelfStatusEnum.ON_SHELF.name();
-            case 12 -> "SKU0001";
-            case 14 -> "500g/份";
-            case 15 -> "份";
-            case 16 -> ScmProductTypeEnum.STANDARD.name();
-            case 17 -> "9.9000";
-            case 18 -> ScmShelfStatusEnum.ON_SHELF.name();
-            case 19 -> "是";
-            case 20 -> "0";
-            default -> "";
-        };
-    }
-
-    private List<ProductImportRow> readRows(byte[] bytes, ImportMode mode, ProductImportResultVO result) {
-        var headers = headers(mode);
-        var setters = mode == ImportMode.CREATE ? CREATE_SETTERS : UPDATE_SETTERS;
-        var rows = new ArrayList<ProductImportRow>();
-        var formatter = new DataFormatter(Locale.ROOT);
-        try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory.create(
-                new java.io.ByteArrayInputStream(bytes))) {
-            if (workbook.getNumberOfSheets() != 1) {
-                addError(result, 0, null, "文件", "SHEET_COUNT", "请保留模板中的一个工作表");
-                return rows;
-            }
-            var sheet = workbook.getSheetAt(0);
-            var header = sheet.getRow(0);
-            for (int column = 0; column < headers.size(); column++) {
-                if (header == null || !headers.get(column).equals(
-                        trim(formatter.formatCellValue(header.getCell(column))))) {
-                    addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
-                            "表头应为“" + headers.get(column) + "”，请使用"
-                                    + (mode == ImportMode.CREATE ? "新增" : "更新") + "模板");
-                }
-            }
-            if (result.getTotalErrors() > 0) return rows;
-            for (var excelRow : sheet) {
-                if (excelRow.getRowNum() == 0) continue;
-                var row = new ProductImportRow();
-                row.setRowNumber(excelRow.getRowNum() + 1);
-                boolean hasData = false;
-                for (var cell : excelRow) {
-                    var value = trim(formatter.formatCellValue(cell));
-                    if (value == null) continue;
-                    hasData = true;
-                    var column = cell.getColumnIndex();
-                    var name = column < headers.size()
-                            ? headers.get(column)
-                            : CellReference.convertNumToColString(column);
-                    if (cell.getCellType() == CellType.FORMULA || cell.getCellType() == CellType.ERROR) {
-                        addError(result, row.getRowNumber(), null, name, "CELL_INVALID", "不能使用公式或错误单元格");
-                    } else if (column >= headers.size()) {
-                        addError(result, row.getRowNumber(), null, name, "COLUMN_UNEXPECTED", "模板之外的列不能填写数据");
-                    } else {
-                        if (cell.getCellType() == CellType.NUMERIC)
-                            value = NumberToTextConverter.toText(cell.getNumericCellValue());
-                        setters.get(column).accept(row, value);
-                    }
-                }
-                if (hasData) rows.add(row);
-                if (rows.size() > MAX_ROWS) {
-                    addError(result, row.getRowNumber(), null, "文件", "ROW_LIMIT", "数据行不能超过 " + MAX_ROWS + " 行");
-                    break;
-                }
-            }
-        } catch (Exception exception) {
-            // 对调用方仍收敛成稳定的 FILE_INVALID，但服务端必须留下真因：解析循环里的 NPE、越界与 POI
-            // 内部异常若只被改写成「请使用最新模板」，用户会反复重导模板而运维零线索。
-            log.error("商品导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
-            addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新模板");
-        }
-        result.setTotalRows(rows.size());
-        return rows;
+        return productImportWorkbookSupport.buildTemplate(mode);
     }
 
     // ------------------------------------------------------------------
