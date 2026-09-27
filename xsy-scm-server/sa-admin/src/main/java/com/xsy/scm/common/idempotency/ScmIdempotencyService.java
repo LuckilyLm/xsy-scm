@@ -63,11 +63,13 @@ public class ScmIdempotencyService {
         return new Claim(row, true);
     }
 
-    public <T> T replay(Claim claim, Class<T> resultType) {
+    public <T> T replay(Claim claim, Class<
+            T> resultType) {
         return replay(claim, resultType, objectMapper);
     }
 
-    public <T> T replay(Claim claim, Class<T> resultType, ObjectMapper resultMapper) {
+    public <T> T replay(Claim claim, Class<
+            T> resultType, ObjectMapper resultMapper) {
         return resultMapper.convertValue(claim.record().getResultData().get("value"), resultType);
     }
 
@@ -79,7 +81,9 @@ public class ScmIdempotencyService {
         ScmIdempotencyRecordEntity row = claim.record();
         row.setResultId(resourceId);
         row.setResultType(resourceType);
-        Map<String, Object> resultData = new LinkedHashMap<>();
+        Map<
+                String,
+                Object> resultData = new LinkedHashMap<>();
         resultData.put("value", resultMapper.convertValue(result, Object.class));
         row.setResultData(resultData);
         row.setUpdatedAt(OffsetDateTime.now());

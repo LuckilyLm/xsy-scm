@@ -31,7 +31,9 @@ public class ScmIdempotencyRecordEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long resultId;
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<String, Object> resultData;
+    private Map<
+            String,
+            Object> resultData;
     @Version
     private Integer version = 0;
     @TableLogic(value = "false", delval = "true")

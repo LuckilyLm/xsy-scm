@@ -26,7 +26,10 @@ import java.io.IOException;
  *
  * @see com.xsy.scm.common.util.ScmDecimalStrings
  */
-public class ScmStrictDecimalStringDeserializer extends JsonDeserializer<String> {
+public class ScmStrictDecimalStringDeserializer
+        extends
+            JsonDeserializer<
+                    String> {
 
     @Override
     public String deserialize(JsonParser parser, DeserializationContext context) throws IOException {

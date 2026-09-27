@@ -23,12 +23,18 @@ import java.util.Map;
  * {@code order/support}；把两份合并到本包是一次纯 Java 重构， 不涉及 migration、不改变对外行为，留待后续统一处理（与 {@code ScmCommonErrorCode} 里 记录的 40921
  * 重复声明同一处置取向：先记录为已知技术债，不顺手重构）。
  */
-public class JsonbObjectMapTypeHandler extends BaseTypeHandler<Map<String, Object>> {
+public class JsonbObjectMapTypeHandler
+        extends
+            BaseTypeHandler<
+                    Map<
+                            String,
+                            Object>> {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
-    public void setNonNullParameter(PreparedStatement statement, int index, Map<String, Object> value, JdbcType type)
-            throws SQLException {
+    public void setNonNullParameter(PreparedStatement statement, int index, Map<
+            String,
+            Object> value, JdbcType type) throws SQLException {
         try {
             PGobject json = new PGobject();
             json.setType("jsonb");
@@ -39,7 +45,9 @@ public class JsonbObjectMapTypeHandler extends BaseTypeHandler<Map<String, Objec
         }
     }
 
-    private Map<String, Object> read(String value) throws SQLException {
+    private Map<
+            String,
+            Object> read(String value) throws SQLException {
         if (value == null) {
             return null;
         }
@@ -52,17 +60,23 @@ public class JsonbObjectMapTypeHandler extends BaseTypeHandler<Map<String, Objec
     }
 
     @Override
-    public Map<String, Object> getNullableResult(ResultSet rs, String name) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(ResultSet rs, String name) throws SQLException {
         return read(rs.getString(name));
     }
 
     @Override
-    public Map<String, Object> getNullableResult(ResultSet rs, int index) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(ResultSet rs, int index) throws SQLException {
         return read(rs.getString(index));
     }
 
     @Override
-    public Map<String, Object> getNullableResult(CallableStatement cs, int index) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(CallableStatement cs, int index) throws SQLException {
         return read(cs.getString(index));
     }
 }

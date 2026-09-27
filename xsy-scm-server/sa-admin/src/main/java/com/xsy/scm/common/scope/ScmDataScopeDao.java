@@ -14,10 +14,12 @@ public interface ScmDataScopeDao {
     /**
      * 员工被授权的仓库 id；无授权行即返回空清单（调用方按「看不到任何仓库数据」处理）。
      */
-    List<Long> listAuthorizedWarehouseIds(@Param("employeeId") Long employeeId);
+    List<
+            Long> listAuthorizedWarehouseIds(@Param("employeeId") Long employeeId);
 
     /**
      * 员工绑定的活动司机 id；一个员工最多绑一个活动司机，返回清单只为不让 Mapper 侧依赖这个约束。
      */
-    List<Long> listDriverIdsByEmployee(@Param("employeeId") Long employeeId);
+    List<
+            Long> listDriverIdsByEmployee(@Param("employeeId") Long employeeId);
 }

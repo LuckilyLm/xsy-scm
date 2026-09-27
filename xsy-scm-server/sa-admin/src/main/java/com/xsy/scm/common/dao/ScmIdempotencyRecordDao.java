@@ -6,7 +6,10 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface ScmIdempotencyRecordDao extends BaseMapper<ScmIdempotencyRecordEntity> {
+public interface ScmIdempotencyRecordDao
+        extends
+            BaseMapper<
+                    ScmIdempotencyRecordEntity> {
 
     ScmIdempotencyRecordEntity lock(@Param("id") Long id);
 

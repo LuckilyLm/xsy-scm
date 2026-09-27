@@ -41,7 +41,10 @@ import java.time.format.DateTimeFormatter;
  *
  * @see net.lab1024.sa.base.config.JsonConfig
  */
-public class ScmOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
+public class ScmOffsetDateTimeSerializer
+        extends
+            JsonSerializer<
+                    OffsetDateTime> {
 
     /**
      * 输出格式：秒级，不带毫秒与时区后缀。

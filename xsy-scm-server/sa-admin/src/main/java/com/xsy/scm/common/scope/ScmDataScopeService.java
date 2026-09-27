@@ -116,8 +116,10 @@ public class ScmDataScopeService {
     /**
      * 维度为空时的空分页：形状与正常分页一致（{@code total=0}、{@code emptyFlag=true}）， 前端不需要为「无授权」写第二套分支，也不会把它误读成「确实没有数据」以外的状态。
      */
-    public static <T> PageResult<T> emptyPage(PageParam form) {
-        Page<T> page = new Page<>(form.getPageNum(), form.getPageSize());
+    public static <T> PageResult<
+            T> emptyPage(PageParam form) {
+        Page<
+                T> page = new Page<>(form.getPageNum(), form.getPageSize());
         page.setTotal(0);
         return SmartPageUtil.convert2PageResult(page, List.of());
     }

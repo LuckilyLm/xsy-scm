@@ -23,9 +23,11 @@ public final class ScmValueScope {
 
     private final boolean all;
 
-    private final Set<Long> ids;
+    private final Set<
+            Long> ids;
 
-    private ScmValueScope(boolean all, Set<Long> ids) {
+    private ScmValueScope(boolean all, Set<
+            Long> ids) {
         this.all = all;
         this.ids = ids;
     }
@@ -41,11 +43,13 @@ public final class ScmValueScope {
     /**
      * 授权 id 清单；{@code null} 元素被丢弃，空清单收敛成 {@link #none()} 而不是「全部」。
      */
-    public static ScmValueScope of(Collection<Long> authorizedIds) {
+    public static ScmValueScope of(Collection<
+            Long> authorizedIds) {
         if (authorizedIds == null || authorizedIds.isEmpty()) {
             return NONE;
         }
-        Set<Long> copy = new LinkedHashSet<>();
+        Set<
+                Long> copy = new LinkedHashSet<>();
         for (Long id : authorizedIds) {
             if (id != null) {
                 copy.add(id);
@@ -60,7 +64,8 @@ public final class ScmValueScope {
     }
 
     /** MyBatis OGNL 以 {@code scope.ids} 读取 foreach 集合；{@link #isAll()} 为真时不会被用到。 */
-    public Set<Long> getIds() {
+    public Set<
+            Long> getIds() {
         return ids;
     }
 
