@@ -148,10 +148,11 @@ def group_by_rule(findings: list[Finding]) -> dict[str, list[Finding]]:
 _ENUM_DECLARATION = re.compile(r"\benum\s+(?P<name>[A-Z]\w*)[^{;]*\{")
 _CONSTANT_NAME = re.compile(r"^\s*(?P<name>[A-Z][A-Z0-9_]*)\b")
 
-# Error-code enums name program identifiers, not domain states: nobody writes
-# "CATEGORY_NOT_FOUND" as a String literal, so keeping them in the vocabulary
-# would only widen the false-positive surface of the magic-string rule.
-_NON_VOCABULARY_ENUM = re.compile(r"ErrorCode$")
+# Error-code enums name program identifiers, and input-only filter enums describe
+# query vocabulary rather than persisted domain states. Neither should cause an
+# unrelated String literal (for example ScmValueScope.toString's "ALL") to be
+# treated as a business-state magic string.
+_NON_VOCABULARY_ENUM = re.compile(r"(?:ErrorCode|FilterEnum)$")
 
 
 def _enum_constant_region(code: str, open_brace: int) -> str:
