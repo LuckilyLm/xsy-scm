@@ -13,19 +13,19 @@ import java.util.List;
  */
 @Data
 public class SortingTaskCreateForm {
-    @NotNull
-    @Positive
+    @NotNull(message = "仓库不能为空")
+    @Positive(message = "仓库 ID 必须大于0")
     private Long warehouseId;
 
     /**
      * 可留空（未指派），未指派任务只有持建单与指派权的人可见。
      */
-    @Positive
+    @Positive(message = "分拣员 ID 必须大于0")
     private Long assigneeEmployeeId;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 
-    @NotEmpty
+    @NotEmpty(message = "订单明细不能为空")
     private List<@NotNull @Positive Long> salesOrderItemIds;
 }

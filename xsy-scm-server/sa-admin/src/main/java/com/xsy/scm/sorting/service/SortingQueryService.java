@@ -39,7 +39,7 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
 @RequiredArgsConstructor
 public class SortingQueryService {
 
-    private final SortingQueryDao queries;
+    private final SortingQueryDao sortingQueryDao;
     private final SortingAccess access;
 
     private Page<?> page(PageParam form) {
@@ -56,7 +56,7 @@ public class SortingQueryService {
         ScmDataScopeContext scope = access.scope();
         // 无授权仓时给形状完整的空分页：不跑恒假谓词，也不让空集合渲染成 IN ()。
         if (scope.getWarehouseScope().isEmpty()) return ScmDataScopeService.emptyPage(form);
-        return SmartPageUtil.convert2PageResult(page, queries.tasks(page, form, scope, access.crossAssignee()));
+        return SmartPageUtil.convert2PageResult(page, sortingQueryDao.tasks(page, form, scope, access.crossAssignee()));
     }
 
     /**
@@ -65,12 +65,12 @@ public class SortingQueryService {
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public SortingTaskDetailVO detail(Long id) {
-        var task = queries.task(id, access.scope(), access.crossAssignee());
+        var task = sortingQueryDao.task(id, access.scope(), access.crossAssignee());
         if (task == null) throw new ScmDataScopeException();
         var result = new SortingTaskDetailVO();
         result.setTask(task);
         // 明细挂在已经放行的任务下，不再各自收窄：子集收窄会破坏「按订单与按商品同一套事实」。
-        result.setItems(queries.items(id));
+        result.setItems(sortingQueryDao.items(id));
         return result;
     }
 
@@ -98,7 +98,8 @@ public class SortingQueryService {
         var page = page(form);
         ScmDataScopeContext scope = access.scope();
         if (scope.getWarehouseScope().isEmpty()) return ScmDataScopeService.emptyPage(form);
-        return SmartPageUtil.convert2PageResult(page, queries.skuSummary(page, form, scope, access.crossAssignee()));
+        return SmartPageUtil.convert2PageResult(
+                page, sortingQueryDao.skuSummary(page, form, scope, access.crossAssignee()));
     }
 
     /**
@@ -109,6 +110,6 @@ public class SortingQueryService {
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingCandidateLineVO> candidateLines(SortingCandidateQueryForm form) {
         var page = page(form);
-        return SmartPageUtil.convert2PageResult(page, queries.candidateLines(page, form));
+        return SmartPageUtil.convert2PageResult(page, sortingQueryDao.candidateLines(page, form));
     }
 }

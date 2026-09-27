@@ -11,14 +11,14 @@ import lombok.Data;
  */
 @Data
 public class SortingAssignForm {
-    @NotNull
-    @Positive
+    @NotNull(message = "分拣员不能为空")
+    @Positive(message = "分拣员 ID 必须大于0")
     private Long assigneeEmployeeId;
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "版本号不能为空")
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "指派原因不能超过500个字符")
     private String reason;
 }

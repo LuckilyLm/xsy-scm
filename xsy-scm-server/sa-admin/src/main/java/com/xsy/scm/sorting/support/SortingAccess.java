@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import com.xsy.scm.sorting.constant.SortingConstant;
+import com.xsy.scm.sorting.permission.SortingPermission;
 import com.xsy.scm.sorting.domain.entity.SortingTaskEntity;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +44,8 @@ public class SortingAccess {
      * 它已经通过 {@code resolve()} 的 {@code all()} 天然放行。
      */
     public boolean crossAssignee() {
-        return ScmDataScopeService.hasPermission(SortingConstant.ASSIGN_PERM) || ScmDataScopeService.isAdministrator();
+        return ScmDataScopeService.hasPermission(SortingPermission.TASK_ASSIGN)
+                || ScmDataScopeService.isAdministrator();
     }
 
     /**

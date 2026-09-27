@@ -2,6 +2,7 @@ package com.xsy.scm.sorting.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
@@ -9,6 +10,7 @@ import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.dao.InventoryOutboundItemDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
 import com.xsy.scm.sorting.dao.SortingTaskItemDao;
@@ -23,6 +25,9 @@ import com.xsy.scm.sorting.domain.form.SortingEntryItemForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import com.xsy.scm.sorting.domain.vo.SortingPrintResultVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskDetailVO;
+import com.xsy.scm.sorting.constant.ScmSortingOccupationStatusEnum;
+import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
+import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
 import com.xsy.scm.sorting.support.SortingAccess;
 import com.xsy.scm.warehouse.dao.WarehouseDao;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
@@ -39,13 +44,7 @@ import java.util.Objects;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
-import static com.xsy.scm.sorting.constant.SortingConstant.CANCELLED;
-import static com.xsy.scm.sorting.constant.SortingConstant.COMPLETED;
-import static com.xsy.scm.sorting.constant.SortingConstant.NORMAL;
-import static com.xsy.scm.sorting.constant.SortingConstant.OCCUPY_ACTIVE;
-import static com.xsy.scm.sorting.constant.SortingConstant.PENDING;
 import static com.xsy.scm.sorting.constant.SortingConstant.PRINTABLE;
-import static com.xsy.scm.sorting.constant.SortingConstant.SORTING;
 import static com.xsy.scm.sorting.constant.SortingConstant.TASK_NO_PREFIX;
 import static com.xsy.scm.sorting.constant.SortingConstant.WORKING;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.ASSIGNEE_INVALID;
@@ -79,19 +78,19 @@ public class SortingTaskService {
      */
     private static final int MAX_LINES_PER_TASK = 500;
 
-    private final InventoryOutboundItemDao outboundItems;
+    private final InventoryOutboundItemDao inventoryOutboundItemDao;
     /**
      * 只为重开前锁订单行而注入：发车与重开必须在同一批订单行上互相排队。
      */
-    private final SalesOrderDao orders;
-    private final SortingTaskDao tasks;
-    private final SortingTaskItemDao itemRows;
-    private final SortingQueryDao queries;
+    private final SalesOrderDao salesOrderDao;
+    private final SortingTaskDao sortingTaskDao;
+    private final SortingTaskItemDao sortingTaskItemDao;
+    private final SortingQueryDao sortingQueryDao;
     private final SortingAccess access;
-    private final WarehouseDao warehouses;
-    private final EmployeeDao employees;
-    private final OrderIdempotencyService idempotency;
-    private final SortingQueryService queryService;
+    private final WarehouseDao warehouseDao;
+    private final EmployeeDao employeeDao;
+    private final OrderIdempotencyService orderIdempotencyService;
+    private final SortingQueryService sortingQueryService;
 
     /**
      * 建单并指派。幂等键挡住「同一请求重发生成第二套业务事实」；
@@ -99,33 +98,33 @@ public class SortingTaskService {
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingTaskDetailVO create(SortingTaskCreateForm form, String key) {
-        var claim = idempotency.claim("SORTING_TASK_CREATE", key, form);
-        if (claim.replay()) return idempotency.replay(claim, SortingTaskDetailVO.class);
+        var claim = orderIdempotencyService.claim("SORTING_TASK_CREATE", key, form);
+        if (claim.replay()) return orderIdempotencyService.replay(claim, SortingTaskDetailVO.class);
         access.requireWarehouse(form.getWarehouseId());
-        var warehouse = warehouses.selectById(form.getWarehouseId());
-        if (warehouse == null || !"ENABLED".equals(warehouse.getStatus()))
+        var warehouse = warehouseDao.selectById(form.getWarehouseId());
+        if (warehouse == null || !ScmEnableStatusEnum.ENABLED.name().equals(warehouse.getStatus()))
             throw new ScmBusinessException(WAREHOUSE_INVALID);
         requireUsableAssignee(form.getAssigneeEmployeeId());
         var lines = sortableLines(form.getSalesOrderItemIds());
 
         var task = new SortingTaskEntity();
-        task.setTaskNo(ScmDocumentNumbers.format(TASK_NO_PREFIX, queries.nextNumber()));
+        task.setTaskNo(ScmDocumentNumbers.format(TASK_NO_PREFIX, sortingQueryDao.nextNumber()));
         task.setWarehouseId(warehouse.getId());
         task.setWarehouseNameSnapshot(warehouse.getName());
         task.setAssigneeEmployeeId(form.getAssigneeEmployeeId());
-        task.setStatus(PENDING);
+        task.setStatus(ScmSortingTaskStatusEnum.PENDING.name());
         task.setRemark(trimToNull(form.getRemark()));
         task.setPrintCount(0);
         stamp(task, true);
-        tasks.insert(task);
+        sortingTaskDao.insert(task);
 
         try {
-            for (var line : lines) itemRows.insert(newItem(task.getId(), line));
+            for (var line : lines) sortingTaskItemDao.insert(newItem(task.getId(), line));
         } catch (DuplicateKeyException taken) {
             throw new ScmBusinessException(ORDER_LINE_TAKEN);
         }
-        var result = queryService.detail(task.getId());
-        idempotency.complete(claim, "SORTING_TASK", task.getId(), result);
+        var result = sortingQueryService.detail(task.getId());
+        orderIdempotencyService.complete(claim, "SORTING_TASK", task.getId(), result);
         return result;
     }
 
@@ -159,7 +158,7 @@ public class SortingTaskService {
             var row = rows.get(entry.getId());
             if (row == null) throw new ScmBusinessException(ITEM_NOT_IN_TASK);
             if (!Objects.equals(row.getVersion(), entry.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-            if (!NORMAL.equals(entry.getResult()) && trimToNull(entry.getReason()) == null)
+            if (!ScmSortingResultEnum.NORMAL.name().equals(entry.getResult()) && trimToNull(entry.getReason()) == null)
                 throw new ScmBusinessException(VALIDATION_ERROR);
             row.setSortedQuantity(entry.getSortedQuantity());
             row.setResult(entry.getResult());
@@ -168,10 +167,10 @@ public class SortingTaskService {
             row.setSortedAt(OffsetDateTime.now());
             stamp(row, false);
             // 同一批里重复提交同一行时，第二次带的是已被自己改掉的旧版本，在这里就断掉。
-            if (itemRows.updateById(row) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (sortingTaskItemDao.updateById(row) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        if (PENDING.equals(task.getStatus())) {
-            task.setStatus(SORTING);
+        if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())) {
+            task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());
             if (task.getStartedAt() == null) task.setStartedAt(OffsetDateTime.now());
             save(task);
         }
@@ -189,9 +188,9 @@ public class SortingTaskService {
         requireVersion(task, form.getVersion());
         if (!WORKING.contains(task.getStatus())) throw new ScmBusinessException(STATE_INVALID);
         var rows = activeItems(id).values();
-        if (rows.isEmpty() || rows.stream().anyMatch(r -> r.getResult() == null))
+        if (rows.isEmpty() || rows.stream().anyMatch(sortingTaskItem -> sortingTaskItem.getResult() == null))
             throw new ScmBusinessException(RESULT_INCOMPLETE);
-        task.setStatus(COMPLETED);
+        task.setStatus(ScmSortingTaskStatusEnum.COMPLETED.name());
         task.setCompletedAt(OffsetDateTime.now());
         save(task);
     }
@@ -208,8 +207,8 @@ public class SortingTaskService {
         requireVersion(task, form.getVersion());
         if (!WORKING.contains(task.getStatus())) throw new ScmBusinessException(STATE_INVALID);
         requireReason(form.getReason());
-        queries.releaseItems(id, ScmOperator.current());
-        task.setStatus(CANCELLED);
+        sortingQueryDao.releaseItems(id, ScmOperator.current());
+        task.setStatus(ScmSortingTaskStatusEnum.CANCELLED.name());
         task.setCancelledAt(OffsetDateTime.now());
         save(task);
     }
@@ -233,7 +232,9 @@ public class SortingTaskService {
         var task = lock(id);
         access.requireQueueManager(scope, task);
         requireVersion(task, form.getVersion());
-        if (!COMPLETED.equals(task.getStatus())) throw new ScmBusinessException(STATE_INVALID);
+        if (!ScmSortingTaskStatusEnum.COMPLETED.name().equals(task.getStatus())) {
+            throw new ScmBusinessException(STATE_INVALID);
+        }
         requireReason(form.getReason());
         var items = activeItems(id).values();
         // 先锁订单行再查出库，否则「发车提交」与「重开提交」可以交错到两边都成功：
@@ -243,10 +244,11 @@ public class SortingTaskService {
                 .forEach(orders::lock);
         var orderLineIds = items.stream().map(SortingTaskItemEntity::getSalesOrderItemId)
                 .filter(Objects::nonNull).toList();
-        if (!orderLineIds.isEmpty() && !outboundItems.listOrderLinesWithConfirmedOutbound(orderLineIds).isEmpty()) {
+        if (!orderLineIds.isEmpty()
+                && !inventoryOutboundItemDao.listOrderLinesWithConfirmedOutbound(orderLineIds).isEmpty()) {
             throw new ScmBusinessException(OUTBOUND_EXISTS);
         }
-        task.setStatus(SORTING);
+        task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());
         save(task);
     }
 
@@ -257,21 +259,21 @@ public class SortingTaskService {
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingPrintResultVO print(Long id, SortingActionForm form, String key) {
-        var claim = idempotency.claim("SORTING_PRINT:" + id, key, form);
-        if (claim.replay()) return idempotency.replay(claim, SortingPrintResultVO.class);
+        var claim = orderIdempotencyService.claim("SORTING_PRINT:" + id, key, form);
+        if (claim.replay()) return orderIdempotencyService.replay(claim, SortingPrintResultVO.class);
         ScmDataScopeContext scope = access.scope();
         var task = lock(id);
         access.requireVisible(scope, task);
         requireVersion(task, form.getVersion());
         if (!PRINTABLE.contains(task.getStatus())) throw new ScmBusinessException(STATE_INVALID);
-        if (queries.markPrinted(id, ScmOperator.current()) != 1) throw new ScmBusinessException(STATE_INVALID);
+        if (sortingQueryDao.markPrinted(id, ScmOperator.current()) != 1) throw new ScmBusinessException(STATE_INVALID);
         var result = new SortingPrintResultVO();
         result.setTaskId(task.getId());
         result.setTaskNo(task.getTaskNo());
         result.setItemCount(activeItems(id).size());
         result.setPrintCount(task.getPrintCount() + 1);
         result.setGeneratedAt(OffsetDateTime.now());
-        idempotency.complete(claim, "SORTING_TASK", id, result);
+        orderIdempotencyService.complete(claim, "SORTING_TASK", id, result);
         return result;
     }
 
@@ -281,10 +283,11 @@ public class SortingTaskService {
     private List<SortingOrderLineSnapshot> sortableLines(List<Long> requested) {
         var ids = requested.stream().filter(Objects::nonNull).distinct().sorted().toList();
         if (ids.isEmpty() || ids.size() > MAX_LINES_PER_TASK) throw new ScmBusinessException(VALIDATION_ERROR);
-        var found = queries.orderLines(ids);
+        var found = sortingQueryDao.orderLines(ids);
         if (found.size() != ids.size()) throw new ScmBusinessException(ORDER_NOT_SORTABLE);
         for (var line : found) {
-            if (!"CONFIRMED".equals(line.getOrderStatus()) || Boolean.TRUE.equals(line.getOrderDeleted())
+            if (!ScmOrderStatusEnum.CONFIRMED.name().equals(line.getOrderStatus())
+                    || Boolean.TRUE.equals(line.getOrderDeleted())
                     || Boolean.TRUE.equals(line.getItemDeleted()) || line.getActualQuantity() == null)
                 throw new ScmBusinessException(ORDER_NOT_SORTABLE);
         }
@@ -309,7 +312,7 @@ public class SortingTaskService {
         item.setProductTypeSnapshot(line.getProductTypeSnapshot());
         // 计划量 = 建单时冻结的订单行实发量；订单侧的值之后怎么变都不追溯已生成的任务。
         item.setPlannedQuantitySnapshot(line.getActualQuantity());
-        item.setOccupationStatus(OCCUPY_ACTIVE);
+        item.setOccupationStatus(ScmSortingOccupationStatusEnum.ACTIVE.name());
         item.setVersion(0);
         stamp(item, true);
         return item;
@@ -320,15 +323,16 @@ public class SortingTaskService {
      */
     private Map<Long, SortingTaskItemEntity> activeItems(Long taskId) {
         var map = new LinkedHashMap<Long, SortingTaskItemEntity>();
-        itemRows.selectList(new LambdaQueryWrapper<SortingTaskItemEntity>()
+        sortingTaskItemDao.selectList(new LambdaQueryWrapper<SortingTaskItemEntity>()
                 .eq(SortingTaskItemEntity::getTaskId, taskId)
-                .eq(SortingTaskItemEntity::getOccupationStatus, OCCUPY_ACTIVE)
-                .orderByAsc(SortingTaskItemEntity::getId)).forEach(r -> map.put(r.getId(), r));
+                .eq(SortingTaskItemEntity::getOccupationStatus, ScmSortingOccupationStatusEnum.ACTIVE.name())
+                .orderByAsc(SortingTaskItemEntity::getId))
+                .forEach(sortingTaskItem -> map.put(sortingTaskItem.getId(), sortingTaskItem));
         return map;
     }
 
     private SortingTaskEntity lock(Long id) {
-        var task = queries.lockTask(id);
+        var task = sortingQueryDao.lockTask(id);
         if (task == null) throw new ScmBusinessException(TASK_NOT_FOUND);
         return task;
     }
@@ -338,7 +342,7 @@ public class SortingTaskService {
      */
     private void requireUsableAssignee(Long employeeId) {
         if (employeeId == null) return;
-        EmployeeEntity employee = employees.selectById(employeeId);
+        EmployeeEntity employee = employeeDao.selectById(employeeId);
         if (employee == null || Boolean.TRUE.equals(employee.getDeletedFlag())
                 || Boolean.TRUE.equals(employee.getDisabledFlag()))
             throw new ScmBusinessException(ASSIGNEE_INVALID);
@@ -369,6 +373,6 @@ public class SortingTaskService {
 
     private void save(SortingTaskEntity task) {
         stamp(task, false);
-        if (tasks.updateById(task) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (sortingTaskDao.updateById(task) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
     }
 }

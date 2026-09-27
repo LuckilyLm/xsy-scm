@@ -19,6 +19,7 @@ import com.xsy.scm.sorting.domain.form.SortingEntryForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
+import com.xsy.scm.sorting.permission.SortingPermission;
 import com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintResultVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintVO;
@@ -41,97 +42,97 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @io.swagger.v3.oas.annotations.tags.Tag(name = "SCM分拣管理")
 public class SortingTaskController {
 
-    private final SortingTaskService service;
-    private final SortingQueryService query;
+    private final SortingTaskService sortingTaskService;
+    private final SortingQueryService sortingQueryService;
 
     @GetMapping("/tasks")
-    @SaCheckPermission("scm:sorting:task:query")
+    @SaCheckPermission(SortingPermission.TASK_QUERY)
     public ResponseDTO<PageResult<SortingTaskVO>> list(@Valid @ModelAttribute SortingTaskQueryForm form) {
-        return ResponseDTO.ok(query.query(form));
+        return ResponseDTO.ok(sortingQueryService.query(form));
     }
 
     @GetMapping("/tasks/{id}")
-    @SaCheckPermission("scm:sorting:task:query")
+    @SaCheckPermission(SortingPermission.TASK_QUERY)
     public ResponseDTO<SortingTaskDetailVO> detail(@PathVariable Long id) {
-        return ResponseDTO.ok(query.detail(id));
+        return ResponseDTO.ok(sortingQueryService.detail(id));
     }
 
     @GetMapping("/summary")
-    @SaCheckPermission("scm:sorting:summary:query")
+    @SaCheckPermission(SortingPermission.SUMMARY_QUERY)
     public ResponseDTO<PageResult<SortingSkuSummaryVO>> summary(@Valid @ModelAttribute SortingSummaryQueryForm form) {
-        return ResponseDTO.ok(query.summary(form));
+        return ResponseDTO.ok(sortingQueryService.summary(form));
     }
 
     // 候选订单行是建单用的队列视图，只授建单权；不受订单业务员范围约束（裁决补充第 22 条）。
     @GetMapping("/candidate-lines")
-    @SaCheckPermission("scm:sorting:task:add")
+    @SaCheckPermission(SortingPermission.TASK_ADD)
     public ResponseDTO<PageResult<SortingCandidateLineVO>> candidateLines(
             @Valid @ModelAttribute SortingCandidateQueryForm form) {
-        return ResponseDTO.ok(query.candidateLines(form));
+        return ResponseDTO.ok(sortingQueryService.candidateLines(form));
     }
 
     /**
      * 打印预览：内容与正式生成同源，但既不改状态也不计次。
      */
     @GetMapping("/tasks/{id}/print")
-    @SaCheckPermission("scm:sorting:task:print")
+    @SaCheckPermission(SortingPermission.TASK_PRINT)
     public ResponseDTO<SortingPrintVO> printPreview(@PathVariable Long id) {
-        return ResponseDTO.ok(query.printPreview(id));
+        return ResponseDTO.ok(sortingQueryService.printPreview(id));
     }
 
     @PostMapping("/tasks")
-    @SaCheckPermission("scm:sorting:task:add")
+    @SaCheckPermission(SortingPermission.TASK_ADD)
     @OperateLog
     public ResponseDTO<SortingTaskDetailVO> create(@Valid @RequestBody SortingTaskCreateForm form,
                                                   @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.create(form, key));
+        return ResponseDTO.ok(sortingTaskService.create(form, key));
     }
 
     @PostMapping("/tasks/{id}/assign")
-    @SaCheckPermission("scm:sorting:task:assign")
+    @SaCheckPermission(SortingPermission.TASK_ASSIGN)
     @OperateLog
     public ResponseDTO<String> assign(@PathVariable Long id, @Valid @RequestBody SortingAssignForm form) {
-        service.assign(id, form);
+        sortingTaskService.assign(id, form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/tasks/{id}/entry")
-    @SaCheckPermission("scm:sorting:item:update")
+    @SaCheckPermission(SortingPermission.ITEM_UPDATE)
     @OperateLog
     public ResponseDTO<String> enter(@PathVariable Long id, @Valid @RequestBody SortingEntryForm form) {
-        service.enter(id, form);
+        sortingTaskService.enter(id, form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/tasks/{id}/complete")
-    @SaCheckPermission("scm:sorting:task:complete")
+    @SaCheckPermission(SortingPermission.TASK_COMPLETE)
     @OperateLog
     public ResponseDTO<String> complete(@PathVariable Long id, @Valid @RequestBody SortingActionForm form) {
-        service.complete(id, form);
+        sortingTaskService.complete(id, form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/tasks/{id}/cancel")
-    @SaCheckPermission("scm:sorting:task:cancel")
+    @SaCheckPermission(SortingPermission.TASK_CANCEL)
     @OperateLog
     public ResponseDTO<String> cancel(@PathVariable Long id, @Valid @RequestBody SortingActionForm form) {
-        service.cancel(id, form);
+        sortingTaskService.cancel(id, form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/tasks/{id}/reopen")
-    @SaCheckPermission("scm:sorting:task:reopen")
+    @SaCheckPermission(SortingPermission.TASK_REOPEN)
     @OperateLog
     public ResponseDTO<String> reopen(@PathVariable Long id, @Valid @RequestBody SortingActionForm form) {
-        service.reopen(id, form);
+        sortingTaskService.reopen(id, form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/tasks/{id}/print")
-    @SaCheckPermission("scm:sorting:task:print")
+    @SaCheckPermission(SortingPermission.TASK_PRINT)
     @OperateLog
     public ResponseDTO<SortingPrintResultVO> print(@PathVariable Long id, @Valid @RequestBody SortingActionForm form,
                                                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.print(id, form, key));
+        return ResponseDTO.ok(sortingTaskService.print(id, form, key));
     }
 }

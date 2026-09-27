@@ -10,12 +10,12 @@ import net.lab1024.sa.base.common.domain.PageParam;
  */
 @Data
 public class SortingCandidateQueryForm extends PageParam {
-    @Size(max = 100)
+    @Size(max = 100, message = "搜索关键词不能超过100个字符")
     private String keyword;
 
-    @Positive
+    @Positive(message = "客户 ID 必须大于0")
     private Long customerId;
 
-    @Positive
+    @Positive(message = "订单 ID 必须大于0")
     private Long orderId;
 }

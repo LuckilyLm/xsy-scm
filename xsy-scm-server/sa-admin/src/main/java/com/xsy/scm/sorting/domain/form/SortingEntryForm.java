@@ -13,6 +13,6 @@ import java.util.List;
 @Data
 public class SortingEntryForm {
 
-    @NotEmpty
+    @NotEmpty(message = "分拣明细不能为空")
     private List<@Valid SortingEntryItemForm> items;
 }
