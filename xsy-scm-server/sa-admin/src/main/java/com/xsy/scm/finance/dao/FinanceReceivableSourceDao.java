@@ -38,7 +38,8 @@ public interface FinanceReceivableSourceDao {
      * <p>
      * {@code sales_order_item_id IS NOT NULL} 排除手工出库（手工出库不产生应收）； 结果为空即「签收成功但零实发」，属 的成功跳过，不是异常。
      */
-    List<FinanceReceivableSourceLineDto> selectOutboundLines(@Param("salesOrderId") Long salesOrderId);
+    List<
+            FinanceReceivableSourceLineDto> selectOutboundLines(@Param("salesOrderId") Long salesOrderId);
 
     /**
      * 已批准退货事实（单头维度）。谓词 {@code status = 'APPROVED'} 是「退货批准才是红字来源」 的库级表达；{@code PENDING / REJECTED / CANCELLED} 一律读不到，
@@ -52,7 +53,8 @@ public interface FinanceReceivableSourceDao {
      * <p>
      * 签收补生成用它遍历（的「先退后签」③）：升序保证多张退货的补生成顺序 与并发到达顺序无关，红字之间互不依赖，因此顺序只影响日志可读性。
      */
-    List<Long> selectApprovedReturnIds(@Param("salesOrderId") Long salesOrderId);
+    List<
+            Long> selectApprovedReturnIds(@Param("salesOrderId") Long salesOrderId);
 
     /**
      * 已批准退货的**有效红字行**：只取 {@code approved_quantity > 0} 且 {@code approved_amount > 0} 的行（第一条：逐行跳过非正金额）。
@@ -60,5 +62,6 @@ public interface FinanceReceivableSourceDao {
      * <p>
      * 不加 {@code approved_quantity IS NOT NULL} 之类的分支：{@code > 0} 对 NULL 恒不成立， 未批准的行自然被排除。
      */
-    List<FinanceReturnSourceLineDto> selectApprovedReturnLines(@Param("orderReturnId") Long orderReturnId);
+    List<
+            FinanceReturnSourceLineDto> selectApprovedReturnLines(@Param("orderReturnId") Long orderReturnId);
 }

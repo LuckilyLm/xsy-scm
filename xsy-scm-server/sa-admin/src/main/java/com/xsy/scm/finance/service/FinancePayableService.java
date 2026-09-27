@@ -70,9 +70,11 @@ public class FinancePayableService {
             throw new IllegalStateException("收货单未处于 CONFIRMED 状态，不能生成应付: " + purchaseReceiptId);
         }
 
-        List<FinancePayableSourceLineDto> lines = financePayableSourceDao
-                .selectConfirmedReceiptLines(purchaseReceiptId);
-        List<FinancePayableItemEntity> items = toItems(lines);
+        List<
+                FinancePayableSourceLineDto> lines = financePayableSourceDao
+                        .selectConfirmedReceiptLines(purchaseReceiptId);
+        List<
+                FinancePayableItemEntity> items = toItems(lines);
         BigDecimal amount = items.stream().map(FinancePayableItemEntity::getAmount).reduce(BigDecimal.ZERO,
                 BigDecimal::add);
 
@@ -127,7 +129,10 @@ public class FinancePayableService {
     /**
      * 明细装配：量取收货行的有效量、价取采购行的结算单价，金额按四位精度 HALF_UP 舍入。 单头金额是**已按四位舍入的行金额之和**，不是「先求和再舍入」—— 后者会让单头与明细对不上账，而对账时没人能解释那半分钱的差额。
      */
-    private List<FinancePayableItemEntity> toItems(List<FinancePayableSourceLineDto> lines) {
+    private List<
+            FinancePayableItemEntity> toItems(
+                    List<
+                            FinancePayableSourceLineDto> lines) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -160,8 +165,12 @@ public class FinancePayableService {
      * 金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是**未注册 JavaTimeModule 的裸 ObjectMapper**，把
      * {@code OffsetDateTime} 直接放进快照会在写入时炸。
      */
-    private Map<String, Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {
-        Map<String, Object> snapshot = new LinkedHashMap<>();
+    private Map<
+            String,
+            Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {
+        Map<
+                String,
+                Object> snapshot = new LinkedHashMap<>();
         snapshot.put("payableNo", payable.getPayableNo());
         snapshot.put("sourceType", payable.getSourceType());
         snapshot.put("sourceId", payable.getSourceId());

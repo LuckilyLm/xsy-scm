@@ -36,8 +36,9 @@ public class FinancePaymentController {
     @PostMapping("/add")
     @SaCheckPermission(FinancePermission.PAYMENT_ADD)
     @OperateLog
-    public ResponseDTO<FinancePaymentVO> add(@Valid @RequestBody FinancePaymentAddForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            FinancePaymentVO> add(@Valid @RequestBody FinancePaymentAddForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financePaymentService.add(form, idempotencyKey));
     }
 }

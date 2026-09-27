@@ -13,7 +13,10 @@ import org.apache.ibatis.annotations.Mapper;
  * 最多一笔正式退款付款。 反向付款的 {@code source_id} 必须为 NULL，因此不与原行抢这个键。
  */
 @Mapper
-public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
+public interface FinancePaymentDao
+        extends
+            BaseMapper<
+                    FinancePaymentEntity> {
 
     /**
      * 付款单号序列（全局非重置，不按日归零）。必须在事务内调用： {@code nextval} 不随事务回滚，跳号是可接受的代价（与应付 / 收款单号同一条纪律）。

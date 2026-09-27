@@ -36,8 +36,9 @@ public class FinanceReceiptController {
     @PostMapping("/add")
     @SaCheckPermission(FinancePermission.RECEIPT_ADD)
     @OperateLog
-    public ResponseDTO<FinanceReceiptVO> add(@Valid @RequestBody FinanceReceiptAddForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<
+            FinanceReceiptVO> add(@Valid @RequestBody FinanceReceiptAddForm form,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financeReceiptService.add(form, idempotencyKey));
     }
 }

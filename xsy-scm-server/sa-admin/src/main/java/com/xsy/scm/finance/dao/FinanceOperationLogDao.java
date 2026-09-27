@@ -13,5 +13,8 @@ import org.apache.ibatis.annotations.Mapper;
  * {@code OrderOperationLogDao} 同一理由）。
  */
 @Mapper
-public interface FinanceOperationLogDao extends BaseMapper<FinanceOperationLogEntity> {
+public interface FinanceOperationLogDao
+        extends
+            BaseMapper<
+                    FinanceOperationLogEntity> {
 }

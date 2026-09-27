@@ -141,8 +141,12 @@ public class FinanceReceiptService {
         throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
     }
 
-    private Map<String, Object> snapshot(FinanceReceiptEntity receipt) {
-        Map<String, Object> snapshot = new LinkedHashMap<>();
+    private Map<
+            String,
+            Object> snapshot(FinanceReceiptEntity receipt) {
+        Map<
+                String,
+                Object> snapshot = new LinkedHashMap<>();
         snapshot.put("receiptNo", receipt.getReceiptNo());
         snapshot.put("customerId", receipt.getCustomerId());
         snapshot.put("customerNameSnapshot", receipt.getCustomerNameSnapshot());

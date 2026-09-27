@@ -22,7 +22,10 @@ import org.apache.ibatis.annotations.Param;
  * 命中冲突即「已生成」并返回成功 —— 财务生成是可重放的派生，不是用户命令。
  */
 @Mapper
-public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity> {
+public interface FinanceReceivableDao
+        extends
+            BaseMapper<
+                    FinanceReceivableEntity> {
 
     /**
      * 应收单号序列（全局非重置，不按日归零）。

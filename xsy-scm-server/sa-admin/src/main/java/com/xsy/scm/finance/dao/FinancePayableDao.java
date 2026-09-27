@@ -12,7 +12,10 @@ import org.apache.ibatis.annotations.Mapper;
  * NULL， 落在该谓词之外，防重由「可冲上限 41137 + 请求级幂等键」承担。
  */
 @Mapper
-public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
+public interface FinancePayableDao
+        extends
+            BaseMapper<
+                    FinancePayableEntity> {
 
     /**
      * 应付单号序列（全局非重置，不按日归零）。

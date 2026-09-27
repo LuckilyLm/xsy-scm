@@ -34,5 +34,7 @@ public interface FinancePayableSourceDao {
      * <p>
      * 一行都没收到就不该进应付明细（{@code finance_payable_item.quantity} 的库级 CHECK 是 {@code > 0}）；少收未交部分不产生任何财务事实。
      */
-    List<FinancePayableSourceLineDto> selectConfirmedReceiptLines(@Param("purchaseReceiptId") Long purchaseReceiptId);
+    List<
+            FinancePayableSourceLineDto> selectConfirmedReceiptLines(
+                    @Param("purchaseReceiptId") Long purchaseReceiptId);
 }

@@ -16,7 +16,10 @@ import org.apache.ibatis.annotations.Mapper;
  * 因此「反向前已用额 = 0」这条前置在并发下才成立。
  */
 @Mapper
-public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
+public interface FinanceReceiptDao
+        extends
+            BaseMapper<
+                    FinanceReceiptEntity> {
 
     /**
      * 收款单号序列（全局非重置，不按日归零）。必须在事务内调用： {@code nextval} 不随事务回滚，跳号是可接受的代价（与应付单号同一条纪律）。

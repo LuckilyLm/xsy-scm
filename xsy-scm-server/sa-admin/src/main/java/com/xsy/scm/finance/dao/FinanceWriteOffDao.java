@@ -15,5 +15,8 @@ import org.apache.ibatis.annotations.Mapper;
  * 已核销额 / 未核销额 / 结清状态**一律读时派生**： 在此追加聚合查询， 但不得追加任何「把派生值写回本表或应收应付表」的方法（全局不变量 6）。
  */
 @Mapper
-public interface FinanceWriteOffDao extends BaseMapper<FinanceWriteOffEntity> {
+public interface FinanceWriteOffDao
+        extends
+            BaseMapper<
+                    FinanceWriteOffEntity> {
 }

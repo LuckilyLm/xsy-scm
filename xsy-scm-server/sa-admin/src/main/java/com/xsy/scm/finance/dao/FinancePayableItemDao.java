@@ -8,7 +8,10 @@ import org.apache.ibatis.annotations.Mapper;
  * 应付明细读写，append-only 契约同 {@link FinanceReceivableDao}。
  */
 @Mapper
-public interface FinancePayableItemDao extends BaseMapper<FinancePayableItemEntity> {
+public interface FinancePayableItemDao
+        extends
+            BaseMapper<
+                    FinancePayableItemEntity> {
 
     /**
      * 插入应付明细，来源身份已存在时什么都不做。

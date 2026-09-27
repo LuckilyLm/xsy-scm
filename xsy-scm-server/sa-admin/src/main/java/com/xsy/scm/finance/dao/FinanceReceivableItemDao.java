@@ -12,7 +12,10 @@ import org.apache.ibatis.annotations.Mapper;
  * 红字明细锚定退货行主键。
  */
 @Mapper
-public interface FinanceReceivableItemDao extends BaseMapper<FinanceReceivableItemEntity> {
+public interface FinanceReceivableItemDao
+        extends
+            BaseMapper<
+                    FinanceReceivableItemEntity> {
 
     /**
      * 插入应收明细，来源出库行已入账时什么都不做。

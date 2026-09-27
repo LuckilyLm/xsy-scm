@@ -228,8 +228,12 @@ public class FinancePaymentService {
         throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
     }
 
-    private Map<String, Object> snapshot(FinancePaymentEntity payment) {
-        Map<String, Object> snapshot = new LinkedHashMap<>();
+    private Map<
+            String,
+            Object> snapshot(FinancePaymentEntity payment) {
+        Map<
+                String,
+                Object> snapshot = new LinkedHashMap<>();
         snapshot.put("paymentNo", payment.getPaymentNo());
         snapshot.put("counterpartyType", payment.getCounterpartyType());
         snapshot.put("counterpartyId", payment.getCounterpartyId());
