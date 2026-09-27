@@ -8,6 +8,7 @@ import com.xsy.scm.screen.domain.vo.ScreenGeoVO;
 import com.xsy.scm.screen.domain.vo.ScreenInventoryVO;
 import com.xsy.scm.screen.domain.vo.ScreenPurchaseVO;
 import com.xsy.scm.screen.domain.vo.ScreenTrendVO;
+import com.xsy.scm.screen.permission.ScreenPermission;
 import com.xsy.scm.screen.service.ScreenDataService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,13 +28,13 @@ public class ScreenDataController {
     private final ScreenDataService screenDataService;
 
     @GetMapping("/data/business")
-    @SaCheckPermission("scm:screen:query")
+    @SaCheckPermission(ScreenPermission.QUERY)
     public ResponseDTO<ScreenBusinessVO> business() {
         return ResponseDTO.ok(screenDataService.getBusinessData());
     }
 
     @GetMapping("/data/inventory")
-    @SaCheckPermission("scm:screen:query")
+    @SaCheckPermission(ScreenPermission.QUERY)
     public ResponseDTO<ScreenInventoryVO> inventory() {
         return ResponseDTO.ok(screenDataService.getInventoryData());
     }
@@ -44,13 +45,13 @@ public class ScreenDataController {
      * <p>与其余面板一样属于只读聚合，受 {@code scm:screen:query} 权限保护。
      */
     @GetMapping("/data/geo")
-    @SaCheckPermission("scm:screen:query")
+    @SaCheckPermission(ScreenPermission.QUERY)
     public ResponseDTO<ScreenGeoVO> geo() {
         return ResponseDTO.ok(screenDataService.getGeoData());
     }
 
     @GetMapping("/data/purchase")
-    @SaCheckPermission("scm:screen:query")
+    @SaCheckPermission(ScreenPermission.QUERY)
     public ResponseDTO<ScreenPurchaseVO> purchase() {
         return ResponseDTO.ok(screenDataService.getPurchaseData());
     }
@@ -64,7 +65,7 @@ public class ScreenDataController {
      * @param range 7d（默认）或 30d，其余取值按 7d 处理（不抛错，大屏不应因参数笔误而空白）
      */
     @GetMapping("/data/trend")
-    @SaCheckPermission("scm:screen:query")
+    @SaCheckPermission(ScreenPermission.QUERY)
     public ResponseDTO<ScreenTrendVO> trend(@RequestParam(value = "range", required = false) String range) {
         return ResponseDTO.ok(screenDataService.getTrendData(range));
     }
