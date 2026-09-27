@@ -9,10 +9,7 @@ import com.baomidou.mybatisplus.annotation.Version;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
-import java.math.BigDecimal;
-import java.util.Map;
 
-import com.xsy.scm.common.json.JsonbStringMapTypeHandler;
 
 @Data
 @TableName(value = "product_image", autoResultMap = true)

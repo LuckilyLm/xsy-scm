@@ -1,13 +1,10 @@
 package com.xsy.scm.product.domain.form;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
 
 @Data
 public class ProductDeleteForm {

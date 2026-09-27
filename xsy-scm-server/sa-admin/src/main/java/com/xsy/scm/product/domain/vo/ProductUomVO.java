@@ -2,7 +2,6 @@ package com.xsy.scm.product.domain.vo;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
 
 @Data
 public class ProductUomVO {

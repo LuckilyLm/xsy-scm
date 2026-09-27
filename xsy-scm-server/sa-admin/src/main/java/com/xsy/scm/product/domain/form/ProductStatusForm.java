@@ -3,12 +3,10 @@ package com.xsy.scm.product.domain.form;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.math.BigDecimal;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
