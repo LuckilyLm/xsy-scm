@@ -16,24 +16,24 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class WarehouseQueryForm extends PageParam {
 
-    @Size(max = 64)
+    @Size(max = 64, message = "仓库编码不能超过64个字符")
     private String warehouseCode;
 
-    @Size(max = 150)
+    @Size(max = 150, message = "仓库名称不能超过150个字符")
     private String name;
 
     @ScmEnumValue(enumClass = ScmWarehouseStatusEnum.class, message = "仓库状态无效")
     private String status;
 
     @Override
-    @Min(1)
+    @Min(value = 1, message = "页码必须大于0")
     public Long getPageNum() {
         return super.getPageNum();
     }
 
     @Override
-    @Min(1)
-    @Max(100)
+    @Min(value = 1, message = "每页条数必须大于0")
+    @Max(value = 100, message = "每页条数不能超过100")
     public Long getPageSize() {
         return super.getPageSize();
     }
