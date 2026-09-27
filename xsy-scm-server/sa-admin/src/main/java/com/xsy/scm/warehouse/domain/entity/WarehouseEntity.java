@@ -6,10 +6,9 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.time.OffsetDateTime;
 
 /**
- * 仓库（最小主数据，W5 Target Design Q1 / §5.2）。
+ * 仓库主数据。
  *
- * <p>W5 只维护**一个**启用仓库（G-03 单仓库口径，由种子数据表达），
- * 但**不在 DB 层**加「最多一行」约束 —— 那会让 W6 / 未来多仓扩展必须改约束。
+ * <p>订单没有仓库字段，预留库存时必须能解析出唯一启用仓库；数据库不限制仓库记录总数。
  */
 @Data
 @TableName(value = "warehouse", autoResultMap = true)

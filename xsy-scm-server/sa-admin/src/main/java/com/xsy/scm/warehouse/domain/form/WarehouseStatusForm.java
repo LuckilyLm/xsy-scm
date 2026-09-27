@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 /**
- * 仓库启停（B1，HD-B1-01）。
+ * 仓库启停命令。
  *
  * <p>{@code enable} / {@code disable} 共用：靠乐观锁 {@code version} 防重复状态覆盖。
  */

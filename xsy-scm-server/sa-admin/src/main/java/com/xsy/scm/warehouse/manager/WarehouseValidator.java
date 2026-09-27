@@ -7,7 +7,7 @@ import com.xsy.scm.warehouse.domain.form.WarehouseAddForm;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * 仓库单条业务规则（纯函数，无 Spring 依赖，可被单测直接覆盖）。
+ * 仓库单条业务规则（纯函数，无 Spring 依赖）。
  *
  * <p>仓库是薄主数据，规则只有三条：编码归一化、名称归一化、状态取值域。
  * 「编码重复」不是本类的职责 —— 它由 {@code uk_warehouse_code_active} 唯一索引 +
@@ -19,7 +19,7 @@ public final class WarehouseValidator {
     }
 
     /**
-     * 编码归一化：去首尾空白 + 转大写（与 W1/W2 的编码口径一致）。
+     * 编码归一化：去首尾空白并转大写。
      */
     public static String normalizeCode(String raw) {
         return raw == null ? null : raw.trim().toUpperCase(java.util.Locale.ROOT);
@@ -35,7 +35,7 @@ public final class WarehouseValidator {
     /**
      * 状态取值域校验。
      *
-     * <p>MVC 入口已有 {@code @Pattern}；这里覆盖非 MVC 入口（内部调用、种子脚本、W6 库存域）。
+     * <p>覆盖不经过 MVC Bean Validation 的内部调用。
      */
     public static void validateStatus(String status) {
         if (status == null) {

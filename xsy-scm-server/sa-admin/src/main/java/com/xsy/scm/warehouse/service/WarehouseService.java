@@ -24,13 +24,13 @@ import java.util.Objects;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 /**
- * 仓库读写（W5 Target Design §2.1 / §5.2 / §7.1）。
+ * 仓库主数据读写与启停命令。
  *
  * <p>**错误码边界**：本类只抛 {@code WarehouseErrorCode} 与 {@code ScmCommonErrorCode}。
  * 「仓库已停用 → 不能用于新采购单」是**采购侧规则**，错误码
  * {@code PURCHASE_WAREHOUSE_DISABLED(40987)} 属于 {@code PurchaseErrorCode}，
  * 由 {@code purchase/support/PurchaseWarehouseReferenceGuard} 判定 ——
- * 这样 {@code warehouse} 域不必反向依赖 {@code purchase} 域（F5）。
+ * 这样 {@code warehouse} 域不必反向依赖 {@code purchase} 域。
  */
 @Service
 @RequiredArgsConstructor
@@ -39,7 +39,7 @@ public class WarehouseService {
     private final WarehouseDao dao;
 
     /**
-     * 停用前置守卫（B1，HD-B1-01）：inventory 域实现，避免 warehouse 反向依赖 purchase/inventory。
+     * 停用前置守卫由库存域实现，避免仓库域反向依赖库存域。
      */
     private final WarehouseDisableGuard disableGuard;
 
@@ -75,7 +75,7 @@ public class WarehouseService {
     /**
      * 解析「默认仓库」= 当前**唯一启用**的仓库。
      *
-     * <p>为什么需要它：销售订单没有仓库字段（G-03 单仓库口径），而订单确认时要预留库存，
+     * <p>销售订单没有仓库字段，而订单确认时要预留库存，
      * 必须落在一个具体仓库上。启用仓库恰好一个时直接返回；0 个或多个都**不猜**，
      * 抛 {@code WAREHOUSE_DEFAULT_AMBIGUOUS(41018)} —— 猜错会把货占在错误的仓库，
      * 而且要到出库/盘点才暴露。
@@ -100,7 +100,7 @@ public class WarehouseService {
         WarehouseEntity entity = new WarehouseEntity();
         entity.setWarehouseCode(code);
         entity.setName(WarehouseValidator.normalizeName(form.getName()));
-        // §7.2 的 WarehouseAddForm 不含 status：新建一律 ENABLED（G-03 单仓库种子语义）。
+        // WarehouseAddForm 不含 status：新建一律 ENABLED。
         entity.setStatus(ScmWarehouseStatusEnum.ENABLED.name());
         entity.setAddress(form.getAddress());
         applyRegion(entity, form);
@@ -133,7 +133,7 @@ public class WarehouseService {
         entity.setAddress(form.getAddress());
         applyRegion(entity, form);
         entity.setRemark(form.getRemark());
-        // status 不随表单变化：§7.2 的 WarehouseUpdateForm 字段清单里没有 status，
+        // status 不随表单变化：WarehouseUpdateForm 字段清单里没有 status，
         // 因此保持 require() 读出的原值（实体声明 updateStrategy = ALWAYS，会原值回写）。
         entity.setVersion(form.getVersion());
         stamp(entity, false);
@@ -147,7 +147,7 @@ public class WarehouseService {
     }
 
     /**
-     * 启用仓库（B1，HD-B1-01）：{@code DISABLED → ENABLED}，靠乐观锁 version。
+     * 启用仓库：{@code DISABLED → ENABLED}，靠乐观锁 version。
      *
      * <p>重复 enable（已是 ENABLED）抛 {@code WAREHOUSE_STATE_INVALID}，不做隐式状态覆盖。
      */
@@ -168,7 +168,7 @@ public class WarehouseService {
     }
 
     /**
-     * 停用仓库（B1，HD-B1-01 严格模式）：{@code ENABLED → DISABLED}。
+     * 停用仓库：{@code ENABLED → DISABLED}。
      *
      * <p>任一阻塞条件成立（库存余额 / 在途采购单 / 待入库收货单）即拒绝，并返回对应错误码，
      * 不使用 {@code WAREHOUSE_NOT_FOUND} 掩盖真实原因。阻塞检查与状态写入在同一事务。

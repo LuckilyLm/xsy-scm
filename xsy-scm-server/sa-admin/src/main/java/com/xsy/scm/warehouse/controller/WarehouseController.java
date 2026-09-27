@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * SCM 仓库（最小主数据，W5 Target Design §7.1）。
+ * SCM 仓库（最小主数据，）。
  *
  * <p>共 7 个端点。没有删除端点：仓库是主数据，{@code status} 通过独立命令表达启停。
  */
@@ -75,7 +75,7 @@ public class WarehouseController {
     }
 
     /**
-     * 启用仓库（B1，HD-B1-01）。
+     * 启用仓库。
      */
     @PostMapping("/enable")
     @SaCheckPermission("scm:warehouse:enable")
@@ -86,7 +86,7 @@ public class WarehouseController {
     }
 
     /**
-     * 停用仓库（B1，HD-B1-01 严格模式）。
+     * 停用仓库。
      */
     @PostMapping("/disable")
     @SaCheckPermission("scm:warehouse:disable")

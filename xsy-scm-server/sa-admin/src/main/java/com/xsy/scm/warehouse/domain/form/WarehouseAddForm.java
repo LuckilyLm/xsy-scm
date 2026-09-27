@@ -6,11 +6,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * 新建仓库（W5 Target Design §7.2）。
+ * 新建仓库。
  *
- * <p>**不含 `status`**：按设计 §7.2 的字面字段清单，新建仓库一律为 {@code ENABLED}；
- * 设计把 `scm:warehouse:add` 定义为「保留但不授予业务角色」的端点（G-03 单仓库）。
- * 状态写入路径的缺口见验收报告 G1。
+ * <p><b>不含 {@code status}</b>：新建仓库由服务端设为 {@code ENABLED}；状态变更走专用命令。
  */
 @Data
 public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm {

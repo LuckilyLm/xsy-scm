@@ -3,7 +3,7 @@ package com.xsy.scm.warehouse.support;
 import com.xsy.scm.warehouse.constant.WarehouseErrorCode;
 
 /**
- * 仓库停用前置守卫（B1，HD-B1-01）。
+ * 仓库停用前置守卫。
  *
  * <p>停用是仓库域动作，但「能否停用」取决于**跨域**业务事实（库存余额在 inventory 域、
  * 在途采购单与待入库收货单在 purchase 域）。仓库域不能反向依赖这两个域，因此这里只声明

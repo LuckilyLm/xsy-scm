@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 仓库（列表行 / 下拉 / 详情共用，W5 Target Design §7.2）。
+ * 仓库列表、下拉与详情共用的视图。
  */
 @Data
 public class WarehouseVO {
