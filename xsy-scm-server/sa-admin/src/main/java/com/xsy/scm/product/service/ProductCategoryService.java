@@ -48,29 +48,36 @@ public class ProductCategoryService {
     private final ProductSpuDao productSpuDao;
 
     public List<ProductCategoryEntity> all() {
-        return productCategoryDao.selectList(new LambdaQueryWrapper<ProductCategoryEntity>().orderByAsc(ProductCategoryEntity::getSortOrder, ProductCategoryEntity::getId));
+        return productCategoryDao.selectList(new LambdaQueryWrapper<ProductCategoryEntity>()
+                .orderByAsc(ProductCategoryEntity::getSortOrder, ProductCategoryEntity::getId));
     }
 
     public ProductCategoryEntity require(Long id) {
         var category = productCategoryDao.selectById(id);
-        if (category == null) throw new ScmBusinessException(CATEGORY_NOT_FOUND);
+        if (category == null)
+            throw new ScmBusinessException(CATEGORY_NOT_FOUND);
         return category;
     }
 
     public ProductCategoryEntity requireSelectableCategory(Long id) {
         // Serialize category deletion with creation/moving of a product referencing it.
-        var category = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
-        if (category == null) throw new ScmBusinessException(CATEGORY_NOT_FOUND);
+        var category = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>()
+                .eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
+        if (category == null)
+            throw new ScmBusinessException(CATEGORY_NOT_FOUND);
         if (category.getLevel() != 3 || !ScmEnableStatusEnum.ENABLED.name().equals(category.getStatus()))
             throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         return category;
     }
 
     public int resolveLevel(Long parentId, Long self) {
-        if (parentId == null) return 1;
-        if (parentId.equals(self)) throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
+        if (parentId == null)
+            return 1;
+        if (parentId.equals(self))
+            throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         var parent = require(parentId);
-        if (parent.getLevel() >= 3) throw new ScmBusinessException(CATEGORY_LEVEL_INVALID);
+        if (parent.getLevel() >= 3)
+            throw new ScmBusinessException(CATEGORY_LEVEL_INVALID);
         if (!ScmEnableStatusEnum.ENABLED.name().equals(parent.getStatus())) {
             throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         }
@@ -91,8 +98,10 @@ public class ProductCategoryService {
         var byId = indexById(rows);
         for (var vo : map.values()) {
             vo.setCategoryPath(path(vo.getCategoryId(), byId));
-            if (vo.getParentId() == null || !map.containsKey(vo.getParentId())) roots.add(vo);
-            else map.get(vo.getParentId()).getChildren().add(vo);
+            if (vo.getParentId() == null || !map.containsKey(vo.getParentId()))
+                roots.add(vo);
+            else
+                map.get(vo.getParentId()).getChildren().add(vo);
         }
         return roots;
     }
@@ -111,8 +120,7 @@ public class ProductCategoryService {
     }
 
     /**
-     * 供循环调用方复用的分类索引：{@link #path(Long, List)} 每次都要整表重建索引，
-     * 在逐行组装 VO 的地方会让复杂度变成 O(行数 × 分类总数)。
+     * 供循环调用方复用的分类索引：{@link #path(Long, List)} 每次都要整表重建索引， 在逐行组装 VO 的地方会让复杂度变成 O(行数 × 分类总数)。
      */
     public static Map<Long, ProductCategoryEntity> indexById(List<ProductCategoryEntity> rows) {
         Map<Long, ProductCategoryEntity> map = new HashMap<>();
@@ -134,9 +142,8 @@ public class ProductCategoryService {
     /**
      * 返回所选分类及全部后代分类，使叶子分类筛选覆盖整条分支。
      *
-     * <p>父→子索引 + 逐层展开，每个节点只访问一次。原先的定点迭代每收敛一层都要重扫全表，
-     * 分类树越深越接近 O(层数 × 分类总数)，而它挂在商品列表的筛选路径上。
-     * 用集合去重同时兜住历史脏数据里的父子环。
+     * <p>
+     * 父→子索引 + 逐层展开，每个节点只访问一次。原先的定点迭代每收敛一层都要重扫全表， 分类树越深越接近 O(层数 × 分类总数)，而它挂在商品列表的筛选路径上。 用集合去重同时兜住历史脏数据里的父子环。
      */
     public List<Long> descendantIds(Long id, List<ProductCategoryEntity> rows) {
         Map<Long, List<Long>> children = new HashMap<>();
@@ -149,7 +156,8 @@ public class ProductCategoryService {
         pending.add(id);
         while (!pending.isEmpty())
             for (var child : children.getOrDefault(pending.poll(), List.of()))
-                if (result.add(child)) pending.add(child);
+                if (result.add(child))
+                    pending.add(child);
         return List.copyOf(result);
     }
 
@@ -171,7 +179,8 @@ public class ProductCategoryService {
     @Transactional
     public void update(ProductCategoryUpdateForm form) {
         var entity = require(form.getCategoryId());
-        if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (!Objects.equals(entity.getVersion(), form.getVersion()))
+            throw new ScmBusinessException(VERSION_CONFLICT);
         var descendants = descendantIds(entity.getId(), all());
         if (form.getParentId() != null && descendants.contains(form.getParentId()))
             throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
@@ -183,7 +192,8 @@ public class ProductCategoryService {
         apply(entity, form, entity.getId());
         entity.setVersion(form.getVersion());
         try {
-            if (productCategoryDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productCategoryDao.updateById(entity) != 1)
+                throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(PRODUCT_CODE_DUPLICATE);
         }
@@ -191,25 +201,32 @@ public class ProductCategoryService {
 
     @Transactional
     public void delete(ProductCategoryDeleteForm form) {
-        var entity = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, form.getCategoryId()).last("FOR UPDATE"));
-        if (entity == null) throw new ScmBusinessException(CATEGORY_NOT_FOUND);
-        if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
-        if (productCategoryDao.selectCount(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getParentId, entity.getId())) > 0)
+        var entity = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>()
+                .eq(ProductCategoryEntity::getId, form.getCategoryId()).last("FOR UPDATE"));
+        if (entity == null)
+            throw new ScmBusinessException(CATEGORY_NOT_FOUND);
+        if (!Objects.equals(entity.getVersion(), form.getVersion()))
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productCategoryDao.selectCount(new LambdaQueryWrapper<ProductCategoryEntity>()
+                .eq(ProductCategoryEntity::getParentId, entity.getId())) > 0)
             throw new ScmBusinessException(CATEGORY_HAS_CHILDREN);
-        if (countProducts(entity.getId()) > 0) throw new ScmBusinessException(CATEGORY_HAS_PRODUCTS);
+        if (countProducts(entity.getId()) > 0)
+            throw new ScmBusinessException(CATEGORY_HAS_PRODUCTS);
         entity.setUpdatedAt(OffsetDateTime.now());
         entity.setUpdatedBy(ScmOperator.current());
-        if (productCategoryDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productCategoryDao.updateById(entity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         productCategoryDao.deleteById(entity.getId());
     }
 
     private long countProducts(Long id) {
-        return productSpuDao.selectCount(new LambdaQueryWrapper<ProductSpuEntity>()
-                .eq(ProductSpuEntity::getCategoryId, id));
+        return productSpuDao
+                .selectCount(new LambdaQueryWrapper<ProductSpuEntity>().eq(ProductSpuEntity::getCategoryId, id));
     }
 
     private void lockParent(Long id) {
-        if (id != null && productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE")) == null)
+        if (id != null && productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>()
+                .eq(ProductCategoryEntity::getId, id).last("FOR UPDATE")) == null)
             throw new ScmBusinessException(CATEGORY_NOT_FOUND);
     }
 

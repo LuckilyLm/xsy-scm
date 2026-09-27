@@ -5,7 +5,6 @@ import com.xsy.scm.product.domain.entity.ProductSkuEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-
 @Mapper
 public interface ProductSkuDao extends BaseMapper<ProductSkuEntity> {
     int clearDefault(@Param("spuId") Long spuId);

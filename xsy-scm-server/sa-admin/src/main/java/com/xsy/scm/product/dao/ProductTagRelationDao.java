@@ -24,14 +24,17 @@ public interface ProductTagRelationDao extends BaseMapper<ProductTagRelationEnti
     /**
      * 为 {@code spuIds × tagIds} 组合补齐关联；活动关系已存在时整行跳过，与唯一索引冲突目标保持一致。
      */
-    int insertIgnore(@Param("spuIds") List<Long> spuIds, @Param("tagIds") List<Long> tagIds, @Param("operator") String operator);
+    int insertIgnore(@Param("spuIds") List<Long> spuIds, @Param("tagIds") List<Long> tagIds,
+            @Param("operator") String operator);
 
     /**
      * REPLACE 语义：把这些 SPU 上不在 tagIds 内的活动关系下线；tagIds 为空表示清空。
      */
-    int softDeleteExcept(@Param("spuIds") List<Long> spuIds, @Param("tagIds") List<Long> tagIds, @Param("operator") String operator);
+    int softDeleteExcept(@Param("spuIds") List<Long> spuIds, @Param("tagIds") List<Long> tagIds,
+            @Param("operator") String operator);
 
-    int softDelete(@Param("spuIds") List<Long> spuIds, @Param("tagIds") List<Long> tagIds, @Param("operator") String operator);
+    int softDelete(@Param("spuIds") List<Long> spuIds, @Param("tagIds") List<Long> tagIds,
+            @Param("operator") String operator);
 
     int softDeleteBySpuIds(@Param("spuIds") List<Long> spuIds, @Param("operator") String operator);
 }

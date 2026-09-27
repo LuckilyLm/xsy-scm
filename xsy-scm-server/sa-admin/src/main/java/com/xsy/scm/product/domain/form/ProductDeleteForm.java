@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-
 @Data
 public class ProductDeleteForm {
     @NotNull(message = "SPU ID不能为空")

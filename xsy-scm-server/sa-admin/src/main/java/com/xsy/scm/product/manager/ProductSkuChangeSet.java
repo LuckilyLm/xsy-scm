@@ -25,8 +25,10 @@ public record ProductSkuChangeSet(List<ProductSkuForm> inserted, List<ProductSku
                 inserted.add(form);
                 continue;
             }
-            if (!ids.contains(id) || !seen.add(id)) throw new ScmBusinessException(SKU_NOT_OWNED);
-            if (form.getVersion() == null || form.getVersion() < 0) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (!ids.contains(id) || !seen.add(id))
+                throw new ScmBusinessException(SKU_NOT_OWNED);
+            if (form.getVersion() == null || form.getVersion() < 0)
+                throw new ScmBusinessException(VERSION_CONFLICT);
             updated.add(form);
         }
         ids.removeAll(seen);

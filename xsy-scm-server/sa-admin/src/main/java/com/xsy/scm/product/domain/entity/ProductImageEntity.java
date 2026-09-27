@@ -10,7 +10,6 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-
 @Data
 @TableName(value = "product_image", autoResultMap = true)
 public class ProductImageEntity {

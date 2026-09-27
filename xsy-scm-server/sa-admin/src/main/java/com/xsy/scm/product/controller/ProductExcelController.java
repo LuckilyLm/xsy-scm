@@ -48,11 +48,12 @@ public class ProductExcelController {
 
     @GetMapping("/import/template")
     @SaCheckPermission(ProductPermission.IMPORT)
-    public void template(@RequestParam(required = false) ImportMode mode,
-                         HttpServletResponse response) throws IOException {
+    public void template(@RequestParam(required = false) ImportMode mode, HttpServletResponse response)
+            throws IOException {
         ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
         // 更新模板带定位键、会改写既存商品，因此下载模板也要编辑权
-        if (selectedMode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
+        if (selectedMode == ImportMode.UPDATE)
+            StpUtil.checkPermission(ProductPermission.UPDATE);
         var content = productImportService.buildTemplate(selectedMode);
         SmartResponseUtil.setDownloadFileHeader(response,
                 (selectedMode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
@@ -63,19 +64,22 @@ public class ProductExcelController {
     @PostMapping("/import")
     @SaCheckPermission(ProductPermission.IMPORT)
     @OperateLog
-    public ResponseDTO<ProductImportResultVO> importProducts(
-            @RequestParam MultipartFile file,
+    public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
             @RequestParam(required = false) ImportMode mode) throws Exception {
         ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
         // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
-        if (selectedMode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
-        if (file.isEmpty()) return ResponseDTO.userErrorParam("导入文件不能为空");
+        if (selectedMode == ImportMode.UPDATE)
+            StpUtil.checkPermission(ProductPermission.UPDATE);
+        if (file.isEmpty())
+            return ResponseDTO.userErrorParam("导入文件不能为空");
         var name = file.getOriginalFilename();
         if (name == null || !name.toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx"))
             return ResponseDTO.userErrorParam("仅支持 .xlsx 文件");
-        if (file.getSize() > MAX_FILE_SIZE) return ResponseDTO.userErrorParam("导入文件不能超过 10 MiB");
+        if (file.getSize() > MAX_FILE_SIZE)
+            return ResponseDTO.userErrorParam("导入文件不能超过 10 MiB");
         var security = securityFileService.checkFile(file);
-        if (!security.getOk()) return ResponseDTO.error(security);
+        if (!security.getOk())
+            return ResponseDTO.error(security);
         return ResponseDTO.ok(productImportService.importFile(file, selectedMode));
     }
 
@@ -87,13 +91,16 @@ public class ProductExcelController {
         form.setPageSize((long) EXPORT_MAX_ROWS);
         PageResult<ProductSpuVO> page = productQueryService.query(form);
         var rows = new ArrayList<ProductExportExcelVO>();
-        for (var spu : page.getList()) rows.addAll(flatten(spu));
+        for (var spu : page.getList())
+            rows.addAll(flatten(spu));
         SmartExcelUtil.exportExcel(response, "商品档案导出.xlsx", "商品", ProductExportExcelVO.class, rows);
     }
 
     private List<ProductExportExcelVO> flatten(ProductSpuVO spu) {
-        var tagNames = spu.getTags() == null ? "" : spu.getTags().stream()
-                .map(t -> t.getName()).filter(java.util.Objects::nonNull).collect(Collectors.joining(","));
+        var tagNames = spu.getTags() == null
+                ? ""
+                : spu.getTags().stream().map(t -> t.getName()).filter(java.util.Objects::nonNull)
+                        .collect(Collectors.joining(","));
         var skus = spu.getSkuList() == null || spu.getSkuList().isEmpty() ? List.<ProductSkuVO>of() : spu.getSkuList();
         var out = new ArrayList<ProductExportExcelVO>();
         for (var sku : skus) {
@@ -124,7 +131,8 @@ public class ProductExcelController {
             vo.setSortOrder(sku.getSortOrder() == null ? "" : String.valueOf(sku.getSortOrder()));
             out.add(vo);
         }
-        if (out.isEmpty()) out.add(baseRow(spu, tagNames));
+        if (out.isEmpty())
+            out.add(baseRow(spu, tagNames));
         return out;
     }
 

@@ -33,10 +33,8 @@ import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_OWNED;
 import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 
 /**
- * 图片中心：脱离商品编辑弹窗、按 SPU 单独维护图片的服务。
- * 所有写操作都收敛到 {@link ProductImageSyncManager#sync} 一条链路，
- * 从而复用其对 public/image/ 前缀、文件存在性与「每 SPU 至多一张主图」的既有校验，
- * 不在此处另写一套图片落库逻辑。
+ * 图片中心：脱离商品编辑弹窗、按 SPU 单独维护图片的服务。 所有写操作都收敛到 {@link ProductImageSyncManager#sync} 一条链路， 从而复用其对 public/image/ 前缀、文件存在性与「每
+ * SPU 至多一张主图」的既有校验， 不在此处另写一套图片落库逻辑。
  */
 @Service
 @RequiredArgsConstructor
@@ -49,9 +47,11 @@ public class ProductImageCenterService {
     public ProductImageCenterVO query(Long spuId) {
         ProductSpuEntity spu = requireSpu(spuId);
         List<ProductImageEntity> rows = productImageSyncManager.existing(spuId);
-        Map<String, String> urls = fileService.getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+        Map<String, String> urls = fileService
+                .getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
                         SmartRequestUtil.getRequestUser())
-                .stream().filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
+                .stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
         List<ProductImageVO> images = rows.stream().map(i -> {
             ProductImageVO vo = new ProductImageVO();
             BeanUtils.copyProperties(i, vo);
@@ -69,8 +69,8 @@ public class ProductImageCenterService {
 
     @Transactional(rollbackFor = Exception.class)
     public void batchBind(ProductImageCenterForms.BatchBindForm form) {
-        Map<Long, List<ProductImageCenterForms.BindItem>> bySpu = form.getItems().stream()
-                .collect(Collectors.groupingBy(ProductImageCenterForms.BindItem::getSpuId, LinkedHashMap::new, Collectors.toList()));
+        Map<Long, List<ProductImageCenterForms.BindItem>> bySpu = form.getItems().stream().collect(Collectors
+                .groupingBy(ProductImageCenterForms.BindItem::getSpuId, LinkedHashMap::new, Collectors.toList()));
         for (var entry : bySpu.entrySet()) {
             Long spuId = entry.getKey();
             requireSpu(spuId);
@@ -82,9 +82,9 @@ public class ProductImageCenterService {
     /**
      * 换绑前按 SPU 汇总「现有 + 本次新增」的完整图片集合再过一遍校验。
      *
-     * <p>{@link ProductImageSyncManager#sync} 只保证 public/image/ 前缀与文件存在性；数量上限、
-     * 主图至多一张与 fileKey 去重原先只在 {@code validateSpu} 里，而图片中心不经那条路径，
-     * 两张主图会直接顶到 唯一索引上抛出未捕获的 {@code DuplicateKeyException}（500）。
+     * <p>
+     * {@link ProductImageSyncManager#sync} 只保证 public/image/ 前缀与文件存在性；数量上限、 主图至多一张与 fileKey 去重原先只在 {@code validateSpu}
+     * 里，而图片中心不经那条路径， 两张主图会直接顶到 唯一索引上抛出未捕获的 {@code DuplicateKeyException}（500）。
      */
     private List<ProductImageForm> requestedWithBinds(Long spuId, List<ProductImageCenterForms.BindItem> binds) {
         List<ProductImageForm> requested = formsOf(spuId);
@@ -106,7 +106,8 @@ public class ProductImageCenterService {
         List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
         Set<Long> owned = existing.stream().map(ProductImageEntity::getId).collect(Collectors.toSet());
         for (Long id : form.getImageIds()) {
-            if (!owned.contains(id)) throw new ScmBusinessException(IMAGE_NOT_OWNED);
+            if (!owned.contains(id))
+                throw new ScmBusinessException(IMAGE_NOT_OWNED);
         }
         Set<Long> removing = new HashSet<>(form.getImageIds());
         List<ProductImageForm> requested = existing.stream().filter(e -> !removing.contains(e.getId()))
@@ -120,9 +121,10 @@ public class ProductImageCenterService {
         requireSpu(spuId);
         List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
         boolean owned = existing.stream().anyMatch(e -> e.getId().equals(form.getImageId()));
-        if (!owned) throw new ScmBusinessException(IMAGE_NOT_OWNED);
-        List<ProductImageForm> requested = existing.stream().map(this::toForm).peek(f ->
-                f.setPrimaryFlag(f.getImageId().equals(form.getImageId()))).collect(Collectors.toList());
+        if (!owned)
+            throw new ScmBusinessException(IMAGE_NOT_OWNED);
+        List<ProductImageForm> requested = existing.stream().map(this::toForm)
+                .peek(f -> f.setPrimaryFlag(f.getImageId().equals(form.getImageId()))).collect(Collectors.toList());
         productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
     }
 
@@ -163,7 +165,8 @@ public class ProductImageCenterService {
 
     private ProductSpuEntity requireSpu(Long spuId) {
         ProductSpuEntity spu = productSpuDao.selectById(spuId);
-        if (spu == null) throw new ScmBusinessException(PRODUCT_NOT_FOUND);
+        if (spu == null)
+            throw new ScmBusinessException(PRODUCT_NOT_FOUND);
         return spu;
     }
 }

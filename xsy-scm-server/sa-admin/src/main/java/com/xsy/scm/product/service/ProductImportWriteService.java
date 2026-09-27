@@ -10,9 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 商品导入的写入边界：整批在同一个事务内逐个新增或逐个更新，任一失败即整体回滚。
- * 与解析/校验分离（{@link ProductImportService} 无事务），确保「先全量校验、0 错误才写」。
- * 更新模式不另建旁路：仍走 {@link ProductSpuService#update}，因此乐观锁、分类与单位校验全部生效。
+ * 商品导入的写入边界：整批在同一个事务内逐个新增或逐个更新，任一失败即整体回滚。 与解析/校验分离（{@link ProductImportService} 无事务），确保「先全量校验、0 错误才写」。 更新模式不另建旁路：仍走
+ * {@link ProductSpuService#update}，因此乐观锁、分类与单位校验全部生效。
  */
 @Service
 @RequiredArgsConstructor

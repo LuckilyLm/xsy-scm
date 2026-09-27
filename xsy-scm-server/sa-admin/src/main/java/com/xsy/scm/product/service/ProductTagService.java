@@ -59,7 +59,8 @@ public class ProductTagService {
      * 供商品详情与列表富化：一次取回多个 SPU 的标签，停用标签照样返回，只影响能否新挂。
      */
     public Map<Long, List<ProductSpuTagVO>> bySpuIds(Collection<Long> spuIds) {
-        if (spuIds == null || spuIds.isEmpty()) return Map.of();
+        if (spuIds == null || spuIds.isEmpty())
+            return Map.of();
         Map<Long, List<ProductSpuTagVO>> grouped = new LinkedHashMap<>();
         for (var row : productTagRelationDao.selectBySpuIds(List.copyOf(spuIds)))
             grouped.computeIfAbsent(row.getSpuId(), k -> new ArrayList<>()).add(row);
@@ -97,7 +98,8 @@ public class ProductTagService {
         entity.setVersion(form.getVersion());
         stamp(entity);
         try {
-            if (productTagDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productTagDao.updateById(entity) != 1)
+                throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (DuplicateKeyException e) {
             throw duplicate(e);
         }
@@ -106,36 +108,40 @@ public class ProductTagService {
     @Transactional
     public void delete(ProductTagKeyForm form) {
         var entity = productTagDao.selectForUpdate(form.getTagId());
-        if (entity == null) throw new ScmBusinessException(TAG_NOT_FOUND);
-        if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (entity == null)
+            throw new ScmBusinessException(TAG_NOT_FOUND);
+        if (!Objects.equals(entity.getVersion(), form.getVersion()))
+            throw new ScmBusinessException(VERSION_CONFLICT);
         if (productTagDao.selectVoById(entity.getId()).getProductCount() > 0) {
             throw new ScmBusinessException(TAG_REFERENCED);
         }
         stamp(entity);
-        if (productTagDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productTagDao.updateById(entity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         productTagDao.deleteById(entity.getId());
     }
 
     /**
-     * REPLACE 语义：活动关系收敛到 tagIds 全集，多退少补。整批一次锁定标签行，
-     * 与删除标签互斥；调用方必须已持有这些 SPU 的行锁。
-     * 这里不校验标签可用性：新建与批量打标由调用方全量校验，单商品编辑只校验新增绑定。
+     * REPLACE 语义：活动关系收敛到 tagIds 全集，多退少补。整批一次锁定标签行， 与删除标签互斥；调用方必须已持有这些 SPU 的行锁。 这里不校验标签可用性：新建与批量打标由调用方全量校验，单商品编辑只校验新增绑定。
      */
     @Transactional
     public void replaceTags(Collection<Long> spuIds, Collection<Long> tagIds) {
         var targets = distinct(spuIds);
-        if (targets.isEmpty()) return;
+        if (targets.isEmpty())
+            return;
         var tags = distinct(tagIds);
         var operator = ScmOperator.current();
         productTagRelationDao.softDeleteExcept(targets, tags, operator);
-        if (!tags.isEmpty()) productTagRelationDao.insertIgnore(targets, tags, operator);
+        if (!tags.isEmpty())
+            productTagRelationDao.insertIgnore(targets, tags, operator);
     }
 
     @Transactional
     public void addTags(Collection<Long> spuIds, Collection<Long> tagIds) {
         var targets = distinct(spuIds);
         var tags = distinct(tagIds);
-        if (targets.isEmpty() || tags.isEmpty()) return;
+        if (targets.isEmpty() || tags.isEmpty())
+            return;
         assertUsable(tags);
         productTagRelationDao.insertIgnore(targets, tags, ScmOperator.current());
     }
@@ -147,7 +153,8 @@ public class ProductTagService {
     public void removeTags(Collection<Long> spuIds, Collection<Long> tagIds) {
         var targets = distinct(spuIds);
         var tags = distinct(tagIds);
-        if (targets.isEmpty() || tags.isEmpty()) return;
+        if (targets.isEmpty() || tags.isEmpty())
+            return;
         productTagRelationDao.softDelete(targets, tags, ScmOperator.current());
     }
 
@@ -156,7 +163,8 @@ public class ProductTagService {
      */
     public void untagProducts(Collection<Long> spuIds) {
         var targets = distinct(spuIds);
-        if (!targets.isEmpty()) productTagRelationDao.softDeleteBySpuIds(targets, ScmOperator.current());
+        if (!targets.isEmpty())
+            productTagRelationDao.softDeleteBySpuIds(targets, ScmOperator.current());
     }
 
     /**
@@ -164,19 +172,21 @@ public class ProductTagService {
      */
     public void assertUsable(Collection<Long> tagIds) {
         var ids = distinct(tagIds);
-        if (ids.isEmpty()) return;
+        if (ids.isEmpty())
+            return;
         var found = productTagDao.lockByIds(ids);
-        if (found.size() != ids.size()) throw new ScmBusinessException(TAG_NOT_FOUND);
+        if (found.size() != ids.size())
+            throw new ScmBusinessException(TAG_NOT_FOUND);
         if (found.stream().anyMatch(t -> !ScmEnableStatusEnum.ENABLED.name().equals(t.getStatus())))
             throw new ScmBusinessException(TAG_NOT_USABLE);
     }
 
     /**
-     * 单商品编辑口径：只校验本次新增的绑定。已绑定的停用标签允许原样保留，
-     * 否则运营改一个无关字段就会被迫先摘标签；要换掉时前端本来就会重选。
+     * 单商品编辑口径：只校验本次新增的绑定。已绑定的停用标签允许原样保留， 否则运营改一个无关字段就会被迫先摘标签；要换掉时前端本来就会重选。
      */
     public void assertNewBindings(Long spuId, Collection<Long> tagIds) {
-        if (tagIds == null || tagIds.isEmpty()) return;
+        if (tagIds == null || tagIds.isEmpty())
+            return;
         var retained = new HashSet<>(productTagRelationDao.selectTagIds(spuId));
         assertUsable(tagIds.stream().filter(id -> !retained.contains(id)).toList());
     }
@@ -195,8 +205,10 @@ public class ProductTagService {
 
     private ProductTagEntity require(Long id, Integer version) {
         var entity = productTagDao.selectById(id);
-        if (entity == null) throw new ScmBusinessException(TAG_NOT_FOUND);
-        if (!Objects.equals(entity.getVersion(), version)) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (entity == null)
+            throw new ScmBusinessException(TAG_NOT_FOUND);
+        if (!Objects.equals(entity.getVersion(), version))
+            throw new ScmBusinessException(VERSION_CONFLICT);
         return entity;
     }
 

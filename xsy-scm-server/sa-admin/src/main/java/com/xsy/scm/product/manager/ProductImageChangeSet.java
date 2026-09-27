@@ -14,7 +14,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_OWNED;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 public record ProductImageChangeSet(List<ProductImageForm> inserted, List<ProductImageForm> updated,
-                                    List<Long> removedIds) {
+        List<Long> removedIds) {
     public static ProductImageChangeSet between(List<ProductImageEntity> existing, List<ProductImageForm> requested) {
         Set<Long> ids = new LinkedHashSet<>();
         existing.forEach(e -> ids.add(e.getId()));
@@ -26,8 +26,10 @@ public record ProductImageChangeSet(List<ProductImageForm> inserted, List<Produc
                 inserted.add(form);
                 continue;
             }
-            if (!ids.contains(id) || !seen.add(id)) throw new ScmBusinessException(IMAGE_NOT_OWNED);
-            if (form.getVersion() == null || form.getVersion() < 0) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (!ids.contains(id) || !seen.add(id))
+                throw new ScmBusinessException(IMAGE_NOT_OWNED);
+            if (form.getVersion() == null || form.getVersion() < 0)
+                throw new ScmBusinessException(VERSION_CONFLICT);
             updated.add(form);
         }
         ids.removeAll(seen);

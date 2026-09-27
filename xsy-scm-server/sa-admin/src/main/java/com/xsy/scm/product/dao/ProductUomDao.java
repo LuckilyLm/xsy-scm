@@ -22,8 +22,7 @@ public interface ProductUomDao extends BaseMapper<ProductUomEntity> {
     ProductUomEntity selectForUpdate(@Param("id") Long id);
 
     /**
-     * 按单位名称加行锁，只返回字典里存在的活动行。
-     * 名称不在字典里时不产生锁，调用方按「未维护」处理。
+     * 按单位名称加行锁，只返回字典里存在的活动行。 名称不在字典里时不产生锁，调用方按「未维护」处理。
      */
     List<ProductUomEntity> selectNamesForUpdate(@Param("names") List<String> names);
 }

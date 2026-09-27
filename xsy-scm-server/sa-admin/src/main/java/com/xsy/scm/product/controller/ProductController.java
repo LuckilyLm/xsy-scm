@@ -57,7 +57,8 @@ public class ProductController {
     @SaCheckPermission(ProductPermission.ADD)
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody ProductSpuAddForm form) {
-        if (!form.getImages().isEmpty()) StpUtil.checkPermission(ProductPermission.IMAGE);
+        if (!form.getImages().isEmpty())
+            StpUtil.checkPermission(ProductPermission.IMAGE);
         return ResponseDTO.ok(productSpuService.add(form));
     }
 
@@ -66,9 +67,12 @@ public class ProductController {
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody ProductSpuUpdateForm form) {
         var existing = productQueryService.detail(form.getSpuId()).getImages();
-        var before = existing.stream().map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
-        var after = form.getImages().stream().map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
-        if (!before.equals(after)) StpUtil.checkPermission(ProductPermission.IMAGE);
+        var before = existing.stream()
+                .map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
+        var after = form.getImages().stream()
+                .map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
+        if (!before.equals(after))
+            StpUtil.checkPermission(ProductPermission.IMAGE);
         productSpuService.update(form);
         return ResponseDTO.ok();
     }

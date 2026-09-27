@@ -25,12 +25,11 @@ import java.util.function.BiConsumer;
 @Slf4j
 @Component
 public class ProductImportWorkbookSupport {
-    private static final List<String> CREATE_HEADERS = List.of("模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码",
-            "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称",
-            "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
-    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本",
-            "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码",
-            "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
+    private static final List<String> CREATE_HEADERS = List.of("模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地",
+            "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
+    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本", "SPU编码",
+            "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位",
+            "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
     private static final List<BiConsumer<ProductImportRow, String>> CREATE_SETTERS = List.of(
             ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
             ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
@@ -71,8 +70,8 @@ public class ProductImportWorkbookSupport {
         var setters = mode == ProductImportService.ImportMode.CREATE ? CREATE_SETTERS : UPDATE_SETTERS;
         var rows = new ArrayList<ProductImportRow>();
         var formatter = new DataFormatter(Locale.ROOT);
-        try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory.create(
-                new java.io.ByteArrayInputStream(bytes))) {
+        try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory
+                .create(new java.io.ByteArrayInputStream(bytes))) {
             if (workbook.getNumberOfSheets() != 1) {
                 addError(result, 0, null, "文件", "SHEET_COUNT", "请保留模板中的一个工作表");
                 return rows;
@@ -80,22 +79,25 @@ public class ProductImportWorkbookSupport {
             var sheet = workbook.getSheetAt(0);
             var header = sheet.getRow(0);
             for (int column = 0; column < headers.size(); column++) {
-                if (header == null || !headers.get(column).equals(
-                        trim(formatter.formatCellValue(header.getCell(column))))) {
+                if (header == null
+                        || !headers.get(column).equals(trim(formatter.formatCellValue(header.getCell(column))))) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
                             "表头应为“" + headers.get(column) + "”，请使用"
                                     + (mode == ProductImportService.ImportMode.CREATE ? "新增" : "更新") + "模板");
                 }
             }
-            if (result.getTotalErrors() > 0) return rows;
+            if (result.getTotalErrors() > 0)
+                return rows;
             for (var excelRow : sheet) {
-                if (excelRow.getRowNum() == 0) continue;
+                if (excelRow.getRowNum() == 0)
+                    continue;
                 var row = new ProductImportRow();
                 row.setRowNumber(excelRow.getRowNum() + 1);
                 boolean hasData = false;
                 for (var cell : excelRow) {
                     var value = trim(formatter.formatCellValue(cell));
-                    if (value == null) continue;
+                    if (value == null)
+                        continue;
                     hasData = true;
                     var column = cell.getColumnIndex();
                     var name = column < headers.size()
@@ -111,7 +113,8 @@ public class ProductImportWorkbookSupport {
                         setters.get(column).accept(row, value);
                     }
                 }
-                if (hasData) rows.add(row);
+                if (hasData)
+                    rows.add(row);
                 if (rows.size() > ProductImportService.MAX_ROWS) {
                     addError(result, row.getRowNumber(), null, "文件", "ROW_LIMIT",
                             "数据行不能超过 " + ProductImportService.MAX_ROWS + " 行");
@@ -184,7 +187,8 @@ public class ProductImportWorkbookSupport {
     }
 
     private String trim(String value) {
-        if (value == null) return null;
+        if (value == null)
+            return null;
         var trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }

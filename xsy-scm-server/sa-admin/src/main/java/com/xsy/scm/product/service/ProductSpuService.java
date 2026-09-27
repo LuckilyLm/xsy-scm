@@ -84,12 +84,13 @@ public class ProductSpuService {
         var skuChanges = ProductSkuChangeSet.between(existing, form.getSkuList());
         productUomService.assertUsable(changedUnits(existing, skuChanges));
         productTagService.assertNewBindings(entity.getId(), form.getTagIds());
-        var imageChanges =
-                ProductImageChangeSet.between(productImageSyncManager.existing(entity.getId()), form.getImages());
+        var imageChanges = ProductImageChangeSet.between(productImageSyncManager.existing(entity.getId()),
+                form.getImages());
         apply(entity, form);
         entity.setVersion(form.getVersion());
         try {
-            if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productSpuDao.updateById(entity) != 1)
+                throw new ScmBusinessException(VERSION_CONFLICT);
             productSkuSyncManager.sync(entity.getId(), skuChanges);
             productImageSyncManager.sync(entity.getId(), imageChanges);
         } catch (DuplicateKeyException e) {
@@ -105,7 +106,8 @@ public class ProductSpuService {
         assertSaleCompatible(entity.getMasterStatus(), form.getStatus());
         entity.setStatus(form.getStatus());
         stamp(entity);
-        if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productSpuDao.updateById(entity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
     @Transactional
@@ -115,18 +117,20 @@ public class ProductSpuService {
             throw new ScmBusinessException(PRODUCT_BUSINESS_REFERENCED);
         }
         stamp(entity);
-        if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productSpuDao.updateById(entity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         productTagService.untagProducts(List.of(entity.getId()));
-        productSkuSyncManager.remove(
-                productSkuSyncManager.existing(entity.getId()).stream().map(s -> s.getId()).toList());
-        productImageSyncManager.remove(
-                productImageSyncManager.existing(entity.getId()).stream().map(i -> i.getId()).toList());
+        productSkuSyncManager
+                .remove(productSkuSyncManager.existing(entity.getId()).stream().map(s -> s.getId()).toList());
+        productImageSyncManager
+                .remove(productImageSyncManager.existing(entity.getId()).stream().map(i -> i.getId()).toList());
         productSpuDao.deleteById(entity.getId());
     }
 
     private ProductSpuEntity require(Long id, Integer version) {
         var entity = productSpuDao.selectById(id);
-        if (entity == null) throw new ScmBusinessException(PRODUCT_NOT_FOUND);
+        if (entity == null)
+            throw new ScmBusinessException(PRODUCT_NOT_FOUND);
         if (version == null || !Objects.equals(entity.getVersion(), version))
             throw new ScmBusinessException(VERSION_CONFLICT);
         return entity;
@@ -144,8 +148,10 @@ public class ProductSpuService {
         entity.setInvoiceName(trimToNull(form.getInvoiceName()));
         entity.setTaxCategoryCode(trimToNull(form.getTaxCategoryCode()));
         // 主档状态与在售状态正交：表单不传就是「不改」，新增时才落到 ENABLED。
-        if (form.getMasterStatus() != null) entity.setMasterStatus(form.getMasterStatus());
-        if (entity.getMasterStatus() == null) entity.setMasterStatus(ScmEnableStatusEnum.ENABLED.name());
+        if (form.getMasterStatus() != null)
+            entity.setMasterStatus(form.getMasterStatus());
+        if (entity.getMasterStatus() == null)
+            entity.setMasterStatus(ScmEnableStatusEnum.ENABLED.name());
         assertSaleCompatible(entity.getMasterStatus(), entity.getStatus());
         stamp(entity);
     }
@@ -157,8 +163,7 @@ public class ProductSpuService {
     }
 
     /**
-     * 只复核新增或改过单位的 SKU：单位字典晚于既有商品建立，
-     * 未改动的历史值即便不在字典里也必须允许原样保存，否则每次编辑都会被拦住。
+     * 只复核新增或改过单位的 SKU：单位字典晚于既有商品建立， 未改动的历史值即便不在字典里也必须允许原样保存，否则每次编辑都会被拦住。
      */
     private Collection<String> changedUnits(List<ProductSkuEntity> existing, ProductSkuChangeSet changes) {
         Map<Long, String> before = new HashMap<>();

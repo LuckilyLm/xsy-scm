@@ -7,7 +7,6 @@ import java.util.List;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ProductSpuDetailVO extends ProductSpuVO {

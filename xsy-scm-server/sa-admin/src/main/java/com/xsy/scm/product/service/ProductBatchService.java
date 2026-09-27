@@ -29,9 +29,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
- * 商品批量维护：上下架、主档启停、改分类、打标签。
- * 整批一个事务，且先逐行预校验再落库：任何一行不存在或版本冲突时 updatedCount 为 0、
- * 不做任何写入，并将每个失败商品及其错误原因逐条返回。
+ * 商品批量维护：上下架、主档启停、改分类、打标签。 整批一个事务，且先逐行预校验再落库：任何一行不存在或版本冲突时 updatedCount 为 0、 不做任何写入，并将每个失败商品及其错误原因逐条返回。
  */
 @Service
 @RequiredArgsConstructor
@@ -61,14 +59,16 @@ public class ProductBatchService {
                     && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
                 failures.add(failure(entity, MASTER_STATUS_SALE_CONFLICT));
         }
-        return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, form.getStatus(), form.getMasterStatus(), null, ScmOperator.current()));
+        return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, form.getStatus(),
+                form.getMasterStatus(), null, ScmOperator.current()));
     }
 
     @Transactional
     public ProductBatchResultVO updateCategory(ProductSpuBatchCategoryForm form) {
         productCategoryService.requireSelectableCategory(form.getCategoryId());
         var failures = verify(form.getItems());
-        return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, null, null, form.getCategoryId(), ScmOperator.current()));
+        return commit(failures, form.getItems(),
+                (ids) -> productSpuDao.batchApply(ids, null, null, form.getCategoryId(), ScmOperator.current()));
     }
 
     /**
@@ -86,7 +86,8 @@ public class ProductBatchService {
                 productTagService.addTags(ids, form.getTagIds());
             else if (ScmProductTagUpdateModeEnum.REMOVE.name().equals(form.getMode()))
                 productTagService.removeTags(ids, form.getTagIds());
-            else productTagService.replaceTags(ids, form.getTagIds());
+            else
+                productTagService.replaceTags(ids, form.getTagIds());
         });
     }
 
@@ -99,9 +100,8 @@ public class ProductBatchService {
      * 按 id 升序加行锁，与单条编辑和并发批量入口互斥；重复 spuId 只锁一次。
      */
     private Map<Long, ProductSpuEntity> lock(List<ProductBatchItemForm> items) {
-        return productSpuDao
-                .lockByIds(items.stream().map(ProductBatchItemForm::getSpuId).distinct().sorted().toList()).stream()
-                .collect(Collectors.toMap(ProductSpuEntity::getId, Function.identity()));
+        return productSpuDao.lockByIds(items.stream().map(ProductBatchItemForm::getSpuId).distinct().sorted().toList())
+                .stream().collect(Collectors.toMap(ProductSpuEntity::getId, Function.identity()));
     }
 
     private Failure check(ProductBatchItemForm item, ProductSpuEntity entity) {
@@ -117,7 +117,8 @@ public class ProductBatchService {
     /**
      * 预校验有失败行时只回结果、不落库；全部通过才执行这一次批量写入。
      */
-    private ProductBatchResultVO commit(List<Failure> failures, List<ProductBatchItemForm> items, java.util.function.Consumer<List<Long>> write) {
+    private ProductBatchResultVO commit(List<Failure> failures, List<ProductBatchItemForm> items,
+            java.util.function.Consumer<List<Long>> write) {
         var result = new ProductBatchResultVO();
         if (!failures.isEmpty()) {
             result.setFailedCount(failures.size());

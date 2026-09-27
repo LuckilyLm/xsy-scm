@@ -12,7 +12,6 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 
-
 @Data
 @TableName(value = "product_spu", autoResultMap = true)
 public class ProductSpuEntity {

@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-
 @Data
 public class ProductCategoryAddForm {
     @Positive(message = "上级分类 ID必须大于0")

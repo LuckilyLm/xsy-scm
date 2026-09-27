@@ -11,7 +11,6 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-
 @Data
 @TableName(value = "product_category", autoResultMap = true)
 public class ProductCategoryEntity {

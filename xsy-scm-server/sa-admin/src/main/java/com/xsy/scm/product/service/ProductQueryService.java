@@ -56,21 +56,27 @@ public class ProductQueryService {
                 throw new net.lab1024.sa.base.common.exception.BusinessException("不支持的商品排序字段");
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        if (page.orders().isEmpty()) page.addOrder(OrderItem.desc("updated_at"), OrderItem.desc("id"));
+        if (page.orders().isEmpty())
+            page.addOrder(OrderItem.desc("updated_at"), OrderItem.desc("id"));
         var categoryRows = productCategoryService.all();
-        var rows = productSpuDao.queryPage(page, form, form.getCategoryId() == null ? null : productCategoryService.descendantIds(form.getCategoryId(), categoryRows));
+        var rows = productSpuDao.queryPage(page, form,
+                form.getCategoryId() == null
+                        ? null
+                        : productCategoryService.descendantIds(form.getCategoryId(), categoryRows));
         var enriched = enrich(rows, categoryRows);
         return SmartPageUtil.convert2PageResult(page, new ArrayList<ProductSpuVO>(enriched));
     }
 
     public ProductSpuDetailVO detail(Long id) {
         var entity = productSpuDao.selectById(id);
-        if (entity == null) throw new ScmBusinessException(PRODUCT_NOT_FOUND);
+        if (entity == null)
+            throw new ScmBusinessException(PRODUCT_NOT_FOUND);
         return enrich(List.of(entity), productCategoryService.all()).getFirst();
     }
 
     private List<ProductSpuDetailVO> enrich(List<ProductSpuEntity> rows, List<ProductCategoryEntity> categoryRows) {
-        if (rows.isEmpty()) return List.of();
+        if (rows.isEmpty())
+            return List.of();
         var ids = rows.stream().map(ProductSpuEntity::getId).toList();
         // 分片取关联数据：导出把 pageSize 强设为 10 万，整表 id 直接进一条 IN 会撞上
         // PostgreSQL 扩展协议单语句 65535 个绑定参数的上限（约 6.5 万商品处直接报错）。
@@ -78,23 +84,27 @@ public class ProductQueryService {
         var skuRows = new ArrayList<ProductSkuEntity>();
         var imageRows = new ArrayList<ProductImageEntity>();
         for (var batch : Lists.partition(ids, IN_BATCH)) {
-            skuRows.addAll(productSkuDao.selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, batch)
-                    .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId)));
-            imageRows.addAll(productImageDao.selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, batch)
-                    .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId)));
+            skuRows.addAll(productSkuDao
+                    .selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, batch)
+                            .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId)));
+            imageRows.addAll(productImageDao
+                    .selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, batch)
+                            .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId)));
         }
         var skuMap = skuRows.stream().collect(Collectors.groupingBy(ProductSkuEntity::getSpuId));
         var imageMap = imageRows.stream().collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
         var tagMap = new LinkedHashMap<Long, List<ProductSpuTagVO>>();
         for (var batch : Lists.partition(ids, IN_BATCH))
-            productTagService.bySpuIds(batch).forEach((spuId, bound) ->
-                    tagMap.computeIfAbsent(spuId, k -> new ArrayList<>()).addAll(bound));
+            productTagService.bySpuIds(batch)
+                    .forEach((spuId, bound) -> tagMap.computeIfAbsent(spuId, k -> new ArrayList<>()).addAll(bound));
         Map<String, String> urls = new HashMap<>();
         // 分批取私有 URL：一次传整页 fileKey 会顶到 PostgreSQL 单语句 65535 个绑定参数上限。
-        for (var batch : Lists.partition(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList(), IN_BATCH))
+        for (var batch : Lists.partition(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+                IN_BATCH))
             fileService.getFileList(batch, SmartRequestUtil.getRequestUser()).stream().filter(Objects::nonNull)
                     .forEach(f -> urls.put(f.getFileKey(), f.getFileUrl()));
-        Map<Long, String> names = categoryRows.stream().collect(Collectors.toMap(ProductCategoryEntity::getId, ProductCategoryEntity::getName));
+        Map<Long, String> names = categoryRows.stream()
+                .collect(Collectors.toMap(ProductCategoryEntity::getId, ProductCategoryEntity::getName));
         // 分类索引在循环外建一次：path(id, rows) 每次都会整表重建，放循环里是 O(页大小 × 分类总数)
         var categoryById = ProductCategoryService.indexById(categoryRows);
         List<ProductSpuDetailVO> result = new ArrayList<>();
@@ -113,9 +123,12 @@ public class ProductQueryService {
             }).toList();
             vo.setSkuList(children);
             vo.setSkuCount(children.size());
-            vo.setDefaultSku(children.stream().filter(s -> Boolean.TRUE.equals(s.getDefaultFlag())).findFirst().orElse(null));
-            vo.setMinMarketPrice(children.stream().map(ProductSkuVO::getMarketPrice).filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(null));
-            vo.setMaxMarketPrice(children.stream().map(ProductSkuVO::getMarketPrice).filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(null));
+            vo.setDefaultSku(
+                    children.stream().filter(s -> Boolean.TRUE.equals(s.getDefaultFlag())).findFirst().orElse(null));
+            vo.setMinMarketPrice(children.stream().map(ProductSkuVO::getMarketPrice).filter(Objects::nonNull)
+                    .min(BigDecimal::compareTo).orElse(null));
+            vo.setMaxMarketPrice(children.stream().map(ProductSkuVO::getMarketPrice).filter(Objects::nonNull)
+                    .max(BigDecimal::compareTo).orElse(null));
             var pictures = imageMap.getOrDefault(row.getId(), List.of()).stream().map(i -> {
                 var image = new ProductImageVO();
                 BeanUtils.copyProperties(i, image);

@@ -31,8 +31,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.UOM_REFERENCED;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
- * 计量单位辅助资料。字典只作为商品销售单位、供应商采购单位的取值来源，业务字段仍存名称字符串，
- * 所以单位名称在活动行内唯一，被引用后只能停用、不能删除。
+ * 计量单位辅助资料。字典只作为商品销售单位、供应商采购单位的取值来源，业务字段仍存名称字符串， 所以单位名称在活动行内唯一，被引用后只能停用、不能删除。
  */
 @Service
 @RequiredArgsConstructor
@@ -53,12 +52,12 @@ public class ProductUomService {
     }
 
     /**
-     * 只复核本次新写入或改动的单位名：必须在字典中且处于启用态，并锁定命中的活动行，
-     * 与 {@link #delete} 互斥。字典里没有这个名称时不锁行，调用方按「未维护」放行历史值。
+     * 只复核本次新写入或改动的单位名：必须在字典中且处于启用态，并锁定命中的活动行， 与 {@link #delete} 互斥。字典里没有这个名称时不锁行，调用方按「未维护」放行历史值。
      */
     public void assertUsable(Collection<String> unitNames) {
         var names = unitNames.stream().filter(n -> n != null && !n.isBlank()).map(String::trim).distinct().toList();
-        if (names.isEmpty()) return;
+        if (names.isEmpty())
+            return;
         var found = productUomDao.selectNamesForUpdate(names);
         var enabled = ScmEnableStatusEnum.ENABLED.name();
         if (found.size() != names.size() || found.stream().anyMatch(u -> !enabled.equals(u.getStatus()))) {
@@ -93,7 +92,8 @@ public class ProductUomService {
         entity.setSortOrder(form.getSortOrder());
         entity.setVersion(form.getVersion());
         stamp(entity);
-        if (productUomDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productUomDao.updateById(entity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
     /**
@@ -102,13 +102,16 @@ public class ProductUomService {
     @Transactional
     public void delete(ProductUomKeyForm form) {
         var entity = productUomDao.selectForUpdate(form.getUomId());
-        if (entity == null) throw new ScmBusinessException(UOM_NOT_FOUND);
-        if (!Objects.equals(entity.getVersion(), form.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (entity == null)
+            throw new ScmBusinessException(UOM_NOT_FOUND);
+        if (!Objects.equals(entity.getVersion(), form.getVersion()))
+            throw new ScmBusinessException(VERSION_CONFLICT);
         if (productUomDao.selectVoById(entity.getId()).getReferencedCount() > 0) {
             throw new ScmBusinessException(UOM_REFERENCED);
         }
         stamp(entity);
-        if (productUomDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (productUomDao.updateById(entity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         productUomDao.deleteById(entity.getId());
     }
 
@@ -126,8 +129,10 @@ public class ProductUomService {
 
     private ProductUomEntity require(Long id, Integer version) {
         var entity = productUomDao.selectById(id);
-        if (entity == null) throw new ScmBusinessException(UOM_NOT_FOUND);
-        if (!Objects.equals(entity.getVersion(), version)) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (entity == null)
+            throw new ScmBusinessException(UOM_NOT_FOUND);
+        if (!Objects.equals(entity.getVersion(), version))
+            throw new ScmBusinessException(VERSION_CONFLICT);
         return entity;
     }
 

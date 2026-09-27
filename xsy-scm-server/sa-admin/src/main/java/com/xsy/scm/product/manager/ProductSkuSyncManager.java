@@ -32,7 +32,8 @@ public class ProductSkuSyncManager {
             var entity = entity(spuId, form);
             entity.setId(form.getSkuId());
             entity.setVersion(form.getVersion());
-            if (productSkuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (productSkuDao.updateById(entity) != 1)
+                throw new ScmBusinessException(VERSION_CONFLICT);
         }
         for (var form : changes.inserted()) {
             var entity = entity(spuId, form);
@@ -45,10 +46,12 @@ public class ProductSkuSyncManager {
     }
 
     public void remove(List<Long> ids) {
-        if (ids.isEmpty()) return;
-        productSkuDao.update(null, new LambdaUpdateWrapper<ProductSkuEntity>().in(ProductSkuEntity::getId, ids)
-                .set(ProductSkuEntity::getUpdatedAt, OffsetDateTime.now()).set(ProductSkuEntity::getUpdatedBy, ScmOperator.current())
-                .setSql("version = version + 1"));
+        if (ids.isEmpty())
+            return;
+        productSkuDao.update(null,
+                new LambdaUpdateWrapper<ProductSkuEntity>().in(ProductSkuEntity::getId, ids)
+                        .set(ProductSkuEntity::getUpdatedAt, OffsetDateTime.now())
+                        .set(ProductSkuEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
         productSkuDao.deleteByIds(ids);
     }
 
