@@ -650,17 +650,14 @@ inventory → sorting → delivery → finance → report`，每一项单独 com
 | 11 | unused import 清理 | 267 | 与 10 同批 |
 | 12 | 行宽 > 120 | 243 | 与 formatter commit 同批 |
 
-### 9.2 Q2/Q3 需要先定的一个格式决定
+### 9.2 Q2/Q3 格式裁决（2026-09-28）
 
-本轮**刻意没有**启用完整 formatter，理由如下，需要负责人先裁决再落地：
+选择 Eclipse JDT 4.31 formatter，固定 120 列与 4 空格缩进；不启用 Google Java Format 的 100 列规则，
+也不增加 Maven JVM 参数。配置在 `tools/quality/eclipse-formatter.xml`，Spotless 只覆盖 SCM 生产源码，
+测试源码保持原样。格式按模块应用并分别提交。
 
-- `google-java-format` 的行宽硬编码 100，与本项目 120 标准冲突（计划 §10 定的是 120）；
-  启用会让两者互相打架，Checkstyle 说合法的行 Spotless 说要拆。
-- 它在 JDK 21 上要求通过 `.mvn/jvm.config` 追加 `add-exports` 参数 —— 那会改变本项目
-  **每一次** Maven 调用的 JVM 参数，超出「质量整改不改行为」的范围。
-- Eclipse formatter 需要一份仓库内 XML 配置，且会把被触碰的文件整体重排。
-- 因此 Q0 只落地 `trimTrailingWhitespace` + `endWithNewline`（零格式化引擎、零全文件重排）。
-  `removeUnusedImports` / `importOrder` 留到 formatter 选型定了再加，避免先制造巨大 diff。
+Checkstyle 报告中的未使用 import 按模块逐条清理，wildcard import 已展开。生产代码的 120 列格式已逐域应用。
+本轮未运行单元、集成或浏览器测试；也未重新生成最终 Checkstyle 报告，因此旧报告计数不作为当前 PASS 证据。
 
 ### 9.3 Q3 — 注释、架构、Service 职责
 
@@ -676,11 +673,10 @@ inventory → sorting → delivery → finance → report`，每一项单独 com
 `idempotency_record` 的实体和写入实现已迁入 common。允许项与原因见
 [`cross-domain-dao-access.md`](q3-cross-domain-dao-access.md) 和 `tools/quality/cross-domain-dao-allowlist.tsv`。
 
-### 9.4 门禁自身要补的三件事
+### 9.4 门禁自身的裁决与状态
 
-1. 测试源码是否纳入 guard 与 Checkstyle（§7 第 4 条）；
-2. Checkstyle / Spotless 绑定到默认生命周期（现在只有 `verify.py quality` 会跑，
-   直接 `mvn test` 不跑）。等 §9.1 第 10–12 项做完、违规数从 871 降到可控范围再绑。
+1. 测试源码继续排除在 SCM 生产代码 guard / Checkstyle 范围外，以免测试夹具字面量混入生产债务；本任务也没有修改测试类。
+2. Checkstyle 报告与 Spotless 检查已绑定到 `validate`。`python tools/verify.py quality` 仍在它们之后运行 ratchet 和质量工具自测。
 3. ~~**测试隔离**：`ScmStocktakeImportPgIT` 依赖「共享种子仓库的余额行数」~~
    **已于 Q0.1 处理完毕**：该 IT 改用独占 warehouse，20 次连续全量单跑 20/20 绿。
    处置过程、边界与一条被纠正的根因表述见
@@ -692,7 +688,7 @@ Q0.1 另外补上了迁包前的三处范围缺陷（Guard / Checkstyle / ArchUn
 
 ---
 
-## 10. Q4 — 文档与仓库治理计划（只出计划，本轮一个文件都没移动）
+## 10. Q4 — 文档与仓库治理计划及实施记录
 
 ### 10.1 现状体量
 
@@ -751,7 +747,7 @@ Finance 每一步的历史。
 - 活动计划统一位于 `docs/plan/active/`；当前状态、决策索引和 ADR 已建立；`AGENTS.md` 已收敛为稳定项目规则。
 - 平台验证入口位于 `tools/verify.ps1` / `tools/verify.sh` / `tools/verify.py`，README 与 CONTRIBUTING 已同步。
 - Q3 服务审查见 `q3-service-architecture-review.md`；商品导入已将工作簿 I/O 与领域编排、整批写入分开。
-- 本轮按用户要求未执行测试、构建或质量门禁；没有修改测试类或数据库迁移。
+- 本轮按用户要求未运行单元、集成或浏览器测试；执行过一次 Checkstyle 报告生成和 Spotless 生产源码格式应用，未修改测试类或数据库迁移。
 
 ---
 
