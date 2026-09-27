@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 核销行的目标侧类型；<b>数据范围随本列</b>（D-5）：{@code RECEIVABLE} 走 orderSellerScope，
+ * 核销行的目标侧类型；<b>数据范围随本列</b>：{@code RECEIVABLE} 走 orderSellerScope，
  * {@code PAYABLE} 走 purchaserScope。
  *
  * <p>即「核销行的可见性 = 被核销单据的可见性」。核销行本身不是独立归属对象，

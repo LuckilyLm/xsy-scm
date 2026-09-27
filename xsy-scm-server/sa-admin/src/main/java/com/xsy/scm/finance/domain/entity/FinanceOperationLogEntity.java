@@ -18,7 +18,7 @@ import java.util.Map;
  * {@code deleted} 来表达它（对照 {@code order_operation_log}）。
  *
  * <p><b>不复用 {@code t_operate_log}</b>：通用日志不保证与业务事务同成同败，也不带金额快照与
- * 类型白名单（P1 裁决 12 的判据）。财务需要的是「改前 / 改后金额级证据」，
+ * 类型白名单。财务需要的是「改前 / 改后金额级证据」，
  * 因此 {@code beforeData} / {@code afterData} 是本表存在的理由。
  *
  * <p>唯一写入口是 {@code FinanceOperationLogRecorder}，<b>必须与业务写同一事务</b>，

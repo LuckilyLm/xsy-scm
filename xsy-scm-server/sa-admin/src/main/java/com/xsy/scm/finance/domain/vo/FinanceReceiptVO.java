@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 /**
  * 收款登记的结果视图：只回本次事实本身，够支撑幂等重放与调用确认。
  *
- * <p>刻意不含派生列（待核销余额、已核销额、结清状态）—— 那些是 F1-5 的读时派生，
+ * <p>刻意不含派生列（待核销余额、已核销额、结清状态）—— 那些是 的读时派生，
  * 落进 VO 就会有人开始把它当存量字段用。
  */
 @Data
@@ -39,7 +39,7 @@ public class FinanceReceiptVO {
     private String remark;
 
     /**
-     * 本期只可能是 {@code NORMAL}；{@code REVERSE} 属 F1-3C。
+     * 收款登记响应只返回 {@code NORMAL} 收款。
      */
     private String entryType;
 }

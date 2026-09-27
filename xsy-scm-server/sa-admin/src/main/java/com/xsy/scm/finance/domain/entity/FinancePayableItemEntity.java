@@ -28,7 +28,7 @@ public class FinancePayableItemEntity extends FinanceRecord {
     private Long sourceId;
 
     /**
-     * 采购订单行 id，回溯结算单价来源（Q10）。
+     * 采购订单行 id，回溯结算单价来源。
      */
     private Long purchaseOrderItemId;
 
@@ -40,13 +40,13 @@ public class FinancePayableItemEntity extends FinanceRecord {
 
     /**
      * = 收货有效量（标品取申报量、非标取 {@code actual_weight}，见
-     * {@code PurchaseReceiptQuantityCalculator}），含合法容差内超收（Q11）。恒 &gt; 0。
+     * {@code PurchaseReceiptQuantityCalculator}），含合法容差内超收。恒 &gt; 0。
      */
     private BigDecimal quantity;
 
     /**
      * = {@code purchase_order_item.purchase_price}，语义为「当前采购业务确认使用的结算单价」，
-     * <b>不含</b>含税 / 未税 / 税额 / 可抵扣税额中的任何含义（Q14）。
+     * <b>不含</b>含税 / 未税 / 税额 / 可抵扣税额中的任何含义。
      */
     private BigDecimal unitPrice;
 

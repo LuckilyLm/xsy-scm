@@ -17,10 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 财务收款登记入口（F1-3A）。
+ * 财务收款登记入口。
  *
- * <p>本阶段只有这一条受保护端点：查询 / 详情 / 导出属 F1-5，反向收款属 F1-3C，
- * 因此也不为它们预留权限或页面菜单（能力先于页面，页面先于按钮）。
+ * <p>收款查询、导出与反向动作由独立命令提供，不复用本登记端点的权限。
  *
  * <p>收款是资金动作，重复请求会重复入账，所以必须带 {@code Idempotency-Key}：
  * 同键同内容重放首次结果，不产生第二张收款单。

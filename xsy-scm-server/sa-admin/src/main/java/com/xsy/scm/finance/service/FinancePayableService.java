@@ -31,14 +31,7 @@ import java.util.Map;
 /**
  * 应付域服务。
  *
- * <p><b>F1-4 在此实现</b>：手工红字应付登记（{@code scm:finance:payable:red}）。
- * 这是 {@code FINANCE_RED_AMOUNT_EXCEEDED(41137)} 在本期**唯一**的使用者 ——
- * 手工红字是人工财务动作，拒绝它不会回滚任何业务域状态机，因此可以 fail-loud；
- * 自动红字应收则永不使用 41137（D-4）。
- *
- * <p><b>边界</b>：对 {@code purchase_*} 与 {@code inventory_*} 只读（全局不变量 4，由
- * {@code FinanceReadOnlyContractTest} 静态扫描把守）；不实现历史回填（D-1）；
- * 红字应付的 schema 虽然已在 V65 就位，本期仍不提前接任何手工入口。
+ * <p>收货确认会在同一事务内生成正常应付；本服务读取采购事实，只写入财务应付记录与操作日志。
  */
 @Service
 @RequiredArgsConstructor
@@ -50,18 +43,18 @@ public class FinancePayableService {
     private final FinanceOperationLogRecorder operationLogs;
 
     /**
-     * 收货确认 → 正常应付（第一批 Q9 / Q10 / Q11 / Q12）。
+     * 收货确认 → 正常应付。
      *
      * <p><b>必须与触发它的事务同成败</b>，因此传播级别是 {@code MANDATORY} 而不是 {@code REQUIRED}：
      * 后者会在没有外层事务时**自己提交**，那会造出「收货单还是草稿、应付已经入账」的孤立事实，
      * 而 {@code confirm} 后续的库存写入一旦失败也没有回滚它的机会。脱离事务调用即
      * {@code IllegalTransactionStateException}，这是刻意的失败。
      *
-     * <p><b>不是用户命令，因此不吃 {@code Idempotency-Key}</b>（§13）：防重复请求由
+     * <p><b>不是用户命令，因此不吃 {@code Idempotency-Key}</b>：防重复请求由
      * {@code confirm} 自身的幂等三段式与「只有 DRAFT 可确认」的状态守卫承担；
      * 防重复**事实**由库级来源唯一索引承担，命中即视为已生成并成功返回。
      *
-     * <p><b>不锁任何行、不碰任何业务表</b>（§14）：业务锁已由 {@code confirm} 持有，
+     * <p><b>不锁任何行、不碰任何业务表</b>：业务锁已由 {@code confirm} 持有，
      * 并发的双触发由 {@code uk_finance_payable_source_active} 仲裁。
      *
      * @param purchaseReceiptId 刚被置为 {@code CONFIRMED} 的收货单 id
@@ -85,7 +78,7 @@ public class FinancePayableService {
 
         if (amount.signum() <= 0) {
             // 没有有效明细，或单价为 0 导致金额为 0：不产生 0 元财务事实，也不造一张空单头留痕
-            // （与应收侧第二批 Q8 同纪律）。0 元事实会永久挂在待核销列表里且无法核销。
+            // 0 元事实会永久挂在待核销列表里且无法核销。
             return;
         }
 
@@ -134,8 +127,8 @@ public class FinancePayableService {
     }
 
     /**
-     * 明细装配：量取收货行的有效量、价取采购行的结算单价，金额 {@code ROUND(量 × 价, 4, HALF_UP)}
-     * （第二批 Q22）。单头金额是**已按 4 位舍入的行金额之和**，不是「先求和再舍入」——
+     * 明细装配：量取收货行的有效量、价取采购行的结算单价，金额按四位精度 HALF_UP 舍入。
+     * 单头金额是**已按四位舍入的行金额之和**，不是「先求和再舍入」——
      * 后者会让单头与明细对不上账，而对账时没人能解释那半分钱的差额。
      */
     private List<FinancePayableItemEntity> toItems(List<FinancePayableSourceLineDto> lines) {
@@ -165,7 +158,7 @@ public class FinancePayableService {
     }
 
     /**
-     * {@code GENERATE} 的 {@code after_data}：单头快照（§17），{@code before_data} 为 {@code null}。
+     * {@code GENERATE} 的 {@code after_data}：单头快照，{@code before_data} 为 {@code null}。
      *
      * <p>金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是**未注册
      * JavaTimeModule 的裸 ObjectMapper**，把 {@code OffsetDateTime} 直接放进快照会在写入时炸。

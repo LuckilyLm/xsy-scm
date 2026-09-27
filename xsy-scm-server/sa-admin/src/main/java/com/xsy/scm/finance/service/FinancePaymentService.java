@@ -39,22 +39,16 @@ import java.util.Map;
 /**
  * 付款域服务。
  *
- * <p><b>F1-3B 交付的是 {@code NORMAL} 付款登记一条命令</b>，且只有两种合法组合：
+ * <p>只接受 {@code NORMAL} 付款，且只有两种合法组合：
  * {@code SUPPLIER} + 无来源（供应商付款 / 预付），{@code CUSTOMER} + {@code ORDER_REFUND}
- * （客户退款付款）。本期不支持 {@code CUSTOMER} + 无来源 —— 客户提现 / 余额退款 / 营销返现
- * 都没有需求基线（P5 范畴）。
+ * （客户退款付款）。客户付款必须对应退款来源；不接受无来源的客户付款。
  *
- * <p><b>退款付款不冲减应收</b>（第二批 Q27）：Return 已经通过红字应收处理过应收，
+ * <p><b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收，
  * 本命令只表达「钱真的付出去了」，因此绝不写 {@code finance_write_off}、绝不改任何
  * {@code finance_receivable} 行 —— 否则同一笔退货被冲减两次。
  *
- * <p><b>反向付款在此实现</b>（F1-3C，{@code scm:finance:payment:reverse}，D-3）：反向行的
- * {@code source_type / source_id} 必须为 NULL（{@code ck_finance_payment_reverse_no_source}），
- * 否则会与原行抢 {@code uk_finance_payment_source_active}，把登错的退款付款变成永远纠不掉。
- * 本方法不复用给反向用 —— 反向要锁原行（{@code LOCK_RANK_PAYMENT}）并校验「已用额 = 0」。
- *
  * <p><b>不设第二套幂等基建</b>：复用既有 {@code idempotency_record} 与
- * {@link OrderIdempotencyService}（三段式同一事务，第二批 Q26）。
+ * {@link OrderIdempotencyService}（三段式同一事务）。
  */
 @Service
 @RequiredArgsConstructor
@@ -74,8 +68,7 @@ public class FinancePaymentService {
      * 要么一起不成。退款来源撞 {@code uk_finance_payment_source_active} 时同样整笔回滚 ——
      * 留下「已付款但无日志」或「claim 已占但无结果」都是不可接受的半成品。
      *
-     * <p>本命令<b>不获取</b>任何业务表行锁，也不按 rank 锁财务行（§14 的财务行锁只属于
-     * 核销 / 反向 / 红字这类要读余额的命令）；并发双付款的仲裁点就是来源唯一索引本身：
+     * <p>本命令<b>不获取</b>任何业务表行锁或财务余额锁；并发双付款的仲裁点是来源唯一索引：
      * 后到者在该索引上等前者提交后重新检查谓词，插入返回 0 即按 41139 拒绝。
      *
      * @param idempotencyKey 请求级幂等键；同键同内容重放首次结果，同键异内容按既有语义报冲突
@@ -103,7 +96,7 @@ public class FinancePaymentService {
      * <b>CUSTOMER 侧的一切不通过都收敛到同一个 41139</b>：退款不存在、退款不属于我、
      * 状态未完成、金额或对方不符、已付过 —— 全部同一个码。若把「不属于我」换成
      * 范围异常（30005）而「不存在」保持 41139，就等于是给调用者一个「这张退款存在且不是你的」
-     * 的探测信号，正是 F1-3A 在客户维度上刻意避免的那件事。
+     * 的探测信号，因此客户范围校验也使用相同的失败响应。
      */
     private FinancePaymentEntity register(FinancePaymentAddForm form) {
         String counterpartyType = counterpartyType(form.getCounterpartyType());
@@ -145,7 +138,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 模式 A：供应商付款 / 预付。<b>没有任何应付、没有采购单也可以付</b>（Q16 预付），
+     * 模式 A：供应商付款 / 预付。<b>没有任何应付、没有采购单也可以付</b>（预付），
      * 因此这里不接受也不校验 payableId / purchaseOrderId / purchaseReceiptId。
      * 只判供应商存在性与 deleted；{@code status} 不做前置（停用的供应商也可能要结清历史债务）。
      */
@@ -156,7 +149,7 @@ public class FinancePaymentService {
         }
         FinanceSupplierFactDto supplier = financeCounterpartySourceDao.selectSupplier(form.getCounterpartyId());
         if (supplier == null) {
-            // 供应商侧没有范围判定（D-5），因此「不存在」不是敏感信号，用参数错误而不是 41139：
+            // 供应商侧没有范围判定，因此「不存在」不是敏感信号，用参数错误而不是 41139：
             // 41139 的文案是「退款付款来源不合法」，挂在这里会误导排查。
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
@@ -168,13 +161,13 @@ public class FinancePaymentService {
 
     /**
      * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}，
-     * 金额与对方必须与 {@code order_refund} **逐值一致**（Q19 / Q27）。
+     * 金额与对方必须与 {@code order_refund} **逐值一致**。
      */
     private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form,
                                     BigDecimal amount) {
         if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(StringUtils.trimToNull(form.getSourceType()))
                 || form.getSourceId() == null) {
-            // 本期唯一的客户侧付款就是退款付款；无来源的「客户付款」没有需求基线（属 P5）
+            // 客户付款必须关联已完成退款；无来源的客户付款不符合受支持的业务形态。
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         FinanceRefundFactDto refund = financePaymentSourceDao.selectOrderRefund(form.getSourceId());
@@ -200,7 +193,7 @@ public class FinancePaymentService {
 
         payment.setCounterpartyId(refund.getCustomerId());
         // 名称取付款发生时客户主档并冻结，绝不采用前端提交的任何名称；
-        // 也不回读订单快照 —— 付款的语义是「真实付款发生时的对方」（设计稿 §6）。
+        // 也不回读订单快照 —— 付款的语义是「真实付款发生时的对方」。
         payment.setCounterpartyNameSnapshot(customer.getCustomerName());
         payment.setSourceType(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name());
         payment.setSourceId(refund.getRefundId());
@@ -228,7 +221,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 方式与收款共用 {@link ScmFinancePaymentMethodEnum}（Q21：Java enum + DB CHECK，不入字典）。
+     * 方式与收款共用 {@link ScmFinancePaymentMethodEnum}，并由数据库 CHECK 约束。
      */
     private static String method(String raw) {
         String value = StringUtils.trimToNull(raw);

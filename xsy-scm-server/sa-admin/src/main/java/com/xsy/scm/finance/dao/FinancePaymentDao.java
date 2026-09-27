@@ -9,8 +9,8 @@ import org.apache.ibatis.annotations.Mapper;
  *
  * <p>退款付款的行级防重锚点是 {@code uk_finance_payment_source_active}
  * （{@code (source_type, source_id) WHERE deleted = FALSE AND source_id IS NOT NULL}）：
- * 同一张 {@code order_refund} 最多一笔正式退款付款（Q19 / Q26）。
- * 反向付款的 {@code source_id} 必须为 NULL，因此不与原行抢这个键（D-3）。
+ * 同一张 {@code order_refund} 最多一笔正式退款付款。
+ * 反向付款的 {@code source_id} 必须为 NULL，因此不与原行抢这个键。
  */
 @Mapper
 public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
@@ -24,7 +24,7 @@ public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
     /**
      * 插入一笔正常付款，同一 {@code ORDER_REFUND} 已有付款时什么都不做。
      *
-     * <p>冲突目标与 {@code uk_finance_payment_source_active} 的列和谓词**逐字一致**（Q11 纪律）：
+     * <p>冲突目标与 {@code uk_finance_payment_source_active} 的列和谓词**逐字一致**（纪律）：
      * 少写谓词会命中「无索引可仲裁」而直接报错，用无目标的 {@code ON CONFLICT DO NOTHING}
      * 会把 {@code payment_no} 撞号一起吞掉。
      *

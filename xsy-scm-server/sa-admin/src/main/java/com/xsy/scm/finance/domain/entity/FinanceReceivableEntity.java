@@ -10,15 +10,14 @@ import java.time.OffsetDateTime;
 /**
  * 应收单头：一张已签收销售订单一条正常应收，一张已批准退货一条红字应收。
  *
- * <p><b>没有状态列</b>（Q17 / Q20）：已核销额、未核销额、超额核销、结清状态全部由
- * {@code finance_write_off} 与红字关系**读时派生**，派生公式见设计稿 §7。
+ * <p><b>没有状态列</b>：已核销额、未核销额、超额核销、结清状态全部由
+ * {@code finance_write_off} 与红字关系**读时派生**，不在事实行重复存储。
  *
- * <p><b>没有 seller_id</b>（Q23 / 设计稿 §0 第 5 条）：范围归属读时 join {@code sales_order}
- * 取活值，落库即会随授权调整而漂移。{@code customer_id} 是结算对方，属财务事实本身，落库。
+ * <p><b>没有 seller_id</b>：范围归属在读取时 join {@code sales_order} 获取当前负责人。
+ * {@code customer_id} 是结算对方，属于财务事实本身。
  *
  * <p><b>本实体没有任何更新路径</b>：应收一经生成即不可改，红冲是新增一条 {@code RED} 行。
- * 因此刻意不给任何字段挂 {@code @TableField(updateStrategy = ALWAYS)} —— P2 裁决 23 已经
- * 证明那种写法会让「按表单部分字段更新」把未提交列写回 NULL。
+ * 因此不提供更新路径，避免把未提交字段写回 NULL。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -59,7 +58,7 @@ public class FinanceReceivableEntity extends FinanceRecord {
     private Long originalReceivableId;
 
     /**
-     * 单头金额 = 明细之和，scale 4、{@code HALF_UP}、恒 &gt; 0；合计为 0 时不生成事实（Q8）。
+     * 单头金额 = 明细之和，scale 4、{@code HALF_UP}、恒 &gt; 0；合计为 0 时不生成事实。
      */
     private BigDecimal amount;
 

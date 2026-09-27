@@ -20,15 +20,15 @@ import java.util.Map;
  * 本类刻意不加 {@code @Transactional}，事务边界由调用方（写命令）决定。
  *
  * <p><b>不复用 {@code t_operate_log}</b>：通用日志不保证与业务事务同成同败，
- * 也不带金额快照与类型白名单（P1 裁决 12 的判据）。财务需要的是「改前 / 改后金额级证据」，
+ * 也不带金额快照与类型白名单。财务需要的是「改前 / 改后金额级证据」，
  * 因此 {@code before} / {@code after} 两个 JSONB 快照是本表存在的理由。
  *
- * <p>快照口径（设计稿 §17）：
+ * <p>快照口径：
  * <ul>
  *   <li>生成类（{@code GENERATE} / {@code RED_GENERATE}）：{@code before} 为 {@code null}，
  *       {@code after} 为单头快照；</li>
  *   <li>核销与反向核销：{@code before} 为目标的派生余额快照，{@code after} 为写入后的派生余额快照；</li>
- *   <li>收付款反向（D-3）：{@code before} 为原行有效额快照，{@code after} 为反向后快照。</li>
+ *   <li>收付款反向：{@code before} 为原行有效额快照，{@code after} 为反向后快照。</li>
  * </ul>
  * 派生余额快照必须在**持有目标行锁之后**取，否则记下的是一份并发下已经不成立的数字。
  */
@@ -61,7 +61,7 @@ public class FinanceOperationLogRecorder {
      * <p>派生生成器用这一条：红字应收的操作人是 {@code order_return.updated_by}（批准人），
      * 正常应收的是 {@code delivery_route_order.signed_by}（签收人）。取已落库的业务事实操作人
      * 而不是 {@link ScmOperator#current()}，是为了让「财务事实的身份列」与「日志的操作人」
-     * 来自同一个事实源 —— 否则同一笔账会出现两个可能对不上的操作人（第三批 D-2 的
+     * 来自同一个事实源 —— 否则同一笔账会出现两个可能对不上的操作人（的
      * 「红字是已成立业务事实的映射」要求这一点成立）。
      */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId,

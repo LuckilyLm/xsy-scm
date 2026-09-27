@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 /**
  * 应收生成所需的**签收事实**（明细维度）：一条 {@code inventory_outbound_item} 一行应收明细。
  *
- * <p>量与价刻意来自两张表：出库行是「实际发了多少」的唯一事实（第一批 Q2），
- * 订单行是「按什么价格结算」的唯一事实（第一批 Q3）。两者都不允许被订单结算列或库存成本列替代。
+ * <p>量与价刻意来自两张表：出库行是「实际发了多少」的唯一事实，
+ * 订单行是「按什么价格结算」的唯一事实。两者都不允许被订单结算列或库存成本列替代。
  */
 @Data
 public class FinanceReceivableSourceLineDto {
@@ -16,7 +16,7 @@ public class FinanceReceivableSourceLineDto {
     private Long inventoryOutboundItemId;
 
     /**
-     * 出库行上的来源订单行 id（V63）；一条订单行将来可能对应多条出库行，
+     * 出库行上的来源订单行 id；一条订单行将来可能对应多条出库行，
      * 因此它只是行级追溯列，不是唯一键。
      */
     private Long salesOrderItemId;

@@ -32,16 +32,12 @@ import java.util.Map;
 /**
  * 应收域服务：正常应收（签收派生）与红字应收（退货批准派生）。
  *
- * <p><b>红字没有任何金额上限校验</b>（第三批 D-2 / D-4，两条都裁为 A）：可生成额度不扣既有核销额，
- * 也不得超过原正常应收的余额——红字是「已经成立的 {@code OrderReturn APPROVED} 在财务域中的事实映射」，
- * 生成器抛错等于让财务规则反向控制订单域状态机。因此本类里<b>不存在</b>也<b>不得新增</b>
- * {@code FINANCE_RED_AMOUNT_EXCEEDED(41137)} 的使用：该码只服务 F1-4 的手工红字应付。
- * 允许净应收为负，其表达（{@code openAmount} / {@code overAppliedAmount}）属 F1-5 读侧派生。
+ * <p><b>红字没有金额上限</b>：红字金额直接取已批准退货事实，不扣既有核销额，也不受原应收余额限制。
+ * 生成器失败不能反过来阻止订单域批准退货。允许净应收为负，{@code openAmount} 与
+ * {@code overAppliedAmount} 均为读侧派生值。
  *
- * <p><b>边界</b>：对 {@code sales_order*} / {@code order_return*} / {@code inventory_*} /
- * {@code delivery_*} 只读（全局不变量 4，由 {@code FinanceReadOnlyContractTest} 静态扫描把守）；
- * 不实现历史回填（D-1，也即不提供任何补生成 API —— 补生成只是重复执行同一个派生生成器）；
- * 不产生收付款事实（退款付款属 F1-3，避免与红字双重冲减）。
+ * <p>来源 DAO 只读订单、退货、库存和配送事实；本服务只写财务应收记录与操作日志。
+ * 应收由签收和退货批准命令触发，不提供历史回填接口；收付款事实由各自登记命令负责。
  */
 @Service
 @RequiredArgsConstructor
@@ -53,7 +49,7 @@ public class FinanceReceivableService {
     private final FinanceOperationLogRecorder operationLogs;
 
     /**
-     * 签收 → 正常应收，并补生成该订单此前已批准退货的红字（第一批 Q1-Q4，第二批 Q27 三种时序）。
+     * 签收后生成正常应收，并补生成该订单此前已批准退货的红字。
      *
      * <p>两步必须在这里连续做：{@code sign} 与 {@code approve} 是两条独立事务，
      * 只靠「退货批准时看一眼有没有正常应收」会漏账 —— 批准的那一方看不到尚未提交的签收，
@@ -78,7 +74,7 @@ public class FinanceReceivableService {
         }
 
         ensureNormalFromSigning(source);
-        // 没有正常应收就没有可挂红字的原单，孤立红字被第二批 Q27 明令禁止 —— 因此不补生成。
+        // 没有正常应收就没有可挂红字的原单，因此不生成孤立红字。
         FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(source.getSalesOrderId());
         if (normal != null) {
             backfillRedForApprovedReturns(source.getSalesOrderId(), normal);
@@ -86,14 +82,14 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 退货批准 → 红字应收（第二批 Q27、第三批 D-2 / D-4）。
+     * 退货批准 → 红字应收。
      *
      * <p><b>正常应收尚不存在时成功跳过</b>：不创建孤立红字、不抛「原应收不存在」、不引入待处理状态，
      * 更不阻塞 {@code approve} —— 退货与退款单是订单域已经成立的事实。该订单后续签收时由
      * {@link #generateOnSign} 补生成（同一套实现，不复制第二份算法）。
      *
      * <p>重复执行（批准幂等重放、签收补生成、生成器重放）都收敛到「一张退货一张红字」：
-     * 防重是 {@code uk_finance_receivable_source_active} 与 {@code ..._item_source_active}，
+     * 防重是 {@code uk_finance_receivable_source_active} 与 {@code..._item_source_active}，
      * 本方法不吃 {@code Idempotency-Key}。
      *
      * @param orderReturnId 刚被置为 {@code APPROVED} 的 {@code order_return.id}
@@ -107,7 +103,7 @@ public class FinanceReceivableService {
         }
         FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(returned.getOrderId());
         if (normal == null) {
-            // 退货先于签收（第二批 Q27 的第二种时序）：成功跳过，等签收补生成。
+            // 退货先于签收时成功跳过，等签收时补生成。
             return;
         }
         generateRed(returned, normal);
@@ -126,7 +122,7 @@ public class FinanceReceivableService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         if (amount.signum() <= 0) {
-            // 两种形状都在这里跳过：① 签收成功但零实发（第二批 Q8）；② 售价全为 0。
+            // 两种形状都在这里跳过：① 签收成功但零实发；② 售价全为 0。
             // 跳过是成功语义：绝不为此回滚合法签收，也绝不造空单头或 0 元事实留痕。
             return;
         }
@@ -153,7 +149,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 补生成该订单全部已批准退货的红字（第二批 Q27 的第三种时序）。
+     * 补生成该订单全部已批准退货的红字（的第三种时序）。
      *
      * <p>逐张走与「批准时直接触发」完全相同的那一个 {@link #generateRed} 实现：
      * 只有一份红字算法，两条触发路径的差别只在「什么时候被叫到」。
@@ -174,7 +170,7 @@ public class FinanceReceivableService {
      *
      * <p>结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上，
      * 从订单或退货行重新解析快照会让同一笔债权出现两个对方身份
-     * （第三批 Q27「必须引用原 {@code Receivable}」的含意之一）。
+     * （「必须引用原 {@code Receivable}」的含意之一）。
      */
     private void generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
         List<FinanceReceivableItemEntity> items = toRedItems(returned,
@@ -233,7 +229,7 @@ public class FinanceReceivableService {
 
     /**
      * 红字应收单头。事件时点与原因继承退货业务事实，金额取已批准红字行之和；
-     * **不做任何上限比较**（D-2 / D-4）。
+     * **不做任何上限比较**。
      */
     private FinanceReceivableEntity redHeader(FinanceReturnSourceDto returned,
                                               FinanceReceivableEntity normal, BigDecimal amount) {
@@ -263,7 +259,7 @@ public class FinanceReceivableService {
 
     /**
      * 正常明细：量取出库行、价取订单行的冻结售价，金额 {@code ROUND(量 × 价, 4, HALF_UP)}
-     * （第二批 Q22）；单头是**已舍入行金额之和**。一条订单行对应多条出库行时逐条成行、不合并。
+     *；单头是**已舍入行金额之和**。一条订单行对应多条出库行时逐条成行、不合并。
      */
     private List<FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
                                                             List<FinanceReceivableSourceLineDto> lines) {
@@ -289,8 +285,8 @@ public class FinanceReceivableService {
 
     /**
      * 红字明细：金额直接采用订单域已落库的 {@code approved_amount}，
-     * **不重算** {@code quantity × unit_price}（设计稿 §8.2）；也不存行级原明细指针
-     * ——一条订单行可能对应多条出库行，不存在唯一的原正常明细（§3.2）。
+     * **不重算** {@code quantity × unit_price}；也不存行级原明细指针
+     * ——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
      */
     private List<FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
                                                          List<FinanceReturnSourceLineDto> lines) {
@@ -322,7 +318,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 生成类动作的 {@code after_data} 单头快照（§17）。金额与时间落成字符串：JSONB 侧的
+     * 生成类动作的 {@code after_data} 单头快照。金额与时间落成字符串：JSONB 侧的
      * {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的裸 ObjectMapper。
      */
     private Map<String, Object> generatedSnapshot(FinanceReceivableEntity receivable, int itemCount) {
@@ -333,7 +329,7 @@ public class FinanceReceivableService {
 
     /**
      * 红字的 {@code after_data}：除单头快照外必须能直接看出它冲的是哪张原应收、来源是哪张退货单
-     * （§18），否则事后核对要连表跳三次。
+     *，否则事后核对要连表跳三次。
      */
     private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red,
                                                      FinanceReturnSourceDto returned, int itemCount) {

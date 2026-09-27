@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  *
  * <p>{@code amount} 直接取订单域已落库的 {@code approved_amount}
  * （{@code OrderReturnService.approve} 按 {@code round(approved_quantity × locked_unit_price, 4)} 算好），
- * 财务**不重算** —— 重算就是给同一个金额造第二个权威来源（设计稿 §8.2）。
+ * 财务**不重算** —— 重算就是给同一个金额造第二个权威来源。
  */
 @Data
 public class FinanceReturnSourceLineDto {

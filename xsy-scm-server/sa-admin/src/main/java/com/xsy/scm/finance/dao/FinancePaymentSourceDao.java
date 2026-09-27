@@ -14,7 +14,7 @@ import org.apache.ibatis.annotations.Param;
 public interface FinancePaymentSourceDao {
 
     /**
-     * 未删除的退款行（状态 + 客户 + 应退金额），供 Q19 的三条校验使用。
+     * 未删除的退款行（状态 + 客户 + 应退金额），供 的三条校验使用。
      *
      * <p>读侧不带 {@code status} 过滤：{@code PENDING} 必须能读出来，服务层才能给出
      * 可解释的 41139，而不是把它伪装成「退款不存在」。

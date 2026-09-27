@@ -30,7 +30,7 @@ public class FinanceReceivableSourceDto {
     private String customerNameSnapshot;
 
     /**
-     * 应收的事件时点（第一批 Q1）：{@code delivery_route_order.signed_at}。
+     * 应收的事件时点：{@code delivery_route_order.signed_at}。
      */
     private OffsetDateTime signedAt;
 
