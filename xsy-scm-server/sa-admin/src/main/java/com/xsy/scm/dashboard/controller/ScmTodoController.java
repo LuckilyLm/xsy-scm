@@ -32,7 +32,9 @@ public class ScmTodoController {
 
     @GetMapping("/todo")
     @SaCheckPermission(DashboardPermission.TODO_QUERY)
-    public ResponseDTO<List<ScmTodoVO>> todo() {
+    public ResponseDTO<
+            List<
+                    ScmTodoVO>> todo() {
         return ResponseDTO.ok(scmTodoQueryService.currentEmployeeTodos());
     }
 }

@@ -41,10 +41,15 @@ public enum ScmTodoCardEnum {
     private final String key;
     private final String label;
     private final String route;
-    private final List<String> allPerms;
-    private final List<String> anyPerms;
+    private final List<
+            String> allPerms;
+    private final List<
+            String> anyPerms;
 
-    ScmTodoCardEnum(String key, String label, String route, List<String> allPerms, List<String> anyPerms) {
+    ScmTodoCardEnum(String key, String label, String route, List<
+            String> allPerms,
+            List<
+                    String> anyPerms) {
         this.key = key;
         this.label = label;
         this.route = route;
@@ -55,7 +60,8 @@ public enum ScmTodoCardEnum {
     /**
      * 当前权限集合是否足以看到本卡片（不代表能执行动作，动作仍由原接口鉴权）。
      */
-    public boolean visibleTo(List<String> heldPermissions) {
+    public boolean visibleTo(List<
+            String> heldPermissions) {
         return heldPermissions.containsAll(allPerms)
                 && (anyPerms.isEmpty() || anyPerms.stream().anyMatch(heldPermissions::contains));
     }
