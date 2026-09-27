@@ -84,7 +84,7 @@ public class ProductImageCenterService {
      *
      * <p>{@link ProductImageSyncManager#sync} 只保证 public/image/ 前缀与文件存在性；数量上限、
      * 主图至多一张与 fileKey 去重原先只在 {@code validateSpu} 里，而图片中心不经那条路径，
-     * 两张主图会直接顶到 V49 唯一索引上抛出未捕获的 {@code DuplicateKeyException}（500）。
+     * 两张主图会直接顶到 唯一索引上抛出未捕获的 {@code DuplicateKeyException}（500）。
      */
     private List<ProductImageForm> requestedWithBinds(Long spuId, List<ProductImageCenterForms.BindItem> binds) {
         List<ProductImageForm> requested = formsOf(spuId);

@@ -49,7 +49,7 @@ public class ProductAggregateValidator {
      *
      * <p>单独成一是因为图片中心的批量换绑不经 {@link #validateSpu}，只走
      * {@link ProductImageSyncManager#sync}；口径若留在 SPU 表单里，那条链路就会把两张主图
-     * 直接顶到 V49 的 {@code uq_product_image_primary_spu} 上，抛出未捕获的
+     * 直接触发唯一索引 {@code uq_product_image_primary_spu}，并抛出未捕获的
      * {@code DuplicateKeyException}（HTTP 500）而不是稳定的 IMAGE_INVALID。
      */
     public void validateImages(List<ProductImageForm> images) {

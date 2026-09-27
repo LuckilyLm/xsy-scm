@@ -35,7 +35,7 @@ public class ProductImageSyncManager {
     /** 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。 */
     private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
     /**
-     * 图集：新增行的缺省归类。V49 之后 image_type 只表达内容角色，<b>不</b>再派生自 primaryFlag——
+     * 图集：新增行的缺省归类。image_type 只表达内容角色，<b>不</b>再派生自 primaryFlag——
      * 主图唯一事实是 is_primary，否则「切主图」会顺带改写图片类型，等于保留第二个主图事实源。
      */
     /** 公开前缀按 {@code FOLDER_PUBLIC} 判定，不用 PUBLIC_IMAGE 的完整目录，新增公开目录时这里不必跟着改。 */
@@ -77,7 +77,7 @@ public class ProductImageSyncManager {
             productImageDao.insert(entity);
         }
         remove(changes.removedIds());
-        // 商品图全部落在公开前缀后（FA-3 / V58），这里恒为空清单，rebind 的作用是把历史私有 key 的
+        // 商品图都落在公开前缀后，这里恒为空清单；rebind 会收回历史私有 key 的
         // 关系行收回来：删图或搬到公开前缀后都必须同时收回读取权，只增不减会让已删附件长期可读。
         fileRelationService.rebind(FileRelationBizTypeEnum.PRODUCT, spuId, existing(spuId).stream()
                 .map(ProductImageEntity::getFileKey)
@@ -96,7 +96,7 @@ public class ProductImageSyncManager {
      * 只读 fileKey 前缀不够：存在性由文件模块证明，而「谁的附件」不在这条链上——
      * 少了这道判断，改商品权限就等于把他人私有附件晋升为所有查看者可读。
      *
-     * <p>这里不再给「沿用本行原有私有 key」留过渡例外：FA-3（V58）已把存量 key 搬到
+     * <p>这里不再给「沿用本行原有私有 key」留过渡例外：存量 key 已迁至
      * {@code public/image/} 并把同一判据落成数据库 CHECK {@code ck_product_image_public_file_key}，
      * 「私有前缀的活商品图」已经不是可能存在的状态。例外若留着，任何一次编辑都会把它重新养大 ——
      * 判据与库约束不一致时，绕过服务层的写入就能造出只有这里拒、库里却收下的行。

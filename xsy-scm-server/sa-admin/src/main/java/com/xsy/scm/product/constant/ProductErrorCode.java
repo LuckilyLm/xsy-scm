@@ -27,7 +27,7 @@ public enum ProductErrorCode implements ScmErrorCode {
     UOM_NOT_USABLE(40027, "计量单位不存在或已停用，请重新选择"),
     TAG_NOT_USABLE(40028, "商品标签不存在或已停用，请重新选择"),
     MASTER_STATUS_SALE_CONFLICT(40029, "归档商品必须处于下架状态"),
-    // 40030 / 40031 归 W3 定价域（见 PricingErrorCode），本枚举后加，取空闲的 40038
+    // 40030 / 40031 属定价域，商品域使用空闲码 40038。
     IMAGE_NOT_PUBLIC(40038, "商品图片只能引用公开图片目录的文件，请重新上传"),
     UOM_NOT_FOUND(40421, "计量单位不存在"),
     TAG_NOT_FOUND(40422, "商品标签不存在"),

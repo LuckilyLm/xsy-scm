@@ -132,7 +132,7 @@ public class ProductCategoryService {
     }
 
     /**
-     * Q3 V2 Enhancement: selected category plus all descendants, not legacy exact-match semantics.
+     * 返回所选分类及全部后代分类，使叶子分类筛选覆盖整条分支。
      *
      * <p>父→子索引 + 逐层展开，每个节点只访问一次。原先的定点迭代每收敛一层都要重扫全表，
      * 分类树越深越接近 O(层数 × 分类总数)，而它挂在商品列表的筛选路径上。

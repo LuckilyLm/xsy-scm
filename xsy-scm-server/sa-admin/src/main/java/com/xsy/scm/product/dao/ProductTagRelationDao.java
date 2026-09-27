@@ -22,7 +22,7 @@ public interface ProductTagRelationDao extends BaseMapper<ProductTagRelationEnti
     List<Long> selectTagIds(@Param("spuId") Long spuId);
 
     /**
-     * spuIds × tagIds 的笛卡尔积打标；活动关系已存在时整行跳过（Q11：冲突目标与唯一索引逐字一致）。
+     * 为 {@code spuIds × tagIds} 组合补齐关联；活动关系已存在时整行跳过，与唯一索引冲突目标保持一致。
      */
     int insertIgnore(@Param("spuIds") List<Long> spuIds, @Param("tagIds") List<Long> tagIds, @Param("operator") String operator);
 
