@@ -10,7 +10,7 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.inventory.dao.InventoryOutboundItemDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
-import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
@@ -89,7 +89,7 @@ public class SortingTaskService {
     private final SortingAccess access;
     private final WarehouseDao warehouseDao;
     private final EmployeeDao employeeDao;
-    private final OrderIdempotencyService orderIdempotencyService;
+    private final ScmIdempotencyService idempotencyService;
     private final SortingQueryService sortingQueryService;
 
     /**
@@ -98,8 +98,8 @@ public class SortingTaskService {
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingTaskDetailVO create(SortingTaskCreateForm form, String key) {
-        var claim = orderIdempotencyService.claim("SORTING_TASK_CREATE", key, form);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SortingTaskDetailVO.class);
+        var claim = idempotencyService.claim("SORTING_TASK_CREATE", key, form);
+        if (claim.replay()) return idempotencyService.replay(claim, SortingTaskDetailVO.class);
         access.requireWarehouse(form.getWarehouseId());
         var warehouse = warehouseDao.selectById(form.getWarehouseId());
         if (warehouse == null || !ScmEnableStatusEnum.ENABLED.name().equals(warehouse.getStatus()))
@@ -125,7 +125,7 @@ public class SortingTaskService {
             throw new ScmBusinessException(ORDER_LINE_TAKEN);
         }
         var result = sortingQueryService.detail(task.getId());
-        orderIdempotencyService.complete(claim, "SORTING_TASK", task.getId(), result);
+        idempotencyService.complete(claim, "SORTING_TASK", task.getId(), result);
         return result;
     }
 
@@ -262,8 +262,8 @@ public class SortingTaskService {
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingPrintResultVO print(Long id, SortingActionForm form, String key) {
-        var claim = orderIdempotencyService.claim("SORTING_PRINT:" + id, key, form);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SortingPrintResultVO.class);
+        var claim = idempotencyService.claim("SORTING_PRINT:" + id, key, form);
+        if (claim.replay()) return idempotencyService.replay(claim, SortingPrintResultVO.class);
         ScmDataScopeContext scope = access.scope();
         var task = lock(id);
         access.requireVisible(scope, task);
@@ -276,7 +276,7 @@ public class SortingTaskService {
         result.setItemCount(activeItems(id).size());
         result.setPrintCount(task.getPrintCount() + 1);
         result.setGeneratedAt(OffsetDateTime.now());
-        orderIdempotencyService.complete(claim, "SORTING_TASK", id, result);
+        idempotencyService.complete(claim, "SORTING_TASK", id, result);
         return result;
     }
 
