@@ -487,19 +487,17 @@
                          索引里存 LF，把被改动的文件规范化成 LF 在 git 看来字节等价，
                          因此既没有 diff，也不会重写存量文件（ratchetFrom 只放行变更文件）。 -->
                     <lineEndings>UNIX</lineEndings>
-                    <!-- 只管 Java：Markdown 与 pom 多数位于 Maven 模块之外，在这里配置
-                         会造成「已覆盖」的错觉。它们的空白策略由根 .editorconfig 声明，
-                         仓库级强制留到 Q4 文档归位时再定。
-                         刻意不启用 removeUnusedImports / importOrder / 完整 formatter：
-                         google-java-format 在 JDK 21 上要求通过 .mvn/jvm.config 追加
-                         add-exports 参数，那会改变本项目每一次 Maven 调用的 JVM 参数；
-                         且它的 100 列硬上限与本项目 120 列标准冲突。
-                         未使用 import 由 Checkstyle 检出、Q2 清理。 -->
+                    <!-- 使用固定版本的 Eclipse JDT formatter，行宽与 Checkstyle 的 120 列规则一致，
+                         不需要改 Maven JVM 参数。仅格式化生产源码；测试类由用户要求保持不动。 -->
                     <java>
                         <includes>
                             <include>src/main/java/**/*.java</include>
-                            <include>src/test/java/**/*.java</include>
                         </includes>
+                        <forbidWildcardImports/>
+                        <eclipse>
+                            <version>4.31</version>
+                            <file>${maven.multiModuleProjectDirectory}/../tools/quality/eclipse-formatter.xml</file>
+                        </eclipse>
                         <trimTrailingWhitespace/>
                         <endWithNewline/>
                     </java>
