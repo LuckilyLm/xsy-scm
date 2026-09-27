@@ -45,11 +45,13 @@ public class ProductTagService {
     private final ProductTagDao productTagDao;
     private final ProductTagRelationDao productTagRelationDao;
 
-    public List<ProductTagVO> list(ProductAssistantQueryForm query) {
+    public List<
+            ProductTagVO> list(ProductAssistantQueryForm query) {
         return productTagDao.selectWithProductCount(query == null ? new ProductAssistantQueryForm() : query);
     }
 
-    public List<ProductTagVO> options() {
+    public List<
+            ProductTagVO> options() {
         var query = new ProductAssistantQueryForm();
         query.setStatus(ScmEnableStatusEnum.ENABLED.name());
         return productTagDao.selectWithProductCount(query);
@@ -58,10 +60,18 @@ public class ProductTagService {
     /**
      * 供商品详情与列表富化：一次取回多个 SPU 的标签，停用标签照样返回，只影响能否新挂。
      */
-    public Map<Long, List<ProductSpuTagVO>> bySpuIds(Collection<Long> spuIds) {
+    public Map<
+            Long,
+            List<
+                    ProductSpuTagVO>> bySpuIds(
+                            Collection<
+                                    Long> spuIds) {
         if (spuIds == null || spuIds.isEmpty())
             return Map.of();
-        Map<Long, List<ProductSpuTagVO>> grouped = new LinkedHashMap<>();
+        Map<
+                Long,
+                List<
+                        ProductSpuTagVO>> grouped = new LinkedHashMap<>();
         for (var row : productTagRelationDao.selectBySpuIds(List.copyOf(spuIds)))
             grouped.computeIfAbsent(row.getSpuId(), k -> new ArrayList<>()).add(row);
         return grouped;
@@ -125,7 +135,10 @@ public class ProductTagService {
      * REPLACE 语义：活动关系收敛到 tagIds 全集，多退少补。整批一次锁定标签行， 与删除标签互斥；调用方必须已持有这些 SPU 的行锁。 这里不校验标签可用性：新建与批量打标由调用方全量校验，单商品编辑只校验新增绑定。
      */
     @Transactional
-    public void replaceTags(Collection<Long> spuIds, Collection<Long> tagIds) {
+    public void replaceTags(Collection<
+            Long> spuIds,
+            Collection<
+                    Long> tagIds) {
         var targets = distinct(spuIds);
         if (targets.isEmpty())
             return;
@@ -137,7 +150,10 @@ public class ProductTagService {
     }
 
     @Transactional
-    public void addTags(Collection<Long> spuIds, Collection<Long> tagIds) {
+    public void addTags(Collection<
+            Long> spuIds,
+            Collection<
+                    Long> tagIds) {
         var targets = distinct(spuIds);
         var tags = distinct(tagIds);
         if (targets.isEmpty() || tags.isEmpty())
@@ -150,7 +166,10 @@ public class ProductTagService {
      * 移除标签不要求标签仍可用，否则停用标签再也无法从商品上摘掉。
      */
     @Transactional
-    public void removeTags(Collection<Long> spuIds, Collection<Long> tagIds) {
+    public void removeTags(Collection<
+            Long> spuIds,
+            Collection<
+                    Long> tagIds) {
         var targets = distinct(spuIds);
         var tags = distinct(tagIds);
         if (targets.isEmpty() || tags.isEmpty())
@@ -161,7 +180,8 @@ public class ProductTagService {
     /**
      * 商品档案删除时清掉其标签关系，避免标签引用数虚高。
      */
-    public void untagProducts(Collection<Long> spuIds) {
+    public void untagProducts(Collection<
+            Long> spuIds) {
         var targets = distinct(spuIds);
         if (!targets.isEmpty())
             productTagRelationDao.softDeleteBySpuIds(targets, ScmOperator.current());
@@ -170,7 +190,8 @@ public class ProductTagService {
     /**
      * 新挂的标签必须存在且启用；按 id 升序加锁，与并发删除标签串行。
      */
-    public void assertUsable(Collection<Long> tagIds) {
+    public void assertUsable(Collection<
+            Long> tagIds) {
         var ids = distinct(tagIds);
         if (ids.isEmpty())
             return;
@@ -184,7 +205,8 @@ public class ProductTagService {
     /**
      * 单商品编辑口径：只校验本次新增的绑定。已绑定的停用标签允许原样保留， 否则运营改一个无关字段就会被迫先摘标签；要换掉时前端本来就会重选。
      */
-    public void assertNewBindings(Long spuId, Collection<Long> tagIds) {
+    public void assertNewBindings(Long spuId, Collection<
+            Long> tagIds) {
         if (tagIds == null || tagIds.isEmpty())
             return;
         var retained = new HashSet<>(productTagRelationDao.selectTagIds(spuId));
@@ -195,10 +217,12 @@ public class ProductTagService {
      * 与 uk_product_tag_code_active / uk_product_tag_name_active 同域的应用级预检。
      */
     private void assertUnique(String code, String name, Long self) {
-        if (productTagDao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getTagCode, code)
+        if (productTagDao.selectCount(new LambdaQueryWrapper<
+                ProductTagEntity>().eq(ProductTagEntity::getTagCode, code)
                 .ne(self != null, ProductTagEntity::getId, self)) > 0)
             throw new ScmBusinessException(TAG_CODE_DUPLICATE);
-        if (productTagDao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getName, name)
+        if (productTagDao.selectCount(new LambdaQueryWrapper<
+                ProductTagEntity>().eq(ProductTagEntity::getName, name)
                 .ne(self != null, ProductTagEntity::getId, self)) > 0)
             throw new ScmBusinessException(TAG_NAME_DUPLICATE);
     }
@@ -212,7 +236,10 @@ public class ProductTagService {
         return entity;
     }
 
-    private List<Long> distinct(Collection<Long> ids) {
+    private List<
+            Long> distinct(
+                    Collection<
+                            Long> ids) {
         return ids == null ? List.of() : ids.stream().filter(Objects::nonNull).distinct().sorted().toList();
     }
 

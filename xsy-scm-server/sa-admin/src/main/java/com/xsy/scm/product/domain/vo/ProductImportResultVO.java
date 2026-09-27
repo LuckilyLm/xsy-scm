@@ -14,6 +14,8 @@ public class ProductImportResultVO {
     private int totalErrors;
     private int importedProducts;
     private int updatedProducts;
-    private List<Long> spuIds = new ArrayList<>();
-    private List<ProductImportErrorVO> errors = new ArrayList<>();
+    private List<
+            Long> spuIds = new ArrayList<>();
+    private List<
+            ProductImportErrorVO> errors = new ArrayList<>();
 }

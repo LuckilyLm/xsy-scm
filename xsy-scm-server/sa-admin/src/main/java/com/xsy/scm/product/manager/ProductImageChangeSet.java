@@ -13,13 +13,23 @@ import java.util.Set;
 import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_OWNED;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
-public record ProductImageChangeSet(List<ProductImageForm> inserted, List<ProductImageForm> updated,
-        List<Long> removedIds) {
-    public static ProductImageChangeSet between(List<ProductImageEntity> existing, List<ProductImageForm> requested) {
-        Set<Long> ids = new LinkedHashSet<>();
+public record ProductImageChangeSet(List<
+        ProductImageForm> inserted,
+        List<
+                ProductImageForm> updated,
+        List<
+                Long> removedIds) {
+    public static ProductImageChangeSet between(List<
+            ProductImageEntity> existing,
+            List<
+                    ProductImageForm> requested) {
+        Set<
+                Long> ids = new LinkedHashSet<>();
         existing.forEach(e -> ids.add(e.getId()));
-        Set<Long> seen = new HashSet<>();
-        List<ProductImageForm> inserted = new ArrayList<>(), updated = new ArrayList<>();
+        Set<
+                Long> seen = new HashSet<>();
+        List<
+                ProductImageForm> inserted = new ArrayList<>(), updated = new ArrayList<>();
         for (var form : requested) {
             Long id = form.getImageId();
             if (id == null) {

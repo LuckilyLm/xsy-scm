@@ -13,7 +13,8 @@ import java.util.List;
 public class ProductBatchResultVO {
     private int updatedCount;
     private int failedCount;
-    private List<Failure> failures = new ArrayList<>();
+    private List<
+            Failure> failures = new ArrayList<>();
 
     @Data
     @RequiredArgsConstructor

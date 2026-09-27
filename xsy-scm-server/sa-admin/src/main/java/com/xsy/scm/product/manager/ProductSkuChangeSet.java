@@ -13,12 +13,23 @@ import java.util.Set;
 import static com.xsy.scm.product.constant.ProductErrorCode.SKU_NOT_OWNED;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
-public record ProductSkuChangeSet(List<ProductSkuForm> inserted, List<ProductSkuForm> updated, List<Long> removedIds) {
-    public static ProductSkuChangeSet between(List<ProductSkuEntity> existing, List<ProductSkuForm> requested) {
-        Set<Long> ids = new LinkedHashSet<>();
+public record ProductSkuChangeSet(List<
+        ProductSkuForm> inserted,
+        List<
+                ProductSkuForm> updated,
+        List<
+                Long> removedIds) {
+    public static ProductSkuChangeSet between(List<
+            ProductSkuEntity> existing,
+            List<
+                    ProductSkuForm> requested) {
+        Set<
+                Long> ids = new LinkedHashSet<>();
         existing.forEach(e -> ids.add(e.getId()));
-        Set<Long> seen = new HashSet<>();
-        List<ProductSkuForm> inserted = new ArrayList<>(), updated = new ArrayList<>();
+        Set<
+                Long> seen = new HashSet<>();
+        List<
+                ProductSkuForm> inserted = new ArrayList<>(), updated = new ArrayList<>();
         for (var form : requested) {
             Long id = form.getSkuId();
             if (id == null) {

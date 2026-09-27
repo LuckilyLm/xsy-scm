@@ -21,7 +21,8 @@ public class ProductSkuController {
 
     @PostMapping("/option-list")
     @SaCheckPermission(ProductPermission.SKU_QUERY)
-    public ResponseDTO<ProductSkuOptionListVO> options(@Valid @RequestBody ProductSkuOptionQueryForm form) {
+    public ResponseDTO<
+            ProductSkuOptionListVO> options(@Valid @RequestBody ProductSkuOptionQueryForm form) {
         return ResponseDTO.ok(productSkuOptionQueryService.optionList(form));
     }
 }

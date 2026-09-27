@@ -10,9 +10,13 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
-public interface ProductUomDao extends BaseMapper<ProductUomEntity> {
+public interface ProductUomDao
+        extends
+            BaseMapper<
+                    ProductUomEntity> {
 
-    List<ProductUomVO> selectWithReference(@Param("query") ProductAssistantQueryForm query);
+    List<
+            ProductUomVO> selectWithReference(@Param("query") ProductAssistantQueryForm query);
 
     ProductUomVO selectVoById(@Param("id") Long id);
 
@@ -24,5 +28,8 @@ public interface ProductUomDao extends BaseMapper<ProductUomEntity> {
     /**
      * 按单位名称加行锁，只返回字典里存在的活动行。 名称不在字典里时不产生锁，调用方按「未维护」处理。
      */
-    List<ProductUomEntity> selectNamesForUpdate(@Param("names") List<String> names);
+    List<
+            ProductUomEntity> selectNamesForUpdate(
+                    @Param("names") List<
+                            String> names);
 }

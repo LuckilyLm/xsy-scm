@@ -5,5 +5,8 @@ import com.xsy.scm.product.domain.entity.ProductCategoryEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface ProductCategoryDao extends BaseMapper<ProductCategoryEntity> {
+public interface ProductCategoryDao
+        extends
+            BaseMapper<
+                    ProductCategoryEntity> {
 }

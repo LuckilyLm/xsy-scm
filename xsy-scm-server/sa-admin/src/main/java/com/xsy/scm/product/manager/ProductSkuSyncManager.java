@@ -21,8 +21,10 @@ import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 public class ProductSkuSyncManager {
     private final ProductSkuDao productSkuDao;
 
-    public List<ProductSkuEntity> existing(Long spuId) {
-        return productSkuDao.selectList(new LambdaQueryWrapper<ProductSkuEntity>().eq(ProductSkuEntity::getSpuId, spuId)
+    public List<
+            ProductSkuEntity> existing(Long spuId) {
+        return productSkuDao.selectList(new LambdaQueryWrapper<
+                ProductSkuEntity>().eq(ProductSkuEntity::getSpuId, spuId)
                 .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId));
     }
 
@@ -45,13 +47,14 @@ public class ProductSkuSyncManager {
         remove(changes.removedIds());
     }
 
-    public void remove(List<Long> ids) {
+    public void remove(List<
+            Long> ids) {
         if (ids.isEmpty())
             return;
-        productSkuDao.update(null,
-                new LambdaUpdateWrapper<ProductSkuEntity>().in(ProductSkuEntity::getId, ids)
-                        .set(ProductSkuEntity::getUpdatedAt, OffsetDateTime.now())
-                        .set(ProductSkuEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
+        productSkuDao.update(null, new LambdaUpdateWrapper<
+                ProductSkuEntity>().in(ProductSkuEntity::getId, ids)
+                .set(ProductSkuEntity::getUpdatedAt, OffsetDateTime.now())
+                .set(ProductSkuEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
         productSkuDao.deleteByIds(ids);
     }
 

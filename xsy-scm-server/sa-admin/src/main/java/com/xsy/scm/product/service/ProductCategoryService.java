@@ -47,9 +47,10 @@ public class ProductCategoryService {
     private final ProductCategoryDao productCategoryDao;
     private final ProductSpuDao productSpuDao;
 
-    public List<ProductCategoryEntity> all() {
-        return productCategoryDao.selectList(new LambdaQueryWrapper<ProductCategoryEntity>()
-                .orderByAsc(ProductCategoryEntity::getSortOrder, ProductCategoryEntity::getId));
+    public List<
+            ProductCategoryEntity> all() {
+        return productCategoryDao.selectList(new LambdaQueryWrapper<
+                ProductCategoryEntity>().orderByAsc(ProductCategoryEntity::getSortOrder, ProductCategoryEntity::getId));
     }
 
     public ProductCategoryEntity require(Long id) {
@@ -61,8 +62,8 @@ public class ProductCategoryService {
 
     public ProductCategoryEntity requireSelectableCategory(Long id) {
         // Serialize category deletion with creation/moving of a product referencing it.
-        var category = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>()
-                .eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
+        var category = productCategoryDao.selectOne(new LambdaQueryWrapper<
+                ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
         if (category == null)
             throw new ScmBusinessException(CATEGORY_NOT_FOUND);
         if (category.getLevel() != 3 || !ScmEnableStatusEnum.ENABLED.name().equals(category.getStatus()))
@@ -84,9 +85,12 @@ public class ProductCategoryService {
         return parent.getLevel() + 1;
     }
 
-    public List<ProductCategoryTreeVO> tree() {
+    public List<
+            ProductCategoryTreeVO> tree() {
         var rows = all();
-        Map<Long, ProductCategoryTreeVO> map = new LinkedHashMap<>();
+        Map<
+                Long,
+                ProductCategoryTreeVO> map = new LinkedHashMap<>();
         for (var row : rows) {
             var vo = new ProductCategoryTreeVO();
             BeanUtils.copyProperties(row, vo);
@@ -94,7 +98,8 @@ public class ProductCategoryService {
             vo.setChildren(new ArrayList<>());
             map.put(row.getId(), vo);
         }
-        List<ProductCategoryTreeVO> roots = new ArrayList<>();
+        List<
+                ProductCategoryTreeVO> roots = new ArrayList<>();
         var byId = indexById(rows);
         for (var vo : map.values()) {
             vo.setCategoryPath(path(vo.getCategoryId(), byId));
@@ -115,22 +120,33 @@ public class ProductCategoryService {
         return vo;
     }
 
-    public static String path(Long id, List<ProductCategoryEntity> rows) {
+    public static String path(Long id, List<
+            ProductCategoryEntity> rows) {
         return path(id, indexById(rows));
     }
 
     /**
      * 供循环调用方复用的分类索引：{@link #path(Long, List)} 每次都要整表重建索引， 在逐行组装 VO 的地方会让复杂度变成 O(行数 × 分类总数)。
      */
-    public static Map<Long, ProductCategoryEntity> indexById(List<ProductCategoryEntity> rows) {
-        Map<Long, ProductCategoryEntity> map = new HashMap<>();
+    public static Map<
+            Long,
+            ProductCategoryEntity> indexById(
+                    List<
+                            ProductCategoryEntity> rows) {
+        Map<
+                Long,
+                ProductCategoryEntity> map = new HashMap<>();
         rows.forEach(c -> map.put(c.getId(), c));
         return map;
     }
 
-    public static String path(Long id, Map<Long, ProductCategoryEntity> byId) {
-        LinkedList<String> names = new LinkedList<>();
-        Set<Long> seen = new HashSet<>();
+    public static String path(Long id, Map<
+            Long,
+            ProductCategoryEntity> byId) {
+        LinkedList<
+                String> names = new LinkedList<>();
+        Set<
+                Long> seen = new HashSet<>();
         while (id != null && seen.add(id) && byId.containsKey(id)) {
             var row = byId.get(id);
             names.addFirst(row.getName());
@@ -145,13 +161,21 @@ public class ProductCategoryService {
      * <p>
      * 父→子索引 + 逐层展开，每个节点只访问一次。原先的定点迭代每收敛一层都要重扫全表， 分类树越深越接近 O(层数 × 分类总数)，而它挂在商品列表的筛选路径上。 用集合去重同时兜住历史脏数据里的父子环。
      */
-    public List<Long> descendantIds(Long id, List<ProductCategoryEntity> rows) {
-        Map<Long, List<Long>> children = new HashMap<>();
+    public List<
+            Long> descendantIds(Long id,
+                    List<
+                            ProductCategoryEntity> rows) {
+        Map<
+                Long,
+                List<
+                        Long>> children = new HashMap<>();
         for (var row : rows)
             if (row.getParentId() != null)
                 children.computeIfAbsent(row.getParentId(), k -> new ArrayList<>()).add(row.getId());
-        Set<Long> result = new LinkedHashSet<>();
-        Deque<Long> pending = new ArrayDeque<>();
+        Set<
+                Long> result = new LinkedHashSet<>();
+        Deque<
+                Long> pending = new ArrayDeque<>();
         result.add(id);
         pending.add(id);
         while (!pending.isEmpty())
@@ -201,14 +225,14 @@ public class ProductCategoryService {
 
     @Transactional
     public void delete(ProductCategoryDeleteForm form) {
-        var entity = productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>()
-                .eq(ProductCategoryEntity::getId, form.getCategoryId()).last("FOR UPDATE"));
+        var entity = productCategoryDao.selectOne(new LambdaQueryWrapper<
+                ProductCategoryEntity>().eq(ProductCategoryEntity::getId, form.getCategoryId()).last("FOR UPDATE"));
         if (entity == null)
             throw new ScmBusinessException(CATEGORY_NOT_FOUND);
         if (!Objects.equals(entity.getVersion(), form.getVersion()))
             throw new ScmBusinessException(VERSION_CONFLICT);
-        if (productCategoryDao.selectCount(new LambdaQueryWrapper<ProductCategoryEntity>()
-                .eq(ProductCategoryEntity::getParentId, entity.getId())) > 0)
+        if (productCategoryDao.selectCount(new LambdaQueryWrapper<
+                ProductCategoryEntity>().eq(ProductCategoryEntity::getParentId, entity.getId())) > 0)
             throw new ScmBusinessException(CATEGORY_HAS_CHILDREN);
         if (countProducts(entity.getId()) > 0)
             throw new ScmBusinessException(CATEGORY_HAS_PRODUCTS);
@@ -220,13 +244,13 @@ public class ProductCategoryService {
     }
 
     private long countProducts(Long id) {
-        return productSpuDao
-                .selectCount(new LambdaQueryWrapper<ProductSpuEntity>().eq(ProductSpuEntity::getCategoryId, id));
+        return productSpuDao.selectCount(new LambdaQueryWrapper<
+                ProductSpuEntity>().eq(ProductSpuEntity::getCategoryId, id));
     }
 
     private void lockParent(Long id) {
-        if (id != null && productCategoryDao.selectOne(new LambdaQueryWrapper<ProductCategoryEntity>()
-                .eq(ProductCategoryEntity::getId, id).last("FOR UPDATE")) == null)
+        if (id != null && productCategoryDao.selectOne(new LambdaQueryWrapper<
+                ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE")) == null)
             throw new ScmBusinessException(CATEGORY_NOT_FOUND);
     }
 

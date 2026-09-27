@@ -45,7 +45,8 @@ public class ProductBatchService {
     @Transactional
     public ProductBatchResultVO updateStatus(ProductSpuBatchStatusForm form) {
         var locked = lock(form.getItems());
-        List<Failure> failures = new ArrayList<>();
+        List<
+                Failure> failures = new ArrayList<>();
         for (var item : form.getItems()) {
             var entity = locked.get(item.getSpuId());
             var failure = check(item, entity);
@@ -91,7 +92,10 @@ public class ProductBatchService {
         });
     }
 
-    private List<Failure> verify(List<ProductBatchItemForm> items) {
+    private List<
+            Failure> verify(
+                    List<
+                            ProductBatchItemForm> items) {
         var locked = lock(items);
         return items.stream().map(item -> check(item, locked.get(item.getSpuId()))).filter(Objects::nonNull).toList();
     }
@@ -99,7 +103,11 @@ public class ProductBatchService {
     /**
      * 按 id 升序加行锁，与单条编辑和并发批量入口互斥；重复 spuId 只锁一次。
      */
-    private Map<Long, ProductSpuEntity> lock(List<ProductBatchItemForm> items) {
+    private Map<
+            Long,
+            ProductSpuEntity> lock(
+                    List<
+                            ProductBatchItemForm> items) {
         return productSpuDao.lockByIds(items.stream().map(ProductBatchItemForm::getSpuId).distinct().sorted().toList())
                 .stream().collect(Collectors.toMap(ProductSpuEntity::getId, Function.identity()));
     }
@@ -117,8 +125,13 @@ public class ProductBatchService {
     /**
      * 预校验有失败行时只回结果、不落库；全部通过才执行这一次批量写入。
      */
-    private ProductBatchResultVO commit(List<Failure> failures, List<ProductBatchItemForm> items,
-            java.util.function.Consumer<List<Long>> write) {
+    private ProductBatchResultVO commit(List<
+            Failure> failures,
+            List<
+                    ProductBatchItemForm> items,
+            java.util.function.Consumer<
+                    List<
+                            Long>> write) {
         var result = new ProductBatchResultVO();
         if (!failures.isEmpty()) {
             result.setFailedCount(failures.size());

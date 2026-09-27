@@ -30,27 +30,33 @@ public class ProductTagController {
 
     @PostMapping("/list")
     @SaCheckPermission(ProductPermission.TAG_QUERY)
-    public ResponseDTO<List<ProductTagVO>> list(@Valid @RequestBody ProductAssistantQueryForm form) {
+    public ResponseDTO<
+            List<
+                    ProductTagVO>> list(@Valid @RequestBody ProductAssistantQueryForm form) {
         return ResponseDTO.ok(productTagService.list(form));
     }
 
     @GetMapping("/options")
     @SaCheckPermission(ProductPermission.QUERY)
-    public ResponseDTO<List<ProductTagVO>> options() {
+    public ResponseDTO<
+            List<
+                    ProductTagVO>> options() {
         return ResponseDTO.ok(productTagService.options());
     }
 
     @PostMapping("/add")
     @SaCheckPermission(ProductPermission.TAG_ADD)
     @OperateLog
-    public ResponseDTO<Long> add(@Valid @RequestBody ProductTagAddForm form) {
+    public ResponseDTO<
+            Long> add(@Valid @RequestBody ProductTagAddForm form) {
         return ResponseDTO.ok(productTagService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(ProductPermission.TAG_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@Valid @RequestBody ProductTagUpdateForm form) {
+    public ResponseDTO<
+            String> update(@Valid @RequestBody ProductTagUpdateForm form) {
         productTagService.update(form);
         return ResponseDTO.ok();
     }
@@ -58,7 +64,8 @@ public class ProductTagController {
     @PostMapping("/delete")
     @SaCheckPermission(ProductPermission.TAG_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody ProductTagKeyForm form) {
+    public ResponseDTO<
+            String> delete(@Valid @RequestBody ProductTagKeyForm form) {
         productTagService.delete(form);
         return ResponseDTO.ok();
     }

@@ -64,8 +64,9 @@ public class ProductExcelController {
     @PostMapping("/import")
     @SaCheckPermission(ProductPermission.IMPORT)
     @OperateLog
-    public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
-            @RequestParam(required = false) ImportMode mode) throws Exception {
+    public ResponseDTO<
+            ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
+                    @RequestParam(required = false) ImportMode mode) throws Exception {
         ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
         // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
         if (selectedMode == ImportMode.UPDATE)
@@ -89,20 +90,24 @@ public class ProductExcelController {
     public void export(@RequestBody ProductSpuQueryForm form, HttpServletResponse response) throws IOException {
         form.setPageNum(1L);
         form.setPageSize((long) EXPORT_MAX_ROWS);
-        PageResult<ProductSpuVO> page = productQueryService.query(form);
-        var rows = new ArrayList<ProductExportExcelVO>();
+        PageResult<
+                ProductSpuVO> page = productQueryService.query(form);
+        var rows = new ArrayList<
+                ProductExportExcelVO>();
         for (var spu : page.getList())
             rows.addAll(flatten(spu));
         SmartExcelUtil.exportExcel(response, "商品档案导出.xlsx", "商品", ProductExportExcelVO.class, rows);
     }
 
-    private List<ProductExportExcelVO> flatten(ProductSpuVO spu) {
+    private List<
+            ProductExportExcelVO> flatten(ProductSpuVO spu) {
         var tagNames = spu.getTags() == null
                 ? ""
                 : spu.getTags().stream().map(t -> t.getName()).filter(java.util.Objects::nonNull)
                         .collect(Collectors.joining(","));
         var skus = spu.getSkuList() == null || spu.getSkuList().isEmpty() ? List.<ProductSkuVO>of() : spu.getSkuList();
-        var out = new ArrayList<ProductExportExcelVO>();
+        var out = new ArrayList<
+                ProductExportExcelVO>();
         for (var sku : skus) {
             var vo = new ProductExportExcelVO();
             vo.setSpuId(text(spu.getSpuId()));

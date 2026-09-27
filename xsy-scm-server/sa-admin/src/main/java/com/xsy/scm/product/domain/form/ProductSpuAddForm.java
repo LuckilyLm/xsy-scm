@@ -42,11 +42,13 @@ public class ProductSpuAddForm {
     @NotEmpty(message = "SKU 列表不能为空")
     @Size(max = 200, message = "SKU 列表不能超过200项")
     @Valid
-    private List<ProductSkuForm> skuList;
+    private List<
+            ProductSkuForm> skuList;
     @NotNull(message = "商品图片列表不能为空")
     @Size(max = 20, message = "商品图片列表不能超过20项")
     @Valid
-    private List<ProductImageForm> images = new ArrayList<>();
+    private List<
+            ProductImageForm> images = new ArrayList<>();
     @Size(max = 64, message = "助记码不能超过64个字符")
     private String mnemonicCode;
     @Size(max = 100, message = "品牌名称不能超过100个字符")
@@ -81,6 +83,5 @@ public class ProductSpuAddForm {
     @Size(max = 50, message = "标签 ID 列表不能超过50项")
     @NotNull(message = "标签 ID 列表不能为空")
     private List<
-            @NotNull(message = "标签 ID 列表不能为空")
-            @Positive(message = "标签 ID 列表必须大于0") Long> tagIds = new ArrayList<>();
+            @NotNull(message = "标签 ID 列表不能为空") @Positive(message = "标签 ID 列表必须大于0") Long> tagIds = new ArrayList<>();
 }

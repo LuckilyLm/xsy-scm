@@ -30,14 +30,16 @@ public class ProductImageCenterController {
 
     @GetMapping("/query")
     @SaCheckPermission(ProductPermission.IMAGE_QUERY)
-    public ResponseDTO<ProductImageCenterVO> query(@RequestParam @NotNull @Min(1) Long spuId) {
+    public ResponseDTO<
+            ProductImageCenterVO> query(@RequestParam @NotNull @Min(1) Long spuId) {
         return ResponseDTO.ok(productImageCenterService.query(spuId));
     }
 
     @PostMapping("/batch-bind")
     @SaCheckPermission(ProductPermission.IMAGE_BATCH)
     @OperateLog
-    public ResponseDTO<String> batchBind(@Valid @RequestBody ProductImageCenterForms.BatchBindForm form) {
+    public ResponseDTO<
+            String> batchBind(@Valid @RequestBody ProductImageCenterForms.BatchBindForm form) {
         productImageCenterService.batchBind(form);
         return ResponseDTO.ok();
     }
@@ -45,7 +47,8 @@ public class ProductImageCenterController {
     @PostMapping("/batch-remove")
     @SaCheckPermission(ProductPermission.IMAGE_BATCH)
     @OperateLog
-    public ResponseDTO<String> batchRemove(@Valid @RequestBody ProductImageCenterForms.BatchRemoveForm form) {
+    public ResponseDTO<
+            String> batchRemove(@Valid @RequestBody ProductImageCenterForms.BatchRemoveForm form) {
         productImageCenterService.batchRemove(form);
         return ResponseDTO.ok();
     }
@@ -53,7 +56,8 @@ public class ProductImageCenterController {
     @PostMapping("/set-primary")
     @SaCheckPermission(ProductPermission.IMAGE_BATCH)
     @OperateLog
-    public ResponseDTO<String> setPrimary(@Valid @RequestBody ProductImageCenterForms.SetPrimaryForm form) {
+    public ResponseDTO<
+            String> setPrimary(@Valid @RequestBody ProductImageCenterForms.SetPrimaryForm form) {
         productImageCenterService.setPrimary(form);
         return ResponseDTO.ok();
     }
@@ -61,7 +65,8 @@ public class ProductImageCenterController {
     @PostMapping("/reorder")
     @SaCheckPermission(ProductPermission.IMAGE_BATCH)
     @OperateLog
-    public ResponseDTO<String> reorder(@Valid @RequestBody ProductImageCenterForms.ReorderForm form) {
+    public ResponseDTO<
+            String> reorder(@Valid @RequestBody ProductImageCenterForms.ReorderForm form) {
         productImageCenterService.reorder(form);
         return ResponseDTO.ok();
     }

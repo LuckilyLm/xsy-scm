@@ -10,5 +10,6 @@ public class ProductImageCenterVO {
     private Long spuId;
     private String spuCode;
     private String name;
-    private List<ProductImageVO> images;
+    private List<
+            ProductImageVO> images;
 }

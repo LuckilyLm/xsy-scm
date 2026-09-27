@@ -37,7 +37,8 @@ public class ProductSpuQueryForm extends net.lab1024.sa.base.common.domain.PageP
      * 命中任一标签即返回（或语义），与分类的多选筛选保持一致。
      */
     @Size(max = 50, message = "标签 ID 列表不能超过50项")
-    private List<@NotNull(message = "标签 ID 列表不能为空") @Positive(message = "标签 ID 列表必须大于0") Long> tagIds;
+    private List<
+            @NotNull(message = "标签 ID 列表不能为空") @Positive(message = "标签 ID 列表必须大于0") Long> tagIds;
     private Boolean hasPrimaryImage;
     private Boolean hasBarcode;
     private OffsetDateTime createdFrom;

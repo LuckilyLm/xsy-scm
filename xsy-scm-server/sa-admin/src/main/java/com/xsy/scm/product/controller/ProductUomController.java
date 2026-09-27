@@ -30,7 +30,9 @@ public class ProductUomController {
 
     @PostMapping("/list")
     @SaCheckPermission(ProductPermission.UOM_QUERY)
-    public ResponseDTO<List<ProductUomVO>> list(@Valid @RequestBody ProductAssistantQueryForm form) {
+    public ResponseDTO<
+            List<
+                    ProductUomVO>> list(@Valid @RequestBody ProductAssistantQueryForm form) {
         return ResponseDTO.ok(productUomService.list(form));
     }
 
@@ -39,21 +41,25 @@ public class ProductUomController {
      */
     @GetMapping("/options")
     @SaCheckPermission(ProductPermission.QUERY)
-    public ResponseDTO<List<ProductUomVO>> options() {
+    public ResponseDTO<
+            List<
+                    ProductUomVO>> options() {
         return ResponseDTO.ok(productUomService.options());
     }
 
     @PostMapping("/add")
     @SaCheckPermission(ProductPermission.UOM_ADD)
     @OperateLog
-    public ResponseDTO<Long> add(@Valid @RequestBody ProductUomAddForm form) {
+    public ResponseDTO<
+            Long> add(@Valid @RequestBody ProductUomAddForm form) {
         return ResponseDTO.ok(productUomService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(ProductPermission.UOM_UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@Valid @RequestBody ProductUomUpdateForm form) {
+    public ResponseDTO<
+            String> update(@Valid @RequestBody ProductUomUpdateForm form) {
         productUomService.update(form);
         return ResponseDTO.ok();
     }
@@ -61,7 +67,8 @@ public class ProductUomController {
     @PostMapping("/delete")
     @SaCheckPermission(ProductPermission.UOM_DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody ProductUomKeyForm form) {
+    public ResponseDTO<
+            String> delete(@Valid @RequestBody ProductUomKeyForm form) {
         productUomService.delete(form);
         return ResponseDTO.ok();
     }

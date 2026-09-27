@@ -10,7 +10,8 @@ import java.time.OffsetDateTime;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ProductSpuDetailVO extends ProductSpuVO {
-    private List<ProductImageVO> images;
+    private List<
+            ProductImageVO> images;
     private OffsetDateTime createdAt;
     private Integer shelfLifeDays;
     private BigDecimal lossRate;
