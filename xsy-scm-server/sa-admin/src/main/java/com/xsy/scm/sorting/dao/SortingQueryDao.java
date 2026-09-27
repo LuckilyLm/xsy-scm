@@ -45,7 +45,7 @@ public interface SortingQueryDao {
                                          @Param("crossAssignee") boolean crossAssignee);
 
     /**
-     * 建单用的候选订单行队列：不受订单业务员维度约束（裁决补充第 22 条），
+     * 建单用的候选订单行队列：不受订单业务员维度约束，
      * 由「只授建单权 + 只取队列必需列」两头收口。
      */
     List<SortingCandidateLineVO> candidateLines(Page<?> page, @Param("q") SortingCandidateQueryForm q);

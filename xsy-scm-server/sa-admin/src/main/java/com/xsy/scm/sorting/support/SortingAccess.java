@@ -11,8 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 
 /**
- * 分拣的可见性与写侧守卫：范围永远是「授权仓 ∩ 可见指派人」，两维取交集且失败关闭
- * （裁决第 7 条与补充第 15 条）。
+ * 分拣的可见性与写侧守卫：范围永远是「授权仓 ∩ 可见指派人」，两维取交集且失败关闭。
  *
  * <p>跨指派人可见性由 {@code scm:sorting:task:assign} 本身隐含，不另设
  * {@code scm:sorting:scope:all:query}：该权限表达的就是「谁的任务都由你排」，
@@ -20,7 +19,7 @@ import java.util.Objects;
  * 分拣员恒等于「派给自己的 ∩ 授权仓」；未指派任务（{@code assignee} 为空）天然落在等值判断之外，
  * 因而只对队列管理者可见。
  *
- * <p>拒绝方式与 P0 其余范围守卫一致：统一 {@link ScmDataScopeException}（对外 30005），
+ * <p>拒绝方式统一使用 {@link ScmDataScopeException}（对外 30005），
  * 不回答「不存在」，否则探测主键与探测权限可以分辨出来。
  */
 @Component

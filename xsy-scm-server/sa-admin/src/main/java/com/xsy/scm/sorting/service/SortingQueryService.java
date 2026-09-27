@@ -103,9 +103,8 @@ public class SortingQueryService {
     }
 
     /**
-     * 建单用的候选订单行队列。刻意不按订单业务员维度收窄（裁决补充第 22 条）：
-     * 仓库岗位默认不持任何订单范围，收窄后建单无从发生；这一侧的入口权限是建单权，
-     * 且返回列不含任何价格与金额。
+     * 建单用的候选订单行队列，不按订单业务员维度收窄：仓库岗位通过建单权限读取候选项，
+     * 返回列不含价格或金额。
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingCandidateLineVO> candidateLines(SortingCandidateQueryForm form) {

@@ -5,7 +5,7 @@ import java.util.Set;
 /**
  * 分拣任务的固定口径：工作状态集合、可打印状态集合与单号前缀。
  *
- * <p>状态只有四个（裁决补充第 16 条）：取消即释放占用，不存在 {@code RELEASED} 任务状态；
+ * <p>状态只有四个：取消即释放占用，不存在 {@code RELEASED} 任务状态；
  * 明细行上另有 {@code ACTIVE / RELEASED} 占用位，两者不要混用。
  */
 public final class SortingConstant {
@@ -23,7 +23,7 @@ public final class SortingConstant {
             ScmSortingTaskStatusEnum.SORTING.name(), ScmSortingTaskStatusEnum.COMPLETED.name());
 
     /**
-     * 单号前缀：SRT + 业务日(Asia/Shanghai) + 全局非重置序号（裁决第 8 条）。
+     * 单号前缀：SRT + 业务日(Asia/Shanghai) + 全局非重置序号。
      */
     public static final String TASK_NO_PREFIX = "SRT";
 

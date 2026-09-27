@@ -5,8 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * 分拣域错误码。码段按本轮全库 {@code grep} 的 41xxx 实际占用取号（配送段止于 41119），
- * 新增前先现查，不相信自己注释里的「本段空闲」。
+ * 分拣域使用 41120–41128 错误码，与配送域的 41100–41119 错误码保持分离。
  *
  * <p>「不属于你的任务」一律不走这里的业务码：那等于回答「这个 id 存在但你不该看」，
  * 让探测主键与探测权限可分辨，故由 {@code ScmDataScopeException} 统一回 30005。
@@ -24,8 +23,7 @@ public enum SortingErrorCode implements ScmErrorCode {
     WAREHOUSE_INVALID(41127, "仓库不存在或未启用"),
 
     /**
-     * 本任务的订单行已经过发车产生 {@code CONFIRMED} 出库单，实物已离仓，不允许再改分拣结果。
-     * 判据见 {@code SortingTaskService#reopen} 与 P2 裁决第 11 条。
+     * 本任务的订单行已有 {@code CONFIRMED} 出库记录，库存已扣减，不允许再改分拣结果。
      */
     OUTBOUND_EXISTS(41128, "该分拣任务对应的订单已发车出库，不能重开");
 

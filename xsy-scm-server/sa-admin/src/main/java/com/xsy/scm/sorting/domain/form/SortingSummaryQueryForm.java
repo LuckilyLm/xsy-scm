@@ -9,7 +9,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
  * 按商品汇总的只读视角：跨订单按 SKU + 单位分组，**不跨单位求和**。
- * 本视角不承载任何录入动作（裁决补充第 19 条）。
+ * 本视角不承载录入动作。
  */
 @Data
 public class SortingSummaryQueryForm extends PageParam {

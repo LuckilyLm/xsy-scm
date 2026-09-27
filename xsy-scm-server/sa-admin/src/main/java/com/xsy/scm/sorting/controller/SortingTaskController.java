@@ -63,7 +63,7 @@ public class SortingTaskController {
         return ResponseDTO.ok(sortingQueryService.summary(form));
     }
 
-    // 候选订单行是建单用的队列视图，只授建单权；不受订单业务员范围约束（裁决补充第 22 条）。
+    // 候选订单行是建单队列，只授建单权限；返回列不含价格或金额。
     @GetMapping("/candidate-lines")
     @SaCheckPermission(SortingPermission.TASK_ADD)
     public ResponseDTO<PageResult<SortingCandidateLineVO>> candidateLines(
