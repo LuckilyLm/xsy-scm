@@ -85,7 +85,7 @@ public class PriceResolver {
                     skuOption, allEnabledVisibility || visibleSkuIds.contains(skuId));
             resolvedPrice.setUnavailableReason(unavailableReason);
             resolvedPrice.setSellable(unavailableReason == null);
-            // Q2: eligibility never short-circuits price lookup or erases a valid zero price.
+            // Eligibility never short-circuits price lookup or erases a valid zero price.
             if (agreementPricesBySkuId.containsKey(skuId)) {
                 var agreementPrice = agreementPricesBySkuId.get(skuId);
                 resolvedPrice.price(
