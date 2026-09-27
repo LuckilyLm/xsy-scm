@@ -7,9 +7,10 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.domain.entity.ScmIdempotencyRecordEntity;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.common.json.ScmOffsetDateTimeDeserializer;
-import com.xsy.scm.order.domain.entity.IdempotencyRecordEntity;
-import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.purchase.constant.PurchaseErrorCode;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -22,11 +23,11 @@ import java.time.OffsetDateTime;
 @RequiredArgsConstructor
 public class PurchaseIdempotencyService {
 
-    private final OrderIdempotencyService orderIdempotencyService;
+    private final ScmIdempotencyService idempotencyService;
 
     /**
      * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。
-     * 请求哈希仍使用 {@link #objectMapper}，避免改变既有幂等键的内容判定。
+     * 该 mapper 只负责结果回放；请求哈希由公共幂等服务保持统一规则。
      */
     static final ObjectMapper RESULT_JSON = JsonMapper.builder()
             .addModule(new JavaTimeModule())
@@ -42,7 +43,7 @@ public class PurchaseIdempotencyService {
      * @param replay {@code true} 表示命中已有记录，调用方必须直接返回
      *               {@link #replay(Claim, Class)} 的结果，不得再次执行副作用
      */
-    public record Claim(IdempotencyRecordEntity record, boolean replay) {
+    public record Claim(ScmIdempotencyRecordEntity record, boolean replay) {
     }
 
     /**
@@ -51,13 +52,13 @@ public class PurchaseIdempotencyService {
      * @throws ScmBusinessException 键缺失 → 40084；超长 → 40085；同键异内容 → 40990
      */
     public Claim claim(String scope, String key, Object request) {
-        OrderIdempotencyService.Claim sharedClaim = orderIdempotencyService.claim(
+        ScmIdempotencyService.Claim sharedClaim = idempotencyService.claim(
                 scope,
                 key,
                 request,
-                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_REQUIRED,
-                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_INVALID,
-                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT,
+                PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_REQUIRED,
+                PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_INVALID,
+                PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT,
                 "已提交的幂等记录缺少 result_data（数据完整性异常）");
         return new Claim(sharedClaim.record(), sharedClaim.replay());
     }
@@ -66,13 +67,16 @@ public class PurchaseIdempotencyService {
      * 返回首次执行的结果，不重新执行业务写入。
      */
     public <T> T replay(Claim claim, Class<T> resultType) {
-        return orderIdempotencyService.replay(claim.record(), resultType, RESULT_JSON);
+        return idempotencyService.replay(
+                new ScmIdempotencyService.Claim(claim.record(), claim.replay()), resultType, RESULT_JSON);
     }
 
     /**
      * 保存结果，与调用方的业务写入一起提交或回滚。
      */
     public void complete(Claim claim, String resourceType, Long resourceId, Object result) {
-        orderIdempotencyService.complete(claim.record(), resourceType, resourceId, result, RESULT_JSON);
+        idempotencyService.complete(
+                new ScmIdempotencyService.Claim(claim.record(), claim.replay()),
+                resourceType, resourceId, result, RESULT_JSON);
     }
 }
