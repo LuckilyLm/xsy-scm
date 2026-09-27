@@ -11,8 +11,8 @@ import com.xsy.scm.delivery.constant.ScmDeliverySignResultEnum;
 /**
  * 订单签收：终态只有 SIGNED 与 EXCEPTION 两种，不做部分签收。
  *
- * <p>{@code version} 锁的是 {@code delivery_route_order} 这一行，不是线路 —— 同一线路上的
- * 不同订单要能被并发签收，只有对同一订单重复签收才需要互相拒绝。
+ * <p>
+ * {@code version} 锁的是 {@code delivery_route_order} 这一行，不是线路 —— 同一线路上的 不同订单要能被并发签收，只有对同一订单重复签收才需要互相拒绝。
  */
 @Data
 public class DeliverySignForm {

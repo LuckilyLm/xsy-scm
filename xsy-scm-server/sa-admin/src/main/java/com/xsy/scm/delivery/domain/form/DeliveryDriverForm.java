@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Size;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 
-
 @Data
 public class DeliveryDriverForm {
     @Positive(message = "记录编号必须为正数")

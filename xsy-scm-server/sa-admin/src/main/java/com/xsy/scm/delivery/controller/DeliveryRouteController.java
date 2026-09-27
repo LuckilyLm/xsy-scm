@@ -99,16 +99,18 @@ public class DeliveryRouteController {
     @PostMapping("/routes/{id}/print/orders")
     @SaCheckPermission(DeliveryPermission.ROUTE_PRINT)
     @OperateLog
-    public ResponseDTO<DeliveryPrintResultVO> printOrders(@PathVariable Long id, @Valid @RequestBody DeliveryPrintOrdersForm form,
-                                                          @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<DeliveryPrintResultVO> printOrders(@PathVariable Long id,
+            @Valid @RequestBody DeliveryPrintOrdersForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(deliveryRouteService.printOrders(id, form, key));
     }
 
     @PostMapping("/routes/{id}/print/customers")
     @SaCheckPermission(DeliveryPermission.ROUTE_PRINT)
     @OperateLog
-    public ResponseDTO<DeliveryPrintResultVO> printCustomers(@PathVariable Long id, @Valid @RequestBody DeliveryPrintCustomersForm form,
-                                                             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<DeliveryPrintResultVO> printCustomers(@PathVariable Long id,
+            @Valid @RequestBody DeliveryPrintCustomersForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(deliveryRouteService.printCustomers(id, form, key));
     }
 
@@ -147,8 +149,9 @@ public class DeliveryRouteController {
     @PostMapping("/routes/{id}/dispatch")
     @SaCheckPermission(DeliveryPermission.ROUTE_DISPATCH)
     @OperateLog
-    public ResponseDTO<DeliveryDispatchResultVO> dispatch(@PathVariable Long id, @Valid @RequestBody DeliveryVersionForm form,
-                                                          @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<DeliveryDispatchResultVO> dispatch(@PathVariable Long id,
+            @Valid @RequestBody DeliveryVersionForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(deliveryRouteService.dispatch(id, form, key));
     }
 
@@ -156,7 +159,8 @@ public class DeliveryRouteController {
     @PostMapping("/routes/{id}/orders/{orderId}/sign")
     @SaCheckPermission(DeliveryPermission.ORDER_SIGN)
     @OperateLog
-    public ResponseDTO<String> sign(@PathVariable Long id, @PathVariable Long orderId, @Valid @RequestBody DeliverySignForm form) {
+    public ResponseDTO<String> sign(@PathVariable Long id, @PathVariable Long orderId,
+            @Valid @RequestBody DeliverySignForm form) {
         deliveryRouteService.sign(id, orderId, form);
         return ResponseDTO.ok();
     }
@@ -188,7 +192,8 @@ public class DeliveryRouteController {
     @DeleteMapping("/routes/{id}/orders/{orderId}")
     @SaCheckPermission(DeliveryPermission.ROUTE_UPDATE)
     @OperateLog
-    public ResponseDTO<String> remove(@PathVariable Long id, @PathVariable Long orderId, @Valid @RequestBody DeliveryVersionForm form) {
+    public ResponseDTO<String> remove(@PathVariable Long id, @PathVariable Long orderId,
+            @Valid @RequestBody DeliveryVersionForm form) {
         deliveryRouteService.removeOrder(id, orderId, form);
         return ResponseDTO.ok();
     }
@@ -204,7 +209,8 @@ public class DeliveryRouteController {
     @PutMapping("/routes/{id}/stops/{stopId}")
     @SaCheckPermission(DeliveryPermission.ROUTE_UPDATE)
     @OperateLog
-    public ResponseDTO<String> locate(@PathVariable Long id, @PathVariable Long stopId, @Valid @RequestBody DeliveryStopForm form) {
+    public ResponseDTO<String> locate(@PathVariable Long id, @PathVariable Long stopId,
+            @Valid @RequestBody DeliveryStopForm form) {
         deliveryRouteService.locate(id, stopId, form);
         return ResponseDTO.ok();
     }

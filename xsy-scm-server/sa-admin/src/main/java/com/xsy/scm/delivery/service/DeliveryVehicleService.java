@@ -28,7 +28,8 @@ public class DeliveryVehicleService {
 
     public PageResult<DeliveryVehicleEntity> query(DeliveryQueryForm form) {
         var requested = DeliveryRouteQueryService.page(form);
-        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryVehicleEntity>(requested.getCurrent(), requested.getSize(), requested.searchCount());
+        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryVehicleEntity>(
+                requested.getCurrent(), requested.getSize(), requested.searchCount());
         var wrapper = new LambdaQueryWrapper<DeliveryVehicleEntity>();
         if (form.getKeyword() != null && !form.getKeyword().isBlank())
             wrapper.like(DeliveryVehicleEntity::getVehicleNo, form.getKeyword());
@@ -48,15 +49,18 @@ public class DeliveryVehicleService {
     @Transactional(rollbackFor = Exception.class)
     public Long save(DeliveryVehicleForm form) {
         var row = form.getId() == null ? new DeliveryVehicleEntity() : deliveryVehicleDao.selectById(form.getId());
-        if (row == null) throw new ScmBusinessException(NOT_FOUND);
+        if (row == null)
+            throw new ScmBusinessException(NOT_FOUND);
         if (form.getId() != null && !Objects.equals(row.getVersion(), form.getVersion()))
             throw new ScmBusinessException(VERSION_CONFLICT);
         BeanUtils.copyProperties(form, row, "id", "version");
         row.setVehicleNo(form.getVehicleNo().trim().toUpperCase(Locale.ROOT));
         DeliveryRouteService.stamp(row, form.getId() == null);
         try {
-            if (form.getId() == null) deliveryVehicleDao.insert(row);
-            else if (deliveryVehicleDao.updateById(row) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (form.getId() == null)
+                deliveryVehicleDao.insert(row);
+            else if (deliveryVehicleDao.updateById(row) != 1)
+                throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(DUPLICATE);
         }

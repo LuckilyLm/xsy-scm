@@ -42,7 +42,8 @@ public class DeliveryDriverService {
 
     public PageResult<DeliveryDriverVO> query(DeliveryQueryForm form) {
         var requested = DeliveryRouteQueryService.page(form);
-        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryDriverEntity>(requested.getCurrent(), requested.getSize(), requested.searchCount());
+        var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryDriverEntity>(
+                requested.getCurrent(), requested.getSize(), requested.searchCount());
         var wrapper = new LambdaQueryWrapper<DeliveryDriverEntity>();
         if (form.getKeyword() != null && !form.getKeyword().isBlank())
             wrapper.like(DeliveryDriverEntity::getDriverCode, form.getKeyword());
@@ -69,7 +70,8 @@ public class DeliveryDriverService {
     @Transactional(rollbackFor = Exception.class)
     public Long save(DeliveryDriverForm form) {
         var row = form.getId() == null ? new DeliveryDriverEntity() : deliveryDriverDao.selectById(form.getId());
-        if (row == null) throw new ScmBusinessException(NOT_FOUND);
+        if (row == null)
+            throw new ScmBusinessException(NOT_FOUND);
         if (form.getId() != null && !Objects.equals(row.getVersion(), form.getVersion()))
             throw new ScmBusinessException(VERSION_CONFLICT);
         requireBindableEmployee(form.getEmployeeId(), form.getStatus());
@@ -77,8 +79,10 @@ public class DeliveryDriverService {
         row.setDriverCode(form.getDriverCode().trim().toUpperCase(Locale.ROOT));
         DeliveryRouteService.stamp(row, form.getId() == null);
         try {
-            if (form.getId() == null) deliveryDriverDao.insert(row);
-            else if (deliveryDriverDao.updateById(row) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (form.getId() == null)
+                deliveryDriverDao.insert(row);
+            else if (deliveryDriverDao.updateById(row) != 1)
+                throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(isBindingConflict(e) ? DRIVER_EMPLOYEE_BOUND : DUPLICATE);
         }
@@ -86,12 +90,12 @@ public class DeliveryDriverService {
     }
 
     /**
-     * 启用即要求绑定：未绑定的司机档案无法把登录人映射回 {@code delivery_route.driver_id}，
-     * 数据范围收不出来，因此「正式司机」必须有员工归属（历史行可以留空，但要重新启用就得补）。
+     * 启用即要求绑定：未绑定的司机档案无法把登录人映射回 {@code delivery_route.driver_id}， 数据范围收不出来，因此「正式司机」必须有员工归属（历史行可以留空，但要重新启用就得补）。
      */
     private void requireBindableEmployee(Long employeeId, String status) {
         if (employeeId == null) {
-            if (ScmEnableStatusEnum.ENABLED.name().equals(status)) throw new ScmBusinessException(DRIVER_EMPLOYEE_REQUIRED);
+            if (ScmEnableStatusEnum.ENABLED.name().equals(status))
+                throw new ScmBusinessException(DRIVER_EMPLOYEE_REQUIRED);
             return;
         }
         EmployeeEntity employee = employeeDao.selectById(employeeId);
@@ -105,9 +109,11 @@ public class DeliveryDriverService {
 
     /** 绑定员工姓名；已删除的员工不显示名字（列表留空即提示这条绑定需要重新处理）。 */
     private Map<Long, String> employeeNames(Set<Long> employeeIds) {
-        if (employeeIds.isEmpty()) return Map.of();
+        if (employeeIds.isEmpty())
+            return Map.of();
         var found = employeeDao.selectBatchIds(employeeIds);
-        if (found == null) return Map.of();
+        if (found == null)
+            return Map.of();
         return found.stream()
                 .filter(e -> e != null && e.getEmployeeId() != null && !Boolean.TRUE.equals(e.getDeletedFlag()))
                 .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, EmployeeEntity::getActualName, (a, b) -> a));
