@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.dashboard.domain.vo.ScmTodoVO;
+import com.xsy.scm.dashboard.permission.DashboardPermission;
 import com.xsy.scm.dashboard.service.ScmTodoQueryService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +31,7 @@ public class ScmTodoController {
     private ScmTodoQueryService scmTodoQueryService;
 
     @GetMapping("/todo")
-    @SaCheckPermission("scm:todo:query")
+    @SaCheckPermission(DashboardPermission.TODO_QUERY)
     public ResponseDTO<List<ScmTodoVO>> todo() {
         return ResponseDTO.ok(scmTodoQueryService.currentEmployeeTodos());
     }
