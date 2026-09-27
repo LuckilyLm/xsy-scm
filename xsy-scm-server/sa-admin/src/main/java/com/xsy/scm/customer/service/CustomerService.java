@@ -37,8 +37,8 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADA
 /**
  * 客户写路径。
  *
- * <p>所有写方法都在事务内，并按固定顺序执行：校验 → 读取并比对版本 → 归属校验 → 查重 → 落库。
- * 顺序固定是为了让并发场景下的失败原因可预测（版本冲突永远先于编码冲突暴露）。
+ * <p>
+ * 所有写方法都在事务内，并按固定顺序执行：校验 → 读取并比对版本 → 归属校验 → 查重 → 落库。 顺序固定是为了让并发场景下的失败原因可预测（版本冲突永远先于编码冲突暴露）。
  */
 @Service
 @RequiredArgsConstructor
@@ -82,7 +82,8 @@ public class CustomerService {
     /**
      * 读取「可交易」客户。
      *
-     * <p>订单创建、提交和确认都通过此方法校验交易资格，避免各服务自行比较状态。
+     * <p>
+     * 订单创建、提交和确认都通过此方法校验交易资格，避免各服务自行比较状态。
      */
     public CustomerEntity requireTradable(Long customerId) {
         CustomerEntity entity = require(customerId);
@@ -154,11 +155,11 @@ public class CustomerService {
     /**
      * 改派客户业务归属（独立端点，权限 {@code scm:customer:assign}）。
      *
-     * <p>与 {@link #update} 同一把客户行锁 + 同一套版本比对，改派与编辑因此互斥：
-     * 两个动作都在动「这行归谁」这件事的两种口径，不能一个走乐观锁一个不走。
+     * <p>
+     * 与 {@link #update} 同一把客户行锁 + 同一套版本比对，改派与编辑因此互斥： 两个动作都在动「这行归谁」这件事的两种口径，不能一个走乐观锁一个不走。
      *
-     * <p>权限判定在 Controller 的 {@code @SaCheckPermission} 上，本方法不再重复判断：
-     * Service 被别的写路径复用时，调用方必须自己带着范围判定。
+     * <p>
+     * 权限判定在 Controller 的 {@code @SaCheckPermission} 上，本方法不再重复判断： Service 被别的写路径复用时，调用方必须自己带着范围判定。
      */
     @Transactional(rollbackFor = Exception.class)
     public void reassignSeller(CustomerSellerReassignForm form) {
@@ -175,11 +176,12 @@ public class CustomerService {
     /**
      * 新建客户的归属：无分配权者一律记在当前员工名下，客户端传来的 {@code sellerId} 忽略。
      *
-     * <p>这是行级范围能成立的前提——否则「建在别人名下、再按列表去读别人的客户」就是留着的口子。
-     * 有分配权者（销售主管 / 超管）可以指定别人，也可以留空表示<b>暂不分配</b>；
-     * 未分配客户只对持分配权或全量范围者可见（见 {@code ScmValueScope#allows}）。
+     * <p>
+     * 这是行级范围能成立的前提——否则「建在别人名下、再按列表去读别人的客户」就是留着的口子。 有分配权者（销售主管 / 超管）可以指定别人，也可以留空表示<b>暂不分配</b>； 未分配客户只对持分配权或全量范围者可见（见
+     * {@code ScmValueScope#allows}）。
      *
-     * <p>取不到当前员工时直接拒绝而不是落成未分配：落成 NULL 会让这条客户对建它的人自己不可见。
+     * <p>
+     * 取不到当前员工时直接拒绝而不是落成未分配：落成 NULL 会让这条客户对建它的人自己不可见。
      */
     private Long resolveSellerOnCreate(Long submittedSellerId) {
         if (ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM)) {
@@ -207,7 +209,8 @@ public class CustomerService {
     /**
      * 删除客户（软删）。
      *
-     * <p>使用 {@code id + version} 原子谓词，而不是先查后改：并发删除时只有一次能成功。
+     * <p>
+     * 使用 {@code id + version} 原子谓词，而不是先查后改：并发删除时只有一次能成功。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(CustomerDeleteForm form) {
@@ -234,7 +237,8 @@ public class CustomerService {
     /**
      * 删除前检查客户 SKU 可见性引用。
      *
-     * <p>销售订单引用由订单域拦截器在软删除前检查，避免客户域直接依赖订单表。
+     * <p>
+     * 销售订单引用由订单域拦截器在软删除前检查，避免客户域直接依赖订单表。
      */
     private void assertNotReferenced(Long customerId) {
         if (customerSkuVisibilityDao.customerReferences(customerId) > 0)
@@ -242,7 +246,8 @@ public class CustomerService {
     }
 
     private void apply(CustomerEntity entity, CustomerAddForm form) {
-        if (form.getVisibilityPolicy() != null) entity.setVisibilityPolicy(form.getVisibilityPolicy());
+        if (form.getVisibilityPolicy() != null)
+            entity.setVisibilityPolicy(form.getVisibilityPolicy());
         else if (entity.getVisibilityPolicy() == null) {
             entity.setVisibilityPolicy(CustomerVisibilityPolicy.ALL_ENABLED);
         }

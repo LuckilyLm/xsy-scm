@@ -20,7 +20,5 @@ public interface CustomerTypeDao extends BaseMapper<CustomerTypeEntity> {
     /**
      * 原子软删：{@code id + version} 双谓词，返回 0 即冲突。
      */
-    int softDelete(@Param("typeId") Long typeId,
-                   @Param("version") Integer version,
-                   @Param("operator") String operator);
+    int softDelete(@Param("typeId") Long typeId, @Param("version") Integer version, @Param("operator") String operator);
 }

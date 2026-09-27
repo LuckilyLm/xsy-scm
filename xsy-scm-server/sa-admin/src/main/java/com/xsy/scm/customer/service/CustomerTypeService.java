@@ -39,7 +39,8 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_TYPE_NOT_
 /**
  * 客户类型读写。
  *
- * <p>客户类型是「可维护字典」：编码唯一、名称允许重复、没有独立的状态端点。
+ * <p>
+ * 客户类型是「可维护字典」：编码唯一、名称允许重复、没有独立的状态端点。
  */
 @Service
 @RequiredArgsConstructor
@@ -78,7 +79,8 @@ public class CustomerTypeService {
     /**
      * 读取「可用于新建 / 编辑客户」的类型：必须存在、未删除且 {@code ENABLED}。
      *
-     * <p>停用类型不允许被新引用，但已引用它的客户仍然可读、可改其它字段。
+     * <p>
+     * 停用类型不允许被新引用，但已引用它的客户仍然可读、可改其它字段。
      */
     public CustomerTypeEntity requireSelectableType(Long typeId) {
         CustomerTypeEntity entity = require(typeId);
@@ -92,12 +94,11 @@ public class CustomerTypeService {
      * 下拉选项：只返回 {@code ENABLED}，按名称排序。
      */
     public List<CustomerTypeVO> optionList() {
-        return customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
+        return customerTypeDao
+                .selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
                         .eq(CustomerTypeEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
                         .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId))
-                .stream()
-                .map(CustomerTypeService::toVO)
-                .toList();
+                .stream().map(CustomerTypeService::toVO).toList();
     }
 
     public PageResult<CustomerTypeVO> query(CustomerTypeQueryForm form) {
@@ -164,8 +165,8 @@ public class CustomerTypeService {
     /**
      * 删除客户类型。
      *
-     * <p>被活动客户引用时拒绝删除——
-     * 否则会把存量客户指向一个不存在的类型。
+     * <p>
+     * 被活动客户引用时拒绝删除—— 否则会把存量客户指向一个不存在的类型。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(CustomerTypeDeleteForm form) {

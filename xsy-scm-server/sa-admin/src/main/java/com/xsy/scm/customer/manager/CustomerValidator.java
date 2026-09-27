@@ -20,7 +20,8 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_PARENT_IN
 /**
  * 客户单条业务规则：账期组合、上级关系、字段归一化。
  *
- * <p>只做「一条规则一件事」的判断，不控制事务、不写库——事务边界在 {@code CustomerService}。
+ * <p>
+ * 只做「一条规则一件事」的判断，不控制事务、不写库——事务边界在 {@code CustomerService}。
  */
 @Component
 @RequiredArgsConstructor
@@ -68,8 +69,8 @@ public class CustomerValidator {
     /**
      * 账期组合校验。
      *
-     * <p>三种合法形态互斥且穷尽：不设置 / 按金额 / 按时间。DB 侧有等价的
-     * {@code ck_customer_credit_period} 约束；这里先拦一次，让错误码是 40000 而不是数据库异常。
+     * <p>
+     * 三种合法形态互斥且穷尽：不设置 / 按金额 / 按时间。DB 侧有等价的 {@code ck_customer_credit_period} 约束；这里先拦一次，让错误码是 40000 而不是数据库异常。
      */
     public void validateCreditPeriod(CustomerAddForm form) {
         String type = form.getCreditPeriodType();
@@ -118,8 +119,10 @@ public class CustomerValidator {
     /**
      * 上级客户关系校验：不得是自身、必须存在、其类型必须是「集团」、上溯不得成环。
      *
-     * @param parentCustomerId 上级客户 id，{@code null} 表示独立客户，直接通过
-     * @param selfId           当前客户 id；新增时为 {@code null}
+     * @param parentCustomerId
+     *            上级客户 id，{@code null} 表示独立客户，直接通过
+     * @param selfId
+     *            当前客户 id；新增时为 {@code null}
      */
     public void validateParent(Long parentCustomerId, Long selfId) {
         if (parentCustomerId == null) {

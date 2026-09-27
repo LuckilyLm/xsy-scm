@@ -8,7 +8,8 @@ import lombok.Data;
 /**
  * 删除客户。
  *
- * <p>删除命令通过 POST body 携带 {@code customerId} 与 {@code version}，以乐观锁拒绝过期请求。
+ * <p>
+ * 删除命令通过 POST body 携带 {@code customerId} 与 {@code version}，以乐观锁拒绝过期请求。
  */
 @Data
 public class CustomerDeleteForm {

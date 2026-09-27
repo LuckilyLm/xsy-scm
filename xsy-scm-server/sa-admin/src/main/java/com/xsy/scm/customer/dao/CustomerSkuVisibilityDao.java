@@ -15,16 +15,16 @@ import java.util.List;
 public interface CustomerSkuVisibilityDao extends BaseMapper<CustomerSkuVisibilityEntity> {
     Long lockCustomer(@Param("id") Long id);
 
-    int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("customerId") Long customerId, @Param("operator") String operator);
+    int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("customerId") Long customerId,
+            @Param("operator") String operator);
 
     long customerReferences(@Param("id") Long id);
 
     long typeReferences(@Param("id") Long id);
 
     /** 反向白名单列表读；范围按客户归属（{@code customer.seller_id}）收窄，传 null 即恒假谓词。 */
-    List<CustomerSkuVisibilityReverseVO> reverse(Page<?> page,
-                                                 @Param("query") CustomerVisibilityQueryForm query,
-                                                 @Param("scope") ScmValueScope scope);
+    List<CustomerSkuVisibilityReverseVO> reverse(Page<?> page, @Param("query") CustomerVisibilityQueryForm query,
+            @Param("scope") ScmValueScope scope);
 
     String policy(@Param("customerId") Long customerId);
 

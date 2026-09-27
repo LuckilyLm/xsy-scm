@@ -15,8 +15,8 @@ import java.time.OffsetDateTime;
 /**
  * 客户（聚合根）。
  *
- * <p>联系人 / 地址 / 账期都是内嵌标量列，不建子表。可空列全部显式声明
- * {@code FieldStrategy.ALWAYS}：MyBatis-Plus 默认 {@code NOT_NULL} 会让 {@code null} 被
+ * <p>
+ * 联系人 / 地址 / 账期都是内嵌标量列，不建子表。可空列全部显式声明 {@code FieldStrategy.ALWAYS}：MyBatis-Plus 默认 {@code NOT_NULL} 会让 {@code null} 被
  * 静默忽略，导致「清空联系人 / 地址 / 备注」永远失败（风险 R7）。
  */
 @Data
@@ -32,7 +32,6 @@ public class CustomerEntity {
     private String geomCrs;
 
     private String visibilityPolicy;
-
 
     @TableId(type = IdType.AUTO)
     private Long id;

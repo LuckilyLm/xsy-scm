@@ -8,7 +8,8 @@ import lombok.Data;
 /**
  * 删除客户类型。
  *
- * <p>删除前检查客户类型是否仍被活动客户引用。
+ * <p>
+ * 删除前检查客户类型是否仍被活动客户引用。
  */
 @Data
 public class CustomerTypeDeleteForm {
