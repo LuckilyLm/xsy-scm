@@ -8,6 +8,4 @@
 
 ## 幂等写入
 
-采购幂等服务已停止直接调用 `order.dao.IdempotencyRecordDao`，改经幂等服务接口提交 claim、读回和完成结果，继续共用 `idempotency_record` 表并保持调用方事务。
-
-Q1 审计提出将 `OrderIdempotencyService` 的通用实现迁入 common。此项仍需在同一事务和既有错误码语义下完成；现存订单、配送、库存、分拣和财务调用保留在 API 侧，不能改回直接 DAO 访问。
+幂等记录实体、DAO、哈希和 claim / replay / complete 实现现位于 common，共用 `idempotency_record` 表并参与调用方事务。采购保留错误码语义；订单模块保留 `OrderIdempotencyService` 兼容外观，订单、配送、库存、分拣和财务命令通过公共实现处理幂等。不得再从业务域直接导入该表的 DAO。

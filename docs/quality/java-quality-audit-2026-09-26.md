@@ -668,13 +668,13 @@ inventory → sorting → delivery → finance → report`，每一项单独 com
 | --- | --- | --- |
 | 1 | 阶段流水注释按 §12 分类改写（D 类迁 docs，B 类保留不变量但换成业务陈述） | 695 处 / 198 文件 |
 | 2 | `>400` 行且命中多线的类做职责拆分（Policy / Validator / Assembler / Calculator / Manager / SourceReader） | 17 命中，优先 4 个多线命中的 |
-| 3 | 跨域直接引用别域 DAO | **24 处 / 15 个域对**（本轮实测，未设门禁） |
-| 4 | 同名常量多 enum 的词汇表裁决 | 28 |
-| 5 | `mapper/business/scm/**` 与 `mapper/scm/**` 两套约定归一 | 18 文件 |
+| 3 | 跨域直接引用别域 DAO | **24 处 / 15 个域对**；已建立精确只读 allowlist 并接入 `verify.py quality` |
+| 4 | 同名常量多 enum 的词汇表裁决 | 2026-09-28 已审议；订单商品类型复用公共 Enum，其他同名项按不同状态机 / 事实维度保留，见 `q3-enum-vocabulary-review.md` |
+| 5 | `mapper/business/scm/**` 与 `mapper/scm/**` 两套约定归一 | 18 个文件已按模块移动 |
 
-第 3 项是当前**没有门禁**的最大一条架构敞口（计划 §12 要求「禁止 domain A 随意访问 domain B DAO」）。
-它没进 Q0 是因为 24 处 / 15 对超出「显式例外清单」能承载的规模，
-需要一个真正的跨域访问白名单机制才能既拦新增又解释存量 —— 属 Q3 设计，不该在 Q0 半做。
+只读 DAO 访问被限定为精确的调用文件、DAO 类型和查询方法；新增引用或增加写方法会被质量入口拒绝。
+`idempotency_record` 的实体和写入实现已迁入 common。允许项与原因见
+[`cross-domain-dao-access.md`](q3-cross-domain-dao-access.md) 和 `tools/quality/cross-domain-dao-allowlist.tsv`。
 
 ### 9.4 门禁自身要补的三件事
 
