@@ -226,8 +226,9 @@ public class CustomerService {
      * 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。
      */
     public boolean existsCode(String normalizedCode, Long excludeId) {
-        LambdaQueryWrapper<CustomerEntity> wrapper = new LambdaQueryWrapper<CustomerEntity>()
-                .eq(CustomerEntity::getCustomerCode, normalizedCode);
+        LambdaQueryWrapper<
+                CustomerEntity> wrapper = new LambdaQueryWrapper<
+                        CustomerEntity>().eq(CustomerEntity::getCustomerCode, normalizedCode);
         if (excludeId != null) {
             wrapper.ne(CustomerEntity::getId, excludeId);
         }

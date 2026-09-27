@@ -49,7 +49,8 @@ public class CustomerTypeService {
     /**
      * 排序白名单：客户端只能选择这些列，避免把任意字段拼入 SQL。
      */
-    private static final Set<String> SORTABLE = Set.of("type_code", "name", "status", "updated_at");
+    private static final Set<
+            String> SORTABLE = Set.of("type_code", "name", "status", "updated_at");
 
     private final CustomerTypeDao customerTypeDao;
 
@@ -60,9 +61,10 @@ public class CustomerTypeService {
     /**
      * 全量客户类型（含 DISABLED），供内部逻辑使用。
      */
-    public List<CustomerTypeEntity> all() {
-        return customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
-                .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId));
+    public List<
+            CustomerTypeEntity> all() {
+        return customerTypeDao.selectList(new LambdaQueryWrapper<
+                CustomerTypeEntity>().orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId));
     }
 
     /**
@@ -93,22 +95,25 @@ public class CustomerTypeService {
     /**
      * 下拉选项：只返回 {@code ENABLED}，按名称排序。
      */
-    public List<CustomerTypeVO> optionList() {
-        return customerTypeDao
-                .selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
-                        .eq(CustomerTypeEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
-                        .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId))
-                .stream().map(CustomerTypeService::toVO).toList();
+    public List<
+            CustomerTypeVO> optionList() {
+        return customerTypeDao.selectList(new LambdaQueryWrapper<
+                CustomerTypeEntity>().eq(CustomerTypeEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+                .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId)).stream()
+                .map(CustomerTypeService::toVO).toList();
     }
 
-    public PageResult<CustomerTypeVO> query(CustomerTypeQueryForm form) {
+    public PageResult<
+            CustomerTypeVO> query(CustomerTypeQueryForm form) {
         assertSortable(form);
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.asc("name"), OrderItem.asc("id"));
         }
-        List<CustomerTypeEntity> rows = customerTypeDao.queryPage(page, form);
-        List<CustomerTypeVO> list = new ArrayList<>(rows.size());
+        List<
+                CustomerTypeEntity> rows = customerTypeDao.queryPage(page, form);
+        List<
+                CustomerTypeVO> list = new ArrayList<>(rows.size());
         rows.forEach(row -> list.add(toVO(row)));
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -185,8 +190,9 @@ public class CustomerTypeService {
     }
 
     private boolean existsCode(String code, Long excludeId) {
-        LambdaQueryWrapper<CustomerTypeEntity> wrapper = new LambdaQueryWrapper<CustomerTypeEntity>()
-                .eq(CustomerTypeEntity::getTypeCode, code);
+        LambdaQueryWrapper<
+                CustomerTypeEntity> wrapper = new LambdaQueryWrapper<
+                        CustomerTypeEntity>().eq(CustomerTypeEntity::getTypeCode, code);
         if (excludeId != null) {
             wrapper.ne(CustomerTypeEntity::getId, excludeId);
         }

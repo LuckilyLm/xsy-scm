@@ -50,13 +50,16 @@ public class CustomerController {
 
     @PostMapping("/query")
     @SaCheckPermission(CustomerPermission.QUERY)
-    public ResponseDTO<PageResult<CustomerVO>> query(@Valid @RequestBody CustomerQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    CustomerVO>> query(@Valid @RequestBody CustomerQueryForm form) {
         return ResponseDTO.ok(customerQueryService.query(form));
     }
 
     @GetMapping("/detail/{customerId}")
     @SaCheckPermission(CustomerPermission.QUERY)
-    public ResponseDTO<CustomerDetailVO> detail(@PathVariable Long customerId) {
+    public ResponseDTO<
+            CustomerDetailVO> detail(@PathVariable Long customerId) {
         return ResponseDTO.ok(customerQueryService.detail(customerId));
     }
 
@@ -69,22 +72,26 @@ public class CustomerController {
      */
     @GetMapping("/{customerId}/frequent-skus")
     @SaCheckPermission(value = {CustomerPermission.QUERY, OrderPermission.QUERY}, mode = SaMode.AND)
-    public ResponseDTO<List<CustomerFrequentSkuVO>> frequentSkus(@PathVariable Long customerId,
-            @RequestParam(defaultValue = "90") int days, @RequestParam(defaultValue = "20") int limit) {
+    public ResponseDTO<
+            List<
+                    CustomerFrequentSkuVO>> frequentSkus(@PathVariable Long customerId,
+                            @RequestParam(defaultValue = "90") int days, @RequestParam(defaultValue = "20") int limit) {
         return ResponseDTO.ok(customerQueryService.frequentSkus(customerId, days, limit));
     }
 
     @PostMapping("/add")
     @SaCheckPermission(CustomerPermission.ADD)
     @OperateLog
-    public ResponseDTO<Long> add(@Valid @RequestBody CustomerAddForm form) {
+    public ResponseDTO<
+            Long> add(@Valid @RequestBody CustomerAddForm form) {
         return ResponseDTO.ok(customerService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(CustomerPermission.UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@Valid @RequestBody CustomerUpdateForm form) {
+    public ResponseDTO<
+            String> update(@Valid @RequestBody CustomerUpdateForm form) {
         customerService.update(form);
         return ResponseDTO.ok();
     }
@@ -92,7 +99,8 @@ public class CustomerController {
     @PostMapping("/updateStatus")
     @SaCheckPermission(CustomerPermission.STATUS)
     @OperateLog
-    public ResponseDTO<String> updateStatus(@Valid @RequestBody CustomerStatusForm form) {
+    public ResponseDTO<
+            String> updateStatus(@Valid @RequestBody CustomerStatusForm form) {
         customerService.updateStatus(form);
         return ResponseDTO.ok();
     }
@@ -107,7 +115,8 @@ public class CustomerController {
     @PostMapping("/reassignSeller")
     @SaCheckPermission(CustomerPermission.ASSIGN)
     @OperateLog
-    public ResponseDTO<String> reassignSeller(@Valid @RequestBody CustomerSellerReassignForm form) {
+    public ResponseDTO<
+            String> reassignSeller(@Valid @RequestBody CustomerSellerReassignForm form) {
         customerService.reassignSeller(form);
         return ResponseDTO.ok();
     }
@@ -115,14 +124,17 @@ public class CustomerController {
     @PostMapping("/delete")
     @SaCheckPermission(CustomerPermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody CustomerDeleteForm form) {
+    public ResponseDTO<
+            String> delete(@Valid @RequestBody CustomerDeleteForm form) {
         customerService.delete(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/option/list")
     @SaCheckPermission(CustomerPermission.QUERY)
-    public ResponseDTO<List<CustomerOptionVO>> optionList() {
+    public ResponseDTO<
+            List<
+                    CustomerOptionVO>> optionList() {
         return ResponseDTO.ok(customerQueryService.optionList());
     }
 }

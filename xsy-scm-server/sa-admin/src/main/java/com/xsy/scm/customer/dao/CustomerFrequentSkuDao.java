@@ -27,6 +27,7 @@ public interface CustomerFrequentSkuDao {
      * @param limit
      *            返回分组数上限（Service 已裁剪到安全区间）
      */
-    List<CustomerFrequentSkuVO> frequentSkus(@Param("customerId") Long customerId, @Param("since") OffsetDateTime since,
-            @Param("limit") int limit);
+    List<
+            CustomerFrequentSkuVO> frequentSkus(@Param("customerId") Long customerId,
+                    @Param("since") OffsetDateTime since, @Param("limit") int limit);
 }

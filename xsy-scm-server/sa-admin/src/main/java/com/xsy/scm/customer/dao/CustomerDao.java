@@ -11,7 +11,10 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
-public interface CustomerDao extends BaseMapper<CustomerEntity> {
+public interface CustomerDao
+        extends
+            BaseMapper<
+                    CustomerEntity> {
 
     /**
      * 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。
@@ -19,8 +22,11 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
      * <p>
      * {@code scope} 是 {@code customer.seller_id} 维度的授权取值：由 Service 显式解析后下传， 传 {@code null} 在 SQL 里渲染成恒假谓词而不是「不加限制」。
      */
-    List<CustomerEntity> queryPage(Page<?> page, @Param("query") CustomerQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            CustomerEntity> queryPage(
+                    Page<
+                            ?> page,
+                    @Param("query") CustomerQueryForm query, @Param("scope") ScmValueScope scope);
 
     /**
      * 原子软删：{@code id + version} 双谓词，返回 0 表示版本冲突。
@@ -36,5 +42,8 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
      */
     long countActiveByTypeId(@Param("typeId") Long typeId);
 
-    List<CustomerEntity> selectActiveByCodes(@Param("codes") List<String> codes);
+    List<
+            CustomerEntity> selectActiveByCodes(
+                    @Param("codes") List<
+                            String> codes);
 }
