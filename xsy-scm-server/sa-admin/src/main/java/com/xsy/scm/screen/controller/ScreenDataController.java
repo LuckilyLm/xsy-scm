@@ -41,7 +41,7 @@ public class ScreenDataController {
     /**
      * 地理分布（地图 M1）：按市聚合的客户 / 供应商 / 仓库气泡与按省上卷的着色值。
      *
-     * <p>与其余面板同为只读聚合，复用 V28 已种下的 {@code scm:screen:query}，不新增权限码。
+     * <p>与其余面板一样属于只读聚合，受 {@code scm:screen:query} 权限保护。
      */
     @GetMapping("/data/geo")
     @SaCheckPermission("scm:screen:query")
