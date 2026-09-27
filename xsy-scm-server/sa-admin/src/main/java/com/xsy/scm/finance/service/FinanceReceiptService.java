@@ -22,7 +22,7 @@ import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
-import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +42,7 @@ import java.util.Map;
  * 允许预收：没有对应应收也可以登记收款。核销由单独命令完成。
  *
  * <p><b>不设第二套幂等基建</b>：复用既有 {@code idempotency_record} 与
- * {@link OrderIdempotencyService}（三段式 {@code claim → 写 → complete} 同一事务），
+ * {@link ScmIdempotencyService}（三段式 {@code claim → 写 → complete} 同一事务），
  * 与 delivery / inventory / sorting 同一形态。
  * {@code external_reference} 只是资金凭据文本，不参与任何一层防重。
  */
@@ -54,7 +54,7 @@ public class FinanceReceiptService {
     private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
     private final FinanceOperationLogRecorder operationLogs;
     private final ScmDataScopeService dataScopeService;
-    private final OrderIdempotencyService orderIdempotencyService;
+    private final ScmIdempotencyService idempotencyService;
 
     /**
      * 登记一笔 {@code NORMAL} 收款。
@@ -71,9 +71,9 @@ public class FinanceReceiptService {
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO add(FinanceReceiptAddForm form, String idempotencyKey) {
-        var claim = orderIdempotencyService.claim(FinanceConstant.RECEIPT_ADD_SCOPE, idempotencyKey, form);
+        var claim = idempotencyService.claim(FinanceConstant.RECEIPT_ADD_SCOPE, idempotencyKey, form);
         if (claim.replay()) {
-            return orderIdempotencyService.replay(claim, FinanceReceiptVO.class);
+            return idempotencyService.replay(claim, FinanceReceiptVO.class);
         }
 
         FinanceReceiptEntity receipt = register(form);
@@ -81,7 +81,7 @@ public class FinanceReceiptService {
                 ScmFinanceOperationTypeEnum.RECEIVE, null, null, snapshot(receipt));
 
         FinanceReceiptVO result = vo(receipt);
-        orderIdempotencyService.complete(claim, "FINANCE_RECEIPT", receipt.getId(), result);
+        idempotencyService.complete(claim, "FINANCE_RECEIPT", receipt.getId(), result);
         return result;
     }
 

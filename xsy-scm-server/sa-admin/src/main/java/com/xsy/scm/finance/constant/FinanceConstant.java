@@ -54,7 +54,7 @@ public final class FinanceConstant {
     /**
      * 收款登记的幂等 scope（与 {@code Idempotency-Key} 一起定位一条命令）。
      *
-     * <p>{@code OrderIdempotencyService} 会自动按「登录身份: scope」再加一层前缀，
+     * <p>{@code ScmIdempotencyService} 会自动按「登录身份: scope」再加一层前缀，
      * 因此这里只写动作名，不要重复拼员工 id。
      */
     public static final String RECEIPT_ADD_SCOPE = "FINANCE_RECEIPT_ADD";

@@ -26,7 +26,7 @@ import com.xsy.scm.finance.domain.entity.FinancePaymentEntity;
 import com.xsy.scm.finance.domain.form.FinancePaymentAddForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
-import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,7 +48,7 @@ import java.util.Map;
  * {@code finance_receivable} 行 —— 否则同一笔退货被冲减两次。
  *
  * <p><b>不设第二套幂等基建</b>：复用既有 {@code idempotency_record} 与
- * {@link OrderIdempotencyService}（三段式同一事务）。
+ * {@link ScmIdempotencyService}（三段式同一事务）。
  */
 @Service
 @RequiredArgsConstructor
@@ -59,7 +59,7 @@ public class FinancePaymentService {
     private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
     private final FinanceOperationLogRecorder operationLogs;
     private final ScmDataScopeService dataScopeService;
-    private final OrderIdempotencyService orderIdempotencyService;
+    private final ScmIdempotencyService idempotencyService;
 
     /**
      * 登记一笔 {@code NORMAL} 付款。
@@ -75,9 +75,9 @@ public class FinancePaymentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentVO add(FinancePaymentAddForm form, String idempotencyKey) {
-        var claim = orderIdempotencyService.claim(FinanceConstant.PAYMENT_ADD_SCOPE, idempotencyKey, form);
+        var claim = idempotencyService.claim(FinanceConstant.PAYMENT_ADD_SCOPE, idempotencyKey, form);
         if (claim.replay()) {
-            return orderIdempotencyService.replay(claim, FinancePaymentVO.class);
+            return idempotencyService.replay(claim, FinancePaymentVO.class);
         }
 
         FinancePaymentEntity payment = register(form);
@@ -85,7 +85,7 @@ public class FinancePaymentService {
                 ScmFinanceOperationTypeEnum.PAY, null, null, snapshot(payment));
 
         FinancePaymentVO result = vo(payment);
-        orderIdempotencyService.complete(claim, "FINANCE_PAYMENT", payment.getId(), result);
+        idempotencyService.complete(claim, "FINANCE_PAYMENT", payment.getId(), result);
         return result;
     }
 
