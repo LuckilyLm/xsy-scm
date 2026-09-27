@@ -13,35 +13,35 @@ import lombok.Data;
 @Data
 public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm {
 
-    @NotBlank
-    @Size(max = 64)
+    @NotBlank(message = "仓库编码不能为空")
+    @Size(max = 64, message = "仓库编码不能超过64个字符")
     private String warehouseCode;
 
-    @NotBlank
-    @Size(max = 150)
+    @NotBlank(message = "仓库名称不能为空")
+    @Size(max = 150, message = "仓库名称不能超过150个字符")
     private String name;
 
-    @Size(max = 255)
+    @Size(max = 255, message = "仓库地址不能超过255个字符")
     private String address;
 
-    @Positive
+    @Positive(message = "省份编码必须大于0")
     private Integer provinceCode;
 
-    @Size(max = 32)
+    @Size(max = 32, message = "省份名称不能超过32个字符")
     private String provinceName;
 
-    @Positive
+    @Positive(message = "城市编码必须大于0")
     private Integer cityCode;
 
-    @Size(max = 64)
+    @Size(max = 64, message = "城市名称不能超过64个字符")
     private String cityName;
 
-    @Positive
+    @Positive(message = "区县编码必须大于0")
     private Integer districtCode;
 
-    @Size(max = 64)
+    @Size(max = 64, message = "区县名称不能超过64个字符")
     private String districtName;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 }
