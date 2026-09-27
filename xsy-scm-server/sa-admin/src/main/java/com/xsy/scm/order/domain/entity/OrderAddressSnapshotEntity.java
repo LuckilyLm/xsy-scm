@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 
 @Data
 @TableName(value = "order_address_snapshot", autoResultMap = true)
@@ -21,10 +22,10 @@ public class OrderAddressSnapshotEntity {
     private String cityName;
     private Integer districtCode;
     private String districtName;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal longitude;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal latitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal longitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal latitude;
     private String geomCrs;
 
     @TableId(type = IdType.AUTO)

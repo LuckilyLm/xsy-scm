@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 
 @Data
 public class OrderAddressSnapshotVO {
@@ -15,10 +16,10 @@ public class OrderAddressSnapshotVO {
     private String cityName;
     private Integer districtCode;
     private String districtName;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal longitude;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal latitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal longitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal latitude;
     private String geomCrs;
 
     private Long id;
