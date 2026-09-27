@@ -11,11 +11,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import com.xsy.scm.order.support.OrderJsonbTypeHandler;
 
 @Data
 @TableName(value = "order_refund", autoResultMap = true)

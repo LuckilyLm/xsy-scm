@@ -1,7 +1,6 @@
 package com.xsy.scm.order.domain.form;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -11,8 +10,6 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.time.OffsetDateTime;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.validation.ScmEnumValue;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 

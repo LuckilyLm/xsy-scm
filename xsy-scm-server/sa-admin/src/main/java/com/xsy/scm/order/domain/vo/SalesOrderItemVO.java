@@ -8,7 +8,6 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
-import com.xsy.scm.order.support.OrderJsonbTypeHandler;
 
 @Data
 public class SalesOrderItemVO {

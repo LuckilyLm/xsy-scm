@@ -7,7 +7,6 @@ import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
-import java.math.BigDecimal;
 
 /**
  * Order lifecycle only. Fulfillment never enters this state graph.
