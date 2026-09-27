@@ -45,27 +45,32 @@ public class SupplierController {
 
     @PostMapping("/query")
     @SaCheckPermission(SupplierPermission.QUERY)
-    public ResponseDTO<PageResult<SupplierVO>> query(@Valid @RequestBody SupplierQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    SupplierVO>> query(@Valid @RequestBody SupplierQueryForm form) {
         return ResponseDTO.ok(supplierQueryService.query(form));
     }
 
     @GetMapping("/detail/{supplierId}")
     @SaCheckPermission(SupplierPermission.QUERY)
-    public ResponseDTO<SupplierDetailVO> detail(@PathVariable Long supplierId) {
+    public ResponseDTO<
+            SupplierDetailVO> detail(@PathVariable Long supplierId) {
         return ResponseDTO.ok(supplierQueryService.detail(supplierId));
     }
 
     @PostMapping("/add")
     @SaCheckPermission(SupplierPermission.ADD)
     @OperateLog
-    public ResponseDTO<Long> add(@Valid @RequestBody SupplierAddForm form) {
+    public ResponseDTO<
+            Long> add(@Valid @RequestBody SupplierAddForm form) {
         return ResponseDTO.ok(supplierService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(SupplierPermission.UPDATE)
     @OperateLog
-    public ResponseDTO<String> update(@Valid @RequestBody SupplierUpdateForm form) {
+    public ResponseDTO<
+            String> update(@Valid @RequestBody SupplierUpdateForm form) {
         supplierService.update(form);
         return ResponseDTO.ok();
     }
@@ -73,7 +78,8 @@ public class SupplierController {
     @PostMapping("/updateStatus")
     @SaCheckPermission(SupplierPermission.STATUS)
     @OperateLog
-    public ResponseDTO<String> updateStatus(@Valid @RequestBody SupplierStatusForm form) {
+    public ResponseDTO<
+            String> updateStatus(@Valid @RequestBody SupplierStatusForm form) {
         supplierService.updateStatus(form);
         return ResponseDTO.ok();
     }
@@ -81,14 +87,17 @@ public class SupplierController {
     @PostMapping("/delete")
     @SaCheckPermission(SupplierPermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody SupplierDeleteForm form) {
+    public ResponseDTO<
+            String> delete(@Valid @RequestBody SupplierDeleteForm form) {
         supplierService.delete(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/option/list")
     @SaCheckPermission(SupplierPermission.QUERY)
-    public ResponseDTO<List<SupplierOptionVO>> optionList() {
+    public ResponseDTO<
+            List<
+                    SupplierOptionVO>> optionList() {
         return ResponseDTO.ok(supplierQueryService.optionList());
     }
 }

@@ -65,7 +65,8 @@ public class SupplierSkuSyncManager {
      * <p>
      * 空列表表示清空全部关联，不表示「无操作」。
      */
-    public void replace(Long supplierId, List<SupplierSkuItemForm> items) {
+    public void replace(Long supplierId, List<
+            SupplierSkuItemForm> items) {
         // ---- 锁段 ----
         SupplierEntity supplier = supplierDao.selectActiveByIdForUpdate(supplierId);
         if (supplier == null) {
@@ -74,14 +75,17 @@ public class SupplierSkuSyncManager {
         if (!ScmEnableStatusEnum.ENABLED.name().equals(supplier.getStatus())) {
             throw new ScmBusinessException(SUPPLIER_DISABLED);
         }
-        List<SupplierSkuEntity> existing = supplierSkuDao.selectActiveBySupplierIdForUpdate(supplierId);
+        List<
+                SupplierSkuEntity> existing = supplierSkuDao.selectActiveBySupplierIdForUpdate(supplierId);
 
         // ---- 校验段 A（差量计算内含请求内一致性校验） ----
         SupplierSkuChangeSet changeSet = SupplierSkuChangeSet.between(existing, items);
 
         // ---- 校验段 B：只构造、不写库 ----
-        List<Planned> retained = planRetained(changeSet, supplier);
-        List<Planned> inserted = planInserted(changeSet, supplier);
+        List<
+                Planned> retained = planRetained(changeSet, supplier);
+        List<
+                Planned> inserted = planInserted(changeSet, supplier);
 
         // ---- 写段 ----
         String operator = ScmOperator.current();
@@ -115,7 +119,9 @@ public class SupplierSkuSyncManager {
             }
         }
 
-        Map<Long, Integer> versionById = new HashMap<>();
+        Map<
+                Long,
+                Integer> versionById = new HashMap<>();
         existing.forEach(row -> versionById.put(row.getId(), row.getVersion()));
         for (Long removedId : changeSet.removedIds()) {
             Integer version = versionById.get(removedId);
@@ -128,9 +134,13 @@ public class SupplierSkuSyncManager {
     /**
      * 构造待更新的行：先批量校验采购员与 SKU，再逐条组装。
      */
-    private List<Planned> planRetained(SupplierSkuChangeSet changeSet, SupplierEntity supplier) {
-        List<Planned> planned = new ArrayList<>(changeSet.retained().size());
-        Map<Long, OrderableSkuVO> skus = loadOrderableSkus(collectSkuIds(changeSet));
+    private List<
+            Planned> planRetained(SupplierSkuChangeSet changeSet, SupplierEntity supplier) {
+        List<
+                Planned> planned = new ArrayList<>(changeSet.retained().size());
+        Map<
+                Long,
+                OrderableSkuVO> skus = loadOrderableSkus(collectSkuIds(changeSet));
         validatePurchasers(changeSet);
         for (SupplierSkuChangeSet.Matched matched : changeSet.retained()) {
             planned.add(new Planned(matched.existing(), matched.requested(), skus.get(matched.requested().getSkuId()),
@@ -142,17 +152,23 @@ public class SupplierSkuSyncManager {
     /**
      * 构造待插入的行。
      */
-    private List<Planned> planInserted(SupplierSkuChangeSet changeSet, SupplierEntity supplier) {
-        List<Planned> planned = new ArrayList<>(changeSet.inserted().size());
-        Map<Long, OrderableSkuVO> skus = loadOrderableSkus(collectSkuIds(changeSet));
+    private List<
+            Planned> planInserted(SupplierSkuChangeSet changeSet, SupplierEntity supplier) {
+        List<
+                Planned> planned = new ArrayList<>(changeSet.inserted().size());
+        Map<
+                Long,
+                OrderableSkuVO> skus = loadOrderableSkus(collectSkuIds(changeSet));
         for (SupplierSkuItemForm item : changeSet.inserted()) {
             planned.add(new Planned(null, item, skus.get(item.getSkuId()), supplier));
         }
         return planned;
     }
 
-    private Set<Long> collectSkuIds(SupplierSkuChangeSet changeSet) {
-        Set<Long> ids = new LinkedHashSet<>();
+    private Set<
+            Long> collectSkuIds(SupplierSkuChangeSet changeSet) {
+        Set<
+                Long> ids = new LinkedHashSet<>();
         changeSet.retained().forEach(matched -> ids.add(matched.requested().getSkuId()));
         changeSet.inserted().forEach(item -> ids.add(item.getSkuId()));
         return ids;
@@ -164,12 +180,19 @@ public class SupplierSkuSyncManager {
      * <p>
      * 缺任何一个 skuId 都意味着它不存在 / 已软删 / 未上架 → 40942。
      */
-    private Map<Long, OrderableSkuVO> loadOrderableSkus(Set<Long> skuIds) {
-        Map<Long, OrderableSkuVO> map = new HashMap<>();
+    private Map<
+            Long,
+            OrderableSkuVO> loadOrderableSkus(
+                    Set<
+                            Long> skuIds) {
+        Map<
+                Long,
+                OrderableSkuVO> map = new HashMap<>();
         if (skuIds.isEmpty()) {
             return map;
         }
-        List<OrderableSkuVO> rows = supplierSkuDao.selectOrderableSkuByIds(skuIds);
+        List<
+                OrderableSkuVO> rows = supplierSkuDao.selectOrderableSkuByIds(skuIds);
         if (rows != null) {
             rows.forEach(row -> map.put(row.getSkuId(), row));
         }
@@ -185,7 +208,8 @@ public class SupplierSkuSyncManager {
      * 批量校验默认采购员存在（引用 SmartAdmin {@code t_employee}，不旁路主数据）。
      */
     private void validatePurchasers(SupplierSkuChangeSet changeSet) {
-        Set<Long> purchaserIds = new HashSet<>();
+        Set<
+                Long> purchaserIds = new HashSet<>();
         changeSet.retained().forEach(matched -> {
             if (matched.requested().getPurchaserId() != null) {
                 purchaserIds.add(matched.requested().getPurchaserId());
@@ -199,9 +223,11 @@ public class SupplierSkuSyncManager {
         if (purchaserIds.isEmpty()) {
             return;
         }
-        List<EmployeeEntity> found = employeeDao
-                .selectList(new LambdaQueryWrapper<EmployeeEntity>().in(EmployeeEntity::getEmployeeId, purchaserIds));
-        Set<Long> existing = new HashSet<>();
+        List<
+                EmployeeEntity> found = employeeDao.selectList(new LambdaQueryWrapper<
+                        EmployeeEntity>().in(EmployeeEntity::getEmployeeId, purchaserIds));
+        Set<
+                Long> existing = new HashSet<>();
         if (found != null) {
             found.forEach(employee -> existing.add(employee.getEmployeeId()));
         }

@@ -10,12 +10,19 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
-public interface SupplierDao extends BaseMapper<SupplierEntity> {
+public interface SupplierDao
+        extends
+            BaseMapper<
+                    SupplierEntity> {
 
     /**
      * 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。
      */
-    List<SupplierEntity> queryPage(Page<?> page, @Param("query") SupplierQueryForm query);
+    List<
+            SupplierEntity> queryPage(
+                    Page<
+                            ?> page,
+                    @Param("query") SupplierQueryForm query);
 
     /**
      * 加行锁读取活动供应商。

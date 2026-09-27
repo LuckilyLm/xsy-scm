@@ -150,8 +150,9 @@ public class SupplierService {
      * 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。
      */
     public boolean existsCode(String normalizedCode, Long excludeId) {
-        LambdaQueryWrapper<SupplierEntity> wrapper = new LambdaQueryWrapper<SupplierEntity>()
-                .eq(SupplierEntity::getSupplierCode, normalizedCode);
+        LambdaQueryWrapper<
+                SupplierEntity> wrapper = new LambdaQueryWrapper<
+                        SupplierEntity>().eq(SupplierEntity::getSupplierCode, normalizedCode);
         if (excludeId != null) {
             wrapper.ne(SupplierEntity::getId, excludeId);
         }

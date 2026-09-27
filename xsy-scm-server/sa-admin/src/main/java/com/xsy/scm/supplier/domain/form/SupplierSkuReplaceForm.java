@@ -31,5 +31,6 @@ public class SupplierSkuReplaceForm {
     @Valid
     @NotNull(message = "供应商商品清单不能为空")
     @Size(max = 500, message = "供应商商品清单不能超过500项")
-    private List<SupplierSkuItemForm> items = new ArrayList<>();
+    private List<
+            SupplierSkuItemForm> items = new ArrayList<>();
 }

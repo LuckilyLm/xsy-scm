@@ -39,22 +39,28 @@ public class SupplierQueryService {
     /**
      * 排序白名单：客户端不能把任意字段名带入 SQL。
      */
-    private static final Set<String> SORTABLE = Set.of("supplier_code", "name", "status", "updated_at");
+    private static final Set<
+            String> SORTABLE = Set.of("supplier_code", "name", "status", "updated_at");
 
     private final SupplierDao supplierDao;
 
     private final SupplierSkuDao supplierSkuDao;
 
-    public PageResult<SupplierVO> query(SupplierQueryForm form) {
+    public PageResult<
+            SupplierVO> query(SupplierQueryForm form) {
         assertSortable(form);
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.asc("name"), OrderItem.asc("id"));
         }
-        List<SupplierEntity> rows = supplierDao.queryPage(page, form);
+        List<
+                SupplierEntity> rows = supplierDao.queryPage(page, form);
 
-        Map<Long, Long> skuCounts = skuCounts(rows);
-        List<SupplierVO> list = new ArrayList<>(rows.size());
+        Map<
+                Long,
+                Long> skuCounts = skuCounts(rows);
+        List<
+                SupplierVO> list = new ArrayList<>(rows.size());
         for (SupplierEntity row : rows) {
             SupplierVO vo = new SupplierVO();
             BeanUtils.copyProperties(row, vo);
@@ -80,12 +86,15 @@ public class SupplierQueryService {
     /**
      * 下拉选项：只返回 {@code ENABLED}，按名称排序。
      */
-    public List<SupplierOptionVO> optionList() {
-        List<SupplierEntity> rows = supplierDao
-                .selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SupplierEntity>()
-                        .eq(SupplierEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
-                        .orderByAsc(SupplierEntity::getName, SupplierEntity::getId));
-        List<SupplierOptionVO> list = new ArrayList<>(rows.size());
+    public List<
+            SupplierOptionVO> optionList() {
+        List<
+                SupplierEntity> rows = supplierDao
+                        .selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<
+                                SupplierEntity>().eq(SupplierEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+                                .orderByAsc(SupplierEntity::getName, SupplierEntity::getId));
+        List<
+                SupplierOptionVO> list = new ArrayList<>(rows.size());
         for (SupplierEntity row : rows) {
             SupplierOptionVO vo = new SupplierOptionVO();
             vo.setSupplierId(row.getId());
@@ -96,13 +105,21 @@ public class SupplierQueryService {
         return list;
     }
 
-    private Map<Long, Long> skuCounts(List<SupplierEntity> rows) {
-        Map<Long, Long> counts = new HashMap<>();
+    private Map<
+            Long,
+            Long> skuCounts(
+                    List<
+                            SupplierEntity> rows) {
+        Map<
+                Long,
+                Long> counts = new HashMap<>();
         if (rows.isEmpty()) {
             return counts;
         }
-        List<Long> ids = rows.stream().map(SupplierEntity::getId).toList();
-        List<SupplierSkuCountVO> found = supplierSkuDao.countActiveBySupplierIds(ids);
+        List<
+                Long> ids = rows.stream().map(SupplierEntity::getId).toList();
+        List<
+                SupplierSkuCountVO> found = supplierSkuDao.countActiveBySupplierIds(ids);
         if (found != null) {
             found.forEach(row -> counts.put(row.getSupplierId(), row.getSkuCount() == null ? 0L : row.getSkuCount()));
         }

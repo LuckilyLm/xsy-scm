@@ -40,7 +40,9 @@ public class SupplierSkuController {
      */
     @GetMapping("/list/{supplierId}")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
-    public ResponseDTO<List<SupplierSkuVO>> listBySupplierId(@PathVariable Long supplierId) {
+    public ResponseDTO<
+            List<
+                    SupplierSkuVO>> listBySupplierId(@PathVariable Long supplierId) {
         return ResponseDTO.ok(supplierSkuService.listBySupplierId(supplierId));
     }
 
@@ -49,14 +51,17 @@ public class SupplierSkuController {
      */
     @PostMapping("/query")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
-    public ResponseDTO<PageResult<SupplierSkuVO>> query(@Valid @RequestBody SupplierSkuQueryForm form) {
+    public ResponseDTO<
+            PageResult<
+                    SupplierSkuVO>> query(@Valid @RequestBody SupplierSkuQueryForm form) {
         return ResponseDTO.ok(supplierSkuService.query(form));
     }
 
     @PostMapping("/replace")
     @SaCheckPermission(SupplierPermission.SKU_UPDATE)
     @OperateLog
-    public ResponseDTO<String> replace(@Valid @RequestBody SupplierSkuReplaceForm form) {
+    public ResponseDTO<
+            String> replace(@Valid @RequestBody SupplierSkuReplaceForm form) {
         supplierSkuService.replace(form);
         return ResponseDTO.ok();
     }
