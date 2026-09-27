@@ -12,8 +12,8 @@ import java.time.OffsetDateTime;
 /**
  * 客户类型（可维护字典表）。
  *
- * <p>legacy 用可维护表、C 用前端硬编码枚举（1/2/3）。W2 采用 legacy 建模：枚举值下沉为
- * {@code customer_type} 的种子数据（ENTERPRISE / PERSONAL / GROUP），使新增类型无需发版。
+ * <p>客户类型存储在 {@code customer_type} 表中，类型编码由种子数据提供，新增类型不需要
+ * 在前端维护另一份枚举。
  */
 @Data
 @TableName(value = "customer_type", autoResultMap = true)

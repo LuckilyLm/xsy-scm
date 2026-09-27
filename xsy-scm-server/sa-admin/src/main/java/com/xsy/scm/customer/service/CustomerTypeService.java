@@ -46,7 +46,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_TYPE_NOT_
 public class CustomerTypeService {
 
     /**
-     * 排序白名单：只有这些列允许来自客户端（修正 legacy D18 / C 缺陷 K14）。
+     * 排序白名单：客户端只能选择这些列，避免把任意字段拼入 SQL。
      */
     private static final Set<String> SORTABLE = Set.of("type_code", "name", "status", "updated_at");
 
@@ -76,7 +76,7 @@ public class CustomerTypeService {
     }
 
     /**
-     * 读取「可用于新建 / 编辑客户」的类型：必须存在、未删除且 {@code ENABLED}（legacy 不变量 C2）。
+     * 读取「可用于新建 / 编辑客户」的类型：必须存在、未删除且 {@code ENABLED}。
      *
      * <p>停用类型不允许被新引用，但已引用它的客户仍然可读、可改其它字段。
      */
@@ -89,7 +89,7 @@ public class CustomerTypeService {
     }
 
     /**
-     * 下拉选项：只返回 {@code ENABLED}（Target Design Q9），按名称排序。
+     * 下拉选项：只返回 {@code ENABLED}，按名称排序。
      */
     public List<CustomerTypeVO> optionList() {
         return customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
@@ -164,7 +164,7 @@ public class CustomerTypeService {
     /**
      * 删除客户类型。
      *
-     * <p>legacy 没有删除端点，W2 新增（Target Design Q3）。被活动客户引用时拒绝——
+     * <p>被活动客户引用时拒绝删除——
      * 否则会把存量客户指向一个不存在的类型。
      */
     @Transactional(rollbackFor = Exception.class)

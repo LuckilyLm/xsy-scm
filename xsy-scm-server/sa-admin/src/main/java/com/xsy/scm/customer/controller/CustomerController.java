@@ -35,8 +35,7 @@ import java.util.List;
 /**
  * SCM 客户档案。
  *
- * <p>写端点全部带 {@code @OperateLog}（修正 legacy 客户域零操作日志的缺陷 D3），
- * 全部带 {@code @SaCheckPermission}（修正 legacy 零权限注解的缺陷 D2）。
+ * <p>所有写端点都记录操作日志并执行对应的客户域权限检查。
  */
 @RestController
 @RequestMapping("/scm/customer")
@@ -61,7 +60,7 @@ public class CustomerController {
     }
 
     /**
-     * 客户「常购商品」（Wave 7 客户 360°，只读聚合）。
+     * 客户「常购商品」（客户 360°，只读聚合）。
      *
      * <p>取数源是订单事实，价格字段沿用订单查看规则，因此<b>同时</b>要求 {@code scm:customer:query}
      * 与 {@code scm:order:query}（{@link SaMode#AND}）：没有订单查看权的人不能仅凭客户权限读到历史成交价。

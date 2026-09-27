@@ -9,8 +9,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 /**
  * 客户类型单条业务规则。
  *
- * <p>客户类型是薄字典，规则只有两条：编码归一化、状态取值域。名称允许重复（legacy 不变量 T2，
- * 不建唯一索引），因此这里不做重名检查。
+ * <p>客户类型是薄字典：编码需归一化且唯一，状态必须属于受支持的取值；名称允许重复。
  */
 public final class CustomerTypeValidator {
 

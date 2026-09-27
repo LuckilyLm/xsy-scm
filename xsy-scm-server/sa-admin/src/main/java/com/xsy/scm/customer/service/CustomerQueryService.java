@@ -46,20 +46,20 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND
 /**
  * 客户读路径。
  *
- * <p>列表补全（类型名 / 上级客户名 / 业务员名）一律走**批量查询**，绝不在循环里查库——
- * legacy 的 N+1 是最容易在客户量增长后暴露的性能问题（legacy 不变量 C17）。
+ * <p>列表补全（类型名 / 上级客户名 / 业务员名）一律走**批量查询**，绝不在循环里查库，
+ * 避免查询次数随列表行数增长。
  */
 @Service
 @RequiredArgsConstructor
 public class CustomerQueryService {
 
     /**
-     * 排序白名单（修正 legacy D18：只做 SQL 注入检查、不做白名单）。
+     * 排序白名单：客户端不能把任意字段名带入 SQL。
      */
     private static final Set<String> SORTABLE = Set.of("customer_code", "name", "status", "updated_at");
 
     /**
-     * 常购商品聚合窗口与行数上限（Wave 7 §11.3）：服务端裁剪，不接受越界的 days / limit。
+     * 常购商品聚合窗口与行数上限：服务端裁剪，不接受越界的 days / limit。
      */
     private static final int FREQUENT_MIN_DAYS = 1;
     private static final int FREQUENT_MAX_DAYS = 365;
@@ -150,7 +150,7 @@ public class CustomerQueryService {
     }
 
     /**
-     * 客户「常购商品」（Wave 7 客户 360°，只读）：近 {@code days} 天已确认订单按 (SKU, 单位) 现算聚合，不落副本。
+     * 客户「常购商品」（客户 360°，只读）：近 {@code days} 天已确认订单按 (SKU, 单位) 现算聚合，不落副本。
      *
      * <p>days / limit 一律服务端裁剪到安全区间；窗口按 <b>Asia/Shanghai 日界</b>对齐——「近 N 天含今天」
      * 下界取当天零点往前 {@code days-1} 天，避免按时分秒滚动窗口导致的边界抖动。客户不存在时与详情同样报 {@code CUSTOMER_NOT_FOUND}。
@@ -188,7 +188,7 @@ public class CustomerQueryService {
         List<CustomerEntity> rows = customerDao.selectList(new LambdaQueryWrapper<CustomerEntity>()
                 .orderByAsc(CustomerEntity::getName, CustomerEntity::getId));
 
-        // 一次批量取回类型编码，避免在循环里查库（C17）
+        // 一次批量取回类型编码，避免在循环里查库。
         Map<Long, String> typeCodes = new HashMap<>();
         Set<Long> typeIds = collect(rows, CustomerEntity::getCustomerTypeId);
         if (!typeIds.isEmpty()) {
@@ -235,8 +235,7 @@ public class CustomerQueryService {
     /**
      * 一次性把一批客户行需要的外部名称全部取回来。
      *
-     * <p>四次批量查询封顶，与行数无关；空集合显式跳过，避免生成 `IN ()` 这种非法 SQL
-     * （修正 legacy D15）。
+     * <p>四次批量查询封顶，与行数无关；空集合显式跳过，避免生成 `IN ()` 这种非法 SQL。
      */
     private EnrichmentContext context(List<CustomerEntity> rows) {
         if (rows.isEmpty()) {

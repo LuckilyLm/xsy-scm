@@ -45,7 +45,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADA
 public class CustomerService {
 
     /**
-     * 新建客户的初始状态（Target Design Q13）。
+     * 新建客户的初始状态。
      */
     public static final String INITIAL_STATUS = ScmCustomerStatusEnum.POTENTIAL.name();
 
@@ -82,8 +82,7 @@ public class CustomerService {
     /**
      * 读取「可交易」客户。
      *
-     * <p>W2 没有订单域，因此当前没有生产调用方；方法先落地，作为 W3 唯一允许的「能否下单」判定入口
-     * （legacy 不变量 C4）。
+     * <p>订单创建、提交和确认都通过此方法校验交易资格，避免各服务自行比较状态。
      */
     public CustomerEntity requireTradable(Long customerId) {
         CustomerEntity entity = require(customerId);
@@ -134,8 +133,8 @@ public class CustomerService {
             throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
         }
 
-        // 注意：apply 不触碰 status —— 状态只能通过 updateStatus 变更（C7）
-        // 也不触碰 seller_id —— 归属只能通过 reassignSeller 变更（裁决 P0 第 6 条）：
+        // apply 不触碰 status；状态只能通过 updateStatus 变更。
+        // 也不触碰 seller_id —— 归属只能通过 reassignSeller 变更（裁决 第 6 条）：
         // 编辑表单里的 sellerId 对任何角色都只是回显值，否则普通销售把客户回传成别人的 id
         // 就能把它挪出自己的范围（或挪进别人的范围），行级范围随之失效。
         apply(entity, form);
@@ -233,11 +232,9 @@ public class CustomerService {
     }
 
     /**
-     * 删除前的下游引用检查（legacy 不变量 C9）。
+     * 删除前检查客户 SKU 可见性引用。
      *
-     * <p>W2 没有任何下游业务表引用客户（定价 / 订单 / 商城都在 W3+），因此当前恒通过。
-     * W3 接入定价后在这里补查询并抛出 {@code CUSTOMER_REFERENCED}(40939)。
-     * 检查位先落地，避免 W3 忘记加而导致删掉被引用的客户。
+     * <p>销售订单引用由订单域拦截器在软删除前检查，避免客户域直接依赖订单表。
      */
     private void assertNotReferenced(Long customerId) {
         if (customerSkuVisibilityDao.customerReferences(customerId) > 0)
@@ -254,7 +251,7 @@ public class CustomerService {
         entity.setCustomerTypeId(form.getCustomerTypeId());
         entity.setSettleMode(form.getSettleMode());
         entity.setParentCustomerId(form.getParentCustomerId());
-        // 归属不在此处赋值：新建走 resolveSellerOnCreate，改派走 reassignSeller（裁决 P0 第 6 条）
+        // 归属只由创建时解析或专用改派命令变更。
         entity.setSupplierId(form.getSupplierId());
         entity.setContactName(CustomerValidator.normalizeOptional(form.getContactName()));
         entity.setContactPhone(CustomerValidator.normalizeOptional(form.getContactPhone()));

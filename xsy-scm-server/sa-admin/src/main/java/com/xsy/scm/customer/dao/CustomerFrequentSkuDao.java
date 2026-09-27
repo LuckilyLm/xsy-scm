@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 客户「常购商品」只读聚合（Wave 7 客户 360°）。
+ * 客户「常购商品」只读聚合（客户 360°）。
  *
  * <p>这是一次<b>跨域只读</b>：聚合源是订单事实表 {@code sales_order / sales_order_item}，
  * 但读模型归客户视图所有，因此与 {@code CustomerQueryService} 补全供应商 / 业务员名同为跨域读，

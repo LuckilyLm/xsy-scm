@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 客户状态变更（独立端点，C7）。
+ * 客户状态变更命令。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

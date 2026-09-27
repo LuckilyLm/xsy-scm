@@ -8,7 +8,7 @@ import lombok.Data;
 /**
  * 删除客户类型。
  *
- * <p>legacy 没有删除端点；W2 新增（Target Design Q3），删除前检查是否仍被活动客户引用。
+ * <p>删除前检查客户类型是否仍被活动客户引用。
  */
 @Data
 public class CustomerTypeDeleteForm {

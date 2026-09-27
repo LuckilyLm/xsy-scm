@@ -27,7 +27,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_PARENT_IN
 public class CustomerValidator {
 
     /**
-     * 上级客户上溯的最大层数；超过即判定为环，避免脏数据把请求拖成死循环（Target Design R4）。
+     * 上级客户上溯的最大层数；超过即判定为环，避免脏数据让请求无限遍历。
      */
     public static final int MAX_PARENT_DEPTH = 20;
 

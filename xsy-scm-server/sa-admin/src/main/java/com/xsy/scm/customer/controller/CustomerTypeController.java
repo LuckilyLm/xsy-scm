@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * SCM 客户类型（可维护字典）。
  *
- * <p>没有独立的状态端点：状态随新增 / 编辑表单带入（legacy 不变量 T8）。
+ * <p>没有独立的状态端点：状态通过新增和编辑表单维护。
  */
 @RestController
 @RequestMapping("/scm/customer/type")

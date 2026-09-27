@@ -10,7 +10,7 @@ import lombok.EqualsAndHashCode;
  * 编辑客户。
  *
  * <p>字段与 {@link CustomerAddForm} 完全一致，仅追加主键与乐观锁版本号；
- * <b>不包含 {@code status}</b>，更新路径不允许改状态（C7）。
+ * <b>不包含 {@code status}</b>；状态只能通过专用状态变更端点修改。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
