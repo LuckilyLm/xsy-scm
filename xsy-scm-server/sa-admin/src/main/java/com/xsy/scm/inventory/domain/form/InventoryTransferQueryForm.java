@@ -10,11 +10,11 @@ import net.lab1024.sa.base.common.domain.PageParam;
 /**
  * 调拨单分页查询条件。
  *
- * <p>与其它库存单据查询同取向：刻意**不提供** {@code sortItemList} ——
- * 列表 SQL 的排序列写死在 mapper 里（{@code created_at DESC, id DESC}）。
+ * <p>
+ * 与其它库存单据查询同取向：刻意**不提供** {@code sortItemList} —— 列表 SQL 的排序列写死在 mapper 里（{@code created_at DESC, id DESC}）。
  *
- * <p>同时给出「源仓」与「目标仓」两个筛选维度：只看源仓回答「这个仓发出去了多少」，
- * 只看目标仓回答「这个仓要收多少」，两者都有查询价值，不能只留一个。
+ * <p>
+ * 同时给出「源仓」与「目标仓」两个筛选维度：只看源仓回答「这个仓发出去了多少」， 只看目标仓回答「这个仓要收多少」，两者都有查询价值，不能只留一个。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

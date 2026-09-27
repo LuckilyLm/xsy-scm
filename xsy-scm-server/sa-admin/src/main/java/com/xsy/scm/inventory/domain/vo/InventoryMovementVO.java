@@ -11,16 +11,17 @@ import java.util.Map;
 /**
  * 库存流水行。
  *
- * <p><b>溯源字段</b>：
+ * <p>
+ * <b>溯源字段</b>：
  * <ul>
- *   <li>{@code sourceDocumentType + sourceDocumentItemId} —— 防重锚点（唯一索引列）；</li>
- *   <li>{@code sourceDocumentId + receiptNo} —— 人类可读溯源（不设 {@code movement_no}，
- *       来源单号由 {@code purchase_receipt.receipt_no} 承担），前端据此跳收货单详情。</li>
+ * <li>{@code sourceDocumentType + sourceDocumentItemId} —— 防重锚点（唯一索引列）；</li>
+ * <li>{@code sourceDocumentId + receiptNo} —— 人类可读溯源（不设 {@code movement_no}， 来源单号由 {@code purchase_receipt.receipt_no}
+ * 承担），前端据此跳收货单详情。</li>
  * </ul>
  *
- * <p><b>快照 vs 实时</b>：{@code unitSnapshot} / {@code unitCost} / {@code beforeQuantity} /
- * {@code afterQuantity} / {@code occurredAt} / {@code operator} 是**写入时冻结的事实**；
- * SKU / 仓库的编码与名称是**实时联表**（流水表刻意不存展示快照，溯源靠 id）。
+ * <p>
+ * <b>快照 vs 实时</b>：{@code unitSnapshot} / {@code unitCost} / {@code beforeQuantity} / {@code afterQuantity} /
+ * {@code occurredAt} / {@code operator} 是**写入时冻结的事实**； SKU / 仓库的编码与名称是**实时联表**（流水表刻意不存展示快照，溯源靠 id）。
  */
 @Data
 public class InventoryMovementVO {
@@ -65,8 +66,8 @@ public class InventoryMovementVO {
     /**
      * 出库单号，关联 {@code inventory_outbound}。
      *
-     * <p>仅 {@code SALES_OUT} 有值。与 {@code receiptNo} 分开两个字段而不是合并成
-     * 「来源单号」一个：两者的跳转目标不同（收货单 vs 出库单），前端要按类型渲染不同链接。
+     * <p>
+     * 仅 {@code SALES_OUT} 有值。与 {@code receiptNo} 分开两个字段而不是合并成 「来源单号」一个：两者的跳转目标不同（收货单 vs 出库单），前端要按类型渲染不同链接。
      */
     private String sourceDocumentNo;
 

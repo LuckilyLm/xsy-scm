@@ -35,15 +35,15 @@ import java.util.Map;
 /**
  * 盘点效率：按仓库导出带签名快照的 Excel 模板，并把用户填好实盘量的 Excel 导回为<b>草稿</b>盘点单。
  *
- * <p><b>本类只负责「解析 + 全量校验 + 凭证核验」，不直接碰库存</b>：真正的落库交给
- * {@link InventoryStocktakeImportTxService}（持锁核验 + 复用既有 {@code create}）。导入绝不写
- * {@code inventory_balance.quantity} 或 {@code inventory_movement} —— 只有后续 {@code confirm} 才改库存。
+ * <p>
+ * <b>本类只负责「解析 + 全量校验 + 凭证核验」，不直接碰库存</b>：真正的落库交给 {@link InventoryStocktakeImportTxService}（持锁核验 + 复用既有
+ * {@code create}）。导入绝不写 {@code inventory_balance.quantity} 或 {@code inventory_movement} —— 只有后续 {@code confirm} 才改库存。
  *
- * <p><b>整批语义</b>：任一空行 / 空白实盘量 / 来源集合被增删替换 / 凭证被篡改或过期 / 快照漂移，
- * 全部导致整批拒绝且不产生草稿。这与商品、订单导入同一取向：先全部校验，0 错误才写。
+ * <p>
+ * <b>整批语义</b>：任一空行 / 空白实盘量 / 来源集合被增删替换 / 凭证被篡改或过期 / 快照漂移， 全部导致整批拒绝且不产生草稿。这与商品、订单导入同一取向：先全部校验，0 错误才写。
  *
- * <p><b>单元格里的账面量 / 单位 / 版本一律不信任</b>：它们只是给人看的快照，权威值来自签名凭证，
- * 并在导入时与持锁读取的当前余额逐项复核（消除「先校验、再保存」竞态）。
+ * <p>
+ * <b>单元格里的账面量 / 单位 / 版本一律不信任</b>：它们只是给人看的快照，权威值来自签名凭证， 并在导入时与持锁读取的当前余额逐项复核（消除「先校验、再保存」竞态）。
  */
 @Slf4j
 @Service
@@ -51,8 +51,7 @@ import java.util.Map;
 public class InventoryStocktakeImportService {
 
     public static final String TEMPLATE_VERSION = "1.0";
-    private static final List<String> HEADERS = List.of(
-            "快照凭证", "SKU编码", "商品名称", "规格", "记账单位", "账面数量快照", "实盘数量", "备注");
+    private static final List<String> HEADERS = List.of("快照凭证", "SKU编码", "商品名称", "规格", "记账单位", "账面数量快照", "实盘数量", "备注");
     private static final int COL_CREDENTIAL = 0;
     private static final int COL_SKU_CODE = 1;
     private static final int COL_ACTUAL = 6;
@@ -83,12 +82,12 @@ public class InventoryStocktakeImportService {
 
         List<StocktakeSnapshotSigner.Entry> entries = new ArrayList<>(balances.size());
         for (InventoryBalanceVO balance : balances) {
-            entries.add(new StocktakeSnapshotSigner.Entry(balance.getSkuCode(), balance.getSkuId(),
-                    balance.getId(), balance.getUnit(), balance.getVersion(), balance.getQuantity()));
+            entries.add(new StocktakeSnapshotSigner.Entry(balance.getSkuCode(), balance.getSkuId(), balance.getId(),
+                    balance.getUnit(), balance.getVersion(), balance.getQuantity()));
         }
         long now = OffsetDateTime.now().toEpochSecond();
-        String credential = signer.sign(new StocktakeSnapshotSigner.Payload(
-                TEMPLATE_VERSION, warehouseId, operator, now, now + ttlMinutes * 60, entries));
+        String credential = signer.sign(new StocktakeSnapshotSigner.Payload(TEMPLATE_VERSION, warehouseId, operator,
+                now, now + ttlMinutes * 60, entries));
 
         try (var workbook = new XSSFWorkbook(); var out = new ByteArrayOutputStream()) {
             var sheet = workbook.createSheet("盘点导入");
@@ -104,7 +103,8 @@ public class InventoryStocktakeImportService {
                 row.createCell(2).setCellValue(nullToEmpty(balance.getProductName()));
                 row.createCell(3).setCellValue(nullToEmpty(balance.getSkuName()));
                 row.createCell(4).setCellValue(nullToEmpty(balance.getUnit()));
-                row.createCell(5).setCellValue(balance.getQuantity() == null ? "" : balance.getQuantity().toPlainString());
+                row.createCell(5)
+                        .setCellValue(balance.getQuantity() == null ? "" : balance.getQuantity().toPlainString());
                 // 实盘数量 / 备注 留空，由用户填写
             }
             workbook.write(out);
@@ -115,7 +115,8 @@ public class InventoryStocktakeImportService {
     /**
      * 导入用户填好实盘量的 Excel → 新建草稿盘点单。
      *
-     * @param idempotencyKey 客户端为「同一次上传」稳定生成的键；响应丢失后原样重发即命中重放，不建第二张草稿
+     * @param idempotencyKey
+     *            客户端为「同一次上传」稳定生成的键；响应丢失后原样重发即命中重放，不建第二张草稿
      */
     public InventoryStocktakeImportResultVO importFile(MultipartFile file, String idempotencyKey) throws Exception {
         var result = new InventoryStocktakeImportResultVO();
@@ -132,12 +133,10 @@ public class InventoryStocktakeImportService {
         } catch (StocktakeSnapshotSigner.SnapshotPayloadUnreadable exception) {
             // 载荷是我们自己签出去的，解析失败属于服务端故障：留下真因，且不能叫用户重导模板空转。
             log.error("盘点快照凭证验签通过但载荷解析失败，属服务端缺陷", exception);
-            addError(result, 0, null, "快照凭证", "SNAPSHOT_UNREADABLE",
-                    "快照凭证无法解析，请联系运维查看服务端日志");
+            addError(result, 0, null, "快照凭证", "SNAPSHOT_UNREADABLE", "快照凭证无法解析，请联系运维查看服务端日志");
             return result;
         } catch (StocktakeSnapshotSigner.SnapshotCredentialException exception) {
-            addError(result, 0, null, "快照凭证", "CREDENTIAL_INVALID",
-                    exception.getMessage() + "；请重新导出模板");
+            addError(result, 0, null, "快照凭证", "CREDENTIAL_INVALID", exception.getMessage() + "；请重新导出模板");
             return result;
         }
         if (!TEMPLATE_VERSION.equals(payload.templateVersion())) {
@@ -145,8 +144,7 @@ public class InventoryStocktakeImportService {
             return result;
         }
         if (!ScmOperator.current().equals(payload.operator())) {
-            addError(result, 0, null, "快照凭证", "OPERATOR_MISMATCH",
-                    "该模板由他人导出，请用本人重新导出的模板导入");
+            addError(result, 0, null, "快照凭证", "OPERATOR_MISMATCH", "该模板由他人导出，请用本人重新导出的模板导入");
             return result;
         }
         // 仓库授权必须在幂等认领之前判：认领本身就是写，越权的导入请求不能在库里留下任何痕迹
@@ -167,8 +165,7 @@ public class InventoryStocktakeImportService {
         }
         for (var code : authoritative.keySet()) {
             if (!sheetCodes.contains(code)) {
-                addError(result, 0, code, "SKU编码", "SOURCE_MISSING",
-                        "快照来源行 " + code + " 在文件中缺失，请重新导出并填写完整");
+                addError(result, 0, code, "SKU编码", "SOURCE_MISSING", "快照来源行 " + code + " 在文件中缺失，请重新导出并填写完整");
             }
         }
         if (result.getTotalErrors() > 0) {
@@ -178,9 +175,8 @@ public class InventoryStocktakeImportService {
         var lines = new ArrayList<InventoryStocktakeService.SnapshotLine>();
         for (var filled : sheet.rows) {
             var entry = authoritative.get(filled.skuCode);
-            lines.add(new InventoryStocktakeService.SnapshotLine(entry.skuCode(), entry.skuId(),
-                    entry.balanceId(), entry.unit(), entry.version(), entry.bookQuantity(),
-                    filled.actualQuantity, filled.remark));
+            lines.add(new InventoryStocktakeService.SnapshotLine(entry.skuCode(), entry.skuId(), entry.balanceId(),
+                    entry.unit(), entry.version(), entry.bookQuantity(), filled.actualQuantity, filled.remark));
         }
 
         try {
@@ -221,7 +217,8 @@ public class InventoryStocktakeImportService {
             var sheet = workbook.getSheetAt(0);
             var header = sheet.getRow(0);
             for (int column = 0; column < HEADERS.size(); column++) {
-                if (header == null || !HEADERS.get(column).equals(trim(formatter.formatCellValue(header.getCell(column))))) {
+                if (header == null
+                        || !HEADERS.get(column).equals(trim(formatter.formatCellValue(header.getCell(column))))) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
                             "表头应为“" + HEADERS.get(column) + "”，请使用最新模板");
                 }
@@ -315,7 +312,7 @@ public class InventoryStocktakeImportService {
 
     /** 参与幂等哈希的指纹：凭证 + 每行（skuCode / 实盘量 / 备注）的稳定序列，内容变即视为不同请求。 */
     private static Object fingerprint(StocktakeSnapshotSigner.Payload payload,
-                                      List<InventoryStocktakeService.SnapshotLine> lines) {
+            List<InventoryStocktakeService.SnapshotLine> lines) {
         var actual = new ArrayList<Map<String, Object>>();
         for (var line : lines) {
             Map<String, Object> row = new LinkedHashMap<>();
@@ -343,8 +340,8 @@ public class InventoryStocktakeImportService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private static void addError(InventoryStocktakeImportResultVO result, int row, String skuCode,
-                                 String column, String code, String message) {
+    private static void addError(InventoryStocktakeImportResultVO result, int row, String skuCode, String column,
+            String code, String message) {
         result.setTotalErrors(result.getTotalErrors() + 1);
         if (result.getErrors().size() < MAX_ERRORS) {
             result.getErrors().add(new InventoryStocktakeImportErrorVO(row, skuCode, column, code, message));

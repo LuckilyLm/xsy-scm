@@ -19,13 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * SCM 库存预警（**只读**）。
  *
- * <p>只有一个端点：预警列表。这里刻意**没有任何写操作** —— 预警不是一种可以「标记已读」
- * 的状态，它只是 {@code (阈值, 可用量)} 的当前计算结果。引入「已读 / 已忽略」会让预警
- * 与真实库存脱钩：货补上了，那条「已读」的记录还在；货又少了，它却已经被忽略过。
- * 用户想看什么，就按状态筛什么。
+ * <p>
+ * 只有一个端点：预警列表。这里刻意**没有任何写操作** —— 预警不是一种可以「标记已读」 的状态，它只是 {@code (阈值, 可用量)} 的当前计算结果。引入「已读 / 已忽略」会让预警
+ * 与真实库存脱钩：货补上了，那条「已读」的记录还在；货又少了，它却已经被忽略过。 用户想看什么，就按状态筛什么。
  *
- * <p>权限 {@code scm:inventory:warning:query} 与阈值配置分开：预警列表是**只读**的日常查看
- * （仓管每天看），阈值配置是**改规则**（改错了会让预警失效或刷屏），两者不是同一量级的操作。
+ * <p>
+ * 权限 {@code scm:inventory:warning:query} 与阈值配置分开：预警列表是**只读**的日常查看 （仓管每天看），阈值配置是**改规则**（改错了会让预警失效或刷屏），两者不是同一量级的操作。
  */
 @RestController
 @RequestMapping("/scm/inventory/warning")
@@ -38,8 +37,8 @@ public class InventoryWarningController {
     /**
      * 预警列表。
      *
-     * <p>{@code status} 为空 → 只返回异常项（低于下限 / 高于上限）；这是预警列表的默认语义。
-     * 传 {@code NORMAL} 才看正常项。
+     * <p>
+     * {@code status} 为空 → 只返回异常项（低于下限 / 高于上限）；这是预警列表的默认语义。 传 {@code NORMAL} 才看正常项。
      */
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.WARNING_QUERY)

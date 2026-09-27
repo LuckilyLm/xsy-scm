@@ -6,10 +6,9 @@ import lombok.RequiredArgsConstructor;
 /**
  * 出库单状态。
  *
- * <p>状态机刻意保持最小：{@code DRAFT → CONFIRMED}，以及草稿态的 {@code CANCELLED}。
- * 已确认的出库单**不可回退**——库存流水是 append-only 账本，冲销必须走「新增反向流水」，
- * 而不是把单据改回草稿再把流水删掉（后者在 DB 层会被
- * {@code ck_inventory_movement_append_only} 直接拒绝）。
+ * <p>
+ * 状态机刻意保持最小：{@code DRAFT → CONFIRMED}，以及草稿态的 {@code CANCELLED}。 已确认的出库单**不可回退**——库存流水是 append-only 账本，冲销必须走「新增反向流水」，
+ * 而不是把单据改回草稿再把流水删掉（后者在 DB 层会被 {@code ck_inventory_movement_append_only} 直接拒绝）。
  *
  * <pre>
  * DRAFT ──confirm──▶ CONFIRMED        （写 SALES_OUT 流水 + 扣减余额）

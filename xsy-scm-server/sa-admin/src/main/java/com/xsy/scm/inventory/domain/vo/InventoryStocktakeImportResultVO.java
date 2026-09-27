@@ -8,11 +8,11 @@ import java.util.List;
 /**
  * 盘点 Excel 导入结果。
  *
- * <p><b>整批语义</b>：{@code totalErrors > 0} 表示没有任何草稿被创建（校验或快照核验在写库前挡住，
- * 或写库中途漂移导致整事务回滚）；成功时 {@code stocktakeId} 为新建草稿单 id。
+ * <p>
+ * <b>整批语义</b>：{@code totalErrors > 0} 表示没有任何草稿被创建（校验或快照核验在写库前挡住， 或写库中途漂移导致整事务回滚）；成功时 {@code stocktakeId} 为新建草稿单 id。
  *
- * <p>{@code replayed} 为真表示本次是同一 {@code Idempotency-Key} 的重试（响应丢失后再发），
- * 返回的是首次创建的那张草稿 id，而非第二张。
+ * <p>
+ * {@code replayed} 为真表示本次是同一 {@code Idempotency-Key} 的重试（响应丢失后再发）， 返回的是首次创建的那张草稿 id，而非第二张。
  */
 @Data
 public class InventoryStocktakeImportResultVO {

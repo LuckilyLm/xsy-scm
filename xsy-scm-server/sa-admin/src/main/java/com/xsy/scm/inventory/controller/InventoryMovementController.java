@@ -19,10 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * SCM 库存流水——**全只读**。
  *
- * <p>流水是 append-only 账本：没有新增、没有编辑、没有删除端点。
- * 未来冲销以「新增反向 movement」实现，同样不会出现「改历史流水」的 API。
+ * <p>
+ * 流水是 append-only 账本：没有新增、没有编辑、没有删除端点。 未来冲销以「新增反向 movement」实现，同样不会出现「改历史流水」的 API。
  *
- * <p>权限码 {@code scm:inventory:movement:query}（菜单 821）。
+ * <p>
+ * 权限码 {@code scm:inventory:movement:query}（菜单 821）。
  */
 @RestController
 @RequestMapping("/scm/inventory/movement")
@@ -34,8 +35,7 @@ public class InventoryMovementController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.MOVEMENT_QUERY)
-    public ResponseDTO<PageResult<InventoryMovementVO>> query(
-            @Valid @RequestBody InventoryMovementQueryForm form) {
+    public ResponseDTO<PageResult<InventoryMovementVO>> query(@Valid @RequestBody InventoryMovementQueryForm form) {
         return ResponseDTO.ok(inventoryMovementQueryService.query(form));
     }
 }

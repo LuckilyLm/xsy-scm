@@ -17,15 +17,15 @@ import java.util.List;
 /**
  * 新建 / 编辑待审核的规格转换单。
  *
- * <p>创建与编辑共用同一表单：转换单只有待审核态可改，字段集合完全一致。
+ * <p>
+ * 创建与编辑共用同一表单：转换单只有待审核态可改，字段集合完全一致。
  *
- * <p><b>折算关系由两个数量显式声明</b>（{@code sourceQuantity} : {@code targetQuantity}），
- * 系统不推断、不校验「合理区间」—— 一箱到底是 9.5 kg 还是 10 kg 是业务事实。
+ * <p>
+ * <b>折算关系由两个数量显式声明</b>（{@code sourceQuantity} : {@code targetQuantity}）， 系统不推断、不校验「合理区间」—— 一箱到底是 9.5 kg 还是 10 kg 是业务事实。
  * 但两个数量都必须为正（DB 也有 CHECK）。
  *
- * <p><b>两个单位也由单据声明</b>（{@code sourceUnit} / {@code targetUnit}）：
- * 折算关系本身含单位。执行时与各自余额的记账单位比对，不一致直接失败（41059 / 41060），
- * 不做隐式换算。
+ * <p>
+ * <b>两个单位也由单据声明</b>（{@code sourceUnit} / {@code targetUnit}）： 折算关系本身含单位。执行时与各自余额的记账单位比对，不一致直接失败（41059 / 41060）， 不做隐式换算。
  */
 @Data
 public class InventoryConversionAddForm {

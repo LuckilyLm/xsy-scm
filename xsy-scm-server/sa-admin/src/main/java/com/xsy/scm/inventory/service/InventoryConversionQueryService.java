@@ -23,8 +23,8 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVER
 /**
  * 规格转换单查询侧（只读）。
  *
- * <p>与命令侧分离：查询不参与事务、不加锁。类型与状态的中文描述在服务层按枚举填充，
- * 避免前端硬编码字典。
+ * <p>
+ * 与命令侧分离：查询不参与事务、不加锁。类型与状态的中文描述在服务层按枚举填充， 避免前端硬编码字典。
  */
 @Service
 @RequiredArgsConstructor
@@ -72,9 +72,8 @@ public class InventoryConversionQueryService {
     /**
      * 独立明细 VO → 头内嵌明细。
      *
-     * <p>两个类字段一致但**不复用同一个类**：头内嵌明细是「详情的组成部分」，
-     * 独立投影是「一行的视图」，两者演进理由不同 —— 因此需要这一层显式映射
-     * （与出库 / 盘点 / 报损报溢 / 调拨同一取向）。
+     * <p>
+     * 两个类字段一致但**不复用同一个类**：头内嵌明细是「详情的组成部分」， 独立投影是「一行的视图」，两者演进理由不同 —— 因此需要这一层显式映射 （与出库 / 盘点 / 报损报溢 / 调拨同一取向）。
      */
     private static InventoryConversionVO.Item toItem(InventoryConversionItemVO src) {
         InventoryConversionVO.Item item = new InventoryConversionVO.Item();
@@ -96,8 +95,7 @@ public class InventoryConversionQueryService {
     }
 
     private static void fillDesc(InventoryConversionVO vo) {
-        ScmInventoryConversionTypeEnum type =
-                ScmInventoryConversionTypeEnum.of(vo.getConvertType());
+        ScmInventoryConversionTypeEnum type = ScmInventoryConversionTypeEnum.of(vo.getConvertType());
         if (type != null) {
             vo.setConvertTypeDesc(type.getDesc());
         }

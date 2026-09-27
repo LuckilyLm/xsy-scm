@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.inventory.dao.InventoryTransferDao;
 import org.springframework.stereotype.Service;
 
-
 /**
  * 调拨单号生成。
  *
@@ -13,13 +12,12 @@ import org.springframework.stereotype.Service;
  * 调拨单：TRF + yyyyMMdd + 至少 6 位   （例 TRF20260919000001）
  * </pre>
  *
- * <p>与采购/收货/出库/盘点/报损报溢同口径：序列来自 PG sequence，**全局单调递增、不按日 reset**；
- * 日期段只是可读性装饰，唯一性由序列保证；补零用 {@code %06d}，超过 999999 自然扩位。
+ * <p>
+ * 与采购/收货/出库/盘点/报损报溢同口径：序列来自 PG sequence，**全局单调递增、不按日 reset**； 日期段只是可读性装饰，唯一性由序列保证；补零用 {@code %06d}，超过 999999 自然扩位。
  */
 @Service
 @RequiredArgsConstructor
 public class InventoryTransferNumberGenerator {
-
 
     /**
      * 调拨单号前缀。

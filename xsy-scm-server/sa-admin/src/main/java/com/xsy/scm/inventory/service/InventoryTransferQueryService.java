@@ -24,8 +24,8 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 /**
  * 调拨单查询侧（只读）。
  *
- * <p>与命令侧分离：查询不参与事务、不加锁，且**不做权限以外的业务判断**。
- * 状态中文描述在服务层按枚举填充，避免前端硬编码状态字典。
+ * <p>
+ * 与命令侧分离：查询不参与事务、不加锁，且**不做权限以外的业务判断**。 状态中文描述在服务层按枚举填充，避免前端硬编码状态字典。
  */
 @Service
 @RequiredArgsConstructor

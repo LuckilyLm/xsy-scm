@@ -25,15 +25,15 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * SCM 规格转换单（整件拆零 / 组合拆分）。
  *
- * <p>共 7 个端点：分页 / 详情 / 新建 / 改待审核 / 审批通过 / 驳回 / 删除。
+ * <p>
+ * 共 7 个端点：分页 / 详情 / 新建 / 改待审核 / 审批通过 / 驳回 / 删除。
  *
- * <p><b>跨 SKU、同仓库</b>：跨仓搬运是**调拨**（{@code /scm/inventory/transfer}），
- * 不是转换 —— 两者职责必须分清，否则会出现「用转换单搬货」这种绕过调拨在途语义的用法。
+ * <p>
+ * <b>跨 SKU、同仓库</b>：跨仓搬运是**调拨**（{@code /scm/inventory/transfer}）， 不是转换 —— 两者职责必须分清，否则会出现「用转换单搬货」这种绕过调拨在途语义的用法。
  *
- * <p><b>权限</b>：查询 {@code scm:inventory:conversion:query}、新建 {@code :add}、
- * 改待审核 {@code :update}、审批 {@code :approve}、驳回 {@code :reject}、删除 {@code :delete}。
- * 「审批」与「驳回」是两个独立权限（与报损报溢一致）；
- * 「新建」与「审批」也必须分开 —— 折算关系（一箱等于多少 kg）是人工声明的，
+ * <p>
+ * <b>权限</b>：查询 {@code scm:inventory:conversion:query}、新建 {@code :add}、 改待审核 {@code :update}、审批 {@code :approve}、驳回
+ * {@code :reject}、删除 {@code :delete}。 「审批」与「驳回」是两个独立权限（与报损报溢一致）； 「新建」与「审批」也必须分开 —— 折算关系（一箱等于多少 kg）是人工声明的，
  * 由同一个人录单并批准等于没人复核。
  */
 @RestController
@@ -48,8 +48,7 @@ public class InventoryConversionController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.CONVERSION_QUERY)
-    public ResponseDTO<PageResult<InventoryConversionVO>> query(
-            @Valid @RequestBody InventoryConversionQueryForm form) {
+    public ResponseDTO<PageResult<InventoryConversionVO>> query(@Valid @RequestBody InventoryConversionQueryForm form) {
         return ResponseDTO.ok(inventoryConversionQueryService.queryPage(form));
     }
 
@@ -76,7 +75,7 @@ public class InventoryConversionController {
     @SaCheckPermission(InventoryPermission.CONVERSION_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long conversionId,
-                                      @Valid @RequestBody InventoryConversionAddForm form) {
+            @Valid @RequestBody InventoryConversionAddForm form) {
         inventoryConversionService.update(conversionId, form);
         return ResponseDTO.ok();
     }
@@ -84,14 +83,14 @@ public class InventoryConversionController {
     /**
      * 审批通过：写 {@code CONVERT_OUT} + {@code CONVERT_IN} 流水并调整两边余额。
      *
-     * <p>这是本模块唯一会改变库存的端点，失败整单回滚，不存在「转一半」。
-     * 请求体必须带上审批人看到的 {@code version}，否则若单据在审批期间被改过会以 40921 失败。
+     * <p>
+     * 这是本模块唯一会改变库存的端点，失败整单回滚，不存在「转一半」。 请求体必须带上审批人看到的 {@code version}，否则若单据在审批期间被改过会以 40921 失败。
      */
     @PostMapping("/approve/{id}")
     @SaCheckPermission(InventoryPermission.CONVERSION_APPROVE)
     @OperateLog
     public ResponseDTO<String> approve(@PathVariable("id") Long conversionId,
-                                       @Valid @RequestBody InventoryConversionAuditForm form) {
+            @Valid @RequestBody InventoryConversionAuditForm form) {
         inventoryConversionService.approve(conversionId, form);
         return ResponseDTO.ok();
     }
@@ -103,7 +102,7 @@ public class InventoryConversionController {
     @SaCheckPermission(InventoryPermission.CONVERSION_REJECT)
     @OperateLog
     public ResponseDTO<String> reject(@PathVariable("id") Long conversionId,
-                                      @Valid @RequestBody InventoryConversionAuditForm form) {
+            @Valid @RequestBody InventoryConversionAuditForm form) {
         inventoryConversionService.reject(conversionId, form);
         return ResponseDTO.ok();
     }

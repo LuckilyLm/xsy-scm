@@ -35,12 +35,12 @@ import java.util.Locale;
 /**
  * SCM 库存盘点单。
  *
- * <p>共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 确认盘点 / 取消 / 删除。
+ * <p>
+ * 共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 确认盘点 / 取消 / 删除。
  *
- * <p><b>权限划分</b>：查询 {@code scm:inventory:stocktake:query}、
- * 新建 {@code :add}、改草稿 {@code :update}、确认盘点 {@code :confirm}、删除 {@code :delete}。
- * 「确认盘点」是**独立的权限**而不是复用 {@code :update} —— 确认会真实调整库存并写不可逆流水，
- * 与「改个草稿」不是同一量级的操作，允许仓管录实盘数但由主管确认是完全合理的分工。
+ * <p>
+ * <b>权限划分</b>：查询 {@code scm:inventory:stocktake:query}、 新建 {@code :add}、改草稿 {@code :update}、确认盘点 {@code :confirm}、删除
+ * {@code :delete}。 「确认盘点」是**独立的权限**而不是复用 {@code :update} —— 确认会真实调整库存并写不可逆流水， 与「改个草稿」不是同一量级的操作，允许仓管录实盘数但由主管确认是完全合理的分工。
  * 与出库单保持同一取向。
  */
 @RestController
@@ -84,7 +84,8 @@ public class InventoryStocktakeController {
     /**
      * 导出某仓库的盘点 Excel 模板（含签名快照凭证）。
      *
-     * <p>需要导入权限；模板里的账面量 / 单位来自余额，读取受 {@code:import} 约束（计划）。
+     * <p>
+     * 需要导入权限；模板里的账面量 / 单位来自余额，读取受 {@code:import} 约束（计划）。
      */
     @GetMapping("/import/template")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
@@ -98,14 +99,13 @@ public class InventoryStocktakeController {
     /**
      * 导入填好实盘量的 Excel → 新建草稿盘点单。
      *
-     * <p><b>只建草稿，不改动库存</b>；整批校验或快照核验任一不过即整批拒绝、不落库。
-     * {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张草稿。
+     * <p>
+     * <b>只建草稿，不改动库存</b>；整批校验或快照核验任一不过即整批拒绝、不落库。 {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张草稿。
      */
     @PostMapping("/import")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
     @OperateLog
-    public ResponseDTO<InventoryStocktakeImportResultVO> importStocktake(
-            @RequestParam MultipartFile file,
+    public ResponseDTO<InventoryStocktakeImportResultVO> importStocktake(@RequestParam MultipartFile file,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) throws Exception {
         if (file.isEmpty()) {
             return ResponseDTO.userErrorParam("导入文件不能为空");
@@ -131,7 +131,7 @@ public class InventoryStocktakeController {
     @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long stocktakeId,
-                                      @Valid @RequestBody InventoryStocktakeAddForm form) {
+            @Valid @RequestBody InventoryStocktakeAddForm form) {
         inventoryStocktakeService.update(stocktakeId, form);
         return ResponseDTO.ok();
     }
@@ -139,7 +139,8 @@ public class InventoryStocktakeController {
     /**
      * 确认盘点：差异转盘盈 / 盘亏流水并调整余额。
      *
-     * <p>这是本模块唯一会改变库存的端点，失败整单回滚，不存在「盘一半」。
+     * <p>
+     * 这是本模块唯一会改变库存的端点，失败整单回滚，不存在「盘一半」。
      */
     @PostMapping("/confirm/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_CONFIRM)

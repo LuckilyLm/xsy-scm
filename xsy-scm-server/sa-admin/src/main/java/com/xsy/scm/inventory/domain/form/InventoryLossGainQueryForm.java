@@ -10,12 +10,13 @@ import net.lab1024.sa.base.common.domain.PageParam;
 /**
  * 报损报溢单分页查询条件。
  *
- * <p>与出库单 / 盘点单查询同取向：刻意**不提供** {@code sortItemList} ——
- * 列表 SQL 的排序列写死在 mapper 里（{@code created_at DESC, id DESC}），
+ * <p>
+ * 与出库单 / 盘点单查询同取向：刻意**不提供** {@code sortItemList} —— 列表 SQL 的排序列写死在 mapper 里（{@code created_at DESC, id DESC}），
  * 客户端传入排序会与联表列名产生歧义。
  *
- * <p>{@code adjustType} / {@code status} 不加 {@code @Pattern} 白名单：非法值只会筛出空列表
- * （无害），而加白名单会引入「前端把『全部』提交成空串 → 40000」这一类与业务无关的失败。
+ * <p>
+ * {@code adjustType} / {@code status} 不加 {@code @Pattern} 白名单：非法值只会筛出空列表 （无害），而加白名单会引入「前端把『全部』提交成空串 →
+ * 40000」这一类与业务无关的失败。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

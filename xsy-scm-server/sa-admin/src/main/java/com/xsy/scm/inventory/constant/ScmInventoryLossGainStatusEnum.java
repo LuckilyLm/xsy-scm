@@ -6,10 +6,9 @@ import lombok.RequiredArgsConstructor;
 /**
  * 报损报溢单状态（与参考项目 `AdjustStatusEnum` 的三态一致）。
  *
- * <p><b>为什么这里没有 DRAFT</b>：出库单与盘点单用 {@code DRAFT → CONFIRMED}，
- * 但报损报溢**创建即提交**（参考项目的初始态就是「待审核」）。加一个草稿态只会让
- * 「提交」变成第二个动作，而它在业务上不产生任何新信息 —— 单据在待审核之前
- * 本来就不影响库存，改与删都已放开。
+ * <p>
+ * <b>为什么这里没有 DRAFT</b>：出库单与盘点单用 {@code DRAFT → CONFIRMED}， 但报损报溢**创建即提交**（参考项目的初始态就是「待审核」）。加一个草稿态只会让
+ * 「提交」变成第二个动作，而它在业务上不产生任何新信息 —— 单据在待审核之前 本来就不影响库存，改与删都已放开。
  *
  * <pre>
  * PENDING ──approve──▶ COMPLETED      （写 LOSS_REPORT / GAIN_REPORT 流水 + 调整余额）
@@ -17,8 +16,8 @@ import lombok.RequiredArgsConstructor;
  *    └──reject───▶ REJECTED            （不产生任何库存影响）
  * </pre>
  *
- * <p>两个终态都**不可回退**：流水 append-only，冲销必须新增反向单据，
- * 而不是把单据改回待审核再删流水（后者会被 {@code trg_inventory_movement_append_only} 拒绝）。
+ * <p>
+ * 两个终态都**不可回退**：流水 append-only，冲销必须新增反向单据， 而不是把单据改回待审核再删流水（后者会被 {@code trg_inventory_movement_append_only} 拒绝）。
  */
 @Getter
 @RequiredArgsConstructor

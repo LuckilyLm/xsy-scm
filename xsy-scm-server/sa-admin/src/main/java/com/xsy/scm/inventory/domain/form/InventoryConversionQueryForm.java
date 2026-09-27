@@ -10,9 +10,9 @@ import net.lab1024.sa.base.common.domain.PageParam;
 /**
  * 规格转换单分页查询条件。
  *
- * <p>与其它库存单据查询同取向：**没有 {@code sortItemList}**，排序写死在 mapper 里。
- * {@code status} / {@code convertType} 不加 {@code @Pattern} 白名单：非法值只会筛出空列表
- * （无害），加白名单反而会引入「前端把『全部』提交成空串 → 40000」这类与业务无关的失败。
+ * <p>
+ * 与其它库存单据查询同取向：**没有 {@code sortItemList}**，排序写死在 mapper 里。 {@code status} / {@code convertType} 不加 {@code @Pattern}
+ * 白名单：非法值只会筛出空列表 （无害），加白名单反而会引入「前端把『全部』提交成空串 → 40000」这类与业务无关的失败。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

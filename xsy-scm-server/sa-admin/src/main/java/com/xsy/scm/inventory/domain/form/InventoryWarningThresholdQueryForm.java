@@ -10,7 +10,8 @@ import net.lab1024.sa.base.common.domain.PageParam;
 /**
  * 预警阈值配置列表查询条件。
  *
- * <p>与其它库存列表同取向：**没有 {@code sortItemList}**，排序写死在 mapper 里。
+ * <p>
+ * 与其它库存列表同取向：**没有 {@code sortItemList}**，排序写死在 mapper 里。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

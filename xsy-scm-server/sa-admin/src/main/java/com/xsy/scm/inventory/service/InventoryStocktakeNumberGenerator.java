@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.inventory.dao.InventoryStocktakeDao;
 import org.springframework.stereotype.Service;
 
-
 /**
  * 盘点单号生成。
  *
@@ -13,16 +12,15 @@ import org.springframework.stereotype.Service;
  * 盘点单：STK + yyyyMMdd + 至少 6 位   （例 STK20260919000001）
  * </pre>
  *
- * <p>与采购/收货/出库同口径：序列来自 PG sequence，**全局单调递增、不按日 reset**；
- * 日期段只是可读性装饰，唯一性由序列保证；补零用 {@code %06d}，超过 999999 自然扩位。
+ * <p>
+ * 与采购/收货/出库同口径：序列来自 PG sequence，**全局单调递增、不按日 reset**； 日期段只是可读性装饰，唯一性由序列保证；补零用 {@code %06d}，超过 999999 自然扩位。
  *
- * <p>日期取 {@link ScmDocumentNumbers} 的 Asia/Shanghai 业务时区，与 的 {@code demand_date}
- * 及采购单号共用同一个 ZoneId 常量，避免跨零点错位。
+ * <p>
+ * 日期取 {@link ScmDocumentNumbers} 的 Asia/Shanghai 业务时区，与 的 {@code demand_date} 及采购单号共用同一个 ZoneId 常量，避免跨零点错位。
  */
 @Service
 @RequiredArgsConstructor
 public class InventoryStocktakeNumberGenerator {
-
 
     /**
      * 盘点单号前缀。

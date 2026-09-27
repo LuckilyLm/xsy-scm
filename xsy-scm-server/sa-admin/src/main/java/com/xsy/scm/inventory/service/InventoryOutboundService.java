@@ -27,19 +27,20 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 /**
  * 出库单命令侧：创建 / 改草稿 / 确认出库 / 取消 / 删除。
  *
- * <p><b>状态机</b>：{@code DRAFT → CONFIRMED}，草稿可 {@code → CANCELLED}。
- * 已确认不可回退 —— 库存流水 append-only，冲销必须新增反向流水，不能改回草稿再删流水
- * （后者会被 {@code ck_inventory_movement_append_only} 在 DB 层拒绝）。
+ * <p>
+ * <b>状态机</b>：{@code DRAFT → CONFIRMED}，草稿可 {@code → CANCELLED}。 已确认不可回退 —— 库存流水 append-only，冲销必须新增反向流水，不能改回草稿再删流水 （后者会被
+ * {@code ck_inventory_movement_append_only} 在 DB 层拒绝）。
  *
- * <p><b>锁序（与收货确认同一顺序）</b>：
+ * <p>
+ * <b>锁序（与收货确认同一顺序）</b>：
  * <ol>
- *   <li>先锁出库单头（{@code lockById}）；</li>
- *   <li>再按 {@code (warehouseId, skuId)} **升序**逐行锁余额并写流水。</li>
+ * <li>先锁出库单头（{@code lockById}）；</li>
+ * <li>再按 {@code (warehouseId, skuId)} **升序**逐行锁余额并写流水。</li>
  * </ol>
  * 顺序固定是避免两条链路（收货确认 / 出库确认）以相反顺序拿余额锁而死锁。
  *
- * <p><b>全部明细在同一事务内</b>：任一行可用量不足或单位不一致，整单回滚 ——
- * 不允许「出一半」的部分出库。
+ * <p>
+ * <b>全部明细在同一事务内</b>：任一行可用量不足或单位不一致，整单回滚 —— 不允许「出一半」的部分出库。
  */
 @Service
 @RequiredArgsConstructor
@@ -58,8 +59,8 @@ public class InventoryOutboundService {
     /**
      * 新建草稿出库单。
      *
-     * <p>草稿阶段**不校验可用量与单位** —— 那是确认出库时的判断。
-     * 草稿允许「先录单再补货」，提前卡住反而让录单不可用。
+     * <p>
+     * 草稿阶段**不校验可用量与单位** —— 那是确认出库时的判断。 草稿允许「先录单再补货」，提前卡住反而让录单不可用。
      *
      * @return 新单 id
      */
@@ -108,8 +109,8 @@ public class InventoryOutboundService {
     /**
      * 确认出库：写 SALES_OUT 流水并扣减余额，全部在同一事务内。
      *
-     * <p>先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。
-     * 明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 草稿态它为空。
+     * <p>
+     * 先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。 明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 草稿态它为空。
      */
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long outboundId) {
@@ -127,22 +128,13 @@ public class InventoryOutboundService {
         }
 
         // 锁序：余额锁按 (warehouseId, skuId) 升序 —— 同一单内多行也必须固定顺序。
-        items.stream()
-                .sorted(Comparator.comparing(InventoryOutboundItemVO::getSkuId))
-                .forEach(item -> {
-                    InventoryOutboundFact fact = new InventoryOutboundFact(
-                            locked.getWarehouseId(),
-                            item.getSkuId(),
-                            locked.getId(),
-                            item.getId(),
-                            item.getQuantity(),
-                            null,
-                            now,
-                            operator);
-                    // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
-                    String unit = inventoryCommandService.postSalesOutbound(fact);
-                    inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, operator);
-                });
+        items.stream().sorted(Comparator.comparing(InventoryOutboundItemVO::getSkuId)).forEach(item -> {
+            InventoryOutboundFact fact = new InventoryOutboundFact(locked.getWarehouseId(), item.getSkuId(),
+                    locked.getId(), item.getId(), item.getQuantity(), null, now, operator);
+            // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
+            String unit = inventoryCommandService.postSalesOutbound(fact);
+            inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, operator);
+        });
 
         if (inventoryOutboundDao.markConfirmed(outboundId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);

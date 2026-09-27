@@ -15,19 +15,16 @@ import java.util.List;
 /**
  * 报损报溢单头读写。
  *
- * <p>本表是**有状态单据**，因此有 update 方法。真正的不可变纪律在
- * {@code inventory_movement} 上，不在这里。
+ * <p>
+ * 本表是**有状态单据**，因此有 update 方法。真正的不可变纪律在 {@code inventory_movement} 上，不在这里。
  *
- * <p><b>每个写方法都带 {@code status = 'PENDING'} 守卫</b>：只有待审核的单据可改 / 可审。
- * 参考项目对 update / delete 没有状态守卫，那会让「已完成（已写流水）」的单据被改内容或被删掉，
- * 账与单会因此不一致。状态守卫写入 SQL 的 {@code WHERE}，而不只依赖服务层判断——
- * 服务层的状态判断是「给人看的错误码」，SQL 的守卫才是并发下真正生效的那一道。
+ * <p>
+ * <b>每个写方法都带 {@code status = 'PENDING'} 守卫</b>：只有待审核的单据可改 / 可审。 参考项目对 update / delete 没有状态守卫，那会让「已完成（已写流水）」的单据被改内容或被删掉，
+ * 账与单会因此不一致。状态守卫写入 SQL 的 {@code WHERE}，而不只依赖服务层判断—— 服务层的状态判断是「给人看的错误码」，SQL 的守卫才是并发下真正生效的那一道。
  *
- * <p><b>为什么只有审批带 {@code version}，update 不带</b>：审批是一道**控制**，
- * 审批人必须批准自己读到的内容；若允许在「打开 → 审批」之间被静默改掉数量，
- * 这道控制就形同虚设，因此审批用乐观锁把这种情形变成 40921。
- * 而两个人同时改同一张草稿属于录单碰撞，与全仓其它单据（出库单 / 盘点单）处理方式一致
- * —— 本项目在那一类场景上不引入乐观锁，保持一致比局部更严更重要。
+ * <p>
+ * <b>为什么只有审批带 {@code version}，update 不带</b>：审批是一道**控制**， 审批人必须批准自己读到的内容；若允许在「打开 → 审批」之间被静默改掉数量，
+ * 这道控制就形同虚设，因此审批用乐观锁把这种情形变成 40921。 而两个人同时改同一张草稿属于录单碰撞，与全仓其它单据（出库单 / 盘点单）处理方式一致 —— 本项目在那一类场景上不引入乐观锁，保持一致比局部更严更重要。
  */
 @Mapper
 public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity> {
@@ -50,9 +47,8 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
     /**
      * 锁定单据行（{@code SELECT ... FOR UPDATE}）。
      *
-     * <p>锁序纪律：**单据锁先于余额锁**。审批通过时先锁本行，再按
-     * {@code (warehouse_id, sku_id)} 升序锁余额行，与收货 / 出库 / 盘点确认同一顺序，
-     * 避免四条链路以相反顺序拿锁而死锁。
+     * <p>
+     * 锁序纪律：**单据锁先于余额锁**。审批通过时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁余额行，与收货 / 出库 / 盘点确认同一顺序， 避免四条链路以相反顺序拿锁而死锁。
      */
     InventoryLossGainEntity lockById(@Param("id") Long id);
 
@@ -61,36 +57,29 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
      *
      * @return 影响行数，必须为 1；为 0 说明状态已变或版本不符 → 调用方区分后抛 41029 / 40921
      */
-    int markCompleted(@Param("id") Long id,
-                      @Param("auditedAt") OffsetDateTime auditedAt,
-                      @Param("auditor") String auditor,
-                      @Param("auditOpinion") String auditOpinion,
-                      @Param("version") Integer version);
+    int markCompleted(@Param("id") Long id, @Param("auditedAt") OffsetDateTime auditedAt,
+            @Param("auditor") String auditor, @Param("auditOpinion") String auditOpinion,
+            @Param("version") Integer version);
 
     /**
      * 置为已驳回，带状态 + 版本双重守卫。
      */
-    int markRejected(@Param("id") Long id,
-                     @Param("auditedAt") OffsetDateTime auditedAt,
-                     @Param("auditor") String auditor,
-                     @Param("auditOpinion") String auditOpinion,
-                     @Param("version") Integer version);
+    int markRejected(@Param("id") Long id, @Param("auditedAt") OffsetDateTime auditedAt,
+            @Param("auditor") String auditor, @Param("auditOpinion") String auditOpinion,
+            @Param("version") Integer version);
 
     /**
      * 回写待审核单据的头（仅 PENDING）。
      */
-    int updatePending(@Param("id") Long id,
-                      @Param("adjustType") String adjustType,
-                      @Param("warehouseId") Long warehouseId,
-                      @Param("reason") String reason,
-                      @Param("remark") String remark,
-                      @Param("operator") String operator);
+    int updatePending(@Param("id") Long id, @Param("adjustType") String adjustType,
+            @Param("warehouseId") Long warehouseId, @Param("reason") String reason, @Param("remark") String remark,
+            @Param("operator") String operator);
 
     /**
      * 分页查询（联仓库取展示字段）。
      */
     List<InventoryLossGainVO> queryPage(Page<?> page, @Param("query") InventoryLossGainQueryForm query,
-                                        @Param("scope") ScmValueScope scope);
+            @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

@@ -27,14 +27,15 @@ import java.util.List;
 /**
  * SCM 库存调拨单（跨仓，两步式：发出 → 在途 → 收货）。
  *
- * <p>共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 发出 / 收货 / 取消 / 删除（8 个，其中取消与删除分开）。
+ * <p>
+ * 共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 发出 / 收货 / 取消 / 删除（8 个，其中取消与删除分开）。
  *
- * <p><b>权限划分</b>：查询 {@code scm:inventory:transfer:query}、
- * 新建 {@code :add}、改草稿 {@code :update}、发出 {@code :ship}、收货 {@code :receive}、
- * 删除 {@code :delete}。
+ * <p>
+ * <b>权限划分</b>：查询 {@code scm:inventory:transfer:query}、 新建 {@code :add}、改草稿 {@code :update}、发出 {@code :ship}、收货
+ * {@code :receive}、 删除 {@code :delete}。
  *
- * <p><b>「发出」与「收货」是两个独立权限</b>：跨仓调拨的常见分工是源仓发货、目标仓点收，
- * 由同一个人两头都确认会让在途数量失去复核 —— 而在途数量正是最容易出错的地方。
+ * <p>
+ * <b>「发出」与「收货」是两个独立权限</b>：跨仓调拨的常见分工是源仓发货、目标仓点收， 由同一个人两头都确认会让在途数量失去复核 —— 而在途数量正是最容易出错的地方。
  */
 @RestController
 @RequestMapping("/scm/inventory/transfer")
@@ -84,7 +85,7 @@ public class InventoryTransferController {
     @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long transferId,
-                                      @Valid @RequestBody InventoryTransferAddForm form) {
+            @Valid @RequestBody InventoryTransferAddForm form) {
         inventoryTransferService.update(transferId, form);
         return ResponseDTO.ok();
     }
@@ -92,8 +93,8 @@ public class InventoryTransferController {
     /**
      * 发出：从源仓扣减并写 {@code TRANSFER_OUT} 流水，单据进入**在途**。
      *
-     * <p>这是两步式的第一步。发出后源仓库存立即减少、目标仓尚未增加 ——
-     * 期间这批货不在任何余额行里（没有虚拟在途仓），全仓总库存会暂时减少。
+     * <p>
+     * 这是两步式的第一步。发出后源仓库存立即减少、目标仓尚未增加 —— 期间这批货不在任何余额行里（没有虚拟在途仓），全仓总库存会暂时减少。
      */
     @PostMapping("/ship/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_SHIP)
@@ -106,7 +107,8 @@ public class InventoryTransferController {
     /**
      * 收货：向目标仓累加并写 {@code TRANSFER_IN} 流水，单据完成。
      *
-     * <p>目标仓的记账单位必须与调拨单位一致（41044）—— 库存不做自动换算。
+     * <p>
+     * 目标仓的记账单位必须与调拨单位一致（41044）—— 库存不做自动换算。
      */
     @PostMapping("/receive/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_RECEIVE)

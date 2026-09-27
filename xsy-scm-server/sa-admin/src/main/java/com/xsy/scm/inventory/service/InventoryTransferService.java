@@ -36,22 +36,23 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 /**
  * 调拨单命令侧：创建 / 改草稿 / 发出 / 收货 / 取消 / 删除。
  *
- * <p><b>状态机</b>：{@code DRAFT → SHIPPED → RECEIVED}，草稿可 {@code → CANCELLED}。
- * 在途不可取消（货已物理离开源仓，只能靠反向调拨单冲回），两个终态都不可回退。
+ * <p>
+ * <b>状态机</b>：{@code DRAFT → SHIPPED → RECEIVED}，草稿可 {@code → CANCELLED}。 在途不可取消（货已物理离开源仓，只能靠反向调拨单冲回），两个终态都不可回退。
  *
- * <p><b>两步各自独立事务</b>（这是两步式的关键收益）：
+ * <p>
+ * <b>两步各自独立事务</b>（这是两步式的关键收益）：
  * <ul>
- *   <li>发出只锁**源仓**的余额行；</li>
- *   <li>收货只锁**目标仓**的余额行。</li>
+ * <li>发出只锁**源仓**的余额行；</li>
+ * <li>收货只锁**目标仓**的余额行。</li>
  * </ul>
- * 因此既有的「按 {@code (warehouse_id, sku_id)} 升序锁余额」纪律**完全不用改**
- * —— 每个事务里只有一个仓库的行。若做成一步式，同一事务要锁两个仓库的行，
+ * 因此既有的「按 {@code (warehouse_id, sku_id)} 升序锁余额」纪律**完全不用改** —— 每个事务里只有一个仓库的行。若做成一步式，同一事务要锁两个仓库的行，
  * 锁序规则就得升级为跨仓排序，而那是六条既有写入路径都要跟着改的事。
  *
- * <p><b>锁序</b>：先锁单据头（{@code lockById}），再按 {@code (warehouseId, skuId)} 升序锁余额
- * —— 与收货 / 出库 / 盘点 / 报损报溢同一顺序。
+ * <p>
+ * <b>锁序</b>：先锁单据头（{@code lockById}），再按 {@code (warehouseId, skuId)} 升序锁余额 —— 与收货 / 出库 / 盘点 / 报损报溢同一顺序。
  *
- * <p><b>全部明细在同一事务内</b>：任一行失败整单回滚，不允许「发一半」。
+ * <p>
+ * <b>全部明细在同一事务内</b>：任一行失败整单回滚，不允许「发一半」。
  */
 @Service
 @RequiredArgsConstructor
@@ -72,7 +73,8 @@ public class InventoryTransferService {
     /**
      * 新建草稿调拨单。
      *
-     * <p>草稿阶段**不校验源仓是否有货**（那是发出时的判断）：草稿允许「先开单再备货」。
+     * <p>
+     * 草稿阶段**不校验源仓是否有货**（那是发出时的判断）：草稿允许「先开单再备货」。
      *
      * @return 新单 id
      */
@@ -129,10 +131,11 @@ public class InventoryTransferService {
     /**
      * 发出：从源仓扣减并写 {@code TRANSFER_OUT} 流水，单据进入**在途**。
      *
-     * <p>明细行的 {@code unitSnapshot} 在此刻按源仓记账单位回写 —— 草稿态它为空。
-     * 这个快照是收货时断言目标仓单位一致的依据。
+     * <p>
+     * 明细行的 {@code unitSnapshot} 在此刻按源仓记账单位回写 —— 草稿态它为空。 这个快照是收货时断言目标仓单位一致的依据。
      *
-     * <p>源仓必须**启用**：停用仓库不能用于新的调拨业务（41048）。
+     * <p>
+     * 源仓必须**启用**：停用仓库不能用于新的调拨业务（41048）。
      */
     @Transactional(rollbackFor = Exception.class)
     public void ship(Long transferId) {
@@ -151,22 +154,14 @@ public class InventoryTransferService {
         }
 
         // 锁序：余额锁按 (warehouseId, skuId) 升序 —— 同一单内多行也必须固定顺序。
-        items.stream()
-                .sorted(Comparator.comparing(InventoryTransferItemVO::getSkuId))
-                .forEach(item -> {
-                    InventoryTransferFact fact = new InventoryTransferFact(
-                            locked.getFromWarehouseId(),
-                            item.getSkuId(),
-                            locked.getId(),
-                            item.getId(),
-                            item.getQuantity(),
-                            // 发出不传单位：单位由源仓余额决定，命令服务会返回它
-                            null,
-                            now,
-                            operator);
-                    String unit = inventoryCommandService.postTransferOut(fact);
-                    inventoryTransferItemDao.updateUnitSnapshot(item.getId(), unit, operator);
-                });
+        items.stream().sorted(Comparator.comparing(InventoryTransferItemVO::getSkuId)).forEach(item -> {
+            InventoryTransferFact fact = new InventoryTransferFact(locked.getFromWarehouseId(), item.getSkuId(),
+                    locked.getId(), item.getId(), item.getQuantity(),
+                    // 发出不传单位：单位由源仓余额决定，命令服务会返回它
+                    null, now, operator);
+            String unit = inventoryCommandService.postTransferOut(fact);
+            inventoryTransferItemDao.updateUnitSnapshot(item.getId(), unit, operator);
+        });
 
         if (inventoryTransferDao.markShipped(transferId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -176,8 +171,8 @@ public class InventoryTransferService {
     /**
      * 收货：向目标仓累加并写 {@code TRANSFER_IN} 流水，单据完成。
      *
-     * <p>目标仓必须**启用**（41048）。目标仓若从没有过该 SKU 的余额行，
-     * 由本次调入建立（单位取明细快照）；已有则断言单位一致，不一致直接 41044。
+     * <p>
+     * 目标仓必须**启用**（41048）。目标仓若从没有过该 SKU 的余额行， 由本次调入建立（单位取明细快照）；已有则断言单位一致，不一致直接 41044。
      */
     @Transactional(rollbackFor = Exception.class)
     public void receive(Long transferId) {
@@ -195,18 +190,11 @@ public class InventoryTransferService {
             throw new ScmBusinessException(INVENTORY_TRANSFER_EMPTY_ITEMS);
         }
 
-        items.stream()
-                .sorted(Comparator.comparing(InventoryTransferItemVO::getSkuId))
+        items.stream().sorted(Comparator.comparing(InventoryTransferItemVO::getSkuId))
                 .forEach(item -> inventoryCommandService.postTransferIn(new InventoryTransferFact(
-                        locked.getToWarehouseId(),
-                        item.getSkuId(),
-                        locked.getId(),
-                        item.getId(),
-                        item.getQuantity(),
+                        locked.getToWarehouseId(), item.getSkuId(), locked.getId(), item.getId(), item.getQuantity(),
                         // 收货必须传期望单位（来自发出时写入的快照）
-                        item.getUnitSnapshot(),
-                        now,
-                        operator)));
+                        item.getUnitSnapshot(), now, operator)));
 
         if (inventoryTransferDao.markReceived(transferId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -265,8 +253,8 @@ public class InventoryTransferService {
     /**
      * 单据级校验：至少一行、同一 SKU 不得重复、源仓与目标仓必须不同且都存在。
      *
-     * <p>源仓 == 目标仓在这里判（而不是只靠 DB 的 {@code ck_inventory_transfer_distinct}）：
-     * DB 约束给不出可读原因，而这是用户最容易犯的错。
+     * <p>
+     * 源仓 == 目标仓在这里判（而不是只靠 DB 的 {@code ck_inventory_transfer_distinct}）： DB 约束给不出可读原因，而这是用户最容易犯的错。
      */
     private void requireForm(InventoryTransferAddForm form) {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {
@@ -289,8 +277,8 @@ public class InventoryTransferService {
     /**
      * 断言仓库**启用**。
      *
-     * <p>与采购侧的 {@code PurchaseWarehouseReferenceGuard} 同一取向：
-     * 「不允许用停用仓库建单」不是仓库域自身的不变量，因此错误码留在调用方域（41048）。
+     * <p>
+     * 与采购侧的 {@code PurchaseWarehouseReferenceGuard} 同一取向： 「不允许用停用仓库建单」不是仓库域自身的不变量，因此错误码留在调用方域（41048）。
      */
     private void requireEnabled(Long warehouseId) {
         WarehouseEntity warehouse = warehouseService.require(warehouseId);
@@ -307,8 +295,7 @@ public class InventoryTransferService {
         return locked;
     }
 
-    private static void requireStatus(InventoryTransferEntity entity,
-                                      ScmInventoryTransferStatusEnum expected) {
+    private static void requireStatus(InventoryTransferEntity entity, ScmInventoryTransferStatusEnum expected) {
         if (!expected.name().equals(entity.getStatus())) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_STATUS_INVALID);
         }

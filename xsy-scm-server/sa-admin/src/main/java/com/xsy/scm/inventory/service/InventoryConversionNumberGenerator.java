@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.inventory.dao.InventoryConversionDao;
 import org.springframework.stereotype.Service;
 
-
 /**
  * 规格转换单号生成。
  *
@@ -13,13 +12,12 @@ import org.springframework.stereotype.Service;
  * 转换单：CVT + yyyyMMdd + 至少 6 位   （例 CVT20260920000001）
  * </pre>
  *
- * <p>与采购/收货/出库/盘点/报损报溢/调拨同口径：序列来自 PG sequence，
- * **全局单调递增、不按日 reset**；日期段只是可读性装饰，唯一性由序列保证。
+ * <p>
+ * 与采购/收货/出库/盘点/报损报溢/调拨同口径：序列来自 PG sequence， **全局单调递增、不按日 reset**；日期段只是可读性装饰，唯一性由序列保证。
  */
 @Service
 @RequiredArgsConstructor
 public class InventoryConversionNumberGenerator {
-
 
     /**
      * 转换单号前缀（与 OUT / STK / LGR / TRF 互不相同）。

@@ -6,7 +6,8 @@ import lombok.RequiredArgsConstructor;
 /**
  * 盘点单状态。
  *
- * <p>状态机与出库单**刻意同构**，保持全仓单据状态语义一致：
+ * <p>
+ * 状态机与出库单**刻意同构**，保持全仓单据状态语义一致：
  *
  * <pre>
  * DRAFT ──confirm──▶ CONFIRMED        （差异转流水 + 调整余额）
@@ -14,13 +15,12 @@ import lombok.RequiredArgsConstructor;
  *   └──cancel──▶ CANCELLED            （不产生任何库存影响）
  * </pre>
  *
- * <p>已确认的盘点单**不可回退**：库存流水是 append-only 账本，冲销必须走「新增反向流水」，
- * 而不是把单据改回草稿再把流水删掉（后者会被 {@code trg_inventory_movement_append_only}
+ * <p>
+ * 已确认的盘点单**不可回退**：库存流水是 append-only 账本，冲销必须走「新增反向流水」， 而不是把单据改回草稿再把流水删掉（后者会被 {@code trg_inventory_movement_append_only}
  * 在数据库层直接拒绝）。
  *
- * <p><b>为什么没有独立的「盘点中」状态</b>：录入实盘数是草稿态的编辑动作，
- * 加一个状态只会让「改明细」与「改状态」两个动作需要保持同步，
- * 而它们并不携带不同的业务含义。DRAFT 即「盘点进行中」。
+ * <p>
+ * <b>为什么没有独立的「盘点中」状态</b>：录入实盘数是草稿态的编辑动作， 加一个状态只会让「改明细」与「改状态」两个动作需要保持同步， 而它们并不携带不同的业务含义。DRAFT 即「盘点进行中」。
  */
 @Getter
 @RequiredArgsConstructor

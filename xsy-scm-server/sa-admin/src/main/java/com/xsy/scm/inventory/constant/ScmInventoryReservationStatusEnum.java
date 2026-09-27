@@ -12,8 +12,8 @@ import lombok.RequiredArgsConstructor;
  *    └──consume──▶ CONSUMED        （消耗：出库时把占用转为实际扣减）
  * </pre>
  *
- * <p>与出库单状态一样**不可回退**：一旦释放或消耗，只能通过新增一条预留来表达新的占用，
- * 而不是把旧记录改回 ACTIVE —— 否则「为什么曾经释放过」这段历史会丢失。
+ * <p>
+ * 与出库单状态一样**不可回退**：一旦释放或消耗，只能通过新增一条预留来表达新的占用， 而不是把旧记录改回 ACTIVE —— 否则「为什么曾经释放过」这段历史会丢失。
  */
 @Getter
 @RequiredArgsConstructor

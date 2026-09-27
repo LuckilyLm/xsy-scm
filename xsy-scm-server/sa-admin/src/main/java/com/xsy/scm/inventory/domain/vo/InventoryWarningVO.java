@@ -10,16 +10,16 @@ import java.util.Map;
 /**
  * 库存预警列表的一行（= 一条阈值配置 + 它对应的余额）。
  *
- * <p><b>现有量 / 预留量 / 可用量三个都返回</b>：判定基准是**可用量**
- * （现有量 − 预留量），只给一个数字会让用户看不懂预警为什么触发 ——
- * 「明明有 20 kg 在库，为什么说低于下限 10 kg？」的答案是那 20 kg 里有 18 kg 已预留。
+ * <p>
+ * <b>现有量 / 预留量 / 可用量三个都返回</b>：判定基准是**可用量** （现有量 − 预留量），只给一个数字会让用户看不懂预警为什么触发 —— 「明明有 20 kg 在库，为什么说低于下限 10 kg？」的答案是那 20
+ * kg 里有 18 kg 已预留。
  *
- * <p><b>{@code status} 是派生值</b>（{@code NORMAL / LOW / HIGH}），由
- * {@code ScmInventoryWarningStatusEnum#evaluate} 在服务层按可用量与阈值算出，不落库。
+ * <p>
+ * <b>{@code status} 是派生值</b>（{@code NORMAL / LOW / HIGH}），由 {@code ScmInventoryWarningStatusEnum#evaluate}
+ * 在服务层按可用量与阈值算出，不落库。
  *
- * <p>配置了阈值但**没有余额行**时，三个数量字段都返回 0（SQL 用 {@code COALESCE}）——
- * 那正是「设了下限却一件没有」，应当预警；这也是本能力唯一能表达
- * 「还没进过货就要补货」的方式。
+ * <p>
+ * 配置了阈值但**没有余额行**时，三个数量字段都返回 0（SQL 用 {@code COALESCE}）—— 那正是「设了下限却一件没有」，应当预警；这也是本能力唯一能表达 「还没进过货就要补货」的方式。
  */
 @Data
 public class InventoryWarningVO {

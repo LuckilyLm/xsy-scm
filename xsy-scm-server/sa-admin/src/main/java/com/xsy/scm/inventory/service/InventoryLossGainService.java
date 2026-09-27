@@ -40,28 +40,28 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
 /**
  * 报损报溢单命令侧：创建 / 改待审核 / 审批 / 驳回 / 删除。
  *
- * <p><b>状态机</b>：{@code PENDING → COMPLETED | REJECTED}，两个终态都不可回退。
- * 只有 {@code PENDING} 可改 / 可删 / 可审 —— 与参考项目不同，参考项目对 update / delete
- * 没有状态守卫，那会让「已完成（已写流水）」的单据被改内容或被删掉，账与单从此对不上。
+ * <p>
+ * <b>状态机</b>：{@code PENDING → COMPLETED | REJECTED}，两个终态都不可回退。 只有 {@code PENDING} 可改 / 可删 / 可审 —— 与参考项目不同，参考项目对 update
+ * / delete 没有状态守卫，那会让「已完成（已写流水）」的单据被改内容或被删掉，账与单从此对不上。
  *
- * <p><b>锁序（与收货 / 出库 / 盘点同一顺序）</b>：
+ * <p>
+ * <b>锁序（与收货 / 出库 / 盘点同一顺序）</b>：
  * <ol>
- *   <li>先锁单据头（{@code lockById}）；</li>
- *   <li>再按 {@code (warehouseId, skuId)} **升序**逐行锁余额并写流水。</li>
+ * <li>先锁单据头（{@code lockById}）；</li>
+ * <li>再按 {@code (warehouseId, skuId)} **升序**逐行锁余额并写流水。</li>
  * </ol>
  * 顺序固定是避免四条链路以相反顺序拿余额锁而死锁。
  *
- * <p><b>全部明细在同一事务内</b>：任一行失败（负库存 / 低于预留 / 无余额行）整单回滚 ——
- * 不允许「报一半」。已写下的流水也随事务回滚。
+ * <p>
+ * <b>全部明细在同一事务内</b>：任一行失败（负库存 / 低于预留 / 无余额行）整单回滚 —— 不允许「报一半」。已写下的流水也随事务回滚。
  *
- * <p><b>审批用乐观锁</b>：审批人必须批准自己读到的内容。若在「打开单据 → 点审批」之间
- * 录单人改了明细，版本已经前进，审批以 40921 失败并要求刷新。
- * 版本判断在**写流水之前**先做一次（早失败，不做无用功），
- * 同时保留在 SQL 的 {@code WHERE} 里作为并发下的第二道防线。
+ * <p>
+ * <b>审批用乐观锁</b>：审批人必须批准自己读到的内容。若在「打开单据 → 点审批」之间 录单人改了明细，版本已经前进，审批以 40921 失败并要求刷新。 版本判断在**写流水之前**先做一次（早失败，不做无用功）， 同时保留在
+ * SQL 的 {@code WHERE} 里作为并发下的第二道防线。
  *
- * <p><b>禁止自建自审</b>：本域只有报损报溢同时存在「录单 + 审批」两个动作，
- * 因此审批通过与驳回都要求 {@code approver != creator}（41065）。
- * 不为此给别的库存单据补审批环节 —— 没有审批动作的单据不存在自审问题。
+ * <p>
+ * <b>禁止自建自审</b>：本域只有报损报溢同时存在「录单 + 审批」两个动作， 因此审批通过与驳回都要求 {@code approver != creator}（41065）。 不为此给别的库存单据补审批环节 ——
+ * 没有审批动作的单据不存在自审问题。
  */
 @Service
 @RequiredArgsConstructor
@@ -84,8 +84,8 @@ public class InventoryLossGainService {
     /**
      * 新建报损报溢单（**创建即待审核**）。
      *
-     * <p>不校验「能不能真的调整」：待审核阶段不影响库存，负库存 / 低于预留都要等到审批时
-     * 才知道（期间可能有出库）。提前卡住会让录单不可用。
+     * <p>
+     * 不校验「能不能真的调整」：待审核阶段不影响库存，负库存 / 低于预留都要等到审批时 才知道（期间可能有出库）。提前卡住会让录单不可用。
      *
      * @return 新单 id
      */
@@ -145,8 +145,8 @@ public class InventoryLossGainService {
     /**
      * 审批通过：按单据类型写 {@code LOSS_REPORT} / {@code GAIN_REPORT} 流水并调整余额。
      *
-     * <p>先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。
-     * 明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 待审核态它为空。
+     * <p>
+     * 先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。 明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 待审核态它为空。
      */
     @Transactional(rollbackFor = Exception.class)
     public void approve(Long lossGainId, InventoryLossGainAuditForm form) {
@@ -160,8 +160,7 @@ public class InventoryLossGainService {
         requireVersion(locked, form);
         requireNotSelfApproval(locked, operator);
         // 类型未知就不该继续 —— 方向无法确定，不能猜。
-        ScmInventoryLossGainTypeEnum type =
-                ScmInventoryLossGainTypeEnum.of(locked.getAdjustType());
+        ScmInventoryLossGainTypeEnum type = ScmInventoryLossGainTypeEnum.of(locked.getAdjustType());
         if (type == null) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_PARAM_INVALID);
         }
@@ -172,26 +171,16 @@ public class InventoryLossGainService {
         }
 
         // 锁序：余额锁按 (warehouseId, skuId) 升序 —— 同一单内多行也必须固定顺序。
-        items.stream()
-                .sorted(Comparator.comparing(InventoryLossGainItemVO::getSkuId))
-                .forEach(item -> {
-                    InventoryLossGainFact fact = new InventoryLossGainFact(
-                            locked.getWarehouseId(),
-                            item.getSkuId(),
-                            locked.getId(),
-                            item.getId(),
-                            locked.getAdjustType(),
-                            item.getQuantity(),
-                            now,
-                            operator);
-                    // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
-                    String unit = inventoryCommandService.postLossGainAdjust(fact);
-                    inventoryLossGainItemDao.updateUnitSnapshot(item.getId(), unit, operator);
-                });
+        items.stream().sorted(Comparator.comparing(InventoryLossGainItemVO::getSkuId)).forEach(item -> {
+            InventoryLossGainFact fact = new InventoryLossGainFact(locked.getWarehouseId(), item.getSkuId(),
+                    locked.getId(), item.getId(), locked.getAdjustType(), item.getQuantity(), now, operator);
+            // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
+            String unit = inventoryCommandService.postLossGainAdjust(fact);
+            inventoryLossGainItemDao.updateUnitSnapshot(item.getId(), unit, operator);
+        });
 
-        if (inventoryLossGainDao.markCompleted(
-                lossGainId, now, operator, form.getAuditOpinion(), form.getVersion())
-                != 1) {
+        if (inventoryLossGainDao.markCompleted(lossGainId, now, operator, form.getAuditOpinion(),
+                form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -199,8 +188,8 @@ public class InventoryLossGainService {
     /**
      * 驳回：只允许 PENDING，**不产生任何库存影响**。
      *
-     * <p>审核意见必填（41037）：驳回是唯一会把「为什么不行」传达给录单人的渠道，
-     * 允许空意见的驳回会让录单人只能反复试。
+     * <p>
+     * 审核意见必填（41037）：驳回是唯一会把「为什么不行」传达给录单人的渠道， 允许空意见的驳回会让录单人只能反复试。
      */
     @Transactional(rollbackFor = Exception.class)
     public void reject(Long lossGainId, InventoryLossGainAuditForm form) {
@@ -218,9 +207,8 @@ public class InventoryLossGainService {
         // 驳回同样是审批动作：自驳自单会让「待审核」这一状态形同虚设，故与通过走同一条禁令
         requireNotSelfApproval(locked, operator);
 
-        if (inventoryLossGainDao.markRejected(
-                lossGainId, now, operator, form.getAuditOpinion(), form.getVersion())
-                != 1) {
+        if (inventoryLossGainDao.markRejected(lossGainId, now, operator, form.getAuditOpinion(),
+                form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         // 驳回是唯一把「为什么不行」传达给录单人的渠道；与状态变更同事务写站内信，
@@ -265,8 +253,8 @@ public class InventoryLossGainService {
     /**
      * 明细校验：至少一行，且同一 SKU 不得重复。
      *
-     * <p>重复 SKU 会让同一份数量被调整两次，而结果看起来完全正常（余额确实变了），
-     * 只是变错了。因此必须在写库前挡掉，而不是静默去重。
+     * <p>
+     * 重复 SKU 会让同一份数量被调整两次，而结果看起来完全正常（余额确实变了）， 只是变错了。因此必须在写库前挡掉，而不是静默去重。
      */
     private static void requireItems(InventoryLossGainAddForm form) {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {
@@ -292,8 +280,8 @@ public class InventoryLossGainService {
     /**
      * 乐观锁早失败：版本不符时**在写流水之前**就报错，不做无用功。
      *
-     * <p>SQL 的 {@code WHERE version = ?} 仍是必需的 —— 它才是并发下真正生效的那道；
-     * 这里的判断只是让错误来得更早、更明确。
+     * <p>
+     * SQL 的 {@code WHERE version = ?} 仍是必需的 —— 它才是并发下真正生效的那道； 这里的判断只是让错误来得更早、更明确。
      */
     private static void requireVersion(InventoryLossGainEntity entity, InventoryLossGainAuditForm form) {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
@@ -304,13 +292,12 @@ public class InventoryLossGainService {
     /**
      * 禁止自建自审：审批人不得是该单的录单人。
      *
-     * <p>{@code created_by} 与 {@code auditor} 都是 {@link ScmOperator} 写的
-     * {@code "userType:employeeId"} 串，因此<b>只比较员工号那一段</b>：
-     * {@code userType} 只是登录端类型，同一个人换个端登录仍是同一个人，
-     * 拿整串比相等等于给「换个端就能自审」留口子。
+     * <p>
+     * {@code created_by} 与 {@code auditor} 都是 {@link ScmOperator} 写的 {@code "userType:employeeId"}
+     * 串，因此<b>只比较员工号那一段</b>： {@code userType} 只是登录端类型，同一个人换个端登录仍是同一个人， 拿整串比相等等于给「换个端就能自审」留口子。
      *
-     * <p>归属解析不出来（历史 {@code created_by} 为空或格式脏）时不阻断：
-     * 无法证明是同一人，就不该用一个业务错误把有效单据卡死；这种情况按审计缺陷单独治理。
+     * <p>
+     * 归属解析不出来（历史 {@code created_by} 为空或格式脏）时不阻断： 无法证明是同一人，就不该用一个业务错误把有效单据卡死；这种情况按审计缺陷单独治理。
      */
     private static void requireNotSelfApproval(InventoryLossGainEntity document, String operator) {
         Long approverId = employeeIdOf(operator);
@@ -346,16 +333,14 @@ public class InventoryLossGainService {
         return locked;
     }
 
-    private static void requireStatus(InventoryLossGainEntity entity,
-                                      ScmInventoryLossGainStatusEnum expected) {
+    private static void requireStatus(InventoryLossGainEntity entity, ScmInventoryLossGainStatusEnum expected) {
         if (!expected.name().equals(entity.getStatus())) {
             throw new ScmBusinessException(INVENTORY_LOSS_GAIN_STATUS_INVALID);
         }
     }
 
     /**
-     * 驳回后向制单人发一条站内信。制单人取自单据 {@code created_by}
-     * （{@link ScmOperator} 写入的 {@code userType:userId} 串），解析不出合法接收人时跳过——
+     * 驳回后向制单人发一条站内信。制单人取自单据 {@code created_by} （{@link ScmOperator} 写入的 {@code userType:userId} 串），解析不出合法接收人时跳过——
      * 不能因为一条历史脏数据把有效的驳回整体回滚。
      */
     private void notifyMakerRejected(InventoryLossGainEntity order, String opinion) {

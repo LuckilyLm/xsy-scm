@@ -7,7 +7,8 @@ import net.lab1024.sa.base.common.domain.PageParam;
 /**
  * 库存预留分页查询条件。
  *
- * <p>与库存余额 / 出库单一致：不提供 {@code sortItemList}，排序列写死在 mapper。
+ * <p>
+ * 与库存余额 / 出库单一致：不提供 {@code sortItemList}，排序列写死在 mapper。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

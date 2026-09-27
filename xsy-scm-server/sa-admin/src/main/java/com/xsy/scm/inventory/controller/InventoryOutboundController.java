@@ -24,12 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * SCM 库存出库单（独立出库单）。
  *
- * <p>共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 确认出库 / 取消 / 删除。
+ * <p>
+ * 共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 确认出库 / 取消 / 删除。
  *
- * <p><b>权限划分</b>：查询 {@code scm:inventory:outbound:query}、
- * 新建 {@code :add}、改草稿 {@code :update}、确认出库 {@code :confirm}、删除 {@code :delete}。
- * 「确认出库」是**独立的权限**而不是复用 {@code :update} —— 确认会真实扣减库存并写不可逆流水，
- * 与「改个草稿」不是同一量级的操作，允许仓管录单但由主管确认是完全合理的分工。
+ * <p>
+ * <b>权限划分</b>：查询 {@code scm:inventory:outbound:query}、 新建 {@code :add}、改草稿 {@code :update}、确认出库 {@code :confirm}、删除
+ * {@code :delete}。 「确认出库」是**独立的权限**而不是复用 {@code :update} —— 确认会真实扣减库存并写不可逆流水， 与「改个草稿」不是同一量级的操作，允许仓管录单但由主管确认是完全合理的分工。
  */
 @RestController
 @RequestMapping("/scm/inventory/outbound")
@@ -70,7 +70,7 @@ public class InventoryOutboundController {
     @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long outboundId,
-                                      @Valid @RequestBody InventoryOutboundAddForm form) {
+            @Valid @RequestBody InventoryOutboundAddForm form) {
         inventoryOutboundService.update(outboundId, form);
         return ResponseDTO.ok();
     }
@@ -78,7 +78,8 @@ public class InventoryOutboundController {
     /**
      * 确认出库：写 SALES_OUT 流水并扣减余额。
      *
-     * <p>这是本模块唯一会改变库存的端点，失败整单回滚，不存在「出一半」。
+     * <p>
+     * 这是本模块唯一会改变库存的端点，失败整单回滚，不存在「出一半」。
      */
     @PostMapping("/confirm/{id}")
     @SaCheckPermission(InventoryPermission.OUTBOUND_CONFIRM)

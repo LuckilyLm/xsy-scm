@@ -16,7 +16,8 @@ import java.util.List;
 /**
  * 库存预留查询侧（只读）。
  *
- * <p>状态中文描述在服务层按枚举填充，避免前端硬编码状态字典。
+ * <p>
+ * 状态中文描述在服务层按枚举填充，避免前端硬编码状态字典。
  */
 @Service
 @RequiredArgsConstructor

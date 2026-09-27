@@ -10,7 +10,8 @@ import java.time.OffsetDateTime;
 /**
  * 库存预留行。
  *
- * <p>展示字段（仓库 / SKU / 商品）实时联表，不是快照；{@code unitSnapshot} 才是预留时的快照。
+ * <p>
+ * 展示字段（仓库 / SKU / 商品）实时联表，不是快照；{@code unitSnapshot} 才是预留时的快照。
  */
 @Data
 public class InventoryReservationVO {
