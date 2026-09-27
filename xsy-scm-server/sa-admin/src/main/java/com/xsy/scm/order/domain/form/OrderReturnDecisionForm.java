@@ -6,8 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-
-
 @Data
 public class OrderReturnDecisionForm {
     @NotNull(message = "退货单 ID 不能为空")

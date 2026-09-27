@@ -2,7 +2,6 @@ package com.xsy.scm.order.manager;
 
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
 
-
 import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ITEM_NOT_OWNED;
@@ -15,8 +14,9 @@ import java.util.List;
 import java.util.Objects;
 
 public record SalesOrderItemChangeSet(List<SalesOrderItemEntity> inserted, List<SalesOrderItemEntity> updated,
-                                      List<SalesOrderItemEntity> removed) {
-    public static SalesOrderItemChangeSet between(List<SalesOrderItemEntity> existing, List<SalesOrderItemEntity> requested) {
+        List<SalesOrderItemEntity> removed) {
+    public static SalesOrderItemChangeSet between(List<SalesOrderItemEntity> existing,
+            List<SalesOrderItemEntity> requested) {
         var unmatched = new LinkedHashMap<Long, SalesOrderItemEntity>();
         existing.forEach(existingItem -> unmatched.put(existingItem.getId(), existingItem));
         var inserted = new ArrayList<SalesOrderItemEntity>();
@@ -27,8 +27,10 @@ public record SalesOrderItemChangeSet(List<SalesOrderItemEntity> inserted, List<
                 continue;
             }
             var existingItem = unmatched.remove(requestedItem.getId());
-            if (existingItem == null) throw new ScmBusinessException(ORDER_ITEM_NOT_OWNED);
-            if (requestedItem.getVersion() == null) throw new ScmBusinessException(ORDER_ITEM_VERSION_REQUIRED);
+            if (existingItem == null)
+                throw new ScmBusinessException(ORDER_ITEM_NOT_OWNED);
+            if (requestedItem.getVersion() == null)
+                throw new ScmBusinessException(ORDER_ITEM_VERSION_REQUIRED);
             if (!Objects.equals(requestedItem.getVersion(), existingItem.getVersion()))
                 throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
             requestedItem.setCreatedAt(existingItem.getCreatedAt());

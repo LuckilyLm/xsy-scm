@@ -16,5 +16,5 @@ public interface OrderOperationLogDao {
 
     /** 列表读；日志行本身无归属列，范围经父订单收窄，见 OrderOperationLogMapper.xml。 */
     List<OrderOperationLogEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
-                                        @Param("scope") ScmValueScope scope);
+            @Param("scope") ScmValueScope scope);
 }

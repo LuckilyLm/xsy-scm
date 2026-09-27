@@ -1,7 +1,5 @@
 package com.xsy.scm.order.manager;
 
-
-
 import com.xsy.scm.common.exception.ScmBusinessException;
 
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_INVALID;
@@ -18,9 +16,11 @@ public final class OrderAmountCalculator {
     }
 
     public static BigDecimal bounded(BigDecimal amount) {
-        if (amount == null) return null;
+        if (amount == null)
+            return null;
         amount = amount.setScale(SCALE, java.math.RoundingMode.HALF_UP);
-        if (amount.abs().compareTo(MAX) > 0) throw new ScmBusinessException(ORDER_PRICE_INVALID);
+        if (amount.abs().compareTo(MAX) > 0)
+            throw new ScmBusinessException(ORDER_PRICE_INVALID);
         return amount;
     }
 
@@ -29,7 +29,8 @@ public final class OrderAmountCalculator {
     }
 
     public static BigDecimal orderAmount(List<BigDecimal> lines) {
-        if (lines.stream().anyMatch(Objects::isNull)) return null;
+        if (lines.stream().anyMatch(Objects::isNull))
+            return null;
         return bounded(lines.stream().reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 }

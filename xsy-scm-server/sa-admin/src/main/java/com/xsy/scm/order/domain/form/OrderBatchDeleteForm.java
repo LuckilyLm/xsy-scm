@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-
 @Data
 public class OrderBatchDeleteForm {
     @Valid

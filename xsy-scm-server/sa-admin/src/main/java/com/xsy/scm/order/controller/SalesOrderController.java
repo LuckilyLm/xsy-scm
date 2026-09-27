@@ -70,29 +70,30 @@ public class SalesOrderController {
     /**
      * 录单时的价格解析预览。
      *
-     * <p>返回体是定价域的 {@code PriceResolveResultVO}，与 {@code PriceResolveController#preview} 调用
-     * 同一个 {@link com.xsy.scm.pricing.service.PriceResolver#preview}，因此<b>同时</b>要求
-     * {@code scm:order:query} 与 {@code scm:pricing:resolve:query}（{@link SaMode#AND}）：只有订单查看权的人
-     * 不能经此旁路批量读到客户协议价与类型价解析结果，那本来需要单独的定价查看权。
+     * <p>
+     * 返回体是定价域的 {@code PriceResolveResultVO}，与 {@code PriceResolveController#preview} 调用 同一个
+     * {@link com.xsy.scm.pricing.service.PriceResolver#preview}，因此<b>同时</b>要求 {@code scm:order:query} 与
+     * {@code scm:pricing:resolve:query}（{@link SaMode#AND}）：只有订单查看权的人 不能经此旁路批量读到客户协议价与类型价解析结果，那本来需要单独的定价查看权。
      */
     @PostMapping("/price/preview")
     @SaCheckPermission(value = {OrderPermission.QUERY, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
-    public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(@Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
-        return ResponseDTO.ok(priceResolver.preview(priceResolveForm.getCustomerId(),
-            priceResolveForm.getSkuIds(), priceResolveForm.getAt()));
+    public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(
+            @Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
+        return ResponseDTO.ok(priceResolver.preview(priceResolveForm.getCustomerId(), priceResolveForm.getSkuIds(),
+                priceResolveForm.getAt()));
     }
 
     /**
      * 某客户某 SKU 的最近已确认订单价（只读）：仅取 CONFIRMED 单的锁定价，只用于录单旁证，不参与定价、不改价格优先级。
      *
-     * <p>取数源是指定客户的历史成交事实，与客户 360 的 {@code frequent-skus} 同数据面，因此门禁口径一致：
-     * <b>同时</b>要求 {@code scm:order:query} 与 {@code scm:customer:query}（{@link SaMode#AND}）。
+     * <p>
+     * 取数源是指定客户的历史成交事实，与客户 360 的 {@code frequent-skus} 同数据面，因此门禁口径一致： <b>同时</b>要求 {@code scm:order:query} 与
+     * {@code scm:customer:query}（{@link SaMode#AND}）。
      */
     @GetMapping("/reference/recent-prices")
     @SaCheckPermission(value = {OrderPermission.QUERY, CustomerPermission.QUERY}, mode = SaMode.AND)
-    public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId,
-                                                              @RequestParam Long skuId,
-                                                              @RequestParam(defaultValue = "5") int limit) {
+    public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId, @RequestParam Long skuId,
+            @RequestParam(defaultValue = "5") int limit) {
         return ResponseDTO.ok(salesOrderQueryService.recentPrices(customerId, skuId, limit));
     }
 
@@ -100,7 +101,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
-        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         overridePermission(salesOrderAddForm);
         return ResponseDTO.ok(salesOrderService.create(salesOrderAddForm, key));
     }
@@ -108,7 +109,8 @@ public class SalesOrderController {
     @PostMapping("/create-and-progress")
     @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         overridePermission(salesOrderAddForm);
         return ResponseDTO.ok(salesOrderService.createAndProgress(salesOrderAddForm, key));
     }
@@ -125,7 +127,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.SUBMIT)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> submit(@Valid @RequestBody OrderVersionForm orderVersionForm,
-        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.submit(orderVersionForm, key));
     }
 
@@ -133,7 +135,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.CONFIRM)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> confirm(@Valid @RequestBody OrderVersionForm orderVersionForm,
-        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.confirm(orderVersionForm, key));
     }
 
@@ -141,14 +143,15 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.CANCEL)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> cancel(@Valid @RequestBody OrderCancelForm orderCancelForm,
-        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.cancel(orderCancelForm, key));
     }
 
     @PostMapping("/item/actual-quantity")
     @SaCheckPermission(OrderPermission.ACTUAL_QUANTITY)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> actual(@Valid @RequestBody OrderActualQuantityForm orderActualQuantityForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<SalesOrderDetailVO> actual(@Valid @RequestBody OrderActualQuantityForm orderActualQuantityForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.actualQuantity(orderActualQuantityForm, key));
     }
 
@@ -171,9 +174,8 @@ public class SalesOrderController {
     /**
      * 为已确认的订单预留库存（出库波次）。
      *
-     * <p>显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生，
-     * 把预留挂在确认上会让「先接单→再采购」链路无法运转（见 docs/decisions.md）。
-     * 货到之后由业务人员对本单执行预留，占用可用量。
+     * <p>
+     * 显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生， 把预留挂在确认上会让「先接单→再采购」链路无法运转（见 docs/decisions.md）。 货到之后由业务人员对本单执行预留，占用可用量。
      */
     @PostMapping("/reserve-stock/{orderId}")
     @SaCheckPermission(OrderPermission.RESERVE_STOCK)
@@ -186,8 +188,10 @@ public class SalesOrderController {
     private void overridePermission(SalesOrderAddForm salesOrderForm) {
         if (!java.util.Set.of(ScmOrderSourceEnum.ADMIN.name(), ScmOrderSourceEnum.SUPPLEMENT.name())
                 .contains(salesOrderForm.getOrderSource()))
-            throw new com.xsy.scm.common.exception.ScmBusinessException(com.xsy.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
-        if (salesOrderForm.getItems().stream().anyMatch(orderItemForm -> Boolean.TRUE.equals(orderItemForm.getManualPriceOverride())))
+            throw new com.xsy.scm.common.exception.ScmBusinessException(
+                    com.xsy.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
+        if (salesOrderForm.getItems().stream()
+                .anyMatch(orderItemForm -> Boolean.TRUE.equals(orderItemForm.getManualPriceOverride())))
             cn.dev33.satoken.stp.StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
     }
 }

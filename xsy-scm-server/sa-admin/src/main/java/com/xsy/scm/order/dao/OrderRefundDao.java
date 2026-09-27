@@ -17,5 +17,5 @@ public interface OrderRefundDao extends BaseMapper<OrderRefundEntity> {
 
     /** 列表读；范围按父订单的 {@code sales_order.seller_id} 收窄，见 OrderRefundMapper.xml。 */
     List<OrderRefundEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
-                                  @Param("scope") ScmValueScope scope);
+            @Param("scope") ScmValueScope scope);
 }

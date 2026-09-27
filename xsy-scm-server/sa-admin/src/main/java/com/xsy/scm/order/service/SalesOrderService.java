@@ -102,33 +102,37 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm salesOrderAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CREATE", key, salesOrderAddForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         var result = createDraft(salesOrderAddForm);
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
-            result.getOrderId(), result);
+                result.getOrderId(), result);
         return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO createAndProgress(SalesOrderAddForm salesOrderAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CREATE_AND_PROGRESS", key, salesOrderAddForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         var result = createDraft(salesOrderAddForm);
         result = submitOrder(result.getOrderId(), result.getVersion());
-        if (result.getItems().stream().allMatch(
-                orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
+        if (result.getItems().stream()
+                .allMatch(orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
             result = confirmOrder(result.getOrderId(), result.getVersion());
         }
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
-            result.getOrderId(), result);
+                result.getOrderId(), result);
         return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public SalesOrderImportResultVO importOrders(List<SalesOrderAddForm> forms, String fileHash, String key, int totalRows) {
+    public SalesOrderImportResultVO importOrders(List<SalesOrderAddForm> forms, String fileHash, String key,
+            int totalRows) {
         var request = Map.of("fileHash", fileHash, "forms", forms);
         var claim = orderIdempotencyService.claim("ORDER_IMPORT", key, request);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SalesOrderImportResultVO.class);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderImportResultVO.class);
         var result = new SalesOrderImportResultVO();
         result.setTotalRows(totalRows);
         result.setTotalOrders(forms.size());
@@ -147,14 +151,11 @@ public class SalesOrderService {
             }
         }
         result.setOrders(imported);
-        result.setConfirmedOrders(
-                (int) imported.stream()
-                        .filter(importedOrder -> ScmOrderStatusEnum.CONFIRMED.name().equals(importedOrder.getStatus()))
-                        .count());
-        result.setPendingOrders(
-                (int) imported.stream()
-                        .filter(importedOrder -> ScmOrderStatusEnum.PENDING.name().equals(importedOrder.getStatus()))
-                        .count());
+        result.setConfirmedOrders((int) imported.stream()
+                .filter(importedOrder -> ScmOrderStatusEnum.CONFIRMED.name().equals(importedOrder.getStatus()))
+                .count());
+        result.setPendingOrders((int) imported.stream()
+                .filter(importedOrder -> ScmOrderStatusEnum.PENDING.name().equals(importedOrder.getStatus())).count());
         orderIdempotencyService.complete(claim, "SALES_ORDER_IMPORT", null, result);
         return result;
     }
@@ -194,7 +195,8 @@ public class SalesOrderService {
         salesOrder.setOrderedTotalAmount(total(rows));
         stamp(salesOrder, true);
         salesOrderDao.insert(salesOrder);
-        for (var row : rows) insert(salesOrder.getId(), row);
+        for (var row : rows)
+            insert(salesOrder.getId(), row);
         var addressSnapshot = new OrderAddressSnapshotEntity();
         BeanUtils.copyProperties(salesOrderAddForm.getAddress(), addressSnapshot);
         addressSnapshot.setOrderId(salesOrder.getId());
@@ -202,7 +204,7 @@ public class SalesOrderService {
         addressSnapshot.setCreatedAt(OffsetDateTime.now());
         addressSnapshot.setCreatedBy(ScmOperator.current());
         if (addressSnapshot.getAddress() != null && !addressSnapshot.getAddress().isBlank()
-            && Objects.equals(addressSnapshot.getAddress(), customer.getAddress())) {
+                && Objects.equals(addressSnapshot.getAddress(), customer.getAddress())) {
             addressSnapshot.setProvinceCode(customer.getProvinceCode());
             addressSnapshot.setProvinceName(customer.getProvinceName());
             addressSnapshot.setCityCode(customer.getCityCode());
@@ -233,24 +235,23 @@ public class SalesOrderService {
         customerService.requireTradable(salesOrder.getCustomerId());
         validateOriginal(salesOrderUpdateForm);
         var oldAddress = orderAddressSnapshotDao.list(salesOrder.getId()).getFirst();
-        if (!Objects.equals(oldAddress.getReceiverName(),
-            salesOrderUpdateForm.getAddress().getReceiverName())
-                || !Objects.equals(oldAddress.getReceiverPhone(),
-                    salesOrderUpdateForm.getAddress().getReceiverPhone())
-                        || !Objects.equals(oldAddress.getAddress(),
-                            salesOrderUpdateForm.getAddress().getAddress()))
+        if (!Objects.equals(oldAddress.getReceiverName(), salesOrderUpdateForm.getAddress().getReceiverName())
+                || !Objects.equals(oldAddress.getReceiverPhone(), salesOrderUpdateForm.getAddress().getReceiverPhone())
+                || !Objects.equals(oldAddress.getAddress(), salesOrderUpdateForm.getAddress().getAddress()))
             throw new ScmBusinessException(ORDER_STATE_INVALID);
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         var existing = salesOrderItemDao.list(salesOrder.getId());
         var requested = materialize(salesOrderUpdateForm);
         var changes = SalesOrderItemChangeSet.between(existing, requested);
         // Remove before insert so a removed SKU may be added again without violating the active unique index.
-        for (var row : changes.removed()) removeItem(row);
+        for (var row : changes.removed())
+            removeItem(row);
         for (var row : changes.updated()) {
             row.setOrderId(salesOrder.getId());
             saveItem(row);
         }
-        for (var row : changes.inserted()) insert(salesOrder.getId(), row);
+        for (var row : changes.inserted())
+            insert(salesOrder.getId(), row);
         header(salesOrder, salesOrderUpdateForm);
         salesOrder.setOrderedTotalAmount(total(requested));
         save(salesOrder);
@@ -262,11 +263,12 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO submit(OrderVersionForm orderVersionForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_SUBMIT:" + orderVersionForm.getOrderId(), key,
-            orderVersionForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+                orderVersionForm);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         var result = submitOrder(orderVersionForm.getOrderId(), orderVersionForm.getVersion());
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
-            result.getOrderId(), result);
+                result.getOrderId(), result);
         return result;
     }
 
@@ -276,28 +278,29 @@ public class SalesOrderService {
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.PENDING.name());
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         var rows = salesOrderItemDao.list(salesOrder.getId());
-        var automatic = rows.stream()
-                .filter(orderItem -> !orderItem.getManualPriceOverride())
-                .map(SalesOrderItemEntity::getSkuId)
-                .toList();
+        var automatic = rows.stream().filter(orderItem -> !orderItem.getManualPriceOverride())
+                .map(SalesOrderItemEntity::getSkuId).toList();
         customerService.requireTradable(salesOrder.getCustomerId());
-        var resolved = priceResolver.requireResolvable(salesOrder.getCustomerId(), automatic,
-            OffsetDateTime.now()).stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId,
-                Function.identity()));
-        var manual = rows.stream().filter(SalesOrderItemEntity::getManualPriceOverride).map(SalesOrderItemEntity::getSkuId).toList();
+        var resolved = priceResolver.requireResolvable(salesOrder.getCustomerId(), automatic, OffsetDateTime.now())
+                .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
+        var manual = rows.stream().filter(SalesOrderItemEntity::getManualPriceOverride)
+                .map(SalesOrderItemEntity::getSkuId).toList();
         var manualResolved = priceResolver.resolve(salesOrder.getCustomerId(), manual, OffsetDateTime.now());
         if (manualResolved.stream().anyMatch(resolvedPrice -> !resolvedPrice.isSellable()))
             throw new ScmBusinessException(com.xsy.scm.pricing.constant.PricingErrorCode.SKU_NOT_SELLABLE);
         for (var row : rows) {
-            if (!row.getManualPriceOverride()) OrderSnapshotFactory.applyPrice(row, resolved.get(row.getSkuId()));
+            if (!row.getManualPriceOverride())
+                OrderSnapshotFactory.applyPrice(row, resolved.get(row.getSkuId()));
             else {
                 OrderValidator.reason(row.getManualPriceReason(), ORDER_PRICE_OVERRIDE_REASON_REQUIRED);
-                if (row.getDraftUnitPrice() == null) throw new ScmBusinessException(ORDER_PRICE_INVALID);
+                if (row.getDraftUnitPrice() == null)
+                    throw new ScmBusinessException(ORDER_PRICE_INVALID);
             }
             row.setLockedUnitPrice(row.getDraftUnitPrice());
             row.setLockedPriceSource(row.getDraftPriceSource());
             row.setLockedPriceSourceId(row.getDraftPriceSourceId());
-            row.setOrderedLineAmount(OrderAmountCalculator.lineAmount(row.getOrderedQuantity(), row.getLockedUnitPrice()));
+            row.setOrderedLineAmount(
+                    OrderAmountCalculator.lineAmount(row.getOrderedQuantity(), row.getLockedUnitPrice()));
             if (ScmProductTypeEnum.STANDARD.name().equals(row.getProductTypeSnapshot())) {
                 row.setActualQuantity(row.getOrderedQuantity());
                 row.setActualQuantitySource(ScmOrderQuantitySourceEnum.SYSTEM.name());
@@ -316,16 +319,15 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO actualQuantity(OrderActualQuantityForm orderActualQuantityForm, String key) {
         var claim = orderIdempotencyService.claim(
-                "ORDER_ACTUAL:" + orderActualQuantityForm.getOrderId() + ":" + orderActualQuantityForm.getItemId(),
-                key,
+                "ORDER_ACTUAL:" + orderActualQuantityForm.getOrderId() + ":" + orderActualQuantityForm.getItemId(), key,
                 orderActualQuantityForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         var salesOrder = lock(orderActualQuantityForm.getOrderId());
         OrderStateMachine.actualQuantity(salesOrder.getStatus());
         var row = salesOrderItemDao.list(salesOrder.getId()).stream()
                 .filter(salesOrderItem -> Objects.equals(salesOrderItem.getId(), orderActualQuantityForm.getItemId()))
-                .findFirst()
-                .orElseThrow(() -> new ScmBusinessException(ORDER_ITEM_NOT_OWNED));
+                .findFirst().orElseThrow(() -> new ScmBusinessException(ORDER_ITEM_NOT_OWNED));
         if (!ScmProductTypeEnum.NON_STANDARD.name().equals(row.getProductTypeSnapshot()))
             throw new ScmBusinessException(ORDER_ACTUAL_NOT_ALLOWED);
         if (!Objects.equals(row.getVersion(), orderActualQuantityForm.getVersion()))
@@ -339,21 +341,22 @@ public class SalesOrderService {
         // Advance the aggregate version too: stale confirm forms must refresh after any item change.
         save(salesOrder);
         var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
-        log(salesOrder.getId(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY,
-            orderActualQuantityForm.getReason(), before, result);
+        log(salesOrder.getId(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY, orderActualQuantityForm.getReason(), before,
+                result);
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
-            salesOrder.getId(), result);
+                salesOrder.getId(), result);
         return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO confirm(OrderVersionForm orderVersionForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CONFIRM:" + orderVersionForm.getOrderId(), key,
-            orderVersionForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+                orderVersionForm);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         var result = confirmOrder(orderVersionForm.getOrderId(), orderVersionForm.getVersion());
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
-            result.getOrderId(), result);
+                result.getOrderId(), result);
         return result;
     }
 
@@ -366,12 +369,12 @@ public class SalesOrderService {
         for (var row : rows) {
             if (row.getActualQuantity() == null || row.getActualQuantity().signum() <= 0)
                 throw new ScmBusinessException(ORDER_ACTUAL_QUANTITY_REQUIRED);
-            row.setSettlementLineAmount(OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
+            row.setSettlementLineAmount(
+                    OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
             saveItem(row);
         }
-        salesOrder.setSettlementTotalAmount(
-                OrderAmountCalculator.orderAmount(
-                        rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));
+        salesOrder.setSettlementTotalAmount(OrderAmountCalculator
+                .orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));
         salesOrder.setStatus(ScmOrderStatusEnum.CONFIRMED.name());
         salesOrder.setConfirmedAt(OffsetDateTime.now());
         save(salesOrder);
@@ -384,7 +387,8 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key, orderCancelForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         var salesOrder = lock(orderCancelForm.getOrderId());
         version(salesOrder.getVersion(), orderCancelForm.getVersion());
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CANCELLED.name());
@@ -400,47 +404,48 @@ public class SalesOrderService {
         var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.CANCEL, orderCancelForm.getReason(), before, result);
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
-            salesOrder.getId(), result);
+                salesOrder.getId(), result);
         return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void delete(OrderVersionForm orderVersionForm) {
         var salesOrder = salesOrderDao.lock(orderVersionForm.getOrderId());
-        if (salesOrder == null) return;
+        if (salesOrder == null)
+            return;
         version(salesOrder.getVersion(), orderVersionForm.getVersion());
         if (!ScmOrderStatusEnum.DRAFT.name().equals(salesOrder.getStatus())) {
             throw new ScmBusinessException(ORDER_DELETE_STATE_INVALID);
         }
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
-        for (var row : salesOrderItemDao.list(salesOrder.getId())) removeItem(row);
+        for (var row : salesOrderItemDao.list(salesOrder.getId()))
+            removeItem(row);
         if (salesOrderDao.softDelete(salesOrder.getId(), salesOrder.getVersion(), ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        log(salesOrder.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除草稿", before, Map.of("deleted", true,
-            "version", salesOrder.getVersion() + 1));
+        log(salesOrder.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除草稿", before,
+                Map.of("deleted", true, "version", salesOrder.getVersion() + 1));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void batchDelete(OrderBatchDeleteForm batchDeleteForm) {
         for (var orderVersionForm : batchDeleteForm.getOrders().stream()
-                .sorted(Comparator.comparing(OrderVersionForm::getOrderId))
-                .toList())
+                .sorted(Comparator.comparing(OrderVersionForm::getOrderId)).toList())
             delete(orderVersionForm);
     }
 
     /**
      * 为已确认的订单**显式预留库存**（出库波次）。
      *
-     * <p><b>为什么是显式操作而不是确认时自动预留</b>：本业务的链路是
-     * 「客户下单 → 订单 → 确认 → 聚合 → 采购需求 → 采购单 → 收货 → 库存」，
-     * **库存在订单确认之后才产生**。把预留挂在确认上等于要求「货先到才能接单」，
-     * 与「先接单、再采购」的设计前提冲突（实测会让 82 个集成用例报 41011）。
+     * <p>
+     * <b>为什么是显式操作而不是确认时自动预留</b>：本业务的链路是 「客户下单 → 订单 → 确认 → 聚合 → 采购需求 → 采购单 → 收货 → 库存」，
+     * **库存在订单确认之后才产生**。把预留挂在确认上等于要求「货先到才能接单」， 与「先接单、再采购」的设计前提冲突（实测会让 82 个集成用例报 41011）。
      * 因此把「什么时候占货」交给业务判断：货到之后，由业务人员对本单执行预留。
      *
-     * <p>业务依据仍是销售订单 —— 预留的来源单据就是订单行，不存在「凭空占货」。
+     * <p>
+     * 业务依据仍是销售订单 —— 预留的来源单据就是订单行，不存在「凭空占货」。
      *
-     * <p>严格语义：任一行可用量不足就抛 41011，整体回滚（不会只占一半）。
-     * 仓库由 {@code defaultEnabledWarehouse} 解析（订单无仓库字段，G-03 单仓库）。
+     * <p>
+     * 严格语义：任一行可用量不足就抛 41011，整体回滚（不会只占一半）。 仓库由 {@code defaultEnabledWarehouse} 解析（订单无仓库字段，G-03 单仓库）。
      */
     @Transactional(rollbackFor = Exception.class)
     public void reserveStock(Long orderId) {
@@ -451,29 +456,32 @@ public class SalesOrderService {
         var rows = salesOrderItemDao.list(salesOrder.getId());
         inventoryReservationService.reserveForSalesOrder(salesOrder.getId(),
                 rows.stream()
-                        .map(salesOrderItem -> new InventoryReservationService.OrderReserveLine(
-                                salesOrderItem.getId(), salesOrderItem.getSkuId(), salesOrderItem.getActualQuantity()))
+                        .map(salesOrderItem -> new InventoryReservationService.OrderReserveLine(salesOrderItem.getId(),
+                                salesOrderItem.getSkuId(), salesOrderItem.getActualQuantity()))
                         .toList(),
                 OffsetDateTime.now());
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.RESERVE_STOCK, null, null,
-            Map.of("reservedLines", rows.size()));
+                Map.of("reservedLines", rows.size()));
     }
 
     public SalesOrderEntity lock(Long orderId) {
         var salesOrder = salesOrderDao.lock(orderId);
-        if (salesOrder == null) throw new ScmBusinessException(ORDER_NOT_FOUND);
+        if (salesOrder == null)
+            throw new ScmBusinessException(ORDER_NOT_FOUND);
         return salesOrder;
     }
 
     public static void version(Integer actual, Integer expected) {
-        if (!Objects.equals(actual, expected)) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (!Objects.equals(actual, expected))
+            throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
     private void validateOriginal(SalesOrderAddForm salesOrderAddForm) {
-        if (salesOrderAddForm.getOriginalOrderId() == null) return;
+        if (salesOrderAddForm.getOriginalOrderId() == null)
+            return;
         var original = salesOrderDao.selectById(salesOrderAddForm.getOriginalOrderId());
         if (original == null || !ScmOrderStatusEnum.CONFIRMED.name().equals(original.getStatus())
-            || !Objects.equals(original.getCustomerId(), salesOrderAddForm.getCustomerId()))
+                || !Objects.equals(original.getCustomerId(), salesOrderAddForm.getCustomerId()))
             throw new ScmBusinessException(ORDER_ORIGINAL_INVALID);
     }
 
@@ -484,17 +492,15 @@ public class SalesOrderService {
         var spuIds = products.values().stream().map(skuOption -> skuOption.getSpuId()).distinct().toList();
         var codes = spuIds.isEmpty()
                 ? Map.<Long, String>of()
-                : productSpuDao.selectBatchIds(spuIds).stream()
-                        .collect(Collectors.toMap(
-                                productSpu -> productSpu.getId(), productSpu -> productSpu.getSpuCode()));
-        var resolved = priceResolver.resolve(salesOrderAddForm.getCustomerId(), ids,
-            OffsetDateTime.now()).stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId,
-                Function.identity()));
+                : productSpuDao.selectBatchIds(spuIds).stream().collect(
+                        Collectors.toMap(productSpu -> productSpu.getId(), productSpu -> productSpu.getSpuCode()));
+        var resolved = priceResolver.resolve(salesOrderAddForm.getCustomerId(), ids, OffsetDateTime.now()).stream()
+                .collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
         return salesOrderAddForm.getItems().stream().map(orderItemForm -> {
             var productSkuOption = products.get(orderItemForm.getSkuId());
             return OrderSnapshotFactory.item(orderItemForm, productSkuOption,
                     productSkuOption == null ? null : codes.get(productSkuOption.getSpuId()),
-                        resolved.get(orderItemForm.getSkuId()));
+                    resolved.get(orderItemForm.getSkuId()));
         }).toList();
     }
 
@@ -507,7 +513,8 @@ public class SalesOrderService {
     }
 
     private BigDecimal total(List<SalesOrderItemEntity> rows) {
-        return OrderAmountCalculator.orderAmount(rows.stream().map(SalesOrderItemEntity::getOrderedLineAmount).toList());
+        return OrderAmountCalculator
+                .orderAmount(rows.stream().map(SalesOrderItemEntity::getOrderedLineAmount).toList());
     }
 
     private void insert(Long orderId, SalesOrderItemEntity salesOrderItem) {
@@ -531,13 +538,15 @@ public class SalesOrderService {
 
     private void save(SalesOrderEntity salesOrder) {
         stamp(salesOrder, false);
-        if (salesOrderDao.updateById(salesOrder) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (salesOrderDao.updateById(salesOrder) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
     }
 
     private void saveItem(SalesOrderItemEntity row) {
         row.setUpdatedAt(OffsetDateTime.now());
         row.setUpdatedBy(ScmOperator.current());
-        if (salesOrderItemDao.updateById(row) != 1) throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
+        if (salesOrderItemDao.updateById(row) != 1)
+            throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
     }
 
     private void removeItem(SalesOrderItemEntity row) {
@@ -546,7 +555,7 @@ public class SalesOrderService {
     }
 
     private void log(Long orderId, ScmOrderOperationTypeEnum operationType, String reason, Object before,
-        Object after) {
+            Object after) {
         orderLogs.record(orderId, operationType, reason, before, after);
     }
 }

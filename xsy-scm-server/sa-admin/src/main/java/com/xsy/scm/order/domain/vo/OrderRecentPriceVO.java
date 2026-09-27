@@ -10,9 +10,9 @@ import java.time.OffsetDateTime;
 /**
  * 某客户某 SKU 的「最近已确认订单价」参考行（只读辅助录单）。
  *
- * <p>取历史 CONFIRMED 订单行的 {@code locked_unit_price} 与单位快照，仅用于录单旁证：绝不回算当前价格、
- * 不参与 {@code PriceResolver} 定价、不改变价格优先级，因此不是第二套价格事实。limit 约束的是订单数而非行数，
- * 同一订单同一 SKU 的多行会各自成行返回（带 {@code itemId}），不能任取一行、相加或求平均。
+ * <p>
+ * 取历史 CONFIRMED 订单行的 {@code locked_unit_price} 与单位快照，仅用于录单旁证：绝不回算当前价格、 不参与 {@code PriceResolver}
+ * 定价、不改变价格优先级，因此不是第二套价格事实。limit 约束的是订单数而非行数， 同一订单同一 SKU 的多行会各自成行返回（带 {@code itemId}），不能任取一行、相加或求平均。
  */
 @Data
 public class OrderRecentPriceVO {

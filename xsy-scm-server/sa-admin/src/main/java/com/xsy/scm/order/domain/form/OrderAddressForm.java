@@ -4,8 +4,6 @@ import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-
-
 @Data
 public class OrderAddressForm {
     @NotBlank(message = "收货人姓名不能为空")

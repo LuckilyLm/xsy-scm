@@ -5,8 +5,6 @@ import lombok.EqualsAndHashCode;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class SalesOrderUpdateForm extends SalesOrderAddForm {

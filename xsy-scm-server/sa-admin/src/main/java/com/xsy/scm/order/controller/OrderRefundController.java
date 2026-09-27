@@ -44,7 +44,8 @@ public class OrderRefundController {
     @PostMapping("/complete")
     @SaCheckPermission(OrderPermission.REFUND_COMPLETE)
     @OperateLog
-    public ResponseDTO<OrderRefundVO> complete(@Valid @RequestBody OrderRefundCompleteForm refundCompleteForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<OrderRefundVO> complete(@Valid @RequestBody OrderRefundCompleteForm refundCompleteForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderRefundService.complete(refundCompleteForm, key));
     }
 

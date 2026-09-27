@@ -1,4 +1,5 @@
 package com.xsy.scm.order.constant;
 
-
-public enum ScmOrderRefundStatusEnum {PENDING, COMPLETED}
+public enum ScmOrderRefundStatusEnum {
+    PENDING, COMPLETED
+}

@@ -1,6 +1,5 @@
 package com.xsy.scm.order.manager;
 
-
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -28,16 +27,19 @@ public final class OrderValidator {
     }
 
     public static void reason(String reasonText, com.xsy.scm.common.error.ScmErrorCode code) {
-        if (trim(reasonText) == null) throw new ScmBusinessException(code);
+        if (trim(reasonText) == null)
+            throw new ScmBusinessException(code);
     }
 
     /**
      * 解析数量 / 金额的定点字符串。
      *
-     * <p>形态规则直接复用 {@link ScmDecimalStrings}：订单域曾要求「恰好 4 位小数」，比全项目唯一规则
-     * 更严，导致前端与 Excel 导入提交的 {@code "10"} 被拒。负数、科学计数法与超 4 位小数仍然拒绝。
+     * <p>
+     * 形态规则直接复用 {@link ScmDecimalStrings}：订单域曾要求「恰好 4 位小数」，比全项目唯一规则 更严，导致前端与 Excel 导入提交的 {@code "10"} 被拒。负数、科学计数法与超 4
+     * 位小数仍然拒绝。
      *
-     * @param positive {@code true} = 数量（必须 &gt; 0）；{@code false} = 单价（允许 0）
+     * @param positive
+     *            {@code true} = 数量（必须 &gt; 0）；{@code false} = 单价（允许 0）
      * @return 4 位小数的 {@link BigDecimal}，与 {@code NUMERIC(18,4)} 及对外序列化形态一致
      */
     public static BigDecimal decimal(String decimalText, boolean positive) {
@@ -47,17 +49,17 @@ public final class OrderValidator {
         } catch (ScmBusinessException e) {
             throw new ScmBusinessException(positive ? ORDER_QUANTITY_FORMAT_INVALID : ORDER_PRICE_INVALID);
         }
-        if (positive && result.signum() <= 0) throw new ScmBusinessException(ORDER_QUANTITY_INVALID);
+        if (positive && result.signum() <= 0)
+            throw new ScmBusinessException(ORDER_QUANTITY_INVALID);
         return result;
     }
 
     public static void draft(SalesOrderAddForm salesOrderForm) {
-        if (salesOrderForm.getItems() == null
-            || salesOrderForm.getItems().isEmpty()) throw new ScmBusinessException(ORDER_QUANTITY_INVALID);
+        if (salesOrderForm.getItems() == null || salesOrderForm.getItems().isEmpty())
+            throw new ScmBusinessException(ORDER_QUANTITY_INVALID);
         if (ScmOrderSourceEnum.SUPPLEMENT.name().equals(salesOrderForm.getOrderSource())) {
             reason(salesOrderForm.getSupplementReason(), ORDER_SUPPLEMENT_REASON_REQUIRED);
-        }
-        else if (salesOrderForm.getOriginalOrderId() != null || trim(salesOrderForm.getSupplementReason()) != null)
+        } else if (salesOrderForm.getOriginalOrderId() != null || trim(salesOrderForm.getSupplementReason()) != null)
             throw new ScmBusinessException(ORDER_SUPPLEMENT_INVALID);
         var seen = new HashSet<Long>();
         for (var orderItemForm : salesOrderForm.getItems()) {

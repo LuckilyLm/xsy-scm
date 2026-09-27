@@ -18,8 +18,8 @@ public class OrderJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> 
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
-    public void setNonNullParameter(PreparedStatement preparedStatement, int parameterIndex, Map<String,
-        Object> jsonValue, JdbcType jdbcType) throws SQLException {
+    public void setNonNullParameter(PreparedStatement preparedStatement, int parameterIndex,
+            Map<String, Object> jsonValue, JdbcType jdbcType) throws SQLException {
         try {
             var postgresJsonObject = new PGobject();
             postgresJsonObject.setType("jsonb");
@@ -31,7 +31,8 @@ public class OrderJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> 
     }
 
     private Map<String, Object> read(String jsonValue) throws SQLException {
-        if (jsonValue == null) return null;
+        if (jsonValue == null)
+            return null;
         try {
             return JSON.readValue(jsonValue, new TypeReference<>() {
             });
@@ -51,8 +52,8 @@ public class OrderJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> 
     }
 
     @Override
-    public Map<String, Object> getNullableResult(CallableStatement callableStatement,
-        int parameterIndex) throws SQLException {
+    public Map<String, Object> getNullableResult(CallableStatement callableStatement, int parameterIndex)
+            throws SQLException {
         return read(callableStatement.getString(parameterIndex));
     }
 }

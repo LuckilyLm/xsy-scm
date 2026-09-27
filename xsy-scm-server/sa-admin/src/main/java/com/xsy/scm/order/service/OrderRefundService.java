@@ -35,7 +35,6 @@ import org.springframework.beans.BeanUtils;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
@@ -56,8 +55,8 @@ public class OrderRefundService {
         }
         var page = SmartPageUtil.convert2PageQuery(orderRefundQueryForm);
         return SmartPageUtil.convert2PageResult(page,
-                orderRefundDao.query(page, orderRefundQueryForm,
-                    dataScopeContext.getOrderSellerScope()).stream().map(this::vo).toList());
+                orderRefundDao.query(page, orderRefundQueryForm, dataScopeContext.getOrderSellerScope()).stream()
+                        .map(this::vo).toList());
     }
 
     private OrderRefundVO vo(OrderRefundEntity refundEntity) {
@@ -73,12 +72,12 @@ public class OrderRefundService {
     }
 
     /**
-     * 退款单详情读 + 显式范围。退款金额是财务事实，读不到原订单的人也不能读到它，
-     * 因此父订单缺失或不在范围内都按 30005 处理。
+     * 退款单详情读 + 显式范围。退款金额是财务事实，读不到原订单的人也不能读到它， 因此父订单缺失或不在范围内都按 30005 处理。
      */
     public OrderRefundVO detail(Long refundId, ScmDataScopeContext dataScopeContext) {
         var refundEntity = orderRefundDao.selectById(refundId);
-        if (refundEntity == null) throw new ScmBusinessException(ORDER_REFUND_NOT_FOUND);
+        if (refundEntity == null)
+            throw new ScmBusinessException(ORDER_REFUND_NOT_FOUND);
         var order = salesOrderDao.selectById(refundEntity.getOrderId());
         if (order == null || !dataScopeContext.getOrderSellerScope().allows(order.getSellerId())) {
             throw new ScmDataScopeException();
@@ -87,20 +86,21 @@ public class OrderRefundService {
     }
 
     /**
-     * 未收窄的详情：退款完成命令在同一事务里取改前/改后镜像并回传结果，
-     * 该路径的门槛是订单锁与状态机，不是读范围。
+     * 未收窄的详情：退款完成命令在同一事务里取改前/改后镜像并回传结果， 该路径的门槛是订单锁与状态机，不是读范围。
      */
     public OrderRefundVO detailSnapshot(Long refundId) {
         var refundEntity = orderRefundDao.selectById(refundId);
-        if (refundEntity == null) throw new ScmBusinessException(ORDER_REFUND_NOT_FOUND);
+        if (refundEntity == null)
+            throw new ScmBusinessException(ORDER_REFUND_NOT_FOUND);
         return vo(refundEntity);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public OrderRefundVO complete(OrderRefundCompleteForm refundCompleteForm, String key) {
-        var claim = orderIdempotencyService.claim(
-                "ORDER_REFUND_COMPLETE:" + refundCompleteForm.getRefundId(), key, refundCompleteForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, OrderRefundVO.class);
+        var claim = orderIdempotencyService.claim("ORDER_REFUND_COMPLETE:" + refundCompleteForm.getRefundId(), key,
+                refundCompleteForm);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, OrderRefundVO.class);
         var before = detailSnapshot(refundCompleteForm.getRefundId());
         salesOrderService.lock(before.getOrderId());
         var refundEntity = orderRefundDao.lock(refundCompleteForm.getRefundId());
@@ -113,7 +113,8 @@ public class OrderRefundService {
         refundEntity.setUpdatedAt(refundEntity.getCompletedAt());
         refundEntity.setUpdatedBy(ScmOperator.current());
         try {
-            if (orderRefundDao.updateById(refundEntity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+            if (orderRefundDao.updateById(refundEntity) != 1)
+                throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
         }
@@ -124,7 +125,7 @@ public class OrderRefundService {
                 "退款单 " + refundEntity.getRefundNo() + " 已完成", Map.of("status", before.getStatus()),
                 Map.of("status", result.getStatus()));
         orderIdempotencyService.complete(claim, ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(),
-            refundEntity.getId(), result);
+                refundEntity.getId(), result);
         return result;
     }
 }

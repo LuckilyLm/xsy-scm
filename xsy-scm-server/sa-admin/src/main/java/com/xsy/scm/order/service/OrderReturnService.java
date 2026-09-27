@@ -82,19 +82,18 @@ public class OrderReturnService {
     private final OrderOperationLogRecorder orderLogs;
     private final ScmDataScopeService dataScopeService;
     /**
-     * 红字应收生成器。依赖方向是 order → finance，
-     * finance 对订单与退货表只读、不反向 import 订单域，因此不构成环；
-     * 生成失败即整笔批准回滚（与库存/幂等写入同一事务纪律）。
+     * 红字应收生成器。依赖方向是 order → finance， finance 对订单与退货表只读、不反向 import 订单域，因此不构成环； 生成失败即整笔批准回滚（与库存/幂等写入同一事务纪律）。
      */
     private final FinanceReceivableService financeReceivableService;
 
     public PageResult<OrderReturnVO> query(OrderReturnQueryForm orderReturnQueryForm) {
         ScmDataScopeContext dataScopeContext = dataScopeService.resolve();
-        if (dataScopeContext.getOrderSellerScope().isEmpty()) return ScmDataScopeService.emptyPage(orderReturnQueryForm);
+        if (dataScopeContext.getOrderSellerScope().isEmpty())
+            return ScmDataScopeService.emptyPage(orderReturnQueryForm);
         var page = SmartPageUtil.convert2PageQuery(orderReturnQueryForm);
         return SmartPageUtil.convert2PageResult(page,
-                orderReturnDao.query(page, orderReturnQueryForm,
-                    dataScopeContext.getOrderSellerScope()).stream().map(this::vo).toList());
+                orderReturnDao.query(page, orderReturnQueryForm, dataScopeContext.getOrderSellerScope()).stream()
+                        .map(this::vo).toList());
     }
 
     private OrderReturnVO vo(OrderReturnEntity orderReturnEntity) {
@@ -110,23 +109,23 @@ public class OrderReturnService {
     }
 
     /**
-     * 退货单详情读 + 显式范围。父订单读不到时同样按 30005 处理：
-     * 退货单本身没有归属列，「看不到订单却能看它的退货」就是绕过。
+     * 退货单详情读 + 显式范围。父订单读不到时同样按 30005 处理： 退货单本身没有归属列，「看不到订单却能看它的退货」就是绕过。
      */
     public OrderReturnDetailVO detail(Long orderReturnId, ScmDataScopeContext dataScopeContext) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
-        if (orderReturnEntity == null) throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
+        if (orderReturnEntity == null)
+            throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
         requireParentOrderVisible(orderReturnEntity.getOrderId(), dataScopeContext.getOrderSellerScope());
         return detailSnapshot(orderReturnEntity);
     }
 
     /**
-     * 未收窄的详情快照：审批/驳回/取消等写命令在同一事务里回读自己刚改过的单据，
-     * 归属判定只属于读接口，不给写流程加第二次门槛（写流程的门槛在订单锁与状态机上）。
+     * 未收窄的详情快照：审批/驳回/取消等写命令在同一事务里回读自己刚改过的单据， 归属判定只属于读接口，不给写流程加第二次门槛（写流程的门槛在订单锁与状态机上）。
      */
     public OrderReturnDetailVO detailSnapshot(Long orderReturnId) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
-        if (orderReturnEntity == null) throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
+        if (orderReturnEntity == null)
+            throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
         return detailSnapshot(orderReturnEntity);
     }
 
@@ -152,7 +151,8 @@ public class OrderReturnService {
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO create(OrderReturnAddForm orderReturnAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_CREATE", key, orderReturnAddForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
         var order = salesOrderService.lock(orderReturnAddForm.getOrderId());
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus()))
             throw new ScmBusinessException(ORDER_RETURN_ORDER_NOT_CONFIRMED);
@@ -176,9 +176,8 @@ public class OrderReturnService {
             // Lock order item explicitly; all competing return commands follow the same order-first lock sequence.
             salesOrderItemDao.lock(original.getId());
             var quantity = OrderValidator.decimal(returnItem.getRequestedQuantity(), true);
-            if (original.getActualQuantity() == null
-                    || orderReturnItemDao.reserved(original.getId()).add(quantity)
-                            .compareTo(original.getActualQuantity()) > 0)
+            if (original.getActualQuantity() == null || orderReturnItemDao.reserved(original.getId()).add(quantity)
+                    .compareTo(original.getActualQuantity()) > 0)
                 throw new ScmBusinessException(ORDER_RETURN_QUANTITY_EXCEEDED);
             var row = new OrderReturnItemEntity();
             row.setOrderItemId(original.getId());
@@ -191,7 +190,8 @@ public class OrderReturnService {
             row.setUpdatedBy(row.getCreatedBy());
             pending.add(row);
         }
-        if (pending.isEmpty()) throw new ScmBusinessException(ORDER_RETURN_ITEM_INVALID);
+        if (pending.isEmpty())
+            throw new ScmBusinessException(ORDER_RETURN_ITEM_INVALID);
         orderReturnDao.insert(orderReturnEntity);
         for (var row : pending) {
             row.setReturnId(orderReturnEntity.getId());
@@ -202,15 +202,16 @@ public class OrderReturnService {
         orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 "退货单 " + orderReturnEntity.getReturnNo() + " 建单", null, Map.of("status", result.getStatus()));
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
-            orderReturnEntity.getId(), result);
+                orderReturnEntity.getId(), result);
         return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO approve(OrderReturnApproveForm orderReturnApproveForm, String key) {
-        var claim = orderIdempotencyService.claim(
-                "ORDER_RETURN_APPROVE:" + orderReturnApproveForm.getReturnId(), key, orderReturnApproveForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        var claim = orderIdempotencyService.claim("ORDER_RETURN_APPROVE:" + orderReturnApproveForm.getReturnId(), key,
+                orderReturnApproveForm);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
         var orderReturnEntity = lock(orderReturnApproveForm.getReturnId());
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnApproveForm.getVersion());
         pending(orderReturnEntity);
@@ -218,10 +219,11 @@ public class OrderReturnService {
         var quantities = new HashMap<Long, BigDecimal>();
         for (var returnItem : orderReturnApproveForm.getItems()) {
             if (quantities.put(returnItem.getOrderItemId(),
-                OrderValidator.decimal(returnItem.getApprovedQuantity(), false)) != null)
+                    OrderValidator.decimal(returnItem.getApprovedQuantity(), false)) != null)
                 throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
         }
-        if (quantities.size() != rows.size()) throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
+        if (quantities.size() != rows.size())
+            throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
         for (var row : rows) {
             var qty = quantities.get(row.getOrderItemId());
             if (qty == null || qty.compareTo(row.getRequestedQuantity()) > 0)
@@ -229,18 +231,22 @@ public class OrderReturnService {
             row.setApprovedQuantity(qty);
             row.setApprovedAmount(OrderAmountCalculator.lineAmount(qty, row.getLockedUnitPrice()));
         }
-        var total = OrderAmountCalculator.orderAmount(rows.stream().map(OrderReturnItemEntity::getApprovedAmount).toList());
-        if (total.signum() <= 0) throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
+        var total = OrderAmountCalculator
+                .orderAmount(rows.stream().map(OrderReturnItemEntity::getApprovedAmount).toList());
+        if (total.signum() <= 0)
+            throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
         for (var row : rows) {
             row.setUpdatedAt(OffsetDateTime.now());
             row.setUpdatedBy(ScmOperator.current());
-            if (orderReturnItemDao.updateById(row) != 1) throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
+            if (orderReturnItemDao.updateById(row) != 1)
+                throw new ScmBusinessException(ORDER_ITEM_VERSION_CONFLICT);
         }
         orderReturnEntity.setApprovedAmount(total);
         orderReturnEntity.setStatus(ScmOrderReturnStatusEnum.APPROVED.name());
         orderReturnEntity.setApprovedAt(OffsetDateTime.now());
         stamp(orderReturnEntity, false);
-        if (orderReturnDao.updateById(orderReturnEntity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (orderReturnDao.updateById(orderReturnEntity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         var refund = new OrderRefundEntity();
         refund.setRefundNo(numbers.refund());
         refund.setReturnId(orderReturnEntity.getId());
@@ -256,8 +262,8 @@ public class OrderReturnService {
         var result = detailSnapshot(orderReturnEntity.getId());
         orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
-                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
-                        "approvedAmount", String.valueOf(refund.getRefundAmount())));
+                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
+                Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(refund.getRefundAmount())));
 
         // 退货批准是红字应收的业务来源，在退货事实与退款单都已成立后、幂等 complete 前生成。
         // 红字生成失败会让整笔 approve 回滚，
@@ -267,7 +273,7 @@ public class OrderReturnService {
         financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
 
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
-            orderReturnEntity.getId(), result);
+                orderReturnEntity.getId(), result);
         return result;
     }
 
@@ -282,33 +288,39 @@ public class OrderReturnService {
     }
 
     private OrderReturnDetailVO decide(OrderReturnDecisionForm orderReturnDecisionForm, String key,
-        ScmOrderReturnStatusEnum state) {
+            ScmOrderReturnStatusEnum state) {
         var claim = orderIdempotencyService.claim(
-                "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key, orderReturnDecisionForm);
-        if (claim.replay()) return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+                "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key,
+                orderReturnDecisionForm);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
         var orderReturnEntity = lock(orderReturnDecisionForm.getReturnId());
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnDecisionForm.getVersion());
         pending(orderReturnEntity);
         OrderValidator.reason(orderReturnDecisionForm.getDecisionReason(), ORDER_RETURN_APPROVAL_INVALID);
         orderReturnEntity.setStatus(state.name());
         orderReturnEntity.setDecisionReason(orderReturnDecisionForm.getDecisionReason().trim());
-        if (ScmOrderReturnStatusEnum.REJECTED == state) orderReturnEntity.setRejectedAt(OffsetDateTime.now());
-        else orderReturnEntity.setCancelledAt(OffsetDateTime.now());
+        if (ScmOrderReturnStatusEnum.REJECTED == state)
+            orderReturnEntity.setRejectedAt(OffsetDateTime.now());
+        else
+            orderReturnEntity.setCancelledAt(OffsetDateTime.now());
         stamp(orderReturnEntity, false);
-        if (orderReturnDao.updateById(orderReturnEntity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (orderReturnDao.updateById(orderReturnEntity) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         var result = detailSnapshot(orderReturnEntity.getId());
         orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                orderReturnDecisionForm.getDecisionReason().trim(), Map.of("status",
-                    ScmOrderReturnStatusEnum.PENDING.name()),
+                orderReturnDecisionForm.getDecisionReason().trim(),
+                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
                 Map.of("status", state.name(), "decisionReason", orderReturnEntity.getDecisionReason()));
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
-            orderReturnEntity.getId(), result);
+                orderReturnEntity.getId(), result);
         return result;
     }
 
     private OrderReturnEntity lock(Long orderReturnId) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
-        if (orderReturnEntity == null) throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
+        if (orderReturnEntity == null)
+            throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
         salesOrderService.lock(orderReturnEntity.getOrderId());
         for (var salesOrderItem : salesOrderItemDao.list(orderReturnEntity.getOrderId())) {
             salesOrderItemDao.lock(salesOrderItem.getId());

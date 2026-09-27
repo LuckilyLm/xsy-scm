@@ -20,6 +20,7 @@ public class OrderCustomerReferenceGuard {
 
     @Before("execution(* com.xsy.scm.customer.dao.CustomerDao.softDelete(..)) && args(customerId,..)")
     public void beforeCustomerDelete(Long customerId) {
-        if (salesOrderDao.customerReferences(customerId) > 0) throw new ScmBusinessException(CUSTOMER_REFERENCED);
+        if (salesOrderDao.customerReferences(customerId) > 0)
+            throw new ScmBusinessException(CUSTOMER_REFERENCED);
     }
 }

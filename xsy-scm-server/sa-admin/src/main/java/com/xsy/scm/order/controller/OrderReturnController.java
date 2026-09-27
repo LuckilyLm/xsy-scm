@@ -47,28 +47,32 @@ public class OrderReturnController {
     @PostMapping("/create")
     @SaCheckPermission(OrderPermission.RETURN_ADD)
     @OperateLog
-    public ResponseDTO<OrderReturnDetailVO> create(@Valid @RequestBody OrderReturnAddForm orderReturnAddForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<OrderReturnDetailVO> create(@Valid @RequestBody OrderReturnAddForm orderReturnAddForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.create(orderReturnAddForm, key));
     }
 
     @PostMapping("/approve")
     @SaCheckPermission(OrderPermission.RETURN_APPROVE)
     @OperateLog
-    public ResponseDTO<OrderReturnDetailVO> approve(@Valid @RequestBody OrderReturnApproveForm orderReturnApproveForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<OrderReturnDetailVO> approve(@Valid @RequestBody OrderReturnApproveForm orderReturnApproveForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.approve(orderReturnApproveForm, key));
     }
 
     @PostMapping("/reject")
     @SaCheckPermission(OrderPermission.RETURN_REJECT)
     @OperateLog
-    public ResponseDTO<OrderReturnDetailVO> reject(@Valid @RequestBody OrderReturnDecisionForm orderReturnDecisionForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<OrderReturnDetailVO> reject(@Valid @RequestBody OrderReturnDecisionForm orderReturnDecisionForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.reject(orderReturnDecisionForm, key));
     }
 
     @PostMapping("/cancel")
     @SaCheckPermission(OrderPermission.RETURN_CANCEL)
     @OperateLog
-    public ResponseDTO<OrderReturnDetailVO> cancel(@Valid @RequestBody OrderReturnDecisionForm orderReturnDecisionForm, @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<OrderReturnDetailVO> cancel(@Valid @RequestBody OrderReturnDecisionForm orderReturnDecisionForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.cancel(orderReturnDecisionForm, key));
     }
 

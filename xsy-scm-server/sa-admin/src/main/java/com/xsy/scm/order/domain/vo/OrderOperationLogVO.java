@@ -5,7 +5,6 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-
 @Data
 public class OrderOperationLogVO {
     private Long logId;

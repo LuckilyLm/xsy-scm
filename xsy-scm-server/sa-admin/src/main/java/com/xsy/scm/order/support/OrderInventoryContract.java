@@ -1,6 +1,5 @@
 package com.xsy.scm.order.support;
 
-
 /**
  * Legacy command shape retained for compatibility; production order commands use the inventory reservation service.
  */
