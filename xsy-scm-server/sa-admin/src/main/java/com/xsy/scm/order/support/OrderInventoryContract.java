@@ -2,7 +2,7 @@ package com.xsy.scm.order.support;
 
 
 /**
- * Future integration only: W4 neither implements nor calls inventory mutations.
+ * Legacy command shape retained for compatibility; production order commands use the inventory reservation service.
  */
 public interface OrderInventoryContract {
     record Reserve(Long orderId, Long skuId, Long warehouseId, java.math.BigDecimal quantity, String idempotencyKey) {

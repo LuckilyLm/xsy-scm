@@ -95,7 +95,7 @@ public class SalesOrderService {
     private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService orderIdempotencyService;
     /**
-     * 确认订单时预留库存、取消时释放（出库波次新增的跨域依赖：order → inventory）。
+     * 确认订单时预留库存、取消时释放；库存变更通过库存域服务完成。
      */
     private final InventoryReservationService inventoryReservationService;
     private final SalesOrderQueryService salesOrderQueryService;
@@ -178,7 +178,7 @@ public class SalesOrderService {
     private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm) {
         OrderValidator.draft(salesOrderAddForm);
         var customer = customerService.requireTradable(salesOrderAddForm.getCustomerId());
-        // 裁决「P0 基线收口裁决」第 6 条：不能对自己读不到的客户开单。订单负责人取自客户快照，
+        // 新建订单前必须确认当前调用者能读取该客户；订单负责人取自客户快照，
         // 只收窄列表等于「看不见但仍然能往别人名下塞单」，行级范围就不成立；因此新建入口按同一范围判定。
         // 分配权（scm:customer:assign）与全量订单范围同等放行：主管刚把客户指定给某人，
         // 就该能替他录单，否则「主管建客户 + 指定负责人」这条路会把主管自己挡在门外。

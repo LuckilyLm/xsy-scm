@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * 订单操作日志的唯一写入口。
  *
- * <p>原先是 {@code SalesOrderService} 的私有方法；退货与退款同样受 AGENTS.md §7.3 约束
+ * <p>原先是 {@code SalesOrderService} 的私有方法；退货与退款同样受 AGENTS.md 约束
  * （cancellation / refund / return 必须留操作日志），若各自再写一份就是三个事实源——
  * 操作人取值、JSON 列形态、before 可为空而 after 必填这些口径迟早会分叉。
  *

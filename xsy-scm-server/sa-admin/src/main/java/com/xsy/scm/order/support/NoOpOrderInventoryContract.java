@@ -1,7 +1,7 @@
 package com.xsy.scm.order.support;
 
 /**
- * Contract placeholder only. No W4 order command invokes these methods.
+ * Preserves the inventory command contract while order commands use the inventory reservation service directly.
  */
 public final class NoOpOrderInventoryContract implements OrderInventoryContract {
     @Override

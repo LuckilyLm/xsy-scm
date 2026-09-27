@@ -82,7 +82,7 @@ public class OrderReturnService {
     private final OrderOperationLogRecorder orderLogs;
     private final ScmDataScopeService dataScopeService;
     /**
-     * 红字应收生成器（Finance R1 F1-2C）。依赖方向是 order → finance，
+     * 红字应收生成器。依赖方向是 order → finance，
      * finance 对订单与退货表只读、不反向 import 订单域，因此不构成环；
      * 生成失败即整笔批准回滚（与库存/幂等写入同一事务纪律）。
      */
@@ -198,7 +198,7 @@ public class OrderReturnService {
             orderReturnItemDao.insert(row);
         }
         var result = detailSnapshot(orderReturnEntity.getId());
-        // §7.3：return 与 cancellation / refund 并列，必须留操作日志。日志与业务变更同一事务。
+        // 退货与取消、退款一样必须留操作日志，日志与业务变更使用同一事务。
         orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 "退货单 " + orderReturnEntity.getReturnNo() + " 建单", null, Map.of("status", result.getStatus()));
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
@@ -259,8 +259,8 @@ public class OrderReturnService {
                 Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
                         "approvedAmount", String.valueOf(refund.getRefundAmount())));
 
-        // Finance R1（第二批 Q27、第三批 D-2 / D-4）：退货批准是红字应收的业务来源，位置固定在
-        // 退货事实与退款单都已成立之后、幂等 complete 之前 —— 红字失败要整笔 approve 回滚，
+        // 退货批准是红字应收的业务来源，在退货事实与退款单都已成立后、幂等 complete 前生成。
+        // 红字生成失败会让整笔 approve 回滚，
         // 但「正常应收还不存在」是成功跳过（签收时补生成），绝不阻塞这里。
         // 生成器不做任何金额上限校验：财务规则不得反向控制订单域状态机。
         // 本类持有的 sales_order 行锁（lock() 里 salesOrderService.lock）就是它与签收之间的串行点。

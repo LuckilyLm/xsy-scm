@@ -83,7 +83,7 @@ public class SalesOrderController {
     }
 
     /**
-     * 某客户某 SKU 的最近已确认订单价（Wave 3 §7.5，只读）：仅取 CONFIRMED 单的锁定价，只用于录单旁证，不参与定价、不改价格优先级。
+     * 某客户某 SKU 的最近已确认订单价（只读）：仅取 CONFIRMED 单的锁定价，只用于录单旁证，不参与定价、不改价格优先级。
      *
      * <p>取数源是指定客户的历史成交事实，与客户 360 的 {@code frequent-skus} 同数据面，因此门禁口径一致：
      * <b>同时</b>要求 {@code scm:order:query} 与 {@code scm:customer:query}（{@link SaMode#AND}）。

@@ -10,7 +10,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED;
 
 /**
- * Order-owned reference adapter. W2 source remains frozen; its transaction and customer lock are reused.
+ * Checks sales-order references before customer soft deletion, using the caller's customer-row lock.
  */
 @Aspect
 @Component

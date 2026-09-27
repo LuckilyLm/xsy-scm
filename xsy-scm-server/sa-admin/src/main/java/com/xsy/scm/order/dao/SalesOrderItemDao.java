@@ -20,7 +20,7 @@ public interface SalesOrderItemDao extends BaseMapper<SalesOrderItemEntity> {
     List<SalesOrderItemEntity> list(@Param("id") Long id);
 
     /**
-     * 某客户某 SKU 的最近已确认订单价（Wave 3 §7.5，只读）：只取 CONFIRMED 订单行的锁定单价快照，
+     * 某客户某 SKU 的最近已确认订单价（只读）：只取 CONFIRMED 订单行的锁定单价快照，
      * 按 {@code confirmed_at DESC, order_id DESC} 倒序，{@code limit} 约束的是最近 N 张订单而非行数。
      */
     List<OrderRecentPriceVO> recentPrices(@Param("customerId") Long customerId,

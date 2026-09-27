@@ -121,7 +121,7 @@ public class OrderRefundService {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
         }
         var result = detailSnapshot(refundEntity.getId());
-        // §7.3：退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，
+        // 退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，
         // 日志要记真实状态，而不是按调用者读范围裁过的视图。
         orderLogs.record(refundEntity.getOrderId(), ScmOrderOperationTypeEnum.REFUND,
                 "退款单 " + refundEntity.getRefundNo() + " 已完成", Map.of("status", before.getStatus()),

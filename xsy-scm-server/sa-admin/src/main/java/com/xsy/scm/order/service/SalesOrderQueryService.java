@@ -57,7 +57,7 @@ public class SalesOrderQueryService {
     private final net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao employeeDao;
     private final ScmDataScopeService dataScopeService;
 
-    /** 最近成交参考价取数条数区间（Wave 3 §7.5：limit 最大 10）。 */
+    /** 最近成交参考价取数条数区间：limit 最大 10。 */
     private static final int RECENT_PRICE_MIN_LIMIT = 1;
     private static final int RECENT_PRICE_MAX_LIMIT = 10;
 
@@ -137,7 +137,7 @@ public class SalesOrderQueryService {
     }
 
     /**
-     * 某客户某 SKU 的最近成交参考价（Wave 3 §7.5，只读）：仅供录单旁证，不回算当前价格、不参与定价。
+     * 某客户某 SKU 的最近成交参考价（只读）：仅供录单旁证，不回算当前价格、不参与定价。
      *
      * <p>刻意不按调用者范围收窄：它是录单时的取价旁证入参，客户与 SKU 都由前端选择，
      * 真正的下单校验在 {@code SalesOrderService} 的归属判定里做（读不到该客户就建不了单）。
