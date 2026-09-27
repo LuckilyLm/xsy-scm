@@ -7,23 +7,12 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
-import com.xsy.scm.common.constant.ScmOperator;
-import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.json.ScmOffsetDateTimeDeserializer;
-import com.xsy.scm.order.dao.IdempotencyRecordDao;
 import com.xsy.scm.order.domain.entity.IdempotencyRecordEntity;
-import com.xsy.scm.purchase.manager.PurchaseOrderValidator;
-import com.xsy.scm.purchase.support.PurchaseIdempotencyRequestHasher;
+import com.xsy.scm.order.service.OrderIdempotencyService;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-
-import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT;
-import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_INVALID;
-import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_REQUIRED;
 
 /**
  * 采购写命令的幂等控制，复用共享表 {@code idempotency_record}。
@@ -33,11 +22,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTEN
 @RequiredArgsConstructor
 public class PurchaseIdempotencyService {
 
-    private static final int MAX_KEY_LENGTH = 200;
-
-    private final IdempotencyRecordDao idempotencyRecordDao;
-
-    private final ObjectMapper objectMapper;
+    private final OrderIdempotencyService orderIdempotencyService;
 
     /**
      * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。
@@ -66,58 +51,28 @@ public class PurchaseIdempotencyService {
      * @throws ScmBusinessException 键缺失 → 40084；超长 → 40085；同键异内容 → 40990
      */
     public Claim claim(String scope, String key, Object request) {
-        PurchaseOrderValidator.reason(key, PURCHASE_IDEMPOTENCY_KEY_REQUIRED);
-        key = key.trim();
-        if (key.length() > MAX_KEY_LENGTH) {
-            throw new ScmBusinessException(PURCHASE_IDEMPOTENCY_KEY_INVALID);
-        }
-        String operator = ScmOperator.current();
-        // 按操作者隔离幂等键，防止跨用户重放结果。
-        scope = operator + ":" + scope;
-        String hash = new PurchaseIdempotencyRequestHasher(objectMapper).hash(request);
-
-        IdempotencyRecordEntity row = new IdempotencyRecordEntity();
-        row.setOperationScope(scope);
-        row.setIdempotencyKey(key);
-        row.setRequestHash(hash);
-        row.setCreatedBy(operator);
-
-        if (idempotencyRecordDao.claim(row) == 1) {
-            return new Claim(idempotencyRecordDao.find(scope, key), false);
-        }
-
-        row = idempotencyRecordDao.find(scope, key);
-        if (!Objects.equals(hash, row.getRequestHash())) {
-            throw new ScmBusinessException(PURCHASE_IDEMPOTENCY_CONFLICT);
-        }
-        if (row.getResultData() == null) {
-            // 已提交记录缺少结果属于完整性异常，不能当作可重试的新请求。
-            throw new IllegalStateException("已提交的幂等记录缺少 result_data（数据完整性异常）");
-        }
-        return new Claim(row, true);
+        OrderIdempotencyService.Claim sharedClaim = orderIdempotencyService.claim(
+                scope,
+                key,
+                request,
+                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_REQUIRED,
+                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_INVALID,
+                com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT,
+                "已提交的幂等记录缺少 result_data（数据完整性异常）");
+        return new Claim(sharedClaim.record(), sharedClaim.replay());
     }
 
     /**
      * 返回首次执行的结果，不重新执行业务写入。
      */
     public <T> T replay(Claim claim, Class<T> resultType) {
-        return RESULT_JSON.convertValue(claim.record().getResultData().get("value"), resultType);
+        return orderIdempotencyService.replay(claim.record(), resultType, RESULT_JSON);
     }
 
     /**
      * 保存结果，与调用方的业务写入一起提交或回滚。
      */
     public void complete(Claim claim, String resourceType, Long resourceId, Object result) {
-        IdempotencyRecordEntity row = claim.record();
-        row.setResultId(resourceId);
-        row.setResultType(resourceType);
-        Map<String, Object> value = new LinkedHashMap<>();
-        value.put("value", RESULT_JSON.convertValue(result, Object.class));
-        row.setResultData(value);
-        row.setUpdatedAt(OffsetDateTime.now());
-        row.setUpdatedBy(ScmOperator.current());
-        if (idempotencyRecordDao.updateById(row) != 1) {
-            throw new IllegalStateException("幂等结果写入失败（影响行数不为 1）");
-        }
+        orderIdempotencyService.complete(claim.record(), resourceType, resourceId, result, RESULT_JSON);
     }
 }
