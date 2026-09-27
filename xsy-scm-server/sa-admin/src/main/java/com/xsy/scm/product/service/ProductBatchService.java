@@ -30,9 +30,9 @@ public class ProductBatchService {
      * 失败行只回前 50 条，避免一次批量误操作把响应撑爆；failedCount 仍是全量。
      */
     private static final int MAX_FAILURES_SHOWN = 50;
-    private final ProductSpuDao spus;
-    private final ProductCategoryService categories;
-    private final ProductTagService tags;
+    private final ProductSpuDao productSpuDao;
+    private final ProductCategoryService productCategoryService;
+    private final ProductTagService productTagService;
 
     @Transactional
     public ProductBatchResultVO updateStatus(ProductSpuBatchStatusForm form) {
@@ -50,14 +50,14 @@ public class ProductBatchService {
             if ("ARCHIVED".equals(form.getMasterStatus()) && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
                 failures.add(failure(entity, MASTER_STATUS_SALE_CONFLICT));
         }
-        return commit(failures, form.getItems(), (ids) -> spus.batchApply(ids, form.getStatus(), form.getMasterStatus(), null, ScmOperator.current()));
+        return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, form.getStatus(), form.getMasterStatus(), null, ScmOperator.current()));
     }
 
     @Transactional
     public ProductBatchResultVO updateCategory(ProductSpuBatchCategoryForm form) {
-        categories.requireSelectableCategory(form.getCategoryId());
+        productCategoryService.requireSelectableCategory(form.getCategoryId());
         var failures = verify(form.getItems());
-        return commit(failures, form.getItems(), (ids) -> spus.batchApply(ids, null, null, form.getCategoryId(), ScmOperator.current()));
+        return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, null, null, form.getCategoryId(), ScmOperator.current()));
     }
 
     /**
@@ -68,11 +68,11 @@ public class ProductBatchService {
         var failures = verify(form.getItems());
         // 批量打标的语义就是「新引用」，所以本次给出的标签必须全部可用；
         // REMOVE 不校验，否则停用标签再也摘不掉。放在 verify 之后以沿用「先商品后标签」的锁序。
-        if (!"REMOVE".equals(form.getMode())) tags.assertUsable(form.getTagIds());
+        if (!"REMOVE".equals(form.getMode())) productTagService.assertUsable(form.getTagIds());
         return commit(failures, form.getItems(), (ids) -> {
-            if ("ADD".equals(form.getMode())) tags.addTags(ids, form.getTagIds());
-            else if ("REMOVE".equals(form.getMode())) tags.removeTags(ids, form.getTagIds());
-            else tags.replaceTags(ids, form.getTagIds());
+            if ("ADD".equals(form.getMode())) productTagService.addTags(ids, form.getTagIds());
+            else if ("REMOVE".equals(form.getMode())) productTagService.removeTags(ids, form.getTagIds());
+            else productTagService.replaceTags(ids, form.getTagIds());
         });
     }
 
@@ -85,7 +85,8 @@ public class ProductBatchService {
      * 按 id 升序加行锁，与单条编辑和并发批量入口互斥；重复 spuId 只锁一次。
      */
     private Map<Long, ProductSpuEntity> lock(List<ProductBatchItemForm> items) {
-        return spus.lockByIds(items.stream().map(ProductBatchItemForm::getSpuId).distinct().sorted().toList()).stream()
+        return productSpuDao
+                .lockByIds(items.stream().map(ProductBatchItemForm::getSpuId).distinct().sorted().toList()).stream()
                 .collect(Collectors.toMap(ProductSpuEntity::getId, Function.identity()));
     }
 

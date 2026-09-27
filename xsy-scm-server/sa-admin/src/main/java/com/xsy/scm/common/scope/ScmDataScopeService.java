@@ -59,7 +59,7 @@ public class ScmDataScopeService {
     /** 配送订单金额可见权：司机默认隐藏金额，需要时由这个独立权限开放。 */
     public static final String DELIVERY_AMOUNT_PERM = "scm:delivery:amount:query";
 
-    private final ScmDataScopeDao scopeDao;
+    private final ScmDataScopeDao dataScopeDao;
 
     /**
      * 解析当前调用者的数据范围。每次请求都重新解析，不缓存在登录态里：
@@ -77,7 +77,7 @@ public class ScmDataScopeService {
         }
         return new ScmDataScopeContextBuilder(employeeId, costVisible)
                 .warehouse(hasPermission(WAREHOUSE_ALL_PERM) ? ScmValueScope.all()
-                        : ScmValueScope.of(scopeDao.listAuthorizedWarehouseIds(employeeId)))
+                        : ScmValueScope.of(dataScopeDao.listAuthorizedWarehouseIds(employeeId)))
                 .customerSeller(hasPermission(CUSTOMER_ALL_PERM) ? ScmValueScope.all()
                         : ScmValueScope.of(List.of(employeeId)))
                 .orderSeller(hasPermission(ORDER_ALL_PERM) ? ScmValueScope.all()
@@ -85,7 +85,7 @@ public class ScmDataScopeService {
                 .purchaser(hasPermission(PURCHASE_ALL_PERM) ? ScmValueScope.all()
                         : ScmValueScope.of(List.of(employeeId)))
                 .driver(hasPermission(DELIVERY_ALL_PERM) ? ScmValueScope.all()
-                        : ScmValueScope.of(scopeDao.listDriverIdsByEmployee(employeeId)))
+                        : ScmValueScope.of(dataScopeDao.listDriverIdsByEmployee(employeeId)))
                 .build();
     }
 

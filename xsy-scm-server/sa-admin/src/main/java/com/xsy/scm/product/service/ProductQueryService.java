@@ -27,11 +27,11 @@ import static com.xsy.scm.product.constant.ProductErrorCode.*;
 public class ProductQueryService {
     /** 单条 IN 的分片上限，见 {@link #enrich}。 */
     private static final int IN_BATCH = 500;
-    private final ProductSpuDao spus;
-    private final ProductSkuDao skus;
-    private final ProductImageDao images;
-    private final ProductCategoryService categories;
-    private final ProductTagService tags;
+    private final ProductSpuDao productSpuDao;
+    private final ProductSkuDao productSkuDao;
+    private final ProductImageDao productImageDao;
+    private final ProductCategoryService productCategoryService;
+    private final ProductTagService productTagService;
     private final FileService fileService;
 
     public PageResult<ProductSpuVO> query(ProductSpuQueryForm form) {
@@ -42,16 +42,16 @@ public class ProductQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) page.addOrder(OrderItem.desc("updated_at"), OrderItem.desc("id"));
-        var categoryRows = categories.all();
-        var rows = spus.queryPage(page, form, form.getCategoryId() == null ? null : categories.descendantIds(form.getCategoryId(), categoryRows));
+        var categoryRows = productCategoryService.all();
+        var rows = productSpuDao.queryPage(page, form, form.getCategoryId() == null ? null : productCategoryService.descendantIds(form.getCategoryId(), categoryRows));
         var enriched = enrich(rows, categoryRows);
         return SmartPageUtil.convert2PageResult(page, new ArrayList<ProductSpuVO>(enriched));
     }
 
     public ProductSpuDetailVO detail(Long id) {
-        var entity = spus.selectById(id);
+        var entity = productSpuDao.selectById(id);
         if (entity == null) throw new ScmBusinessException(PRODUCT_NOT_FOUND);
-        return enrich(List.of(entity), categories.all()).getFirst();
+        return enrich(List.of(entity), productCategoryService.all()).getFirst();
     }
 
     private List<ProductSpuDetailVO> enrich(List<ProductSpuEntity> rows, List<ProductCategoryEntity> categoryRows) {
@@ -63,16 +63,16 @@ public class ProductQueryService {
         var skuRows = new ArrayList<ProductSkuEntity>();
         var imageRows = new ArrayList<ProductImageEntity>();
         for (var batch : Lists.partition(ids, IN_BATCH)) {
-            skuRows.addAll(skus.selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, batch)
+            skuRows.addAll(productSkuDao.selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, batch)
                     .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId)));
-            imageRows.addAll(images.selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, batch)
+            imageRows.addAll(productImageDao.selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, batch)
                     .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId)));
         }
         var skuMap = skuRows.stream().collect(Collectors.groupingBy(ProductSkuEntity::getSpuId));
         var imageMap = imageRows.stream().collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
         var tagMap = new LinkedHashMap<Long, List<ProductSpuTagVO>>();
         for (var batch : Lists.partition(ids, IN_BATCH))
-            tags.bySpuIds(batch).forEach((spuId, bound) ->
+            productTagService.bySpuIds(batch).forEach((spuId, bound) ->
                     tagMap.computeIfAbsent(spuId, k -> new ArrayList<>()).addAll(bound));
         Map<String, String> urls = new HashMap<>();
         // 分批取私有 URL：一次传整页 fileKey 会顶到 PostgreSQL 单语句 65535 个绑定参数上限。

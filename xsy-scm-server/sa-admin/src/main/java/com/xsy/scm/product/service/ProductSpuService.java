@@ -25,19 +25,19 @@ import static com.xsy.scm.product.manager.ProductAggregateValidator.trimToNull;
 @RequiredArgsConstructor
 public class ProductSpuService {
     private final ProductSpuDao productSpuDao;
-    private final ProductCategoryService categories;
+    private final ProductCategoryService productCategoryService;
     private final ProductAggregateValidator productAggregateValidator;
-    private final ProductSkuSyncManager skus;
-    private final ProductImageSyncManager images;
-    private final ProductUomService uom;
-    private final ProductTagService tags;
+    private final ProductSkuSyncManager productSkuSyncManager;
+    private final ProductImageSyncManager productImageSyncManager;
+    private final ProductUomService productUomService;
+    private final ProductTagService productTagService;
 
     @Transactional
     public Long add(ProductSpuAddForm form) {
         productAggregateValidator.validateSpu(form);
-        categories.requireSelectableCategory(form.getCategoryId());
-        uom.assertUsable(form.getSkuList().stream().map(ProductSkuForm::getSaleUnit).toList());
-        tags.assertUsable(form.getTagIds());
+        productCategoryService.requireSelectableCategory(form.getCategoryId());
+        productUomService.assertUsable(form.getSkuList().stream().map(ProductSkuForm::getSaleUnit).toList());
+        productTagService.assertUsable(form.getTagIds());
         var skuChanges = ProductSkuChangeSet.between(List.of(), form.getSkuList());
         var imageChanges = ProductImageChangeSet.between(List.of(), form.getImages());
         var entity = new ProductSpuEntity();
@@ -46,35 +46,36 @@ public class ProductSpuService {
         entity.setCreatedBy(entity.getUpdatedBy());
         try {
             productSpuDao.insert(entity);
-            skus.sync(entity.getId(), skuChanges);
-            images.sync(entity.getId(), imageChanges);
+            productSkuSyncManager.sync(entity.getId(), skuChanges);
+            productImageSyncManager.sync(entity.getId(), imageChanges);
         } catch (DuplicateKeyException e) {
             throw duplicate(e);
         }
-        tags.replaceTags(List.of(entity.getId()), form.getTagIds());
+        productTagService.replaceTags(List.of(entity.getId()), form.getTagIds());
         return entity.getId();
     }
 
     @Transactional
     public void update(ProductSpuUpdateForm form) {
         productAggregateValidator.validateSpu(form);
-        categories.requireSelectableCategory(form.getCategoryId());
+        productCategoryService.requireSelectableCategory(form.getCategoryId());
         var entity = require(form.getSpuId(), form.getVersion());
-        var existing = skus.existing(entity.getId());
+        var existing = productSkuSyncManager.existing(entity.getId());
         var skuChanges = ProductSkuChangeSet.between(existing, form.getSkuList());
-        uom.assertUsable(changedUnits(existing, skuChanges));
-        tags.assertNewBindings(entity.getId(), form.getTagIds());
-        var imageChanges = ProductImageChangeSet.between(images.existing(entity.getId()), form.getImages());
+        productUomService.assertUsable(changedUnits(existing, skuChanges));
+        productTagService.assertNewBindings(entity.getId(), form.getTagIds());
+        var imageChanges =
+                ProductImageChangeSet.between(productImageSyncManager.existing(entity.getId()), form.getImages());
         apply(entity, form);
         entity.setVersion(form.getVersion());
         try {
             if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
-            skus.sync(entity.getId(), skuChanges);
-            images.sync(entity.getId(), imageChanges);
+            productSkuSyncManager.sync(entity.getId(), skuChanges);
+            productImageSyncManager.sync(entity.getId(), imageChanges);
         } catch (DuplicateKeyException e) {
             throw duplicate(e);
         }
-        tags.replaceTags(List.of(entity.getId()), form.getTagIds());
+        productTagService.replaceTags(List.of(entity.getId()), form.getTagIds());
     }
 
     @Transactional
@@ -95,9 +96,11 @@ public class ProductSpuService {
         }
         stamp(entity);
         if (productSpuDao.updateById(entity) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
-        tags.untagProducts(List.of(entity.getId()));
-        skus.remove(skus.existing(entity.getId()).stream().map(s -> s.getId()).toList());
-        images.remove(images.existing(entity.getId()).stream().map(i -> i.getId()).toList());
+        productTagService.untagProducts(List.of(entity.getId()));
+        productSkuSyncManager.remove(
+                productSkuSyncManager.existing(entity.getId()).stream().map(s -> s.getId()).toList());
+        productImageSyncManager.remove(
+                productImageSyncManager.existing(entity.getId()).stream().map(i -> i.getId()).toList());
         productSpuDao.deleteById(entity.getId());
     }
 
