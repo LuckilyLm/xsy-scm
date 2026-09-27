@@ -493,7 +493,6 @@
                         <includes>
                             <include>src/main/java/**/*.java</include>
                         </includes>
-                        <forbidWildcardImports/>
                         <eclipse>
                             <version>4.31</version>
                             <file>${maven.multiModuleProjectDirectory}/../tools/quality/eclipse-formatter.xml</file>
