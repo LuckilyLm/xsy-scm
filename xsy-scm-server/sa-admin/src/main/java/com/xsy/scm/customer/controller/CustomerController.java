@@ -15,8 +15,10 @@ import com.xsy.scm.customer.domain.vo.CustomerDetailVO;
 import com.xsy.scm.customer.domain.vo.CustomerFrequentSkuVO;
 import com.xsy.scm.customer.domain.vo.CustomerOptionVO;
 import com.xsy.scm.customer.domain.vo.CustomerVO;
+import com.xsy.scm.customer.permission.CustomerPermission;
 import com.xsy.scm.customer.service.CustomerQueryService;
 import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.order.permission.OrderPermission;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -42,20 +44,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomerController {
 
-    private final CustomerService service;
+    private final CustomerService customerService;
 
-    private final CustomerQueryService queryService;
+    private final CustomerQueryService customerQueryService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:customer:query")
+    @SaCheckPermission(CustomerPermission.QUERY)
     public ResponseDTO<PageResult<CustomerVO>> query(@Valid @RequestBody CustomerQueryForm form) {
-        return ResponseDTO.ok(queryService.query(form));
+        return ResponseDTO.ok(customerQueryService.query(form));
     }
 
     @GetMapping("/detail/{customerId}")
-    @SaCheckPermission("scm:customer:query")
+    @SaCheckPermission(CustomerPermission.QUERY)
     public ResponseDTO<CustomerDetailVO> detail(@PathVariable Long customerId) {
-        return ResponseDTO.ok(queryService.detail(customerId));
+        return ResponseDTO.ok(customerQueryService.detail(customerId));
     }
 
     /**
@@ -65,33 +67,33 @@ public class CustomerController {
      * 与 {@code scm:order:query}（{@link SaMode#AND}）：没有订单查看权的人不能仅凭客户权限读到历史成交价。
      */
     @GetMapping("/{customerId}/frequent-skus")
-    @SaCheckPermission(value = {"scm:customer:query", "scm:order:query"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {CustomerPermission.QUERY, OrderPermission.QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<CustomerFrequentSkuVO>> frequentSkus(@PathVariable Long customerId,
                                                                  @RequestParam(defaultValue = "90") int days,
                                                                  @RequestParam(defaultValue = "20") int limit) {
-        return ResponseDTO.ok(queryService.frequentSkus(customerId, days, limit));
+        return ResponseDTO.ok(customerQueryService.frequentSkus(customerId, days, limit));
     }
 
     @PostMapping("/add")
-    @SaCheckPermission("scm:customer:add")
+    @SaCheckPermission(CustomerPermission.ADD)
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody CustomerAddForm form) {
-        return ResponseDTO.ok(service.add(form));
+        return ResponseDTO.ok(customerService.add(form));
     }
 
     @PostMapping("/update")
-    @SaCheckPermission("scm:customer:update")
+    @SaCheckPermission(CustomerPermission.UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody CustomerUpdateForm form) {
-        service.update(form);
+        customerService.update(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/updateStatus")
-    @SaCheckPermission("scm:customer:status")
+    @SaCheckPermission(CustomerPermission.STATUS)
     @OperateLog
     public ResponseDTO<String> updateStatus(@Valid @RequestBody CustomerStatusForm form) {
-        service.updateStatus(form);
+        customerService.updateStatus(form);
         return ResponseDTO.ok();
     }
 
@@ -102,24 +104,24 @@ public class CustomerController {
      * 归属变更必须带着乐观锁版本走这里，才能留下单独的操作日志并且不让编辑表单顺带挪走数据。
      */
     @PostMapping("/reassignSeller")
-    @SaCheckPermission("scm:customer:assign")
+    @SaCheckPermission(CustomerPermission.ASSIGN)
     @OperateLog
     public ResponseDTO<String> reassignSeller(@Valid @RequestBody CustomerSellerReassignForm form) {
-        service.reassignSeller(form);
+        customerService.reassignSeller(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/delete")
-    @SaCheckPermission("scm:customer:delete")
+    @SaCheckPermission(CustomerPermission.DELETE)
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody CustomerDeleteForm form) {
-        service.delete(form);
+        customerService.delete(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/option/list")
-    @SaCheckPermission("scm:customer:query")
+    @SaCheckPermission(CustomerPermission.QUERY)
     public ResponseDTO<List<CustomerOptionVO>> optionList() {
-        return ResponseDTO.ok(queryService.optionList());
+        return ResponseDTO.ok(customerQueryService.optionList());
     }
 }

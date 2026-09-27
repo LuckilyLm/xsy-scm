@@ -18,20 +18,20 @@ import lombok.Data;
 @Data
 public class CustomerSellerReassignForm {
 
-    @NotNull
-    @Positive
+    @NotNull(message = "客户 ID 不能为空")
+    @Positive(message = "客户 ID 必须大于0")
     private Long customerId;
 
     /**
      * 新负责人（员工 id）；{@code null} 表示收回为未分配。
      */
-    @Positive
+    @Positive(message = "业务员 ID 必须大于0")
     private Long sellerId;
 
     /**
      * 乐观锁版本：改派必须针对自己刚看到的那一行，不能覆盖别人的并发编辑。
      */
-    @NotNull
-    @Min(0)
+    @NotNull(message = "版本号不能为空")
+    @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
 }

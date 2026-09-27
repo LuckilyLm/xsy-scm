@@ -1,7 +1,8 @@
 package com.xsy.scm.customer.domain.form;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import com.xsy.scm.common.constant.ScmCustomerStatusEnum;
+import com.xsy.scm.common.validation.ScmEnumValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -12,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class CustomerStatusForm extends CustomerDeleteForm {
 
-    @NotNull
-    @Pattern(regexp = "POTENTIAL|COOPERATING|SUSPENDED|BLACKLIST")
+    @NotNull(message = "客户状态不能为空")
+    @ScmEnumValue(enumClass = ScmCustomerStatusEnum.class, message = "客户状态无效")
     private String status;
 }

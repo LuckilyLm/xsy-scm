@@ -7,6 +7,6 @@ import jakarta.validation.constraints.NotNull;
 public class CustomerSkuVisibilityItemForm {
     private Long id;
     private Integer version;
-    @NotNull
+    @NotNull(message = "SKU ID 不能为空")
     private Long skuId;
 }

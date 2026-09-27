@@ -9,6 +9,7 @@ import com.xsy.scm.customer.domain.form.CustomerTypeDeleteForm;
 import com.xsy.scm.customer.domain.form.CustomerTypeQueryForm;
 import com.xsy.scm.customer.domain.form.CustomerTypeUpdateForm;
 import com.xsy.scm.customer.domain.vo.CustomerTypeVO;
+import com.xsy.scm.customer.permission.CustomerPermission;
 import com.xsy.scm.customer.service.CustomerTypeService;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -31,40 +32,40 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomerTypeController {
 
-    private final CustomerTypeService service;
+    private final CustomerTypeService customerTypeService;
 
     @PostMapping("/query")
-    @SaCheckPermission("scm:customer:type:query")
+    @SaCheckPermission(CustomerPermission.TYPE_QUERY)
     public ResponseDTO<PageResult<CustomerTypeVO>> query(@Valid @RequestBody CustomerTypeQueryForm form) {
-        return ResponseDTO.ok(service.query(form));
+        return ResponseDTO.ok(customerTypeService.query(form));
     }
 
     @PostMapping("/add")
-    @SaCheckPermission("scm:customer:type:add")
+    @SaCheckPermission(CustomerPermission.TYPE_ADD)
     @OperateLog
     public ResponseDTO<Long> add(@Valid @RequestBody CustomerTypeAddForm form) {
-        return ResponseDTO.ok(service.add(form));
+        return ResponseDTO.ok(customerTypeService.add(form));
     }
 
     @PostMapping("/update")
-    @SaCheckPermission("scm:customer:type:update")
+    @SaCheckPermission(CustomerPermission.TYPE_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@Valid @RequestBody CustomerTypeUpdateForm form) {
-        service.update(form);
+        customerTypeService.update(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/delete")
-    @SaCheckPermission("scm:customer:type:delete")
+    @SaCheckPermission(CustomerPermission.TYPE_DELETE)
     @OperateLog
     public ResponseDTO<String> delete(@Valid @RequestBody CustomerTypeDeleteForm form) {
-        service.delete(form);
+        customerTypeService.delete(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/option/list")
-    @SaCheckPermission("scm:customer:type:query")
+    @SaCheckPermission(CustomerPermission.TYPE_QUERY)
     public ResponseDTO<List<CustomerTypeVO>> optionList() {
-        return ResponseDTO.ok(service.optionList());
+        return ResponseDTO.ok(customerTypeService.optionList());
     }
 }

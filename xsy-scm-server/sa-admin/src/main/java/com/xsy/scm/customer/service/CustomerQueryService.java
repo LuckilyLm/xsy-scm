@@ -67,34 +67,34 @@ public class CustomerQueryService {
     private static final int FREQUENT_MAX_LIMIT = 100;
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
 
-    private final CustomerDao customers;
-    private final CustomerSkuVisibilityService visibility;
+    private final CustomerDao customerDao;
+    private final CustomerSkuVisibilityService customerSkuVisibilityService;
 
     /**
      * 跨域只读：常购商品由订单事实（sales_order / sales_order_item）现算，不落副本。
      */
-    private final CustomerFrequentSkuDao frequentSkus;
+    private final CustomerFrequentSkuDao customerFrequentSkuDao;
 
-    private final CustomerTypeDao customerTypes;
+    private final CustomerTypeDao customerTypeDao;
 
     /**
      * 跨域只读：客户详情展示「绑定供应商」的名称。
      */
-    private final SupplierDao suppliers;
+    private final SupplierDao supplierDao;
 
     /**
      * SmartAdmin 原生员工读取，用于补全业务员姓名。
      */
-    private final EmployeeDao employees;
+    private final EmployeeDao employeeDao;
 
     /**
      * SCM 数据范围解析入口：客户读路径唯一允许「能看哪些行」的判断来源。
      */
-    private final ScmDataScopeService scopeService;
+    private final ScmDataScopeService dataScopeService;
 
     public PageResult<CustomerVO> query(CustomerQueryForm form) {
         assertSortable(form);
-        ScmDataScopeContext scope = scopeService.resolve();
+        ScmDataScopeContext scope = dataScopeService.resolve();
         // 维度里一个授权 id 都没有 → 直接空分页，既不给数据库跑恒假谓词，也不会把空集合送进 IN ()。
         if (scope.getCustomerSellerScope().isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
@@ -103,7 +103,7 @@ public class CustomerQueryService {
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.desc("updated_at"), OrderItem.desc("id"));
         }
-        List<CustomerEntity> rows = customers.queryPage(page, form, scope.getCustomerSellerScope());
+        List<CustomerEntity> rows = customerDao.queryPage(page, form, scope.getCustomerSellerScope());
         List<CustomerVO> list = new ArrayList<>(rows.size());
         rows.forEach(row -> list.add(toVO(row, context(rows))));
         return SmartPageUtil.convert2PageResult(page, list);
@@ -111,7 +111,7 @@ public class CustomerQueryService {
 
     /** 客户详情读（HTTP 入口）：按当前调用者的客户负责人范围判定，越权 30005。 */
     public CustomerDetailVO detail(Long customerId) {
-        return detail(customerId, scopeService.resolve());
+        return detail(customerId, dataScopeService.resolve());
     }
 
     /**
@@ -124,7 +124,7 @@ public class CustomerQueryService {
      * 集团统一结算不代表跨业务员互见（裁决第 6 条）。
      */
     public CustomerDetailVO detail(Long customerId, ScmDataScopeContext scope) {
-        CustomerEntity entity = customers.selectById(customerId);
+        CustomerEntity entity = customerDao.selectById(customerId);
         if (entity == null) {
             throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
         }
@@ -138,7 +138,7 @@ public class CustomerQueryService {
         CustomerDetailVO vo = new CustomerDetailVO();
         BeanUtils.copyProperties(entity, vo);
         vo.setCustomerId(entity.getId());
-        vo.setVisibilities(visibility.list(entity.getId()));
+        vo.setVisibilities(customerSkuVisibilityService.list(entity.getId()));
 
         List<CustomerEntity> rows = List.of(entity);
         EnrichmentContext context = context(rows);
@@ -158,11 +158,11 @@ public class CustomerQueryService {
      * <p>取数源是别人的成交价与用量，因此与详情同一套归属判定：读不到该客户就 30005。
      */
     public List<CustomerFrequentSkuVO> frequentSkus(Long customerId, int days, int limit) {
-        CustomerEntity customer = customers.selectById(customerId);
+        CustomerEntity customer = customerDao.selectById(customerId);
         if (customer == null) {
             throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
         }
-        if (!scopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+        if (!dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             throw new ScmDataScopeException();
         }
         int windowDays = Math.min(Math.max(days, FREQUENT_MIN_DAYS), FREQUENT_MAX_DAYS);
@@ -171,7 +171,7 @@ public class CustomerQueryService {
                 .minusDays(windowDays - 1L)
                 .atStartOfDay(SHANGHAI);
         OffsetDateTime since = startOfWindow.toOffsetDateTime();
-        return frequentSkus.frequentSkus(customerId, since, rowLimit);
+        return customerFrequentSkuDao.frequentSkus(customerId, since, rowLimit);
     }
 
     /**
@@ -185,16 +185,16 @@ public class CustomerQueryService {
      * 且「能否对该客户建单」在服务端另有归属判定。
      */
     public List<CustomerOptionVO> optionList() {
-        List<CustomerEntity> rows = customers.selectList(new LambdaQueryWrapper<CustomerEntity>()
+        List<CustomerEntity> rows = customerDao.selectList(new LambdaQueryWrapper<CustomerEntity>()
                 .orderByAsc(CustomerEntity::getName, CustomerEntity::getId));
 
         // 一次批量取回类型编码，避免在循环里查库（C17）
         Map<Long, String> typeCodes = new HashMap<>();
         Set<Long> typeIds = collect(rows, CustomerEntity::getCustomerTypeId);
         if (!typeIds.isEmpty()) {
-            customerTypes.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
+            customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
                             .in(CustomerTypeEntity::getId, typeIds))
-                    .forEach(t -> typeCodes.put(t.getId(), t.getTypeCode()));
+                    .forEach(customerType -> typeCodes.put(customerType.getId(), customerType.getTypeCode()));
         }
 
         List<CustomerOptionVO> list = new ArrayList<>(rows.size());
@@ -249,32 +249,32 @@ public class CustomerQueryService {
 
         Map<Long, String> typeNames = new HashMap<>();
         if (!typeIds.isEmpty()) {
-            customerTypes.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
+            customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
                             .in(CustomerTypeEntity::getId, typeIds))
-                    .forEach(t -> typeNames.put(t.getId(), t.getName()));
+                    .forEach(customerType -> typeNames.put(customerType.getId(), customerType.getName()));
         }
 
         Map<Long, String> customerNames = new HashMap<>();
         if (!parentIds.isEmpty()) {
-            customers.selectList(new LambdaQueryWrapper<CustomerEntity>()
+            customerDao.selectList(new LambdaQueryWrapper<CustomerEntity>()
                             .in(CustomerEntity::getId, parentIds))
-                    .forEach(c -> customerNames.put(c.getId(), c.getName()));
+                    .forEach(parentCustomer -> customerNames.put(parentCustomer.getId(), parentCustomer.getName()));
         }
 
         Map<Long, String> employeeNames = new HashMap<>();
         if (!sellerIds.isEmpty()) {
-            List<EmployeeVO> found = employees.getEmployeeByIds(sellerIds);
+            List<EmployeeVO> found = employeeDao.getEmployeeByIds(sellerIds);
             if (found != null) {
-                found.stream().filter(e -> e != null && e.getEmployeeId() != null)
-                        .forEach(e -> employeeNames.put(e.getEmployeeId(), e.getActualName()));
+                found.stream().filter(employee -> employee != null && employee.getEmployeeId() != null)
+                        .forEach(employee -> employeeNames.put(employee.getEmployeeId(), employee.getActualName()));
             }
         }
 
         Map<Long, String> supplierNames = new HashMap<>();
         if (!supplierIds.isEmpty()) {
-            suppliers.selectList(new LambdaQueryWrapper<SupplierEntity>()
+            supplierDao.selectList(new LambdaQueryWrapper<SupplierEntity>()
                             .in(SupplierEntity::getId, supplierIds))
-                    .forEach(s -> supplierNames.put(s.getId(), s.getName()));
+                    .forEach(supplier -> supplierNames.put(supplier.getId(), supplier.getName()));
         }
 
         return new EnrichmentContext(typeNames, customerNames, employeeNames, supplierNames);

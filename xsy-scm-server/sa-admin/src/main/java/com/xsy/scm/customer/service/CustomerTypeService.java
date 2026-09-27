@@ -7,6 +7,7 @@ import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.dao.CustomerDao;
+import com.xsy.scm.customer.dao.CustomerSkuVisibilityDao;
 import com.xsy.scm.customer.dao.CustomerTypeDao;
 import com.xsy.scm.customer.domain.entity.CustomerTypeEntity;
 import com.xsy.scm.customer.domain.form.CustomerTypeAddForm;
@@ -15,6 +16,7 @@ import com.xsy.scm.customer.domain.form.CustomerTypeQueryForm;
 import com.xsy.scm.customer.domain.form.CustomerTypeUpdateForm;
 import com.xsy.scm.customer.domain.vo.CustomerTypeVO;
 import com.xsy.scm.customer.manager.CustomerTypeValidator;
+import com.xsy.scm.pricing.dao.CustomerTypePriceDao;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.beans.BeanUtils;
@@ -48,17 +50,17 @@ public class CustomerTypeService {
      */
     private static final Set<String> SORTABLE = Set.of("type_code", "name", "status", "updated_at");
 
-    private final CustomerTypeDao dao;
+    private final CustomerTypeDao customerTypeDao;
 
     private final CustomerDao customerDao;
-    private final com.xsy.scm.customer.dao.CustomerSkuVisibilityDao pricingReferences;
-    private final com.xsy.scm.pricing.dao.CustomerTypePriceDao priceDao;
+    private final CustomerSkuVisibilityDao customerSkuVisibilityDao;
+    private final CustomerTypePriceDao customerTypePriceDao;
 
     /**
      * 全量客户类型（含 DISABLED），供内部逻辑使用。
      */
     public List<CustomerTypeEntity> all() {
-        return dao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
+        return customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
                 .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId));
     }
 
@@ -66,7 +68,7 @@ public class CustomerTypeService {
      * 读取客户类型，不存在或已删除 → 40431。
      */
     public CustomerTypeEntity require(Long typeId) {
-        CustomerTypeEntity entity = typeId == null ? null : dao.selectById(typeId);
+        CustomerTypeEntity entity = typeId == null ? null : customerTypeDao.selectById(typeId);
         if (entity == null) {
             throw new ScmBusinessException(CUSTOMER_TYPE_NOT_FOUND);
         }
@@ -90,7 +92,7 @@ public class CustomerTypeService {
      * 下拉选项：只返回 {@code ENABLED}（Target Design Q9），按名称排序。
      */
     public List<CustomerTypeVO> optionList() {
-        return dao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
+        return customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
                         .eq(CustomerTypeEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
                         .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId))
                 .stream()
@@ -104,7 +106,7 @@ public class CustomerTypeService {
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.asc("name"), OrderItem.asc("id"));
         }
-        List<CustomerTypeEntity> rows = dao.queryPage(page, form);
+        List<CustomerTypeEntity> rows = customerTypeDao.queryPage(page, form);
         List<CustomerTypeVO> list = new ArrayList<>(rows.size());
         rows.forEach(row -> list.add(toVO(row)));
         return SmartPageUtil.convert2PageResult(page, list);
@@ -125,7 +127,7 @@ public class CustomerTypeService {
         entity.setDeleted(false);
         stamp(entity, true);
         try {
-            dao.insert(entity);
+            customerTypeDao.insert(entity);
         } catch (DuplicateKeyException e) {
             // 并发兜底：显式查重与插入之间存在窗口
             throw new ScmBusinessException(CUSTOMER_TYPE_CODE_DUPLICATE);
@@ -136,7 +138,7 @@ public class CustomerTypeService {
     @Transactional(rollbackFor = Exception.class)
     public void update(CustomerTypeUpdateForm form) {
         CustomerTypeValidator.validateRequired(form);
-        priceDao.lockParent(form.getTypeId());
+        customerTypePriceDao.lockParent(form.getTypeId());
         CustomerTypeEntity entity = require(form.getTypeId());
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -151,7 +153,7 @@ public class CustomerTypeService {
         entity.setVersion(form.getVersion());
         stamp(entity, false);
         try {
-            if (dao.updateById(entity) != 1) {
+            if (customerTypeDao.updateById(entity) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
         } catch (DuplicateKeyException e) {
@@ -167,15 +169,16 @@ public class CustomerTypeService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(CustomerTypeDeleteForm form) {
-        priceDao.lockParent(form.getTypeId());
+        customerTypePriceDao.lockParent(form.getTypeId());
         CustomerTypeEntity entity = require(form.getTypeId());
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        if (customerDao.countActiveByTypeId(form.getTypeId()) > 0 || pricingReferences.typeReferences(form.getTypeId()) > 0) {
+        if (customerDao.countActiveByTypeId(form.getTypeId()) > 0
+                || customerSkuVisibilityDao.typeReferences(form.getTypeId()) > 0) {
             throw new ScmBusinessException(CUSTOMER_TYPE_IN_USE);
         }
-        if (dao.softDelete(form.getTypeId(), form.getVersion(), ScmOperator.current()) != 1) {
+        if (customerTypeDao.softDelete(form.getTypeId(), form.getVersion(), ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -186,7 +189,7 @@ public class CustomerTypeService {
         if (excludeId != null) {
             wrapper.ne(CustomerTypeEntity::getId, excludeId);
         }
-        return dao.selectCount(wrapper) > 0;
+        return customerTypeDao.selectCount(wrapper) > 0;
     }
 
     private void assertSortable(CustomerTypeQueryForm form) {

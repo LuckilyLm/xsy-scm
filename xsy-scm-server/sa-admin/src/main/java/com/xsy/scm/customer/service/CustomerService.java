@@ -9,6 +9,8 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.customer.dao.CustomerDao;
+import com.xsy.scm.customer.dao.CustomerSkuVisibilityDao;
+import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
 import com.xsy.scm.customer.domain.form.CustomerDeleteForm;
@@ -47,11 +49,11 @@ public class CustomerService {
      */
     public static final String INITIAL_STATUS = ScmCustomerStatusEnum.POTENTIAL.name();
 
-    private final CustomerDao dao;
-    private final CustomerSkuVisibilityService visibility;
-    private final com.xsy.scm.customer.dao.CustomerSkuVisibilityDao visibilityDao;
+    private final CustomerDao customerDao;
+    private final CustomerSkuVisibilityService customerSkuVisibilityService;
+    private final CustomerSkuVisibilityDao customerSkuVisibilityDao;
 
-    private final CustomerValidator validator;
+    private final CustomerValidator customerValidator;
 
     private final CustomerTypeService customerTypeService;
 
@@ -59,7 +61,7 @@ public class CustomerService {
      * 读取客户，不存在或已删除 → 40430。
      */
     public CustomerEntity require(Long customerId) {
-        CustomerEntity entity = customerId == null ? null : dao.selectById(customerId);
+        CustomerEntity entity = customerId == null ? null : customerDao.selectById(customerId);
         if (entity == null) {
             throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
         }
@@ -93,9 +95,9 @@ public class CustomerService {
 
     @Transactional(rollbackFor = Exception.class)
     public Long add(CustomerAddForm form) {
-        validator.validateCreditPeriod(form);
+        customerValidator.validateCreditPeriod(form);
         customerTypeService.requireSelectableType(form.getCustomerTypeId());
-        validator.validateParent(form.getParentCustomerId(), null);
+        customerValidator.validateParent(form.getParentCustomerId(), null);
 
         String code = CustomerValidator.normalizeCode(form.getCustomerCode());
         if (existsCode(code, null)) {
@@ -110,22 +112,22 @@ public class CustomerService {
         entity.setDeleted(false);
         stamp(entity, true);
         try {
-            dao.insert(entity);
+            customerDao.insert(entity);
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
         }
         if (form.getVisibilityPolicy() != null || form.getVisibilities() != null)
-            visibility.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
+            customerSkuVisibilityService.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
         return entity.getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void update(CustomerUpdateForm form) {
-        validator.validateCreditPeriod(form);
-        visibilityDao.lockCustomer(form.getCustomerId());
+        customerValidator.validateCreditPeriod(form);
+        customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
         CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
         customerTypeService.requireSelectableType(form.getCustomerTypeId());
-        validator.validateParent(form.getParentCustomerId(), form.getCustomerId());
+        customerValidator.validateParent(form.getParentCustomerId(), form.getCustomerId());
 
         String code = CustomerValidator.normalizeCode(form.getCustomerCode());
         if (existsCode(code, form.getCustomerId())) {
@@ -140,14 +142,14 @@ public class CustomerService {
         entity.setVersion(form.getVersion());
         stamp(entity, false);
         try {
-            if (dao.updateById(entity) != 1) {
+            if (customerDao.updateById(entity) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
         }
         if (form.getVisibilityPolicy() != null || form.getVisibilities() != null)
-            visibility.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
+            customerSkuVisibilityService.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
     }
 
     /**
@@ -161,12 +163,12 @@ public class CustomerService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void reassignSeller(CustomerSellerReassignForm form) {
-        visibilityDao.lockCustomer(form.getCustomerId());
+        customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
         CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
         entity.setSellerId(form.getSellerId());
         entity.setVersion(form.getVersion());
         stamp(entity, false);
-        if (dao.updateById(entity) != 1) {
+        if (customerDao.updateById(entity) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -198,7 +200,7 @@ public class CustomerService {
         entity.setStatus(form.getStatus());
         entity.setVersion(form.getVersion());
         stamp(entity, false);
-        if (dao.updateById(entity) != 1) {
+        if (customerDao.updateById(entity) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -210,10 +212,10 @@ public class CustomerService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(CustomerDeleteForm form) {
-        visibilityDao.lockCustomer(form.getCustomerId());
+        customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
         require(form.getCustomerId(), form.getVersion());
         assertNotReferenced(form.getCustomerId());
-        if (dao.softDelete(form.getCustomerId(), form.getVersion(), ScmOperator.current()) != 1) {
+        if (customerDao.softDelete(form.getCustomerId(), form.getVersion(), ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -227,7 +229,7 @@ public class CustomerService {
         if (excludeId != null) {
             wrapper.ne(CustomerEntity::getId, excludeId);
         }
-        return dao.selectCount(wrapper) > 0;
+        return customerDao.selectCount(wrapper) > 0;
     }
 
     /**
@@ -238,13 +240,15 @@ public class CustomerService {
      * 检查位先落地，避免 W3 忘记加而导致删掉被引用的客户。
      */
     private void assertNotReferenced(Long customerId) {
-        if (visibilityDao.customerReferences(customerId) > 0)
+        if (customerSkuVisibilityDao.customerReferences(customerId) > 0)
             throw new ScmBusinessException(com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED);
     }
 
     private void apply(CustomerEntity entity, CustomerAddForm form) {
         if (form.getVisibilityPolicy() != null) entity.setVisibilityPolicy(form.getVisibilityPolicy());
-        else if (entity.getVisibilityPolicy() == null) entity.setVisibilityPolicy("ALL_ENABLED");
+        else if (entity.getVisibilityPolicy() == null) {
+            entity.setVisibilityPolicy(CustomerVisibilityPolicy.ALL_ENABLED);
+        }
         entity.setCustomerCode(CustomerValidator.normalizeCode(form.getCustomerCode()));
         entity.setName(CustomerValidator.normalizeName(form.getName()));
         entity.setCustomerTypeId(form.getCustomerTypeId());
