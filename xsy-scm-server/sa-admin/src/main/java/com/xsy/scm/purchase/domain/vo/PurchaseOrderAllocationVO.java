@@ -10,8 +10,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 采购单行上的单条需求分配。
  *
- * <p>身份是 `(purchaseOrderItemId, demandId)`；`allocationId` 是 `purchase_demand_allocation.id`。
- * `demandVersion` 供前端编辑时回传做乐观锁；`demandStatus` 让前端知道该需求是否已被别的行分满。
+ * <p>
+ * 身份是 `(purchaseOrderItemId, demandId)`；`allocationId` 是 `purchase_demand_allocation.id`。 `demandVersion`
+ * 供前端编辑时回传做乐观锁；`demandStatus` 让前端知道该需求是否已被别的行分满。
  */
 @Data
 public class PurchaseOrderAllocationVO {

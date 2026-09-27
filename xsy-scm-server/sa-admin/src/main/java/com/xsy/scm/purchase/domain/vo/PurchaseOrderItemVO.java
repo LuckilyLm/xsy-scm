@@ -11,10 +11,12 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 采购单行。
  *
- * <p>`remainingQuantity` / `overReceiptQuantity` 是**派生量**（不落库），
- * 与 恒等式同口径：`remaining = max(planned − received, 0)`、`over = max(received − planned, 0)`。
+ * <p>
+ * `remainingQuantity` / `overReceiptQuantity` 是**派生量**（不落库）， 与 恒等式同口径：`remaining = max(planned − received, 0)`、`over =
+ * max(received − planned, 0)`。
  *
- * <p>`allocations` 是该行挂的全部需求分配（**：一行多需求**），每项一个 `demandId`。
+ * <p>
+ * `allocations` 是该行挂的全部需求分配（**：一行多需求**），每项一个 `demandId`。
  */
 @Data
 public class PurchaseOrderItemVO {

@@ -54,11 +54,11 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_N
 /**
  * 采购域只读查询。
  *
- * <p>列表与详情按采购员范围收窄，工作台汇总按仓库范围收窄；命令结果快照由已授权的写命令调用。
- * 空范围返回空分页，不把无权数据伪装成零值。
+ * <p>
+ * 列表与详情按采购员范围收窄，工作台汇总按仓库范围收窄；命令结果快照由已授权的写命令调用。 空范围返回空分页，不把无权数据伪装成零值。
  *
- * <p>收货余量与超收量统一由 {@link PurchaseReceiptQuantityCalculator} 计算，
- * 避免列表和详情使用不同的数量口径。
+ * <p>
+ * 收货余量与超收量统一由 {@link PurchaseReceiptQuantityCalculator} 计算， 避免列表和详情使用不同的数量口径。
  */
 @Service
 @RequiredArgsConstructor
@@ -85,8 +85,7 @@ public class PurchaseQueryService {
     // ------------------------------------------------------------------
 
     /**
-     * 需求列表：按当前调用者的采购员范围收窄。表单里没有采购员筛选项，
-     * 因此不存在「用户筛选放大范围」的入口。
+     * 需求列表：按当前调用者的采购员范围收窄。表单里没有采购员筛选项， 因此不存在「用户筛选放大范围」的入口。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseDemandVO> demandQuery(PurchaseDemandQueryForm form) {
@@ -101,16 +100,15 @@ public class PurchaseQueryService {
     /**
      * 订单汇总 / 库存缺口预览。
      *
-     * <p><b>只读</b>：不写任何表、不改 {@link PurchaseDemandService#generate} 的需求语义，
-     * 只是把「已确认订单实发量」与「目标仓可用余额」并排算一个缺口供决策。
+     * <p>
+     * <b>只读</b>：不写任何表、不改 {@link PurchaseDemandService#generate} 的需求语义， 只是把「已确认订单实发量」与「目标仓可用余额」并排算一个缺口供决策。
      *
-     * <p>拒绝客户端排序的理由与库存余额页一致（join + 聚合，裸列名有歧义），排序固定为
-     * 「缺口降序 → SKU」；{@code optimizeCountSql=false} 让分页 count 按聚合组数而非明细行数统计。
+     * <p>
+     * 拒绝客户端排序的理由与库存余额页一致（join + 聚合，裸列名有歧义），排序固定为 「缺口降序 → SKU」；{@code optimizeCountSql=false} 让分页 count 按聚合组数而非明细行数统计。
      *
-     * <p><b>仓库范围</b>：{@code warehouseId} 必填且单选，整页数字（余额、预留、缺口）都归属到它，
-     * 因此请求仓不在授权范围内时整页给空分页。只把余额左连收窄是错的：那会让调用者读到同一页
-     * 订单需求量、只是状态变成 {@code NO_BALANCE}，等于把「无权看这个仓」谎报成「这个仓没货」。
-     * 范围谓词同时下传 Mapper 兜底，见 {@code PurchaseDemandDao.xml}。
+     * <p>
+     * <b>仓库范围</b>：{@code warehouseId} 必填且单选，整页数字（余额、预留、缺口）都归属到它， 因此请求仓不在授权范围内时整页给空分页。只把余额左连收窄是错的：那会让调用者读到同一页
+     * 订单需求量、只是状态变成 {@code NO_BALANCE}，等于把「无权看这个仓」谎报成「这个仓没货」。 范围谓词同时下传 Mapper 兜底，见 {@code PurchaseDemandDao.xml}。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseDemandSummaryVO> summaryPreview(PurchaseDemandSummaryPreviewForm form) {
@@ -126,8 +124,7 @@ public class PurchaseQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
-        return SmartPageUtil.convert2PageResult(page,
-                purchaseDemandDao.summaryPreview(page, form, warehouseScope));
+        return SmartPageUtil.convert2PageResult(page, purchaseDemandDao.summaryPreview(page, form, warehouseScope));
     }
 
     @Transactional(readOnly = true)
@@ -162,8 +159,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 采购员维度的可见性判定：范围外的单据按「没有权限」处理，而不是伪装成「不存在」。
-     * 未分配（{@code purchaser_id IS NULL}）只有 {@link ScmValueScope#all()} 才可见。
+     * 采购员维度的可见性判定：范围外的单据按「没有权限」处理，而不是伪装成「不存在」。 未分配（{@code purchaser_id IS NULL}）只有 {@link ScmValueScope#all()} 才可见。
      */
     private static void requirePurchaserVisible(ScmValueScope purchaserScope, Long ownerEmployeeId) {
         if (!purchaserScope.allows(ownerEmployeeId)) {
@@ -184,13 +180,11 @@ public class PurchaseQueryService {
     // ------------------------------------------------------------------
 
     /**
-     * 采购单列表：先按调用者范围，再与表单的 {@code purchaserId} 取交集
-     * （用户筛选只能缩小授权范围，不能放大）。
+     * 采购单列表：先按调用者范围，再与表单的 {@code purchaserId} 取交集 （用户筛选只能缩小授权范围，不能放大）。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseOrderVO> orderQuery(PurchaseOrderQueryForm form) {
-        ScmValueScope purchaserScope =
-                dataScopeService.resolve().getPurchaserScope().narrow(form.getPurchaserId());
+        ScmValueScope purchaserScope = dataScopeService.resolve().getPurchaserScope().narrow(form.getPurchaserId());
         if (purchaserScope.isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
         }
@@ -220,9 +214,7 @@ public class PurchaseQueryService {
         List<PurchaseOrderItemVO> items = orderItems(purchaseOrderId, ScmValueScope.all());
         vo.setItems(items);
         // 单级平铺：前端「分配明细」区直接消费，不需要自己扁平化 items[].allocations[]
-        vo.setAllocations(items.stream()
-                .flatMap(item -> item.getAllocations().stream())
-                .toList());
+        vo.setAllocations(items.stream().flatMap(item -> item.getAllocations().stream()).toList());
         vo.setLogs(orderLogs(purchaseOrderId, ScmValueScope.all()));
         return vo;
     }
@@ -238,8 +230,8 @@ public class PurchaseQueryService {
     /**
      * 采购单行（含每行的分配集合，**：N allocations**）。
      *
-     * <p>它是独立端点 {@code GET /scm/purchase/item/{orderId}} 的实现，因此与详情同样受范围约束：
-     * 只挡详情、放行行清单等于把别人单据的价格与数量照样端出去。
+     * <p>
+     * 它是独立端点 {@code GET /scm/purchase/item/{orderId}} 的实现，因此与详情同样受范围约束： 只挡详情、放行行清单等于把别人单据的价格与数量照样端出去。
      */
     @Transactional(readOnly = true)
     public List<PurchaseOrderItemVO> orderItems(Long orderId) {
@@ -276,8 +268,7 @@ public class PurchaseQueryService {
     // ------------------------------------------------------------------
 
     /**
-     * 收货单列表：采购员维度按父采购单继承（表上没有采购员列），谓词见
-     * {@code PurchaseReceiptDao.xml} 的 EXISTS 半连。仓库维度由库存/仓库侧口径负责，这里不重复实现。
+     * 收货单列表：采购员维度按父采购单继承（表上没有采购员列），谓词见 {@code PurchaseReceiptDao.xml} 的 EXISTS 半连。仓库维度由库存/仓库侧口径负责，这里不重复实现。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseReceiptVO> receiptQuery(PurchaseReceiptQueryForm form) {
@@ -312,8 +303,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 命令侧投影：收货的创建 / 确认 / 入库回的是自己刚写的单据，
-     * 且父单归属不该让一次合法的收货确认回滚（见类说明）。
+     * 命令侧投影：收货的创建 / 确认 / 入库回的是自己刚写的单据， 且父单归属不该让一次合法的收货确认回滚（见类说明）。
      */
     @Transactional(readOnly = true)
     public PurchaseReceiptVO receiptDetailForCommand(Long receiptId) {
@@ -336,22 +326,20 @@ public class PurchaseQueryService {
             Long parentOrderId = receipt == null ? null : receipt.getPurchaseOrderId();
             requirePurchaserVisible(purchaserScope, orderPurchaserId(parentOrderId));
         }
-        return purchaseReceiptItemDao.listByReceiptId(receiptId).stream()
-                .map(PurchaseQueryService::receiptItemVo)
+        return purchaseReceiptItemDao.listByReceiptId(receiptId).stream().map(PurchaseQueryService::receiptItemVo)
                 .toList();
     }
 
     /**
      * 按商品收货工作台（只读）。
      *
-     * <p>与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、
-     * 排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页 count 按 SKU×单位 组数统计。
-     * 只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
+     * <p>
+     * 与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、 排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页
+     * count 按 SKU×单位 组数统计。 只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
      *
-     * <p><b>仓库范围</b>：计划量与已收量归属的仓库就是采购单的 {@code warehouse_id}
-     * （收货单建单时从采购单继承，因此不需要另判收货侧的仓），范围谓词落在采购单事实行上、
-     * 分组之前，未授权仓的采购单整单不参与聚合。表单的 {@code warehouseId} 只能进一步缩小范围。
-     * 一个授权仓都没有时给空分页：0 会被读成「这些仓没收过货」，而真实原因是「你没有可看的仓」。
+     * <p>
+     * <b>仓库范围</b>：计划量与已收量归属的仓库就是采购单的 {@code warehouse_id} （收货单建单时从采购单继承，因此不需要另判收货侧的仓），范围谓词落在采购单事实行上、
+     * 分组之前，未授权仓的采购单整单不参与聚合。表单的 {@code warehouseId} 只能进一步缩小范围。 一个授权仓都没有时给空分页：0 会被读成「这些仓没收过货」，而真实原因是「你没有可看的仓」。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseReceiptItemWorkbenchVO> receiptItemWorkbench(PurchaseReceiptItemWorkbenchQueryForm form) {
@@ -364,8 +352,7 @@ public class PurchaseQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
-        return SmartPageUtil.convert2PageResult(page,
-                purchaseOrderItemDao.workbench(page, form, warehouseScope));
+        return SmartPageUtil.convert2PageResult(page, purchaseOrderItemDao.workbench(page, form, warehouseScope));
     }
 
     // ------------------------------------------------------------------
@@ -375,15 +362,16 @@ public class PurchaseQueryService {
     /**
      * 批量装配采购单行 VO。
      *
-     * <p>一次取全部行的 allocation，再按 `purchaseOrderItemId` 分组 —— 避免逐行查库（N+1）。
+     * <p>
+     * 一次取全部行的 allocation，再按 `purchaseOrderItemId` 分组 —— 避免逐行查库（N+1）。
      */
     public List<PurchaseOrderItemVO> itemVos(List<PurchaseOrderItemEntity> rows) {
         if (rows.isEmpty()) {
             return List.of();
         }
         List<Long> itemIds = rows.stream().map(PurchaseOrderItemEntity::getId).toList();
-        List<PurchaseDemandAllocationEntity> allocations =
-                purchaseDemandAllocationDao.listActiveByOrderItemIds(itemIds);
+        List<PurchaseDemandAllocationEntity> allocations = purchaseDemandAllocationDao
+                .listActiveByOrderItemIds(itemIds);
         Map<Long, PurchaseDemandEntity> demands = demandMap(allocations);
 
         Map<Long, List<PurchaseOrderAllocationVO>> byItem = new LinkedHashMap<>();
@@ -392,16 +380,16 @@ public class PurchaseQueryService {
                     .add(allocationVo(allocation, demands.get(allocation.getPurchaseDemandId())));
         }
 
-        return rows.stream().sorted(
-                        Comparator.comparing(PurchaseOrderItemEntity::getSortOrder,
-                                        Comparator.nullsLast(Comparator.naturalOrder()))
-                                .thenComparing(PurchaseOrderItemEntity::getId))
-                .map(row -> itemVo(row, byItem.getOrDefault(row.getId(), List.of())))
-                .toList();
+        return rows.stream()
+                .sorted(Comparator
+                        .comparing(PurchaseOrderItemEntity::getSortOrder,
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(PurchaseOrderItemEntity::getId))
+                .map(row -> itemVo(row, byItem.getOrDefault(row.getId(), List.of()))).toList();
     }
 
     private static PurchaseOrderItemVO itemVo(PurchaseOrderItemEntity row,
-                                              List<PurchaseOrderAllocationVO> allocations) {
+            List<PurchaseOrderAllocationVO> allocations) {
         PurchaseOrderItemVO vo = new PurchaseOrderItemVO();
         vo.setId(row.getId());
         vo.setSkuId(row.getSkuId());
@@ -414,11 +402,11 @@ public class PurchaseQueryService {
         vo.setProductType(row.getProductTypeSnapshot());
         vo.setPlannedQuantity(row.getPlannedQuantity());
         vo.setReceivedQuantity(row.getReceivedQuantity());
-        //：与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
-        vo.setRemainingQuantity(PurchaseReceiptQuantityCalculator.remaining(
-                row.getPlannedQuantity(), row.getReceivedQuantity()));
-        vo.setOverReceiptQuantity(PurchaseReceiptQuantityCalculator.overReceipt(
-                row.getPlannedQuantity(), row.getReceivedQuantity()));
+        // ：与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
+        vo.setRemainingQuantity(
+                PurchaseReceiptQuantityCalculator.remaining(row.getPlannedQuantity(), row.getReceivedQuantity()));
+        vo.setOverReceiptQuantity(
+                PurchaseReceiptQuantityCalculator.overReceipt(row.getPlannedQuantity(), row.getReceivedQuantity()));
         vo.setPurchasePrice(row.getPurchasePrice());
         vo.setLineAmount(row.getLineAmount());
         vo.setSortOrder(row.getSortOrder());
@@ -430,12 +418,12 @@ public class PurchaseQueryService {
     /**
      * 分配 VO。
      *
-     * <p>`demandUnit` / `demandVersion` / `demandStatus` 取自**需求当前值**（不是分配行上的快照）：
-     * 它们表达的是「这条分配现在挂在一个什么状态的需求上」，快照表达不了「需求已补齐」。
+     * <p>
+     * `demandUnit` / `demandVersion` / `demandStatus` 取自**需求当前值**（不是分配行上的快照）： 它们表达的是「这条分配现在挂在一个什么状态的需求上」，快照表达不了「需求已补齐」。
      * `quantity` 取分配行自己的数量（一条分配一个数量）。
      */
     private static PurchaseOrderAllocationVO allocationVo(PurchaseDemandAllocationEntity row,
-                                                          PurchaseDemandEntity demand) {
+            PurchaseDemandEntity demand) {
         PurchaseOrderAllocationVO vo = new PurchaseOrderAllocationVO();
         vo.setAllocationId(row.getId());
         vo.setDemandId(row.getPurchaseDemandId());
@@ -453,11 +441,8 @@ public class PurchaseQueryService {
     }
 
     private Map<Long, PurchaseDemandEntity> demandMap(List<PurchaseDemandAllocationEntity> allocations) {
-        List<Long> demandIds = allocations.stream()
-                .map(PurchaseDemandAllocationEntity::getPurchaseDemandId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        List<Long> demandIds = allocations.stream().map(PurchaseDemandAllocationEntity::getPurchaseDemandId)
+                .filter(Objects::nonNull).distinct().toList();
         if (demandIds.isEmpty()) {
             return Map.of();
         }

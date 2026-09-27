@@ -13,14 +13,16 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 采购单。
  *
- * <p>**没有 `confirmedAt`**：`purchase_order` 表没有 `confirmed_at` 列，
- * 收货完成时间见各收货单的 `confirmed_at`。`submittedAt` / `cancelledAt` / `shortClosedAt`
- * 与状态时间戳 CHECK 一一对应。
+ * <p>
+ * **没有 `confirmedAt`**：`purchase_order` 表没有 `confirmed_at` 列， 收货完成时间见各收货单的 `confirmed_at`。`submittedAt` / `cancelledAt`
+ * / `shortClosedAt` 与状态时间戳 CHECK 一一对应。
  *
- * <p>`receivedProgress` 是**汇总进度**（派生量，不落库），用于列表展示。
+ * <p>
+ * `receivedProgress` 是**汇总进度**（派生量，不落库），用于列表展示。
  *
- * <p>`items` / `allocations` / `logs` **仅 detail 返回**：`allocations` 是跨行扁平化的分配列表
- * （前端「一行多需求」编辑器 A31 用），与 `items[].allocations` 是同一批数据的不同切面。
+ * <p>
+ * `items` / `allocations` / `logs` **仅 detail 返回**：`allocations` 是跨行扁平化的分配列表 （前端「一行多需求」编辑器 A31 用），与
+ * `items[].allocations` 是同一批数据的不同切面。
  */
 @Data
 public class PurchaseOrderVO {
@@ -41,7 +43,8 @@ public class PurchaseOrderVO {
     /**
      * 派生：Σreceived / Σplanned（比例，scale 4，HALF_UP），用于列表进度展示。
      *
-     * <p>无活动收货行时为 {@code null}，表示尚无进度值；超收时比例可大于 1。
+     * <p>
+     * 无活动收货行时为 {@code null}，表示尚无进度值；超收时比例可大于 1。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal receivedProgress;

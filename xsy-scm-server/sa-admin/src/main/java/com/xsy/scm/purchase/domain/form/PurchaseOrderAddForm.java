@@ -17,15 +17,16 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 /**
  * 新建采购单。
  *
- * <p>****：一行（一个 SKU）可以承接**多个**采购需求 —— 由 `items[].allocations[]` 表达，
- * 不是行上的单个 `demandId` 字段。`(item, demand)` 组合在一张采购单内不得重复。
+ * <p>
+ * ****：一行（一个 SKU）可以承接**多个**采购需求 —— 由 `items[].allocations[]` 表达， 不是行上的单个 `demandId` 字段。`(item, demand)` 组合在一张采购单内不得重复。
  *
- * <p>****：需求单位（`demandUnitSnapshot`）与采购单位（`purchaseUnitSnapshot`）是两个独立快照；
+ * <p>
+ * ****：需求单位（`demandUnitSnapshot`）与采购单位（`purchaseUnitSnapshot`）是两个独立快照；
  * 两者不一致时不允许自动分配（`PURCHASE_UNIT_CONVERSION_REQUIRED`）， 不做换算。
  *
- * <p>子表单元类型是本类的**嵌套静态类**（与设计 把 `items[]` / `allocations[]` 画成内联块一致），
- * 因此 `purchase/domain/form` 恰好 17 个 Form 文件。新增与编辑共用同一个 `Item`：
- * `id` / `version` 在新增时为空，编辑保留行时必填（同 `SalesOrderItemForm` 的做法）。
+ * <p>
+ * 子表单元类型是本类的**嵌套静态类**（与设计 把 `items[]` / `allocations[]` 画成内联块一致）， 因此 `purchase/domain/form` 恰好 17 个 Form 文件。新增与编辑共用同一个
+ * `Item`： `id` / `version` 在新增时为空，编辑保留行时必填（同 `SalesOrderItemForm` 的做法）。
  */
 @Data
 public class PurchaseOrderAddForm {

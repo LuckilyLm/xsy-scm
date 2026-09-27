@@ -10,8 +10,8 @@ import java.util.function.Function;
 /**
  * 采购单导出的列目录（只读）。
  *
- * <p>列的<b>唯一事实源在这里</b>：前端「导出设置」只回传它勾选的列 key，本目录按固定顺序过滤并落表头，
- * 未知 key 直接忽略、勾选为空则导出整目录 —— 前端拿不到后端不认识的列，也不会因前端拼字段而改变导出内容。
+ * <p>
+ * 列的<b>唯一事实源在这里</b>：前端「导出设置」只回传它勾选的列 key，本目录按固定顺序过滤并落表头， 未知 key 直接忽略、勾选为空则导出整目录 —— 前端拿不到后端不认识的列，也不会因前端拼字段而改变导出内容。
  * 导出不触碰任何采购状态，是纯粹的读取投影。
  */
 public final class PurchaseOrderExportSupport {
@@ -22,8 +22,7 @@ public final class PurchaseOrderExportSupport {
     public record Column(String key, String title, Function<PurchaseOrderVO, Object> valueExtractor) {
     }
 
-    private static final List<Column> CATALOG = List.of(
-            new Column("orderNo", "采购单号", PurchaseOrderVO::getOrderNo),
+    private static final List<Column> CATALOG = List.of(new Column("orderNo", "采购单号", PurchaseOrderVO::getOrderNo),
             new Column("supplierName", "供应商", PurchaseOrderVO::getSupplierName),
             new Column("supplierCode", "供应商编码", PurchaseOrderVO::getSupplierCode),
             new Column("purchaserName", "采购员", PurchaseOrderVO::getPurchaserName),
@@ -37,8 +36,7 @@ public final class PurchaseOrderExportSupport {
             new Column("cancelReason", "取消原因", PurchaseOrderVO::getCancelReason),
             new Column("shortCloseReason", "少收关单原因", PurchaseOrderVO::getShortCloseReason),
             new Column("submittedAt", "提交时间", PurchaseOrderVO::getSubmittedAt),
-            new Column("createdAt", "创建时间", PurchaseOrderVO::getCreatedAt)
-    );
+            new Column("createdAt", "创建时间", PurchaseOrderVO::getCreatedAt));
 
     /** 勾选为空 / 全部未知时导出整目录；否则按目录固定顺序保留命中的 key。 */
     private static List<Column> resolve(List<String> selected) {

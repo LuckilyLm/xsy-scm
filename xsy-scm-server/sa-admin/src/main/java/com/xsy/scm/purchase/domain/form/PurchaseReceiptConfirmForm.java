@@ -17,11 +17,12 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 /**
  * 确认采购收货。
  *
- * <p>**必须提交本收货单的全部活动行**（`PURCHASE_RECEIPT_ITEM_INCOMPLETE(40998)`），
- * 不允许只提交子集 —— 修 /G11 的「确认了但仍有 0 数量行」歧义。
+ * <p>
+ * **必须提交本收货单的全部活动行**（`PURCHASE_RECEIPT_ITEM_INCOMPLETE(40998)`）， 不允许只提交子集 —— 修 /G11 的「确认了但仍有 0 数量行」歧义。
  *
- * <p>标品：`actualWeight` / `weightSource` / `correctionReason` 必须全空；
- * 非标品：`actualWeight` 必填且 &gt; 0，`weightSource` 必须 == `MANUAL`，有效数量取实重。
+ * <p>
+ * 标品：`actualWeight` / `weightSource` / `correctionReason` 必须全空； 非标品：`actualWeight` 必填且 &gt; 0，`weightSource` 必须 ==
+ * `MANUAL`，有效数量取实重。
  */
 @Data
 public class PurchaseReceiptConfirmForm {

@@ -13,8 +13,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 /**
  * 采购需求。
  *
- * <p>`demandUnit` 是**需求单位**（来自销售订单行的 `sale_unit_snapshot`）；
- * `unallocatedQuantity = requiredQuantity − allocatedQuantity` 是派生量，不落库。
+ * <p>
+ * `demandUnit` 是**需求单位**（来自销售订单行的 `sale_unit_snapshot`）； `unallocatedQuantity = requiredQuantity − allocatedQuantity`
+ * 是派生量，不落库。
  */
 @Data
 public class PurchaseDemandVO {

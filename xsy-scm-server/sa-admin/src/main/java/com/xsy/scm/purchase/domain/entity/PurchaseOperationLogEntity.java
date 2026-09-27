@@ -15,16 +15,16 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 /**
  * 采购操作日志。
  *
- * <p>**只追加**：没有 `version` / `deleted` / `updated_*`，也没有 update / delete 端点。
+ * <p>
+ * **只追加**：没有 `version` / `deleted` / `updated_*`，也没有 update / delete 端点。
  *
- * <p>**归属**：`purchaseOrderId` 与 `purchaseReceiptId` 的取值由 `operationType` 决定，
- * 由 `ck_purchase_operation_log_owner` 在 DB 层强制：
- * `DEMAND_GENERATE` 双 id 为空（此时采购单与收货单都还不存在）·
- * `DEMAND_ALLOCATE` 只有采购单 id（由 `purchaseOrderItemId` 反查）·
- * `CREATE/UPDATE/SUBMIT/CANCEL/SHORT_CLOSE/DELETE` 只有采购单 id ·
- * `RECEIPT_*` 双 id 非空。
+ * <p>
+ * **归属**：`purchaseOrderId` 与 `purchaseReceiptId` 的取值由 `operationType` 决定， 由 `ck_purchase_operation_log_owner` 在 DB 层强制：
+ * `DEMAND_GENERATE` 双 id 为空（此时采购单与收货单都还不存在）· `DEMAND_ALLOCATE` 只有采购单 id（由 `purchaseOrderItemId` 反查）·
+ * `CREATE/UPDATE/SUBMIT/CANCEL/SHORT_CLOSE/DELETE` 只有采购单 id · `RECEIPT_*` 双 id 非空。
  *
- * <p>`beforeData` / `afterData` 写**全量快照**（修），格式与 的 `order_operation_log` 一致。
+ * <p>
+ * `beforeData` / `afterData` 写**全量快照**（修），格式与 的 `order_operation_log` 一致。
  */
 @Data
 @TableName(value = "purchase_operation_log", autoResultMap = true)

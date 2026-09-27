@@ -10,8 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 采购单审计日志载荷；主数据到实体的业务快照由 {@link PurchaseSnapshotFactory} 负责。
- * 数量与金额沿用定点字符串格式，保留 null 与零的区别。
+ * 采购单审计日志载荷；主数据到实体的业务快照由 {@link PurchaseSnapshotFactory} 负责。 数量与金额沿用定点字符串格式，保留 null 与零的区别。
  */
 public final class PurchaseOrderAuditSnapshotFactory {
 

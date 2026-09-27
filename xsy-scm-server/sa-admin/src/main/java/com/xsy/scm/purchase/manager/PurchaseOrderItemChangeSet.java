@@ -18,30 +18,29 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
 /**
  * 采购单**行级**差量（A 段）。
  *
- * <p><b>行身份 = {@code (purchase_order_id, sku_id)}</b>，由
- * {@code uk_purchase_order_item_order_sku_active} 强制（修订后**保留**该索引）。
- * 这与 allocation 身份 `(purchase_order_item_id, purchase_demand_id)` 是两个层次，
- * 必须区分（见 {@link PurchaseOrderAllocationChangeSet}）。
+ * <p>
+ * <b>行身份 = {@code (purchase_order_id, sku_id)}</b>，由 {@code uk_purchase_order_item_order_sku_active} 强制（修订后**保留**该索引）。
+ * 这与 allocation 身份 `(purchase_order_item_id, purchase_demand_id)` 是两个层次， 必须区分（见
+ * {@link PurchaseOrderAllocationChangeSet}）。
  *
- * <p>规则（逐条对应 步骤 1–4）：
+ * <p>
+ * 规则（逐条对应 步骤 1–4）：
  * <ol>
- *   <li>请求内同一 `skuId` 出现两次 → {@code PURCHASE_ORDER_ITEM_DUPLICATE_SKU}；</li>
- *   <li>保留行（`id` 非空）必须属于本单 → 否则 {@code PURCHASE_ORDER_ITEM_NOT_OWNED}；</li>
- *   <li>保留行必须带 `version` → 否则 {@code PURCHASE_ITEM_VERSION_REQUIRED}；
- *       版本必须相等 → 否则 {@code PURCHASE_ORDER_ITEM_VERSION_CONFLICT}；</li>
- *   <li>被删除的行若已收货（`received_quantity > 0`）→ {@code PURCHASE_ORDER_STATE_INVALID}。</li>
+ * <li>请求内同一 `skuId` 出现两次 → {@code PURCHASE_ORDER_ITEM_DUPLICATE_SKU}；</li>
+ * <li>保留行（`id` 非空）必须属于本单 → 否则 {@code PURCHASE_ORDER_ITEM_NOT_OWNED}；</li>
+ * <li>保留行必须带 `version` → 否则 {@code PURCHASE_ITEM_VERSION_REQUIRED}； 版本必须相等 → 否则
+ * {@code PURCHASE_ORDER_ITEM_VERSION_CONFLICT}；</li>
+ * <li>被删除的行若已收货（`received_quantity > 0`）→ {@code PURCHASE_ORDER_STATE_INVALID}。</li>
  * </ol>
  */
-public record PurchaseOrderItemChangeSet(List<PurchaseOrderItemEntity> inserted,
-                                         List<PurchaseOrderItemEntity> updated,
-                                         List<PurchaseOrderItemEntity> removed) {
+public record PurchaseOrderItemChangeSet(List<PurchaseOrderItemEntity> inserted, List<PurchaseOrderItemEntity> updated,
+        List<PurchaseOrderItemEntity> removed) {
 
     /**
-     * 计算差量。`requested` 里的 `id` / `version` 由表单带入，其余字段已由
-     * {@code PurchaseSnapshotFactory} 装配完成。
+     * 计算差量。`requested` 里的 `id` / `version` 由表单带入，其余字段已由 {@code PurchaseSnapshotFactory} 装配完成。
      */
     public static PurchaseOrderItemChangeSet between(List<PurchaseOrderItemEntity> existing,
-                                                     List<PurchaseOrderItemEntity> requested) {
+            List<PurchaseOrderItemEntity> requested) {
         var unmatched = new LinkedHashMap<Long, PurchaseOrderItemEntity>();
         existing.forEach(row -> unmatched.put(row.getId(), row));
 

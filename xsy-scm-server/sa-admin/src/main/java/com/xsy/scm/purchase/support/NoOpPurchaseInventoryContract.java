@@ -1,8 +1,8 @@
 package com.xsy.scm.purchase.support;
 
 /**
- * Disabled placeholder retained to make the absence of a no-op inventory bean explicit.
- * This class must not be registered in Spring; the production bean is supplied by the inventory module.
+ * Disabled placeholder retained to make the absence of a no-op inventory bean explicit. This class must not be
+ * registered in Spring; the production bean is supplied by the inventory module.
  */
 public final class NoOpPurchaseInventoryContract implements PurchaseInventoryContract {
 

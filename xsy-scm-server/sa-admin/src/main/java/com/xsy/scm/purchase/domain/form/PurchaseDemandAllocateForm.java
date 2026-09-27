@@ -11,9 +11,9 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 /**
  * 把一条采购需求分配到某个采购单行。
  *
- * <p>`version` 是**采购需求的版本**（不是采购单行的版本）：分配会改动
- * `purchase_demand.allocated_quantity` 与 `status`，因此必须带需求版本做乐观锁。
- * 缺失 → `PURCHASE_DEMAND_VERSION_REQUIRED(40091)`；不等 → `PURCHASE_DEMAND_VERSION_CONFLICT(40972)`。
+ * <p>
+ * `version` 是**采购需求的版本**（不是采购单行的版本）：分配会改动 `purchase_demand.allocated_quantity` 与 `status`，因此必须带需求版本做乐观锁。 缺失 →
+ * `PURCHASE_DEMAND_VERSION_REQUIRED(40091)`；不等 → `PURCHASE_DEMAND_VERSION_CONFLICT(40972)`。
  */
 @Data
 public class PurchaseDemandAllocateForm {

@@ -20,10 +20,10 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 /**
  * 采购需求 ↔ 采购单行的数量分配。
  *
- * <p>****：`purchase_order_item` 与 `purchase_demand_allocation` 是 **1:N** ——
- * 一行采购行（一个 SKU）可以承接**多个**需求，每个 `(purchase_order_item_id, purchase_demand_id)`
- * 组合至多一条活动 allocation（由 `uk_purchase_demand_allocation_source_active` 强制）。
- * 「一行多需求」由**多行 allocation** 表达。
+ * <p>
+ * ****：`purchase_order_item` 与 `purchase_demand_allocation` 是 **1:N** —— 一行采购行（一个 SKU）可以承接**多个**需求，每个
+ * `(purchase_order_item_id, purchase_demand_id)` 组合至多一条活动 allocation（由 `uk_purchase_demand_allocation_source_active`
+ * 强制）。 「一行多需求」由**多行 allocation** 表达。
  */
 @Data
 @TableName(value = "purchase_demand_allocation", autoResultMap = true)

@@ -6,18 +6,17 @@ import com.xsy.scm.purchase.dao.PurchaseOrderDao;
 import com.xsy.scm.purchase.dao.PurchaseReceiptDao;
 import org.springframework.stereotype.Service;
 
-
 /**
  * Generates purchase order and receipt numbers.
  *
- * <p>Numbers combine a PO / PR prefix, the Asia/Shanghai business date, and a global PostgreSQL sequence.
- * The sequence is never reset daily. Values are padded to six digits and grow naturally beyond 999999.
- * The date uses {@link ScmDocumentNumbers} so it matches the purchase-demand business date.
+ * <p>
+ * Numbers combine a PO / PR prefix, the Asia/Shanghai business date, and a global PostgreSQL sequence. The sequence is
+ * never reset daily. Values are padded to six digits and grow naturally beyond 999999. The date uses
+ * {@link ScmDocumentNumbers} so it matches the purchase-demand business date.
  */
 @Service
 @RequiredArgsConstructor
 public class PurchaseNumberGenerator {
-
 
     private final PurchaseOrderDao purchaseOrderDao;
 

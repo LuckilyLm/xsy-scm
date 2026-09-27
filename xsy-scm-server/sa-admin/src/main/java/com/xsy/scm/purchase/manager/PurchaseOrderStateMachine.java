@@ -10,8 +10,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
 /**
  * 采购单状态机（6 状态）。
  *
- * <p>实现为**声明式策略**，不是散落的 if。转换表与 的 `ck_purchase_order_status` 白名单、
- * 以及 的 – 逐条对应。
+ * <p>
+ * 实现为**声明式策略**，不是散落的 if。转换表与 的 `ck_purchase_order_status` 白名单、 以及 的 – 逐条对应。
  *
  * <pre>
  * DRAFT ──submit──→ SUBMITTED ──收货确认──→ PARTIALLY_RECEIVED ──收货确认──→ RECEIVED
@@ -21,9 +21,10 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
  * CANCELLED ←────────────┘                     SHORT_CLOSED
  * </pre>
  *
- * <p><b></b>：{@code PARTIALLY_RECEIVED} **不允许 cancel**；需要终止时用 {@link #shortClosable}
- * 对应的 {@code shortClose}。
- * <p>{@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED} 是**终态**。
+ * <p>
+ * <b></b>：{@code PARTIALLY_RECEIVED} **不允许 cancel**；需要终止时用 {@link #shortClosable} 对应的 {@code shortClose}。
+ * <p>
+ * {@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED} 是**终态**。
  */
 public final class PurchaseOrderStateMachine {
 
@@ -41,12 +42,12 @@ public final class PurchaseOrderStateMachine {
         }
         return switch (fromStatus) {
             case DRAFT -> Set.of(ScmPurchaseStatusEnum.SUBMITTED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
-            case SUBMITTED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED,
-                    ScmPurchaseStatusEnum.RECEIVED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
+            case SUBMITTED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED, ScmPurchaseStatusEnum.RECEIVED,
+                    ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
             // 同一状态到自身是合法的：第二次收货后仍是 PARTIALLY_RECEIVED
-            case PARTIALLY_RECEIVED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED,
-                    ScmPurchaseStatusEnum.RECEIVED, ScmPurchaseStatusEnum.SHORT_CLOSED).contains(toStatus);
-            default -> false;   // RECEIVED / SHORT_CLOSED / CANCELLED 为终态
+            case PARTIALLY_RECEIVED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED, ScmPurchaseStatusEnum.RECEIVED,
+                    ScmPurchaseStatusEnum.SHORT_CLOSED).contains(toStatus);
+            default -> false; // RECEIVED / SHORT_CLOSED / CANCELLED 为终态
         };
     }
 
@@ -112,8 +113,9 @@ public final class PurchaseOrderStateMachine {
     /**
      * 收货确认后由「全部行是否收齐」推导出的采购单新状态。
      *
-     * <p>注意：**已收满的采购单不再回到 {@code PARTIALLY_RECEIVED}**；只要所有活动行
-     * {@code received >= planned} 就是 {@code RECEIVED}，否则 {@code PARTIALLY_RECEIVED}。
+     * <p>
+     * 注意：**已收满的采购单不再回到 {@code PARTIALLY_RECEIVED}**；只要所有活动行 {@code received >= planned} 就是 {@code RECEIVED}，否则
+     * {@code PARTIALLY_RECEIVED}。
      */
     public static String afterReceipt(boolean allLinesFulfilled) {
         return allLinesFulfilled

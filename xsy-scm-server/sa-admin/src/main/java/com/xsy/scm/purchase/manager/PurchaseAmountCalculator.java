@@ -17,9 +17,9 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_PRICE_INV
  * total_amount = Σ line_amount（create / update 时重算）
  * </pre>
  *
- * <p>收货**不改变** {@code total_amount}： 没有「实际金额」字段。
- * 与 的 {@code OrderAmountCalculator} 同口径：{@code null} 参与运算时结果保持 {@code null}，
- * 不把「无值」静默变成 {@code 0.0000}。
+ * <p>
+ * 收货**不改变** {@code total_amount}： 没有「实际金额」字段。 与 的 {@code OrderAmountCalculator} 同口径：{@code null} 参与运算时结果保持
+ * {@code null}， 不把「无值」静默变成 {@code 0.0000}。
  */
 public final class PurchaseAmountCalculator {
 

@@ -8,11 +8,12 @@ import java.time.OffsetDateTime;
 /**
  * 生成采购需求（汇总已确认销售订单行）。
  *
- * <p>`startAt` / `endAt` 是**半开区间** `[startAt, endAt)`，按 `sales_order.confirmed_at` 过滤；
- * `startAt < endAt` 由 Service 校验（否则 `PURCHASE_QUANTITY_INVALID`）。
+ * <p>
+ * `startAt` / `endAt` 是**半开区间** `[startAt, endAt)`，按 `sales_order.confirmed_at` 过滤； `startAt < endAt` 由 Service 校验（否则
+ * `PURCHASE_QUANTITY_INVALID`）。
  *
- * <p>****：生成出来的 `demand_date` 取每行 `source_confirmed_at` 在 `Asia/Shanghai` 下的日期，
- * **不是**本窗口的第一天 —— 跨多日窗口不会被压平成同一天。
+ * <p>
+ * ****：生成出来的 `demand_date` 取每行 `source_confirmed_at` 在 `Asia/Shanghai` 下的日期， **不是**本窗口的第一天 —— 跨多日窗口不会被压平成同一天。
  */
 @Data
 public class PurchaseDemandGenerateForm {
