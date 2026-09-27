@@ -49,7 +49,7 @@ public class ScmDataScopeService {
     public static final String PURCHASE_ALL_PERM = ScmCrossDomainPermission.PURCHASE_SCOPE_ALL_QUERY;
 
     /** 查看全部司机与线路（调度岗）；普通司机只看绑定到自己名下的线路。 */
-    public static final String DELIVERY_ALL_PERM = "scm:delivery:scope:all:query";
+    public static final String DELIVERY_ALL_PERM = ScmCrossDomainPermission.DELIVERY_SCOPE_ALL_QUERY;
 
     /** 客户业务归属分配/改派权；持有者才能把 {@code seller_id} 写成别人，或看到未分配客户。 */
     public static final String CUSTOMER_ASSIGN_PERM = "scm:customer:assign";
@@ -58,7 +58,7 @@ public class ScmDataScopeService {
     public static final String PURCHASE_ASSIGN_PERM = ScmCrossDomainPermission.PURCHASE_ASSIGN;
 
     /** 配送订单金额可见权：司机默认隐藏金额，需要时由这个独立权限开放。 */
-    public static final String DELIVERY_AMOUNT_PERM = "scm:delivery:amount:query";
+    public static final String DELIVERY_AMOUNT_PERM = ScmCrossDomainPermission.DELIVERY_AMOUNT_QUERY;
 
     private final ScmDataScopeDao dataScopeDao;
 

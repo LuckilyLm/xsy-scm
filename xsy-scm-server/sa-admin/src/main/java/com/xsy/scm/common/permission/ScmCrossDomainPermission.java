@@ -11,6 +11,10 @@ public final class ScmCrossDomainPermission {
 
     public static final String PURCHASE_SCOPE_ALL_QUERY = "scm:purchase:scope:all:query";
 
+    public static final String DELIVERY_SCOPE_ALL_QUERY = "scm:delivery:scope:all:query";
+
+    public static final String DELIVERY_AMOUNT_QUERY = "scm:delivery:amount:query";
+
     private ScmCrossDomainPermission() {
     }
 }
