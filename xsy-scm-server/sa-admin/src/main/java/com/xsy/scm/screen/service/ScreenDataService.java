@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 数据大屏只读聚合服务。
@@ -103,18 +104,24 @@ public class ScreenDataService {
         OffsetDateTime[] range = todayRange();
         ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenBusinessVO vo = new ScreenBusinessVO();
-        vo.setTodayOrderCount(nullToZero(screenDataDao.countConfirmedOrders(range[0], range[1], scope)));
-        vo.setTodayOrderedAmount(nullToZero(screenDataDao.sumOrderedAmount(range[0], range[1], scope)));
-        vo.setTodaySettlementAmount(nullToZero(screenDataDao.sumSettlementAmount(range[0], range[1], scope)));
-        vo.setTotalOrderCount(nullToZero(screenDataDao.countTotalConfirmedOrders(scope)));
-        vo.setTotalSettlementAmount(nullToZero(screenDataDao.sumTotalSettlementAmount(scope)));
-        vo.setCustomerCount(nullToZero(screenDataDao.countCustomers(scope)));
-        vo.setSupplierCount(nullToZero(screenDataDao.countSuppliers()));
-        vo.setSkuCount(nullToZero(screenDataDao.countSkus()));
+        vo.setTodayOrderCount(Objects.requireNonNullElse(
+                screenDataDao.countConfirmedOrders(range[0], range[1], scope), 0L));
+        vo.setTodayOrderedAmount(Objects.requireNonNullElse(
+                screenDataDao.sumOrderedAmount(range[0], range[1], scope), BigDecimal.ZERO));
+        vo.setTodaySettlementAmount(Objects.requireNonNullElse(
+                screenDataDao.sumSettlementAmount(range[0], range[1], scope), BigDecimal.ZERO));
+        vo.setTotalOrderCount(Objects.requireNonNullElse(screenDataDao.countTotalConfirmedOrders(scope), 0L));
+        vo.setTotalSettlementAmount(Objects.requireNonNullElse(
+                screenDataDao.sumTotalSettlementAmount(scope), BigDecimal.ZERO));
+        vo.setCustomerCount(Objects.requireNonNullElse(screenDataDao.countCustomers(scope), 0L));
+        vo.setSupplierCount(Objects.requireNonNullElse(screenDataDao.countSuppliers(), 0L));
+        vo.setSkuCount(Objects.requireNonNullElse(screenDataDao.countSkus(), 0L));
         vo.setTodayCustomerCount(
-                nullToZero(screenDataDao.countCustomersWithOrdersInRange(range[0], range[1], scope)));
+                Objects.requireNonNullElse(
+                        screenDataDao.countCustomersWithOrdersInRange(range[0], range[1], scope), 0L));
         vo.setTodaySupplierCount(
-                nullToZero(screenDataDao.countSuppliersWithOrdersInRange(range[0], range[1], scope)));
+                Objects.requireNonNullElse(
+                        screenDataDao.countSuppliersWithOrdersInRange(range[0], range[1], scope), 0L));
         vo.setTopCustomers(
                 nullToEmpty(screenDataDao.topCustomersBySettlement(range[0], range[1], TOP_RANK_LIMIT, scope)));
         vo.setTopProducts(
@@ -126,13 +133,13 @@ public class ScreenDataService {
         OffsetDateTime[] range = todayRange();
         ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenInventoryVO vo = new ScreenInventoryVO();
-        vo.setTotalQuantity(nullToZero(screenDataDao.sumInventoryQuantity(scope)));
-        vo.setSkuCount(nullToZero(screenDataDao.countInventorySkus(scope)));
-        vo.setWarehouseCount(nullToZero(screenDataDao.countEnabledWarehouses(scope)));
-        vo.setTodayInboundCount(nullToZero(
-                screenDataDao.countMovementsByTypeAndRange(INBOUND_MOVEMENT_TYPES, range[0], range[1], scope)));
-        vo.setTodayOutboundCount(nullToZero(
-                screenDataDao.countMovementsByTypeAndRange(OUTBOUND_MOVEMENT_TYPES, range[0], range[1], scope)));
+        vo.setTotalQuantity(Objects.requireNonNullElse(screenDataDao.sumInventoryQuantity(scope), BigDecimal.ZERO));
+        vo.setSkuCount(Objects.requireNonNullElse(screenDataDao.countInventorySkus(scope), 0L));
+        vo.setWarehouseCount(Objects.requireNonNullElse(screenDataDao.countEnabledWarehouses(scope), 0L));
+        vo.setTodayInboundCount(Objects.requireNonNullElse(
+                screenDataDao.countMovementsByTypeAndRange(INBOUND_MOVEMENT_TYPES, range[0], range[1], scope), 0L));
+        vo.setTodayOutboundCount(Objects.requireNonNullElse(
+                screenDataDao.countMovementsByTypeAndRange(OUTBOUND_MOVEMENT_TYPES, range[0], range[1], scope), 0L));
         vo.setWarehouseDistribution(nullToEmpty(screenDataDao.inventoryDistributionByWarehouse(scope)));
         vo.setHealth(buildHealth(scope));
         vo.setWarehouseNodes(nullToEmpty(
@@ -200,11 +207,15 @@ public class ScreenDataService {
         OffsetDateTime[] range = todayRange();
         ScmDataScopeContext scope = dataScopeService.resolve();
         ScreenPurchaseVO vo = new ScreenPurchaseVO();
-        vo.setTodayPurchaseOrderCount(nullToZero(screenDataDao.countPurchaseOrders(range[0], range[1], scope)));
-        vo.setTodayPurchaseAmount(nullToZero(screenDataDao.sumPurchaseAmount(range[0], range[1], scope)));
-        vo.setTotalPurchaseOrderCount(nullToZero(screenDataDao.countTotalPurchaseOrders(scope)));
-        vo.setTotalPurchaseAmount(nullToZero(screenDataDao.sumTotalPurchaseAmount(scope)));
-        vo.setTodayReceiptCount(nullToZero(screenDataDao.countReceipts(range[0], range[1], scope)));
+        vo.setTodayPurchaseOrderCount(Objects.requireNonNullElse(
+                screenDataDao.countPurchaseOrders(range[0], range[1], scope), 0L));
+        vo.setTodayPurchaseAmount(Objects.requireNonNullElse(
+                screenDataDao.sumPurchaseAmount(range[0], range[1], scope), BigDecimal.ZERO));
+        vo.setTotalPurchaseOrderCount(Objects.requireNonNullElse(screenDataDao.countTotalPurchaseOrders(scope), 0L));
+        vo.setTotalPurchaseAmount(Objects.requireNonNullElse(
+                screenDataDao.sumTotalPurchaseAmount(scope), BigDecimal.ZERO));
+        vo.setTodayReceiptCount(Objects.requireNonNullElse(
+                screenDataDao.countReceipts(range[0], range[1], scope), 0L));
         return vo;
     }
 
@@ -238,13 +249,13 @@ public class ScreenDataService {
         for (ScreenTrendVO.Point p : points) {
             dates.add(p.getLabel());
             fullDates.add(p.getDate());
-            sales.add(nullToZero(p.getSales()));
-            orders.add(nullToZero(p.getOrders()));
-            purchaseAmounts.add(nullToZero(p.getPurchaseAmounts()));
-            purchaseOrders.add(nullToZero(p.getPurchaseOrders()));
-            inventoryQuantity.add(nullToZero(p.getInventoryQuantity()));
-            inboundQuantity.add(nullToZero(p.getInboundQuantity()));
-            outboundQuantity.add(nullToZero(p.getOutboundQuantity()));
+            sales.add(Objects.requireNonNullElse(p.getSales(), BigDecimal.ZERO));
+            orders.add(Objects.requireNonNullElse(p.getOrders(), 0L));
+            purchaseAmounts.add(Objects.requireNonNullElse(p.getPurchaseAmounts(), BigDecimal.ZERO));
+            purchaseOrders.add(Objects.requireNonNullElse(p.getPurchaseOrders(), 0L));
+            inventoryQuantity.add(Objects.requireNonNullElse(p.getInventoryQuantity(), BigDecimal.ZERO));
+            inboundQuantity.add(Objects.requireNonNullElse(p.getInboundQuantity(), BigDecimal.ZERO));
+            outboundQuantity.add(Objects.requireNonNullElse(p.getOutboundQuantity(), BigDecimal.ZERO));
         }
 
         ScreenTrendVO vo = new ScreenTrendVO();
@@ -305,14 +316,6 @@ public class ScreenDataService {
         provinces.sort(Comparator.comparingLong(ScreenGeoVO.ProvinceNode::getCustomerCount).reversed()
                 .thenComparing(ScreenGeoVO.ProvinceNode::getProvinceCode));
         return provinces;
-    }
-
-    private static Long nullToZero(Long value) {
-        return value == null ? 0L : value;
-    }
-
-    private static BigDecimal nullToZero(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
     }
 
     private static <T> List<T> nullToEmpty(List<T> value) {
