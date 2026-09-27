@@ -16,7 +16,8 @@ public class JsonbStringMapTypeHandler extends BaseTypeHandler<Map<String, Strin
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
-    public void setNonNullParameter(PreparedStatement statement, int index, Map<String, String> value, JdbcType type) throws SQLException {
+    public void setNonNullParameter(PreparedStatement statement, int index, Map<String, String> value, JdbcType type)
+            throws SQLException {
         try {
             PGobject json = new PGobject();
             json.setType("jsonb");
@@ -28,7 +29,8 @@ public class JsonbStringMapTypeHandler extends BaseTypeHandler<Map<String, Strin
     }
 
     private Map<String, String> read(String value) throws SQLException {
-        if (value == null) return null;
+        if (value == null)
+            return null;
         try {
             return JSON.readValue(value, new TypeReference<>() {
             });

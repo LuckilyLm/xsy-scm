@@ -14,8 +14,7 @@ public class ScmEnumValueValidator implements ConstraintValidator<ScmEnumValue, 
 
     @Override
     public void initialize(ScmEnumValue constraintAnnotation) {
-        enumNames = Arrays.stream(constraintAnnotation.enumClass().getEnumConstants())
-                .map(Enum::name)
+        enumNames = Arrays.stream(constraintAnnotation.enumClass().getEnumConstants()).map(Enum::name)
                 .collect(Collectors.toUnmodifiableSet());
     }
 

@@ -7,13 +7,12 @@ import java.util.Set;
 /**
  * 单个维度（仓库 / 客户业务员 / 订单业务员 / 采购员 / 司机）的授权取值范围。
  *
- * <p>只有两个极端形态是显式的：{@link #all()} 表示「本维度不收窄」，{@link #none()} 表示
- * 「本维度无任何授权」。两者都不用 {@code null} 表达，因为 {@code null} 会被调用方读成「全部」，
- * 而本类的默认语义是失败关闭：没有授权就查不到数据
- * （裁决见 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4 条）。
+ * <p>
+ * 只有两个极端形态是显式的：{@link #all()} 表示「本维度不收窄」，{@link #none()} 表示 「本维度无任何授权」。两者都不用 {@code null} 表达，因为 {@code null}
+ * 会被调用方读成「全部」， 而本类的默认语义是失败关闭：没有授权就查不到数据 （裁决见 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4 条）。
  *
- * <p>{@link #isAll()} 为真时 Mapper 不拼任何本维度谓词，因此 {@code owner_id IS NULL}
- * 的未分配行也照常可见；反之 {@code IN (...)} 天然排除 NULL，
+ * <p>
+ * {@link #isAll()} 为真时 Mapper 不拼任何本维度谓词，因此 {@code owner_id IS NULL} 的未分配行也照常可见；反之 {@code IN (...)} 天然排除 NULL，
  * 正好对应「未分配数据普通业务员不可见」。
  */
 public final class ScmValueScope {

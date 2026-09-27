@@ -30,18 +30,18 @@ public class ScmIdempotencyService {
     }
 
     public Claim claim(String scope, String key, Object request) {
-        return claim(scope, key, request,
-                ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED,
-                ScmCommonErrorCode.IDEMPOTENCY_KEY_INVALID,
-                ScmCommonErrorCode.IDEMPOTENCY_CONFLICT,
+        return claim(scope, key, request, ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED,
+                ScmCommonErrorCode.IDEMPOTENCY_KEY_INVALID, ScmCommonErrorCode.IDEMPOTENCY_CONFLICT,
                 "已提交的幂等记录缺少 result_data（数据完整性异常）");
     }
 
     public Claim claim(String scope, String key, Object request, ScmErrorCode missingKeyError,
             ScmErrorCode invalidKeyError, ScmErrorCode conflictError, String incompleteResultMessage) {
-        if (StringUtils.isBlank(key)) throw new ScmBusinessException(missingKeyError);
+        if (StringUtils.isBlank(key))
+            throw new ScmBusinessException(missingKeyError);
         String normalizedKey = key.trim();
-        if (normalizedKey.length() > MAX_KEY_LENGTH) throw new ScmBusinessException(invalidKeyError);
+        if (normalizedKey.length() > MAX_KEY_LENGTH)
+            throw new ScmBusinessException(invalidKeyError);
 
         String operator = ScmOperator.current();
         String operationScope = operator + ":" + scope;
@@ -56,8 +56,10 @@ public class ScmIdempotencyService {
             return new Claim(idempotencyRecordDao.find(operationScope, normalizedKey), false);
         }
         row = idempotencyRecordDao.find(operationScope, normalizedKey);
-        if (!Objects.equals(requestHash, row.getRequestHash())) throw new ScmBusinessException(conflictError);
-        if (row.getResultData() == null) throw new IllegalStateException(incompleteResultMessage);
+        if (!Objects.equals(requestHash, row.getRequestHash()))
+            throw new ScmBusinessException(conflictError);
+        if (row.getResultData() == null)
+            throw new IllegalStateException(incompleteResultMessage);
         return new Claim(row, true);
     }
 

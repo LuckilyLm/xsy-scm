@@ -12,8 +12,9 @@ import java.lang.annotation.Target;
 /**
  * Validates a String against enum constant names without changing the JSON field type.
  *
- * <p>{@code null} passes this constraint so callers can combine it with {@code @NotNull} or
- * {@code @NotBlank} and provide a field-specific message for required values.
+ * <p>
+ * {@code null} passes this constraint so callers can combine it with {@code @NotNull} or {@code @NotBlank} and provide
+ * a field-specific message for required values.
  */
 @Documented
 @Constraint(validatedBy = ScmEnumValueValidator.class)

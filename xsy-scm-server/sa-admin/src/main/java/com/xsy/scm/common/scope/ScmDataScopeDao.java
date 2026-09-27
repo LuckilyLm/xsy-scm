@@ -6,8 +6,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 数据范围的只读取数入口：把「这个员工能看哪些仓 / 绑了哪个司机」集中成一次查询，
- * 供 {@link ScmDataScopeService} 解析。业务 Dao 不各自拼范围条件。
+ * 数据范围的只读取数入口：把「这个员工能看哪些仓 / 绑了哪个司机」集中成一次查询， 供 {@link ScmDataScopeService} 解析。业务 Dao 不各自拼范围条件。
  */
 @Mapper
 public interface ScmDataScopeDao {

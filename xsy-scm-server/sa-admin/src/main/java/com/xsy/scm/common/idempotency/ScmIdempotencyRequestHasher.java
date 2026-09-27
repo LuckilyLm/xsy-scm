@@ -35,8 +35,7 @@ public final class ScmIdempotencyRequestHasher {
     private String canonical(JsonNode node) throws JsonProcessingException {
         if (node.isObject()) {
             var sorted = objectMapper.createObjectNode();
-            node.properties().stream()
-                    .sorted(Map.Entry.comparingByKey())
+            node.properties().stream().sorted(Map.Entry.comparingByKey())
                     .forEach(property -> sorted.set(property.getKey(), canonicalNode(property.getValue())));
             return objectMapper.writeValueAsString(sorted);
         }
@@ -46,8 +45,7 @@ public final class ScmIdempotencyRequestHasher {
     private JsonNode canonicalNode(JsonNode node) {
         if (node.isObject()) {
             var sorted = objectMapper.createObjectNode();
-            node.properties().stream()
-                    .sorted(Map.Entry.comparingByKey())
+            node.properties().stream().sorted(Map.Entry.comparingByKey())
                     .forEach(property -> sorted.set(property.getKey(), canonicalNode(property.getValue())));
             return sorted;
         }

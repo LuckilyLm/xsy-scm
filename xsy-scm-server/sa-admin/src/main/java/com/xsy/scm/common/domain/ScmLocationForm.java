@@ -28,8 +28,7 @@ public class ScmLocationForm {
     @AssertTrue(message = "经纬度和坐标系必须同时填写或同时清空")
     public boolean isLocationComplete() {
         return longitude == null && latitude == null && geomCrs == null
-                || longitude != null && latitude != null
-                && (ScmGeoCoordinateSystemEnum.GCJ02.name().equals(geomCrs)
-                || ScmGeoCoordinateSystemEnum.WGS84.name().equals(geomCrs));
+                || longitude != null && latitude != null && (ScmGeoCoordinateSystemEnum.GCJ02.name().equals(geomCrs)
+                        || ScmGeoCoordinateSystemEnum.WGS84.name().equals(geomCrs));
     }
 }
