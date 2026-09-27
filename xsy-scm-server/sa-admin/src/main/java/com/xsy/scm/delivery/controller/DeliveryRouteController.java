@@ -53,6 +53,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 public class DeliveryRouteController {
     private final DeliveryRouteService deliveryRouteService;
     private final DeliveryRouteQueryService deliveryRouteQueryService;
+    private final DeliveryRoutePrintService deliveryRoutePrintService;
     private final DeliveryCandidateOrderQueryService deliveryCandidateOrderQueryService;
     private final DeliveryDriverService deliveryDriverService;
     private final DeliveryVehicleService deliveryVehicleService;
@@ -102,7 +103,7 @@ public class DeliveryRouteController {
     public ResponseDTO<DeliveryPrintResultVO> printOrders(@PathVariable Long id,
             @Valid @RequestBody DeliveryPrintOrdersForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(deliveryRouteService.printOrders(id, form, key));
+        return ResponseDTO.ok(deliveryRoutePrintService.printOrders(id, form, key));
     }
 
     @PostMapping("/routes/{id}/print/customers")
@@ -111,7 +112,7 @@ public class DeliveryRouteController {
     public ResponseDTO<DeliveryPrintResultVO> printCustomers(@PathVariable Long id,
             @Valid @RequestBody DeliveryPrintCustomersForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(deliveryRouteService.printCustomers(id, form, key));
+        return ResponseDTO.ok(deliveryRoutePrintService.printCustomers(id, form, key));
     }
 
     @PostMapping("/routes")

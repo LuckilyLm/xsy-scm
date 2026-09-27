@@ -7,7 +7,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,9 +30,7 @@ import com.xsy.scm.delivery.dao.DeliveryRouteOrderDao;
 import com.xsy.scm.delivery.dao.DeliveryRouteStopDao;
 import com.xsy.scm.delivery.dao.DeliveryVehicleDao;
 import com.xsy.scm.delivery.constant.ScmDeliveryAssignmentStatusEnum;
-import com.xsy.scm.delivery.constant.ScmDeliveryCustomerPrintFilterEnum;
 import com.xsy.scm.delivery.constant.ScmDeliveryIdempotencyResourceTypeEnum;
-import com.xsy.scm.delivery.constant.ScmDeliveryOrderPrintFilterEnum;
 import com.xsy.scm.delivery.constant.ScmDeliveryRouteStatusEnum;
 import com.xsy.scm.delivery.constant.ScmDeliverySignResultEnum;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
@@ -53,7 +50,6 @@ import com.xsy.scm.delivery.domain.form.DeliveryStopForm;
 import com.xsy.scm.delivery.domain.form.DeliveryVersionForm;
 import com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryDispatchResultVO;
-import com.xsy.scm.delivery.domain.vo.DeliveryOrderViewVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryPrintResultVO;
 import com.xsy.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.inventory.service.InventoryFulfillmentService;
@@ -79,9 +75,6 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @Service
 @RequiredArgsConstructor
 public class DeliveryRouteService {
-    // 与只读预览 DeliveryRouteQueryService.print 保持同一可打印状态集合。
-    private static final Set<String> PRINTABLE = Set.of(ScmDeliveryRouteStatusEnum.PLANNED.name(),
-            ScmDeliveryRouteStatusEnum.DISPATCHED.name(), ScmDeliveryRouteStatusEnum.COMPLETED.name());
     private final DeliveryRouteDao deliveryRouteDao;
     private final DeliveryRouteStopDao deliveryRouteStopDao;
     private final DeliveryRouteOrderDao deliveryRouteOrderDao;
@@ -92,6 +85,7 @@ public class DeliveryRouteService {
     private final SalesOrderDao salesOrderDao;
     private final DeliveryEligibilityPolicy eligibility;
     private final ScmIdempotencyService idempotencyService;
+    private final DeliveryRoutePrintService deliveryRoutePrintService;
     /**
      * 库存域唯一的写入口：本类不直接修改余额、预留或库存流水。
      */
@@ -503,20 +497,7 @@ public class DeliveryRouteService {
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
-        var claim = idempotencyService.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
-        // 重放结果取自幂等记录里的原始明细，金额同样要在返回前过一遍可见性口径。
-        if (claim.replay())
-            return DeliveryVisibility.current()
-                    .printResult(idempotencyService.replay(claim, DeliveryPrintResultVO.class));
-        printable(lock(id, form.getVersion()));
-        var wanted = new HashSet<>(form.getOrderIds());
-        var selected = active(id).stream().filter(a -> wanted.contains(a.getOrderId())).toList();
-        // 请求集合必须在锁定的 ACTIVE 集合中一一对应；缺少任一订单说明预览后线路已变化，拒绝旧请求。
-        if (selected.size() != wanted.size())
-            throw new ScmBusinessException(STATE_INVALID);
-        var result = recordAndBuild(id, selected);
-        idempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
-        return DeliveryVisibility.current().printResult(result);
+        return deliveryRoutePrintService.printOrders(id, form, key);
     }
 
     /**
@@ -525,106 +506,7 @@ public class DeliveryRouteService {
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
-        var claim = idempotencyService.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
-        if (claim.replay())
-            return DeliveryVisibility.current()
-                    .printResult(idempotencyService.replay(claim, DeliveryPrintResultVO.class));
-        printable(lock(id, form.getVersion()));
-        var customerStatusFilter = customerPrintFilter(form.getCustomerStatusFilter(),
-                ScmDeliveryCustomerPrintFilterEnum.ALL);
-        var candidates = form.getCustomerIds() == null ? Set.<Long>of() : new HashSet<>(form.getCustomerIds());
-        if (candidates.isEmpty() && customerStatusFilter == ScmDeliveryCustomerPrintFilterEnum.ALL)
-            throw new ScmBusinessException(VALIDATION_ERROR);
-        var orderFilter = orderPrintFilter(form.getOrderPrintFilter());
-        var selected = new ArrayList<DeliveryRouteOrderEntity>();
-        // 聚合键用 LinkedHashMap：线路锁内读到的顺序即打印顺序，两次同请求生成同一份清单。
-        for (var entry : active(id).stream().collect(
-                Collectors.groupingBy(DeliveryRouteOrderEntity::getCustomerId, LinkedHashMap::new, Collectors.toList()))
-                .entrySet()) {
-            if (!candidates.isEmpty() && !candidates.contains(entry.getKey()))
-                continue;
-            if (!matchesCustomerStatus(customerStatusFilter, entry.getValue()))
-                continue;
-            entry.getValue().stream().filter(a -> matchesOrderPrint(orderFilter, a)).forEach(selected::add);
-        }
-        if (selected.isEmpty())
-            throw new ScmBusinessException(STATE_INVALID);
-        var result = recordAndBuild(id, selected);
-        idempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
-        return DeliveryVisibility.current().printResult(result);
-    }
-
-    /**
-     * 客户维度打印状态：与只读 customerView 的判定口径一致（已打印有效订单数对比总有效订单数）。
-     */
-    private boolean matchesCustomerStatus(ScmDeliveryCustomerPrintFilterEnum statusFilter,
-            List<DeliveryRouteOrderEntity> customerOrders) {
-        if (statusFilter == ScmDeliveryCustomerPrintFilterEnum.ALL)
-            return true;
-        long printed = customerOrders.stream().filter(a -> hasPrinted(a)).count();
-        return switch (statusFilter) {
-            case PRINTED -> printed == customerOrders.size();
-            case UNPRINTED -> printed == 0;
-            case PARTIAL -> printed > 0 && printed < customerOrders.size();
-            default -> throw new ScmBusinessException(VALIDATION_ERROR);
-        };
-    }
-
-    private boolean matchesOrderPrint(ScmDeliveryOrderPrintFilterEnum orderFilter,
-            DeliveryRouteOrderEntity assignment) {
-        return switch (orderFilter) {
-            case PRINTED -> hasPrinted(assignment);
-            case UNPRINTED -> !hasPrinted(assignment);
-            case ALL -> true;
-            default -> throw new ScmBusinessException(VALIDATION_ERROR);
-        };
-    }
-
-    private ScmDeliveryCustomerPrintFilterEnum customerPrintFilter(String value,
-            ScmDeliveryCustomerPrintFilterEnum defaultValue) {
-        if (value == null)
-            return defaultValue;
-        try {
-            return ScmDeliveryCustomerPrintFilterEnum.valueOf(value);
-        } catch (IllegalArgumentException exception) {
-            throw new ScmBusinessException(VALIDATION_ERROR);
-        }
-    }
-
-    private ScmDeliveryOrderPrintFilterEnum orderPrintFilter(String value) {
-        if (value == null)
-            return ScmDeliveryOrderPrintFilterEnum.ALL;
-        try {
-            return ScmDeliveryOrderPrintFilterEnum.valueOf(value);
-        } catch (IllegalArgumentException exception) {
-            throw new ScmBusinessException(VALIDATION_ERROR);
-        }
-    }
-
-    private boolean hasPrinted(DeliveryRouteOrderEntity assignment) {
-        return assignment.getPrintCount() != null && assignment.getPrintCount() > 0;
-    }
-
-    private DeliveryPrintResultVO recordAndBuild(Long id, List<DeliveryRouteOrderEntity> selected) {
-        var ids = selected.stream().map(DeliveryRouteOrderEntity::getId).toList();
-        if (deliveryQueryDao.markPrinted(ids, ScmOperator.current()) != ids.size())
-            throw new ScmBusinessException(STATE_INVALID);
-        var orderIds = new HashSet<>(selected.stream().map(DeliveryRouteOrderEntity::getOrderId).toList());
-        var rows = deliveryQueryDao.orderView(id).stream()
-                .filter(orderView -> orderIds.contains(orderView.getOrderId())).toList();
-        var result = new DeliveryPrintResultVO();
-        result.setRouteId(id);
-        result.setGeneratedAt(OffsetDateTime.now());
-        result.setOrderCount(rows.size());
-        result.setTotalAmount(rows.stream().map(DeliveryOrderViewVO::getOrderAmount).filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
-        result.setOrders(rows);
-        return result;
-    }
-
-    private void printable(DeliveryRouteEntity route) {
-        if (!PRINTABLE.contains(route.getStatus()))
-            throw new ScmBusinessException(STATE_INVALID);
+        return deliveryRoutePrintService.printCustomers(id, form, key);
     }
 
     private List<DeliveryRouteOrderEntity> active(Long id) {
