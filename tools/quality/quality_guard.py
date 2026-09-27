@@ -306,6 +306,19 @@ def magic_string_literals(source: JavaSource, vocabulary: dict[str, set[str]]) -
     for literal in source.string_literals:
         if literal.text_block or literal.value not in vocabulary:
             continue
+        if (
+            source.relative_path == (
+                "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/manager/CustomerValidator.java"
+            )
+            and literal.value == "GROUP"
+            and re.search(
+                r"\bGROUP_TYPE_CODE\s*=\s*\"GROUP\"\s*;",
+                source.code.splitlines()[literal.line - 1],
+            )
+        ):
+            # GROUP_TYPE_CODE is a reserved customer-type code. Its value happens to match
+            # ScmSettleModeEnum.GROUP, but the two strings represent different business fields.
+            continue
         owners = sorted(vocabulary[literal.value])
         findings.append(
             Finding(
