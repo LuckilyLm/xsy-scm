@@ -86,7 +86,8 @@ public class ProductImportService {
 
     /** CREATE 整批新增；UPDATE 按定位键改写既存商品，两者语义不可混用。 */
     public enum ImportMode {
-        CREATE, UPDATE
+        CREATE,
+        UPDATE
     }
 
     public ProductImportResultVO importFile(MultipartFile file, ImportMode mode) throws Exception {
