@@ -22,7 +22,6 @@ import com.xsy.scm.sorting.domain.entity.SortingTaskItemEntity;
 import com.xsy.scm.sorting.domain.form.SortingActionForm;
 import com.xsy.scm.sorting.domain.form.SortingAssignForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
-import com.xsy.scm.sorting.domain.form.SortingEntryItemForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import com.xsy.scm.sorting.domain.vo.SortingPrintResultVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskDetailVO;
