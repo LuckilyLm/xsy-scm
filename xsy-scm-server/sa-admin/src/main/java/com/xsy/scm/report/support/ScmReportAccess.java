@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.xsy.scm.report.constant.ScmReportPermission;
 
 /**
  * 报表的字段级权限收口（Finance R0 计划 §32）。
@@ -22,7 +23,7 @@ import cn.dev33.satoken.stp.StpUtil;
 public final class ScmReportAccess {
 
     /** 成本查看权限码；必须与 V50 种下的 {@code t_menu.api_perms} 逐字一致。 */
-    public static final String COST_QUERY_PERM = "scm:report:cost:query";
+    public static final String COST_QUERY_PERM = ScmReportPermission.COST_QUERY;
 
     private ScmReportAccess() {
     }
@@ -33,7 +34,7 @@ public final class ScmReportAccess {
      */
     public static boolean canViewCost() {
         try {
-            return StpUtil.hasPermission(COST_QUERY_PERM);
+            return StpUtil.hasPermission(ScmReportPermission.COST_QUERY);
         } catch (RuntimeException notLoggedIn) {
             return false;
         }

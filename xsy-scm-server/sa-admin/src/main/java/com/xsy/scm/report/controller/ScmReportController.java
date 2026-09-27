@@ -1,5 +1,7 @@
 package com.xsy.scm.report.controller;
 
+import com.xsy.scm.report.constant.ScmReportPermission;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
@@ -76,19 +78,19 @@ public class ScmReportController {
     // ==================== 经营概览 ====================
 
     @PostMapping("/overview")
-    @SaCheckPermission("scm:report:overview:query")
+    @SaCheckPermission(ScmReportPermission.OVERVIEW_QUERY)
     public ResponseDTO<ReportOverviewVO> overview(@Valid @RequestBody ScmOverviewReportQueryForm form) {
         return ResponseDTO.ok(overviewReportService.overview(form));
     }
 
     @PostMapping("/overview/trend")
-    @SaCheckPermission("scm:report:overview:query")
+    @SaCheckPermission(ScmReportPermission.OVERVIEW_QUERY)
     public ResponseDTO<List<ReportDailyStatVO>> overviewTrend(@Valid @RequestBody ScmOverviewReportQueryForm form) {
         return ResponseDTO.ok(overviewReportService.dailyStat(form));
     }
 
     @PostMapping("/overview/daily")
-    @SaCheckPermission("scm:report:overview:query")
+    @SaCheckPermission(ScmReportPermission.OVERVIEW_QUERY)
     public ResponseDTO<List<ReportDailyStatVO>> overviewDaily(@Valid @RequestBody ScmOverviewReportQueryForm form) {
         return ResponseDTO.ok(overviewReportService.dailyStat(form));
     }
@@ -96,59 +98,60 @@ public class ScmReportController {
     // ==================== 销售分析 ====================
 
     @PostMapping("/sales/product")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<PageResult<SalesReportVO.ProductRow>> salesProduct(
             @Valid @RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.byProduct(form));
     }
 
     @PostMapping("/sales/product/top")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<List<SalesReportVO.TopItem>> salesProductTop(@RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.topProduct(form));
     }
 
     @PostMapping("/sales/category")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<PageResult<SalesReportVO.CategoryRow>> salesCategory(
             @Valid @RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.byCategory(form));
     }
 
     @PostMapping("/sales/category/top")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<List<SalesReportVO.TopItem>> salesCategoryTop(@RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.topCategory(form));
     }
 
     @PostMapping("/sales/customer")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<PageResult<SalesReportVO.CustomerRow>> salesCustomer(
             @Valid @RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.byCustomer(form));
     }
 
     @PostMapping("/sales/customer/top")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<List<SalesReportVO.TopItem>> salesCustomerTop(@RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.topCustomer(form));
     }
 
     @PostMapping("/sales/seller")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<PageResult<SalesReportVO.SellerRow>> salesSeller(@Valid @RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.bySeller(form));
     }
 
     @PostMapping("/sales/item/query")
-    @SaCheckPermission("scm:report:sales:query")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
     public ResponseDTO<PageResult<SalesReportVO.ItemRow>> salesItem(
             @Valid @RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.itemList(form));
     }
 
     @PostMapping("/sales/product/export")
-    @SaCheckPermission(value = {"scm:report:sales:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.SALES_QUERY, ScmReportPermission.EXPORT},
+            mode = SaMode.AND)
     @OperateLog
     public void exportSalesProduct(@RequestBody ScmSalesReportQueryForm form,
                                    HttpServletResponse response) throws IOException {
@@ -164,7 +167,7 @@ public class ScmReportController {
     }
 
     @PostMapping("/sales/customer/export")
-    @SaCheckPermission(value = {"scm:report:sales:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.SALES_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportSalesCustomer(@RequestBody ScmSalesReportQueryForm form,
                                     HttpServletResponse response) throws IOException {
@@ -179,7 +182,7 @@ public class ScmReportController {
     }
 
     @PostMapping("/sales/item/export")
-    @SaCheckPermission(value = {"scm:report:sales:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.SALES_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportSalesItem(@RequestBody ScmSalesReportQueryForm form,
                                 HttpServletResponse response) throws IOException {
@@ -200,56 +203,56 @@ public class ScmReportController {
     // ==================== 采购分析 ====================
 
     @PostMapping("/purchase/overview")
-    @SaCheckPermission("scm:report:purchase:query")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<PurchaseReportVO.Overview> purchaseOverview(
             @Valid @RequestBody ScmPurchaseReportQueryForm form) {
         return ResponseDTO.ok(purchaseReportService.overview(form));
     }
 
     @PostMapping("/purchase/product")
-    @SaCheckPermission("scm:report:purchase:query")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<PageResult<PurchaseReportVO.ProductRow>> purchaseProduct(
             @Valid @RequestBody ScmPurchaseReportQueryForm form) {
         return ResponseDTO.ok(purchaseReportService.byProduct(form));
     }
 
     @PostMapping("/purchase/supplier")
-    @SaCheckPermission("scm:report:purchase:query")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<PageResult<PurchaseReportVO.SupplierRow>> purchaseSupplier(
             @Valid @RequestBody ScmPurchaseReportQueryForm form) {
         return ResponseDTO.ok(purchaseReportService.bySupplier(form));
     }
 
     @PostMapping("/purchase/supplier/top")
-    @SaCheckPermission(value = {"scm:report:purchase:query", "scm:report:cost:query"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<SalesReportVO.TopItem>> purchaseSupplierTop(
             @RequestBody ScmPurchaseReportQueryForm form) {
         return ResponseDTO.ok(purchaseReportService.topSupplierInbound(form));
     }
 
     @PostMapping("/purchase/purchaser")
-    @SaCheckPermission("scm:report:purchase:query")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<PageResult<PurchaseReportVO.PurchaserRow>> purchasePurchaser(
             @Valid @RequestBody ScmPurchaseReportQueryForm form) {
         return ResponseDTO.ok(purchaseReportService.byPurchaser(form));
     }
 
     @PostMapping("/purchase/item/query")
-    @SaCheckPermission("scm:report:purchase:query")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<PageResult<PurchaseReportVO.ItemRow>> purchaseItem(
             @Valid @RequestBody ScmPurchaseReportQueryForm form) {
         return ResponseDTO.ok(purchaseReportService.itemList(form));
     }
 
     @PostMapping("/purchase/price-trend")
-    @SaCheckPermission("scm:report:purchase:query")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<List<PurchaseReportVO.PriceTrendPoint>> purchasePriceTrend(
             @Valid @RequestBody ScmPurchaseReportQueryForm form) {
         return ResponseDTO.ok(purchaseReportService.priceTrend(form));
     }
 
     @PostMapping("/purchase/product/export")
-    @SaCheckPermission(value = {"scm:report:purchase:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportPurchaseProduct(@RequestBody ScmPurchaseReportQueryForm form,
                                       HttpServletResponse response) throws IOException {
@@ -265,7 +268,7 @@ public class ScmReportController {
     }
 
     @PostMapping("/purchase/supplier/export")
-    @SaCheckPermission(value = {"scm:report:purchase:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportPurchaseSupplier(@RequestBody ScmPurchaseReportQueryForm form,
                                        HttpServletResponse response) throws IOException {
@@ -280,7 +283,7 @@ public class ScmReportController {
     }
 
     @PostMapping("/purchase/item/export")
-    @SaCheckPermission(value = {"scm:report:purchase:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportPurchaseItem(@RequestBody ScmPurchaseReportQueryForm form,
                                    HttpServletResponse response) throws IOException {
@@ -299,28 +302,28 @@ public class ScmReportController {
     // ==================== 收货与入库 ====================
 
     @PostMapping("/receipt/query")
-    @SaCheckPermission("scm:report:purchase:query")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<PageResult<ReceiptReportVO.ReceiptRow>> receiptList(
             @Valid @RequestBody ScmReceiptReportQueryForm form) {
         return ResponseDTO.ok(receiptReportService.receiptList(form));
     }
 
     @PostMapping("/inbound/query")
-    @SaCheckPermission("scm:report:inventory:query")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<ReceiptReportVO.InboundRow>> inboundList(
             @Valid @RequestBody ScmReceiptReportQueryForm form) {
         return ResponseDTO.ok(receiptReportService.inboundList(form));
     }
 
     @PostMapping("/pending-putaway/query")
-    @SaCheckPermission("scm:report:inventory:query")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<ReceiptReportVO.PendingPutawayRow>> pendingPutaway(
             @RequestBody ScmReceiptReportQueryForm form) {
         return ResponseDTO.ok(receiptReportService.pendingPutawayList(form));
     }
 
     @PostMapping("/receipt/export")
-    @SaCheckPermission(value = {"scm:report:purchase:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportReceipt(@RequestBody ScmReceiptReportQueryForm form,
                               HttpServletResponse response) throws IOException {
@@ -339,7 +342,7 @@ public class ScmReportController {
     }
 
     @PostMapping("/inbound/export")
-    @SaCheckPermission(value = {"scm:report:inventory:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportInbound(@RequestBody ScmReceiptReportQueryForm form,
                               HttpServletResponse response) throws IOException {
@@ -356,21 +359,21 @@ public class ScmReportController {
     // ==================== 库存分析 ====================
 
     @PostMapping("/inventory/movement/query")
-    @SaCheckPermission("scm:report:inventory:query")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<InventoryReportVO.MovementRow>> movementList(
             @Valid @RequestBody ScmInventoryReportQueryForm form) {
         return ResponseDTO.ok(inventoryReportService.movementList(form));
     }
 
     @PostMapping("/inventory/loss/summary")
-    @SaCheckPermission("scm:report:inventory:query")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<InventoryReportVO.LossSummary> lossSummary(
             @Valid @RequestBody ScmInventoryReportQueryForm form) {
         return ResponseDTO.ok(inventoryReportService.lossSummary(form));
     }
 
     @PostMapping("/inventory/loss/query")
-    @SaCheckPermission("scm:report:inventory:query")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<InventoryReportVO.LossRow>> lossList(
             @Valid @RequestBody ScmInventoryReportQueryForm form) {
         return ResponseDTO.ok(inventoryReportService.lossList(form));
@@ -378,21 +381,21 @@ public class ScmReportController {
 
     /** 整页都是成本视图，因此在接口层就要成本权限，而不是返回一堆 null 让人猜为什么是空的。 */
     @PostMapping("/inventory/value/query")
-    @SaCheckPermission(value = {"scm:report:inventory:query", "scm:report:cost:query"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
     public ResponseDTO<PageResult<InventoryReportVO.ValueRow>> inventoryValue(
             @Valid @RequestBody ScmInventoryReportQueryForm form) {
         return ResponseDTO.ok(inventoryReportService.valueList(form));
     }
 
     @PostMapping("/inventory/flow-summary/query")
-    @SaCheckPermission("scm:report:inventory:query")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<InventoryReportVO.FlowSummaryRow>> flowSummary(
             @Valid @RequestBody ScmInventoryReportQueryForm form) {
         return ResponseDTO.ok(inventoryReportService.flowSummary(form));
     }
 
     @PostMapping("/inventory/movement/export")
-    @SaCheckPermission(value = {"scm:report:inventory:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportMovement(@RequestBody ScmInventoryReportQueryForm form,
                                HttpServletResponse response) throws IOException {
@@ -410,7 +413,7 @@ public class ScmReportController {
     }
 
     @PostMapping("/inventory/loss/export")
-    @SaCheckPermission(value = {"scm:report:inventory:query", "scm:report:export"}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportLoss(@RequestBody ScmInventoryReportQueryForm form,
                            HttpServletResponse response) throws IOException {
@@ -425,8 +428,8 @@ public class ScmReportController {
     }
 
     @PostMapping("/inventory/value/export")
-    @SaCheckPermission(value = {"scm:report:inventory:query", "scm:report:cost:query", "scm:report:export"},
-            mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.COST_QUERY,
+            ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportInventoryValue(@RequestBody ScmInventoryReportQueryForm form,
                                      HttpServletResponse response) throws IOException {

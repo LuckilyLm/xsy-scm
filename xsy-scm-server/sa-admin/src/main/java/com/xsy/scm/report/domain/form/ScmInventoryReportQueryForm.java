@@ -3,10 +3,12 @@ package com.xsy.scm.report.domain.form;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.report.constant.ScmInventoryMovementFilterEnum;
+import com.xsy.scm.report.constant.ScmInventorySourceDocumentFilterEnum;
 import com.xsy.scm.report.support.ScmReportDateFilter;
 
 /**
@@ -33,13 +35,9 @@ public class ScmInventoryReportQueryForm extends PageParam implements ScmReportD
     private String keyword;
 
     /** 流水类型；取值与 {@code ck_inventory_movement_type} 同源，由前端枚举提供候选。 */
-    @Pattern(regexp = "PURCHASE_IN|SALES_OUT|STOCKTAKE_GAIN|STOCKTAKE_LOSS|LOSS_REPORT"
-            + "|GAIN_REPORT|TRANSFER_OUT|TRANSFER_IN|CONVERT_OUT|CONVERT_IN",
-            message = "流水类型不合法")
+    @ScmEnumValue(enumClass = ScmInventoryMovementFilterEnum.class, message = "流水类型不合法")
     private String movementType;
 
-    @Pattern(regexp = "PURCHASE_RECEIPT_ITEM|SALES_OUTBOUND_ITEM|STOCKTAKE_ITEM|LOSS_GAIN_ITEM"
-            + "|TRANSFER_OUT_ITEM|TRANSFER_IN_ITEM|CONVERT_OUT_ITEM|CONVERT_IN_ITEM",
-            message = "来源单据类型不合法")
+    @ScmEnumValue(enumClass = ScmInventorySourceDocumentFilterEnum.class, message = "来源单据类型不合法")
     private String sourceDocumentType;
 }

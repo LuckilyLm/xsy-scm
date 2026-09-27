@@ -3,10 +3,12 @@ package com.xsy.scm.report.domain.form;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.purchase.constant.ScmPutawayStatusEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
 import com.xsy.scm.report.support.ScmReportDateFilter;
 
 /**
@@ -36,9 +38,9 @@ public class ScmReceiptReportQueryForm extends PageParam implements ScmReportDat
     /** 收货单号 / 采购单号 / 商品模糊匹配。 */
     private String keyword;
 
-    @Pattern(regexp = "DIRECT|WAREHOUSE_CONFIRM", message = "收货模式不合法")
+    @ScmEnumValue(enumClass = ScmReceiptModeEnum.class, message = "收货模式不合法")
     private String receiptMode;
 
-    @Pattern(regexp = "PENDING|COMPLETED", message = "入库状态不合法")
+    @ScmEnumValue(enumClass = ScmPutawayStatusEnum.class, message = "入库状态不合法")
     private String putawayStatus;
 }
