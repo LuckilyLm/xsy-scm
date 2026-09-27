@@ -1,6 +1,7 @@
 package com.xsy.scm.customer.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
@@ -12,10 +13,10 @@ import java.time.OffsetDateTime;
  */
 @Data
 public class CustomerDetailVO {
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal longitude;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal latitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal longitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal latitude;
     private String geomCrs;
 
     private String visibilityPolicy;
