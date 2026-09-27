@@ -56,7 +56,8 @@ public class CustomerTypePriceService {
         String beforeSnapshot = snapshot(existing);
         apply(existing, form);
         existing.setVersion(form.getVersion());
-        if (customerTypePriceDao.updateById(existing) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (customerTypePriceDao.updateById(existing) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         log(existing, ScmPriceOperationTypeEnum.UPDATE, beforeSnapshot);
     }
 
@@ -73,14 +74,17 @@ public class CustomerTypePriceService {
 
     private CustomerTypePriceEntity require(Long customerTypePriceId, Integer version) {
         var customerTypePrice = customerTypePriceDao.selectById(customerTypePriceId);
-        if (customerTypePrice == null) throw new ScmBusinessException(CUSTOMER_TYPE_PRICE_NOT_FOUND);
-        if (!Objects.equals(version, customerTypePrice.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (customerTypePrice == null)
+            throw new ScmBusinessException(CUSTOMER_TYPE_PRICE_NOT_FOUND);
+        if (!Objects.equals(version, customerTypePrice.getVersion()))
+            throw new ScmBusinessException(VERSION_CONFLICT);
         return customerTypePrice;
     }
 
     private void validateAndLock(CustomerTypePriceAddForm form, Long excludedCustomerTypePriceId) {
         PriceValidation.amountAndPeriod(form.getUnitPrice(), form.getEffectiveFrom(), form.getEffectiveTo());
-        if (form.getCustomerTypeId() == null) throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
+        if (form.getCustomerTypeId() == null)
+            throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
         if (customerTypePriceDao.lockParent(form.getCustomerTypeId()) == null) {
             customerTypeService.requireSelectableType(form.getCustomerTypeId());
         }
@@ -112,8 +116,8 @@ public class CustomerTypePriceService {
         fields.put("skuId", customerTypePrice.getSkuId());
         fields.put("unitPrice", customerTypePrice.getUnitPrice().setScale(4).toPlainString());
         fields.put("effectiveFrom", customerTypePrice.getEffectiveFrom().toString());
-        fields.put("effectiveTo", customerTypePrice.getEffectiveTo() == null
-                ? null : customerTypePrice.getEffectiveTo().toString());
+        fields.put("effectiveTo",
+                customerTypePrice.getEffectiveTo() == null ? null : customerTypePrice.getEffectiveTo().toString());
         fields.put("version", customerTypePrice.getVersion());
         fields.put("deleted", customerTypePrice.getDeleted());
         try {
@@ -124,7 +128,7 @@ public class CustomerTypePriceService {
     }
 
     private void log(CustomerTypePriceEntity customerTypePrice, ScmPriceOperationTypeEnum operationType,
-                     String beforeSnapshot) {
+            String beforeSnapshot) {
         customerTypePriceDao.log(customerTypePrice.getId(), operationType.name(), ScmOperator.current(), beforeSnapshot,
                 snapshot(customerTypePrice));
     }

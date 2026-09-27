@@ -21,17 +21,16 @@ public interface AgreementPriceDao extends BaseMapper<AgreementPriceEntity> {
     Long lockParent(@Param("id") Long customerId);
 
     long countOverlapping(@Param("dimension") Long customerId, @Param("skuId") Long skuId,
-                          @Param("from") OffsetDateTime effectiveFrom, @Param("to") OffsetDateTime effectiveTo,
-                          @Param("excludeId") Long excludedAgreementPriceId);
+            @Param("from") OffsetDateTime effectiveFrom, @Param("to") OffsetDateTime effectiveTo,
+            @Param("excludeId") Long excludedAgreementPriceId);
 
-    List<AgreementPriceEntity> selectEffective(@Param("dimension") Long customerId,
-                                               @Param("skuIds") List<Long> skuIds,
-                                               @Param("at") OffsetDateTime priceAt);
+    List<AgreementPriceEntity> selectEffective(@Param("dimension") Long customerId, @Param("skuIds") List<Long> skuIds,
+            @Param("at") OffsetDateTime priceAt);
 
     int softDelete(@Param("id") Long agreementPriceId, @Param("version") Integer version,
-                   @Param("operator") String operator);
+            @Param("operator") String operator);
 
     void log(@Param("id") Long agreementPriceId, @Param("operation") String operationType,
-             @Param("operator") String operator, @Param("before") String beforeSnapshot,
-             @Param("after") String afterSnapshot);
+            @Param("operator") String operator, @Param("before") String beforeSnapshot,
+            @Param("after") String afterSnapshot);
 }

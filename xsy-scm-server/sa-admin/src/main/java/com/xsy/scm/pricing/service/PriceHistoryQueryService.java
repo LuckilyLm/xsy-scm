@@ -19,7 +19,8 @@ public class PriceHistoryQueryService {
                 && !ScmPriceSourceEnum.CUSTOMER_TYPE.name().equals(form.getSource())) {
             form.setSource(null);
         }
-        if (form.getOperationType() != null && form.getOperationType().isBlank()) form.setOperationType(null);
+        if (form.getOperationType() != null && form.getOperationType().isBlank())
+            form.setOperationType(null);
         // History has a stable audit ordering; user supplied ordering is not accepted.
         form.setSortItemList(java.util.List.of());
         var page = SmartPageUtil.convert2PageQuery(form);

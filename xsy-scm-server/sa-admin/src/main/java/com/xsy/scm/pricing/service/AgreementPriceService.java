@@ -49,14 +49,15 @@ public class AgreementPriceService {
     public void update(AgreementPriceUpdateForm form) {
         // Lock old and new parents in ascending order if the dimension is changed.
         var existing = require(form.getAgreementPriceId(), form.getVersion());
-        java.util.stream.Stream.of(existing.getCustomerId(), form.getCustomerId()).filter(Objects::nonNull)
-                .distinct().sorted().forEach(agreementPriceDao::lockParent);
+        java.util.stream.Stream.of(existing.getCustomerId(), form.getCustomerId()).filter(Objects::nonNull).distinct()
+                .sorted().forEach(agreementPriceDao::lockParent);
         existing = require(form.getAgreementPriceId(), form.getVersion());
         validateAndLock(form, existing.getId());
         String beforeSnapshot = snapshot(existing);
         apply(existing, form);
         existing.setVersion(form.getVersion());
-        if (agreementPriceDao.updateById(existing) != 1) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (agreementPriceDao.updateById(existing) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
         log(existing, ScmPriceOperationTypeEnum.UPDATE, beforeSnapshot);
     }
 
@@ -73,14 +74,17 @@ public class AgreementPriceService {
 
     private AgreementPriceEntity require(Long agreementPriceId, Integer version) {
         var agreementPrice = agreementPriceDao.selectById(agreementPriceId);
-        if (agreementPrice == null) throw new ScmBusinessException(AGREEMENT_PRICE_NOT_FOUND);
-        if (!Objects.equals(version, agreementPrice.getVersion())) throw new ScmBusinessException(VERSION_CONFLICT);
+        if (agreementPrice == null)
+            throw new ScmBusinessException(AGREEMENT_PRICE_NOT_FOUND);
+        if (!Objects.equals(version, agreementPrice.getVersion()))
+            throw new ScmBusinessException(VERSION_CONFLICT);
         return agreementPrice;
     }
 
     private void validateAndLock(AgreementPriceAddForm form, Long excludedAgreementPriceId) {
         PriceValidation.amountAndPeriod(form.getUnitPrice(), form.getEffectiveFrom(), form.getEffectiveTo());
-        if (form.getCustomerId() == null) throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
+        if (form.getCustomerId() == null)
+            throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
         if (agreementPriceDao.lockParent(form.getCustomerId()) == null) {
             customerService.requireTradable(form.getCustomerId());
         }
@@ -112,8 +116,8 @@ public class AgreementPriceService {
         fields.put("skuId", agreementPrice.getSkuId());
         fields.put("unitPrice", agreementPrice.getUnitPrice().setScale(4).toPlainString());
         fields.put("effectiveFrom", agreementPrice.getEffectiveFrom().toString());
-        fields.put("effectiveTo", agreementPrice.getEffectiveTo() == null
-                ? null : agreementPrice.getEffectiveTo().toString());
+        fields.put("effectiveTo",
+                agreementPrice.getEffectiveTo() == null ? null : agreementPrice.getEffectiveTo().toString());
         fields.put("version", agreementPrice.getVersion());
         fields.put("deleted", agreementPrice.getDeleted());
         try {
@@ -124,7 +128,7 @@ public class AgreementPriceService {
     }
 
     private void log(AgreementPriceEntity agreementPrice, ScmPriceOperationTypeEnum operationType,
-                     String beforeSnapshot) {
+            String beforeSnapshot) {
         agreementPriceDao.log(agreementPrice.getId(), operationType.name(), ScmOperator.current(), beforeSnapshot,
                 snapshot(agreementPrice));
     }

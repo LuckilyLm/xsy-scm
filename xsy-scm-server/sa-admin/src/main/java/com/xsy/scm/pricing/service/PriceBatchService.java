@@ -23,7 +23,8 @@ public class PriceBatchService {
     private final PriceBatchAuditDao priceBatchAuditDao;
 
     public PriceBatchResultVO submit(PriceBatchForm form) {
-        if (form.getBatchKey() == null || form.getBatchKey().isBlank() || form.getBatchKey().length() > 100 || form.getRows() == null || form.getRows().isEmpty() || form.getRows().size() > 500)
+        if (form.getBatchKey() == null || form.getBatchKey().isBlank() || form.getBatchKey().length() > 100
+                || form.getRows() == null || form.getRows().isEmpty() || form.getRows().size() > 500)
             throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
         if (priceBatchAuditDao.successCount(form.getBatchKey()) > 0) {
             throw new ScmBusinessException(PRICE_BATCH_KEY_DUPLICATE);

@@ -50,32 +50,23 @@ public class PriceBatchWriter {
         if (priceBatchAuditDao.successCount(form.getBatchKey()) > 0) {
             throw new ScmBusinessException(PRICE_BATCH_KEY_DUPLICATE);
         }
-        var priceBatchRows = form.getRows().stream()
-                .sorted(Comparator.comparing(PriceBatchRowForm::getCustomerTypeId))
+        var priceBatchRows = form.getRows().stream().sorted(Comparator.comparing(PriceBatchRowForm::getCustomerTypeId))
                 .toList();
-        priceBatchRows.stream()
-                .map(PriceBatchRowForm::getCustomerTypeId)
-                .distinct()
+        priceBatchRows.stream().map(PriceBatchRowForm::getCustomerTypeId).distinct()
                 .forEach(customerTypePriceDao::lockParent);
         var customerTypeById = new HashMap<Long, CustomerTypeEntity>();
-        customerTypeDao.selectByIds(priceBatchRows.stream()
-                        .map(PriceBatchRowForm::getCustomerTypeId)
-                        .distinct()
-                        .toList())
+        customerTypeDao
+                .selectByIds(priceBatchRows.stream().map(PriceBatchRowForm::getCustomerTypeId).distinct().toList())
                 .forEach(customerType -> customerTypeById.put(customerType.getId(), customerType));
         var productSkuOptionById = new HashMap<Long, ProductSkuOptionVO>();
-        productSkuOptionDao.selectByIds(priceBatchRows.stream()
-                        .map(PriceBatchRowForm::getSkuId)
-                        .distinct()
-                        .toList())
+        productSkuOptionDao.selectByIds(priceBatchRows.stream().map(PriceBatchRowForm::getSkuId).distinct().toList())
                 .forEach(skuOption -> productSkuOptionById.put(skuOption.getSkuId(), skuOption));
         List<PriceBatchRowFailureVO> rowFailures = new ArrayList<>();
         for (var priceBatchRow : priceBatchRows) {
             var customerType = customerTypeById.get(priceBatchRow.getCustomerTypeId());
             if (customerType == null || !ScmEnableStatusEnum.ENABLED.name().equals(customerType.getStatus())) {
                 rowFailures.add(new PriceBatchRowFailureVO(priceBatchRow.getRowNumber(),
-                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40431,
-                        "客户类型不存在或已停用"));
+                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40431, "客户类型不存在或已停用"));
             }
             if (PriceValidation.unavailable(productSkuOptionById.get(priceBatchRow.getSkuId()), true) != null) {
                 rowFailures.add(new PriceBatchRowFailureVO(priceBatchRow.getRowNumber(),
@@ -84,11 +75,11 @@ public class PriceBatchWriter {
             if (customerTypePriceDao.countOverlapping(priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(),
                     priceBatchRow.getEffectiveFrom(), priceBatchRow.getEffectiveTo(), null) > 0) {
                 rowFailures.add(new PriceBatchRowFailureVO(priceBatchRow.getRowNumber(),
-                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40935,
-                        "客户类型价有效期重叠"));
+                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40935, "客户类型价有效期重叠"));
             }
         }
-        if (!rowFailures.isEmpty()) throw new Rejected(rowFailures);
+        if (!rowFailures.isEmpty())
+            throw new Rejected(rowFailures);
         List<Long> createdPriceIds = new ArrayList<>();
         for (var priceBatchRow : priceBatchRows) {
             var customerTypePriceForm = new CustomerTypePriceAddForm();
@@ -99,9 +90,8 @@ public class PriceBatchWriter {
             customerTypePriceForm.setEffectiveTo(priceBatchRow.getEffectiveTo());
             createdPriceIds.add(customerTypePriceService.add(customerTypePriceForm));
         }
-        priceBatchAuditDao.insert(form.getBatchKey(), ScmPriceBatchResultEnum.SUCCESS.name(),
-                priceBatchRows.size(), null, ScmOperator.current());
-        return new PriceBatchResultVO(form.getBatchKey(), true, createdPriceIds.size(), createdPriceIds,
-                List.of());
+        priceBatchAuditDao.insert(form.getBatchKey(), ScmPriceBatchResultEnum.SUCCESS.name(), priceBatchRows.size(),
+                null, ScmOperator.current());
+        return new PriceBatchResultVO(form.getBatchKey(), true, createdPriceIds.size(), createdPriceIds, List.of());
     }
 }

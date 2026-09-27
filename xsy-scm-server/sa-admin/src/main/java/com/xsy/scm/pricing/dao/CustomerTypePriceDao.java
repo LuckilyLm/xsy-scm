@@ -21,17 +21,16 @@ public interface CustomerTypePriceDao extends BaseMapper<CustomerTypePriceEntity
     Long lockParent(@Param("id") Long customerTypeId);
 
     long countOverlapping(@Param("dimension") Long customerTypeId, @Param("skuId") Long skuId,
-                          @Param("from") OffsetDateTime effectiveFrom, @Param("to") OffsetDateTime effectiveTo,
-                          @Param("excludeId") Long excludedCustomerTypePriceId);
+            @Param("from") OffsetDateTime effectiveFrom, @Param("to") OffsetDateTime effectiveTo,
+            @Param("excludeId") Long excludedCustomerTypePriceId);
 
     List<CustomerTypePriceEntity> selectEffective(@Param("dimension") Long customerTypeId,
-                                                  @Param("skuIds") List<Long> skuIds,
-                                                  @Param("at") OffsetDateTime priceAt);
+            @Param("skuIds") List<Long> skuIds, @Param("at") OffsetDateTime priceAt);
 
     int softDelete(@Param("id") Long customerTypePriceId, @Param("version") Integer version,
-                   @Param("operator") String operator);
+            @Param("operator") String operator);
 
     void log(@Param("id") Long customerTypePriceId, @Param("operation") String operationType,
-             @Param("operator") String operator, @Param("before") String beforeSnapshot,
-             @Param("after") String afterSnapshot);
+            @Param("operator") String operator, @Param("before") String beforeSnapshot,
+            @Param("after") String afterSnapshot);
 }

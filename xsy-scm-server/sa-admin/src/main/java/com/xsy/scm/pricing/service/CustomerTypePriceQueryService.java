@@ -19,18 +19,19 @@ public class CustomerTypePriceQueryService {
     private final CustomerTypePriceDao customerTypePriceDao;
 
     public PageResult<CustomerTypePriceVO> query(CustomerTypePriceQueryForm form) {
-        if (form.getSortItemList() != null && form.getSortItemList().stream().anyMatch(sortItem ->
-                !java.util.Set.of("effective_from", "effective_to", "unit_price", "updated_at")
-                        .contains(sortItem.getColumn())))
+        if (form.getSortItemList() != null && form.getSortItemList().stream().anyMatch(sortItem -> !java.util.Set
+                .of("effective_from", "effective_to", "unit_price", "updated_at").contains(sortItem.getColumn())))
             throw new ScmBusinessException(VALIDATION_ERROR);
         var page = SmartPageUtil.convert2PageQuery(form);
-        if (page.orders().isEmpty()) page.addOrder(OrderItem.desc("effective_from"), OrderItem.desc("price_id"));
+        if (page.orders().isEmpty())
+            page.addOrder(OrderItem.desc("effective_from"), OrderItem.desc("price_id"));
         return SmartPageUtil.convert2PageResult(page, customerTypePriceDao.queryPage(page, form));
     }
 
     public CustomerTypePriceVO detail(Long customerTypePriceId) {
         var customerTypePrice = customerTypePriceDao.detail(customerTypePriceId);
-        if (customerTypePrice == null) throw new ScmBusinessException(CUSTOMER_TYPE_PRICE_NOT_FOUND);
+        if (customerTypePrice == null)
+            throw new ScmBusinessException(CUSTOMER_TYPE_PRICE_NOT_FOUND);
         return customerTypePrice;
     }
 }

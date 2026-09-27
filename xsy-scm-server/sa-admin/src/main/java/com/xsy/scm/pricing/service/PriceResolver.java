@@ -52,7 +52,8 @@ public class PriceResolver {
     }
 
     public List<ResolvedPriceVO> resolve(Long customerId, List<Long> skuIds, OffsetDateTime requestedAt) {
-        if (skuIds.isEmpty()) return List.of();
+        if (skuIds.isEmpty())
+            return List.of();
         var customer = customerService.requireTradable(customerId);
         var customerType = customerTypeDao.selectById(customer.getCustomerTypeId());
         if (customerType == null || !ScmEnableStatusEnum.ENABLED.name().equals(customerType.getStatus()))
@@ -62,11 +63,9 @@ public class PriceResolver {
                 .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity()));
         var agreementPricesBySkuId = agreementPriceDao.selectEffective(customerId, skuIds, priceAt).stream()
                 .collect(Collectors.toMap(AgreementPriceEntity::getSkuId, Function.identity(), (first, next) -> first));
-        var customerTypePricesBySkuId = customerTypePriceDao
-                .selectEffective(customerType.getId(), skuIds, priceAt)
-                .stream()
-                .collect(Collectors.toMap(
-                        CustomerTypePriceEntity::getSkuId, Function.identity(), (first, next) -> first));
+        var customerTypePricesBySkuId = customerTypePriceDao.selectEffective(customerType.getId(), skuIds, priceAt)
+                .stream().collect(Collectors.toMap(CustomerTypePriceEntity::getSkuId, Function.identity(),
+                        (first, next) -> first));
         boolean allEnabledVisibility = CustomerVisibilityPolicy.ALL_ENABLED
                 .equals(customerSkuVisibilityDao.policy(customerId));
         Set<Long> visibleSkuIds = allEnabledVisibility
@@ -81,22 +80,22 @@ public class PriceResolver {
                 resolvedPrice.setProductName(skuOption.getProductName());
                 resolvedPrice.setSpecName(skuOption.getSpecName());
             }
-            var unavailableReason = PriceValidation.unavailable(
-                    skuOption, allEnabledVisibility || visibleSkuIds.contains(skuId));
+            var unavailableReason = PriceValidation.unavailable(skuOption,
+                    allEnabledVisibility || visibleSkuIds.contains(skuId));
             resolvedPrice.setUnavailableReason(unavailableReason);
             resolvedPrice.setSellable(unavailableReason == null);
             // Eligibility never short-circuits price lookup or erases a valid zero price.
             if (agreementPricesBySkuId.containsKey(skuId)) {
                 var agreementPrice = agreementPricesBySkuId.get(skuId);
-                resolvedPrice.price(
-                        agreementPrice.getUnitPrice(), ScmPriceSourceEnum.AGREEMENT, agreementPrice.getId());
+                resolvedPrice.price(agreementPrice.getUnitPrice(), ScmPriceSourceEnum.AGREEMENT,
+                        agreementPrice.getId());
             } else if (customerTypePricesBySkuId.containsKey(skuId)) {
                 var customerTypePrice = customerTypePricesBySkuId.get(skuId);
                 resolvedPrice.price(customerTypePrice.getUnitPrice(), ScmPriceSourceEnum.CUSTOMER_TYPE,
                         customerTypePrice.getId());
             } else {
-                resolvedPrice.price(skuOption == null ? null : skuOption.getMarketPrice(),
-                        ScmPriceSourceEnum.MARKET, null);
+                resolvedPrice.price(skuOption == null ? null : skuOption.getMarketPrice(), ScmPriceSourceEnum.MARKET,
+                        null);
             }
             return resolvedPrice;
         }).toList();
@@ -104,8 +103,8 @@ public class PriceResolver {
 
     public List<ResolvedPriceVO> requireResolvable(Long customerId, List<Long> skuIds, OffsetDateTime requestedAt) {
         var resolvedPrices = resolve(customerId, skuIds, requestedAt);
-        if (resolvedPrices.stream().anyMatch(resolvedPrice ->
-                !resolvedPrice.isSellable() || resolvedPrice.getPriceStatus() == ScmPriceStatusEnum.UNPRICED))
+        if (resolvedPrices.stream().anyMatch(resolvedPrice -> !resolvedPrice.isSellable()
+                || resolvedPrice.getPriceStatus() == ScmPriceStatusEnum.UNPRICED))
             throw new ScmBusinessException(SKU_NOT_SELLABLE);
         return resolvedPrices;
     }

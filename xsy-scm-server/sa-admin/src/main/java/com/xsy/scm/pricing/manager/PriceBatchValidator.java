@@ -20,9 +20,10 @@ public final class PriceBatchValidator {
         for (int i = 0; i < rows.size(); i++) {
             var priceBatchRow = rows.get(i);
             int rowNumber = priceBatchRow == null || priceBatchRow.getRowNumber() == null
-                    ? i + 1 : priceBatchRow.getRowNumber();
-            if (priceBatchRow == null || priceBatchRow.getCustomerTypeId() == null
-                    || priceBatchRow.getSkuId() == null || rowNumber < 1 || !numbers.add(rowNumber)) {
+                    ? i + 1
+                    : priceBatchRow.getRowNumber();
+            if (priceBatchRow == null || priceBatchRow.getCustomerTypeId() == null || priceBatchRow.getSkuId() == null
+                    || rowNumber < 1 || !numbers.add(rowNumber)) {
                 failures.add(new PriceBatchRowFailureVO(rowNumber,
                         priceBatchRow == null ? null : priceBatchRow.getCustomerTypeId(),
                         priceBatchRow == null ? null : priceBatchRow.getSkuId(), 40035, "批量行标识不合法"));

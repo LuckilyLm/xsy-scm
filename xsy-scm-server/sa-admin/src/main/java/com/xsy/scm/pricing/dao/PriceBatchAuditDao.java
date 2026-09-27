@@ -7,7 +7,6 @@ import org.apache.ibatis.annotations.Param;
 public interface PriceBatchAuditDao {
     long successCount(@Param("key") String batchKey);
 
-    void insert(@Param("key") String batchKey, @Param("result") String batchResult,
-                @Param("count") int rowCount, @Param("errors") String errorData,
-                @Param("operator") String operator);
+    void insert(@Param("key") String batchKey, @Param("result") String batchResult, @Param("count") int rowCount,
+            @Param("errors") String errorData, @Param("operator") String operator);
 }

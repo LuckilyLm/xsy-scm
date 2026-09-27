@@ -24,8 +24,8 @@ public class PriceBatchAuditService {
     public void failed(String batchKey, int submittedRowCount, List<PriceBatchRowFailureVO> rowFailures) {
         try {
             priceBatchAuditDao.insert(batchKey, ScmPriceBatchResultEnum.FAILED.name(), submittedRowCount,
-                    objectMapper.writeValueAsString(Map.of("failures", rowFailures,
-                            "failedCount", rowFailures.size(), "submittedCount", submittedRowCount)),
+                    objectMapper.writeValueAsString(Map.of("failures", rowFailures, "failedCount", rowFailures.size(),
+                            "submittedCount", submittedRowCount)),
                     ScmOperator.current());
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new IllegalStateException("Cannot serialize batch audit", e);

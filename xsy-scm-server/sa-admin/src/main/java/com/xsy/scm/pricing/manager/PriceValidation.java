@@ -33,14 +33,16 @@ public class PriceValidation {
     }
 
     public void requireSellable(Long skuId) {
-        if (skuId == null) throw new ScmBusinessException(SKU_NOT_SELLABLE);
+        if (skuId == null)
+            throw new ScmBusinessException(SKU_NOT_SELLABLE);
         var skuOptions = productSkuOptionDao.selectByIds(List.of(skuId));
         if (unavailable(skuOptions.isEmpty() ? null : skuOptions.getFirst(), true) != null)
             throw new ScmBusinessException(SKU_NOT_SELLABLE);
     }
 
     public static ScmUnavailableReasonEnum unavailable(ProductSkuOptionVO skuOption, boolean visibleToCustomer) {
-        if (skuOption == null) return ScmUnavailableReasonEnum.SKU_NOT_FOUND;
+        if (skuOption == null)
+            return ScmUnavailableReasonEnum.SKU_NOT_FOUND;
         if (!ScmShelfStatusEnum.ON_SHELF.name().equals(skuOption.getStatus())) {
             return ScmUnavailableReasonEnum.SKU_OFF_SHELF;
         }

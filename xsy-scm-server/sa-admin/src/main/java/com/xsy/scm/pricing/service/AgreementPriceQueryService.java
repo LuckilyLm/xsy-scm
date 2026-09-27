@@ -19,18 +19,19 @@ public class AgreementPriceQueryService {
     private final AgreementPriceDao agreementPriceDao;
 
     public PageResult<AgreementPriceVO> query(AgreementPriceQueryForm form) {
-        if (form.getSortItemList() != null && form.getSortItemList().stream().anyMatch(sortItem ->
-                !java.util.Set.of("effective_from", "effective_to", "unit_price", "updated_at")
-                        .contains(sortItem.getColumn())))
+        if (form.getSortItemList() != null && form.getSortItemList().stream().anyMatch(sortItem -> !java.util.Set
+                .of("effective_from", "effective_to", "unit_price", "updated_at").contains(sortItem.getColumn())))
             throw new ScmBusinessException(VALIDATION_ERROR);
         var page = SmartPageUtil.convert2PageQuery(form);
-        if (page.orders().isEmpty()) page.addOrder(OrderItem.desc("effective_from"), OrderItem.desc("price_id"));
+        if (page.orders().isEmpty())
+            page.addOrder(OrderItem.desc("effective_from"), OrderItem.desc("price_id"));
         return SmartPageUtil.convert2PageResult(page, agreementPriceDao.queryPage(page, form));
     }
 
     public AgreementPriceVO detail(Long agreementPriceId) {
         var agreementPrice = agreementPriceDao.detail(agreementPriceId);
-        if (agreementPrice == null) throw new ScmBusinessException(AGREEMENT_PRICE_NOT_FOUND);
+        if (agreementPrice == null)
+            throw new ScmBusinessException(AGREEMENT_PRICE_NOT_FOUND);
         return agreementPrice;
     }
 }
