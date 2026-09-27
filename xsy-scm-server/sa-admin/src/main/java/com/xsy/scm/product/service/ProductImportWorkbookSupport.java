@@ -2,6 +2,7 @@ package com.xsy.scm.product.service;
 
 import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
+import com.xsy.scm.product.constant.ScmStorageMethodEnum;
 import com.xsy.scm.product.domain.dto.ProductImportRow;
 import com.xsy.scm.product.domain.vo.ProductImportErrorVO;
 import com.xsy.scm.product.domain.vo.ProductImportResultVO;
@@ -142,7 +143,7 @@ public class ProductImportWorkbookSupport {
                 case 6 -> "示例蔬菜";
                 case 8 -> "FRESH-FRUIT";
                 case 11 -> "本地";
-                case 12 -> "CHILLED";
+                case 12 -> ScmStorageMethodEnum.CHILLED.name();
                 case 15 -> ScmShelfStatusEnum.ON_SHELF.name();
                 case 16 -> "SKU0001";
                 case 18 -> "500g/份";
@@ -161,7 +162,7 @@ public class ProductImportWorkbookSupport {
             case 2 -> "示例蔬菜";
             case 4 -> "FRESH-FRUIT";
             case 7 -> "本地";
-            case 8 -> "CHILLED";
+            case 8 -> ScmStorageMethodEnum.CHILLED.name();
             case 11 -> ScmShelfStatusEnum.ON_SHELF.name();
             case 12 -> "SKU0001";
             case 14 -> "500g/份";

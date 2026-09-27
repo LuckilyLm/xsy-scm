@@ -49,13 +49,14 @@ public class ProductExcelController {
 
     @GetMapping("/import/template")
     @SaCheckPermission(ProductPermission.IMPORT)
-    public void template(@RequestParam(required = false, defaultValue = "CREATE") ImportMode mode,
+    public void template(@RequestParam(required = false) ImportMode mode,
                          HttpServletResponse response) throws IOException {
+        ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
         // 更新模板带定位键、会改写既存商品，因此下载模板也要编辑权
-        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
-        var content = productImportService.buildTemplate(mode);
+        if (selectedMode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
+        var content = productImportService.buildTemplate(selectedMode);
         SmartResponseUtil.setDownloadFileHeader(response,
-                (mode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
+                (selectedMode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
         response.getOutputStream().write(content);
         response.flushBuffer();
     }
@@ -63,10 +64,12 @@ public class ProductExcelController {
     @PostMapping("/import")
     @SaCheckPermission(ProductPermission.IMPORT)
     @OperateLog
-    public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
-                                                            @RequestParam(required = false, defaultValue = "CREATE") ImportMode mode) throws Exception {
+    public ResponseDTO<ProductImportResultVO> importProducts(
+            @RequestParam MultipartFile file,
+            @RequestParam(required = false) ImportMode mode) throws Exception {
+        ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
         // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
-        if (mode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
+        if (selectedMode == ImportMode.UPDATE) StpUtil.checkPermission(ProductPermission.UPDATE);
         if (file.isEmpty()) return ResponseDTO.userErrorParam("导入文件不能为空");
         var name = file.getOriginalFilename();
         if (name == null || !name.toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx"))
@@ -74,7 +77,7 @@ public class ProductExcelController {
         if (file.getSize() > MAX_FILE_SIZE) return ResponseDTO.userErrorParam("导入文件不能超过 10 MiB");
         var security = securityFileService.checkFile(file);
         if (!security.getOk()) return ResponseDTO.error(security);
-        return ResponseDTO.ok(productImportService.importFile(file, mode));
+        return ResponseDTO.ok(productImportService.importFile(file, selectedMode));
     }
 
     @PostMapping("/export")

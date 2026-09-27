@@ -1,12 +1,13 @@
 package com.xsy.scm.product.domain.form;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.product.constant.ScmProductTagUpdateModeEnum;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -30,7 +31,7 @@ public class ProductSpuBatchTagForm {
             @Positive(message = "标签 ID 列表必须大于0")
             Long> tagIds = new ArrayList<>();
     @NotBlank(message = "标签维护方式不能为空")
-    @Pattern(regexp = "REPLACE|ADD|REMOVE", message = "标签维护方式取值无效")
+    @ScmEnumValue(enumClass = ScmProductTagUpdateModeEnum.class, message = "标签维护方式取值无效")
     private String mode;
 
     /**
@@ -39,6 +40,6 @@ public class ProductSpuBatchTagForm {
     @AssertTrue(message = "ADD 与 REMOVE 必须至少选择一个标签")
     @JsonIgnore
     public boolean isTagSelectionPresent() {
-        return tagIds == null || "REPLACE".equals(mode) || !tagIds.isEmpty();
+        return tagIds == null || ScmProductTagUpdateModeEnum.REPLACE.name().equals(mode) || !tagIds.isEmpty();
     }
 }

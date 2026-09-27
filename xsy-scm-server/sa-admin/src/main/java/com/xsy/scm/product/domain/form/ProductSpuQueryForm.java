@@ -4,10 +4,10 @@ import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
+import com.xsy.scm.product.constant.ScmStorageMethodEnum;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -31,7 +31,7 @@ public class ProductSpuQueryForm extends net.lab1024.sa.base.common.domain.PageP
     private String productType;
     @ScmEnumValue(enumClass = ScmProductMasterStatusEnum.class, message = "商品主档状态无效")
     private String masterStatus;
-    @Pattern(regexp = "AMBIENT|CHILLED|FROZEN", message = "储存方式取值无效")
+    @ScmEnumValue(enumClass = ScmStorageMethodEnum.class, message = "储存方式取值无效")
     private String storageMethod;
     /**
      * 命中任一标签即返回（或语义），与分类的多选筛选保持一致。

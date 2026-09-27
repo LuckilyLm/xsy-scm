@@ -3,6 +3,7 @@ package com.xsy.scm.product.domain.form;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
+import com.xsy.scm.product.constant.ScmStorageMethodEnum;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
@@ -12,7 +13,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -53,7 +53,7 @@ public class ProductSpuAddForm {
     private String brandName;
     @Size(max = 100, message = "产地不能超过100个字符")
     private String origin;
-    @Pattern(regexp = "AMBIENT|CHILLED|FROZEN", message = "储存方式取值无效")
+    @ScmEnumValue(enumClass = ScmStorageMethodEnum.class, message = "储存方式取值无效")
     private String storageMethod;
     @Min(value = 0, message = "保质期天数不能小于0")
     @Max(value = 36500, message = "保质期天数不能大于36500")

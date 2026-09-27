@@ -6,6 +6,7 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmErrorCode;
 import com.xsy.scm.product.dao.ProductSpuDao;
 import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
+import com.xsy.scm.product.constant.ScmProductTagUpdateModeEnum;
 import com.xsy.scm.product.domain.entity.ProductSpuEntity;
 import com.xsy.scm.product.domain.form.ProductBatchItemForm;
 import com.xsy.scm.product.domain.form.ProductSpuBatchCategoryForm;
@@ -78,10 +79,13 @@ public class ProductBatchService {
         var failures = verify(form.getItems());
         // 批量打标的语义就是「新引用」，所以本次给出的标签必须全部可用；
         // REMOVE 不校验，否则停用标签再也摘不掉。放在 verify 之后以沿用「先商品后标签」的锁序。
-        if (!"REMOVE".equals(form.getMode())) productTagService.assertUsable(form.getTagIds());
+        if (!ScmProductTagUpdateModeEnum.REMOVE.name().equals(form.getMode()))
+            productTagService.assertUsable(form.getTagIds());
         return commit(failures, form.getItems(), (ids) -> {
-            if ("ADD".equals(form.getMode())) productTagService.addTags(ids, form.getTagIds());
-            else if ("REMOVE".equals(form.getMode())) productTagService.removeTags(ids, form.getTagIds());
+            if (ScmProductTagUpdateModeEnum.ADD.name().equals(form.getMode()))
+                productTagService.addTags(ids, form.getTagIds());
+            else if (ScmProductTagUpdateModeEnum.REMOVE.name().equals(form.getMode()))
+                productTagService.removeTags(ids, form.getTagIds());
             else productTagService.replaceTags(ids, form.getTagIds());
         });
     }

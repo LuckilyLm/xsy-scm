@@ -6,6 +6,7 @@ import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.product.constant.ScmStorageMethodEnum;
 import com.xsy.scm.product.dao.ProductCategoryDao;
 import com.xsy.scm.product.dao.ProductImageDao;
 import com.xsy.scm.product.dao.ProductSkuDao;
@@ -73,7 +74,8 @@ public class ProductImportService {
             ScmShelfStatusEnum.ON_SHELF.name(), ScmShelfStatusEnum.OFF_SHELF.name());
     private static final Set<String> PRODUCT_TYPE = Set.of(
             ScmProductTypeEnum.STANDARD.name(), ScmProductTypeEnum.NON_STANDARD.name());
-    private static final Set<String> STORAGE = Set.of("AMBIENT", "CHILLED", "FROZEN");
+    private static final Set<String> STORAGE = Set.of(
+            ScmStorageMethodEnum.AMBIENT.name(), ScmStorageMethodEnum.CHILLED.name(), ScmStorageMethodEnum.FROZEN.name());
     private static final Set<String> TRUTHY = Set.of("是", "Y", "YES", "TRUE", "1");
 
     private final ProductCategoryDao productCategoryDao;
