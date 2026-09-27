@@ -8,7 +8,8 @@ import lombok.Data;
 /**
  * 新建仓库。
  *
- * <p><b>不含 {@code status}</b>：新建仓库由服务端设为 {@code ENABLED}；状态变更走专用命令。
+ * <p>
+ * <b>不含 {@code status}</b>：新建仓库由服务端设为 {@code ENABLED}；状态变更走专用命令。
  */
 @Data
 public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm {

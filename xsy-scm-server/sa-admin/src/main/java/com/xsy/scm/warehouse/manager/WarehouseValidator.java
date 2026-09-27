@@ -9,8 +9,8 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 /**
  * 仓库单条业务规则（纯函数，无 Spring 依赖）。
  *
- * <p>仓库是薄主数据，规则只有三条：编码归一化、名称归一化、状态取值域。
- * 「编码重复」不是本类的职责 —— 它由 {@code uk_warehouse_code_active} 唯一索引 +
+ * <p>
+ * 仓库是薄主数据，规则只有三条：编码归一化、名称归一化、状态取值域。 「编码重复」不是本类的职责 —— 它由 {@code uk_warehouse_code_active} 唯一索引 +
  * {@code WarehouseService} 的显式查重共同保证。
  */
 public final class WarehouseValidator {
@@ -35,7 +35,8 @@ public final class WarehouseValidator {
     /**
      * 状态取值域校验。
      *
-     * <p>覆盖不经过 MVC Bean Validation 的内部调用。
+     * <p>
+     * 覆盖不经过 MVC Bean Validation 的内部调用。
      */
     public static void validateStatus(String status) {
         if (status == null) {
@@ -53,8 +54,7 @@ public final class WarehouseValidator {
      * 编码 / 名称必填校验（非 MVC 入口用）。
      */
     public static void validateRequired(WarehouseAddForm form) {
-        if (form == null
-                || form.getWarehouseCode() == null || form.getWarehouseCode().trim().isEmpty()
+        if (form == null || form.getWarehouseCode() == null || form.getWarehouseCode().trim().isEmpty()
                 || form.getName() == null || form.getName().trim().isEmpty()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }

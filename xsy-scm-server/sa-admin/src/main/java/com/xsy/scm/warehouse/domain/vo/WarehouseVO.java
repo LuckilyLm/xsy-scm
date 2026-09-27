@@ -15,7 +15,6 @@ public class WarehouseVO {
     private java.math.BigDecimal latitude;
     private String geomCrs;
 
-
     private Long id;
 
     private String warehouseCode;

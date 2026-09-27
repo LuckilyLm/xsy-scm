@@ -26,11 +26,12 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 /**
  * 仓库查询（只读，不开事务）。
  *
- * <p>`GET /scm/warehouse/list` 只返回 **ENABLED** 仓库：它是给采购单/收货单的**下拉选择器**用的，
- * 与 {@code CustomerTypeService.optionList()} 的口径一致；管理页用 {@code POST /query}。
+ * <p>
+ * `GET /scm/warehouse/list` 只返回 **ENABLED** 仓库：它是给采购单/收货单的**下拉选择器**用的， 与 {@code CustomerTypeService.optionList()}
+ * 的口径一致；管理页用 {@code POST /query}。
  *
- * <p><b>三个读入口都按仓库授权范围收窄</b>：未授权仓库的 id、名称、地址一律不给，
- * 否则选择器就成了绕过仓库范围的旁门 —— 拿到别人仓库的 id 就能提交别人的入库单。
+ * <p>
+ * <b>三个读入口都按仓库授权范围收窄</b>：未授权仓库的 id、名称、地址一律不给， 否则选择器就成了绕过仓库范围的旁门 —— 拿到别人仓库的 id 就能提交别人的入库单。
  * 历史单据不受影响：它们展示的是自己行上的仓库名称快照，不经过本类。
  */
 @Service
@@ -40,8 +41,7 @@ public class WarehouseQueryService {
     /**
      * 排序白名单：只有这些列允许来自客户端。
      */
-    private static final Set<String> SORTABLE =
-            Set.of("warehouse_code", "name", "status", "created_at", "updated_at");
+    private static final Set<String> SORTABLE = Set.of("warehouse_code", "name", "status", "created_at", "updated_at");
 
     private final WarehouseDao warehouseDao;
 
@@ -63,9 +63,7 @@ public class WarehouseQueryService {
             query.in(WarehouseEntity::getId, scope.getIds());
         }
         return warehouseDao.selectList(query.orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId))
-                .stream()
-                .map(WarehouseQueryService::toVO)
-                .toList();
+                .stream().map(WarehouseQueryService::toVO).toList();
     }
 
     public PageResult<WarehouseVO> query(WarehouseQueryForm form) {
@@ -85,8 +83,7 @@ public class WarehouseQueryService {
     }
 
     /**
-     * 仓库详情；未授权的仓按无权限回答（30005），不按「不存在」回答，
-     * 否则探测仓库编号与探测授权可以分辨出来。
+     * 仓库详情；未授权的仓按无权限回答（30005），不按「不存在」回答， 否则探测仓库编号与探测授权可以分辨出来。
      */
     public WarehouseVO detail(Long id) {
         WarehouseEntity entity = warehouseService.require(id);

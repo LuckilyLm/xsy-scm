@@ -15,8 +15,7 @@ public class WarehouseScopeEmployeeVO {
     private String actualName;
 
     /**
-     * 员工是否已停用：授权行可以早于人员离职，维护页必须能看出来，否则会出现
-     * 「这个仓只有离职的人能看」这种没人发现得了的空档。
+     * 员工是否已停用：授权行可以早于人员离职，维护页必须能看出来，否则会出现 「这个仓只有离职的人能看」这种没人发现得了的空档。
      */
     private Boolean disabledFlag;
 }

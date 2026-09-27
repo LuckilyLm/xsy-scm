@@ -13,8 +13,8 @@ import java.util.List;
 /**
  * 员工—仓库授权读写。
  *
- * <p>本表是 SCM 数据范围仓库维度的唯一入口；业务查询侧的取数走
- * {@code ScmDataScopeDao}（只读），这里只服务维护页与「整体替换」写入。
+ * <p>
+ * 本表是 SCM 数据范围仓库维度的唯一入口；业务查询侧的取数走 {@code ScmDataScopeDao}（只读），这里只服务维护页与「整体替换」写入。
  */
 @Mapper
 public interface EmployeeWarehouseScopeDao extends BaseMapper<EmployeeWarehouseScopeEntity> {
@@ -30,19 +30,16 @@ public interface EmployeeWarehouseScopeDao extends BaseMapper<EmployeeWarehouseS
     List<WarehouseScopeWarehouseVO> listWarehousesByEmployee(@Param("employeeId") Long employeeId);
 
     /**
-     * 回收某员工的全部活动授权；活动行与部分唯一索引 {@code uk_employee_warehouse_scope_active}
-     * 同一谓词，不能漏掉 {@code deleted_flag = FALSE}。
+     * 回收某员工的全部活动授权；活动行与部分唯一索引 {@code uk_employee_warehouse_scope_active} 同一谓词，不能漏掉 {@code deleted_flag = FALSE}。
      *
      * @return 被回收的行数，0 是正常的（该员工本来没有授权）
      */
     int deactivateByEmployee(@Param("employeeId") Long employeeId);
 
     /**
-     * 一次性批量授权：整批一条 INSERT，与 {@link #deactivateByEmployee} 同事务，
-     * 使「替换」对任何并发读都只呈现替换前或替换后两种状态。
+     * 一次性批量授权：整批一条 INSERT，与 {@link #deactivateByEmployee} 同事务， 使「替换」对任何并发读都只呈现替换前或替换后两种状态。
      */
-    int insertBatch(@Param("employeeId") Long employeeId,
-                    @Param("warehouseIds") Collection<Long> warehouseIds);
+    int insertBatch(@Param("employeeId") Long employeeId, @Param("warehouseIds") Collection<Long> warehouseIds);
 
     /**
      * 回读存在的仓库 id，用于批量存在性校验（不建外键，故完整性只能在这里判）。

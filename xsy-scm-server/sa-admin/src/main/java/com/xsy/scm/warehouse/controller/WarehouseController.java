@@ -27,7 +27,8 @@ import java.util.List;
 /**
  * SCM 仓库（最小主数据，）。
  *
- * <p>共 7 个端点。没有删除端点：仓库是主数据，{@code status} 通过独立命令表达启停。
+ * <p>
+ * 共 7 个端点。没有删除端点：仓库是主数据，{@code status} 通过独立命令表达启停。
  */
 @RestController
 @RequestMapping("/scm/warehouse")

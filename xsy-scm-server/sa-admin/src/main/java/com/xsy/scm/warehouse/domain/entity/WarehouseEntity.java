@@ -14,7 +14,8 @@ import java.time.OffsetDateTime;
 /**
  * 仓库主数据。
  *
- * <p>订单没有仓库字段，预留库存时必须能解析出唯一启用仓库；数据库不限制仓库记录总数。
+ * <p>
+ * 订单没有仓库字段，预留库存时必须能解析出唯一启用仓库；数据库不限制仓库记录总数。
  */
 @Data
 @TableName(value = "warehouse", autoResultMap = true)
