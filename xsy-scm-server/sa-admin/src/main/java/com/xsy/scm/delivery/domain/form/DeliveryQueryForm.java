@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 
 import net.lab1024.sa.base.common.domain.PageParam;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
 public class DeliveryQueryForm extends PageParam {
@@ -22,11 +23,11 @@ public class DeliveryQueryForm extends PageParam {
     private String customerKeyword;
     @ScmEnumValue(enumClass = ScmDeliveryRouteStatusEnum.class, message = "线路状态无效")
     private String status;
-    @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate deliveryDate;
-    @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private OffsetDateTime deliveryTimeFrom;
-    @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private OffsetDateTime deliveryTimeTo;
     @Positive(message = "仓库编号必须为正数")
     private Long warehouseId;
