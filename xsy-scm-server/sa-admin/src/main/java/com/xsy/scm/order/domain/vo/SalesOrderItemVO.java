@@ -19,7 +19,9 @@ public class SalesOrderItemVO {
     private String productNameSnapshot;
     private String skuCodeSnapshot;
     private String specNameSnapshot;
-    private Map<String, Object> specValuesSnapshot;
+    private Map<
+            String,
+            Object> specValuesSnapshot;
     private String saleUnitSnapshot;
     private String productTypeSnapshot;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

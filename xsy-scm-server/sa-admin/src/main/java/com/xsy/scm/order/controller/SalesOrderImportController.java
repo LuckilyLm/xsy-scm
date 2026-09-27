@@ -55,8 +55,9 @@ public class SalesOrderImportController {
     @PostMapping
     @SaCheckPermission(OrderPermission.IMPORT)
     @OperateLog
-    public ResponseDTO<SalesOrderImportResultVO> importOrders(@RequestParam MultipartFile file,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) throws Exception {
+    public ResponseDTO<
+            SalesOrderImportResultVO> importOrders(@RequestParam MultipartFile file,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String key) throws Exception {
         if (file.isEmpty())
             return ResponseDTO.userErrorParam("导入文件不能为空");
         var name = file.getOriginalFilename();

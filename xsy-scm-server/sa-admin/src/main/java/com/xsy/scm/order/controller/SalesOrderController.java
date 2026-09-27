@@ -51,19 +51,24 @@ public class SalesOrderController {
 
     @PostMapping("/query")
     @SaCheckPermission(OrderPermission.QUERY)
-    public ResponseDTO<PageResult<SalesOrderVO>> query(@Valid @RequestBody SalesOrderQueryForm salesOrderQueryForm) {
+    public ResponseDTO<
+            PageResult<
+                    SalesOrderVO>> query(@Valid @RequestBody SalesOrderQueryForm salesOrderQueryForm) {
         return ResponseDTO.ok(salesOrderQueryService.query(salesOrderQueryForm));
     }
 
     @GetMapping("/detail/{orderId}")
     @SaCheckPermission(OrderPermission.QUERY)
-    public ResponseDTO<SalesOrderDetailVO> detail(@PathVariable Long orderId) {
+    public ResponseDTO<
+            SalesOrderDetailVO> detail(@PathVariable Long orderId) {
         return ResponseDTO.ok(salesOrderQueryService.detail(orderId));
     }
 
     @PostMapping("/log/query")
     @SaCheckPermission(OrderPermission.LOG_QUERY)
-    public ResponseDTO<PageResult<OrderOperationLogVO>> logs(@Valid @RequestBody OrderLogQueryForm orderLogQueryForm) {
+    public ResponseDTO<
+            PageResult<
+                    OrderOperationLogVO>> logs(@Valid @RequestBody OrderLogQueryForm orderLogQueryForm) {
         return ResponseDTO.ok(salesOrderQueryService.logs(orderLogQueryForm));
     }
 
@@ -77,8 +82,9 @@ public class SalesOrderController {
      */
     @PostMapping("/price/preview")
     @SaCheckPermission(value = {OrderPermission.QUERY, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
-    public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(
-            @Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
+    public ResponseDTO<
+            com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(
+                    @Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
         return ResponseDTO.ok(priceResolver.preview(priceResolveForm.getCustomerId(), priceResolveForm.getSkuIds(),
                 priceResolveForm.getAt()));
     }
@@ -92,16 +98,19 @@ public class SalesOrderController {
      */
     @GetMapping("/reference/recent-prices")
     @SaCheckPermission(value = {OrderPermission.QUERY, CustomerPermission.QUERY}, mode = SaMode.AND)
-    public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId, @RequestParam Long skuId,
-            @RequestParam(defaultValue = "5") int limit) {
+    public ResponseDTO<
+            List<
+                    OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId, @RequestParam Long skuId,
+                            @RequestParam(defaultValue = "5") int limit) {
         return ResponseDTO.ok(salesOrderQueryService.recentPrices(customerId, skuId, limit));
     }
 
     @PostMapping("/create")
     @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<
+            SalesOrderDetailVO> create(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         overridePermission(salesOrderAddForm);
         return ResponseDTO.ok(salesOrderService.create(salesOrderAddForm, key));
     }
@@ -109,8 +118,9 @@ public class SalesOrderController {
     @PostMapping("/create-and-progress")
     @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<
+            SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         overridePermission(salesOrderAddForm);
         return ResponseDTO.ok(salesOrderService.createAndProgress(salesOrderAddForm, key));
     }
@@ -118,7 +128,8 @@ public class SalesOrderController {
     @PostMapping("/update")
     @SaCheckPermission(OrderPermission.UPDATE)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> update(@Valid @RequestBody SalesOrderUpdateForm salesOrderUpdateForm) {
+    public ResponseDTO<
+            SalesOrderDetailVO> update(@Valid @RequestBody SalesOrderUpdateForm salesOrderUpdateForm) {
         overridePermission(salesOrderUpdateForm);
         return ResponseDTO.ok(salesOrderService.update(salesOrderUpdateForm));
     }
@@ -126,39 +137,44 @@ public class SalesOrderController {
     @PostMapping("/submit")
     @SaCheckPermission(OrderPermission.SUBMIT)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> submit(@Valid @RequestBody OrderVersionForm orderVersionForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<
+            SalesOrderDetailVO> submit(@Valid @RequestBody OrderVersionForm orderVersionForm,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.submit(orderVersionForm, key));
     }
 
     @PostMapping("/confirm")
     @SaCheckPermission(OrderPermission.CONFIRM)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> confirm(@Valid @RequestBody OrderVersionForm orderVersionForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<
+            SalesOrderDetailVO> confirm(@Valid @RequestBody OrderVersionForm orderVersionForm,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.confirm(orderVersionForm, key));
     }
 
     @PostMapping("/cancel")
     @SaCheckPermission(OrderPermission.CANCEL)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> cancel(@Valid @RequestBody OrderCancelForm orderCancelForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<
+            SalesOrderDetailVO> cancel(@Valid @RequestBody OrderCancelForm orderCancelForm,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.cancel(orderCancelForm, key));
     }
 
     @PostMapping("/item/actual-quantity")
     @SaCheckPermission(OrderPermission.ACTUAL_QUANTITY)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> actual(@Valid @RequestBody OrderActualQuantityForm orderActualQuantityForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<
+            SalesOrderDetailVO> actual(@Valid @RequestBody OrderActualQuantityForm orderActualQuantityForm,
+                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.actualQuantity(orderActualQuantityForm, key));
     }
 
     @PostMapping("/delete")
     @SaCheckPermission(OrderPermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> delete(@Valid @RequestBody OrderVersionForm orderVersionForm) {
+    public ResponseDTO<
+            String> delete(@Valid @RequestBody OrderVersionForm orderVersionForm) {
         salesOrderService.delete(orderVersionForm);
         return ResponseDTO.ok();
     }
@@ -166,7 +182,8 @@ public class SalesOrderController {
     @PostMapping("/batch-delete")
     @SaCheckPermission(OrderPermission.DELETE)
     @OperateLog
-    public ResponseDTO<String> batchDelete(@Valid @RequestBody OrderBatchDeleteForm batchDeleteForm) {
+    public ResponseDTO<
+            String> batchDelete(@Valid @RequestBody OrderBatchDeleteForm batchDeleteForm) {
         salesOrderService.batchDelete(batchDeleteForm);
         return ResponseDTO.ok();
     }
@@ -180,7 +197,8 @@ public class SalesOrderController {
     @PostMapping("/reserve-stock/{orderId}")
     @SaCheckPermission(OrderPermission.RESERVE_STOCK)
     @OperateLog
-    public ResponseDTO<String> reserveStock(@PathVariable Long orderId) {
+    public ResponseDTO<
+            String> reserveStock(@PathVariable Long orderId) {
         salesOrderService.reserveStock(orderId);
         return ResponseDTO.ok();
     }

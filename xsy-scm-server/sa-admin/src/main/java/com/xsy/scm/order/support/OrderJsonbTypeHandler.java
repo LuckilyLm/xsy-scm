@@ -14,12 +14,18 @@ import java.sql.SQLException;
 
 import java.util.Map;
 
-public class OrderJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> {
+public class OrderJsonbTypeHandler
+        extends
+            BaseTypeHandler<
+                    Map<
+                            String,
+                            Object>> {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
-    public void setNonNullParameter(PreparedStatement preparedStatement, int parameterIndex,
-            Map<String, Object> jsonValue, JdbcType jdbcType) throws SQLException {
+    public void setNonNullParameter(PreparedStatement preparedStatement, int parameterIndex, Map<
+            String,
+            Object> jsonValue, JdbcType jdbcType) throws SQLException {
         try {
             var postgresJsonObject = new PGobject();
             postgresJsonObject.setType("jsonb");
@@ -30,7 +36,9 @@ public class OrderJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> 
         }
     }
 
-    private Map<String, Object> read(String jsonValue) throws SQLException {
+    private Map<
+            String,
+            Object> read(String jsonValue) throws SQLException {
         if (jsonValue == null)
             return null;
         try {
@@ -42,18 +50,23 @@ public class OrderJsonbTypeHandler extends BaseTypeHandler<Map<String, Object>> 
     }
 
     @Override
-    public Map<String, Object> getNullableResult(ResultSet resultSet, String columnLabel) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(ResultSet resultSet, String columnLabel) throws SQLException {
         return read(resultSet.getString(columnLabel));
     }
 
     @Override
-    public Map<String, Object> getNullableResult(ResultSet resultSet, int columnIndex) throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(ResultSet resultSet, int columnIndex) throws SQLException {
         return read(resultSet.getString(columnIndex));
     }
 
     @Override
-    public Map<String, Object> getNullableResult(CallableStatement callableStatement, int parameterIndex)
-            throws SQLException {
+    public Map<
+            String,
+            Object> getNullableResult(CallableStatement callableStatement, int parameterIndex) throws SQLException {
         return read(callableStatement.getString(parameterIndex));
     }
 }

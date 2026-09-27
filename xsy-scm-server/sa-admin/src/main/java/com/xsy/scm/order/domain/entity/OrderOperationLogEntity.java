@@ -26,9 +26,13 @@ public class OrderOperationLogEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String reason;
     @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<String, Object> beforeData;
+    private Map<
+            String,
+            Object> beforeData;
     @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<String, Object> afterData;
+    private Map<
+            String,
+            Object> afterData;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime createdAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

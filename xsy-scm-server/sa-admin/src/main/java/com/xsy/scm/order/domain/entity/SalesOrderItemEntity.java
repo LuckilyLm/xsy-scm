@@ -37,7 +37,9 @@ public class SalesOrderItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String specNameSnapshot;
     @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<String, Object> specValuesSnapshot;
+    private Map<
+            String,
+            Object> specValuesSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String saleUnitSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

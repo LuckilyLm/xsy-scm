@@ -86,7 +86,8 @@ public class OrderReturnService {
      */
     private final FinanceReceivableService financeReceivableService;
 
-    public PageResult<OrderReturnVO> query(OrderReturnQueryForm orderReturnQueryForm) {
+    public PageResult<
+            OrderReturnVO> query(OrderReturnQueryForm orderReturnQueryForm) {
         ScmDataScopeContext dataScopeContext = dataScopeService.resolve();
         if (dataScopeContext.getOrderSellerScope().isEmpty())
             return ScmDataScopeService.emptyPage(orderReturnQueryForm);
@@ -167,8 +168,10 @@ public class OrderReturnService {
         orderReturnEntity.setReason(orderReturnAddForm.getReason().trim());
         orderReturnEntity.setApprovedAmount(BigDecimal.ZERO.setScale(4));
         stamp(orderReturnEntity, true);
-        var pending = new ArrayList<OrderReturnItemEntity>();
-        var seen = new HashSet<Long>();
+        var pending = new ArrayList<
+                OrderReturnItemEntity>();
+        var seen = new HashSet<
+                Long>();
         for (var returnItem : orderReturnAddForm.getItems()) {
             var original = originals.get(returnItem.getOrderItemId());
             if (original == null || !seen.add(returnItem.getOrderItemId()))
@@ -216,7 +219,9 @@ public class OrderReturnService {
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnApproveForm.getVersion());
         pending(orderReturnEntity);
         var rows = orderReturnItemDao.list(orderReturnEntity.getId());
-        var quantities = new HashMap<Long, BigDecimal>();
+        var quantities = new HashMap<
+                Long,
+                BigDecimal>();
         for (var returnItem : orderReturnApproveForm.getItems()) {
             if (quantities.put(returnItem.getOrderItemId(),
                     OrderValidator.decimal(returnItem.getApprovedQuantity(), false)) != null)

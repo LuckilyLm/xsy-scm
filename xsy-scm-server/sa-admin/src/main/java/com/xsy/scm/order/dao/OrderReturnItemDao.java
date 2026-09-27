@@ -9,10 +9,14 @@ import java.util.List;
 import com.xsy.scm.order.domain.entity.OrderReturnItemEntity;
 
 @Mapper
-public interface OrderReturnItemDao extends BaseMapper<OrderReturnItemEntity> {
+public interface OrderReturnItemDao
+        extends
+            BaseMapper<
+                    OrderReturnItemEntity> {
     OrderReturnItemEntity lock(@Param("id") Long id);
 
-    List<OrderReturnItemEntity> list(@Param("id") Long id);
+    List<
+            OrderReturnItemEntity> list(@Param("id") Long id);
 
     java.math.BigDecimal reserved(@Param("id") Long id);
 }

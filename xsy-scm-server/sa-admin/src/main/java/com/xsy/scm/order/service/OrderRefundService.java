@@ -48,7 +48,8 @@ public class OrderRefundService {
     private final OrderOperationLogRecorder orderLogs;
     private final ScmDataScopeService dataScopeService;
 
-    public PageResult<OrderRefundVO> query(OrderRefundQueryForm orderRefundQueryForm) {
+    public PageResult<
+            OrderRefundVO> query(OrderRefundQueryForm orderRefundQueryForm) {
         ScmDataScopeContext dataScopeContext = dataScopeService.resolve();
         if (dataScopeContext.getOrderSellerScope().isEmpty()) {
             return ScmDataScopeService.emptyPage(orderRefundQueryForm);

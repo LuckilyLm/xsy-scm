@@ -19,5 +19,6 @@ public class OrderReturnAddForm {
     @Valid
     @NotEmpty(message = "退货明细不能为空")
     @Size(max = 500, message = "退货明细不能超过500项")
-    private List<OrderReturnItemForm> items;
+    private List<
+            OrderReturnItemForm> items;
 }

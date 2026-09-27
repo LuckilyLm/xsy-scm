@@ -127,8 +127,8 @@ public class SalesOrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public SalesOrderImportResultVO importOrders(List<SalesOrderAddForm> forms, String fileHash, String key,
-            int totalRows) {
+    public SalesOrderImportResultVO importOrders(List<
+            SalesOrderAddForm> forms, String fileHash, String key, int totalRows) {
         var request = Map.of("fileHash", fileHash, "forms", forms);
         var claim = orderIdempotencyService.claim("ORDER_IMPORT", key, request);
         if (claim.replay())
@@ -136,7 +136,8 @@ public class SalesOrderService {
         var result = new SalesOrderImportResultVO();
         result.setTotalRows(totalRows);
         result.setTotalOrders(forms.size());
-        var imported = new ArrayList<SalesOrderDetailVO>();
+        var imported = new ArrayList<
+                SalesOrderDetailVO>();
         for (int index = 0; index < forms.size(); index++) {
             try {
                 var order = createDraft(forms.get(index));
@@ -485,7 +486,8 @@ public class SalesOrderService {
             throw new ScmBusinessException(ORDER_ORIGINAL_INVALID);
     }
 
-    private List<SalesOrderItemEntity> materialize(SalesOrderAddForm salesOrderAddForm) {
+    private List<
+            SalesOrderItemEntity> materialize(SalesOrderAddForm salesOrderAddForm) {
         var ids = salesOrderAddForm.getItems().stream().map(SalesOrderItemForm::getSkuId).toList();
         var products = productSkuOptionDao.selectByIds(ids).stream()
                 .collect(Collectors.toMap(skuOption -> skuOption.getSkuId(), Function.identity()));
@@ -512,7 +514,8 @@ public class SalesOrderService {
         salesOrder.setExpectDeliveryTime(salesOrderAddForm.getExpectDeliveryTime());
     }
 
-    private BigDecimal total(List<SalesOrderItemEntity> rows) {
+    private BigDecimal total(List<
+            SalesOrderItemEntity> rows) {
         return OrderAmountCalculator
                 .orderAmount(rows.stream().map(SalesOrderItemEntity::getOrderedLineAmount).toList());
     }
