@@ -3,12 +3,17 @@ package com.xsy.scm.dashboard.service;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.dashboard.constant.ScmTodoCardEnum;
 import com.xsy.scm.dashboard.domain.vo.ScmTodoVO;
+import com.xsy.scm.delivery.constant.ScmDeliveryRouteStatusEnum;
 import com.xsy.scm.delivery.domain.form.DeliveryQueryForm;
 import com.xsy.scm.delivery.service.DeliveryRouteQueryService;
+import com.xsy.scm.inventory.constant.ScmInventoryLossGainStatusEnum;
 import com.xsy.scm.inventory.domain.form.InventoryLossGainQueryForm;
 import com.xsy.scm.inventory.domain.form.InventoryWarningQueryForm;
 import com.xsy.scm.inventory.service.InventoryLossGainQueryService;
 import com.xsy.scm.inventory.service.InventoryWarningQueryService;
+import com.xsy.scm.purchase.constant.ScmPutawayStatusEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
+import com.xsy.scm.purchase.constant.ScmReceiptStatusEnum;
 import com.xsy.scm.purchase.domain.form.PurchaseReceiptQueryForm;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
 import net.lab1024.sa.admin.module.system.login.manager.LoginManager;
@@ -98,9 +103,9 @@ public class ScmTodoQueryService {
         PurchaseReceiptQueryForm form = new PurchaseReceiptQueryForm();
         form.setPageNum(1L);
         form.setPageSize(1L);
-        form.setStatus("CONFIRMED");
-        form.setReceiptMode("WAREHOUSE_CONFIRM");
-        form.setPutawayStatus("PENDING");
+        form.setStatus(ScmReceiptStatusEnum.CONFIRMED.name());
+        form.setReceiptMode(ScmReceiptModeEnum.WAREHOUSE_CONFIRM.name());
+        form.setPutawayStatus(ScmPutawayStatusEnum.PENDING.name());
         return form;
     }
 
@@ -108,7 +113,7 @@ public class ScmTodoQueryService {
         InventoryLossGainQueryForm form = new InventoryLossGainQueryForm();
         form.setPageNum(1L);
         form.setPageSize(1L);
-        form.setStatus("PENDING");
+        form.setStatus(ScmInventoryLossGainStatusEnum.PENDING.name());
         return form;
     }
 
@@ -116,7 +121,7 @@ public class ScmTodoQueryService {
         DeliveryQueryForm form = new DeliveryQueryForm();
         form.setPageNum(1L);
         form.setPageSize(1L);
-        form.setStatus("DRAFT");
+        form.setStatus(ScmDeliveryRouteStatusEnum.DRAFT.name());
         return form;
     }
 }
