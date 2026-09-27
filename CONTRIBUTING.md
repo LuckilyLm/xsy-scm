@@ -144,13 +144,14 @@ python -m pip install -r tools/requirements-dev.txt
 
 ```powershell
 .\tools\verify.ps1           # 后端 + 类型门禁 + lint + 前端单测/构建 + E2E 就绪检查/执行
+.\tools\verify.ps1 quality   # Java 质量门禁
 .\tools\verify.ps1 backend   # 后端单测与 IT
 .\tools\verify.ps1 frontend  # 前端检查、构建与 E2E
 .\tools\verify.ps1 e2e       # 仅 E2E
 python tools/test_verification.py
 ```
 
-macOS / Linux 对应使用 `bash tools/verify.sh [scope]`。两种入口共享 `tools/verify.py`。
+macOS / Linux 对应使用 `bash tools/verify.sh [scope]`（例如 `quality`）。两种入口共享 `tools/verify.py`。
 
 E2E 需先启动既有 Playwright 配置对应的服务（默认前端 18081、后端 18080），提供本机账号脚本；F0 云场景还需临时管理员与普通员工 token。前置条件不足时明确列出未覆盖项，不自动供给正式角色。
 
