@@ -19,15 +19,15 @@ import java.time.OffsetDateTime;
 @Data
 public class FinanceReceiptAddForm {
 
-    @NotNull
+    @NotNull(message = "客户不能为空")
     private Long customerId;
 
     /**
      * 收款金额：一律 JSON 字符串，整数最多 14 位、小数最多 4 位；
      * 服务端按 {@link ScmDecimalStrings} 统一成 scale 4，并要求严格大于 0。
      */
-    @NotNull
-    @Pattern(regexp = ScmDecimalStrings.PATTERN)
+    @NotNull(message = "收款金额不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "收款金额格式无效")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String amount;
 
@@ -35,14 +35,14 @@ public class FinanceReceiptAddForm {
      * 方式取 {@code ScmFinancePaymentMethodEnum} 三值（第二批 Q21：Java enum + DB CHECK，不入字典）。
      * 在线支付 / 余额 / COD / 充值属 P5，本期不出现。
      */
-    @NotNull
+    @NotNull(message = "收款方式不能为空")
     private String method;
 
     /**
      * 实际收款业务时点，由登记人填写。本期不加「不得晚于当前时间」之类的额外规则（设计稿 §5）；
      * 也不接受服务端 {@code now()} 兜底 —— 时点是业务事实，不是落库时刻。
      */
-    @NotNull
+    @NotNull(message = "收款时间不能为空")
     private OffsetDateTime receivedAt;
 
     /**
@@ -52,9 +52,9 @@ public class FinanceReceiptAddForm {
      * {@code uk_finance_receipt_no} 只是单据号唯一、不是业务事实幂等键。
      * 金额 / 凭据号 / 时点全部相同的两笔真实收款，只要来自两条命令就都应当成立。
      */
-    @Size(max = 128)
+    @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注长度不能超过500")
     private String remark;
 }

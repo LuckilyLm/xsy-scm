@@ -1,7 +1,9 @@
 package com.xsy.scm.finance.constant;
 
+import com.xsy.scm.finance.permission.FinancePermission;
+
 /**
- * 财务域的固定口径：单号前缀、权限码与锁序 rank。
+ * 财务域的固定口径：单号前缀与锁序 rank。
  *
  * <p><b>金额与数量一律 {@code NUMERIC(18,4)}、scale 4、{@code HALF_UP}</b>（Q22）；
  * 序列化沿用 {@code ScmFixedScale4Serializer}（null 写 null，绝不写 0）。
@@ -38,16 +40,16 @@ public final class FinanceConstant {
      */
     public static final String WRITE_OFF_NO_PREFIX = "WO";
 
-    public static final String RECEIVABLE_QUERY_PERM = "scm:finance:receivable:query";
-    public static final String PAYABLE_QUERY_PERM = "scm:finance:payable:query";
-    public static final String RECEIPT_QUERY_PERM = "scm:finance:receipt:query";
-    public static final String PAYMENT_QUERY_PERM = "scm:finance:payment:query";
-    public static final String WRITE_OFF_QUERY_PERM = "scm:finance:write-off:query";
+    public static final String RECEIVABLE_QUERY_PERM = FinancePermission.RECEIVABLE_QUERY;
+    public static final String PAYABLE_QUERY_PERM = FinancePermission.PAYABLE_QUERY;
+    public static final String RECEIPT_QUERY_PERM = FinancePermission.RECEIPT_QUERY;
+    public static final String PAYMENT_QUERY_PERM = FinancePermission.PAYMENT_QUERY;
+    public static final String WRITE_OFF_QUERY_PERM = FinancePermission.WRITE_OFF_QUERY;
 
-    public static final String RECEIPT_ADD_PERM = "scm:finance:receipt:add";
-    public static final String PAYMENT_ADD_PERM = "scm:finance:payment:add";
-    public static final String WRITE_OFF_ADD_PERM = "scm:finance:write-off:add";
-    public static final String PAYABLE_RED_PERM = "scm:finance:payable:red";
+    public static final String RECEIPT_ADD_PERM = FinancePermission.RECEIPT_ADD;
+    public static final String PAYMENT_ADD_PERM = FinancePermission.PAYMENT_ADD;
+    public static final String WRITE_OFF_ADD_PERM = FinancePermission.WRITE_OFF_ADD;
+    public static final String PAYABLE_RED_PERM = FinancePermission.PAYABLE_RED;
 
     /**
      * 收款登记的幂等 scope（与 {@code Idempotency-Key} 一起定位一条命令）。
@@ -70,15 +72,15 @@ public final class FinanceConstant {
      * 四个破坏性动作各一条独立权限（Q20 / D-3）：能登记一笔款的人不必然是能冲掉一笔款的人，
      * 因此它们既不与 {@code *:add} 合并，也不合成一个 {@code scm:finance:reverse}。
      */
-    public static final String WRITE_OFF_REVERSE_PERM = "scm:finance:write-off:reverse";
-    public static final String RECEIPT_REVERSE_PERM = "scm:finance:receipt:reverse";
-    public static final String PAYMENT_REVERSE_PERM = "scm:finance:payment:reverse";
+    public static final String WRITE_OFF_REVERSE_PERM = FinancePermission.WRITE_OFF_REVERSE;
+    public static final String RECEIPT_REVERSE_PERM = FinancePermission.RECEIPT_REVERSE;
+    public static final String PAYMENT_REVERSE_PERM = FinancePermission.PAYMENT_REVERSE;
 
     /**
      * 导出许可，<b>绝不扩大查询范围</b>（P0 裁决 10）：导出端点要求
      * 「对应 {@code *:query} AND 本权限」，且与列表共用同一次范围解析结果。
      */
-    public static final String EXPORT_PERM = "scm:finance:export";
+    public static final String EXPORT_PERM = FinancePermission.EXPORT;
 
     /*
      * 以上权限串是设计稿 §16 冻结的**词汇表**。发布纪律：一个阶段只种它第一次真实使用的能力，

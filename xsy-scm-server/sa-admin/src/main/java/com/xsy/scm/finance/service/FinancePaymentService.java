@@ -1,6 +1,7 @@
 package com.xsy.scm.finance.service;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -26,6 +27,7 @@ import com.xsy.scm.finance.domain.form.FinancePaymentAddForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,14 +60,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FinancePaymentService {
 
-    private static final String REFUND_STATUS_COMPLETED = "COMPLETED";
-
-    private final FinancePaymentDao payments;
-    private final FinancePaymentSourceDao paymentSource;
-    private final FinanceCounterpartySourceDao counterpartySource;
+    private final FinancePaymentDao financePaymentDao;
+    private final FinancePaymentSourceDao financePaymentSourceDao;
+    private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
     private final FinanceOperationLogRecorder operationLogs;
-    private final ScmDataScopeService scopeService;
-    private final OrderIdempotencyService idempotency;
+    private final ScmDataScopeService dataScopeService;
+    private final OrderIdempotencyService orderIdempotencyService;
 
     /**
      * 登记一笔 {@code NORMAL} 付款。
@@ -82,9 +82,9 @@ public class FinancePaymentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentVO add(FinancePaymentAddForm form, String idempotencyKey) {
-        var claim = idempotency.claim(FinanceConstant.PAYMENT_ADD_SCOPE, idempotencyKey, form);
+        var claim = orderIdempotencyService.claim(FinanceConstant.PAYMENT_ADD_SCOPE, idempotencyKey, form);
         if (claim.replay()) {
-            return idempotency.replay(claim, FinancePaymentVO.class);
+            return orderIdempotencyService.replay(claim, FinancePaymentVO.class);
         }
 
         FinancePaymentEntity payment = register(form);
@@ -92,7 +92,7 @@ public class FinancePaymentService {
                 ScmFinanceOperationTypeEnum.PAY, null, null, snapshot(payment));
 
         FinancePaymentVO result = vo(payment);
-        idempotency.complete(claim, "FINANCE_PAYMENT", payment.getId(), result);
+        orderIdempotencyService.complete(claim, "FINANCE_PAYMENT", payment.getId(), result);
         return result;
     }
 
@@ -118,8 +118,8 @@ public class FinancePaymentService {
         // REVERSE 专用列在 NORMAL 行上必须为空（ck_finance_payment_entry_pairing）。
         payment.setReverseOfId(null);
         payment.setReason(null);
-        payment.setExternalReference(trimToNull(form.getExternalReference()));
-        payment.setRemark(trimToNull(form.getRemark()));
+        payment.setExternalReference(StringUtils.trimToNull(form.getExternalReference()));
+        payment.setRemark(StringUtils.trimToNull(form.getRemark()));
 
         if (ScmFinanceCounterpartyTypeEnum.SUPPLIER.name().equals(counterpartyType)) {
             fillSupplier(payment, form);
@@ -130,7 +130,7 @@ public class FinancePaymentService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         payment.setPaymentNo(ScmDocumentNumbers.format(
-                FinanceConstant.PAYMENT_NO_PREFIX, payments.nextPaymentNo()));
+                FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
         payment.setCreatedAt(now);
         payment.setUpdatedAt(now);
         payment.setCreatedBy(operator);
@@ -138,7 +138,7 @@ public class FinancePaymentService {
 
         // 0 行 = 撞 uk_finance_payment_source_active。供应商付款的 source_id 为 NULL、
         // 不在该索引内，所以这里不存在「把别的冲突误吞成已付过」的空间。
-        if (payments.insertNormalOnConflictDoNothing(payment) != 1) {
+        if (financePaymentDao.insertNormalOnConflictDoNothing(payment) != 1) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         return payment;
@@ -154,7 +154,7 @@ public class FinancePaymentService {
             // 供应商付款没有业务来源；带了来源就是模式错误（库层 ck_finance_payment_source_pairing 同向）
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        FinanceSupplierFactDto supplier = counterpartySource.selectSupplier(form.getCounterpartyId());
+        FinanceSupplierFactDto supplier = financeCounterpartySourceDao.selectSupplier(form.getCounterpartyId());
         if (supplier == null) {
             // 供应商侧没有范围判定（D-5），因此「不存在」不是敏感信号，用参数错误而不是 41139：
             // 41139 的文案是「退款付款来源不合法」，挂在这里会误导排查。
@@ -172,22 +172,22 @@ public class FinancePaymentService {
      */
     private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form,
                                     BigDecimal amount) {
-        if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(trimToNull(form.getSourceType()))
+        if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(StringUtils.trimToNull(form.getSourceType()))
                 || form.getSourceId() == null) {
             // 本期唯一的客户侧付款就是退款付款；无来源的「客户付款」没有需求基线（属 P5）
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        FinanceRefundFactDto refund = paymentSource.selectOrderRefund(form.getSourceId());
+        FinanceRefundFactDto refund = financePaymentSourceDao.selectOrderRefund(form.getSourceId());
         if (refund == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        FinanceCustomerFactDto customer = counterpartySource.selectCustomer(refund.getCustomerId());
+        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(refund.getCustomerId());
         if (customer == null
-                || !scopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+                || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             // 越权与「退款指向的客户不存在」同码：见 register() 的说明
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        if (!REFUND_STATUS_COMPLETED.equals(refund.getStatus())) {
+        if (!ScmOrderRefundStatusEnum.COMPLETED.name().equals(refund.getStatus())) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         if (!refund.getCustomerId().equals(form.getCounterpartyId())) {
@@ -207,7 +207,7 @@ public class FinancePaymentService {
     }
 
     private static String counterpartyType(String raw) {
-        String value = trimToNull(raw);
+        String value = StringUtils.trimToNull(raw);
         for (ScmFinanceCounterpartyTypeEnum candidate : ScmFinanceCounterpartyTypeEnum.values()) {
             if (candidate.name().equals(value)) {
                 return candidate.name();
@@ -231,20 +231,13 @@ public class FinancePaymentService {
      * 方式与收款共用 {@link ScmFinancePaymentMethodEnum}（Q21：Java enum + DB CHECK，不入字典）。
      */
     private static String method(String raw) {
-        String value = trimToNull(raw);
+        String value = StringUtils.trimToNull(raw);
         for (ScmFinancePaymentMethodEnum candidate : ScmFinancePaymentMethodEnum.values()) {
             if (candidate.name().equals(value)) {
                 return candidate.name();
             }
         }
         throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
-    }
-
-    private static String trimToNull(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        return value.trim();
     }
 
     private Map<String, Object> snapshot(FinancePaymentEntity payment) {

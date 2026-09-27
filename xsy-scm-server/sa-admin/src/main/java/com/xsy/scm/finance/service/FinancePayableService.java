@@ -44,9 +44,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FinancePayableService {
 
-    private final FinancePayableDao payables;
-    private final FinancePayableItemDao payableItems;
-    private final FinancePayableSourceDao payableSource;
+    private final FinancePayableDao financePayableDao;
+    private final FinancePayableItemDao financePayableItemDao;
+    private final FinancePayableSourceDao financePayableSourceDao;
     private final FinanceOperationLogRecorder operationLogs;
 
     /**
@@ -68,7 +68,7 @@ public class FinancePayableService {
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateOnReceiptConfirm(Long purchaseReceiptId) {
-        FinancePayableSourceDto source = payableSource.selectConfirmedReceipt(purchaseReceiptId);
+        FinancePayableSourceDto source = financePayableSourceDao.selectConfirmedReceipt(purchaseReceiptId);
         if (source == null) {
             // 走到这里说明调用点把未确认（或不存在）的收货单当成收货事实，静默跳过会留下一个
             // 「业务以为财务已挂账、财务什么都没记」的缺口，因此必须失败并让收货确认一起回滚。
@@ -76,7 +76,8 @@ public class FinancePayableService {
                     "收货单未处于 CONFIRMED 状态，不能生成应付: " + purchaseReceiptId);
         }
 
-        List<FinancePayableSourceLineDto> lines = payableSource.selectConfirmedReceiptLines(purchaseReceiptId);
+        List<FinancePayableSourceLineDto> lines =
+                financePayableSourceDao.selectConfirmedReceiptLines(purchaseReceiptId);
         List<FinancePayableItemEntity> items = toItems(lines);
         BigDecimal amount = items.stream()
                 .map(FinancePayableItemEntity::getAmount)
@@ -89,12 +90,12 @@ public class FinancePayableService {
         }
 
         FinancePayableEntity payable = header(source, amount);
-        if (payables.insertOnConflictDoNothing(payable) == 0) {
+        if (financePayableDao.insertOnConflictDoNothing(payable) == 0) {
             return;
         }
         for (FinancePayableItemEntity item : items) {
             item.setPayableId(payable.getId());
-            if (payableItems.insertOnConflictDoNothing(item) != 1) {
+            if (financePayableItemDao.insertOnConflictDoNothing(item) != 1) {
                 // 单头是本次刚插入的，因此这里撞键不是重放，而是同一收货行被挂到了两张应付单上。
                 throw new IllegalStateException(
                         "收货行已挂在别的应付单上，本次生成整体回滚: " + item.getSourceId());
@@ -116,7 +117,7 @@ public class FinancePayableService {
 
         FinancePayableEntity payable = new FinancePayableEntity();
         payable.setPayableNo(ScmDocumentNumbers.format(
-                FinanceConstant.PAYABLE_NO_PREFIX, payables.nextPayableNo()));
+                FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
         payable.setSourceType(ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name());
         payable.setSourceId(source.getPurchaseReceiptId());
         payable.setPurchaseOrderId(source.getPurchaseOrderId());

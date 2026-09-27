@@ -30,36 +30,36 @@ public class FinancePaymentAddForm {
     /**
      * {@code ScmFinanceCounterpartyTypeEnum} 两值之一。
      */
-    @NotNull
+    @NotNull(message = "往来方类型不能为空")
     private String counterpartyType;
 
     /**
      * 对方主键：{@code SUPPLIER} 时为 {@code supplier.id}；
      * {@code CUSTOMER} 时<b>以 {@code order_refund.customer_id} 为权威</b>，本字段只用于一致性校验。
      */
-    @NotNull
+    @NotNull(message = "往来方编号不能为空")
     private Long counterpartyId;
 
     /**
      * 付款金额：一律 JSON 字符串，整数最多 14 位、小数最多 4 位；
      * 服务端按 {@link ScmDecimalStrings} 统一成 scale 4，并要求严格大于 0。
      */
-    @NotNull
-    @Pattern(regexp = ScmDecimalStrings.PATTERN)
+    @NotNull(message = "付款金额不能为空")
+    @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "付款金额格式无效")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String amount;
 
     /**
      * 方式取 {@code ScmFinancePaymentMethodEnum} 三值，与收款共用同一套枚举（Q21）。
      */
-    @NotNull
+    @NotNull(message = "付款方式不能为空")
     private String method;
 
     /**
      * 实际付款业务时点，由登记人填写。服务端不用 {@code now()} 兜底，
      * 也不加「不得晚于当前时间」的规则（同收款，设计稿 §6）。
      */
-    @NotNull
+    @NotNull(message = "付款时间不能为空")
     private OffsetDateTime paidAt;
 
     /**
@@ -68,7 +68,7 @@ public class FinancePaymentAddForm {
      * <p><b>不会从 {@code order_refund.external_reference} 自动带入</b>：那一列属于订单域的退款事实，
      * 本列属于财务的真实资金动作，两者职责不同，必须由登记人独立提供。
      */
-    @Size(max = 128)
+    @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;
 
     /**
@@ -82,6 +82,6 @@ public class FinancePaymentAddForm {
      */
     private Long sourceId;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "备注长度不能超过500")
     private String remark;
 }

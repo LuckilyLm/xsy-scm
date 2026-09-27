@@ -1,6 +1,7 @@
 package com.xsy.scm.finance.service;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -53,11 +54,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FinanceReceiptService {
 
-    private final FinanceReceiptDao receipts;
-    private final FinanceCounterpartySourceDao counterpartySource;
+    private final FinanceReceiptDao financeReceiptDao;
+    private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
     private final FinanceOperationLogRecorder operationLogs;
-    private final ScmDataScopeService scopeService;
-    private final OrderIdempotencyService idempotency;
+    private final ScmDataScopeService dataScopeService;
+    private final OrderIdempotencyService orderIdempotencyService;
 
     /**
      * 登记一笔 {@code NORMAL} 收款。
@@ -74,9 +75,9 @@ public class FinanceReceiptService {
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO add(FinanceReceiptAddForm form, String idempotencyKey) {
-        var claim = idempotency.claim(FinanceConstant.RECEIPT_ADD_SCOPE, idempotencyKey, form);
+        var claim = orderIdempotencyService.claim(FinanceConstant.RECEIPT_ADD_SCOPE, idempotencyKey, form);
         if (claim.replay()) {
-            return idempotency.replay(claim, FinanceReceiptVO.class);
+            return orderIdempotencyService.replay(claim, FinanceReceiptVO.class);
         }
 
         FinanceReceiptEntity receipt = register(form);
@@ -84,7 +85,7 @@ public class FinanceReceiptService {
                 ScmFinanceOperationTypeEnum.RECEIVE, null, null, snapshot(receipt));
 
         FinanceReceiptVO result = vo(receipt);
-        idempotency.complete(claim, "FINANCE_RECEIPT", receipt.getId(), result);
+        orderIdempotencyService.complete(claim, "FINANCE_RECEIPT", receipt.getId(), result);
         return result;
     }
 
@@ -93,9 +94,9 @@ public class FinanceReceiptService {
      * 反向要带 {@code reverse_of_id} 与原行「已用额 = 0」前置，是另一条命令。
      */
     private FinanceReceiptEntity register(FinanceReceiptAddForm form) {
-        FinanceCustomerFactDto customer = counterpartySource.selectCustomer(form.getCustomerId());
+        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(form.getCustomerId());
         if (customer == null
-                || !scopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+                || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             throw new ScmDataScopeException();
         }
 
@@ -110,7 +111,7 @@ public class FinanceReceiptService {
 
         FinanceReceiptEntity receipt = new FinanceReceiptEntity();
         receipt.setReceiptNo(ScmDocumentNumbers.format(
-                FinanceConstant.RECEIPT_NO_PREFIX, receipts.nextReceiptNo()));
+                FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customer.getCustomerName());
         receipt.setAmount(amount);
@@ -120,13 +121,13 @@ public class FinanceReceiptService {
         // REVERSE 专用列在 NORMAL 行上必须为空（ck_finance_receipt_entry_pairing）。
         receipt.setReverseOfId(null);
         receipt.setReason(null);
-        receipt.setExternalReference(trimToNull(form.getExternalReference()));
-        receipt.setRemark(trimToNull(form.getRemark()));
+        receipt.setExternalReference(StringUtils.trimToNull(form.getExternalReference()));
+        receipt.setRemark(StringUtils.trimToNull(form.getRemark()));
         receipt.setCreatedAt(now);
         receipt.setUpdatedAt(now);
         receipt.setCreatedBy(operator);
         receipt.setUpdatedBy(operator);
-        if (receipts.insert(receipt) != 1) {
+        if (financeReceiptDao.insert(receipt) != 1) {
             throw new IllegalStateException("收款登记未落库: " + receipt.getReceiptNo());
         }
         return receipt;
@@ -138,20 +139,13 @@ public class FinanceReceiptService {
      * 不用 {@code valueOf} 直抛，是为了给用户一个业务码而不是栈异常。
      */
     private static String method(String raw) {
-        String value = trimToNull(raw);
+        String value = StringUtils.trimToNull(raw);
         for (ScmFinancePaymentMethodEnum candidate : ScmFinancePaymentMethodEnum.values()) {
             if (candidate.name().equals(value)) {
                 return candidate.name();
             }
         }
         throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
-    }
-
-    private static String trimToNull(String value) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        return value.trim();
     }
 
     private Map<String, Object> snapshot(FinanceReceiptEntity receipt) {

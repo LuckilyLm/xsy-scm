@@ -27,6 +27,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class FinanceWriteOffService {
 
-    private final FinanceWriteOffDao writeOffs;
+    private final FinanceWriteOffDao financeWriteOffDao;
     private final FinanceOperationLogRecorder operationLogs;
 }

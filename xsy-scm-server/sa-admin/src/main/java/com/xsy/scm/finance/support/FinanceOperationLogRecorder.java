@@ -36,8 +36,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FinanceOperationLogRecorder {
 
-    private final FinanceOperationLogDao logs;
-    private final ObjectMapper json;
+    private final FinanceOperationLogDao financeOperationLogDao;
+    private final ObjectMapper objectMapper;
 
     /**
      * 追加一条财务操作日志。
@@ -76,14 +76,14 @@ public class FinanceOperationLogRecorder {
         entry.setReason(reason);
         entry.setBeforeData(toJsonMap(before));
         entry.setAfterData(toJsonMap(after));
-        logs.insert(entry);
+        financeOperationLogDao.insert(entry);
     }
 
     private Map<String, Object> toJsonMap(Object value) {
         if (value == null) {
             return null;
         }
-        return json.convertValue(value, new TypeReference<Map<String, Object>>() {
+        return objectMapper.convertValue(value, new TypeReference<Map<String, Object>>() {
         });
     }
 }

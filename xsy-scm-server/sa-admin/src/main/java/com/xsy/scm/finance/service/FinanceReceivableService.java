@@ -47,9 +47,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FinanceReceivableService {
 
-    private final FinanceReceivableDao receivables;
-    private final FinanceReceivableItemDao receivableItems;
-    private final FinanceReceivableSourceDao receivableSource;
+    private final FinanceReceivableDao financeReceivableDao;
+    private final FinanceReceivableItemDao financeReceivableItemDao;
+    private final FinanceReceivableSourceDao financeReceivableSourceDao;
     private final FinanceOperationLogRecorder operationLogs;
 
     /**
@@ -69,7 +69,7 @@ public class FinanceReceivableService {
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateOnSign(Long deliveryRouteOrderId) {
-        FinanceReceivableSourceDto source = receivableSource.selectSignedAssignment(deliveryRouteOrderId);
+        FinanceReceivableSourceDto source = financeReceivableSourceDao.selectSignedAssignment(deliveryRouteOrderId);
         if (source == null) {
             // 调用点把没签收（或不存在）的分配行当成签收事实。静默跳过会留下
             // 「配送以为已挂账、财务什么都没记」的缺口，因此必须失败并让签收回滚。
@@ -79,7 +79,7 @@ public class FinanceReceivableService {
 
         ensureNormalFromSigning(source);
         // 没有正常应收就没有可挂红字的原单，孤立红字被第二批 Q27 明令禁止 —— 因此不补生成。
-        FinanceReceivableEntity normal = receivables.selectNormalByOrder(source.getSalesOrderId());
+        FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(source.getSalesOrderId());
         if (normal != null) {
             backfillRedForApprovedReturns(source.getSalesOrderId(), normal);
         }
@@ -100,12 +100,12 @@ public class FinanceReceivableService {
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateRedOnReturnApproved(Long orderReturnId) {
-        FinanceReturnSourceDto returned = receivableSource.selectApprovedReturn(orderReturnId);
+        FinanceReturnSourceDto returned = financeReceivableSourceDao.selectApprovedReturn(orderReturnId);
         if (returned == null) {
             throw new IllegalStateException(
                     "退货单未处于 APPROVED 状态，不能生成红字应收: " + orderReturnId);
         }
-        FinanceReceivableEntity normal = receivables.selectNormalByOrder(returned.getOrderId());
+        FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(returned.getOrderId());
         if (normal == null) {
             // 退货先于签收（第二批 Q27 的第二种时序）：成功跳过，等签收补生成。
             return;
@@ -120,7 +120,7 @@ public class FinanceReceivableService {
      */
     private void ensureNormalFromSigning(FinanceReceivableSourceDto source) {
         List<FinanceReceivableItemEntity> items = toNormalItems(source,
-                receivableSource.selectOutboundLines(source.getSalesOrderId()));
+                financeReceivableSourceDao.selectOutboundLines(source.getSalesOrderId()));
         BigDecimal amount = items.stream()
                 .map(FinanceReceivableItemEntity::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -132,7 +132,7 @@ public class FinanceReceivableService {
         }
 
         FinanceReceivableEntity receivable = normalHeader(source, amount);
-        if (receivables.insertOnConflictDoNothing(receivable) == 0) {
+        if (financeReceivableDao.insertOnConflictDoNothing(receivable) == 0) {
             // 该订单已经有正常应收了（生成器可重放：签收重试、同一派生被再次触发）。
             // 首笔已经把明细与日志写全，这里既不再插也不重复留痕 —— 仲裁者是那条唯一索引，
             // 不是「先查再插」。
@@ -140,7 +140,7 @@ public class FinanceReceivableService {
         }
         for (FinanceReceivableItemEntity item : items) {
             item.setReceivableId(receivable.getId());
-            if (receivableItems.insertOnConflictDoNothing(item) != 1) {
+            if (financeReceivableItemDao.insertOnConflictDoNothing(item) != 1) {
                 // 单头是本次刚插入的，因此这里撞键不是重放，而是同一出库行被挂到了两张应收单上。
                 throw new IllegalStateException(
                         "出库行已挂在别的应收单上，本次生成整体回滚: " + item.getSourceId());
@@ -159,8 +159,8 @@ public class FinanceReceivableService {
      * 只有一份红字算法，两条触发路径的差别只在「什么时候被叫到」。
      */
     private void backfillRedForApprovedReturns(Long salesOrderId, FinanceReceivableEntity normal) {
-        for (Long returnId : receivableSource.selectApprovedReturnIds(salesOrderId)) {
-            FinanceReturnSourceDto returned = receivableSource.selectApprovedReturn(returnId);
+        for (Long returnId : financeReceivableSourceDao.selectApprovedReturnIds(salesOrderId)) {
+            FinanceReturnSourceDto returned = financeReceivableSourceDao.selectApprovedReturn(returnId);
             if (returned == null) {
                 // 同一事务内刚按 APPROVED 查出这一张，现在读不到说明数据被旁路改过：宁可失败不可漏账。
                 throw new IllegalStateException("已批准退货读不到事实，不能补生成红字应收: " + returnId);
@@ -178,7 +178,7 @@ public class FinanceReceivableService {
      */
     private void generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
         List<FinanceReceivableItemEntity> items = toRedItems(returned,
-                receivableSource.selectApprovedReturnLines(returned.getOrderReturnId()));
+                financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()));
         BigDecimal amount = items.stream()
                 .map(FinanceReceivableItemEntity::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -190,12 +190,12 @@ public class FinanceReceivableService {
         }
 
         FinanceReceivableEntity red = redHeader(returned, normal, amount);
-        if (receivables.insertOnConflictDoNothing(red) == 0) {
+        if (financeReceivableDao.insertOnConflictDoNothing(red) == 0) {
             return;
         }
         for (FinanceReceivableItemEntity item : items) {
             item.setReceivableId(red.getId());
-            if (receivableItems.insertOnConflictDoNothing(item) != 1) {
+            if (financeReceivableItemDao.insertOnConflictDoNothing(item) != 1) {
                 throw new IllegalStateException(
                         "退货行已挂在别的应收单上，本次红字生成整体回滚: " + item.getSourceId());
             }
@@ -215,7 +215,7 @@ public class FinanceReceivableService {
 
         FinanceReceivableEntity receivable = new FinanceReceivableEntity();
         receivable.setReceivableNo(ScmDocumentNumbers.format(
-                FinanceConstant.RECEIVABLE_NO_PREFIX, receivables.nextReceivableNo()));
+                FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
         receivable.setSourceType(ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name());
         receivable.setSourceId(source.getSalesOrderId());
         receivable.setOrderId(source.getSalesOrderId());
@@ -241,7 +241,7 @@ public class FinanceReceivableService {
 
         FinanceReceivableEntity red = new FinanceReceivableEntity();
         red.setReceivableNo(ScmDocumentNumbers.format(
-                FinanceConstant.RECEIVABLE_NO_PREFIX, receivables.nextReceivableNo()));
+                FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
         red.setSourceType(ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name());
         red.setSourceId(returned.getOrderReturnId());
         red.setOrderId(returned.getOrderId());

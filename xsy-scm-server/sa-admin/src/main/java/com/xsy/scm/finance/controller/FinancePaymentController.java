@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import com.xsy.scm.finance.constant.FinanceConstant;
+import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.domain.form.FinancePaymentAddForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.service.FinancePaymentService;
@@ -35,7 +35,7 @@ public class FinancePaymentController {
     private final FinancePaymentService financePaymentService;
 
     @PostMapping("/add")
-    @SaCheckPermission(FinanceConstant.PAYMENT_ADD_PERM)
+    @SaCheckPermission(FinancePermission.PAYMENT_ADD)
     @OperateLog
     public ResponseDTO<FinancePaymentVO> add(
             @Valid @RequestBody FinancePaymentAddForm form,
