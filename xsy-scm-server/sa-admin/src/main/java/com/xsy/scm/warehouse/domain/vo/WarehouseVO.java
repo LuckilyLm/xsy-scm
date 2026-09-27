@@ -1,7 +1,10 @@
 package com.xsy.scm.warehouse.domain.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
@@ -9,10 +12,10 @@ import java.time.OffsetDateTime;
  */
 @Data
 public class WarehouseVO {
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal longitude;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    private java.math.BigDecimal latitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal longitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    private BigDecimal latitude;
     private String geomCrs;
 
     private Long id;

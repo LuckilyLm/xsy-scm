@@ -8,7 +8,10 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
@@ -20,13 +23,13 @@ import java.time.OffsetDateTime;
 @Data
 @TableName(value = "warehouse", autoResultMap = true)
 public class WarehouseEntity {
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS)
-    private java.math.BigDecimal longitude;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(nullsUsing = com.fasterxml.jackson.databind.ser.std.NullSerializer.class)
-    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS)
-    private java.math.BigDecimal latitude;
-    @com.baomidou.mybatisplus.annotation.TableField(updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.ALWAYS)
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private BigDecimal longitude;
+    @JsonSerialize(nullsUsing = NullSerializer.class)
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private BigDecimal latitude;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String geomCrs;
 
     @TableId(type = IdType.AUTO)
