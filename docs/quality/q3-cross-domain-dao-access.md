@@ -8,4 +8,4 @@
 
 ## 幂等写入
 
-幂等记录实体、DAO、哈希和 claim / replay / complete 实现现位于 common，共用 `idempotency_record` 表并参与调用方事务。采购保留错误码语义；订单模块保留 `OrderIdempotencyService` 兼容外观，订单、配送、库存、分拣和财务命令通过公共实现处理幂等。不得再从业务域直接导入该表的 DAO。
+幂等记录实体、DAO、请求哈希和 claim / replay / complete 实现现位于 common，共用 `idempotency_record` 表并参与调用方事务。采购保留其既有错误码语义，其他 SCM 命令使用公共幂等错误码。`OrderIdempotencyService` 保留为订单侧兼容外观；跨域命令直接使用公共服务，不得直接导入幂等记录 DAO。
