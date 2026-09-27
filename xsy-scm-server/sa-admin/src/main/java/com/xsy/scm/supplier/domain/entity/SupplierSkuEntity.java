@@ -17,7 +17,8 @@ import java.util.Map;
 /**
  * 商品-供应商关系（SKU 级）。
  *
- * <p>关系以 SKU 为粒度；快照列冻结供应商与 SKU 的展示信息，使主数据改名后关联行仍然可读。
+ * <p>
+ * 关系以 SKU 为粒度；快照列冻结供应商与 SKU 的展示信息，使主数据改名后关联行仍然可读。
  */
 @Data
 @TableName(value = "supplier_sku", autoResultMap = true)
@@ -66,7 +67,8 @@ public class SupplierSkuEntity {
     /**
      * 是否默认采购来源。
      *
-     * <p>同一供应商允许多个默认来源，因此这里不做互斥校验，也不建立限制基数的唯一索引。
+     * <p>
+     * 同一供应商允许多个默认来源，因此这里不做互斥校验，也不建立限制基数的唯一索引。
      */
     @TableField("is_default")
     private Boolean defaultFlag;

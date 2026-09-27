@@ -29,7 +29,8 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND
 /**
  * 供应商读路径。
  *
- * <p>管理列表返回全部状态，下拉只返回 {@code ENABLED}；{@code skuCount} 一次查询批量补全。
+ * <p>
+ * 管理列表返回全部状态，下拉只返回 {@code ENABLED}；{@code skuCount} 一次查询批量补全。
  */
 @Service
 @RequiredArgsConstructor
@@ -80,8 +81,8 @@ public class SupplierQueryService {
      * 下拉选项：只返回 {@code ENABLED}，按名称排序。
      */
     public List<SupplierOptionVO> optionList() {
-        List<SupplierEntity> rows = supplierDao.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SupplierEntity>()
+        List<SupplierEntity> rows = supplierDao
+                .selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SupplierEntity>()
                         .eq(SupplierEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
                         .orderByAsc(SupplierEntity::getName, SupplierEntity::getId));
         List<SupplierOptionVO> list = new ArrayList<>(rows.size());

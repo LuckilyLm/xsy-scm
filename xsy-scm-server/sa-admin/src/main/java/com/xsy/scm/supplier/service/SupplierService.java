@@ -29,10 +29,11 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND
 /**
  * 供应商写路径。
  *
- * <p>状态字段只由专用命令维护：
+ * <p>
+ * 状态字段只由专用命令维护：
  * <ul>
- *   <li>{@link #update} 不触碰 {@code status}，更新表单不含该字段；</li>
- *   <li>{@link #add} 固定使用 {@code ENABLED}，不接受客户端指定初始状态。</li>
+ * <li>{@link #update} 不触碰 {@code status}，更新表单不含该字段；</li>
+ * <li>{@link #add} 固定使用 {@code ENABLED}，不接受客户端指定初始状态。</li>
  * </ul>
  */
 @Service
@@ -131,8 +132,8 @@ public class SupplierService {
     /**
      * 删除供应商。
      *
-     * <p>被活动 {@code supplier_sku} 引用时拒绝删除——
-     * 否则商品关联会指向一个不存在的供应商。
+     * <p>
+     * 被活动 {@code supplier_sku} 引用时拒绝删除—— 否则商品关联会指向一个不存在的供应商。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(SupplierDeleteForm form) {

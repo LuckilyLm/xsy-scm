@@ -14,8 +14,8 @@ import java.time.OffsetDateTime;
 /**
  * 供应商（聚合根）。
  *
- * <p>可空联系人、电话和地址使用 {@code FieldStrategy.ALWAYS}，以便编辑时通过 {@code null}
- * 清空字段；MyBatis-Plus 默认 {@code NOT_NULL} 会忽略这些更新。
+ * <p>
+ * 可空联系人、电话和地址使用 {@code FieldStrategy.ALWAYS}，以便编辑时通过 {@code null} 清空字段；MyBatis-Plus 默认 {@code NOT_NULL} 会忽略这些更新。
  */
 @Data
 @TableName(value = "supplier", autoResultMap = true)

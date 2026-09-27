@@ -33,7 +33,8 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_NOT_F
 /**
  * 商品-供应商关联的读写。
  *
- * <p>写路径只有一个入口 {@link #replace}（整表替换），读路径有两条：按供应商回填、按 SKU 反查。
+ * <p>
+ * 写路径只有一个入口 {@link #replace}（整表替换），读路径有两条：按供应商回填、按 SKU 反查。
  */
 @Service
 @RequiredArgsConstructor
@@ -72,7 +73,8 @@ public class SupplierSkuService {
     /**
      * 整表替换某供应商的商品关联。
      *
-     * <p>事务边界在这里，而不是在 Manager——Manager 只负责规则与落库，不决定事务范围。
+     * <p>
+     * 事务边界在这里，而不是在 Manager——Manager 只负责规则与落库，不决定事务范围。
      */
     @Transactional(rollbackFor = Exception.class)
     public void replace(SupplierSkuReplaceForm form) {
@@ -82,14 +84,13 @@ public class SupplierSkuService {
     /**
      * 校验「某 SKU 可以由某供应商供货」。
      *
-     * <p>采购写路径通过此方法确认供应商与 SKU 均可采购，避免采购服务绕过主数据直接查
-     * {@code supplier_sku} 表。
+     * <p>
+     * 采购写路径通过此方法确认供应商与 SKU 均可采购，避免采购服务绕过主数据直接查 {@code supplier_sku} 表。
      */
     public SupplierSkuEntity requireEnabledForPurchasing(Long supplierId, Long skuId) {
         supplierService.requireEnabled(supplierId);
         SupplierSkuEntity entity = supplierSkuDao.selectOne(new LambdaQueryWrapper<SupplierSkuEntity>()
-                .eq(SupplierSkuEntity::getSupplierId, supplierId)
-                .eq(SupplierSkuEntity::getSkuId, skuId)
+                .eq(SupplierSkuEntity::getSupplierId, supplierId).eq(SupplierSkuEntity::getSkuId, skuId)
                 .eq(SupplierSkuEntity::getStatus, ScmEnableStatusEnum.ENABLED.name()));
         if (entity == null) {
             throw new ScmBusinessException(SUPPLIER_SKU_NOT_FOUND);

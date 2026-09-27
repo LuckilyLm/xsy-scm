@@ -18,16 +18,13 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLI
 /**
  * 整表替换的差量计算结果。
  *
- * <p>把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断——
- * 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功，
- * 后续写库就不会因为业务规则失败而回滚一半。
+ * <p>
+ * 把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断—— 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功， 后续写库就不会因为业务规则失败而回滚一半。
  *
- * <p><b>刻意不做的事：</b>不校验 {@code defaultFlag} 的基数。同一供应商允许多条默认来源
- * 同一供应商允许多个默认来源，因此这里不检查默认标记的数量。
+ * <p>
+ * <b>刻意不做的事：</b>不校验 {@code defaultFlag} 的基数。同一供应商允许多条默认来源 同一供应商允许多个默认来源，因此这里不检查默认标记的数量。
  */
-public record SupplierSkuChangeSet(List<Matched> retained,
-                                   List<SupplierSkuItemForm> inserted,
-                                   List<Long> removedIds) {
+public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemForm> inserted, List<Long> removedIds) {
 
     /**
      * 需要更新（含「无 id 但命中已存在 (supplierId, skuId) 而复用」）的一对行。
@@ -38,13 +35,14 @@ public record SupplierSkuChangeSet(List<Matched> retained,
     /**
      * 计算差量。
      *
-     * @param existing  库中该供应商的全部活动行（调用方已加锁读取）
-     * @param requested 请求列表；空列表表示清空全部关联
-     * @throws ScmBusinessException 40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、
-     *                              40921（带 id 的行版本不一致）
+     * @param existing
+     *            库中该供应商的全部活动行（调用方已加锁读取）
+     * @param requested
+     *            请求列表；空列表表示清空全部关联
+     * @throws ScmBusinessException
+     *             40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、 40921（带 id 的行版本不一致）
      */
-    public static SupplierSkuChangeSet between(List<SupplierSkuEntity> existing,
-                                               List<SupplierSkuItemForm> requested) {
+    public static SupplierSkuChangeSet between(List<SupplierSkuEntity> existing, List<SupplierSkuItemForm> requested) {
         List<SupplierSkuItemForm> items = requested == null ? List.of() : requested;
 
         // 校验段 A：请求内 skuId 不得重复。

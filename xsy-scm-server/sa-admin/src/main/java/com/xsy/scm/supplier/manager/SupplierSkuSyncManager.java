@@ -36,18 +36,18 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_PURCH
 /**
  * {@code supplier_sku} 的差量落库。
  *
- * <p><b>整表替换分四段执行：</b>
+ * <p>
+ * <b>整表替换分四段执行：</b>
  * <ol>
- *   <li><b>校验段 A</b>：请求内一致性（skuId 不重复、id 归属正确）——由
- *       {@link SupplierSkuChangeSet#between} 完成；</li>
- *   <li><b>锁段</b>：先锁 {@code supplier} 行，再锁 {@code supplier_sku} 行。锁序固定，
- *       且 supplier 的启用状态在持有行锁之后才判断，避免「判断完状态、供应商刚好被停用」的窗口；</li>
- *   <li><b>校验段 B</b>：对每条待写行做外部校验（采购员存在、SKU 可下单、构造快照）。
- *       这一步<b>只构造、不写库</b>；</li>
- *   <li><b>写段</b>：校验段 A/B 全部通过后才开始更新 / 插入 / 软删。</li>
+ * <li><b>校验段 A</b>：请求内一致性（skuId 不重复、id 归属正确）——由 {@link SupplierSkuChangeSet#between} 完成；</li>
+ * <li><b>锁段</b>：先锁 {@code supplier} 行，再锁 {@code supplier_sku} 行。锁序固定， 且 supplier
+ * 的启用状态在持有行锁之后才判断，避免「判断完状态、供应商刚好被停用」的窗口；</li>
+ * <li><b>校验段 B</b>：对每条待写行做外部校验（采购员存在、SKU 可下单、构造快照）。 这一步<b>只构造、不写库</b>；</li>
+ * <li><b>写段</b>：校验段 A/B 全部通过后才开始更新 / 插入 / 软删。</li>
  * </ol>
  *
- * <p>Manager 不控制事务——事务边界在 {@code SupplierSkuService.replace}。
+ * <p>
+ * Manager 不控制事务——事务边界在 {@code SupplierSkuService.replace}。
  */
 @Component
 @RequiredArgsConstructor
@@ -62,7 +62,8 @@ public class SupplierSkuSyncManager {
     /**
      * 用请求列表整表替换某供应商的商品关联。
      *
-     * <p>空列表表示清空全部关联，不表示「无操作」。
+     * <p>
+     * 空列表表示清空全部关联，不表示「无操作」。
      */
     public void replace(Long supplierId, List<SupplierSkuItemForm> items) {
         // ---- 锁段 ----
@@ -132,8 +133,8 @@ public class SupplierSkuSyncManager {
         Map<Long, OrderableSkuVO> skus = loadOrderableSkus(collectSkuIds(changeSet));
         validatePurchasers(changeSet);
         for (SupplierSkuChangeSet.Matched matched : changeSet.retained()) {
-            planned.add(new Planned(matched.existing(), matched.requested(),
-                    skus.get(matched.requested().getSkuId()), supplier));
+            planned.add(new Planned(matched.existing(), matched.requested(), skus.get(matched.requested().getSkuId()),
+                    supplier));
         }
         return planned;
     }
@@ -160,7 +161,8 @@ public class SupplierSkuSyncManager {
     /**
      * 批量取可下单 SKU（SPU 与 SKU 同时上架）。
      *
-     * <p>缺任何一个 skuId 都意味着它不存在 / 已软删 / 未上架 → 40942。
+     * <p>
+     * 缺任何一个 skuId 都意味着它不存在 / 已软删 / 未上架 → 40942。
      */
     private Map<Long, OrderableSkuVO> loadOrderableSkus(Set<Long> skuIds) {
         Map<Long, OrderableSkuVO> map = new HashMap<>();
@@ -197,8 +199,8 @@ public class SupplierSkuSyncManager {
         if (purchaserIds.isEmpty()) {
             return;
         }
-        List<EmployeeEntity> found = employeeDao.selectList(new LambdaQueryWrapper<EmployeeEntity>()
-                .in(EmployeeEntity::getEmployeeId, purchaserIds));
+        List<EmployeeEntity> found = employeeDao
+                .selectList(new LambdaQueryWrapper<EmployeeEntity>().in(EmployeeEntity::getEmployeeId, purchaserIds));
         Set<Long> existing = new HashSet<>();
         if (found != null) {
             found.forEach(employee -> existing.add(employee.getEmployeeId()));
@@ -238,9 +240,7 @@ public class SupplierSkuSyncManager {
     /**
      * 一条待写行：既有实体（新增时为 {@code null}）+ 请求行 + 快照来源 + 供应商。
      */
-    private record Planned(SupplierSkuEntity existing,
-                           SupplierSkuItemForm requested,
-                           OrderableSkuVO sku,
-                           SupplierEntity supplier) {
+    private record Planned(SupplierSkuEntity existing, SupplierSkuItemForm requested, OrderableSkuVO sku,
+            SupplierEntity supplier) {
     }
 }

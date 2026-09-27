@@ -12,7 +12,8 @@ import com.xsy.scm.common.validation.ScmEnumValue;
 /**
  * 商品-供应商关系分页查询（只读反查视图）。
  *
- * <p> 只提供「按 SKU 反查供应商」的读路径；写入只有 {@code /scm/supplier/sku/replace} 一个入口。
+ * <p>
+ * 只提供「按 SKU 反查供应商」的读路径；写入只有 {@code /scm/supplier/sku/replace} 一个入口。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

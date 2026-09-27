@@ -7,10 +7,11 @@ import com.xsy.scm.common.error.ScmErrorCode;
 /**
  * 供应商域错误码。
  *
- * <p>稳定保留已有业务码，并使用 40947 表示供应商引用冲突、40040 表示默认采购员无效。
+ * <p>
+ * 稳定保留已有业务码，并使用 40947 表示供应商引用冲突、40040 表示默认采购员无效。
  *
- * <p><b>40941 已弃用</b>：SKU 版本冲突统一使用
- * {@code ScmCommonErrorCode.VERSION_CONFLICT}(40921)。保留该码值以便解释已有日志，不再抛出。
+ * <p>
+ * <b>40941 已弃用</b>：SKU 版本冲突统一使用 {@code ScmCommonErrorCode.VERSION_CONFLICT}(40921)。保留该码值以便解释已有日志，不再抛出。
  */
 @Getter
 @RequiredArgsConstructor

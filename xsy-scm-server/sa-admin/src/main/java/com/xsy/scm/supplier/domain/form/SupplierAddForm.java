@@ -8,8 +8,8 @@ import lombok.Data;
 /**
  * 新增供应商。
  *
- * <p><b>刻意不含 {@code status}</b>：新建供应商强制为 {@code ENABLED}，
- * 由 Service 显式设置，不接受客户端指定。
+ * <p>
+ * <b>刻意不含 {@code status}</b>：新建供应商强制为 {@code ENABLED}， 由 Service 显式设置，不接受客户端指定。
  */
 @Data
 public class SupplierAddForm {
