@@ -34,7 +34,8 @@ public class ReceiptReportService {
 
     private final ScmDataScopeService dataScopeService;
 
-    public PageResult<ReceiptReportVO.ReceiptRow> receiptList(ScmReceiptReportQueryForm form) {
+    public PageResult<
+            ReceiptReportVO.ReceiptRow> receiptList(ScmReceiptReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -46,7 +47,8 @@ public class ReceiptReportService {
                 reportDao.receiptItemList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
     }
 
-    public PageResult<ReceiptReportVO.InboundRow> inboundList(ScmReceiptReportQueryForm form) {
+    public PageResult<
+            ReceiptReportVO.InboundRow> inboundList(ScmReceiptReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -54,8 +56,9 @@ public class ReceiptReportService {
             return ScmDataScopeService.emptyPage(form);
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        PageResult<ReceiptReportVO.InboundRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.inboundList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+        PageResult<
+                ReceiptReportVO.InboundRow> result = SmartPageUtil.convert2PageResult(page,
+                        reportDao.inboundList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         if (!context.isCostVisible() && result != null && result.getList() != null) {
             result.getList().forEach(row -> {
                 row.setUnitCost(null);
@@ -67,7 +70,8 @@ public class ReceiptReportService {
         return result;
     }
 
-    public PageResult<ReceiptReportVO.PendingPutawayRow> pendingPutawayList(ScmReceiptReportQueryForm form) {
+    public PageResult<
+            ReceiptReportVO.PendingPutawayRow> pendingPutawayList(ScmReceiptReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         if (context.warehouseNowhere()) {

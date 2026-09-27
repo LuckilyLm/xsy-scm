@@ -43,38 +43,62 @@ public interface ReportDao {
     ReportOverviewVO overviewKpi(@Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
             @Param("query") ScmOverviewReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<ReportDailyStatVO> dailyStat(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
-            @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
-            @Param("query") ScmOverviewReportQueryForm query, @Param("scope") ScmValueScope scope);
+    List<
+            ReportDailyStatVO> dailyStat(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmOverviewReportQueryForm query, @Param("scope") ScmValueScope scope);
 
     // ---------- 销售分析 ----------
 
-    List<SalesReportVO.ProductRow> salesByProduct(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.ProductRow> salesByProduct(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmSalesReportQueryForm query);
 
-    List<SalesReportVO.TopItem> topSalesProduct(@Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
-            @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.TopItem> topSalesProduct(@Param("startAt") OffsetDateTime startAt,
+                    @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
+                    @Param("query") ScmSalesReportQueryForm query);
 
-    List<SalesReportVO.CategoryRow> salesByCategory(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.CategoryRow> salesByCategory(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmSalesReportQueryForm query);
 
-    List<SalesReportVO.TopItem> topSalesCategory(@Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
-            @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.TopItem> topSalesCategory(@Param("startAt") OffsetDateTime startAt,
+                    @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
+                    @Param("query") ScmSalesReportQueryForm query);
 
-    List<SalesReportVO.CustomerRow> salesByCustomer(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.CustomerRow> salesByCustomer(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmSalesReportQueryForm query);
 
-    List<SalesReportVO.TopItem> topSalesCustomer(@Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
-            @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.TopItem> topSalesCustomer(@Param("startAt") OffsetDateTime startAt,
+                    @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
+                    @Param("query") ScmSalesReportQueryForm query);
 
-    List<SalesReportVO.SellerRow> salesBySeller(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.SellerRow> salesBySeller(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmSalesReportQueryForm query);
 
-    List<SalesReportVO.ItemRow> salesItemList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
+    List<
+            SalesReportVO.ItemRow> salesItemList(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmSalesReportQueryForm query);
 
     // ---------- 采购分析 ----------
 
@@ -82,61 +106,100 @@ public interface ReportDao {
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
             @Param("scope") ScmValueScope scope);
 
-    List<PurchaseReportVO.ProductRow> purchaseByProduct(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseReportVO.ProductRow> purchaseByProduct(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmPurchaseReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<PurchaseReportVO.SupplierRow> purchaseBySupplier(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseReportVO.SupplierRow> purchaseBySupplier(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmPurchaseReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<SalesReportVO.TopItem> topPurchaseSupplierInbound(@Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
-            @Param("query") ScmPurchaseReportQueryForm query, @Param("scope") ScmValueScope scope);
+    List<
+            SalesReportVO.TopItem> topPurchaseSupplierInbound(@Param("startAt") OffsetDateTime startAt,
+                    @Param("endAt") OffsetDateTime endAt, @Param("limit") int limit,
+                    @Param("query") ScmPurchaseReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<PurchaseReportVO.PurchaserRow> purchaseByPurchaser(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseReportVO.PurchaserRow> purchaseByPurchaser(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmPurchaseReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<PurchaseReportVO.ItemRow> purchaseItemList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseReportVO.ItemRow> purchaseItemList(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmPurchaseReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<PurchaseReportVO.PriceTrendPoint> purchasePriceTrend(@Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            PurchaseReportVO.PriceTrendPoint> purchasePriceTrend(@Param("startAt") OffsetDateTime startAt,
+                    @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
+                    @Param("scope") ScmValueScope scope);
 
     // ---------- 收货 / 入库 ----------
 
-    List<ReceiptReportVO.ReceiptRow> receiptItemList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            ReceiptReportVO.ReceiptRow> receiptItemList(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmReceiptReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<ReceiptReportVO.InboundRow> inboundList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            ReceiptReportVO.InboundRow> inboundList(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmReceiptReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<ReceiptReportVO.PendingPutawayRow> pendingPutawayList(Page<?> page,
-            @Param("query") ScmReceiptReportQueryForm query, @Param("scope") ScmValueScope scope);
+    List<
+            ReceiptReportVO.PendingPutawayRow> pendingPutawayList(
+                    Page<
+                            ?> page,
+                    @Param("query") ScmReceiptReportQueryForm query, @Param("scope") ScmValueScope scope);
 
     // ---------- 库存分析 ----------
 
-    List<InventoryReportVO.MovementRow> movementList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("inboundTypes") List<String> inboundTypes,
-            @Param("query") ScmInventoryReportQueryForm query, @Param("scope") ScmValueScope scope);
+    List<
+            InventoryReportVO.MovementRow> movementList(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("inboundTypes") List<
+                            String> inboundTypes,
+                    @Param("query") ScmInventoryReportQueryForm query, @Param("scope") ScmValueScope scope);
 
     InventoryReportVO.LossSummary lossSummary(@Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmInventoryReportQueryForm query,
             @Param("scope") ScmValueScope scope);
 
-    List<InventoryReportVO.LossRow> lossList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmInventoryReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            InventoryReportVO.LossRow> lossList(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("query") ScmInventoryReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<InventoryReportVO.ValueRow> inventoryValueList(Page<?> page, @Param("query") ScmInventoryReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+    List<
+            InventoryReportVO.ValueRow> inventoryValueList(
+                    Page<
+                            ?> page,
+                    @Param("query") ScmInventoryReportQueryForm query, @Param("scope") ScmValueScope scope);
 
-    List<InventoryReportVO.FlowSummaryRow> flowSummary(Page<?> page, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("inboundTypes") List<String> inboundTypes,
-            @Param("query") ScmInventoryReportQueryForm query, @Param("scope") ScmValueScope scope);
+    List<
+            InventoryReportVO.FlowSummaryRow> flowSummary(
+                    Page<
+                            ?> page,
+                    @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
+                    @Param("inboundTypes") List<
+                            String> inboundTypes,
+                    @Param("query") ScmInventoryReportQueryForm query, @Param("scope") ScmValueScope scope);
 }

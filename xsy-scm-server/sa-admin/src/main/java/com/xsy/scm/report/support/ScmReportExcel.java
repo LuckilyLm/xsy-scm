@@ -39,10 +39,16 @@ public final class ScmReportExcel {
      * @param rows
      *            行数据，每行元素数必须与 {@code titles} 等长（用 {@link #row} 构造可自检）
      */
-    public static void write(HttpServletResponse response, String fileName, String sheetName, List<String> titles,
-            List<List<Object>> rows) throws IOException {
+    public static void write(HttpServletResponse response, String fileName, String sheetName, List<
+            String> titles,
+            List<
+                    List<
+                            Object>> rows)
+            throws IOException {
         SmartResponseUtil.setDownloadFileHeader(response, fileName, null);
-        List<List<String>> head = new ArrayList<>(titles.size());
+        List<
+                List<
+                        String>> head = new ArrayList<>(titles.size());
         for (String title : titles) {
             head.add(List.of(title));
         }
@@ -56,11 +62,16 @@ public final class ScmReportExcel {
      * <p>
      * 列数不齐会让 Excel 出现整列错位而不报错，那是导出里最难被发现的一类缺陷。
      */
-    public static List<Object> row(List<String> titles, Object... cells) {
+    public static List<
+            Object> row(
+                    List<
+                            String> titles,
+                    Object... cells) {
         if (cells.length != titles.size()) {
             throw new IllegalStateException("导出行列数(" + cells.length + ")与表头列数(" + titles.size() + ")不一致");
         }
-        List<Object> row = new ArrayList<>(cells.length);
+        List<
+                Object> row = new ArrayList<>(cells.length);
         for (Object cell : cells) {
             row.add(cell(cell));
         }

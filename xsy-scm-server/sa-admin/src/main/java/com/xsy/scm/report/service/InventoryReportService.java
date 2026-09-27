@@ -37,14 +37,16 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 @Transactional(readOnly = true)
 public class InventoryReportService {
 
-    private static final List<String> INBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
-            .filter(ScmInventoryMovementTypeEnum::isInbound).map(Enum::name).toList();
+    private static final List<
+            String> INBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
+                    .filter(ScmInventoryMovementTypeEnum::isInbound).map(Enum::name).toList();
 
     private final ReportDao reportDao;
 
     private final ScmDataScopeService dataScopeService;
 
-    public PageResult<InventoryReportVO.MovementRow> movementList(ScmInventoryReportQueryForm form) {
+    public PageResult<
+            InventoryReportVO.MovementRow> movementList(ScmInventoryReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -52,9 +54,10 @@ public class InventoryReportService {
             return ScmDataScopeService.emptyPage(form);
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        PageResult<InventoryReportVO.MovementRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.movementList(page, range.startAt(), range.endAt(), INBOUND_MOVEMENT_TYPES, form,
-                        context.getWarehouseScope()));
+        PageResult<
+                InventoryReportVO.MovementRow> result = SmartPageUtil.convert2PageResult(page,
+                        reportDao.movementList(page, range.startAt(), range.endAt(), INBOUND_MOVEMENT_TYPES, form,
+                                context.getWarehouseScope()));
         if (result != null && result.getList() != null) {
             result.getList().forEach(row -> {
                 ScmInventoryMovementTypeEnum type = ScmInventoryMovementTypeEnum.of(row.getMovementType());
@@ -86,7 +89,8 @@ public class InventoryReportService {
         return vo;
     }
 
-    public PageResult<InventoryReportVO.LossRow> lossList(ScmInventoryReportQueryForm form) {
+    public PageResult<
+            InventoryReportVO.LossRow> lossList(ScmInventoryReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -94,8 +98,9 @@ public class InventoryReportService {
             return ScmDataScopeService.emptyPage(form);
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        PageResult<InventoryReportVO.LossRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.lossList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+        PageResult<
+                InventoryReportVO.LossRow> result = SmartPageUtil.convert2PageResult(page,
+                        reportDao.lossList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         if (!context.isCostVisible() && result != null && result.getList() != null) {
             result.getList().forEach(row -> {
                 row.setUnitCost(null);
@@ -108,7 +113,8 @@ public class InventoryReportService {
     /**
      * 当前库存账面价值。整个页面就是成本视图，因此由 Controller 用 {@code scm:report:cost:query} 直接拦住，这里不再做字段级抹除。
      */
-    public PageResult<InventoryReportVO.ValueRow> valueList(ScmInventoryReportQueryForm form) {
+    public PageResult<
+            InventoryReportVO.ValueRow> valueList(ScmInventoryReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -121,7 +127,8 @@ public class InventoryReportService {
     }
 
     /** 收发存是数量口径，不需要成本权限；但仍与其余库存查询共用同一份仓库范围。 */
-    public PageResult<InventoryReportVO.FlowSummaryRow> flowSummary(ScmInventoryReportQueryForm form) {
+    public PageResult<
+            InventoryReportVO.FlowSummaryRow> flowSummary(ScmInventoryReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
