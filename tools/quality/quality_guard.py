@@ -319,6 +319,29 @@ def magic_string_literals(source: JavaSource, vocabulary: dict[str, set[str]]) -
             # GROUP_TYPE_CODE is a reserved customer-type code. Its value happens to match
             # ScmSettleModeEnum.GROUP, but the two strings represent different business fields.
             continue
+        if (
+            source.relative_path == (
+                "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptConfirmForm.java"
+            )
+            and literal.value == "MANUAL"
+            and re.search(r'@Pattern\s*\(\s*regexp\s*=\s*"MANUAL"', source.code.splitlines()[literal.line - 1])
+        ):
+            # W5 deliberately accepts only MANUAL on this form: DEVICE is an enum extension point,
+            # but the current database CHECK and purchase workflow still reject it.
+            continue
+        if (
+            source.relative_path == (
+                "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseInventoryContract.java"
+            )
+            and literal.value == "PURCHASE_RECEIPT_ITEM"
+            and re.search(
+                r'SOURCE_DOCUMENT_TYPE\s*=\s*"PURCHASE_RECEIPT_ITEM"\s*;',
+                source.code.splitlines()[literal.line - 1],
+            )
+        ):
+            # This stable contract constant keeps purchase compile-time independent from inventory;
+            # the inventory source-document enum intentionally carries the same wire value.
+            continue
         owners = sorted(vocabulary[literal.value])
         findings.append(
             Finding(
