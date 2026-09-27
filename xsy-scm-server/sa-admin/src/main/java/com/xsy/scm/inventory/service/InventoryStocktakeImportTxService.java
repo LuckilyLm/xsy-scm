@@ -1,7 +1,7 @@
 package com.xsy.scm.inventory.service;
 
 import lombok.RequiredArgsConstructor;
-import com.xsy.scm.order.service.OrderIdempotencyService;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +26,7 @@ public class InventoryStocktakeImportTxService {
 
     private final InventoryStocktakeService inventoryStocktakeService;
 
-    private final OrderIdempotencyService orderIdempotencyService;
+    private final ScmIdempotencyService idempotencyService;
 
     /**
      * @param fingerprint 参与哈希的请求指纹（凭证令牌 + 各行实盘量）：内容变了即视为不同请求，
@@ -35,13 +35,13 @@ public class InventoryStocktakeImportTxService {
     @Transactional(rollbackFor = Exception.class)
     public CommitResult commit(Long warehouseId, List<InventoryStocktakeService.SnapshotLine> lines,
                                String idempotencyKey, Object fingerprint) {
-        var claim = orderIdempotencyService.claim("STOCKTAKE_IMPORT", idempotencyKey, fingerprint);
+        var claim = idempotencyService.claim("STOCKTAKE_IMPORT", idempotencyKey, fingerprint);
         if (claim.replay()) {
-            Long existing = orderIdempotencyService.replay(claim, Long.class);
+            Long existing = idempotencyService.replay(claim, Long.class);
             return new CommitResult(existing, true);
         }
         Long stocktakeId = inventoryStocktakeService.createFromSnapshot(warehouseId, lines);
-        orderIdempotencyService.complete(claim, "STOCKTAKE_IMPORT_DRAFT", stocktakeId, stocktakeId);
+        idempotencyService.complete(claim, "STOCKTAKE_IMPORT_DRAFT", stocktakeId, stocktakeId);
         return new CommitResult(stocktakeId, false);
     }
 }
