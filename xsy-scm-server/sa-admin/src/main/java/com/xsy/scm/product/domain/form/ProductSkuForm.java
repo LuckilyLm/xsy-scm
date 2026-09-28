@@ -31,8 +31,8 @@ public class ProductSkuForm {
     @NotNull(message = "规格属性值不能为空")
     @Size(max = 30, message = "规格属性值不能超过30个字符")
     private Map<
-            @NotBlank(message = "规格属性名不能为空") @Size(max = 100, message = "规格属性名不能超过100个字符") String,
-            @NotBlank(message = "规格值必填") @Size(max = 150, message = "规格值最长150字") String> specValues = new LinkedHashMap<>();
+            @NotBlank(message = "属性名必填") @Size(max = 100, message = "属性名限100字") String,
+            @NotBlank(message = "值必填") @Size(max = 150, message = "值限150字") String> specValues = new LinkedHashMap<>();
     @NotBlank(message = "销售单位不能为空")
     @Size(max = 32, message = "销售单位不能超过32个字符")
     private String saleUnit;

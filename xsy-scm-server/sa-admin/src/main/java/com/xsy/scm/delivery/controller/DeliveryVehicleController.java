@@ -1,6 +1,7 @@
 package com.xsy.scm.delivery.controller;
 
 import com.xsy.scm.delivery.permission.DeliveryPermission;
+import net.lab1024.sa.base.common.domain.ResponseDTO;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import jakarta.validation.Valid;

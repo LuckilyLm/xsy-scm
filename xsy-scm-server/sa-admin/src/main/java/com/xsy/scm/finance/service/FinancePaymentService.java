@@ -27,7 +27,6 @@ import com.xsy.scm.finance.domain.form.FinancePaymentAddForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
-import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -175,7 +174,7 @@ public class FinancePaymentService {
             // 越权与「退款指向的客户不存在」同码：见 register() 的说明
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        if (!ScmOrderRefundStatusEnum.COMPLETED.name().equals(refund.getStatus())) {
+        if (!refund.isCompleted()) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         if (!refund.getCustomerId().equals(form.getCounterpartyId())) {

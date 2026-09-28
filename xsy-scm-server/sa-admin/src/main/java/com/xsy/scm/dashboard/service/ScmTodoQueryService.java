@@ -38,9 +38,9 @@ import java.util.List;
 public class ScmTodoQueryService {
 
     private final LoginManager loginManager;
-    private final InventoryWarningQueryService warningQueryService;
+    private final InventoryWarningQueryService inventoryWarningQueryService;
     private final PurchaseQueryService purchaseQueryService;
-    private final InventoryLossGainQueryService lossGainQueryService;
+    private final InventoryLossGainQueryService inventoryLossGainQueryService;
     private final DeliveryRouteQueryService deliveryRouteQueryService;
 
     /**
@@ -86,10 +86,10 @@ public class ScmTodoQueryService {
     private long countOf(ScmTodoCardEnum card) {
         return switch (card) {
             // status 为空即预警列表默认口径：只含异常（LOW / HIGH），与列表页一致
-            case INVENTORY_WARNING -> total(warningQueryService.queryWarningPage(newWarningForm()));
+            case INVENTORY_WARNING -> total(inventoryWarningQueryService.queryWarningPage(newWarningForm()));
             case RECEIPT_PUTAWAY -> total(purchaseQueryService.receiptQuery(putawayForm()));
             // PENDING 即待审批列表筛选，approve / reject 权限由卡片可见性把关
-            case LOSS_GAIN_AUDIT -> total(lossGainQueryService.queryPage(pendingLossGainForm()));
+            case LOSS_GAIN_AUDIT -> total(inventoryLossGainQueryService.queryPage(pendingLossGainForm()));
             case DELIVERY_ROUTE_DRAFT -> total(deliveryRouteQueryService.query(draftRouteForm()));
         };
     }

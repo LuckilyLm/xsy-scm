@@ -46,6 +46,10 @@ These same spellings describe different dimensions or different stored facts; sh
 | `RECEIPT_PUTAWAY` | `ScmTodoCardEnum`, `ScmPurchaseOperationTypeEnum` | A dashboard card key is not a purchase audit event. |
 | `WRITE_OFF` | `ScmFinanceOperationTypeEnum`, `ScmFinanceBusinessTypeEnum` | An operation-log action differs from a financial business type. |
 
+## 精确保留的错误诊断 token
+
+`ProductImportService` emits `CATEGORY_DISABLED` as the import row's `errorCode` argument to `addError`. It is an error token, not a persisted status, type, or source. Although the pricing domain has an enum member with the same spelling, importing that enum into product would create a product-to-pricing dependency. The quality guard therefore excludes only this exact literal in this exact import error-code position; the magic-string baseline does not retain it as debt.
+
 ## Maintenance rule
 
 Enum duplication is reviewed when vocabularies change. New shared values must preserve each database CHECK and command boundary; do not merge Enums solely because their constants have the same spelling.

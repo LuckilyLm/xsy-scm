@@ -24,10 +24,8 @@ public class FinanceRefundFactDto {
      */
     private Long customerId;
 
-    /**
-     * {@code PENDING / COMPLETED}；只有 {@code COMPLETED} 可付款。
-     */
-    private String status;
+    /** True only when the source order refund has completed and may be paid. */
+    private boolean completed;
 
     /**
      * 本次退款的应退金额。付款金额必须与它**逐值相等**（scale 4，不四舍五入到 2 位再比）。

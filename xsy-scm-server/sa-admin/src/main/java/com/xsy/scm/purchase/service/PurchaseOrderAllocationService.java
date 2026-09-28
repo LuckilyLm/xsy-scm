@@ -76,7 +76,7 @@ public class PurchaseOrderAllocationService {
 
         private RequestedRow(PurchaseOrderItemEntity purchaseOrderItem, List<
                 PurchaseOrderAddForm.Allocation> forms) {
-            this.purchaseOrderItem = purchaseOrderItem;
+            this.item = purchaseOrderItem;
             this.forms = forms == null ? List.of() : forms;
         }
     }

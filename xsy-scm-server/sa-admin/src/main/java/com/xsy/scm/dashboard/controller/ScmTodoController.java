@@ -28,13 +28,13 @@ import java.util.List;
 public class ScmTodoController {
 
     @Resource
-    private ScmTodoQueryService scmTodoQueryService;
+    private ScmTodoQueryService todoQueryService;
 
     @GetMapping("/todo")
     @SaCheckPermission(DashboardPermission.TODO_QUERY)
     public ResponseDTO<
             List<
                     ScmTodoVO>> todo() {
-        return ResponseDTO.ok(scmTodoQueryService.currentEmployeeTodos());
+        return ResponseDTO.ok(todoQueryService.currentEmployeeTodos());
     }
 }

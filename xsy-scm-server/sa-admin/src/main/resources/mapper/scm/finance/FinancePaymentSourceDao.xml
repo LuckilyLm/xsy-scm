@@ -13,7 +13,7 @@
             resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
         SELECT r.id             AS refundId,
                r.customer_id    AS customerId,
-               r.status         AS status,
+               CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed,
                r.refund_amount  AS refundAmount
         FROM order_refund r
         WHERE r.id = #{refundId}

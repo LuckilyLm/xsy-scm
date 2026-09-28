@@ -32,9 +32,9 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 @RequiredArgsConstructor
 public class WarehouseScopeService {
 
-    private final EmployeeWarehouseScopeDao scopeDao;
+    private final EmployeeWarehouseScopeDao employeeWarehouseScopeDao;
 
-    private final EmployeeDao employees;
+    private final EmployeeDao employeeDao;
 
     /**
      * 某仓库下被授权的员工。
@@ -44,7 +44,7 @@ public class WarehouseScopeService {
         if (warehouseId == null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        return scopeDao.listEmployeesByWarehouse(warehouseId);
+        return employeeWarehouseScopeDao.listEmployeesByWarehouse(warehouseId);
     }
 
     /**
@@ -55,7 +55,7 @@ public class WarehouseScopeService {
         if (employeeId == null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        return scopeDao.listWarehousesByEmployee(employeeId);
+        return employeeWarehouseScopeDao.listWarehousesByEmployee(employeeId);
     }
 
     /**
@@ -70,14 +70,14 @@ public class WarehouseScopeService {
         Set<
                 Long> target = distinctIds(form.getWarehouseIds());
         requireWarehousesExist(target);
-        scopeDao.deactivateByEmployee(form.getEmployeeId());
+        employeeWarehouseScopeDao.deactivateByEmployee(form.getEmployeeId());
         if (!target.isEmpty()) {
-            scopeDao.insertBatch(form.getEmployeeId(), target);
+            employeeWarehouseScopeDao.insertBatch(form.getEmployeeId(), target);
         }
     }
 
     private void requireEmployee(Long employeeId) {
-        EmployeeEntity employee = employeeId == null ? null : employees.selectById(employeeId);
+        EmployeeEntity employee = employeeId == null ? null : employeeDao.selectById(employeeId);
         if (employee == null || Boolean.TRUE.equals(employee.getDeletedFlag())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
@@ -92,7 +92,7 @@ public class WarehouseScopeService {
             return;
         }
         List<
-                Long> found = scopeDao.listExistingWarehouseIds(warehouseIds);
+                Long> found = employeeWarehouseScopeDao.listExistingWarehouseIds(warehouseIds);
         Set<
                 Long> existing = found == null ? Set.of() : new LinkedHashSet<>(found);
         if (!existing.containsAll(warehouseIds)) {

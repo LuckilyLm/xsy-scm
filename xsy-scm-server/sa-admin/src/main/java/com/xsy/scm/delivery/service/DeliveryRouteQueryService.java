@@ -27,6 +27,7 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.NOT_FOUND;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**

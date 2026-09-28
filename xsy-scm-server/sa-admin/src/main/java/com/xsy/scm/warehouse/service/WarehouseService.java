@@ -40,7 +40,7 @@ public class WarehouseService {
     /**
      * 停用前置守卫由库存域实现，避免仓库域反向依赖库存域。
      */
-    private final WarehouseDisableGuard disableGuard;
+    private final WarehouseDisableGuard warehouseDisableGuard;
 
     /**
      * 读取仓库，不存在或已删除 → 40485。
@@ -183,7 +183,7 @@ public class WarehouseService {
         if (ScmWarehouseStatusEnum.DISABLED.name().equals(entity.getStatus())) {
             throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_STATE_INVALID);
         }
-        WarehouseErrorCode blocker = disableGuard.disableBlocker(entity.getId());
+        WarehouseErrorCode blocker = warehouseDisableGuard.disableBlocker(entity.getId());
         if (blocker != null) {
             throw new ScmBusinessException(blocker);
         }

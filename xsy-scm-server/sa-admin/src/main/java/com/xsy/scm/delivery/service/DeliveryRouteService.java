@@ -60,6 +60,7 @@ import com.xsy.scm.warehouse.dao.WarehouseDao;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DISPATCH_ROUTE_INELIGIBLE;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.EMPTY_ROUTE;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.LOCATION_REQUIRED;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.LIMIT_EXCEEDED;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.MASTER_DISABLED;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.NOT_FOUND;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.ORDER_ASSIGNED;
@@ -67,6 +68,8 @@ import static com.xsy.scm.delivery.constant.DeliveryErrorCode.ORDER_INELIGIBLE;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.ROUTE_NOT_ALL_SIGNED;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.SIGN_REASON_REQUIRED;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.SIGN_RESULT_INVALID;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
+import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STOP_ORDER_INVALID;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 /**

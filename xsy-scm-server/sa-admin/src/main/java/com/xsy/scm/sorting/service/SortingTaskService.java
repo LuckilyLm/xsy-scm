@@ -243,7 +243,7 @@ public class SortingTaskService {
         // 结果是一张已真实出库的订单行还能继续改分拣量，而这正是本条守卫要拦的事。
         // 配送侧同样按订单 id 升序加锁（DeliveryRouteService#dispatch），因此这里不会构成反向锁序。
         items.stream().map(SortingTaskItemEntity::getSalesOrderId).filter(Objects::nonNull).distinct().sorted()
-                .forEach(orders::lock);
+                .forEach(salesOrderDao::lock);
         var orderLineIds = items.stream().map(SortingTaskItemEntity::getSalesOrderItemId).filter(Objects::nonNull)
                 .toList();
         if (!orderLineIds.isEmpty()

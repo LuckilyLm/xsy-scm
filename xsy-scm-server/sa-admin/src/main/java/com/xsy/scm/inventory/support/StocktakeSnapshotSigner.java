@@ -90,7 +90,7 @@ public class StocktakeSnapshotSigner {
             @Value("${scm.inventory.stocktake.snapshot.secret:" + DEV_SECRET + "}") String secret,
             @Value("${spring.profiles.active:dev}") String activeProfiles) {
         requireNonPublicSecret(secret, activeProfiles);
-        this.json = json;
+        this.objectMapper = json;
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
     }
 

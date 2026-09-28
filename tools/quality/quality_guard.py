@@ -343,6 +343,18 @@ def magic_string_literals(source: JavaSource, vocabulary: dict[str, set[str]]) -
             # This stable contract constant keeps purchase compile-time independent from inventory;
             # the inventory source-document enum intentionally carries the same wire value.
             continue
+        if (
+            source.relative_path
+            == "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java"
+            and literal.value == "CATEGORY_DISABLED"
+            and re.search(
+                r'\baddError\s*\([^;\r\n]*,\s*"CATEGORY_DISABLED"\s*,',
+                source.code.splitlines()[literal.line - 1],
+            )
+        ):
+            # This exact value is the product import row's errorCode token, not a persisted status/type/source.
+            # Reusing the pricing enum here would make product depend on pricing for an import diagnostic.
+            continue
         owners = sorted(vocabulary[literal.value])
         findings.append(
             Finding(
