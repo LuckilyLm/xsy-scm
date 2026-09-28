@@ -1,7 +1,7 @@
 package com.xsy.scm.purchase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xsy.scm.purchase.support.PurchaseIdempotencyRequestHasher;
+import com.xsy.scm.common.idempotency.ScmIdempotencyRequestHasher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,8 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class PurchaseIdempotencyRequestHasherTest {
 
-    private final PurchaseIdempotencyRequestHasher hasher =
-            new PurchaseIdempotencyRequestHasher(new ObjectMapper());
+    private final ScmIdempotencyRequestHasher hasher =
+            new ScmIdempotencyRequestHasher(new ObjectMapper());
 
     @Test
     @DisplayName("键排序：对象键顺序不影响哈希；但数组顺序必须影响（分配顺序是请求的一部分）")

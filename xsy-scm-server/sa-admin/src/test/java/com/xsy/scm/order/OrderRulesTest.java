@@ -5,7 +5,7 @@ import com.xsy.scm.order.domain.entity.*;
 import com.xsy.scm.order.domain.form.*;
 import com.xsy.scm.order.constant.*;
 import com.xsy.scm.order.service.OrderNumberGenerator;
-import com.xsy.scm.order.support.OrderIdempotencyRequestHasher;
+import com.xsy.scm.common.idempotency.ScmIdempotencyRequestHasher;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ class OrderRulesTest {
 
     @Test
     void canonicalHashHandlesNestedKeysAndDecimals() {
-        var h = new OrderIdempotencyRequestHasher(new ObjectMapper());
+        var h = new ScmIdempotencyRequestHasher(new ObjectMapper());
         assertThat(h.hash(Map.of("b", List.of(Map.of("p", "1.5000")), "a", 2))).isEqualTo(h.hash(Map.of("a", 2, "b", List.of(Map.of("p", "1.5")))));
         assertThat(h.hash(Map.of("p", "0.0000"))).isNotEqualTo(h.hash(Collections.singletonMap("p", null)));
     }

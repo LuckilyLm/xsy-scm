@@ -238,19 +238,18 @@ def check_archunit_analyzes_both_packages() -> Check:
     return check
 
 
-def check_archunit_finance_exception_stays_exact() -> Check:
-    """§15: the recorded debt exemption must stay a class allowlist.
-
-    Widening it to a package would make the rule vacuous for the whole finance
-    domain, which is exactly how such an exception silently becomes no exception.
-    """
-    check = Check("archunit-finance-exception", "Finance 历史例外保持精确到类")
+def check_archunit_finance_exception_removed() -> Check:
+    """Finance must not retain the retired Order idempotency exception."""
+    check = Check("archunit-finance-exception", "Finance 不再豁免其他业务域依赖")
     source = text(resolve_migrating_file(ARCHITECTURE_TEST_RELATIVE))
-    if "belongToAnyOf(OrderIdempotencyService.class)" not in source:
-        check.failures.append("the class-level allowlist is gone or renamed")
-    for widening in ("resideInAnyPackage(\"..scm.finance..\")", "resideInAPackage(\"..finance..\")"):
-        if widening in source:
-            check.failures.append(f"exception widened to a package: {widening}")
+    if "OrderIdempotencyService" in source or "belongToAnyOf(" in source:
+        check.failures.append("the historical Finance -> Order idempotency exception remains")
+    if ".resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)" not in source:
+        check.failures.append("the Finance rule does not reject dependencies on every other concrete domain")
+    finance_root = ROOT / "xsy-scm-server" / "sa-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm" / "finance"
+    for path in finance_root.rglob("*.java"):
+        if "OrderIdempotencyService" in path.read_text(encoding="utf-8"):
+            check.failures.append(f"Finance production code still references OrderIdempotencyService: {path}")
     return check
 
 
@@ -1015,7 +1014,7 @@ def build_checks() -> list[Check]:
         check_guard_rejects_empty_source_set,
         check_checkstyle_scans_both_packages,
         check_archunit_analyzes_both_packages,
-        check_archunit_finance_exception_stays_exact,
+        check_archunit_finance_exception_removed,
         check_baseline_migration_tooling,
         check_capture_is_identity_safe,
         check_domain_completeness_contract,
@@ -1036,7 +1035,7 @@ def _unused_checks() -> list[Check]:
         check_guard_rejects_empty_source_set(),
         check_checkstyle_scans_both_packages(),
         check_archunit_analyzes_both_packages(),
-        check_archunit_finance_exception_stays_exact(),
+        check_archunit_finance_exception_removed(),
         check_baseline_migration_tooling(),
         check_capture_is_identity_safe(),
         check_domain_completeness_contract(),

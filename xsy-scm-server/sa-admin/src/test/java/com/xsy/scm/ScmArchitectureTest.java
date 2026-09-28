@@ -6,10 +6,6 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
-import com.xsy.scm.order.service.OrderIdempotencyService;
-
-import static com.tngtech.archunit.base.DescribedPredicate.not;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.belongToAnyOf;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -24,14 +20,9 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * 这条 SQL 级事实；这里看编译产物的类型依赖，钉住分层方向与跨域引用。两者不重叠 ——
  * 一句 {@code UPDATE sales_order} 不产生任何类型依赖，而一次注入 DAO 也不产生任何 SQL 文本。
  *
- * <p><b>Q1 迁包已完成</b>（2026-09-26）：旧包 {@code net.lab1024.sa.admin.module.scm} 下已无任何
- * 源码，SCM 全部落在 {@code com.xsy.scm}。本类随 {@code _root} 条目一起从
- * {@code net/lab1024/.../scm/ScmArchitectureTest.java} 移到
- * {@code com/xsy/scm/ScmArchitectureTest.java}，故自身 package 也已改写为 {@code com.xsy.scm}。
- * {@link #LEGACY_SCM_PACKAGE} 常量与 {@link #importedSourceSetIsNotEmpty} 里的
- * 「旧包为空」分支**刻意保留**：它是这条断言的全部意义所在 —— 若哪天有人把旧包名重新引入，
- * 或把分析包集改错，这里仍要能发现。{@code AdminApplication.COMPONENT_SCAN} 与
- * {@code @MapperScan} 仍同时覆盖 {@code net.lab1024.sa} 与 {@code com.xsy}。
+ * <p>The importer checks both the SmartAdmin SCM package and {@code com.xsy.scm};
+ * {@link #importedSourceSetIsNotEmpty} prevents an empty or misconfigured import from
+ * making every architecture rule pass vacuously.
  */
 @AnalyzeClasses(
         packages = {
@@ -41,7 +32,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
         importOptions = ImportOption.DoNotIncludeTests.class)
 class ScmArchitectureTest {
 
-    /** Q1 迁移的两侧：迁包是逐域进行的，中间态必然两边同时有 SCM 代码。 */
+    /** Both namespaces remain in the scan so reintroduced legacy SCM classes are detected. */
     static final String LEGACY_SCM_PACKAGE = "net.lab1024.sa.admin.module.scm";
     static final String XSY_SCM_PACKAGE = "com.xsy.scm";
 
@@ -104,11 +95,9 @@ class ScmArchitectureTest {
     /**
      * common 不得依赖任何具体业务域。
      *
-     * <p><b>本规则看不见的一类耦合要单独记住</b>：{@code ScmDataScopeService} 里
-     * {@code hasPermission(ScmReportAccess.COST_QUERY_PERM)} 读的是另一个域的
-     * {@code static final String} 常量。javac 会把编译期常量内联进调用方，字节码里
-     * 根本不留下对 {@code ScmReportAccess} 的引用，所以这条规则不会失败 —— 已实测确认。
-     * 这是源码级依赖，属 Q2 权限目录的清理项（把权限码挪进 common），不能当成已被门禁放过。
+     * <p>Compile-time {@code static final String} constants are inlined by javac, so this
+     * bytecode rule cannot detect source-only references to another domain's permission
+     * catalog. Permission ownership is checked by the source-level permission contract.
      */
     @ArchTest
     static final ArchRule commonDoesNotDependOnConcreteDomains =
@@ -116,26 +105,17 @@ class ScmArchitectureTest {
                     .should().dependOnClassesThat().resideInAnyPackage(CONCRETE_DOMAINS)
                     .because("common 被所有域依赖；它一旦依赖某个具体域，该域就被隐式耦合进每一个域");
 
-    /**
-     * 已知历史债务，Q3 分层整理时移除：收款与付款登记复用了 {@code order} 域的
-     * {@code OrderIdempotencyService}。幂等登记是通用能力，应落在公共层，
-     * 而不是让财务域依赖订单域。财务域对业务表的只读边界另由
-     * {@code FinanceReadOnlyContractTest} 在 SQL 文本层钉住。
-     */
     @ArchTest
     static final ArchRule financeDoesNotDependOnOtherDomains =
             noClasses().that().resideInAPackage("..scm.finance..")
-                    .should().dependOnClassesThat(
-                            resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
-                                    .and(not(belongToAnyOf(OrderIdempotencyService.class))))
+                    .should().dependOnClassesThat().resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
                     .because("财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止");
 
     /**
      * 防止「一条规则都没跑到」被读成「所有规则都过了」。
      *
-     * <p>包名写错时 ArchUnit 会分析到 0 个类，而「没有类违反规则」在空集合上恒真 ——
-     * 每条 {@link ArchRule} 都会绿。Q1 恰好要改这两个包名，所以这一条必须与它们同时存在：
-     * 它把「确实抓到了 SCM 类」变成断言，而不是依赖注解本身正确。
+     * <p>ArchUnit rules pass vacuously when their imported class set is empty. This
+     * assertion proves the configured package set contains SCM classes before the rules run.
      */
     @ArchTest
     static void importedSourceSetIsNotEmpty(JavaClasses classes) {
@@ -155,9 +135,9 @@ class ScmArchitectureTest {
                     + LEGACY_SCM_PACKAGE + ", " + XSY_SCM_PACKAGE
                     + "}; the analyzed package set is misconfigured, not clean");
         }
-        // 迁移完成（旧包归零）后本断言仍成立：此时只剩 com.xsy.scm，故不要求旧包存在。
+        // SmartAdmin may have no SCM classes; the XSY namespace must still contain SCM classes.
         if (!sawLegacyPackage) {
-            System.out.println("[ScmArchitectureTest] legacy SCM package is empty; Q1 migration finished");
+            System.out.println("[ScmArchitectureTest] legacy SCM package is empty");
         }
     }
 
@@ -167,24 +147,14 @@ class ScmArchitectureTest {
                     .because("测试库以 compile 作用域泄漏到生产 classpath，编译器不会拦，只能由这条规则拦");
 
     /**
-     * Q1 迁包的正向收口：SCM 具体业务域必须全部落在 {@code com.xsy.scm}。
+     * Concrete SCM business domains must reside under {@code com.xsy.scm}.
      *
-     * <p>与 {@link #importedSourceSetIsNotEmpty} 互补：那条防「一条规则都没跑到」的空扫描假绿，
-     * 这条防「迁了一半就停下」——逐域迁移的中间态两边并存是预期的，但 15 个域全部搬完之后，
-     * 旧包再出现业务域代码都说明有代码被漏搬或被重新引入。
-     *
-     * <p>2026-09-26 收口时启用，此时旧包已无生产类。
-     *
-     * <p><b>为什么不写「旧包必须为空」的 noClasses 规则</b>：那条规则在旧包归零后
-     * {@code that()} 子句匹配到 0 个类，ArchUnit 默认 {@code failOnEmptyShould=true} 会判它
-     * 「failed to check any classes」而失败（实测踩到）。空集合上的「没有类违反」是恒真的，
-     * 写成规则反而要靠 {@code allowEmptyShould(true)} 关掉保护，那就把断言变成装饰。
-     * 旧包是否为空的判据由 {@link #importedSourceSetIsNotEmpty} 的
-     * {@code sawLegacyPackage} 分支与 readiness 脚本的 domain-completeness 共同承担。
+     * <p>This positive rule complements {@link #importedSourceSetIsNotEmpty}: it catches business classes
+     * stranded outside the target namespace, while the companion rule prevents a vacuous empty scan.
      */
     @ArchTest
     static final ArchRule scmProductionCodeLivesInXsyPackage =
             classes().that().resideInAnyPackage(CONCRETE_DOMAINS)
                     .should().resideInAPackage(XSY_SCM_PACKAGE + "..")
-                    .because("Q1 已收口：具体业务域只应存在于新包 " + XSY_SCM_PACKAGE);
+                    .because("SCM business domains must remain under " + XSY_SCM_PACKAGE);
 }

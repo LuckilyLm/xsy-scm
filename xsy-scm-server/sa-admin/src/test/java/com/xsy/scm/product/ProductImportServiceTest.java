@@ -19,6 +19,7 @@ import com.xsy.scm.product.domain.form.ProductSpuUpdateForm;
 import com.xsy.scm.product.domain.vo.ProductSpuTagVO;
 import com.xsy.scm.product.service.ProductImportService;
 import com.xsy.scm.product.service.ProductImportService.ImportMode;
+import com.xsy.scm.product.service.ProductImportWorkbookSupport;
 import com.xsy.scm.product.service.ProductImportWriteService;
 import com.xsy.scm.product.service.ProductTagService;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -49,8 +50,11 @@ class ProductImportServiceTest {
     private final ProductSkuDao productSkuDao = mock(ProductSkuDao.class);
     private final ProductImageDao productImageDao = mock(ProductImageDao.class);
     private final ProductTagService productTagService = mock(ProductTagService.class);
+    private final ProductImportWorkbookSupport productImportWorkbookSupport = new ProductImportWorkbookSupport();
     private final ProductImportWriteService productImportWriteService = mock(ProductImportWriteService.class);
-    private final ProductImportService productImportService = new ProductImportService(productCategoryDao, productTagDao, productUomDao, productSpuDao, productSkuDao, productImageDao, productTagService, productImportWriteService);
+    private final ProductImportService productImportService = new ProductImportService(productCategoryDao, productTagDao,
+            productUomDao, productSpuDao, productSkuDao, productImageDao, productTagService,
+            productImportWorkbookSupport, productImportWriteService);
 
     {
         // CREATE 逐行会预判单位「在字典且 ENABLED」（与 ProductUomService.assertUsable 同判据），
