@@ -3,32 +3,4 @@
 # detection : 字段声明行匹配 private/protected [final] <Type> <name>;，name 属于 {dao,service,query,manager,validator,repository,mapper,reader,writer,client}，且类型简单名小写后不等于该字段名
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 28 occurrences in 28 identities
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryDriverController.java	DeliveryDriverController#service:DeliveryDriverService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryRouteController.java	DeliveryRouteController#query:DeliveryRouteQueryService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryRouteController.java	DeliveryRouteController#service:DeliveryRouteService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/controller/DeliveryVehicleController.java	DeliveryVehicleController#service:DeliveryVehicleService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/service/DeliveryDriverService.java	DeliveryDriverService#dao:DeliveryDriverDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/service/DeliveryVehicleService.java	DeliveryVehicleService#dao:DeliveryVehicleDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/controller/InventoryConversionController.java	InventoryConversionController#service:InventoryConversionService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/controller/InventoryLossGainController.java	InventoryLossGainController#service:InventoryLossGainService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/controller/InventoryOutboundController.java	InventoryOutboundController#service:InventoryOutboundService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/controller/InventoryReservationController.java	InventoryReservationController#service:InventoryReservationService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/controller/InventoryStocktakeController.java	InventoryStocktakeController#service:InventoryStocktakeService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/controller/InventoryTransferController.java	InventoryTransferController#service:InventoryTransferService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/controller/InventoryWarningThresholdController.java	InventoryWarningThresholdController#service:InventoryWarningThresholdService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/OrderRefundController.java	OrderRefundController#service:OrderRefundService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/OrderReturnController.java	OrderReturnController#service:OrderReturnService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java	SalesOrderController#query:SalesOrderQueryService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderController.java	SalesOrderController#service:SalesOrderService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/controller/SalesOrderImportController.java	SalesOrderImportController#service:SalesOrderImportService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderIdempotencyService.java	OrderIdempotencyService#dao:IdempotencyRecordDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderNumberGenerator.java	OrderNumberGenerator#dao:SalesOrderDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	SalesOrderService#query:SalesOrderQueryService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/controller/SortingTaskController.java	SortingTaskController#query:SortingQueryService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/sorting/controller/SortingTaskController.java	SortingTaskController#service:SortingTaskService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseController.java	WarehouseController#service:WarehouseService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/controller/WarehouseScopeController.java	WarehouseScopeController#service:WarehouseScopeService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseQueryService.java	WarehouseQueryService#dao:WarehouseDao
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseQueryService.java	WarehouseQueryService#service:WarehouseService
-1	generic-dependency-field	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/service/WarehouseService.java	WarehouseService#dao:WarehouseDao
+# captured  : 0 occurrences in 0 identities
