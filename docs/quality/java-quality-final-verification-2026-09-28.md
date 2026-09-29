@@ -1,18 +1,16 @@
 # Java 代码质量整改最终验收
 
-日期：2026-09-28。历史 Q0 快照保留在 [Java 质量审计](java-quality-audit-2026-09-26.md)，本文件记录最终现状。
+日期：2026-09-28。历史 Q0 快照保留在 [Java 质量审计](java-quality-audit-2026-09-26.md)，本文件保留该次验收快照。当前修复与未完成项见[后续修复记录](java-quality-follow-up-2026-09-28.md)。
 
 ## 验收结论
 
-**QUALITY REMEDIATION Q0–Q4 — IMPLEMENTATION COMPLETE**  
-**FINAL VERIFICATION COMPLETE**（接受 5 个既有云门控跳过）  
-**FINANCE DEVELOPMENT — STILL PAUSED**
+先前“FINAL VERIFICATION COMPLETE”的结论过宽：后续发现 common 源码反向依赖、权限检查覆盖不足及阶段注释漏检。下述数字保留为当时门禁覆盖范围内的结果；当前验证与测试覆盖待办尚未完成。Finance 后续阶段继续暂停。
 
 行为与质量门禁验证针对源码/测试提交 `a805f2497a29205268aa55c3834b536caa625b38`。分支为 `main`；验证时 `origin/main` 为 `3ac89db9659f9d2f8e1c7607afbad604e03990af`。未推送。
 
 从审计锚点 `da7103eee4d14eb9c79fb4d8a2bde6d63220f1e4` 到该源码/测试提交：163 commits、800 files changed、`+25,023 / -18,753`。baseline 收缩与本报告作为最终文档收口单独本地提交。
 
-## 当前源码指标
+## 该次源码扫描指标
 
 | 指标 | 当前值 | 结果 |
 | --- | ---: | --- |

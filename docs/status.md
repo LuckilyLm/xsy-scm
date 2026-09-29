@@ -5,12 +5,12 @@
 ## 当前完成
 
 - SCM V2 正式底座、商品、客户、供应商、定价、订单、采购、库存、分拣、配送和 Finance R1 的 F1-3B 已完成，详情见 [有效决策](decisions.md) 与归档记录。
-- Java 质量整改 Q0–Q4 实施与最终验收已完成；当前快照、baseline 收缩、测试结果和允许的云门控跳过见 [最终验收报告](quality/java-quality-final-verification-2026-09-28.md)。
-- Q2 类型、权限、校验、命名、工具复用和格式债务均为 0；Q3 架构门禁与跨域 DAO 白名单通过。
+- Java 质量整改已实施并留下[先前验收记录](quality/java-quality-final-verification-2026-09-28.md)；其中的零计数与 PASS 只描述当时门禁覆盖的范围。
+- 后续已修正 common 对 report 的权限常量依赖、共享权限目录、格式配置和已发现的阶段注释，见[后续修复记录](quality/java-quality-follow-up-2026-09-28.md)。
 
 ## 当前进行
 
-- 无 Java 质量整改待办。后端全量回归符合验收条件；5 个 `F0FileStorageCloudIT` 仅因云存储环境门控而跳过。
+- 测试覆盖待办 QF-TEST-01～06 暂缓：权限契约、源码层常量依赖、阶段注释漏检、幂等哈希、收款重放范围和 DAO 守卫规则。按用户要求仅记录，本次不修改测试。
 
 ## 暂停或未开始
 
@@ -20,8 +20,8 @@
 
 ## 风险与验证状态
 
-- `python tools/verify.py backend` 汇总 1203 tests / 0 failures / 0 errors / 5 skipped；跳过项全部属于既有 `F0FileStorageCloudIT`。该入口把非零跳过标为 `INCOMPLETE`，具体用例与处理口径见最终验收报告。
-- 质量入口 PASS；Spotless 全量检查覆盖 731 个 SCM 生产 Java 文件；质量工具单测 85/85；迁移校验 67 migrations，drift / missing / renamed / unbaked 全为 0。
+- 本次生产代码和格式配置改动未运行测试、构建或质量门禁；既有文件与新格式规则的一致性尚未检查。
+- 先前 `python tools/verify.py backend` 汇总 1203 tests / 0 failures / 0 errors / 5 skipped，跳过项属于 `F0FileStorageCloudIT`，入口返回 `INCOMPLETE`；当时质量入口 PASS、工具单测 85/85、迁移校验 67 条无漂移。这些结果不覆盖本次改动。
 - 归档进度中的测试结果仅描述当时的运行记录，不代表本次改动已验证。
 
 ## 下一步

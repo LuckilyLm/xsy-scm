@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-截至 2026-09-28，供应链核心域与 Finance R1 F1-3B 已交付；Java 质量整改 Q0–Q4 实施与最终验收已完成。验收指标、5 个已知云门控跳过和本地提交见 [质量最终验收报告](docs/quality/java-quality-final-verification-2026-09-28.md)。Finance R1 后续阶段和 W6-2 小程序仍未开始。
+截至 2026-09-28，供应链核心域与 Finance R1 F1-3B 已交付；Java 质量整改的后续复核已修正共享权限依赖与格式配置，测试覆盖缺口按要求暂缓处理，见 [质量后续修复记录](docs/quality/java-quality-follow-up-2026-09-28.md)。Finance R1 后续阶段和 W6-2 小程序仍未开始。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
