@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
  * 仓库维度的**写侧**守卫：库存族的每条命令在落库前都要回答一次「这个仓归不归他管」。
  *
  * <p>
- * 读侧已经把范围下传给 Mapper，但只收读侧会留下一个洞：只有 B 仓授权的人只要握着 {@code scm:inventory:outbound:confirm} 就能确认 A 仓的出库单。裁决要求的是 「库存余额 / 流水 /
- * 盘点 / 收货 / 出库的 {@code warehouse_id} 必须落在授权仓内」， 即读写同一条边界（{@code docs/decisions.md}「P0 基线收口裁决」第 8 条）。
+ * 读侧已经把范围下传给 Mapper，但只收读侧会留下一个洞：只有 B 仓授权的人只要握着 {@code scm:inventory:outbound:confirm} 就能确认 A 仓的出库单。库存余额、流水、盘点、收货和出库的
+ * {@code warehouse_id} 都必须落在授权仓内，读写使用同一条边界。
  *
  * <p>
  * <b>调用位置决定它是否成立</b>：必须在读到<b>持久化行</b>之后、任何写入之前调用。 已存在的单据取行上的仓库，不取表单值——表单能填成任何人想要的 id，而库存事实按行上的仓库记账。

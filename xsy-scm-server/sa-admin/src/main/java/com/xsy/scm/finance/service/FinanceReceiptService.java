@@ -71,12 +71,15 @@ public class FinanceReceiptService {
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO add(FinanceReceiptAddForm form, String idempotencyKey) {
+        FinanceCustomerFactDto customer = requireAuthorizedCustomer(form.getCustomerId());
         var claim = idempotencyService.claim(FinanceConstant.RECEIPT_ADD_SCOPE, idempotencyKey, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, FinanceReceiptVO.class);
+            FinanceReceiptVO replayed = idempotencyService.replay(claim, FinanceReceiptVO.class);
+            requireAuthorizedCustomer(replayed.getCustomerId());
+            return replayed;
         }
 
-        FinanceReceiptEntity receipt = register(form);
+        FinanceReceiptEntity receipt = register(form, customer);
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
                 null, null, snapshot(receipt));
 
@@ -88,11 +91,15 @@ public class FinanceReceiptService {
     /**
      * 创建收款事实本身（不含幂等三段式）；反向收款由追加反向事实的命令处理。
      */
-    private FinanceReceiptEntity register(FinanceReceiptAddForm form) {
-        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(form.getCustomerId());
+    private FinanceCustomerFactDto requireAuthorizedCustomer(Long customerId) {
+        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(customerId);
         if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             throw new ScmDataScopeException();
         }
+        return customer;
+    }
+
+    private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer) {
 
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {

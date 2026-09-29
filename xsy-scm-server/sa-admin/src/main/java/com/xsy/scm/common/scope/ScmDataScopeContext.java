@@ -6,8 +6,7 @@ import lombok.Getter;
  * 某次调用在当前登录员工下的 SCM 数据范围解析结果（不可变值对象）。
  *
  * <p>
- * 由 {@link ScmDataScopeService#resolve()} 集中产出，Service 层显式下传给 Mapper； 不使用底座 {@code @DataScope} 插件，理由与口径见
- * {@code docs/decisions.md}「P0 基线收口裁决」第 1–5 条。
+ * 由 {@link ScmDataScopeService#resolve()} 集中产出，Service 层显式下传给 Mapper；不使用底座 {@code @DataScope} 插件，避免空范围被解释为全量数据。
  */
 @Getter
 public final class ScmDataScopeContext {

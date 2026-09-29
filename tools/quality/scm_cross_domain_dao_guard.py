@@ -17,6 +17,9 @@ IMPORT = re.compile(
     re.MULTILINE,
 )
 STRING = re.compile(r'"(?:\\.|[^"\\])*"')
+MAPPER_NAMESPACE = re.compile(r'<mapper\s+namespace="(?P<name>[^"]+)"')
+MAPPER_STATEMENT = re.compile(r'<(?P<kind>select|insert|update|delete)\s+id="(?P<id>[A-Za-z_]\w*)"')
+BASE_MAPPER_READ_METHOD = re.compile(r"^(?:select|exists)\w*$")
 
 
 @dataclass(frozen=True)
@@ -80,6 +83,34 @@ def imported_accesses() -> dict[tuple[str, str], tuple[set[str], str]]:
     return accesses
 
 
+def mapper_operations(target: str) -> dict[str, str]:
+    """Return the SQL operation declared for each custom DAO method."""
+    type_name = target.rsplit(".", 1)[-1]
+    operations: dict[str, str] = {}
+    mapper_root = ROOT / "xsy-scm-server" / "sa-admin" / "src" / "main" / "resources" / "mapper"
+    for mapper_file in mapper_root.rglob("*.xml"):
+        source = mapper_file.read_text(encoding="utf-8")
+        namespace = MAPPER_NAMESPACE.search(source)
+        if namespace is None or namespace.group("name") != target:
+            continue
+        operations.update({match.group("id"): match.group("kind") for match in MAPPER_STATEMENT.finditer(source)})
+    return operations
+
+
+def non_read_only_methods(access: Access, observed_methods: set[str]) -> list[str]:
+    operations = mapper_operations(access.target)
+    failures: list[str] = []
+    for method in sorted(observed_methods):
+        operation = operations.get(method)
+        if operation == "select" or (operation is None and BASE_MAPPER_READ_METHOD.fullmatch(method)):
+            continue
+        if operation is None:
+            failures.append(f"cannot prove SQL operation for {method}")
+        else:
+            failures.append(f"{method} maps to <{operation}>")
+    return failures
+
+
 def check() -> int:
     try:
         allowlist = load_allowlist()
@@ -99,6 +130,9 @@ def check() -> int:
             failures.append(
                 f"non-read-only calls {sorted(unexpected)} on {key[1]} from {key[0]}"
             )
+            continue
+        for violation in non_read_only_methods(access, methods):
+            failures.append(f"non-read-only SQL {violation} on {key[1]} from {key[0]}")
 
     for key in sorted(allowlist.keys() - accesses.keys()):
         failures.append(f"stale allowlist entry {key[0]} -> {key[1]}")

@@ -3,7 +3,6 @@ package com.xsy.scm.common.scope;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
-import com.xsy.scm.report.support.ScmReportAccess;
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 import net.lab1024.sa.base.common.domain.PageParam;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -16,7 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * SCM 数据范围的唯一解析入口（裁决「P0 基线收口裁决」第 2、4 条）。
+ * SCM 数据范围的唯一解析入口。
  *
  * <p>
  * 口径：
@@ -39,10 +38,10 @@ public class ScmDataScopeService {
     public static final String WAREHOUSE_ALL_PERM = ScmCrossDomainPermission.INVENTORY_SCOPE_ALL_QUERY;
 
     /** 查看全部业务员名下客户（销售主管、财务）。 */
-    public static final String CUSTOMER_ALL_PERM = "scm:customer:scope:all:query";
+    public static final String CUSTOMER_ALL_PERM = ScmCrossDomainPermission.CUSTOMER_SCOPE_ALL_QUERY;
 
     /** 查看全部业务员名下的销售订单。 */
-    public static final String ORDER_ALL_PERM = "scm:order:scope:all:query";
+    public static final String ORDER_ALL_PERM = ScmCrossDomainPermission.ORDER_SCOPE_ALL_QUERY;
 
     /** 查看全部采购员的采购单与采购需求。 */
     public static final String PURCHASE_ALL_PERM = ScmCrossDomainPermission.PURCHASE_SCOPE_ALL_QUERY;
@@ -51,7 +50,7 @@ public class ScmDataScopeService {
     public static final String DELIVERY_ALL_PERM = ScmCrossDomainPermission.DELIVERY_SCOPE_ALL_QUERY;
 
     /** 客户业务归属分配/改派权；持有者才能把 {@code seller_id} 写成别人，或看到未分配客户。 */
-    public static final String CUSTOMER_ASSIGN_PERM = "scm:customer:assign";
+    public static final String CUSTOMER_ASSIGN_PERM = ScmCrossDomainPermission.CUSTOMER_ASSIGN;
 
     /** 采购负责人分配/改派权，语义同上。 */
     public static final String PURCHASE_ASSIGN_PERM = ScmCrossDomainPermission.PURCHASE_ASSIGN;
@@ -70,7 +69,7 @@ public class ScmDataScopeService {
             return ScmDataScopeContext.denied();
         }
         Long employeeId = employee.getEmployeeId();
-        boolean costVisible = hasPermission(ScmReportAccess.COST_QUERY_PERM);
+        boolean costVisible = hasPermission(ScmCrossDomainPermission.REPORT_COST_QUERY);
         if (isAdministrator()) {
             return ScmDataScopeContext.unrestricted(employeeId, costVisible);
         }
@@ -103,7 +102,7 @@ public class ScmDataScopeService {
     }
 
     /**
-     * 权限判断失败关闭：未登录、Sa-Token 上下文缺失、依赖未装配都按「无权限」处理。 与 {@link ScmReportAccess#canViewCost()} 同一取向——宁可少给数据，不可多给。
+     * 权限判断失败关闭：未登录、Sa-Token 上下文缺失、依赖未装配都按「无权限」处理，避免泄露受限数据。
      */
     public static boolean hasPermission(String permissionCode) {
         try {
@@ -116,10 +115,8 @@ public class ScmDataScopeService {
     /**
      * 维度为空时的空分页：形状与正常分页一致（{@code total=0}、{@code emptyFlag=true}）， 前端不需要为「无授权」写第二套分支，也不会把它误读成「确实没有数据」以外的状态。
      */
-    public static <T> PageResult<
-            T> emptyPage(PageParam form) {
-        Page<
-                T> page = new Page<>(form.getPageNum(), form.getPageSize());
+    public static <T> PageResult<T> emptyPage(PageParam form) {
+        Page<T> page = new Page<>(form.getPageNum(), form.getPageSize());
         page.setTotal(0);
         return SmartPageUtil.convert2PageResult(page, List.of());
     }

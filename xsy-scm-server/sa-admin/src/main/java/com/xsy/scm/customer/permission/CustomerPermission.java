@@ -1,5 +1,7 @@
 package com.xsy.scm.customer.permission;
 
+import com.xsy.scm.common.permission.ScmCrossDomainPermission;
+
 /** Stable permission identifiers published by customer-management APIs. */
 public final class CustomerPermission {
 
@@ -7,7 +9,7 @@ public final class CustomerPermission {
     public static final String ADD = "scm:customer:add";
     public static final String UPDATE = "scm:customer:update";
     public static final String STATUS = "scm:customer:status";
-    public static final String ASSIGN = "scm:customer:assign";
+    public static final String ASSIGN = ScmCrossDomainPermission.CUSTOMER_ASSIGN;
     public static final String DELETE = "scm:customer:delete";
     public static final String TYPE_QUERY = "scm:customer:type:query";
     public static final String TYPE_ADD = "scm:customer:type:add";
