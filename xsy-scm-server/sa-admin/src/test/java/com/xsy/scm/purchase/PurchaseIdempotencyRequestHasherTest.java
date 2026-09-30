@@ -36,48 +36,66 @@ class PurchaseIdempotencyRequestHasherTest {
     @DisplayName("键排序：对象键顺序不影响哈希；但数组顺序必须影响（分配顺序是请求的一部分）")
     void keyOrderDoesNotMatterButArrayOrderDoes() {
         Map<String, Object> left = new LinkedHashMap<>();
-        left.put("z", 1);
-        left.put("a", List.of(Map.of("p", "1.5000", "r", "9.0000"), Map.of("q", "2.0000")));
+        left.put("supplierId", 1);
+        left.put("items", List.of(
+                Map.of("skuId", 100, "quantity", "1.5000", "price", "9.0000"),
+                Map.of("skuId", 101, "weight", "2.0000")));
         left.put("m", Map.of("nested", Map.of("y", "x", "b", "a")));
 
         Map<String, Object> right = new LinkedHashMap<>();
         right.put("m", Map.of("nested", Map.of("b", "a", "y", "x")));
-        right.put("a", List.of(Map.of("r", "9.0000", "p", "1.5000"), Map.of("q", "2.0000")));
-        right.put("z", 1);
+        right.put("items", List.of(
+                Map.of("price", "9.0000", "quantity", "1.5000", "skuId", 100),
+                Map.of("weight", "2.0000", "skuId", 101)));
+        right.put("supplierId", 1);
 
         assertThat(hasher.hash(left)).isEqualTo(hasher.hash(right));
 
         // 数组是**有序**的：allocations 的先后不可归一，否则「换序的同一组分配」会被误判为重放
-        assertThat(hasher.hash(Map.of("a", List.of(Map.of("p", "1.5000"), Map.of("q", "2.0000")))))
-                .isNotEqualTo(hasher.hash(Map.of("a", List.of(Map.of("q", "2.0000"), Map.of("p", "1.5000")))));
+        assertThat(hasher.hash(Map.of("items", List.of(
+                Map.of("skuId", 100, "quantity", "1.5000"), Map.of("skuId", 101, "quantity", "2.0000")))))
+                .isNotEqualTo(hasher.hash(Map.of("items", List.of(
+                        Map.of("skuId", 101, "quantity", "2.0000"),
+                        Map.of("skuId", 100, "quantity", "1.5000")))));
     }
 
     @Test
     @DisplayName("数字归一：JSON 数字 stripTrailingZeros（1.5000 == 1.5，100.0000 == 100）")
     void numericValuesAreStripped() {
-        assertThat(hasher.hash(Map.of("q", new BigDecimal("1.5000"))))
-                .isEqualTo(hasher.hash(Map.of("q", new BigDecimal("1.5"))));
-        assertThat(hasher.hash(Map.of("q", new BigDecimal("100.0000"))))
-                .isEqualTo(hasher.hash(Map.of("q", 100)));
+        assertThat(hasher.hash(Map.of("amount", new BigDecimal("1.5000"))))
+                .isEqualTo(hasher.hash(Map.of("amount", new BigDecimal("1.5"))));
+        assertThat(hasher.hash(Map.of("quantity", new BigDecimal("100.0000"))))
+                .isEqualTo(hasher.hash(Map.of("quantity", 100)));
     }
 
     @Test
     @DisplayName("数字字符串归一：W5 的定点字符串字段必须可重放（\"1.5000\" == \"1.5\"）")
     void numericStringsAreNormalized() {
-        assertThat(hasher.hash(Map.of("quantity", "1.5000")))
-                .isEqualTo(hasher.hash(Map.of("quantity", "1.5")));
-        assertThat(hasher.hash(Map.of("price", "0.0000")))
-                .isEqualTo(hasher.hash(Map.of("price", "0")));
-        // 非数字字符串原样保留，不做任何改写
-        assertThat(hasher.hash(Map.of("reason", "供应商缺货")))
-                .isNotEqualTo(hasher.hash(Map.of("reason", "供应商缺货 ")));
+        for (String field : List.of("amount", "quantity", "price", "weight", "cost", "rate")) {
+            assertThat(hasher.hash(Map.of(field, "1.5000")))
+                    .as("业务数值字段 %s 的 scale 不应改变幂等请求身份", field)
+                    .isEqualTo(hasher.hash(Map.of(field, "1.5")));
+        }
+    }
+
+    @Test
+    @DisplayName("编码、外部凭据和备注按普通文本保留前导零")
+    void identifiersAndRemarksAreNotNormalizedAsNumbers() {
+        for (String field : List.of("externalReference", "supplierCode", "skuCode", "remark")) {
+            assertThat(hasher.hash(Map.of(field, "00123")))
+                    .as("文本字段 %s 必须保留前导零", field)
+                    .isNotEqualTo(hasher.hash(Map.of(field, "123")));
+        }
+
+        assertThat(hasher.hash(Map.of("remark", "供应商缺货")))
+                .isNotEqualTo(hasher.hash(Map.of("remark", "供应商缺货 ")));
     }
 
     @Test
     @DisplayName("三态语义：null 与 \"0.0000\" 必须哈希不同")
     void nullIsNotZero() {
-        assertThat(hasher.hash(Map.of("price", "0.0000")))
-                .isNotEqualTo(hasher.hash(Collections.singletonMap("price", null)));
+        assertThat(hasher.hash(Map.of("amount", "0.0000")))
+                .isNotEqualTo(hasher.hash(Collections.singletonMap("amount", null)));
         // 嵌套位置同样成立：{allocations:[{demandVersion:null}]} ≠ {allocations:[{demandVersion:0}]}
         assertThat(hasher.hash(Map.of("allocations",
                 List.of(Collections.singletonMap("demandVersion", null)))))
@@ -87,7 +105,8 @@ class PurchaseIdempotencyRequestHasherTest {
     @Test
     @DisplayName("确定性：同一请求多次哈希结果稳定，且是 64 位十六进制 SHA-256")
     void hashIsStableAndSha256() {
-        Map<String, Object> request = Map.of("supplierId", 1, "items", List.of(Map.of("skuId", 100, "quantity", "3.0000")));
+        Map<String, Object> request = Map.of("supplierId", 1,
+                "items", List.of(Map.of("skuId", 100, "quantity", "3.0000")));
         String first = hasher.hash(request);
         assertThat(first).isEqualTo(hasher.hash(request));
         assertThat(first).matches("[0-9a-f]{64}");
