@@ -30,25 +30,32 @@ class Access:
     reason: str
 
 
-def load_allowlist() -> dict[tuple[str, str], Access]:
+def load_allowlist(allowlist_path: Path = ALLOWLIST) -> dict[tuple[str, str], Access]:
     entries: dict[tuple[str, str], Access] = {}
-    for line_number, line in enumerate(ALLOWLIST.read_text(encoding="utf-8").splitlines(), 1):
+    for line_number, line in enumerate(allowlist_path.read_text(encoding="utf-8").splitlines(), 1):
         if not line or line.startswith("#"):
             continue
         fields = line.split("\t")
         if len(fields) != 4 or not all(fields):
-            raise ValueError(f"{ALLOWLIST}:{line_number}: expected source, DAO, methods, reason")
+            raise ValueError(f"{allowlist_path}:{line_number}: expected source, DAO, methods, reason")
         source, target, methods_text, reason = fields
         key = (source, target)
         if key in entries:
-            raise ValueError(f"{ALLOWLIST}:{line_number}: duplicate allowlist entry {source} -> {target}")
+            raise ValueError(f"{allowlist_path}:{line_number}: duplicate allowlist entry {source} -> {target}")
         entries[key] = Access(source, target, frozenset(methods_text.split(",")), reason)
     return entries
 
 
-def imported_accesses() -> dict[tuple[str, str], tuple[set[str], str]]:
+def imported_accesses(root: Path = ROOT) -> dict[tuple[str, str], tuple[set[str], str]]:
     accesses: dict[tuple[str, str], tuple[set[str], str]] = {}
-    for source in quality_guard.scm_main_sources():
+    source_root = root / "xsy-scm-server" / "sa-admin" / "src" / "main" / "java" / "com" / "xsy" / "scm"
+    if not source_root.is_dir():
+        raise OSError(f"SCM production source root is missing: {source_root}")
+    source_files = sorted(source_root.rglob("*.java"))
+    if not source_files:
+        raise ValueError(f"SCM production source root is empty: {source_root}")
+    for path in source_files:
+        source = quality_guard.JavaSource.read(path, root)
         parts = source.package.split(".")
         if len(parts) < 4 or parts[:3] != ["com", "xsy", "scm"]:
             continue
@@ -83,11 +90,11 @@ def imported_accesses() -> dict[tuple[str, str], tuple[set[str], str]]:
     return accesses
 
 
-def mapper_operations(target: str) -> dict[str, str]:
+def mapper_operations(target: str, root: Path = ROOT) -> dict[str, str]:
     """Return the SQL operation declared for each custom DAO method."""
     type_name = target.rsplit(".", 1)[-1]
     operations: dict[str, str] = {}
-    mapper_root = ROOT / "xsy-scm-server" / "sa-admin" / "src" / "main" / "resources" / "mapper"
+    mapper_root = root / "xsy-scm-server" / "sa-admin" / "src" / "main" / "resources" / "mapper"
     for mapper_file in mapper_root.rglob("*.xml"):
         source = mapper_file.read_text(encoding="utf-8")
         namespace = MAPPER_NAMESPACE.search(source)
@@ -97,8 +104,8 @@ def mapper_operations(target: str) -> dict[str, str]:
     return operations
 
 
-def non_read_only_methods(access: Access, observed_methods: set[str]) -> list[str]:
-    operations = mapper_operations(access.target)
+def non_read_only_methods(access: Access, observed_methods: set[str], root: Path = ROOT) -> list[str]:
+    operations = mapper_operations(access.target, root)
     failures: list[str] = []
     for method in sorted(observed_methods):
         operation = operations.get(method)
@@ -111,13 +118,12 @@ def non_read_only_methods(access: Access, observed_methods: set[str]) -> list[st
     return failures
 
 
-def check() -> int:
+def collect_failures(root: Path = ROOT, allowlist_path: Path = ALLOWLIST) -> list[str]:
     try:
-        allowlist = load_allowlist()
-        accesses = imported_accesses()
+        allowlist = load_allowlist(allowlist_path)
+        accesses = imported_accesses(root)
     except (OSError, ValueError) as error:
-        print(f"cross-domain DAO guard: {error}", file=sys.stderr)
-        return 1
+        return [str(error)]
 
     failures: list[str] = []
     for key, (methods, caller) in sorted(accesses.items()):
@@ -131,18 +137,23 @@ def check() -> int:
                 f"non-read-only calls {sorted(unexpected)} on {key[1]} from {key[0]}"
             )
             continue
-        for violation in non_read_only_methods(access, methods):
+        for violation in non_read_only_methods(access, methods, root):
             failures.append(f"non-read-only SQL {violation} on {key[1]} from {key[0]}")
 
     for key in sorted(allowlist.keys() - accesses.keys()):
         failures.append(f"stale allowlist entry {key[0]} -> {key[1]}")
 
+    return failures
+
+
+def check() -> int:
+    failures = collect_failures()
     if failures:
         print("cross-domain DAO guard: FAIL")
         for failure in failures:
             print(f"  {failure}")
         return 1
-    print(f"cross-domain DAO guard: PASS ({len(accesses)} read-only accesses explicitly allowed)")
+    print("cross-domain DAO guard: PASS (all observed cross-domain DAO calls are explicitly allowed)")
     return 0
 
 

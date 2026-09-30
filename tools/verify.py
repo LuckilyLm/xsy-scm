@@ -110,6 +110,20 @@ class Verification:
             [sys.executable, str(ROOT / "tools/quality/scm_cross_domain_dao_guard.py")],
             ROOT,
         )
+        self.run(
+            "common-source-domain-boundary",
+            [sys.executable, str(ROOT / "tools/quality/scm_common_domain_source_guard.py")],
+            ROOT,
+        )
+        self.run("cross-domain-dao-guard-selftest",
+                 [sys.executable, str(ROOT / "tools/quality/test_scm_cross_domain_dao_guard.py")],
+                 ROOT / "tools/quality")
+        self.run("common-source-domain-guard-selftest",
+                 [sys.executable, str(ROOT / "tools/quality/test_scm_common_domain_source_guard.py")],
+                 ROOT / "tools/quality")
+        self.run("quality-source-rules-selftest",
+                 [sys.executable, str(ROOT / "tools/quality/test_quality_guard_source_rules.py")],
+                 ROOT / "tools/quality")
         self.run("baseline-migration-selftest",
                  [sys.executable, str(ROOT / "tools/quality/test_baseline_path_migration.py")],
                  ROOT / "tools/quality")

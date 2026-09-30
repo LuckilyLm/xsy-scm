@@ -401,6 +401,12 @@ def raw_permission_literals(source: JavaSource) -> list[Finding]:
 # 把它们当阶段流水会产生无法清理的误报。
 STAGE_COMMENT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("stage-code", re.compile(r"\bF\d+-\d+[A-Za-z]?\b")),
+    ("stage-plan-token", re.compile(
+        r"(?<![A-Za-z0-9_-])P\d+(?![A-Za-z0-9_-])"
+        r"(?=\s+(?:基线|阶段|收口|裁决|验收|整改|质量|计划|本轮|下一阶段|"
+        r"Finance\b|Quality\b|Report\b|Hardening\b|Roadmap\b))",
+        re.IGNORECASE,
+    )),
     ("wave", re.compile(r"\bWave\s+\d+")),
     ("decision-q", re.compile(r"\bQ\d+\b")),
     ("decision-d", re.compile(r"\bD-\d+\b")),
@@ -414,13 +420,21 @@ STAGE_COMMENT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 # Section and wave numbers are renumbered by whoever edits the design doc;
 # folding them keeps the baseline stable while the occurrence count still grows
 # when a new narration is added.
-_FOLDED_STAGE_TOKENS = {"design-doc-section": "§<n>", "wave": "Wave <n>"}
+_FOLDED_STAGE_TOKENS = {
+    "design-doc-section": "§<n>",
+    "wave": "Wave <n>",
+    "stage-plan-token": "P<n>",
+}
 
 
 def stage_comments(source: JavaSource) -> list[Finding]:
     """Flag comments that narrate a delivery phase instead of a business rule."""
     findings = []
     for comment in source.comments:
+        if re.fullmatch(r"P\d+", comment.text.strip(), re.IGNORECASE):
+            findings.append(
+                Finding("stage-comment", source.relative_path, "P<n>", comment.text[:120], comment.line)
+            )
         for label, pattern in STAGE_COMMENT_PATTERNS:
             for match in pattern.finditer(comment.text):
                 findings.append(
