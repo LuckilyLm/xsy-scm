@@ -5,6 +5,8 @@
         :id="LAYOUT_ELEMENT_IDS.menu"
         class="side-menu"
         :width="sideMenuWidth"
+        :collapsed-width="isMobile ? 0 : 80"
+        :style="isMobile ? {position: 'fixed', inset: '0 auto 0 0', zIndex: 20} : undefined"
         v-model:collapsed="collapsed"
         :theme="theme"
         v-show="!fullScreenFlag"
@@ -12,6 +14,7 @@
       <!-- 左侧菜单 -->
       <SideMenu :collapsed="collapsed"/>
     </a-layout-sider>
+    <div v-if="isMobile && !collapsed" class="mobile-menu-backdrop" @click="collapsed = true"/>
 
     <!--中间内容，一共三部分：1、顶部;2、中间内容区域;3、底部（一般是公司版权信息）;-->
     <a-layout :id="LAYOUT_ELEMENT_IDS.main" :style="`height: ${windowHeight}px`" class="admin-layout-main">
@@ -118,6 +121,8 @@ import {theme as antDesignTheme} from 'ant-design-vue';
 const appConfigStore = useAppConfigStore();
 
 const windowHeight = ref(window.innerHeight);
+const windowWidth = ref(window.innerWidth);
+const isMobile = computed(() => windowWidth.value <= 768);
 //是否全屏
 const fullScreenFlag = computed(() => useAppConfigStore().$state.fullScreenFlag);
 //菜单宽度
@@ -179,7 +184,7 @@ function sizeComputed() {
 }
 
 //是否隐藏菜单
-const collapsed = ref(false);
+const collapsed = ref(windowWidth.value <= 768);
 
 //页面初始化的时候加载水印
 onMounted(() => {
@@ -214,10 +219,16 @@ function goHome() {
 
 window.addEventListener('resize', function () {
   windowHeight.value = window.innerHeight;
+  windowWidth.value = window.innerWidth;
+  collapsed.value = windowWidth.value <= 768;
 });
 
 // ----------------------- keep-alive相关 -----------------------
 let {route, keepAliveIncludes, iframeNotKeepAlivePageFlag, keepAliveIframePages} = smartKeepAlive();
+
+watch(() => route.path, () => {
+  if (isMobile.value) collapsed.value = true;
+});
 
 const {useToken} = antDesignTheme;
 const {token} = useToken();
@@ -364,5 +375,36 @@ const {token} = useToken();
   padding: 7px 0px;
   display: flex;
   justify-content: center;
+}
+
+.mobile-menu-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    background: rgba(0, 0, 0, 0.24);
+  }
+
+  .admin-layout-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  :deep(.layout-header-right .name) {
+    display: none;
+  }
+
+  :deep(.layout-header-right .user-space-item:last-of-type) {
+    display: none;
+  }
+
+  :deep(.admin-layout-content) {
+    padding-bottom: 48px;
+  }
 }
 </style>
