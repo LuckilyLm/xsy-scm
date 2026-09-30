@@ -27,7 +27,7 @@ const HEADER_DETAIL = '../src/layout/components/header-user-space/header-message
 const BACKEND_ENUM =
   '../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/message/constant/MessageTypeEnum.java';
 const LOSS_GAIN_SERVICE =
-  '../../xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/inventory/service/InventoryLossGainService.java';
+  '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/service/InventoryLossGainService.java';
 
 test('驳回消息解析为单据入口，主键原样进 query', () => {
   const link = messageBusinessLink(MESSAGE_TYPE_INVENTORY_LOSS_GAIN, '1234567890123456789');
@@ -63,7 +63,7 @@ test('前后端业务类型数值镜像一致，且跳转路径与待办入口�
   );
   const todo = readFileSync(
     new URL(
-      '../../xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/constant/ScmTodoCardEnum.java',
+      '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java',
       import.meta.url
     ),
     'utf8'

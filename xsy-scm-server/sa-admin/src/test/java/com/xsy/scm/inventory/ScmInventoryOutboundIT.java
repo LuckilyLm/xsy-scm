@@ -5,7 +5,6 @@ import com.xsy.scm.inventory.domain.InventoryOutboundFact;
 import com.xsy.scm.inventory.domain.ReserveInventoryFact;
 import com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity;
 import com.xsy.scm.inventory.service.InventoryReservationService;
-import com.xsy.scm.warehouse.service.WarehouseService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,11 +33,9 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
     @Autowired
     private InventoryReservationService reservations;
 
-    @Autowired
-    private WarehouseService warehouseService;
-
     private Long warehouseId() {
-        return warehouseService.defaultEnabledWarehouse().getId();
+        // Outbound invariants need a stable ledger unit; default-enabled selection is a separate warehouse rule.
+        return seedWarehouseId();
     }
 
     /**

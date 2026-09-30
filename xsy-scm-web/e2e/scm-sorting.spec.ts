@@ -390,7 +390,8 @@ test('按商品汇总是同一套事实的只读视角，页面不提供任何�
         '汇总视角不得出现写动作入口').toBe(0);
 
     const summary = await ok<Paged>(leadClient, 'get', '/scm/sorting/summary?pageNum=1&pageSize=100');
-    const row = summary.list.find(r => String(r.saleUnitSnapshot) === 'kg' && Number(r.lineCount) >= 2);
+    const row = summary.list.find(r => Number(r.skuId) === Number(skuId)
+        && String(r.saleUnitSnapshot) === 'kg' && Number(r.lineCount) >= 2);
     expect(row, '两句任务应在汇总里并成一行同单位的聚合').toBeTruthy();
     // 汇总量与逐行事实必须一致：同一 SKU + 单位下，计划合计 = 各行计划量之和。
     const items = (await taskPage(leadClient)).list.filter(t => Number(t.warehouseId) === warehouseId);
@@ -398,7 +399,7 @@ test('按商品汇总是同一套事实的只读视角，页面不提供任何�
     for (const task of items) {
         lines.push(...(await taskDetail(leadClient, task.id)).items.filter((i: Row) => i.occupationStatus === 'ACTIVE'));
     }
-    const planned = lines.filter(i => i.saleUnitSnapshot === 'kg' && i.skuId === row.skuId)
+    const planned = lines.filter(i => i.saleUnitSnapshot === 'kg' && Number(i.skuId) === Number(row.skuId))
         .reduce((sum, i) => sum + Number(i.plannedQuantitySnapshot), 0);
     expect(Number(row.plannedQuantity)).toBeCloseTo(planned, 4);
 });

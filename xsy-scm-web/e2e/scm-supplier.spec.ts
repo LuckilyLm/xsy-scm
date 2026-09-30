@@ -34,6 +34,14 @@ const escapeRe = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const buttonName = (text: string) => new RegExp('^' + [...text].map(escapeRe).join('\\s*') + '$');
 const button = (root: Page | Locator, text: string) => root.getByRole('button', { name: buttonName(text) });
 
+async function searchSupplier(page: Page, keyword: string): Promise<Locator> {
+  await page.getByPlaceholder('编码 / 名称 / 联系人 / 电话').fill(keyword);
+  await button(page, '查询').click();
+  const row = page.getByRole('row').filter({ hasText: keyword }).first();
+  await expect(row).toBeVisible();
+  return row;
+}
+
 async function login(account: string) {
   const client = await request.newContext({ baseURL: apiUrl });
   const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
@@ -188,8 +196,7 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
   await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
 
   // ------------------------------------------------- 关联两个 SKU，且都为默认来源
-  let row = page.getByRole('row').filter({ hasText: prefix + 'S1' });
-  await expect(row).toBeVisible();
+  let row = await searchSupplier(page, prefix + 'S1');
   await button(row, '关联商品').click();
   drawer = currentDrawer(page);
   await expect(drawer.getByText('关联商品 · ' + prefix + '供应商甲')).toBeVisible();
@@ -227,7 +234,7 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
   // 列表「关联商品数」必须反映活动关联数量。
   // `exact: true` 不能省：前缀（时间戳 base36）里可能含「2」，供应商名称按钮会被一并命中。
   await page.reload();
-  row = page.getByRole('row').filter({ hasText: prefix + 'S1' });
+  row = await searchSupplier(page, prefix + 'S1');
   await expect(row.getByRole('button', { name: '2', exact: true })).toBeVisible();
 
   // ------------------------------------------------- 深链详情：只读快照表
@@ -240,7 +247,7 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
 
   // ------------------------------------------------------------------ 编辑
   await button(page, '返回供应商列表').click();
-  row = page.getByRole('row').filter({ hasText: prefix + 'S1' });
+  row = await searchSupplier(page, prefix + 'S1');
   await button(row, '编辑').click();
   drawer = currentDrawer(page);
   await expect(drawer.getByLabel('供应商编码', { exact: true })).toHaveValue(prefix + 'S1');
@@ -275,7 +282,7 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
 
   // ------------------------------------------------------------------ 删除
   await page.reload();
-  row = page.getByRole('row').filter({ hasText: prefix + 'S1' });
+  row = await searchSupplier(page, prefix + 'S1');
   await button(row, '删除').click();
   await page.locator('.ant-popover:visible').getByRole('button', { name: /确.*定/ }).click();
   await expect(row).toHaveCount(0);

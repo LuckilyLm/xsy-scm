@@ -22,7 +22,7 @@ function code(relative) {
 }
 
 const TODO_ENUM_JAVA =
-  '../../xsy-scm-server/sa-admin/src/main/java/net/lab1024/sa/admin/module/scm/dashboard/constant/ScmTodoCardEnum.java';
+  '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java';
 
 const RECEIPT = '../src/views/business/scm/purchase/purchase-receipt-list.vue';
 const LOSS_GAIN = '../src/views/business/scm/inventory/inventory-loss-gain-list.vue';
