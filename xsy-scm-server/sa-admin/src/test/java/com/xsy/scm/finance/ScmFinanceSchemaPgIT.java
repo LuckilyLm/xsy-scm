@@ -516,9 +516,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * F1-1 与 F1-2 一条财务菜单都没种（那时没有 Controller）；F1-3A 交付第一条受保护端点
-     * {@code POST /scm/finance/receipt/add}（V66 发布 1500 隐藏目录 + 1521），
-     * F1-3B 交付第二条 {@code POST /scm/finance/payment/add}（V67 只补 1522，父目录已存在）。
+     * F1-3A / F1-3B 分别交付收款与付款登记；F1-3C 发布两条收付款反向端点；F1-4 发布核销与红字应付；
+     * F1-5 发布只读与导出；F1-6 才发布五个真实页面菜单。V66–V71 分阶段对应这些能力。
      *
      * <p><b>为什么这条断言必须随阶段收紧而不是删掉</b>：F1-1 那轮一度把设计稿 §16 的 1500–1531
      * 全部种了下去，结果是「已授权的页面菜单指向不存在的 {@code .vue}」——
@@ -530,34 +529,50 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
      * 所以下面逐值钉的是「已发布集合 == 已有真实端点的能力集合」。
      */
     @Test
-    @DisplayName("阶段边界：财务只发布 1500 隐藏目录 + 1521 收款登记 + 1522 付款登记，无任何页面菜单")
-    void financePublishesOnlyTheReceiptAddCapability() {
+    @DisplayName("阶段边界：财务页面组件与授权只发布已实现的能力")
+    void financePublishesOnlyImplementedCapabilities() {
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 ORDER BY menu_id", Long.class))
-                .as("V67 之后财务段只允许这三行；新增一行必须同时带来一个真实端点或一个真实页面")
-                .containsExactly(1500L, 1521L, 1522L);
+                .as("V71 之后财务段只允许目录、五个实际页面与十三个真实能力权限")
+                .containsExactly(1500L, 1501L, 1502L, 1503L, 1504L, 1505L, 1511L, 1512L, 1513L, 1514L, 1515L,
+                        1521L, 1522L, 1523L, 1524L, 1525L, 1526L, 1527L, 1531L);
 
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
                 Integer.class))
-                .as("页面菜单（menu_type=2）随 F1-6 的 .vue 一起落库，本阶段一个都没有")
-                .isZero();
+                .as("五个菜单页面只在对应 .vue 存在后发布")
+                .isEqualTo(5);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND component IS NOT NULL",
                 Integer.class))
-                .as("没有任何一行财务菜单可以声明组件路径")
-                .isZero();
+                .as("五个页面都必须声明真实组件路径")
+                .isEqualTo(5);
+        assertThat(jdbc.queryForList(
+                "SELECT component FROM t_menu WHERE menu_id BETWEEN 1501 AND 1505 ORDER BY menu_id", String.class))
+                .containsExactly("/business/scm/finance/finance-receivable-list.vue",
+                        "/business/scm/finance/finance-payable-list.vue",
+                        "/business/scm/finance/finance-receipt-list.vue",
+                        "/business/scm/finance/finance-payment-list.vue",
+                        "/business/scm/finance/finance-write-off-list.vue");
+        assertThat(jdbc.queryForList(
+                "SELECT icon FROM t_menu WHERE menu_id BETWEEN 1500 AND 1505 ORDER BY menu_id", String.class))
+                .containsExactly("DollarOutlined", "AccountBookOutlined", "FileTextOutlined", "ImportOutlined",
+                        "ExportOutlined", "RetweetOutlined");
         assertThat(jdbc.queryForObject(
                 "SELECT visible_flag FROM t_menu WHERE menu_id = 1500", Boolean.class))
-                .as("目录本身也要保持隐藏，侧栏出现入口就等于出现空目录")
-                .isFalse();
+                .as("五个财务页发布时同步显示目录入口")
+                .isTrue();
 
         // 权限串按内容再查一遍：换号段种同样会造成「已授权但无任何端点使用它」。
         assertThat(jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:%' ORDER BY api_perms",
                 String.class))
-                .as("query / reverse / write-off / export 一律还没发布")
-                .containsExactly("scm:finance:payment:add", "scm:finance:receipt:add");
+                .as("只发布已实现的登记、查询、核销、红字、反向与导出权限")
+                .containsExactly("scm:finance:export", "scm:finance:payable:query", "scm:finance:payable:red",
+                        "scm:finance:payment:add", "scm:finance:payment:query", "scm:finance:payment:reverse",
+                        "scm:finance:receipt:add", "scm:finance:receipt:query", "scm:finance:receipt:reverse",
+                        "scm:finance:receivable:query", "scm:finance:write-off:add",
+                        "scm:finance:write-off:query", "scm:finance:write-off:reverse");
         // 四条种子约定之一：api_perms == web_perms，前端按钮与服务端鉴权读的是同一个串。
         // 作用域限制在财务段：底座原生菜单行本就允许两者不对称，全库断言会误伤。
         assertThat(jdbc.queryForObject(
@@ -569,8 +584,20 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "WHERE m.menu_id BETWEEN 1500 AND 1599", Integer.class))
-                .as("财务段三行菜单（1500 目录 + 1521 / 1522 能力）各授超管兜底与 SCM_FINANCE，共 3 × 2 行")
-                .isEqualTo(6);
+                .as("财务段十九行菜单（目录、五页面、十三权限）各授超管兜底与 SCM_FINANCE，共 19 × 2 行")
+                .isEqualTo(38);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "JOIN t_role r ON r.role_id = rm.role_id "
+                        + "WHERE m.menu_id BETWEEN 1501 AND 1505 AND r.role_code = 'SCM_FINANCE'", Integer.class))
+                .as("SCM_FINANCE 获得五个页面菜单")
+                .isEqualTo(5);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "JOIN t_role r ON r.role_id = rm.role_id "
+                        + "WHERE m.menu_id BETWEEN 1501 AND 1505 AND r.role_code = 'SCM_DRIVER'", Integer.class))
+                .as("司机角色没有财务页面")
+                .isZero();
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "WHERE m.menu_id = 1521", Integer.class))
@@ -583,6 +610,26 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 .isEqualTo(2);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "WHERE m.menu_id = 1526", Integer.class))
+                .as("能力点 1526 恰好两条授权行")
+                .isEqualTo(2);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "WHERE m.menu_id = 1527", Integer.class))
+                .as("能力点 1527 恰好两条授权行")
+                .isEqualTo(2);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "WHERE m.menu_id IN (1515, 1523, 1524, 1525)", Integer.class))
+                .as("V69 四个能力点各授给超管与 SCM_FINANCE，共 8 行")
+                .isEqualTo(8);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "WHERE m.menu_id IN (1511, 1512, 1513, 1514, 1531)", Integer.class))
+                .as("V70 五个只读 / 导出能力点各授给超管与 SCM_FINANCE，共 10 行")
+                .isEqualTo(10);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
                         + "JOIN t_role r ON r.role_id = rm.role_id "
                         + "WHERE m.menu_id = 1521 AND r.role_code = 'SCM_FINANCE'", Integer.class))
                 .as("SCM_FINANCE 按 role_code 授权（V56 口径），不硬编码 role_id")
@@ -592,6 +639,20 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                         + "JOIN t_role r ON r.role_id = rm.role_id "
                         + "WHERE m.menu_id = 1522 AND r.role_code = 'SCM_FINANCE'", Integer.class))
                 .isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "JOIN t_role r ON r.role_id = rm.role_id "
+                        + "WHERE m.menu_id IN (1515, 1523, 1524, 1525, 1526, 1527)"
+                        + " AND r.role_code = 'SCM_FINANCE'", Integer.class))
+                .as("F1-3C 与 F1-4 权限按 role_code 授给 SCM_FINANCE")
+                .isEqualTo(6);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu rm JOIN t_menu m ON m.menu_id = rm.menu_id "
+                        + "JOIN t_role r ON r.role_id = rm.role_id "
+                        + "WHERE m.menu_id IN (1511, 1512, 1513, 1514, 1531)"
+                        + " AND r.role_code = 'SCM_FINANCE'", Integer.class))
+                .as("F1-5 查询 / 导出权限按 role_code 授给 SCM_FINANCE")
+                .isEqualTo(5);
     }
 
     /**

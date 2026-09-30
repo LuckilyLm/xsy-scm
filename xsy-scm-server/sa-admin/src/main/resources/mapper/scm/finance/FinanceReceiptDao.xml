@@ -5,4 +5,130 @@
     <select id="nextReceiptNo" resultType="long">
         SELECT nextval('finance_receipt_no_seq')
     </select>
+
+    <select id="selectByIdForUpdate" resultType="com.xsy.scm.finance.domain.entity.FinanceReceiptEntity">
+        SELECT *
+        FROM finance_receipt
+        WHERE id = #{receiptId}
+          AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectEffectiveWriteOffAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(CASE
+            WHEN entry_type = 'NORMAL' THEN amount
+            WHEN entry_type = 'REVERSE' THEN -amount
+            ELSE 0
+        END), 0)
+        FROM finance_write_off
+        WHERE source_type = 'RECEIPT'
+          AND source_id = #{receiptId}
+          AND deleted = FALSE
+    </select>
+
+    <insert id="insertReverseOnConflictDoNothing"
+            parameterType="com.xsy.scm.finance.domain.entity.FinanceReceiptEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot,
+                                     amount, method, received_at, entry_type, reverse_of_id,
+                                     reason, external_reference, remark, version, deleted,
+                                     created_at, updated_at, created_by, updated_by)
+        VALUES (#{receiptNo}, #{customerId}, #{customerNameSnapshot},
+                #{amount}, #{method}, #{receivedAt}, #{entryType}, #{reverseOfId},
+                #{reason}, #{externalReference}, #{remark}, 0, FALSE,
+                #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (reverse_of_id)
+            WHERE deleted = FALSE AND entry_type = 'REVERSE' DO NOTHING
+    </insert>
+
+    <select id="selectReversedAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM finance_receipt
+        WHERE reverse_of_id = #{receiptId}
+          AND entry_type = 'REVERSE'
+          AND deleted = FALSE
+    </select>
+
+    <sql id="receiptQuerySelect">
+        SELECT r.id AS receiptId,
+               r.receipt_no AS receiptNo,
+               r.customer_id AS customerId,
+               r.customer_name_snapshot AS customerName,
+               r.amount,
+               CASE WHEN r.entry_type = 'NORMAL' THEN r.amount - reversed.reversedAmount ELSE 0 END AS effectiveAmount,
+               CASE WHEN r.entry_type = 'NORMAL' THEN used.usedAmount ELSE 0 END AS usedAmount,
+               CASE WHEN r.entry_type = 'NORMAL'
+                    THEN GREATEST(r.amount - reversed.reversedAmount - used.usedAmount, 0)
+                    ELSE 0 END AS pendingWriteOffAmount,
+               r.method,
+               r.entry_type AS entryType,
+               r.reverse_of_id AS reverseOfId,
+               original.receipt_no AS reverseOfNo,
+               r.reason,
+               r.received_at AS receivedAt,
+               r.external_reference AS externalReference,
+               r.remark
+        FROM finance_receipt r
+        LEFT JOIN customer c ON c.id = r.customer_id AND c.deleted = FALSE
+        LEFT JOIN finance_receipt original ON original.id = r.reverse_of_id AND original.deleted = FALSE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(reverse.amount), 0) AS reversedAmount
+            FROM finance_receipt reverse
+            WHERE reverse.reverse_of_id = r.id
+              AND reverse.entry_type = 'REVERSE'
+              AND reverse.deleted = FALSE
+        ) reversed ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(CASE
+                WHEN wo.entry_type = 'NORMAL' THEN wo.amount
+                WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
+                ELSE 0
+            END), 0) AS usedAmount
+            FROM finance_write_off wo
+            WHERE wo.source_type = 'RECEIPT'
+              AND wo.source_id = r.id
+              AND wo.deleted = FALSE
+        ) used ON TRUE
+    </sql>
+
+    <select id="selectQueryById" resultType="com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO">
+        <include refid="receiptQuerySelect"/>
+        WHERE r.id = #{receiptId}
+          AND r.deleted = FALSE
+    </select>
+
+    <select id="selectReversalByOriginal" resultType="com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO">
+        <include refid="receiptQuerySelect"/>
+        WHERE r.reverse_of_id = #{receiptId}
+          AND r.entry_type = 'REVERSE'
+          AND r.deleted = FALSE
+        LIMIT 1
+    </select>
+
+    <select id="queryPage" resultType="com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO">
+        <include refid="receiptQuerySelect"/>
+        <where>
+            r.deleted = FALSE
+            AND r.received_at &gt;= #{timeRange.startAt}
+            AND r.received_at &lt; #{timeRange.endAt}
+            <choose>
+                <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
+                <when test="scope.customerSellerScope.all"></when>
+                <otherwise>
+                    AND c.seller_id IN
+                    <foreach collection="scope.customerSellerScope.ids" item="sellerId"
+                             open="(" separator="," close=")">#{sellerId}</foreach>
+                </otherwise>
+            </choose>
+            <if test="query.receiptId != null">AND r.id = #{query.receiptId}</if>
+            <if test="query.customerId != null">AND r.customer_id = #{query.customerId}</if>
+            <if test="query.method != null and query.method != ''">AND r.method = #{query.method}</if>
+            <if test="query.entryType != null and query.entryType != ''">AND r.entry_type = #{query.entryType}</if>
+            <if test="query.pendingOnly == true">
+                AND r.entry_type = 'NORMAL'
+                AND GREATEST(r.amount - reversed.reversedAmount - used.usedAmount, 0) &gt; 0
+            </if>
+        </where>
+        ORDER BY r.received_at DESC, r.id DESC
+    </select>
 </mapper>

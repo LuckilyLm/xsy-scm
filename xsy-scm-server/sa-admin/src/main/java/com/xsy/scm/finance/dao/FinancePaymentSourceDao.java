@@ -1,8 +1,14 @@
 package com.xsy.scm.finance.dao;
 
 import com.xsy.scm.finance.domain.dto.FinanceRefundFactDto;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.finance.domain.form.FinanceRefundOptionQueryForm;
+import com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 付款登记读取的**来源事实**（只读跨域 DAO，形态照 {@link FinancePayableSourceDao}）。
@@ -20,4 +26,8 @@ public interface FinancePaymentSourceDao {
      * 读侧不带 {@code status} 过滤：{@code PENDING} 必须能读出来，服务层才能给出 可解释的 41139，而不是把它伪装成「退款不存在」。
      */
     FinanceRefundFactDto selectOrderRefund(@Param("refundId") Long refundId);
+
+    /** Paginated completed refund picker; excludes already-paid sources and follows customer seller scope. */
+    List<FinanceRefundOptionVO> selectCompletedRefundOptions(Page<?> page,
+            @Param("query") FinanceRefundOptionQueryForm query, @Param("scope") ScmDataScopeContext scope);
 }

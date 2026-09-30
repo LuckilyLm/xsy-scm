@@ -290,7 +290,8 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(row.get("reason")).isNull();
         assertThat((BigDecimal) row.get("amount")).isEqualByComparingTo("500.0000");
         assertThat(String.valueOf(row.get("payment_no"))).matches("PM\\d{14,}");
-        assertThat(count("SELECT count(*) FROM finance_write_off")).as("核销属 F1-4").isZero();
+        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+                result.getPaymentId())).as("该笔预付款不自动生成核销").isZero();
         assertThat(result.getCounterpartyName()).as("回显登记时冻结的对方名").isEqualTo(row.get("counterparty_name_snapshot"));
     }
 
@@ -312,15 +313,15 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         Map<String, Object> before = jdbc.queryForMap(
                 "SELECT * FROM finance_payable WHERE source_id = ?", receiptId);
 
-        add(supplierForm(supplierId, "500.0000"));
+        FinancePaymentVO payment = add(supplierForm(supplierId, "500.0000"));
 
         Map<String, Object> after = jdbc.queryForMap(
                 "SELECT * FROM finance_payable WHERE source_id = ?", receiptId);
         assertThat(after.get("amount")).isEqualTo(before.get("amount"));
         assertThat(after.get("version")).isEqualTo(before.get("version"));
         assertThat(after.get("updated_at")).isEqualTo(before.get("updated_at"));
-        assertThat(count("SELECT count(*) FROM finance_write_off"))
-                .as("等额也不自动核销，付款只是「一笔待核销款」").isZero();
+        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+                payment.getPaymentId())).as("等额付款也不自动核销").isZero();
     }
 
     @Test
@@ -530,7 +531,8 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
                 "SELECT * FROM finance_receivable WHERE order_id = ? ORDER BY entry_type", refund.orderId());
         assertThat(before).hasSize(2);
 
-        add(refundForm(refund.customerId(), refund.refundAmount().toPlainString(), refund.refundId()));
+        FinancePaymentVO payment = add(refundForm(
+                refund.customerId(), refund.refundAmount().toPlainString(), refund.refundId()));
 
         List<Map<String, Object>> after = jdbc.queryForList(
                 "SELECT * FROM finance_receivable WHERE order_id = ? ORDER BY entry_type", refund.orderId());
@@ -540,7 +542,8 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
             assertThat(after.get(index).get("version")).isEqualTo(before.get(index).get("version"));
             assertThat(after.get(index).get("updated_at")).isEqualTo(before.get(index).get("updated_at"));
         }
-        assertThat(count("SELECT count(*) FROM finance_write_off")).as("付款不核销").isZero();
+        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+                payment.getPaymentId())).as("退款付款不自动生成核销").isZero();
         assertThat(count("SELECT count(*) FROM finance_receivable WHERE source_id = ? AND entry_type = 'RED'"
                 + " AND receivable_no <> 'AR-M-RED'", refund.refundId())).as("不追加第二张红字").isZero();
     }

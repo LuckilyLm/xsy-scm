@@ -20,6 +20,7 @@ import com.xsy.scm.finance.dao.FinanceReceiptDao;
 import com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
+import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
@@ -89,6 +90,51 @@ public class FinanceReceiptService {
     }
 
     /**
+     * 追加一条 {@code REVERSE} 收款事实。原记录保持不变；该命令与核销共用原收款行锁， 因而在并发下也能保证反向前的有效已用额为 0。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FinanceReceiptVO reverse(FinanceReceiptReverseForm form, String idempotencyKey) {
+        FinanceReceiptEntity original = financeReceiptDao.selectByIdForUpdate(form.getReceiptId());
+        if (original == null) {
+            throw new ScmBusinessException(FinanceErrorCode.RECEIPT_NOT_FOUND);
+        }
+        requireAuthorizedCustomer(original.getCustomerId());
+        if (!ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(original.getEntryType())) {
+            throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
+        }
+
+        String reason = StringUtils.trimToNull(form.getReason());
+        if (reason == null) {
+            throw new ScmBusinessException(FinanceErrorCode.REVERSE_REASON_REQUIRED);
+        }
+
+        var claim = idempotencyService.claim(FinanceConstant.RECEIPT_REVERSE_SCOPE + ":" + original.getId(),
+                idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, FinanceReceiptVO.class);
+        }
+
+        BigDecimal effectiveWriteOffAmount = financeReceiptDao.selectEffectiveWriteOffAmount(original.getId());
+        if (effectiveWriteOffAmount == null || effectiveWriteOffAmount.signum() != 0) {
+            throw new ScmBusinessException(FinanceErrorCode.REVERSE_BLOCKED_BY_WRITE_OFF);
+        }
+
+        FinanceReceiptEntity reversal = newReverseRecord(original, reason);
+        if (financeReceiptDao.insertReverseOnConflictDoNothing(reversal) != 1) {
+            throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
+        }
+
+        operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, original.getId(),
+                ScmFinanceOperationTypeEnum.RECEIPT_REVERSE, reason,
+                effectiveAmountSnapshot(original, original.getAmount()),
+                effectiveAmountSnapshot(reversal, BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)));
+
+        FinanceReceiptVO result = vo(reversal);
+        idempotencyService.complete(claim, "FINANCE_RECEIPT", reversal.getId(), result);
+        return result;
+    }
+
+    /**
      * 创建收款事实本身（不含幂等三段式）；反向收款由追加反向事实的命令处理。
      */
     private FinanceCustomerFactDto requireAuthorizedCustomer(Long customerId) {
@@ -97,6 +143,42 @@ public class FinanceReceiptService {
             throw new ScmDataScopeException();
         }
         return customer;
+    }
+
+    private FinanceReceiptEntity newReverseRecord(FinanceReceiptEntity original, String reason) {
+        OffsetDateTime now = OffsetDateTime.now();
+        String operator = ScmOperator.current();
+        FinanceReceiptEntity reversal = new FinanceReceiptEntity();
+        reversal.setReceiptNo(
+                ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+        reversal.setCustomerId(original.getCustomerId());
+        reversal.setCustomerNameSnapshot(original.getCustomerNameSnapshot());
+        reversal.setAmount(original.getAmount());
+        reversal.setMethod(original.getMethod());
+        reversal.setReceivedAt(now);
+        reversal.setEntryType(ScmFinanceReverseEntryTypeEnum.REVERSE.name());
+        reversal.setReverseOfId(original.getId());
+        reversal.setReason(reason);
+        // 反向单据是本次纠错事实，不沿用原资金凭据或备注。
+        reversal.setExternalReference(null);
+        reversal.setRemark(null);
+        reversal.setCreatedAt(now);
+        reversal.setUpdatedAt(now);
+        reversal.setCreatedBy(operator);
+        reversal.setUpdatedBy(operator);
+        return reversal;
+    }
+
+    private static Map<String, Object> effectiveAmountSnapshot(FinanceReceiptEntity receipt,
+            BigDecimal effectiveAmount) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("receiptId", receipt.getId());
+        snapshot.put("receiptNo", receipt.getReceiptNo());
+        snapshot.put("entryType", receipt.getEntryType());
+        snapshot.put("reverseOfId", receipt.getReverseOfId());
+        snapshot.put("effectiveAmount", effectiveAmount.toPlainString());
+        snapshot.put("reason", receipt.getReason());
+        return snapshot;
     }
 
     private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer) {
@@ -148,12 +230,8 @@ public class FinanceReceiptService {
         throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
     }
 
-    private Map<
-            String,
-            Object> snapshot(FinanceReceiptEntity receipt) {
-        Map<
-                String,
-                Object> snapshot = new LinkedHashMap<>();
+    private Map<String, Object> snapshot(FinanceReceiptEntity receipt) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("receiptNo", receipt.getReceiptNo());
         snapshot.put("customerId", receipt.getCustomerId());
         snapshot.put("customerNameSnapshot", receipt.getCustomerNameSnapshot());
@@ -180,6 +258,8 @@ public class FinanceReceiptService {
         vo.setExternalReference(receipt.getExternalReference());
         vo.setRemark(receipt.getRemark());
         vo.setEntryType(receipt.getEntryType());
+        vo.setReverseOfId(receipt.getReverseOfId());
+        vo.setReason(receipt.getReason());
         return vo;
     }
 }

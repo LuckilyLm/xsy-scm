@@ -43,4 +43,12 @@
           AND ri.received_quantity > 0
         ORDER BY ri.sort_order, ri.id
     </select>
+
+    <select id="selectPurchaserId" resultType="long">
+        SELECT po.purchaser_id
+        FROM purchase_receipt pr
+        JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        WHERE pr.id = #{purchaseReceiptId}
+          AND pr.deleted = FALSE
+    </select>
 </mapper>

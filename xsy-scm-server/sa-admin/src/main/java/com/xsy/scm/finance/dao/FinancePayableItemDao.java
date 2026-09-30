@@ -3,15 +3,15 @@ package com.xsy.scm.finance.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.finance.domain.entity.FinancePayableItemEntity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 应付明细读写，append-only 契约同 {@link FinanceReceivableDao}。
  */
 @Mapper
-public interface FinancePayableItemDao
-        extends
-            BaseMapper<
-                    FinancePayableItemEntity> {
+public interface FinancePayableItemDao extends BaseMapper<FinancePayableItemEntity> {
 
     /**
      * 插入应付明细，来源身份已存在时什么都不做。
@@ -21,4 +21,9 @@ public interface FinancePayableItemDao
      * 不可能是重放，而是这一条收货行已经挂在别的应付单上 —— 属于数据异常，必须失败。
      */
     int insertOnConflictDoNothing(FinancePayableItemEntity entity);
+
+    FinancePayableItemEntity selectOriginalItem(@Param("payableId") Long payableId,
+            @Param("purchaseOrderItemId") Long purchaseOrderItemId);
+
+    List<FinancePayableItemEntity> selectByPayableId(@Param("payableId") Long payableId);
 }

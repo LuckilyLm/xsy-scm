@@ -31,4 +31,145 @@
         ON CONFLICT (source_type, source_id)
             WHERE deleted = FALSE AND source_id IS NOT NULL DO NOTHING
     </insert>
+
+    <select id="selectByIdForUpdate" resultType="com.xsy.scm.finance.domain.entity.FinancePaymentEntity">
+        SELECT *
+        FROM finance_payment
+        WHERE id = #{paymentId}
+          AND deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectEffectiveWriteOffAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(CASE
+            WHEN entry_type = 'NORMAL' THEN amount
+            WHEN entry_type = 'REVERSE' THEN -amount
+            ELSE 0
+        END), 0)
+        FROM finance_write_off
+        WHERE source_type = 'PAYMENT'
+          AND source_id = #{paymentId}
+          AND deleted = FALSE
+    </select>
+
+    <insert id="insertReverseOnConflictDoNothing"
+            parameterType="com.xsy.scm.finance.domain.entity.FinancePaymentEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,
+                                     counterparty_name_snapshot, amount, method, paid_at,
+                                     entry_type, reverse_of_id, reason, external_reference,
+                                     source_type, source_id, remark, version, deleted,
+                                     created_at, updated_at, created_by, updated_by)
+        VALUES (#{paymentNo}, #{counterpartyType}, #{counterpartyId},
+                #{counterpartyNameSnapshot}, #{amount}, #{method}, #{paidAt},
+                #{entryType}, #{reverseOfId}, #{reason}, #{externalReference},
+                NULL, NULL, #{remark}, 0, FALSE,
+                #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (reverse_of_id)
+            WHERE deleted = FALSE AND entry_type = 'REVERSE' DO NOTHING
+    </insert>
+
+    <select id="selectReversedAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM finance_payment
+        WHERE reverse_of_id = #{paymentId}
+          AND entry_type = 'REVERSE'
+          AND deleted = FALSE
+    </select>
+
+    <sql id="paymentQuerySelect">
+        SELECT p.id AS paymentId,
+               p.payment_no AS paymentNo,
+               p.counterparty_type AS counterpartyType,
+               p.counterparty_id AS counterpartyId,
+               p.counterparty_name_snapshot AS counterpartyName,
+               p.amount,
+               CASE WHEN p.entry_type = 'NORMAL' THEN p.amount - reversed.reversedAmount ELSE 0 END AS effectiveAmount,
+               CASE WHEN p.entry_type = 'NORMAL' THEN used.usedAmount ELSE 0 END AS usedAmount,
+               CASE WHEN p.entry_type = 'NORMAL'
+                    THEN GREATEST(p.amount - reversed.reversedAmount - used.usedAmount, 0)
+                    ELSE 0 END AS pendingWriteOffAmount,
+               p.method,
+               p.entry_type AS entryType,
+               p.reverse_of_id AS reverseOfId,
+               original.payment_no AS reverseOfNo,
+               p.reason,
+               p.paid_at AS paidAt,
+               p.external_reference AS externalReference,
+               p.source_type AS sourceType,
+               p.source_id AS sourceId,
+               p.remark
+        FROM finance_payment p
+        LEFT JOIN customer c ON p.counterparty_type = 'CUSTOMER'
+            AND c.id = p.counterparty_id AND c.deleted = FALSE
+        LEFT JOIN finance_payment original ON original.id = p.reverse_of_id AND original.deleted = FALSE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(reverse.amount), 0) AS reversedAmount
+            FROM finance_payment reverse
+            WHERE reverse.reverse_of_id = p.id
+              AND reverse.entry_type = 'REVERSE'
+              AND reverse.deleted = FALSE
+        ) reversed ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(CASE
+                WHEN wo.entry_type = 'NORMAL' THEN wo.amount
+                WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
+                ELSE 0
+            END), 0) AS usedAmount
+            FROM finance_write_off wo
+            WHERE wo.source_type = 'PAYMENT'
+              AND wo.source_id = p.id
+              AND wo.deleted = FALSE
+        ) used ON TRUE
+    </sql>
+
+    <select id="selectQueryById" resultType="com.xsy.scm.finance.domain.vo.FinancePaymentQueryVO">
+        <include refid="paymentQuerySelect"/>
+        WHERE p.id = #{paymentId}
+          AND p.deleted = FALSE
+    </select>
+
+    <select id="selectReversalByOriginal" resultType="com.xsy.scm.finance.domain.vo.FinancePaymentQueryVO">
+        <include refid="paymentQuerySelect"/>
+        WHERE p.reverse_of_id = #{paymentId}
+          AND p.entry_type = 'REVERSE'
+          AND p.deleted = FALSE
+        LIMIT 1
+    </select>
+
+    <select id="queryPage" resultType="com.xsy.scm.finance.domain.vo.FinancePaymentQueryVO">
+        <include refid="paymentQuerySelect"/>
+        <where>
+            p.deleted = FALSE
+            AND p.paid_at &gt;= #{timeRange.startAt}
+            AND p.paid_at &lt; #{timeRange.endAt}
+            <choose>
+                <when test="scope == null">AND FALSE</when>
+                <when test="scope.customerSellerScope.all"></when>
+                <when test="scope.customerSellerScope.empty">AND p.counterparty_type = 'SUPPLIER'</when>
+                <otherwise>
+                    AND (p.counterparty_type = 'SUPPLIER' OR
+                         (p.counterparty_type = 'CUSTOMER' AND c.seller_id IN
+                            <foreach collection="scope.customerSellerScope.ids" item="sellerId"
+                                     open="(" separator="," close=")">#{sellerId}</foreach>))
+                </otherwise>
+            </choose>
+            <if test="query.paymentId != null">AND p.id = #{query.paymentId}</if>
+            <if test="query.counterpartyType != null and query.counterpartyType != ''">
+                AND p.counterparty_type = #{query.counterpartyType}
+            </if>
+            <if test="query.counterpartyId != null">AND p.counterparty_id = #{query.counterpartyId}</if>
+            <if test="query.counterpartyName != null and query.counterpartyName != ''">
+                AND p.counterparty_name_snapshot ILIKE CONCAT('%', #{query.counterpartyName}, '%')
+            </if>
+            <if test="query.method != null and query.method != ''">AND p.method = #{query.method}</if>
+            <if test="query.sourceType != null and query.sourceType != ''">AND p.source_type = #{query.sourceType}</if>
+            <if test="query.entryType != null and query.entryType != ''">AND p.entry_type = #{query.entryType}</if>
+            <if test="query.pendingOnly == true">
+                AND p.entry_type = 'NORMAL'
+                AND GREATEST(p.amount - reversed.reversedAmount - used.usedAmount, 0) &gt; 0
+            </if>
+        </where>
+        ORDER BY p.paid_at DESC, p.id DESC
+    </select>
 </mapper>

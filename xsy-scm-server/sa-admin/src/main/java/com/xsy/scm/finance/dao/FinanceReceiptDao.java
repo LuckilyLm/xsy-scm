@@ -1,8 +1,17 @@
 package com.xsy.scm.finance.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.time.ScmDateTimeRange;
 import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
+import com.xsy.scm.finance.domain.form.FinanceReceiptQueryForm;
+import com.xsy.scm.finance.domain.vo.FinanceReceiptQueryVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 收款读写。
@@ -16,13 +25,28 @@ import org.apache.ibatis.annotations.Mapper;
  * 因此「反向前已用额 = 0」这条前置在并发下才成立。
  */
 @Mapper
-public interface FinanceReceiptDao
-        extends
-            BaseMapper<
-                    FinanceReceiptEntity> {
+public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
 
     /**
      * 收款单号序列（全局非重置，不按日归零）。必须在事务内调用： {@code nextval} 不随事务回滚，跳号是可接受的代价（与应付单号同一条纪律）。
      */
     long nextReceiptNo();
+
+    /** Lock the source receipt so reversal and write-off commands serialize on the same row. */
+    FinanceReceiptEntity selectByIdForUpdate(@Param("receiptId") Long receiptId);
+
+    /** Effective write-off amount (NORMAL minus REVERSE) for this source receipt. */
+    BigDecimal selectEffectiveWriteOffAmount(@Param("receiptId") Long receiptId);
+
+    /** Insert a reversal, letting the partial unique index arbitrate a second reversal. */
+    int insertReverseOnConflictDoNothing(FinanceReceiptEntity entity);
+
+    BigDecimal selectReversedAmount(@Param("receiptId") Long receiptId);
+
+    FinanceReceiptQueryVO selectQueryById(@Param("receiptId") Long receiptId);
+
+    FinanceReceiptQueryVO selectReversalByOriginal(@Param("receiptId") Long receiptId);
+
+    List<FinanceReceiptQueryVO> queryPage(Page<?> page, @Param("query") FinanceReceiptQueryForm query,
+            @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
 }

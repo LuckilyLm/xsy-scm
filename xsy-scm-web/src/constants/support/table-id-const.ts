@@ -80,6 +80,13 @@ export const TABLE_ID_CONST = {
         // P1 分拣管理：任务列表与按商品汇总（两张都是列表页，列配置沿用同一套数字 id）
         SCM_SORTING_TASK: 50045,
         SCM_SORTING_SUMMARY: 50046,
+        SCM_FINANCE_RECEIVABLE: 50047,
+        SCM_FINANCE_PAYABLE: 50048,
+        SCM_FINANCE_RECEIPT: 50049,
+        SCM_FINANCE_PAYMENT: 50050,
+        SCM_FINANCE_WRITE_OFF: 50051,
+        SCM_REPORT_FINANCE_RECEIVABLE: 50052,
+        SCM_REPORT_FINANCE_PAYABLE: 50053,
         OA: {
             NOTICE: businessOAInitTableId + 1, //通知公告
             ENTERPRISE: businessOAInitTableId + 2, //企业信息

@@ -22,4 +22,13 @@
         ON CONFLICT (source_type, source_id)
             WHERE deleted = FALSE DO NOTHING
     </insert>
+
+    <select id="selectByReceivableId"
+            resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity">
+        SELECT *
+        FROM finance_receivable_item
+        WHERE receivable_id = #{receivableId}
+          AND deleted = FALSE
+        ORDER BY id
+    </select>
 </mapper>

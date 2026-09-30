@@ -68,6 +68,25 @@ public final class FinanceConstant {
     public static final String PAYMENT_ADD_SCOPE = "FINANCE_PAYMENT_ADD";
 
     /**
+     * 收款反向命令幂等 scope；实际 scope 还要拼原收款 id，避免跨单据复用同一 key。
+     */
+    public static final String RECEIPT_REVERSE_SCOPE = "FINANCE_RECEIPT_REVERSE";
+
+    /**
+     * 付款反向命令幂等 scope；实际 scope 还要拼原付款 id，避免跨单据复用同一 key。
+     */
+    public static final String PAYMENT_REVERSE_SCOPE = "FINANCE_PAYMENT_REVERSE";
+
+    /** 核销新增命令幂等 scope；实际 scope 还要拼资金来源类型与 id。 */
+    public static final String WRITE_OFF_ADD_SCOPE = "FINANCE_WRITE_OFF_ADD";
+
+    /** 核销反向命令幂等 scope；实际 scope 还要拼原核销 id。 */
+    public static final String WRITE_OFF_REVERSE_SCOPE = "FINANCE_WRITE_OFF_REVERSE";
+
+    /** 手工红字应付命令幂等 scope；实际 scope 还要拼原应付 id。 */
+    public static final String PAYABLE_RED_SCOPE = "FINANCE_PAYABLE_RED";
+
+    /**
      * 四个破坏性动作各一条独立权限：能登记一笔款的人不必然是能冲掉一笔款的人， 因此它们既不与 {@code *:add} 合并，也不合成一个 {@code scm:finance:reverse}。
      */
     public static final String WRITE_OFF_REVERSE_PERM = FinancePermission.WRITE_OFF_REVERSE;

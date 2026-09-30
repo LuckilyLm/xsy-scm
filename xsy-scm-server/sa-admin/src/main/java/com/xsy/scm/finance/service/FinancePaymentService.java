@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
@@ -24,6 +25,7 @@ import com.xsy.scm.finance.domain.dto.FinanceRefundFactDto;
 import com.xsy.scm.finance.domain.dto.FinanceSupplierFactDto;
 import com.xsy.scm.finance.domain.entity.FinancePaymentEntity;
 import com.xsy.scm.finance.domain.form.FinancePaymentAddForm;
+import com.xsy.scm.finance.domain.form.FinancePaymentReverseForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
@@ -90,6 +92,51 @@ public class FinancePaymentService {
     }
 
     /**
+     * 追加一条 {@code REVERSE} 付款事实。原记录保持不变；反向行不继承退款来源，避免与原付款争用来源唯一键。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FinancePaymentVO reverse(FinancePaymentReverseForm form, String idempotencyKey) {
+        FinancePaymentEntity original = financePaymentDao.selectByIdForUpdate(form.getPaymentId());
+        if (original == null) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_NOT_FOUND);
+        }
+        requireAuthorizedCounterparty(original);
+        if (!ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(original.getEntryType())) {
+            throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
+        }
+
+        String reason = StringUtils.trimToNull(form.getReason());
+        if (reason == null) {
+            throw new ScmBusinessException(FinanceErrorCode.REVERSE_REASON_REQUIRED);
+        }
+
+        var claim = idempotencyService.claim(FinanceConstant.PAYMENT_REVERSE_SCOPE + ":" + original.getId(),
+                idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, FinancePaymentVO.class);
+        }
+
+        BigDecimal effectiveWriteOffAmount = financePaymentDao.selectEffectiveWriteOffAmount(original.getId());
+        if (effectiveWriteOffAmount == null || effectiveWriteOffAmount.signum() != 0) {
+            throw new ScmBusinessException(FinanceErrorCode.REVERSE_BLOCKED_BY_WRITE_OFF);
+        }
+
+        FinancePaymentEntity reversal = newReverseRecord(original, reason);
+        if (financePaymentDao.insertReverseOnConflictDoNothing(reversal) != 1) {
+            throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
+        }
+
+        operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, original.getId(),
+                ScmFinanceOperationTypeEnum.PAYMENT_REVERSE, reason,
+                effectiveAmountSnapshot(original, original.getAmount()),
+                effectiveAmountSnapshot(reversal, BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)));
+
+        FinancePaymentVO result = vo(reversal);
+        idempotencyService.complete(claim, "FINANCE_PAYMENT", reversal.getId(), result);
+        return result;
+    }
+
+    /**
      * 付款事实本身（不含幂等三段式）。
      *
      * <p>
@@ -133,6 +180,57 @@ public class FinancePaymentService {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         return payment;
+    }
+
+    private void requireAuthorizedCounterparty(FinancePaymentEntity payment) {
+        if (ScmFinanceCounterpartyTypeEnum.SUPPLIER.name().equals(payment.getCounterpartyType())) {
+            return;
+        }
+        if (!ScmFinanceCounterpartyTypeEnum.CUSTOMER.name().equals(payment.getCounterpartyType())) {
+            throw new ScmDataScopeException();
+        }
+        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(payment.getCounterpartyId());
+        if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
+    }
+
+    private FinancePaymentEntity newReverseRecord(FinancePaymentEntity original, String reason) {
+        OffsetDateTime now = OffsetDateTime.now();
+        String operator = ScmOperator.current();
+        FinancePaymentEntity reversal = new FinancePaymentEntity();
+        reversal.setPaymentNo(
+                ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+        reversal.setCounterpartyType(original.getCounterpartyType());
+        reversal.setCounterpartyId(original.getCounterpartyId());
+        reversal.setCounterpartyNameSnapshot(original.getCounterpartyNameSnapshot());
+        reversal.setAmount(original.getAmount());
+        reversal.setMethod(original.getMethod());
+        reversal.setPaidAt(now);
+        reversal.setEntryType(ScmFinanceReverseEntryTypeEnum.REVERSE.name());
+        reversal.setReverseOfId(original.getId());
+        reversal.setReason(reason);
+        reversal.setExternalReference(null);
+        reversal.setSourceType(null);
+        reversal.setSourceId(null);
+        reversal.setRemark(null);
+        reversal.setCreatedAt(now);
+        reversal.setUpdatedAt(now);
+        reversal.setCreatedBy(operator);
+        reversal.setUpdatedBy(operator);
+        return reversal;
+    }
+
+    private static Map<String, Object> effectiveAmountSnapshot(FinancePaymentEntity payment,
+            BigDecimal effectiveAmount) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("paymentId", payment.getId());
+        snapshot.put("paymentNo", payment.getPaymentNo());
+        snapshot.put("entryType", payment.getEntryType());
+        snapshot.put("reverseOfId", payment.getReverseOfId());
+        snapshot.put("effectiveAmount", effectiveAmount.toPlainString());
+        snapshot.put("reason", payment.getReason());
+        return snapshot;
     }
 
     /**
@@ -227,12 +325,8 @@ public class FinancePaymentService {
         throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
     }
 
-    private Map<
-            String,
-            Object> snapshot(FinancePaymentEntity payment) {
-        Map<
-                String,
-                Object> snapshot = new LinkedHashMap<>();
+    private Map<String, Object> snapshot(FinancePaymentEntity payment) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("paymentNo", payment.getPaymentNo());
         snapshot.put("counterpartyType", payment.getCounterpartyType());
         snapshot.put("counterpartyId", payment.getCounterpartyId());
@@ -264,6 +358,8 @@ public class FinancePaymentService {
         vo.setSourceId(payment.getSourceId());
         vo.setRemark(payment.getRemark());
         vo.setEntryType(payment.getEntryType());
+        vo.setReverseOfId(payment.getReverseOfId());
+        vo.setReason(payment.getReason());
         return vo;
     }
 }

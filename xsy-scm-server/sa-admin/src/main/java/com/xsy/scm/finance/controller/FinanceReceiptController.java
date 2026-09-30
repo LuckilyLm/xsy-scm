@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
+import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -36,9 +37,16 @@ public class FinanceReceiptController {
     @PostMapping("/add")
     @SaCheckPermission(FinancePermission.RECEIPT_ADD)
     @OperateLog
-    public ResponseDTO<
-            FinanceReceiptVO> add(@Valid @RequestBody FinanceReceiptAddForm form,
-                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<FinanceReceiptVO> add(@Valid @RequestBody FinanceReceiptAddForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financeReceiptService.add(form, idempotencyKey));
+    }
+
+    @PostMapping("/reverse")
+    @SaCheckPermission(FinancePermission.RECEIPT_REVERSE)
+    @OperateLog
+    public ResponseDTO<FinanceReceiptVO> reverse(@Valid @RequestBody FinanceReceiptReverseForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(financeReceiptService.reverse(form, idempotencyKey));
     }
 }

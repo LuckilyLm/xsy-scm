@@ -114,25 +114,22 @@ class SmartAdminMenuComponentPgIT {
     }
 
     @Test
-    @DisplayName("Finance 段至今没有任何页面菜单：能力点可以先行，带 component 的行必须等 .vue")
-    void financeHasNoPublishedPageMenuInThisPhase() {
-        // F1-1 / F1-2 一行都没种（那时没有 Controller）；F1-3A 的 V66 只发布
-        // 1500 隐藏目录 + 1521 能力点，两类都没有 component。
-        // 本用例钉的是这条边界：**能力点可以先行，页面菜单必须等 .vue**，
-        // 而具体发布了哪几行由 ScmFinanceSchemaPgIT 按 containsExactly 收紧。
+    @DisplayName("Finance 五个页面菜单都指向已存在组件")
+    void financePagesArePublishedWithTheirComponents() {
+        // F1-6 才发布五个真实页面菜单；此前能力点可以先行，但不能注册不存在的 .vue。
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE (menu_id BETWEEN 1500 AND 1599"
                         + " OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%'"
-                        + " OR path LIKE '/finance/%') AND menu_type = 2", Long.class))
-                .as("财务的五个页面菜单（1501–1505）随 F1-6 的 .vue 一起落库，现在一个都不许存在")
-                .isEmpty();
+                        + " OR path LIKE '/finance/%') AND menu_type = 2 ORDER BY menu_id", Long.class))
+                .as("F1-6 发布的只有五个应收、应付、收款、付款与核销页面")
+                .containsExactly(1501L, 1502L, 1503L, 1504L, 1505L);
 
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE (menu_id BETWEEN 1500 AND 1599"
                         + " OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%')"
-                        + " AND component IS NOT NULL", Long.class))
-                .as("component 非空即会注册路由；财务段现在没有任何一行可以注册")
-                .isEmpty();
+                        + " AND component IS NOT NULL ORDER BY menu_id", Long.class))
+                .as("声明 component 的 Finance 菜单恰好就是五个真实页面")
+                .containsExactly(1501L, 1502L, 1503L, 1504L, 1505L);
     }
 
     private String stripLeadingSlash(String component) {

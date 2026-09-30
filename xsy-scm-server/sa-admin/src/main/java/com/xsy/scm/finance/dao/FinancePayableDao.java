@@ -1,8 +1,18 @@
 package com.xsy.scm.finance.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.time.ScmDateTimeRange;
+import com.xsy.scm.finance.domain.dto.FinancePayableTargetDto;
 import com.xsy.scm.finance.domain.entity.FinancePayableEntity;
+import com.xsy.scm.finance.domain.form.FinancePayableQueryForm;
+import com.xsy.scm.finance.domain.vo.FinancePayableVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 应付单头读写，append-only 契约同 {@link FinanceReceivableDao}。
@@ -12,10 +22,7 @@ import org.apache.ibatis.annotations.Mapper;
  * NULL， 落在该谓词之外，防重由「可冲上限 41137 + 请求级幂等键」承担。
  */
 @Mapper
-public interface FinancePayableDao
-        extends
-            BaseMapper<
-                    FinancePayableEntity> {
+public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
 
     /**
      * 应付单号序列（全局非重置，不按日归零）。
@@ -35,4 +42,19 @@ public interface FinancePayableDao
      * @return 1 = 本次生成了应付（{@code id} 已回填）；0 = 该收货单已有应付，调用方按「已生成」成功返回
      */
     int insertOnConflictDoNothing(FinancePayableEntity entity);
+
+    List<FinancePayableTargetDto> selectNormalTargetsForUpdate(@Param("targetIds") List<Long> targetIds);
+
+    FinancePayableTargetDto selectNormalTargetForUpdate(@Param("targetId") Long targetId);
+
+    BigDecimal selectRedAmount(@Param("originalPayableId") Long originalPayableId);
+
+    FinancePayableEntity selectActiveById(@Param("payableId") Long payableId);
+
+    FinancePayableVO selectSummaryById(@Param("payableId") Long payableId);
+
+    List<FinancePayableVO> selectRedEntriesByOriginal(@Param("originalPayableId") Long originalPayableId);
+
+    List<FinancePayableVO> queryPage(Page<?> page, @Param("query") FinancePayableQueryForm query,
+            @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
 }

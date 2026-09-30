@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 /**
  * 应收明细读写，append-only 契约同 {@link FinanceReceivableDao}。
  *
@@ -12,10 +14,7 @@ import org.apache.ibatis.annotations.Mapper;
  * 红字明细锚定退货行主键。
  */
 @Mapper
-public interface FinanceReceivableItemDao
-        extends
-            BaseMapper<
-                    FinanceReceivableItemEntity> {
+public interface FinanceReceivableItemDao extends BaseMapper<FinanceReceivableItemEntity> {
 
     /**
      * 插入应收明细，来源出库行已入账时什么都不做。
@@ -25,4 +24,7 @@ public interface FinanceReceivableItemDao
      * 不可能是重放，而是同一条出库行被挂到了两张应收单上 —— 属于数据异常，必须失败。
      */
     int insertOnConflictDoNothing(FinanceReceivableItemEntity entity);
+
+    List<FinanceReceivableItemEntity> selectByReceivableId(
+            @org.apache.ibatis.annotations.Param("receivableId") Long receivableId);
 }

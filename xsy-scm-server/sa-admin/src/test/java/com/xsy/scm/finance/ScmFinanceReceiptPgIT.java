@@ -290,8 +290,8 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         FinanceReceiptVO result = add(form(customerId, "30.0000", "CASH", PAST));
 
         assertThat(result.getReceiptNo()).startsWith("RC");
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT'"))
-                .as("核销是 F1-4 的能力，全库都不该有一行").isZero();
+        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
+                result.getReceiptId())).as("这笔预收不自动生成核销").isZero();
         // 按客户收窄而不是全表：同一库里 NOT_SUPPORTED 的 IT 会提交真实的应收事实
         assertThat(count("SELECT count(*) FROM finance_receivable WHERE customer_id = ?", customerId))
                 .as("登记收款不产生任何应收").isZero();
@@ -316,14 +316,15 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         BigDecimal orderSettlementBefore = jdbc.queryForObject(
                 "SELECT settlement_total_amount FROM sales_order WHERE id = ?", BigDecimal.class, orderId);
 
-        add(form(customerId, "5.0000", "CASH", PAST));
+        FinanceReceiptVO receipt = add(form(customerId, "5.0000", "CASH", PAST));
 
         Map<String, Object> after = jdbc.queryForMap(
                 "SELECT * FROM finance_receivable WHERE source_id = ? AND entry_type = 'NORMAL'", orderId);
         assertThat(after.get("amount")).isEqualTo(before.get("amount"));
         assertThat(after.get("version")).isEqualTo(before.get("version"));
         assertThat(after.get("updated_at")).isEqualTo(before.get("updated_at"));
-        assertThat(count("SELECT count(*) FROM finance_write_off")).as("F1-4 能力，绝不提前产生").isZero();
+        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
+                receipt.getReceiptId())).as("这笔收款不自动生成核销").isZero();
         assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT settlement_total_amount FROM sales_order WHERE id = ?",
                 BigDecimal.class, orderId)).as("订单结算金额一字未改").isEqualByComparingTo(orderSettlementBefore);

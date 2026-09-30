@@ -103,16 +103,21 @@ class ScmFinancePaymentPermissionPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("本阶段没有提前发布任何付款侧查询 / 反向权限，也没有财务页面菜单")
+    @DisplayName("付款侧发布登记、查询与反向权限，五个财务页面随组件同步发布")
     void nothingElseIsPublishedYet() {
         assertThat(jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:payment:%'"
                         + " ORDER BY api_perms", String.class))
-                .as("payment:query 属 F1-5、payment:reverse 属 F1-3C，都不该提前出现")
-                .containsExactly(FinanceConstant.PAYMENT_ADD_PERM);
+                .as("F1-3B / F1-3C / F1-5 各自发布真实端点使用的权限")
+                .containsExactly(FinanceConstant.PAYMENT_ADD_PERM, FinanceConstant.PAYMENT_QUERY_PERM,
+                        FinanceConstant.PAYMENT_REVERSE_PERM);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
                 Integer.class))
-                .as("页面菜单随 F1-6 的 .vue 一起发布，本阶段一个都没有").isZero();
+                .as("F1-6 已发布五个带真实组件的财务页面")
+                .isEqualTo(5);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1501 AND 1505 AND component IS NOT NULL",
+                Integer.class)).isEqualTo(5);
     }
 }

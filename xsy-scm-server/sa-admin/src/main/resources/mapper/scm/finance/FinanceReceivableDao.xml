@@ -42,4 +42,159 @@
           AND entry_type = 'NORMAL'
           AND deleted = FALSE
     </select>
+
+    <select id="selectNormalTargetsForUpdate"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto">
+        SELECT r.id AS receivableId,
+               r.receivable_no AS receivableNo,
+               r.order_id AS orderId,
+               r.customer_id AS customerId,
+               r.customer_name_snapshot AS customerNameSnapshot,
+               r.entry_type AS entryType,
+               r.amount,
+               so.seller_id AS sellerId
+        FROM finance_receivable r
+        LEFT JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        WHERE r.id IN
+        <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">
+            #{targetId}
+        </foreach>
+          AND r.entry_type = 'NORMAL'
+          AND r.deleted = FALSE
+        ORDER BY r.id
+        FOR UPDATE OF r
+    </select>
+
+    <select id="selectNormalTargetForUpdate"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto">
+        SELECT r.id AS receivableId,
+               r.receivable_no AS receivableNo,
+               r.order_id AS orderId,
+               r.customer_id AS customerId,
+               r.customer_name_snapshot AS customerNameSnapshot,
+               r.entry_type AS entryType,
+               r.amount,
+               so.seller_id AS sellerId
+        FROM finance_receivable r
+        LEFT JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        WHERE r.id = #{targetId}
+          AND r.entry_type = 'NORMAL'
+          AND r.deleted = FALSE
+        FOR UPDATE OF r
+    </select>
+
+    <select id="selectRedAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM finance_receivable
+        WHERE original_receivable_id = #{originalReceivableId}
+          AND entry_type = 'RED'
+          AND deleted = FALSE
+    </select>
+
+    <select id="selectActiveById" resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity">
+        SELECT *
+        FROM finance_receivable
+        WHERE id = #{receivableId}
+          AND deleted = FALSE
+    </select>
+
+    <sql id="receivableSummarySelect">
+        SELECT r.id AS receivableId,
+               r.receivable_no AS receivableNo,
+               r.order_id AS orderId,
+               so.order_no AS orderNo,
+               r.customer_id AS customerId,
+               r.customer_name_snapshot AS customerName,
+               r.source_type AS sourceType,
+               r.source_id AS sourceId,
+               r.entry_type AS entryType,
+               r.original_receivable_id AS originalReceivableId,
+               original.receivable_no AS originalReceivableNo,
+               r.amount,
+               CASE WHEN r.entry_type = 'NORMAL' THEN r.amount - red.redAmount ELSE 0 END AS netAmount,
+               CASE WHEN r.entry_type = 'NORMAL' THEN written.writtenOffAmount ELSE 0 END AS writtenOffAmount,
+               CASE WHEN r.entry_type = 'NORMAL'
+                    THEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0)
+                    ELSE 0 END AS openAmount,
+               CASE WHEN r.entry_type = 'NORMAL'
+                    THEN GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0)
+                    ELSE 0 END AS overAppliedAmount,
+               CASE WHEN r.entry_type &lt;&gt; 'NORMAL' THEN NULL
+                    WHEN written.writtenOffAmount = 0 THEN 'OPEN'
+                    WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
+                         AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
+                    ELSE 'PARTIAL' END AS settleState,
+               r.event_at AS eventAt,
+               r.reason
+        FROM finance_receivable r
+        JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        LEFT JOIN finance_receivable original ON original.id = r.original_receivable_id
+            AND original.deleted = FALSE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(red.amount), 0) AS redAmount
+            FROM finance_receivable red
+            WHERE red.original_receivable_id = r.id
+              AND red.entry_type = 'RED'
+              AND red.deleted = FALSE
+        ) red ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(CASE
+                WHEN wo.entry_type = 'NORMAL' THEN wo.amount
+                WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
+                ELSE 0
+            END), 0) AS writtenOffAmount
+            FROM finance_write_off wo
+            WHERE wo.target_type = 'RECEIVABLE'
+              AND wo.target_id = r.id
+              AND wo.deleted = FALSE
+        ) written ON TRUE
+    </sql>
+
+    <select id="selectSummaryById" resultType="com.xsy.scm.finance.domain.vo.FinanceReceivableVO">
+        <include refid="receivableSummarySelect"/>
+        WHERE r.id = #{receivableId}
+          AND r.deleted = FALSE
+    </select>
+
+    <select id="selectRedEntriesByOriginal" resultType="com.xsy.scm.finance.domain.vo.FinanceReceivableVO">
+        <include refid="receivableSummarySelect"/>
+        WHERE r.original_receivable_id = #{originalReceivableId}
+          AND r.entry_type = 'RED'
+          AND r.deleted = FALSE
+        ORDER BY r.event_at, r.id
+    </select>
+
+    <select id="queryPage" resultType="com.xsy.scm.finance.domain.vo.FinanceReceivableVO">
+        <include refid="receivableSummarySelect"/>
+        <where>
+            r.deleted = FALSE
+            AND r.event_at &gt;= #{timeRange.startAt}
+            AND r.event_at &lt; #{timeRange.endAt}
+            <choose>
+                <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
+                <when test="scope.orderSellerScope.all"></when>
+                <otherwise>
+                    AND so.seller_id IN
+                    <foreach collection="scope.orderSellerScope.ids" item="sellerId"
+                             open="(" separator="," close=")">#{sellerId}</foreach>
+                </otherwise>
+            </choose>
+            <if test="query.receivableId != null">AND r.id = #{query.receivableId}</if>
+            <if test="query.customerId != null">AND r.customer_id = #{query.customerId}</if>
+            <if test="query.orderNo != null and query.orderNo != ''">
+                AND so.order_no ILIKE CONCAT('%', #{query.orderNo}, '%')
+            </if>
+            <if test="query.entryType != null and query.entryType != ''">
+                AND r.entry_type = #{query.entryType}
+            </if>
+            <if test="query.settleState != null and query.settleState != ''">
+                AND r.entry_type = 'NORMAL'
+                AND CASE WHEN written.writtenOffAmount = 0 THEN 'OPEN'
+                         WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
+                              AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
+                         ELSE 'PARTIAL' END = #{query.settleState}
+            </if>
+        </where>
+        ORDER BY r.event_at DESC, r.id DESC
+    </select>
 </mapper>

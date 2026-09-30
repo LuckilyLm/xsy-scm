@@ -51,6 +51,13 @@
         ORDER BY ob.id
     </select>
 
+    <select id="selectOrderSellerId" resultType="long">
+        SELECT seller_id
+        FROM sales_order
+        WHERE id = #{salesOrderId}
+          AND deleted = FALSE
+    </select>
+
     <!--
       退货批准事实（单头）。reason 是建单时填写的退货原因，红字直接继承，
       财务侧不另造原因、不现取 now()（第三批 D-2：红字是已成立业务事实的映射）。
@@ -101,4 +108,5 @@
           AND ri.approved_amount &gt; 0
         ORDER BY ri.id
     </select>
+
 </mapper>

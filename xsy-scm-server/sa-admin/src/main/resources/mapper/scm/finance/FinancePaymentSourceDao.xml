@@ -19,4 +19,47 @@
         WHERE r.id = #{refundId}
           AND r.deleted = FALSE
     </select>
+
+    <!--
+      Read-only picker for the payment form. It returns only COMPLETED refunds without a
+      NORMAL ORDER_REFUND payment source, and applies the same live customer seller scope
+      as customer payments. The unique source index remains the final concurrent guard.
+    -->
+    <select id="selectCompletedRefundOptions"
+            resultType="com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO">
+        SELECT r.id          AS refundId,
+               r.refund_no   AS refundNo,
+               rt.return_no  AS returnNo,
+               o.order_no    AS orderNo,
+               r.customer_id AS customerId,
+               c.name        AS customerName,
+               r.refund_amount AS refundAmount,
+               r.completed_at AS completedAt
+        FROM order_refund r
+                 JOIN customer c ON c.id = r.customer_id AND c.deleted = FALSE
+                 LEFT JOIN order_return rt ON rt.id = r.return_id AND rt.deleted = FALSE
+                 LEFT JOIN sales_order o ON o.id = r.order_id AND o.deleted = FALSE
+                 LEFT JOIN finance_payment p ON p.source_type = 'ORDER_REFUND'
+                    AND p.source_id = r.id AND p.entry_type = 'NORMAL' AND p.deleted = FALSE
+        WHERE r.deleted = FALSE
+          AND r.status = 'COMPLETED'
+          AND p.id IS NULL
+        <choose>
+            <when test="scope == null">AND FALSE</when>
+            <when test="scope.customerSellerScope.all"></when>
+            <when test="scope.customerSellerScope.empty">AND FALSE</when>
+            <otherwise>
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="sellerId"
+                         open="(" separator="," close=")">#{sellerId}</foreach>
+            </otherwise>
+        </choose>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (r.refund_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR COALESCE(rt.return_no, '') ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR COALESCE(o.order_no, '') ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR c.name ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY r.completed_at DESC, r.id DESC
+    </select>
 </mapper>

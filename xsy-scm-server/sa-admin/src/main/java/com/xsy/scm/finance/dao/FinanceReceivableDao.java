@@ -1,9 +1,18 @@
 package com.xsy.scm.finance.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.time.ScmDateTimeRange;
+import com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
+import com.xsy.scm.finance.domain.form.FinanceReceivableQueryForm;
+import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 应收单头读写。
@@ -22,10 +31,7 @@ import org.apache.ibatis.annotations.Param;
  * 命中冲突即「已生成」并返回成功 —— 财务生成是可重放的派生，不是用户命令。
  */
 @Mapper
-public interface FinanceReceivableDao
-        extends
-            BaseMapper<
-                    FinanceReceivableEntity> {
+public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity> {
 
     /**
      * 应收单号序列（全局非重置，不按日归零）。
@@ -55,4 +61,19 @@ public interface FinanceReceivableDao
      * {@code original_receivable_id}。
      */
     FinanceReceivableEntity selectNormalByOrder(@Param("salesOrderId") Long salesOrderId);
+
+    List<FinanceReceivableTargetDto> selectNormalTargetsForUpdate(@Param("targetIds") List<Long> targetIds);
+
+    FinanceReceivableTargetDto selectNormalTargetForUpdate(@Param("targetId") Long targetId);
+
+    BigDecimal selectRedAmount(@Param("originalReceivableId") Long originalReceivableId);
+
+    FinanceReceivableEntity selectActiveById(@Param("receivableId") Long receivableId);
+
+    FinanceReceivableVO selectSummaryById(@Param("receivableId") Long receivableId);
+
+    List<FinanceReceivableVO> selectRedEntriesByOriginal(@Param("originalReceivableId") Long originalReceivableId);
+
+    List<FinanceReceivableVO> queryPage(Page<?> page, @Param("query") FinanceReceivableQueryForm query,
+            @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
 }

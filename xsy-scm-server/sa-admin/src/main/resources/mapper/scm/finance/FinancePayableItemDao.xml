@@ -20,4 +20,24 @@
         ON CONFLICT (source_type, source_id)
             WHERE deleted = FALSE AND source_id IS NOT NULL DO NOTHING
     </insert>
+
+    <select id="selectOriginalItem"
+            resultType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
+        SELECT *
+        FROM finance_payable_item
+        WHERE payable_id = #{payableId}
+          AND purchase_order_item_id = #{purchaseOrderItemId}
+          AND source_type = 'PURCHASE_RECEIPT_ITEM'
+          AND deleted = FALSE
+        ORDER BY id
+        LIMIT 1
+    </select>
+
+    <select id="selectByPayableId" resultType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
+        SELECT *
+        FROM finance_payable_item
+        WHERE payable_id = #{payableId}
+          AND deleted = FALSE
+        ORDER BY id
+    </select>
 </mapper>

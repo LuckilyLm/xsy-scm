@@ -102,18 +102,23 @@ class ScmFinanceReceiptPermissionPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("本阶段没有提前发布任何其它收款侧权限或财务页面菜单")
+    @DisplayName("收款侧发布登记、查询与反向权限，五个财务页面随组件同步发布")
     void nothingElseIsPublishedYet() {
         // 只钉「收款侧」：整个财务段发布了哪几行由 ScmFinanceSchemaPgIT 按 containsExactly 负责，
         // 在这里重复一份会随下一个阶段（F1-3B 的付款能力）无谓变红。
         assertThat(jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:receipt:%'"
                         + " ORDER BY api_perms", String.class))
-                .as("receipt:reverse 属 F1-3C、receipt:query 属 F1-5，都不该提前出现")
-                .containsExactly(FinanceConstant.RECEIPT_ADD_PERM);
+                .as("F1-3A / F1-3C / F1-5 各自发布真实端点使用的权限")
+                .containsExactly(FinanceConstant.RECEIPT_ADD_PERM, FinanceConstant.RECEIPT_QUERY_PERM,
+                        FinanceConstant.RECEIPT_REVERSE_PERM);
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1500 AND 1599 AND menu_type = 2",
                 Integer.class))
-                .as("页面菜单随 F1-6 的 .vue 一起发布，本阶段一个都没有").isZero();
+                .as("F1-6 已发布五个带真实组件的财务页面")
+                .isEqualTo(5);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 1501 AND 1505 AND component IS NOT NULL",
+                Integer.class)).isEqualTo(5);
     }
 }

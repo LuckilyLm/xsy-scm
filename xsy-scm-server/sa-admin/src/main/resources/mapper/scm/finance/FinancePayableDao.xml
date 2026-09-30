@@ -28,4 +28,168 @@
         ON CONFLICT (source_type, source_id)
             WHERE deleted = FALSE AND source_id IS NOT NULL DO NOTHING
     </insert>
+
+    <select id="selectNormalTargetsForUpdate"
+            resultType="com.xsy.scm.finance.domain.dto.FinancePayableTargetDto">
+        SELECT p.id AS payableId,
+               p.payable_no AS payableNo,
+               p.purchase_order_id AS purchaseOrderId,
+               p.supplier_id AS supplierId,
+               p.supplier_name_snapshot AS supplierNameSnapshot,
+               p.entry_type AS entryType,
+               p.amount,
+               po.purchaser_id AS purchaserId
+        FROM finance_payable p
+        LEFT JOIN purchase_receipt pr ON pr.id = p.source_id AND pr.deleted = FALSE
+        LEFT JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        WHERE p.id IN
+        <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">
+            #{targetId}
+        </foreach>
+          AND p.entry_type = 'NORMAL'
+          AND p.deleted = FALSE
+        ORDER BY p.id
+        FOR UPDATE OF p
+    </select>
+
+    <select id="selectNormalTargetForUpdate"
+            resultType="com.xsy.scm.finance.domain.dto.FinancePayableTargetDto">
+        SELECT p.id AS payableId,
+               p.payable_no AS payableNo,
+               p.purchase_order_id AS purchaseOrderId,
+               p.supplier_id AS supplierId,
+               p.supplier_name_snapshot AS supplierNameSnapshot,
+               p.entry_type AS entryType,
+               p.amount,
+               po.purchaser_id AS purchaserId
+        FROM finance_payable p
+        LEFT JOIN purchase_receipt pr ON pr.id = p.source_id AND pr.deleted = FALSE
+        LEFT JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        WHERE p.id = #{targetId}
+          AND p.entry_type = 'NORMAL'
+          AND p.deleted = FALSE
+        FOR UPDATE OF p
+    </select>
+
+    <select id="selectRedAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM finance_payable
+        WHERE original_payable_id = #{originalPayableId}
+          AND entry_type = 'RED'
+          AND deleted = FALSE
+    </select>
+
+    <select id="selectActiveById" resultType="com.xsy.scm.finance.domain.entity.FinancePayableEntity">
+        SELECT *
+        FROM finance_payable
+        WHERE id = #{payableId}
+          AND deleted = FALSE
+    </select>
+
+    <sql id="payableSummarySelect">
+        SELECT p.id AS payableId,
+               p.payable_no AS payableNo,
+               p.purchase_order_id AS purchaseOrderId,
+               po.order_no AS purchaseOrderNo,
+               p.supplier_id AS supplierId,
+               p.supplier_name_snapshot AS supplierName,
+               p.source_type AS sourceType,
+               p.source_id AS sourceId,
+               p.entry_type AS entryType,
+               p.original_payable_id AS originalPayableId,
+               original.payable_no AS originalPayableNo,
+               p.amount,
+               CASE WHEN p.entry_type = 'NORMAL' THEN p.amount - red.redAmount ELSE 0 END AS netAmount,
+               CASE WHEN p.entry_type = 'NORMAL' THEN written.writtenOffAmount ELSE 0 END AS writtenOffAmount,
+               CASE WHEN p.entry_type = 'NORMAL'
+                    THEN GREATEST(p.amount - red.redAmount - written.writtenOffAmount, 0)
+                    ELSE 0 END AS openAmount,
+               CASE WHEN p.entry_type = 'NORMAL'
+                    THEN GREATEST(written.writtenOffAmount - (p.amount - red.redAmount), 0)
+                    ELSE 0 END AS overAppliedAmount,
+               CASE WHEN p.entry_type &lt;&gt; 'NORMAL' THEN NULL
+                    WHEN written.writtenOffAmount = 0 THEN 'OPEN'
+                    WHEN GREATEST(p.amount - red.redAmount - written.writtenOffAmount, 0) = 0
+                         AND GREATEST(written.writtenOffAmount - (p.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
+                    ELSE 'PARTIAL' END AS settleState,
+               p.event_at AS eventAt,
+               p.reason
+        FROM finance_payable p
+        LEFT JOIN finance_payable original ON original.id = p.original_payable_id
+            AND original.deleted = FALSE
+        LEFT JOIN finance_payable normalSource ON normalSource.id =
+            CASE WHEN p.entry_type = 'RED' THEN p.original_payable_id ELSE p.id END
+            AND normalSource.entry_type = 'NORMAL' AND normalSource.deleted = FALSE
+        LEFT JOIN purchase_receipt pr ON pr.id = normalSource.source_id AND pr.deleted = FALSE
+        LEFT JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(red.amount), 0) AS redAmount
+            FROM finance_payable red
+            WHERE red.original_payable_id = p.id
+              AND red.entry_type = 'RED'
+              AND red.deleted = FALSE
+        ) red ON TRUE
+        LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(CASE
+                WHEN wo.entry_type = 'NORMAL' THEN wo.amount
+                WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
+                ELSE 0
+            END), 0) AS writtenOffAmount
+            FROM finance_write_off wo
+            WHERE wo.target_type = 'PAYABLE'
+              AND wo.target_id = p.id
+              AND wo.deleted = FALSE
+        ) written ON TRUE
+    </sql>
+
+    <select id="selectSummaryById" resultType="com.xsy.scm.finance.domain.vo.FinancePayableVO">
+        <include refid="payableSummarySelect"/>
+        WHERE p.id = #{payableId}
+          AND p.deleted = FALSE
+    </select>
+
+    <select id="selectRedEntriesByOriginal" resultType="com.xsy.scm.finance.domain.vo.FinancePayableVO">
+        <include refid="payableSummarySelect"/>
+        WHERE p.original_payable_id = #{originalPayableId}
+          AND p.entry_type = 'RED'
+          AND p.deleted = FALSE
+        ORDER BY p.event_at, p.id
+    </select>
+
+    <select id="queryPage" resultType="com.xsy.scm.finance.domain.vo.FinancePayableVO">
+        <include refid="payableSummarySelect"/>
+        <where>
+            p.deleted = FALSE
+            AND p.event_at &gt;= #{timeRange.startAt}
+            AND p.event_at &lt; #{timeRange.endAt}
+            <choose>
+                <when test="scope == null or scope.purchaserScope.empty">AND FALSE</when>
+                <when test="scope.purchaserScope.all"></when>
+                <otherwise>
+                    AND po.purchaser_id IN
+                    <foreach collection="scope.purchaserScope.ids" item="purchaserId"
+                             open="(" separator="," close=")">#{purchaserId}</foreach>
+                </otherwise>
+            </choose>
+            <if test="query.payableId != null">AND p.id = #{query.payableId}</if>
+            <if test="query.supplierId != null">AND p.supplier_id = #{query.supplierId}</if>
+            <if test="query.supplierName != null and query.supplierName != ''">
+                AND p.supplier_name_snapshot ILIKE CONCAT('%', #{query.supplierName}, '%')
+            </if>
+            <if test="query.purchaseOrderNo != null and query.purchaseOrderNo != ''">
+                AND po.order_no ILIKE CONCAT('%', #{query.purchaseOrderNo}, '%')
+            </if>
+            <if test="query.entryType != null and query.entryType != ''">
+                AND p.entry_type = #{query.entryType}
+            </if>
+            <if test="query.settleState != null and query.settleState != ''">
+                AND p.entry_type = 'NORMAL'
+                AND CASE WHEN written.writtenOffAmount = 0 THEN 'OPEN'
+                         WHEN GREATEST(p.amount - red.redAmount - written.writtenOffAmount, 0) = 0
+                              AND GREATEST(written.writtenOffAmount - (p.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
+                         ELSE 'PARTIAL' END = #{query.settleState}
+            </if>
+        </where>
+        ORDER BY p.event_at DESC, p.id DESC
+    </select>
 </mapper>

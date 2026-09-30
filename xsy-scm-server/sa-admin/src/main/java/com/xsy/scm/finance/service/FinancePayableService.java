@@ -1,9 +1,16 @@
 package com.xsy.scm.finance.service;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.error.ScmCommonErrorCode;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.constant.FinanceConstant;
+import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
@@ -12,11 +19,16 @@ import com.xsy.scm.finance.constant.ScmFinancePayableSourceTypeEnum;
 import com.xsy.scm.finance.dao.FinancePayableDao;
 import com.xsy.scm.finance.dao.FinancePayableItemDao;
 import com.xsy.scm.finance.dao.FinancePayableSourceDao;
+import com.xsy.scm.finance.domain.dto.FinancePayableTargetDto;
 import com.xsy.scm.finance.domain.dto.FinancePayableSourceDto;
 import com.xsy.scm.finance.domain.dto.FinancePayableSourceLineDto;
 import com.xsy.scm.finance.domain.entity.FinancePayableEntity;
 import com.xsy.scm.finance.domain.entity.FinancePayableItemEntity;
+import com.xsy.scm.finance.domain.form.FinancePayableRedForm;
+import com.xsy.scm.finance.domain.form.FinancePayableRedItemForm;
+import com.xsy.scm.finance.domain.vo.FinancePayableRedVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +55,153 @@ public class FinancePayableService {
     private final FinancePayableItemDao financePayableItemDao;
     private final FinancePayableSourceDao financePayableSourceDao;
     private final FinanceOperationLogRecorder operationLogs;
+    private final ScmDataScopeService dataScopeService;
+    private final ScmIdempotencyService idempotencyService;
+
+    /**
+     * Append one manual RED payable. The NORMAL payable row is locked before checking the cumulative red amount, which
+     * serializes competing red entries for the same source.
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FinancePayableRedVO red(FinancePayableRedForm form, String idempotencyKey) {
+        FinancePayableTargetDto original = financePayableDao.selectNormalTargetForUpdate(form.getOriginalPayableId());
+        if (original == null) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
+        }
+        if (!dataScopeService.resolve().getPurchaserScope().allows(original.getPurchaserId())) {
+            throw new ScmDataScopeException();
+        }
+
+        String reason = StringUtils.trimToNull(form.getReason());
+        if (reason == null) {
+            throw new ScmBusinessException(FinanceErrorCode.REVERSE_REASON_REQUIRED);
+        }
+        var claim = idempotencyService.claim(FinanceConstant.PAYABLE_RED_SCOPE + ":" + original.getPayableId(),
+                idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, FinancePayableRedVO.class);
+        }
+
+        List<FinancePayableItemEntity> items = manualRedItems(original.getPayableId(), form.getItems());
+        BigDecimal redAmount = items.stream().map(FinancePayableItemEntity::getAmount).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
+        BigDecimal existingRedAmount = financePayableDao.selectRedAmount(original.getPayableId());
+        if (redAmount.signum() <= 0 || existingRedAmount.add(redAmount).compareTo(original.getAmount()) > 0) {
+            throw new ScmBusinessException(FinanceErrorCode.RED_AMOUNT_EXCEEDED);
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        String operator = ScmOperator.current();
+        FinancePayableEntity red = new FinancePayableEntity();
+        red.setPayableNo(
+                ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
+        red.setSourceType(ScmFinancePayableSourceTypeEnum.MANUAL.name());
+        red.setSourceId(null);
+        red.setPurchaseOrderId(original.getPurchaseOrderId());
+        red.setSupplierId(original.getSupplierId());
+        red.setSupplierNameSnapshot(original.getSupplierNameSnapshot());
+        red.setEntryType(ScmFinanceEntryTypeEnum.RED.name());
+        red.setOriginalPayableId(original.getPayableId());
+        red.setAmount(redAmount);
+        red.setEventAt(now);
+        red.setReason(reason);
+        red.setCreatedAt(now);
+        red.setUpdatedAt(now);
+        red.setCreatedBy(operator);
+        red.setUpdatedBy(operator);
+        if (financePayableDao.insert(red) != 1) {
+            throw new IllegalStateException("手工红字应付未落库: " + red.getPayableNo());
+        }
+
+        for (FinancePayableItemEntity item : items) {
+            item.setPayableId(red.getId());
+            if (financePayableItemDao.insert(item) != 1) {
+                throw new IllegalStateException("手工红字应付明细未落库: " + item.getPurchaseOrderItemId());
+            }
+        }
+
+        operationLogs.record(ScmFinanceBusinessTypeEnum.PAYABLE, red.getId(), ScmFinanceOperationTypeEnum.RED_GENERATE,
+                reason, null, redSnapshot(red, items.size()));
+
+        FinancePayableRedVO result = redVO(red, items.size());
+        idempotencyService.complete(claim, "FINANCE_PAYABLE", red.getId(), result);
+        return result;
+    }
+
+    private List<FinancePayableItemEntity> manualRedItems(Long originalPayableId,
+            List<FinancePayableRedItemForm> forms) {
+        String operator = ScmOperator.current();
+        OffsetDateTime now = OffsetDateTime.now();
+        List<FinancePayableItemEntity> items = new ArrayList<>(forms.size());
+        for (FinancePayableRedItemForm form : forms) {
+            FinancePayableItemEntity originalItem = financePayableItemDao.selectOriginalItem(originalPayableId,
+                    form.getPurchaseOrderItemId());
+            if (originalItem == null) {
+                throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+            }
+
+            BigDecimal quantity = ScmDecimalStrings.parseScale4Required(form.getQuantity());
+            BigDecimal unitPrice = ScmDecimalStrings.parseScale4Required(form.getUnitPrice());
+            BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
+            if (quantity.signum() <= 0 || unitPrice.signum() < 0 || amount.signum() <= 0) {
+                throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+            }
+            BigDecimal expectedAmount = quantity.multiply(unitPrice).setScale(FinanceConstant.AMOUNT_SCALE,
+                    RoundingMode.HALF_UP);
+            if (amount.compareTo(expectedAmount) != 0) {
+                throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+            }
+
+            FinancePayableItemEntity item = new FinancePayableItemEntity();
+            item.setSourceType(ScmFinancePayableItemSourceTypeEnum.MANUAL.name());
+            item.setSourceId(null);
+            item.setPurchaseOrderItemId(originalItem.getPurchaseOrderItemId());
+            item.setSkuId(originalItem.getSkuId());
+            item.setSkuNameSnapshot(originalItem.getSkuNameSnapshot());
+            item.setUnitSnapshot(originalItem.getUnitSnapshot());
+            item.setQuantity(quantity);
+            item.setUnitPrice(unitPrice);
+            item.setAmount(amount);
+            item.setCreatedAt(now);
+            item.setUpdatedAt(now);
+            item.setCreatedBy(operator);
+            item.setUpdatedBy(operator);
+            items.add(item);
+        }
+        return items;
+    }
+
+    private Map<String, Object> redSnapshot(FinancePayableEntity red, int itemCount) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("payableNo", red.getPayableNo());
+        snapshot.put("sourceType", red.getSourceType());
+        snapshot.put("sourceId", red.getSourceId());
+        snapshot.put("purchaseOrderId", red.getPurchaseOrderId());
+        snapshot.put("supplierId", red.getSupplierId());
+        snapshot.put("supplierNameSnapshot", red.getSupplierNameSnapshot());
+        snapshot.put("entryType", red.getEntryType());
+        snapshot.put("originalPayableId", red.getOriginalPayableId());
+        snapshot.put("amount", red.getAmount().toPlainString());
+        snapshot.put("eventAt", red.getEventAt().toString());
+        snapshot.put("reason", red.getReason());
+        snapshot.put("itemCount", itemCount);
+        return snapshot;
+    }
+
+    private FinancePayableRedVO redVO(FinancePayableEntity red, int itemCount) {
+        FinancePayableRedVO vo = new FinancePayableRedVO();
+        vo.setPayableId(red.getId());
+        vo.setPayableNo(red.getPayableNo());
+        vo.setOriginalPayableId(red.getOriginalPayableId());
+        vo.setSupplierId(red.getSupplierId());
+        vo.setSupplierName(red.getSupplierNameSnapshot());
+        vo.setEntryType(red.getEntryType());
+        vo.setAmount(red.getAmount());
+        vo.setEventAt(red.getEventAt());
+        vo.setReason(red.getReason());
+        vo.setItemCount(itemCount);
+        return vo;
+    }
 
     /**
      * 收货确认 → 正常应付。
@@ -70,11 +230,9 @@ public class FinancePayableService {
             throw new IllegalStateException("收货单未处于 CONFIRMED 状态，不能生成应付: " + purchaseReceiptId);
         }
 
-        List<
-                FinancePayableSourceLineDto> lines = financePayableSourceDao
-                        .selectConfirmedReceiptLines(purchaseReceiptId);
-        List<
-                FinancePayableItemEntity> items = toItems(lines);
+        List<FinancePayableSourceLineDto> lines = financePayableSourceDao
+                .selectConfirmedReceiptLines(purchaseReceiptId);
+        List<FinancePayableItemEntity> items = toItems(lines);
         BigDecimal amount = items.stream().map(FinancePayableItemEntity::getAmount).reduce(BigDecimal.ZERO,
                 BigDecimal::add);
 
@@ -129,10 +287,7 @@ public class FinancePayableService {
     /**
      * 明细装配：量取收货行的有效量、价取采购行的结算单价，金额按四位精度 HALF_UP 舍入。 单头金额是**已按四位舍入的行金额之和**，不是「先求和再舍入」—— 后者会让单头与明细对不上账，而对账时没人能解释那半分钱的差额。
      */
-    private List<
-            FinancePayableItemEntity> toItems(
-                    List<
-                            FinancePayableSourceLineDto> lines) {
+    private List<FinancePayableItemEntity> toItems(List<FinancePayableSourceLineDto> lines) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -165,12 +320,8 @@ public class FinancePayableService {
      * 金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是**未注册 JavaTimeModule 的裸 ObjectMapper**，把
      * {@code OffsetDateTime} 直接放进快照会在写入时炸。
      */
-    private Map<
-            String,
-            Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {
-        Map<
-                String,
-                Object> snapshot = new LinkedHashMap<>();
+    private Map<String, Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("payableNo", payable.getPayableNo());
         snapshot.put("sourceType", payable.getSourceType());
         snapshot.put("sourceId", payable.getSourceId());

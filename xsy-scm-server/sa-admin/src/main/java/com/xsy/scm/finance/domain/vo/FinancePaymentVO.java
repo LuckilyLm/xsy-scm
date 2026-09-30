@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 付款登记的结果视图：只回本次事实本身，够支撑幂等重放与调用确认。
+ * 付款命令的结果视图：只回本次事实本身，够支撑幂等重放与调用确认。
  *
  * <p>
  * 刻意不含派生列（待核销余额、已用额、结清状态、核销行）—— 那些是 的读时派生。
@@ -45,7 +45,11 @@ public class FinancePaymentVO {
     private String remark;
 
     /**
-     * 付款登记响应只返回 {@code NORMAL} 付款。
+     * {@code NORMAL} 付款或 {@code REVERSE} 反向付款。
      */
     private String entryType;
+
+    private Long reverseOfId;
+
+    private String reason;
 }
