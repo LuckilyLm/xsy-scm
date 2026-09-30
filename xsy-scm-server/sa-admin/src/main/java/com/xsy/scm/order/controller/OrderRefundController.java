@@ -31,25 +31,21 @@ public class OrderRefundController {
 
     @PostMapping("/query")
     @SaCheckPermission(OrderPermission.REFUND_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    OrderRefundVO>> query(@Valid @RequestBody OrderRefundQueryForm orderRefundQueryForm) {
+    public ResponseDTO<PageResult<OrderRefundVO>> query(@Valid @RequestBody OrderRefundQueryForm orderRefundQueryForm) {
         return ResponseDTO.ok(orderRefundService.query(orderRefundQueryForm));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(OrderPermission.REFUND_QUERY)
-    public ResponseDTO<
-            OrderRefundVO> detail(@PathVariable Long refundId) {
+    public ResponseDTO<OrderRefundVO> detail(@PathVariable("id") Long refundId) {
         return ResponseDTO.ok(orderRefundService.detail(refundId));
     }
 
     @PostMapping("/complete")
     @SaCheckPermission(OrderPermission.REFUND_COMPLETE)
     @OperateLog
-    public ResponseDTO<
-            OrderRefundVO> complete(@Valid @RequestBody OrderRefundCompleteForm refundCompleteForm,
-                    @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<OrderRefundVO> complete(@Valid @RequestBody OrderRefundCompleteForm refundCompleteForm,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderRefundService.complete(refundCompleteForm, key));
     }
 

@@ -67,7 +67,7 @@
   </a-button>
 </template>
 <script setup lang="ts">
-import {reactive, ref} from 'vue';
+import {reactive, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import dayjs from 'dayjs';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
@@ -112,6 +112,11 @@ const recentCache = reactive(createRecentPriceCache());
 
 /** 同一时刻只允许一行开着价签。这里按行序号记：「哪个浮层开着」是位置问题，与历史价按客户 + SKU 归属无关。 */
 const recentOpenIndex = ref<number | null>(null);
+
+// The open history belongs to the current (customer, SKU) pair. Close it as
+// soon as either key changes so an old price is never shown beside a new item.
+watch(() => props.customerId, () => (recentOpenIndex.value = null));
+watch(() => props.items.map(item => item.skuId), () => (recentOpenIndex.value = null));
 
 /** 浮层挂到宿主抽屉内：抽屉关闭（含 Esc 键盘关闭）时它必须随宿主一起消失，不能留在列表页上。 */
 function recentPopupContainer(trigger: HTMLElement): HTMLElement {
