@@ -72,6 +72,7 @@ const tokens: Record<(typeof ROLES)[number], string> = {} as Record<(typeof ROLE
 /** 两个都有余额行的真实仓库；凑不出来说明夹具不成立，直接失败而不是 skip */
 let whA = 0;
 let whB = 0;
+let temporaryWarehouseId = 0;
 let adminTotalAll = 0;
 let customerId = 0;
 let customerVersion = 0;
@@ -130,11 +131,32 @@ test.beforeAll(async () => {
     api = await apiClient(await login(accounts, accounts.admin));
 
     // 用真实存在余额的启用仓库做对照：仓库清单只返回 ENABLED，逐个问 total 就够定位夹具
-    const enabled = await ok<Row[]>(api, 'get', '/scm/warehouse/list');
+    let enabled = await ok<Row[]>(api, 'get', '/scm/warehouse/list');
     const stocked: {id: number; total: number}[] = [];
-    for (const warehouse of enabled) {
-        const total = (await balanceQuery(api, Number(warehouse.id))).total;
-        if (total > 0) stocked.push({id: Number(warehouse.id), total});
+    const collectStocked = async (warehouses: Row[]) => {
+        const result: {id: number; total: number}[] = [];
+        for (const warehouse of warehouses) {
+            const total = (await balanceQuery(api, Number(warehouse.id))).total;
+            if (total > 0) result.push({id: Number(warehouse.id), total});
+        }
+        return result;
+    };
+    stocked.push(...await collectStocked(enabled));
+    if (stocked.length < 2) {
+        // E2E 库会保留上轮测试留下的停用库存仓；启用其中一座作范围对照，结束后先盘亏归零再停用。
+        // 这样仓库范围用例不依赖启用仓恰好已有两座，也不伪造库存余额行。
+        const disabled = await ok<Page1>(api, 'post', '/scm/warehouse/query',
+            {status: 'DISABLED', pageNum: 1, pageSize: 100});
+        const disabledStocked = await collectStocked(disabled.list);
+        disabledStocked.sort((x, y) => y.total - x.total);
+        const candidate = disabledStocked[0];
+        if (candidate) {
+            const detail = await ok<Row>(api, 'get', `/scm/warehouse/detail/${candidate.id}`);
+            await ok(api, 'post', '/scm/warehouse/enable', {id: candidate.id, version: detail.version});
+            temporaryWarehouseId = candidate.id;
+            enabled = await ok<Row[]>(api, 'get', '/scm/warehouse/list');
+            stocked.push(...await collectStocked(enabled.filter((warehouse) => Number(warehouse.id) === candidate.id)));
+        }
     }
     expect(stocked.length,
         '需要两个都有余额行的启用仓库才能验证范围，实际 ' + JSON.stringify(stocked)).toBeGreaterThanOrEqual(2);
@@ -163,19 +185,36 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-    // 授权行按 employee_id 落在 employee_warehouse_scope，删账号不会连带回收，必须显式清空
-    for (const role of ROLES) {
-        await grantWarehouses(employeeIdOf(role), []);
+    try {
+        if (temporaryWarehouseId) {
+            const balances = (await balanceQuery(api, temporaryWarehouseId)).list
+                .filter((row) => Number(row.quantity) > 0);
+            if (balances.length > 0) {
+                const stocktakeId = await ok<number>(api, 'post', '/scm/inventory/stocktake/create', {
+                    warehouseId: temporaryWarehouseId,
+                    remark: `${tag} scope fixture cleanup`,
+                    items: balances.map((row) => ({skuId: Number(row.skuId), actualQuantity: '0.0000'})),
+                });
+                await ok(api, 'post', `/scm/inventory/stocktake/confirm/${stocktakeId}`, {});
+            }
+            const detail = await ok<Row>(api, 'get', `/scm/warehouse/detail/${temporaryWarehouseId}`);
+            await ok(api, 'post', '/scm/warehouse/disable', {id: temporaryWarehouseId, version: detail.version});
+        }
+    } finally {
+        // 授权行按 employee_id 落在 employee_warehouse_scope，删账号不会连带回收，必须显式清空
+        for (const role of ROLES) {
+            await grantWarehouses(employeeIdOf(role), []);
+        }
+        if (narrowEmployeeId) {
+            await grantWarehouses(narrowEmployeeId, []);
+        }
+        for (const client of Object.values(clients)) {
+            await client.dispose();
+        }
+        await narrowClient?.dispose();
+        await api?.dispose();
+        accounts.cleanup();
     }
-    if (narrowEmployeeId) {
-        await grantWarehouses(narrowEmployeeId, []);
-    }
-    for (const client of Object.values(clients)) {
-        await client.dispose();
-    }
-    await narrowClient?.dispose();
-    await api.dispose();
-    accounts.cleanup();
 });
 
 test('1｜仓库授权维护真实生效：换授权即换可见行，且不必重新登录', async ({page}) => {

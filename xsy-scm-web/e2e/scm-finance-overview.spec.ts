@@ -40,6 +40,21 @@ function signedTotal(rows: Row[], negativeType: string) {
         (row.entryType === negativeType ? -scaled(String(row.amount)) : scaled(String(row.amount))), 0n));
 }
 
+/** Aging-free detail endpoints expose all normal documents before endDate; paginate for stock totals. */
+async function financeStockRows(path: string, range: Record<string, string>): Promise<Row[]> {
+    const rows: Row[] = [];
+    let total = Number.POSITIVE_INFINITY;
+    for (let pageNum = 1; rows.length < total; pageNum++) {
+        const page = await call<Row>(harness.finance, 'post', path, { ...range, pageNum, pageSize: 100 });
+        const pageRows = page.list as Row[];
+        rows.push(...pageRows);
+        total = Number(page.total);
+        if (pageRows.length === 0) break;
+    }
+    expect(rows.length, `${path} must include every document before endDate`).toBe(total);
+    return rows;
+}
+
 async function captureDownload(page: any, label: string, filename: string) {
     const pending = page.waitForEvent('download');
     await page.getByRole('button', {name: accessibleName(label)}).click();
@@ -59,7 +74,7 @@ test('Finance R0 六指标与期末明细和 Finance R1 事实一致，并导出
     ]);
 
     const range = reportDateRange();
-    const [receivables, payables, writeOffs] = await Promise.all([
+    const [receivables, payables, writeOffs, receivableStock, payableStock] = await Promise.all([
         call<Row>(harness.finance, 'post', '/scm/finance/receivable/query', {
             ...range, pageNum: 1, pageSize: 100,
         }),
@@ -69,6 +84,8 @@ test('Finance R0 六指标与期末明细和 Finance R1 事实一致，并导出
         call<Row>(harness.finance, 'post', '/scm/finance/write-off/query', {
             ...range, pageNum: 1, pageSize: 100,
         }),
+        financeStockRows('/scm/report/finance/receivable/aging-free-detail', range),
+        financeStockRows('/scm/report/finance/payable/aging-free-detail', range),
     ]);
     expect(receivables.list.length).toBe(receivables.total);
     expect(payables.list.length).toBe(payables.total);
@@ -79,11 +96,11 @@ test('Finance R0 六指标与期末明细和 Finance R1 事实一致，并导出
     const expected = {
         receivableOccurredAmount: signedTotal(receivables.list as Row[], 'RED'),
         receivableWrittenOffAmount: signedTotal(targetWriteOffs('RECEIVABLE'), 'REVERSE'),
-        endingReceivableAmount: fixed((receivables.list as Row[])
+        endingReceivableAmount: fixed(receivableStock
             .reduce((sum, item) => sum + scaled(String(item.openAmount)), 0n)),
         payableOccurredAmount: signedTotal(payables.list as Row[], 'RED'),
         payableWrittenOffAmount: signedTotal(targetWriteOffs('PAYABLE'), 'REVERSE'),
-        endingPayableAmount: fixed((payables.list as Row[])
+        endingPayableAmount: fixed(payableStock
             .reduce((sum, item) => sum + scaled(String(item.openAmount)), 0n)),
     };
     const orderReceivables = (receivables.list as Row[])
