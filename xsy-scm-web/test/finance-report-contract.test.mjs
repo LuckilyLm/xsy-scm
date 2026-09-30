@@ -43,6 +43,7 @@ const PAGES = {
   receipt: code(`${REPORT_DIR}report-receipt-list.vue`),
   inventory: code(`${REPORT_DIR}report-inventory-list.vue`),
 };
+const FINANCE_PAGE = code(`${REPORT_DIR}report-finance-overview.vue`);
 const API = code('../src/api/business/scm/report-api.ts');
 const CONST = code('../src/constants/business/scm/report-const.ts');
 const ALL_PAGES = Object.values(PAGES).join('\n');
@@ -109,10 +110,16 @@ const CONTRACT_PATHS = [
   '/inventory/movement/export',
   '/inventory/loss/export',
   '/inventory/value/export',
+  '/finance/overview',
+  '/finance/receivable/aging-free-detail',
+  '/finance/payable/aging-free-detail',
+  '/finance/overview/export',
+  '/finance/receivable/aging-free-detail/export',
+  '/finance/payable/aging-free-detail/export',
 ];
 
-test('后端约定的 37 个端点逐条存在，且都挂在 /scm/report 下', () => {
-  assert.equal(CONTRACT_PATHS.length, 37, '清单本身必须与计划 §30 + 本次固定契约同数');
+test('后端约定的 43 个端点逐条存在，且都挂在 /scm/report 下', () => {
+  assert.equal(CONTRACT_PATHS.length, 43, '清单本身必须与计划 §30 + Finance R0 契约同数');
   assert.match(API, /const BASE = '\/scm\/report'/);
   for (const path of CONTRACT_PATHS) {
     assert.ok(API.includes('${BASE}' + path), `缺少端点 ${path}`);
@@ -128,7 +135,7 @@ test('报表 API 没有任何写端点与第二套上传', () => {
 
 test('导出统一走 postDownload，不自己拼 Blob、不硬编码文件名', () => {
   const exportCount = (API.match(/postDownload\(/g) ?? []).length;
-  assert.equal(exportCount, 11, '导出端点数与契约一致（销售 3 + 采购 3 + 收货 2 + 库存 3）');
+  assert.equal(exportCount, 14, '导出端点数与契约一致（销售 3 + 采购 3 + 收货 2 + 库存 3 + Finance 3）');
   assert.ok(!/new Blob|createObjectURL|\.xlsx'/.test(API), '文件名与下载由 postDownload 负责');
 });
 
@@ -149,16 +156,53 @@ test('页面导出用当前筛选，且不带分页参数', () => {
 // 权限
 // ------------------------------------------------------------------
 
-test('六个权限码逐字正确', () => {
+test('七个权限码逐字正确', () => {
   for (const perm of [
     'scm:report:overview:query',
     'scm:report:sales:query',
     'scm:report:purchase:query',
     'scm:report:inventory:query',
+    'scm:report:finance:query',
     'scm:report:cost:query',
     'scm:report:export',
   ]) {
     assert.ok(CONST.includes(`'${perm}'`), `常量里缺 ${perm}`);
+  }
+});
+
+test('Finance R0 exposes only the six fixed measures and read-only page actions', () => {
+  for (const label of ['应收发生额', '应收已核销', '期末待收', '应付发生额', '应付已核销', '期末待付']) {
+    assert.ok(FINANCE_PAGE.includes(label), `往来概览缺固定指标「${label}」`);
+  }
+  assert.match(FINANCE_PAGE, /包含起始日前的未结单据/, '期末余额口径要说明不受起始日截断');
+  assert.match(FINANCE_PAGE, /核销是分配关系/, '已核销不得让人读成现金收付');
+  assert.match(FINANCE_PAGE, /v-privilege="PERM\.FINANCE_QUERY"/, '页面查询必须受 Finance R0 权限控制');
+  assert.match(FINANCE_PAGE, /v-privilege="PERM\.EXPORT"/, '三个导出按钮必须受导出权限控制');
+  assert.match(FINANCE_PAGE, /SCM_REPORT_TABLE_ID\.FINANCE_RECEIVABLE/);
+  assert.match(FINANCE_PAGE, /SCM_REPORT_TABLE_ID\.FINANCE_PAYABLE/);
+  assert.match(FINANCE_PAGE, /TableOperator/);
+  assert.match(FINANCE_PAGE, /createGuardedLoader/);
+  assert.match(FINANCE_PAGE, /createTabLoader/);
+  assert.ok(!/\bNumber\(/.test(FINANCE_PAGE), '金额不在前端转数字计算');
+  assert.ok(!/toFixed\(/.test(FINANCE_PAGE), '金额精度由 Finance 后端提供');
+});
+
+test('Finance R0 query and export requests share the report date range without exporting the current page', () => {
+  assert.match(FINANCE_PAGE, /reportFinanceApi\.overviewExport\(overviewExportQuery\(\)\)/);
+  assert.match(FINANCE_PAGE, /reportFinanceApi\.receivableExport\(detailExportQuery\(\)\)/);
+  assert.match(FINANCE_PAGE, /reportFinanceApi\.payableExport\(detailExportQuery\(\)\)/);
+  assert.match(FINANCE_PAGE, /const overviewExportQuery = \(\) => \(\{startDate: dateRange\.value\[0\], endDate: dateRange\.value\[1\]\}\)/);
+  assert.match(FINANCE_PAGE, /const detailExportQuery = \(\) => \(\{\.\.\.overviewExportQuery\(\), keyword:/);
+  assert.doesNotMatch(FINANCE_PAGE.match(/const detailExportQuery = [^\n]+/)?.[0] ?? '', /pageNum|pageSize/);
+  for (const endpoint of [
+    '/finance/overview',
+    '/finance/receivable/aging-free-detail',
+    '/finance/payable/aging-free-detail',
+    '/finance/overview/export',
+    '/finance/receivable/aging-free-detail/export',
+    '/finance/payable/aging-free-detail/export',
+  ]) {
+    assert.ok(API.includes(`\${BASE}${endpoint}`), `Finance R0 API missing ${endpoint}`);
   }
 });
 

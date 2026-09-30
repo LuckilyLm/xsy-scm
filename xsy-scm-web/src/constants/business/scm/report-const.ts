@@ -43,6 +43,7 @@ export const SCM_REPORT_PERMISSION = {
     SALES_QUERY: 'scm:report:sales:query',
     PURCHASE_QUERY: 'scm:report:purchase:query',
     INVENTORY_QUERY: 'scm:report:inventory:query',
+    FINANCE_QUERY: 'scm:report:finance:query',
     COST_QUERY: 'scm:report:cost:query',
     EXPORT: 'scm:report:export',
 } as const;
@@ -74,6 +75,8 @@ export const SCM_REPORT_TABLE_ID = {
     INVENTORY_LOSS: 'scm-report-inventory-loss-table',
     INVENTORY_VALUE: 'scm-report-inventory-value-table',
     INVENTORY_FLOW_SUMMARY: 'scm-report-inventory-flow-summary-table',
+    FINANCE_RECEIVABLE: 'scm-report-finance-receivable-table',
+    FINANCE_PAYABLE: 'scm-report-finance-payable-table',
 } as const;
 
 export default {

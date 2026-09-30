@@ -268,6 +268,30 @@
     "67": {
       "file": "V67__scm_finance_payment_permission.sql",
       "checksum": 248118692
+    },
+    "68": {
+      "file": "V68__scm_finance_reverse_permission.sql",
+      "checksum": -754477924
+    },
+    "69": {
+      "file": "V69__scm_finance_write_off_permission.sql",
+      "checksum": -1210569359
+    },
+    "70": {
+      "file": "V70__scm_finance_read_export_permission.sql",
+      "checksum": 2057713783
+    },
+    "71": {
+      "file": "V71__scm_finance_pages.sql",
+      "checksum": 663549756
+    },
+    "72": {
+      "file": "V72__scm_finance_menu_icons.sql",
+      "checksum": -126910913
+    },
+    "73": {
+      "file": "V73__scm_report_finance_overview.sql",
+      "checksum": -2137538623
     }
   }
 }

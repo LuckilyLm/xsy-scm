@@ -22,6 +22,11 @@ import type {
     InventoryMovementRow,
     InventoryReportQuery,
     InventoryValuePage,
+    FinanceOverviewQuery,
+    FinancePayableDetailRow,
+    FinanceReceivableDetailRow,
+    FinanceReportOverview,
+    FinanceReportQuery,
     OverviewQuery,
     PurchaseItemRow,
     PurchaseOverview,
@@ -135,6 +140,23 @@ export const reportReceiptApi = {
 
     receiptExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/receipt/export`, data),
     inboundExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/inbound/export`, data),
+};
+
+/** Finance R0: immutable Finance R1 facts, separate from the operational report measures above. */
+export const reportFinanceApi = {
+    overview: (data: FinanceOverviewQuery) =>
+        postRequest(`${BASE}/finance/overview`, data) as unknown as Promise<ScmResponse<FinanceReportOverview>>,
+    receivableDetails: (data: FinanceReportQuery) =>
+        postRequest(`${BASE}/finance/receivable/aging-free-detail`, data) as unknown as Promise<
+            ScmResponse<ScmPage<FinanceReceivableDetailRow>>>,
+    payableDetails: (data: FinanceReportQuery) =>
+        postRequest(`${BASE}/finance/payable/aging-free-detail`, data) as unknown as Promise<
+            ScmResponse<ScmPage<FinancePayableDetailRow>>>,
+    overviewExport: (data: FinanceOverviewQuery) => postDownload(`${BASE}/finance/overview/export`, data),
+    receivableExport: (data: Omit<FinanceReportQuery, 'pageNum' | 'pageSize'>) =>
+        postDownload(`${BASE}/finance/receivable/aging-free-detail/export`, data),
+    payableExport: (data: Omit<FinanceReportQuery, 'pageNum' | 'pageSize'>) =>
+        postDownload(`${BASE}/finance/payable/aging-free-detail/export`, data),
 };
 
 /** 库存分析：库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版（计划 §21–§25）。 */

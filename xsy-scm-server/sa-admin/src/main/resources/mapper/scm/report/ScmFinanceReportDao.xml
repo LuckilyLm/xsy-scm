@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.ScmFinanceReportDao">
+
+    <sql id="orderScopeFilter">
+        <if test="orderScope == null">
+            AND FALSE
+        </if>
+        <if test="orderScope != null and orderScope.all == false">
+            AND so.seller_id IN
+            <foreach collection="orderScope.ids" item="scopeId" open="(" separator="," close=")">
+                #{scopeId}
+            </foreach>
+        </if>
+    </sql>
+
+    <sql id="purchaserScopeFilter">
+        <if test="purchaserScope == null">
+            AND FALSE
+        </if>
+        <if test="purchaserScope != null and purchaserScope.all == false">
+            AND po.purchaser_id IN
+            <foreach collection="purchaserScope.ids" item="scopeId" open="(" separator="," close=")">
+                #{scopeId}
+            </foreach>
+        </if>
+    </sql>
+
+    <select id="overview" resultType="com.xsy.scm.report.domain.vo.ScmFinanceOverviewVO">
+        SELECT ar_flow.amount AS receivableOccurredAmount,
+               ar_flow.write_off_amount AS receivableWrittenOffAmount,
+               ar_stock.amount AS endingReceivableAmount,
+               ap_flow.amount AS payableOccurredAmount,
+               ap_flow.write_off_amount AS payableWrittenOffAmount,
+               ap_stock.amount AS endingPayableAmount
+        FROM (
+            SELECT (SELECT COALESCE(SUM(CASE r.entry_type
+                                            WHEN 'NORMAL' THEN r.amount
+                                            WHEN 'RED' THEN -r.amount
+                                            ELSE 0
+                                        END), 0)
+                    FROM finance_receivable r
+                             JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+                    WHERE r.deleted = FALSE
+                      AND r.event_at &gt;= #{startAt}
+                      AND r.event_at &lt; #{endAt}
+                      <include refid="orderScopeFilter"/>) AS amount,
+                   (SELECT COALESCE(SUM(CASE wo.entry_type
+                                            WHEN 'NORMAL' THEN wo.amount
+                                            WHEN 'REVERSE' THEN -wo.amount
+                                            ELSE 0
+                                        END), 0)
+                    FROM finance_write_off wo
+                             JOIN finance_receivable r ON r.id = wo.target_id AND r.deleted = FALSE
+                             JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+                    WHERE wo.target_type = 'RECEIVABLE'
+                      AND r.entry_type = 'NORMAL'
+                      AND wo.deleted = FALSE
+                      AND wo.written_off_at &gt;= #{startAt}
+                      AND wo.written_off_at &lt; #{endAt}
+                      <include refid="orderScopeFilter"/>) AS write_off_amount
+        ) ar_flow
+                 CROSS JOIN (
+            SELECT COALESCE(SUM(GREATEST(balance.net_amount - balance.written_off_amount, 0)), 0) AS amount
+            FROM (
+                SELECT normal.id,
+                       normal.amount - COALESCE(red.red_amount, 0) AS net_amount,
+                       COALESCE(wo.written_off_amount, 0) AS written_off_amount
+                FROM finance_receivable normal
+                         JOIN sales_order so ON so.id = normal.order_id AND so.deleted = FALSE
+                         LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(red.amount), 0) AS red_amount
+                    FROM finance_receivable red
+                    WHERE red.original_receivable_id = normal.id
+                      AND red.entry_type = 'RED'
+                      AND red.deleted = FALSE
+                      AND red.event_at &lt; #{endAt}
+                ) red ON TRUE
+                         LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(CASE wo.entry_type
+                                            WHEN 'NORMAL' THEN wo.amount
+                                            WHEN 'REVERSE' THEN -wo.amount
+                                            ELSE 0
+                                        END), 0) AS written_off_amount
+                    FROM finance_write_off wo
+                    WHERE wo.target_type = 'RECEIVABLE'
+                      AND wo.target_id = normal.id
+                      AND wo.deleted = FALSE
+                      AND wo.written_off_at &lt; #{endAt}
+                ) wo ON TRUE
+                WHERE normal.entry_type = 'NORMAL'
+                  AND normal.deleted = FALSE
+                  AND normal.event_at &lt; #{endAt}
+                  <include refid="orderScopeFilter"/>
+            ) balance
+        ) ar_stock
+                 CROSS JOIN (
+            SELECT (SELECT COALESCE(SUM(CASE p.entry_type
+                                            WHEN 'NORMAL' THEN p.amount
+                                            WHEN 'RED' THEN -p.amount
+                                            ELSE 0
+                                        END), 0)
+                    FROM finance_payable p
+                             JOIN purchase_order po ON po.id = p.purchase_order_id AND po.deleted = FALSE
+                    WHERE p.deleted = FALSE
+                      AND p.event_at &gt;= #{startAt}
+                      AND p.event_at &lt; #{endAt}
+                      <include refid="purchaserScopeFilter"/>) AS amount,
+                   (SELECT COALESCE(SUM(CASE wo.entry_type
+                                            WHEN 'NORMAL' THEN wo.amount
+                                            WHEN 'REVERSE' THEN -wo.amount
+                                            ELSE 0
+                                        END), 0)
+                    FROM finance_write_off wo
+                             JOIN finance_payable p ON p.id = wo.target_id AND p.deleted = FALSE
+                             JOIN purchase_order po ON po.id = p.purchase_order_id AND po.deleted = FALSE
+                    WHERE wo.target_type = 'PAYABLE'
+                      AND p.entry_type = 'NORMAL'
+                      AND wo.deleted = FALSE
+                      AND wo.written_off_at &gt;= #{startAt}
+                      AND wo.written_off_at &lt; #{endAt}
+                      <include refid="purchaserScopeFilter"/>) AS write_off_amount
+        ) ap_flow
+                 CROSS JOIN (
+            SELECT COALESCE(SUM(GREATEST(balance.net_amount - balance.written_off_amount, 0)), 0) AS amount
+            FROM (
+                SELECT normal.id,
+                       normal.amount - COALESCE(red.red_amount, 0) AS net_amount,
+                       COALESCE(wo.written_off_amount, 0) AS written_off_amount
+                FROM finance_payable normal
+                         JOIN purchase_order po ON po.id = normal.purchase_order_id AND po.deleted = FALSE
+                         LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(red.amount), 0) AS red_amount
+                    FROM finance_payable red
+                    WHERE red.original_payable_id = normal.id
+                      AND red.entry_type = 'RED'
+                      AND red.deleted = FALSE
+                      AND red.event_at &lt; #{endAt}
+                ) red ON TRUE
+                         LEFT JOIN LATERAL (
+                    SELECT COALESCE(SUM(CASE wo.entry_type
+                                            WHEN 'NORMAL' THEN wo.amount
+                                            WHEN 'REVERSE' THEN -wo.amount
+                                            ELSE 0
+                                        END), 0) AS written_off_amount
+                    FROM finance_write_off wo
+                    WHERE wo.target_type = 'PAYABLE'
+                      AND wo.target_id = normal.id
+                      AND wo.deleted = FALSE
+                      AND wo.written_off_at &lt; #{endAt}
+                ) wo ON TRUE
+                WHERE normal.entry_type = 'NORMAL'
+                  AND normal.deleted = FALSE
+                  AND normal.event_at &lt; #{endAt}
+                  <include refid="purchaserScopeFilter"/>
+            ) balance
+        ) ap_stock
+    </select>
+
+    <select id="receivableDetails" resultType="com.xsy.scm.report.domain.vo.ScmFinanceReceivableDetailVO">
+        SELECT normal.id AS receivableId,
+               normal.receivable_no AS receivableNo,
+               so.order_no AS orderNo,
+               normal.customer_name_snapshot AS customerName,
+               normal.amount,
+               COALESCE(red.red_amount, 0) AS redAmount,
+               normal.amount - COALESCE(red.red_amount, 0) AS netAmount,
+               COALESCE(wo.written_off_amount, 0) AS writtenOffAmount,
+               GREATEST(normal.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0), 0) AS openAmount,
+               GREATEST(COALESCE(wo.written_off_amount, 0) - (normal.amount - COALESCE(red.red_amount, 0)), 0) AS overAppliedAmount,
+               normal.event_at AS eventAt
+        FROM finance_receivable normal
+                 JOIN sales_order so ON so.id = normal.order_id AND so.deleted = FALSE
+                 LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(red.amount), 0) AS red_amount
+            FROM finance_receivable red
+            WHERE red.original_receivable_id = normal.id
+              AND red.entry_type = 'RED'
+              AND red.deleted = FALSE
+              AND red.event_at &lt; #{endAt}
+        ) red ON TRUE
+                 LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(CASE wo.entry_type
+                                    WHEN 'NORMAL' THEN wo.amount
+                                    WHEN 'REVERSE' THEN -wo.amount
+                                    ELSE 0
+                                END), 0) AS written_off_amount
+            FROM finance_write_off wo
+            WHERE wo.target_type = 'RECEIVABLE'
+              AND wo.target_id = normal.id
+              AND wo.deleted = FALSE
+              AND wo.written_off_at &lt; #{endAt}
+        ) wo ON TRUE
+        WHERE normal.entry_type = 'NORMAL'
+          AND normal.deleted = FALSE
+          AND normal.event_at &lt; #{endAt}
+          <include refid="orderScopeFilter"/>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (normal.receivable_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR so.order_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR normal.customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY normal.event_at DESC, normal.id DESC
+    </select>
+
+    <select id="payableDetails" resultType="com.xsy.scm.report.domain.vo.ScmFinancePayableDetailVO">
+        SELECT normal.id AS payableId,
+               normal.payable_no AS payableNo,
+               po.order_no AS purchaseOrderNo,
+               normal.supplier_name_snapshot AS supplierName,
+               normal.amount,
+               COALESCE(red.red_amount, 0) AS redAmount,
+               normal.amount - COALESCE(red.red_amount, 0) AS netAmount,
+               COALESCE(wo.written_off_amount, 0) AS writtenOffAmount,
+               GREATEST(normal.amount - COALESCE(red.red_amount, 0) - COALESCE(wo.written_off_amount, 0), 0) AS openAmount,
+               GREATEST(COALESCE(wo.written_off_amount, 0) - (normal.amount - COALESCE(red.red_amount, 0)), 0) AS overAppliedAmount,
+               normal.event_at AS eventAt
+        FROM finance_payable normal
+                 JOIN purchase_order po ON po.id = normal.purchase_order_id AND po.deleted = FALSE
+                 LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(red.amount), 0) AS red_amount
+            FROM finance_payable red
+            WHERE red.original_payable_id = normal.id
+              AND red.entry_type = 'RED'
+              AND red.deleted = FALSE
+              AND red.event_at &lt; #{endAt}
+        ) red ON TRUE
+                 LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(CASE wo.entry_type
+                                    WHEN 'NORMAL' THEN wo.amount
+                                    WHEN 'REVERSE' THEN -wo.amount
+                                    ELSE 0
+                                END), 0) AS written_off_amount
+            FROM finance_write_off wo
+            WHERE wo.target_type = 'PAYABLE'
+              AND wo.target_id = normal.id
+              AND wo.deleted = FALSE
+              AND wo.written_off_at &lt; #{endAt}
+        ) wo ON TRUE
+        WHERE normal.entry_type = 'NORMAL'
+          AND normal.deleted = FALSE
+          AND normal.event_at &lt; #{endAt}
+          <include refid="purchaserScopeFilter"/>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (normal.payable_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR po.order_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR normal.supplier_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY normal.event_at DESC, normal.id DESC
+    </select>
+</mapper>

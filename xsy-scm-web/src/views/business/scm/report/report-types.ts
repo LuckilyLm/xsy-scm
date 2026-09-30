@@ -102,6 +102,52 @@ export interface ReportOverview {
     snapshotAt?: string | null;
 }
 
+/** Six fixed Finance R0 measures; field names describe the source fact and time role. */
+export interface FinanceReportOverview {
+    receivableOccurredAmount: string | null;
+    receivableWrittenOffAmount: string | null;
+    endingReceivableAmount: string | null;
+    payableOccurredAmount: string | null;
+    payableWrittenOffAmount: string | null;
+    endingPayableAmount: string | null;
+}
+
+export type FinanceOverviewQuery = ReportDateQuery;
+
+export interface FinanceReportQuery extends ReportPage, ReportDateQuery {
+    keyword?: string;
+}
+
+/** Normal receivable bills with linked red facts and their end-date balances. */
+export interface FinanceReceivableDetailRow {
+    receivableId: ReportId;
+    receivableNo: string;
+    orderNo: string;
+    customerName: string;
+    amount: string;
+    redAmount: string;
+    netAmount: string;
+    writtenOffAmount: string;
+    openAmount: string;
+    overAppliedAmount: string;
+    eventAt: string;
+}
+
+/** Normal payable bills with linked red facts and their end-date balances. */
+export interface FinancePayableDetailRow {
+    payableId: ReportId;
+    payableNo: string;
+    purchaseOrderNo: string;
+    supplierName: string;
+    amount: string;
+    redAmount: string;
+    netAmount: string;
+    writtenOffAmount: string;
+    openAmount: string;
+    overAppliedAmount: string;
+    eventAt: string;
+}
+
 /** `ReportDailyStatVO`：按业务日聚合的一行，同时服务趋势折线与每日统计表。 */
 export interface ReportDailyStat {
     /** 业务日期 `yyyy-MM-dd`（Asia/Shanghai）。日期轴由 SQL 补齐，没有单据的天也在。 */
