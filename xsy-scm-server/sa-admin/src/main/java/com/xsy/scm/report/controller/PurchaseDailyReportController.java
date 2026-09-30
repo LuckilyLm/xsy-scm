@@ -38,7 +38,8 @@ public class PurchaseDailyReportController {
     @PostMapping("/export")
     @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
-    public void export(@Valid @RequestBody PurchaseDailyQueryForm form, HttpServletResponse response) throws IOException {
+    public void export(@Valid @RequestBody PurchaseDailyQueryForm form,
+            HttpServletResponse response) throws IOException {
         List<PurchaseDailyReportVO.ProductRow> products = ScmReportExportGuard.exportRows(limit -> {
             form.setPageNum(1L);
             form.setPageSize(limit);
