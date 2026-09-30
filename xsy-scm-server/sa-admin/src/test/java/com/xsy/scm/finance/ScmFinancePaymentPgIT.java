@@ -707,6 +707,45 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("CUSTOMER 付款重放重新校验当前客户归属，拒绝时不追加事实、日志或幂等行")
+    void customerReplayRechecksCurrentSellerScope() {
+        Long employeeA = newPlainEmployee("PRA");
+        Long employeeB = newPlainEmployee("PRB");
+        Refund refund = completedRefund("CUSTOMER-REPLAY", "10.0000", "2.0000");
+        assertThat(jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeA, refund.customerId()))
+                .isEqualTo(1);
+        evictMybatisCache();
+
+        FinancePaymentAddForm request = refundForm(
+                refund.customerId(), refund.refundAmount().toPlainString(), refund.refundId());
+        String idempotencyKey = key("customer-replay-scope");
+        try {
+            asEmployee(employeeA);
+            FinancePaymentVO first = add(request, idempotencyKey);
+            FinancePaymentVO replay = add(request, idempotencyKey);
+
+            assertThat(replay.getPaymentId()).isEqualTo(first.getPaymentId());
+            assertThat(paymentsOfRefund(refund.refundId())).isEqualTo(1);
+            assertThat(payLogsOfRefund(refund.refundId())).isEqualTo(1);
+            assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+                    .isEqualTo(1);
+
+            assertThat(jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeB, refund.customerId()))
+                    .isEqualTo(1);
+            evictMybatisCache();
+
+            expectCode(() -> add(request, idempotencyKey), 41139);
+        } finally {
+            asAdmin();
+        }
+
+        assertThat(paymentsOfRefund(refund.refundId())).isEqualTo(1);
+        assertThat(payLogsOfRefund(refund.refundId())).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+                .isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("W 幂等冲突 40966 与缺键 40069：两种失败都不产生付款")
     void conflictAndMissingKeyProduceNothing() {
         Long supplierId = supplier();

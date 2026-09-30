@@ -79,6 +79,9 @@ public class FinancePaymentService {
     public FinancePaymentVO add(FinancePaymentAddForm form, String idempotencyKey) {
         var claim = idempotencyService.claim(FinanceConstant.PAYMENT_ADD_SCOPE, idempotencyKey, form);
         if (claim.replay()) {
+            if (ScmFinanceCounterpartyTypeEnum.CUSTOMER.name().equals(counterpartyType(form.getCounterpartyType()))) {
+                requireCustomerPaymentVisible(form.getCounterpartyId());
+            }
             return idempotencyService.replay(claim, FinancePaymentVO.class);
         }
 
@@ -289,6 +292,16 @@ public class FinancePaymentService {
         payment.setCounterpartyNameSnapshot(customer.getCustomerName());
         payment.setSourceType(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name());
         payment.setSourceId(refund.getRefundId());
+    }
+
+    /**
+     * CUSTOMER 付款重放仍须按当前客户归属校验可见性，且使用付款来源既有的防枚举错误码。
+     */
+    private void requireCustomerPaymentVisible(Long customerId) {
+        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(customerId);
+        if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
     }
 
     private static String counterpartyType(String raw) {

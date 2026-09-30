@@ -354,6 +354,37 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("收款重放：客户改派后按当前范围拒绝，保持 30005 且不追加事实")
+    void replayIsRejectedAfterCustomerIsReassigned() {
+        Long employeeA = newPlainEmployee("RRA");
+        Long employeeB = newPlainEmployee("RRB");
+        Long customerId = customerOwnedBy(employeeA);
+        FinanceReceiptAddForm request = form(customerId, "88.0000", "CASH", PAST);
+        String idempotencyKey = key("replay-scope");
+
+        try {
+            asEmployee(employeeA);
+            FinanceReceiptVO first = financeReceiptService.add(request, idempotencyKey);
+            FinanceReceiptVO replay = financeReceiptService.add(request, idempotencyKey);
+            assertThat(replay.getReceiptId()).isEqualTo(first.getReceiptId());
+
+            assertThat(jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeB, customerId))
+                    .isEqualTo(1);
+            evictMybatisCache();
+
+            assertThatThrownBy(() -> financeReceiptService.add(request, idempotencyKey))
+                    .isInstanceOf(ScmDataScopeException.class);
+        } finally {
+            asAdmin();
+        }
+
+        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
+        assertThat(receiptLogsOfCustomer(customerId)).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+                .isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("幂等冲突：同键不同金额 → 40966，不产生第二张收款单")
     void sameKeyDifferentContentIsRejectedAsConflict() {
         Long customerId = customerOwnedBy(null);
