@@ -1,19 +1,19 @@
 <template>
   <a-card size="small" :bordered="false">
-    <a-form layout="inline" class="daily-filters" @submit.prevent="search">
+    <a-form :model="queryForm" layout="inline" class="daily-filters" @finish="search">
       <a-form-item label="清单日期">
-        <a-date-picker v-model:value="reportDate" value-format="YYYY-MM-DD" :allow-clear="false"
+        <a-date-picker v-model:value="queryForm.reportDate" value-format="YYYY-MM-DD" :allow-clear="false"
                        :disabled-date="disabledDate"/>
       </a-form-item>
       <a-form-item label="仓库">
-        <WarehouseSelect v-model:value="warehouseId" width="180px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px"/>
       </a-form-item>
       <a-form-item label="商品">
-        <a-input v-model:value="keyword" placeholder="名称 / SPU / SKU 编码" allow-clear :maxlength="100"/>
+        <a-input v-model:value="queryForm.keyword" placeholder="名称 / SPU / SKU 编码" allow-clear :maxlength="100"/>
       </a-form-item>
       <a-form-item>
         <a-space wrap>
-          <a-button type="primary" html-type="submit" :loading="loading">查询</a-button>
+          <a-button type="primary" :loading="loading" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
           <a-button v-privilege="PERM.EXPORT" :loading="exporting"
                     :disabled="!report?.generatedAt || loading || !!error" @click="exportReport">导出清单</a-button>
@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onBeforeUnmount, onMounted, ref} from 'vue';
+import {computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
 import type {Dayjs} from 'dayjs';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -72,9 +72,11 @@ function todayInShanghai() {
 }
 
 const yesterday = () => todayInShanghai().subtract(1, 'day').format('YYYY-MM-DD');
-const reportDate = ref(yesterday());
-const warehouseId = ref<number | string>();
-const keyword = ref('');
+const queryForm = reactive<{reportDate: string; warehouseId: number | string | undefined; keyword: string}>({
+  reportDate: yesterday(),
+  warehouseId: undefined,
+  keyword: '',
+});
 const pageNum = ref(1);
 const pageSize = ref(20);
 const report = ref<PurchaseDailyReport>();
@@ -122,13 +124,13 @@ async function load(query: PurchaseDailyQuery) {
 }
 
 function search() {
-  if (!reportDate.value) {
+  if (!queryForm.reportDate) {
     message.warning('请选择清单日期');
     return;
   }
   pageNum.value = 1;
-  void load({reportDate: reportDate.value, warehouseId: warehouseId.value,
-    keyword: keyword.value.trim() || undefined, pageNum: 1, pageSize: pageSize.value});
+  void load({reportDate: queryForm.reportDate, warehouseId: queryForm.warehouseId,
+    keyword: queryForm.keyword.trim() || undefined, pageNum: 1, pageSize: pageSize.value});
 }
 
 function changePage(current: number, size: number) {
@@ -139,9 +141,9 @@ function changePage(current: number, size: number) {
 }
 
 function reset() {
-  reportDate.value = yesterday();
-  warehouseId.value = undefined;
-  keyword.value = '';
+  queryForm.reportDate = yesterday();
+  queryForm.warehouseId = undefined;
+  queryForm.keyword = '';
   search();
 }
 
