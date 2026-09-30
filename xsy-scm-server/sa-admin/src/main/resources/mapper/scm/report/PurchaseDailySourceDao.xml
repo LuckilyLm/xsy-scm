@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.PurchaseDailySourceDao">
+    <!-- 仅系统任务调用，单条 SELECT 保证所有分组取自同一数据库语句快照。 -->
+    <select id="aggregateSubmittedOrders" resultType="com.xsy.scm.report.domain.dto.PurchaseDailySnapshotRow">
+        SELECT o.warehouse_id, o.purchaser_id, oi.sku_id,
+               MAX(oi.spu_code_snapshot) AS spu_code,
+               MAX(oi.product_name_snapshot) AS product_name,
+               MAX(oi.sku_code_snapshot) AS sku_code,
+               MAX(oi.sku_name_snapshot) AS sku_name,
+               oi.purchase_unit_snapshot AS purchase_unit,
+               COUNT(DISTINCT o.id) AS order_count,
+               SUM(oi.planned_quantity) AS planned_quantity,
+               SUM(oi.line_amount) AS order_amount
+        FROM purchase_order o
+        JOIN purchase_order_item oi ON oi.purchase_order_id = o.id AND oi.deleted = FALSE
+        WHERE o.deleted = FALSE
+          AND o.submitted_at &gt;= #{startAt} AND o.submitted_at &lt; #{endAt}
+          AND o.status IN
+          <foreach collection="statuses" item="status" open="(" separator="," close=")">#{status}</foreach>
+        GROUP BY o.warehouse_id, o.purchaser_id, oi.sku_id, oi.purchase_unit_snapshot
+    </select>
+</mapper>

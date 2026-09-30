@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.PurchaseDailyReportDao">
+    <insert id="claimDate">
+        INSERT INTO report_purchase_daily (report_date, generated_at)
+        VALUES (#{reportDate}, CURRENT_TIMESTAMP)
+        ON CONFLICT (report_date) DO NOTHING
+    </insert>
+    <insert id="insertRows">
+        INSERT INTO report_purchase_daily_item
+            (report_date, warehouse_id, purchaser_id, sku_id, spu_code, product_name, sku_code, sku_name,
+             purchase_unit, order_count, planned_quantity, order_amount)
+        VALUES
+        <foreach collection="rows" item="row" separator=",">
+            (#{reportDate}, #{row.warehouseId}, #{row.purchaserId}, #{row.skuId}, #{row.spuCode},
+             #{row.productName}, #{row.skuCode}, #{row.skuName}, #{row.purchaseUnit}, #{row.orderCount},
+             #{row.plannedQuantity}, #{row.orderAmount})
+        </foreach>
+    </insert>
+    <select id="findGeneratedAt" resultType="java.time.OffsetDateTime">
+        SELECT generated_at FROM report_purchase_daily WHERE report_date = #{reportDate}
+    </select>
+    <select id="queryProducts" resultType="com.xsy.scm.report.domain.vo.PurchaseDailyReportVO$ProductRow">
+        SELECT sku_id, MAX(spu_code) AS spu_code, MAX(product_name) AS product_name,
+               MAX(sku_code) AS sku_code, MAX(sku_name) AS sku_name, purchase_unit,
+               SUM(order_count)::bigint AS order_count,
+               SUM(planned_quantity) AS planned_quantity, SUM(order_amount) AS order_amount
+        FROM report_purchase_daily_item
+        WHERE report_date = #{query.reportDate}
+        <choose>
+            <when test="warehouseScope != null and warehouseScope.all"/>
+            <when test="warehouseScope != null and !warehouseScope.empty">
+                AND warehouse_id IN
+                <foreach collection="warehouseScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="purchaserScope != null and purchaserScope.all"/>
+            <when test="purchaserScope != null and !purchaserScope.empty">
+                AND purchaser_id IN
+                <foreach collection="purchaserScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <if test="query.warehouseId != null">AND warehouse_id = #{query.warehouseId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (product_name ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        GROUP BY sku_id, purchase_unit
+        ORDER BY sku_id, purchase_unit
+    </select>
+</mapper>

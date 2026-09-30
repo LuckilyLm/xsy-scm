@@ -9,7 +9,7 @@
   SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED，排除 DRAFT 与 CANCELLED（SQL 固定）。
 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
+  <a-form v-if="activeTab !== 'daily'" class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="提交日期" class="smart-query-form-item">
         <ReportDateRangePicker v-model:value="dateRange"/>
@@ -46,13 +46,16 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="chartError" :message="chartError" type="error" show-icon>
+  <a-alert v-if="chartError && activeTab !== 'daily'" :message="chartError" type="error" show-icon>
     <template #action>
       <a-button @click="queryActiveTab">重试</a-button>
     </template>
   </a-alert>
 
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
+    <a-tab-pane key="daily" tab="每日清单">
+      <PurchaseDailyReport/>
+    </a-tab-pane>
     <!-- ==================== 采购概览 ==================== -->
     <a-tab-pane key="overview" tab="采购概览">
       <a-row :gutter="[12, 12]">
@@ -495,6 +498,7 @@
 </template>
 
 <script setup lang="ts">
+import PurchaseDailyReport from './report-components/purchase-daily-report.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -554,7 +558,7 @@ const PERM = SCM_REPORT_PERMISSION;
 const route = useRoute();
 const {canViewCost} = useReportPermission();
 
-type PurchaseTab = 'overview' | 'product' | 'supplier' | 'purchaser' | 'item' | 'trend';
+type PurchaseTab = 'overview' | 'product' | 'supplier' | 'purchaser' | 'item' | 'trend' | 'daily';
 
 const activeTab = ref<PurchaseTab>('overview');
 const dateRange = ref<DateRange | undefined>();
@@ -779,6 +783,7 @@ const loadDrilldown = createTabLoader(
 );
 
 function queryActiveTab() {
+    if (activeTab.value === 'daily') return;
     const overLimit = rangeOverLimitError(dateRange.value);
     if (overLimit) {
         chartError.value = overLimit;

@@ -3,12 +3,13 @@ package com.xsy.scm.report.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
+import com.xsy.scm.common.error.ScmExportErrorCode;
 
 /**
- * 报表域错误码。只读域，因此只有「查询边界不合法」与「导出规模超限」两类，没有写入冲突码。
+ * 报表查询、导出与每日清单可用性错误码。
  *
  * <p>
- * 报表域的专属错误码使用 41110–41112，与配送域的 41100–41109 分开。
+ * 已发布的报表错误码为 41110–41112；每日清单使用 41150，避开配送、分拣与财务已占用区间。
  */
 @Getter
 @RequiredArgsConstructor
@@ -17,21 +18,15 @@ public enum ReportErrorCode implements ScmErrorCode {
     /**
      * 起止日期缺失或倒序。报表不接受无边界扫描：没有日期就没有可复现的口径， 「导出 = 列表」也无从保证。
      */
-    REPORT_DATE_RANGE_REQUIRED(
-            41110,
-            "请选择完整且顺序正确的查询日期范围"),
+    REPORT_DATE_RANGE_REQUIRED(41110, "请选择完整且顺序正确的查询日期范围"),
 
     /** 查询跨度超过 {@code ScmReportTimeRangeResolver.MAX_SPAN_DAYS}。 */
-    REPORT_DATE_RANGE_TOO_LARGE(
-            41111,
-            "查询日期跨度超过上限，请缩小日期范围后重试"),
+    REPORT_DATE_RANGE_TOO_LARGE(41111, "查询日期跨度超过上限，请缩小日期范围后重试"),
 
-    /**
-     * 导出命中行数超过上限。明确拒绝而不是静默截断： 既有商品 / 采购导出是「clamp pageSize 后少导一部分」，那会让使用者把部分结果当全部， 报表要求列表口径与导出口径一致，因此超出必须报错。
-     */
-    REPORT_EXPORT_ROW_LIMIT_EXCEEDED(
-            41112,
-            "当前筛选结果超过导出行数上限，请缩小日期范围或筛选条件后重试");
+    REPORT_DAILY_UNAVAILABLE(41150, "该日期的采购清单尚未生成或不在授权范围内");
+
+    /** Shared by finance and report exports; the wire code remains 41112. */
+    public static final ScmErrorCode REPORT_EXPORT_ROW_LIMIT_EXCEEDED = ScmExportErrorCode.EXPORT_ROW_LIMIT_EXCEEDED;
 
     private final int code;
 
