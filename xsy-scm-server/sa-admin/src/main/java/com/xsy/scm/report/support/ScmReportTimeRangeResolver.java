@@ -1,11 +1,7 @@
 package com.xsy.scm.report.support;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-
-import com.xsy.scm.common.error.ScmCommonErrorCode;
-import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.time.ScmDateTimeRange;
+import com.xsy.scm.common.time.ScmDateTimeRangeResolver;
 import com.xsy.scm.report.constant.ReportErrorCode;
 
 /**
@@ -18,12 +14,12 @@ import com.xsy.scm.report.constant.ReportErrorCode;
 public final class ScmReportTimeRangeResolver {
 
     /** 与业务库、单号生成器、大屏一致的日界时区。 */
-    public static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
+    public static final java.time.ZoneId BUSINESS_ZONE = ScmDateTimeRangeResolver.BUSINESS_ZONE;
 
     /**
      * 最大查询跨度（含首尾两天）。超过这个范围的历史聚合没有可用的索引边界， 且趋势图与每日统计的行数也不再是可读的。
      */
-    public static final int MAX_SPAN_DAYS = 366;
+    public static final int MAX_SPAN_DAYS = ScmDateTimeRangeResolver.MAX_SPAN_DAYS;
 
     private ScmReportTimeRangeResolver() {
     }
@@ -35,15 +31,8 @@ public final class ScmReportTimeRangeResolver {
      *             日期缺失 / 倒序（40000），或跨度超限（41111）
      */
     public static ScmReportTimeRange resolve(ScmReportDateFilter filter) {
-        LocalDate startDate = filter.getStartDate();
-        LocalDate endDate = filter.getEndDate();
-        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
-            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
-        }
-        if (ChronoUnit.DAYS.between(startDate, endDate) + 1 > MAX_SPAN_DAYS) {
-            throw new ScmBusinessException(ReportErrorCode.REPORT_DATE_RANGE_TOO_LARGE);
-        }
-        return new ScmReportTimeRange(startDate, endDate, startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime());
+        ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(filter.getStartDate(), filter.getEndDate(),
+                ReportErrorCode.REPORT_DATE_RANGE_TOO_LARGE);
+        return new ScmReportTimeRange(range.startDate(), range.endDate(), range.startAt(), range.endAt());
     }
 }
