@@ -21,8 +21,7 @@
         SELECT generated_at FROM report_purchase_daily WHERE report_date = #{reportDate}
     </select>
     <select id="queryProducts" resultType="com.xsy.scm.report.domain.vo.PurchaseDailyReportVO$ProductRow">
-        SELECT sku_id, MAX(spu_code) AS spu_code, MAX(product_name) AS product_name,
-               MAX(sku_code) AS sku_code, MAX(sku_name) AS sku_name, purchase_unit,
+        SELECT sku_id, spu_code, product_name, sku_code, sku_name, purchase_unit,
                SUM(order_count)::bigint AS order_count,
                SUM(planned_quantity) AS planned_quantity, SUM(order_amount) AS order_amount
         FROM report_purchase_daily_item
@@ -49,7 +48,7 @@
                  OR spu_code ILIKE CONCAT('%', #{query.keyword}, '%')
                  OR sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        GROUP BY sku_id, purchase_unit
-        ORDER BY sku_id, purchase_unit
+        GROUP BY sku_id, spu_code, product_name, sku_code, sku_name, purchase_unit
+        ORDER BY sku_id, purchase_unit, spu_code, product_name, sku_code, sku_name
     </select>
 </mapper>

@@ -22,7 +22,7 @@
     </a-form>
 
     <p class="daily-description">
-      每日自动统计前一天提交的有效采购单，排除草稿和取消单。按商品规格、采购单位汇总，生成后保留历史快照。
+      每日自动统计前一天提交的有效采购单，排除草稿和取消单。按采购时的商品名称、规格和单位分组汇总，生成后保留历史快照。
       <router-link v-privilege="'support:job:query'" to="/job/list">配置执行时间</router-link>
     </p>
 
@@ -103,7 +103,9 @@ const emptyText = computed(() => {
     ? '清单已生成，当前授权范围和筛选条件下没有采购商品'
     : '该日期清单尚未生成或无访问范围，可联系管理员查看任务记录或补生成';
 });
-const rowKey = (row: PurchaseDailyProduct) => JSON.stringify([row.skuId, row.purchaseUnit]);
+const rowKey = (row: PurchaseDailyProduct) => JSON.stringify([
+  row.skuId, row.spuCode, row.productName, row.skuCode, row.skuName, row.purchaseUnit,
+]);
 const disabledDate = (date: Dayjs) => !date.isBefore(todayInShanghai(), 'day');
 
 async function load(query: PurchaseDailyQuery) {

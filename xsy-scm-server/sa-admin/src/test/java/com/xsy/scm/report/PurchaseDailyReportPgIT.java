@@ -3,14 +3,23 @@ package com.xsy.scm.report;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW6PgITBase;
@@ -77,6 +86,100 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
         assertThat(kilograms.getOrderAmount()).isEqualByComparingTo("18");
         assertThat(rows.stream().filter(row -> "箱".equals(row.getPurchaseUnit())).findFirst().orElseThrow()
                 .getPlannedQuantity()).isEqualByComparingTo("5");
+    }
+
+    @Test
+    void keepsEachPurchaseOrderNameAndCodeSnapshotWhenProductChangesDuringTheDay() {
+        order(ScmPurchaseStatusEnum.SUBMITTED, start(), "kg", "2", WAREHOUSE_A, PURCHASER_A,
+                "SPU-OLD", "奶白菜", "SKU-OLD", "250g");
+        order(ScmPurchaseStatusEnum.SUBMITTED, start().plusHours(8), "kg", "3", WAREHOUSE_A, PURCHASER_A,
+                "SPU-NEW", "上海青", "SKU-NEW", "250g");
+
+        assertThat(generationService.generate(REPORT_DATE)).isTrue();
+
+        List<PurchaseDailyReportVO.ProductRow> rows = products(ScmValueScope.all(), ScmValueScope.all(), null);
+        assertThat(rows).hasSize(2);
+        PurchaseDailyReportVO.ProductRow oldSnapshot = rows.stream()
+                .filter(row -> "奶白菜".equals(row.getProductName())).findFirst().orElseThrow();
+        PurchaseDailyReportVO.ProductRow newSnapshot = rows.stream()
+                .filter(row -> "上海青".equals(row.getProductName())).findFirst().orElseThrow();
+        assertThat(oldSnapshot.getSpuCode()).isEqualTo("SPU-OLD");
+        assertThat(oldSnapshot.getSkuCode()).isEqualTo("SKU-OLD");
+        assertThat(oldSnapshot.getOrderCount()).isEqualTo(1);
+        assertThat(oldSnapshot.getPlannedQuantity()).isEqualByComparingTo("2");
+        assertThat(newSnapshot.getSpuCode()).isEqualTo("SPU-NEW");
+        assertThat(newSnapshot.getSkuCode()).isEqualTo("SKU-NEW");
+        assertThat(newSnapshot.getOrderCount()).isEqualTo(1);
+        assertThat(newSnapshot.getPlannedQuantity()).isEqualByComparingTo("3");
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void rollsBackClaimedHeaderWhenSnapshotItemInsertFailsAndAllowsRetry() {
+        List<Long> orderIds = new ArrayList<>();
+        try {
+            orderIds.add(order(ScmPurchaseStatusEnum.SUBMITTED, start(), "kg", "2", WAREHOUSE_A, PURCHASER_A));
+            dropItemFailureTrigger();
+            jdbcTemplate.execute("""
+                    CREATE FUNCTION xsy_test_reject_purchase_daily_item() RETURNS trigger
+                    LANGUAGE plpgsql AS $$
+                    BEGIN
+                        RAISE EXCEPTION 'forced purchase daily item insert failure';
+                    END;
+                    $$
+                    """);
+            jdbcTemplate.execute("""
+                    CREATE TRIGGER xsy_test_reject_purchase_daily_item
+                    BEFORE INSERT ON report_purchase_daily_item
+                    FOR EACH ROW EXECUTE FUNCTION xsy_test_reject_purchase_daily_item()
+                    """);
+
+            assertThatThrownBy(() -> generationService.generate(REPORT_DATE))
+                    .isInstanceOf(DataAccessException.class);
+            assertThat(countDailyHeaders()).isZero();
+            assertThat(countDailyItems()).isZero();
+
+            dropItemFailureTrigger();
+            assertThat(generationService.generate(REPORT_DATE)).isTrue();
+            assertThat(countDailyHeaders()).isEqualTo(1);
+            assertThat(countDailyItems()).isEqualTo(1);
+        } finally {
+            dropItemFailureTrigger();
+            cleanupDailyReportFixtures(orderIds);
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void concurrentGenerationCreatesOneCompleteSnapshot() throws Exception {
+        List<Long> orderIds = new ArrayList<>();
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch startTogether = new CountDownLatch(1);
+        try {
+            orderIds.add(order(ScmPurchaseStatusEnum.SUBMITTED, start(), "kg", "2", WAREHOUSE_A, PURCHASER_A));
+            orderIds.add(order(ScmPurchaseStatusEnum.SUBMITTED, start().plusHours(1), "kg", "3", WAREHOUSE_A, PURCHASER_A));
+            Future<Boolean> first = executor.submit(() -> generateTogether(ready, startTogether));
+            Future<Boolean> second = executor.submit(() -> generateTogether(ready, startTogether));
+
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            startTogether.countDown();
+            assertThat(List.of(first.get(30, TimeUnit.SECONDS), second.get(30, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(true, false);
+            assertThat(countDailyHeaders()).isEqualTo(1);
+            assertThat(countDailyItems()).isEqualTo(1);
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT order_count FROM report_purchase_daily_item WHERE report_date = ?",
+                    Integer.class, REPORT_DATE)).isEqualTo(2);
+            assertThat(jdbcTemplate.queryForObject(
+                    "SELECT planned_quantity FROM report_purchase_daily_item WHERE report_date = ?",
+                    BigDecimal.class, REPORT_DATE)).isEqualByComparingTo("5");
+        } finally {
+            startTogether.countDown();
+            executor.shutdownNow();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+            cleanupDailyReportFixtures(orderIds);
+        }
     }
 
     @Test
@@ -167,8 +270,47 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
         return REPORT_DATE.atStartOfDay(ScmReportTimeRangeResolver.BUSINESS_ZONE).toOffsetDateTime();
     }
 
+    private boolean generateTogether(CountDownLatch ready, CountDownLatch startTogether) throws InterruptedException {
+        ready.countDown();
+        if (!startTogether.await(10, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Concurrent generation did not receive its shared start signal");
+        }
+        return generationService.generate(REPORT_DATE);
+    }
+
+    private int countDailyHeaders() {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM report_purchase_daily WHERE report_date = ?", Integer.class, REPORT_DATE);
+    }
+
+    private int countDailyItems() {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM report_purchase_daily_item WHERE report_date = ?", Integer.class, REPORT_DATE);
+    }
+
+    private void dropItemFailureTrigger() {
+        jdbcTemplate.execute(
+                "DROP TRIGGER IF EXISTS xsy_test_reject_purchase_daily_item ON report_purchase_daily_item");
+        jdbcTemplate.execute("DROP FUNCTION IF EXISTS xsy_test_reject_purchase_daily_item()");
+    }
+
+    private void cleanupDailyReportFixtures(List<Long> orderIds) {
+        jdbcTemplate.update("DELETE FROM report_purchase_daily_item WHERE report_date = ?", REPORT_DATE);
+        jdbcTemplate.update("DELETE FROM report_purchase_daily WHERE report_date = ?", REPORT_DATE);
+        for (Long orderId : orderIds) {
+            jdbcTemplate.update("DELETE FROM purchase_order_item WHERE purchase_order_id = ?", orderId);
+            jdbcTemplate.update("DELETE FROM purchase_order WHERE id = ?", orderId);
+        }
+    }
+
     private Long order(ScmPurchaseStatusEnum status, OffsetDateTime submittedAt, String unit, String quantity,
             long warehouseId, long purchaserId) {
+        return order(status, submittedAt, unit, quantity, warehouseId, purchaserId,
+                "DAILY-SPU", "每日商品", "DAILY-SKU", "规格");
+    }
+
+    private Long order(ScmPurchaseStatusEnum status, OffsetDateTime submittedAt, String unit, String quantity,
+            long warehouseId, long purchaserId, String spuCode, String productName, String skuCode, String skuName) {
         String orderNo = "DAILY-" + UUID.randomUUID();
         boolean cancelled = status == ScmPurchaseStatusEnum.CANCELLED;
         boolean shortClosed = status == ScmPurchaseStatusEnum.SHORT_CLOSED;
@@ -186,8 +328,8 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
                 INSERT INTO purchase_order_item (purchase_order_id, spu_id, sku_id, spu_code_snapshot,
                     product_name_snapshot, sku_code_snapshot, sku_name_snapshot, purchase_unit_snapshot,
                     product_type_snapshot, planned_quantity, received_quantity, purchase_price, line_amount)
-                VALUES (?, 1, ?, 'DAILY-SPU', '每日商品', 'DAILY-SKU', '规格', ?, 'STANDARD', ?, 0, 2, ?)
-                """, orderId, SKU_ID, unit, new BigDecimal(quantity), amount);
+                VALUES (?, 1, ?, ?, ?, ?, ?, ?, 'STANDARD', ?, 0, 2, ?)
+                """, orderId, SKU_ID, spuCode, productName, skuCode, skuName, unit, new BigDecimal(quantity), amount);
         return orderId;
     }
 }

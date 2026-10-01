@@ -4,10 +4,10 @@
     <!-- 仅系统任务调用，单条 SELECT 保证所有分组取自同一数据库语句快照。 -->
     <select id="aggregateSubmittedOrders" resultType="com.xsy.scm.report.domain.dto.PurchaseDailySnapshotRow">
         SELECT o.warehouse_id, o.purchaser_id, oi.sku_id,
-               MAX(oi.spu_code_snapshot) AS spu_code,
-               MAX(oi.product_name_snapshot) AS product_name,
-               MAX(oi.sku_code_snapshot) AS sku_code,
-               MAX(oi.sku_name_snapshot) AS sku_name,
+               oi.spu_code_snapshot AS spu_code,
+               oi.product_name_snapshot AS product_name,
+               oi.sku_code_snapshot AS sku_code,
+               oi.sku_name_snapshot AS sku_name,
                oi.purchase_unit_snapshot AS purchase_unit,
                COUNT(DISTINCT o.id) AS order_count,
                SUM(oi.planned_quantity) AS planned_quantity,
@@ -18,6 +18,8 @@
           AND o.submitted_at &gt;= #{startAt} AND o.submitted_at &lt; #{endAt}
           AND o.status IN
           <foreach collection="statuses" item="status" open="(" separator="," close=")">#{status}</foreach>
-        GROUP BY o.warehouse_id, o.purchaser_id, oi.sku_id, oi.purchase_unit_snapshot
+        GROUP BY o.warehouse_id, o.purchaser_id, oi.sku_id,
+                 oi.spu_code_snapshot, oi.product_name_snapshot,
+                 oi.sku_code_snapshot, oi.sku_name_snapshot, oi.purchase_unit_snapshot
     </select>
 </mapper>
