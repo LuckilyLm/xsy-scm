@@ -216,10 +216,9 @@ test('12 unsaved draft survives a page reload and a route switch',async({page})=
  await page.locator('.ant-drawer:visible').locator('.ant-drawer-footer').getByRole('button',{name:/^关\s*闭$/}).click();
 });
 
-/** 历史价浮层是 trigger=click 的切换语义：先确保关闭再点一次，才能拿到「按当前 (客户,SKU) 现算」的那一版内容。 */
+/** 客户或 SKU 改变后组件会关闭旧浮层；等它完全关闭后再点，检查新键对应的历史价。 */
 async function openRecentPopover(page:Page){
  const pop=page.locator('.ant-popover:visible');
- if(await pop.count()>0){await page.locator('#order-item-table .recent-btn').first().click();}
  await expect(pop).toHaveCount(0);
  await page.locator('#order-item-table .recent-btn').first().click();
  await expect(pop).toHaveCount(1);
