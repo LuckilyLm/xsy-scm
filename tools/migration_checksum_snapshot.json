@@ -292,6 +292,10 @@
     "73": {
       "file": "V73__scm_report_finance_overview.sql",
       "checksum": -2137538623
+    },
+    "74": {
+      "file": "V74__scm_purchase_daily_report.sql",
+      "checksum": 2107962294
     }
   }
 }
