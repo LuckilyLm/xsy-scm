@@ -1,6 +1,6 @@
 # Java 质量复核后续修复
 
-日期：2026-09-28。用户要求修复生产代码和配置；测试问题先记录，不修改测试、不运行测试或构建。
+原始记录日期：2026-09-28。以下前两节保留当时的工作范围和待办状态；2026-10-01 的收口验证追加在文末。
 
 ## 已修改
 
@@ -12,7 +12,7 @@
 - 收款登记在 claim 前校验请求客户范围，重放时再校验已记录结果的客户范围；客户被改派或调用者失去范围后，不再返回原收款的客户、金额或凭据数据。
 - 跨域 DAO 守卫会读取目标 Mapper 的 statement 类型。白名单调用必须对应 `<select>`，或为 MyBatis-Plus 的 `select*` / `exists*` 基础只读方法；无法解析或映射到写语句会失败。
 
-## 测试与门禁待办（暂不修复）
+## 测试与门禁待办（2026-09-28 时记录）
 
 | 编号 | 现有缺口 | 后续需要覆盖 |
 | --- | --- | --- |
@@ -23,8 +23,31 @@
 | QF-TEST-05 | 收款重放此前直接返回已记录结果，没有覆盖客户改派或撤销范围后的行为。 | 覆盖同键重放时当前客户范围仍有效，以及失去范围时以数据范围错误拒绝。 |
 | QF-TEST-06 | 跨域 DAO 守卫新增 Mapper SQL 类型检查，尚无守卫自身的正反例。 | 覆盖 `<select>` 通过、`<update>` / `<delete>` 拒绝、缺失 Mapper statement 拒绝、基础 `select*` 方法通过。 |
 
-本次没有改动 Java 测试类、质量扫描器或它们的测试；以上三项仍未完成。没有重新 capture baseline，也没有运行 Checkstyle、Spotless、质量入口或回归。
+该段只描述 2026-09-28 当时状态：测试覆盖待办尚未完成，未运行 Checkstyle、Spotless、质量入口或回归。
 
 ## 验证记录适用范围
 
-[先前验收报告](java-quality-final-verification-2026-09-28.md) 中的 1203 项后端结果、85 项工具单测和各门禁 PASS 仅适用于当时的源码和规则；不能证明本次改动已验证，也不能证明上述覆盖缺口不存在。当前状态为“生产修复已写入，验证与测试覆盖待办未完成”。Finance 后续阶段继续暂停。
+[先前验收报告](java-quality-final-verification-2026-09-28.md) 中的 1203 项后端结果、85 项工具单测和各门禁 PASS 仅适用于当时的源码和规则；不能证明之后的改动已验证。
+
+## 2026-10-01 Mainline hardening 收口
+
+本轮只处理 Finance CUSTOMER Payment 重放范围、QF-TEST-01～06 与 V74 采购商品每日清单验收，没有开始新的业务阶段。
+
+| 编号 | 状态 | 修复与覆盖 | 验证 |
+| --- | --- | --- | --- |
+| QF-TEST-01 | COMPLETE / PASS | 源码扫描覆盖 `@SaCheckPermission`、`StpUtil.checkPermission` / `hasPermission`、`ScmDataScopeService` 与 `ScmReportAccess` 包装；分割 Java 注释与字符串，实际权限必须来自目录并发布到菜单表。 | `ScmPermissionContractPgIT` 2/2；`python tools/verify.py quality` PASS。 |
+| QF-TEST-02 | COMPLETE / PASS | 新增 `common` 对各业务域的源码依赖守卫，覆盖普通 import、static import 和全限定引用；注释与字符串不计。 | 源码守卫六个临时 fixture 用例通过；Python quality suite 101/101。 |
+| QF-TEST-03 | COMPLETE / PASS | 阶段注释扫描识别独立的 `P<n>` token，正例、反例均覆盖。 | `python tools/quality/quality_guard.py check --checkstyle` PASS；stage-comment baseline 0。 |
+| QF-TEST-04 | COMPLETE / PASS | 幂等哈希测试使用 `amount`、`quantity`、`price`、`weight`、`cost`、`rate` 等实际字段；编码、外部引用、备注前导零与数组顺序保持原样。 | `PurchaseIdempotencyRequestHasherTest` 6/6。 |
+| QF-TEST-05 | COMPLETE / PASS | CUSTOMER Payment 重放会重新验证当前客户范围，失去范围返回既有 41139；Receipt 重放改派后拒绝并保持既有 30005。Supplier Payment 未新增范围限制。 | `ScmFinancePaymentPgIT` 22/22；`ScmFinanceReceiptPgIT` 17/17。 |
+| QF-TEST-06 | COMPLETE / PASS | DAO guard 有临时 fixture 覆盖只读白名单、写语句拒绝、缺失 statement、MyBatis-Plus 基础只读方法、过期 allowlist 和未登记 DAO。 | DAO guard 七个 fixture 用例通过；真实 guard PASS；Python quality suite 101/101。 |
+
+### 最终门禁
+
+- Checkstyle 0；质量守卫六项 baseline 全部为 0；`python tools/verify.py quality` PASS。
+- `python tools/verify.py backend` PASS：1,261 tests，0 failures / errors / skipped；`F0FileStorageCloudIT` 5/5 实际执行。
+- `python tools/verify.py frontend` PASS：TS 棘轮新增错误 0，lint 0 errors，单测 258/258，生产构建 PASS。
+- `python tools/verify.py e2e` PASS：156 passed，0 skipped、0 unexpected、0 flaky。
+- Migration checksum guard：74 migrations，drift 0、missing 0、renamed 0、unbaked 0。
+
+V68–V74 只应用到本地验收 / scratch 数据库，没有应用到生产库。未推送本地提交。
