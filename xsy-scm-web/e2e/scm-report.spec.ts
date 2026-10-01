@@ -27,10 +27,17 @@ const env = {...process.env, W6_E2E_NAME: name, W6_E2E_PASSWORD: password};
 // 窗口就会把这条事实正当排除，表现为 0 行的假失败。
 const today = new Intl.DateTimeFormat('sv-SE', {timeZone: 'Asia/Shanghai'}).format(new Date());
 
+function shiftBusinessDate(value: string, days: number) {
+    const [year, month, day] = value.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
 let api: APIRequestContext;
 let anonApi: APIRequestContext;
 let token: string;
 let warehouseId: string;
+let warehouseName: string;
+let secondWarehouse: {id: string; name: string} | undefined;
 let skuId: string;
 let skuCode: string;
 let customerId: string;
@@ -79,7 +86,54 @@ async function report(path: string, data: Record<string, unknown> = {}) {
 
 async function browse(page: Page, path: string) {
     await page.addInitScript(v => localStorage.setItem('smart_admin_user_token', v), token);
+    // SmartAdmin builds its dynamic route table from the home-page login bootstrap.
+    await page.goto('/#/home');
+    await page.waitForLoadState('networkidle');
     await page.goto('/#' + path);
+}
+
+function w6Fixture(action: string, args: string[] = []) {
+    return execFileSync('python', ['../tools/w6_e2e_accounts.py', action, ...args], {env, encoding: 'utf8'}).trim();
+}
+
+async function purchaseDailyQuery(reportDate: string, filters: Record<string, unknown> = {}) {
+    return await post('/scm/report/purchase/daily/query', {
+        reportDate, pageNum: 1, pageSize: 20, ...filters,
+    });
+}
+
+async function generatePurchaseDailyReport(reportDate: string) {
+    const jobs = await post('/support/job/query', {
+        pageNum: 1, pageSize: 100, searchWord: '采购商品每日清单',
+    });
+    const job = (jobs.list ?? []).find((row: any) =>
+        row.jobClass === 'com.xsy.scm.report.job.PurchaseDailyReportJob');
+    expect(job, 'V74 应复用已登记的采购每日清单任务').toBeTruthy();
+    await post('/support/job/execute', {jobId: job.jobId, param: reportDate});
+    await expect.poll(async () => (await purchaseDailyQuery(reportDate)).generatedAt, {timeout: 30_000})
+        .toBeTruthy();
+}
+
+async function chooseDailyDate(page: Page, reportDate: string) {
+    await page.locator('.daily-filters .ant-picker').click();
+    const [targetYear, targetMonth] = reportDate.split('-').map(Number);
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+        const header = await page.locator('.ant-picker-dropdown:visible .ant-picker-header-view').first().textContent();
+        const match = /(\d{4})\D+(\d{1,2})/.exec(header ?? '');
+        expect(match, '日期选择器应显示年月').toBeTruthy();
+        const currentMonth = Number(match![1]) * 12 + Number(match![2]);
+        const targetMonthIndex = targetYear * 12 + targetMonth;
+        if (currentMonth === targetMonthIndex) break;
+        const control = currentMonth > targetMonthIndex ? 'prev' : 'next';
+        await page.locator(`.ant-picker-dropdown:visible .ant-picker-header-${control}-btn`).first().click();
+    }
+    await page.locator(`.ant-picker-dropdown:visible td[title="${reportDate}"]`).click();
+}
+
+async function chooseDailyWarehouse(page: Page, nameToSelect: string) {
+    await page.locator('.daily-filters .ant-select').first().click();
+    await page.locator('.ant-select-dropdown:visible .ant-select-item-option')
+        .filter({hasText: nameToSelect}).first().click();
 }
 
 /** 采购单：提交后的干净单（没有需求来源，收货量与采购量无关是合法业务）。 */
@@ -115,7 +169,11 @@ test.beforeAll(async () => {
     anonApi = await request.newContext({baseURL: apiUrl});
 
     const warehouses = await get('/scm/warehouse/list');
-    warehouseId = String((warehouses.find((w: any) => w.warehouseCode === 'WH001') ?? warehouses[0]).id);
+    const primaryWarehouse = warehouses.find((w: any) => w.warehouseCode === 'WH001') ?? warehouses[0];
+    warehouseId = String(primaryWarehouse.id);
+    warehouseName = String(primaryWarehouse.name);
+    const alternate = warehouses.find((w: any) => String(w.id) !== warehouseId);
+    if (alternate) secondWarehouse = {id: String(alternate.id), name: String(alternate.name)};
     const options = (await post('/scm/product/sku/option-list', {limit: 200, status: 'ON_SHELF'})).options;
     const orderableOptions = options.filter((x: any) => x.spuStatus === 'ON_SHELF');
     // 优先挑可采购的标准品：下架 SKU/商品虽然可能出现在选择器里，但无法配置给供应商。
@@ -319,5 +377,141 @@ test('10 无权限账号在报表接口层就被拒（前端隐藏不算防线�
     for (const path of ['overview', 'sales/product', 'purchase/overview', 'inventory/movement/query']) {
         const r = await (await anonApi.post(`/scm/report/${path}`, {startDate: today, endDate: today})).json();
         expect(r.code, `未登录访问 /scm/report/${path} 必须被拒`).not.toBe(0);
+    }
+});
+
+test('11 采购每日清单保留下单快照并完成查询、筛选、分页与导出', async ({page}) => {
+    const reportDates = w6Fixture('unused-report-dates', ['--count', '2'])
+        .split(/\r?\n/).filter(Boolean);
+    expect(reportDates).toHaveLength(2);
+    const [emptyDate, dataDate] = reportDates;
+    const orderIds: string[] = [];
+    const dailyRemark = `${name}-daily-fixture`;
+    const pageErrors: string[] = [];
+
+    try {
+        page.on('pageerror', error => pageErrors.push(error.message));
+        await browse(page, '/report/report-purchase-list');
+        await page.getByRole('tab', {name: '每日清单'}).click();
+
+        const dailyCard = page.locator('.daily-filters')
+            .locator('xpath=ancestor::div[contains(@class, "ant-card")][1]');
+        const dailyRows = dailyCard.locator('.ant-table-tbody > tr[data-row-key]');
+        const searchButton = page.locator('.daily-filters .ant-btn-primary').first();
+        const dateInput = dailyCard.locator('.ant-picker input').first();
+        await expect(dailyCard.locator('.daily-filters')).toBeVisible();
+        await expect(dateInput).toHaveValue(shiftBusinessDate(today, -1));
+
+        await dailyCard.locator('.ant-picker').click();
+        await expect(page.locator(`.ant-picker-dropdown:visible td[title="${today}"]`))
+            .toHaveClass(/ant-picker-cell-disabled/);
+        await expect(page.locator(`.ant-picker-dropdown:visible td[title="${shiftBusinessDate(today, 1)}"]`))
+            .toHaveClass(/ant-picker-cell-disabled/);
+        await page.keyboard.press('Escape');
+
+        await chooseDailyDate(page, emptyDate);
+        await searchButton.click();
+        await expect(dailyCard.getByText('该日期清单尚未生成或无访问范围，可联系管理员查看任务记录或补生成'))
+            .toBeVisible();
+        expect((await purchaseDailyQuery(emptyDate)).generatedAt).toBeNull();
+
+        await generatePurchaseDailyReport(emptyDate);
+        await searchButton.click();
+        await expect(dailyCard.getByText('清单已生成，当前授权范围和筛选条件下没有采购商品')).toBeVisible();
+        await expect(dailyCard.locator('.daily-meta')).toContainText(emptyDate);
+        expect((await purchaseDailyQuery(emptyDate)).products.total).toBe(0);
+
+        const options = (await post('/scm/product/sku/option-list', {limit: 200, status: 'ON_SHELF'})).options;
+        const dailySkus = options.filter((option: any) => option.spuStatus === 'ON_SHELF').slice(0, 11);
+        expect(dailySkus, '分页验收需要至少 11 个可采购 SKU').toHaveLength(11);
+        await post('/scm/supplier/sku/replace', {
+            supplierId,
+            items: dailySkus.map((option: any, index: number) => ({
+                skuId: option.skuId, purchaseUnit: 'kg', defaultFlag: index === 0, status: 'ENABLED',
+            })),
+        });
+
+        const dailyItems = dailySkus.map((option: any) => ({
+            skuId: option.skuId, quantity: '1.0000', price: '6.2000', allocations: [],
+        }));
+        const created = await post('/scm/purchase/create', {
+            supplierId, warehouseId, purchaserId: null, plannedArrivalDate: null, remark: dailyRemark,
+            items: dailyItems,
+        });
+        orderIds.push(String(created.id));
+        await post('/scm/purchase/submit', {id: created.id, version: created.version});
+
+        if (secondWarehouse) {
+            const secondOrder = await post('/scm/purchase/create', {
+                supplierId, warehouseId: secondWarehouse.id, purchaserId: null, plannedArrivalDate: null,
+                remark: dailyRemark,
+                items: [{skuId: dailySkus[0].skuId, quantity: '2.0000', price: '6.2000', allocations: []}],
+            });
+            orderIds.push(String(secondOrder.id));
+            await post('/scm/purchase/submit', {id: secondOrder.id, version: secondOrder.version});
+        }
+
+        w6Fixture('backdate-purchase-order', [
+            '--report-date', dataDate, '--remark', dailyRemark,
+            ...orderIds.flatMap(orderId => ['--order-id', orderId]),
+        ]);
+        await generatePurchaseDailyReport(dataDate);
+        const generated = await purchaseDailyQuery(dataDate);
+        expect(generated.generatedAt).toBeTruthy();
+        expect(generated.products.total).toBe(11);
+
+        await chooseDailyDate(page, dataDate);
+        await chooseDailyWarehouse(page, warehouseName);
+        await searchButton.click();
+        await expect(dailyCard.locator('.daily-meta')).toContainText('11 项');
+        await expect(dailyRows).toHaveCount(11);
+
+        if (secondWarehouse) {
+            await chooseDailyWarehouse(page, secondWarehouse.name);
+            await searchButton.click();
+            await expect(dailyCard.locator('.daily-meta')).toContainText('1 项');
+            expect((await purchaseDailyQuery(dataDate, {warehouseId: Number(secondWarehouse.id)})).products.total)
+                .toBe(1);
+            await chooseDailyWarehouse(page, warehouseName);
+            await searchButton.click();
+        }
+
+        const keyword = dailyCard.getByPlaceholder('名称 / SPU / SKU 编码');
+        await keyword.fill(String(dailySkus[0].skuCode));
+        await searchButton.click();
+        await expect(dailyRows).toHaveCount(1);
+        await keyword.fill('');
+        await searchButton.click();
+
+        await dailyCard.locator('.daily-pagination .ant-select-selector').click();
+        await page.locator('.ant-select-dropdown:visible .ant-select-item-option')
+            .filter({hasText: /^10 条\/页$/}).click();
+        await expect(dailyRows).toHaveCount(10);
+        await dailyCard.locator('.daily-pagination .ant-pagination-next').click();
+        await expect(dailyRows).toHaveCount(1);
+
+        const exportResponse = await api.post('/scm/report/purchase/daily/export', {
+            data: {reportDate: dataDate, warehouseId: Number(warehouseId), pageNum: 1, pageSize: 10},
+        });
+        expect(exportResponse.status()).toBe(200);
+        expect(exportResponse.headers()['content-disposition']).toContain('filename');
+        const exportBytes = await exportResponse.body();
+        expect(exportBytes.subarray(0, 2).toString()).toBe('PK');
+
+        const downloadPromise = page.waitForEvent('download');
+        await dailyCard.getByRole('button', {name: '导出清单'}).click();
+        const download = await downloadPromise;
+        expect(download.suggestedFilename()).toContain(dataDate);
+        expect(download.suggestedFilename()).toMatch(/\.xlsx$/);
+        await page.setViewportSize({width: 390, height: 844});
+        await expect(dailyCard.locator('.daily-filters')).toBeVisible();
+        await expect(dailyCard.locator('.daily-pagination')).toBeVisible();
+        expect(pageErrors).toEqual([]);
+    } finally {
+        w6Fixture('cleanup-daily-report-fixture', [
+            ...reportDates.flatMap(reportDate => ['--report-date', reportDate]),
+            ...(orderIds.length ? ['--remark', dailyRemark] : []),
+            ...orderIds.flatMap(orderId => ['--order-id', orderId]),
+        ]);
     }
 });
