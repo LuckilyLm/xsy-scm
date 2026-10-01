@@ -116,9 +116,11 @@ test.beforeAll(async () => {
 
     const warehouses = await get('/scm/warehouse/list');
     warehouseId = String((warehouses.find((w: any) => w.warehouseCode === 'WH001') ?? warehouses[0]).id);
-    const options = (await post('/scm/product/sku/option-list', {limit: 20})).options;
-    // 优先挑标准品：非标品在确认前必须先录实重，会让「确认后金额」这条断言多绕一步
-    const sku = options.find((x: any) => x.productType === 'STANDARD') ?? options[0];
+    const options = (await post('/scm/product/sku/option-list', {limit: 200, status: 'ON_SHELF'})).options;
+    const orderableOptions = options.filter((x: any) => x.spuStatus === 'ON_SHELF');
+    // 优先挑可采购的标准品：下架 SKU/商品虽然可能出现在选择器里，但无法配置给供应商。
+    const sku = orderableOptions.find((x: any) => x.productType === 'STANDARD') ?? orderableOptions[0];
+    expect(sku, '报表夹具需要至少一个已上架且 SPU 同样上架的 SKU').toBeTruthy();
     skuId = String(sku.skuId);
     skuCode = String(sku.skuCode);
     standardSku = sku.productType === 'STANDARD';
