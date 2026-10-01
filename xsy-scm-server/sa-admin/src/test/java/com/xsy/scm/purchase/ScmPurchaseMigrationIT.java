@@ -43,7 +43,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     private static final String V15_TABLE_LIST = String.join(",", V15_TABLES);
 
     @Test
-    @DisplayName("V15 建 9 表 + 2 序列 + 32 索引（28 部分 / 7 唯一）+ 2 条种子")
+    @DisplayName("V15 建 9 表 + 2 序列；后续获批索引 + 2 条种子")
     void schemaShapeMatchesDesign() {
         List<String> tables = jdbc.queryForList(
                 "SELECT table_name FROM information_schema.tables "
@@ -55,7 +55,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         assertThat(sequences).contains("purchase_order_no_seq", "purchase_receipt_no_seq");
 
         // 非主键索引（主键走 pg_constraint，不计入 §6.4 的 31 条；B1 的 V22 追加 1 条部分索引，
-        // V40 的地图归属再追加 1 条 warehouse 部分索引，V51 的报表日期轴追加 1 条 purchase_receipt 部分索引）
+        // V40 的地图归属再追加 1 条 warehouse 部分索引，V51 的报表日期轴和 V74 的采购每日清单各追加 1 条部分索引）
         Integer indexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
@@ -63,15 +63,15 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND NOT EXISTS (SELECT 1 FROM pg_constraint c "
                         + "                  WHERE c.conname = i.indexname AND c.contype = 'p')",
                 Integer.class, V15_TABLE_LIST);
-        assertThat(indexes).isEqualTo(34);
+        assertThat(indexes).isEqualTo(35);
 
         Integer partial = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
                         + "  AND i.tablename = ANY (string_to_array(?, ',')) "
                         + "  AND i.indexdef LIKE '%WHERE%'", Integer.class, V15_TABLE_LIST);
-        // 29 条为 W5/B1/V40 之后的批准部分索引数，V51 的报表确认日期轴再追加 1 条（purchase_receipt）
-        assertThat(partial).isEqualTo(30);
+        // 已批准部分索引：此前 29 条，V51 的报表确认日期轴、V74 的采购每日清单各追加 1 条。
+        assertThat(partial).isEqualTo(31);
 
         // 7 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条。
         // 必须排除「约束支撑的索引」：PG 的 PRIMARY KEY / UNIQUE 约束也会生成 CREATE UNIQUE INDEX，
