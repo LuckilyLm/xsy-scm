@@ -25,9 +25,10 @@
 - Finance R1 F1-7 / F1-8 在 2026-09-30 通过 `python tools/verify.py all`：后端 1,243 tests，0 failures / errors / skipped；Web 单测 258/258；浏览器 E2E 154 passed，0 skipped / unexpected / flaky。质量门禁、迁移校验（73 条无漂移）、生产构建和 TS 基线棘轮均通过。
 - 前端 lint 退出 0，保留 3 条既有 warning；生产构建有依赖 `icon.svg`、动态导入和大 chunk 的既有提示。TS 基线棘轮为 baseline 1974、current 1940、delta -34，SCM 错误 0、新增错误 0；直接全仓 `vue-tsc --noEmit` 仍有历史类型错误，不记为全仓 typecheck 通过。
 - F1-8 新增 Finance R0 往来概览的六项指标、期末应收/应付明细和三种 XLSX 导出；Finance R0 定向浏览器用例 3/3 通过，包含移动端完整字段卡片、服务端权限拒绝和 XLSX 文件签名检查。桌面/窄屏视觉复核通过，详情见 `.runtime/finance-r0-review/`。
-- V68–V74 只应用到本地验收 / scratch 数据库，未应用到生产库。2026-10-01 fresh PostgreSQL 数据库从 V1 应用至 V74；V74 Job 单行启用且无重复类名。后端全量 1,261 tests，0 failures / errors / skipped；5 个 `F0FileStorageCloudIT` 用例均实际执行并通过。
+- V68–V74 只应用到本地验收 / scratch 数据库，未应用到生产库。2026-10-01 fresh PostgreSQL 数据库从 V1 应用至 V74；V74 Job 单行启用且无重复类名。后端全量 1,261 tests，0 failures / errors / skipped；5 个 `F0FileStorageCloudIT` 用例均实际执行并通过。生产库迁移状态需在部署时单独核验。
 - 2026-10-01 前端正式入口通过：TS 棘轮无新增错误、lint 0 errors（3 条既有 warning）、Web 单测 258/258、生产构建成功。全量浏览器 E2E 156 passed，0 skipped / unexpected / flaky。
 - Migration checksum snapshot 已冻结到 V74：74 migrations，drift 0、missing 0、renamed 0、unbaked 0。质量门禁六项 baseline 均为 0。
+- Repository integration（2026-10-02）：主线收口变更已合并并推送到远端 `main`，本次交付 SHA 为 `2edb8ccf4a7129bc02be1cdf3f67bcdea75edc37`。
 - 归档进度中的测试结果仅描述当时的运行记录，不代表本次改动已验证。
 
 ## 下一步

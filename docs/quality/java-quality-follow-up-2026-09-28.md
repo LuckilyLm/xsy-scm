@@ -50,4 +50,4 @@
 - `python tools/verify.py e2e` PASS：156 passed，0 skipped、0 unexpected、0 flaky。
 - Migration checksum guard：74 migrations，drift 0、missing 0、renamed 0、unbaked 0。
 
-V68–V74 只应用到本地验收 / scratch 数据库，没有应用到生产库。未推送本地提交。
+本轮代码变更已于 2026-10-02 合并并推送到远端 `main`（交付 SHA：`2edb8ccf4a7129bc02be1cdf3f67bcdea75edc37`）。V68–V74 的 migration 验证仍限于本地验收 / scratch 数据库；生产库迁移状态需在部署时单独核验。
