@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.ScmFinanceProfitDao">
+
+    <sql id="dimensionFields">
+        CASE #{query.dimension}
+            WHEN 'CUSTOMER' THEN so.customer_id
+            WHEN 'PRODUCT' THEN soi.sku_id
+            WHEN 'CATEGORY' THEN cat.id
+            WHEN 'SELLER' THEN so.seller_id
+            WHEN 'WAREHOUSE' THEN w.id
+            ELSE NULL::BIGINT
+        END AS dimension_id,
+        CASE #{query.dimension}
+            WHEN 'CUSTOMER' THEN so.customer_name_snapshot
+            WHEN 'PRODUCT' THEN soi.product_name_snapshot
+            WHEN 'CATEGORY' THEN COALESCE(cat.name, '未分类')
+            WHEN 'SELLER' THEN COALESCE(e.actual_name, '未分配销售员')
+            WHEN 'WAREHOUSE' THEN COALESCE(w.name, '未归属仓库')
+            ELSE TO_CHAR((fact_event.event_at AT TIME ZONE 'Asia/Shanghai')::date, 'YYYY-MM-DD')
+        END AS dimension_name,
+        CASE #{query.dimension}
+            WHEN 'CUSTOMER' THEN so.customer_code_snapshot
+            WHEN 'PRODUCT' THEN soi.sku_code_snapshot
+            WHEN 'CATEGORY' THEN CAST(cat.id AS VARCHAR)
+            WHEN 'SELLER' THEN CAST(so.seller_id AS VARCHAR)
+            WHEN 'WAREHOUSE' THEN w.warehouse_code
+            ELSE NULL::VARCHAR
+        END AS dimension_code,
+        CASE WHEN #{query.dimension} = 'DAY'
+             THEN (fact_event.event_at AT TIME ZONE 'Asia/Shanghai')::date
+             ELSE NULL::DATE END AS biz_date
+    </sql>
+
+    <sql id="businessJoins">
+        JOIN customer c ON c.id = so.customer_id AND c.deleted = FALSE
+        LEFT JOIN t_employee e ON e.employee_id = so.seller_id AND e.deleted_flag = FALSE
+        LEFT JOIN product_spu ps ON ps.id = soi.spu_id AND ps.deleted = FALSE
+        LEFT JOIN product_category cat ON cat.id = ps.category_id AND cat.deleted = FALSE
+        LEFT JOIN product_category cat2 ON cat2.id = cat.parent_id AND cat2.deleted = FALSE
+        LEFT JOIN product_category cat3 ON cat3.id = cat2.parent_id AND cat3.deleted = FALSE
+    </sql>
+
+    <sql id="businessFilters">
+        <choose>
+            <when test="scope != null and scope.orderSellerScope.all"/>
+            <when test="scope != null and !scope.orderSellerScope.empty">
+                AND so.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="scope != null and scope.customerSellerScope.all"/>
+            <when test="scope != null and !scope.customerSellerScope.empty">
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <if test="query.customerId != null">AND so.customer_id = #{query.customerId}</if>
+        <if test="query.sellerId != null">AND so.seller_id = #{query.sellerId}</if>
+        <if test="query.skuId != null">AND soi.sku_id = #{query.skuId}</if>
+        <if test="query.categoryId != null">
+            AND (cat.id = #{query.categoryId} OR cat2.id = #{query.categoryId} OR cat3.id = #{query.categoryId})
+        </if>
+        <if test="query.warehouseId != null">AND w.id = #{query.warehouseId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (so.order_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR so.customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR soi.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR soi.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR soi.spu_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR COALESCE(w.name, '') ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+    </sql>
+
+    <sql id="warehouseScope">
+        <choose>
+            <when test="scope != null and scope.warehouseScope.all"/>
+            <when test="scope != null and !scope.warehouseScope.empty">
+                AND w.id IN
+                <foreach collection="scope.warehouseScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+    </sql>
+
+    <sql id="facts">
+        WITH return_allocations AS (
+            SELECT receipt_item.return_item_id,
+                   receipt_item.source_sales_out_movement_id,
+                   SUM(receipt_item.quantity) AS allocated_quantity
+            FROM order_return_receipt_item receipt_item
+            GROUP BY receipt_item.return_item_id, receipt_item.source_sales_out_movement_id
+        ), return_allocation_totals AS (
+            SELECT return_item_id, SUM(allocated_quantity) AS allocated_quantity
+            FROM return_allocations
+            GROUP BY return_item_id
+        ), facts AS (
+            -- Revenue is recognized from NORMAL Finance receivables at their event time.
+            SELECT <include refid="dimensionFields"/>,
+                   receivable_item.amount AS revenue_amount,
+                   0::NUMERIC AS sales_cost_amount,
+                   CASE WHEN sales_out.id IS NULL OR sales_out.unit_cost IS NULL
+                        THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
+            FROM finance_receivable receivable
+                     JOIN finance_receivable_item receivable_item
+                          ON receivable_item.receivable_id = receivable.id
+                         AND receivable_item.deleted = FALSE
+                         AND receivable_item.source_type = 'INVENTORY_OUTBOUND_ITEM'
+                     JOIN inventory_outbound_item outbound_item
+                          ON outbound_item.id = receivable_item.source_id
+                         AND outbound_item.deleted = FALSE
+                     JOIN inventory_outbound outbound
+                          ON outbound.id = outbound_item.outbound_id
+                         AND outbound.deleted = FALSE
+                     JOIN sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
+                     JOIN sales_order_item soi
+                          ON soi.id = receivable_item.order_item_id AND soi.deleted = FALSE
+                     CROSS JOIN LATERAL (SELECT receivable.event_at AS event_at) fact_event
+                     LEFT JOIN inventory_movement sales_out
+                          ON sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
+                         AND sales_out.source_document_item_id = outbound_item.id
+                         AND sales_out.movement_type = 'SALES_OUT'
+                         AND sales_out.warehouse_id = outbound.warehouse_id
+                         AND sales_out.deleted = FALSE
+                     LEFT JOIN warehouse w ON w.id = outbound.warehouse_id AND w.deleted = FALSE
+                     <include refid="businessJoins"/>
+            WHERE receivable.deleted = FALSE
+              AND receivable.entry_type = 'NORMAL'
+              AND receivable.source_type = 'SALES_ORDER'
+              AND receivable.event_at &gt;= #{startAt}
+              AND receivable.event_at &lt; #{endAt}
+              AND outbound_item.sales_order_id = so.id
+              AND outbound_item.sales_order_item_id = soi.id
+              <include refid="businessFilters"/>
+              <include refid="warehouseScope"/>
+
+            UNION ALL
+
+            -- Approved red receivables reverse revenue. Allocate it only across physically received
+            -- quantities with a traceable original outbound; the not-yet-received remainder is
+            -- unassigned to a warehouse and is visible only to an all-warehouse scope.
+            SELECT <include refid="dimensionFields"/>,
+                   -receivable_item.amount * allocation.allocated_quantity
+                       / NULLIF(return_item.approved_quantity, 0) AS revenue_amount,
+                   0::NUMERIC AS sales_cost_amount,
+                   0::BIGINT AS cost_missing_count
+            FROM finance_receivable receivable
+                     JOIN finance_receivable_item receivable_item
+                          ON receivable_item.receivable_id = receivable.id
+                         AND receivable_item.deleted = FALSE
+                         AND receivable_item.source_type = 'ORDER_RETURN_ITEM'
+                     JOIN order_return_item return_item
+                          ON return_item.id = receivable_item.source_id AND return_item.deleted = FALSE
+                     JOIN return_allocations allocation ON allocation.return_item_id = return_item.id
+                     JOIN inventory_movement source_sales_out
+                          ON source_sales_out.id = allocation.source_sales_out_movement_id
+                         AND source_sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
+                         AND source_sales_out.movement_type = 'SALES_OUT'
+                         AND source_sales_out.deleted = FALSE
+                     JOIN inventory_outbound_item outbound_item
+                          ON outbound_item.id = source_sales_out.source_document_item_id
+                         AND outbound_item.deleted = FALSE
+                     JOIN sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
+                     JOIN sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
+                     CROSS JOIN LATERAL (SELECT receivable.event_at AS event_at) fact_event
+                     LEFT JOIN warehouse w ON w.id = source_sales_out.warehouse_id AND w.deleted = FALSE
+                     <include refid="businessJoins"/>
+            WHERE receivable.deleted = FALSE
+              AND receivable.entry_type = 'RED'
+              AND receivable.source_type = 'ORDER_RETURN'
+              AND receivable.event_at &gt;= #{startAt}
+              AND receivable.event_at &lt; #{endAt}
+              AND outbound_item.sales_order_item_id = soi.id
+              AND outbound_item.sales_order_id = so.id
+              <include refid="businessFilters"/>
+              <include refid="warehouseScope"/>
+
+            UNION ALL
+
+            -- Red revenue that has not yet been physically allocated to a source outbound.
+            SELECT <include refid="dimensionFields"/>,
+                   -receivable_item.amount *
+                       CASE WHEN return_item.approved_quantity &gt; 0
+                            THEN GREATEST(return_item.approved_quantity - COALESCE(allocation_totals.allocated_quantity, 0), 0)
+                                 / return_item.approved_quantity
+                            ELSE 1 END AS revenue_amount,
+                   0::NUMERIC AS sales_cost_amount,
+                   0::BIGINT AS cost_missing_count
+            FROM finance_receivable receivable
+                     JOIN finance_receivable_item receivable_item
+                          ON receivable_item.receivable_id = receivable.id
+                         AND receivable_item.deleted = FALSE
+                         AND receivable_item.source_type = 'ORDER_RETURN_ITEM'
+                     JOIN order_return_item return_item
+                          ON return_item.id = receivable_item.source_id AND return_item.deleted = FALSE
+                     LEFT JOIN return_allocation_totals allocation_totals
+                          ON allocation_totals.return_item_id = return_item.id
+                     JOIN sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
+                     JOIN sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
+                     CROSS JOIN LATERAL (SELECT receivable.event_at AS event_at) fact_event
+                     LEFT JOIN warehouse w ON FALSE
+                     <include refid="businessJoins"/>
+            WHERE receivable.deleted = FALSE
+              AND receivable.entry_type = 'RED'
+              AND receivable.source_type = 'ORDER_RETURN'
+              AND receivable.event_at &gt;= #{startAt}
+              AND receivable.event_at &lt; #{endAt}
+              AND (return_item.approved_quantity IS NULL
+                   OR return_item.approved_quantity &gt; COALESCE(allocation_totals.allocated_quantity, 0))
+              <include refid="businessFilters"/>
+              <choose>
+                  <when test="scope != null and scope.warehouseScope.all"/>
+                  <otherwise>AND FALSE</otherwise>
+              </choose>
+
+            UNION ALL
+
+            -- COGS is taken from the immutable SALES_OUT movement at its own occurrence time.
+            SELECT <include refid="dimensionFields"/>,
+                   0::NUMERIC AS revenue_amount,
+                   COALESCE(sales_out.quantity * sales_out.unit_cost, 0) AS sales_cost_amount,
+                   CASE WHEN sales_out.unit_cost IS NULL AND NOT EXISTS (
+                       SELECT 1
+                       FROM finance_receivable receivable
+                                JOIN finance_receivable_item receivable_item
+                                     ON receivable_item.receivable_id = receivable.id
+                                    AND receivable_item.deleted = FALSE
+                                    AND receivable_item.source_type = 'INVENTORY_OUTBOUND_ITEM'
+                       WHERE receivable.deleted = FALSE
+                         AND receivable.entry_type = 'NORMAL'
+                         AND receivable.source_type = 'SALES_ORDER'
+                         AND receivable_item.source_id = outbound_item.id
+                         AND receivable.event_at &gt;= #{startAt}
+                         AND receivable.event_at &lt; #{endAt}
+                   ) THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
+            FROM inventory_movement sales_out
+                     JOIN inventory_outbound_item outbound_item
+                          ON outbound_item.id = sales_out.source_document_item_id
+                         AND outbound_item.deleted = FALSE
+                         AND outbound_item.sales_order_id IS NOT NULL
+                         AND outbound_item.sales_order_item_id IS NOT NULL
+                     JOIN inventory_outbound outbound
+                          ON outbound.id = outbound_item.outbound_id
+                         AND outbound.deleted = FALSE
+                         AND outbound.warehouse_id = sales_out.warehouse_id
+                     JOIN sales_order so ON so.id = outbound_item.sales_order_id AND so.deleted = FALSE
+                     JOIN sales_order_item soi
+                          ON soi.id = outbound_item.sales_order_item_id AND soi.deleted = FALSE
+                     CROSS JOIN LATERAL (SELECT sales_out.occurred_at AS event_at) fact_event
+                     LEFT JOIN warehouse w ON w.id = sales_out.warehouse_id AND w.deleted = FALSE
+                     <include refid="businessJoins"/>
+            WHERE sales_out.deleted = FALSE
+              AND sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
+              AND sales_out.movement_type = 'SALES_OUT'
+              AND sales_out.occurred_at &gt;= #{startAt}
+              AND sales_out.occurred_at &lt; #{endAt}
+              <include refid="businessFilters"/>
+              <include refid="warehouseScope"/>
+
+            UNION ALL
+
+            -- Physical acceptance reverses original sales cost per ADR-006; disposition only
+            -- decides whether the returned quantity becomes available inventory.
+            SELECT <include refid="dimensionFields"/>,
+                   0::NUMERIC AS revenue_amount,
+                   -(receipt_item.quantity * receipt_item.unit_cost) AS sales_cost_amount,
+                   0::BIGINT AS cost_missing_count
+            FROM order_return_receipt_item receipt_item
+                     JOIN order_return_receipt return_receipt ON return_receipt.id = receipt_item.receipt_id
+                     JOIN order_return return_doc ON return_doc.id = return_receipt.return_id
+                     JOIN order_return_item return_item
+                          ON return_item.id = receipt_item.return_item_id AND return_item.deleted = FALSE
+                     JOIN inventory_movement source_sales_out
+                          ON source_sales_out.id = receipt_item.source_sales_out_movement_id
+                         AND source_sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
+                         AND source_sales_out.movement_type = 'SALES_OUT'
+                         AND source_sales_out.deleted = FALSE
+                     JOIN inventory_outbound_item outbound_item
+                          ON outbound_item.id = source_sales_out.source_document_item_id
+                         AND outbound_item.deleted = FALSE
+                     JOIN sales_order so ON so.id = return_doc.order_id AND so.deleted = FALSE
+                     JOIN sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
+                     CROSS JOIN LATERAL (SELECT return_receipt.received_at AS event_at) fact_event
+                     LEFT JOIN warehouse w ON w.id = source_sales_out.warehouse_id AND w.deleted = FALSE
+                     <include refid="businessJoins"/>
+            WHERE return_receipt.received_at &gt;= #{startAt}
+              AND return_receipt.received_at &lt; #{endAt}
+              AND outbound_item.sales_order_item_id = soi.id
+              AND outbound_item.sales_order_id = so.id
+              <include refid="businessFilters"/>
+              <include refid="warehouseScope"/>
+        )
+    </sql>
+
+    <select id="query" resultType="com.xsy.scm.report.domain.vo.ScmFinanceProfitRowVO">
+        <include refid="facts"/>
+        SELECT dimension_id AS dimensionId,
+               MAX(dimension_name) AS dimensionName,
+               MAX(dimension_code) AS dimensionCode,
+               biz_date AS bizDate,
+               COALESCE(SUM(revenue_amount), 0) AS revenueAmount,
+               COALESCE(SUM(sales_cost_amount), 0) AS salesCostAmount,
+               CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(revenue_amount), 0) - COALESCE(SUM(sales_cost_amount), 0) END AS grossProfit,
+               CASE WHEN SUM(cost_missing_count) &gt; 0 OR COALESCE(SUM(revenue_amount), 0) = 0 THEN NULL
+                    ELSE ROUND((SUM(revenue_amount) - SUM(sales_cost_amount))
+                               / NULLIF(SUM(revenue_amount), 0) * 100, 4) END AS grossMarginRate,
+               SUM(cost_missing_count) AS costMissingCount
+        FROM facts
+        GROUP BY dimension_id, biz_date
+        ORDER BY CASE WHEN #{query.dimension} = 'DAY' THEN biz_date END ASC NULLS LAST,
+                 CASE WHEN #{query.dimension} &lt;&gt; 'DAY' THEN
+                     CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL
+                          ELSE SUM(revenue_amount) - SUM(sales_cost_amount) END
+                 END DESC NULLS LAST,
+                 SUM(revenue_amount) DESC NULLS LAST,
+                 MAX(dimension_name)
+    </select>
+
+    <select id="summary" resultType="com.xsy.scm.report.domain.vo.ScmFinanceProfitSummaryVO">
+        <include refid="facts"/>
+        SELECT COALESCE(SUM(revenue_amount), 0) AS revenueAmount,
+               COALESCE(SUM(sales_cost_amount), 0) AS salesCostAmount,
+               CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(revenue_amount), 0) - COALESCE(SUM(sales_cost_amount), 0) END AS grossProfit,
+               CASE WHEN SUM(cost_missing_count) &gt; 0 OR COALESCE(SUM(revenue_amount), 0) = 0 THEN NULL
+                    ELSE ROUND((SUM(revenue_amount) - SUM(sales_cost_amount))
+                               / NULLIF(SUM(revenue_amount), 0) * 100, 4) END AS grossMarginRate,
+               COALESCE(SUM(cost_missing_count), 0) AS costMissingCount
+        FROM facts
+    </select>
+</mapper>

@@ -45,6 +45,7 @@ export const SCM_REPORT_PERMISSION = {
     INVENTORY_QUERY: 'scm:report:inventory:query',
     FINANCE_QUERY: 'scm:report:finance:query',
     FINANCE_AGING_QUERY: 'scm:report:finance:aging:query',
+    FINANCE_PROFIT_QUERY: 'scm:report:finance:profit:query',
     COST_QUERY: 'scm:report:cost:query',
     EXPORT: 'scm:report:export',
 } as const;
