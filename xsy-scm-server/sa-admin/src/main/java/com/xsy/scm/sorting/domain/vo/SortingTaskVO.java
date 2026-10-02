@@ -19,6 +19,24 @@ public class SortingTaskVO {
     private Integer itemCount;
     private Integer processedCount;
     private String remark;
+
+    /**
+     * 建单时冻结的送货时间；筛选与展示都按它，不按订单当前值。
+     */
+    private OffsetDateTime deliveryTimeSnapshot;
+
+    /**
+     * 预配送波次；线路维度由它表达。
+     */
+    private String deliveryWave;
+
+    /**
+     * 建单时显式指定的供应商来源与名称快照。
+     */
+    private Long supplierId;
+
+    private String supplierNameSnapshot;
+
     private OffsetDateTime createdAt;
     private OffsetDateTime startedAt;
     private OffsetDateTime completedAt;

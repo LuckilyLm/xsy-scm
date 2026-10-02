@@ -56,6 +56,23 @@
         <EmployeeSelect v-model:value="assigneeFilter" placeholder="全部" width="180px"/>
       </a-form-item>
     </template>
+    <!-- 送货时间 / 波次 / 供应商：三个维度都在**建单时冻结**，因此筛选结果不会随主档或
+         配送线路变化而改变。波次表达线路维度，供应商是建单时显式指定的来源。 -->
+    <a-form-item label="送货时间" class="smart-query-form-item">
+      <a-range-picker
+          v-model:value="deliveryRange"
+          show-time
+          value-format="YYYY-MM-DDTHH:mm:ssZ"
+          style="width: 340px"
+      />
+    </a-form-item>
+    <a-form-item label="预配送波次" class="smart-query-form-item">
+      <a-input v-model:value="queryForm.deliveryWave" placeholder="波次" allow-clear style="width: 140px"
+               @pressEnter="onSearch"/>
+    </a-form-item>
+    <a-form-item label="供应商" class="smart-query-form-item">
+      <SupplierSelect v-model:value="queryForm.supplierId" width="200px" placeholder="全部"/>
+    </a-form-item>
     <a-form-item class="smart-query-form-item">
       <a-button-group>
         <a-button type="primary" v-privilege="'scm:sorting:task:query'" @click="onSearch">查询</a-button>
@@ -113,9 +130,22 @@
           <span class="num">{{ record.printCount ? record.printCount : '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
+        <template v-else-if="column.dataIndex === 'deliveryTimeSnapshot'">
+          {{ record.deliveryTimeSnapshot ? datetime(record.deliveryTimeSnapshot) : '—' }}
+        </template>
+        <template v-else-if="column.dataIndex === 'deliveryWave'">{{ record.deliveryWave || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'supplierNameSnapshot'">
+          {{ record.supplierNameSnapshot || '—' }}
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="4">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
+            <a-button
+                type="link"
+                size="small"
+                v-privilege="'scm:sorting:scale:query'"
+                @click="openScale(record)"
+            >秤读数</a-button>
             <a-button v-if="SCM_SORTING_PRINTABLE_STATUS.includes(record.status)" type="link" size="small"
                       v-privilege="'scm:sorting:task:query'" @click="openTicket(record.id)">小票</a-button>
             <a-button
@@ -459,6 +489,65 @@
   <!-- 打印：预览走只读 GET，「登记打印」才是计次的 POST 命令；两者绝不混用同一个入口 -->
   <PrintDocumentModal :open="ticketOpen" document-type="SORTING_TICKET"
                       :business-ids="ticketTaskId === undefined ? [] : [ticketTaskId]" @close="ticketOpen = false"/>
+  <a-drawer v-model:open="scaleOpen" title="秤读数" width="960px" @close="scaleOpen = false">
+    <a-alert
+        message="读数不等于分拣结果：只有「接受」才会把该读数写进分拣结果，且只处理标准品。"
+        type="info"
+        show-icon
+    />
+    <a-alert v-if="scaleError" type="error" show-icon :message="scaleError" class="scale-banner"/>
+    <a-table
+        size="small"
+        :data-source="scaleEvents"
+        :columns="scaleColumns"
+        row-key="id"
+        bordered
+        :loading="scaleLoading"
+        :pagination="false"
+        :scroll="{ x: 1100 }"
+    >
+      <template #bodyCell="{ record, column }">
+        <template v-if="column.dataIndex === 'status'">
+          <a-tag :color="sortingScaleStatuses[record.status as SortingScaleStatus]?.color || 'default'">
+            {{ sortingScaleStatuses[record.status as SortingScaleStatus]?.label || record.status }}
+          </a-tag>
+        </template>
+        <template v-else-if="column.dataIndex === 'stableFlag'">
+          <a-tag :color="record.stableFlag ? 'green' : 'orange'">{{ record.stableFlag ? '已稳定' : '未稳定' }}</a-tag>
+        </template>
+        <template v-else-if="column.dataIndex === 'rawReading' || column.dataIndex === 'acceptedQuantity'">
+          <span class="num">{{ quantityText(record[column.dataIndex]) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'capturedAt' || column.dataIndex === 'receivedAt'">
+          {{ datetime(record[column.dataIndex]) }}
+        </template>
+        <template v-else-if="column.dataIndex === 'action'">
+          <a-space v-if="record.status === 'PENDING'" :size="4">
+            <a-button
+                type="link"
+                size="small"
+                v-privilege="'scm:sorting:scale:accept'"
+                @click="acceptScale(record)"
+            >接受
+            </a-button>
+            <a-button type="link" size="small" danger v-privilege="'scm:sorting:scale:accept'"
+                      @click="openReject(record)">驳回
+            </a-button>
+          </a-space>
+          <span v-else class="hint">{{ record.acceptedBy || record.rejectedBy || '—' }}</span>
+        </template>
+      </template>
+    </a-table>
+  </a-drawer>
+  <a-modal v-model:open="rejectOpen" title="驳回秤读数" :confirm-loading="scaleBusy" @ok="submitReject">
+    <a-form layout="vertical">
+      <a-form-item label="驳回原因" required>
+        <a-textarea v-model:value="rejectReason" :maxlength="200" :rows="3"
+                    placeholder="例如读数未稳定 / 与实物明显不符 / 秤未校准"/>
+      </a-form-item>
+    </a-form>
+    <a-alert v-if="scaleError" type="error" show-icon :message="scaleError"/>
+  </a-modal>
   <a-modal v-model:open="printOpen" title="分拣单打印预览" :width="1000" :footer="null">
     <a-alert v-if="printError" type="error" show-icon :message="printError"/>
     <div class="print-toolbar">
@@ -537,6 +626,7 @@ import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
+import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -564,15 +654,109 @@ import type {
     SortingEntryPayload,
     SortingLineResult,
     SortingPrint,
+    SortingScaleEvent,
+    SortingScaleStatus,
     SortingTask,
     SortingTaskDetail,
     SortingTaskItem,
     SortingTaskQuery,
     SortingTaskStatus,
 } from './sorting-types';
-import {quantityText, sortingError} from './sorting-types';
+import {quantityText, sortingError, sortingScaleStatuses} from './sorting-types';
 
 type ActionMode = 'assign' | 'cancel' | 'reopen';
+
+// ------------------------------------------------------------------
+// 电子秤读数（ADM-11）
+// ------------------------------------------------------------------
+
+const deliveryRange = ref<[string, string] | undefined>(undefined);
+const scaleOpen = ref(false);
+const scaleLoading = ref(false);
+const scaleBusy = ref(false);
+const scaleError = ref('');
+const scaleEvents = ref<SortingScaleEvent[]>([]);
+const scaleTaskId = ref<Id | undefined>(undefined);
+const rejectOpen = ref(false);
+const rejectReason = ref('');
+const rejectTarget = ref<SortingScaleEvent>();
+
+const scaleColumns: TableColumnsType = [
+  {title: '状态', dataIndex: 'status', width: 90},
+  {title: '设备', dataIndex: 'deviceCode', width: 130},
+  {title: '原始读数', dataIndex: 'rawReading', align: 'right', width: 110},
+  {title: '单位', dataIndex: 'unit', width: 80},
+  {title: '稳定', dataIndex: 'stableFlag', align: 'center', width: 90},
+  {title: '商品', dataIndex: 'productNameSnapshot', width: 160},
+  {title: 'SKU', dataIndex: 'skuCodeSnapshot', width: 140},
+  {title: '采集时间', dataIndex: 'capturedAt', width: 175},
+  {title: '接收时间', dataIndex: 'receivedAt', width: 175},
+  {title: '接受数量', dataIndex: 'acceptedQuantity', align: 'right', width: 110},
+  {title: '处理', dataIndex: 'action', align: 'right', fixed: 'right', width: 140},
+];
+
+async function openScale(record: SortingTask) {
+  scaleTaskId.value = record.id;
+  scaleOpen.value = true;
+  scaleError.value = '';
+  await loadScale();
+}
+
+async function loadScale() {
+  if (scaleTaskId.value === undefined) return;
+  scaleLoading.value = true;
+  try {
+    scaleEvents.value = (await sortingApi.scaleEvents(scaleTaskId.value)).data ?? [];
+  } catch (e) {
+    scaleEvents.value = [];
+    scaleError.value = sortingError(e);
+  } finally {
+    scaleLoading.value = false;
+  }
+}
+
+/** 接受读数：把该读数写进分拣结果（后端只接受标准品且要求读数已稳定）。 */
+async function acceptScale(record: SortingScaleEvent) {
+  scaleBusy.value = true;
+  scaleError.value = '';
+  try {
+    await sortingApi.acceptScaleEvent(record.id, record.version);
+    message.success('已接受读数并写入分拣结果');
+    await loadScale();
+  } catch (e) {
+    scaleError.value = sortingError(e);
+  } finally {
+    scaleBusy.value = false;
+  }
+}
+
+function openReject(record: SortingScaleEvent) {
+  rejectTarget.value = record;
+  rejectReason.value = '';
+  scaleError.value = '';
+  rejectOpen.value = true;
+}
+
+async function submitReject() {
+  const target = rejectTarget.value;
+  if (!target) return;
+  if (!rejectReason.value.trim()) {
+    scaleError.value = '请填写驳回原因';
+    return;
+  }
+  scaleBusy.value = true;
+  scaleError.value = '';
+  try {
+    await sortingApi.rejectScaleEvent(target.id, target.version, rejectReason.value.trim());
+    message.success('已驳回该读数');
+    rejectOpen.value = false;
+    await loadScale();
+  } catch (e) {
+    scaleError.value = sortingError(e);
+  } finally {
+    scaleBusy.value = false;
+  }
+}
 
 /** 一行明细的编辑草稿；空串表示「没填」，与后端 `"0.0000"`（填了且为 0）是两回事。 */
 interface EntryDraft {
@@ -609,6 +793,10 @@ const columns = ref<TableColumnsType<SortingTask>>([
   {title: '明细行数', dataIndex: 'itemCount', align: 'right', width: 90},
   {title: '已处理', dataIndex: 'processedCount', align: 'right', width: 100},
   {title: '打印次数', dataIndex: 'printCount', align: 'right', width: 90},
+  // 三个冻结维度：任务建出来之后它们不再变化，所以直接展示，不做「当前值 vs 快照」的对比
+  {title: '送货时间', dataIndex: 'deliveryTimeSnapshot', width: 170},
+  {title: '波次', dataIndex: 'deliveryWave', width: 120},
+  {title: '供应商来源', dataIndex: 'supplierNameSnapshot', width: 150},
   {title: '创建时间', dataIndex: 'createdAt', width: 170},
   {title: '操作', dataIndex: 'action', fixed: 'right', align: 'right', width: 320},
 ]);
@@ -645,7 +833,13 @@ async function queryData() {
     loading.value = true;
     listError.value = '';
     try {
-        const result = await sortingApi.tasks({...queryForm, assigneeEmployeeId: assigneeFilter.value});
+        const result = await sortingApi.tasks({
+            ...queryForm,
+            assigneeEmployeeId: assigneeFilter.value,
+            // 送货时间按**冻结快照**过滤，半开区间 [from, to)
+            deliveryTimeFrom: deliveryRange.value?.[0],
+            deliveryTimeTo: deliveryRange.value?.[1],
+        });
         if (current === listGeneration) {
             rows.value = result.data.list;
             total.value = result.data.total;
@@ -667,6 +861,9 @@ function resetQuery() {
     queryForm.status = undefined;
     queryForm.warehouseId = undefined;
     queryForm.unassignedOnly = false;
+    queryForm.deliveryWave = undefined;
+    queryForm.supplierId = undefined;
+    deliveryRange.value = undefined;
     assigneeFilter.value = undefined;
     onSearch();
 }
@@ -1144,8 +1341,7 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-.num {
-  font-variant-numeric: tabular-nums;
+.num {  font-variant-numeric: tabular-nums;
 }
 
 .toolbar-hint {
@@ -1272,5 +1468,14 @@ onMounted(queryData);
 .label-no {
   font-size: 11px;
   color: #4e5969;
+}
+
+/* 秤读数抽屉（ADM-11） */
+.scale-banner {
+  margin: 12px 0;
+}
+
+.hint {
+  color: var(--ant-color-text-secondary);
 }
 </style>

@@ -29,6 +29,7 @@ import com.xsy.scm.sorting.constant.ScmSortingOccupationStatusEnum;
 import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
 import com.xsy.scm.sorting.support.SortingAccess;
+import com.xsy.scm.supplier.dao.SupplierDao;
 import com.xsy.scm.warehouse.dao.WarehouseDao;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
@@ -54,6 +55,7 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.ORDER_NOT_SORTABLE;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.OUTBOUND_EXISTS;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.RESULT_INCOMPLETE;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
+import static com.xsy.scm.sorting.constant.SortingErrorCode.SUPPLIER_INVALID;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.WAREHOUSE_INVALID;
 
@@ -86,6 +88,10 @@ public class SortingTaskService {
     private final SortingAccess access;
     private final WarehouseDao warehouseDao;
     private final EmployeeDao employeeDao;
+    /**
+     * 供应商只读校验（建单时冻结来源）：排序域不写供应商表，只按 id 读一行。
+     */
+    private final SupplierDao supplierDao;
     private final ScmIdempotencyService idempotencyService;
     private final SortingQueryService sortingQueryService;
 
@@ -112,6 +118,19 @@ public class SortingTaskService {
         task.setStatus(ScmSortingTaskStatusEnum.PENDING.name());
         String remark = form.getRemark();
         task.setRemark(StringUtils.isBlank(remark) ? null : StringUtils.trim(remark));
+        // 三个筛选维度在**建单时**冻结：任务一旦建出来，作业口径就不该随主档或配送线路变化。
+        // 供应商必须显式给出并校验启用态 —— 从 SKU 与供应商的多对多关系反推会得到一个
+        // 「可能对、也可能不对」的来源，而分拣台上正是按它找货的。
+        task.setDeliveryTimeSnapshot(form.getDeliveryTime());
+        task.setDeliveryWave(StringUtils.isBlank(form.getDeliveryWave()) ? null : StringUtils.trim(form.getDeliveryWave()));
+        if (form.getSupplierId() != null) {
+            var supplier = supplierDao.selectById(form.getSupplierId());
+            if (supplier == null || Boolean.TRUE.equals(supplier.getDeleted())
+                    || !ScmEnableStatusEnum.ENABLED.name().equals(supplier.getStatus()))
+                throw new ScmBusinessException(SUPPLIER_INVALID);
+            task.setSupplierId(supplier.getId());
+            task.setSupplierNameSnapshot(supplier.getName());
+        }
         task.setPrintCount(0);
         stamp(task, true);
         sortingTaskDao.insert(task);

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.sorting.dao.SortingScaleEventDao">
+
+    <sql id="columns">
+        id, event_key, task_id, task_item_id, sku_id, device_code, raw_reading, unit, stable_flag,
+        captured_at, received_at, status, accepted_quantity, accepted_at, accepted_by,
+        rejected_at, rejected_by, reject_reason, version
+    </sql>
+
+    <!-- 重复上报走 ON CONFLICT DO NOTHING：返回 0 让调用方重读既有记录并回同一份结果，
+         而不是把弱网重试报成错误。 -->
+    <insert id="insertIgnore" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO sorting_scale_event (event_key, task_id, task_item_id, sku_id, device_code, raw_reading, unit,
+                                         stable_flag, captured_at, received_at, status, version)
+        VALUES (#{row.eventKey}, #{row.taskId}, #{row.taskItemId}, #{row.skuId}, #{row.deviceCode},
+                #{row.rawReading}, #{row.unit}, #{row.stableFlag}, #{row.capturedAt}, #{row.receivedAt},
+                'PENDING', 0)
+        ON CONFLICT (event_key) DO NOTHING
+    </insert>
+
+    <select id="selectByEventKey" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM sorting_scale_event
+        WHERE event_key = #{eventKey}
+    </select>
+
+    <select id="lockById" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM sorting_scale_event
+        WHERE id = #{id}
+            FOR UPDATE
+    </select>
+
+    <!-- 作业台按任务看待处理读数；接收时间倒序，最新一次称重在最上面。 -->
+    <select id="listByTask" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM sorting_scale_event
+        WHERE task_id = #{taskId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY received_at DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 状态流转一律带 status = 'PENDING'：重复接受同一读数只能成功一次，
+         第二次影响 0 行，调用方据此回答「已被处理」而不是重复写分拣结果。 -->
+    <update id="markAccepted">
+        UPDATE sorting_scale_event
+        SET status            = 'ACCEPTED',
+            accepted_quantity = #{acceptedQuantity},
+            accepted_at       = CURRENT_TIMESTAMP,
+            accepted_by       = #{operator},
+            version           = version + 1
+        WHERE id = #{id}
+          AND status = 'PENDING'
+          AND version = #{version}
+    </update>
+
+    <update id="markRejected">
+        UPDATE sorting_scale_event
+        SET status        = 'REJECTED',
+            rejected_at   = CURRENT_TIMESTAMP,
+            rejected_by   = #{operator},
+            reject_reason = #{reason},
+            version       = version + 1
+        WHERE id = #{id}
+          AND status = 'PENDING'
+          AND version = #{version}
+    </update>
+
+</mapper>

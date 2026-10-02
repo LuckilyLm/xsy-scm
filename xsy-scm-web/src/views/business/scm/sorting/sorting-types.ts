@@ -40,6 +40,13 @@ export interface SortingTaskQuery extends SortingPage {
     warehouseId?: Id;
     assigneeEmployeeId?: Id;
     unassignedOnly?: boolean;
+    /** 送货时间区间（半开），按建单时冻结的快照过滤。 */
+    deliveryTimeFrom?: string;
+    deliveryTimeTo?: string;
+    /** 预配送波次（线路维度由它表达）。 */
+    deliveryWave?: string;
+    /** 供应商来源，按任务上冻结的供应商过滤。 */
+    supplierId?: Id;
 }
 
 export interface SortingSummaryQuery extends SortingPage {
@@ -66,6 +73,13 @@ export interface SortingTask {
     itemCount: number;
     processedCount: number;
     remark?: string | null;
+    /** 建单时冻结的送货时间；筛选与展示都按它。 */
+    deliveryTimeSnapshot?: string | null;
+    /** 预配送波次；线路维度由它表达。 */
+    deliveryWave?: string | null;
+    /** 建单时显式指定的供应商来源与名称快照。 */
+    supplierId?: Id | null;
+    supplierNameSnapshot?: string | null;
     createdAt: string;
     startedAt?: string | null;
     completedAt?: string | null;
@@ -231,3 +245,47 @@ export function sortingError(error: unknown): string {
 export function quantityText(value: string | null | undefined): string {
     return value === null || value === undefined || value === '' ? '—' : value;
 }
+
+// ------------------------------------------------------------------
+// 电子秤读数（ADM-11）
+// ------------------------------------------------------------------
+
+export type SortingScaleStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+/**
+ * `SortingScaleEventVO` —— 秤读数。
+ *
+ * 原始读数与接受数量都返回：两者不一致时必须能看出来，而不是只留一个「最终值」。
+ * `capturedAt` 是设备采集时间，`receivedAt` 是服务端接收时间（设备可能离线补传）。
+ * `duplicated` 表示本次上报是重复事件（服务端已有同键记录），**不是错误**。
+ */
+export interface SortingScaleEvent {
+    id: Id;
+    eventKey: string;
+    taskId: Id;
+    taskItemId: Id;
+    skuId?: Id | null;
+    skuCodeSnapshot?: string | null;
+    productNameSnapshot?: string | null;
+    deviceCode: string;
+    rawReading?: string | null;
+    unit: string;
+    stableFlag: boolean;
+    capturedAt: string;
+    receivedAt: string;
+    status: SortingScaleStatus;
+    acceptedQuantity?: string | null;
+    acceptedAt?: string | null;
+    acceptedBy?: string | null;
+    rejectedAt?: string | null;
+    rejectedBy?: string | null;
+    rejectReason?: string | null;
+    version: number;
+    duplicated?: boolean;
+}
+
+export const sortingScaleStatuses: Record<SortingScaleStatus, { label: string; color: string }> = {
+    PENDING: {label: '待处理', color: 'blue'},
+    ACCEPTED: {label: '已接受', color: 'green'},
+    REJECTED: {label: '已驳回', color: 'default'},
+};

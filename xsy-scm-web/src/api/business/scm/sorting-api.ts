@@ -18,6 +18,7 @@ import type {
     SortingActionPayload,
     SortingAssignPayload,
     SortingCandidateLine,
+    SortingScaleEvent,
     SortingCandidateQuery,
     SortingEntryPayload,
     SortingPrint,
@@ -74,4 +75,13 @@ export const sortingApi = {
     reopen: (id: Id, form: SortingActionPayload) => call<string>('post', `/tasks/${id}/reopen`, form),
     /** 正式生成并登记计次；带 Idempotency-Key，累加由服务端的任务聚合锁串行化。 */
     print: (id: Id, form: SortingActionPayload) => command<SortingPrintResult>(`/tasks/${id}/print`, form),
+    /** 某任务的秤读数；`status` 为空返回全部（默认看全部，便于追溯被驳回的读数）。 */
+    scaleEvents: (taskId: Id, status?: string) =>
+        call<SortingScaleEvent[]>('get', `/scale/tasks/${taskId}`, status ? {status} : {}),
+    /** 接受读数：把该读数写进分拣结果（只处理标准品）。 */
+    acceptScaleEvent: (id: Id, version: number) =>
+        call<string>('post', `/scale/${id}/accept`, {version}),
+    /** 驳回读数：不写分拣结果，留原因。 */
+    rejectScaleEvent: (id: Id, version: number, reason: string) =>
+        call<string>('post', `/scale/${id}/reject`, {version, reason}),
 };

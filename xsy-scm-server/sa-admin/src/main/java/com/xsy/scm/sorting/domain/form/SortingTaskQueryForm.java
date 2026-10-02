@@ -31,4 +31,23 @@ public class SortingTaskQueryForm extends PageParam {
      * {@code true} 只看未指派任务（待办队列）。
      */
     private Boolean unassignedOnly;
+
+    /**
+     * 送货时间区间（半开区间 {@code [from, to)}），按建单时冻结的快照过滤。
+     */
+    private java.time.OffsetDateTime deliveryTimeFrom;
+
+    private java.time.OffsetDateTime deliveryTimeTo;
+
+    /**
+     * 预配送波次（精确）；线路维度由它表达。
+     */
+    @Size(max = 64, message = "预配送波次不能超过64个字符")
+    private String deliveryWave;
+
+    /**
+     * 供应商来源（精确），按任务上冻结的供应商过滤。
+     */
+    @Positive(message = "供应商 ID 必须大于0")
+    private Long supplierId;
 }

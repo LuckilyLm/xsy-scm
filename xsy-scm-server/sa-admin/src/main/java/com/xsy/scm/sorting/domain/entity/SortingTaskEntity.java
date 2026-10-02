@@ -40,6 +40,28 @@ public class SortingTaskEntity extends SortingRecord {
      */
     private OffsetDateTime completedAt;
     private OffsetDateTime cancelledAt;
+
+    /**
+     * 建单时**冻结**的送货时间：筛选按它，不按订单当前值。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private OffsetDateTime deliveryTimeSnapshot;
+
+    /**
+     * 预配送波次标识；线路维度由它表达，不从订单反查线路。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String deliveryWave;
+
+    /**
+     * 建单时**显式指定**的供应商来源；不从 SKU 与供应商的多对多关系推断。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long supplierId;
+
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String supplierNameSnapshot;
+
     /**
      * 打印触发次数：只代表出单动作，不代表物理出纸成功，也不改任何状态。
      */

@@ -47,6 +47,12 @@
         <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
         <if test="q.assigneeEmployeeId != null">AND t.assignee_employee_id=#{q.assigneeEmployeeId}</if>
         <if test="q.unassignedOnly != null and q.unassignedOnly">AND t.assignee_employee_id IS NULL</if>
+        <!-- ADM-11 冻结维度筛选：送货时间 / 波次 / 供应商来源全部按**建单时冻结的快照**过滤，
+             不联订单或线路回查 —— 任务建出来之后，它的作业口径就不该跟着主档变。 -->
+        <if test="q.deliveryTimeFrom != null">AND t.delivery_time_snapshot &gt;= #{q.deliveryTimeFrom}</if>
+        <if test="q.deliveryTimeTo != null">AND t.delivery_time_snapshot &lt; #{q.deliveryTimeTo}</if>
+        <if test="q.deliveryWave != null and q.deliveryWave != ''">AND t.delivery_wave=#{q.deliveryWave}</if>
+        <if test="q.supplierId != null">AND t.supplier_id=#{q.supplierId}</if>
         <if test="q.keyword != null and q.keyword != ''">
             AND (t.task_no ILIKE concat('%',#{q.keyword},'%')
             OR t.warehouse_name_snapshot ILIKE concat('%',#{q.keyword},'%')
