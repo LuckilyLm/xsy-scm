@@ -68,4 +68,22 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      */
     List<InventoryWarningVO> queryWarningPage(Page<?> page, @Param("query") InventoryWarningQueryForm query,
             @Param("scope") ScmValueScope scope);
+
+    /**
+     * 预警通知扫描用的配置行（**不按状态过滤**）。
+     *
+     * <p>
+     * 与 {@link #queryWarningPage} 的关键区别：这里必须看到 {@code NORMAL} 的行。判定
+     * 「异常 → 正常」的恢复需要知道它现在是正常的，而预警列表默认只返回异常项 —— 用它去
+     * 扫描的话，恢复永远观察不到，纪元也就永远不会推进，于是「恢复后再次异常」再也不会提醒。
+     *
+     * <p>
+     * 不加排序供客户端选择：扫描顺序固定为 {@code (仓库, SKU)} 升序，便于按日志复现一轮扫描。
+     *
+     * @param limit
+     *            单轮上限；超出部分留给下一轮，避免一次扫描把整库读进内存
+     * @param scope
+     *            仓库范围；{@code null} 按失败关闭返回 0 行（与其它 SCM 查询同一纪律）
+     */
+    List<InventoryWarningVO> listScanRows(@Param("limit") int limit, @Param("scope") ScmValueScope scope);
 }

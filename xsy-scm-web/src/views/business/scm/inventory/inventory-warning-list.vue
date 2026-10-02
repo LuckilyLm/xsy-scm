@@ -1,14 +1,19 @@
 <!--
   库存预警列表（阈值预警波次新增）。
 
-  **只读页**：预警不是一种可以「标记已读」的状态，它只是 (阈值, 可用量) 的当前计算结果。
+  **列表本身只读**：预警不是一种可以「标记已读」的状态，它只是 (阈值, 可用量) 的当前计算结果。
   引入「已读 / 已忽略」会让预警与真实库存脱钩 —— 货补上了那条「已读」记录还在，
   货又少了它却已经被忽略过。用户想看什么就按状态筛什么。
+
+  页面上唯一的写动作是「检查并发送预警通知」：它不改变任何预警，只是把**当前已经发生**的
+  阈值跃迁投递成站内信（定时任务跑的是同一段逻辑），单独用 scm:inventory:warning:scan 授权。
 
   页面上必须讲清楚的一件事：**判定基准是可用量（现有量 − 预留量），不是现有量**。
   「明明有 20 kg 在库，为什么说低于下限 10 kg？」的答案是那 20 kg 里有 18 kg 已预留 ——
   下限的业务含义是「还够不够发货」，货已经被订走就不算有货。
   因此三个数量都展示出来，用户能自己看懂预警为什么触发。
+
+  站内信跳转带 `thresholdId`（消息的 dataId 就是阈值配置 id），按它精确定位那一条。
 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
@@ -42,12 +47,26 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
+    <a-alert
+        v-if="anchorThresholdId"
+        class="anchor"
+        type="info"
+        show-icon
+        :message="`已按消息定位到阈值配置 ${anchorThresholdId}`"
+        description="库存预警消息带的是阈值配置 id，这里直接按它过滤。点「重置」可回到全部预警。"
+    />
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
-          预警由「预警阈值」配置驱动：只有配置了阈值的仓库 + SKU 才会出现在这里。
-          判定基准是<strong>可用量</strong>（现有量 − 预留量）。
-        </a-typography-text>
+        <a-button
+            v-privilege="'scm:inventory:warning:scan'"
+            :loading="scanning"
+            @click="scan"
+        >
+          检查并发送预警通知
+        </a-button>
+        <span class="hint">
+          向本仓的授权员工投递站内信；只在状态发生跃迁时发送，重复点击不会重复发信
+        </span>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -108,18 +127,21 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {reactive, ref, watch} from 'vue';
+import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
+import {useRoute} from 'vue-router';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {inventoryWarningApi} from '/@/api/business/scm/inventory-warning-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
+import {deepLinkId} from '/@/lib/query-deep-link';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_INVENTORY_TABLE_ID,
   SCM_INVENTORY_WARNING_STATUS_ENUM,
 } from '/@/constants/business/scm/inventory-const';
-import type {InventoryWarning, InventoryWarningQuery} from './inventory-types';
+import type {Id, InventoryWarning, InventoryWarningQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault} from './inventory-model';
 import {inventoryError} from './inventory-errors';
@@ -128,9 +150,15 @@ const queryForm = reactive<InventoryWarningQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarning[]>([]);
 const total = ref(0);
 const loading = ref(false);
+const scanning = ref(false);
 const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
+/** 来自站内信的阈值配置锚点；非空时页面顶部提示「已定位到某一条」。 */
+const anchorThresholdId = ref<Id | undefined>(undefined);
 let requestId = 0;
+
+const route = useRoute();
+const warningRouteName = route.name;
 
 /**
  * 第一项是「仅异常」而不是「全部」—— 后端 status 为空时的语义就是只看异常。
@@ -199,6 +227,31 @@ async function applySingleWarehouseDefault() {
   }
 }
 
+/**
+ * 立即检查阈值跃迁并投递通知。
+ *
+ * 只扫描调用者有授权的仓库（范围由服务端解析，前端不传）；重复点击不会重复发信 ——
+ * 同一次跃迁的 event_key 是稳定的，第二次起会被去重表挡掉，因此这里不需要额外的防抖。
+ */
+async function scan() {
+  scanning.value = true;
+  error.value = '';
+  try {
+    const r = await inventoryWarningApi.scan();
+    const {scannedCount, sentCount} = r.data;
+    if (sentCount > 0) {
+      message.success(`已检查 ${scannedCount} 条阈值配置，投递 ${sentCount} 条预警通知`);
+    } else {
+      message.info(`已检查 ${scannedCount} 条阈值配置，没有新的预警跃迁`);
+    }
+    await queryData();
+  } catch (e) {
+    error.value = inventoryError(e);
+  } finally {
+    scanning.value = false;
+  }
+}
+
 function onSearch() {
   queryForm.pageNum = 1;
   queryData();
@@ -207,15 +260,43 @@ function onSearch() {
 function resetQuery() {
   queryForm.warehouseId = undefined;
   queryForm.skuCode = undefined;
+  queryForm.thresholdId = undefined;
   // 重置回「仅异常」而不是「全部」：这是本页的默认语义
   queryForm.status = undefined;
+  anchorThresholdId.value = undefined;
   onSearch();
 }
 
-onMounted(async () => {
-  await applySingleWarehouseDefault();
+/**
+ * 进入页面（首次挂载与 keep-alive 复用同一条路径）。
+ *
+ * 站内信跳转带 `thresholdId`（消息的 dataId 就是阈值配置 id），按它精确定位那一条；
+ * 普通菜单进入没有 query，于是锚点回落 `undefined`，即页面默认（未筛选）。
+ */
+async function enterPage() {
+  const anchor = deepLinkId(route.query, 'thresholdId');
+  anchorThresholdId.value = anchor;
+  queryForm.thresholdId = anchor;
+  queryForm.skuCode = undefined;
+  queryForm.status = undefined;
+  queryForm.pageNum = 1;
+  // 带锚点时不再套用「只有一个仓库就默认选中」：那会把锚点所在的仓筛掉，看起来像没数据
+  if (anchor === undefined) {
+    queryForm.warehouseId = undefined;
+    await applySingleWarehouseDefault();
+  }
   await queryData();
-});
+}
+
+watch(
+    [() => route.name, () => route.query],
+    ([name]) => {
+      // 组件被缓存时，跳往其他页面不应触发本页查询；回到本页才重新套用来源链接。
+      if (name !== warningRouteName) return;
+      void enterPage();
+    },
+    {immediate: true}
+);
 </script>
 
 <style scoped>
@@ -225,5 +306,15 @@ onMounted(async () => {
 
 .strong {
   font-weight: 600;
+}
+
+.hint {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.anchor {
+  margin-bottom: 12px;
 }
 </style>

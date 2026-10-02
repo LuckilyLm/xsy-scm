@@ -23,6 +23,13 @@ public enum MessageTypeEnum implements BaseEnum {
      * 新增 SCM 业务消息类型时同步前端 {@code message-const.ts} 的数值镜像，否则类型列渲染为空。
      */
     SCM_INVENTORY_LOSS_GAIN(3, "库存报损报溢"),
+
+    /**
+     * 库存预警阈值通知：{@code dataId} 为预警阈值配置 id，前端据此跳到该条预警。
+     * 新增 SCM 业务消息类型时同步前端 {@code message-const.ts} 与
+     * {@code message-business-link.ts}，否则类型列渲染为空、消息点不出去。
+     */
+    SCM_INVENTORY_WARNING(4, "库存预警"),
     ;
 
     private final Integer value;

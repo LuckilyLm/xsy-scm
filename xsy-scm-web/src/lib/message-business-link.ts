@@ -12,8 +12,17 @@
 /** 与后端 `MessageTypeEnum.SCM_INVENTORY_LOSS_GAIN` 同值；两侧一致性由 w4 消息跳转单测核对。 */
 export const MESSAGE_TYPE_INVENTORY_LOSS_GAIN = 3;
 
+/** 与后端 `MessageTypeEnum.SCM_INVENTORY_WARNING` 同值。 */
+export const MESSAGE_TYPE_INVENTORY_WARNING = 4;
+
 /** 报损报溢单列表路由，与后端 `ScmTodoCardEnum` 的待办路由同一入口。 */
 export const INVENTORY_LOSS_GAIN_LIST_PATH = '/inventory/inventory-loss-gain-list';
+
+/**
+ * 库存预警列表路由。消息的 `dataId` 是**阈值配置 id**，页面按它精确定位那一条预警 ——
+ * 只跳到整个列表而不带锚点，用户还得自己再找一遍，那不算闭环。
+ */
+export const INVENTORY_WARNING_LIST_PATH = '/inventory/inventory-warning-list';
 
 export interface MessageBusinessLink {
   path: string;
@@ -34,6 +43,9 @@ export function messageBusinessLink(messageType: unknown, dataId: unknown): Mess
   }
   if (Number(messageType) === MESSAGE_TYPE_INVENTORY_LOSS_GAIN) {
     return {path: INVENTORY_LOSS_GAIN_LIST_PATH, query: {id}, label: '查看业务单据'};
+  }
+  if (Number(messageType) === MESSAGE_TYPE_INVENTORY_WARNING) {
+    return {path: INVENTORY_WARNING_LIST_PATH, query: {thresholdId: id}, label: '查看库存预警'};
   }
   return undefined;
 }

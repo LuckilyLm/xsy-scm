@@ -549,6 +549,19 @@ export interface InventoryInTransit {
 // ------------------------------------------------------------------
 
 /**
+ * `InventoryWarningScanVO` —— 一次预警检查的结果。
+ *
+ * 两个计数都要看：只有「投递条数」时 `0` 既可能是「检查了 30 条、都没有跃迁」，
+ * 也可能是「一条阈值都没配」—— 这两种情况的下一步操作完全不同。
+ */
+export interface InventoryWarningScanResult {
+    /** 本轮实际检查的阈值配置条数。 */
+    scannedCount: number;
+    /** 本轮投递的站内信条数；同一跃迁发给多名接收人会各计一条。 */
+    sentCount: number;
+}
+
+/**
  * `InventoryWarningVO` —— 预警列表的一行（一条阈值配置 + 它对应的余额）。
  *
  * **三个数量都返回**：判定基准是**可用量**（现有量 − 预留量），只给一个数字会让用户
@@ -592,6 +605,12 @@ export interface InventoryWarningQuery extends Page {
     warehouseId?: Id;
     skuId?: Id;
     skuCode?: string;
+    /**
+     * 阈值配置 id（精确）。
+     *
+     * 供站内信跳转使用：库存预警消息的 `dataId` 就是配置 id，点进来直接落到那一条。
+     */
+    thresholdId?: Id;
     status?: string;
 }
 

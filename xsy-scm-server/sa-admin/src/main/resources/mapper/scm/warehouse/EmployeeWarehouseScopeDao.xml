@@ -22,6 +22,22 @@
         ORDER BY e.employee_id
     </select>
 
+    <!--
+      通知接收人：某仓库下仍可用的员工 id。
+      与 listEmployeesByWarehouse 同一份授权谓词（deleted_flag = FALSE），差别只在
+      额外排除 disabled_flag = TRUE 的停用人员 —— 维护页要看到「授权还在但人已停用」，
+      发通知则不该投给一个已经不能用系统的人。
+    -->
+    <select id="listEnabledEmployeeIdsByWarehouse" resultType="java.lang.Long">
+        SELECT e.employee_id
+        FROM employee_warehouse_scope s
+                 JOIN t_employee e ON e.employee_id = s.employee_id AND e.deleted_flag = FALSE
+        WHERE s.deleted_flag = FALSE
+          AND e.disabled_flag = FALSE
+          AND s.warehouse_id = #{warehouseId}
+        ORDER BY e.employee_id
+    </select>
+
     <!-- 已软删仓库不出现在授权清单里：它已经不能再承载任何业务数据。 -->
     <select id="listWarehousesByEmployee"
             resultType="com.xsy.scm.warehouse.domain.vo.WarehouseScopeWarehouseVO">

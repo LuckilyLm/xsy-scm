@@ -38,6 +38,14 @@ public class InventoryWarningQueryForm extends PageParam {
     private String skuCode;
 
     /**
+     * 阈值配置 id（精确）。
+     *
+     * <p>
+     * 供站内信跳转使用：预警消息的 {@code dataId} 就是配置 id，点进来要能直接落到那一条。
+     */
+    private Long thresholdId;
+
+    /**
      * 预警状态精确过滤：{@code NORMAL} / {@code LOW} / {@code HIGH}。
      *
      * <p>

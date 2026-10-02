@@ -182,6 +182,12 @@
         <if test="query.skuCode != null and query.skuCode != ''">
             AND k.sku_code ILIKE CONCAT('%', #{query.skuCode}, '%')
         </if>
+        <!-- 消息跳转锚点：站内信携带的 dataId 就是阈值配置 id，这里按它精确定位那一条预警。
+             不加这个过滤的话，从「库存低于下限」消息点进来只会落到整个预警列表，
+             用户还得自己再找一遍 —— 那不算闭环。 -->
+        <if test="query.thresholdId != null">
+            AND t.id = #{query.thresholdId}
+        </if>
         <!-- status 有值 → 精确过滤；为空 → 只看异常（预警列表的默认语义） -->
         <choose>
             <when test="query.status != null and query.status != ''">
@@ -201,6 +207,50 @@
         END,
         t.warehouse_id ASC,
         t.id ASC
+    </select>
+
+    <!--
+      扫描用的配置行（预警通知的输入）：与 queryWarningPage 同一投影，但**不按状态过滤**。
+      扫描必须看到 NORMAL 的行才能观察到「异常 → 正常」的恢复，否则纪元不会推进，
+      「恢复后再次异常」就再也提醒不了。
+
+      范围谓词与其它 SCM 查询同一纪律：谓词落在阈值配置所在的仓上，scope 缺失恒假。
+      定时任务用 all() 调用（它没有登录人范围），手动检查用调用者的仓库范围收窄。
+    -->
+    <select id="listScanRows" resultMap="warningVoMap">
+        SELECT t.id AS threshold_id,
+        t.warehouse_id,
+        t.sku_id,
+        t.warn_min,
+        t.warn_max,
+        w.warehouse_code,
+        w.name AS warehouse_name,
+        k.sku_code,
+        k.spec_name AS sku_name,
+        k.spec_values,
+        p.name AS product_name,
+        b.unit,
+        COALESCE(b.quantity, 0) AS quantity,
+        COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
+        COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
+        FROM inventory_warning_threshold t
+        LEFT JOIN inventory_balance b
+        ON b.warehouse_id = t.warehouse_id
+        AND b.sku_id = t.sku_id
+        AND b.deleted = FALSE
+        LEFT JOIN warehouse w ON w.id = t.warehouse_id
+        LEFT JOIN product_sku k ON k.id = t.sku_id
+        LEFT JOIN product_spu p ON p.id = k.spu_id
+        WHERE t.deleted = FALSE
+        <if test="scope != null and scope.all == false">
+            AND t.warehouse_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">
+            AND FALSE
+        </if>
+        ORDER BY t.warehouse_id ASC, t.sku_id ASC
+        LIMIT #{limit}
     </select>
 
 </mapper>

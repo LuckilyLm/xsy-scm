@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryWarningStateDao">
+
+    <!--
+      FOR UPDATE：同一 (仓库, SKU) 上的并发评估必须串行 —— 「读上次状态 → 决定发不发 →
+      写回新状态」如果交错执行，两次评估都会读到同一个旧状态，于是同一次跃迁发两条通知。
+      （余额变更路径本身已持有余额行锁，这里是独立的第二道防线：手动检查与定时扫描
+      都不经过余额锁。）
+    -->
+    <select id="selectForUpdate" resultType="com.xsy.scm.inventory.domain.entity.InventoryWarningStateEntity">
+        SELECT warehouse_id, sku_id, status, epoch, updated_at, updated_by
+        FROM scm_inventory_warning_state
+        WHERE warehouse_id = #{warehouseId}
+          AND sku_id = #{skuId}
+            FOR UPDATE
+    </select>
+
+    <!-- 首次落状态：冲突即「并发对手已经写过」，返回 0 由调用方重读，不做「先查后插」。 -->
+    <insert id="insertIfAbsent">
+        INSERT INTO scm_inventory_warning_state
+            (warehouse_id, sku_id, status, epoch, updated_at, updated_by)
+        VALUES
+            (#{warehouseId}, #{skuId}, #{status}, #{epoch}, CURRENT_TIMESTAMP, #{operator})
+        ON CONFLICT (warehouse_id, sku_id) DO NOTHING
+    </insert>
+
+    <update id="updateState">
+        UPDATE scm_inventory_warning_state
+        SET status     = #{status},
+            epoch      = #{epoch},
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE warehouse_id = #{warehouseId}
+          AND sku_id = #{skuId}
+    </update>
+
+</mapper>

@@ -17,6 +17,11 @@ export const MESSAGE_TYPE_ENUM = {
         value: 3,
         desc: '库存报损报溢'
     },
+    // 与 message-business-link.ts 的跳转分支同值；两侧一致性由消息跳转单测核对
+    INVENTORY_WARNING: {
+        value: 4,
+        desc: '库存预警'
+    },
 };
 
 

@@ -71,6 +71,12 @@ public final class InventoryPermission {
 
     public static final String WARNING_QUERY = "scm:inventory:warning:query";
 
+    /**
+     * 主动检查库存阈值并投递预警通知。与 {@link #WARNING_QUERY} 分开：查看预警是只读，
+     * 本权限会给别人发站内信。
+     */
+    public static final String WARNING_SCAN = "scm:inventory:warning:scan";
+
     public static final String TRANSFER_QUERY = "scm:inventory:transfer:query";
 
     public static final String TRANSFER_ADD = "scm:inventory:transfer:add";
