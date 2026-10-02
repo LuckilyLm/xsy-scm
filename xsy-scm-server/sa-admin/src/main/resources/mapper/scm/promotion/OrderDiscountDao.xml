@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.promotion.dao.OrderDiscountDao">
+
+    <resultMap id="discountMap" type="com.xsy.scm.promotion.domain.entity.OrderDiscountEntity">
+        <id column="id" property="id"/>
+        <result column="activity_snapshot" property="activitySnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+        <result column="coupon_snapshot" property="couponSnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+        <!-- allocations 在实体上是 String：它只被整体读写，不参与任何按字段查询 -->
+        <result column="allocations" property="allocations"/>
+    </resultMap>
+
+    <select id="selectByOrderId" resultMap="discountMap">
+        SELECT id, sales_order_id, activity_id, activity_version, activity_snapshot, coupon_instance_id,
+               coupon_snapshot, base_amount, discount_amount, allocations::text AS allocations,
+               rounding_target_item_id, created_at, created_by, version
+        FROM order_discount
+        WHERE sales_order_id = #{salesOrderId}
+    </select>
+
+    <insert id="insertDiscount" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO order_discount (sales_order_id, activity_id, activity_version, activity_snapshot,
+                                    coupon_instance_id, coupon_snapshot, base_amount, discount_amount,
+                                    allocations, rounding_target_item_id, created_at, created_by, version)
+        VALUES (#{row.salesOrderId}, #{row.activityId}, #{row.activityVersion},
+                #{row.activitySnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.couponInstanceId},
+                #{row.couponSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.baseAmount}, #{row.discountAmount},
+                #{row.allocations}::jsonb, #{row.roundingTargetItemId}, CURRENT_TIMESTAMP, #{row.createdBy}, 0)
+    </insert>
+
+</mapper>

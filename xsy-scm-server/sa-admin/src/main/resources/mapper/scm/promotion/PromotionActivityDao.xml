@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.promotion.dao.PromotionActivityDao">
+
+    <resultMap id="activityMap" type="com.xsy.scm.promotion.domain.entity.PromotionActivityEntity">
+        <id column="id" property="id"/>
+        <result column="rule" property="rule"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, activity_code, activity_name, activity_type, exclusive_group, priority, valid_from, valid_to,
+        status, rule, remark, version, deleted, created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <select id="queryPage" resultMap="activityMap">
+        SELECT
+        <include refid="columns"/>
+        FROM promotion_activity
+        WHERE deleted = FALSE
+        <if test="query.activityType != null and query.activityType != ''">
+            AND activity_type = #{query.activityType}
+        </if>
+        <if test="query.status != null and query.status != ''">
+            AND status = #{query.status}
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (activity_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR activity_name ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY priority DESC, id DESC
+    </select>
+
+    <!-- 生效中的活动：状态 + 时间窗口。互斥组的取舍在计算逻辑里做，不在这里。 -->
+    <select id="listActive" resultMap="activityMap">
+        SELECT
+        <include refid="columns"/>
+        FROM promotion_activity
+        WHERE deleted = FALSE
+          AND status = 'ACTIVE'
+          AND valid_from &lt;= #{at}
+          AND valid_to &gt; #{at}
+        ORDER BY priority DESC, id ASC
+    </select>
+
+    <select id="lockById" resultMap="activityMap">
+        SELECT
+        <include refid="columns"/>
+        FROM promotion_activity
+        WHERE id = #{id}
+          AND deleted = FALSE
+            FOR UPDATE
+    </select>
+
+    <update id="updateStatus">
+        UPDATE promotion_activity
+        SET status     = #{status},
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND version = #{version}
+    </update>
+
+</mapper>
