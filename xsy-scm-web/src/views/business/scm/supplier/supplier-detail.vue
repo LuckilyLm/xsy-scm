@@ -35,6 +35,12 @@
         <a-descriptions-item label="联系电话">{{ supplier.contactPhone || '—' }}</a-descriptions-item>
         <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
         <a-descriptions-item label="地址" :span="2">{{ supplier.address || '—' }}</a-descriptions-item>
+        <a-descriptions-item label="地图定位" :span="3">
+          <span v-if="isLocated(supplier)">
+            {{ supplier.longitude }}，{{ supplier.latitude }}（{{ supplier.geomCrs }}）
+          </span>
+          <span v-else class="hint">未采集点位；点位用于地图分布与供应商位置查询</span>
+        </a-descriptions-item>
         <a-descriptions-item label="更新时间">{{ datetime(supplier.updatedAt) }}</a-descriptions-item>
         <a-descriptions-item label="付款账期">{{ supplier.paymentPeriodDays ?? 0 }} 天</a-descriptions-item>
         <a-descriptions-item label="备注" :span="3">{{ supplier.remark || '—' }}</a-descriptions-item>
@@ -80,6 +86,7 @@ import type {EnableStatus, SupplierDetail, SupplierSkuRow} from '/@/types/busine
 import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
+import {isLocated} from '/@/components/business/scm/map/types';
 
 const route = useRoute();
 const router = useRouter();
@@ -148,5 +155,9 @@ watch(() => route.query.supplierId, load, {immediate: true});
 .amount {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.hint {
+  color: var(--ant-color-text-secondary);
 }
 </style>

@@ -48,6 +48,10 @@ export function emptySupplier(): SupplierForm {
     return {
         // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
         // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的供应商。
+        // 点位三列同理：留着上一条的坐标会把新供应商静默标到旧地点上。
+        longitude: null,
+        latitude: null,
+        geomCrs: null,
         provinceCode: null,
         provinceName: null,
         cityCode: null,

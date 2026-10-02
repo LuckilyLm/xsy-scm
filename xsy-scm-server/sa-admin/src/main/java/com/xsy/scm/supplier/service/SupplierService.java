@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_CODE_DUPLICATE;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_DISABLED;
@@ -171,6 +172,14 @@ public class SupplierService {
         entity.setCityName(SupplierValidator.normalizeOptional(form.getCityName()));
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(SupplierValidator.normalizeOptional(form.getDistrictName()));
+        // 点位成组落库：半组坐标在地图上无法解释，DB 的 ck_supplier_location_complete 也会拒绝。
+        // 表单侧的 ScmLocationForm 已做同一条断言，这里是服务端不变量断言 —— 与客户同一取向。
+        if (!form.isLocationComplete()) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        entity.setLongitude(form.getLongitude());
+        entity.setLatitude(form.getLatitude());
+        entity.setGeomCrs(form.getGeomCrs());
         entity.setRemark(SupplierValidator.normalizeOptional(form.getRemark()));
     }
 

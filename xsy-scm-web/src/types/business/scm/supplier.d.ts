@@ -8,6 +8,7 @@
  */
 
 import type {AreaColumns} from './area';
+import type {ScmLocation} from '/@/components/business/scm/map/types';
 
 export type ScmId = string | number;
 
@@ -40,7 +41,7 @@ export interface ScmSortItem {
 // ---------------------------------------------------------------------------
 
 /** 新建 / 编辑请求体（对应 SupplierAddForm / SupplierUpdateForm，**不含 status**）。 */
-export interface SupplierForm extends Partial<AreaColumns> {
+export interface SupplierForm extends Partial<AreaColumns>, ScmLocation {
     supplierId?: ScmId;
     version?: number;
     supplierCode: string;

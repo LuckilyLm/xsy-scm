@@ -60,7 +60,13 @@
           <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
         </a-form-item>
         <a-form-item label="地址" name="address">
-          <a-input v-model:value="form.address" :maxlength="255"/>
+          <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
+        </a-form-item>
+        <a-form-item label="地图定位">
+          <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
+          <div class="ant-form-item-extra">
+            点位用于地图分布与供应商位置查询；经纬度与坐标系必须同时填写或同时清空
+          </div>
         </a-form-item>
         <a-form-item label="付款账期（天）" name="paymentPeriodDays">
           <a-input-number v-model:value="form.paymentPeriodDays" :min="0" :max="3650" :precision="0"/>
@@ -88,6 +94,8 @@ import {supplierApi} from '/@/api/business/scm/supplier-api';
 import type {ScmId, SupplierForm} from '/@/types/business/scm/supplier';
 import {emptySupplier, toSupplierPayload, validateSupplier} from '../supplier-form-model';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
+import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
+import {emptyLocation, locationError} from '/@/components/business/scm/map/types';
 import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import {supplierError} from '../supplier-errors';
@@ -106,7 +114,8 @@ const form = reactive<SupplierForm>(emptySupplier());
 const area = ref<AreaNode[]>([]);
 
 function onAreaChange(_value: unknown, nodes: AreaNode[]) {
-  Object.assign(form, areaColumnsOf(nodes));
+  // 区划变了就作废已选点位：留着旧坐标会让「改了区划但没重新选点」静默指向另一个地方。
+  Object.assign(form, areaColumnsOf(nodes), emptyLocation());
 }
 
 const title = computed(() => (form.supplierId ? '编辑供应商' : '新增供应商'));
@@ -142,6 +151,9 @@ async function open(supplierId?: ScmId) {
       cityName: detail.cityName ?? null,
       districtCode: detail.districtCode ?? null,
       districtName: detail.districtName ?? null,
+      longitude: detail.longitude ?? null,
+      latitude: detail.latitude ?? null,
+      geomCrs: detail.geomCrs ?? null,
       remark: detail.remark ?? '',
     });
   } catch (e) {
@@ -166,7 +178,8 @@ async function submit() {
   } catch {
     return;
   }
-  const problem = validateSupplier(form);
+  // 点位成组校验先于业务校验：半组坐标在地图上无法解释，后端也会以 VALIDATION_ERROR 拒绝
+  const problem = locationError(form) || validateSupplier(form);
   if (problem) {
     error.value = problem;
     return;

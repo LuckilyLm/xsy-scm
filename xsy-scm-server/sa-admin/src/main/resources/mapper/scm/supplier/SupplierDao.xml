@@ -5,6 +5,7 @@
     <select id="queryPage" resultType="com.xsy.scm.supplier.domain.entity.SupplierEntity">
         SELECT s.id, s.version, s.supplier_code, s.name, s.status,
         s.contact_name, s.contact_phone, s.address, s.remark,
+        s.longitude, s.latitude, s.geom_crs,
         s.created_at, s.updated_at, s.created_by, s.updated_by
         FROM supplier s
         WHERE s.deleted = FALSE
@@ -31,6 +32,9 @@
                s.contact_phone,
                s.address,
                s.remark,
+               s.longitude,
+               s.latitude,
+               s.geom_crs,
                s.created_at,
                s.updated_at,
                s.created_by,
