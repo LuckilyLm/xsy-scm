@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.ScmFinanceAgingDao">
+    <sql id="receivableScope">
+        <choose>
+            <when test="scope.orderSellerScope.all"/>
+            <when test="!scope.orderSellerScope.empty">
+                AND so.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="scope.customerSellerScope.all"/>
+            <when test="!scope.customerSellerScope.empty">
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <if test="query.customerId != null">AND r.customer_id=#{query.customerId}</if>
+        <if test="query.settlementCustomerId != null">AND r.settlement_customer_id=#{query.settlementCustomerId}</if>
+        <!-- Header amounts cannot be prorated by guessing a warehouse allocation. Require every source line visible. -->
+        <if test="!scope.warehouseScope.all or query.warehouseId != null">
+            AND EXISTS (SELECT 1 FROM finance_receivable_item ri WHERE ri.receivable_id=r.id AND ri.deleted=FALSE)
+            AND NOT EXISTS (
+                SELECT 1 FROM finance_receivable_item ri
+                LEFT JOIN inventory_outbound_item oi ON ri.source_type='INVENTORY_OUTBOUND_ITEM' AND oi.id=ri.source_id AND oi.deleted=FALSE
+                LEFT JOIN inventory_outbound ib ON ib.id=oi.outbound_id AND ib.deleted=FALSE
+                WHERE ri.receivable_id=r.id AND ri.deleted=FALSE AND (
+                    ib.warehouse_id IS NULL
+                    <if test="query.warehouseId != null">OR ib.warehouse_id &lt;&gt; #{query.warehouseId}</if>
+                    <choose>
+                        <when test="scope.warehouseScope.all"/>
+                        <when test="!scope.warehouseScope.empty">OR ib.warehouse_id NOT IN
+                            <foreach collection="scope.warehouseScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+                        </when>
+                        <otherwise>OR TRUE</otherwise>
+                    </choose>
+                )
+            )
+        </if>
+    </sql>
+
+    <sql id="payableScope">
+        <choose>
+            <when test="scope.purchaserScope.all"/>
+            <when test="!scope.purchaserScope.empty">AND po.purchaser_id IN
+                <foreach collection="scope.purchaserScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="scope.warehouseScope.all"/>
+            <when test="!scope.warehouseScope.empty">AND po.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <if test="query.supplierId != null">AND p.supplier_id=#{query.supplierId}</if>
+        <if test="query.warehouseId != null">AND po.warehouse_id=#{query.warehouseId}</if>
+    </sql>
+
+    <sql id="balances">
+        WITH accounts AS (
+            <choose>
+                <when test="query.receivable">
+                    SELECT 'RECEIVABLE' AS account_type, r.id AS document_id, r.receivable_no AS document_no,
+                           r.order_id AS source_id, so.order_no AS source_no,
+                           r.customer_id AS counterparty_id, r.customer_name_snapshot AS counterparty_name,
+                           r.settlement_customer_id, r.settlement_customer_name_snapshot AS settlement_customer_name,
+                           r.event_at, r.due_date, r.amount, COALESCE(red.amount,0) AS red_amount,
+                           r.amount - COALESCE(red.amount,0) AS net_amount,
+                           COALESCE(wo.amount,0) AS written_off_amount,
+                           GREATEST(r.amount - COALESCE(red.amount,0) - COALESCE(wo.amount,0),0) AS open_amount
+                    FROM finance_receivable r
+                    JOIN sales_order so ON so.id=r.order_id AND so.deleted=FALSE
+                    JOIN customer c ON c.id=r.customer_id AND c.deleted=FALSE
+                    LEFT JOIN LATERAL (SELECT SUM(x.amount) AS amount FROM finance_receivable x
+                        WHERE x.original_receivable_id=r.id AND x.entry_type='RED' AND x.deleted=FALSE
+                          AND x.event_at &lt; #{endAt}) red ON TRUE
+                    LEFT JOIN LATERAL (SELECT SUM(CASE WHEN x.entry_type='NORMAL' THEN x.amount ELSE -x.amount END) AS amount
+                        FROM finance_write_off x WHERE x.target_type='RECEIVABLE' AND x.target_id=r.id AND x.deleted=FALSE
+                          AND x.written_off_at &lt; #{endAt}) wo ON TRUE
+                    WHERE r.entry_type='NORMAL' AND r.deleted=FALSE AND r.event_at &lt; #{endAt}
+                    <include refid="receivableScope"/>
+                </when>
+                <otherwise>
+                    SELECT 'PAYABLE' AS account_type, p.id AS document_id, p.payable_no AS document_no,
+                           p.purchase_order_id AS source_id, po.order_no AS source_no,
+                           p.supplier_id AS counterparty_id, p.supplier_name_snapshot AS counterparty_name,
+                           NULL::bigint AS settlement_customer_id, NULL::varchar AS settlement_customer_name,
+                           p.event_at, p.due_date, p.amount, COALESCE(red.amount,0) AS red_amount,
+                           p.amount - COALESCE(red.amount,0) AS net_amount,
+                           COALESCE(wo.amount,0) AS written_off_amount,
+                           GREATEST(p.amount - COALESCE(red.amount,0) - COALESCE(wo.amount,0),0) AS open_amount
+                    FROM finance_payable p
+                    JOIN purchase_order po ON po.id=p.purchase_order_id AND po.deleted=FALSE
+                    LEFT JOIN LATERAL (SELECT SUM(x.amount) AS amount FROM finance_payable x
+                        WHERE x.original_payable_id=p.id AND x.entry_type='RED' AND x.deleted=FALSE
+                          AND x.event_at &lt; #{endAt}) red ON TRUE
+                    LEFT JOIN LATERAL (SELECT SUM(CASE WHEN x.entry_type='NORMAL' THEN x.amount ELSE -x.amount END) AS amount
+                        FROM finance_write_off x WHERE x.target_type='PAYABLE' AND x.target_id=p.id AND x.deleted=FALSE
+                          AND x.written_off_at &lt; #{endAt}) wo ON TRUE
+                    WHERE p.entry_type='NORMAL' AND p.deleted=FALSE AND p.event_at &lt; #{endAt}
+                    <include refid="payableScope"/>
+                </otherwise>
+            </choose>
+        ), aged AS (
+            SELECT accounts.*,
+                   CASE WHEN due_date IS NULL THEN NULL ELSE GREATEST(#{query.asOfDate}::date-due_date,0) END AS overdue_days,
+                   CASE WHEN due_date IS NULL THEN 'UNKNOWN'
+                        WHEN due_date &gt;= #{query.asOfDate}::date THEN 'NOT_DUE'
+                        WHEN #{query.asOfDate}::date-due_date &lt;= 30 THEN 'DAYS_1_30'
+                        WHEN #{query.asOfDate}::date-due_date &lt;= 60 THEN 'DAYS_31_60'
+                        WHEN #{query.asOfDate}::date-due_date &lt;= 90 THEN 'DAYS_61_90'
+                        WHEN #{query.asOfDate}::date-due_date &lt;= 180 THEN 'DAYS_91_180'
+                        ELSE 'OVER_180' END AS aging_bucket
+            FROM accounts WHERE open_amount &gt; 0
+        )
+    </sql>
+    <sql id="filter">
+        <where>
+            <if test="query.agingBucketCode != null">aging_bucket=#{query.agingBucketCode}</if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (POSITION(LOWER(#{query.keyword}) IN LOWER(document_no)) &gt; 0
+                  OR POSITION(LOWER(#{query.keyword}) IN LOWER(COALESCE(source_no,''))) &gt; 0
+                  OR POSITION(LOWER(#{query.keyword}) IN LOWER(counterparty_name)) &gt; 0
+                  OR POSITION(LOWER(#{query.keyword}) IN LOWER(COALESCE(settlement_customer_name,''))) &gt; 0)
+            </if>
+        </where>
+    </sql>
+    <select id="query" resultType="com.xsy.scm.report.domain.vo.ScmFinanceAgingRowVO">
+        <include refid="balances"/>
+        SELECT * FROM aged <include refid="filter"/>
+        ORDER BY due_date ASC NULLS LAST, document_id DESC
+    </select>
+    <select id="summary" resultType="com.xsy.scm.report.domain.vo.ScmFinanceAgingSummaryVO">
+        <include refid="balances"/>
+        SELECT aging_bucket, COUNT(*) AS document_count, SUM(open_amount) AS open_amount
+        FROM aged <include refid="filter"/> GROUP BY aging_bucket
+    </select>
+</mapper>
