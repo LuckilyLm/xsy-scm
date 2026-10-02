@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.ScmSupplierStatementDao">
+    <select id="selectSnapshotAt" resultType="java.time.OffsetDateTime">
+        SELECT transaction_timestamp()
+    </select>
+    <sql id="purchaseScope">
+        <choose>
+            <when test="scope.purchaserScope.all"/>
+            <when test="!scope.purchaserScope.empty">
+                AND po.purchaser_id IN
+                <foreach collection="scope.purchaserScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <choose>
+            <when test="scope.warehouseScope.all"/>
+            <when test="!scope.warehouseScope.empty">
+                AND po.warehouse_id IN
+                <foreach collection="scope.warehouseScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <if test="query.warehouseId != null">AND po.warehouse_id = #{query.warehouseId}</if>
+    </sql>
+
+    <select id="selectEvents" resultType="com.xsy.scm.report.domain.vo.ScmSupplierStatementItemVO">
+        WITH eligible AS (
+            SELECT p.id, p.supplier_id, po.order_no AS purchase_order_no, pr.receipt_no
+            FROM finance_payable p
+            JOIN purchase_receipt pr ON p.source_type = 'PURCHASE_RECEIPT'
+                AND pr.id = p.source_id AND pr.deleted = FALSE
+            JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+            WHERE p.deleted = FALSE AND p.entry_type = 'NORMAL' AND p.supplier_id = #{query.supplierId}
+            <include refid="purchaseScope"/>
+        ), supplier_payments AS (
+            -- Supplier payments have no purchase order or warehouse; they are global supplier cash facts.
+            SELECT pm.* FROM finance_payment pm
+            WHERE pm.deleted = FALSE AND pm.counterparty_type = 'SUPPLIER'
+              AND pm.counterparty_id = #{query.supplierId}
+        ), events AS (
+            SELECT 'PAYABLE'::varchar AS fact_type, p.id AS fact_id, p.event_at,
+                   p.payable_no AS document_no, e.receipt_no AS related_no,
+                   p.amount AS payable_delta, 0::numeric AS payment_delta,
+                   0::numeric AS write_off_delta, p.created_at
+            FROM finance_payable p JOIN eligible e ON e.id = p.id
+            UNION ALL
+            SELECT 'RED', p.id, p.event_at, p.payable_no, original.payable_no,
+                   -p.amount, 0, 0, p.created_at
+            FROM finance_payable p
+            JOIN eligible e ON e.id = p.original_payable_id
+            JOIN finance_payable original ON original.id = e.id AND original.deleted = FALSE
+            WHERE p.deleted = FALSE AND p.entry_type = 'RED'
+              AND p.source_type = 'MANUAL' AND p.supplier_id = #{query.supplierId}
+            UNION ALL
+            SELECT CASE WHEN pm.entry_type = 'NORMAL' THEN 'PAYMENT' ELSE 'PAYMENT_REVERSE' END,
+                   pm.id, pm.paid_at, pm.payment_no, original.payment_no,
+                   0, CASE WHEN pm.entry_type = 'NORMAL' THEN pm.amount ELSE -pm.amount END,
+                   0, pm.created_at
+            FROM supplier_payments pm
+            LEFT JOIN finance_payment original ON original.id = pm.reverse_of_id AND original.deleted = FALSE
+            UNION ALL
+            SELECT CASE WHEN wo.entry_type = 'NORMAL' THEN 'WRITE_OFF' ELSE 'WRITE_OFF_REVERSE' END,
+                   wo.id, wo.written_off_at, wo.write_off_no, p.payable_no,
+                   CASE WHEN wo.entry_type = 'NORMAL' THEN -wo.amount ELSE wo.amount END,
+                   0, CASE WHEN wo.entry_type = 'NORMAL' THEN wo.amount ELSE -wo.amount END, wo.created_at
+            FROM finance_write_off wo
+            JOIN eligible e ON wo.target_type = 'PAYABLE' AND wo.target_id = e.id
+            JOIN finance_payable p ON p.id = e.id AND p.deleted = FALSE
+            JOIN supplier_payments pm ON wo.source_type = 'PAYMENT' AND wo.source_id = pm.id
+            WHERE wo.deleted = FALSE
+        )
+        SELECT fact_type AS factType, fact_id AS factId, event_at AS eventAt,
+               document_no AS documentNo, related_no AS relatedNo,
+               payable_delta AS payableDelta, payment_delta AS paymentDelta,
+               write_off_delta AS writeOffDelta
+        FROM events WHERE event_at &lt; #{endAt}
+        <if test="asOfCreatedAt != null">AND created_at &lt;= #{asOfCreatedAt}</if>
+        ORDER BY event_at, fact_type, fact_id
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectSupplierName" resultType="string">
+        SELECT name FROM supplier WHERE id = #{id} AND deleted = FALSE
+    </select>
+    <insert id="insertStatement" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO scm_supplier_statement (supplier_id,supplier_name,warehouse_id,
+            start_date,end_date,partial_scope,generated_by_employee_id,generated_at,
+            opening_payable,payable_increase,payable_red,write_off_net,closing_payable,
+            opening_unallocated,payment_net,closing_unallocated)
+        VALUES (#{supplierId},#{supplierName},#{warehouseId},#{startDate},#{endDate},
+            #{partialScope},#{generatedByEmployeeId},#{generatedAt},
+            #{openingPayable},#{payableIncrease},#{payableRed},#{writeOffNet},#{closingPayable},
+            #{openingUnallocated},#{paymentNet},#{closingUnallocated})
+    </insert>
+    <insert id="insertItem">
+        INSERT INTO scm_supplier_statement_item (statement_id,line_no,fact_type,fact_id,event_at,
+            document_no,related_no,payable_delta,payment_delta,write_off_delta,payable_balance)
+        VALUES (#{statementId},#{lineNo},#{factType},#{factId},#{eventAt},
+            #{documentNo},#{relatedNo},#{payableDelta},#{paymentDelta},#{writeOffDelta},#{payableBalance})
+    </insert>
+    <insert id="insertSource">
+        INSERT INTO scm_supplier_statement_source (statement_id,fact_type,fact_id)
+        VALUES (#{statementId},#{factType},#{factId})
+    </insert>
+    <select id="selectSources" resultType="com.xsy.scm.report.domain.vo.ScmSupplierStatementItemVO">
+        SELECT fact_type AS factType, fact_id AS factId
+        FROM scm_supplier_statement_source WHERE statement_id = #{id}
+    </select>
+    <select id="selectStatement" resultType="com.xsy.scm.report.domain.vo.ScmSupplierStatementVO">
+        SELECT * FROM scm_supplier_statement WHERE id = #{id} AND generated_by_employee_id = #{employeeId}
+    </select>
+    <select id="selectHistory" resultType="com.xsy.scm.report.domain.vo.ScmSupplierStatementVO">
+        SELECT * FROM scm_supplier_statement WHERE supplier_id = #{supplierId}
+          AND generated_by_employee_id = #{employeeId}
+        ORDER BY generated_at DESC, id DESC LIMIT 50 OFFSET #{offset}
+    </select>
+    <select id="selectItems" resultType="com.xsy.scm.report.domain.vo.ScmSupplierStatementItemVO">
+        SELECT * FROM scm_supplier_statement_item WHERE statement_id = #{id} ORDER BY line_no
+    </select>
+</mapper>

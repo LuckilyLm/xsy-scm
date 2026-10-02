@@ -23,7 +23,7 @@ public enum ReportErrorCode implements ScmErrorCode {
     /** 查询跨度超过 {@code ScmReportTimeRangeResolver.MAX_SPAN_DAYS}。 */
     REPORT_DATE_RANGE_TOO_LARGE(41111, "查询日期跨度超过上限，请缩小日期范围后重试"),
 
-    REPORT_STATEMENT_TOO_LARGE(41113, "客户历史财务事实超过单次对账上限，请联系管理员分期处理"),
+    REPORT_STATEMENT_TOO_LARGE(41113, "截至所选日期的历史财务事实超过单次对账上限，请联系管理员处理"),
     REPORT_STATEMENT_UNAVAILABLE(41114, "对账单不存在或当前无权查看完整版本"),
     REPORT_STATEMENT_EMPTY(41115, "当前授权范围内没有可生成对账单的财务事实"),
     REPORT_DAILY_UNAVAILABLE(41150, "该日期的采购清单尚未生成或不在授权范围内");
