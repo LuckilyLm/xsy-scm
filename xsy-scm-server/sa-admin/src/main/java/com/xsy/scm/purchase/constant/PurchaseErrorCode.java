@@ -41,6 +41,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_ORDER_ITEM_EMPTY(40089, "采购单至少需要一行有效明细"),
     PURCHASE_DEMAND_ALLOCATION_DUPLICATE(40090, "同一采购行重复关联同一采购需求"),
     PURCHASE_DEMAND_VERSION_REQUIRED(40091, "采购需求分配必须携带需求版本"),
+    PURCHASE_DEMAND_BATCH_TOO_LARGE(40092, "净需求计算来源超过单批上限，请缩短时间段或增加筛选条件"),
 
     // ---- 40480–40484 NOT_FOUND ----
     PURCHASE_DEMAND_NOT_FOUND(40480, "采购需求不存在"),

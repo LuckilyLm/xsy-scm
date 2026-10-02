@@ -138,6 +138,12 @@ export interface DemandSummaryRow {
     stockAvailableForSelectedOrders?: string | null;
     /** 已确认订单与当前库存/预留的对比差额，**不是**最终净采购建议（§6A.6 未裁决）。 */
     stockComparisonGap?: string | null;
+    /** 未收采购覆盖：在途未收量扣除已分配需求后的余量。 */
+    inTransitQuantity?: string | null;
+    /** 已有采购需求分配覆盖量。 */
+    purchaseCoverageQuantity?: string | null;
+    /** 扣除库存、在途未收和采购覆盖后的净采购缺口。 */
+    netPurchaseGap?: string | null;
     /** STOCK_ENOUGH / SHORTAGE / ZERO_STOCK / UNIT_MISMATCH / NO_BALANCE。 */
     calculationStatus?: string;
 }

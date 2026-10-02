@@ -157,12 +157,22 @@
                    ELSE GREATEST(s.order_demand_quantity
                                      - (s.available_quantity + s.selected_order_reserved_quantity), 0)
                END                                                             AS stock_comparison_gap,
+               s.in_transit_quantity,
+               s.purchase_coverage_quantity,
+               CASE
+                   WHEN s.inventory_unit IS NOT NULL AND s.inventory_unit &lt;&gt; s.demand_unit THEN NULL
+                   ELSE GREATEST(s.order_demand_quantity
+                                     - (s.available_quantity + s.selected_order_reserved_quantity)
+                                     - s.in_transit_quantity - s.purchase_coverage_quantity, 0)
+               END                                                             AS net_purchase_gap,
                CASE
                    WHEN s.inventory_unit IS NULL THEN 'NO_BALANCE'
                    WHEN s.inventory_unit &lt;&gt; s.demand_unit THEN 'UNIT_MISMATCH'
-                   WHEN (s.available_quantity + s.selected_order_reserved_quantity) = 0 THEN 'ZERO_STOCK'
+                   WHEN (s.available_quantity + s.selected_order_reserved_quantity
+                         + s.in_transit_quantity + s.purchase_coverage_quantity) = 0 THEN 'ZERO_STOCK'
                    WHEN s.order_demand_quantity
-                            &gt; (s.available_quantity + s.selected_order_reserved_quantity) THEN 'SHORTAGE'
+                            &gt; (s.available_quantity + s.selected_order_reserved_quantity
+                               + s.in_transit_quantity + s.purchase_coverage_quantity) THEN 'SHORTAGE'
                    ELSE 'STOCK_ENOUGH'
                END                                                             AS calculation_status
         FROM (
@@ -194,7 +204,47 @@
                                            AND w.status = 'CONFIRMED'
                                            AND w.confirmed_at &gt;= #{query.startAt}
                                            AND w.confirmed_at &lt; #{query.endAt})),
-                                 0)                                                          AS selected_order_reserved_quantity
+                                 0)                                                          AS selected_order_reserved_quantity,
+                        COALESCE((SELECT SUM(GREATEST(oi2.planned_quantity - oi2.received_quantity
+                                      - COALESCE((SELECT SUM(a2.allocated_quantity)
+                                                  FROM purchase_demand_allocation a2
+                                                  JOIN purchase_demand d3 ON d3.id = a2.purchase_demand_id
+                                                      AND d3.deleted = FALSE
+                                                  WHERE a2.deleted = FALSE
+                                                    AND a2.purchase_order_item_id = oi2.id
+                                                    AND d3.sku_id = oi2.sku_id
+                                                    AND d3.demand_unit_snapshot = oi2.purchase_unit_snapshot), 0), 0))
+                                  FROM purchase_order_item oi2
+                                  JOIN purchase_order po2 ON po2.id = oi2.purchase_order_id
+                                      AND po2.deleted = FALSE
+                                  WHERE oi2.deleted = FALSE
+                                    AND po2.warehouse_id = #{query.warehouseId}
+                                    AND po2.status IN ('SUBMITTED','PARTIALLY_RECEIVED')
+                                    AND oi2.sku_id = oi.sku_id
+                                    AND oi2.purchase_unit_snapshot = oi.sale_unit_snapshot), 0)
+                                                                                              AS in_transit_quantity,
+                        COALESCE((SELECT SUM(a.allocated_quantity)
+                                  FROM purchase_demand_allocation a
+                                  JOIN purchase_demand d2 ON d2.id = a.purchase_demand_id
+                                      AND d2.deleted = FALSE
+                                  JOIN purchase_order_item oi2 ON oi2.id = a.purchase_order_item_id
+                                      AND oi2.deleted = FALSE
+                                  JOIN purchase_order po2 ON po2.id = oi2.purchase_order_id
+                                      AND po2.deleted = FALSE
+                                  WHERE a.deleted = FALSE
+                                    AND d2.sku_id = oi.sku_id
+                                    AND d2.demand_unit_snapshot = oi.sale_unit_snapshot
+                                    AND d2.warehouse_id = #{query.warehouseId}
+                                    AND po2.status IN ('SUBMITTED','PARTIALLY_RECEIVED')
+                                    AND oi2.purchase_unit_snapshot = oi.sale_unit_snapshot), 0)
+                            + COALESCE((SELECT SUM(d.required_quantity - d.allocated_quantity)
+                                        FROM purchase_demand d
+                                        WHERE d.deleted=FALSE AND d.status IN ('PENDING','PARTIALLY_ALLOCATED')
+                                          AND d.warehouse_id=#{query.warehouseId}
+                                          AND d.sku_id=oi.sku_id
+                                          AND d.demand_unit_snapshot=oi.sale_unit_snapshot
+                                          AND d.required_quantity > d.allocated_quantity),0)
+                                                                                              AS purchase_coverage_quantity
                  FROM sales_order_item oi
                           JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
                           LEFT JOIN product_sku k ON k.id = oi.sku_id
@@ -309,14 +359,16 @@
                                      sku_code_snapshot, sku_name_snapshot, spec_values_snapshot,
                                      demand_unit_snapshot, product_type_snapshot,
                                      required_quantity, allocated_quantity, supplier_id, warehouse_id, purchaser_id,
-                                     status, demand_date, source_confirmed_at, created_by)
+                                     status, demand_date, source_confirmed_at, calculation_batch_id,
+                                     calculation_batch_item_id, created_by)
         VALUES (#{row.salesOrderId}, #{row.salesOrderItemId}, #{row.spuId}, #{row.skuId},
                 #{row.salesOrderNoSnapshot}, #{row.spuCodeSnapshot}, #{row.productNameSnapshot},
                 #{row.skuCodeSnapshot}, #{row.skuNameSnapshot},
                 #{row.specValuesSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
                 #{row.demandUnitSnapshot}, #{row.productTypeSnapshot},
                 #{row.requiredQuantity}, 0, #{row.supplierId}, #{row.warehouseId}, #{row.purchaserId},
-                #{row.status}, #{row.demandDate}, #{row.sourceConfirmedAt}, #{row.createdBy})
+                #{row.status}, #{row.demandDate}, #{row.sourceConfirmedAt}, #{row.calculationBatchId},
+                #{row.calculationBatchItemId}, #{row.createdBy})
         ON CONFLICT DO NOTHING
     </insert>
 

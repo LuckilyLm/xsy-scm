@@ -127,6 +127,30 @@ public class PurchaseQueryService {
         return SmartPageUtil.convert2PageResult(page, purchaseDemandDao.summaryPreview(page, form, warehouseScope));
     }
 
+    /** Reads every grouped row for a calculation snapshot with the exact preview scope and criteria. */
+    @Transactional(readOnly = true)
+    public List<PurchaseDemandSummaryVO> summaryPreviewAll(PurchaseDemandSummaryPreviewForm form, int maximumRows) {
+        ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
+        if (scope.isEmpty() || !scope.allows(form.getWarehouseId())) {
+            return List.of();
+        }
+        List<PurchaseDemandSummaryVO> rows = new ArrayList<>();
+        long pageNumber = 1;
+        while (true) {
+            Page<PurchaseDemandSummaryVO> page = new Page<>(pageNumber, 100);
+            page.setOptimizeCountSql(false);
+            List<PurchaseDemandSummaryVO> pageRows = purchaseDemandDao.summaryPreview(page, form, scope);
+            if (page.getTotal() > maximumRows) {
+                throw new ScmBusinessException(com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_BATCH_TOO_LARGE);
+            }
+            rows.addAll(pageRows);
+            if (rows.size() >= page.getTotal() || pageRows.isEmpty()) {
+                return rows;
+            }
+            pageNumber++;
+        }
+    }
+
     @Transactional(readOnly = true)
     public PurchaseDemandVO demandDetail(Long demandId) {
         return demandDetail(demandId, dataScopeService.resolve().getPurchaserScope());

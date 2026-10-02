@@ -40,6 +40,8 @@ public class PurchaseDemandEntity {
     private Long salesOrderId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long salesOrderItemId;
+    private Long calculationBatchId;
+    private Long calculationBatchItemId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long spuId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

@@ -23,6 +23,7 @@ public class PurchaseDemandVO {
     private Long salesOrderId;
     private String salesOrderNoSnapshot;
     private Long salesOrderItemId;
+    private Long calculationBatchId;
     private Long skuId;
     private String skuCode;
     private String skuName;

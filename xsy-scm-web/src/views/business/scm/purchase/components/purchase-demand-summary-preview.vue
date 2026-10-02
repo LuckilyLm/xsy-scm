@@ -43,8 +43,8 @@
         class="banner"
         type="info"
         show-icon
-        message="只读预览"
-        description="这是「已确认订单」与当前库存/预留的对比结果，不是最终净采购建议。本批订单自身已预留的量不计入占用（见「其中本批预留」），比对用的是「本批可用」。在途采购是否抵扣、已履约量如何扣减尚未裁决，故均未计入。本操作不生成需求、不改写任何数据。"
+        message="冻结批次净需求预览"
+        description="按仓库、SKU、单位扣除本批可用库存、有效在途未收量和已有采购覆盖。结果仍是只读的冻结批次预览，不是最终净采购建议，也不生成采购单；正式生成需求必须使用同一冻结批次。"
     />
     <a-table
         id="scm-purchase-demand-summary-preview-table"
@@ -109,6 +109,9 @@ const numericColumns = [
   'availableQuantity',
   'stockAvailableForSelectedOrders',
   'stockComparisonGap',
+  'inTransitQuantity',
+  'purchaseCoverageQuantity',
+  'netPurchaseGap',
 ];
 
 const range = ref<[string, string] | undefined>(undefined);
@@ -139,6 +142,9 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {title: '全仓净可用', dataIndex: 'availableQuantity', align: 'right', width: 110},
   {title: '本批可用', dataIndex: 'stockAvailableForSelectedOrders', align: 'right', width: 110},
   {title: '库存对比差额', dataIndex: 'stockComparisonGap', align: 'right', width: 130},
+  {title: '有效在途未收', dataIndex: 'inTransitQuantity', align: 'right', width: 130},
+  {title: '已有采购覆盖', dataIndex: 'purchaseCoverageQuantity', align: 'right', width: 130},
+  {title: '净采购缺口', dataIndex: 'netPurchaseGap', align: 'right', width: 125},
   {title: '计算状态', dataIndex: 'calculationStatus', align: 'center', width: 120},
 ]);
 

@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
 import com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity;
+import com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchEntity;
+import com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchItemEntity;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandQueryForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO;

@@ -97,6 +97,17 @@ public class PurchaseDemandSummaryVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal stockComparisonGap;
 
+    /** Open purchase coverage split into unallocated in-transit quantity and allocated coverage. */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal inTransitQuantity;
+
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal purchaseCoverageQuantity;
+
+    /** Net purchase gap after stock, in-transit quantity and existing purchase coverage. */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal netPurchaseGap;
+
     /**
      * STOCK_ENOUGH / SHORTAGE / ZERO_STOCK / UNIT_MISMATCH / NO_BALANCE。
      */
