@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.notification.dao.ScmNotificationEventDao">
+    <insert id="insertIgnore">
+        INSERT INTO scm_notification_event
+            (event_key,event_type,receiver_user_type,receiver_user_id,data_id,created_at,created_by)
+        VALUES
+            (#{eventKey},#{eventType},#{receiverUserType},#{receiverUserId},#{dataId},CURRENT_TIMESTAMP,#{createdBy})
+        ON CONFLICT (event_key) DO NOTHING
+    </insert>
+</mapper>

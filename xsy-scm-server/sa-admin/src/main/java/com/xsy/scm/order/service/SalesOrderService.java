@@ -10,6 +10,7 @@ import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
 import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
 import com.xsy.scm.inventory.service.InventoryReservationService;
+import com.xsy.scm.notification.service.ScmNotificationService;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderQuantitySourceEnum;
@@ -93,6 +94,7 @@ public class SalesOrderService {
     /** SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。 */
     private final ScmDataScopeService dataScopeService;
     private final OrderCreditService orderCreditService;
+    private final ScmNotificationService notificationService;
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm salesOrderAddForm, String key) {
@@ -426,6 +428,9 @@ public class SalesOrderService {
         salesOrder.setStatus(ScmOrderStatusEnum.CONFIRMED.name());
         salesOrder.setConfirmedAt(OffsetDateTime.now());
         save(salesOrder);
+        notificationService.sendOnce("ORDER_CONFIRMED:" + salesOrder.getId(), "ORDER_CONFIRMED",
+                salesOrder.getSellerId(), salesOrder.getId(), "销售订单已确认",
+                "销售订单 " + salesOrder.getOrderNo() + " 已确认，可进入采购与履约流程。");
         // 订单确认不自动预留库存；当前主链是先接单、再采购和收货，预留由后续显式动作完成。
         var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.CONFIRM, null, before, result);
