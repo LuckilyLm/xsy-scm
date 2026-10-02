@@ -5,10 +5,13 @@ import cn.dev33.satoken.annotation.SaMode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandAllocateForm;
+import com.xsy.scm.purchase.domain.form.PurchaseDemandBatchCreateForm;
+import com.xsy.scm.purchase.domain.form.PurchaseDemandBatchGenerateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandGenerateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandQueryForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandVO;
 import com.xsy.scm.purchase.service.PurchaseDemandService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
@@ -36,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PurchaseDemandController {
 
     private final PurchaseDemandService purchaseDemandService;
+    private final PurchaseDemandCalculationBatchService purchaseDemandCalculationBatchService;
 
     private final PurchaseQueryService purchaseQueryService;
 
@@ -58,6 +62,24 @@ public class PurchaseDemandController {
     public ResponseDTO<PageResult<PurchaseDemandSummaryVO>> summaryPreview(
             @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
         return ResponseDTO.ok(purchaseQueryService.summaryPreview(form));
+    }
+
+    @PostMapping("/batch/create")
+    @SaCheckPermission(PurchasePermission.DEMAND_BATCH_CREATE)
+    @OperateLog
+    public ResponseDTO<PurchaseDemandCalculationBatchVO> createBatch(
+            @Valid @RequestBody PurchaseDemandBatchCreateForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(purchaseDemandCalculationBatchService.create(form, idempotencyKey));
+    }
+
+    @PostMapping("/batch/generate")
+    @SaCheckPermission(PurchasePermission.DEMAND_BATCH_GENERATE)
+    @OperateLog
+    public ResponseDTO<PurchaseDemandService.GenerateResult> generateBatch(
+            @Valid @RequestBody PurchaseDemandBatchGenerateForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(purchaseDemandCalculationBatchService.generate(form, idempotencyKey));
     }
 
     @PostMapping("/generate")

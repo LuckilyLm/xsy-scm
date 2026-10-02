@@ -49,6 +49,7 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_ORDER_ITEM_NOT_FOUND(40482, "采购明细不存在"),
     PURCHASE_RECEIPT_NOT_FOUND(40483, "收货单不存在"),
     PURCHASE_RECEIPT_ITEM_NOT_FOUND(40484, "收货明细不存在"),
+    PURCHASE_DEMAND_BATCH_NOT_FOUND(40486, "净需求计算批次不存在"),
 
     // ---- 40971–40999 CONFLICT ----
     PURCHASE_UNIT_CONVERSION_REQUIRED(40971, "需求单位与采购单位不一致，无法自动换算"),

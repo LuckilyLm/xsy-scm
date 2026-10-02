@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.purchase.dao.PurchaseDemandCalculationBatchItemDao">
+    <select id="listByBatchId" resultType="com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchItemEntity">
+        SELECT * FROM purchase_demand_calculation_batch_item WHERE batch_id=#{batchId} ORDER BY line_no
+    </select>
+    <insert id="insertBatch">
+        INSERT INTO purchase_demand_calculation_batch_item
+            (batch_id,line_no,sales_order_id,sales_order_item_id,sales_order_no_snapshot,source_confirmed_at,
+             spu_id,sku_id,spu_code_snapshot,product_name_snapshot,sku_code_snapshot,sku_name_snapshot,
+             spec_values_snapshot,demand_unit_snapshot,product_type_snapshot,source_quantity,required_quantity,existing_demand_id)
+        VALUES
+        <foreach collection="rows" item="r" separator=",">
+            (#{r.batchId},#{r.lineNo},#{r.salesOrderId},#{r.salesOrderItemId},#{r.salesOrderNoSnapshot},#{r.sourceConfirmedAt},
+             #{r.spuId},#{r.skuId},#{r.spuCodeSnapshot},#{r.productNameSnapshot},#{r.skuCodeSnapshot},#{r.skuNameSnapshot},
+             #{r.specValuesSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+             #{r.demandUnitSnapshot},#{r.productTypeSnapshot},#{r.sourceQuantity},#{r.requiredQuantity},#{r.existingDemandId})
+        </foreach>
+    </insert>
+</mapper>

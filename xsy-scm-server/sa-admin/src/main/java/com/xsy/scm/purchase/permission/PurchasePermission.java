@@ -11,6 +11,10 @@ public final class PurchasePermission {
 
     public static final String DEMAND_ALLOCATE = "scm:purchase:demand:allocate";
 
+    public static final String DEMAND_BATCH_CREATE = "scm:purchase:demand:batch:create";
+
+    public static final String DEMAND_BATCH_GENERATE = "scm:purchase:demand:batch:generate";
+
     public static final String QUERY = "scm:purchase:query";
 
     public static final String LOG_QUERY = "scm:purchase:log:query";

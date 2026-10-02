@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.purchase.dao.PurchaseDemandCalculationBatchDao">
+    <select id="lock" resultType="com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchEntity">
+        SELECT * FROM purchase_demand_calculation_batch WHERE id=#{batchId} FOR UPDATE
+    </select>
+    <update id="markGenerated">
+        UPDATE purchase_demand_calculation_batch SET status='GENERATED', generated_count=#{generatedCount},
+            skipped_count=#{skippedCount}, result_snapshot=#{resultSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
+            generated_at=#{generatedAt}, updated_at=#{generatedAt}, updated_by=#{operator}
+        WHERE id=#{batchId} AND status='READY'
+    </update>
+</mapper>
