@@ -75,7 +75,7 @@ xsy-scm-server/
 Java 21 + Spring Boot 3.5.4 + MyBatis-Plus 3.5.12
 Sa-Token 1.44.0 + Redis（sa-token-redis-jackson）
 PostgreSQL + Flyway
-包根：net.lab1024.sa.base（框架） / net.lab1024.sa.admin（业务）
+包根：net.lab1024.sa.base（框架） / net.lab1024.sa.admin（SmartAdmin 系统与 OA） / com.xsy.scm（SCM 业务）
 ```
 
 分层约定（沿用 SmartAdmin）：
@@ -88,10 +88,10 @@ domain/entity / domain/form / domain/vo / domain/dto
 SCM 业务模块放入：
 
 ```text
-net.lab1024.sa.admin.module.scm.<domain>/
+com.xsy.scm.<domain>
 ```
 
-其中 `<domain>` ∈ `product | customer | supplier | order | purchase | inventory | mall`（`marketing` 为 DEFERRED）。
+当前业务域包括 `product | customer | supplier | pricing | order | purchase | inventory | warehouse | sorting | delivery | finance | report | dashboard | screen`，共用能力位于 `common`。`mall` / `marketing` 尚未在正式主线形成完整模块，不能把规划包名当成实现状态。
 
 ### 2.2 前端
 
@@ -282,12 +282,12 @@ marketing：DEFERRED —— 不删除、不在 Product Pilot 迁移
 业务规则来源优先级：
 
 ```text
-当前用户请求
-→ AGENTS.md / CLAUDE.md / 本文件
-→ 当前 Sprint 规格及相关 docs
-→ legacy 实现（业务语义参照）
-→ legacy 测试（行为契约参照）
-→ SmartAdmin 框架惯例
+用户本轮明确要求
+→ AGENTS.md
+→ 对应领域的正式决策与计划
+→ 现有实现
+
+legacy 代码、历史测试和 SmartAdmin 参考仅用于追溯，不覆盖上述规则。
 ```
 
 ### 7.3 禁止的大规模重构

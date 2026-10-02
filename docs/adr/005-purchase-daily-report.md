@@ -38,4 +38,4 @@
 - 前端 TS 棘轮无新增错误、lint 0 errors（3 条既有 warning）、单测 258/258、生产构建成功；正式浏览器 E2E 156 passed，0 skipped / unexpected / flaky。每日清单用例覆盖默认上海昨日、今天/未来禁选、未生成与空清单、仓库/关键字筛选、分页、Content-Disposition、XLSX `PK` 签名及窄屏布局。
 - Migration checksum guard 已冻结 V74：74 migrations，drift 0、missing 0、renamed 0、unbaked 0。质量门禁全部 baseline 为 0。
 
-V74 与后续版本只在本地验收 / scratch 数据库应用；没有应用到生产库，也未推送本地代码提交。
+截至上述验收记录，V74 只在本地验收 / scratch 数据库应用，未应用生产库；本轮文档整理未查询生产环境。相关代码已于 2026-10-02 合并并推送到 `main`（交付 SHA：`2edb8ccf4a7129bc02be1cdf3f67bcdea75edc37`），见[项目状态](../status.md)。代码交付不等于生产库已迁移；后续版本不由本记录推断。

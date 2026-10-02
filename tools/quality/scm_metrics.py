@@ -530,7 +530,7 @@ DOCS_FILES = (
     "README.md",
     "NOTICE.md",
     "docs/architecture/smartadmin-foundation.md",
-    "docs/archive/proposals/PROPOSAL-2026-09-18-团队技术提升方案.md",
+    "docs/plan/active/admin-development-roadmap.md",
     "docs/README.md",
     "docs/status.md",
     "docs/decisions.md",
@@ -539,7 +539,7 @@ DOCS_FILES = (
     "docs/adr/003-delivery-outbound-and-signoff.md",
     "docs/adr/004-finance-r1-facts.md",
     "docs/quality/java-code-quality-remediation-plan.md",
-    "docs/quality/q3-service-architecture-review.md",
+    "docs/quality/package-migration-readiness.md",
     "docs/plan/active/finance-r1-design.md",
 )
 

@@ -1,36 +1,34 @@
 # 项目状态
 
-最后更新：2026-10-01
+最后更新：2026-10-02。
 
 ## 当前完成
 
-- SCM V2 正式底座、商品、客户、供应商、定价、订单、采购、库存、分拣、配送和 Finance R1 F1-8 已完成，详情见 [有效决策](decisions.md) 与 [Finance R1 规划](plan/active/finance-r1-design.md)。
-- Java 质量整改已实施并留下[先前验收记录](quality/java-quality-final-verification-2026-09-28.md)；其中的零计数与 PASS 只描述当时门禁覆盖的范围。
-- 后续已修正 common 对 report 的权限常量依赖、共享权限目录、格式配置和已发现的阶段注释，见[后续修复记录](quality/java-quality-follow-up-2026-09-28.md)。
-- 2026-10-01 主线代码收口已完成：Finance CUSTOMER Payment 重放重新校验当前客户范围；QF-TEST-01～06 已补测并通过；V74 采购商品每日清单已在 fresh PostgreSQL 数据库应用并完成后端、前端与浏览器验证。细节见[后续修复记录](quality/java-quality-follow-up-2026-09-28.md)和 [ADR-005](adr/005-purchase-daily-report.md)。
+- SCM V2 正式底座及商品、客户、供应商、定价、订单、采购、库存、分拣、配送的当前阶段已交付；Finance R1 F1-8 与 V74 采购商品每日清单已完成。详情见[有效决策](decisions.md)与[开发规划](plan/active/admin-development-roadmap.md)。
+- 主线代码收口记录截至 2026-10-01：Finance 重放范围、QF-TEST-01～06 和 V74 验收已完成，见[质量基线中的收口记录](quality/java-code-quality-remediation-plan.md)及 [ADR-005](adr/005-purchase-daily-report.md)。
+- 上述主线代码已于 2026-10-02 合并并推送到 `main`，交付 SHA 为 `2edb8ccf4a7129bc02be1cdf3f67bcdea75edc37`。这是既有交付记录，不代表本次文档整理已提交或推送。
 
 ## 当前进行
 
-- 本轮主线代码收口已完成，当前没有待验收的主线项；没有开始新的业务阶段。
+- 已整理管理后台剩余需求并形成[开发规划清单](plan/active/admin-development-roadmap.md)；本轮只整理文档，没有开始新的业务阶段。
+- “当前阶段完成”不表示全部产品需求完成；代码验收与生产上线分开记录。
 
-## 暂停或未开始
+## 未开始或待打通
 
-- W6-2 小程序尚未开始，当前目录保持冻结。
-- 地图 M2 的完整商用底图方案仍待路线选择；现有 M0/M1 与可配置接入不受影响。
+- 财务 R2：利润、账龄、客户/供应商对账与财务分析。
+- 业务闭环：销售退货回库、集团统一结算、账期授信联动、采购净需求。
+- 后台完善：订单与库存通知、可配置打印模板、异常订单分析。
+- 阶段外增强：地图 M2 商用收口及供应商点位、配送优化/轨迹、分拣设备与协同；现有 M0/M1 和可配置选点已经实现。
+- 营销与支付、推广二维码、移动协同/订单助手、扫码溯源未形成完整模块。W6-2 客户商城仍未开始，legacy 目录冻结。
+- 具体建议顺序、前置规则和完成标准以[开发规划清单](plan/active/admin-development-roadmap.md)为准；未构成实施授权。
 
-## 风险与验证状态
+## 验证与部署边界
 
-- Finance R1 F1-3C / F1-4 的生产代码、V68 / V69 迁移已通过定向 PostgreSQL 集成验证：反向收付款 8/8，核销 / 红字 13/13，并发锁序 4/4；结合 schema、只读契约和日期区间检查，目标类共 45/45。
-- Finance R1 F1-5 / F1-6 已交付：V70 查询 / 导出权限、V71 五页面菜单、V72 折叠导航图标；定向 PostgreSQL 组 44/44。财务菜单实际为 `1500–1505, 1511–1515, 1521–1527, 1531`，最大 `menu_id=1531`。
-- Finance R1 F1-7 / F1-8 在 2026-09-30 通过 `python tools/verify.py all`：后端 1,243 tests，0 failures / errors / skipped；Web 单测 258/258；浏览器 E2E 154 passed，0 skipped / unexpected / flaky。质量门禁、迁移校验（73 条无漂移）、生产构建和 TS 基线棘轮均通过。
-- 前端 lint 退出 0，保留 3 条既有 warning；生产构建有依赖 `icon.svg`、动态导入和大 chunk 的既有提示。TS 基线棘轮为 baseline 1974、current 1940、delta -34，SCM 错误 0、新增错误 0；直接全仓 `vue-tsc --noEmit` 仍有历史类型错误，不记为全仓 typecheck 通过。
-- F1-8 新增 Finance R0 往来概览的六项指标、期末应收/应付明细和三种 XLSX 导出；Finance R0 定向浏览器用例 3/3 通过，包含移动端完整字段卡片、服务端权限拒绝和 XLSX 文件签名检查。桌面/窄屏视觉复核通过，详情见 `.runtime/finance-r0-review/`。
-- V68–V74 只应用到本地验收 / scratch 数据库，未应用到生产库。2026-10-01 fresh PostgreSQL 数据库从 V1 应用至 V74；V74 Job 单行启用且无重复类名。后端全量 1,261 tests，0 failures / errors / skipped；5 个 `F0FileStorageCloudIT` 用例均实际执行并通过。生产库迁移状态需在部署时单独核验。
-- 2026-10-01 前端正式入口通过：TS 棘轮无新增错误、lint 0 errors（3 条既有 warning）、Web 单测 258/258、生产构建成功。全量浏览器 E2E 156 passed，0 skipped / unexpected / flaky。
-- Migration checksum snapshot 已冻结到 V74：74 migrations，drift 0、missing 0、renamed 0、unbaked 0。质量门禁六项 baseline 均为 0。
-- Repository integration（2026-10-02）：主线收口变更已合并并推送到远端 `main`，本次交付 SHA 为 `2edb8ccf4a7129bc02be1cdf3f67bcdea75edc37`。
-- 归档进度中的测试结果仅描述当时的运行记录，不代表本次改动已验证。
+- 最近一次记录的全量验收为 2026-10-01：后端 1,261 tests（0 failures/errors/skipped），Web 单测 258/258，浏览器 E2E 156 passed；质量与迁移门禁通过。本次文档整理未重跑这些验证。
+- 前端 TS 棘轮无新增错误，但直接全仓 `vue-tsc --noEmit` 仍有历史类型错误；lint 保留 3 条既有 warning，构建有既有提示。不将其表述为全仓零问题。
+- V68–V74 最近记录只应用于本地验收 / scratch 数据库，未应用生产库；本轮未查询生产环境，部署时需单独核验。
+- 最近收口证据保留在质量基线与 ADR-005；旧过程和阶段快照从 Git 历史追溯，不另建副本文档。历史测试数字和 Git 推送不等于当前生产环境验收。
 
 ## 下一步
 
-- 若地图 M2 或多仓默认选择进入实施，先更新对应 ADR 和活动计划。
+先按规划清单收敛下一工作包的范围与业务规则；涉及现有边界变更时同步 ADR。每次完成实现或验收后更新本文件与开发规划；历史过程从 Git 追溯，不再累积重复清单。

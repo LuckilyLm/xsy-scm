@@ -3,7 +3,7 @@
 最后更新：2026-09-26
 
 这些是当前仓库继续有效的简要边界。详细业务语义优先查阅
-[`project-reference-examples/xsy-scm/`](../project-reference-examples/xsy-scm/)；实现约束以根目录 `AGENTS.md` 为准。
+[只读参考项目](../../../project-reference-examples/xsy-scm/)；实现约束以根目录 `AGENTS.md` 为准。
 
 ## 工程边界
 
@@ -250,7 +250,7 @@
 
 ### 地图模块 M0 / M1：地理数据地基与大屏真实地图（V40，2026-09-21）
 
-方案与分期见 [`requirements/2026-09-21-地图模块分期实施方案.md`](./requirements/2026-09-21-地图模块分期实施方案.md)；
+方案与分期见 [地图当前边界](../../decisions.md#地图当前边界)；
 本节只记取舍，不复述实现。
 
 - **`scm_region` 只做省 / 市两级，不建区县字典**。区县由表单人工选择后按「编码 + 名称快照」直接落库，
@@ -283,7 +283,7 @@
 
 ### F0-DEBT-01 裁决：附件资产分级与文件读取权限（V41，2026-09-21）
 
-下一波完整改造的方案见 [`plan/attachment-asset-grading-and-file-access-plan.md`](./plan/attachment-asset-grading-and-file-access-plan.md)；
+下一波完整改造的方案见 [附件授权 ADR](../../adr/001-data-scope-and-file-access.md)；
 本节只记裁决本身与其理由。
 
 - **附件按「机密性」分级，不按「哪个业务模块上传」分级**。分级只有一个可执行来源：目录前缀
@@ -695,7 +695,7 @@ P1 的实现里混进未经确认的权限模型（第二条范围权限）、�
 ## P3 Finance R1 裁决（2026-09-25）
 
 主线顺序 P2 → Finance R1 → Finance R2。规划、调研结论、候选并列与正式设计统一见
-[`plan/finance-r1-design.md`](plan/finance-r1-design.md)（单文档收口版；2026-09-25 之前的
+[Finance R1 正式设计](../../plan/active/finance-r1-design.md)（单文档收口版；2026-09-25 之前的
 调研稿与两批裁决表已并入该稿后删除，过程留痕在提交 `76904ea`）。
 
 条目编号**沿用裁决表 Q 号**，以便与调研稿 §11 的 26 问逐条对照；不按波次顺序重编号。
@@ -917,7 +917,7 @@ Q27 之所以要写清三种时序，是因为「先退货后签收」在当前�
 
 F1-0 设计评审把五项实现期分叉提交负责人，五条**全部裁决为 A**。
 自此 Finance R1 无待裁决项，F1-1 解禁。落点索引见
-[`plan/finance-r1-design.md`](plan/finance-r1-design.md) §26；候选并列过程留在提交 `caace54a`。
+[Finance R1 正式设计](../../plan/active/finance-r1-design.md) §26；候选并列过程留在提交 `caace54a`。
 
 **D-1 历史财务事实回填：不回填。**
 
@@ -1036,7 +1036,7 @@ overAppliedAmount   = max(writtenOffAmount − netAmount, 0)
 ### 第三批同时修正的设计稿内部不一致（2026-09-26）
 
 五处不是新裁决，是 D-1…D-5 落地后设计稿自身必须同步的口径，已回改
-[`plan/finance-r1-design.md`](plan/finance-r1-design.md)：
+[Finance R1 正式设计](../../plan/active/finance-r1-design.md)：
 
 1. **Payable MANUAL 红字的来源唯一索引谓词**必须为
    `WHERE deleted = FALSE AND source_id IS NOT NULL`（`finance_payable_item` 同形）。
@@ -1181,4 +1181,4 @@ overAppliedAmount   = max(writtenOffAmount − netAmount, 0)
 只实现 DRAFT / PLANNED / CANCELLED 的命令，不擅自决定实发数量、不接 L3 出库、不扩展订单状态机。
 线路版本锁 + 销售订单锁 + ACTIVE 部分唯一索引保证组单一致性；规划要求所有实际地址点位完整且同坐标系。
 地址 / 联系人 / 点位 / 订单金额均保留快照；取消保留历史但释放分配。主档变更不让历史路线漂移。
-仅 SUPER_ADMIN 获新增菜单权限。详细边界、接口和配置见 [配送实现说明](delivery-static-route-implementation.md)。
+仅 SUPER_ADMIN 获新增菜单权限。详细边界、接口和配置见 [配送出库与签收 ADR](../../adr/003-delivery-outbound-and-signoff.md)。

@@ -1,23 +1,17 @@
 # 项目文档
 
-按用途查找当前文档：
+日常只看三个入口：
 
-- [项目状态](status.md)：当前完成、进行中、暂停项和风险。
-- [当前决策索引](decisions.md) 与 [ADR](adr/)：仍然生效的工程和业务约束。
-- [架构](architecture/)：SmartAdmin 底座规则和架构说明。
-- [需求](requirements/)：需求基线、负责人确认口径和技术调研。
-- [活动计划](plan/active/)：尚需推进或可供实施参考的计划。
-- [质量](quality/)：Java 整改基线、审计与质量工具说明。
-- [运行手册](runbooks/)：可重复的本地及部署操作说明。
-- [验收报告](test-report/)：按日期保存的交付验收记录。
-- [归档](archive/)：已完成计划、历史进度、原决策全文和旧方案。
+- [项目状态](status.md)：已交付能力、验证与部署边界。
+- [开发规划](plan/active/admin-development-roadmap.md)：剩余功能、建议顺序及完成标准。
+- [有效决策](decisions.md)：业务规则、正式 ADR 和未决事项。
 
-## 维护规则
+需要细节时查阅：
 
-- `status.md` 只维护当前状态、风险和下一步；详细历史保存在 `archive/progress/`。
-- `decisions.md` 只维护当前有效决策的索引与未决事项；完整理由写在 ADR，旧决策全文保存在归档。
-- `plan/active/` 中的迁移版本、菜单编号等规划快照，实施前必须按当前代码和数据库重新核对。
-- 文档引用仓库相对路径。不要记录个人机器路径、临时库名、PID、日志路径、凭据或本机网络拓扑。
-- 已应用的迁移不可修改；项目状态以实现、有效 ADR 和 `status.md` 为准，归档内容只用于追溯。
+- [原始需求](requirements/产品功能需求基线.md)、[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)。
+- [SmartAdmin 底座](architecture/smartadmin-foundation.md)、[工程质量基线](quality/java-code-quality-remediation-plan.md)。
+- [Finance R1 正式设计](plan/active/finance-r1-design.md)、[贡献与验证指南](../CONTRIBUTING.md)。
 
-业务需求、旧系统语义和参考页面以只读目录 `../project-reference-examples/xsy-scm/` 为参考；当前实现规则优先。
+原始需求、有效规则和仍使用的正式设计保留；重复清单、已完成计划和旧审计过程直接删除，从 Git 追溯。只保留仍被正式设计引用的完整裁决记录。当前状态不重复记录开发过程，剩余工作只维护一份规划。
+
+文档使用仓库相对链接；测试记录须注明日期与范围，本地验收不等于生产上线。
