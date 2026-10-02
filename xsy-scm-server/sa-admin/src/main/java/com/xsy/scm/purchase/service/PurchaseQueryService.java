@@ -1,5 +1,6 @@
 package com.xsy.scm.purchase.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.purchase.dao.PurchaseDemandAllocationDao;

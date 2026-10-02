@@ -41,10 +41,10 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button type="primary" v-privilege="'scm:purchase:demand:generate'" @click="generateOpen = true">
-          汇总生成需求
+        <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true">
+          冻结批次生成需求
         </a-button>
-        <span class="hint">需求来自「已确认」的销售订单行，重复汇总不会重复生成</span>
+        <span class="hint">先按仓库/SKU/单位冻结净需求批次（含库存、在途、已有采购覆盖的解释行），再从同一批次生成需求；重复生成不会重复建需求</span>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData"/>
@@ -60,7 +60,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1500 }"
+        :scroll="{ x: 1700 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -77,6 +77,18 @@
         </template>
         <template v-else-if="column.dataIndex === 'supplierName'">{{ record.supplierName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'calculationBatchId'">
+          <a-button
+              v-if="record.calculationBatchId"
+              type="link"
+              size="small"
+              v-privilege="'scm:purchase:demand:batch:query'"
+              @click="openBatch(record.calculationBatchId)"
+          >
+            {{ record.calculationBatchId }}
+          </a-button>
+          <span v-else class="hint">手工毛需求</span>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button
@@ -112,7 +124,18 @@
     </a-tab-pane>
   </a-tabs>
 
-  <DemandGenerateModal :open="generateOpen" @close="generateOpen = false" @generated="queryData"/>
+  <DemandGenerateModal
+      :open="generateOpen"
+      @close="generateOpen = false"
+      @generated="queryData"
+      @viewBatch="openBatch"
+  />
+
+  <PurchaseDemandBatchDetailDrawer
+      :open="batchDrawer.open"
+      :batch-id="batchDrawer.batchId"
+      @close="batchDrawer.open = false"
+  />
 
   <!-- 分配到采购行：`allocate` 的入参是 `purchaseOrderItemId`，因此要先选单再选行 -->
   <a-modal
@@ -170,6 +193,7 @@ import {fixed, quantity} from './purchase-form-model';
 import {purchaseError} from './purchase-errors';
 import DemandGenerateModal from './components/purchase-demand-generate-modal.vue';
 import PurchaseDemandSummaryPreview from './components/purchase-demand-summary-preview.vue';
+import PurchaseDemandBatchDetailDrawer from './components/purchase-demand-batch-detail-drawer.vue';
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
@@ -184,6 +208,17 @@ const loading = ref(false);
 const error = ref('');
 const generateOpen = ref(false);
 let requestId = 0;
+
+/** 冻结批次回看的唯一抽屉实例：列表列与生成弹窗共用它，避免同源请求出现两份。 */
+const batchDrawer = reactive({
+  open: false,
+  batchId: undefined as Id | undefined,
+});
+
+function openBatch(batchId: Id) {
+  batchDrawer.batchId = batchId;
+  batchDrawer.open = true;
+}
 
 const alloc = reactive({
   open: false,
@@ -203,6 +238,7 @@ const alloc = reactive({
 
 const columns = computed<TableColumnsType<Demand>>(() => [
   {title: '来源销售单号', dataIndex: 'salesOrderNoSnapshot', width: 200},
+  {title: '来源冻结批次', dataIndex: 'calculationBatchId', width: 130},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '规格', dataIndex: 'skuName', width: 130},
   {title: '需求单位', dataIndex: 'demandUnit', width: 95},

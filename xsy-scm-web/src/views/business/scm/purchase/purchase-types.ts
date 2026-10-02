@@ -34,6 +34,8 @@ export interface Demand {
     salesOrderId?: Id;
     salesOrderNoSnapshot?: string;
     salesOrderItemId?: Id;
+    /** 生成这条需求的冻结批次；走一次性 `generate` 的毛需求为 `null`。 */
+    calculationBatchId?: Id | null;
     skuId?: Id;
     skuCode?: string;
     skuName?: string;
@@ -90,7 +92,88 @@ export interface DemandCalculationBatch {
     candidateLineCount: number;
     generatedCount: number;
     skippedCount: number;
-    summary?: Record<string, unknown>[];
+    summary?: DemandBatchSummaryRow[];
+}
+
+/**
+ * `PurchaseDemandCalculationBatchDetailVO` —— 冻结批次回看（只读，不重算）。
+ *
+ * 三块内容缺一不可地支撑「建议量逐项解释」：批次头是冻结时的输入条件与计数，
+ * `summary` 是 SKU 级解释行（订单需求 − 本批可用 − 在途 − 已有采购覆盖 = 净缺口），
+ * `items` 是逐行建议（净缺口摊到哪张订单行、摊了多少）。
+ *
+ * 所有数字原样取自冻结快照，与生成时逐字一致 —— **不能**拿它当「当前库存」再判断一次。
+ */
+export interface DemandBatchDetail {
+    batchId: Id;
+    status: 'READY' | 'GENERATED' | string;
+    startAt?: string;
+    endAt?: string;
+    warehouseId?: Id;
+    warehouseName?: string | null;
+    supplierId?: Id | null;
+    supplierName?: string | null;
+    /** 批次归属采购员（已解析落库值）；回看可见性按它判定。 */
+    purchaserId?: Id | null;
+    purchaserName?: string | null;
+    categoryId?: Id | null;
+    keyword?: string | null;
+    sourceLineCount: number;
+    candidateLineCount: number;
+    generatedCount: number;
+    skippedCount: number;
+    createdAt?: string;
+    createdBy?: string;
+    generatedAt?: string | null;
+    summary?: DemandBatchSummaryRow[];
+    items?: DemandBatchItem[];
+}
+
+/**
+ * 冻结快照里的 SKU 级解释行：键与 `DemandSummaryRow` 同名，值一律是四位定点字符串
+ * （`null` 与 `"0.0000"` 语义不同：前者是「单位不一致，不猜折算率」）。
+ */
+export interface DemandBatchSummaryRow {
+    skuId: Id;
+    skuCode?: string;
+    productName?: string;
+    skuName?: string;
+    demandUnit?: string;
+    orderDemandQuantity?: string | null;
+    onHandQuantity?: string | null;
+    reservedQuantity?: string | null;
+    selectedOrderReservedQuantity?: string | null;
+    otherReservedQuantity?: string | null;
+    availableQuantity?: string | null;
+    stockAvailableForSelectedOrders?: string | null;
+    stockComparisonGap?: string | null;
+    inTransitQuantity?: string | null;
+    purchaseCoverageQuantity?: string | null;
+    netPurchaseGap?: string | null;
+    calculationStatus?: string;
+}
+
+/**
+ * 冻结批次的逐行建议。
+ *
+ * `requiredQuantity` 可能小于 `sourceQuantity`：同 SKU 的净缺口在批次内按确认时间顺序
+ * 被前面的行消耗完，后面的行只能拿到剩下的部分。`existingDemandId` 非空表示冻结时
+ * 这一行已有活动需求，本批不再重复建议。
+ */
+export interface DemandBatchItem {
+    lineNo: number;
+    salesOrderNo?: string;
+    sourceConfirmedAt?: string;
+    skuId?: Id;
+    skuCode?: string;
+    productName?: string;
+    skuName?: string;
+    specValues?: Record<string, unknown>;
+    demandUnit?: string;
+    productType?: string;
+    sourceQuantity?: string | null;
+    requiredQuantity?: string | null;
+    existingDemandId?: Id | null;
 }
 
 /** `PurchaseDemandService.GenerateResult`。 */

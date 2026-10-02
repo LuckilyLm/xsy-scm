@@ -15,6 +15,8 @@ public final class PurchasePermission {
 
     public static final String DEMAND_BATCH_GENERATE = "scm:purchase:demand:batch:generate";
 
+    public static final String DEMAND_BATCH_QUERY = "scm:purchase:demand:batch:query";
+
     public static final String QUERY = "scm:purchase:query";
 
     public static final String LOG_QUERY = "scm:purchase:log:query";

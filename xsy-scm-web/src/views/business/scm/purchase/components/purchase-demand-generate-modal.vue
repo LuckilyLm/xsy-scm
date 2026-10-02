@@ -5,8 +5,12 @@
       `purchaseQuantity` / `unitPrice` 列（那是 A 源的汇总预览列，W5 的汇总在服务端完成）。
 适配：**A21 半开区间** `[startAt, endAt)`（不是 `startTime`/`endTime`，也不是闭区间）、
       Q6a `demand_date` 取 `confirmed_at` 在上海时区下的日期、
-      补 `warehouseId`（必填）/ `supplierId` / `purchaserId`、`scm:purchase:demand:generate`（A22）、
+      补 `warehouseId`（必填）/ `supplierId` / `purchaserId`、
+      **两步走**：先 `demand/batch/create` 冻结净需求批次（含库存/在途/已有采购覆盖解释行），
+      再 `demand/batch/generate` 从同一批次生成需求；权限分别是
+      `scm:purchase:demand:batch:create` 与 `scm:purchase:demand:batch:generate`、
       `a-form-item` 带 `name`（A29）、loading/error/retry（A27）。
+      回看冻结明细走 `scm:purchase:demand:batch:query`，抽屉实例挂在列表页（本弹窗只发事件）。
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-modal
@@ -23,7 +27,7 @@
         type="info"
         show-icon
         message="区间是半开区间 [开始, 结束)"
-        description="只汇总区间内「已确认」的销售订单行；重复汇总不会重复生成，已存在的来源行会被计入「已跳过」。"
+        description="只汇总区间内「已确认」的销售订单行。生成分两步：先按仓库、SKU、单位冻结净需求批次（含库存、在途与已有采购覆盖的解释行），再从同一冻结批次生成需求；重复生成不会重复建需求，已存在的来源行计入「已跳过」。"
     />
     <a-form layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
@@ -56,8 +60,14 @@
       <a-descriptions-item label="冻结批次">{{ batch.batchId }}</a-descriptions-item>
       <a-descriptions-item label="候选行">{{ batch.candidateLineCount }}</a-descriptions-item>
       <a-descriptions-item label="状态">{{ batch.status }}</a-descriptions-item>
-      <a-descriptions-item label="操作">可继续从冻结批次生成需求</a-descriptions-item>
+      <a-descriptions-item label="冻结解释行">{{ batch.summary?.length ?? 0 }} 个 SKU</a-descriptions-item>
     </a-descriptions>
+    <div v-if="batch" class="batch-actions">
+      <a-button v-privilege="'scm:purchase:demand:batch:query'" @click="viewBatch">
+        查看冻结批次明细
+      </a-button>
+      <span class="hint">回看冻结时的解释行与逐行建议；数字不会随后续库存变化重算</span>
+    </div>
     <a-descriptions v-if="result" bordered size="small" :column="2">
       <a-descriptions-item label="区间内来源行">{{ result.sourceLineCount }}</a-descriptions-item>
       <a-descriptions-item label="本次新建需求">{{ result.createdCount }}</a-descriptions-item>
@@ -78,7 +88,7 @@ import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types
 import {purchaseError} from '../purchase-errors';
 
 const props = defineProps<{ open: boolean }>();
-const emit = defineEmits<{ close: []; generated: [] }>();
+const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>();
 
 const range = ref<[string, string] | undefined>(undefined);
 const form = ref<{ warehouseId?: Id; supplierId?: Id; purchaserId?: Id }>({});
@@ -172,10 +182,29 @@ async function generate() {
 function close() {
   emit('close');
 }
+
+/** 把回看交给列表页那个唯一的抽屉实例：这里再挂一个抽屉会出现两份同源请求。 */
+function viewBatch() {
+  if (batch.value) {
+    emit('viewBatch', batch.value.batchId);
+  }
+}
 </script>
 
 <style scoped>
 .form {
   margin-top: 12px;
+}
+
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.hint {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
 }
 </style>

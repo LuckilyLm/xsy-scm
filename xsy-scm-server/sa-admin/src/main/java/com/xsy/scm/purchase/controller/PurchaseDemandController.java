@@ -7,10 +7,12 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandAllocateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandBatchCreateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandBatchGenerateForm;
+import com.xsy.scm.purchase.domain.form.PurchaseDemandBatchQueryForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandGenerateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandQueryForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchDetailVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandVO;
 import com.xsy.scm.purchase.service.PurchaseDemandService;
@@ -80,6 +82,22 @@ public class PurchaseDemandController {
             @Valid @RequestBody PurchaseDemandBatchGenerateForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseDemandCalculationBatchService.generate(form, idempotencyKey));
+    }
+
+    /**
+     * 冻结批次回看（只读：不重算、不写业务表、不做幂等）。
+     *
+     * <p>
+     * 返回体含该仓的库存与预留数字，因此与 {@code summary-preview} 同样<b>同时</b>要求
+     * {@code scm:purchase:demand:batch:query} 与 {@code scm:inventory:balance:query}（{@link SaMode#AND}）：
+     * 只有批次查看权的人不能经此接口读到库存余额。
+     */
+    @PostMapping("/batch/detail")
+    @SaCheckPermission(value = {PurchasePermission.DEMAND_BATCH_QUERY,
+            ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
+    public ResponseDTO<PurchaseDemandCalculationBatchDetailVO> batchDetail(
+            @Valid @RequestBody PurchaseDemandBatchQueryForm form) {
+        return ResponseDTO.ok(purchaseDemandCalculationBatchService.detail(form.getBatchId()));
     }
 
     @PostMapping("/generate")

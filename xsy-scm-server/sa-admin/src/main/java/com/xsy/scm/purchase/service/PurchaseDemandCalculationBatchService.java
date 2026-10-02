@@ -2,6 +2,8 @@ package com.xsy.scm.purchase.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
@@ -16,6 +18,8 @@ import com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandBatchCreateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandBatchGenerateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseDemandSummaryPreviewForm;
+import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchDetailVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchItemVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchVO;
 import com.xsy.scm.purchase.manager.PurchaseSnapshotFactory;
 import com.xsy.scm.purchase.support.PurchaseOwnerResolver;
@@ -49,6 +53,7 @@ public class PurchaseDemandCalculationBatchService {
     private final PurchaseIdempotencyService idempotencyService;
     private final PurchaseWarehouseReferenceGuard warehouseReferenceGuard;
     private final PurchaseOwnerResolver ownerResolver;
+    private final ScmDataScopeService dataScopeService;
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseDemandCalculationBatchVO create(PurchaseDemandBatchCreateForm form, String key) {
@@ -81,28 +86,49 @@ public class PurchaseDemandCalculationBatchService {
                 .collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
         Map<Long, PurchaseDemandEntity> existing = existing(sourceItems);
 
+        // 批次头记录**解析后**的归属，与稍后由同一批次生成的需求保持同一个 owner：
+        // 只存表单原值会让「没分配权的采购员建了自己的批次却读不回来」。
+        Long resolvedPurchaserId = ownerResolver.resolveForCreate(form.getPurchaserId());
+
         PurchaseDemandCalculationBatchEntity batch = new PurchaseDemandCalculationBatchEntity();
         batch.setStartAt(form.getStartAt());
         batch.setEndAt(form.getEndAt());
         batch.setWarehouseId(form.getWarehouseId());
         batch.setSupplierId(form.getSupplierId());
-        batch.setPurchaserId(form.getPurchaserId());
+        batch.setPurchaserId(resolvedPurchaserId);
         batch.setCategoryId(form.getCategoryId());
         batch.setKeyword(form.getKeyword());
         batch.setStatus("READY");
         batch.setSourceLineCount(sourceItems.size());
         batch.setCreatedAt(OffsetDateTime.now());
         batch.setCreatedBy(ScmOperator.current());
-        batch.setSummarySnapshot(summary.stream().map(row -> {
+        // V78 的 ck_purchase_demand_batch_summary 要求 summary_snapshot 是 JSON 对象而不是数组，
+        // 因此解释行整体挂在 "rows" 键下；数字全部在这里定成四位定点字符串，回看时不再重算。
+        Map<String, Object> summarySnapshot = PurchaseSnapshotFactory.snapshot();
+        summarySnapshot.put("rows", summary.stream().map(row -> {
             Map<String, Object> value = new LinkedHashMap<>();
             value.put("skuId", row.getSkuId());
+            value.put("skuCode", row.getSkuCode());
+            value.put("productName", row.getProductName());
+            value.put("skuName", row.getSkuName());
             value.put("demandUnit", row.getDemandUnit());
             value.put("orderDemandQuantity", PurchaseSnapshotFactory.fixed(row.getOrderDemandQuantity()));
-            value.put("netPurchaseGap", PurchaseSnapshotFactory.fixed(row.getNetPurchaseGap()));
+            value.put("onHandQuantity", PurchaseSnapshotFactory.fixed(row.getOnHandQuantity()));
+            value.put("reservedQuantity", PurchaseSnapshotFactory.fixed(row.getReservedQuantity()));
+            value.put("selectedOrderReservedQuantity",
+                    PurchaseSnapshotFactory.fixed(row.getSelectedOrderReservedQuantity()));
+            value.put("otherReservedQuantity", PurchaseSnapshotFactory.fixed(row.getOtherReservedQuantity()));
+            value.put("availableQuantity", PurchaseSnapshotFactory.fixed(row.getAvailableQuantity()));
+            value.put("stockAvailableForSelectedOrders",
+                    PurchaseSnapshotFactory.fixed(row.getStockAvailableForSelectedOrders()));
+            value.put("stockComparisonGap", PurchaseSnapshotFactory.fixed(row.getStockComparisonGap()));
             value.put("inTransitQuantity", PurchaseSnapshotFactory.fixed(row.getInTransitQuantity()));
             value.put("purchaseCoverageQuantity", PurchaseSnapshotFactory.fixed(row.getPurchaseCoverageQuantity()));
+            value.put("netPurchaseGap", PurchaseSnapshotFactory.fixed(row.getNetPurchaseGap()));
+            value.put("calculationStatus", row.getCalculationStatus());
             return value;
         }).toList());
+        batch.setSummarySnapshot(summarySnapshot);
 
         List<PurchaseDemandCalculationBatchItemEntity> items = new ArrayList<>();
         int lineNo = 1;
@@ -135,7 +161,8 @@ public class PurchaseDemandCalculationBatchService {
             item.setExistingDemandId(old == null ? null : old.getId());
             items.add(item);
         }
-        batch.setCandidateLineCount((int) items.stream().filter(item -> item.getRequiredQuantity().signum() > 0).count());
+        batch.setCandidateLineCount(
+                (int) items.stream().filter(item -> item.getRequiredQuantity().signum() > 0).count());
         batchDao.insert(batch);
         items.forEach(item -> item.setBatchId(batch.getId()));
         if (!items.isEmpty()) {
@@ -207,10 +234,44 @@ public class PurchaseDemandCalculationBatchService {
         return result;
     }
 
+    /**
+     * 回看一个冻结批次：批次头 + 冻结解释行 + 逐行建议量。
+     *
+     * <p>
+     * <b>只读</b>：所有数字都取自冻结快照，不回表重算，因此回看结果与当初生成时逐字一致。 这是 ADM-05「建议量可以逐项解释」的落点 —— 没有这一步，批次一旦生成就只剩计数，解释链断了。
+     */
+    @Transactional(readOnly = true)
+    public PurchaseDemandCalculationBatchDetailVO detail(Long batchId) {
+        PurchaseDemandCalculationBatchDetailVO detail = batchDao.selectHeader(batchId);
+        if (detail == null) {
+            throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_DEMAND_BATCH_NOT_FOUND);
+        }
+        requireVisible(detail);
+        PurchaseDemandCalculationBatchEntity batch = batchDao.selectById(batchId);
+        detail.setSummary(summaryRows(batch == null ? null : batch.getSummarySnapshot()));
+        detail.setItems(batchItemDao.listByBatchId(batchId).stream()
+                .map(PurchaseDemandCalculationBatchService::itemVo).toList());
+        return detail;
+    }
+
+    /**
+     * 批次可见性：仓库范围管解释行里的库存数字，采购员范围管这个采购归属的批次本身。
+     *
+     * <p>
+     * 两个维度<b>相交而不互相替代</b>：只判仓库会让任何有查看权的人按 id 猜出别人的采购批次； 只判采购员则会把未授权仓库的库存量随解释行一起发出去。
+     */
+    private void requireVisible(PurchaseDemandCalculationBatchDetailVO detail) {
+        if (!dataScopeService.resolve().getWarehouseScope().allows(detail.getWarehouseId())) {
+            throw new ScmDataScopeException();
+        }
+        ownerResolver.requireVisible(detail.getPurchaserId());
+    }
+
     private Map<Long, PurchaseDemandEntity> existing(List<SalesOrderItemEntity> sourceItems) {
         if (sourceItems.isEmpty()) return Map.of();
-        return purchaseDemandDao.listActiveBySourceItemIds(sourceItems.stream().map(SalesOrderItemEntity::getId).toList())
-                .stream().collect(Collectors.toMap(PurchaseDemandEntity::getSalesOrderItemId, Function.identity()));
+        return purchaseDemandDao
+                .listActiveBySourceItemIds(sourceItems.stream().map(SalesOrderItemEntity::getId).toList()).stream()
+                .collect(Collectors.toMap(PurchaseDemandEntity::getSalesOrderItemId, Function.identity()));
     }
 
     private static BigDecimal consume(Map<String, BigDecimal> gaps, String key, BigDecimal sourceQuantity) {
@@ -238,7 +299,46 @@ public class PurchaseDemandCalculationBatchService {
         vo.setCandidateLineCount(batch.getCandidateLineCount());
         vo.setGeneratedCount(batch.getGeneratedCount());
         vo.setSkippedCount(batch.getSkippedCount());
-        vo.setSummary(batch.getSummarySnapshot() == null ? List.of() : List.of(batch.getSummarySnapshot()));
+        vo.setSummary(summaryRows(batch.getSummarySnapshot()));
+        return vo;
+    }
+
+    /**
+     * 冻结快照里的解释行（快照是 {@code {"rows":[...]}}）。
+     *
+     * <p>
+     * 结构不符或字段缺失时退化成空列表而不是抛异常：批次头本身仍然可读， 让一个损坏的快照把整次回看打成 500 是拿不到任何信息的。
+     */
+    private static List<Map<String, Object>> summaryRows(Map<String, Object> snapshot) {
+        if (snapshot == null || !(snapshot.get("rows") instanceof List<?> rows)) {
+            return List.of();
+        }
+        List<Map<String, Object>> result = new ArrayList<>(rows.size());
+        for (Object row : rows) {
+            if (row instanceof Map<?, ?> map) {
+                Map<String, Object> copy = new LinkedHashMap<>();
+                map.forEach((key, value) -> copy.put(String.valueOf(key), value));
+                result.add(copy);
+            }
+        }
+        return result;
+    }
+
+    private static PurchaseDemandCalculationBatchItemVO itemVo(PurchaseDemandCalculationBatchItemEntity row) {
+        PurchaseDemandCalculationBatchItemVO vo = new PurchaseDemandCalculationBatchItemVO();
+        vo.setLineNo(row.getLineNo());
+        vo.setSalesOrderNo(row.getSalesOrderNoSnapshot());
+        vo.setSourceConfirmedAt(row.getSourceConfirmedAt());
+        vo.setSkuId(row.getSkuId());
+        vo.setSkuCode(row.getSkuCodeSnapshot());
+        vo.setProductName(row.getProductNameSnapshot());
+        vo.setSkuName(row.getSkuNameSnapshot());
+        vo.setSpecValues(row.getSpecValuesSnapshot());
+        vo.setDemandUnit(row.getDemandUnitSnapshot());
+        vo.setProductType(row.getProductTypeSnapshot());
+        vo.setSourceQuantity(row.getSourceQuantity());
+        vo.setRequiredQuantity(row.getRequiredQuantity());
+        vo.setExistingDemandId(row.getExistingDemandId());
         return vo;
     }
 }
