@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.print.dao.ScmPrintTemplateDao">
+
+    <!-- model 是 JSONB：手写 select 必须显式声明 typeHandler，否则读出来是 PGobject。 -->
+    <resultMap id="templateMap" type="com.xsy.scm.print.domain.entity.ScmPrintTemplateEntity">
+        <id column="id" property="id"/>
+        <result column="model" property="model"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, document_type, template_code, template_name, default_flag, enabled_flag, model, remark,
+        version, deleted, created_at, updated_at, created_by, updated_by
+    </sql>
+
+    <select id="queryPage" resultMap="templateMap">
+        SELECT
+        <include refid="columns"/>
+        FROM scm_print_template
+        WHERE deleted = FALSE
+        <if test="query.documentType != null and query.documentType != ''">
+            AND document_type = #{query.documentType}
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (template_code ILIKE CONCAT('%', #{query.keyword}, '%')
+                 OR template_name ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.enabledFlag != null">
+            AND enabled_flag = #{query.enabledFlag}
+        </if>
+        <!-- 默认模板排在同类型最前：用户最先要看到的是「不打模板时用的是哪份」 -->
+        ORDER BY document_type ASC, default_flag DESC, template_code ASC, id ASC
+    </select>
+
+    <select id="lock" resultMap="templateMap">
+        SELECT
+        <include refid="columns"/>
+        FROM scm_print_template
+        WHERE id = #{id}
+          AND deleted = FALSE
+            FOR UPDATE
+    </select>
+
+    <select id="selectByCode" resultMap="templateMap">
+        SELECT
+        <include refid="columns"/>
+        FROM scm_print_template
+        WHERE document_type = #{documentType}
+          AND template_code = #{templateCode}
+          AND deleted = FALSE
+    </select>
+
+    <!-- 只有启用中的默认模板能被「不指定模板」的打印选中：停用的默认模板等于没有默认。 -->
+    <select id="selectDefault" resultMap="templateMap">
+        SELECT
+        <include refid="columns"/>
+        FROM scm_print_template
+        WHERE document_type = #{documentType}
+          AND default_flag = TRUE
+          AND enabled_flag = TRUE
+          AND deleted = FALSE
+    </select>
+
+    <insert id="insertTemplate" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO scm_print_template (document_type, template_code, template_name, default_flag, enabled_flag,
+                                        model, remark, version, deleted, created_at, updated_at, created_by, updated_by)
+        VALUES (#{row.documentType}, #{row.templateCode}, #{row.templateName}, #{row.defaultFlag}, #{row.enabledFlag},
+                #{row.model,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.remark}, 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{row.createdBy}, #{row.updatedBy})
+    </insert>
+
+    <update id="updateTemplate">
+        UPDATE scm_print_template
+        SET template_code = #{templateCode},
+            template_name = #{templateName},
+            default_flag  = #{defaultFlag},
+            enabled_flag  = #{enabledFlag},
+            model         = #{model,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+            remark        = #{remark},
+            version       = version + 1,
+            updated_at    = CURRENT_TIMESTAMP,
+            updated_by    = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND version = #{version}
+    </update>
+
+    <!-- 同类型只允许一个默认（部分唯一索引 uk_scm_print_template_default 兜底）。
+         先清后设必须在同一事务里，否则中间态会出现「两个默认」或「没有默认」。 -->
+    <update id="clearDefault">
+        UPDATE scm_print_template
+        SET default_flag = FALSE,
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE document_type = #{documentType}
+          AND deleted = FALSE
+          AND default_flag = TRUE
+        <if test="keepId != null">
+            AND id &lt;&gt; #{keepId}
+        </if>
+    </update>
+
+    <update id="setDefaultFlag">
+        UPDATE scm_print_template
+        SET default_flag = #{defaultFlag},
+            version      = version + 1,
+            updated_at   = CURRENT_TIMESTAMP,
+            updated_by   = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+    </update>
+
+    <update id="softDelete">
+        UPDATE scm_print_template
+        SET deleted    = TRUE,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND version = #{version}
+    </update>
+
+</mapper>

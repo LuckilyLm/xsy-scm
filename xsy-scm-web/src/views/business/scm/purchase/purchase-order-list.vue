@@ -140,6 +140,12 @@
 
   <PurchaseOrderForm ref="drawer" @saved="queryData"/>
   <PurchaseOrderDetail ref="detail" @saved="queryData"/>
+  <PrintDocumentModal
+      :open="printBatch.open"
+      document-type="PURCHASE_ORDER"
+      :business-ids="printBatch.ids"
+      @close="printBatch.open = false"
+  />
 
   <a-modal
       v-model:open="reassignVisible"
@@ -195,8 +201,7 @@ import {amount, progress} from './purchase-form-model';
 import {hasPermission} from '../common/scm-permission';
 import {datetime} from '../common/scm-display';
 import {purchaseError} from './purchase-errors';
-import {printPurchaseOrders} from './purchase-order-print';
-import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
+import PrintDocumentModal from '../print/print-document-modal.vue';import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
 import PurchaseOrderDetail from './components/purchase-order-detail-drawer.vue';
 
 const queryForm = reactive<OrderQuery>({pageNum: 1, pageSize: 20});
@@ -207,6 +212,9 @@ const error = ref('');
 const selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof PurchaseOrderForm>>();
 const detail = ref<InstanceType<typeof PurchaseOrderDetail>>();
+
+/** 打印对话框：单张与批量共用，只传要打印的采购单 id（渲染与冻结都在服务端）。 */
+const printBatch = reactive({open: false, ids: [] as (string | number)[]});
 
 /** 改派采购归属：独立动作、独立权限（scm:purchase:assign），带乐观锁 version；reason 可选留痕。 */
 const reassignVisible = ref(false);
@@ -501,12 +509,18 @@ function saveExportSettings() {
   message.success('导出设置已保存');
 }
 
-/** 单张打印：拉详情后交隐藏 iframe 渲染，纯读取、不改采购状态（§6.8）。 */
+/**
+ * 打印走打印中心的模板渲染：先选模板、可预览，再正式打印。
+ *
+ * 正式打印会由服务端冻结模板版本与版面快照（打印记录），因此「纸上这张」与「库里这张」
+ * 逐字一致；本页不再自己拼 HTML。纯读取业务数据，不改采购单状态。
+ */
 function printRow(row: Order) {
-  purchaseOrderApi
-      .detail(row.id!)
-      .then((r) => printPurchaseOrders([r.data]))
-      .catch((e) => (error.value = purchaseError(e)));
+  if (row.id === undefined || row.id === null) {
+    return;
+  }
+  printBatch.ids = [row.id];
+  printBatch.open = true;
 }
 
 async function batchPrint() {
@@ -515,16 +529,8 @@ async function batchPrint() {
     error.value = '请先勾选要打印的采购单';
     return;
   }
-  const orders: Order[] = [];
-  for (const row of rows) {
-    try {
-      orders.push((await purchaseOrderApi.detail(row.id!)).data);
-    } catch (e) {
-      error.value = purchaseError(e);
-      return;
-    }
-  }
-  printPurchaseOrders(orders);
+  printBatch.ids = rows.map((row) => row.id!);
+  printBatch.open = true;
 }
 
 onMounted(queryData);

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.print.dao.ScmPrintRecordDao">
+
+    <resultMap id="recordMap" type="com.xsy.scm.print.domain.entity.ScmPrintRecordEntity">
+        <id column="id" property="id"/>
+        <result column="model_snapshot" property="modelSnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+        <result column="data_snapshot" property="dataSnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+    </resultMap>
+
+    <!-- 列表不带快照正文：快照可能很大，而列表只需要「谁在什么时候按哪份模板的哪一版打了哪张单」。 -->
+    <select id="queryPage" resultType="com.xsy.scm.print.domain.vo.ScmPrintRecordVO">
+        SELECT id, document_type, business_id, business_no, template_id, template_code, template_name,
+               template_version, printed_at, printed_by
+        FROM scm_print_record
+        WHERE 1 = 1
+        <if test="query.documentType != null and query.documentType != ''">
+            AND document_type = #{query.documentType}
+        </if>
+        <if test="query.businessNo != null and query.businessNo != ''">
+            AND business_no ILIKE CONCAT('%', #{query.businessNo}, '%')
+        </if>
+        ORDER BY printed_at DESC, id DESC
+    </select>
+
+    <select id="selectRecord" resultMap="recordMap">
+        SELECT id, document_type, business_id, business_no, template_id, template_code, template_name,
+               template_version, model_snapshot, data_snapshot, printed_at, printed_by
+        FROM scm_print_record
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insertRecord" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO scm_print_record (document_type, business_id, business_no, template_id, template_code,
+                                      template_name, template_version, model_snapshot, data_snapshot,
+                                      printed_at, printed_by)
+        VALUES (#{row.documentType}, #{row.businessId}, #{row.businessNo}, #{row.templateId}, #{row.templateCode},
+                #{row.templateName}, #{row.templateVersion},
+                #{row.modelSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.dataSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.printedAt}, #{row.printedBy})
+    </insert>
+
+</mapper>
