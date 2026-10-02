@@ -37,6 +37,10 @@ public final class OrderPermission {
 
     public static final String RETURN_CANCEL = "scm:order:return:cancel";
 
+    public static final String RETURN_RECEIVE = "scm:order:return:receive";
+
+    public static final String CREDIT_OVERRIDE = "scm:order:credit:override";
+
     public static final String REFUND_QUERY = "scm:order:refund:query";
 
     public static final String REFUND_COMPLETE = "scm:order:refund:complete";

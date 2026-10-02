@@ -37,6 +37,7 @@
               </a-descriptions-item>
               <a-descriptions-item label="结算方式">{{ settleModeText(customer.settleMode) }}</a-descriptions-item>
               <a-descriptions-item label="上级集团">{{ customer.parentCustomerName || '—' }}</a-descriptions-item>
+              <a-descriptions-item label="统一结算方">{{ customer.settlementCustomerName || customer.name }}</a-descriptions-item>
               <a-descriptions-item label="归属业务员">{{ customer.sellerName || '—' }}</a-descriptions-item>
               <a-descriptions-item label="绑定供应商">{{ customer.supplierName || '—' }}</a-descriptions-item>
               <a-descriptions-item label="联系人">{{ customer.contactName || '—' }}</a-descriptions-item>

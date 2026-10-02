@@ -36,5 +36,8 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
      */
     long countActiveByTypeId(@Param("typeId") Long typeId);
 
+    /** Locks the active customer row used as the authoritative settlement/credit account. */
+    CustomerEntity lock(@Param("customerId") Long customerId);
+
     List<CustomerEntity> selectActiveByCodes(@Param("codes") List<String> codes);
 }

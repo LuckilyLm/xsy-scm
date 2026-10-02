@@ -29,6 +29,8 @@ public enum ScmInventorySourceDocumentTypeEnum {
      */
     SALES_OUTBOUND_ITEM("出库单行"),
 
+    SALES_RETURN_RECEIPT_ITEM("销售退货接收行"),
+
     /**
      * 销售订单行（预留的来源）：{@code source_document_item_id = sales_order_item.id}。
      */

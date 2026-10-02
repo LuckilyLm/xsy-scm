@@ -12,6 +12,7 @@ import com.xsy.scm.inventory.domain.InventoryLossGainFact;
 import com.xsy.scm.inventory.domain.InventoryOutboundFact;
 import com.xsy.scm.inventory.domain.InventoryStocktakeAdjustment;
 import com.xsy.scm.inventory.domain.InventoryStocktakeFact;
+import com.xsy.scm.inventory.domain.InventorySalesReturnFact;
 import com.xsy.scm.inventory.domain.InventoryTransferFact;
 import com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity;
 import com.xsy.scm.inventory.domain.entity.InventoryMovementEntity;
@@ -330,6 +331,52 @@ public class InventoryCommandService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         return unit;
+    }
+
+    public void postSalesReturnInbound(InventorySalesReturnFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Sales return inbound requires the caller's transaction");
+        }
+        if (fact == null || fact.warehouseId() == null || fact.skuId() == null || fact.returnId() == null
+                || fact.returnReceiptItemId() == null || fact.quantity() == null || fact.quantity().signum() <= 0
+                || fact.unit() == null || fact.unit().isBlank() || fact.unitCost() == null
+                || fact.unitCost().signum() < 0 || fact.occurredAt() == null || fact.operator() == null
+                || fact.operator().isBlank()) {
+            throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
+        }
+        warehouseService.require(fact.warehouseId());
+        inventoryBalanceDao.insertOnConflictDoNothing(fact.warehouseId(), fact.skuId(), fact.unit(), fact.operator());
+        InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
+        }
+        if (!fact.unit().equals(balance.getUnit())) {
+            throw new ScmBusinessException(INVENTORY_UNIT_MISMATCH);
+        }
+        BigDecimal before = balance.getQuantity();
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(ScmInventoryMovementTypeEnum.SALES_RETURN_IN.name());
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.SALES_RETURN_RECEIPT_ITEM.name());
+        movement.setSourceDocumentId(fact.returnId());
+        movement.setSourceDocumentItemId(fact.returnReceiptItemId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(fact.unit());
+        movement.setUnitCost(fact.unitCost());
+        movement.setBeforeQuantity(before);
+        movement.setAfterQuantity(before.add(fact.quantity()));
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_INBOUND);
+        }
+        if (inventoryBalanceDao.incrementQuantityAndSetAvgCost(balance.getId(), fact.quantity(),
+                inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
     }
 
     /**

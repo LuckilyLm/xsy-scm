@@ -22,6 +22,10 @@ public class SupplierAddForm {
     @Size(max = 150, message = "供应商名称不能超过150个字符")
     private String name;
 
+    @jakarta.validation.constraints.Min(value = 0, message = "付款账期不能小于0天")
+    @jakarta.validation.constraints.Max(value = 3650, message = "付款账期不能超过3650天")
+    private Integer paymentPeriodDays = 0;
+
     @Size(max = 100, message = "联系人姓名不能超过100个字符")
     private String contactName;
 

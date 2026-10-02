@@ -9,5 +9,6 @@ public enum ScmOrderOperationTypeEnum {
     CANCEL,
     RESERVE_STOCK,
     RETURN,
-    REFUND
+    REFUND,
+    CREDIT_OVERRIDE
 }

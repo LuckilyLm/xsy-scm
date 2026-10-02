@@ -28,6 +28,10 @@ public class FinanceReceivableSourceDto {
      */
     private String customerNameSnapshot;
 
+    private Long settlementCustomerId;
+
+    private String settlementCustomerNameSnapshot;
+
     /**
      * 应收的事件时点：{@code delivery_route_order.signed_at}。
      */

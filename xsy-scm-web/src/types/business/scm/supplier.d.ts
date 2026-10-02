@@ -47,6 +47,7 @@ export interface SupplierForm extends Partial<AreaColumns> {
     name: string;
     contactName?: string | null;
     contactPhone?: string | null;
+    paymentPeriodDays?: number;
     address?: string | null;
     remark?: string | null;
 }

@@ -34,6 +34,10 @@ public class FinanceReceiptEntity extends FinanceRecord {
 
     private String customerNameSnapshot;
 
+    private Long settlementCustomerId;
+
+    private String settlementCustomerNameSnapshot;
+
     /**
      * 一笔钱一单，恒 &gt; 0；反向行金额同样为正。
      */

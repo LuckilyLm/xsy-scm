@@ -1,16 +1,18 @@
 package com.xsy.scm.customer.service;
 
-import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmCustomerStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmSettleModeEnum;
+import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
+import com.xsy.scm.customer.constant.CustomerErrorCode;
+import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 import com.xsy.scm.customer.dao.CustomerDao;
 import com.xsy.scm.customer.dao.CustomerSkuVisibilityDao;
-import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
 import com.xsy.scm.customer.domain.form.CustomerDeleteForm;
@@ -18,17 +20,16 @@ import com.xsy.scm.customer.domain.form.CustomerSellerReassignForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.domain.form.CustomerUpdateForm;
 import com.xsy.scm.customer.manager.CustomerValidator;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.Objects;
+import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.domain.RequestUser;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.Objects;
-
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_CODE_DUPLICATE;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
@@ -50,6 +51,7 @@ public class CustomerService {
     public static final String INITIAL_STATUS = ScmCustomerStatusEnum.POTENTIAL.name();
 
     private final CustomerDao customerDao;
+    private final ScmDataScopeService dataScopeService;
     private final CustomerSkuVisibilityService customerSkuVisibilityService;
     private final CustomerSkuVisibilityDao customerSkuVisibilityDao;
 
@@ -85,6 +87,46 @@ public class CustomerService {
      * <p>
      * 订单创建、提交和确认都通过此方法校验交易资格，避免各服务自行比较状态。
      */
+    public CustomerEntity requireSettlementCustomer(CustomerEntity customer) {
+        return requireSettlementAccount(customer, true);
+    }
+
+    /** Resolve a legally configured settlement account without changing historical finance tradability rules. */
+    public CustomerEntity requireSettlementAccount(CustomerEntity customer) {
+        return requireSettlementAccount(customer, false);
+    }
+
+    private CustomerEntity requireSettlementAccount(CustomerEntity customer, boolean requireTradable) {
+        Long settlementCustomerId = customer.getSettlementCustomerId() == null
+                ? customer.getId()
+                : customer.getSettlementCustomerId();
+        CustomerEntity settlement = requireTradable
+                ? requireTradable(settlementCustomerId)
+                : require(settlementCustomerId);
+        boolean self = Objects.equals(customer.getId(), settlement.getId());
+        boolean directParent = Objects.equals(customer.getParentCustomerId(), settlement.getId());
+        boolean groupMode = ScmSettleModeEnum.GROUP.name().equals(customer.getSettleMode())
+                && ScmSettleModeEnum.GROUP.name().equals(settlement.getSettleMode());
+        boolean settlementIsGroup = CustomerValidator.GROUP_TYPE_CODE
+                .equals(customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+        // 结算主体只允许自己或直接上级。兄弟客户即使拥有同一 parent，也不能互相充当结算主体；
+        // 集团统一结算必须由 GROUP 类型、GROUP 模式且自身结算的权威父客户承担。
+        if ((!self && !(directParent && groupMode && settlementIsGroup))
+                || !Objects.equals(settlement.getSettlementCustomerId(), settlement.getId())) {
+            throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_PARENT_INVALID);
+        }
+        return settlement;
+    }
+
+    /** Historical documents retain their settlement account even after group membership changes. */
+    public CustomerEntity lockCreditAccount(Long settlementCustomerId) {
+        CustomerEntity locked = customerDao.lock(settlementCustomerId);
+        if (locked == null) {
+            throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
+        }
+        return locked;
+    }
+
     public CustomerEntity requireTradable(Long customerId) {
         CustomerEntity entity = require(customerId);
         if (!ScmCustomerStatusEnum.valueOf(entity.getStatus()).tradable()) {
@@ -113,6 +155,9 @@ public class CustomerService {
         stamp(entity, true);
         try {
             customerDao.insert(entity);
+            if (entity.getSettlementCustomerId() == null) {
+                entity.setSettlementCustomerId(entity.getId());
+            }
         } catch (DuplicateKeyException e) {
             throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
         }
@@ -242,7 +287,7 @@ public class CustomerService {
      */
     private void assertNotReferenced(Long customerId) {
         if (customerSkuVisibilityDao.customerReferences(customerId) > 0)
-            throw new ScmBusinessException(com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED);
+            throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_REFERENCED);
     }
 
     private void apply(CustomerEntity entity, CustomerAddForm form) {
@@ -256,6 +301,14 @@ public class CustomerService {
         entity.setCustomerTypeId(form.getCustomerTypeId());
         entity.setSettleMode(form.getSettleMode());
         entity.setParentCustomerId(form.getParentCustomerId());
+        Long settlementCustomerId = form.getSettlementCustomerId();
+        entity.setSettlementCustomerId(settlementCustomerId == null ? entity.getId() : settlementCustomerId);
+        if (settlementCustomerId != null && !Objects.equals(settlementCustomerId, entity.getId())) {
+            CustomerEntity settlement = requireSettlementCustomer(entity);
+            if (!dataScopeService.resolve().getCustomerSellerScope().allows(settlement.getSellerId())) {
+                throw new ScmDataScopeException();
+            }
+        }
         // 归属只由创建时解析或专用改派命令变更。
         entity.setSupplierId(form.getSupplierId());
         entity.setContactName(CustomerValidator.normalizeOptional(form.getContactName()));
@@ -268,7 +321,7 @@ public class CustomerService {
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(CustomerValidator.normalizeOptional(form.getDistrictName()));
         if (!form.isLocationComplete())
-            throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         entity.setLongitude(form.getLongitude());
         entity.setLatitude(form.getLatitude());
         entity.setGeomCrs(form.getGeomCrs());

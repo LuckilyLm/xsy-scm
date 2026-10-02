@@ -42,6 +42,9 @@
             <a-button type="link" v-privilege="'scm:order:return:approve'" v-if="record.status==='PENDING'"
                       @click="edit(record,'approve')">批准
             </a-button>
+            <a-button type="link" v-privilege="'scm:order:return:receive'" v-if="record.status==='APPROVED'"
+                      @click="edit(record,'receive')">实物接收
+            </a-button>
             <a-button type="link" v-privilege="'scm:order:return:reject'" v-if="record.status==='PENDING'"
                       @click="edit(record,'reject')">驳回
             </a-button>
@@ -58,7 +61,7 @@
                     :show-total="(n:number)=>`共${n}条`"/>
     </div>
   </a-card>
-  <a-modal :open="visible" :title="action==='approve'?'审核退货':action==='reject'?'驳回退货':'取消退货'" width="800px"
+  <a-modal :open="visible" :title="action==='approve'?'审核退货':action==='receive'?'退货实物接收':action==='reject'?'驳回退货':'取消退货'" width="min(800px,96vw)"
            :confirm-loading="saving" @ok="save" @cancel="visible=false">
     <template v-if="active">
       <a-alert v-if="error" :message="error" type="error"/>
@@ -70,6 +73,16 @@
                           string-mode :precision="4" :min="'0'" :max="record.requestedQuantity" aria-label="批准数量"/>
         </template>
       </a-table>
+      <template v-else-if="action==='receive'">
+        <a-alert message="仅接收本次实际验收的数量；报损不会增加可售库存。" type="info" show-icon/>
+        <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId"/></a-form-item>
+        <a-table :data-source="active.items" :scroll="{x: 650}" :columns="[{title:'商品',dataIndex:'productName',width:150},{title:'单位',dataIndex:'unit',width:65},{title:'批准数量',dataIndex:'approvedQuantity'},{title:'已接收',dataIndex:'receivedQuantity'},{title:'本次接收',dataIndex:'receiptQuantity'},{title:'处置',dataIndex:'disposition'}]" row-key="returnItemId" :pagination="false">
+          <template #bodyCell="{record,column}">
+            <a-input-number v-if="column.dataIndex==='receiptQuantity'" v-model:value="record.receiptQuantity" string-mode :precision="4" :min="'0'" :max="remainingQuantity(record)" aria-label="本次接收数量"/>
+            <a-select v-else-if="column.dataIndex==='disposition'" v-model:value="record.disposition" aria-label="实物处置方式" :options="[{value:'RETURN_TO_STOCK',label:'可售回库'},{value:'DAMAGE',label:'报损'}]"/>
+          </template>
+        </a-table>
+      </template>
       <a-form-item v-else label="处理原因" required>
         <a-input v-model:value="decisionReason" maxlength="500"/>
       </a-form-item>
@@ -78,13 +91,16 @@
 </template>
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
+import Decimal from 'decimal.js';
+import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderReturnApi as api} from '/@/api/business/scm/order-return-api';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import type {ReturnRow, Query} from './order-types';
+import type {ReturnRow, Query, ReturnItem, Id} from './order-types';
+type ReturnItemWithDisposition = ReturnItem & { disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string };
 import {amount, fixed} from './order-form-model';
 import {orderError} from './order-errors';
 
@@ -136,12 +152,17 @@ function resetQuery() {
   onSearch();
 }
 
-const action = ref<'approve' | 'reject' | 'cancel'>('approve'), decisionReason = ref('');
+const action = ref<'approve' | 'receive' | 'reject' | 'cancel'>('approve'), decisionReason = ref(''), warehouseId = ref<Id>();
 
-async function edit(row: ReturnRow, mode: 'approve' | 'reject' | 'cancel') {
+async function edit(row: ReturnRow, mode: 'approve' | 'receive' | 'reject' | 'cancel') {
   try {
     active.value = (await api.detail(row.returnId)).data;
-    active.value.items.forEach(i => i.approvedQuantity = i.requestedQuantity);
+    active.value.items.forEach(i => {
+      if (mode === 'approve') i.approvedQuantity = i.requestedQuantity;
+      (i as ReturnItemWithDisposition).receiptQuantity = remainingQuantity(i);
+      (i as ReturnItemWithDisposition).disposition = 'RETURN_TO_STOCK';
+    });
+    warehouseId.value = undefined;
     action.value = mode;
     decisionReason.value = '';
     error.value = '';
@@ -151,24 +172,40 @@ async function edit(row: ReturnRow, mode: 'approve' | 'reject' | 'cancel') {
   }
 }
 
+function remainingQuantity(item: ReturnItem): string {
+  return Decimal.max(0, new Decimal(item.approvedQuantity ?? 0).minus(item.receivedQuantity ?? 0)).toFixed(4);
+}
+
 async function save() {
-  if (!active.value) return;
-  if (action.value !== 'approve' && !decisionReason.value.trim()) {
+  if (!active.value || saving.value) return;
+  if (['reject', 'cancel'].includes(action.value) && !decisionReason.value.trim()) {
     message.error('请填写处理原因');
     return;
   }
   saving.value = true;
   try {
     const r = active.value;
-    await api[action.value]({
-      returnId: r.returnId,
-      version: r.version, ...(action.value === 'approve' ? {
-        items: r.items.map(i => ({
-          orderItemId: i.orderItemId,
-          approvedQuantity: fixed(i.approvedQuantity ?? '0')
-        }))
-      } : {decisionReason: decisionReason.value})
-    });
+    if (action.value === 'receive') {
+      if (!warehouseId.value) throw new Error('请选择接收仓库');
+      const items = (r.items as ReturnItemWithDisposition[]).filter(i => new Decimal(i.receiptQuantity ?? 0).gt(0));
+      if (!items.length) throw new Error('请填写至少一行本次接收数量');
+      if (items.some(i => new Decimal(i.receiptQuantity).gt(remainingQuantity(i)))) {
+        throw new Error('本次接收数量不能超过剩余可接收数量');
+      }
+      await api.receive({returnId: r.returnId, version: r.version, warehouseId: warehouseId.value, items: items.map(i => ({
+        returnItemId: i.returnItemId, quantity: fixed(i.receiptQuantity), disposition: i.disposition
+      }))});
+    } else {
+      await api[action.value]({
+        returnId: r.returnId,
+        version: r.version, ...(action.value === 'approve' ? {
+          items: r.items.map(i => ({
+            orderItemId: i.orderItemId,
+            approvedQuantity: fixed(i.approvedQuantity ?? '0')
+          }))
+        } : {decisionReason: decisionReason.value})
+      });
+    }
     visible.value = false;
     await queryData();
   } catch (e) {

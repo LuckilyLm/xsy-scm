@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.order.dao.OrderReturnReceiptItemDao">
+    <select id="receivedQuantity" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(quantity), 0) FROM order_return_receipt_item WHERE return_item_id = #{returnItemId}
+    </select>
+    <select id="receivedOrderItemQuantity" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(i.quantity), 0) FROM order_return_receipt_item i
+        JOIN order_return_item ri ON ri.id = i.return_item_id
+        WHERE ri.order_item_id = #{orderItemId}
+    </select>
+    <select id="allocatedQuantity" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(quantity), 0) FROM order_return_receipt_item
+        WHERE source_sales_out_movement_id = #{sourceSalesOutMovementId}
+    </select>
+    <select id="listByReturnItemId" resultType="com.xsy.scm.order.domain.entity.OrderReturnReceiptItemEntity">
+        SELECT * FROM order_return_receipt_item WHERE return_item_id = #{returnItemId} ORDER BY id
+    </select>
+    <select id="listByReturnId" resultType="com.xsy.scm.order.domain.entity.OrderReturnReceiptItemEntity">
+        SELECT i.* FROM order_return_receipt_item i JOIN order_return_receipt r ON r.id = i.receipt_id
+        WHERE r.return_id = #{returnId} ORDER BY i.id
+    </select>
+</mapper>

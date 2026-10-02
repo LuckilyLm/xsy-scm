@@ -1,7 +1,5 @@
 package com.xsy.scm.finance.service;
 
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -19,10 +17,11 @@ import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffTargetTypeEnum;
+import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
 import com.xsy.scm.finance.dao.FinancePayableDao;
 import com.xsy.scm.finance.dao.FinancePaymentDao;
-import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
+import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceWriteOffDao;
 import com.xsy.scm.finance.domain.dto.FinancePayableTargetDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableTargetDto;
@@ -35,15 +34,16 @@ import com.xsy.scm.finance.domain.form.FinanceWriteOffReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffAddResultVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** 核销分配、反向核销与目标余额派生。 */
 @Service
@@ -51,6 +51,7 @@ import java.util.Map;
 public class FinanceWriteOffService {
 
     private final FinanceWriteOffDao financeWriteOffDao;
+    private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
     private final FinanceReceiptDao financeReceiptDao;
     private final FinancePaymentDao financePaymentDao;
     private final FinanceReceivableDao financeReceivableDao;
@@ -221,9 +222,14 @@ public class FinanceWriteOffService {
             if (receipt == null || !ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(receipt.getEntryType())) {
                 throw new ScmBusinessException(FinanceErrorCode.RECEIPT_NOT_FOUND);
             }
+            var customer = financeCounterpartySourceDao.selectCustomer(receipt.getCustomerId());
+            if (customer == null
+                    || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+                throw new ScmDataScopeException();
+            }
             BigDecimal effectiveAmount = receipt.getAmount().subtract(financeReceiptDao.selectReversedAmount(sourceId));
             return new SourceFact(sourceType, sourceId, receipt.getReceiptNo(), receipt.getCustomerNameSnapshot(),
-                    ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), receipt.getCustomerId(), effectiveAmount);
+                    ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), receipt.getSettlementCustomerId(), effectiveAmount);
         }
         if (ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name().equals(sourceType)) {
             FinancePaymentEntity payment = financePaymentDao.selectByIdForUpdate(sourceId);
@@ -243,7 +249,7 @@ public class FinanceWriteOffService {
             for (FinanceReceivableTargetDto dto : financeReceivableDao.selectNormalTargetsForUpdate(targetIds)) {
                 targets.put(dto.getReceivableId(),
                         new TargetFact(targetType, dto.getReceivableId(), dto.getReceivableNo(),
-                                dto.getCustomerNameSnapshot(), dto.getCustomerId(), dto.getSellerId(),
+                                dto.getCustomerNameSnapshot(), dto.getSettlementCustomerId(), dto.getSellerId(),
                                 dto.getAmount()));
             }
             if (targets.size() != targetIds.size()) {
@@ -268,7 +274,7 @@ public class FinanceWriteOffService {
                 throw new ScmBusinessException(FinanceErrorCode.RECEIVABLE_NOT_FOUND);
             }
             return new TargetFact(targetType, dto.getReceivableId(), dto.getReceivableNo(),
-                    dto.getCustomerNameSnapshot(), dto.getCustomerId(), dto.getSellerId(), dto.getAmount());
+                    dto.getCustomerNameSnapshot(), dto.getSettlementCustomerId(), dto.getSellerId(), dto.getAmount());
         }
         if (ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name().equals(targetType)) {
             FinancePayableTargetDto dto = financePayableDao.selectNormalTargetForUpdate(targetId);

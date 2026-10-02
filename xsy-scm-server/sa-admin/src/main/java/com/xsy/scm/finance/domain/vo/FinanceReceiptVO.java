@@ -26,6 +26,8 @@ public class FinanceReceiptVO {
      * 登记时冻结的客户名称快照，不是主档当前名。
      */
     private String customerName;
+    private Long settlementCustomerId;
+    private String settlementCustomerName;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class)
     private BigDecimal amount;

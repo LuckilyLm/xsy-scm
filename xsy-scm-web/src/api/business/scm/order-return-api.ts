@@ -8,6 +8,7 @@ export const orderReturnApi = {
     detail: (id: Id) => getRequest('/scm/order/return/detail/' + id, {}) as unknown as Promise<ScmResponse<ReturnRow>>,
     create: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/create', data),
     approve: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/approve', data),
+    receive: (data: unknown) => orderCommand('/scm/order/return/receive', data),
     reject: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/reject', data),
     cancel: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/cancel', data),
 };

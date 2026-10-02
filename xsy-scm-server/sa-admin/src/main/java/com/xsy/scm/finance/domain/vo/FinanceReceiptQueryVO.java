@@ -18,6 +18,8 @@ public class FinanceReceiptQueryVO {
     private Long customerId;
 
     private String customerName;
+    private Long settlementCustomerId;
+    private String settlementCustomerName;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class)
     private BigDecimal amount;

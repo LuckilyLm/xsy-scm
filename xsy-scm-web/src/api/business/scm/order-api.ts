@@ -46,6 +46,19 @@ async function importOrders(file: File): Promise<ScmResponse<ImportResult>> {
     return result;
 }
 
+export interface CreditCheck {
+    allowed: boolean;
+    overLimit: boolean;
+    overdue: boolean;
+    creditLimit: string;
+    openReceivableAmount: string;
+    confirmedOrderAmount: string;
+    requestedOrderAmount: string;
+    projectedExposure: string;
+    earliestOverdueDate?: string | null;
+    amountThresholdHint?: string | null;
+}
+
 export const orderApi = {
     query: (data: Query) => postRequest('/scm/order/query', data) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
     detail: (id: Id) => getRequest('/scm/order/detail/' + id, {}) as unknown as Promise<ScmResponse<Order>>,
@@ -56,6 +69,8 @@ export const orderApi = {
     update: (data: Order) => postRequest('/scm/order/update', data) as unknown as Promise<ScmResponse<Order>>,
     submit: (data: unknown) => orderCommand<Order>('/scm/order/submit', data),
     confirm: (data: unknown) => orderCommand<Order>('/scm/order/confirm', data),
+    creditCheck: (customerId: Id, requestedAmount?: string) => getRequest('/scm/order/credit-check/' + customerId, {requestedAmount}) as unknown as Promise<ScmResponse<{allowed: boolean; overLimit: boolean; overdue: boolean; creditLimit: string; projectedExposure: string; amountThresholdHint?: string | null}>>,
+    orderCreditCheck: (orderId: Id) => getRequest('/scm/order/credit-check/order/' + orderId, {}) as unknown as Promise<ScmResponse<CreditCheck>>,
     cancel: (data: unknown) => orderCommand<Order>('/scm/order/cancel', data),
     actual: (data: unknown) => orderCommand<Order>('/scm/order/item/actual-quantity', data),
     delete: (data: unknown) => postRequest('/scm/order/delete', data),

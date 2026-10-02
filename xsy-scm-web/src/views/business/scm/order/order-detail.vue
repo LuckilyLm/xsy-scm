@@ -69,6 +69,29 @@
         </a-form-item>
       </a-form>
     </a-modal>
+    <a-modal :open="creditOpen" title="确认订单与授信检查" :confirm-loading="saving"
+             @ok="confirmWithCredit" @cancel="creditOpen=false" :ok-button-props="{disabled: !creditCheck?.allowed && !creditOverride}">
+      <a-alert v-if="error" :message="error" type="error" show-icon/>
+      <template v-if="creditCheck">
+        <a-alert :type="creditCheck.allowed ? 'success' : 'warning'" show-icon
+                 :message="creditCheck.allowed ? '当前授信检查通过，提交时将再次校验' : '额度不足或存在逾期，订单暂不能确认'"/>
+        <a-descriptions :column="1" size="small" bordered>
+          <a-descriptions-item label="未核销应收">{{ amount(creditCheck.openReceivableAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="已确认未形成应收">{{ amount(creditCheck.confirmedOrderAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="本次实重结算金额">{{ amount(creditCheck.requestedOrderAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="确认后授信占用">{{ amount(creditCheck.projectedExposure) }}</a-descriptions-item>
+          <a-descriptions-item label="授信额度">{{ creditCheck.creditLimit === '0.0000' ? '未设置金额上限' : amount(creditCheck.creditLimit) }}</a-descriptions-item>
+          <a-descriptions-item v-if="creditCheck.overdue" label="最早逾期到期日">{{ creditCheck.earliestOverdueDate }}</a-descriptions-item>
+        </a-descriptions>
+        <p v-if="creditCheck.amountThresholdHint">{{ creditCheck.amountThresholdHint }}</p>
+        <div v-if="!creditCheck.allowed" v-privilege="'scm:order:credit:override'">
+          <a-checkbox v-model:checked="creditOverride">申请授信例外放行（将记录操作日志）</a-checkbox>
+          <a-form-item v-if="creditOverride" label="例外原因" required>
+            <a-textarea v-model:value="creditOverrideReason" :maxlength="500" :auto-size="{minRows: 2, maxRows: 5}"/>
+          </a-form-item>
+        </div>
+      </template>
+    </a-modal>
     <a-modal :open="cancelOpen" title="取消订单" :confirm-loading="saving" @ok="cancel" @cancel="cancelOpen=false">
       <a-form-item label="取消原因" name="cancelReason" required>
         <a-input v-model:value="cancelReason" maxlength="500"/>
@@ -79,9 +102,9 @@
 <script setup lang="ts">
 import {ref} from 'vue';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
-import {Modal, message} from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
-import {orderApi} from '/@/api/business/scm/order-api';
+import {orderApi, type CreditCheck} from '/@/api/business/scm/order-api';
 import {orderLogApi} from '/@/api/business/scm/order-log-api';
 import {SCM_ORDER_STATUS_ENUM, SCM_ORDER_OPERATION_ENUM} from '/@/constants/business/scm/order-const';
 import type {Order, Item, Id, LogRow} from './order-types';
@@ -149,19 +172,42 @@ async function loadLogs() {
   }
 }
 
-function confirm() {
-  Modal.confirm({
-    title: '按当前实际数量确认并核算订单？', onOk: async () => {
-      try {
-        await orderApi.confirm({orderId: order.value!.orderId, version: order.value!.version});
-        await load();
-        emit('saved');
-      } catch (e) {
-        error.value = orderError(e);
-        throw e;
-      }
-    }
-  });
+const creditOpen = ref(false), creditCheck = ref<CreditCheck>(), creditOverride = ref(false), creditOverrideReason = ref('');
+
+async function confirm() {
+  if (!order.value?.orderId || saving.value) return;
+  saving.value = true;
+  error.value = '';
+  try {
+    creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId)).data;
+    creditOverride.value = false;
+    creditOverrideReason.value = '';
+    creditOpen.value = true;
+  } catch (e) {
+    error.value = orderError(e);
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function confirmWithCredit() {
+  if (!order.value || saving.value) return;
+  if (!creditCheck.value?.allowed && (!creditOverride.value || !creditOverrideReason.value.trim())) {
+    message.error('授信未通过；例外放行必须填写原因');
+    return;
+  }
+  saving.value = true;
+  try {
+    await orderApi.confirm({orderId: order.value.orderId, version: order.value.version,
+      creditOverride: creditOverride.value, creditOverrideReason: creditOverride.value ? creditOverrideReason.value.trim() : undefined});
+    creditOpen.value = false;
+    await load();
+    emit('saved');
+  } catch (e) {
+    error.value = orderError(e);
+  } finally {
+    saving.value = false;
+  }
 }
 
 function editActual(i: Item) {

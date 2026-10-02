@@ -23,4 +23,8 @@ public class FinanceCustomerFactDto {
      * 客户归属业务员；{@code customer.seller_id} 允许为空（尚未分配）， 空值只有全部范围可通过，这是失败关闭语义。
      */
     private Long sellerId;
+
+    private Long settlementCustomerId;
+
+    private String settlementCustomerName;
 }

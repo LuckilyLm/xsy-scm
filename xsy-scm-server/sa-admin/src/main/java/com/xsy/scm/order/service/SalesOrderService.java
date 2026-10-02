@@ -1,42 +1,60 @@
 package com.xsy.scm.order.service;
 
+import cn.dev33.satoken.stp.StpUtil;
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.constant.ScmProductTypeEnum;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
+import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
+import com.xsy.scm.inventory.service.InventoryReservationService;
+import com.xsy.scm.order.constant.OrderErrorCode;
+import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
+import com.xsy.scm.order.constant.ScmOrderQuantitySourceEnum;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
+import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
+import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.entity.OrderAddressSnapshotEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
-
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderBatchDeleteForm;
 import com.xsy.scm.order.domain.form.OrderCancelForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
 import com.xsy.scm.order.domain.form.OrderVersionForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderItemForm;
 import com.xsy.scm.order.domain.form.SalesOrderUpdateForm;
-
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderImportResultVO;
-
-import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
-import com.xsy.scm.order.dao.SalesOrderDao;
-import com.xsy.scm.order.dao.SalesOrderItemDao;
-
 import com.xsy.scm.order.manager.OrderAmountCalculator;
 import com.xsy.scm.order.manager.OrderOperationLogRecorder;
 import com.xsy.scm.order.manager.OrderSnapshotFactory;
 import com.xsy.scm.order.manager.OrderStateMachine;
 import com.xsy.scm.order.manager.OrderValidator;
 import com.xsy.scm.order.manager.SalesOrderItemChangeSet;
-
-import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
-import com.xsy.scm.common.constant.ScmProductTypeEnum;
-import com.xsy.scm.order.constant.ScmOrderQuantitySourceEnum;
-import com.xsy.scm.order.constant.ScmOrderStatusEnum;
-import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
-import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.common.constant.ScmOperator;
-import com.xsy.scm.common.scope.ScmDataScopeService;
-import com.xsy.scm.inventory.service.InventoryReservationService;
-
+import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
+import com.xsy.scm.pricing.service.PriceResolver;
+import com.xsy.scm.product.dao.ProductSkuOptionDao;
+import com.xsy.scm.product.dao.ProductSpuDao;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_NOT_ALLOWED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_QUANTITY_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_REASON_REQUIRED;
@@ -50,30 +68,6 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_PRICE_OVERRIDE_REASON_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RESERVE_STATE_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
-
-import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.BeanUtils;
-
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import java.util.stream.Collectors;
-import java.util.function.Function;
-
-import com.xsy.scm.customer.service.CustomerService;
-import com.xsy.scm.pricing.service.PriceResolver;
-import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
-import com.xsy.scm.product.dao.ProductSkuOptionDao;
-import com.xsy.scm.product.dao.ProductSpuDao;
 
 /**
  * Aggregate root: all item mutations occur inside an order transaction.
@@ -98,6 +92,7 @@ public class SalesOrderService {
     private final SalesOrderQueryService salesOrderQueryService;
     /** SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。 */
     private final ScmDataScopeService dataScopeService;
+    private final OrderCreditService orderCreditService;
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm salesOrderAddForm, String key) {
@@ -189,6 +184,9 @@ public class SalesOrderService {
         var rows = materialize(salesOrderAddForm);
         var salesOrder = new SalesOrderEntity();
         OrderSnapshotFactory.customer(salesOrder, customer);
+        var settlementCustomer = customerService.requireSettlementCustomer(customer);
+        salesOrder.setSettlementCustomerId(settlementCustomer.getId());
+        salesOrder.setSettlementCustomerNameSnapshot(settlementCustomer.getName());
         salesOrder.setOrderNo(numbers.order());
         salesOrder.setStatus(ScmOrderStatusEnum.DRAFT.name());
         header(salesOrder, salesOrderAddForm);
@@ -348,22 +346,56 @@ public class SalesOrderService {
         return result;
     }
 
+    public CustomerCreditCheckVO creditCheck(Long orderId) {
+        // 先走订单详情的 seller scope，再读取任何结算主体或敞口信息，避免用不可见订单探测集团授信。
+        salesOrderQueryService.detail(orderId);
+        var order = salesOrderDao.selectById(orderId);
+        if (order == null || !dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
+        var rows = salesOrderItemDao.list(orderId);
+        var amount = OrderAmountCalculator.orderAmount(rows.stream().map(row -> {
+            if (row.getActualQuantity() == null || row.getActualQuantity().signum() <= 0) {
+                throw new ScmBusinessException(ORDER_ACTUAL_QUANTITY_REQUIRED);
+            }
+            return OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice());
+        }).toList());
+        return orderCreditService.checkSettlement(order.getSettlementCustomerId(), amount);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO confirm(OrderVersionForm orderVersionForm, String key) {
+        OrderConfirmForm confirmForm = new OrderConfirmForm();
+        confirmForm.setOrderId(orderVersionForm.getOrderId());
+        confirmForm.setVersion(orderVersionForm.getVersion());
+        return confirm(confirmForm, key);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public SalesOrderDetailVO confirm(OrderConfirmForm orderVersionForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CONFIRM:" + orderVersionForm.getOrderId(), key,
                 orderVersionForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            salesOrderQueryService.detail(orderVersionForm.getOrderId());
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
-        var result = confirmOrder(orderVersionForm.getOrderId(), orderVersionForm.getVersion());
+        }
+        var result = confirmOrder(orderVersionForm.getOrderId(), orderVersionForm.getVersion(), orderVersionForm);
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
                 result.getOrderId(), result);
         return result;
     }
 
     private SalesOrderDetailVO confirmOrder(Long orderId, Integer expectedVersion) {
+        return confirmOrder(orderId, expectedVersion, null);
+    }
+
+    private SalesOrderDetailVO confirmOrder(Long orderId, Integer expectedVersion, OrderConfirmForm confirmation) {
         var salesOrder = lock(orderId);
         version(salesOrder.getVersion(), expectedVersion);
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CONFIRMED.name());
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(salesOrder.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         var rows = salesOrderItemDao.list(salesOrder.getId());
         for (var row : rows) {
@@ -375,6 +407,22 @@ public class SalesOrderService {
         }
         salesOrder.setSettlementTotalAmount(OrderAmountCalculator
                 .orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));
+        var check = orderCreditService.checkForSettlementConfirmation(salesOrder.getSettlementCustomerId(),
+                salesOrder.getSettlementTotalAmount());
+        if (!Boolean.TRUE.equals(check.getAllowed())) {
+            if (confirmation == null || !Boolean.TRUE.equals(confirmation.getCreditOverride())
+                    || confirmation.getCreditOverrideReason() == null
+                    || confirmation.getCreditOverrideReason().isBlank()) {
+                throw new ScmBusinessException(OrderErrorCode.ORDER_CREDIT_BLOCKED);
+            }
+            StpUtil.checkPermission(OrderPermission.CREDIT_OVERRIDE);
+            String reason = confirmation.getCreditOverrideReason().trim();
+            salesOrder.setCreditOverrideReason(reason);
+            orderLogs.record(salesOrder.getId(), ScmOrderOperationTypeEnum.CREDIT_OVERRIDE, reason, null,
+                    Map.of("settlementCustomerId", salesOrder.getSettlementCustomerId(), "orderAmount",
+                            salesOrder.getSettlementTotalAmount().toPlainString(), "overLimit", check.getOverLimit(),
+                            "overdue", check.getOverdue()));
+        }
         salesOrder.setStatus(ScmOrderStatusEnum.CONFIRMED.name());
         salesOrder.setConfirmedAt(OffsetDateTime.now());
         save(salesOrder);

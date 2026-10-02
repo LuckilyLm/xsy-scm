@@ -44,6 +44,8 @@ public class SupplierEntity {
 
     private String status;
 
+    private Integer paymentPeriodDays;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String contactName;
 

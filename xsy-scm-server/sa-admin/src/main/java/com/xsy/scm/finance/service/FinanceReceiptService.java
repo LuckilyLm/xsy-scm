@@ -24,6 +24,7 @@ import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
+import com.xsy.scm.customer.service.CustomerService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +56,7 @@ public class FinanceReceiptService {
     private final FinanceOperationLogRecorder operationLogs;
     private final ScmDataScopeService dataScopeService;
     private final ScmIdempotencyService idempotencyService;
+    private final CustomerService customerService;
 
     /**
      * 登记一笔 {@code NORMAL} 收款。
@@ -153,6 +155,8 @@ public class FinanceReceiptService {
                 ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         reversal.setCustomerId(original.getCustomerId());
         reversal.setCustomerNameSnapshot(original.getCustomerNameSnapshot());
+        reversal.setSettlementCustomerId(original.getSettlementCustomerId());
+        reversal.setSettlementCustomerNameSnapshot(original.getSettlementCustomerNameSnapshot());
         reversal.setAmount(original.getAmount());
         reversal.setMethod(original.getMethod());
         reversal.setReceivedAt(now);
@@ -183,6 +187,11 @@ public class FinanceReceiptService {
 
     private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer) {
 
+        // customerId 始终保留实际付款客户；settlementCustomerId 是统一收款/核销主体。
+        // 复用客户域规则，防止脏主档把收款挂到兄弟客户、非 GROUP 或循环关系上。
+        var payer = customerService.require(customer.getCustomerId());
+        var settlement = customerService.requireSettlementAccount(payer);
+
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {
             // 0 元收款不是财务事实：库级 CHECK (amount > 0) 是第二层，这里先给出可解释的 40000。
@@ -197,6 +206,8 @@ public class FinanceReceiptService {
                 ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customer.getCustomerName());
+        receipt.setSettlementCustomerId(settlement.getId());
+        receipt.setSettlementCustomerNameSnapshot(settlement.getName());
         receipt.setAmount(amount);
         receipt.setMethod(method(form.getMethod()));
         receipt.setReceivedAt(form.getReceivedAt());
@@ -252,6 +263,8 @@ public class FinanceReceiptService {
         vo.setReceiptNo(receipt.getReceiptNo());
         vo.setCustomerId(receipt.getCustomerId());
         vo.setCustomerName(receipt.getCustomerNameSnapshot());
+        vo.setSettlementCustomerId(receipt.getSettlementCustomerId());
+        vo.setSettlementCustomerName(receipt.getSettlementCustomerNameSnapshot());
         vo.setAmount(receipt.getAmount());
         vo.setMethod(receipt.getMethod());
         vo.setReceivedAt(receipt.getReceivedAt());

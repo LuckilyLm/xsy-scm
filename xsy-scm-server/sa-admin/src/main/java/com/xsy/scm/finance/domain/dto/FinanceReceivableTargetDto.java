@@ -16,6 +16,8 @@ public class FinanceReceivableTargetDto {
 
     private Long customerId;
 
+    private Long settlementCustomerId;
+
     private String customerNameSnapshot;
 
     private String entryType;

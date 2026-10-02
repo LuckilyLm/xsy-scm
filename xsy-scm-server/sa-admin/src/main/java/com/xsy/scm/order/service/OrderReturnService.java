@@ -1,42 +1,54 @@
 package com.xsy.scm.order.service;
 
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmValueScope;
+import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
+import com.xsy.scm.finance.service.FinanceReceivableService;
+import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
+import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
+import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
+import com.xsy.scm.order.dao.OrderRefundDao;
+import com.xsy.scm.order.dao.OrderReturnDao;
+import com.xsy.scm.order.dao.OrderReturnItemDao;
+import com.xsy.scm.order.dao.OrderReturnReceiptItemDao;
+import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.entity.OrderRefundEntity;
 import com.xsy.scm.order.domain.entity.OrderReturnEntity;
 import com.xsy.scm.order.domain.entity.OrderReturnItemEntity;
+import com.xsy.scm.order.domain.entity.OrderReturnReceiptItemEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
-
 import com.xsy.scm.order.domain.form.OrderReturnAddForm;
 import com.xsy.scm.order.domain.form.OrderReturnApproveForm;
 import com.xsy.scm.order.domain.form.OrderReturnDecisionForm;
 import com.xsy.scm.order.domain.form.OrderReturnQueryForm;
-
 import com.xsy.scm.order.domain.vo.OrderReturnDetailVO;
 import com.xsy.scm.order.domain.vo.OrderReturnItemVO;
+import com.xsy.scm.order.domain.vo.OrderReturnReceiptVO;
 import com.xsy.scm.order.domain.vo.OrderReturnVO;
-
-import com.xsy.scm.order.dao.OrderRefundDao;
-import com.xsy.scm.order.dao.OrderReturnDao;
-import com.xsy.scm.order.dao.OrderReturnItemDao;
-import com.xsy.scm.order.dao.SalesOrderDao;
-import com.xsy.scm.order.dao.SalesOrderItemDao;
-
 import com.xsy.scm.order.manager.OrderAmountCalculator;
 import com.xsy.scm.order.manager.OrderOperationLogRecorder;
 import com.xsy.scm.order.manager.OrderValidator;
-
-import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
-import com.xsy.scm.order.constant.ScmOrderStatusEnum;
-import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
-import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
-import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.common.constant.ScmOperator;
-import com.xsy.scm.common.scope.ScmDataScopeContext;
-import com.xsy.scm.common.scope.ScmDataScopeService;
-import com.xsy.scm.common.scope.ScmValueScope;
-import com.xsy.scm.finance.service.FinanceReceivableService;
-import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
-
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import net.lab1024.sa.base.common.domain.PageResult;
+import net.lab1024.sa.base.common.util.SmartPageUtil;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ITEM_VERSION_CONFLICT;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_APPROVAL_INVALID;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_ITEM_INVALID;
@@ -44,26 +56,6 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_NOT_FOUND;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_ORDER_NOT_CONFIRMED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_QUANTITY_EXCEEDED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_STATUS_INVALID;
-
-import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.BeanUtils;
-
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
-import java.util.stream.Collectors;
-import java.util.function.Function;
-
-import net.lab1024.sa.base.common.domain.PageResult;
-import net.lab1024.sa.base.common.util.SmartPageUtil;
 
 /**
  * Serialize every after-sales write on the original order, before return/refund locks.
@@ -76,6 +68,7 @@ public class OrderReturnService {
     private final SalesOrderItemDao salesOrderItemDao;
     private final OrderReturnDao orderReturnDao;
     private final OrderReturnItemDao orderReturnItemDao;
+    private final OrderReturnReceiptItemDao orderReturnReceiptItemDao;
     private final OrderRefundDao orderRefundDao;
     private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService orderIdempotencyService;
@@ -132,13 +125,36 @@ public class OrderReturnService {
     private OrderReturnDetailVO detailSnapshot(OrderReturnEntity orderReturnEntity) {
         var orderReturnResultVO = new OrderReturnDetailVO();
         BeanUtils.copyProperties(vo(orderReturnEntity), orderReturnResultVO);
+        var orderItems = salesOrderItemDao.list(orderReturnEntity.getOrderId()).stream()
+                .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
         orderReturnResultVO.setItems(orderReturnItemDao.list(orderReturnEntity.getId()).stream().map(returnItem -> {
             var returnItemVO = new OrderReturnItemVO();
             BeanUtils.copyProperties(returnItem, returnItemVO);
             returnItemVO.setReturnItemId(returnItem.getId());
+            returnItemVO.setReceivedQuantity(orderReturnReceiptItemDao.receivedQuantity(returnItem.getId()));
+            returnItemVO.setReceiptAllocations(orderReturnReceiptItemDao.listByReturnItemId(returnItem.getId()).stream()
+                    .map(this::receiptAllocation).toList());
+            var orderItem = orderItems.get(returnItem.getOrderItemId());
+            if (orderItem != null) {
+                returnItemVO.setProductName(orderItem.getProductNameSnapshot());
+                returnItemVO.setUnit(orderItem.getSaleUnitSnapshot());
+            }
             return returnItemVO;
         }).toList());
         return orderReturnResultVO;
+    }
+
+    private OrderReturnReceiptVO.Item receiptAllocation(OrderReturnReceiptItemEntity entity) {
+        var item = new OrderReturnReceiptVO.Item();
+        item.setReceiptItemId(entity.getId());
+        item.setReturnItemId(entity.getReturnItemId());
+        item.setSourceSalesOutMovementId(entity.getSourceSalesOutMovementId());
+        item.setSourceOutboundItemId(entity.getSourceOutboundItemId());
+        item.setDisposition(entity.getDisposition());
+        item.setQuantity(entity.getQuantity());
+        item.setUnit(entity.getUnitSnapshot());
+        item.setUnitCost(entity.getUnitCost());
+        return item;
     }
 
     private void requireParentOrderVisible(Long orderId, ScmValueScope orderSellerScope) {
@@ -315,6 +331,10 @@ public class OrderReturnService {
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
                 orderReturnEntity.getId(), result);
         return result;
+    }
+
+    public OrderReturnEntity lockForReceipt(Long orderReturnId) {
+        return lock(orderReturnId);
     }
 
     private OrderReturnEntity lock(Long orderReturnId) {

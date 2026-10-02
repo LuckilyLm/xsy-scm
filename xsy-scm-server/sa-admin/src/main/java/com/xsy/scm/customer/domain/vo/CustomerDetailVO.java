@@ -74,6 +74,10 @@ public class CustomerDetailVO {
 
     private String parentCustomerName;
 
+    private Long settlementCustomerId;
+
+    private String settlementCustomerName;
+
     private Long sellerId;
 
     private String sellerName;

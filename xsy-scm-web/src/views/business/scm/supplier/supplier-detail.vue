@@ -36,6 +36,7 @@
         <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
         <a-descriptions-item label="地址" :span="2">{{ supplier.address || '—' }}</a-descriptions-item>
         <a-descriptions-item label="更新时间">{{ datetime(supplier.updatedAt) }}</a-descriptions-item>
+        <a-descriptions-item label="付款账期">{{ supplier.paymentPeriodDays ?? 0 }} 天</a-descriptions-item>
         <a-descriptions-item label="备注" :span="3">{{ supplier.remark || '—' }}</a-descriptions-item>
       </a-descriptions>
 

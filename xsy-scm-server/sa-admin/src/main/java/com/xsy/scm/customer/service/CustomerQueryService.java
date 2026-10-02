@@ -142,6 +142,8 @@ public class CustomerQueryService {
         EnrichmentContext context = context(rows);
         vo.setCustomerTypeName(context.typeNames().get(entity.getCustomerTypeId()));
         vo.setParentCustomerName(context.customerNames().get(entity.getParentCustomerId()));
+        CustomerEntity settlement = customerDao.selectById(entity.getSettlementCustomerId());
+        vo.setSettlementCustomerName(settlement == null ? entity.getName() : settlement.getName());
         vo.setSellerName(context.employeeNames().get(entity.getSellerId()));
         vo.setSupplierName(context.supplierNames().get(entity.getSupplierId()));
         return vo;

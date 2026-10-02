@@ -44,6 +44,9 @@ public class SalesOrderEntity {
     private BigDecimal settlementTotalAmount;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String settleModeSnapshot;
+    private Long settlementCustomerId;
+    private String settlementCustomerNameSnapshot;
+    private String creditOverrideReason;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime expectDeliveryTime;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

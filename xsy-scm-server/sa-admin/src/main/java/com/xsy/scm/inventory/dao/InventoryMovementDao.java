@@ -66,4 +66,6 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
      */
     int countActiveBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
             @Param("sourceDocumentItemId") Long sourceDocumentItemId);
+
+    List<InventoryMovementEntity> listSalesOutAllocations(@Param("orderItemId") Long orderItemId);
 }

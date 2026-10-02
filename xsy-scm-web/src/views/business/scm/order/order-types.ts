@@ -82,12 +82,15 @@ export interface RecentPrice {
 }
 
 export interface ReturnItem {
+    productName?: string;
+    unit?: string;
     returnItemId?: Id;
     orderItemId: Id;
     requestedQuantity: string;
     approvedQuantity?: string | null;
     lockedUnitPrice?: string;
-    approvedAmount?: string
+    approvedAmount?: string;
+    receivedQuantity?: string;
 }
 
 export interface ReturnRow {

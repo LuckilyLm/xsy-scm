@@ -20,6 +20,8 @@ public class SupplierDetailVO {
 
     private String status;
 
+    private Integer paymentPeriodDays;
+
     private String contactName;
 
     private String contactPhone;

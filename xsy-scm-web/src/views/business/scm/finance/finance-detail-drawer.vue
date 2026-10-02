@@ -7,6 +7,8 @@
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="单号">{{ headerNo }}</a-descriptions-item>
             <a-descriptions-item label="方向">{{ entryTypeText(header.entryType) }}</a-descriptions-item>
+            <a-descriptions-item v-if="header.settlementCustomerName" label="单据结算方">{{ header.settlementCustomerName }}</a-descriptions-item>
+            <a-descriptions-item v-if="isAccount" label="冻结到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
             <a-descriptions-item label="往来方">{{ partyName }}</a-descriptions-item>
             <a-descriptions-item label="关联单号">{{ linkedNo }}</a-descriptions-item>
             <a-descriptions-item label="金额">{{ moneyText(header.amount) }}</a-descriptions-item>

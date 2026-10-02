@@ -50,6 +50,9 @@ public class CustomerAddForm extends ScmLocationForm {
     @Positive(message = "上级客户 ID 必须大于0")
     private Long parentCustomerId;
 
+    @Positive(message = "结算客户 ID 必须大于0")
+    private Long settlementCustomerId;
+
     @Positive(message = "业务员 ID 必须大于0")
     private Long sellerId;
 

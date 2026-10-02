@@ -70,6 +70,8 @@ export interface FinanceRefundOption {
     orderNo?: string | null;
     customerId: FinanceId;
     customerName: string;
+    settlementCustomerId?: FinanceId;
+    settlementCustomerName?: string;
     refundAmount: string;
     completedAt: string;
 }
@@ -90,6 +92,8 @@ export interface FinanceReceivable {
     orderNo: string;
     customerId: FinanceId;
     customerName: string;
+    settlementCustomerId?: FinanceId;
+    settlementCustomerName?: string;
     sourceType: string;
     sourceId: FinanceId;
     entryType: FinanceEntryType;
@@ -102,6 +106,7 @@ export interface FinanceReceivable {
     overAppliedAmount: string;
     settleState: string;
     eventAt: string;
+    dueDate?: string | null;
     reason?: string | null;
 }
 
@@ -124,6 +129,7 @@ export interface FinancePayable {
     overAppliedAmount: string;
     settleState: string;
     eventAt: string;
+    dueDate?: string | null;
     reason?: string | null;
 }
 
@@ -132,6 +138,8 @@ export interface FinanceReceipt {
     receiptNo: string;
     customerId: FinanceId;
     customerName: string;
+    settlementCustomerId?: FinanceId;
+    settlementCustomerName?: string;
     amount: string;
     effectiveAmount: string;
     usedAmount: string;

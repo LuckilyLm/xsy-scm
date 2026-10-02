@@ -1,11 +1,14 @@
 package com.xsy.scm.finance.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
 
 /**
  * 应收单头：一张已签收销售订单一条正常应收，一张已批准退货一条红字应收。
@@ -21,7 +24,7 @@ import java.time.OffsetDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("finance_receivable")
+@TableName(value = "finance_receivable", autoResultMap = true)
 public class FinanceReceivableEntity extends FinanceRecord {
 
     private String receivableNo;
@@ -45,6 +48,15 @@ public class FinanceReceivableEntity extends FinanceRecord {
     private Long customerId;
 
     private String customerNameSnapshot;
+
+    private Long settlementCustomerId;
+
+    private String settlementCustomerNameSnapshot;
+
+    private LocalDate dueDate;
+
+    @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
+    private Map<String, Object> creditRuleSnapshot;
 
     /**
      * {@code ScmFinanceEntryTypeEnum} 的 {@code NORMAL / RED}；方向编码在类型里，金额恒为正。

@@ -70,6 +70,8 @@ public class CustomerEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long parentCustomerId;
 
+    private Long settlementCustomerId;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long sellerId;
 

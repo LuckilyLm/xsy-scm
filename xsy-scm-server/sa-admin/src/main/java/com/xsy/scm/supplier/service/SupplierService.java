@@ -161,6 +161,7 @@ public class SupplierService {
     private void apply(SupplierEntity entity, SupplierAddForm form) {
         entity.setSupplierCode(SupplierValidator.normalizeCode(form.getSupplierCode()));
         entity.setName(SupplierValidator.normalizeName(form.getName()));
+        entity.setPaymentPeriodDays(form.getPaymentPeriodDays() == null ? 0 : form.getPaymentPeriodDays());
         entity.setContactName(SupplierValidator.normalizeOptional(form.getContactName()));
         entity.setContactPhone(SupplierValidator.normalizeOptional(form.getContactPhone()));
         entity.setAddress(SupplierValidator.normalizeOptional(form.getAddress()));

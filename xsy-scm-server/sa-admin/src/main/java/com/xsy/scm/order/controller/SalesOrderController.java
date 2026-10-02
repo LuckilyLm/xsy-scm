@@ -1,31 +1,38 @@
 package com.xsy.scm.order.controller;
 
-import com.xsy.scm.order.service.SalesOrderQueryService;
-import com.xsy.scm.order.service.SalesOrderService;
-
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
+import cn.dev33.satoken.stp.StpUtil;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.customer.permission.CustomerPermission;
+import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
+import com.xsy.scm.order.service.OrderCreditService;
+import com.xsy.scm.order.constant.OrderErrorCode;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderBatchDeleteForm;
 import com.xsy.scm.order.domain.form.OrderCancelForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
 import com.xsy.scm.order.domain.form.OrderLogQueryForm;
 import com.xsy.scm.order.domain.form.OrderVersionForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
 import com.xsy.scm.order.domain.form.SalesOrderUpdateForm;
-
 import com.xsy.scm.order.domain.vo.OrderOperationLogVO;
 import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
-
 import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.order.service.SalesOrderQueryService;
+import com.xsy.scm.order.service.SalesOrderService;
 import com.xsy.scm.pricing.permission.PricingPermission;
-import com.xsy.scm.customer.permission.CustomerPermission;
-import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.pricing.service.PriceResolver;
-import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
-import cn.dev33.satoken.annotation.SaCheckPermission;
-import cn.dev33.satoken.annotation.SaMode;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import net.lab1024.sa.base.common.domain.PageResult;
+import net.lab1024.sa.base.common.domain.ResponseDTO;
+import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,12 +42,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.lab1024.sa.base.common.domain.ResponseDTO;
-import net.lab1024.sa.base.common.domain.PageResult;
-import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
-
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/scm/order")
@@ -48,6 +49,7 @@ public class SalesOrderController {
     private final SalesOrderService salesOrderService;
     private final SalesOrderQueryService salesOrderQueryService;
     private final PriceResolver priceResolver;
+    private final OrderCreditService orderCreditService;
 
     @PostMapping("/query")
     @SaCheckPermission(OrderPermission.QUERY)
@@ -131,10 +133,23 @@ public class SalesOrderController {
         return ResponseDTO.ok(salesOrderService.submit(orderVersionForm, key));
     }
 
+    @GetMapping("/credit-check/{customerId}")
+    @SaCheckPermission(OrderPermission.QUERY)
+    public ResponseDTO<CustomerCreditCheckVO> creditCheck(@PathVariable Long customerId,
+            @RequestParam(required = false) java.math.BigDecimal requestedAmount) {
+        return ResponseDTO.ok(orderCreditService.check(customerId, requestedAmount));
+    }
+
+    @GetMapping("/credit-check/order/{orderId}")
+    @SaCheckPermission(OrderPermission.CONFIRM)
+    public ResponseDTO<CustomerCreditCheckVO> orderCreditCheck(@PathVariable Long orderId) {
+        return ResponseDTO.ok(salesOrderService.creditCheck(orderId));
+    }
+
     @PostMapping("/confirm")
     @SaCheckPermission(OrderPermission.CONFIRM)
     @OperateLog
-    public ResponseDTO<SalesOrderDetailVO> confirm(@Valid @RequestBody OrderVersionForm orderVersionForm,
+    public ResponseDTO<SalesOrderDetailVO> confirm(@Valid @RequestBody OrderConfirmForm orderVersionForm,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.confirm(orderVersionForm, key));
     }
@@ -188,10 +203,9 @@ public class SalesOrderController {
     private void overridePermission(SalesOrderAddForm salesOrderForm) {
         if (!java.util.Set.of(ScmOrderSourceEnum.ADMIN.name(), ScmOrderSourceEnum.SUPPLEMENT.name())
                 .contains(salesOrderForm.getOrderSource()))
-            throw new com.xsy.scm.common.exception.ScmBusinessException(
-                    com.xsy.scm.order.constant.OrderErrorCode.ORDER_SOURCE_INVALID);
+            throw new ScmBusinessException(OrderErrorCode.ORDER_SOURCE_INVALID);
         if (salesOrderForm.getItems().stream()
                 .anyMatch(orderItemForm -> Boolean.TRUE.equals(orderItemForm.getManualPriceOverride())))
-            cn.dev33.satoken.stp.StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
+            StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
     }
 }

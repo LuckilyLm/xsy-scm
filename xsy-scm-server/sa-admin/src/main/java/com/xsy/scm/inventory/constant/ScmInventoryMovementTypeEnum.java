@@ -38,6 +38,8 @@ public enum ScmInventoryMovementTypeEnum {
      */
     SALES_OUT("销售出库", false),
 
+    SALES_RETURN_IN("销售退货入库", true),
+
     /**
      * 盘盈：盘点确认时实盘量高于账面量的部分（方向 = 入）。
      *

@@ -58,6 +58,7 @@ export function emptySupplier(): SupplierForm {
         name: '',
         contactName: '',
         contactPhone: '',
+        paymentPeriodDays: 0,
         address: '',
         remark: '',
     };

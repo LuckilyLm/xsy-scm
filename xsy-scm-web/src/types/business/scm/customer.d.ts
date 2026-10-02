@@ -86,6 +86,7 @@ export interface CustomerForm extends Partial<AreaColumns>, ScmLocation {
     name: string;
     customerTypeId?: ScmId;
     parentCustomerId?: ScmId | null;
+    settlementCustomerId?: ScmId | null;
     /**
      * 业务员（员工）ID。
      *
@@ -122,6 +123,7 @@ export interface CustomerRow extends CustomerForm {
 /** 详情（对应 CustomerDetailVO，比列表行多出绑定供应商名与创建时间）。 */
 export interface CustomerDetail extends CustomerRow {
     supplierName?: string;
+    settlementCustomerName?: string;
     createdAt?: string;
 }
 

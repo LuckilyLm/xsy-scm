@@ -73,6 +73,11 @@
               <SmartEnumSelect v-model:value="form.settleMode" enum-name="SETTLE_MODE_ENUM" width="100%"/>
             </a-form-item>
           </a-col>
+          <a-col :span="12">
+            <a-form-item label="统一结算方" name="settlementCustomerId">
+              <CustomerSelect v-model:value="form.settlementCustomerId" placeholder="留空则独立结算；集团客户请选择结算主体"/>
+            </a-form-item>
+          </a-col>
         </a-row>
 
         <a-row :gutter="16">
@@ -131,7 +136,7 @@
         <a-row :gutter="16">
           <a-col :span="12">
             <a-form-item label="授信额度" name="creditLimit">
-              <a-input v-model:value="form.creditLimit" placeholder="例如 10000.0000（最多四位小数）"/>
+              <a-input v-model:value="form.creditLimit" placeholder="0 表示未设置额度；逾期仍阻断"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -297,6 +302,7 @@ async function open(customerId?: ScmId) {
       name: detail.name,
       customerTypeId: detail.customerTypeId,
       parentCustomerId: detail.parentCustomerId ?? null,
+      settlementCustomerId: detail.settlementCustomerId ?? null,
       sellerId: detail.sellerId ?? null,
       supplierId: detail.supplierId ?? null,
       contactName: detail.contactName ?? '',

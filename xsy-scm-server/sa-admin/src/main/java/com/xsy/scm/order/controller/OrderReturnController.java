@@ -1,6 +1,9 @@
 package com.xsy.scm.order.controller;
 
 import com.xsy.scm.order.service.OrderReturnService;
+import com.xsy.scm.order.service.OrderReturnReceiptService;
+import com.xsy.scm.order.domain.form.OrderReturnReceiveForm;
+import com.xsy.scm.order.domain.vo.OrderReturnReceiptVO;
 
 import com.xsy.scm.order.domain.form.OrderReturnAddForm;
 import com.xsy.scm.order.domain.form.OrderReturnApproveForm;
@@ -31,6 +34,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequestMapping("/scm/order/return")
 public class OrderReturnController {
     private final OrderReturnService orderReturnService;
+    private final OrderReturnReceiptService orderReturnReceiptService;
 
     @PostMapping("/query")
     @SaCheckPermission(OrderPermission.RETURN_QUERY)
@@ -58,6 +62,14 @@ public class OrderReturnController {
     public ResponseDTO<OrderReturnDetailVO> approve(@Valid @RequestBody OrderReturnApproveForm orderReturnApproveForm,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.approve(orderReturnApproveForm, key));
+    }
+
+    @PostMapping("/receive")
+    @SaCheckPermission(OrderPermission.RETURN_RECEIVE)
+    @OperateLog
+    public ResponseDTO<OrderReturnReceiptVO> receive(@Valid @RequestBody OrderReturnReceiveForm form,
+            @RequestHeader(value = "Idempotency-Key") String key) {
+        return ResponseDTO.ok(orderReturnReceiptService.receive(form, key));
     }
 
     @PostMapping("/reject")

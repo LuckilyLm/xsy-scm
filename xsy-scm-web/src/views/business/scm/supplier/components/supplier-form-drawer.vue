@@ -62,6 +62,10 @@
         <a-form-item label="地址" name="address">
           <a-input v-model:value="form.address" :maxlength="255"/>
         </a-form-item>
+        <a-form-item label="付款账期（天）" name="paymentPeriodDays">
+          <a-input-number v-model:value="form.paymentPeriodDays" :min="0" :max="3650" :precision="0"/>
+          <p>应付形成时冻结到期日；0 表示当日到期，修改只影响新应付。</p>
+        </a-form-item>
         <a-form-item label="备注" name="remark">
           <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3" show-count/>
         </a-form-item>
@@ -130,6 +134,7 @@ async function open(supplierId?: ScmId) {
       name: detail.name,
       contactName: detail.contactName ?? '',
       contactPhone: detail.contactPhone ?? '',
+      paymentPeriodDays: detail.paymentPeriodDays ?? 0,
       address: detail.address ?? '',
       provinceCode: detail.provinceCode ?? null,
       provinceName: detail.provinceName ?? null,

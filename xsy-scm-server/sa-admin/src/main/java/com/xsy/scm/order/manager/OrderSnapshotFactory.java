@@ -66,6 +66,9 @@ public final class OrderSnapshotFactory {
         salesOrder.setCustomerCodeSnapshot(customer.getCustomerCode());
         salesOrder.setCustomerNameSnapshot(customer.getName());
         salesOrder.setSettleModeSnapshot(customer.getSettleMode());
+        salesOrder.setSettlementCustomerId(
+                customer.getSettlementCustomerId() == null ? customer.getId() : customer.getSettlementCustomerId());
+        salesOrder.setSettlementCustomerNameSnapshot(customer.getName());
         salesOrder.setSellerId(customer.getSellerId());
     }
 }

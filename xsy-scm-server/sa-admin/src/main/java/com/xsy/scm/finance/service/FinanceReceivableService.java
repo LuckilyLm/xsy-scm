@@ -211,6 +211,8 @@ public class FinanceReceivableService {
         receivable.setOrderId(source.getSalesOrderId());
         receivable.setCustomerId(source.getCustomerId());
         receivable.setCustomerNameSnapshot(source.getCustomerNameSnapshot());
+        receivable.setSettlementCustomerId(source.getSettlementCustomerId());
+        receivable.setSettlementCustomerNameSnapshot(source.getSettlementCustomerNameSnapshot());
         receivable.setEntryType(ScmFinanceEntryTypeEnum.NORMAL.name());
         receivable.setAmount(amount);
         receivable.setEventAt(source.getSignedAt());
@@ -236,6 +238,10 @@ public class FinanceReceivableService {
         red.setOrderId(returned.getOrderId());
         red.setCustomerId(normal.getCustomerId());
         red.setCustomerNameSnapshot(normal.getCustomerNameSnapshot());
+        red.setSettlementCustomerId(normal.getSettlementCustomerId());
+        red.setSettlementCustomerNameSnapshot(normal.getSettlementCustomerNameSnapshot());
+        red.setDueDate(normal.getDueDate());
+        red.setCreditRuleSnapshot(normal.getCreditRuleSnapshot());
         red.setEntryType(ScmFinanceEntryTypeEnum.RED.name());
         red.setOriginalReceivableId(normal.getId());
         red.setAmount(amount);
