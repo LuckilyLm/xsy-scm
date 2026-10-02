@@ -36,12 +36,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_AL
  * <b>调用方必须遍历 {@code 旧集合 ∪ 新集合} 的 demandId 去重算需求侧</b>： 只在旧集合出现的 demand（被删空）也要重算，否则 {@code allocated_quantity} 不会回落、
  * {@code status} 也不会从 {@code ALLOCATED} 退回 {@code PENDING}（C 段）。 并集请用 {@link #involvedDemandIds}。
  */
-public record PurchaseOrderAllocationChangeSet(List<
-        PurchaseDemandAllocationEntity> inserted,
-        List<
-                PurchaseDemandAllocationEntity> updated,
-        List<
-                PurchaseDemandAllocationEntity> removed) {
+public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEntity> inserted,
+        List<PurchaseDemandAllocationEntity> updated, List<PurchaseDemandAllocationEntity> removed) {
 
     /**
      * allocation 的身份。
@@ -56,21 +52,14 @@ public record PurchaseOrderAllocationChangeSet(List<
     /**
      * 计算差量。`requested` 的 `purchaseOrderItemId` 由调用方在行落库后回填。
      */
-    public static PurchaseOrderAllocationChangeSet between(List<
-            PurchaseDemandAllocationEntity> existing,
-            List<
-                    PurchaseDemandAllocationEntity> requested) {
-        var unmatched = new LinkedHashMap<
-                Key,
-                PurchaseDemandAllocationEntity>();
+    public static PurchaseOrderAllocationChangeSet between(List<PurchaseDemandAllocationEntity> existing,
+            List<PurchaseDemandAllocationEntity> requested) {
+        var unmatched = new LinkedHashMap<Key, PurchaseDemandAllocationEntity>();
         existing.forEach(row -> unmatched.put(key(row), row));
 
-        var inserted = new ArrayList<
-                PurchaseDemandAllocationEntity>();
-        var updated = new ArrayList<
-                PurchaseDemandAllocationEntity>();
-        var seen = new java.util.HashSet<
-                Key>();
+        var inserted = new ArrayList<PurchaseDemandAllocationEntity>();
+        var updated = new ArrayList<PurchaseDemandAllocationEntity>();
+        var seen = new java.util.HashSet<Key>();
 
         for (PurchaseDemandAllocationEntity row : requested) {
             Key key = key(row);
@@ -101,12 +90,8 @@ public record PurchaseOrderAllocationChangeSet(List<
     /**
      * 本次涉及的全部 demandId（**旧集合 ∪ 新集合**），已去重且保持稳定顺序。
      */
-    public List<
-            Long> involvedDemandIds(
-                    List<
-                            PurchaseDemandAllocationEntity> existing) {
-        var ids = new java.util.LinkedHashSet<
-                Long>();
+    public List<Long> involvedDemandIds(List<PurchaseDemandAllocationEntity> existing) {
+        var ids = new java.util.LinkedHashSet<Long>();
         existing.forEach(row -> ids.add(row.getPurchaseDemandId()));
         inserted.forEach(row -> ids.add(row.getPurchaseDemandId()));
         updated.forEach(row -> ids.add(row.getPurchaseDemandId()));

@@ -10,6 +10,5 @@ import java.util.List;
 @Data
 public class SortingTaskDetailVO {
     private SortingTaskVO task;
-    private List<
-            SortingTaskItemVO> items;
+    private List<SortingTaskItemVO> items;
 }

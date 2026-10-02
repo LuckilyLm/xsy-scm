@@ -25,41 +25,29 @@ import java.util.function.BiConsumer;
 @Slf4j
 @Component
 public class ProductImportWorkbookSupport {
+    private static final List<String> CREATE_HEADERS = List.of("模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地",
+            "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
+    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本", "SPU编码",
+            "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位",
+            "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
+    private static final List<BiConsumer<ProductImportRow, String>> CREATE_SETTERS = List.of(
+            ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
+            ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
+            ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
+            ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
+            ProductImportRow::setSkuCode, ProductImportRow::setBarcode, ProductImportRow::setSpecName,
+            ProductImportRow::setSaleUnit, ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
+            ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
     private static final List<
-            String> CREATE_HEADERS = List.of("模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数",
-                    "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
-    private static final List<
-            String> UPDATE_HEADERS = List.of("模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本", "SPU编码", "商品名称", "别名",
-                    "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型",
-                    "市场价", "SKU上下架", "默认SKU", "排序");
-    private static final List<
-            BiConsumer<
-                    ProductImportRow,
-                    String>> CREATE_SETTERS = List.of(ProductImportRow::setTemplateVersion,
-                            ProductImportRow::setSpuCode, ProductImportRow::setSpuName, ProductImportRow::setAlias,
-                            ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
-                            ProductImportRow::setBrandName, ProductImportRow::setOrigin,
-                            ProductImportRow::setStorageMethod, ProductImportRow::setShelfLifeDays,
-                            ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus, ProductImportRow::setSkuCode,
-                            ProductImportRow::setBarcode, ProductImportRow::setSpecName, ProductImportRow::setSaleUnit,
-                            ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
-                            ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag,
-                            ProductImportRow::setSortOrder);
-    private static final List<
-            BiConsumer<
-                    ProductImportRow,
-                    String>> UPDATE_SETTERS = List.of(ProductImportRow::setTemplateVersion, ProductImportRow::setSpuId,
-                            ProductImportRow::setSpuVersion, ProductImportRow::setSkuId,
-                            ProductImportRow::setSkuVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
-                            ProductImportRow::setAlias, ProductImportRow::setCategoryCode,
-                            ProductImportRow::setMnemonicCode, ProductImportRow::setBrandName,
-                            ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
-                            ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes,
-                            ProductImportRow::setSpuStatus, ProductImportRow::setSkuCode, ProductImportRow::setBarcode,
-                            ProductImportRow::setSpecName, ProductImportRow::setSaleUnit,
-                            ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
-                            ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag,
-                            ProductImportRow::setSortOrder);
+            BiConsumer<ProductImportRow, String>> UPDATE_SETTERS = List.of(ProductImportRow::setTemplateVersion,
+                    ProductImportRow::setSpuId, ProductImportRow::setSpuVersion, ProductImportRow::setSkuId,
+                    ProductImportRow::setSkuVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
+                    ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
+                    ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
+                    ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
+                    ProductImportRow::setSkuCode, ProductImportRow::setBarcode, ProductImportRow::setSpecName,
+                    ProductImportRow::setSaleUnit, ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
+                    ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
 
     public byte[] buildTemplate(ProductImportService.ImportMode mode) throws IOException {
         var headers = headers(mode);
@@ -76,13 +64,11 @@ public class ProductImportWorkbookSupport {
         }
     }
 
-    public List<
-            ProductImportRow> readRows(byte[] bytes, ProductImportService.ImportMode mode,
-                    ProductImportResultVO result) {
+    public List<ProductImportRow> readRows(byte[] bytes, ProductImportService.ImportMode mode,
+            ProductImportResultVO result) {
         var headers = headers(mode);
         var setters = mode == ProductImportService.ImportMode.CREATE ? CREATE_SETTERS : UPDATE_SETTERS;
-        var rows = new ArrayList<
-                ProductImportRow>();
+        var rows = new ArrayList<ProductImportRow>();
         var formatter = new DataFormatter(Locale.ROOT);
         try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory
                 .create(new java.io.ByteArrayInputStream(bytes))) {
@@ -143,8 +129,7 @@ public class ProductImportWorkbookSupport {
         return rows;
     }
 
-    private List<
-            String> headers(ProductImportService.ImportMode mode) {
+    private List<String> headers(ProductImportService.ImportMode mode) {
         return mode == ProductImportService.ImportMode.CREATE ? CREATE_HEADERS : UPDATE_HEADERS;
     }
 

@@ -61,16 +61,13 @@ public class InventoryStocktakeController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    InventoryStocktakeVO>> query(@Valid @RequestBody InventoryStocktakeQueryForm form) {
+    public ResponseDTO<PageResult<InventoryStocktakeVO>> query(@Valid @RequestBody InventoryStocktakeQueryForm form) {
         return ResponseDTO.ok(inventoryStocktakeQueryService.queryPage(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_QUERY)
-    public ResponseDTO<
-            InventoryStocktakeVO> detail(@PathVariable("id") Long stocktakeId) {
+    public ResponseDTO<InventoryStocktakeVO> detail(@PathVariable("id") Long stocktakeId) {
         return ResponseDTO.ok(inventoryStocktakeQueryService.detail(stocktakeId));
     }
 
@@ -80,8 +77,7 @@ public class InventoryStocktakeController {
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> create(@Valid @RequestBody InventoryStocktakeAddForm form) {
+    public ResponseDTO<Long> create(@Valid @RequestBody InventoryStocktakeAddForm form) {
         return ResponseDTO.ok(inventoryStocktakeService.create(form));
     }
 
@@ -109,10 +105,8 @@ public class InventoryStocktakeController {
     @PostMapping("/import")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
     @OperateLog
-    public ResponseDTO<
-            InventoryStocktakeImportResultVO> importStocktake(@RequestParam MultipartFile file,
-                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey)
-                    throws Exception {
+    public ResponseDTO<InventoryStocktakeImportResultVO> importStocktake(@RequestParam MultipartFile file,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) throws Exception {
         if (file.isEmpty()) {
             return ResponseDTO.userErrorParam("导入文件不能为空");
         }
@@ -136,8 +130,8 @@ public class InventoryStocktakeController {
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@PathVariable("id") Long stocktakeId, @Valid @RequestBody InventoryStocktakeAddForm form) {
+    public ResponseDTO<String> update(@PathVariable("id") Long stocktakeId,
+            @Valid @RequestBody InventoryStocktakeAddForm form) {
         inventoryStocktakeService.update(stocktakeId, form);
         return ResponseDTO.ok();
     }
@@ -151,8 +145,7 @@ public class InventoryStocktakeController {
     @PostMapping("/confirm/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_CONFIRM)
     @OperateLog
-    public ResponseDTO<
-            String> confirm(@PathVariable("id") Long stocktakeId) {
+    public ResponseDTO<String> confirm(@PathVariable("id") Long stocktakeId) {
         inventoryStocktakeService.confirm(stocktakeId);
         return ResponseDTO.ok();
     }
@@ -163,8 +156,7 @@ public class InventoryStocktakeController {
     @PostMapping("/cancel/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> cancel(@PathVariable("id") Long stocktakeId) {
+    public ResponseDTO<String> cancel(@PathVariable("id") Long stocktakeId) {
         inventoryStocktakeService.cancel(stocktakeId);
         return ResponseDTO.ok();
     }
@@ -175,8 +167,7 @@ public class InventoryStocktakeController {
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@PathVariable("id") Long stocktakeId) {
+    public ResponseDTO<String> delete(@PathVariable("id") Long stocktakeId) {
         inventoryStocktakeService.delete(stocktakeId);
         return ResponseDTO.ok();
     }

@@ -5,8 +5,5 @@ import org.apache.ibatis.annotations.Mapper;
 import com.xsy.scm.delivery.domain.entity.DeliveryVehicleEntity;
 
 @Mapper
-public interface DeliveryVehicleDao
-        extends
-            BaseMapper<
-                    DeliveryVehicleEntity> {
+public interface DeliveryVehicleDao extends BaseMapper<DeliveryVehicleEntity> {
 }

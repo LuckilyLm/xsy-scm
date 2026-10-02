@@ -28,8 +28,7 @@ public final class OrderAmountCalculator {
         return price == null ? null : bounded(quantity.multiply(price));
     }
 
-    public static BigDecimal orderAmount(List<
-            BigDecimal> lines) {
+    public static BigDecimal orderAmount(List<BigDecimal> lines) {
         if (lines.stream().anyMatch(Objects::isNull))
             return null;
         return bounded(lines.stream().reduce(BigDecimal.ZERO, BigDecimal::add));

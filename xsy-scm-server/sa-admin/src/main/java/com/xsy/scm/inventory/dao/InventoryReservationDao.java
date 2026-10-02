@@ -20,10 +20,7 @@ import java.util.List;
  * {@code ON CONFLICT... DO NOTHING} 且冲突目标与索引逐字匹配。
  */
 @Mapper
-public interface InventoryReservationDao
-        extends
-            BaseMapper<
-                    InventoryReservationEntity> {
+public interface InventoryReservationDao extends BaseMapper<InventoryReservationEntity> {
 
     /**
      * 并发安全的「首建预留」：同一来源行只会成功一次。
@@ -49,10 +46,8 @@ public interface InventoryReservationDao
      * <p>
      * 与 {@link #selectActiveBySource} 的区别在粒度：订单确认是逐行预留， 订单取消却是整单释放，因此需要一个头级入口，避免调用方自己拿明细再循环。
      */
-    List<
-            InventoryReservationEntity> listActiveBySourceDocument(
-                    @Param("sourceDocumentType") String sourceDocumentType,
-                    @Param("sourceDocumentId") Long sourceDocumentId);
+    List<InventoryReservationEntity> listActiveBySourceDocument(@Param("sourceDocumentType") String sourceDocumentType,
+            @Param("sourceDocumentId") Long sourceDocumentId);
 
     /**
      * 按来源**行** id 批量查有效预留（发车一次性取整条线路的预留，不逐行往返）。
@@ -61,10 +56,8 @@ public interface InventoryReservationDao
      * 不锁；调用方随后按返回顺序逐行 {@link #lockById}。排序取 {@code (warehouse_id, sku_id, id)} 升序，与 的余额锁序一致 ——
      * 归还预留要拿余额锁，顺序在这里定好，服务层就不必再排一次。
      */
-    List<
-            InventoryReservationEntity> listActiveBySourceItemIds(
-                    @Param("sourceDocumentType") String sourceDocumentType, @Param("sourceDocumentItemIds") Collection<
-                            Long> sourceDocumentItemIds);
+    List<InventoryReservationEntity> listActiveBySourceItemIds(@Param("sourceDocumentType") String sourceDocumentType,
+            @Param("sourceDocumentItemIds") Collection<Long> sourceDocumentItemIds);
 
     /**
      * 锁定预留行（{@code SELECT ... FOR UPDATE}）。
@@ -87,9 +80,6 @@ public interface InventoryReservationDao
     /**
      * 分页查询（联仓库 / SKU / 商品取展示字段）。
      */
-    List<
-            InventoryReservationVO> queryPage(
-                    Page<
-                            ?> page,
-                    @Param("query") InventoryReservationQueryForm query, @Param("scope") ScmValueScope scope);
+    List<InventoryReservationVO> queryPage(Page<?> page, @Param("query") InventoryReservationQueryForm query,
+            @Param("scope") ScmValueScope scope);
 }

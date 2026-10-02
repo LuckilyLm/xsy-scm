@@ -34,9 +34,7 @@ public class ProductSkuEntity {
     private String barcode;
     private String specName;
     @TableField(typeHandler = JsonbStringMapTypeHandler.class)
-    private Map<
-            String,
-            String> specValues;
+    private Map<String, String> specValues;
     private String saleUnit;
     private String productType;
     private BigDecimal marketPrice;

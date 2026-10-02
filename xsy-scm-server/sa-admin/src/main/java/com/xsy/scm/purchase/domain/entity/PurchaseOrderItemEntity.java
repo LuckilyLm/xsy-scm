@@ -48,9 +48,7 @@ public class PurchaseOrderItemEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String skuNameSnapshot;
     @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<
-            String,
-            Object> specValuesSnapshot;
+    private Map<String, Object> specValuesSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String purchaseUnitSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

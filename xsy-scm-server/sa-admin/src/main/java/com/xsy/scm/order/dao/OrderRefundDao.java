@@ -12,16 +12,10 @@ import com.xsy.scm.order.domain.entity.OrderRefundEntity;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
 
 @Mapper
-public interface OrderRefundDao
-        extends
-            BaseMapper<
-                    OrderRefundEntity> {
+public interface OrderRefundDao extends BaseMapper<OrderRefundEntity> {
     OrderRefundEntity lock(@Param("id") Long id);
 
     /** 列表读；范围按父订单的 {@code sales_order.seller_id} 收窄，见 OrderRefundMapper.xml。 */
-    List<
-            OrderRefundEntity> query(
-                    Page<
-                            ?> page,
-                    @Param("query") SalesOrderQueryForm query, @Param("scope") ScmValueScope scope);
+    List<OrderRefundEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
+            @Param("scope") ScmValueScope scope);
 }

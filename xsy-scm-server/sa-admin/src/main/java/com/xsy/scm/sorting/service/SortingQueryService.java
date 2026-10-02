@@ -42,8 +42,7 @@ public class SortingQueryService {
     private final SortingQueryDao sortingQueryDao;
     private final SortingAccess access;
 
-    private Page<
-            ?> page(PageParam form) {
+    private Page<?> page(PageParam form) {
         // 排序由 SQL 固定，客户端排序列一律不接受；分页上限与 SCM 其它列表页一致。
         if (form.getPageNum() == null || form.getPageNum() < 1 || form.getPageSize() == null || form.getPageSize() < 1
                 || form.getPageSize() > 100 || form.getSortItemList() != null && !form.getSortItemList().isEmpty())
@@ -51,8 +50,7 @@ public class SortingQueryService {
         return SmartPageUtil.convert2PageQuery(form);
     }
 
-    public PageResult<
-            SortingTaskVO> query(SortingTaskQueryForm form) {
+    public PageResult<SortingTaskVO> query(SortingTaskQueryForm form) {
         var page = page(form);
         ScmDataScopeContext scope = access.scope();
         // 无授权仓时给形状完整的空分页：不跑恒假谓词，也不让空集合渲染成 IN ()。
@@ -97,8 +95,7 @@ public class SortingQueryService {
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public PageResult<
-            SortingSkuSummaryVO> summary(SortingSummaryQueryForm form) {
+    public PageResult<SortingSkuSummaryVO> summary(SortingSummaryQueryForm form) {
         var page = page(form);
         ScmDataScopeContext scope = access.scope();
         if (scope.getWarehouseScope().isEmpty())
@@ -111,8 +108,7 @@ public class SortingQueryService {
      * 建单用的候选订单行队列，不按订单业务员维度收窄：仓库岗位通过建单权限读取候选项， 返回列不含价格或金额。
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public PageResult<
-            SortingCandidateLineVO> candidateLines(SortingCandidateQueryForm form) {
+    public PageResult<SortingCandidateLineVO> candidateLines(SortingCandidateQueryForm form) {
         var page = page(form);
         return SmartPageUtil.convert2PageResult(page, sortingQueryDao.candidateLines(page, form));
     }

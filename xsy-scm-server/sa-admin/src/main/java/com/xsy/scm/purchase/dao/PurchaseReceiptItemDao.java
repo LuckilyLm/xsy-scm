@@ -21,22 +21,17 @@ import java.util.List;
  * 本身**永不被覆盖**，传的是从采购行继承的同一个值。
  */
 @Mapper
-public interface PurchaseReceiptItemDao
-        extends
-            BaseMapper<
-                    PurchaseReceiptItemEntity> {
+public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEntity> {
 
     /**
      * 本收货单全部活动行，按 `sort_order` 排序。
      */
-    List<
-            PurchaseReceiptItemEntity> listByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
+    List<PurchaseReceiptItemEntity> listByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
     /**
      * 锁定本收货单全部行（`ORDER BY id ASC FOR UPDATE`）。
      */
-    List<
-            PurchaseReceiptItemEntity> lockByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
+    List<PurchaseReceiptItemEntity> lockByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
     /**
      * 单行 `FOR UPDATE`。
@@ -46,8 +41,7 @@ public interface PurchaseReceiptItemDao
     /**
      * 按采购行查活动收货行（跨收货单累计对账用）。
      */
-    List<
-            PurchaseReceiptItemEntity> listActiveByOrderItemId(@Param("purchaseOrderItemId") Long purchaseOrderItemId);
+    List<PurchaseReceiptItemEntity> listActiveByOrderItemId(@Param("purchaseOrderItemId") Long purchaseOrderItemId);
 
     /**
      * 一次性写全 5 个对账数量 + 实重三字段（标品三字段全空）。

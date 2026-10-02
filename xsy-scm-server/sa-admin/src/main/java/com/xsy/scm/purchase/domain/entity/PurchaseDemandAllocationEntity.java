@@ -44,9 +44,7 @@ public class PurchaseDemandAllocationEntity {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal allocatedQuantity;
     @TableField(typeHandler = PurchaseJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
-    private Map<
-            String,
-            Object> demandSnapshot;
+    private Map<String, Object> demandSnapshot;
     @Version
     private Integer version = 0;
     @TableLogic(value = "false", delval = "true")

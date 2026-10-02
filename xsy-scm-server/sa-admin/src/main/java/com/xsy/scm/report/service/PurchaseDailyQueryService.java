@@ -39,8 +39,8 @@ public class PurchaseDailyQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
-        result.setProducts(SmartPageUtil.convert2PageResult(page, purchaseDailyReportDao.queryProducts(
-                page, form, warehouseScope, context.getPurchaserScope())));
+        result.setProducts(SmartPageUtil.convert2PageResult(page,
+                purchaseDailyReportDao.queryProducts(page, form, warehouseScope, context.getPurchaserScope())));
         return result;
     }
 }

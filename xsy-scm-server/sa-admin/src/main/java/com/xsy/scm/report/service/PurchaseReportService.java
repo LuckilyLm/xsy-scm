@@ -56,8 +56,7 @@ public class PurchaseReportService {
         return vo;
     }
 
-    public PageResult<
-            PurchaseReportVO.ProductRow> byProduct(ScmPurchaseReportQueryForm form) {
+    public PageResult<PurchaseReportVO.ProductRow> byProduct(ScmPurchaseReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -66,15 +65,13 @@ public class PurchaseReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
-        PageResult<
-                PurchaseReportVO.ProductRow> result = SmartPageUtil.convert2PageResult(page, reportDao
-                        .purchaseByProduct(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+        PageResult<PurchaseReportVO.ProductRow> result = SmartPageUtil.convert2PageResult(page,
+                reportDao.purchaseByProduct(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         maskProductCost(result, context.isCostVisible());
         return result;
     }
 
-    public PageResult<
-            PurchaseReportVO.SupplierRow> bySupplier(ScmPurchaseReportQueryForm form) {
+    public PageResult<PurchaseReportVO.SupplierRow> bySupplier(ScmPurchaseReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -83,15 +80,13 @@ public class PurchaseReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
-        PageResult<
-                PurchaseReportVO.SupplierRow> result = SmartPageUtil.convert2PageResult(page, reportDao
-                        .purchaseBySupplier(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+        PageResult<PurchaseReportVO.SupplierRow> result = SmartPageUtil.convert2PageResult(page,
+                reportDao.purchaseBySupplier(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         maskSupplierCost(result, context.isCostVisible());
         return result;
     }
 
-    public List<
-            SalesReportVO.TopItem> topSupplierInbound(ScmPurchaseReportQueryForm form) {
+    public List<SalesReportVO.TopItem> topSupplierInbound(ScmPurchaseReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         if (!context.isCostVisible() || context.warehouseNowhere()) {
@@ -101,8 +96,7 @@ public class PurchaseReportService {
                 context.getWarehouseScope());
     }
 
-    public PageResult<
-            PurchaseReportVO.PurchaserRow> byPurchaser(ScmPurchaseReportQueryForm form) {
+    public PageResult<PurchaseReportVO.PurchaserRow> byPurchaser(ScmPurchaseReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -111,11 +105,9 @@ public class PurchaseReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
-        PageResult<
-                PurchaseReportVO.PurchaserRow> result = SmartPageUtil.convert2PageResult(page, reportDao
-                        .purchaseByPurchaser(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
-        List<
-                PurchaseReportVO.PurchaserRow> rows = result.getList();
+        PageResult<PurchaseReportVO.PurchaserRow> result = SmartPageUtil.convert2PageResult(page,
+                reportDao.purchaseByPurchaser(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+        List<PurchaseReportVO.PurchaserRow> rows = result.getList();
         if (!context.isCostVisible()) {
             rows.forEach(row -> {
                 row.setInboundCostAmount(null);
@@ -125,8 +117,7 @@ public class PurchaseReportService {
         return result;
     }
 
-    public PageResult<
-            PurchaseReportVO.ItemRow> itemList(ScmPurchaseReportQueryForm form) {
+    public PageResult<PurchaseReportVO.ItemRow> itemList(ScmPurchaseReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -138,8 +129,7 @@ public class PurchaseReportService {
                 reportDao.purchaseItemList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
     }
 
-    public List<
-            PurchaseReportVO.PriceTrendPoint> priceTrend(ScmPurchaseReportQueryForm form) {
+    public List<PurchaseReportVO.PriceTrendPoint> priceTrend(ScmPurchaseReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         if (context.warehouseNowhere()) {
@@ -148,8 +138,7 @@ public class PurchaseReportService {
         return reportDao.purchasePriceTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope());
     }
 
-    private void maskProductCost(PageResult<
-            PurchaseReportVO.ProductRow> result, boolean costVisible) {
+    private void maskProductCost(PageResult<PurchaseReportVO.ProductRow> result, boolean costVisible) {
         if (costVisible || result == null || result.getList() == null) {
             return;
         }
@@ -160,8 +149,7 @@ public class PurchaseReportService {
         });
     }
 
-    private void maskSupplierCost(PageResult<
-            PurchaseReportVO.SupplierRow> result, boolean costVisible) {
+    private void maskSupplierCost(PageResult<PurchaseReportVO.SupplierRow> result, boolean costVisible) {
         if (costVisible || result == null || result.getList() == null) {
             return;
         }

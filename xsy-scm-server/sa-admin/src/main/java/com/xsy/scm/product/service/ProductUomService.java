@@ -38,16 +38,14 @@ import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 public class ProductUomService {
     private final ProductUomDao productUomDao;
 
-    public List<
-            ProductUomVO> list(ProductAssistantQueryForm query) {
+    public List<ProductUomVO> list(ProductAssistantQueryForm query) {
         return productUomDao.selectWithReference(query == null ? new ProductAssistantQueryForm() : query);
     }
 
     /**
      * 下拉只出启用单位；停用单位不再出现在新配置里，历史商品字段不受影响。
      */
-    public List<
-            ProductUomVO> options() {
+    public List<ProductUomVO> options() {
         var query = new ProductAssistantQueryForm();
         query.setStatus(ScmEnableStatusEnum.ENABLED.name());
         return productUomDao.selectWithReference(query);
@@ -56,8 +54,7 @@ public class ProductUomService {
     /**
      * 只复核本次新写入或改动的单位名：必须在字典中且处于启用态，并锁定命中的活动行， 与 {@link #delete} 互斥。字典里没有这个名称时不锁行，调用方按「未维护」放行历史值。
      */
-    public void assertUsable(Collection<
-            String> unitNames) {
+    public void assertUsable(Collection<String> unitNames) {
         var names = unitNames.stream().filter(n -> n != null && !n.isBlank()).map(String::trim).distinct().toList();
         if (names.isEmpty())
             return;
@@ -122,12 +119,10 @@ public class ProductUomService {
      * 与 uk_scm_uom_code_active / uk_scm_uom_name_active 同域的应用级预检，给出可解释的错误码。
      */
     private void assertUnique(String code, String name, Long self) {
-        if (productUomDao.selectCount(new LambdaQueryWrapper<
-                ProductUomEntity>().eq(ProductUomEntity::getUomCode, code)
+        if (productUomDao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getUomCode, code)
                 .ne(self != null, ProductUomEntity::getId, self)) > 0)
             throw new ScmBusinessException(UOM_CODE_DUPLICATE);
-        if (productUomDao.selectCount(new LambdaQueryWrapper<
-                ProductUomEntity>().eq(ProductUomEntity::getName, name)
+        if (productUomDao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getName, name)
                 .ne(self != null, ProductUomEntity::getId, self)) > 0)
             throw new ScmBusinessException(UOM_NAME_DUPLICATE);
     }

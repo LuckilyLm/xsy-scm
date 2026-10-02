@@ -110,9 +110,7 @@ public class CustomerTypePriceService {
     }
 
     private String snapshot(CustomerTypePriceEntity customerTypePrice) {
-        var fields = new java.util.LinkedHashMap<
-                String,
-                Object>();
+        var fields = new java.util.LinkedHashMap<String, Object>();
         fields.put("id", customerTypePrice.getId());
         fields.put("customerTypeId", customerTypePrice.getCustomerTypeId());
         fields.put("skuId", customerTypePrice.getSkuId());

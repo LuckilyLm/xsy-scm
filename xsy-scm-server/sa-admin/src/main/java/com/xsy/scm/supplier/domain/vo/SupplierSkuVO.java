@@ -30,9 +30,7 @@ public class SupplierSkuVO {
 
     private String skuNameSnapshot;
 
-    private Map<
-            String,
-            String> specValuesSnapshot;
+    private Map<String, String> specValuesSnapshot;
 
     private String purchaseUnit;
 

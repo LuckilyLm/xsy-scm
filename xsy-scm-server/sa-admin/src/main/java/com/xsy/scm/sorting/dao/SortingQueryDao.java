@@ -31,42 +31,26 @@ public interface SortingQueryDao {
 
     long nextNumber();
 
-    List<
-            SortingTaskVO> tasks(
-                    Page<
-                            ?> page,
-                    @Param("q") SortingTaskQueryForm q, @Param("scope") ScmDataScopeContext scope,
-                    @Param("crossAssignee") boolean crossAssignee);
+    List<SortingTaskVO> tasks(Page<?> page, @Param("q") SortingTaskQueryForm q,
+            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     SortingTaskVO task(@Param("id") Long id, @Param("scope") ScmDataScopeContext scope,
             @Param("crossAssignee") boolean crossAssignee);
 
-    List<
-            SortingTaskItemVO> items(@Param("taskId") Long taskId);
+    List<SortingTaskItemVO> items(@Param("taskId") Long taskId);
 
-    List<
-            SortingSkuSummaryVO> skuSummary(
-                    Page<
-                            ?> page,
-                    @Param("q") SortingSummaryQueryForm q, @Param("scope") ScmDataScopeContext scope,
-                    @Param("crossAssignee") boolean crossAssignee);
+    List<SortingSkuSummaryVO> skuSummary(Page<?> page, @Param("q") SortingSummaryQueryForm q,
+            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     /**
      * 建单用的候选订单行队列：不受订单业务员维度约束， 由「只授建单权 + 只取队列必需列」两头收口。
      */
-    List<
-            SortingCandidateLineVO> candidateLines(
-                    Page<
-                            ?> page,
-                    @Param("q") SortingCandidateQueryForm q);
+    List<SortingCandidateLineVO> candidateLines(Page<?> page, @Param("q") SortingCandidateQueryForm q);
 
     /**
      * 按 id 批量取订单行快照（含已删除标志），一次往返完成校验与冻结。
      */
-    List<
-            SortingOrderLineSnapshot> orderLines(
-                    @Param("ids") List<
-                            Long> ids);
+    List<SortingOrderLineSnapshot> orderLines(@Param("ids") List<Long> ids);
 
     int markPrinted(@Param("id") Long id, @Param("operator") String operator);
 

@@ -9,8 +9,6 @@ import com.xsy.scm.delivery.domain.entity.DeliveryRouteOrderEntity;
 @Data
 public class DeliveryDetailVO {
     private DeliveryRouteVO route;
-    private List<
-            DeliveryStopVO> stops;
-    private List<
-            DeliveryRouteOrderEntity> orders;
+    private List<DeliveryStopVO> stops;
+    private List<DeliveryRouteOrderEntity> orders;
 }

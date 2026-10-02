@@ -20,12 +20,10 @@ import java.util.List;
 public class ScreenGeoVO {
 
     @Schema(description = "按市聚合的节点（ECharts 气泡层），按客户数倒序")
-    private List<
-            CityNode> cities;
+    private List<CityNode> cities;
 
     @Schema(description = "按省上卷的分布（ECharts 着色层），按客户数倒序")
-    private List<
-            ProvinceNode> provinces;
+    private List<ProvinceNode> provinces;
 
     @Schema(description = "地理归属覆盖度")
     private Coverage coverage;

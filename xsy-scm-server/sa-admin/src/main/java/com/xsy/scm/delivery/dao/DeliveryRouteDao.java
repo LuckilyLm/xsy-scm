@@ -5,8 +5,5 @@ import org.apache.ibatis.annotations.Mapper;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity;
 
 @Mapper
-public interface DeliveryRouteDao
-        extends
-            BaseMapper<
-                    DeliveryRouteEntity> {
+public interface DeliveryRouteDao extends BaseMapper<DeliveryRouteEntity> {
 }

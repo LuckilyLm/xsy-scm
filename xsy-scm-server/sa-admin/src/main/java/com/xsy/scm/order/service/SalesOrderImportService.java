@@ -49,19 +49,15 @@ public class SalesOrderImportService {
     private static final int MAX_ORDERS = 200;
     private static final int MAX_ITEMS_PER_ORDER = 100;
     private static final int MAX_ERRORS = 1000;
-    private static final List<
-            String> HEADERS = List.of("模板版本", "导入订单标识", "客户编码", "收货人", "联系电话", "收货地址", "期望配送时间", "SKU编码", "下单数量",
-                    "人工单价", "改价原因", "订单备注");
-    private static final List<
-            BiConsumer<
-                    SalesOrderImportRow,
-                    String>> SETTERS = List.of(SalesOrderImportRow::setTemplateVersion,
-                            SalesOrderImportRow::setOrderKey, SalesOrderImportRow::setCustomerCode,
-                            SalesOrderImportRow::setReceiverName, SalesOrderImportRow::setReceiverPhone,
-                            SalesOrderImportRow::setAddress, SalesOrderImportRow::setExpectDeliveryTime,
-                            SalesOrderImportRow::setSkuCode, SalesOrderImportRow::setOrderedQuantity,
-                            SalesOrderImportRow::setUnitPrice, SalesOrderImportRow::setOverrideReason,
-                            SalesOrderImportRow::setRemark);
+    private static final List<String> HEADERS = List.of("模板版本", "导入订单标识", "客户编码", "收货人", "联系电话", "收货地址", "期望配送时间",
+            "SKU编码", "下单数量", "人工单价", "改价原因", "订单备注");
+    private static final List<BiConsumer<SalesOrderImportRow, String>> SETTERS = List.of(
+            SalesOrderImportRow::setTemplateVersion, SalesOrderImportRow::setOrderKey,
+            SalesOrderImportRow::setCustomerCode, SalesOrderImportRow::setReceiverName,
+            SalesOrderImportRow::setReceiverPhone, SalesOrderImportRow::setAddress,
+            SalesOrderImportRow::setExpectDeliveryTime, SalesOrderImportRow::setSkuCode,
+            SalesOrderImportRow::setOrderedQuantity, SalesOrderImportRow::setUnitPrice,
+            SalesOrderImportRow::setOverrideReason, SalesOrderImportRow::setRemark);
 
     private final CustomerDao customerDao;
     private final ProductSkuOptionDao productSkuOptionDao;
@@ -102,10 +98,8 @@ public class SalesOrderImportService {
         }
     }
 
-    private List<
-            SalesOrderImportRow> readRows(byte[] bytes, SalesOrderImportResultVO result) {
-        var rows = new ArrayList<
-                SalesOrderImportRow>();
+    private List<SalesOrderImportRow> readRows(byte[] bytes, SalesOrderImportResultVO result) {
+        var rows = new ArrayList<SalesOrderImportRow>();
         var formatter = new DataFormatter(java.util.Locale.ROOT);
         try (var workbook = WorkbookFactory.create(new ByteArrayInputStream(bytes))) {
             if (workbook.getNumberOfSheets() != 1) {
@@ -167,8 +161,7 @@ public class SalesOrderImportService {
         return rows;
     }
 
-    private Assembly assemble(List<
-            SalesOrderImportRow> rows, boolean priceOverrideAllowed) {
+    private Assembly assemble(List<SalesOrderImportRow> rows, boolean priceOverrideAllowed) {
         var result = new SalesOrderImportResultVO();
         result.setTotalRows(rows.size());
         if (rows.isEmpty())
@@ -189,10 +182,7 @@ public class SalesOrderImportService {
                 : productSkuOptionDao.selectByCodes(skuCodes).stream()
                         .collect(Collectors.toMap(ProductSkuOptionVO::getSkuCode, Function.identity()));
 
-        var groups = new LinkedHashMap<
-                String,
-                List<
-                        IndexedRow>>();
+        var groups = new LinkedHashMap<String, List<IndexedRow>>();
         for (int index = 0; index < rows.size(); index++) {
             var row = rows.get(index);
             var rowNumber = row.getRowNumber();
@@ -205,8 +195,7 @@ public class SalesOrderImportService {
         if (groups.size() > MAX_ORDERS)
             addError(result, 0, null, "导入订单标识", "ORDER_LIMIT", "订单数不能超过 " + MAX_ORDERS + " 张");
 
-        var forms = new ArrayList<
-                SalesOrderAddForm>();
+        var forms = new ArrayList<SalesOrderAddForm>();
         for (var entry : groups.entrySet()) {
             var group = entry.getValue();
             var first = group.getFirst();
@@ -221,15 +210,8 @@ public class SalesOrderImportService {
         return new Assembly(result, forms, new ArrayList<>(groups.values()));
     }
 
-    private void validatePrices(String orderKey, List<
-            IndexedRow> rows,
-            Map<
-                    String,
-                    CustomerEntity> customerMap,
-            Map<
-                    String,
-                    ProductSkuOptionVO> skuMap,
-            SalesOrderImportResultVO result) {
+    private void validatePrices(String orderKey, List<IndexedRow> rows, Map<String, CustomerEntity> customerMap,
+            Map<String, ProductSkuOptionVO> skuMap, SalesOrderImportResultVO result) {
         var customer = customerMap.get(trim(rows.getFirst().row().getCustomerCode()));
         if (customer == null
                 || !com.xsy.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable())
@@ -274,12 +256,8 @@ public class SalesOrderImportService {
         }
     }
 
-    private void validateRow(SalesOrderImportRow row, int rowNumber, String orderKey, Map<
-            String,
-            CustomerEntity> customerMap,
-            Map<
-                    String,
-                    ProductSkuOptionVO> skuMap,
+    private void validateRow(SalesOrderImportRow row, int rowNumber, String orderKey,
+            Map<String, CustomerEntity> customerMap, Map<String, ProductSkuOptionVO> skuMap,
             boolean priceOverrideAllowed, SalesOrderImportResultVO result) {
         required(result, rowNumber, orderKey, "模板版本", row.getTemplateVersion());
         if (trim(row.getTemplateVersion()) != null && !TEMPLATE_VERSION.equals(trim(row.getTemplateVersion())))
@@ -324,11 +302,9 @@ public class SalesOrderImportService {
             }
     }
 
-    private void validateGroup(String orderKey, List<
-            IndexedRow> rows, SalesOrderImportResultVO result) {
+    private void validateGroup(String orderKey, List<IndexedRow> rows, SalesOrderImportResultVO result) {
         var first = rows.getFirst().row();
-        var skuCodes = new java.util.HashSet<
-                String>();
+        var skuCodes = new java.util.HashSet<String>();
         for (var indexed : rows) {
             var row = indexed.row();
             same(result, indexed.rowNumber(), orderKey, "客户编码", first.getCustomerCode(), row.getCustomerCode());
@@ -344,14 +320,8 @@ public class SalesOrderImportService {
         }
     }
 
-    private SalesOrderAddForm toForm(List<
-            IndexedRow> rows,
-            Map<
-                    String,
-                    CustomerEntity> customerMap,
-            Map<
-                    String,
-                    ProductSkuOptionVO> skuMap) {
+    private SalesOrderAddForm toForm(List<IndexedRow> rows, Map<String, CustomerEntity> customerMap,
+            Map<String, ProductSkuOptionVO> skuMap) {
         var first = rows.getFirst().row();
         var form = new SalesOrderAddForm();
         form.setCustomerId(customerMap.get(trim(first.getCustomerCode())).getId());
@@ -364,8 +334,7 @@ public class SalesOrderImportService {
         address.setReceiverPhone(trim(first.getReceiverPhone()));
         address.setAddress(trim(first.getAddress()));
         form.setAddress(address);
-        var items = new ArrayList<
-                SalesOrderItemForm>();
+        var items = new ArrayList<SalesOrderItemForm>();
         for (int index = 0; index < rows.size(); index++) {
             var row = rows.get(index).row();
             var item = new SalesOrderItemForm();
@@ -436,10 +405,7 @@ public class SalesOrderImportService {
     private record IndexedRow(int rowNumber, SalesOrderImportRow row) {
     }
 
-    private record Assembly(SalesOrderImportResultVO result, List<
-            SalesOrderAddForm> forms,
-            List<
-                    List<
-                            IndexedRow>> groups) {
+    private record Assembly(SalesOrderImportResultVO result, List<SalesOrderAddForm> forms,
+            List<List<IndexedRow>> groups) {
     }
 }

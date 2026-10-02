@@ -58,16 +58,10 @@ public class ProductImportService {
     /** UPDATE 模式的显式清空标记：空白=保持原值，因此清除既存值必须另有记号。仅 UPDATE 解释该记号。 */
     public static final String CLEAR_TOKEN = "(清空)";
     /** 这些列没有枚举/数值校验兜底，标记出现在这里必须拒绝，否则会被当成普通值写进名称、单位或默认标记。 */
-    private static final List<
-            Map.Entry<
-                    String,
-                    Function<
-                            ProductImportRow,
-                            String>>> CLEAR_GUARDED = List.of(Map.entry("商品名称", ProductImportRow::getSpuName),
-                                    Map.entry("SKU编码", ProductImportRow::getSkuCode),
-                                    Map.entry("规格名称", ProductImportRow::getSpecName),
-                                    Map.entry("销售单位", ProductImportRow::getSaleUnit),
-                                    Map.entry("默认SKU", ProductImportRow::getDefaultFlag));
+    private static final List<Map.Entry<String, Function<ProductImportRow, String>>> CLEAR_GUARDED = List.of(
+            Map.entry("商品名称", ProductImportRow::getSpuName), Map.entry("SKU编码", ProductImportRow::getSkuCode),
+            Map.entry("规格名称", ProductImportRow::getSpecName), Map.entry("销售单位", ProductImportRow::getSaleUnit),
+            Map.entry("默认SKU", ProductImportRow::getDefaultFlag));
     static final int MAX_ROWS = 20000;
     private static final int MAX_PRODUCTS = 5000;
     private static final int MAX_SKUS_PER_PRODUCT = 200;
@@ -76,11 +70,9 @@ public class ProductImportService {
             String> SHELF = Set.of(ScmShelfStatusEnum.ON_SHELF.name(), ScmShelfStatusEnum.OFF_SHELF.name());
     private static final Set<
             String> PRODUCT_TYPE = Set.of(ScmProductTypeEnum.STANDARD.name(), ScmProductTypeEnum.NON_STANDARD.name());
-    private static final Set<
-            String> STORAGE = Set.of(ScmStorageMethodEnum.AMBIENT.name(), ScmStorageMethodEnum.CHILLED.name(),
-                    ScmStorageMethodEnum.FROZEN.name());
-    private static final Set<
-            String> TRUTHY = Set.of("是", "Y", "YES", "TRUE", "1");
+    private static final Set<String> STORAGE = Set.of(ScmStorageMethodEnum.AMBIENT.name(),
+            ScmStorageMethodEnum.CHILLED.name(), ScmStorageMethodEnum.FROZEN.name());
+    private static final Set<String> TRUTHY = Set.of("是", "Y", "YES", "TRUE", "1");
 
     private final ProductCategoryDao productCategoryDao;
     private final ProductTagDao productTagDao;
@@ -132,8 +124,7 @@ public class ProductImportService {
         }
     }
 
-    private void addWriteError(ProductImportResultVO result, List<
-            ProductImportRow> group, Throwable cause) {
+    private void addWriteError(ProductImportResultVO result, List<ProductImportRow> group, Throwable cause) {
         var code = cause instanceof ScmBusinessException business
                 ? String.valueOf(business.getErrorCode().getCode())
                 : "WRITE_CONFLICT";
@@ -152,8 +143,7 @@ public class ProductImportService {
     // CREATE
     // ------------------------------------------------------------------
 
-    private Assembly assembleCreates(List<
-            ProductImportRow> rows, ProductImportResultVO result) {
+    private Assembly assembleCreates(List<ProductImportRow> rows, ProductImportResultVO result) {
         result.setTotalRows(rows.size());
         if (rows.isEmpty())
             addError(result, 0, null, "文件", "FILE_EMPTY", "导入文件没有数据行");
@@ -164,10 +154,7 @@ public class ProductImportService {
         var tagMap = loadTags(rows);
         var unitMap = loadUnits(rows);
 
-        var groups = new LinkedHashMap<
-                String,
-                List<
-                        ProductImportRow>>();
+        var groups = new LinkedHashMap<String, List<ProductImportRow>>();
         for (var row : rows)
             validateCreateRow(row, categoryMap, tagMap, unitMap, result);
         for (var row : rows) {
@@ -180,11 +167,8 @@ public class ProductImportService {
             addError(result, 0, null, "SPU编码", "PRODUCT_LIMIT", "商品数不能超过 " + MAX_PRODUCTS + " 个");
         }
 
-        var forms = new ArrayList<
-                ProductSpuAddForm>();
-        var orderedGroups = new ArrayList<
-                List<
-                        ProductImportRow>>();
+        var forms = new ArrayList<ProductSpuAddForm>();
+        var orderedGroups = new ArrayList<List<ProductImportRow>>();
         for (var entry : groups.entrySet()) {
             var group = entry.getValue();
             orderedGroups.add(group);
@@ -205,8 +189,7 @@ public class ProductImportService {
     /**
      * 更新模式先按定位键读回现状，再把 Excel 的非空单元格覆盖到现状之上： 空白保持原值、未列出的 SKU 保持原样、Excel 之外的字段（详情描述、税率、图片等）一律原值回写， 因此不会把「只改一个市场价」变成整单替换。
      */
-    private UpdateAssembly assembleUpdates(List<
-            ProductImportRow> rows, ProductImportResultVO result) {
+    private UpdateAssembly assembleUpdates(List<ProductImportRow> rows, ProductImportResultVO result) {
         result.setTotalRows(rows.size());
         if (rows.isEmpty())
             addError(result, 0, null, "文件", "FILE_EMPTY", "导入文件没有数据行");
@@ -222,33 +205,28 @@ public class ProductImportService {
         // 一次批量读现状，避免逐行查库；软删行读不到即按「商品不存在」报错。
         var spuMap = spuIds.isEmpty()
                 ? Map.<Long, ProductSpuEntity>of()
-                : productSpuDao.selectList(new LambdaQueryWrapper<
-                        ProductSpuEntity>().in(ProductSpuEntity::getId, spuIds).eq(ProductSpuEntity::getDeleted, false))
+                : productSpuDao
+                        .selectList(new LambdaQueryWrapper<ProductSpuEntity>().in(ProductSpuEntity::getId, spuIds)
+                                .eq(ProductSpuEntity::getDeleted, false))
                         .stream().collect(Collectors.toMap(ProductSpuEntity::getId, s -> s, (a, b) -> a));
         var skuMap = spuIds.isEmpty()
-                ? Map.<Long, List<
-                        ProductSkuEntity>>of()
-                : productSkuDao.selectList(new LambdaQueryWrapper<
-                        ProductSkuEntity>().in(ProductSkuEntity::getSpuId, spuIds)
-                        .eq(ProductSkuEntity::getDeleted, false)).stream()
-                        .collect(Collectors.groupingBy(ProductSkuEntity::getSpuId));
+                ? Map.<Long, List<ProductSkuEntity>>of()
+                : productSkuDao
+                        .selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, spuIds)
+                                .eq(ProductSkuEntity::getDeleted, false))
+                        .stream().collect(Collectors.groupingBy(ProductSkuEntity::getSpuId));
         var imageMap = spuIds.isEmpty()
-                ? Map.<Long, List<
-                        ProductImageEntity>>of()
-                : productImageDao.selectList(new LambdaQueryWrapper<
-                        ProductImageEntity>().in(ProductImageEntity::getSpuId, spuIds)
-                        .eq(ProductImageEntity::getDeleted, false)).stream()
-                        .collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
+                ? Map.<Long, List<ProductImageEntity>>of()
+                : productImageDao
+                        .selectList(new LambdaQueryWrapper<ProductImageEntity>()
+                                .in(ProductImageEntity::getSpuId, spuIds).eq(ProductImageEntity::getDeleted, false))
+                        .stream().collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
         var tagIdMap = spuIds.isEmpty()
-                ? Map.<Long, List<
-                        Long>>of()
+                ? Map.<Long, List<Long>>of()
                 : productTagService.bySpuIds(spuIds).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                         e -> e.getValue().stream().map(t -> t.getTagId()).toList()));
 
-        var groups = new LinkedHashMap<
-                String,
-                List<
-                        ProductImportRow>>();
+        var groups = new LinkedHashMap<String, List<ProductImportRow>>();
         for (var row : rows) {
             var key = trim(row.getSpuId());
             if (key != null)
@@ -259,11 +237,8 @@ public class ProductImportService {
             addError(result, 0, null, "SPU ID", "PRODUCT_LIMIT", "商品数不能超过 " + MAX_PRODUCTS + " 个");
         }
 
-        var forms = new ArrayList<
-                ProductSpuUpdateForm>();
-        var orderedGroups = new ArrayList<
-                List<
-                        ProductImportRow>>();
+        var forms = new ArrayList<ProductSpuUpdateForm>();
+        var orderedGroups = new ArrayList<List<ProductImportRow>>();
         for (var entry : groups.entrySet()) {
             var group = entry.getValue();
             orderedGroups.add(group);
@@ -281,16 +256,8 @@ public class ProductImportService {
         return new UpdateAssembly(forms, orderedGroups);
     }
 
-    private void validateUpdateGroup(String spuKey, List<
-            ProductImportRow> rows,
-            Map<
-                    Long,
-                    ProductSpuEntity> spuMap,
-            Map<
-                    Long,
-                    List<
-                            ProductSkuEntity>> skuMap,
-            ProductImportResultVO result) {
+    private void validateUpdateGroup(String spuKey, List<ProductImportRow> rows, Map<Long, ProductSpuEntity> spuMap,
+            Map<Long, List<ProductSkuEntity>> skuMap, ProductImportResultVO result) {
         var first = rows.getFirst();
         var spuId = parseLong(spuKey);
         var firstRowNumber = first.getRowNumber();
@@ -314,8 +281,7 @@ public class ProductImportService {
 
         var existingSkus = skuMap.getOrDefault(spuId, List.of()).stream()
                 .collect(Collectors.toMap(ProductSkuEntity::getId, s -> s, (a, b) -> a));
-        var seenSkuIds = new java.util.HashSet<
-                Long>();
+        var seenSkuIds = new java.util.HashSet<Long>();
         var skuCodes = existingSkus.values().stream().map(ProductSkuEntity::getSkuCode)
                 .collect(Collectors.toCollection(java.util.HashSet::new));
         int defaults = 0;
@@ -374,20 +340,9 @@ public class ProductImportService {
             addError(result, firstRowNumber, trim(first.getSpuCode()), "默认SKU", "DEFAULT_SKU_INVALID", "默认 SKU 只能有一个");
     }
 
-    private ProductSpuUpdateForm toUpdateForm(List<
-            ProductImportRow> rows, ProductSpuEntity spu,
-            List<
-                    ProductSkuEntity> existingSkus,
-            List<
-                    ProductImageEntity> existingImages,
-            List<
-                    Long> existingTagIds,
-            Map<
-                    String,
-                    ProductCategoryEntity> categoryMap,
-            Map<
-                    String,
-                    ProductTagEntity> tagMap) {
+    private ProductSpuUpdateForm toUpdateForm(List<ProductImportRow> rows, ProductSpuEntity spu,
+            List<ProductSkuEntity> existingSkus, List<ProductImageEntity> existingImages, List<Long> existingTagIds,
+            Map<String, ProductCategoryEntity> categoryMap, Map<String, ProductTagEntity> tagMap) {
         var first = rows.getFirst();
         var form = new ProductSpuUpdateForm();
         form.setSpuId(spu.getId());
@@ -427,16 +382,10 @@ public class ProductImportService {
     }
 
     /** 既存 SKU 按 skuId 覆盖，未列出的原样保留，空白列保持原值。 */
-    private List<
-            ProductSkuForm> mergeSkus(
-                    List<
-                            ProductImportRow> rows,
-                    List<
-                            ProductSkuEntity> existingSkus) {
+    private List<ProductSkuForm> mergeSkus(List<ProductImportRow> rows, List<ProductSkuEntity> existingSkus) {
         var merged = existingSkus.stream()
                 .collect(Collectors.toMap(ProductSkuEntity::getId, this::toSkuForm, (a, b) -> a, LinkedHashMap::new));
-        var created = new ArrayList<
-                ProductSkuForm>();
+        var created = new ArrayList<ProductSkuForm>();
         for (var row : rows) {
             var skuId = parseLong(row.getSkuId());
             if (skuId != null) {
@@ -451,8 +400,7 @@ public class ProductImportService {
             applySkuOverride(form, row);
             created.add(form);
         }
-        var result = new ArrayList<
-                ProductSkuForm>(merged.size() + created.size());
+        var result = new ArrayList<ProductSkuForm>(merged.size() + created.size());
         result.addAll(merged.values());
         result.addAll(created);
         return result;
@@ -525,44 +473,30 @@ public class ProductImportService {
     // 共享校验
     // ------------------------------------------------------------------
 
-    private Map<
-            String,
-            ProductCategoryEntity> loadCategories(
-                    List<
-                            ProductImportRow> rows) {
+    private Map<String, ProductCategoryEntity> loadCategories(List<ProductImportRow> rows) {
         var codes = rows.stream().map(row -> trim(row.getCategoryCode())).filter(Objects::nonNull).distinct().toList();
         return codes.isEmpty()
                 ? Map.of()
-                : productCategoryDao.selectList(new LambdaQueryWrapper<
-                        ProductCategoryEntity>().in(ProductCategoryEntity::getCategoryCode, codes)
-                        .eq(ProductCategoryEntity::getDeleted, false)).stream()
+                : productCategoryDao
+                        .selectList(new LambdaQueryWrapper<ProductCategoryEntity>()
+                                .in(ProductCategoryEntity::getCategoryCode, codes)
+                                .eq(ProductCategoryEntity::getDeleted, false))
+                        .stream()
                         .collect(Collectors.toMap(ProductCategoryEntity::getCategoryCode, c -> c, (a, b) -> a));
     }
 
-    private Map<
-            String,
-            ProductTagEntity> loadTags(
-                    List<
-                            ProductImportRow> rows) {
+    private Map<String, ProductTagEntity> loadTags(List<ProductImportRow> rows) {
         var codes = rows.stream().flatMap(row -> splitTags(row.getTagCodes()).stream()).distinct().toList();
         return codes.isEmpty()
                 ? Map.of()
-                : productTagDao.selectList(new LambdaQueryWrapper<
-                        ProductTagEntity>().in(ProductTagEntity::getTagCode, codes)
-                        .eq(ProductTagEntity::getDeleted, false)).stream()
-                        .collect(Collectors.toMap(ProductTagEntity::getTagCode, t -> t, (a, b) -> a));
+                : productTagDao
+                        .selectList(new LambdaQueryWrapper<ProductTagEntity>().in(ProductTagEntity::getTagCode, codes)
+                                .eq(ProductTagEntity::getDeleted, false))
+                        .stream().collect(Collectors.toMap(ProductTagEntity::getTagCode, t -> t, (a, b) -> a));
     }
 
-    private void validateCreateRow(ProductImportRow row, Map<
-            String,
-            ProductCategoryEntity> categoryMap,
-            Map<
-                    String,
-                    ProductTagEntity> tagMap,
-            Map<
-                    String,
-                    ProductUomEntity> unitMap,
-            ProductImportResultVO result) {
+    private void validateCreateRow(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
+            Map<String, ProductTagEntity> tagMap, Map<String, ProductUomEntity> unitMap, ProductImportResultVO result) {
         var rowNumber = row.getRowNumber();
         var key = trim(row.getSpuCode());
         required(result, rowNumber, key, "模板版本", row.getTemplateVersion());
@@ -582,13 +516,8 @@ public class ProductImportService {
         validateSharedCells(row, categoryMap, tagMap, result, false, unitMap);
     }
 
-    private void validateUpdateRow(ProductImportRow row, Map<
-            String,
-            ProductCategoryEntity> categoryMap,
-            Map<
-                    String,
-                    ProductTagEntity> tagMap,
-            ProductImportResultVO result) {
+    private void validateUpdateRow(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
+            Map<String, ProductTagEntity> tagMap, ProductImportResultVO result) {
         var rowNumber = row.getRowNumber();
         var key = trim(row.getSpuCode());
         required(result, rowNumber, key, "模板版本", row.getTemplateVersion());
@@ -614,15 +543,9 @@ public class ProductImportService {
     }
 
     /** 两模式共用的取值与长度校验；必填口径由各模式的调用方决定。 */
-    private void validateSharedCells(ProductImportRow row, Map<
-            String,
-            ProductCategoryEntity> categoryMap,
-            Map<
-                    String,
-                    ProductTagEntity> tagMap,
-            ProductImportResultVO result, boolean allowClearToken, Map<
-                    String,
-                    ProductUomEntity> unitMap) {
+    private void validateSharedCells(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
+            Map<String, ProductTagEntity> tagMap, ProductImportResultVO result, boolean allowClearToken,
+            Map<String, ProductUomEntity> unitMap) {
         var rowNumber = row.getRowNumber();
         var key = trim(row.getSpuCode());
         length(result, rowNumber, key, "SPU编码", row.getSpuCode(), 64);
@@ -674,18 +597,14 @@ public class ProductImportService {
     }
 
     /** CREATE 模式的单位字典：与 {@code ProductUomService.assertUsable} 同判据（活动行 + ENABLED）。 */
-    private Map<
-            String,
-            ProductUomEntity> loadUnits(
-                    List<
-                            ProductImportRow> rows) {
+    private Map<String, ProductUomEntity> loadUnits(List<ProductImportRow> rows) {
         var names = rows.stream().map(row -> trim(row.getSaleUnit())).filter(Objects::nonNull).distinct().toList();
         return names.isEmpty()
                 ? Map.of()
-                : productUomDao.selectList(new LambdaQueryWrapper<
-                        ProductUomEntity>().in(ProductUomEntity::getName, names)
-                        .eq(ProductUomEntity::getDeleted, false)).stream()
-                        .collect(Collectors.toMap(ProductUomEntity::getName, u -> u, (a, b) -> a));
+                : productUomDao
+                        .selectList(new LambdaQueryWrapper<ProductUomEntity>().in(ProductUomEntity::getName, names)
+                                .eq(ProductUomEntity::getDeleted, false))
+                        .stream().collect(Collectors.toMap(ProductUomEntity::getName, u -> u, (a, b) -> a));
     }
 
     /**
@@ -695,9 +614,8 @@ public class ProductImportService {
      * CREATE 同时复核启用态：{@code loadTags} 只按 {@code deleted=FALSE} 取行、不看 {@code status}， 缺了这一步，填了停用标签要等整批写库被
      * {@code assertUsable} 抛 40028 才知道是哪一行。
      */
-    private void validateTagCodes(ProductImportResultVO result, ProductImportRow row, Map<
-            String,
-            ProductTagEntity> tagMap, boolean allowClear) {
+    private void validateTagCodes(ProductImportResultVO result, ProductImportRow row,
+            Map<String, ProductTagEntity> tagMap, boolean allowClear) {
         var cell = trim(row.getTagCodes());
         if (cell == null || (allowClear && CLEAR_TOKEN.equals(cell)))
             return;
@@ -713,11 +631,9 @@ public class ProductImportService {
         }
     }
 
-    private void validateGroup(String spuCode, List<
-            ProductImportRow> rows, ProductImportResultVO result) {
+    private void validateGroup(String spuCode, List<ProductImportRow> rows, ProductImportResultVO result) {
         var first = rows.getFirst();
-        var skuCodes = new java.util.HashSet<
-                String>();
+        var skuCodes = new java.util.HashSet<String>();
         int defaults = 0;
         for (var row : rows) {
             int rowNumber = row.getRowNumber();
@@ -738,14 +654,8 @@ public class ProductImportService {
             addError(result, first.getRowNumber(), spuCode, "默认SKU", "DEFAULT_SKU_INVALID", "默认 SKU 只能有一个");
     }
 
-    private ProductSpuAddForm toCreateForm(List<
-            ProductImportRow> rows,
-            Map<
-                    String,
-                    ProductCategoryEntity> categoryMap,
-            Map<
-                    String,
-                    ProductTagEntity> tagMap) {
+    private ProductSpuAddForm toCreateForm(List<ProductImportRow> rows, Map<String, ProductCategoryEntity> categoryMap,
+            Map<String, ProductTagEntity> tagMap) {
         var first = rows.getFirst();
         var form = new ProductSpuAddForm();
         form.setSpuCode(first.getSpuCode());
@@ -761,8 +671,7 @@ public class ProductImportService {
             form.setShelfLifeDays(Integer.parseInt(trim(first.getShelfLifeDays())));
         form.setTagIds(splitTags(first.getTagCodes()).stream().map(c -> tagMap.get(c).getId()).distinct()
                 .collect(Collectors.toList()));
-        var skuList = new ArrayList<
-                ProductSkuForm>();
+        var skuList = new ArrayList<ProductSkuForm>();
         for (var row : rows) {
             var sku = new ProductSkuForm();
             sku.setSkuCode(row.getSkuCode());
@@ -786,8 +695,7 @@ public class ProductImportService {
         return trimmedValue != null && TRUTHY.contains(trimmedValue.toUpperCase(Locale.ROOT));
     }
 
-    private List<
-            String> splitTags(String value) {
+    private List<String> splitTags(String value) {
         var trimmedValue = trim(value);
         if (trimmedValue == null)
             return List.of();
@@ -858,8 +766,8 @@ public class ProductImportService {
             addError(result, rowNumber, key, column, "TOO_LONG", column + "不能超过 " + max + " 个字符");
     }
 
-    private void enumValue(ProductImportResultVO result, int rowNumber, String key, String column, String value, Set<
-            String> allowed) {
+    private void enumValue(ProductImportResultVO result, int rowNumber, String key, String column, String value,
+            Set<String> allowed) {
         var trimmedValue = trim(value);
         if (trimmedValue != null && !allowed.contains(trimmedValue)) {
             addError(result, rowNumber, key, column, "ENUM_INVALID", column + "取值必须是 " + allowed);
@@ -918,17 +826,9 @@ public class ProductImportService {
             result.getErrors().add(new ProductImportErrorVO(rowNumber, key, column, code, message));
     }
 
-    private record Assembly(List<
-            ProductSpuAddForm> forms,
-            List<
-                    List<
-                            ProductImportRow>> groups) {
+    private record Assembly(List<ProductSpuAddForm> forms, List<List<ProductImportRow>> groups) {
     }
 
-    private record UpdateAssembly(List<
-            ProductSpuUpdateForm> forms,
-            List<
-                    List<
-                            ProductImportRow>> groups) {
+    private record UpdateAssembly(List<ProductSpuUpdateForm> forms, List<List<ProductImportRow>> groups) {
     }
 }

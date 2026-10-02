@@ -21,8 +21,7 @@ public class ProductSpuBatchStatusForm {
     @NotEmpty(message = "批量项目列表不能为空")
     @Size(max = 200, message = "批量项目列表不能超过200项")
     @Valid
-    private List<
-            ProductBatchItemForm> items;
+    private List<ProductBatchItemForm> items;
     @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品销售状态无效")
     private String status;
     @ScmEnumValue(enumClass = ScmProductMasterStatusEnum.class, message = "商品主档状态无效")

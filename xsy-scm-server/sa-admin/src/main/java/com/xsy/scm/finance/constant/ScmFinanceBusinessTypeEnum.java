@@ -16,32 +16,27 @@ public enum ScmFinanceBusinessTypeEnum {
     /**
      * 应收单（{@code finance_receivable}）。
      */
-    RECEIVABLE(
-            "应收"),
+    RECEIVABLE("应收"),
 
     /**
      * 应付单（{@code finance_payable}）。
      */
-    PAYABLE(
-            "应付"),
+    PAYABLE("应付"),
 
     /**
      * 收款单（{@code finance_receipt}）。
      */
-    RECEIPT(
-            "收款"),
+    RECEIPT("收款"),
 
     /**
      * 付款单（{@code finance_payment}）。
      */
-    PAYMENT(
-            "付款"),
+    PAYMENT("付款"),
 
     /**
      * 核销行（{@code finance_write_off}）。
      */
-    WRITE_OFF(
-            "核销");
+    WRITE_OFF("核销");
 
     private final String desc;
 }

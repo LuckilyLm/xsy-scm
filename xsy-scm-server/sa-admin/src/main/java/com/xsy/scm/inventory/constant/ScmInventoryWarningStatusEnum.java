@@ -27,20 +27,17 @@ public enum ScmInventoryWarningStatusEnum {
     /**
      * 正常：在阈值区间内（或没有配置对应的边界）。
      */
-    NORMAL(
-            "正常"),
+    NORMAL("正常"),
 
     /**
      * 低于下限：触发补货预警。
      */
-    LOW(
-            "低于下限"),
+    LOW("低于下限"),
 
     /**
      * 高于上限：触发积压预警。
      */
-    HIGH(
-            "高于上限");
+    HIGH("高于上限");
 
     private final String desc;
 

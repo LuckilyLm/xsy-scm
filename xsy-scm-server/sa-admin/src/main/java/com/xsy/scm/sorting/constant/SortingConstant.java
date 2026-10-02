@@ -19,9 +19,8 @@ public final class SortingConstant {
     /**
      * 可出单状态：待分拣还没开始，已取消不再出单，两者都不给打印。
      */
-    public static final Set<
-            String> PRINTABLE = Set.of(ScmSortingTaskStatusEnum.SORTING.name(),
-                    ScmSortingTaskStatusEnum.COMPLETED.name());
+    public static final Set<String> PRINTABLE = Set.of(ScmSortingTaskStatusEnum.SORTING.name(),
+            ScmSortingTaskStatusEnum.COMPLETED.name());
 
     /**
      * 单号前缀：SRT + 业务日(Asia/Shanghai) + 全局非重置序号。

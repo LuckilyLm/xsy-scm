@@ -33,8 +33,7 @@ public class CustomerAddForm extends ScmLocationForm {
     private String visibilityPolicy;
     @Valid
     @Size(max = 500, message = "商品可见性清单不能超过500项")
-    private List<
-            CustomerSkuVisibilityItemForm> visibilities;
+    private List<CustomerSkuVisibilityItemForm> visibilities;
 
     @NotBlank(message = "客户编码不能为空")
     @Size(max = 64, message = "客户编码不能超过64个字符")

@@ -13,37 +13,19 @@ import com.xsy.scm.common.error.ScmErrorCode;
 @Getter
 @RequiredArgsConstructor
 public enum SortingErrorCode implements ScmErrorCode {
-    TASK_NOT_FOUND(
-            41120,
-            "分拣任务不存在"),
-    STATE_INVALID(
-            41121,
-            "分拣任务当前状态不允许此操作"),
-    ITEM_NOT_IN_TASK(
-            41122,
-            "提交的分拣明细不属于该任务"),
-    ORDER_LINE_TAKEN(
-            41123,
-            "该订单行已被其它分拣任务占用，请刷新后重试"),
-    ORDER_NOT_SORTABLE(
-            41124,
-            "只有已确认订单的有效明细可以进入分拣"),
-    RESULT_INCOMPLETE(
-            41125,
-            "仍有未处理的分拣明细，任务不能完成"),
-    ASSIGNEE_INVALID(
-            41126,
-            "受指派员工不存在或已停用"),
-    WAREHOUSE_INVALID(
-            41127,
-            "仓库不存在或未启用"),
+    TASK_NOT_FOUND(41120, "分拣任务不存在"),
+    STATE_INVALID(41121, "分拣任务当前状态不允许此操作"),
+    ITEM_NOT_IN_TASK(41122, "提交的分拣明细不属于该任务"),
+    ORDER_LINE_TAKEN(41123, "该订单行已被其它分拣任务占用，请刷新后重试"),
+    ORDER_NOT_SORTABLE(41124, "只有已确认订单的有效明细可以进入分拣"),
+    RESULT_INCOMPLETE(41125, "仍有未处理的分拣明细，任务不能完成"),
+    ASSIGNEE_INVALID(41126, "受指派员工不存在或已停用"),
+    WAREHOUSE_INVALID(41127, "仓库不存在或未启用"),
 
     /**
      * 本任务的订单行已有 {@code CONFIRMED} 出库记录，库存已扣减，不允许再改分拣结果。
      */
-    OUTBOUND_EXISTS(
-            41128,
-            "该分拣任务对应的订单已发车出库，不能重开");
+    OUTBOUND_EXISTS(41128, "该分拣任务对应的订单已发车出库，不能重开");
 
     private final int code;
     private final String msg;

@@ -48,8 +48,7 @@ public class InventoryConversionAddForm {
 
     @NotEmpty(message = "转换明细不能为空")
     @Valid
-    private List<
-            Item> items;
+    private List<Item> items;
 
     /**
      * 转换明细行：源 SKU 出 N（单位 U₁） → 目标 SKU 入 M（单位 U₂）。

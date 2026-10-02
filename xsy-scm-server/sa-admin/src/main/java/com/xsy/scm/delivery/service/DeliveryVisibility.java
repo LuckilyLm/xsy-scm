@@ -34,31 +34,19 @@ public final class DeliveryVisibility {
         return new DeliveryVisibility(ScmDataScopeService.hasPermission(ScmDataScopeService.DELIVERY_AMOUNT_PERM));
     }
 
-    public List<
-            DeliveryRouteVO> routes(
-                    List<
-                            DeliveryRouteVO> rows) {
+    public List<DeliveryRouteVO> routes(List<DeliveryRouteVO> rows) {
         return mask(rows, row -> row.setTotalAmount(null));
     }
 
-    public List<
-            DeliveryCandidateVO> candidates(
-                    List<
-                            DeliveryCandidateVO> rows) {
+    public List<DeliveryCandidateVO> candidates(List<DeliveryCandidateVO> rows) {
         return mask(rows, row -> row.setOrderAmount(null));
     }
 
-    public List<
-            DeliveryOrderViewVO> orderView(
-                    List<
-                            DeliveryOrderViewVO> rows) {
+    public List<DeliveryOrderViewVO> orderView(List<DeliveryOrderViewVO> rows) {
         return mask(rows, row -> row.setOrderAmount(null));
     }
 
-    public List<
-            DeliveryCustomerViewVO> customerView(
-                    List<
-                            DeliveryCustomerViewVO> rows) {
+    public List<DeliveryCustomerViewVO> customerView(List<DeliveryCustomerViewVO> rows) {
         return mask(rows, row -> row.setTotalAmount(null));
     }
 
@@ -77,10 +65,7 @@ public final class DeliveryVisibility {
     /**
      * 打印预览明细：发货单上的行金额与结算金额同样属于订单金额。 清空的是本次查询新读出的实体字段，只影响响应体，不回写数据库。
      */
-    public List<
-            DeliveryPrintItemVO> printItems(
-                    List<
-                            DeliveryPrintItemVO> rows) {
+    public List<DeliveryPrintItemVO> printItems(List<DeliveryPrintItemVO> rows) {
         return mask(rows, item -> {
             item.setOrderedLineAmount(null);
             item.setSettlementLineAmount(null);
@@ -97,11 +82,7 @@ public final class DeliveryVisibility {
     }
 
     /** 无权限才逐行清空，有权限原样返回。 */
-    private <T> List<
-            T> mask(List<
-                    T> rows,
-                    Consumer<
-                            T> clear) {
+    private <T> List<T> mask(List<T> rows, Consumer<T> clear) {
         if (amountVisible || rows == null)
             return rows;
         rows.forEach(clear);

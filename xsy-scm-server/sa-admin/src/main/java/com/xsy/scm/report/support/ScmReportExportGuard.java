@@ -30,14 +30,8 @@ public final class ScmReportExportGuard {
      * <p>
      * 调用方必须保证 {@code query} 只读取一次数据；本方法不会二次执行它， 否则导出可能与列表口径出现第二次分叉。
      */
-    public static <T> List<
-            T> exportRows(
-                    Function<
-                            Long,
-                            List<
-                                    T>> queryByPageSize) {
-        List<
-                T> rows = queryByPageSize.apply(PROBE_PAGE_SIZE);
+    public static <T> List<T> exportRows(Function<Long, List<T>> queryByPageSize) {
+        List<T> rows = queryByPageSize.apply(PROBE_PAGE_SIZE);
         if (rows != null && rows.size() > EXPORT_MAX_ROWS) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_EXPORT_ROW_LIMIT_EXCEEDED);
         }

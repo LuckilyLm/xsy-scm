@@ -16,8 +16,7 @@ public class DeliveryOrdersForm {
     private Integer version;
     @NotEmpty(message = "请至少选择一张订单")
     @Size(max = 500, message = "订单数量不能超过500张")
-    private List<
-            @NotNull(message = "订单编号不能为空") @Positive(message = "订单编号必须为正数") Long> orderIds;
+    private List<@NotNull(message = "订单编号不能为空") @Positive(message = "订单编号必须为正数") Long> orderIds;
     @NotBlank(message = "原因不能为空")
     @Size(max = 500, message = "原因长度不能超过500")
     private String reason;

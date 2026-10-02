@@ -152,10 +152,7 @@ public final class PurchaseDemandAllocator {
      * <p>
      * 调用方在锁定前校验需求 ID。这里过滤空值并去重，保证后续锁始终按升序获取。
      */
-    public static List<
-            Long> ascendingDemandIds(
-                    Collection<
-                            Long> demandIds) {
+    public static List<Long> ascendingDemandIds(Collection<Long> demandIds) {
         return demandIds.stream().filter(Objects::nonNull).distinct().sorted().toList();
     }
 }

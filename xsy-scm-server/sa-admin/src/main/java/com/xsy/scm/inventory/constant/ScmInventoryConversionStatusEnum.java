@@ -25,20 +25,17 @@ public enum ScmInventoryConversionStatusEnum {
     /**
      * 待审核：可改明细、可删除，未产生任何库存影响。
      */
-    PENDING(
-            "待审核"),
+    PENDING("待审核"),
 
     /**
      * 已完成：已写两条流水并调整两边余额，不可再改、不可删除。
      */
-    COMPLETED(
-            "已完成"),
+    COMPLETED("已完成"),
 
     /**
      * 已驳回：不产生任何库存影响，不可再改、不可删除。
      */
-    REJECTED(
-            "已驳回");
+    REJECTED("已驳回");
 
     private final String desc;
 

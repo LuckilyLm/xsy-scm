@@ -67,8 +67,7 @@ public class InventoryConversionVO {
     /**
      * 明细；仅详情接口填充，列表接口为 null。
      */
-    private List<
-            Item> items;
+    private List<Item> items;
 
     /**
      * 转换明细行。

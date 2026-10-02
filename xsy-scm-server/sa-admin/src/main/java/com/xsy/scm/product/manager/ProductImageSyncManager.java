@@ -43,23 +43,20 @@ public class ProductImageSyncManager {
     private final FileService fileService;
     private final FileRelationService fileRelationService;
 
-    public List<
-            ProductImageEntity> existing(Long spuId) {
-        return productImageDao.selectList(new LambdaQueryWrapper<
-                ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
-                .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
+    public List<ProductImageEntity> existing(Long spuId) {
+        return productImageDao
+                .selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
+                        .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void sync(Long spuId, ProductImageChangeSet changes) {
-        List<
-                ProductImageForm> requested = new ArrayList<>(changes.updated());
+        List<ProductImageForm> requested = new ArrayList<>(changes.updated());
         requested.addAll(changes.inserted());
         // File module remains the authority for existence and metadata; URLs are never resolved on
         // the write path (the caller may not own these keys — resolving them would be an ungarded
         // read). Public-prefix binding is enforced by requirePublicImageKey, not by URL resolution.
-        Map<
-                String,
+        Map<String,
                 FileVO> metadata = fileService
                         .getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList()).stream()
                         .filter(Objects::nonNull)
@@ -91,14 +88,13 @@ public class ProductImageSyncManager {
                 .map(ProductImageEntity::getFileKey).filter(key -> !key.startsWith(PUBLIC_FOLDER_PREFIX)).toList());
     }
 
-    public void remove(List<
-            Long> ids) {
+    public void remove(List<Long> ids) {
         if (ids.isEmpty())
             return;
-        productImageDao.update(null, new LambdaUpdateWrapper<
-                ProductImageEntity>().in(ProductImageEntity::getId, ids)
-                .set(ProductImageEntity::getUpdatedAt, OffsetDateTime.now())
-                .set(ProductImageEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
+        productImageDao.update(null,
+                new LambdaUpdateWrapper<ProductImageEntity>().in(ProductImageEntity::getId, ids)
+                        .set(ProductImageEntity::getUpdatedAt, OffsetDateTime.now())
+                        .set(ProductImageEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
         productImageDao.deleteByIds(ids);
     }
     /**

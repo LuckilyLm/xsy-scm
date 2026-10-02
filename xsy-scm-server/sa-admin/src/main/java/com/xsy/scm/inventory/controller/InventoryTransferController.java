@@ -49,9 +49,7 @@ public class InventoryTransferController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.TRANSFER_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    InventoryTransferVO>> query(@Valid @RequestBody InventoryTransferQueryForm form) {
+    public ResponseDTO<PageResult<InventoryTransferVO>> query(@Valid @RequestBody InventoryTransferQueryForm form) {
         return ResponseDTO.ok(inventoryTransferQueryService.queryPage(form));
     }
 
@@ -60,16 +58,13 @@ public class InventoryTransferController {
      */
     @GetMapping("/in-transit")
     @SaCheckPermission(InventoryPermission.TRANSFER_QUERY)
-    public ResponseDTO<
-            List<
-                    InventoryInTransitVO>> inTransit() {
+    public ResponseDTO<List<InventoryInTransitVO>> inTransit() {
         return ResponseDTO.ok(inventoryTransferQueryService.queryInTransit());
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_QUERY)
-    public ResponseDTO<
-            InventoryTransferVO> detail(@PathVariable("id") Long transferId) {
+    public ResponseDTO<InventoryTransferVO> detail(@PathVariable("id") Long transferId) {
         return ResponseDTO.ok(inventoryTransferQueryService.detail(transferId));
     }
 
@@ -79,8 +74,7 @@ public class InventoryTransferController {
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.TRANSFER_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> create(@Valid @RequestBody InventoryTransferAddForm form) {
+    public ResponseDTO<Long> create(@Valid @RequestBody InventoryTransferAddForm form) {
         return ResponseDTO.ok(inventoryTransferService.create(form));
     }
 
@@ -90,8 +84,8 @@ public class InventoryTransferController {
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@PathVariable("id") Long transferId, @Valid @RequestBody InventoryTransferAddForm form) {
+    public ResponseDTO<String> update(@PathVariable("id") Long transferId,
+            @Valid @RequestBody InventoryTransferAddForm form) {
         inventoryTransferService.update(transferId, form);
         return ResponseDTO.ok();
     }
@@ -105,8 +99,7 @@ public class InventoryTransferController {
     @PostMapping("/ship/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_SHIP)
     @OperateLog
-    public ResponseDTO<
-            String> ship(@PathVariable("id") Long transferId) {
+    public ResponseDTO<String> ship(@PathVariable("id") Long transferId) {
         inventoryTransferService.ship(transferId);
         return ResponseDTO.ok();
     }
@@ -120,8 +113,7 @@ public class InventoryTransferController {
     @PostMapping("/receive/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_RECEIVE)
     @OperateLog
-    public ResponseDTO<
-            String> receive(@PathVariable("id") Long transferId) {
+    public ResponseDTO<String> receive(@PathVariable("id") Long transferId) {
         inventoryTransferService.receive(transferId);
         return ResponseDTO.ok();
     }
@@ -132,8 +124,7 @@ public class InventoryTransferController {
     @PostMapping("/cancel/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> cancel(@PathVariable("id") Long transferId) {
+    public ResponseDTO<String> cancel(@PathVariable("id") Long transferId) {
         inventoryTransferService.cancel(transferId);
         return ResponseDTO.ok();
     }
@@ -144,8 +135,7 @@ public class InventoryTransferController {
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.TRANSFER_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@PathVariable("id") Long transferId) {
+    public ResponseDTO<String> delete(@PathVariable("id") Long transferId) {
         inventoryTransferService.delete(transferId);
         return ResponseDTO.ok();
     }

@@ -29,15 +29,13 @@ public class ScreenInventoryVO {
     private Long todayOutboundCount;
 
     @Schema(description = "按仓库库存分布")
-    private List<
-            WarehouseDistribution> warehouseDistribution;
+    private List<WarehouseDistribution> warehouseDistribution;
 
     @Schema(description = "库存健康度（按库存预警阈值分档）")
     private InventoryHealth health;
 
     @Schema(description = "供应链网络-启用仓库节点")
-    private List<
-            WarehouseNode> warehouseNodes;
+    private List<WarehouseNode> warehouseNodes;
 
     @Data
     @Schema(description = "仓库分布")

@@ -10,6 +10,8 @@ package com.xsy.scm.common.constant;
  * W2 只落库该字段，<b>不实现</b>结算逻辑；集团结算与订单归属不是同一概念，W3 引入订单域时 不得把二者合并。
  */
 public enum ScmSettleModeEnum {
+
     INDEPENDENT,
+
     GROUP
 }

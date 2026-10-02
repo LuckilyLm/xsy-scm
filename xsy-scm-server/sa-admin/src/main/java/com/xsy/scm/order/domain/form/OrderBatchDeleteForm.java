@@ -12,6 +12,5 @@ public class OrderBatchDeleteForm {
     @Valid
     @NotEmpty(message = "订单列表不能为空")
     @Size(max = 100, message = "一次最多删除100个订单")
-    private List<
-            OrderVersionForm> orders;
+    private List<OrderVersionForm> orders;
 }

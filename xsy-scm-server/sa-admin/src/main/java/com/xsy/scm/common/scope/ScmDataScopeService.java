@@ -64,15 +64,20 @@ public class ScmDataScopeService {
      * 解析当前调用者的数据范围。每次请求都重新解析，不缓存在登录态里： 授权行调整后必须立即生效，而 {@code RequestEmployee} 是带 Spring Cache 的登录快照。
      */
     public ScmDataScopeContext resolve() {
+
         RequestUser requestUser = SmartRequestUtil.getRequestUser();
+
         if (!(requestUser instanceof RequestEmployee employee) || employee.getEmployeeId() == null) {
             return ScmDataScopeContext.denied();
         }
+
         Long employeeId = employee.getEmployeeId();
         boolean costVisible = hasPermission(ScmCrossDomainPermission.REPORT_COST_QUERY);
+
         if (isAdministrator()) {
             return ScmDataScopeContext.unrestricted(employeeId, costVisible);
         }
+
         return new ScmDataScopeContextBuilder(employeeId, costVisible)
                 .warehouse(hasPermission(WAREHOUSE_ALL_PERM)
                         ? ScmValueScope.all()
@@ -123,6 +128,7 @@ public class ScmDataScopeService {
 
     /** 仅供 {@link #resolve()} 组装不可变上下文，避免七参数构造器写错顺序。 */
     private static final class ScmDataScopeContextBuilder {
+
         private final Long employeeId;
         private final boolean costVisible;
         private ScmValueScope warehouse = ScmValueScope.none();

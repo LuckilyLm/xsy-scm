@@ -18,8 +18,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 public class CustomerTypePriceQueryService {
     private final CustomerTypePriceDao customerTypePriceDao;
 
-    public PageResult<
-            CustomerTypePriceVO> query(CustomerTypePriceQueryForm form) {
+    public PageResult<CustomerTypePriceVO> query(CustomerTypePriceQueryForm form) {
         if (form.getSortItemList() != null && form.getSortItemList().stream().anyMatch(sortItem -> !java.util.Set
                 .of("effective_from", "effective_to", "unit_price", "updated_at").contains(sortItem.getColumn())))
             throw new ScmBusinessException(VALIDATION_ERROR);

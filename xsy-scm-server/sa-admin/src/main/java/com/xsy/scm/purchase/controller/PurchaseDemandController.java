@@ -41,9 +41,7 @@ public class PurchaseDemandController {
 
     @PostMapping("/query")
     @SaCheckPermission(PurchasePermission.DEMAND_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    PurchaseDemandVO>> query(@Valid @RequestBody PurchaseDemandQueryForm form) {
+    public ResponseDTO<PageResult<PurchaseDemandVO>> query(@Valid @RequestBody PurchaseDemandQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.demandQuery(form));
     }
 
@@ -57,28 +55,25 @@ public class PurchaseDemandController {
     @PostMapping("/summary-preview")
     @SaCheckPermission(value = {PurchasePermission.DEMAND_QUERY,
             ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
-    public ResponseDTO<
-            PageResult<
-                    PurchaseDemandSummaryVO>> summaryPreview(
-                            @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
+    public ResponseDTO<PageResult<PurchaseDemandSummaryVO>> summaryPreview(
+            @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
         return ResponseDTO.ok(purchaseQueryService.summaryPreview(form));
     }
 
     @PostMapping("/generate")
     @SaCheckPermission(PurchasePermission.DEMAND_GENERATE)
     @OperateLog
-    public ResponseDTO<
-            PurchaseDemandService.GenerateResult> generate(@Valid @RequestBody PurchaseDemandGenerateForm form,
-                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<PurchaseDemandService.GenerateResult> generate(
+            @Valid @RequestBody PurchaseDemandGenerateForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseDemandService.generate(form, idempotencyKey));
     }
 
     @PostMapping("/allocate")
     @SaCheckPermission(PurchasePermission.DEMAND_ALLOCATE)
     @OperateLog
-    public ResponseDTO<
-            PurchaseDemandVO> allocate(@Valid @RequestBody PurchaseDemandAllocateForm form,
-                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    public ResponseDTO<PurchaseDemandVO> allocate(@Valid @RequestBody PurchaseDemandAllocateForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseDemandService.allocate(form, idempotencyKey));
     }
 }

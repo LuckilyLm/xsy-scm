@@ -67,10 +67,9 @@ public class WarehouseService {
     /**
      * 全量仓库（含 DISABLED），供内部逻辑使用。
      */
-    public List<
-            WarehouseEntity> all() {
-        return warehouseDao.selectList(new LambdaQueryWrapper<
-                WarehouseEntity>().orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
+    public List<WarehouseEntity> all() {
+        return warehouseDao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
+                .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
     }
 
     /**
@@ -81,9 +80,8 @@ public class WarehouseService {
      * 猜错会把货占在错误的仓库， 而且要到出库/盘点才暴露。
      */
     public WarehouseEntity defaultEnabledWarehouse() {
-        List<
-                WarehouseEntity> enabled = all().stream()
-                        .filter(w -> ScmWarehouseStatusEnum.ENABLED.name().equals(w.getStatus())).toList();
+        List<WarehouseEntity> enabled = all().stream()
+                .filter(w -> ScmWarehouseStatusEnum.ENABLED.name().equals(w.getStatus())).toList();
         if (enabled.size() != 1) {
             throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_DEFAULT_AMBIGUOUS);
         }
@@ -195,9 +193,8 @@ public class WarehouseService {
     }
 
     private boolean existsCode(String code, Long excludeId) {
-        LambdaQueryWrapper<
-                WarehouseEntity> wrapper = new LambdaQueryWrapper<
-                        WarehouseEntity>().eq(WarehouseEntity::getWarehouseCode, code);
+        LambdaQueryWrapper<WarehouseEntity> wrapper = new LambdaQueryWrapper<WarehouseEntity>()
+                .eq(WarehouseEntity::getWarehouseCode, code);
         if (excludeId != null) {
             wrapper.ne(WarehouseEntity::getId, excludeId);
         }

@@ -38,8 +38,7 @@ public class InventoryOutboundQueryService {
     /**
      * 分页查询（不返回明细，明细走 {@link #detail}）。
      */
-    public PageResult<
-            InventoryOutboundVO> queryPage(InventoryOutboundQueryForm query) {
+    public PageResult<InventoryOutboundVO> queryPage(InventoryOutboundQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
         ScmDataScopeContext scope = dataScopeService.resolve();
@@ -47,8 +46,7 @@ public class InventoryOutboundQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<
-                InventoryOutboundVO> list = inventoryOutboundDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryOutboundVO> list = inventoryOutboundDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryOutboundQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -65,8 +63,7 @@ public class InventoryOutboundQueryService {
             throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
-        List<
-                InventoryOutboundItemVO> items = inventoryOutboundItemDao.listByOutboundId(outboundId);
+        List<InventoryOutboundItemVO> items = inventoryOutboundItemDao.listByOutboundId(outboundId);
         vo.setItems(items.stream().map(InventoryOutboundQueryService::toItem).toList());
         return vo;
     }

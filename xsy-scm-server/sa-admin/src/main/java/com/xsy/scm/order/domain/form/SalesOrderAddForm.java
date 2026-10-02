@@ -32,6 +32,5 @@ public class SalesOrderAddForm {
     @Valid
     @NotEmpty(message = "订单明细不能为空")
     @Size(max = 500, message = "订单明细不能超过500项")
-    private List<
-            SalesOrderItemForm> items;
+    private List<SalesOrderItemForm> items;
 }

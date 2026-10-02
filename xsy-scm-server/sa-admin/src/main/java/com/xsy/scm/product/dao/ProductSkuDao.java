@@ -6,9 +6,6 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
-public interface ProductSkuDao
-        extends
-            BaseMapper<
-                    ProductSkuEntity> {
+public interface ProductSkuDao extends BaseMapper<ProductSkuEntity> {
     int clearDefault(@Param("spuId") Long spuId);
 }

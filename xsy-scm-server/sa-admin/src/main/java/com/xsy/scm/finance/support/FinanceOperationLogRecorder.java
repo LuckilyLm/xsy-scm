@@ -81,16 +81,11 @@ public class FinanceOperationLogRecorder {
         financeOperationLogDao.insert(entry);
     }
 
-    private Map<
-            String,
-            Object> toJsonMap(Object value) {
+    private Map<String, Object> toJsonMap(Object value) {
         if (value == null) {
             return null;
         }
-        return objectMapper.convertValue(value, new TypeReference<
-                Map<
-                        String,
-                        Object>>() {
+        return objectMapper.convertValue(value, new TypeReference<Map<String, Object>>() {
         });
     }
 }

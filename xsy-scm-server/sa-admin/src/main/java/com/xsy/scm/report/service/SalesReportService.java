@@ -39,8 +39,7 @@ public class SalesReportService {
 
     private final ReportDao reportDao;
 
-    public PageResult<
-            SalesReportVO.ProductRow> byProduct(ScmSalesReportQueryForm form) {
+    public PageResult<SalesReportVO.ProductRow> byProduct(ScmSalesReportQueryForm form) {
         rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         var page = SmartPageUtil.convert2PageQuery(form);
@@ -49,14 +48,12 @@ public class SalesReportService {
                 reportDao.salesByProduct(page, range.startAt(), range.endAt(), form));
     }
 
-    public List<
-            SalesReportVO.TopItem> topProduct(ScmSalesReportQueryForm form) {
+    public List<SalesReportVO.TopItem> topProduct(ScmSalesReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         return reportDao.topSalesProduct(range.startAt(), range.endAt(), TOP_LIMIT, form);
     }
 
-    public PageResult<
-            SalesReportVO.CategoryRow> byCategory(ScmSalesReportQueryForm form) {
+    public PageResult<SalesReportVO.CategoryRow> byCategory(ScmSalesReportQueryForm form) {
         rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         var page = SmartPageUtil.convert2PageQuery(form);
@@ -65,14 +62,12 @@ public class SalesReportService {
                 reportDao.salesByCategory(page, range.startAt(), range.endAt(), form));
     }
 
-    public List<
-            SalesReportVO.TopItem> topCategory(ScmSalesReportQueryForm form) {
+    public List<SalesReportVO.TopItem> topCategory(ScmSalesReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         return reportDao.topSalesCategory(range.startAt(), range.endAt(), TOP_LIMIT, form);
     }
 
-    public PageResult<
-            SalesReportVO.CustomerRow> byCustomer(ScmSalesReportQueryForm form) {
+    public PageResult<SalesReportVO.CustomerRow> byCustomer(ScmSalesReportQueryForm form) {
         rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         var page = SmartPageUtil.convert2PageQuery(form);
@@ -81,14 +76,12 @@ public class SalesReportService {
                 reportDao.salesByCustomer(page, range.startAt(), range.endAt(), form));
     }
 
-    public List<
-            SalesReportVO.TopItem> topCustomer(ScmSalesReportQueryForm form) {
+    public List<SalesReportVO.TopItem> topCustomer(ScmSalesReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         return reportDao.topSalesCustomer(range.startAt(), range.endAt(), TOP_LIMIT, form);
     }
 
-    public PageResult<
-            SalesReportVO.SellerRow> bySeller(ScmSalesReportQueryForm form) {
+    public PageResult<SalesReportVO.SellerRow> bySeller(ScmSalesReportQueryForm form) {
         rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         var page = SmartPageUtil.convert2PageQuery(form);
@@ -97,8 +90,7 @@ public class SalesReportService {
                 reportDao.salesBySeller(page, range.startAt(), range.endAt(), form));
     }
 
-    public PageResult<
-            SalesReportVO.ItemRow> itemList(ScmSalesReportQueryForm form) {
+    public PageResult<SalesReportVO.ItemRow> itemList(ScmSalesReportQueryForm form) {
         rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         var page = SmartPageUtil.convert2PageQuery(form);

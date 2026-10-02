@@ -39,9 +39,8 @@ import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
 @Service
 public class DeliveryRoutePrintService {
 
-    private static final Set<
-            String> PRINTABLE = Set.of(ScmDeliveryRouteStatusEnum.PLANNED.name(),
-                    ScmDeliveryRouteStatusEnum.DISPATCHED.name(), ScmDeliveryRouteStatusEnum.COMPLETED.name());
+    private static final Set<String> PRINTABLE = Set.of(ScmDeliveryRouteStatusEnum.PLANNED.name(),
+            ScmDeliveryRouteStatusEnum.DISPATCHED.name(), ScmDeliveryRouteStatusEnum.COMPLETED.name());
 
     private final DeliveryQueryDao deliveryQueryDao;
     private final DeliveryRouteOrderDao deliveryRouteOrderDao;
@@ -88,8 +87,7 @@ public class DeliveryRoutePrintService {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         var orderFilter = orderPrintFilter(form.getOrderPrintFilter());
-        var selected = new ArrayList<
-                DeliveryRouteOrderEntity>();
+        var selected = new ArrayList<DeliveryRouteOrderEntity>();
         for (var entry : active(id).stream().collect(
                 Collectors.groupingBy(DeliveryRouteOrderEntity::getCustomerId, LinkedHashMap::new, Collectors.toList()))
                 .entrySet()) {
@@ -107,8 +105,8 @@ public class DeliveryRoutePrintService {
         return DeliveryVisibility.current().printResult(result);
     }
 
-    private boolean matchesCustomerStatus(ScmDeliveryCustomerPrintFilterEnum filter, List<
-            DeliveryRouteOrderEntity> customerOrders) {
+    private boolean matchesCustomerStatus(ScmDeliveryCustomerPrintFilterEnum filter,
+            List<DeliveryRouteOrderEntity> customerOrders) {
         if (filter == ScmDeliveryCustomerPrintFilterEnum.ALL)
             return true;
         long printed = customerOrders.stream().filter(this::hasPrinted).count();
@@ -154,8 +152,7 @@ public class DeliveryRoutePrintService {
         return assignment.getPrintCount() != null && assignment.getPrintCount() > 0;
     }
 
-    private DeliveryPrintResultVO recordAndBuild(Long id, List<
-            DeliveryRouteOrderEntity> selected) {
+    private DeliveryPrintResultVO recordAndBuild(Long id, List<DeliveryRouteOrderEntity> selected) {
         var assignmentIds = selected.stream().map(DeliveryRouteOrderEntity::getId).toList();
         if (deliveryQueryDao.markPrinted(assignmentIds, ScmOperator.current()) != assignmentIds.size()) {
             throw new ScmBusinessException(STATE_INVALID);
@@ -178,12 +175,12 @@ public class DeliveryRoutePrintService {
             throw new ScmBusinessException(STATE_INVALID);
     }
 
-    private List<
-            DeliveryRouteOrderEntity> active(Long routeId) {
-        return deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<
-                DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, routeId)
-                .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
-                .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
+    private List<DeliveryRouteOrderEntity> active(Long routeId) {
+        return deliveryRouteOrderDao.selectList(
+                new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, routeId)
+                        .eq(DeliveryRouteOrderEntity::getAssignmentStatus,
+                                ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
+                        .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
     }
 
     private DeliveryRouteEntity lock(Long routeId, Integer version) {

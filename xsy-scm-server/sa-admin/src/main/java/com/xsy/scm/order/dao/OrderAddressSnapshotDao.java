@@ -9,10 +9,6 @@ import java.util.List;
 import com.xsy.scm.order.domain.entity.OrderAddressSnapshotEntity;
 
 @Mapper
-public interface OrderAddressSnapshotDao
-        extends
-            BaseMapper<
-                    OrderAddressSnapshotEntity> {
-    List<
-            OrderAddressSnapshotEntity> list(@Param("id") Long id);
+public interface OrderAddressSnapshotDao extends BaseMapper<OrderAddressSnapshotEntity> {
+    List<OrderAddressSnapshotEntity> list(@Param("id") Long id);
 }

@@ -34,8 +34,7 @@ public class PurchaseReceiptConfirmForm {
     @Valid
     @NotEmpty(message = "收货明细不能为空")
     @Size(max = 500, message = "收货明细不能超过500项")
-    private List<
-            Item> items;
+    private List<Item> items;
 
     /**
      * 收货单行的本次确认数据。

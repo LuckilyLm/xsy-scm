@@ -151,8 +151,7 @@ public class InventoryConversionService {
         requireVersion(locked, form);
         requireEnabled(locked.getWarehouseId());
 
-        List<
-                InventoryConversionItemVO> items = inventoryConversionItemDao.listByConversionId(conversionId);
+        List<InventoryConversionItemVO> items = inventoryConversionItemDao.listByConversionId(conversionId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_CONVERSION_EMPTY_ITEMS);
         }
@@ -161,20 +160,16 @@ public class InventoryConversionService {
         // 同一条明细的转入腿完全可能先于转出腿跑。等到腿里再读均价，读到的会是被本单前半段
         // 改过的值，两条腿于是不同源 —— 守恒的是总成本，这一步就是它的唯一来源。
         // lockCostBasis 同时承担锁序职责：按 skuId 升序把本单涉及的行一次锁齐。
-        List<
-                Long> involvedSkuIds = new ArrayList<>(items.size() * 2);
+        List<Long> involvedSkuIds = new ArrayList<>(items.size() * 2);
         for (InventoryConversionItemVO item : items) {
             involvedSkuIds.add(item.getSourceSkuId());
             involvedSkuIds.add(item.getTargetSkuId());
         }
-        Map<
-                Long,
-                BigDecimal> costBasis = resolveOutboundCostBasis(items,
-                        inventoryCommandService.lockCostBasis(locked.getWarehouseId(), involvedSkuIds));
+        Map<Long, BigDecimal> costBasis = resolveOutboundCostBasis(items,
+                inventoryCommandService.lockCostBasis(locked.getWarehouseId(), involvedSkuIds));
 
         // 把每行拆成两条腿，再全局排序 —— 这是本能力与既有六条写入路径的**唯一实质差异**。
-        List<
-                Leg> legs = new ArrayList<>(items.size() * 2);
+        List<Leg> legs = new ArrayList<>(items.size() * 2);
         for (InventoryConversionItemVO item : items) {
             // 一条明细的两条腿共用同一个基准值，所以总成本必然守恒。
             BigDecimal sourceCost = costBasis.getOrDefault(item.getSourceSkuId(), BigDecimal.ZERO);
@@ -260,24 +255,13 @@ public class InventoryConversionService {
      * 不能直接拿期初均价当基准：腿的执行顺序保证同一 SKU **先入后出**，所以一个在本单里 既收又发的 SKU（链式转换 A→B 且 B→C 里的 B），它的转出腿在真实账本上看到的均价是 「进完之后」的加权值。B
      * 没有期初行时期初均价为 0，直接取 0 会把 C 记成零成本 —— 与修掉的「调拨转入清零」是同一个缺陷。
      */
-    private Map<
-            Long,
-            BigDecimal> resolveOutboundCostBasis(
-                    List<
-                            InventoryConversionItemVO> items,
-                    Map<
-                            Long,
-                            InventoryCommandService.CostBasis> opening) {
-        Map<
-                Long,
-                List<
-                        InventoryConversionItemVO>> inboundByTarget = new HashMap<>();
+    private Map<Long, BigDecimal> resolveOutboundCostBasis(List<InventoryConversionItemVO> items,
+            Map<Long, InventoryCommandService.CostBasis> opening) {
+        Map<Long, List<InventoryConversionItemVO>> inboundByTarget = new HashMap<>();
         for (InventoryConversionItemVO item : items) {
             inboundByTarget.computeIfAbsent(item.getTargetSkuId(), key -> new ArrayList<>()).add(item);
         }
-        Map<
-                Long,
-                BigDecimal> resolved = new HashMap<>();
+        Map<Long, BigDecimal> resolved = new HashMap<>();
         for (InventoryConversionItemVO item : items) {
             outboundCostBasis(item.getSourceSkuId(), inboundByTarget, opening, resolved, new HashSet<>());
         }
@@ -294,18 +278,8 @@ public class InventoryConversionService {
      * <p>
      * 转入腿按 {@code items} 的顺序逐条加权，与腿的实际执行顺序一致（同一 SKU 上先入后出、 入腿之间保持明细行顺序），因此中间取整也与账本一致。
      */
-    private BigDecimal outboundCostBasis(Long skuId, Map<
-            Long,
-            List<
-                    InventoryConversionItemVO>> inboundByTarget,
-            Map<
-                    Long,
-                    InventoryCommandService.CostBasis> opening,
-            Map<
-                    Long,
-                    BigDecimal> resolved,
-            Set<
-                    Long> visiting) {
+    private BigDecimal outboundCostBasis(Long skuId, Map<Long, List<InventoryConversionItemVO>> inboundByTarget,
+            Map<Long, InventoryCommandService.CostBasis> opening, Map<Long, BigDecimal> resolved, Set<Long> visiting) {
         BigDecimal cached = resolved.get(skuId);
         if (cached != null) {
             return cached;
@@ -319,8 +293,7 @@ public class InventoryConversionService {
         BigDecimal quantity = own == null ? BigDecimal.ZERO : own.quantityOrZero();
         BigDecimal basis = own == null ? BigDecimal.ZERO : own.avgCostOrZero();
 
-        List<
-                InventoryConversionItemVO> inbound = inboundByTarget.get(skuId);
+        List<InventoryConversionItemVO> inbound = inboundByTarget.get(skuId);
         if (inbound != null) {
             for (InventoryConversionItemVO item : inbound) {
                 BigDecimal sourceCost = outboundCostBasis(item.getSourceSkuId(), inboundByTarget, opening, resolved,

@@ -43,9 +43,7 @@ public class InventoryWarningVO {
 
     private String productName;
 
-    private Map<
-            String,
-            String> specValues;
+    private Map<String, String> specValues;
 
     /**
      * 记账单位；没有余额行时为空。

@@ -16,6 +16,5 @@ public class PriceResolveForm {
     @NotNull(message = "SKU ID 列表不能为空")
     @NotEmpty(message = "SKU ID 列表不能为空")
     @Size(max = 500, message = "试算 SKU 不能超过500个")
-    private List<
-            @NotNull(message = "SKU ID 列表项不能为空") Long> skuIds;
+    private List<@NotNull(message = "SKU ID 列表项不能为空") Long> skuIds;
 }

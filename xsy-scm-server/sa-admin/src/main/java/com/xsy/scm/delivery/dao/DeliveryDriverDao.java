@@ -5,8 +5,5 @@ import org.apache.ibatis.annotations.Mapper;
 import com.xsy.scm.delivery.domain.entity.DeliveryDriverEntity;
 
 @Mapper
-public interface DeliveryDriverDao
-        extends
-            BaseMapper<
-                    DeliveryDriverEntity> {
+public interface DeliveryDriverDao extends BaseMapper<DeliveryDriverEntity> {
 }

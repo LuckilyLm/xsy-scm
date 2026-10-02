@@ -34,17 +34,10 @@ public class OrderOperationLogRecorder {
         entry.setOperator(ScmOperator.current());
         entry.setCreatedBy(entry.getOperator());
         entry.setReason(reason);
-        entry.setBeforeData(before == null
-                ? null
-                : objectMapper.convertValue(before, new TypeReference<
-                        Map<
-                                String,
-                                Object>>() {
+        entry.setBeforeData(
+                before == null ? null : objectMapper.convertValue(before, new TypeReference<Map<String, Object>>() {
                 }));
-        entry.setAfterData(objectMapper.convertValue(after, new TypeReference<
-                Map<
-                        String,
-                        Object>>() {
+        entry.setAfterData(objectMapper.convertValue(after, new TypeReference<Map<String, Object>>() {
         }));
         orderOperationLogDao.insert(entry);
     }

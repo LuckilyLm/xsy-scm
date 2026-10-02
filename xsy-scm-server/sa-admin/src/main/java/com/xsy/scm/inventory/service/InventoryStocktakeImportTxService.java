@@ -31,8 +31,8 @@ public class InventoryStocktakeImportTxService {
      *            参与哈希的请求指纹（凭证令牌 + 各行实盘量）：内容变了即视为不同请求， 不会把「改了实盘数的重传」误判成首次请求的重放。
      */
     @Transactional(rollbackFor = Exception.class)
-    public CommitResult commit(Long warehouseId, List<
-            InventoryStocktakeService.SnapshotLine> lines, String idempotencyKey, Object fingerprint) {
+    public CommitResult commit(Long warehouseId, List<InventoryStocktakeService.SnapshotLine> lines,
+            String idempotencyKey, Object fingerprint) {
         var claim = idempotencyService.claim("STOCKTAKE_IMPORT", idempotencyKey, fingerprint);
         if (claim.replay()) {
             Long existing = idempotencyService.replay(claim, Long.class);

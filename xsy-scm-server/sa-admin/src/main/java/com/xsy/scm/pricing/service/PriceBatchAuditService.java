@@ -21,8 +21,7 @@ public class PriceBatchAuditService {
     private final ObjectMapper objectMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void failed(String batchKey, int submittedRowCount, List<
-            PriceBatchRowFailureVO> rowFailures) {
+    public void failed(String batchKey, int submittedRowCount, List<PriceBatchRowFailureVO> rowFailures) {
         try {
             priceBatchAuditDao.insert(batchKey, ScmPriceBatchResultEnum.FAILED.name(), submittedRowCount,
                     objectMapper.writeValueAsString(Map.of("failures", rowFailures, "failedCount", rowFailures.size(),

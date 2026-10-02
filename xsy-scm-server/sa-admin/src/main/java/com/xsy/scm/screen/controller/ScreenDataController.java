@@ -29,15 +29,13 @@ public class ScreenDataController {
 
     @GetMapping("/data/business")
     @SaCheckPermission(ScreenPermission.QUERY)
-    public ResponseDTO<
-            ScreenBusinessVO> business() {
+    public ResponseDTO<ScreenBusinessVO> business() {
         return ResponseDTO.ok(screenDataService.getBusinessData());
     }
 
     @GetMapping("/data/inventory")
     @SaCheckPermission(ScreenPermission.QUERY)
-    public ResponseDTO<
-            ScreenInventoryVO> inventory() {
+    public ResponseDTO<ScreenInventoryVO> inventory() {
         return ResponseDTO.ok(screenDataService.getInventoryData());
     }
 
@@ -49,15 +47,13 @@ public class ScreenDataController {
      */
     @GetMapping("/data/geo")
     @SaCheckPermission(ScreenPermission.QUERY)
-    public ResponseDTO<
-            ScreenGeoVO> geo() {
+    public ResponseDTO<ScreenGeoVO> geo() {
         return ResponseDTO.ok(screenDataService.getGeoData());
     }
 
     @GetMapping("/data/purchase")
     @SaCheckPermission(ScreenPermission.QUERY)
-    public ResponseDTO<
-            ScreenPurchaseVO> purchase() {
+    public ResponseDTO<ScreenPurchaseVO> purchase() {
         return ResponseDTO.ok(screenDataService.getPurchaseData());
     }
 
@@ -72,8 +68,7 @@ public class ScreenDataController {
      */
     @GetMapping("/data/trend")
     @SaCheckPermission(ScreenPermission.QUERY)
-    public ResponseDTO<
-            ScreenTrendVO> trend(@RequestParam(value = "range", required = false) String range) {
+    public ResponseDTO<ScreenTrendVO> trend(@RequestParam(value = "range", required = false) String range) {
         return ResponseDTO.ok(screenDataService.getTrendData(range));
     }
 }

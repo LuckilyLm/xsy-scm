@@ -28,9 +28,7 @@ public class InventoryLossGainItemVO {
 
     private String productName;
 
-    private Map<
-            String,
-            String> specValues;
+    private Map<String, String> specValues;
 
     /**
      * 申报数量，恒为正。

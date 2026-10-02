@@ -23,8 +23,7 @@ public class DeliveryEligibilityPolicy {
 
     private final DeliveryQueryDao deliveryQueryDao;
 
-    public List<
-            String> candidateStatuses() {
+    public List<String> candidateStatuses() {
         return List.of(ScmOrderStatusEnum.CONFIRMED.name());
     }
 

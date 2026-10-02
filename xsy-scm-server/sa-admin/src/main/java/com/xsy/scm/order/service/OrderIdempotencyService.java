@@ -20,8 +20,7 @@ public class OrderIdempotencyService {
         return new Claim(claim.record(), claim.replay());
     }
 
-    public <T> T replay(Claim claim, Class<
-            T> resultType) {
+    public <T> T replay(Claim claim, Class<T> resultType) {
         return idempotencyService.replay(toSharedClaim(claim), resultType);
     }
 

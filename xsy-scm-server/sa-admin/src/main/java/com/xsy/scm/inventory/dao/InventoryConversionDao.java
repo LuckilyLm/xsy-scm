@@ -24,10 +24,7 @@ import java.util.List;
  * PENDING，会被守卫拒绝。 行锁把「读明细 → 写流水」这段序列化了。审批仍**额外**带 {@code version}： 它的「读」发生在弹窗打开那一刻，不在锁的保护范围内。
  */
 @Mapper
-public interface InventoryConversionDao
-        extends
-            BaseMapper<
-                    InventoryConversionEntity> {
+public interface InventoryConversionDao extends BaseMapper<InventoryConversionEntity> {
 
     /**
      * 单号是否存在（软删范围内）。
@@ -77,11 +74,8 @@ public interface InventoryConversionDao
     /**
      * 分页查询（联仓库取展示字段）。
      */
-    List<
-            InventoryConversionVO> queryPage(
-                    Page<
-                            ?> page,
-                    @Param("query") InventoryConversionQueryForm query, @Param("scope") ScmValueScope scope);
+    List<InventoryConversionVO> queryPage(Page<?> page, @Param("query") InventoryConversionQueryForm query,
+            @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

@@ -29,21 +29,15 @@ public class ProductAggregateValidator {
             throw new ScmBusinessException(SKU_REQUIRED);
         if (skus.stream().filter(s -> Boolean.TRUE.equals(s.getDefaultFlag())).count() != 1)
             throw new ScmBusinessException(DEFAULT_SKU_INVALID);
-        Set<
-                String> codes = new HashSet<>(), barcodes = new HashSet<>();
-        Set<
-                Map<
-                        String,
-                        String>> specs = new HashSet<>();
+        Set<String> codes = new HashSet<>(), barcodes = new HashSet<>();
+        Set<Map<String, String>> specs = new HashSet<>();
         for (var sku : skus) {
             if (!codes.add(normalizeCode(sku.getSkuCode())))
                 throw new ScmBusinessException(SKU_CODE_DUPLICATE);
             String barcode = trimToNull(sku.getBarcode());
             if (barcode != null && !barcodes.add(barcode))
                 throw new ScmBusinessException(SKU_BARCODE_DUPLICATE);
-            Map<
-                    String,
-                    String> normalized = new TreeMap<>();
+            Map<String, String> normalized = new TreeMap<>();
             if (sku.getSpecValues() != null)
                 sku.getSpecValues().forEach((k, v) -> normalized.put(normalizeSpec(k), normalizeSpec(v)));
             if (!specs.add(normalized))
@@ -63,13 +57,11 @@ public class ProductAggregateValidator {
      * 直接触发唯一索引 {@code uq_product_image_primary_spu}，并抛出未捕获的 {@code DuplicateKeyException}（HTTP 500）而不是稳定的
      * IMAGE_INVALID。
      */
-    public void validateImages(List<
-            ProductImageForm> images) {
+    public void validateImages(List<ProductImageForm> images) {
         if (images == null || images.size() > 20
                 || images.stream().filter(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).count() > 1)
             throw new ScmBusinessException(IMAGE_INVALID);
-        Set<
-                String> keys = new HashSet<>();
+        Set<String> keys = new HashSet<>();
         for (var img : images) {
             String key = trimToNull(img.getFileKey());
             if (key == null || !keys.add(key))

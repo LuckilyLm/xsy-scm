@@ -26,9 +26,7 @@ public class PurchaseOrderItemVO {
     private String productName;
     private String skuCode;
     private String skuName;
-    private java.util.Map<
-            String,
-            Object> specValues;
+    private java.util.Map<String, Object> specValues;
     private String purchaseUnit;
     private String productType;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -45,6 +43,5 @@ public class PurchaseOrderItemVO {
     private BigDecimal lineAmount;
     private Integer sortOrder;
     private Integer version;
-    private List<
-            PurchaseOrderAllocationVO> allocations;
+    private List<PurchaseOrderAllocationVO> allocations;
 }

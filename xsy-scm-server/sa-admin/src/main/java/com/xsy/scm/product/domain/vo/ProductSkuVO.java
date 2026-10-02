@@ -15,9 +15,7 @@ public class ProductSkuVO {
     private String skuCode;
     private String barcode;
     private String specName;
-    private Map<
-            String,
-            String> specValues;
+    private Map<String, String> specValues;
     private String saleUnit;
     private String productType;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

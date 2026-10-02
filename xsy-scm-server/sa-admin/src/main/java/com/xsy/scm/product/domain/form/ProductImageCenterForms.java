@@ -29,8 +29,7 @@ public final class ProductImageCenterForms {
     public static class BatchBindForm {
         @NotEmpty(message = "批量项目列表不能为空")
         @Valid
-        private List<
-                BindItem> items = new ArrayList<>();
+        private List<BindItem> items = new ArrayList<>();
     }
 
     @Data

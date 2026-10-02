@@ -51,8 +51,7 @@ public class InventoryStocktakeVO {
     /**
      * 明细；仅详情接口填充，列表接口为 null。
      */
-    private List<
-            Item> items;
+    private List<Item> items;
 
     /**
      * 盘点单明细行。
@@ -70,9 +69,7 @@ public class InventoryStocktakeVO {
 
         private String productName;
 
-        private Map<
-                String,
-                String> specValues;
+        private Map<String, String> specValues;
 
         /**
          * 账面量快照（保存草稿那一刻）。

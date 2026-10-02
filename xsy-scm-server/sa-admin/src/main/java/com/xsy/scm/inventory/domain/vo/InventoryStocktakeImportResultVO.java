@@ -30,6 +30,5 @@ public class InventoryStocktakeImportResultVO {
     /** 命中幂等重放：未重复建单，返回既有草稿。 */
     private boolean replayed;
 
-    private List<
-            InventoryStocktakeImportErrorVO> errors = new ArrayList<>();
+    private List<InventoryStocktakeImportErrorVO> errors = new ArrayList<>();
 }

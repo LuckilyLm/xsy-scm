@@ -33,6 +33,5 @@ public class PurchaseReceiptVO {
     private Integer version;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private List<
-            PurchaseReceiptItemVO> items;
+    private List<PurchaseReceiptItemVO> items;
 }
