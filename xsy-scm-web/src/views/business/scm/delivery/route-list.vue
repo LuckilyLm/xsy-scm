@@ -148,7 +148,7 @@
   <RoutePrint ref="printer"/>
 </template>
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
@@ -286,6 +286,12 @@ watch(
       clearQuery();
       query.status = filters.status;
       load();
+      const id = incomingQuery.routeId;
+      if (typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) {
+        void nextTick(() => {
+          if (route.name === routesRouteName && route.query.routeId === id) details.value?.open(id, 'orders');
+        });
+      }
     },
     {immediate: true}
 );

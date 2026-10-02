@@ -39,6 +39,7 @@
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
           <div class="smart-table-operate">
+            <a-button type="link" v-privilege="'scm:order:return:query'" @click="showDetail(record.returnId)">详情</a-button>
             <a-button type="link" v-privilege="'scm:order:return:approve'" v-if="record.status==='PENDING'"
                       @click="edit(record,'approve')">批准
             </a-button>
@@ -61,6 +62,25 @@
                     :show-total="(n:number)=>`共${n}条`"/>
     </div>
   </a-card>
+  <a-drawer v-model:open="detailOpen" title="退货单详情" width="min(850px,96vw)">
+    <a-alert v-if="detailError" type="error" show-icon :message="detailError">
+      <template #action><a-button @click="showDetail(detailId)">重试</a-button></template>
+    </a-alert>
+    <a-spin :spinning="detailLoading">
+      <template v-if="detail">
+        <a-descriptions bordered :column="1" size="small">
+          <a-descriptions-item label="退货单号">{{ detail.returnNo }}</a-descriptions-item>
+          <a-descriptions-item label="状态">{{ SCM_ORDER_RETURN_STATUS_ENUM[detail.status]?.desc ?? detail.status }}</a-descriptions-item>
+          <a-descriptions-item label="申请原因">{{ detail.reason || '—' }}</a-descriptions-item>
+          <a-descriptions-item label="处理原因">{{ detail.decisionReason || '—' }}</a-descriptions-item>
+        </a-descriptions>
+        <a-table :data-source="detail.items" row-key="orderItemId" :pagination="false" :scroll="{x: 600}"
+                 :columns="[{title:'商品',dataIndex:'productName'},{title:'单位',dataIndex:'unit'},
+                   {title:'申请数量',dataIndex:'requestedQuantity'},{title:'批准数量',dataIndex:'approvedQuantity'},
+                   {title:'已接收数量',dataIndex:'receivedQuantity'}]"/>
+      </template>
+    </a-spin>
+  </a-drawer>
   <a-modal :open="visible" :title="action==='approve'?'审核退货':action==='receive'?'退货实物接收':action==='reject'?'驳回退货':'取消退货'" width="min(800px,96vw)"
            :confirm-loading="saving" @ok="save" @cancel="visible=false">
     <template v-if="active">
@@ -90,7 +110,8 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
+import {useRoute} from 'vue-router';
 import Decimal from 'decimal.js';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {message} from 'ant-design-vue';
@@ -214,6 +235,29 @@ async function save() {
     saving.value = false;
   }
 }
+
+const detailOpen = ref(false), detailLoading = ref(false), detailError = ref('');
+const detail = ref<ReturnRow>(), detailId = ref<Id>();
+let detailRequestId = 0;
+async function showDetail(id?: Id) {
+  if (id === undefined) return;
+  const generation = ++detailRequestId;
+  detailId.value = id;
+  detailOpen.value = true;
+  detailLoading.value = true;
+  detailError.value = '';
+  detail.value = undefined;
+  try {
+    const response = await api.detail(id);
+    if (generation === detailRequestId) detail.value = response.data;
+  } catch (e) { if (generation === detailRequestId) detailError.value = orderError(e); }
+  finally { if (generation === detailRequestId) detailLoading.value = false; }
+}
+const route = useRoute();
+const returnRouteName = route.name;
+watch([() => route.name, () => route.query.returnId], ([name, id]) => {
+  if (name === returnRouteName && typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) void showDetail(id);
+}, {immediate: true});
 
 onMounted(queryData);
 </script>

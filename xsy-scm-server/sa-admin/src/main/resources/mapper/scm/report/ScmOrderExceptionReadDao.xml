@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.ScmOrderExceptionReadDao">
+    <!-- 三种源事实共用一份筛选集合；撤销/重开后的当前事实由源表决定，不另存处置状态。 -->
+    <sql id="facts">
+        WITH exception_facts AS (
+            SELECT 'SORTING_DIFFERENCE'::text AS exception_type, t.id AS source_id, i.id AS source_row_id,
+                   t.task_no AS source_no, i.sales_order_id AS order_id, i.order_no_snapshot AS order_no,
+                   i.customer_name_snapshot AS customer_name, t.warehouse_id,
+                   t.warehouse_name_snapshot AS warehouse_name, i.product_name_snapshot AS product_name,
+                   i.sale_unit_snapshot AS unit, i.planned_quantity_snapshot AS planned_quantity,
+                   i.sorted_quantity AS actual_quantity,
+                   i.sorted_quantity - i.planned_quantity_snapshot AS difference_quantity,
+                   i.result AS source_status, i.reason, i.sorted_at AS occurred_at
+            FROM sorting_task_item i JOIN sorting_task t ON t.id = i.task_id AND t.deleted = FALSE
+            WHERE i.deleted = FALSE AND i.occupation_status = 'ACTIVE'
+              AND i.sorted_quantity IS NOT NULL AND i.sorted_quantity != i.planned_quantity_snapshot
+              AND i.sorted_at &gt;= #{startAt} AND i.sorted_at &lt; #{endAt}
+            <include refid="com.xsy.scm.sorting.dao.SortingQueryDao.taskScopeGuard"/>
+            UNION ALL
+            SELECT 'DELIVERY_EXCEPTION', d.id, a.id, d.route_no, a.order_id, a.order_no_snapshot,
+                   s.customer_name_snapshot, d.warehouse_id, d.warehouse_name_snapshot,
+                   NULL::text, NULL::text, NULL::numeric, NULL::numeric, NULL::numeric,
+                   a.fulfillment_status, a.sign_reason, a.signed_at
+            FROM delivery_route_order a JOIN delivery_route d ON d.id = a.route_id AND d.deleted = FALSE
+            JOIN delivery_route_stop s ON s.id = a.stop_id AND s.deleted = FALSE
+            WHERE a.deleted = FALSE AND a.assignment_status = 'ACTIVE' AND a.fulfillment_status = 'EXCEPTION'
+              AND a.signed_at &gt;= #{startAt} AND a.signed_at &lt; #{endAt}
+            <choose>
+                <when test="scope == null or scope.driverScope.empty">AND FALSE</when>
+                <when test="scope.driverScope.all == false">
+                    AND d.driver_id IN
+                    <foreach collection="scope.driverScope.ids" item="driver" open="(" separator="," close=")">#{driver}</foreach>
+                </when>
+            </choose>
+            UNION ALL
+            SELECT 'RETURN_REJECTED', r.id, r.id, r.return_no, o.id, o.order_no, o.customer_name_snapshot,
+                   NULL::bigint, NULL::text, NULL::text, NULL::text, NULL::numeric, NULL::numeric, NULL::numeric,
+                   r.status, r.decision_reason, r.rejected_at
+            FROM order_return r JOIN sales_order o ON o.id = r.order_id AND o.deleted = FALSE
+            WHERE r.deleted = FALSE AND r.status = 'REJECTED'
+              AND r.rejected_at &gt;= #{startAt} AND r.rejected_at &lt; #{endAt}
+            <choose>
+                <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
+                <when test="scope.orderSellerScope.all == false">
+                    AND o.seller_id IN
+                    <foreach collection="scope.orderSellerScope.ids" item="seller" open="(" separator="," close=")">#{seller}</foreach>
+                </when>
+            </choose>
+        ), filtered AS (
+            SELECT * FROM exception_facts WHERE 1 = 1
+            <choose>
+                <when test="visibleTypes == null or visibleTypes.isEmpty()">AND FALSE</when>
+                <otherwise>
+                    AND exception_type IN
+                    <foreach collection="visibleTypes" item="type" open="(" separator="," close=")">#{type}</foreach>
+                </otherwise>
+            </choose>
+            <if test="q.exceptionType != null">AND exception_type = #{q.exceptionType}</if>
+            <if test="q.warehouseId != null">AND warehouse_id = #{q.warehouseId}</if>
+            <if test="q.keyword != null and q.keyword != ''">
+                AND (source_no ILIKE CONCAT('%', #{q.keyword}, '%') OR order_no ILIKE CONCAT('%', #{q.keyword}, '%')
+                  OR customer_name ILIKE CONCAT('%', #{q.keyword}, '%') OR product_name ILIKE CONCAT('%', #{q.keyword}, '%'))
+            </if>
+        )
+    </sql>
+    <select id="query" resultType="com.xsy.scm.report.domain.vo.ScmOrderExceptionRowVO">
+        <include refid="facts"/>
+        SELECT * FROM filtered ORDER BY occurred_at DESC, exception_type, source_row_id DESC
+    </select>
+    <select id="summary" resultType="com.xsy.scm.report.domain.vo.ScmOrderExceptionSummaryVO">
+        <include refid="facts"/>
+        SELECT exception_type, COUNT(*) AS exception_count, COUNT(DISTINCT order_id) AS order_count
+        FROM filtered GROUP BY exception_type ORDER BY exception_type
+    </select>
+</mapper>

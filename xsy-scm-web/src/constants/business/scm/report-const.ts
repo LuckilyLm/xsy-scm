@@ -41,6 +41,7 @@ export const SCM_REPORT_LOSS_TYPE_ENUM: SmartEnum<string> = {
 export const SCM_REPORT_PERMISSION = {
     OVERVIEW_QUERY: 'scm:report:overview:query',
     SALES_QUERY: 'scm:report:sales:query',
+    ORDER_EXCEPTION_QUERY: 'scm:report:order:exception:query',
     PURCHASE_QUERY: 'scm:report:purchase:query',
     INVENTORY_QUERY: 'scm:report:inventory:query',
     FINANCE_QUERY: 'scm:report:finance:query',

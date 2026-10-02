@@ -532,7 +532,8 @@
 
 <script setup lang="ts">
 import PrintDocumentModal from '../print/print-document-modal.vue';
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -1132,6 +1133,12 @@ async function recordPrint() {
         printing.value = false;
     }
 }
+
+const route = useRoute();
+const taskRouteName = route.name;
+watch([() => route.name, () => route.query.taskId], ([name, id]) => {
+    if (name === taskRouteName && typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) openDetail(id);
+}, {immediate: true});
 
 onMounted(queryData);
 </script>

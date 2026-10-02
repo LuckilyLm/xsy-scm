@@ -6,6 +6,7 @@ import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 public final class ScmReportPermission {
 
     public static final String OVERVIEW_QUERY = "scm:report:overview:query";
+    public static final String ORDER_EXCEPTION_QUERY = "scm:report:order:exception:query";
     public static final String SALES_QUERY = "scm:report:sales:query";
     public static final String PURCHASE_QUERY = "scm:report:purchase:query";
     public static final String INVENTORY_QUERY = "scm:report:inventory:query";
