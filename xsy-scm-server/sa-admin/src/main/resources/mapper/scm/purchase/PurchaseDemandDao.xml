@@ -67,6 +67,7 @@
     <!-- 联 supplier / warehouse 取名称（快照之外还需要当前名称展示，两者语义不同） -->
     <select id="query" resultMap="demandVoMap">
         SELECT d.id, d.sales_order_id, d.sales_order_no_snapshot, d.sales_order_item_id,
+        d.calculation_batch_id,
         d.sku_id,
         d.sku_code_snapshot AS sku_code,
         d.sku_name_snapshot AS sku_name,
@@ -298,6 +299,7 @@
     <select id="detail" resultMap="demandVoMap">
         SELECT d.id,
                d.sales_order_id,
+               d.calculation_batch_id,
                d.sales_order_no_snapshot,
                d.sales_order_item_id,
                d.sku_id,
