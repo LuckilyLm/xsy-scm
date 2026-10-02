@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.report.dao.ScmCustomerStatementDao">
+    <sql id="customerScope">
+        <choose>
+            <when test="scope.customerSellerScope.all"/>
+            <when test="!scope.customerSellerScope.empty">
+                AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+    </sql>
+    <sql id="orderScope">
+        <choose>
+            <when test="scope.orderSellerScope.all"/>
+            <when test="!scope.orderSellerScope.empty">
+                AND so.seller_id IN
+                <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+    </sql>
+    <select id="selectEvents" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementItemVO">
+        WITH eligible AS (
+            SELECT r.id, r.order_id, r.customer_id
+            FROM finance_receivable r
+            JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+            JOIN customer c ON c.id = r.customer_id AND c.deleted = FALSE
+            WHERE r.deleted = FALSE AND r.entry_type = 'NORMAL'
+              AND r.settlement_customer_id = #{query.settlementCustomerId}
+              <if test="query.customerId != null">AND r.customer_id = #{query.customerId}</if>
+              <include refid="customerScope"/>
+              <include refid="orderScope"/>
+              <!-- A financial header is all-or-nothing across its source warehouses. -->
+              <if test="!scope.warehouseScope.all">
+                  AND EXISTS (SELECT 1 FROM finance_receivable_item ri
+                              WHERE ri.receivable_id = r.id AND ri.deleted = FALSE)
+                  AND NOT EXISTS (
+                      SELECT 1 FROM finance_receivable_item ri
+                      LEFT JOIN inventory_outbound_item oi ON ri.source_type = 'INVENTORY_OUTBOUND_ITEM'
+                          AND oi.id = ri.source_id AND oi.deleted = FALSE
+                      LEFT JOIN inventory_outbound ib ON ib.id = oi.outbound_id AND ib.deleted = FALSE
+                      WHERE ri.receivable_id = r.id AND ri.deleted = FALSE AND (
+                          ib.warehouse_id IS NULL
+                          <choose>
+                              <when test="!scope.warehouseScope.empty">OR ib.warehouse_id NOT IN
+                                  <foreach collection="scope.warehouseScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+                              </when>
+                              <otherwise>OR TRUE</otherwise>
+                          </choose>
+                      )
+                  )
+              </if>
+        ), scoped_receipts AS (
+            SELECT rc.* FROM finance_receipt rc
+            JOIN customer c ON c.id = rc.customer_id AND c.deleted = FALSE
+            WHERE rc.deleted = FALSE AND rc.settlement_customer_id = #{query.settlementCustomerId}
+            <if test="query.customerId != null">AND rc.customer_id = #{query.customerId}</if>
+            <include refid="customerScope"/>
+        ), events AS (
+            SELECT 'RECEIVABLE'::varchar AS fact_type, r.id AS fact_id, r.event_at,
+                   r.receivable_no AS document_no, so.order_no AS related_no,
+                   r.customer_id, r.customer_name_snapshot AS customer_name,
+                   r.amount AS receivable_delta, 0::numeric AS receipt_delta,
+                   0::numeric AS write_off_delta, 0::numeric AS refund_delta, r.created_at
+            FROM finance_receivable r JOIN eligible e ON e.id = r.id
+            JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+            UNION ALL
+            SELECT 'RED', r.id, r.event_at, r.receivable_no, so.order_no,
+                   r.customer_id, r.customer_name_snapshot, -r.amount, 0, 0, 0, r.created_at
+            FROM finance_receivable r JOIN eligible e ON e.id = r.original_receivable_id
+            JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+            WHERE r.deleted = FALSE AND r.entry_type = 'RED'
+              AND r.settlement_customer_id = #{query.settlementCustomerId}
+            UNION ALL
+            SELECT CASE WHEN rc.entry_type = 'NORMAL' THEN 'RECEIPT' ELSE 'RECEIPT_REVERSE' END,
+                   rc.id, rc.received_at, rc.receipt_no, original.receipt_no,
+                   rc.customer_id, rc.customer_name_snapshot, 0,
+                   CASE WHEN rc.entry_type = 'NORMAL' THEN rc.amount ELSE -rc.amount END, 0, 0, rc.created_at
+            FROM scoped_receipts rc LEFT JOIN finance_receipt original ON original.id = rc.reverse_of_id
+            UNION ALL
+            SELECT CASE WHEN wo.entry_type = 'NORMAL' THEN 'WRITE_OFF' ELSE 'WRITE_OFF_REVERSE' END,
+                   wo.id, wo.written_off_at, wo.write_off_no, ar.receivable_no,
+                   ar.customer_id, ar.customer_name_snapshot,
+                   CASE WHEN wo.entry_type = 'NORMAL' THEN -wo.amount ELSE wo.amount END,
+                   0, CASE WHEN wo.entry_type = 'NORMAL' THEN wo.amount ELSE -wo.amount END, 0, wo.created_at
+            FROM finance_write_off wo JOIN finance_receivable ar ON ar.id = wo.target_id AND ar.deleted = FALSE
+            JOIN eligible e ON e.id = CASE WHEN ar.entry_type = 'NORMAL' THEN ar.id ELSE ar.original_receivable_id END
+            JOIN scoped_receipts rc ON wo.source_type = 'RECEIPT' AND rc.id = wo.source_id
+            WHERE wo.deleted = FALSE AND wo.target_type = 'RECEIVABLE'
+            UNION ALL
+            SELECT CASE WHEN p.entry_type = 'NORMAL' THEN 'REFUND' ELSE 'REFUND_REVERSE' END,
+                   p.id, p.paid_at, p.payment_no, refund.refund_no,
+                   p.counterparty_id, p.counterparty_name_snapshot, 0, 0, 0,
+                   CASE WHEN p.entry_type = 'NORMAL' THEN p.amount ELSE -p.amount END, p.created_at
+            FROM finance_payment p
+            JOIN finance_payment original ON original.id = COALESCE(p.reverse_of_id, p.id)
+                AND original.counterparty_type = 'CUSTOMER' AND original.source_type = 'ORDER_REFUND'
+            JOIN order_refund refund ON refund.id = original.source_id
+            JOIN sales_order so ON so.id = refund.order_id AND so.deleted = FALSE
+                AND so.customer_id = p.counterparty_id
+                AND so.settlement_customer_id = #{query.settlementCustomerId}
+            JOIN customer c ON c.id = p.counterparty_id AND c.deleted = FALSE
+            WHERE p.deleted = FALSE AND p.counterparty_type = 'CUSTOMER'
+              <if test="query.customerId != null">AND p.counterparty_id = #{query.customerId}</if>
+              <include refid="customerScope"/>
+              <include refid="orderScope"/>
+              <if test="!scope.warehouseScope.all">
+                  AND EXISTS (SELECT 1 FROM inventory_outbound_item oi
+                              WHERE oi.sales_order_id = so.id AND oi.deleted = FALSE)
+                  AND NOT EXISTS (
+                      SELECT 1 FROM inventory_outbound_item oi
+                      LEFT JOIN inventory_outbound ib ON ib.id = oi.outbound_id AND ib.deleted = FALSE
+                      WHERE oi.sales_order_id = so.id AND oi.deleted = FALSE AND (
+                          ib.warehouse_id IS NULL
+                          <choose>
+                              <when test="!scope.warehouseScope.empty">OR ib.warehouse_id NOT IN
+                                  <foreach collection="scope.warehouseScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+                              </when>
+                              <otherwise>OR TRUE</otherwise>
+                          </choose>
+                      )
+                  )
+              </if>
+        )
+        SELECT fact_type AS factType, fact_id AS factId, event_at AS eventAt,
+               document_no AS documentNo, related_no AS relatedNo, customer_id AS customerId,
+               customer_name AS customerName, receivable_delta AS receivableDelta,
+               receipt_delta AS receiptDelta, write_off_delta AS writeOffDelta, refund_delta AS refundDelta
+        FROM events WHERE event_at &lt; #{endAt}
+        <if test="asOfCreatedAt != null">AND created_at &lt;= #{asOfCreatedAt}</if>
+        ORDER BY event_at, fact_type, fact_id
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectSettlementName" resultType="string">
+        SELECT name FROM customer WHERE id = #{id} AND deleted = FALSE
+    </select>
+    <insert id="insertStatement" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO scm_customer_statement (settlement_customer_id,settlement_customer_name,customer_id,
+            start_date,end_date,partial_scope,generated_by_employee_id,generated_at,
+            opening_receivable,receivable_increase,receivable_red,write_off_net,closing_receivable,
+            opening_unallocated,receipt_net,closing_unallocated,refund_net)
+        VALUES (#{settlementCustomerId},#{settlementCustomerName},#{customerId},
+            #{startDate},#{endDate},#{partialScope},#{generatedByEmployeeId},#{generatedAt},
+            #{openingReceivable},#{receivableIncrease},#{receivableRed},#{writeOffNet},#{closingReceivable},
+            #{openingUnallocated},#{receiptNet},#{closingUnallocated},#{refundNet})
+    </insert>
+    <insert id="insertItem">
+        INSERT INTO scm_customer_statement_item (statement_id,line_no,fact_type,fact_id,event_at,
+            document_no,related_no,customer_id,customer_name,receivable_delta,receipt_delta,
+            write_off_delta,refund_delta,receivable_balance)
+        VALUES (#{statementId},#{lineNo},#{factType},#{factId},#{eventAt},
+            #{documentNo},#{relatedNo},#{customerId},#{customerName},#{receivableDelta},#{receiptDelta},
+            #{writeOffDelta},#{refundDelta},#{receivableBalance})
+    </insert>
+    <insert id="insertSource">
+        INSERT INTO scm_customer_statement_source (statement_id, fact_type, fact_id)
+        VALUES (#{statementId}, #{factType}, #{factId})
+    </insert>
+    <select id="selectSources" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementItemVO">
+        SELECT fact_type AS factType, fact_id AS factId
+        FROM scm_customer_statement_source WHERE statement_id = #{id}
+    </select>
+    <select id="selectStatement" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementVO">
+        SELECT * FROM scm_customer_statement WHERE id = #{id} AND generated_by_employee_id = #{employeeId}
+    </select>
+    <select id="selectHistory" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementVO">
+        SELECT * FROM scm_customer_statement
+        WHERE settlement_customer_id = #{settlementCustomerId} AND generated_by_employee_id = #{employeeId}
+        ORDER BY generated_at DESC, id DESC LIMIT 50
+    </select>
+    <select id="selectItems" resultType="com.xsy.scm.report.domain.vo.ScmCustomerStatementItemVO">
+        SELECT * FROM scm_customer_statement_item WHERE statement_id = #{id} ORDER BY line_no
+    </select>
+</mapper>

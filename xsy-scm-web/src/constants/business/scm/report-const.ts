@@ -46,6 +46,8 @@ export const SCM_REPORT_PERMISSION = {
     FINANCE_QUERY: 'scm:report:finance:query',
     FINANCE_AGING_QUERY: 'scm:report:finance:aging:query',
     FINANCE_PROFIT_QUERY: 'scm:report:finance:profit:query',
+    CUSTOMER_STATEMENT_QUERY: 'scm:report:customer:statement:query',
+    CUSTOMER_STATEMENT_FREEZE: 'scm:report:customer:statement:freeze',
     COST_QUERY: 'scm:report:cost:query',
     EXPORT: 'scm:report:export',
 } as const;
