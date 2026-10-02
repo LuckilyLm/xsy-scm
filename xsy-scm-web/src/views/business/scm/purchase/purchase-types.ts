@@ -74,6 +74,25 @@ export interface DemandGenerate {
     purchaserId?: Id | null;
 }
 
+export interface DemandBatchCreate extends DemandGenerate {
+    categoryId?: Id | null;
+    keyword?: string | null;
+}
+
+export interface DemandBatchGenerate {
+    batchId: Id;
+}
+
+export interface DemandCalculationBatch {
+    batchId: Id;
+    status: 'READY' | 'GENERATED' | string;
+    sourceLineCount: number;
+    candidateLineCount: number;
+    generatedCount: number;
+    skippedCount: number;
+    summary?: Record<string, unknown>[];
+}
+
 /** `PurchaseDemandService.GenerateResult`。 */
 export interface GenerateResult {
     demandIds: Id[];

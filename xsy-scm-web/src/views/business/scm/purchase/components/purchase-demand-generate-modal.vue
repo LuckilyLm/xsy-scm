@@ -52,6 +52,12 @@
       </a-form-item>
     </a-form>
 
+    <a-descriptions v-if="batch" bordered size="small" :column="2">
+      <a-descriptions-item label="冻结批次">{{ batch.batchId }}</a-descriptions-item>
+      <a-descriptions-item label="候选行">{{ batch.candidateLineCount }}</a-descriptions-item>
+      <a-descriptions-item label="状态">{{ batch.status }}</a-descriptions-item>
+      <a-descriptions-item label="操作">可继续从冻结批次生成需求</a-descriptions-item>
+    </a-descriptions>
     <a-descriptions v-if="result" bordered size="small" :column="2">
       <a-descriptions-item label="区间内来源行">{{ result.sourceLineCount }}</a-descriptions-item>
       <a-descriptions-item label="本次新建需求">{{ result.createdCount }}</a-descriptions-item>
@@ -68,7 +74,7 @@ import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
-import type {GenerateResult, Id} from '../purchase-types';
+import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
 
 const props = defineProps<{ open: boolean }>();
@@ -79,6 +85,7 @@ const form = ref<{ warehouseId?: Id; supplierId?: Id; purchaserId?: Id }>({});
 const saving = ref(false);
 const error = ref('');
 const result = ref<GenerateResult>();
+const batch = ref<DemandCalculationBatch>();
 const warehouseLoading = ref(false);
 const warehouses = ref<{ id: Id; warehouseCode?: string; name?: string }[]>([]);
 
@@ -124,6 +131,7 @@ watch(
       if (open) {
         range.value = undefined;
         result.value = undefined;
+        batch.value = undefined;
         error.value = '';
         void loadWarehouses();
       }
@@ -142,15 +150,17 @@ async function generate() {
   }
   saving.value = true;
   try {
-    const r = await purchaseDemandApi.generate({
+    const r = await purchaseDemandApi.createBatch({
       startAt: range.value[0],
       endAt: range.value[1],
       warehouseId: form.value.warehouseId,
       supplierId: form.value.supplierId ?? null,
       purchaserId: form.value.purchaserId ?? null,
     });
-    result.value = r.data;
-    message.success(`本次新建 ${r.data.createdCount} 条需求，跳过 ${r.data.skippedCount} 条`);
+    batch.value = r.data;
+    const generated = await purchaseDemandApi.generateBatch({batchId: r.data.batchId});
+    result.value = generated.data;
+    message.success(`冻结批次 ${r.data.batchId} 已生成 ${generated.data.createdCount} 条需求，跳过 ${generated.data.skippedCount} 条`);
     emit('generated');
   } catch (e) {
     error.value = purchaseError(e);

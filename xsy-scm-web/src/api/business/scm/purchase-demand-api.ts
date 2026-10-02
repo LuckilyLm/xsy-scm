@@ -17,6 +17,9 @@ import type {
     DemandSummaryPreviewQuery,
     DemandSummaryRow,
     GenerateResult,
+    DemandBatchCreate,
+    DemandBatchGenerate,
+    DemandCalculationBatch,
 } from '/@/views/business/scm/purchase/purchase-types';
 
 export const purchaseDemandApi = {
@@ -36,6 +39,12 @@ export const purchaseDemandApi = {
 
     /** 汇总窗口 `[startAt, endAt)` 内的已确认订单行 → 采购需求。 */
     generate: (data: DemandGenerate) => purchaseCommand<GenerateResult>('/scm/purchase/demand/generate', data),
+
+    createBatch: (data: DemandBatchCreate) =>
+        purchaseCommand<DemandCalculationBatch>('/scm/purchase/demand/batch/create', data),
+
+    generateBatch: (data: DemandBatchGenerate) =>
+        purchaseCommand<GenerateResult>('/scm/purchase/demand/batch/generate', data),
 
     /** 把一条需求分配到某个采购行（`version` 是**需求**的版本）。 */
     allocate: (data: DemandAllocate) => purchaseCommand<Demand>('/scm/purchase/demand/allocate', data),
