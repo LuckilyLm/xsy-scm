@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.delivery.dao.DeliveryPlanProposalDao">
+
+    <resultMap id="proposalMap" type="com.xsy.scm.delivery.domain.entity.DeliveryPlanProposalEntity">
+        <id column="id" property="id"/>
+        <result column="input_snapshot" property="inputSnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+        <result column="result_snapshot" property="resultSnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, route_id, status, provider_code, provider_version, estimated_flag, rule_code, stop_count,
+        total_distance, input_snapshot, result_snapshot, created_at, created_by,
+        applied_at, applied_by, discarded_at, discarded_by, version
+    </sql>
+
+    <select id="lockActive" resultMap="proposalMap">
+        SELECT
+        <include refid="columns"/>
+        FROM delivery_plan_proposal
+        WHERE route_id = #{routeId}
+          AND status = 'PROPOSED'
+            FOR UPDATE
+    </select>
+
+    <select id="lockById" resultMap="proposalMap">
+        SELECT
+        <include refid="columns"/>
+        FROM delivery_plan_proposal
+        WHERE id = #{id}
+            FOR UPDATE
+    </select>
+
+    <select id="listByRoute" resultMap="proposalMap">
+        SELECT
+        <include refid="columns"/>
+        FROM delivery_plan_proposal
+        WHERE route_id = #{routeId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insertProposal" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO delivery_plan_proposal (route_id, status, provider_code, provider_version, estimated_flag,
+                                            rule_code, stop_count, total_distance, input_snapshot, result_snapshot,
+                                            created_at, created_by, version)
+        VALUES (#{row.routeId}, #{row.status}, #{row.providerCode}, #{row.providerVersion}, #{row.estimatedFlag},
+                #{row.ruleCode}, #{row.stopCount}, #{row.totalDistance},
+                #{row.inputSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.resultSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.createdAt}, #{row.createdBy}, 0)
+    </insert>
+
+    <update id="markApplied">
+        UPDATE delivery_plan_proposal
+        SET status     = 'APPLIED',
+            applied_at = CURRENT_TIMESTAMP,
+            applied_by = #{operator},
+            version    = version + 1
+        WHERE id = #{id}
+          AND status = 'PROPOSED'
+          AND version = #{version}
+    </update>
+
+    <update id="markDiscarded">
+        UPDATE delivery_plan_proposal
+        SET status       = 'DISCARDED',
+            discarded_at = CURRENT_TIMESTAMP,
+            discarded_by = #{operator},
+            version      = version + 1
+        WHERE id = #{id}
+          AND status = 'PROPOSED'
+          AND version = #{version}
+    </update>
+
+    <update id="discardActive">
+        UPDATE delivery_plan_proposal
+        SET status       = 'DISCARDED',
+            discarded_at = CURRENT_TIMESTAMP,
+            discarded_by = #{operator},
+            version      = version + 1
+        WHERE route_id = #{routeId}
+          AND status = 'PROPOSED'
+    </update>
+
+</mapper>

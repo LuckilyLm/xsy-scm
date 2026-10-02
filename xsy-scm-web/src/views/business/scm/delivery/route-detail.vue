@@ -405,6 +405,141 @@
               </template>
             </a-table>
           </a-tab-pane>
+          <a-tab-pane key="plan" tab="排线建议">
+            <a-alert
+                message="建议只是建议：生成不会改动线路，只有「应用建议」才会写回停靠顺序；建议也不会自动发车。"
+                type="info"
+                show-icon
+            />
+            <a-space class="plan-actions">
+              <a-button
+                  type="primary"
+                  v-privilege="DELIVERY_PERM.PLAN_PROPOSE"
+                  :loading="planBusy"
+                  :disabled="!canEdit"
+                  @click="proposePlan"
+              >
+                生成排线建议
+              </a-button>
+              <span class="hint" v-if="!canEdit">只有草稿线路可以生成与应用建议</span>
+            </a-space>
+            <a-alert v-if="planError" type="error" :message="planError" show-icon/>
+
+            <template v-if="proposal">
+              <a-descriptions bordered size="small" :column="3" class="plan-meta">
+                <a-descriptions-item label="状态">
+                  <a-tag :color="planProposalStatuses[proposal.status]?.color || 'default'">
+                    {{ planProposalStatuses[proposal.status]?.label || proposal.status }}
+                  </a-tag>
+                </a-descriptions-item>
+                <a-descriptions-item label="总距离">{{ proposal.totalDistance }} 米</a-descriptions-item>
+                <a-descriptions-item label="停靠点数">{{ proposal.stopCount }}</a-descriptions-item>
+                <a-descriptions-item label="算路来源" :span="2">
+                  {{ proposal.providerCode }} v{{ proposal.providerVersion }}
+                  <a-tag v-if="proposal.estimated" color="orange" class="ml">估算，非真实路网</a-tag>
+                </a-descriptions-item>
+                <a-descriptions-item label="生成时间">{{ datetime(proposal.createdAt) }}</a-descriptions-item>
+                <a-descriptions-item label="排序规则" :span="3">
+                  {{ planRuleLabels[proposal.ruleCode] || proposal.ruleCode }}
+                </a-descriptions-item>
+              </a-descriptions>
+
+              <a-table
+                  size="small"
+                  :data-source="proposal.legs ?? []"
+                  :columns="planColumns"
+                  row-key="stopId"
+                  bordered
+                  :pagination="false"
+                  :scroll="{ x: 900 }"
+              >
+                <template #bodyCell="{ record, column }">
+                  <template v-if="column.dataIndex === 'legDistance' || column.dataIndex === 'cumulativeDistance'">
+                    <span class="num">{{ record[column.dataIndex] }}</span>
+                  </template>
+                </template>
+              </a-table>
+
+              <a-space class="plan-actions">
+                <a-button
+                    type="primary"
+                    v-privilege="DELIVERY_PERM.PLAN_APPLY"
+                    :loading="planBusy"
+                    :disabled="proposal.status !== 'PROPOSED' || !canEdit"
+                    @click="applyPlan"
+                >
+                  应用建议
+                </a-button>
+                <a-button
+                    v-privilege="DELIVERY_PERM.PLAN_APPLY"
+                    :loading="planBusy"
+                    :disabled="proposal.status !== 'PROPOSED'"
+                    @click="discardPlan"
+                >
+                  放弃建议
+                </a-button>
+              </a-space>
+            </template>
+            <a-empty v-else-if="!planBusy" description="还没有排线建议"/>
+
+            <template v-if="planHistory.length > 1">
+              <a-divider orientation="left">历史建议</a-divider>
+              <a-table
+                  size="small"
+                  :data-source="planHistory"
+                  :columns="planHistoryColumns"
+                  row-key="id"
+                  bordered
+                  :pagination="false"
+              >
+                <template #bodyCell="{ record, column }">
+                  <template v-if="column.dataIndex === 'status'">
+                    <a-tag :color="planProposalStatuses[record.status]?.color || 'default'">
+                      {{ planProposalStatuses[record.status]?.label || record.status }}
+                    </a-tag>
+                  </template>
+                  <template v-else-if="column.dataIndex === 'action'">
+                    <a-button type="link" @click="showProposal(record)">查看</a-button>
+                  </template>
+                </template>
+              </a-table>
+            </template>
+          </a-tab-pane>
+          <a-tab-pane key="gps" tab="轨迹">
+            <a-alert
+                message="轨迹是配送证据：它不改变签收结果，也不触发库存或财务事实。回放按设备采集时间排序。"
+                type="info"
+                show-icon
+            />
+            <a-form layout="inline" class="gps-query">
+              <a-form-item label="采集时间段">
+                <a-range-picker
+                    v-model:value="gpsRange"
+                    show-time
+                    value-format="YYYY-MM-DDTHH:mm:ssZ"
+                    style="width: 380px"
+                />
+              </a-form-item>
+              <a-form-item>
+                <a-button :loading="gpsBusy" v-privilege="DELIVERY_PERM.GPS_QUERY" @click="loadGps">查询轨迹</a-button>
+              </a-form-item>
+            </a-form>
+            <a-alert v-if="gpsError" type="error" :message="gpsError" show-icon/>
+            <template v-if="gpsPoints.length">
+              <p class="hint">共 {{ gpsPoints.length }} 个轨迹点（按采集时间升序，最多返回 2000 个）</p>
+              <ScmMap :points="gpsMapPoints" route/>
+              <a-table
+                  size="small"
+                  :data-source="gpsPoints"
+                  :columns="gpsColumns"
+                  row-key="id"
+                  bordered
+                  :pagination="false"
+                  :scroll="{ x: 1100 }"
+              />
+            </template>
+            <a-empty v-else-if="!gpsBusy" description="没有轨迹点；设备尚未上报或该时间段无数据"/>
+          </a-tab-pane>
         </a-tabs>
       </template>
       <a-empty v-else-if="!loading" description="线路尚未加载"/>
@@ -504,6 +639,10 @@ import {
   routeStatuses,
   SIGNABLE_FULFILLMENT,
   signResults,
+  planProposalStatuses,
+  planRuleLabels,
+  type DeliveryGpsEvent,
+  type DeliveryPlanProposal,
   type DeliveryStop,
   type FulfillmentStatus,
   type Id,
@@ -514,6 +653,7 @@ import {
   type RouteOrderView,
   type SignResult,
 } from './delivery-types';
+import {deliveryGpsApi, deliveryPlanApi} from '/@/api/business/scm/delivery-plan-api';
 
 const emit = defineEmits<{ changed: [] }>();
 const visible = ref(false),
@@ -560,8 +700,144 @@ const orderColumns = computed<TableColumnsType>(() => [
   {title: '操作', dataIndex: 'action', align: 'right' as const, width: 80},
 ]);
 
-const printMode = ref<'orders' | 'customers'>('orders');
-const customerFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED'>('ALL');
+// ------------------------------------------------------------------
+// 排线建议与轨迹（ADM-10）
+// ------------------------------------------------------------------
+
+const planBusy = ref(false);
+const planError = ref('');
+/** 当前展示的建议（默认取最新一条）。 */
+const proposal = ref<DeliveryPlanProposal>();
+const planHistory = ref<DeliveryPlanProposal[]>([]);
+
+const gpsBusy = ref(false);
+const gpsError = ref('');
+const gpsRange = ref<[string, string] | undefined>(undefined);
+const gpsPoints = ref<DeliveryGpsEvent[]>([]);
+
+const planColumns: TableColumnsType = [
+  {title: '顺序', dataIndex: 'seq', align: 'right', width: 70},
+  {title: '停靠点 / 客户', dataIndex: 'customerNameSnapshot', width: 200},
+  {title: '配送地址', dataIndex: 'addressSnapshot', width: 280},
+  {title: '本段距离（米）', dataIndex: 'legDistance', align: 'right', width: 130},
+  {title: '累计距离（米）', dataIndex: 'cumulativeDistance', align: 'right', width: 130},
+];
+
+const planHistoryColumns: TableColumnsType = [
+  {title: '生成时间', dataIndex: 'createdAt', width: 180},
+  {title: '状态', dataIndex: 'status', width: 100},
+  {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 100},
+  {title: '总距离（米）', dataIndex: 'totalDistance', align: 'right', width: 130},
+  {title: '算路来源', dataIndex: 'providerCode', width: 220},
+  {title: '操作', dataIndex: 'action', align: 'right', width: 90},
+];
+
+const gpsColumns: TableColumnsType = [
+  {title: '采集时间', dataIndex: 'capturedAt', width: 180},
+  {title: '接收时间', dataIndex: 'receivedAt', width: 180},
+  {title: '经度', dataIndex: 'longitude', align: 'right', width: 130},
+  {title: '纬度', dataIndex: 'latitude', align: 'right', width: 130},
+  {title: '坐标系', dataIndex: 'geomCrs', width: 90},
+  {title: '精度（米）', dataIndex: 'accuracyMeters', align: 'right', width: 110},
+  {title: '速度（km/h）', dataIndex: 'speedKph', align: 'right', width: 120},
+  {title: '设备', dataIndex: 'deviceCode', width: 140},
+];
+
+/** 轨迹点转地图点：按采集时间升序，画成一条折线（`route` 开关）。 */
+const gpsMapPoints = computed<MapPoint[]>(() =>
+    gpsPoints.value
+        .filter((point) => isLocated(point))
+        .map((point, index) => ({
+          longitude: point.longitude,
+          latitude: point.latitude,
+          geomCrs: point.geomCrs,
+          label: `#${index + 1} ${point.capturedAt}`,
+          description: `接收 ${point.receivedAt}`,
+        }))
+);
+
+async function loadPlan(routeIdValue: Id) {
+  try {
+    planHistory.value = (await deliveryPlanApi.history(routeIdValue)).data ?? [];
+    proposal.value = planHistory.value[0];
+  } catch (e) {
+    planError.value = deliveryError(e);
+  }
+}
+
+async function proposePlan() {
+  if (!routeId.value) return;
+  planBusy.value = true;
+  planError.value = '';
+  try {
+    const created = (await deliveryPlanApi.propose(routeId.value)).data;
+    proposal.value = created;
+    await loadPlan(routeId.value);
+    message.success(`已生成排线建议，共 ${created.stopCount} 个停靠点`);
+  } catch (e) {
+    planError.value = deliveryError(e);
+  } finally {
+    planBusy.value = false;
+  }
+}
+
+async function applyPlan() {
+  const current = proposal.value;
+  const route = detail.value?.route;
+  if (!current || !route || routeId.value === undefined) return;
+  planBusy.value = true;
+  planError.value = '';
+  try {
+    // version 传线路版本：应用会写回停靠顺序，属于对线路的一次变更
+    await deliveryPlanApi.apply(current.id, route.version);
+    message.success('已应用建议，停靠顺序已更新');
+    await load();
+  } catch (e) {
+    planError.value = deliveryError(e);
+  } finally {
+    planBusy.value = false;
+  }
+}
+
+async function discardPlan() {
+  const current = proposal.value;
+  if (!current || routeId.value === undefined) return;
+  planBusy.value = true;
+  planError.value = '';
+  try {
+    await deliveryPlanApi.discard(current.id, current.version ?? 0);
+    message.success('已放弃建议，线路未改动');
+    await loadPlan(routeId.value);
+  } catch (e) {
+    planError.value = deliveryError(e);
+  } finally {
+    planBusy.value = false;
+  }
+}
+
+function showProposal(row: DeliveryPlanProposal) {
+  proposal.value = row;
+}
+
+async function loadGps() {
+  if (!routeId.value) return;
+  gpsBusy.value = true;
+  gpsError.value = '';
+  try {
+    gpsPoints.value = (await deliveryGpsApi.query({
+      routeId: routeId.value,
+      from: gpsRange.value?.[0],
+      to: gpsRange.value?.[1],
+    })).data ?? [];
+  } catch (e) {
+    gpsPoints.value = [];
+    gpsError.value = deliveryError(e);
+  } finally {
+    gpsBusy.value = false;
+  }
+}
+
+const printMode = ref<'orders' | 'customers'>('orders');const customerFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED'>('ALL');
 const customerStatusFilter = ref<'ALL' | 'PRINTED' | 'UNPRINTED' | 'PARTIAL'>('ALL');
 const ordersView = ref<RouteOrderView[]>([]);
 const customersView = ref<RouteCustomerView[]>([]);
@@ -670,6 +946,10 @@ async function loadPrint() {
 
 watch(tab, (value) => {
   if (value === 'print' && !printLoaded.value) loadPrint();
+  // 排线建议与轨迹都是「打开这一页才需要的」数据：不预先拉，避免每次开详情都多两次请求。
+  // 但每次切回来都重取 —— 建议可能已被别人生成/应用，缓存旧结果会让人对着过期建议点「应用」。
+  if (value === 'plan' && routeId.value != null) void loadPlan(routeId.value);
+  if (value === 'gps' && routeId.value != null) void loadGps();
 });
 
 async function recordPrint() {
@@ -1077,8 +1357,7 @@ defineExpose({open});
   overflow-wrap: anywhere;
 }
 
-.stop-heading {
-  display: flex;
+.stop-heading {  display: flex;
   justify-content: space-between;
   gap: 8px;
 }
@@ -1091,5 +1370,31 @@ defineExpose({open});
   .route-stops {
     max-height: none;
   }
+}
+
+/* 排线建议与轨迹（ADM-10） */
+.plan-actions {
+  margin: 12px 0;
+}
+
+.plan-meta {
+  margin-bottom: 12px;
+}
+
+.gps-query {
+  margin: 12px 0;
+}
+
+.num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.hint {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+}
+
+.ml {
+  margin-left: 8px;
 }
 </style>

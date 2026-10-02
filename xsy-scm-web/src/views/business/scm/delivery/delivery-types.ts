@@ -275,3 +275,81 @@ export function deliveryError(error: unknown): string {
     const response = error as { data?: { msg?: string }; response?: { data?: { msg?: string } }; message?: string };
     return response?.data?.msg ?? response?.response?.data?.msg ?? response?.message ?? '操作失败，请刷新后重试';
 }
+
+// ------------------------------------------------------------------
+// 辅助排线建议（ADM-10）
+// ------------------------------------------------------------------
+
+/** 建议里的一段：本段距离 + 累计距离。只有总距离时无法解释「为什么这单排在前面」。 */
+export interface DeliveryPlanLeg {
+    seq: number;
+    stopId: Id;
+    customerNameSnapshot?: string;
+    addressSnapshot?: string;
+    /** 四位定点字符串（米）。 */
+    legDistance?: string | null;
+    cumulativeDistance?: string | null;
+    longitude?: string | null;
+    latitude?: string | null;
+}
+
+export interface DeliveryPlanProposal {
+    id: Id;
+    routeId: Id;
+    status: 'PROPOSED' | 'APPLIED' | 'DISCARDED' | string;
+    providerCode: string;
+    providerVersion: string;
+    /** true = 估算（非真实路网 / 非实时交通）；界面必须显性提示。 */
+    estimated: boolean;
+    ruleCode: string;
+    stopCount: number;
+    totalDistance?: string | null;
+    legs?: DeliveryPlanLeg[];
+    createdAt?: string;
+    createdBy?: string;
+    appliedAt?: string | null;
+    appliedBy?: string | null;
+    discardedAt?: string | null;
+    discardedBy?: string | null;
+    version?: number;
+}
+
+export const planProposalStatuses: Record<string, { label: string; color: string }> = {
+    PROPOSED: {label: '待确认', color: 'blue'},
+    APPLIED: {label: '已应用', color: 'green'},
+    DISCARDED: {label: '已放弃', color: 'default'},
+};
+
+/** 排序规则的可读说明；后端只回代码，文案在前端维护。 */
+export const planRuleLabels: Record<string, string> = {
+    NEAREST_NEIGHBOUR_FROM_START: '从起点出发，每步去最近的未访问停靠点（启发式，不保证最短路径）',
+};
+
+// ------------------------------------------------------------------
+// GPS 轨迹（ADM-10）
+// ------------------------------------------------------------------
+
+/**
+ * 轨迹点。
+ *
+ * `capturedAt` 是设备采集时间（回放按它排序），`receivedAt` 是服务端接收时间 ——
+ * 设备可能离线补传，两者不是一回事。
+ */
+export interface DeliveryGpsEvent {
+    id: Id;
+    eventKey: string;
+    routeId: Id;
+    driverId?: Id | null;
+    deviceCode?: string | null;
+    capturedAt: string;
+    receivedAt: string;
+    longitude?: string | null;
+    latitude?: string | null;
+    geomCrs?: string | null;
+    accuracyMeters?: string | null;
+    speedKph?: string | null;
+    reportedBy?: string;
+    /** 重复上报（服务端已有同键记录）时置位；不是错误。 */
+    duplicated?: boolean;
+}
+

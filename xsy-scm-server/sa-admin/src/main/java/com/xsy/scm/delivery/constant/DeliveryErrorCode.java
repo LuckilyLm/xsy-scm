@@ -42,7 +42,16 @@ public enum DeliveryErrorCode implements ScmErrorCode {
     SIGN_REASON_REQUIRED(41118, "异常签收必须填写原因"),
 
     /** 签收结果只认 SIGNED / EXCEPTION 两个终态，其它值不是「未确认」的兜底。 */
-    SIGN_RESULT_INVALID(41119, "签收结果不合法，只能是正常签收或异常签收");
+    SIGN_RESULT_INVALID(41119, "签收结果不合法，只能是正常签收或异常签收"),
+
+    /** 排线建议不存在，或已被应用 / 放弃。 */
+    PLAN_PROPOSAL_NOT_FOUND(41160, "排线建议不存在或已被处理，请重新生成"),
+
+    /** 只有待确认的建议可以应用或放弃；已处理的建议不能二次处理。 */
+    PLAN_PROPOSAL_STATE_INVALID(41161, "排线建议当前状态不允许此操作"),
+
+    /** 设备时钟不可信，但不接受明显超前的采集时间（库里 CHECK 同口径兜底）。 */
+    GPS_CAPTURED_AT_INVALID(41162, "采集时间不能晚于当前时间");
     private final int code;
     private final String msg;
 }

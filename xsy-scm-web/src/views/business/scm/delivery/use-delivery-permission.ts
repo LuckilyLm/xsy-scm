@@ -34,6 +34,13 @@ export const DELIVERY_PERM = {
     ROUTE_COMPLETE: 'scm:delivery:route:complete',
     /** L3 订单签收：权限点在**订单**维度，不在线路维度（司机只持这一条，不持发车）。 */
     ORDER_SIGN: 'scm:delivery:order:sign',
+    /** ADM-10 排线建议：生成（只算建议）与应用（写回顺序）分开，避免「看一眼」顺手改线路。 */
+    PLAN_QUERY: 'scm:delivery:plan:query',
+    PLAN_PROPOSE: 'scm:delivery:plan:propose',
+    PLAN_APPLY: 'scm:delivery:plan:apply',
+    /** ADM-10 轨迹：查询（调度）与上报（司机 / 设备）分权。 */
+    GPS_QUERY: 'scm:delivery:gps:query',
+    GPS_REPORT: 'scm:delivery:gps:report',
     /** 显式放宽到全部司机范围；缺它的人只看得见排给自己的线路。 */
     SCOPE_ALL_QUERY: 'scm:delivery:scope:all:query',
     AMOUNT_QUERY: DELIVERY_AMOUNT_PERM,
