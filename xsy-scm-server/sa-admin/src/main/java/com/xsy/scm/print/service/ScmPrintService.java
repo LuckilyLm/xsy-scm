@@ -8,6 +8,7 @@ import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
 import com.xsy.scm.print.constant.ScmPrintErrorCode;
 import com.xsy.scm.print.constant.ScmPrintField;
 import com.xsy.scm.print.dao.ScmPrintRecordDao;
+import com.xsy.scm.print.dao.ScmPrintRecordQueryReadDao;
 import com.xsy.scm.print.domain.entity.ScmPrintRecordEntity;
 import com.xsy.scm.print.domain.entity.ScmPrintTemplateEntity;
 import com.xsy.scm.print.domain.form.ScmPrintActionForm;
@@ -17,6 +18,8 @@ import com.xsy.scm.print.domain.vo.ScmPrintRecordVO;
 import com.xsy.scm.print.domain.vo.ScmPrintRenderColumnVO;
 import com.xsy.scm.print.domain.vo.ScmPrintRenderFieldVO;
 import com.xsy.scm.print.domain.vo.ScmPrintRenderVO;
+import com.xsy.scm.print.domain.vo.ScmPrintTemplateVO;
+import com.xsy.scm.sorting.support.SortingAccess;
 import com.xsy.scm.print.support.ScmPrintSource;
 import com.xsy.scm.print.support.ScmPrintSourceProvider;
 import cn.dev33.satoken.stp.StpUtil;
@@ -61,7 +64,13 @@ public class ScmPrintService {
 
     private final ScmPrintRecordDao scmPrintRecordDao;
 
+    private final ScmPrintRecordQueryReadDao scmPrintRecordQueryReadDao;
+
     private final ScmIdempotencyService scmIdempotencyService;
+
+    private final ScmDataScopeService scmDataScopeService;
+
+    private final SortingAccess sortingAccess;
 
     /**
      * 打印预览（只读，不计次）。
@@ -72,12 +81,28 @@ public class ScmPrintService {
     @Transactional(readOnly = true)
     public ScmPrintRenderVO preview(String documentType, Long businessId, Long templateId) {
         ScmPrintDocumentTypeEnum type = requireType(documentType);
+        return render(type, businessId, template(type, templateId));
+    }
+
+    /** 打印操作者只需业务查看权，不依赖模板管理权限。 */
+    @Transactional(readOnly = true)
+    public List<ScmPrintTemplateVO> templateOptions(String documentType, Long businessId) {
+        requireVisible(requireType(documentType), businessId);
+        return scmPrintTemplateService.enabledOptions(documentType);
+    }
+
+    private ScmPrintTemplateEntity template(ScmPrintDocumentTypeEnum type, Long templateId) {
         ScmPrintTemplateEntity template = templateId == null ? scmPrintTemplateService.requireDefault(type.name())
                 : scmPrintTemplateService.requireEnabled(templateId);
         if (!type.name().equals(template.getDocumentType())) {
             // 拿采购单的模板去打印发货单：字段白名单完全不同，按「模板不存在」拒绝
             throw new ScmBusinessException(ScmPrintErrorCode.TEMPLATE_NOT_FOUND);
         }
+        return template;
+    }
+
+    private ScmPrintRenderVO render(ScmPrintDocumentTypeEnum type, Long businessId,
+            ScmPrintTemplateEntity template) {
         ScmPrintSourceProvider provider = scmPrintRenderService.provider(type);
         // 功能权限先判：数据源走的查询服务只做数据范围收窄，不判权限码。
         // 少了这一步，任何登录用户只要知道单据 id 就能把内容渲染出来。
@@ -103,13 +128,17 @@ public class ScmPrintService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ScmPrintRenderVO print(String documentType, Long businessId, ScmPrintActionForm form, String key) {
+        ScmPrintDocumentTypeEnum type = requireType(documentType);
+        requireVisible(type, businessId);
         var claim = scmIdempotencyService.claim(PRINT_SCOPE + ":" + documentType + ":" + businessId, key, form);
         if (claim.replay()) {
-            return scmIdempotencyService.replay(claim, ScmPrintRenderVO.class);
+            ScmPrintRenderVO replay = scmIdempotencyService.replay(claim, ScmPrintRenderVO.class);
+            maskAmount(type, replay);
+            return replay;
         }
 
-        ScmPrintRenderVO render = preview(documentType, businessId, form.getTemplateId());
-        ScmPrintTemplateEntity template = scmPrintTemplateService.requireEnabled(render.getTemplateId());
+        ScmPrintTemplateEntity template = template(type, form.getTemplateId());
+        ScmPrintRenderVO render = render(type, businessId, template);
 
         ScmPrintRecordEntity record = new ScmPrintRecordEntity();
         record.setDocumentType(render.getDocumentType());
@@ -149,7 +178,7 @@ public class ScmPrintService {
         }
         ScmPrintDocumentTypeEnum type = requireType(record.getDocumentType());
         // 重印同样要该单据的查看权：快照里有单据内容，只有记录查询权不该能读出它。
-        StpUtil.checkPermission(scmPrintRenderService.provider(type).queryPermission());
+        requireVisible(type, record.getBusinessId());
         ScmPrintTemplateModel model = ScmPrintTemplateModel.fromMap(record.getModelSnapshot());
 
         ScmPrintRenderVO render = new ScmPrintRenderVO();
@@ -175,12 +204,28 @@ public class ScmPrintService {
 
     @Transactional(readOnly = true)
     public PageResult<ScmPrintRecordVO> recordPage(ScmPrintRecordQueryForm query) {
+        if (query.getSortItemList() != null && !query.getSortItemList().isEmpty()) {
+            throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        List<String> visibleTypes = java.util.Arrays.stream(ScmPrintDocumentTypeEnum.values())
+                .filter(type -> ScmDataScopeService.hasPermission(scmPrintRenderService.provider(type).queryPermission()))
+                .map(Enum::name).toList();
+        if (visibleTypes.isEmpty()) {
+            return ScmDataScopeService.emptyPage(query);
+        }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<ScmPrintRecordVO> rows = scmPrintRecordDao.queryPage(page, query);
+        List<ScmPrintRecordVO> rows = scmPrintRecordQueryReadDao.queryPage(page, query, scmDataScopeService.resolve(),
+                visibleTypes, sortingAccess.crossAssignee());
         rows.forEach(row -> row.setDocumentTypeLabel(ScmPrintDocumentTypeEnum.isSupported(row.getDocumentType())
                 ? ScmPrintDocumentTypeEnum.valueOf(row.getDocumentType()).getLabel()
                 : row.getDocumentType()));
         return SmartPageUtil.convert2PageResult(page, rows);
+    }
+
+    private void requireVisible(ScmPrintDocumentTypeEnum type, Long businessId) {
+        ScmPrintSourceProvider provider = scmPrintRenderService.provider(type);
+        StpUtil.checkPermission(provider.queryPermission());
+        provider.requireVisible(businessId);
     }
 
     private void maskAmount(ScmPrintDocumentTypeEnum type, ScmPrintRenderVO render) {

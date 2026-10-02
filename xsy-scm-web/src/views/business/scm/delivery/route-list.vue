@@ -121,7 +121,7 @@
             <a-button
                 v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(record.status)"
                 type="link"
-                v-privilege="'scm:delivery:route:print'"
+                v-privilege="'scm:delivery:route:query'"
                 @click="printer?.open(record.id)"
             >打印
             </a-button

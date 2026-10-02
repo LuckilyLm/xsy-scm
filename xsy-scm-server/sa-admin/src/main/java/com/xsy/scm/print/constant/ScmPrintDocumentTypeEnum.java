@@ -1,5 +1,6 @@
 package com.xsy.scm.print.constant;
 
+import com.xsy.scm.delivery.permission.DeliveryPermission;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -18,9 +19,6 @@ import java.util.List;
  * 本来就看得到单价，打印不额外放宽也不额外收紧）。需要门禁的类型在这里声明，渲染阶段据此
  * 剔除金额字段 —— 授权信息不写进模板。
  *
- * <p>
- * 本轮只接入采购单；发货单与分拣小票的字段目录与数据源在后续补齐，接入方式是加一个枚举值
- * 加一个数据源实现，不改模板、渲染与冻结这三层。
  */
 @Getter
 @RequiredArgsConstructor
@@ -45,7 +43,46 @@ public enum ScmPrintDocumentTypeEnum {
                     new ScmPrintField("remainingQuantity", "未收数量", false, true),
                     new ScmPrintField("purchasePrice", "采购单价", true, true),
                     new ScmPrintField("lineAmount", "行金额", true, true)),
-            List.of(new ScmPrintField("totalAmount", "合计金额", true, true)));
+            List.of(new ScmPrintField("totalAmount", "合计金额", true, true))),
+
+    DELIVERY_NOTE("发货单", DeliveryPermission.AMOUNT_QUERY, List.of(
+            new ScmPrintField("routeName", "线路", false, false),
+            new ScmPrintField("deliveryDate", "配送日期", false, false),
+            new ScmPrintField("warehouseName", "仓库", false, false),
+            new ScmPrintField("driverName", "司机", false, false),
+            new ScmPrintField("driverPhone", "司机电话", false, false),
+            new ScmPrintField("vehicleNo", "车牌", false, false),
+            new ScmPrintField("remark", "线路备注", false, false)), List.of(
+                    new ScmPrintField("stopSeq", "停靠序", false, true),
+                    new ScmPrintField("customerName", "客户", false, false),
+                    new ScmPrintField("address", "收货地址", false, false),
+                    new ScmPrintField("receiverName", "收货人", false, false),
+                    new ScmPrintField("receiverPhone", "收货电话", false, false),
+                    new ScmPrintField("stopRemark", "停靠备注", false, false),
+                    new ScmPrintField("orderNo", "订单号", false, false),
+                    new ScmPrintField("expectDeliveryTime", "期望配送", false, false),
+                    new ScmPrintField("productName", "商品", false, false),
+                    new ScmPrintField("specName", "规格", false, false),
+                    new ScmPrintField("saleUnit", "单位", false, false),
+                    new ScmPrintField("orderedQuantity", "订购数量", false, true),
+                    new ScmPrintField("actualQuantity", "实重 / 实际量", false, true),
+                    new ScmPrintField("orderedLineAmount", "订单行金额", true, true),
+                    new ScmPrintField("settlementLineAmount", "结算行金额", true, true)),
+            List.of(new ScmPrintField("totalAmount", "订单合计金额", true, true))),
+
+    SORTING_TICKET("分拣小票", null, List.of(
+            new ScmPrintField("warehouseName", "仓库", false, false),
+            new ScmPrintField("assigneeName", "分拣员", false, false)), List.of(
+                    new ScmPrintField("orderNo", "订单号", false, false),
+                    new ScmPrintField("customerName", "客户", false, false),
+                    new ScmPrintField("productName", "商品", false, false),
+                    new ScmPrintField("skuCode", "SKU 编码", false, false),
+                    new ScmPrintField("specName", "规格", false, false),
+                    new ScmPrintField("saleUnit", "单位", false, false),
+                    new ScmPrintField("plannedQuantity", "计划量", false, true),
+                    new ScmPrintField("sortedQuantity", "实分量", false, true),
+                    new ScmPrintField("result", "分拣结果", false, false),
+                    new ScmPrintField("reason", "差异原因", false, false)), List.of());
 
     /**
      * 展示名（模板列表与错误信息用）。

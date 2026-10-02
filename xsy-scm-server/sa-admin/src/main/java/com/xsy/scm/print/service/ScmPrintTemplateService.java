@@ -50,6 +50,12 @@ public class ScmPrintTemplateService {
         return SmartPageUtil.convert2PageResult(page, rows.stream().map(ScmPrintTemplateService::toVO).toList());
     }
 
+    public List<ScmPrintTemplateVO> enabledOptions(String documentType) {
+        requireType(documentType);
+        return scmPrintTemplateDao.enabledOptions(documentType).stream()
+                .map(ScmPrintTemplateService::toVO).toList();
+    }
+
     /**
      * 可配置打印的单据类型清单（前端类型下拉据此渲染，不硬编码类型）。
      */

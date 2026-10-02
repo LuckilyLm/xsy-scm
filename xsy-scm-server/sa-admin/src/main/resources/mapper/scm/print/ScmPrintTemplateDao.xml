@@ -14,6 +14,13 @@
         version, deleted, created_at, updated_at, created_by, updated_by
     </sql>
 
+    <select id="enabledOptions" resultMap="templateMap">
+        SELECT <include refid="columns"/>
+        FROM scm_print_template
+        WHERE document_type = #{documentType} AND deleted = FALSE AND enabled_flag = TRUE
+        ORDER BY default_flag DESC, template_code, id
+    </select>
+
     <select id="queryPage" resultMap="templateMap">
         SELECT
         <include refid="columns"/>

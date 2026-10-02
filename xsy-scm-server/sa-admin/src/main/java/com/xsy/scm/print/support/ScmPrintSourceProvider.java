@@ -35,4 +35,7 @@ public interface ScmPrintSourceProvider {
      * 读取一张单据的打印来源；范围或状态不允许时抛该域既有异常。
      */
     ScmPrintSource load(Long businessId);
+
+    /** 仅校验当前数据范围；历史重印不受当前可打印状态影响，也不重算内容。 */
+    void requireVisible(Long businessId);
 }

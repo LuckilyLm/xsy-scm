@@ -145,7 +145,7 @@ async function reprint(record: PrintRecord) {
   error.value = '';
   try {
     const r = await printApi.reprint(record.id);
-    printRenders([r.data]);
+    await printRenders([r.data]);
     if ((r.data.hiddenFields ?? []).length) {
       message.warning(`已重印，但 ${r.data.hiddenFields?.length} 个金额字段因权限未打印`);
     }

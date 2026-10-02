@@ -80,6 +80,11 @@ export const printApi = {
         >,
 
     // ---- 渲染与打印 ----
+    templateOptions: (documentType: PrintDocumentType, businessId: Id) =>
+        getRequest(`/scm/print/${documentType}/${businessId}/templates`, {}) as unknown as Promise<
+            ScmResponse<PrintTemplate[]>
+        >,
+
     /** 预览：只读，不计次、不留痕。`templateId` 为空用默认模板。 */
     preview: (documentType: PrintDocumentType, businessId: Id, templateId?: Id) => {
         const query = templateId === undefined || templateId === null ? '' : `?templateId=${templateId}`;

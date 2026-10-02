@@ -43,7 +43,7 @@
             >
             <a-button
                 v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.route.status)"
-                v-privilege="'scm:delivery:route:print'"
+                v-privilege="'scm:delivery:route:query'"
                 @click="printer?.open(detail.route.id)"
             >打印发货单
             </a-button

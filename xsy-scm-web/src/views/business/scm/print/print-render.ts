@@ -27,7 +27,7 @@ function esc(value: unknown): string {
 /** `@page` 与字号按纸张给出：小票是定宽卷纸，字号与内边距都要收窄。 */
 function pageRule(render: PrintRender): string {
     if (render.paper === 'TICKET_80') {
-        return '@page{size:80mm auto;margin:4mm}';
+        return '@page{size:auto;margin:4mm}';
     }
     return render.orientation === 'LANDSCAPE'
         ? '@page{size:A4 landscape;margin:10mm}'
@@ -87,7 +87,7 @@ export function renderPrintDocument(renders: PrintRender[]): string {
         '<!doctype html><html lang="zh"><head><meta charset="utf-8"/><title>打印</title><style>' +
         (first ? pageRule(first) : '') +
         'body{font-family:system-ui,-apple-system,"Microsoft YaHei",sans-serif;color:#1F2329;margin:16px;}' +
-        'body.ticket{margin:2mm;font-size:11px;}' +
+        'body.ticket{width:72mm;margin:0;font-size:11px;}' +
         'body.a4{font-size:13px;}' +
         '.doc{page-break-after:always;}' +
         '.doc:last-child{page-break-after:auto;}' +
@@ -95,7 +95,7 @@ export function renderPrintDocument(renders: PrintRender[]): string {
         'body.ticket h2{font-size:13px;}' +
         '.meta{margin-bottom:10px;}' +
         '.meta .f,.totals .f{margin-right:18px;}' +
-        'table{border-collapse:collapse;width:100%;}' +
+        'table{border-collapse:collapse;width:100%;}thead{display:table-header-group}tr{break-inside:avoid}th,td{overflow-wrap:anywhere}' +
         'body.ticket table{font-size:10px;}' +
         'th,td{border:1px solid #E5E6EB;padding:4px 6px;text-align:left;}' +
         'body.ticket th,body.ticket td{border:none;border-bottom:1px dashed #999;padding:2px 3px;}' +
@@ -117,42 +117,40 @@ export function renderPrintDocument(renders: PrintRender[]): string {
  * 用 iframe 而非 `window.open` 是为避开弹窗拦截；打印完即移除节点。纯客户端动作，
  * 不触发任何业务状态变化（正式打印的记录已在调用前由接口冻结）。
  */
-export function printRenders(renders: PrintRender[]): void {
-    if (!renders.length) {
-        return;
-    }
+export async function printRenders(renders: PrintRender[]): Promise<void> {
+    if (!renders.length) return;
     const iframe = document.createElement('iframe');
     iframe.setAttribute('aria-hidden', 'true');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-
-    const done = () => {
-        iframe.removeEventListener('load', onload);
-        window.setTimeout(() => iframe.remove(), 0);
-    };
-    const onload = () => {
+    iframe.title = '单据打印';
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    try {
+        await new Promise<void>((resolve, reject) => {
+            const timeout = window.setTimeout(() => {
+                iframe.onload = null;
+                reject(new Error('打印页面加载超时，请重试'));
+            }, 15000);
+            iframe.onload = () => {
+                window.clearTimeout(timeout);
+                iframe.onload = null;
+                resolve();
+            };
+            iframe.srcdoc = renderPrintDocument(renders);
+            document.body.appendChild(iframe);
+        });
         const win = iframe.contentWindow;
-        if (!win) {
-            done();
-            return;
-        }
+        const doc = iframe.contentDocument;
+        if (!win || !doc) throw new Error('无法打开打印窗口，请重试');
+        await doc.fonts.ready;
+        // 某些浏览器的 print 非阻塞；保留 iframe 直到对话框关闭，避免打印空白页。
+        const cleanupTimer = window.setTimeout(() => iframe.remove(), 60000);
+        win.addEventListener('afterprint', () => {
+            window.clearTimeout(cleanupTimer);
+            iframe.remove();
+        }, {once: true});
         win.focus();
         win.print();
-        done();
-    };
-    iframe.addEventListener('load', onload);
-
-    const doc = iframe.contentDocument;
-    if (!doc) {
+    } catch (error) {
         iframe.remove();
-        return;
+        throw error;
     }
-    doc.open();
-    doc.write(renderPrintDocument(renders));
-    doc.close();
 }

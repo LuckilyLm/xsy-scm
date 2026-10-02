@@ -20,6 +20,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface ScmPrintTemplateDao extends BaseMapper<ScmPrintTemplateEntity> {
 
+    List<ScmPrintTemplateEntity> enabledOptions(@Param("documentType") String documentType);
+
     /**
      * 模板分页（联单据类型展示名由服务端补，不在 SQL 里）。
      */

@@ -16,6 +16,9 @@
       title="打印"
       width="1000px"
       :confirm-loading="printing"
+      :closable="!printing"
+      :mask-closable="!printing"
+      :keyboard="!printing"
       ok-text="打印"
       :ok-button-props="{ disabled: !canPrint }"
       @ok="print"
@@ -29,15 +32,18 @@
             v-model:value="templateId"
             :options="templateOptions"
             :loading="loading"
+            :disabled="loading || printing"
             style="width: 320px"
             placeholder="请选择打印模板"
             @change="reloadPreview"
         />
       </a-form-item>
       <a-form-item>
-        <a-button :loading="loading" @click="reloadPreview">刷新预览</a-button>
+        <a-button :loading="loading" :disabled="printing" @click="reloadPreview">刷新预览</a-button>
       </a-form-item>
     </a-form>
+
+    <a-alert v-if="registrationHint" class="banner" type="info" show-icon :message="registrationHint"/>
 
     <a-alert
         v-if="hiddenFields.length"
@@ -52,7 +58,7 @@
         class="banner"
         type="success"
         show-icon
-        message="已按冻结快照打印"
+        message="已生成打印快照"
         :description="frozenHint"
     />
 
@@ -87,6 +93,13 @@ const loading = ref(false);
 const printing = ref(false);
 const error = ref('');
 let requestId = 0;
+const frozenByBusiness = new Map<string, PrintRender>();
+
+const registrationHint = computed(() => props.documentType === 'SORTING_TICKET'
+    ? '出单后请在分拣单预览中登记打印次数。此处生成小票不自动登记。'
+    : props.documentType === 'DELIVERY_NOTE'
+        ? '此处打印整条线路的发货单。订单打印次数仍在「配送打印」中按订单或客户登记。'
+        : '');
 
 const templateOptions = computed(() =>
     templates.value.map((item) => ({
@@ -95,7 +108,8 @@ const templateOptions = computed(() =>
     }))
 );
 
-const canPrint = computed(() => renders.value.length > 0 && templateId.value !== undefined);
+const canPrint = computed(() => !loading.value && !printing.value && renders.value.length > 0
+    && renders.value.length === props.businessIds.length && templateId.value !== undefined);
 
 const hiddenFields = computed(() => {
   const keys = new Set<string>();
@@ -113,20 +127,20 @@ const frozenHint = computed(() => {
 
 const previewHtml = computed(() => renders.value.map(renderPrintHtml).join(''));
 
-async function loadTemplates() {
-  const r = await printApi.templateQuery({
-    pageNum: 1,
-    pageSize: 100,
-    documentType: props.documentType,
-    enabledFlag: true,
-  });
-  templates.value = r.data.list ?? [];
+async function loadTemplates(id: number) {
+  const firstId = props.businessIds[0];
+  if (firstId === undefined) return;
+  const r = await printApi.templateOptions(props.documentType, firstId);
+  if (id !== requestId) return;
+  templates.value = r.data ?? [];
   const preferred = templates.value.find((item) => item.defaultFlag) ?? templates.value[0];
   templateId.value = preferred?.id;
 }
 
 /** 预览：只读，不产生打印记录。 */
 async function reloadPreview() {
+  if (printing.value) return;
+  frozenByBusiness.clear();
   if (!props.businessIds.length) {
     renders.value = [];
     return;
@@ -134,9 +148,11 @@ async function reloadPreview() {
   const id = ++requestId;
   loading.value = true;
   error.value = '';
+  renders.value = [];
   try {
     const list: PrintRender[] = [];
     for (const businessId of props.businessIds) {
+      if (id !== requestId) return;
       const r = await printApi.preview(props.documentType, businessId, templateId.value);
       list.push(r.data);
     }
@@ -158,8 +174,8 @@ async function reloadPreview() {
 /**
  * 正式打印：逐张冻结后合并成一份文档打印。
  *
- * 先全部冻结再调起打印：中途失败时不会出现「一半已留痕、一半没有」的错觉 ——
- * 失败的那张不会有记录，用户重试即可（同键重放不会重复留痕）。
+ * 中途失败时保留已成功冻结的结果；同一对话框直接重试只提交尚未完成的单据。
+ * 刷新预览、切换模板或重新打开表示新的一次打印，清空本次结果。
  */
 async function print() {
   if (!canPrint.value) {
@@ -170,13 +186,20 @@ async function print() {
   try {
     const frozen: PrintRender[] = [];
     for (const businessId of props.businessIds) {
-      const r = await printApi.print(props.documentType, businessId, templateId.value);
-      frozen.push(r.data);
+      const cacheKey = String(businessId);
+      let render = frozenByBusiness.get(cacheKey);
+      if (!render) {
+        const r = await printApi.print(props.documentType, businessId, templateId.value);
+        render = r.data;
+        frozenByBusiness.set(cacheKey, render);
+      }
+      frozen.push(render);
     }
     renders.value = frozen;
     emit('printed');
-    printRenders(frozen);
-    message.success(`已打印 ${frozen.length} 张`);
+    await printRenders(frozen);
+    frozenByBusiness.clear();
+    message.success(`已打开 ${frozen.length} 张单据的打印窗口`);
   } catch (e) {
     error.value = printError(e);
   } finally {
@@ -186,8 +209,16 @@ async function print() {
 
 // 打开时重载模板与预览；关闭时清空，避免下次打开看到上一次的内容
 watch(
-    () => props.open,
-    (open) => {
+    () => JSON.stringify([props.open, props.documentType, ...props.businessIds.map(String)]),
+    () => {
+      const id = ++requestId;
+      frozenByBusiness.clear();
+      templates.value = [];
+      templateId.value = undefined;
+      renders.value = [];
+      error.value = '';
+      loading.value = props.open;
+      const open = props.open;
       if (!open) {
         renders.value = [];
         error.value = '';
@@ -195,16 +226,27 @@ watch(
       }
       void (async () => {
         try {
-          await loadTemplates();
+          await loadTemplates(id);
+          if (id !== requestId) return;
+          if (!templates.value.length) {
+            error.value = '没有可用模板，请联系管理员启用该单据类型的模板。';
+            loading.value = false;
+            return;
+          }
           await reloadPreview();
         } catch (e) {
-          error.value = printError(e);
+          if (id === requestId) {
+            error.value = printError(e);
+            loading.value = false;
+          }
         }
       })();
-    }
+    },
+    {immediate: true}
 );
 
 function close() {
+  if (printing.value) return;
   emit('close');
 }
 </script>

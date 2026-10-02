@@ -44,6 +44,11 @@ public class PurchaseOrderPrintSourceProvider implements ScmPrintSourceProvider 
     }
 
     @Override
+    public void requireVisible(Long businessId) {
+        purchaseQueryService.orderDetail(businessId);
+    }
+
+    @Override
     public ScmPrintSource load(Long businessId) {
         PurchaseOrderVO order = purchaseQueryService.orderDetail(businessId);
 

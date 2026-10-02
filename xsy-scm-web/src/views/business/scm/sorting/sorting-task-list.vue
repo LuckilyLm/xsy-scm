@@ -116,6 +116,8 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="4">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
+            <a-button v-if="SCM_SORTING_PRINTABLE_STATUS.includes(record.status)" type="link" size="small"
+                      v-privilege="'scm:sorting:task:query'" @click="openTicket(record.id)">小票</a-button>
             <a-button
                 v-if="SCM_SORTING_PRINTABLE_STATUS.includes(record.status)"
                 type="link"
@@ -272,6 +274,8 @@
           </div>
           <a-space wrap>
             <a-tag :color="SCM_SORTING_TASK_STATUS_COLOR[detail.task.status]">{{ statusDesc(detail.task.status) }}</a-tag>
+            <a-button v-if="SCM_SORTING_PRINTABLE_STATUS.includes(detail.task.status)"
+                      v-privilege="'scm:sorting:task:query'" @click="openTicket(detail.task.id)">打印小票</a-button>
             <a-button
                 v-if="SCM_SORTING_PRINTABLE_STATUS.includes(detail.task.status)"
                 v-privilege="'scm:sorting:task:print'"
@@ -453,6 +457,8 @@
   </a-modal>
 
   <!-- 打印：预览走只读 GET，「登记打印」才是计次的 POST 命令；两者绝不混用同一个入口 -->
+  <PrintDocumentModal :open="ticketOpen" document-type="SORTING_TICKET"
+                      :business-ids="ticketTaskId === undefined ? [] : [ticketTaskId]" @close="ticketOpen = false"/>
   <a-modal v-model:open="printOpen" title="分拣单打印预览" :width="1000" :footer="null">
     <a-alert v-if="printError" type="error" show-icon :message="printError"/>
     <div class="print-toolbar">
@@ -460,6 +466,8 @@
         预览不累加打印次数；确认已实际出单后再登记，登记只代表出单动作发生，不代表库存或状态变化。
       </a-typography-text>
       <a-space>
+        <a-button :disabled="printLoading || !print" @click="openTicket(printTaskId)"
+                  v-privilege="'scm:sorting:task:query'">选择模板并打印小票</a-button>
         <a-button :disabled="printLoading || !print" @click="loadPrintPreview">重新预览</a-button>
         <a-button
             type="primary"
@@ -523,6 +531,7 @@
 </template>
 
 <script setup lang="ts">
+import PrintDocumentModal from '../print/print-document-modal.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -1062,6 +1071,8 @@ async function submitCreate() {
 // ------------------------------------------------------------------ 打印
 
 const printOpen = ref(false);
+const ticketOpen = ref(false);
+const ticketTaskId = ref<Id>();
 const printLoading = ref(false);
 const printing = ref(false);
 const printError = ref('');
@@ -1072,6 +1083,12 @@ const print = ref<SortingPrint>();
  */
 const printVersion = ref<number>();
 let printTaskId: Id | undefined;
+
+function openTicket(id?: Id) {
+    if (id === undefined) return;
+    ticketTaskId.value = id;
+    ticketOpen.value = true;
+}
 
 function openPrint(record: SortingTask) {
     printTaskId = record.id;

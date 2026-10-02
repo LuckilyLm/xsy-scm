@@ -79,7 +79,8 @@ public class ScmPrintController {
      * 可配置打印的单据类型清单（前端类型下拉用）。
      */
     @GetMapping("/template/document-types")
-    @SaCheckPermission(ScmPrintPermission.TEMPLATE_QUERY)
+    @SaCheckPermission(value = {ScmPrintPermission.TEMPLATE_QUERY, ScmPrintPermission.RECORD_QUERY},
+            mode = cn.dev33.satoken.annotation.SaMode.OR)
     public ResponseDTO<List<ScmPrintDocumentTypeVO>> documentTypes() {
         return ResponseDTO.ok(scmPrintTemplateService.documentTypes());
     }
@@ -128,6 +129,12 @@ public class ScmPrintController {
     // ------------------------------------------------------------------
     // 渲染与打印
     // ------------------------------------------------------------------
+
+    @GetMapping("/{documentType}/{businessId}/templates")
+    public ResponseDTO<List<ScmPrintTemplateVO>> templateOptions(@PathVariable("documentType") String documentType,
+            @PathVariable("businessId") Long businessId) {
+        return ResponseDTO.ok(scmPrintService.templateOptions(documentType, businessId));
+    }
 
     /**
      * 打印预览：只读，不计次、不留痕。
