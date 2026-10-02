@@ -30,10 +30,12 @@
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceiptEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot,
+                                     settlement_customer_id, settlement_customer_name_snapshot,
                                      amount, method, received_at, entry_type, reverse_of_id,
                                      reason, external_reference, remark, version, deleted,
                                      created_at, updated_at, created_by, updated_by)
         VALUES (#{receiptNo}, #{customerId}, #{customerNameSnapshot},
+                #{settlementCustomerId}, #{settlementCustomerNameSnapshot},
                 #{amount}, #{method}, #{receivedAt}, #{entryType}, #{reverseOfId},
                 #{reason}, #{externalReference}, #{remark}, 0, FALSE,
                 #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
@@ -54,6 +56,8 @@
                r.receipt_no AS receiptNo,
                r.customer_id AS customerId,
                r.customer_name_snapshot AS customerName,
+               r.settlement_customer_id AS settlementCustomerId,
+               r.settlement_customer_name_snapshot AS settlementCustomerName,
                r.amount,
                CASE WHEN r.entry_type = 'NORMAL' THEN r.amount - reversed.reversedAmount ELSE 0 END AS effectiveAmount,
                CASE WHEN r.entry_type = 'NORMAL' THEN used.usedAmount ELSE 0 END AS usedAmount,

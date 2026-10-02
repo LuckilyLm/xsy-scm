@@ -12,8 +12,11 @@
             resultType="com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto">
         SELECT c.id         AS customerId,
                c.name       AS customerName,
-               c.seller_id  AS sellerId
+               c.seller_id  AS sellerId,
+               COALESCE(c.settlement_customer_id, c.id) AS settlementCustomerId,
+               COALESCE(sc.name, c.name) AS settlementCustomerName
         FROM customer c
+        LEFT JOIN customer sc ON sc.id = c.settlement_customer_id AND sc.deleted = FALSE
         WHERE c.id = #{customerId}
           AND c.deleted = FALSE
     </select>

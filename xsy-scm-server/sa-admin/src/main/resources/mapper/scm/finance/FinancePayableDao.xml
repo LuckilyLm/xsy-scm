@@ -112,7 +112,7 @@
                     WHEN GREATEST(p.amount - red.redAmount - written.writtenOffAmount, 0) = 0
                          AND GREATEST(written.writtenOffAmount - (p.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
                     ELSE 'PARTIAL' END AS settleState,
-               p.event_at AS eventAt,
+               p.event_at AS eventAt, p.due_date AS dueDate,
                p.reason
         FROM finance_payable p
         LEFT JOIN finance_payable original ON original.id = p.original_payable_id

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableDao">
+    <resultMap id="receivableEntity" type="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity" autoMapping="true">
+        <result column="credit_rule_snapshot" property="creditRuleSnapshot" typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+    </resultMap>
 
     <select id="nextReceivableNo" resultType="long">
         SELECT nextval('finance_receivable_no_seq')
@@ -19,12 +22,15 @@
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,
-                                        customer_id, customer_name_snapshot, entry_type,
-                                        original_receivable_id, amount, event_at, reason,
+                                        customer_id, customer_name_snapshot, settlement_customer_id,
+                                        settlement_customer_name_snapshot, entry_type,
+                                        original_receivable_id, amount, event_at, reason, due_date, credit_rule_snapshot,
                                         version, deleted, created_at, updated_at, created_by, updated_by)
         VALUES (#{receivableNo}, #{sourceType}, #{sourceId}, #{orderId},
-                #{customerId}, #{customerNameSnapshot}, #{entryType},
-                #{originalReceivableId}, #{amount}, #{eventAt}, #{reason},
+                #{customerId}, #{customerNameSnapshot}, #{settlementCustomerId},
+                #{settlementCustomerNameSnapshot}, #{entryType},
+                #{originalReceivableId}, #{amount}, #{eventAt}, #{reason}, #{dueDate},
+                #{creditRuleSnapshot, typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
                 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
         ON CONFLICT (source_type, source_id)
             WHERE deleted = FALSE DO NOTHING
@@ -32,8 +38,9 @@
 
     <!-- 一订单的正常应收最多一张（uk_finance_receivable_source_active 的同一口径）。 -->
     <select id="selectNormalByOrder"
-            resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity">
+            resultMap="receivableEntity">
         SELECT id, receivable_no, source_type, source_id, order_id, customer_id,
+               settlement_customer_id, settlement_customer_name_snapshot, due_date, credit_rule_snapshot,
                customer_name_snapshot, entry_type, original_receivable_id, amount, event_at,
                reason, version, deleted, created_at, updated_at, created_by, updated_by
         FROM finance_receivable
@@ -49,6 +56,7 @@
                r.receivable_no AS receivableNo,
                r.order_id AS orderId,
                r.customer_id AS customerId,
+               r.settlement_customer_id AS settlementCustomerId,
                r.customer_name_snapshot AS customerNameSnapshot,
                r.entry_type AS entryType,
                r.amount,
@@ -71,6 +79,7 @@
                r.receivable_no AS receivableNo,
                r.order_id AS orderId,
                r.customer_id AS customerId,
+               r.settlement_customer_id AS settlementCustomerId,
                r.customer_name_snapshot AS customerNameSnapshot,
                r.entry_type AS entryType,
                r.amount,
@@ -91,7 +100,7 @@
           AND deleted = FALSE
     </select>
 
-    <select id="selectActiveById" resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity">
+    <select id="selectActiveById" resultMap="receivableEntity">
         SELECT *
         FROM finance_receivable
         WHERE id = #{receivableId}
@@ -105,6 +114,8 @@
                so.order_no AS orderNo,
                r.customer_id AS customerId,
                r.customer_name_snapshot AS customerName,
+               r.settlement_customer_id AS settlementCustomerId,
+               r.settlement_customer_name_snapshot AS settlementCustomerName,
                r.source_type AS sourceType,
                r.source_id AS sourceId,
                r.entry_type AS entryType,
@@ -124,7 +135,7 @@
                     WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
                          AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
                     ELSE 'PARTIAL' END AS settleState,
-               r.event_at AS eventAt,
+               r.event_at AS eventAt, r.due_date AS dueDate,
                r.reason
         FROM finance_receivable r
         JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE

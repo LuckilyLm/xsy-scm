@@ -5,7 +5,7 @@
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
         c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.status, c.settle_mode,
-        c.credit_limit, c.parent_customer_id, c.seller_id, c.supplier_id,
+        c.credit_limit, c.parent_customer_id, c.settlement_customer_id, c.seller_id, c.supplier_id,
         c.contact_name, c.contact_phone, c.address,
         c.credit_period_type, c.credit_amount_threshold, c.credit_period_value, c.credit_period_unit,
         c.settle_day, c.remark, c.created_at, c.updated_at, c.created_by, c.updated_by
@@ -62,6 +62,13 @@
         FROM customer
         WHERE customer_type_id = #{typeId}
           AND deleted = FALSE
+    </select>
+
+    <select id="lock" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
+        SELECT <include refid="customerColumns"/>
+        FROM customer c
+        WHERE c.id = #{customerId} AND c.deleted = FALSE
+        FOR UPDATE
     </select>
 
     <select id="selectActiveByCodes" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">

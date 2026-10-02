@@ -16,7 +16,9 @@
                ro.signed_at             AS signedAt,
                ro.signed_by             AS signedBy,
                o.customer_id            AS customerId,
-               o.customer_name_snapshot AS customerNameSnapshot
+               o.customer_name_snapshot AS customerNameSnapshot,
+               o.settlement_customer_id AS settlementCustomerId,
+               o.settlement_customer_name_snapshot AS settlementCustomerNameSnapshot
         FROM delivery_route_order ro
                  JOIN sales_order o ON o.id = ro.order_id
         WHERE ro.id = #{deliveryRouteOrderId}

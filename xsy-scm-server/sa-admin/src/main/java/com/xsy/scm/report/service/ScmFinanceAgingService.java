@@ -50,8 +50,8 @@ public class ScmFinanceAgingService {
         if (denied(form, scope)) {
             return List.of();
         }
-        return ScmReportExportGuard.exportRows(size ->
-                financeAgingDao.query(new Page<>(1, size, false), form, endAt, scope));
+        return ScmReportExportGuard
+                .exportRows(size -> financeAgingDao.query(new Page<>(1, size, false), form, endAt, scope));
     }
 
     private OffsetDateTime validate(ScmFinanceAgingQueryForm form) {

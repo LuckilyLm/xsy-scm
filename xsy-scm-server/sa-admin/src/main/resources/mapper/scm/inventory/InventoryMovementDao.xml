@@ -57,8 +57,8 @@
         m.operator,
         m.created_at,
         r.receipt_no,
-        COALESCE(ob.outbound_no, st.stocktake_no, lg.loss_gain_no, tr.transfer_no, cv.conversion_no) AS
-        source_document_no,
+        COALESCE(ob.outbound_no, st.stocktake_no, lg.loss_gain_no, tr.transfer_no, cv.conversion_no,
+                 returned.return_no) AS source_document_no,
         w.warehouse_code,
         w.name AS warehouse_name,
         k.sku_code,
@@ -96,6 +96,10 @@
         LEFT JOIN inventory_conversion cv
         ON cv.id = m.source_document_id
         AND m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
+        -- 销售退货入库流水以退货单为头级来源，展示退货单号。
+        LEFT JOIN order_return returned
+        ON returned.id = m.source_document_id
+        AND m.source_document_type = 'SALES_RETURN_RECEIPT_ITEM'
         LEFT JOIN warehouse w ON w.id = m.warehouse_id
         LEFT JOIN product_sku k ON k.id = m.sku_id
         LEFT JOIN product_spu p ON p.id = k.spu_id
@@ -162,4 +166,14 @@
           AND source_document_item_id = #{sourceDocumentItemId}
     </select>
 
+    <select id="listSalesOutAllocations" resultType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">
+        SELECT m.*
+        FROM inventory_movement m
+        JOIN inventory_outbound_item oi ON oi.id = m.source_document_item_id AND oi.deleted = FALSE
+        WHERE m.deleted = FALSE
+          AND m.movement_type = 'SALES_OUT'
+          AND m.source_document_type = 'SALES_OUTBOUND_ITEM'
+          AND oi.sales_order_item_id = #{orderItemId}
+        ORDER BY m.occurred_at, m.id
+    </select>
 </mapper>
