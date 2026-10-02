@@ -30,32 +30,27 @@ public class CustomerTypePriceController {
 
     @PostMapping("/query")
     @SaCheckPermission(PricingPermission.TYPE_PRICE_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    CustomerTypePriceVO>> query(@Valid @RequestBody CustomerTypePriceQueryForm form) {
+    public ResponseDTO<PageResult<CustomerTypePriceVO>> query(@Valid @RequestBody CustomerTypePriceQueryForm form) {
         return ResponseDTO.ok(customerTypePriceQueryService.query(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(PricingPermission.TYPE_PRICE_QUERY)
-    public ResponseDTO<
-            CustomerTypePriceVO> detail(@PathVariable("id") Long customerTypePriceId) {
+    public ResponseDTO<CustomerTypePriceVO> detail(@PathVariable("id") Long customerTypePriceId) {
         return ResponseDTO.ok(customerTypePriceQueryService.detail(customerTypePriceId));
     }
 
     @PostMapping("/add")
     @SaCheckPermission(PricingPermission.TYPE_PRICE_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> add(@Valid @RequestBody CustomerTypePriceAddForm form) {
+    public ResponseDTO<Long> add(@Valid @RequestBody CustomerTypePriceAddForm form) {
         return ResponseDTO.ok(customerTypePriceService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(PricingPermission.TYPE_PRICE_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@Valid @RequestBody CustomerTypePriceUpdateForm form) {
+    public ResponseDTO<String> update(@Valid @RequestBody CustomerTypePriceUpdateForm form) {
         customerTypePriceService.update(form);
         return ResponseDTO.ok();
     }
@@ -63,8 +58,7 @@ public class CustomerTypePriceController {
     @PostMapping("/delete")
     @SaCheckPermission(PricingPermission.TYPE_PRICE_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@Valid @RequestBody CustomerTypePriceDeleteForm form) {
+    public ResponseDTO<String> delete(@Valid @RequestBody CustomerTypePriceDeleteForm form) {
         customerTypePriceService.delete(form);
         return ResponseDTO.ok();
     }

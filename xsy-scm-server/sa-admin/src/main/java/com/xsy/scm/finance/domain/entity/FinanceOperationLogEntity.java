@@ -60,17 +60,13 @@ public class FinanceOperationLogEntity {
      * 改前快照：生成类动作为 {@code null}；核销与反向类为目标的派生余额快照。
      */
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
-    private Map<
-            String,
-            Object> beforeData;
+    private Map<String, Object> beforeData;
 
     /**
      * 改后快照：生成类为单头快照；核销与反向类为写入后的派生余额快照。
      */
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
-    private Map<
-            String,
-            Object> afterData;
+    private Map<String, Object> afterData;
 
     private OffsetDateTime createdAt;
 

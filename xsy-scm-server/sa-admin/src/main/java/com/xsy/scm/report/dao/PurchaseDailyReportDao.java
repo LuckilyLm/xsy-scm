@@ -16,13 +16,11 @@ import com.xsy.scm.report.domain.vo.PurchaseDailyReportVO;
 public interface PurchaseDailyReportDao {
     int claimDate(@Param("reportDate") LocalDate reportDate);
 
-    void insertRows(@Param("reportDate") LocalDate reportDate,
-            @Param("rows") List<PurchaseDailySnapshotRow> rows);
+    void insertRows(@Param("reportDate") LocalDate reportDate, @Param("rows") List<PurchaseDailySnapshotRow> rows);
 
     OffsetDateTime findGeneratedAt(@Param("reportDate") LocalDate reportDate);
 
-    List<PurchaseDailyReportVO.ProductRow> queryProducts(Page<?> page,
-            @Param("query") PurchaseDailyQueryForm query,
+    List<PurchaseDailyReportVO.ProductRow> queryProducts(Page<?> page, @Param("query") PurchaseDailyQueryForm query,
             @Param("warehouseScope") ScmValueScope warehouseScope,
             @Param("purchaserScope") ScmValueScope purchaserScope);
 }

@@ -26,8 +26,7 @@ public class DeliveryCandidateOrderQueryService {
     private final DeliveryEligibilityPolicy policy;
     private final ScmDataScopeService dataScopeService;
 
-    public PageResult<
-            DeliveryCandidateVO> query(DeliveryQueryForm form) {
+    public PageResult<DeliveryCandidateVO> query(DeliveryQueryForm form) {
         if (!ScmDataScopeService.hasPermission(DeliveryPermission.ROUTE_PLAN))
             throw new ScmDataScopeException();
         var page = DeliveryRouteQueryService.page(form);

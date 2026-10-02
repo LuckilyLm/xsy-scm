@@ -37,25 +37,21 @@ public class CustomerTypeController {
 
     @PostMapping("/query")
     @SaCheckPermission(CustomerPermission.TYPE_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    CustomerTypeVO>> query(@Valid @RequestBody CustomerTypeQueryForm form) {
+    public ResponseDTO<PageResult<CustomerTypeVO>> query(@Valid @RequestBody CustomerTypeQueryForm form) {
         return ResponseDTO.ok(customerTypeService.query(form));
     }
 
     @PostMapping("/add")
     @SaCheckPermission(CustomerPermission.TYPE_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> add(@Valid @RequestBody CustomerTypeAddForm form) {
+    public ResponseDTO<Long> add(@Valid @RequestBody CustomerTypeAddForm form) {
         return ResponseDTO.ok(customerTypeService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(CustomerPermission.TYPE_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@Valid @RequestBody CustomerTypeUpdateForm form) {
+    public ResponseDTO<String> update(@Valid @RequestBody CustomerTypeUpdateForm form) {
         customerTypeService.update(form);
         return ResponseDTO.ok();
     }
@@ -63,17 +59,14 @@ public class CustomerTypeController {
     @PostMapping("/delete")
     @SaCheckPermission(CustomerPermission.TYPE_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@Valid @RequestBody CustomerTypeDeleteForm form) {
+    public ResponseDTO<String> delete(@Valid @RequestBody CustomerTypeDeleteForm form) {
         customerTypeService.delete(form);
         return ResponseDTO.ok();
     }
 
     @PostMapping("/option/list")
     @SaCheckPermission(CustomerPermission.TYPE_QUERY)
-    public ResponseDTO<
-            List<
-                    CustomerTypeVO>> optionList() {
+    public ResponseDTO<List<CustomerTypeVO>> optionList() {
         return ResponseDTO.ok(customerTypeService.optionList());
     }
 }

@@ -16,9 +16,7 @@ public class ProductSkuOptionVO {
     private String skuCode;
     private String productName;
     private String specName;
-    private Map<
-            String,
-            String> specValues;
+    private Map<String, String> specValues;
     private String saleUnit;
     private String productType;
     private String status;

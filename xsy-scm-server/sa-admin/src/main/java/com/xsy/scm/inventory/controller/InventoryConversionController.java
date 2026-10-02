@@ -48,16 +48,13 @@ public class InventoryConversionController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.CONVERSION_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    InventoryConversionVO>> query(@Valid @RequestBody InventoryConversionQueryForm form) {
+    public ResponseDTO<PageResult<InventoryConversionVO>> query(@Valid @RequestBody InventoryConversionQueryForm form) {
         return ResponseDTO.ok(inventoryConversionQueryService.queryPage(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(InventoryPermission.CONVERSION_QUERY)
-    public ResponseDTO<
-            InventoryConversionVO> detail(@PathVariable("id") Long conversionId) {
+    public ResponseDTO<InventoryConversionVO> detail(@PathVariable("id") Long conversionId) {
         return ResponseDTO.ok(inventoryConversionQueryService.detail(conversionId));
     }
 
@@ -67,8 +64,7 @@ public class InventoryConversionController {
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.CONVERSION_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> create(@Valid @RequestBody InventoryConversionAddForm form) {
+    public ResponseDTO<Long> create(@Valid @RequestBody InventoryConversionAddForm form) {
         return ResponseDTO.ok(inventoryConversionService.create(form));
     }
 
@@ -78,8 +74,8 @@ public class InventoryConversionController {
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.CONVERSION_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@PathVariable("id") Long conversionId, @Valid @RequestBody InventoryConversionAddForm form) {
+    public ResponseDTO<String> update(@PathVariable("id") Long conversionId,
+            @Valid @RequestBody InventoryConversionAddForm form) {
         inventoryConversionService.update(conversionId, form);
         return ResponseDTO.ok();
     }
@@ -93,9 +89,8 @@ public class InventoryConversionController {
     @PostMapping("/approve/{id}")
     @SaCheckPermission(InventoryPermission.CONVERSION_APPROVE)
     @OperateLog
-    public ResponseDTO<
-            String> approve(@PathVariable("id") Long conversionId,
-                    @Valid @RequestBody InventoryConversionAuditForm form) {
+    public ResponseDTO<String> approve(@PathVariable("id") Long conversionId,
+            @Valid @RequestBody InventoryConversionAuditForm form) {
         inventoryConversionService.approve(conversionId, form);
         return ResponseDTO.ok();
     }
@@ -106,9 +101,8 @@ public class InventoryConversionController {
     @PostMapping("/reject/{id}")
     @SaCheckPermission(InventoryPermission.CONVERSION_REJECT)
     @OperateLog
-    public ResponseDTO<
-            String> reject(@PathVariable("id") Long conversionId,
-                    @Valid @RequestBody InventoryConversionAuditForm form) {
+    public ResponseDTO<String> reject(@PathVariable("id") Long conversionId,
+            @Valid @RequestBody InventoryConversionAuditForm form) {
         inventoryConversionService.reject(conversionId, form);
         return ResponseDTO.ok();
     }
@@ -119,8 +113,7 @@ public class InventoryConversionController {
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.CONVERSION_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@PathVariable("id") Long conversionId) {
+    public ResponseDTO<String> delete(@PathVariable("id") Long conversionId) {
         inventoryConversionService.delete(conversionId);
         return ResponseDTO.ok();
     }

@@ -41,8 +41,7 @@ public class DeliveryRouteQueryService {
     private final DeliveryRouteDao deliveryRouteDao;
     private final ScmDataScopeService dataScopeService;
 
-    public static Page<
-            ?> page(DeliveryQueryForm form) {
+    public static Page<?> page(DeliveryQueryForm form) {
         // SQL owns deterministic sorting. Never pass arbitrary client sort columns to MyBatis.
         if (form.getPageNum() == null || form.getPageNum() < 1 || form.getPageSize() == null || form.getPageSize() < 1
                 || form.getPageSize() > 500 || form.getSortItemList() != null && !form.getSortItemList().isEmpty())
@@ -50,8 +49,7 @@ public class DeliveryRouteQueryService {
         return SmartPageUtil.convert2PageQuery(form);
     }
 
-    public PageResult<
-            DeliveryRouteVO> query(DeliveryQueryForm form) {
+    public PageResult<DeliveryRouteVO> query(DeliveryQueryForm form) {
         var page = page(form);
         var scope = dataScopeService.resolve().getDriverScope();
         // 没有任何司机授权时直接给空分页：既不跑恒假谓词，也不让空集合渲染成 IN ()。
@@ -68,8 +66,7 @@ public class DeliveryRouteQueryService {
         result.setRoute(route);
         // 停靠点与订单关系都挂在已经放行的线路下，因此不再各自收窄：收窄子集会破坏聚合口径。
         result.setStops(deliveryQueryDao.stops(id));
-        result.setOrders(deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<
-                DeliveryRouteOrderEntity>()
+        result.setOrders(deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
                 .eq(DeliveryRouteOrderEntity::getRouteId, id)
                 .eq(!ScmDeliveryRouteStatusEnum.CANCELLED.name().equals(route.getStatus()),
                         DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
@@ -90,15 +87,13 @@ public class DeliveryRouteQueryService {
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public java.util.List<
-            DeliveryOrderViewVO> orderView(Long id) {
+    public java.util.List<DeliveryOrderViewVO> orderView(Long id) {
         scopedRoute(id, dataScopeService.resolve());
         return DeliveryVisibility.current().orderView(deliveryQueryDao.orderView(id));
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public java.util.List<
-            DeliveryCustomerViewVO> customerView(Long id) {
+    public java.util.List<DeliveryCustomerViewVO> customerView(Long id) {
         scopedRoute(id, dataScopeService.resolve());
         return DeliveryVisibility.current().customerView(deliveryQueryDao.customerView(id));
     }

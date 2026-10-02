@@ -17,10 +17,7 @@ import java.time.format.ResolverStyle;
  * 接受 SCM 展示时间（{@code yyyy-MM-dd HH:mm:ss}）和 ISO-8601 时间。 展示格式按 {@link ScmOffsetDateTimeSerializer#DISPLAY_ZONE} 解读，ISO
  * 输入保留其偏移量。 {@code null} 或空白字符串返回 {@code null}；非法日期与非字符串输入拒绝解析。
  */
-public class ScmOffsetDateTimeDeserializer
-        extends
-            JsonDeserializer<
-                    OffsetDateTime> {
+public class ScmOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
 
     private static final DateTimeFormatter INPUT_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss")
             .withResolverStyle(ResolverStyle.STRICT);

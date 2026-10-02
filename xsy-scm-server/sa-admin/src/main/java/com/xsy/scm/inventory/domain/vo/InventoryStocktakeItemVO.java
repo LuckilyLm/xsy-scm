@@ -29,9 +29,7 @@ public class InventoryStocktakeItemVO {
 
     private String productName;
 
-    private Map<
-            String,
-            String> specValues;
+    private Map<String, String> specValues;
 
     /**
      * 账面量快照（保存草稿那一刻）。

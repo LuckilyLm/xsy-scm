@@ -43,9 +43,7 @@ public class WarehouseScopeController {
      */
     @GetMapping("/employees")
     @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
-    public ResponseDTO<
-            List<
-                    WarehouseScopeEmployeeVO>> employees(@RequestParam Long warehouseId) {
+    public ResponseDTO<List<WarehouseScopeEmployeeVO>> employees(@RequestParam Long warehouseId) {
         return ResponseDTO.ok(warehouseScopeService.listEmployees(warehouseId));
     }
 
@@ -54,9 +52,7 @@ public class WarehouseScopeController {
      */
     @GetMapping("/warehouses")
     @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
-    public ResponseDTO<
-            List<
-                    WarehouseScopeWarehouseVO>> warehouses(@RequestParam Long employeeId) {
+    public ResponseDTO<List<WarehouseScopeWarehouseVO>> warehouses(@RequestParam Long employeeId) {
         return ResponseDTO.ok(warehouseScopeService.listWarehouses(employeeId));
     }
 
@@ -66,8 +62,7 @@ public class WarehouseScopeController {
     @PostMapping("/update")
     @SaCheckPermission(WarehousePermission.SCOPE_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@Valid @RequestBody WarehouseScopeUpdateForm form) {
+    public ResponseDTO<String> update(@Valid @RequestBody WarehouseScopeUpdateForm form) {
         warehouseScopeService.update(form);
         return ResponseDTO.ok();
     }

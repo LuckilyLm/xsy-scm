@@ -169,8 +169,7 @@ public class InventoryReservationService {
      * @param lines
      *            订单行（只取 itemId / skuId / quantity）
      */
-    public void reserveForSalesOrder(Long salesOrderId, List<
-            OrderReserveLine> lines, OffsetDateTime occurredAt) {
+    public void reserveForSalesOrder(Long salesOrderId, List<OrderReserveLine> lines, OffsetDateTime occurredAt) {
         if (lines == null || lines.isEmpty()) {
             return;
         }
@@ -191,9 +190,8 @@ public class InventoryReservationService {
         if (salesOrderId == null) {
             return;
         }
-        List<
-                InventoryReservationEntity> actives = inventoryReservationDao.listActiveBySourceDocument(
-                        ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId);
+        List<InventoryReservationEntity> actives = inventoryReservationDao
+                .listActiveBySourceDocument(ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId);
         for (InventoryReservationEntity active : actives) {
             releaseCascade(active.getId());
         }

@@ -8,14 +8,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Keeps String-backed request fields aligned with their existing enum vocabulary. */
-public class ScmEnumValueValidator
-        implements
-            ConstraintValidator<
-                    ScmEnumValue,
-                    String> {
+public class ScmEnumValueValidator implements ConstraintValidator<ScmEnumValue, String> {
 
-    private Set<
-            String> enumNames;
+    private Set<String> enumNames;
 
     @Override
     public void initialize(ScmEnumValue constraintAnnotation) {

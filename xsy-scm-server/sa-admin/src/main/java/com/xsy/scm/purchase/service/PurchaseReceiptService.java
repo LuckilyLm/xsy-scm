@@ -173,8 +173,7 @@ public class PurchaseReceiptService {
         }
         // 仓库可能在采购单创建后被停用：收货单创建是「新引用」，必须重查启用态。
         purchaseWarehouseReferenceGuard.requireEnabled(order.getWarehouseId());
-        List<
-                PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId());
+        List<PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId());
         if (orderItems.isEmpty()) {
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_EMPTY);
         }
@@ -187,8 +186,7 @@ public class PurchaseReceiptService {
         stamp(receipt, true);
         purchaseReceiptDao.insert(receipt);
 
-        List<
-                PurchaseReceiptItemEntity> items = new ArrayList<>(orderItems.size());
+        List<PurchaseReceiptItemEntity> items = new ArrayList<>(orderItems.size());
         for (int index = 0; index < orderItems.size(); index++) {
             PurchaseReceiptItemEntity item = PurchaseSnapshotFactory.receiptItem(receipt, orderItems.get(index), index);
             stamp(item, true);
@@ -197,9 +195,7 @@ public class PurchaseReceiptService {
         }
 
         PurchaseReceiptVO result = purchaseQueryService.receiptDetailForCommand(receipt.getId());
-        Map<
-                String,
-                Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("receiptNo", receipt.getReceiptNo());
         after.put("items", items.stream().map(PurchaseReceiptService::receiptItemSnapshot).toList());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.RECEIPT_CREATE,
@@ -222,9 +218,7 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_RECEIPT_STATE_INVALID);
         }
 
-        Map<
-                String,
-                Object> before = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> before = PurchaseSnapshotFactory.snapshot();
         before.put("remark", receipt.getRemark());
         before.put("version", receipt.getVersion());
 
@@ -234,9 +228,7 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
 
-        Map<
-                String,
-                Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("remark", receipt.getRemark());
         after.put("version", receipt.getVersion() + 1);
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.RECEIPT_UPDATE,
@@ -284,33 +276,21 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_RECEIPT_ORDER_STATE_INVALID);
         }
 
-        Map<
-                Long,
-                PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId()).stream()
-                        .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
-        List<
-                PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.lockByReceiptId(receipt.getId());
-        Map<
-                Long,
-                PurchaseReceiptConfirmForm.Item> requested = requestedLines(form, receiptItems);
+        Map<Long, PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.lockByOrderId(order.getId()).stream()
+                .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
+        List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.lockByReceiptId(receipt.getId());
+        Map<Long, PurchaseReceiptConfirmForm.Item> requested = requestedLines(form, receiptItems);
 
         // ：容差来自 SmartAdmin 原生 Config；缺失回退 10，非法 40999
         ConfigVO toleranceConfig = configService.getConfig(PurchaseConfigKey.OVER_RECEIPT_TOLERANCE_PERCENT);
         int tolerance = PurchaseReceiptQuantityCalculator
                 .tolerance(toleranceConfig == null ? null : toleranceConfig.getConfigValue());
 
-        List<
-                Map<
-                        String,
-                        Object>> beforeItems = new ArrayList<>(receiptItems.size());
-        List<
-                Map<
-                        String,
-                        Object>> afterItems = new ArrayList<>(receiptItems.size());
+        List<Map<String, Object>> beforeItems = new ArrayList<>(receiptItems.size());
+        List<Map<String, Object>> afterItems = new ArrayList<>(receiptItems.size());
         // ：本行入库事实的最小元组（行 / 采购行 / 有效数量）。**循环内只收集，不调用契约** ——
         // 事实装配必须发生在收货单 CONFIRMED 落库之后（occurredAt/operator 取自那一刻的冻结事实）。
-        List<
-                InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
+        List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
 
         for (PurchaseReceiptItemEntity line : receiptItems) {
             PurchaseReceiptConfirmForm.Item input = requested.get(line.getId());
@@ -341,9 +321,7 @@ public class PurchaseReceiptService {
             }
 
             BigDecimal cumulative = orderItem.getReceivedQuantity().add(effective);
-            Map<
-                    String,
-                    Object> beforeLine = PurchaseSnapshotFactory.snapshot();
+            Map<String, Object> beforeLine = PurchaseSnapshotFactory.snapshot();
             beforeLine.put("id", line.getId());
             beforeLine.put("receivedQuantity", PurchaseSnapshotFactory.fixed(line.getReceivedQuantity()));
             beforeItems.add(beforeLine);
@@ -373,9 +351,7 @@ public class PurchaseReceiptService {
                 appendWeighingRecord(line.getId(), actualWeight, weightUnit, correctionReason);
             }
 
-            Map<
-                    String,
-                    Object> afterLine = PurchaseSnapshotFactory.snapshot();
+            Map<String, Object> afterLine = PurchaseSnapshotFactory.snapshot();
             afterLine.put("id", line.getId());
             afterLine.put("receivedQuantity", PurchaseSnapshotFactory.fixed(effective));
             afterLine.put("cumulative", PurchaseSnapshotFactory.fixed(cumulative));
@@ -415,13 +391,9 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
 
-        Map<
-                String,
-                Object> before = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> before = PurchaseSnapshotFactory.snapshot();
         before.put("items", beforeItems);
-        Map<
-                String,
-                Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("items", afterItems);
         after.put("orderStatus", order.getStatus());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
@@ -485,16 +457,12 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
         }
         // 已确认收货单的采购单不可能仍是 DRAFT，行价格只读即可（不入行锁）。
-        Map<
-                Long,
-                PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.listByOrderId(order.getId()).stream()
-                        .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
-        List<
-                PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.listByReceiptId(receipt.getId());
+        Map<Long, PurchaseOrderItemEntity> orderItems = purchaseOrderItemDao.listByOrderId(order.getId()).stream()
+                .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
+        List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.listByReceiptId(receipt.getId());
 
         // 入库事实的最小元组：数量取确认时已落库的 received_quantity，单位/单价取采购行快照。
-        List<
-                InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
+        List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
         for (PurchaseReceiptItemEntity line : receiptItems) {
             PurchaseOrderItemEntity orderItem = orderItems.get(line.getPurchaseOrderItemId());
             if (orderItem == null) {
@@ -513,13 +481,9 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
 
-        Map<
-                String,
-                Object> before = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> before = PurchaseSnapshotFactory.snapshot();
         before.put("putawayStatus", ScmPutawayStatusEnum.PENDING.name());
-        Map<
-                String,
-                Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("putawayStatus", ScmPutawayStatusEnum.COMPLETED.name());
         // 审计快照只放字符串：PurchaseJsonbTypeHandler 的 ObjectMapper 未注册 JavaTimeModule，
         // 直接放 OffsetDateTime 会抛「Invalid purchase JSON」（与确认日志同纪律）。
@@ -559,9 +523,7 @@ public class PurchaseReceiptService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
 
-        Map<
-                String,
-                Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("deleted", true);
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.RECEIPT_DELETE,
                 receipt.getPurchaseOrderId(), receipt.getId(), null, receiptSnapshot(before), after));
@@ -585,21 +547,15 @@ public class PurchaseReceiptService {
      * <p>
      * 不允许只提交子集：否则「确认了但仍有 0 数量行」的歧义会一直存在， 而 `received_quantity` 的累计口径也会变得不可推理。
      */
-    private static Map<
-            Long,
-            PurchaseReceiptConfirmForm.Item> requestedLines(PurchaseReceiptConfirmForm form,
-                    List<
-                            PurchaseReceiptItemEntity> receiptItems) {
-        Map<
-                Long,
-                PurchaseReceiptConfirmForm.Item> requested = new LinkedHashMap<>();
+    private static Map<Long, PurchaseReceiptConfirmForm.Item> requestedLines(PurchaseReceiptConfirmForm form,
+            List<PurchaseReceiptItemEntity> receiptItems) {
+        Map<Long, PurchaseReceiptConfirmForm.Item> requested = new LinkedHashMap<>();
         for (PurchaseReceiptConfirmForm.Item item : form.getItems()) {
             if (requested.put(item.getReceiptItemId(), item) != null) {
                 throw new ScmBusinessException(PURCHASE_RECEIPT_ITEM_INCOMPLETE);
             }
         }
-        Set<
-                Long> active = receiptItems.stream().map(PurchaseReceiptItemEntity::getId).collect(Collectors.toSet());
+        Set<Long> active = receiptItems.stream().map(PurchaseReceiptItemEntity::getId).collect(Collectors.toSet());
         if (active.isEmpty() || !active.equals(requested.keySet())) {
             throw new ScmBusinessException(PURCHASE_RECEIPT_ITEM_INCOMPLETE);
         }
@@ -622,25 +578,24 @@ public class PurchaseReceiptService {
      * <b>失败传播</b>：库存写入抛出的任何异常都会冒泡出去，使整个 confirm 回滚 —— {@code received_quantity} 累计、对账快照、称重记录、采购单状态、收货单状态、操作日志、
      * 幂等记录全部不落库。用户视角 = 「这次收货确认失败了」，重试安全（幂等 claim 未提交）。
      */
-    private void postInbound(PurchaseOrderEntity order, PurchaseReceiptEntity receipt, List<
-            InboundLine> lines, OffsetDateTime occurredAt, String operator) {
+    private void postInbound(PurchaseOrderEntity order, PurchaseReceiptEntity receipt, List<InboundLine> lines,
+            OffsetDateTime occurredAt, String operator) {
         if (lines.isEmpty()) {
             // confirm 要求请求行 == 活动行且非空（40998），因此这里只是防御性短路
             return;
         }
-        List<
-                PurchaseInventoryContract.InboundFact> facts = lines.stream()
-                        .map(line -> new PurchaseInventoryContract.InboundFact(order.getId(), receipt.getId(),
-                                line.line().getId(), order.getWarehouseId(), line.line().getSkuId(),
-                                receipt.getWarehouseCodeSnapshot(), receipt.getWarehouseNameSnapshot(),
-                                line.line().getSkuCodeSnapshot(), line.line().getSkuNameSnapshot(),
-                                // 单位统一取 purchase_unit_snapshot，
-                                // **不得**用 confirm 循环里的 weightUnit（标品时为 null）
-                                line.orderItem().getPurchaseUnitSnapshot(), line.effective(),
-                                line.orderItem().getPurchasePrice(),
-                                PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE + ":" + line.line().getId(), occurredAt,
-                                operator))
-                        .toList();
+        List<PurchaseInventoryContract.InboundFact> facts = lines.stream()
+                .map(line -> new PurchaseInventoryContract.InboundFact(order.getId(), receipt.getId(),
+                        line.line().getId(), order.getWarehouseId(), line.line().getSkuId(),
+                        receipt.getWarehouseCodeSnapshot(), receipt.getWarehouseNameSnapshot(),
+                        line.line().getSkuCodeSnapshot(), line.line().getSkuNameSnapshot(),
+                        // 单位统一取 purchase_unit_snapshot，
+                        // **不得**用 confirm 循环里的 weightUnit（标品时为 null）
+                        line.orderItem().getPurchaseUnitSnapshot(), line.effective(),
+                        line.orderItem().getPurchasePrice(),
+                        PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE + ":" + line.line().getId(), occurredAt,
+                        operator))
+                .toList();
 
         facts.stream().sorted(inboundLockOrder()).forEach(purchaseInventoryContract::postInbound);
     }
@@ -656,8 +611,7 @@ public class PurchaseReceiptService {
      * <p>
      * 集中成具名比较器，确保每个入库调用都按相同顺序获取余额锁。
      */
-    static Comparator<
-            PurchaseInventoryContract.InboundFact> inboundLockOrder() {
+    static Comparator<PurchaseInventoryContract.InboundFact> inboundLockOrder() {
         return Comparator.comparing(PurchaseInventoryContract.InboundFact::warehouseId)
                 .thenComparing(PurchaseInventoryContract.InboundFact::skuId);
     }
@@ -758,12 +712,8 @@ public class PurchaseReceiptService {
         }
     }
 
-    private static Map<
-            String,
-            Object> receiptItemSnapshot(PurchaseReceiptItemEntity row) {
-        Map<
-                String,
-                Object> snapshot = PurchaseSnapshotFactory.snapshot();
+    private static Map<String, Object> receiptItemSnapshot(PurchaseReceiptItemEntity row) {
+        Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("id", row.getId());
         snapshot.put("purchaseOrderItemId", row.getPurchaseOrderItemId());
         snapshot.put("skuId", row.getSkuId());
@@ -775,27 +725,18 @@ public class PurchaseReceiptService {
     /**
      * `RECEIPT_DELETE` 的「全量」前态。
      */
-    private static Map<
-            String,
-            Object> receiptSnapshot(PurchaseReceiptVO vo) {
-        Map<
-                String,
-                Object> snapshot = PurchaseSnapshotFactory.snapshot();
+    private static Map<String, Object> receiptSnapshot(PurchaseReceiptVO vo) {
+        Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("id", vo.getId());
         snapshot.put("receiptNo", vo.getReceiptNo());
         snapshot.put("purchaseOrderId", vo.getPurchaseOrderId());
         snapshot.put("status", vo.getStatus());
         snapshot.put("remark", vo.getRemark());
         snapshot.put("version", vo.getVersion());
-        List<
-                Map<
-                        String,
-                        Object>> items = new ArrayList<>();
+        List<Map<String, Object>> items = new ArrayList<>();
         if (vo.getItems() != null) {
             for (PurchaseReceiptItemVO item : vo.getItems()) {
-                Map<
-                        String,
-                        Object> one = PurchaseSnapshotFactory.snapshot();
+                Map<String, Object> one = PurchaseSnapshotFactory.snapshot();
                 one.put("id", item.getId());
                 one.put("purchaseOrderItemId", item.getPurchaseOrderItemId());
                 one.put("receivedQuantity", PurchaseSnapshotFactory.fixed(item.getReceivedQuantity()));

@@ -7,6 +7,5 @@ import java.util.List;
 @Data
 public class DeliveryPrintVO {
     private DeliveryDetailVO detail;
-    private List<
-            DeliveryPrintItemVO> items;
+    private List<DeliveryPrintItemVO> items;
 }

@@ -43,24 +43,20 @@ public class ProductController {
 
     @PostMapping("/query")
     @SaCheckPermission(ProductPermission.QUERY)
-    public ResponseDTO<
-            PageResult<
-                    ProductSpuVO>> query(@Valid @RequestBody ProductSpuQueryForm form) {
+    public ResponseDTO<PageResult<ProductSpuVO>> query(@Valid @RequestBody ProductSpuQueryForm form) {
         return ResponseDTO.ok(productQueryService.query(form));
     }
 
     @GetMapping("/detail/{spuId}")
     @SaCheckPermission(ProductPermission.QUERY)
-    public ResponseDTO<
-            ProductSpuDetailVO> detail(@PathVariable Long spuId) {
+    public ResponseDTO<ProductSpuDetailVO> detail(@PathVariable Long spuId) {
         return ResponseDTO.ok(productQueryService.detail(spuId));
     }
 
     @PostMapping("/add")
     @SaCheckPermission(ProductPermission.ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> add(@Valid @RequestBody ProductSpuAddForm form) {
+    public ResponseDTO<Long> add(@Valid @RequestBody ProductSpuAddForm form) {
         if (!form.getImages().isEmpty())
             StpUtil.checkPermission(ProductPermission.IMAGE);
         return ResponseDTO.ok(productSpuService.add(form));
@@ -69,8 +65,7 @@ public class ProductController {
     @PostMapping("/update")
     @SaCheckPermission(ProductPermission.UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@Valid @RequestBody ProductSpuUpdateForm form) {
+    public ResponseDTO<String> update(@Valid @RequestBody ProductSpuUpdateForm form) {
         var existing = productQueryService.detail(form.getSpuId()).getImages();
         var before = existing.stream()
                 .map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
@@ -85,8 +80,7 @@ public class ProductController {
     @PostMapping("/updateStatus")
     @SaCheckPermission(ProductPermission.STATUS)
     @OperateLog
-    public ResponseDTO<
-            String> updateStatus(@Valid @RequestBody ProductStatusForm form) {
+    public ResponseDTO<String> updateStatus(@Valid @RequestBody ProductStatusForm form) {
         productSpuService.updateStatus(form);
         return ResponseDTO.ok();
     }
@@ -94,8 +88,7 @@ public class ProductController {
     @PostMapping("/delete")
     @SaCheckPermission(ProductPermission.DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@Valid @RequestBody ProductDeleteForm form) {
+    public ResponseDTO<String> delete(@Valid @RequestBody ProductDeleteForm form) {
         productSpuService.delete(form);
         return ResponseDTO.ok();
     }
@@ -103,24 +96,21 @@ public class ProductController {
     @PostMapping("/batch/updateStatus")
     @SaCheckPermission(ProductPermission.BATCH)
     @OperateLog
-    public ResponseDTO<
-            ProductBatchResultVO> batchStatus(@Valid @RequestBody ProductSpuBatchStatusForm form) {
+    public ResponseDTO<ProductBatchResultVO> batchStatus(@Valid @RequestBody ProductSpuBatchStatusForm form) {
         return ResponseDTO.ok(productBatchService.updateStatus(form));
     }
 
     @PostMapping("/batch/updateCategory")
     @SaCheckPermission(ProductPermission.BATCH)
     @OperateLog
-    public ResponseDTO<
-            ProductBatchResultVO> batchCategory(@Valid @RequestBody ProductSpuBatchCategoryForm form) {
+    public ResponseDTO<ProductBatchResultVO> batchCategory(@Valid @RequestBody ProductSpuBatchCategoryForm form) {
         return ResponseDTO.ok(productBatchService.updateCategory(form));
     }
 
     @PostMapping("/batch/updateTags")
     @SaCheckPermission(ProductPermission.BATCH)
     @OperateLog
-    public ResponseDTO<
-            ProductBatchResultVO> batchTags(@Valid @RequestBody ProductSpuBatchTagForm form) {
+    public ResponseDTO<ProductBatchResultVO> batchTags(@Valid @RequestBody ProductSpuBatchTagForm form) {
         return ResponseDTO.ok(productBatchService.updateTags(form));
     }
 }

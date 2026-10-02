@@ -22,20 +22,17 @@ public enum ScmInventoryReservationStatusEnum {
     /**
      * 生效中：占用可用量，但未改变物理库存。
      */
-    ACTIVE(
-            "生效中"),
+    ACTIVE("生效中"),
 
     /**
      * 已释放：占用已归还，可用量恢复。
      */
-    RELEASED(
-            "已释放"),
+    RELEASED("已释放"),
 
     /**
      * 已消耗：已被出库消费，占用转为实际扣减。
      */
-    CONSUMED(
-            "已消耗");
+    CONSUMED("已消耗");
 
     private final String desc;
 

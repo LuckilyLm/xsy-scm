@@ -31,32 +31,27 @@ public class ProductCategoryController {
 
     @PostMapping("/tree")
     @SaCheckPermission(ProductPermission.CATEGORY_QUERY)
-    public ResponseDTO<
-            List<
-                    ProductCategoryTreeVO>> tree() {
+    public ResponseDTO<List<ProductCategoryTreeVO>> tree() {
         return ResponseDTO.ok(productCategoryService.tree());
     }
 
     @GetMapping("/{categoryId}")
     @SaCheckPermission(ProductPermission.CATEGORY_QUERY)
-    public ResponseDTO<
-            ProductCategoryVO> detail(@PathVariable Long categoryId) {
+    public ResponseDTO<ProductCategoryVO> detail(@PathVariable Long categoryId) {
         return ResponseDTO.ok(productCategoryService.detail(categoryId));
     }
 
     @PostMapping("/add")
     @SaCheckPermission(ProductPermission.CATEGORY_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> add(@Valid @RequestBody ProductCategoryAddForm form) {
+    public ResponseDTO<Long> add(@Valid @RequestBody ProductCategoryAddForm form) {
         return ResponseDTO.ok(productCategoryService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(ProductPermission.CATEGORY_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@Valid @RequestBody ProductCategoryUpdateForm form) {
+    public ResponseDTO<String> update(@Valid @RequestBody ProductCategoryUpdateForm form) {
         productCategoryService.update(form);
         return ResponseDTO.ok();
     }
@@ -64,8 +59,7 @@ public class ProductCategoryController {
     @PostMapping("/delete")
     @SaCheckPermission(ProductPermission.CATEGORY_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@Valid @RequestBody ProductCategoryDeleteForm form) {
+    public ResponseDTO<String> delete(@Valid @RequestBody ProductCategoryDeleteForm form) {
         productCategoryService.delete(form);
         return ResponseDTO.ok();
     }

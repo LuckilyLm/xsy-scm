@@ -44,10 +44,7 @@ import java.math.RoundingMode;
  *
  * @see net.lab1024.sa.base.common.json.serializer.BigDecimalNullZeroSerializer
  */
-public class ScmFixedScale4Serializer
-        extends
-            JsonSerializer<
-                    BigDecimal> {
+public class ScmFixedScale4Serializer extends JsonSerializer<BigDecimal> {
 
     /**
      * 金额与数量统一保留的小数位数。

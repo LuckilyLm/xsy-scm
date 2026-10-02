@@ -61,8 +61,7 @@ public final class OrderValidator {
             reason(salesOrderForm.getSupplementReason(), ORDER_SUPPLEMENT_REASON_REQUIRED);
         } else if (salesOrderForm.getOriginalOrderId() != null || trim(salesOrderForm.getSupplementReason()) != null)
             throw new ScmBusinessException(ORDER_SUPPLEMENT_INVALID);
-        var seen = new HashSet<
-                Long>();
+        var seen = new HashSet<Long>();
         for (var orderItemForm : salesOrderForm.getItems()) {
             if (orderItemForm.getSkuId() == null || !seen.add(orderItemForm.getSkuId())) {
                 throw new ScmBusinessException(ORDER_SKU_DUPLICATE);

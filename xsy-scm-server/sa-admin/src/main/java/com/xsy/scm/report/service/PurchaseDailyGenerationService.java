@@ -17,9 +17,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PurchaseDailyGenerationService {
     private static final int INSERT_BATCH_SIZE = 500;
-    private static final List<ScmPurchaseStatusEnum> INCLUDED_STATUSES = List.of(
-            ScmPurchaseStatusEnum.SUBMITTED, ScmPurchaseStatusEnum.PARTIALLY_RECEIVED,
-            ScmPurchaseStatusEnum.RECEIVED, ScmPurchaseStatusEnum.SHORT_CLOSED);
+    private static final List<ScmPurchaseStatusEnum> INCLUDED_STATUSES = List.of(ScmPurchaseStatusEnum.SUBMITTED,
+            ScmPurchaseStatusEnum.PARTIALLY_RECEIVED, ScmPurchaseStatusEnum.RECEIVED,
+            ScmPurchaseStatusEnum.SHORT_CLOSED);
 
     private final PurchaseDailyReportDao purchaseDailyReportDao;
     private final PurchaseDailySourceDao purchaseDailySourceDao;

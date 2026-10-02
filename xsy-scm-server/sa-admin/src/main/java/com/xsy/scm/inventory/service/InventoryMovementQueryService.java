@@ -36,16 +36,14 @@ public class InventoryMovementQueryService {
     private final ScmDataScopeService dataScopeService;
 
     @Transactional(readOnly = true)
-    public PageResult<
-            InventoryMovementVO> query(InventoryMovementQueryForm form) {
+    public PageResult<InventoryMovementVO> query(InventoryMovementQueryForm form) {
         InventoryBalanceQueryService.rejectClientSort(form);
         ScmDataScopeContext scope = dataScopeService.resolve();
         if (scope.warehouseNowhere()) {
             return ScmDataScopeService.emptyPage(form);
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        List<
-                InventoryMovementVO> list = inventoryMovementDao.queryPage(page, form, scope.getWarehouseScope());
+        List<InventoryMovementVO> list = inventoryMovementDao.queryPage(page, form, scope.getWarehouseScope());
         // unit_cost 就是这一笔入库的采购价快照，属于成本事实；可见性只按仓库判定，
         // 与 created_by 是否为空无关（回填行的 created_by 是 NULL）。
         ScmReportAccess.maskCost(list, scope.isCostVisible(), vo -> vo.setUnitCost(null));

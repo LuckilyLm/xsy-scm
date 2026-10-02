@@ -41,16 +41,14 @@ public class InventoryWarningQueryService {
     /**
      * 阈值配置分页（联仓库 / SKU / 商品取展示字段）。
      */
-    public PageResult<
-            InventoryWarningThresholdVO> queryThresholdPage(InventoryWarningThresholdQueryForm query) {
+    public PageResult<InventoryWarningThresholdVO> queryThresholdPage(InventoryWarningThresholdQueryForm query) {
         ScmDataScopeContext scope = dataScopeService.resolve();
         if (scope.warehouseNowhere()) {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<
-                InventoryWarningThresholdVO> list = inventoryWarningThresholdDao.queryPage(page, query,
-                        scope.getWarehouseScope());
+        List<InventoryWarningThresholdVO> list = inventoryWarningThresholdDao.queryPage(page, query,
+                scope.getWarehouseScope());
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
@@ -77,16 +75,14 @@ public class InventoryWarningQueryService {
      * <p>
      * 每行的状态在这里按**可用量**重算（而不是信 SQL 的结果）：可用量是 SQL 算出来的数字， 而「数字 vs 阈值 → 状态」这条规则只在枚举里实现一次。
      */
-    public PageResult<
-            InventoryWarningVO> queryWarningPage(InventoryWarningQueryForm query) {
+    public PageResult<InventoryWarningVO> queryWarningPage(InventoryWarningQueryForm query) {
         ScmDataScopeContext scope = dataScopeService.resolve();
         if (scope.warehouseNowhere()) {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<
-                InventoryWarningVO> list = inventoryWarningThresholdDao.queryWarningPage(page, query,
-                        scope.getWarehouseScope());
+        List<InventoryWarningVO> list = inventoryWarningThresholdDao.queryWarningPage(page, query,
+                scope.getWarehouseScope());
         list.forEach(InventoryWarningQueryService::fillStatus);
         return SmartPageUtil.convert2PageResult(page, list);
     }

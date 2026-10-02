@@ -24,13 +24,9 @@ public @interface ScmEnumValue {
 
     String message() default "值不在允许范围内";
 
-    Class<
-            ?>[] groups() default {};
+    Class<?>[] groups() default {};
 
-    Class<
-            ? extends Payload>[] payload() default {};
+    Class<? extends Payload>[] payload() default {};
 
-    Class<
-            ? extends Enum<
-                    ?>> enumClass();
+    Class<? extends Enum<?>> enumClass();
 }

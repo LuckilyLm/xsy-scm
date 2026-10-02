@@ -12,8 +12,6 @@ public class SalesOrderImportResultVO {
     private int confirmedOrders;
     private int pendingOrders;
     private int totalErrors;
-    private List<
-            SalesOrderImportErrorVO> errors = new ArrayList<>();
-    private List<
-            SalesOrderDetailVO> orders = new ArrayList<>();
+    private List<SalesOrderImportErrorVO> errors = new ArrayList<>();
+    private List<SalesOrderDetailVO> orders = new ArrayList<>();
 }

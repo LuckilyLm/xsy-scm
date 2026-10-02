@@ -46,29 +46,22 @@ public class ScmTodoQueryService {
     /**
      * 当前登录员工的待办卡片列表。
      */
-    public List<
-            ScmTodoVO> currentEmployeeTodos() {
+    public List<ScmTodoVO> currentEmployeeTodos() {
         RequestUser user = SmartRequestUtil.getRequestUser();
         if (user == null || user.getUserId() == null) {
             return List.of();
         }
         UserPermission permission = loginManager.getUserPermission(user.getUserId());
-        List<
-                String> held = permission == null ? List.of() : permission.getPermissionList();
+        List<String> held = permission == null ? List.of() : permission.getPermissionList();
         return todosFor(held);
     }
 
     /**
      * 按给定权限集合计算卡片（与登录态解耦，便于负向夹具直接验证省略 / 零值语义）。
      */
-    public List<
-            ScmTodoVO> todosFor(
-                    List<
-                            String> heldPermissions) {
-        List<
-                String> held = heldPermissions == null ? List.of() : heldPermissions;
-        List<
-                ScmTodoVO> result = new ArrayList<>();
+    public List<ScmTodoVO> todosFor(List<String> heldPermissions) {
+        List<String> held = heldPermissions == null ? List.of() : heldPermissions;
+        List<ScmTodoVO> result = new ArrayList<>();
         for (ScmTodoCardEnum card : ScmTodoCardEnum.values()) {
             if (!card.visibleTo(held)) {
                 continue;
@@ -94,8 +87,7 @@ public class ScmTodoQueryService {
         };
     }
 
-    private static long total(PageResult<
-            ?> page) {
+    private static long total(PageResult<?> page) {
         return page == null || page.getTotal() == null ? 0L : page.getTotal();
     }
 

@@ -22,20 +22,17 @@ public enum ScmInventorySourceDocumentTypeEnum {
     /**
      * 采购收货行：{@code source_document_item_id = purchase_receipt_item.id}。
      */
-    PURCHASE_RECEIPT_ITEM(
-            "采购收货行"),
+    PURCHASE_RECEIPT_ITEM("采购收货行"),
 
     /**
      * 出库单行：{@code source_document_item_id = inventory_outbound_item.id}。
      */
-    SALES_OUTBOUND_ITEM(
-            "出库单行"),
+    SALES_OUTBOUND_ITEM("出库单行"),
 
     /**
      * 销售订单行（预留的来源）：{@code source_document_item_id = sales_order_item.id}。
      */
-    SALES_ORDER_ITEM(
-            "销售订单行"),
+    SALES_ORDER_ITEM("销售订单行"),
 
     /**
      * 盘点单行：{@code source_document_item_id = inventory_stocktake_item.id}。
@@ -44,8 +41,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * 一条盘点明细行最多产生**一条**流水：{@code delta = 0} 的行不写流水 （数量恒为正，写不出「零差异」的流水），因此 {@code uk_inventory_movement_source_active}
      * 的一行一流水语义在这里依然成立。
      */
-    STOCKTAKE_ITEM(
-            "盘点单行"),
+    STOCKTAKE_ITEM("盘点单行"),
 
     /**
      * 报损报溢单行：{@code source_document_item_id = inventory_loss_gain_item.id}。
@@ -53,8 +49,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * <p>
      * 报损与报溢**共用一个来源类型**（方向由流水的 {@code movement_type} 表达）： 它们出自同一张单据表的同一种行，拆成两个来源类型只会让查询多一次分支， 而「这张单据是报损还是报溢」在单据头上已经能读到。
      */
-    LOSS_GAIN_ITEM(
-            "报损报溢单行"),
+    LOSS_GAIN_ITEM("报损报溢单行"),
 
     /**
      * 调拨**转出**行的来源类型：{@code source_document_item_id = inventory_transfer_item.id}。
@@ -68,14 +63,12 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * 该索引是 冻结的 / 契约，不能为了调拨去放宽它。因此改用 「来源类型本身编码方向」：转出与转入各占一个来源类型，各自在自己的 {@code (type, itemId)} 空间里唯一。副作用是正向的 ——
      * 可以直接按来源类型查出「所有转出流水」或「所有转入流水」。
      */
-    TRANSFER_OUT_ITEM(
-            "调拨单行（转出）"),
+    TRANSFER_OUT_ITEM("调拨单行（转出）"),
 
     /**
      * 调拨**转入**行的来源类型；与 {@link #TRANSFER_OUT_ITEM} 分开以满足源身份唯一索引。
      */
-    TRANSFER_IN_ITEM(
-            "调拨单行（转入）"),
+    TRANSFER_IN_ITEM("调拨单行（转入）"),
 
     /**
      * 规格转换**转出**行的来源类型：{@code source_document_item_id = inventory_conversion_item.id}。
@@ -85,14 +78,12 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)} —— 两条流水引用同一个明细行
      * id，共用一个来源类型第二条就插不进去。 该索引是 冻结的 / 契约，不为新能力放宽。
      */
-    CONVERT_OUT_ITEM(
-            "转换单行（转出）"),
+    CONVERT_OUT_ITEM("转换单行（转出）"),
 
     /**
      * 规格转换**转入**行的来源类型；与 {@link #CONVERT_OUT_ITEM} 分开以满足源身份唯一索引。
      */
-    CONVERT_IN_ITEM(
-            "转换单行（转入）"),
+    CONVERT_IN_ITEM("转换单行（转入）"),
 
     /**
      * 配送线路：{@code source_document_item_id} 不用（本类型只出现在 {@code inventory_outbound.source_document_id = delivery_route.id}
@@ -102,8 +93,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * <b>为什么流水里看不到它</b>：发车产生的仍然是 {@code SALES_OUT}，来源类型按 {@link #SALES_OUTBOUND_ITEM}（出库单行）记账 —— 流水的唯一锚点与成本口径都在出库单行上，
      * 线路只是「谁创建了这张出库单」。多一条追溯走 {@code inventory_outbound_item.sales_order_item_id}，不给流水表再加第二套来源语义。
      */
-    DELIVERY_ROUTE(
-            "配送线路");
+    DELIVERY_ROUTE("配送线路");
 
     private final String desc;
 

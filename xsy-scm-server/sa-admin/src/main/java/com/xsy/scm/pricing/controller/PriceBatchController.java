@@ -21,8 +21,7 @@ public class PriceBatchController {
     @PostMapping("/scm/pricing/type-price/batch")
     @SaCheckPermission(PricingPermission.TYPE_PRICE_BATCH)
     @OperateLog
-    public ResponseDTO<
-            PriceBatchResultVO> batch(@Valid @RequestBody PriceBatchForm form) {
+    public ResponseDTO<PriceBatchResultVO> batch(@Valid @RequestBody PriceBatchForm form) {
         return ResponseDTO.ok(priceBatchService.submit(form));
     }
 }

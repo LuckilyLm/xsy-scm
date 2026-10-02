@@ -10,46 +10,27 @@ import java.util.List;
  */
 public enum ScmTodoCardEnum {
 
-    INVENTORY_WARNING(
-            "inventory-warning",
-            "库存异常",
-            "/inventory/inventory-warning-list",
-            List.of("scm:inventory:warning:query"),
-            List.of()),
+    INVENTORY_WARNING("inventory-warning", "库存异常", "/inventory/inventory-warning-list",
+            List.of("scm:inventory:warning:query"), List.of()),
 
-    RECEIPT_PUTAWAY(
-            "receipt-putaway",
-            "待仓库确认入库",
+    RECEIPT_PUTAWAY("receipt-putaway", "待仓库确认入库",
             "/purchase/purchase-receipt-list?status=CONFIRMED&receiptMode=WAREHOUSE_CONFIRM&putawayStatus=PENDING",
-            List.of("scm:purchase:receipt:query", "scm:purchase:receipt:putaway"),
-            List.of()),
+            List.of("scm:purchase:receipt:query", "scm:purchase:receipt:putaway"), List.of()),
 
-    LOSS_GAIN_AUDIT(
-            "loss-gain-audit",
-            "待审批报损报溢",
-            "/inventory/inventory-loss-gain-list?status=PENDING",
+    LOSS_GAIN_AUDIT("loss-gain-audit", "待审批报损报溢", "/inventory/inventory-loss-gain-list?status=PENDING",
             List.of("scm:inventory:loss-gain:query"),
             List.of("scm:inventory:loss-gain:approve", "scm:inventory:loss-gain:reject")),
 
-    DELIVERY_ROUTE_DRAFT(
-            "delivery-route-draft",
-            "草稿配送线路",
-            "/delivery/routes?status=DRAFT",
-            List.of("scm:delivery:route:query", "scm:delivery:route:plan"),
-            List.of()),;
+    DELIVERY_ROUTE_DRAFT("delivery-route-draft", "草稿配送线路", "/delivery/routes?status=DRAFT",
+            List.of("scm:delivery:route:query", "scm:delivery:route:plan"), List.of()),;
 
     private final String key;
     private final String label;
     private final String route;
-    private final List<
-            String> allPerms;
-    private final List<
-            String> anyPerms;
+    private final List<String> allPerms;
+    private final List<String> anyPerms;
 
-    ScmTodoCardEnum(String key, String label, String route, List<
-            String> allPerms,
-            List<
-                    String> anyPerms) {
+    ScmTodoCardEnum(String key, String label, String route, List<String> allPerms, List<String> anyPerms) {
         this.key = key;
         this.label = label;
         this.route = route;
@@ -60,8 +41,7 @@ public enum ScmTodoCardEnum {
     /**
      * 当前权限集合是否足以看到本卡片（不代表能执行动作，动作仍由原接口鉴权）。
      */
-    public boolean visibleTo(List<
-            String> heldPermissions) {
+    public boolean visibleTo(List<String> heldPermissions) {
         return heldPermissions.containsAll(allPerms)
                 && (anyPerms.isEmpty() || anyPerms.stream().anyMatch(heldPermissions::contains));
     }

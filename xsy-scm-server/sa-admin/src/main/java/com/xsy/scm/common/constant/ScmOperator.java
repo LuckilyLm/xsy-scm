@@ -3,6 +3,7 @@ package com.xsy.scm.common.constant;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 
 public final class ScmOperator {
+
     private ScmOperator() {
     }
 

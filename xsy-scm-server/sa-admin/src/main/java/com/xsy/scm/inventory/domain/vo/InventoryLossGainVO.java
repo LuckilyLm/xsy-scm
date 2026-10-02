@@ -83,8 +83,7 @@ public class InventoryLossGainVO {
     /**
      * 明细；仅详情接口填充，列表接口为 null。
      */
-    private List<
-            Item> items;
+    private List<Item> items;
 
     /**
      * 报损报溢单明细行。
@@ -102,9 +101,7 @@ public class InventoryLossGainVO {
 
         private String productName;
 
-        private Map<
-                String,
-                String> specValues;
+        private Map<String, String> specValues;
 
         /**
          * 申报数量，恒为正；方向看单据的 {@code adjustType}。

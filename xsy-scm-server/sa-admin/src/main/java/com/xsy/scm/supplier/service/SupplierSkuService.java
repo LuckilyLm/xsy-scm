@@ -51,26 +51,22 @@ public class SupplierSkuService {
     /**
      * 按供应商列出活动关联行，供替换编辑页回填。
      */
-    public List<
-            SupplierSkuVO> listBySupplierId(Long supplierId) {
+    public List<SupplierSkuVO> listBySupplierId(Long supplierId) {
         // 供应商必须存在，否则回填一个不存在的供应商会得到「空列表」这种歧义结果
         supplierService.require(supplierId);
-        List<
-                SupplierSkuEntity> rows = supplierSkuDao.selectActiveBySupplierId(supplierId);
+        List<SupplierSkuEntity> rows = supplierSkuDao.selectActiveBySupplierId(supplierId);
         return enrich(rows);
     }
 
     /**
      * 只读反查分页（按 SKU 找供应商）。
      */
-    public PageResult<
-            SupplierSkuVO> query(SupplierSkuQueryForm form) {
+    public PageResult<SupplierSkuVO> query(SupplierSkuQueryForm form) {
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.desc("is_default"), OrderItem.asc("id"));
         }
-        List<
-                SupplierSkuEntity> rows = supplierSkuDao.queryPage(page, form);
+        List<SupplierSkuEntity> rows = supplierSkuDao.queryPage(page, form);
         return SmartPageUtil.convert2PageResult(page, enrich(rows));
     }
 
@@ -93,9 +89,8 @@ public class SupplierSkuService {
      */
     public SupplierSkuEntity requireEnabledForPurchasing(Long supplierId, Long skuId) {
         supplierService.requireEnabled(supplierId);
-        SupplierSkuEntity entity = supplierSkuDao.selectOne(new LambdaQueryWrapper<
-                SupplierSkuEntity>().eq(SupplierSkuEntity::getSupplierId, supplierId)
-                .eq(SupplierSkuEntity::getSkuId, skuId)
+        SupplierSkuEntity entity = supplierSkuDao.selectOne(new LambdaQueryWrapper<SupplierSkuEntity>()
+                .eq(SupplierSkuEntity::getSupplierId, supplierId).eq(SupplierSkuEntity::getSkuId, skuId)
                 .eq(SupplierSkuEntity::getStatus, ScmEnableStatusEnum.ENABLED.name()));
         if (entity == null) {
             throw new ScmBusinessException(SUPPLIER_SKU_NOT_FOUND);
@@ -109,18 +104,12 @@ public class SupplierSkuService {
         return entity;
     }
 
-    private List<
-            SupplierSkuVO> enrich(
-                    List<
-                            SupplierSkuEntity> rows) {
-        List<
-                SupplierSkuVO> list = new ArrayList<>(rows.size());
+    private List<SupplierSkuVO> enrich(List<SupplierSkuEntity> rows) {
+        List<SupplierSkuVO> list = new ArrayList<>(rows.size());
         if (rows.isEmpty()) {
             return list;
         }
-        Map<
-                Long,
-                String> purchaserNames = purchaserNames(rows);
+        Map<Long, String> purchaserNames = purchaserNames(rows);
         for (SupplierSkuEntity row : rows) {
             SupplierSkuVO vo = new SupplierSkuVO();
             BeanUtils.copyProperties(row, vo);
@@ -130,26 +119,18 @@ public class SupplierSkuService {
         return list;
     }
 
-    private Map<
-            Long,
-            String> purchaserNames(
-                    List<
-                            SupplierSkuEntity> rows) {
-        Set<
-                Long> ids = new LinkedHashSet<>();
+    private Map<Long, String> purchaserNames(List<SupplierSkuEntity> rows) {
+        Set<Long> ids = new LinkedHashSet<>();
         rows.forEach(row -> {
             if (row.getPurchaserId() != null) {
                 ids.add(row.getPurchaserId());
             }
         });
-        Map<
-                Long,
-                String> names = new HashMap<>();
+        Map<Long, String> names = new HashMap<>();
         if (ids.isEmpty()) {
             return names;
         }
-        List<
-                EmployeeVO> found = employeeDao.getEmployeeByIds(ids);
+        List<EmployeeVO> found = employeeDao.getEmployeeByIds(ids);
         if (found != null) {
             found.stream().filter(e -> e != null && e.getEmployeeId() != null)
                     .forEach(e -> names.put(e.getEmployeeId(), e.getActualName()));

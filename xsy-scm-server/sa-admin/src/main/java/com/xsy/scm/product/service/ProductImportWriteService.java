@@ -19,12 +19,8 @@ public class ProductImportWriteService {
     private final ProductSpuService productSpuService;
 
     @Transactional(rollbackFor = Exception.class)
-    public List<
-            Long> writeAll(
-                    List<
-                            ProductSpuAddForm> forms) {
-        var ids = new ArrayList<
-                Long>();
+    public List<Long> writeAll(List<ProductSpuAddForm> forms) {
+        var ids = new ArrayList<Long>();
         for (int index = 0; index < forms.size(); index++) {
             try {
                 ids.add(productSpuService.add(forms.get(index)));
@@ -37,8 +33,7 @@ public class ProductImportWriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public int writeUpdates(List<
-            ProductSpuUpdateForm> forms) {
+    public int writeUpdates(List<ProductSpuUpdateForm> forms) {
         for (int index = 0; index < forms.size(); index++) {
             try {
                 productSpuService.update(forms.get(index));

@@ -22,6 +22,5 @@ public class PurchaseOrderExportForm extends PurchaseOrderQueryForm {
      * 勾选导出的列 key（顺序无关，后端按自身目录固定顺序落表头）；为空表示导出全部列。
      */
     @Size(max = 32, message = "导出列不能超过32项")
-    private List<
-            String> exportColumns;
+    private List<String> exportColumns;
 }

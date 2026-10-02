@@ -30,32 +30,27 @@ public class AgreementPriceController {
 
     @PostMapping("/query")
     @SaCheckPermission(PricingPermission.AGREEMENT_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    AgreementPriceVO>> query(@Valid @RequestBody AgreementPriceQueryForm form) {
+    public ResponseDTO<PageResult<AgreementPriceVO>> query(@Valid @RequestBody AgreementPriceQueryForm form) {
         return ResponseDTO.ok(agreementPriceQueryService.query(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(PricingPermission.AGREEMENT_QUERY)
-    public ResponseDTO<
-            AgreementPriceVO> detail(@PathVariable("id") Long agreementPriceId) {
+    public ResponseDTO<AgreementPriceVO> detail(@PathVariable("id") Long agreementPriceId) {
         return ResponseDTO.ok(agreementPriceQueryService.detail(agreementPriceId));
     }
 
     @PostMapping("/add")
     @SaCheckPermission(PricingPermission.AGREEMENT_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> add(@Valid @RequestBody AgreementPriceAddForm form) {
+    public ResponseDTO<Long> add(@Valid @RequestBody AgreementPriceAddForm form) {
         return ResponseDTO.ok(agreementPriceService.add(form));
     }
 
     @PostMapping("/update")
     @SaCheckPermission(PricingPermission.AGREEMENT_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@Valid @RequestBody AgreementPriceUpdateForm form) {
+    public ResponseDTO<String> update(@Valid @RequestBody AgreementPriceUpdateForm form) {
         agreementPriceService.update(form);
         return ResponseDTO.ok();
     }
@@ -63,8 +58,7 @@ public class AgreementPriceController {
     @PostMapping("/delete")
     @SaCheckPermission(PricingPermission.AGREEMENT_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@Valid @RequestBody AgreementPriceDeleteForm form) {
+    public ResponseDTO<String> delete(@Valid @RequestBody AgreementPriceDeleteForm form) {
         agreementPriceService.delete(form);
         return ResponseDTO.ok();
     }

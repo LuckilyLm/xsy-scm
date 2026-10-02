@@ -1,5 +1,6 @@
 package com.xsy.scm.common.json;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ibatis.type.BaseTypeHandler;
@@ -20,63 +21,50 @@ import java.util.Map;
  *
  * <p>
  * {@code order} 域已有一份等价的 {@code OrderJsonbTypeHandler}。这里不直接复用它， 是为了不让 {@code finance} 依赖
- * {@code order/support}；把两份合并到本包是一次纯 Java 重构， 不涉及 migration、不改变对外行为，留待后续统一处理（与 {@code ScmCommonErrorCode} 里 记录的 40921
+ * {@code order/support}；把两份合并到本包是一次纯 Java 重构， 不涉及 migration、不改变对外行为， 留待后续统一处理（与 {@code ScmCommonErrorCode} 里 记录的 40921
  * 重复声明同一处置取向：先记录为已知技术债，不顺手重构）。
  */
-public class JsonbObjectMapTypeHandler
-        extends
-            BaseTypeHandler<
-                    Map<
-                            String,
-                            Object>> {
+public class JsonbObjectMapTypeHandler extends BaseTypeHandler<Map<String, Object>> {
+
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
-    public void setNonNullParameter(PreparedStatement statement, int index, Map<
-            String,
-            Object> value, JdbcType type) throws SQLException {
+    public void setNonNullParameter(PreparedStatement statement, int index, Map<String, Object> value, JdbcType type)
+            throws SQLException {
         try {
             PGobject json = new PGobject();
             json.setType("jsonb");
             json.setValue(JSON.writeValueAsString(value));
             statement.setObject(index, json);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new SQLException("Invalid JSONB object map", e);
         }
     }
 
-    private Map<
-            String,
-            Object> read(String value) throws SQLException {
+    private Map<String, Object> read(String value) throws SQLException {
         if (value == null) {
             return null;
         }
         try {
             return JSON.readValue(value, new TypeReference<>() {
             });
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new SQLException("Invalid JSONB object map", e);
         }
     }
 
     @Override
-    public Map<
-            String,
-            Object> getNullableResult(ResultSet rs, String name) throws SQLException {
+    public Map<String, Object> getNullableResult(ResultSet rs, String name) throws SQLException {
         return read(rs.getString(name));
     }
 
     @Override
-    public Map<
-            String,
-            Object> getNullableResult(ResultSet rs, int index) throws SQLException {
+    public Map<String, Object> getNullableResult(ResultSet rs, int index) throws SQLException {
         return read(rs.getString(index));
     }
 
     @Override
-    public Map<
-            String,
-            Object> getNullableResult(CallableStatement cs, int index) throws SQLException {
+    public Map<String, Object> getNullableResult(CallableStatement cs, int index) throws SQLException {
         return read(cs.getString(index));
     }
 }

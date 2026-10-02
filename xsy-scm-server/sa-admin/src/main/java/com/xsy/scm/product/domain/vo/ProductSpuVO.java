@@ -28,8 +28,7 @@ public class ProductSpuVO {
     private String brandName;
     private String origin;
     private String storageMethod;
-    private List<
-            ProductSpuTagVO> tags = new ArrayList<>();
+    private List<ProductSpuTagVO> tags = new ArrayList<>();
     private String categoryName;
     private String categoryPath;
     private Integer skuCount;
@@ -39,7 +38,6 @@ public class ProductSpuVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal maxMarketPrice;
     private String primaryImageUrl;
-    private List<
-            ProductSkuVO> skuList;
+    private List<ProductSkuVO> skuList;
     private OffsetDateTime updatedAt;
 }

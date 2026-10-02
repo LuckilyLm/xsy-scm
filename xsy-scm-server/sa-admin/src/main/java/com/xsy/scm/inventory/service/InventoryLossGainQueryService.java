@@ -39,8 +39,7 @@ public class InventoryLossGainQueryService {
     /**
      * 分页查询（不返回明细，明细走 {@link #detail}）。
      */
-    public PageResult<
-            InventoryLossGainVO> queryPage(InventoryLossGainQueryForm query) {
+    public PageResult<InventoryLossGainVO> queryPage(InventoryLossGainQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是联表结果，客户端传入的排序列名会与 join 列产生歧义。
         ScmDataScopeContext scope = dataScopeService.resolve();
@@ -48,8 +47,7 @@ public class InventoryLossGainQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<
-                InventoryLossGainVO> list = inventoryLossGainDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryLossGainVO> list = inventoryLossGainDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryLossGainQueryService::fillDescs);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -66,8 +64,7 @@ public class InventoryLossGainQueryService {
             throw new ScmDataScopeException();
         }
         fillDescs(vo);
-        List<
-                InventoryLossGainItemVO> items = inventoryLossGainItemDao.listByLossGainId(lossGainId);
+        List<InventoryLossGainItemVO> items = inventoryLossGainItemDao.listByLossGainId(lossGainId);
         vo.setItems(items.stream().map(InventoryLossGainQueryService::toItem).toList());
         return vo;
     }

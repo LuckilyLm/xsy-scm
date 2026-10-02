@@ -20,12 +20,8 @@ public final class PurchaseOrderAuditSnapshotFactory {
     /**
      * `SUBMIT` / `CANCEL` / `SHORT_CLOSE` 的轻量状态快照。
      */
-    public static Map<
-            String,
-            Object> orderStateSnapshot(PurchaseOrderEntity order) {
-        Map<
-                String,
-                Object> snapshot = PurchaseSnapshotFactory.snapshot();
+    public static Map<String, Object> orderStateSnapshot(PurchaseOrderEntity order) {
+        Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("status", order.getStatus());
         snapshot.put("version", order.getVersion());
         return snapshot;
@@ -34,12 +30,8 @@ public final class PurchaseOrderAuditSnapshotFactory {
     /**
      * `CREATE` / `UPDATE` / `DELETE` 的「全量 header + items」快照。
      */
-    public static Map<
-            String,
-            Object> orderAuditSnapshot(PurchaseOrderVO vo) {
-        Map<
-                String,
-                Object> snapshot = PurchaseSnapshotFactory.snapshot();
+    public static Map<String, Object> orderAuditSnapshot(PurchaseOrderVO vo) {
+        Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("id", vo.getId());
         snapshot.put("orderNo", vo.getOrderNo());
         snapshot.put("supplierId", vo.getSupplierId());
@@ -57,23 +49,13 @@ public final class PurchaseOrderAuditSnapshotFactory {
     /**
      * 全量快照里的行数组；`null` 入参退化为空数组（不返回 `null`，避免下游判空）。
      */
-    public static List<
-            Map<
-                    String,
-                    Object>> orderItemAuditSnapshots(
-                            List<
-                                    PurchaseOrderItemVO> items) {
-        List<
-                Map<
-                        String,
-                        Object>> snapshots = new ArrayList<>();
+    public static List<Map<String, Object>> orderItemAuditSnapshots(List<PurchaseOrderItemVO> items) {
+        List<Map<String, Object>> snapshots = new ArrayList<>();
         if (items == null) {
             return snapshots;
         }
         for (PurchaseOrderItemVO item : items) {
-            Map<
-                    String,
-                    Object> row = PurchaseSnapshotFactory.snapshot();
+            Map<String, Object> row = PurchaseSnapshotFactory.snapshot();
             row.put("id", item.getId());
             row.put("skuId", item.getSkuId());
             row.put("plannedQuantity", PurchaseSnapshotFactory.fixed(item.getPlannedQuantity()));
@@ -82,15 +64,10 @@ public final class PurchaseOrderAuditSnapshotFactory {
             row.put("lineAmount", PurchaseSnapshotFactory.fixed(item.getLineAmount()));
             row.put("sortOrder", item.getSortOrder());
             row.put("version", item.getVersion());
-            List<
-                    Map<
-                            String,
-                            Object>> allocations = new ArrayList<>();
+            List<Map<String, Object>> allocations = new ArrayList<>();
             if (item.getAllocations() != null) {
                 for (PurchaseOrderAllocationVO allocation : item.getAllocations()) {
-                    Map<
-                            String,
-                            Object> one = PurchaseSnapshotFactory.snapshot();
+                    Map<String, Object> one = PurchaseSnapshotFactory.snapshot();
                     one.put("allocationId", allocation.getAllocationId());
                     one.put("demandId", allocation.getDemandId());
                     one.put("quantity", PurchaseSnapshotFactory.fixed(allocation.getQuantity()));

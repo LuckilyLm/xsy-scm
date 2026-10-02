@@ -55,8 +55,7 @@ public class StocktakeSnapshotSigner {
      *            导出人（{@code ScmOperator#current}），导入时要求同一人，防止跨人复用离线清单
      */
     public record Payload(String templateVersion, Long warehouseId, String operator, long issuedAtEpochSec,
-            long expiresAtEpochSec, List<
-                    Entry> entries) {
+            long expiresAtEpochSec, List<Entry> entries) {
     }
 
     /** 凭证校验失败（签名不符 / 结构损坏 / 已过期）。调用方据此整批拒绝。 */

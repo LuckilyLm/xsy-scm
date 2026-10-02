@@ -23,24 +23,17 @@ import java.util.List;
  * tolerance/100)`）， 静态 CHECK 表达不了（见 的注释）。累计的唯一入口是 {@link #accumulateReceived}，且必须持有行锁（{@link #lockByOrderId}）。
  */
 @Mapper
-public interface PurchaseOrderItemDao
-        extends
-            BaseMapper<
-                    PurchaseOrderItemEntity> {
+public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity> {
 
     /**
      * 本单全部活动行，按 `sort_order` 排序。
      */
-    List<
-            PurchaseOrderItemEntity> listByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
+    List<PurchaseOrderItemEntity> listByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
     /**
      * 多单活动行（批量详情用）。
      */
-    List<
-            PurchaseOrderItemEntity> listByOrderIds(
-                    @Param("ids") List<
-                            Long> ids);
+    List<PurchaseOrderItemEntity> listByOrderIds(@Param("ids") List<Long> ids);
 
     /**
      * 锁定本单全部行（`ORDER BY id ASC FOR UPDATE`）。
@@ -48,8 +41,7 @@ public interface PurchaseOrderItemDao
      * <p>
      * 收货确认必须先锁行再累计：两笔收货并发收同一剩余量时， 只有行锁能让第二笔看到第一笔的 `received_quantity`。
      */
-    List<
-            PurchaseOrderItemEntity> lockByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
+    List<PurchaseOrderItemEntity> lockByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
     /**
      * 单行 `FOR UPDATE`。
@@ -86,9 +78,6 @@ public interface PurchaseOrderItemDao
      * {@code scope} 是调用者的仓库授权范围，谓词落在 {@code purchase_order.warehouse_id} 上： 收货单的仓库在建单时从采购单继承，因此这一列同时就是收货行所在的那个仓。
      * {@code null} 在 Mapper 里失败关闭，不表示「全部」。
      */
-    List<
-            PurchaseReceiptItemWorkbenchVO> workbench(
-                    Page<
-                            ?> page,
-                    @Param("query") PurchaseReceiptItemWorkbenchQueryForm form, @Param("scope") ScmValueScope scope);
+    List<PurchaseReceiptItemWorkbenchVO> workbench(Page<?> page,
+            @Param("query") PurchaseReceiptItemWorkbenchQueryForm form, @Param("scope") ScmValueScope scope);
 }

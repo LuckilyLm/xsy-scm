@@ -16,14 +16,12 @@ public enum ScmFinanceReceivableSourceTypeEnum {
     /**
      * 正常应收：{@code source_id} = {@code sales_order.id}。
      */
-    SALES_ORDER(
-            "销售订单"),
+    SALES_ORDER("销售订单"),
 
     /**
      * 红字应收：{@code source_id} = {@code order_return.id}。
      */
-    ORDER_RETURN(
-            "销售退货");
+    ORDER_RETURN("销售退货");
 
     private final String desc;
 }

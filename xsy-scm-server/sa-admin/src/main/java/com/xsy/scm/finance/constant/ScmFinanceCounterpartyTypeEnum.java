@@ -17,14 +17,12 @@ public enum ScmFinanceCounterpartyTypeEnum {
     /**
      * 供应商：对应 {@code finance_payable} 的核销与预付。
      */
-    SUPPLIER(
-            "供应商"),
+    SUPPLIER("供应商"),
 
     /**
      * 客户：对应退款付款（{@code source_type = ORDER_REFUND}）。
      */
-    CUSTOMER(
-            "客户");
+    CUSTOMER("客户");
 
     private final String desc;
 }

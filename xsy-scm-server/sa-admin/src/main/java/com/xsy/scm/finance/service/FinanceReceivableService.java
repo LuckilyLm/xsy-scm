@@ -114,9 +114,8 @@ public class FinanceReceivableService {
      * 零实发与整单金额为 0 时什么都不写、静默返回 —— 跳过是成功语义，不是失败。
      */
     private void ensureNormalFromSigning(FinanceReceivableSourceDto source) {
-        List<
-                FinanceReceivableItemEntity> items = toNormalItems(source,
-                        financeReceivableSourceDao.selectOutboundLines(source.getSalesOrderId()));
+        List<FinanceReceivableItemEntity> items = toNormalItems(source,
+                financeReceivableSourceDao.selectOutboundLines(source.getSalesOrderId()));
         BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
                 BigDecimal::add);
 
@@ -170,9 +169,8 @@ public class FinanceReceivableService {
      * 结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上， 从订单或退货行重新解析快照会让同一笔债权出现两个对方身份 （「必须引用原 {@code Receivable}」的含意之一）。
      */
     private void generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
-        List<
-                FinanceReceivableItemEntity> items = toRedItems(returned,
-                        financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()));
+        List<FinanceReceivableItemEntity> items = toRedItems(returned,
+                financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()));
         BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
                 BigDecimal::add);
 
@@ -255,10 +253,8 @@ public class FinanceReceivableService {
     /**
      * 正常明细：量取出库行、价取订单行的冻结售价，金额 {@code ROUND(量 × 价, 4, HALF_UP)} ；单头是**已舍入行金额之和**。一条订单行对应多条出库行时逐条成行、不合并。
      */
-    private List<
-            FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
-                    List<
-                            FinanceReceivableSourceLineDto> lines) {
+    private List<FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
+            List<FinanceReceivableSourceLineDto> lines) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return lines.stream().map(line -> {
@@ -283,10 +279,8 @@ public class FinanceReceivableService {
      * 红字明细：金额直接采用订单域已落库的 {@code approved_amount}， **不重算** {@code quantity × unit_price}；也不存行级原明细指针
      * ——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
      */
-    private List<
-            FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
-                    List<
-                            FinanceReturnSourceLineDto> lines) {
+    private List<FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
+            List<FinanceReturnSourceLineDto> lines) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return lines.stream().map(line -> {
@@ -317,12 +311,8 @@ public class FinanceReceivableService {
      * 生成类动作的 {@code after_data} 单头快照。金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的裸
      * ObjectMapper。
      */
-    private Map<
-            String,
-            Object> generatedSnapshot(FinanceReceivableEntity receivable, int itemCount) {
-        Map<
-                String,
-                Object> snapshot = baseSnapshot(receivable);
+    private Map<String, Object> generatedSnapshot(FinanceReceivableEntity receivable, int itemCount) {
+        Map<String, Object> snapshot = baseSnapshot(receivable);
         snapshot.put("itemCount", itemCount);
         return snapshot;
     }
@@ -330,12 +320,9 @@ public class FinanceReceivableService {
     /**
      * 红字的 {@code after_data}：除单头快照外必须能直接看出它冲的是哪张原应收、来源是哪张退货单 ，否则事后核对要连表跳三次。
      */
-    private Map<
-            String,
-            Object> redGeneratedSnapshot(FinanceReceivableEntity red, FinanceReturnSourceDto returned, int itemCount) {
-        Map<
-                String,
-                Object> snapshot = baseSnapshot(red);
+    private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red, FinanceReturnSourceDto returned,
+            int itemCount) {
+        Map<String, Object> snapshot = baseSnapshot(red);
         snapshot.put("sourceReturnId", returned.getOrderReturnId());
         snapshot.put("returnNo", returned.getReturnNo());
         snapshot.put("originalReceivableId", red.getOriginalReceivableId());
@@ -343,12 +330,8 @@ public class FinanceReceivableService {
         return snapshot;
     }
 
-    private Map<
-            String,
-            Object> baseSnapshot(FinanceReceivableEntity receivable) {
-        Map<
-                String,
-                Object> snapshot = new LinkedHashMap<>();
+    private Map<String, Object> baseSnapshot(FinanceReceivableEntity receivable) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("receivableNo", receivable.getReceivableNo());
         snapshot.put("sourceType", receivable.getSourceType());
         snapshot.put("sourceId", receivable.getSourceId());

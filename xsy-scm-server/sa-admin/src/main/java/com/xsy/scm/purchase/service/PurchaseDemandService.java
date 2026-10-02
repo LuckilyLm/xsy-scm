@@ -96,8 +96,7 @@ public class PurchaseDemandService {
      */
     @Data
     public static class GenerateResult {
-        private List<
-                Long> demandIds = new ArrayList<>();
+        private List<Long> demandIds = new ArrayList<>();
         private int sourceLineCount;
         private int createdCount;
         private int skippedCount;
@@ -131,20 +130,15 @@ public class PurchaseDemandService {
         // form.warehouseId 显式给出并由 warehouseReferenceGuard 校验启用态；「这个仓归不归他管」
         // 是收货上架 / 出库这些改库存事实的写路径的判据（ScmWarehouseScopeGuard），不在这里重复。
         // 传 all() 而不是省略参数，是为了让 Dao 的 scope 语义在两处调用点都显式可查。
-        List<
-                SalesOrderItemEntity> sourceItems = purchaseDemandDao.listSourceItems(form.getStartAt(),
-                        form.getEndAt(), ScmValueScope.all());
+        List<SalesOrderItemEntity> sourceItems = purchaseDemandDao.listSourceItems(form.getStartAt(), form.getEndAt(),
+                ScmValueScope.all());
 
         GenerateResult result = new GenerateResult();
         result.setSourceLineCount(sourceItems.size());
 
         if (!sourceItems.isEmpty()) {
-            Map<
-                    Long,
-                    SalesOrderEntity> orders = ordersOf(sourceItems);
-            Map<
-                    Long,
-                    Long> existingDemandIds = existingDemandIds(sourceItems);
+            Map<Long, SalesOrderEntity> orders = ordersOf(sourceItems);
+            Map<Long, Long> existingDemandIds = existingDemandIds(sourceItems);
 
             for (SalesOrderItemEntity source : sourceItems) {
                 SalesOrderEntity order = orders.get(source.getOrderId());
@@ -176,9 +170,7 @@ public class PurchaseDemandService {
             }
         }
 
-        Map<
-                String,
-                Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("demandIds", result.getDemandIds());
         after.put("sourceLineCount", result.getSourceLineCount());
         after.put("createdCount", result.getCreatedCount());
@@ -272,18 +264,12 @@ public class PurchaseDemandService {
 
         // ：DEMAND_ALLOCATE 的 purchase_order_id 由 purchaseOrderItemId **反查**得到，非空；
         // purchase_receipt_id 为 NULL。ck_purchase_operation_log_owner 会复核这一分支。
-        Map<
-                String,
-                Object> before = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> before = PurchaseSnapshotFactory.snapshot();
         before.put("allocatedQuantity", PurchaseSnapshotFactory.fixed(previousAllocated));
-        Map<
-                String,
-                Object> after = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("purchaseOrderItemId", orderItem.getId());
         after.put("purchaseOrderId", order.getId());
-        Map<
-                String,
-                Object> one = PurchaseSnapshotFactory.snapshot();
+        Map<String, Object> one = PurchaseSnapshotFactory.snapshot();
         one.put("demandId", demand.getId());
         one.put("quantity", PurchaseSnapshotFactory.fixed(quantity));
         after.put("allocations", List.of(one));
@@ -311,14 +297,9 @@ public class PurchaseDemandService {
         }
     }
 
-    private Map<
-            Long,
-            SalesOrderEntity> ordersOf(
-                    List<
-                            SalesOrderItemEntity> sourceItems) {
-        List<
-                Long> orderIds = sourceItems.stream().map(SalesOrderItemEntity::getOrderId).filter(Objects::nonNull)
-                        .distinct().toList();
+    private Map<Long, SalesOrderEntity> ordersOf(List<SalesOrderItemEntity> sourceItems) {
+        List<Long> orderIds = sourceItems.stream().map(SalesOrderItemEntity::getOrderId).filter(Objects::nonNull)
+                .distinct().toList();
         if (orderIds.isEmpty()) {
             return Map.of();
         }
@@ -327,16 +308,9 @@ public class PurchaseDemandService {
                 .collect(Collectors.toMap(SalesOrderEntity::getId, order -> order, (a, b) -> a));
     }
 
-    private Map<
-            Long,
-            Long> existingDemandIds(
-                    List<
-                            SalesOrderItemEntity> sourceItems) {
-        List<
-                Long> itemIds = sourceItems.stream().map(SalesOrderItemEntity::getId).toList();
-        Map<
-                Long,
-                Long> bySourceItem = new LinkedHashMap<>();
+    private Map<Long, Long> existingDemandIds(List<SalesOrderItemEntity> sourceItems) {
+        List<Long> itemIds = sourceItems.stream().map(SalesOrderItemEntity::getId).toList();
+        Map<Long, Long> bySourceItem = new LinkedHashMap<>();
         for (PurchaseDemandEntity row : purchaseDemandDao.listActiveBySourceItemIds(itemIds)) {
             bySourceItem.put(row.getSalesOrderItemId(), row.getId());
         }
@@ -344,8 +318,7 @@ public class PurchaseDemandService {
     }
 
     private Long reReadDemandId(Long salesOrderItemId) {
-        List<
-                PurchaseDemandEntity> rows = purchaseDemandDao.listActiveBySourceItemIds(List.of(salesOrderItemId));
+        List<PurchaseDemandEntity> rows = purchaseDemandDao.listActiveBySourceItemIds(List.of(salesOrderItemId));
         if (rows.isEmpty()) {
             // INSERT 报告冲突却读不到行：唯一索引与查询条件不一致，属数据/映射缺陷
             throw new IllegalStateException("采购需求 INSERT 冲突但重读为空，salesOrderItemId=" + salesOrderItemId);

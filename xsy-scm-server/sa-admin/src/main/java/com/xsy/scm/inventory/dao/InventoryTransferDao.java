@@ -25,10 +25,7 @@ import java.util.List;
  * 而那时状态已不是 DRAFT，改草稿会被守卫拒绝。行锁天然把「读明细 → 写流水」这段序列化了， 所以不需要额外的版本号（报损报溢的审批需要，是因为它的「读」发生在弹窗打开那一刻， 不在锁的保护范围内）。
  */
 @Mapper
-public interface InventoryTransferDao
-        extends
-            BaseMapper<
-                    InventoryTransferEntity> {
+public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity> {
 
     /**
      * 单号是否存在（软删范围内）。生成单号时用于冲突重试。
@@ -83,11 +80,8 @@ public interface InventoryTransferDao
      * <p>
      * 调拨的可见口径是「源仓或目标仓任一被授权」，只授权一端的人看不见在途单就没法对账。
      */
-    List<
-            InventoryTransferVO> queryPage(
-                    Page<
-                            ?> page,
-                    @Param("query") InventoryTransferQueryForm query, @Param("scope") ScmValueScope scope);
+    List<InventoryTransferVO> queryPage(Page<?> page, @Param("query") InventoryTransferQueryForm query,
+            @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。
@@ -100,6 +94,5 @@ public interface InventoryTransferDao
      * <p>
      * 只读聚合，不修改任何业务表；结果按 (transfer_no, sku_id) 展开。
      */
-    List<
-            InventoryInTransitVO> queryInTransit(@Param("scope") ScmValueScope scope);
+    List<InventoryInTransitVO> queryInTransit(@Param("scope") ScmValueScope scope);
 }

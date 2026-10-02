@@ -15,6 +15,5 @@ public class PurchaseOrderBatchDeleteForm {
     @Valid
     @NotEmpty(message = "采购单列表不能为空")
     @Size(max = 100, message = "采购单列表不能超过100项")
-    private List<
-            PurchaseOrderVersionForm> orders;
+    private List<PurchaseOrderVersionForm> orders;
 }

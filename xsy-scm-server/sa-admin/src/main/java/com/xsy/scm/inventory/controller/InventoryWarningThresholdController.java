@@ -46,16 +46,14 @@ public class InventoryWarningThresholdController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.THRESHOLD_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    InventoryWarningThresholdVO>> query(@Valid @RequestBody InventoryWarningThresholdQueryForm form) {
+    public ResponseDTO<PageResult<InventoryWarningThresholdVO>> query(
+            @Valid @RequestBody InventoryWarningThresholdQueryForm form) {
         return ResponseDTO.ok(inventoryWarningQueryService.queryThresholdPage(form));
     }
 
     @GetMapping("/detail/{id}")
     @SaCheckPermission(InventoryPermission.THRESHOLD_QUERY)
-    public ResponseDTO<
-            InventoryWarningThresholdVO> detail(@PathVariable("id") Long warningThresholdId) {
+    public ResponseDTO<InventoryWarningThresholdVO> detail(@PathVariable("id") Long warningThresholdId) {
         return ResponseDTO.ok(inventoryWarningQueryService.detail(warningThresholdId));
     }
 
@@ -65,8 +63,7 @@ public class InventoryWarningThresholdController {
     @PostMapping("/create")
     @SaCheckPermission(InventoryPermission.THRESHOLD_ADD)
     @OperateLog
-    public ResponseDTO<
-            Long> create(@Valid @RequestBody InventoryWarningThresholdAddForm form) {
+    public ResponseDTO<Long> create(@Valid @RequestBody InventoryWarningThresholdAddForm form) {
         return ResponseDTO.ok(inventoryWarningThresholdService.create(form));
     }
 
@@ -76,9 +73,8 @@ public class InventoryWarningThresholdController {
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.THRESHOLD_UPDATE)
     @OperateLog
-    public ResponseDTO<
-            String> update(@PathVariable("id") Long warningThresholdId,
-                    @Valid @RequestBody InventoryWarningThresholdAddForm form) {
+    public ResponseDTO<String> update(@PathVariable("id") Long warningThresholdId,
+            @Valid @RequestBody InventoryWarningThresholdAddForm form) {
         inventoryWarningThresholdService.update(warningThresholdId, form);
         return ResponseDTO.ok();
     }
@@ -89,8 +85,7 @@ public class InventoryWarningThresholdController {
     @PostMapping("/delete/{id}")
     @SaCheckPermission(InventoryPermission.THRESHOLD_DELETE)
     @OperateLog
-    public ResponseDTO<
-            String> delete(@PathVariable("id") Long warningThresholdId) {
+    public ResponseDTO<String> delete(@PathVariable("id") Long warningThresholdId) {
         inventoryWarningThresholdService.delete(warningThresholdId);
         return ResponseDTO.ok();
     }

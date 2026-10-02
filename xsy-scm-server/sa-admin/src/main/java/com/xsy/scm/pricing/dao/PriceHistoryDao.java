@@ -11,9 +11,5 @@ import com.xsy.scm.pricing.domain.vo.PriceHistoryVO;
 
 @Mapper
 public interface PriceHistoryDao {
-    List<
-            PriceHistoryVO> query(
-                    Page<
-                            ?> page,
-                    @Param("query") PriceHistoryQueryForm query);
+    List<PriceHistoryVO> query(Page<?> page, @Param("query") PriceHistoryQueryForm query);
 }

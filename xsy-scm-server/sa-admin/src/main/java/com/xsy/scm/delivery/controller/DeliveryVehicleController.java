@@ -28,17 +28,14 @@ public class DeliveryVehicleController {
 
     @GetMapping
     @SaCheckPermission(DeliveryPermission.VEHICLE_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    DeliveryVehicleEntity>> query(@Valid @ModelAttribute DeliveryQueryForm form) {
+    public ResponseDTO<PageResult<DeliveryVehicleEntity>> query(@Valid @ModelAttribute DeliveryQueryForm form) {
         return ResponseDTO.ok(deliveryVehicleService.query(form));
     }
 
     @PostMapping
     @SaCheckPermission(DeliveryPermission.VEHICLE_EDIT)
     @OperateLog
-    public ResponseDTO<
-            Long> save(@Valid @RequestBody DeliveryVehicleForm form) {
+    public ResponseDTO<Long> save(@Valid @RequestBody DeliveryVehicleForm form) {
         return ResponseDTO.ok(deliveryVehicleService.save(form));
     }
 }

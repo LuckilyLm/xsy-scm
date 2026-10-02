@@ -37,8 +37,7 @@ public class InventoryTransferAddForm {
 
     @NotEmpty(message = "调拨明细不能为空")
     @Valid
-    private List<
-            Item> items;
+    private List<Item> items;
 
     /**
      * 调拨明细行。

@@ -19,10 +19,7 @@ import java.util.List;
  * 与余额 DAO 的关键差别：本表是**普通有状态单据**（草稿可改、可取消）， 因此有 update 方法。真正的不可变纪律在 {@code inventory_movement} 上，不在这里。
  */
 @Mapper
-public interface InventoryOutboundDao
-        extends
-            BaseMapper<
-                    InventoryOutboundEntity> {
+public interface InventoryOutboundDao extends BaseMapper<InventoryOutboundEntity> {
 
     /**
      * 单号是否存在（软删范围内）。生成单号时用于冲突重试。
@@ -70,11 +67,8 @@ public interface InventoryOutboundDao
     /**
      * 分页查询（联仓库取展示字段）。
      */
-    List<
-            InventoryOutboundVO> queryPage(
-                    Page<
-                            ?> page,
-                    @Param("query") InventoryOutboundQueryForm query, @Param("scope") ScmValueScope scope);
+    List<InventoryOutboundVO> queryPage(Page<?> page, @Param("query") InventoryOutboundQueryForm query,
+            @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

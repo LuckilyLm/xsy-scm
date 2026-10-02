@@ -12,6 +12,8 @@ package com.xsy.scm.common.constant;
  * 约束与 {@code CustomerValidator} 双重保证。
  */
 public enum ScmCreditPeriodTypeEnum {
+
     BY_AMOUNT,
+
     BY_TIME
 }

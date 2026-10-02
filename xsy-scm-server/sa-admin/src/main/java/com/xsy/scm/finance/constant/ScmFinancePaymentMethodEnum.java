@@ -19,20 +19,17 @@ public enum ScmFinancePaymentMethodEnum {
     /**
      * 现金。
      */
-    CASH(
-            "现金"),
+    CASH("现金"),
 
     /**
      * 银行转账。
      */
-    BANK_TRANSFER(
-            "银行转账"),
+    BANK_TRANSFER("银行转账"),
 
     /**
      * 其它；具体渠道写在 {@code external_reference} 或 {@code remark} 里。
      */
-    OTHER(
-            "其它");
+    OTHER("其它");
 
     private final String desc;
 }

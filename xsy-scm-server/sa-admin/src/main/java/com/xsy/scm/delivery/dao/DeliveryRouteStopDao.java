@@ -5,8 +5,5 @@ import org.apache.ibatis.annotations.Mapper;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteStopEntity;
 
 @Mapper
-public interface DeliveryRouteStopDao
-        extends
-            BaseMapper<
-                    DeliveryRouteStopEntity> {
+public interface DeliveryRouteStopDao extends BaseMapper<DeliveryRouteStopEntity> {
 }

@@ -53,8 +53,7 @@ public class SalesOrderQueryService {
     private static final int RECENT_PRICE_MIN_LIMIT = 1;
     private static final int RECENT_PRICE_MAX_LIMIT = 10;
 
-    public PageResult<
-            SalesOrderVO> query(SalesOrderQueryForm salesOrderQueryForm) {
+    public PageResult<SalesOrderVO> query(SalesOrderQueryForm salesOrderQueryForm) {
         ScmDataScopeContext dataScopeContext = dataScopeService.resolve();
         // 维度里一个授权 id 都没有时直接给空分页：不必让数据库跑一次恒假的 IN，
         // 也避免把空集合送进 IN () 变成非法 SQL。
@@ -135,8 +134,7 @@ public class SalesOrderQueryService {
      * <p>
      * 刻意不按调用者范围收窄：它是录单时的取价旁证入参，客户与 SKU 都由前端选择， 真正的下单校验在 {@code SalesOrderService} 的归属判定里做（读不到该客户就建不了单）。
      */
-    public List<
-            OrderRecentPriceVO> recentPrices(Long customerId, Long skuId, int limit) {
+    public List<OrderRecentPriceVO> recentPrices(Long customerId, Long skuId, int limit) {
         int n = Math.min(Math.max(limit, RECENT_PRICE_MIN_LIMIT), RECENT_PRICE_MAX_LIMIT);
         return salesOrderItemDao.recentPrices(customerId, skuId, n);
     }
@@ -144,8 +142,7 @@ public class SalesOrderQueryService {
     /**
      * 操作日志列表：日志行没有归属列，范围经父订单生效（见 OrderOperationLogMapper.xml）。
      */
-    public PageResult<
-            OrderOperationLogVO> logs(OrderLogQueryForm logQueryForm) {
+    public PageResult<OrderOperationLogVO> logs(OrderLogQueryForm logQueryForm) {
         ScmDataScopeContext dataScopeContext = dataScopeService.resolve();
         if (dataScopeContext.getOrderSellerScope().isEmpty())
             return ScmDataScopeService.emptyPage(logQueryForm);

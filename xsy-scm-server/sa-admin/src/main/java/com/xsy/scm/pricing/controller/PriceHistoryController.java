@@ -22,9 +22,7 @@ public class PriceHistoryController {
 
     @PostMapping("/query")
     @SaCheckPermission(PricingPermission.HISTORY_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    PriceHistoryVO>> query(@Valid @RequestBody PriceHistoryQueryForm form) {
+    public ResponseDTO<PageResult<PriceHistoryVO>> query(@Valid @RequestBody PriceHistoryQueryForm form) {
         return ResponseDTO.ok(priceHistoryQueryService.query(form));
     }
 }

@@ -20,14 +20,12 @@ public enum ScmFinancePayableSourceTypeEnum {
     /**
      * 正常应付：{@code source_id} = {@code purchase_receipt.id}。
      */
-    PURCHASE_RECEIPT(
-            "采购收货单"),
+    PURCHASE_RECEIPT("采购收货单"),
 
     /**
      * 手工红字应付：{@code source_id} 必须为 {@code null}，{@code original_payable_id} 与 {@code reason} 必填。
      */
-    MANUAL(
-            "手工登记");
+    MANUAL("手工登记");
 
     private final String desc;
 }

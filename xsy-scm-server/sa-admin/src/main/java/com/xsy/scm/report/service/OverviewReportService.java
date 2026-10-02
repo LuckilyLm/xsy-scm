@@ -51,13 +51,11 @@ public class OverviewReportService {
         return vo;
     }
 
-    public List<
-            ReportDailyStatVO> dailyStat(ScmOverviewReportQueryForm form) {
+    public List<ReportDailyStatVO> dailyStat(ScmOverviewReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
-        List<
-                ReportDailyStatVO> rows = reportDao.dailyStat(range.startDate(), range.endDate(), range.startAt(),
-                        range.endAt(), form, warehousePredicate(context));
+        List<ReportDailyStatVO> rows = reportDao.dailyStat(range.startDate(), range.endDate(), range.startAt(),
+                range.endAt(), form, warehousePredicate(context));
         boolean warehouseNowhere = context.warehouseNowhere();
         boolean costVisible = context.isCostVisible();
         if (warehouseNowhere || !costVisible) {

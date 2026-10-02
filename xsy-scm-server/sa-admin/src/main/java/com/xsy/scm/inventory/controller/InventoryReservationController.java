@@ -38,9 +38,8 @@ public class InventoryReservationController {
 
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.RESERVATION_QUERY)
-    public ResponseDTO<
-            PageResult<
-                    InventoryReservationVO>> query(@Valid @RequestBody InventoryReservationQueryForm form) {
+    public ResponseDTO<PageResult<InventoryReservationVO>> query(
+            @Valid @RequestBody InventoryReservationQueryForm form) {
         return ResponseDTO.ok(inventoryReservationQueryService.queryPage(form));
     }
 
@@ -53,8 +52,7 @@ public class InventoryReservationController {
     @PostMapping("/release/{id}")
     @SaCheckPermission(InventoryPermission.RESERVATION_RELEASE)
     @OperateLog
-    public ResponseDTO<
-            String> release(@PathVariable("id") Long reservationId) {
+    public ResponseDTO<String> release(@PathVariable("id") Long reservationId) {
         inventoryReservationService.release(reservationId);
         return ResponseDTO.ok();
     }

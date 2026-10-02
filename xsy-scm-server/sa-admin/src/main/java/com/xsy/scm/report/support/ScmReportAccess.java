@@ -44,10 +44,7 @@ public final class ScmReportAccess {
      * <p>
      * 用 {@code null} 而不是 {@code 0}：0 是「成本确实是零」这一事实， null 才是「调用者无权知道」。前端把 null 渲染成 {@code —}，两者在页面上必须可辨。
      */
-    public static <T> void maskCost(Collection<
-            T> rows, boolean costVisible,
-            Consumer<
-                    T> costClearer) {
+    public static <T> void maskCost(Collection<T> rows, boolean costVisible, Consumer<T> costClearer) {
         if (costVisible || rows == null) {
             return;
         }

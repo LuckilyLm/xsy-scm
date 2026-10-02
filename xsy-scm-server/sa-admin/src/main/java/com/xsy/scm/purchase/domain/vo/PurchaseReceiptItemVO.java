@@ -25,9 +25,7 @@ public class PurchaseReceiptItemVO {
     private Long skuId;
     private String skuCode;
     private String skuName;
-    private Map<
-            String,
-            Object> specValues;
+    private Map<String, Object> specValues;
     private String purchaseUnit;
     private String productType;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

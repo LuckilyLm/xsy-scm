@@ -19,6 +19,5 @@ public class OrderReturnApproveForm {
     @Valid
     @NotEmpty(message = "退货审批明细不能为空")
     @Size(max = 500, message = "退货审批明细不能超过500项")
-    private List<
-            OrderReturnApproveItemForm> items;
+    private List<OrderReturnApproveItemForm> items;
 }

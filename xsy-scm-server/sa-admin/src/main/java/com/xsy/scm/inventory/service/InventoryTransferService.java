@@ -148,8 +148,7 @@ public class InventoryTransferService {
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
         requireEnabled(locked.getFromWarehouseId());
 
-        List<
-                InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
+        List<InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_EMPTY_ITEMS);
         }
@@ -186,8 +185,7 @@ public class InventoryTransferService {
         requireStatus(locked, ScmInventoryTransferStatusEnum.SHIPPED);
         requireEnabled(locked.getToWarehouseId());
 
-        List<
-                InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
+        List<InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
         if (items == null || items.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_EMPTY_ITEMS);
         }
@@ -265,8 +263,7 @@ public class InventoryTransferService {
         if (Objects.equals(form.getFromWarehouseId(), form.getToWarehouseId())) {
             throw new ScmBusinessException(INVENTORY_TRANSFER_SAME_WAREHOUSE);
         }
-        Set<
-                Long> seen = new HashSet<>();
+        Set<Long> seen = new HashSet<>();
         for (InventoryTransferAddForm.Item item : form.getItems()) {
             if (item == null || item.getSkuId() == null || !seen.add(item.getSkuId())) {
                 throw new ScmBusinessException(INVENTORY_TRANSFER_DUPLICATE_SKU);

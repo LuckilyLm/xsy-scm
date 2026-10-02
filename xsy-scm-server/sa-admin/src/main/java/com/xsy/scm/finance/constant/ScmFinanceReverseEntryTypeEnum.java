@@ -20,14 +20,12 @@ public enum ScmFinanceReverseEntryTypeEnum {
     /**
      * 原始事实：{@code reverse_of_id} 必须为 {@code null}。
      */
-    NORMAL(
-            "正常"),
+    NORMAL("正常"),
 
     /**
      * 反向事实：{@code reverse_of_id} 必填且指向同表的 {@code NORMAL} 行，{@code reason} 必填非空。
      */
-    REVERSE(
-            "反向");
+    REVERSE("反向");
 
     private final String desc;
 }

@@ -20,8 +20,7 @@ public class CustomerDetailVO {
     private String geomCrs;
 
     private String visibilityPolicy;
-    private java.util.List<
-            CustomerSkuVisibilityVO> visibilities;
+    private java.util.List<CustomerSkuVisibilityVO> visibilities;
 
     private Long customerId;
 

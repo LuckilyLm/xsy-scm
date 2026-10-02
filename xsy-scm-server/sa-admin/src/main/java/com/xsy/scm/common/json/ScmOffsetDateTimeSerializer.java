@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -41,10 +42,7 @@ import java.time.format.DateTimeFormatter;
  *
  * @see net.lab1024.sa.base.config.JsonConfig
  */
-public class ScmOffsetDateTimeSerializer
-        extends
-            JsonSerializer<
-                    OffsetDateTime> {
+public class ScmOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
 
     /**
      * 输出格式：秒级，不带毫秒与时区后缀。
@@ -54,7 +52,7 @@ public class ScmOffsetDateTimeSerializer
     /**
      * 展示时区（中国标准时间）。
      */
-    public static final java.time.ZoneId DISPLAY_ZONE = java.time.ZoneId.of("Asia/Shanghai");
+    public static final ZoneId DISPLAY_ZONE = ZoneId.of("Asia/Shanghai");
 
     @Override
     public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {

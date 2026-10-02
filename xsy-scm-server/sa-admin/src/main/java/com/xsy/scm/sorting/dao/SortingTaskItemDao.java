@@ -5,8 +5,5 @@ import org.apache.ibatis.annotations.Mapper;
 import com.xsy.scm.sorting.domain.entity.SortingTaskItemEntity;
 
 @Mapper
-public interface SortingTaskItemDao
-        extends
-            BaseMapper<
-                    SortingTaskItemEntity> {
+public interface SortingTaskItemDao extends BaseMapper<SortingTaskItemEntity> {
 }

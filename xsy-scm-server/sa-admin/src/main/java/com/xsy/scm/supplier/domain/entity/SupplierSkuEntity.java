@@ -54,9 +54,7 @@ public class SupplierSkuEntity {
     private String skuNameSnapshot;
 
     @TableField(typeHandler = JsonbStringMapTypeHandler.class)
-    private Map<
-            String,
-            String> specValuesSnapshot;
+    private Map<String, String> specValuesSnapshot;
 
     private String purchaseUnit;
 

@@ -12,7 +12,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
  * SCM 定点数（数量 / 金额）字符串的唯一解析入口。
  *
  * <p>
- * <b>为什么需要它：</b>legacy 对同一批字段存在两套解析规则（一处接受数字、一处只接受字符串， 一处四舍五入、一处直接截断），导致同一份请求在不同入口得到不同金额。W2 起数量与金额 <b>只有一条规则</b>：
+ * <b>为什么需要它：</b>legacy 对同一批字段存在两套解析规则（一处接受数字、一处只接受字符串， 一处四舍五入、一处直接截断）， 导致同一份请求在不同入口得到不同金额。W2 起数量与金额 <b>只有一条规则</b>：
  *
  * <ul>
  * <li>传输形态固定为 JSON <b>字符串</b>，整数部分最多 14 位、小数部分最多 4 位；</li>
@@ -26,7 +26,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
  * 解析结果统一 {@code setScale(4, HALF_UP)}，与 {@code ScmFixedScale4Serializer} 的对外形态对称。
  *
  * <p>
- * <b>使用边界：</b>本类服务于「非 MVC 入口」——参数已经进入 Service / Manager / 工具层， 不再经过 Bean Validation 的场景。MVC 入口的字段仍用 {@code @Pattern}
+ * <b>使用边界：</b>本类服务于「非 MVC 入口」——参数已经进入 Service / Manager / 工具层， 不再经过 Bean Validation 的场景。 MVC 入口的字段仍用 {@code @Pattern}
  * 注解做第一道拦截 （失败由 SmartAdmin 全局异常处理返回 30001）；本类失败抛 {@link ScmBusinessException}，携带
  * {@code ScmCommonErrorCode.VALIDATION_ERROR}(40000)。
  */

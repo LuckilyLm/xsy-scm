@@ -25,12 +25,8 @@ public class PriceHistoryVO {
     private String operationType;
     private String operator;
     private OffsetDateTime operatedAt;
-    private Map<
-            String,
-            Object> beforeData;
-    private Map<
-            String,
-            Object> afterData;
+    private Map<String, Object> beforeData;
+    private Map<String, Object> afterData;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal currentUnitPrice;
     private OffsetDateTime currentEffectiveFrom;

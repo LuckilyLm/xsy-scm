@@ -24,6 +24,7 @@ public class ScmIdempotencyService {
     private static final int MAX_KEY_LENGTH = 200;
 
     private final ScmIdempotencyRecordDao idempotencyRecordDao;
+
     private final ObjectMapper objectMapper;
 
     public record Claim(ScmIdempotencyRecordEntity record, boolean replay) {

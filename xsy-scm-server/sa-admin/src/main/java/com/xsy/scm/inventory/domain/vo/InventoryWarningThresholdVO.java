@@ -33,9 +33,7 @@ public class InventoryWarningThresholdVO {
 
     private String productName;
 
-    private Map<
-            String,
-            String> specValues;
+    private Map<String, String> specValues;
 
     /**
      * 预警下限；{@code null} = 不设下限。

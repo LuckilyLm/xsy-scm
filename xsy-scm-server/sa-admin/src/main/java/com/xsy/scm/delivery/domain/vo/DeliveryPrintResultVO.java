@@ -19,6 +19,5 @@ public class DeliveryPrintResultVO {
     private Integer orderCount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal totalAmount;
-    private List<
-            DeliveryOrderViewVO> orders;
+    private List<DeliveryOrderViewVO> orders;
 }

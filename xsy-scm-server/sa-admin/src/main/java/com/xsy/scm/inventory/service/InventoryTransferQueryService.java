@@ -40,8 +40,7 @@ public class InventoryTransferQueryService {
     /**
      * 在途库存报表（只读聚合，不进 inventory_balance）。
      */
-    public List<
-            InventoryInTransitVO> queryInTransit() {
+    public List<InventoryInTransitVO> queryInTransit() {
         ScmDataScopeContext scope = dataScopeService.resolve();
         if (scope.warehouseNowhere()) {
             return List.of();
@@ -52,8 +51,7 @@ public class InventoryTransferQueryService {
     /**
      * 分页查询（不返回明细，明细走 {@link #detail}）。
      */
-    public PageResult<
-            InventoryTransferVO> queryPage(InventoryTransferQueryForm query) {
+    public PageResult<InventoryTransferVO> queryPage(InventoryTransferQueryForm query) {
         // 排序由 mapper 写死（created_at DESC, id DESC），这里不注入 OrderItem ——
         // 列表是双联表结果（warehouse 联了两次），客户端传入的排序列名会与 join 列产生歧义。
         ScmDataScopeContext scope = dataScopeService.resolve();
@@ -61,8 +59,7 @@ public class InventoryTransferQueryService {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
-        List<
-                InventoryTransferVO> list = inventoryTransferDao.queryPage(page, query, scope.getWarehouseScope());
+        List<InventoryTransferVO> list = inventoryTransferDao.queryPage(page, query, scope.getWarehouseScope());
         list.forEach(InventoryTransferQueryService::fillStatusDesc);
         return SmartPageUtil.convert2PageResult(page, list);
     }
@@ -80,8 +77,7 @@ public class InventoryTransferQueryService {
             throw new ScmDataScopeException();
         }
         fillStatusDesc(vo);
-        List<
-                InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
+        List<InventoryTransferItemVO> items = inventoryTransferItemDao.listByTransferId(transferId);
         vo.setItems(items.stream().map(InventoryTransferQueryService::toItem).toList());
         return vo;
     }

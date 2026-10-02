@@ -68,39 +68,29 @@ public class PurchaseOrderAllocationService {
 
         final PurchaseOrderItemEntity item;
 
-        final List<
-                PurchaseOrderAddForm.Allocation> forms;
+        final List<PurchaseOrderAddForm.Allocation> forms;
 
-        final List<
-                PurchaseDemandAllocationEntity> allocations = new ArrayList<>();
+        final List<PurchaseDemandAllocationEntity> allocations = new ArrayList<>();
 
-        private RequestedRow(PurchaseOrderItemEntity purchaseOrderItem, List<
-                PurchaseOrderAddForm.Allocation> forms) {
+        private RequestedRow(PurchaseOrderItemEntity purchaseOrderItem, List<PurchaseOrderAddForm.Allocation> forms) {
             this.item = purchaseOrderItem;
             this.forms = forms == null ? List.of() : forms;
         }
     }
 
-    public List<
-            RequestedRow> materialize(PurchaseOrderAddForm form) {
-        List<
-                Long> skuIds = form.getItems().stream().map(PurchaseOrderAddForm.Item::getSkuId).distinct().toList();
-        Map<
-                Long,
-                ProductSkuOptionVO> products = productSkuOptionDao.selectByIds(skuIds).stream()
-                        .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity(), (a, b) -> a));
-        List<
-                Long> spuIds = products.values().stream().map(ProductSkuOptionVO::getSpuId).filter(Objects::nonNull)
-                        .distinct().toList();
-        Map<
-                Long,
+    public List<RequestedRow> materialize(PurchaseOrderAddForm form) {
+        List<Long> skuIds = form.getItems().stream().map(PurchaseOrderAddForm.Item::getSkuId).distinct().toList();
+        Map<Long, ProductSkuOptionVO> products = productSkuOptionDao.selectByIds(skuIds).stream()
+                .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity(), (a, b) -> a));
+        List<Long> spuIds = products.values().stream().map(ProductSkuOptionVO::getSpuId).filter(Objects::nonNull)
+                .distinct().toList();
+        Map<Long,
                 String> spuCodes = spuIds.isEmpty()
                         ? Map.of()
                         : productSpuDao.selectBatchIds(spuIds).stream().collect(
                                 Collectors.toMap(ProductSpuEntity::getId, ProductSpuEntity::getSpuCode, (a, b) -> a));
 
-        List<
-                RequestedRow> rows = new ArrayList<>(form.getItems().size());
+        List<RequestedRow> rows = new ArrayList<>(form.getItems().size());
         for (PurchaseOrderAddForm.Item itemForm : form.getItems()) {
             ProductSkuOptionVO sku = products.get(itemForm.getSkuId());
             if (sku == null) {
@@ -128,20 +118,9 @@ public class PurchaseOrderAllocationService {
      * 时必须传入 旧合计，否则「原样保存」都会因为 `旧 + 新 > required` 而误报 40082。 这与 {@code recomputeDemands} 里 `otherAllocated = allocated −
      * oldTotals[demand]` 是同一个口径。
      */
-    public Map<
-            Long,
-            BigDecimal> validateAllocations(
-                    List<
-                            RequestedRow> rows,
-                    Map<
-                            Long,
-                            PurchaseDemandEntity> demands,
-                    Long supplierId, Long warehouseId, Map<
-                            Long,
-                            BigDecimal> oldTotals) {
-        Map<
-                Long,
-                BigDecimal> totals = new LinkedHashMap<>();
+    public Map<Long, BigDecimal> validateAllocations(List<RequestedRow> rows, Map<Long, PurchaseDemandEntity> demands,
+            Long supplierId, Long warehouseId, Map<Long, BigDecimal> oldTotals) {
+        Map<Long, BigDecimal> totals = new LinkedHashMap<>();
         for (RequestedRow row : rows) {
             for (PurchaseOrderAddForm.Allocation allocationForm : row.forms) {
                 PurchaseDemandEntity demand = demands.get(allocationForm.getDemandId());
@@ -174,9 +153,7 @@ public class PurchaseOrderAllocationService {
             }
         }
 
-        for (Map.Entry<
-                Long,
-                BigDecimal> entry : totals.entrySet()) {
+        for (Map.Entry<Long, BigDecimal> entry : totals.entrySet()) {
             PurchaseDemandEntity demand = demands.get(entry.getKey());
             // 扣除本单旧分配后再比 required（见方法注释）。create 时 oldTotals 为空 → 退化为原口径。
             BigDecimal otherAllocated = demand.getAllocatedQuantity()
@@ -192,18 +169,9 @@ public class PurchaseOrderAllocationService {
      * <p>
      * **必须遍历并集**：只在旧集合出现的 demand（被删空 / 整单取消）也要重算， 否则 `allocated_quantity` 不会回落、`status` 也不会从 `ALLOCATED` 退回 `PENDING`。
      */
-    public void recomputeDemands(Map<
-            Long,
-            PurchaseDemandEntity> locked,
-            Map<
-                    Long,
-                    BigDecimal> oldTotals,
-            Map<
-                    Long,
-                    BigDecimal> newTotals,
-            Long orderSupplierId) {
-        Collection<
-                Long> involved = new LinkedHashSet<>(oldTotals.keySet());
+    public void recomputeDemands(Map<Long, PurchaseDemandEntity> locked, Map<Long, BigDecimal> oldTotals,
+            Map<Long, BigDecimal> newTotals, Long orderSupplierId) {
+        Collection<Long> involved = new LinkedHashSet<>(oldTotals.keySet());
         involved.addAll(newTotals.keySet());
         for (Long demandId : PurchaseDemandAllocator.ascendingDemandIds(involved)) {
             PurchaseDemandEntity demand = locked.get(demandId);
@@ -231,8 +199,7 @@ public class PurchaseOrderAllocationService {
     /**
      * 单行内的分配集合差量（**禁止**「一个 item 对一个 allocation」的算法）。
      */
-    public void applyAllocationChanges(RequestedRow row, List<
-            PurchaseDemandAllocationEntity> existing) {
+    public void applyAllocationChanges(RequestedRow row, List<PurchaseDemandAllocationEntity> existing) {
         // 新增采购行在落库后才取得 ID；差量身份和插入记录都必须使用该 ID。
         row.allocations.forEach(allocation -> allocation.setPurchaseOrderItemId(row.item.getId()));
         PurchaseOrderAllocationChangeSet changes = PurchaseOrderAllocationChangeSet.between(existing, row.allocations);
@@ -274,26 +241,17 @@ public class PurchaseOrderAllocationService {
      * 见类注释：不释放会让需求永久卡在 {@code ALLOCATED}。**不删任何行、不删任何单据** —— 只把分配软删、把需求的 `allocated_quantity` 减回去。
      */
     public void releaseAllocations(PurchaseOrderEntity order) {
-        List<
-                PurchaseOrderItemEntity> items = purchaseOrderItemDao.listByOrderId(order.getId());
+        List<PurchaseOrderItemEntity> items = purchaseOrderItemDao.listByOrderId(order.getId());
         if (items.isEmpty()) {
             return;
         }
-        Map<
-                Long,
-                List<
-                        PurchaseDemandAllocationEntity>> byItem = loadAllocations(items);
-        List<
-                PurchaseDemandAllocationEntity> allocations = byItem.values().stream().flatMap(List::stream).toList();
+        Map<Long, List<PurchaseDemandAllocationEntity>> byItem = loadAllocations(items);
+        List<PurchaseDemandAllocationEntity> allocations = byItem.values().stream().flatMap(List::stream).toList();
         if (allocations.isEmpty()) {
             return;
         }
-        Map<
-                Long,
-                BigDecimal> oldTotals = totals(byItem.values());
-        Map<
-                Long,
-                PurchaseDemandEntity> demands = lockDemands(oldTotals.keySet());
+        Map<Long, BigDecimal> oldTotals = totals(byItem.values());
+        Map<Long, PurchaseDemandEntity> demands = lockDemands(oldTotals.keySet());
         for (PurchaseOrderItemEntity item : items) {
             purchaseDemandAllocationDao.softDeleteByOrderItemId(item.getId(), ScmOperator.current());
         }
@@ -304,25 +262,16 @@ public class PurchaseOrderAllocationService {
     // 内部工具
     // ------------------------------------------------------------------
 
-    public Map<
-            Long,
-            List<
-                    PurchaseDemandAllocationEntity>> loadAllocations(
-                            List<
-                                    PurchaseOrderItemEntity> items) {
+    public Map<Long, List<PurchaseDemandAllocationEntity>> loadAllocations(List<PurchaseOrderItemEntity> items) {
         if (items.isEmpty()) {
             return Map.of();
         }
-        List<
-                Long> itemIds = items.stream().map(PurchaseOrderItemEntity::getId).toList();
+        List<Long> itemIds = items.stream().map(PurchaseOrderItemEntity::getId).toList();
         return purchaseDemandAllocationDao.listActiveByOrderItemIds(itemIds).stream()
                 .collect(Collectors.groupingBy(PurchaseDemandAllocationEntity::getPurchaseOrderItemId));
     }
 
-    public static List<
-            Long> requestedDemandIds(
-                    List<
-                            RequestedRow> rows) {
+    public static List<Long> requestedDemandIds(List<RequestedRow> rows) {
         return rows.stream().flatMap(row -> row.forms.stream()).map(PurchaseOrderAddForm.Allocation::getDemandId)
                 .filter(Objects::nonNull).distinct().toList();
     }
@@ -330,37 +279,22 @@ public class PurchaseOrderAllocationService {
     /**
      * 锁序第 1 层：需求必须**按 id 升序**一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
      */
-    public Map<
-            Long,
-            PurchaseDemandEntity> lockDemands(
-                    Collection<
-                            Long> demandIds) {
-        List<
-                Long> ascending = PurchaseDemandAllocator.ascendingDemandIds(demandIds);
+    public Map<Long, PurchaseDemandEntity> lockDemands(Collection<Long> demandIds) {
+        List<Long> ascending = PurchaseDemandAllocator.ascendingDemandIds(demandIds);
         if (ascending.isEmpty()) {
             return Map.of();
         }
-        List<
-                PurchaseDemandEntity> rows = purchaseDemandDao.lockByIds(ascending);
+        List<PurchaseDemandEntity> rows = purchaseDemandDao.lockByIds(ascending);
         if (rows.size() != ascending.size()) {
             throw new ScmBusinessException(PURCHASE_DEMAND_NOT_FOUND);
         }
-        Map<
-                Long,
-                PurchaseDemandEntity> byId = new LinkedHashMap<>();
+        Map<Long, PurchaseDemandEntity> byId = new LinkedHashMap<>();
         rows.forEach(row -> byId.put(row.getId(), row));
         return byId;
     }
 
-    public static Map<
-            Long,
-            BigDecimal> totals(
-                    Collection<
-                            List<
-                                    PurchaseDemandAllocationEntity>> grouped) {
-        Map<
-                Long,
-                BigDecimal> totals = new LinkedHashMap<>();
+    public static Map<Long, BigDecimal> totals(Collection<List<PurchaseDemandAllocationEntity>> grouped) {
+        Map<Long, BigDecimal> totals = new LinkedHashMap<>();
         grouped.stream().flatMap(List::stream).forEach(allocation -> totals.merge(allocation.getPurchaseDemandId(),
                 allocation.getAllocatedQuantity(), BigDecimal::add));
         return totals;

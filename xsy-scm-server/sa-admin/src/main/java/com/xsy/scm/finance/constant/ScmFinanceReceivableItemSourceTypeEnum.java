@@ -21,14 +21,12 @@ public enum ScmFinanceReceivableItemSourceTypeEnum {
     /**
      * 正常明细：{@code source_id} = {@code inventory_outbound_item.id}。
      */
-    INVENTORY_OUTBOUND_ITEM(
-            "库存出库明细"),
+    INVENTORY_OUTBOUND_ITEM("库存出库明细"),
 
     /**
      * 红字明细：{@code source_id} = {@code order_return_item.id}。
      */
-    ORDER_RETURN_ITEM(
-            "销售退货明细");
+    ORDER_RETURN_ITEM("销售退货明细");
 
     private final String desc;
 }
