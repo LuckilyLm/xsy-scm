@@ -78,7 +78,8 @@
   <a-card size="small" :bordered="false" class="smart-margin-top10">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
+        <a-button v-privilege="PERM.EXPORT" @click="exportDaily">导出</a-button>
+        <a-typography-text type="secondary" class="smart-margin-left10">
           每行的数与上方指标卡同一口径；点击行末链接可带着这一天跳到对应分析页。
         </a-typography-text>
       </div>
@@ -340,6 +341,11 @@ async function queryAll() {
 
 function onSearch() {
     queryAll();
+}
+
+/** 导出每日统计：与列表同一筛选、同一查询方法，成本 / 仓库字段按当前权限同样抹除。 */
+function exportDaily() {
+    void reportOverviewApi.dailyExport(query.value);
 }
 
 function resetQuery() {

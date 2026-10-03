@@ -142,7 +142,8 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-typography-text type="secondary">
+            <a-button v-privilege="PERM.EXPORT" @click="exportCategory">导出</a-button>
+            <a-typography-text type="secondary" class="smart-margin-left10">
               三级分类无 path 列，按 parent_id 上卷；金额是该分类节点及其子孙的合计。
             </a-typography-text>
           </div>
@@ -284,7 +285,8 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-typography-text type="secondary">
+            <a-button v-privilege="PERM.EXPORT" @click="exportSeller">导出</a-button>
+            <a-typography-text type="secondary" class="smart-margin-left10">
               这是「销售员订单业绩」，不是收入、利润或提成；`seller_id` 为空的单归入「未分配销售员」。
             </a-typography-text>
           </div>
@@ -713,8 +715,16 @@ function exportProduct() {
     void reportSalesApi.productExport(exportQuery());
 }
 
+function exportCategory() {
+    void reportSalesApi.categoryExport(exportQuery());
+}
+
 function exportCustomer() {
     void reportSalesApi.customerExport(exportQuery());
+}
+
+function exportSeller() {
+    void reportSalesApi.sellerExport(exportQuery());
 }
 
 function exportItem() {

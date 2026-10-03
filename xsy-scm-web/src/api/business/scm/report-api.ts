@@ -70,6 +70,12 @@ export const reportOverviewApi = {
      */
     daily: (data: OverviewQuery) =>
         postRequest(`${BASE}/overview/daily`, data) as unknown as Promise<ScmResponse<ReportDailyStat[]>>,
+
+    /**
+     * 每日统计导出。与列表同一个查询：日期轴补齐、成本 / 仓库字段按范围抹除，
+     * 导出不会比页面多看到一列。
+     */
+    dailyExport: (data: Partial<OverviewQuery>) => postDownload(`${BASE}/overview/daily/export`, data),
 };
 
 /** 销售分析：按商品 / 按分类 / 按客户 / 按销售员 / 订单明细（计划 §5–§10）。 */
@@ -94,7 +100,9 @@ export const reportSalesApi = {
         postRequest(`${BASE}/sales/customer/top`, data) as unknown as Promise<ScmResponse<SalesTopItem[]>>,
 
     productExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/product/export`, data),
+    categoryExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/category/export`, data),
     customerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/customer/export`, data),
+    sellerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/seller/export`, data),
     itemExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/item/export`, data),
 };
 
