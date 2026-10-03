@@ -54,12 +54,13 @@ public enum ScmPaymentIntentStatusEnum {
      */
     public static boolean canTransition(String from, String to) {
         ScmPaymentIntentStatusEnum source = of(from);
-        if (source == null || source.terminal || of(to) == null) {
+        ScmPaymentIntentStatusEnum target = of(to);
+        if (source == null || source.terminal || target == null) {
             return false;
         }
         return switch (source) {
-            case CREATED -> PENDING.equals(to) || FAILED.equals(to) || EXPIRED.equals(to) || CLOSED.equals(to);
-            case PENDING -> SUCCEEDED.equals(to) || FAILED.equals(to) || EXPIRED.equals(to) || CLOSED.equals(to);
+            case CREATED -> target == PENDING || target == FAILED || target == EXPIRED || target == CLOSED;
+            case PENDING -> target == SUCCEEDED || target == FAILED || target == EXPIRED || target == CLOSED;
             default -> false;
         };
     }

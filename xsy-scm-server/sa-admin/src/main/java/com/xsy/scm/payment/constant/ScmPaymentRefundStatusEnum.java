@@ -28,12 +28,13 @@ public enum ScmPaymentRefundStatusEnum {
     /** 唯一转换实现。失败后要重试就新建一条退款，保留「试过几次」。 */
     public static boolean canTransition(String from, String to) {
         ScmPaymentRefundStatusEnum source = of(from);
-        if (source == null || source.terminal || of(to) == null) {
+        ScmPaymentRefundStatusEnum target = of(to);
+        if (source == null || source.terminal || target == null) {
             return false;
         }
         return switch (source) {
-            case CREATED -> PROCESSING.equals(to) || FAILED.equals(to) || CLOSED.equals(to);
-            case PROCESSING -> SUCCEEDED.equals(to) || FAILED.equals(to);
+            case CREATED -> target == PROCESSING || target == FAILED || target == CLOSED;
+            case PROCESSING -> target == SUCCEEDED || target == FAILED;
             default -> false;
         };
     }
