@@ -1136,11 +1136,19 @@
         LEFT JOIN inventory_conversion src_conversion
                   ON m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
                       AND src_conversion.id = m.source_document_id
+        <!--
+          促销赠品出库：头级 source_document_id 记的是**发车事实**（配送线路），
+          因此这里显示线路编号回答「这趟车送的赠品」。防重锚点在 item 级（赠品权益 id），
+          与「哪个活动赠了什么」的追溯走 order_promotion_gift，不在本报表展开。
+        -->
+        LEFT JOIN delivery_route src_route
+                  ON m.source_document_type = 'ORDER_PROMOTION_GIFT' AND src_route.id = m.source_document_id
     </sql>
 
     <sql id="movementSourceNo">
         COALESCE(src_receipt.receipt_no, src_outbound.outbound_no, src_stocktake.stocktake_no,
-                 src_loss_gain.loss_gain_no, src_transfer.transfer_no, src_conversion.conversion_no)
+                 src_loss_gain.loss_gain_no, src_transfer.transfer_no, src_conversion.conversion_no,
+                 src_route.route_no)
     </sql>
 
     <select id="movementList"

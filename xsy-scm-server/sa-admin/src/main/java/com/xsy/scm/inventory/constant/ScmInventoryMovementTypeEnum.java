@@ -93,7 +93,18 @@ public enum ScmInventoryMovementTypeEnum {
     /**
      * 规格转换入：转换单审批通过时写入**目标 SKU**（方向 = 入）。
      */
-    CONVERT_IN("规格转换入", true);
+    CONVERT_IN("规格转换入", true),
+
+    /**
+     * 促销赠品出库：发车时随销售出库一起写入（方向 = 出）。
+     *
+     * <p>
+     * <b>为什么不复用 {@link #SALES_OUT}</b>：赠品是**非金额权益**，它不进订单金额、也不进应收，
+     * 但它的出库成本要计入该订单的履约成本。复用销售出库会让「这个月营销活动送掉多少成本」
+     * 只能回头拼订单行才能回答；独立类型让毛利报表能直接拆出赠品成本，
+     * 也让赠品流水可以按来源（{@code order_promotion_gift}）直接追溯「哪个活动赠了什么」。
+     */
+    PROMOTION_GIFT_OUT("促销赠品出库", false);
 
     /**
      * 持久化到 {@code inventory_movement.movement_type} 的值。

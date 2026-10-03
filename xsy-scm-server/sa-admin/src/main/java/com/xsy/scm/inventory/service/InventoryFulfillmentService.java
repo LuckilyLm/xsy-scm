@@ -11,6 +11,7 @@ import com.xsy.scm.inventory.dao.InventoryOutboundDao;
 import com.xsy.scm.inventory.dao.InventoryOutboundItemDao;
 import com.xsy.scm.inventory.dao.InventoryReservationDao;
 import com.xsy.scm.inventory.domain.InventoryOutboundFact;
+import com.xsy.scm.inventory.domain.InventoryPromotionGiftFact;
 import com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity;
 import com.xsy.scm.inventory.domain.entity.InventoryOutboundEntity;
 import com.xsy.scm.inventory.domain.entity.InventoryOutboundItemEntity;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_INSUFFICIENT_AVAILABLE;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_PARAM_INVALID;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERVATION_INVALID;
 
@@ -109,6 +111,25 @@ public class InventoryFulfillmentService {
     }
 
     /**
+     * 一条赠品出库明细：一个冻结的赠品权益行。
+     *
+     * @param giftId
+     *            {@code order_promotion_gift.id}，同时是防重锚点
+     * @param quantity
+     *            赠品数量，恒 &gt; 0
+     */
+    public record GiftLine(Long giftId, Long salesOrderId, Long skuId, BigDecimal quantity) {
+    }
+
+    /**
+     * @param routeId
+     *            发车业务事实（配送线路 id），只做流水头级溯源
+     */
+    public record GiftCommand(Long routeId, Long warehouseId, java.time.OffsetDateTime occurredAt, String operator,
+            List<GiftLine> lines) {
+    }
+
+    /**
      * 发车正式出库：归还预留 → 生成已确认出库单 → 逐行写 SALES_OUT 并扣余额。
      *
      * <p>
@@ -143,6 +164,83 @@ public class InventoryFulfillmentService {
         return new Result(outbound.getId(), outbound.getOutboundNo(), shipped.size());
     }
 
+    /**
+     * 促销赠品发车出库。
+     *
+     * <p>
+     * 与 {@link #dispatchOutbound} 同一事务纪律（任一环节失败整条线路一起回滚），但**不碰预留**：
+     * 赠品从不预留，它只在发车这一刻从可用量里出。全部赠品按 {@code (warehouse_id, sku_id)} 升序逐条写流水，
+     * 与销售出库同一锁序，避免与其它库存命令形成死锁。
+     *
+     * <p>
+     * 缺货由调用方先用 {@link #requirePromotionGiftStock} 预检；这里逐条再校验一次是纵深防御 ——
+     * 预检与出库之间若有并发，仍以出库时的可用量为准。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public int dispatchPromotionGiftOutbound(GiftCommand command) {
+        requireGiftCommand(command);
+        warehouseService.require(command.warehouseId());
+        warehouseScopeGuard.require(command.warehouseId());
+
+        List<GiftLine> shipped = command.lines().stream()
+                .filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
+                .sorted(Comparator.comparing(GiftLine::skuId).thenComparing(GiftLine::giftId)).toList();
+        for (GiftLine line : shipped) {
+            inventoryCommandService.postPromotionGiftOutbound(new InventoryPromotionGiftFact(command.warehouseId(),
+                    line.skuId(), command.routeId(), line.giftId(), line.quantity(), command.occurredAt(),
+                    command.operator()));
+        }
+        return shipped.size();
+    }
+
+    /**
+     * 赠品库存预检：只锁余额并校验可用量，**不写任何流水**。
+     *
+     * <p>
+     * 发车时先跑一遍，让「赠品缺货」在动正常商品之前就暴露出来：整笔发车本来就是一个事务、失败都会回滚，
+     * 但先失败能省掉一次完整出库的代价，也让报错直接指向真正的缺口。
+     *
+     * <p>
+     * 同一 SKU 可能被多张订单的赠品同时要，因此按 SKU **汇总后**再比可用量 ——
+     * 逐条都比得过、合起来不够，是赠品场景下最容易漏的一种缺货。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void requirePromotionGiftStock(Long warehouseId, List<GiftLine> lines) {
+        if (warehouseId == null || lines == null || lines.isEmpty()) {
+            return;
+        }
+        warehouseService.require(warehouseId);
+        warehouseScopeGuard.require(warehouseId);
+
+        Map<Long, BigDecimal> wanted = new LinkedHashMap<>();
+        for (GiftLine line : lines) {
+            if (line.quantity() != null && line.quantity().compareTo(BigDecimal.ZERO) > 0) {
+                wanted.merge(line.skuId(), line.quantity(), BigDecimal::add);
+            }
+        }
+        if (wanted.isEmpty()) {
+            return;
+        }
+
+        Map<Long, InventoryBalanceEntity> balances = new LinkedHashMap<>();
+        for (Long skuId : wanted.keySet().stream().sorted().toList()) {
+            InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(warehouseId, skuId);
+            if (balance == null) {
+                // 没有余额行 = 从未入库 = 无货可出
+                throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+            }
+            balances.put(skuId, balance);
+        }
+        for (Map.Entry<Long, BigDecimal> entry : wanted.entrySet()) {
+            InventoryBalanceEntity balance = balances.get(entry.getKey());
+            BigDecimal reserved = balance.getReservedQuantity() == null ? BigDecimal.ZERO
+                    : balance.getReservedQuantity();
+            if (balance.getQuantity().subtract(reserved).compareTo(entry.getValue()) < 0) {
+                throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+            }
+        }
+    }
+
     // ------------------------------------------------------------------
     // 内部
     // ------------------------------------------------------------------
@@ -161,6 +259,24 @@ public class InventoryFulfillmentService {
             if (line.salesOrderId() == null || line.salesOrderItemId() == null || line.skuId() == null
                     || line.quantity() == null || line.quantity().compareTo(BigDecimal.ZERO) < 0
                     || !seenOrderLines.add(line.salesOrderItemId())) {
+                throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
+            }
+        }
+    }
+
+    /**
+     * 赠品命令的域边界校验：重复引用同一权益行会造成静默重复扣库存，因此按 giftId 去重。
+     */
+    private static void requireGiftCommand(GiftCommand command) {
+        if (command == null || command.routeId() == null || command.warehouseId() == null
+                || command.occurredAt() == null || command.operator() == null || command.operator().isBlank()
+                || command.lines() == null || command.lines().isEmpty()) {
+            throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
+        }
+        Set<Long> seenGifts = new HashSet<>();
+        for (GiftLine line : command.lines()) {
+            if (line.giftId() == null || line.skuId() == null || line.quantity() == null
+                    || line.quantity().compareTo(BigDecimal.ZERO) < 0 || !seenGifts.add(line.giftId())) {
                 throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
             }
         }

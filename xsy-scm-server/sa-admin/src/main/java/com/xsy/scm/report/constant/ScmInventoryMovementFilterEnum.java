@@ -11,5 +11,7 @@ public enum ScmInventoryMovementFilterEnum {
     TRANSFER_OUT,
     TRANSFER_IN,
     CONVERT_OUT,
-    CONVERT_IN
+    CONVERT_IN,
+    /** 促销赠品出库（ADM-12 3-5b）：赠品成本要能从流水单独筛出来。 */
+    PROMOTION_GIFT_OUT
 }

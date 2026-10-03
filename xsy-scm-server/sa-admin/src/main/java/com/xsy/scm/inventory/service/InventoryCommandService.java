@@ -333,6 +333,70 @@ public class InventoryCommandService {
         return unit;
     }
 
+    /**
+     * 促销赠品出库：方向 = 出，来源 = 冻结的赠品权益（{@code order_promotion_gift}）。
+     *
+     * <p>
+     * 与 {@link #postSalesOutbound} 同一套纪律：必须在调用方事务内、按 {@code (warehouse_id, sku_id)} 锁余额、
+     * 可用量不足即失败、成本取当时的移动加权均价、数量恒为正（方向编码在类型里）。
+     * 差别只在两处：赠品不挂订单行（{@code source_document_item_id} 是赠品权益 id，不是出库单行 id），
+     * 以及流水类型是 {@code PROMOTION_GIFT_OUT}，让毛利报表能把赠品成本单独拆出来。
+     *
+     * <p>
+     * 防重由 {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)}
+     * 承担：一行权益至多一条赠品出库流水，重复发车不会重复扣库存。
+     */
+    public String postPromotionGiftOutbound(InventoryPromotionGiftFact fact) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalTransactionStateException("Promotion gift outbound requires the caller's transaction");
+        }
+        requirePromotionGiftFact(fact);
+
+        warehouseService.require(fact.warehouseId());
+
+        // 与销售出库同样：没有余额行 = 从未入库 = 无货可出。
+        InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
+        if (balance == null) {
+            throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+        }
+
+        String unit = balance.getUnit();
+        BigDecimal onHand = balance.getQuantity();
+        BigDecimal reserved = balance.getReservedQuantity() == null ? BigDecimal.ZERO : balance.getReservedQuantity();
+        // 持有行锁后再算可用量：赠品同样不能吃掉别人预留的货。
+        if (onHand.subtract(reserved).compareTo(fact.quantity()) < 0) {
+            throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
+        }
+
+        InventoryMovementEntity movement = new InventoryMovementEntity();
+        movement.setWarehouseId(fact.warehouseId());
+        movement.setSkuId(fact.skuId());
+        movement.setMovementType(ScmInventoryMovementTypeEnum.PROMOTION_GIFT_OUT.name());
+        movement.setSourceDocumentType(ScmInventorySourceDocumentTypeEnum.ORDER_PROMOTION_GIFT.name());
+        // 头级只做发车事实的溯源；防重锚点是 item 级的赠品权益 id。
+        movement.setSourceDocumentId(fact.routeId());
+        movement.setSourceDocumentItemId(fact.giftId());
+        movement.setQuantity(fact.quantity());
+        movement.setUnitSnapshot(unit);
+        // 与销售出库同口径：出库按当时的移动加权均价记成本，出库不改变均价。
+        movement.setUnitCost(balance.getAvgCost());
+        movement.setBeforeQuantity(onHand);
+        movement.setAfterQuantity(onHand.subtract(fact.quantity()));
+        movement.setOccurredAt(fact.occurredAt());
+        movement.setOperator(fact.operator());
+        movement.setDeleted(false);
+        movement.setCreatedBy(fact.operator());
+
+        if (inventoryMovementDao.insertOnConflictDoNothing(movement) != 1) {
+            throw new ScmBusinessException(INVENTORY_DUPLICATE_OUTBOUND);
+        }
+
+        if (inventoryBalanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+        return unit;
+    }
+
     public void postSalesReturnInbound(InventorySalesReturnFact fact) {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalTransactionStateException("Sales return inbound requires the caller's transaction");
@@ -900,6 +964,14 @@ public class InventoryCommandService {
     private static void requireOutboundFact(InventoryOutboundFact fact) {
         if (fact == null || fact.warehouseId() == null || fact.skuId() == null || fact.outboundId() == null
                 || fact.outboundItemId() == null || fact.quantity() == null || fact.quantity().signum() <= 0
+                || fact.occurredAt() == null || fact.operator() == null || fact.operator().isBlank()) {
+            throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
+        }
+    }
+
+    private static void requirePromotionGiftFact(InventoryPromotionGiftFact fact) {
+        if (fact == null || fact.warehouseId() == null || fact.skuId() == null || fact.routeId() == null
+                || fact.giftId() == null || fact.quantity() == null || fact.quantity().signum() <= 0
                 || fact.occurredAt() == null || fact.operator() == null || fact.operator().isBlank()) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
         }

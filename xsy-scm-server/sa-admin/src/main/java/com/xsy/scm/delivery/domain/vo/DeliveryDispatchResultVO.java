@@ -23,4 +23,13 @@ public class DeliveryDispatchResultVO {
      * 实际生成的出库明细行数（实发为 0 的订单行不出库，因此它小于等于订单行总数）。
      */
     private Integer shippedLineCount;
+
+    /**
+     * 本次随车出库的促销赠品行数。
+     *
+     * <p>
+     * 与 {@link #shippedLineCount} 分开：赠品不挂订单行、也不进应收，混进出货行数会让
+     * 「这趟送了多少行商品」变得要再减一次才知道。没有赠品时为 0。
+     */
+    private Integer giftLineCount;
 }

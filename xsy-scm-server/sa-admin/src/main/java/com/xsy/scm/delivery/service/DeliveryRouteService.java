@@ -405,8 +405,23 @@ public class DeliveryRouteService {
 
         var now = OffsetDateTime.now();
         var operator = ScmOperator.current();
+        // 满赠赠品：与销售出库同一时点、同一仓库、同一事务。赠品不挂订单行，因此单独一条命令。
+        var giftLines = new ArrayList<InventoryFulfillmentService.GiftLine>();
+        for (var orderId : orderIds) {
+            for (var gift : promotionDiscountService.listGiftFacts(orderId)) {
+                giftLines.add(new InventoryFulfillmentService.GiftLine(gift.giftId(), gift.salesOrderId(),
+                        gift.skuId(), gift.quantity()));
+            }
+        }
+        // 先预检赠品库存：缺货要在动正常商品之前暴露。整笔发车本来就是一个事务、失败都会回滚，
+        // 但先失败能省掉一次完整出库的代价，也让报错直接指向真正的缺口。
+        inventoryFulfillmentService.requirePromotionGiftStock(route.getWarehouseId(), giftLines);
         var outbound = inventoryFulfillmentService.dispatchOutbound(
                 new InventoryFulfillmentService.Command(id, route.getWarehouseId(), now, operator, lines));
+        if (!giftLines.isEmpty()) {
+            inventoryFulfillmentService.dispatchPromotionGiftOutbound(new InventoryFulfillmentService.GiftCommand(id,
+                    route.getWarehouseId(), now, operator, giftLines));
+        }
 
         route.setStatus(ScmDeliveryRouteStatusEnum.DISPATCHED.name());
         route.setOutboundId(outbound.outboundId());
@@ -424,6 +439,7 @@ public class DeliveryRouteService {
         result.setOutboundNo(outbound.outboundNo());
         result.setOrderCount(assigned.size());
         result.setShippedLineCount(outbound.shippedLineCount());
+        result.setGiftLineCount(giftLines.size());
         idempotencyService.complete(claim, ScmDeliveryIdempotencyResourceTypeEnum.DELIVERY_ROUTE.name(), id, result);
         return result;
     }

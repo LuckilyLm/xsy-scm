@@ -22,6 +22,7 @@ import com.xsy.scm.promotion.domain.form.PromotionDiscountPreviewForm;
 import com.xsy.scm.promotion.domain.vo.OrderDiscountVO;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.support.PromotionDiscountAllocator;
+import com.xsy.scm.promotion.support.PromotionGiftFact;
 import com.xsy.scm.promotion.support.PromotionOrderFacts;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
@@ -180,6 +181,21 @@ public class PromotionDiscountService {
     public List<PromotionDiscountVO.GiftEntitlementVO> listGifts(Long salesOrderId) {
         return orderPromotionGiftDao.listByOrder(salesOrderId).stream()
                 .map(PromotionDiscountService::toGiftVO).toList();
+    }
+
+    /**
+     * 订单冻结的赠品权益事实（出库用）：只给「哪一行权益、哪个 SKU、多少」。
+     *
+     * <p>
+     * 与 {@link #listGifts} 分开：出库不关心活动名与规则，而订单详情需要解释「为什么送」。
+     * 一个方法返回两套字段只会让出库路径被迫依赖展示模型。
+     */
+    @Transactional(readOnly = true)
+    public List<PromotionGiftFact> listGiftFacts(Long salesOrderId) {
+        return orderPromotionGiftDao.listByOrder(salesOrderId).stream()
+                .map(row -> new PromotionGiftFact(row.getId(), row.getSalesOrderId(), row.getSkuId(),
+                        row.getQuantity()))
+                .toList();
     }
 
     private static PromotionDiscountVO.GiftEntitlementVO toGiftVO(OrderPromotionGiftEntity row) {

@@ -80,15 +80,26 @@ class ScmInventoryConstantTest {
         assertThat(ScmInventoryMovementTypeEnum.isSupported("GAIN_REPORT")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("TRANSFER_OUT")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("TRANSFER_IN")).isTrue();
+        assertThat(ScmInventoryMovementTypeEnum.isSupported("CONVERT_OUT")).isTrue();
+        assertThat(ScmInventoryMovementTypeEnum.isSupported("CONVERT_IN")).isTrue();
+        // 促销赠品出库：方向为「出」，但**不复用 SALES_OUT** —— 赠品不进订单金额与应收，
+        // 独立类型才能让毛利报表直接拆出赠品成本（ADM-12 3-5b）。
+        assertThat(ScmInventoryMovementTypeEnum.isSupported("PROMOTION_GIFT_OUT")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("PURCHASE_RECEIPT_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("SALES_OUTBOUND_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("STOCKTAKE_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("LOSS_GAIN_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("TRANSFER_OUT_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("TRANSFER_IN_ITEM")).isTrue();
+        assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("CONVERT_OUT_ITEM")).isTrue();
+        assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("CONVERT_IN_ITEM")).isTrue();
+        assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("DELIVERY_ROUTE")).isTrue();
+        // 赠品出库的源身份是**冻结的赠品权益**而不是出库单行：赠品不挂订单行，
+        // 防重锚点用 order_promotion_gift.id。
+        assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("ORDER_PROMOTION_GIFT")).isTrue();
 
         // STOCKTAKE_ADJUST 是**刻意不存在**的类型名（盘盈与盘亏必须是两个类型）；
-        // UNKNOWN_IN 是一个**明确不存在**的类型名 —— 十个真实类型已全部落地，
+        // UNKNOWN_IN 是一个**明确不存在**的类型名 —— 十一个真实类型已全部落地，
         // 因此这里不能再拿「未实现的业务类型」当反例（每落地一个就要改一次），
         // 改用不可能被实现的名字，断言的是「白名单之外一律拒绝」这条性质本身。
         for (String rejected : new String[]{null, "", " ", "UNKNOWN_IN", "STOCKTAKE_ADJUST", "purchase_in"}) {
@@ -98,15 +109,15 @@ class ScmInventoryConstantTest {
                     .as("source_document_type 不应放行 %s", rejected).isFalse();
         }
 
-        // 已落地 10 个流水类型（每组恰好 5 个，与 V33 的十方向分组一致）。
-        assertThat(ScmInventoryMovementTypeEnum.values()).hasSize(10);
+        // 已落地 11 个流水类型（5 入 6 出；出库组多出的一个是 PROMOTION_GIFT_OUT）。
+        assertThat(ScmInventoryMovementTypeEnum.values()).hasSize(11);
         // 来源类型：采购收货行 / 出库单行 / 销售订单行（预留）/ 盘点单行 / 报损报溢单行 /
-        // 调拨转出行 / 调拨转入行 / 转换转出行 / 转换转入行 ——
+        // 调拨转出行 / 调拨转入行 / 转换转出行 / 转换转入行 / 促销赠品权益 ——
         // 调拨与转换各占两个是**被迫的**：它们的同一条明细行会产生两条流水，
         // 共用一个来源类型会撞上 uk_inventory_movement_source_active。
         // DELIVERY_ROUTE 是唯一**不出现在流水里**的来源类型：它只标在出库单头上回答
         // 「这张单是哪条线路发车的」，流水仍按 SALES_OUTBOUND_ITEM 记账。
-        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(10);
+        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(11);
     }
 
     @Test
@@ -126,18 +137,20 @@ class ScmInventoryConstantTest {
         // 规格转换：源 SKU 一律「出」、目标 SKU 一律「入」
         assertThat(ScmInventoryMovementTypeEnum.CONVERT_OUT.isInbound()).isFalse();
         assertThat(ScmInventoryMovementTypeEnum.CONVERT_IN.isInbound()).isTrue();
+        // 促销赠品出库是「出」：赠品离开仓库，但它的来源是权益而不是订单行
+        assertThat(ScmInventoryMovementTypeEnum.PROMOTION_GIFT_OUT.isInbound()).isFalse();
         assertThat(ScmInventoryMovementTypeEnum.of("SALES_OUT"))
                 .isEqualTo(ScmInventoryMovementTypeEnum.SALES_OUT);
         assertThat(ScmInventoryMovementTypeEnum.of("NOT_A_TYPE")).isNull();
 
-        // 十个类型必须**恰好**分成两个方向组、每组五个：
+        // 十一个类型必须**恰好**分成两个方向组、5 入 6 出：
         // 这是 ck_inventory_movement_snap「按方向分组」写法的前提 ——
         // 漏分类的类型会插不进流水（响亮失败），但漏了也没人会发现，所以在这里钉住。
         long inbound = Arrays.stream(ScmInventoryMovementTypeEnum.values())
                 .filter(ScmInventoryMovementTypeEnum::isInbound).count();
         assertThat(inbound).as("入库方向的类型数").isEqualTo(5L);
         assertThat(ScmInventoryMovementTypeEnum.values().length - inbound).as("出库方向的类型数")
-                .isEqualTo(5L);
+                .isEqualTo(6L);
     }
 
     @Test

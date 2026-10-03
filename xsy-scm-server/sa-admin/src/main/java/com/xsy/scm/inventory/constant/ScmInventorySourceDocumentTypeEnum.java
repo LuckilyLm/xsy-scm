@@ -95,7 +95,18 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * <b>为什么流水里看不到它</b>：发车产生的仍然是 {@code SALES_OUT}，来源类型按 {@link #SALES_OUTBOUND_ITEM}（出库单行）记账 —— 流水的唯一锚点与成本口径都在出库单行上，
      * 线路只是「谁创建了这张出库单」。多一条追溯走 {@code inventory_outbound_item.sales_order_item_id}，不给流水表再加第二套来源语义。
      */
-    DELIVERY_ROUTE("配送线路");
+    DELIVERY_ROUTE("配送线路"),
+
+    /**
+     * 促销赠品权益：{@code source_document_item_id = order_promotion_gift.id}。
+     *
+     * <p>
+     * 赠品出库的源身份是**冻结的赠品权益**而不是出库单行：赠品不挂在任何订单行上
+     * （{@code inventory_outbound_item.sales_order_item_id} 保持为空，不为兼容旧逻辑虚造订单行），
+     * 因此「哪个活动赠了什么、出库多少」直接从流水追到权益行。
+     * 一行权益至多产生一条出库流水，{@code uk_inventory_movement_source_active} 的一行一流水语义成立。
+     */
+    ORDER_PROMOTION_GIFT("促销赠品权益");
 
     private final String desc;
 
