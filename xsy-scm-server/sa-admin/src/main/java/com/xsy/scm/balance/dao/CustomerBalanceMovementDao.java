@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
 import com.xsy.scm.balance.domain.form.BalanceMovementQueryForm;
+import com.xsy.scm.balance.domain.vo.BalanceMovementVO;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
 import java.math.BigDecimal;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
@@ -25,7 +27,16 @@ public interface CustomerBalanceMovementDao extends BaseMapper<CustomerBalanceMo
     CustomerBalanceMovementEntity selectBySource(@Param("sourceType") String sourceType,
             @Param("sourceId") Long sourceId);
 
-    List<CustomerBalanceMovementEntity> queryPage(Page<?> page, @Param("query") BalanceMovementQueryForm query);
+    /**
+     * 流水分页。
+     *
+     * <p>
+     * 数据范围**按结算主体的业务员**收窄，与收款列表同一套规则：范围为空时直接返回空页
+     * （{@code AND FALSE}），不做「无范围即全量」的宽松处理 —— 那是 fail-open。
+     * 查询结果同时带出结算主体名与实际业务客户名，页面不必再逐行回查。
+     */
+    List<BalanceMovementVO> queryPage(Page<?> page, @Param("query") BalanceMovementQueryForm query,
+            @Param("scope") ScmDataScopeContext scope);
 
     /** 账户下的流水（升序，用于对账复盘）。 */
     List<CustomerBalanceMovementEntity> listByAccount(@Param("accountId") Long accountId);

@@ -16,11 +16,18 @@ public class BalanceMovementVO {
 
     private Long accountId;
 
+    /** 钱包所有者（结算主体）。 */
     private Long settlementCustomerId;
 
+    private String settlementCustomerName;
+
+    /** 本次业务实际发生的客户；集团场景下与钱包所有者不同。 */
     private Long customerId;
 
-    private String type;
+    private String customerName;
+
+    /** {@code RECHARGE} / {@code CONSUME} / {@code REFUND} / {@code CORRECTION}。 */
+    private String movementType;
 
     private String direction;
 
@@ -38,5 +45,6 @@ public class BalanceMovementVO {
 
     private OffsetDateTime createdAt;
 
-    private String createdBy;
+    /** 操作人（写入流水的人；系统入账时为服务账号）。 */
+    private String operator;
 }

@@ -19,9 +19,15 @@ public class CustomerBalanceVO {
 
     private String settlementCustomerName;
 
-    /** 钱包余额 = SUM(CREDIT) − SUM(DEBIT)；没有账户时是 0。 */
+    /**
+     * 可用余额 = SUM(CREDIT) − SUM(DEBIT)；没有账户时是 0。
+     *
+     * <p>
+     * **每次现算**，账户表上没有可缓存的 balance 字段：存一份就要维护它，
+     * 任何一次漏更新都会让余额与流水永久漂移，且没人说得清该信哪个。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
-    private BigDecimal balance;
+    private BigDecimal availableBalance;
 
     /** 账户 id；没有账户时为 {@code null}（此时 balance 恒为 0）。 */
     private Long accountId;

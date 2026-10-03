@@ -79,9 +79,20 @@ public class CustomerBalanceService {
      */
     @Transactional(readOnly = true)
     public BigDecimal balanceOf(Long customerId) {
-        CustomerEntity settlement = settlementCustomerOf(customerId);
+        return balanceOfSettlement(settlementCustomerOf(customerId).getId());
+    }
+
+    /**
+     * 按**结算主体**读余额（供查询层复用）。
+     *
+     * <p>
+     * 查询层已经解析过结算主体，再走一遍 {@link #balanceOf} 会重复解析客户关系 ——
+     * 而解析里含「客户必须合法可结算」这类校验，重复调用只会多一次查询、不改结果。
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal balanceOfSettlement(Long settlementCustomerId) {
         CustomerBalanceAccountEntity account = customerBalanceAccountDao
-                .selectBySettlementCustomerId(settlement.getId());
+                .selectBySettlementCustomerId(settlementCustomerId);
         return account == null ? BigDecimal.ZERO.setScale(SCALE) : signedBalance(account.getId());
     }
 
