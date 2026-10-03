@@ -8,6 +8,7 @@ import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePayableItemSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePayableSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
+import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceivableItemSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
@@ -479,8 +480,9 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertWhitelist("finance_operation_log", "ck_finance_operation_log_type",
                 ScmFinanceOperationTypeEnum.class);
 
-        // 收付款方式固定三值，且收款与付款共用同一套枚举（Q21）。
-        assertWhitelist("finance_receipt", "ck_finance_receipt_method", ScmFinancePaymentMethodEnum.class);
+        // 收款方式与付款方式**刻意分开**（ADM-12 3-11a）：在线支付与余额是收款侧才有的资金渠道，
+        // 放进共用的付款枚举会让供应商付款入口也拿到它们，等于让支付域反向污染供应商付款语义。
+        assertWhitelist("finance_receipt", "ck_finance_receipt_method", ScmFinanceReceiptMethodEnum.class);
         assertWhitelist("finance_payment", "ck_finance_payment_method", ScmFinancePaymentMethodEnum.class);
 
         // NORMAL / RED 用于应收应付，NORMAL / REVERSE 用于收付款与核销；两套刻意不合并。
@@ -493,9 +495,13 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertWhitelist("finance_write_off", "ck_finance_write_off_entry_type",
                 ScmFinanceReverseEntryTypeEnum.class);
 
-        // 方式枚举不得混入任何 P5 支付能力（Q21）。
-        assertThat(literalsOf(constraintDef("finance_receipt", "ck_finance_receipt_method")))
+        // 支付能力只落在**收款**侧：付款方式不得混入任何 P5 支付能力（Q21 的边界在付款侧继续有效）。
+        assertThat(literalsOf(constraintDef("finance_payment", "ck_finance_payment_method")))
                 .doesNotContain("ONLINE_PAYMENT", "BALANCE", "COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
+        // 收款侧放开了 ONLINE_PAYMENT / BALANCE（3-11a 的支付与余额），但两条**依然**不得进入：
+        // COD 是「什么时候收钱」的结算时机，不是实际收款渠道；具体渠道名写在 external_reference。
+        assertThat(literalsOf(constraintDef("finance_receipt", "ck_finance_receipt_method")))
+                .doesNotContain("COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
     }
 
     /**

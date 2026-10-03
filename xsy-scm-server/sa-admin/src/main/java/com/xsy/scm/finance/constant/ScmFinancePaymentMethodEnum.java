@@ -4,7 +4,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 收付款方式：固定三值，收款与付款**共用同一套枚举**。
+ * **付款**方式：固定三值。
+ *
+ * <p>
+ * <b>收款已拆出为 {@link ScmFinanceReceiptMethodEnum}</b>（ADM-12 3-11a）：在线支付与余额
+ * 是收款侧才有的资金渠道，直接加到这里会让供应商付款入口也拿到这些取值。
+ * 本枚举与 {@code ck_finance_payment_method} 保持原样。
  *
  * <p>
  * 值由 Java enum 和数据库 CHECK 固定，**不引入 SCM {@code t_dict}**： 字典表适合运营可维护的取值，而方式一旦能被随意增删，历史收付款的方式语义就会漂移， 且有限的支付方式也无法在数据库中约束。

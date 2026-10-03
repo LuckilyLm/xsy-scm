@@ -29,9 +29,24 @@ export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
     SETTLED: {value: 'SETTLED', desc: '已结清'},
 };
 
+/** 付款方式（与后端 `ScmFinancePaymentMethodEnum` 逐字对应）。 */
 export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
     CASH: {value: 'CASH', desc: '现金'},
     BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
+    OTHER: {value: 'OTHER', desc: '其他'},
+};
+
+/**
+ * 收款方式（与后端 `ScmFinanceReceiptMethodEnum` 逐字对应）。
+ *
+ * 与付款方式**刻意分开**：在线支付与余额是收款侧才有的资金渠道（ADM-12 3-11a）。
+ * 没有 COD —— 它是「什么时候收钱」的结算时机，不是实际收款渠道。
+ */
+export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
+    CASH: {value: 'CASH', desc: '现金'},
+    BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
+    ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
+    BALANCE: {value: 'BALANCE', desc: '客户余额'},
     OTHER: {value: 'OTHER', desc: '其他'},
 };
 
@@ -72,6 +87,7 @@ export default {
     SCM_FINANCE_ENTRY_TYPE_ENUM,
     SCM_FINANCE_SETTLE_STATE_ENUM,
     SCM_FINANCE_PAYMENT_METHOD_ENUM,
+    SCM_FINANCE_RECEIPT_METHOD_ENUM,
     SCM_FINANCE_COUNTERPARTY_TYPE_ENUM,
     SCM_FINANCE_SOURCE_TYPE_ENUM,
     SCM_FINANCE_BUSINESS_TYPE_ENUM,

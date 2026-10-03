@@ -67,7 +67,20 @@ public enum FinanceErrorCode implements ScmErrorCode {
     /**
      * 该事实已被反向过。{@code uk_finance_*_single_reverse} 是最终防线， 本码让服务层在撞库级唯一索引之前给出可读错误。
      */
-    ALREADY_REVERSED(41143, "该单据已被反向，不能重复反向");
+    ALREADY_REVERSED(41143, "该单据已被反向，不能重复反向"),
+
+    /**
+     * 系统来源的收款不允许走人工冲正。
+     *
+     * <p>
+     * 人工 {@code reverse()} 的语义是「整笔登记错了，撤销这笔登记」，且要求原收款已核销金额为 0。
+     * 而支付退款是**业务退款**，可能部分、可能多次（100 退 30 再退 20），
+     * 现有 REVERSE 模型表达不了。支付退款应走独立的系统资金反向事实。
+     */
+    SYSTEM_RECEIPT_REVERSE_FORBIDDEN(41144, "系统来源的收款不能人工冲正，请走支付退款流程"),
+
+    /** 支付交易缺少可信的渠道实收金额：不能凭空登记一笔金额不明的收款。 */
+    PAYMENT_RECEIPT_AMOUNT_MISSING(41145, "支付交易缺少渠道实收金额，无法登记收款");
 
     private final int code;
     private final String msg;

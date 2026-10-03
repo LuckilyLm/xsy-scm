@@ -73,7 +73,7 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
-import {moneyText} from './report-model';
+import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
 
 const bucketOptions: {value: AgingBucket; label: string}[] = [

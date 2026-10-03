@@ -35,6 +35,16 @@ public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
     /** Lock the source receipt so reversal and write-off commands serialize on the same row. */
     FinanceReceiptEntity selectByIdForUpdate(@Param("receiptId") Long receiptId);
 
+    /**
+     * 按系统来源键取正常收款事实（ADM-12 3-11a）。
+     *
+     * <p>
+     * 系统来源登记收款时先查这里：常见的重复驱动（同一笔支付被多次回调）在这一步就返回已有事实，
+     * 库上的 {@code uk_finance_receipt_source_active} 才是并发下真正的仲裁者。
+     */
+    FinanceReceiptEntity selectBySource(@Param("sourceType") String sourceType,
+            @Param("sourceId") Long sourceId);
+
     /** Effective write-off amount (NORMAL minus REVERSE) for this source receipt. */
     BigDecimal selectEffectiveWriteOffAmount(@Param("receiptId") Long receiptId);
 

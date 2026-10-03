@@ -11,7 +11,7 @@ import com.xsy.scm.common.time.ScmDateTimeRange;
 import com.xsy.scm.common.time.ScmDateTimeRangeResolver;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
-import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
+import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffSourceTypeEnum;
 import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
@@ -165,7 +165,7 @@ public class FinanceReceiptQueryService {
     }
 
     private static void validateFilters(FinanceReceiptQueryForm form) {
-        if (form.getMethod() != null && !enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())) {
+        if (form.getMethod() != null && !enumContains(ScmFinanceReceiptMethodEnum.values(), form.getMethod())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getEntryType() != null

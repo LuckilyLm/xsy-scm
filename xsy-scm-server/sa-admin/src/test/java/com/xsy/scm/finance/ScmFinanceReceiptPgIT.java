@@ -195,16 +195,21 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("方式越界：服务层 41140 拒绝；直插 WECHAT 被 ck_finance_receipt_method 拒绝")
-    void methodOutsideThreeValuesIsRejectedTwice() {
+    @DisplayName("方式越界：渠道名与余额被 41140 拒绝；ONLINE_PAYMENT 人工可登记；直插渠道名被 CHECK 拒绝")
+    void methodOutsideReceiptValuesIsRejectedTwice() {
         Long customerId = customerOwnedBy(null);
 
+        // 渠道名不是收款方式：具体渠道写在 external_reference，塞进 method 会让「钱怎么进来的」失去答案
         expectCode(() -> add(form(customerId, "10.0000", "WECHAT_PAY", PAST)), 41140);
+        // 余额抵扣必须由余额流水驱动，人工登记会造出「账上有收款、余额没动」的假事实
         expectCode(() -> add(form(customerId, "10.0000", "BALANCE", PAST)), 41140);
-        expectCode(() -> add(form(customerId, "10.0000", "ONLINE_PAYMENT", PAST)), 41140);
         assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isZero();
 
-        // 库层第二道：即使绕过 Java 枚举也进不来（P5 的支付方式不得混进 Finance R1）。
+        // 在线支付是收款侧合法方式（ADM-12 3-11a 起）：人工登记一笔在线收款是允许的
+        assertThat(add(form(customerId, "10.0000", "ONLINE_PAYMENT", PAST)).getMethod())
+                .isEqualTo("ONLINE_PAYMENT");
+
+        // 库层第二道：即使绕过 Java 枚举也进不来
         expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot,"
                 + " amount, method, received_at, entry_type) VALUES ('RC-D-1', ?, '客户', 10.0000,"
                 + " 'WECHAT_PAY', now(), 'NORMAL')", customerId);

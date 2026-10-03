@@ -102,7 +102,7 @@ import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {financeApi} from '/@/api/business/scm/finance-api';
-import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_PAYMENT_METHOD_ENUM, SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
+import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_RECEIPT_METHOD_ENUM, SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
@@ -121,7 +121,7 @@ const addOpen = ref(false), addSaving = ref(false), addError = ref('');
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceReceipt | null>(null);
 const addForm = reactive({customerId: undefined as string | number | undefined, amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
     receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
-const methodOptions = Object.values(SCM_FINANCE_PAYMENT_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value}));
+const methodOptions = Object.values(SCM_FINANCE_RECEIPT_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const pendingOptions = [{label: '仅待核销', value: true}, {label: '全部', value: false}];
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';

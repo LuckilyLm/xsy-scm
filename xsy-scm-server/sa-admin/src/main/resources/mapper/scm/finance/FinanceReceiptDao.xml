@@ -135,4 +135,12 @@
         </where>
         ORDER BY r.received_at DESC, r.id DESC
     </select>
+    <select id="selectBySource" resultType="com.xsy.scm.finance.domain.entity.FinanceReceiptEntity">
+        SELECT * FROM finance_receipt
+        WHERE source_type = #{sourceType}
+          AND source_id = #{sourceId}
+          AND entry_type = 'NORMAL'
+          AND deleted = FALSE
+    </select>
+
 </mapper>

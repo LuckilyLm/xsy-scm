@@ -14,6 +14,8 @@ import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.domain.form.PaymentIntentCreateForm;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
+import com.xsy.scm.finance.service.FinanceReceiptService;
+import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -46,6 +48,12 @@ public class PaymentIntentService {
     private final PaymentNumberGenerator paymentNumberGenerator;
 
     private final ScmPaymentProviderRegistry providerRegistry;
+
+    /**
+     * 财务域的系统收款入口。依赖方向是 payment → finance；finance 不反向依赖支付域，
+     * 因此不构成环，与 delivery → finance 是同一套做法。
+     */
+    private final FinanceReceiptService financeReceiptService;
 
     /**
      * 创建支付意图并向渠道发起。
@@ -108,10 +116,10 @@ public class PaymentIntentService {
         // 发起过就是发起过：先落到 PENDING，再按渠道结果推进 —— 状态机因此不需要
         // CREATED → SUCCEEDED 这条捷径，「发起了几次」也仍然可数
         transition(intent.getId(), ScmPaymentIntentStatusEnum.CREATED, ScmPaymentIntentStatusEnum.PENDING, operator);
-        // 同步成功时渠道还没回报金额（mock 与真实渠道都一样，金额以回调/查单为准），
-        // 因此 provider_amount 留空，由回调或对账补齐 —— 不用本地应付金额去顶替它。
+        // 同步成功时渠道会一并回报金额（result.amount()），落进 provider_amount；
+        // 延迟 / 失败时为空，等回调再报。**本地绝不拿应付金额去顶替它**。
         applyOutcome(intent.getId(), transaction.getId(), result.outcome(), result.failureCode(),
-                result.failureMessage(), null, operator);
+                result.failureMessage(), result.amount(), operator);
         return paymentIntentDao.selectById(intent.getId());
     }
 
@@ -127,12 +135,15 @@ public class PaymentIntentService {
             String failureMessage, BigDecimal providerAmount, String operator) {
         switch (outcome) {
             case SUCCEEDED -> {
-                if (paymentTransactionDao.markSucceeded(transactionId, providerAmount, operator) != 1) {
-                    // 已被处理过（重复回调）：不改状态，交由幂等层回答「已处理」
-                    return;
+                boolean firstTime = paymentTransactionDao.markSucceeded(transactionId, providerAmount, operator) == 1;
+                if (firstTime) {
+                    transition(intentId, ScmPaymentIntentStatusEnum.PENDING, ScmPaymentIntentStatusEnum.SUCCEEDED,
+                            operator);
                 }
-                transition(intentId, ScmPaymentIntentStatusEnum.PENDING, ScmPaymentIntentStatusEnum.SUCCEEDED,
-                        operator);
+                // **无论是否首次都确保 Finance 收款事实存在**：
+                // 「渠道已成功、本地事务当时失败」的场景靠下一次回调 / 对账重新驱动恢复，
+                // 而恢复的入口就是这一句。注册本身按来源键幂等，重复调用不会多记一笔收款。
+                registerFinanceReceipt(intentId, transactionId, operator);
             }
             case FAILED -> {
                 if (paymentTransactionDao.markFailed(transactionId, failureCode, failureMessage, operator) != 1) {
@@ -145,6 +156,37 @@ public class PaymentIntentService {
             }
             default -> throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
+    }
+
+    /**
+     * 支付成功 → Finance 收款事实（ADM-12 3-11a）。
+     *
+     * <p>
+     * <b>同一事务</b>：Finance 写失败就整笔回滚，本地不会留下「已成功但没登记收款」的半截事实。
+     * 渠道事实不回滚 —— 那正是对账要发现、并靠下一次回调重新驱动的差异。
+     *
+     * <p>
+     * <b>唯一来源键</b>：{@code source_type = PAYMENT_TRANSACTION} + {@code source_id = transactionId}。
+     * 支付域的回调事件幂等是第一层，这个来源键是第二层：无论本地被驱动多少次，
+     * Finance 只有一条正常收款事实。
+     *
+     * <p>
+     * 金额取 {@code provider_amount}（渠道实收），时间取交易的成功时刻 —— 都不取本地应付金额与本地当前时间。
+     */
+    private void registerFinanceReceipt(Long intentId, Long transactionId, String operator) {
+        PaymentTransactionEntity transaction = paymentTransactionDao.selectById(transactionId);
+        if (transaction == null
+                || !ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
+            // 交易没成功就没有收款事实可言：这里是唯一的守卫，调用方不必各自判一遍
+            return;
+        }
+        PaymentIntentEntity intent = paymentIntentDao.selectById(intentId);
+        if (intent == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_NOT_FOUND);
+        }
+        financeReceiptService.registerFromPaymentTransaction(new FinancePaymentReceiptFact(transaction.getId(),
+                intent.getCustomerId(), transaction.getProviderAmount(), transaction.getPaidAt(),
+                transaction.getProviderTransactionNo()));
     }
 
     /**

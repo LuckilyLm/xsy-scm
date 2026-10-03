@@ -72,4 +72,16 @@ public class FinanceReceiptEntity extends FinanceRecord {
     private String externalReference;
 
     private String remark;
+
+    /**
+     * 系统来源类型；人工登记的收款为空。
+     *
+     * <p>
+     * 与 {@link #sourceId} 成对（库上有 CHECK），且只出现在 {@code NORMAL} 行上；
+     * 唯一索引 {@code uk_finance_receipt_source_active} 保证同一来源只有一条正常收款事实。
+     */
+    private String sourceType;
+
+    /** 系统来源主键；{@code PAYMENT_TRANSACTION} 时是 {@code payment_transaction.id}。 */
+    private Long sourceId;
 }

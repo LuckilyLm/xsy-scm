@@ -73,14 +73,15 @@ public class MockPaymentProvider implements ScmPaymentProvider {
             case SUCCESS -> {
                 // 渠道先记账（独立事务），再告诉本地「成功了」
                 recordLedger(providerTransactionNo, null, "IN", request.amount());
-                yield new IntentResult(externalIntentId, providerTransactionNo, Outcome.SUCCEEDED, null, null);
+                yield new IntentResult(externalIntentId, providerTransactionNo, Outcome.SUCCEEDED, request.amount(),
+                        null, null);
             }
             case FAILURE ->
-                new IntentResult(externalIntentId, providerTransactionNo, Outcome.FAILED, "MOCK_DECLINED",
+                new IntentResult(externalIntentId, providerTransactionNo, Outcome.FAILED, null, "MOCK_DECLINED",
                         "模拟渠道拒付");
             case DELAYED, EXPIRED ->
                 // 延迟与过期都不立即记账：等真正成功的那一刻（回调）才入渠道账
-                new IntentResult(externalIntentId, providerTransactionNo, Outcome.PENDING, null, null);
+                new IntentResult(externalIntentId, providerTransactionNo, Outcome.PENDING, null, null, null);
         };
     }
 

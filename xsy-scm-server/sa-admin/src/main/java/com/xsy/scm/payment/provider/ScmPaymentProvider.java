@@ -87,9 +87,13 @@ public interface ScmPaymentProvider {
      *
      * @param providerTransactionNo
      *            渠道交易号；回调按它匹配本地交易
+     * @param amount
+     *            **渠道确认收到的金额**。只有同步成功（{@code SUCCEEDED}）才有值；
+     *            延迟 / 失败时为空，等回调再报。它是 Finance 收款金额的唯一依据 ——
+     *            本地绝不拿应付金额去顶替它
      */
-    record IntentResult(String externalIntentId, String providerTransactionNo, Outcome outcome, String failureCode,
-            String failureMessage) {
+    record IntentResult(String externalIntentId, String providerTransactionNo, Outcome outcome, BigDecimal amount,
+            String failureCode, String failureMessage) {
     }
 
     /** 退款入参。 */

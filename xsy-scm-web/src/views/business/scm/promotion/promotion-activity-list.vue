@@ -221,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
@@ -231,7 +231,6 @@ import {
   activityTypes,
   promotionError,
   promotionStatuses,
-  type Id,
   type PromotionActivity,
   type PromotionActivityQuery,
   type PromotionActivitySave,

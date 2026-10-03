@@ -11,9 +11,11 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
+import com.xsy.scm.finance.constant.FinancePaymentSourceType;
+import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
+import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
-import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
 import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
@@ -104,6 +106,12 @@ public class FinanceReceiptService {
         if (!ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(original.getEntryType())) {
             throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
         }
+        if (original.getSourceType() != null) {
+            // 人工 reverse 的语义是「整笔登记错了，撤销这笔登记」，而支付退款是**业务退款**：
+            // 可能部分、可能多次（100 退 30 再退 20）。现有 REVERSE 模型表达不了，
+            // 硬套会把「退款」记成「纠错」，审计上再也分不开。退款资金反向另行设计（3-11b）。
+            throw new ScmBusinessException(FinanceErrorCode.SYSTEM_RECEIPT_REVERSE_FORBIDDEN);
+        }
 
         String reason = StringUtils.trimToNull(form.getReason());
         if (reason == null) {
@@ -134,6 +142,88 @@ public class FinanceReceiptService {
         FinanceReceiptVO result = vo(reversal);
         idempotencyService.complete(claim, "FINANCE_RECEIPT", reversal.getId(), result);
         return result;
+    }
+
+    /**
+     * 系统入口：支付交易成功后登记收款事实（ADM-12 3-11a）。
+     *
+     * <p>
+     * <b>不复用人工的 {@code add(FinanceReceiptAddForm)}</b>：那个入口的字段假设「有人在填」，
+     * 方式、时点、外部凭据都由人给。系统来源必须由财务域自己决定这些 —— 让支付域去凑一个人工表单，
+     * 等于把财务规则复制到支付域，两边迟早不一致。
+     *
+     * <p>
+     * 三条与人工入口不同的地方：
+     * <ol>
+     * <li>方式固定 {@code ONLINE_PAYMENT}，不取调用方输入；</li>
+     * <li>金额取**渠道实际成功捕获/结算的金额**（{@code providerAmount}），不取本地应付金额 ——
+     * 本地应付 100、渠道实收 98 时凭空登记 100 会让账实不符；</li>
+     * <li>时点取渠道成功时间，不是本地登记时间。</li>
+     * </ol>
+     *
+     * <p>
+     * <b>幂等两层</b>：这里先按来源键查一次（常见的重复回调），库上的
+     * {@code uk_finance_receipt_source_active} 是并发下真正的仲裁者。第二层刻意不吞异常：
+     * 事务里吞掉唯一键冲突会让 PostgreSQL 的整个事务进入失败状态，反而更危险；
+     * 让冲突冒出来，渠道重试时前置查询就能命中已有事实。
+     *
+     * @return 已存在的或新登记的收款事实
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FinanceReceiptEntity registerFromPaymentTransaction(FinancePaymentReceiptFact fact) {
+        if (fact == null || fact.transactionId() == null || fact.customerId() == null
+                || fact.providerAmount() == null || fact.succeededAt() == null) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_RECEIPT_AMOUNT_MISSING);
+        }
+        BigDecimal amount = fact.providerAmount()
+                .setScale(FinanceConstant.AMOUNT_SCALE, java.math.RoundingMode.HALF_UP);
+        if (amount.signum() <= 0) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_RECEIPT_AMOUNT_MISSING);
+        }
+
+        FinanceReceiptEntity existing = financeReceiptDao
+                .selectBySource(FinancePaymentSourceType.PAYMENT_TRANSACTION, fact.transactionId());
+        if (existing != null) {
+            return existing;
+        }
+
+        // 客户与结算主体同样按客户域规则解析：系统来源不是绕过这条纪律的理由
+        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(fact.customerId());
+        if (customer == null) {
+            throw new ScmDataScopeException();
+        }
+        var payer = customerService.require(customer.getCustomerId());
+        var settlement = customerService.requireSettlementAccount(payer);
+
+        OffsetDateTime now = OffsetDateTime.now();
+        String operator = ScmOperator.current();
+        FinanceReceiptEntity receipt = new FinanceReceiptEntity();
+        receipt.setReceiptNo(
+                ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+        receipt.setCustomerId(customer.getCustomerId());
+        receipt.setCustomerNameSnapshot(customer.getCustomerName());
+        receipt.setSettlementCustomerId(settlement.getId());
+        receipt.setSettlementCustomerNameSnapshot(settlement.getName());
+        receipt.setAmount(amount);
+        receipt.setMethod(ScmFinanceReceiptMethodEnum.ONLINE_PAYMENT.name());
+        receipt.setReceivedAt(fact.succeededAt());
+        receipt.setEntryType(ScmFinanceReverseEntryTypeEnum.NORMAL.name());
+        receipt.setReverseOfId(null);
+        receipt.setReason(null);
+        receipt.setExternalReference(StringUtils.trimToNull(fact.providerTransactionNo()));
+        receipt.setRemark(null);
+        receipt.setSourceType(FinancePaymentSourceType.PAYMENT_TRANSACTION);
+        receipt.setSourceId(fact.transactionId());
+        receipt.setCreatedAt(now);
+        receipt.setUpdatedAt(now);
+        receipt.setCreatedBy(operator);
+        receipt.setUpdatedBy(operator);
+        if (financeReceiptDao.insert(receipt) != 1) {
+            throw new IllegalStateException("支付收款登记未落库: " + receipt.getReceiptNo());
+        }
+        operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
+                null, null, snapshot(receipt));
+        return receipt;
     }
 
     /**
@@ -228,17 +318,20 @@ public class FinanceReceiptService {
     }
 
     /**
-     * 方式取值以 {@link ScmFinancePaymentMethodEnum} 为唯一来源，必须与 {@code ck_finance_receipt_method} 的三值白名单一致； 不用
-     * {@code valueOf} 直抛，是为了给用户一个业务码而不是栈异常。
+     * 方式取值以 {@link ScmFinanceReceiptMethodEnum} 为唯一来源，必须与 {@code ck_finance_receipt_method}
+     * 的白名单一致；不用 {@code valueOf} 直抛，是为了给用户一个业务码而不是栈异常。
+     *
+     * <p>
+     * <b>人工登记不允许选 {@code BALANCE}</b>：余额抵扣必须由余额流水驱动（余额扣了钱才有这笔收款）。
+     * 允许人工登记一笔余额收款，会造出「账上有收款、余额没动」的假事实。
      */
     private static String method(String raw) {
         String value = StringUtils.trimToNull(raw);
-        for (ScmFinancePaymentMethodEnum candidate : ScmFinancePaymentMethodEnum.values()) {
-            if (candidate.name().equals(value)) {
-                return candidate.name();
-            }
+        ScmFinanceReceiptMethodEnum candidate = ScmFinanceReceiptMethodEnum.of(value);
+        if (candidate == null || candidate == ScmFinanceReceiptMethodEnum.BALANCE) {
+            throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
         }
-        throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
+        return candidate.name();
     }
 
     private Map<String, Object> snapshot(FinanceReceiptEntity receipt) {
@@ -254,6 +347,8 @@ public class FinanceReceiptService {
         snapshot.put("externalReference", receipt.getExternalReference());
         snapshot.put("remark", receipt.getRemark());
         snapshot.put("entryType", receipt.getEntryType());
+        snapshot.put("sourceType", receipt.getSourceType());
+        snapshot.put("sourceId", receipt.getSourceId() == null ? null : receipt.getSourceId().toString());
         return snapshot;
     }
 
