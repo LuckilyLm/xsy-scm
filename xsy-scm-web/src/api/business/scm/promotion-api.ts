@@ -95,15 +95,13 @@ export const promotionApi = {
     }) =>
         postRequest('/scm/promotion/discount/preview', form) as unknown as Promise<ScmResponse<PromotionDiscount>>,
 
-    /** 冻结：占用券并写入订单优惠快照；服务端重验活动与券的当前状态。 */
-    discountConfirm: (form: {
-        salesOrderId: Id;
-        customerId: Id;
-        activityId?: Id | null;
-        couponInstanceId?: Id | null;
-        lines: PromotionDiscountLine[];
-    }) =>
-        postRequest('/scm/promotion/discount/confirm', form) as unknown as Promise<ScmResponse<PromotionDiscount>>,
+    /**
+     * 冻结不再有独立端点：优惠由**订单确认**在服务端按订单事实冻结。
+     *
+     * 客户端只传 `couponInstanceId`（客户选用哪张券是客户的权益），活动由服务端自行选出，
+     * 客户与行金额由服务端从订单读取 —— 这样不会出现「订单确认了但优惠没冻结」的中间态。
+     * 因此这里刻意没有 `discountConfirm`：一个不存在的函数比一个会返回 404 的函数更说明问题。
+     */
 };
 
 export default promotionApi;

@@ -60,6 +60,16 @@ public class PromotionDiscountVO {
     /** 试算过程中被互斥组挤掉的活动（可解释：为什么另一条没生效）。 */
     private List<String> suppressedActivities = new ArrayList<>();
 
+    /**
+     * 实际产生优惠的**全部**活动，按作用顺序。
+     *
+     * <p>
+     * 与 {@link #activityId} 的区别：{@code activityId} 只记第一条产生优惠的活动（主规则，便于快速展示），
+     * 不同互斥组可以叠加，因此真实生效的可能不止一条。冻结时必须按本列表完整落快照，
+     * 否则退款反向会漏掉叠加的那部分。
+     */
+    private List<AppliedActivityVO> appliedActivities = new ArrayList<>();
+
     /** 本次结果是否已冻结（确认下单为 true，试算为 false）。 */
     private boolean frozen;
 
@@ -77,6 +87,27 @@ public class PromotionDiscountVO {
 
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal baseAmount;
+
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal discountAmount;
+    }
+
+    /** 一条实际生效的活动：规则与它这一次贡献的优惠额一并留下，供退款反向与解释使用。 */
+    @Data
+    public static class AppliedActivityVO {
+
+        private Long activityId;
+
+        private String activityCode;
+
+        private String activityName;
+
+        private String activityType;
+
+        private Integer version;
+
+        /** 活动规则原文（受控键值）。 */
+        private Map<String, Object> rule;
 
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal discountAmount;

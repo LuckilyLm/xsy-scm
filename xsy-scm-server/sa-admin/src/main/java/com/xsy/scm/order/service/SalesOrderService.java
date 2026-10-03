@@ -42,6 +42,8 @@ import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.dao.ProductSpuDao;
+import com.xsy.scm.promotion.service.PromotionDiscountService;
+import com.xsy.scm.promotion.support.PromotionOrderFacts;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -95,6 +97,11 @@ public class SalesOrderService {
     private final ScmDataScopeService dataScopeService;
     private final OrderCreditService orderCreditService;
     private final ScmNotificationService notificationService;
+
+    /**
+     * 优惠冻结由订单确认编排：营销域只按订单事实计算，订单域不重复实现优惠规则。
+     */
+    private final PromotionDiscountService promotionDiscountService;
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm salesOrderAddForm, String key) {
@@ -428,6 +435,13 @@ public class SalesOrderService {
         salesOrder.setStatus(ScmOrderStatusEnum.CONFIRMED.name());
         salesOrder.setConfirmedAt(OffsetDateTime.now());
         save(salesOrder);
+        // 优惠冻结并入确认命令，而不是让客户端确认后再单独调一次：否则会出现
+        // 「订单已确认、优惠却没冻结」的中间态。行基础金额取 ordered_line_amount
+        // （下单量 × 锁定单价），该口径由负责人 2026-10-03 确认。
+        promotionDiscountService.freeze(new PromotionOrderFacts(salesOrder.getId(), salesOrder.getCustomerId(),
+                rows.stream().map(row -> new PromotionOrderFacts.Line(row.getId(), row.getOrderedLineAmount()))
+                        .toList()),
+                confirmation == null ? null : confirmation.getCouponInstanceId());
         notificationService.sendOnce("ORDER_CONFIRMED:" + salesOrder.getId(), "ORDER_CONFIRMED",
                 salesOrder.getSellerId(), salesOrder.getId(), "销售订单已确认",
                 "销售订单 " + salesOrder.getOrderNo() + " 已确认，可进入采购与履约流程。");

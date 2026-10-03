@@ -10,7 +10,6 @@ import com.xsy.scm.promotion.domain.form.PromotionActivityQueryForm;
 import com.xsy.scm.promotion.domain.form.PromotionCouponForm;
 import com.xsy.scm.promotion.domain.form.PromotionCouponIssueForm;
 import com.xsy.scm.promotion.domain.form.PromotionCouponQueryForm;
-import com.xsy.scm.promotion.domain.form.PromotionDiscountConfirmForm;
 import com.xsy.scm.promotion.domain.form.PromotionDiscountPreviewForm;
 import com.xsy.scm.promotion.domain.form.PromotionStatusForm;
 import com.xsy.scm.promotion.domain.vo.PromotionActivityVO;
@@ -156,20 +155,14 @@ public class PromotionController {
 
     /**
      * 试算：只读，不占用券。
+     *
+     * <p>
+     * 冻结（{@code confirm}）已并入订单确认：优惠由订单确认在服务端按订单事实冻结，
+     * 客户端不能再单独调冻结接口，否则会出现「订单确认了但优惠没冻结」的中间态。
      */
     @PostMapping("/discount/preview")
     @SaCheckPermission(PromotionPermission.ACTIVITY_QUERY)
     public ResponseDTO<PromotionDiscountVO> preview(@Valid @RequestBody PromotionDiscountPreviewForm form) {
         return ResponseDTO.ok(promotionDiscountService.preview(form));
-    }
-
-    /**
-     * 冻结：占用券并写入订单优惠快照；服务端重验活动与券的当前状态。
-     */
-    @PostMapping("/discount/confirm")
-    @SaCheckPermission(PromotionPermission.ACTIVITY_QUERY)
-    @OperateLog
-    public ResponseDTO<PromotionDiscountVO> confirm(@Valid @RequestBody PromotionDiscountConfirmForm form) {
-        return ResponseDTO.ok(promotionDiscountService.confirm(form));
     }
 }

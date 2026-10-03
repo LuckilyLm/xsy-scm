@@ -16,10 +16,10 @@ import com.xsy.scm.promotion.domain.entity.OrderDiscountEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionActivityEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity;
-import com.xsy.scm.promotion.domain.form.PromotionDiscountConfirmForm;
 import com.xsy.scm.promotion.domain.form.PromotionDiscountPreviewForm;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.support.PromotionDiscountAllocator;
+import com.xsy.scm.promotion.support.PromotionOrderFacts;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -42,7 +42,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <li><b>基础价不在本域</b>：订单行只传「行 id + 基础金额」，基础定价顺序
  * （协议价 → 客户类型价 → 市场价）仍只有订单域一处实现，活动价在它之后计算。</li>
  * <li><b>试算不占用</b>：{@code preview} 不写任何表、不动券状态（ADR-009：预览不等于最终占用）。</li>
- * <li><b>冻结时重验</b>：{@code confirm} 重新读活动与券的**当前**状态与版本，
+ * <li><b>冻结只认订单事实</b>：{@code freeze} 由订单确认在服务端编排调用，客户与行金额来自
+ * {@link PromotionOrderFacts}，活动由服务端自行选出；客户端无法指定客户、行金额或优惠组合。</li>
+ * <li><b>冻结时重验</b>：{@code freeze} 重新读活动与券的**当前**状态与版本，
  * 试算之后活动可能已停用、券可能已被别人占用 —— 用试算结果直接落库会写出一个从未成立过的优惠。</li>
  * <li><b>互斥组</b>：同组内只取优先级最高的一条，其余记入 {@code suppressedActivities} 供解释；
  * 不同组可以叠加，顺序按优先级降序、id 升序，保证同一份输入得到同一份结果。</li>
@@ -66,36 +68,54 @@ public class PromotionDiscountService {
 
     /**
      * 试算：只读，不占用券。
+     *
+     * <p>
+     * 试算面向「还没有订单」的结算预览，因此客户与行由调用方给出；它不写任何表，
+     * 因此不构成「客户端自行组合优惠」——真正落库的冻结只认订单事实。
      */
     @Transactional(readOnly = true)
     public PromotionDiscountVO preview(PromotionDiscountPreviewForm form) {
-        return compute(form, null);
+        List<PromotionDiscountAllocator.Line> lines = form.getLines().stream()
+                .map(line -> new PromotionDiscountAllocator.Line(line.getOrderItemId(), amount(line.getBaseAmount())))
+                .toList();
+        return compute(form.getCustomerId(), form.getActivityId(), form.getCouponInstanceId(), lines, null);
     }
 
     /**
-     * 冻结：占用券并写入订单优惠快照。
+     * 冻结：由**订单确认**在服务端编排调用，按订单事实计算并占用券。
      *
      * <p>
-     * 一个订单只能冻结一次：重复调用直接拒绝，避免用第二次的结果覆盖第一次 ——
-     * 快照本来就是不可变的，能覆盖等于没冻结。
+     * 与试算的三点差别：
+     * <ul>
+     * <li>客户与行金额来自 {@link PromotionOrderFacts}（订单域装配），不接受客户端传入；</li>
+     * <li>活动不由客户端指定：服务端按当前生效活动与互斥组自行选出，避免客户端拼优惠组合；</li>
+     * <li>请求级幂等由外层命令承担 —— 冻结是订单确认事务的一部分，重复确认由
+     * {@code ORDER_CONFIRM} 的 {@code Idempotency-Key} 回放首次结果，不会走到这里第二次。
+     * 本方法仍保留「一个订单至多一份」的兜底判定，供非幂等路径调用时拒绝而不是覆盖。</li>
+     * </ul>
      */
     @Transactional(rollbackFor = Exception.class)
-    public PromotionDiscountVO confirm(PromotionDiscountConfirmForm form) {
-        if (orderDiscountDao.selectByOrderId(form.getSalesOrderId()) != null) {
+    public PromotionDiscountVO freeze(PromotionOrderFacts facts, Long couponInstanceId) {
+        if (orderDiscountDao.selectByOrderId(facts.salesOrderId()) != null) {
             throw new ScmBusinessException(PromotionErrorCode.DISCOUNT_ALREADY_FROZEN);
         }
-        PromotionDiscountVO computed = compute(form, form.getSalesOrderId());
-        if (computed.getDiscountAmount().signum() == 0) {
+        List<PromotionDiscountAllocator.Line> lines = facts.lines().stream()
+                .map(line -> new PromotionDiscountAllocator.Line(line.orderItemId(), line.baseAmount()))
+                .toList();
+        PromotionDiscountVO computed = compute(facts.customerId(), null, couponInstanceId, lines,
+                facts.salesOrderId());
+        if (computed.getDiscountAmount() == null || computed.getDiscountAmount().signum() == 0) {
             // 没有优惠就不落冻结记录：留一条 0 元记录会让「这单有没有优惠」变得要读快照才知道
             return computed;
         }
 
         String operator = ScmOperator.current();
         OrderDiscountEntity row = new OrderDiscountEntity();
-        row.setSalesOrderId(form.getSalesOrderId());
+        row.setSalesOrderId(facts.salesOrderId());
+        // 主活动列只记第一条产生优惠的活动；叠加生效的其余活动完整落在快照里（见 activitySnapshot）。
         row.setActivityId(computed.getActivityId());
         row.setActivityVersion(computed.getActivityVersion());
-        row.setActivitySnapshot(computed.getActivityRule());
+        row.setActivitySnapshot(activitySnapshot(computed));
         row.setCouponInstanceId(computed.getCouponInstanceId());
         row.setCouponSnapshot(couponSnapshot(computed));
         row.setBaseAmount(computed.getBaseAmount());
@@ -114,13 +134,13 @@ public class PromotionDiscountService {
                 throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_NOT_FOUND);
             }
             if (promotionCouponInstanceDao.markReserved(instance.getId(), instance.getVersion(),
-                    form.getSalesOrderId(), operator) != 1) {
+                    facts.salesOrderId(), operator) != 1) {
                 throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_UNAVAILABLE);
             }
         }
 
         computed.setFrozen(true);
-        computed.setSalesOrderId(form.getSalesOrderId());
+        computed.setSalesOrderId(facts.salesOrderId());
         computed.setCreatedAt(row.getCreatedAt());
         computed.setCreatedBy(operator);
         return computed;
@@ -130,26 +150,25 @@ public class PromotionDiscountService {
     // 内部
     // ------------------------------------------------------------------
 
-    private PromotionDiscountVO compute(PromotionDiscountPreviewForm form, Long salesOrderId) {
+    private PromotionDiscountVO compute(Long customerId, Long activityId, Long couponInstanceId,
+            List<PromotionDiscountAllocator.Line> lines, Long salesOrderId) {
         OffsetDateTime now = OffsetDateTime.now();
-        List<PromotionDiscountAllocator.Line> lines = form.getLines().stream()
-                .map(line -> new PromotionDiscountAllocator.Line(line.getOrderItemId(), amount(line.getBaseAmount())))
-                .toList();
 
         PromotionDiscountVO vo = new PromotionDiscountVO();
-        vo.setCustomerId(form.getCustomerId());
+        vo.setCustomerId(customerId);
         vo.setSalesOrderId(salesOrderId);
 
         // 1) 活动：先选出真正生效的那几条，再按优先级顺序逐条作用在**剩余金额**上
-        List<PromotionActivityEntity> candidates = form.getActivityId() == null
+        List<PromotionActivityEntity> candidates = activityId == null
                 ? promotionActivityDao.listActive(now)
-                : List.of(requireActiveActivity(form.getActivityId(), now));
+                : List.of(requireActiveActivity(activityId, now));
         List<PromotionActivityEntity> applied = selectApplied(candidates, vo);
 
         BigDecimal baseTotal = lines.stream().map(PromotionDiscountAllocator.Line::baseAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
         BigDecimal remaining = baseTotal;
         BigDecimal activityDiscount = BigDecimal.ZERO.setScale(SCALE);
+        List<PromotionDiscountVO.AppliedActivityVO> appliedActivities = new ArrayList<>();
         for (PromotionActivityEntity activity : applied) {
             BigDecimal delta = activityDiscountOf(activity, remaining);
             if (delta.signum() <= 0) {
@@ -157,8 +176,10 @@ public class PromotionDiscountService {
             }
             activityDiscount = activityDiscount.add(delta);
             remaining = remaining.subtract(delta).max(BigDecimal.ZERO);
+            appliedActivities.add(appliedActivity(activity, delta));
             if (vo.getActivityId() == null) {
-                // 只记「实际产生优惠的第一条活动」：多组叠加时，快照里能解释主规则是哪一条
+                // 主活动只记「实际产生优惠的第一条」：多组叠加时，快速展示能说出主规则是哪一条；
+                // 叠加生效的其余活动完整落在 appliedActivities 里，冻结时一并入快照。
                 vo.setActivityId(activity.getId());
                 vo.setActivityCode(activity.getActivityCode());
                 vo.setActivityName(activity.getActivityName());
@@ -166,13 +187,14 @@ public class PromotionDiscountService {
                 vo.setActivityRule(activity.getRule());
             }
         }
+        vo.setAppliedActivities(appliedActivities);
 
         // 2) 券：按门槛在「活动后剩余金额」上判定
         BigDecimal couponDiscount = BigDecimal.ZERO.setScale(SCALE);
         PromotionCouponEntity coupon = null;
         PromotionCouponInstanceEntity instance = null;
-        if (form.getCouponInstanceId() != null) {
-            instance = requireUsableInstance(form.getCouponInstanceId(), form.getCustomerId());
+        if (couponInstanceId != null) {
+            instance = requireUsableInstance(couponInstanceId, customerId);
             coupon = requireActiveCoupon(instance.getCouponId(), now);
             couponDiscount = couponDiscountOf(coupon, remaining);
             vo.setCouponInstanceId(instance.getId());
@@ -316,6 +338,49 @@ public class PromotionDiscountService {
         snapshot.put("couponName", vo.getCouponName());
         snapshot.put("couponDiscount", plain(vo.getCouponDiscount()));
         return snapshot;
+    }
+
+    /**
+     * 活动快照：冻结**每一条实际生效活动**及其贡献额，外加被互斥组挤掉的活动。
+     *
+     * <p>
+     * 为什么不直接存 {@code activityRule}（单条规则）：不同互斥组可以叠加，真实生效的可能不止一条。
+     * 只冻结主规则会让退款反向漏掉叠加的那部分，而快照是不可变的，事后无法补算。
+     *
+     * <p>
+     * 形状保持 {@code object}（{@code order_discount.activity_snapshot} 有
+     * {@code jsonb_typeof = 'object'} 约束），因此不需要改表：完整列表放在 {@code applied} 键下。
+     */
+    private Map<String, Object> activitySnapshot(PromotionDiscountVO vo) {
+        List<Map<String, Object>> applied = new ArrayList<>();
+        for (PromotionDiscountVO.AppliedActivityVO activity : vo.getAppliedActivities()) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("activityId", activity.getActivityId());
+            row.put("activityCode", activity.getActivityCode());
+            row.put("activityName", activity.getActivityName());
+            row.put("activityType", activity.getActivityType());
+            row.put("version", activity.getVersion());
+            row.put("rule", activity.getRule());
+            row.put("discountAmount", plain(activity.getDiscountAmount()));
+            applied.add(row);
+        }
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("applied", applied);
+        snapshot.put("suppressed", List.copyOf(vo.getSuppressedActivities()));
+        return snapshot;
+    }
+
+    private static PromotionDiscountVO.AppliedActivityVO appliedActivity(PromotionActivityEntity activity,
+            BigDecimal discountAmount) {
+        PromotionDiscountVO.AppliedActivityVO vo = new PromotionDiscountVO.AppliedActivityVO();
+        vo.setActivityId(activity.getId());
+        vo.setActivityCode(activity.getActivityCode());
+        vo.setActivityName(activity.getActivityName());
+        vo.setActivityType(activity.getActivityType());
+        vo.setVersion(activity.getVersion());
+        vo.setRule(activity.getRule());
+        vo.setDiscountAmount(discountAmount);
+        return vo;
     }
 
     private String allocationsJson(PromotionDiscountVO vo) {
