@@ -66,7 +66,25 @@ public enum PaymentErrorCode implements ScmErrorCode {
      * 可退本金必须以**渠道实际成功捕获/结算的金额**为准。缺失时**拒绝退款**而不是退回本地应付金额：
      * 静默 fallback 会掩盖「支付结果没落完整」这个问题，等接真实渠道时才以「退款被渠道拒」的形式暴露。
      */
-    PAYMENT_PROVIDER_AMOUNT_MISSING(41355, "该笔交易缺少渠道实收金额，无法确定可退本金");
+    PAYMENT_PROVIDER_AMOUNT_MISSING(41355, "该笔交易缺少渠道实收金额，无法确定可退本金"),
+
+    /** 业务退款来源不成立：退款单不存在 / 未完成 / 客户与原支付不一致 / 来源类型不受支持。 */
+    PAYMENT_REFUND_SOURCE_INVALID(41356, "业务退款来源不合法：请确认退款单已完成且属于原支付客户"),
+
+    /** 提交的退款额与业务退款单的应退额**逐值不一致**。 */
+    PAYMENT_REFUND_AMOUNT_MISMATCH(41357, "退款金额与业务退款单的应退金额不一致"),
+
+    /** 渠道退款成功回调没带实际退款金额：没有它就无法登记资金反向事实。 */
+    PAYMENT_REFUND_PROVIDER_AMOUNT_MISSING(41358, "渠道未回报实际退款金额，无法确认退款结果"),
+
+    /**
+     * 支付意图的业务来源不合法：订单不存在 / 不受支持 / 与提交的客户不一致。
+     *
+     * <p>
+     * <b>来源身份不能由客户端自己拼</b>：意图必须按订单 id 解析出正式事实（订单号、客户、业务员），
+     * 否则 {@code customer_name_snapshot} 里会躺着一个客户 id 字符串，支付成功后又顺着它进 Finance。
+     */
+    PAYMENT_INTENT_SOURCE_INVALID(41359, "支付意图的业务来源不合法：请确认订单存在且属于该客户");
 
     private final int code;
 

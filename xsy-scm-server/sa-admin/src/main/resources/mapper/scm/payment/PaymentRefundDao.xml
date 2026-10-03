@@ -46,6 +46,7 @@
         UPDATE payment_refund
         SET status             = 'SUCCEEDED',
             provider_refund_no = #{providerRefundNo},
+            provider_amount    = #{providerAmount},
             refunded_at        = CURRENT_TIMESTAMP,
             failure_code       = NULL,
             failure_message    = NULL,

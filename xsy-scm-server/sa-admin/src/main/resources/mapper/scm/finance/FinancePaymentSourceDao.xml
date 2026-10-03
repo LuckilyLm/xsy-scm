@@ -62,4 +62,13 @@
         </if>
         ORDER BY r.completed_at DESC, r.id DESC
     </select>
+    <select id="selectActivePaymentRefund" resultType="java.lang.Long">
+        SELECT r.id
+        FROM payment_refund r
+        WHERE r.source_type = 'ORDER_REFUND'
+          AND r.source_id = #{orderRefundId}
+          AND r.deleted = FALSE
+        LIMIT 1
+    </select>
+
 </mapper>

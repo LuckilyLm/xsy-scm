@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.payment.dao.PaymentSourceDao">
+
+    <!--
+      只读外部事实。三张表分属订单域与财务域；这里只 SELECT，且只取校验所需的最小列 ——
+      多取一列就等于把别域的表结构复制过来，对方改列时这里会静默读到 null。
+    -->
+    <select id="selectOrder" resultType="com.xsy.scm.payment.domain.dto.PaymentOrderFact">
+        SELECT so.id                    AS order_id,
+               so.order_no              AS order_no,
+               so.customer_id           AS customer_id,
+               so.customer_name_snapshot AS customer_name_snapshot,
+               so.seller_id             AS seller_id
+        FROM sales_order so
+        WHERE so.id = #{orderId}
+          AND so.deleted = FALSE
+    </select>
+
+    <select id="lockOrderRefund" resultType="com.xsy.scm.payment.domain.dto.PaymentOrderRefundFact">
+        SELECT r.id            AS refund_id,
+               r.refund_no     AS refund_no,
+               r.order_id      AS order_id,
+               r.customer_id   AS customer_id,
+               r.refund_amount AS refund_amount,
+               r.status        AS status
+        FROM order_refund r
+        WHERE r.id = #{refundId}
+          AND r.deleted = FALSE
+        FOR UPDATE
+    </select>
+
+    <select id="selectActiveRefundPayment" resultType="java.lang.Long">
+        SELECT p.id
+        FROM finance_payment p
+        WHERE p.source_type = 'ORDER_REFUND'
+          AND p.source_id = #{orderRefundId}
+          AND p.entry_type = 'NORMAL'
+          AND p.deleted = FALSE
+        LIMIT 1
+    </select>
+
+</mapper>

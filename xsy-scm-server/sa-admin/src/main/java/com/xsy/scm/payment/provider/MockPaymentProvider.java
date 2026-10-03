@@ -92,10 +92,11 @@ public class MockPaymentProvider implements ScmPaymentProvider {
                 : request.scenario();
         String providerRefundNo = "MOCK-REFUND-" + request.refundNo();
         if (scenario == ScmPaymentMockScenarioEnum.FAILURE) {
-            return new RefundResult(providerRefundNo, Outcome.FAILED, "MOCK_REFUND_REJECTED", "模拟渠道拒绝退款");
+            return new RefundResult(providerRefundNo, Outcome.FAILED, null, "MOCK_REFUND_REJECTED",
+                    "模拟渠道拒绝退款");
         }
         recordLedger(request.providerTransactionNo(), providerRefundNo, "OUT", request.amount());
-        return new RefundResult(providerRefundNo, Outcome.SUCCEEDED, null, null);
+        return new RefundResult(providerRefundNo, Outcome.SUCCEEDED, request.amount(), null, null);
     }
 
     /**

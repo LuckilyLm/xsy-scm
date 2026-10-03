@@ -27,6 +27,16 @@ public interface FinancePaymentSourceDao {
      */
     FinanceRefundFactDto selectOrderRefund(@Param("refundId") Long refundId);
 
+    /**
+     * 该业务退款单是否已有**线上退款事实**（支付域 {@code payment_refund}）。
+     *
+     * <p>
+     * 人工退款付款与线上退款必须互斥：同一张退款单被退两次（人工一次、渠道一次）
+     * 是最难查的一类账。两边各自锁同一行 {@code order_refund}，再各自查对方有没有事实，
+     * 窗口就关上了。返回退款单 id；没有则返回 {@code null}。
+     */
+    Long selectActivePaymentRefund(@Param("orderRefundId") Long orderRefundId);
+
     /** Paginated completed refund picker; excludes already-paid sources and follows customer seller scope. */
     List<FinanceRefundOptionVO> selectCompletedRefundOptions(Page<?> page,
             @Param("query") FinanceRefundOptionQueryForm query, @Param("scope") ScmDataScopeContext scope);

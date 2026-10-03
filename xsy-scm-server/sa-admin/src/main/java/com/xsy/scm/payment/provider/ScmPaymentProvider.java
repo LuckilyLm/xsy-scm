@@ -101,8 +101,15 @@ public interface ScmPaymentProvider {
             ScmPaymentMockScenarioEnum scenario) {
     }
 
-    /** 退款结果。 */
-    record RefundResult(String providerRefundNo, Outcome outcome, String failureCode, String failureMessage) {
+    /**
+     * 退款结果。
+     *
+     * @param amount
+     *            **渠道实际退回的金额**；只有成功时才有值。与申请退款额分开：
+     *            申请 100 而渠道实退 98 是可能发生的，资金反向事实认的是它
+     */
+    record RefundResult(String providerRefundNo, Outcome outcome, BigDecimal amount, String failureCode,
+            String failureMessage) {
     }
 
     /**

@@ -131,7 +131,8 @@ public class PaymentCallbackService {
                         callback.eventType() == ScmPaymentCallbackEventTypeEnum.REFUND_SUCCEEDED
                                 ? ScmPaymentProvider.Outcome.SUCCEEDED
                                 : ScmPaymentProvider.Outcome.FAILED,
-                        callback.providerRefundNo(), "PROVIDER_REFUND_FAILED", "渠道回调退款失败", operator);
+                        callback.providerRefundNo(), callback.amount(), "PROVIDER_REFUND_FAILED",
+                        "渠道回调退款失败", operator);
             }
         }
 

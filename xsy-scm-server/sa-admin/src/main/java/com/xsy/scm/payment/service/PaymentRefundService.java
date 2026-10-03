@@ -7,9 +7,14 @@ import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentMockScenarioEnum;
 import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
 import com.xsy.scm.payment.constant.ScmPaymentRefundStatusEnum;
+import com.xsy.scm.payment.constant.ScmPaymentSourceTypeEnum;
 import com.xsy.scm.payment.constant.ScmPaymentTransactionStatusEnum;
+import com.xsy.scm.payment.dao.PaymentIntentDao;
 import com.xsy.scm.payment.dao.PaymentRefundDao;
+import com.xsy.scm.payment.dao.PaymentSourceDao;
 import com.xsy.scm.payment.dao.PaymentTransactionDao;
+import com.xsy.scm.payment.domain.dto.PaymentOrderRefundFact;
+import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
 import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.domain.form.PaymentRefundCreateForm;
@@ -62,6 +67,11 @@ public class PaymentRefundService {
 
     private final PaymentTransactionDao paymentTransactionDao;
 
+    private final PaymentIntentDao paymentIntentDao;
+
+    /** 只读外部事实：订单 / 退款单 / 财务付款，用于来源校验与互斥。 */
+    private final PaymentSourceDao paymentSourceDao;
+
     private final PaymentNumberGenerator paymentNumberGenerator;
 
     private final ScmPaymentProviderRegistry providerRegistry;
@@ -92,17 +102,14 @@ public class PaymentRefundService {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
         }
 
-        // 业务来源唯一：同一张售后退款单只能映射一笔渠道退款
+        BigDecimal amount = form.getAmount().setScale(SCALE, RoundingMode.HALF_UP);
+
+        // **业务来源校验必须早于 provider.refund()**：这里任何一条不成立，渠道的钱都还没动。
+        // 留到 3-11b 由 Finance 侧拒绝就晚了 —— 那时渠道已经把钱退出去了，数据库拒绝没有意义。
         if (form.getSourceType() != null) {
-            if (form.getSourceId() == null) {
-                throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
-            }
-            if (paymentRefundDao.selectBySource(form.getSourceType(), form.getSourceId()) != null) {
-                throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_DUPLICATED);
-            }
+            requireOrderRefundSource(form, transaction, amount);
         }
 
-        BigDecimal amount = form.getAmount().setScale(SCALE, RoundingMode.HALF_UP);
         BigDecimal refundable = refundableOf(transaction);
         if (amount.compareTo(refundable) > 0) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_AMOUNT_EXCEEDED);
@@ -133,8 +140,8 @@ public class PaymentRefundService {
         if (paymentRefundDao.markProcessing(refund.getId(), result.providerRefundNo(), operator) != 1) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
         }
-        applyOutcome(refund.getId(), result.outcome(), result.providerRefundNo(), result.failureCode(),
-                result.failureMessage(), operator);
+        applyOutcome(refund.getId(), result.outcome(), result.providerRefundNo(), result.amount(),
+                result.failureCode(), result.failureMessage(), operator);
         PaymentRefundEntity saved = paymentRefundDao.selectById(refund.getId());
         idempotencyService.complete(claim, "PAYMENT_REFUND", saved.getId(), saved);
         return saved;
@@ -149,14 +156,63 @@ public class PaymentRefundService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long refundId, ScmPaymentProvider.Outcome outcome, String providerRefundNo,
-            String failureCode, String failureMessage, String operator) {
+            BigDecimal providerAmount, String failureCode, String failureMessage, String operator) {
         switch (outcome) {
-            case SUCCEEDED -> paymentRefundDao.markSucceeded(refundId, providerRefundNo, operator);
+            case SUCCEEDED -> {
+                if (providerAmount == null || providerAmount.signum() <= 0) {
+                    // 没有渠道实退金额就不算退成功：硬写会让「退了多少」无从回答，
+                    // 3-11b 也无法据此登记资金反向事实。宁可失败，让渠道重试带全信息。
+                    throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_PROVIDER_AMOUNT_MISSING);
+                }
+                paymentRefundDao.markSucceeded(refundId, providerRefundNo,
+                        providerAmount.setScale(SCALE, RoundingMode.HALF_UP), operator);
+            }
             case FAILED -> paymentRefundDao.markFailed(refundId, failureCode, failureMessage, operator);
             case PENDING -> {
                 // 渠道还没给结果：停在 PROCESSING，等回调
             }
             default -> throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
+        }
+    }
+
+    /**
+     * 业务退款来源（{@code ORDER_REFUND}）的前置校验。
+     *
+     * <p>
+     * 顺序即纪律，且**必须在 {@code provider.refund()} 之前**完成：
+     * <ol>
+     * <li>锁 {@code order_refund} —— 线上退款与人工退款付款（财务域 {@code CUSTOMER + ORDER_REFUND}）
+     * 必须互斥，两边锁同一行才能关掉「先查后写」的窗口；</li>
+     * <li>退款单必须存在且 {@code COMPLETED}；</li>
+     * <li>退款对象必须与原支付客户一致（否则会把 A 的付款退给 B）；</li>
+     * <li>提交金额必须与应退额**逐值一致**（差一分钱，两条路径就各退一部分）；</li>
+     * <li>不存在人工登记的退款付款；</li>
+     * <li>不存在已有的线上退款。</li>
+     * </ol>
+     */
+    private void requireOrderRefundSource(PaymentRefundCreateForm form, PaymentTransactionEntity transaction,
+            BigDecimal amount) {
+        if (!ScmPaymentSourceTypeEnum.ORDER_REFUND.name().equals(form.getSourceType()) || form.getSourceId() == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
+        }
+        PaymentOrderRefundFact refund = paymentSourceDao.lockOrderRefund(form.getSourceId());
+        if (refund == null || !refund.completed()) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
+        }
+        PaymentIntentEntity intent = paymentIntentDao.selectById(transaction.getIntentId());
+        if (intent == null || !refund.customerId().equals(intent.getCustomerId())) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
+        }
+        if (amount.compareTo(refund.refundAmount().setScale(SCALE, RoundingMode.HALF_UP)) != 0) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_AMOUNT_MISMATCH);
+        }
+        // 与人工退款付款互斥：同一张退款单被退两次（人工一次、渠道一次）是最难查的一类账
+        if (paymentSourceDao.selectActiveRefundPayment(refund.refundId()) != null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_DUPLICATED);
+        }
+        // 线上重复：同一张退款单只映射一笔渠道退款
+        if (paymentRefundDao.selectBySource(form.getSourceType(), form.getSourceId()) != null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_DUPLICATED);
         }
     }
 

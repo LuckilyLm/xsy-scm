@@ -285,6 +285,11 @@ public class FinancePaymentService {
             // scale 4 逐值判等，不允许四舍五入到 2 位再比：refund_amount 与付款金额都是 18,4
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
+        if (financePaymentSourceDao.selectActivePaymentRefund(refund.getRefundId()) != null) {
+            // 线上退款已发起/完成：再人工退一次，就是同一张退款单被退两遍。
+            // 与支付域的 requireOrderRefundSource 构成**双向互斥**，两边都锁同一行 order_refund。
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
 
         payment.setCounterpartyId(refund.getCustomerId());
         // 名称取付款发生时客户主档并冻结，绝不采用前端提交的任何名称；

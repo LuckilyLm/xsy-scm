@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,13 +43,20 @@ public class PaymentIntentController {
      * 创建支付意图并向渠道发起。
      *
      * <p>
-     * 应付金额由入参显式给出；本接口**不做**「按订单金额自动算」的推断。
+     * <b>需要 {@code Idempotency-Key}</b>：这里往下会真的调用渠道。后台双击、网络重试、
+     * 前端超时后重试都会造出第二个意图与第二笔渠道交易 —— 退款都要求幂等，收钱更不能没有。
+     * 同键同内容重放首次结果，同键异内容按既有语义报冲突。
+     *
+     * <p>
+     * 应付金额由入参显式给出（允许部分支付、余额 + 在线支付拆分）；本接口**不做**
+     * 「按订单金额自动算」的推断，但**来源身份由正式订单事实解析**，不采信提交的客户与单号。
      */
     @PostMapping("/create")
     @SaCheckPermission(ScmPaymentPermission.INTENT_CREATE)
     @OperateLog
-    public ResponseDTO<PaymentIntentVO> create(@Valid @RequestBody PaymentIntentCreateForm form) {
-        return ResponseDTO.ok(PaymentVoAssembler.toIntent(paymentIntentService.create(form)));
+    public ResponseDTO<PaymentIntentVO> create(@Valid @RequestBody PaymentIntentCreateForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(PaymentVoAssembler.toIntent(paymentIntentService.create(form, key)));
     }
 
     @PostMapping("/query")

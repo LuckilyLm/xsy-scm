@@ -2,15 +2,21 @@ package com.xsy.scm.payment.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentIntentStatusEnum;
 import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
 import com.xsy.scm.payment.constant.ScmPaymentMockScenarioEnum;
 import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
+import com.xsy.scm.payment.constant.ScmPaymentSourceTypeEnum;
 import com.xsy.scm.payment.constant.ScmPaymentTransactionStatusEnum;
 import com.xsy.scm.payment.dao.PaymentIntentDao;
+import com.xsy.scm.payment.dao.PaymentSourceDao;
 import com.xsy.scm.payment.dao.PaymentTransactionDao;
 import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
+import com.xsy.scm.payment.domain.dto.PaymentOrderFact;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.domain.form.PaymentIntentCreateForm;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
@@ -41,11 +47,20 @@ public class PaymentIntentService {
 
     private static final int SCALE = 4;
 
+    private static final String IDEMPOTENCY_SCOPE = "PAYMENT_INTENT_CREATE";
+
     private final PaymentIntentDao paymentIntentDao;
 
     private final PaymentTransactionDao paymentTransactionDao;
 
     private final PaymentNumberGenerator paymentNumberGenerator;
+
+    /** 只读外部事实：按订单 id 解析正式订单（订单号 / 客户 / 业务员）。 */
+    private final PaymentSourceDao paymentSourceDao;
+
+    private final ScmDataScopeService dataScopeService;
+
+    private final ScmIdempotencyService idempotencyService;
 
     private final ScmPaymentProviderRegistry providerRegistry;
 
@@ -63,7 +78,14 @@ public class PaymentIntentService {
      * 一张订单可以只收一部分、也可以拆成余额 + 在线支付两条意图。
      */
     @Transactional(rollbackFor = Exception.class)
-    public PaymentIntentEntity create(PaymentIntentCreateForm form) {
+    public PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey) {
+        // 幂等：**收钱也要幂等**。这里往下会真的调用 provider.createIntent()，
+        // 后台双击 / 网络重试 / 前端超时重试都会造出第二个意图与第二笔渠道交易。
+        var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE, idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, PaymentIntentEntity.class);
+        }
+
         ScmPaymentMethodEnum method = ScmPaymentMethodEnum.of(form.getMethod());
         if (method == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
@@ -74,16 +96,19 @@ public class PaymentIntentService {
         }
         ScmPaymentProvider provider = providerRegistry.require(form.getProvider());
         ScmPaymentMockScenarioEnum scenario = resolveScenario(form);
+        // 来源身份由**正式订单事实**决定，不采信客户端提交的客户与单号
+        PaymentOrderFact order = requireOrder(form);
 
         String operator = ScmOperator.current();
         PaymentIntentEntity intent = new PaymentIntentEntity();
         intent.setIntentNo(paymentNumberGenerator.nextIntentNo());
-        intent.setCustomerId(form.getCustomerId());
-        // 客户名快照由订单域保证（这里只存调用方给的业务单号快照），避免支付域反向依赖客户域
-        intent.setCustomerNameSnapshot(String.valueOf(form.getCustomerId()));
-        intent.setSourceType(form.getSourceType());
-        intent.setSourceId(form.getSourceId());
-        intent.setSourceNoSnapshot(String.valueOf(form.getSourceId()));
+        intent.setCustomerId(order.customerId());
+        // 冻结**正式**客户名与订单号：存 id 字符串不仅是显示问题 ——
+        // 支付成功后会顺着 customer_id 进 Finance 收款事实，来源身份必须从一开始就是对的
+        intent.setCustomerNameSnapshot(order.customerNameSnapshot());
+        intent.setSourceType(ScmPaymentSourceTypeEnum.SALES_ORDER.name());
+        intent.setSourceId(order.orderId());
+        intent.setSourceNoSnapshot(order.orderNo());
         intent.setAmount(form.getAmount().setScale(SCALE, RoundingMode.HALF_UP));
         intent.setMethod(method.name());
         intent.setProvider(provider.provider().name());
@@ -120,7 +145,9 @@ public class PaymentIntentService {
         // 延迟 / 失败时为空，等回调再报。**本地绝不拿应付金额去顶替它**。
         applyOutcome(intent.getId(), transaction.getId(), result.outcome(), result.failureCode(),
                 result.failureMessage(), result.amount(), operator);
-        return paymentIntentDao.selectById(intent.getId());
+        PaymentIntentEntity saved = paymentIntentDao.selectById(intent.getId());
+        idempotencyService.complete(claim, "PAYMENT_INTENT", saved.getId(), saved);
+        return saved;
     }
 
     /**
@@ -204,6 +231,35 @@ public class PaymentIntentService {
         if (paymentIntentDao.updateStatus(intentId, from.name(), to.name(), operator) != 1) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
+    }
+
+    /**
+     * 按订单 id 解析并校验正式订单事实。
+     *
+     * <p>
+     * 校验四件事：来源类型受支持、订单存在、**订单客户与提交的客户一致**、订单在当前调用者的
+     * 订单数据范围内。
+     *
+     * <p>
+     * 越权与「订单不存在」**共用同一个拒绝**（{@link ScmDataScopeException}，对外 30005）：
+     * 能分辨「存在但无权」就等于把订单主键探测变成了可用信号，与 Finance 收款的纪律一致。
+     *
+     * <p>
+     * 金额仍由调用方显式给出（允许部分支付、余额 + 在线支付拆分），但**来源身份不能由客户端自己拼**。
+     */
+    private PaymentOrderFact requireOrder(PaymentIntentCreateForm form) {
+        if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(form.getSourceType())) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
+        }
+        PaymentOrderFact order = paymentSourceDao.selectOrder(form.getSourceId());
+        if (order == null || !dataScopeService.resolve().getOrderSellerScope().allows(order.sellerId())) {
+            throw new ScmDataScopeException();
+        }
+        if (!order.customerId().equals(form.getCustomerId())) {
+            // 订单客户与提交客户不一致：这条不挡住，支付成功后的 Finance 收款会挂到别的客户名下
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
+        }
+        return order;
     }
 
     /** 仅本地模拟渠道可带剧本；真实渠道带剧本一律拒收（DDL 也有同义 CHECK 兜底）。 */
