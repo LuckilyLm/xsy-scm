@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -145,6 +146,48 @@ public class PromotionDiscountService {
         computed.setCreatedAt(row.getCreatedAt());
         computed.setCreatedBy(operator);
         return computed;
+    }
+
+    /**
+     * 正常签收 → 核销该订单占用的券：{@code RESERVED → USED}。
+     *
+     * <p>
+     * <b>必须与签收同事务</b>（{@code MANDATORY}）：签收是订单级不可逆终态，也正是应收的形成时点，
+     * 券「已被一笔真实成交用掉」的判定与它对齐。任何一步失败整笔回滚，不会出现
+     * 「已签收但券还是 RESERVED」，也不会出现「券已核销但财务没生成」。
+     *
+     * <p>
+     * <b>异常签收不核销</b>：{@code EXCEPTION} 不形成应收，券也保持 {@code RESERVED}，
+     * 等异常解决后真正签收再核销 —— 与「异常签收不形成应收」同一条规则。
+     *
+     * <p>
+     * <b>退款不恢复券</b>：签收之后的部分 / 全额退款都保持 {@code USED}。退款反向的是**金额**
+     * （按冻结分摊），券回答的是**权益是否已被一笔成交使用过**，两者不是一回事；
+     * 允许复活会让「100 元订单用 20 元券、退款后券回来、再用于下一单」变成重复营销权益。
+     * 业务若确需「全额退款返券」，应重新 {@code issue} 一张新券，而不是把旧券改回 {@code AVAILABLE}。
+     *
+     * <p>
+     * 没有冻结记录或没用券时成功跳过：签收本身合法，不能因为没有券而回滚。
+     */
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    public void markCouponUsed(Long salesOrderId) {
+        OrderDiscountEntity row = orderDiscountDao.selectByOrderId(salesOrderId);
+        if (row == null || row.getCouponInstanceId() == null) {
+            return;
+        }
+        PromotionCouponInstanceEntity instance = promotionCouponInstanceDao.lockById(row.getCouponInstanceId());
+        if (instance == null) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_NOT_FOUND);
+        }
+        if (ScmPromotionCouponInstanceStatusEnum.USED.name().equals(instance.getStatus())) {
+            // 幂等：签收重放（或并发下的重复触发）不该报错，券已经在这个订单上用掉了。
+            return;
+        }
+        if (promotionCouponInstanceDao.markUsed(instance.getId(), instance.getVersion(), salesOrderId,
+                ScmOperator.current()) != 1) {
+            // 券不在 RESERVED（例如未来「撤销确认」把它释放了）：宁可失败，也不写出一张状态说不清的券。
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_STATE_INVALID);
+        }
     }
 
     /**

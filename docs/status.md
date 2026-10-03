@@ -2,7 +2,7 @@
 
 最后更新：2026-10-03。
 
-本轮从本地 `main` 的 `daf77d55` 继续开发，起始工作区干净；配送范围收敛阶段代码已完成，V91 尚未执行。随后完成营销券启停子阶段代码（券启停接口与权限、发券幂等与客户范围判定、前端按钮），V92 尚未执行；再完成财务与报表（ADM-01）逐项缺口盘点与两个实施切片（六个导出 + 订单表头级客户订单明细）；最后完成营销接入订单（ADM-12 3-1～3-4、3-7、3-8：优惠按订单事实在订单确认内冻结，前端可选券，订单优惠可追溯，应收与红字改按净额）。未运行测试或构建，未推送。
+本轮从本地 `main` 的 `daf77d55` 继续开发，起始工作区干净；配送范围收敛阶段代码已完成，V91 尚未执行。随后完成营销券启停子阶段代码（券启停接口与权限、发券幂等与客户范围判定、前端按钮），V92 尚未执行；再完成财务与报表（ADM-01）逐项缺口盘点与两个实施切片（六个导出 + 订单表头级客户订单明细）；最后完成营销接入订单（ADM-12 3-1～3-4、3-7～3-9：优惠按订单事实在订单确认内冻结，前端可选券，订单优惠可追溯，应收与红字改按净额，券在正常签收时核销）。未运行测试或构建，未推送。
 
 ## 当前完成
 
@@ -23,7 +23,7 @@
 - ADM-09 地图 M2 收口已补：`supplier` 的坐标列（V40 已建）此前只存在于数据库，Java 实体、表单、详情与前端选点均缺失；本次补齐三列成组校验（服务端断言 + DB 约束 + 前端 `locationError`）、详情展示与地图选点，区划或地址变更会作废已选点位。新增[地图接入的部署与使用](architecture/map-deployment.md)（环境变量、高德控制台白名单、无外网降级、部署验收清单、不承诺能力）。仅开发，未运行测试、构建或迁移；高德商用授权、配额与真实底图结果仍须在部署环境验收。
 - ADM-10 已按负责人新要求完成代码收敛：保留「仓库起点 → 有序停靠点 → 方向连线」地图与缺点断线；移除 GPS 前端页面/API/类型以及后端 Controller、Service、DAO 等运行代码。V91 仅撤回 GPS 入口授权并补建议快照不可变约束，不改 V88 或历史轨迹数据。辅助排线要求线路查询权与当前司机范围，写操作统一先锁线路再锁建议；冻结并比对线路/停靠点版本、坐标与 CRS，旧无版本建议需重新生成。历史每段距离/地址恢复自快照；前端修复应用后刷新和跨线路旧请求覆盖。仅代码完成，未测试、未构建、V91 未执行。
 - ADM-11 分拣增强已实现两半：任务冻结维度（`V89` 给 `sorting_task` 加送货时间快照、预配送波次、显式指定的供应商来源与名称快照；列表按这三者筛选，送货时间为半开区间；供应商在建单时校验启用态，不从 SKU 与供应商关系反推）与电子秤链路（`sorting_scale_event` 实现「设备事件 → 稳定读数 → 人工接受」，事件键幂等、重复上报返回既有记录、采集与接收时间分列；接受经既有 `enter` 入口只写已分拣数量，要求读数已稳定且明细为标准品，非标品必须人工录入）。前端分拣列表补三个冻结维度筛选与「秤读数」抽屉（接受 / 驳回）。替代商品、容差放行、供应商代分拣未纳入（ADR-008 明确排除）。仅开发，未运行测试、构建或迁移；真实电子秤协议、稳定性与校准须在现场验收。
-- ADM-12 营销基础代码已形成（`1369716c` / V90）：活动与券管理、券实例、优惠按行比例分摊及冻结。券启停子阶段已补齐：券新建即草稿、此前无启停入口导致正常流程走不到发券，本次新增 `PromotionCouponService.updateStatus`（`DRAFT/STOPPED → ACTIVE`、`ACTIVE → STOPPED`，生效中不可改内容、过期券不可再启用）、独立权限 `scm:promotion:coupon:status`（V92 菜单 1709）与券列表启用/停用按钮；发券改为要求 `Idempotency-Key`（缺失 40069，同键同内容重放回放首次结果），发券与券实例查询经 `CustomerQueryService.detail` 判客户归属范围（越权 30005），券维护补版本校验，状态与券实例状态改用枚举，并替换 `PromotionActivityService` / `PromotionDiscountService` 中残留的状态字面量（消除 `magic-string-domain-literal` 命中）。订单接入（3-1～3-4、3-7、3-8）已补齐，见[营销接入正式订单计划](plan/active/promotion-order-integration-plan.md)：新增契约 `PromotionOrderFacts`（订单域装配，行基础金额取 `ordered_line_amount`，由负责人 2026-10-03 确认），`PromotionDiscountService.freeze(facts, couponInstanceId)` 取代原 `confirm(form)`，删除客户端 `POST /scm/promotion/discount/confirm` 与 `PromotionDiscountConfirmForm`，`SalesOrderService.confirmOrder` 在订单确认事务内冻结（不再可能「订单确认了但优惠没冻结」）；`OrderConfirmForm` 新增 `couponInstanceId`（只接受「用哪张券」，活动由服务端自选）；`activity_snapshot` 改为 `{applied[], suppressed[]}` 完整冻结每条实际产生优惠的活动；订单详情确认弹窗补券选择与试算（只读不占用）；新增只读 `OrderDiscountVO` 与 `PromotionDiscountService.getByOrder`，`SalesOrderDetailVO` 嵌入 `discount` 并在详情页展示优惠合计 / 基数 / 券 / 逐条生效活动（前端只渲染不重算）；前端移除 `discountConfirm` 封装。应收净额（3-4）：`finance_receivable_item` 新增 `discount_amount`（V93），正常应收按「行毛额 − 该行优惠分摊」生成、红字按同一把尺子反向（冻结行分摊 × 该行本次金额 / 下单金额，等比），`FinanceReceivableSourceDao` 只读 `order_discount.allocations` 摊平成行、财务不重算优惠规则，毛额由 `amount + discount_amount` 还原不落库，财务详情展示毛额 / 订单优惠 / 净额；销售毛利报表直接取 `amount` 作收入，净收入与退款反向自动同步。仍待收口：券 `RESERVED → USED`/`RELEASED` 的转结编排、满赠履约来源、冻结重放（现由外层 `ORDER_CONFIRM` 幂等承担，`DISCOUNT_ALREADY_FROZEN` 作兜底）。授信检查仍按未扣优惠金额判定（属 ADM-04 口径，本轮未动）。支付与余额未开发；未测试、未构建、未执行迁移，V92/V93 未执行。
+- ADM-12 营销基础代码已形成（`1369716c` / V90）：活动与券管理、券实例、优惠按行比例分摊及冻结。券启停子阶段已补齐：券新建即草稿、此前无启停入口导致正常流程走不到发券，本次新增 `PromotionCouponService.updateStatus`（`DRAFT/STOPPED → ACTIVE`、`ACTIVE → STOPPED`，生效中不可改内容、过期券不可再启用）、独立权限 `scm:promotion:coupon:status`（V92 菜单 1709）与券列表启用/停用按钮；发券改为要求 `Idempotency-Key`（缺失 40069，同键同内容重放回放首次结果），发券与券实例查询经 `CustomerQueryService.detail` 判客户归属范围（越权 30005），券维护补版本校验，状态与券实例状态改用枚举，并替换 `PromotionActivityService` / `PromotionDiscountService` 中残留的状态字面量（消除 `magic-string-domain-literal` 命中）。订单接入（3-1～3-4、3-7、3-8）已补齐，见[营销接入正式订单计划](plan/active/promotion-order-integration-plan.md)：新增契约 `PromotionOrderFacts`（订单域装配，行基础金额取 `ordered_line_amount`，由负责人 2026-10-03 确认），`PromotionDiscountService.freeze(facts, couponInstanceId)` 取代原 `confirm(form)`，删除客户端 `POST /scm/promotion/discount/confirm` 与 `PromotionDiscountConfirmForm`，`SalesOrderService.confirmOrder` 在订单确认事务内冻结（不再可能「订单确认了但优惠没冻结」）；`OrderConfirmForm` 新增 `couponInstanceId`（只接受「用哪张券」，活动由服务端自选）；`activity_snapshot` 改为 `{applied[], suppressed[]}` 完整冻结每条实际产生优惠的活动；订单详情确认弹窗补券选择与试算（只读不占用）；新增只读 `OrderDiscountVO` 与 `PromotionDiscountService.getByOrder`，`SalesOrderDetailVO` 嵌入 `discount` 并在详情页展示优惠合计 / 基数 / 券 / 逐条生效活动（前端只渲染不重算）；前端移除 `discountConfirm` 封装。应收净额（3-4）：`finance_receivable_item` 新增 `discount_amount`（V93），正常应收按「行毛额 − 该行优惠分摊」生成、红字按同一把尺子反向（冻结行分摊 × 该行本次金额 / 下单金额，等比），`FinanceReceivableSourceDao` 只读 `order_discount.allocations` 摊平成行、财务不重算优惠规则，毛额由 `amount + discount_amount` 还原不落库，财务详情展示毛额 / 订单优惠 / 净额；销售毛利报表直接取 `amount` 作收入，净收入与退款反向自动同步。券生命周期（3-9）：`PromotionDiscountService.markCouponUsed` 在**正常签收**事务内做 `RESERVED → USED`（`Propagation.MANDATORY`，与 `financeReceivableService.generateOnSign` 同一时点、同一事务，任一失败整笔回滚）；`DeliveryRouteService.sign` 的 `EXCEPTION` 分支不核销（异常签收既不形成应收，也不算用掉券）；退款保持 `USED`、现有订单取消不处理券（`CONFIRMED` 已是订单终态）；`markReleased` 保留但无当前触发点。仍待收口：满赠与限时特价（口径已定、代码未开始）、冻结重放（现由外层 `ORDER_CONFIRM` 幂等承担，`DISCOUNT_ALREADY_FROZEN` 作兜底）。授信检查仍按未扣优惠金额判定（属 ADM-04 口径，本轮未动）。支付与余额未开发；未测试、未构建、未执行迁移，V92/V93 未执行。
 - 当前路线图仍未完成；“当前阶段完成”不表示全部产品需求完成，代码验收与生产上线分开记录。
 
 ## 未开始或待打通
@@ -32,7 +32,7 @@
 - 业务闭环：销售退货回库、集团统一结算、账期授信联动已有代码主链，最终场景仍待验收；采购净需求预览、冻结批次与回看代码已形成，待验收。
 - 后台完善：三类单据可配置打印模板、异常订单分析代码已完成，待验收。订单与库存事件通知代码已形成，待验收。
 - 地图/现场增强：供应商点位、估算排线、分拣冻结筛选与秤事件已有代码。配送已收敛为计划路线示意，GPS 运行入口已移除、撤权 migration 待执行；地图目标环境与实体秤验收另行安排。
-- 营销与支付、推广二维码、移动协同/订单助手、扫码溯源未形成完整模块。营销已接通订单确认冻结、前端券选择、优惠可追溯与应收净额；券状态转结（`RESERVED → USED`/`RELEASED`）、满赠履约与限时特价待做；支付/余额未开发。W6-2 客户商城仍未开始，legacy 目录冻结。
+- 营销与支付、推广二维码、移动协同/订单助手、扫码溯源未形成完整模块。营销已接通订单确认冻结、前端券选择、优惠可追溯、应收净额与券生命周期；满赠与限时特价口径已定、代码未开始；支付/余额未开发。W6-2 客户商城仍未开始，legacy 目录冻结。
 - 具体建议顺序、前置规则和完成标准以[开发规划清单](plan/active/admin-development-roadmap.md)为准；实施边界已由 ADR-006～010 确认。
 
 ## 验证与部署边界
@@ -47,4 +47,4 @@
 
 ## 下一步
 
-按[开发规划第二节](plan/active/admin-development-roadmap.md#2-下一轮开发顺序按最新代码重新排定)推进：配送路线范围收敛代码已完成；营销券启停子阶段（券启停、按客户范围发券、重试防重复）代码已完成；财务与报表缺口盘点完成并交付两个切片；营销接入订单（按订单事实在订单确认内冻结、前端券选择、订单优惠可追溯、应收净额与红字反向）代码已完成。接下来补券状态转结与满赠履约来源，随后分阶段建设支付、独立员工端/订单助手、客户商城/推广及批次包装溯源。每个实现阶段单独本地提交并更新进度；默认不测试、不构建、不迁移、不推送。
+按[开发规划第二节](plan/active/admin-development-roadmap.md#2-下一轮开发顺序按最新代码重新排定)推进：配送路线范围收敛代码已完成；营销券启停子阶段（券启停、按客户范围发券、重试防重复）代码已完成；财务与报表缺口盘点完成并交付两个切片；营销接入订单（按订单事实在订单确认内冻结、前端券选择、订单优惠可追溯、应收净额与红字反向、券在正常签收核销）代码已完成。接下来按已确认口径实现满赠履约来源与限时特价，随后分阶段建设支付、独立员工端/订单助手、客户商城/推广及批次包装溯源。每个实现阶段单独本地提交并更新进度；默认不测试、不构建、不迁移、不推送。

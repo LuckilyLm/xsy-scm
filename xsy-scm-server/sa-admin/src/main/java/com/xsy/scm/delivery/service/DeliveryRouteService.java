@@ -55,6 +55,7 @@ import com.xsy.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.inventory.service.InventoryFulfillmentService;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
+import com.xsy.scm.promotion.service.PromotionDiscountService;
 import com.xsy.scm.warehouse.dao.WarehouseDao;
 
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DISPATCH_ROUTE_INELIGIBLE;
@@ -102,6 +103,12 @@ public class DeliveryRouteService {
      * {@link #inventoryFulfillmentService} 的库存写入同事务。
      */
     private final FinanceReceivableService financeReceivableService;
+
+    /**
+     * 券核销：正常签收与应收同一个时点，也在同一个事务里。依赖方向是 delivery → promotion，
+     * 营销域不回读配送表，因此不构成环；核销失败即整笔签收回滚。
+     */
+    private final PromotionDiscountService promotionDiscountService;
 
     @Transactional(rollbackFor = Exception.class)
     public Long create(DeliveryRouteForm form) {
@@ -475,6 +482,10 @@ public class DeliveryRouteService {
         // 也不反冲 SALES_OUT；签收时刻与签收人由生成器回读 delivery_route_order，
         // 因为 markSigned 的 signed_at 是数据库时钟，在这里现取 now() 会造出第二个时点事实。
         if (!exception) {
+            // 券生命周期与签收同生共死：签收是订单级不可逆终态，也正是应收的形成时点，
+            // 券「已被一笔真实成交用掉」的判定与它对齐（RESERVED → USED）。
+            // 异常签收不核销：它既不形成应收，也不该把券算作用掉，等异常解决后真正签收再核销。
+            promotionDiscountService.markCouponUsed(orderId);
             financeReceivableService.generateOnSign(assignment.getId());
         }
     }

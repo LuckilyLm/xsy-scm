@@ -1,7 +1,7 @@
 # 营销接入正式订单（ADM-12 第三阶段）计划
 
 计划日期：2026-10-03。
-状态：决策已确认；切片 3-1～3-4、3-7、3-8 代码完成，待验收。
+状态：决策已确认；切片 3-1～3-4、3-7、3-8、3-9 代码完成，待验收；3-5 / 3-6 口径已定、未开始。
 依据：[ADR-009](../adr/009-marketing-payment-promotion-order-assistant-and-traceability.md)、[开发规划](admin-development-roadmap.md)、[项目状态](../../status.md)及当前主线代码。
 
 ## 1. 目标
@@ -51,10 +51,11 @@
 | 3-2 | 冻结的请求级幂等：由外层命令承担 —— 冻结是订单确认事务的一部分，重复确认由 `ORDER_CONFIRM` 的 `Idempotency-Key` 回放首次结果，不会第二次进入冻结。`DISCOUNT_ALREADY_FROZEN` 保留为兜底，供非幂等路径调用时拒绝而非覆盖 | 代码完成 |
 | 3-3 | 完整活动快照：`activity_snapshot` 由「单条规则」改为 `{"applied":[{activityId, activityCode, activityName, activityType, version, rule, discountAmount}...],"suppressed":[...]}`，冻结**每一条实际产生优惠的活动**（不同互斥组可叠加，可能不止一条）；`activity_id` / `activity_version` 保留为主活动（第一条产生优惠的活动）。形状仍是 `object`，`order_discount` 的 `jsonb_typeof='object'` 约束不需要改表 | 代码完成 |
 | 3-4 | 订单优惠落到应收净额：正常应收按「行毛额 − 该行优惠分摊」生成，红字按同一把尺子反向；新增 `finance_receivable_item.discount_amount`（V93），毛额由 `amount + discount_amount` 还原不落库；财务详情展示毛额 / 订单优惠 / 净额 | 代码完成 |
-| 3-5 | 满赠履约来源（赠品 SKU → 库存出库 / 成本口径） | 未开始 |
-| 3-6 | 限时特价（改基础价，与 ADR-009「活动价在基础价之后计算」冲突） | 未开始 |
+| 3-5 | 满赠履约来源（赠品走正式库存出库、出库来源标为促销赠品、成本计入订单履约成本；不塞成普通订单行） | 口径已定（[决策](../../decisions.md#营销优惠生命周期赠品与限时特价口径2026-10-03-负责人确认)），未开始 |
+| 3-6 | 限时特价（不改基础定价链，作为 Promotion 作用于基础价之后；特价 ≥ 基础价时优惠为 0） | 口径已定（同上），未开始 |
 | 3-7 | 前端券选择入口：确认弹窗拉客户 `AVAILABLE` 券实例、切换即试算（只读不占用）、确认时提交 `couponInstanceId` | 代码完成 |
 | 3-8 | 订单优惠可追溯：新增只读 `OrderDiscountVO` 与 `PromotionDiscountService.getByOrder`，订单详情嵌入 `discount`（优惠合计 / 基数 / 券 / 逐条生效活动 / 被挤掉的活动），前端只渲染不重算 | 代码完成 |
+| 3-9 | 券生命周期：`PromotionDiscountService.markCouponUsed` 在正常签收事务内做 `RESERVED → USED`（`MANDATORY`，与应收同一时点）；异常签收不核销；退款保持 `USED`；`RELEASED` 无当前触发点 | 代码完成 |
 
 ## 5. 本轮留下的明确待办
 
@@ -67,7 +68,7 @@
   - **不落 `gross_amount`**：毛额由 `amount + discount_amount` 精确还原，多存一列派生态会与「不落余额 / 结清状态列」的纪律冲突。
   - **授信占用口径不变**：确认时仍按未扣优惠的 `settlementTotalAmount` 判定（更保守，不因优惠放宽额度）。
   - 副作用（正向）：销售毛利报表直接取 `finance_receivable_item.amount` 作为收入，因此**净收入与退款反向自动同步**，利润 SQL 不需要改。
-- **券的 `RESERVED → USED` / `RELEASED` 未接**：冻结时已占用（`markReserved`），但订单签收后转核销、取消后释放仍无触发点。`markUsed` / `markReleased` 已具备，只差编排，属下一片。
+- **券生命周期已接（3-9）**：核销挂在**正常签收**，与应收同一时点、同一事务（`Propagation.MANDATORY`）；异常签收不核销、退款保持 `USED`、现有订单取消不处理券（`CONFIRMED` 已是终态，`cancel()` 碰不到 `RESERVED`）。`markReleased` 保留但**当前没有正式触发点**，留给将来的「撤销确认 / 终止履约」。完整口径见[决策](../../decisions.md#营销优惠生命周期赠品与限时特价口径2026-10-03-负责人确认)。
 
 ## 6. 不在本切片
 
