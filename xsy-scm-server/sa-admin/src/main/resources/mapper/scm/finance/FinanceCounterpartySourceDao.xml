@@ -7,14 +7,21 @@
       范围判定要拿到 seller_id 才能判 customerSellerScope，因此一次读足三列，
       不在服务层再走 CustomerService（那会带来第二套校验与写能力）。
       收款与退款付款的 CUSTOMER 侧共用这一条，范围口径不留两处实现。
+
+      结算主体的 id 与名称必须来自**同一行**：customer.settlement_customer_id 是 NOT NULL，
+      自己结算自己时这一行就是付款客户本身。历史写法用 COALESCE(sc.name, c.name) 给名称兜底，
+      会在结算父客户被软删（客户域删除只拦协议价/SKU 可见性，不拦「被别人当结算主体」）时
+      产出「结算 id 是父客户、名称是付款客户」的错配快照，而 finance_receipt 这两列都是
+      NOT NULL、写进历史事实不可改。缺结算行时两列一并留空，由登记收款处拒绝写入；
+      行本身仍然返回，收款列表/详情与审计日志只要 seller_id 判范围，不被主档悬空连带变成读不出来。
     -->
     <select id="selectCustomer"
             resultType="com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto">
         SELECT c.id         AS customerId,
                c.name       AS customerName,
                c.seller_id  AS sellerId,
-               COALESCE(c.settlement_customer_id, c.id) AS settlementCustomerId,
-               COALESCE(sc.name, c.name) AS settlementCustomerName
+               sc.id        AS settlementCustomerId,
+               sc.name      AS settlementCustomerName
         FROM customer c
         LEFT JOIN customer sc ON sc.id = c.settlement_customer_id AND sc.deleted = FALSE
         WHERE c.id = #{customerId}

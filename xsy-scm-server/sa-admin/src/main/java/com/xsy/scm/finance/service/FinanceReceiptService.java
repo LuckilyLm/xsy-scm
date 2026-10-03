@@ -8,7 +8,6 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
-import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
@@ -60,7 +59,6 @@ public class FinanceReceiptService {
     private final FinanceOperationLogRecorder operationLogs;
     private final ScmDataScopeService dataScopeService;
     private final ScmIdempotencyService idempotencyService;
-    private final CustomerService customerService;
     private final FinanceOrderFundingSourceDao financeOrderFundingSourceDao;
     private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
 
@@ -292,14 +290,16 @@ public class FinanceReceiptService {
 
     private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer) {
 
-        // customerId 始终保留实际付款客户；settlementCustomerId 是统一收款/核销主体。
-        // 复用客户域规则，防止脏主档把收款挂到兄弟客户、非 GROUP 或循环关系上。
-        var payer = customerService.require(customer.getCustomerId());
-        var settlement = customerService.requireSettlementAccount(payer);
-
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {
             // 0 元收款不是财务事实：库级 CHECK (amount > 0) 是第二层，这里先给出可解释的 40000。
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        // customerId 始终保留实际付款客户，settlementCustomerId 是统一收款/核销主体；两者都取自
+        // FinanceCounterpartySourceDao.selectCustomer 读到的客户事实，财务域不再回客户域解析结算关系。
+        // 已声明结算主体却读不到未删除的那一行说明主档悬空：这两列在 finance_receipt 上都是 NOT NULL，
+        // 宁可拒绝登记，也不能把付款客户自己的名字写成结算主体快照（历史事实不可改，写错就永久错）。
+        if (customer.getSettlementCustomerId() == null || customer.getSettlementCustomerName() == null) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
 
@@ -311,8 +311,8 @@ public class FinanceReceiptService {
                 ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customer.getCustomerName());
-        receipt.setSettlementCustomerId(settlement.getId());
-        receipt.setSettlementCustomerNameSnapshot(settlement.getName());
+        receipt.setSettlementCustomerId(customer.getSettlementCustomerId());
+        receipt.setSettlementCustomerNameSnapshot(customer.getSettlementCustomerName());
         receipt.setAmount(amount);
         receipt.setMethod(method(form.getMethod()));
         receipt.setReceivedAt(form.getReceivedAt());
