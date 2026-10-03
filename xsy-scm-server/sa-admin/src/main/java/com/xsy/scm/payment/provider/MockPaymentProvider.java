@@ -153,7 +153,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     }
 
     /**
-     * 渠道对账明细：按业务日汇总渠道自己的账（退款为负）。
+     * 渠道收款对账明细：按业务日汇总渠道自己的账（**只取 IN**，退款对账是后续独立一项）。
      */
     @Override
     public Settlement fetchSettlement(LocalDate bizDate) {
@@ -161,9 +161,11 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         List<SettlementLine> lines = new ArrayList<>(rows.size());
         BigDecimal total = BigDecimal.ZERO;
         for (PaymentMockLedgerEntity row : rows) {
-            BigDecimal signed = "OUT".equals(row.getDirection()) ? row.getAmount().negate() : row.getAmount();
-            lines.add(new SettlementLine(row.getProviderTransactionNo(), signed));
-            total = total.add(signed);
+            if (!"IN".equals(row.getDirection())) {
+                continue;
+            }
+            lines.add(new SettlementLine(row.getProviderTransactionNo(), row.getAmount()));
+            total = total.add(row.getAmount());
         }
         return new Settlement(bizDate, total, lines.size(), lines);
     }

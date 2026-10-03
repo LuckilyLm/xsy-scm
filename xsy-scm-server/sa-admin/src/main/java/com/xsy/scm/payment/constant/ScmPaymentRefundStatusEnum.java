@@ -12,7 +12,7 @@ public enum ScmPaymentRefundStatusEnum {
     CREATED("已创建", false),
 
     /** 已向渠道发起，等结果。 */
-    PENDING("退款中", false),
+    PROCESSING("退款处理中", false),
 
     SUCCEEDED("退款成功", true),
 
@@ -32,8 +32,8 @@ public enum ScmPaymentRefundStatusEnum {
             return false;
         }
         return switch (source) {
-            case CREATED -> PENDING.equals(to) || FAILED.equals(to) || CLOSED.equals(to);
-            case PENDING -> SUCCEEDED.equals(to) || FAILED.equals(to);
+            case CREATED -> PROCESSING.equals(to) || FAILED.equals(to) || CLOSED.equals(to);
+            case PROCESSING -> SUCCEEDED.equals(to) || FAILED.equals(to);
             default -> false;
         };
     }

@@ -59,7 +59,12 @@ public interface ScmPaymentProvider {
     TransactionResult queryTransaction(String providerTransactionNo);
 
     /**
-     * 拉取某业务日的渠道对账明细。
+     * 拉取某业务日的渠道**收款**明细。
+     *
+     * <p>
+     * 首版只对收款：退款的渠道账与本地退款事实是另一组口径，混进同一个合计会让
+     * 「渠道合计含退款、本地合计不含」这种不对称的比较永远报差异 —— 那不是发现了问题，
+     * 是拿两把尺子量。退款对账作为后续独立一项。
      */
     Settlement fetchSettlement(LocalDate bizDate);
 

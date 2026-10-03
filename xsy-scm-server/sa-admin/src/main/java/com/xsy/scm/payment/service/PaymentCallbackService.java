@@ -8,6 +8,7 @@ import com.xsy.scm.payment.constant.ScmPaymentCallbackProcessStatusEnum;
 import com.xsy.scm.payment.dao.PaymentCallbackEventDao;
 import com.xsy.scm.payment.dao.PaymentTransactionDao;
 import com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity;
+import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
@@ -53,6 +54,8 @@ public class PaymentCallbackService {
     private final PaymentTransactionDao paymentTransactionDao;
 
     private final PaymentIntentService paymentIntentService;
+
+    private final PaymentRefundService paymentRefundService;
 
     private final ScmPaymentProviderRegistry providerRegistry;
 
@@ -105,21 +108,35 @@ public class PaymentCallbackService {
             return reject(event.getId(), "找不到对应的支付交易：" + callback.providerTransactionNo());
         }
 
-        // 5) 状态机：支付成功/失败复用与发起时**同一段**判定，不各写一份
+        // 5) 状态机：支付与退款都走**这一个** dispatcher，各自复用与发起时同一段判定，
+        //    不各写一份，也不留第二条处理路径
+        Long linkedTransactionId = transaction.getId();
         switch (callback.eventType()) {
             case PAYMENT_SUCCEEDED -> paymentIntentService.applyOutcome(transaction.getIntentId(),
                     transaction.getId(), ScmPaymentProvider.Outcome.SUCCEEDED, null, null, callback.amount(), operator);
             case PAYMENT_FAILED -> paymentIntentService.applyOutcome(transaction.getIntentId(), transaction.getId(),
                     ScmPaymentProvider.Outcome.FAILED, "PROVIDER_FAILED", "渠道回调支付失败", null, operator);
             case REFUND_SUCCEEDED, REFUND_FAILED -> {
-                // 退款回调属 3-10 的下一片（退款服务）：这里先明确拒收而不是静默吞掉，
-                // 否则渠道会以为已处理，退款状态永远停在「退款中」。
-                return reject(event.getId(), "退款回调处理尚未启用：" + callback.eventType());
+                // 退款回调按**渠道退款号**匹配退款事实；缺它就无从定位，宁可拒收也不猜
+                if (callback.providerRefundNo() == null || callback.providerRefundNo().isBlank()) {
+                    return reject(event.getId(), "退款回调缺少渠道退款号");
+                }
+                PaymentRefundEntity refund = paymentRefundService
+                        .findByProviderRefundNo(providerCode, callback.providerRefundNo());
+                if (refund == null) {
+                    return reject(event.getId(), "找不到对应的支付退款：" + callback.providerRefundNo());
+                }
+                linkedTransactionId = refund.getTransactionId();
+                paymentRefundService.applyOutcome(refund.getId(),
+                        callback.eventType() == ScmPaymentCallbackEventTypeEnum.REFUND_SUCCEEDED
+                                ? ScmPaymentProvider.Outcome.SUCCEEDED
+                                : ScmPaymentProvider.Outcome.FAILED,
+                        callback.providerRefundNo(), "PROVIDER_REFUND_FAILED", "渠道回调退款失败", operator);
             }
         }
 
         paymentCallbackEventDao.markProcessed(event.getId(), ScmPaymentCallbackProcessStatusEnum.APPLIED.name(),
-                transaction.getId(), null);
+                linkedTransactionId, null);
         return paymentCallbackEventDao.selectById(event.getId());
     }
 

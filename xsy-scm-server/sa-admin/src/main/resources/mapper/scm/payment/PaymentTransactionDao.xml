@@ -60,4 +60,13 @@
         ORDER BY id
     </select>
 
+    <select id="listByWindow" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
+        SELECT * FROM payment_transaction
+        WHERE provider = #{provider}
+          AND created_at &gt;= #{startAt}
+          AND created_at &lt; #{endAt}
+          AND deleted = FALSE
+        ORDER BY id
+    </select>
+
 </mapper>

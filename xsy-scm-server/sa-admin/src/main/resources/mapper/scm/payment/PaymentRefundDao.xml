@@ -37,7 +37,7 @@
             updated_at         = CURRENT_TIMESTAMP,
             updated_by         = #{operator}
         WHERE id = #{id}
-          AND status IN ('CREATED', 'PENDING')
+          AND status IN ('CREATED', 'PROCESSING')
           AND deleted = FALSE
     </update>
 
@@ -50,13 +50,13 @@
             updated_at      = CURRENT_TIMESTAMP,
             updated_by      = #{operator}
         WHERE id = #{id}
-          AND status IN ('CREATED', 'PENDING')
+          AND status IN ('CREATED', 'PROCESSING')
           AND deleted = FALSE
     </update>
 
-    <update id="markPending">
+    <update id="markProcessing">
         UPDATE payment_refund
-        SET status             = 'PENDING',
+        SET status             = 'PROCESSING',
             provider_refund_no = #{providerRefundNo},
             version            = version + 1,
             updated_at         = CURRENT_TIMESTAMP,

@@ -37,4 +37,14 @@ public interface PaymentTransactionDao extends BaseMapper<PaymentTransactionEnti
      */
     List<PaymentTransactionEntity> listSucceededBetween(@Param("provider") String provider,
             @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt);
+
+    /**
+     * 某业务窗口内的**全部状态**本地交易（对账用）。
+     *
+     * <p>
+     * 不只看成功的：渠道账上有钱而本地停在 PENDING/FAILED，正是 {@code STATUS_MISMATCH}
+     * 要发现的情形；只看成功交易就永远看不到它。
+     */
+    List<PaymentTransactionEntity> listByWindow(@Param("provider") String provider,
+            @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt);
 }

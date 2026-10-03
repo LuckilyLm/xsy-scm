@@ -1,0 +1,195 @@
+package com.xsy.scm.payment.service;
+
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
+import com.xsy.scm.payment.constant.PaymentErrorCode;
+import com.xsy.scm.payment.constant.ScmPaymentMockScenarioEnum;
+import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
+import com.xsy.scm.payment.constant.ScmPaymentRefundStatusEnum;
+import com.xsy.scm.payment.constant.ScmPaymentTransactionStatusEnum;
+import com.xsy.scm.payment.dao.PaymentRefundDao;
+import com.xsy.scm.payment.dao.PaymentTransactionDao;
+import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
+import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
+import com.xsy.scm.payment.domain.form.PaymentRefundCreateForm;
+import com.xsy.scm.payment.provider.ScmPaymentProvider;
+import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 退款服务：支付域**自己的**退款事实。
+ *
+ * <p>
+ * 链路：
+ *
+ * <pre>
+ * 业务退款申请 / 售后退款单
+ *        ↓
+ * PaymentRefund（CREATED）
+ *        ↓
+ * ScmPaymentProvider.refund(...)
+ *        ↓
+ * PaymentRefund（PROCESSING）── 渠道回调 / 查单 ──▶ SUCCEEDED | FAILED
+ * </pre>
+ *
+ * <p>
+ * <b>本阶段不生成 Finance 红字或资金退款事实</b>：那属于 3-11 的资金映射。
+ * 这里只把「渠道实际退了没有」变成可查的事实。
+ *
+ * <p>
+ * 三条硬约束：
+ * <ol>
+ * <li><b>资金来源必须是 {@code PaymentTransaction}</b>，且该交易必须是成功的 ——
+ * 没收到钱就退钱是账外行为；</li>
+ * <li><b>累计成功退款不得超过原支付成功金额</b>；</li>
+ * <li><b>同一业务退款来源只能映射一笔有效退款</b>（表上有唯一索引兜底）。</li>
+ * </ol>
+ */
+@Service
+@RequiredArgsConstructor
+public class PaymentRefundService {
+
+    private static final int SCALE = 4;
+
+    private static final String IDEMPOTENCY_SCOPE = "PAYMENT_REFUND_CREATE";
+
+    private final PaymentRefundDao paymentRefundDao;
+
+    private final PaymentTransactionDao paymentTransactionDao;
+
+    private final PaymentNumberGenerator paymentNumberGenerator;
+
+    private final ScmPaymentProviderRegistry providerRegistry;
+
+    private final ScmIdempotencyService idempotencyService;
+
+    /**
+     * 发起退款。
+     *
+     * <p>
+     * <b>重复请求靠业务幂等键回放首次结果</b>，不是「发现已有就随便返回一个」：
+     * 前者回答「这次请求的结果是什么」，后者会在两次请求参数不同时给出一个看似成功的错误答案。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PaymentRefundEntity create(PaymentRefundCreateForm form, String idempotencyKey) {
+        var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE + ":" + form.getTransactionId(), idempotencyKey,
+                form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, PaymentRefundEntity.class);
+        }
+
+        PaymentTransactionEntity transaction = paymentTransactionDao.lockById(form.getTransactionId());
+        if (transaction == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_TRANSACTION_NOT_FOUND);
+        }
+        if (!ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
+            // 只有真正收到的钱能退
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
+        }
+
+        // 业务来源唯一：同一张售后退款单只能映射一笔渠道退款
+        if (form.getSourceType() != null) {
+            if (form.getSourceId() == null) {
+                throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
+            }
+            if (paymentRefundDao.selectBySource(form.getSourceType(), form.getSourceId()) != null) {
+                throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_DUPLICATED);
+            }
+        }
+
+        BigDecimal amount = form.getAmount().setScale(SCALE, RoundingMode.HALF_UP);
+        BigDecimal refundable = refundableOf(transaction);
+        if (amount.compareTo(refundable) > 0) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_AMOUNT_EXCEEDED);
+        }
+
+        String operator = ScmOperator.current();
+        PaymentRefundEntity refund = new PaymentRefundEntity();
+        refund.setRefundNo(paymentNumberGenerator.nextRefundNo());
+        refund.setIntentId(transaction.getIntentId());
+        refund.setTransactionId(transaction.getId());
+        refund.setProvider(transaction.getProvider());
+        refund.setAmount(amount);
+        refund.setSourceType(form.getSourceType());
+        refund.setSourceId(form.getSourceId());
+        refund.setStatus(ScmPaymentRefundStatusEnum.CREATED.name());
+        refund.setMockScenario(resolveScenario(transaction.getProvider(), form.getMockScenario()));
+        refund.setReason(form.getReason());
+        refund.setCreatedBy(operator);
+        refund.setUpdatedBy(operator);
+        paymentRefundDao.insert(refund);
+
+        ScmPaymentProvider provider = providerRegistry.require(transaction.getProvider());
+        ScmPaymentProvider.RefundResult result = provider.refund(new ScmPaymentProvider.RefundRequest(
+                refund.getRefundNo(), transaction.getProviderTransactionNo(), amount, form.getReason(),
+                ScmPaymentMockScenarioEnum.of(refund.getMockScenario())));
+
+        // 发起过就是发起过：先落 PROCESSING，再按渠道结果推进（与支付意图同一套纪律）
+        if (paymentRefundDao.markProcessing(refund.getId(), result.providerRefundNo(), operator) != 1) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
+        }
+        applyOutcome(refund.getId(), result.outcome(), result.providerRefundNo(), result.failureCode(),
+                result.failureMessage(), operator);
+        PaymentRefundEntity saved = paymentRefundDao.selectById(refund.getId());
+        idempotencyService.complete(claim, "PAYMENT_REFUND", saved.getId(), saved);
+        return saved;
+    }
+
+    /**
+     * 把渠道的退款结果落到状态机上。
+     *
+     * <p>
+     * 发起时与回调时**复用同一段**判定：两处各写一份，迟早会出现「回调说成功、本地还停在处理中」。
+     * 受影响行数 != 1 说明这笔退款已被处理过（重复回调），直接返回，由幂等层回答「已处理」。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void applyOutcome(Long refundId, ScmPaymentProvider.Outcome outcome, String providerRefundNo,
+            String failureCode, String failureMessage, String operator) {
+        switch (outcome) {
+            case SUCCEEDED -> paymentRefundDao.markSucceeded(refundId, providerRefundNo, operator);
+            case FAILED -> paymentRefundDao.markFailed(refundId, failureCode, failureMessage, operator);
+            case PENDING -> {
+                // 渠道还没给结果：停在 PROCESSING，等回调
+            }
+            default -> throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
+        }
+    }
+
+    /** 按渠道退款号定位退款（退款回调的匹配入口）。 */
+    @Transactional(readOnly = true)
+    public PaymentRefundEntity findByProviderRefundNo(String provider, String providerRefundNo) {
+        return paymentRefundDao.selectByProviderRefundNo(provider, providerRefundNo);
+    }
+
+    /**
+     * 可退金额 = 原支付成功金额 − 已成功退款合计。
+     *
+     * <p>
+     * 原金额优先取**渠道回报金额**：渠道实际只收到 98 而本地应付是 100 时，
+     * 按 100 退会退超，必然被渠道拒。差额本身该由对账的 {@code AMOUNT_MISMATCH} 暴露，
+     * 而不是让退款先撞一次墙。
+     */
+    private BigDecimal refundableOf(PaymentTransactionEntity transaction) {
+        BigDecimal received = transaction.getProviderAmount() == null ? transaction.getAmount()
+                : transaction.getProviderAmount();
+        BigDecimal refunded = paymentRefundDao.sumSucceededByTransaction(transaction.getId());
+        return received.subtract(refunded == null ? BigDecimal.ZERO : refunded).max(BigDecimal.ZERO)
+                .setScale(SCALE, RoundingMode.HALF_UP);
+    }
+
+    private static String resolveScenario(String provider, String scenario) {
+        if (scenario == null || scenario.isBlank()) {
+            return null;
+        }
+        if (!ScmPaymentProviderEnum.MOCK.name().equals(provider)
+                || ScmPaymentMockScenarioEnum.of(scenario) == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_MOCK_SCENARIO_INVALID);
+        }
+        return scenario;
+    }
+}

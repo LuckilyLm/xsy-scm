@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.payment.dao.PaymentReconciliationItemDao">
+
+    <insert id="insertItem" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO payment_reconciliation_item (reconciliation_id, category, provider_transaction_no,
+                                                 transaction_id, local_amount, provider_amount, local_status,
+                                                 provider_status, created_at, created_by)
+        VALUES (#{row.reconciliationId}, #{row.category}, #{row.providerTransactionNo}, #{row.transactionId},
+                #{row.localAmount}, #{row.providerAmount}, #{row.localStatus}, #{row.providerStatus},
+                CURRENT_TIMESTAMP, #{row.createdBy})
+    </insert>
+
+    <select id="listByReconciliation"
+            resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationItemEntity">
+        SELECT * FROM payment_reconciliation_item
+        WHERE reconciliation_id = #{reconciliationId}
+        ORDER BY category, id
+    </select>
+
+</mapper>

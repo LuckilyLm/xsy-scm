@@ -54,7 +54,10 @@ public enum PaymentErrorCode implements ScmErrorCode {
      * 余额（{@code BALANCE}）的余额流水与扣减是 ADM-12 3-12 的内容；在它落地之前，
      * 这里**明确拒绝**而不是让它悄悄走到外部渠道上去。
      */
-    PAYMENT_METHOD_NOT_ENABLED(41353, "该支付方式尚未启用");
+    PAYMENT_METHOD_NOT_ENABLED(41353, "该支付方式尚未启用"),
+
+    /** 同一业务退款来源只能映射一笔有效退款：重复来源说明上游重复提交，宁可失败也不重复出款。 */
+    PAYMENT_REFUND_SOURCE_DUPLICATED(41354, "该业务退款来源已存在有效退款");
 
     private final int code;
 
