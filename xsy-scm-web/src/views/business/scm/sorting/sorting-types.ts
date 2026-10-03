@@ -89,12 +89,22 @@ export interface SortingTask {
     version: number;
 }
 
-/** `SortingTaskItemVO`：计划量是建单时冻结的订单行实发量，之后订单怎么改都不追溯。 */
+/** 分拣清单行的来源：订单行 / 满赠赠品权益。 */
+export type SortingItemSourceType = 'ORDER_ITEM' | 'PROMOTION_GIFT';
+
+/**
+ * `SortingTaskItemVO`：计划量是建单时冻结的订单行实发量，之后订单怎么改都不追溯。
+ *
+ * 这是一个**只读合并模型**：订单行来自 `sorting_task_item`，满赠赠品来自
+ * `order_promotion_gift`（赠品不复制成订单行，否则会污染销售数量与商品排行）。
+ * 赠品行 `salesOrderItemId` 为 null、`sortedQuantity` 恒为 null —— 分拣不写回赠品数量。
+ */
 export interface SortingTaskItem {
     id: Id;
     taskId: Id;
     salesOrderId: Id;
-    salesOrderItemId: Id;
+    /** 赠品行恒为 null：赠品不挂订单行。 */
+    salesOrderItemId: Id | null;
     orderNoSnapshot: string;
     customerId: Id;
     customerNameSnapshot: string;
@@ -106,7 +116,9 @@ export interface SortingTaskItem {
     specNameSnapshot?: string | null;
     saleUnitSnapshot: string;
     productTypeSnapshot?: SortingProductType | string | null;
+    /** 赠品行装的是赠品数量（冻结权益）。 */
     plannedQuantitySnapshot: string | null;
+    /** 赠品行恒为 null。 */
     sortedQuantity: string | null;
     result?: SortingLineResult | null;
     reason?: string | null;
@@ -114,6 +126,8 @@ export interface SortingTaskItem {
     sortedAt?: string | null;
     occupationStatus: SortingOccupation;
     version: number;
+    /** 缺省按订单行处理，兼容升级前返回的数据。 */
+    sourceType?: SortingItemSourceType | null;
 }
 
 /** `SortingTaskDetailVO`。 */

@@ -75,6 +75,9 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("assigneeName", "分拣员", false, false)), List.of(
                     new ScmPrintField("orderNo", "订单号", false, false),
                     new ScmPrintField("customerName", "客户", false, false),
+                    // 来源：商品 / 赠品。满赠赠品随订单一起拣，但**不挂订单行**，
+                    // 因此小票必须自己说清这一行是赠品，否则仓库会按订单量去核。
+                    new ScmPrintField("sourceType", "来源", false, false),
                     new ScmPrintField("productName", "商品", false, false),
                     new ScmPrintField("skuCode", "SKU 编码", false, false),
                     new ScmPrintField("specName", "规格", false, false),

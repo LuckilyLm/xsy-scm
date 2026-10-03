@@ -3,6 +3,7 @@ package com.xsy.scm.print.support;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
 import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import com.xsy.scm.sorting.permission.SortingPermission;
+import com.xsy.scm.sorting.domain.vo.SortingTaskItemVO;
 import com.xsy.scm.sorting.service.SortingQueryService;
 import java.util.ArrayList;
 import java.util.Map;
@@ -39,7 +40,10 @@ public class SortingTicketPrintSourceProvider implements ScmPrintSourceProvider 
         header.put("assigneeName", ScmPrintText.text(ticket.getAssigneeName()));
         var rows = new ArrayList<Map<String, String>>();
         for (var item : ticket.getItems()) {
+            // 赠品是只读合并进来的第二类来源：不挂订单行、也不会有分拣结果。
+            var gift = SortingTaskItemVO.PROMOTION_GIFT.equals(item.getSourceType());
             var row = ScmPrintSource.row();
+            row.put("sourceType", gift ? "赠品" : "商品");
             row.put("orderNo", ScmPrintText.text(item.getOrderNoSnapshot()));
             row.put("customerName", ScmPrintText.text(item.getCustomerNameSnapshot()));
             row.put("productName", ScmPrintText.text(item.getProductNameSnapshot()));
@@ -48,7 +52,8 @@ public class SortingTicketPrintSourceProvider implements ScmPrintSourceProvider 
             row.put("saleUnit", ScmPrintText.text(item.getSaleUnitSnapshot()));
             row.put("plannedQuantity", ScmPrintText.fixed(item.getPlannedQuantitySnapshot()));
             row.put("sortedQuantity", ScmPrintText.fixed(item.getSortedQuantity()));
-            row.put("result", resultLabel(item.getResult()));
+            // 赠品留空而不是「未录入」：它不会、也不该被录入 —— 分拣只拣货，不写回赠品事实
+            row.put("result", gift ? "" : resultLabel(item.getResult()));
             row.put("reason", ScmPrintText.text(item.getReason()));
             rows.add(row);
         }

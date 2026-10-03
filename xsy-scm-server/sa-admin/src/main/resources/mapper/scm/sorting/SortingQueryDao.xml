@@ -73,11 +73,59 @@
         <include refid="taskScopeGuard"/>
     </select>
     <select id="items" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskItemVO">
-        SELECT i.*
+        SELECT i.*, 'ORDER_ITEM' AS source_type
         FROM sorting_task_item i
         WHERE i.task_id = #{taskId}
           AND i.deleted = FALSE
         ORDER BY i.id
+    </select>
+
+    <!--
+      任务内各订单的满赠赠品权益（只读合并模型的第二类来源）。
+      赠品不落 sorting_task_item：那张表强制挂订单行，虚造订单行会污染销售数量、商品排行、
+      采购分析与客户购买历史。这里按「任务里出现的订单」现合并，任务取消后自然不再返回。
+      赠品行刻意不填 sorted_quantity / result：分拣只拣货，不写回赠品事实。
+    -->
+    <select id="giftItems" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskItemVO">
+        WITH task_orders AS (
+            SELECT i.sales_order_id,
+                   MAX(i.order_no_snapshot)      AS order_no_snapshot,
+                   MAX(i.customer_id)            AS customer_id,
+                   MAX(i.customer_name_snapshot) AS customer_name_snapshot
+            FROM sorting_task_item i
+            WHERE i.task_id = #{taskId}
+              AND i.deleted = FALSE
+            GROUP BY i.sales_order_id
+        )
+        SELECT g.id                       AS id,
+               #{taskId}                  AS task_id,
+               g.sales_order_id           AS sales_order_id,
+               NULL::BIGINT               AS sales_order_item_id,
+               o.order_no_snapshot        AS order_no_snapshot,
+               o.customer_id              AS customer_id,
+               o.customer_name_snapshot   AS customer_name_snapshot,
+               spu.id                     AS spu_id,
+               g.sku_id                   AS sku_id,
+               spu.spu_code               AS spu_code_snapshot,
+               spu.name                   AS product_name_snapshot,
+               sku.sku_code               AS sku_code_snapshot,
+               sku.spec_name              AS spec_name_snapshot,
+               sku.sale_unit              AS sale_unit_snapshot,
+               'STANDARD'                 AS product_type_snapshot,
+               g.quantity                 AS planned_quantity_snapshot,
+               NULL::NUMERIC              AS sorted_quantity,
+               NULL::VARCHAR              AS result,
+               NULL::VARCHAR              AS reason,
+               NULL::VARCHAR              AS sorted_by,
+               NULL::TIMESTAMPTZ          AS sorted_at,
+               'ACTIVE'                   AS occupation_status,
+               0                          AS version,
+               'PROMOTION_GIFT'           AS source_type
+        FROM order_promotion_gift g
+                 JOIN task_orders o ON o.sales_order_id = g.sales_order_id
+                 JOIN product_sku sku ON sku.id = g.sku_id
+                 JOIN product_spu spu ON spu.id = sku.spu_id
+        ORDER BY g.sales_order_id, g.id
     </select>
     <!--
       按商品汇总（只读视角，裁决补充第 19 条）：分组键含销售单位，量只在同单位内相加。

@@ -380,10 +380,14 @@
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'product'">
-              <div>{{ record.productNameSnapshot }}</div>
+              <div>
+                {{ record.productNameSnapshot }}
+                <a-tag v-if="isGiftRow(record)" color="purple">赠品</a-tag>
+              </div>
               <a-typography-text type="secondary">
                 {{ record.specNameSnapshot || '—' }} · {{ productTypeDesc(record.productTypeSnapshot) }}
-                <template v-if="record.occupationStatus === 'RELEASED'"> · 占用已释放</template>
+                <template v-if="isGiftRow(record)"> · 满赠赠品，无需录入实分量</template>
+                <template v-else-if="record.occupationStatus === 'RELEASED'"> · 占用已释放</template>
               </a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'plannedQuantitySnapshot'">
@@ -433,7 +437,8 @@
             </template>
             <template v-else-if="column.dataIndex === 'sortedAt'">{{ datetime(record.sortedAt) }}</template>
             <template v-else-if="column.dataIndex === 'occupationStatus'">
-              <a-tag :color="SCM_SORTING_OCCUPATION_COLOR[record.occupationStatus]">
+              <span v-if="isGiftRow(record)">—</span>
+              <a-tag v-else :color="SCM_SORTING_OCCUPATION_COLOR[record.occupationStatus]">
                 {{ occupationDesc(record.occupationStatus) }}
               </a-tag>
             </template>
@@ -592,11 +597,14 @@
             <tr v-for="item in print.items" :key="item.id">
               <td>{{ item.orderNoSnapshot }}</td>
               <td>{{ item.customerNameSnapshot }}</td>
-              <td>{{ item.productNameSnapshot }} {{ item.specNameSnapshot }}</td>
+              <td>
+                {{ item.productNameSnapshot }} {{ item.specNameSnapshot }}
+                <a-tag v-if="isGiftRow(item)" color="purple">赠品</a-tag>
+              </td>
               <td>{{ item.saleUnitSnapshot }}</td>
               <td class="numeric">{{ quantityText(item.plannedQuantitySnapshot) }}</td>
               <td class="numeric">{{ quantityText(item.sortedQuantity) }}</td>
-              <td>{{ resultDesc(item.result) }}</td>
+              <td>{{ isGiftRow(item) ? '—' : resultDesc(item.result) }}</td>
             </tr>
             </tbody>
           </table>
@@ -605,7 +613,10 @@
         <section class="print-labels">
           <h2>商品标签（逐行）</h2>
           <div v-for="item in print.items" :key="`label-${item.id}`" class="label">
-            <strong>{{ item.productNameSnapshot }}</strong>
+            <strong>
+              {{ item.productNameSnapshot }}
+              <a-tag v-if="isGiftRow(item)" color="purple">赠品</a-tag>
+            </strong>
             <p>{{ item.specNameSnapshot || '—' }} / {{ item.saleUnitSnapshot }}</p>
             <p class="label-qty">
               计划 {{ quantityText(item.plannedQuantitySnapshot) }}　实分 {{ quantityText(item.sortedQuantity) }}
@@ -924,8 +935,18 @@ const readOnlyReason = computed(() => {
     return '当前账号没有分拣明细编辑权限（scm:sorting:item:update），只能查看。';
 });
 
-/** 释放占用的历史行不再代表待办量，即使任务还能干活也不能编辑。 */
+/** 满赠赠品行：只读合并进来的第二类来源，缺省按订单行处理（兼容升级前返回的数据）。 */
+function isGiftRow(record: SortingTaskItem) {
+    return record.sourceType === 'PROMOTION_GIFT';
+}
+
+/**
+ * 释放占用的历史行不再代表待办量，即使任务还能干活也不能编辑。
+ *
+ * 赠品行一律不可编辑：分拣只拣货，不写回赠品数量与结果 —— 赠品事实只在冻结权益与出库流水里。
+ */
 function canEditRow(record: SortingTaskItem) {
+    if (isGiftRow(record)) return false;
     return canEditItems.value && record.occupationStatus === 'ACTIVE';
 }
 

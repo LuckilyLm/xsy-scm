@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.sorting.constant.SortingConstant.PRINTABLE;
@@ -70,7 +71,11 @@ public class SortingQueryService {
         var result = new SortingTaskDetailVO();
         result.setTask(task);
         // 明细挂在已经放行的任务下，不再各自收窄：子集收窄会破坏「按订单与按商品同一套事实」。
-        result.setItems(sortingQueryDao.items(id));
+        // 满赠赠品是**只读合并**的第二类来源：它不落 sorting_task_item（那张表强制挂订单行），
+        // 但仓库照单要备货，因此追加在订单行之后并带 sourceType，界面据它打「赠品」标记。
+        var items = new ArrayList<>(sortingQueryDao.items(id));
+        items.addAll(sortingQueryDao.giftItems(id));
+        result.setItems(items);
         return result;
     }
 
