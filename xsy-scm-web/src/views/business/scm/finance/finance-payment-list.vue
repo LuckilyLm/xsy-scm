@@ -88,7 +88,7 @@
         <a-input-number v-if="addForm.counterpartyType==='SUPPLIER'" v-model:value="addForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:100%"/>
         <a-input v-else :value="selectedRefund ? moneyText(selectedRefund.refundAmount) : ''" disabled placeholder="选择退款来源后自动带入"/>
       </a-form-item>
-      <a-form-item label="付款方式" required><a-select v-model:value="addForm.method" :options="methodOptions" placeholder="选择方式"/></a-form-item>
+      <a-form-item label="付款方式" required><a-select v-model:value="addForm.method" :options="addMethodOptions" placeholder="选择方式"/></a-form-item>
       <a-form-item label="付款时间" required><a-date-picker v-model:value="addForm.paidAt" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" style="width:100%"/></a-form-item>
       <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128"/></a-form-item>
       <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count/></a-form-item>
@@ -105,11 +105,11 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';
-import {SCM_FINANCE_COUNTERPARTY_TYPE_ENUM, SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_PAYMENT_METHOD_ENUM, SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
+import {SCM_FINANCE_COUNTERPARTY_TYPE_ENUM, SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM, SCM_FINANCE_PAYMENT_METHOD_ENUM, SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
@@ -131,7 +131,13 @@ const addForm = reactive<Omit<FinancePaymentAddForm, 'counterpartyId'> & {counte
     counterpartyType: 'SUPPLIER', amount: '', method: 'BANK_TRANSFER', paidAt: nowDateTimeValue(), externalReference: '',
     sourceType: undefined, sourceId: undefined, remark: '',
 });
-const methodOptions = Object.values(SCM_FINANCE_PAYMENT_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value}));
+// 查询是跨对手方的：两组方式都要给，否则筛选不到客户退款的在线支付
+const methodOptions = Object.values({...SCM_FINANCE_PAYMENT_METHOD_ENUM, ...SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM})
+    .map((item) => ({label: item.desc, value: item.value}));
+// 新增表单按对手方给选项，与后端 ck_finance_payment_method 的分组一致
+const addMethodOptions = computed(() => Object.values(addForm.counterpartyType === 'SUPPLIER'
+    ? SCM_FINANCE_PAYMENT_METHOD_ENUM
+    : SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value})));
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const partyTypeOptions = Object.values(SCM_FINANCE_COUNTERPARTY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const sourceOptions = [{label: '退款', value: 'ORDER_REFUND'}];

@@ -50,6 +50,19 @@ export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
     OTHER: {value: 'OTHER', desc: '其他'},
 };
 
+/**
+ * 客户退款的付款方式（与后端 `ScmFinanceCustomerRefundMethodEnum` 逐字对应）。
+ *
+ * 与付款方式**刻意分开**：`ONLINE_PAYMENT` 只对客户退款放行（后端 CHECK 按对手方分组），
+ * 放进供应商付款的选项里会造出「前端能选、后端必然失败」。
+ */
+export const SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM: SmartEnum<string> = {
+    CASH: {value: 'CASH', desc: '现金'},
+    BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
+    ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
+    OTHER: {value: 'OTHER', desc: '其他'},
+};
+
 export const SCM_FINANCE_COUNTERPARTY_TYPE_ENUM: SmartEnum<string> = {
     CUSTOMER: {value: 'CUSTOMER', desc: '客户'},
     SUPPLIER: {value: 'SUPPLIER', desc: '供应商'},
@@ -87,6 +100,7 @@ export default {
     SCM_FINANCE_ENTRY_TYPE_ENUM,
     SCM_FINANCE_SETTLE_STATE_ENUM,
     SCM_FINANCE_PAYMENT_METHOD_ENUM,
+    SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM,
     SCM_FINANCE_RECEIPT_METHOD_ENUM,
     SCM_FINANCE_COUNTERPARTY_TYPE_ENUM,
     SCM_FINANCE_SOURCE_TYPE_ENUM,

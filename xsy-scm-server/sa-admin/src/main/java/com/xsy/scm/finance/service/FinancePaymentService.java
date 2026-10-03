@@ -14,6 +14,7 @@ import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceCounterpartyTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceCustomerRefundMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
@@ -28,6 +29,7 @@ import com.xsy.scm.finance.domain.form.FinancePaymentAddForm;
 import com.xsy.scm.finance.domain.form.FinancePaymentReverseForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
+import com.xsy.scm.finance.support.FinancePaymentRefundFact;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -153,7 +155,7 @@ public class FinancePaymentService {
         FinancePaymentEntity payment = new FinancePaymentEntity();
         payment.setCounterpartyType(counterpartyType);
         payment.setAmount(amount);
-        payment.setMethod(method(form.getMethod()));
+        payment.setMethod(method(counterpartyType, form.getMethod()));
         payment.setPaidAt(form.getPaidAt());
         payment.setEntryType(ScmFinanceReverseEntryTypeEnum.NORMAL.name());
         // REVERSE 专用列在 NORMAL 行上必须为空（ck_finance_payment_entry_pairing）。
@@ -258,6 +260,95 @@ public class FinancePaymentService {
     }
 
     /**
+     * 系统入口：渠道退款成功后登记付款事实（ADM-12 3-11b）。
+     *
+     * <p>
+     * <b>不复用人工的 {@code add(FinancePaymentAddForm)}</b>：那个入口假设「有人在填」。
+     * 系统来源固定生成 {@code CUSTOMER + ORDER_REFUND + ONLINE_PAYMENT}，金额取**渠道实退**，
+     * 时点取渠道退款成功时间，渠道退款号落 {@code external_reference}。
+     *
+     * <p>
+     * <b>财务域再校验一遍业务退款单</b>（不因为支付域校验过就跳过）：退款单存在且 COMPLETED、
+     * 客户一致、金额与应退额逐值一致、客户在当前调用者的客户数据范围内。
+     * 已有 {@code uk_finance_payment_source_active} 是并发下最终的仲裁点。
+     *
+     * <p>
+     * <b>金额不一致时这里会拒绝</b>：但正常情况下走不到这里 —— 支付域已按口径「金额不一致就不生成」
+     * 提前跳过（见 {@code PaymentRefundService.applyOutcome}）。真走到这里说明两边口径分叉了，
+     * 宁可失败也不要落一笔金额对不上的付款。
+     *
+     * @return 已存在的或新登记的付款事实
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FinancePaymentEntity registerFromPaymentRefund(FinancePaymentRefundFact fact) {
+        if (fact == null || fact.orderRefundId() == null || fact.customerId() == null
+                || fact.providerAmount() == null || fact.refundedAt() == null) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
+        BigDecimal amount = fact.providerAmount()
+                .setScale(FinanceConstant.AMOUNT_SCALE, java.math.RoundingMode.HALF_UP);
+        if (amount.signum() <= 0) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
+
+        FinancePaymentEntity existing = financePaymentDao
+                .selectBySource(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(), fact.orderRefundId());
+        if (existing != null) {
+            return existing;
+        }
+
+        FinanceRefundFactDto refund = financePaymentSourceDao.selectOrderRefund(fact.orderRefundId());
+        if (refund == null || !refund.isCompleted() || !refund.getCustomerId().equals(fact.customerId())) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
+        if (amount.compareTo(refund.getRefundAmount()) != 0) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
+        FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(refund.getCustomerId());
+        if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        String operator = ScmOperator.current();
+        FinancePaymentEntity payment = new FinancePaymentEntity();
+        payment.setPaymentNo(
+                ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+        payment.setCounterpartyType(ScmFinanceCounterpartyTypeEnum.CUSTOMER.name());
+        payment.setCounterpartyId(refund.getCustomerId());
+        payment.setCounterpartyNameSnapshot(customer.getCustomerName());
+        payment.setAmount(amount);
+        // 系统退款固定原路退回
+        payment.setMethod(ScmFinanceCustomerRefundMethodEnum.ONLINE_PAYMENT.name());
+        payment.setPaidAt(fact.refundedAt());
+        payment.setEntryType(ScmFinanceReverseEntryTypeEnum.NORMAL.name());
+        payment.setReverseOfId(null);
+        payment.setReason(null);
+        payment.setExternalReference(StringUtils.trimToNull(fact.providerRefundNo()));
+        payment.setSourceType(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name());
+        payment.setSourceId(refund.getRefundId());
+        payment.setRemark(null);
+        payment.setCreatedAt(now);
+        payment.setUpdatedAt(now);
+        payment.setCreatedBy(operator);
+        payment.setUpdatedBy(operator);
+
+        if (financePaymentDao.insertNormalOnConflictDoNothing(payment) != 1) {
+            // 并发下另一个事务先插进去了：唯一索引仲裁，读回已有事实。
+            // 这条 INSERT 用的是 ON CONFLICT DO NOTHING，不会让事务进入失败状态，因此可以安全读回。
+            FinancePaymentEntity raced = financePaymentDao
+                    .selectBySource(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(), fact.orderRefundId());
+            if (raced != null) {
+                return raced;
+            }
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
+        }
+        operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(), ScmFinanceOperationTypeEnum.PAY,
+                null, null, snapshot(payment));
+        return payment;
+    }
+
+    /**
      * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}， 金额与对方必须与 {@code order_refund} **逐值一致**。
      */
     private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form, BigDecimal amount) {
@@ -331,12 +422,24 @@ public class FinancePaymentService {
     }
 
     /**
-     * 方式与收款共用 {@link ScmFinancePaymentMethodEnum}，并由数据库 CHECK 约束。
+     * 方式按**对手方**校验，与 {@code ck_finance_payment_method} 的分组逐字一致：
+     * 供应商付款只有三值；客户退款多一个 {@code ONLINE_PAYMENT}（系统退款固定用它）。
+     *
+     * <p>
+     * 不按对手方分组校验，就会出现「前端能选、后端必然失败」的最差一种支持：
+     * 供应商付款带 ONLINE_PAYMENT 会被数据库拒绝。
      */
-    private static String method(String raw) {
+    private static String method(String counterpartyType, String raw) {
         String value = StringUtils.trimToNull(raw);
-        for (ScmFinancePaymentMethodEnum candidate : ScmFinancePaymentMethodEnum.values()) {
-            if (candidate.name().equals(value)) {
+        if (ScmFinanceCounterpartyTypeEnum.SUPPLIER.name().equals(counterpartyType)) {
+            for (ScmFinancePaymentMethodEnum candidate : ScmFinancePaymentMethodEnum.values()) {
+                if (candidate.name().equals(value)) {
+                    return candidate.name();
+                }
+            }
+        } else {
+            ScmFinanceCustomerRefundMethodEnum candidate = ScmFinanceCustomerRefundMethodEnum.of(value);
+            if (candidate != null) {
                 return candidate.name();
             }
         }

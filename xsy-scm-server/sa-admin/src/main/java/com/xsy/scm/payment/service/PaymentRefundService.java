@@ -18,11 +18,14 @@ import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
 import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.domain.form.PaymentRefundCreateForm;
+import com.xsy.scm.finance.service.FinancePaymentService;
+import com.xsy.scm.finance.support.FinancePaymentRefundFact;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +58,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <li><b>同一业务退款来源只能映射一笔有效退款</b>（表上有唯一索引兜底）。</li>
  * </ol>
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentRefundService {
@@ -71,6 +75,12 @@ public class PaymentRefundService {
 
     /** 只读外部事实：订单 / 退款单 / 财务付款，用于来源校验与互斥。 */
     private final PaymentSourceDao paymentSourceDao;
+
+    /**
+     * 财务域的系统退款付款入口。依赖方向是 payment → finance；finance 不反向依赖支付域，
+     * 因此不构成环（与 payment → finance 收款是同一套做法）。
+     */
+    private final FinancePaymentService financePaymentService;
 
     private final PaymentNumberGenerator paymentNumberGenerator;
 
@@ -106,9 +116,12 @@ public class PaymentRefundService {
 
         // **业务来源校验必须早于 provider.refund()**：这里任何一条不成立，渠道的钱都还没动。
         // 留到 3-11b 由 Finance 侧拒绝就晚了 —— 那时渠道已经把钱退出去了，数据库拒绝没有意义。
-        if (form.getSourceType() != null) {
-            requireOrderRefundSource(form, transaction, amount);
-        }
+        //
+        // 当前阶段唯一受支持的正式退款来源就是售后退款，因此**强制要求**来源，不接受无来源退款：
+        // 无来源的渠道退款会在 Finance 侧落不下付款事实（付款必须挂业务退款单），
+        // 而钱那时已经退出去了。将来若需要「渠道技术退款 / 人工补退」，另开内部命令，
+        // 不要借这个正式入口绕开业务退款事实。
+        requireOrderRefundSource(form, transaction, amount);
 
         BigDecimal refundable = refundableOf(transaction);
         if (amount.compareTo(refundable) > 0) {
@@ -166,6 +179,9 @@ public class PaymentRefundService {
                 }
                 paymentRefundDao.markSucceeded(refundId, providerRefundNo,
                         providerAmount.setScale(SCALE, RoundingMode.HALF_UP), operator);
+                // **无论是否首次都确保 Finance 付款事实存在**：这样「渠道已退、本地在上次落账前失败」
+                // 可以靠下一次回调恢复 —— 与收款的 registerFinanceReceipt 同一条纪律。
+                registerFinancePayment(refundId, operator);
             }
             case FAILED -> paymentRefundDao.markFailed(refundId, failureCode, failureMessage, operator);
             case PENDING -> {
@@ -214,6 +230,45 @@ public class PaymentRefundService {
         if (paymentRefundDao.selectBySource(form.getSourceType(), form.getSourceId()) != null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_DUPLICATED);
         }
+    }
+
+    /**
+     * 退款成功 → Finance 付款事实（ADM-12 3-11b）。
+     *
+     * <p>
+     * 复用财务域 {@code finance_payment} 的 {@code CUSTOMER + ORDER_REFUND}，唯一来源键是
+     * {@code source_id = order_refund.id}：无论本地被驱动多少次，Finance 只有一条正常付款事实。
+     *
+     * <p>
+     * <b>金额不一致时只保留渠道成功事实，不生成 Finance 付款、也不回滚。</b>
+     * 渠道实际退了 98 而业务应退 100 是可能发生的；若因此把整笔已验签的退款成功回滚，
+     * 每次重复回调都会因为同一个永久差异失败，本地永远停在「退款处理中」，
+     * 反而丢掉「渠道确实已经退钱」这个最重要的事实。这类记录天然可查
+     * （{@code SUCCEEDED AND provider_amount <> amount}），留给后续退款对账处理。
+     */
+    private void registerFinancePayment(Long refundId, String operator) {
+        PaymentRefundEntity refund = paymentRefundDao.selectById(refundId);
+        if (refund == null || !ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(refund.getStatus())
+                || refund.getProviderAmount() == null) {
+            return;
+        }
+        if (!ScmPaymentSourceTypeEnum.ORDER_REFUND.name().equals(refund.getSourceType())
+                || refund.getSourceId() == null) {
+            // 没有业务退款单就落不下付款事实（付款必须挂来源）；当前入口已强制要求来源，这里只是兜底
+            return;
+        }
+        if (refund.getProviderAmount().compareTo(refund.getAmount()) != 0) {
+            log.warn("渠道实退金额与申请金额不一致，暂不生成 Finance 付款事实：refundNo={} 申请={} 实退={}",
+                    refund.getRefundNo(), refund.getAmount(), refund.getProviderAmount());
+            return;
+        }
+        PaymentIntentEntity intent = paymentIntentDao.selectById(refund.getIntentId());
+        if (intent == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_NOT_FOUND);
+        }
+        financePaymentService.registerFromPaymentRefund(new FinancePaymentRefundFact(refund.getId(),
+                refund.getSourceId(), intent.getCustomerId(), refund.getProviderAmount(), refund.getRefundedAt(),
+                refund.getProviderRefundNo()));
     }
 
     /** 按渠道退款号定位退款（退款回调的匹配入口）。 */

@@ -47,7 +47,10 @@ export function settleStateText(value: string | null | undefined): string {
 }
 
 export function paymentMethodText(value: string | null | undefined): string {
-    return value === 'CASH' ? '现金' : value === 'BANK_TRANSFER' ? '银行转账' : value === 'OTHER' ? '其他' : value || '—';
+    return value === 'CASH' ? '现金'
+        : value === 'BANK_TRANSFER' ? '银行转账'
+            : value === 'ONLINE_PAYMENT' ? '在线支付'
+                : value === 'OTHER' ? '其他' : value || '—';
 }
 
 export function isValidPositiveAmount(value: string | null | undefined): boolean {

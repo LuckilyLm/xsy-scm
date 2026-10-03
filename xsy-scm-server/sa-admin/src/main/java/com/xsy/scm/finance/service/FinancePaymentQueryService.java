@@ -12,6 +12,7 @@ import com.xsy.scm.common.time.ScmDateTimeRangeResolver;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceCounterpartyTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceCustomerRefundMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
@@ -166,7 +167,11 @@ public class FinancePaymentQueryService {
                 && !enumContains(ScmFinanceCounterpartyTypeEnum.values(), form.getCounterpartyType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        if (form.getMethod() != null && !enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())) {
+        // 付款方式按对手方分两组：供应商三值、客户退款四值。过滤是跨对手方的，
+        // 因此两组都要放行 —— 只认一组会把另一组的值当成非法参数拒掉。
+        if (form.getMethod() != null
+                && !enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())
+                && !enumContains(ScmFinanceCustomerRefundMethodEnum.values(), form.getMethod())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getSourceType() != null
