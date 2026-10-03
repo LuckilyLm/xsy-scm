@@ -480,6 +480,89 @@
         ORDER BY o.confirmed_at DESC, o.id DESC, i.sort_order, i.id
     </select>
 
+    <!--
+      订单表头级「客户订单明细」的筛选。
+
+      与 `salesFilters` 的差别是刻意的：categoryId / keyword 是**行级**条件，这里用 EXISTS 只判定
+      「该订单是否命中」，命中后金额仍按整单汇总。若直接套 `salesFilters`，订单金额会变成
+      「只匹配那几行」的合计 —— 一单买 10 个菜、只筛蔬菜时金额凭空变小，而页面看不出来。
+    -->
+    <sql id="salesOrderLevelFilters">
+        <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
+        <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
+        <if test="query.orderSource != null and query.orderSource != ''">
+            AND o.order_source = #{query.orderSource}
+        </if>
+        <if test="query.categoryId != null or (query.keyword != null and query.keyword != '')">
+            AND EXISTS (SELECT 1
+                        FROM sales_order_item f
+                                 LEFT JOIN product_spu fspu ON fspu.id = f.spu_id
+                                 LEFT JOIN product_category fcat ON fcat.id = fspu.category_id AND fcat.deleted = FALSE
+                                 LEFT JOIN product_category fcat2 ON fcat2.id = fcat.parent_id
+                                 LEFT JOIN product_category fcat3 ON fcat3.id = fcat2.parent_id
+                        WHERE f.order_id = o.id
+                          AND f.deleted = FALSE
+            <if test="query.categoryId != null">
+                          AND (fcat.id = #{query.categoryId} OR fcat2.id = #{query.categoryId}
+                               OR fcat3.id = #{query.categoryId})
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                          AND (f.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                               OR f.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+                               OR f.spu_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+            )
+        </if>
+    </sql>
+
+    <!--
+      一行 = 一个订单（表头级）。退款按 order_id 独立聚合后关联，不经订单行 JOIN，
+      否则一单多行会把退款放大；退款只认窗口内 COMPLETED，与按客户 / 按销售员同口径。
+    -->
+    <select id="salesOrderList"
+            resultType="com.xsy.scm.report.domain.vo.SalesReportVO$OrderRow">
+        WITH ord AS (SELECT o.id,
+                            o.order_no,
+                            o.confirmed_at,
+                            o.customer_code_snapshot,
+                            o.customer_name_snapshot,
+                            o.seller_id,
+                            o.order_source,
+                            o.settle_mode_snapshot,
+                            COUNT(i.id)                   AS line_count,
+                            COUNT(DISTINCT i.sku_id)      AS sku_kind_count,
+                            SUM(i.settlement_line_amount) AS settlement_amount
+                     FROM sales_order o
+                              JOIN sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE
+                     WHERE <include refid="salesConfirmed"/>
+                        <include refid="salesOrderLevelFilters"/>
+                     GROUP BY o.id, o.order_no, o.confirmed_at, o.customer_code_snapshot, o.customer_name_snapshot,
+                              o.seller_id, o.order_source, o.settle_mode_snapshot),
+             rf AS (SELECT r.order_id, SUM(r.refund_amount) AS refund_amount
+                    FROM order_refund r
+                    WHERE r.deleted = FALSE
+                      AND r.status = 'COMPLETED'
+                      AND r.completed_at &gt;= #{startAt}
+                      AND r.completed_at &lt; #{endAt}
+                    GROUP BY r.order_id)
+        SELECT ord.id                        AS orderId,
+               ord.order_no                  AS orderNo,
+               ord.confirmed_at              AS confirmedAt,
+               ord.customer_code_snapshot    AS customerCode,
+               ord.customer_name_snapshot    AS customerName,
+               e.actual_name                 AS sellerName,
+               ord.order_source              AS orderSource,
+               ord.settle_mode_snapshot      AS settleMode,
+               ord.line_count                AS lineCount,
+               ord.sku_kind_count            AS skuKindCount,
+               ord.settlement_amount         AS settlementAmount,
+               COALESCE(rf.refund_amount, 0) AS completedRefundAmount
+        FROM ord
+                 LEFT JOIN rf ON rf.order_id = ord.id
+                 LEFT JOIN t_employee e ON e.employee_id = ord.seller_id AND e.deleted_flag = FALSE
+        ORDER BY ord.confirmed_at DESC, ord.id DESC
+    </select>
+
     <!-- ============ 采购分析 ============ -->
 
     <select id="purchaseOverview"

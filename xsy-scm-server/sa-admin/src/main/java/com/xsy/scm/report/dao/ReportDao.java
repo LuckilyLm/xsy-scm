@@ -76,6 +76,9 @@ public interface ReportDao {
     List<SalesReportVO.ItemRow> salesItemList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
 
+    List<SalesReportVO.OrderRow> salesOrderList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
+
     // ---------- 采购分析 ----------
 
     PurchaseReportVO.Overview purchaseOverview(@Param("startAt") OffsetDateTime startAt,

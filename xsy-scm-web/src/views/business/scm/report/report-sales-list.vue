@@ -435,6 +435,85 @@
         </div>
       </a-card>
     </a-tab-pane>
+    <!-- ==================== 客户订单明细（订单表头级） ==================== -->
+    <a-tab-pane key="order" tab="客户订单明细">
+      <a-card size="small" :bordered="false">
+        <a-row class="smart-table-btn-block">
+          <div class="smart-table-operate-block">
+            <a-button v-privilege="PERM.EXPORT" @click="exportOrder">导出</a-button>
+            <a-typography-text type="secondary" class="smart-margin-left10">
+              一行 = 一个订单：回答「这个客户有几单、每单多少」。分类与关键词只判定订单是否命中，
+              命中后金额仍按整单汇总，不会只算匹配到的行。
+            </a-typography-text>
+          </div>
+          <div class="smart-table-setting-block">
+            <TableOperator
+                v-model="orderColumns"
+                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ORDER"
+                :refresh="loadOrder"
+            />
+          </div>
+        </a-row>
+        <a-alert v-if="order.error" :message="order.error" type="error" show-icon class="smart-margin-bottom10">
+          <template #action>
+            <a-button @click="loadOrder">重试</a-button>
+          </template>
+        </a-alert>
+        <a-table
+            :id="SCM_REPORT_TABLE_ID.SALES_ORDER"
+            size="small"
+            :data-source="order.rows"
+            :columns="orderColumns"
+            row-key="orderId"
+            bordered
+            :loading="order.loading"
+            :pagination="false"
+            :locale="{emptyText: '暂无客户订单明细'}"
+            :scroll="{x: 1600}"
+        >
+          <template #bodyCell="{ record, column }">
+            <template v-if="column.dataIndex === 'orderNo'">
+              <!-- 复用订单详情，不造第二套详情页 -->
+              <a v-if="record.orderId" @click="openOrder(record.orderId)">{{ record.orderNo }}</a>
+              <span v-else>{{ record.orderNo ?? '—' }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'confirmedAt'">
+              {{ datetime(record.confirmedAt) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'orderSource'">
+              {{ enumDescText(record.orderSource, SCM_ORDER_SOURCE_ENUM) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'settleMode'">
+              {{ enumDescText(record.settleMode, SETTLE_MODE_ENUM) }}
+            </template>
+            <template v-else-if="column.dataIndex === 'lineCount'">
+              <span class="num">{{ countText(record.lineCount) }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'skuKindCount'">
+              <span class="num">{{ countText(record.skuKindCount) }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'settlementAmount'">
+              <span class="num">{{ moneyText(record.settlementAmount) }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'completedRefundAmount'">
+              <span class="num">{{ moneyText(record.completedRefundAmount) }}</span>
+            </template>
+            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
+          </template>
+        </a-table>
+        <div class="smart-query-table-page">
+          <a-pagination
+              show-size-changer
+              show-quick-jumper
+              v-model:current="order.pageNum"
+              v-model:page-size="order.pageSize"
+              :total="order.total"
+              @change="loadOrder"
+              :show-total="(n: number) => `共${n}条`"
+          />
+        </div>
+      </a-card>
+    </a-tab-pane>
   </a-tabs>
 
   <OrderDetail ref="orderDetail"/>
@@ -465,6 +544,7 @@ import type {
     SalesCategoryRow,
     SalesCustomerRow,
     SalesItemRow,
+    SalesOrderRow,
     SalesProductRow,
     SalesQuery,
     SalesSellerRow,
@@ -492,7 +572,7 @@ import type {DateRange} from './report-model';
 const PERM = SCM_REPORT_PERMISSION;
 const route = useRoute();
 
-type SalesTab = 'product' | 'category' | 'customer' | 'seller' | 'item';
+type SalesTab = 'product' | 'category' | 'customer' | 'seller' | 'item' | 'order';
 
 const activeTab = ref<SalesTab>('product');
 const dateRange = ref<DateRange | undefined>();
@@ -512,9 +592,9 @@ const category = reactive(createTabView<SalesCategoryRow>());
 const customer = reactive(createTabView<SalesCustomerRow>());
 const seller = reactive(createTabView<SalesSellerRow>());
 const item = reactive(createTabView<SalesItemRow>());
+const order = reactive(createTabView<SalesOrderRow>());
 
-/** 有导出口径的是商品 / 客户 / 明细三个 Tab（计划 §30 只给了这三个导出端点），
- *  分类与销售员 Tab 因此不放导出按钮，避免点出 404。 */
+/** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
 
 const productColumns = ref<TableColumnsType<SalesProductRow>>([
     {title: '商品名称', dataIndex: 'productName', width: 200},
@@ -585,6 +665,20 @@ const itemColumns = ref<TableColumnsType<SalesItemRow>>([
     {title: '手工改价原因', dataIndex: 'manualPriceReason', width: 200},
 ]);
 
+const orderColumns = ref<TableColumnsType<SalesOrderRow>>([
+    {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
+    {title: '订单号', dataIndex: 'orderNo', width: 190},
+    {title: '客户编码', dataIndex: 'customerCode', width: 150},
+    {title: '客户名称', dataIndex: 'customerName', width: 200},
+    {title: '销售员', dataIndex: 'sellerName', width: 120},
+    {title: '订单来源', dataIndex: 'orderSource', width: 110},
+    {title: '结算方式', dataIndex: 'settleMode', width: 120},
+    {title: '订单行数', dataIndex: 'lineCount', align: 'right', width: 110},
+    {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
+    {title: '结算金额', dataIndex: 'settlementAmount', align: 'right', width: 150},
+    {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
+]);
+
 /** 请求体：日期区间 + 共享筛选 + 该 Tab 的分页。 */
 function salesQuery(tab: {pageNum: number; pageSize: number}): SalesQuery {
     return buildReportQuery<SalesQuery>(dateRange.value, {...filters}, tab);
@@ -600,6 +694,7 @@ const loadCategory = createTabLoader(category, () => salesQuery(category), repor
 const loadCustomer = createTabLoader(customer, () => salesQuery(customer), reportSalesApi.customer);
 const loadSeller = createTabLoader(seller, () => salesQuery(seller), reportSalesApi.seller);
 const loadItem = createTabLoader(item, () => salesQuery(item), reportSalesApi.item);
+const loadOrder = createTabLoader(order, () => salesQuery(order), reportSalesApi.order);
 
 const loadProductTop = createGuardedLoader(
     () => reportSalesApi.productTop(salesQuery(product)),
@@ -653,6 +748,9 @@ function queryActiveTab() {
         case 'item':
             void loadItem();
             break;
+        case 'order':
+            void loadOrder();
+            break;
         default:
             break;
     }
@@ -680,6 +778,9 @@ function onTabChange() {
             break;
         case 'item':
             enterTab(item);
+            break;
+        case 'order':
+            enterTab(order);
             break;
         default:
             break;
@@ -729,6 +830,10 @@ function exportSeller() {
 
 function exportItem() {
     void reportSalesApi.itemExport(exportQuery());
+}
+
+function exportOrder() {
+    void reportSalesApi.orderExport(exportQuery());
 }
 
 const orderDetail = ref<InstanceType<typeof OrderDetail>>();

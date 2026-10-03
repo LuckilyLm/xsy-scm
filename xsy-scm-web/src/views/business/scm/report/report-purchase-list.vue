@@ -58,6 +58,14 @@
     </a-tab-pane>
     <!-- ==================== 采购概览 ==================== -->
     <a-tab-pane key="overview" tab="采购概览">
+      <a-row class="smart-table-btn-block">
+        <div class="smart-table-operate-block">
+          <a-button v-privilege="PERM.EXPORT" @click="exportOverview">导出</a-button>
+          <a-typography-text type="secondary" class="smart-margin-left10">
+            导出的是本页指标卡单行；没有授权仓库时指标不可知，导出同样为空而不是 0。
+          </a-typography-text>
+        </div>
+      </a-row>
       <a-row :gutter="[12, 12]">
         <a-col v-for="card in overviewCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
           <ReportKpiCard
@@ -248,7 +256,8 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-typography-text type="secondary">
+            <a-button v-privilege="PERM.EXPORT" @click="exportPurchaser">导出</a-button>
+            <a-typography-text type="secondary" class="smart-margin-left10">
               点采购员名称，右侧抽屉看该采购员的商品维度明细；这是业绩与成本视角，不是提成。
             </a-typography-text>
           </div>
@@ -410,7 +419,8 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-typography-text type="secondary">
+            <a-button v-privilege="PERM.EXPORT" @click="exportPriceTrend">导出</a-button>
+            <a-typography-text type="secondary" class="smart-margin-left10">
               一行 = 业务日 × SKU × 采购单位。曲线太多时先用 SKU 筛选收窄。
             </a-typography-text>
           </div>
@@ -895,6 +905,18 @@ function exportSupplier() {
 
 function exportItem() {
     void reportPurchaseApi.itemExport(exportQuery());
+}
+
+function exportOverview() {
+    void reportPurchaseApi.overviewExport(exportQuery());
+}
+
+function exportPurchaser() {
+    void reportPurchaseApi.purchaserExport(exportQuery());
+}
+
+function exportPriceTrend() {
+    void reportPurchaseApi.priceTrendExport(exportQuery());
 }
 
 const purchaseOrderDetail = ref<InstanceType<typeof PurchaseOrderDetail>>();

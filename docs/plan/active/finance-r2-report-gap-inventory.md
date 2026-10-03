@@ -1,7 +1,7 @@
 # 财务与报表（ADM-01 / Finance R2）缺口盘点
 
 盘点日期：2026-10-03。
-状态：盘点完成，实施按切片推进；本文只记录**代码可证的现状与缺口**，不构成排期承诺。
+状态：盘点完成，缺口已全部实施（切片 1 + 切片 2）；本文只记录**代码可证的现状与缺口**，不代表已通过运行验收。
 依据：[产品功能需求基线](../../requirements/产品功能需求基线.md)、[有效决策](../../decisions.md)、[开发规划](admin-development-roadmap.md)、[Finance R1 正式设计](finance-r1-design.md)及当前主线代码。
 
 ## 1. 盘点口径
@@ -18,11 +18,11 @@
 
 | 需求项 | 现有交付证据 | 结论 |
 | --- | --- | --- |
-| 经营数据报表 | `POST /scm/report/overview`、`/overview/trend`、`/overview/daily`；页面 `/report/report-overview-list`；权限 `scm:report:overview:query` | **已交付**；缺口见 G3 |
-| 销售明细报表 | `POST /sales/product`、`/sales/category`、`/sales/customer`、`/sales/seller`、`/sales/item/query` 与三个 TOP 端点；页面 `/report/report-sales-list`（五个 Tab）；导出 `/sales/product/export`、`/sales/customer/export`、`/sales/item/export`；权限 `scm:report:sales:query` | **已交付**；缺口见 G1、G2 |
-| 客户订单明细报表 | `/sales/customer`（粒度=客户：订单笔数、SKU 种类数、确认金额、已完成退款、最近确认时间）+ `/sales/item/query`（粒度=`sales_order_item`，含客户/销售员列与 `customerId` 筛选） | **行级已交付**；无订单表头级明细，见 G5 |
-| 销售员业绩报表 | `/sales/seller`（粒度=销售员；`seller_id` 空归「未分配销售员」）；页面销售分析「按销售员」Tab | **已交付**；缺口见 G2 |
-| 采购明细报表 | `/purchase/item/query` + `/purchase/item/export`（粒度=`purchase_order_item`）；另有 `/purchase/overview`、`/purchase/product`、`/purchase/supplier`、`/purchase/purchaser`、`/purchase/price-trend`、`/purchase/supplier/top`；权限 `scm:report:purchase:query` | **已交付**；导出齐全 |
+| 经营数据报表 | `POST /scm/report/overview`、`/overview/trend`、`/overview/daily`（切片 1 补 `/overview/daily/export`）；页面 `/report/report-overview-list`；权限 `scm:report:overview:query` | **已交付**（含导出） |
+| 销售明细报表 | `POST /sales/product`、`/sales/category`、`/sales/customer`、`/sales/seller`、`/sales/item/query`、`/sales/order/query` 与三个 TOP 端点；页面 `/report/report-sales-list`（六个 Tab）；导出 product / category / customer / seller / item / order；权限 `scm:report:sales:query` | **已交付**（含导出） |
+| 客户订单明细报表 | `/sales/customer`（粒度=客户：订单笔数、SKU 种类数、确认金额、已完成退款、最近确认时间）+ `/sales/item/query`（粒度=`sales_order_item`，含客户/销售员列与 `customerId` 筛选）；切片 2 新增 `/sales/order/query`（粒度=`sales_order`，订单表头级，含订单行数与 SKU 种类数） | **已交付**（行级 + 订单表头级） |
+| 销售员业绩报表 | `/sales/seller`（粒度=销售员；`seller_id` 空归「未分配销售员」）+ 切片 1 的 `/sales/seller/export`；页面销售分析「按销售员」Tab | **已交付**（含导出） |
+| 采购明细报表 | `/purchase/item/query` + `/purchase/item/export`（粒度=`purchase_order_item`）；另有 `/purchase/overview`、`/purchase/product`、`/purchase/supplier`、`/purchase/purchaser`、`/purchase/price-trend`、`/purchase/supplier/top`，切片 2 补齐 overview / purchaser / price-trend 三个导出；权限 `scm:report:purchase:query` | **已交付**（导出齐全） |
 | 单品利润 | `/scm/report/finance/profit/{query,summary,export}`，`ScmFinanceProfitDimensionEnum` 含 `PRODUCT`；权限 `FINANCE_PROFIT_QUERY` **AND** `COST_QUERY` | **已交付**（代码） |
 | 客户利润 | 同上，`CUSTOMER` 维度 | **已交付**（代码） |
 
@@ -45,7 +45,7 @@
 
 ## 3. 真实缺口
 
-### 3.1 建议本轮实施（口径清晰、与同类维度同构）
+### 3.1 已实施（切片 1：三个导出）
 
 | 编号 | 缺口 | 现状证据 | 补齐方式 |
 | --- | --- | --- | --- |
@@ -55,12 +55,14 @@
 
 三个缺口共用报表中心既有的 `exportRows`（第 1 页 + 上限探测行，超限抛 41112）与 `ScmReportExcel`，导出与列表**同一查询方法**，口径不可能分叉。
 
-### 3.2 待口径确认后再决定（本轮不实施）
+### 3.2 已实施（切片 2：采购导出与订单表头级明细，2026-10-03 负责人确认）
 
-| 编号 | 事项 | 说明 |
+| 编号 | 事项 | 处理 |
 | --- | --- | --- |
-| G4 | 采购概览 / 按采购员 / 价格波动无导出 | 需求基线只要求「采购明细报表」，这三项是超出需求的增量视图；是否补导出待确认，避免无需求驱动的建设 |
-| G5 | 无订单表头级「客户订单明细」 | 现有行级明细能回答「某客户买了什么」，客户聚合能回答「某客户合计多少」；表头级（某客户有几单、每单多少、状态如何）目前只能去订单运营列表看。是否要按报表口径再出一张，需负责人确认 |
+| G4 | 采购概览 / 按采购员 / 价格波动无导出 | 已补 `/purchase/overview/export`（单行指标卡）、`/purchase/purchaser/export`、`/purchase/price-trend/export`，分别复用 `overview` / `byPurchaser` / `priceTrend`；权限 `PURCHASE_QUERY` AND `EXPORT`，成本字段沿用 Service 的字段级抹除 |
+| G5 | 无订单表头级「客户订单明细」 | 已补 `/sales/order/query` + `/sales/order/export`（`SalesReportVO.OrderRow`），页面销售分析新增「客户订单明细」Tab。一行 = 一个订单，含订单行数、SKU 种类数、结算金额与已完成退款金额；退款按 `order_id` 独立聚合，不经订单行 JOIN |
+
+**G5 的筛选语义（刻意与行级不同）**：`categoryId` / `keyword` 是**行级**条件，在订单维度下用 `EXISTS` 只判定「该订单是否命中」，命中后金额仍按**整单**汇总。若直接套用行级 `salesFilters`，订单金额会变成「只匹配那几行」的合计——一单买 10 个菜、只筛蔬菜时金额凭空变小，而页面看不出来。
 
 ### 3.3 已知阻塞与依赖（非缺口）
 
@@ -70,8 +72,9 @@
 
 ## 4. 实施切片
 
-1. **切片 1（本轮）**：G1 + G2 + G3 三个导出端点与对应前端按钮。三者同构，一次提交。
-2. 后续切片按用户确认的 G4 / G5 结论推进；每片单独提交并更新[开发规划](admin-development-roadmap.md)与[项目状态](../../status.md)。
+1. **切片 1（已完成）**：G1 + G2 + G3 三个导出端点与对应前端按钮。
+2. **切片 2（已完成）**：G4 采购三个导出 + G5 订单表头级客户订单明细（后端查询 / 导出、前端 Tab 与按钮、表格 id 与列配置注册）。
+3. 后续按营销接入订单的进度同步净收入与退款反向分摊；每片单独提交并更新[开发规划](admin-development-roadmap.md)与[项目状态](../../status.md)。
 
 ## 5. 不重复建设
 

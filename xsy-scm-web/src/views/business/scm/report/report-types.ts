@@ -277,6 +277,27 @@ export interface SalesItemRow {
     manualPriceReason?: string | null;
 }
 
+/**
+ * `SalesReportVO.OrderRow`：粒度 = `sales_order`（订单表头级）。
+ *
+ * 与 {@link SalesItemRow} 的分工：行级回答「这单买了什么」，本行回答「这个客户有几单、每单多少」。
+ * 分类 / 关键词在本维度下只判定订单是否命中，金额仍按整单汇总。
+ */
+export interface SalesOrderRow {
+    orderId?: ReportId;
+    orderNo?: string | null;
+    confirmedAt?: string | null;
+    customerCode?: string | null;
+    customerName?: string | null;
+    sellerName?: string | null;
+    orderSource?: string | null;
+    settleMode?: string | null;
+    lineCount?: number | null;
+    skuKindCount?: number | null;
+    settlementAmount?: string | null;
+    completedRefundAmount?: string | null;
+}
+
 /** `ScmSalesReportQueryForm`：五个维度共用一个表单（切 Tab 不串条件是前端职责）。 */
 export interface SalesQuery extends ReportPage, ReportDateQuery {
     customerId?: ReportId;

@@ -68,6 +68,8 @@ export const SCM_REPORT_TABLE_ID = {
     SALES_CUSTOMER: 'scm-report-sales-customer-table',
     SALES_SELLER: 'scm-report-sales-seller-table',
     SALES_ITEM: 'scm-report-sales-item-table',
+    /** 订单表头级（一行 = 一个订单），与行级 `SALES_ITEM` 是两张表，DOM id 不能相同。 */
+    SALES_ORDER: 'scm-report-sales-order-table',
     PURCHASE_PRODUCT: 'scm-report-purchase-product-table',
     PURCHASE_SUPPLIER: 'scm-report-purchase-supplier-table',
     PURCHASE_PURCHASER: 'scm-report-purchase-purchaser-table',

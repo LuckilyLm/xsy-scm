@@ -98,6 +98,16 @@ public class SalesReportService {
                 reportDao.salesItemList(page, range.startAt(), range.endAt(), form));
     }
 
+    /** 订单表头级明细：一行 = 一个订单，回答「这个客户有几单、每单多少」。 */
+    public PageResult<SalesReportVO.OrderRow> orderList(ScmSalesReportQueryForm form) {
+        rejectClientSort(form);
+        ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
+        var page = SmartPageUtil.convert2PageQuery(form);
+        page.setOptimizeCountSql(false);
+        return SmartPageUtil.convert2PageResult(page,
+                reportDao.salesOrderList(page, range.startAt(), range.endAt(), form));
+    }
+
     static void rejectClientSort(PageParam form) {
         if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
             throw new ScmBusinessException(VALIDATION_ERROR);

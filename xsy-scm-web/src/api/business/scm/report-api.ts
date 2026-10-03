@@ -45,6 +45,7 @@ import type {
     SalesCategoryRow,
     SalesCustomerRow,
     SalesItemRow,
+    SalesOrderRow,
     SalesProductRow,
     SalesQuery,
     SalesSellerRow,
@@ -90,6 +91,9 @@ export const reportSalesApi = {
         postRequest(`${BASE}/sales/seller`, data) as unknown as Promise<ScmResponse<ScmPage<SalesSellerRow>>>,
     item: (data: SalesQuery) =>
         postRequest(`${BASE}/sales/item/query`, data) as unknown as Promise<ScmResponse<ScmPage<SalesItemRow>>>,
+    /** 订单表头级：一行 = 一个订单（「这个客户有几单、每单多少」）。 */
+    order: (data: SalesQuery) =>
+        postRequest(`${BASE}/sales/order/query`, data) as unknown as Promise<ScmResponse<ScmPage<SalesOrderRow>>>,
 
     /** TOP5 由 DB 直接 `LIMIT`，不在 Java 侧排序，也不取全量回内存。 */
     productTop: (data: SalesQuery) =>
@@ -104,6 +108,7 @@ export const reportSalesApi = {
     customerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/customer/export`, data),
     sellerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/seller/export`, data),
     itemExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/item/export`, data),
+    orderExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/order/export`, data),
 };
 
 /** 采购分析：采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动（计划 §11–§16、§26）。 */
@@ -132,6 +137,9 @@ export const reportPurchaseApi = {
     productExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/product/export`, data),
     supplierExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/supplier/export`, data),
     itemExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/item/export`, data),
+    overviewExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/overview/export`, data),
+    purchaserExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/purchaser/export`, data),
+    priceTrendExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/price-trend/export`, data),
 };
 
 /** 收货与入库：三张表是**三种不同事实**（计划 §17–§20）。 */
