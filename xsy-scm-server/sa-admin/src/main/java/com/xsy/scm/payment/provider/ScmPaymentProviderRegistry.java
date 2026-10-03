@@ -34,7 +34,7 @@ public class ScmPaymentProviderRegistry {
     public ScmPaymentProvider require(String provider) {
         ScmPaymentProviderEnum code = ScmPaymentProviderEnum.of(provider);
         ScmPaymentProvider implementation = code == null ? null : providers.get(code);
-        if (implementation == null) {
+        if (implementation == null || code == ScmPaymentProviderEnum.INTERNAL_BALANCE) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_UNSUPPORTED);
         }
         return implementation;

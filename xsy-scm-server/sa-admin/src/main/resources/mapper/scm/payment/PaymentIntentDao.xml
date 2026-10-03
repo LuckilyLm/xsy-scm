@@ -2,9 +2,31 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.PaymentIntentDao">
 
+    <sql id="visibleIntent">
+        AND EXISTS (SELECT 1 FROM customer c WHERE c.id = i.customer_id AND c.deleted = FALSE
+        <choose>
+            <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
+            <when test="scope.customerSellerScope.all"></when>
+            <otherwise>AND c.seller_id IN
+                <foreach collection="scope.customerSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </otherwise>
+        </choose>)
+        AND (i.source_type = 'BALANCE_RECHARGE' OR (i.source_type = 'SALES_ORDER' AND EXISTS (
+            SELECT 1 FROM sales_order so WHERE so.id = i.source_id AND so.deleted = FALSE
+            <choose>
+                <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
+                <when test="scope.orderSellerScope.all"></when>
+                <otherwise>AND so.seller_id IN
+                    <foreach collection="scope.orderSellerScope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+                </otherwise>
+            </choose>)))
+    </sql>
+
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
-        SELECT * FROM payment_intent
-        WHERE deleted = FALSE
+        SELECT i.* FROM payment_intent i
+        WHERE i.deleted = FALSE
+        <include refid="visibleIntent"/>
+        <if test="query.sourceType != null and query.sourceType != ''">AND i.source_type = #{query.sourceType}</if>
         <if test="query.customerId != null">AND customer_id = #{query.customerId}</if>
         <if test="query.sourceId != null">AND source_id = #{query.sourceId}</if>
         <if test="query.provider != null and query.provider != ''">AND provider = #{query.provider}</if>
@@ -38,6 +60,13 @@
         WHERE id = #{id}
           AND status = #{from}
           AND deleted = FALSE
+    </update>
+
+    <update id="markBalanceSucceeded">
+        UPDATE payment_intent SET status = 'SUCCEEDED', succeeded_at = #{succeededAt},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id} AND method = 'BALANCE' AND provider = 'INTERNAL_BALANCE'
+            AND status = 'PENDING' AND deleted = FALSE
     </update>
 
     <update id="bindExternalIntent">

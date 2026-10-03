@@ -2,8 +2,10 @@ package com.xsy.scm.payment.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xsy.scm.payment.domain.form.PaymentTransactionQueryForm;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
+import com.xsy.scm.payment.domain.form.PaymentTransactionQueryForm;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
@@ -18,7 +20,8 @@ public interface PaymentTransactionDao extends BaseMapper<PaymentTransactionEnti
      * <p>
      * 渠道交易号在同一渠道内唯一（表上唯一索引），因此这里最多返回一行。
      */
-    List<PaymentTransactionEntity> queryPage(Page<?> page, @Param("query") PaymentTransactionQueryForm query);
+    List<PaymentTransactionEntity> queryPage(Page<?> page, @Param("query") PaymentTransactionQueryForm query,
+            @Param("scope") ScmDataScopeContext scope);
 
     PaymentTransactionEntity selectByProviderTransactionNo(@Param("provider") String provider,
             @Param("providerTransactionNo") String providerTransactionNo);
@@ -30,8 +33,11 @@ public interface PaymentTransactionDao extends BaseMapper<PaymentTransactionEnti
     /**
      * 条件更新为成功：把「当前状态」放进 WHERE，重复回调不会二次生效。
      */
-    int markSucceeded(@Param("id") Long id, @Param("providerAmount") java.math.BigDecimal providerAmount,
+    int markSucceeded(@Param("id") Long id, @Param("providerAmount") BigDecimal providerAmount,
             @Param("operator") String operator);
+
+    int markBalanceSucceeded(@Param("id") Long id, @Param("amount") BigDecimal amount,
+            @Param("paidAt") OffsetDateTime paidAt, @Param("operator") String operator);
 
     int markFailed(@Param("id") Long id, @Param("failureCode") String failureCode,
             @Param("failureMessage") String failureMessage, @Param("operator") String operator);

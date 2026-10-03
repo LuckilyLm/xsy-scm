@@ -7,6 +7,9 @@ import net.lab1024.sa.base.common.domain.PageParam;
 /** 余额流水查询。 */
 @Data
 public class BalanceMovementQueryForm extends PageParam {
+    private Long movementId;
+    private String sourceType;
+    private Long sourceId;
 
     /** 按钱包所有者（结算主体）收窄。 */
     private Long settlementCustomerId;

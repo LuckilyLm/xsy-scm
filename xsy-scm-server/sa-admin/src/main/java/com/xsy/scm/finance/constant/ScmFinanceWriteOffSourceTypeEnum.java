@@ -21,7 +21,9 @@ public enum ScmFinanceWriteOffSourceTypeEnum {
     /**
      * 付款：{@code source_id} = {@code finance_payment.id}，只能核 {@code PAYABLE}。
      */
-    PAYMENT("付款");
+    PAYMENT("付款"),
+
+    BALANCE_MOVEMENT("余额消费");
 
     private final String desc;
 }

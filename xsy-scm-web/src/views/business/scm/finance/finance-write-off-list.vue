@@ -6,6 +6,8 @@
         <span class="date-separator">至</span>
         <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期"/>
       </a-form-item>
+      <a-form-item label="资金类型"><a-select v-model:value="query.sourceType" allow-clear placeholder="全部" style="width:140px"
+        :options="[{label:'收款',value:'RECEIPT'},{label:'付款',value:'PAYMENT'},{label:'余额消费',value:'BALANCE_MOVEMENT'}]"/></a-form-item>
       <a-form-item label="资金单号"><a-input v-model:value="query.sourceNo" allow-clear @press-enter="onSearch"/></a-form-item>
       <a-form-item label="目标单号"><a-input v-model:value="query.targetNo" allow-clear @press-enter="onSearch"/></a-form-item>
       <a-form-item label="方向"><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width:120px"/></a-form-item>
@@ -35,7 +37,11 @@
     <a-table id="scm-finance-write-off-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
              row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1300}">
       <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='sourceType'">{{ text==='RECEIPT'?'收款':'付款' }}</template>
+        <template v-if="column.dataIndex==='sourceType'">{{ text==='BALANCE_MOVEMENT'?'余额消费':text==='RECEIPT'?'收款':'付款' }}</template>
+        <template v-else-if="column.dataIndex==='sourceNo' && record.sourceType==='BALANCE_MOVEMENT'">
+          <span>{{ text }}</span><a-button type="link" v-privilege="'scm:balance:movement:query'"
+            @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a-button>
+        </template>
         <template v-else-if="column.dataIndex==='targetType'">{{ text==='RECEIVABLE'?'应收':'应付' }}</template>
         <template v-else-if="column.dataIndex==='entryType'"><a-tag :color="SCM_FINANCE_ENTRY_COLOR[text]">{{ entryTypeText(text) }}</a-tag></template>
         <template v-else-if="column.dataIndex==='amount'">{{ moneyText(text) }}</template>
@@ -96,6 +102,7 @@
     <a-form layout="vertical"><a-form-item label="撤销原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
   </a-modal>
 
+  <BalanceMovementDetail ref="movementDetail"/>
   <FinanceRecordPicker v-model:open="pickerOpen" :kind="pickerKind" @select="onCandidateSelected"/>
 </template>
 
@@ -108,6 +115,8 @@ import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_PERMIS
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import FinanceRecordPicker from './finance-record-picker.vue';
+import BalanceMovementDetail from './balance-movement-detail.vue';
+const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyText, isValidPositiveAmount} from './finance-form-model';
 import {financeError} from './finance-errors';
 import type {FinanceCandidate, FinanceWriteOff, WriteOffQuery} from './finance-types';
@@ -148,7 +157,7 @@ async function queryData() { await page.queryData(query); }
 function onSearch() { query.pageNum = 1; queryData(); }
 function resetQuery() {
     Object.assign(query, {pageNum: 1, pageSize: 20, ...initialFinanceDateRange(), sourceNo: undefined,
-        targetNo: undefined, entryType: undefined});
+        targetNo: undefined, entryType: undefined, sourceType: undefined});
     queryData();
 }
 async function exportData() { await page.exportData(query); }

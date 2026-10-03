@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.finance.dao.FinanceOrderFundingSourceDao">
+    <sql id="funding">
+        SELECT i.id AS intentId, o.id AS orderId, i.customer_id AS customerId,
+            COALESCE(o.settlement_customer_id, recharge.settlement_customer_id) AS settlementCustomerId,
+            COALESCE(o.settlement_customer_name_snapshot, recharge.settlement_customer_name_snapshot) AS settlementCustomerName,
+            i.method, i.provider, i.source_type AS sourceType, i.status AS intentStatus, i.amount,
+            t.id AS transactionId, t.status AS transactionStatus, t.provider AS transactionProvider,
+            t.updated_by AS operator, t.provider_amount AS providerAmount, t.paid_at AS paidAt, t.amount AS transactionAmount, r.id AS receiptId,
+            r.customer_id AS receiptCustomerId, r.settlement_customer_id AS receiptSettlementCustomerId,
+            r.amount AS receiptAmount, m.occurred_at AS movementOccurredAt,
+            m.id AS movementId, m.customer_id AS movementCustomerId,
+            m.settlement_customer_id AS movementSettlementCustomerId, m.source_id AS movementIntentId,
+            m.type AS movementType, m.direction AS movementDirection, m.source_type AS movementSourceType,
+            m.amount AS movementAmount
+        FROM payment_intent i
+        LEFT JOIN sales_order o ON i.source_type = 'SALES_ORDER' AND o.id = i.source_id
+            AND o.customer_id = i.customer_id AND o.deleted = FALSE
+        LEFT JOIN customer_balance_recharge recharge ON i.source_type = 'BALANCE_RECHARGE'
+            AND recharge.id = i.source_id AND recharge.customer_id = i.customer_id AND recharge.deleted = FALSE
+        LEFT JOIN payment_transaction t ON t.intent_id = i.id AND t.deleted = FALSE
+        LEFT JOIN finance_receipt r ON r.source_type = 'PAYMENT_TRANSACTION' AND r.source_id = t.id
+            AND r.entry_type = 'NORMAL' AND r.deleted = FALSE
+        LEFT JOIN customer_balance_movement m ON m.source_type = 'PAYMENT_INTENT' AND m.source_id = i.id
+            AND m.deleted = FALSE
+    </sql>
+    <select id="selectOrderFunding" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto">
+        <include refid="funding"/>
+        WHERE i.source_type = 'SALES_ORDER' AND i.source_id = #{orderId} AND i.deleted = FALSE
+            AND (i.status = 'SUCCEEDED' OR t.status = 'SUCCEEDED')
+        ORDER BY i.id, t.id
+    </select>
+    <select id="selectTransaction" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto">
+        <include refid="funding"/>
+        WHERE t.id = #{transactionId} AND i.deleted = FALSE
+    </select>
+    <select id="lockMovement" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
+        SELECT * FROM customer_balance_movement WHERE id = #{movementId} AND deleted = FALSE FOR UPDATE
+    </select>
+    <select id="isRechargeReceipt" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM finance_receipt r
+            JOIN payment_transaction t ON r.source_type = 'PAYMENT_TRANSACTION' AND t.id = r.source_id
+            JOIN payment_intent i ON i.id = t.intent_id
+            WHERE r.id = #{receiptId} AND i.source_type = 'BALANCE_RECHARGE')
+    </select>
+</mapper>

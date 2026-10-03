@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface CustomerBalanceAccountDao extends BaseMapper<CustomerBalanceAccountEntity> {
 
+    int insertOnConflictDoNothing(CustomerBalanceAccountEntity account);
+
     CustomerBalanceAccountEntity selectBySettlementCustomerId(@Param("settlementCustomerId") Long settlementCustomerId);
 
     /**

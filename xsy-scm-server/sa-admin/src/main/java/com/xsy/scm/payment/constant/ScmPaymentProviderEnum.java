@@ -18,7 +18,9 @@ public enum ScmPaymentProviderEnum {
     MOCK("本地模拟"),
 
     /** 微信支付：**尚未接入**，此处只占位以冻结契约；密钥与通知地址不得进业务规则。 */
-    WECHAT("微信支付");
+    WECHAT("微信支付"),
+
+    INTERNAL_BALANCE("内部余额结算");
 
     private final String desc;
 

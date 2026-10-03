@@ -1,10 +1,9 @@
 package com.xsy.scm.finance.service;
 
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
@@ -13,8 +12,8 @@ import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceCounterpartyTypeEnum;
-import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceCustomerRefundMethodEnum;
+import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
@@ -30,14 +29,15 @@ import com.xsy.scm.finance.domain.form.FinancePaymentReverseForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.finance.support.FinancePaymentRefundFact;
-import com.xsy.scm.common.idempotency.ScmIdempotencyService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 付款域服务。
@@ -58,6 +58,7 @@ import java.util.Map;
 public class FinancePaymentService {
 
     private final FinancePaymentDao financePaymentDao;
+    private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
     private final FinancePaymentSourceDao financePaymentSourceDao;
     private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
     private final FinanceOperationLogRecorder operationLogs;
@@ -72,7 +73,7 @@ public class FinancePaymentService {
      * 时同样整笔回滚 —— 留下「已付款但无日志」或「claim 已占但无结果」都是不可接受的半成品。
      *
      * <p>
-     * 本命令<b>不获取</b>任何业务表行锁或财务余额锁；并发双付款的仲裁点是来源唯一索引： 后到者在该索引上等前者提交后重新检查谓词，插入返回 0 即按 41139 拒绝。
+     * 客户退款先锁退款来源，与渠道退款及余额支付串行；来源唯一索引继续兜底重复付款。
      *
      * @param idempotencyKey
      *            请求级幂等键；同键同内容重放首次结果，同键异内容按既有语义报冲突
@@ -286,7 +287,7 @@ public class FinancePaymentService {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         BigDecimal amount = fact.providerAmount()
-                .setScale(FinanceConstant.AMOUNT_SCALE, java.math.RoundingMode.HALF_UP);
+                .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
         if (amount.signum() <= 0) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
@@ -357,7 +358,7 @@ public class FinancePaymentService {
             // 客户付款必须关联已完成退款；无来源的客户付款不符合受支持的业务形态。
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        FinanceRefundFactDto refund = financePaymentSourceDao.selectOrderRefund(form.getSourceId());
+        FinanceRefundFactDto refund = financePaymentSourceDao.lockOrderRefund(form.getSourceId());
         if (refund == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
@@ -376,6 +377,7 @@ public class FinancePaymentService {
             // scale 4 逐值判等，不允许四舍五入到 2 位再比：refund_amount 与付款金额都是 18,4
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
+        financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), false);
         if (financePaymentSourceDao.selectActivePaymentRefund(refund.getRefundId()) != null) {
             // 线上退款已发起/完成：再人工退一次，就是同一张退款单被退两遍。
             // 与支付域的 requireOrderRefundSource 构成**双向互斥**，两边都锁同一行 order_refund。

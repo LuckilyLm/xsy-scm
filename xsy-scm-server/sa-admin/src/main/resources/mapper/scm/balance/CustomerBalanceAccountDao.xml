@@ -2,6 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.balance.dao.CustomerBalanceAccountDao">
 
+    <insert id="insertOnConflictDoNothing">
+        INSERT INTO customer_balance_account (settlement_customer_id, settlement_customer_name_snapshot,
+            created_at, updated_at, created_by, updated_by)
+        VALUES (#{settlementCustomerId}, #{settlementCustomerNameSnapshot},
+            #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (settlement_customer_id) WHERE deleted = FALSE DO NOTHING
+    </insert>
+
     <select id="selectBySettlementCustomerId"
             resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceAccountEntity">
         SELECT * FROM customer_balance_account

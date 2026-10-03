@@ -1,23 +1,23 @@
 package com.xsy.scm.finance.service;
 
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
+import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
-import com.xsy.scm.finance.constant.ScmFinanceReceiptSourceTypeEnum;
-import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
-import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
+import com.xsy.scm.finance.constant.ScmFinanceReceiptSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
 import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
+import com.xsy.scm.finance.dao.FinanceOrderFundingSourceDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
 import com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
@@ -25,15 +25,17 @@ import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
-import com.xsy.scm.common.idempotency.ScmIdempotencyService;
-import com.xsy.scm.customer.service.CustomerService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
+import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 收款域服务。
@@ -59,6 +61,8 @@ public class FinanceReceiptService {
     private final ScmDataScopeService dataScopeService;
     private final ScmIdempotencyService idempotencyService;
     private final CustomerService customerService;
+    private final FinanceOrderFundingSourceDao financeOrderFundingSourceDao;
+    private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
 
     /**
      * 登记一笔 {@code NORMAL} 收款。
@@ -176,14 +180,27 @@ public class FinanceReceiptService {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_RECEIPT_AMOUNT_MISSING);
         }
         BigDecimal amount = fact.providerAmount()
-                .setScale(FinanceConstant.AMOUNT_SCALE, java.math.RoundingMode.HALF_UP);
+                .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
         if (amount.signum() <= 0) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_RECEIPT_AMOUNT_MISSING);
         }
 
+        var funding = financeOrderFundingSourceDao.selectTransaction(fact.transactionId());
+        financeOrderFundingPolicy.requireSuccessful(funding);
+        if (!ScmPaymentMethodEnum.ONLINE.name().equals(funding.getMethod())
+                || !fact.customerId().equals(funding.getCustomerId())
+                || amount.compareTo(funding.getProviderAmount()) != 0
+                || !fact.succeededAt().isEqual(funding.getPaidAt())) {
+            throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
+        }
         FinanceReceiptEntity existing = financeReceiptDao
                 .selectBySource(ScmFinanceReceiptSourceTypeEnum.PAYMENT_TRANSACTION.name(), fact.transactionId());
         if (existing != null) {
+            if (!existing.getCustomerId().equals(funding.getCustomerId())
+                    || !existing.getSettlementCustomerId().equals(funding.getSettlementCustomerId())
+                    || existing.getAmount().compareTo(amount) != 0) {
+                throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
+            }
             return existing;
         }
 
@@ -192,18 +209,16 @@ public class FinanceReceiptService {
         if (customer == null) {
             throw new ScmDataScopeException();
         }
-        var payer = customerService.require(customer.getCustomerId());
-        var settlement = customerService.requireSettlementAccount(payer);
 
         OffsetDateTime now = OffsetDateTime.now();
-        String operator = ScmOperator.current();
+        String operator = funding.getOperator() == null ? FinanceConstant.ORDER_FUNDING_OPERATOR : funding.getOperator();
         FinanceReceiptEntity receipt = new FinanceReceiptEntity();
         receipt.setReceiptNo(
                 ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customer.getCustomerName());
-        receipt.setSettlementCustomerId(settlement.getId());
-        receipt.setSettlementCustomerNameSnapshot(settlement.getName());
+        receipt.setSettlementCustomerId(funding.getSettlementCustomerId());
+        receipt.setSettlementCustomerNameSnapshot(funding.getSettlementCustomerName());
         receipt.setAmount(amount);
         receipt.setMethod(ScmFinanceReceiptMethodEnum.ONLINE_PAYMENT.name());
         receipt.setReceivedAt(fact.succeededAt());
@@ -222,7 +237,7 @@ public class FinanceReceiptService {
             throw new IllegalStateException("支付收款登记未落库: " + receipt.getReceiptNo());
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
-                null, null, snapshot(receipt));
+                null, null, snapshot(receipt), operator);
         return receipt;
     }
 

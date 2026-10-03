@@ -1,6 +1,5 @@
 package com.xsy.scm.finance.service;
 
-import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
@@ -19,10 +18,6 @@ import com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -30,6 +25,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 应收域服务：正常应收（签收派生）与红字应收（退货批准派生）。
@@ -49,6 +48,7 @@ public class FinanceReceivableService {
     private final FinanceReceivableItemDao financeReceivableItemDao;
     private final FinanceReceivableSourceDao financeReceivableSourceDao;
     private final FinanceOperationLogRecorder operationLogs;
+    private final FinanceOrderFundingSettlementService financeOrderFundingSettlementService;
 
     /**
      * 签收后生成正常应收，并补生成该订单此前已批准退货的红字。
@@ -78,6 +78,7 @@ public class FinanceReceivableService {
         FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(source.getSalesOrderId());
         if (normal != null) {
             backfillRedForApprovedReturns(source.getSalesOrderId(), normal);
+            financeOrderFundingSettlementService.settleSalesOrderFunding(source.getSalesOrderId());
         }
     }
 

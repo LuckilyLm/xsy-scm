@@ -2,8 +2,11 @@ package com.xsy.scm.payment.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
 import com.xsy.scm.payment.domain.form.PaymentIntentQueryForm;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -11,7 +14,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface PaymentIntentDao extends BaseMapper<PaymentIntentEntity> {
 
-    List<PaymentIntentEntity> queryPage(Page<?> page, @Param("query") PaymentIntentQueryForm query);
+    List<PaymentIntentEntity> queryPage(Page<?> page, @Param("query") PaymentIntentQueryForm query,
+            @Param("scope") ScmDataScopeContext scope);
 
     PaymentIntentEntity selectByIntentNo(@Param("intentNo") String intentNo);
 
@@ -27,11 +31,14 @@ public interface PaymentIntentDao extends BaseMapper<PaymentIntentEntity> {
     int updateStatus(@Param("id") Long id, @Param("from") String from, @Param("to") String to,
             @Param("operator") String operator);
 
+    int markBalanceSucceeded(@Param("id") Long id, @Param("succeededAt") OffsetDateTime succeededAt,
+            @Param("operator") String operator);
+
     /** 回填渠道意图号（发起成功后）。 */
     int bindExternalIntent(@Param("id") Long id, @Param("externalIntentId") String externalIntentId,
             @Param("operator") String operator);
 
     /** 该来源下已成功收款的合计（判断「这单还欠多少」用，不用于自动推断应付金额）。 */
-    java.math.BigDecimal sumSucceededBySource(@Param("sourceType") String sourceType,
+    BigDecimal sumSucceededBySource(@Param("sourceType") String sourceType,
             @Param("sourceId") Long sourceId);
 }

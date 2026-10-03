@@ -3,7 +3,14 @@ package com.xsy.scm.payment.service;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.finance.constant.FinanceErrorCode;
+import com.xsy.scm.finance.service.FinanceOrderFundingPolicy;
+import com.xsy.scm.finance.service.FinancePaymentService;
+import com.xsy.scm.finance.support.FinancePaymentRefundFact;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
+import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
 import com.xsy.scm.payment.constant.ScmPaymentMockScenarioEnum;
 import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
 import com.xsy.scm.payment.constant.ScmPaymentRefundStatusEnum;
@@ -18,8 +25,6 @@ import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
 import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.domain.form.PaymentRefundCreateForm;
-import com.xsy.scm.finance.service.FinancePaymentService;
-import com.xsy.scm.finance.support.FinancePaymentRefundFact;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
 import java.math.BigDecimal;
@@ -46,8 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
  * </pre>
  *
  * <p>
- * <b>本阶段不生成 Finance 红字或资金退款事实</b>：那属于 3-11 的资金映射。
- * 这里只把「渠道实际退了没有」变成可查的事实。
+ * <b>渠道退款成功按实退登记 Finance 付款事实</b>，不冲减或反向应收及历史核销。
  *
  * <p>
  * 三条硬约束：
@@ -81,12 +85,14 @@ public class PaymentRefundService {
      * 因此不构成环（与 payment → finance 收款是同一套做法）。
      */
     private final FinancePaymentService financePaymentService;
+    private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
 
     private final PaymentNumberGenerator paymentNumberGenerator;
 
     private final ScmPaymentProviderRegistry providerRegistry;
 
     private final ScmIdempotencyService idempotencyService;
+    private final ScmDataScopeService dataScopeService;
 
     /**
      * 发起退款。
@@ -99,10 +105,26 @@ public class PaymentRefundService {
     public PaymentRefundEntity create(PaymentRefundCreateForm form, String idempotencyKey) {
         var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE + ":" + form.getTransactionId(), idempotencyKey,
                 form);
+
+        PaymentTransactionEntity initial = paymentTransactionDao.selectById(form.getTransactionId());
+        PaymentIntentEntity originalIntent = initial == null ? null : paymentIntentDao.selectById(initial.getIntentId());
+        if (originalIntent == null || !ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(originalIntent.getSourceType())
+                || paymentSourceDao.lockOrder(originalIntent.getSourceId()) == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
+        }
+        var order = paymentSourceDao.selectOrder(originalIntent.getSourceId());
+        var scope = dataScopeService.resolve();
+        if (!scope.getOrderSellerScope().allows(order.sellerId())
+                || !paymentSourceDao.customerVisible(originalIntent.getCustomerId(), scope.getCustomerSellerScope())) {
+            throw new ScmDataScopeException();
+        }
         if (claim.replay()) {
             return idempotencyService.replay(claim, PaymentRefundEntity.class);
         }
-
+        financeOrderFundingPolicy.requireCashRefundAllowed(originalIntent.getSourceId(), true);
+        if (!ScmPaymentMethodEnum.ONLINE.name().equals(originalIntent.getMethod())) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
+        }
         PaymentTransactionEntity transaction = paymentTransactionDao.lockById(form.getTransactionId());
         if (transaction == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_TRANSACTION_NOT_FOUND);
@@ -125,7 +147,7 @@ public class PaymentRefundService {
 
         BigDecimal refundable = refundableOf(transaction);
         if (amount.compareTo(refundable) > 0) {
-            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_AMOUNT_EXCEEDED);
+            throw new ScmBusinessException(FinanceErrorCode.REFUND_ALLOCATION_REQUIRED);
         }
 
         String operator = ScmOperator.current();
@@ -223,7 +245,10 @@ public class PaymentRefundService {
         // 充值支付（BALANCE_RECHARGE）若从这里退走渠道的钱，钱包里的 RECHARGE 并不会被撤销 ——
         // 结果是「公司退了 100、钱包还剩 100」，等于白送一笔余额。
         // 充值退款要单独设计（先查未消费余额 → DEBIT 钱包 → 再退渠道），不借这条链。
-        if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(intent.getSourceType())) {
+        if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(intent.getSourceType())
+                || !refund.orderId().equals(intent.getSourceId())
+                || !ScmPaymentMethodEnum.ONLINE.name().equals(intent.getMethod())
+                || !transaction.getProvider().equals(intent.getProvider())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
         if (amount.compareTo(refund.refundAmount().setScale(SCALE, RoundingMode.HALF_UP)) != 0) {

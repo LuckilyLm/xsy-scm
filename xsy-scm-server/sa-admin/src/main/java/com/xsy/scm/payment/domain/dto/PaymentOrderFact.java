@@ -1,5 +1,7 @@
 package com.xsy.scm.payment.domain.dto;
 
+
+
 /**
  * 支付域读取的**销售订单事实**（只读，来源 {@code sales_order}）。
  *
@@ -20,5 +22,5 @@ package com.xsy.scm.payment.domain.dto;
  *            订单业务员，用于订单数据范围判定
  */
 public record PaymentOrderFact(Long orderId, String orderNo, Long customerId, String customerNameSnapshot,
-        Long sellerId) {
+        Long sellerId, Long settlementCustomerId, String settlementCustomerNameSnapshot, String status) {
 }

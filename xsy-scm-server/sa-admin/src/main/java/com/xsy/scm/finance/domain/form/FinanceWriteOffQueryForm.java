@@ -26,5 +26,6 @@ public class FinanceWriteOffQueryForm extends FinanceDatePageForm {
     private String targetNo;
 
     private String entryType;
+    private String sourceType;
 
 }

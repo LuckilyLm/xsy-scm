@@ -46,7 +46,7 @@
       <div v-for="record in page.tableData.value" :key="record.receiptId" class="finance-mobile-balance-row">
         <div class="mobile-balance-heading"><strong>{{ record.receiptNo }}</strong><a-button type="link" @click="showDetail(record)">明细</a-button></div>
         <div class="mobile-balance-party">{{ record.customerName }} · {{ paymentMethodText(record.method) }} · {{ entryTypeText(record.entryType) }}</div>
-        <div class="mobile-balance-values"><span>待核销 <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span><span>有效 {{ moneyText(record.effectiveAmount) }}</span></div>
+        <div class="mobile-balance-values"><span>{{ record.walletFunding ? '已转钱包权益' : '待核销' }} <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span><span>有效 {{ moneyText(record.effectiveAmount) }}</span></div>
       </div>
     </div>
     <a-table id="scm-finance-receipt-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
@@ -54,12 +54,13 @@
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'"><a-tag :color="SCM_FINANCE_ENTRY_COLOR[text]">{{ entryTypeText(text) }}</a-tag></template>
         <template v-else-if="column.dataIndex==='method'">{{ paymentMethodText(text) }}</template>
+        <template v-else-if="column.dataIndex==='pendingWriteOffAmount' && record.walletFunding"><a-tag>已转钱包权益</a-tag></template>
         <template v-else-if="['amount','effectiveAmount','usedAmount','pendingWriteOffAmount'].includes(column.dataIndex)">{{ moneyText(text) }}</template>
         <template v-else-if="column.dataIndex==='receivedAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
           <a-button type="link" @click="showDetail(record)">明细</a-button>
           <a-button v-if="record.entryType==='NORMAL'" type="link" danger v-privilege="PERM.RECEIPT_REVERSE"
-                    :disabled="record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
+                    :disabled="record.walletFunding || record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
         </template>
       </template>
     </a-table>

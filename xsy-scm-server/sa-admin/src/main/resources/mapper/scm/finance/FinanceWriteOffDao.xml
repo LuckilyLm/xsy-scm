@@ -58,13 +58,37 @@
             WHERE deleted = FALSE AND entry_type = 'REVERSE' DO NOTHING
     </insert>
 
+    <insert id="insertBalanceOnConflictDoNothing"
+            parameterType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type, target_id,
+                                       amount, entry_type, reverse_of_id, reason, written_off_at,
+                                       operator, version, deleted, created_at, updated_at, created_by, updated_by)
+        VALUES (#{writeOffNo}, #{sourceType}, #{sourceId}, #{targetType}, #{targetId},
+                #{amount}, #{entryType}, #{reverseOfId}, #{reason}, #{writtenOffAt},
+                #{operator}, 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT (source_type, source_id)
+            WHERE entry_type = 'NORMAL' AND source_type = 'BALANCE_MOVEMENT' DO NOTHING
+    </insert>
+
+    <select id="selectNormalAllocation" resultType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity">
+        SELECT * FROM finance_write_off WHERE source_type = #{sourceType} AND source_id = #{sourceId}
+            AND entry_type = 'NORMAL' AND deleted = FALSE
+        <if test="targetId != null">AND target_type = 'RECEIVABLE' AND target_id = #{targetId}</if>
+        ORDER BY id LIMIT 1
+    </select>
+    <select id="hasReversal" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM finance_write_off WHERE reverse_of_id = #{writeOffId}
+            AND entry_type = 'REVERSE' AND deleted = FALSE)
+    </select>
+
     <sql id="writeOffProjectionFrom">
         SELECT wo.id AS writeOffId,
                wo.write_off_no AS writeOffNo,
                wo.source_type AS sourceType,
                wo.source_id AS sourceId,
-               COALESCE(r.receipt_no, p.payment_no) AS sourceNo,
-               COALESCE(r.customer_name_snapshot, p.counterparty_name_snapshot) AS sourceName,
+               COALESCE(r.receipt_no, p.payment_no, m.movement_no) AS sourceNo,
+               COALESCE(r.customer_name_snapshot, p.counterparty_name_snapshot, mc.name) AS sourceName,
                wo.target_type AS targetType,
                wo.target_id AS targetId,
                COALESCE(ar.receivable_no, ap.payable_no) AS targetNo,
@@ -80,6 +104,9 @@
             AND r.id = wo.source_id AND r.deleted = FALSE
         LEFT JOIN finance_payment p ON wo.source_type = 'PAYMENT'
             AND p.id = wo.source_id AND p.deleted = FALSE
+        LEFT JOIN customer_balance_movement m ON wo.source_type = 'BALANCE_MOVEMENT'
+            AND m.id = wo.source_id AND m.deleted = FALSE
+        LEFT JOIN customer mc ON mc.id = m.customer_id AND mc.deleted = FALSE
         LEFT JOIN finance_receivable ar ON wo.target_type = 'RECEIVABLE'
             AND ar.id = wo.target_id AND ar.deleted = FALSE
         LEFT JOIN sales_order so ON ar.order_id = so.id AND so.deleted = FALSE
@@ -127,8 +154,9 @@
         <where>
             wo.deleted = FALSE
             <include refid="targetScopePredicate"/>
+            <if test="query.sourceType != null and query.sourceType != ''">AND wo.source_type = #{query.sourceType}</if>
             <if test="query.sourceNo != null and query.sourceNo != ''">
-                AND COALESCE(r.receipt_no, p.payment_no) ILIKE CONCAT('%', #{query.sourceNo}, '%')
+                AND COALESCE(r.receipt_no, p.payment_no, m.movement_no) ILIKE CONCAT('%', #{query.sourceNo}, '%')
             </if>
             <if test="query.writeOffId != null">
                 AND wo.id = #{query.writeOffId}

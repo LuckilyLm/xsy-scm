@@ -15,6 +15,9 @@
           <a-button v-if="order.status==='CONFIRMED'" v-privilege="'scm:order:return:add'"
                     @click="returnForm?.open(order)">申请退货
           </a-button>
+          <a-button v-if="order.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'"
+                    @click="paymentDrawer?.open(order)">订单支付</a-button>
+          <a-button v-privilege="'scm:payment:transaction:query'" @click="paymentDrawer?.open(order)">支付记录</a-button>
         </a-space>
         <a-descriptions bordered size="small" :column="2">
           <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}（{{ order.customerCodeSnapshot }}）
@@ -92,6 +95,7 @@
         </a-timeline>
       </template>
     </a-spin>
+    <OrderPaymentDrawer ref="paymentDrawer"/>
     <ReturnForm ref="returnForm" @saved="load"/>
     <a-modal :open="actualOpen" title="录入实际数量" :confirm-loading="saving" @ok="saveActual"
              @cancel="actualOpen=false">
@@ -174,6 +178,8 @@ import {datetime} from '../common/scm-display';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {orderError} from './order-errors';
 import ReturnForm from './components/order-return-form-modal.vue';
+import OrderPaymentDrawer from './components/order-payment-drawer.vue';
+const paymentDrawer = ref<InstanceType<typeof OrderPaymentDrawer>>();
 
 const emit = defineEmits<{ saved: [] }>();
 const visible = ref(false), loading = ref(false), saving = ref(false), error = ref(''), order = ref<Order>(),

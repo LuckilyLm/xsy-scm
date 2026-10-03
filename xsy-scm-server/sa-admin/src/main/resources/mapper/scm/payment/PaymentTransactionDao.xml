@@ -4,7 +4,9 @@
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
         SELECT t.* FROM payment_transaction t
+        JOIN payment_intent i ON i.id = t.intent_id AND i.deleted = FALSE
         WHERE t.deleted = FALSE
+        <include refid="com.xsy.scm.payment.dao.PaymentIntentDao.visibleIntent"/>
         <if test="query.intentId != null">AND t.intent_id = #{query.intentId}</if>
         <if test="query.provider != null and query.provider != ''">AND t.provider = #{query.provider}</if>
         <if test="query.status != null and query.status != ''">AND t.status = #{query.status}</if>
@@ -51,6 +53,12 @@
         WHERE id = #{id}
           AND status = 'PENDING'
           AND deleted = FALSE
+    </update>
+
+    <update id="markBalanceSucceeded">
+        UPDATE payment_transaction SET status = 'SUCCEEDED', provider_amount = #{amount}, paid_at = #{paidAt},
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id} AND provider = 'INTERNAL_BALANCE' AND status = 'PENDING' AND deleted = FALSE
     </update>
 
     <update id="markFailed">

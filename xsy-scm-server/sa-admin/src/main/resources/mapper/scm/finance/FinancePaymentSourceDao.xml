@@ -12,12 +12,26 @@
     <select id="selectOrderRefund"
             resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
         SELECT r.id             AS refundId,
+               r.order_id       AS orderId,
                r.customer_id    AS customerId,
                CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed,
                r.refund_amount  AS refundAmount
         FROM order_refund r
         WHERE r.id = #{refundId}
           AND r.deleted = FALSE
+    </select>
+
+    <select id="lockOrderRefund"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceRefundFactDto">
+        SELECT r.id             AS refundId,
+               r.order_id       AS orderId,
+               r.customer_id    AS customerId,
+               CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed,
+               r.refund_amount  AS refundAmount
+        FROM order_refund r
+        WHERE r.id = #{refundId}
+          AND r.deleted = FALSE
+        FOR UPDATE
     </select>
 
     <!--

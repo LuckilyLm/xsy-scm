@@ -61,9 +61,10 @@
                r.amount,
                CASE WHEN r.entry_type = 'NORMAL' THEN r.amount - reversed.reversedAmount ELSE 0 END AS effectiveAmount,
                CASE WHEN r.entry_type = 'NORMAL' THEN used.usedAmount ELSE 0 END AS usedAmount,
-               CASE WHEN r.entry_type = 'NORMAL'
+               CASE WHEN r.entry_type = 'NORMAL' AND COALESCE(pi.source_type, '') != 'BALANCE_RECHARGE'
                     THEN GREATEST(r.amount - reversed.reversedAmount - used.usedAmount, 0)
                     ELSE 0 END AS pendingWriteOffAmount,
+               (pi.source_type = 'BALANCE_RECHARGE') AS walletFunding,
                r.method,
                r.entry_type AS entryType,
                r.reverse_of_id AS reverseOfId,
@@ -73,6 +74,8 @@
                r.external_reference AS externalReference,
                r.remark
         FROM finance_receipt r
+        LEFT JOIN payment_transaction pt ON r.source_type = 'PAYMENT_TRANSACTION' AND pt.id = r.source_id
+        LEFT JOIN payment_intent pi ON pi.id = pt.intent_id
         LEFT JOIN customer c ON c.id = r.customer_id AND c.deleted = FALSE
         LEFT JOIN finance_receipt original ON original.id = r.reverse_of_id AND original.deleted = FALSE
         LEFT JOIN LATERAL (
@@ -130,6 +133,7 @@
             <if test="query.entryType != null and query.entryType != ''">AND r.entry_type = #{query.entryType}</if>
             <if test="query.pendingOnly == true">
                 AND r.entry_type = 'NORMAL'
+                AND COALESCE(pi.source_type, '') != 'BALANCE_RECHARGE'
                 AND GREATEST(r.amount - reversed.reversedAmount - used.usedAmount, 0) &gt; 0
             </if>
         </where>

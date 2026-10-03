@@ -14,6 +14,8 @@ import com.xsy.scm.finance.permission.FinancePermission;
  */
 public final class FinanceConstant {
 
+    public static final String ORDER_FUNDING_OPERATOR = "SYSTEM:ORDER_FUNDING";
+
     /**
      * 应收单号前缀：AR + 业务日(Asia/Shanghai) + 全局非重置序号，拼接走 {@code ScmDocumentNumbers.format}。
      */

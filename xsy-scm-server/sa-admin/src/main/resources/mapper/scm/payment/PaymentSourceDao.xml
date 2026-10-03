@@ -11,10 +11,24 @@
                so.order_no              AS order_no,
                so.customer_id           AS customer_id,
                so.customer_name_snapshot AS customer_name_snapshot,
-               so.seller_id             AS seller_id
+               so.seller_id             AS seller_id,
+               so.settlement_customer_id, so.settlement_customer_name_snapshot, so.status
         FROM sales_order so
         WHERE so.id = #{orderId}
           AND so.deleted = FALSE
+    </select>
+
+    <select id="lockOrder" resultType="com.xsy.scm.payment.domain.dto.PaymentOrderFact">
+        SELECT so.id                    AS order_id,
+               so.order_no              AS order_no,
+               so.customer_id           AS customer_id,
+               so.customer_name_snapshot AS customer_name_snapshot,
+               so.seller_id             AS seller_id,
+               so.settlement_customer_id, so.settlement_customer_name_snapshot, so.status
+        FROM sales_order so
+        WHERE so.id = #{orderId}
+          AND so.deleted = FALSE
+        FOR UPDATE
     </select>
 
     <select id="lockOrderRefund" resultType="com.xsy.scm.payment.domain.dto.PaymentOrderRefundFact">
@@ -40,4 +54,24 @@
         LIMIT 1
     </select>
 
+    <select id="lockOrderRefunds" resultType="java.lang.Long">
+        SELECT id FROM order_refund WHERE order_id = #{orderId} AND deleted = FALSE ORDER BY id FOR UPDATE
+    </select>
+    <select id="hasOrderRefundFunding" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM order_refund r WHERE r.order_id = #{orderId} AND r.deleted = FALSE
+            AND (EXISTS (SELECT 1 FROM payment_refund p WHERE p.source_type = 'ORDER_REFUND'
+                AND p.source_id = r.id AND p.deleted = FALSE)
+            OR EXISTS (SELECT 1 FROM finance_payment p WHERE p.source_type = 'ORDER_REFUND'
+                AND p.source_id = r.id AND p.entry_type = 'NORMAL' AND p.deleted = FALSE)))
+    </select>
+    <select id="customerVisible" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM customer WHERE id = #{customerId} AND deleted = FALSE
+        <choose>
+            <when test="scope == null or scope.empty">AND FALSE</when>
+            <when test="scope.all"></when>
+            <otherwise>AND seller_id IN
+                <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </otherwise>
+        </choose>)
+    </select>
 </mapper>

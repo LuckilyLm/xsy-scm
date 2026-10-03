@@ -17,13 +17,14 @@
             <a-descriptions-item v-if="isAccount" label="已核销">{{ moneyText(header.writtenOffAmount) }}</a-descriptions-item>
             <a-descriptions-item v-else label="已核销">{{ moneyText(header.usedAmount) }}</a-descriptions-item>
             <a-descriptions-item v-if="isAccount" label="未核销">{{ moneyText(header.openAmount) }}</a-descriptions-item>
+            <a-descriptions-item v-else-if="walletFunding" label="资金用途">已转钱包权益，通过余额支付结算订单</a-descriptions-item>
             <a-descriptions-item v-else label="待核销">{{ moneyText(header.pendingWriteOffAmount) }}</a-descriptions-item>
             <a-descriptions-item label="业务时点">{{ dateTimeText(header.eventAt ?? header.receivedAt ?? header.paidAt) }}</a-descriptions-item>
             <a-descriptions-item label="原因">{{ header.reason || '—' }}</a-descriptions-item>
             <a-descriptions-item v-if="header.reverseOfNo" label="原单号">{{ header.reverseOfNo }}</a-descriptions-item>
           </a-descriptions>
           <a-alert v-if="header.overAppliedAmount && header.overAppliedAmount !== '0.0000'"
-                   class="over-applied" type="warning" show-icon message="超额核销待处理"/>
+                   class="over-applied" type="warning" show-icon :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"/>
           <a-alert v-if="header.netAmount?.startsWith('-')" class="over-applied" type="error" show-icon
                    message="净应收为负数，请结合红字和核销记录核对。"/>
         </section>
@@ -94,6 +95,7 @@ const emit = defineEmits<{(event: 'update:open', value: boolean): void}>();
 const detail = computed(() => props.detail ?? null);
 const isReceivable = computed(() => props.kind === 'RECEIVABLE');
 const isPayable = computed(() => props.kind === 'PAYABLE');
+const walletFunding = computed(() => !!(detail.value && 'receipt' in detail.value && detail.value.receipt.walletFunding));
 const isAccount = computed(() => isReceivable.value || isPayable.value);
 const title = computed(() => ({RECEIVABLE: '应收明细', PAYABLE: '应付明细', RECEIPT: '收款明细', PAYMENT: '付款明细'}[props.kind]));
 const header = computed(() => {

@@ -1,5 +1,7 @@
 package com.xsy.scm.finance.service;
 
+import com.xsy.scm.balance.constant.ScmBalanceDirectionEnum;
+import com.xsy.scm.balance.constant.ScmBalanceMovementTypeEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -18,6 +20,7 @@ import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffTargetTypeEnum;
 import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
+import com.xsy.scm.finance.dao.FinanceOrderFundingSourceDao;
 import com.xsy.scm.finance.dao.FinancePayableDao;
 import com.xsy.scm.finance.dao.FinancePaymentDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
@@ -51,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FinanceWriteOffService {
 
     private final FinanceWriteOffDao financeWriteOffDao;
+    private final FinanceOrderFundingSourceDao financeOrderFundingSourceDao;
     private final FinanceCounterpartySourceDao financeCounterpartySourceDao;
     private final FinanceReceiptDao financeReceiptDao;
     private final FinancePaymentDao financePaymentDao;
@@ -74,6 +78,10 @@ public class FinanceWriteOffService {
         List<Allocation> allocations = allocations(form.getItems());
         String scopeKey = FinanceConstant.WRITE_OFF_ADD_SCOPE + ":" + sourceType + ":" + form.getSourceId();
         SourceFact source = lockSource(sourceType, form.getSourceId());
+        if (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)
+                && financeOrderFundingSourceDao.isRechargeReceipt(source.id())) {
+            throw new ScmBusinessException(FinanceErrorCode.RECHARGE_RECEIPT_RESERVED);
+        }
         String targetType = targetType(sourceType);
         List<Long> targetIds = allocations.stream().map(Allocation::targetId).distinct().sorted().toList();
         Map<Long, TargetFact> targets = lockTargets(targetType, targetIds);
@@ -217,6 +225,20 @@ public class FinanceWriteOffService {
     }
 
     private SourceFact lockSource(String sourceType, Long sourceId) {
+        if (ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT.name().equals(sourceType)) {
+            var movement = financeOrderFundingSourceDao.lockMovement(sourceId);
+            if (movement == null
+                    || !ScmBalanceMovementTypeEnum.CONSUME.name().equals(movement.getType())
+                    || !ScmBalanceDirectionEnum.DEBIT.name().equals(movement.getDirection())) {
+                throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
+            }
+            var customer = financeCounterpartySourceDao.selectCustomer(movement.getCustomerId());
+            if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+                throw new ScmDataScopeException();
+            }
+            return new SourceFact(sourceType, sourceId, movement.getMovementNo(), customer.getCustomerName(),
+                    ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), movement.getSettlementCustomerId(), movement.getAmount());
+        }
         if (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)) {
             FinanceReceiptEntity receipt = financeReceiptDao.selectByIdForUpdate(sourceId);
             if (receipt == null || !ScmFinanceReverseEntryTypeEnum.NORMAL.name().equals(receipt.getEntryType())) {
@@ -297,7 +319,8 @@ public class FinanceWriteOffService {
     }
 
     private void requireMatchingCounterparty(SourceFact source, TargetFact target) {
-        boolean receiptToReceivable = ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(source.type())
+        boolean receiptToReceivable = (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(source.type())
+                || ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT.name().equals(source.type()))
                 && ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(target.type())
                 && source.counterpartyId().equals(target.counterpartyId());
         boolean supplierPaymentToPayable = ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name().equals(source.type())
@@ -334,7 +357,8 @@ public class FinanceWriteOffService {
 
     private static String sourceType(String raw) {
         String value = StringUtils.trimToNull(raw);
-        for (ScmFinanceWriteOffSourceTypeEnum candidate : ScmFinanceWriteOffSourceTypeEnum.values()) {
+        for (ScmFinanceWriteOffSourceTypeEnum candidate : List.of(ScmFinanceWriteOffSourceTypeEnum.RECEIPT,
+                ScmFinanceWriteOffSourceTypeEnum.PAYMENT)) {
             if (candidate.name().equals(value)) {
                 return candidate.name();
             }
@@ -343,9 +367,10 @@ public class FinanceWriteOffService {
     }
 
     private static String targetType(String sourceType) {
-        return ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)
-                ? ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name()
-                : ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name();
+        return switch (ScmFinanceWriteOffSourceTypeEnum.valueOf(sourceType)) {
+            case RECEIPT, BALANCE_MOVEMENT -> ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name();
+            case PAYMENT -> ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name();
+        };
     }
 
     private static Map<String, Object> balanceSnapshot(TargetFact target, TargetBalance balance) {

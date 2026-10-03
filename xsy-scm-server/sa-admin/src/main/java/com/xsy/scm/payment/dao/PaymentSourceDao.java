@@ -1,7 +1,9 @@
 package com.xsy.scm.payment.dao;
 
+import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.payment.domain.dto.PaymentOrderFact;
 import com.xsy.scm.payment.domain.dto.PaymentOrderRefundFact;
+import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -15,6 +17,11 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface PaymentSourceDao {
+    List<Long> lockOrderRefunds(@Param("orderId") Long orderId);
+    boolean hasOrderRefundFunding(@Param("orderId") Long orderId);
+    boolean customerVisible(@Param("customerId") Long customerId,
+            @Param("scope") ScmValueScope scope);
+
 
     /**
      * 销售订单事实（订单号 / 客户 / 业务员）。
@@ -23,6 +30,8 @@ public interface PaymentSourceDao {
      * 不加锁：订单的客户与单号在创建后不会变，意图只需要冻结它们的当前值。
      * 真正的并发争用点在退款路径（见 {@link #lockOrderRefund}）。
      */
+    PaymentOrderFact lockOrder(@Param("orderId") Long orderId);
+
     PaymentOrderFact selectOrder(@Param("orderId") Long orderId);
 
     /**

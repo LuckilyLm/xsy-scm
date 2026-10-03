@@ -17,6 +17,8 @@ public enum ScmBalanceSourceTypeEnum {
     /** 来源是支付域的交易事实：{@code source_id = payment_transaction.id}（3-12b 充值用）。 */
     PAYMENT_TRANSACTION("支付交易"),
 
+    PAYMENT_INTENT("订单余额支付"),
+
     /** 来源是售后退款单：{@code source_id = order_refund.id}（3-12c 余额返还用）。 */
     ORDER_REFUND("售后退款单");
 

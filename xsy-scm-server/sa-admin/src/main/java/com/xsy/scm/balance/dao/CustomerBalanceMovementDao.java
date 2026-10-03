@@ -14,6 +14,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface CustomerBalanceMovementDao extends BaseMapper<CustomerBalanceMovementEntity> {
 
+    int insertOnConflictDoNothing(CustomerBalanceMovementEntity movement);
+
     /**
      * 账户余额（有符号合计）。
      *

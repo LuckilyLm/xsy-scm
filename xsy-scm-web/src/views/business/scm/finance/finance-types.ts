@@ -83,6 +83,7 @@ export interface WriteOffQuery extends FinancePageQuery {
     sourceNo?: string;
     targetNo?: string;
     entryType?: FinanceEntryType;
+    sourceType?: 'RECEIPT' | 'PAYMENT' | 'BALANCE_MOVEMENT';
 }
 
 export interface FinanceReceivable {
@@ -134,6 +135,7 @@ export interface FinancePayable {
 }
 
 export interface FinanceReceipt {
+    walletFunding?: boolean;
     receiptId: FinanceId;
     receiptNo: string;
     customerId: FinanceId;
@@ -179,7 +181,7 @@ export interface FinancePayment {
 export interface FinanceWriteOff {
     writeOffId: FinanceId;
     writeOffNo: string;
-    sourceType: 'RECEIPT' | 'PAYMENT';
+    sourceType: 'RECEIPT' | 'PAYMENT' | 'BALANCE_MOVEMENT';
     sourceId: FinanceId;
     sourceNo: string;
     sourceName: string;

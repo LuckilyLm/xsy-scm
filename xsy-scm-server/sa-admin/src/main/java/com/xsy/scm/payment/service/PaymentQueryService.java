@@ -1,11 +1,16 @@
 package com.xsy.scm.payment.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
+import com.xsy.scm.payment.constant.ScmPaymentSourceTypeEnum;
 import com.xsy.scm.payment.dao.PaymentCallbackEventDao;
 import com.xsy.scm.payment.dao.PaymentIntentDao;
 import com.xsy.scm.payment.dao.PaymentReconciliationDao;
 import com.xsy.scm.payment.dao.PaymentRefundDao;
+import com.xsy.scm.payment.dao.PaymentSourceDao;
 import com.xsy.scm.payment.dao.PaymentTransactionDao;
 import com.xsy.scm.payment.domain.form.PaymentCallbackQueryForm;
 import com.xsy.scm.payment.domain.form.PaymentIntentQueryForm;
@@ -18,7 +23,6 @@ import com.xsy.scm.payment.domain.vo.PaymentReconciliationVO;
 import com.xsy.scm.payment.domain.vo.PaymentRefundVO;
 import com.xsy.scm.payment.domain.vo.PaymentTransactionVO;
 import com.xsy.scm.payment.support.PaymentVoAssembler;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -42,6 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentQueryService {
 
     private final PaymentIntentDao paymentIntentDao;
+    private final ScmDataScopeService dataScopeService;
+    private final PaymentSourceDao paymentSourceDao;
 
     private final PaymentTransactionDao paymentTransactionDao;
 
@@ -57,7 +63,7 @@ public class PaymentQueryService {
     public PageResult<PaymentIntentVO> intentPage(PaymentIntentQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
         return SmartPageUtil.convert2PageResult(page,
-                paymentIntentDao.queryPage(page, form).stream().map(PaymentVoAssembler::toIntent).toList());
+                paymentIntentDao.queryPage(page, form, dataScopeService.resolve()).stream().map(PaymentVoAssembler::toIntent).toList());
     }
 
     /**
@@ -73,9 +79,19 @@ public class PaymentQueryService {
         if (intent == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_NOT_FOUND);
         }
+        var scope = dataScopeService.resolve();
+        if (!paymentSourceDao.customerVisible(intent.getCustomerId(), scope.getCustomerSellerScope())) {
+            throw new ScmDataScopeException();
+        }
+        if (ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(intent.getSourceType())) {
+            var order = paymentSourceDao.selectOrder(intent.getSourceId());
+            if (order == null || !scope.getOrderSellerScope().allows(order.sellerId())) {
+                throw new ScmDataScopeException();
+            }
+        }
         PaymentIntentVO vo = PaymentVoAssembler.toIntent(intent);
         List<PaymentTransactionVO> transactions = paymentTransactionDao
-                .queryPage(new Page<>(1, 200), transactionQueryOf(id)).stream()
+                .queryPage(new Page<>(1, 200), transactionQueryOf(id), dataScopeService.resolve()).stream()
                 .map(PaymentVoAssembler::toTransaction).toList();
         vo.setTransactions(transactions);
         return vo;
@@ -85,7 +101,7 @@ public class PaymentQueryService {
     public PageResult<PaymentTransactionVO> transactionPage(PaymentTransactionQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
         return SmartPageUtil.convert2PageResult(page,
-                paymentTransactionDao.queryPage(page, form).stream().map(PaymentVoAssembler::toTransaction).toList());
+                paymentTransactionDao.queryPage(page, form, dataScopeService.resolve()).stream().map(PaymentVoAssembler::toTransaction).toList());
     }
 
     @Transactional(readOnly = true)

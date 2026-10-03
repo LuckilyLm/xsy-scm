@@ -7,11 +7,10 @@ import com.xsy.scm.common.time.ScmDateTimeRange;
 import com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffQueryForm;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-
 import java.math.BigDecimal;
 import java.util.List;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 核销行读写。
@@ -27,6 +26,10 @@ import java.util.List;
 public interface FinanceWriteOffDao extends BaseMapper<FinanceWriteOffEntity> {
 
     long nextWriteOffNo();
+    FinanceWriteOffEntity selectNormalAllocation(@Param("sourceType") String sourceType,
+            @Param("sourceId") Long sourceId, @Param("targetId") Long targetId);
+    boolean hasReversal(@Param("writeOffId") Long writeOffId);
+    int insertBalanceOnConflictDoNothing(FinanceWriteOffEntity entity);
 
     BigDecimal selectSourceUsedAmount(@Param("sourceType") String sourceType, @Param("sourceId") Long sourceId);
 

@@ -1,8 +1,8 @@
 package com.xsy.scm.finance.constant;
 
+import com.xsy.scm.common.error.ScmErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
  * 财务域错误码使用 41130–41149；已发布数值保持稳定。
@@ -80,7 +80,12 @@ public enum FinanceErrorCode implements ScmErrorCode {
     SYSTEM_RECEIPT_REVERSE_FORBIDDEN(41144, "系统来源的收款不能人工冲正，请走支付退款流程"),
 
     /** 支付交易缺少可信的渠道实收金额：不能凭空登记一笔金额不明的收款。 */
-    PAYMENT_RECEIPT_AMOUNT_MISSING(41145, "支付交易缺少渠道实收金额，无法登记收款");
+    PAYMENT_RECEIPT_AMOUNT_MISSING(41145, "支付交易缺少渠道实收金额，无法登记收款"),
+    ORDER_FUNDING_INVALID(41146, "订单资金来源不完整或身份金额不一致，请核对支付与资金流水"),
+    RECHARGE_RECEIPT_RESERVED(41147, "充值收款已形成钱包权益，请通过余额支付结算订单"),
+    REFUND_ALLOCATION_REQUIRED(41148, "该退款需要支付来源分摊，不能从单笔交易或人工付款直接退款"),
+    BALANCE_REFUND_NOT_ENABLED(41149, "纯余额订单的余额返还功能尚未开通"),
+    BALANCE_PAYMENT_AFTER_REFUND(41150, "订单已发起资金退款，暂不支持继续余额支付");
 
     private final int code;
     private final String msg;

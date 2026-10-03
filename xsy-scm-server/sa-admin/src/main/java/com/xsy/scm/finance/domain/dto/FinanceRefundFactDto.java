@@ -1,8 +1,7 @@
 package com.xsy.scm.finance.domain.dto;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
+import lombok.Data;
 
 /**
  * 退款付款所需的**订单退款事实**，由 {@code FinancePaymentSourceDao} 只读取得。
@@ -18,6 +17,7 @@ import java.math.BigDecimal;
 public class FinanceRefundFactDto {
 
     private Long refundId;
+    private Long orderId;
 
     /**
      * {@code order_refund.customer_id}，退款付款的收款对方，也是 CUSTOMER 侧范围判定的入口。

@@ -11,6 +11,7 @@ public class PaymentIntentQueryForm extends PageParam {
 
     /** 按业务单据（订单）收窄。 */
     private Long sourceId;
+    private String sourceType;
 
     private String provider;
 
