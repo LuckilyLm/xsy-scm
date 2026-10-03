@@ -109,15 +109,16 @@ class ScmInventoryConstantTest {
                     .as("source_document_type 不应放行 %s", rejected).isFalse();
         }
 
-        // 已落地 11 个流水类型（5 入 6 出；出库组多出的一个是 PROMOTION_GIFT_OUT）。
-        assertThat(ScmInventoryMovementTypeEnum.values()).hasSize(11);
-        // 来源类型：采购收货行 / 出库单行 / 销售订单行（预留）/ 盘点单行 / 报损报溢单行 /
-        // 调拨转出行 / 调拨转入行 / 转换转出行 / 转换转入行 / 促销赠品权益 ——
+        // 已落地 12 个流水类型（6 入 6 出；出库组多出的一个是 PROMOTION_GIFT_OUT，
+        // 入库组多出的是销售退货入库 SALES_RETURN_IN）。
+        assertThat(ScmInventoryMovementTypeEnum.values()).hasSize(12);
+        // 来源类型：采购收货行 / 出库单行 / 销售退货接收行 / 销售订单行（预留）/ 盘点单行 /
+        // 报损报溢单行 / 调拨转出行 / 调拨转入行 / 转换转出行 / 转换转入行 / 促销赠品权益 ——
         // 调拨与转换各占两个是**被迫的**：它们的同一条明细行会产生两条流水，
         // 共用一个来源类型会撞上 uk_inventory_movement_source_active。
         // DELIVERY_ROUTE 是唯一**不出现在流水里**的来源类型：它只标在出库单头上回答
         // 「这张单是哪条线路发车的」，流水仍按 SALES_OUTBOUND_ITEM 记账。
-        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(11);
+        assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(12);
     }
 
     @Test
@@ -143,12 +144,12 @@ class ScmInventoryConstantTest {
                 .isEqualTo(ScmInventoryMovementTypeEnum.SALES_OUT);
         assertThat(ScmInventoryMovementTypeEnum.of("NOT_A_TYPE")).isNull();
 
-        // 十一个类型必须**恰好**分成两个方向组、5 入 6 出：
+        // 十二个类型必须**恰好**分成两个方向组、6 入 6 出：
         // 这是 ck_inventory_movement_snap「按方向分组」写法的前提 ——
         // 漏分类的类型会插不进流水（响亮失败），但漏了也没人会发现，所以在这里钉住。
         long inbound = Arrays.stream(ScmInventoryMovementTypeEnum.values())
                 .filter(ScmInventoryMovementTypeEnum::isInbound).count();
-        assertThat(inbound).as("入库方向的类型数").isEqualTo(5L);
+        assertThat(inbound).as("入库方向的类型数").isEqualTo(6L);
         assertThat(ScmInventoryMovementTypeEnum.values().length - inbound).as("出库方向的类型数")
                 .isEqualTo(6L);
     }

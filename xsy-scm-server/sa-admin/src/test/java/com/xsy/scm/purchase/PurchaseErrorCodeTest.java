@@ -29,9 +29,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>锁定三件事：
  * <ol>
- *   <li>{@link PurchaseErrorCode} 恰好 **39** 个、{@link WarehouseErrorCode} 恰好 **8** 个，合计 **47**
- *       （W5 冻结 40 个，B1 加 1、出库波次加 1、调拨波次加 1，另有 W5 内的 39 与 2 的口径见下方断言）；</li>
- *   <li>W5+B1 的 47 个码**段内无重复**，且段分布为 400xx=12 · 404xx=6 · 409xx=22 · 410xx=7；</li>
+ *   <li>{@link PurchaseErrorCode} 恰好 **41** 个、{@link WarehouseErrorCode} 恰好 **8** 个，合计 **49**
+ *       （W5 冻结 40 个，B1 加 1、出库波次加 1、调拨波次加 1、净需求批次加 2）；</li>
+ *   <li>W5+B1 的 49 个码**段内无重复**，且段分布为 400xx=13 · 404xx=7 · 409xx=22 · 410xx=7；</li>
  *   <li>W5 的 47 个码与 **W1–W4 全部** SCM 错误码**零交集**，且两个枚举之间也零重复。</li>
  * </ol>
  *
@@ -75,10 +75,11 @@ class PurchaseErrorCodeTest {
             "SupplierErrorCode", "PricingErrorCode", "OrderErrorCode");
 
     @Test
-    @DisplayName("撞码门禁：W5+B1 合计 46 码、段内无重复、段分布正确、与 W1–W4 零交集")
+    @DisplayName("撞码门禁：W5+B1 合计 49 码、段内无重复、段分布正确、与 W1–W4 零交集")
     void gate() {
         // ---------- 1. 数量 ----------
-        assertThat(PurchaseErrorCode.values()).hasSize(39);
+        // 净需求计算批次加了 40092（批量上限）与 40486（批次不存在），采购域由 39 增至 41。
+        assertThat(PurchaseErrorCode.values()).hasSize(41);
         // 出库波次新增 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，仓库域由 6 增至 7；
         // 调拨波次新增 WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009)，再增至 8。
         assertThat(WarehouseErrorCode.values()).hasSize(8);
@@ -88,24 +89,24 @@ class PurchaseErrorCodeTest {
                 .forEach(c -> w5.put("PurchaseErrorCode." + c.name(), c.getCode()));
         Arrays.stream(WarehouseErrorCode.values())
                 .forEach(c -> w5.put("WarehouseErrorCode." + c.name(), c.getCode()));
-        assertThat(w5).as("W5+B1 错误码合计").hasSize(47);
+        assertThat(w5).as("W5+B1 错误码合计").hasSize(49);
 
         // ---------- 2. 段内无重复 ----------
         Set<Integer> w5Codes = new LinkedHashSet<>(w5.values());
-        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(47);
+        assertThat(w5Codes).as("W5+B1 段内存在重复码值").hasSize(49);
 
         // ---------- 3. 段分布 ----------
         Set<Integer> purchaseCodes = Arrays.stream(PurchaseErrorCode.values())
                 .map(PurchaseErrorCode::getCode).collect(Collectors.toSet());
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 400).count())
-                .as("PurchaseErrorCode 400xx 段").isEqualTo(12L);
+                .as("PurchaseErrorCode 400xx 段").isEqualTo(13L);
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 404).count())
-                .as("PurchaseErrorCode 404xx 段").isEqualTo(5L);
+                .as("PurchaseErrorCode 404xx 段").isEqualTo(6L);
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 409).count())
                 .as("PurchaseErrorCode 409xx 段").isEqualTo(21L);
         assertThat(purchaseCodes.stream().filter(c -> c / 100 == 410).count())
                 .as("PurchaseErrorCode 410xx 段").isEqualTo(1L);
-        assertThat(purchaseCodes).hasSize(39);
+        assertThat(purchaseCodes).hasSize(41);
 
         assertThat(WarehouseErrorCode.WAREHOUSE_NOT_FOUND.getCode()).isEqualTo(40485);
         assertThat(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE.getCode()).isEqualTo(40996);
@@ -118,9 +119,9 @@ class PurchaseErrorCodeTest {
         // 调拨波次：在途调拨单阻塞仓库停用（第四条停用阻塞条件）
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER.getCode()).isEqualTo(41009);
 
-        // 合并后的段分布：400xx=12 · 404xx=6（含 40485）· 409xx=22（含 40996）· 410xx=7
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(12L);
-        assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(6L);
+        // 合并后的段分布：400xx=13 · 404xx=7（含 40485）· 409xx=22（含 40996）· 410xx=7
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 400).count()).isEqualTo(13L);
+        assertThat(w5Codes.stream().filter(c -> c / 100 == 404).count()).isEqualTo(7L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(22L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(7L);
 

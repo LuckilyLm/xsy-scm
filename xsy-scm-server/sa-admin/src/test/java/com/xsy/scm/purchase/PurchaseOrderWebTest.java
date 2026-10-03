@@ -10,6 +10,7 @@ import com.xsy.scm.purchase.controller.PurchaseReceiptController;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.purchase.service.PurchaseDemandCalculationBatchService;
 import com.xsy.scm.purchase.service.PurchaseDemandService;
 import com.xsy.scm.purchase.service.PurchaseOrderService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
@@ -68,7 +69,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfiguration(classes = {PurchaseDemandController.class, PurchaseOrderController.class,
         PurchaseReceiptController.class, WarehouseController.class,
         ScmExceptionHandler.class, GlobalExceptionHandler.class})
-@DisplayName("W5 Web 层：27 端点 + 权限注解 + 定点数字符串序列化")
+@DisplayName("W5 Web 层：38 端点 + 权限注解 + 定点数字符串序列化")
 class PurchaseOrderWebTest {
 
     @Autowired
@@ -76,6 +77,9 @@ class PurchaseOrderWebTest {
 
     @MockitoBean
     private PurchaseDemandService demandService;
+
+    @MockitoBean
+    private PurchaseDemandCalculationBatchService demandBatchService;
 
     @MockitoBean
     private PurchaseOrderService orderService;
@@ -107,7 +111,7 @@ class PurchaseOrderWebTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("35 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
+    @DisplayName("38 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
     void allEndpointsHaveNativePermissions() {
         // 计数只是登记增量（34 → 35：P0-F 把改派归属拆成独立端点 /scm/purchase/reassign，
         // 权限码 scm:purchase:assign —— 归属同时是数据范围依据，混在 /update 里就无法单独授权）；
@@ -128,7 +132,7 @@ class PurchaseOrderWebTest {
                 count++;
             }
         }
-        assertThat(count).isEqualTo(35);
+        assertThat(count).isEqualTo(38);
     }
 
     // ------------------------------------------------------------------

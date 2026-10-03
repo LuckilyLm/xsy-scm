@@ -37,9 +37,13 @@ class OrderWebTest {
     @MockitoBean
     OrderReturnService returns;
     @MockitoBean
+    OrderReturnReceiptService returnReceipts;
+    @MockitoBean
     OrderRefundService refunds;
     @MockitoBean
     PriceResolver prices;
+    @MockitoBean
+    OrderCreditService credits;
     @MockitoBean
     SalesOrderImportService imports;
     @MockitoBean
@@ -56,7 +60,7 @@ class OrderWebTest {
                     assertThat(m.getAnnotation(SaCheckPermission.class)).as(m.getName()).isNotNull();
                     count++;
                 }
-        assertThat(count).isEqualTo(26);
+        assertThat(count).isEqualTo(29);
     }
 
     @Test
