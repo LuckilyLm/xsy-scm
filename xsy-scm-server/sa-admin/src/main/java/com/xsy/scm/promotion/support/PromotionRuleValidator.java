@@ -58,6 +58,12 @@ public final class PromotionRuleValidator {
                 normalized.put("giftSkuId", String.valueOf(requiredLong(rule.get("giftSkuId"))));
                 normalized.put("giftQuantity", positive(rule.get("giftQuantity")).toPlainString());
             }
+            case SPECIAL_PRICE -> {
+                requireOnly(rule, "skuId", "specialPrice");
+                normalized.put("skuId", String.valueOf(requiredLong(rule.get("skuId"))));
+                // 特价必须为正：0 元特价等于白送，属于赠品而不是特价，走满赠那条链
+                normalized.put("specialPrice", positive(rule.get("specialPrice")).toPlainString());
+            }
             default -> throw new ScmBusinessException(PromotionErrorCode.RULE_INVALID);
         }
         return normalized;

@@ -44,6 +44,16 @@ public class OrderDiscountVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal discountAmount;
 
+    /**
+     * 其中的限时特价让利额。
+     *
+     * <p>
+     * 与 {@link #discountAmount} 是「其中」的关系（表上有 CHECK 保证不大于合计）：
+     * 单独暴露才能回答「原基础价多少、特价让了多少、最后多少」。
+     */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal specialDiscountAmount;
+
     private List<Allocation> allocations = new ArrayList<>();
 
     /** 承接舍入差额的行；没有差额时为 {@code null}。 */

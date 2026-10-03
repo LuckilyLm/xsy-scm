@@ -157,6 +157,22 @@
             </a-form-item>
           </a-col>
         </template>
+        <template v-else-if="form.activityType === 'SPECIAL_PRICE'">
+          <a-col :span="12">
+            <a-form-item label="特价商品（SKU）" required>
+              <SkuSelect
+                  :value="form.rule.skuId ?? null"
+                  width="100%"
+                  @update:value="onSpecialSkuChange"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="特价单价" required>
+              <a-input v-model:value="form.rule.specialPrice" placeholder="例如 6.8000；只能低于该行单价"/>
+            </a-form-item>
+          </a-col>
+        </template>
         <template v-else>
           <a-col :span="12">
             <a-form-item label="门槛金额" required>
@@ -208,6 +224,8 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
+import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import type {ScmId} from '/@/types/business/scm/customer';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
 import {
   activityTypes,
@@ -263,9 +281,15 @@ const form = reactive<PromotionActivitySave>({
 function ruleText(rule?: PromotionRule): string {
   if (!rule) return '—';
   if (rule.discountRate) return `折扣率 ${rule.discountRate}`;
+  if (rule.specialPrice) return `SKU ${rule.skuId} 限时特价 ${rule.specialPrice}`;
   if (rule.reduceAmount) return `满 ${rule.thresholdAmount} 减 ${rule.reduceAmount}`;
   if (rule.giftSkuId) return `满 ${rule.thresholdAmount} 赠 SKU ${rule.giftSkuId} × ${rule.giftQuantity}`;
   return '—';
+}
+
+/** SKU 选择器给出的是 id（可能是数字）；规则里的键统一按字符串提交。 */
+function onSpecialSkuChange(value: ScmId | ScmId[] | undefined) {
+  form.rule.skuId = value === undefined || value === null ? undefined : String(value);
 }
 
 async function queryData() {

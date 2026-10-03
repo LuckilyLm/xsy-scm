@@ -26,9 +26,19 @@ public class PromotionDiscountVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal baseAmount;
 
-    /** 活动产生的优惠（不含券）。 */
+    /** 活动产生的优惠（不含券、不含限时特价）。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal activityDiscount;
+
+    /**
+     * 限时特价让利（不含满减/折扣与券）。
+     *
+     * <p>
+     * 与 {@link #activityDiscount} 分开：特价作用在**基础价之上、其余活动之前**，且让利按**行**归集
+     * （针对某个 SKU），不是按订单金额比例分摊的订单级优惠。分开才能回答「原基础价多少、特价让了多少」。
+     */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal specialDiscount;
 
     /** 券产生的优惠。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -37,6 +47,10 @@ public class PromotionDiscountVO {
     /** 合计优惠（已夹在 [0, 基础合计] 内）。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal discountAmount;
+
+    /** 客户实付 = 基础合计 − 合计优惠。 */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal finalAmount;
 
     private Long activityId;
 

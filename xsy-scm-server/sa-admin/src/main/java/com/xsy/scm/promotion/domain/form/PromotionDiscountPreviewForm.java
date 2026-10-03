@@ -45,6 +45,21 @@ public class PromotionDiscountPreviewForm {
         @Positive(message = "订单行 ID 必须大于0")
         private Long orderItemId;
 
+        /**
+         * 行上的 SKU；限时特价按 SKU 命中，因此必须有它。
+         */
+        @NotNull(message = "SKU 不能为空")
+        @Positive(message = "SKU ID 必须大于0")
+        private Long skuId;
+
+        /**
+         * 行数量（下单量）；限时特价的让利 = 基础金额 − 数量 × 特价。
+         */
+        @NotNull(message = "数量不能为空")
+        @DecimalMin(value = "0", inclusive = false, message = "数量必须大于0")
+        @Digits(integer = 14, fraction = 4, message = "数量最多14位整数和4位小数")
+        private BigDecimal quantity;
+
         @NotNull(message = "基础金额不能为空")
         @DecimalMin(value = "0", message = "基础金额不能为负")
         @Digits(integer = 14, fraction = 4, message = "基础金额最多14位整数和4位小数")

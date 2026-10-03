@@ -90,8 +90,9 @@ public class PromotionDiscountService {
      */
     @Transactional(readOnly = true)
     public PromotionDiscountVO preview(PromotionDiscountPreviewForm form) {
-        List<PromotionDiscountAllocator.Line> lines = form.getLines().stream()
-                .map(line -> new PromotionDiscountAllocator.Line(line.getOrderItemId(), amount(line.getBaseAmount())))
+        List<PromotionOrderFacts.Line> lines = form.getLines().stream()
+                .map(line -> new PromotionOrderFacts.Line(line.getOrderItemId(), line.getSkuId(),
+                        amount(line.getQuantity()), amount(line.getBaseAmount())))
                 .toList();
         return compute(form.getCustomerId(), form.getActivityId(), form.getCouponInstanceId(), lines, null);
     }
@@ -114,10 +115,7 @@ public class PromotionDiscountService {
         if (orderDiscountDao.selectByOrderId(facts.salesOrderId()) != null) {
             throw new ScmBusinessException(PromotionErrorCode.DISCOUNT_ALREADY_FROZEN);
         }
-        List<PromotionDiscountAllocator.Line> lines = facts.lines().stream()
-                .map(line -> new PromotionDiscountAllocator.Line(line.orderItemId(), line.baseAmount()))
-                .toList();
-        PromotionDiscountVO computed = compute(facts.customerId(), null, couponInstanceId, lines,
+        PromotionDiscountVO computed = compute(facts.customerId(), null, couponInstanceId, facts.lines(),
                 facts.salesOrderId());
         boolean hasDiscount = computed.getDiscountAmount() != null && computed.getDiscountAmount().signum() > 0;
         boolean hasGifts = computed.getGifts() != null && !computed.getGifts().isEmpty();
@@ -140,6 +138,7 @@ public class PromotionDiscountService {
             row.setCouponSnapshot(couponSnapshot(computed));
             row.setBaseAmount(computed.getBaseAmount());
             row.setDiscountAmount(computed.getDiscountAmount());
+            row.setSpecialDiscountAmount(computed.getSpecialDiscount());
             row.setAllocations(allocationsJson(computed));
             row.setRoundingTargetItemId(computed.getRoundingTargetItemId());
             row.setCreatedBy(operator);
@@ -293,6 +292,7 @@ public class PromotionDiscountService {
         vo.setCouponSnapshot(row.getCouponSnapshot());
         vo.setBaseAmount(row.getBaseAmount());
         vo.setDiscountAmount(row.getDiscountAmount());
+        vo.setSpecialDiscountAmount(row.getSpecialDiscountAmount());
         vo.setAllocations(parseAllocations(row.getAllocations()));
         vo.setRoundingTargetItemId(row.getRoundingTargetItemId());
         vo.setCreatedAt(row.getCreatedAt());
@@ -335,25 +335,43 @@ public class PromotionDiscountService {
     // ------------------------------------------------------------------
 
     private PromotionDiscountVO compute(Long customerId, Long activityId, Long couponInstanceId,
-            List<PromotionDiscountAllocator.Line> lines, Long salesOrderId) {
+            List<PromotionOrderFacts.Line> lines, Long salesOrderId) {
         OffsetDateTime now = OffsetDateTime.now();
 
         PromotionDiscountVO vo = new PromotionDiscountVO();
         vo.setCustomerId(customerId);
         vo.setSalesOrderId(salesOrderId);
 
-        // 1) 活动：先选出真正生效的那几条，再按优先级顺序逐条作用在**剩余金额**上
+        // 1) 活动：先选出真正生效的那几条，再按优先级顺序作用
         List<PromotionActivityEntity> candidates = activityId == null
                 ? promotionActivityDao.listActive(now)
                 : List.of(requireActiveActivity(activityId, now));
         List<PromotionActivityEntity> applied = selectApplied(candidates, vo);
 
-        BigDecimal baseTotal = lines.stream().map(PromotionDiscountAllocator.Line::baseAmount)
+        BigDecimal baseTotal = lines.stream().map(line -> amount(line.baseAmount()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
-        BigDecimal remaining = baseTotal;
-        BigDecimal activityDiscount = BigDecimal.ZERO.setScale(SCALE);
         List<PromotionDiscountVO.AppliedActivityVO> appliedActivities = new ArrayList<>();
         List<PromotionDiscountVO.GiftEntitlementVO> gifts = new ArrayList<>();
+
+        // 1a) 限时特价：作用在**基础价之上、其余活动之前**（基础价 → 限时特价 → 满减/折扣 → 券）。
+        //     让利按**行**归集而不是按金额比例分摊：特价针对某个 SKU，摊到别的行上会让退款反向错行。
+        Map<Long, BigDecimal> specialByItem = new LinkedHashMap<>();
+        for (PromotionActivityEntity activity : applied) {
+            if (!ScmPromotionActivityTypeEnum.SPECIAL_PRICE.name().equals(activity.getActivityType())) {
+                continue;
+            }
+            BigDecimal delta = specialPriceDelta(activity, lines, specialByItem);
+            if (delta.signum() > 0) {
+                appliedActivities.add(appliedActivity(activity, delta));
+                markPrimaryActivity(vo, activity);
+            }
+        }
+        BigDecimal specialDiscount = specialByItem.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(SCALE, RoundingMode.HALF_UP).min(baseTotal);
+        BigDecimal remaining = baseTotal.subtract(specialDiscount).max(BigDecimal.ZERO);
+
+        // 1b) 满减 / 折扣 / 满赠：逐条作用在**特价之后**的剩余金额上
+        BigDecimal activityDiscount = BigDecimal.ZERO.setScale(SCALE);
         for (PromotionActivityEntity activity : applied) {
             if (ScmPromotionActivityTypeEnum.FULL_GIFT.name().equals(activity.getActivityType())) {
                 // 满赠是**非金额权益**：它不让订单金额变小，所以既不参与下面的剩余金额递减，
@@ -365,6 +383,10 @@ public class PromotionDiscountService {
                 }
                 continue;
             }
+            if (ScmPromotionActivityTypeEnum.SPECIAL_PRICE.name().equals(activity.getActivityType())) {
+                // 特价已在 1a 处理：它不是「作用在剩余金额上」的订单级优惠
+                continue;
+            }
             BigDecimal delta = activityDiscountOf(activity, remaining);
             if (delta.signum() <= 0) {
                 continue;
@@ -372,50 +394,108 @@ public class PromotionDiscountService {
             activityDiscount = activityDiscount.add(delta);
             remaining = remaining.subtract(delta).max(BigDecimal.ZERO);
             appliedActivities.add(appliedActivity(activity, delta));
-            if (vo.getActivityId() == null) {
-                // 主活动只记「实际产生优惠的第一条」：多组叠加时，快速展示能说出主规则是哪一条；
-                // 叠加生效的其余活动完整落在 appliedActivities 里，冻结时一并入快照。
-                vo.setActivityId(activity.getId());
-                vo.setActivityCode(activity.getActivityCode());
-                vo.setActivityName(activity.getActivityName());
-                vo.setActivityVersion(activity.getVersion());
-                vo.setActivityRule(activity.getRule());
-            }
+            markPrimaryActivity(vo, activity);
         }
         vo.setAppliedActivities(appliedActivities);
         vo.setGifts(gifts);
 
         // 2) 券：按门槛在「活动后剩余金额」上判定
         BigDecimal couponDiscount = BigDecimal.ZERO.setScale(SCALE);
-        PromotionCouponEntity coupon = null;
-        PromotionCouponInstanceEntity instance = null;
         if (couponInstanceId != null) {
-            instance = requireUsableInstance(couponInstanceId, customerId);
-            coupon = requireActiveCoupon(instance.getCouponId(), now);
+            PromotionCouponInstanceEntity instance = requireUsableInstance(couponInstanceId, customerId);
+            PromotionCouponEntity coupon = requireActiveCoupon(instance.getCouponId(), now);
             couponDiscount = couponDiscountOf(coupon, remaining);
             vo.setCouponInstanceId(instance.getId());
             vo.setCouponCode(coupon.getCouponCode());
             vo.setCouponName(coupon.getCouponName());
         }
 
-        // 3) 合计分摊：活动与券合并成一个总优惠后按行比例分摊，避免两轮分摊各归集一次差额
-        BigDecimal total = activityDiscount.add(couponDiscount).min(baseTotal).setScale(SCALE, RoundingMode.HALF_UP);
-        PromotionDiscountAllocator.Result allocation = PromotionDiscountAllocator.allocate(lines, total);
+        // 3) 分摊：满减/折扣与券合成一个总额，在**特价之后**的行金额上按比例分摊（这样优惠跟着
+        //    客户实际要付的钱走）；特价让利再逐行加回。两段相加即逐行优惠，且每行不会超过行金额。
+        BigDecimal proportional = activityDiscount.add(couponDiscount).min(remaining)
+                .setScale(SCALE, RoundingMode.HALF_UP);
+        List<PromotionDiscountAllocator.Line> adjusted = lines.stream()
+                .map(line -> new PromotionDiscountAllocator.Line(line.orderItemId(), amount(line.baseAmount())
+                        .subtract(specialByItem.getOrDefault(line.orderItemId(), BigDecimal.ZERO.setScale(SCALE)))))
+                .toList();
+        PromotionDiscountAllocator.Result allocation = PromotionDiscountAllocator.allocate(adjusted, proportional);
+        Map<Long, BigDecimal> proportionalByItem = new LinkedHashMap<>();
+        for (PromotionDiscountAllocator.Allocation item : allocation.allocations()) {
+            proportionalByItem.put(item.orderItemId(), item.discountAmount());
+        }
 
+        BigDecimal total = specialDiscount.add(allocation.discountAmount()).min(baseTotal)
+                .setScale(SCALE, RoundingMode.HALF_UP);
         vo.setBaseAmount(baseTotal);
+        vo.setSpecialDiscount(specialDiscount);
         vo.setActivityDiscount(activityDiscount);
         vo.setCouponDiscount(couponDiscount);
-        vo.setDiscountAmount(allocation.discountAmount());
+        vo.setDiscountAmount(total);
+        vo.setFinalAmount(baseTotal.subtract(total).max(BigDecimal.ZERO));
         vo.setRoundingTargetItemId(allocation.roundingTargetItemId());
-        vo.setAllocations(allocation.allocations().stream().map(item -> {
+        // 逐行基础金额回填**原始**行金额（不是特价后的），否则「原价多少」在分摊里就丢了
+        vo.setAllocations(lines.stream().map(line -> {
             PromotionDiscountVO.PromotionDiscountAllocationVO allocationVo =
                     new PromotionDiscountVO.PromotionDiscountAllocationVO();
-            allocationVo.setOrderItemId(item.orderItemId());
-            allocationVo.setBaseAmount(item.baseAmount());
-            allocationVo.setDiscountAmount(item.discountAmount());
+            allocationVo.setOrderItemId(line.orderItemId());
+            allocationVo.setBaseAmount(amount(line.baseAmount()));
+            allocationVo.setDiscountAmount(specialByItem.getOrDefault(line.orderItemId(), BigDecimal.ZERO.setScale(SCALE))
+                    .add(proportionalByItem.getOrDefault(line.orderItemId(), BigDecimal.ZERO.setScale(SCALE)))
+                    .setScale(SCALE, RoundingMode.HALF_UP));
             return allocationVo;
         }).toList());
         return vo;
+    }
+
+    /**
+     * 主活动只记「实际产生优惠的第一条」：多组叠加时，快速展示能说出主规则是哪一条；
+     * 叠加生效的其余活动完整落在 {@code appliedActivities} 里，冻结时一并入快照。
+     */
+    private static void markPrimaryActivity(PromotionDiscountVO vo, PromotionActivityEntity activity) {
+        if (vo.getActivityId() != null) {
+            return;
+        }
+        vo.setActivityId(activity.getId());
+        vo.setActivityCode(activity.getActivityCode());
+        vo.setActivityName(activity.getActivityName());
+        vo.setActivityVersion(activity.getVersion());
+        vo.setActivityRule(activity.getRule());
+    }
+
+    /**
+     * 一条限时特价活动作用在匹配行上的让利，并把它记进 {@code specialByItem}。
+     *
+     * <p>
+     * 让利 = 行基础金额 − 数量 × 特价；**特价 ≥ 该行单价时让利为 0** —— 特价只能把价格往下压，
+     * 不能抬高（否则协议客户的价格会被活动抬上去）。
+     *
+     * <p>
+     * 同一行只让一次价：已被更靠前的一条特价命中过的行直接跳过。这样「按优先级顺序作用」
+     * 这条既有语义在特价上也成立，且每条活动记进快照的让利额之和恰好等于总让利。
+     */
+    private static BigDecimal specialPriceDelta(PromotionActivityEntity activity, List<PromotionOrderFacts.Line> lines,
+            Map<Long, BigDecimal> specialByItem) {
+        Map<String, Object> rule = activity.getRule();
+        Long skuId = rule == null ? null : longValue(rule.get("skuId"));
+        BigDecimal specialPrice = rule == null ? null : decimal(rule.get("specialPrice"));
+        if (skuId == null || specialPrice == null || specialPrice.signum() <= 0) {
+            return BigDecimal.ZERO.setScale(SCALE);
+        }
+        BigDecimal delta = BigDecimal.ZERO.setScale(SCALE);
+        for (PromotionOrderFacts.Line line : lines) {
+            if (!skuId.equals(line.skuId()) || specialByItem.containsKey(line.orderItemId())) {
+                continue;
+            }
+            BigDecimal base = amount(line.baseAmount());
+            BigDecimal discounted = amount(line.quantity()).multiply(specialPrice)
+                    .setScale(SCALE, RoundingMode.HALF_UP);
+            BigDecimal lineDelta = base.subtract(discounted).max(BigDecimal.ZERO).min(base);
+            if (lineDelta.signum() > 0) {
+                specialByItem.put(line.orderItemId(), lineDelta);
+                delta = delta.add(lineDelta);
+            }
+        }
+        return delta;
     }
 
     /**

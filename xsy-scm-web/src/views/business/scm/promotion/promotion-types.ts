@@ -11,7 +11,7 @@ export interface PromotionPage {
     pageSize: number;
 }
 
-export type PromotionActivityType = 'FULL_REDUCE' | 'DISCOUNT' | 'FULL_GIFT';
+export type PromotionActivityType = 'FULL_REDUCE' | 'DISCOUNT' | 'FULL_GIFT' | 'SPECIAL_PRICE';
 
 export type PromotionCouponDiscountType = 'AMOUNT' | 'RATE';
 
@@ -35,6 +35,9 @@ export interface PromotionRule {
     /** FULL_GIFT：赠品 SKU 与数量。 */
     giftSkuId?: string;
     giftQuantity?: string;
+    /** SPECIAL_PRICE：限时特价的 SKU 与特价单价。 */
+    skuId?: string;
+    specialPrice?: string;
 }
 
 export interface PromotionActivity {
@@ -126,6 +129,10 @@ export interface PromotionCouponInstance {
 
 export interface PromotionDiscountLine {
     orderItemId: Id;
+    /** 行上的 SKU；限时特价按 SKU 命中。 */
+    skuId: Id;
+    /** 行数量（下单量）；限时特价让利 = 基础金额 − 数量 × 特价。 */
+    quantity: string;
     baseAmount: string;
 }
 
@@ -140,9 +147,13 @@ export interface PromotionDiscount {
     salesOrderId?: Id | null;
     customerId: Id;
     baseAmount?: string | null;
+    /** 限时特价让利（作用于基础价之上、其余活动之前，按行归集）。 */
+    specialDiscount?: string | null;
     activityDiscount?: string | null;
     couponDiscount?: string | null;
     discountAmount?: string | null;
+    /** 客户实付 = 基础金额 − 合计优惠。 */
+    finalAmount?: string | null;
     activityId?: Id | null;
     activityCode?: string | null;
     activityName?: string | null;
@@ -169,6 +180,8 @@ export interface OrderDiscount {
     /** 优惠基数（下单金额口径）。 */
     baseAmount?: string | null;
     discountAmount?: string | null;
+    /** 其中的限时特价让利额（不得大于 discountAmount）。 */
+    specialDiscountAmount?: string | null;
     allocations?: OrderDiscountAllocation[];
     roundingTargetItemId?: Id | null;
     createdAt?: string | null;
@@ -225,6 +238,7 @@ export const activityTypes: Record<PromotionActivityType, { label: string; color
     FULL_REDUCE: {label: '满减', color: 'red'},
     DISCOUNT: {label: '折扣', color: 'orange'},
     FULL_GIFT: {label: '满赠', color: 'purple'},
+    SPECIAL_PRICE: {label: '限时特价', color: 'cyan'},
 };
 
 export const promotionStatuses: Record<PromotionStatus, { label: string; color: string }> = {

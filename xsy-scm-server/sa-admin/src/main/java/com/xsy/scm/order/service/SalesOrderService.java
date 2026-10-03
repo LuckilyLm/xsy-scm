@@ -439,8 +439,8 @@ public class SalesOrderService {
         // 「订单已确认、优惠却没冻结」的中间态。行基础金额取 ordered_line_amount
         // （下单量 × 锁定单价），该口径由负责人 2026-10-03 确认。
         promotionDiscountService.freeze(new PromotionOrderFacts(salesOrder.getId(), salesOrder.getCustomerId(),
-                rows.stream().map(row -> new PromotionOrderFacts.Line(row.getId(), row.getOrderedLineAmount()))
-                        .toList()),
+                rows.stream().map(row -> new PromotionOrderFacts.Line(row.getId(), row.getSkuId(),
+                        row.getOrderedQuantity(), row.getOrderedLineAmount())).toList()),
                 confirmation == null ? null : confirmation.getCouponInstanceId());
         notificationService.sendOnce("ORDER_CONFIRMED:" + salesOrder.getId(), "ORDER_CONFIRMED",
                 salesOrder.getSellerId(), salesOrder.getId(), "销售订单已确认",

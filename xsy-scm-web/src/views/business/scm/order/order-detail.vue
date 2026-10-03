@@ -33,6 +33,7 @@
         <!-- 优惠是独立事实：订单金额列仍是结算口径，这里回答「减了多少、按什么规则减的」 -->
         <a-descriptions v-if="order.discount" class="discount" bordered size="small" :column="2">
           <a-descriptions-item label="优惠合计">{{ amount(order.discount.discountAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="其中限时特价让利">{{ amount(order.discount.specialDiscountAmount) }}</a-descriptions-item>
           <a-descriptions-item label="优惠基数（下单金额口径）">{{ amount(order.discount.baseAmount) }}</a-descriptions-item>
           <a-descriptions-item label="券优惠">{{ amount(order.discount.couponSnapshot?.couponDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="用券">
@@ -136,9 +137,11 @@
         <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint"/>
         <a-descriptions v-if="discountPreview" :column="1" size="small" bordered>
           <a-descriptions-item label="行基础金额（下单量口径）">{{ amount(discountPreview.baseAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="限时特价让利">{{ amount(discountPreview.specialDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="活动优惠">{{ amount(discountPreview.activityDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="券优惠">{{ amount(discountPreview.couponDiscount) }}</a-descriptions-item>
           <a-descriptions-item label="合计优惠">{{ amount(discountPreview.discountAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="客户实付">{{ amount(discountPreview.finalAmount) }}</a-descriptions-item>
         </a-descriptions>
         <div v-if="!creditCheck.allowed" v-privilege="'scm:order:credit:override'">
           <a-checkbox v-model:checked="creditOverride">申请授信例外放行（将记录操作日志）</a-checkbox>
@@ -282,8 +285,15 @@ async function loadPreview() {
   previewError.value = '';
   const customerId = order.value?.customerId;
   const lines = (order.value?.items ?? [])
-      .filter((item) => item.itemId !== undefined && item.itemId !== null && item.orderedLineAmount)
-      .map((item) => ({orderItemId: item.itemId as Id, baseAmount: item.orderedLineAmount as string}));
+      .filter((item) => item.itemId !== undefined && item.itemId !== null && item.skuId !== undefined
+          && item.skuId !== null && item.orderedQuantity && item.orderedLineAmount)
+      .map((item) => ({
+        orderItemId: item.itemId as Id,
+        // SKU 与数量是限时特价的命中依据：特价让利 = 基础金额 − 数量 × 特价
+        skuId: item.skuId as Id,
+        quantity: item.orderedQuantity as string,
+        baseAmount: item.orderedLineAmount as string,
+      }));
   if (customerId === undefined || customerId === null || lines.length === 0) {
     return;
   }

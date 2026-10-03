@@ -14,7 +14,8 @@
 
     <select id="selectByOrderId" resultMap="discountMap">
         SELECT id, sales_order_id, activity_id, activity_version, activity_snapshot, coupon_instance_id,
-               coupon_snapshot, base_amount, discount_amount, allocations::text AS allocations,
+               coupon_snapshot, base_amount, discount_amount, special_discount_amount,
+               allocations::text AS allocations,
                rounding_target_item_id, created_at, created_by, version
         FROM order_discount
         WHERE sales_order_id = #{salesOrderId}
@@ -23,12 +24,13 @@
     <insert id="insertDiscount" useGeneratedKeys="true" keyProperty="row.id">
         INSERT INTO order_discount (sales_order_id, activity_id, activity_version, activity_snapshot,
                                     coupon_instance_id, coupon_snapshot, base_amount, discount_amount,
-                                    allocations, rounding_target_item_id, created_at, created_by, version)
+                                    special_discount_amount, allocations, rounding_target_item_id, created_at,
+                                    created_by, version)
         VALUES (#{row.salesOrderId}, #{row.activityId}, #{row.activityVersion},
                 #{row.activitySnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
                 #{row.couponInstanceId},
                 #{row.couponSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
-                #{row.baseAmount}, #{row.discountAmount},
+                #{row.baseAmount}, #{row.discountAmount}, #{row.specialDiscountAmount},
                 #{row.allocations}::jsonb, #{row.roundingTargetItemId}, CURRENT_TIMESTAMP, #{row.createdBy}, 0)
     </insert>
 

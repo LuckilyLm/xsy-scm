@@ -46,6 +46,15 @@ public class OrderDiscountEntity {
 
     private BigDecimal discountAmount;
 
+    /**
+     * 其中的限时特价让利额（正数）。
+     *
+     * <p>
+     * 它已经包含在 {@link #discountAmount} 与 {@code allocations} 里，单独落一列是为了能直接回答
+     * 「这个月限时特价让利多少」，不必回读快照 JSON。表上有 CHECK：不得大于合计优惠。
+     */
+    private BigDecimal specialDiscountAmount;
+
     /** 逐行分摊：{@code [{orderItemId, baseAmount, discountAmount}]}。 */
     private String allocations;
 
