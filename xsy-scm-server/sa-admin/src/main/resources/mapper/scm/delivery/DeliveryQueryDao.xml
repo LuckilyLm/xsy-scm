@@ -58,6 +58,14 @@
         WHERE id = #{id}
           AND deleted = FALSE FOR UPDATE
     </select>
+    <select id="lockScopedRoute" resultType="com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity">
+        SELECT r.* FROM delivery_route r WHERE r.id = #{id} AND r.deleted = FALSE
+        <choose>
+            <when test="scope == null or scope.empty">AND FALSE</when>
+            <otherwise><include refid="driverScopeGuard"/></otherwise>
+        </choose>
+        FOR UPDATE
+    </select>
     <select id="stops" resultType="com.xsy.scm.delivery.domain.vo.DeliveryStopVO">
         SELECT s.*, count(o.id) AS order_count, sum(o.order_amount_snapshot) AS total_amount
         FROM delivery_route_stop s

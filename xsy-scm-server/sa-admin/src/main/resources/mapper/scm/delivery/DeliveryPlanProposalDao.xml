@@ -32,6 +32,9 @@
         WHERE id = #{id}
             FOR UPDATE
     </select>
+    <select id="findById" resultMap="proposalMap">
+        SELECT <include refid="columns"/> FROM delivery_plan_proposal WHERE id = #{id}
+    </select>
 
     <select id="listByRoute" resultMap="proposalMap">
         SELECT

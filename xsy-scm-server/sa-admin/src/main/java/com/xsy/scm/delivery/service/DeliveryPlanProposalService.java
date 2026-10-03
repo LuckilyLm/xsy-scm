@@ -3,7 +3,11 @@ package com.xsy.scm.delivery.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.delivery.support.DeliveryPlanSnapshotPolicy;
 import com.xsy.scm.delivery.constant.DeliveryErrorCode;
+import com.xsy.scm.delivery.constant.ScmDeliveryPlanStatusEnum;
 import com.xsy.scm.delivery.constant.ScmDeliveryRouteStatusEnum;
 import com.xsy.scm.delivery.dao.DeliveryPlanProposalDao;
 import com.xsy.scm.delivery.dao.DeliveryQueryDao;
@@ -15,7 +19,6 @@ import com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteStopEntity;
 import com.xsy.scm.delivery.domain.form.DeliveryPlanApplyForm;
 import com.xsy.scm.delivery.domain.form.DeliveryPlanDiscardForm;
-import com.xsy.scm.delivery.domain.vo.DeliveryPlanLegVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryPlanProposalVO;
 import com.xsy.scm.delivery.support.DeliveryDistanceMatrixProvider;
 import com.xsy.scm.delivery.support.GeoPoint;
@@ -71,15 +74,16 @@ public class DeliveryPlanProposalService {
 
     private final DeliveryDistanceMatrixProvider distanceMatrixProvider;
 
+    private final ScmDataScopeService dataScopeService;
+
+    private final DeliveryRouteQueryService deliveryRouteQueryService;
+
     /**
      * 生成建议（只读业务数据 + 追加一条建议记录）。
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPlanProposalVO propose(Long routeId) {
-        DeliveryRouteEntity route = deliveryQueryDao.lockRoute(routeId);
-        if (route == null) {
-            throw new ScmBusinessException(DeliveryErrorCode.NOT_FOUND);
-        }
+        DeliveryRouteEntity route = lockVisibleRoute(routeId);
         requireDraft(route);
         List<DeliveryRouteStopEntity> stops = stops(routeId);
         requireLocations(route, stops);
@@ -94,7 +98,6 @@ public class DeliveryPlanProposalService {
         NearestNeighbourPlanner.Plan plan = NearestNeighbourPlanner.plan(matrix);
 
         List<Map<String, Object>> legs = new ArrayList<>();
-        List<DeliveryPlanLegVO> legVos = new ArrayList<>();
         for (int position = 1; position < plan.order().size(); position++) {
             // order 的元素是 points 的下标：0 是起点，k 对应 stops.get(k - 1)
             DeliveryRouteStopEntity stop = stops.get(plan.order().get(position) - 1);
@@ -105,16 +108,6 @@ public class DeliveryPlanProposalService {
             leg.put("cumulativeDistance", plain(plan.cumulativeDistances().get(position)));
             legs.add(leg);
 
-            DeliveryPlanLegVO legVo = new DeliveryPlanLegVO();
-            legVo.setSeq(position);
-            legVo.setStopId(stop.getId());
-            legVo.setCustomerNameSnapshot(stop.getCustomerNameSnapshot());
-            legVo.setAddressSnapshot(stop.getAddressSnapshot());
-            legVo.setLegDistance(plan.legDistances().get(position));
-            legVo.setCumulativeDistance(plan.cumulativeDistances().get(position));
-            legVo.setLongitude(stop.getLongitude());
-            legVo.setLatitude(stop.getLatitude());
-            legVos.add(legVo);
         }
 
         String operator = ScmOperator.current();
@@ -123,14 +116,14 @@ public class DeliveryPlanProposalService {
 
         DeliveryPlanProposalEntity row = new DeliveryPlanProposalEntity();
         row.setRouteId(routeId);
-        row.setStatus("PROPOSED");
+        row.setStatus(ScmDeliveryPlanStatusEnum.PROPOSED.name());
         row.setProviderCode(distanceMatrixProvider.providerCode());
         row.setProviderVersion(distanceMatrixProvider.providerVersion());
         row.setEstimatedFlag(distanceMatrixProvider.estimated());
         row.setRuleCode(NearestNeighbourPlanner.RULE_CODE);
         row.setStopCount(stops.size());
         row.setTotalDistance(plan.totalDistance());
-        row.setInputSnapshot(inputSnapshot(route, stops));
+        row.setInputSnapshot(DeliveryPlanSnapshotPolicy.capture(route, stops));
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("ruleCode", NearestNeighbourPlanner.RULE_CODE);
         result.put("legs", legs);
@@ -140,9 +133,7 @@ public class DeliveryPlanProposalService {
         row.setCreatedBy(operator);
         deliveryPlanProposalDao.insertProposal(row);
 
-        DeliveryPlanProposalVO vo = toVO(row);
-        vo.setLegs(legVos);
-        return vo;
+        return toVO(row);
     }
 
     /**
@@ -154,16 +145,13 @@ public class DeliveryPlanProposalService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void apply(Long proposalId, DeliveryPlanApplyForm form) {
+        DeliveryPlanProposalEntity initial = requireProposal(proposalId);
+        // 与生成建议一致：先锁线路，再锁建议，避免相反锁序造成死锁。
+        DeliveryRouteEntity route = lockVisibleRoute(initial.getRouteId());
         DeliveryPlanProposalEntity proposal = deliveryPlanProposalDao.lockById(proposalId);
-        if (proposal == null) {
-            throw new ScmBusinessException(DeliveryErrorCode.PLAN_PROPOSAL_NOT_FOUND);
-        }
-        if (!"PROPOSED".equals(proposal.getStatus())) {
+        if (proposal == null || !Objects.equals(proposal.getRouteId(), route.getId())
+                || !ScmDeliveryPlanStatusEnum.PROPOSED.name().equals(proposal.getStatus())) {
             throw new ScmBusinessException(DeliveryErrorCode.PLAN_PROPOSAL_STATE_INVALID);
-        }
-        DeliveryRouteEntity route = deliveryQueryDao.lockRoute(proposal.getRouteId());
-        if (route == null) {
-            throw new ScmBusinessException(DeliveryErrorCode.NOT_FOUND);
         }
         if (!Objects.equals(route.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
@@ -173,6 +161,7 @@ public class DeliveryPlanProposalService {
 
         List<Long> orderedStopIds = orderedStopIds(proposal);
         List<DeliveryRouteStopEntity> existing = stops(route.getId());
+        DeliveryPlanSnapshotPolicy.requireCurrent(proposal, route, existing);
         Set<Long> existingIds = existing.stream().map(DeliveryRouteStopEntity::getId).collect(Collectors.toSet());
         if (orderedStopIds.size() != existing.size() || !new HashSet<>(orderedStopIds).equals(existingIds)) {
             // 建议生成后停靠点被增删过：直接按旧顺序写回会漏掉新点或指向已删点
@@ -188,7 +177,9 @@ public class DeliveryPlanProposalService {
             DeliveryRouteStopEntity stop = byId.get(stopId);
             stop.setStopSeq(++seq);
             stamp(stop);
-            deliveryRouteStopDao.updateById(stop);
+            if (deliveryRouteStopDao.updateById(stop) != 1) {
+                throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
+            }
         }
         // 线路版本必须推进：否则客户端拿着旧版本号还能再排一次，两次顺序会互相覆盖
         stamp(route);
@@ -205,8 +196,10 @@ public class DeliveryPlanProposalService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void discard(Long proposalId, DeliveryPlanDiscardForm form) {
+        DeliveryPlanProposalEntity initial = requireProposal(proposalId);
+        DeliveryRouteEntity route = lockVisibleRoute(initial.getRouteId());
         DeliveryPlanProposalEntity proposal = deliveryPlanProposalDao.lockById(proposalId);
-        if (proposal == null) {
+        if (proposal == null || !Objects.equals(proposal.getRouteId(), route.getId())) {
             throw new ScmBusinessException(DeliveryErrorCode.PLAN_PROPOSAL_NOT_FOUND);
         }
         if (!Objects.equals(proposal.getVersion(), form.getVersion())) {
@@ -220,8 +213,9 @@ public class DeliveryPlanProposalService {
     /**
      * 某线路的建议历史（最新在前），供比较多次生成的结果。
      */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public List<DeliveryPlanProposalVO> history(Long routeId) {
+        deliveryRouteQueryService.requireVisible(routeId);
         return deliveryPlanProposalDao.listByRoute(routeId, HISTORY_LIMIT).stream()
                 .map(DeliveryPlanProposalService::toVO).toList();
     }
@@ -229,6 +223,23 @@ public class DeliveryPlanProposalService {
     // ------------------------------------------------------------------
     // 内部
     // ------------------------------------------------------------------
+
+    private DeliveryRouteEntity lockVisibleRoute(Long routeId) {
+        var scope = dataScopeService.resolve().getDriverScope();
+        DeliveryRouteEntity route = deliveryQueryDao.lockScopedRoute(routeId, scope);
+        if (route == null) {
+            throw new ScmDataScopeException();
+        }
+        return route;
+    }
+
+    private DeliveryPlanProposalEntity requireProposal(Long id) {
+        DeliveryPlanProposalEntity proposal = deliveryPlanProposalDao.findById(id);
+        if (proposal == null) {
+            throw new ScmBusinessException(DeliveryErrorCode.PLAN_PROPOSAL_NOT_FOUND);
+        }
+        return proposal;
+    }
 
     private List<DeliveryRouteStopEntity> stops(Long routeId) {
         return deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
@@ -257,41 +268,6 @@ public class DeliveryPlanProposalService {
                 throw new ScmBusinessException(DeliveryErrorCode.LOCATION_REQUIRED);
             }
         }
-    }
-
-    /**
-     * 输入快照：冻结「按什么算的」。
-     *
-     * <p>
-     * {@code constraints} 同时列出**生效**与**未生效**的约束：只写生效项会让人以为
-     * 建议已经把时间窗、载重都考虑进去了，而当前规则一个都没考虑。
-     */
-    private static Map<String, Object> inputSnapshot(DeliveryRouteEntity route, List<DeliveryRouteStopEntity> stops) {
-        Map<String, Object> snapshot = new LinkedHashMap<>();
-        Map<String, Object> start = new LinkedHashMap<>();
-        start.put("longitude", plain(route.getStartLongitude()));
-        start.put("latitude", plain(route.getStartLatitude()));
-        start.put("geomCrs", route.getStartGeomCrs());
-        snapshot.put("start", start);
-
-        List<Map<String, Object>> stopRows = new ArrayList<>();
-        for (DeliveryRouteStopEntity stop : stops) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("stopId", stop.getId());
-            item.put("stopSeq", stop.getStopSeq());
-            item.put("customerNameSnapshot", stop.getCustomerNameSnapshot());
-            item.put("addressSnapshot", stop.getAddressSnapshot());
-            item.put("longitude", plain(stop.getLongitude()));
-            item.put("latitude", plain(stop.getLatitude()));
-            stopRows.add(item);
-        }
-        snapshot.put("stops", stopRows);
-
-        Map<String, Object> constraints = new LinkedHashMap<>();
-        constraints.put("applied", List.of("SAME_CRS", "START_FIXED"));
-        constraints.put("notApplied", List.of("TIME_WINDOW", "VEHICLE_CAPACITY", "TRAFFIC"));
-        snapshot.put("constraints", constraints);
-        return snapshot;
     }
 
     @SuppressWarnings("unchecked")
@@ -328,6 +304,7 @@ public class DeliveryPlanProposalService {
         vo.setDiscardedAt(row.getDiscardedAt());
         vo.setDiscardedBy(row.getDiscardedBy());
         vo.setVersion(row.getVersion());
+        vo.setLegs(DeliveryPlanSnapshotPolicy.legs(row));
         return vo;
     }
 

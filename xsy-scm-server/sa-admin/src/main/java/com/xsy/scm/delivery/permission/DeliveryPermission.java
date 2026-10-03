@@ -44,11 +44,7 @@ public final class DeliveryPermission {
 
     public static final String PLAN_APPLY = "scm:delivery:plan:apply";
 
-    /** 轨迹查询（调度）。 */
-    public static final String GPS_QUERY = "scm:delivery:gps:query";
 
-    /** 轨迹上报（司机端 / 设备）。范围由服务端按司机维度判定，不由前端传参决定。 */
-    public static final String GPS_REPORT = "scm:delivery:gps:report";
 
     public static final String SCOPE_ALL_QUERY = ScmCrossDomainPermission.DELIVERY_SCOPE_ALL_QUERY;
 

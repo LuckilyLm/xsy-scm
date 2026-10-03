@@ -325,31 +325,3 @@ export const planRuleLabels: Record<string, string> = {
     NEAREST_NEIGHBOUR_FROM_START: '从起点出发，每步去最近的未访问停靠点（启发式，不保证最短路径）',
 };
 
-// ------------------------------------------------------------------
-// GPS 轨迹（ADM-10）
-// ------------------------------------------------------------------
-
-/**
- * 轨迹点。
- *
- * `capturedAt` 是设备采集时间（回放按它排序），`receivedAt` 是服务端接收时间 ——
- * 设备可能离线补传，两者不是一回事。
- */
-export interface DeliveryGpsEvent {
-    id: Id;
-    eventKey: string;
-    routeId: Id;
-    driverId?: Id | null;
-    deviceCode?: string | null;
-    capturedAt: string;
-    receivedAt: string;
-    longitude?: string | null;
-    latitude?: string | null;
-    geomCrs?: string | null;
-    accuracyMeters?: string | null;
-    speedKph?: string | null;
-    reportedBy?: string;
-    /** 重复上报（服务端已有同键记录）时置位；不是错误。 */
-    duplicated?: boolean;
-}
-

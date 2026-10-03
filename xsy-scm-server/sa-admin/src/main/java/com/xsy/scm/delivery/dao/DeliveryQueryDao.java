@@ -26,6 +26,8 @@ public interface DeliveryQueryDao {
 
     DeliveryRouteEntity lockRoute(@Param("id") Long id);
 
+    DeliveryRouteEntity lockScopedRoute(@Param("id") Long id, @Param("scope") ScmValueScope scope);
+
     List<DeliveryStopVO> stops(@Param("id") Long id);
 
     List<DeliveryCandidateVO> candidates(Page<?> page, @Param("q") DeliveryQueryForm q,

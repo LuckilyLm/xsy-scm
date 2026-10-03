@@ -50,8 +50,8 @@ public enum DeliveryErrorCode implements ScmErrorCode {
     /** 只有待确认的建议可以应用或放弃；已处理的建议不能二次处理。 */
     PLAN_PROPOSAL_STATE_INVALID(41161, "排线建议当前状态不允许此操作"),
 
-    /** 设备时钟不可信，但不接受明显超前的采集时间（库里 CHECK 同口径兜底）。 */
-    GPS_CAPTURED_AT_INVALID(41162, "采集时间不能晚于当前时间");
+    /** 生成建议之后线路或停靠点已改变，或旧快照缺少版本依据。 */
+    PLAN_PROPOSAL_STALE(41163, "线路或停靠点已变化，请重新生成排线建议");
     private final int code;
     private final String msg;
 }

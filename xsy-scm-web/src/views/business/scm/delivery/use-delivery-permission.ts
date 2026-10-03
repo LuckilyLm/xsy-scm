@@ -39,8 +39,6 @@ export const DELIVERY_PERM = {
     PLAN_PROPOSE: 'scm:delivery:plan:propose',
     PLAN_APPLY: 'scm:delivery:plan:apply',
     /** ADM-10 轨迹：查询（调度）与上报（司机 / 设备）分权。 */
-    GPS_QUERY: 'scm:delivery:gps:query',
-    GPS_REPORT: 'scm:delivery:gps:report',
     /** 显式放宽到全部司机范围；缺它的人只看得见排给自己的线路。 */
     SCOPE_ALL_QUERY: 'scm:delivery:scope:all:query',
     AMOUNT_QUERY: DELIVERY_AMOUNT_PERM,

@@ -1,6 +1,7 @@
 package com.xsy.scm.delivery.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -41,7 +42,7 @@ public class DeliveryPlanController {
      * 生成建议（会作废该线路原有的待确认建议）。
      */
     @PostMapping("/route/{routeId}/propose")
-    @SaCheckPermission(DeliveryPermission.PLAN_PROPOSE)
+    @SaCheckPermission(value = {DeliveryPermission.PLAN_PROPOSE, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<DeliveryPlanProposalVO> propose(@PathVariable("routeId") Long routeId) {
         return ResponseDTO.ok(deliveryPlanProposalService.propose(routeId));
@@ -51,7 +52,7 @@ public class DeliveryPlanController {
      * 建议历史（最新在前），供比较多次生成的结果。
      */
     @GetMapping("/route/{routeId}/history")
-    @SaCheckPermission(DeliveryPermission.PLAN_QUERY)
+    @SaCheckPermission(value = {DeliveryPermission.PLAN_QUERY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<DeliveryPlanProposalVO>> history(@PathVariable("routeId") Long routeId) {
         return ResponseDTO.ok(deliveryPlanProposalService.history(routeId));
     }
@@ -60,7 +61,7 @@ public class DeliveryPlanController {
      * 应用建议：按建议顺序重排停靠点。{@code version} 是**线路**版本。
      */
     @PostMapping("/proposal/{proposalId}/apply")
-    @SaCheckPermission(DeliveryPermission.PLAN_APPLY)
+    @SaCheckPermission(value = {DeliveryPermission.PLAN_APPLY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<String> apply(@PathVariable("proposalId") Long proposalId,
             @Valid @RequestBody DeliveryPlanApplyForm form) {
@@ -72,7 +73,7 @@ public class DeliveryPlanController {
      * 放弃建议：不改线路。
      */
     @PostMapping("/proposal/{proposalId}/discard")
-    @SaCheckPermission(DeliveryPermission.PLAN_APPLY)
+    @SaCheckPermission(value = {DeliveryPermission.PLAN_APPLY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<String> discard(@PathVariable("proposalId") Long proposalId,
             @Valid @RequestBody DeliveryPlanDiscardForm form) {

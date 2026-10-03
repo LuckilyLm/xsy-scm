@@ -16,6 +16,8 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface DeliveryPlanProposalDao extends BaseMapper<DeliveryPlanProposalEntity> {
 
+    DeliveryPlanProposalEntity findById(@Param("id") Long id);
+
     /**
      * 取该线路当前待确认的建议并加行锁；没有则返回 {@code null}。
      */
