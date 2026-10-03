@@ -78,7 +78,7 @@ class PurchaseErrorCodeTest {
     @DisplayName("撞码门禁：W5+B1 合计 49 码、段内无重复、段分布正确、与 W1–W4 零交集")
     void gate() {
         // ---------- 1. 数量 ----------
-        // 净需求计算批次加了 40092（批量上限）与 40486（批次不存在），采购域由 39 增至 41。
+        // 净需求计算批次加了 40092（批量上限）与 40487（批次不存在），采购域由 39 增至 41。
         assertThat(PurchaseErrorCode.values()).hasSize(41);
         // 出库波次新增 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，仓库域由 6 增至 7；
         // 调拨波次新增 WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009)，再增至 8。

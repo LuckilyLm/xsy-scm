@@ -43,13 +43,15 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_DEMAND_VERSION_REQUIRED(40091, "采购需求分配必须携带需求版本"),
     PURCHASE_DEMAND_BATCH_TOO_LARGE(40092, "净需求计算来源超过单批上限，请缩短时间段或增加筛选条件"),
 
-    // ---- 40480–40484 NOT_FOUND ----
+    // ---- 40480–40487 NOT_FOUND ----
+    // 40485 属仓库域、40486 属库存域（InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND，
+    // 已被 ScmInventoryConstantTest 冻结），采购批次因此取 40487，不与两者共用一个码值。
     PURCHASE_DEMAND_NOT_FOUND(40480, "采购需求不存在"),
     PURCHASE_ORDER_NOT_FOUND(40481, "采购单不存在"),
     PURCHASE_ORDER_ITEM_NOT_FOUND(40482, "采购明细不存在"),
     PURCHASE_RECEIPT_NOT_FOUND(40483, "收货单不存在"),
     PURCHASE_RECEIPT_ITEM_NOT_FOUND(40484, "收货明细不存在"),
-    PURCHASE_DEMAND_BATCH_NOT_FOUND(40486, "净需求计算批次不存在"),
+    PURCHASE_DEMAND_BATCH_NOT_FOUND(40487, "净需求计算批次不存在"),
 
     // ---- 40971–40999 CONFLICT ----
     PURCHASE_UNIT_CONVERSION_REQUIRED(40971, "需求单位与采购单位不一致，无法自动换算"),
