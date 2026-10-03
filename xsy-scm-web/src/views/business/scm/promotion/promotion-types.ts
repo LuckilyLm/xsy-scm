@@ -206,6 +206,21 @@ export interface OrderDiscountAllocation {
     discountAmount?: string | null;
 }
 
+/** 满赠赠品权益（`PromotionDiscountVO.GiftEntitlementVO`，冻结后不可改）。 */
+export interface OrderGiftEntitlement {
+    activityId?: Id;
+    activityCode?: string | null;
+    activityName?: string | null;
+    version?: number | null;
+    skuId?: Id;
+    skuCode?: string | null;
+    productName?: string | null;
+    specName?: string | null;
+    saleUnit?: string | null;
+    quantity?: string | null;
+    rule?: PromotionRule | null;
+}
+
 export const activityTypes: Record<PromotionActivityType, { label: string; color: string }> = {
     FULL_REDUCE: {label: '满减', color: 'red'},
     DISCOUNT: {label: '折扣', color: 'orange'},

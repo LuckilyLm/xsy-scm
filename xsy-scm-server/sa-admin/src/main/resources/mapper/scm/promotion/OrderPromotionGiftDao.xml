@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.promotion.dao.OrderPromotionGiftDao">
+
+    <resultMap id="giftMap" type="com.xsy.scm.promotion.domain.entity.OrderPromotionGiftEntity">
+        <id column="id" property="id"/>
+        <result column="rule_snapshot" property="ruleSnapshot"
+                typeHandler="com.xsy.scm.common.json.JsonbObjectMapTypeHandler"/>
+    </resultMap>
+
+    <sql id="columns">
+        id, sales_order_id, activity_id, activity_version, sku_id, sku_code_snapshot,
+        product_name_snapshot, spec_name_snapshot, sale_unit_snapshot, quantity, rule_snapshot,
+        version, created_at, created_by
+    </sql>
+
+    <select id="listByOrder" resultMap="giftMap">
+        SELECT
+        <include refid="columns"/>
+        FROM order_promotion_gift
+        WHERE sales_order_id = #{salesOrderId}
+        ORDER BY activity_id
+    </select>
+
+    <insert id="insertGift" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO order_promotion_gift (sales_order_id, activity_id, activity_version, sku_id,
+                                          sku_code_snapshot, product_name_snapshot, spec_name_snapshot,
+                                          sale_unit_snapshot, quantity, rule_snapshot, version,
+                                          created_at, created_by)
+        VALUES (#{row.salesOrderId}, #{row.activityId}, #{row.activityVersion}, #{row.skuId},
+                #{row.skuCodeSnapshot}, #{row.productNameSnapshot}, #{row.specNameSnapshot},
+                #{row.saleUnitSnapshot}, #{row.quantity},
+                #{row.ruleSnapshot,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                0, CURRENT_TIMESTAMP, #{row.createdBy})
+    </insert>
+
+</mapper>

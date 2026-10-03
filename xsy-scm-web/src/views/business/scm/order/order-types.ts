@@ -1,4 +1,4 @@
-import type {OrderDiscount} from '/@/views/business/scm/promotion/promotion-types';
+import type {OrderDiscount, OrderGiftEntitlement} from '/@/views/business/scm/promotion/promotion-types';
 
 export type Id = string | number;
 
@@ -59,6 +59,12 @@ export interface Order {
      * 「原价多少、减了多少」无法回答。
      */
     discount?: OrderDiscount | null;
+    /**
+     * 满赠赠品权益；没有赠品时为空。
+     *
+     * 与 `discount` 分开：赠品是非金额权益，只有赠品没有金额优惠的订单不会有优惠行。
+     */
+    gifts?: OrderGiftEntitlement[] | null;
 }
 
 export interface Query {

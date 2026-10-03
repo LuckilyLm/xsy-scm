@@ -17,6 +17,7 @@ xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceBatchWrit
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.customer.dao.CustomerTypeDao	selectById	Price resolution loads customer-type context.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.customer.dao.CustomerSkuVisibilityDao	policy,visibleIds	Price resolution applies customer SKU visibility.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/pricing/service/PriceResolver.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Price resolution loads product option snapshots.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/promotion/service/PromotionDiscountService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Promotion freezes gift SKU snapshots from the activity rule.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseDemandService.java	com.xsy.scm.order.dao.SalesOrderDao	selectBatchIds	Purchase demand generation consumes confirmed sales-order facts.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderAllocationService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Purchase allocation resolves product option snapshots.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/service/PurchaseOrderAllocationService.java	com.xsy.scm.product.dao.ProductSpuDao	selectBatchIds	Purchase allocation resolves SPU snapshots.

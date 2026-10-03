@@ -134,6 +134,7 @@ public class SalesOrderQueryService {
                     return addressSnapshotVO;
                 }).orElse(null));
         salesOrderDetailVO.setDiscount(promotionDiscountService.getByOrder(salesOrder.getId()));
+        salesOrderDetailVO.setGifts(promotionDiscountService.listGifts(salesOrder.getId()));
         return salesOrderDetailVO;
     }
 

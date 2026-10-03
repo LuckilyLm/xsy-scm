@@ -9,10 +9,12 @@ import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponInstanceStatusEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionStatusEnum;
 import com.xsy.scm.promotion.dao.OrderDiscountDao;
+import com.xsy.scm.promotion.dao.OrderPromotionGiftDao;
 import com.xsy.scm.promotion.dao.PromotionActivityDao;
 import com.xsy.scm.promotion.dao.PromotionCouponDao;
 import com.xsy.scm.promotion.dao.PromotionCouponInstanceDao;
 import com.xsy.scm.promotion.domain.entity.OrderDiscountEntity;
+import com.xsy.scm.promotion.domain.entity.OrderPromotionGiftEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionActivityEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity;
@@ -21,6 +23,8 @@ import com.xsy.scm.promotion.domain.vo.OrderDiscountVO;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.support.PromotionDiscountAllocator;
 import com.xsy.scm.promotion.support.PromotionOrderFacts;
+import com.xsy.scm.product.dao.ProductSkuOptionDao;
+import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -66,6 +70,14 @@ public class PromotionDiscountService {
 
     private final OrderDiscountDao orderDiscountDao;
 
+    private final OrderPromotionGiftDao orderPromotionGiftDao;
+
+    /**
+     * 跨域只读：满赠冻结时取赠品 SKU 的名称 / 规格 / 销售单位快照。
+     * 只读商品主档，不写商品域任何表（见 {@code cross-domain-dao-allowlist.tsv}）。
+     */
+    private final ProductSkuOptionDao productSkuOptionDao;
+
     private final ObjectMapper objectMapper;
 
     /**
@@ -106,26 +118,35 @@ public class PromotionDiscountService {
                 .toList();
         PromotionDiscountVO computed = compute(facts.customerId(), null, couponInstanceId, lines,
                 facts.salesOrderId());
-        if (computed.getDiscountAmount() == null || computed.getDiscountAmount().signum() == 0) {
-            // 没有优惠就不落冻结记录：留一条 0 元记录会让「这单有没有优惠」变得要读快照才知道
+        boolean hasDiscount = computed.getDiscountAmount() != null && computed.getDiscountAmount().signum() > 0;
+        boolean hasGifts = computed.getGifts() != null && !computed.getGifts().isEmpty();
+        if (!hasDiscount && !hasGifts) {
+            // 既没有金额优惠也没有赠品就不落冻结记录：留一条 0 元记录会让「这单有没有优惠」
+            // 变得要读快照才知道。反之，**只有赠品的单也必须冻结** —— 赠品是独立事实，
+            // 它不产生金额优惠，但出库、分拣与成本都靠它。
             return computed;
         }
 
         String operator = ScmOperator.current();
-        OrderDiscountEntity row = new OrderDiscountEntity();
-        row.setSalesOrderId(facts.salesOrderId());
-        // 主活动列只记第一条产生优惠的活动；叠加生效的其余活动完整落在快照里（见 activitySnapshot）。
-        row.setActivityId(computed.getActivityId());
-        row.setActivityVersion(computed.getActivityVersion());
-        row.setActivitySnapshot(activitySnapshot(computed));
-        row.setCouponInstanceId(computed.getCouponInstanceId());
-        row.setCouponSnapshot(couponSnapshot(computed));
-        row.setBaseAmount(computed.getBaseAmount());
-        row.setDiscountAmount(computed.getDiscountAmount());
-        row.setAllocations(allocationsJson(computed));
-        row.setRoundingTargetItemId(computed.getRoundingTargetItemId());
-        row.setCreatedBy(operator);
-        orderDiscountDao.insertDiscount(row);
+        if (hasDiscount) {
+            OrderDiscountEntity row = new OrderDiscountEntity();
+            row.setSalesOrderId(facts.salesOrderId());
+            // 主活动列只记第一条产生优惠的活动；叠加生效的其余活动完整落在快照里（见 activitySnapshot）。
+            row.setActivityId(computed.getActivityId());
+            row.setActivityVersion(computed.getActivityVersion());
+            row.setActivitySnapshot(activitySnapshot(computed));
+            row.setCouponInstanceId(computed.getCouponInstanceId());
+            row.setCouponSnapshot(couponSnapshot(computed));
+            row.setBaseAmount(computed.getBaseAmount());
+            row.setDiscountAmount(computed.getDiscountAmount());
+            row.setAllocations(allocationsJson(computed));
+            row.setRoundingTargetItemId(computed.getRoundingTargetItemId());
+            row.setCreatedBy(operator);
+            orderDiscountDao.insertDiscount(row);
+        }
+        for (PromotionDiscountVO.GiftEntitlementVO gift : computed.getGifts()) {
+            orderPromotionGiftDao.insertGift(giftEntity(facts.salesOrderId(), gift, operator));
+        }
 
         // 券占用：只有真正下单才占用。占用失败（已被别人用掉）即整笔回滚，
         // 不会出现「优惠已冻结、券却没占上」这种两边不一致的状态。
@@ -143,9 +164,53 @@ public class PromotionDiscountService {
 
         computed.setFrozen(true);
         computed.setSalesOrderId(facts.salesOrderId());
-        computed.setCreatedAt(row.getCreatedAt());
+        computed.setCreatedAt(OffsetDateTime.now());
         computed.setCreatedBy(operator);
         return computed;
+    }
+
+    /**
+     * 订单冻结的赠品权益（只读）。
+     *
+     * <p>
+     * 与优惠分开读：赠品是**非金额权益**，只有赠品、没有金额优惠的订单不会有 {@code order_discount} 行，
+     * 把赠品塞进优惠读模型会让这种订单看起来「什么都没有」。
+     */
+    @Transactional(readOnly = true)
+    public List<PromotionDiscountVO.GiftEntitlementVO> listGifts(Long salesOrderId) {
+        return orderPromotionGiftDao.listByOrder(salesOrderId).stream()
+                .map(PromotionDiscountService::toGiftVO).toList();
+    }
+
+    private static PromotionDiscountVO.GiftEntitlementVO toGiftVO(OrderPromotionGiftEntity row) {
+        PromotionDiscountVO.GiftEntitlementVO vo = new PromotionDiscountVO.GiftEntitlementVO();
+        vo.setActivityId(row.getActivityId());
+        vo.setVersion(row.getActivityVersion());
+        vo.setSkuId(row.getSkuId());
+        vo.setSkuCode(row.getSkuCodeSnapshot());
+        vo.setProductName(row.getProductNameSnapshot());
+        vo.setSpecName(row.getSpecNameSnapshot());
+        vo.setSaleUnit(row.getSaleUnitSnapshot());
+        vo.setQuantity(row.getQuantity());
+        vo.setRule(row.getRuleSnapshot());
+        return vo;
+    }
+
+    private static OrderPromotionGiftEntity giftEntity(Long salesOrderId, PromotionDiscountVO.GiftEntitlementVO gift,
+            String operator) {
+        OrderPromotionGiftEntity row = new OrderPromotionGiftEntity();
+        row.setSalesOrderId(salesOrderId);
+        row.setActivityId(gift.getActivityId());
+        row.setActivityVersion(gift.getVersion());
+        row.setSkuId(gift.getSkuId());
+        row.setSkuCodeSnapshot(gift.getSkuCode());
+        row.setProductNameSnapshot(gift.getProductName());
+        row.setSpecNameSnapshot(gift.getSpecName());
+        row.setSaleUnitSnapshot(gift.getSaleUnit());
+        row.setQuantity(gift.getQuantity());
+        row.setRuleSnapshot(gift.getRule());
+        row.setCreatedBy(operator);
+        return row;
     }
 
     /**
@@ -272,7 +337,18 @@ public class PromotionDiscountService {
         BigDecimal remaining = baseTotal;
         BigDecimal activityDiscount = BigDecimal.ZERO.setScale(SCALE);
         List<PromotionDiscountVO.AppliedActivityVO> appliedActivities = new ArrayList<>();
+        List<PromotionDiscountVO.GiftEntitlementVO> gifts = new ArrayList<>();
         for (PromotionActivityEntity activity : applied) {
+            if (ScmPromotionActivityTypeEnum.FULL_GIFT.name().equals(activity.getActivityType())) {
+                // 满赠是**非金额权益**：它不让订单金额变小，所以既不参与下面的剩余金额递减，
+                // 也不进 appliedActivities（那里记的是「实际减了多少钱的活动」）。
+                // 门槛按**基础合计**判定，不按逐条作用后的剩余金额 —— 「满 100 赠 2kg」不该因为
+                // 同单另有满减把门槛压没：客户看的是订单金额达没达标。
+                if (giftThresholdReached(activity, baseTotal)) {
+                    gifts.add(giftEntitlement(activity));
+                }
+                continue;
+            }
             BigDecimal delta = activityDiscountOf(activity, remaining);
             if (delta.signum() <= 0) {
                 continue;
@@ -291,6 +367,7 @@ public class PromotionDiscountService {
             }
         }
         vo.setAppliedActivities(appliedActivities);
+        vo.setGifts(gifts);
 
         // 2) 券：按门槛在「活动后剩余金额」上判定
         BigDecimal couponDiscount = BigDecimal.ZERO.setScale(SCALE);
@@ -484,6 +561,56 @@ public class PromotionDiscountService {
         vo.setRule(activity.getRule());
         vo.setDiscountAmount(discountAmount);
         return vo;
+    }
+
+    /**
+     * 满赠门槛判定：订单金额达到门槛即成立。
+     *
+     * <p>
+     * 门槛比的是**基础合计**（未扣任何优惠的订单金额），不是逐条作用后的剩余金额：
+     * 「满 100 赠 2kg」不该因为同单另有满减把门槛压没 —— 客户看的是订单金额达没达标。
+     */
+    private static boolean giftThresholdReached(PromotionActivityEntity activity, BigDecimal baseTotal) {
+        Map<String, Object> rule = activity.getRule();
+        if (rule == null) {
+            return false;
+        }
+        BigDecimal threshold = decimal(rule.get("thresholdAmount"));
+        return threshold != null && baseTotal.compareTo(threshold) >= 0;
+    }
+
+    /**
+     * 把满赠活动规则解析成一条赠品权益，并取赠品 SKU 快照。
+     *
+     * <p>
+     * 赠品 SKU 读不到时**失败**而不是静默跳过：规则指向一个不存在的商品，冻结一条发不出货的权益
+     * 比当场报错更糟 —— 后者在确认订单时就能发现，前者要到发货才暴露。
+     */
+    private PromotionDiscountVO.GiftEntitlementVO giftEntitlement(PromotionActivityEntity activity) {
+        Map<String, Object> rule = activity.getRule();
+        Long skuId = rule == null ? null : longValue(rule.get("giftSkuId"));
+        BigDecimal quantity = rule == null ? null : decimal(rule.get("giftQuantity"));
+        if (skuId == null || quantity == null || quantity.signum() <= 0) {
+            throw new ScmBusinessException(PromotionErrorCode.RULE_INVALID);
+        }
+        ProductSkuOptionVO sku = productSkuOptionDao.selectByIds(List.of(skuId)).stream().findFirst().orElse(null);
+        if (sku == null) {
+            throw new ScmBusinessException(PromotionErrorCode.RULE_INVALID);
+        }
+
+        PromotionDiscountVO.GiftEntitlementVO gift = new PromotionDiscountVO.GiftEntitlementVO();
+        gift.setActivityId(activity.getId());
+        gift.setActivityCode(activity.getActivityCode());
+        gift.setActivityName(activity.getActivityName());
+        gift.setVersion(activity.getVersion());
+        gift.setSkuId(sku.getSkuId());
+        gift.setSkuCode(sku.getSkuCode());
+        gift.setProductName(sku.getProductName());
+        gift.setSpecName(sku.getSpecName());
+        gift.setSaleUnit(sku.getSaleUnit());
+        gift.setQuantity(quantity.setScale(SCALE, RoundingMode.HALF_UP));
+        gift.setRule(rule);
+        return gift;
     }
 
     private String allocationsJson(PromotionDiscountVO vo) {

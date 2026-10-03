@@ -70,6 +70,12 @@ public class PromotionDiscountVO {
      */
     private List<AppliedActivityVO> appliedActivities = new ArrayList<>();
 
+    /**
+     * 满赠赠品权益：**非金额权益**，不参与优惠分摊、不进 {@link #discountAmount}，
+     * 而是单独冻结成 {@code order_promotion_gift}，供出库、分拣、小票与成本归集读取。
+     */
+    private List<GiftEntitlementVO> gifts = new ArrayList<>();
+
     /** 本次结果是否已冻结（确认下单为 true，试算为 false）。 */
     private boolean frozen;
 
@@ -111,5 +117,34 @@ public class PromotionDiscountVO {
 
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal discountAmount;
+    }
+
+    /** 一条赠品权益：活动、赠品 SKU 快照与数量，冻结后不可改。 */
+    @Data
+    public static class GiftEntitlementVO {
+
+        private Long activityId;
+
+        private String activityCode;
+
+        private String activityName;
+
+        private Integer version;
+
+        private Long skuId;
+
+        private String skuCode;
+
+        private String productName;
+
+        private String specName;
+
+        private String saleUnit;
+
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal quantity;
+
+        /** 活动规则原文（受控键值），供解释「满多少赠多少」。 */
+        private Map<String, Object> rule;
     }
 }

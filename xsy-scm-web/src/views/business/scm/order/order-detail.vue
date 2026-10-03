@@ -53,6 +53,17 @@
             </div>
           </a-descriptions-item>
         </a-descriptions>
+        <!-- 满赠赠品：非金额权益，不减订单金额，但必须发货；出库、分拣与小票都读这份冻结权益 -->
+        <a-descriptions v-if="(order.gifts?.length ?? 0) > 0" class="discount" bordered size="small" :column="1">
+          <a-descriptions-item label="赠品">
+            <div v-for="gift in order.gifts ?? []" :key="`${gift.activityId}-${gift.skuId}`">
+              {{ gift.productName }}（{{ gift.skuCode }} / {{ gift.specName }}）
+              × {{ gift.quantity }} {{ gift.saleUnit }}
+              <span class="gift-source">— 来自活动「{{ gift.activityName || gift.activityCode }}」v{{ gift.version }}</span>
+            </div>
+            <div class="gift-note">赠品金额恒为 0，不计入订单金额；出库成本单独计入本单履约成本。</div>
+          </a-descriptions-item>
+        </a-descriptions>
         <a-table class="items" :data-source="order.items" :columns="columns" row-key="itemId" :pagination="false"
                  :scroll="{x:1100}" size="small" bordered>
           <template #bodyCell="{record,column}">
@@ -400,6 +411,15 @@ pre {
 }
 
 .discount-suppressed {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+}
+
+.gift-source {
+  color: var(--ant-color-text-secondary);
+}
+
+.gift-note {
   color: var(--ant-color-text-secondary);
   font-size: 12px;
 }</style>
