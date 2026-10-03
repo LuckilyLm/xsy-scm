@@ -1,6 +1,9 @@
 package com.xsy.scm.payment.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.payment.domain.form.PaymentRefundQueryForm;
+import java.util.List;
 import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import java.math.BigDecimal;
 import org.apache.ibatis.annotations.Mapper;
@@ -8,6 +11,8 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface PaymentRefundDao extends BaseMapper<PaymentRefundEntity> {
+
+    List<PaymentRefundEntity> queryPage(Page<?> page, @Param("query") PaymentRefundQueryForm query);
 
     PaymentRefundEntity lockById(@Param("id") Long id);
 

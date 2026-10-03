@@ -2,6 +2,23 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.PaymentTransactionDao">
 
+    <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
+        SELECT t.* FROM payment_transaction t
+        WHERE t.deleted = FALSE
+        <if test="query.intentId != null">AND t.intent_id = #{query.intentId}</if>
+        <if test="query.provider != null and query.provider != ''">AND t.provider = #{query.provider}</if>
+        <if test="query.status != null and query.status != ''">AND t.status = #{query.status}</if>
+        <if test="query.customerId != null">
+            AND EXISTS (SELECT 1 FROM payment_intent i
+                        WHERE i.id = t.intent_id AND i.customer_id = #{query.customerId})
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (t.transaction_no ILIKE CONCAT('%', #{query.keyword}, '%')
+             OR t.provider_transaction_no ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY t.created_at DESC, t.id DESC
+    </select>
+
     <select id="selectByProviderTransactionNo"
             resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
         SELECT * FROM payment_transaction

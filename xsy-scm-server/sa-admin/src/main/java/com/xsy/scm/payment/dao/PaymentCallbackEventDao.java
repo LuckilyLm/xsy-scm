@@ -1,6 +1,9 @@
 package com.xsy.scm.payment.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.payment.domain.form.PaymentCallbackQueryForm;
+import java.util.List;
 import com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -22,6 +25,8 @@ public interface PaymentCallbackEventDao extends BaseMapper<PaymentCallbackEvent
      * @return 1 = 本次新落；0 = 重复事件
      */
     int insertIgnoreDuplicate(@Param("row") PaymentCallbackEventEntity row);
+
+    List<PaymentCallbackEventEntity> queryPage(Page<?> page, @Param("query") PaymentCallbackQueryForm query);
 
     PaymentCallbackEventEntity selectByProviderEventId(@Param("provider") String provider,
             @Param("providerEventId") String providerEventId);

@@ -2,6 +2,22 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.PaymentRefundDao">
 
+    <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
+        SELECT * FROM payment_refund
+        WHERE deleted = FALSE
+        <if test="query.transactionId != null">AND transaction_id = #{query.transactionId}</if>
+        <if test="query.intentId != null">AND intent_id = #{query.intentId}</if>
+        <if test="query.provider != null and query.provider != ''">AND provider = #{query.provider}</if>
+        <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
+        <if test="query.sourceType != null and query.sourceType != ''">AND source_type = #{query.sourceType}</if>
+        <if test="query.sourceId != null">AND source_id = #{query.sourceId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (refund_no ILIKE CONCAT('%', #{query.keyword}, '%')
+             OR provider_refund_no ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY created_at DESC, id DESC
+    </select>
+
     <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
         SELECT * FROM payment_refund WHERE id = #{id} AND deleted = FALSE FOR UPDATE
     </select>

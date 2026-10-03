@@ -57,7 +57,16 @@ public enum PaymentErrorCode implements ScmErrorCode {
     PAYMENT_METHOD_NOT_ENABLED(41353, "该支付方式尚未启用"),
 
     /** 同一业务退款来源只能映射一笔有效退款：重复来源说明上游重复提交，宁可失败也不重复出款。 */
-    PAYMENT_REFUND_SOURCE_DUPLICATED(41354, "该业务退款来源已存在有效退款");
+    PAYMENT_REFUND_SOURCE_DUPLICATED(41354, "该业务退款来源已存在有效退款"),
+
+    /**
+     * 成功的交易缺少可信的渠道实收金额。
+     *
+     * <p>
+     * 可退本金必须以**渠道实际成功捕获/结算的金额**为准。缺失时**拒绝退款**而不是退回本地应付金额：
+     * 静默 fallback 会掩盖「支付结果没落完整」这个问题，等接真实渠道时才以「退款被渠道拒」的形式暴露。
+     */
+    PAYMENT_PROVIDER_AMOUNT_MISSING(41355, "该笔交易缺少渠道实收金额，无法确定可退本金");
 
     private final int code;
 

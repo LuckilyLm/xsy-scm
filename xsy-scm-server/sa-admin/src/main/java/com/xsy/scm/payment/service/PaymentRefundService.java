@@ -167,19 +167,20 @@ public class PaymentRefundService {
     }
 
     /**
-     * 可退金额 = 原支付成功金额 − 已成功退款合计。
+     * 可退本金 = **渠道实际成功捕获/结算的金额** − 已成功退款合计。
      *
      * <p>
-     * 原金额优先取**渠道回报金额**：渠道实际只收到 98 而本地应付是 100 时，
-     * 按 100 退会退超，必然被渠道拒。差额本身该由对账的 {@code AMOUNT_MISMATCH} 暴露，
-     * 而不是让退款先撞一次墙。
+     * 刻意**不** fallback 到本地应付金额：本地应付 100、渠道实收 98 时，按 100 退必然被渠道拒；
+     * 而更糟的是「本地根本没记下渠道实收」时静默按 100 退 —— 那会掩盖支付结果落库不完整，
+     * 等接真实渠道时才以「退款被渠道拒」的形式暴露出来。缺可信金额就**拒绝退款**。
      */
     private BigDecimal refundableOf(PaymentTransactionEntity transaction) {
-        BigDecimal received = transaction.getProviderAmount() == null ? transaction.getAmount()
-                : transaction.getProviderAmount();
+        if (transaction.getProviderAmount() == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_AMOUNT_MISSING);
+        }
         BigDecimal refunded = paymentRefundDao.sumSucceededByTransaction(transaction.getId());
-        return received.subtract(refunded == null ? BigDecimal.ZERO : refunded).max(BigDecimal.ZERO)
-                .setScale(SCALE, RoundingMode.HALF_UP);
+        return transaction.getProviderAmount().subtract(refunded == null ? BigDecimal.ZERO : refunded)
+                .max(BigDecimal.ZERO).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
     private static String resolveScenario(String provider, String scenario) {

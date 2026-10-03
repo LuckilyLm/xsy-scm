@@ -145,6 +145,12 @@ public class PaymentReconciliationService {
         reconciliation.setProviderCount(settlement.count());
         reconciliation.setLocalCount(locals.size());
         reconciliation.setDifferenceCount(items.size());
+        // 参与比对的交易数 = 渠道侧与本地侧的**并集**（同一笔两边都有时只算一次）；
+        // 平账数 = 总数 − 差异数。平不平以**差异条数**为准，不看净差额：
+        // 一正一负的差异会让净差额归零，但账其实不平。
+        int totalCount = unionCount(providerNos, localByNo);
+        reconciliation.setTotalCount(totalCount);
+        reconciliation.setMatchedCount(totalCount - items.size());
         reconciliation.setDetail(summaryOf(items));
         reconciliation.setReconciledAt(OffsetDateTime.now());
         reconciliation.setCreatedBy(operator);
@@ -158,7 +164,14 @@ public class PaymentReconciliationService {
         return paymentReconciliationDao.selectById(reconciliation.getId());
     }
 
-    /** 逐条差异明细（后台展示用）。 */
+    /** 渠道侧与本地侧交易号的并集大小。 */
+    private static int unionCount(Set<String> providerNos, Map<String, PaymentTransactionEntity> localByNo) {
+        Set<String> union = new HashSet<>(providerNos);
+        union.addAll(localByNo.keySet());
+        return union.size();
+    }
+
+    /** 逐条差异明细（后台展示用）。只含异常项：平账的靠批次汇总表达，不逐笔落库。 */
     @Transactional(readOnly = true)
     public List<PaymentReconciliationItemEntity> items(Long reconciliationId) {
         return paymentReconciliationItemDao.listByReconciliation(reconciliationId);

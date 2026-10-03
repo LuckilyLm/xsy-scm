@@ -229,7 +229,10 @@ CREATE TABLE payment_reconciliation (
     difference          NUMERIC(18, 4) NOT NULL DEFAULT 0,
     provider_count      INTEGER      NOT NULL DEFAULT 0 CHECK (provider_count >= 0),
     local_count         INTEGER      NOT NULL DEFAULT 0 CHECK (local_count >= 0),
-    -- 差异条数。净差额可能为 0 而仍有差异（一正一负），所以平不平看条数而不是看差额。
+    -- 参与比对的交易数（渠道侧与本地侧的并集）与其中的平账数
+    total_count         INTEGER      NOT NULL DEFAULT 0 CHECK (total_count >= 0),
+    matched_count       INTEGER      NOT NULL DEFAULT 0 CHECK (matched_count >= 0),
+    -- 差异条数。**净差额可能为 0 而仍有差异（一正一负），所以平不平看条数而不是看差额。**
     difference_count    INTEGER      NOT NULL DEFAULT 0 CHECK (difference_count >= 0),
     -- 分类汇总（各类各几条），供页面直接展示
     detail              JSONB
@@ -245,7 +248,10 @@ CREATE TABLE payment_reconciliation (
     updated_by          VARCHAR(64),
     -- MATCHED 当且仅当没有任何差异：不允许「状态说平了、还有差异条」
     CONSTRAINT ck_payment_reconciliation_balanced CHECK (
-        status <> 'MATCHED' OR (difference = 0 AND difference_count = 0))
+        status <> 'MATCHED' OR (difference_count = 0 AND matched_count = total_count)),
+    -- 三个计数不许各说各话：平账数 = 总数 − 差异数
+    CONSTRAINT ck_payment_reconciliation_counts CHECK (
+        matched_count = total_count - difference_count)
 );
 CREATE UNIQUE INDEX uk_payment_reconciliation_no ON payment_reconciliation (reconciliation_no)
     WHERE deleted = FALSE;

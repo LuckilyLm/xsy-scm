@@ -14,6 +14,20 @@
         ON CONFLICT (provider, provider_event_id) DO NOTHING
     </insert>
 
+    <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
+        SELECT * FROM payment_callback_event
+        WHERE 1 = 1
+        <if test="query.provider != null and query.provider != ''">AND provider = #{query.provider}</if>
+        <if test="query.processStatus != null and query.processStatus != ''">
+            AND process_status = #{query.processStatus}
+        </if>
+        <if test="query.transactionId != null">AND transaction_id = #{query.transactionId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND provider_event_id ILIKE CONCAT('%', #{query.keyword}, '%')
+        </if>
+        ORDER BY received_at DESC, id DESC
+    </select>
+
     <select id="selectByProviderEventId"
             resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
         SELECT * FROM payment_callback_event

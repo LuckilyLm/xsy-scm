@@ -1,6 +1,8 @@
 package com.xsy.scm.payment.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.payment.domain.form.PaymentTransactionQueryForm;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -16,6 +18,8 @@ public interface PaymentTransactionDao extends BaseMapper<PaymentTransactionEnti
      * <p>
      * 渠道交易号在同一渠道内唯一（表上唯一索引），因此这里最多返回一行。
      */
+    List<PaymentTransactionEntity> queryPage(Page<?> page, @Param("query") PaymentTransactionQueryForm query);
+
     PaymentTransactionEntity selectByProviderTransactionNo(@Param("provider") String provider,
             @Param("providerTransactionNo") String providerTransactionNo);
 
