@@ -44,7 +44,8 @@
 
 - M0 的地区、坐标和 CRS 字段及 M1 中国地图大屏已实现。客户、仓库、供应商和停靠点均已接入通用选点组件（供应商点位见 ADM-09）。
 - `map-provider.ts` 根据 `VITE_AMAP_KEY` 加载高德 JSAPI，支持安全代理/安全码配置和 Geocoder；配置缺失可手工录入经纬度。代码可配置不代表生产环境已配置或获得商用授权。
-- 地图展示不等于实时轨迹；辅助/自动排线、GPS 和司机端是独立后续能力。坐标必须成对且带 CRS，地图不能绕过业务范围或直接改变库存。
+- 2026-10-03 负责人确认：配送只需地图上的大致计划路线。复用仓库起点、按顺序编号的停靠点与方向连线；实时 GPS 定位、轨迹采集/回放不再纳入本期。已有轨迹代码待按 ADR-008 退场，不能把规划调整写成已删除。
+- 现有辅助排线仅作为可选工具，司机端单独建设；道路导航、路况与 ETA 不作为当前路线展示要求。坐标必须成对且带 CRS，地图不能绕过业务范围或直接改变库存。
 - 商用服务商、授权、配额和部署路线在实施时核实，不沿用历史调研的版本、费用或预排迁移号。
 
 ## ADM-01～17 实施决策基线
@@ -53,7 +54,7 @@
 
 - ADM-01～04：[ADR-006：Finance R2、退货、集团结算与授信](adr/006-finance-r2-returns-settlement-and-credit.md)。
 - ADM-05～08：[ADR-007：后台净需求、通知、打印与异常聚合](adr/007-admin-operations-demand-notification-print-and-exceptions.md)。
-- ADM-09～11：[ADR-008：地图、配送排线、GPS 与分拣设备](adr/008-map-routing-gps-and-sorting-devices.md)。
+- ADM-09～11：[ADR-008：配送路线示意、辅助排线与分拣设备](adr/008-map-routing-gps-and-sorting-devices.md)。
 - ADM-12～15：[ADR-009：营销支付、推广归属、订单助手与溯源](adr/009-marketing-payment-promotion-order-assistant-and-traceability.md)。
 - ADM-16～17：[ADR-010：客户商城与员工移动端双产品](adr/010-customer-mall-and-employee-mobile-products.md)。
 
