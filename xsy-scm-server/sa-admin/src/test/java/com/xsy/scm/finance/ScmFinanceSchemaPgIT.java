@@ -7,6 +7,7 @@ import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePayableItemSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinancePayableSourceTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceCustomerRefundMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
@@ -483,7 +484,16 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         // 收款方式与付款方式**刻意分开**（ADM-12 3-11a）：在线支付与余额是收款侧才有的资金渠道，
         // 放进共用的付款枚举会让供应商付款入口也拿到它们，等于让支付域反向污染供应商付款语义。
         assertWhitelist("finance_receipt", "ck_finance_receipt_method", ScmFinanceReceiptMethodEnum.class);
-        assertWhitelist("finance_payment", "ck_finance_payment_method", ScmFinancePaymentMethodEnum.class);
+        // 付款方式**按对手方分组**约束（ADM-12 3-11b）：一条 CHECK 覆盖两组值域，
+        // 因此不能再与单一枚举双向相等。分组本身也要断言 —— 否则它退化成一条扁平白名单时没人发现。
+        assertThat(constraintDef("finance_payment", "ck_finance_payment_method"))
+                .containsIgnoringCase("counterparty_type = 'SUPPLIER'")
+                .containsIgnoringCase("counterparty_type = 'CUSTOMER'");
+        assertThat(literalsOf(constraintDef("finance_payment", "ck_finance_payment_method")))
+                .containsExactlyInAnyOrder("CASH", "BANK_TRANSFER", "OTHER", "ONLINE_PAYMENT");
+        // 两组各自的值域用枚举尺寸钉住：供应商三值、客户退款四值
+        assertThat(ScmFinancePaymentMethodEnum.values()).hasSize(3);
+        assertThat(ScmFinanceCustomerRefundMethodEnum.values()).hasSize(4);
 
         // NORMAL / RED 用于应收应付，NORMAL / REVERSE 用于收付款与核销；两套刻意不合并。
         assertWhitelist("finance_receivable", "ck_finance_receivable_entry_type", ScmFinanceEntryTypeEnum.class);
@@ -495,9 +505,10 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertWhitelist("finance_write_off", "ck_finance_write_off_entry_type",
                 ScmFinanceReverseEntryTypeEnum.class);
 
-        // 支付能力只落在**收款**侧：付款方式不得混入任何 P5 支付能力（Q21 的边界在付款侧继续有效）。
+        // ONLINE_PAYMENT 已按对手方放行给客户退款（3-11b）；余额 / COD / 渠道名**依然**不得进入付款方式：
+        // 余额抵扣不是付款渠道，COD 是结算时机，具体渠道名写在 external_reference。
         assertThat(literalsOf(constraintDef("finance_payment", "ck_finance_payment_method")))
-                .doesNotContain("ONLINE_PAYMENT", "BALANCE", "COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
+                .doesNotContain("BALANCE", "COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
         // 收款侧放开了 ONLINE_PAYMENT / BALANCE（3-11a 的支付与余额），但两条**依然**不得进入：
         // COD 是「什么时候收钱」的结算时机，不是实际收款渠道；具体渠道名写在 external_reference。
         assertThat(literalsOf(constraintDef("finance_receipt", "ck_finance_receipt_method")))
