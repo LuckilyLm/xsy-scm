@@ -36,8 +36,11 @@ CREATE TABLE payment_intent (
     source_no_snapshot      VARCHAR(64)  NOT NULL CHECK (btrim(source_no_snapshot) <> ''),
     -- 应付金额：**显式给出**，不由订单金额推断（订单可能只收一部分，也可能叠加余额）
     amount                  NUMERIC(18, 4) NOT NULL CHECK (amount > 0),
-    -- 渠道大类：ONLINE=在线支付、BALANCE=客户余额（3-12）。两者都落 Finance 收款事实，
-    -- 但**分开记**：一张订单可以同时有余额与在线支付两条资金来源，不是一个被覆盖的字段。
+    -- 渠道大类：ONLINE=在线支付、BALANCE=客户余额（3-12）。
+    -- **只有 ONLINE 会落 Finance 收款事实**：余额消费不是新的实际资金进入，
+    -- 它是权益账本（customer_balance_movement）的事，不是资金动作。
+    -- 一张订单可以同时有余额与在线支付两条资金**来源**，因此这两者必须分开记，
+    -- 但不能各记一条 Finance 收款 —— 那会把同一笔钱记两遍。
     method                  VARCHAR(16)  NOT NULL
         CONSTRAINT ck_payment_intent_method CHECK (method IN ('ONLINE', 'BALANCE')),
     provider                VARCHAR(32)  NOT NULL

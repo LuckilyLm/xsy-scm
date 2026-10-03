@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.balance.dao.CustomerBalanceMovementDao">
+
+    <!--
+      余额 = SUM(CREDIT) − SUM(DEBIT)。方向字面量由调用方传入（枚举是唯一来源）。
+      只算未删除行：append-only 由 CHECK 保证，这里仍带 deleted 条件以配合部分索引。
+    -->
+    <select id="sumSignedByAccount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(CASE WHEN direction = #{credit} THEN amount ELSE -amount END), 0)
+        FROM customer_balance_movement
+        WHERE account_id = #{accountId}
+          AND deleted = FALSE
+    </select>
+
+    <select id="selectBySource" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
+        SELECT * FROM customer_balance_movement
+        WHERE source_type = #{sourceType}
+          AND source_id = #{sourceId}
+          AND deleted = FALSE
+    </select>
+
+    <select id="queryPage" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
+        SELECT * FROM customer_balance_movement
+        WHERE deleted = FALSE
+        <if test="query.settlementCustomerId != null">AND settlement_customer_id = #{query.settlementCustomerId}</if>
+        <if test="query.customerId != null">AND customer_id = #{query.customerId}</if>
+        <if test="query.type != null and query.type != ''">AND type = #{query.type}</if>
+        <if test="query.direction != null and query.direction != ''">AND direction = #{query.direction}</if>
+        <if test="query.occurredFrom != null">AND occurred_at &gt;= #{query.occurredFrom}</if>
+        <if test="query.occurredTo != null">AND occurred_at &lt; #{query.occurredTo}</if>
+        ORDER BY occurred_at DESC, id DESC
+    </select>
+
+    <select id="listByAccount" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
+        SELECT * FROM customer_balance_movement
+        WHERE account_id = #{accountId}
+          AND deleted = FALSE
+        ORDER BY occurred_at, id
+    </select>
+
+</mapper>

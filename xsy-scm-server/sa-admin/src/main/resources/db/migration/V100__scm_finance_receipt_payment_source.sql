@@ -19,7 +19,7 @@
 -- ---------------------------------------------------------------------------
 ALTER TABLE finance_receipt DROP CONSTRAINT ck_finance_receipt_method;
 ALTER TABLE finance_receipt ADD CONSTRAINT ck_finance_receipt_method
-    CHECK (method IN ('CASH', 'BANK_TRANSFER', 'ONLINE_PAYMENT', 'BALANCE', 'OTHER'));
+    CHECK (method IN ('CASH', 'BANK_TRANSFER', 'ONLINE_PAYMENT', 'OTHER'));
 
 -- ---------------------------------------------------------------------------
 -- 2. 来源键：系统生成的收款必须能回答「这笔钱是谁登记进来的」

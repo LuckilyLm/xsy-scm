@@ -11,7 +11,7 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
-import com.xsy.scm.finance.constant.FinancePaymentSourceType;
+import com.xsy.scm.finance.constant.ScmFinanceReceiptSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
@@ -182,7 +182,7 @@ public class FinanceReceiptService {
         }
 
         FinanceReceiptEntity existing = financeReceiptDao
-                .selectBySource(FinancePaymentSourceType.PAYMENT_TRANSACTION, fact.transactionId());
+                .selectBySource(ScmFinanceReceiptSourceTypeEnum.PAYMENT_TRANSACTION.name(), fact.transactionId());
         if (existing != null) {
             return existing;
         }
@@ -212,7 +212,7 @@ public class FinanceReceiptService {
         receipt.setReason(null);
         receipt.setExternalReference(StringUtils.trimToNull(fact.providerTransactionNo()));
         receipt.setRemark(null);
-        receipt.setSourceType(FinancePaymentSourceType.PAYMENT_TRANSACTION);
+        receipt.setSourceType(ScmFinanceReceiptSourceTypeEnum.PAYMENT_TRANSACTION.name());
         receipt.setSourceId(fact.transactionId());
         receipt.setCreatedAt(now);
         receipt.setUpdatedAt(now);
@@ -322,13 +322,13 @@ public class FinanceReceiptService {
      * 的白名单一致；不用 {@code valueOf} 直抛，是为了给用户一个业务码而不是栈异常。
      *
      * <p>
-     * <b>人工登记不允许选 {@code BALANCE}</b>：余额抵扣必须由余额流水驱动（余额扣了钱才有这笔收款）。
-     * 允许人工登记一笔余额收款，会造出「账上有收款、余额没动」的假事实。
+     * 枚举里没有 {@code BALANCE}，因此这里不需要额外禁止它：余额消费不是实际资金动作，
+     * 不该出现在收款方式里（见 {@link ScmFinanceReceiptMethodEnum} 的说明）。
      */
     private static String method(String raw) {
         String value = StringUtils.trimToNull(raw);
         ScmFinanceReceiptMethodEnum candidate = ScmFinanceReceiptMethodEnum.of(value);
-        if (candidate == null || candidate == ScmFinanceReceiptMethodEnum.BALANCE) {
+        if (candidate == null) {
             throw new ScmBusinessException(FinanceErrorCode.METHOD_INVALID);
         }
         return candidate.name();
