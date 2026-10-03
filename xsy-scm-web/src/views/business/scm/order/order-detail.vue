@@ -84,6 +84,28 @@
           <a-descriptions-item v-if="creditCheck.overdue" label="最早逾期到期日">{{ creditCheck.earliestOverdueDate }}</a-descriptions-item>
         </a-descriptions>
         <p v-if="creditCheck.amountThresholdHint">{{ creditCheck.amountThresholdHint }}</p>
+        <a-divider style="margin: 12px 0"/>
+        <a-form-item label="优惠券">
+          <a-select
+              v-model:value="couponInstanceId"
+              :loading="couponLoading"
+              :options="couponOptions"
+              placeholder="不使用优惠券"
+              allow-clear
+              style="width: 100%"
+          />
+          <a-typography-text type="secondary" class="coupon-hint">
+            活动优惠由服务端按当前生效规则自动计算；券只接受「用哪张」，确认时服务端会再验一次券状态。
+            试算不占用券，确认成功才占用。
+          </a-typography-text>
+        </a-form-item>
+        <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint"/>
+        <a-descriptions v-if="discountPreview" :column="1" size="small" bordered>
+          <a-descriptions-item label="行基础金额（下单量口径）">{{ amount(discountPreview.baseAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="活动优惠">{{ amount(discountPreview.activityDiscount) }}</a-descriptions-item>
+          <a-descriptions-item label="券优惠">{{ amount(discountPreview.couponDiscount) }}</a-descriptions-item>
+          <a-descriptions-item label="合计优惠">{{ amount(discountPreview.discountAmount) }}</a-descriptions-item>
+        </a-descriptions>
         <div v-if="!creditCheck.allowed" v-privilege="'scm:order:credit:override'">
           <a-checkbox v-model:checked="creditOverride">申请授信例外放行（将记录操作日志）</a-checkbox>
           <a-form-item v-if="creditOverride" label="例外原因" required>
@@ -100,12 +122,14 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
-import {ref} from 'vue';
+import {ref, watch} from 'vue';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi, type CreditCheck} from '/@/api/business/scm/order-api';
 import {orderLogApi} from '/@/api/business/scm/order-log-api';
+import {promotionApi} from '/@/api/business/scm/promotion-api';
+import type {PromotionCouponInstance, PromotionDiscount} from '/@/views/business/scm/promotion/promotion-types';
 import {SCM_ORDER_STATUS_ENUM, SCM_ORDER_OPERATION_ENUM} from '/@/constants/business/scm/order-const';
 import type {Order, Item, Id, LogRow} from './order-types';
 import {amount, fixed} from './order-form-model';
@@ -174,6 +198,69 @@ async function loadLogs() {
 
 const creditOpen = ref(false), creditCheck = ref<CreditCheck>(), creditOverride = ref(false), creditOverrideReason = ref('');
 
+/**
+ * 券选择与试算：券是客户自己的权益，必须显式指定券实例 id，服务端不自动挑券；
+ * 活动优惠由服务端按当前生效规则算出，前端不拼优惠组合。
+ */
+const couponInstanceId = ref<Id | undefined>();
+const couponOptions = ref<{value: Id; label: string}[]>([]);
+const couponLoading = ref(false);
+const discountPreview = ref<PromotionDiscount>();
+const previewError = ref('');
+
+async function loadCoupons() {
+  couponInstanceId.value = undefined;
+  couponOptions.value = [];
+  discountPreview.value = undefined;
+  previewError.value = '';
+  const customerId = order.value?.customerId;
+  if (customerId === undefined || customerId === null) {
+    return;
+  }
+  couponLoading.value = true;
+  try {
+    const rows: PromotionCouponInstance[] = (await promotionApi.couponInstances(customerId, 'AVAILABLE')).data ?? [];
+    couponOptions.value = rows.map((row) => ({
+      value: row.id,
+      label: `${row.couponName ?? row.couponCode ?? '优惠券'}（${row.instanceNo}）`,
+    }));
+  } catch (e) {
+    // 券列表拉不到只影响「用哪张券」，不该挡住确认本身
+    previewError.value = orderError(e);
+  } finally {
+    couponLoading.value = false;
+  }
+}
+
+/**
+ * 试算只用于给操作人看清「减多少」，不占用券；行基础金额取订单行的下单金额
+ * （`ordered_line_amount`，与确认时的冻结口径一致），未锁定价格的行不参与。
+ */
+async function loadPreview() {
+  discountPreview.value = undefined;
+  previewError.value = '';
+  const customerId = order.value?.customerId;
+  const lines = (order.value?.items ?? [])
+      .filter((item) => item.itemId !== undefined && item.itemId !== null && item.orderedLineAmount)
+      .map((item) => ({orderItemId: item.itemId as Id, baseAmount: item.orderedLineAmount as string}));
+  if (customerId === undefined || customerId === null || lines.length === 0) {
+    return;
+  }
+  try {
+    discountPreview.value = (await promotionApi.discountPreview({
+      customerId,
+      couponInstanceId: couponInstanceId.value ?? null,
+      lines,
+    })).data;
+  } catch (e) {
+    previewError.value = orderError(e);
+  }
+}
+
+watch(couponInstanceId, () => {
+  void loadPreview();
+});
+
 async function confirm() {
   if (!order.value?.orderId || saving.value) return;
   saving.value = true;
@@ -183,6 +270,9 @@ async function confirm() {
     creditOverride.value = false;
     creditOverrideReason.value = '';
     creditOpen.value = true;
+    // 打开确认弹窗才拉券与试算：确认是低频动作，不值得在详情加载时预取
+    await loadCoupons();
+    await loadPreview();
   } catch (e) {
     error.value = orderError(e);
   } finally {
@@ -199,7 +289,8 @@ async function confirmWithCredit() {
   saving.value = true;
   try {
     await orderApi.confirm({orderId: order.value.orderId, version: order.value.version,
-      creditOverride: creditOverride.value, creditOverrideReason: creditOverride.value ? creditOverrideReason.value.trim() : undefined});
+      creditOverride: creditOverride.value, creditOverrideReason: creditOverride.value ? creditOverrideReason.value.trim() : undefined,
+      couponInstanceId: couponInstanceId.value ?? undefined});
     creditOpen.value = false;
     await load();
     emit('saved');
@@ -268,4 +359,8 @@ defineExpose({open});
 pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.coupon-hint {
+  font-size: 12px;
 }</style>
