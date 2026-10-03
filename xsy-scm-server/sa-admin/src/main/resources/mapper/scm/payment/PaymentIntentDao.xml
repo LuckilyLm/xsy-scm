@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.payment.dao.PaymentIntentDao">
+
+    <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
+        SELECT * FROM payment_intent
+        WHERE deleted = FALSE
+        <if test="query.customerId != null">AND customer_id = #{query.customerId}</if>
+        <if test="query.sourceId != null">AND source_id = #{query.sourceId}</if>
+        <if test="query.provider != null and query.provider != ''">AND provider = #{query.provider}</if>
+        <if test="query.method != null and query.method != ''">AND method = #{query.method}</if>
+        <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (intent_no ILIKE CONCAT('%', #{query.keyword}, '%')
+             OR source_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
+             OR customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY created_at DESC, id DESC
+    </select>
+
+    <select id="selectByIntentNo" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
+        SELECT * FROM payment_intent WHERE intent_no = #{intentNo} AND deleted = FALSE
+    </select>
+
+    <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
+        SELECT * FROM payment_intent WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <update id="updateStatus">
+        UPDATE payment_intent
+        SET status     = #{to},
+            -- 成功时刻与关闭时刻由状态派生，与 ck_payment_intent_*_pairing 一一对应
+            succeeded_at = CASE WHEN #{to} = 'SUCCEEDED' THEN CURRENT_TIMESTAMP ELSE succeeded_at END,
+            closed_at  = CASE WHEN #{to} = 'CLOSED' THEN CURRENT_TIMESTAMP ELSE closed_at END,
+            version    = version + 1,
+            updated_at = CURRENT_TIMESTAMP,
+            updated_by = #{operator}
+        WHERE id = #{id}
+          AND status = #{from}
+          AND deleted = FALSE
+    </update>
+
+    <update id="bindExternalIntent">
+        UPDATE payment_intent
+        SET external_intent_id = #{externalIntentId},
+            version            = version + 1,
+            updated_at         = CURRENT_TIMESTAMP,
+            updated_by         = #{operator}
+        WHERE id = #{id} AND deleted = FALSE
+    </update>
+
+    <select id="sumSucceededBySource" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM payment_intent
+        WHERE source_type = #{sourceType}
+          AND source_id = #{sourceId}
+          AND status = 'SUCCEEDED'
+          AND deleted = FALSE
+    </select>
+
+</mapper>

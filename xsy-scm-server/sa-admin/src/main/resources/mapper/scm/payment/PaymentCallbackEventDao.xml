@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.payment.dao.PaymentCallbackEventDao">
+
+    <insert id="insertIgnoreDuplicate">
+        INSERT INTO payment_callback_event (provider, provider_event_id, event_type, signature_verified,
+                                            payload_hash, payload, transaction_id, process_status,
+                                            reject_reason, received_at, created_by)
+        VALUES (#{row.provider}, #{row.providerEventId}, #{row.eventType}, #{row.signatureVerified},
+                #{row.payloadHash},
+                #{row.payload,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
+                #{row.transactionId}, #{row.processStatus}, #{row.rejectReason},
+                CURRENT_TIMESTAMP, #{row.createdBy})
+        ON CONFLICT (provider, provider_event_id) DO NOTHING
+    </insert>
+
+    <select id="selectByProviderEventId"
+            resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
+        SELECT * FROM payment_callback_event
+        WHERE provider = #{provider} AND provider_event_id = #{providerEventId}
+    </select>
+
+    <update id="markProcessed">
+        UPDATE payment_callback_event
+        SET process_status = #{processStatus},
+            transaction_id = #{transactionId},
+            reject_reason  = #{rejectReason},
+            processed_at   = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

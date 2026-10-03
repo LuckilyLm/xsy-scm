@@ -1,0 +1,142 @@
+package com.xsy.scm.payment.service;
+
+import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.payment.constant.PaymentErrorCode;
+import com.xsy.scm.payment.constant.ScmPaymentCallbackEventTypeEnum;
+import com.xsy.scm.payment.constant.ScmPaymentCallbackProcessStatusEnum;
+import com.xsy.scm.payment.dao.PaymentCallbackEventDao;
+import com.xsy.scm.payment.dao.PaymentTransactionDao;
+import com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity;
+import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
+import com.xsy.scm.payment.provider.ScmPaymentProvider;
+import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 支付回调入口（**唯一**）。
+ *
+ * <p>
+ * 顺序是这一片的核心，不可调换：
+ *
+ * <pre>
+ * 渠道回调 → 验签 → 落事件（渠道事件 id 唯一）→ 匹配交易 → 状态机 → （3-11）唯一 Finance 收款事实
+ * </pre>
+ *
+ * <p>
+ * <b>禁止</b>：回调直接改订单、直接改库存、直接写财务表。回调只推进支付域自己的状态；
+ * 收款事实由支付成功**派生**（3-11），且带唯一来源键，重复回调不会重复记收款。
+ *
+ * <p>
+ * <b>幂等靠唯一索引而不是「先查后写」</b>：并发回调下先查后写两边都会查到「不存在」，
+ * 于是都去执行副作用。这里先 {@code INSERT ... ON CONFLICT DO NOTHING}，返回 0 即判定重复，
+ * 直接返回且**不执行任何副作用**。
+ *
+ * <p>
+ * <b>未通过验签的回调照样落库</b>（{@code REJECTED}）：伪造回调必须留证据。
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class PaymentCallbackService {
+
+    private final PaymentCallbackEventDao paymentCallbackEventDao;
+
+    private final PaymentTransactionDao paymentTransactionDao;
+
+    private final PaymentIntentService paymentIntentService;
+
+    private final ScmPaymentProviderRegistry providerRegistry;
+
+    /**
+     * 处理一次渠道回调。
+     *
+     * @return 本次处理结论（重复事件也返回结论，调用方据此决定回什么给渠道）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PaymentCallbackEventEntity handle(String providerCode, Map<String, String> headers, String rawBody) {
+        ScmPaymentProvider provider = providerRegistry.require(providerCode);
+        ScmPaymentProvider.Callback callback = provider.parseCallback(headers, rawBody);
+
+        // 1) 幂等锚点必须存在：没有渠道事件 id 就无从判定重复，宁可拒收也不冒「重复入账」的险
+        if (callback.providerEventId() == null || callback.providerEventId().isBlank()) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_CALLBACK_PAYLOAD_INVALID);
+        }
+
+        String operator = ScmOperator.current();
+        PaymentCallbackEventEntity event = new PaymentCallbackEventEntity();
+        event.setProvider(providerCode);
+        event.setProviderEventId(callback.providerEventId());
+        // 归一化类型优先；不认识时**原样存渠道给的名字**（payload 里有什么就存什么），
+        // 两个都没有才留空 —— 留证比编一个本地占位值诚实，也避免造出与其它域撞值的魔法字符串。
+        event.setEventType(callback.eventType() != null ? callback.eventType().name() : callback.rawEventType());
+        event.setSignatureVerified(callback.signatureVerified());
+        event.setPayloadHash(hash(rawBody));
+        event.setPayload(callback.payload());
+        event.setProcessStatus(ScmPaymentCallbackProcessStatusEnum.RECEIVED.name());
+        event.setCreatedBy(operator);
+
+        // 2) 幂等：已存在则静默返回「重复事件」，**不做任何状态转换**
+        if (paymentCallbackEventDao.insertIgnoreDuplicate(event) != 1) {
+            log.info("支付回调重复投递，已忽略：provider={} eventId={}", providerCode, callback.providerEventId());
+            return paymentCallbackEventDao.selectByProviderEventId(providerCode, callback.providerEventId());
+        }
+
+        // 3) 验签：不通过只留证，绝不进入状态转换
+        if (!callback.signatureVerified()) {
+            return reject(event.getId(), "验签失败：" + callback.rejectReason());
+        }
+        if (callback.eventType() == null) {
+            return reject(event.getId(), "事件类型不认识：" + callback.rejectReason());
+        }
+
+        // 4) 匹配交易：渠道交易号是回调与本地交易的唯一连接点
+        PaymentTransactionEntity transaction = paymentTransactionDao
+                .selectByProviderTransactionNo(providerCode, callback.providerTransactionNo());
+        if (transaction == null) {
+            return reject(event.getId(), "找不到对应的支付交易：" + callback.providerTransactionNo());
+        }
+
+        // 5) 状态机：支付成功/失败复用与发起时**同一段**判定，不各写一份
+        switch (callback.eventType()) {
+            case PAYMENT_SUCCEEDED -> paymentIntentService.applyOutcome(transaction.getIntentId(),
+                    transaction.getId(), ScmPaymentProvider.Outcome.SUCCEEDED, null, null, callback.amount(), operator);
+            case PAYMENT_FAILED -> paymentIntentService.applyOutcome(transaction.getIntentId(), transaction.getId(),
+                    ScmPaymentProvider.Outcome.FAILED, "PROVIDER_FAILED", "渠道回调支付失败", null, operator);
+            case REFUND_SUCCEEDED, REFUND_FAILED -> {
+                // 退款回调属 3-10 的下一片（退款服务）：这里先明确拒收而不是静默吞掉，
+                // 否则渠道会以为已处理，退款状态永远停在「退款中」。
+                return reject(event.getId(), "退款回调处理尚未启用：" + callback.eventType());
+            }
+        }
+
+        paymentCallbackEventDao.markProcessed(event.getId(), ScmPaymentCallbackProcessStatusEnum.APPLIED.name(),
+                transaction.getId(), null);
+        return paymentCallbackEventDao.selectById(event.getId());
+    }
+
+    private PaymentCallbackEventEntity reject(Long eventId, String reason) {
+        paymentCallbackEventDao.markProcessed(eventId, ScmPaymentCallbackProcessStatusEnum.REJECTED.name(), null,
+                reason);
+        log.warn("支付回调被拒绝：eventId={} reason={}", eventId, reason);
+        return paymentCallbackEventDao.selectById(eventId);
+    }
+
+    private static String hash(String rawBody) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest((rawBody == null ? "" : rawBody).getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 不可用", e);
+        }
+    }
+}

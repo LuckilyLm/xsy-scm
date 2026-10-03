@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.payment.dao.PaymentTransactionDao">
+
+    <select id="selectByProviderTransactionNo"
+            resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
+        SELECT * FROM payment_transaction
+        WHERE provider = #{provider}
+          AND provider_transaction_no = #{providerTransactionNo}
+          AND deleted = FALSE
+    </select>
+
+    <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
+        SELECT * FROM payment_transaction WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+    <select id="selectByIntentId" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
+        SELECT * FROM payment_transaction
+        WHERE intent_id = #{intentId} AND deleted = FALSE
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <update id="markSucceeded">
+        UPDATE payment_transaction
+        SET status          = 'SUCCEEDED',
+            provider_amount = #{providerAmount},
+            paid_at         = CURRENT_TIMESTAMP,
+            failure_code    = NULL,
+            failure_message = NULL,
+            version         = version + 1,
+            updated_at      = CURRENT_TIMESTAMP,
+            updated_by      = #{operator}
+        WHERE id = #{id}
+          AND status = 'PENDING'
+          AND deleted = FALSE
+    </update>
+
+    <update id="markFailed">
+        UPDATE payment_transaction
+        SET status          = 'FAILED',
+            failure_code    = #{failureCode},
+            failure_message = #{failureMessage},
+            version         = version + 1,
+            updated_at      = CURRENT_TIMESTAMP,
+            updated_by      = #{operator}
+        WHERE id = #{id}
+          AND status = 'PENDING'
+          AND deleted = FALSE
+    </update>
+
+    <select id="listSucceededBetween"
+            resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
+        SELECT * FROM payment_transaction
+        WHERE provider = #{provider}
+          AND status = 'SUCCEEDED'
+          AND paid_at &gt;= #{startAt}
+          AND paid_at &lt; #{endAt}
+          AND deleted = FALSE
+        ORDER BY id
+    </select>
+
+</mapper>

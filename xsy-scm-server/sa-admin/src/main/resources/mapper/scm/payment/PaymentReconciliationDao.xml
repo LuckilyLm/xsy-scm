@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.payment.dao.PaymentReconciliationDao">
+
+    <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationEntity">
+        SELECT * FROM payment_reconciliation
+        WHERE deleted = FALSE
+        <if test="query.provider != null and query.provider != ''">AND provider = #{query.provider}</if>
+        <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
+        <if test="query.bizDateFrom != null">AND biz_date &gt;= #{query.bizDateFrom}</if>
+        <if test="query.bizDateTo != null">AND biz_date &lt;= #{query.bizDateTo}</if>
+        ORDER BY biz_date DESC, id DESC
+    </select>
+
+    <select id="selectByProviderAndDate"
+            resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationEntity">
+        SELECT * FROM payment_reconciliation
+        WHERE provider = #{provider} AND biz_date = #{bizDate} AND deleted = FALSE
+    </select>
+
+    <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationEntity">
+        SELECT * FROM payment_reconciliation WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+
+</mapper>
