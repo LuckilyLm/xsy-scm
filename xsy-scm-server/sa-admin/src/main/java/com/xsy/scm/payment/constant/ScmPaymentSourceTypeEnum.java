@@ -23,7 +23,17 @@ public enum ScmPaymentSourceTypeEnum {
     SALES_ORDER("销售订单"),
 
     /** 退款的来源：售后退款单。 */
-    ORDER_REFUND("售后退款单");
+    ORDER_REFUND("售后退款单"),
+
+    /**
+     * 支付意图的来源：客户余额充值（ADM-12 3-12b）。
+     *
+     * <p>
+     * {@code source_id} 指向 {@code customer_balance_recharge.id} —— **不是**客户、结算主体或
+     * 余额账户 id：同一集团连续充 100、200、500 时那些 ID 全都一样，回答不了
+     * 「这笔 PaymentIntent 是哪一次充值」。
+     */
+    BALANCE_RECHARGE("余额充值");
 
     private final String desc;
 

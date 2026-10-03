@@ -6,8 +6,10 @@ import com.xsy.scm.balance.constant.ScmBalanceMovementTypeEnum;
 import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
 import com.xsy.scm.balance.dao.CustomerBalanceAccountDao;
 import com.xsy.scm.balance.dao.CustomerBalanceMovementDao;
+import com.xsy.scm.balance.dao.CustomerBalanceRechargeDao;
 import com.xsy.scm.balance.domain.entity.CustomerBalanceAccountEntity;
 import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
+import com.xsy.scm.balance.domain.entity.CustomerBalanceRechargeEntity;
 import com.xsy.scm.balance.domain.form.BalanceCorrectionForm;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -15,10 +17,12 @@ import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.payment.support.BalanceRechargeSink;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,9 +42,10 @@ import org.springframework.transaction.annotation.Transactional;
  * 余额退款的资金事实 —— 那三件都要先决定「余额消费与应收核销、与 write-off 的关系」，
  * 属 3-12b / 3-12c。这里只把账本、并发、防重、查询与更正做干净。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class CustomerBalanceService {
+public class CustomerBalanceService implements BalanceRechargeSink {
 
     private static final int SCALE = 4;
 
@@ -51,6 +56,8 @@ public class CustomerBalanceService {
     private final CustomerBalanceAccountDao customerBalanceAccountDao;
 
     private final CustomerBalanceMovementDao customerBalanceMovementDao;
+
+    private final CustomerBalanceRechargeDao customerBalanceRechargeDao;
 
     private final CustomerService customerService;
 
@@ -190,6 +197,43 @@ public class CustomerBalanceService {
                 ScmBalanceMovementTypeEnum.CORRECTION, direction, value, null, null, reason);
         idempotencyService.complete(claim, "BALANCE_MOVEMENT", movement.getId(), movement);
         return movement;
+    }
+
+    /**
+     * 充值支付成功 → 钱包权益增加（ADM-12 3-12b，{@link BalanceRechargeSink} 的实现）。
+     *
+     * <p>
+     * <b>入账金额取渠道实收</b>：钱包进多少必须等于公司真收多少。渠道实收 98 而充值申请 100 时，
+     * 记 98 并留下告警 —— 与退款那条口径（不一致就不落账）刻意不同：
+     * 充值场景下「客户付了钱却没有任何权益」比「权益比申请额少 2 元」严重得多。
+     * 差异本身可查（充值事实仍保留申请额），留给对账处理。
+     *
+     * <p>
+     * 幂等靠 {@code (PAYMENT_TRANSACTION, transactionId)} 的来源唯一索引：
+     * 同一个回调重复投递多少次，也只产生一条充值流水。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rechargeFromPayment(Long rechargeId, Long customerId, BigDecimal providerAmount, Long transactionId,
+            OffsetDateTime succeededAt) {
+        if (rechargeId == null || customerId == null || providerAmount == null || transactionId == null) {
+            throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
+        }
+        CustomerBalanceRechargeEntity recharge = customerBalanceRechargeDao.selectByIdForUpdate(rechargeId);
+        if (recharge == null) {
+            throw new ScmBusinessException(BalanceErrorCode.BALANCE_RECHARGE_NOT_FOUND);
+        }
+        if (!recharge.getCustomerId().equals(customerId)) {
+            // 充值的业务客户与支付意图的客户不一致：来源身份已经分叉，宁可失败
+            throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
+        }
+        if (providerAmount.compareTo(recharge.getAmount()) != 0) {
+            log.warn("充值实收与申请金额不一致，按实收入账：rechargeNo={} 申请={} 实收={}",
+                    recharge.getRechargeNo(), recharge.getAmount(), providerAmount);
+        }
+        credit(ScmBalanceMovementTypeEnum.RECHARGE, customerId, providerAmount,
+                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, transactionId,
+                "在线充值 " + recharge.getRechargeNo());
     }
 
     /**

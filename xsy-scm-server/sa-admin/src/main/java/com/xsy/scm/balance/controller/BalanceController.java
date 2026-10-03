@@ -4,12 +4,16 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.balance.constant.ScmBalancePermission;
 import com.xsy.scm.balance.domain.form.BalanceCorrectionForm;
 import com.xsy.scm.balance.domain.form.BalanceMovementQueryForm;
+import com.xsy.scm.balance.domain.form.BalanceRechargeCreateForm;
 import com.xsy.scm.balance.domain.form.BalanceQueryForm;
 import com.xsy.scm.balance.domain.vo.BalanceMovementVO;
 import com.xsy.scm.balance.domain.vo.CustomerBalanceVO;
+import com.xsy.scm.balance.service.BalanceRechargeService;
 import com.xsy.scm.balance.service.CustomerBalanceQueryService;
 import com.xsy.scm.balance.service.CustomerBalanceService;
 import com.xsy.scm.balance.support.BalanceVoAssembler;
+import com.xsy.scm.payment.domain.vo.PaymentIntentVO;
+import com.xsy.scm.payment.support.PaymentVoAssembler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -36,6 +40,8 @@ public class BalanceController {
 
     private final CustomerBalanceQueryService customerBalanceQueryService;
 
+    private final BalanceRechargeService balanceRechargeService;
+
     /** 余额概览：服务端解析结算主体，不接受客户端指定钱包账户 id。 */
     @PostMapping("/query")
     @SaCheckPermission(ScmBalancePermission.QUERY)
@@ -48,6 +54,21 @@ public class BalanceController {
     public ResponseDTO<PageResult<BalanceMovementVO>> movementQuery(
             @Valid @RequestBody BalanceMovementQueryForm form) {
         return ResponseDTO.ok(customerBalanceQueryService.movementPage(form));
+    }
+
+    /**
+     * 发起在线充值。
+     *
+     * <p>
+     * 由余额域创建充值事实后**内部**创建支付意图；客户端拿不到「拿任意 rechargeId 拼一笔支付」
+     * 的能力。要求 {@code Idempotency-Key}：这里往下会真的调用渠道。
+     */
+    @PostMapping("/recharge/create")
+    @SaCheckPermission(ScmBalancePermission.RECHARGE)
+    @OperateLog
+    public ResponseDTO<PaymentIntentVO> recharge(@Valid @RequestBody BalanceRechargeCreateForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(PaymentVoAssembler.toIntent(balanceRechargeService.create(form, key)));
     }
 
     /**

@@ -23,9 +23,12 @@ import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
+import com.xsy.scm.payment.support.BalanceRechargeIntentFact;
+import com.xsy.scm.payment.support.BalanceRechargeSink;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +52,8 @@ public class PaymentIntentService {
 
     private static final String IDEMPOTENCY_SCOPE = "PAYMENT_INTENT_CREATE";
 
+    private static final String RECHARGE_INTENT_SCOPE = "BALANCE_RECHARGE_INTENT_CREATE";
+
     private final PaymentIntentDao paymentIntentDao;
 
     private final PaymentTransactionDao paymentTransactionDao;
@@ -71,6 +76,20 @@ public class PaymentIntentService {
     private final FinanceReceiptService financeReceiptService;
 
     /**
+     * 充值落账入口（由余额域实现）。
+     *
+     * <p>
+     * 用 {@link ObjectProvider} 而不是直接注入：这是**真实的双向业务关系** —— 余额域要调本域
+     * 创建意图，本域要在支付成功后通知余额域落账。接口定义在本域（依赖倒置，编译期单向），
+     * 但 Bean 依赖仍是双向的，因此按需解析、不在构造期解环。
+     *
+     * <p>
+     * 用 {@code getObject()} 而不是 {@code getIfAvailable()}：拿不到实现是装配错误，
+     * 必须响亮失败 —— 静默跳过会让「钱进来了、钱包没加」这种最糟的情况无声发生。
+     */
+    private final ObjectProvider<BalanceRechargeSink> balanceRechargeSinkProvider;
+
+    /**
      * 创建支付意图并向渠道发起。
      *
      * <p>
@@ -91,43 +110,89 @@ public class PaymentIntentService {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
         if (method == ScmPaymentMethodEnum.BALANCE) {
-            // 余额支付在 3-12 落地前不开放
+            // 余额支付（用余额抵扣）不从这里开：余额消费要与应收核销一起设计（3-12c）
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_METHOD_NOT_ENABLED);
         }
         ScmPaymentProvider provider = providerRegistry.require(form.getProvider());
         ScmPaymentMockScenarioEnum scenario = resolveScenario(form);
         // 来源身份由**正式订单事实**决定，不采信客户端提交的客户与单号
         PaymentOrderFact order = requireOrder(form);
+        return createInternal(new IntentDraft(ScmPaymentSourceTypeEnum.SALES_ORDER.name(), order.orderId(),
+                order.orderNo(), order.customerId(), order.customerNameSnapshot(),
+                form.getAmount().setScale(SCALE, RoundingMode.HALF_UP), method, provider, scenario, form.getRemark()),
+                claim);
+    }
 
+    /**
+     * 余额充值：**内部契约**，只由余额域调用。
+     *
+     * <p>
+     * 刻意不放开公开的 {@code /scm/payment/intent/create}：客户端若能自己拼
+     * {@code sourceType=BALANCE_RECHARGE + sourceId=任意充值 id}，就等于绕过了
+     * 「先有充值事实、再有钱要付」这条顺序。
+     *
+     * <p>
+     * <b>{@code method} 恒为 {@code ONLINE}</b>：这是往余额里充钱，资金来源仍是外部在线支付；
+     * {@code BALANCE} 表示「用余额抵扣」，是相反的方向。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PaymentIntentEntity createForBalanceRecharge(BalanceRechargeIntentFact fact, String idempotencyKey) {
+        var claim = idempotencyService.claim(RECHARGE_INTENT_SCOPE + ":" + fact.rechargeId(), idempotencyKey, fact);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, PaymentIntentEntity.class);
+        }
+        ScmPaymentProvider provider = providerRegistry.require(fact.provider());
+        ScmPaymentMockScenarioEnum scenario = null;
+        if (fact.mockScenario() != null && !fact.mockScenario().isBlank()) {
+            if (!ScmPaymentProviderEnum.MOCK.name().equals(fact.provider())
+                    || ScmPaymentMockScenarioEnum.of(fact.mockScenario()) == null) {
+                throw new ScmBusinessException(PaymentErrorCode.PAYMENT_MOCK_SCENARIO_INVALID);
+            }
+            scenario = ScmPaymentMockScenarioEnum.of(fact.mockScenario());
+        }
+        return createInternal(new IntentDraft(ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name(), fact.rechargeId(),
+                fact.rechargeNo(), fact.customerId(), fact.customerName(),
+                fact.amount().setScale(SCALE, RoundingMode.HALF_UP), ScmPaymentMethodEnum.ONLINE, provider, scenario,
+                fact.remark()), claim);
+    }
+
+    /**
+     * 意图创建的共享实现（订单支付与余额充值都走这里）。
+     *
+     * <p>
+     * 抽出来是为了让两条入口共用**同一套**「先落意图 → 调渠道 → 落交易 → 推进状态机」的顺序：
+     * 各写一份迟早会出现「一条路径记得先落交易、另一条忘了」。
+     */
+    private PaymentIntentEntity createInternal(IntentDraft draft, ScmIdempotencyService.Claim claim) {
         String operator = ScmOperator.current();
         PaymentIntentEntity intent = new PaymentIntentEntity();
         intent.setIntentNo(paymentNumberGenerator.nextIntentNo());
-        intent.setCustomerId(order.customerId());
-        // 冻结**正式**客户名与订单号：存 id 字符串不仅是显示问题 ——
+        intent.setCustomerId(draft.customerId());
+        // 冻结**正式**客户名与业务单号：存 id 字符串不仅是显示问题 ——
         // 支付成功后会顺着 customer_id 进 Finance 收款事实，来源身份必须从一开始就是对的
-        intent.setCustomerNameSnapshot(order.customerNameSnapshot());
-        intent.setSourceType(ScmPaymentSourceTypeEnum.SALES_ORDER.name());
-        intent.setSourceId(order.orderId());
-        intent.setSourceNoSnapshot(order.orderNo());
-        intent.setAmount(form.getAmount().setScale(SCALE, RoundingMode.HALF_UP));
-        intent.setMethod(method.name());
-        intent.setProvider(provider.provider().name());
+        intent.setCustomerNameSnapshot(draft.customerName());
+        intent.setSourceType(draft.sourceType());
+        intent.setSourceId(draft.sourceId());
+        intent.setSourceNoSnapshot(draft.sourceNo());
+        intent.setAmount(draft.amount());
+        intent.setMethod(draft.method().name());
+        intent.setProvider(draft.provider().provider().name());
         intent.setStatus(ScmPaymentIntentStatusEnum.CREATED.name());
-        intent.setMockScenario(scenario == null ? null : scenario.name());
-        intent.setRemark(form.getRemark());
+        intent.setMockScenario(draft.scenario() == null ? null : draft.scenario().name());
+        intent.setRemark(draft.remark());
         intent.setCreatedBy(operator);
         intent.setUpdatedBy(operator);
         paymentIntentDao.insert(intent);
 
         // 向渠道发起
-        ScmPaymentProvider.IntentResult result = provider.createIntent(new ScmPaymentProvider.IntentRequest(
-                intent.getIntentNo(), intent.getAmount(), intent.getSourceNoSnapshot(), scenario));
+        ScmPaymentProvider.IntentResult result = draft.provider().createIntent(new ScmPaymentProvider.IntentRequest(
+                intent.getIntentNo(), intent.getAmount(), intent.getSourceNoSnapshot(), draft.scenario()));
 
         // 落交易事实：渠道交易号是回调匹配的入口，先落库再改状态，回调永远找得到它
         PaymentTransactionEntity transaction = new PaymentTransactionEntity();
         transaction.setTransactionNo(paymentNumberGenerator.nextTransactionNo());
         transaction.setIntentId(intent.getId());
-        transaction.setProvider(provider.provider().name());
+        transaction.setProvider(draft.provider().provider().name());
         transaction.setProviderTransactionNo(result.providerTransactionNo());
         transaction.setAmount(intent.getAmount());
         transaction.setStatus(ScmPaymentTransactionStatusEnum.PENDING.name());
@@ -148,6 +213,12 @@ public class PaymentIntentService {
         PaymentIntentEntity saved = paymentIntentDao.selectById(intent.getId());
         idempotencyService.complete(claim, "PAYMENT_INTENT", saved.getId(), saved);
         return saved;
+    }
+
+    /** 意图创建草稿：把两条入口的差异收在一处，共享实现只认它。 */
+    private record IntentDraft(String sourceType, Long sourceId, String sourceNo, Long customerId,
+            String customerName, BigDecimal amount, ScmPaymentMethodEnum method, ScmPaymentProvider provider,
+            ScmPaymentMockScenarioEnum scenario, String remark) {
     }
 
     /**
@@ -214,6 +285,14 @@ public class PaymentIntentService {
         financeReceiptService.registerFromPaymentTransaction(new FinancePaymentReceiptFact(transaction.getId(),
                 intent.getCustomerId(), transaction.getProviderAmount(), transaction.getPaidAt(),
                 transaction.getProviderTransactionNo()));
+
+        // 充值来源还要把**钱包权益**同时记上：两条事实回答两个不同问题 ——
+        // Finance 收款说「公司实际进账了多少」，余额流水说「这笔钱形成了多少钱包权益」。
+        // 不是重复记账：一个回答资金，一个回答权益。
+        if (ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name().equals(intent.getSourceType())) {
+            balanceRechargeSinkProvider.getObject().rechargeFromPayment(intent.getSourceId(), intent.getCustomerId(),
+                    transaction.getProviderAmount(), transaction.getId(), transaction.getPaidAt());
+        }
     }
 
     /**

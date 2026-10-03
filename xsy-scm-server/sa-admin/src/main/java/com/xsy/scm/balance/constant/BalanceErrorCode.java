@@ -37,7 +37,13 @@ public enum BalanceErrorCode implements ScmErrorCode {
     BALANCE_SOURCE_INVALID(41367, "余额流水来源不合法"),
 
     /** 同一来源已经产生过余额流水：重复驱动不重复入账。 */
-    BALANCE_SOURCE_DUPLICATED(41368, "该来源已产生过余额流水");
+    BALANCE_SOURCE_DUPLICATED(41368, "该来源已产生过余额流水"),
+
+    /** 充值请求不存在。 */
+    BALANCE_RECHARGE_NOT_FOUND(41369, "充值请求不存在"),
+
+    /** 充值金额不合法。 */
+    BALANCE_RECHARGE_AMOUNT_INVALID(41370, "充值金额必须大于0");
 
     private final int code;
 
