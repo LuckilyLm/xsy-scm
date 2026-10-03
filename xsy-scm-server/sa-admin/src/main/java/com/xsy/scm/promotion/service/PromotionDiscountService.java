@@ -6,6 +6,8 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.promotion.constant.PromotionErrorCode;
 import com.xsy.scm.promotion.constant.ScmPromotionActivityTypeEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
+import com.xsy.scm.promotion.constant.ScmPromotionCouponInstanceStatusEnum;
+import com.xsy.scm.promotion.constant.ScmPromotionStatusEnum;
 import com.xsy.scm.promotion.dao.OrderDiscountDao;
 import com.xsy.scm.promotion.dao.PromotionActivityDao;
 import com.xsy.scm.promotion.dao.PromotionCouponDao;
@@ -268,7 +270,7 @@ public class PromotionDiscountService {
         if (row == null || Boolean.TRUE.equals(row.getDeleted())) {
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_NOT_FOUND);
         }
-        if (!"ACTIVE".equals(row.getStatus()) || !row.getValidFrom().isBefore(now)
+        if (!ScmPromotionStatusEnum.ACTIVE.name().equals(row.getStatus()) || !row.getValidFrom().isBefore(now)
                 || !row.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_STATE_INVALID);
         }
@@ -280,7 +282,7 @@ public class PromotionDiscountService {
         if (row == null || Boolean.TRUE.equals(row.getDeleted())) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
         }
-        if (!"ACTIVE".equals(row.getStatus()) || !row.getValidFrom().isBefore(now)
+        if (!ScmPromotionStatusEnum.ACTIVE.name().equals(row.getStatus()) || !row.getValidFrom().isBefore(now)
                 || !row.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
         }
@@ -298,7 +300,7 @@ public class PromotionDiscountService {
         if (!Objects.equals(instance.getCustomerId(), customerId)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_NOT_FOUND);
         }
-        if (!"AVAILABLE".equals(instance.getStatus())) {
+        if (!ScmPromotionCouponInstanceStatusEnum.AVAILABLE.name().equals(instance.getStatus())) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_STATE_INVALID);
         }
         return instance;

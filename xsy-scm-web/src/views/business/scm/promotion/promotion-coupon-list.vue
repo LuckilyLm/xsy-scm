@@ -1,8 +1,12 @@
 <!--
   优惠券（ADM-12 第一阶段）。
 
+  正常流程：新建（草稿）→ 启用 → 发券。只有生效中的券模板可以发，因此草稿必须先启用；
+  启用只是发布模板，实际发券还要落在券自己的有效期内（服务端再判一次窗口）。
+
   券模板只在草稿 / 停用状态可改：生效中的券被改内容，会让同一批**已发出**的券按两套规则核销。
-  发券一次批量落库，每张券带自己的实例号，因此「这个客户有几张、用到第几张」都能查。
+  发券一次批量落库（带 Idempotency-Key，重试回放不重复发），每张券带自己的实例号，
+  因此「这个客户有几张、用到第几张」都能查。
 
   券的占用 / 核销 / 释放不在本页：它们由下单与退款流程驱动（试算不占用，确认下单才占用）。
 -->
@@ -59,6 +63,21 @@
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button type="link" v-privilege="'scm:promotion:coupon:edit'" @click="openEdit(record)">编辑</a-button>
+            <a-button
+                v-if="record.status !== 'ACTIVE'"
+                type="link"
+                v-privilege="'scm:promotion:coupon:status'"
+                @click="changeStatus(record, 'ACTIVE')"
+            >启用
+            </a-button>
+            <a-button
+                v-else
+                type="link"
+                danger
+                v-privilege="'scm:promotion:coupon:status'"
+                @click="changeStatus(record, 'STOPPED')"
+            >停用
+            </a-button>
             <a-button
                 type="link"
                 v-privilege="'scm:promotion:coupon:issue'"
@@ -196,7 +215,7 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '生效时间', dataIndex: 'validFrom', width: 180},
   {title: '失效时间', dataIndex: 'validTo', width: 180},
   {title: '状态', dataIndex: 'status', width: 100},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 150},
+  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 220},
 ];
 
 const form = reactive<PromotionCouponSave>({
@@ -301,6 +320,19 @@ function openIssue(record: PromotionCoupon) {
   issueForm.quantity = 1;
   issueError.value = '';
   issueOpen.value = true;
+}
+
+/**
+ * 启停券模板。券新建后是草稿，必须先启用才能发券；已过期的券不能再次启用（服务端 41327 兜底）。
+ */
+async function changeStatus(record: PromotionCoupon, status: 'ACTIVE' | 'STOPPED') {
+  try {
+    await promotionApi.couponStatus(record.id, record.version, status);
+    message.success(status === 'ACTIVE' ? '优惠券已启用' : '优惠券已停用');
+    await queryData();
+  } catch (e) {
+    error.value = promotionError(e);
+  }
 }
 
 async function submitIssue() {

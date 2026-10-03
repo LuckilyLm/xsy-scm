@@ -6,6 +6,7 @@ import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.promotion.constant.PromotionErrorCode;
 import com.xsy.scm.promotion.constant.ScmPromotionActivityTypeEnum;
+import com.xsy.scm.promotion.constant.ScmPromotionStatusEnum;
 import com.xsy.scm.promotion.dao.PromotionActivityDao;
 import com.xsy.scm.promotion.domain.entity.PromotionActivityEntity;
 import com.xsy.scm.promotion.domain.form.PromotionActivityForm;
@@ -38,7 +39,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PromotionActivityService {
 
-    private static final Set<String> EDITABLE_STATUS = Set.of("DRAFT", "STOPPED");
+    private static final Set<String> EDITABLE_STATUS = Set.of(ScmPromotionStatusEnum.DRAFT.name(),
+            ScmPromotionStatusEnum.STOPPED.name());
 
     private final PromotionActivityDao promotionActivityDao;
 
@@ -73,7 +75,7 @@ public class PromotionActivityService {
             PromotionActivityEntity row = new PromotionActivityEntity();
             row.setActivityCode(form.getActivityCode().trim());
             apply(row, form, rule, type);
-            row.setStatus("DRAFT");
+            row.setStatus(ScmPromotionStatusEnum.DRAFT.name());
             row.setCreatedBy(operator);
             row.setUpdatedBy(operator);
             promotionActivityDao.insert(row);
@@ -102,7 +104,8 @@ public class PromotionActivityService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(Long id, PromotionStatusForm form) {
-        if (!Set.of("ACTIVE", "STOPPED").contains(form.getStatus())) {
+        if (!Set.of(ScmPromotionStatusEnum.ACTIVE.name(), ScmPromotionStatusEnum.STOPPED.name())
+                .contains(form.getStatus())) {
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_STATE_INVALID);
         }
         PromotionActivityEntity row = promotionActivityDao.lockById(id);
@@ -112,7 +115,8 @@ public class PromotionActivityService {
         if (form.getStatus().equals(row.getStatus())) {
             return;
         }
-        if ("ACTIVE".equals(form.getStatus()) && !row.getValidTo().isAfter(OffsetDateTime.now())) {
+        if (ScmPromotionStatusEnum.ACTIVE.name().equals(form.getStatus())
+                && !row.getValidTo().isAfter(OffsetDateTime.now())) {
             // 已过期的活动上线只会得到一条永远不生效的规则
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_WINDOW_INVALID);
         }

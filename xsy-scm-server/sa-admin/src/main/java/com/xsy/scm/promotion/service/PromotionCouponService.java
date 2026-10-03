@@ -5,8 +5,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
+import com.xsy.scm.customer.service.CustomerQueryService;
 import com.xsy.scm.promotion.constant.PromotionErrorCode;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
+import com.xsy.scm.promotion.constant.ScmPromotionCouponInstanceStatusEnum;
+import com.xsy.scm.promotion.constant.ScmPromotionStatusEnum;
 import com.xsy.scm.promotion.dao.PromotionCouponDao;
 import com.xsy.scm.promotion.dao.PromotionCouponInstanceDao;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponEntity;
@@ -14,8 +18,10 @@ import com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity;
 import com.xsy.scm.promotion.domain.form.PromotionCouponForm;
 import com.xsy.scm.promotion.domain.form.PromotionCouponIssueForm;
 import com.xsy.scm.promotion.domain.form.PromotionCouponQueryForm;
+import com.xsy.scm.promotion.domain.form.PromotionStatusForm;
 import com.xsy.scm.promotion.domain.vo.PromotionCouponVO;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +50,10 @@ public class PromotionCouponService {
     private final PromotionCouponDao promotionCouponDao;
 
     private final PromotionCouponInstanceDao promotionCouponInstanceDao;
+
+    private final CustomerQueryService customerQueryService;
+
+    private final ScmIdempotencyService idempotencyService;
 
     @Transactional(readOnly = true)
     public PageResult<PromotionCouponVO> queryPage(PromotionCouponQueryForm query) {
@@ -80,7 +90,7 @@ public class PromotionCouponService {
             PromotionCouponEntity row = new PromotionCouponEntity();
             row.setCouponCode(form.getCouponCode().trim());
             apply(row, form, type);
-            row.setStatus("DRAFT");
+            row.setStatus(ScmPromotionStatusEnum.DRAFT.name());
             row.setCreatedBy(operator);
             row.setUpdatedBy(operator);
             promotionCouponDao.insert(row);
@@ -91,7 +101,10 @@ public class PromotionCouponService {
         if (row == null) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
         }
-        if ("ACTIVE".equals(row.getStatus())) {
+        if (!Objects.equals(form.getVersion(), row.getVersion())) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VERSION_CONFLICT);
+        }
+        if (ScmPromotionStatusEnum.ACTIVE.name().equals(row.getStatus())) {
             // 生效中的券改内容，会让同一批已发出的券按两套规则核销
             throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
         }
@@ -104,6 +117,33 @@ public class PromotionCouponService {
         return row.getId();
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public void updateStatus(Long id, PromotionStatusForm form) {
+        PromotionCouponEntity coupon = promotionCouponDao.lockById(id);
+        if (coupon == null) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
+        }
+        if (!Objects.equals(coupon.getVersion(), form.getVersion())) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VERSION_CONFLICT);
+        }
+        boolean activate = ScmPromotionStatusEnum.ACTIVE.name().equals(form.getStatus());
+        boolean stop = ScmPromotionStatusEnum.STOPPED.name().equals(form.getStatus());
+        boolean currentlyActive = ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus());
+        if ((!activate && !stop) || activate == currentlyActive) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
+        }
+        // 允许提前启用未来生效的券；实际发券仍须进入有效期，过期券不能再次启用。
+        if (activate && !coupon.getValidTo().isAfter(OffsetDateTime.now())) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
+        }
+        coupon.setStatus(form.getStatus());
+        coupon.setUpdatedBy(ScmOperator.current());
+        coupon.setUpdatedAt(OffsetDateTime.now());
+        if (promotionCouponDao.updateById(coupon) != 1) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VERSION_CONFLICT);
+        }
+    }
+
     /**
      * 发券：给某客户发 N 张可用券。
      *
@@ -111,32 +151,51 @@ public class PromotionCouponService {
      * 只有生效中的券模板可以发：发出去的券立刻可用，模板还没生效等于发了一批用不了的券。
      */
     @Transactional(rollbackFor = Exception.class)
-    public int issue(PromotionCouponIssueForm form) {
+    public int issue(PromotionCouponIssueForm form, String key) {
+        // 重放同样重新检查客户当前归属，旧请求不保留已撤销的数据范围。
+        customerQueryService.detail(form.getCustomerId());
+        var claim = idempotencyService.claim("PROMOTION_COUPON_ISSUE", key, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, Integer.class);
+        }
         PromotionCouponEntity coupon = promotionCouponDao.lockById(form.getCouponId());
         if (coupon == null) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
         }
-        if (!"ACTIVE".equals(coupon.getStatus())) {
+        OffsetDateTime now = OffsetDateTime.now();
+        if (!ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus())
+                || coupon.getValidFrom().isAfter(now) || !coupon.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
         }
         int quantity = form.getQuantity() == null ? 1 : form.getQuantity();
         List<PromotionCouponInstanceEntity> rows = new ArrayList<>(quantity);
-        String batch = Long.toString(System.currentTimeMillis(), 36).toUpperCase();
+        String batch = "ISSUE-" + claim.record().getId();
         for (int index = 0; index < quantity; index++) {
             PromotionCouponInstanceEntity row = new PromotionCouponInstanceEntity();
             row.setCouponId(coupon.getId());
             row.setCustomerId(form.getCustomerId());
-            // 实例号 = 批次 + 序号：同一次发券的券可归组，且全局唯一（唯一约束兜底）
+            // 幂等记录主键标识批次，不以毫秒时间猜测唯一性。
             row.setInstanceNo(batch + "-" + (index + 1));
-            row.setStatus("AVAILABLE");
+            row.setStatus(ScmPromotionCouponInstanceStatusEnum.AVAILABLE.name());
             rows.add(row);
         }
-        promotionCouponInstanceDao.insertBatch(rows);
+        if (promotionCouponInstanceDao.insertBatch(rows) != quantity) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_UNAVAILABLE);
+        }
+        idempotencyService.complete(claim, "PROMOTION_COUPON", coupon.getId(), quantity);
         return quantity;
     }
 
     @Transactional(readOnly = true)
     public List<PromotionCouponVO.Instance> listInstances(Long customerId, String status) {
+        customerQueryService.detail(customerId);
+        if (StringUtils.isNotBlank(status)) {
+            try {
+                ScmPromotionCouponInstanceStatusEnum.valueOf(status);
+            } catch (IllegalArgumentException exception) {
+                throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_STATE_INVALID);
+            }
+        }
         List<PromotionCouponInstanceEntity> rows = promotionCouponInstanceDao.listByCustomer(customerId, status,
                 INSTANCE_LIST_LIMIT);
         Map<Long, PromotionCouponEntity> coupons = new HashMap<>();

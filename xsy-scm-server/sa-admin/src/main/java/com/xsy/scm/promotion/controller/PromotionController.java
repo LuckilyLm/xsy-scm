@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -112,13 +113,30 @@ public class PromotionController {
     }
 
     /**
+     * 启停券模板；草稿 / 停用的券不能发，只有生效中的券才允许发出。
+     */
+    @PostMapping("/coupon/{id}/status")
+    @SaCheckPermission(PromotionPermission.COUPON_STATUS)
+    @OperateLog
+    public ResponseDTO<String> couponStatus(@PathVariable("id") Long id,
+            @Valid @RequestBody PromotionStatusForm form) {
+        promotionCouponService.updateStatus(id, form);
+        return ResponseDTO.ok();
+    }
+
+    /**
      * 发券：给某客户发 N 张可用券。
+     *
+     * <p>
+     * 需要 {@code Idempotency-Key}（缺失 → 40069）：重试回放首次结果，不重复发券；
+     * 客户归属与数据范围在服务端重新判定。
      */
     @PostMapping("/coupon/issue")
     @SaCheckPermission(PromotionPermission.COUPON_ISSUE)
     @OperateLog
-    public ResponseDTO<Integer> issueCoupon(@Valid @RequestBody PromotionCouponIssueForm form) {
-        return ResponseDTO.ok(promotionCouponService.issue(form));
+    public ResponseDTO<Integer> issueCoupon(@Valid @RequestBody PromotionCouponIssueForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(promotionCouponService.issue(form, key));
     }
 
     /**
