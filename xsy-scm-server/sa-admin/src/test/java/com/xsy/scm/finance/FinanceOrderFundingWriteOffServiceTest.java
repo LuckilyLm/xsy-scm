@@ -1,6 +1,11 @@
 package com.xsy.scm.finance;
 
 import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.finance.constant.FinanceConstant;
+import com.xsy.scm.finance.constant.FinanceErrorCode;
+import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import com.xsy.scm.finance.dao.FinanceOrderFundingSourceDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
 import com.xsy.scm.finance.dao.FinanceReceivableDao;
@@ -14,12 +19,17 @@ import com.xsy.scm.finance.service.FinanceOrderFundingWriteOffService;
 import com.xsy.scm.finance.support.FinanceFundingAllocationResult.Status;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import java.math.BigDecimal;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -92,6 +102,102 @@ class FinanceOrderFundingWriteOffServiceTest {
         assertThat(service.register(20L, 50L).status()).isEqualTo(Status.ALREADY_ALLOCATED);
         verify(writeOffs, never()).insert(any(FinanceWriteOffEntity.class));
         verifyNoInteractions(logs);
+    }
+
+    @Test
+    void exhaustedBalanceSourceReportsNoAvailableFunds() {
+        balanceSource();
+        when(writeOffs.selectSourceUsedAmount("BALANCE_MOVEMENT", 30L)).thenReturn(new BigDecimal("100"));
+        var result = service.register(20L, 50L);
+        assertThat(result.status()).isEqualTo(Status.NO_AVAILABLE_FUNDS);
+        assertThat(result.appliedAmount()).isEqualByComparingTo("0");
+        verify(writeOffs, never()).insertBalanceOnConflictDoNothing(any());
+        verifyNoInteractions(logs);
+    }
+
+    @Test
+    void partiallyUsedBalanceSourceIsRejectedBecauseBalanceAllocationIsAllOrNothing() {
+        balanceSource();
+        when(writeOffs.selectSourceUsedAmount("BALANCE_MOVEMENT", 30L)).thenReturn(new BigDecimal("40"));
+        assertInvalid(() -> service.register(20L, 50L));
+        verify(writeOffs, never()).insertBalanceOnConflictDoNothing(any());
+    }
+
+    @Test
+    void balanceMovementMustExistAndBelongToTheFundingIntent() {
+        balanceSource();
+        when(sources.lockMovement(30L)).thenReturn(null);
+        assertInvalid(() -> service.register(20L, 50L));
+        var foreign = new CustomerBalanceMovementEntity();
+        foreign.setSourceId(999L); foreign.setAmount(new BigDecimal("100"));
+        when(sources.lockMovement(30L)).thenReturn(foreign);
+        assertInvalid(() -> service.register(20L, 50L));
+        verify(writeOffs, never()).insertBalanceOnConflictDoNothing(any());
+    }
+
+    @Test
+    void rechargeReceiptCannotBeAllocatedToAnOrderReceivable() {
+        onlineSource();
+        when(sources.isRechargeReceipt(40L)).thenReturn(true);
+        assertInvalid(() -> service.register(20L, 50L));
+        verify(writeOffs, never()).insert(any(FinanceWriteOffEntity.class));
+    }
+
+    @Test
+    void appliedWriteOffLogsTheReceivableBalanceBeforeAndAfter() {
+        balanceSource();
+        when(writeOffs.insertBalanceOnConflictDoNothing(any())).thenAnswer(invocation -> {
+            FinanceWriteOffEntity row = invocation.getArgument(0); row.setId(60L); return 1;
+        });
+        service.register(20L, 50L);
+        var before = ArgumentCaptor.forClass(Object.class);
+        var after = ArgumentCaptor.forClass(Object.class);
+        verify(logs).record(eq(ScmFinanceBusinessTypeEnum.WRITE_OFF), eq(60L),
+                eq(ScmFinanceOperationTypeEnum.WRITE_OFF), isNull(), before.capture(), after.capture(),
+                eq(FinanceConstant.ORDER_FUNDING_OPERATOR));
+        // 净额 40 = 应收 70 − 红冲 30；核销 100 因此超额 60 —— 超额只在读侧表达，不改原债权
+        assertThat(snapshot(before.getValue())).containsEntry("targetNo", "AR50").containsEntry("netAmount", "40")
+                .containsEntry("writtenOffAmount", "0").containsEntry("openAmount", "40")
+                .containsEntry("overAppliedAmount", "0");
+        assertThat(snapshot(after.getValue())).containsEntry("netAmount", "40")
+                .containsEntry("writtenOffAmount", "100").containsEntry("openAmount", "0")
+                .containsEntry("overAppliedAmount", "60");
+    }
+
+    @Test
+    void concurrentInsertConflictReplaysTheExistingAllocation() {
+        balanceSource();
+        when(writeOffs.insertBalanceOnConflictDoNothing(any())).thenReturn(0);
+        var existing = new FinanceWriteOffEntity();
+        existing.setId(60L); existing.setTargetType("RECEIVABLE"); existing.setTargetId(50L);
+        existing.setAmount(new BigDecimal("100"));
+        // 首次查重为空才会走到插入；冲突后回读才拿到并发写入的那条（两次入参完全相同）
+        when(writeOffs.selectNormalAllocation("BALANCE_MOVEMENT", 30L, null)).thenReturn(null, existing);
+        when(writeOffs.hasReversal(60L)).thenReturn(false);
+        assertThat(service.register(20L, 50L).status()).isEqualTo(Status.ALREADY_ALLOCATED);
+        verifyNoInteractions(logs);
+    }
+
+    @Test
+    void insertConflictAgainstADifferentAllocationFailsInsteadOfPassingSilently() {
+        balanceSource();
+        when(writeOffs.insertBalanceOnConflictDoNothing(any())).thenReturn(0);
+        var other = new FinanceWriteOffEntity();
+        other.setId(61L); other.setTargetType("RECEIVABLE"); other.setTargetId(77L);
+        other.setAmount(new BigDecimal("100"));
+        when(writeOffs.selectNormalAllocation("BALANCE_MOVEMENT", 30L, null)).thenReturn(null, other);
+        assertInvalid(() -> service.register(20L, 50L));
+        verifyNoInteractions(logs);
+    }
+
+    private static void assertInvalid(Executable executable) {
+        assertThatThrownBy(executable::execute).isInstanceOfSatisfying(ScmBusinessException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(FinanceErrorCode.ORDER_FUNDING_INVALID));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> snapshot(Object captured) {
+        return (Map<String, Object>) captured;
     }
 
     private void balanceSource() {
