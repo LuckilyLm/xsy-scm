@@ -60,7 +60,34 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
     private BigDecimal unitPrice;
 
     /**
-     * 正常 = {@code ROUND(quantity × unitPrice, 4)}；红字 = {@code order_return_item.approved_amount} （订单域已算，财务不重算、不改写）。
+     * 该行承担的订单优惠分摊（正常为减免额；红字为按同一份冻结分摊反向的减免额）。恒 &gt;= 0。
+     *
+     * <p>
+     * 来源是订单确认时冻结的 {@code order_discount.allocations}，按「该行金额 / 订单行下单金额」等比折算；
+     * <b>不用</b>本次操作时的当前活动重算 —— 否则双十一买的单在双十二退货会退成另一个数。
+     */
+    private BigDecimal discountAmount;
+
+    /**
+     * 行净额 = 毛额 − {@link #discountAmount}（库上有 {@code amount >= 0}，减多了会被拒）。
+     *
+     * <p>
+     * 正常 = {@code ROUND(quantity × unitPrice, 4)} 再扣优惠；红字 = 订单域已算的
+     * {@code approved_amount} 再扣反向优惠。
      */
     private BigDecimal amount;
+
+    /**
+     * 行毛额 = {@link #amount} + {@link #discountAmount}。
+     *
+     * <p>
+     * <b>刻意不落库</b>：毛额可由净额与优惠精确还原，多存一列派生态就会与既有
+     * 「不落余额 / 结清状态列」的纪律冲突，也会给「三列互相漂移」留出空间。
+     */
+    public BigDecimal getGrossAmount() {
+        if (amount == null) {
+            return null;
+        }
+        return discountAmount == null ? amount : amount.add(discountAmount);
+    }
 }

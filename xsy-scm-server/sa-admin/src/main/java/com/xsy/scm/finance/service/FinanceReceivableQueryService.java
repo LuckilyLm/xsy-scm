@@ -162,6 +162,8 @@ public class FinanceReceivableQueryService {
         vo.setUnit(item.getUnitSnapshot());
         vo.setQuantity(item.getQuantity());
         vo.setUnitPrice(item.getUnitPrice());
+        vo.setGrossAmount(item.getGrossAmount());
+        vo.setDiscountAmount(item.getDiscountAmount());
         vo.setAmount(item.getAmount());
         return vo;
     }

@@ -1,7 +1,7 @@
 # 营销接入正式订单（ADM-12 第三阶段）计划
 
 计划日期：2026-10-03。
-状态：决策已确认；切片 3-1～3-3、3-7、3-8 代码完成，待验收。
+状态：决策已确认；切片 3-1～3-4、3-7、3-8 代码完成，待验收。
 依据：[ADR-009](../adr/009-marketing-payment-promotion-order-assistant-and-traceability.md)、[开发规划](admin-development-roadmap.md)、[项目状态](../../status.md)及当前主线代码。
 
 ## 1. 目标
@@ -50,7 +50,7 @@
 | 3-1 | 服务端按订单事实冻结：新增契约 `PromotionOrderFacts`（订单域装配，含 `salesOrderId` / `customerId` / 行 `orderedLineAmount`）；`PromotionDiscountService.freeze(facts, couponInstanceId)` 取代原 `confirm(form)`；活动不由客户端指定（服务端按生效规则与互斥组自选）；删除 `POST /scm/promotion/discount/confirm` 与 `PromotionDiscountConfirmForm`；`OrderConfirmForm` 新增 `couponInstanceId`（只接受「用哪张券」，券是客户权益） | 代码完成 |
 | 3-2 | 冻结的请求级幂等：由外层命令承担 —— 冻结是订单确认事务的一部分，重复确认由 `ORDER_CONFIRM` 的 `Idempotency-Key` 回放首次结果，不会第二次进入冻结。`DISCOUNT_ALREADY_FROZEN` 保留为兜底，供非幂等路径调用时拒绝而非覆盖 | 代码完成 |
 | 3-3 | 完整活动快照：`activity_snapshot` 由「单条规则」改为 `{"applied":[{activityId, activityCode, activityName, activityType, version, rule, discountAmount}...],"suppressed":[...]}`，冻结**每一条实际产生优惠的活动**（不同互斥组可叠加，可能不止一条）；`activity_id` / `activity_version` 保留为主活动（第一条产生优惠的活动）。形状仍是 `object`，`order_discount` 的 `jsonb_typeof='object'` 约束不需要改表 | 代码完成 |
-| 3-4 | 订单取消 / 退款按冻结分摊反向；券 `RESERVED → USED` / `RELEASED` | 未开始（见第 5 节：与 Finance 净收入口径耦合） |
+| 3-4 | 订单优惠落到应收净额：正常应收按「行毛额 − 该行优惠分摊」生成，红字按同一把尺子反向；新增 `finance_receivable_item.discount_amount`（V93），毛额由 `amount + discount_amount` 还原不落库；财务详情展示毛额 / 订单优惠 / 净额 | 代码完成 |
 | 3-5 | 满赠履约来源（赠品 SKU → 库存出库 / 成本口径） | 未开始 |
 | 3-6 | 限时特价（改基础价，与 ADR-009「活动价在基础价之后计算」冲突） | 未开始 |
 | 3-7 | 前端券选择入口：确认弹窗拉客户 `AVAILABLE` 券实例、切换即试算（只读不占用）、确认时提交 `couponInstanceId` | 代码完成 |
@@ -61,7 +61,13 @@
 - **授信检查仍按未扣优惠的金额**：`confirmOrder` 里 `checkForSettlementConfirmation` 用的是 `settlementTotalAmount`，**没有减去优惠**。授信占用口径属于 ADM-04，改它需要单独确认，本轮刻意未动；否则会悄悄改变授信额度判定。
 - **订单确认通知在冻结之后发送**：冻结失败即整笔回滚，不会出现「已发确认通知但优惠没冻结」。
 - **架构测试未覆盖 `promotion` 域**：`ScmArchitectureTest.CONCRETE_DOMAINS` 列了 14 个业务域，但没有 `..scm.promotion..`，因此分层方向与「`common` 不反向依赖业务域」两条规则对营销域不生效。属于既有缺口，本轮未动测试（加了会引入无法在本轮验证的失败面），需单独处理。
-- **3-4 与 Finance 净收入口径耦合**：订单优惠目前是订单侧独立事实，Finance 的应收/红字仍按**未扣优惠**的结算金额生成（`settlementTotalAmount`）。因此「退款按冻结分摊反向」不能单独做——先做反向而不做 Finance 净收入，会让账上出现「有优惠反向、却没有优惠净额」的半截状态。建议把 3-4 与 [ADM-01 的净收入同步](finance-r2-report-gap-inventory.md) 合成一个切片，并先确认应收与红字的净额口径。
+- **3-4 的口径（负责人 2026-10-03 确认）**：
+  - 应收**直接记净额**：`finance_receivable_item.amount` = 行毛额 − 该行优惠分摊；红字按同一份冻结分摊反向。不新增「优惠抵减事实」类型。
+  - 折算规则：**冻结的订单行优惠 × 该行本次金额 / 该订单行下单金额**（等比）。少发或部分退货时该行承担的优惠按比例变小，不会整额落到部分金额上（整额会减成负数，被既有 `amount >= 0` 拒掉）。该式与「已确认优惠 × 退货金额 / 已出库金额」恒等，因此红字不必回读正常应收明细。
+  - **不落 `gross_amount`**：毛额由 `amount + discount_amount` 精确还原，多存一列派生态会与「不落余额 / 结清状态列」的纪律冲突。
+  - **授信占用口径不变**：确认时仍按未扣优惠的 `settlementTotalAmount` 判定（更保守，不因优惠放宽额度）。
+  - 副作用（正向）：销售毛利报表直接取 `finance_receivable_item.amount` 作为收入，因此**净收入与退款反向自动同步**，利润 SQL 不需要改。
+- **券的 `RESERVED → USED` / `RELEASED` 未接**：冻结时已占用（`markReserved`），但订单签收后转核销、取消后释放仍无触发点。`markUsed` / `markReleased` 已具备，只差编排，属下一片。
 
 ## 6. 不在本切片
 

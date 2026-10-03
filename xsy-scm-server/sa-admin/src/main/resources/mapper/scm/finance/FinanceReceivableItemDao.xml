@@ -13,11 +13,11 @@
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity">
         INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, order_item_id,
                                              sku_id, sku_name_snapshot, unit_snapshot,
-                                             quantity, unit_price, amount,
+                                             quantity, unit_price, discount_amount, amount,
                                              version, deleted, created_at, updated_at, created_by, updated_by)
         VALUES (#{receivableId}, #{sourceType}, #{sourceId}, #{orderItemId},
                 #{skuId}, #{skuNameSnapshot}, #{unitSnapshot},
-                #{quantity}, #{unitPrice}, #{amount},
+                #{quantity}, #{unitPrice}, #{discountAmount}, #{amount},
                 0, FALSE, #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
         ON CONFLICT (source_type, source_id)
             WHERE deleted = FALSE DO NOTHING

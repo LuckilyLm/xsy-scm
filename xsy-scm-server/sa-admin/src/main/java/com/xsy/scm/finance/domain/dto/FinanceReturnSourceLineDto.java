@@ -35,4 +35,14 @@ public class FinanceReturnSourceLineDto {
      * 订单域已算好的批准金额，财务原样采用。
      */
     private BigDecimal approvedAmount;
+
+    /**
+     * 订单行的下单金额 {@code sales_order_item.ordered_line_amount}（下单量 × 锁定单价）。
+     *
+     * <p>
+     * 与正常应收同一把尺子：红字要反向的优惠 = 冻结行分摊 × 本次退货金额 / 下单金额。
+     * 该式与「已确认优惠 × 退货金额 / 已出库金额」恒等（优惠本就按下单金额等比冻结），
+     * 因此不必回读正常应收明细就能得到一致的反向额。
+     */
+    private BigDecimal orderedLineAmount;
 }

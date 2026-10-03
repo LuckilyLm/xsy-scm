@@ -39,4 +39,13 @@ public class FinanceReceivableSourceLineDto {
      * 冻结售价 {@code sales_order_item.locked_unit_price}，允许合法为 0（赠品 / 0 元单）。
      */
     private BigDecimal unitPrice;
+
+    /**
+     * 订单行的下单金额 {@code sales_order_item.ordered_line_amount}（下单量 × 锁定单价）。
+     *
+     * <p>
+     * 只用来把订单确认时冻结的行优惠分摊**等比折算**到本次实际出库量上：优惠是按下单金额冻结的，
+     * 少发时该行应承担的优惠也要按比例变小，不能整额落到部分出库行上。
+     */
+    private BigDecimal orderedLineAmount;
 }

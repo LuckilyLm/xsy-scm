@@ -205,6 +205,11 @@ export interface FinanceReceivableItem {
     unit: string;
     quantity: string;
     unitPrice: string;
+    /** 行毛额（未扣订单优惠）。 */
+    grossAmount?: string | null;
+    /** 该行承担的订单优惠分摊（正常为减免额；红字为反向减免额）。 */
+    discountAmount?: string | null;
+    /** 行净额 = 毛额 − 优惠分摊。 */
     amount: string;
 }
 

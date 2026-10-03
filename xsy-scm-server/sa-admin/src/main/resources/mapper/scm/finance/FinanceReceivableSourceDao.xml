@@ -43,7 +43,8 @@
                oi.product_name_snapshot AS skuNameSnapshot,
                oi.sale_unit_snapshot  AS unitSnapshot,
                ob.quantity            AS quantity,
-               oi.locked_unit_price   AS unitPrice
+               oi.locked_unit_price   AS unitPrice,
+               oi.ordered_line_amount AS orderedLineAmount
         FROM inventory_outbound_item ob
                  JOIN sales_order_item oi ON oi.id = ob.sales_order_item_id
         WHERE ob.deleted = FALSE
@@ -101,7 +102,8 @@
                oi.sale_unit_snapshot AS unitSnapshot,
                ri.approved_quantity AS approvedQuantity,
                ri.locked_unit_price AS lockedUnitPrice,
-               ri.approved_amount   AS approvedAmount
+               ri.approved_amount   AS approvedAmount,
+               oi.ordered_line_amount AS orderedLineAmount
         FROM order_return_item ri
                  JOIN sales_order_item oi ON oi.id = ri.order_item_id
         WHERE ri.return_id = #{orderReturnId}
@@ -109,6 +111,22 @@
           AND ri.approved_quantity &gt; 0
           AND ri.approved_amount &gt; 0
         ORDER BY ri.id
+    </select>
+
+    <!--
+      订单确认时冻结的行级优惠分摊。allocations 是受控 JSON 数组
+      [{orderItemId, baseAmount, discountAmount}]，这里摊平成「订单行 → 优惠额」；
+      没有冻结记录（订单无优惠）时返回空集，调用方按 0 优惠处理。
+      刻意不在 SQL 里做等比折算：折算比例依赖「该行本次金额 / 下单金额」，
+      是行级计算，放在 Service 里与正常、红字两条路径共用同一段代码。
+    -->
+    <select id="selectOrderDiscountLines"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
+        SELECT (allocation -&gt;&gt; 'orderItemId')::bigint     AS orderItemId,
+               (allocation -&gt;&gt; 'discountAmount')::numeric AS discountAmount
+        FROM order_discount od
+                 CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
+        WHERE od.sales_order_id = #{salesOrderId}
     </select>
 
 </mapper>

@@ -130,7 +130,10 @@ const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
     {title: '出库来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
     {title: '数量', dataIndex: 'quantity', align: 'right', customRender: ({text}) => numberText(text)},
     {title: '单价', dataIndex: 'unitPrice', align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '金额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
+    // 毛额 − 优惠 = 净额：三列一起看才能解释「这行为什么只记这么多应收」
+    {title: '毛额', dataIndex: 'grossAmount', align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '订单优惠', dataIndex: 'discountAmount', align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '净额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
 ];
 const payableColumns: TableColumnsType<FinancePayableItem> = [
     {title: '收货来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
