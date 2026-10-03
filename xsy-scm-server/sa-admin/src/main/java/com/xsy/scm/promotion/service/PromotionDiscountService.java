@@ -17,6 +17,7 @@ import com.xsy.scm.promotion.domain.entity.PromotionActivityEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity;
 import com.xsy.scm.promotion.domain.form.PromotionDiscountPreviewForm;
+import com.xsy.scm.promotion.domain.vo.OrderDiscountVO;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.support.PromotionDiscountAllocator;
 import com.xsy.scm.promotion.support.PromotionOrderFacts;
@@ -144,6 +145,65 @@ public class PromotionDiscountService {
         computed.setCreatedAt(row.getCreatedAt());
         computed.setCreatedBy(operator);
         return computed;
+    }
+
+    /**
+     * 订单已冻结优惠（只读）。
+     *
+     * <p>
+     * 没有冻结记录返回 {@code null} 而不是 0 元对象：「这单没优惠」与「优惠是 0」是两件事，
+     * 返回 0 会让页面无法区分，也会让「有没有用过优惠」变得要读快照才知道。
+     */
+    @Transactional(readOnly = true)
+    public OrderDiscountVO getByOrder(Long salesOrderId) {
+        OrderDiscountEntity row = orderDiscountDao.selectByOrderId(salesOrderId);
+        if (row == null) {
+            return null;
+        }
+        OrderDiscountVO vo = new OrderDiscountVO();
+        vo.setSalesOrderId(row.getSalesOrderId());
+        vo.setActivityId(row.getActivityId());
+        vo.setActivityVersion(row.getActivityVersion());
+        vo.setActivitySnapshot(row.getActivitySnapshot());
+        vo.setCouponInstanceId(row.getCouponInstanceId());
+        vo.setCouponSnapshot(row.getCouponSnapshot());
+        vo.setBaseAmount(row.getBaseAmount());
+        vo.setDiscountAmount(row.getDiscountAmount());
+        vo.setAllocations(parseAllocations(row.getAllocations()));
+        vo.setRoundingTargetItemId(row.getRoundingTargetItemId());
+        vo.setCreatedAt(row.getCreatedAt());
+        vo.setCreatedBy(row.getCreatedBy());
+        return vo;
+    }
+
+    /** 冻结时写进去的是 JSON 数组文本，这里原样读回，不在读路径上重算分摊。 */
+    private List<OrderDiscountVO.Allocation> parseAllocations(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<Map<String, Object>> rows = objectMapper.readValue(json,
+                    new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
+                    });
+            List<OrderDiscountVO.Allocation> allocations = new ArrayList<>(rows.size());
+            for (Map<String, Object> row : rows) {
+                OrderDiscountVO.Allocation allocation = new OrderDiscountVO.Allocation();
+                allocation.setOrderItemId(longValue(row.get("orderItemId")));
+                allocation.setBaseAmount(decimal(row.get("baseAmount")));
+                allocation.setDiscountAmount(decimal(row.get("discountAmount")));
+                allocations.add(allocation);
+            }
+            return allocations;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException("订单优惠分摊反序列化失败", e);
+        }
+    }
+
+    private static Long longValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return value instanceof Number number ? number.longValue() : Long.valueOf(String.valueOf(value));
     }
 
     // ------------------------------------------------------------------

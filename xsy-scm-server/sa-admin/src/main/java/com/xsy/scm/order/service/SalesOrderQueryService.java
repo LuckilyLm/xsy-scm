@@ -20,6 +20,8 @@ import com.xsy.scm.order.dao.OrderOperationLogDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
 
+import com.xsy.scm.promotion.service.PromotionDiscountService;
+
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
@@ -48,6 +50,12 @@ public class SalesOrderQueryService {
     private final OrderOperationLogDao orderOperationLogDao;
     private final net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao employeeDao;
     private final ScmDataScopeService dataScopeService;
+
+    /**
+     * 订单详情带上已冻结优惠（只读事实）。订单域不重复实现优惠规则，只把营销域的读模型嵌进来，
+     * 让「这单减了多少、用了哪张券」在详情页可查；没有优惠时为 null。
+     */
+    private final PromotionDiscountService promotionDiscountService;
 
     /** 最近成交参考价取数条数区间：limit 最大 10。 */
     private static final int RECENT_PRICE_MIN_LIMIT = 1;
@@ -125,6 +133,7 @@ public class SalesOrderQueryService {
                     BeanUtils.copyProperties(addressSnapshot, addressSnapshotVO);
                     return addressSnapshotVO;
                 }).orElse(null));
+        salesOrderDetailVO.setDiscount(promotionDiscountService.getByOrder(salesOrder.getId()));
         return salesOrderDetailVO;
     }
 

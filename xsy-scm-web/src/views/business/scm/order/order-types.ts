@@ -1,3 +1,5 @@
+import type {OrderDiscount} from '/@/views/business/scm/promotion/promotion-types';
+
 export type Id = string | number;
 
 export interface Item {
@@ -49,7 +51,14 @@ export interface Order {
     settlementTotalAmount?: string | null;
     createdAt?: string;
     items: Item[];
-    address: Address
+    address: Address;
+    /**
+     * 已冻结的订单优惠；没有优惠时为 null。
+     *
+     * 订单金额列仍是结算口径（不含优惠），优惠是**独立事实**：合成一个「净额」会让
+     * 「原价多少、减了多少」无法回答。
+     */
+    discount?: OrderDiscount | null;
 }
 
 export interface Query {

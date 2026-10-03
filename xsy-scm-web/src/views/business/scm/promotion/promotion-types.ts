@@ -157,6 +157,55 @@ export interface PromotionDiscount {
     activityRule?: PromotionRule | null;
 }
 
+/** 订单已冻结优惠的读模型（`OrderDiscountVO`，只读；冻结后不可变）。 */
+export interface OrderDiscount {
+    salesOrderId?: Id | null;
+    /** 主活动（第一条产生优惠的活动）；叠加生效的其余活动在 `activitySnapshot.applied` 里。 */
+    activityId?: Id | null;
+    activityVersion?: number | null;
+    activitySnapshot?: OrderDiscountActivitySnapshot | null;
+    couponInstanceId?: Id | null;
+    couponSnapshot?: OrderDiscountCouponSnapshot | null;
+    /** 优惠基数（下单金额口径）。 */
+    baseAmount?: string | null;
+    discountAmount?: string | null;
+    allocations?: OrderDiscountAllocation[];
+    roundingTargetItemId?: Id | null;
+    createdAt?: string | null;
+    createdBy?: string | null;
+}
+
+export interface OrderDiscountActivitySnapshot {
+    /** 实际产生优惠的全部活动，按作用顺序；不同互斥组可叠加。 */
+    applied?: OrderDiscountAppliedActivity[];
+    /** 被互斥组挤掉的活动编码。 */
+    suppressed?: string[];
+}
+
+export interface OrderDiscountAppliedActivity {
+    activityId?: Id;
+    activityCode?: string | null;
+    activityName?: string | null;
+    activityType?: string | null;
+    version?: number | null;
+    rule?: PromotionRule | null;
+    discountAmount?: string | null;
+}
+
+export interface OrderDiscountCouponSnapshot {
+    couponInstanceId?: Id;
+    couponCode?: string | null;
+    couponName?: string | null;
+    couponDiscount?: string | null;
+}
+
+/** 逐行分摊：退款按这份分摊反向，不用退款时的当前活动重算。 */
+export interface OrderDiscountAllocation {
+    orderItemId?: Id;
+    baseAmount?: string | null;
+    discountAmount?: string | null;
+}
+
 export const activityTypes: Record<PromotionActivityType, { label: string; color: string }> = {
     FULL_REDUCE: {label: '满减', color: 'red'},
     DISCOUNT: {label: '折扣', color: 'orange'},

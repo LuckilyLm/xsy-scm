@@ -30,6 +30,29 @@
           <a-descriptions-item label="期望配送时间">{{ order.expectDeliveryTime || '—' }}</a-descriptions-item>
           <a-descriptions-item label="备注">{{ order.remark || '—' }}</a-descriptions-item>
         </a-descriptions>
+        <!-- 优惠是独立事实：订单金额列仍是结算口径，这里回答「减了多少、按什么规则减的」 -->
+        <a-descriptions v-if="order.discount" class="discount" bordered size="small" :column="2">
+          <a-descriptions-item label="优惠合计">{{ amount(order.discount.discountAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="优惠基数（下单金额口径）">{{ amount(order.discount.baseAmount) }}</a-descriptions-item>
+          <a-descriptions-item label="券优惠">{{ amount(order.discount.couponSnapshot?.couponDiscount) }}</a-descriptions-item>
+          <a-descriptions-item label="用券">
+            <template v-if="order.discount.couponSnapshot">
+              {{ order.discount.couponSnapshot.couponName || '—' }}
+              <span v-if="order.discount.couponSnapshot.couponCode">（{{ order.discount.couponSnapshot.couponCode }}）</span>
+            </template>
+            <template v-else>未用券</template>
+          </a-descriptions-item>
+          <a-descriptions-item label="生效活动" :span="2">
+            <div v-for="activity in appliedActivities" :key="activity.activityId">
+              {{ activity.activityName || '—' }}（{{ activity.activityCode }} v{{ activity.version }}）：
+              {{ amount(activity.discountAmount) }}
+            </div>
+            <span v-if="appliedActivities.length === 0">无活动优惠</span>
+            <div v-if="(order.discount.activitySnapshot?.suppressed?.length ?? 0) > 0" class="discount-suppressed">
+              被互斥组挤掉：{{ order.discount.activitySnapshot?.suppressed?.join('、') }}
+            </div>
+          </a-descriptions-item>
+        </a-descriptions>
         <a-table class="items" :data-source="order.items" :columns="columns" row-key="itemId" :pagination="false"
                  :scroll="{x:1100}" size="small" bordered>
           <template #bodyCell="{record,column}">
@@ -122,14 +145,14 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
-import {ref, watch} from 'vue';
+import {computed, ref, watch} from 'vue';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi, type CreditCheck} from '/@/api/business/scm/order-api';
 import {orderLogApi} from '/@/api/business/scm/order-log-api';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
-import type {PromotionCouponInstance, PromotionDiscount} from '/@/views/business/scm/promotion/promotion-types';
+import type {OrderDiscountAppliedActivity, PromotionCouponInstance, PromotionDiscount} from '/@/views/business/scm/promotion/promotion-types';
 import {SCM_ORDER_STATUS_ENUM, SCM_ORDER_OPERATION_ENUM} from '/@/constants/business/scm/order-const';
 import type {Order, Item, Id, LogRow} from './order-types';
 import {amount, fixed} from './order-form-model';
@@ -207,6 +230,13 @@ const couponOptions = ref<{value: Id; label: string}[]>([]);
 const couponLoading = ref(false);
 const discountPreview = ref<PromotionDiscount>();
 const previewError = ref('');
+
+/**
+ * 已冻结优惠里实际生效的活动。**只渲染、不重算**：每条活动的优惠额是后端冻结时写下的字符串，
+ * 前端不做求和（求和会引入第二个真相，与「优惠合计」对不上时无法判断哪个对）。
+ */
+const appliedActivities = computed<OrderDiscountAppliedActivity[]>(
+    () => order.value?.discount?.activitySnapshot?.applied ?? []);
 
 async function loadCoupons() {
   couponInstanceId.value = undefined;
@@ -362,5 +392,14 @@ pre {
 }
 
 .coupon-hint {
+  font-size: 12px;
+}
+
+.discount {
+  margin-top: 12px;
+}
+
+.discount-suppressed {
+  color: var(--ant-color-text-secondary);
   font-size: 12px;
 }</style>
