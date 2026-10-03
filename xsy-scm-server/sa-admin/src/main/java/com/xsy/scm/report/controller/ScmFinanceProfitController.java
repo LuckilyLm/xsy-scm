@@ -30,8 +30,8 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequestMapping("/scm/report/finance/profit")
 @RequiredArgsConstructor
 public class ScmFinanceProfitController {
-    private static final List<String> TITLES = List.of("分析维度", "维度名称", "编码", "日期", "销售收入", "销售出库成本",
-            "销售毛利", "毛利率（%）", "缺失成本流水数");
+    private static final List<String> TITLES = List.of("分析维度", "维度名称", "编码", "日期", "销售收入", "商品销售成本",
+            "促销赠品成本", "销售毛利", "毛利率（%）", "缺失成本流水数");
 
     private final ScmFinanceProfitService financeProfitService;
 
@@ -57,8 +57,8 @@ public class ScmFinanceProfitController {
         List<List<Object>> rows = financeProfitService.export(form).stream()
                 .map(row -> ScmReportExcel.row(TITLES, dimension, row.getDimensionName(), row.getDimensionCode(),
                         row.getBizDate(), fixedScale(row.getRevenueAmount()), fixedScale(row.getSalesCostAmount()),
-                        fixedScale(row.getGrossProfit()), fixedScale(row.getGrossMarginRate()),
-                        row.getCostMissingCount()))
+                        fixedScale(row.getGiftCostAmount()), fixedScale(row.getGrossProfit()),
+                        fixedScale(row.getGrossMarginRate()), row.getCostMissingCount()))
                 .toList();
         ScmReportExcel.write(response, "销售毛利分析.xlsx", "毛利分析", TITLES, rows);
     }

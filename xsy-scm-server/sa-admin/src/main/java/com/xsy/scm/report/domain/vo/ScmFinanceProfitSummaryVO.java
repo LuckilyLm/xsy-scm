@@ -15,6 +15,10 @@ public class ScmFinanceProfitSummaryVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal salesCostAmount;
 
+    /** 促销赠品成本（满赠赠品的出库成本）；与商品销售成本分开，见 {@link ScmFinanceProfitRowVO}。 */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal giftCostAmount;
+
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal grossProfit;
 

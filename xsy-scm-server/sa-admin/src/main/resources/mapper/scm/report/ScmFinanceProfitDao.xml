@@ -102,6 +102,7 @@
             SELECT <include refid="dimensionFields"/>,
                    receivable_item.amount AS revenue_amount,
                    0::NUMERIC AS sales_cost_amount,
+                   0::NUMERIC AS gift_cost_amount,
                    CASE WHEN sales_out.id IS NULL OR sales_out.unit_cost IS NULL
                         THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
             FROM finance_receivable receivable
@@ -146,6 +147,7 @@
                    -receivable_item.amount * allocation.allocated_quantity
                        / NULLIF(return_item.approved_quantity, 0) AS revenue_amount,
                    0::NUMERIC AS sales_cost_amount,
+                   0::NUMERIC AS gift_cost_amount,
                    0::BIGINT AS cost_missing_count
             FROM finance_receivable receivable
                      JOIN finance_receivable_item receivable_item
@@ -188,6 +190,7 @@
                                  / return_item.approved_quantity
                             ELSE 1 END AS revenue_amount,
                    0::NUMERIC AS sales_cost_amount,
+                   0::NUMERIC AS gift_cost_amount,
                    0::BIGINT AS cost_missing_count
             FROM finance_receivable receivable
                      JOIN finance_receivable_item receivable_item
@@ -222,6 +225,7 @@
             SELECT <include refid="dimensionFields"/>,
                    0::NUMERIC AS revenue_amount,
                    COALESCE(sales_out.quantity * sales_out.unit_cost, 0) AS sales_cost_amount,
+                   0::NUMERIC AS gift_cost_amount,
                    CASE WHEN sales_out.unit_cost IS NULL AND NOT EXISTS (
                        SELECT 1
                        FROM finance_receivable receivable
@@ -267,6 +271,7 @@
             SELECT <include refid="dimensionFields"/>,
                    0::NUMERIC AS revenue_amount,
                    -(receipt_item.quantity * receipt_item.unit_cost) AS sales_cost_amount,
+                   0::NUMERIC AS gift_cost_amount,
                    0::BIGINT AS cost_missing_count
             FROM order_return_receipt_item receipt_item
                      JOIN order_return_receipt return_receipt ON return_receipt.id = receipt_item.receipt_id
@@ -292,6 +297,43 @@
               AND outbound_item.sales_order_id = so.id
               <include refid="businessFilters"/>
               <include refid="warehouseScope"/>
+
+            UNION ALL
+
+            -- 促销赠品成本：赠品**不减收入**，但它的出库成本计入该订单的履约成本（ADR-009）。
+            -- 单独一列 gift_cost_amount 而不是并进 sales_cost_amount：「这个月活动送掉多少成本」
+            -- 要能直接从报表回答，而不是回头从库存流水重拼一遍。
+            -- 商品 / 分类维度按**赠品 SKU** 归集（下面那张派生表把赠品对成 soi 的形状），
+            -- 因此该 SKU 会呈现为「有成本、无收入」——那是赠品的事实，不是数据错误。
+            SELECT <include refid="dimensionFields"/>,
+                   0::NUMERIC AS revenue_amount,
+                   0::NUMERIC AS sales_cost_amount,
+                   COALESCE(gift_out.quantity * gift_out.unit_cost, 0) AS gift_cost_amount,
+                   CASE WHEN gift_out.unit_cost IS NULL THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
+            FROM inventory_movement gift_out
+                     JOIN order_promotion_gift gift
+                          ON gift.id = gift_out.source_document_item_id
+                     JOIN sales_order so ON so.id = gift.sales_order_id AND so.deleted = FALSE
+                     JOIN (
+                         SELECT sku.id       AS id,
+                                sku.id       AS sku_id,
+                                spu.id       AS spu_id,
+                                spu.spu_code AS spu_code_snapshot,
+                                spu.name     AS product_name_snapshot,
+                                sku.sku_code AS sku_code_snapshot
+                         FROM product_sku sku
+                                  JOIN product_spu spu ON spu.id = sku.spu_id
+                     ) soi ON soi.id = gift.sku_id
+                     CROSS JOIN LATERAL (SELECT gift_out.occurred_at AS event_at) fact_event
+                     LEFT JOIN warehouse w ON w.id = gift_out.warehouse_id AND w.deleted = FALSE
+                     <include refid="businessJoins"/>
+            WHERE gift_out.deleted = FALSE
+              AND gift_out.source_document_type = 'ORDER_PROMOTION_GIFT'
+              AND gift_out.movement_type = 'PROMOTION_GIFT_OUT'
+              AND gift_out.occurred_at &gt;= #{startAt}
+              AND gift_out.occurred_at &lt; #{endAt}
+              <include refid="businessFilters"/>
+              <include refid="warehouseScope"/>
         )
     </sql>
 
@@ -303,10 +345,12 @@
                biz_date AS bizDate,
                COALESCE(SUM(revenue_amount), 0) AS revenueAmount,
                COALESCE(SUM(sales_cost_amount), 0) AS salesCostAmount,
+               COALESCE(SUM(gift_cost_amount), 0) AS giftCostAmount,
                CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL
-                    ELSE COALESCE(SUM(revenue_amount), 0) - COALESCE(SUM(sales_cost_amount), 0) END AS grossProfit,
+                    ELSE COALESCE(SUM(revenue_amount), 0) - COALESCE(SUM(sales_cost_amount), 0)
+                         - COALESCE(SUM(gift_cost_amount), 0) END AS grossProfit,
                CASE WHEN SUM(cost_missing_count) &gt; 0 OR COALESCE(SUM(revenue_amount), 0) = 0 THEN NULL
-                    ELSE ROUND((SUM(revenue_amount) - SUM(sales_cost_amount))
+                    ELSE ROUND((SUM(revenue_amount) - SUM(sales_cost_amount) - SUM(gift_cost_amount))
                                / NULLIF(SUM(revenue_amount), 0) * 100, 4) END AS grossMarginRate,
                SUM(cost_missing_count) AS costMissingCount
         FROM facts
@@ -314,7 +358,7 @@
         ORDER BY CASE WHEN #{query.dimension} = 'DAY' THEN biz_date END ASC NULLS LAST,
                  CASE WHEN #{query.dimension} &lt;&gt; 'DAY' THEN
                      CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL
-                          ELSE SUM(revenue_amount) - SUM(sales_cost_amount) END
+                          ELSE SUM(revenue_amount) - SUM(sales_cost_amount) - SUM(gift_cost_amount) END
                  END DESC NULLS LAST,
                  SUM(revenue_amount) DESC NULLS LAST,
                  MAX(dimension_name)
@@ -324,10 +368,12 @@
         <include refid="facts"/>
         SELECT COALESCE(SUM(revenue_amount), 0) AS revenueAmount,
                COALESCE(SUM(sales_cost_amount), 0) AS salesCostAmount,
+               COALESCE(SUM(gift_cost_amount), 0) AS giftCostAmount,
                CASE WHEN SUM(cost_missing_count) &gt; 0 THEN NULL
-                    ELSE COALESCE(SUM(revenue_amount), 0) - COALESCE(SUM(sales_cost_amount), 0) END AS grossProfit,
+                    ELSE COALESCE(SUM(revenue_amount), 0) - COALESCE(SUM(sales_cost_amount), 0)
+                         - COALESCE(SUM(gift_cost_amount), 0) END AS grossProfit,
                CASE WHEN SUM(cost_missing_count) &gt; 0 OR COALESCE(SUM(revenue_amount), 0) = 0 THEN NULL
-                    ELSE ROUND((SUM(revenue_amount) - SUM(sales_cost_amount))
+                    ELSE ROUND((SUM(revenue_amount) - SUM(sales_cost_amount) - SUM(gift_cost_amount))
                                / NULLIF(SUM(revenue_amount), 0) * 100, 4) END AS grossMarginRate,
                COALESCE(SUM(cost_missing_count), 0) AS costMissingCount
         FROM facts

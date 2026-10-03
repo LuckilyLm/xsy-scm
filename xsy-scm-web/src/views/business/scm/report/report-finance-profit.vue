@@ -27,17 +27,18 @@
     <template #action><a-button @click="load">重试</a-button></template>
   </a-alert>
   <a-alert type="info" show-icon class="profit-alert"
-           message="毛利 = Finance 应收收入 − 销售出库成本"
-           description="收入按应收/红字应收事件时点，成本按销售出库流水时点；退货红字先冲收入，实物接收后按原出库仓及原成本冲回。未接收红字仅全仓授权可见，后续接收会改变历史期间的仓库分组；受限仓库结果不保证与全仓红字总额一致。跨期收入与成本不按订单配比，历史成本缺失时不按零补算。"/>
+           message="毛利 = Finance 应收收入 − 商品销售成本 − 促销赠品成本"
+           description="收入按应收/红字应收事件时点，成本按销售出库流水时点；退货红字先冲收入，实物接收后按原出库仓及原成本冲回。未接收红字仅全仓授权可见，后续接收会改变历史期间的仓库分组；受限仓库结果不保证与全仓红字总额一致。跨期收入与成本不按订单配比，历史成本缺失时不按零补算。促销赠品成本单独一列：赠品不减收入，但它的出库成本是订单的履约成本，所以要从毛利里扣。"/>
   <a-alert v-if="(summary?.costMissingCount ?? 0) > 0" type="warning" show-icon class="profit-alert"
            :message="`有 ${summary?.costMissingCount} 行历史销售成本缺失，毛利和毛利率暂不完整`"
            description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本事实。"/>
 
   <a-row :gutter="12" class="profit-kpis">
-    <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><div class="kpi-label">销售收入</div><div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><div class="kpi-label">销售出库成本（净额）</div><div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><div class="kpi-label">销售毛利</div><div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><div class="kpi-label">毛利率</div><div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card></a-col>
+    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">销售收入</div><div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card></a-col>
+    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">商品销售成本（净额）</div><div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card></a-col>
+    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">促销赠品成本</div><div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card></a-col>
+    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">销售毛利</div><div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card></a-col>
+    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">毛利率</div><div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card></a-col>
   </a-row>
 
   <a-card size="small" :bordered="false">
@@ -54,6 +55,7 @@
         <template v-if="column.dataIndex === 'bizDate'">{{ record.bizDate || '—' }}</template>
         <template v-else-if="column.dataIndex === 'revenueAmount'">{{ moneyText(record.revenueAmount) }}</template>
         <template v-else-if="column.dataIndex === 'salesCostAmount'">{{ moneyText(record.salesCostAmount) }}</template>
+        <template v-else-if="column.dataIndex === 'giftCostAmount'">{{ moneyText(record.giftCostAmount) }}</template>
         <template v-else-if="column.dataIndex === 'grossProfit'">{{ moneyText(record.grossProfit) }}</template>
         <template v-else-if="column.dataIndex === 'grossMarginRate'">{{ rateText(record.grossMarginRate) }}</template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -102,7 +104,8 @@ const columns: TableColumnsType<FinanceProfitRow> = [
   {title: '分析对象', dataIndex: 'dimensionName', width: 210},
   {title: '编码', dataIndex: 'dimensionCode', width: 170},
   {title: '销售收入', dataIndex: 'revenueAmount', align: 'right', width: 150},
-  {title: '销售出库成本（净额）', dataIndex: 'salesCostAmount', align: 'right', width: 180},
+  {title: '商品销售成本（净额）', dataIndex: 'salesCostAmount', align: 'right', width: 180},
+  {title: '促销赠品成本', dataIndex: 'giftCostAmount', align: 'right', width: 150},
   {title: '销售毛利', dataIndex: 'grossProfit', align: 'right', width: 150},
   {title: '毛利率', dataIndex: 'grossMarginRate', align: 'right', width: 130},
   {title: '缺失成本流水数', dataIndex: 'costMissingCount', align: 'right', width: 150},

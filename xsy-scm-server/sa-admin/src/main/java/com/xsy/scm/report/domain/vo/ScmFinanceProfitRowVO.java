@@ -22,6 +22,16 @@ public class ScmFinanceProfitRowVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal salesCostAmount;
 
+    /**
+     * 促销赠品成本（满赠赠品的出库成本，正数表示成本）。
+     *
+     * <p>
+     * 与 {@link #salesCostAmount} 分开：赠品**不减收入**，它是订单的履约成本之一；
+     * 单独一列才能直接回答「这个月营销活动送掉多少成本」，而不必回头从库存流水重拼。
+     */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal giftCostAmount;
+
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal grossProfit;
 
