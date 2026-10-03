@@ -26,7 +26,8 @@ class SalesOrderQueryRecentPriceTest {
     private SalesOrderQueryService serviceWith(SalesOrderItemDao items) {
         return new SalesOrderQueryService(mock(SalesOrderDao.class), items, mock(OrderAddressSnapshotDao.class),
                 mock(OrderOperationLogDao.class), mock(EmployeeDao.class),
-                mock(com.xsy.scm.common.scope.ScmDataScopeService.class));
+                mock(com.xsy.scm.common.scope.ScmDataScopeService.class),
+                mock(com.xsy.scm.promotion.service.PromotionDiscountService.class));
     }
 
     @Test

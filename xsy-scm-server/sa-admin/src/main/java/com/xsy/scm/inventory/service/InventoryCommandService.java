@@ -10,6 +10,7 @@ import com.xsy.scm.inventory.dao.InventoryMovementDao;
 import com.xsy.scm.inventory.domain.InventoryConversionFact;
 import com.xsy.scm.inventory.domain.InventoryLossGainFact;
 import com.xsy.scm.inventory.domain.InventoryOutboundFact;
+import com.xsy.scm.inventory.domain.InventoryPromotionGiftFact;
 import com.xsy.scm.inventory.domain.InventoryStocktakeAdjustment;
 import com.xsy.scm.inventory.domain.InventoryStocktakeFact;
 import com.xsy.scm.inventory.domain.InventorySalesReturnFact;

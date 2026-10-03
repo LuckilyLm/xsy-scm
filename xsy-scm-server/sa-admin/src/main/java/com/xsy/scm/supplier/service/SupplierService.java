@@ -175,7 +175,7 @@ public class SupplierService {
         // 点位成组落库：半组坐标在地图上无法解释，DB 的 ck_supplier_location_complete 也会拒绝。
         // 表单侧的 ScmLocationForm 已做同一条断言，这里是服务端不变量断言 —— 与客户同一取向。
         if (!form.isLocationComplete()) {
-            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+            throw new ScmBusinessException(VALIDATION_ERROR);
         }
         entity.setLongitude(form.getLongitude());
         entity.setLatitude(form.getLatitude());

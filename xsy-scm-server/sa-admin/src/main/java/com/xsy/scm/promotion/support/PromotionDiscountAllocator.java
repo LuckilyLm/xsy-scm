@@ -69,7 +69,7 @@ public final class PromotionDiscountAllocator {
      */
     public static Result allocate(List<Line> lines, BigDecimal requestedDiscount) {
         List<Line> safeLines = lines == null ? List.of() : lines;
-        BigDecimal baseTotal = safeLines.stream().map(PromotionDiscountAllocator::amount)
+        BigDecimal baseTotal = safeLines.stream().map(line -> amount(line.baseAmount()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
         BigDecimal discount = clamp(amount(requestedDiscount), baseTotal);
 

@@ -547,6 +547,8 @@ public class PromotionDiscountService {
                         : remaining.multiply(BigDecimal.ONE.subtract(rate)).setScale(SCALE, RoundingMode.HALF_UP);
             }
             case FULL_GIFT -> BigDecimal.ZERO.setScale(SCALE);
+            // 特价在 1a 按行归集、调用方已跳过它；这一格只为 switch 穷尽，不构成订单级减免
+            case SPECIAL_PRICE -> BigDecimal.ZERO.setScale(SCALE);
         };
     }
 

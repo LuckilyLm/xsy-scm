@@ -15,6 +15,7 @@ import com.xsy.scm.purchase.domain.vo.PurchaseDemandSummaryVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchDetailVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseDemandVO;
+import com.xsy.scm.purchase.service.PurchaseDemandCalculationBatchService;
 import com.xsy.scm.purchase.service.PurchaseDemandService;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
 import com.xsy.scm.purchase.permission.PurchasePermission;
