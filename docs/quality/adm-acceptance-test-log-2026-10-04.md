@@ -2187,3 +2187,9 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 10. J-11：非空 seller scope 的信用敞口 SQL 取证
 
 新增 `CustomerCreditScopePgIT`：通过正式客户/订单服务创建有归属的 CONFIRMED 订单，分别以不包含该 seller 的非空范围与包含该 seller 的非空范围读取 `CustomerCreditDao.selectExposure`。PostgreSQL 实际执行了 `scope.ids` 的 `foreach` 参数绑定；外范围返回不可见、归属范围返回可见，**1 test / 0 failures / 0 errors / 0 skipped**。没有调整 `knownFailures` 或基线，也没有发现方言缺陷；该用例随后纳入 §8 的全量后端结果。
+
+## 11. 组件拆分后的完整浏览器复验（2026-10-05）
+
+分拣秤读数抽屉与配送辅助排线面板拆分后，使用 Docker Desktop 新库 `xsy_scm_e2e_postfix_20261005`，Flyway 从空库迁移至 V109；本地后端指向该库，Vite 主服务与 `adm-ui` 夹具服务分别监听 18081/18083。MinIO F0 使用当前 Docker MinIO 容器的 Access Key，`XSY_FILE_STORAGE_MODE=cloud`。
+
+`python tools/verify.py e2e` **PASS：158 passed / 0 skipped / 0 unexpected / 0 flaky**。MinIO F0 **8/8**；数据范围 `scm-data-scope.spec.ts` **6/6**。为使 J-17 真正适用于空库，夹具现选择 STANDARD SKU，空客户库自建并清理客户，司机范围测试自建本人/他人线路并在收尾取消线路、停用司机。数据库为本地隔离验收库，原 `xsy_scm` V76 未修改。

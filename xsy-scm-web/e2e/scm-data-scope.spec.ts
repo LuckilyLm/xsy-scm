@@ -7,6 +7,7 @@ import {
     provisionTempAccounts,
     type TempAccounts,
 } from './scm-e2e-account';
+import {createLocatedCustomer} from './scm-delivery-fixtures';
 import {randomUUID} from 'node:crypto';
 
 /**
@@ -73,9 +74,12 @@ const tokens: Record<(typeof ROLES)[number], string> = {} as Record<(typeof ROLE
 let whA = 0;
 let whB = 0;
 let temporaryWarehouseId = 0;
+const temporaryRouteIds: number[] = [];
+const temporaryDriverCodes: string[] = [];
 let adminTotalAll = 0;
 let customerId = 0;
 let customerVersion = 0;
+let temporaryCustomerId = 0;
 let driverEmployeeId = 0;
 /**
  * 「只读面 − 全部仓库范围」账号：V57 起财务显式持有 `scm:inventory:scope:all:query`
@@ -172,7 +176,10 @@ test.beforeAll(async () => {
     if (stocked.length === 0) {
         // 第一条 (warehouse, SKU) 余额只能由真实入库建立；盘点不可替代采购收货事实。
         const skus = await ok<Row>(api, 'post', '/scm/product/sku/option-list', {keyword: '', limit: 10});
-        let skuId = Number(((skus.options ?? []) as Row[])[0]?.skuId);
+        // The initial receipt below sets actualWeight=null, so it must use a standard SKU.
+        // The first option is not stable across seed sets and may be NON_STANDARD.
+        const standardSku = ((skus.options ?? []) as Row[]).find((option) => option.productType === 'STANDARD');
+        let skuId = Number(standardSku?.skuId);
         if (!(skuId > 0)) {
             const tree = await ok<Row[]>(api, 'post', '/scm/product/category/tree', {});
             const flatten = (rows: Row[]): Row[] =>
@@ -251,10 +258,14 @@ test.beforeAll(async () => {
     expect(narrowEmployeeId, '未建立扣权账号，无法验证「没有全量范围时报表按授权行收窄」').toBeGreaterThan(0);
 
     const customers = await ok<Page1>(api, 'post', '/scm/customer/query', {pageNum: 1, pageSize: 20});
-    expect(customers.list.length, '客户夹具为空，无法验证归属改派').toBeGreaterThan(0);
-    // CustomerVO 的行键是 customerId，不是 id：写成 id 会得到 NaN 路径 + 「参数错误」，看不出真因
-    const firstCustomer = Number(customers.list[0].customerId ?? customers.list[0].id);
-    const detail = await customerDetail(api, firstCustomer);
+    if (customers.list.length > 0) {
+        // CustomerVO 的行键是 customerId，不是 id：写成 id 会得到 NaN 路径 + 「参数错误」，看不出真因
+        customerId = Number(customers.list[0].customerId ?? customers.list[0].id);
+    } else {
+        customerId = Number(await createLocatedCustomer(api, tag, 'SCOPE', `${tag} 范围验收地址`));
+        temporaryCustomerId = customerId;
+    }
+    const detail = await customerDetail(api, customerId);
     expect(detail, '客户明细未带 version，改派的乐观锁前提不成立').toHaveProperty('version');
     customerId = Number(detail.customerId ?? detail.id);
     customerVersion = Number(detail.version);
@@ -263,6 +274,31 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
     try {
+        for (const routeId of temporaryRouteIds) {
+            const detail = await ok<Row>(api, 'get', `/scm/delivery/routes/${routeId}`);
+            if (detail.route.status === 'DRAFT') {
+                await ok(api, 'post', `/scm/delivery/routes/${routeId}/cancel`, {
+                    version: detail.route.version, reason: `${tag} 范围夹具清理`,
+                });
+            }
+        }
+        for (const driverCode of temporaryDriverCodes) {
+            const result = await ok<Page1>(api, 'get',
+                `/scm/delivery/drivers?pageNum=1&pageSize=100&keyword=${encodeURIComponent(driverCode)}`);
+            const driver = result.list.find((row) => row.driverCode === driverCode);
+            if (driver?.status === 'ENABLED') {
+                await ok(api, 'post', '/scm/delivery/drivers', {
+                    id: driver.id,
+                    version: driver.version,
+                    driverCode: driver.driverCode,
+                    driverName: driver.driverName,
+                    phone: driver.phone,
+                    employeeId: driver.employeeId,
+                    status: 'DISABLED',
+                    remark: driver.remark,
+                });
+            }
+        }
         if (temporaryWarehouseId) {
             const balances = (await balanceQuery(api, temporaryWarehouseId)).list
                 .filter((row) => Number(row.quantity) > 0);
@@ -276,6 +312,12 @@ test.afterAll(async () => {
             }
             const detail = await ok<Row>(api, 'get', `/scm/warehouse/detail/${temporaryWarehouseId}`);
             await ok(api, 'post', '/scm/warehouse/disable', {id: temporaryWarehouseId, version: detail.version});
+        }
+        if (temporaryCustomerId) {
+            const detail = await customerDetail(api, temporaryCustomerId);
+            await ok(api, 'post', '/scm/customer/delete', {
+                customerId: temporaryCustomerId, version: detail.version,
+            });
         }
     } finally {
         // 授权行按 employee_id 落在 employee_warehouse_scope，删账号不会连带回收，必须显式清空
@@ -387,13 +429,37 @@ test('3｜客户归属改派：销售只看自己名下，改派后可见性立�
 });
 
 test('4｜司机绑定员工唯一，司机只看到自己的线路', async () => {
+    const ownDriverCode = `${tag}-A`;
+    const otherDriverCode = `${tag}-OTHER`;
     const created = await ok<Row>(api, 'post', '/scm/delivery/drivers', {
-        driverCode: `${tag}-A`, driverName: '范围用例司机', phone: '13900000021',
+        driverCode: ownDriverCode, driverName: '范围用例司机', phone: '13900000021',
         employeeId: driverEmployeeId, status: 'ENABLED',
     });
     const driverId = Number(created?.id ?? created);
     expect(Number.isFinite(driverId) && driverId > 0, '新建司机应返回 id，实际 ' + JSON.stringify(created))
         .toBeTruthy();
+    temporaryDriverCodes.push(ownDriverCode);
+
+    await grantWarehouses(driverEmployeeId, [whA]);
+    const otherEmployeeId = Number(accounts.employeeIds[accounts.admin]);
+    expect(otherEmployeeId, '临时管理员员工 id 缺失，无法造另一司机线路').toBeGreaterThan(0);
+    const otherDriver = await ok<Row>(api, 'post', '/scm/delivery/drivers', {
+        driverCode: otherDriverCode, driverName: '另一范围用例司机', phone: '13900000022',
+        employeeId: otherEmployeeId, status: 'ENABLED',
+    });
+    const otherDriverId = Number(otherDriver?.id ?? otherDriver);
+    expect(Number.isFinite(otherDriverId) && otherDriverId > 0, '另一司机应创建成功')
+        .toBeTruthy();
+    temporaryDriverCodes.push(otherDriverCode);
+
+    const ownRouteId = await ok<number>(api, 'post', '/scm/delivery/routes', {
+        routeName: `${tag} 司机本人线路`, deliveryDate: today, warehouseId: whA, driverId,
+    });
+    const otherRouteId = await ok<number>(api, 'post', '/scm/delivery/routes', {
+        routeName: `${tag} 其他司机线路`, deliveryDate: today, warehouseId: whA,
+        driverId: otherDriverId,
+    });
+    temporaryRouteIds.push(ownRouteId, otherRouteId);
 
     // 一个员工最多绑一个活动司机：第二次绑定必须被服务端拒，不靠前端去重
     const duplicated = await envelope(api, '/scm/delivery/drivers', {
@@ -404,6 +470,7 @@ test('4｜司机绑定员工唯一，司机只看到自己的线路', async () =
 
     const adminRoutes = await ok<Page1>(api, 'get', '/scm/delivery/routes?pageNum=1&pageSize=200');
     const own = await ok<Page1>(clients.SCM_DRIVER, 'get', '/scm/delivery/routes?pageNum=1&pageSize=200');
+    expect(own.total, '夹具必须包含这名司机自己的线路').toBeGreaterThan(0);
     for (const row of own.list) {
         expect(Number(row.driverId), '司机不得看到别人名下的线路').toBe(driverId);
     }
