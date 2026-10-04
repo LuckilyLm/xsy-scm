@@ -27,8 +27,6 @@ spring:
     min-evictable-idle-time-millis: 300000
     filters: stat
     druid:
-      username: druid
-      password: 1024
       login:
         enabled: false
       method:
@@ -48,12 +46,12 @@ spring:
           min-idle: 10
           max-idle: 50
           max-wait: 30000ms
-  # 邮件，置以SSL的方式发送, 这个需要使用这种方式并且端口是465
+  # 邮件凭据必须由生产环境显式注入，不提供示例账号或默认密码。
   mail:
-    host: smtp.163.com
-    port: 465
-    username: lab1024@163.com
-    password: LAB1024LAB
+    host: ${XSY_MAIL_HOST}
+    port: ${XSY_MAIL_PORT:465}
+    username: ${XSY_MAIL_USERNAME}
+    password: ${XSY_MAIL_PASSWORD}
     test-connection: false
     properties:
       mail:
@@ -126,21 +124,19 @@ file:
       path-style-access-enabled: ${XSY_FILE_PATH_STYLE:false}
       send-object-acl: ${XSY_FILE_SEND_OBJECT_ACL:true}
 
-# open api配置
+# OpenAPI 文档默认关闭；如生产排障临时启用，必须通过受控配置并置于管理网络之后。
 springdoc:
   swagger-ui:
-    enabled: true # 开关
-    doc-expansion: none  #关闭展开
+    enabled: false
+    doc-expansion: none
     tags-sorter: alpha
     server-base-url:
   api-docs:
-    enabled: true # 开关
+    enabled: false
 knife4j:
-  enable: true
+  enable: false
   basic:
     enable: false
-    username: api # Basic认证用户名
-    password: 1024 # Basic认证密码
 
 # RestTemplate 请求配置 毫秒
 http:
