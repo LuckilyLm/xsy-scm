@@ -182,74 +182,18 @@
             </a-table>
           </a-tab-pane>
           <a-tab-pane key="map" tab="停靠点 / 路线地图">
-            <a-alert message="计划路线按仓库起点和停靠顺序连线，展示大致配送方向。" type="info" show-icon/>
-            <a-alert
-                v-if="!allLocated"
-                :message="`尚有 ${detail.route.stopCount - detail.route.locatedCount} 个停靠点未定位${
-                !isLocated(startPoint) ? '，仓库起点也未定位' : ''
-              }。补齐后才能确认规划。`"
-                type="warning"
-                show-icon
+            <RouteMapPanel
+                :route="detail.route"
+                :stops="detail.stops"
+                :start-point="startPoint"
+                :map-points="mapPoints"
+                :all-located="allLocated"
+                :can-edit="canEdit"
+                :busy="busy"
+                :can-view-amount="canViewAmount"
+                @move-stop="move"
+                @edit-stop="editStop"
             />
-            <div class="route-map-layout">
-              <div class="route-stops">
-                <div class="warehouse-stop">
-                  <strong>起点 · {{ detail.route.warehouseNameSnapshot }}</strong>
-                  <p>{{ detail.route.warehouseAddressSnapshot || '未填写地址' }}</p>
-                </div>
-                <p v-if="canEdit">拖动停靠点排序，或使用上移 / 下移。顺序调整后自动保存。</p>
-                <a-empty v-if="!detail.stops.length" description="还没有停靠点，请先在线路订单中加入订单"/>
-                <ol>
-                  <li
-                      v-for="(stop, index) in detail.stops"
-                      :key="stop.id"
-                      :draggable="canEdit && !busy"
-                      @dragstart="dragFrom = index"
-                      @dragend="dragFrom = undefined"
-                      @dragover.prevent
-                      @drop.prevent="drop(index)"
-                  >
-                    <div class="stop-heading">
-                      <strong>{{ stop.stopSeq }}. {{ stop.customerNameSnapshot }}</strong
-                      >
-                      <a-tag :color="isLocated(stop) ? 'green' : 'default'">{{
-                          isLocated(stop) ? '已定位' : '未定位'
-                        }}
-                      </a-tag>
-                    </div>
-                    <p>{{ stop.addressSnapshot }}</p>
-                    <p>{{ stop.receiverNameSnapshot || '—' }} · {{ stop.receiverPhoneSnapshot || '—' }}</p>
-                    <p>
-                      {{ stop.orderCount }} 张订单<span v-if="canViewAmount"> · {{ money(stop.totalAmount) }}</span><span
-                        v-if="stop.geomCrs"> · {{ stop.geomCrs }}</span>
-                    </p>
-                    <p v-if="stop.plannedArrivalTime">计划到达：{{ datetime(stop.plannedArrivalTime) }}</p>
-                    <a-space v-if="canEdit"
-                    >
-                      <a-button
-                          size="small"
-                          :disabled="index === 0 || busy"
-                          :aria-label="`上移${stop.customerNameSnapshot}`"
-                          @click="move(index, index - 1)"
-                      >上移
-                      </a-button
-                      >
-                      <a-button
-                          size="small"
-                          :disabled="index === detail.stops.length - 1 || busy"
-                          :aria-label="`下移${stop.customerNameSnapshot}`"
-                          @click="move(index, index + 1)"
-                      >下移
-                      </a-button
-                      >
-                      <a-button size="small" :disabled="busy" @click="editStop(stop)">定位 / 备注</a-button>
-                    </a-space
-                    >
-                  </li>
-                </ol>
-              </div>
-              <ScmMap v-if="tab === 'map'" :points="mapPoints" route/>
-            </div>
           </a-tab-pane>
           <a-tab-pane key="print" tab="配送打印">
             <div class="smart-table-btn-block">
@@ -502,12 +446,12 @@ import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import {Modal, message, type TableColumnsType} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
-import ScmMap from '/@/components/business/scm/map/scm-map.vue';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
 import {isLocated, locationError, type MapPoint} from '/@/components/business/scm/map/types';
 import RouteFormDrawer from './components/route-form-drawer.vue';
 import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePlanningSuggestionPanel from './components/route-planning-suggestion-panel.vue';
+import RouteMapPanel from './components/route-map-panel.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
@@ -1030,13 +974,6 @@ function plan() {
   });
 }
 
-const dragFrom = ref<number>();
-
-function drop(index: number) {
-  if (dragFrom.value != null) move(dragFrom.value, index);
-  dragFrom.value = undefined;
-}
-
 async function move(from: number, to: number) {
   if (!detail.value || busy.value || !canEdit.value || from === to) return;
   const ids = detail.value.stops.map((s) => s.id);
@@ -1160,55 +1097,6 @@ defineExpose({open});
 
 .route-summary strong {
   margin-left: 8px;
-}
-
-.route-map-layout {
-  display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.route-stops {
-  max-height: 620px;
-  overflow: auto;
-  padding-right: 8px;
-}
-
-.route-stops ol {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.route-stops li,
-.warehouse-stop {
-  padding: 16px 0;
-  border-bottom: 1px solid var(--ant-color-border, #e5e6eb);
-}
-
-.route-stops li[draggable='true'] {
-  cursor: grab;
-}
-
-.route-stops p {
-  margin: 8px 0;
-  overflow-wrap: anywhere;
-}
-
-.stop-heading {  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-@media (max-width: 900px) {
-  .route-map-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .route-stops {
-    max-height: none;
-  }
 }
 
 .num {

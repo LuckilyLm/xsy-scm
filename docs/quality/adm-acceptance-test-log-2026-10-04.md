@@ -2235,3 +2235,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 21. 六个销售面板最终回归（2026-10-05）
 
 加入订单表头级 `SalesOrderTab` 并验证订单号可继续打开原订单详情后，再次完整运行 `scm-report.spec.ts`，Docker Desktop 隔离库仍为 **13 passed / 0 skipped / 0 failures**。本次覆盖六个销售面板和其余报表流程；前端构建、E2E 类型检查与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时服务验收后停止。
+
+## 22. 配送路线地图面板拆分（2026-10-05）
+
+从 `route-detail.vue` 抽出路线地图、起点/停靠列表、定位提示、拖拽与上下移操作为 `RouteMapPanel`；父页继续持有数据范围、坐标投影、排序与定位 API。`scm-delivery.spec.ts` 全套 **8/8** 通过，包含未定位提示、坐标补录及规划前置校验。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。

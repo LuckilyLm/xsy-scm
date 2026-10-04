@@ -467,6 +467,8 @@ test('5｜L2 未定位时确认规划被拒，页面补定位后放行', async (
     await page.locator('#scm-delivery-route-table tbody tr.ant-table-row').filter({hasText: name}).first()
         .getByText(accessibleName('路线')).click();
     const drawer = page.locator('.ant-drawer-open');
+    await drawer.getByRole('tab', {name: accessibleName('停靠点 / 路线地图')}).click();
+    await expect(drawer.locator('.route-map-layout')).toBeVisible();
     await expect(drawer).toContainText('尚有 1 个停靠点未定位');
     // 只有「未定位」那个停靠点需要补坐标：按列表项文本筛，避免点到已定位项的同类按钮。
     await drawer.locator('li').filter({hasText: '未定位'}).first()
