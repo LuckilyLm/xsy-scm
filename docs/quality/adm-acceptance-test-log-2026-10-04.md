@@ -2251,3 +2251,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 25. 分拣任务详情面板拆分（2026-10-05）
 
 从 `sorting-task-list.vue` 抽出任务摘要、状态操作、分拣录入表及其页面状态展示为 `SortingTaskDetailDrawer`；详情读取、草稿校验、逐行版本提交、冲突刷新和保存事务继续由父页管理。`scm-sorting.spec.ts` 全套 **8/8** 通过。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。
+
+## 26. 采购明细面板拆分（2026-10-05）
+
+从 `report-purchase-list.vue` 抽出采购订单行明细、列配置、格式化与分页为 `PurchaseItemTab`；日期、业务筛选、查询/导出和原采购单详情弹窗仍由父页负责。`scm-report.spec.ts` 完整套件 **13/13** 通过，包含新建并提交采购单后采购明细表可见。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。

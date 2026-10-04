@@ -331,80 +331,18 @@
 
     <!-- ==================== 采购明细 ==================== -->
     <a-tab-pane key="item" tab="采购明细">
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportItem">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              一行 = 一个采购订单行；采购单号可回原采购单详情，不造第二套详情页。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="itemColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_ITEM"
-                :refresh="loadItem"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="item.error" :message="item.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadItem">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.PURCHASE_ITEM"
-            size="small"
-            :data-source="item.rows"
-            :columns="itemColumns"
-            row-key="purchaseOrderItemId"
-            bordered
-            :loading="item.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无采购明细'}"
-            :scroll="{x: 2300}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'submittedAt'">
-              {{ datetime(record.submittedAt) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'orderNo'">
-              <a v-if="record.purchaseOrderId" @click="openPurchaseOrder(record.purchaseOrderId)">{{ record.orderNo }}</a>
-              <span v-else>{{ record.orderNo ?? '—' }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'status'">
-              <a-tag>{{ enumDescText(record.status, SCM_PURCHASE_STATUS_ENUM) }}</a-tag>
-            </template>
-            <template v-else-if="column.dataIndex === 'plannedArrivalDate'">
-              {{ dateOnly(record.plannedArrivalDate) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'plannedQuantity'">
-              <span class="num">{{ quantityText(record.plannedQuantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'receivedQuantity'">
-              <span class="num">{{ quantityText(record.receivedQuantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'purchasePrice'">
-              <span class="num">{{ moneyText(record.purchasePrice) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'lineAmount'">
-              <span class="num">{{ moneyText(record.lineAmount) }}</span>
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="item.pageNum"
-              v-model:page-size="item.pageSize"
-              :total="item.total"
-              @change="loadItem"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
+      <PurchaseItemTab
+          :rows="item.rows"
+          :loading="item.loading"
+          :error="item.error"
+          :page-num="item.pageNum"
+          :page-size="item.pageSize"
+          :total="item.total"
+          @export="exportItem"
+          @reload="loadItem"
+          @page-change="loadItemPage"
+          @open-purchase-order="openPurchaseOrder"
+      />
     </a-tab-pane>
 
     <!-- ==================== 价格波动（R0-B） ==================== -->
@@ -478,10 +416,10 @@ import ReportKpiCard from './report-components/report-kpi-card.vue';
 import ReportBarChart from './report-components/report-bar-chart.vue';
 import ReportDrilldownDrawer from './report-components/report-drilldown-drawer.vue';
 import PurchasePriceTrendTab from './report-components/purchase-price-trend-tab.vue';
+import PurchaseItemTab from './report-components/purchase-item-tab.vue';
 import {reportPurchaseApi} from '/@/api/business/scm/report-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
-import {SCM_PURCHASE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {
     PurchaseItemRow,
     PurchaseOverview,
@@ -501,7 +439,6 @@ import {
     countText,
     createTabView,
     defaultDateRange,
-    enumDescText,
     enterTab,
     filterCostColumns,
     incompleteCostHint,
@@ -510,7 +447,7 @@ import {
     textOrDash,
 } from './report-model';
 import {moneyText, quantityText} from '../inventory/inventory-model';
-import {dateOnly, datetime} from '../common/scm-display';
+import {datetime} from '../common/scm-display';
 import type {TabView} from './report-model';
 import {useReportPermission} from './use-report-permission';
 import {createGuardedLoader, createTabLoader} from './use-report-query';
@@ -589,25 +526,6 @@ const purchaserColumns = ref<TableColumnsType<PurchasePurchaserRow>>([
     {title: '最近采购时间', dataIndex: 'lastSubmittedAt', width: 190},
 ]);
 
-const itemColumns = ref<TableColumnsType<PurchaseItemRow>>([
-    {title: '提交时间', dataIndex: 'submittedAt', width: 190},
-    {title: '采购单号', dataIndex: 'orderNo', width: 190},
-    {title: '状态', dataIndex: 'status', align: 'center', width: 110},
-    {title: '供应商', dataIndex: 'supplierName', width: 180},
-    {title: '采购员', dataIndex: 'purchaserName', width: 120},
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '计划到货日期', dataIndex: 'plannedArrivalDate', width: 130},
-    {title: 'SPU 编码', dataIndex: 'spuCode', width: 140},
-    {title: '商品', dataIndex: 'productName', width: 180},
-    {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-    {title: '规格', dataIndex: 'skuName', width: 140},
-    {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 100},
-    {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 120},
-    {title: '累计收货数量', dataIndex: 'receivedQuantity', align: 'right', width: 150},
-    {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 130},
-    {title: '采购行金额', dataIndex: 'lineAmount', align: 'right', width: 140},
-]);
-
 const visibleProductColumns = computed(() => filterCostColumns(productColumns.value, COST_INDEXES, canViewCost.value));
 const visibleSupplierColumns = computed(() => filterCostColumns(supplierColumns.value, COST_INDEXES, canViewCost.value));
 const visiblePurchaserColumns = computed(() =>
@@ -672,6 +590,12 @@ const loadProduct = createTabLoader(product, () => purchaseQuery(product), repor
 const loadSupplier = createTabLoader(supplier, () => purchaseQuery(supplier), reportPurchaseApi.supplier);
 const loadPurchaser = createTabLoader(purchaser, () => purchaseQuery(purchaser), reportPurchaseApi.purchaser);
 const loadItem = createTabLoader(item, () => purchaseQuery(item), reportPurchaseApi.item);
+
+function loadItemPage(pageNum: number, pageSize: number) {
+    item.pageNum = pageNum;
+    item.pageSize = pageSize;
+    void loadItem();
+}
 
 const loadOverview = createGuardedLoader(
     () => reportPurchaseApi.overview(buildReportQuery<PurchaseQuery>(dateRange.value, {...filters})),

@@ -301,7 +301,7 @@ test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结�
     await expect(page.getByText('下单时结算方式', {exact: true})).toBeVisible();
 });
 
-test('3 采购报表只计提交后的采购事实', async () => {
+test('3 采购报表只计提交后的采购事实', async ({page}) => {
     const draftOnly: any = await post('/scm/purchase/create', {
         supplierId, warehouseId, purchaserId: null, plannedArrivalDate: null, remark: name + '-draft',
         items: [{skuId, quantity: '3.0000', price: '5.0000', allocations: []}],
@@ -320,6 +320,10 @@ test('3 采购报表只计提交后的采购事实', async () => {
     overview = await report('purchase/overview', {supplierId});
     expect(overview.submittedOrderCount).toBe(1);
     expect(overview.submittedAmount).toBe('15.0000');
+
+    await browse(page, '/report/report-purchase-list');
+    await page.getByRole('tab', {name: '采购明细', exact: true}).click();
+    await expect(page.locator('#scm-report-purchase-item-table tbody tr[data-row-key]').first()).toBeVisible();
 });
 
 test('R0-B 价格波动面板显示按 SKU 与采购单位分组的趋势行', async ({page}) => {
