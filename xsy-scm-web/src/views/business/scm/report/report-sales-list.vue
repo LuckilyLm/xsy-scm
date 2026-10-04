@@ -86,80 +86,18 @@
 
     <!-- ==================== 按客户 ==================== -->
     <a-tab-pane key="customer" tab="按客户">
-      <ReportBarChart
-          class="smart-margin-bottom10"
-          title="客户确认订单金额 TOP5"
+      <SalesCustomerTab
           :items="topItems(customerTop)"
-          series-name="确认订单金额"
-          extra="退款按 order_refund.customer_id 独立聚合，不经订单行 JOIN"
+          :rows="customer.rows"
+          :loading="customer.loading"
+          :error="customer.error"
+          :page-num="customer.pageNum"
+          :page-size="customer.pageSize"
+          :total="customer.total"
+          @export="exportCustomer"
+          @reload="loadCustomer"
+          @page-change="loadCustomerPage"
       />
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportCustomer">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              本页不展示已收 / 未收 / 应收余额：R0 还没有收款与核销事实。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="customerColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_CUSTOMER"
-                :refresh="loadCustomer"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="customer.error" :message="customer.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadCustomer">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.SALES_CUSTOMER"
-            size="small"
-            :data-source="customer.rows"
-            :columns="customerColumns"
-            row-key="customerId"
-            bordered
-            :loading="customer.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无客户销售数据'}"
-            :scroll="{x: 1400}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderCount'">
-              <span class="num">{{ countText(record.orderCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'skuKindCount'">
-              <span class="num">{{ countText(record.skuKindCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'settlementAmount'">
-              <span class="num">{{ moneyText(record.settlementAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'completedRefundAmount'">
-              <span class="num">{{ moneyText(record.completedRefundAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'lastConfirmedAt'">
-              {{ datetime(record.lastConfirmedAt) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'amountRank'">
-              <span class="num">{{ countText(record.amountRank) }}</span>
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="customer.pageNum"
-              v-model:page-size="customer.pageSize"
-              :total="customer.total"
-              @change="loadCustomer"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
     </a-tab-pane>
 
     <!-- ==================== 按销售员 ==================== -->
@@ -412,9 +350,9 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import OrderDetail from '../order/order-detail.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
-import ReportBarChart from './report-components/report-bar-chart.vue';
 import SalesProductTab from './report-components/sales-product-tab.vue';
 import SalesCategoryTab from './report-components/sales-category-tab.vue';
+import SalesCustomerTab from './report-components/sales-customer-tab.vue';
 import {reportSalesApi} from '/@/api/business/scm/report-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -479,18 +417,6 @@ const item = reactive(createTabView<SalesItemRow>());
 const order = reactive(createTabView<SalesOrderRow>());
 
 /** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
-
-const customerColumns = ref<TableColumnsType<SalesCustomerRow>>([
-    {title: '客户编码', dataIndex: 'customerCode', width: 150},
-    {title: '客户名称', dataIndex: 'customerName', width: 200},
-    {title: '销售员', dataIndex: 'sellerName', width: 120},
-    {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 110},
-    {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
-    {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 160},
-    {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
-    {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 190},
-    {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
-]);
 
 const sellerColumns = ref<TableColumnsType<SalesSellerRow>>([
     {title: '销售员', dataIndex: 'sellerName', width: 160},
@@ -565,6 +491,12 @@ function loadCategoryPage(pageNum: number, pageSize: number) {
     category.pageNum = pageNum;
     category.pageSize = pageSize;
     void loadCategory();
+}
+
+function loadCustomerPage(pageNum: number, pageSize: number) {
+    customer.pageNum = pageNum;
+    customer.pageSize = pageSize;
+    void loadCustomer();
 }
 
 const loadProductTop = createGuardedLoader(

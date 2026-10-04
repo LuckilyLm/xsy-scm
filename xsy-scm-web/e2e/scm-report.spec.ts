@@ -234,6 +234,9 @@ test('1b 五张报表页逐个打开：0 pageerror 且各自的口径标题在�
     await page.getByRole('tab', {name: '按分类'}).click();
     await expect(page.getByText('分类确认订单金额 TOP5', {exact: true})).toBeVisible();
     await expect(page.locator('#scm-report-sales-category-table')).toBeVisible();
+    await page.getByRole('tab', {name: '按客户'}).click();
+    await expect(page.getByText('客户确认订单金额 TOP5', {exact: true})).toBeVisible();
+    await expect(page.locator('#scm-report-sales-customer-table')).toBeVisible();
 });
 
 test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结算总额', async ({page}) => {
@@ -275,6 +278,15 @@ test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结�
 
     await browse(page, '/report/report-sales-list');
     await expect(page.locator('#scm-report-sales-product-table tbody tr[data-row-key]').first()).toBeVisible();
+    await page.getByRole('tab', {name: '按客户'}).click();
+    const customerFilter = page.locator('.smart-query-form-row').first().locator('.ant-select').first();
+    await customerFilter.click();
+    await customerFilter.locator('input').fill(name);
+    const customerOption = page.locator('.ant-select-dropdown:visible .ant-select-item-option').filter({hasText: name}).first();
+    await expect(customerOption).toBeVisible();
+    await customerOption.click();
+    await page.locator('.smart-query-form .ant-btn-primary').first().click();
+    await expect(page.locator('#scm-report-sales-customer-table tbody tr[data-row-key]').filter({hasText: name})).toBeVisible();
 });
 
 test('3 采购报表只计提交后的采购事实', async () => {

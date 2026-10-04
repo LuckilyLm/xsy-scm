@@ -1,0 +1,127 @@
+<template>
+  <ReportBarChart
+      class="smart-margin-bottom10"
+      title="客户确认订单金额 TOP5"
+      :items="items"
+      series-name="确认订单金额"
+      extra="退款按 order_refund.customer_id 独立聚合，不经订单行 JOIN"
+  />
+  <a-card size="small" :bordered="false">
+    <a-row class="smart-table-btn-block">
+      <div class="smart-table-operate-block">
+        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
+        <a-typography-text type="secondary" class="smart-margin-left10">
+          本页不展示已收 / 未收 / 应收余额：R0 还没有收款与核销事实。
+        </a-typography-text>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_CUSTOMER" :refresh="refresh"/>
+      </div>
+    </a-row>
+    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <template #action>
+        <a-button @click="refresh">重试</a-button>
+      </template>
+    </a-alert>
+    <a-table
+        :id="SCM_REPORT_TABLE_ID.SALES_CUSTOMER"
+        size="small"
+        :data-source="rows"
+        :columns="columns"
+        row-key="customerId"
+        bordered
+        :loading="loading"
+        :pagination="false"
+        :locale="{emptyText: '暂无客户销售数据'}"
+        :scroll="{x: 1400}"
+    >
+      <template #bodyCell="{ record, column }">
+        <template v-if="column.dataIndex === 'orderCount'">
+          <span class="num">{{ countText(record.orderCount) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'skuKindCount'">
+          <span class="num">{{ countText(record.skuKindCount) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'settlementAmount'">
+          <span class="num">{{ moneyText(record.settlementAmount) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'completedRefundAmount'">
+          <span class="num">{{ moneyText(record.completedRefundAmount) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'lastConfirmedAt'">
+          {{ datetime(record.lastConfirmedAt) }}
+        </template>
+        <template v-else-if="column.dataIndex === 'amountRank'">
+          <span class="num">{{ countText(record.amountRank) }}</span>
+        </template>
+        <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
+      </template>
+    </a-table>
+    <div class="smart-query-table-page">
+      <a-pagination
+          show-size-changer
+          show-quick-jumper
+          :current="pageNum"
+          :page-size="pageSize"
+          :total="total"
+          @change="changePage"
+          :show-total="(n: number) => `共${n}条`"
+      />
+    </div>
+  </a-card>
+</template>
+
+<script setup lang="ts">
+import {ref} from 'vue';
+import type {TableColumnsType} from 'ant-design-vue';
+import TableOperator from '/@/components/support/table-operator/index.vue';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
+import ReportBarChart from './report-bar-chart.vue';
+import {countText} from '../report-model';
+import {moneyText} from '../../inventory/inventory-model';
+import {datetime} from '../../common/scm-display';
+import type {ReportChartBar, SalesCustomerRow} from '../report-types';
+
+defineProps<{
+  items: ReportChartBar[];
+  rows: SalesCustomerRow[];
+  loading: boolean;
+  error: string;
+  pageNum: number;
+  pageSize: number;
+  total: number;
+}>();
+
+const emit = defineEmits<{
+  export: [];
+  reload: [];
+  pageChange: [page: number, pageSize: number];
+}>();
+
+const columns = ref<TableColumnsType<SalesCustomerRow>>([
+  {title: '客户编码', dataIndex: 'customerCode', width: 150},
+  {title: '客户名称', dataIndex: 'customerName', width: 200},
+  {title: '销售员', dataIndex: 'sellerName', width: 120},
+  {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 110},
+  {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 160},
+  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
+  {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 190},
+  {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
+]);
+
+function refresh() {
+  emit('reload');
+}
+
+function changePage(page: number, pageSize: number) {
+  emit('pageChange', page, pageSize);
+}
+</script>
+
+<style scoped>
+.num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+</style>
