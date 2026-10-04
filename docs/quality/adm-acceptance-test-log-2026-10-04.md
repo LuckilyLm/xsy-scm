@@ -2195,3 +2195,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 `python tools/verify.py e2e` **PASS：158 passed / 0 skipped / 0 unexpected / 0 flaky**。MinIO F0 **8/8**；数据范围 `scm-data-scope.spec.ts` **6/6**。为使 J-17 真正适用于空库，夹具现选择 STANDARD SKU，空客户库自建并清理客户，司机范围测试自建本人/他人线路并在收尾取消线路、停用司机。数据库为本地隔离验收库，原 `xsy_scm` V76 未修改。
 
 随后从 `sorting-task-list.vue` 抽出打印预览 / 计次面板 `SortingPrintPreviewModal`；定向 `scm-sorting.spec.ts` **8/8**，E2E ESLint、TypeScript 检查、TS 棘轮与生产构建通过。全量 158 项是在该打印面板拆分之前执行的。
+
+## 12. 采购价格波动面板拆分与分页参数修复（2026-10-05）
+
+从 `report-purchase-list.vue` 抽出价格波动图表与明细表到 `purchase-price-trend-tab.vue`，父页继续统一维护日期、SKU、供应商筛选和请求生命周期。定向测试首次打开该面板时发现价格趋势查询遗漏 `pageNum/pageSize`，服务端按 `PurchaseQuery` 返回 30001；加载器改为复用同页构造好的 `purchaseQuery(trend)`。`scm-report.spec.ts` **13/13** 通过，含新价格趋势面板行数据断言；定向 ESLint、E2E 类型检查、TS 棘轮与生产构建通过。

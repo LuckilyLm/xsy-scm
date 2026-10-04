@@ -409,60 +409,13 @@
 
     <!-- ==================== 价格波动（R0-B） ==================== -->
     <a-tab-pane key="trend" tab="价格波动">
-      <ReportLineChart
-          class="smart-margin-bottom10"
-          title="采购成交价波动"
-          :x-axis="trendAxis"
-          :series="trendSeries"
-          extra="同一天多笔按数量加权平均；不同采购单位永不合并成一条线"
+      <PurchasePriceTrendTab
+          :rows="trend.rows"
+          :loading="trend.loading"
+          :error="trend.error"
+          @export="exportPriceTrend"
+          @reload="loadTrend"
       />
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportPriceTrend">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              一行 = 业务日 × SKU × 采购单位。曲线太多时先用 SKU 筛选收窄。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="trendColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_PRICE_TREND"
-                :refresh="loadTrend"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="trend.error" :message="trend.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadTrend">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.PURCHASE_PRICE_TREND"
-            size="small"
-            :data-source="trend.rows"
-            :columns="trendColumns"
-            :row-key="(row: PurchasePriceTrendPoint) => `${row.bizDate}-${row.skuId}-${row.purchaseUnit}`"
-            bordered
-            :loading="trend.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无价格波动数据'}"
-            :scroll="{x: 1000}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'bizDate'">
-              {{ dateOnly(record.bizDate) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'weightedAvgPrice'">
-              <span class="num">{{ moneyText(record.weightedAvgPrice) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'sampleLineCount'">
-              <span class="num">{{ countText(record.sampleLineCount) }}</span>
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-      </a-card>
     </a-tab-pane>
   </a-tabs>
 
@@ -523,8 +476,8 @@ import PurchaseOrderDetail from '../purchase/components/purchase-order-detail-dr
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
 import ReportBarChart from './report-components/report-bar-chart.vue';
-import ReportLineChart from './report-components/report-line-chart.vue';
 import ReportDrilldownDrawer from './report-components/report-drilldown-drawer.vue';
+import PurchasePriceTrendTab from './report-components/purchase-price-trend-tab.vue';
 import {reportPurchaseApi} from '/@/api/business/scm/report-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
@@ -539,7 +492,6 @@ import type {
     PurchaseSupplierRow,
     PurchaseTopItem,
     ReportChartBar,
-    ReportChartLine,
     ReportId,
 } from './report-types';
 import {
@@ -579,7 +531,6 @@ const chartError = ref('');
 
 const overview = ref<PurchaseOverview>();
 const supplierTopRows = ref<PurchaseTopItem[]>([]);
-const priceTrendRows = ref<PurchasePriceTrendPoint[]>([]);
 
 const product = reactive(createTabView<PurchaseProductRow>());
 const supplier = reactive(createTabView<PurchaseSupplierRow>());
@@ -657,15 +608,6 @@ const itemColumns = ref<TableColumnsType<PurchaseItemRow>>([
     {title: '采购行金额', dataIndex: 'lineAmount', align: 'right', width: 140},
 ]);
 
-const trendColumns = ref<TableColumnsType<PurchasePriceTrendPoint>>([
-    {title: '业务日期', dataIndex: 'bizDate', width: 130},
-    {title: '商品', dataIndex: 'productName', width: 200},
-    {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-    {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 110},
-    {title: '加权平均成交价', dataIndex: 'weightedAvgPrice', align: 'right', width: 160},
-    {title: '样本行数', dataIndex: 'sampleLineCount', align: 'right', width: 110},
-]);
-
 const visibleProductColumns = computed(() => filterCostColumns(productColumns.value, COST_INDEXES, canViewCost.value));
 const visibleSupplierColumns = computed(() => filterCostColumns(supplierColumns.value, COST_INDEXES, canViewCost.value));
 const visiblePurchaserColumns = computed(() =>
@@ -718,38 +660,6 @@ function topItems(rows: PurchaseTopItem[]): ReportChartBar[] {
     }));
 }
 
-/** x 轴取全部出现过的业务日并升序；后端按日聚合，不补空日。 */
-const trendAxis = computed(() => [...new Set(priceTrendRows.value.map((row) => row.bizDate ?? ''))].sort());
-
-/**
- * 一条线 = 一个 (SKU, 采购单位)。
- *
- * 单位必须进线的名字里：箱价与公斤价画在同一条线上没有任何意义，
- * 而把它们混在一张图里但不同名，用户看不出错在哪。
- */
-const trendSeries = computed<ReportChartLine[]>(() => {
-    const groups = new Map<string, PurchasePriceTrendPoint[]>();
-    for (const row of priceTrendRows.value) {
-        const key = `${row.skuId ?? '未知'}|${row.purchaseUnit ?? '无单位'}`;
-        const bucket = groups.get(key);
-        if (bucket) {
-            bucket.push(row);
-        } else {
-            groups.set(key, [row]);
-        }
-    }
-    const axis = trendAxis.value;
-    return [...groups.entries()].map(([key, rows]) => {
-        const byDate = new Map(rows.map((row) => [row.bizDate ?? '', row]));
-        const label = rows[0]?.productName ?? key;
-        return {
-            name: `${label}（${rows[0]?.purchaseUnit ?? '无单位'}）`,
-            data: axis.map((date) => chartValue(byDate.get(date)?.weightedAvgPrice)),
-            texts: axis.map((date) => moneyText(byDate.get(date)?.weightedAvgPrice)),
-        };
-    });
-});
-
 function purchaseQuery(tab: {pageNum: number; pageSize: number}): PurchaseQuery {
     return buildReportQuery<PurchaseQuery>(dateRange.value, {...filters}, tab);
 }
@@ -775,9 +685,8 @@ const loadSupplierTop = createGuardedLoader(
 );
 /** 价格波动不分页（一次给完整个区间的按日点），表格只渲染返回的行。 */
 const loadTrend = createGuardedLoader(
-    () => reportPurchaseApi.priceTrend(buildReportQuery<PurchaseQuery>(dateRange.value, {...filters})),
+    () => reportPurchaseApi.priceTrend(purchaseQuery(trend)),
     (rows) => {
-        priceTrendRows.value = rows ?? [];
         trend.rows = rows ?? [];
         trend.total = (rows ?? []).length;
     },

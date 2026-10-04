@@ -288,6 +288,24 @@ test('3 采购报表只计提交后的采购事实', async () => {
     expect(overview.submittedAmount).toBe('15.0000');
 });
 
+test('R0-B 价格波动面板显示按 SKU 与采购单位分组的趋势行', async ({page}) => {
+    await browse(page, '/report/report-purchase-list');
+    const trendLoaded = page.waitForResponse(response =>
+        response.url().endsWith('/scm/report/purchase/price-trend') && response.request().method() === 'POST'
+    );
+    await page.getByRole('tab', {name: '价格波动'}).click();
+    const result = await (await trendLoaded).json();
+    expect(result.code, result.msg).toBe(0);
+    const rows = result.data as Array<{skuId: string | number; purchaseUnit: string}>;
+    expect(rows.some(row => Number(row.skuId) === Number(skuId) && row.purchaseUnit === 'kg'),
+        '刚提交的采购行应进入当前业务日的价格趋势').toBe(true);
+
+    await expect(page.getByText('采购成交价波动', {exact: true})).toBeVisible();
+    const table = page.locator('#scm-report-purchase-price-trend-table');
+    await expect(table).toBeVisible();
+    await expect(table.locator('tbody tr[data-row-key]')).toHaveCount(rows.length);
+});
+
 test('4 收货与入库分离：WAREHOUSE_CONFIRM 先只出现在收货与待入库，入库后才进入库明细', async () => {
     const {receipt} = await confirmedReceipt('WAREHOUSE_CONFIRM', '7.0000');
 
