@@ -64,7 +64,7 @@
 
 - **授信检查仍按未扣优惠的金额**：`confirmOrder` 里 `checkForSettlementConfirmation` 用的是 `settlementTotalAmount`，**没有减去优惠**。授信占用口径属于 ADM-04，改它需要单独确认，本轮刻意未动；否则会悄悄改变授信额度判定。
 - **订单确认通知在冻结之后发送**：冻结失败即整笔回滚，不会出现「已发确认通知但优惠没冻结」。
-- **架构测试未覆盖 `promotion` 域**：`ScmArchitectureTest.CONCRETE_DOMAINS` 列了 14 个业务域，但没有 `..scm.promotion..`，因此分层方向与「`common` 不反向依赖业务域」两条规则对营销域不生效。属于既有缺口，本轮未动测试（加了会引入无法在本轮验证的失败面），需单独处理。
+- **已关闭：营销域此前未纳入 ArchUnit 规则。** `ScmArchitectureTest` 的 `CONCRETE_DOMAINS` 与 `CONCRETE_DOMAINS_EXCEPT_FINANCE` 均加入 `..scm.promotion..`，因此公共层反向依赖、Finance 跨域依赖及业务包归属规则现在覆盖营销域。2026-10-05 Maven reactor 定向运行 `ScmArchitectureTest`：**9 tests / 0 failures / 0 errors / 0 skipped**。
 - **3-5b 已按勘察结论实施**：赠品**没有**混进 `dispatchOutbound`（它的 `Line` 强制要求 `salesOrderItemId`，且预留归还全按订单行走），而是另开 `GiftCommand` + `dispatchPromotionGiftOutbound`（按 `(warehouse_id, sku_id)` 锁余额、不碰预留）；加类型时**同时**扩了 `ck_inventory_movement_type` 与方向感知的 `ck_inventory_movement_snap`（V95）；毛利成本侧新增独立分支而不是把 `WHERE` 改成 `IN (...)`；赠品出库行的 `sales_order_item_id` 保持为空，应收生成器本来就带 `IS NOT NULL` 过滤，赠品**自动不进应收**。
 - **3-6 的分配口径（实施时定）**：限时特价让利按**行**归集，不参与按金额比例分摊 —— 特价针对某个 SKU，摊到别的行上会让退款反向错行；同一行只让一次价（已被更靠前的特价命中过的行跳过），因此「按优先级顺序作用」这条既有语义在特价上依然成立，且每条活动记进快照的让利额之和恰好等于总让利。满减/折扣与券仍在**特价之后**的行金额上按比例分摊。
 - **3-4 的口径（负责人 2026-10-03 确认）**：

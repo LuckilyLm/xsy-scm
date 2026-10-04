@@ -44,14 +44,14 @@ class ScmArchitectureTest {
             "..scm.product..", "..scm.customer..", "..scm.supplier..", "..scm.pricing..",
             "..scm.order..", "..scm.purchase..", "..scm.inventory..", "..scm.sorting..",
             "..scm.delivery..", "..scm.finance..", "..scm.report..", "..scm.dashboard..",
-            "..scm.screen..", "..scm.warehouse..",
+            "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
     };
 
     private static final String[] CONCRETE_DOMAINS_EXCEPT_FINANCE = {
             "..scm.product..", "..scm.customer..", "..scm.supplier..", "..scm.pricing..",
             "..scm.order..", "..scm.purchase..", "..scm.inventory..", "..scm.sorting..",
             "..scm.delivery..", "..scm.report..", "..scm.dashboard..",
-            "..scm.screen..", "..scm.warehouse..",
+            "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
     };
 
     /**
