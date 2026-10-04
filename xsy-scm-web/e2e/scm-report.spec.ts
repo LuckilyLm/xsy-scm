@@ -324,6 +324,8 @@ test('3 采购报表只计提交后的采购事实', async ({page}) => {
     await browse(page, '/report/report-purchase-list');
     await page.getByRole('tab', {name: '采购明细', exact: true}).click();
     await expect(page.locator('#scm-report-purchase-item-table tbody tr[data-row-key]').first()).toBeVisible();
+    await page.getByRole('tab', {name: '按采购员', exact: true}).click();
+    await expect(page.locator('#scm-report-purchase-purchaser-table')).toBeVisible();
 });
 
 test('R0-B 价格波动面板显示按 SKU 与采购单位分组的趋势行', async ({page}) => {

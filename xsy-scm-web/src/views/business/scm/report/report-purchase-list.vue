@@ -253,80 +253,19 @@
 
     <!-- ==================== 按采购员 ==================== -->
     <a-tab-pane key="purchaser" tab="按采购员">
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportPurchaser">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              点采购员名称，右侧抽屉看该采购员的商品维度明细；这是业绩与成本视角，不是提成。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="purchaserColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_PURCHASER"
-                :refresh="loadPurchaser"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="purchaser.error" :message="purchaser.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadPurchaser">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.PURCHASE_PURCHASER"
-            size="small"
-            :data-source="purchaser.rows"
-            :columns="visiblePurchaserColumns"
-            row-key="purchaserId"
-            bordered
-            :loading="purchaser.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无采购员数据'}"
-            :scroll="{x: 1400}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'purchaserName'">
-              <a @click="openPurchaserDrilldown(record)">{{ record.purchaserName ?? '未分配采购员' }}</a>
-            </template>
-            <template v-else-if="column.dataIndex === 'orderCount'">
-              <span class="num">{{ countText(record.orderCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'skuKindCount'">
-              <span class="num">{{ countText(record.skuKindCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'orderAmount'">
-              <span class="num">{{ moneyText(record.orderAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'receiptReferenceAmount'">
-              <span class="num">{{ moneyText(record.receiptReferenceAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-              <span class="num">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
-              <a-tooltip v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
-                         :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')">
-                <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true"/>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'lastSubmittedAt'">
-              {{ datetime(record.lastSubmittedAt) }}
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="purchaser.pageNum"
-              v-model:page-size="purchaser.pageSize"
-              :total="purchaser.total"
-              @change="loadPurchaser"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
+      <PurchasePurchaserTab
+          :rows="purchaser.rows"
+          :loading="purchaser.loading"
+          :error="purchaser.error"
+          :can-view-cost="canViewCost"
+          :page-num="purchaser.pageNum"
+          :page-size="purchaser.pageSize"
+          :total="purchaser.total"
+          @export="exportPurchaser"
+          @reload="loadPurchaser"
+          @page-change="loadPurchaserPage"
+          @open-purchaser="openPurchaserDrilldown"
+      />
     </a-tab-pane>
 
     <!-- ==================== 采购明细 ==================== -->
@@ -417,6 +356,7 @@ import ReportBarChart from './report-components/report-bar-chart.vue';
 import ReportDrilldownDrawer from './report-components/report-drilldown-drawer.vue';
 import PurchasePriceTrendTab from './report-components/purchase-price-trend-tab.vue';
 import PurchaseItemTab from './report-components/purchase-item-tab.vue';
+import PurchasePurchaserTab from './report-components/purchase-purchaser-tab.vue';
 import {reportPurchaseApi} from '/@/api/business/scm/report-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
@@ -516,21 +456,8 @@ const supplierColumns = ref<TableColumnsType<PurchaseSupplierRow>>([
     {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
 ]);
 
-const purchaserColumns = ref<TableColumnsType<PurchasePurchaserRow>>([
-    {title: '采购员', dataIndex: 'purchaserName', width: 160},
-    {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 120},
-    {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
-    {title: '采购订单金额', dataIndex: 'orderAmount', align: 'right', width: 170},
-    {title: '已收参考金额', dataIndex: 'receiptReferenceAmount', align: 'right', width: 160},
-    {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', align: 'right', width: 180},
-    {title: '最近采购时间', dataIndex: 'lastSubmittedAt', width: 190},
-]);
-
 const visibleProductColumns = computed(() => filterCostColumns(productColumns.value, COST_INDEXES, canViewCost.value));
 const visibleSupplierColumns = computed(() => filterCostColumns(supplierColumns.value, COST_INDEXES, canViewCost.value));
-const visiblePurchaserColumns = computed(() =>
-    filterCostColumns(purchaserColumns.value, COST_INDEXES, canViewCost.value)
-);
 const visibleDrilldownColumns = computed(() =>
     filterCostColumns(productColumns.value, COST_INDEXES, canViewCost.value)
 );
@@ -595,6 +522,12 @@ function loadItemPage(pageNum: number, pageSize: number) {
     item.pageNum = pageNum;
     item.pageSize = pageSize;
     void loadItem();
+}
+
+function loadPurchaserPage(pageNum: number, pageSize: number) {
+    purchaser.pageNum = pageNum;
+    purchaser.pageSize = pageSize;
+    void loadPurchaser();
 }
 
 const loadOverview = createGuardedLoader(
