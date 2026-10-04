@@ -2263,3 +2263,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 28. 采购商品分析面板拆分（2026-10-05）
 
 从 `report-purchase-list.vue` 抽出商品汇总表、成本列过滤、错误与分页展示为 `PurchaseProductTab`；列定义仍与商品下钻共用，日期/供应商/仓库筛选、查询和导出由父页负责。完整 `scm-report.spec.ts` **13/13** 通过，涵盖商品页签、采购明细与采购员视角。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。
+
+## 29. 供应商采购分析面板拆分（2026-10-05）
+
+从 `report-purchase-list.vue` 抽出供应商 TOP10 图表、汇总表、成本列门禁和商品下钻入口为 `PurchaseSupplierTab`；供应商聚合请求、权限状态与下钻抽屉继续由父页管理。完整 `scm-report.spec.ts` **13/13** 通过，包含采购商品、供应商、采购明细和采购员页签导航。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。

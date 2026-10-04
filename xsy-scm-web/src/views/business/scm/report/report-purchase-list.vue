@@ -104,91 +104,21 @@
 
     <!-- ==================== 按供应商 ==================== -->
     <a-tab-pane key="supplier" tab="按供应商">
-      <ReportBarChart
-          class="smart-margin-bottom10"
-          title="供应商采购入库成本 TOP10"
-          :items="topItems(supplierTopRows)"
-          series-name="采购入库成本金额"
-      />
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportSupplier">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              点供应商名称，右侧抽屉看该供应商的商品维度明细。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="supplierColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_SUPPLIER"
-                :refresh="loadSupplier"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="supplier.error" :message="supplier.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadSupplier">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.PURCHASE_SUPPLIER"
-            size="small"
-            :data-source="supplier.rows"
-            :columns="visibleSupplierColumns"
-            row-key="supplierId"
-            bordered
-            :loading="supplier.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无供应商采购数据'}"
-            :scroll="{x: 1600}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'supplierName'">
-              <a v-if="record.supplierId" @click="openSupplierDrilldown(record)">{{ record.supplierName }}</a>
-              <span v-else>{{ record.supplierName ?? '—' }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'orderCount'">
-              <span class="num">{{ countText(record.orderCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'skuKindCount'">
-              <span class="num">{{ countText(record.skuKindCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'orderAmount'">
-              <span class="num">{{ moneyText(record.orderAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'receiptReferenceAmount'">
-              <span class="num">{{ moneyText(record.receiptReferenceAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-              <span class="num">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
-              <a-tooltip v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
-                         :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')">
-                <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true"/>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'lastSubmittedAt'">
-              {{ datetime(record.lastSubmittedAt) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'amountRank'">
-              <span class="num">{{ countText(record.amountRank) }}</span>
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="supplier.pageNum"
-              v-model:page-size="supplier.pageSize"
-              :total="supplier.total"
-              @change="loadSupplier"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
-    </a-tab-pane>
+  <PurchaseSupplierTab
+      :items="topItems(supplierTopRows)"
+      :rows="supplier.rows"
+      :loading="supplier.loading"
+      :error="supplier.error"
+      :can-view-cost="canViewCost"
+      :page-num="supplier.pageNum"
+      :page-size="supplier.pageSize"
+      :total="supplier.total"
+      @export="exportSupplier"
+      @reload="loadSupplier"
+      @page-change="loadSupplierPage"
+      @open-supplier="openSupplierDrilldown"
+  />
+</a-tab-pane>
 
     <!-- ==================== 按采购员 ==================== -->
     <a-tab-pane key="purchaser" tab="按采购员">
@@ -281,8 +211,6 @@ import PurchaseDailyReport from './report-components/purchase-daily-report.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
-import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
-import TableOperator from '/@/components/support/table-operator/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -297,9 +225,9 @@ import PurchasePriceTrendTab from './report-components/purchase-price-trend-tab.
 import PurchaseItemTab from './report-components/purchase-item-tab.vue';
 import PurchasePurchaserTab from './report-components/purchase-purchaser-tab.vue';
 import PurchaseProductTab from './report-components/purchase-product-tab.vue';
+import PurchaseSupplierTab from './report-components/purchase-supplier-tab.vue';
 import {reportPurchaseApi} from '/@/api/business/scm/report-api';
-import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
+import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
 import type {
     PurchaseItemRow,
     PurchaseOverview,
@@ -327,7 +255,6 @@ import {
     textOrDash,
 } from './report-model';
 import {moneyText, quantityText} from '../inventory/inventory-model';
-import {datetime} from '../common/scm-display';
 import type {TabView} from './report-model';
 import {useReportPermission} from './use-report-permission';
 import {createGuardedLoader, createTabLoader} from './use-report-query';
@@ -384,19 +311,6 @@ const productColumns = ref<TableColumnsType<PurchaseProductRow>>([
     {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', align: 'right', width: 180},
 ]);
 
-const supplierColumns = ref<TableColumnsType<PurchaseSupplierRow>>([
-    {title: '供应商编码', dataIndex: 'supplierCode', width: 150},
-    {title: '供应商名称', dataIndex: 'supplierName', width: 200},
-    {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 110},
-    {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
-    {title: '采购订单金额', dataIndex: 'orderAmount', align: 'right', width: 160},
-    {title: '已收参考金额', dataIndex: 'receiptReferenceAmount', align: 'right', width: 150},
-    {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', align: 'right', width: 180},
-    {title: '最近采购时间', dataIndex: 'lastSubmittedAt', width: 190},
-    {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
-]);
-
-const visibleSupplierColumns = computed(() => filterCostColumns(supplierColumns.value, COST_INDEXES, canViewCost.value));
 const visibleDrilldownColumns = computed(() =>
     filterCostColumns(productColumns.value, COST_INDEXES, canViewCost.value)
 );
@@ -461,6 +375,12 @@ function loadProductPage(pageNum: number, pageSize: number) {
     product.pageNum = pageNum;
     product.pageSize = pageSize;
     void loadProduct();
+}
+
+function loadSupplierPage(pageNum: number, pageSize: number) {
+    supplier.pageNum = pageNum;
+    supplier.pageSize = pageSize;
+    void loadSupplier();
 }
 
 function loadItemPage(pageNum: number, pageSize: number) {
