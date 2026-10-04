@@ -99,7 +99,9 @@ class Verification:
         """
         self.spotless_coverage()
         self.run("checkstyle-report", ["mvn", "-B", "-N", "checkstyle:check"], SERVER)
-        self.run("spotless-check", ["mvn", "-B", "spotless:check"], SERVER)
+        ratchet_ref = os.environ.get("QUALITY_RATCHET_FROM", "origin/main")
+        self.run("spotless-check",
+                 ["mvn", "-B", "spotless:check", f"-Dquality.ratchet.from={ratchet_ref}"], SERVER)
         self.run(
             "quality-guard",
             [sys.executable, str(ROOT / "tools/quality/quality_guard.py"), "check", "--checkstyle"],

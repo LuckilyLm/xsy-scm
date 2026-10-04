@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Java and repository quality gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: xsy-scm-server/pom.xml
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Select Spotless ratchet base
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          if [[ -n "$PR_BASE_SHA" ]]; then
+            ref="$PR_BASE_SHA"
+          elif [[ -n "$EVENT_BEFORE" && "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]] \
+            && git cat-file -e "${EVENT_BEFORE}^{commit}" 2>/dev/null; then
+            ref="$EVENT_BEFORE"
+          else
+            ref="$(git merge-base origin/main HEAD)"
+          fi
+          if [[ "$ref" == "$(git rev-parse HEAD)" ]]; then
+            ref="$(git rev-parse HEAD^)"
+          fi
+          echo "QUALITY_RATCHET_FROM=$ref" >> "$GITHUB_ENV"
+
+      - name: Run repository quality gates
+        run: python tools/verify.py quality
+
+      - name: Verify production configuration
+        run: python tools/verify_prod_config.py
+
+  frontend:
+    name: Frontend type, lint, unit, and build checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: xsy-scm-web/package-lock.json
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install frontend dependencies
+        working-directory: xsy-scm-web
+        run: npm ci
+
+      - name: Run frontend checks
+        run: python tools/verify.py frontend
+
+  backend:
+    name: Backend tests on PostgreSQL and Redis
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: xsy_scm
+          POSTGRES_USER: xsy_scm_app
+          POSTGRES_PASSWORD: xsy_scm_ci_only
+        ports:
+          - 25432:5432
+        options: >-
+          --health-cmd "pg_isready -U xsy_scm_app -d xsy_scm"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 16379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: xsy-scm-server/pom.xml
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Validate migration checksums
+        run: python tools/migration_checksum_guard.py check
+
+      - name: Run backend tests
+        working-directory: xsy-scm-server
+        env:
+          XSY_V2_DB_URL: jdbc:p6spy:postgresql://127.0.0.1:25432/xsy_scm?currentSchema=xsy_v2&ApplicationName=xsy-scm-ci
+          XSY_V2_DB_USERNAME: xsy_scm_app
+          XSY_V2_DB_PASSWORD: xsy_scm_ci_only
+          SPRING_DATA_REDIS_HOST: 127.0.0.1
+          SPRING_DATA_REDIS_PORT: '16379'
+        run: mvn -B -pl sa-admin -am test
