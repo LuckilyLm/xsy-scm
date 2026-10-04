@@ -12,6 +12,7 @@ const env={...process.env,W5_E2E_NAME:name,W5_E2E_PASSWORD:password};
 let api:APIRequestContext,token:string;
 let warehouseId:string,skuId:string,supplierId:string,customerId:string;
 let demandA:any,soA:any,orderA:any;
+let printTemplateId:number|undefined;
 test.describe.configure({mode:'serial'});
 async function login(account:string){const c=await request.newContext({baseURL:apiUrl});const captcha=(await(await c.get('/login/getCaptcha')).json()).data;const source=readFileSync('src/lib/encrypt.ts','utf8');const key=/const SM4_KEY = '([^']+)'/.exec(source)![1];const encrypted=Buffer.from(smCrypto.sm4.encrypt(password,Buffer.from(key).toString('hex'))).toString('base64');const r=await(await c.post('/login',{data:{loginName:account,password:encrypted,captchaUuid:captcha.captchaUuid,captchaCode:captcha.captchaText,loginDevice:1}})).json();expect(r.code).toBe(0);await c.dispose();return r.data.token;}
 async function raw(path:string,data:unknown,key=randomUUID()){return await(await api.post(path,{data,headers:{'Idempotency-Key':key}})).json();}
@@ -71,7 +72,11 @@ test.beforeAll(async()=>{
  // 采购单位必须与需求单位（= 销售单位）一致，否则 Q17 直接 40971；这里逐个对齐。
  await post('/scm/supplier/sku/replace',{supplierId,items:[{skuId,purchaseUnit:'kg',defaultFlag:true,status:'ENABLED'},{skuId:boxSkuId,purchaseUnit:'箱',defaultFlag:false,status:'ENABLED'}]});
 });
-test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose();}execFileSync('python',['../tools/w5_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});});
+test.afterAll(async()=>{
+ if(api&&printTemplateId){const template=await get(`/scm/print/template/${printTemplateId}`);await post(`/scm/print/template/${printTemplateId}/delete?version=${template.version}`,{});}
+ if(api){await api.get('/login/logout');await api.dispose();}
+ execFileSync('python',['../tools/w5_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});
+});
 
 test('1 demand generation from a confirmed sales order',async({page})=>{
  const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));
@@ -433,6 +438,14 @@ test('14 print renders the fetched order into the print document and never write
   items:[{skuId,quantity:'7.0000',price:'6.2000',allocations:[]}]});
  const order=await orderDetail(created.id);
  expect(order.remark,'服务端未原样保存备注，转义断言的前提不成立').toBe(mark);
+ const templateName=`W5 E2E 打印转义 ${Date.now()}`;
+ printTemplateId=await post('/scm/print/template',{
+  documentType:'PURCHASE_ORDER',templateCode:`E2E_PURCHASE_${Date.now()}`,templateName,defaultFlag:false,enabledFlag:true,
+  model:{title:'采购单打印',paper:'A4',orientation:'PORTRAIT',
+   headerFields:['supplierName','warehouseName','purchaserName','plannedArrivalDate','remark'],
+   columns:['productName','skuCode','skuName','purchaseUnit','plannedQuantity','receivedQuantity','remainingQuantity','purchasePrice','lineAmount'],
+   showTotals:true,footerNote:'W5 打印转义验收'},
+ });
  const statusBefore=order.status;
  await capturePrint(page);
  const writes:string[]=[];let printing=false;
@@ -442,11 +455,18 @@ test('14 print renders the fetched order into the print document and never write
  const orderRow=await row(page,'scm-purchase-order-table',order.orderNo);
  printing=true;
  await orderRow.getByRole('button',{name:'打印',exact:true}).click();
+ const singleDialog=page.locator('.ant-modal:visible').last();
+ await expect(singleDialog.getByText(order.orderNo)).toBeVisible();
+ await singleDialog.locator('.ant-select').first().click();
+ await page.locator('.ant-select-dropdown:visible').last().getByText(templateName,{exact:true}).click();
+ await expect(singleDialog.locator('.preview')).toContainText(mark);
+ await page.locator('.ant-modal-footer .ant-btn-primary').last().click();
  await expect.poll(()=>page.evaluate(()=>(window as any).__printDocuments.length)).toBe(1);
  // 打印的必须是这一张单的当前详情（表头 + 明细行），而不是空模板
  const [single]=await page.evaluate(()=>(window as any).__printDocuments) as
   {title:string,text:string,scripts:number,rows:number}[];
- expect(single.title).toContain('采购单打印');
+ expect(single.title).toBe('打印');
+ expect(single.text).toContain('采购单打印');
  expect(single.text).toContain(order.orderNo);
  expect(single.text).toContain(order.supplierName);
  expect(single.text).toContain(order.items[0].productName);
@@ -457,15 +477,27 @@ test('14 print renders the fetched order into the print document and never write
  expect(single.text).toContain(mark);
  expect(single.scripts).toBe(0);
  // 批量打印共用同一份文档生成器：勾上这张单后应再生成一个只含它的文档
+ await page.locator('.ant-modal-footer .ant-btn-default').last().click();
  await page.locator('#scm-purchase-order-table tbody tr.ant-table-row').first().locator('input[type=checkbox]').click();
  await page.getByRole('button',{name:'批量打印'}).click();
+ const batchDialog=page.locator('.ant-modal:visible').last();
+ await expect(batchDialog.getByText(order.orderNo)).toBeVisible();
+ await batchDialog.locator('.ant-select').first().click();
+ await page.locator('.ant-select-dropdown:visible').last().getByText(templateName,{exact:true}).click();
+ await expect(batchDialog.locator('.preview')).toContainText(mark);
+ await page.locator('.ant-modal-footer .ant-btn-primary').last().click();
  await expect.poll(()=>page.evaluate(()=>(window as any).__printDocuments.length)).toBe(2);
  const batch=await page.evaluate(()=>(window as any).__printDocuments[1]);
  expect(batch.text).toContain(order.orderNo);
  expect(batch.rows).toBe(1);
  expect(batch.scripts).toBe(0);
- // §1.2：打印不等于收货 / 关单 —— 全程只读，采购状态一位不动
- expect(writes).toEqual([]);
+ // 模板打印只追加冻结打印记录；采购订单状态不会改变，也不能触发其它写入口。
+ const paths=writes.map((entry)=>{
+  const [method,url]=entry.split(' ',2);
+  return `${method} ${new URL(url).pathname}`;
+ });
+ const printPath=`/scm/print/PURCHASE_ORDER/${created.id}/print`;
+ expect(paths).toEqual([`POST ${printPath}`,`POST ${printPath}`]);
  expect((await orderDetail(created.id)).status).toBe(statusBefore);
  await page.screenshot({path:'../.runtime/w2b-order-print.png',fullPage:true});
  expect(consoleErrors).toEqual([]);
