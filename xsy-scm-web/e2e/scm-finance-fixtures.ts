@@ -173,11 +173,37 @@ async function stockIn(harness: FinanceHarness, supplierId: string, skuIds: stri
     });
 }
 
+/**
+ * 订单行/分拣行都按 skuId 认，不按数组位置认：满赠会在分拣任务里追加赠品权益行，
+ * 位置匹配会把赠品当成第 N 条采购行（D-41）。
+ */
+function pickOrderLine(detail: Row, skuId: string, tag: string): Row {
+    const line = (detail.items as Row[]).find((item) => Number(item.skuId) === Number(skuId));
+    if (!line) throw new Error(`${tag} 订单里没有 sku ${skuId} 的行`);
+    return line;
+}
+
+function inputForSku(inputs: ReceivableLineInput[], skus: string[], skuId: unknown, tag: string) {
+    const index = skus.findIndex((sku) => Number(sku) === Number(skuId));
+    if (index < 0) throw new Error(`${tag} 分拣行 sku ${String(skuId)} 不在夹具建单清单里`);
+    return inputs[index];
+}
+
+/**
+ * 单独给某条 sku 在夹具仓补库存：满赠的赠品不属于任何订单行，
+ * 没人买它就只能靠这条入口备货，否则发车时赠品出库会因无货而失败。
+ */
+export async function stockSku(harness: FinanceHarness, suffix: string, skuId: string, quantity: string) {
+    const supplierId = await createSupplier(harness, suffix, [skuId]);
+    return stockIn(harness, supplierId, [skuId], [quantity]);
+}
+
 export async function createSignedOrder(
     harness: FinanceHarness,
     suffix: string,
     lineInputs: ReceivableLineInput[],
     existingCustomerId?: string,
+    confirmExtras?: {couponInstanceId?: number},
 ): Promise<SignedOrderFacts> {
     const address = `${harness.runTag}${suffix} 验收路`;
     const customerId = existingCustomerId ??
@@ -206,7 +232,7 @@ export async function createSignedOrder(
     order = await call<Row>(harness.admin, 'post', '/scm/order/submit', {orderId: order.orderId, version: order.version});
     for (const [index, input] of lineInputs.entries()) {
         const fresh = await call<Row>(harness.admin, 'get', `/scm/order/detail/${order.orderId}`);
-        const line = (fresh.items as Row[])[index];
+        const line = pickOrderLine(fresh, skus[index], `${harness.runTag} ${suffix}`);
         await call(harness.admin, 'post', '/scm/order/item/actual-quantity', {
             orderId: fresh.orderId,
             itemId: line.itemId,
@@ -219,6 +245,8 @@ export async function createSignedOrder(
     order = await call<Row>(harness.admin, 'post', '/scm/order/confirm', {
         orderId: orderDetail.orderId,
         version: orderDetail.version,
+        // 集团/独立结算链不传这个；活动券链要带 couponInstanceId 才能验「确认时冻结优惠」
+        ...(confirmExtras ?? {}),
     });
     orderDetail = await call<Row>(harness.admin, 'get', `/scm/order/detail/${order.orderId}`);
 
@@ -228,16 +256,20 @@ export async function createSignedOrder(
         remark: `${harness.runTag} ${suffix} Finance E2E 分拣`,
     });
     await call(harness.admin, 'post', `/scm/sorting/tasks/${sorting.task.id}/entry`, {
-        items: (sorting.items as Row[]).map((item, index) => {
-            const input = lineInputs[index];
-            return {
-                id: item.id,
-                version: item.version,
-                sortedQuantity: input.sortedQuantity ?? input.quantity,
-                result: input.sortedResult ?? 'NORMAL',
-                ...(input.sortedResult === 'SHORT' ? {reason: `${harness.runTag} 少拣`} : {}),
-            };
-        }),
+        // 满赠任务的 items 是「订单行 + 赠品权益行」的合并视图，赠品行追加在订单行之后。
+        // 按 index 取 lineInputs 会在有赠品时错位（D-41），所以只提交订单行并按 skuId 认行。
+        items: (sorting.items as Row[])
+            .filter((item) => item.sourceType !== 'PROMOTION_GIFT')
+            .map((item) => {
+                const input = inputForSku(lineInputs, skus, item.skuId, `${harness.runTag} ${suffix}`);
+                return {
+                    id: item.id,
+                    version: item.version,
+                    sortedQuantity: input.sortedQuantity ?? input.quantity,
+                    result: input.sortedResult ?? 'NORMAL',
+                    ...(input.sortedResult === 'SHORT' ? {reason: `${harness.runTag} 少拣`} : {}),
+                };
+            }),
     });
     const sortingReady = await call<Row>(harness.admin, 'get', `/scm/sorting/tasks/${sorting.task.id}`);
     await call(harness.admin, 'post', `/scm/sorting/tasks/${sorting.task.id}/complete`, {
