@@ -9,7 +9,10 @@ async function mock(page: any, handler: (path: string, body: any, request: any) 
   await page.route('**/*', async (route: any) => {
     const req = route.request();
     const url = new URL(req.url());
-    if (!url.pathname.startsWith('/scm/') && !url.pathname.startsWith('/tableColumn/')) return route.continue();
+    // 列配置的真实路径是 /support/tableColumn/getColumns/{id}，不是 /tableColumn/…：
+    // 只按前缀放行会让这一发请求打到真后端 → 无令牌 401 → axios 拦截器跳登录页，
+    // 用例于是看到「元素 detached」而不是缺 mock。
+    if (!url.pathname.startsWith('/scm/') && !url.pathname.includes('/tableColumn/')) return route.continue();
     let body;
     try { body = req.postDataJSON(); } catch { body = undefined; }
     const data = handler(url.pathname, body, req);

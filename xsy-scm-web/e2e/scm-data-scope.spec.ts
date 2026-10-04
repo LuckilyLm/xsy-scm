@@ -142,6 +142,48 @@ test.beforeAll(async () => {
         return result;
     };
     stocked.push(...await collectStocked(enabled));
+    if (stocked.length === 0) {
+        // 全新 V1→V106 库里一座「有余额」的启用仓都没有（默认仓是空的），上面那条回收分支和
+        // 下面的「从有货的仓调拨」都无从下手。先用一次**盘盈**造出真实余额行：
+        // 走 /stocktake/create + /confirm 这条正式库存命令，产生 INVENTORY_GAIN 流水，
+        // 不直接写 inventory_balance（那会伪造事实，测不到余额与流水的一致性）。
+        // 全新库里 product/sku 是空的（迁移只播种分类树与系统基线），所以先自建一个可售 SKU，
+        // 再盘盈出余额行 —— 两步都走正式端点，不留「靠上一个用例留下的数据」这种隐性前置。
+        const skus = await ok<Row>(api, 'post', '/scm/product/sku/option-list', {keyword: '', limit: 10});
+        let skuId = Number(((skus.options ?? []) as Row[])[0]?.skuId);
+        if (!(skuId > 0)) {
+            const tree = await ok<Row[]>(api, 'post', '/scm/product/category/tree', {});
+            const flatten = (rows: Row[]): Row[] =>
+                rows.flatMap((row) => [row, ...flatten((row.children ?? []) as Row[])]);
+            const leaves = flatten(tree as Row[]);
+            const category = leaves.find((row) => Number(row.level) === 3) ?? leaves[0];
+            expect(category !== undefined, '干净库里没有商品分类，无法自建 SKU 夹具').toBe(true);
+            await ok(api, 'post', '/scm/product/add', {
+                spuCode: `${tag}-SPU`, name: `${tag} 范围夹具商品`,
+                categoryId: Number(category.categoryId), status: 'ON_SHELF', images: [],
+                skuList: [{skuCode: `${tag}-SKU`, specName: '标准', saleUnit: 'kg', productType: 'STANDARD',
+                           marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0}],
+            });
+            const created = await ok<Row>(api, 'post', '/scm/product/sku/option-list', {keyword: tag, limit: 10});
+            skuId = Number(((created.options ?? []) as Row[])[0]?.skuId);
+        }
+        const homeId = Number(enabled[0]?.id ?? enabled[0]?.warehouseId);
+        expect(skuId > 0 && homeId > 0, '干净库里没有可用 SKU 或启用仓库，数据范围夹具无法自给').toBe(true);
+        // 实测：库存域**不允许**用盘盈给全新的 (仓库, SKU) 造出第一条余额行 ——
+        // /stocktake/create 直接拒：「该仓库与 SKU 尚无库存记录，请先办理入库再盘点」。
+        // 所以干净库上自给余额只能走正式入库链（供应商 → 采购单 → 收货 → 确认入库），
+        // 这条链的成本与口径见 docs/quality/adm-acceptance-test-log-2026-10-04.md 的裁决项 7。
+        const gainId = await envelope(api, '/scm/inventory/stocktake/create', {
+            warehouseId: homeId, remark: `${tag} scope fixture gain`,
+            items: [{skuId, actualQuantity: '20.0000'}],
+        });
+        if (gainId.code !== 0) {
+            throw new Error(`${gainId.msg} —— 需要完整入库链（供应商→采购单→收货确认）才能在此库自给余额行；`
+                + '当前用例的前置是「库里至少有一座有余额的启用仓」，见裁决项 7。');
+        }
+        await ok(api, 'post', `/scm/inventory/stocktake/confirm/${gainId.data}`, {});
+        stocked.push(...await collectStocked(enabled));
+    }
     if (stocked.length < 2) {
         // E2E 库会保留上轮测试留下的停用库存仓；启用其中一座作范围对照，结束后先盘亏归零再停用。
         // 这样仓库范围用例不依赖启用仓恰好已有两座，也不伪造库存余额行。
@@ -156,6 +198,31 @@ test.beforeAll(async () => {
             temporaryWarehouseId = candidate.id;
             enabled = await ok<Row[]>(api, 'get', '/scm/warehouse/list');
             stocked.push(...await collectStocked(enabled.filter((warehouse) => Number(warehouse.id) === candidate.id)));
+        }
+    }
+    if (stocked.length < 2) {
+        // 全新库里连一座可回收的停用库存仓都没有（只有默认仓），上面那条「回收残渣」的分支就不成立
+        // —— 而 afterAll 又会把回收来的仓盘亏归零再停用，所以残渣本来就不该被指望。
+        // 这里自建一座对照仓：WarehouseService.create 新建即 ENABLED 且没有「启用仓唯一」约束，
+        // 再用真实调拨单把货调过去（发出+收货），余额行由库存域命令产生，不伪造。
+        const donor = stocked[0];
+        if (donor) {
+            const donorRows = (await balanceQuery(api, donor.id)).list
+                .filter((row) => Number(row.quantity) > 0);
+            donorRows.sort((x, y) => Number(y.quantity) - Number(x.quantity));
+            const line = donorRows[0];
+            if (line) {
+                const createdId = await ok<number>(api, 'post', '/scm/warehouse/create',
+                    {warehouseCode: `${tag}-B`, name: `${tag} 范围对照仓`, address: null, remark: `${tag} scope fixture`});
+                const transferId = await ok<number>(api, 'post', '/scm/inventory/transfer/create', {
+                    fromWarehouseId: donor.id, toWarehouseId: createdId, remark: `${tag} scope fixture`,
+                    items: [{skuId: Number(line.skuId), quantity: '1.0000'}],
+                });
+                await ok(api, 'post', `/scm/inventory/transfer/ship/${transferId}`, {});
+                await ok(api, 'post', `/scm/inventory/transfer/receive/${transferId}`, {});
+                temporaryWarehouseId = createdId;
+                stocked.push({id: createdId, total: (await balanceQuery(api, createdId)).total});
+            }
         }
     }
     expect(stocked.length,
