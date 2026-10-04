@@ -21,7 +21,7 @@ const app = createApp({setup() {
 // 组件 setup 直接抛错、整页不渲染。这里补一个真实 router，让夹具的挂载环境和应用一致。
 const router = createRouter({
   history: createMemoryHistory(),
-  routes: [{path: '/:pathMatch(.*)*', name: 'adm-fixture', component: {render: () => null}}],
+  routes: [{path: '/:pathMatch(.*)*', name: 'adm-fixture', component: {render: (): null => null}}],
 });
 app.use(store).use(Antd).use(router).use(smartEnumPlugin, constants);
 // Permission enforcement has separate backend coverage; this fixture renders authorized controls.

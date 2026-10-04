@@ -171,7 +171,7 @@ class Verification:
     def frontend(self):
         # Run vue-tsc once; the ratchet rejects new diagnostics and all SCM errors.
         self.run("ts-ratchet", [sys.executable, str(ROOT / "tools/ts_baseline_ratchet.py"), "check"], ROOT)
-        for script in ("lint", "test", "build"):
+        for script in ("lint", "typecheck:e2e", "test", "build"):
             self.run(f"frontend-{script}", ["npm", "run", script], WEB)
 
     def e2e(self):

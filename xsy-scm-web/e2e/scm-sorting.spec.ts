@@ -352,7 +352,7 @@ test('重开保留已录内容并让订单立刻掉出配送候选', async ({pag
     expect(detail.task.status).toBe('SORTING');
     expect(detail.task.completedAt, '曾完成的时间要留下来').toBeTruthy();
     expect(detail.items.map((i: Row) => i.result)).toEqual(['SHORT', 'NORMAL']);
-    expect(detail.items.map(i => i.reason).filter(Boolean), '只有差异行才带原因').toEqual(['当日到货不足']);
+    expect(detail.items.map((i: Row) => i.reason).filter(Boolean), '只有差异行才带原因').toEqual(['当日到货不足']);
 
     expect(await candidateOf(taskOne.orderNo), '重开只改任务状态就应让订单掉出候选').toEqual([]);
 });

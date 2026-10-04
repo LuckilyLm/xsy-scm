@@ -39,7 +39,6 @@ let warehouseId: string;
 let warehouseName: string;
 let secondWarehouse: {id: string; name: string} | undefined;
 let skuId: string;
-let skuCode: string;
 let customerId: string;
 let supplierId: string;
 let standardSku = true;
@@ -180,7 +179,6 @@ test.beforeAll(async () => {
     const sku = orderableOptions.find((x: any) => x.productType === 'STANDARD') ?? orderableOptions[0];
     expect(sku, '报表夹具需要至少一个已上架且 SPU 同样上架的 SKU').toBeTruthy();
     skuId = String(sku.skuId);
-    skuCode = String(sku.skuCode);
     standardSku = sku.productType === 'STANDARD';
     customerId = String(await post('/scm/customer/add', {
         customerCode: name.toUpperCase(), name, customerTypeId: (await post('/scm/customer/type/option/list', {}))[0].typeId,
@@ -298,8 +296,7 @@ test('4 收货与入库分离：WAREHOUSE_CONFIRM 先只出现在收货与待入
     expect(receipts[0].putawayStatus).toBe('PENDING');
     expect(receipts[0].receiptReferenceAmount).toBe('43.4000');   // 7 × 6.2000
 
-    expect((await report('pending-putaway/query', {keyword: receipt.receiptNo})).list).toHaveLength(1,
-        '待入库应看到这张单');
+    expect((await report('pending-putaway/query', {keyword: receipt.receiptNo})).list).toHaveLength(1);
     expect((await report('inbound/query', {keyword: receipt.receiptNo})).list).toHaveLength(0);
 
     await post('/scm/purchase/receipt/putaway', {id: receipt.id, version: receipt.version});
@@ -375,7 +372,7 @@ test('9 导出是当前筛选的真文件：接口层是合法 xlsx，页面上�
 
 test('10 无权限账号在报表接口层就被拒（前端隐藏不算防线）', async () => {
     for (const path of ['overview', 'sales/product', 'purchase/overview', 'inventory/movement/query']) {
-        const r = await (await anonApi.post(`/scm/report/${path}`, {startDate: today, endDate: today})).json();
+        const r = await (await anonApi.post(`/scm/report/${path}`, {data: {startDate: today, endDate: today}})).json();
         expect(r.code, `未登录访问 /scm/report/${path} 必须被拒`).not.toBe(0);
     }
 });
@@ -432,7 +429,7 @@ test('11 采购每日清单保留下单快照并完成查询、筛选、分页�
         });
 
         const dailyItems = dailySkus.map((option: any) => ({
-            skuId: option.skuId, quantity: '1.0000', price: '6.2000', allocations: [],
+            skuId: option.skuId, quantity: '1.0000', price: '6.2000', allocations: [] as Record<string, unknown>[],
         }));
         const created = await post('/scm/purchase/create', {
             supplierId, warehouseId, purchaserId: null, plannedArrivalDate: null, remark: dailyRemark,

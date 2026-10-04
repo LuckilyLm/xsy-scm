@@ -3,7 +3,6 @@ import {test, expect} from './scm-test-base';
 import {accessibleName, authenticate} from './scm-e2e-account';
 import {
     call,
-    completeRefund,
     createApprovedReturn,
     createReceipt,
     createSignedOrder,

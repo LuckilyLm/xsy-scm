@@ -158,8 +158,11 @@ test('待办卡片数字与目标列表接口 total 同源，route 落在目标�
     const {page, params} = splitRoute(card.route);
     expect(page, `${card.key} 的 route 必须指向目标列表页`).toBe(target.page);
     const query = {...params, pageNum: 1, pageSize: 1};
+    const queryString = new URLSearchParams(
+        Object.entries(query).map(([key, value]) => [key, String(value)])
+    );
     const total = target.method === 'get'
-        ? (await get<Row>(`${target.queryPath}?${new URLSearchParams(query as Record<string, string>)}`)).total
+        ? (await get<Row>(`${target.queryPath}?${queryString}`)).total
         : (await post(target.queryPath, query)).total;
     // 同一条筛选口径算出来的两个数：待办不是第二套统计
     expect(Number(total), `${card.key} 待办数字应等于列表 total`).toBe(Number(card.count));

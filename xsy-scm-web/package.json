@@ -15,7 +15,9 @@
     "build:pre": "vite build  --mode pre",
     "build:prod": "vite build  --mode production",
     "typecheck": "vue-tsc --noEmit",
-    "lint": "eslint src",
+    "lint": "eslint src && npm run lint:e2e",
+    "lint:e2e": "eslint \"e2e/**/*.ts\" playwright.config.ts",
+    "typecheck:e2e": "tsc --noEmit --project tsconfig.e2e.json",
     "test": "node --experimental-strip-types --test test/*.test.mjs",
     "build": "vite build --mode production --outDir dist-verify --emptyOutDir"
   },
@@ -52,6 +54,8 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
+    "@typescript-eslint/eslint-plugin": "8.70.0",
+    "@typescript-eslint/parser": "8.70.0",
     "@vitejs/plugin-vue": "5.1.4",
     "@vitejs/plugin-vue-jsx": "4.0.1",
     "@vue/eslint-config-prettier": "^10.0.0",

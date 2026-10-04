@@ -31,6 +31,7 @@
 | --- | --- | --- |
 | 后端（单测 + 集成测试） | `mvn -pl sa-admin -am test` | `Tests run: ___ , Failures: ___ , Errors: ___ , Skipped: ___` |
 | 前端类型门禁（含 vue-tsc） | `python tools/ts_baseline_ratchet.py check` | SCM 零错误、无新增错误；不代表上游全量 typecheck 为零 |
+| E2E 静态门禁（TypeScript + ESLint） | `npm run typecheck:e2e` / `npm run lint:e2e` | 覆盖 Playwright specs、共享夹具与配置 |
 | 前端 lint | `npm run lint` | |
 | 前端单测 | `npm run test` | |
 | 前端构建 | `npm run build` | |

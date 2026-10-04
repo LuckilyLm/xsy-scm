@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "strictNullChecks": false,
+    "noImplicitAny": true,
+    "types": ["node"],
+    "paths": {
+      "/@/plugins/smart-enums-plugin": ["e2e/types/smart-enums-plugin.d.ts"],
+      "/@/*": ["src/*"]
+    }
+  },
+  "include": ["e2e/**/*.ts", "playwright.config.ts"]
+}

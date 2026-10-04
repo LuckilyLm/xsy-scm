@@ -1,9 +1,12 @@
 import {test, expect} from './scm-test-base';
 
+type Row = Record<string, unknown>;
+
 const root = 'http://127.0.0.1:18083/e2e/fixtures/adm-ui.html';
 const order = {orderId: 1, orderNo: 'SO-授信验收', version: 3, status: 'PENDING', customerId: 2,
   customerNameSnapshot: '验收客户', customerCodeSnapshot: 'ADM-C', settleModeSnapshot: 'INDEPENDENT',
-  orderedTotalAmount: '10.0000', settlementTotalAmount: null, items: [], address: {receiverName: '收货人', receiverPhone: '13800000000', address: '验收地址'}};
+  orderedTotalAmount: '10.0000', settlementTotalAmount: null as string | null, items: [] as Row[],
+  address: {receiverName: '收货人', receiverPhone: '13800000000', address: '验收地址'}};
 
 async function mock(page: any, handler: (path: string, body: any, request: any) => unknown) {
   await page.route('**/*', async (route: any) => {

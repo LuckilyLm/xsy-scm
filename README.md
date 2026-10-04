@@ -60,9 +60,12 @@ Vite 默认端口为 `18081`，可通过 `VITE_DEV_PORT` 覆盖。API 地址由 
 ```powershell
 npm run lint
 npm run typecheck
+npm run typecheck:e2e
 npm test
 npm run build
 ```
+
+`npm run lint` 覆盖 `src/`、`e2e/**/*.ts` 与 `playwright.config.ts`；`typecheck:e2e` 使用独立 TypeScript 配置检查 Playwright 用例与夹具。
 
 浏览器验证须先启动 PostgreSQL、Redis、后端与前端；`tools/verify.ps1` / `tools/verify.sh` 只执行门禁，不管理服务生命周期。完整入口从仓库根目录运行 `./tools/verify.ps1`，结果保存在 `.runtime/verify/<timestamp>/summary.json` 与 `.runtime/playwright-result.json`。没有执行或因环境跳过的检查不能报告为通过。
 

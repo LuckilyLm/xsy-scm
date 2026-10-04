@@ -109,7 +109,7 @@ function field(scope: any, label: string) {
 async function fillField(scope: any, label: string, value: string) {
     const control = field(scope, label).locator('input, textarea').first();
     await control.fill(value);
-    await control.press('Enter').catch(() => undefined);
+    await control.press('Enter').catch((): undefined => undefined);
 }
 
 async function pickOption(page: any, scope: any, label: string, optionText: string) {
@@ -229,7 +229,7 @@ test.beforeAll(async () => {
         const after = await get<Row>(`/scm/order/detail/${order.orderId}`);
         const confirmed = await post<Row>('/scm/order/confirm', {orderId: order.orderId, version: after.version});
         expect(confirmed.status).toBe('CONFIRMED');
-        await sortingCompleted(order.orderId, after);
+        await sortingCompleted(after);
         return {id: String(order.orderId), no: String(confirmed.orderNo ?? after.orderNo)};
     }
 
@@ -238,7 +238,7 @@ test.beforeAll(async () => {
      * （`docs/decisions.md`「P1 分拣管理裁决」第 11 条与补充第 18 条）。组单夹具因此必须走一遍
      * 真实分拣命令链（建单 → 录入 → 完成），不能靠改订单状态糊过去 —— 那正是被验收的口径本身。
      */
-    async function sortingCompleted(orderId: string | number, detail: Row) {
+    async function sortingCompleted(detail: Row) {
         const itemIds = (detail.items as Row[]).map(i => Number(i.itemId));
         expect(itemIds.length, '订单至少要有一行明细').toBeGreaterThan(0);
         const created = await post<Row>('/scm/sorting/tasks', {
@@ -377,7 +377,10 @@ test('3｜L2 页面新建草稿线路并快照仓库起点坐标', async ({page}
         // 否则只剩一个 toHaveCount(0) 的红灯，看不出是校验、权限还是接口失败。
         const hints = await drawer.locator('.ant-form-item-explain-error, .ant-alert-message').allInnerTexts();
         const values = await drawer.locator('input').evaluateAll(
-            (els) => els.map((e) => `${e.placeholder || e.type}=${e.value}`));
+            (els) => els.map((element) => {
+                if (!(element instanceof HTMLInputElement)) return '';
+                return `${element.placeholder || element.type}=${element.value}`;
+            }));
         throw new Error(`保存线路未生效；页面提示 ${JSON.stringify(hints)}；表单现值 ${JSON.stringify(values)}`);
     }
 

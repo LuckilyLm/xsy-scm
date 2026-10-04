@@ -19,7 +19,8 @@ test('签收按出库实发生成两行应收，并可从页面查看来源和�
     expect(facts.receivableDetail.items).toHaveLength(2);
     expect(facts.receivableDetail.items
         .map((item: Row) => [Number(item.quantity), Number(item.amount)] as const)
-        .sort(([left], [right]) => left - right)).toEqual([[2, 7], [4, 14]]);
+        .sort((left: readonly [number, number], right: readonly [number, number]) => left[0] - right[0]))
+        .toEqual([[2, 7], [4, 14]]);
     expect(facts.receivableDetail.items.every((item: Row) => item.sourceType === 'INVENTORY_OUTBOUND_ITEM')).toBe(true);
     expect(facts.receivableDetail.items.every((item: Row) => Number(item.sourceId) > 0)).toBe(true);
 

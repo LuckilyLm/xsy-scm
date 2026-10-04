@@ -55,11 +55,11 @@ let orderA = '';
 let orderB = '';
 let taskB = '';
 let outboundId = 0;
-let dispatchKey = '';
+let dispatchKey: string = '';
 let balanceAfterStock = 0;
 
 async function ok<T = Row>(client: typeof api, method: 'get' | 'post' | 'put', path: string,
-                            data?: unknown, key = randomUUID()): Promise<T> {
+                            data?: unknown, key: string = randomUUID()): Promise<T> {
     const response = method === 'get'
         ? await client.get(path)
         : await client[method](path, {data, headers: {'Idempotency-Key': key}});

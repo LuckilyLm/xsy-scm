@@ -1,4 +1,4 @@
-import type {Browser, Page} from '@playwright/test';
+import type {Page} from '@playwright/test';
 import {test, expect} from './scm-test-base';
 import {accessibleName, apiClient, authenticate, login} from './scm-e2e-account';
 import {
