@@ -66,7 +66,7 @@ const list = computed<Warehouse[]>(() => props.options ?? fetched.value);
 
 async function query() {
   try {
-    const resp = await warehouseApi.list();
+    const resp = await warehouseApi.list({suppressGlobalErrorMessage: true});
     fetched.value = resp.data ?? [];
   } catch (e) {
     // 没有 `scm:warehouse:query` 时静默降级：仓库筛选只是便利，不该让整页失败

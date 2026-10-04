@@ -11,6 +11,17 @@ import {DATA_TYPE_ENUM} from '../constants/common-const';
 import _ from 'lodash';
 import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
 
+declare module 'axios' {
+    interface AxiosRequestConfig {
+        /** Optional filter requests may fail closed without interrupting an otherwise usable page. */
+        suppressGlobalErrorMessage?: boolean;
+    }
+}
+
+export type RequestOptions = {
+    suppressGlobalErrorMessage?: boolean;
+};
+
 // token的消息头
 const TOKEN_HEADER = 'Authorization';
 
@@ -98,8 +109,10 @@ smartAxios.interceptors.response.use(
                 setTimeout(logout, 3000);
                 return Promise.reject(response);
             }
-            message.destroy();
-            message.error(res.msg);
+            if (!response.config.suppressGlobalErrorMessage) {
+                message.destroy();
+                message.error(res.msg);
+            }
             return Promise.reject(response);
         } else {
             return Promise.resolve(res);
@@ -107,6 +120,9 @@ smartAxios.interceptors.response.use(
     },
     (error) => {
         // 对响应错误做点什么
+        if (error.config?.suppressGlobalErrorMessage) {
+            return Promise.reject(error);
+        }
         if (error.message.indexOf('timeout') !== -1) {
             message.destroy();
             message.error('网络超时');
@@ -126,8 +142,8 @@ smartAxios.interceptors.response.use(
 /**
  * get请求
  */
-export const getRequest = (url, params) => {
-    return request({url, method: 'get', params});
+export const getRequest = (url: string, params?: any, options?: RequestOptions) => {
+    return request({url, method: 'get', params, ...options});
 };
 
 /**
@@ -141,11 +157,12 @@ export const request = (config) => {
 /**
  * post请求
  */
-export const postRequest = (url, data) => {
+export const postRequest = (url: string, data?: any, options?: RequestOptions) => {
     return request({
         data,
         url,
         method: 'post',
+        ...options,
     });
 };
 

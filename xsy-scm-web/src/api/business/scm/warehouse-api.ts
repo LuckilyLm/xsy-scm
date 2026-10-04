@@ -8,7 +8,7 @@
  * B1 通过独立的 `enable` / `disable` 命令管理状态。`status` 不进入新增或编辑表单，
  * 新建仓库仍一律为 `ENABLED`。
  */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -23,7 +23,8 @@ import type {
 
 export const warehouseApi = {
     /** 全量启用仓库（选择器用）。 */
-    list: () => getRequest('/scm/warehouse/list', {}) as unknown as Promise<ScmResponse<Warehouse[]>>,
+    list: (options?: RequestOptions) =>
+        getRequest('/scm/warehouse/list', {}, options) as unknown as Promise<ScmResponse<Warehouse[]>>,
     query: (data: WarehouseQuery) =>
         postRequest('/scm/warehouse/query', data) as unknown as Promise<ScmResponse<ScmPage<Warehouse>>>,
     detail: (id: Id) =>

@@ -2154,3 +2154,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7v. 后续修复：应收明细重复呈现超额待处理状态
 
 按 J-16 选择 A，在应收详情抽屉增加与列表同名的“超额核销待处理”状态标签，保留净应收与“不代表已退款或钱包余额”的说明。`scm-finance-receivable-red` Docker-backed Playwright 用例 **1/1** 通过。
+
+## 7w. 后续修复：可选筛选请求静默降级
+
+按 J-14 选择 A，为 Axios 请求添加显式的 `suppressGlobalErrorMessage` 选项；供应商与仓库下拉的辅助查询启用该选项。业务拒绝仍按 Promise reject 交给组件处理，但不再清除或覆盖页面现有消息。Docker-backed `scm-sorting.spec.ts` **8/8** 通过，包含主管新建分拣任务及权限反例。

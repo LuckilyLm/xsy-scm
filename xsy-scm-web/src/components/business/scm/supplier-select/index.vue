@@ -55,7 +55,7 @@ const supplierList = ref<SupplierOption[]>([]);
 
 async function query() {
   try {
-    const resp = await supplierApi.optionList();
+    const resp = await supplierApi.optionList({suppressGlobalErrorMessage: true});
     supplierList.value = resp.data ?? [];
   } catch (e) {
     smartSentry.captureError(e);

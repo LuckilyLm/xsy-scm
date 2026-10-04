@@ -12,7 +12,7 @@
  * - 编辑 / 状态 / 删除全部携带 `version`。
  */
 
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
     ScmId,
     ScmPage,
@@ -31,8 +31,8 @@ export const supplierApi = {
         postRequest('/scm/supplier/query', form) as unknown as Promise<ScmResponse<ScmPage<SupplierRow>>>,
     detail: (supplierId: ScmId) =>
         getRequest(`/scm/supplier/detail/${supplierId}`, {}) as unknown as Promise<ScmResponse<SupplierDetail>>,
-    optionList: () =>
-        postRequest('/scm/supplier/option/list', {}) as unknown as Promise<ScmResponse<SupplierOption[]>>,
+    optionList: (options?: RequestOptions) =>
+        postRequest('/scm/supplier/option/list', {}, options) as unknown as Promise<ScmResponse<SupplierOption[]>>,
     add: (form: SupplierForm) => postRequest('/scm/supplier/add', form) as unknown as Promise<ScmResponse<ScmId>>,
     update: (form: SupplierForm) => postRequest('/scm/supplier/update', form) as unknown as Promise<ScmResponse<null>>,
     updateStatus: (payload: SupplierStatusPayload) => postRequest('/scm/supplier/updateStatus', payload),
