@@ -2134,3 +2134,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7q. 后续修复：库存只读 DAO 契约（Docker PostgreSQL 定向验证）
 
 `InventoryMovementDao.listSalesOutAllocations` 是退货查询读取销售出库分摊的只读方法。`ScmInventoryMigrationIT` 的声明方法清单补入该方法后，Docker PostgreSQL 定向执行 **5 tests / 0 failures / 0 errors / 0 skipped**；append-only 写入口限制不变。
+
+## 7r. 后续修复：动态权限 Catalog 契约（Docker PostgreSQL 定向验证）
+
+将 J-10 选择为 C：权限契约扫描器只对打印数据源权限、打印金额权限和订单异常类型查询权限展开其正式 enum / provider 值，并逐值断言 Catalog 存在及菜单已发布；支付与余额 Catalog 也纳入正式类扫描。`ScmPermissionContractPgIT` 定向执行 **2 tests / 0 failures / 0 errors / 0 skipped**，未放宽运行期权限校验。

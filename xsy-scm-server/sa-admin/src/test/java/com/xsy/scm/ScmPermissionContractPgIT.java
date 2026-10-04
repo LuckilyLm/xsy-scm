@@ -3,8 +3,12 @@ package com.xsy.scm;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import net.lab1024.sa.admin.AdminApplication;
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
+import com.xsy.scm.print.support.ScmPrintSourceProvider;
+import com.xsy.scm.report.constant.ScmOrderExceptionTypeEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.annotation.AnnotatedElementUtils;
@@ -23,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -35,10 +40,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("SCM Permission Catalog 与菜单发布契约（PG IT）")
 class ScmPermissionContractPgIT extends ScmW5PgITBase {
 
+    @Autowired
+    private List<ScmPrintSourceProvider> printSourceProviders;
+
     private static final String BASE_PACKAGE = "com.xsy.scm";
     private static final Pattern CATALOG_CLASS =
             Pattern.compile("com\\.xsy\\.scm\\.(?:.*\\.permission\\.[A-Za-z_$][\\w$]*Permission"
-                    + "|report\\.constant\\.ScmReportPermission)");
+                    + "|report\\.constant\\.ScmReportPermission"
+                    + "|payment\\.constant\\.ScmPaymentPermission"
+                    + "|balance\\.constant\\.ScmBalancePermission)");
     private static final Pattern PERMISSION_FIELD = Pattern.compile(
             "(?:([A-Za-z_$][\\w$]*Permission)|ScmDataScopeService)\\.([A-Z][A-Z0-9_]*)");
     private static final Pattern PERMISSION_ALIAS = Pattern.compile("[A-Z][A-Z0-9_]*");
@@ -166,6 +176,52 @@ class ScmPermissionContractPgIT extends ScmW5PgITBase {
             Set<String> catalogValues, Set<String> usedValues) throws Exception {
         for (String argument : arguments.split(",")) {
             String reference = argument.trim();
+            if (sourceFile.getFileName().toString().equals("ScmPrintService.java")
+                    && (reference.startsWith("scmPrintRenderService.provider(type")
+                            || reference.startsWith("provider.queryPermission("))) {
+                // Resolve provider-owned query permissions from every registered print source.
+                assertThat(printSourceProviders).as("all print source providers are registered").isNotEmpty();
+                for (ScmPrintSourceProvider provider : printSourceProviders) {
+                    String permission = provider.queryPermission();
+                    assertThat(catalogValues)
+                            .as("print source %s must resolve its query permission to the formal catalog",
+                                    provider.documentType())
+                            .contains(permission);
+                    usedValues.add(permission);
+                }
+                continue;
+            }
+            if (Set.of("ScmPrintRenderService.java", "ScmPrintService.java")
+                    .contains(sourceFile.getFileName().toString())
+                    && reference.equals("type.getMoneyPermission(")) {
+                // The document type is data-driven, so expand its declared permissions instead of
+                // mistaking this approved read-only alias for an uncatalogued computed permission.
+                for (ScmPrintDocumentTypeEnum documentType : ScmPrintDocumentTypeEnum.values()) {
+                    String permission = documentType.getMoneyPermission();
+                    if (permission == null) {
+                        continue;
+                    }
+                    assertThat(catalogValues)
+                            .as("print type %s must resolve its dynamic money permission to the formal catalog",
+                                    documentType)
+                            .contains(permission);
+                    usedValues.add(permission);
+                }
+                continue;
+            }
+            if (sourceFile.getFileName().toString().equals("ScmOrderExceptionService.java")
+                    && reference.startsWith("type.getQueryPermission(")) {
+                // Exception categories resolve to source-domain query permissions via this enum.
+                for (ScmOrderExceptionTypeEnum exceptionType : ScmOrderExceptionTypeEnum.values()) {
+                    String permission = exceptionType.getQueryPermission();
+                    assertThat(catalogValues)
+                            .as("exception type %s must resolve its query permission to the formal catalog",
+                                    exceptionType)
+                            .contains(permission);
+                    usedValues.add(permission);
+                }
+                continue;
+            }
             Matcher fieldReference = PERMISSION_FIELD.matcher(reference);
             String typeName;
             String fieldName;
@@ -178,8 +234,8 @@ class ScmPermissionContractPgIT extends ScmW5PgITBase {
                 boolean isScopeAlias = sourceFile.getFileName().toString().equals("ScmDataScopeService.java")
                         && PERMISSION_ALIAS.matcher(reference).matches();
                 assertThat(isScopeAlias)
-                        .as("SCM 权限检查必须引用正式 Permission Catalog 字段，而不是文本或计算表达式 in %s",
-                                sourceFile)
+                        .as("SCM 权限检查必须引用正式 Permission Catalog 字段，而不是文本或计算表达式 (%s) in %s",
+                                reference, sourceFile)
                         .isTrue();
                 typeName = "ScmDataScopeService";
                 fieldName = reference;
