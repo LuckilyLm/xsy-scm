@@ -33,6 +33,7 @@ import {
   SCM_INVENTORY_CONVERSION_TYPE_ENUM,
   SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
   SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
+  SCM_INVENTORY_MOVEMENT_INBOUND_TYPES,
   SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
   SCM_INVENTORY_SOURCE_TYPE_ENUM,
   SCM_INVENTORY_TABLE_ID,
@@ -157,7 +158,7 @@ test('movement type text falls back to the raw value so an unmapped type stays v
   assert.equal(movementTypeText(null, labels), '—');
   assert.equal(movementTypeText(undefined, labels), '—');
   // 未知类型**不显示成「—」**：一个后端新增而前端未跟上的类型本身就是有用信号。
-  // 用 UNKNOWN_IN（**明确不存在**的名字）：十个真实类型已全部落地，
+  // 用 UNKNOWN_IN（**明确不存在**的名字）：真实类型已全部落地，
   // 再拿「未实现的业务类型」当反例会每落地一个就要改一次。
   assert.equal(movementTypeText('UNKNOWN_IN', labels), 'UNKNOWN_IN');
   // 文案表里缺 desc 时同样回落到原值，而不是显示空白
@@ -170,12 +171,12 @@ test('movement type text falls back to the raw value so an unmapped type stays v
 
 test('inventory enums expose exactly the values the backend CHECK whitelist allows', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM),
-      ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'GAIN_REPORT',
-        'TRANSFER_OUT', 'TRANSFER_IN', 'CONVERT_OUT', 'CONVERT_IN']);
+      ['PURCHASE_IN', 'SALES_OUT', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT',
+        'GAIN_REPORT', 'TRANSFER_OUT', 'TRANSFER_IN', 'CONVERT_OUT', 'CONVERT_IN', 'PROMOTION_GIFT_OUT']);
   assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM),
-      ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_ORDER_ITEM', 'STOCKTAKE_ITEM',
-        'LOSS_GAIN_ITEM', 'TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM', 'CONVERT_OUT_ITEM',
-        'CONVERT_IN_ITEM']);
+      ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_RETURN_RECEIPT_ITEM', 'SALES_ORDER_ITEM',
+        'STOCKTAKE_ITEM', 'LOSS_GAIN_ITEM', 'TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM', 'CONVERT_OUT_ITEM',
+        'CONVERT_IN_ITEM', 'ORDER_PROMOTION_GIFT']);
 
   // 值与键逐字一致（后端 `ScmInventoryMovementTypeEnum.name()` 就是持久化值）
   for (const [key, item] of Object.entries(SCM_INVENTORY_MOVEMENT_TYPE_ENUM)) {
@@ -191,14 +192,19 @@ test('inventory enums expose exactly the values the backend CHECK whitelist allo
   // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。报损 / 报溢、转出 / 转入同理。
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /STOCKTAKE_ADJUST/);
 
-  // 十个类型必须**恰好**分成两个方向组、每组五个 ——
+  // 全部类型必须**恰好**分成两个方向组（入 6 / 出 6）——
   // 这是 `ck_inventory_movement_snap`「按方向分组」写法的前提。
-  const inbound = ['PURCHASE_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN', 'CONVERT_IN'];
-  const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT', 'CONVERT_OUT'];
+  const inbound = ['PURCHASE_IN', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN', 'CONVERT_IN'];
+  const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT', 'CONVERT_OUT',
+      'PROMOTION_GIFT_OUT'];
   assert.deepEqual([...inbound, ...outbound].sort(),
       Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).sort());
 
-  // 十个真实类型已全部落地；这里断言的是「白名单之外一律拒绝」这条性质本身
+  // 页面方向判定用的是导出的 `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES`，
+  // 因此它必须与上面的入方向组逐字一致，否则报表会把退货回库显示成「出」。
+  assert.deepEqual([...SCM_INVENTORY_MOVEMENT_INBOUND_TYPES].sort(), inbound.sort());
+
+  // 真实类型已全部落地；这里断言的是「白名单之外一律拒绝」这条性质本身
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /UNKNOWN|ADJUST/);
 });
 

@@ -108,6 +108,10 @@ export const SCM_SORTING_PERMISSION = {
     TASK_REOPEN: 'scm:sorting:task:reopen',
     TASK_PRINT: 'scm:sorting:task:print',
     SUMMARY_QUERY: 'scm:sorting:summary:query',
+    /** 电子秤（ADM-11）：设备上报 / 待接受读数查询 / 人工接受 / 事件追溯，与 `SortingPermission` 同集合。 */
+    SCALE_QUERY: 'scm:sorting:scale:query',
+    SCALE_ACCEPT: 'scm:sorting:scale:accept',
+    SCALE_REPORT: 'scm:sorting:scale:report',
 } as const;
 
 /**

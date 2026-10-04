@@ -62,6 +62,10 @@ const CONTRACT_PERMS = [
     'scm:sorting:task:reopen',
     'scm:sorting:task:print',
     'scm:sorting:summary:query',
+    // ADM-11 电子秤：`SortingPermission` 与 V89 菜单种子都发布了这三条。
+    'scm:sorting:scale:query',
+    'scm:sorting:scale:accept',
+    'scm:sorting:scale:report',
 ];
 
 // ------------------------------------------------------------------ 只读边界

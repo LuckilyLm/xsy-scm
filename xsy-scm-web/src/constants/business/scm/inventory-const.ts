@@ -29,6 +29,8 @@ import type {SmartEnum} from '/@/types/smart-enum';
 export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
     PURCHASE_IN: {value: 'PURCHASE_IN', desc: '采购入库'},
     SALES_OUT: {value: 'SALES_OUT', desc: '销售出库'},
+    /** 退货实物回库：方向为「入」，来源是退货接收单（ADM-02）。 */
+    SALES_RETURN_IN: {value: 'SALES_RETURN_IN', desc: '销售退货入库'},
     STOCKTAKE_GAIN: {value: 'STOCKTAKE_GAIN', desc: '盘盈'},
     STOCKTAKE_LOSS: {value: 'STOCKTAKE_LOSS', desc: '盘亏'},
     LOSS_REPORT: {value: 'LOSS_REPORT', desc: '报损'},
@@ -51,6 +53,7 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
  */
 export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [
     'PURCHASE_IN',
+    'SALES_RETURN_IN',
     'STOCKTAKE_GAIN',
     'GAIN_REPORT',
     'TRANSFER_IN',
@@ -70,6 +73,8 @@ export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [
 export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
     PURCHASE_RECEIPT_ITEM: {value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货行'},
     SALES_OUTBOUND_ITEM: {value: 'SALES_OUTBOUND_ITEM', desc: '出库单行'},
+    /** 退货接收单行：`source_document_item_id = sales_return_receipt_item.id`（ADM-02 实物回库追溯）。 */
+    SALES_RETURN_RECEIPT_ITEM: {value: 'SALES_RETURN_RECEIPT_ITEM', desc: '退货接收单行'},
     SALES_ORDER_ITEM: {value: 'SALES_ORDER_ITEM', desc: '销售订单行'},
     STOCKTAKE_ITEM: {value: 'STOCKTAKE_ITEM', desc: '盘点单行'},
     LOSS_GAIN_ITEM: {value: 'LOSS_GAIN_ITEM', desc: '报损报溢单行'},

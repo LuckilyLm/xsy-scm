@@ -4,7 +4,7 @@
     <a-alert v-if="error" type="error" show-icon :message="error" class="payment-message"/>
     <a-alert v-if="created" type="success" show-icon
              :message="`${created.intentNo}：${statusText(created.status)}`" class="payment-message"/>
-    <a-form v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'" layout="vertical" @finish="submit">
+    <a-form v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'" layout="vertical">
       <a-form-item label="支付方式">
         <a-radio-group v-model:value="method" :disabled="saving">
           <a-radio value="BALANCE">余额支付</a-radio><a-radio value="ONLINE">在线支付（模拟渠道）</a-radio>
@@ -16,7 +16,7 @@
       </a-form-item>
       <p v-if="method === 'BALANCE'">从订单结算主体的钱包扣款。签收形成应收后自动核销，超额单独显示，不自动退款。</p>
       <p v-else>当前仅接入开发模拟渠道，不会发起真实微信收款。</p>
-      <a-button type="primary" html-type="submit" :loading="saving">{{ method === 'BALANCE' ? '确认余额支付' : '发起模拟支付' }}</a-button>
+      <a-button type="primary" html-type="button" :loading="saving" @click="submit">{{ method === 'BALANCE' ? '确认余额支付' : '发起模拟支付' }}</a-button>
     </a-form>
     <a-divider/>
     <a-button v-privilege="'scm:payment:transaction:query'" :loading="loading" @click="load(1)">查询支付记录</a-button>
