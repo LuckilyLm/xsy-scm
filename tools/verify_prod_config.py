@@ -21,6 +21,9 @@ REQUIRED = (
     "host: ${XSY_MAIL_HOST}",
     "username: ${XSY_MAIL_USERNAME}",
     "password: ${XSY_MAIL_PASSWORD}",
+    "  timeout: 43200",
+    "  active-timeout: 1800",
+    "  auto-renew: true",
 )
 
 
