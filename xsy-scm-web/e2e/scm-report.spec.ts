@@ -322,6 +322,8 @@ test('3 采购报表只计提交后的采购事实', async ({page}) => {
     expect(overview.submittedAmount).toBe('15.0000');
 
     await browse(page, '/report/report-purchase-list');
+    await page.getByRole('tab', {name: '按商品', exact: true}).click();
+    await expect(page.locator('#scm-report-purchase-product-table')).toBeVisible();
     await page.getByRole('tab', {name: '采购明细', exact: true}).click();
     await expect(page.locator('#scm-report-purchase-item-table tbody tr[data-row-key]').first()).toBeVisible();
     await page.getByRole('tab', {name: '按采购员', exact: true}).click();

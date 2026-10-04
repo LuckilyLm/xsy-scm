@@ -87,80 +87,19 @@
 
     <!-- ==================== 按商品 ==================== -->
     <a-tab-pane key="product" tab="按商品">
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportProduct">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              采购入库数量按库存记账单位分组，与采购单位可能不同，因此是文本且不做合计。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="productColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_PRODUCT"
-                :refresh="loadProduct"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="product.error" :message="product.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadProduct">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.PURCHASE_PRODUCT"
-            size="small"
-            :data-source="product.rows"
-            :columns="visibleProductColumns"
-            row-key="skuId"
-            bordered
-            :loading="product.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无商品采购数据'}"
-            :scroll="{x: 1900}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderCount'">
-              <span class="num">{{ countText(record.orderCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'plannedQuantity'">
-              <span class="num">{{ quantityText(record.plannedQuantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'receivedQuantity'">
-              <span class="num">{{ quantityText(record.receivedQuantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'orderAmount'">
-              <span class="num">{{ moneyText(record.orderAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'avgPurchasePrice'">
-              <span class="num">{{ moneyText(record.avgPurchasePrice) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'inboundQuantityText'">
-              {{ textOrDash(record.inboundQuantityText) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-              <span class="num">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
-              <a-tooltip v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
-                         :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')">
-                <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true"/>
-              </a-tooltip>
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="product.pageNum"
-              v-model:page-size="product.pageSize"
-              :total="product.total"
-              @change="loadProduct"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
+      <PurchaseProductTab
+          v-model:columns="productColumns"
+          :rows="product.rows"
+          :loading="product.loading"
+          :error="product.error"
+          :can-view-cost="canViewCost"
+          :page-num="product.pageNum"
+          :page-size="product.pageSize"
+          :total="product.total"
+          @export="exportProduct"
+          @reload="loadProduct"
+          @page-change="loadProductPage"
+      />
     </a-tab-pane>
 
     <!-- ==================== 按供应商 ==================== -->
@@ -357,6 +296,7 @@ import ReportDrilldownDrawer from './report-components/report-drilldown-drawer.v
 import PurchasePriceTrendTab from './report-components/purchase-price-trend-tab.vue';
 import PurchaseItemTab from './report-components/purchase-item-tab.vue';
 import PurchasePurchaserTab from './report-components/purchase-purchaser-tab.vue';
+import PurchaseProductTab from './report-components/purchase-product-tab.vue';
 import {reportPurchaseApi} from '/@/api/business/scm/report-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
@@ -456,7 +396,6 @@ const supplierColumns = ref<TableColumnsType<PurchaseSupplierRow>>([
     {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
 ]);
 
-const visibleProductColumns = computed(() => filterCostColumns(productColumns.value, COST_INDEXES, canViewCost.value));
 const visibleSupplierColumns = computed(() => filterCostColumns(supplierColumns.value, COST_INDEXES, canViewCost.value));
 const visibleDrilldownColumns = computed(() =>
     filterCostColumns(productColumns.value, COST_INDEXES, canViewCost.value)
@@ -517,6 +456,12 @@ const loadProduct = createTabLoader(product, () => purchaseQuery(product), repor
 const loadSupplier = createTabLoader(supplier, () => purchaseQuery(supplier), reportPurchaseApi.supplier);
 const loadPurchaser = createTabLoader(purchaser, () => purchaseQuery(purchaser), reportPurchaseApi.purchaser);
 const loadItem = createTabLoader(item, () => purchaseQuery(item), reportPurchaseApi.item);
+
+function loadProductPage(pageNum: number, pageSize: number) {
+    product.pageNum = pageNum;
+    product.pageSize = pageSize;
+    void loadProduct();
+}
 
 function loadItemPage(pageNum: number, pageSize: number) {
     item.pageNum = pageNum;
