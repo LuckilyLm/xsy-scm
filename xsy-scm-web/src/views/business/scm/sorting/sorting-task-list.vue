@@ -495,81 +495,21 @@
   <PrintDocumentModal :open="ticketOpen" document-type="SORTING_TICKET"
                       :business-ids="ticketTaskId === undefined ? [] : [ticketTaskId]" @close="ticketOpen = false"/>
   <SortingScaleDrawer v-model:open="scaleOpen" :task-id="scaleTaskId"/>
-  <a-modal v-model:open="printOpen" title="分拣单打印预览" :width="1000" :footer="null">
-    <a-alert v-if="printError" type="error" show-icon :message="printError"/>
-    <div class="print-toolbar">
-      <a-typography-text type="secondary">
-        预览不累加打印次数；确认已实际出单后再登记，登记只代表出单动作发生，不代表库存或状态变化。
-      </a-typography-text>
-      <a-space>
-        <a-button :disabled="printLoading || !print" @click="openTicket(printTaskId)"
-                  v-privilege="'scm:sorting:task:query'">选择模板并打印小票</a-button>
-        <a-button :disabled="printLoading || !print" @click="loadPrintPreview">重新预览</a-button>
-        <a-button
-            type="primary"
-            v-privilege="'scm:sorting:task:print'"
-            :disabled="!print || printing || printVersion == null"
-            :loading="printing"
-            @click="recordPrint"
-        >登记打印
-        </a-button>
-      </a-space>
-    </div>
-    <a-spin :spinning="printLoading">
-      <div v-if="print" ref="printPaper" class="sorting-print">
-        <section class="print-ticket">
-          <h1>分拣单</h1>
-          <p>单号：{{ print.taskNo }}</p>
-          <p>仓库：{{ print.warehouseNameSnapshot }}　分拣员：{{ print.assigneeName || '未指派' }}</p>
-          <p>状态：{{ statusDesc(print.status) }}　行数：{{ print.items.length }}　已打印：{{ print.printCount || '—' }}</p>
-          <p>生成时间：{{ datetime(print.generatedAt) }}</p>
-          <table>
-            <thead>
-            <tr>
-              <th>订单号</th>
-              <th>客户</th>
-              <th>商品 / 规格</th>
-              <th>单位</th>
-              <th class="numeric">计划量</th>
-              <th class="numeric">分拣量</th>
-              <th>结果</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="item in print.items" :key="item.id">
-              <td>{{ item.orderNoSnapshot }}</td>
-              <td>{{ item.customerNameSnapshot }}</td>
-              <td>
-                {{ item.productNameSnapshot }} {{ item.specNameSnapshot }}
-                <a-tag v-if="isGiftRow(item)" color="purple">赠品</a-tag>
-              </td>
-              <td>{{ item.saleUnitSnapshot }}</td>
-              <td class="numeric">{{ quantityText(item.plannedQuantitySnapshot) }}</td>
-              <td class="numeric">{{ quantityText(item.sortedQuantity) }}</td>
-              <td>{{ isGiftRow(item) ? '—' : resultDesc(item.result) }}</td>
-            </tr>
-            </tbody>
-          </table>
-          <p class="print-note">本单为分拣作业凭据；未录入的分拣量显示“—”。分拣不回写订单、不改库存。</p>
-        </section>
-        <section class="print-labels">
-          <h2>商品标签（逐行）</h2>
-          <div v-for="item in print.items" :key="`label-${item.id}`" class="label">
-            <strong>
-              {{ item.productNameSnapshot }}
-              <a-tag v-if="isGiftRow(item)" color="purple">赠品</a-tag>
-            </strong>
-            <p>{{ item.specNameSnapshot || '—' }} / {{ item.saleUnitSnapshot }}</p>
-            <p class="label-qty">
-              计划 {{ quantityText(item.plannedQuantitySnapshot) }}　实分 {{ quantityText(item.sortedQuantity) }}
-            </p>
-            <p>{{ item.customerNameSnapshot }}</p>
-            <p class="label-no">{{ item.orderNoSnapshot }} · {{ print.taskNo }}</p>
-          </div>
-        </section>
-      </div>
-    </a-spin>
-  </a-modal>
+  <SortingPrintPreviewModal
+      v-model:open="printOpen"
+      :print-task-id="printTaskId"
+      :print-version="printVersion"
+      :print-loading="printLoading"
+      :printing="printing"
+      :print-error="printError"
+      :print="print"
+      :status-desc="statusDesc"
+      :result-desc="resultDesc"
+      :is-gift-row="isGiftRow"
+      @open-ticket="openTicket"
+      @reload="loadPrintPreview"
+      @record="recordPrint"
+  />
 </template>
 
 <script setup lang="ts">
@@ -600,6 +540,7 @@ import {
 import {hasPermission} from '../common/scm-permission';
 import {datetime} from '../common/scm-display';
 import SortingScaleDrawer from './components/sorting-scale-drawer.vue';
+import SortingPrintPreviewModal from './components/sorting-print-preview-modal.vue';
 import type {
     Id,
     SortingActionPayload,
@@ -1163,7 +1104,7 @@ const print = ref<SortingPrint>();
  * 因此打开打印时把当时读到的任务版本记下来 —— 与录入同理，登记的应当是自己看到的那一版。
  */
 const printVersion = ref<number>();
-let printTaskId: Id | undefined;
+const printTaskId = ref<Id>();
 
 function openTicket(id?: Id) {
     if (id === undefined) return;
@@ -1172,7 +1113,7 @@ function openTicket(id?: Id) {
 }
 
 function openPrint(record: SortingTask) {
-    printTaskId = record.id;
+    printTaskId.value = record.id;
     printVersion.value = record.version;
     print.value = undefined;
     printError.value = '';
@@ -1181,12 +1122,12 @@ function openPrint(record: SortingTask) {
 }
 
 async function loadPrintPreview() {
-    if (printTaskId === undefined) return;
+    if (printTaskId.value === undefined) return;
     printLoading.value = true;
     printError.value = '';
     try {
         // 只读预览：GET，不累加打印次数
-        print.value = (await sortingApi.printPreview(printTaskId)).data;
+        print.value = (await sortingApi.printPreview(printTaskId.value)).data;
     } catch (e) {
         printError.value = sortingError(e);
     } finally {
@@ -1195,20 +1136,21 @@ async function loadPrintPreview() {
 }
 
 async function recordPrint() {
-    if (printTaskId === undefined || printVersion.value == null) return;
+    const taskId = printTaskId.value;
+    if (taskId === undefined || printVersion.value == null) return;
     printing.value = true;
     printError.value = '';
     try {
-        const result = await sortingApi.print(printTaskId, {version: printVersion.value});
+        const result = await sortingApi.print(taskId, {version: printVersion.value});
         message.success(`已登记打印，累计 ${result.data.printCount} 次`);
         print.value = {...print.value, printCount: result.data.printCount} as SortingPrint;
         await queryData();
-        if (detailOpen.value && String(detailId) === String(printTaskId)) await reloadDetail();
+        if (detailOpen.value && String(detailId) === String(taskId)) await reloadDetail();
     } catch (e) {
         // 计次不 bump 任务版本，所以版本冲突只可能是任务真被改过：刷新后重新登记
         printError.value = sortingError(e);
         await queryData();
-        if (detailOpen.value && String(detailId) === String(printTaskId)) await reloadDetail();
+        if (detailOpen.value && String(detailId) === String(taskId)) await reloadDetail();
     } finally {
         printing.value = false;
     }
@@ -1270,87 +1212,6 @@ onMounted(queryData);
   gap: 16px;
   flex-wrap: wrap;
   margin-top: 16px;
-}
-
-.print-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin: 12px 0;
-}
-
-.sorting-print {
-  background: #fff;
-  color: #1f2329;
-  padding: 24px;
-}
-
-.sorting-print h1 {
-  font-size: 24px;
-  margin: 0 0 12px;
-}
-
-.sorting-print h2 {
-  font-size: 18px;
-  margin: 24px 0 12px;
-}
-
-.sorting-print table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-}
-
-.sorting-print th,
-.sorting-print td {
-  border: 1px solid #e5e6eb;
-  padding: 8px;
-  text-align: left;
-}
-
-.sorting-print .numeric {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.print-note {
-  margin-top: 16px;
-}
-
-.print-labels {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.print-labels h2 {
-  width: 100%;
-}
-
-.label {
-  width: 220px;
-  border: 1px dashed #86909c;
-  padding: 12px;
-  break-inside: avoid;
-}
-
-.label strong {
-  font-size: 15px;
-}
-
-.label p {
-  margin: 4px 0;
-}
-
-.label-qty {
-  font-variant-numeric: tabular-nums;
-}
-
-.label-no {
-  font-size: 11px;
-  color: #4e5969;
 }
 
 </style>
