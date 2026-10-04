@@ -241,6 +241,8 @@ test('1b 五张报表页逐个打开：0 pageerror 且各自的口径标题在�
     await expect(page.locator('#scm-report-sales-seller-table')).toBeVisible();
     await page.getByRole('tab', {name: '订单明细', exact: true}).click();
     await expect(page.locator('#scm-report-sales-item-table')).toBeVisible();
+    await page.getByRole('tab', {name: '客户订单明细', exact: true}).click();
+    await expect(page.locator('#scm-report-sales-order-table')).toBeVisible();
 });
 
 test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结算总额', async ({page}) => {
@@ -293,6 +295,10 @@ test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结�
     await expect(page.locator('#scm-report-sales-customer-table tbody tr[data-row-key]').filter({hasText: name})).toBeVisible();
     await page.getByRole('tab', {name: '订单明细', exact: true}).click();
     await expect(page.locator('#scm-report-sales-item-table tbody tr[data-row-key]').first()).toBeVisible();
+    await page.getByRole('tab', {name: '客户订单明细', exact: true}).click();
+    await expect(page.locator('#scm-report-sales-order-table tbody tr[data-row-key]').first()).toBeVisible();
+    await page.locator('#scm-report-sales-order-table tbody tr[data-row-key]').first().locator('a').click();
+    await expect(page.getByText('下单时结算方式', {exact: true})).toBeVisible();
 });
 
 test('3 采购报表只计提交后的采购事实', async () => {
