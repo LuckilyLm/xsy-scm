@@ -127,6 +127,33 @@ const warehouseIdsOf = (rows: Row[]) => [...new Set(rows.map((row) => Number(row
 
 const button = (page: Page, text: string) => page.getByRole('button', {name: accessibleName(text)});
 
+async function receiveInitialStock(warehouseId: number, skuId: number) {
+    const supplierId = await ok<number>(api, 'post', '/scm/supplier/add', {
+        supplierCode: `${tag}-SUP`, name: `${tag} 范围夹具供应商`,
+    });
+    await ok(api, 'post', '/scm/supplier/sku/replace', {
+        supplierId, items: [{skuId, purchaseUnit: 'kg', defaultFlag: true, status: 'ENABLED'}],
+    });
+    const purchase = await ok<Row>(api, 'post', '/scm/purchase/create', {
+        supplierId, warehouseId, purchaserId: null, plannedArrivalDate: null, remark: `${tag} scope fixture`,
+        items: [{skuId, quantity: '20.0000', price: '3.5000', allocations: []}],
+    });
+    await ok(api, 'post', '/scm/purchase/submit', {id: purchase.id, version: purchase.version});
+    const receipt = await ok<Row>(api, 'post', '/scm/purchase/receipt/create', {
+        purchaseOrderId: purchase.id, receiptMode: 'DIRECT', remark: `${tag} scope fixture`,
+    });
+    const item = receipt.items[0];
+    const confirmed = await ok<Row>(api, 'post', '/scm/purchase/receipt/confirm', {
+        id: receipt.id,
+        version: receipt.version,
+        items: [{
+            receiptItemId: item.id, version: item.version, receivedQuantity: '20.0000',
+            actualWeight: null, weightSource: null,
+        }],
+    });
+    expect(confirmed.status, '初始库存必须由确认入库事实生成').toBe('CONFIRMED');
+}
+
 test.beforeAll(async () => {
     api = await apiClient(await login(accounts, accounts.admin));
 
@@ -143,12 +170,7 @@ test.beforeAll(async () => {
     };
     stocked.push(...await collectStocked(enabled));
     if (stocked.length === 0) {
-        // 全新 V1→V106 库里一座「有余额」的启用仓都没有（默认仓是空的），上面那条回收分支和
-        // 下面的「从有货的仓调拨」都无从下手。先用一次**盘盈**造出真实余额行：
-        // 走 /stocktake/create + /confirm 这条正式库存命令，产生 INVENTORY_GAIN 流水，
-        // 不直接写 inventory_balance（那会伪造事实，测不到余额与流水的一致性）。
-        // 全新库里 product/sku 是空的（迁移只播种分类树与系统基线），所以先自建一个可售 SKU，
-        // 再盘盈出余额行 —— 两步都走正式端点，不留「靠上一个用例留下的数据」这种隐性前置。
+        // 第一条 (warehouse, SKU) 余额只能由真实入库建立；盘点不可替代采购收货事实。
         const skus = await ok<Row>(api, 'post', '/scm/product/sku/option-list', {keyword: '', limit: 10});
         let skuId = Number(((skus.options ?? []) as Row[])[0]?.skuId);
         if (!(skuId > 0)) {
@@ -169,19 +191,7 @@ test.beforeAll(async () => {
         }
         const homeId = Number(enabled[0]?.id ?? enabled[0]?.warehouseId);
         expect(skuId > 0 && homeId > 0, '干净库里没有可用 SKU 或启用仓库，数据范围夹具无法自给').toBe(true);
-        // 实测：库存域**不允许**用盘盈给全新的 (仓库, SKU) 造出第一条余额行 ——
-        // /stocktake/create 直接拒：「该仓库与 SKU 尚无库存记录，请先办理入库再盘点」。
-        // 所以干净库上自给余额只能走正式入库链（供应商 → 采购单 → 收货 → 确认入库），
-        // 这条链的成本与口径见 docs/quality/adm-acceptance-test-log-2026-10-04.md 的裁决项 7。
-        const gainId = await envelope(api, '/scm/inventory/stocktake/create', {
-            warehouseId: homeId, remark: `${tag} scope fixture gain`,
-            items: [{skuId, actualQuantity: '20.0000'}],
-        });
-        if (gainId.code !== 0) {
-            throw new Error(`${gainId.msg} —— 需要完整入库链（供应商→采购单→收货确认）才能在此库自给余额行；`
-                + '当前用例的前置是「库里至少有一座有余额的启用仓」，见裁决项 7。');
-        }
-        await ok(api, 'post', `/scm/inventory/stocktake/confirm/${gainId.data}`, {});
+        await receiveInitialStock(homeId, skuId);
         stocked.push(...await collectStocked(enabled));
     }
     if (stocked.length < 2) {
