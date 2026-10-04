@@ -214,66 +214,17 @@
             />
           </a-tab-pane>
           <a-tab-pane key="fulfillment" tab="履约">
-            <a-alert
-                message="发车后订单进入在途，客户到手才登记签收；「异常签收」含拒收，但货已真实出库，因此不冲减库存——冲销必须走后续退货流程新增反向事实。完成线路要求全部在途订单都已登记结果。"
-                type="info"
-                show-icon
-            />
-            <a-table
-                id="scm-delivery-route-fulfillment"
-                size="small"
-                :columns="fulfillmentColumns"
-                :data-source="activeOrders"
-                row-key="id"
+            <RouteFulfillmentPanel
+                :orders="activeOrders"
+                :stops="detail.stops"
                 :loading="loading"
-                :pagination="false"
-                :locale="{emptyText: fulfillmentEmptyText}"
-                :scroll="{x: 1160}"
-                bordered
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.dataIndex === 'customer'">
-                  {{ stopOf(record.stopId)?.customerNameSnapshot || '—' }}
-                </template>
-                <template v-else-if="column.dataIndex === 'fulfillmentStatus'">
-                  <a-tag :color="fulfillmentStatuses[record.fulfillmentStatus as FulfillmentStatus].color">{{
-                      fulfillmentStatuses[record.fulfillmentStatus as FulfillmentStatus].label
-                    }}
-                  </a-tag>
-                </template>
-                <template v-else-if="column.dataIndex === 'signedAt'">
-                  {{ datetime(record.signedAt) }}
-                </template>
-                <template v-else-if="column.dataIndex === 'signedBy'">
-                  {{ record.signedBy || '—' }}
-                </template>
-                <template v-else-if="column.dataIndex === 'signReason'">
-                  {{ record.signReason || '—' }}
-                </template>
-                <template v-else-if="column.dataIndex === 'action'">
-                  <a-space :size="0">
-                    <a-button
-                        v-if="signable(record)"
-                        type="link"
-                        v-privilege="DELIVERY_PERM.ORDER_SIGN"
-                        :disabled="busy"
-                        @click="openSign(record, 'SIGNED')"
-                    >签收
-                    </a-button>
-                    <a-button
-                        v-if="signable(record)"
-                        type="link"
-                        danger
-                        v-privilege="DELIVERY_PERM.ORDER_SIGN"
-                        :disabled="busy"
-                        @click="openSign(record, 'EXCEPTION')"
-                    >异常签收
-                    </a-button>
-                    <span v-else>{{ signHintOf(record) }}</span>
-                  </a-space>
-                </template>
-              </template>
-            </a-table>
+                :busy="busy"
+                :can-sign="canSign"
+                :empty-text="fulfillmentEmptyText"
+                :can-sign-order="signable"
+                :sign-hint-of="signHintOf"
+                @sign="openSign"
+            />
           </a-tab-pane>
           <a-tab-pane v-if="hasPerm(DELIVERY_PERM.PLAN_QUERY)" key="plan" tab="辅助排线（可选）">
             <RoutePlanningSuggestionPanel
@@ -379,19 +330,18 @@ import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePlanningSuggestionPanel from './components/route-planning-suggestion-panel.vue';
 import RouteMapPanel from './components/route-map-panel.vue';
 import RoutePrintPanel from './components/route-print-panel.vue';
+import RouteFulfillmentPanel from './components/route-fulfillment-panel.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
 import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import {
   deliveryError,
-  fulfillmentStatuses,
   routeStatuses,
   SIGNABLE_FULFILLMENT,
   signResults,
   type DeliveryPlanProposal,
   type DeliveryStop,
-  type FulfillmentStatus,
   type Id,
   type RouteCustomerView,
   type RouteDetail,
@@ -583,19 +533,6 @@ const showOutbound = computed(() => ['DISPATCHED', 'COMPLETED'].includes(detail.
 const activeOrders = computed<RouteOrder[]>(() =>
     (detail.value?.orders ?? []).filter((order) => order.assignmentStatus === 'ACTIVE')
 );
-
-const fulfillmentColumns = computed<TableColumnsType>(() => [
-  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 180},
-  {title: '客户', dataIndex: 'customer', width: 200},
-  {title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center' as const},
-  {title: '签收时间', dataIndex: 'signedAt', width: 170},
-  {title: '签收人', dataIndex: 'signedBy', width: 140},
-  {title: '原因', dataIndex: 'signReason', width: 240, ellipsis: true},
-  // 无签收权时整列消失（指令只能删列里的节点，删不掉列头），留下一个全空的表头比没有更糟。
-  ...(canSign.value
-      ? [{title: '操作', dataIndex: 'action', width: 160, align: 'right' as const, fixed: 'right' as const}]
-      : []),
-]);
 
 // 「没有行」有三种原因，文案要能区分：线路没订单 / 线路已取消，用户下一步要做的事完全不同。
 const fulfillmentEmptyText = computed(() =>
