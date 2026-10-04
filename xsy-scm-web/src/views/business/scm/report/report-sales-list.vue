@@ -102,70 +102,17 @@
 
     <!-- ==================== 按销售员 ==================== -->
     <a-tab-pane key="seller" tab="按销售员">
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportSeller">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              这是「销售员订单业绩」，不是收入、利润或提成；`seller_id` 为空的单归入「未分配销售员」。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="sellerColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_SELLER"
-                :refresh="loadSeller"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="seller.error" :message="seller.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadSeller">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.SALES_SELLER"
-            size="small"
-            :data-source="seller.rows"
-            :columns="sellerColumns"
-            row-key="sellerId"
-            bordered
-            :loading="seller.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无销售员业绩数据'}"
-            :scroll="{x: 1000}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderCount'">
-              <span class="num">{{ countText(record.orderCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'customerCount'">
-              <span class="num">{{ countText(record.customerCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'settlementAmount'">
-              <span class="num">{{ moneyText(record.settlementAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'completedRefundAmount'">
-              <span class="num">{{ moneyText(record.completedRefundAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'lastConfirmedAt'">
-              {{ datetime(record.lastConfirmedAt) }}
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="seller.pageNum"
-              v-model:page-size="seller.pageSize"
-              :total="seller.total"
-              @change="loadSeller"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
+      <SalesSellerTab
+          :rows="seller.rows"
+          :loading="seller.loading"
+          :error="seller.error"
+          :page-num="seller.pageNum"
+          :page-size="seller.pageSize"
+          :total="seller.total"
+          @export="exportSeller"
+          @reload="loadSeller"
+          @page-change="loadSellerPage"
+      />
     </a-tab-pane>
 
     <!-- ==================== 订单明细 ==================== -->
@@ -353,6 +300,7 @@ import ReportDateRangePicker from './report-components/report-date-range-picker.
 import SalesProductTab from './report-components/sales-product-tab.vue';
 import SalesCategoryTab from './report-components/sales-category-tab.vue';
 import SalesCustomerTab from './report-components/sales-customer-tab.vue';
+import SalesSellerTab from './report-components/sales-seller-tab.vue';
 import {reportSalesApi} from '/@/api/business/scm/report-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -417,15 +365,6 @@ const item = reactive(createTabView<SalesItemRow>());
 const order = reactive(createTabView<SalesOrderRow>());
 
 /** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
-
-const sellerColumns = ref<TableColumnsType<SalesSellerRow>>([
-    {title: '销售员', dataIndex: 'sellerName', width: 160},
-    {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 120},
-    {title: '客户数', dataIndex: 'customerCount', align: 'right', width: 110},
-    {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 170},
-    {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 170},
-    {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 190},
-]);
 
 const itemColumns = ref<TableColumnsType<SalesItemRow>>([
     {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
@@ -497,6 +436,12 @@ function loadCustomerPage(pageNum: number, pageSize: number) {
     customer.pageNum = pageNum;
     customer.pageSize = pageSize;
     void loadCustomer();
+}
+
+function loadSellerPage(pageNum: number, pageSize: number) {
+    seller.pageNum = pageNum;
+    seller.pageSize = pageSize;
+    void loadSeller();
 }
 
 const loadProductTop = createGuardedLoader(

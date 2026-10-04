@@ -237,6 +237,8 @@ test('1b 五张报表页逐个打开：0 pageerror 且各自的口径标题在�
     await page.getByRole('tab', {name: '按客户'}).click();
     await expect(page.getByText('客户确认订单金额 TOP5', {exact: true})).toBeVisible();
     await expect(page.locator('#scm-report-sales-customer-table')).toBeVisible();
+    await page.getByRole('tab', {name: '按销售员'}).click();
+    await expect(page.locator('#scm-report-sales-seller-table')).toBeVisible();
 });
 
 test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结算总额', async ({page}) => {
