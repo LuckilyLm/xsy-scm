@@ -2203,3 +2203,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 13. 库存损耗分析面板拆分（2026-10-05）
 
 从 `report-inventory-list.vue` 抽出 `InventoryLossAnalysisTab`，将 KPI、成本权限控制、金额占比与按日趋势图、明细列配置和分页展示移入子组件；日期筛选、查询状态、导出和加载生命周期仍由父页管理。新增浏览器断言切换到“损耗分析”并检查图表标题和明细表。Docker Desktop 隔离库 `xsy_scm_e2e_postfix_20261005` 上定向用例 **1/1**；全量 ESLint、E2E 类型检查、TS 棘轮、生产构建通过。TS 棘轮为基线 1,858 项、SCM 错误 0、新错误 0；全量 `vue-tsc` 仍受既有 SmartAdmin/`oa` 类型错误影响。临时后端与 Vite 服务在验收后停止。
+
+## 14. 销售商品分析面板拆分（2026-10-05）
+
+从 `report-sales-list.vue` 抽出“按商品”图表与分页明细为 `SalesProductTab`；日期和业务筛选、TOP 查询、列表请求及分页数据仍由父页管理。五张报表导航用例增加商品 TOP5 标题与表格可见性断言；销售业务用例在正式确认订单后检查该 SKU 出现在按商品表格中。Docker Desktop 隔离库上两个定向用例各 **1/1**。ESLint、E2E 类型检查、TS 棘轮和生产构建通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务已停止。

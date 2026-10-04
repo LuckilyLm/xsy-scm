@@ -54,80 +54,18 @@
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <!-- ==================== 按商品 ==================== -->
     <a-tab-pane key="product" tab="按商品">
-      <ReportBarChart
-          class="smart-margin-bottom10"
-          title="商品确认订单金额 TOP5"
+      <SalesProductTab
           :items="topItems(productTop)"
-          series-name="确认订单金额"
-          extra="按已确认订单金额降序，由数据库直接取前 5 名"
+          :rows="product.rows"
+          :loading="product.loading"
+          :error="product.error"
+          :page-num="product.pageNum"
+          :page-size="product.pageSize"
+          :total="product.total"
+          @export="exportProduct"
+          @reload="loadProduct"
+          @page-change="loadProductPage"
       />
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportProduct">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              一行 = SKU × 销售单位；确认数量按各自单位统计，不做跨单位合计。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="productColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_PRODUCT"
-                :refresh="loadProduct"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="product.error" :message="product.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadProduct">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.SALES_PRODUCT"
-            size="small"
-            :data-source="product.rows"
-            :columns="productColumns"
-            row-key="skuId"
-            bordered
-            :loading="product.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无商品销售数据'}"
-            :scroll="{x: 1720}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderCount'">
-              <span class="num">{{ countText(record.orderCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'customerCount'">
-              <span class="num">{{ countText(record.customerCount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'confirmedQuantity'">
-              <span class="num">{{ quantityText(record.confirmedQuantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'avgTransactionPrice'">
-              <span class="num">{{ moneyText(record.avgTransactionPrice) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'settlementAmount'">
-              <span class="num">{{ moneyText(record.settlementAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'amountRank'">
-              <span class="num">{{ countText(record.amountRank) }}</span>
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="product.pageNum"
-              v-model:page-size="product.pageSize"
-              :total="product.total"
-              @change="loadProduct"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
     </a-tab-pane>
 
     <!-- ==================== 按分类 ==================== -->
@@ -531,6 +469,7 @@ import CategorySelect from '/@/components/business/scm/product-category-tree-sel
 import OrderDetail from '../order/order-detail.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportBarChart from './report-components/report-bar-chart.vue';
+import SalesProductTab from './report-components/sales-product-tab.vue';
 import {reportSalesApi} from '/@/api/business/scm/report-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -595,22 +534,6 @@ const item = reactive(createTabView<SalesItemRow>());
 const order = reactive(createTabView<SalesOrderRow>());
 
 /** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
-
-const productColumns = ref<TableColumnsType<SalesProductRow>>([
-    {title: '商品名称', dataIndex: 'productName', width: 200},
-    {title: '一级分类', dataIndex: 'rootCategoryName', width: 140},
-    {title: '末级分类', dataIndex: 'leafCategoryName', width: 140},
-    {title: 'SPU 编码', dataIndex: 'spuCode', width: 150},
-    {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-    {title: '规格', dataIndex: 'specName', width: 140},
-    {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 100},
-    {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 110},
-    {title: '客户数', dataIndex: 'customerCount', align: 'right', width: 100},
-    {title: '确认数量', dataIndex: 'confirmedQuantity', align: 'right', width: 130},
-    {title: '成交均价', dataIndex: 'avgTransactionPrice', align: 'right', width: 130},
-    {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 160},
-    {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
-]);
 
 const categoryColumns = ref<TableColumnsType<SalesCategoryRow>>([
     {title: '一级分类', dataIndex: 'rootCategoryName', width: 180},
@@ -695,6 +618,12 @@ const loadCustomer = createTabLoader(customer, () => salesQuery(customer), repor
 const loadSeller = createTabLoader(seller, () => salesQuery(seller), reportSalesApi.seller);
 const loadItem = createTabLoader(item, () => salesQuery(item), reportSalesApi.item);
 const loadOrder = createTabLoader(order, () => salesQuery(order), reportSalesApi.order);
+
+function loadProductPage(pageNum: number, pageSize: number) {
+    product.pageNum = pageNum;
+    product.pageSize = pageSize;
+    void loadProduct();
+}
 
 const loadProductTop = createGuardedLoader(
     () => reportSalesApi.productTop(salesQuery(product)),

@@ -227,9 +227,13 @@ test('1b 五张报表页逐个打开：0 pageerror 且各自的口径标题在�
         await expect(page.getByText(label, {exact: true}).filter({visible: true}).first(),
             `${path} 应渲染出「${label}」`).toBeVisible();
     }
+
+    await browse(page, '/report/report-sales-list');
+    await expect(page.getByText('商品确认订单金额 TOP5', {exact: true})).toBeVisible();
+    await expect(page.locator('#scm-report-sales-product-table')).toBeVisible();
 });
 
-test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结算总额', async () => {
+test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结算总额', async ({page}) => {
     let order: any = await post('/scm/order/create', {
         customerId, orderSource: 'ADMIN',
         address: {receiverName: 'R0验收', receiverPhone: '13800000000', address: '验收地址'},
@@ -265,6 +269,9 @@ test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结�
     const daily = await report('overview/daily');
     const dailyAmount = (daily.list ?? daily).reduce((sum: number, r: any) => sum + Number(r.confirmedOrderAmount ?? 0), 0);
     expect(dailyAmount).toBeCloseTo(Number(kpi.confirmedOrderAmount), 4);
+
+    await browse(page, '/report/report-sales-list');
+    await expect(page.locator('#scm-report-sales-product-table tbody tr[data-row-key]').first()).toBeVisible();
 });
 
 test('3 采购报表只计提交后的采购事实', async () => {
