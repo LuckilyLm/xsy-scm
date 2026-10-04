@@ -1,16 +1,17 @@
 package com.xsy.scm.order.domain.vo;
 
-import lombok.Data;
-
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import lombok.Data;
 
 @Data
 public class OrderRefundVO {
     private Long refundId;
+    private Long balanceMovementId;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal balanceReturnedAmount;
     private String refundNo;
     private Long returnId;
     private Long orderId;

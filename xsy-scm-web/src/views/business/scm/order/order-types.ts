@@ -121,6 +121,8 @@ export interface ReturnRow {
 }
 
 export interface RefundRow {
+    balanceMovementId?: Id | null;
+    balanceReturnedAmount?: string | null;
     refundId: Id;
     orderId: Id;
     refundNo: string;

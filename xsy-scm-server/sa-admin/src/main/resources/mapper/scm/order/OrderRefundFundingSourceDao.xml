@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.order.dao.OrderRefundFundingSourceDao">
+    <select id="selectBalanceReturns" resultType="com.xsy.scm.order.domain.dto.OrderRefundBalanceFact">
+        SELECT source_id AS refundId, id AS movementId, amount FROM customer_balance_movement
+        WHERE source_type = 'ORDER_REFUND' AND type = 'REFUND' AND direction = 'CREDIT' AND deleted = FALSE
+        AND source_id IN
+        <foreach collection="refundIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+</mapper>

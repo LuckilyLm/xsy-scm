@@ -44,4 +44,12 @@
             JOIN payment_intent i ON i.id = t.intent_id
             WHERE r.id = #{receiptId} AND i.source_type = 'BALANCE_RECHARGE')
     </select>
+    <select id="hasReceiptFunding" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM finance_write_off w
+            JOIN finance_receivable ar ON w.target_type = 'RECEIVABLE' AND w.target_id = ar.id
+            WHERE ar.order_id = #{orderId} AND ar.entry_type = 'NORMAL' AND ar.deleted = FALSE
+                AND w.source_type = 'RECEIPT' AND w.entry_type = 'NORMAL' AND w.deleted = FALSE
+                AND NOT EXISTS (SELECT 1 FROM finance_write_off reverse
+                    WHERE reverse.reverse_of_id = w.id AND reverse.entry_type = 'REVERSE' AND reverse.deleted = FALSE))
+    </select>
 </mapper>

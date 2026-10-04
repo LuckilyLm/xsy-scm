@@ -21,6 +21,8 @@ public final class ScmBalancePermission {
     /** 发起在线充值（3-12b 真的开放了充值入口，此时才落这个权限）。 */
     public static final String RECHARGE = "scm:balance:recharge";
 
+    public static final String REFUND = "scm:balance:refund";
+
     private ScmBalancePermission() {
     }
 }

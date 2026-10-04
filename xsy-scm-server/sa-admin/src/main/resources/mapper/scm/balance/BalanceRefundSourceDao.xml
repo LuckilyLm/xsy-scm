@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.balance.dao.BalanceRefundSourceDao">
+    <select id="selectRefund" resultType="com.xsy.scm.balance.domain.dto.BalanceRefundFact">
+        SELECT r.id AS refundId, r.order_id AS orderId, r.customer_id AS customerId,
+            o.settlement_customer_id AS settlementCustomerId, o.seller_id AS sellerId,
+            r.refund_amount AS amount, r.status, r.completed_at AS completedAt
+        FROM order_refund r JOIN sales_order o ON o.id = r.order_id AND o.customer_id = r.customer_id
+            AND o.deleted = FALSE
+        WHERE r.id = #{refundId} AND r.deleted = FALSE
+    </select>
+    <select id="lockOrder" resultType="java.lang.Long">
+        SELECT id FROM sales_order WHERE id = #{orderId} AND deleted = FALSE FOR UPDATE
+    </select>
+    <select id="lockOrderRefunds" resultType="java.lang.Long">
+        SELECT id FROM order_refund WHERE order_id = #{orderId} AND deleted = FALSE ORDER BY id FOR UPDATE
+    </select>
+    <select id="hasCashRefund" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM order_refund r WHERE r.order_id = #{orderId} AND r.deleted = FALSE
+            AND (EXISTS (SELECT 1 FROM finance_payment p WHERE p.source_type = 'ORDER_REFUND'
+                AND p.source_id = r.id AND p.entry_type = 'NORMAL' AND p.deleted = FALSE)
+            OR EXISTS (SELECT 1 FROM payment_refund p WHERE p.source_type = 'ORDER_REFUND'
+                AND p.source_id = r.id AND p.deleted = FALSE)))
+    </select>
+    <select id="hasPendingFunding" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM payment_intent i WHERE i.source_type = 'SALES_ORDER'
+            AND i.source_id = #{orderId} AND i.deleted = FALSE AND i.status IN ('CREATED', 'PENDING'))
+    </select>
+    <sql id="returnedFrom">
+        FROM customer_balance_movement m
+        JOIN order_refund r ON m.source_type = 'ORDER_REFUND' AND m.source_id = r.id
+        JOIN sales_order o ON o.id = r.order_id
+        LEFT JOIN customer_balance_account a ON a.id = m.account_id AND a.deleted = FALSE
+        WHERE r.order_id = #{orderId} AND m.deleted = FALSE
+    </sql>
+    <select id="hasInvalidReturns" resultType="boolean">
+        SELECT EXISTS (SELECT 1 <include refid="returnedFrom"/>
+            AND (r.deleted = TRUE OR o.deleted = TRUE OR r.status != 'COMPLETED'
+                OR m.type != 'REFUND' OR m.direction != 'CREDIT'
+                OR m.customer_id IS DISTINCT FROM r.customer_id OR r.customer_id IS DISTINCT FROM o.customer_id
+                OR m.settlement_customer_id IS DISTINCT FROM o.settlement_customer_id
+                OR a.settlement_customer_id IS DISTINCT FROM o.settlement_customer_id
+                OR m.amount IS DISTINCT FROM r.refund_amount OR m.occurred_at IS DISTINCT FROM r.completed_at))
+    </select>
+    <select id="returnedAmount" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(m.amount), 0) <include refid="returnedFrom"/>
+    </select>
+</mapper>

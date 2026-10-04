@@ -1,47 +1,45 @@
 package com.xsy.scm.order.service;
 
-import com.xsy.scm.common.scope.ScmDataScopeException;
-import com.xsy.scm.order.domain.entity.OrderRefundEntity;
-
-import com.xsy.scm.order.domain.form.OrderRefundCompleteForm;
-import com.xsy.scm.order.domain.form.OrderRefundQueryForm;
-
-import com.xsy.scm.order.domain.vo.OrderRefundVO;
-
-import com.xsy.scm.order.dao.OrderRefundDao;
-import com.xsy.scm.order.dao.SalesOrderDao;
-
-import com.xsy.scm.order.manager.OrderOperationLogRecorder;
-import com.xsy.scm.order.manager.OrderValidator;
-
-import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
-import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
-import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.balance.service.BalanceRefundService;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.finance.constant.ScmFinancePaymentSourceTypeEnum;
-
-import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REFUND_NOT_FOUND;
-import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REFUND_STATUS_INVALID;
-
-import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.BeanUtils;
-
+import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
+import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
+import com.xsy.scm.order.dao.OrderRefundDao;
+import com.xsy.scm.order.dao.OrderRefundFundingSourceDao;
+import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.domain.dto.OrderRefundBalanceFact;
+import com.xsy.scm.order.domain.entity.OrderRefundEntity;
+import com.xsy.scm.order.domain.form.OrderRefundCompleteForm;
+import com.xsy.scm.order.domain.form.OrderRefundQueryForm;
+import com.xsy.scm.order.domain.vo.OrderRefundVO;
+import com.xsy.scm.order.manager.OrderOperationLogRecorder;
+import com.xsy.scm.order.manager.OrderValidator;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
-
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REFUND_NOT_FOUND;
+import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REFUND_STATUS_INVALID;
 
 @Service
 @RequiredArgsConstructor
 public class OrderRefundService {
     private final OrderRefundDao orderRefundDao;
+    private final OrderRefundFundingSourceDao orderRefundFundingSourceDao;
+    private final BalanceRefundService balanceRefundService;
     private final SalesOrderDao salesOrderDao;
     private final SalesOrderService salesOrderService;
     private final OrderIdempotencyService orderIdempotencyService;
@@ -54,9 +52,10 @@ public class OrderRefundService {
             return ScmDataScopeService.emptyPage(orderRefundQueryForm);
         }
         var page = SmartPageUtil.convert2PageQuery(orderRefundQueryForm);
-        return SmartPageUtil.convert2PageResult(page,
-                orderRefundDao.query(page, orderRefundQueryForm, dataScopeContext.getOrderSellerScope()).stream()
-                        .map(this::vo).toList());
+        var rows = orderRefundDao.query(page, orderRefundQueryForm, dataScopeContext.getOrderSellerScope()).stream()
+                .map(this::vo).toList();
+        enrichBalanceReturns(rows);
+        return SmartPageUtil.convert2PageResult(page, rows);
     }
 
     private OrderRefundVO vo(OrderRefundEntity refundEntity) {
@@ -82,7 +81,9 @@ public class OrderRefundService {
         if (order == null || !dataScopeContext.getOrderSellerScope().allows(order.getSellerId())) {
             throw new ScmDataScopeException();
         }
-        return vo(refundEntity);
+        var result = vo(refundEntity);
+        enrichBalanceReturns(List.of(result));
+        return result;
     }
 
     /**
@@ -92,17 +93,39 @@ public class OrderRefundService {
         var refundEntity = orderRefundDao.selectById(refundId);
         if (refundEntity == null)
             throw new ScmBusinessException(ORDER_REFUND_NOT_FOUND);
-        return vo(refundEntity);
+        var result = vo(refundEntity);
+        enrichBalanceReturns(List.of(result));
+        return result;
+    }
+
+    private void enrichBalanceReturns(List<OrderRefundVO> rows) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        var returned = orderRefundFundingSourceDao.selectBalanceReturns(rows.stream().map(OrderRefundVO::getRefundId).toList())
+                .stream().collect(Collectors.toMap(
+                        OrderRefundBalanceFact::refundId, fact -> fact));
+        for (var row : rows) {
+            var fact = returned.get(row.getRefundId());
+            if (fact != null) {
+                row.setBalanceMovementId(fact.movementId());
+                row.setBalanceReturnedAmount(fact.amount());
+            }
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)
     public OrderRefundVO complete(OrderRefundCompleteForm refundCompleteForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_REFUND_COMPLETE:" + refundCompleteForm.getRefundId(), key,
                 refundCompleteForm);
-        if (claim.replay())
+        var before = detail(refundCompleteForm.getRefundId());
+        var order = salesOrderService.lock(before.getOrderId());
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
+        if (claim.replay()) {
             return orderIdempotencyService.replay(claim, OrderRefundVO.class);
-        var before = detailSnapshot(refundCompleteForm.getRefundId());
-        salesOrderService.lock(before.getOrderId());
+        }
         var refundEntity = orderRefundDao.lock(refundCompleteForm.getRefundId());
         SalesOrderService.version(refundEntity.getVersion(), refundCompleteForm.getVersion());
         if (!ScmOrderRefundStatusEnum.PENDING.name().equals(refundEntity.getStatus()))
@@ -118,6 +141,7 @@ public class OrderRefundService {
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
         }
+        balanceRefundService.refundOnCompletion(refundEntity.getId());
         var result = detailSnapshot(refundEntity.getId());
         // 退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，
         // 日志要记真实状态，而不是按调用者读范围裁过的视图。

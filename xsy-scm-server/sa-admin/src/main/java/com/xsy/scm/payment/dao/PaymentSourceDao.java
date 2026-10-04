@@ -18,10 +18,11 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface PaymentSourceDao {
     List<Long> lockOrderRefunds(@Param("orderId") Long orderId);
+    boolean hasBalanceRefunds(@Param("orderId") Long orderId);
+
     boolean hasOrderRefundFunding(@Param("orderId") Long orderId);
     boolean customerVisible(@Param("customerId") Long customerId,
             @Param("scope") ScmValueScope scope);
-
 
     /**
      * 销售订单事实（订单号 / 客户 / 业务员）。

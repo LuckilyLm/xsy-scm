@@ -4,11 +4,13 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.balance.constant.ScmBalancePermission;
 import com.xsy.scm.balance.domain.form.BalanceCorrectionForm;
 import com.xsy.scm.balance.domain.form.BalanceMovementQueryForm;
-import com.xsy.scm.balance.domain.form.BalanceRechargeCreateForm;
 import com.xsy.scm.balance.domain.form.BalanceQueryForm;
+import com.xsy.scm.balance.domain.form.BalanceRechargeCreateForm;
+import com.xsy.scm.balance.domain.form.BalanceRefundForm;
 import com.xsy.scm.balance.domain.vo.BalanceMovementVO;
 import com.xsy.scm.balance.domain.vo.CustomerBalanceVO;
 import com.xsy.scm.balance.service.BalanceRechargeService;
+import com.xsy.scm.balance.service.BalanceRefundService;
 import com.xsy.scm.balance.service.CustomerBalanceQueryService;
 import com.xsy.scm.balance.service.CustomerBalanceService;
 import com.xsy.scm.balance.support.BalanceVoAssembler;
@@ -41,6 +43,16 @@ public class BalanceController {
     private final CustomerBalanceQueryService customerBalanceQueryService;
 
     private final BalanceRechargeService balanceRechargeService;
+    private final BalanceRefundService balanceRefundService;
+
+    @PostMapping("/refund")
+    @SaCheckPermission(ScmBalancePermission.REFUND)
+    @OperateLog
+    public ResponseDTO<BalanceMovementVO> refund(
+            @Valid @RequestBody BalanceRefundForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(BalanceVoAssembler.toMovement(balanceRefundService.refund(form, key)));
+    }
 
     /** 余额概览：服务端解析结算主体，不接受客户端指定钱包账户 id。 */
     @PostMapping("/query")

@@ -116,6 +116,9 @@ public class PaymentIntentService {
                 != (provider == ScmPaymentProviderEnum.INTERNAL_BALANCE)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_UNSUPPORTED);
         }
+        if (paymentSourceDao.hasBalanceRefunds(order.orderId())) {
+            throw new ScmBusinessException(FinanceErrorCode.PAYMENT_AFTER_BALANCE_REFUND);
+        }
         if (method == ScmPaymentMethodEnum.BALANCE) {
             paymentSourceDao.lockOrderRefunds(order.orderId());
             if (paymentSourceDao.hasOrderRefundFunding(order.orderId())) {

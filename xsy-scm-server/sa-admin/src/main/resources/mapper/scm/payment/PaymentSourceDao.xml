@@ -74,4 +74,9 @@
             </otherwise>
         </choose>)
     </select>
+    <select id="hasBalanceRefunds" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM customer_balance_movement m
+            JOIN order_refund r ON m.source_type = 'ORDER_REFUND' AND m.source_id = r.id
+            WHERE r.order_id = #{orderId} AND m.deleted = FALSE)
+    </select>
 </mapper>

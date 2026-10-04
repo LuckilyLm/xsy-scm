@@ -35,7 +35,16 @@ class FinanceOrderFundingPolicyTest {
         when(sources.selectOrderFunding(10L)).thenReturn(List.of(balance()));
         assertThatThrownBy(() -> policy.requireCashRefundAllowed(10L, false))
                 .isInstanceOfSatisfying(ScmBusinessException.class,
-                        e -> assertThat(e.getErrorCode()).isEqualTo(FinanceErrorCode.BALANCE_REFUND_NOT_ENABLED));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(FinanceErrorCode.BALANCE_REFUND_REQUIRES_WALLET));
+    }
+
+    @Test
+    void balanceWithManuallyAllocatedReceiptRequiresFundingAllocation() {
+        when(sources.selectOrderFunding(10L)).thenReturn(List.of(balance()));
+        when(sources.hasReceiptFunding(10L)).thenReturn(true);
+        assertThatThrownBy(() -> policy.requireCashRefundAllowed(10L, false))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(FinanceErrorCode.REFUND_ALLOCATION_REQUIRED));
     }
 
     @Test

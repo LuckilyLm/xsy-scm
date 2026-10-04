@@ -78,12 +78,16 @@ public class FinanceOrderFundingPolicy {
         boolean balance = facts.stream().anyMatch(f -> ScmPaymentMethodEnum.BALANCE.name().equals(f.getMethod()));
         boolean online = facts.stream().anyMatch(f -> ScmPaymentMethodEnum.ONLINE.name().equals(f.getMethod()));
         if (balance) {
-            throw new ScmBusinessException(online ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
-                    : FinanceErrorCode.BALANCE_REFUND_NOT_ENABLED);
+            throw new ScmBusinessException(online || hasReceiptFunding(orderId) ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
+                    : FinanceErrorCode.BALANCE_REFUND_REQUIRES_WALLET);
         }
         if (requireOnline && !online) {
             throw invalid();
         }
+    }
+
+    public boolean hasReceiptFunding(Long orderId) {
+        return financeOrderFundingSourceDao.hasReceiptFunding(orderId);
     }
 
     private static ScmBusinessException invalid() {

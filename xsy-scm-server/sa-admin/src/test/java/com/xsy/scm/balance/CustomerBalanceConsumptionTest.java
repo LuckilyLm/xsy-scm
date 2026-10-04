@@ -80,6 +80,23 @@ class CustomerBalanceConsumptionTest {
     }
 
     @Test
+    void refundReturnsToFrozenWalletWithoutResolvingCurrentCustomerGroup() {
+        when(movements.insertOnConflictDoNothing(any())).thenAnswer(invocation -> {
+            CustomerBalanceMovementEntity row = invocation.getArgument(0); row.setId(8L); return 1;
+        });
+        var at = OffsetDateTime.parse("2026-10-04T15:00:00+08:00");
+        try (var operator = mockStatic(ScmOperator.class)) {
+            operator.when(ScmOperator::current).thenReturn("1:1");
+            var returned = service.refundToSettlement(50L, 2L, 3L, new BigDecimal("30"), at);
+            assertThat(returned.getSettlementCustomerId()).isEqualTo(3L);
+            assertThat(returned.getSourceType()).isEqualTo("ORDER_REFUND");
+            assertThat(returned.getDirection()).isEqualTo("CREDIT");
+            assertThat(returned.getOccurredAt()).isEqualTo(at);
+        }
+        verify(customers, never()).require(2L);
+    }
+
+    @Test
     void insufficientBalanceAndChangedSettlementCannotAppendDebit() {
         when(movements.sumSignedByAccount(4L, "CREDIT")).thenReturn(new BigDecimal("59"));
         assertThatThrownBy(() -> service.consumeForPayment(1L, 2L, 3L, new BigDecimal("60")))

@@ -1,8 +1,8 @@
 package com.xsy.scm.balance.constant;
 
+import com.xsy.scm.common.error.ScmErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
  * 余额域使用 41360–41379 错误码。
@@ -43,7 +43,11 @@ public enum BalanceErrorCode implements ScmErrorCode {
     BALANCE_RECHARGE_NOT_FOUND(41369, "充值请求不存在"),
 
     /** 充值金额不合法。 */
-    BALANCE_RECHARGE_AMOUNT_INVALID(41370, "充值金额必须大于0");
+    BALANCE_RECHARGE_AMOUNT_INVALID(41370, "充值金额必须大于0"),
+    BALANCE_REFUND_SOURCE_INVALID(41371, "余额返还来源无效，请确认退款已完成且原订单为纯余额支付"),
+    BALANCE_REFUND_AMOUNT_EXCEEDED(41372, "累计余额返还不能超过原订单已消费本金"),
+    BALANCE_REFUND_PATH_CONFLICT(41373, "该订单已有渠道或人工资金退款，不能再返还余额"),
+    BALANCE_REFUND_PENDING_PAYMENT(41374, "订单仍有未完成支付，请先处理支付结果再返还余额");
 
     private final int code;
 

@@ -305,6 +305,7 @@ public class FinancePaymentService {
         if (amount.compareTo(refund.getRefundAmount()) != 0) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
+        financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), true);
         FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(refund.getCustomerId());
         if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);

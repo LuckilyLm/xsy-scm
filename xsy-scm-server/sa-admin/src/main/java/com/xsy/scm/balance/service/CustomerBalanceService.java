@@ -122,21 +122,33 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
                 movement.getAmount(), movement.getOccurredAt());
     }
 
-    /**
-     * 入账账本原语；来源类型必须与充值或退款配对。
-     *
-     * <p>
-     * 必须带业务来源：{@code RECHARGE} 用 {@code PAYMENT_TRANSACTION + transactionId}、
-     * {@code REFUND} 用 {@code ORDER_REFUND + orderRefundId}。来源唯一索引保证
-     * 「同一笔支付交易只充值一次、同一张退款单只返还一次」—— 重复回调不会重复入账。
-     *
-     * <p>
-     * 重复驱动在账户锁内核对身份、方向和金额，只有完全匹配才返回已有流水。
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public CustomerBalanceMovementEntity credit(ScmBalanceMovementTypeEnum type, Long customerId, BigDecimal amount,
-            ScmBalanceSourceTypeEnum sourceType, Long sourceId, String reason) {
-        return creditAt(type, customerId, amount, sourceType, sourceId, reason, OffsetDateTime.now());
+    /** 返还原消费所属钱包，不随客户当前集团关系重新解析归属。 */
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    public CustomerBalanceMovementEntity refundToSettlement(Long refundId, Long customerId,
+            Long settlementCustomerId, BigDecimal amount, OffsetDateTime occurredAt) {
+        if (refundId == null || customerId == null || settlementCustomerId == null || occurredAt == null) {
+            throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
+        }
+        BigDecimal value = positiveAmount(amount);
+        CustomerBalanceAccountEntity account = customerBalanceAccountDao.lockBySettlementCustomerId(settlementCustomerId);
+        if (account == null) {
+            throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
+        }
+        var existing = customerBalanceMovementDao.selectBySource(ScmBalanceSourceTypeEnum.ORDER_REFUND.name(), refundId);
+        if (existing != null) {
+            requireMatchingMovement(existing, account, customerId, ScmBalanceMovementTypeEnum.REFUND,
+                    ScmBalanceDirectionEnum.CREDIT, value);
+            if (!occurredAt.isEqual(existing.getOccurredAt())) {
+                throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
+            }
+            return existing;
+        }
+        var returned = record(account, customerId, ScmBalanceMovementTypeEnum.REFUND, ScmBalanceDirectionEnum.CREDIT,
+                value, ScmBalanceSourceTypeEnum.ORDER_REFUND, refundId, "售后余额返还", occurredAt);
+        if (!occurredAt.isEqual(returned.getOccurredAt())) {
+            throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
+        }
+        return returned;
     }
 
     private CustomerBalanceMovementEntity creditAt(ScmBalanceMovementTypeEnum type, Long customerId,

@@ -12,5 +12,6 @@ public interface FinanceOrderFundingSourceDao {
     List<FinanceOrderFundingDto> selectOrderFunding(@Param("orderId") Long orderId);
     FinanceOrderFundingDto selectTransaction(@Param("transactionId") Long transactionId);
     CustomerBalanceMovementEntity lockMovement(@Param("movementId") Long movementId);
+    boolean hasReceiptFunding(@Param("orderId") Long orderId);
     boolean isRechargeReceipt(@Param("receiptId") Long receiptId);
 }

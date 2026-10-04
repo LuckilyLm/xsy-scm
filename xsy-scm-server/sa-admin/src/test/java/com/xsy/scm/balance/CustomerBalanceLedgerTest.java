@@ -1,8 +1,6 @@
 package com.xsy.scm.balance;
 
 import com.xsy.scm.balance.constant.BalanceErrorCode;
-import com.xsy.scm.balance.constant.ScmBalanceMovementTypeEnum;
-import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
 import com.xsy.scm.balance.dao.CustomerBalanceAccountDao;
 import com.xsy.scm.balance.dao.CustomerBalanceMovementDao;
 import com.xsy.scm.balance.dao.CustomerBalanceRechargeDao;
@@ -60,16 +58,16 @@ class CustomerBalanceLedgerTest {
     }
 
     @Test
-    void creditOnlyAcceptsTheSourceTypeThatPairsWithTheMovementType() {
+    void publicCreditCannotBypassValidatedRechargeOrRefundContracts() {
+        assertThat(Arrays.stream(CustomerBalanceService.class.getMethods()).map(java.lang.reflect.Method::getName))
+                .doesNotContain("credit", "consume");
         var amount = new BigDecimal("100");
-        assertSourceInvalid(() -> service.credit(ScmBalanceMovementTypeEnum.RECHARGE, 2L, amount,
-                ScmBalanceSourceTypeEnum.ORDER_REFUND, 7L, "充值"));
-        assertSourceInvalid(() -> service.credit(ScmBalanceMovementTypeEnum.REFUND, 2L, amount,
-                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, 7L, "返还"));
-        assertSourceInvalid(() -> service.credit(ScmBalanceMovementTypeEnum.CONSUME, 2L, amount,
-                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, 7L, "消费"));
-        assertSourceInvalid(() -> service.credit(ScmBalanceMovementTypeEnum.RECHARGE, 2L, amount,
-                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, null, "充值"));
+        assertSourceInvalid(() -> service.rechargeFromPayment(null, 2L, amount, 20L, PAID_AT));
+        assertSourceInvalid(() -> service.rechargeFromPayment(9L, 2L, amount, null, PAID_AT));
+        assertFailure(() -> service.refundToSettlement(null, 2L, 3L, amount, PAID_AT),
+                BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
+        assertFailure(() -> service.refundToSettlement(7L, 2L, null, amount, PAID_AT),
+                BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         verifyNoInteractions(accounts, movements, recharges);
     }
 
@@ -81,12 +79,15 @@ class CustomerBalanceLedgerTest {
         when(movements.insertOnConflictDoNothing(any())).thenAnswer(invocation -> {
             CustomerBalanceMovementEntity row = invocation.getArgument(0); row.setId(5L); return 1;
         });
-        CustomerBalanceMovementEntity movement;
+        var source = recharge(9L, 2L, 3L, "100"); source.setRechargeNo("CBR1");
+        when(recharges.selectByIdForUpdate(9L)).thenReturn(source);
         try (var operator = mockStatic(ScmOperator.class)) {
             operator.when(ScmOperator::current).thenReturn("1:1");
-            movement = service.credit(ScmBalanceMovementTypeEnum.RECHARGE, 2L, new BigDecimal("100"),
-                    ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, 20L, "在线充值 CBR1");
+            service.rechargeFromPayment(9L, 2L, new BigDecimal("100"), 20L, PAID_AT);
         }
+        var appended = ArgumentCaptor.forClass(CustomerBalanceMovementEntity.class);
+        verify(movements).insertOnConflictDoNothing(appended.capture());
+        var movement = appended.getValue();
         var created = ArgumentCaptor.forClass(CustomerBalanceAccountEntity.class);
         verify(accounts).insertOnConflictDoNothing(created.capture());
         assertThat(created.getValue().getSettlementCustomerId()).isEqualTo(3L);
@@ -113,14 +114,12 @@ class CustomerBalanceLedgerTest {
     }
 
     @Test
-    void repeatedCallbackReturnsTheExistingCreditAndRejectsAChangedAmount() {
+    void repeatedRechargeCallbackReusesTheExistingCreditAndRejectsAChangedAmount() {
         var existing = movement(5L, "RECHARGE", "CREDIT", "100");
+        when(recharges.selectByIdForUpdate(9L)).thenReturn(recharge(9L, 2L, 3L, "100"));
         when(movements.selectBySource("PAYMENT_TRANSACTION", 20L)).thenReturn(existing);
-        assertThat(service.credit(ScmBalanceMovementTypeEnum.RECHARGE, 2L, new BigDecimal("100"),
-                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, 20L, "在线充值")).isSameAs(existing);
-        // 同一来源换了金额就是另一笔钱：宁可失败，也不悄悄按新金额再入一次账
-        assertSourceInvalid(() -> service.credit(ScmBalanceMovementTypeEnum.RECHARGE, 2L, new BigDecimal("101"),
-                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, 20L, "在线充值"));
+        service.rechargeFromPayment(9L, 2L, new BigDecimal("100"), 20L, PAID_AT);
+        assertSourceInvalid(() -> service.rechargeFromPayment(9L, 2L, new BigDecimal("101"), 20L, PAID_AT));
         verify(movements, never()).insertOnConflictDoNothing(any());
         verify(movements, never()).sumSignedByAccount(anyLong(), anyString());
     }
@@ -221,8 +220,7 @@ class CustomerBalanceLedgerTest {
     void movementAmountMustBePositiveAndCarryAtMostFourDecimals() {
         for (BigDecimal amount : Arrays.asList(null, BigDecimal.ZERO, new BigDecimal("-100"),
                 new BigDecimal("100.00001"))) {
-            assertFailure(() -> service.credit(ScmBalanceMovementTypeEnum.RECHARGE, 2L, amount,
-                    ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, 20L, "在线充值"),
+            assertFailure(() -> service.refundToSettlement(7L, 2L, 3L, amount, PAID_AT),
                     BalanceErrorCode.BALANCE_AMOUNT_INVALID);
         }
         verifyNoInteractions(accounts, movements);
