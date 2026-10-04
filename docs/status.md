@@ -12,7 +12,7 @@
 
 ## 当前进行
 
-- ADM-12 支付与余额 c1～c3 代码已完成：内部余额支付不产生新收款，ONLINE / BALANCE 在签收或支付成功时自动核销；订单专属资金全额关联原正常应收，超额单独显示。纯余额售后在退款完成事务内返还原钱包，累计不超消费本金，与渠道 / 人工退款互斥，并提供独立重试入口和流水追溯。2026-10-04 在 Docker Desktop PostgreSQL 独立新库执行 V1～V109 全量迁移及后端套件，1,383 项通过；真实 MinIO 云存储测试 5/5。主 Playwright 套件现为 158/158；充值回调钱包入账的黄金链 3 步仍因 D-39 标记待裁，混合及多交易退款分摊 d 仍未实现，真实支付渠道待现场验收，见[设计与实施边界](plan/active/balance-payment-order-settlement-design.md)。
+- ADM-12 支付与余额 c1～c3 代码已完成：内部余额支付不产生新收款，ONLINE / BALANCE 在签收或支付成功时自动核销；订单专属资金全额关联原正常应收，超额单独显示。纯余额售后在退款完成事务内返还原钱包，累计不超消费本金，与渠道 / 人工退款互斥，并提供独立重试入口和流水追溯。2026-10-05 在 Docker Desktop PostgreSQL 隔离库从空库迁移至 V109 后执行后端套件，**1,384 项通过**；真实 MinIO 云存储测试 5/5。主 Playwright 套件 158/158；充值回调钱包入账的黄金链第 3～5 步仍因 D-39 待裁，混合及多交易退款分摊 d 仍未实现，真实支付渠道待现场验收，见[设计与实施边界](plan/active/balance-payment-order-settlement-design.md)。
 
 - ADM-02～04 已补退货接收、结算快照、核销、冻结账期、授信阻断与例外放行的业务主链；2026-10-02 曾在独立 PostgreSQL 验收库执行针对性验证，最终新增改动待用户安排验收。
 - ADM-01 新增应收/应付账龄页面、查询、汇总、导出、权限与 V77 菜单代码；保留缺失到期日分组。仅开发，未运行测试或构建。
@@ -39,8 +39,7 @@
 
 ## 验证与部署边界
 
-- 2026-10-04 Docker Desktop 后端验收：全新库 `xsy_scm_release_20261004` 由 Flyway 从空库迁移至 V109；**1,383 tests / 0 failures / 0 errors / 0 skipped**。实际 MinIO 云存储集成 **5/5** 通过；迁移校验摘要现已冻结 V1～V109，guard check 通过。原 `xsy_scm` 数据库（V76）未修改。证据见[ADM 验收日志 §7s/§7t](quality/adm-acceptance-test-log-2026-10-04.md)。
-- J-11 非空 `CustomerCreditDao.selectExposure` seller scope 的独立 Docker PostgreSQL IT **1/1** 通过，验证了 MyBatis `foreach` 绑定和超范围/归属范围可见性。证据见[ADM 验收日志 §10](quality/adm-acceptance-test-log-2026-10-04.md)。
+- 2026-10-05 Docker Desktop 后端最终验收：全新库 `xsy_scm_backend_final_20261005` 由 Flyway 从空库迁移至 V109；**1,384 tests / 0 failures / 0 errors / 0 skipped**，其中包含 J-11 非空 seller scope 的 `CustomerCreditScopePgIT`。MinIO 云存储集成 **5/5**；迁移校验摘要冻结 V1～V109。原 `xsy_scm` V76 未修改。证据见[ADM 验收日志 §8/§10](quality/adm-acceptance-test-log-2026-10-04.md)。
 - 2026-10-05 当前分支前端与浏览器验收已在 Docker Desktop PostgreSQL + Redis + MinIO 上完成：`python tools/verify.py frontend` **PASS**，Playwright **158 passed / 0 skipped / 0 unexpected / 0 flaky**。采购单保留 XLSX 导出；模板预览后的浏览器打印可选择打印机或另存为 PDF。
 - 支付/财务黄金链另用全新 Docker 库 `xsy_scm_chain_current_20261005` 执行：**36 passed / 1 skipped / 0 failed**。唯一 skip 是 ADM-12 充值回调后钱包入账链（D-39），状态机与到账时点仍待业务裁决；真实渠道回调另需现场凭据。地图供应商密钥与实体电子秤同样属于现场验收。
 - 前端 E2E TypeScript 与 ESLint 已纳入门禁。TS 历史基线经修复后从 1,974 收缩并重捕获为 **1,858**；SCM 域与新增错误均为 0。lint 通过，保留 3 条既有 warning；生产构建通过并保留既有 bundle 体积提示。
