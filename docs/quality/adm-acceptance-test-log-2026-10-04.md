@@ -2207,3 +2207,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 14. 销售商品分析面板拆分（2026-10-05）
 
 从 `report-sales-list.vue` 抽出“按商品”图表与分页明细为 `SalesProductTab`；日期和业务筛选、TOP 查询、列表请求及分页数据仍由父页管理。五张报表导航用例增加商品 TOP5 标题与表格可见性断言；销售业务用例在正式确认订单后检查该 SKU 出现在按商品表格中。Docker Desktop 隔离库上两个定向用例各 **1/1**。ESLint、E2E 类型检查、TS 棘轮和生产构建通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务已停止。
+
+## 15. 销售分类分析面板拆分（2026-10-05）
+
+从 `report-sales-list.vue` 抽出“按分类”图表、表格、列配置和分页展示为 `SalesCategoryTab`；日期与业务筛选、TOP/明细查询、错误状态及分页请求仍由父页管理。五张报表导航用例增加切换分类 Tab 后对 TOP5 图表标题和明细表的断言，Docker Desktop 隔离库定向用例 **1/1**。ESLint、E2E 类型检查、TS 棘轮和生产构建通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务已停止。
