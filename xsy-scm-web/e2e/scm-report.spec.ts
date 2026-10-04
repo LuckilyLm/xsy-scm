@@ -239,6 +239,8 @@ test('1b 五张报表页逐个打开：0 pageerror 且各自的口径标题在�
     await expect(page.locator('#scm-report-sales-customer-table')).toBeVisible();
     await page.getByRole('tab', {name: '按销售员'}).click();
     await expect(page.locator('#scm-report-sales-seller-table')).toBeVisible();
+    await page.getByRole('tab', {name: '订单明细', exact: true}).click();
+    await expect(page.locator('#scm-report-sales-item-table')).toBeVisible();
 });
 
 test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结算总额', async ({page}) => {
@@ -289,6 +291,8 @@ test('2 销售报表只计 CONFIRMED：草稿无行、确认后金额等于结�
     await customerOption.click();
     await page.locator('.smart-query-form .ant-btn-primary').first().click();
     await expect(page.locator('#scm-report-sales-customer-table tbody tr[data-row-key]').filter({hasText: name})).toBeVisible();
+    await page.getByRole('tab', {name: '订单明细', exact: true}).click();
+    await expect(page.locator('#scm-report-sales-item-table tbody tr[data-row-key]').first()).toBeVisible();
 });
 
 test('3 采购报表只计提交后的采购事实', async () => {

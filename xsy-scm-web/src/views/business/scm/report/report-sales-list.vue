@@ -117,90 +117,18 @@
 
     <!-- ==================== 订单明细 ==================== -->
     <a-tab-pane key="item" tab="订单明细">
-      <a-card size="small" :bordered="false">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportItem">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              一行 = 一个订单行，名称与价格全部取订单行快照，不回查当前商品主档。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="itemColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ITEM"
-                :refresh="loadItem"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="item.error" :message="item.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadItem">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.SALES_ITEM"
-            size="small"
-            :data-source="item.rows"
-            :columns="itemColumns"
-            row-key="orderItemId"
-            bordered
-            :loading="item.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无订单明细'}"
-            :scroll="{x: 2600}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderNo'">
-              <!-- 复用订单详情，不造第二套详情页 -->
-              <a v-if="record.orderId" @click="openOrder(record.orderId)">{{ record.orderNo }}</a>
-              <span v-else>{{ record.orderNo ?? '—' }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'confirmedAt'">
-              {{ datetime(record.confirmedAt) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'orderSource'">
-              {{ enumDescText(record.orderSource, SCM_ORDER_SOURCE_ENUM) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'settleMode'">
-              {{ enumDescText(record.settleMode, SETTLE_MODE_ENUM) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'productType'">
-              {{ optionLabel(PRODUCT_TYPE_ENUM, record.productType) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'orderedQuantity'">
-              <span class="num">{{ quantityText(record.orderedQuantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'actualQuantity'">
-              <span class="num">{{ quantityText(record.actualQuantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'lockedUnitPrice'">
-              <span class="num">{{ moneyText(record.lockedUnitPrice) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'lockedPriceSource'">
-              {{ enumDescText(record.lockedPriceSource, SCM_ORDER_PRICE_SOURCE_ENUM) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'settlementLineAmount'">
-              <span class="num">{{ moneyText(record.settlementLineAmount) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'manualPriceOverride'">
-              {{ yesNoText(record.manualPriceOverride) }}
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="item.pageNum"
-              v-model:page-size="item.pageSize"
-              :total="item.total"
-              @change="loadItem"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
+      <SalesItemTab
+          :rows="item.rows"
+          :loading="item.loading"
+          :error="item.error"
+          :page-num="item.pageNum"
+          :page-size="item.pageSize"
+          :total="item.total"
+          @export="exportItem"
+          @reload="loadItem"
+          @page-change="loadItemPage"
+          @open-order="openOrder"
+      />
     </a-tab-pane>
     <!-- ==================== 客户订单明细（订单表头级） ==================== -->
     <a-tab-pane key="order" tab="客户订单明细">
@@ -301,13 +229,13 @@ import SalesProductTab from './report-components/sales-product-tab.vue';
 import SalesCategoryTab from './report-components/sales-category-tab.vue';
 import SalesCustomerTab from './report-components/sales-customer-tab.vue';
 import SalesSellerTab from './report-components/sales-seller-tab.vue';
+import SalesItemTab from './report-components/sales-item-tab.vue';
 import {reportSalesApi} from '/@/api/business/scm/report-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
-import {SCM_ORDER_PRICE_SOURCE_ENUM, SCM_ORDER_SOURCE_ENUM} from '/@/constants/business/scm/order-const';
+import {SCM_ORDER_SOURCE_ENUM} from '/@/constants/business/scm/order-const';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
-import {PRODUCT_TYPE_ENUM} from '/@/constants/business/scm/product-const';
 import type {ProductCategory} from '/@/types/business/scm/product';
 import type {
     ReportChartBar,
@@ -329,12 +257,10 @@ import {
     defaultDateRange,
     enumDescText,
     enterTab,
-    optionLabel,
     rangeFromQuery,
     rangeOverLimitError,
-    yesNoText,
 } from './report-model';
-import {moneyText, quantityText} from '../inventory/inventory-model';
+import {moneyText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 import {createGuardedLoader, createTabLoader} from './use-report-query';
 import type {DateRange} from './report-model';
@@ -365,29 +291,6 @@ const item = reactive(createTabView<SalesItemRow>());
 const order = reactive(createTabView<SalesOrderRow>());
 
 /** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
-
-const itemColumns = ref<TableColumnsType<SalesItemRow>>([
-    {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
-    {title: '订单号', dataIndex: 'orderNo', width: 190},
-    {title: '客户编码', dataIndex: 'customerCode', width: 140},
-    {title: '客户名称', dataIndex: 'customerName', width: 180},
-    {title: '销售员', dataIndex: 'sellerName', width: 110},
-    {title: '订单来源', dataIndex: 'orderSource', width: 110},
-    {title: '结算方式', dataIndex: 'settleMode', width: 110},
-    {title: 'SPU 编码', dataIndex: 'spuCode', width: 140},
-    {title: '商品名称', dataIndex: 'productName', width: 180},
-    {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-    {title: '规格', dataIndex: 'specName', width: 130},
-    {title: '商品类型', dataIndex: 'productType', width: 100},
-    {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 90},
-    {title: '订购数量', dataIndex: 'orderedQuantity', align: 'right', width: 120},
-    {title: '实际数量', dataIndex: 'actualQuantity', align: 'right', width: 120},
-    {title: '锁定成交单价', dataIndex: 'lockedUnitPrice', align: 'right', width: 140},
-    {title: '价格来源', dataIndex: 'lockedPriceSource', width: 130},
-    {title: '结算金额', dataIndex: 'settlementLineAmount', align: 'right', width: 140},
-    {title: '是否手工改价', dataIndex: 'manualPriceOverride', align: 'center', width: 120},
-    {title: '手工改价原因', dataIndex: 'manualPriceReason', width: 200},
-]);
 
 const orderColumns = ref<TableColumnsType<SalesOrderRow>>([
     {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
@@ -442,6 +345,12 @@ function loadSellerPage(pageNum: number, pageSize: number) {
     seller.pageNum = pageNum;
     seller.pageSize = pageSize;
     void loadSeller();
+}
+
+function loadItemPage(pageNum: number, pageSize: number) {
+    item.pageNum = pageNum;
+    item.pageSize = pageSize;
+    void loadItem();
 }
 
 const loadProductTop = createGuardedLoader(

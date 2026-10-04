@@ -2219,3 +2219,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 17. 销售员业绩面板拆分（2026-10-05）
 
 从 `report-sales-list.vue` 抽出销售员业绩表、列配置、错误与分页展示为 `SalesSellerTab`；导出、筛选与请求仍由父页管理。五张报表导航用例切到“按销售员”并确认表格可见，Docker Desktop 隔离库定向用例 **1/1**。ESLint、E2E 类型检查、TS 棘轮和生产构建通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务已停止。
+
+## 18. 销售订单行明细面板拆分（2026-10-05）
+
+从 `report-sales-list.vue` 抽出订单行快照表、字段格式化、列配置与分页为 `SalesItemTab`；原订单详情弹窗仍由父页打开。导航用例确认明细表可见；销售业务用例通过共享客户筛选器查到刚确认订单的行明细。Docker Desktop 隔离库两个定向用例 **2/2**。ESLint、E2E 类型检查、TS 棘轮和生产构建通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务已停止。
