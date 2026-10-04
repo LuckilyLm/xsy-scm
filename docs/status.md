@@ -39,7 +39,7 @@
 
 ## 验证与部署边界
 
-- 2026-10-04 Docker Desktop 后端验收：全新库 `xsy_scm_release_20261004` 由 Flyway 从空库迁移至 V109；**1,383 tests / 0 failures / 0 errors / 0 skipped**。实际 MinIO 云存储集成 **5/5** 通过。原 `xsy_scm` 数据库（V76）未修改。证据见[ADM 验收日志 §7s](quality/adm-acceptance-test-log-2026-10-04.md)。
+- 2026-10-04 Docker Desktop 后端验收：全新库 `xsy_scm_release_20261004` 由 Flyway 从空库迁移至 V109；**1,383 tests / 0 failures / 0 errors / 0 skipped**。实际 MinIO 云存储集成 **5/5** 通过；迁移校验摘要现已冻结 V1～V109，guard check 通过。原 `xsy_scm` 数据库（V76）未修改。证据见[ADM 验收日志 §7s/§7t](quality/adm-acceptance-test-log-2026-10-04.md)。
 - 当前 HEAD 的 Playwright 浏览器 E2E 尚未重跑；2026-10-04 之前的历史 E2E 数字不视为当前基线。地图供应商密钥、实体电子秤和真实支付渠道仍需现场验收。
 - 前端 E2E TypeScript 与 ESLint 已纳入门禁。最近一轮静态验收：TS 棘轮 1,940 条历史错误，SCM 域与新增错误均为 0；lint 通过并保留 3 条既有 warning；E2E 类型检查通过。
 - quality guard 的 13 条漂移已清理，`quality_guard.py check` 通过。GitHub Actions CI 已添加 Java 质量、前端与 PostgreSQL/Redis 后端作业；YAML/脚本通过本地静态检查，GitHub 托管运行尚未执行。

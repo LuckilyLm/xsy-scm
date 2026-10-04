@@ -2142,3 +2142,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7s. 后续修复：结算关系校验与干净库全量后端验收
 
 `ScmFinanceReceiptSettlementPgIT` 的集团夹具改为先通过 Customer 域创建合法父子集团关系，再模拟父客户软删；手工收款边界将失效结算关系稳定映射为参数校验错误。定向测试 **3/3** 通过。随后在 Docker Desktop PostgreSQL 独立新库 `xsy_scm_release_20261004`、本机 Redis 与 MinIO 上重跑全量后端：**1,383 tests / 0 failures / 0 errors / 0 skipped**；真实 MinIO `F0FileStorageCloudIT` 为 **5/5**。Flyway 从空库迁移至 V109。原有 `xsy_scm` 数据库未修改；本结果不代表浏览器 E2E 或生产部署验收。
+
+## 7t. 后续修复：迁移校验摘要冻结至 V109
+
+干净 Docker PostgreSQL 已由 Flyway 从 V1 应用至 V109，且全量后端测试通过后，运行 `python tools/migration_checksum_guard.py sync`，将 V75～V109 加入已跟踪摘要；随后 `check` 通过。此次操作只更新仓库摘要文件，没有改写已应用迁移，也没有触碰原 `xsy_scm` V76 数据库。

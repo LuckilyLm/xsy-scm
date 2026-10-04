@@ -296,6 +296,146 @@
     "74": {
       "file": "V74__scm_purchase_daily_report.sql",
       "checksum": 2107962294
+    },
+    "75": {
+      "file": "V75__scm_admin_settlement_credit_return_receipt.sql",
+      "checksum": -126507206
+    },
+    "76": {
+      "file": "V76__scm_admin_operation_web_permissions.sql",
+      "checksum": -340428971
+    },
+    "77": {
+      "file": "V77__scm_finance_aging_menu.sql",
+      "checksum": 356262276
+    },
+    "78": {
+      "file": "V78__scm_purchase_demand_calculation_batch.sql",
+      "checksum": 534260908
+    },
+    "79": {
+      "file": "V79__scm_notification_event_dedup.sql",
+      "checksum": 2049283428
+    },
+    "80": {
+      "file": "V80__scm_finance_profit_report.sql",
+      "checksum": 1978255392
+    },
+    "81": {
+      "file": "V81__scm_customer_statement.sql",
+      "checksum": 125400537
+    },
+    "82": {
+      "file": "V82__scm_supplier_statement.sql",
+      "checksum": -476682524
+    },
+    "83": {
+      "file": "V83__scm_purchase_demand_batch_permissions.sql",
+      "checksum": 1411924291
+    },
+    "84": {
+      "file": "V84__scm_inventory_warning_notification.sql",
+      "checksum": 1770683095
+    },
+    "85": {
+      "file": "V85__scm_print_template.sql",
+      "checksum": -1150616864
+    },
+    "86": {
+      "file": "V86__scm_delivery_sorting_print_templates.sql",
+      "checksum": 181645019
+    },
+    "87": {
+      "file": "V87__scm_order_exception_report.sql",
+      "checksum": 706802065
+    },
+    "88": {
+      "file": "V88__scm_delivery_plan_and_gps.sql",
+      "checksum": 1844614216
+    },
+    "89": {
+      "file": "V89__scm_sorting_scale_and_filters.sql",
+      "checksum": 1595809080
+    },
+    "90": {
+      "file": "V90__scm_promotion_rules.sql",
+      "checksum": 1997227846
+    },
+    "91": {
+      "file": "V91__scm_delivery_route_scope_cleanup.sql",
+      "checksum": 965362400
+    },
+    "92": {
+      "file": "V92__scm_promotion_coupon_status_permission.sql",
+      "checksum": 943156874
+    },
+    "93": {
+      "file": "V93__scm_order_discount_net_receivable.sql",
+      "checksum": -213244766
+    },
+    "94": {
+      "file": "V94__scm_order_promotion_gift.sql",
+      "checksum": -1093342776
+    },
+    "95": {
+      "file": "V95__scm_promotion_gift_outbound.sql",
+      "checksum": 461929998
+    },
+    "96": {
+      "file": "V96__scm_sorting_ticket_gift_column.sql",
+      "checksum": 45976052
+    },
+    "97": {
+      "file": "V97__scm_promotion_special_price.sql",
+      "checksum": -1983692368
+    },
+    "98": {
+      "file": "V98__scm_payment_core.sql",
+      "checksum": 559695565
+    },
+    "99": {
+      "file": "V99__scm_payment_permissions.sql",
+      "checksum": 1106877002
+    },
+    "100": {
+      "file": "V100__scm_finance_receipt_payment_source.sql",
+      "checksum": 1519822075
+    },
+    "101": {
+      "file": "V101__scm_payment_refund_provider_amount.sql",
+      "checksum": -1757514842
+    },
+    "102": {
+      "file": "V102__scm_finance_customer_refund_method.sql",
+      "checksum": 981251380
+    },
+    "103": {
+      "file": "V103__scm_customer_balance_ledger.sql",
+      "checksum": -349882663
+    },
+    "104": {
+      "file": "V104__scm_balance_permissions.sql",
+      "checksum": 1446064373
+    },
+    "105": {
+      "file": "V105__scm_balance_recharge.sql",
+      "checksum": 1352795193
+    },
+    "106": {
+      "file": "V106__scm_balance_payment_order_settlement.sql",
+      "checksum": 1704136734
+    },
+    "107": {
+      "file": "V107__scm_balance_refund_permission.sql",
+      "checksum": 453272091
+    },
+    "108": {
+      "file": "V108__scm_retire_missing_menu_components.sql",
+      "checksum": 869261654
+    },
+    "109": {
+      "file": "V109__scm_remove_database_foreign_keys.sql",
+      "checksum": 1587756775
     }
   }
 }
