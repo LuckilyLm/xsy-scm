@@ -2170,3 +2170,24 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7z. 后续修复：采购单导出与打印验收对齐实际页面
 
 采购单列表 XLSX 导出用例保留；打印用例改为打开模板预览、选择带备注字段的临时模板，再触发浏览器打印（用户可选择打印机或另存为 PDF）。断言验证备注中的 `<script>` 作为文本、仅追加两条打印快照、不改变采购单状态。临时模板在 `afterAll` 按版本软删除。`scm-purchase.spec.ts` 打印用例 **1/1**，E2E lint 与类型检查均通过。
+
+## 8. 当前分支最终验收（2026-10-05）
+
+- `python tools/verify.py quality`：**PASS**。Checkstyle、Spotless、Quality Guard、跨域 DAO / common-source 守卫、质量工具自检和 package-migration-readiness 全部通过。
+- `python tools/verify.py backend`：Docker Desktop 独立库从空库迁移至 V109 后，**1,383 tests / 0 failures / 0 errors / 0 skipped**；MinIO 云存储 `F0FileStorageCloudIT` **5/5**。
+- `python tools/verify.py frontend`：**PASS**。TS 棘轮、ESLint、Playwright 类型检查、Web 单测、生产构建通过；主浏览器套件 **158 passed / 0 skipped / 0 unexpected / 0 flaky**。
+- TypeScript 基线中 116 项既有错误已因请求参数可选化而消除；baseline 从 1,974 收缩并重捕获为 **1,858**。随后 `ts_baseline_ratchet.py check` 显示 SCM errors 0、new errors 0。
+- 生产配置检查与迁移 checksum guard 均通过；迁移摘要覆盖 109 个版本，drift / missing / renamed / unbaked 均为 0。
+- 上述数据库是 Docker Desktop 中新建的隔离库，原 `xsy_scm` V76 未修改。GitHub Actions 工作流已提交但未 push，因此没有 GitHub-hosted CI 运行结果。
+
+## 9. 充值/支付/财务黄金业务链（2026-10-05）
+
+在新的 Docker Desktop 库 `xsy_scm_chain_current_20261005` 上运行 `playwright.chains.config.ts`：**36 passed / 1 skipped / 0 failed**。唯一 skip 是 `adm-golden-chain-07` 的第 3～5 步：充值回调 → 钱包 CREDIT → 余额支付 → 应收以 BALANCE 核销，缺陷登记为 D-39/J-18。前两步通过并再次确认当前 mock 充值意向已成功、财务收款已立，但钱包余额尚未入账；后续渠道确认与钱包入账时点需先由业务方裁决。
+
+## 8. 当前分支最终验收（2026-10-05）
+
+- `python tools/verify.py quality`：**PASS**；Checkstyle / Spotless、Quality Guard、跨域 DAO / common-source guard、自检与 package-migration-readiness 全部通过。
+- `python tools/verify.py backend`：在新 Docker PostgreSQL 库全量迁移至 V109 后，**1,383 tests / 0 failures / 0 errors / 0 skipped**；真实 MinIO `F0FileStorageCloudIT` **5/5**。
+- `python tools/verify.py frontend`：**PASS**；TS baseline 1,858、SCM errors 0、new errors 0；ESLint、Playwright TS、Web 单测与生产构建通过；浏览器 E2E **158 passed / 0 skipped / 0 unexpected / 0 flaky**。
+- 黄金业务链独立套件：**36 passed / 1 skipped / 0 failed**。唯一 skip 是充值回调与钱包 CREDIT 后续链，决策见 J-18。
+- 所有运行验收数据库均为 Docker Desktop 中新建隔离库；原有 `xsy_scm` V76 未修改，未查询或操作生产库。GitHub 托管 Actions 尚未触发；当前分支仅本地提交，未 push。

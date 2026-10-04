@@ -1,6 +1,6 @@
 # 项目状态
 
-最后更新：2026-10-04。
+最后更新：2026-10-05。
 
 当前开发已覆盖营销接入正式订单、支付核心与在线充值、余额支付及自动核销、纯余额售后返还。代码完成、运行验收与生产部署分别记录；后续工作以[开发规划](plan/active/admin-development-roadmap.md)为准。
 
@@ -12,7 +12,7 @@
 
 ## 当前进行
 
-- ADM-12 支付与余额 c1～c3 代码已完成：内部余额支付不产生新收款，ONLINE / BALANCE 在签收或支付成功时自动核销；订单专属资金全额关联原正常应收，超额单独显示。纯余额售后在退款完成事务内返还原钱包，累计不超消费本金，与渠道 / 人工退款互斥，并提供独立重试入口和流水追溯。2026-10-04 在 Docker Desktop PostgreSQL 独立新库执行 V1～V109 全量迁移及后端套件，1,383 项通过；真实 MinIO 云存储测试 5/5。混合及多交易退款分摊 d 尚未实现，真实支付渠道与浏览器验收仍未完成，见[设计与实施边界](plan/active/balance-payment-order-settlement-design.md)。
+- ADM-12 支付与余额 c1～c3 代码已完成：内部余额支付不产生新收款，ONLINE / BALANCE 在签收或支付成功时自动核销；订单专属资金全额关联原正常应收，超额单独显示。纯余额售后在退款完成事务内返还原钱包，累计不超消费本金，与渠道 / 人工退款互斥，并提供独立重试入口和流水追溯。2026-10-04 在 Docker Desktop PostgreSQL 独立新库执行 V1～V109 全量迁移及后端套件，1,383 项通过；真实 MinIO 云存储测试 5/5。主 Playwright 套件现为 158/158；充值回调钱包入账的黄金链 3 步仍因 D-39 标记待裁，混合及多交易退款分摊 d 仍未实现，真实支付渠道待现场验收，见[设计与实施边界](plan/active/balance-payment-order-settlement-design.md)。
 
 - ADM-02～04 已补退货接收、结算快照、核销、冻结账期、授信阻断与例外放行的业务主链；2026-10-02 曾在独立 PostgreSQL 验收库执行针对性验证，最终新增改动待用户安排验收。
 - ADM-01 新增应收/应付账龄页面、查询、汇总、导出、权限与 V77 菜单代码；保留缺失到期日分组。仅开发，未运行测试或构建。
@@ -40,8 +40,9 @@
 ## 验证与部署边界
 
 - 2026-10-04 Docker Desktop 后端验收：全新库 `xsy_scm_release_20261004` 由 Flyway 从空库迁移至 V109；**1,383 tests / 0 failures / 0 errors / 0 skipped**。实际 MinIO 云存储集成 **5/5** 通过；迁移校验摘要现已冻结 V1～V109，guard check 通过。原 `xsy_scm` 数据库（V76）未修改。证据见[ADM 验收日志 §7s/§7t](quality/adm-acceptance-test-log-2026-10-04.md)。
-- 2026-10-05 当前分支浏览器 E2E 已用 Docker Desktop PostgreSQL + Redis + MinIO 运行；首轮找出 8 个环境/夹具/UI失败，修复后正在做完整复跑。采购单 XLSX 导出保留；打印用例验证模板预览后的浏览器打印（可另存 PDF），不把列表“打印”按钮误当成直接调用系统打印。地图供应商密钥、实体电子秤和真实支付渠道仍需现场验收。
-- 前端 E2E TypeScript 与 ESLint 已纳入门禁。最近一轮静态验收：TS 棘轮 1,940 条历史错误，SCM 域与新增错误均为 0；lint 通过并保留 3 条既有 warning；E2E 类型检查通过。
+- 2026-10-05 当前分支前端与浏览器验收已在 Docker Desktop PostgreSQL + Redis + MinIO 上完成：`python tools/verify.py frontend` **PASS**，Playwright **158 passed / 0 skipped / 0 unexpected / 0 flaky**。采购单保留 XLSX 导出；模板预览后的浏览器打印可选择打印机或另存为 PDF。
+- 支付/财务黄金链另用全新 Docker 库 `xsy_scm_chain_current_20261005` 执行：**36 passed / 1 skipped / 0 failed**。唯一 skip 是 ADM-12 充值回调后钱包入账链（D-39），状态机与到账时点仍待业务裁决；真实渠道回调另需现场凭据。地图供应商密钥与实体电子秤同样属于现场验收。
+- 前端 E2E TypeScript 与 ESLint 已纳入门禁。TS 历史基线经修复后从 1,974 收缩并重捕获为 **1,858**；SCM 域与新增错误均为 0。lint 通过，保留 3 条既有 warning；生产构建通过并保留既有 bundle 体积提示。
 - quality guard 的 13 条漂移已清理，`quality_guard.py check` 通过。GitHub Actions CI 已添加 Java 质量、前端与 PostgreSQL/Redis 后端作业；YAML/脚本通过本地静态检查，GitHub 托管运行尚未执行。
 - 2026-10-03 只读扫描中的 `magic-string-domain-literal` 与 `stage-comment` 命中已在后续整改中解决；不再沿用该次 FAIL 作为当前状态。
 - 此前 V77、V80～V97 的验收和部署记录仍按各条目状态保留；独立测试数据库通过不替代生产数据库部署验收。
