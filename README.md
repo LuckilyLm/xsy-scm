@@ -104,7 +104,7 @@ Compose 要求显式设置 `MINIO_IMAGE`，不再内置历史 MinIO 镜像。使
 
 桶策略脚本 `deploy/minio/bootstrap.sh` 纳入仓库。bootstrap 每次运行覆盖匿名策略，只允许 `public/*` 的 `s3:GetObject`；不开放整个桶、列桶或 `private/*`。`minio-bootstrap` 正常状态为 `Exited (0)`，其余五个服务应为 `healthy`。后端健康检查复用匿名只读登录配置接口并检查业务成功码。
 
-首次空库由 Flyway 自动创建 `xsy_v2` 并应用 V1–V34，不导入手工业务建表 SQL、不自动 baseline、不修改旧 migration。检查迁移与日志：
+首次空库由 Flyway 自动创建 `xsy_v2`，并按顺序应用仓库 `db/migration` 目录中的全部迁移。不导入手工业务建表 SQL、不自动 baseline、不修改旧 migration。检查迁移与日志：
 
 ```bash
 docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT version, success FROM xsy_v2.flyway_schema_history ORDER BY installed_rank;"'
