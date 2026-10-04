@@ -6,6 +6,7 @@ import com.xsy.scm.inventory.dao.InventoryWarningStateDao;
 import com.xsy.scm.inventory.domain.entity.InventoryWarningStateEntity;
 import com.xsy.scm.inventory.domain.vo.InventoryWarningVO;
 import com.xsy.scm.notification.service.ScmNotificationService;
+import com.xsy.scm.notification.constant.ScmNotificationEventTypeEnum;
 import com.xsy.scm.warehouse.dao.EmployeeWarehouseScopeDao;
 import java.math.BigDecimal;
 import java.util.List;
@@ -36,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class InventoryWarningNotifier {
 
-    private static final String EVENT_TYPE = "INVENTORY_WARNING";
+    private static final String EVENT_TYPE = ScmNotificationEventTypeEnum.INVENTORY_WARNING.name();
 
     private final InventoryWarningStateDao stateDao;
 

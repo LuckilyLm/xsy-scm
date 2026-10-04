@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import com.xsy.scm.report.constant.ReportErrorCode;
 import com.xsy.scm.report.dao.ScmSupplierStatementDao;
 import com.xsy.scm.report.domain.form.ScmSupplierStatementForm;
@@ -80,9 +82,9 @@ public class ScmSupplierStatementService {
             }
             payable = payable.add(payableChange);
             unallocated = unallocated.add(fundsChange);
-            if ("PAYABLE".equals(fact.getFactType())) {
+            if (ScmFinanceBusinessTypeEnum.PAYABLE.name().equals(fact.getFactType())) {
                 increase = increase.add(payableChange);
-            } else if ("RED".equals(fact.getFactType())) {
+            } else if (ScmFinanceEntryTypeEnum.RED.name().equals(fact.getFactType())) {
                 red = red.subtract(payableChange);
             }
             writeOff = writeOff.add(fact.getWriteOffDelta());

@@ -2,6 +2,7 @@ package com.xsy.scm.balance.service;
 
 import com.xsy.scm.balance.constant.BalanceErrorCode;
 import com.xsy.scm.balance.constant.ScmBalanceDirectionEnum;
+import com.xsy.scm.balance.constant.ScmBalanceIdempotencyResourceTypeEnum;
 import com.xsy.scm.balance.constant.ScmBalanceMovementTypeEnum;
 import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
 import com.xsy.scm.balance.dao.CustomerBalanceAccountDao;
@@ -206,7 +207,9 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         }
         CustomerBalanceMovementEntity movement = record(account, form.getCustomerId(),
                 ScmBalanceMovementTypeEnum.CORRECTION, direction, value, null, null, reason, OffsetDateTime.now());
-        idempotencyService.complete(claim, "BALANCE_MOVEMENT", movement.getId(), movement);
+        idempotencyService.complete(claim, ScmBalanceIdempotencyResourceTypeEnum.BALANCE_MOVEMENT.name(),
+                movement.getId(),
+                movement);
         return movement;
     }
 

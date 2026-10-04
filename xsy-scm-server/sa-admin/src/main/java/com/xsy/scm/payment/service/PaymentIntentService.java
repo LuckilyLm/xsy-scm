@@ -1,6 +1,7 @@
 package com.xsy.scm.payment.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.common.scope.ScmDataScopeException;
@@ -238,7 +239,7 @@ public class PaymentIntentService {
                     result.failureMessage(), result.amount(), operator);
         }
         PaymentIntentEntity saved = paymentIntentDao.selectById(intent.getId());
-        idempotencyService.complete(claim, "PAYMENT_INTENT", saved.getId(), saved);
+        idempotencyService.complete(claim, ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), saved.getId(), saved);
         return saved;
     }
 

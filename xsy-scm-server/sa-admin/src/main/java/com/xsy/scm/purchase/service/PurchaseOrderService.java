@@ -5,6 +5,7 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.purchase.constant.ScmPurchaseOperationTypeEnum;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
+import com.xsy.scm.purchase.constant.ScmPurchaseIdempotencyResourceTypeEnum;
 import com.xsy.scm.purchase.dao.PurchaseDemandAllocationDao;
 import com.xsy.scm.purchase.dao.PurchaseOperationLogDao;
 import com.xsy.scm.purchase.dao.PurchaseOrderDao;
@@ -140,7 +141,9 @@ public class PurchaseOrderService {
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CREATE,
                 order.getId(), null, null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
-        purchaseIdempotencyService.complete(claim, "PURCHASE_ORDER", order.getId(), result);
+        purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
+                order.getId(),
+                result);
         return result;
     }
 
@@ -310,7 +313,9 @@ public class PurchaseOrderService {
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.SUBMIT,
                 order.getId(), null, null, before, PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order)));
-        purchaseIdempotencyService.complete(claim, "PURCHASE_ORDER", order.getId(), result);
+        purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
+                order.getId(),
+                result);
         return result;
     }
 
@@ -340,7 +345,9 @@ public class PurchaseOrderService {
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CANCEL,
                 order.getId(), null, order.getCancelReason(), before, after));
-        purchaseIdempotencyService.complete(claim, "PURCHASE_ORDER", order.getId(), result);
+        purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
+                order.getId(),
+                result);
         return result;
     }
 
@@ -353,7 +360,9 @@ public class PurchaseOrderService {
         }
 
         PurchaseOrderVO result = applyShortClose(form);
-        purchaseIdempotencyService.complete(claim, "PURCHASE_ORDER", form.getId(), result);
+        purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
+                form.getId(),
+                result);
         return result;
     }
 

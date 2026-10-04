@@ -6,6 +6,7 @@ import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
+import com.xsy.scm.sorting.constant.ScmSortingScaleEventStatusEnum;
 import com.xsy.scm.sorting.constant.SortingErrorCode;
 import com.xsy.scm.sorting.dao.SortingScaleEventDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
@@ -208,7 +209,7 @@ public class SortingScaleEventService {
         if (event == null) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_NOT_FOUND);
         }
-        if (!"PENDING".equals(event.getStatus())) {
+        if (!ScmSortingScaleEventStatusEnum.PENDING.name().equals(event.getStatus())) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_STATE_INVALID);
         }
         if (!Objects.equals(event.getVersion(), version)) {

@@ -14,12 +14,12 @@ import lombok.Data;
 public class InventoryWarningScanVO {
 
     /**
-     * 本轮实际检查的阈值配置条数（受单轮上限约束）。
+     * 实际检查的阈值配置条数（受单次扫描上限约束）。
      */
     private int scannedCount;
 
     /**
-     * 本轮投递的站内信条数；同一跃迁发给多名接收人会各计一条。
+     * 投递的站内信条数；同一跃迁发给多名接收人会各计一条。
      */
     private int sentCount;
 }

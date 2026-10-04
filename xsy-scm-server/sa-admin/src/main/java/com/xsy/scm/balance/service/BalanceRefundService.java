@@ -2,6 +2,7 @@ package com.xsy.scm.balance.service;
 
 import com.xsy.scm.balance.constant.BalanceErrorCode;
 import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
+import com.xsy.scm.balance.constant.ScmBalanceIdempotencyResourceTypeEnum;
 import com.xsy.scm.balance.dao.BalanceRefundSourceDao;
 import com.xsy.scm.balance.dao.CustomerBalanceMovementDao;
 import com.xsy.scm.balance.domain.dto.BalanceRefundFact;
@@ -51,7 +52,9 @@ public class BalanceRefundService {
             return idempotencyService.replay(claim, CustomerBalanceMovementEntity.class);
         }
         CustomerBalanceMovementEntity movement = apply(fact, true);
-        idempotencyService.complete(claim, "BALANCE_MOVEMENT", movement.getId(), movement);
+        idempotencyService.complete(claim, ScmBalanceIdempotencyResourceTypeEnum.BALANCE_MOVEMENT.name(),
+                movement.getId(),
+                movement);
         return movement;
     }
 

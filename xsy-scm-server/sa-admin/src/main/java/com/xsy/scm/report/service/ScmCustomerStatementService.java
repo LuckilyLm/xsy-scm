@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
 import com.xsy.scm.report.constant.ReportErrorCode;
 import com.xsy.scm.report.dao.ScmCustomerStatementDao;
 import com.xsy.scm.report.domain.form.ScmCustomerStatementForm;
@@ -80,9 +82,9 @@ public class ScmCustomerStatementService {
             }
             debt = debt.add(debtChange);
             unallocated = unallocated.add(fundsChange);
-            if ("RECEIVABLE".equals(fact.getFactType())) {
+            if (ScmFinanceBusinessTypeEnum.RECEIVABLE.name().equals(fact.getFactType())) {
                 revenue = revenue.add(debtChange);
-            } else if ("RED".equals(fact.getFactType())) {
+            } else if (ScmFinanceEntryTypeEnum.RED.name().equals(fact.getFactType())) {
                 red = red.subtract(debtChange);
             }
             writeOff = writeOff.add(fact.getWriteOffDelta());

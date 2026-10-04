@@ -1,6 +1,7 @@
 package com.xsy.scm.balance.service;
 
 import com.xsy.scm.balance.constant.BalanceErrorCode;
+import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
 import com.xsy.scm.balance.dao.CustomerBalanceRechargeDao;
 import com.xsy.scm.balance.domain.entity.CustomerBalanceRechargeEntity;
 import com.xsy.scm.balance.domain.form.BalanceRechargeCreateForm;
@@ -110,7 +111,7 @@ public class BalanceRechargeService {
         PaymentIntentEntity intent = paymentIntentService.createForBalanceRecharge(new BalanceRechargeIntentFact(
                 recharge.getId(), recharge.getRechargeNo(), customer.getId(), customer.getName(), amount,
                 form.getProvider(), form.getMockScenario(), form.getRemark()), idempotencyKey);
-        idempotencyService.complete(claim, "PAYMENT_INTENT", intent.getId(), intent);
+        idempotencyService.complete(claim, ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), intent.getId(), intent);
         return intent;
     }
 }

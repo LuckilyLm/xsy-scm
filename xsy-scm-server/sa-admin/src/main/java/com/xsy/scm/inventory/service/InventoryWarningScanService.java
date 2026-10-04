@@ -45,7 +45,7 @@ public class InventoryWarningScanService {
      *
      * @param warehouseScope
      *            仓库范围；定时任务传 {@link ScmValueScope#all()}，手动检查传调用者的范围
-     * @return 本轮检查条数与投递条数
+     * @return 扫描的检查条数与实际投递条数
      */
     public InventoryWarningScanVO scan(ScmValueScope warehouseScope) {
         InventoryWarningScanVO result = new InventoryWarningScanVO();
