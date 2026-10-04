@@ -2247,3 +2247,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 24. 配送履约面板拆分（2026-10-05）
 
 从 `route-detail.vue` 抽出活动线路订单、签收状态、空状态和签收操作入口为 `RouteFulfillmentPanel`；父页继续负责签收弹窗、行版本校验与签收命令。`scm-delivery-l3.spec.ts` 全套 **8/8** 通过，覆盖正常/异常签收、终态动作隐藏、权限与发货不变量。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。
+
+## 25. 分拣任务详情面板拆分（2026-10-05）
+
+从 `sorting-task-list.vue` 抽出任务摘要、状态操作、分拣录入表及其页面状态展示为 `SortingTaskDetailDrawer`；详情读取、草稿校验、逐行版本提交、冲突刷新和保存事务继续由父页管理。`scm-sorting.spec.ts` 全套 **8/8** 通过。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。
