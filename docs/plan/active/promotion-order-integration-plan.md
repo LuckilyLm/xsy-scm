@@ -1,7 +1,7 @@
 # 营销接入正式订单（ADM-12 第三阶段）计划
 
 计划日期：2026-10-03。
-状态：决策已确认；切片 3-1～3-9 **全部代码完成**，待验收。
+状态（2026-10-05）：决策已确认；切片 3-1～3-9 **全部代码完成**。代码纳入 Docker Desktop V109 后端全套和主 Playwright 自动化基线；本地自动化通过不等同于生产部署验收。当前系统证据见[项目状态](../../status.md)与[ADM 验收记录](../../quality/adm-acceptance-test-log-2026-10-04.md)。
 依据：[ADR-009](../adr/009-marketing-payment-promotion-order-assistant-and-traceability.md)、[开发规划](admin-development-roadmap.md)、[项目状态](../../status.md)及当前主线代码。
 
 ## 1. 目标

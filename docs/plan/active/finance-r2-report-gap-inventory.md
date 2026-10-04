@@ -1,7 +1,7 @@
 # 财务与报表（ADM-01 / Finance R2）缺口盘点
 
 盘点日期：2026-10-03。
-状态：盘点完成，缺口已全部实施（切片 1 + 切片 2）；本文只记录**代码可证的现状与缺口**，不代表已通过运行验收。
+状态：代码缺口盘点完成（切片 1 + 切片 2）。本文件记录盘点时的代码证据；后续 Docker Desktop V109 自动化验收状态见[项目状态](../../status.md)与[ADM 验收记录](../../quality/adm-acceptance-test-log-2026-10-04.md)。本文不代表历史期初、真实生产数据或现场对账已验收。
 依据：[产品功能需求基线](../../requirements/产品功能需求基线.md)、[有效决策](../../decisions.md)、[开发规划](admin-development-roadmap.md)、[Finance R1 正式设计](finance-r1-design.md)及当前主线代码。
 
 ## 1. 盘点口径
