@@ -61,6 +61,10 @@ const CONTRACT_DELIVERY_PERMS = [
   'scm:delivery:route:print',
   'scm:delivery:route:dispatch',
   'scm:delivery:route:complete',
+  // ADM-10 排线建议：`DeliveryPermission` 与 V88 菜单种子都发布了这三条。
+  'scm:delivery:plan:query',
+  'scm:delivery:plan:propose',
+  'scm:delivery:plan:apply',
   'scm:delivery:order:sign',
   'scm:delivery:scope:all:query',
   'scm:delivery:amount:query',
@@ -151,10 +155,12 @@ test('打印保持原样：预览 GET + 两个计次 POST，面板里没有任�
   ]) {
     assert.ok(!printPane.includes(forbidden), `打印面板出现了 L3 动作 ${forbidden}`);
   }
-  // 预览弹窗是纯只读：它唯一的 deliveryApi 调用就是 GET 预览。
+  // ADM-07 之后发货单版面交给打印中心渲染（`DELIVERY_NOTE` 模板 + 冻结版本/业务模型），
+  // 所以这个面板不再自己调任何配送接口：一次命令都不许出现，比原来「只许 print()」更严。
   const printView = code(PRINT_VIEW);
+  assert.match(printView, /document-type="DELIVERY_NOTE"/);
   const calls = [...printView.matchAll(/deliveryApi\.(\w+)\(/g)].map((m) => m[1]);
-  assert.deepEqual(calls, ['print'], `发货单预览只允许 print()，实际调用了 ${calls}`);
+  assert.deepEqual(calls, [], `发货单打印面板不应直接发起配送命令，实际调用了 ${calls}`);
 });
 
 // ------------------------------------------------------------------ 权限

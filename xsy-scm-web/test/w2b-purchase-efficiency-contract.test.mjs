@@ -52,10 +52,22 @@ test('工作台组件只渲染后端聚合量，绝不重算欠收 / 超收', ()
   assert.doesNotMatch(src, /plannedQuantity\s*-\s*receivedQuantity/);
 });
 
-test('打印工具是纯客户端，无任何网络或写调用', () => {
-  const src = code('../src/views/business/scm/purchase/purchase-order-print.ts');
-  assert.match(src, /export function printPurchaseOrders/);
-  assert.doesNotMatch(src, /postRequest|purchaseCommand|getRequest|axios|fetch\(|XMLHttpRequest/);
+test('采购单打印走 ADM-07 打印中心，且不会改写采购业务事实', () => {
+  // ADM-07 用服务端模板渲染（冻结模板版本 / 业务模型 / 版面）取代了早期的纯客户端打印工具，
+  // 因此这里守的是同一件事的另一面：打印入口不携带任何采购写操作。
+  const list = code('../src/views/business/scm/purchase/purchase-order-list.vue');
+  assert.match(list, /PrintDocumentModal/);
+  assert.match(list, /document-type="PURCHASE_ORDER"/);
+  assert.doesNotMatch(list, /purchase-order-print/);
+
+  const modal = code('../src/views/business/scm/print/print-document-modal.vue');
+  assert.match(modal, /printApi\.preview\(/);
+  assert.match(modal, /printApi\.print\(/);
+  // 打印与预览只经 print-api：不得出现采购命令（否则打印会改状态 / 重复生成业务事实）
+  assert.doesNotMatch(modal, /purchaseOrderApi|purchaseCommand/);
+
+  const api = code('../src/api/business/scm/print-api.ts');
+  assert.doesNotMatch(api, /putRequest|deleteRequest/);
 });
 
 test('导出列目录与后端 15 列逐字对齐且顺序敏感', () => {

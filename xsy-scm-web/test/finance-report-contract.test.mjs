@@ -134,8 +134,34 @@ test('报表 API 没有任何写端点与第二套上传', () => {
 });
 
 test('导出统一走 postDownload，不自己拼 Blob、不硬编码文件名', () => {
-  const exportCount = (API.match(/postDownload\(/g) ?? []).length;
-  assert.equal(exportCount, 14, '导出端点数与契约一致（销售 3 + 采购 3 + 收货 2 + 库存 3 + Finance 3）');
+  // 端点清单逐个对过后端 controller 映射（ADM-01 的六个后补导出已在
+  // ScmSalesReportController / ScmPurchaseReportController / ScmFinanceReportController 落地）。
+  // 用清单而不是「数一个总数」：新增导出漏接后端时，这里会直接点名是哪一条。
+  const exportPaths = [...API.matchAll(/postDownload\(`\$\{BASE\}([^`]+)`/g)].map((m) => m[1]).sort();
+  assert.deepEqual(exportPaths, [
+    '/finance/overview/export',
+    '/finance/payable/aging-free-detail/export',
+    '/finance/receivable/aging-free-detail/export',
+    '/inbound/export',
+    '/inventory/loss/export',
+    '/inventory/movement/export',
+    '/inventory/value/export',
+    '/overview/daily/export',
+    '/purchase/item/export',
+    '/purchase/overview/export',
+    '/purchase/price-trend/export',
+    '/purchase/product/export',
+    '/purchase/purchaser/export',
+    '/purchase/supplier/export',
+    '/receipt/export',
+    '/sales/category/export',
+    '/sales/customer/export',
+    '/sales/item/export',
+    '/sales/order/export',
+    '/sales/product/export',
+    '/sales/seller/export',
+  ]);
+  assert.equal(exportPaths.length, 21, '导出端点数与契约一致（概览 1 + 销售 6 + 采购 6 + 收货 2 + Finance 3 + 库存 3）');
   assert.ok(!/new Blob|createObjectURL|\.xlsx'/.test(API), '文件名与下载由 postDownload 负责');
 });
 

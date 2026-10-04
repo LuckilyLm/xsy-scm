@@ -76,7 +76,9 @@ test('the preview is a tab inside the existing demand page with no new route or 
   const list = code('../src/views/business/scm/purchase/purchase-demand-list.vue');
   assert.match(list, /PurchaseDemandSummaryPreview/);
   assert.match(list, /a-tab-pane\s+key="preview"/);
-  // 既有需求列表的写入口（generate / allocate）仍在本页
-  assert.match(list, /scm:purchase:demand:generate/);
+  // 既有需求列表的写入口仍在本页：ADM-05 之后是「冻结批次 → 从批次生成需求」，
+  // 直接 generate 端点保留给既有集成，UI 写入口是 batch:create（+ 逐行 allocate）。
+  assert.match(list, /scm:purchase:demand:batch:create/);
+  assert.match(list, /scm:purchase:demand:allocate/);
   assert.match(list, /scm:purchase:demand:allocate/);
 });
