@@ -210,83 +210,25 @@
   </a-card>
 
   <!-- 新建任务：仓库必须显式选择（不从订单 / 客户 / 线路猜），候选订单行由服务端按建单权开放 -->
-  <a-modal
-      v-model:open="createOpen"
-      title="新建分拣任务"
-      :width="1100"
-      :confirm-loading="creating"
-      :ok-button-props="{ disabled: !candidateSelected.length || createLoading || candidateRows.length === 0 }"
-      :ok-text="`创建任务（${candidateSelected.length} 行）`"
-      @ok="submitCreate"
-  >
-    <a-alert
-        type="info"
-        show-icon
-        message="候选行是「已确认订单上尚未被任何活动任务占用」的明细；计划量取该行的实发量并在此刻冻结。"
-    />
-    <a-alert v-if="createError" type="error" show-icon :message="createError"/>
-    <a-form layout="inline" class="create-form" @submit.prevent="searchCandidates">
-      <a-form-item label="仓库" required>
-        <WarehouseSelect v-model:value="createForm.warehouseId" width="220px"/>
-      </a-form-item>
-      <a-form-item label="受指派人">
-        <EmployeeSelect v-model:value="createForm.assigneeEmployeeId" placeholder="暂不指派" width="200px"/>
-      </a-form-item>
-      <a-form-item label="备注">
-        <a-input v-model:value="createForm.remark" :maxlength="500" style="width: 220px" placeholder="可选"/>
-      </a-form-item>
-      <a-form-item label="订单 / 客户 / 商品">
-        <a-input
-            v-model:value="candidateQuery.keyword"
-            placeholder="订单 / 客户 / 商品"
-            allow-clear
-            :maxlength="100"
-            @pressEnter="searchCandidates"
-        />
-      </a-form-item>
-      <a-form-item>
-        <a-space>
-          <a-button type="primary" @click="searchCandidates">查询候选行</a-button>
-          <a-button @click="resetCandidates">重置</a-button>
-        </a-space>
-      </a-form-item>
-    </a-form>
-    <a-table
-        :id="SCM_SORTING_TABLE_ID.CANDIDATE_LINE"
-        size="small"
-        :data-source="candidateRows"
-        :columns="candidateColumns"
-        row-key="salesOrderItemId"
-        :loading="createLoading"
-        :pagination="false"
-        :scroll="{ x: 940, y: 320 }"
-        :row-selection="{ selectedRowKeys: candidateSelected, onChange: onCandidateSelect, preserveSelectedRowKeys: true }"
-        :locale="{ emptyText: '暂无可分拣的订单行' }"
-    >
-      <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'actualQuantity'">
-          <span class="num">{{ quantityText(record.actualQuantity) }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'orderedQuantity'">
-          <span class="num">{{ quantityText(record.orderedQuantity) }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'productTypeSnapshot'">
-          {{ productTypeDesc(record.productTypeSnapshot) }}
-        </template>
-        <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-      </template>
-    </a-table>
-    <div class="smart-query-table-page">
-      <a-pagination
-          v-model:current="candidateQuery.pageNum"
-          v-model:page-size="candidateQuery.pageSize"
-          :total="candidateTotal"
-          show-size-changer
-          :page-size-options="['10', '20', '50', '100']"
-          @change="loadCandidates"
-      />
-    </div>
-  </a-modal>
+  <SortingTaskCreateModal
+    v-model:open="createOpen"
+    v-model:warehouse-id="createForm.warehouseId"
+    v-model:assignee-employee-id="createForm.assigneeEmployeeId"
+    v-model:remark="createForm.remark"
+    v-model:keyword="candidateQuery.keyword"
+    :creating="creating"
+    :loading="createLoading"
+    :error="createError"
+    :rows="candidateRows"
+    :total="candidateTotal"
+    v-model:selected-ids="candidateSelected"
+    :page-num="candidateQuery.pageNum"
+    :page-size="candidateQuery.pageSize"
+    @search="searchCandidates"
+    @reset="resetCandidates"
+    @page-change="loadCandidatesPage"
+    @create="submitCreate"
+  />
 
   <!-- 详情：头部 + 明细录入 -->
   <SortingTaskDetailDrawer
@@ -391,6 +333,7 @@ import {datetime} from '../common/scm-display';
 import SortingScaleDrawer from './components/sorting-scale-drawer.vue';
 import SortingPrintPreviewModal from './components/sorting-print-preview-modal.vue';
 import SortingTaskDetailDrawer from './components/sorting-task-detail-drawer.vue';
+import SortingTaskCreateModal from './components/sorting-task-create-modal.vue';
 import type {
     Id,
     SortingActionPayload,
@@ -405,7 +348,7 @@ import type {
     SortingTaskQuery,
     SortingTaskStatus,
 } from './sorting-types';
-import {quantityText, sortingError} from './sorting-types';
+import {sortingError} from './sorting-types';
 
 type ActionMode = 'assign' | 'cancel' | 'reopen';
 
@@ -835,21 +778,6 @@ const candidateSelected = ref<Id[]>([]);
 const candidateTotal = ref(0);
 let candidateGeneration = 0;
 
-const candidateColumns = ref<TableColumnsType<SortingCandidateLine>>([
-  {title: '订单号', dataIndex: 'orderNo', width: 170},
-  {title: '客户', dataIndex: 'customerName', width: 160},
-  {title: '商品', dataIndex: 'productNameSnapshot', width: 170},
-  {title: '规格', dataIndex: 'specNameSnapshot', width: 130},
-  {title: '类型', dataIndex: 'productTypeSnapshot', align: 'center', width: 90},
-  {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 80},
-  {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
-  {title: '实发量', dataIndex: 'actualQuantity', align: 'right', width: 110},
-]);
-
-function onCandidateSelect(keys: (string | number)[]) {
-    candidateSelected.value = keys;
-}
-
 async function loadCandidates() {
     const current = ++candidateGeneration;
     createLoading.value = true;
@@ -864,6 +792,12 @@ async function loadCandidates() {
     } finally {
         if (current === candidateGeneration) createLoading.value = false;
     }
+}
+
+function loadCandidatesPage(pageNum: number, pageSize: number) {
+    candidateQuery.pageNum = pageNum;
+    candidateQuery.pageSize = pageSize;
+    void loadCandidates();
 }
 
 function searchCandidates() {
@@ -1002,11 +936,6 @@ onMounted(queryData);
 
 .toolbar-hint {
   margin-left: 12px;
-}
-
-.create-form {
-  gap: 12px 0;
-  margin: 16px 0;
 }
 
 </style>
