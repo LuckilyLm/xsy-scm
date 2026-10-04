@@ -196,96 +196,22 @@
             />
           </a-tab-pane>
           <a-tab-pane key="print" tab="配送打印">
-            <div class="smart-table-btn-block">
-              <a-segmented
-                  v-model:value="printMode"
-                  :options="[
-                    { label: '按订单', value: 'orders' },
-                    { label: '按客户', value: 'customers' },
-                  ]"
-              />
-              <a-select
-                  v-if="printMode === 'customers'"
-                  v-model:value="customerStatusFilter"
-                  style="width: 150px"
-                  :options="[
-                    { label: '全部客户', value: 'ALL' },
-                    { label: '未打印客户', value: 'UNPRINTED' },
-                    { label: '部分打印客户', value: 'PARTIAL' },
-                    { label: '已打印客户', value: 'PRINTED' },
-                  ]"
-              />
-              <a-select
-                  v-if="printMode === 'customers'"
-                  v-model:value="customerFilter"
-                  style="width: 160px"
-                  :options="[
-                    { label: '全部订单', value: 'ALL' },
-                    { label: '仅未打印订单', value: 'UNPRINTED' },
-                    { label: '仅已打印订单', value: 'PRINTED' },
-                  ]"
-              />
-              <a-button
-                  v-if="canPrint"
-                  type="primary"
-                  v-privilege="'scm:delivery:route:print'"
-                  :disabled="busy || !canRecordPrint"
-                  @click="recordPrint"
-              >生成打印 · 登记 {{ printTargetCount }}
-              </a-button>
-            </div>
-            <a-alert
-                message="「生成打印」仅登记本次已生成打印预览并累加计次，不代表发货确认，也不扣减库存。客户与订单的打印状态在生成时由服务端按当前有效订单重新判定，列表状态仅供预览。"
-                type="info"
-                show-icon
+            <RoutePrintPanel
+                v-model:print-mode="printMode"
+                v-model:customer-status-filter="customerStatusFilter"
+                v-model:customer-filter="customerFilter"
+                v-model:order-selection="orderSelection"
+                v-model:customer-selection="customerSelection"
+                :orders="ordersView"
+                :customers="customersShown"
+                :loading="printLoading"
+                :busy="busy"
+                :can-print="canPrint"
+                :can-record-print="canRecordPrint"
+                :target-count="printTargetCount"
+                :can-view-amount="canViewAmount"
+                @record-print="recordPrint"
             />
-            <a-table
-                v-if="printMode === 'orders'"
-                size="small"
-                :columns="orderViewColumns"
-                :data-source="ordersView"
-                row-key="orderId"
-                :loading="printLoading"
-                :pagination="false"
-                :scroll="{ x: 1080 }"
-                :row-selection="orderRowSelection"
-                bordered
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.dataIndex === 'orderAmount'">{{ money(record.orderAmount) }}</template>
-                <template v-else-if="column.dataIndex === 'printStatus'">
-                  <a-tag :color="printStatuses[record.printStatus as PrintStatus].color">{{
-                      printStatuses[record.printStatus as PrintStatus].label
-                    }}
-                  </a-tag>
-                </template>
-                <template v-else-if="column.dataIndex === 'lastPrintedAt'">
-                  {{ record.lastPrintedAt ? datetime(record.lastPrintedAt) : '—' }}
-                </template>
-              </template>
-            </a-table>
-            <a-table
-                v-else
-                size="small"
-                :columns="customerViewColumns"
-                :data-source="customersShown"
-                row-key="customerId"
-                :loading="printLoading"
-                :pagination="false"
-                :scroll="{ x: 760 }"
-                :row-selection="customerRowSelection"
-                bordered
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.dataIndex === 'totalAmount'">{{ money(record.totalAmount) }}</template>
-                <template v-else-if="column.dataIndex === 'printStatus'">
-                  <a-tag :color="printStatuses[record.printStatus as PrintStatus].color">{{
-                      printStatuses[record.printStatus as PrintStatus].label
-                    }}
-                  </a-tag>
-                </template>
-              </template>
-            </a-table>
           </a-tab-pane>
           <a-tab-pane key="fulfillment" tab="履约">
             <a-alert
@@ -452,6 +378,7 @@ import RouteFormDrawer from './components/route-form-drawer.vue';
 import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePlanningSuggestionPanel from './components/route-planning-suggestion-panel.vue';
 import RouteMapPanel from './components/route-map-panel.vue';
+import RoutePrintPanel from './components/route-print-panel.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
@@ -459,7 +386,6 @@ import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import {
   deliveryError,
   fulfillmentStatuses,
-  printStatuses,
   routeStatuses,
   SIGNABLE_FULFILLMENT,
   signResults,
@@ -467,7 +393,6 @@ import {
   type DeliveryStop,
   type FulfillmentStatus,
   type Id,
-  type PrintStatus,
   type RouteCustomerView,
   type RouteDetail,
   type RouteOrder,
@@ -648,33 +573,6 @@ const printTargetCount = computed(() =>
         ? orderSelection.value.length
         : customerSelection.value.length || customersShown.value.length
 );
-const orderRowSelection = computed(() => ({
-  selectedRowKeys: orderSelection.value,
-  onChange: (keys: (string | number)[]) => (orderSelection.value = keys),
-}));
-const customerRowSelection = computed(() => ({
-  selectedRowKeys: customerSelection.value,
-  onChange: (keys: (string | number)[]) => (customerSelection.value = keys),
-}));
-const orderViewColumns = computed<TableColumnsType>(() => [
-  {title: '订单号', dataIndex: 'orderNo', width: 170},
-  {title: '客户', dataIndex: 'customerName', width: 160},
-  {title: '停靠序', dataIndex: 'stopSeq', width: 80, align: 'right' as const},
-  {title: '商品行', dataIndex: 'itemCount', width: 80, align: 'right' as const},
-  ...(canViewAmount.value ? [{title: '订单金额', dataIndex: 'orderAmount', width: 120, align: 'right' as const}] : []),
-  {title: '打印次数', dataIndex: 'printCount', width: 90, align: 'right' as const},
-  {title: '打印状态', dataIndex: 'printStatus', width: 100, align: 'center' as const},
-  {title: '最近打印', dataIndex: 'lastPrintedAt', width: 170},
-]);
-const customerViewColumns = computed<TableColumnsType>(() => [
-  {title: '客户', dataIndex: 'customerName', width: 200},
-  {title: '订单数', dataIndex: 'orderCount', width: 90, align: 'right' as const},
-  {title: '商品行', dataIndex: 'itemCount', width: 90, align: 'right' as const},
-  ...(canViewAmount.value ? [{title: '金额', dataIndex: 'totalAmount', width: 130, align: 'right' as const}] : []),
-  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 110, align: 'right' as const},
-  {title: '打印状态', dataIndex: 'printStatus', width: 110, align: 'center' as const},
-]);
-
 /** 出库单只在发车之后存在；DRAFT / PLANNED 显示它只会让人以为漏了什么没填。 */
 const showOutbound = computed(() => ['DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? ''));
 

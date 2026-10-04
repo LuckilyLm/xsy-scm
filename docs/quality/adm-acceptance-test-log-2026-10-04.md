@@ -2239,3 +2239,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 22. 配送路线地图面板拆分（2026-10-05）
 
 从 `route-detail.vue` 抽出路线地图、起点/停靠列表、定位提示、拖拽与上下移操作为 `RouteMapPanel`；父页继续持有数据范围、坐标投影、排序与定位 API。`scm-delivery.spec.ts` 全套 **8/8** 通过，包含未定位提示、坐标补录及规划前置校验。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。
+
+## 23. 配送打印面板拆分（2026-10-05）
+
+从 `route-detail.vue` 抽出按订单/按客户双视角、筛选、勾选和打印状态表格为 `RoutePrintPanel`；父页继续持有打印数据加载、状态重置和计次 API。`scm-delivery-print.spec.ts` **6/6** 通过，覆盖权限拒绝、两种打印范围、筛选与不改变发货/库存状态。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。
