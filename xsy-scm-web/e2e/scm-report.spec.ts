@@ -356,7 +356,7 @@ test('7 收发存数量版按单位分组，且不伪造历史期初期末', asy
     expect(typeof row.unit).toBe('string');
 });
 
-test('8 损耗分析只计盘亏与报损，盈与报溢不进成本', async () => {
+test('8 损耗分析只计盘亏与报损，盈与报溢不进成本', async ({page}) => {
     const summary = await report('inventory/loss/summary');
     const rows = (await report('inventory/loss/query')).list;
     for (const row of rows) {
@@ -364,6 +364,11 @@ test('8 损耗分析只计盘亏与报损，盈与报溢不进成本', async () 
     }
     expect(Number(summary.stocktakeLossCostAmount) + Number(summary.lossReportCostAmount))
         .toBeCloseTo(Number(summary.totalLossCostAmount), 4);
+
+    await browse(page, '/report/report-inventory-list');
+    await page.getByRole('tab', {name: '损耗分析'}).click();
+    await expect(page.getByText('损耗类型金额占比', {exact: true})).toBeVisible();
+    await expect(page.locator('#scm-report-inventory-loss-table')).toBeVisible();
 });
 
 test('9 导出是当前筛选的真文件：接口层是合法 xlsx，页面上点导出能落盘', async ({page}) => {

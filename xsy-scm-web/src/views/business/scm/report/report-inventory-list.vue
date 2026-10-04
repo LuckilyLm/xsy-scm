@@ -149,92 +149,19 @@
 
     <!-- ==================== 损耗分析 ==================== -->
     <a-tab-pane key="loss" tab="损耗分析">
-      <a-row :gutter="[12, 12]">
-        <a-col v-for="card in lossCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
-          <ReportKpiCard :label="card.label" :value="card.value" :hint="card.hint" :warning="card.warning"/>
-        </a-col>
-      </a-row>
-      <a-row :gutter="[12, 12]" class="smart-margin-top10">
-        <a-col :xs="24" :lg="12">
-          <ReportPieChart
-              title="损耗类型金额占比"
-              :slices="lossPieSlices"
-              extra="只统计盘亏与手工报损；盘盈与报溢是增益，不进损耗成本"
-          />
-        </a-col>
-        <a-col :xs="24" :lg="12">
-          <ReportLineChart
-              title="损耗金额按日趋势"
-              :x-axis="lossTrendAxis"
-              :series="lossTrendSeries"
-              empty-text="暂无按日损耗趋势（需后端提供按日聚合，前端不自行累加分页明细）"
-          />
-        </a-col>
-      </a-row>
-      <a-card size="small" :bordered="false" class="smart-margin-top10">
-        <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportLoss">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              R0 只承认盘亏与手工报损两类可证明的损耗事实，不伪造「采购损耗 / 退货损耗」。
-            </a-typography-text>
-          </div>
-          <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="lossColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_LOSS"
-                :refresh="loadLoss"
-            />
-          </div>
-        </a-row>
-        <a-alert v-if="loss.error" :message="loss.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadLoss">重试</a-button>
-          </template>
-        </a-alert>
-        <a-table
-            :id="SCM_REPORT_TABLE_ID.INVENTORY_LOSS"
-            size="small"
-            :data-source="loss.rows"
-            :columns="visibleLossColumns"
-            row-key="movementId"
-            bordered
-            :loading="loss.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无损耗明细'}"
-            :scroll="{x: 1800}"
-        >
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'movementType'">
-              {{ enumDescText(record.movementType, SCM_REPORT_LOSS_TYPE_ENUM) }}
-            </template>
-            <template v-else-if="column.dataIndex === 'quantity'">
-              <span class="num">{{ quantityText(record.quantity) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'unitCost'">
-              <span class="num">{{ costText(record.unitCost, canViewCost) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'costAmount'">
-              <span class="num">{{ costText(record.costAmount, canViewCost) }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'occurredAt'">
-              {{ datetime(record.occurredAt) }}
-            </template>
-            <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-          </template>
-        </a-table>
-        <div class="smart-query-table-page">
-          <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="loss.pageNum"
-              v-model:page-size="loss.pageSize"
-              :total="loss.total"
-              @change="loadLoss"
-              :show-total="(n: number) => `共${n}条`"
-          />
-        </div>
-      </a-card>
+      <InventoryLossAnalysisTab
+          :summary="lossSummary"
+          :rows="loss.rows"
+          :loading="loss.loading"
+          :error="loss.error"
+          :can-view-cost="canViewCost"
+          :page-num="loss.pageNum"
+          :page-size="loss.pageSize"
+          :total="loss.total"
+          @export="exportLoss"
+          @reload="loadLoss"
+          @page-change="loadLossPage"
+      />
     </a-tab-pane>
 
     <!-- ==================== 当前库存价值（成本权限可见） ==================== -->
@@ -383,11 +310,10 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
-import ReportPieChart from './report-components/report-pie-chart.vue';
-import ReportLineChart from './report-components/report-line-chart.vue';
+import InventoryLossAnalysisTab from './report-components/inventory-loss-analysis-tab.vue';
 import {reportInventoryApi} from '/@/api/business/scm/report-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {SCM_REPORT_LOSS_TYPE_ENUM, SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
+import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {
     SCM_INVENTORY_MOVEMENT_INBOUND_TYPES,
     SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
@@ -400,12 +326,9 @@ import type {
     InventoryMovementRow,
     InventoryReportQuery,
     InventoryValueRow,
-    ReportChartLine,
-    ReportChartSlice,
 } from './report-types';
 import {
     buildReportQuery,
-    chartValue,
     costText,
     countText,
     createTabView,
@@ -414,7 +337,6 @@ import {
     enumDescText,
     enterTab,
     filterCostColumns,
-    incompleteCostHint,
     movementDirection,
     rangeFromQuery,
     rangeOverLimitError,
@@ -468,20 +390,6 @@ const movementColumns = ref<TableColumnsType<InventoryMovementRow>>([
     {title: '操作人', dataIndex: 'operator', width: 120},
 ]);
 
-const lossColumns = ref<TableColumnsType<InventoryLossRow>>([
-    {title: '商品', dataIndex: 'productName', width: 180},
-    {title: 'SKU', dataIndex: 'skuCode', width: 170},
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '损耗类型', dataIndex: 'movementType', width: 110},
-    {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
-    {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 90},
-    {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 130},
-    {title: '损耗成本金额', dataIndex: 'costAmount', align: 'right', width: 150},
-    {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 190},
-    {title: '发生时间', dataIndex: 'occurredAt', width: 190},
-    {title: '操作人', dataIndex: 'operator', width: 120},
-]);
-
 const valueColumns = ref<TableColumnsType<InventoryValueRow>>([
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '商品', dataIndex: 'productName', width: 180},
@@ -528,83 +436,10 @@ const flowColumns = ref<TableColumnsType<InventoryFlowSummaryRow>>([
 ]);
 
 const visibleMovementColumns = computed(() => filterCostColumns(movementColumns.value, COST_INDEXES, canViewCost.value));
-const visibleLossColumns = computed(() => filterCostColumns(lossColumns.value, COST_INDEXES, canViewCost.value));
 
 function directionOf(movementType: string | null | undefined): 'IN' | 'OUT' | null {
     return movementDirection(movementType, SCM_INVENTORY_MOVEMENT_INBOUND_TYPES);
 }
-
-const lossCards = computed(() => {
-    const data = lossSummary.value ?? {};
-    const cards: Array<{label: string; value: string; hint?: string; warning?: string; cost?: boolean}> = [
-        {
-            label: '盘亏数量（按单位）',
-            value: data.stocktakeLossQuantityText || '—',
-            hint: 'STOCKTAKE_LOSS 流水的数量，按记账单位分组，不做跨单位相加',
-        },
-        {
-            label: '盘亏成本金额',
-            value: costText(data.stocktakeLossCostAmount, canViewCost.value),
-            hint: 'SUM(quantity × unit_cost)',
-            cost: true,
-        },
-        {
-            label: '报损数量（按单位）',
-            value: data.lossReportQuantityText || '—',
-            hint: 'LOSS_REPORT 流水的数量，按记账单位分组',
-        },
-        {
-            label: '报损成本金额',
-            value: costText(data.lossReportCostAmount, canViewCost.value),
-            hint: 'SUM(quantity × unit_cost)',
-            cost: true,
-        },
-        {
-            label: '损耗总成本金额',
-            value: costText(data.totalLossCostAmount, canViewCost.value),
-            hint: '盘亏 + 报损的合计，由后端聚合；不含盘盈与报溢',
-            warning: incompleteCostHint(data.missingCostCount, '损耗成本金额'),
-            cost: true,
-        },
-    ];
-    return cards.filter((card) => !card.cost || canViewCost.value);
-});
-
-/** 占比图直接吃两个 KPI 金额：角度由图表库按值分配，前端不做任何金额运算。 */
-const lossPieSlices = computed<ReportChartSlice[]>(() => {
-    const data = lossSummary.value ?? {};
-    if (!canViewCost.value) {
-        return [];
-    }
-    return [
-        {
-            name: '盘亏',
-            value: chartValue(data.stocktakeLossCostAmount),
-            text: moneyText(data.stocktakeLossCostAmount),
-        },
-        {
-            name: '报损',
-            value: chartValue(data.lossReportCostAmount),
-            text: moneyText(data.lossReportCostAmount),
-        },
-    ];
-});
-
-const lossTrendPoints = computed(() => lossSummary.value?.dailyTrend ?? []);
-const lossTrendAxis = computed(() => lossTrendPoints.value.map((point) => point.bizDate ?? ''));
-const lossTrendSeries = computed<ReportChartLine[]>(() => {
-    const points = lossTrendPoints.value;
-    if (!canViewCost.value) {
-        return [];
-    }
-    return [
-        {
-            name: '损耗金额',
-            data: points.map((point) => chartValue(point.totalLossCostAmount)),
-            texts: points.map((point) => moneyText(point.totalLossCostAmount)),
-        },
-    ];
-});
 
 /** 价值 KPI：后端没给聚合就不显示，绝不把当页金额相加冒充总额。 */
 const hasValueSummary = computed(() => Object.values(valueSummary.value).some((item) => item !== undefined && item !== null));
@@ -633,6 +468,12 @@ function exportQuery(): Partial<InventoryReportQuery> {
 const loadMovement = createTabLoader(movement, () => inventoryQuery(movement), reportInventoryApi.movementQuery);
 const loadLoss = createTabLoader(loss, () => inventoryQuery(loss), reportInventoryApi.lossQuery);
 const loadFlow = createTabLoader(flow, () => inventoryQuery(flow), reportInventoryApi.flowSummaryQuery);
+
+function loadLossPage(pageNum: number, pageSize: number) {
+    loss.pageNum = pageNum;
+    loss.pageSize = pageSize;
+    void loadLoss();
+}
 
 const loadLossSummary = createGuardedLoader(
     () => reportInventoryApi.lossSummary(buildReportQuery<InventoryReportQuery>(dateRange.value, {...filters})),

@@ -2199,3 +2199,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 12. 采购价格波动面板拆分与分页参数修复（2026-10-05）
 
 从 `report-purchase-list.vue` 抽出价格波动图表与明细表到 `purchase-price-trend-tab.vue`，父页继续统一维护日期、SKU、供应商筛选和请求生命周期。定向测试首次打开该面板时发现价格趋势查询遗漏 `pageNum/pageSize`，服务端按 `PurchaseQuery` 返回 30001；加载器改为复用同页构造好的 `purchaseQuery(trend)`。`scm-report.spec.ts` **13/13** 通过，含新价格趋势面板行数据断言；定向 ESLint、E2E 类型检查、TS 棘轮与生产构建通过。
+
+## 13. 库存损耗分析面板拆分（2026-10-05）
+
+从 `report-inventory-list.vue` 抽出 `InventoryLossAnalysisTab`，将 KPI、成本权限控制、金额占比与按日趋势图、明细列配置和分页展示移入子组件；日期筛选、查询状态、导出和加载生命周期仍由父页管理。新增浏览器断言切换到“损耗分析”并检查图表标题和明细表。Docker Desktop 隔离库 `xsy_scm_e2e_postfix_20261005` 上定向用例 **1/1**；全量 ESLint、E2E 类型检查、TS 棘轮、生产构建通过。TS 棘轮为基线 1,858 项、SCM 错误 0、新错误 0；全量 `vue-tsc` 仍受既有 SmartAdmin/`oa` 类型错误影响。临时后端与 Vite 服务在验收后停止。
