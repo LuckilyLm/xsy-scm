@@ -60,32 +60,32 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH;
 
 /**
- * 将已确认的采购收货行记入库存，必须参与调用方事务，失败时随收货确认一起回滚。
+ * 统一协调 SCM 的库存余额与流水写入，必须参与调用方事务，失败时随业务命令整体回滚。
  *
  * <p>
- * 调用方须先持有采购/收货锁，再按 {@code (warehouseId, skuId)} 升序写入库存， 避免多行收货以相反顺序获取余额锁。
+ * 调用方须先持有自己的单据锁，再按 {@code (warehouseId, skuId)} 升序写余额，避免多行命令以相反顺序获取余额锁。
  *
  * <p>
- * <b>本类是全仓唯一会改变 {@code inventory_balance.quantity} 的地方</b>， 八条写入路径都遵守同一套纪律：
+ * <b>本类是全仓唯一会改变 {@code inventory_balance.quantity} 的地方。</b> 十条写入路径都先锁余额行，再计算流水的 before/after：
  * <ul>
- * <li>{@link #postPurchaseInbound} —— 采购入库（方向 = 入，可建零余额行）；</li>
- * <li>{@link #postSalesOutbound} —— 销售出库（方向 = 出，不建行，先判可用量）；</li>
- * <li>{@link #postStocktakeAdjust} —— 盘点调整（方向由差异正负决定，不建行）；</li>
- * <li>{@link #postLossGainAdjust} —— 报损报溢（方向由单据类型决定，不建行）；</li>
- * <li>{@link #postTransferOut} —— 调拨转出（方向 = 出，不建行，先判可用量）；</li>
- * <li>{@link #postTransferIn} —— 调拨转入（方向 = 入，**可建零余额行**）；</li>
- * <li>{@link #postConvertOut} —— 规格转换转出（方向 = 出，不建行，先判可用量）；</li>
- * <li>{@link #postConvertIn} —— 规格转换转入（方向 = 入，**可建零余额行**）。</li>
+ * <li>{@link #postPurchaseInbound} —— 采购入库；</li>
+ * <li>{@link #postSalesOutbound} —— 销售出库；</li>
+ * <li>{@link #postPromotionGiftOutbound} —— 促销赠品出库；</li>
+ * <li>{@link #postSalesReturnInbound} —— 销售退货回库；</li>
+ * <li>{@link #postStocktakeAdjust} —— 盘点调整；</li>
+ * <li>{@link #postLossGainAdjust} —— 报损报溢；</li>
+ * <li>{@link #postTransferOut} / {@link #postTransferIn} —— 调拨转出与转入；</li>
+ * <li>{@link #postConvertOut} / {@link #postConvertIn} —— 规格转换转出与转入。</li>
  * </ul>
- * 八者都：不自行开启事务、先锁余额行再算 before/after、只用**增量**方法改余额 （{@code incrementQuantity} / {@code decrementQuantity}），从不做「读-改-写」赋值。
+ * 十条路径都不自行开启事务，只通过数据库增量语句 {@code incrementQuantity} / {@code decrementQuantity} 改数量，不做读-改-写赋值。
  *
  * <p>
- * <b>均价只由三条入方向腿按加权公式更新</b>：采购入库、调拨转入、规格转换转入 （{@link #inboundAvgCost}）。三者的成本来源分别是采购单价、{@link #transferInCost} 回读的
- * 发出腿事实，以及调用方在写腿之前解好的成本基准（{@link #lockCostBasis} 的期初快照 + 链式求解）。出方向与其它入库都不改均价，只把当时的均价写进流水。
+ * 加权均价在四条有明确单位成本的入库路径上更新：采购入库、销售退货回库、调拨转入和规格转换转入。
+ *
+ * 盘点与报损报溢调整不改变均价；出库保留当时均价到流水，不修改余额均价。
  *
  * <p>
- * <b>「入方向才允许建零余额行」是一条不变量</b>：三条入方向腿可以建行（它们带单位事实）， 五条出方向腿（销售出库 / 盘点 / 报损报溢 / 调拨转出 / 转换转出）都不建
- * （无余额行意味着「从未入库」，对「出」方向就是无货可动）。
+ * 只有四条入库路径可以并发首建零余额行；其余六条都要求余额已存在，正向盘点或报溢不能代替入库建行。
  */
 @Service
 @RequiredArgsConstructor
@@ -340,8 +340,9 @@ public class InventoryCommandService {
      * <p>
      * 与 {@link #postSalesOutbound} 同一套纪律：必须在调用方事务内、按 {@code (warehouse_id, sku_id)} 锁余额、
      * 可用量不足即失败、成本取当时的移动加权均价、数量恒为正（方向编码在类型里）。
-     * 差别只在两处：赠品不挂订单行（{@code source_document_item_id} 是赠品权益 id，不是出库单行 id），
-     * 以及流水类型是 {@code PROMOTION_GIFT_OUT}，让毛利报表能把赠品成本单独拆出来。
+     *
+     * <p>
+     * 赠品不挂订单行，流水行来源使用权益 id；{@code PROMOTION_GIFT_OUT} 让毛利报表单独统计其成本。
      *
      * <p>
      * 防重由 {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)}
