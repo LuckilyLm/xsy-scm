@@ -25,6 +25,8 @@
           </a-descriptions>
           <a-alert v-if="header.overAppliedAmount && header.overAppliedAmount !== '0.0000'"
                    class="over-applied" type="warning" show-icon :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"/>
+          <a-tag v-if="isReceivable && header.overAppliedAmount && header.overAppliedAmount !== '0.0000'"
+                 color="orange">超额核销待处理</a-tag>
           <a-alert v-if="header.netAmount?.startsWith('-')" class="over-applied" type="error" show-icon
                    message="净应收为负数，请结合红字和核销记录核对。"/>
         </section>

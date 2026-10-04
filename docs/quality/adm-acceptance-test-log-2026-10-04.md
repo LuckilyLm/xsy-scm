@@ -2150,3 +2150,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7u. 后续修复：采购缺口预览明确标记只读
 
 按 J-15 选择 A，在冻结批次缺口预览卡片增加“只读预览”标记，不改查询或需求生成行为。Docker-backed Playwright 定向用例 `10 stock shortage preview is read-only and server-computed` **1/1** 通过。
+
+## 7v. 后续修复：应收明细重复呈现超额待处理状态
+
+按 J-16 选择 A，在应收详情抽屉增加与列表同名的“超额核销待处理”状态标签，保留净应收与“不代表已退款或钱包余额”的说明。`scm-finance-receivable-red` Docker-backed Playwright 用例 **1/1** 通过。
