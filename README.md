@@ -68,7 +68,7 @@ npm run build
 
 ## Docker 第一版部署
 
-需要 Docker Engine / Docker Desktop（Linux 容器）与 Docker Compose v2 或以上。首次构建需要访问 Maven、npm、Docker Hub 和 quay.io。根 Compose 一次启动 Vue3/Nginx、Java 21 后端、PostgreSQL 18、Redis、MinIO，并运行桶策略初始化。Linux 服务器直接拉取固定 MinIO 镜像，不需要本机已有镜像或 Go 编译工具链。
+需要 Docker Engine / Docker Desktop（Linux 容器）与 Docker Compose v2 或以上。首次构建需要访问 Maven、npm、Docker Hub 和 quay.io。根 Compose 一次启动 Vue3/Nginx、Java 21 后端、PostgreSQL 18、Redis、MinIO，并运行桶策略初始化。此 Compose 配置用于受限测试与试用，不构成生产对象存储基线。
 
 ```bash
 git clone https://github.com/LuckilyLm/xsy-scm.git
@@ -83,7 +83,11 @@ docker compose ps -a
 
 把 `.env` 中所有 `CHANGE_ME` 换成独立密码。`.env` 已忽略，`docker compose config` 会展开密码，只在本机检查，不要分享其输出。Windows 可用 `Copy-Item .env.example .env`。
 
-`MINIO_PUBLIC_ENDPOINT` 必须改为**浏览器和 backend 容器都能访问**的服务器地址，例如 `http://192.168.1.100:9000`，不要带末尾斜线。不能使用 `minio:9000`、`localhost` 或 `127.0.0.1`。S3 Client 与 Presigner 使用同一个 endpoint；公开图片前缀自动生成 `{MINIO_PUBLIC_ENDPOINT}/{MINIO_BUCKET}/`，私有文件的签名也使用这个地址。若改了 `MINIO_PORT`，同时改 endpoint 中的端口；域名或 HTTPS 入口需自行保证解析、证书和容器回连可用。
+`MINIO_IMAGE` 必须在启动前替换为经过安全审查的固定镜像；示例占位值不能拉取。Compose 不再提供有已知漏洞记录的历史 MinIO 镜像默认值。
+
+`MINIO_PUBLIC_ENDPOINT` 必须改为**浏览器和 backend 容器都能访问**的地址，例如 `https://files.example.com`，不要带末尾斜线。不能使用 `minio:9000`、`localhost` 或 `127.0.0.1`。S3 Client 与 Presigner 使用同一个 endpoint；公开图片前缀自动生成 `{MINIO_PUBLIC_ENDPOINT}/{MINIO_BUCKET}/`，私有文件的签名也使用这个地址。若改了 `MINIO_PORT`，同时改 endpoint 中的端口；域名或 HTTPS 入口需自行保证解析、证书和容器回连可用。
+
+MinIO API 默认只绑定宿主机回环地址 `127.0.0.1`，Console 也只绑定回环地址。若使用直连地址供浏览器访问，将 `MINIO_BIND_ADDRESS` 设为服务器的指定内网网卡地址，并用网络 ACL 限制来源；生产入口应优先使用带 HTTPS 与访问控制的反向代理或托管对象存储。不要默认绑定 `0.0.0.0`。
 
 | 服务 | 默认宿主机地址 | `.env` 配置 |
 | --- | --- | --- |
@@ -91,12 +95,12 @@ docker compose ps -a
 | 后端 | `127.0.0.1:1024` | `SERVER_BIND_ADDRESS` / `SERVER_PORT` |
 | PostgreSQL | `127.0.0.1:15432` | `POSTGRES_BIND_ADDRESS` / `POSTGRES_PORT` |
 | Redis | `127.0.0.1:6379` | `REDIS_BIND_ADDRESS` / `REDIS_PORT` |
-| MinIO API / 文件 | `0.0.0.0:9000` | `MINIO_BIND_ADDRESS` / `MINIO_PORT` |
+| MinIO API / 文件 | `127.0.0.1:9000` | `MINIO_BIND_ADDRESS` / `MINIO_PORT` |
 | MinIO Console | `127.0.0.1:9001` | `MINIO_CONSOLE_BIND_ADDRESS` / `MINIO_CONSOLE_PORT` |
 
-浏览器访问 `http://服务器IP:7515`（端口随 `WEB_PORT` 修改）。前端 API 固定走同源 `/api`，由 Nginx 转发到 `backend:1024`。上传入口限制为 25 MB，后端单文件限制为 20 MB。数据库和 Redis 默认仅绑定本机；Console 可通过 SSH 隧道访问。
+浏览器访问 `http://服务器IP:7515`（端口随 `WEB_PORT` 修改）。前端 API 固定走同源 `/api`，由 Nginx 转发到 `backend:1024`。上传入口限制为 25 MB，后端单文件限制为 20 MB。数据库、Redis、MinIO API 和 Console 默认仅绑定本机；Console 可通过 SSH 隧道访问。
 
-MinIO 使用可直接拉取的 `quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z`，可通过 `MINIO_IMAGE` 指定其他经验证的固定镜像。这个历史官方版本未包含 [CVE-2025-62506 修复](https://github.com/minio/minio/security/advisories/GHSA-jjjj-jwhf-8rgr)，仅用于受限测试环境；不作为生产安全基线。生产应换成包含补丁的可信镜像或托管 S3，不能将隐藏 Console 当作漏洞修复。
+Compose 要求显式设置 `MINIO_IMAGE`，不再内置历史 MinIO 镜像。使用 MinIO 前应核实所选固定版本已修复适用的安全问题；生产应使用经过审核的可信镜像或托管 S3，并通过网络 ACL 与 HTTPS 入口限制访问。隐藏 Console 不能替代服务端安全更新。
 
 桶策略脚本 `deploy/minio/bootstrap.sh` 纳入仓库。bootstrap 每次运行覆盖匿名策略，只允许 `public/*` 的 `s3:GetObject`；不开放整个桶、列桶或 `private/*`。`minio-bootstrap` 正常状态为 `Exited (0)`，其余五个服务应为 `healthy`。后端健康检查复用匿名只读登录配置接口并检查业务成功码。
 

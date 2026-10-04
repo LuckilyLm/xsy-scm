@@ -115,15 +115,15 @@ services:
       - no-new-privileges:true
 
   minio:
-    # 固定可直接拉取的官方镜像；该历史版本的使用限制见 README。
-    image: ${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z}
+    # 受限测试环境必须显式选择固定镜像；生产环境应使用经安全评审的对象存储方案。
+    image: ${MINIO_IMAGE:?Set MINIO_IMAGE to a reviewed fixed image; see README}
     command: server /data --console-address ":9001"
     restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     ports:
-      - "${MINIO_BIND_ADDRESS:-0.0.0.0}:${MINIO_PORT:-9000}:9000"
+      - "${MINIO_BIND_ADDRESS:-127.0.0.1}:${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_BIND_ADDRESS:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - xsy-scm-minio:/data
@@ -135,6 +135,8 @@ services:
       start_period: 20s
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
   minio-bootstrap:
     image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
