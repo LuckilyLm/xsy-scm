@@ -30,19 +30,21 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 @RequestMapping("/scm/report/finance/profit")
 @RequiredArgsConstructor
 public class ScmFinanceProfitController {
-    private static final List<String> TITLES = List.of("分析维度", "维度名称", "编码", "日期", "销售收入", "商品销售成本",
-            "促销赠品成本", "销售毛利", "毛利率（%）", "缺失成本流水数");
+    private static final List<String> TITLES = List.of("分析维度", "维度名称", "编码", "日期", "销售收入", "商品销售成本", "促销赠品成本", "销售毛利",
+            "毛利率（%）", "缺失成本流水数");
 
     private final ScmFinanceProfitService financeProfitService;
 
     @PostMapping("/query")
-    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY,
+            ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
     public ResponseDTO<PageResult<ScmFinanceProfitRowVO>> query(@Valid @RequestBody ScmFinanceProfitQueryForm form) {
         return ResponseDTO.ok(financeProfitService.query(form));
     }
 
     @PostMapping("/summary")
-    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY, ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
+    @SaCheckPermission(value = {ScmReportPermission.FINANCE_PROFIT_QUERY,
+            ScmReportPermission.COST_QUERY}, mode = SaMode.AND)
     public ResponseDTO<ScmFinanceProfitSummaryVO> summary(@Valid @RequestBody ScmFinanceProfitQueryForm form) {
         return ResponseDTO.ok(financeProfitService.summary(form));
     }

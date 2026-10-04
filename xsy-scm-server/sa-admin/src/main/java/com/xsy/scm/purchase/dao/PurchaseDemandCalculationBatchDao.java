@@ -14,6 +14,7 @@ public interface PurchaseDemandCalculationBatchDao extends BaseMapper<PurchaseDe
     PurchaseDemandCalculationBatchDetailVO selectHeader(@Param("batchId") Long batchId);
 
     int markGenerated(@Param("batchId") Long batchId, @Param("generatedCount") Integer generatedCount,
-            @Param("skippedCount") Integer skippedCount, @Param("resultSnapshot") java.util.Map<String, Object> resultSnapshot,
+            @Param("skippedCount") Integer skippedCount,
+            @Param("resultSnapshot") java.util.Map<String, Object> resultSnapshot,
             @Param("generatedAt") java.time.OffsetDateTime generatedAt, @Param("operator") String operator);
 }

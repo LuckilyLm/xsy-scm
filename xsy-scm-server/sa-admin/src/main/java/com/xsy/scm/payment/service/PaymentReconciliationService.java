@@ -33,17 +33,15 @@ import org.springframework.transaction.annotation.Transactional;
  * 对账服务：把「渠道账」与「本地账」比一遍，把差异**冻成事实**。
  *
  * <p>
- * <b>首版只发现差异，绝不自动修复。</b> 自动改交易状态会把审计链搞复杂：
- * 之后没人说得清「这条记录是渠道说的，还是对账程序改的」。
- * 差异落 {@code payment_reconciliation_item}，后台展示，人工处理。
+ * <b>首版只发现差异，绝不自动修复。</b> 自动改交易状态会把审计链搞复杂： 之后没人说得清「这条记录是渠道说的，还是对账程序改的」。 差异落
+ * {@code payment_reconciliation_item}，后台展示，人工处理。
  *
  * <p>
  * 分类：
  * <ul>
  * <li>{@code LOCAL_MISSING}：渠道收到了钱，本地没有对应交易 —— 最危险的一类；</li>
  * <li>{@code PROVIDER_MISSING}：本地记了成功，渠道账上没有；</li>
- * <li>{@code AMOUNT_MISMATCH}：两边都有、金额不一致（{@code amount} 与 {@code provider_amount}
- * 分开存的价值就在这里）；</li>
+ * <li>{@code AMOUNT_MISMATCH}：两边都有、金额不一致（{@code amount} 与 {@code provider_amount} 分开存的价值就在这里）；</li>
  * <li>{@code STATUS_MISMATCH}：本地不是成功态，渠道账上却有这笔。</li>
  * </ul>
  *
@@ -76,8 +74,7 @@ public class PaymentReconciliationService {
      * 执行一次对账。
      *
      * <p>
-     * 同一渠道同一业务日**只出一次结论**：允许重复生成会得到两份互相矛盾的结论，
-     * 而后台没法判断该信哪一份。
+     * 同一渠道同一业务日**只出一次结论**：允许重复生成会得到两份互相矛盾的结论， 而后台没法判断该信哪一份。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentReconciliationEntity run(String providerCode, LocalDate bizDate) {
@@ -110,13 +107,15 @@ public class PaymentReconciliationService {
             }
             if (!ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(local.getStatus())) {
                 items.add(item(ScmPaymentReconciliationCategoryEnum.STATUS_MISMATCH, line.providerTransactionNo(),
-                        local.getId(), receivedOf(local), line.amount(), local.getStatus(), ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
+                        local.getId(), receivedOf(local), line.amount(), local.getStatus(),
+                        ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
                 continue;
             }
             BigDecimal localAmount = receivedOf(local);
             if (localAmount.compareTo(line.amount().setScale(SCALE, RoundingMode.HALF_UP)) != 0) {
                 items.add(item(ScmPaymentReconciliationCategoryEnum.AMOUNT_MISMATCH, line.providerTransactionNo(),
-                        local.getId(), localAmount, line.amount(), local.getStatus(), ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
+                        local.getId(), localAmount, line.amount(), local.getStatus(),
+                        ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
             }
         }
 
@@ -137,7 +136,8 @@ public class PaymentReconciliationService {
         reconciliation.setReconciliationNo(paymentNumberGenerator.nextReconciliationNo());
         reconciliation.setProvider(providerCode);
         reconciliation.setBizDate(bizDate);
-        reconciliation.setStatus(items.isEmpty() ? ScmPaymentReconciliationStatusEnum.MATCHED.name()
+        reconciliation.setStatus(items.isEmpty()
+                ? ScmPaymentReconciliationStatusEnum.MATCHED.name()
                 : ScmPaymentReconciliationStatusEnum.MISMATCHED.name());
         reconciliation.setProviderTotal(providerTotal);
         reconciliation.setLocalTotal(localTotal);
@@ -179,7 +179,8 @@ public class PaymentReconciliationService {
 
     /** 本地实际收到的金额：优先渠道回报，没回报才退回本地应付。 */
     private static BigDecimal receivedOf(PaymentTransactionEntity transaction) {
-        BigDecimal value = transaction.getProviderAmount() == null ? transaction.getAmount()
+        BigDecimal value = transaction.getProviderAmount() == null
+                ? transaction.getAmount()
                 : transaction.getProviderAmount();
         return value.setScale(SCALE, RoundingMode.HALF_UP);
     }

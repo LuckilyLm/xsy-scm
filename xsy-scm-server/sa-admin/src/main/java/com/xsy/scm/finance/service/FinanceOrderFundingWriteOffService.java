@@ -45,7 +45,8 @@ public class FinanceOrderFundingWriteOffService {
         var funding = financeOrderFundingSourceDao.selectTransaction(transactionId);
         financeOrderFundingPolicy.requireSuccessful(funding);
         boolean balance = ScmPaymentMethodEnum.BALANCE.name().equals(funding.getMethod());
-        String sourceType = (balance ? ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT
+        String sourceType = (balance
+                ? ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT
                 : ScmFinanceWriteOffSourceTypeEnum.RECEIPT).name();
         Long sourceId = balance ? funding.getMovementId() : funding.getReceiptId();
         BigDecimal effective;
@@ -94,11 +95,11 @@ public class FinanceOrderFundingWriteOffService {
             throw invalid();
         }
         // 订单专属资金完整关联原债权，RED 或少发导致的超额只在读侧表达。
-        BigDecimal before = financeWriteOffDao.selectTargetWrittenOffAmount(
-                ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name(), receivableId);
+        BigDecimal before = financeWriteOffDao
+                .selectTargetWrittenOffAmount(ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name(), receivableId);
         FinanceWriteOffEntity entity = new FinanceWriteOffEntity();
-        entity.setWriteOffNo(ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX,
-                financeWriteOffDao.nextWriteOffNo()));
+        entity.setWriteOffNo(
+                ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
         entity.setSourceType(sourceType);
         entity.setSourceId(sourceId);
         entity.setTargetType(ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name());
@@ -113,7 +114,8 @@ public class FinanceOrderFundingWriteOffService {
         entity.setUpdatedAt(now);
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
-        int inserted = balance ? financeWriteOffDao.insertBalanceOnConflictDoNothing(entity)
+        int inserted = balance
+                ? financeWriteOffDao.insertBalanceOnConflictDoNothing(entity)
                 : financeWriteOffDao.insert(entity);
         if (inserted == 0) {
             existing = financeWriteOffDao.selectNormalAllocation(sourceType, sourceId, null);
@@ -122,12 +124,13 @@ public class FinanceOrderFundingWriteOffService {
                     || existing.getAmount().compareTo(available) != 0) {
                 throw invalid();
             }
-            return result(transactionId, financeWriteOffDao.hasReversal(existing.getId())
-                    ? Status.REVERSED : Status.ALREADY_ALLOCATED, BigDecimal.ZERO);
+            return result(transactionId,
+                    financeWriteOffDao.hasReversal(existing.getId()) ? Status.REVERSED : Status.ALREADY_ALLOCATED,
+                    BigDecimal.ZERO);
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.WRITE_OFF, entity.getId(),
-                ScmFinanceOperationTypeEnum.WRITE_OFF, null,
-                balanceSnapshot(target, before), balanceSnapshot(target, before.add(available)), operator);
+                ScmFinanceOperationTypeEnum.WRITE_OFF, null, balanceSnapshot(target, before),
+                balanceSnapshot(target, before.add(available)), operator);
         return result(transactionId, available.compareTo(effective) < 0 ? Status.PARTIALLY_AVAILABLE : Status.APPLIED,
                 available);
     }
@@ -135,8 +138,8 @@ public class FinanceOrderFundingWriteOffService {
     private Map<String, Object> balanceSnapshot(FinanceReceivableEntity target, BigDecimal used) {
         BigDecimal net = target.getAmount().subtract(financeReceivableDao.selectRedAmount(target.getId()));
         return Map.of("targetId", target.getId(), "targetType", ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name(),
-                "targetNo", target.getReceivableNo(), "netAmount", net.toPlainString(),
-                "writtenOffAmount", used.toPlainString(), "openAmount", net.subtract(used).max(BigDecimal.ZERO).toPlainString(),
+                "targetNo", target.getReceivableNo(), "netAmount", net.toPlainString(), "writtenOffAmount",
+                used.toPlainString(), "openAmount", net.subtract(used).max(BigDecimal.ZERO).toPlainString(),
                 "overAppliedAmount", used.subtract(net).max(BigDecimal.ZERO).toPlainString());
     }
 

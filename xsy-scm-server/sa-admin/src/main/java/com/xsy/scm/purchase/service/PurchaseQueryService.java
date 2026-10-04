@@ -142,7 +142,8 @@ public class PurchaseQueryService {
             page.setOptimizeCountSql(false);
             List<PurchaseDemandSummaryVO> pageRows = purchaseDemandDao.summaryPreview(page, form, scope);
             if (page.getTotal() > maximumRows) {
-                throw new ScmBusinessException(com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_BATCH_TOO_LARGE);
+                throw new ScmBusinessException(
+                        com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_BATCH_TOO_LARGE);
             }
             rows.addAll(pageRows);
             if (rows.size() >= page.getTotal() || pageRows.isEmpty()) {

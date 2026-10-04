@@ -1,6 +1,5 @@
 package com.xsy.scm.report.service;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -58,9 +57,8 @@ public class ScmFinanceProfitService {
         if (denied(form, scope)) {
             return List.of();
         }
-        return ScmReportExportGuard.exportRows(
-                pageSize -> financeProfitDao.query(new Page<>(1, pageSize, false), range.startAt(), range.endAt(), form,
-                        scope));
+        return ScmReportExportGuard.exportRows(pageSize -> financeProfitDao.query(new Page<>(1, pageSize, false),
+                range.startAt(), range.endAt(), form, scope));
     }
 
     private ScmReportTimeRange validate(ScmFinanceProfitQueryForm form) {

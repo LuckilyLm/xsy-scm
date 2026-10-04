@@ -42,11 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 三者的关系是这个能力的核心：
  * <ul>
  * <li><b>预览</b>：读业务数据 + 模板现算，<b>不写任何表</b>（不计次、不留痕）；</li>
- * <li><b>正式打印</b>：先用同一段代码算出同一份版面，再把它连同模板版本冻结进
- * {@code scm_print_record}。冻结记录只追加、不可改（表上有触发器）；</li>
- * <li><b>重印</b>：只读冻结快照，<b>不回业务表重算</b> —— 否则「当初打出来的那张」会随着
- * 业务数据变化变成另一张。但金额权限要按**当前**调用者重新套一遍：快照冻结的是内容，
- * 不是授权。</li>
+ * <li><b>正式打印</b>：先用同一段代码算出同一份版面，再把它连同模板版本冻结进 {@code scm_print_record}。冻结记录只追加、不可改（表上有触发器）；</li>
+ * <li><b>重印</b>：只读冻结快照，<b>不回业务表重算</b> —— 否则「当初打出来的那张」会随着 业务数据变化变成另一张。但金额权限要按**当前**调用者重新套一遍：快照冻结的是内容， 不是授权。</li>
  * </ul>
  *
  * <p>
@@ -92,7 +89,8 @@ public class ScmPrintService {
     }
 
     private ScmPrintTemplateEntity template(ScmPrintDocumentTypeEnum type, Long templateId) {
-        ScmPrintTemplateEntity template = templateId == null ? scmPrintTemplateService.requireDefault(type.name())
+        ScmPrintTemplateEntity template = templateId == null
+                ? scmPrintTemplateService.requireDefault(type.name())
                 : scmPrintTemplateService.requireEnabled(templateId);
         if (!type.name().equals(template.getDocumentType())) {
             // 拿采购单的模板去打印发货单：字段白名单完全不同，按「模板不存在」拒绝
@@ -101,8 +99,7 @@ public class ScmPrintService {
         return template;
     }
 
-    private ScmPrintRenderVO render(ScmPrintDocumentTypeEnum type, Long businessId,
-            ScmPrintTemplateEntity template) {
+    private ScmPrintRenderVO render(ScmPrintDocumentTypeEnum type, Long businessId, ScmPrintTemplateEntity template) {
         ScmPrintSourceProvider provider = scmPrintRenderService.provider(type);
         // 功能权限先判：数据源走的查询服务只做数据范围收窄，不判权限码。
         // 少了这一步，任何登录用户只要知道单据 id 就能把内容渲染出来。
@@ -123,8 +120,7 @@ public class ScmPrintService {
      * 正式打印：冻结模板版本、模型快照与版面快照，并返回这份冻结版面。
      *
      * <p>
-     * 要求幂等键：一次提交重试不该产生两条「打过一次」的记录。同键重放直接返回首次的冻结版面，
-     * 因此重放拿到的是**当时**那张，而不是重新渲染的现在这张。
+     * 要求幂等键：一次提交重试不该产生两条「打过一次」的记录。同键重放直接返回首次的冻结版面， 因此重放拿到的是**当时**那张，而不是重新渲染的现在这张。
      */
     @Transactional(rollbackFor = Exception.class)
     public ScmPrintRenderVO print(String documentType, Long businessId, ScmPrintActionForm form, String key) {
@@ -166,8 +162,7 @@ public class ScmPrintService {
      * 历史重印：只读冻结快照。
      *
      * <p>
-     * 金额按**当前**调用者重新套一遍权限：快照里可能有原打印人有权限、而当前人没权限的金额列，
-     * 直接回放等于用一条历史消息把金额权限绕过去。剔除时行里的 key 也一并删掉 ——
+     * 金额按**当前**调用者重新套一遍权限：快照里可能有原打印人有权限、而当前人没权限的金额列， 直接回放等于用一条历史消息把金额权限绕过去。剔除时行里的 key 也一并删掉 ——
      * 只删列定义而把值留在行里，等于「界面上看不到、接口里拿得到」。
      */
     @Transactional(readOnly = true)
@@ -207,8 +202,8 @@ public class ScmPrintService {
         if (query.getSortItemList() != null && !query.getSortItemList().isEmpty()) {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
         }
-        List<String> visibleTypes = java.util.Arrays.stream(ScmPrintDocumentTypeEnum.values())
-                .filter(type -> ScmDataScopeService.hasPermission(scmPrintRenderService.provider(type).queryPermission()))
+        List<String> visibleTypes = java.util.Arrays.stream(ScmPrintDocumentTypeEnum.values()).filter(
+                type -> ScmDataScopeService.hasPermission(scmPrintRenderService.provider(type).queryPermission()))
                 .map(Enum::name).toList();
         if (visibleTypes.isEmpty()) {
             return ScmDataScopeService.emptyPage(query);

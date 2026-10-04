@@ -227,17 +227,20 @@ public class FinanceWriteOffService {
     private SourceFact lockSource(String sourceType, Long sourceId) {
         if (ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT.name().equals(sourceType)) {
             var movement = financeOrderFundingSourceDao.lockMovement(sourceId);
-            if (movement == null
-                    || !ScmBalanceMovementTypeEnum.CONSUME.name().equals(movement.getType())
+            if (movement == null || !ScmBalanceMovementTypeEnum.CONSUME.name().equals(movement.getType())
                     || !ScmBalanceDirectionEnum.DEBIT.name().equals(movement.getDirection())) {
                 throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
             }
             var customer = financeCounterpartySourceDao.selectCustomer(movement.getCustomerId());
-            if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+            if (customer == null) {
+                throw new ScmDataScopeException();
+            }
+            if (!dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
                 throw new ScmDataScopeException();
             }
             return new SourceFact(sourceType, sourceId, movement.getMovementNo(), customer.getCustomerName(),
-                    ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), movement.getSettlementCustomerId(), movement.getAmount());
+                    ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), movement.getSettlementCustomerId(),
+                    movement.getAmount());
         }
         if (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)) {
             FinanceReceiptEntity receipt = financeReceiptDao.selectByIdForUpdate(sourceId);

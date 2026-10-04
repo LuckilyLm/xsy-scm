@@ -56,8 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * 三条硬约束：
  * <ol>
- * <li><b>资金来源必须是 {@code PaymentTransaction}</b>，且该交易必须是成功的 ——
- * 没收到钱就退钱是账外行为；</li>
+ * <li><b>资金来源必须是 {@code PaymentTransaction}</b>，且该交易必须是成功的 —— 没收到钱就退钱是账外行为；</li>
  * <li><b>累计成功退款不得超过原支付成功金额</b>；</li>
  * <li><b>同一业务退款来源只能映射一笔有效退款</b>（表上有唯一索引兜底）。</li>
  * </ol>
@@ -81,8 +80,7 @@ public class PaymentRefundService {
     private final PaymentSourceDao paymentSourceDao;
 
     /**
-     * 财务域的系统退款付款入口。依赖方向是 payment → finance；finance 不反向依赖支付域，
-     * 因此不构成环（与 payment → finance 收款是同一套做法）。
+     * 财务域的系统退款付款入口。依赖方向是 payment → finance；finance 不反向依赖支付域， 因此不构成环（与 payment → finance 收款是同一套做法）。
      */
     private final FinancePaymentService financePaymentService;
     private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
@@ -98,17 +96,18 @@ public class PaymentRefundService {
      * 发起退款。
      *
      * <p>
-     * <b>重复请求靠业务幂等键回放首次结果</b>，不是「发现已有就随便返回一个」：
-     * 前者回答「这次请求的结果是什么」，后者会在两次请求参数不同时给出一个看似成功的错误答案。
+     * <b>重复请求靠业务幂等键回放首次结果</b>，不是「发现已有就随便返回一个」： 前者回答「这次请求的结果是什么」，后者会在两次请求参数不同时给出一个看似成功的错误答案。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentRefundEntity create(PaymentRefundCreateForm form, String idempotencyKey) {
-        var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE + ":" + form.getTransactionId(), idempotencyKey,
-                form);
+        var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE + ":" + form.getTransactionId(), idempotencyKey, form);
 
         PaymentTransactionEntity initial = paymentTransactionDao.selectById(form.getTransactionId());
-        PaymentIntentEntity originalIntent = initial == null ? null : paymentIntentDao.selectById(initial.getIntentId());
-        if (originalIntent == null || !ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(originalIntent.getSourceType())
+        PaymentIntentEntity originalIntent = initial == null
+                ? null
+                : paymentIntentDao.selectById(initial.getIntentId());
+        if (originalIntent == null
+                || !ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(originalIntent.getSourceType())
                 || paymentSourceDao.lockOrder(originalIntent.getSourceId()) == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
@@ -167,16 +166,16 @@ public class PaymentRefundService {
         paymentRefundDao.insert(refund);
 
         ScmPaymentProvider provider = providerRegistry.require(transaction.getProvider());
-        ScmPaymentProvider.RefundResult result = provider.refund(new ScmPaymentProvider.RefundRequest(
-                refund.getRefundNo(), transaction.getProviderTransactionNo(), amount, form.getReason(),
-                ScmPaymentMockScenarioEnum.of(refund.getMockScenario())));
+        ScmPaymentProvider.RefundResult result = provider.refund(
+                new ScmPaymentProvider.RefundRequest(refund.getRefundNo(), transaction.getProviderTransactionNo(),
+                        amount, form.getReason(), ScmPaymentMockScenarioEnum.of(refund.getMockScenario())));
 
         // 发起过就是发起过：先落 PROCESSING，再按渠道结果推进（与支付意图同一套纪律）
         if (paymentRefundDao.markProcessing(refund.getId(), result.providerRefundNo(), operator) != 1) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
         }
-        applyOutcome(refund.getId(), result.outcome(), result.providerRefundNo(), result.amount(),
-                result.failureCode(), result.failureMessage(), operator);
+        applyOutcome(refund.getId(), result.outcome(), result.providerRefundNo(), result.amount(), result.failureCode(),
+                result.failureMessage(), operator);
         PaymentRefundEntity saved = paymentRefundDao.selectById(refund.getId());
         idempotencyService.complete(claim, "PAYMENT_REFUND", saved.getId(), saved);
         return saved;
@@ -186,8 +185,7 @@ public class PaymentRefundService {
      * 把渠道的退款结果落到状态机上。
      *
      * <p>
-     * 发起时与回调时**复用同一段**判定：两处各写一份，迟早会出现「回调说成功、本地还停在处理中」。
-     * 受影响行数 != 1 说明这笔退款已被处理过（重复回调），直接返回，由幂等层回答「已处理」。
+     * 发起时与回调时**复用同一段**判定：两处各写一份，迟早会出现「回调说成功、本地还停在处理中」。 受影响行数 != 1 说明这笔退款已被处理过（重复回调），直接返回，由幂等层回答「已处理」。
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long refundId, ScmPaymentProvider.Outcome outcome, String providerRefundNo,
@@ -219,8 +217,7 @@ public class PaymentRefundService {
      * <p>
      * 顺序即纪律，且**必须在 {@code provider.refund()} 之前**完成：
      * <ol>
-     * <li>锁 {@code order_refund} —— 线上退款与人工退款付款（财务域 {@code CUSTOMER + ORDER_REFUND}）
-     * 必须互斥，两边锁同一行才能关掉「先查后写」的窗口；</li>
+     * <li>锁 {@code order_refund} —— 线上退款与人工退款付款（财务域 {@code CUSTOMER + ORDER_REFUND}） 必须互斥，两边锁同一行才能关掉「先查后写」的窗口；</li>
      * <li>退款单必须存在且 {@code COMPLETED}；</li>
      * <li>退款对象必须与原支付客户一致（否则会把 A 的付款退给 B）；</li>
      * <li>提交金额必须与应退额**逐值一致**（差一分钱，两条路径就各退一部分）；</li>
@@ -272,10 +269,8 @@ public class PaymentRefundService {
      * {@code source_id = order_refund.id}：无论本地被驱动多少次，Finance 只有一条正常付款事实。
      *
      * <p>
-     * <b>金额不一致时只保留渠道成功事实，不生成 Finance 付款、也不回滚。</b>
-     * 渠道实际退了 98 而业务应退 100 是可能发生的；若因此把整笔已验签的退款成功回滚，
-     * 每次重复回调都会因为同一个永久差异失败，本地永远停在「退款处理中」，
-     * 反而丢掉「渠道确实已经退钱」这个最重要的事实。这类记录天然可查
+     * <b>金额不一致时只保留渠道成功事实，不生成 Finance 付款、也不回滚。</b> 渠道实际退了 98 而业务应退 100 是可能发生的；若因此把整笔已验签的退款成功回滚，
+     * 每次重复回调都会因为同一个永久差异失败，本地永远停在「退款处理中」， 反而丢掉「渠道确实已经退钱」这个最重要的事实。这类记录天然可查
      * （{@code SUCCEEDED AND provider_amount <> amount}），留给后续退款对账处理。
      */
     private void registerFinancePayment(Long refundId, String operator) {
@@ -290,17 +285,17 @@ public class PaymentRefundService {
             return;
         }
         if (refund.getProviderAmount().compareTo(refund.getAmount()) != 0) {
-            log.warn("渠道实退金额与申请金额不一致，暂不生成 Finance 付款事实：refundNo={} 申请={} 实退={}",
-                    refund.getRefundNo(), refund.getAmount(), refund.getProviderAmount());
+            log.warn("渠道实退金额与申请金额不一致，暂不生成 Finance 付款事实：refundNo={} 申请={} 实退={}", refund.getRefundNo(),
+                    refund.getAmount(), refund.getProviderAmount());
             return;
         }
         PaymentIntentEntity intent = paymentIntentDao.selectById(refund.getIntentId());
         if (intent == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_NOT_FOUND);
         }
-        financePaymentService.registerFromPaymentRefund(new FinancePaymentRefundFact(refund.getId(),
-                refund.getSourceId(), intent.getCustomerId(), refund.getProviderAmount(), refund.getRefundedAt(),
-                refund.getProviderRefundNo()));
+        financePaymentService.registerFromPaymentRefund(
+                new FinancePaymentRefundFact(refund.getId(), refund.getSourceId(), intent.getCustomerId(),
+                        refund.getProviderAmount(), refund.getRefundedAt(), refund.getProviderRefundNo()));
     }
 
     /** 按渠道退款号定位退款（退款回调的匹配入口）。 */
@@ -313,8 +308,7 @@ public class PaymentRefundService {
      * 可退本金 = **渠道实际成功捕获/结算的金额** − 已成功退款合计。
      *
      * <p>
-     * 刻意**不** fallback 到本地应付金额：本地应付 100、渠道实收 98 时，按 100 退必然被渠道拒；
-     * 而更糟的是「本地根本没记下渠道实收」时静默按 100 退 —— 那会掩盖支付结果落库不完整，
+     * 刻意**不** fallback 到本地应付金额：本地应付 100、渠道实收 98 时，按 100 退必然被渠道拒； 而更糟的是「本地根本没记下渠道实收」时静默按 100 退 —— 那会掩盖支付结果落库不完整，
      * 等接真实渠道时才以「退款被渠道拒」的形式暴露出来。缺可信金额就**拒绝退款**。
      */
     private BigDecimal refundableOf(PaymentTransactionEntity transaction) {
@@ -330,8 +324,7 @@ public class PaymentRefundService {
         if (scenario == null || scenario.isBlank()) {
             return null;
         }
-        if (!ScmPaymentProviderEnum.MOCK.name().equals(provider)
-                || ScmPaymentMockScenarioEnum.of(scenario) == null) {
+        if (!ScmPaymentProviderEnum.MOCK.name().equals(provider) || ScmPaymentMockScenarioEnum.of(scenario) == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_MOCK_SCENARIO_INVALID);
         }
         return scenario;

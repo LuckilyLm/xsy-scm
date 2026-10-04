@@ -102,9 +102,9 @@ public class OrderRefundService {
         if (rows.isEmpty()) {
             return;
         }
-        var returned = orderRefundFundingSourceDao.selectBalanceReturns(rows.stream().map(OrderRefundVO::getRefundId).toList())
-                .stream().collect(Collectors.toMap(
-                        OrderRefundBalanceFact::refundId, fact -> fact));
+        var returned = orderRefundFundingSourceDao
+                .selectBalanceReturns(rows.stream().map(OrderRefundVO::getRefundId).toList()).stream()
+                .collect(Collectors.toMap(OrderRefundBalanceFact::refundId, fact -> fact));
         for (var row : rows) {
             var fact = returned.get(row.getRefundId());
             if (fact != null) {

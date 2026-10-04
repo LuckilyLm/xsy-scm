@@ -122,7 +122,8 @@ public class SortingTaskService {
         // 供应商必须显式给出并校验启用态 —— 从 SKU 与供应商的多对多关系反推会得到一个
         // 「可能对、也可能不对」的来源，而分拣台上正是按它找货的。
         task.setDeliveryTimeSnapshot(form.getDeliveryTime());
-        task.setDeliveryWave(StringUtils.isBlank(form.getDeliveryWave()) ? null : StringUtils.trim(form.getDeliveryWave()));
+        task.setDeliveryWave(
+                StringUtils.isBlank(form.getDeliveryWave()) ? null : StringUtils.trim(form.getDeliveryWave()));
         if (form.getSupplierId() != null) {
             var supplier = supplierDao.selectById(form.getSupplierId());
             if (supplier == null || Boolean.TRUE.equals(supplier.getDeleted())

@@ -1,6 +1,5 @@
 package com.xsy.scm.payment.domain.form;
 
-import java.time.LocalDate;
 import lombok.Data;
 import net.lab1024.sa.base.common.domain.PageParam;
 

@@ -68,8 +68,8 @@ public class ScmReportController {
 
     private static final int TOP_LIMIT = 5;
 
-    private static final List<String> OVERVIEW_DAILY_TITLES = List.of("业务日期", "确认订单数", "客户数", "确认订单金额",
-            "已完成退款金额", "提交采购金额", "采购入库成本金额", "成本缺失行数");
+    private static final List<String> OVERVIEW_DAILY_TITLES = List.of("业务日期", "确认订单数", "客户数", "确认订单金额", "已完成退款金额",
+            "提交采购金额", "采购入库成本金额", "成本缺失行数");
 
     private final OverviewReportService overviewReportService;
     private final SalesReportService salesReportService;
@@ -112,8 +112,7 @@ public class ScmReportController {
         List<List<Object>> rows = overviewReportService.dailyStat(form).stream()
                 .map(r -> ScmReportExcel.row(OVERVIEW_DAILY_TITLES, r.getBizDate(), r.getConfirmedOrderCount(),
                         r.getCustomerCount(), r.getConfirmedOrderAmount(), r.getCompletedRefundAmount(),
-                        r.getSubmittedPurchaseAmount(), r.getPurchaseInCostAmount(),
-                        r.getPurchaseInCostMissingCount()))
+                        r.getSubmittedPurchaseAmount(), r.getPurchaseInCostAmount(), r.getPurchaseInCostMissingCount()))
                 .toList();
         ScmReportExcel.write(response, "经营概览-每日统计.xlsx", "每日统计", OVERVIEW_DAILY_TITLES, rows);
     }
@@ -176,12 +175,12 @@ public class ScmReportController {
      * 订单表头级「客户订单明细」：一行 = 一个订单。
      *
      * <p>
-     * 与行级订单明细的分工是「有几单 / 每单多少」vs「买了什么」。分类与关键词在维度下按 EXISTS
-     * 判定订单是否命中，命中后金额仍按整单汇总，不会只算匹配到的行。
+     * 与行级订单明细的分工是「有几单 / 每单多少」vs「买了什么」。分类与关键词在维度下按 EXISTS 判定订单是否命中，命中后金额仍按整单汇总，不会只算匹配到的行。
      */
     @PostMapping("/sales/order/query")
     @SaCheckPermission(ScmReportPermission.SALES_QUERY)
-    public ResponseDTO<PageResult<SalesReportVO.OrderRow>> salesOrder(@Valid @RequestBody ScmSalesReportQueryForm form) {
+    public ResponseDTO<PageResult<SalesReportVO.OrderRow>> salesOrder(
+            @Valid @RequestBody ScmSalesReportQueryForm form) {
         return ResponseDTO.ok(salesReportService.orderList(form));
     }
 
@@ -221,10 +220,11 @@ public class ScmReportController {
     public void exportSalesCategory(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
             throws IOException {
         List<String> titles = List.of("一级分类", "末级分类", "确认订单金额", "订单笔数", "客户数", "金额排名");
-        List<List<Object>> rows = exportRows(form, () -> salesReportService.byCategory(form)).stream()
-                .map(r -> ScmReportExcel.row(titles, r.getRootCategoryName(), r.getLeafCategoryName(),
-                        r.getSettlementAmount(), r.getOrderCount(), r.getCustomerCount(), r.getAmountRank()))
-                .toList();
+        List<List<
+                Object>> rows = exportRows(form, () -> salesReportService.byCategory(form)).stream()
+                        .map(r -> ScmReportExcel.row(titles, r.getRootCategoryName(), r.getLeafCategoryName(),
+                                r.getSettlementAmount(), r.getOrderCount(), r.getCustomerCount(), r.getAmountRank()))
+                        .toList();
         ScmReportExcel.write(response, "销售分析-按分类.xlsx", "按分类", titles, rows);
     }
 
@@ -235,10 +235,11 @@ public class ScmReportController {
             throws IOException {
         // 销售员业绩是订单金额口径，不含成本，因此只 AND 导出权限，不要求成本权限。
         List<String> titles = List.of("销售员", "订单笔数", "客户数", "确认订单金额", "已完成退款金额", "最近确认时间");
-        List<List<Object>> rows = exportRows(form, () -> salesReportService.bySeller(form)).stream()
-                .map(r -> ScmReportExcel.row(titles, r.getSellerName(), r.getOrderCount(), r.getCustomerCount(),
-                        r.getSettlementAmount(), r.getCompletedRefundAmount(), r.getLastConfirmedAt()))
-                .toList();
+        List<List<
+                Object>> rows = exportRows(form, () -> salesReportService.bySeller(form)).stream()
+                        .map(r -> ScmReportExcel.row(titles, r.getSellerName(), r.getOrderCount(), r.getCustomerCount(),
+                                r.getSettlementAmount(), r.getCompletedRefundAmount(), r.getLastConfirmedAt()))
+                        .toList();
         ScmReportExcel.write(response, "销售分析-按销售员.xlsx", "按销售员", titles, rows);
     }
 
@@ -264,8 +265,8 @@ public class ScmReportController {
     @OperateLog
     public void exportSalesOrder(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "订单行数",
-                "SKU 种类数", "结算金额", "已完成退款金额");
+        List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "订单行数", "SKU 种类数", "结算金额",
+                "已完成退款金额");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.orderList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(),
                         r.getCustomerName(), r.getSellerName(), r.getOrderSource(), r.getSettleMode(), r.getLineCount(),
@@ -289,10 +290,10 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchaseOverview(@Valid @RequestBody ScmPurchaseReportQueryForm form,
             HttpServletResponse response) throws IOException {
-        List<String> titles = List.of("提交采购单数", "提交采购金额", "确认收货单数", "收货参考金额", "采购入库成本金额",
-                "成本缺失行数", "待入库收货单数");
+        List<String> titles = List.of("提交采购单数", "提交采购金额", "确认收货单数", "收货参考金额", "采购入库成本金额", "成本缺失行数", "待入库收货单数");
         PurchaseReportVO.Overview result = purchaseReportService.overview(form);
-        List<List<Object>> rows = result == null ? List.of()
+        List<List<Object>> rows = result == null
+                ? List.of()
                 : List.of(ScmReportExcel.row(titles, result.getSubmittedOrderCount(), result.getSubmittedAmount(),
                         result.getConfirmedReceiptCount(), result.getReceiptReferenceAmount(),
                         result.getPurchaseInCostAmount(), result.getPurchaseInCostMissingCount(),
@@ -332,8 +333,7 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchasePurchaser(@RequestBody ScmPurchaseReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("采购员", "采购单数", "SKU 种类数", "采购订单金额", "已收参考金额", "采购入库成本金额",
-                "成本缺失行数", "最近采购时间");
+        List<String> titles = List.of("采购员", "采购单数", "SKU 种类数", "采购订单金额", "已收参考金额", "采购入库成本金额", "成本缺失行数", "最近采购时间");
         List<List<Object>> rows = exportRows(form, () -> purchaseReportService.byPurchaser(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getPurchaserName(), r.getOrderCount(), r.getSkuKindCount(),
                         r.getOrderAmount(), r.getReceiptReferenceAmount(), r.getInboundCostAmount(),
@@ -357,8 +357,7 @@ public class ScmReportController {
     }
 
     /**
-     * 价格波动导出。粒度 = 业务日 × SKU × 采购单位，不同单位不会合并成一条线；
-     * 与列表同一个 {@code priceTrend}。
+     * 价格波动导出。粒度 = 业务日 × SKU × 采购单位，不同单位不会合并成一条线； 与列表同一个 {@code priceTrend}。
      */
     @PostMapping("/purchase/price-trend/export")
     @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
@@ -366,9 +365,9 @@ public class ScmReportController {
     public void exportPurchasePriceTrend(@Valid @RequestBody ScmPurchaseReportQueryForm form,
             HttpServletResponse response) throws IOException {
         List<String> titles = List.of("业务日", "SKU 编码", "商品名称", "采购单位", "加权平均采购价", "样本行数");
-        List<List<Object>> rows = purchaseReportService.priceTrend(form).stream()
-                .map(r -> ScmReportExcel.row(titles, r.getBizDate(), r.getSkuCode(), r.getProductName(),
-                        r.getPurchaseUnit(), r.getWeightedAvgPrice(), r.getSampleLineCount()))
+        List<List<Object>> rows = purchaseReportService
+                .priceTrend(form).stream().map(r -> ScmReportExcel.row(titles, r.getBizDate(), r.getSkuCode(),
+                        r.getProductName(), r.getPurchaseUnit(), r.getWeightedAvgPrice(), r.getSampleLineCount()))
                 .toList();
         ScmReportExcel.write(response, "采购分析-价格波动.xlsx", "价格波动", titles, rows);
     }

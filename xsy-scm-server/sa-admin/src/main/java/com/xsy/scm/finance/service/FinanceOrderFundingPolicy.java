@@ -44,19 +44,19 @@ public class FinanceOrderFundingPolicy {
                     || !Objects.equals(fact.getCustomerId(), fact.getMovementCustomerId())
                     || !Objects.equals(fact.getSettlementCustomerId(), fact.getMovementSettlementCustomerId())
                     || fact.getMovementOccurredAt() == null || !fact.getPaidAt().isEqual(fact.getMovementOccurredAt())
-                    || fact.getMovementAmount() == null
-                    || fact.getAmount().compareTo(fact.getMovementAmount()) != 0
+                    || fact.getMovementAmount() == null || fact.getAmount().compareTo(fact.getMovementAmount()) != 0
                     || fact.getAmount().compareTo(fact.getProviderAmount()) != 0) {
                 throw invalid();
             }
         } else if (!ScmPaymentMethodEnum.ONLINE.name().equals(fact.getMethod())
                 || (ScmPaymentProviderEnum.of(fact.getProvider()) != ScmPaymentProviderEnum.MOCK
-                && ScmPaymentProviderEnum.of(fact.getProvider()) != ScmPaymentProviderEnum.WECHAT)) {
+                        && ScmPaymentProviderEnum.of(fact.getProvider()) != ScmPaymentProviderEnum.WECHAT)) {
             throw invalid();
         }
         if (fact.getReceiptId() != null && (!Objects.equals(fact.getCustomerId(), fact.getReceiptCustomerId())
                 || !Objects.equals(fact.getSettlementCustomerId(), fact.getReceiptSettlementCustomerId())
-                || fact.getReceiptAmount() == null || fact.getProviderAmount().compareTo(fact.getReceiptAmount()) != 0)) {
+                || fact.getReceiptAmount() == null
+                || fact.getProviderAmount().compareTo(fact.getReceiptAmount()) != 0)) {
             throw invalid();
         }
     }
@@ -78,7 +78,8 @@ public class FinanceOrderFundingPolicy {
         boolean balance = facts.stream().anyMatch(f -> ScmPaymentMethodEnum.BALANCE.name().equals(f.getMethod()));
         boolean online = facts.stream().anyMatch(f -> ScmPaymentMethodEnum.ONLINE.name().equals(f.getMethod()));
         if (balance) {
-            throw new ScmBusinessException(online || hasReceiptFunding(orderId) ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
+            throw new ScmBusinessException(online || hasReceiptFunding(orderId)
+                    ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
                     : FinanceErrorCode.BALANCE_REFUND_REQUIRES_WALLET);
         }
         if (requireOnline && !online) {
