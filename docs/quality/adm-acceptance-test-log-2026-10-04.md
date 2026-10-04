@@ -2117,3 +2117,8 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 （`scm:sorting:scale:query|accept|report`）补契约登记，与配送派单无关。
 本地历史不回改，在此如实勘正；`docs` 这条也不该被当成「测试全绿」的凭证 ——
 它记录的每个数字都取于 `99ec1d4f` + V106，见 §6 顶部的适用边界。
+
+## 7n. 后续修复：无组件菜单（静态记录，未应用 migration）
+
+2026-10-04 补齐客户 SKU 反查页（menu 435 原组件路径），并新增 V108 软删除 SmartAdmin 演示页（menu 85）及未接入端点的“可见性维护”权限（menu 487），移除角色关联。客户 SKU 编辑仍由客户新增 / 编辑与详情流程完成，反查权限（menu 486）保留。
+`SmartAdminMenuComponentPgIT` 不再豁免历史缺口；V108 尚未在任何数据库执行，因此本条只记录代码与迁移，不表示运行验收完成。

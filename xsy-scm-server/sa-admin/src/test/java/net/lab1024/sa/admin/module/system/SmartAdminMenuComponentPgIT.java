@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,10 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 页面菜单随页面实现的阶段落库。Finance R1 的 F1-1 即按此办理（V65 是纯 DDL），
  * F1-3A 交付第一个受保护端点后由 V66 只补一行能力点（外加它必需的隐藏目录父级）。
  *
- * <p><b>基线只减不增</b>：{@link #LEGACY_MISSING_COMPONENTS} 是本门禁**加入之前**就已存在的缺口，
- * 逐条注明出处与处置。新增缺口一律让本用例失败；补上页面或下线菜单后，从基线里删掉对应条目。
- * 与 {@code SmartAdminMapperPgValidationIT} 的跳过项基线、{@code tools/ts_baseline_ratchet.py}
- * 是同一套「棘轮」取向。
+ * <p>客户 SKU 可见性页面已补齐，底座演示菜单由新增 migration 下线；所有未删除页面菜单都必须解析到真实组件。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -48,23 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
         "logging.level.root=WARN"})
 @DisplayName("页面菜单 component 存在性契约（PG IT）")
 class SmartAdminMenuComponentPgIT {
-
-    /**
-     * 门禁加入前就已存在的缺口（2026-09-26 实测）。两处都**不是**本轮引入，且都不属于 Finance。
-     *
-     * <ul>
-     *   <li>{@code /business/scm/customer/customer-sku-visibility-list.vue} —— V11 种的
-     *       menu_id 435「客户 SKU 可见性」，仅授超管、{@code visible_flag = true}，
-     *       但前端从未实现该页面（全仓 0 处引用）。V11 已应用不可改，
-     *       修复要么新开一条 data-only 迁移下线该菜单，要么补页面 —— 两者都超出 Finance R1 F1-1 范围，
-     *       已如实记入 {@code docs/progress.md} 的未覆盖项。</li>
-     *   <li>{@code /support/demonstration/index.vue} —— V3 从 SmartAdmin 底座带进来的
-     *       menu_id 85「组件演示」，V2 前端工作区没有搬运这个演示页。属底座示例菜单，非业务能力。</li>
-     * </ul>
-     */
-    private static final Set<String> LEGACY_MISSING_COMPONENTS = Set.of(
-            "/business/scm/customer/customer-sku-visibility-list.vue",
-            "/support/demonstration/index.vue");
 
     @Autowired
     private JdbcTemplate jdbc;
@@ -85,8 +64,7 @@ class SmartAdminMenuComponentPgIT {
         List<String> missing = pages.stream()
                 .filter(row -> {
                     String component = String.valueOf(row.get("component"));
-                    return !LEGACY_MISSING_COMPONENTS.contains(component)
-                            && !Files.exists(views.resolve(stripLeadingSlash(component)));
+                    return !Files.exists(views.resolve(stripLeadingSlash(component)));
                 })
                 .map(row -> "menu_id=" + row.get("menu_id") + " 「" + row.get("menu_name") + "」 -> "
                         + row.get("component"))
@@ -95,21 +73,7 @@ class SmartAdminMenuComponentPgIT {
         assertThat(missing)
                 .as("已授权的页面菜单指向不存在的组件时，路由会注册成功但 component 为 undefined，"
                         + "用户点开是空白页且没有任何构建期/运行期报错。"
-                        + "请让页面菜单与它的 .vue 同一阶段落库；"
-                        + "若确属本门禁加入前的历史缺口，才允许加进 LEGACY_MISSING_COMPONENTS 并注明出处")
-                .isEmpty();
-    }
-
-    @Test
-    @DisplayName("基线里的既有缺口仍然缺失（补上页面或下线菜单后必须同步删除基线条目）")
-    void legacyBaselineEntriesAreStillMissing() {
-        Path views = viewsRoot();
-        List<String> fixed = LEGACY_MISSING_COMPONENTS.stream()
-                .filter(component -> Files.exists(views.resolve(stripLeadingSlash(component))))
-                .toList();
-        // 棘轮的另一个方向：条目一旦被修好却留在基线里，基线就会慢慢变成一张没人核对的豁免清单。
-        assertThat(fixed)
-                .as("这些组件已经存在，请从 LEGACY_MISSING_COMPONENTS 中删除对应条目")
+                        + "请让页面菜单与它的 .vue 同一阶段落库，或用新增 migration 下线已废弃菜单")
                 .isEmpty();
     }
 
