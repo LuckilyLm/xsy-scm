@@ -82,6 +82,7 @@
 - **J-14 / D-33：已选 A 并实现。** 仓库/供应商可选筛选请求可静默降级，拦截器保留拒绝语义但不弹全局错误条；分拣 Playwright 套件 8/8 通过。
 - **J-13 / D-19：已选 A 并实现。** Wave 7 客户 360 用例改为自建并清理客户夹具，不依赖库内已有数据；定向 Playwright 用例 2/2 通过。
 - **J-17 / D-38：已选 A 并实现。** 数据范围 E2E 在缺少初始库存时通过正式采购收货链建余额，不直接写余额表；定向 Playwright 用例 6/6 通过。
+- **J-11 / D-10：已关闭（无需改口径或更新 knownFailures）。** 新增 Docker PostgreSQL IT 使用两个非空 seller scope 实际执行 `CustomerCreditDao.selectExposure`，并验证外范围拒绝、归属范围可见；1/1 通过，未变更 baseline。
 
 ## 当前验证与待裁决项（2026-10-05）
 

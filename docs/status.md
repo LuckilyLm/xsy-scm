@@ -40,6 +40,7 @@
 ## 验证与部署边界
 
 - 2026-10-04 Docker Desktop 后端验收：全新库 `xsy_scm_release_20261004` 由 Flyway 从空库迁移至 V109；**1,383 tests / 0 failures / 0 errors / 0 skipped**。实际 MinIO 云存储集成 **5/5** 通过；迁移校验摘要现已冻结 V1～V109，guard check 通过。原 `xsy_scm` 数据库（V76）未修改。证据见[ADM 验收日志 §7s/§7t](quality/adm-acceptance-test-log-2026-10-04.md)。
+- J-11 非空 `CustomerCreditDao.selectExposure` seller scope 的独立 Docker PostgreSQL IT **1/1** 通过，验证了 MyBatis `foreach` 绑定和超范围/归属范围可见性。证据见[ADM 验收日志 §10](quality/adm-acceptance-test-log-2026-10-04.md)。
 - 2026-10-05 当前分支前端与浏览器验收已在 Docker Desktop PostgreSQL + Redis + MinIO 上完成：`python tools/verify.py frontend` **PASS**，Playwright **158 passed / 0 skipped / 0 unexpected / 0 flaky**。采购单保留 XLSX 导出；模板预览后的浏览器打印可选择打印机或另存为 PDF。
 - 支付/财务黄金链另用全新 Docker 库 `xsy_scm_chain_current_20261005` 执行：**36 passed / 1 skipped / 0 failed**。唯一 skip 是 ADM-12 充值回调后钱包入账链（D-39），状态机与到账时点仍待业务裁决；真实渠道回调另需现场凭据。地图供应商密钥与实体电子秤同样属于现场验收。
 - 前端 E2E TypeScript 与 ESLint 已纳入门禁。TS 历史基线经修复后从 1,974 收缩并重捕获为 **1,858**；SCM 域与新增错误均为 0。lint 通过，保留 3 条既有 warning；生产构建通过并保留既有 bundle 体积提示。

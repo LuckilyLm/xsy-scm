@@ -2184,6 +2184,10 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 
 在新的 Docker Desktop 库 `xsy_scm_chain_current_20261005` 上运行 `playwright.chains.config.ts`：**36 passed / 1 skipped / 0 failed**。唯一 skip 是 `adm-golden-chain-07` 的第 3～5 步：充值回调 → 钱包 CREDIT → 余额支付 → 应收以 BALANCE 核销，缺陷登记为 D-39/J-18。前两步通过并再次确认当前 mock 充值意向已成功、财务收款已立，但钱包余额尚未入账；后续渠道确认与钱包入账时点需先由业务方裁决。
 
+## 10. J-11：非空 seller scope 的信用敞口 SQL 取证
+
+新增 `CustomerCreditScopePgIT`：通过正式客户/订单服务创建有归属的 CONFIRMED 订单，分别以不包含该 seller 的非空范围与包含该 seller 的非空范围读取 `CustomerCreditDao.selectExposure`。PostgreSQL 实际执行了 `scope.ids` 的 `foreach` 参数绑定；外范围返回不可见、归属范围返回可见，**1 test / 0 failures / 0 errors / 0 skipped**。没有调整 `knownFailures` 或基线，也没有发现方言缺陷。
+
 ## 8. 当前分支最终验收（2026-10-05）
 
 - `python tools/verify.py quality`：**PASS**；Checkstyle / Spotless、Quality Guard、跨域 DAO / common-source guard、自检与 package-migration-readiness 全部通过。
