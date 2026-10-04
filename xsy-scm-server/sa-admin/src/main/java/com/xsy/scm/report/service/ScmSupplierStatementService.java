@@ -180,8 +180,7 @@ public class ScmSupplierStatementService {
     }
 
     private void requireScope(Long warehouseId, ScmDataScopeContext scope) {
-        if (scope.getEmployeeId() == null || scope.getWarehouseScope().isEmpty()
-                || scope.getPurchaserScope().isEmpty()
+        if (scope.getEmployeeId() == null || scope.getWarehouseScope().isEmpty() || scope.getPurchaserScope().isEmpty()
                 || (warehouseId != null && !scope.getWarehouseScope().allows(warehouseId))) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_UNAVAILABLE);
         }

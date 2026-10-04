@@ -36,17 +36,13 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * 三条不变量：
  * <ul>
- * <li><b>读数不等于分拣结果</b>：上报只落事实，只有 {@code accept} 才写分拣结果。
- * 让设备直接决定发货数量，等于让一台未经校准的秤替人签字。</li>
- * <li><b>一键只处理标准品</b>：非标品的数量是称重结果、需要人工录入并说明差异，
- * 由一键操作推断会绕过「人工确认」这条链路（ADR-008 明确排除非标品自动结算）。</li>
- * <li><b>重复事件不重复写结果</b>：{@code event_key} 唯一挡住重复上报，
- * 状态流转只认 {@code PENDING}，重复接受影响 0 行并回答「已被处理」。</li>
+ * <li><b>读数不等于分拣结果</b>：上报只落事实，只有 {@code accept} 才写分拣结果。 让设备直接决定发货数量，等于让一台未经校准的秤替人签字。</li>
+ * <li><b>一键只处理标准品</b>：非标品的数量是称重结果、需要人工录入并说明差异， 由一键操作推断会绕过「人工确认」这条链路（ADR-008 明确排除非标品自动结算）。</li>
+ * <li><b>重复事件不重复写结果</b>：{@code event_key} 唯一挡住重复上报， 状态流转只认 {@code PENDING}，重复接受影响 0 行并回答「已被处理」。</li>
  * </ul>
  *
  * <p>
- * 接受写的是**分拣明细**（只写已分拣数量），不碰订单数量、不碰库存、不触发结算 ——
- * 与手工录入走的是同一个 {@code enter} 入口，因此两条路径的约束完全一致。
+ * 接受写的是**分拣明细**（只写已分拣数量），不碰订单数量、不碰库存、不触发结算 —— 与手工录入走的是同一个 {@code enter} 入口，因此两条路径的约束完全一致。
  */
 @Service
 @RequiredArgsConstructor
@@ -115,8 +111,7 @@ public class SortingScaleEventService {
      * 接受读数：把该读数写进分拣结果。
      *
      * <p>
-     * 写入经 {@link SortingTaskService#enter}（与手工录入同一入口），因此任务状态、明细版本、
-     * 结果枚举、原因必填这些约束一条都不会被绕过。
+     * 写入经 {@link SortingTaskService#enter}（与手工录入同一入口），因此任务状态、明细版本、 结果枚举、原因必填这些约束一条都不会被绕过。
      */
     @Transactional(rollbackFor = Exception.class)
     public void accept(Long id, SortingScaleAcceptForm form) {

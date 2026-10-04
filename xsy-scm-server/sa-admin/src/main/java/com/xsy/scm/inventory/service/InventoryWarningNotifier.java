@@ -20,10 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 库存预警阈值通知的单行评估与投递。
  *
  * <p>
- * <b>跃迁语义（ADR-007）</b>：只在「{@code NORMAL → LOW/HIGH}」时投递，异常持续期间不重复，
- * 回到 {@code NORMAL} 之后再次异常可以再提醒一次。判定「上次是什么状态」靠
- * {@code scm_inventory_warning_state}，而状态本身仍由 {@link ScmInventoryWarningStatusEnum#evaluate}
- * 现算 —— 这里不复制一份阈值规则。
+ * <b>跃迁语义（ADR-007）</b>：只在「{@code NORMAL → LOW/HIGH}」时投递，异常持续期间不重复， 回到 {@code NORMAL} 之后再次异常可以再提醒一次。判定「上次是什么状态」靠
+ * {@code scm_inventory_warning_state}，而状态本身仍由 {@link ScmInventoryWarningStatusEnum#evaluate} 现算 —— 这里不复制一份阈值规则。
  *
  * <p>
  * 每次跃迁的 {@code event_key} 由 {@code (仓库, SKU, 纪元, 状态, 接收人)} 组成：
@@ -88,14 +86,13 @@ public class InventoryWarningNotifier {
      * 向该仓的授权员工投递站内信。
      *
      * <p>
-     * 接收人来自 {@code employee_warehouse_scope}：授权行是「谁负责这个仓」的唯一正式来源。
-     * 没有授权行时<b>不广播、不猜人</b>，只记一条日志 —— 把预警发给全公司比不发更糟。
+     * 接收人来自 {@code employee_warehouse_scope}：授权行是「谁负责这个仓」的唯一正式来源。 没有授权行时<b>不广播、不猜人</b>，只记一条日志 —— 把预警发给全公司比不发更糟。
      */
     private int notify(InventoryWarningVO row, ScmInventoryWarningStatusEnum status, int epoch) {
         List<Long> receivers = employeeWarehouseScopeDao.listEnabledEmployeeIdsByWarehouse(row.getWarehouseId());
         if (receivers == null || receivers.isEmpty()) {
-            log.info("库存预警无接收人，跳过通知 warehouseId={} skuId={} status={}", row.getWarehouseId(),
-                    row.getSkuId(), status.name());
+            log.info("库存预警无接收人，跳过通知 warehouseId={} skuId={} status={}", row.getWarehouseId(), row.getSkuId(),
+                    status.name());
             return 0;
         }
         String title = status == ScmInventoryWarningStatusEnum.LOW ? "库存低于下限" : "库存高于上限";
@@ -104,9 +101,8 @@ public class InventoryWarningNotifier {
         for (Long receiverUserId : receivers) {
             String eventKey = EVENT_TYPE + ":" + row.getWarehouseId() + ":" + row.getSkuId() + ":" + epoch + ":"
                     + status.name() + ":" + receiverUserId;
-            if (notificationService.sendOnce(eventKey, EVENT_TYPE,
-                    MessageTypeEnum.SCM_INVENTORY_WARNING.getValue(), receiverUserId, row.getThresholdId(), title,
-                    content)) {
+            if (notificationService.sendOnce(eventKey, EVENT_TYPE, MessageTypeEnum.SCM_INVENTORY_WARNING.getValue(),
+                    receiverUserId, row.getThresholdId(), title, content)) {
                 sent++;
             }
         }
@@ -117,8 +113,7 @@ public class InventoryWarningNotifier {
      * 通知正文。
      *
      * <p>
-     * 只写可用量、阈值与仓库 / SKU 标识，<b>不带金额与成本</b>：接收人来自仓库授权行，
-     * 其中包含默认看不到采购价与均价仓管角色，通知正文不能成为绕过金额权限的旁路。
+     * 只写可用量、阈值与仓库 / SKU 标识，<b>不带金额与成本</b>：接收人来自仓库授权行， 其中包含默认看不到采购价与均价仓管角色，通知正文不能成为绕过金额权限的旁路。
      */
     private static String content(InventoryWarningVO row, ScmInventoryWarningStatusEnum status) {
         StringBuilder text = new StringBuilder();

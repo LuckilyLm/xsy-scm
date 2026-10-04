@@ -57,8 +57,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 钱包归属：**结算主体**。
      *
      * <p>
-     * 普通客户的钱包就是自己的；集团下属单位共用集团钱包。理由是应收、授信、收款早已把
-     * 「实际下单客户」与「结算主体」分开 —— 若钱包挂在子客户，A 店与 B 店各有一份不能共享的
+     * 普通客户的钱包就是自己的；集团下属单位共用集团钱包。理由是应收、授信、收款早已把 「实际下单客户」与「结算主体」分开 —— 若钱包挂在子客户，A 店与 B 店各有一份不能共享的
      * 余额，就与「集团统一结算」直接冲突。流水仍保留实际业务客户，因此花的是哪家店仍可追溯。
      */
     @Transactional(readOnly = true)
@@ -71,8 +70,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 钱包余额（只读）。
      *
      * <p>
-     * <b>不创建账户</b>：读路径不该写库。没有账户就是 0 元 —— 「还没有钱包」与「钱包是空的」
-     * 在金额上等价，不必为此落一行。
+     * <b>不创建账户</b>：读路径不该写库。没有账户就是 0 元 —— 「还没有钱包」与「钱包是空的」 在金额上等价，不必为此落一行。
      */
     @Transactional(readOnly = true)
     public BigDecimal balanceOf(Long customerId) {
@@ -83,8 +81,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 按**结算主体**读余额（供查询层复用）。
      *
      * <p>
-     * 查询层已经解析过结算主体，再走一遍 {@link #balanceOf} 会重复解析客户关系 ——
-     * 而解析里含「客户必须合法可结算」这类校验，重复调用只会多一次查询、不改结果。
+     * 查询层已经解析过结算主体，再走一遍 {@link #balanceOf} 会重复解析客户关系 —— 而解析里含「客户必须合法可结算」这类校验，重复调用只会多一次查询、不改结果。
      */
     @Transactional(readOnly = true)
     public BigDecimal balanceOfSettlement(Long settlementCustomerId) {
@@ -107,15 +104,14 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
         CustomerBalanceAccountEntity account = lockAccount(settlement);
-        CustomerBalanceMovementEntity movement = customerBalanceMovementDao.selectBySource(
-                ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), intentId);
+        CustomerBalanceMovementEntity movement = customerBalanceMovementDao
+                .selectBySource(ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), intentId);
         if (movement == null) {
             if (signedBalance(account.getId()).compareTo(value) < 0) {
                 throw new ScmBusinessException(BalanceErrorCode.BALANCE_INSUFFICIENT);
             }
-            movement = record(account, customerId, ScmBalanceMovementTypeEnum.CONSUME,
-                    ScmBalanceDirectionEnum.DEBIT, value, ScmBalanceSourceTypeEnum.PAYMENT_INTENT, intentId,
-                    "订单余额支付", OffsetDateTime.now());
+            movement = record(account, customerId, ScmBalanceMovementTypeEnum.CONSUME, ScmBalanceDirectionEnum.DEBIT,
+                    value, ScmBalanceSourceTypeEnum.PAYMENT_INTENT, intentId, "订单余额支付", OffsetDateTime.now());
         }
         requireMatchingMovement(movement, account, customerId, ScmBalanceMovementTypeEnum.CONSUME,
                 ScmBalanceDirectionEnum.DEBIT, value);
@@ -125,17 +121,19 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
 
     /** 返还原消费所属钱包，不随客户当前集团关系重新解析归属。 */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
-    public CustomerBalanceMovementEntity refundToSettlement(Long refundId, Long customerId,
-            Long settlementCustomerId, BigDecimal amount, OffsetDateTime occurredAt) {
+    public CustomerBalanceMovementEntity refundToSettlement(Long refundId, Long customerId, Long settlementCustomerId,
+            BigDecimal amount, OffsetDateTime occurredAt) {
         if (refundId == null || customerId == null || settlementCustomerId == null || occurredAt == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
         BigDecimal value = positiveAmount(amount);
-        CustomerBalanceAccountEntity account = customerBalanceAccountDao.lockBySettlementCustomerId(settlementCustomerId);
+        CustomerBalanceAccountEntity account = customerBalanceAccountDao
+                .lockBySettlementCustomerId(settlementCustomerId);
         if (account == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
-        var existing = customerBalanceMovementDao.selectBySource(ScmBalanceSourceTypeEnum.ORDER_REFUND.name(), refundId);
+        var existing = customerBalanceMovementDao.selectBySource(ScmBalanceSourceTypeEnum.ORDER_REFUND.name(),
+                refundId);
         if (existing != null) {
             requireMatchingMovement(existing, account, customerId, ScmBalanceMovementTypeEnum.REFUND,
                     ScmBalanceDirectionEnum.CREDIT, value);
@@ -152,13 +150,12 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         return returned;
     }
 
-    private CustomerBalanceMovementEntity creditAt(ScmBalanceMovementTypeEnum type, Long customerId,
-            BigDecimal amount, ScmBalanceSourceTypeEnum sourceType, Long sourceId, String reason,
-            OffsetDateTime occurredAt) {
+    private CustomerBalanceMovementEntity creditAt(ScmBalanceMovementTypeEnum type, Long customerId, BigDecimal amount,
+            ScmBalanceSourceTypeEnum sourceType, Long sourceId, String reason, OffsetDateTime occurredAt) {
         if (!((type == ScmBalanceMovementTypeEnum.RECHARGE
                 && sourceType == ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION)
-                || (type == ScmBalanceMovementTypeEnum.REFUND
-                && sourceType == ScmBalanceSourceTypeEnum.ORDER_REFUND)) || sourceId == null) {
+                || (type == ScmBalanceMovementTypeEnum.REFUND && sourceType == ScmBalanceSourceTypeEnum.ORDER_REFUND))
+                || sourceId == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
         BigDecimal value = positiveAmount(amount);
@@ -176,8 +173,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 人工更正：管理员对账后修正余额。
      *
      * <p>
-     * 要求权限（Controller 层）＋ 方向 ＋ 金额 ＋ 原因 ＋ {@code Idempotency-Key} ＋ 操作人。
-     * <b>没有「编辑余额」接口</b>：更正也是追加流水，历史不可改。
+     * 要求权限（Controller 层）＋ 方向 ＋ 金额 ＋ 原因 ＋ {@code Idempotency-Key} ＋ 操作人。 <b>没有「编辑余额」接口</b>：更正也是追加流水，历史不可改。
      */
     @Transactional(rollbackFor = Exception.class)
     public CustomerBalanceMovementEntity correct(BalanceCorrectionForm form, String idempotencyKey) {
@@ -208,8 +204,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         CustomerBalanceMovementEntity movement = record(account, form.getCustomerId(),
                 ScmBalanceMovementTypeEnum.CORRECTION, direction, value, null, null, reason, OffsetDateTime.now());
         idempotencyService.complete(claim, ScmBalanceIdempotencyResourceTypeEnum.BALANCE_MOVEMENT.name(),
-                movement.getId(),
-                movement);
+                movement.getId(), movement);
         return movement;
     }
 
@@ -217,14 +212,11 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 充值支付成功 → 钱包权益增加（ADM-12 3-12b，{@link BalanceRechargeSink} 的实现）。
      *
      * <p>
-     * <b>入账金额取渠道实收</b>：钱包进多少必须等于公司真收多少。渠道实收 98 而充值申请 100 时，
-     * 记 98 并留下告警 —— 与退款那条口径（不一致就不落账）刻意不同：
-     * 充值场景下「客户付了钱却没有任何权益」比「权益比申请额少 2 元」严重得多。
-     * 差异本身可查（充值事实仍保留申请额），留给对账处理。
+     * <b>入账金额取渠道实收</b>：钱包进多少必须等于公司真收多少。渠道实收 98 而充值申请 100 时， 记 98 并留下告警 —— 与退款那条口径（不一致就不落账）刻意不同：
+     * 充值场景下「客户付了钱却没有任何权益」比「权益比申请额少 2 元」严重得多。 差异本身可查（充值事实仍保留申请额），留给对账处理。
      *
      * <p>
-     * 幂等靠 {@code (PAYMENT_TRANSACTION, transactionId)} 的来源唯一索引：
-     * 同一个回调重复投递多少次，也只产生一条充值流水。
+     * 幂等靠 {@code (PAYMENT_TRANSACTION, transactionId)} 的来源唯一索引： 同一个回调重复投递多少次，也只产生一条充值流水。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -242,24 +234,23 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
         if (providerAmount.compareTo(recharge.getAmount()) != 0) {
-            log.warn("充值实收与申请金额不一致，按实收入账：rechargeNo={} 申请={} 实收={}",
-                    recharge.getRechargeNo(), recharge.getAmount(), providerAmount);
+            log.warn("充值实收与申请金额不一致，按实收入账：rechargeNo={} 申请={} 实收={}", recharge.getRechargeNo(), recharge.getAmount(),
+                    providerAmount);
         }
         if (!recharge.getSettlementCustomerId().equals(settlementCustomerOf(customerId).getId())
                 || succeededAt == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
         creditAt(ScmBalanceMovementTypeEnum.RECHARGE, customerId, providerAmount,
-                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, transactionId,
-                "在线充值 " + recharge.getRechargeNo(), succeededAt);
+                ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, transactionId, "在线充值 " + recharge.getRechargeNo(),
+                succeededAt);
     }
 
     /**
      * 落一条流水（所有入账路径的唯一出口）。
      *
      * <p>
-     * 方向与类型的一致性在这里校验，库上的 {@code ck_customer_balance_movement_type_direction}
-     * 是第二层：类型固定方向的（充值 / 消费 / 退款返还）不接受调用方改写方向。
+     * 方向与类型的一致性在这里校验，库上的 {@code ck_customer_balance_movement_type_direction} 是第二层：类型固定方向的（充值 / 消费 / 退款返还）不接受调用方改写方向。
      */
     private CustomerBalanceMovementEntity record(CustomerBalanceAccountEntity account, Long customerId,
             ScmBalanceMovementTypeEnum type, ScmBalanceDirectionEnum direction, BigDecimal amount,
@@ -270,15 +261,14 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         if (type.getFixedDirection() != null && type.getFixedDirection() != direction) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_DIRECTION_INVALID);
         }
-        if (type == ScmBalanceMovementTypeEnum.CORRECTION
-                && (reason == null || reason.trim().isEmpty())) {
+        if (type == ScmBalanceMovementTypeEnum.CORRECTION && (reason == null || reason.trim().isEmpty())) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REASON_REQUIRED);
         }
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         CustomerBalanceMovementEntity movement = new CustomerBalanceMovementEntity();
-        movement.setMovementNo(ScmDocumentNumbers.format(MOVEMENT_NO_PREFIX,
-                customerBalanceMovementDao.nextMovementNo()));
+        movement.setMovementNo(
+                ScmDocumentNumbers.format(MOVEMENT_NO_PREFIX, customerBalanceMovementDao.nextMovementNo()));
         movement.setAccountId(account.getId());
         movement.setSettlementCustomerId(account.getSettlementCustomerId());
         movement.setCustomerId(customerId);
@@ -294,7 +284,8 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         movement.setCreatedBy(operator);
         movement.setUpdatedBy(operator);
         if (customerBalanceMovementDao.insertOnConflictDoNothing(movement) == 0) {
-            CustomerBalanceMovementEntity existing = customerBalanceMovementDao.selectBySource(sourceType.name(), sourceId);
+            CustomerBalanceMovementEntity existing = customerBalanceMovementDao.selectBySource(sourceType.name(),
+                    sourceId);
             requireMatchingMovement(existing, account, customerId, type, direction, amount);
             return existing;
         }
@@ -305,9 +296,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 取钱包账户并在必要时创建，然后**加锁**。
      *
      * <p>
-     * 创建放在锁路径里而不是读路径里：读余额不该写库，而真正要动钱时必须有一个可锁的行。
-     * 唯一索引保证同一结算主体只有一个账户；并发下第二个事务会命中冲突，因此先查再插，
-     * 冲突时读回已有行。
+     * 创建放在锁路径里而不是读路径里：读余额不该写库，而真正要动钱时必须有一个可锁的行。 唯一索引保证同一结算主体只有一个账户；并发下第二个事务会命中冲突，因此先查再插， 冲突时读回已有行。
      */
     private CustomerBalanceAccountEntity lockAccount(CustomerEntity settlement) {
         CustomerBalanceAccountEntity existing = customerBalanceAccountDao
@@ -333,9 +322,8 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             ScmBalanceDirectionEnum direction, BigDecimal amount) {
         if (movement == null || !Objects.equals(movement.getAccountId(), account.getId())
                 || !Objects.equals(movement.getSettlementCustomerId(), account.getSettlementCustomerId())
-                || !Objects.equals(movement.getCustomerId(), customerId)
-                || !type.name().equals(movement.getType()) || !direction.name().equals(movement.getDirection())
-                || movement.getAmount().compareTo(amount) != 0) {
+                || !Objects.equals(movement.getCustomerId(), customerId) || !type.name().equals(movement.getType())
+                || !direction.name().equals(movement.getDirection()) || movement.getAmount().compareTo(amount) != 0) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
     }

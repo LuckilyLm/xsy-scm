@@ -40,8 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
  * </pre>
  *
  * <p>
- * <b>余额域负责解释「为什么要支付」，支付域负责支付本身。</b> 因此充值意图由本服务内部创建，
- * 而不是把公开的 {@code /scm/payment/intent/create} 放开给客户端拼
+ * <b>余额域负责解释「为什么要支付」，支付域负责支付本身。</b> 因此充值意图由本服务内部创建， 而不是把公开的 {@code /scm/payment/intent/create} 放开给客户端拼
  * {@code sourceType=BALANCE_RECHARGE + sourceId=任意充值 id}。
  */
 @Service
@@ -70,8 +69,7 @@ public class BalanceRechargeService {
      * 发起充值：先落充值事实，再创建支付意图。
      *
      * <p>
-     * <b>幂等在外层先占</b>：如果等内部创建意图时才 claim，一次超时重试会先多出一条充值事实。
-     * 同一个 {@code Idempotency-Key} 回放首次结果；换 key 再提就是一笔新充值（允许多次充值）。
+     * <b>幂等在外层先占</b>：如果等内部创建意图时才 claim，一次超时重试会先多出一条充值事实。 同一个 {@code Idempotency-Key} 回放首次结果；换 key 再提就是一笔新充值（允许多次充值）。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(BalanceRechargeCreateForm form, String idempotencyKey) {
@@ -94,8 +92,8 @@ public class BalanceRechargeService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         CustomerBalanceRechargeEntity recharge = new CustomerBalanceRechargeEntity();
-        recharge.setRechargeNo(ScmDocumentNumbers.format(RECHARGE_NO_PREFIX,
-                customerBalanceRechargeDao.nextRechargeNo()));
+        recharge.setRechargeNo(
+                ScmDocumentNumbers.format(RECHARGE_NO_PREFIX, customerBalanceRechargeDao.nextRechargeNo()));
         recharge.setSettlementCustomerId(settlement.getId());
         recharge.setSettlementCustomerNameSnapshot(settlement.getName());
         recharge.setCustomerId(customer.getId());
@@ -108,9 +106,10 @@ public class BalanceRechargeService {
         recharge.setUpdatedBy(operator);
         customerBalanceRechargeDao.insert(recharge);
 
-        PaymentIntentEntity intent = paymentIntentService.createForBalanceRecharge(new BalanceRechargeIntentFact(
-                recharge.getId(), recharge.getRechargeNo(), customer.getId(), customer.getName(), amount,
-                form.getProvider(), form.getMockScenario(), form.getRemark()), idempotencyKey);
+        PaymentIntentEntity intent = paymentIntentService.createForBalanceRecharge(
+                new BalanceRechargeIntentFact(recharge.getId(), recharge.getRechargeNo(), customer.getId(),
+                        customer.getName(), amount, form.getProvider(), form.getMockScenario(), form.getRemark()),
+                idempotencyKey);
         idempotencyService.complete(claim, ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), intent.getId(), intent);
         return intent;
     }

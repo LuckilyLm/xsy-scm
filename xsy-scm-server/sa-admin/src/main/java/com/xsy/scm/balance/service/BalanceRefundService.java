@@ -53,8 +53,7 @@ public class BalanceRefundService {
         }
         CustomerBalanceMovementEntity movement = apply(fact, true);
         idempotencyService.complete(claim, ScmBalanceIdempotencyResourceTypeEnum.BALANCE_MOVEMENT.name(),
-                movement.getId(),
-                movement);
+                movement.getId(), movement);
         return movement;
     }
 
@@ -66,8 +65,7 @@ public class BalanceRefundService {
         balanceRefundSourceDao.lockOrderRefunds(initial.orderId());
         BalanceRefundFact fact = balanceRefundSourceDao.selectRefund(refundId);
         if (fact == null || !Objects.equals(initial.orderId(), fact.orderId())
-                || !ScmOrderRefundStatusEnum.COMPLETED.name().equals(fact.status())
-                || fact.completedAt() == null
+                || !ScmOrderRefundStatusEnum.COMPLETED.name().equals(fact.status()) || fact.completedAt() == null
                 || fact.amount() == null || fact.amount().signum() <= 0) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
@@ -82,7 +80,8 @@ public class BalanceRefundService {
         boolean cashAllocated = financeOrderFundingPolicy.hasReceiptFunding(refund.orderId());
         if (!balance || online || cashAllocated) {
             if (explicit) {
-                throw new ScmBusinessException((online || cashAllocated) && balance ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
+                throw new ScmBusinessException((online || cashAllocated) && balance
+                        ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
                         : BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
             }
             return null;
@@ -108,8 +107,8 @@ public class BalanceRefundService {
         if (funding.stream().map(f -> f.getMovementId()).distinct().count() != funding.size()) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
-        BigDecimal principal = funding.stream().map(f -> f.getMovementAmount())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal principal = funding.stream().map(f -> f.getMovementAmount()).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
         BigDecimal returned = balanceRefundSourceDao.returnedAmount(refund.orderId());
         var existing = customerBalanceMovementDao.selectBySource(ScmBalanceSourceTypeEnum.ORDER_REFUND.name(),
                 refund.refundId());

@@ -142,8 +142,7 @@ public class PurchaseOrderService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CREATE,
                 order.getId(), null, null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                order.getId(),
-                result);
+                order.getId(), result);
         return result;
     }
 
@@ -314,8 +313,7 @@ public class PurchaseOrderService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.SUBMIT,
                 order.getId(), null, null, before, PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order)));
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                order.getId(),
-                result);
+                order.getId(), result);
         return result;
     }
 
@@ -346,8 +344,7 @@ public class PurchaseOrderService {
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CANCEL,
                 order.getId(), null, order.getCancelReason(), before, after));
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                order.getId(),
-                result);
+                order.getId(), result);
         return result;
     }
 
@@ -361,8 +358,7 @@ public class PurchaseOrderService {
 
         PurchaseOrderVO result = applyShortClose(form);
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                form.getId(),
-                result);
+                form.getId(), result);
         return result;
     }
 

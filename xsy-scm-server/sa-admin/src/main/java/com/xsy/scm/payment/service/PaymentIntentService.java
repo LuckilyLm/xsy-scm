@@ -66,8 +66,7 @@ public class PaymentIntentService {
     private final ScmPaymentProviderRegistry providerRegistry;
 
     /**
-     * 财务域的系统收款入口。依赖方向是 payment → finance；finance 不反向依赖支付域，
-     * 因此不构成环，与 delivery → finance 是同一套做法。
+     * 财务域的系统收款入口。依赖方向是 payment → finance；finance 不反向依赖支付域， 因此不构成环，与 delivery → finance 是同一套做法。
      */
     private final FinanceReceiptService financeReceiptService;
 
@@ -75,13 +74,11 @@ public class PaymentIntentService {
      * 充值落账入口（由余额域实现）。
      *
      * <p>
-     * 用 {@link ObjectProvider} 而不是直接注入：这是**真实的双向业务关系** —— 余额域要调本域
-     * 创建意图，本域要在支付成功后通知余额域落账。接口定义在本域（依赖倒置，编译期单向），
-     * 但 Bean 依赖仍是双向的，因此按需解析、不在构造期解环。
+     * 用 {@link ObjectProvider} 而不是直接注入：这是**真实的双向业务关系** —— 余额域要调本域 创建意图，本域要在支付成功后通知余额域落账。接口定义在本域（依赖倒置，编译期单向）， 但 Bean
+     * 依赖仍是双向的，因此按需解析、不在构造期解环。
      *
      * <p>
-     * 用 {@code getObject()} 而不是 {@code getIfAvailable()}：拿不到实现是装配错误，
-     * 必须响亮失败 —— 静默跳过会让「钱进来了、钱包没加」这种最糟的情况无声发生。
+     * 用 {@code getObject()} 而不是 {@code getIfAvailable()}：拿不到实现是装配错误， 必须响亮失败 —— 静默跳过会让「钱进来了、钱包没加」这种最糟的情况无声发生。
      */
     private final ObjectProvider<BalanceRechargeSink> balanceRechargeSinkProvider;
     private final ObjectProvider<BalanceConsumptionSink> balanceConsumptionSinkProvider;
@@ -91,8 +88,7 @@ public class PaymentIntentService {
      * 创建支付意图并向渠道发起。
      *
      * <p>
-     * <b>应付金额只认入参</b>：不从订单金额推断，也不从已收金额倒算 ——
-     * 一张订单可以只收一部分、也可以拆成余额 + 在线支付两条意图。
+     * <b>应付金额只认入参</b>：不从订单金额推断，也不从已收金额倒算 —— 一张订单可以只收一部分、也可以拆成余额 + 在线支付两条意图。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey) {
@@ -113,8 +109,8 @@ public class PaymentIntentService {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
         ScmPaymentProviderEnum provider = ScmPaymentProviderEnum.of(form.getProvider());
-        if (provider == null || (method == ScmPaymentMethodEnum.BALANCE)
-                != (provider == ScmPaymentProviderEnum.INTERNAL_BALANCE)) {
+        if (provider == null
+                || (method == ScmPaymentMethodEnum.BALANCE) != (provider == ScmPaymentProviderEnum.INTERNAL_BALANCE)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_UNSUPPORTED);
         }
         if (paymentSourceDao.hasBalanceRefunds(order.orderId())) {
@@ -140,12 +136,10 @@ public class PaymentIntentService {
      *
      * <p>
      * 刻意不放开公开的 {@code /scm/payment/intent/create}：客户端若能自己拼
-     * {@code sourceType=BALANCE_RECHARGE + sourceId=任意充值 id}，就等于绕过了
-     * 「先有充值事实、再有钱要付」这条顺序。
+     * {@code sourceType=BALANCE_RECHARGE + sourceId=任意充值 id}，就等于绕过了 「先有充值事实、再有钱要付」这条顺序。
      *
      * <p>
-     * <b>{@code method} 恒为 {@code ONLINE}</b>：这是往余额里充钱，资金来源仍是外部在线支付；
-     * {@code BALANCE} 表示「用余额抵扣」，是相反的方向。
+     * <b>{@code method} 恒为 {@code ONLINE}</b>：这是往余额里充钱，资金来源仍是外部在线支付； {@code BALANCE} 表示「用余额抵扣」，是相反的方向。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity createForBalanceRecharge(BalanceRechargeIntentFact fact, String idempotencyKey) {
@@ -162,10 +156,11 @@ public class PaymentIntentService {
             }
             scenario = ScmPaymentMockScenarioEnum.of(fact.mockScenario());
         }
-        return createInternal(new IntentDraft(ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name(), fact.rechargeId(),
-                fact.rechargeNo(), fact.customerId(), fact.customerName(),
-                fact.amount().setScale(SCALE, RoundingMode.HALF_UP), ScmPaymentMethodEnum.ONLINE, provider.provider(), scenario,
-                fact.remark()), claim);
+        return createInternal(
+                new IntentDraft(ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name(), fact.rechargeId(), fact.rechargeNo(),
+                        fact.customerId(), fact.customerName(), fact.amount().setScale(SCALE, RoundingMode.HALF_UP),
+                        ScmPaymentMethodEnum.ONLINE, provider.provider(), scenario, fact.remark()),
+                claim);
     }
 
     /**
@@ -206,7 +201,8 @@ public class PaymentIntentService {
         if (draft.method() == ScmPaymentMethodEnum.BALANCE) {
             transaction.setProviderTransactionNo(transaction.getTransactionNo());
             paymentTransactionDao.insert(transaction);
-            transition(intent.getId(), ScmPaymentIntentStatusEnum.CREATED, ScmPaymentIntentStatusEnum.PENDING, operator);
+            transition(intent.getId(), ScmPaymentIntentStatusEnum.CREATED, ScmPaymentIntentStatusEnum.PENDING,
+                    operator);
             PaymentOrderFact order = paymentSourceDao.selectOrder(intent.getSourceId());
             BalanceConsumptionResult consumed = balanceConsumptionSinkProvider.getObject().consumeForPayment(
                     intent.getId(), intent.getCustomerId(), order.settlementCustomerId(), intent.getAmount());
@@ -234,7 +230,8 @@ public class PaymentIntentService {
             if (result.externalIntentId() != null) {
                 paymentIntentDao.bindExternalIntent(intent.getId(), result.externalIntentId(), operator);
             }
-            transition(intent.getId(), ScmPaymentIntentStatusEnum.CREATED, ScmPaymentIntentStatusEnum.PENDING, operator);
+            transition(intent.getId(), ScmPaymentIntentStatusEnum.CREATED, ScmPaymentIntentStatusEnum.PENDING,
+                    operator);
             applyOutcome(intent.getId(), transaction.getId(), result.outcome(), result.failureCode(),
                     result.failureMessage(), result.amount(), operator);
         }
@@ -244,8 +241,8 @@ public class PaymentIntentService {
     }
 
     /** 意图创建草稿：把两条入口的差异收在一处，共享实现只认它。 */
-    private record IntentDraft(String sourceType, Long sourceId, String sourceNo, Long customerId,
-            String customerName, BigDecimal amount, ScmPaymentMethodEnum method, ScmPaymentProviderEnum provider,
+    private record IntentDraft(String sourceType, Long sourceId, String sourceNo, Long customerId, String customerName,
+            BigDecimal amount, ScmPaymentMethodEnum method, ScmPaymentProviderEnum provider,
             ScmPaymentMockScenarioEnum scenario, String remark) {
     }
 
@@ -253,8 +250,7 @@ public class PaymentIntentService {
      * 把渠道的发起结果落到状态机上。
      *
      * <p>
-     * 抽成方法是为了让回调路径能复用同一段判定：发起时同步成功与之后回调成功，
-     * 落到本地必须是**同一条**状态转换，不能各写一份。
+     * 抽成方法是为了让回调路径能复用同一段判定：发起时同步成功与之后回调成功， 落到本地必须是**同一条**状态转换，不能各写一份。
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long intentId, Long transactionId, ScmPaymentProvider.Outcome outcome, String failureCode,
@@ -274,10 +270,10 @@ public class PaymentIntentService {
                 || !Objects.equals(transaction.getProvider(), intent.getProvider())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }
-        if (outcome == ScmPaymentProvider.Outcome.SUCCEEDED
-                && (providerAmount == null || providerAmount.signum() <= 0
+        if (outcome == ScmPaymentProvider.Outcome.SUCCEEDED && (providerAmount == null || providerAmount.signum() <= 0
                 || (ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())
-                && (transaction.getProviderAmount() == null || transaction.getProviderAmount().compareTo(providerAmount) != 0)))) {
+                        && (transaction.getProviderAmount() == null
+                                || transaction.getProviderAmount().compareTo(providerAmount) != 0)))) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_AMOUNT_MISMATCH);
         }
         switch (outcome) {
@@ -309,21 +305,18 @@ public class PaymentIntentService {
      * 支付成功 → Finance 收款事实（ADM-12 3-11a）。
      *
      * <p>
-     * <b>同一事务</b>：Finance 写失败就整笔回滚，本地不会留下「已成功但没登记收款」的半截事实。
-     * 渠道事实不回滚 —— 那正是对账要发现、并靠下一次回调重新驱动的差异。
+     * <b>同一事务</b>：Finance 写失败就整笔回滚，本地不会留下「已成功但没登记收款」的半截事实。 渠道事实不回滚 —— 那正是对账要发现、并靠下一次回调重新驱动的差异。
      *
      * <p>
      * <b>唯一来源键</b>：{@code source_type = PAYMENT_TRANSACTION} + {@code source_id = transactionId}。
-     * 支付域的回调事件幂等是第一层，这个来源键是第二层：无论本地被驱动多少次，
-     * Finance 只有一条正常收款事实。
+     * 支付域的回调事件幂等是第一层，这个来源键是第二层：无论本地被驱动多少次， Finance 只有一条正常收款事实。
      *
      * <p>
      * 金额取 {@code provider_amount}（渠道实收），时间取交易的成功时刻 —— 都不取本地应付金额与本地当前时间。
      */
     private void registerFinanceReceipt(Long intentId, Long transactionId, String operator) {
         PaymentTransactionEntity transaction = paymentTransactionDao.selectById(transactionId);
-        if (transaction == null
-                || !ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
+        if (transaction == null || !ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
             // 交易没成功就没有收款事实可言：这里是唯一的守卫，调用方不必各自判一遍
             return;
         }
@@ -367,12 +360,10 @@ public class PaymentIntentService {
      * 按订单 id 解析并校验正式订单事实。
      *
      * <p>
-     * 校验四件事：来源类型受支持、订单存在、**订单客户与提交的客户一致**、订单在当前调用者的
-     * 订单数据范围内。
+     * 校验四件事：来源类型受支持、订单存在、**订单客户与提交的客户一致**、订单在当前调用者的 订单数据范围内。
      *
      * <p>
-     * 越权与「订单不存在」**共用同一个拒绝**（{@link ScmDataScopeException}，对外 30005）：
-     * 能分辨「存在但无权」就等于把订单主键探测变成了可用信号，与 Finance 收款的纪律一致。
+     * 越权与「订单不存在」**共用同一个拒绝**（{@link ScmDataScopeException}，对外 30005）： 能分辨「存在但无权」就等于把订单主键探测变成了可用信号，与 Finance 收款的纪律一致。
      *
      * <p>
      * 金额仍由调用方显式给出（允许部分支付、余额 + 在线支付拆分），但**来源身份不能由客户端自己拼**。
