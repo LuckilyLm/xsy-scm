@@ -2158,3 +2158,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7w. 后续修复：可选筛选请求静默降级
 
 按 J-14 选择 A，为 Axios 请求添加显式的 `suppressGlobalErrorMessage` 选项；供应商与仓库下拉的辅助查询启用该选项。业务拒绝仍按 Promise reject 交给组件处理，但不再清除或覆盖页面现有消息。Docker-backed `scm-sorting.spec.ts` **8/8** 通过，包含主管新建分拣任务及权限反例。
+
+## 7x. 后续修复：客户 360 E2E 自建数据夹具
+
+按 J-13 选择 A，Wave 7 用例在独立账号下经正式客户类型、员工与客户 API 创建临时客户，并在结束时按 id/version 删除；干净 V1→V109 库不再依赖其他 E2E 文件留下的客户。`scm-customer-360.spec.ts` **2/2** 通过，包含常购商品只读请求与缺订单权限拒绝。

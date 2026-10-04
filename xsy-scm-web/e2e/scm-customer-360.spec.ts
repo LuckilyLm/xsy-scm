@@ -16,6 +16,7 @@
  * - 全程无 pageerror。
  */
 import {test, expect, type APIRequestContext} from '@playwright/test';
+import {randomUUID} from 'node:crypto';
 import {accessibleName, apiClient, authenticate, login, provisionTempAccounts, type TempAccounts} from './scm-e2e-account';
 
 const ORDER_QUERY_PERMISSION = 'scm:order:query';
@@ -23,29 +24,50 @@ const ORDER_QUERY_PERMISSION = 'scm:order:query';
 let accounts: TempAccounts;
 let adminToken: string;
 let admin: APIRequestContext;
+let customerId = 0;
+let customerVersion = 0;
 
 test.describe('Wave 7 客户 360° 只读上下文', () => {
   test.beforeAll(async () => {
     accounts = provisionTempAccounts('w7', [ORDER_QUERY_PERMISSION]);
     adminToken = await login(accounts, accounts.admin);
     admin = await apiClient(adminToken);
+
+    const types = await (await admin.post('/scm/customer/type/query', {data: {pageNum: 1, pageSize: 1}})).json();
+    expect(types.code, `查询客户类型失败：${types.msg}`).toBe(0);
+    const employees = await (await admin.post('/employee/query', {data: {pageNum: 1, pageSize: 1}})).json();
+    expect(employees.code, `查询员工失败：${employees.msg}`).toBe(0);
+    const suffix = randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase();
+    const created = await (await admin.post('/scm/customer/add', {data: {
+      customerCode: `W7CUS${suffix}`,
+      name: `W7 客户 360 ${suffix}`,
+      customerTypeId: types.data.list[0].typeId,
+      settleMode: 'INDEPENDENT',
+      sellerId: employees.data.list[0].employeeId,
+    }})).json();
+    expect(created.code, `创建 Wave 7 客户夹具失败：${created.msg}`).toBe(0);
+    customerId = Number(created.data);
+    const detail = await (await admin.get(`/scm/customer/detail/${customerId}`)).json();
+    expect(detail.code, `读取 Wave 7 客户夹具失败：${detail.msg}`).toBe(0);
+    customerVersion = Number(detail.data.version);
   });
 
   test.afterAll(async () => {
+    if (admin && customerId > 0) {
+      await admin.post('/scm/customer/delete', {data: {customerId, version: customerVersion}});
+    }
     await admin?.dispose();
     accounts?.cleanup();
   });
 
-  /** 取一个既有客户作为上下文。缺夹具必须让用例变红而不是 skip：绿色跑过 + 场景没执行 = 把「文件存在」当成「已验收」。 */
-  async function requireCustomerId(): Promise<number> {
-    const query = await (await admin.post('/scm/customer/query', {data: {pageNum: 1, pageSize: 1}})).json();
-    const customerId = query.code === 0 ? query.data?.list?.[0]?.customerId : undefined;
-    expect(customerId, '当前库没有任何客户，Wave 7 客户 360° 场景无法执行').toBeTruthy();
-    return customerId as number;
+  /** 每轮自建客户夹具，干净迁移库也能执行只读上下文与权限反例。 */
+  function requireCustomerId(): number {
+    expect(customerId, 'Wave 7 客户夹具未创建').toBeGreaterThan(0);
+    return customerId;
   }
 
   test('客户详情渲染 5 个上下文 Tab，常购商品走 GET 且返回业务码 0', async ({page}) => {
-    const customerId = await requireCustomerId();
+    const customerId = requireCustomerId();
 
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -69,7 +91,7 @@ test.describe('Wave 7 客户 360° 只读上下文', () => {
   });
 
   test('缺订单查看权的账号读常购商品被整条拒，页面不摊开成交价', async ({page}) => {
-    const customerId = await requireCustomerId();
+    const customerId = requireCustomerId();
 
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
