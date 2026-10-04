@@ -15,7 +15,7 @@
 ## 当前验收证据
 
 - **后端：** 2026-10-05 在 Docker Desktop 独立 PostgreSQL 数据库 `xsy_scm_backend_final_20261005` 从空库迁移至 V109 后，**1,384 tests / 0 failures / 0 errors / 0 skipped**；MinIO 云存储集成 **5/5**。迁移 checksum 覆盖 V1～V109，drift、missing、renamed、unbaked 均为 0。原 `xsy_scm` V76 未修改。
-- **前端与浏览器：** 分拣秤抽屉、配送排线面板拆分后，Docker Desktop 全新库 `xsy_scm_e2e_postfix_20261005` 的主 E2E **158 passed / 0 skipped / 0 unexpected / 0 flaky**，包含 MinIO F0 8 项和数据范围 6 项；随后分拣打印预览 `scm-sorting.spec.ts` **8/8**、采购价格趋势 `scm-report.spec.ts` **13/13**。库存损耗面板定向用例 **1/1**；销售六个页签拆分后，导航及带客户筛选的数据呈现用例 **2/2**。TS 棘轮、ESLint、E2E 类型检查和生产构建均通过。数据库由 Flyway 从空库迁移至 V109，原 `xsy_scm` 未修改。
+- **前端与浏览器：** 分拣秤抽屉、配送排线面板拆分后，Docker Desktop 全新库 `xsy_scm_e2e_postfix_20261005` 的主 E2E **158 passed / 0 skipped / 0 unexpected / 0 flaky**，包含 MinIO F0 8 项和数据范围 6 项；随后分拣打印预览 `scm-sorting.spec.ts` **8/8**、采购价格趋势 `scm-report.spec.ts` **13/13**。库存损耗面板定向用例 **1/1**；销售六个页签拆分后的完整 `scm-report.spec.ts` **13/13**。TS 棘轮、ESLint、E2E 类型检查和生产构建均通过。数据库由 Flyway 从空库迁移至 V109，原 `xsy_scm` 未修改。
 - **质量：** `python tools/verify.py quality` 通过。前端 E2E 已纳入 ESLint 和 TypeScript 检查。TypeScript 历史基线为 **1,858**；SCM 错误和新增错误均为 0。全量直接 `vue-tsc` 仍会报告这批历史错误。ESLint 保留 3 条既有 warning；生产构建有既有图标路径与 bundle 体积提示。
 - **支付/财务黄金链：** Docker Desktop 全新库 `xsy_scm_chain_current_20261005`：**36 passed / 1 skipped / 0 failed**。唯一 skip 为 D-39/J-18 充值回调钱包入账步骤，等待业务裁决。
 

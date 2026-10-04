@@ -2227,3 +2227,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 19. 销售订单表头明细面板拆分（2026-10-05）
 
 从 `report-sales-list.vue` 抽出订单表头级明细表、列配置、格式化和分页为 `SalesOrderTab`；订单详情弹窗仍由父页持有。导航用例覆盖该表格，销售业务用例检查筛选客户的订单行，并点击订单号确认原订单详情仍可打开。Docker Desktop 隔离库两个定向用例 **2/2**。ESLint、E2E 类型检查、TS 棘轮和生产构建通过；TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务已停止。
+
+## 20. 六个销售报表面板的完整浏览器复验（2026-10-05）
+
+在销售商品、分类、客户、销售员、订单行和订单表头六个展示面板拆分后，完整运行 `scm-report.spec.ts`，Docker Desktop 隔离库 **13 passed / 0 skipped / 0 failures**。涵盖销售业务口径、六个面板导航与数据呈现、采购与入库报表、库存流水/损耗、导出文件和接口权限。临时后端与 Vite 服务在验收后停止。
