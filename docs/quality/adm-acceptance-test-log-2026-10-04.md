@@ -2121,8 +2121,12 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7n. 后续修复：无组件菜单（静态记录，未应用 migration）
 
 2026-10-04 补齐客户 SKU 反查页（menu 435 原组件路径），并新增 V108 软删除 SmartAdmin 演示页（menu 85）及未接入端点的“可见性维护”权限（menu 487），移除角色关联。客户 SKU 编辑仍由客户新增 / 编辑与详情流程完成，反查权限（menu 486）保留。
-`SmartAdminMenuComponentPgIT` 不再豁免历史缺口；V108 尚未在任何数据库执行，因此本条只记录代码与迁移，不表示运行验收完成。
+`SmartAdminMenuComponentPgIT` 不再豁免历史缺口。V108 已在本机 Docker 隔离库 `xsy_scm_task_20261004` 执行；原有 `xsy_scm` V76 库和生产库未操作。
 
 ## 7o. 后续修复：SCM 外键口径冲突（静态记录，未应用 migration）
 
-仓库规则在 `AGENTS.md` 与 SmartAdmin 底座规则中均明确 V2 不使用数据库外键。2026-10-04 新增 V109，移除 V81、V82、V88、V89、V90 引入的 9 条外键；既有采购 / 库存 migration 契约保持全局零外键断言，`ScmPurchaseMigrationIT` 的追加历史清单更新到 V109。V109 尚未在任何数据库执行，本条不表示迁移或数据库验收完成。
+仓库规则在 `AGENTS.md` 与 SmartAdmin 底座规则中均明确 V2 不使用数据库外键。2026-10-04 新增 V109，移除 V81、V82、V88、V89、V90 引入的 9 条外键；既有采购 / 库存 migration 契约保持全局零外键断言，`ScmPurchaseMigrationIT` 的追加历史清单更新到 V109。Docker 隔离库已由 Flyway 执行至 V109；`ScmInventoryMigrationIT` 的全局零外键断言通过，随后在 mapper 方法白名单断言处发现独立缺口。原有 `xsy_scm` V76 库和生产库未操作。
+
+## 7p. 后续修复：收款登记结算关系纵深校验（Docker PostgreSQL 定向验证）
+
+2026-10-04 手工收款新增只读客户域契约，在首次登记前调用现有 Customer 结算关系校验；幂等重放和支付派生收款保留原冻结主体，不按当前主档重算。`AdminSettlementTermsPgIT` 在 Docker PostgreSQL 隔离库定向执行：**5 tests / 0 failures / 0 errors / 0 skipped**。

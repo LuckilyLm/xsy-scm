@@ -40,7 +40,7 @@
 | ID | 问题 | 选项 | 我的建议 | 原§4 |
 |---|---|---|---|---|
 | J-08 | **9 个外键**（D-06）：schema 里真实存在，设计口径写「不用外键」。两条报警断言用的是**不加表范围过滤的全局计数** | A 全局不变量「禁外键」→ 出迁移删约束；B 各域自选 → 把两条断言收窄到各自域 | 取决于你是否接受「新域可自选」。我倾向 **A**，因为业务不变量已经靠服务层与唯一约束承担，外键反而绕开 SCM 数据范围口径。**注意**：选 B 只是改断言口径，不能算「测试通过」而掩盖分歧 | 10 |
-| J-09 | **收款登记是否重放结算主体合法性**（D-09，`734ab04c` 为消 6 条 ArchUnit 违规删掉了 `requireSettlementAccount`） | A 恢复一层纵深防御（ArchUnit 违规要用只读契约表达）；B 信任 Customer 域写入的冻结值，用例改为「带外改库属越界，不验」 | **A**。同一批证据显示 Customer 域写入口守得住，但失败用例正是用 `UPDATE customer SET settle_mode='GROUP'` 绕过服务层造脏数据 —— 真问题是要不要兜住带外改库，不是有没有校验 | 11 |
+| J-09 | **收款登记是否重放结算主体合法性**（D-09，`734ab04c` 为消 6 条 ArchUnit 违规删掉了 `requireSettlementAccount`） | A 恢复一层纵深防御（ArchUnit 违规要用只读契约表达）；B 信任 Customer 域写入的冻结值，用例改为「带外改库属越界，不验」 | **已选 A 并实现**：手工新收款通过 `common.contract.CustomerSettlementAccountValidator` 重新校验 Customer 主档关系；重放及支付派生收款继续使用原冻结事实。同一批证据显示 Customer 域写入口守得住，但失败用例正是用 `UPDATE customer SET settle_mode='GROUP'` 绕过服务层造脏数据 —— 真问题是要不要兜住带外改库，不是有没有校验 | 11 |
 | J-10 | **打印中心金额权限无法用静态 Permission Catalog 表达**（D-04）：`ScmPrintRenderService` 传的是 `type.getMoneyPermission()` 计算值，契约用例要求可静态解析的 `Catalog.CONSTANT` | A 枚举返回类型收窄到常量引用；B 按单据类型显式列权限（多一份与枚举并行的真相）；C 承认它属数据范围别名并登记进别名集合 | **C 最小、A 最干净**。若要长期不再踩，选 A；本轮收口选 C | 5/6 |
 | J-11 | **`CustomerCreditDao.selectExposure` 渲染参数**（D-10）：让样本 `scope.ids` 非空会同时推动 skipped 基线与 `knownFailures` 计数 | A 降基线；B 承认是方言缺陷并新增登记 | 需要一次真实运行结果再定，**不建议盲改**；我倾向 B（先登记再修） | 13 |
 | J-12 | **两条「可见但点开是空白页」的菜单**：menu 435「客户 SKU 可见性」与 menu 85「组件演示」指向不存在的 `.vue`，且 `visible_flag=TRUE`（`ScmMenuComponentExistencePgIT` 就是在守这个老故障） | A 补页面；B 出新迁移撤菜单 | **B**。`route.component` 缺文件时静默 `undefined`，构建/vue-tsc/后端测试全都不红 —— 留着就是线上空白页。**已应用的迁移不可改，必须新版本** | 新（D-17） |

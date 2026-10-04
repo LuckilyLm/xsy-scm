@@ -1,6 +1,7 @@
 package com.xsy.scm.finance.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.contract.CustomerSettlementAccountValidator;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
@@ -61,6 +62,7 @@ public class FinanceReceiptService {
     private final ScmIdempotencyService idempotencyService;
     private final FinanceOrderFundingSourceDao financeOrderFundingSourceDao;
     private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
+    private final CustomerSettlementAccountValidator customerSettlementAccountValidator;
 
     /**
      * 登记一笔 {@code NORMAL} 收款。
@@ -86,6 +88,7 @@ public class FinanceReceiptService {
             return replayed;
         }
 
+        customerSettlementAccountValidator.validateSettlementRelationship(customer.getCustomerId());
         FinanceReceiptEntity receipt = register(form, customer);
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
                 null, null, snapshot(receipt));
@@ -150,35 +153,30 @@ public class FinanceReceiptService {
      * 系统入口：支付交易成功后登记收款事实（ADM-12 3-11a）。
      *
      * <p>
-     * <b>不复用人工的 {@code add(FinanceReceiptAddForm)}</b>：那个入口的字段假设「有人在填」，
-     * 方式、时点、外部凭据都由人给。系统来源必须由财务域自己决定这些 —— 让支付域去凑一个人工表单，
-     * 等于把财务规则复制到支付域，两边迟早不一致。
+     * <b>不复用人工的 {@code add(FinanceReceiptAddForm)}</b>：那个入口的字段假设「有人在填」， 方式、时点、外部凭据都由人给。系统来源必须由财务域自己决定这些 ——
+     * 让支付域去凑一个人工表单， 等于把财务规则复制到支付域，两边迟早不一致。
      *
      * <p>
      * 三条与人工入口不同的地方：
      * <ol>
      * <li>方式固定 {@code ONLINE_PAYMENT}，不取调用方输入；</li>
-     * <li>金额取**渠道实际成功捕获/结算的金额**（{@code providerAmount}），不取本地应付金额 ——
-     * 本地应付 100、渠道实收 98 时凭空登记 100 会让账实不符；</li>
+     * <li>金额取**渠道实际成功捕获/结算的金额**（{@code providerAmount}），不取本地应付金额 —— 本地应付 100、渠道实收 98 时凭空登记 100 会让账实不符；</li>
      * <li>时点取渠道成功时间，不是本地登记时间。</li>
      * </ol>
      *
      * <p>
-     * <b>幂等两层</b>：这里先按来源键查一次（常见的重复回调），库上的
-     * {@code uk_finance_receipt_source_active} 是并发下真正的仲裁者。第二层刻意不吞异常：
-     * 事务里吞掉唯一键冲突会让 PostgreSQL 的整个事务进入失败状态，反而更危险；
-     * 让冲突冒出来，渠道重试时前置查询就能命中已有事实。
+     * <b>幂等两层</b>：这里先按来源键查一次（常见的重复回调），库上的 {@code uk_finance_receipt_source_active} 是并发下真正的仲裁者。第二层刻意不吞异常： 事务里吞掉唯一键冲突会让
+     * PostgreSQL 的整个事务进入失败状态，反而更危险； 让冲突冒出来，渠道重试时前置查询就能命中已有事实。
      *
      * @return 已存在的或新登记的收款事实
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptEntity registerFromPaymentTransaction(FinancePaymentReceiptFact fact) {
-        if (fact == null || fact.transactionId() == null || fact.customerId() == null
-                || fact.providerAmount() == null || fact.succeededAt() == null) {
+        if (fact == null || fact.transactionId() == null || fact.customerId() == null || fact.providerAmount() == null
+                || fact.succeededAt() == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_RECEIPT_AMOUNT_MISSING);
         }
-        BigDecimal amount = fact.providerAmount()
-                .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
+        BigDecimal amount = fact.providerAmount().setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
         if (amount.signum() <= 0) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_RECEIPT_AMOUNT_MISSING);
         }
@@ -209,7 +207,9 @@ public class FinanceReceiptService {
         }
 
         OffsetDateTime now = OffsetDateTime.now();
-        String operator = funding.getOperator() == null ? FinanceConstant.ORDER_FUNDING_OPERATOR : funding.getOperator();
+        String operator = funding.getOperator() == null
+                ? FinanceConstant.ORDER_FUNDING_OPERATOR
+                : funding.getOperator();
         FinanceReceiptEntity receipt = new FinanceReceiptEntity();
         receipt.setReceiptNo(
                 ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
@@ -295,8 +295,7 @@ public class FinanceReceiptService {
             // 0 元收款不是财务事实：库级 CHECK (amount > 0) 是第二层，这里先给出可解释的 40000。
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
-        // customerId 始终保留实际付款客户，settlementCustomerId 是统一收款/核销主体；两者都取自
-        // FinanceCounterpartySourceDao.selectCustomer 读到的客户事实，财务域不再回客户域解析结算关系。
+        // 客户域只读契约先验证当前结算关系；快照值仍来自 FinanceCounterpartySourceDao，财务域不重算或替换。
         // 已声明结算主体却读不到未删除的那一行说明主档悬空：这两列在 finance_receipt 上都是 NOT NULL，
         // 宁可拒绝登记，也不能把付款客户自己的名字写成结算主体快照（历史事实不可改，写错就永久错）。
         if (customer.getSettlementCustomerId() == null || customer.getSettlementCustomerName() == null) {
@@ -333,12 +332,11 @@ public class FinanceReceiptService {
     }
 
     /**
-     * 方式取值以 {@link ScmFinanceReceiptMethodEnum} 为唯一来源，必须与 {@code ck_finance_receipt_method}
-     * 的白名单一致；不用 {@code valueOf} 直抛，是为了给用户一个业务码而不是栈异常。
+     * 方式取值以 {@link ScmFinanceReceiptMethodEnum} 为唯一来源，必须与 {@code ck_finance_receipt_method} 的白名单一致；不用 {@code valueOf}
+     * 直抛，是为了给用户一个业务码而不是栈异常。
      *
      * <p>
-     * 枚举里没有 {@code BALANCE}，因此这里不需要额外禁止它：余额消费不是实际资金动作，
-     * 不该出现在收款方式里（见 {@link ScmFinanceReceiptMethodEnum} 的说明）。
+     * 枚举里没有 {@code BALANCE}，因此这里不需要额外禁止它：余额消费不是实际资金动作， 不该出现在收款方式里（见 {@link ScmFinanceReceiptMethodEnum} 的说明）。
      */
     private static String method(String raw) {
         String value = StringUtils.trimToNull(raw);
