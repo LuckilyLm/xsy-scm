@@ -103,7 +103,11 @@ class SmartAdminMapperPgValidationIT {
     private static void prepare(Statement st, String name, String sql) throws Exception {
         String current = sql;
         // PostgreSQL 只报第一个无法推断类型的参数，补一次可能又暴露下一个，故循环处理。
-        for (int round = 0; round < 16; round++) {
+        // 上限取参数出现次数：写死小整数会让「参数很多的长 SQL」在真正报错之前就退出循环，
+        // 把 PREPARE 的推断轮数不足误报成 MySQL 残留。
+        int rounds = (int) java.util.regex.Pattern.compile("\\$\\d+")
+                .matcher(sql).results().count();
+        for (int round = 0; round <= rounds; round++) {
             try {
                 st.execute("PREPARE " + name + " AS " + current);
                 return;
@@ -219,8 +223,16 @@ class SmartAdminMapperPgValidationIT {
         // 泛型方法。基线 443 → 453：P1 分拣新增 sorting_task / sorting_task_item 两张表的 BaseMapper。
         // 基线 453 → 493：P3 Finance R1 的 F1-1 新增 8 张财务表的 BaseMapper（8 × 5 = 40 条，
         // 与 P1 的「每张表 5 条」同一形态）。
-        // 上面第 1) 条已保证跳过项方法名必属 BaseMapper，故这些增量不可能是手写语句被漏掉。
-        assertThat(skipped).as("跳过项基线 493 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(493);
+        // 基线 493 → 608：F1-1 之后各 ADM 交付又带来 23 张 BaseMapper 表（+115 条），
+        // 集中在 ADM-12 支付/余额（payment_* 7 张、customer_balance_* 3 张）、
+        // ADM-07 打印中心（print_template / print_record）、ADM-02 退货接收单（2 张）、
+        // ADM-05 净需求冻结批次（2 张）、ADM-10 排线建议、ADM-01 对账单等。
+        // 数字在 V106 干净库上实测取得；上面第 1) 条已保证这 608 条的**方法名全部属于 BaseMapper**，
+        // 因此它们不可能是手写语句被漏掉——手写语句一旦混进来会先在那条断言上点名失败。
+        // 另注：本轮把 ScmValueScope / ScmDataScopeContext 变成可构造之后，
+        // 原本因 `scope.ids` 为 null 而被跳过的数据范围手写语句（如 CustomerCreditDao.selectExposure、
+        // ScmSupplierStatementDao.selectEvents）已从 skipped 移到真正被 PREPARE 校验的集合里。
+        assertThat(skipped).as("跳过项基线 608 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(608);
     }
 
     // ------------------------------------------------------------------
@@ -326,6 +338,37 @@ class SmartAdminMapperPgValidationIT {
         }
         if (Wrapper.class.isAssignableFrom(rawType)) {
             return new QueryWrapper<>();
+        }
+        // 数据范围值对象是不可变的（final 字段 + 静态工厂），通用 bean 递归填不出它的 ids。
+        // 于是所有把 scope 传进 <choose> 的 mapper 都会在 getBoundSql 抛错、整条被跳过，
+        // 等价于让「按 SCM 数据范围收窄」的那段 SQL 永远不进 PostgreSQL 校验。
+        // 这里用 of(...) 造一个非空、非全量范围，使 NOT IN <foreach> 分支真正渲染出来。
+        if (rawType == com.xsy.scm.common.scope.ScmValueScope.class) {
+            return com.xsy.scm.common.scope.ScmValueScope.of(java.util.List.of(1L));
+        }
+        // SCM 数据范围上下文同样是不可变的（final 字段 + 只有全参构造器，且工厂方法不是 public）。
+        // 它是全部「按范围收窄」DAO 的入参：造不出来就会被 getBoundSql 抛错整条跳过，
+        // 等于数据范围那段 SQL 从来没进过 PostgreSQL 校验。用非空、非全量范围把它造出来。
+        if (rawType == com.xsy.scm.common.scope.ScmDataScopeContext.class) {
+            Object scopedValue = com.xsy.scm.common.scope.ScmValueScope.of(java.util.List.of(1L));
+            try {
+                Constructor<?> ctor = rawType.getDeclaredConstructors()[0];
+                ctor.setAccessible(true);
+                Object[] args = new Object[ctor.getParameterCount()];
+                for (int k = 0; k < args.length; k++) {
+                    Class<?> param = ctor.getParameterTypes()[k];
+                    if (param == Long.class || param == long.class) {
+                        args[k] = 1L;
+                    } else if (param == boolean.class || param == Boolean.class) {
+                        args[k] = Boolean.TRUE;
+                    } else {
+                        args[k] = scopedValue;
+                    }
+                }
+                return ctor.newInstance(args);
+            } catch (Exception ignored) {
+                return null;
+            }
         }
         if (rawType == java.io.Serializable.class || rawType == Comparable.class) {
             return 1L;

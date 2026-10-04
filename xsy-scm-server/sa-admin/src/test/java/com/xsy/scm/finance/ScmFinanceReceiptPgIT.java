@@ -269,8 +269,9 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         // external_reference 上有普通索引、没有唯一约束（V65）：银行流水号跨客户重复是真实存在的
         assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'finance_receipt'"
                 + " AND indexdef ILIKE '%unique%' AND indexdef ILIKE '%external_reference%'")).isZero();
-        // 收款表根本没有来源列，所以也没有任何业务来源唯一索引可依赖；
-        // 全部唯一索引只有主键、单据号与 F1-3C 的反向唯一，三者都不是业务事实幂等键。
+        // ADM-12 3-11a（V100）之后收款表**有了**来源列，并带一条第二层幂等索引：
+        // 同一笔支付交易被驱动多少次，Finance 只留一条 NORMAL 且带来源的收款事实。
+        // 它是「支付交易 → 收款」的幂等键，不是人工收款的自然唯一键，因此谓词必须收窄。
         assertThat(jdbc.queryForList(
                 "SELECT indexdef FROM pg_indexes WHERE tablename = 'finance_receipt'"
                         + " AND indexdef ILIKE '%unique%'", String.class))
@@ -279,7 +280,9 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
                         .satisfiesAnyOf(
                                 def -> assertThat(def).contains("receipt_no"),
                                 def -> assertThat(def).contains("reverse_of_id"),
-                                def -> assertThat(def).contains("finance_receipt_pkey")));
+                                def -> assertThat(def).contains("finance_receipt_pkey"),
+                                def -> assertThat(def).contains("(source_type, source_id)")
+                                        .contains("WHERE").contains("source_type IS NOT NULL")));
     }
 
     // ------------------------------------------------------------------
@@ -310,11 +313,12 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         // 受控夹具：F1-5 的应收查询/派生尚未实现，此处按 schema 直插一张正常应收事实，
         // 目的是证明「收款登记不会碰它」，不依赖也不提前实现 F1-4 的核销能力。
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
-                        + " customer_id, customer_name_snapshot, entry_type, amount, event_at,"
+                        + " customer_id, customer_name_snapshot, settlement_customer_id,"
+                        + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
                         + " created_at, updated_at, created_by)"
-                        + " VALUES ('AR-FIXTURE-1', 'SALES_ORDER', ?, ?, ?, '测试客户', 'NORMAL', 12.0000,"
+                        + " VALUES ('AR-FIXTURE-1', 'SALES_ORDER', ?, ?, ?, '测试客户', ?, '测试客户', 'NORMAL', 12.0000,"
                         + " now(), now(), now(), ?)",
-                orderId, orderId, customerId, currentOperator());
+                orderId, orderId, customerId, customerId, currentOperator());
         evictMybatisCache();
         Map<String, Object> before = jdbc.queryForMap(
                 "SELECT * FROM finance_receivable WHERE source_id = ? AND entry_type = 'NORMAL'", orderId);

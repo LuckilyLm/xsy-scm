@@ -513,19 +513,21 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         // 该退货发生在签收之前，因此批准时成功跳过、库里此刻没有红字。
         // 直接按 schema 补两张应收事实作为「已存在」的前置，不依赖 F1-2B 的签收链路。
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
-                        + " customer_id, customer_name_snapshot, entry_type, amount, event_at,"
+                        + " customer_id, customer_name_snapshot, settlement_customer_id,"
+                        + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
                         + " created_at, updated_at, created_by)"
-                        + " VALUES ('AR-M-NORMAL', 'SALES_ORDER', ?, ?, ?, '夹具客户', 'NORMAL', 80.0000,"
+                        + " VALUES ('AR-M-NORMAL', 'SALES_ORDER', ?, ?, ?, '夹具客户', ?, '夹具客户', 'NORMAL', 80.0000,"
                         + " now(), now(), now(), ?)",
-                refund.orderId(), refund.orderId(), refund.customerId(), currentOperator());
+                refund.orderId(), refund.orderId(), refund.customerId(), refund.customerId(), currentOperator());
         Long normalId = jdbc.queryForObject(
                 "SELECT id FROM finance_receivable WHERE receivable_no = 'AR-M-NORMAL'", Long.class);
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
-                        + " customer_id, customer_name_snapshot, entry_type, amount, event_at,"
+                        + " customer_id, customer_name_snapshot, settlement_customer_id,"
+                        + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
                         + " original_receivable_id, reason, created_at, updated_at, created_by)"
-                        + " VALUES ('AR-M-RED', 'ORDER_RETURN', ?, ?, ?, '夹具客户', 'RED', 20.0000,"
+                        + " VALUES ('AR-M-RED', 'ORDER_RETURN', ?, ?, ?, '夹具客户', ?, '夹具客户', 'RED', 20.0000,"
                         + " now(), ?, '品质问题', now(), now(), ?)",
-                refund.refundId(), refund.orderId(), refund.customerId(), normalId, currentOperator());
+                refund.refundId(), refund.orderId(), refund.customerId(), refund.customerId(), normalId, currentOperator());
         evictMybatisCache();
         List<Map<String, Object>> before = jdbc.queryForList(
                 "SELECT * FROM finance_receivable WHERE order_id = ? ORDER BY entry_type", refund.orderId());

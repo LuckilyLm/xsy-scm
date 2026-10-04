@@ -110,6 +110,11 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 .collect(Collectors.toSet());
     }
 
+    /** 从字面量集合里剔除分组用的对手方名，剩下的就是该支允许的资金渠道。 */
+    private Set<String> without(Set<String> literals, String counterpartyType) {
+        return literals.stream().filter(v -> !v.equals(counterpartyType)).collect(Collectors.toSet());
+    }
+
     // ------------------------------------------------------------------
     // 表 / 序列 / 列
     // ------------------------------------------------------------------
@@ -136,10 +141,12 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("财务表不含状态列 / 余额列 / 账期列（Q15 Q17 Q20，全局不变量 6）")
     void noStateMachineOrDerivedColumns() {
-        // 落库的派生态一定会漂移；due_date 与审批字段属 R2 或未裁决范围。
+        // 落库的派生态一定会漂移；审批字段属未裁决范围。
+        // `due_date` 不在禁用之列：ADM-04 账期把它作为**冻结事实**落库（主档后来改账期不得重算旧应收），
+        // 它是账期规则的求值结果快照，不是可被回写的派生态。
         List<String> forbidden = List.of(
                 "status", "settled_amount", "open_amount", "written_off_amount", "net_amount",
-                "due_date", "approver", "approval_state", "currency", "tax_rate", "tax_amount");
+                "approver", "approval_state", "currency", "tax_rate", "tax_amount");
         for (String table : FINANCE_TABLES) {
             assertThat(columnsOf(table))
                     .as("表 %s 不得出现派生态或越界列", table)
@@ -174,8 +181,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
         // 金额与数量恒正：0 元事实不允许存在（Q8「不生成 0 元财务事实」的库级兜底）。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
-                        + "customer_id, customer_name_snapshot, entry_type, amount, event_at) "
-                        + "VALUES (?, 'SALES_ORDER', 900001, 900001, 900001, '客户', 'NORMAL', 0, now())",
+                        + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
+                        + "VALUES (?, 'SALES_ORDER', 900001, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 0, now())",
                 no("AR"));
         expectSqlFailure("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, "
                         + "order_item_id, sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount) "
@@ -228,24 +235,24 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
         // 红字缺原单引用 → 拒绝（Q13 / Q27：红字必须可追溯到被冲的原应收）。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
-                        + "customer_id, customer_name_snapshot, entry_type, amount, event_at, reason) "
-                        + "VALUES (?, 'ORDER_RETURN', 900002, 900001, 900001, '客户', 'RED', 20, now(), '退货')",
+                        + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, reason) "
+                        + "VALUES (?, 'ORDER_RETURN', 900002, 900001, 900001, '客户', 900001, '客户', 'RED', 20, now(), '退货')",
                 no("AR"));
         // 红字缺原因 → 拒绝。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
-                        + "customer_id, customer_name_snapshot, entry_type, amount, event_at, "
+                        + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, "
                         + "original_receivable_id, reason) "
-                        + "VALUES (?, 'ORDER_RETURN', 900003, 900001, 900001, '客户', 'RED', 20, now(), 1, '  ')",
+                        + "VALUES (?, 'ORDER_RETURN', 900003, 900001, 900001, '客户', 900001, '客户', 'RED', 20, now(), 1, '  ')",
                 no("AR"));
         // 正常应收却带原单引用 → 拒绝（方向与引用必须一致，否则读时派生会算错净额）。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
-                        + "customer_id, customer_name_snapshot, entry_type, amount, event_at, original_receivable_id) "
-                        + "VALUES (?, 'SALES_ORDER', 900004, 900001, 900001, '客户', 'NORMAL', 30, now(), 1)",
+                        + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, original_receivable_id) "
+                        + "VALUES (?, 'SALES_ORDER', 900004, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 30, now(), 1)",
                 no("AR"));
         // 方向与来源错配（NORMAL 却声明来源是退货）→ 拒绝。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
-                        + "customer_id, customer_name_snapshot, entry_type, amount, event_at) "
-                        + "VALUES (?, 'ORDER_RETURN', 900005, 900001, 900001, '客户', 'NORMAL', 30, now())",
+                        + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
+                        + "VALUES (?, 'ORDER_RETURN', 900005, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 30, now())",
                 no("AR"));
     }
 
@@ -296,13 +303,13 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
         long receipt = insertReceipt(no("RC"), "NORMAL", null, null, null);
         // 反向行缺原因 → 拒绝。
-        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, amount, "
+        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
                         + "method, received_at, entry_type, reverse_of_id) "
-                        + "VALUES (?, 900001, '客户', 100, 'CASH', now(), 'REVERSE', ?)", no("RC"), receipt);
+                        + "VALUES (?, 900001, '客户', 900001, '客户', 100, 'CASH', now(), 'REVERSE', ?)", no("RC"), receipt);
         // 正常行却带 reverse_of_id → 拒绝。
-        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, amount, "
+        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
                         + "method, received_at, entry_type, reverse_of_id, reason) "
-                        + "VALUES (?, 900001, '客户', 100, 'CASH', now(), 'NORMAL', ?, '多余')", no("RC"), receipt);
+                        + "VALUES (?, 900001, '客户', 900001, '客户', 100, 'CASH', now(), 'NORMAL', ?, '多余')", no("RC"), receipt);
 
         // 反向付款沿用 ORDER_REFUND 来源 → 拒绝。这条 CHECK 挡住的是「纠错路径被自己的
         // 防重索引锁死」：uk_finance_payment_source_active 的谓词是 source_id IS NOT NULL，
@@ -392,8 +399,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         // 同一张订单第二次生成应收 → 拒绝。生成器据此走 insertOnConflictDoNothing，
         // 命中冲突即「已生成」并返回成功（可重放的派生，不是用户命令）。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
-                        + "customer_id, customer_name_snapshot, entry_type, amount, event_at) "
-                        + "VALUES (?, 'SALES_ORDER', ?, 900001, 900001, '客户', 'NORMAL', 100, now())",
+                        + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
+                        + "VALUES (?, 'SALES_ORDER', ?, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 100, now())",
                 no("AR"), sourceId);
     }
 
@@ -416,9 +423,9 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         long receipt = insertReceipt(no("RC"), "NORMAL", null, null, null);
         insertReceipt(no("RC"), "REVERSE", receipt, "登错金额", null);
         // 第二条反向 → 撞库级唯一索引。重复撤销必须在这里失败，而不是靠服务层先查后判。
-        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, amount, "
+        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
                         + "method, received_at, entry_type, reverse_of_id, reason) "
-                        + "VALUES (?, 900001, '客户', 100, 'CASH', now(), 'REVERSE', ?, '再冲一次')",
+                        + "VALUES (?, 900001, '客户', 900001, '客户', 100, 'CASH', now(), 'REVERSE', ?, '再冲一次')",
                 no("RC"), receipt);
     }
 
@@ -486,11 +493,22 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertWhitelist("finance_receipt", "ck_finance_receipt_method", ScmFinanceReceiptMethodEnum.class);
         // 付款方式**按对手方分组**约束（ADM-12 3-11b）：一条 CHECK 覆盖两组值域，
         // 因此不能再与单一枚举双向相等。分组本身也要断言 —— 否则它退化成一条扁平白名单时没人发现。
-        assertThat(constraintDef("finance_payment", "ck_finance_payment_method"))
-                .containsIgnoringCase("counterparty_type = 'SUPPLIER'")
-                .containsIgnoringCase("counterparty_type = 'CUSTOMER'");
-        assertThat(literalsOf(constraintDef("finance_payment", "ck_finance_payment_method")))
-                .containsExactlyInAnyOrder("CASH", "BANK_TRANSFER", "OTHER", "ONLINE_PAYMENT");
+        // 不能按 `counterparty_type = 'SUPPLIER'` 这种字面子串匹配：PostgreSQL 会把约束规范化成
+        // `(counterparty_type)::text = 'SUPPLIER'::text`，照字面写会随 PG 版本升级假失败。
+        // 改成按结构判定：必须恰好是「SUPPLIER 分支 OR CUSTOMER 分支」，且 ONLINE_PAYMENT 只在客户分支。
+        String[] methodBranches = constraintDef("finance_payment", "ck_finance_payment_method")
+                .split("\\bOR\\b");
+        assertThat(methodBranches).as("付款方式必须按对手方分成两条分支").hasSize(2);
+        String supplierBranch = methodBranches[0].contains("SUPPLIER") ? methodBranches[0] : methodBranches[1];
+        String customerBranch = methodBranches[0].contains("CUSTOMER") ? methodBranches[0] : methodBranches[1];
+        assertThat(supplierBranch).as("供应商付款不得拿到在线支付").doesNotContain("ONLINE_PAYMENT");
+        assertThat(customerBranch).as("客户退款分支必须放行在线支付").contains("ONLINE_PAYMENT");
+        // 分组值域逐支断言：literalsOf 会把分支里的 counterparty_type 字面量一起取出来，
+        // 所以按「去掉本支对手方名」后的集合钉住，正好等于两组枚举的并集与差集。
+        assertThat(without(literalsOf(supplierBranch), "SUPPLIER"))
+                .containsExactlyInAnyOrder("CASH", "BANK_TRANSFER", "OTHER");
+        assertThat(without(literalsOf(customerBranch), "CUSTOMER"))
+                .containsExactlyInAnyOrder("CASH", "BANK_TRANSFER", "ONLINE_PAYMENT", "OTHER");
         // 两组各自的值域用枚举尺寸钉住：供应商三值、客户退款四值
         assertThat(ScmFinancePaymentMethodEnum.values()).hasSize(3);
         assertThat(ScmFinanceCustomerRefundMethodEnum.values()).hasSize(4);
@@ -696,8 +714,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                                   Long originalId, String reason, BigDecimal amount) {
         long sourceId = 900_000L + (System.nanoTime() % 1_000_000L);
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, customer_id, "
-                        + "customer_name_snapshot, entry_type, original_receivable_id, amount, event_at, reason) "
-                        + "VALUES (?, ?, ?, 900001, 900001, '客户', ?, ?, ?, now(), ?)",
+                        + "customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, original_receivable_id, amount, event_at, reason) "
+                        + "VALUES (?, ?, ?, 900001, 900001, '客户', 900001, '客户', ?, ?, ?, now(), ?)",
                 no(prefix), sourceType, sourceId, entryType, originalId, amount, reason);
         return jdbc.queryForObject("SELECT id FROM finance_receivable WHERE source_type = ? AND source_id = ?",
                 Long.class, sourceType, sourceId);
@@ -713,9 +731,9 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     private long insertReceipt(String receiptNo, String entryType, Long reverseOfId, String reason,
                                String externalReference) {
-        jdbc.update("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, amount, method, "
+        jdbc.update("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, method, "
                         + "received_at, entry_type, reverse_of_id, reason, external_reference) "
-                        + "VALUES (?, 900001, '客户', 100.0000, 'CASH', now(), ?, ?, ?, ?)",
+                        + "VALUES (?, 900001, '客户', 900001, '客户', 100.0000, 'CASH', now(), ?, ?, ?, ?)",
                 receiptNo, entryType, reverseOfId, reason, externalReference);
         return jdbc.queryForObject("SELECT id FROM finance_receipt WHERE receipt_no = ?", Long.class, receiptNo);
     }

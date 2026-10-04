@@ -181,10 +181,11 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
         Long resolvedSourceId = sourceId == null ? orderId : sourceId;
         return jdbc.queryForObject("INSERT INTO finance_receivable "
                         + "(receivable_no, source_type, source_id, order_id, customer_id, customer_name_snapshot, "
+                        + "settlement_customer_id, settlement_customer_name_snapshot, "
                         + "entry_type, original_receivable_id, amount, event_at, reason) "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
                 Long.class, prefix + "-" + suffix, resolvedSourceType, resolvedSourceId, orderId, customerId,
-                customerName, entryType, originalId, new BigDecimal(amount), eventAt, reason);
+                customerName, customerId, customerName, entryType, originalId, new BigDecimal(amount), eventAt, reason);
     }
 
     private PurchaseFact purchaseFact(String suffix, Long supplierId, Long skuId, String quantity, String price,
@@ -212,9 +213,10 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
 
     private Long receipt(Long customerId, String customerName, String amount, OffsetDateTime receivedAt) {
         return jdbc.queryForObject("INSERT INTO finance_receipt "
-                        + "(receipt_no, customer_id, customer_name_snapshot, amount, method, received_at, entry_type) "
-                        + "VALUES (?, ?, ?, ?, 'BANK_TRANSFER', ?, 'NORMAL') RETURNING id",
-                Long.class, prefix + "-RC-" + UUID.randomUUID(), customerId, customerName,
+                        + "(receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, "
+                        + "settlement_customer_name_snapshot, amount, method, received_at, entry_type) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, 'BANK_TRANSFER', ?, 'NORMAL') RETURNING id",
+                Long.class, prefix + "-RC-" + UUID.randomUUID(), customerId, customerName, customerId, customerName,
                 new BigDecimal(amount), receivedAt);
     }
 

@@ -293,9 +293,10 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
         Long skuId = newOnShelfSku("READ-AR");
         Long orderId = confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000");
         Long receivableId = jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no, source_type, source_id,"
-                        + " order_id, customer_id, customer_name_snapshot, entry_type, amount, event_at)"
-                        + " VALUES (?, 'SALES_ORDER', ?, ?, ?, '只读测试客户', 'NORMAL', ?, now()) RETURNING id",
-                Long.class, "AR-READ-" + prefix + "-" + UUID.randomUUID(), orderId, orderId, customerId,
+                        + " order_id, customer_id, customer_name_snapshot, settlement_customer_id,"
+                        + " settlement_customer_name_snapshot, entry_type, amount, event_at)"
+                        + " VALUES (?, 'SALES_ORDER', ?, ?, ?, '只读测试客户', ?, '只读测试客户', 'NORMAL', ?, now()) RETURNING id",
+                Long.class, "AR-READ-" + prefix + "-" + UUID.randomUUID(), orderId, orderId, customerId, customerId,
                 new BigDecimal(amount));
         jdbc.update("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, order_item_id,"
                         + " sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount)"
@@ -306,11 +307,12 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
 
     private void insertRedReceivable(Long originalId, Long customerId, String amount) {
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
-                        + " customer_name_snapshot, entry_type, original_receivable_id, amount, event_at, reason)"
-                        + " VALUES (?, 'ORDER_RETURN', ?, ?, ?, '只读测试客户', 'RED', ?, ?, now(), '只读测试红字')",
+                        + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot,"
+                        + " entry_type, original_receivable_id, amount, event_at, reason)"
+                        + " VALUES (?, 'ORDER_RETURN', ?, ?, ?, '只读测试客户', ?, '只读测试客户', 'RED', ?, ?, now(), '只读测试红字')",
                 "AR-READ-RED-" + prefix + "-" + UUID.randomUUID(), uniqueNumber(),
                 jdbc.queryForObject("SELECT order_id FROM finance_receivable WHERE id = ?", Long.class, originalId),
-                customerId, originalId, new BigDecimal(amount));
+                customerId, customerId, originalId, new BigDecimal(amount));
     }
 
     private Long normalPayable(Long supplierId, String amount) {

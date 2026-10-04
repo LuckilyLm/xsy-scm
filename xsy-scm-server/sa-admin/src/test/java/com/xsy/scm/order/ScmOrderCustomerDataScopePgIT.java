@@ -574,10 +574,11 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
     private Long insertOrder(Long customerId, String suffix, Long sellerId) {
         String orderNo = prefix + "-SO" + suffix;
         jdbc.update("INSERT INTO sales_order (order_no, customer_id, customer_code_snapshot,"
-                        + " customer_name_snapshot, order_source, status, ordered_total_amount,"
+                        + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot,"
+                        + " order_source, status, ordered_total_amount,"
                         + " settlement_total_amount, settle_mode_snapshot, seller_id)"
-                        + " VALUES (?, ?, ?, ?, 'ADMIN', 'DRAFT', 0, 0, 'INDEPENDENT', ?)",
-                orderNo, customerId, "CODE-" + suffix, "范围测试客户", sellerId);
+                        + " VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', 'DRAFT', 0, 0, 'INDEPENDENT', ?)",
+                orderNo, customerId, "CODE-" + suffix, "范围测试客户", customerId, "范围测试客户", sellerId);
         Long orderId = jdbc.queryForObject("SELECT id FROM sales_order WHERE order_no = ?", Long.class, orderNo);
         evicted();
         return orderId;

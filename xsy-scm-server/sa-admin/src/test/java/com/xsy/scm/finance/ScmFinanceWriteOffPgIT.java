@@ -342,19 +342,22 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     private Long normalReceivable(Long customerId, String amount) {
         long sourceId = uniqueNumber();
         return jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
-                        + " customer_id, customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
-                        + " VALUES (?, 'SALES_ORDER', ?, 1, ?, '核销测试客户', 'NORMAL', ?, now(), now(), now())"
+                        + " customer_id, customer_name_snapshot, settlement_customer_id,"
+                        + " settlement_customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
+                        + " VALUES (?, 'SALES_ORDER', ?, 1, ?, '核销测试客户', ?, '核销测试客户', 'NORMAL', ?,"
+                        + " now(), now(), now())"
                         + " RETURNING id",
-                Long.class, "AR-WO-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId,
+                Long.class, "AR-WO-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId, customerId,
                 new BigDecimal(amount));
     }
 
     private void insertRedReceivable(Long originalId, Long customerId, String amount) {
         long sourceId = uniqueNumber();
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
-                        + " customer_name_snapshot, entry_type, original_receivable_id, amount, event_at, reason)"
-                        + " VALUES (?, 'ORDER_RETURN', ?, 1, ?, '核销测试客户', 'RED', ?, ?, now(), '测试红字')",
-                "AR-WO-RED-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId, originalId,
+                        + " customer_name_snapshot, settlement_customer_id,"
+                        + " settlement_customer_name_snapshot, entry_type, original_receivable_id, amount, event_at, reason)"
+                        + " VALUES (?, 'ORDER_RETURN', ?, 1, ?, '核销测试客户', ?, '核销测试客户', 'RED', ?, ?, now(), '测试红字')",
+                "AR-WO-RED-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId, customerId, originalId,
                 new BigDecimal(amount));
     }
 

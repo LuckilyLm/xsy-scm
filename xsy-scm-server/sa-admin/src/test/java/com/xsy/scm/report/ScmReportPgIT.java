@@ -445,10 +445,11 @@ class ScmReportPgIT extends ScmW6PgITBase {
     private Long insertSalesOrder(String status, OffsetDateTime confirmedAt, Long customerId) {
         jdbc.update("""
                 INSERT INTO sales_order(order_no, customer_id, customer_code_snapshot, customer_name_snapshot,
+                                        settlement_customer_id, settlement_customer_name_snapshot,
                                         order_source, status, settle_mode_snapshot, ordered_total_amount,
                                         settlement_total_amount, confirmed_at)
-                VALUES (?, ?, ?, ?, 'ADMIN', ?, 'INDEPENDENT', 0, 0, ?)""",
-                tag + "-SO", customerId, tag + "-CODE", tag + "-客户", status, confirmedAt);
+                VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', ?, 'INDEPENDENT', 0, 0, ?)""",
+                tag + "-SO", customerId, tag + "-CODE", tag + "-客户", customerId, tag + "-客户", status, confirmedAt);
         Long orderId = jdbc.queryForObject("SELECT id FROM sales_order WHERE order_no = ?", Long.class,
                 tag + "-SO");
         insertSalesItem(orderId, new BigDecimal("100.0000"));

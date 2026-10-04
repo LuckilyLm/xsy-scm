@@ -210,10 +210,12 @@ class ScmFinanceConcurrencyPgIT extends ScmW5PgITBase {
     private Long normalReceivable(Long customerId, String amount) {
         long sourceId = uniqueNumber();
         return jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
-                        + " customer_id, customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
-                        + " VALUES (?, 'SALES_ORDER', ?, 1, ?, '并发核销客户', 'NORMAL', ?, now(), now(), now())"
+                        + " customer_id, customer_name_snapshot, settlement_customer_id,"
+                        + " settlement_customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
+                        + " VALUES (?, 'SALES_ORDER', ?, 1, ?, '并发核销客户', ?, '并发核销客户', 'NORMAL', ?,"
+                        + " now(), now(), now())"
                         + " RETURNING id",
-                Long.class, "AR-RACE-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId,
+                Long.class, "AR-RACE-" + prefix + "-" + UUID.randomUUID(), sourceId, customerId, customerId,
                 new BigDecimal(amount));
     }
 

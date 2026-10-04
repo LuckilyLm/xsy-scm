@@ -55,7 +55,8 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         assertThat(sequences).contains("purchase_order_no_seq", "purchase_receipt_no_seq");
 
         // 非主键索引（主键走 pg_constraint，不计入 §6.4 的 31 条；B1 的 V22 追加 1 条部分索引，
-        // V40 的地图归属再追加 1 条 warehouse 部分索引，V51 的报表日期轴和 V74 的采购每日清单各追加 1 条部分索引）
+        // V40 的地图归属再追加 1 条 warehouse 部分索引，V51 的报表日期轴和 V74 的采购每日清单各追加 1 条部分索引；
+        // V78 的 ADM-05 净需求冻结批次给 purchase_demand 加 1 条「同一批次行只能生成一条需求」的唯一索引）
         Integer indexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
@@ -63,17 +64,20 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND NOT EXISTS (SELECT 1 FROM pg_constraint c "
                         + "                  WHERE c.conname = i.indexname AND c.contype = 'p')",
                 Integer.class, V15_TABLE_LIST);
-        assertThat(indexes).isEqualTo(35);
+        assertThat(indexes).isEqualTo(36);
 
         Integer partial = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
                         + "  AND i.tablename = ANY (string_to_array(?, ',')) "
                         + "  AND i.indexdef LIKE '%WHERE%'", Integer.class, V15_TABLE_LIST);
-        // 已批准部分索引：此前 29 条，V51 的报表确认日期轴、V74 的采购每日清单各追加 1 条。
-        assertThat(partial).isEqualTo(31);
+        // 已批准部分索引：此前 29 条，V51 的报表确认日期轴、V74 的采购每日清单各追加 1 条，
+        // V78 的 ADM-05 批次行唯一索引（ON purchase_demand(calculation_batch_item_id)
+        // WHERE deleted=FALSE AND calculation_batch_item_id IS NOT NULL）再加 1 条 = 32。
+        assertThat(partial).isEqualTo(32);
 
-        // 7 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条。
+        // 8 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条 + V78（ADM-05 冻结批次）
+        // 在 purchase_demand 上加的批次行唯一索引。
         // 必须排除「约束支撑的索引」：PG 的 PRIMARY KEY / UNIQUE 约束也会生成 CREATE UNIQUE INDEX，
         // 不排除就会把 9 个主键算进来（实测 16），从而把断言变成对主键个数的间接断言。
         Integer unique = jdbc.queryForObject(
@@ -84,7 +88,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "  AND NOT EXISTS (SELECT 1 FROM pg_constraint c "
                         + "                  WHERE c.conname = i.indexname AND c.contype IN ('p','u'))",
                 Integer.class, V15_TABLE_LIST);
-        assertThat(unique).isEqualTo(7);
+        assertThat(unique).isEqualTo(8);
 
         // 2 条种子：默认仓库（G-03 单仓库）+ 超收容差配置（Q3a）
         assertThat(jdbc.queryForObject(
@@ -204,7 +208,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //   V70 = Finance R1 F1-5（仅数据）：查询与导出权限。
     //   V71–V72 = Finance R1 F1-6（仅数据）：五个页面菜单与折叠导航图标。
     //   V73 = Finance R1 F1-8（仅数据）：报表中心往来概览页面与查询权限。
-    @DisplayName("flyway_schema_history：V1–V74 全部 success，V15–V74 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V106 全部 success，V15–V106 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -216,7 +220,12 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
                 "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52",
                 "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67",
-                "68", "69", "70", "71", "72", "73", "74");
+                "68", "69", "70", "71", "72", "73", "74",
+                // V75 起是后续 ADM 交付追加的版本（ADM-02/03/04 结算与退货 → ADM-12 支付/余额）。
+                // 这里仍然逐条列举而不是 contains：只增不减，且顺序不变。
+                "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90",
+                "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105",
+                "106");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
         // 除上面逐条列举的版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）

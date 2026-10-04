@@ -119,9 +119,10 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
                 .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
                 + String.format("%06d", next + 1);
         jdbc.update("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot,"
+                        + " settlement_customer_id, settlement_customer_name_snapshot,"
                         + " amount, method, received_at, entry_type, created_at, updated_at, created_by)"
-                        + " VALUES (?, ?, '占位客户', 1.0000, 'CASH', now(), 'NORMAL', now(), now(), '2:1')",
-                taken, customerId);
+                        + " VALUES (?, ?, '占位客户', ?, '占位客户', 1.0000, 'CASH', now(), 'NORMAL', now(), now(), '2:1')",
+                taken, customerId, customerId);
 
         // 基线：本类是 NOT_SUPPORTED（真提交），前一个用例留下的收款与日志是既有事实，
         // 因此「零残留」只能相对本次调用之前测量，按全局零断言会把别人的证据算成自己的泄漏。
