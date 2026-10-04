@@ -2146,3 +2146,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7t. 后续修复：迁移校验摘要冻结至 V109
 
 干净 Docker PostgreSQL 已由 Flyway 从 V1 应用至 V109，且全量后端测试通过后，运行 `python tools/migration_checksum_guard.py sync`，将 V75～V109 加入已跟踪摘要；随后 `check` 通过。此次操作只更新仓库摘要文件，没有改写已应用迁移，也没有触碰原 `xsy_scm` V76 数据库。
+
+## 7u. 后续修复：采购缺口预览明确标记只读
+
+按 J-15 选择 A，在冻结批次缺口预览卡片增加“只读预览”标记，不改查询或需求生成行为。Docker-backed Playwright 定向用例 `10 stock shortage preview is read-only and server-computed` **1/1** 通过。

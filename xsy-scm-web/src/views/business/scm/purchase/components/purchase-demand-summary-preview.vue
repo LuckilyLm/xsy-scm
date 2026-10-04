@@ -39,6 +39,7 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
+    <a-tag color="blue">只读预览</a-tag>
     <a-alert
         class="banner"
         type="info"
