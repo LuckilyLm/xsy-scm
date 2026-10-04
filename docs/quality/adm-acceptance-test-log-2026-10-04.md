@@ -2130,3 +2130,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7p. 后续修复：收款登记结算关系纵深校验（Docker PostgreSQL 定向验证）
 
 2026-10-04 手工收款新增只读客户域契约，在首次登记前调用现有 Customer 结算关系校验；幂等重放和支付派生收款保留原冻结主体，不按当前主档重算。`AdminSettlementTermsPgIT` 在 Docker PostgreSQL 隔离库定向执行：**5 tests / 0 failures / 0 errors / 0 skipped**。
+
+## 7q. 后续修复：库存只读 DAO 契约（Docker PostgreSQL 定向验证）
+
+`InventoryMovementDao.listSalesOutAllocations` 是退货查询读取销售出库分摊的只读方法。`ScmInventoryMigrationIT` 的声明方法清单补入该方法后，Docker PostgreSQL 定向执行 **5 tests / 0 failures / 0 errors / 0 skipped**；append-only 写入口限制不变。
