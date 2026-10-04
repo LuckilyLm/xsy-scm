@@ -2118,12 +2118,12 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 本地历史不回改，在此如实勘正；`docs` 这条也不该被当成「测试全绿」的凭证 ——
 它记录的每个数字都取于 `99ec1d4f` + V106，见 §6 顶部的适用边界。
 
-## 7n. 后续修复：无组件菜单（静态记录，未应用 migration）
+## 7n. 后续修复：无组件菜单（Docker PostgreSQL 验证）
 
 2026-10-04 补齐客户 SKU 反查页（menu 435 原组件路径），并新增 V108 软删除 SmartAdmin 演示页（menu 85）及未接入端点的“可见性维护”权限（menu 487），移除角色关联。客户 SKU 编辑仍由客户新增 / 编辑与详情流程完成，反查权限（menu 486）保留。
 `SmartAdminMenuComponentPgIT` 不再豁免历史缺口。V108 已在本机 Docker 隔离库 `xsy_scm_task_20261004` 执行；原有 `xsy_scm` V76 库和生产库未操作。
 
-## 7o. 后续修复：SCM 外键口径冲突（静态记录，未应用 migration）
+## 7o. 后续修复：SCM 外键口径冲突（Docker PostgreSQL 验证）
 
 仓库规则在 `AGENTS.md` 与 SmartAdmin 底座规则中均明确 V2 不使用数据库外键。2026-10-04 新增 V109，移除 V81、V82、V88、V89、V90 引入的 9 条外键；既有采购 / 库存 migration 契约保持全局零外键断言，`ScmPurchaseMigrationIT` 的追加历史清单更新到 V109。Docker 隔离库已由 Flyway 执行至 V109；`ScmInventoryMigrationIT` 的全局零外键断言通过，随后在 mapper 方法白名单断言处发现独立缺口。原有 `xsy_scm` V76 库和生产库未操作。
 
@@ -2138,3 +2138,7 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 7r. 后续修复：动态权限 Catalog 契约（Docker PostgreSQL 定向验证）
 
 将 J-10 选择为 C：权限契约扫描器只对打印数据源权限、打印金额权限和订单异常类型查询权限展开其正式 enum / provider 值，并逐值断言 Catalog 存在及菜单已发布；支付与余额 Catalog 也纳入正式类扫描。`ScmPermissionContractPgIT` 定向执行 **2 tests / 0 failures / 0 errors / 0 skipped**，未放宽运行期权限校验。
+
+## 7s. 后续修复：结算关系校验与干净库全量后端验收
+
+`ScmFinanceReceiptSettlementPgIT` 的集团夹具改为先通过 Customer 域创建合法父子集团关系，再模拟父客户软删；手工收款边界将失效结算关系稳定映射为参数校验错误。定向测试 **3/3** 通过。随后在 Docker Desktop PostgreSQL 独立新库 `xsy_scm_release_20261004`、本机 Redis 与 MinIO 上重跑全量后端：**1,383 tests / 0 failures / 0 errors / 0 skipped**；真实 MinIO `F0FileStorageCloudIT` 为 **5/5**。Flyway 从空库迁移至 V109。原有 `xsy_scm` 数据库未修改；本结果不代表浏览器 E2E 或生产部署验收。

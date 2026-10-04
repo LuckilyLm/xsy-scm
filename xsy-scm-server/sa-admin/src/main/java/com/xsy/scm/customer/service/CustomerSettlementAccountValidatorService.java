@@ -1,6 +1,8 @@
 package com.xsy.scm.customer.service;
 
 import com.xsy.scm.common.contract.CustomerSettlementAccountValidator;
+import com.xsy.scm.common.error.ScmCommonErrorCode;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,13 @@ public class CustomerSettlementAccountValidatorService implements CustomerSettle
     @Override
     @Transactional(readOnly = true)
     public void validateSettlementRelationship(Long customerId) {
-        CustomerEntity customer = customerService.require(customerId);
-        customerService.requireSettlementAccount(customer);
+        try {
+            CustomerEntity customer = customerService.require(customerId);
+            customerService.requireSettlementAccount(customer);
+        } catch (ScmBusinessException exception) {
+            // Finance receipt input is invalid when its configured settlement account is broken,
+            // regardless of whether the referenced customer was deleted or never existed.
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
     }
 }

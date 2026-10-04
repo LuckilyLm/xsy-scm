@@ -3,6 +3,8 @@ package com.xsy.scm.finance;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.customer.domain.form.CustomerAddForm;
+import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptQueryForm;
@@ -45,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <p>
  * 悬空状态是可达的，不是假想：{@code CustomerService.assertNotReferenced} 只拦协议价与 SKU
  * 可见性引用，不拦「仍被别人当作结算主体」，所以父客户可以被删掉而子客户继续指向它。
- * 夹具因此直接用 SQL 造出这个形状，而不是依赖客户域的合法配置路径。
+ * 夹具先经客户域建立合法集团关系，再只用 SQL 模拟删除父客户。
  */
 @DisplayName("收款登记的结算主体边界（PG IT）")
 class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
@@ -73,10 +75,23 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
         return prefix + ":add:" + UUID.randomUUID();
     }
 
-    /** 让 child 把 parent 当结算主体；绕开客户域的合法配置，直接造出主档悬空的形状。 */
-    private void settleTo(Long child, Long parent) {
-        jdbc.update("UPDATE customer SET settlement_customer_id = ? WHERE id = ?", parent, child);
-        evictMybatisCache();
+    private Long groupCustomer(Long parentCustomerId) {
+        CustomerAddForm form = new CustomerAddForm();
+        form.setCustomerCode(prefix + "-G" + UUID.randomUUID().toString().substring(0, 8));
+        form.setName("结算主体边界集团客户");
+        form.setCustomerTypeId(customerTypeId(parentCustomerId == null ? "GROUP" : "ENTERPRISE"));
+        form.setSettleMode("GROUP");
+        form.setSellerId(1L);
+        form.setParentCustomerId(parentCustomerId);
+        form.setSettlementCustomerId(parentCustomerId);
+        Long customerId = customerService.add(form);
+
+        CustomerStatusForm status = new CustomerStatusForm();
+        status.setCustomerId(customerId);
+        status.setVersion(customerService.require(customerId).getVersion());
+        status.setStatus("COOPERATING");
+        customerService.updateStatus(status);
+        return customerId;
     }
 
     private void softDelete(Long customerId) {
@@ -126,11 +141,10 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
     @Test
     @DisplayName("结算父客户已软删：付款客户整行仍可读、结算主体成对为空、新收款登记被拒且不落库")
     void danglingSettlementSubjectStillReadsThePayerButRejectsANewReceipt() {
-        Long parent = newCustomer();
-        Long child = newCustomer();
+        Long parent = groupCustomer(null);
+        Long child = groupCustomer(parent);
         Long seller = plainEmployeeOwning(child);
         asEmployee(seller);
-        settleTo(child, parent);
         softDelete(parent);
 
         var fact = counterpartySourceDao.selectCustomer(child);
@@ -152,11 +166,10 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
     @Test
     @DisplayName("收款登记之后再软删结算父客户：历史收款在列表与详情里都照常可读，快照不被改写")
     void historicalReceiptStaysReadableAfterTheSettlementParentIsDeletedLater() {
-        Long parent = newCustomer();
-        Long child = newCustomer();
+        Long parent = groupCustomer(null);
+        Long child = groupCustomer(parent);
         Long seller = plainEmployeeOwning(child);
         asEmployee(seller);
-        settleTo(child, parent);
 
         FinanceReceiptVO receipt = financeReceiptService.add(form(child, "88.0000"), key());
         assertThat(receipt.getSettlementCustomerId()).isEqualTo(parent);

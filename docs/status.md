@@ -12,7 +12,7 @@
 
 ## 当前进行
 
-- ADM-12 支付与余额 c1～c3 代码已完成：内部余额支付不产生新收款，ONLINE / BALANCE 在签收或支付成功时自动核销；订单专属资金全额关联原正常应收，超额单独显示。纯余额售后在退款完成事务内返还原钱包，累计不超消费本金，与渠道 / 人工退款互斥，并提供独立重试入口和流水追溯。2026-10-04 已运行 `PaymentIntentBalanceTest`、`CustomerBalanceConsumptionTest`、`BalanceRefundServiceTest`，共 20 项通过；migration checksum guard 通过（V75～V107 尚未入快照）。V106 / V107 尚未在当前测试库执行；PostgreSQL 并发 / 事务场景因当前测试库连接配置尚未对齐而未完成，浏览器验收也未运行。混合及多交易退款分摊 d 尚未实现，见[设计与实施边界](plan/active/balance-payment-order-settlement-design.md)。
+- ADM-12 支付与余额 c1～c3 代码已完成：内部余额支付不产生新收款，ONLINE / BALANCE 在签收或支付成功时自动核销；订单专属资金全额关联原正常应收，超额单独显示。纯余额售后在退款完成事务内返还原钱包，累计不超消费本金，与渠道 / 人工退款互斥，并提供独立重试入口和流水追溯。2026-10-04 在 Docker Desktop PostgreSQL 独立新库执行 V1～V109 全量迁移及后端套件，1,383 项通过；真实 MinIO 云存储测试 5/5。混合及多交易退款分摊 d 尚未实现，真实支付渠道与浏览器验收仍未完成，见[设计与实施边界](plan/active/balance-payment-order-settlement-design.md)。
 
 - ADM-02～04 已补退货接收、结算快照、核销、冻结账期、授信阻断与例外放行的业务主链；2026-10-02 曾在独立 PostgreSQL 验收库执行针对性验证，最终新增改动待用户安排验收。
 - ADM-01 新增应收/应付账龄页面、查询、汇总、导出、权限与 V77 菜单代码；保留缺失到期日分组。仅开发，未运行测试或构建。
@@ -39,12 +39,12 @@
 
 ## 验证与部署边界
 
-- 2026-10-04 启动支付与余额收口：c1～c3 的 3 个针对性测试类共 20 项通过，Maven 同时完成主代码与 198 个测试源文件编译；migration checksum guard 通过，V75～V107 保持 pending。V106 / V107 未在当前测试库执行；PostgreSQL 并发与回滚用例尝试启动，但测试 profile 的数据库连接未建立，3 项用例在加载 ApplicationContext 时失败，因此不计为业务测试失败，也不能记为通过。浏览器、权限和实际钱包金额验收未运行。
-- 此前 V77、V80～V97 的未验收记录继续保留，本轮针对性验证不能覆盖这些模块，也不能替代生产部署验收。
-
-- 最近一次记录的全量验收为 2026-10-01：后端 1,261 tests（0 failures/errors/skipped），Web 单测 258/258，浏览器 E2E 156 passed；质量与迁移门禁通过。本轮销售毛利、客户/供应商对账开发未重跑这些验证。
-- 2026-10-01 验收记录中的前端 TS 棘轮无新增错误，但当时直接全仓 `vue-tsc --noEmit` 仍有历史类型错误；lint 保留 3 条既有 warning，构建有既有提示。不将其表述为全仓零问题。
-- 2026-10-03 只读静态扫描（`quality_guard.py scan`，未运行 verify、未改基线）显示质量守卫存在历史漂移：`magic-string-domain-literal` 10 条、`stage-comment` 3 条命中未被 `tools/quality/baseline/` 覆盖（均来自 V84～V87 阶段，非本次营销改动）。营销域本次已清零（券/活动状态与券实例状态改用枚举、替换裸字面量，命中由 9 条降为 0）。上述漂移会使 `quality_guard.py check` FAIL，需在授权验证时一并处理，本次未修改基线也未修复非营销域命中。
+- 2026-10-04 Docker Desktop 后端验收：全新库 `xsy_scm_release_20261004` 由 Flyway 从空库迁移至 V109；**1,383 tests / 0 failures / 0 errors / 0 skipped**。实际 MinIO 云存储集成 **5/5** 通过。原 `xsy_scm` 数据库（V76）未修改。证据见[ADM 验收日志 §7s](quality/adm-acceptance-test-log-2026-10-04.md)。
+- 当前 HEAD 的 Playwright 浏览器 E2E 尚未重跑；2026-10-04 之前的历史 E2E 数字不视为当前基线。地图供应商密钥、实体电子秤和真实支付渠道仍需现场验收。
+- 前端 E2E TypeScript 与 ESLint 已纳入门禁。最近一轮静态验收：TS 棘轮 1,940 条历史错误，SCM 域与新增错误均为 0；lint 通过并保留 3 条既有 warning；E2E 类型检查通过。
+- quality guard 的 13 条漂移已清理，`quality_guard.py check` 通过。GitHub Actions CI 已添加 Java 质量、前端与 PostgreSQL/Redis 后端作业；YAML/脚本通过本地静态检查，GitHub 托管运行尚未执行。
+- 2026-10-03 只读扫描中的 `magic-string-domain-literal` 与 `stage-comment` 命中已在后续整改中解决；不再沿用该次 FAIL 作为当前状态。
+- 此前 V77、V80～V97 的验收和部署记录仍按各条目状态保留；独立测试数据库通过不替代生产数据库部署验收。
 - V68–V74 最近记录只应用于本地验收 / scratch 数据库，未应用生产库；本轮未查询生产环境，部署时需单独核验。
 - 最近收口证据保留在质量基线与 ADR-005；旧过程和阶段快照从 Git 历史追溯，不另建副本文档。历史测试数字和 Git 推送不等于当前生产环境验收。
 
