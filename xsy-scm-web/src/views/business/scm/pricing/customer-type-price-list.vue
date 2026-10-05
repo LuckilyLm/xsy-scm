@@ -16,11 +16,14 @@
  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error=''" />
  <a-card size="small" :bordered="false">
   <a-row class="smart-table-btn-block"><div class="smart-table-operate-block"><a-button type="primary" v-privilege="'scm:pricing:type-price:add'" @click="drawer?.open()">新增客户类型价</a-button><a-button v-privilege="'scm:pricing:type-price:batch'" @click="router.push('/pricing/customer-type-price-batch')">批量调价</a-button></div><div class="smart-table-setting-block"><TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_TYPE_PRICE" :refresh="load" /></div></a-row>
-  <a-table :data-source="rows" :columns="columns" row-key="customerTypePriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{x:1300}">
+  <a-table :data-source="rows" :columns="columns" row-key="customerTypePriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{x:1200}">
    <template #bodyCell="{record,column}">
-    <template v-if="column.dataIndex==='unitPrice'"><span class="amount">{{formatAmount(record.unitPrice)}}</span></template>
-    <template v-else-if="column.dataIndex==='effectiveTo'">{{record.effectiveTo || '长期有效'}}</template>
-    <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate"><a-button type="link" v-privilege="'scm:pricing:type-price:update'" @click="drawer?.open(record.customerTypePriceId)">编辑</a-button><a-button type="link" danger v-privilege="'scm:pricing:type-price:delete'" @click="remove(record)">删除</a-button></div></template>
+    <template v-if="column.dataIndex==='customerTypeName'"><div class="scm-cell-stack"><span class="scm-cell-stack__main">{{record.customerTypeName || '—'}}</span><span v-if="record.customerTypeCode" class="scm-cell-stack__sub">{{record.customerTypeCode}}</span></div></template>
+    <template v-else-if="column.dataIndex==='specName'"><div class="scm-cell-stack"><span class="scm-cell-stack__main">{{record.specName || '—'}}</span><span v-if="record.skuCode" class="scm-cell-stack__sub">{{record.skuCode}}</span></div></template>
+    <template v-else-if="column.dataIndex==='unitPrice'"><span class="scm-money">{{formatAmount(record.unitPrice)}}</span></template>
+    <template v-else-if="column.dataIndex==='effectiveRange'"><div class="scm-cell-stack"><span class="scm-cell-stack__main">{{effectiveRangeText(record.effectiveFrom, record.effectiveTo)}}</span><span v-if="!record.effectiveTo" class="scm-cell-stack__sub">长期有效</span></div></template>
+    <ScmStatusTag v-else-if="column.dataIndex==='effectiveness'" v-bind="effectiveness(record)" />
+    <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate scm-table-actions"><a-button type="link" v-privilege="'scm:pricing:type-price:update'" @click="drawer?.open(record.customerTypePriceId)">编辑</a-button><a-button type="link" danger v-privilege="'scm:pricing:type-price:delete'" @click="remove(record)">删除</a-button></div></template>
    </template>
   </a-table>
   <div class="smart-query-table-page"><a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer show-quick-jumper @change="load" :show-total="(n:number)=>`共 ${n} 条`" /></div>
@@ -39,9 +42,10 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {formatAmount} from '/@/utils/scm-amount';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {pricingError} from './pricing-errors';
 import PriceDrawer from './components/customer-type-price-form-drawer.vue';
-import {datetime} from '../common/scm-display';
+import {effectiveRangeText, PRICE_EFFECTIVENESS, priceEffectiveness} from './pricing-display';
 
 const router = useRouter();
 const api = pricingApi.typePrice;
@@ -50,35 +54,21 @@ const range = ref<[string, string] | undefined>();
 const rows = ref<PriceRow[]>([]), total = ref(0), loading = ref(false), error = ref('');
 const drawer = ref<InstanceType<typeof PriceDrawer>>();
 let requestId = 0;
-const columns = ref<TableColumnsType<PriceRow>>([{
-  title: '客户类型',
-  dataIndex: 'customerTypeName',
-  width: 160
-}, {title: '客户类型编码', dataIndex: 'customerTypeCode', width: 130}, {
-  title: '商品规格编码',
-  dataIndex: 'skuCode',
-  width: 150
-}, {title: '商品', dataIndex: 'productName', width: 160}, {
-  title: '商品规格',
-  dataIndex: 'specName',
-  width: 120
-}, {title: '单价', dataIndex: 'unitPrice', align: 'right', width: 120}, {
-  title: '生效时间',
-  dataIndex: 'effectiveFrom',
-  width: 200,
-  customRender: ({text}) => datetime(text)
-}, {
-  title: '结束时间',
-  dataIndex: 'effectiveTo',
-  width: 200,
-  customRender: ({text}) => datetime(text)
-}, {title: '更新时间', dataIndex: 'updatedAt', width: 200, customRender: ({text}) => datetime(text)}, {
-  title: '操作',
-  dataIndex: 'action',
-  align: 'right',
-  fixed: 'right',
-  width: 130
-}]);
+const columns = ref<TableColumnsType<PriceRow>>([
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 160},
+  {title: '商品', dataIndex: 'productName', width: 160},
+  {title: '商品规格', dataIndex: 'specName', width: 200},
+  {title: '单价', dataIndex: 'unitPrice', align: 'right', width: 120},
+  {title: '有效期', dataIndex: 'effectiveRange', width: 340},
+  {title: '状态', dataIndex: 'effectiveness', align: 'center', width: 100},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
+]);
+
+/** 生效状态由前端按有效区间推导（VO 不带状态字段），只用于展示。 */
+function effectiveness(row: PriceRow) {
+  return PRICE_EFFECTIVENESS[priceEffectiveness(row.effectiveFrom, row.effectiveTo)];
+}
+
 
 async function load() {
   const id = ++requestId;
@@ -130,7 +120,3 @@ function remove(row: PriceRow) {
 
 onMounted(load);
 </script>
-<style scoped>.amount {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}</style>
