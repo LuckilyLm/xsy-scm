@@ -86,20 +86,15 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
-          <a-tag :color="SCM_SORTING_TASK_STATUS_COLOR[record.status as SortingTaskStatus]">
-            {{ statusDesc(record.status) }}
-          </a-tag>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="statusDesc(record.status)"/>
         </template>
         <template v-else-if="column.dataIndex === 'assigneeName'">
           {{ record.assigneeName || '未指派' }}
         </template>
         <template v-else-if="column.dataIndex === 'processedCount'">
-          <span class="num">{{ record.processedCount }} / {{ record.itemCount }}</span>
+          <!-- 已处理行数 / 总行数同格：两列分开读起来要来回对照 -->
+          <span class="scm-quantity">{{ record.processedCount }} / {{ record.itemCount }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'printCount'">
-          <span class="num">{{ record.printCount ? record.printCount : '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
         <template v-else-if="column.dataIndex === 'deliveryTimeSnapshot'">
           {{ record.deliveryTimeSnapshot ? datetime(record.deliveryTimeSnapshot) : '—' }}
         </template>
@@ -108,24 +103,9 @@
           {{ record.supplierNameSnapshot || '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="4">
+          <!-- 行内只留本状态唯一的推进动作（指派 / 改派、完成），其余收进「更多」 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
-            <a-button
-                type="link"
-                size="small"
-                v-privilege="'scm:sorting:scale:query'"
-                @click="openScale(record)"
-            >秤读数</a-button>
-            <a-button v-if="SCM_SORTING_PRINTABLE_STATUS.includes(record.status)" type="link" size="small"
-                      v-privilege="'scm:sorting:task:query'" @click="openTicket(record.id)">小票</a-button>
-            <a-button
-                v-if="SCM_SORTING_PRINTABLE_STATUS.includes(record.status)"
-                type="link"
-                size="small"
-                v-privilege="'scm:sorting:task:print'"
-                @click="openPrint(record)"
-            >打印
-            </a-button>
             <a-button
                 v-if="isWorking(record.status)"
                 type="link"
@@ -142,23 +122,7 @@
                 @click="confirmComplete(record)"
             >完成
             </a-button>
-            <a-button
-                v-if="isWorking(record.status)"
-                type="link"
-                size="small"
-                danger
-                v-privilege="'scm:sorting:task:cancel'"
-                @click="openAction('cancel', record)"
-            >取消
-            </a-button>
-            <a-button
-                v-if="record.status === 'COMPLETED'"
-                type="link"
-                size="small"
-                v-privilege="'scm:sorting:task:reopen'"
-                @click="openAction('reopen', record)"
-            >重开
-            </a-button>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -265,6 +229,10 @@ import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {
@@ -272,7 +240,6 @@ import {
     SCM_SORTING_PRINTABLE_STATUS,
     SCM_SORTING_RESULT_ENUM,
     SCM_SORTING_TABLE_ID,
-    SCM_SORTING_TASK_STATUS_COLOR,
     SCM_SORTING_TASK_STATUS_ENUM,
     SCM_SORTING_WORKING_STATUS,
     SCM_SORTING_PRODUCT_TYPE_ENUM,
@@ -293,7 +260,6 @@ import type {
     SortingPrint,
     SortingTask,
     SortingTaskQuery,
-    SortingTaskStatus,
 } from './sorting-types';
 import {sortingError} from './sorting-types';
 
@@ -330,21 +296,55 @@ const emptyText = computed(() =>
     isQueueManager.value ? '暂无分拣任务' : '当前仅显示派给您本人的任务；若无数据，可能是任务尚未指派或本仓未授权给您，请联系分拣主管确认。'
 );
 
+// 分拣是操作型工作台，列只留「哪张任务 / 谁在做 / 做到哪了 / 什么时候要送到」。
+// 打印次数与创建时间下沉详情；「明细行数 + 已处理」合成一格进度（两列分开要来回对照）。
 const columns = ref<TableColumnsType<SortingTask>>([
   {title: '任务号', dataIndex: 'taskNo', width: 180},
-  {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 160},
+  {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '受指派人', dataIndex: 'assigneeName', width: 120},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '明细行数', dataIndex: 'itemCount', align: 'right', width: 90},
-  {title: '已处理', dataIndex: 'processedCount', align: 'right', width: 100},
-  {title: '打印次数', dataIndex: 'printCount', align: 'right', width: 90},
+  {title: '分拣进度', dataIndex: 'processedCount', align: 'right', width: 110},
   // 三个冻结维度：任务建出来之后它们不再变化，所以直接展示，不做「当前值 vs 快照」的对比
   {title: '送货时间', dataIndex: 'deliveryTimeSnapshot', width: 170},
-  {title: '波次', dataIndex: 'deliveryWave', width: 120},
+  {title: '波次', dataIndex: 'deliveryWave', width: 110},
   {title: '供应商来源', dataIndex: 'supplierNameSnapshot', width: 150},
-  {title: '创建时间', dataIndex: 'createdAt', width: 170},
-  {title: '操作', dataIndex: 'action', fixed: 'right', align: 'right', width: 320},
+  {title: '操作', dataIndex: 'action', fixed: 'right', align: 'center', width: 220},
 ]);
+
+/** §25 状态视觉：待分拣 = 待处理（橙），分拣中 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
+const SORTING_STATUS_TONE: Record<string, ScmStatusTone> = {
+  PENDING: 'warning',
+  SORTING: 'processing',
+  COMPLETED: 'success',
+  CANCELLED: 'neutral',
+};
+const statusTone = (status?: string | null): ScmStatusTone => SORTING_STATUS_TONE[status ?? ''] ?? 'neutral';
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+function rowActions(row: SortingTask): ScmActionItem[] {
+  const working = isWorking(row.status);
+  const printable = SCM_SORTING_PRINTABLE_STATUS.includes(row.status);
+  return [
+    {key: 'scale', label: '秤读数', hidden: !hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
+    {key: 'ticket', label: '小票', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY))},
+    {key: 'print', label: '打印', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_PRINT))},
+    // 取消限 WORKING、重开限 COMPLETED：两者条件不同不是漏写
+    {key: 'cancel', label: '取消单据', danger: true, hidden: !(working && hasPermission(SCM_SORTING_PERMISSION.TASK_CANCEL))},
+    {key: 'reopen', label: '重开', hidden: !(row.status === 'COMPLETED' && hasPermission(SCM_SORTING_PERMISSION.TASK_REOPEN))},
+  ];
+}
+
+function onRowAction(key: string, row: SortingTask) {
+  if (key === 'scale') {
+    openScale(row);
+  } else if (key === 'ticket') {
+    openTicket(row.id);
+  } else if (key === 'print') {
+    openPrint(row);
+  } else if (key === 'cancel' || key === 'reopen') {
+    openAction(key, row);
+  }
+}
 
 function statusDesc(status?: string | null) {
     return status ? SCM_SORTING_TASK_STATUS_ENUM[status]?.desc ?? status : '—';
@@ -686,11 +686,7 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-.num {  font-variant-numeric: tabular-nums;
-}
-
 .toolbar-hint {
   margin-left: 12px;
 }
-
 </style>

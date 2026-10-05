@@ -80,17 +80,33 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1380 }"
+        :scroll="{ x: 1120 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'plannedQuantity'">
-          <span class="num">{{ quantityText(record.plannedQuantity) }}</span>
+        <template v-if="column.dataIndex === 'product'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.productNameSnapshot || '—' }}</span>
+            <span v-if="record.spuCodeSnapshot" class="scm-cell-stack__sub">{{ record.spuCodeSnapshot }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'sku'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.specNameSnapshot || '—' }}</span>
+            <span v-if="record.skuCodeSnapshot" class="scm-cell-stack__sub">{{ record.skuCodeSnapshot }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'plannedQuantity'">
+          <span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'sortedQuantity'">
-          <span class="num">{{ quantityText(record.sortedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.sortedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unprocessedCount'">
-          <a-tag :color="record.unprocessedCount ? 'orange' : 'green'">{{ record.unprocessedCount }}</a-tag>
+          <!-- 未处理行数是本页唯一需要「一眼挑出来」的异常信号：0 不强调，非 0 才着色 -->
+          <ScmStatusTag
+              :tone="record.unprocessedCount ? 'warning' : 'neutral'"
+              :label="String(record.unprocessedCount ?? '—')"
+          />
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -116,6 +132,7 @@ import {computed, onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {
@@ -143,12 +160,15 @@ const emptyText = computed(() =>
         : '当前仅统计授权仓库内派给您本人的任务；若无数据，可能是尚未生成分拣任务，请联系分拣主管确认。'
 );
 
-/** 列即口径：数量列只有本行同单位内的合计，绝不出现跨行的「合计」列。 */
+/**
+ * 列即口径：数量列只有本行同单位内的合计，绝不出现跨行的「合计」列。
+ *
+ * 两个编码（商品编码 / 商品规格编码）不再各占一列，改为名称下方的 secondary text ——
+ * 本页每行是「商品 + 规格 + 单位」的聚合，两列编码会把 11 列挤成 11 列纯技术字段。
+ */
 const columns = ref<TableColumnsType<SortingSkuSummary>>([
-  {title: '商品', dataIndex: 'productNameSnapshot', width: 190},
-  {title: '商品规格', dataIndex: 'specNameSnapshot', width: 150},
-  {title: '商品编码', dataIndex: 'spuCodeSnapshot', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 140},
+  {title: '商品', dataIndex: 'product', width: 190},
+  {title: '商品规格', dataIndex: 'sku', width: 190},
   {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 90},
   {title: '涉及订单数', dataIndex: 'orderCount', align: 'right', width: 110},
   {title: '任务数', dataIndex: 'taskCount', align: 'right', width: 90},
@@ -191,10 +211,6 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-.num {
-  font-variant-numeric: tabular-nums;
-}
-
 .read-only-hint {
   margin-bottom: 12px;
 }

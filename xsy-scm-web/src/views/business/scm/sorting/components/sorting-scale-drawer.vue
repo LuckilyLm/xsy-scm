@@ -14,7 +14,7 @@
         bordered
         :loading="scaleLoading"
         :pagination="false"
-        :scroll="{x:1100}"
+        :scroll="{x:1410}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
@@ -25,8 +25,13 @@
         <template v-else-if="column.dataIndex === 'stableFlag'">
           <a-tag :color="record.stableFlag ? 'green' : 'orange'">{{ record.stableFlag ? '已稳定' : '未稳定' }}</a-tag>
         </template>
-        <template v-else-if="column.dataIndex === 'rawReading' || column.dataIndex === 'acceptedQuantity'">
-          <span class="num">{{ quantityText(record[column.dataIndex]) }}</span>
+        <template v-else-if="column.dataIndex === 'rawReading'">
+          <!-- 秤读数是本抽屉唯一要「读」的数字：放大 + 等宽 -->
+          <span class="reading">{{ quantityText(record.rawReading) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'acceptedQuantity'">
+          <!-- 与读数区分：绿色表示这个数字已经写进分拣结果 -->
+          <span class="accepted">{{ quantityText(record.acceptedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'capturedAt' || column.dataIndex === 'receivedAt'">
           {{ datetime(record[column.dataIndex]) }}
@@ -90,7 +95,7 @@ const scaleColumns: TableColumnsType = [
     {title: '采集时间', dataIndex: 'capturedAt', width: 175},
     {title: '接收时间', dataIndex: 'receivedAt', width: 175},
     {title: '接受数量', dataIndex: 'acceptedQuantity', align: 'right', width: 110},
-    {title: '处理', dataIndex: 'action', align: 'right', fixed: 'right', width: 140},
+    {title: '处理', dataIndex: 'action', align: 'center', fixed: 'right', width: 140},
 ];
 
 watch(
@@ -164,8 +169,17 @@ function close() {
 </script>
 
 <style scoped>
-.num {
+/* 原始读数：放大到 18px，与「接受数量」形成明确的视觉层级 */
+.reading {
+  font-size: 18px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* 接受数量：绿色 = 已写进分拣结果，与「还只是一个读数」区分开 */
+.accepted {
+  font-variant-numeric: tabular-nums;
+  color: var(--scm-success, #52c41a);
 }
 
 .scale-banner {
@@ -173,6 +187,6 @@ function close() {
 }
 
 .hint {
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 </style>

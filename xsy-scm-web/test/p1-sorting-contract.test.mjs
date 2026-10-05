@@ -162,13 +162,17 @@ test('页面用到的 v-privilege 全部落在权限码集合内，且集合与�
     const declared = Object.values(SCM_SORTING_PERMISSION).sort();
     assert.deepEqual(declared, [...CONTRACT_PERMS].sort(), '权限码必须与后端契约一一对应，不多不少');
 
-    const used = new Set(
-        [
-            ...[...taskList.matchAll(/v-privilege="'([^']+)'"/g)].map((m) => m[1]),
-            ...[...taskFilter.matchAll(/v-privilege="'([^']+)'"/g)].map((m) => m[1]),
-            ...[...summary.matchAll(/v-privilege="'([^']+)'"/g)].map((m) => m[1]),
-        ]
-    );
+    /**
+     * 页面上「用到权限码」的两种写法：
+     * - 行内按钮的 `v-privilege="'码'"` 指令；
+     * - 「更多」菜单项（挂不上指令）的 `hasPermission(SCM_SORTING_PERMISSION.X)`。
+     * 只数前者会随动作下移而漏掉一半，样本量门禁因此会误报「扫描失效」。
+     */
+    const permsIn = (source) => [
+        ...[...source.matchAll(/v-privilege="'([^']+)'"/g)].map((m) => m[1]),
+        ...[...source.matchAll(/hasPermission\(SCM_SORTING_PERMISSION\.(\w+)\)/g)].map((m) => SCM_SORTING_PERMISSION[m[1]]),
+    ];
+    const used = new Set([...permsIn(taskList), ...permsIn(taskFilter), ...permsIn(summary)].filter(Boolean));
     // 样本量门禁：匹配数为 0 会让上面两个断言「空跑通过」，扫描失效比断言失败更危险
     assert.ok(used.size >= 8, `只解析到 ${used.size} 个权限码，说明页面或扫描方式失效`);
     for (const perm of used) {
@@ -217,17 +221,23 @@ test('按钮出现条件与后端状态机一致', () => {
     assert.deepEqual(Object.keys(SCM_SORTING_PRODUCT_TYPE_ENUM), ['STANDARD', 'NON_STANDARD']);
 
     // 取消限 WORKING、重开限 COMPLETED：两者条件不同不是漏写。
-    // 按「按钮标签」取条件，不按「权限码附近 200 字符」取：一个码在列表行与抽屉里各出现一次，
-    // 靠距离匹配会把抽屉那一份的条件安到列表按钮上，断言就只测了个寂寞。
-    const actionTags = [...taskList.matchAll(/<a-button\b[\s\S]*?<\/a-button>/g)].map((m) => m[0]);
-    const tagFor = (perm) => actionTags.find((tag) => tag.includes(perm));
-    const cancelTag = tagFor('scm:sorting:task:cancel');
-    const reopenTag = tagFor('scm:sorting:task:reopen');
-    const printTag = tagFor('scm:sorting:task:print');
-    assert.ok(cancelTag && reopenTag && printTag, '缺取消 / 重开 / 打印按钮');
-    assert.match(cancelTag, /v-if="isWorking\(record\.status\)"/);
-    assert.match(reopenTag, /v-if="record\.status === 'COMPLETED'"/);
-    assert.match(printTag, /SCM_SORTING_PRINTABLE_STATUS\.includes\(record\.status\)/);
+    // 这三个动作现在住在 rowActions() 的 hidden 条件里（低频动作收进「更多」，
+    // 行内只留详情 + 本状态的推进动作），所以按动作 key 取那一段再断言条件。
+    const actionOf = (key) => taskList.match(new RegExp(`key: '${key}'[\\s\\S]{0,220}`))?.[0];
+    const cancelAction = actionOf('cancel');
+    const reopenAction = actionOf('reopen');
+    const printAction = actionOf('print');
+    assert.ok(cancelAction && reopenAction && printAction, '缺取消 / 重开 / 打印动作');
+    // working 是 isWorking(row.status) 的别名，与行内按钮同一判据
+    assert.match(taskList, /const working = isWorking\(row\.status\)/);
+    assert.match(cancelAction, /working && hasPermission\(SCM_SORTING_PERMISSION\.TASK_CANCEL\)/);
+    assert.match(reopenAction, /row\.status === 'COMPLETED'/);
+    assert.match(printAction, /printable && hasPermission\(SCM_SORTING_PERMISSION\.TASK_PRINT\)/);
+    assert.match(taskList, /const printable = SCM_SORTING_PRINTABLE_STATUS\.includes\(row\.status\)/);
+    // 推进动作（指派 / 改派、完成）必须留在行内：分拣是操作型工作台，
+    // 把「下一步该干什么」藏进「更多」等于每次多一次点击。
+    assert.match(taskList, /v-if="isWorking\(record\.status\)"[\s\S]{0,160}scm:sorting:task:assign/);
+    assert.match(taskList, /v-if="isWorking\(record\.status\)"[\s\S]{0,160}scm:sorting:task:complete/);
     // 取消与重开的原因是必填项（与后端 requireReason 同口径）
     assert.match(taskList, /if \(actionMode\.value !== 'assign' && !reason\)/);
     // 编辑权 = 干活的状态 + 派给本人 + 明细编辑权，缺一即只读；三者同源于录入组合式函数
@@ -262,4 +272,46 @@ test('列表分页上限受后端约束（pageSize > 100 会被 30001 拒绝）'
         assert.ok(Math.max(...sizes) <= 100, `${name} 的 pageSize 选项超过后端上限 100`);
     }
     assert.match(taskList, /salesOrderItemIds: \[\.\.\.candidateSelected\.value\]/);
+});
+
+// ------------------------------------------------------------------ 列表与汇总的展示收敛
+
+test('分拣列表与汇总页按「少列、编码下沉」收敛', () => {
+    // 任务列表：打印次数与创建时间下沉详情；「明细行数 + 已处理」合成一格进度
+    // （两列分开读起来要来回对照，而它们回答的是同一个问题：这单做到哪了）
+    assert.doesNotMatch(taskList, /title: '打印次数'/);
+    assert.doesNotMatch(taskList, /title: '创建时间'/);
+    assert.doesNotMatch(taskList, /title: '明细行数'/);
+    assert.match(taskList, /title: '分拣进度', dataIndex: 'processedCount'/);
+    assert.match(taskList, /record\.processedCount \}\} \/ \{\{ record\.itemCount/);
+    // 状态走 §25 档位，不再直接读 antd 色名表
+    assert.match(taskList, /PENDING: 'warning'/);
+    assert.match(taskList, /SORTING: 'processing'/);
+    assert.match(taskList, /COMPLETED: 'success'/);
+    assert.match(taskList, /CANCELLED: 'neutral'/);
+    assert.match(taskList, /ScmStatusTag/);
+    assert.doesNotMatch(taskList, /SCM_SORTING_TASK_STATUS_COLOR/);
+    // 操作列 320 → 220 居中：详情 / 指派·改派 / 完成 / 更多
+    assert.match(taskList, /dataIndex: 'action', fixed: 'right', align: 'center', width: 220/);
+    assert.match(taskList, /ScmActionMore/);
+
+    // 汇总页：两个编码折进名称下方，未处理行数走 tag 档位
+    assert.doesNotMatch(summary, /title: '商品编码'/);
+    assert.doesNotMatch(summary, /title: '商品规格编码'/);
+    assert.match(summary, /title: '商品', dataIndex: 'product'/);
+    assert.match(summary, /title: '商品规格', dataIndex: 'sku'/);
+    assert.match(summary, /record\.spuCodeSnapshot/);
+    assert.match(summary, /record\.skuCodeSnapshot/);
+    assert.match(summary, /record\.unprocessedCount \? 'warning' : 'neutral'/);
+});
+
+test('秤读数抽屉把读数与接受数量在视觉上分开', () => {
+    const scale = code('../src/views/business/scm/sorting/components/sorting-scale-drawer.vue');
+    // 读数要「读」，所以放大；接受数量绿色表示已经写进分拣结果
+    assert.match(scale, /column\.dataIndex === 'rawReading'/);
+    assert.match(scale, /column\.dataIndex === 'acceptedQuantity'/);
+    assert.match(scale, /class="reading"/);
+    assert.match(scale, /class="accepted"/);
+    // 抽屉里的次要文字也要用已定义的语义变量（antd-vue 4.2.5 不开 cssVar）
+    assert.doesNotMatch(scale, /var\(--ant-color-/, '--ant-color-* 从未定义，必须用 --scm-*');
 });
