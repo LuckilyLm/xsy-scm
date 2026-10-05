@@ -42,39 +42,51 @@
       </div>
     </a-row>
     <a-table id="order-table" size="small" :data-source="tableData" :columns="columns" row-key="orderId" bordered
-             :loading="loading" :pagination="false" :scroll="{x:1500}"
+             :loading="loading" :pagination="false" :scroll="{x:1190}"
              :row-selection="{selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys,getCheckboxProps:(r:Order)=>({disabled:r.status!=='DRAFT'})}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='orderNo'"><a @click="detail?.open(record.orderId)">{{ record.orderNo }}</a>
         </template>
+        <template v-else-if="column.dataIndex==='customerNameSnapshot'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.customerNameSnapshot || '—' }}</span>
+            <span v-if="record.customerCodeSnapshot" class="scm-cell-stack__sub">{{ record.customerCodeSnapshot }}</span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex==='status'">
-          <a-tag>{{ SCM_ORDER_STATUS_ENUM[record.status]?.desc }}</a-tag>
+          <ScmStatusTag :tone="statusTone(record.status)"
+                        :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc"/>
         </template>
         <template v-else-if="column.dataIndex==='orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc }}
         </template>
-        <template v-else-if="column.dataIndex==='orderedTotalAmount'">{{ amount(record.orderedTotalAmount, true) }}
+        <template v-else-if="column.dataIndex==='orderedTotalAmount'">
+          <span class="scm-money">{{ amount(record.orderedTotalAmount, true) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='settlementTotalAmount'">{{ amount(record.settlementTotalAmount) }}
+        <template v-else-if="column.dataIndex==='settlementTotalAmount'">
+          <span class="scm-money">{{ amount(record.settlementTotalAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex==='action'">
-          <div class="smart-table-operate">
-            <a-button type="link" @click="detail?.open(record.orderId)">详情</a-button>
-            <a-button v-if="record.status==='CONFIRMED'" type="link" v-privilege="'scm:order:add'"
-                      @click="drawer?.openFromHistory(record.orderId)">复用为新单
-            </a-button>
-            <a-button v-if="record.status==='DRAFT'" type="link" v-privilege="'scm:order:update'"
-                      @click="drawer?.open(record.orderId)">编辑
-            </a-button>
-            <a-button v-if="record.status==='DRAFT'" type="link" v-privilege="'scm:order:submit'"
-                      @click="submit(record)">提交
-            </a-button>
-            <a-button v-if="record.status==='DRAFT'" danger type="link" v-privilege="'scm:order:delete'"
-                      @click="remove(record)">删除
-            </a-button>
-            <a-button v-if="record.status==='CONFIRMED'" type="link" v-privilege="'scm:order:reserve-stock'"
-                      @click="reserveStock(record)">预留库存
-            </a-button>
-          </div>
+          <!-- 行内只留当前状态最高频的动作，其余收进「更多」；动作集合与原行内按钮一一对应 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <template v-if="record.status==='DRAFT'">
+              <a-button type="link" size="small" v-privilege="'scm:order:update'"
+                        @click="drawer?.open(record.orderId)">编辑
+              </a-button>
+              <a-button type="link" size="small" v-privilege="'scm:order:submit'"
+                        @click="submit(record)">提交
+              </a-button>
+            </template>
+            <template v-else-if="record.status==='CONFIRMED'">
+              <a-button type="link" size="small" @click="detail?.open(record.orderId)">详情</a-button>
+              <a-button type="link" size="small" v-privilege="'scm:order:reserve-stock'"
+                        @click="reserveStock(record)">预留库存
+              </a-button>
+            </template>
+            <template v-else>
+              <a-button type="link" size="small" @click="detail?.open(record.orderId)">详情</a-button>
+            </template>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -89,16 +101,21 @@
   <OrderDetail ref="detail" @saved="queryData"/>
 </template>
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import {SCM_ORDER_STATUS_ENUM, SCM_ORDER_SOURCE_ENUM} from '/@/constants/business/scm/order-const';
 import type {Order, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
+import {hasPermission} from '../common/scm-permission';
 import OrderForm from './components/order-form-drawer.vue';
 import OrderImportModal from './components/order-import-modal.vue';
 import OrderDetail from './order-detail.vue';
@@ -108,24 +125,54 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<O
 const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>(),
     detail = ref<InstanceType<typeof OrderDetail>>();
 let requestId = 0;
-const columns = ref<TableColumnsType<Order>>([{title: '订单号', dataIndex: 'orderNo', width: 210}, {
-  title: '客户',
-  dataIndex: 'customerNameSnapshot',
-  width: 160
-}, {title: '客户编码', dataIndex: 'customerCodeSnapshot', width: 130}, {
-  title: '来源',
-  dataIndex: 'orderSource',
-  width: 100
-}, {title: '状态', dataIndex: 'status', align: 'center', width: 95}, {
-  title: '下单金额',
-  dataIndex: 'orderedTotalAmount',
-  align: 'right',
-  width: 140
-}, {title: '结算金额', dataIndex: 'settlementTotalAmount', align: 'right', width: 140}, {
-  title: '期望配送时间',
-  dataIndex: 'expectDeliveryTime',
-  width: 210
-}, {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 260}]);
+const columns = ref<TableColumnsType<Order>>([
+  {title: '订单号', dataIndex: 'orderNo', width: 190},
+  {title: '客户', dataIndex: 'customerNameSnapshot', width: 200},
+  {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 100},
+  {title: '下单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 130},
+  {title: '结算金额', dataIndex: 'settlementTotalAmount', align: 'right', width: 130},
+  {title: '期望配送时间', dataIndex: 'expectDeliveryTime', width: 180},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
+]);
+
+/** 规划 §25：草稿/待确认=待处理，已确认=处理中，已取消=失效。 */
+const STATUS_TONE: Record<string, ScmStatusTone> = {
+  DRAFT: 'warning',
+  PENDING: 'warning',
+  CONFIRMED: 'processing',
+  CANCELLED: 'neutral',
+};
+const statusTone = (value?: string | null): ScmStatusTone => STATUS_TONE[value ?? ''] ?? 'neutral';
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canAdd = computed(() => hasPermission('scm:order:add'));
+const canDelete = computed(() => hasPermission('scm:order:delete'));
+
+/**
+ * 行内常驻当前状态最高频的动作（草稿：编辑/提交；已确认：详情/预留库存），其余收进「更多」。
+ * 动作集合与原行内按钮一一对应，只按频率重新分组，不新增也不隐藏业务动作。
+ */
+function rowActions(row: Order): ScmActionItem[] {
+  const draft = row.status === 'DRAFT';
+  const confirmed = row.status === 'CONFIRMED';
+  return [
+    {key: 'detail', label: '详情', hidden: draft || confirmed},
+    {key: 'reuse', label: '复用为新单', hidden: !(confirmed && canAdd.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+  ];
+}
+
+function onRowAction(key: string, row: Order) {
+  // `Order.orderId` 在 VO 里可选，打开详情 / 复用为新单都要求确定的 Id，这里先判空。
+  if (row.orderId != null && key === 'detail') {
+    detail?.value?.open(row.orderId);
+  } else if (row.orderId != null && key === 'reuse') {
+    drawer?.value?.openFromHistory(row.orderId);
+  } else if (key === 'delete') {
+    remove(row);
+  }
+}
 
 async function queryData() {
   const id = ++requestId;

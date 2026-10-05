@@ -57,9 +57,11 @@ test('明细表按客户 + SKU 现查最近已确认订单价，且不回写解�
   assert.doesNotMatch(table, /record\.draftUnitPrice\s*=/);
 });
 
-test('订单列表把「复用为新单」接在既有操作列，沿用 scm:order:add 权限', () => {
+test('订单列表把「复用为新单」接在操作列的「更多」里，沿用 scm:order:add 权限', () => {
   const list = code('../src/views/business/scm/order/order-list.vue');
-  assert.match(list, /openFromHistory\(record\.orderId\)/);
-  assert.match(list, /复用为新单/);
-  assert.match(list, /v-privilege="'scm:order:add'"/);
+  // 规划 §14.1：已确认订单行内只留「详情 + 预留库存」，复用为新单属于低频动作，收进「更多」。
+  // 菜单项挂不上 v-privilege 指令，改用同一口径的 hasPermission 裁剪，权限码不变。
+  assert.match(list, /key: 'reuse', label: '复用为新单'/);
+  assert.match(list, /openFromHistory\(row\.orderId\)/);
+  assert.match(list, /hasPermission\('scm:order:add'\)/);
 });

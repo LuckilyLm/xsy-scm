@@ -128,7 +128,8 @@ test('9 history reuse prefills a new draft and the recent-price popover shows th
  await page.getByPlaceholder('名称或订单号').fill(confirmedOrder.orderNo);
  await page.getByRole('button',{name:/^查\s*询$/}).click();
  const row=page.locator('#order-table tbody tr').filter({hasText:confirmedOrder.orderNo}).first();
- await row.getByRole('button',{name:'复用为新单'}).click();
+ await row.getByRole('button',{name:'更多操作'}).click();
+ await page.getByRole('menuitem',{name:'复用为新单'}).click();
  const drawer=page.locator('.ant-drawer:visible');
  // 复用生成的是「新建」态：只带一行历史商品，价格按当前价重新解析，绝不沿用历史锁价
  await expect(drawer.getByRole('button',{name:'创建订单'})).toBeVisible();
@@ -147,7 +148,8 @@ test('9 history reuse prefills a new draft and the recent-price popover shows th
  await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
  // 组件实例不销毁，重开抽屉时不能直接冒出上次的价签。仍走复用入口：
  // 上面那次关闭落了本地草稿，走「新建订单」会先弹草稿恢复框，与本用例要验的东西无关。
- await row.getByRole('button',{name:'复用为新单'}).click();
+ await row.getByRole('button',{name:'更多操作'}).click();
+ await page.getByRole('menuitem',{name:'复用为新单'}).click();
  await expect(drawer.getByRole('button',{name:'创建订单'})).toBeVisible();
  await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
  expect(consoleErrors).toEqual([]);
