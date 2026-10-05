@@ -2,8 +2,6 @@
   <a-card size="small" :bordered="false" :loading="loading">
     <a-space class="smart-margin-bottom10">
       <a-button @click="router.push('/product/product-list')">返回商品列表</a-button>
-      <a-button @click="load">刷新详情</a-button>
-      <a-button v-privilege="'support:operateLog:query'" :disabled="!spuId" @click="openOperateLog">操作日志</a-button>
     </a-space>
     <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>
@@ -106,7 +104,7 @@ const route = useRoute(), router = useRouter();
 const product = ref<ProductRow>(), loading = ref(false), error = ref('');
 let requestId = 0;
 
-/** 深链 spuId 即详情与操作日志入口的唯一上下文；非纯数字视为无效。 */
+/** 深链 spuId 是详情页唯一的上下文来源；非纯数字视为无效。 */
 const spuId = computed(() => {
   const id = route.query.spuId;
   return typeof id === 'string' && /^\d+$/.test(id) ? id : '';
@@ -131,15 +129,6 @@ async function load() {
   } finally {
     if (request === requestId) loading.value = false;
   }
-}
-
-// 携带业务上下文跳到通用操作日志页，按 spuId 精确筛选。
-function openOperateLog() {
-  if (!spuId.value) return;
-  void router.push({
-    path: '/support/operate-log/operate-log-list',
-    query: {businessType: 'PRODUCT', businessId: spuId.value},
-  });
 }
 
 watch(() => route.query.spuId, load, {immediate: true});

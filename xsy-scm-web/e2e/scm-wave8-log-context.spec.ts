@@ -3,7 +3,9 @@
 
   覆盖 §12.3 Wave 8 的四件事，并且**全部用真实非管理员登录**（只读角色 / 零权限角色），
   避免「只有 SUPER_ADMIN 走过链路」这种验收口径：
-    1. 商品详情的「操作日志」入口把业务类型与 ID 带进日志页，查询载荷按下钻而不是扫全表；
+    1. 操作日志页按业务类型与 ID 下钻（查询载荷按下钻而不是扫全表）——
+       原先由「商品详情的操作日志入口」触发，该入口已按产品要求移除，
+       现在直接打开深链验证同一条口径；
     2. 日志页刷新与「重置」都不丢业务上下文（重置只清普通筛选），返回行确实落在该对象上；
     3. 零权限账号按业务对象查询日志被服务端拒（30005）——前端隐藏按钮不是权限；
     4. 客户列表查询条件按登录人分别记忆：查询落键、刷新恢复、重置清除，且换人不共用同一键。
@@ -97,7 +99,7 @@ test.afterAll(async () => {
   execFileSync('python', [ACCOUNT_SCRIPT, 'cleanup'], {env, stdio: 'pipe'});
 });
 
-test('商品详情「操作日志」入口带 PRODUCT 上下文下钻（只读角色）', async ({page}) => {
+test('操作日志页按 PRODUCT 业务上下文下钻（原商品详情入口已移除）', async ({page}) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   const query = await (await adminApi.post('/scm/product/query', {data: {pageNum: 1, pageSize: 1}})).json();
@@ -106,17 +108,14 @@ test('商品详情「操作日志」入口带 PRODUCT 上下文下钻（只读�
   expect(spuId, '当前库没有任何商品，Wave 8 下钻场景无法执行').toBeTruthy();
 
   await authenticate(page, readToken);
-  await page.goto(`/#/product/product-detail?spuId=${spuId}`);
-  await expect(button(page, '操作日志')).toBeVisible();
-  const pending = queryPayload(page);
-  await button(page, '操作日志').click();
-  await page.waitForURL(/operate-log-list/);
-  expect(page.url()).toContain('businessType=PRODUCT');
-  expect(page.url()).toContain(`businessId=${spuId}`);
-
-  const payload = await pending;
+  // 商品详情的「操作日志」入口已按产品要求移除，因此这里直接验证深链本身：
+  // 只要日志页仍按 PRODUCT + businessId 精确下钻，入口挂在哪个页面都不改变这条口径。
+  await page.goto(`/#/support/operate-log/operate-log-list?businessType=PRODUCT&businessId=${spuId}`);
+  const payload = await queryPayload(page);
   expect(payload.businessType).toBe('PRODUCT');
   expect(payload.businessId, '业务 ID 必须以数值下钻，不能退化成文本筛选').toBe(Number(spuId));
+  expect(page.url()).toContain('businessType=PRODUCT');
+  expect(page.url()).toContain(`businessId=${spuId}`);
   // 下钻视图必须自带口径说明：它不是该对象的全部历史。
   await expect(page.getByText('正在按当前业务对象查看操作记录')).toBeVisible();
   expect(errors).toEqual([]);
