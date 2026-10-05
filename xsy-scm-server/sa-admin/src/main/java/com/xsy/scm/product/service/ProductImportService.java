@@ -24,7 +24,6 @@ import com.xsy.scm.product.domain.form.ProductImageForm;
 import com.xsy.scm.product.domain.form.ProductSkuForm;
 import com.xsy.scm.product.domain.form.ProductSpuAddForm;
 import com.xsy.scm.product.domain.form.ProductSpuUpdateForm;
-import com.xsy.scm.product.domain.vo.ProductImportErrorVO;
 import com.xsy.scm.product.domain.vo.ProductImportResultVO;
 import com.xsy.scm.product.manager.ProductAggregateValidator;
 import org.springframework.stereotype.Service;
@@ -42,9 +41,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import static com.xsy.scm.product.service.ProductImportValueRules.addError;
+import static com.xsy.scm.product.service.ProductImportValueRules.decimal;
+import static com.xsy.scm.product.service.ProductImportValueRules.enumValue;
+import static com.xsy.scm.product.service.ProductImportValueRules.integer;
+import static com.xsy.scm.product.service.ProductImportValueRules.length;
+import static com.xsy.scm.product.service.ProductImportValueRules.nonNegative;
+import static com.xsy.scm.product.service.ProductImportValueRules.parseInteger;
+import static com.xsy.scm.product.service.ProductImportValueRules.parseLong;
+import static com.xsy.scm.product.service.ProductImportValueRules.positiveId;
+import static com.xsy.scm.product.service.ProductImportValueRules.required;
+import static com.xsy.scm.product.service.ProductImportValueRules.same;
+import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 
 /**
- * 商品 Excel 导入编排：工作簿读写由 {@link ProductImportWorkbookSupport} 负责，领域校验通过后 交给 {@link ProductImportWriteService} 整批回滚写入。
+ * 商品 Excel 导入编排：工作簿读写由 {@link ProductImportWorkbookSupport} 负责，单元格规范化和字段值校验由 {@link ProductImportValueRules} 负责，领域校验通过后交给
+ * {@link ProductImportWriteService} 整批回滚写入。
  * 复用既有 ProductSpuService.add / update 的全部领域校验与保护，不新建导入旁路。
  *
  * <p>
@@ -65,7 +77,6 @@ public class ProductImportService {
     static final int MAX_ROWS = 20000;
     private static final int MAX_PRODUCTS = 5000;
     private static final int MAX_SKUS_PER_PRODUCT = 200;
-    static final int MAX_ERRORS = 1000;
     private static final Set<
             String> SHELF = Set.of(ScmShelfStatusEnum.ON_SHELF.name(), ScmShelfStatusEnum.OFF_SHELF.name());
     private static final Set<
@@ -714,116 +725,6 @@ public class ProductImportService {
 
     private String string(Integer value) {
         return value == null ? null : String.valueOf(value);
-    }
-
-    private Long parseLong(String value) {
-        var trimmedValue = trim(value);
-        if (trimmedValue == null)
-            return null;
-        try {
-            return Long.valueOf(trimmedValue);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private Integer parseInteger(String value) {
-        var trimmedValue = trim(value);
-        if (trimmedValue == null)
-            return null;
-        try {
-            return Integer.valueOf(trimmedValue);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private void positiveId(ProductImportResultVO result, int rowNumber, String key, String column, String value) {
-        var trimmedValue = trim(value);
-        if (trimmedValue != null && (parseLong(trimmedValue) == null || parseLong(trimmedValue) <= 0)) {
-            addError(result, rowNumber, key, column, "ID_INVALID", column + "必须是正整数");
-        }
-    }
-
-    private void nonNegative(ProductImportResultVO result, int rowNumber, String key, String column, String value) {
-        var trimmedValue = trim(value);
-        if (trimmedValue == null)
-            return;
-        var number = parseInteger(trimmedValue);
-        if (number == null || number < 0) {
-            addError(result, rowNumber, key, column, "INT_INVALID", column + "必须是 0 以上的整数");
-        }
-    }
-
-    private void required(ProductImportResultVO result, int rowNumber, String key, String column, String value) {
-        if (trim(value) == null)
-            addError(result, rowNumber, key, column, "REQUIRED", column + "不能为空");
-    }
-
-    private void length(ProductImportResultVO result, int rowNumber, String key, String column, String value, int max) {
-        var trimmedValue = trim(value);
-        if (trimmedValue != null && trimmedValue.length() > max)
-            addError(result, rowNumber, key, column, "TOO_LONG", column + "不能超过 " + max + " 个字符");
-    }
-
-    private void enumValue(ProductImportResultVO result, int rowNumber, String key, String column, String value,
-            Set<String> allowed) {
-        var trimmedValue = trim(value);
-        if (trimmedValue != null && !allowed.contains(trimmedValue)) {
-            addError(result, rowNumber, key, column, "ENUM_INVALID", column + "取值必须是 " + allowed);
-        }
-    }
-
-    private void decimal(ProductImportResultVO result, int rowNumber, String key, String column, String value,
-            boolean positive) {
-        var trimmedValue = trim(value);
-        if (trimmedValue == null)
-            return;
-        try {
-            if (!trimmedValue.matches("[0-9]{1,14}(\\.[0-9]{1,4})?"))
-                throw new NumberFormatException();
-            var number = new BigDecimal(trimmedValue);
-            if (positive ? number.signum() <= 0 : number.signum() < 0)
-                throw new NumberFormatException();
-        } catch (NumberFormatException exception) {
-            addError(result, rowNumber, key, column, "DECIMAL_INVALID",
-                    column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数");
-        }
-    }
-
-    private void integer(ProductImportResultVO result, int rowNumber, String key, String column, String value, int min,
-            int max) {
-        var trimmedValue = trim(value);
-        if (trimmedValue == null)
-            return;
-        try {
-            var number = Integer.parseInt(trimmedValue);
-            if (number < min || number > max)
-                throw new NumberFormatException();
-        } catch (NumberFormatException exception) {
-            addError(result, rowNumber, key, column, "INT_INVALID", column + "必须是 " + min + "~" + max + " 的整数");
-        }
-    }
-
-    private void same(ProductImportResultVO result, int rowNumber, String key, String column, String expected,
-            String actual) {
-        if (!Objects.equals(trim(expected), trim(actual))) {
-            addError(result, rowNumber, key, column, "HEADER_CONFLICT", "同一商品的" + column + "必须一致");
-        }
-    }
-
-    private String trim(String value) {
-        if (value == null)
-            return null;
-        var trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private void addError(ProductImportResultVO result, int rowNumber, String key, String column, String code,
-            String message) {
-        result.setTotalErrors(result.getTotalErrors() + 1);
-        if (result.getErrors().size() < MAX_ERRORS)
-            result.getErrors().add(new ProductImportErrorVO(rowNumber, key, column, code, message));
     }
 
     private record Assembly(List<ProductSpuAddForm> forms, List<List<ProductImportRow>> groups) {

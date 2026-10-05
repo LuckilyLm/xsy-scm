@@ -4,7 +4,6 @@ import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.product.constant.ScmStorageMethodEnum;
 import com.xsy.scm.product.domain.dto.ProductImportRow;
-import com.xsy.scm.product.domain.vo.ProductImportErrorVO;
 import com.xsy.scm.product.domain.vo.ProductImportResultVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellType;
@@ -20,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BiConsumer;
+import static com.xsy.scm.product.service.ProductImportValueRules.addError;
+import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 
 /** Excel 模板生成和工作簿解析；产品领域校验与写入由导入服务负责。 */
 @Slf4j
@@ -178,18 +179,4 @@ public class ProductImportWorkbookSupport {
         };
     }
 
-    private void addError(ProductImportResultVO result, int rowNumber, String key, String column, String code,
-            String message) {
-        result.setTotalErrors(result.getTotalErrors() + 1);
-        if (result.getErrors().size() < ProductImportService.MAX_ERRORS) {
-            result.getErrors().add(new ProductImportErrorVO(rowNumber, key, column, code, message));
-        }
-    }
-
-    private String trim(String value) {
-        if (value == null)
-            return null;
-        var trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
 }
