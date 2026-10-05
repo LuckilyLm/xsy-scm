@@ -8,7 +8,10 @@
 
 .xsy-login {
   position: relative;
-  min-height: 100%;
+  // 必须用视口单位而不是 100%：body 高度是 auto，min-height:100% 解析不出视口高度，
+  // 内容比视口略高时（矮屏 + 500px 卡片）会溢出 ~11px，触发纵向滚动条，
+  // 滚动条占掉右侧 ~15px 使右下角露出一条浅色带。
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -162,7 +165,9 @@
   display: flex;
   width: 100%;
   max-width: 1160px;
-  min-height: 500px;
+  // 用 min() 而不是固定 500px：矮视口（<=700px 高）时必须让卡片跟着缩，
+  // 否则卡片 + 页脚会顶破视口触发滚动条，右下角露出一条浅色带。
+  min-height: min(500px, calc(100vh - 140px));
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(15, 23, 42, 0.06);
@@ -438,6 +443,90 @@
 }
 
 // ---------------- 响应式 ----------------
+
+// 矮视口：卡片与页脚要能塞进一屏，否则会出纵向滚动条，
+// 滚动条占掉右侧约 15px，右下角就会露出一条浅色带。
+@media (max-height: 760px) {
+  .xsy-login {
+    padding: 20px 24px 12px;
+  }
+
+  .xsy-login__footer {
+    margin-top: 12px;
+  }
+}
+
+@media (max-height: 640px) {
+  .xsy-login {
+    padding: 12px 20px 8px;
+  }
+
+  .xsy-login__brand,
+  .xsy-login__panel {
+    padding-top: 28px;
+    padding-bottom: 28px;
+  }
+
+  .xsy-login__brand-copy {
+    margin-top: 18px;
+  }
+
+  .xsy-login__features {
+    margin-top: 16px;
+  }
+
+  .xsy-login__header {
+    margin-bottom: 18px;
+  }
+
+  .xsy-login__footer {
+    margin-top: 8px;
+  }
+
+  // 表单是矮屏下的高度瓶颈：每项间距与输入框高度都要收一点，
+  // 否则卡片缩不下去，卡片+页脚还是顶破一屏。
+  .xsy-login__form {
+    .ant-form-item {
+      margin-bottom: 12px;
+    }
+
+    .ant-input,
+    .ant-input-affix-wrapper {
+      height: 40px;
+    }
+
+    .ant-input-affix-wrapper > input.ant-input {
+      height: 38px;
+    }
+  }
+
+  .xsy-login__captcha-img,
+  .xsy-login__code-btn {
+    height: 40px;
+  }
+
+  .xsy-login__submit {
+    height: 42px;
+  }
+
+  .xsy-login__remember {
+    margin-bottom: 8px;
+  }
+
+  // 主插画是左列最高的块（约 337px）：矮屏下它才是卡片撑到 580px 的真因。
+  // min-height 拦不住内容，必须直接压插画本身。
+  .xsy-login__visual {
+    padding-top: 12px;
+    max-height: 200px;
+    overflow: hidden;
+  }
+
+  .xsy-login__scene {
+    max-height: 200px;
+    width: auto;
+    max-width: 100%;
+  }
+}
 
 @media (max-width: 1199px) {
   .xsy-login__shell {
