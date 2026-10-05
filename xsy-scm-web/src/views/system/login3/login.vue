@@ -22,6 +22,7 @@
               <AppstoreOutlined class="xsy-login__node-icon"/>
               <span>商品</span>
             </div>
+            <div class="xsy-login__connector"></div>
             <div class="xsy-login__node">
               <ShopOutlined class="xsy-login__node-icon"/>
               <span>供应商</span>
