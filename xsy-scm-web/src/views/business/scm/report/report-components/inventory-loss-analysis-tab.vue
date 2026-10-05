@@ -59,13 +59,13 @@
           {{ enumDescText(record.movementType, SCM_REPORT_LOSS_TYPE_ENUM) }}
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
-          <span class="num">{{ quantityText(record.quantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unitCost'">
-          <span class="num">{{ costText(record.unitCost, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.unitCost, canViewCost) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'costAmount'">
-          <span class="num">{{ costText(record.costAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.costAmount, canViewCost) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'occurredAt'">
           {{ datetime(record.occurredAt) }}
@@ -124,7 +124,7 @@ const emit = defineEmits<{
 
 const columns = ref<TableColumnsType<InventoryLossRow>>([
   {title: '商品', dataIndex: 'productName', width: 180},
-  {title: '商品规格', dataIndex: 'skuCode', width: 170},
+  {title: '商品规格', dataIndex: 'skuName', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '损耗类型', dataIndex: 'movementType', width: 110},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
@@ -201,9 +201,3 @@ function changePage(page: number, pageSize: number) {
   emit('pageChange', page, pageSize);
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

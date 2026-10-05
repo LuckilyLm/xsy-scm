@@ -33,19 +33,19 @@
           <a @click="emit('openPurchaser', record)">{{ record.purchaserName ?? '未分配采购员' }}</a>
         </template>
         <template v-else-if="column.dataIndex === 'orderCount'">
-          <span class="num">{{ countText(record.orderCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.orderCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'skuKindCount'">
-          <span class="num">{{ countText(record.skuKindCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.skuKindCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'orderAmount'">
-          <span class="num">{{ moneyText(record.orderAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.orderAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'receiptReferenceAmount'">
-          <span class="num">{{ moneyText(record.receiptReferenceAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.receiptReferenceAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-          <span class="num">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
           <a-tooltip v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
                      :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')">
             <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true"/>
@@ -123,7 +123,8 @@ function changePage(page: number, pageSize: number) {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+.report-warn-icon {
+  color: var(--ant-color-warning);
+  margin-left: 4px;
 }
 </style>

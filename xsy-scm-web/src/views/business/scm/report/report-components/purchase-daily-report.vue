@@ -35,11 +35,11 @@
       <span>当前范围 {{ report.products.total }} 项</span>
     </p>
     <a-table size="small" bordered :columns="columns" :data-source="report?.products.list ?? []"
-             :row-key="rowKey" :loading="loading" :pagination="false" :scroll="{ x: 1080 }"
+             :row-key="rowKey" :loading="loading" :pagination="false" :scroll="{ x: 800 }"
              :locale="{ emptyText }">
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'plannedQuantity'">{{ quantityText(record.plannedQuantity) }}</template>
-        <template v-else-if="column.dataIndex === 'orderAmount'">{{ moneyText(record.orderAmount) }}</template>
+        <template v-if="column.dataIndex === 'plannedQuantity'"><span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span></template>
+        <template v-else-if="column.dataIndex === 'orderAmount'"><span class="scm-money">{{ moneyText(record.orderAmount) }}</span></template>
       </template>
     </a-table>
     <div class="daily-pagination">
@@ -87,9 +87,7 @@ let requestSequence = 0;
 let appliedQuery: PurchaseDailyQuery | undefined;
 
 const columns: TableColumnsType<PurchaseDailyProduct> = [
-  {title: '商品编码', dataIndex: 'spuCode', width: 140},
   {title: '商品名称', dataIndex: 'productName', width: 180},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '商品规格', dataIndex: 'skuName', width: 160},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 90},
   {title: '采购单数', dataIndex: 'orderCount', width: 100, align: 'right'},

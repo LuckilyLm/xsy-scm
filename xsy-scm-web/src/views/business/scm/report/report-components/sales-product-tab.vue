@@ -33,26 +33,26 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无商品销售数据'}"
-        :scroll="{x: 1720}"
+        :scroll="{x: 1400}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderCount'">
-          <span class="num">{{ countText(record.orderCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.orderCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'customerCount'">
-          <span class="num">{{ countText(record.customerCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.customerCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'confirmedQuantity'">
-          <span class="num">{{ quantityText(record.confirmedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.confirmedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'avgTransactionPrice'">
-          <span class="num">{{ moneyText(record.avgTransactionPrice) }}</span>
+          <span class="scm-money">{{ moneyText(record.avgTransactionPrice) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'settlementAmount'">
-          <span class="num">{{ moneyText(record.settlementAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.settlementAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'amountRank'">
-          <span class="num">{{ countText(record.amountRank) }}</span>
+          <span class="scm-quantity">{{ countText(record.amountRank) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -102,8 +102,6 @@ const columns = ref<TableColumnsType<SalesProductRow>>([
   {title: '商品名称', dataIndex: 'productName', width: 200},
   {title: '一级分类', dataIndex: 'rootCategoryName', width: 140},
   {title: '末级分类', dataIndex: 'leafCategoryName', width: 140},
-  {title: '商品编码', dataIndex: 'spuCode', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '商品规格', dataIndex: 'specName', width: 140},
   {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 100},
   {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 110},
@@ -122,9 +120,3 @@ function changePage(page: number, pageSize: number) {
   emit('pageChange', page, pageSize);
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

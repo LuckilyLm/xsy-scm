@@ -32,7 +32,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无供应商采购数据'}"
-        :scroll="{x: 1600}"
+        :scroll="{x: 1450}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'supplierName'">
@@ -40,19 +40,19 @@
           <span v-else>{{ record.supplierName ?? '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'orderCount'">
-          <span class="num">{{ countText(record.orderCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.orderCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'skuKindCount'">
-          <span class="num">{{ countText(record.skuKindCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.skuKindCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'orderAmount'">
-          <span class="num">{{ moneyText(record.orderAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.orderAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'receiptReferenceAmount'">
-          <span class="num">{{ moneyText(record.receiptReferenceAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.receiptReferenceAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-          <span class="num">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
           <a-tooltip v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
                      :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')">
             <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true"/>
@@ -62,7 +62,7 @@
           {{ datetime(record.lastSubmittedAt) }}
         </template>
         <template v-else-if="column.dataIndex === 'amountRank'">
-          <span class="num">{{ countText(record.amountRank) }}</span>
+          <span class="scm-quantity">{{ countText(record.amountRank) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -114,7 +114,6 @@ const emit = defineEmits<{
 
 const COST_INDEXES = ['inboundCostAmount'];
 const columns = ref<TableColumnsType<PurchaseSupplierRow>>([
-  {title: '供应商编码', dataIndex: 'supplierCode', width: 150},
   {title: '供应商名称', dataIndex: 'supplierName', width: 200},
   {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 110},
   {title: '商品规格数', dataIndex: 'skuKindCount', align: 'right', width: 120},
@@ -137,7 +136,8 @@ function changePage(page: number, pageSize: number) {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+.report-warn-icon {
+  color: var(--ant-color-warning);
+  margin-left: 4px;
 }
 </style>

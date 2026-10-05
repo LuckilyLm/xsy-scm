@@ -27,7 +27,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无客户订单明细'}"
-        :scroll="{x: 1600}"
+        :scroll="{x: 1450}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderNo'">
@@ -44,16 +44,16 @@
           {{ enumDescText(record.settleMode, SETTLE_MODE_ENUM) }}
         </template>
         <template v-else-if="column.dataIndex === 'lineCount'">
-          <span class="num">{{ countText(record.lineCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.lineCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'skuKindCount'">
-          <span class="num">{{ countText(record.skuKindCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.skuKindCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'settlementAmount'">
-          <span class="num">{{ moneyText(record.settlementAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.settlementAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'completedRefundAmount'">
-          <span class="num">{{ moneyText(record.completedRefundAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.completedRefundAmount) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -104,7 +104,6 @@ const emit = defineEmits<{
 const columns = ref<TableColumnsType<SalesOrderRow>>([
   {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
   {title: '订单号', dataIndex: 'orderNo', width: 190},
-  {title: '客户编码', dataIndex: 'customerCode', width: 150},
   {title: '客户名称', dataIndex: 'customerName', width: 200},
   {title: '销售员', dataIndex: 'sellerName', width: 120},
   {title: '订单来源', dataIndex: 'orderSource', width: 110},
@@ -127,9 +126,3 @@ function openOrder(orderId?: ReportId) {
   if (orderId !== undefined) emit('openOrder', orderId);
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

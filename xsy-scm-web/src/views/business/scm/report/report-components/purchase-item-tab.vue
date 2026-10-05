@@ -26,7 +26,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无采购明细'}"
-        :scroll="{x: 2300}"
+        :scroll="{x: 1990}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'submittedAt'">
@@ -43,16 +43,16 @@
           {{ dateOnly(record.plannedArrivalDate) }}
         </template>
         <template v-else-if="column.dataIndex === 'plannedQuantity'">
-          <span class="num">{{ quantityText(record.plannedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'receivedQuantity'">
-          <span class="num">{{ quantityText(record.receivedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.receivedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'purchasePrice'">
-          <span class="num">{{ moneyText(record.purchasePrice) }}</span>
+          <span class="scm-money">{{ moneyText(record.purchasePrice) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'lineAmount'">
-          <span class="num">{{ moneyText(record.lineAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.lineAmount) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -107,9 +107,7 @@ const columns = ref<TableColumnsType<PurchaseItemRow>>([
   {title: '采购员', dataIndex: 'purchaserName', width: 120},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '计划到货日期', dataIndex: 'plannedArrivalDate', width: 130},
-  {title: '商品编码', dataIndex: 'spuCode', width: 140},
   {title: '商品', dataIndex: 'productName', width: 180},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '商品规格', dataIndex: 'skuName', width: 140},
   {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 100},
   {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 120},
@@ -130,9 +128,3 @@ function openPurchaseOrder(purchaseOrderId?: string | number) {
   if (purchaseOrderId !== undefined) emit('openPurchaseOrder', purchaseOrderId);
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

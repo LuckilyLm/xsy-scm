@@ -33,26 +33,26 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无客户销售数据'}"
-        :scroll="{x: 1400}"
+        :scroll="{x: 1250}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderCount'">
-          <span class="num">{{ countText(record.orderCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.orderCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'skuKindCount'">
-          <span class="num">{{ countText(record.skuKindCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.skuKindCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'settlementAmount'">
-          <span class="num">{{ moneyText(record.settlementAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.settlementAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'completedRefundAmount'">
-          <span class="num">{{ moneyText(record.completedRefundAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.completedRefundAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'lastConfirmedAt'">
           {{ datetime(record.lastConfirmedAt) }}
         </template>
         <template v-else-if="column.dataIndex === 'amountRank'">
-          <span class="num">{{ countText(record.amountRank) }}</span>
+          <span class="scm-quantity">{{ countText(record.amountRank) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -100,7 +100,6 @@ const emit = defineEmits<{
 }>();
 
 const columns = ref<TableColumnsType<SalesCustomerRow>>([
-  {title: '客户编码', dataIndex: 'customerCode', width: 150},
   {title: '客户名称', dataIndex: 'customerName', width: 200},
   {title: '销售员', dataIndex: 'sellerName', width: 120},
   {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 110},
@@ -119,9 +118,3 @@ function changePage(page: number, pageSize: number) {
   emit('pageChange', page, pageSize);
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

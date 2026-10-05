@@ -26,7 +26,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无订单明细'}"
-        :scroll="{x: 2600}"
+        :scroll="{x: 2150}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderNo'">
@@ -46,19 +46,19 @@
           {{ optionLabel(PRODUCT_TYPE_ENUM, record.productType) }}
         </template>
         <template v-else-if="column.dataIndex === 'orderedQuantity'">
-          <span class="num">{{ quantityText(record.orderedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.orderedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'actualQuantity'">
-          <span class="num">{{ quantityText(record.actualQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.actualQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'lockedUnitPrice'">
-          <span class="num">{{ moneyText(record.lockedUnitPrice) }}</span>
+          <span class="scm-money">{{ moneyText(record.lockedUnitPrice) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'lockedPriceSource'">
           {{ enumDescText(record.lockedPriceSource, SCM_ORDER_PRICE_SOURCE_ENUM) }}
         </template>
         <template v-else-if="column.dataIndex === 'settlementLineAmount'">
-          <span class="num">{{ moneyText(record.settlementLineAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.settlementLineAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'manualPriceOverride'">
           {{ yesNoText(record.manualPriceOverride) }}
@@ -113,14 +113,11 @@ const emit = defineEmits<{
 const columns = ref<TableColumnsType<SalesItemRow>>([
   {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
   {title: '订单号', dataIndex: 'orderNo', width: 190},
-  {title: '客户编码', dataIndex: 'customerCode', width: 140},
   {title: '客户名称', dataIndex: 'customerName', width: 180},
   {title: '销售员', dataIndex: 'sellerName', width: 110},
   {title: '订单来源', dataIndex: 'orderSource', width: 110},
   {title: '结算方式', dataIndex: 'settleMode', width: 110},
-  {title: '商品编码', dataIndex: 'spuCode', width: 140},
   {title: '商品名称', dataIndex: 'productName', width: 180},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '商品规格', dataIndex: 'specName', width: 130},
   {title: '商品类型', dataIndex: 'productType', width: 100},
   {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 90},
@@ -145,9 +142,3 @@ function openOrder(orderId?: string | number) {
   if (orderId !== undefined) emit('openOrder', orderId);
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

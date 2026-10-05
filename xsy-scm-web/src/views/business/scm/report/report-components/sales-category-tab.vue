@@ -37,16 +37,16 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'settlementAmount'">
-          <span class="num">{{ moneyText(record.settlementAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.settlementAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'orderCount'">
-          <span class="num">{{ countText(record.orderCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.orderCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'customerCount'">
-          <span class="num">{{ countText(record.customerCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.customerCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'amountRank'">
-          <span class="num">{{ countText(record.amountRank) }}</span>
+          <span class="scm-quantity">{{ countText(record.amountRank) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -109,9 +109,3 @@ function changePage(page: number, pageSize: number) {
   emit('pageChange', page, pageSize);
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

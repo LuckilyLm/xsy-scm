@@ -109,29 +109,29 @@
           <a @click="goAnalysis('sales', record.bizDate)">{{ record.bizDate }}</a>
         </template>
         <template v-else-if="column.dataIndex === 'confirmedOrderCount'">
-          <span class="num">{{ countText(record.confirmedOrderCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.confirmedOrderCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'customerCount'">
-          <span class="num">{{ countText(record.customerCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.customerCount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'confirmedOrderAmount'">
-          <span class="num">{{ moneyText(record.confirmedOrderAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.confirmedOrderAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'completedRefundAmount'">
-          <span class="num">{{ moneyText(record.completedRefundAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.completedRefundAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'submittedPurchaseAmount'">
-          <span class="num">{{ moneyText(record.submittedPurchaseAmount) }}</span>
+          <span class="scm-money">{{ moneyText(record.submittedPurchaseAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'purchaseInCostAmount'">
-          <span class="num">{{ costText(record.purchaseInCostAmount, canViewCost) }}</span>
+          <span class="scm-money">{{ costText(record.purchaseInCostAmount, canViewCost) }}</span>
           <a-tooltip v-if="incompleteCostHint(record.purchaseInCostMissingCount, '采购入库成本金额')"
                      :title="incompleteCostHint(record.purchaseInCostMissingCount, '采购入库成本金额')">
             <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true"/>
           </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="scm-table-actions">
             <a-button type="link" @click="goAnalysis('sales', record.bizDate)">销售</a-button>
             <a-button type="link" @click="goAnalysis('purchase', record.bizDate)">采购</a-button>
             <a-button type="link" @click="goAnalysis('receipt', record.bizDate)">收货入库</a-button>
@@ -215,7 +215,7 @@ const columns = ref<TableColumnsType<ReportDailyStat>>([
     {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
     {title: '已提交采购金额', dataIndex: 'submittedPurchaseAmount', align: 'right', width: 160},
     {title: '采购入库成本金额', dataIndex: 'purchaseInCostAmount', align: 'right', width: 180},
-    {title: '下钻', dataIndex: 'action', align: 'right', fixed: 'right', width: 260},
+    {title: '下钻', dataIndex: 'action', align: 'center', fixed: 'right', width: 260},
 ]);
 
 /** 成本列：无 `scm:report:cost:query` 时整列不出现（不是显示一串 `—`）。 */
@@ -393,10 +393,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .report-warn-icon {
   color: var(--ant-color-warning);
   margin-left: 4px;

@@ -44,10 +44,10 @@
           {{ dateOnly(record.bizDate) }}
         </template>
         <template v-else-if="column.dataIndex === 'weightedAvgPrice'">
-          <span class="num">{{ moneyText(record.weightedAvgPrice) }}</span>
+          <span class="scm-money">{{ moneyText(record.weightedAvgPrice) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'sampleLineCount'">
-          <span class="num">{{ countText(record.sampleLineCount) }}</span>
+          <span class="scm-quantity">{{ countText(record.sampleLineCount) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -118,9 +118,3 @@ function refresh() {
   emit('reload');
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

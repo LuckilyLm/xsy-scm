@@ -7,7 +7,7 @@
       </a-tooltip>
       <a-tag v-if="currentPoint">当前时点</a-tag>
     </div>
-    <div class="report-kpi-value">{{ value }}</div>
+    <div class="report-kpi-value" :class="tone ? `report-kpi-value--${tone}` : ''">{{ value }}</div>
     <div v-if="sub" class="report-kpi-sub">{{ sub }}</div>
     <div v-if="warning" class="report-kpi-warn">{{ warning }}</div>
   </a-card>
@@ -38,6 +38,8 @@ defineProps<{
     warning?: string;
     /** 时点值标记。 */
     currentPoint?: boolean;
+    /** 数值语义色：danger 用于逾期合计这类必须第一眼看到的坏消息；颜色之外标签仍说明含义。 */
+    tone?: 'danger';
 }>();
 </script>
 
@@ -65,6 +67,11 @@ defineProps<{
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
   margin-top: 4px;
+}
+
+.report-kpi-value--danger {
+  /* 用 SCM 主题变量：antd 4.2.5 不开 cssVar，--ant-color-* 在项目里从未定义 */
+  color: var(--scm-error, #cf1322);
 }
 
 .report-kpi-sub {
