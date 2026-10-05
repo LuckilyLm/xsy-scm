@@ -46,7 +46,7 @@
           <span v-else>无余额返还记录</span>
         </template>
         <template v-else-if="column.dataIndex==='action'">
-          <div class="smart-table-operate">
+          <div class="smart-table-operate scm-table-actions">
             <a-button type="link" v-privilege="'scm:order:refund:complete'" v-if="record.status==='PENDING'"
                       @click="edit(record)">登记退款完成
             </a-button>
@@ -106,7 +106,7 @@ const columns = ref<TableColumnsType<RefundRow>>([{
 }, {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200}, {title: '外部凭证', dataIndex: 'externalReference', width: 200}, {
   title: '操作',
   dataIndex: 'action',
-  align: 'right',
+  align: 'center',
   fixed: 'right',
   width: 240
 }]);

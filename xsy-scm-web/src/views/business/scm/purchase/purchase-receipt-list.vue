@@ -98,7 +98,7 @@
           </a-tag>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="smart-table-operate scm-table-actions">
             <a-button
                 v-if="record.status === 'DRAFT'"
                 type="link"
@@ -210,7 +210,7 @@ const columns = ref<TableColumnsType<Receipt>>([
   {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
   {title: '操作者', dataIndex: 'operator', width: 120},
   {title: '备注', dataIndex: 'remark', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 250},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 250},
 ]);
 
 /** 采购单号 → id：收货单列表按 `purchaseOrderId` 过滤，不能直接传单号。 */

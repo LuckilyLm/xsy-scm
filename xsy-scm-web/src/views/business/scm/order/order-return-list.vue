@@ -38,7 +38,7 @@
         <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
-          <div class="smart-table-operate">
+          <div class="smart-table-operate scm-table-actions">
             <a-button type="link" v-privilege="'scm:order:return:query'" @click="showDetail(record.returnId)">详情</a-button>
             <a-button type="link" v-privilege="'scm:order:return:approve'" v-if="record.status==='PENDING'"
                       @click="edit(record,'approve')">批准
@@ -139,7 +139,7 @@ const columns = ref<TableColumnsType<ReturnRow>>([{
 }, {title: '批准金额', dataIndex: 'approvedAmount', align: 'right', width: 140}, {
   title: '操作',
   dataIndex: 'action',
-  align: 'right',
+  align: 'center',
   fixed: 'right',
   width: 240
 }]);

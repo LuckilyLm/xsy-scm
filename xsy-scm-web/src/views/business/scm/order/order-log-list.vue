@@ -36,7 +36,7 @@
         <template v-if="column.dataIndex==='operationType'">{{ SCM_ORDER_OPERATION_ENUM[text]?.desc }}</template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
-          <div class="smart-table-operate">
+          <div class="smart-table-operate scm-table-actions">
             <a-button type="link" @click="active=record;visible=true">变更前后</a-button>
           </div>
         </template>
@@ -80,7 +80,7 @@ const columns = ref<TableColumnsType<LogRow>>([{
 }, {title: '原因', dataIndex: 'reason', width: 200}, {
   title: '操作',
   dataIndex: 'action',
-  align: 'right',
+  align: 'center',
   fixed: 'right',
   width: 240
 }]);

@@ -63,7 +63,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'reason'">{{ record.reason || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="smart-table-operate scm-table-actions">
             <a-button type="link" @click="active = record; visible = true">变更前后</a-button>
           </div>
         </template>
@@ -107,7 +107,7 @@ const columns = ref<TableColumnsType<LogRow>>([
   {title: '采购单 id', dataIndex: 'purchaseOrderId', width: 120},
   {title: '收货单 id', dataIndex: 'purchaseReceiptId', width: 120},
   {title: '原因', dataIndex: 'reason', width: 200},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 120},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
 ]);
 
 async function queryData() {

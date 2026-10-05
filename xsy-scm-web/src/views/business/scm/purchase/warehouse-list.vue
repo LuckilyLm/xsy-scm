@@ -62,7 +62,7 @@
         <template v-else-if="column.dataIndex === 'address'">{{ record.address || '—' }}</template>
         <template v-else-if="column.dataIndex === 'remark'">{{ record.remark || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="smart-table-operate scm-table-actions">
             <a-button type="link" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
             <a-button type="link" v-privilege="'scm:warehouse:scope:query'" @click="scopeModal?.openEmployees(record.id, record.name)">
               授权员工
@@ -188,7 +188,7 @@ const columns = ref<TableColumnsType<Warehouse>>([
   {title: '地址', dataIndex: 'address', width: 260},
   {title: '备注', dataIndex: 'remark', width: 200},
   {title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 210},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 210},
 ]);
 
 async function queryData() {

@@ -90,7 +90,7 @@
           <span v-else class="hint">手工毛需求</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
+          <div class="smart-table-operate scm-table-actions">
             <a-button
                 v-if="Number(record.unallocatedQuantity ?? '0') > 0"
                 type="link"
@@ -249,7 +249,7 @@ const columns = computed<TableColumnsType<Demand>>(() => [
   {title: '供应商', dataIndex: 'supplierName', width: 150},
   {title: '仓库', dataIndex: 'warehouseName', width: 130},
   {title: '需求日期', dataIndex: 'demandDate', width: 120},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 160},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
 
 async function queryData() {

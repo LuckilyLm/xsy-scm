@@ -271,7 +271,7 @@
               {{ textOrDash(record.quantityText) }}
             </template>
             <template v-else-if="column.dataIndex === 'action'">
-              <div class="smart-table-operate">
+              <div class="smart-table-operate scm-table-actions">
                 <!-- 只有一个跳转：报表不提供「确认入库」写入口 -->
                 <a-button type="link" @click="openReceipt(record.receiptNo)">查看原收货单</a-button>
               </div>
@@ -389,7 +389,7 @@ const pendingColumns = ref<TableColumnsType<PendingPutawayRow>>([
     {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
     {title: '商品种类', dataIndex: 'skuKindCount', align: 'right', width: 110},
     {title: '收货数量', dataIndex: 'quantityText', width: 220},
-    {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 140},
+    {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 140},
 ]);
 
 /** 入库成本两列受成本权限控制。 */
