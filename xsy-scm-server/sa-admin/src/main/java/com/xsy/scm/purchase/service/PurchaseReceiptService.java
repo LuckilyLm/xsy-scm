@@ -29,7 +29,6 @@ import com.xsy.scm.purchase.domain.form.PurchaseReceiptCreateForm;
 import com.xsy.scm.purchase.domain.form.PurchaseReceiptDeleteForm;
 import com.xsy.scm.purchase.domain.form.PurchaseReceiptPutawayForm;
 import com.xsy.scm.purchase.domain.form.PurchaseReceiptUpdateForm;
-import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import com.xsy.scm.purchase.manager.PurchaseOrderStateMachine;
 import com.xsy.scm.purchase.manager.PurchaseOrderValidator;
@@ -67,6 +66,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_O
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_OVER_RECEIVED;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_STATE_INVALID;
+import static com.xsy.scm.purchase.service.PurchaseReceiptSnapshotMapper.receiptSnapshot;
 
 /**
  * 采购收货命令服务。
@@ -197,7 +197,7 @@ public class PurchaseReceiptService {
         PurchaseReceiptVO result = purchaseQueryService.receiptDetailForCommand(receipt.getId());
         Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("receiptNo", receipt.getReceiptNo());
-        after.put("items", items.stream().map(PurchaseReceiptService::receiptItemSnapshot).toList());
+        after.put("items", items.stream().map(PurchaseReceiptSnapshotMapper::receiptItemSnapshot).toList());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.RECEIPT_CREATE,
                 order.getId(), receipt.getId(), null, null, after));
         purchaseIdempotencyService.complete(claim, ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name(),
@@ -712,38 +712,4 @@ public class PurchaseReceiptService {
         }
     }
 
-    private static Map<String, Object> receiptItemSnapshot(PurchaseReceiptItemEntity row) {
-        Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
-        snapshot.put("id", row.getId());
-        snapshot.put("purchaseOrderItemId", row.getPurchaseOrderItemId());
-        snapshot.put("skuId", row.getSkuId());
-        snapshot.put("plannedQuantity", PurchaseSnapshotFactory.fixed(row.getPlannedQuantity()));
-        snapshot.put("receivedQuantity", PurchaseSnapshotFactory.fixed(row.getReceivedQuantity()));
-        return snapshot;
-    }
-
-    /**
-     * `RECEIPT_DELETE` 的「全量」前态。
-     */
-    private static Map<String, Object> receiptSnapshot(PurchaseReceiptVO vo) {
-        Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
-        snapshot.put("id", vo.getId());
-        snapshot.put("receiptNo", vo.getReceiptNo());
-        snapshot.put("purchaseOrderId", vo.getPurchaseOrderId());
-        snapshot.put("status", vo.getStatus());
-        snapshot.put("remark", vo.getRemark());
-        snapshot.put("version", vo.getVersion());
-        List<Map<String, Object>> items = new ArrayList<>();
-        if (vo.getItems() != null) {
-            for (PurchaseReceiptItemVO item : vo.getItems()) {
-                Map<String, Object> one = PurchaseSnapshotFactory.snapshot();
-                one.put("id", item.getId());
-                one.put("purchaseOrderItemId", item.getPurchaseOrderItemId());
-                one.put("receivedQuantity", PurchaseSnapshotFactory.fixed(item.getReceivedQuantity()));
-                items.add(one);
-            }
-        }
-        snapshot.put("items", items);
-        return snapshot;
-    }
 }
