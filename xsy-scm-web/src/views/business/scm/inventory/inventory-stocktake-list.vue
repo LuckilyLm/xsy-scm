@@ -86,34 +86,24 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无盘点单' }"
-        :scroll="{ x: 1300 }"
+        :scroll="{ x: 1160 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'status'">
-          <a-tag :color="statusColor(record.status)">{{ record.statusDesc || record.status }}</a-tag>
+        <template v-if="column.dataIndex === 'warehouse'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
+            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'status'">
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
         <template v-else-if="column.dataIndex === 'confirmedAt'">{{ datetime(record.confirmedAt) }}</template>
-        <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="4">
+          <!-- 行内常驻「详情」与草稿态的「确认盘点」（会真实调整库存，故单独留在行内），
+               复制 / 编辑 / 取消 / 删除收进「更多」 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-            <a-button
-                type="link"
-                size="small"
-                @click="openCopy(record)"
-                v-privilege="'scm:inventory:stocktake:add'"
-            >
-              复制到新建
-            </a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                @click="openEdit(record)"
-                v-privilege="'scm:inventory:stocktake:update'"
-            >
-              编辑
-            </a-button>
             <a-button
                 v-if="record.status === 'DRAFT'"
                 type="link"
@@ -123,26 +113,7 @@
             >
               确认盘点
             </a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                danger
-                @click="onCancel(record)"
-                v-privilege="'scm:inventory:stocktake:update'"
-            >
-              取消
-            </a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                danger
-                @click="onDelete(record)"
-                v-privilege="'scm:inventory:stocktake:delete'"
-            >
-              删除
-            </a-button>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -204,7 +175,14 @@
               <a-typography-text type="secondary">{{ record.unit || '—' }}</a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'actualQuantity'">
-              <a-input v-model:value="record.actualQuantity" placeholder="0.0000" style="width: 130px"/>
+              <a-input-number
+                  v-model:value="record.actualQuantity"
+                  :min="0"
+                  :precision="4"
+                  :step="1"
+                  placeholder="0.0000"
+                  style="width: 140px"
+              />
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
               <a-input v-model:value="record.remark" :maxlength="500"/>
@@ -268,12 +246,16 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, UploadProps} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import InventoryStocktakeDetailDrawer from './components/inventory-stocktake-detail-drawer.vue';
 import {inventoryStocktakeApi} from '/@/api/business/scm/inventory-stocktake-api';
 import {inventoryBalanceApi} from '/@/api/business/scm/inventory-balance-api';
@@ -290,7 +272,8 @@ import type {
   StocktakeImportResult,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-model';
+import {fixed4, resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-model';
+import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 
@@ -307,29 +290,60 @@ const statusOptions = Object.values(SCM_INVENTORY_STOCKTAKE_STATUS_ENUM).map((i)
   label: i.desc,
 }));
 
+// 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候盘的」排列。创建时间是技术字段，
+// 盘点单的业务时刻是确认时间，不上列。
 const columns = ref<TableColumnsType<InventoryStocktake>>([
   {title: '盘点单号', dataIndex: 'stocktakeNo', width: 200},
-  {title: '仓库', dataIndex: 'warehouseName', width: 160},
+  {title: '仓库', dataIndex: 'warehouse', width: 160},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '确认人', dataIndex: 'operator', width: 140},
-  {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
+  {title: '确认人', dataIndex: 'operator', width: 130},
+  {title: '确认时间', dataIndex: 'confirmedAt', width: 170},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
-  {title: '创建时间', dataIndex: 'createdAt', width: 180},
-  {title: '操作', dataIndex: 'action', width: 260, fixed: 'right'},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 200},
 ]);
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '记账单位', dataIndex: 'unit', align: 'center', width: 100},
-  {title: '实盘量', dataIndex: 'actualQuantity', width: 150},
+  {title: '实盘量', dataIndex: 'actualQuantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
 ];
 
-function statusColor(status?: string) {
-  if (status === 'CONFIRMED') return 'green';
-  if (status === 'CANCELLED') return 'default';
-  return 'orange';
+/** 草稿 = 盘点进行中（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
+const STATUS_TONE: Record<string, ScmStatusTone> = {
+  DRAFT: 'warning',
+  CONFIRMED: 'success',
+  CANCELLED: 'neutral',
+};
+const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canAdd = computed(() => hasPermission('scm:inventory:stocktake:add'));
+const canUpdate = computed(() => hasPermission('scm:inventory:stocktake:update'));
+const canDelete = computed(() => hasPermission('scm:inventory:stocktake:delete'));
+
+/** 复制到新建对所有状态可用（它是「照这张单再盘一次」）；其余动作只在草稿态。 */
+function rowActions(row: InventoryStocktake): ScmActionItem[] {
+  const draft = row.status === 'DRAFT';
+  return [
+    {key: 'copy', label: '复制到新建', hidden: !canAdd.value},
+    {key: 'edit', label: '编辑', hidden: !(draft && canUpdate.value)},
+    {key: 'cancel', label: '取消单据', hidden: !(draft && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+  ];
+}
+
+function onRowAction(key: string, row: InventoryStocktake) {
+  if (key === 'copy') {
+    void openCopy(row);
+  } else if (key === 'edit') {
+    void openEdit(row);
+  } else if (key === 'cancel') {
+    onCancel(row);
+  } else if (key === 'delete') {
+    onDelete(row);
+  }
 }
 
 // ------------------------------------------------------------------ 查询
@@ -387,7 +401,11 @@ interface EditableItem {
   skuId?: string | number;
   // 记账单位：仅「复制到新建」时带入，供核对当前余额单位；普通新建为空。
   unit?: string;
-  actualQuantity: string;
+  /**
+   * 实盘量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
+   * 4 位定点字符串。`null` = 还没清点；`0` = 确实一件不剩，两者是不同的结论。
+   */
+  actualQuantity?: number | null;
   remark?: string;
 }
 
@@ -409,7 +427,7 @@ const formRules = {
 };
 
 function addItem() {
-  form.items.push({_key: ++keySeq, actualQuantity: ''});
+  form.items.push({_key: ++keySeq, actualQuantity: null});
 }
 
 function removeItem(index: number) {
@@ -436,8 +454,8 @@ async function openEdit(record: InventoryStocktake) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     skuId: i.skuId,
-    // 实盘量后端以 4 位定点字符串返回，直接回填，不转 number（避免精度与类型问题）
-    actualQuantity: i.actualQuantity ?? '',
+    // 后端以 4 位定点字符串返回实盘量，InputNumber 要 number；空值保持 null
+    actualQuantity: i.actualQuantity == null ? null : Number(i.actualQuantity),
     remark: i.remark,
   }));
   if (form.items.length === 0) {
@@ -484,7 +502,13 @@ async function openCopy(record: InventoryStocktake) {
         message.error(`商品规格「${i.skuCode ?? i.skuName ?? key}」在仓库「${d.warehouseName ?? whId}」已无库存余额，无法复制，请改用新建`);
         return;
       }
-      items.push({_key: ++keySeq, skuId: i.skuId, unit: unitBySku.get(key), actualQuantity: '', remark: undefined});
+      items.push({
+        _key: ++keySeq,
+        skuId: i.skuId,
+        unit: unitBySku.get(key),
+        actualQuantity: null,
+        remark: undefined,
+      });
     }
     form.id = undefined;
     form.stocktakeNo = undefined;
@@ -555,7 +579,12 @@ const onUploadImport: UploadProps['customRequest'] = async (options) => {
   }
 };
 
-/** 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。 */
+/**
+ * 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。
+ *
+ * 非负与最多 4 位小数已由 InputNumber（`:min="0"` + `:precision="4"`）结构性保证，
+ * 这里只需拦住「整行没清点」。实盘量填 0 是合法结论（确实一件不剩），不能与「没填」合并。
+ */
 function buildPayload(): InventoryStocktakeAdd | null {
   const items = form.items.filter((i) => i.skuId !== undefined && i.skuId !== null);
   if (items.length === 0) {
@@ -570,20 +599,18 @@ function buildPayload(): InventoryStocktakeAdd | null {
       return null;
     }
     seen.add(skuKey);
-    const q = (items[i].actualQuantity ?? '').trim();
-    // 实盘量允许 0（确实一件不剩），但不允许负数 —— 后端同样拒绝负数
-    if (!/^\d+(\.\d{1,4})?$/.test(q)) {
-      message.warning(`第 ${i + 1} 行：实盘量必须为不小于 0 的数字，最多 4 位小数`);
+    if (fixed4(items[i].actualQuantity) === undefined) {
+      message.warning(`第 ${i + 1} 行：请填写实盘量（一件不剩请填 0）`);
       return null;
     }
   }
   return {
     warehouseId: form.warehouseId as string | number,
     remark: form.remark,
-    // 数量以字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
     items: items.map((i) => ({
       skuId: i.skuId as string | number,
-      actualQuantity: i.actualQuantity.trim(),
+      actualQuantity: fixed4(i.actualQuantity) as string,
       remark: i.remark,
     })),
   };

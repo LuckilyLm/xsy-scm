@@ -82,29 +82,32 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无报损报溢单' }"
-        :scroll="{ x: 1450 }"
+        :scroll="{ x: 1170 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'adjustType'">
-          <a-tag :color="typeColor(record.adjustType)">{{ record.adjustTypeDesc || record.adjustType }}</a-tag>
+          <ScmStatusTag :tone="typeTone(record.adjustType)" :label="record.adjustTypeDesc || record.adjustType"/>
+        </template>
+        <template v-else-if="column.dataIndex === 'warehouse'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
+            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <a-tag :color="statusColor(record.status)">{{ record.statusDesc || record.status }}</a-tag>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
-        <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
+        <template v-else-if="column.dataIndex === 'auditedAt'">
+          <!-- 审核的「谁」和「何时」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.auditedAt) }}</span>
+            <span v-if="record.auditor" class="scm-cell-stack__sub">{{ record.auditor }}</span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="4">
+          <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-            <a-button
-                v-if="record.status === 'PENDING'"
-                type="link"
-                size="small"
-                @click="openEdit(record)"
-                v-privilege="'scm:inventory:loss-gain:update'"
-            >
-              编辑
-            </a-button>
             <a-button
                 v-if="record.status === 'PENDING'"
                 type="link"
@@ -114,26 +117,7 @@
             >
               审批
             </a-button>
-            <a-button
-                v-if="record.status === 'PENDING'"
-                type="link"
-                size="small"
-                danger
-                @click="openAudit(record, 'reject')"
-                v-privilege="'scm:inventory:loss-gain:reject'"
-            >
-              驳回
-            </a-button>
-            <a-button
-                v-if="record.status === 'PENDING'"
-                type="link"
-                size="small"
-                danger
-                @click="onDelete(record)"
-                v-privilege="'scm:inventory:loss-gain:delete'"
-            >
-              删除
-            </a-button>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -202,7 +186,14 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <a-input v-model:value="record.quantity" placeholder="0.0000" style="width: 130px"/>
+              <a-input-number
+                  v-model:value="record.quantity"
+                  :min="0.0001"
+                  :precision="4"
+                  :step="1"
+                  placeholder="0.0000"
+                  style="width: 140px"
+              />
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
               <a-input v-model:value="record.remark" :maxlength="500"/>
@@ -272,13 +263,17 @@
 </template>
 
 <script setup lang="ts">
-import {reactive, ref, watch} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import InventoryLossGainDetailDrawer from './components/inventory-loss-gain-detail-drawer.vue';
 import {inventoryLossGainApi} from '/@/api/business/scm/inventory-loss-gain-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
@@ -296,7 +291,8 @@ import type {
   InventoryLossGainQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {singleWarehouseDefault} from './inventory-model';
+import {fixed4, singleWarehouseDefault} from './inventory-model';
+import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 
@@ -318,36 +314,63 @@ const statusOptions = Object.values(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM).map((i)
   label: i.desc,
 }));
 
+// 列表按「哪张单 / 什么类型 / 哪个仓 / 什么状态 / 为什么」排列。创建时间是技术字段，
+// 报损报溢的业务时刻是审核时间，不上列。
 const columns = ref<TableColumnsType<InventoryLossGain>>([
   {title: '单据号', dataIndex: 'lossGainNo', width: 200},
-  {title: '类型', dataIndex: 'adjustType', align: 'center', width: 90},
-  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '类型', dataIndex: 'adjustType', align: 'center', width: 100},
+  {title: '仓库', dataIndex: 'warehouse', width: 150},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '原因', dataIndex: 'reason', width: 220, ellipsis: true},
-  {title: '审核人', dataIndex: 'auditor', width: 130},
-  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
-  {title: '创建时间', dataIndex: 'createdAt', width: 170},
-  {title: '操作', dataIndex: 'action', width: 280, fixed: 'right'},
+  {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
+  {title: '审核', dataIndex: 'auditedAt', width: 180},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 200},
 ]);
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '数量', dataIndex: 'quantity', width: 150},
+  {title: '数量', dataIndex: 'quantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
 ];
 
-/** 报损是减少（红），报溢是增加（绿）—— 方向在列表里必须一眼可见。 */
-function typeColor(adjustType?: string) {
-  if (adjustType === 'LOSS') return 'red';
-  if (adjustType === 'OVERFLOW') return 'green';
-  return 'default';
+/** 报损 = 库存减少（红），报溢 = 库存增加（绿）—— 方向在列表里必须一眼可见。 */
+const TYPE_TONE: Record<string, ScmStatusTone> = {
+  LOSS: 'error',
+  OVERFLOW: 'success',
+};
+const typeTone = (adjustType?: string | null): ScmStatusTone => TYPE_TONE[adjustType ?? ''] ?? 'neutral';
+
+/** 待审核 = 待处理（橙），已完成 = 通过（绿），已驳回 = 拒绝（红）。 */
+const STATUS_TONE: Record<string, ScmStatusTone> = {
+  PENDING: 'warning',
+  COMPLETED: 'success',
+  REJECTED: 'error',
+};
+const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canUpdate = computed(() => hasPermission('scm:inventory:loss-gain:update'));
+const canReject = computed(() => hasPermission('scm:inventory:loss-gain:reject'));
+const canDelete = computed(() => hasPermission('scm:inventory:loss-gain:delete'));
+
+/** 只有待审核可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+function rowActions(row: InventoryLossGain): ScmActionItem[] {
+  const pending = row.status === 'PENDING';
+  return [
+    {key: 'reject', label: '驳回', danger: true, hidden: !(pending && canReject.value)},
+    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+  ];
 }
 
-function statusColor(status?: string) {
-  if (status === 'COMPLETED') return 'green';
-  if (status === 'REJECTED') return 'red';
-  return 'orange';
+function onRowAction(key: string, row: InventoryLossGain) {
+  if (key === 'reject') {
+    openAudit(row, 'reject');
+  } else if (key === 'edit') {
+    void openEdit(row);
+  } else if (key === 'delete') {
+    onDelete(row);
+  }
 }
 
 // ------------------------------------------------------------------ 查询
@@ -404,7 +427,11 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   skuId?: string | number;
-  quantity: string;
+  /**
+   * 数量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
+   * 4 位定点字符串。`null` = 还没填。
+   */
+  quantity?: number | null;
   remark?: string;
 }
 
@@ -430,7 +457,7 @@ const formRules = {
 };
 
 function addItem() {
-  form.items.push({_key: ++keySeq, quantity: ''});
+  form.items.push({_key: ++keySeq, quantity: null});
 }
 
 function removeItem(index: number) {
@@ -461,8 +488,8 @@ async function openEdit(record: InventoryLossGain) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     skuId: i.skuId,
-    // 数量后端以 4 位定点字符串返回，直接回填，不转 number（避免精度与类型问题）
-    quantity: i.quantity ?? '',
+    // 后端以 4 位定点字符串返回数量，InputNumber 要 number；空值保持 null
+    quantity: i.quantity == null ? null : Number(i.quantity),
     remark: i.remark,
   }));
   if (form.items.length === 0) {
@@ -490,10 +517,10 @@ function buildPayload(): InventoryLossGainAdd | null {
       return null;
     }
     seen.add(skuKey);
-    const q = (items[i].quantity ?? '').trim();
     // 数量恒为正：方向由单据类型表达，不接受 0 或负数
-    if (!/^\d+(\.\d{1,4})?$/.test(q) || Number(q) <= 0) {
-      message.warning(`第 ${i + 1} 行：数量必须为大于 0 的数字，最多 4 位小数`);
+    // （大于 0 与最多 4 位小数已由 InputNumber 的 :min="0.0001" + :precision="4" 保证）
+    if (fixed4(items[i].quantity) === undefined) {
+      message.warning(`第 ${i + 1} 行：请填写数量`);
       return null;
     }
   }
@@ -502,10 +529,10 @@ function buildPayload(): InventoryLossGainAdd | null {
     warehouseId: form.warehouseId as string | number,
     reason: (form.reason ?? '').trim(),
     remark: form.remark,
-    // 数量以字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
     items: items.map((i) => ({
       skuId: i.skuId as string | number,
-      quantity: i.quantity.trim(),
+      quantity: fixed4(i.quantity) as string,
       remark: i.remark,
     })),
   };

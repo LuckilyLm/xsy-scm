@@ -81,29 +81,32 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无规格转换单' }"
-        :scroll="{ x: 1400 }"
+        :scroll="{ x: 1140 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'convertType'">
-          <a-tag color="blue">{{ record.convertTypeDesc || record.convertType }}</a-tag>
+          <ScmStatusTag tone="processing" :label="record.convertTypeDesc || record.convertType"/>
+        </template>
+        <template v-else-if="column.dataIndex === 'warehouse'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
+            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <a-tag :color="statusColor(record.status)">{{ record.statusDesc || record.status }}</a-tag>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
-        <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
+        <template v-else-if="column.dataIndex === 'auditedAt'">
+          <!-- 审核的「谁」和「何时」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.auditedAt) }}</span>
+            <span v-if="record.auditor" class="scm-cell-stack__sub">{{ record.auditor }}</span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="4">
+          <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-            <a-button
-                v-if="record.status === 'PENDING'"
-                type="link"
-                size="small"
-                @click="openEdit(record)"
-                v-privilege="'scm:inventory:conversion:update'"
-            >
-              编辑
-            </a-button>
             <a-button
                 v-if="record.status === 'PENDING'"
                 type="link"
@@ -113,26 +116,7 @@
             >
               审批
             </a-button>
-            <a-button
-                v-if="record.status === 'PENDING'"
-                type="link"
-                size="small"
-                danger
-                @click="openAudit(record, 'reject')"
-                v-privilege="'scm:inventory:conversion:reject'"
-            >
-              驳回
-            </a-button>
-            <a-button
-                v-if="record.status === 'PENDING'"
-                type="link"
-                size="small"
-                danger
-                @click="onDelete(record)"
-                v-privilege="'scm:inventory:conversion:delete'"
-            >
-              删除
-            </a-button>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -201,7 +185,14 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'sourceQuantity'">
-              <a-input v-model:value="record.sourceQuantity" placeholder="0.0000" style="width: 110px"/>
+              <a-input-number
+                  v-model:value="record.sourceQuantity"
+                  :min="0.0001"
+                  :precision="4"
+                  :step="1"
+                  placeholder="0.0000"
+                  style="width: 120px"
+              />
             </template>
             <template v-else-if="column.dataIndex === 'sourceUnit'">
               <a-input v-model:value="record.sourceUnit" placeholder="如 箱" style="width: 80px"/>
@@ -215,7 +206,14 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'targetQuantity'">
-              <a-input v-model:value="record.targetQuantity" placeholder="0.0000" style="width: 110px"/>
+              <a-input-number
+                  v-model:value="record.targetQuantity"
+                  :min="0.0001"
+                  :precision="4"
+                  :step="1"
+                  placeholder="0.0000"
+                  style="width: 120px"
+              />
             </template>
             <template v-else-if="column.dataIndex === 'targetUnit'">
               <a-input v-model:value="record.targetUnit" placeholder="如 kg" style="width: 80px"/>
@@ -286,12 +284,16 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import InventoryConversionDetailDrawer from './components/inventory-conversion-detail-drawer.vue';
 import {inventoryConversionApi} from '/@/api/business/scm/inventory-conversion-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
@@ -307,7 +309,8 @@ import type {
   InventoryConversionQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {singleWarehouseDefault} from './inventory-model';
+import {fixed4, singleWarehouseDefault} from './inventory-model';
+import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 
@@ -329,16 +332,16 @@ const statusOptions = Object.values(SCM_INVENTORY_CONVERSION_STATUS_ENUM).map((i
   label: i.desc,
 }));
 
+// 列表按「哪张单 / 哪个仓 / 什么类型 / 什么状态 / 为什么」排列。创建时间是技术字段，
+// 转换单的业务时刻是审核时间，不上列；审核人与审核时间合成一格。
 const columns = ref<TableColumnsType<InventoryConversion>>([
   {title: '转换单号', dataIndex: 'conversionNo', width: 200},
-  {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '类型', dataIndex: 'convertType', align: 'center', width: 120},
+  {title: '仓库', dataIndex: 'warehouse', width: 150},
+  {title: '类型', dataIndex: 'convertType', align: 'center', width: 110},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 220, ellipsis: true},
-  {title: '审核人', dataIndex: 'auditor', width: 130},
-  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
-  {title: '创建时间', dataIndex: 'createdAt', width: 170},
-  {title: '操作', dataIndex: 'action', width: 280, fixed: 'right'},
+  {title: '审核', dataIndex: 'auditedAt', width: 180},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
 
 const itemColumns: TableColumnsType = [
@@ -351,10 +354,37 @@ const itemColumns: TableColumnsType = [
   {title: '操作', dataIndex: 'action', width: 70},
 ];
 
-function statusColor(status?: string) {
-  if (status === 'COMPLETED') return 'green';
-  if (status === 'REJECTED') return 'red';
-  return 'orange';
+/** 待审核 = 待处理（橙），已完成 = 通过（绿），已驳回 = 拒绝（红）。 */
+const STATUS_TONE: Record<string, ScmStatusTone> = {
+  PENDING: 'warning',
+  COMPLETED: 'success',
+  REJECTED: 'error',
+};
+const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canUpdate = computed(() => hasPermission('scm:inventory:conversion:update'));
+const canReject = computed(() => hasPermission('scm:inventory:conversion:reject'));
+const canDelete = computed(() => hasPermission('scm:inventory:conversion:delete'));
+
+/** 只有待审核可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+function rowActions(row: InventoryConversion): ScmActionItem[] {
+  const pending = row.status === 'PENDING';
+  return [
+    {key: 'reject', label: '驳回', danger: true, hidden: !(pending && canReject.value)},
+    {key: 'edit', label: '编辑', hidden: !(pending && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(pending && canDelete.value)},
+  ];
+}
+
+function onRowAction(key: string, row: InventoryConversion) {
+  if (key === 'reject') {
+    openAudit(row, 'reject');
+  } else if (key === 'edit') {
+    void openEdit(row);
+  } else if (key === 'delete') {
+    onDelete(row);
+  }
 }
 
 // ------------------------------------------------------------------ 查询
@@ -411,10 +441,15 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   sourceSkuId?: string | number;
-  sourceQuantity: string;
+  /**
+   * 数量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
+   * 4 位定点字符串。`null` = 还没填。
+   */
+  sourceQuantity?: number | null;
+  /** 单位是**单据声明**（折算关系的一部分），仍是自由文本，不做单位换算。 */
   sourceUnit: string;
   targetSkuId?: string | number;
-  targetQuantity: string;
+  targetQuantity?: number | null;
   targetUnit: string;
   remark?: string;
 }
@@ -442,9 +477,9 @@ const formRules = {
 function addItem() {
   form.items.push({
     _key: ++keySeq,
-    sourceQuantity: '',
+    sourceQuantity: null,
     sourceUnit: '',
-    targetQuantity: '',
+    targetQuantity: null,
     targetUnit: '',
   });
 }
@@ -477,11 +512,11 @@ async function openEdit(record: InventoryConversion) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     sourceSkuId: i.sourceSkuId,
-    // 定点字符串直接回填，不转 number（避免精度与类型问题）
-    sourceQuantity: i.sourceQuantity ?? '',
+    // 后端以 4 位定点字符串返回数量，InputNumber 要 number；空值保持 null
+    sourceQuantity: i.sourceQuantity == null ? null : Number(i.sourceQuantity),
     sourceUnit: i.sourceUnit ?? '',
     targetSkuId: i.targetSkuId,
-    targetQuantity: i.targetQuantity ?? '',
+    targetQuantity: i.targetQuantity == null ? null : Number(i.targetQuantity),
     targetUnit: i.targetUnit ?? '',
     remark: i.remark,
   }));
@@ -514,10 +549,10 @@ function buildPayload(): InventoryConversionAdd | null {
       ['源数量', row.sourceQuantity],
       ['目标数量', row.targetQuantity],
     ] as const) {
-      const q = (value ?? '').trim();
       // 数量恒为正：方向由「转出 / 转入」决定，不接受 0 或负数
-      if (!/^\d+(\.\d{1,4})?$/.test(q) || Number(q) <= 0) {
-        message.warning(`第 ${i + 1} 行：${label}必须为大于 0 的数字，最多 4 位小数`);
+      // （大于 0 与最多 4 位小数已由 InputNumber 的 :min="0.0001" + :precision="4" 保证）
+      if (fixed4(value) === undefined) {
+        message.warning(`第 ${i + 1} 行：请填写${label}`);
         return null;
       }
     }
@@ -531,13 +566,13 @@ function buildPayload(): InventoryConversionAdd | null {
     convertType: form.convertType as string,
     reason: form.reason,
     remark: form.remark,
-    // 数量以字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
     items: items.map((i) => ({
       sourceSkuId: i.sourceSkuId as string | number,
-      sourceQuantity: i.sourceQuantity.trim(),
+      sourceQuantity: fixed4(i.sourceQuantity) as string,
       sourceUnit: i.sourceUnit.trim(),
       targetSkuId: i.targetSkuId as string | number,
-      targetQuantity: i.targetQuantity.trim(),
+      targetQuantity: fixed4(i.targetQuantity) as string,
       targetUnit: i.targetUnit.trim(),
       remark: i.remark,
     })),

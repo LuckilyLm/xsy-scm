@@ -58,6 +58,7 @@ test('复制历史是纯前端：只读 detail + 余额 query，不引入后端�
 test('导入成功回填实盘量留空并复用既有 confirm 端点调整库存', () => {
   const list = code(LIST);
   assert.match(list, /await inventoryStocktakeApi\.confirm\(record\.id\)/);
-  // 复制过来的行强制重新清点：实盘量清空，不带入历史 / 当前值
-  assert.match(list, /actualQuantity:\s*''/);
+  // 复制过来的行强制重新清点：实盘量清空，不带入历史 / 当前值。
+  // InputNumber 的空值是 null —— `''` 会被判成非法输入，而不是「未填」。
+  assert.match(list, /actualQuantity:\s*null/);
 });

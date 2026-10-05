@@ -429,8 +429,11 @@ test('the stocktake page is a stateful document page wired to its own DOM id and
   // 只有草稿可写：确认 / 取消 / 删除都必须挂在 status === 'DRAFT' 上
   assert.match(page, /record\.status === 'DRAFT'/);
 
-  // 实盘量允许 0（确实一件不剩），因此校验正则不得要求大于 0
-  assert.match(page, /\^\\d\+\(\\.\\d\{1,4\}\)\?\$/);
+  // 实盘量允许 0（确实一件不剩）：InputNumber 的下限是 0（**不是** 0.0001），
+  // 提交走 fixed4 补足 4 位定点 —— 空值（null）与 0.0000 必须区分。
+  assert.match(page, /:min="0"/);
+  assert.doesNotMatch(page, /:min="0\.0001"/, '实盘量必须允许 0');
+  assert.match(page, /actualQuantity: fixed4\(i\.actualQuantity\) as string/);
 });
 
 test('the stocktake page documents that delta is applied to the live book quantity', () => {
@@ -828,6 +831,73 @@ test('the conversion page is an approval page wired to its own DOM id and six pr
   assert.match(api, /create:/);
   assert.match(api, /update:/);
   assert.match(api, /delete:/);
+});
+
+// ------------------------------------------------------------------
+// 单据类页面（盘点 / 报损报溢 / 转换）的展示契约
+// ------------------------------------------------------------------
+
+test('the three inventory document pages hide the technical timestamp and centre the action column', () => {
+  // 三张单据的业务时刻都是「审核 / 确认」时间，创建时间是技术字段
+  for (const page of [
+    'inventory-stocktake-list.vue',
+    'inventory-loss-gain-list.vue',
+    'inventory-conversion-list.vue',
+  ]) {
+    const source = code('../src/views/business/scm/inventory/' + page);
+    assert.doesNotMatch(source, /title: '创建时间'/, page + ' 仍在列表展示创建时间');
+    assert.doesNotMatch(source, /'orange'|'green'|'red'/, page + ' 状态色应由 tone 档位给出');
+    assert.match(source, /ScmStatusTag/, page + ' 未使用 ScmStatusTag');
+    assert.match(source, /ScmActionMore/, page + ' 未把低频动作收进「更多」');
+    assert.match(source, /dataIndex: 'action', align: 'center', fixed: 'right'/, page + ' 操作列未居中固定');
+    assert.doesNotMatch(source, /toFixed\(/, page + ' 自己做了定点转换');
+  }
+});
+
+test('the stocktake page keeps the confirm action inline and re-counts copied rows', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-stocktake-list.vue');
+  assert.match(page, /DRAFT: 'warning'/);
+  assert.match(page, /CONFIRMED: 'success'/);
+  assert.match(page, /CANCELLED: 'neutral'/);
+  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 200/);
+  assert.match(page, /key: 'copy', label: '复制到新建'/);
+  assert.match(page, /key: 'delete', label: '删除', danger: true/);
+  // 实盘量用 InputNumber（:min=0 允许「一件不剩」），提交走 fixed4
+  assert.match(page, /<a-input-number[\s\S]{0,140}record\.actualQuantity/);
+  assert.match(page, /:min="0"/);
+  assert.match(page, /actualQuantity: fixed4\(i\.actualQuantity\) as string/);
+});
+
+test('the loss/gain page colours the direction and folds the auditor into the audit time', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-loss-gain-list.vue');
+  // 方向必须一眼可见：报损红、报溢绿
+  assert.match(page, /LOSS: 'error'/);
+  assert.match(page, /OVERFLOW: 'success'/);
+  assert.match(page, /PENDING: 'warning'/);
+  assert.match(page, /COMPLETED: 'success'/);
+  assert.match(page, /REJECTED: 'error'/);
+  // 审核人与审核时间合成一格
+  assert.doesNotMatch(page, /title: '审核人'|title: '审核时间'/);
+  assert.match(page, /title: '审核', dataIndex: 'auditedAt'/);
+  assert.match(page, /column\.dataIndex === 'auditedAt'[\s\S]{0,200}record\.auditor/);
+  // 数量恒为正：InputNumber 的下限是 0.0001（方向由单据类型表达）
+  assert.match(page, /<a-input-number[\s\S]{0,140}record\.quantity/);
+  assert.match(page, /:min="0.0001"/);
+  assert.match(page, /quantity: fixed4\(i\.quantity\) as string/);
+});
+
+test('the conversion page keeps the declared units free-text while quantities go through fixed4', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-conversion-list.vue');
+  assert.match(page, /PENDING: 'warning'/);
+  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 160/);
+  // 两个数量都是 InputNumber
+  assert.match(page, /<a-input-number[\s\S]{0,140}record\.sourceQuantity/);
+  assert.match(page, /<a-input-number[\s\S]{0,140}record\.targetQuantity/);
+  assert.match(page, /sourceQuantity: fixed4\(i\.sourceQuantity\) as string/);
+  assert.match(page, /targetQuantity: fixed4\(i\.targetQuantity\) as string/);
+  // 单位是**单据声明**（折算关系的一部分），仍是自由文本 —— 不做单位换算
+  assert.match(page, /<a-input v-model:value="record\.sourceUnit"/);
+  assert.match(page, /<a-input v-model:value="record\.targetUnit"/);
 });
 
 test('conversion error codes all have actionable Chinese text', () => {
