@@ -18,9 +18,12 @@ SmartAdmin 口令规则（从正式源码反推，勿凭记忆猜）：
   登录时 LoginService 用同一套 generateSaltPassword 复算后做 matches()，
   因此这里必须写**一样的摘要**，否则登录失败。
 
-数据库：本机 docker `xsy-pg-v2`（127.0.0.1:15432），schema=xsy_v2；**库名必须由 XSY_V2_PG_DB 显式给出**，
-不给即拒绝执行（默认值会把账号建到过期快照库，登录只报「登录名或密码错误」）。
+数据库：本机 docker Compose 的 Postgres 容器（默认 `xsy-scm-postgres-1`，127.0.0.1:15432），schema=xsy_v2；
+**库名必须由 XSY_V2_PG_DB 显式给出**，不给即拒绝执行（默认值会把账号建到过期快照库，登录只报「登录名或密码错误」）。
 可用环境变量覆盖：XSY_V2_PG_CONTAINER / XSY_V2_PG_DB（必填）/ XSY_V2_PG_SCHEMA / XSY_V2_PG_USER
+
+容器名与数据库用户由 Compose 按项目名自动生成（项目名一变，容器名就跟着变），所以这两个默认值只是
+本仓库当前 Compose 的便利值；启动脚本与 CI 应显式传 XSY_V2_PG_CONTAINER / XSY_V2_PG_USER 覆盖。
 
 命令行：
     python tools/e2e_accounts.py setup   --prefix w1_e2e_ --name NAME --password PASS
@@ -39,10 +42,10 @@ import re
 import subprocess
 import sys
 
-CONTAINER = os.environ.get("XSY_V2_PG_CONTAINER", "xsy-pg-v2")
+CONTAINER = os.environ.get("XSY_V2_PG_CONTAINER", "xsy-scm-postgres-1")
 DB = os.environ.get("XSY_V2_PG_DB", "")
 SCHEMA = os.environ.get("XSY_V2_PG_SCHEMA", "xsy_v2")
-USER = os.environ.get("XSY_V2_PG_USER", "postgres")
+USER = os.environ.get("XSY_V2_PG_USER", "xsy_scm_app")
 
 SEED_LOGIN_NAME = "admin"     # V3 播种的管理员账号，任何情况下都不允许被本脚本触碰
 SEED_EMPLOYEE_ID = 1          # 与上面同一行记录的 employee_id
