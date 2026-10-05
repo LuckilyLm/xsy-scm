@@ -66,7 +66,7 @@
         </template>
         <template v-else-if="column.dataIndex === 'sku'">
           <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ specText(record.specValues) || record.skuName || '—' }}</span>
+            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
             <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
           </div>
         </template>
@@ -115,7 +115,7 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
 import type {InventoryBalance, InventoryBalanceQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {moneyText, quantityText, singleWarehouseDefault, specText} from './inventory-model';
+import {moneyText, quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 
 const queryForm = reactive<InventoryBalanceQuery>({pageNum: 1, pageSize: 20});

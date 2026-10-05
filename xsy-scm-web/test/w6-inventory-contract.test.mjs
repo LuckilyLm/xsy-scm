@@ -24,6 +24,7 @@ import {
   moneyText,
   singleWarehouseDefault,
   quantityText,
+  skuMainText,
   specText,
   movementTypeText,
 } from '../src/views/business/scm/inventory/inventory-model.ts';
@@ -118,6 +119,50 @@ test('specValues render as readable text and degrade to a dash', () => {
   assert.equal(specText({}), '—');
   assert.equal(specText({规格: '散装'}), '规格：散装');
   assert.equal(specText({规格: '散装', 产地: '寿光'}), '规格：散装，产地：寿光');
+});
+
+test('sku cell prefers spec values and falls back to the spec name', () => {
+  assert.equal(skuMainText({规格: '散装'}, '散装 500g'), '规格：散装');
+  assert.equal(skuMainText(null, '散装 500g'), '散装 500g');
+  assert.equal(skuMainText(undefined, '散装 500g'), '散装 500g');
+  assert.equal(skuMainText({}, '散装 500g'), '散装 500g');
+  assert.equal(skuMainText(null, null), '—');
+  assert.equal(skuMainText(null, ''), '—');
+
+  // 回归：页面曾写 `specText(...) || record.skuName`，而 specText 无值时返回 '—'（truthy），
+  // 回落分支永远不会执行 —— 无规格值的商品在列表里只剩一个破折号。
+  for (const page of ['inventory-balance-list.vue', 'inventory-movement-list.vue']) {
+    const source = code('../src/views/business/scm/inventory/' + page);
+    assert.match(source, /skuMainText\(record\.specValues, record\.skuName\)/, page + ' 未使用 skuMainText');
+    assert.doesNotMatch(source, /specText\(record\.specValues\)\s*\|\|/, page + ' 仍在用 truthy 回落');
+  }
+});
+
+// ------------------------------------------------------------------
+// 入 / 出方向
+// ------------------------------------------------------------------
+
+test('the movement page derives 入/出 from the shared inbound set, not from a local list', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-movement-list.vue');
+
+  // 方向集合必须来自常量（与后端 `ScmInventoryMovementTypeEnum.getInbound()` 同源）。
+  // 本页自己写一份 IN / OUT 名单的话，后端加类型时方向会判反，而数字看起来完全正常。
+  assert.match(page, /SCM_INVENTORY_MOVEMENT_INBOUND_TYPES\.includes\(/);
+  for (const literal of ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT',
+    'GAIN_REPORT', 'TRANSFER_IN', 'TRANSFER_OUT', 'CONVERT_IN', 'CONVERT_OUT', 'SALES_RETURN_IN',
+    'PROMOTION_GIFT_OUT']) {
+    assert.doesNotMatch(page, new RegExp(`'${literal}'`), `流水页硬编码了 ${literal} 来判方向`);
+  }
+
+  // 未知类型不渲染方向标签：否则会凭空出现一个橙色的「出」
+  assert.match(page, /v-if="directionOf\(record\)"/);
+
+  // 集合与枚举互补：12 个类型里恰好 6 个入、6 个出，没有既不进集合也不在枚举里的值
+  assert.deepEqual([...SCM_INVENTORY_MOVEMENT_INBOUND_TYPES].sort(),
+      ['CONVERT_IN', 'GAIN_REPORT', 'PURCHASE_IN', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'TRANSFER_IN']);
+  for (const type of SCM_INVENTORY_MOVEMENT_INBOUND_TYPES) {
+    assert.ok(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).includes(type), type + ' 不在流水类型枚举里');
+  }
 });
 
 // ------------------------------------------------------------------
