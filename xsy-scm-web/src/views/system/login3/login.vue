@@ -5,6 +5,16 @@
 -->
 <template>
   <main class="xsy-login">
+    <!-- 纯装饰背景层：叶片 / 仓储场景 / 连接线 / 点阵，全部 pointer-events:none -->
+    <div class="xsy-login__decor" aria-hidden="true">
+      <img class="xsy-login__decor-img xsy-login__decor-img--wave" :src="bgLeafWave" alt=""/>
+      <img class="xsy-login__decor-img xsy-login__decor-img--ribbon" :src="bgLeafRibbon" alt=""/>
+      <img class="xsy-login__decor-img xsy-login__decor-img--logistics" :src="bgLogistics" alt=""/>
+      <img class="xsy-login__decor-img xsy-login__decor-img--connectors" :src="bgConnectors" alt=""/>
+      <img class="xsy-login__decor-img xsy-login__decor-img--leaves" :src="bgLeaves" alt=""/>
+      <img class="xsy-login__decor-img xsy-login__decor-img--dots" :src="bgDots" alt=""/>
+    </div>
+
     <section class="xsy-login__shell">
       <aside class="xsy-login__brand">
         <img class="xsy-login__logo" :src="logoImg" alt="鲜蔬源智链"/>
@@ -12,48 +22,30 @@
         <div class="xsy-login__brand-copy">
           <h1 class="xsy-login__headline">鲜蔬源智链</h1>
           <p class="xsy-login__tagline">智慧供应链管理平台</p>
+          <p class="xsy-login__intro">一套系统，贯通商品、订单、采购、库存、配送与结算。</p>
         </div>
 
-        <p class="xsy-login__description">一套系统，贯通商品、订单、采购、库存、配送与结算。</p>
+        <ul class="xsy-login__features">
+          <li class="xsy-login__feature">
+            <span class="xsy-login__feature-badge"><BulbOutlined class="xsy-login__feature-icon"/></span>
+            <span>新鲜高效</span>
+          </li>
+          <li class="xsy-login__feature">
+            <span class="xsy-login__feature-badge"><NodeIndexOutlined class="xsy-login__feature-icon"/></span>
+            <span>全链协同</span>
+          </li>
+          <li class="xsy-login__feature">
+            <span class="xsy-login__feature-badge"><BarChartOutlined class="xsy-login__feature-icon"/></span>
+            <span>数据驱动</span>
+          </li>
+          <li class="xsy-login__feature">
+            <span class="xsy-login__feature-badge"><RiseOutlined class="xsy-login__feature-icon"/></span>
+            <span>降本增效</span>
+          </li>
+        </ul>
 
-        <div class="xsy-login__visual" aria-hidden="true">
-          <div class="xsy-login__flow-row">
-            <div class="xsy-login__node">
-              <AppstoreOutlined class="xsy-login__node-icon"/>
-              <span>商品</span>
-            </div>
-            <div class="xsy-login__connector"></div>
-            <div class="xsy-login__node">
-              <ShopOutlined class="xsy-login__node-icon"/>
-              <span>供应商</span>
-            </div>
-            <div class="xsy-login__connector"></div>
-            <div class="xsy-login__node">
-              <InboxOutlined class="xsy-login__node-icon"/>
-              <span>仓库</span>
-            </div>
-            <div class="xsy-login__connector"></div>
-            <div class="xsy-login__node">
-              <SlidersOutlined class="xsy-login__node-icon"/>
-              <span>分拣</span>
-            </div>
-          </div>
-          <div class="xsy-login__flow-row">
-            <div class="xsy-login__node">
-              <CarOutlined class="xsy-login__node-icon"/>
-              <span>配送</span>
-            </div>
-            <div class="xsy-login__connector"></div>
-            <div class="xsy-login__node">
-              <TeamOutlined class="xsy-login__node-icon"/>
-              <span>客户</span>
-            </div>
-            <div class="xsy-login__connector"></div>
-            <div class="xsy-login__node">
-              <AccountBookOutlined class="xsy-login__node-icon"/>
-              <span>财务</span>
-            </div>
-          </div>
+        <div class="xsy-login__visual">
+          <img class="xsy-login__scene" :src="supplyChainScene" alt="商品、供应商、仓库、分拣、配送、客户、财务全链路"/>
         </div>
       </aside>
 
@@ -129,15 +121,12 @@
 <script setup lang="ts">
 defineOptions({name: "SystemLoginThree"});
 import {
-  AccountBookOutlined,
-  AppstoreOutlined,
-  CarOutlined,
-  InboxOutlined,
+  BarChartOutlined,
+  BulbOutlined,
   LockOutlined,
+  NodeIndexOutlined,
+  RiseOutlined,
   SafetyCertificateOutlined,
-  ShopOutlined,
-  SlidersOutlined,
-  TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
@@ -145,6 +134,13 @@ import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {loginApi} from '/@/api/system/login-api';
 import logoImg from '/@/assets/images/logo/xsy-logo.png';
+import supplyChainScene from '/@/assets/images/login-illustration/supply-chain-scene.png';
+import bgLeafWave from '/@/assets/images/login-illustration/bg-leaf-wave-bottom-left.png';
+import bgLeafRibbon from '/@/assets/images/login-illustration/bg-leaf-ribbon-top-right.png';
+import bgLogistics from '/@/assets/images/login-illustration/bg-warehouse-logistics-scene.png';
+import bgConnectors from '/@/assets/images/login-illustration/bg-supply-chain-connectors.png';
+import bgLeaves from '/@/assets/images/login-illustration/bg-floating-leaves.png';
+import bgDots from '/@/assets/images/login-illustration/bg-dot-pattern.png';
 import {SmartLoading} from '/@/components/framework/smart-loading';
 import {LOGIN_DEVICE_ENUM} from '/@/constants/system/login-device-const';
 import {useUserStore} from '/@/store/modules/system/user';

@@ -7,23 +7,162 @@
 @xsy-border: #e5e7eb;
 
 .xsy-login {
+  position: relative;
   min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 40px 32px 20px;
+  overflow: hidden;
   background:
-          radial-gradient(circle at 12% 20%, rgba(22, 163, 74, 0.10), transparent 34%),
-          radial-gradient(circle at 88% 12%, rgba(20, 184, 166, 0.08), transparent 30%),
-          linear-gradient(135deg, #f7fbf8 0%, #f3f8f5 48%, #f8faf9 100%);
+          radial-gradient(circle at 10% 22%, rgba(22, 163, 74, 0.13), transparent 36%),
+          radial-gradient(circle at 90% 10%, rgba(20, 184, 166, 0.10), transparent 32%),
+          radial-gradient(circle at 6% 92%, rgba(34, 197, 94, 0.16), transparent 36%),
+          radial-gradient(circle at 94% 94%, rgba(45, 212, 191, 0.12), transparent 34%),
+          linear-gradient(135deg, #f6fbf8 0%, #f1f8f4 48%, #f7faf8 100%);
+
+  // 大型有机弧面：只露出屏幕边缘的一小段柔光。
+  // 两个关键点，缺一个就会露出「圆盘」硬边：
+  //   1. 用 ellipse 而非 circle + transform: scale —— scale 会把淡出区一起压扁，
+  //      圆周上的渐隐被压缩成一条可见的硬轮廓；
+  //   2. 淡出必须走满全程（0% → 100%），峰值透明度放在 0%，越往边缘越淡。
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // 左下：浅绿叶片感的弧面
+  &::before {
+    width: 900px;
+    height: 620px;
+    left: -470px;
+    bottom: -340px;
+    background: radial-gradient(
+            ellipse 50% 50% at 72% 28%,
+            rgba(74, 222, 128, 0.26) 0%,
+            rgba(74, 222, 128, 0.15) 38%,
+            rgba(74, 222, 128, 0.04) 68%,
+            rgba(74, 222, 128, 0) 100%
+    );
+    transform: rotate(-10deg);
+  }
+
+  // 右上：浅青弧面
+  &::after {
+    width: 760px;
+    height: 540px;
+    right: -400px;
+    top: -300px;
+    background: radial-gradient(
+            ellipse 50% 50% at 30% 72%,
+            rgba(45, 212, 191, 0.22) 0%,
+            rgba(45, 212, 191, 0.13) 38%,
+            rgba(45, 212, 191, 0.04) 68%,
+            rgba(45, 212, 191, 0) 100%
+    );
+    transform: rotate(14deg);
+  }
+}
+
+// ---------------- 装饰层 ----------------
+
+.xsy-login__decor {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.xsy-login__decor-img {
+  position: absolute;
+  user-select: none;
+  animation: xsy-login-decor-in 1.2s ease-out both;
+}
+
+// 左下叶片波浪：参考图里左下是最浓的一块绿，是整个背景的视觉锚点
+.xsy-login__decor-img--wave {
+  left: -2%;
+  bottom: -3%;
+  width: 860px;
+  max-width: 58vw;
+  opacity: 0.88;
+}
+
+// 右上叶片飘带：参考图右上偏青、浓度中等，不要压过左下
+.xsy-login__decor-img--ribbon {
+  right: -2%;
+  top: -2%;
+  width: 700px;
+  max-width: 48vw;
+  opacity: 0.46;
+  animation-delay: 0.1s;
+}
+
+// 右下仓储物流场景：参考图右下的绿度约是左下的四成，单靠这张淡图撑不住，
+// 所以提高透明度并把它推满右下角，让右下不显得比其它三角空。
+.xsy-login__decor-img--logistics {
+  right: -3%;
+  bottom: -4%;
+  width: 620px;
+  opacity: 0.62;
+  animation-delay: 0.2s;
+}
+
+// 供应链网络：圆底节点（叶片 / 车辆 / 数据）+ 连接曲线。
+// 素材是 650x183 的扁长条，参考图里它横贯页面顶部、卡片上沿之上，
+// 所以这里给足宽度让它自然铺开，而不是缩小成一个图标组。
+.xsy-login__decor-img--connectors {
+  left: 50%;
+  top: -1%;
+  width: 1120px;
+  max-width: 78vw;
+  opacity: 0.5;
+  transform: translateX(-50%);
+  animation-delay: 0.3s;
+}
+
+// 独立浮动叶片：右下偏上，补右下的稀疏感
+.xsy-login__decor-img--leaves {
+  right: 1%;
+  bottom: 26%;
+  width: 340px;
+  opacity: 0.62;
+  animation-delay: 0.4s;
+}
+
+// 局部点阵：左上角，补参考图左上那一小片规则点阵
+.xsy-login__decor-img--dots {
+  left: 3%;
+  top: 14%;
+  width: 240px;
+  opacity: 0.58;
+  animation-delay: 0.5s;
+}
+
+@keyframes xsy-login-decor-in {
+  from {
+    opacity: 0;
+  }
+}
+
+// 装饰层之上：卡片与页脚
+.xsy-login__footer {
+  position: relative;
+  z-index: 1;
 }
 
 .xsy-login__shell {
+  position: relative;
+  z-index: 1;
   display: flex;
   width: 100%;
-  max-width: 1040px;
-  min-height: 580px;
+  max-width: 1160px;
+  min-height: 500px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(15, 23, 42, 0.06);
@@ -48,8 +187,8 @@
 // ---------------- 左侧品牌区 ----------------
 
 .xsy-login__brand {
-  width: 54%;
-  padding: 48px 52px;
+  width: 61%;
+  padding: 44px 48px 40px;
   display: flex;
   flex-direction: column;
   background:
@@ -59,76 +198,93 @@
 }
 
 .xsy-login__logo {
-  height: 38px;
+  height: 34px;
   width: auto;
   align-self: flex-start;
   object-fit: contain;
 }
 
 .xsy-login__brand-copy {
-  margin-top: 44px;
+  margin-top: 26px;
 }
 
 .xsy-login__headline {
   margin: 0;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 700;
   color: @xsy-text;
   letter-spacing: 1px;
 }
 
 .xsy-login__tagline {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font-size: 16px;
   color: @xsy-text-secondary;
   letter-spacing: 2px;
 }
 
-.xsy-login__description {
-  margin: 26px 0 0;
+.xsy-login__intro {
+  margin: 14px 0 0;
   font-size: 14px;
-  line-height: 1.8;
   color: @xsy-text-secondary;
+  letter-spacing: 0.5px;
 }
 
-.xsy-login__visual {
-  margin-top: auto;
-  padding-top: 40px;
-}
-
-.xsy-login__flow-row {
+// 品牌特性标签
+.xsy-login__features {
   display: flex;
-  align-items: center;
-  margin-bottom: 14px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-
-  .xsy-login__node {
-    &:nth-child(1) { animation-delay: 0.05s; }
-    &:nth-child(3) { animation-delay: 0.10s; }
-    &:nth-child(5) { animation-delay: 0.15s; }
-    &:nth-child(7) { animation-delay: 0.20s; }
-    &:nth-child(9) { animation-delay: 0.25s; }
-    &:nth-child(11) { animation-delay: 0.30s; }
-    &:nth-child(13) { animation-delay: 0.35s; }
-  }
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.xsy-login__node {
+.xsy-login__feature {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 46px;
-  padding: 0 16px;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 185, 107, 0.22);
-  font-size: 13px;
+  gap: 7px;
+  font-size: 14px;
   color: @xsy-text;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  white-space: nowrap;
   animation: xsy-login-fade 0.4s ease-out both;
+
+  &:nth-child(1) { animation-delay: 0.10s; }
+  &:nth-child(2) { animation-delay: 0.16s; }
+  &:nth-child(3) { animation-delay: 0.22s; }
+  &:nth-child(4) { animation-delay: 0.28s; }
+}
+
+// 圆形浅绿底的图标，与参考图的特性标签一致
+.xsy-login__feature-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(0, 185, 107, 0.12);
+}
+
+.xsy-login__feature-icon {
+  font-size: 13px;
+  color: @xsy-primary;
+}
+
+// 全链路主插画
+.xsy-login__visual {
+  margin-top: auto;
+  padding-top: 20px;
+  animation: xsy-login-fade 0.5s ease-out 0.3s both;
+}
+
+.xsy-login__scene {
+  display: block;
+  width: 100%;
+  max-width: 700px;
+  height: auto;
+  user-select: none;
 }
 
 @keyframes xsy-login-fade {
@@ -142,30 +298,18 @@
   }
 }
 
-.xsy-login__node-icon {
-  font-size: 19px;
-  color: @xsy-primary;
-}
-
-.xsy-login__connector {
-  width: 16px;
-  height: 1px;
-  margin: 0 6px;
-  background: rgba(0, 185, 107, 0.35);
-}
-
 // ---------------- 右侧登录区 ----------------
 
 .xsy-login__panel {
-  width: 46%;
-  padding: 48px 52px;
+  width: 39%;
+  padding: 44px 46px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 .xsy-login__header {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .xsy-login__title {
@@ -267,6 +411,9 @@
 }
 
 .xsy-login__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 48px;
   border-radius: 8px;
   font-size: 16px;
@@ -297,9 +444,16 @@
     width: calc(100vw - 64px);
   }
 
-  .xsy-login__brand,
+  .xsy-login__brand {
+    padding: 36px 38px 32px;
+  }
+
   .xsy-login__panel {
-    padding: 40px 40px;
+    padding: 36px 38px;
+  }
+
+  .xsy-login__headline {
+    font-size: 30px;
   }
 }
 
@@ -316,6 +470,19 @@
   .xsy-login__panel {
     width: 100%;
     padding: 40px 40px 32px;
+  }
+
+  // 窄屏装饰整体退弱，只留角落的叶片层
+  .xsy-login__decor-img--connectors,
+  .xsy-login__decor-img--leaves,
+  .xsy-login__decor-img--dots,
+  .xsy-login__decor-img--logistics {
+    display: none;
+  }
+
+  .xsy-login__decor-img--wave,
+  .xsy-login__decor-img--ribbon {
+    opacity: 0.3;
   }
 }
 
@@ -339,13 +506,19 @@
   .xsy-login__footer {
     margin-top: 16px;
   }
+
+  .xsy-login__decor-img {
+    display: none;
+  }
 }
 
 // ---------------- 减少动态偏好 ----------------
 
 @media (prefers-reduced-motion: reduce) {
   .xsy-login__shell,
-  .xsy-login__node {
+  .xsy-login__feature,
+  .xsy-login__visual,
+  .xsy-login__decor-img {
     animation: none;
   }
 }
