@@ -29,57 +29,27 @@
   与详情返回的 `assigneeEmployeeId`，服务端仍是权威。
 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
-    <a-form-item label="关键词" class="smart-query-form-item">
-      <a-input
-          v-model:value="queryForm.keyword"
-          placeholder="任务号 / 仓库 / 分拣员 / 订单号 / 商品 / 客户"
-          allow-clear
-          :maxlength="100"
-          style="width: 260px"
-          @pressEnter="onSearch"
-      />
-    </a-form-item>
-    <a-form-item label="状态" class="smart-query-form-item">
-      <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px"/>
-    </a-form-item>
-    <a-form-item label="仓库" class="smart-query-form-item">
-      <WarehouseSelect v-model:value="queryForm.warehouseId" placeholder="全部仓库" width="200px"/>
-    </a-form-item>
-    <!-- 未指派队列与按人筛选只对持指派权（即跨指派人可见）的人有意义：
-         分拣员的数据范围里根本不存在别人的任务，把筛选摆出来只会让人以为「别人也有任务被藏起来了」。 -->
-    <template v-if="isQueueManager">
-      <a-form-item label="只看未指派" class="smart-query-form-item">
-        <a-switch v-model:checked="queryForm.unassignedOnly"/>
-      </a-form-item>
-      <a-form-item label="受指派人" class="smart-query-form-item">
-        <EmployeeSelect v-model:value="assigneeFilter" placeholder="全部" width="180px"/>
-      </a-form-item>
-    </template>
-    <!-- 送货时间 / 波次 / 供应商：三个维度都在**建单时冻结**，因此筛选结果不会随主档或
-         配送线路变化而改变。波次表达线路维度，供应商是建单时显式指定的来源。 -->
-    <a-form-item label="送货时间" class="smart-query-form-item">
-      <a-range-picker
-          v-model:value="deliveryRange"
-          show-time
-          value-format="YYYY-MM-DDTHH:mm:ssZ"
-          style="width: 340px"
-      />
-    </a-form-item>
-    <a-form-item label="预配送波次" class="smart-query-form-item">
-      <a-input v-model:value="queryForm.deliveryWave" placeholder="波次" allow-clear style="width: 140px"
-               @pressEnter="onSearch"/>
-    </a-form-item>
-    <a-form-item label="供应商" class="smart-query-form-item">
-      <SupplierSelect v-model:value="queryForm.supplierId" width="200px" placeholder="全部"/>
-    </a-form-item>
-    <a-form-item class="smart-query-form-item">
-      <a-button-group>
-        <a-button type="primary" v-privilege="'scm:sorting:task:query'" @click="onSearch">查询</a-button>
-        <a-button @click="resetQuery">重置</a-button>
-      </a-button-group>
-    </a-form-item>
-  </a-form>
+  <SortingTaskFilterForm
+    :keyword="queryForm.keyword"
+    :status="queryForm.status"
+    :warehouse-id="queryForm.warehouseId"
+    :unassigned-only="queryForm.unassignedOnly"
+    :assignee-id="assigneeFilter"
+    :delivery-range="deliveryRange"
+    :delivery-wave="queryForm.deliveryWave"
+    :supplier-id="queryForm.supplierId"
+    :is-queue-manager="isQueueManager"
+    @update:keyword="queryForm.keyword = $event"
+    @update:status="queryForm.status = $event"
+    @update:warehouse-id="queryForm.warehouseId = $event"
+    @update:unassigned-only="queryForm.unassignedOnly = $event"
+    @update:assignee-id="assigneeFilter = $event"
+    @update:delivery-range="deliveryRange = $event"
+    @update:delivery-wave="queryForm.deliveryWave = $event"
+    @update:supplier-id="queryForm.supplierId = $event"
+    @search="onSearch"
+    @reset="resetQuery"
+  />
 
   <a-alert v-if="listError" :message="listError" type="error" show-icon>
     <template #action>
@@ -295,9 +265,6 @@ import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {useUserStore} from '/@/store/modules/system/user';
-import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
-import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
-import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
@@ -318,6 +285,7 @@ import SortingPrintPreviewModal from './components/sorting-print-preview-modal.v
 import SortingTaskDetailDrawer from './components/sorting-task-detail-drawer.vue';
 import SortingTaskCreateModal from './components/sorting-task-create-modal.vue';
 import SortingTaskActionModal from './components/sorting-task-action-modal.vue';
+import SortingTaskFilterForm from './components/sorting-task-filter-form.vue';
 import type {
     Id,
     SortingActionPayload,
@@ -392,7 +360,6 @@ const columns = ref<TableColumnsType<SortingTask>>([
   {title: '操作', dataIndex: 'action', fixed: 'right', align: 'right', width: 320},
 ]);
 
-const statusOptions = Object.values(SCM_SORTING_TASK_STATUS_ENUM).map((item) => ({value: item.value, label: item.desc}));
 function statusDesc(status?: string | null) {
     return status ? SCM_SORTING_TASK_STATUS_ENUM[status]?.desc ?? status : '—';
 }

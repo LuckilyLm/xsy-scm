@@ -35,6 +35,7 @@ import {
 } from '../src/constants/business/scm/sorting-const.ts';
 
 const TASK_LIST = '../src/views/business/scm/sorting/sorting-task-list.vue';
+const TASK_FILTER = '../src/views/business/scm/sorting/components/sorting-task-filter-form.vue';
 const DETAIL_DRAWER = '../src/views/business/scm/sorting/components/sorting-task-detail-drawer.vue';
 const SUMMARY = '../src/views/business/scm/sorting/sorting-summary.vue';
 const API = '../src/api/business/scm/sorting-api.ts';
@@ -49,6 +50,7 @@ function code(relative) {
 }
 
 const taskList = code(TASK_LIST);
+const taskFilter = code(TASK_FILTER);
 const detailDrawer = code(DETAIL_DRAWER);
 const summary = code(SUMMARY);
 const api = code(API);
@@ -160,6 +162,7 @@ test('页面用到的 v-privilege 全部落在权限码集合内，且集合与�
     const used = new Set(
         [
             ...[...taskList.matchAll(/v-privilege="'([^']+)'"/g)].map((m) => m[1]),
+            ...[...taskFilter.matchAll(/v-privilege="'([^']+)'"/g)].map((m) => m[1]),
             ...[...summary.matchAll(/v-privilege="'([^']+)'"/g)].map((m) => m[1]),
         ]
     );
@@ -229,7 +232,7 @@ test('按钮出现条件与后端状态机一致', () => {
     assert.match(taskList, /String\(assignee\) === String\(userStore\.employeeId\)/);
     assert.match(taskList, /hasPermission\(SCM_SORTING_PERMISSION\.ITEM_UPDATE\)/);
     // 未指派队列与按人筛选只对队列管理者渲染
-    assert.match(taskList, /v-if="isQueueManager"[\s\S]{0,400}?unassignedOnly/);
+    assert.match(taskFilter, /v-if="isQueueManager"[\s\S]{0,400}?unassignedOnly/);
 });
 
 test('汇总页的入口权限挂在查询按钮上，重置按钮不带权限', () => {
