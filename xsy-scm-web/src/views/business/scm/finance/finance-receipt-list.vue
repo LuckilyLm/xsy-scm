@@ -50,17 +50,25 @@
       </div>
     </div>
     <a-table id="scm-finance-receipt-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="receiptId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1440}">
+             row-key="receiptId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1455}">
       <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='entryType'"><a-tag :color="SCM_FINANCE_ENTRY_COLOR[text]">{{ entryTypeText(text) }}</a-tag></template>
+        <template v-if="column.dataIndex==='entryType'">
+          <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
+        </template>
         <template v-else-if="column.dataIndex==='method'">{{ paymentMethodText(text) }}</template>
-        <template v-else-if="column.dataIndex==='pendingWriteOffAmount' && record.walletFunding"><a-tag>已转钱包权益</a-tag></template>
-        <template v-else-if="['amount','effectiveAmount','usedAmount','pendingWriteOffAmount'].includes(column.dataIndex)">{{ moneyText(text) }}</template>
+        <template v-else-if="column.dataIndex==='pendingWriteOffAmount' && record.walletFunding">
+          <ScmStatusTag tone="processing" label="已转钱包权益"/>
+        </template>
+        <template v-else-if="['amount','effectiveAmount','usedAmount','pendingWriteOffAmount'].includes(column.dataIndex)">
+          <span class="scm-money">{{ moneyText(text) }}</span>
+        </template>
         <template v-else-if="column.dataIndex==='receivedAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
-          <a-button type="link" @click="showDetail(record)">明细</a-button>
-          <a-button v-if="record.entryType==='NORMAL'" type="link" danger v-privilege="PERM.RECEIPT_REVERSE"
-                    :disabled="record.walletFunding || record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" @click="showDetail(record)">明细</a-button>
+            <a-button v-if="record.entryType==='NORMAL'" type="link" size="small" danger v-privilege="PERM.RECEIPT_REVERSE"
+                      :disabled="record.walletFunding || record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -106,6 +114,7 @@ import {financeApi} from '/@/api/business/scm/finance-api';
 import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_RECEIPT_METHOD_ENUM, SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
 import {financeError} from './finance-errors';
@@ -135,7 +144,7 @@ const columns = ref<TableColumnsType<FinanceReceipt>>([
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 125},
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 115}, {title: '方式', dataIndex: 'method', width: 110},
     {title: '凭据号', dataIndex: 'externalReference', width: 160}, {title: '收款时点', dataIndex: 'receivedAt', width: 165},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'right', width: 95},
+    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];

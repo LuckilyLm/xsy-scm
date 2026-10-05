@@ -143,3 +143,53 @@ test('超额核销、负净应收和反向单据都用事实字段展示', () =>
   assert.ok(pageCode.payment.includes("record.entryType==='NORMAL'"));
   assert.ok(pageCode.writeOff.includes("record.entryType==='NORMAL'"));
 });
+
+// ------------------------------------------------------------------ §20 财务列表的展示契约
+
+test('§20 五张财务列表的操作列统一居中固定', () => {
+  for (const [key, source] of Object.entries(pageCode)) {
+    assert.match(source, /dataIndex: 'action', fixed: actionColumnFixed, align: 'center'/,
+        `${PAGES[key]} 的操作列未居中`);
+  }
+});
+
+test('§20 核销页把「资金」与「目标」各自合成一格', () => {
+  // 只看**主列表**的列定义：抽屉里的分配子表另有自己的「目标单号」，
+  // 那是登记核销时逐条录入的对象，不属于列表展示口径。
+  const mainColumns = pageCode.writeOff
+      .match(/const columns = ref<TableColumnsType<FinanceWriteOff>>\(\[[\s\S]*?\n\]\);/)?.[0];
+  assert.ok(mainColumns, '未取到核销页主列表的列定义');
+  for (const gone of ['资金类型', '资金单号', '资金方', '目标类型', '目标单号', '目标方']) {
+    assert.ok(!mainColumns.includes(`title: '${gone}'`), `核销页仍有独立列：${gone}`);
+  }
+  assert.match(mainColumns, /title: '来源', dataIndex: 'source'/);
+  assert.match(mainColumns, /title: '对象', dataIndex: 'target'/);
+  // 两组「类型 + 单号」都下沉为次要行，且类型仍要落成中文
+  assert.match(pageCode.writeOff, /column\.dataIndex==='source'[\s\S]{0,400}sourceTypeText\(record\.sourceType\)/);
+  assert.match(pageCode.writeOff, /column\.dataIndex==='target'[\s\S]{0,400}targetTypeText\(record\.targetType\)/);
+  // 余额消费来自流水表，不在 SCM_FINANCE_SOURCE_TYPE_ENUM 里，必须单独补
+  assert.match(pageCode.writeOff, /BALANCE_MOVEMENT: '余额消费'/);
+  // 撤销核销是追加反向事实：danger 视觉 + 独立二次确认弹窗（不能与普通编辑同权重）
+  assert.match(pageCode.writeOff, /title="撤销核销"/);
+  assert.match(pageCode.writeOff, /将追加一条反向核销/);
+});
+
+test('§20 付款页不再展示裸的技术主键，往来方类型下沉为次要行', () => {
+  const payment = pageCode.payment;
+  // sourceId 是退款单的数据库主键：对使用者没有信息量
+  assert.ok(!payment.includes(`title: '来源编号'`), '付款页仍在展示裸主键');
+  assert.ok(!payment.includes(`dataIndex: 'sourceId'`), '付款页仍绑定了 sourceId 列');
+  // 往来方类型（客户 / 供应商）决定这笔付款的性质，作往来方的次要行而不是独占一列
+  assert.ok(!payment.includes(`title: '往来方类型'`));
+  assert.match(payment, /title: '往来方', dataIndex: 'counterparty'/);
+  assert.match(payment, /column\.dataIndex==='counterparty'[\s\S]{0,400}record\.counterpartyType/);
+});
+
+test('§20 收付款页的金额列统一走 scm-money（右对齐 + 等宽数字）', () => {
+  for (const key of ['receipt', 'payment']) {
+    const source = pageCode[key];
+    assert.match(source, /class="scm-money"/, `${PAGES[key]} 的金额未走 scm-money`);
+    assert.doesNotMatch(source, /<a-tag :color="SCM_FINANCE_ENTRY_COLOR/,
+        `${PAGES[key]} 的方向标签应走 ScmStatusTag`);
+  }
+});

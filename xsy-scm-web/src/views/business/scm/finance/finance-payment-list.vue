@@ -45,18 +45,35 @@
       </div>
     </div>
     <a-table id="scm-finance-payment-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1320}">
+             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1290}">
       <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='entryType'"><a-tag :color="SCM_FINANCE_ENTRY_COLOR[text]">{{ entryTypeText(text) }}</a-tag></template>
-        <template v-else-if="column.dataIndex==='counterpartyType'">{{ text==='CUSTOMER'?'客户':'供应商' }}</template>
+        <template v-if="column.dataIndex==='entryType'">
+          <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
+        </template>
+        <template v-else-if="column.dataIndex==='counterparty'">
+          <!-- 往来方是客户还是供应商决定这笔付款的性质，作次要行而不是独占一列 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.counterpartyName || '—' }}</span>
+            <span v-if="record.counterpartyType" class="scm-cell-stack__sub">
+              {{ record.counterpartyType==='CUSTOMER'?'客户':'供应商' }}
+            </span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex==='method'">{{ paymentMethodText(text) }}</template>
-        <template v-else-if="column.dataIndex==='sourceType'">{{ text==='ORDER_REFUND'?'退款':'—' }}</template>
-        <template v-else-if="['amount','effectiveAmount','usedAmount','pendingWriteOffAmount'].includes(column.dataIndex)">{{ moneyText(text) }}</template>
+        <template v-else-if="column.dataIndex==='sourceType'">
+          <span v-if="text==='ORDER_REFUND'">退款</span>
+          <span v-else class="scm-cell-hint">—</span>
+        </template>
+        <template v-else-if="['amount','effectiveAmount','usedAmount','pendingWriteOffAmount'].includes(column.dataIndex)">
+          <span class="scm-money">{{ moneyText(text) }}</span>
+        </template>
         <template v-else-if="column.dataIndex==='paidAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
-          <a-button type="link" @click="showDetail(record)">明细</a-button>
-          <a-button v-if="record.entryType==='NORMAL'" type="link" danger v-privilege="PERM.PAYMENT_REVERSE"
-                    :disabled="record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" @click="showDetail(record)">明细</a-button>
+            <a-button v-if="record.entryType==='NORMAL'" type="link" size="small" danger v-privilege="PERM.PAYMENT_REVERSE"
+                      :disabled="record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -112,6 +129,7 @@ import {financeApi} from '/@/api/business/scm/finance-api';
 import {SCM_FINANCE_COUNTERPARTY_TYPE_ENUM, SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM, SCM_FINANCE_PAYMENT_METHOD_ENUM, SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import FinanceRefundPicker from './finance-refund-picker.vue';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
@@ -147,13 +165,12 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
 const columns = ref<TableColumnsType<FinancePayment>>([
     {title: '付款单号', dataIndex: 'paymentNo', fixed: 'left', width: 110, ellipsis: true},
     {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '往来方类型', dataIndex: 'counterpartyType', width: 105}, {title: '往来方', dataIndex: 'counterpartyName', width: 160},
-    {title: '方向', dataIndex: 'entryType', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
+    {title: '往来方', dataIndex: 'counterparty', width: 190}, {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 110},
-    {title: '方式', dataIndex: 'method', width: 105}, {title: '来源', dataIndex: 'sourceType', width: 95},
-    {title: '来源编号', dataIndex: 'sourceId', width: 100}, {title: '付款时点', dataIndex: 'paidAt', width: 160},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'right', width: 95},
+    {title: '方式', dataIndex: 'method', width: 105}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
+    {title: '付款时点', dataIndex: 'paidAt', width: 160},
+    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];
