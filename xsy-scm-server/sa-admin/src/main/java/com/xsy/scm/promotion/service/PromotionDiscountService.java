@@ -39,6 +39,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.activitySnapshot;
+import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.allocationsJson;
+import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.appliedActivity;
+import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.couponSnapshot;
 
 /**
  * 优惠计算：试算（只读）与冻结（占用券 + 落库）。
@@ -133,7 +137,7 @@ public class PromotionDiscountService {
             row.setBaseAmount(computed.getBaseAmount());
             row.setDiscountAmount(computed.getDiscountAmount());
             row.setSpecialDiscountAmount(computed.getSpecialDiscount());
-            row.setAllocations(allocationsJson(computed));
+            row.setAllocations(allocationsJson(objectMapper, computed));
             row.setRoundingTargetItemId(computed.getRoundingTargetItemId());
             row.setCreatedBy(operator);
             orderDiscountDao.insertDiscount(row);
@@ -588,60 +592,6 @@ public class PromotionDiscountService {
         return instance;
     }
 
-    private Map<String, Object> couponSnapshot(PromotionDiscountVO vo) {
-        if (vo.getCouponInstanceId() == null) {
-            return null;
-        }
-        Map<String, Object> snapshot = new LinkedHashMap<>();
-        snapshot.put("couponInstanceId", vo.getCouponInstanceId());
-        snapshot.put("couponCode", vo.getCouponCode());
-        snapshot.put("couponName", vo.getCouponName());
-        snapshot.put("couponDiscount", plain(vo.getCouponDiscount()));
-        return snapshot;
-    }
-
-    /**
-     * 活动快照：冻结**每一条实际生效活动**及其贡献额，外加被互斥组挤掉的活动。
-     *
-     * <p>
-     * 为什么不直接存 {@code activityRule}（单条规则）：不同互斥组可以叠加，真实生效的可能不止一条。 只冻结主规则会让退款反向漏掉叠加的那部分，而快照是不可变的，事后无法补算。
-     *
-     * <p>
-     * 形状保持 {@code object}（{@code order_discount.activity_snapshot} 有 {@code jsonb_typeof = 'object'} 约束），因此不需要改表：完整列表放在
-     * {@code applied} 键下。
-     */
-    private Map<String, Object> activitySnapshot(PromotionDiscountVO vo) {
-        List<Map<String, Object>> applied = new ArrayList<>();
-        for (PromotionDiscountVO.AppliedActivityVO activity : vo.getAppliedActivities()) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("activityId", activity.getActivityId());
-            row.put("activityCode", activity.getActivityCode());
-            row.put("activityName", activity.getActivityName());
-            row.put("activityType", activity.getActivityType());
-            row.put("version", activity.getVersion());
-            row.put("rule", activity.getRule());
-            row.put("discountAmount", plain(activity.getDiscountAmount()));
-            applied.add(row);
-        }
-        Map<String, Object> snapshot = new LinkedHashMap<>();
-        snapshot.put("applied", applied);
-        snapshot.put("suppressed", List.copyOf(vo.getSuppressedActivities()));
-        return snapshot;
-    }
-
-    private static PromotionDiscountVO.AppliedActivityVO appliedActivity(PromotionActivityEntity activity,
-            BigDecimal discountAmount) {
-        PromotionDiscountVO.AppliedActivityVO vo = new PromotionDiscountVO.AppliedActivityVO();
-        vo.setActivityId(activity.getId());
-        vo.setActivityCode(activity.getActivityCode());
-        vo.setActivityName(activity.getActivityName());
-        vo.setActivityType(activity.getActivityType());
-        vo.setVersion(activity.getVersion());
-        vo.setRule(activity.getRule());
-        vo.setDiscountAmount(discountAmount);
-        return vo;
-    }
-
     /**
      * 满赠门槛判定：订单金额达到门槛即成立。
      *
@@ -690,22 +640,6 @@ public class PromotionDiscountService {
         return gift;
     }
 
-    private String allocationsJson(PromotionDiscountVO vo) {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        for (PromotionDiscountVO.PromotionDiscountAllocationVO allocation : vo.getAllocations()) {
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("orderItemId", allocation.getOrderItemId());
-            row.put("baseAmount", plain(allocation.getBaseAmount()));
-            row.put("discountAmount", plain(allocation.getDiscountAmount()));
-            rows.add(row);
-        }
-        try {
-            return objectMapper.writeValueAsString(rows);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new IllegalStateException("订单优惠分摊序列化失败", e);
-        }
-    }
-
     private static BigDecimal min(BigDecimal value, BigDecimal cap) {
         if (value == null) {
             return BigDecimal.ZERO.setScale(SCALE);
@@ -726,9 +660,5 @@ public class PromotionDiscountService {
         } catch (NumberFormatException e) {
             throw new ScmBusinessException(PromotionErrorCode.RULE_INVALID);
         }
-    }
-
-    private static String plain(BigDecimal value) {
-        return value == null ? null : value.toPlainString();
     }
 }
