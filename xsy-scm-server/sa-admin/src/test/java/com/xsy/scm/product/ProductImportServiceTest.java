@@ -65,13 +65,13 @@ class ProductImportServiceTest {
         when(productUomDao.selectList(any())).thenReturn(java.util.List.of(kg));
     }
 
-    private static final String[] HEADERS = {"模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码",
-            "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称",
-            "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序"};
+    private static final String[] HEADERS = {"模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码",
+            "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "规格编码", "条码", "规格名称",
+            "销售单位", "商品类型", "市场价", "规格状态", "默认规格", "排序"};
 
-    private static final String[] UPDATE_HEADERS = {"模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本",
-            "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码",
-            "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序"};
+    private static final String[] UPDATE_HEADERS = {"模板版本", "商品ID", "商品版本", "规格ID", "规格版本",
+            "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码",
+            "商品状态", "规格编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "规格状态", "默认规格", "排序"};
 
     /** 更新模板的列下标：定位键在最前，其余列留空即保持库内原值。 */
     private static final int SPU_VERSION = 2;
@@ -207,7 +207,7 @@ class ProductImportServiceTest {
         var result = productImportService.importFile(workbook(b -> b.getSheetAt(0).getRow(2).getCell(11).setCellValue("MAYBE")), ImportMode.CREATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getRowNumber()).isEqualTo(3);
-            assertThat(error.getColumn()).isEqualTo("商品上下架");
+            assertThat(error.getColumn()).isEqualTo("商品状态");
             assertThat(error.getCode()).isEqualTo("ENUM_INVALID");
         });
         verifyNoInteractions(productImportWriteService);
@@ -446,7 +446,7 @@ class ProductImportServiceTest {
                 .getCell(DEFAULT_SKU).setCellValue(ProductImportService.CLEAR_TOKEN)), ImportMode.UPDATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getCode()).isEqualTo("CLEAR_NOT_ALLOWED");
-            assertThat(error.getColumn()).isEqualTo("默认SKU");
+            assertThat(error.getColumn()).isEqualTo("默认规格");
         });
         verifyNoInteractions(productImportWriteService);
     }
@@ -483,7 +483,7 @@ class ProductImportServiceTest {
                 .getCell(SPU_VERSION).setCellValue("4")), ImportMode.UPDATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getCode()).isEqualTo("VERSION_CONFLICT");
-            assertThat(error.getColumn()).isEqualTo("SPU版本");
+            assertThat(error.getColumn()).isEqualTo("商品版本");
             assertThat(error.getRowNumber()).isEqualTo(2);
         });
         verifyNoInteractions(productImportWriteService);
@@ -499,7 +499,7 @@ class ProductImportServiceTest {
         assertThat(result.getErrors()).extracting("code").contains("FIELD_LOCKED");
         assertThat(result.getErrors()).allSatisfy(error -> {
             if (error.getCode().equals("FIELD_LOCKED"))
-                assertThat(List.of("SPU编码", "SKU编码")).contains(error.getColumn());
+                assertThat(List.of("商品编码", "规格编码")).contains(error.getColumn());
         });
         verifyNoInteractions(productImportWriteService);
     }

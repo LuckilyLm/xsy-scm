@@ -121,6 +121,9 @@
         <a-divider orientation="left">商品图集</a-divider>
         <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event"/>
         <a-divider orientation="left">商品规格</a-divider>
+        <a-typography-text type="secondary" style="display: block; margin-bottom: 8px">
+          规格属性用于描述不同商品规格；采购、销售与库存都按具体的商品规格记录。
+        </a-typography-text>
         <SkuEditor v-model="form.skuList" :units="units"/>
       </a-form>
     </a-spin>

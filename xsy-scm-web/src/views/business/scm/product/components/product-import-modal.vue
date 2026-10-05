@@ -55,14 +55,14 @@ const open = ref(false), file = ref<File | null>(null), importing = ref(false), 
     result = ref<ProductImportResult | null>(null), done = ref(false), mode = ref<ProductImportMode>('CREATE');
 const errorColumns = [
   { title: 'Excel 行', dataIndex: 'rowNumber', width: 90 },
-  { title: 'SPU 编码', dataIndex: 'spuCode', width: 150 },
+  { title: '商品编码', dataIndex: 'spuCode', width: 150 },
   { title: '错误明细', dataIndex: 'cells' },
 ];
 const groups = computed(() => (result.value ? groupErrorsByRow(result.value.errors) : []));
 const hasErrors = computed(() => !!result.value && hasBlockingErrors(result.value));
 const hint = computed(() => (mode.value === 'UPDATE'
-    ? '更新只改写你填写的单元格，空白列保持原值；填 (清空) 才会清除别名、助记码、品牌、产地、标签编码、条码的既有值。文件里没出现的 SKU 与图片也原样保留。前四列定位键请取自刚导出的商品档案：SPU ID / SPU版本 / SKU ID / SKU版本，版本过期会整批拒绝。'
-    : '导入是整批事务：任意一行有错都不会写入任何商品。请先下载模板，按 SPU 编码组织多行 SKU。'));
+    ? '更新只改写你填写的单元格，空白列保持原值；填 (清空) 才会清除别名、助记码、品牌、产地、标签编码、条码的既有值。文件里没出现的商品规格与图片也原样保留。前四列定位键请取自刚导出的商品档案：商品ID / 商品版本 / 规格ID / 规格版本，版本过期会整批拒绝。'
+    : '导入是整批事务：任意一行有错都不会写入任何商品。请先下载模板，按商品编码组织多行商品规格。'));
 const doneTitle = computed(() => (result.value?.mode === 'UPDATE'
     ? `成功更新 ${result.value?.updatedProducts ?? 0} 个商品`
     : `成功导入 ${result.value?.importedProducts ?? 0} 个商品`));
@@ -117,7 +117,7 @@ async function doImport() {
 /** 失败明细在前端即时导出，符合「本次即时查看/下载、不建历史批次表」的第一版约定。 */
 function downloadErrors() {
   if (!result.value) return;
-  const header = ['Excel行', 'SPU编码', '列', '原因码', '说明'];
+  const header = ['Excel行', '商品编码', '列', '原因码', '说明'];
   const lines = result.value.errors.map(e => [e.rowNumber, e.spuCode ?? '', e.column, e.code, e.message]
       .map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
   const blob = new Blob(['﻿' + [header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });

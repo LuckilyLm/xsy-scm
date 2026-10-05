@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.*;
         "file.storage.local.url-prefix=http://127.0.0.1:18082",
         "logging.level.root=WARN"})
 class ProductImportUpdatePgIT {
+    // Legacy headers from previously downloaded templates remain accepted.
     private static final List<String> HEADERS = List.of("模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本",
             "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码",
             "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
@@ -162,7 +163,7 @@ class ProductImportUpdatePgIT {
                 cell(MARKET_PRICE, "8.8800"), cell(SPU_VERSION, "99"))), ImportMode.UPDATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getCode()).isEqualTo("VERSION_CONFLICT");
-            assertThat(error.getColumn()).isEqualTo("SPU版本");
+            assertThat(error.getColumn()).isEqualTo("商品版本");
         });
         assertThat(result.getUpdatedProducts()).isZero();
         assertThat(price(target)).isEqualByComparingTo("1.2000");

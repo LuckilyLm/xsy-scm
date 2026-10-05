@@ -142,10 +142,10 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   row = page.getByRole('row').filter({ hasText: prefix + 'SPU' }); await button(row, '下架').click();
   await page.locator('.ant-popover:visible').getByRole('button', { name: /确.*定/ }).click();
   await expect(button(row, '上架')).toBeVisible();
-  await page.getByPlaceholder('商品名 / 编码 / 条码 / 助记码').fill(prefix + 'BAR'); await button(page, '查询').click();
+  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'BAR'); await button(page, '查询').click();
   await expect(row).toBeVisible();
   // 助记码进入同一个关键字模糊搜索，运营不需要记住编码
-  await page.getByPlaceholder('商品名 / 编码 / 条码 / 助记码').fill(prefix + 'PG'); await button(page, '查询').click();
+  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'PG'); await button(page, '查询').click();
   await expect(row).toBeVisible();
   await button(page, '高级筛选').click();
   // 查询区的 a-form-item 只有 label 没有 name，AntD 不会生成 label/for 关联，只能按结构定位
@@ -162,14 +162,14 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await page.screenshot({ path: '../.runtime/w1-product-detail.png', fullPage: true });
   await button(page, '返回商品列表').click();
   await button(page, '重置').click();
-  await page.getByPlaceholder('商品名 / 编码 / 条码 / 助记码').fill(prefix + 'SPU'); await button(page, '查询').click();
+  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'SPU'); await button(page, '查询').click();
   row = page.getByRole('row').filter({ hasText: prefix + 'SPU' });
 
   // PCO-1 批量维护：标签先由接口建好，再刷新列表让下拉选项重新加载
   const tag = await (await api.post('/scm/product/tag/add', { data: { tagCode: prefix + 'TAG', name: prefix + '礼盒', sortOrder: 99, status: 'ENABLED' } })).json();
   expect(tag.code).toBe(0); tagIds.push(tag.data);
   await page.reload();
-  await page.getByPlaceholder('商品名 / 编码 / 条码 / 助记码').fill(prefix + 'SPU'); await button(page, '查询').click();
+  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'SPU'); await button(page, '查询').click();
   row = page.getByRole('row').filter({ hasText: prefix + 'SPU' });
   await row.getByRole('checkbox').check(); await expect(page.getByText(/已选\s*1\s*个/)).toBeVisible();
   const modal = page.locator('.ant-modal:visible');
@@ -344,7 +344,7 @@ test('Wave 1 UPDATE import: real page round trip preserves blank columns and rej
   } })).json();
   expect(added.code, JSON.stringify(added)).toBe(0); const spuId = added.data; productIds.push(spuId);
 
-  // 更新导入的定位键（SPU ID / SPU版本 / SKU ID / SKU版本）必须取自库里真值，测试不自己编乐观锁版本。
+  // 更新导入的定位键（商品ID / 商品版本 / 规格ID / 规格版本）必须取自库里真值，测试不自己编乐观锁版本。
   // 输入用服务端的更新模板而不是列表导出：两者列集合刻意不同（导出给人看，含分类路径与标签名称；
   // 更新模板要分类编码与标签编码），把导出喂给更新导入会被 HEADER_INVALID 整批拒绝。
   const before = await (await api.get(`/scm/product/detail/${spuId}`)).json();
@@ -361,8 +361,8 @@ test('Wave 1 UPDATE import: real page round trip preserves blank columns and rej
     const sku = before.data.skuList[0];
     const patched = JSON.parse(execFileSync('python', ['../tools/patch_product_update_xlsx.py', '--template',
       '--in', templatePath, '--out', updatePath,
-      '--set', `SPU ID=${before.data.spuId}`, '--set', `SPU版本=${before.data.version}`,
-      '--set', `SKU ID=${sku.skuId}`, '--set', `SKU版本=${sku.version}`, '--set', `别名=${newAlias}`],
+      '--set', `商品ID=${before.data.spuId}`, '--set', `商品版本=${before.data.version}`,
+      '--set', `规格ID=${sku.skuId}`, '--set', `规格版本=${sku.version}`, '--set', `别名=${newAlias}`],
       { encoding: 'utf8' }).trim()) as { rows: number; templateVersion: string };
     expect(patched.rows).toBe(1);
     expect(patched.templateVersion, '更新模板没有自带模板版本').toBeTruthy();
@@ -432,6 +432,7 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
 
   const spuCode = prefix + 'CRE';
   const leafCategoryCode = categoryCode + 3;
+  // Legacy SPU/SKU workbook headers remain accepted after new templates switch to business-facing labels.
   const goodRows = [
     { SPU编码: spuCode, 商品名称: prefix + '导入商品', 分类编码: leafCategoryCode, 品牌: '导入品牌',
       商品上下架: 'ON_SHELF', SKU编码: spuCode + 'A', 规格名称: '散装', 销售单位: 'kg',
@@ -487,7 +488,7 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
     // 页面闭环：新增结果必须能在列表里查到，而不只是接口回一个 id
     await modal.getByRole('button', { name: 'Close' }).click();
     await expect(modal).not.toBeVisible();
-    await page.getByPlaceholder('商品名 / 编码 / 条码 / 助记码').fill(spuCode);
+    await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(spuCode);
     await button(page, '查询').click();
     await expect(page.getByRole('row').filter({ hasText: spuCode })).toHaveCount(1);
 

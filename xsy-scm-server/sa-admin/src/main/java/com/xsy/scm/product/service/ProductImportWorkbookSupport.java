@@ -26,11 +26,11 @@ import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 @Slf4j
 @Component
 public class ProductImportWorkbookSupport {
-    private static final List<String> CREATE_HEADERS = List.of("模板版本", "SPU编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地",
-            "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
-    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "SPU ID", "SPU版本", "SKU ID", "SKU版本", "SPU编码",
-            "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品上下架", "SKU编码", "条码", "规格名称", "销售单位",
-            "商品类型", "市场价", "SKU上下架", "默认SKU", "排序");
+    private static final List<String> CREATE_HEADERS = List.of("模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地",
+            "储存方式", "保质期天数", "标签编码", "商品状态", "规格编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "规格状态", "默认规格", "排序");
+    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "商品ID", "商品版本", "规格ID", "规格版本", "商品编码",
+            "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "规格编码", "条码", "规格名称", "销售单位",
+            "商品类型", "市场价", "规格状态", "默认规格", "排序");
     private static final List<BiConsumer<ProductImportRow, String>> CREATE_SETTERS = List.of(
             ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
             ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
@@ -80,8 +80,8 @@ public class ProductImportWorkbookSupport {
             var sheet = workbook.getSheetAt(0);
             var header = sheet.getRow(0);
             for (int column = 0; column < headers.size(); column++) {
-                if (header == null
-                        || !headers.get(column).equals(trim(formatter.formatCellValue(header.getCell(column))))) {
+                String headerValue = header == null ? null : trim(formatter.formatCellValue(header.getCell(column)));
+                if (!headerMatches(mode, column, headerValue)) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
                             "表头应为“" + headers.get(column) + "”，请使用"
                                     + (mode == ProductImportService.ImportMode.CREATE ? "新增" : "更新") + "模板");
@@ -132,6 +132,35 @@ public class ProductImportWorkbookSupport {
 
     private List<String> headers(ProductImportService.ImportMode mode) {
         return mode == ProductImportService.ImportMode.CREATE ? CREATE_HEADERS : UPDATE_HEADERS;
+    }
+
+    /** Accept previously downloaded technical headers while exporting only business-facing labels. */
+    private boolean headerMatches(ProductImportService.ImportMode mode, int column, String value) {
+        if (headers(mode).get(column).equals(value)) {
+            return true;
+        }
+        if (mode == ProductImportService.ImportMode.CREATE) {
+            return switch (column) {
+                case 1 -> "SPU编码".equals(value);
+                case 11 -> "商品上下架".equals(value);
+                case 12 -> "SKU编码".equals(value);
+                case 18 -> "SKU上下架".equals(value);
+                case 19 -> "默认SKU".equals(value);
+                default -> false;
+            };
+        }
+        return switch (column) {
+            case 1 -> "SPU ID".equals(value);
+            case 2 -> "SPU版本".equals(value);
+            case 3 -> "SKU ID".equals(value);
+            case 4 -> "SKU版本".equals(value);
+            case 5 -> "SPU编码".equals(value);
+            case 15 -> "商品上下架".equals(value);
+            case 16 -> "SKU编码".equals(value);
+            case 22 -> "SKU上下架".equals(value);
+            case 23 -> "默认SKU".equals(value);
+            default -> false;
+        };
     }
 
     private String sampleValue(ProductImportService.ImportMode mode, int column) {
