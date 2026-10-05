@@ -1,12 +1,14 @@
 <template>
   <a-table :columns="columns" :data-source="rows" row-key="categoryId" :pagination="false" :loading="loading"
-           size="small" bordered :scroll="{ x: 850 }">
+           size="small" bordered :scroll="{ x: 1020 }">
     <template #bodyCell="{ column, record }">
       <template v-if="column.dataIndex === 'level'">{{ record.level }} 级</template>
+      <!-- 分类路径是「生鲜 / 果蔬 / 苹果」；父分类 = 去掉最后一段，一级分类没有父级 -->
+      <template v-else-if="column.dataIndex === 'parentName'">{{ parentName(record) }}</template>
       <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
         {{ record.status === 'ENABLED' ? '启用' : '停用' }}
       </a-tag>
-      <a-space v-else-if="column.dataIndex === 'action'" class="smart-table-operate">
+      <a-space v-else-if="column.dataIndex === 'action'" class="smart-table-operate scm-table-actions">
         <a-button v-if="record.level < 3" v-privilege="'scm:product:category:add'" type="link" size="small"
                   :disabled="record.status !== 'ENABLED'" @click="emit('add', record)">新增子分类
         </a-button>
@@ -29,19 +31,22 @@ const emit = defineEmits<{
   edit: [row: ProductCategory];
   remove: [row: ProductCategory]
 }>();
+
+/**
+ * 父分类来自 `categoryPath`（如「生鲜 / 果蔬 / 苹果」）去掉最后一段。
+ * 一级分类没有父级，显示 — 而不是空白，与全站空值口径一致。
+ */
+function parentName(record: ProductCategory): string {
+  const segments = (record.categoryPath ?? '').split(' / ').filter(Boolean);
+  return segments.length > 1 ? segments.slice(0, -1).join(' / ') : '—';
+}
+
 const columns = [
-  {title: '分类名称', dataIndex: 'name', width: 260}, {title: '分类编码', dataIndex: 'categoryCode', width: 190},
-  {title: '层级', dataIndex: 'level', width: 90}, {
-    title: '排序',
-    dataIndex: 'sortOrder',
-    width: 90,
-    align: 'right' as const
-  },
-  {title: '状态', dataIndex: 'status', width: 90, align: 'center' as const}, {
-    title: '操作',
-    dataIndex: 'action',
-    width: 250,
-    align: 'right' as const
-  },
+  {title: '分类名称', dataIndex: 'name', width: 260},
+  {title: '层级', dataIndex: 'level', width: 90},
+  {title: '父分类', dataIndex: 'parentName', width: 240},
+  {title: '排序', dataIndex: 'sortOrder', width: 90, align: 'right' as const},
+  {title: '状态', dataIndex: 'status', width: 90, align: 'center' as const},
+  {title: '操作', dataIndex: 'action', width: 250, align: 'center' as const},
 ];
 </script>

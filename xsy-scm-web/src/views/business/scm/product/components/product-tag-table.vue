@@ -22,7 +22,7 @@
       <a-tag v-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
         {{ enumLabel(ENABLE_STATUS_ENUM, record.status) }}
       </a-tag>
-      <span v-else-if="column.dataIndex === 'productCount'" class="price">{{ record.productCount }}</span>
+      <span v-else-if="column.dataIndex === 'productCount'" class="scm-quantity">{{ record.productCount }}</span>
       <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate">
         <a-button v-privilege="'scm:product:tag:update'" type="link" size="small" @click="modal?.open(record)">编辑
         </a-button>
@@ -66,7 +66,7 @@ const columns: TableColumnsType<ProductTag> = [
     title: '操作',
     dataIndex: 'action',
     width: 140,
-    align: 'right'
+    align: 'center'
   },
 ];
 
@@ -104,6 +104,3 @@ async function remove(row: ProductTag) {
 
 onMounted(load);
 </script>
-<style scoped>.price {
-  font-variant-numeric: tabular-nums;
-}</style>
