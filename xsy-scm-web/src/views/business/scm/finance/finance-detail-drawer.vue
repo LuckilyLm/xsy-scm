@@ -2,26 +2,50 @@
   <a-drawer :open="open" :title="title" width="min(1120px, 96vw)" :destroy-on-close="true" @close="close">
     <a-spin :spinning="loading">
       <template v-if="detail">
+        <!-- 1. 单据概要：只放「这是什么单」。金额不在这里，见 §20.6 金额组成。 -->
         <section class="detail-section">
           <h3>单据概要</h3>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="单号">{{ headerNo }}</a-descriptions-item>
             <a-descriptions-item label="方向">{{ entryTypeText(header.entryType) }}</a-descriptions-item>
-            <a-descriptions-item v-if="header.settlementCustomerName" label="单据结算方">{{ header.settlementCustomerName }}</a-descriptions-item>
-            <a-descriptions-item v-if="isAccount" label="冻结到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
-            <a-descriptions-item label="往来方">{{ partyName }}</a-descriptions-item>
-            <a-descriptions-item label="关联单号">{{ linkedNo }}</a-descriptions-item>
-            <a-descriptions-item label="金额">{{ moneyText(header.amount) }}</a-descriptions-item>
-            <a-descriptions-item v-if="isAccount" label="净应收 / 净应付">{{ moneyText(header.netAmount) }}</a-descriptions-item>
-            <a-descriptions-item v-if="!isAccount" label="有效金额">{{ moneyText(header.effectiveAmount) }}</a-descriptions-item>
-            <a-descriptions-item v-if="isAccount" label="已核销">{{ moneyText(header.writtenOffAmount) }}</a-descriptions-item>
-            <a-descriptions-item v-else label="已核销">{{ moneyText(header.usedAmount) }}</a-descriptions-item>
-            <a-descriptions-item v-if="isAccount" label="未核销">{{ moneyText(header.openAmount) }}</a-descriptions-item>
-            <a-descriptions-item v-else-if="walletFunding" label="资金用途">已转钱包权益，通过余额支付结算订单</a-descriptions-item>
-            <a-descriptions-item v-else label="待核销">{{ moneyText(header.pendingWriteOffAmount) }}</a-descriptions-item>
             <a-descriptions-item label="业务时点">{{ dateTimeText(header.eventAt ?? header.receivedAt ?? header.paidAt) }}</a-descriptions-item>
             <a-descriptions-item label="原因">{{ header.reason || '—' }}</a-descriptions-item>
             <a-descriptions-item v-if="header.reverseOfNo" label="原单号">{{ header.reverseOfNo }}</a-descriptions-item>
+          </a-descriptions>
+        </section>
+
+        <!-- 2. 对象信息：跟谁发生关系、挂在哪张业务单上。 -->
+        <section class="detail-section">
+          <h3>对象信息</h3>
+          <a-descriptions bordered size="small" :column="2">
+            <a-descriptions-item label="往来方">{{ partyName }}</a-descriptions-item>
+            <a-descriptions-item v-if="header.settlementCustomerName" label="单据结算方">{{ header.settlementCustomerName }}</a-descriptions-item>
+            <a-descriptions-item label="关联单号">{{ linkedNo }}</a-descriptions-item>
+            <a-descriptions-item v-if="isAccount" label="冻结到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
+          </a-descriptions>
+
+          <!-- 3. 金额组成：§20.6 要求金额摘要比 ID、编码更突出，所以单独成段并用数值强调。 -->
+          <h3 class="detail-section--nested">金额组成</h3>
+          <div class="amount-grid">
+            <div class="amount-cell">
+              <span class="amount-cell__label">{{ isAccount ? '净应收 / 净应付' : '有效金额' }}</span>
+              <span class="amount-cell__value scm-money">{{ moneyText(isAccount ? header.netAmount : header.effectiveAmount) }}</span>
+            </div>
+            <div class="amount-cell">
+              <span class="amount-cell__label">金额</span>
+              <span class="amount-cell__value scm-money">{{ moneyText(header.amount) }}</span>
+            </div>
+            <div class="amount-cell">
+              <span class="amount-cell__label">已核销</span>
+              <span class="amount-cell__value scm-money">{{ moneyText(isAccount ? header.writtenOffAmount : header.usedAmount) }}</span>
+            </div>
+            <div class="amount-cell">
+              <span class="amount-cell__label">{{ isAccount ? '未核销' : '待核销' }}</span>
+              <span class="amount-cell__value scm-money">{{ moneyText(isAccount ? header.openAmount : header.pendingWriteOffAmount) }}</span>
+            </div>
+          </div>
+          <a-descriptions v-if="!isAccount && walletFunding" size="small" :column="1" class="smart-margin-top10">
+            <a-descriptions-item label="资金用途">已转钱包权益，通过余额支付结算订单</a-descriptions-item>
           </a-descriptions>
           <a-alert v-if="header.overAppliedAmount && header.overAppliedAmount !== '0.0000'"
                    class="over-applied" type="warning" show-icon :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"/>
@@ -31,29 +55,30 @@
                    message="净应收为负数，请结合红字和核销记录核对。"/>
         </section>
 
-        <a-alert v-if="relationText" class="over-applied" type="info" show-icon :message="relationText"/>
-
+        <!-- 4. 来源单据：这张财务单是从哪张业务单派生出来的明细。 -->
         <section v-if="receivableItems.length || payableItems.length" class="detail-section">
-          <h3>明细行</h3>
+          <h3>来源单据</h3>
           <a-table v-if="isReceivable" size="small" :data-source="receivableItems" :columns="receivableColumns"
                    row-key="receivableItemId" :pagination="false" :scroll="{x:760}"/>
           <a-table v-else size="small" :data-source="payableItems" :columns="payableColumns"
                    row-key="payableItemId" :pagination="false" :scroll="{x:760}"/>
         </section>
 
-        <section v-if="redEntries.length" class="detail-section">
-          <h3>红字关联</h3>
-          <a-table size="small" :data-source="redEntries" :columns="redColumns" row-key="id" :pagination="false"/>
+        <!-- 5. 核销 / 退款 / 红字关系：把互相抵消的事实放在一起，便于对账。 -->
+        <section v-if="relationText || writeOffs.length || redEntries.length" class="detail-section">
+          <h3>核销 / 红字关系</h3>
+          <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText"/>
+          <h4 v-if="writeOffs.length" class="detail-subtitle">核销记录</h4>
+          <a-table v-if="writeOffs.length" size="small" :data-source="writeOffs" :columns="writeOffColumns"
+                   row-key="writeOffId" :pagination="false" :scroll="{x:900}"/>
+          <h4 v-if="redEntries.length" class="detail-subtitle">红字关联</h4>
+          <a-table v-if="redEntries.length" size="small" :data-source="redEntries" :columns="redColumns"
+                   row-key="id" :pagination="false"/>
         </section>
 
-        <section v-if="writeOffs.length" class="detail-section">
-          <h3>核销记录</h3>
-          <a-table size="small" :data-source="writeOffs" :columns="writeOffColumns" row-key="writeOffId"
-                   :pagination="false" :scroll="{x:900}"/>
-        </section>
-
+        <!-- 6. 流水记录：财务操作审计流水。 -->
         <section v-if="operationLogs.length" class="detail-section">
-          <h3>财务操作记录</h3>
+          <h3>流水记录</h3>
           <a-table size="small" :data-source="operationLogs" :columns="logColumns" row-key="id"
                    :pagination="false" :scroll="{x:960}">
             <template #bodyCell="{record,column}">
@@ -68,7 +93,13 @@
           </a-table>
         </section>
 
-        <a-empty v-if="!writeOffs.length && !operationLogs.length" description="暂无核销或操作记录"/>
+        <!--
+          7. 系统信息：§20.6 计划的第 7 段。`FinanceReceivableVO` / `FinanceReceiptVO` 等后端 VO
+          不暴露 createTime / updateTime / 创建人（只有业务单号），前端没有可渲染的事实，
+          因此本段暂不渲染 —— 不编造系统字段。补后端字段后再启用。
+        -->
+
+        <a-empty v-if="!writeOffs.length && !operationLogs.length && !redEntries.length" description="暂无核销或操作记录"/>
       </template>
     </a-spin>
   </a-drawer>
@@ -175,6 +206,48 @@ function close() {
 .detail-section h3 {
   margin: 0 0 12px;
   font-weight: 600;
+}
+
+/* 金额组成是同一段里的第二个小标题（§20.6 要求金额比 ID、编码更突出） */
+.detail-section--nested {
+  margin-top: 20px;
+}
+
+/* 对象信息段里的金额组：四格摘要，数值比标签大一号 */
+.amount-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.amount-cell {
+  background: var(--scm-fill, #fafafa);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.amount-cell__label {
+  color: var(--scm-text-secondary);
+  display: block;
+  font-size: 12px;
+}
+
+.amount-cell__value {
+  display: block;
+  font-size: 18px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.detail-subtitle {
+  color: var(--scm-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 12px 0 8px;
+}
+
+.relation-alert {
+  margin-bottom: 12px;
 }
 
 .over-applied {
