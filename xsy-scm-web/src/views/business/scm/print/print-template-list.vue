@@ -50,29 +50,27 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1300 }"
+        :scroll="{ x: 1200 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'defaultFlag'">
-          <a-tag v-if="record.defaultFlag" color="blue">默认</a-tag>
-          <span v-else class="hint">—</span>
+          <ScmStatusTag v-if="record.defaultFlag" tone="processing" label="默认"/>
+          <span v-else class="scm-cell-hint">—</span>
         </template>
         <template v-else-if="column.dataIndex === 'enabledFlag'">
-          <a-tag :color="record.enabledFlag ? 'green' : 'default'">{{ record.enabledFlag ? '启用' : '停用' }}</a-tag>
-        </template>
-        <template v-else-if="column.dataIndex === 'columnCount'">
-          {{ record.model?.columns?.length ?? 0 }}
+          <ScmStatusTag :tone="record.enabledFlag ? 'success' : 'neutral'"
+                        :label="record.enabledFlag ? '启用' : '停用'"/>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
-            <a-button type="link" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
-            <a-button v-if="!record.defaultFlag" type="link" v-privilege="'scm:print:template:update'"
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
+            <a-button v-if="!record.defaultFlag" type="link" size="small" v-privilege="'scm:print:template:update'"
                       @click="setDefault(record)">设为默认
             </a-button>
-            <a-button v-if="!record.defaultFlag" type="link" danger v-privilege="'scm:print:template:delete'"
+            <a-button v-if="!record.defaultFlag" type="link" size="small" danger v-privilege="'scm:print:template:delete'"
                       @click="remove(record)">删除
             </a-button>
-          </div>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -190,6 +188,7 @@ import type {
   PrintTemplateQuery,
   PrintTemplateSave,
 } from './print-types';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {printError} from './print-errors';
 
 const queryForm = reactive<PrintTemplateQuery>({pageNum: 1, pageSize: 20});
@@ -236,10 +235,9 @@ const columns: TableColumnsType<PrintTemplate> = [
   {title: '模板名称', dataIndex: 'templateName', width: 180},
   {title: '默认', dataIndex: 'defaultFlag', align: 'center', width: 90},
   {title: '状态', dataIndex: 'enabledFlag', align: 'center', width: 90},
-  {title: '明细列数', dataIndex: 'columnCount', align: 'right', width: 100},
   {title: '版本', dataIndex: 'version', align: 'right', width: 80},
   {title: '更新时间', dataIndex: 'updatedAt', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 220},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 220},
 ];
 
 const form = reactive<PrintTemplateSave & { id?: Id }>({

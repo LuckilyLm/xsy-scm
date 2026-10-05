@@ -42,11 +42,30 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '还没有正式打印记录' }"
-        :scroll="{ x: 1200 }"
+        :scroll="{ x: 820 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'action'">
-          <a-button type="link" :loading="reprinting === record.id" @click="reprint(record)">重印</a-button>
+        <template v-if="column.dataIndex === 'template'">
+          <!-- 模板名作主行，「编码 + 版本」作次要行：打印记录是**审计凭据**，
+               必须能说清当初用的是哪一版模板，但不需要为它多占两列 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.templateName || '—' }}</span>
+            <span class="scm-cell-stack__sub">
+              {{ record.templateCode || '—' }}<template v-if="record.templateVersion != null"> · v{{ record.templateVersion }}</template>
+            </span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'printed'">
+          <!-- 「谁在什么时候打的」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.printedAt || '—' }}</span>
+            <span v-if="record.printedBy" class="scm-cell-stack__sub">{{ record.printedBy }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'action'">
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" :loading="reprinting === record.id" @click="reprint(record)">重印</a-button>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -90,12 +109,9 @@ const typeOptions = computed(() =>
 const columns: TableColumnsType<PrintRecord> = [
   {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130},
   {title: '业务单号', dataIndex: 'businessNo', width: 190},
-  {title: '模板', dataIndex: 'templateName', width: 180},
-  {title: '模板编码', dataIndex: 'templateCode', width: 200},
-  {title: '模板版本', dataIndex: 'templateVersion', align: 'right', width: 100},
-  {title: '打印时间', dataIndex: 'printedAt', width: 180},
-  {title: '操作人', dataIndex: 'printedBy', width: 140},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 100},
+  {title: '模板', dataIndex: 'template', width: 220},
+  {title: '打印', dataIndex: 'printed', width: 180},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ];
 
 async function queryData() {
