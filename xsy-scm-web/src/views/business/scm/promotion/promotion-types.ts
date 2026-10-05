@@ -258,3 +258,21 @@ export function promotionError(error: unknown): string {
     const response = error as { data?: { msg?: string }; response?: { data?: { msg?: string } }; message?: string };
     return response?.data?.msg ?? response?.response?.data?.msg ?? response?.message ?? '操作失败，请刷新后重试';
 }
+
+/**
+ * 折扣率的**展示换算**：后端存的是 (0,1] 的比率（0.95），业务人员说的是百分比（95%）。
+ *
+ * 只在展示层换算，提交回来的比率与直接填比率完全一致 —— 后端与历史数据都不受影响。
+ * 百分比取 2 位小数即可**无损**覆盖 4 位比率的全部取值（0.0001 比率 = 0.01%），
+ * 因此往返 `rate → percent → rate` 不会丢精度。
+ */
+export function rateToPercent(rate?: string | null): number | null {
+    if (rate === null || rate === undefined || rate === '') return null;
+    const value = Number(rate);
+    return Number.isFinite(value) ? Number((value * 100).toFixed(2)) : null;
+}
+
+/** {@link rateToPercent} 的逆运算；不填时返回 `undefined`（不收进规则载荷）。 */
+export function percentToRate(percent?: number | null): string | undefined {
+    return percent === null || percent === undefined ? undefined : (percent / 100).toFixed(4);
+}
