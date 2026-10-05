@@ -4,61 +4,149 @@
   *
 -->
 <template>
-  <div class="login-container">
-    <div class="box-item desc">
-      <div class="welcome">
-        <p>欢迎登录 鲜蔬源智链</p>
-        <p class="sub-welcome">鲜蔬源智慧供应链管理平台</p>
-      </div>
-      <img class="welcome-img" :src="loginGif"/>
-    </div>
-    <div class="box-item login">
-      <div class="login-title">账号登录</div>
-      <a-form ref="formRef" class="login-form" :model="loginForm" :rules="rules">
-        <a-form-item name="loginName">
-          <a-input v-model:value.trim="loginForm.loginName" placeholder="请输入用户名"/>
-        </a-form-item>
-        <a-form-item name="emailCode" v-if="emailCodeShowFlag">
-          <a-input-group compact>
-            <a-input style="width: calc(100% - 110px)" v-model:value="loginForm.emailCode" autocomplete="on"
-                     placeholder="请输入邮箱验证码"/>
-            <a-button @click="sendSmsCode" class="code-btn" type="primary" :disabled="emailCodeButtonDisabled">
-              {{ emailCodeTips }}
-            </a-button>
-          </a-input-group>
-        </a-form-item>
-        <a-form-item name="password">
-          <a-input-password
-              v-model:value="loginForm.password"
-              autocomplete="on"
-              :type="showPassword ? 'text' : 'password'"
-              placeholder="请输入密码：至少三种字符，最小 8 位"
-          />
-        </a-form-item>
-        <a-form-item name="captchaCode">
-          <a-input class="captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码"/>
-          <img class="captcha-img" :src="captchaBase64Image" @click="getCaptcha"/>
-        </a-form-item>
-        <a-form-item>
-          <a-checkbox v-model:checked="rememberPwd">记住密码</a-checkbox>
-        </a-form-item>
-        <a-form-item>
-          <div class="btn" @click="onLogin">登录</div>
-        </a-form-item>
-      </a-form>
-    </div>
-  </div>
+  <main class="xsy-login">
+    <section class="xsy-login__shell">
+      <aside class="xsy-login__brand">
+        <img class="xsy-login__logo" :src="logoImg" alt="鲜蔬源智链"/>
+
+        <div class="xsy-login__brand-copy">
+          <h1 class="xsy-login__headline">鲜蔬源智链</h1>
+          <p class="xsy-login__tagline">智慧供应链管理平台</p>
+        </div>
+
+        <p class="xsy-login__description">一套系统，贯通商品、订单、采购、库存、配送与结算。</p>
+
+        <div class="xsy-login__visual" aria-hidden="true">
+          <div class="xsy-login__flow-row">
+            <div class="xsy-login__node">
+              <AppstoreOutlined class="xsy-login__node-icon"/>
+              <span>商品</span>
+            </div>
+            <div class="xsy-login__node">
+              <ShopOutlined class="xsy-login__node-icon"/>
+              <span>供应商</span>
+            </div>
+            <div class="xsy-login__connector"></div>
+            <div class="xsy-login__node">
+              <InboxOutlined class="xsy-login__node-icon"/>
+              <span>仓库</span>
+            </div>
+            <div class="xsy-login__connector"></div>
+            <div class="xsy-login__node">
+              <SlidersOutlined class="xsy-login__node-icon"/>
+              <span>分拣</span>
+            </div>
+          </div>
+          <div class="xsy-login__flow-row">
+            <div class="xsy-login__node">
+              <CarOutlined class="xsy-login__node-icon"/>
+              <span>配送</span>
+            </div>
+            <div class="xsy-login__connector"></div>
+            <div class="xsy-login__node">
+              <TeamOutlined class="xsy-login__node-icon"/>
+              <span>客户</span>
+            </div>
+            <div class="xsy-login__connector"></div>
+            <div class="xsy-login__node">
+              <AccountBookOutlined class="xsy-login__node-icon"/>
+              <span>财务</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="xsy-login__panel">
+        <header class="xsy-login__header">
+          <h2 class="xsy-login__title">欢迎回来</h2>
+          <p class="xsy-login__subtitle">登录鲜蔬源智链管理后台</p>
+        </header>
+
+        <a-form ref="formRef" class="xsy-login__form" layout="vertical" :model="loginForm" :rules="rules">
+          <a-form-item name="loginName" label="用户名">
+            <a-input
+                v-model:value.trim="loginForm.loginName"
+                placeholder="请输入用户名"
+                autocomplete="username"
+            >
+              <template #prefix>
+                <UserOutlined class="xsy-login__field-icon"/>
+              </template>
+            </a-input>
+          </a-form-item>
+          <a-form-item name="emailCode" label="邮箱验证码" v-if="emailCodeShowFlag">
+            <a-input-group compact>
+              <a-input style="width: calc(100% - 120px)" v-model:value="loginForm.emailCode" autocomplete="on"
+                       placeholder="请输入邮箱验证码"/>
+              <a-button @click="sendSmsCode" class="xsy-login__code-btn" type="primary" :disabled="emailCodeButtonDisabled">
+                {{ emailCodeTips }}
+              </a-button>
+            </a-input-group>
+          </a-form-item>
+          <a-form-item name="password" label="密码">
+            <a-input-password
+                v-model:value="loginForm.password"
+                autocomplete="current-password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="请输入密码"
+            >
+              <template #prefix>
+                <LockOutlined class="xsy-login__field-icon"/>
+              </template>
+            </a-input-password>
+          </a-form-item>
+          <a-form-item name="captchaCode" label="验证码">
+            <div class="xsy-login__captcha">
+              <a-input
+                  class="xsy-login__captcha-input"
+                  v-model:value.trim="loginForm.captchaCode"
+                  placeholder="请输入验证码"
+                  autocomplete="off"
+              >
+                <template #prefix>
+                  <SafetyCertificateOutlined class="xsy-login__field-icon"/>
+                </template>
+              </a-input>
+              <a-tooltip title="点击刷新验证码">
+                <img class="xsy-login__captcha-img" :src="captchaBase64Image" alt="登录验证码" @click="getCaptcha"/>
+              </a-tooltip>
+            </div>
+          </a-form-item>
+          <a-form-item class="xsy-login__remember">
+            <a-checkbox v-model:checked="rememberPwd">记住密码</a-checkbox>
+          </a-form-item>
+          <a-form-item class="xsy-login__submit-item">
+            <a-button type="primary" block class="xsy-login__submit" @click="onLogin">登录</a-button>
+          </a-form-item>
+        </a-form>
+      </section>
+    </section>
+
+    <footer class="xsy-login__footer">© 2026 鲜蔬源智慧供应链管理平台</footer>
+  </main>
 </template>
 <script setup lang="ts">
 defineOptions({name: "SystemLoginThree"});
+import {
+  AccountBookOutlined,
+  AppstoreOutlined,
+  CarOutlined,
+  InboxOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+  ShopOutlined,
+  SlidersOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {loginApi} from '/@/api/system/login-api';
+import logoImg from '/@/assets/images/logo/xsy-logo.png';
 import {SmartLoading} from '/@/components/framework/smart-loading';
 import {LOGIN_DEVICE_ENUM} from '/@/constants/system/login-device-const';
 import {useUserStore} from '/@/store/modules/system/user';
-import loginGif from '/@/assets/images/login/login-min.gif';
 import {buildRoutes} from '/@/router/index';
 import {smartSentry} from '/@/lib/smart-sentry';
 import {encryptData} from '/@/lib/encrypt';
