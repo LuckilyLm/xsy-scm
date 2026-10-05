@@ -55,27 +55,37 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无库存余额' }"
-        :scroll="{ x: 1680 }"
+        :scroll="{ x: 1240 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'specValues'">{{ specText(record.specValues) }}</template>
+        <template v-if="column.dataIndex === 'warehouse'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
+            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'sku'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ specText(record.specValues) || record.skuName || '—' }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex === 'unit'">{{ record.unit || '—' }}</template>
         <template v-else-if="column.dataIndex === 'quantity'">
-          <span class="num">{{ quantityText(record.quantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'reservedQuantity'">
-          <span class="num">{{ quantityText(record.reservedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.reservedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'availableQuantity'">
-          <span class="num">{{ quantityText(record.availableQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.availableQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'avgCost'">
-          <span class="num">{{ moneyText(record.avgCost) }}</span>
+          <span class="scm-money">{{ moneyText(record.avgCost) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'amount'">
-          <span class="num">{{ moneyText(record.amount) }}</span>
+          <span class="scm-money">{{ moneyText(record.amount) }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'updatedAt'">{{ datetime(record.updatedAt) }}</template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
@@ -107,7 +117,6 @@ import type {InventoryBalance, InventoryBalanceQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {moneyText, quantityText, singleWarehouseDefault, specText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
-import {datetime} from '../common/scm-display';
 
 const queryForm = reactive<InventoryBalanceQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryBalance[]>([]);
@@ -118,21 +127,19 @@ const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
+// 余额按「仓库 + 商品规格」定位，编码作为名称下方的次要信息，不再各占一列。
+// 库存/预留/可用/均价/金额是一组要横向比较的数值，统一右对齐 + 等宽数字。
 const columns = ref<TableColumnsType<InventoryBalance>>([
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
-  {title: '仓库名称', dataIndex: 'warehouseName', width: 160},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
-  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
-  {title: '商品名称', dataIndex: 'productName', width: 180},
-  {title: '规格值', dataIndex: 'specValues', width: 160},
-  {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
-  {title: '库存数量', dataIndex: 'quantity', align: 'right', width: 130},
-  {title: '预留量', dataIndex: 'reservedQuantity', align: 'right', width: 110},
-  {title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110},
+  {title: '仓库', dataIndex: 'warehouse', width: 180},
+  {title: '商品', dataIndex: 'productName', width: 200},
+  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
+  {title: '库存', dataIndex: 'quantity', align: 'right', width: 110},
+  {title: '预留', dataIndex: 'reservedQuantity', align: 'right', width: 100},
+  {title: '可用', dataIndex: 'availableQuantity', align: 'right', width: 100},
   // V34 移动加权成本。均价恒有值（NOT NULL DEFAULT 0），金额由后端 quantity × avgCost 派生。
-  {title: '移动加权均价', dataIndex: 'avgCost', align: 'right', width: 140},
+  {title: '平均成本', dataIndex: 'avgCost', align: 'right', width: 130},
   {title: '库存金额', dataIndex: 'amount', align: 'right', width: 140},
-  {title: '更新时间', dataIndex: 'updatedAt', width: 190},
 ]);
 
 async function queryData() {
@@ -191,9 +198,3 @@ onMounted(async () => {
   await queryData();
 });
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>
