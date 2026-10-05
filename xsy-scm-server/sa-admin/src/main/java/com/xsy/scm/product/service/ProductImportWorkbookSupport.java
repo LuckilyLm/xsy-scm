@@ -173,13 +173,13 @@ public class ProductImportWorkbookSupport {
                 case 2 -> "0";
                 case 3 -> "2001";
                 case 4 -> "0";
-                case 5 -> "SPU0001";
+                case 5 -> "M0001";
                 case 6 -> "示例蔬菜";
                 case 8 -> "FRESH-FRUIT";
                 case 11 -> "本地";
                 case 12 -> ScmStorageMethodEnum.CHILLED.name();
                 case 15 -> ScmShelfStatusEnum.ON_SHELF.name();
-                case 16 -> "SKU0001";
+                case 16 -> "G000001";
                 case 18 -> "500g/份";
                 case 19 -> "份";
                 case 20 -> ScmProductTypeEnum.STANDARD.name();
@@ -192,13 +192,13 @@ public class ProductImportWorkbookSupport {
         }
         return switch (column) {
             case 0 -> ProductImportService.TEMPLATE_VERSION;
-            case 1 -> "SPU0001";
+            case 1 -> "P000012";
             case 2 -> "示例蔬菜";
             case 4 -> "FRESH-FRUIT";
             case 7 -> "本地";
             case 8 -> ScmStorageMethodEnum.CHILLED.name();
             case 11 -> ScmShelfStatusEnum.ON_SHELF.name();
-            case 12 -> "SKU0001";
+            case 12 -> "G000001";
             case 14 -> "500g/份";
             case 15 -> "份";
             case 16 -> ScmProductTypeEnum.STANDARD.name();
