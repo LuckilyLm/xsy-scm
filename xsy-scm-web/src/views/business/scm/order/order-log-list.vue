@@ -31,13 +31,13 @@
       </div>
     </a-row>
     <a-table id="order-log-table" size="small" :data-source="tableData" :columns="columns" row-key="logId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:1100}">
+             :loading="loading" bordered :pagination="false" :scroll="{x:920}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='operationType'">{{ SCM_ORDER_OPERATION_ENUM[text]?.desc }}</template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
           <div class="smart-table-operate scm-table-actions">
-            <a-button type="link" @click="active=record;visible=true">变更前后</a-button>
+            <a-button type="link" size="small" @click="active=record;visible=true">变更前后</a-button>
           </div>
         </template>
       </template>
@@ -68,6 +68,16 @@ import {datetime} from '../common/scm-display';
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<LogRow[]>([]), total = ref(0),
     loading = ref(false), error = ref(''), visible = ref(false), active = ref<LogRow>();
 let requestId = 0;
+/**
+ * 日志列（§14.4）。
+ *
+ * 本页只有「变更前后」一个动作，操作列却占 240px —— §8 规定普通操作列 120～160px、
+ * 明细下载类单动作页可到 120px。收窄后把省下的宽度还给「原因」：
+ * 排查时读的是原因，不是那一列空白。
+ *
+ * 时间（`createdAt`）**必须保留**：日志页是 §7.3 明确列出的时间例外，
+ * 隐藏时间会让「谁在什么时候改的」这条审计链断掉。
+ */
 const columns = ref<TableColumnsType<LogRow>>([{
   title: '时间',
   dataIndex: 'createdAt',
@@ -77,12 +87,12 @@ const columns = ref<TableColumnsType<LogRow>>([{
   title: '操作人',
   dataIndex: 'operatorName',
   width: 140
-}, {title: '原因', dataIndex: 'reason', width: 200}, {
+}, {title: '原因', dataIndex: 'reason', width: 320}, {
   title: '操作',
   dataIndex: 'action',
   align: 'center',
   fixed: 'right',
-  width: 240
+  width: 110
 }]);
 
 async function queryData() {

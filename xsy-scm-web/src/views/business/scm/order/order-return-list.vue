@@ -33,26 +33,25 @@
       </div>
     </a-row>
     <a-table id="order-return-table" size="small" :data-source="tableData" :columns="columns" row-key="returnId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:1100}">
+             :loading="loading" bordered :pagination="false" :scroll="{x:890}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
-          <div class="smart-table-operate scm-table-actions">
-            <a-button type="link" v-privilege="'scm:order:return:query'" @click="showDetail(record.returnId)">详情</a-button>
-            <a-button type="link" v-privilege="'scm:order:return:approve'" v-if="record.status==='PENDING'"
+          <!-- 常驻「详情」与当前状态唯一的推进动作（待审核=批准、已批准=实物接收）；
+               驳回 / 取消是低频且不可逆的动作，收进「更多」——
+               它们此前与主推进动作同排常驻，240px 里最显眼的却是那排红字 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" v-privilege="'scm:order:return:query'"
+                      @click="showDetail(record.returnId)">详情</a-button>
+            <a-button type="link" size="small" v-privilege="'scm:order:return:approve'" v-if="record.status==='PENDING'"
                       @click="edit(record,'approve')">批准
             </a-button>
-            <a-button type="link" v-privilege="'scm:order:return:receive'" v-if="record.status==='APPROVED'"
+            <a-button type="link" size="small" v-privilege="'scm:order:return:receive'" v-if="record.status==='APPROVED'"
                       @click="edit(record,'receive')">实物接收
             </a-button>
-            <a-button type="link" v-privilege="'scm:order:return:reject'" v-if="record.status==='PENDING'"
-                      @click="edit(record,'reject')">驳回
-            </a-button>
-            <a-button type="link" danger v-privilege="'scm:order:return:cancel'" v-if="record.status==='PENDING'"
-                      @click="edit(record,'cancel')">取消
-            </a-button>
-          </div>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -110,7 +109,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import Decimal from 'decimal.js';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -120,19 +119,32 @@ import {orderReturnApi as api} from '/@/api/business/scm/order-return-api';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ReturnRow, Query, ReturnItem, Id} from './order-types';
 type ReturnItemWithDisposition = ReturnItem & { disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string };
 import {amount, fixed} from './order-form-model';
 import {orderError} from './order-errors';
+import {hasPermission} from '../common/scm-permission';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<ReturnRow[]>([]), total = ref(0),
     loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<ReturnRow>();
 let requestId = 0;
+/**
+ * 退货列（§14.5）。
+ *
+ * 退货原因可能很长（业务人员会写整句），列表里给它固定宽度 + ellipsis，
+ * 完整原因在详情抽屉里看；不设 ellipsis 会让长原因把行撑成两行、破坏表格节奏。
+ *
+ * 注意 `ReturnRow` 只有 `orderId`，**没有订单号与客户名**（`OrderReturnVO` 不带），
+ * 所以 §14.5 里「原订单/客户（若 VO 已有）」这一条当前无法满足 —— 属后端字段缺口，
+ * 不在这里用 `orderId` 冒充单号显示。
+ */
 const columns = ref<TableColumnsType<ReturnRow>>([{
   title: '退货单号',
   dataIndex: 'returnNo',
   width: 220
-}, {title: '退货原因', dataIndex: 'reason', width: 200}, {
+}, {title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
   title: '状态',
   dataIndex: 'status',
   width: 120
@@ -141,8 +153,27 @@ const columns = ref<TableColumnsType<ReturnRow>>([{
   dataIndex: 'action',
   align: 'center',
   fixed: 'right',
-  width: 240
+  width: 150
 }]);
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canReject = computed(() => hasPermission('scm:order:return:reject'));
+const canCancel = computed(() => hasPermission('scm:order:return:cancel'));
+
+/** 驳回与取消都只对「待审核」开放；两者都会写入处理原因，故都走 `edit` 的同一入口。 */
+function rowActions(row: ReturnRow): ScmActionItem[] {
+  const pending = row.status === 'PENDING';
+  return [
+    {key: 'reject', label: '驳回', hidden: !(pending && canReject.value)},
+    {key: 'cancel', label: '取消', danger: true, hidden: !(pending && canCancel.value)},
+  ];
+}
+
+function onRowAction(key: string, row: ReturnRow) {
+  if (key === 'reject' || key === 'cancel') {
+    edit(row, key);
+  }
+}
 
 async function queryData() {
   const id = ++requestId;

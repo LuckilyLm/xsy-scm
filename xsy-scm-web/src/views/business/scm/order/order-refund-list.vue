@@ -33,7 +33,7 @@
       </div>
     </a-row>
     <a-table id="order-refund-table" size="small" :data-source="tableData" :columns="columns" row-key="refundId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:1100}">
+             :loading="loading" bordered :pagination="false" :scroll="{x:930}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_REFUND_STATUS_ENUM[text]?.desc }}</template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
@@ -47,10 +47,10 @@
         </template>
         <template v-else-if="column.dataIndex==='action'">
           <div class="smart-table-operate scm-table-actions">
-            <a-button type="link" v-privilege="'scm:order:refund:complete'" v-if="record.status==='PENDING'"
+            <a-button type="link" size="small" v-privilege="'scm:order:refund:complete'" v-if="record.status==='PENDING'"
                       @click="edit(record)">登记退款完成
             </a-button>
-            <a-button v-if="record.status==='COMPLETED' && !record.balanceMovementId" type="link"
+            <a-button v-if="record.status==='COMPLETED' && !record.balanceMovementId" type="link" size="small"
                       v-privilege="'scm:balance:refund'" @click="openBalanceRefund(record)">返还余额</a-button>
           </div>
         </template>
@@ -94,6 +94,15 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<R
 const balanceRefundOpen = ref(false), returning = ref(false), balanceRefundError = ref('');
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 let requestId = 0;
+/**
+ * 退款列（§14.6）。
+ *
+ * 外部凭证是渠道返回的长字符串（订单号 / 流水号 / 人工备注都可能塞进来），
+ * 固定 200px + ellipsis + Tooltip：不给 Tooltip 就只剩一串截断字符，
+ * 不给 ellipsis 则会被长串把整行撑开。
+ *
+ * 已返还钱包同时带「流水」入口，属于动作而非纯文本，因此不参与 ellipsis。
+ */
 const columns = ref<TableColumnsType<RefundRow>>([{
   title: '退款单号',
   dataIndex: 'refundNo',
@@ -103,12 +112,17 @@ const columns = ref<TableColumnsType<RefundRow>>([{
   dataIndex: 'refundAmount',
   align: 'right',
   width: 140
-}, {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200}, {title: '外部凭证', dataIndex: 'externalReference', width: 200}, {
+}, {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200}, {
+  title: '外部凭证',
+  dataIndex: 'externalReference',
+  width: 200,
+  ellipsis: true
+}, {
   title: '操作',
   dataIndex: 'action',
   align: 'center',
   fixed: 'right',
-  width: 240
+  width: 150
 }]);
 
 async function queryData() {
