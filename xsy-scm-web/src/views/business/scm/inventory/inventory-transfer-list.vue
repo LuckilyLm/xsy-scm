@@ -77,32 +77,36 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无调拨单' }"
-        :scroll="{ x: 1550 }"
+        :scroll="{ x: 1070 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
-          <span>{{ record.fromWarehouseName || '—' }}</span>
-          <span style="margin: 0 6px; color: #999">→</span>
-          <span>{{ record.toWarehouseName || '—' }}</span>
+          <span class="transfer-direction">
+            <span>{{ record.fromWarehouseName || '—' }}</span>
+            <span class="transfer-direction__arrow">→</span>
+            <span>{{ record.toWarehouseName || '—' }}</span>
+          </span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <a-tag :color="statusColor(record.status)">{{ record.statusDesc || record.status }}</a-tag>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'shippedAt'">{{ datetime(record.shippedAt) }}</template>
-        <template v-else-if="column.dataIndex === 'receivedAt'">{{ datetime(record.receivedAt) }}</template>
-        <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
+        <template v-else-if="column.dataIndex === 'shippedAt'">
+          <!-- 发出/收货的「谁」和「何时」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.shippedAt) }}</span>
+            <span v-if="record.shippedBy" class="scm-cell-stack__sub">{{ record.shippedBy }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'receivedAt'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.receivedAt) }}</span>
+            <span v-if="record.receivedBy" class="scm-cell-stack__sub">{{ record.receivedBy }}</span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="4">
+          <!-- 行内常驻「详情」与本状态唯一的推进动作（草稿→发出，在途→收货），其余收进「更多」 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                @click="openEdit(record)"
-                v-privilege="'scm:inventory:transfer:update'"
-            >
-              编辑
-            </a-button>
             <a-button
                 v-if="record.status === 'DRAFT'"
                 type="link"
@@ -113,7 +117,7 @@
               发出
             </a-button>
             <a-button
-                v-if="record.status === 'SHIPPED'"
+                v-else-if="record.status === 'SHIPPED'"
                 type="link"
                 size="small"
                 @click="onReceive(record)"
@@ -121,26 +125,7 @@
             >
               收货
             </a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                danger
-                @click="onCancel(record)"
-                v-privilege="'scm:inventory:transfer:update'"
-            >
-              取消
-            </a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                danger
-                @click="onDelete(record)"
-                v-privilege="'scm:inventory:transfer:delete'"
-            >
-              删除
-            </a-button>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -202,7 +187,14 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <a-input v-model:value="record.quantity" placeholder="0.0000" style="width: 130px"/>
+              <a-input-number
+                  v-model:value="record.quantity"
+                  :min="0.0001"
+                  :precision="4"
+                  :step="1"
+                  placeholder="0.0000"
+                  style="width: 140px"
+              />
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
               <a-input v-model:value="record.remark" :maxlength="500"/>
@@ -250,16 +242,24 @@
         :loading="inTransitLoading"
         :pagination="false"
         :locale="{ emptyText: '当前没有在途调拨' }"
-        :scroll="{ x: 900 }"
+        :scroll="{ x: 840 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
-          <span>{{ record.fromWarehouseName || '—' }}</span>
-          <span style="margin: 0 6px; color: #999">→</span>
-          <span>{{ record.toWarehouseName || '—' }}</span>
+          <span class="transfer-direction">
+            <span>{{ record.fromWarehouseName || '—' }}</span>
+            <span class="transfer-direction__arrow">→</span>
+            <span>{{ record.toWarehouseName || '—' }}</span>
+          </span>
+        </template>
+        <template v-else-if="column.dataIndex === 'sku'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.skuName || '—' }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
-          <span class="num">{{ quantityText(record.quantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -268,12 +268,16 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import InventoryTransferDetailDrawer from './components/inventory-transfer-detail-drawer.vue';
 import {inventoryTransferApi} from '/@/api/business/scm/inventory-transfer-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
@@ -289,7 +293,8 @@ import type {
   InventoryTransferQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {fixed4, quantityText, singleWarehouseDefault} from './inventory-model';
+import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 
@@ -306,30 +311,55 @@ const statusOptions = Object.values(SCM_INVENTORY_TRANSFER_STATUS_ENUM).map((i) 
   label: i.desc,
 }));
 
+// 调拨的语义是「从哪到哪」：方向合成一格（源仓 → 目标仓），发出/收货的「谁」作为时间的次要行。
+// 创建时间是技术字段，不上列 —— 调拨的业务时刻是发出与收货。
 const columns = ref<TableColumnsType<InventoryTransfer>>([
-  {title: '调拨单号', dataIndex: 'transferNo', width: 200},
-  {title: '调拨方向', dataIndex: 'direction', width: 280},
+  {title: '调拨单号', dataIndex: 'transferNo', width: 190},
+  {title: '调拨方向', dataIndex: 'direction', width: 260},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '发出人', dataIndex: 'shippedBy', width: 120},
-  {title: '发出时间', dataIndex: 'shippedAt', width: 170},
-  {title: '收货人', dataIndex: 'receivedBy', width: 120},
-  {title: '收货时间', dataIndex: 'receivedAt', width: 170},
-  {title: '操作', dataIndex: 'action', width: 280, fixed: 'right'},
+  {title: '发出', dataIndex: 'shippedAt', width: 170},
+  {title: '收货', dataIndex: 'receivedAt', width: 170},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 180},
 ]);
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '调拨数量', dataIndex: 'quantity', width: 150},
+  {title: '调拨数量', dataIndex: 'quantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
 ];
 
-/** 「在途」用醒目的橙色：它代表货不在任何仓库里，最容易被误读成丢失。 */
-function statusColor(status?: string) {
-  if (status === 'RECEIVED') return 'green';
-  if (status === 'CANCELLED') return 'default';
-  if (status === 'SHIPPED') return 'orange';
-  return 'blue';
+/** 在途用醒目的橙色：它代表货不在任何仓库里，最容易被误读成丢失。 */
+const STATUS_TONE: Record<string, ScmStatusTone> = {
+  DRAFT: 'processing',
+  SHIPPED: 'warning',
+  RECEIVED: 'success',
+  CANCELLED: 'neutral',
+};
+const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canUpdate = computed(() => hasPermission('scm:inventory:transfer:update'));
+const canDelete = computed(() => hasPermission('scm:inventory:transfer:delete'));
+
+/** 只有草稿可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+function rowActions(row: InventoryTransfer): ScmActionItem[] {
+  const draft = row.status === 'DRAFT';
+  return [
+    {key: 'edit', label: '编辑', hidden: !(draft && canUpdate.value)},
+    {key: 'cancel', label: '取消单据', hidden: !(draft && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+  ];
+}
+
+function onRowAction(key: string, row: InventoryTransfer) {
+  if (key === 'edit') {
+    void openEdit(row);
+  } else if (key === 'cancel') {
+    onCancel(row);
+  } else if (key === 'delete') {
+    onDelete(row);
+  }
 }
 
 // ------------------------------------------------------------------ 查询
@@ -386,7 +416,11 @@ function resetQuery() {
 interface EditableItem {
   _key: number;
   skuId?: string | number;
-  quantity: string;
+  /**
+   * 明细数量在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
+   * 4 位定点字符串。`null` = 还没填。
+   */
+  quantity?: number | null;
   remark?: string;
 }
 
@@ -410,7 +444,7 @@ const formRules = {
 };
 
 function addItem() {
-  form.items.push({_key: ++keySeq, quantity: ''});
+  form.items.push({_key: ++keySeq, quantity: null});
 }
 
 function removeItem(index: number) {
@@ -439,8 +473,8 @@ async function openEdit(record: InventoryTransfer) {
   form.items = (d.items ?? []).map((i) => ({
     _key: ++keySeq,
     skuId: i.skuId,
-    // 数量后端以 4 位定点字符串返回，直接回填，不转 number（避免精度与类型问题）
-    quantity: i.quantity ?? '',
+    // 后端以 4 位定点字符串返回明细数量，InputNumber 要 number；空值保持 null
+    quantity: i.quantity == null ? null : Number(i.quantity),
     remark: i.remark,
   }));
   if (form.items.length === 0) {
@@ -453,7 +487,12 @@ function closeDrawer() {
   drawerOpen.value = false;
 }
 
-/** 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。 */
+/**
+ * 明细校验在提交前做：逐行给出「第几行缺什么」，比一条笼统的「参数不合法」有用得多。
+ *
+ * 数量大于 0 与最多 4 位小数已由 InputNumber（`:min="0.0001"` + `:precision="4"`）
+ * 结构性保证，这里只需拦住「整行没填数量」。
+ */
 function buildPayload(): InventoryTransferAdd | null {
   if (String(form.fromWarehouseId) === String(form.toWarehouseId)) {
     message.warning('源仓库与目标仓库不能相同');
@@ -472,10 +511,9 @@ function buildPayload(): InventoryTransferAdd | null {
       return null;
     }
     seen.add(skuKey);
-    const q = (items[i].quantity ?? '').trim();
     // 数量恒为正：方向由「发出 / 收货」动作表达，不接受 0 或负数
-    if (!/^\d+(\.\d{1,4})?$/.test(q) || Number(q) <= 0) {
-      message.warning(`第 ${i + 1} 行：调拨数量必须为大于 0 的数字，最多 4 位小数`);
+    if (fixed4(items[i].quantity) === undefined) {
+      message.warning(`第 ${i + 1} 行：请填写调拨数量`);
       return null;
     }
   }
@@ -483,10 +521,10 @@ function buildPayload(): InventoryTransferAdd | null {
     fromWarehouseId: form.fromWarehouseId as string | number,
     toWarehouseId: form.toWarehouseId as string | number,
     remark: form.remark,
-    // 数量以字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
+    // 数量以定点字符串提交：后端拒绝 JSON 数字（ScmStrictDecimalStringDeserializer）
     items: items.map((i) => ({
       skuId: i.skuId as string | number,
-      quantity: i.quantity.trim(),
+      quantity: fixed4(i.quantity) as string,
       remark: i.remark,
     })),
   };
@@ -616,8 +654,7 @@ const inTransitRows = ref<Array<InventoryInTransit & { rowKey: string }>>([]);
 const inTransitColumns: TableColumnsType = [
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
   {title: '调拨方向', dataIndex: 'direction', width: 240},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
-  {title: '商品规格名称', dataIndex: 'skuName', width: 140},
+  {title: '商品规格', dataIndex: 'sku', width: 200},
   {title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
 ];
@@ -650,7 +687,22 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+/* 「源仓 → 目标仓」：箭头弱化，两个仓名不换行，避免撑高行 */
+.transfer-direction {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.transfer-direction > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.transfer-direction__arrow {
+  flex: none;
+  margin: 0 6px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 </style>

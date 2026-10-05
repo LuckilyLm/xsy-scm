@@ -195,7 +195,7 @@ import type {
   InventoryWarningThresholdQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
+import {fixed4, quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 
 const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});
@@ -312,16 +312,6 @@ function openEdit(record: InventoryWarningThreshold) {
 
 function closeDrawer() {
   drawerOpen.value = false;
-}
-
-/**
- * InputNumber 的 number → 后端要求的 4 位定点字符串；不设该边界时返回 `undefined`。
- *
- * 后端用 `ScmStrictDecimalStringDeserializer` **拒绝 JSON 数字**，所以这里必须显式
- * 补足 4 位小数，不能把 `10` 直接发上去。
- */
-function fixed4(value?: number | null): string | undefined {
-  return value === null || value === undefined ? undefined : value.toFixed(4);
 }
 
 /**

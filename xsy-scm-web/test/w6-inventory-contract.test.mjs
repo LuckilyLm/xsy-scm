@@ -21,6 +21,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
+  fixed4,
   moneyText,
   singleWarehouseDefault,
   quantityText,
@@ -162,6 +163,26 @@ test('the movement page derives 入/出 from the shared inbound set, not from a 
       ['CONVERT_IN', 'GAIN_REPORT', 'PURCHASE_IN', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'TRANSFER_IN']);
   for (const type of SCM_INVENTORY_MOVEMENT_INBOUND_TYPES) {
     assert.ok(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).includes(type), type + ' 不在流水类型枚举里');
+  }
+});
+
+// ------------------------------------------------------------------
+// 定点字符串转换（InputNumber → 后端 4 位定点）
+// ------------------------------------------------------------------
+
+test('fixed4 pads to 4 decimals and turns "not set" into undefined, never an empty string', () => {
+  assert.equal(fixed4(10), '10.0000');
+  assert.equal(fixed4(0), '0.0000');
+  assert.equal(fixed4(0.5), '0.5000');
+  assert.equal(fixed4(12.3456), '12.3456');
+  // 「不设该边界」是 undefined（提交时收口成 null），不是 "0.0000"，也不是空串 ——
+  // 后端 @Pattern 接受 null、拒绝 ''，而 0.0000 是一个真实的阈值。
+  assert.equal(fixed4(null), undefined);
+  assert.equal(fixed4(undefined), undefined);
+  // 转换只在模型里做一次：页面不得各写一份 toFixed
+  for (const page of ['inventory-warning-threshold-list.vue', 'inventory-outbound-list.vue']) {
+    const source = code('../src/views/business/scm/inventory/' + page);
+    assert.doesNotMatch(source, /toFixed\(/, page + ' 自己做了定点转换');
   }
 });
 
@@ -556,6 +577,39 @@ test('the transfer page wires its own DOM id, six privileges and a two-step acti
   assert.match(page, /不在任何仓库的余额/);
 });
 
+test('the transfer page folds the four actor/time columns into two and keeps the arrow direction', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-transfer-list.vue');
+
+  // 调拨的业务时刻是发出与收货；创建时间是技术字段
+  assert.doesNotMatch(page, /title: '创建时间'/);
+  assert.doesNotMatch(page, /title: '发出人'|title: '收货人'/);
+  // 「谁」与「何时」同格：时间作主行，操作者作次要行
+  assert.match(page, /title: '发出', dataIndex: 'shippedAt'/);
+  assert.match(page, /title: '收货', dataIndex: 'receivedAt'/);
+  assert.match(page, /column\.dataIndex === 'shippedAt'[\s\S]{0,200}record\.shippedBy/);
+  assert.match(page, /column\.dataIndex === 'receivedAt'[\s\S]{0,200}record\.receivedBy/);
+
+  // 方向是一格：源仓 → 目标仓，箭头弱化（不再用行内 style）
+  assert.match(page, /class="transfer-direction__arrow"/);
+  assert.doesNotMatch(page, /style="margin: 0 6px/, '方向箭头应走样式类，不写行内 style');
+
+  // 状态走语义档位；在途仍是橙色（最容易被误读成丢失）
+  assert.match(page, /SHIPPED: 'warning'/);
+  assert.match(page, /RECEIVED: 'success'/);
+  assert.match(page, /CANCELLED: 'neutral'/);
+
+  // 操作列收窄到三个槽位，推进动作（发出 / 收货）留在行内
+  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 180/);
+  assert.match(page, /ScmActionMore/);
+  assert.match(page, /key: 'cancel', label: '取消单据'/);
+
+  // 明细数量是 InputNumber，提交走 fixed4；在途报表的规格编码作 secondary text
+  assert.match(page, /<a-input-number[\s\S]{0,120}record\.quantity/);
+  assert.match(page, /quantity: fixed4\(i\.quantity\) as string/);
+  assert.doesNotMatch(page, /toFixed\(/);
+  assert.match(page, /column\.dataIndex === 'sku'[\s\S]{0,200}record\.skuCode/);
+});
+
 test('transfer error codes all have actionable Chinese text', () => {
   // 调拨波次 11 个码：41038–41048
   for (let code = 41038; code <= 41048; code++) {
@@ -626,8 +680,11 @@ test('the threshold config page is not a stock-mutating page and validates the r
   assert.match(page, /<a-input-number[\s\S]{0,120}form\.warnMin/);
   assert.match(page, /<a-input-number[\s\S]{0,120}form\.warnMax/);
   assert.match(page, /:precision="4"/);
-  // 提交时必须补足 4 位定点字符串：后端 ScmStrictDecimalStringDeserializer 拒绝 JSON 数字
-  assert.match(page, /value\.toFixed\(4\)/);
+  // 提交时必须补足 4 位定点字符串：后端 ScmStrictDecimalStringDeserializer 拒绝 JSON 数字。
+  // 转换只在 inventory-model.fixed4 里做一次，页面不得各写一份 toFixed。
+  assert.match(page, /fixed4\(form\.warnMin\)/);
+  assert.match(page, /fixed4\(form\.warnMax\)/);
+  assert.doesNotMatch(page, /toFixed\(/, '定点转换应由 fixed4 统一提供');
   // 不设边界要转成 null，不能把空串发上去（后端 @Pattern 接受 null、拒绝 ''）
   assert.match(page, /warnMin: min \?\? null/);
   assert.match(page, /warnMax: max \?\? null/);
@@ -679,6 +736,34 @@ test('the warning page keeps all three quantities and colours the level, not the
   assert.match(page, /上限 \{\{ quantityText\(record\.warnMax\) \}\}/);
   // 状态列不是操作列，不该固定在右侧
   assert.doesNotMatch(page, /dataIndex: 'status'[^}]*fixed/);
+});
+
+test('the outbound page drops the technical timestamp and keeps the confirm action inline', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-outbound-list.vue');
+
+  // 出库单的业务时刻是确认时间；创建时间是技术字段，不上列
+  assert.doesNotMatch(page, /title: '创建时间'/);
+  assert.match(page, /title: '出库时间', dataIndex: 'confirmedAt'/);
+
+  // 状态走语义档位
+  assert.match(page, /DRAFT: 'warning'/);
+  assert.match(page, /CONFIRMED: 'success'/);
+  assert.match(page, /CANCELLED: 'neutral'/);
+  assert.doesNotMatch(page, /'orange'|'green'/, '状态色应由 tone 档位给出');
+
+  // 操作列收窄到三个槽位（详情 / 确认出库 / 更多），不可撤销的确认出库留在行内
+  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 200/);
+  assert.match(page, /ScmActionMore/);
+  assert.match(page, /key: 'edit', label: '编辑'/);
+  assert.match(page, /key: 'cancel', label: '取消单据'/);
+  assert.match(page, /key: 'delete', label: '删除', danger: true/);
+
+  // 明细数量是 InputNumber，提交走 fixed4（后端拒绝 JSON 数字，也拒绝空串）
+  assert.match(page, /<a-input-number[\s\S]{0,120}record\.quantity/);
+  assert.match(page, /quantity: fixed4\(i\.quantity\) as string/);
+  assert.doesNotMatch(page, /toFixed\(/);
+  // 明细的规格编码作 secondary text
+  assert.match(page, /skuMainText\(record\.specValues, record\.skuName\)/);
 });
 
 test('warning error codes all have actionable Chinese text', () => {
