@@ -1,0 +1,68 @@
+/*
+ * SCM 业务表单分区与纵向节奏
+ *
+ * 全局样式，不使用 scoped，因此可以直接命中 antd 类名而不需要 :deep()。
+ * 选择器带上 .ant-* 前缀是为了在 CSS-in-JS 注入顺序不确定的情况下稳定压过组件库默认样式。
+ */
+
+.scm-form-section {
+  padding: 20px;
+  margin-bottom: 20px;
+  background: var(--scm-bg-container, #fff);
+  border: 1px solid var(--scm-border, #f0f0f0);
+  border-radius: 8px;
+}
+
+.scm-form-section:last-child {
+  margin-bottom: 0;
+}
+
+/* 明细卡片比业务分区低一级：内边距与间距同步收紧 */
+.scm-form-section--nested {
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.scm-form-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.scm-form-section__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+}
+
+.scm-form-section__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+.scm-form-section__extra {
+  margin-left: auto;
+}
+
+/* 纵向节奏：相邻两行之间留出清晰空白，最后一行不留尾距，底部空白交给卡片内边距。
+   必须用「直接子级 > .ant-row」限定，否则会连带命中子组件里同样处于末行的表单项并把间距清零。 */
+.scm-form-section > .ant-row .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.scm-form-section > .ant-row:last-child > .ant-col .ant-form-item {
+  margin-bottom: 0;
+}
+
+/* 只读状态展示：用标签而不是 disabled 输入框，避免"看起来能改其实不能改" */
+.scm-form-readonly {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}

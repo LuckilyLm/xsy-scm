@@ -1,0 +1,33 @@
+/*
+ * SCM 响应式约束。
+ *
+ * 桌面主目标 1920×1080 / 1440×900，最低兼容 1280。
+ * 移动端不是后台主场景，只保证不出现不可操作的挤压。
+ */
+
+/* Drawer 宽度分级（S 560~640 / M 720~820 / L 900~960）由 scm-drawer.ts 给出具体数值，
+   这里统一兜住视口上限，任何一级都不允许超出屏幕。 */
+.ant-drawer-content-wrapper {
+  max-width: 96vw;
+}
+
+.ant-modal {
+  max-width: 96vw;
+}
+
+/* 窄屏下两列表单自动退回单列，避免 label 与控件被横向压扁 */
+@media (max-width: 768px) {
+  .scm-form-section {
+    padding: 16px;
+  }
+
+  .scm-form-section > .ant-row > .ant-col {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  /* 小屏取消操作列固定，否则横向可点区域会被固定列吃掉 */
+  .ant-table-cell-fix-right {
+    position: static !important;
+  }
+}

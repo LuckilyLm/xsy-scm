@@ -45,6 +45,7 @@ import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useSpinStore} from '/@/store/modules/system/spin';
 import {Popover, theme} from 'ant-design-vue';
 import {themeColors} from '/@/theme/color';
+import {useScmThemeVars} from '/@/theme/scm/use-scm-theme-vars';
 import SmartCopyIcon from '/@/components/framework/smart-copy-icon/index.vue';
 
 const antdLocale = computed(() => messages[useAppConfigStore().language].antdLocale);
@@ -101,6 +102,8 @@ function transformCellText({text, column, record, index}) {
 
 const {useToken} = theme;
 const {token} = useToken();
+// SCM 全局样式变量：主题色与暗色切换时同步刷新，业务组件不必各自注入一份
+useScmThemeVars();
 </script>
 <style lang="less">
 @color-bg-container: v-bind('token.colorBgContainer');

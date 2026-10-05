@@ -1,0 +1,68 @@
+/*
+ * SCM 按钮层级：Primary 由 antd 承担，这里补齐 Secondary / Tertiary / Danger 三档。
+ *
+ * 选择器写成 .ant-btn.scm-btn-* 而非单类名：antd v4 的组件样式由 CSS-in-JS 在运行时注入，
+ * 顺序晚于静态样式表，同等特异性会覆盖我们的定义。
+ */
+
+/* 二级操作：浅主题色底 + 主题色文字 + 浅主题色描边，不抢主按钮视觉重心 */
+.ant-btn.scm-btn-secondary {
+  color: var(--scm-primary, #1677ff);
+  background: var(--scm-primary-bg, #e6f4ff);
+  border-color: var(--scm-primary-border, #91caff);
+}
+
+.ant-btn.scm-btn-secondary:hover,
+.ant-btn.scm-btn-secondary:focus {
+  color: var(--scm-primary, #1677ff);
+  background: var(--scm-primary-bg-hover, #bae0ff);
+  border-color: var(--scm-primary, #1677ff);
+}
+
+/* 三级操作：浅灰底，用于编辑、设为主图等普通辅助动作 */
+.ant-btn.scm-btn-tertiary {
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  border-color: transparent;
+}
+
+.ant-btn.scm-btn-tertiary:hover,
+.ant-btn.scm-btn-tertiary:focus {
+  color: var(--scm-primary, #1677ff);
+  background: var(--scm-primary-bg, #e6f4ff);
+  border-color: transparent;
+}
+
+/* 危险操作：浅红底 + 红图标。用图标按钮而不是一条宽红条，避免误触也避免视觉压迫 */
+.ant-btn.scm-btn-icon-danger {
+  color: var(--scm-error, #ff4d4f);
+  background: var(--scm-error-bg, #fff2f0);
+  border-color: transparent;
+}
+
+.ant-btn.scm-btn-icon-danger:hover,
+.ant-btn.scm-btn-icon-danger:focus {
+  color: var(--scm-error, #ff4d4f);
+  background: var(--scm-error-border, #ffccc7);
+  border-color: transparent;
+}
+
+.ant-btn.scm-btn-tertiary:disabled,
+.ant-btn.scm-btn-icon-danger:disabled {
+  color: var(--scm-text-disabled, rgba(0, 0, 0, 0.25));
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  border-color: transparent;
+}
+
+/* 整行虚线按钮：提示"还能继续加"，但不与保存争焦点 */
+.ant-btn.scm-btn-add-row {
+  height: 40px;
+  border-style: dashed;
+}
+
+/* 列表操作区里的图标按钮统一尺寸，避免各页面自定 24/28/32 混用 */
+.ant-btn.scm-btn-icon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
