@@ -2271,3 +2271,11 @@ XSY_V2_PG_USER=xsy_scm_app XSY_V2_PG_DB=xsy_v2_e2e_e python tools/verify.py e2e
 ## 30. 分拣任务创建候选面板拆分（2026-10-05）
 
 从 `sorting-task-list.vue` 抽出新建分拣任务的仓库/指派人表单、候选订单行筛选、分页和勾选为 `SortingTaskCreateModal`；候选 API 加载与任务创建命令仍由父页管理。`scm-sorting.spec.ts` **8/8** 通过，包含页面建单并指派成功。生产构建、E2E 类型检查、ESLint 与 TS 棘轮通过，TS 基线 1,858 项、SCM 与新增错误均为 0。临时后端和 Vite 服务在验收后停止。
+
+## 31. 当前工作区前端完整回归（2026-10-05）
+
+`python tools/verify.py frontend` **PASS**：TS 棘轮、全量 ESLint、E2E TypeScript 检查、Web 单测 **261 passed / 0 failed**、生产构建均通过。Docker Desktop 隔离库 `xsy_scm_e2e_postfix_20261005` 的完整 Playwright **159 passed / 0 skipped / 0 unexpected / 0 flaky**；MinIO F0 在 `XSY_FILE_STORAGE_MODE=cloud` 下实际运行并 **8/8** 通过。原开发库 `xsy_scm` 未迁移、未清理。
+
+## 32. 源码契约测试跟随面板拆分（2026-10-05）
+
+报表、配送和分拣页面拆出子面板后，源码契约测试改为扫描真实持有 UI 行为的组件：权限、表格 ID / 列设置、成本门禁、定点数量输入、打印权限和履约状态断言均保留。没有删除或放宽业务断言。`npm run test` **261 passed / 0 failed**；改动后再次通过 `python tools/verify.py frontend`，含 159 项 Playwright 全通过。

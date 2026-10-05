@@ -23,6 +23,7 @@ function code(relative) {
 
 const api = code('../src/api/business/scm/delivery-api.ts');
 const view = code('../src/views/business/scm/delivery/route-detail.vue');
+const printPanel = code('../src/views/business/scm/delivery/components/route-print-panel.vue');
 
 test('dual views are read-only GETs while formal printing is an idempotent POST', () => {
   assert.match(api, /call<RouteOrderView\[\]>\('get', `\/routes\/\$\{id\}\/orders-view`\)/);
@@ -38,7 +39,7 @@ test('dual views are read-only GETs while formal printing is an idempotent POST'
 
 test('printing is gated to printable states and print permission', () => {
   assert.match(view, /\['PLANNED', 'DISPATCHED', 'COMPLETED'\]\.includes/);
-  assert.match(view, /scm:delivery:route:print/);
+  assert.match(printPanel, /v-privilege="'scm:delivery:route:print'"/);
 });
 
 test('the delivery API still exposes no inventory write / GPS tracking endpoint', () => {

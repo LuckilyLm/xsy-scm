@@ -35,6 +35,7 @@ import {
 } from '../src/constants/business/scm/sorting-const.ts';
 
 const TASK_LIST = '../src/views/business/scm/sorting/sorting-task-list.vue';
+const DETAIL_DRAWER = '../src/views/business/scm/sorting/components/sorting-task-detail-drawer.vue';
 const SUMMARY = '../src/views/business/scm/sorting/sorting-summary.vue';
 const API = '../src/api/business/scm/sorting-api.ts';
 const CONST = '../src/constants/business/scm/sorting-const.ts';
@@ -48,6 +49,7 @@ function code(relative) {
 }
 
 const taskList = code(TASK_LIST);
+const detailDrawer = code(DETAIL_DRAWER);
 const summary = code(SUMMARY);
 const api = code(API);
 
@@ -191,7 +193,7 @@ test('数量不在前端做数值运算', () => {
 });
 
 test('分拣量输入按 4 位定点、允许 0（整行缺货是合法结果）', () => {
-    const cell = taskList.match(/column\.dataIndex === 'sortedQuantity'[\s\S]*?<\/template>/)?.[0];
+    const cell = detailDrawer.match(/column\.dataIndex === 'sortedQuantity'[\s\S]*?<\/template>/)?.[0];
     assert.ok(cell, '缺分拣量单元格');
     assert.match(cell, /string-mode/);
     assert.match(cell, /:precision="4"/);

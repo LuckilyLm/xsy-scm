@@ -32,6 +32,8 @@ const API = '../src/api/business/scm/delivery-api.ts';
 const TYPES = '../src/views/business/scm/delivery/delivery-types.ts';
 const PERM = '../src/views/business/scm/delivery/use-delivery-permission.ts';
 const VIEW = '../src/views/business/scm/delivery/route-detail.vue';
+const PRINT_PANEL = '../src/views/business/scm/delivery/components/route-print-panel.vue';
+const FULFILLMENT_PANEL = '../src/views/business/scm/delivery/components/route-fulfillment-panel.vue';
 const PRINT_VIEW = '../src/views/business/scm/delivery/route-print.vue';
 const OUTBOUND_VIEW = '../src/views/business/scm/inventory/inventory-outbound-list.vue';
 
@@ -48,8 +50,8 @@ const view = code(VIEW);
 const outbound = code(OUTBOUND_VIEW);
 
 /** 打印面板整块：`key="print"` 到它自己的闭合标签（非贪婪，中间没有嵌套同名 pane）。 */
-const printPane = view.match(/<a-tab-pane key="print"[\s\S]*?<\/a-tab-pane>/)?.[0];
-const fulfillmentPane = view.match(/<a-tab-pane key="fulfillment"[\s\S]*?<\/a-tab-pane>/)?.[0];
+const printPane = code(PRINT_PANEL);
+const fulfillmentPane = code(FULFILLMENT_PANEL);
 
 /** 配送域后端契约里的功能码（V43 / V55 / V64 的 `t_menu.web_perms`，与 `@SaCheckPermission` 同源）。 */
 const CONTRACT_DELIVERY_PERMS = [
@@ -142,7 +144,7 @@ test('整条线路零实发时 outboundNo 为 null，那是成功不是失败', 
 test('打印保持原样：预览 GET + 两个计次 POST，面板里没有任何 L3 动作', () => {
   assert.ok(printPane, '缺打印面板');
   assert.match(api, /print: \(id: Id\) => call<RoutePrint>\('get', `\/routes\/\$\{id\}\/print`\)/);
-  assert.match(printPane, /@click="recordPrint"/);
+  assert.match(printPane, /@click="emit\('recordPrint'\)"/);
   for (const forbidden of [
     'dispatch',
     'complete',
@@ -263,12 +265,14 @@ test('按钮出现条件与后端状态机一致，且每个写动作都有二�
 
   const dispatchTag = tagWith('DELIVERY_PERM.ROUTE_DISPATCH');
   const completeTag = tagWith('DELIVERY_PERM.ROUTE_COMPLETE');
-  const signTag = tagWith('DELIVERY_PERM.ORDER_SIGN');
+  const signTag = [...fulfillmentPane.matchAll(/<a-button\b[\s\S]*?<\/a-button>/g)]
+      .map((match) => match[0])
+      .find((tag) => tag.includes('DELIVERY_PERM.ORDER_SIGN'));
   assert.ok(dispatchTag && completeTag && signTag, '缺发车 / 完成 / 签收按钮');
   // 发车限 PLANNED、完成限 DISPATCHED：两者条件不同不是漏写，签收则限 DISPATCHED 的行级 IN_TRANSIT。
   assert.match(dispatchTag, /v-if="detail\.route\.status === 'PLANNED'"/);
   assert.match(completeTag, /v-if="detail\.route\.status === 'DISPATCHED'"/);
-  assert.match(signTag, /v-if="signable\(record\)"/);
+  assert.match(signTag, /v-if="canSignOrder\(record\)"/);
   for (const tag of [dispatchTag, completeTag, signTag]) {
     assert.match(tag, /:disabled="busy"/, '写动作必须被在途请求挡住');
   }
@@ -286,7 +290,10 @@ test('按钮出现条件与后端状态机一致，且每个写动作都有二�
 // ------------------------------------------------------------------ 空值与算术纪律
 
 test('数量与金额不做前端算术，null 渲染为 —（不是 0）', () => {
-  for (const [name, source] of [[API, api], [TYPES, code(TYPES)], [PERM, code(PERM)], [VIEW, view]]) {
+  for (const [name, source] of [
+    [API, api], [TYPES, code(TYPES)], [PERM, code(PERM)], [VIEW, view], [PRINT_PANEL, printPane],
+    [FULFILLMENT_PANEL, fulfillmentPane],
+  ]) {
     assert.ok(!/\bNumber\(/.test(source), `${name} 不该 Number() 后端定点数`);
     assert.ok(!/toFixed\(/.test(source), `${name} 不该重排精度`);
     assert.ok(!/parseFloat\(/.test(source), `${name} 不该把定点串转成浮点再算`);
@@ -299,8 +306,8 @@ test('数量与金额不做前端算术，null 渲染为 —（不是 0）', () 
   assert.match(fulfillmentPane, /record\.signReason \|\| '—'/);
   assert.ok(!/\|\| 0\b/.test(view), '空值不得回落成 0');
   // 对齐口径（AGENTS §12）：状态居中、操作右。
-  assert.match(view, /title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center' as const/);
-  assert.match(view, /title: '操作', dataIndex: 'action', width: 160, align: 'right' as const/);
+  assert.match(fulfillmentPane, /title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'/);
+  assert.match(fulfillmentPane, /title: '操作', dataIndex: 'action', width: 160, align: 'right' as const/);
 });
 
 // ------------------------------------------------------------------ 跨页跳转
@@ -323,7 +330,7 @@ test('发车产生的出库单可跳到库存出库页，且目标页真的按�
 
 test('履约面板具备加载 / 空 / 错三态，与打印面板同一套做法', () => {
   assert.match(fulfillmentPane, /:loading="loading"/);
-  assert.match(fulfillmentPane, /:locale="\{emptyText: fulfillmentEmptyText\}"/);
+  assert.match(fulfillmentPane, /:locale="\{emptyText\}"/);
   assert.match(view, /const fulfillmentEmptyText = computed\(\(\) =>[\s\S]*?线路已取消[\s\S]*?线路还没有订单/);
   // 错误统一进顶部横幅（与打印的 loadPrint 一致），并由横幅的刷新动作恢复。
   assert.match(view, /<a-alert v-if="error" :message="error" type="error" show-icon/);

@@ -36,6 +36,7 @@ function raw(relative) {
 }
 
 const REPORT_DIR = '../src/views/business/scm/report/';
+const REPORT_COMPONENT_DIR = `${REPORT_DIR}report-components/`;
 const PAGES = {
   overview: code(`${REPORT_DIR}report-overview-list.vue`),
   sales: code(`${REPORT_DIR}report-sales-list.vue`),
@@ -43,10 +44,21 @@ const PAGES = {
   receipt: code(`${REPORT_DIR}report-receipt-list.vue`),
   inventory: code(`${REPORT_DIR}report-inventory-list.vue`),
 };
+const PAGE_COMPONENTS = {
+  sales: [
+    'sales-product-tab.vue', 'sales-category-tab.vue', 'sales-customer-tab.vue',
+    'sales-seller-tab.vue', 'sales-item-tab.vue', 'sales-order-tab.vue',
+  ].map(name => code(`${REPORT_COMPONENT_DIR}${name}`)),
+  purchase: [
+    'purchase-daily-report.vue', 'purchase-product-tab.vue', 'purchase-supplier-tab.vue',
+    'purchase-purchaser-tab.vue', 'purchase-item-tab.vue', 'purchase-price-trend-tab.vue',
+  ].map(name => code(`${REPORT_COMPONENT_DIR}${name}`)),
+  inventory: ['inventory-loss-analysis-tab.vue'].map(name => code(`${REPORT_COMPONENT_DIR}${name}`)),
+};
 const FINANCE_PAGE = code(`${REPORT_DIR}report-finance-overview.vue`);
 const API = code('../src/api/business/scm/report-api.ts');
 const CONST = code('../src/constants/business/scm/report-const.ts');
-const ALL_PAGES = Object.values(PAGES).join('\n');
+const ALL_PAGES = [...Object.values(PAGES), ...Object.values(PAGE_COMPONENTS).flat()].join('\n');
 
 // ------------------------------------------------------------------
 // 布局与文件存在性
@@ -249,7 +261,8 @@ test('每页的查询按钮带本页 query 权限，重置按钮不带权限', (
   }
   for (const [name, source] of Object.entries(PAGES)) {
     if (name === 'overview') continue;   // 计划 §30 里没有概览导出
-    assert.match(source, /v-privilege="PERM\.EXPORT"/, '导出按钮挂在 export 权限上');
+    const panelSources = [source, ...(PAGE_COMPONENTS[name] ?? [])].join('\n');
+    assert.match(panelSources, /v-privilege="(?:PERM|SCM_REPORT_PERMISSION)\.EXPORT"/, '导出按钮挂在 export 权限上');
   }
 });
 
@@ -374,8 +387,9 @@ test('列配置用的数字 tableId 全局唯一', () => {
 
 test('五个报表页各自的表格都绑了 DOM id 与 TableOperator', () => {
   for (const [name, source] of Object.entries(PAGES)) {
-    assert.match(source, /SCM_REPORT_TABLE_ID\./, `${name} 页缺 Playwright 用的表格 id`);
-    assert.match(source, /TableOperator/, `${name} 页缺列设置入口`);
+    const panelSources = [source, ...(PAGE_COMPONENTS[name] ?? [])].join('\n');
+    assert.match(panelSources, /SCM_REPORT_TABLE_ID\./, `${name} 页缺 Playwright 用的表格 id`);
+    assert.match(panelSources, /TableOperator/, `${name} 页缺列设置入口`);
   }
 });
 
