@@ -29,40 +29,62 @@
             </template>
           </a-alert>
           <template v-else-if="customer">
-            <a-descriptions :title="customer.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
-              <a-descriptions-item label="客户编码">{{ customer.customerCode }}</a-descriptions-item>
-              <a-descriptions-item label="客户类型">{{ customer.customerTypeName || '—' }}</a-descriptions-item>
-              <a-descriptions-item label="状态">
-                <a-tag :color="statusColor(customer.status)">{{ statusText(customer.status) }}</a-tag>
-              </a-descriptions-item>
-              <a-descriptions-item label="结算方式">{{ settleModeText(customer.settleMode) }}</a-descriptions-item>
-              <a-descriptions-item label="上级集团">{{ customer.parentCustomerName || '—' }}</a-descriptions-item>
-              <a-descriptions-item label="统一结算方">{{ customer.settlementCustomerName || customer.name }}</a-descriptions-item>
-              <a-descriptions-item label="归属业务员">{{ customer.sellerName || '—' }}</a-descriptions-item>
-              <a-descriptions-item label="绑定供应商">{{ customer.supplierName || '—' }}</a-descriptions-item>
-              <a-descriptions-item label="联系人">{{ customer.contactName || '—' }}</a-descriptions-item>
-              <a-descriptions-item label="联系电话">{{ customer.contactPhone || '—' }}</a-descriptions-item>
-              <a-descriptions-item label="地址" :span="3">{{ customer.address || '—' }}</a-descriptions-item>
-              <a-descriptions-item label="创建时间">{{ datetime(customer.createdAt) }}</a-descriptions-item>
-              <a-descriptions-item label="更新时间">{{ datetime(customer.updatedAt) }}</a-descriptions-item>
-              <a-descriptions-item label="备注" :span="3">{{ customer.remark || '—' }}</a-descriptions-item>
-            </a-descriptions>
+            <div class="detail-doc-title">{{ customer.name }}</div>
 
-            <a-divider orientation="left">授信与账期</a-divider>
-            <a-descriptions bordered :column="{ xs: 1, sm: 2, lg: 3 }">
-              <a-descriptions-item label="授信额度">{{ customer.creditLimit ?? '未设置' }}</a-descriptions-item>
-              <a-descriptions-item label="账期类型">{{ creditPeriodTypeText }}</a-descriptions-item>
-              <template v-if="customer.creditPeriodType === 'BY_AMOUNT'">
-                <a-descriptions-item label="金额阈值">{{ customer.creditAmountThreshold ?? '—' }}</a-descriptions-item>
-              </template>
-              <template v-else-if="customer.creditPeriodType === 'BY_TIME'">
-                <a-descriptions-item label="账期值">{{ customer.creditPeriodValue ?? '—' }}</a-descriptions-item>
-                <a-descriptions-item label="账期单位">{{ creditPeriodUnitText }}</a-descriptions-item>
-                <a-descriptions-item v-if="customer.creditPeriodUnit === 'MONTH'" label="固定结算日">
-                  {{ customer.settleDay ?? '—' }}
+            <!-- 1. 客户概览 -->
+            <section class="detail-section">
+              <h3>客户概览</h3>
+              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+                <a-descriptions-item label="客户编码">{{ customer.customerCode }}</a-descriptions-item>
+                <a-descriptions-item label="客户类型">{{ customer.customerTypeName || '—' }}</a-descriptions-item>
+                <a-descriptions-item label="状态">
+                  <a-tag :color="statusColor(customer.status)">{{ statusText(customer.status) }}</a-tag>
                 </a-descriptions-item>
-              </template>
-            </a-descriptions>
+                <a-descriptions-item label="结算方式">{{ settleModeText(customer.settleMode) }}</a-descriptions-item>
+              </a-descriptions>
+
+              <!-- 2. 联系与地址 -->
+              <h3 class="detail-section--nested">联系与地址</h3>
+              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+                <a-descriptions-item label="联系人">{{ customer.contactName || '—' }}</a-descriptions-item>
+                <a-descriptions-item label="联系电话">{{ customer.contactPhone || '—' }}</a-descriptions-item>
+                <a-descriptions-item label="地址" :span="3">{{ customer.address || '—' }}</a-descriptions-item>
+              </a-descriptions>
+
+              <!-- 3. 归属关系 -->
+              <h3 class="detail-section--nested">归属关系</h3>
+              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+                <a-descriptions-item label="上级集团">{{ customer.parentCustomerName || '—' }}</a-descriptions-item>
+                <a-descriptions-item label="统一结算方">{{ customer.settlementCustomerName || customer.name }}</a-descriptions-item>
+                <a-descriptions-item label="归属业务员">{{ customer.sellerName || '—' }}</a-descriptions-item>
+                <a-descriptions-item label="绑定供应商">{{ customer.supplierName || '—' }}</a-descriptions-item>
+              </a-descriptions>
+
+              <!-- 4. 授信与账期 -->
+              <h3 class="detail-section--nested">授信与账期</h3>
+              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+                <a-descriptions-item label="授信额度">{{ customer.creditLimit ?? '未设置' }}</a-descriptions-item>
+                <a-descriptions-item label="账期类型">{{ creditPeriodTypeText }}</a-descriptions-item>
+                <template v-if="customer.creditPeriodType === 'BY_AMOUNT'">
+                  <a-descriptions-item label="金额阈值">{{ customer.creditAmountThreshold ?? '—' }}</a-descriptions-item>
+                </template>
+                <template v-else-if="customer.creditPeriodType === 'BY_TIME'">
+                  <a-descriptions-item label="账期值">{{ customer.creditPeriodValue ?? '—' }}</a-descriptions-item>
+                  <a-descriptions-item label="账期单位">{{ creditPeriodUnitText }}</a-descriptions-item>
+                  <a-descriptions-item v-if="customer.creditPeriodUnit === 'MONTH'" label="固定结算日">
+                    {{ customer.settleDay ?? '—' }}
+                  </a-descriptions-item>
+                </template>
+              </a-descriptions>
+
+              <!-- 7. 系统信息：§11.3 要求编码与时间不占核心区域 -->
+              <h3 class="detail-section--nested">系统信息</h3>
+              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+                <a-descriptions-item label="创建时间">{{ datetime(customer.createdAt) }}</a-descriptions-item>
+                <a-descriptions-item label="更新时间">{{ datetime(customer.updatedAt) }}</a-descriptions-item>
+                <a-descriptions-item label="备注" :span="3">{{ customer.remark || '—' }}</a-descriptions-item>
+              </a-descriptions>
+            </section>
           </template>
         </a-spin>
       </a-tab-pane>
@@ -81,7 +103,7 @@
             <template v-else-if="column.dataIndex === 'status'">
               <a-tag>{{ SCM_ORDER_STATUS_ENUM[record.status]?.desc || record.status }}</a-tag>
             </template>
-            <template v-else-if="column.dataIndex === 'orderedTotalAmount'"><span class="amount">{{ formatAmountOrDash(record.orderedTotalAmount) }}</span></template>
+            <template v-else-if="column.dataIndex === 'orderedTotalAmount'"><span class="scm-money">{{ formatAmountOrDash(record.orderedTotalAmount) }}</span></template>
             <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
           </template>
         </a-table>
@@ -106,8 +128,8 @@
         <a-table v-else :data-source="frequent.rows.value" :columns="frequentCols" :row-key="(r: CustomerFrequentSku) => `${r.skuId}-${r.unit}`" size="small" bordered
                  :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 960 }">
           <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderedQuantity'"><span class="amount">{{ record.orderedQuantity }}</span></template>
-            <template v-else-if="column.dataIndex === 'recentUnitPrice'"><span class="amount">{{ formatAmountOrDash(record.recentUnitPrice) }}</span></template>
+            <template v-if="column.dataIndex === 'orderedQuantity'"><span class="scm-quantity">{{ record.orderedQuantity }}</span></template>
+            <template v-else-if="column.dataIndex === 'recentUnitPrice'"><span class="scm-money">{{ formatAmountOrDash(record.recentUnitPrice) }}</span></template>
             <template v-else-if="column.dataIndex === 'lastConfirmedAt'">{{ datetime(record.lastConfirmedAt) }}</template>
           </template>
         </a-table>
@@ -123,7 +145,7 @@
         <a-table v-else :data-source="agreement.rows.value" :columns="agreementCols" row-key="agreementPriceId" size="small" bordered
                  :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 900 }">
           <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'unitPrice'"><span class="amount">{{ formatAmount(record.unitPrice) }}</span></template>
+            <template v-if="column.dataIndex === 'unitPrice'"><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template>
             <template v-else-if="column.dataIndex === 'effectiveFrom'">{{ datetime(record.effectiveFrom) }}</template>
             <template v-else-if="column.dataIndex === 'effectiveTo'">{{ record.effectiveTo ? datetime(record.effectiveTo) : '长期有效' }}</template>
           </template>
@@ -420,8 +442,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.amount {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+/* 文档标题：比描述列表更突出（§31.3「核心业务信息优先」） */
+.detail-doc-title {
+  color: var(--scm-text);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.detail-section h3 {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+/* 同一段里的后续小标题（概览段串起 联系/归属/授信/系统信息） */
+.detail-section--nested {
+  margin-top: 20px;
 }
 </style>

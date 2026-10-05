@@ -19,80 +19,105 @@
                     @click="paymentDrawer?.open(order)">订单支付</a-button>
           <a-button v-privilege="'scm:payment:transaction:query'" @click="paymentDrawer?.open(order)">支付记录</a-button>
         </a-space>
-        <a-descriptions bordered size="small" :column="2">
-          <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}（{{ order.customerCodeSnapshot }}）
-          </a-descriptions-item>
-          <a-descriptions-item label="下单时结算方式">
-            {{ SETTLE_MODE_ENUM[order.settleModeSnapshot ?? '']?.desc || '—' }}
-          </a-descriptions-item>
-          <a-descriptions-item label="收货人">{{ order.address?.receiverName }} / {{ order.address?.receiverPhone }}
-          </a-descriptions-item>
-          <a-descriptions-item label="收货地址">{{ order.address?.address }}</a-descriptions-item>
-          <a-descriptions-item label="下单金额">{{ amount(order.orderedTotalAmount, true) }}</a-descriptions-item>
-          <a-descriptions-item label="结算金额">{{ amount(order.settlementTotalAmount) }}</a-descriptions-item>
-          <a-descriptions-item label="期望配送时间">{{ order.expectDeliveryTime || '—' }}</a-descriptions-item>
-          <a-descriptions-item label="备注">{{ order.remark || '—' }}</a-descriptions-item>
-        </a-descriptions>
-        <!-- 优惠是独立事实：订单金额列仍是结算口径，这里回答「减了多少、按什么规则减的」 -->
-        <a-descriptions v-if="order.discount" class="discount" bordered size="small" :column="2">
-          <a-descriptions-item label="优惠合计">{{ amount(order.discount.discountAmount) }}</a-descriptions-item>
-          <a-descriptions-item label="其中限时特价让利">{{ amount(order.discount.specialDiscountAmount) }}</a-descriptions-item>
-          <a-descriptions-item label="优惠基数（下单金额口径）">{{ amount(order.discount.baseAmount) }}</a-descriptions-item>
-          <a-descriptions-item label="券优惠">{{ amount(order.discount.couponSnapshot?.couponDiscount) }}</a-descriptions-item>
-          <a-descriptions-item label="用券">
-            <template v-if="order.discount.couponSnapshot">
-              {{ order.discount.couponSnapshot.couponName || '—' }}
-              <span v-if="order.discount.couponSnapshot.couponCode">（{{ order.discount.couponSnapshot.couponCode }}）</span>
+
+        <!-- 1. 状态与核心摘要 -->
+        <section class="detail-section">
+          <h3>状态与核心摘要</h3>
+          <a-descriptions bordered size="small" :column="2">
+            <a-descriptions-item label="订单号">{{ order.orderNo }}</a-descriptions-item>
+            <a-descriptions-item label="下单金额">{{ amount(order.orderedTotalAmount, true) }}</a-descriptions-item>
+            <a-descriptions-item label="结算金额">{{ amount(order.settlementTotalAmount) }}</a-descriptions-item>
+            <a-descriptions-item label="期望配送时间">{{ order.expectDeliveryTime || '—' }}</a-descriptions-item>
+          </a-descriptions>
+
+          <!-- 2. 客户与配送 -->
+          <h3 class="detail-section--nested">客户与配送</h3>
+          <a-descriptions bordered size="small" :column="2">
+            <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}（{{ order.customerCodeSnapshot }}）
+            </a-descriptions-item>
+            <a-descriptions-item label="下单时结算方式">
+              {{ SETTLE_MODE_ENUM[order.settleModeSnapshot ?? '']?.desc || '—' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="收货人">{{ order.address?.receiverName }} / {{ order.address?.receiverPhone }}
+            </a-descriptions-item>
+            <a-descriptions-item label="收货地址">{{ order.address?.address }}</a-descriptions-item>
+          </a-descriptions>
+
+          <!-- 4. 金额结算：优惠是独立事实，回答「减了多少、按什么规则减的」 -->
+          <h3 class="detail-section--nested">金额结算</h3>
+          <a-descriptions v-if="order.discount" bordered size="small" :column="2">
+            <a-descriptions-item label="优惠合计">{{ amount(order.discount.discountAmount) }}</a-descriptions-item>
+            <a-descriptions-item label="其中限时特价让利">{{ amount(order.discount.specialDiscountAmount) }}</a-descriptions-item>
+            <a-descriptions-item label="优惠基数（下单金额口径）">{{ amount(order.discount.baseAmount) }}</a-descriptions-item>
+            <a-descriptions-item label="券优惠">{{ amount(order.discount.couponSnapshot?.couponDiscount) }}</a-descriptions-item>
+            <a-descriptions-item label="用券">
+              <template v-if="order.discount.couponSnapshot">
+                {{ order.discount.couponSnapshot.couponName || '—' }}
+                <span v-if="order.discount.couponSnapshot.couponCode">（{{ order.discount.couponSnapshot.couponCode }}）</span>
+              </template>
+              <template v-else>未用券</template>
+            </a-descriptions-item>
+            <a-descriptions-item label="生效活动" :span="2">
+              <div v-for="activity in appliedActivities" :key="activity.activityId">
+                {{ activity.activityName || '—' }}（{{ activity.activityCode }} v{{ activity.version }}）：
+                {{ amount(activity.discountAmount) }}
+              </div>
+              <span v-if="appliedActivities.length === 0">无活动优惠</span>
+              <div v-if="(order.discount.activitySnapshot?.suppressed?.length ?? 0) > 0" class="discount-suppressed">
+                被互斥组挤掉：{{ order.discount.activitySnapshot?.suppressed?.join('、') }}
+              </div>
+            </a-descriptions-item>
+          </a-descriptions>
+          <!-- 满赠赠品：非金额权益，不减订单金额，但必须发货 -->
+          <a-descriptions v-if="(order.gifts?.length ?? 0) > 0" bordered size="small" :column="1">
+            <a-descriptions-item label="赠品">
+              <div v-for="gift in order.gifts ?? []" :key="`${gift.activityId}-${gift.skuId}`">
+                {{ gift.productName }}（{{ gift.skuCode }} / {{ gift.specName }}）
+                × {{ gift.quantity }} {{ gift.saleUnit }}
+                <span class="gift-source">— 来自活动「{{ gift.activityName || gift.activityCode }}」v{{ gift.version }}</span>
+              </div>
+              <div class="gift-note">赠品金额恒为 0，不计入订单金额；出库成本单独计入本单履约成本。</div>
+            </a-descriptions-item>
+          </a-descriptions>
+
+          <!-- 3. 商品明细 -->
+          <h3 class="detail-section--nested">商品明细</h3>
+          <a-table class="items" :data-source="order.items" :columns="columns" row-key="itemId" :pagination="false"
+                   :scroll="{x:1100}" size="small" bordered>
+            <template #bodyCell="{record,column}">
+              <template
+                  v-if="['draftUnitPrice','lockedUnitPrice','orderedLineAmount','settlementLineAmount'].includes(column.dataIndex)">
+                {{ amount(record[column.dataIndex], column.dataIndex === 'draftUnitPrice' || column.dataIndex === 'orderedLineAmount') }}
+              </template>
+              <template v-else-if="column.dataIndex==='action'">
+                <a-button v-if="order.status==='PENDING'&&record.productTypeSnapshot==='NON_STANDARD'" type="link"
+                          v-privilege="'scm:order:actual-quantity'" @click="editActual(record)">录入实重
+                </a-button>
+              </template>
             </template>
-            <template v-else>未用券</template>
-          </a-descriptions-item>
-          <a-descriptions-item label="生效活动" :span="2">
-            <div v-for="activity in appliedActivities" :key="activity.activityId">
-              {{ activity.activityName || '—' }}（{{ activity.activityCode }} v{{ activity.version }}）：
-              {{ amount(activity.discountAmount) }}
-            </div>
-            <span v-if="appliedActivities.length === 0">无活动优惠</span>
-            <div v-if="(order.discount.activitySnapshot?.suppressed?.length ?? 0) > 0" class="discount-suppressed">
-              被互斥组挤掉：{{ order.discount.activitySnapshot?.suppressed?.join('、') }}
-            </div>
-          </a-descriptions-item>
-        </a-descriptions>
-        <!-- 满赠赠品：非金额权益，不减订单金额，但必须发货；出库、分拣与小票都读这份冻结权益 -->
-        <a-descriptions v-if="(order.gifts?.length ?? 0) > 0" class="discount" bordered size="small" :column="1">
-          <a-descriptions-item label="赠品">
-            <div v-for="gift in order.gifts ?? []" :key="`${gift.activityId}-${gift.skuId}`">
-              {{ gift.productName }}（{{ gift.skuCode }} / {{ gift.specName }}）
-              × {{ gift.quantity }} {{ gift.saleUnit }}
-              <span class="gift-source">— 来自活动「{{ gift.activityName || gift.activityCode }}」v{{ gift.version }}</span>
-            </div>
-            <div class="gift-note">赠品金额恒为 0，不计入订单金额；出库成本单独计入本单履约成本。</div>
-          </a-descriptions-item>
-        </a-descriptions>
-        <a-table class="items" :data-source="order.items" :columns="columns" row-key="itemId" :pagination="false"
-                 :scroll="{x:1100}" size="small" bordered>
-          <template #bodyCell="{record,column}">
-            <template
-                v-if="['draftUnitPrice','lockedUnitPrice','orderedLineAmount','settlementLineAmount'].includes(column.dataIndex)">
-              {{ amount(record[column.dataIndex], column.dataIndex === 'draftUnitPrice' || column.dataIndex === 'orderedLineAmount') }}
-            </template>
-            <template v-else-if="column.dataIndex==='action'">
-              <a-button v-if="order.status==='PENDING'&&record.productTypeSnapshot==='NON_STANDARD'" type="link"
-                        v-privilege="'scm:order:actual-quantity'" @click="editActual(record)">录入实重
-              </a-button>
-            </template>
-          </template>
-        </a-table>
-        <a-button v-privilege="'scm:order:log:query'" @click="loadLogs">查看操作记录</a-button>
-        <a-timeline>
-          <a-timeline-item v-for="log in logs" :key="log.logId">{{ datetime(log.createdAt) }} · {{ log.operatorName }} ·
-            {{ SCM_ORDER_OPERATION_ENUM[log.operationType]?.desc }}
-            <a-collapse>
-              <a-collapse-panel key="audit" header="变更前后">
-                <ScmDiffTable :before="log.beforeData" :after="log.afterData"/>
-              </a-collapse-panel>
-            </a-collapse>
-          </a-timeline-item>
-        </a-timeline>
+          </a-table>
+
+          <!-- 7. 操作记录 -->
+          <h3 class="detail-section--nested">操作记录</h3>
+          <a-button v-privilege="'scm:order:log:query'" @click="loadLogs">查看操作记录</a-button>
+          <a-timeline class="smart-margin-top10">
+            <a-timeline-item v-for="log in logs" :key="log.logId">
+              {{ datetime(log.createdAt) }} · {{ log.operatorName }} ·
+              {{ SCM_ORDER_OPERATION_ENUM[log.operationType]?.desc }}
+              <a-collapse>
+                <a-collapse-panel key="audit" header="变更前后">
+                  <ScmDiffTable :before="log.beforeData" :after="log.afterData"/>
+                </a-collapse-panel>
+              </a-collapse>
+            </a-timeline-item>
+          </a-timeline>
+
+          <!-- 8. 系统信息：备注等内部字段不占核心区域 -->
+          <h3 class="detail-section--nested">系统信息</h3>
+          <a-descriptions bordered size="small" :column="2">
+            <a-descriptions-item label="备注" :span="2">{{ order.remark || '—' }}</a-descriptions-item>
+          </a-descriptions>
+        </section>
       </template>
     </a-spin>
     <OrderPaymentDrawer ref="paymentDrawer"/>
@@ -413,6 +438,16 @@ defineExpose({open});
   margin: 16px 0;
 }
 
+/* §14.3 分区：详情按业务 Section 分区，而不是一长串描述列表 */
+.detail-section h3 {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.detail-section--nested {
+  margin-top: 20px;
+}
+
 pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -420,10 +455,6 @@ pre {
 
 .coupon-hint {
   font-size: 12px;
-}
-
-.discount {
-  margin-top: 12px;
 }
 
 .discount-suppressed {

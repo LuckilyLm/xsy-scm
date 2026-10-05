@@ -2,7 +2,8 @@
   * 供应商详情（独立隐藏路由，可深链）
   *
   * 来源：**W1 派生** —— 结构照抄 `views/business/scm/product/product-detail.vue`
-  * （返回按钮 + 刷新 + `a-descriptions` + 分节 `a-divider` + 子表格）。
+  * （返回按钮 + 刷新 + 分节说明区 + 子表格）；§12.4 起按业务 Section 分区（概览 / 联系方式 /
+  * 地址与地图 / 采购与账期 / 关联商品 / 系统信息），不再用 `a-divider` 串成一长串描述列表。
   *
   * C 的供应商详情是列表抽屉里的只读区，没有独立详情页；V2 需要可深链的独立页
   * （对应 `t_menu` 463「供应商详情」，`visible_flag = false`，与 W1 商品详情同策略）。
@@ -25,53 +26,80 @@
       </template>
     </a-alert>
     <template v-else-if="supplier">
-      <a-descriptions :title="supplier.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
-        <a-descriptions-item label="供应商编码">{{ supplier.supplierCode }}</a-descriptions-item>
-        <a-descriptions-item label="状态">
-          <a-tag :color="supplier.status === 'ENABLED' ? 'green' : 'default'">{{ statusText(supplier.status) }}</a-tag>
-        </a-descriptions-item>
-        <a-descriptions-item label="关联商品数">{{ supplier.skuCount ?? 0 }}</a-descriptions-item>
-        <a-descriptions-item label="联系人">{{ supplier.contactName || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="联系电话">{{ supplier.contactPhone || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
-        <a-descriptions-item label="地址" :span="2">{{ supplier.address || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="地图定位" :span="3">
-          <span v-if="isLocated(supplier)">
-            {{ supplier.longitude }}，{{ supplier.latitude }}（{{ supplier.geomCrs }}）
-          </span>
-          <span v-else class="hint">未采集点位；点位用于地图分布与供应商位置查询</span>
-        </a-descriptions-item>
-        <a-descriptions-item label="更新时间">{{ datetime(supplier.updatedAt) }}</a-descriptions-item>
-        <a-descriptions-item label="付款账期">{{ supplier.paymentPeriodDays ?? 0 }} 天</a-descriptions-item>
-        <a-descriptions-item label="备注" :span="3">{{ supplier.remark || '—' }}</a-descriptions-item>
-      </a-descriptions>
+      <div class="detail-doc-title">{{ supplier.name }}</div>
 
-      <a-divider orientation="left">已关联商品（快照）</a-divider>
-      <a-table
-          :data-source="relations"
-          :columns="relationColumns"
-          row-key="id"
-          size="small"
-          bordered
-          :pagination="false"
-          :scroll="{ x: 1000 }"
-      >
-        <template #bodyCell="{ column, record }">
-          <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
-          <span v-else-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
-          <span v-else-if="column.dataIndex === 'referencePrice'" class="amount">{{
-              record.referencePrice ?? '—'
-            }}</span>
-          <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
-          <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
-            {{ record.defaultFlag ? '默认来源' : '—' }}
-          </a-tag>
-          <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
-            {{ skuStatusText(record.status) }}
-          </a-tag>
-        </template>
-      </a-table>
-      <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品"/>
+      <!-- 1. 概览 -->
+      <section class="detail-section">
+        <h3>概览</h3>
+        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+          <a-descriptions-item label="供应商编码">{{ supplier.supplierCode }}</a-descriptions-item>
+          <a-descriptions-item label="状态">
+            <a-tag :color="supplier.status === 'ENABLED' ? 'green' : 'default'">{{ statusText(supplier.status) }}</a-tag>
+          </a-descriptions-item>
+          <a-descriptions-item label="关联商品数">{{ supplier.skuCount ?? 0 }}</a-descriptions-item>
+        </a-descriptions>
+
+        <!-- 2. 联系方式 -->
+        <h3 class="detail-section--nested">联系方式</h3>
+        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+          <a-descriptions-item label="联系人">{{ supplier.contactName || '—' }}</a-descriptions-item>
+          <a-descriptions-item label="联系电话">{{ supplier.contactPhone || '—' }}</a-descriptions-item>
+        </a-descriptions>
+
+        <!-- 3. 地址与地图 -->
+        <h3 class="detail-section--nested">地址与地图</h3>
+        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+          <a-descriptions-item label="地址" :span="3">{{ supplier.address || '—' }}</a-descriptions-item>
+          <a-descriptions-item label="地图定位" :span="3">
+            <span v-if="isLocated(supplier)">
+              {{ supplier.longitude }}，{{ supplier.latitude }}（{{ supplier.geomCrs }}）
+            </span>
+            <span v-else class="hint">未采集点位；点位用于地图分布与供应商位置查询</span>
+          </a-descriptions-item>
+        </a-descriptions>
+
+        <!-- 4. 采购与账期 -->
+        <h3 class="detail-section--nested">采购与账期</h3>
+        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+          <a-descriptions-item label="付款账期">{{ supplier.paymentPeriodDays ?? 0 }} 天</a-descriptions-item>
+        </a-descriptions>
+
+        <!-- 6. 系统信息：§12.4 要求编码与时间放最后，不占核心区域 -->
+        <h3 class="detail-section--nested">系统信息</h3>
+        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+          <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
+          <a-descriptions-item label="更新时间">{{ datetime(supplier.updatedAt) }}</a-descriptions-item>
+          <a-descriptions-item label="备注" :span="3">{{ supplier.remark || '—' }}</a-descriptions-item>
+        </a-descriptions>
+
+        <!-- 5. 关联商品 -->
+        <h3 class="detail-section--nested">已关联商品（快照）</h3>
+        <a-table
+            :data-source="relations"
+            :columns="relationColumns"
+            row-key="id"
+            size="small"
+            bordered
+            :pagination="false"
+            :scroll="{ x: 1000 }"
+        >
+          <template #bodyCell="{ column, record }">
+            <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
+            <span v-else-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
+            <span v-else-if="column.dataIndex === 'referencePrice'" class="scm-money">{{
+                record.referencePrice ?? '—'
+              }}</span>
+            <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
+            <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
+              {{ record.defaultFlag ? '默认来源' : '—' }}
+            </a-tag>
+            <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
+              {{ skuStatusText(record.status) }}
+            </a-tag>
+          </template>
+        </a-table>
+        <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品"/>
+      </section>
     </template>
   </a-card>
 </template>
@@ -152,9 +180,22 @@ watch(() => route.query.supplierId, load, {immediate: true});
 </script>
 
 <style scoped>
-.amount {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+/* 文档标题：比描述列表更突出（§31.3「核心业务信息优先」） */
+.detail-doc-title {
+  color: var(--scm-text);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.detail-section h3 {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+/* 同一段里的后续小标题（概览段串起 联系/地址/采购/系统信息/关联商品） */
+.detail-section--nested {
+  margin-top: 20px;
 }
 
 .hint {
