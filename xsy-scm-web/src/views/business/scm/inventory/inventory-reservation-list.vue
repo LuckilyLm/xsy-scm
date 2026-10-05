@@ -78,7 +78,7 @@
           </div>
         </template>
         <template v-else-if="column.dataIndex === 'sku'">
-          <!-- 预留 VO 不返回规格值（specValues），主行只能是规格名称，编码作次要行 -->
+          <!-- 预留 VO 不返回规格值（specValues，见前端后端缺口盘点 B8），主行只能是规格名称，编码作次要行 -->
           <div class="scm-cell-stack">
             <span class="scm-cell-stack__main">{{ record.skuName || '—' }}</span>
             <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>

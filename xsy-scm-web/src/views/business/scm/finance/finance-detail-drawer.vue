@@ -95,8 +95,9 @@
 
         <!--
           7. 系统信息：§20.6 计划的第 7 段。`FinanceReceivableVO` / `FinanceReceiptVO` 等后端 VO
-          不暴露 createTime / updateTime / 创建人（只有业务单号），前端没有可渲染的事实，
+          表头不暴露 createTime / updateTime / 创建人（见前端后端缺口盘点 B3），前端没有可渲染的事实，
           因此本段暂不渲染 —— 不编造系统字段。补后端字段后再启用。
+          注意：流水「行」本身是带 operator / createdAt 的（第 6 段已可渲染），缺的只是表头单据级信息。
         -->
 
         <a-empty v-if="!writeOffs.length && !operationLogs.length && !redEntries.length" description="暂无核销或操作记录"/>

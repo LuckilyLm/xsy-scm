@@ -320,7 +320,8 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
 /**
  * 列按「叫什么 / 什么券 / 优惠多少 / 什么门槛 / 什么时候有效 / 上没上线」排列。
  * 券编码下沉为名称的次要行；生效与失效时间合成一格（它们回答同一个问题）。
- * 「发放量 / 已领取 / 已使用」当前 VO 不返回，属于后端缺口，前端不臆造。
+ * 「发放量 / 已领取 / 已使用」当前 VO 不返回，属于后端缺口
+ * （登记于 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B7），前端不臆造。
  */
 const columns: TableColumnsType<PromotionCoupon> = [
   {title: '券名称', dataIndex: 'couponName', width: 200},

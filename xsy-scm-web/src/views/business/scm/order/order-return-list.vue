@@ -137,7 +137,8 @@ let requestId = 0;
  * 完整原因在详情抽屉里看；不设 ellipsis 会让长原因把行撑成两行、破坏表格节奏。
  *
  * 注意 `ReturnRow` 只有 `orderId`，**没有订单号与客户名**（`OrderReturnVO` 不带），
- * 所以 §14.5 里「原订单/客户（若 VO 已有）」这一条当前无法满足 —— 属后端字段缺口，
+ * 所以 §14.5 里「原订单/客户（若 VO 已有）」这一条当前无法满足 —— 属后端字段缺口
+ * （登记于 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B6），
  * 不在这里用 `orderId` 冒充单号显示。
  */
 const columns = ref<TableColumnsType<ReturnRow>>([{
