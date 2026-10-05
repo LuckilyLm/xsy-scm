@@ -22,7 +22,7 @@ public class SalesOrderImportRow {
     private String address;
     @ExcelProperty("期望配送时间")
     private String expectDeliveryTime;
-    @ExcelProperty("SKU编码")
+    @ExcelProperty("商品规格编码")
     private String skuCode;
     @ExcelProperty("下单数量")
     private String orderedQuantity;

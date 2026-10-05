@@ -2,7 +2,7 @@
   <screen-panel title="库存健康度" flex>
     <template #extra>
       <span class="scm-health-total">
-        参与评估 <b>{{ formatInt(health?.totalSkuCount) }}</b> 个 (仓库,SKU)
+        参与评估 <b>{{ formatInt(health?.totalSkuCount) }}</b> 个（仓库、商品规格组合）
       </span>
     </template>
 

@@ -10,7 +10,7 @@ import com.xsy.scm.common.error.ScmErrorCode;
 public enum OrderErrorCode implements ScmErrorCode {
     ORDER_SUPPLEMENT_REASON_REQUIRED(40060, "补单原因不能为空"),
     ORDER_SUPPLEMENT_INVALID(40061, "非补单订单不能关联原订单或填写补单原因"),
-    ORDER_SKU_DUPLICATE(40062, "订单明细中 SKU 不能重复"),
+    ORDER_SKU_DUPLICATE(40062, "订单明细中商品规格不能重复"),
     ORDER_QUANTITY_INVALID(40063, "数量必须大于零"),
     ORDER_PRICE_OVERRIDE_REASON_REQUIRED(40064, "人工改价必须同时填写价格与原因"),
     ORDER_PRICE_OVERRIDE_INVALID(40065, "非人工改价行不能指定价格"),

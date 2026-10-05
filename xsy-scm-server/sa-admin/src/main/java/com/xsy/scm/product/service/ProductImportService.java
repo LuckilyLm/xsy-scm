@@ -71,9 +71,9 @@ public class ProductImportService {
     public static final String CLEAR_TOKEN = "(清空)";
     /** 这些列没有枚举/数值校验兜底，标记出现在这里必须拒绝，否则会被当成普通值写进名称、单位或默认标记。 */
     private static final List<Map.Entry<String, Function<ProductImportRow, String>>> CLEAR_GUARDED = List.of(
-            Map.entry("商品名称", ProductImportRow::getSpuName), Map.entry("规格编码", ProductImportRow::getSkuCode),
-            Map.entry("规格名称", ProductImportRow::getSpecName), Map.entry("销售单位", ProductImportRow::getSaleUnit),
-            Map.entry("默认规格", ProductImportRow::getDefaultFlag));
+            Map.entry("商品名称", ProductImportRow::getSpuName), Map.entry("商品规格编码", ProductImportRow::getSkuCode),
+            Map.entry("商品规格名称", ProductImportRow::getSpecName), Map.entry("销售单位", ProductImportRow::getSaleUnit),
+            Map.entry("默认商品规格", ProductImportRow::getDefaultFlag));
     static final int MAX_ROWS = 20000;
     private static final int MAX_PRODUCTS = 5000;
     private static final int MAX_SKUS_PER_PRODUCT = 200;
@@ -184,7 +184,7 @@ public class ProductImportService {
             var group = entry.getValue();
             orderedGroups.add(group);
             if (group.size() > MAX_SKUS_PER_PRODUCT)
-                addError(result, group.getFirst().getRowNumber(), entry.getKey(), "规格编码", "SKU_LIMIT",
+                addError(result, group.getFirst().getRowNumber(), entry.getKey(), "商品规格编码", "SKU_LIMIT",
                         "单个商品规格不能超过 " + MAX_SKUS_PER_PRODUCT + " 个");
             validateGroup(entry.getKey(), group, result);
             if (result.getTotalErrors() == 0)
@@ -254,7 +254,7 @@ public class ProductImportService {
             var group = entry.getValue();
             orderedGroups.add(group);
             if (group.size() > MAX_SKUS_PER_PRODUCT)
-                addError(result, group.getFirst().getRowNumber(), trim(group.getFirst().getSpuCode()), "规格ID",
+                addError(result, group.getFirst().getRowNumber(), trim(group.getFirst().getSpuCode()), "商品规格ID",
                         "SKU_LIMIT", "单个商品规格不能超过 " + MAX_SKUS_PER_PRODUCT + " 个");
             validateUpdateGroup(entry.getKey(), group, spuMap, skuMap, result);
             if (result.getTotalErrors() == 0) {
@@ -308,16 +308,16 @@ public class ProductImportService {
             if (skuId != null) {
                 var existing = existingSkus.get(skuId);
                 if (existing == null || !seenSkuIds.add(skuId)) {
-                    addError(result, rowNumber, trim(row.getSkuCode()), "规格ID", "SKU_NOT_OWNED", "商品规格不属于该商品或重复出现");
+                    addError(result, rowNumber, trim(row.getSkuCode()), "商品规格ID", "SKU_NOT_OWNED", "商品规格不属于该商品或重复出现");
                     continue;
                 }
                 if (!Objects.equals(parseInteger(row.getSkuVersion()), existing.getVersion()))
-                    addError(result, rowNumber, trim(row.getSkuCode()), "规格版本", "VERSION_CONFLICT",
+                    addError(result, rowNumber, trim(row.getSkuCode()), "商品规格版本", "VERSION_CONFLICT",
                             "商品规格版本已变化（当前 " + existing.getVersion() + "），本次整批拒绝，请重新导出");
                 if (trim(row.getSkuCode()) != null && !Objects
                         .equals(ProductAggregateValidator.normalizeCode(row.getSkuCode()), existing.getSkuCode()))
-                    addError(result, rowNumber, trim(row.getSkuCode()), "规格编码", "FIELD_LOCKED",
-                            "规格编码不能通过导入修改，请走商品编辑");
+                    addError(result, rowNumber, trim(row.getSkuCode()), "商品规格编码", "FIELD_LOCKED",
+                            "商品规格编码不能通过导入修改，请走商品编辑");
                 if (isTruthy(row.getDefaultFlag()))
                     defaults++;
                 else if (Boolean.TRUE.equals(existing.getDefaultFlag()) && trim(row.getDefaultFlag()) == null)
@@ -326,17 +326,17 @@ public class ProductImportService {
             }
             // 新增 SKU 走与新增导入相同的必填口径；SKU 版本对新增行没有意义
             if (trim(row.getSkuVersion()) != null)
-                addError(result, rowNumber, trim(row.getSkuCode()), "规格版本", "NEW_SKU_VERSION", "新增规格不应填写规格版本");
-            required(result, rowNumber, trim(row.getSkuCode()), "规格编码", row.getSkuCode());
-            required(result, rowNumber, trim(row.getSkuCode()), "规格名称", row.getSpecName());
+                addError(result, rowNumber, trim(row.getSkuCode()), "商品规格版本", "NEW_SKU_VERSION", "新增商品规格不应填写商品规格版本");
+            required(result, rowNumber, trim(row.getSkuCode()), "商品规格编码", row.getSkuCode());
+            required(result, rowNumber, trim(row.getSkuCode()), "商品规格名称", row.getSpecName());
             required(result, rowNumber, trim(row.getSkuCode()), "销售单位", row.getSaleUnit());
             required(result, rowNumber, trim(row.getSkuCode()), "商品类型", row.getProductType());
             required(result, rowNumber, trim(row.getSkuCode()), "市场价", row.getMarketPrice());
-            required(result, rowNumber, trim(row.getSkuCode()), "规格状态", row.getSkuStatus());
-            required(result, rowNumber, trim(row.getSkuCode()), "默认规格", row.getDefaultFlag());
+            required(result, rowNumber, trim(row.getSkuCode()), "商品规格状态", row.getSkuStatus());
+            required(result, rowNumber, trim(row.getSkuCode()), "默认商品规格", row.getDefaultFlag());
             var skuCode = ProductAggregateValidator.normalizeCode(row.getSkuCode());
             if (skuCode != null && !skuCodes.add(skuCode))
-                addError(result, rowNumber, trim(row.getSkuCode()), "规格编码", "SKU_CODE_DUPLICATE", "同一商品内规格编码不能重复");
+                addError(result, rowNumber, trim(row.getSkuCode()), "商品规格编码", "SKU_CODE_DUPLICATE", "同一商品内商品规格编码不能重复");
             if (isTruthy(row.getDefaultFlag()))
                 defaults++;
         }
@@ -345,10 +345,10 @@ public class ProductImportService {
             if (!seenSkuIds.contains(existing.getId()) && Boolean.TRUE.equals(existing.getDefaultFlag()))
                 defaults++;
         if (defaults == 0)
-            addError(result, firstRowNumber, trim(first.getSpuCode()), "默认规格", "DEFAULT_SKU_INVALID",
-                    "商品必须保留一个默认规格");
+            addError(result, firstRowNumber, trim(first.getSpuCode()), "默认商品规格", "DEFAULT_SKU_INVALID",
+                    "商品必须保留一个默认商品规格");
         if (defaults > 1)
-            addError(result, firstRowNumber, trim(first.getSpuCode()), "默认规格", "DEFAULT_SKU_INVALID", "默认规格只能有一个");
+            addError(result, firstRowNumber, trim(first.getSpuCode()), "默认商品规格", "DEFAULT_SKU_INVALID", "默认商品规格只能有一个");
     }
 
     private ProductSpuUpdateForm toUpdateForm(List<ProductImportRow> rows, ProductSpuEntity spu,
@@ -517,13 +517,13 @@ public class ProductImportService {
         required(result, rowNumber, key, "商品名称", row.getSpuName());
         required(result, rowNumber, key, "分类编码", row.getCategoryCode());
         required(result, rowNumber, key, "商品状态", row.getSpuStatus());
-        required(result, rowNumber, key, "规格编码", row.getSkuCode());
-        required(result, rowNumber, key, "规格名称", row.getSpecName());
+        required(result, rowNumber, key, "商品规格编码", row.getSkuCode());
+        required(result, rowNumber, key, "商品规格名称", row.getSpecName());
         required(result, rowNumber, key, "销售单位", row.getSaleUnit());
         required(result, rowNumber, key, "商品类型", row.getProductType());
         required(result, rowNumber, key, "市场价", row.getMarketPrice());
-        required(result, rowNumber, key, "规格状态", row.getSkuStatus());
-        required(result, rowNumber, key, "默认规格", row.getDefaultFlag());
+        required(result, rowNumber, key, "商品规格状态", row.getSkuStatus());
+        required(result, rowNumber, key, "默认商品规格", row.getDefaultFlag());
         validateSharedCells(row, categoryMap, tagMap, result, false, unitMap);
     }
 
@@ -537,9 +537,9 @@ public class ProductImportService {
         required(result, rowNumber, key, "商品ID", row.getSpuId());
         required(result, rowNumber, key, "商品版本", row.getSpuVersion());
         positiveId(result, rowNumber, key, "商品ID", row.getSpuId());
-        positiveId(result, rowNumber, key, "规格ID", row.getSkuId());
+        positiveId(result, rowNumber, key, "商品规格ID", row.getSkuId());
         nonNegative(result, rowNumber, key, "商品版本", row.getSpuVersion());
-        nonNegative(result, rowNumber, key, "规格版本", row.getSkuVersion());
+        nonNegative(result, rowNumber, key, "商品规格版本", row.getSkuVersion());
         validateSharedCells(row, categoryMap, tagMap, result, true, Map.of());
         rejectClearMarker(result, row);
     }
@@ -561,8 +561,8 @@ public class ProductImportService {
         var key = trim(row.getSpuCode());
         length(result, rowNumber, key, "商品编码", row.getSpuCode(), 64);
         length(result, rowNumber, key, "商品名称", row.getSpuName(), 150);
-        length(result, rowNumber, key, "规格编码", row.getSkuCode(), 64);
-        length(result, rowNumber, key, "规格名称", row.getSpecName(), 150);
+        length(result, rowNumber, key, "商品规格编码", row.getSkuCode(), 64);
+        length(result, rowNumber, key, "商品规格名称", row.getSpecName(), 150);
         length(result, rowNumber, key, "销售单位", row.getSaleUnit(), 32);
         // 上限与 ProductSpuAddForm 的 @Size 及库里 VARCHAR 同数值：导入不走 @Valid，
         // 缺了这几列的逐行上限，超长要等整批写库才被数据库拒掉，定位不到是哪个单元格。
@@ -583,7 +583,7 @@ public class ProductImportService {
             addError(result, rowNumber, key, "分类编码", "CATEGORY_LEVEL_INVALID", "商品只能绑定三级分类，请改填该分类下的三级分类");
 
         enumValue(result, rowNumber, key, "商品状态", row.getSpuStatus(), SHELF);
-        enumValue(result, rowNumber, key, "规格状态", row.getSkuStatus(), SHELF);
+        enumValue(result, rowNumber, key, "商品规格状态", row.getSkuStatus(), SHELF);
         enumValue(result, rowNumber, key, "商品类型", row.getProductType(), PRODUCT_TYPE);
         if (trim(row.getStorageMethod()) != null)
             enumValue(result, rowNumber, key, "储存方式", row.getStorageMethod(), STORAGE);
@@ -655,14 +655,14 @@ public class ProductImportService {
             same(result, rowNumber, spuCode, "标签编码", first.getTagCodes(), row.getTagCodes());
             var skuCode = trim(row.getSkuCode());
             if (skuCode != null && !skuCodes.add(skuCode))
-                addError(result, rowNumber, spuCode, "规格编码", "SKU_CODE_DUPLICATE", "同一商品内规格编码不能重复");
+                addError(result, rowNumber, spuCode, "商品规格编码", "SKU_CODE_DUPLICATE", "同一商品内商品规格编码不能重复");
             if (isTruthy(row.getDefaultFlag()))
                 defaults++;
         }
         if (defaults == 0)
-            addError(result, first.getRowNumber(), spuCode, "默认规格", "DEFAULT_SKU_INVALID", "商品必须且只能有一个默认规格");
+            addError(result, first.getRowNumber(), spuCode, "默认商品规格", "DEFAULT_SKU_INVALID", "商品必须且只能有一个默认商品规格");
         if (defaults > 1)
-            addError(result, first.getRowNumber(), spuCode, "默认规格", "DEFAULT_SKU_INVALID", "默认规格只能有一个");
+            addError(result, first.getRowNumber(), spuCode, "默认商品规格", "DEFAULT_SKU_INVALID", "默认商品规格只能有一个");
     }
 
     private ProductSpuAddForm toCreateForm(List<ProductImportRow> rows, Map<String, ProductCategoryEntity> categoryMap,

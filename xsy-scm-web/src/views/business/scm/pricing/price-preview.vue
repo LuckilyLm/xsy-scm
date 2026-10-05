@@ -4,7 +4,7 @@
   <a-form layout="inline" class="smart-query-form">
    <a-row class="smart-query-form-row">
     <a-form-item label="客户" required class="smart-query-form-item"><CustomerSelect v-model:value="customerId" width="220px" /></a-form-item>
-    <a-form-item label="SKU" required class="smart-query-form-item"><SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]" /></a-form-item>
+    <a-form-item label="商品规格" required class="smart-query-form-item"><SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]" /></a-form-item>
     <a-form-item label="时点" class="smart-query-form-item"><a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" placeholder="当前时点" /></a-form-item>
     <a-form-item class="smart-query-form-item"><a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算</a-button></a-form-item>
    </a-row>
@@ -40,11 +40,11 @@ import {pricingError} from './pricing-errors';
 const customerId = ref<ScmId>(), skuIds = ref<ScmId[]>([]), at = ref<string>(), result = ref<ResolveResult>(),
     loading = ref(false), error = ref('');
 let requestId = 0;
-const columns: TableColumnsType<ResolvedPrice> = [{title: 'SKU 编码', dataIndex: 'skuCode', width: 150}, {
+const columns: TableColumnsType<ResolvedPrice> = [{title: '商品规格编码', dataIndex: 'skuCode', width: 150}, {
   title: '商品',
   dataIndex: 'productName',
   width: 150
-}, {title: '规格', dataIndex: 'specName', width: 100}, {
+}, {title: '商品规格', dataIndex: 'specName', width: 100}, {
   title: '单价',
   dataIndex: 'unitPrice',
   align: 'right',
@@ -73,7 +73,7 @@ function reasonLabel(value: string | null) {
 
 async function resolve() {
   if (customerId.value == null || !skuIds.value?.length) {
-    error.value = '请选择客户和 SKU';
+    error.value = '请选择客户和商品规格';
     return;
   }
   const id = ++requestId;

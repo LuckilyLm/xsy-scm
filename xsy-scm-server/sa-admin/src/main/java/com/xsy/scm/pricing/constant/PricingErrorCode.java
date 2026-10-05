@@ -15,7 +15,7 @@ public enum PricingErrorCode implements ScmErrorCode {
     CUSTOMER_TYPE_PRICE_OVERLAP(40935, "客户类型价有效期重叠"),
     PRICE_BATCH_ROW_INVALID(40035, "批量调价存在非法行"),
     PRICE_BATCH_KEY_DUPLICATE(40948, "批次号已成功提交，请勿重复提交"),
-    SKU_NOT_SELLABLE(40949, "SKU 不可售、不可见或未定价"),
+    SKU_NOT_SELLABLE(40949, "商品规格不可售、不可见或未定价"),
     PRICE_RESOLVE_CUSTOMER_TYPE_MISSING(40036, "客户未设置有效的客户类型");
     private final int code;
     private final String msg;

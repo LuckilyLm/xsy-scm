@@ -44,7 +44,7 @@
         <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true">
           冻结批次生成需求
         </a-button>
-        <span class="hint">先按仓库/SKU/单位冻结净需求批次（含库存、在途、已有采购覆盖的解释行），再从同一批次生成需求；重复生成不会重复建需求</span>
+        <span class="hint">先按仓库/商品规格/单位冻结净需求批次（含库存、在途、已有采购覆盖的解释行），再从同一批次生成需求；重复生成不会重复建需求</span>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData"/>
@@ -161,7 +161,7 @@
             @change="orderChanged"
         />
       </a-form-item>
-      <a-form-item label="采购行（同一 SKU）" name="purchaseOrderItemId" required>
+      <a-form-item label="采购行（同一商品规格）" name="purchaseOrderItemId" required>
         <a-select
             v-model:value="alloc.purchaseOrderItemId"
             :options="alloc.itemOptions"
@@ -240,7 +240,7 @@ const columns = computed<TableColumnsType<Demand>>(() => [
   {title: '来源销售单号', dataIndex: 'salesOrderNoSnapshot', width: 200},
   {title: '来源冻结批次', dataIndex: 'calculationBatchId', width: 130},
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '规格', dataIndex: 'skuName', width: 130},
+  {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '需求单位', dataIndex: 'demandUnit', width: 95},
   {title: '需求量', dataIndex: 'requiredQuantity', align: 'right', width: 115},
   {title: '已分配', dataIndex: 'allocatedQuantity', align: 'right', width: 115},
@@ -338,7 +338,7 @@ async function orderChanged(orderId: Id | undefined) {
           label: `第 ${(item.sortOrder ?? 0) + 1} 行 · 采购量 ${item.plannedQuantity} ${item.purchaseUnit ?? ''}`,
         }));
     if (!alloc.itemOptions.length) {
-      alloc.error = '该采购单没有此 SKU 的采购行，请换一张单或先在采购单里补行';
+      alloc.error = '该采购单没有此商品规格的采购行，请换一张单或先在采购单里补行';
     }
   } catch (e) {
     alloc.error = purchaseError(e);

@@ -29,7 +29,7 @@
         <WarehouseSelect v-model:value="filters.warehouseId" width="180px"/>
       </a-form-item>
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" placeholder="商品名称 / SKU 编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -52,7 +52,7 @@
             width="180px"
         />
       </a-form-item>
-      <a-form-item label="SKU" class="smart-query-form-item">
+      <a-form-item label="商品规格" class="smart-query-form-item">
         <SkuSelect v-model:value="filters.skuId" width="240px"/>
       </a-form-item>
     </a-row>
@@ -249,7 +249,7 @@
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-typography-text type="secondary">
-              一行 = 仓库 + SKU + 记账单位；数量列按单位分组，不做跨单位合计（10kg + 5箱 ≠ 15）。
+              一行 = 仓库 + 商品规格 + 记账单位；数量列按单位分组，不做跨单位合计（10kg + 5箱 ≠ 15）。
             </a-typography-text>
           </div>
           <div class="smart-table-setting-block">
@@ -374,7 +374,7 @@ const movementColumns = ref<TableColumnsType<InventoryMovementRow>>([
     {title: '发生时间', dataIndex: 'occurredAt', width: 190},
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '商品', dataIndex: 'productName', width: 180},
-    {title: 'SKU', dataIndex: 'skuCode', width: 170},
+    {title: '商品规格', dataIndex: 'skuCode', width: 170},
     {title: '流水类型', dataIndex: 'movementType', width: 120},
     {title: '方向', dataIndex: 'direction', align: 'center', width: 80},
     {title: '来源单据类型', dataIndex: 'sourceDocumentType', width: 150},
@@ -393,7 +393,7 @@ const movementColumns = ref<TableColumnsType<InventoryMovementRow>>([
 const valueColumns = ref<TableColumnsType<InventoryValueRow>>([
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '商品', dataIndex: 'productName', width: 180},
-    {title: 'SKU', dataIndex: 'skuCode', width: 170},
+    {title: '商品规格', dataIndex: 'skuCode', width: 170},
     {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
     {title: '当前数量', dataIndex: 'quantity', align: 'right', width: 130},
     {title: '预留数量', dataIndex: 'reservedQuantity', align: 'right', width: 130},
@@ -420,7 +420,7 @@ const QUANTITY_INDEXES = [
 const flowColumns = ref<TableColumnsType<InventoryFlowSummaryRow>>([
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '商品', dataIndex: 'productName', width: 180},
-    {title: 'SKU', dataIndex: 'skuCode', width: 170},
+        {title: '商品规格', dataIndex: 'skuCode', width: 170},
     {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
     {title: '期内采购入库数量', dataIndex: 'purchaseInQuantity', align: 'right', width: 160},
     {title: '期内销售出库数量', dataIndex: 'salesOutQuantity', align: 'right', width: 160},
@@ -452,8 +452,8 @@ const valueCards = computed(() => {
             hint: 'SUM(inventory_balance.quantity × avg_cost)，当前时点',
             sub: data.snapshotAt ? `截至 ${datetime(data.snapshotAt)}` : undefined,
         },
-        {label: '有库存 SKU 数', value: countText(data.stockedSkuCount), hint: '余额行数量大于 0 的 (仓库, SKU) 行数'},
-        {label: '零库存 SKU 数', value: countText(data.zeroStockSkuCount), hint: '余额行存在但数量为 0'},
+        {label: '有库存商品规格数', value: countText(data.stockedSkuCount), hint: '余额行数量大于 0 的（仓库，商品规格）行数'},
+        {label: '零库存商品规格数', value: countText(data.zeroStockSkuCount), hint: '余额行存在但数量为 0'},
     ];
 });
 

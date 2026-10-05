@@ -643,7 +643,7 @@ test('the conversion page is an approval page wired to its own DOM id and six pr
   assert.match(page, /sourceUnit/);
   assert.match(page, /targetUnit/);
   // 同一行源与目标不得相同（前端先拦一道）
-  assert.match(page, /源 SKU 与目标 SKU 不能相同/);
+  assert.match(page, /源商品规格与目标商品规格不能相同/);
 
   const api = code('../src/api/business/scm/inventory-conversion-api.ts');
   assert.match(api, /approve:/);

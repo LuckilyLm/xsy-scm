@@ -30,13 +30,13 @@ public class InventoryInTransitVO {
     @Schema(description = "目标仓库名称")
     private String toWarehouseName;
 
-    @Schema(description = "SKU ID")
+    @Schema(description = "商品规格ID")
     private Long skuId;
 
-    @Schema(description = "SKU 编码")
+    @Schema(description = "商品规格编码")
     private String skuCode;
 
-    @Schema(description = "SKU 名称")
+    @Schema(description = "商品规格名称")
     private String skuName;
 
     @Schema(description = "在途数量")

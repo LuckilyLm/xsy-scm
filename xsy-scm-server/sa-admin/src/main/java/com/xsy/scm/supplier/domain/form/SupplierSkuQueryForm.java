@@ -22,7 +22,7 @@ public class SupplierSkuQueryForm extends PageParam {
     @Positive(message = "供应商 ID 必须大于0")
     private Long supplierId;
 
-    @Positive(message = "SKU ID 必须大于0")
+    @Positive(message = "商品规格ID必须大于0")
     private Long skuId;
 
     @ScmEnumValue(enumClass = ScmEnableStatusEnum.class, message = "供应商商品状态无效")

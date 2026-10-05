@@ -19,7 +19,7 @@
       <a-form-item label="商品分类">
         <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px"/>
       </a-form-item>
-      <a-form-item label="商品 / 单号"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名、SKU 编码或订单号" @pressEnter="search"/></a-form-item>
+      <a-form-item label="商品 / 单号"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"/></a-form-item>
     </a-row>
   </a-form>
 

@@ -5,7 +5,7 @@
   <a-form-item label="来源" class="smart-query-form-item"><a-select v-model:value="query.source" allow-clear style="width:150px" :options="[{value:'AGREEMENT',label:'客户协议价'},{value:'CUSTOMER_TYPE',label:'客户类型价'}]" /></a-form-item>
   <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="query.customerId" width="180px" /></a-form-item>
   <a-form-item label="客户类型" class="smart-query-form-item"><CustomerTypeSelect v-model:value="query.customerTypeId" width="150px" /></a-form-item>
-  <a-form-item label="SKU" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
+  <a-form-item label="商品规格" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
   <a-form-item label="操作" class="smart-query-form-item"><a-select v-model:value="query.operationType" allow-clear style="width:110px" :options="[{value:'CREATE',label:'新增'},{value:'UPDATE',label:'更新'},{value:'DELETE',label:'删除'}]" /></a-form-item>
   <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
   <a-form-item label="操作区间" class="smart-query-form-item"><a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
@@ -44,7 +44,7 @@ const columns = ref<TableColumnsType<HistoryRow>>([{title: '来源', dataIndex: 
   dataIndex: 'customerName',
   width: 140
 }, {title: '客户类型', dataIndex: 'customerTypeName', width: 130}, {
-  title: 'SKU 编码',
+  title: '商品规格编码',
   dataIndex: 'skuCode',
   width: 150
 }, {title: '商品', dataIndex: 'productName', width: 140}, {

@@ -259,7 +259,7 @@ function logColor(operationType: string | undefined): string {
 
 const itemColumns: TableColumnsType<OrderItem> = [
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '规格', dataIndex: 'skuName', width: 130},
+  {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 100},
   {title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 120},
   {title: '已收数量', dataIndex: 'receivedQuantity', align: 'right', width: 120},

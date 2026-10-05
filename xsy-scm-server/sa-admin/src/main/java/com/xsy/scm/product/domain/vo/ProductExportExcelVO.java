@@ -9,15 +9,15 @@ import lombok.Data;
 @Data
 public class ProductExportExcelVO {
     /** 更新导入模板的四个定位键列，顺序与 ProductImportService.UPDATE_HEADERS 一致。 */
-    @ExcelProperty("SPU ID")
+    @ExcelProperty("商品ID")
     private String spuId;
-    @ExcelProperty("SPU版本")
+    @ExcelProperty("商品版本")
     private String spuVersion;
-    @ExcelProperty("SKU ID")
+    @ExcelProperty("商品规格ID")
     private String skuId;
-    @ExcelProperty("SKU版本")
+    @ExcelProperty("商品规格版本")
     private String skuVersion;
-    @ExcelProperty("SPU编码")
+    @ExcelProperty("商品编码")
     private String spuCode;
     @ExcelProperty("商品名称")
     private String spuName;
@@ -35,15 +35,15 @@ public class ProductExportExcelVO {
     private String storageMethod;
     @ExcelProperty("主档状态")
     private String masterStatus;
-    @ExcelProperty("商品上下架")
+    @ExcelProperty("商品状态")
     private String spuStatus;
     @ExcelProperty("标签")
     private String tagNames;
-    @ExcelProperty("SKU编码")
+    @ExcelProperty("商品规格编码")
     private String skuCode;
     @ExcelProperty("条码")
     private String barcode;
-    @ExcelProperty("规格名称")
+    @ExcelProperty("商品规格名称")
     private String specName;
     @ExcelProperty("销售单位")
     private String saleUnit;
@@ -51,9 +51,9 @@ public class ProductExportExcelVO {
     private String productType;
     @ExcelProperty("市场价")
     private String marketPrice;
-    @ExcelProperty("SKU上下架")
+    @ExcelProperty("商品规格状态")
     private String skuStatus;
-    @ExcelProperty("默认SKU")
+    @ExcelProperty("默认商品规格")
     private String defaultFlag;
     @ExcelProperty("排序")
     private String sortOrder;

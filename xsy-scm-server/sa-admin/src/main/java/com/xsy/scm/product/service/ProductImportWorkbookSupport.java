@@ -27,10 +27,10 @@ import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 @Component
 public class ProductImportWorkbookSupport {
     private static final List<String> CREATE_HEADERS = List.of("模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地",
-            "储存方式", "保质期天数", "标签编码", "商品状态", "规格编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "规格状态", "默认规格", "排序");
-    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "商品ID", "商品版本", "规格ID", "规格版本", "商品编码",
-            "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "规格编码", "条码", "规格名称", "销售单位",
-            "商品类型", "市场价", "规格状态", "默认规格", "排序");
+            "储存方式", "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
+    private static final List<String> UPDATE_HEADERS = List.of("模板版本", "商品ID", "商品版本", "商品规格ID", "商品规格版本", "商品编码",
+            "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位",
+            "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
     private static final List<BiConsumer<ProductImportRow, String>> CREATE_SETTERS = List.of(
             ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
             ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
@@ -143,22 +143,24 @@ public class ProductImportWorkbookSupport {
             return switch (column) {
                 case 1 -> "SPU编码".equals(value);
                 case 11 -> "商品上下架".equals(value);
-                case 12 -> "SKU编码".equals(value);
-                case 18 -> "SKU上下架".equals(value);
-                case 19 -> "默认SKU".equals(value);
+                case 12 -> "SKU编码".equals(value) || "规格编码".equals(value);
+                case 14 -> "规格名称".equals(value);
+                case 18 -> "SKU上下架".equals(value) || "规格状态".equals(value);
+                case 19 -> "默认SKU".equals(value) || "默认规格".equals(value);
                 default -> false;
             };
         }
         return switch (column) {
             case 1 -> "SPU ID".equals(value);
             case 2 -> "SPU版本".equals(value);
-            case 3 -> "SKU ID".equals(value);
-            case 4 -> "SKU版本".equals(value);
+            case 3 -> "SKU ID".equals(value) || "规格ID".equals(value);
+            case 4 -> "SKU版本".equals(value) || "规格版本".equals(value);
             case 5 -> "SPU编码".equals(value);
             case 15 -> "商品上下架".equals(value);
-            case 16 -> "SKU编码".equals(value);
-            case 22 -> "SKU上下架".equals(value);
-            case 23 -> "默认SKU".equals(value);
+            case 16 -> "SKU编码".equals(value) || "规格编码".equals(value);
+            case 18 -> "规格名称".equals(value);
+            case 22 -> "SKU上下架".equals(value) || "规格状态".equals(value);
+            case 23 -> "默认SKU".equals(value) || "默认规格".equals(value);
             default -> false;
         };
     }

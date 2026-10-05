@@ -96,7 +96,7 @@
         <a-space class="smart-margin-bottom10">
           <span>统计窗口</span>
           <a-select v-model:value="freqDays" style="width: 120px" :options="freqDayOptions" @change="onFreqDaysChange" />
-          <span class="smart-font-size12 smart-color-gray">按 SKU＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
+          <span class="smart-font-size12 smart-color-gray">按商品规格＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
         </a-space>
         <a-alert v-if="frequent.error.value" :message="frequent.error.value" type="error" show-icon>
           <template #action>
@@ -365,8 +365,8 @@ const visPolicyText = computed(() => {
   const policy = visibility.rows.value[0]?.visibilityPolicy;
   if (!policy) return '';
   return policy === 'ALL_ENABLED'
-      ? '可见范围：全部已启用商品（未设 SKU 白名单）'
-      : '可见范围：按白名单可售，以下为该客户已授权 SKU';
+      ? '可见范围：全部已启用商品（未设商品规格白名单）'
+      : '可见范围：按白名单可售，以下为该客户已授权商品规格';
 });
 const visRows = computed(() => visibility.rows.value.filter((r) => r.skuId != null));
 
@@ -381,9 +381,9 @@ const orderCols: TableColumnsType<Order> = [
   {title: '创建时间', dataIndex: 'createdAt', width: 180}
 ];
 const frequentCols: TableColumnsType<CustomerFrequentSku> = [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '规格', dataIndex: 'specName', width: 120},
+  {title: '商品规格', dataIndex: 'specName', width: 120},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '订购次数', dataIndex: 'orderCount', align: 'right', width: 100},
   {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
@@ -391,18 +391,18 @@ const frequentCols: TableColumnsType<CustomerFrequentSku> = [
   {title: '最近成交价', dataIndex: 'recentUnitPrice', align: 'right', width: 120}
 ];
 const agreementCols: TableColumnsType<PriceRow> = [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '规格', dataIndex: 'specName', width: 120},
+  {title: '商品规格', dataIndex: 'specName', width: 120},
   {title: '协议单价', dataIndex: 'unitPrice', align: 'right', width: 120},
   {title: '生效时间', dataIndex: 'effectiveFrom', width: 180},
   {title: '结束时间', dataIndex: 'effectiveTo', width: 180}
 ];
 const visibilityCols: TableColumnsType<VisibilityRow> = [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '规格', dataIndex: 'specName', width: 120},
-  {title: 'SKU 状态', dataIndex: 'skuStatus', align: 'center', width: 110},
+  {title: '商品规格', dataIndex: 'specName', width: 120},
+  {title: '商品规格状态', dataIndex: 'skuStatus', align: 'center', width: 110},
   {title: '加入白名单时间', dataIndex: 'createdAt', width: 180}
 ];
 

@@ -149,7 +149,7 @@ import {purchaseError} from '../purchase-errors';
 defineProps<{ items: OrderItem[] }>();
 
 const columns: TableColumnsType<OrderItem> = [
-  {title: '商品 / 规格 / SKU', dataIndex: 'skuId', width: 300},
+  {title: '商品 / 商品规格', dataIndex: 'skuId', width: 300},
   {title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 150},
   {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 150},
   {title: '已分配合计', dataIndex: 'allocated', align: 'right', width: 140},
@@ -230,7 +230,7 @@ async function openDemandPicker(item: OrderItem) {
     // 只保留还有余量的需求（`unallocated = 0` 的加进去必然 40082）
     picker.rows = r.data.list.filter((d) => Number(d.unallocatedQuantity ?? '0') > 0);
     if (!picker.rows.length) {
-      picker.error = '该 SKU 没有可分配的采购需求，请先在「采购需求」页生成需求';
+      picker.error = '该商品规格没有可分配的采购需求，请先在「采购需求」页生成需求';
     }
   } catch (e) {
     picker.error = purchaseError(e);

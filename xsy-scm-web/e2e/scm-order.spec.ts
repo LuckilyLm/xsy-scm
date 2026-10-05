@@ -77,7 +77,7 @@ test('7 download template and import standard/nonstandard orders atomically',asy
  const bad='../.runtime/w4-order-import-bad.xlsx';copyFileSync(valid,bad);
  execFileSync('python',['-c',fillScript,bad,customerCode,standardCode,weightCode,'bad']);await page.getByRole('button',{name:'取 消'}).click();await page.getByRole('button',{name:'导入订单',exact:true}).click();
  const before=(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;await page.locator('.ant-modal:visible input[type=file]').setInputFiles(bad);await page.getByRole('button',{name:'开始导入',exact:true}).click();
- await expect(page.getByText(/发现 1 个问题，订单未写入/)).toBeVisible();await expect(page.locator('.ant-modal:visible')).toContainText('SKU 编码不存在');const after=(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;expect(after).toBe(before);
+ await expect(page.getByText(/发现 1 个问题，订单未写入/)).toBeVisible();await expect(page.locator('.ant-modal:visible')).toContainText('商品规格编码不存在');const after=(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;expect(after).toBe(before);
  const bytes=readFileSync(valid);const key=randomUUID();const first=await api.post('/scm/order/import',{multipart:{file:{name:'retry.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes}},headers:{'Idempotency-Key':key}});const second=await api.post('/scm/order/import',{multipart:{file:{name:'retry.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes}},headers:{'Idempotency-Key':key}});const one=(await first.json()).data.orders.map((x:any)=>x.orderId),two=(await second.json()).data.orders.map((x:any)=>x.orderId);expect(two).toEqual(one);
 });
 
@@ -102,7 +102,7 @@ test('8 sample row and manual override rules block the whole batch',async({page}
  await expect(sampleErrors.first()).toContainText('客户编码');
  await expect(sampleErrors.first()).toContainText('客户编码不存在');
  await expect(sampleErrors.nth(1)).toContainText('SKU编码');
- await expect(sampleErrors.nth(1)).toContainText('SKU 编码不存在');
+ await expect(sampleErrors.nth(1)).toContainText('商品规格编码不存在');
  expect(await importedTotal()).toBe(baseline);
 
  // B) 人工单价 + 改价原因（账号同时持有 scm:order:import 与 scm:order:price-override）→ 成功且按人工价成交

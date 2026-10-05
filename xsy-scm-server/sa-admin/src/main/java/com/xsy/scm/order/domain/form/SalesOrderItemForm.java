@@ -12,7 +12,7 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 public class SalesOrderItemForm {
     private Long itemId;
     private Integer version;
-    @NotNull(message = "商品 SKU 不能为空")
+    @NotNull(message = "商品规格不能为空")
     private Long skuId;
     @NotBlank(message = "下单数量不能为空")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)

@@ -17,7 +17,7 @@
       <a-upload-dragger :file-list="fileList" :before-upload="beforeUpload" :disabled="loading" :max-count="1"
                         accept=".xlsx" @remove="removeFile">
         <p class="ant-upload-text">点击或拖拽订单 Excel 到此处</p>
-        <p class="ant-upload-hint">请使用最新模板，按客户编码与 SKU 编码填写</p>
+        <p class="ant-upload-hint">请使用最新模板，按客户编码与商品规格编码填写</p>
       </a-upload-dragger>
       <a-alert v-if="error" type="error" show-icon :message="error"/>
       <a-result v-if="result && !result.totalErrors" status="success" title="订单导入完成"

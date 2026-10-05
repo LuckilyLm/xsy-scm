@@ -214,7 +214,7 @@
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
         <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个 SKU 只能出现一次 —— 重复行会让同一份数量被调整两次。
+          同一个商品规格只能出现一次 —— 重复行会让同一份数量被调整两次。
         </a-typography-text>
       </a-form-item>
     </a-form>
@@ -331,7 +331,7 @@ const columns = ref<TableColumnsType<InventoryLossGain>>([
 ]);
 
 const itemColumns: TableColumnsType = [
-  {title: 'SKU', dataIndex: 'skuId', width: 290},
+  {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '数量', dataIndex: 'quantity', width: 150},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
@@ -486,7 +486,7 @@ function buildPayload(): InventoryLossGainAdd | null {
   for (let i = 0; i < items.length; i++) {
     const skuKey = String(items[i].skuId);
     if (seen.has(skuKey)) {
-      message.warning(`第 ${i + 1} 行：同一 SKU 只能出现一次，请合并重复行`);
+      message.warning(`第 ${i + 1} 行：同一商品规格只能出现一次，请合并重复行`);
       return null;
     }
     seen.add(skuKey);

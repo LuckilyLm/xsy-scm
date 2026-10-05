@@ -57,7 +57,7 @@ public class InventoryLossGainAddForm {
     @Data
     public static class Item {
 
-        @NotNull(message = "SKU 不能为空")
+        @NotNull(message = "商品规格不能为空")
         private Long skuId;
 
         @NotNull(message = "调整数量不能为空")

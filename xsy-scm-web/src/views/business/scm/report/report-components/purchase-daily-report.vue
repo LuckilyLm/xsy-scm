@@ -9,7 +9,7 @@
         <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px"/>
       </a-form-item>
       <a-form-item label="商品">
-        <a-input v-model:value="queryForm.keyword" placeholder="名称 / SPU / SKU 编码" allow-clear :maxlength="100"/>
+        <a-input v-model:value="queryForm.keyword" placeholder="商品名称 / 商品编码 / 商品规格编码" allow-clear :maxlength="100"/>
       </a-form-item>
       <a-form-item>
         <a-space wrap>
@@ -87,10 +87,10 @@ let requestSequence = 0;
 let appliedQuery: PurchaseDailyQuery | undefined;
 
 const columns: TableColumnsType<PurchaseDailyProduct> = [
-  {title: 'SPU 编码', dataIndex: 'spuCode', width: 140},
+  {title: '商品编码', dataIndex: 'spuCode', width: 140},
   {title: '商品名称', dataIndex: 'productName', width: 180},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 140},
-  {title: '规格', dataIndex: 'skuName', width: 160},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
+  {title: '商品规格', dataIndex: 'skuName', width: 160},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 90},
   {title: '采购单数', dataIndex: 'orderCount', width: 100, align: 'right'},
   {title: '采购数量', dataIndex: 'plannedQuantity', width: 130, align: 'right'},

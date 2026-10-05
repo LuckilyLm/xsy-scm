@@ -4,7 +4,7 @@ export function emptySku(sortOrder = 0, defaultFlag = false): ProductSku {
     return {
         skuCode: '',
         barcode: '',
-        specName: defaultFlag ? '默认规格' : '',
+        specName: defaultFlag ? '默认商品规格' : '',
         specValues: {},
         saleUnit: '',
         productType: 'NON_STANDARD',
@@ -90,18 +90,18 @@ export function validateProduct(form: ProductForm): string | undefined {
     const codes = new Set<string>(), barcodes = new Set<string>(), specs = new Set<string>();
     for (const [index, sku] of form.skuList.entries()) {
         const label = `第 ${index + 1} 个商品规格：`;
-        if (!sku.skuCode.trim() || !sku.specName.trim() || !sku.saleUnit.trim()) return label + '请填写编码、规格名称和单位';
+        if (!sku.skuCode.trim() || !sku.specName.trim() || !sku.saleUnit.trim()) return label + '请填写商品规格编码、商品规格名称和单位';
         if (!/^\d+(\.\d{1,4})?$/.test(sku.marketPrice)) return label + '市场价须为非负数，最多四位小数';
         const code = sku.skuCode.trim().toUpperCase();
-        if (codes.has(code)) return label + '规格编码重复';
+        if (codes.has(code)) return label + '商品规格编码重复';
         codes.add(code);
         const barcode = sku.barcode?.trim();
         if (barcode && barcodes.has(barcode)) return label + '条码重复';
         if (barcode) barcodes.add(barcode);
         const entries = Object.entries(sku.specValues);
-        if (entries.some(([k, v]) => !k.trim() || !v.trim())) return label + '规格属性名称和值不能为空';
+        if (entries.some(([k, v]) => !k.trim() || !v.trim())) return label + '规格项名称和规格值不能为空';
         const normalized = JSON.stringify(entries.map(([k, v]) => [k.trim().toLowerCase(), v.trim().toLowerCase()]).sort(([a], [b]) => a.localeCompare(b)));
-        if (specs.has(normalized)) return label + '规格组合重复';
+        if (specs.has(normalized)) return label + '商品规格组合重复';
         specs.add(normalized);
     }
     if (form.images.filter(i => i.primaryFlag).length > 1) return '最多设置一张主图';

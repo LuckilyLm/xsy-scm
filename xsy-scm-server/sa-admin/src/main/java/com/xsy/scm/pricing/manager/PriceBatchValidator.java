@@ -32,7 +32,7 @@ public final class PriceBatchValidator {
             priceBatchRow.setRowNumber(rowNumber);
             if (!keys.add(priceBatchRow.getCustomerTypeId() + ":" + priceBatchRow.getSkuId()))
                 failures.add(new PriceBatchRowFailureVO(rowNumber, priceBatchRow.getCustomerTypeId(),
-                        priceBatchRow.getSkuId(), 40035, "请求内客户类型与 SKU 重复"));
+                        priceBatchRow.getSkuId(), 40035, "请求内客户类型与商品规格重复"));
             try {
                 PriceValidation.amountAndPeriod(priceBatchRow.getUnitPrice(), priceBatchRow.getEffectiveFrom(),
                         priceBatchRow.getEffectiveTo());

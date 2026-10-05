@@ -141,8 +141,8 @@ const statusOptions = Object.values(SCM_INVENTORY_RESERVATION_STATUS_ENUM).map((
 
 const columns = ref<TableColumnsType<InventoryReservation>>([
   {title: '仓库', dataIndex: 'warehouseName', width: 160},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
   {title: '商品名称', dataIndex: 'productName', width: 160},
   {title: '预留数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 90},

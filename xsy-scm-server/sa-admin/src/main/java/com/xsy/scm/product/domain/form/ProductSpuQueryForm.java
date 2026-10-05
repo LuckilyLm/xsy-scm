@@ -25,7 +25,7 @@ public class ProductSpuQueryForm extends net.lab1024.sa.base.common.domain.PageP
     private Long categoryId;
     @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品销售状态无效")
     private String status;
-    @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "SKU 状态无效")
+    @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品规格状态无效")
     private String skuStatus;
     @ScmEnumValue(enumClass = ScmProductTypeEnum.class, message = "商品类型无效")
     private String productType;

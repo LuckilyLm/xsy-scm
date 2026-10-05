@@ -34,7 +34,7 @@ public class InventoryWarningQueryForm extends PageParam {
     /**
      * SKU 编码模糊匹配（联 {@code product_sku}）。
      */
-    @Size(max = 64, message = "SKU 编码不能超过64个字符")
+    @Size(max = 64, message = "商品规格编码不能超过64个字符")
     private String skuCode;
 
     /**

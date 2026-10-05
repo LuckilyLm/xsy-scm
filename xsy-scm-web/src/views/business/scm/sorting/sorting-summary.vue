@@ -146,9 +146,9 @@ const emptyText = computed(() =>
 /** 列即口径：数量列只有本行同单位内的合计，绝不出现跨行的「合计」列。 */
 const columns = ref<TableColumnsType<SortingSkuSummary>>([
   {title: '商品', dataIndex: 'productNameSnapshot', width: 190},
-  {title: '规格', dataIndex: 'specNameSnapshot', width: 150},
+  {title: '商品规格', dataIndex: 'specNameSnapshot', width: 150},
   {title: '商品编码', dataIndex: 'spuCodeSnapshot', width: 140},
-  {title: '规格编码', dataIndex: 'skuCodeSnapshot', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 140},
   {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 90},
   {title: '涉及订单数', dataIndex: 'orderCount', align: 'right', width: 110},
   {title: '任务数', dataIndex: 'taskCount', align: 'right', width: 90},

@@ -17,7 +17,7 @@ export function supplierError(error: unknown): string {
         return '供应商未启用，不能维护商品关联';
     }
     if (code === 40942) {
-        return 'SKU 未启用或不存在（SPU 与 SKU 必须同时上架）';
+        return '商品规格未启用或不存在（商品与商品规格必须同时上架）';
     }
     if (code === 40943) {
         return '同一供应商下该商品规格已存在，或请求中的行重复';

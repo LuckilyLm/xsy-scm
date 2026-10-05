@@ -42,7 +42,7 @@ const columns: TableColumnsType<BatchRow> = [{title: '行号', dataIndex: 'rowNu
   title: '客户类型',
   dataIndex: 'customerTypeId',
   width: 200
-}, {title: 'SKU', dataIndex: 'skuId', width: 280}, {
+}, {title: '商品规格', dataIndex: 'skuId', width: 280}, {
   title: '单价',
   dataIndex: 'unitPrice',
   width: 140

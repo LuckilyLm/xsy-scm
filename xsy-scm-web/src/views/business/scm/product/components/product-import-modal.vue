@@ -61,7 +61,7 @@ const errorColumns = [
 const groups = computed(() => (result.value ? groupErrorsByRow(result.value.errors) : []));
 const hasErrors = computed(() => !!result.value && hasBlockingErrors(result.value));
 const hint = computed(() => (mode.value === 'UPDATE'
-    ? '更新只改写你填写的单元格，空白列保持原值；填 (清空) 才会清除别名、助记码、品牌、产地、标签编码、条码的既有值。文件里没出现的商品规格与图片也原样保留。前四列定位键请取自刚导出的商品档案：商品ID / 商品版本 / 规格ID / 规格版本，版本过期会整批拒绝。'
+    ? '更新只改写你填写的单元格，空白列保持原值；填 (清空) 才会清除别名、助记码、品牌、产地、标签编码、条码的既有值。文件里没出现的商品规格与图片也原样保留。前四列定位键请取自刚导出的商品档案：商品ID / 商品版本 / 商品规格ID / 商品规格版本，版本过期会整批拒绝。'
     : '导入是整批事务：任意一行有错都不会写入任何商品。请先下载模板，按商品编码组织多行商品规格。'));
 const doneTitle = computed(() => (result.value?.mode === 'UPDATE'
     ? `成功更新 ${result.value?.updatedProducts ?? 0} 个商品`

@@ -542,7 +542,7 @@ test('11 采购每日清单保留下单快照并完成查询、筛选、分页�
             await searchButton.click();
         }
 
-        const keyword = dailyCard.getByPlaceholder('名称 / SPU / SKU 编码');
+        const keyword = dailyCard.getByPlaceholder('商品名称 / 商品编码 / 商品规格编码');
         await keyword.fill(String(dailySkus[0].skuCode));
         await searchButton.click();
         await expect(dailyRows).toHaveCount(1);

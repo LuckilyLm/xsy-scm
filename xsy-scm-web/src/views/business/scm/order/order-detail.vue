@@ -187,7 +187,7 @@ const visible = ref(false), loading = ref(false), saving = ref(false), error = r
 const actualOpen = ref(false), cancelOpen = ref(false), actualQuantity = ref('1.0000'), actualReason = ref(''),
     cancelReason = ref(''), activeItem = ref<Item>();
 const columns: TableColumnsType<Item> = [{title: '商品', dataIndex: 'productNameSnapshot', width: 140}, {
-  title: '规格',
+  title: '商品规格',
   dataIndex: 'specNameSnapshot',
   width: 100
 }, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65}, {

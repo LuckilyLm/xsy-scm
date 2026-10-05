@@ -9,8 +9,8 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ProductSpuUpdateForm extends ProductSpuAddForm {
-    @NotNull(message = "SPU ID不能为空")
-    @Positive(message = "SPU ID必须大于0")
+    @NotNull(message = "商品ID不能为空")
+    @Positive(message = "商品ID必须大于0")
     private Long spuId;
     @NotNull(message = "版本号不能为空")
     @Min(value = 0, message = "版本号不能小于0")

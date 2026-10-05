@@ -42,7 +42,7 @@ public class InventoryStocktakeAddForm {
     @Data
     public static class Item {
 
-        @NotNull(message = "SKU 不能为空")
+        @NotNull(message = "商品规格不能为空")
         private Long skuId;
 
         /**

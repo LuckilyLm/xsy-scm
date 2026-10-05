@@ -11,7 +11,7 @@
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
         <a-typography-text type="secondary" class="smart-margin-left10">
-          一行 = SKU × 销售单位；确认数量按各自单位统计，不做跨单位合计。
+          一行 = 商品规格 × 销售单位；确认数量按各自单位统计，不做跨单位合计。
         </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
@@ -102,9 +102,9 @@ const columns = ref<TableColumnsType<SalesProductRow>>([
   {title: '商品名称', dataIndex: 'productName', width: 200},
   {title: '一级分类', dataIndex: 'rootCategoryName', width: 140},
   {title: '末级分类', dataIndex: 'leafCategoryName', width: 140},
-  {title: 'SPU 编码', dataIndex: 'spuCode', width: 150},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-  {title: '规格', dataIndex: 'specName', width: 140},
+  {title: '商品编码', dataIndex: 'spuCode', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
+  {title: '商品规格', dataIndex: 'specName', width: 140},
   {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 100},
   {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 110},
   {title: '客户数', dataIndex: 'customerCount', align: 'right', width: 100},

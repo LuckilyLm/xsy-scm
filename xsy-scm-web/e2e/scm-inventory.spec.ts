@@ -107,7 +107,7 @@ test('1 a confirmed receipt lands as a PURCHASE_IN balance row with the purchase
   // 页面层
   await browse(page,'/inventory/inventory-balance-list');
   await expect(page.locator('#scm-inventory-balance-table')).toBeVisible();
-  await page.getByPlaceholder('SKU 编码').fill(skuCode);
+  await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
   const row=balanceRows(page,skuCode);
   await expect(row).toHaveCount(1);
@@ -139,7 +139,7 @@ test('2 a second partial receipt accumulates the balance and adds a traceable mo
 
   await browse(page,'/inventory/inventory-movement-list');
   await expect(page.locator('#scm-inventory-movement-table')).toBeVisible();
-  await page.getByPlaceholder('SKU 编码').fill(skuCode);
+  await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
   const rows=movementRows(page,skuCode);
   await expect(rows).toHaveCount(2);
@@ -161,7 +161,7 @@ test('3 a SKU without stock renders the empty state instead of an error',async({
   expect(empty.total).toBe(0);
 
   await browse(page,'/inventory/inventory-balance-list');
-  await page.getByPlaceholder('SKU 编码').fill(emptySkuCode);
+  await page.getByPlaceholder('商品规格编码').fill(emptySkuCode);
   await search(page);
   await expect(page.locator('#scm-inventory-balance-table')).toContainText('暂无库存余额');
   // 空态不是错误：不得出现错误提示
@@ -212,7 +212,7 @@ test('5 filters and paging work on both read-only pages',async({page})=>{
   expect(paged.total).toBeGreaterThanOrEqual(1);
 
   await browse(page,'/inventory/inventory-balance-list');
-  await page.getByPlaceholder('SKU 编码').fill(skuCode);
+  await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
   await expect(balanceRows(page,skuCode)).toHaveCount(1);
 
@@ -226,7 +226,7 @@ test('5 filters and paging work on both read-only pages',async({page})=>{
   expect(ancient.total).toBe(0);
 
   await browse(page,'/inventory/inventory-movement-list');
-  await page.getByPlaceholder('SKU 编码').fill(skuCode);
+  await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
   await expect(movementRows(page,skuCode)).toHaveCount(2);
   // 区间选择器：设到 2020 年 → 空态
@@ -241,7 +241,7 @@ test('5 filters and paging work on both read-only pages',async({page})=>{
   // 清空筛选后仍可查询（枚举清空必须送 undefined，不能送空串，否则 40000）。
   // 按钮名用正则：antd 会在两个中文字之间插入空格，可访问名实际是「重 置」。
   await page.getByRole('button',{name:/^重\s*置$/}).click();
-  await page.getByPlaceholder('SKU 编码').fill(skuCode);
+  await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
   await expect(movementRows(page,skuCode)).toHaveCount(2);
 });

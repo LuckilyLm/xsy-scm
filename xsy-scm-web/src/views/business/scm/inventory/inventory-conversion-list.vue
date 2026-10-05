@@ -163,7 +163,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="折算关系由你显式声明（如 1 箱 = 10 kg），系统不推断。两个单位会与各自 SKU 的库存记账单位比对，不一致会被拒绝。"
+        message="折算关系由你显式声明（如 1 箱 = 10 kg），系统不推断。两个单位会与各自商品规格的库存记账单位比对，不一致会被拒绝。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">
@@ -227,8 +227,8 @@
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
         <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一 SKU 可以在多行里出现（既是某行的源、又是另一行的目标，用于链式转换），
-          但**同一行的源与目标不能是同一个 SKU**。
+          同一商品规格可以在多行里出现（既是某行的源、又是另一行的目标，用于链式转换），
+          但**同一行的源与目标不能是同一个商品规格**。
         </a-typography-text>
       </a-form-item>
     </a-form>
@@ -258,7 +258,7 @@
         show-icon
         style="margin-bottom: 12px"
         :message="auditMode === 'approve'
-        ? '审批通过会立即按本单明细改动两个 SKU 的库存（源出 / 目标入）并生成不可删除的流水，此操作不可撤销。'
+        ? '审批通过会立即按本单明细改动两个商品规格的库存（源出 / 目标入）并生成不可删除的流水，此操作不可撤销。'
         : '驳回不产生任何库存影响；单据将变为终态，不可再修改或删除。'"
     />
     <a-descriptions :column="1" bordered size="small" style="margin-bottom: 12px">
@@ -342,10 +342,10 @@ const columns = ref<TableColumnsType<InventoryConversion>>([
 ]);
 
 const itemColumns: TableColumnsType = [
-  {title: '源 SKU（转出）', dataIndex: 'sourceSkuId', width: 220},
+  {title: '源商品规格（转出）', dataIndex: 'sourceSkuId', width: 220},
   {title: '源数量', dataIndex: 'sourceQuantity', width: 120},
   {title: '源单位', dataIndex: 'sourceUnit', width: 90},
-  {title: '目标 SKU（转入）', dataIndex: 'targetSkuId', width: 220},
+  {title: '目标商品规格（转入）', dataIndex: 'targetSkuId', width: 220},
   {title: '目标数量', dataIndex: 'targetQuantity', width: 120},
   {title: '目标单位', dataIndex: 'targetUnit', width: 90},
   {title: '操作', dataIndex: 'action', width: 70},
@@ -501,13 +501,13 @@ function buildPayload(): InventoryConversionAdd | null {
       (i) => i.sourceSkuId !== undefined && i.sourceSkuId !== null && i.targetSkuId !== undefined && i.targetSkuId !== null
   );
   if (items.length === 0) {
-    message.warning('请至少添加一条转换明细（源 SKU 与目标 SKU 都要选）');
+    message.warning('请至少添加一条转换明细（源商品规格与目标商品规格都要选）');
     return null;
   }
   for (let i = 0; i < items.length; i++) {
     const row = items[i];
     if (String(row.sourceSkuId) === String(row.targetSkuId)) {
-      message.warning(`第 ${i + 1} 行：源 SKU 与目标 SKU 不能相同`);
+      message.warning(`第 ${i + 1} 行：源商品规格与目标商品规格不能相同`);
       return null;
     }
     for (const [label, value] of [

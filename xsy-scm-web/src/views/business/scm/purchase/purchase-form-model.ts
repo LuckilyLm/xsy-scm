@@ -235,7 +235,7 @@ export function validateOrder(form: Order): string | undefined {
             return '请选择采购商品';
         }
         if (seen.has(String(item.skuId))) {
-            return '同一 SKU 不能重复，请合并到同一行';
+            return '同一商品规格不能重复，请合并到同一行';
         }
         seen.add(String(item.skuId));
         const plannedQuantity = typedFixed(item.plannedQuantity);

@@ -48,8 +48,8 @@ public class PromotionDiscountPreviewForm {
         /**
          * 行上的 SKU；限时特价按 SKU 命中，因此必须有它。
          */
-        @NotNull(message = "SKU 不能为空")
-        @Positive(message = "SKU ID 必须大于0")
+        @NotNull(message = "商品规格不能为空")
+        @Positive(message = "商品规格ID必须大于0")
         private Long skuId;
 
         /**

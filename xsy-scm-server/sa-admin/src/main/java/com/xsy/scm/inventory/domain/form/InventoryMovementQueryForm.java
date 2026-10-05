@@ -34,7 +34,7 @@ public class InventoryMovementQueryForm extends PageParam {
      * <b>为什么必须有它</b>：流水页的筛选不能只给 {@code skuId} —— 用户在页面上看到的是 SKU 编码，手上也只有编码。只提供 id 筛选等于要求用户先知道 id， 那是一个只对开发者成立的筛选条件（#5
      * 的「sku 编码关键字」）。
      */
-    @Size(max = 64, message = "SKU 编码不能超过64个字符")
+    @Size(max = 64, message = "商品规格编码不能超过64个字符")
     private String skuCode;
 
     /**

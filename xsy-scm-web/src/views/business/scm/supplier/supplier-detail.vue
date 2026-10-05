@@ -104,8 +104,8 @@ const specText = (spec: Record<string, string> | undefined): string => {
 
 const relationColumns: TableColumnsType<SupplierSkuRow> = [
   {title: '商品名称（快照）', dataIndex: 'skuNameSnapshot', width: 220},
-  {title: '规格', dataIndex: 'spec', width: 160},
-  {title: '规格编码（快照）', dataIndex: 'skuCodeSnapshot', width: 170},
+  {title: '商品规格', dataIndex: 'spec', width: 160},
+  {title: '商品规格编码（快照）', dataIndex: 'skuCodeSnapshot', width: 170},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 100},
   {title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right'},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},

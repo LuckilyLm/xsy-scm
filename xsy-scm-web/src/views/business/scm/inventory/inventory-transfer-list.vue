@@ -214,7 +214,7 @@
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
         <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个 SKU 只能出现一次。两仓的记账单位必须一致 —— 库存不做自动换算。
+          同一个商品规格只能出现一次。两仓的记账单位必须一致 —— 库存不做自动换算。
         </a-typography-text>
       </a-form-item>
     </a-form>
@@ -318,7 +318,7 @@ const columns = ref<TableColumnsType<InventoryTransfer>>([
 ]);
 
 const itemColumns: TableColumnsType = [
-  {title: 'SKU', dataIndex: 'skuId', width: 290},
+  {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '调拨数量', dataIndex: 'quantity', width: 150},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
@@ -468,7 +468,7 @@ function buildPayload(): InventoryTransferAdd | null {
   for (let i = 0; i < items.length; i++) {
     const skuKey = String(items[i].skuId);
     if (seen.has(skuKey)) {
-      message.warning(`第 ${i + 1} 行：同一 SKU 只能出现一次，请合并重复行`);
+      message.warning(`第 ${i + 1} 行：同一商品规格只能出现一次，请合并重复行`);
       return null;
     }
     seen.add(skuKey);
@@ -616,8 +616,8 @@ const inTransitRows = ref<Array<InventoryInTransit & { rowKey: string }>>([]);
 const inTransitColumns: TableColumnsType = [
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
   {title: '调拨方向', dataIndex: 'direction', width: 240},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 140},
   {title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
 ];

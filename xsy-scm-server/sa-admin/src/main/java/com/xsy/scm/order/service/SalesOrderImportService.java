@@ -50,7 +50,7 @@ public class SalesOrderImportService {
     private static final int MAX_ITEMS_PER_ORDER = 100;
     private static final int MAX_ERRORS = 1000;
     private static final List<String> HEADERS = List.of("模板版本", "导入订单标识", "客户编码", "收货人", "联系电话", "收货地址", "期望配送时间",
-            "SKU编码", "下单数量", "人工单价", "改价原因", "订单备注");
+            "商品规格编码", "下单数量", "人工单价", "改价原因", "订单备注");
     private static final List<BiConsumer<SalesOrderImportRow, String>> SETTERS = List.of(
             SalesOrderImportRow::setTemplateVersion, SalesOrderImportRow::setOrderKey,
             SalesOrderImportRow::setCustomerCode, SalesOrderImportRow::setReceiverName,
@@ -109,8 +109,7 @@ public class SalesOrderImportService {
             var sheet = workbook.getSheetAt(0);
             var header = sheet.getRow(0);
             for (int column = 0; column < HEADERS.size(); column++) {
-                if (header == null
-                        || !HEADERS.get(column).equals(trim(formatter.formatCellValue(header.getCell(column))))) {
+                if (header == null || !headerMatches(column, trim(formatter.formatCellValue(header.getCell(column))))) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
                             "表头应为“" + HEADERS.get(column) + "”，请使用最新模板");
                 }
@@ -159,6 +158,10 @@ public class SalesOrderImportService {
         }
         result.setTotalRows(rows.size());
         return rows;
+    }
+
+    private boolean headerMatches(int column, String value) {
+        return HEADERS.get(column).equals(value) || column == 7 && "SKU编码".equals(value);
     }
 
     private Assembly assemble(List<SalesOrderImportRow> rows, boolean priceOverrideAllowed) {
@@ -229,7 +232,7 @@ public class SalesOrderImportService {
                     continue;
                 var price = resolved.get(sku.getSkuId());
                 if (price == null || !price.isSellable()) {
-                    addError(result, indexed.rowNumber(), orderKey, "SKU编码", "SKU_NOT_SELLABLE", "商品已下架、分类停用或对该客户不可见");
+                    addError(result, indexed.rowNumber(), orderKey, "商品规格编码", "SKU_NOT_SELLABLE", "商品已下架、分类停用或对该客户不可见");
                     continue;
                 }
                 if (trim(row.getUnitPrice()) == null && price.getPriceStatus() == ScmPriceStatusEnum.UNPRICED) {
@@ -267,7 +270,7 @@ public class SalesOrderImportService {
         required(result, rowNumber, orderKey, "收货人", row.getReceiverName());
         required(result, rowNumber, orderKey, "联系电话", row.getReceiverPhone());
         required(result, rowNumber, orderKey, "收货地址", row.getAddress());
-        required(result, rowNumber, orderKey, "SKU编码", row.getSkuCode());
+        required(result, rowNumber, orderKey, "商品规格编码", row.getSkuCode());
         required(result, rowNumber, orderKey, "下单数量", row.getOrderedQuantity());
         length(result, rowNumber, orderKey, "收货人", row.getReceiverName(), 100);
         length(result, rowNumber, orderKey, "联系电话", row.getReceiverPhone(), 32);
@@ -283,7 +286,7 @@ public class SalesOrderImportService {
             addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_TRADABLE", "客户状态不可交易");
         var skuCode = trim(row.getSkuCode());
         if (skuCode != null && !skuMap.containsKey(skuCode))
-            addError(result, rowNumber, orderKey, "SKU编码", ScmUnavailableReasonEnum.SKU_NOT_FOUND.name(), "SKU 编码不存在");
+            addError(result, rowNumber, orderKey, "商品规格编码", ScmUnavailableReasonEnum.SKU_NOT_FOUND.name(), "商品规格编码不存在");
         decimal(result, rowNumber, orderKey, "下单数量", row.getOrderedQuantity(), true);
         if (trim(row.getUnitPrice()) != null) {
             decimal(result, rowNumber, orderKey, "人工单价", row.getUnitPrice(), false);
@@ -316,7 +319,7 @@ public class SalesOrderImportService {
             same(result, indexed.rowNumber(), orderKey, "订单备注", first.getRemark(), row.getRemark());
             var skuCode = trim(row.getSkuCode());
             if (skuCode != null && !skuCodes.add(skuCode))
-                addError(result, indexed.rowNumber(), orderKey, "SKU编码", "SKU_DUPLICATE", "同一订单内 SKU 不能重复");
+                addError(result, indexed.rowNumber(), orderKey, "商品规格编码", "SKU_DUPLICATE", "同一订单内商品规格不能重复");
         }
     }
 

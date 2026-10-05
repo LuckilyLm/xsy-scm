@@ -70,7 +70,7 @@ public class PriceBatchWriter {
             }
             if (PriceValidation.unavailable(productSkuOptionById.get(priceBatchRow.getSkuId()), true) != null) {
                 rowFailures.add(new PriceBatchRowFailureVO(priceBatchRow.getRowNumber(),
-                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40949, "SKU 不可售"));
+                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40949, "商品规格不可售"));
             }
             if (customerTypePriceDao.countOverlapping(priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(),
                     priceBatchRow.getEffectiveFrom(), priceBatchRow.getEffectiveTo(), null) > 0) {

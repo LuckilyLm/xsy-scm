@@ -5,9 +5,9 @@
         <thead>
         <tr>
           <th>默认</th>
-          <th>规格编码 *</th>
-          <th>规格名称 *</th>
-          <th>规格属性</th>
+          <th>商品规格编码 *</th>
+          <th>商品规格 *</th>
+          <th>规格值</th>
           <th>单位 *</th>
           <th>市场价 *</th>
           <th>类型</th>
@@ -19,57 +19,57 @@
         <tbody>
         <tr v-for="(sku, index) in modelValue" :key="sku.skuId ?? `new-${index}`">
           <td>
-            <a-radio :checked="sku.defaultFlag" :aria-label="`将第 ${index + 1} 个规格设为默认规格`"
+            <a-radio :checked="sku.defaultFlag" :aria-label="`将第 ${index + 1} 个商品规格设为默认商品规格`"
                      @change="makeDefault(index)"/>
           </td>
           <td>
-            <a-input v-model:value="sku.skuCode" :maxlength="64" :aria-label="`规格 ${index + 1} 编码`"/>
+            <a-input v-model:value="sku.skuCode" :maxlength="64" :aria-label="`第 ${index + 1} 个商品规格编码`"/>
           </td>
           <td>
-            <a-input v-model:value="sku.specName" :maxlength="150" :aria-label="`规格 ${index + 1} 名称`"/>
+            <a-input v-model:value="sku.specName" :maxlength="150" :aria-label="`第 ${index + 1} 个商品规格名称`"/>
           </td>
           <td>
             <div v-for="([key, value], pairIndex) in Object.entries(sku.specValues)" :key="pairIndex" class="spec-pair">
-              <a-input :value="key" placeholder="属性名称" :aria-label="`规格 ${index + 1} 属性 ${pairIndex + 1}`"
+              <a-input :value="key" placeholder="规格项名称" :aria-label="`第 ${index + 1} 个商品规格的第 ${pairIndex + 1} 个规格项名称`"
                        @change="renameKey(sku, key, $event.target.value ?? '')"/>
-              <a-input :value="value" placeholder="属性值" :aria-label="`规格 ${index + 1} 属性值 ${pairIndex + 1}`"
+              <a-input :value="value" placeholder="规格值" :aria-label="`第 ${index + 1} 个商品规格的第 ${pairIndex + 1} 个规格值`"
                        @update:value="sku.specValues[key] = $event"/>
-              <a-button size="small" danger :aria-label="`删除规格 ${index + 1} 属性 ${pairIndex + 1}`"
+              <a-button size="small" danger :aria-label="`删除第 ${index + 1} 个商品规格的第 ${pairIndex + 1} 个规格项`"
                         @click="delete sku.specValues[key]">×
               </a-button>
             </div>
-            <a-button type="link" size="small" @click="addAttribute(sku)">添加属性</a-button>
+            <a-button type="link" size="small" @click="addAttribute(sku)">添加规格项</a-button>
           </td>
           <td>
             <a-select v-model:value="sku.saleUnit" :options="unitOptions" show-search option-filter-prop="label"
-                      placeholder="选择单位" :aria-label="`规格 ${index + 1} 单位`"/>
+                      placeholder="选择单位" :aria-label="`第 ${index + 1} 个商品规格的单位`"/>
           </td>
           <td>
             <a-input-number :value="sku.marketPrice" string-mode :min="0" step="0.0001" :controls="false"
-                            :aria-label="`规格 ${index + 1} 市场价`"
+                            :aria-label="`第 ${index + 1} 个商品规格的市场价`"
                             @update:value="sku.marketPrice = $event === null ? '' : String($event)"/>
           </td>
           <td>
             <a-select v-model:value="sku.productType" :options="PRODUCT_TYPE_ENUM"
-                      :aria-label="`规格 ${index + 1} 类型`"/>
+                      :aria-label="`第 ${index + 1} 个商品规格的类型`"/>
           </td>
           <td>
-            <a-input v-model:value="sku.barcode" :maxlength="64" :aria-label="`规格 ${index + 1} 条码`"/>
+            <a-input v-model:value="sku.barcode" :maxlength="64" :aria-label="`第 ${index + 1} 个商品规格的条码`"/>
           </td>
           <td>
-            <a-select v-model:value="sku.status" :options="SHELF_STATUS_ENUM" :aria-label="`规格 ${index + 1} 状态`"/>
+            <a-select v-model:value="sku.status" :options="SHELF_STATUS_ENUM" :aria-label="`第 ${index + 1} 个商品规格的状态`"/>
           </td>
           <td>
             <a-popconfirm title="确认删除此商品规格？" :disabled="modelValue.length === 1"
                           @confirm="emit('update:modelValue', removeSku(modelValue, index))">
-              <a-button type="link" danger size="small" :disabled="modelValue.length === 1">删除规格</a-button>
+              <a-button type="link" danger size="small" :disabled="modelValue.length === 1">删除商品规格</a-button>
             </a-popconfirm>
           </td>
         </tr>
         </tbody>
       </table>
     </div>
-    <a-button class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySku(modelValue.length)])">新增规格</a-button>
+    <a-button class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySku(modelValue.length)])">新增商品规格</a-button>
   </div>
 </template>
 <script setup lang="ts">
@@ -105,7 +105,7 @@ function addAttribute(sku: ProductSku) {
 
 function renameKey(sku: ProductSku, previous: string, key: string) {
   if (key !== previous && key in sku.specValues) {
-    message.error('属性名称不能重复');
+    message.error('规格项名称不能重复');
     return;
   }
   sku.specValues = Object.fromEntries(Object.entries(sku.specValues).map(([k, v]) => [k === previous ? key : k, v]));

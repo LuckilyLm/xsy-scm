@@ -275,15 +275,15 @@ const columns = ref<TableColumnsType<InventoryOutbound>>([
 ]);
 
 const itemColumns: TableColumnsType = [
-  {title: 'SKU', dataIndex: 'skuId', width: 290},
+  {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '出库数量', dataIndex: 'quantity', width: 150},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
 ];
 
 const detailItemColumns: TableColumnsType = [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
   {title: '商品名称', dataIndex: 'productName', width: 150},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 120},

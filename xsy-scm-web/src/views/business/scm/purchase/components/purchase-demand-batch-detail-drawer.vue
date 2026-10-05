@@ -44,7 +44,7 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
             description="批次创建时一次性冻结。库存、在途与预留之后如何变化都不会回写到这里——回看与生成必须逐字一致，否则「当时为什么建议这个数量」会被现在的库存改写。需要最新数字请回缺口预览重算。"
         />
 
-        <a-divider orientation="left">SKU 级解释行</a-divider>
+        <a-divider orientation="left">商品规格需求解释行</a-divider>
         <a-table
             size="small"
             :data-source="detail.summary ?? []"
@@ -131,9 +131,9 @@ const error = ref('');
 let requestId = 0;
 
 const summaryColumns: TableColumnsType<DemandBatchSummaryRow> = [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '规格', dataIndex: 'skuName', width: 130},
+  {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '需求单位', dataIndex: 'demandUnit', width: 95},
   {title: '订单需求量', dataIndex: 'orderDemandQuantity', align: 'right', width: 120},
   {title: '现有量', dataIndex: 'onHandQuantity', align: 'right', width: 110},
@@ -153,9 +153,9 @@ const itemColumns: TableColumnsType<DemandBatchItem> = [
   {title: '行号', dataIndex: 'lineNo', align: 'right', width: 70},
   {title: '来源销售单号', dataIndex: 'salesOrderNo', width: 190},
   {title: '确认时间', dataIndex: 'sourceConfirmedAt', width: 180},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '规格', dataIndex: 'skuName', width: 130},
+  {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '需求单位', dataIndex: 'demandUnit', width: 95},
   {title: '来源实发量', dataIndex: 'sourceQuantity', align: 'right', width: 120},
   {title: '本批建议量', dataIndex: 'requiredQuantity', align: 'right', width: 120},

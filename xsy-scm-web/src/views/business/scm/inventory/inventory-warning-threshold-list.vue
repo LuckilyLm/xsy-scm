@@ -14,8 +14,8 @@
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
       </a-form-item>
-      <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
+      <a-form-item label="商品规格编码" class="smart-query-form-item">
+        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -39,7 +39,7 @@
           新建阈值配置
         </a-button>
         <a-typography-text type="secondary" style="margin-left: 12px">
-          只有配置了阈值的仓库 + SKU 才会进入预警列表；上下限至少填一个。
+          只有配置了阈值的仓库 + 商品规格才会进入预警列表；上下限至少填一个。
         </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
@@ -126,7 +126,7 @@
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
-      <a-form-item label="SKU" name="skuId">
+      <a-form-item label="商品规格" name="skuId">
         <SkuSelect
             :value="form.skuId"
             :disabled-statuses="[]"
@@ -184,8 +184,8 @@ let requestId = 0;
 
 const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
   {title: '仓库', dataIndex: 'warehouseName', width: 160},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
   {title: '商品名称', dataIndex: 'productName', width: 150},
   {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 120},
   {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 120},
@@ -258,7 +258,7 @@ const form = reactive<{
 
 const formRules = {
   warehouseId: [{required: true, message: '请选择仓库'}],
-  skuId: [{required: true, message: '请选择 SKU'}],
+  skuId: [{required: true, message: '请选择商品规格'}],
 };
 
 function openCreate() {
@@ -348,7 +348,7 @@ async function onSubmit() {
 function onDelete(record: InventoryWarningThreshold) {
   Modal.confirm({
     title: '删除阈值配置',
-    content: `确认删除「${record.warehouseName || ''} / ${record.skuCode || ''}」的预警阈值？删除后该仓库与 SKU 不再产生预警。`,
+    content: `确认删除「${record.warehouseName || ''} / ${record.skuCode || ''}」的预警阈值？删除后该仓库与商品规格不再产生预警。`,
     okText: '删除',
     okType: 'danger',
     cancelText: '返回',

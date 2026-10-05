@@ -25,7 +25,7 @@ public enum SupplierErrorCode implements ScmErrorCode {
     /**
      * 供应商 SKU 配置不存在。
      */
-    SUPPLIER_SKU_NOT_FOUND(40442, "供应商SKU配置不存在"),
+    SUPPLIER_SKU_NOT_FOUND(40442, "供应商商品规格配置不存在"),
 
     /**
      * 供应商未启用。
@@ -35,12 +35,12 @@ public enum SupplierErrorCode implements ScmErrorCode {
     /**
      * SKU 未启用或不存在（SPU 与 SKU 必须同时上架）。
      */
-    SKU_DISABLED(40942, "SKU 未启用或不存在"),
+    SKU_DISABLED(40942, "商品规格未启用或不存在"),
 
     /**
      * 同一供应商下 SKU 重复，或请求内 skuId 重复、跨供应商 id 串用。
      */
-    SUPPLIER_SKU_DUPLICATE(40943, "供应商SKU配置重复"),
+    SUPPLIER_SKU_DUPLICATE(40943, "供应商商品规格配置重复"),
 
     /**
      * 供应商编码重复；Service 先显式查重，并将数据库并发冲突映射到此码。
@@ -50,7 +50,7 @@ public enum SupplierErrorCode implements ScmErrorCode {
     /**
      * 供应商 SKU 关系重复，作为数据库唯一索引的并发兜底映射。
      */
-    SUPPLIER_SKU_CONFLICT(40946, "供应商SKU配置已存在"),
+    SUPPLIER_SKU_CONFLICT(40946, "供应商商品规格配置已存在"),
 
     /**
      * 删除供应商前检测到活动商品关联。

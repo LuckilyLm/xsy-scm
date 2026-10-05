@@ -18,8 +18,8 @@ export const UNPRICED_REASON_ENUM: SmartEnum<string> = {
     }
 };
 export const UNAVAILABLE_REASON_ENUM: SmartEnum<string> = {
-    SKU_NOT_FOUND: {value: 'SKU_NOT_FOUND', desc: 'SKU 不存在'},
-    SKU_OFF_SHELF: {value: 'SKU_OFF_SHELF', desc: 'SKU 已下架'},
+    SKU_NOT_FOUND: {value: 'SKU_NOT_FOUND', desc: '商品规格不存在'},
+    SKU_OFF_SHELF: {value: 'SKU_OFF_SHELF', desc: '商品规格已下架'},
     SPU_OFF_SHELF: {value: 'SPU_OFF_SHELF', desc: '商品已下架'},
     CATEGORY_DISABLED: {value: 'CATEGORY_DISABLED', desc: '所属分类不可用'},
     NOT_VISIBLE: {value: 'NOT_VISIBLE', desc: '客户不可见'}

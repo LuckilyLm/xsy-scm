@@ -42,8 +42,8 @@ public class SupplierSkuItemForm {
     @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
 
-    @NotNull(message = "SKU ID 不能为空")
-    @Positive(message = "SKU ID 必须大于0")
+    @NotNull(message = "商品规格ID不能为空")
+    @Positive(message = "商品规格ID必须大于0")
     private Long skuId;
 
     @NotBlank(message = "采购单位不能为空")

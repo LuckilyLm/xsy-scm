@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 public class AgreementPriceAddForm {
     @NotNull(message = "客户不能为空")
     private Long customerId;
-    @NotNull(message = "SKU 不能为空")
+    @NotNull(message = "商品规格不能为空")
     private Long skuId;
     @NotNull(message = "协议价不能为空")
     @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "协议价格式不正确")

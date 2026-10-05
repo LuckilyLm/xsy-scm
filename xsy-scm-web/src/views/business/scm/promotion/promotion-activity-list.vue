@@ -159,7 +159,7 @@
         </template>
         <template v-else-if="form.activityType === 'SPECIAL_PRICE'">
           <a-col :span="12">
-            <a-form-item label="特价商品（SKU）" required>
+            <a-form-item label="特价商品规格" required>
               <SkuSelect
                   :value="form.rule.skuId ?? null"
                   width="100%"
@@ -186,7 +186,7 @@
           </a-col>
           <template v-if="form.activityType === 'FULL_GIFT'">
             <a-col :span="12">
-              <a-form-item label="赠品 SKU ID" required>
+              <a-form-item label="赠送商品规格" required>
                 <a-input v-model:value="form.rule.giftSkuId"/>
               </a-form-item>
             </a-col>
@@ -280,9 +280,9 @@ const form = reactive<PromotionActivitySave>({
 function ruleText(rule?: PromotionRule): string {
   if (!rule) return '—';
   if (rule.discountRate) return `折扣率 ${rule.discountRate}`;
-  if (rule.specialPrice) return `SKU ${rule.skuId} 限时特价 ${rule.specialPrice}`;
+  if (rule.specialPrice) return `商品规格 ${rule.skuId} 限时特价 ${rule.specialPrice}`;
   if (rule.reduceAmount) return `满 ${rule.thresholdAmount} 减 ${rule.reduceAmount}`;
-  if (rule.giftSkuId) return `满 ${rule.thresholdAmount} 赠 SKU ${rule.giftSkuId} × ${rule.giftQuantity}`;
+  if (rule.giftSkuId) return `满 ${rule.thresholdAmount} 赠送商品规格 ${rule.giftSkuId} × ${rule.giftQuantity}`;
   return '—';
 }
 

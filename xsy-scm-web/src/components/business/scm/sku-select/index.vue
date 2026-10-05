@@ -4,7 +4,7 @@
   <a-select :value="value" :mode="mode" :style="{width}" :size="size" :placeholder="placeholder" show-search allow-clear
             :filter-option="false" :loading="loading" :options="options" @search="search" @change="changed"
             @dropdown-visible-change="opened">
-    <template #notFoundContent><span>{{ error || (loading ? '加载中…' : '暂无匹配 SKU') }}</span>
+    <template #notFoundContent><span>{{ error || (loading ? '加载中…' : '暂无匹配商品规格') }}</span>
       <a-button v-if="error" type="link" size="small" @click="load('')">重试</a-button>
     </template>
     <template #dropdownRender="{menuNode}">
@@ -30,7 +30,7 @@ const props = withDefaults(defineProps<{
   limit?: number;
   disabledStatuses?: string[]
 }>(), {
-  placeholder: '请选择 SKU',
+  placeholder: '请选择商品规格',
   width: '100%',
   size: 'default',
   status: null,

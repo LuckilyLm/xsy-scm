@@ -104,7 +104,7 @@ const COST_INDEXES = ['inboundCostAmount'];
 const columns = ref<TableColumnsType<PurchasePurchaserRow>>([
   {title: '采购员', dataIndex: 'purchaserName', width: 160},
   {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 120},
-  {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
+  {title: '商品规格数', dataIndex: 'skuKindCount', align: 'right', width: 120},
   {title: '采购订单金额', dataIndex: 'orderAmount', align: 'right', width: 170},
   {title: '已收参考金额', dataIndex: 'receiptReferenceAmount', align: 'right', width: 160},
   {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', align: 'right', width: 180},

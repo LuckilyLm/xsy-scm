@@ -86,7 +86,7 @@ const scaleColumns: TableColumnsType = [
     {title: '单位', dataIndex: 'unit', width: 80},
     {title: '稳定', dataIndex: 'stableFlag', align: 'center', width: 90},
     {title: '商品', dataIndex: 'productNameSnapshot', width: 160},
-    {title: 'SKU', dataIndex: 'skuCodeSnapshot', width: 140},
+    {title: '商品规格', dataIndex: 'skuCodeSnapshot', width: 140},
     {title: '采集时间', dataIndex: 'capturedAt', width: 175},
     {title: '接收时间', dataIndex: 'receivedAt', width: 175},
     {title: '接受数量', dataIndex: 'acceptedQuantity', align: 'right', width: 110},

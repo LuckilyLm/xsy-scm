@@ -21,7 +21,7 @@
           <a-popover v-if="customerId && record.skuId" trigger="click" placement="left"
                      :open="recentOpenIndex===index" @update:open="(v:boolean)=>recentOpenIndex=v?index:null"
                      :get-popup-container="recentPopupContainer"
-                     :title="'最近已确认订单价 · '+(record.skuCodeSnapshot||'SKU')">
+                     :title="'最近已确认订单价 · '+(record.skuCodeSnapshot||'商品规格')">
             <a-button type="link" size="small" class="recent-btn" aria-label="最近已确认订单价"
                       @click="loadRecent(record)">历史价</a-button>
             <template #content>
@@ -87,7 +87,7 @@ import {orderError} from '../order-errors';
 const props = defineProps<{ items: Item[]; customerId?: Id }>();
 const emit = defineEmits<{ price: [] }>();
 const columns: TableColumnsType<Item> = [{
-  title: '商品 / 规格 / SKU',
+  title: '商品 / 商品规格',
   dataIndex: 'skuId',
   width: 300
 }, {title: '下单数量', dataIndex: 'orderedQuantity', align: 'right', width: 165}, {

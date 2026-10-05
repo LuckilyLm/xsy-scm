@@ -231,7 +231,7 @@ const resultOptions = Object.values(SCM_SORTING_RESULT_ENUM).map((item) => ({val
 const itemColumns = ref<TableColumnsType<SortingTaskItem>>([
   {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
   {title: '客户', dataIndex: 'customerNameSnapshot', width: 150},
-  {title: '商品 / 规格', dataIndex: 'product', width: 220},
+  {title: '商品 / 商品规格', dataIndex: 'product', width: 220},
   {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 80},
   {title: '计划量', dataIndex: 'plannedQuantitySnapshot', align: 'right', width: 110},
   {title: '分拣量', dataIndex: 'sortedQuantity', align: 'right', width: 150},

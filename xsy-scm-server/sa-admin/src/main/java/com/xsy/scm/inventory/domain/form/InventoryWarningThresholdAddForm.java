@@ -23,7 +23,7 @@ public class InventoryWarningThresholdAddForm {
     @NotNull(message = "仓库不能为空")
     private Long warehouseId;
 
-    @NotNull(message = "SKU 不能为空")
+    @NotNull(message = "商品规格不能为空")
     private Long skuId;
 
     /**

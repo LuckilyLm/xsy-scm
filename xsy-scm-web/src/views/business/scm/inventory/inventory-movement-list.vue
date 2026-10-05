@@ -8,8 +8,8 @@
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" width="200px"/>
       </a-form-item>
-      <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
+      <a-form-item label="商品规格编码" class="smart-query-form-item">
+        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="流水类型" class="smart-query-form-item">
         <SmartEnumSelect
@@ -142,8 +142,8 @@ const columns = ref<TableColumnsType<InventoryMovement>>([
   {title: '类型', dataIndex: 'movementType', width: 110},
   {title: '来源单号', dataIndex: 'receiptNo', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 140},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 120},

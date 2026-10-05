@@ -189,7 +189,7 @@ public class ScmReportController {
     @OperateLog
     public void exportSalesProduct(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("商品名称", "SKU 编码", "规格", "销售单位", "一级分类", "末级分类", "订单笔数", "客户数", "确认数量", "成交均价",
+        List<String> titles = List.of("商品名称", "商品规格编码", "商品规格", "销售单位", "一级分类", "末级分类", "订单笔数", "客户数", "确认数量", "成交均价",
                 "确认订单金额", "金额排名");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.byProduct(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getSpecName(),
@@ -205,7 +205,7 @@ public class ScmReportController {
     @OperateLog
     public void exportSalesCustomer(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("客户编码", "客户名称", "销售员", "订单笔数", "SKU 种类数", "确认订单金额", "已完成退款金额", "最近确认时间", "金额排名");
+        List<String> titles = List.of("客户编码", "客户名称", "销售员", "订单笔数", "商品规格数", "确认订单金额", "已完成退款金额", "最近确认时间", "金额排名");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.byCustomer(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getCustomerCode(), r.getCustomerName(), r.getSellerName(),
                         r.getOrderCount(), r.getSkuKindCount(), r.getSettlementAmount(), r.getCompletedRefundAmount(),
@@ -248,8 +248,8 @@ public class ScmReportController {
     @OperateLog
     public void exportSalesItem(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "SPU 编码", "商品名称", "SKU 编码",
-                "规格", "商品类型", "销售单位", "订购数量", "实际数量", "锁定成交单价", "价格来源", "结算金额", "是否手工改价", "手工改价原因");
+        List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "商品编码", "商品名称", "商品规格编码",
+                "商品规格", "商品类型", "销售单位", "订购数量", "实际数量", "锁定成交单价", "价格来源", "结算金额", "是否手工改价", "手工改价原因");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.itemList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(),
                         r.getCustomerName(), r.getSellerName(), r.getOrderSource(), r.getSettleMode(), r.getSpuCode(),
@@ -265,7 +265,7 @@ public class ScmReportController {
     @OperateLog
     public void exportSalesOrder(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "订单行数", "SKU 种类数", "结算金额",
+        List<String> titles = List.of("确认时间", "订单号", "客户编码", "客户名称", "销售员", "订单来源", "结算方式", "订单行数", "商品规格数", "结算金额",
                 "已完成退款金额");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.orderList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(),
@@ -333,7 +333,7 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchasePurchaser(@RequestBody ScmPurchaseReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("采购员", "采购单数", "SKU 种类数", "采购订单金额", "已收参考金额", "采购入库成本金额", "成本缺失行数", "最近采购时间");
+        List<String> titles = List.of("采购员", "采购单数", "商品规格数", "采购订单金额", "已收参考金额", "采购入库成本金额", "成本缺失行数", "最近采购时间");
         List<List<Object>> rows = exportRows(form, () -> purchaseReportService.byPurchaser(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getPurchaserName(), r.getOrderCount(), r.getSkuKindCount(),
                         r.getOrderAmount(), r.getReceiptReferenceAmount(), r.getInboundCostAmount(),
@@ -364,7 +364,7 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchasePriceTrend(@Valid @RequestBody ScmPurchaseReportQueryForm form,
             HttpServletResponse response) throws IOException {
-        List<String> titles = List.of("业务日", "SKU 编码", "商品名称", "采购单位", "加权平均采购价", "样本行数");
+        List<String> titles = List.of("业务日", "商品规格编码", "商品名称", "采购单位", "加权平均采购价", "样本行数");
         List<List<Object>> rows = purchaseReportService
                 .priceTrend(form).stream().map(r -> ScmReportExcel.row(titles, r.getBizDate(), r.getSkuCode(),
                         r.getProductName(), r.getPurchaseUnit(), r.getWeightedAvgPrice(), r.getSampleLineCount()))
@@ -377,7 +377,7 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchaseProduct(@RequestBody ScmPurchaseReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("商品名称", "SKU 编码", "规格", "采购单位", "采购单数", "计划采购数量", "已收数量", "采购订单金额", "采购成交均价",
+        List<String> titles = List.of("商品名称", "商品规格编码", "商品规格", "采购单位", "采购单数", "计划采购数量", "已收数量", "采购订单金额", "采购成交均价",
                 "采购入库数量", "采购入库成本金额");
         List<List<Object>> rows = exportRows(form, () -> purchaseReportService.byProduct(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getSkuName(),
@@ -393,7 +393,7 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchaseSupplier(@RequestBody ScmPurchaseReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("供应商编码", "供应商名称", "采购单数", "SKU 种类数", "采购订单金额", "已收参考金额", "采购入库成本金额", "最近采购时间",
+        List<String> titles = List.of("供应商编码", "供应商名称", "采购单数", "商品规格数", "采购订单金额", "已收参考金额", "采购入库成本金额", "最近采购时间",
                 "金额排名");
         List<List<Object>> rows = exportRows(form, () -> purchaseReportService.bySupplier(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getSupplierCode(), r.getSupplierName(), r.getOrderCount(),
@@ -408,8 +408,8 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchaseItem(@RequestBody ScmPurchaseReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("提交时间", "采购单号", "状态", "供应商", "采购员", "仓库", "计划到货日期", "SPU 编码", "商品名称", "SKU 编码",
-                "规格", "采购单位", "计划数量", "累计收货数量", "采购单价", "采购行金额");
+        List<String> titles = List.of("提交时间", "采购单号", "状态", "供应商", "采购员", "仓库", "计划到货日期", "商品编码", "商品名称", "商品规格编码",
+                "商品规格", "采购单位", "计划数量", "累计收货数量", "采购单价", "采购行金额");
         List<List<Object>> rows = exportRows(form, () -> purchaseReportService.itemList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getSubmittedAt(), r.getOrderNo(), r.getStatus(),
                         r.getSupplierName(), r.getPurchaserName(), r.getWarehouseName(), r.getPlannedArrivalDate(),
@@ -447,7 +447,7 @@ public class ScmReportController {
     @OperateLog
     public void exportReceipt(@RequestBody ScmReceiptReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("收货确认时间", "收货单号", "采购单号", "供应商", "仓库", "收货模式", "入库状态", "商品名称", "SKU 编码", "规格",
+        List<String> titles = List.of("收货确认时间", "收货单号", "采购单号", "供应商", "仓库", "收货模式", "入库状态", "商品名称", "商品规格编码", "商品规格",
                 "采购单位", "本次收货数量", "累计收货数量", "剩余数量", "超收数量", "收货差异", "采购单价", "收货参考金额");
         List<List<Object>> rows = exportRows(form, () -> receiptReportService.receiptList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getConfirmedAt(), r.getReceiptNo(), r.getPurchaseOrderNo(),
@@ -465,7 +465,7 @@ public class ScmReportController {
     @OperateLog
     public void exportInbound(@RequestBody ScmReceiptReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("入库时间", "仓库", "收货单号", "采购单号", "供应商", "商品名称", "SKU 编码", "单位", "入库数量", "入库单位成本",
+        List<String> titles = List.of("入库时间", "仓库", "收货单号", "采购单号", "供应商", "商品名称", "商品规格编码", "单位", "入库数量", "入库单位成本",
                 "入库成本金额", "操作人");
         List<List<Object>> rows = exportRows(form, () -> receiptReportService.inboundList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getOccurredAt(), r.getWarehouseName(), r.getReceiptNo(),
@@ -518,7 +518,7 @@ public class ScmReportController {
     @OperateLog
     public void exportMovement(@RequestBody ScmInventoryReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("发生时间", "仓库", "商品名称", "SKU 编码", "流水类型", "方向", "来源单据类型", "来源单号", "来源单据 ID",
+        List<String> titles = List.of("发生时间", "仓库", "商品名称", "商品规格编码", "流水类型", "方向", "来源单据类型", "来源单号", "来源单据 ID",
                 "来源单据行 ID", "数量", "单位", "单位成本", "成本金额", "变动前数量", "变动后数量", "操作人");
         List<List<Object>> rows = exportRows(form, () -> inventoryReportService.movementList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getOccurredAt(), r.getWarehouseName(), r.getProductName(),
@@ -535,7 +535,7 @@ public class ScmReportController {
     @OperateLog
     public void exportLoss(@RequestBody ScmInventoryReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("商品名称", "SKU 编码", "仓库", "损耗类型", "数量", "单位", "单位成本", "损耗成本金额", "来源单号", "发生时间",
+        List<String> titles = List.of("商品名称", "商品规格编码", "仓库", "损耗类型", "数量", "单位", "单位成本", "损耗成本金额", "来源单号", "发生时间",
                 "操作人");
         List<List<Object>> rows = exportRows(form, () -> inventoryReportService.lossList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getWarehouseName(),
@@ -551,7 +551,7 @@ public class ScmReportController {
     @OperateLog
     public void exportInventoryValue(@RequestBody ScmInventoryReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("仓库", "商品名称", "SKU 编码", "当前数量", "预留数量", "可用数量", "单位", "当前移动平均成本", "当前账面金额");
+        List<String> titles = List.of("仓库", "商品名称", "商品规格编码", "当前数量", "预留数量", "可用数量", "单位", "当前移动平均成本", "当前账面金额");
         List<List<Object>> rows = exportRows(form, () -> inventoryReportService.valueList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getWarehouseName(), r.getProductName(), r.getSkuCode(),
                         r.getQuantity(), r.getReservedQuantity(), r.getAvailableQuantity(), r.getUnit(), r.getAvgCost(),

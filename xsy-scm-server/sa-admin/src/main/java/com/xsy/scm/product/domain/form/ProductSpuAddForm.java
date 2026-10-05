@@ -23,8 +23,8 @@ import java.math.BigDecimal;
 
 @Data
 public class ProductSpuAddForm {
-    @NotBlank(message = "SPU 编码不能为空")
-    @Size(max = 64, message = "SPU 编码不能超过64个字符")
+    @NotBlank(message = "商品编码不能为空")
+    @Size(max = 64, message = "商品编码不能超过64个字符")
     private String spuCode;
     @NotBlank(message = "商品名称不能为空")
     @Size(max = 150, message = "商品名称不能超过150个字符")
@@ -39,8 +39,8 @@ public class ProductSpuAddForm {
     @NotNull(message = "商品销售状态不能为空")
     @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品销售状态无效")
     private String status;
-    @NotEmpty(message = "SKU 列表不能为空")
-    @Size(max = 200, message = "SKU 列表不能超过200项")
+    @NotEmpty(message = "商品规格列表不能为空")
+    @Size(max = 200, message = "商品规格列表不能超过200项")
     @Valid
     private List<ProductSkuForm> skuList;
     @NotNull(message = "商品图片列表不能为空")

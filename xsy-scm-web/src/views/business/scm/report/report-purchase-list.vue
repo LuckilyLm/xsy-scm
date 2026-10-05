@@ -38,10 +38,10 @@
         <SmartEnumSelect v-model:value="filters.status" enum-name="SCM_PURCHASE_STATUS_ENUM" width="160px"/>
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" placeholder="商品名称 / SPU 编码 / SKU 编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品编码 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
-      <a-form-item v-if="activeTab === 'trend'" label="SKU" class="smart-query-form-item">
-        <SkuSelect v-model:value="filters.skuId" width="240px" placeholder="按 SKU 看价格曲线"/>
+      <a-form-item v-if="activeTab === 'trend'" label="商品规格" class="smart-query-form-item">
+        <SkuSelect v-model:value="filters.skuId" width="240px" placeholder="按商品规格看价格曲线"/>
       </a-form-item>
     </a-row>
   </a-form>
@@ -298,9 +298,9 @@ const COST_INDEXES = ['inboundCostAmount'];
 
 const productColumns = ref<TableColumnsType<PurchaseProductRow>>([
     {title: '商品名称', dataIndex: 'productName', width: 200},
-    {title: 'SPU 编码', dataIndex: 'spuCode', width: 150},
-    {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-    {title: 'SKU 名称', dataIndex: 'skuName', width: 160},
+    {title: '商品编码', dataIndex: 'spuCode', width: 150},
+    {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
+    {title: '商品规格名称', dataIndex: 'skuName', width: 160},
     {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 100},
     {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 110},
     {title: '计划采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 140},

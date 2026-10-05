@@ -57,7 +57,7 @@ public class PurchaseOrderAddForm {
          */
         @Min(value = 0, message = "版本号不能小于0")
         private Integer version;
-        @NotNull(message = "SKU不能为空")
+        @NotNull(message = "商品规格不能为空")
         private Long skuId;
         @NotBlank(message = "采购数量不能为空")
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)

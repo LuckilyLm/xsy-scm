@@ -60,8 +60,8 @@ const emit = defineEmits<{
 }>();
 
 const itemColumns: TableColumnsType = [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 130},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 130},
   {title: '商品名称', dataIndex: 'productName', width: 130},
   {title: '账面量', dataIndex: 'bookQuantity', align: 'right', width: 110},
   {title: '实盘量', dataIndex: 'actualQuantity', align: 'right', width: 110},

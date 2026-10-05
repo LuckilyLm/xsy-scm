@@ -21,8 +21,8 @@
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
       </a-form-item>
-      <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
+      <a-form-item label="商品规格编码" class="smart-query-form-item">
+        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <a-select
@@ -174,8 +174,8 @@ const statusOptions = [
 
 const columns = ref<TableColumnsType<InventoryWarning>>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
   {title: '商品名称', dataIndex: 'productName', width: 150},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
   {title: '现有量', dataIndex: 'quantity', align: 'right', width: 110},

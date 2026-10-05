@@ -40,7 +40,7 @@
         <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px"/>
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" placeholder="商品名称 / SPU 编码 / SKU 编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品编码 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
     </a-row>
   </a-form>

@@ -35,7 +35,7 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("plannedArrivalDate", "计划到货", false, false),
             new ScmPrintField("remark", "备注", false, false)), List.of(
                     new ScmPrintField("productName", "商品", false, false),
-                    new ScmPrintField("skuCode", "SKU 编码", false, false),
+                    new ScmPrintField("skuCode", "商品规格编码", false, false),
                     new ScmPrintField("skuName", "规格", false, false),
                     new ScmPrintField("purchaseUnit", "采购单位", false, false),
                     new ScmPrintField("plannedQuantity", "计划数量", false, true),
@@ -79,7 +79,7 @@ public enum ScmPrintDocumentTypeEnum {
                     // 因此小票必须自己说清这一行是赠品，否则仓库会按订单量去核。
                     new ScmPrintField("sourceType", "来源", false, false),
                     new ScmPrintField("productName", "商品", false, false),
-                    new ScmPrintField("skuCode", "SKU 编码", false, false),
+                    new ScmPrintField("skuCode", "商品规格编码", false, false),
                     new ScmPrintField("specName", "规格", false, false),
                     new ScmPrintField("saleUnit", "单位", false, false),
                     new ScmPrintField("plannedQuantity", "计划量", false, true),

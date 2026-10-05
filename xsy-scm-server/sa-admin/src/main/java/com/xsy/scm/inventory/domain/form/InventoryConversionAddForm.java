@@ -56,7 +56,7 @@ public class InventoryConversionAddForm {
     @Data
     public static class Item {
 
-        @NotNull(message = "来源 SKU 不能为空")
+        @NotNull(message = "来源商品规格不能为空")
         private Long sourceSkuId;
 
         @NotNull(message = "来源数量不能为空")
@@ -68,7 +68,7 @@ public class InventoryConversionAddForm {
         @Size(max = 32, message = "来源单位不能超过32个字符")
         private String sourceUnit;
 
-        @NotNull(message = "目标 SKU 不能为空")
+        @NotNull(message = "目标商品规格不能为空")
         private Long targetSkuId;
 
         @NotNull(message = "目标数量不能为空")

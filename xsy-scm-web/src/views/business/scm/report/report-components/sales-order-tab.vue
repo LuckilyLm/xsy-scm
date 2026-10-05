@@ -110,7 +110,7 @@ const columns = ref<TableColumnsType<SalesOrderRow>>([
   {title: '订单来源', dataIndex: 'orderSource', width: 110},
   {title: '结算方式', dataIndex: 'settleMode', width: 120},
   {title: '订单行数', dataIndex: 'lineCount', align: 'right', width: 110},
-  {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
+  {title: '商品规格数', dataIndex: 'skuKindCount', align: 'right', width: 120},
   {title: '结算金额', dataIndex: 'settlementAmount', align: 'right', width: 150},
   {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
 ]);

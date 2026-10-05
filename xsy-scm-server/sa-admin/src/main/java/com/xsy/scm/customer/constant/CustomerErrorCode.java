@@ -63,7 +63,7 @@ public enum CustomerErrorCode implements ScmErrorCode {
 
     VISIBILITY_ITEM_INVALID(40034, "可见性明细行不合法"),
 
-    VISIBILITY_SKU_NOT_SELLABLE(40037, "可见性明细包含不可售 SKU");
+    VISIBILITY_SKU_NOT_SELLABLE(40037, "可见性明细包含不可售商品规格");
 
     private final int code;
 

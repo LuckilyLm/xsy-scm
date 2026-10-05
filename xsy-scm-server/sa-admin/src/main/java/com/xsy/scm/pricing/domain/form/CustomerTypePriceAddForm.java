@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 public class CustomerTypePriceAddForm {
     @NotNull(message = "客户类型不能为空")
     private Long customerTypeId;
-    @NotNull(message = "SKU 不能为空")
+    @NotNull(message = "商品规格不能为空")
     private Long skuId;
     @NotNull(message = "客户类型价不能为空")
     @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "客户类型价格式不正确")

@@ -117,7 +117,7 @@ const columns = ref<TableColumnsType<PurchaseSupplierRow>>([
   {title: '供应商编码', dataIndex: 'supplierCode', width: 150},
   {title: '供应商名称', dataIndex: 'supplierName', width: 200},
   {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 110},
-  {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
+  {title: '商品规格数', dataIndex: 'skuKindCount', align: 'right', width: 120},
   {title: '采购订单金额', dataIndex: 'orderAmount', align: 'right', width: 160},
   {title: '已收参考金额', dataIndex: 'receiptReferenceAmount', align: 'right', width: 150},
   {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', align: 'right', width: 180},

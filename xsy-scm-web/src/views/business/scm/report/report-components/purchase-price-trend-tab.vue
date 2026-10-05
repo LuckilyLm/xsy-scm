@@ -11,7 +11,7 @@
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
         <a-typography-text type="secondary" class="smart-margin-left10">
-          一行 = 业务日 × SKU × 采购单位。曲线太多时先用 SKU 筛选收窄。
+          一行 = 业务日 × 商品规格 × 采购单位。曲线太多时先用商品规格筛选收窄。
         </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
@@ -81,7 +81,7 @@ const emit = defineEmits<{
 const columns = ref<TableColumnsType<PurchasePriceTrendPoint>>([
   {title: '业务日期', dataIndex: 'bizDate', width: 130},
   {title: '商品', dataIndex: 'productName', width: 200},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 110},
   {title: '加权平均成交价', dataIndex: 'weightedAvgPrice', align: 'right', width: 160},
   {title: '样本行数', dataIndex: 'sampleLineCount', align: 'right', width: 110},

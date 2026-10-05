@@ -29,7 +29,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 这是**显式失败**而不是自动换算：{@code SupplierSku.purchaseUnit} 是 supplier + sku 维度， 同一 SKU
      * 经不同供应商入库时理论上可以是不同单位；静默把「箱」与「kg」相加会得到一个 没有物理意义的余额，而错误只会在未来出库/盘点时以「账实不符」的形式暴露。
      */
-    INVENTORY_UNIT_MISMATCH(41001, "该仓库与 SKU 的库存记账单位与本次入库单位不一致，无法直接累加"),
+    INVENTORY_UNIT_MISMATCH(41001, "该仓库与商品规格的库存记账单位与本次入库单位不一致，无法直接累加"),
 
     /**
      * 41002：源身份重复入库。
@@ -110,7 +110,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 记账单位只能来自余额行，因此「从未入库过的 SKU」不能在盘点里凭空盘盈 —— 那需要先有入库事实来确定单位。这不是能力缺失，而是刻意不让盘点成为 「绕过入库、凭空造库存」的入口。
      */
-    INVENTORY_STOCKTAKE_BALANCE_MISSING(41023, "该仓库与 SKU 尚无库存记录，请先办理入库再盘点"),
+    INVENTORY_STOCKTAKE_BALANCE_MISSING(41023, "该仓库与商品规格尚无库存记录，请先办理入库再盘点"),
 
     /**
      * 41024：盘点调整后数量为负。
@@ -140,7 +140,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 必须显式拒绝而不是静默去重：重复行会让同一份差异被施加两次， 而结果看起来完全正常（余额确实变了），只是变错了。这类错误只有在 未来对账时才会暴露，所以要在入口挡住。
      */
-    INVENTORY_STOCKTAKE_DUPLICATE_SKU(41027, "同一 SKU 在盘点单中只能出现一次"),
+    INVENTORY_STOCKTAKE_DUPLICATE_SKU(41027, "同一商品规格在盘点单中只能出现一次"),
 
     /**
      * 41028：报损报溢单不存在（行不存在或已软删）。
@@ -171,7 +171,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 与盘点的 41023 是**同一类约束**（记账单位只能来自余额行）， 但补救动作不同：盘点要「先入库再盘点」，报损报溢要「先入库再报损报溢」。 因此各自保留一个码，让前端提示能给出准确的下一步。
      */
-    INVENTORY_LOSS_GAIN_BALANCE_MISSING(41032, "该仓库与 SKU 尚无库存记录，请先办理入库再报损报溢"),
+    INVENTORY_LOSS_GAIN_BALANCE_MISSING(41032, "该仓库与商品规格尚无库存记录，请先办理入库再报损报溢"),
 
     /**
      * 41033：报损后库存数量为负。
@@ -197,7 +197,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 与盘点的 41027 同一理由：重复行会让同一份数量被调整两次， 而结果看起来完全正常。
      */
-    INVENTORY_LOSS_GAIN_DUPLICATE_SKU(41036, "同一 SKU 在报损报溢单中只能出现一次"),
+    INVENTORY_LOSS_GAIN_DUPLICATE_SKU(41036, "同一商品规格在报损报溢单中只能出现一次"),
 
     /**
      * 41037：驳回时必须填写审核意见。
@@ -253,12 +253,12 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 规定一个 {@code (warehouse, sku)} 只锁一个记账单位，且**不做隐式换算**： 源仓按「箱」记账、目标仓按「kg」记账时，把 10 箱直接加成 10 kg 会得到一个
      * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。 当前不支持单位换算，单位不匹配时显式失败。
      */
-    INVENTORY_TRANSFER_UNIT_MISMATCH(41044, "目标仓库该 SKU 的记账单位与调拨单位不一致，库存不做自动换算：请先统一两仓的采购单位"),
+    INVENTORY_TRANSFER_UNIT_MISMATCH(41044, "目标仓库该商品规格的记账单位与调拨单位不一致，库存不做自动换算：请先统一两仓的采购单位"),
 
     /**
      * 41045：同一 SKU 在调拨单里出现多次。
      */
-    INVENTORY_TRANSFER_DUPLICATE_SKU(41045, "同一 SKU 在调拨单中只能出现一次"),
+    INVENTORY_TRANSFER_DUPLICATE_SKU(41045, "同一商品规格在调拨单中只能出现一次"),
 
     /**
      * 41046：源仓没有该 SKU 的余额行，无法发出。
@@ -266,7 +266,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 转出是「出」方向，与销售出库同一取向：没有余额行 = 从未入库 = 无货可调， **不建零余额行**（只有「入」方向才允许建行）。
      */
-    INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING(41046, "源仓库该 SKU 尚无库存记录，无货可调：请确认源仓是否入过库"),
+    INVENTORY_TRANSFER_SOURCE_BALANCE_MISSING(41046, "源仓库该商品规格尚无库存记录，无货可调：请确认源仓是否入过库"),
 
     /**
      * 41047：源身份重复调拨（同一条明细行已写过该方向的流水）。
@@ -292,7 +292,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 必须显式拒绝而不是静默覆盖：两条配置会让「按哪条判断」变得没有答案， 而预警本身是给人看的，含糊的预警等于没有预警。
      */
-    INVENTORY_WARNING_THRESHOLD_DUPLICATE(41050, "该仓库与 SKU 已配置过预警阈值，请直接编辑既有配置"),
+    INVENTORY_WARNING_THRESHOLD_DUPLICATE(41050, "该仓库与商品规格已配置过预警阈值，请直接编辑既有配置"),
 
     /**
      * 41051：阈值配置非法。
@@ -310,7 +310,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 阈值配置**必须**校验 SKU 存在（其它库存单据不校验，因为它们总是由已存在的 SKU 选择器驱动）：配置表是长期驻留的，一条指向不存在 SKU 的配置会永远留在 预警列表里（没有余额 → 数量按 0 计 →
      * 触发下限预警），成为永远清不掉的噪声。
      */
-    INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND(41052, "SKU 不存在，请选择有效的 SKU"),
+    INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND(41052, "商品规格不存在，请选择有效的商品规格"),
 
     /**
      * 41053：规格转换单不存在（行不存在或已软删）。
@@ -338,7 +338,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 那不是转换，是把货在**同一行余额**上来回加减：净效果为零却留下两条流水， 还会让「本月转换量」虚高。DB 也有 {@code ck_inventory_conversion_item_distinct} 兜底。
      */
-    INVENTORY_CONVERSION_SAME_SKU(41057, "源 SKU 与目标 SKU 不能相同"),
+    INVENTORY_CONVERSION_SAME_SKU(41057, "源商品规格与目标商品规格不能相同"),
 
     /**
      * 41058：源 SKU 在该仓库没有余额行。
@@ -346,7 +346,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 转出是「出」方向，与销售出库 / 调拨转出同一取向：没有余额行 = 从未入库 = 无货可转， **不建零余额行**（只有「入」方向才允许建行）。
      */
-    INVENTORY_CONVERSION_SOURCE_BALANCE_MISSING(41058, "源 SKU 在该仓库尚无库存记录，无货可转：请确认源 SKU 是否入过库"),
+    INVENTORY_CONVERSION_SOURCE_BALANCE_MISSING(41058, "源商品规格在该仓库尚无库存记录，无货可转：请确认源商品规格是否入过库"),
 
     /**
      * 41059：源 SKU 的余额记账单位与单据声明的源单位不一致。
@@ -354,7 +354,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 规定一个 {@code (warehouse, sku)} 只锁一个记账单位且**不做隐式换算**。 单位是单据显式声明的（折算关系本身含单位），因此不一致时只能失败， 不能「按声明改记账单位」—— 那会让既有余额的含义漂移。
      */
-    INVENTORY_CONVERSION_SOURCE_UNIT_MISMATCH(41059, "源 SKU 的记账单位与单据声明的源单位不一致，库存不做自动换算"),
+    INVENTORY_CONVERSION_SOURCE_UNIT_MISMATCH(41059, "源商品规格的记账单位与单据声明的源单位不一致，库存不做自动换算"),
 
     /**
      * 41060：目标 SKU 已有余额行，但其记账单位与单据声明的目标单位不一致。
@@ -362,7 +362,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 目标 SKU 没有余额行时允许用声明单位建行（入方向）；**已有**余额行则必须一致， 否则会把「箱」与「kg」相加，得到一个没有物理意义的余额。
      */
-    INVENTORY_CONVERSION_TARGET_UNIT_MISMATCH(41060, "目标 SKU 的记账单位与单据声明的目标单位不一致，库存不做自动换算"),
+    INVENTORY_CONVERSION_TARGET_UNIT_MISMATCH(41060, "目标商品规格的记账单位与单据声明的目标单位不一致，库存不做自动换算"),
 
     /**
      * 41061：源 SKU 可用量不足。
@@ -370,7 +370,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * <p>
      * 可用量 = {@code quantity − reserved_quantity}。转换不得让源 SKU 变负， 也不得吃掉源 SKU 已预留的货（预留代表对下游的承诺）。
      */
-    INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE(41061, "源 SKU 可用库存不足（可用量 = 现有量 − 预留量），请减少转出数量或先释放预留"),
+    INVENTORY_CONVERSION_INSUFFICIENT_AVAILABLE(41061, "源商品规格可用库存不足（可用量 = 现有量 − 预留量），请减少转出数量或先释放预留"),
 
     /**
      * 41062：源身份重复转换（同一条明细行已写过该方向的流水）。

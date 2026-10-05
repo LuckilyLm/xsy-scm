@@ -21,7 +21,7 @@
         <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库"/>
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="keyword" placeholder="SPU 编码 / 名称 / SKU 编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="keyword" placeholder="商品编码 / 名称 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -45,7 +45,7 @@
         type="info"
         show-icon
         message="冻结批次净需求预览"
-        description="按仓库、SKU、单位扣除本批可用库存、有效在途未收量和已有采购覆盖。结果仍是只读的冻结批次预览，不是最终净采购建议，也不生成采购单；正式生成需求必须使用同一冻结批次。"
+        description="按仓库、商品规格、单位扣除本批可用库存、有效在途未收量和已有采购覆盖。结果仍是只读的冻结批次预览，不是最终净采购建议，也不生成采购单；正式生成需求必须使用同一冻结批次。"
     />
     <a-table
         id="scm-purchase-demand-summary-preview-table"
@@ -127,9 +127,9 @@ const error = ref('');
 let requestId = 0;
 
 const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '规格', dataIndex: 'skuName', width: 130},
+  {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '分类', dataIndex: 'categoryName', width: 130},
   {title: '来源订单数', dataIndex: 'sourceOrderCount', align: 'right', width: 110},
   {title: '来源行数', dataIndex: 'sourceLineCount', align: 'right', width: 100},

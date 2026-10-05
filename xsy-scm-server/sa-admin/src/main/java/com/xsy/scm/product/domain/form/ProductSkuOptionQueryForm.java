@@ -13,7 +13,7 @@ import jakarta.validation.constraints.Size;
 public class ProductSkuOptionQueryForm {
     @Size(max = 150, message = "查询关键词不能超过150个字符")
     private String keyword;
-    @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "SKU 状态无效")
+    @ScmEnumValue(enumClass = ScmShelfStatusEnum.class, message = "商品规格状态无效")
     private String status;
     private Long spuId;
     @NotNull(message = "返回上限不能为空")

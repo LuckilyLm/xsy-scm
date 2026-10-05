@@ -104,7 +104,7 @@ const columns = ref<TableColumnsType<SalesCustomerRow>>([
   {title: '客户名称', dataIndex: 'customerName', width: 200},
   {title: '销售员', dataIndex: 'sellerName', width: 120},
   {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 110},
-  {title: 'SKU 种类数', dataIndex: 'skuKindCount', align: 'right', width: 120},
+  {title: '商品规格数', dataIndex: 'skuKindCount', align: 'right', width: 120},
   {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 160},
   {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
   {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 190},

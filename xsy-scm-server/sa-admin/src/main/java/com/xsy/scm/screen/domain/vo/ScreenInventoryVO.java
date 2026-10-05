@@ -16,7 +16,7 @@ public class ScreenInventoryVO {
     @Schema(description = "库存总数量（所有仓库求和）")
     private BigDecimal totalQuantity;
 
-    @Schema(description = "在库 SKU 数（inventory_balance 去重 sku）")
+    @Schema(description = "在库商品规格数（inventory_balance 去重 sku）")
     private Long skuCount;
 
     @Schema(description = "启用仓库数")
@@ -64,7 +64,7 @@ public class ScreenInventoryVO {
     @Schema(description = "库存健康度")
     public static class InventoryHealth {
 
-        @Schema(description = "参与评估的 (仓库,SKU) 数 = 缺货+预警+积压+正常+未配置")
+        @Schema(description = "参与评估的 (仓库,商品规格) 数 = 缺货+预警+积压+正常+未配置")
         private Long totalSkuCount;
 
         @Schema(description = "正常（在阈值区间内）")

@@ -8,8 +8,8 @@
       <a-form-item label="仓库" class="smart-query-form-item">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px"/>
       </a-form-item>
-      <a-form-item label="SKU 编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="SKU 编码" allow-clear @pressEnter="onSearch"/>
+      <a-form-item label="商品规格编码" class="smart-query-form-item">
+        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="商品名称" class="smart-query-form-item">
         <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch"/>
@@ -121,10 +121,10 @@ let requestId = 0;
 const columns = ref<TableColumnsType<InventoryBalance>>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
   {title: '仓库名称', dataIndex: 'warehouseName', width: 160},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 170},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
+  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
   {title: '商品名称', dataIndex: 'productName', width: 180},
-  {title: '规格', dataIndex: 'specValues', width: 160},
+  {title: '规格值', dataIndex: 'specValues', width: 160},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
   {title: '库存数量', dataIndex: 'quantity', align: 'right', width: 130},
   {title: '预留量', dataIndex: 'reservedQuantity', align: 'right', width: 110},

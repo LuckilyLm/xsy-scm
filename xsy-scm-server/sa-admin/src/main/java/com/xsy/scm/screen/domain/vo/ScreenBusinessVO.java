@@ -38,7 +38,7 @@ public class ScreenBusinessVO {
     @Schema(description = "供应商总数")
     private Long supplierCount;
 
-    @Schema(description = "商品 SKU 总数")
+    @Schema(description = "商品规格数")
     private Long skuCount;
 
     @Schema(description = "今日成交客户数（今日有 CONFIRMED 订单的客户去重数）")

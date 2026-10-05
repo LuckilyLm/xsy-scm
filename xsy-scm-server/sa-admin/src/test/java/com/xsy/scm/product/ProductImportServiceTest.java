@@ -66,12 +66,12 @@ class ProductImportServiceTest {
     }
 
     private static final String[] HEADERS = {"模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码",
-            "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "规格编码", "条码", "规格名称",
-            "销售单位", "商品类型", "市场价", "规格状态", "默认规格", "排序"};
+            "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称",
+            "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序"};
 
-    private static final String[] UPDATE_HEADERS = {"模板版本", "商品ID", "商品版本", "规格ID", "规格版本",
+    private static final String[] UPDATE_HEADERS = {"模板版本", "商品ID", "商品版本", "商品规格ID", "商品规格版本",
             "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码",
-            "商品状态", "规格编码", "条码", "规格名称", "销售单位", "商品类型", "市场价", "规格状态", "默认规格", "排序"};
+            "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序"};
 
     /** 更新模板的列下标：定位键在最前，其余列留空即保持库内原值。 */
     private static final int SPU_VERSION = 2;
@@ -499,7 +499,7 @@ class ProductImportServiceTest {
         assertThat(result.getErrors()).extracting("code").contains("FIELD_LOCKED");
         assertThat(result.getErrors()).allSatisfy(error -> {
             if (error.getCode().equals("FIELD_LOCKED"))
-                assertThat(List.of("商品编码", "规格编码")).contains(error.getColumn());
+                assertThat(List.of("商品编码", "商品规格编码")).contains(error.getColumn());
         });
         verifyNoInteractions(productImportWriteService);
     }

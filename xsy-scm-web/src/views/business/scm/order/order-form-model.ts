@@ -118,8 +118,8 @@ export function validateOrder(f: Order): string | undefined {
     if (f.orderSource === 'SUPPLEMENT' && !f.supplementReason?.trim()) return '请填写补单原因';
     const seen = new Set<string>();
     for (const i of f.items) {
-        if (!i.skuId) return '请选择 SKU';
-        if (seen.has(String(i.skuId))) return '同一 SKU 不能重复';
+        if (!i.skuId) return '请选择商品规格';
+        if (seen.has(String(i.skuId))) return '同一商品规格不能重复';
         seen.add(String(i.skuId));
         if (!/^\d{1,14}\.\d{4}$/.test(i.orderedQuantity) || new Decimal(i.orderedQuantity).lte(0)) return '数量必须为正的四位定点数';
         if (i.manualPriceOverride && (!i.overrideReason?.trim() || i.unitPrice == null || !/^\d{1,14}\.\d{4}$/.test(i.unitPrice))) return '人工改价需要有效价格和原因';

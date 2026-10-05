@@ -12,7 +12,7 @@
         <a-form-item label="客户类型" required>
           <CustomerTypeSelect v-model:value="form.customerTypeId"/>
         </a-form-item>
-        <a-form-item label="SKU" required>
+        <a-form-item label="商品规格" required>
           <SkuSelect v-model:value="form.skuId"/>
         </a-form-item>
         <a-form-item label="单价" required help="零价也是有效价格；最多四位小数">

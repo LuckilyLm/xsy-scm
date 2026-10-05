@@ -216,7 +216,7 @@
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
         <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个 SKU 只能出现一次 —— 重复行会让同一份差异被调整两次。
+          同一个商品规格只能出现一次 —— 重复行会让同一份差异被调整两次。
         </a-typography-text>
       </a-form-item>
     </a-form>
@@ -319,7 +319,7 @@ const columns = ref<TableColumnsType<InventoryStocktake>>([
 ]);
 
 const itemColumns: TableColumnsType = [
-  {title: 'SKU', dataIndex: 'skuId', width: 290},
+  {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '记账单位', dataIndex: 'unit', align: 'center', width: 100},
   {title: '实盘量', dataIndex: 'actualQuantity', width: 150},
   {title: '备注', dataIndex: 'remark'},
@@ -481,7 +481,7 @@ async function openCopy(record: InventoryStocktake) {
     for (const i of sourceItems) {
       const key = String(i.skuId);
       if (!unitBySku.has(key)) {
-        message.error(`SKU「${i.skuCode ?? i.skuName ?? key}」在仓库「${d.warehouseName ?? whId}」已无库存余额，无法复制，请改用新建`);
+        message.error(`商品规格「${i.skuCode ?? i.skuName ?? key}」在仓库「${d.warehouseName ?? whId}」已无库存余额，无法复制，请改用新建`);
         return;
       }
       items.push({_key: ++keySeq, skuId: i.skuId, unit: unitBySku.get(key), actualQuantity: '', remark: undefined});
@@ -507,7 +507,7 @@ const importResult = ref<StocktakeImportResult | null>(null);
 
 const importErrorColumns: TableColumnsType = [
   {title: '行', dataIndex: 'row', width: 60},
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '列', dataIndex: 'column', width: 120},
   {title: '原因', dataIndex: 'message'},
 ];
@@ -566,7 +566,7 @@ function buildPayload(): InventoryStocktakeAdd | null {
   for (let i = 0; i < items.length; i++) {
     const skuKey = String(items[i].skuId);
     if (seen.has(skuKey)) {
-      message.warning(`第 ${i + 1} 行：同一 SKU 只能出现一次，请合并重复行`);
+      message.warning(`第 ${i + 1} 行：同一商品规格只能出现一次，请合并重复行`);
       return null;
     }
     seen.add(skuKey);
