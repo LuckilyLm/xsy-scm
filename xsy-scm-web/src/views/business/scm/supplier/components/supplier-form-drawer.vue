@@ -19,62 +19,88 @@
   *   地址仍是收货与展示口径；点位经纬度随 M2 的地图选点再加。
 -->
 <template>
-  <a-drawer v-model:open="visible" :title="title" width="620" @close="close">
+  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
       <a-form ref="formRef" :model="form" layout="vertical">
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="供应商编码" name="supplierCode"
-                         :rules="[{ required: true, whitespace: true, message: '请输入供应商编码' }]">
-              <a-input v-model:value="form.supplierCode" :maxlength="64" placeholder="保存时自动转为大写"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="供应商名称" name="name"
-                         :rules="[{ required: true, whitespace: true, message: '请输入供应商名称' }]">
-              <a-input v-model:value="form.name" :maxlength="150"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="联系人" name="contactName">
-              <a-input v-model:value="form.contactName" :maxlength="100"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="联系电话" name="contactPhone">
-              <a-input v-model:value="form.contactPhone" :maxlength="32"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-form-item label="所在地区">
-          <AreaCascader
-              type="province_city_district"
-              v-model:value="area"
-              style="width: 100%"
-              placeholder="省 / 市 / 区"
-              @change="onAreaChange"
-          />
-          <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
-        </a-form-item>
-        <a-form-item label="地址" name="address">
-          <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
-        </a-form-item>
-        <a-form-item label="地图定位">
-          <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
-          <div class="ant-form-item-extra">
-            点位用于地图分布与供应商位置查询；经纬度与坐标系必须同时填写或同时清空
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">基础信息</h3>
           </div>
-        </a-form-item>
-        <a-form-item label="付款账期（天）" name="paymentPeriodDays">
-          <a-input-number v-model:value="form.paymentPeriodDays" :min="0" :max="3650" :precision="0"/>
-          <p>应付形成时冻结到期日；0 表示当日到期，修改只影响新应付。</p>
-        </a-form-item>
-        <a-form-item label="备注" name="remark">
-          <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3" show-count/>
-        </a-form-item>
+          <a-row :gutter="20">
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="供应商名称" name="name"
+                           :rules="[{ required: true, whitespace: true, message: '请输入供应商名称' }]">
+                <a-input v-model:value="form.name" :maxlength="150"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="供应商编码" name="supplierCode"
+                           :rules="[{ required: true, whitespace: true, message: '请输入供应商编码' }]">
+                <a-input v-model:value="form.supplierCode" :maxlength="64" placeholder="保存时自动转为大写"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="联系人" name="contactName">
+                <a-input v-model:value="form.contactName" :maxlength="100"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="联系电话" name="contactPhone">
+                <a-input v-model:value="form.contactPhone" :maxlength="32"/>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">位置与配送</h3>
+          </div>
+          <a-form-item label="所在地区">
+            <AreaCascader
+                type="province_city_district"
+                v-model:value="area"
+                style="width: 100%"
+                placeholder="省 / 市 / 区"
+                @change="onAreaChange"
+            />
+            <div class="scm-form-section__extra">留空则不参与地图分布统计</div>
+          </a-form-item>
+          <a-form-item label="地址" name="address">
+            <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
+          </a-form-item>
+          <a-form-item label="地图定位">
+            <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
+            <div class="scm-form-section__extra">
+              点位用于地图分布与供应商位置查询；经纬度与坐标系必须同时填写或同时清空
+            </div>
+          </a-form-item>
+        </section>
+
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">结算设置</h3>
+          </div>
+          <a-row :gutter="20">
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="付款账期" name="paymentPeriodDays">
+                <a-input-number v-model:value="form.paymentPeriodDays" :min="0" :max="3650" :precision="0"
+                                addon-after="天" style="width: 100%"/>
+                <div class="scm-form-section__extra">应付形成时冻结到期日；0 表示当日到期，修改只影响新应付。</div>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">其他</h3>
+          </div>
+          <a-form-item label="备注" name="remark">
+            <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3" show-count/>
+          </a-form-item>
+        </section>
       </a-form>
     </a-spin>
     <template #footer>
@@ -98,6 +124,7 @@ import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
 import {emptyLocation, locationError} from '/@/components/business/scm/map/types';
 import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {supplierError} from '../supplier-errors';
 
 const emit = defineEmits<{ saved: [] }>();
