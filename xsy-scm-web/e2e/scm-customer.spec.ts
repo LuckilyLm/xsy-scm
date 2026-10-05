@@ -199,8 +199,11 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   // ------------------------------------------------------------------ 删除
   await button(page, '返回客户列表').click();
   row = page.getByRole('row').filter({ hasText: prefix + 'C1' });
-  await button(row, '删除').click();
-  await page.locator('.ant-popover:visible').getByRole('button', { name: /确.*定/ }).click();
+  // 删除属于危险动作，已从常驻操作收进「更多」；菜单项只在展开后进入 DOM。
+  // 二次确认随之由 popconfirm 改为 Modal，断言的仍是「必须确认后才真的删除」。
+  await row.getByRole('button', { name: /更多/ }).click();
+  await page.getByRole('menuitem', { name: buttonName('删除') }).click();
+  await page.locator('.ant-modal:visible .ant-modal-confirm-btns .ant-btn-primary').click();
   await expect(row).toHaveCount(0);
 
   // 客户已删除，客户类型这时才能删（否则后端 40938）。

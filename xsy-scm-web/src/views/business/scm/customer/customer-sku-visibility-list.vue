@@ -43,11 +43,26 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '当前授权范围内没有匹配的客户可见性配置'}"
-        :scroll="{x: 1320}"
+        :scroll="{x: 1165}"
         size="small"
       >
         <template #bodyCell="{column, record}">
-          <template v-if="column.key === 'visibilityPolicy'">
+          <template v-if="column.dataIndex === 'customerName'">
+            <div class="scm-cell-stack">
+              <span class="scm-cell-stack__main">{{ record.customerName || '—' }}</span>
+              <span class="scm-cell-stack__sub">{{ record.customerCode || '—' }}</span>
+            </div>
+          </template>
+          <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
+          <span v-else-if="column.dataIndex === 'productName'">{{ record.productName || '—' }}</span>
+          <template v-else-if="column.dataIndex === 'specName'">
+            <div v-if="record.specName || record.skuCode" class="scm-cell-stack">
+              <span class="scm-cell-stack__main">{{ record.specName || '—' }}</span>
+              <span class="scm-cell-stack__sub">{{ record.skuCode || '—' }}</span>
+            </div>
+            <span v-else>—</span>
+          </template>
+          <template v-else-if="column.key === 'visibilityPolicy'">
             <a-tag :color="record.visibilityPolicy === 'ALLOWLIST' ? 'blue' : 'default'">
               {{ visibilityPolicyLabel(record.visibilityPolicy) }}
             </a-tag>
@@ -60,14 +75,16 @@
             </a-space>
           </template>
           <template v-else-if="column.key === 'action'">
-            <a-button
-              v-privilege="'scm:customer:query'"
-              type="link"
-              size="small"
-              @click="openCustomer(record.customerId)"
-            >
-              客户详情
-            </a-button>
+            <div class="scm-table-actions">
+              <a-button
+                v-privilege="'scm:customer:query'"
+                type="link"
+                size="small"
+                @click="openCustomer(record.customerId)"
+              >
+                客户详情
+              </a-button>
+            </div>
           </template>
         </template>
       </a-table>
@@ -96,7 +113,6 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {VisibilityRow} from '/@/types/business/scm/pricing';
 import {customerError} from './customer-errors';
-import {datetime} from '../common/scm-display';
 
 interface VisibilityQuery {
   pageNum: number;
@@ -114,17 +130,15 @@ const loading = ref(false);
 const error = ref('');
 let requestId = 0;
 
+// 客户编码、商品规格编码折成对应名称下方的次要文字，不再各占一列。
 const columns = ref<TableColumnsType<VisibilityRow>>([
-  {title: '客户编码', dataIndex: 'customerCode', width: 140},
-  {title: '客户名称', dataIndex: 'customerName', width: 180},
+  {title: '客户名称', dataIndex: 'customerName', width: 220},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 130},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
-  {title: '商品', dataIndex: 'productName', width: 200},
-  {title: '商品规格', dataIndex: 'specName', width: 160},
+  {title: '商品名称', dataIndex: 'productName', width: 220},
+  {title: '商品规格', dataIndex: 'specName', width: 180},
   {title: '可见策略', key: 'visibilityPolicy', width: 125},
   {title: '商品状态', key: 'status', width: 190},
-  {title: '加入时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => text ? datetime(text) : '—'},
-  {title: '操作', key: 'action', width: 100, fixed: 'right', align: 'right'},
+  {title: '操作', key: 'action', width: 100, fixed: 'right', align: 'center'},
 ]);
 
 function visibilityPolicyLabel(policy: string): string {

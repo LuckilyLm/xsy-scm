@@ -11,7 +11,7 @@
   * - 删除改为 `POST /scm/customer/type/delete` 并回传 `version`（W1 分类同为 version 删除）。
   *
   * 注意：后端 `CustomerTypeVO` **不返回 `updatedAt`**（只有 `createdAt`），
-  * 因此列表只展示「创建时间」，排序也只开放 `typeCode / name / status` 三列，
+  * 因此排序只开放 `typeCode / name / status` 三列，
   * 避免出现「点了排序但后端没有对应可见列」的假象。
 -->
 <template>
@@ -51,14 +51,14 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 760 }"
+          :scroll="{ x: 660 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
           <a-tag v-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
             {{ statusText(record.status) }}
           </a-tag>
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate">
+          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:customer:type:update'" type="link" size="small" @click="modal?.open(record)">
               编辑
             </a-button>
@@ -96,7 +96,6 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import CustomerTypeModal from './components/customer-type-form-modal.vue';
 import {customerError} from './customer-errors';
-import {datetime} from '../common/scm-display';
 
 const filters = reactive<CustomerTypeQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<CustomerType[]>([]);
@@ -108,12 +107,12 @@ const modal = ref<InstanceType<typeof CustomerTypeModal>>();
 /** 枚举值 → 中文；查不到时退回原值，避免表格出现空白单元格。 */
 const statusText = (value: string): string => CUSTOMER_TYPE_STATUS_ENUM[value]?.desc || value;
 
+// 字典表只有四列值得常驻：编码、名称、状态、操作。创建时间不影响判断，不默认摊在列表上。
 const columns = ref<TableColumnsType<CustomerType>>([
   {title: '类型编码', dataIndex: 'typeCode', width: 200, sorter: true},
   {title: '类型名称', dataIndex: 'name', width: 220, sorter: true},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
-  {title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'action', width: 140, align: 'right', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: 140, align: 'center', fixed: 'right'},
 ]);
 
 // 请求序号：避免快速切页时旧响应覆盖新响应（与 W1 product-list 同策略）。

@@ -70,29 +70,34 @@
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1860 }"
+          :scroll="{ x: 1160 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'name'">
-            <a-button type="link" @click="detail(record.customerId)">{{ record.name }}</a-button>
+            <div class="scm-cell-stack">
+              <a-button type="link" size="small" class="name-link" @click="detail(record.customerId)">
+                {{ record.name }}
+              </a-button>
+              <span class="scm-cell-stack__sub">{{ record.customerCode }}</span>
+            </div>
           </template>
-          <span v-else-if="column.dataIndex === 'parentCustomerName'">{{ record.parentCustomerName || '—' }}</span>
+          <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'sellerName'">{{ record.sellerName || '—' }}</span>
-          <span v-else-if="column.dataIndex === 'contactName'">{{ record.contactName || '—' }}</span>
-          <span v-else-if="column.dataIndex === 'contactPhone'">{{ record.contactPhone || '—' }}</span>
+          <template v-else-if="column.dataIndex === 'contact'">
+            <div v-if="record.contactName || record.contactPhone" class="scm-cell-stack">
+              <span class="scm-cell-stack__main">{{ record.contactName || '—' }}</span>
+              <span class="scm-cell-stack__sub">{{ record.contactPhone || '—' }}</span>
+            </div>
+            <span v-else>—</span>
+          </template>
           <span v-else-if="column.dataIndex === 'settleMode'">{{ settleModeText(record.settleMode) }}</span>
-          <span v-else-if="column.dataIndex === 'creditLimit'" class="amount">{{ record.creditLimit ?? '—' }}</span>
-          <a-tag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)">
-            {{ statusText(record.status) }}
-          </a-tag>
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate">
-            <a-button type="link" size="small" @click="detail(record.customerId)">详情</a-button>
+          <span v-else-if="column.dataIndex === 'creditLimit'" class="scm-money">{{ record.creditLimit ?? '—' }}</span>
+          <ScmStatusTag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)"
+                        :label="statusText(record.status)"/>
+          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:customer:update'" type="link" size="small"
                       @click="drawer?.open(record.customerId)">编辑
-            </a-button>
-            <a-button v-privilege="'scm:customer:assign'" type="link" size="small" @click="openReassign(record)">
-              改派
             </a-button>
             <a-dropdown>
               <a-button v-privilege="'scm:customer:status'" type="link" size="small">状态</a-button>
@@ -109,9 +114,7 @@
                 </a-menu>
               </template>
             </a-dropdown>
-            <a-popconfirm title="确认删除此客户？" @confirm="remove(record)">
-              <a-button v-privilege="'scm:customer:delete'" type="link" danger size="small">删除</a-button>
-            </a-popconfirm>
+            <ScmActionMore :actions="rowActions()" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
       </a-table>
@@ -152,7 +155,7 @@
 <script setup lang="ts">
 import {onMounted, reactive, ref, computed} from 'vue';
 import {useRouter} from 'vue-router';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import type {CustomerQuery, CustomerRow, CustomerStatus, ScmId} from '/@/types/business/scm/customer';
@@ -160,13 +163,15 @@ import {CUSTOMER_STATUS_ENUM, SETTLE_MODE_ENUM} from '/@/constants/business/scm/
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerDrawer from './components/customer-form-drawer.vue';
 import {customerError} from './customer-errors';
 import {hasPermission} from '../common/scm-permission';
-import {datetime} from '../common/scm-display';
 import {useQueryFilterMemory} from '/@/lib/query-filter-memory';
 
 const router = useRouter();
@@ -239,19 +244,18 @@ const statusColor = (value: CustomerStatus): string => {
   return 'default';
 };
 
+// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
+// 客户编码折成名称下方的次要文字；上级集团、更新时间仍在搜索、详情、编辑与导出里，不默认摊在列表上。
+// 联系人与联系电话合并成一列，避免两个半空列挤占业务字段。
 const columns = ref<TableColumnsType<CustomerRow>>([
-  {title: '客户编码', dataIndex: 'customerCode', width: 150, sorter: true},
-  {title: '客户名称', dataIndex: 'name', width: 200, sorter: true},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 110},
-  {title: '上级集团', dataIndex: 'parentCustomerName', width: 160},
-  {title: '业务员', dataIndex: 'sellerName', width: 110},
-  {title: '联系人', dataIndex: 'contactName', width: 110},
-  {title: '联系电话', dataIndex: 'contactPhone', width: 140},
+  {title: '客户名称', dataIndex: 'name', width: 220, sorter: true},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
+  {title: '业务员', dataIndex: 'sellerName', width: 120},
+  {title: '联系方式', dataIndex: 'contact', width: 200},
   {title: '结算方式', dataIndex: 'settleMode', width: 110, align: 'center'},
   {title: '授信额度', dataIndex: 'creditLimit', width: 140, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
-  {title: '更新时间', dataIndex: 'updatedAt', width: 190, sorter: true, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'action', width: 280, align: 'right', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
 ]);
 
 let requestId = 0;
@@ -337,6 +341,37 @@ async function remove(row: CustomerRow) {
   }
 }
 
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canAssign = computed(() => hasPermission('scm:customer:assign'));
+const canDelete = computed(() => hasPermission('scm:customer:delete'));
+
+/** 操作列常驻「编辑 + 状态」，其余低频与危险动作收进「更多」，把宽度留给业务字段。 */
+function rowActions(): ScmActionItem[] {
+  return [
+    {key: 'detail', label: '详情'},
+    {key: 'reassign', label: '改派业务员', hidden: !canAssign.value},
+    {key: 'delete', label: '删除', danger: true, hidden: !canDelete.value},
+  ];
+}
+
+function onRowAction(key: string, row: CustomerRow) {
+  if (key === 'detail') {
+    detail(row.customerId);
+  } else if (key === 'reassign') {
+    openReassign(row);
+  } else if (key === 'delete') {
+    // 菜单项挂不上 a-popconfirm，二次确认改由 Modal 承担，语义与原 popconfirm 一致。
+    Modal.confirm({
+      title: '删除客户',
+      content: `确认删除「${row.name}」（${row.customerCode}）？`,
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: () => remove(row),
+    });
+  }
+}
+
 onMounted(() => {
   // 恢复上次筛选条件与分页大小，但强制回到第 1 页：记忆是便利，不该把用户带回深处的旧页码。
   Object.assign(filters, queryMemory.load(), {pageNum: 1});
@@ -345,8 +380,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.amount {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+/* 名称行是客户详情入口，保留链接按钮语义；只清掉内边距，让它与下方的客户编码共用左边缘。
+   不直接给按钮加 .scm-cell-stack__main：那个类自带 color，和 antd 的 .ant-btn-link 同特异性，
+   谁生效取决于 CSS-in-JS 的注入顺序。 */
+.name-link {
+  height: auto;
+  padding: 0;
 }
 </style>

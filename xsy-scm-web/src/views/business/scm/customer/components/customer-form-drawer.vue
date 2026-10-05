@@ -23,163 +23,188 @@
   *   新建固定「潜在」、变更走独立的 `updateStatus` 端点，因此这里改成只读展示。
 -->
 <template>
-  <a-drawer v-model:open="visible" :title="title" width="780" @close="close">
+  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('l')" @close="close">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
       <a-form ref="formRef" :model="form" layout="vertical">
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="客户编码" name="customerCode"
-                         :rules="[{ required: true, whitespace: true, message: '请输入客户编码' }]">
-              <a-input v-model:value="form.customerCode" :maxlength="64" placeholder="保存时自动转为大写"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="客户名称" name="name"
-                         :rules="[{ required: true, whitespace: true, message: '请输入客户名称' }]">
-              <a-input v-model:value="form.name" :maxlength="150"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">基础信息</h3>
+          </div>
+          <a-row :gutter="20">
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="客户名称" name="name"
+                           :rules="[{ required: true, whitespace: true, message: '请输入客户名称' }]">
+                <a-input v-model:value="form.name" :maxlength="150"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="客户编码" name="customerCode"
+                           :rules="[{ required: true, whitespace: true, message: '请输入客户编码' }]">
+                <a-input v-model:value="form.customerCode" :maxlength="64" placeholder="保存时自动转为大写"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="客户类型" name="customerTypeId"
+                           :rules="[{ required: true, message: '请选择客户类型' }]">
+                <CustomerTypeSelect v-model:value="form.customerTypeId"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="客户状态">
+                <div class="scm-form-readonly">
+                  <ScmStatusTag :color="STATUS_COLOR[status]" :label="statusText"/>
+                </div>
+                <div class="ant-form-item-extra">新建固定为「潜在」，后续通过「状态变更」维护</div>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
 
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="客户类型" name="customerTypeId"
-                         :rules="[{ required: true, message: '请选择客户类型' }]">
-              <CustomerTypeSelect v-model:value="form.customerTypeId"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="客户状态">
-              <a-input :value="statusText" disabled/>
-              <div class="ant-form-item-extra">新建固定为「潜在」，后续通过「状态变更」维护</div>
-            </a-form-item>
-          </a-col>
-        </a-row>
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">归属与结算</h3>
+          </div>
+          <a-row :gutter="20">
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="归属业务员">
+                <a-input v-if="isEdit" :value="sellerName || '未分配'" disabled/>
+                <EmployeeSelect v-else v-model:value="sellerValue" :disabled="!canAssign" placeholder="请选择业务员" width="100%"/>
+                <div class="ant-form-item-extra">{{ sellerHint }}</div>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="上级集团客户" name="parentCustomerId">
+                <CustomerSelect
+                    v-model:value="form.parentCustomerId"
+                    type-code="GROUP"
+                    :exclude-id="form.customerId"
+                    placeholder="仅集团客户可作为上级"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="统一结算方" name="settlementCustomerId">
+                <CustomerSelect v-model:value="form.settlementCustomerId" placeholder="留空则独立结算；集团客户请选择结算主体"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="结算方式" name="settleMode" :rules="[{ required: true, message: '请选择结算方式' }]">
+                <SmartEnumSelect v-model:value="form.settleMode" enum-name="SETTLE_MODE_ENUM" width="100%"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="绑定供应商" name="supplierId">
+                <SupplierSelect v-model:value="form.supplierId" placeholder="请选择供应商"/>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
 
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="上级集团客户" name="parentCustomerId">
-              <CustomerSelect
-                  v-model:value="form.parentCustomerId"
-                  type-code="GROUP"
-                  :exclude-id="form.customerId"
-                  placeholder="仅集团客户可作为上级"
-              />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="结算方式" name="settleMode" :rules="[{ required: true, message: '请选择结算方式' }]">
-              <SmartEnumSelect v-model:value="form.settleMode" enum-name="SETTLE_MODE_ENUM" width="100%"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="统一结算方" name="settlementCustomerId">
-              <CustomerSelect v-model:value="form.settlementCustomerId" placeholder="留空则独立结算；集团客户请选择结算主体"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">联系与配送</h3>
+          </div>
+          <a-row :gutter="20">
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="联系人" name="contactName">
+                <a-input v-model:value="form.contactName" :maxlength="100"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="联系电话" name="contactPhone">
+                <a-input v-model:value="form.contactPhone" :maxlength="32"/>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="所在地区">
+                <AreaCascader
+                    type="province_city_district"
+                    v-model:value="area"
+                    style="width: 100%"
+                    placeholder="省 / 市 / 区"
+                    @change="onAreaChange"
+                />
+                <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="地址" name="address">
+                <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
+              </a-form-item>
+            </a-col>
+            <a-col :span="24">
+              <a-form-item label="地图定位">
+                <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
 
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="归属业务员">
-              <a-input v-if="isEdit" :value="sellerName || '未分配'" disabled/>
-              <EmployeeSelect v-else v-model:value="sellerValue" :disabled="!canAssign" placeholder="请选择业务员" width="100%"/>
-              <div class="ant-form-item-extra">{{ sellerHint }}</div>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="绑定供应商" name="supplierId">
-              <SupplierSelect v-model:value="form.supplierId" placeholder="请选择供应商"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">授信与账期</h3>
+            <span class="scm-form-section__hint">账期三种形态互斥：不设置 / 按金额 / 按时间。</span>
+          </div>
+          <a-row :gutter="20">
+            <!-- 额度与阈值都是后端的 4 位定点**字符串**，必须 string-mode：走 number 会丢精度、也会改掉提交类型 -->
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="授信额度" name="creditLimit">
+                <a-input-number v-model:value="form.creditLimit" string-mode :min="0" :max="99999999999999"
+                                :precision="4" addon-before="¥" style="width: 100%"/>
+                <div class="ant-form-item-extra">0 表示未设置额度；逾期仍阻断</div>
+              </a-form-item>
+            </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item label="账期类型" name="creditPeriodType">
+                <SmartEnumSelect
+                    v-model:value="creditPeriodTypeValue"
+                    enum-name="CREDIT_PERIOD_TYPE_ENUM"
+                    width="100%"
+                    placeholder="不设置账期"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col v-if="form.creditPeriodType === 'BY_AMOUNT'" :xs="24" :sm="12">
+              <a-form-item label="金额阈值" name="creditAmountThreshold">
+                <a-input-number v-model:value="form.creditAmountThreshold" string-mode :min="0"
+                                :max="99999999999999" :precision="4" addon-before="¥" style="width: 100%"
+                                placeholder="例如 5000.0000"/>
+              </a-form-item>
+            </a-col>
+            <template v-if="form.creditPeriodType === 'BY_TIME'">
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="账期值" name="creditPeriodValue">
+                  <a-input-number v-model:value="form.creditPeriodValue" :min="1" :precision="0" style="width: 100%"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="账期单位" name="creditPeriodUnit">
+                  <SmartEnumSelect v-model:value="creditPeriodUnitValue" enum-name="CREDIT_PERIOD_UNIT_ENUM" width="100%"/>
+                </a-form-item>
+              </a-col>
+              <a-col v-if="form.creditPeriodUnit === 'MONTH'" :xs="24" :sm="12">
+                <a-form-item label="固定结算日" name="settleDay">
+                  <a-input-number v-model:value="form.settleDay" :min="1" :max="28" :precision="0" addon-after="日"
+                                  style="width: 100%"/>
+                </a-form-item>
+              </a-col>
+            </template>
+          </a-row>
+        </section>
 
-        <a-divider orientation="left">联系方式</a-divider>
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="联系人" name="contactName">
-              <a-input v-model:value="form.contactName" :maxlength="100"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="联系电话" name="contactPhone">
-              <a-input v-model:value="form.contactPhone" :maxlength="32"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row :gutter="16">
-          <a-col :span="8">
-            <a-form-item label="所在地区">
-              <AreaCascader
-                  type="province_city_district"
-                  v-model:value="area"
-                  style="width: 100%"
-                  placeholder="省 / 市 / 区"
-                  @change="onAreaChange"
-              />
-              <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
-            </a-form-item>
-          </a-col>
-          <a-col :span="16">
-            <a-form-item label="地址" name="address">
-              <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
-            </a-form-item>
-            <a-form-item label="地图定位">
-              <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-divider orientation="left">授信与账期</a-divider>
-        <a-row :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="授信额度" name="creditLimit">
-              <a-input v-model:value="form.creditLimit" placeholder="0 表示未设置额度；逾期仍阻断"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="账期类型" name="creditPeriodType">
-              <SmartEnumSelect
-                  v-model:value="creditPeriodTypeValue"
-                  enum-name="CREDIT_PERIOD_TYPE_ENUM"
-                  width="100%"
-                  placeholder="不设置账期"
-              />
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row v-if="form.creditPeriodType === 'BY_AMOUNT'" :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="金额阈值" name="creditAmountThreshold">
-              <a-input v-model:value="form.creditAmountThreshold" placeholder="例如 5000.0000"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-row v-if="form.creditPeriodType === 'BY_TIME'" :gutter="16">
-          <a-col :span="8">
-            <a-form-item label="账期值" name="creditPeriodValue">
-              <a-input-number v-model:value="form.creditPeriodValue" :min="1" :precision="0" style="width: 100%"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="8">
-            <a-form-item label="账期单位" name="creditPeriodUnit">
-              <SmartEnumSelect v-model:value="creditPeriodUnitValue" enum-name="CREDIT_PERIOD_UNIT_ENUM" width="100%"/>
-            </a-form-item>
-          </a-col>
-          <a-col v-if="form.creditPeriodUnit === 'MONTH'" :span="8">
-            <a-form-item label="固定结算日" name="settleDay">
-              <a-input-number v-model:value="form.settleDay" :min="1" :max="28" :precision="0" style="width: 100%"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <a-form-item label="备注" name="remark">
-          <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3" show-count/>
-        </a-form-item>
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">其他</h3>
+          </div>
+          <a-row :gutter="20">
+            <a-col :span="24">
+              <a-form-item label="备注" name="remark">
+                <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3" show-count/>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
       </a-form>
     </a-spin>
     <template #footer>
@@ -206,6 +231,7 @@ import type {
   ScmId
 } from '/@/types/business/scm/customer';
 import {CUSTOMER_STATUS_ENUM} from '/@/constants/business/scm/customer-const';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
@@ -214,6 +240,7 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {
   applyCreditPeriodType,
   applyCreditPeriodUnit,
@@ -234,6 +261,13 @@ const formRef = ref<FormInstance>();
 
 /** 详情里的状态（只读展示用）。新建时后端固定给「潜在」。 */
 const status = ref<CustomerStatus>('POTENTIAL');
+/** 与客户列表同一套配色：合作中绿、暂停合作橙、黑名单红、潜在灰。 */
+const STATUS_COLOR: Record<CustomerStatus, string> = {
+  POTENTIAL: 'default',
+  COOPERATING: 'green',
+  SUSPENDED: 'orange',
+  BLACKLIST: 'red',
+};
 /** 编辑态回显的当前负责人姓名；归属只能通过列表「改派业务员」变更，编辑不动它。 */
 const sellerName = ref('');
 
