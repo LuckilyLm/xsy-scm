@@ -1,0 +1,88 @@
+<template>
+  <a-modal
+      :open="open"
+      :title="title"
+      :confirm-loading="busy"
+      :ok-type="mode === 'cancel' ? 'danger' : 'primary'"
+      :ok-text="mode === 'assign' ? '确认指派' : '确认'"
+      @ok="emit('submit')"
+      @cancel="emit('update:open', false)"
+  >
+    <a-alert v-if="tip" type="info" show-icon :message="tip"/>
+    <a-alert v-if="error" type="error" show-icon :message="error"/>
+    <a-form layout="vertical">
+      <a-form-item v-if="mode === 'assign'" label="受指派人" required>
+        <EmployeeSelect
+            :value="assignee"
+            placeholder="选择分拣员"
+            @update:value="emit('update:assignee', $event)"
+        />
+        <a-typography-text type="secondary">
+          改派只换人，已录入的分拣量与原因全部保留 —— 上一位称过的重量不会因为换人而重称。
+        </a-typography-text>
+      </a-form-item>
+      <a-form-item v-if="mode !== 'assign'" label="原因" required>
+        <a-textarea
+            :value="reason"
+            :rows="3"
+            :maxlength="500"
+            show-count
+            :placeholder="reasonHint"
+            @update:value="emit('update:reason', $event)"
+        />
+      </a-form-item>
+      <a-form-item v-if="mode === 'assign'" label="原因">
+        <a-input
+            :value="reason"
+            :maxlength="500"
+            placeholder="可选，例如：原分拣员请假"
+            @update:value="emit('update:reason', $event)"
+        />
+      </a-form-item>
+    </a-form>
+  </a-modal>
+</template>
+
+<script setup lang="ts">
+import {computed} from 'vue';
+import EmployeeSelect from '/@/components/system/employee-select/index.vue';
+
+type SortingTaskActionMode = 'assign' | 'cancel' | 'reopen';
+
+const props = defineProps<{
+  open: boolean;
+  mode: SortingTaskActionMode;
+  busy: boolean;
+  error: string;
+  assignee?: number;
+  reason: string;
+}>();
+
+const emit = defineEmits<{
+  'update:open': [value: boolean];
+  'update:assignee': [value: number | undefined];
+  'update:reason': [value: string];
+  submit: [];
+}>();
+
+const title = computed(() => ({
+  assign: '指派 / 改派',
+  cancel: '取消分拣任务',
+  reopen: '重开分拣任务',
+}[props.mode]));
+
+const tip = computed(() => {
+  switch (props.mode) {
+    case 'assign':
+      return '已完成与已取消的任务不再改派；改派保留已录入的分拣量。';
+    case 'cancel':
+      return '取消会在同一事务里释放本任务全部明细的占用位，被释放的订单行才能重新进入新任务。此操作不可撤销。';
+    default:
+      return '重开后任务回到「分拣中」，已录入的量与原因保留，可以继续修改。';
+  }
+});
+
+const reasonHint = computed(() =>
+    props.mode === 'cancel' ? '例如：订单行下错、客户临时取消' : '例如：完成后发现一行称重有误'
+);
+</script>
