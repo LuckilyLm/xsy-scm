@@ -61,18 +61,29 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无阈值配置' }"
-        :scroll="{ x: 1250 }"
+        :scroll="{ x: 1090 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warnMin'">
-          <span class="num">{{ quantityText(record.warnMin) }}</span>
+        <template v-if="column.dataIndex === 'warehouse'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
+            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'sku'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'warnMin'">
+          <span class="scm-quantity">{{ quantityText(record.warnMin) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'warnMax'">
-          <span class="num">{{ quantityText(record.warnMax) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.warnMax) }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'updatedAt'">{{ datetime(record.updatedAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-space :size="4">
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
                 type="link"
                 size="small"
@@ -135,10 +146,24 @@
         />
       </a-form-item>
       <a-form-item label="预警下限" name="warnMin">
-        <a-input v-model:value="form.warnMin" placeholder="留空表示不设下限" style="width: 200px"/>
+        <a-input-number
+            v-model:value="form.warnMin"
+            :min="0"
+            :precision="4"
+            :step="1"
+            placeholder="留空表示不设下限"
+            style="width: 200px"
+        />
       </a-form-item>
       <a-form-item label="预警上限" name="warnMax">
-        <a-input v-model:value="form.warnMax" placeholder="留空表示不设上限" style="width: 200px"/>
+        <a-input-number
+            v-model:value="form.warnMax"
+            :min="0"
+            :precision="4"
+            :step="1"
+            placeholder="留空表示不设上限"
+            style="width: 200px"
+        />
       </a-form-item>
       <a-form-item label="备注" name="remark">
         <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
@@ -170,9 +195,8 @@ import type {
   InventoryWarningThresholdQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
-import {datetime} from '../common/scm-display';
 
 const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarningThreshold[]>([]);
@@ -182,16 +206,16 @@ const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
+// 配置页只关心「哪个仓 + 哪个商品规格 + 上下限是多少 + 备注」。
+// 更新时间是技术字段（改配置立即生效，没有需要追溯的业务时刻），不上列。
 const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
-  {title: '仓库', dataIndex: 'warehouseName', width: 160},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
-  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
-  {title: '商品名称', dataIndex: 'productName', width: 150},
+  {title: '仓库', dataIndex: 'warehouse', width: 160},
+  {title: '商品', dataIndex: 'productName', width: 150},
+  {title: '商品规格', dataIndex: 'sku', width: 200},
   {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 120},
   {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 120},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
-  {title: '更新时间', dataIndex: 'updatedAt', width: 170},
-  {title: '操作', dataIndex: 'action', width: 140, fixed: 'right'},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 140},
 ]);
 
 // ------------------------------------------------------------------ 查询
@@ -251,8 +275,12 @@ const form = reactive<{
   id?: string | number;
   warehouseId?: string | number;
   skuId?: string | number;
-  warnMin?: string;
-  warnMax?: string;
+  /**
+   * 上下限在表单里是 `number`（InputNumber 只接受数字），提交时才转成后端要求的
+   * 4 位定点字符串。`null` = 不设该边界，与 `0` 是两件事。
+   */
+  warnMin?: number | null;
+  warnMax?: number | null;
   remark?: string;
 }>({});
 
@@ -265,8 +293,8 @@ function openCreate() {
   form.id = undefined;
   form.warehouseId = queryForm.warehouseId ?? singleWarehouseDefault(warehouses.value);
   form.skuId = undefined;
-  form.warnMin = undefined;
-  form.warnMax = undefined;
+  form.warnMin = null;
+  form.warnMax = null;
   form.remark = undefined;
   drawerOpen.value = true;
 }
@@ -275,9 +303,9 @@ function openEdit(record: InventoryWarningThreshold) {
   form.id = record.id;
   form.warehouseId = record.warehouseId;
   form.skuId = record.skuId;
-  // 定点字符串直接回填，不转 number（避免精度与类型问题）
-  form.warnMin = record.warnMin ?? undefined;
-  form.warnMax = record.warnMax ?? undefined;
+  // 后端给的是 4 位定点字符串，InputNumber 要 number；空值保持 null（= 不设该边界）
+  form.warnMin = record.warnMin == null ? null : Number(record.warnMin);
+  form.warnMax = record.warnMax == null ? null : Number(record.warnMax);
   form.remark = record.remark;
   drawerOpen.value = true;
 }
@@ -286,30 +314,29 @@ function closeDrawer() {
   drawerOpen.value = false;
 }
 
-/** 空串 → undefined（= 不设该边界）；这是「清空下限」的表达方式。 */
-function boundOrUndefined(value?: string) {
-  const trimmed = (value ?? '').trim();
-  return trimmed === '' ? undefined : trimmed;
+/**
+ * InputNumber 的 number → 后端要求的 4 位定点字符串；不设该边界时返回 `undefined`。
+ *
+ * 后端用 `ScmStrictDecimalStringDeserializer` **拒绝 JSON 数字**，所以这里必须显式
+ * 补足 4 位小数，不能把 `10` 直接发上去。
+ */
+function fixed4(value?: number | null): string | undefined {
+  return value === null || value === undefined ? undefined : value.toFixed(4);
 }
 
 /**
- * 提交前校验三条判据：至少填一个、都非负、下限不高于上限。
- * 后端会再判一次（41051）并给出可读错误，这里先拦一道是为了让用户少跑一次请求。
+ * 提交前校验两条判据：至少填一个、下限不高于上限。
+ * 非负与小数位数已由 InputNumber（`:min="0"` + `:precision="4"`）结构性保证，
+ * 后端会再判一次（41051）并给出可读错误。
  */
 function buildPayload(): InventoryWarningThresholdAdd | null {
-  const min = boundOrUndefined(form.warnMin);
-  const max = boundOrUndefined(form.warnMax);
+  const min = fixed4(form.warnMin);
+  const max = fixed4(form.warnMax);
   if (min === undefined && max === undefined) {
     message.warning('预警上下限至少填写一个 —— 都没有的配置没有任何判断依据');
     return null;
   }
-  for (const [label, value] of [['下限', min], ['上限', max]] as const) {
-    if (value !== undefined && (!/^\d+(\.\d{1,4})?$/.test(value) || Number(value) < 0)) {
-      message.warning(`预警${label}必须为不小于 0 的数字，最多 4 位小数`);
-      return null;
-    }
-  }
-  if (min !== undefined && max !== undefined && Number(min) > Number(max)) {
+  if (form.warnMin != null && form.warnMax != null && form.warnMin > form.warnMax) {
     message.warning('预警下限不得大于上限 —— 否则所有状态都会异常，预警会失去意义');
     return null;
   }
@@ -369,9 +396,3 @@ onMounted(async () => {
   await queryData();
 });
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

@@ -4,6 +4,10 @@
   预留是**业务动作的副产物**（销售订单确认时产生），不是人手工录的单据 ——
   因此本页只有查询与释放，没有「新建」。
   释放把占用归还可用量；重复释放会被拒绝（41016），不会把可用量虚增。
+
+  列按「哪张单 / 哪个仓 / 什么货 / 占了多少 / 还在不在占」排列：仓库与商品规格的编码
+  作为名称下方的 secondary text。来源单号取不到时显示破折号，**不回落成裸 ID** ——
+  `sourceDocumentId` 是技术主键，对使用者没有信息量。
 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
@@ -63,31 +67,46 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无预留记录' }"
-        :scroll="{ x: 1400 }"
+        :scroll="{ x: 1260 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'status'">
-          <a-tag :color="statusColor(record.status)">{{ record.statusDesc || record.status }}</a-tag>
+        <template v-if="column.dataIndex === 'sourceDocumentNo'">{{ record.sourceDocumentNo || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouse'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
+            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'sku'">
+          <!-- 预留 VO 不返回规格值（specValues），主行只能是规格名称，编码作次要行 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.skuName || '—' }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
-          <span class="num">{{ quantityText(record.quantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sourceDocumentNo'">
-          {{ record.sourceDocumentNo || `#${record.sourceDocumentId ?? '—'}` }}
+        <template v-else-if="column.dataIndex === 'unitSnapshot'">{{ record.unitSnapshot || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'status'">
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
         <template v-else-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <a-button
-              v-if="record.status === 'ACTIVE'"
-              type="link"
-              size="small"
-              danger
-              @click="onRelease(record)"
-              v-privilege="'scm:inventory:reservation:release'"
-          >
-            释放
-          </a-button>
-          <span v-else>—</span>
+          <!-- 只有生效中的预留可以释放；其余状态留一个破折号占位，避免操作列时有时无 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button
+                v-if="record.status === 'ACTIVE'"
+                type="link"
+                size="small"
+                danger
+                @click="onRelease(record)"
+                v-privilege="'scm:inventory:reservation:release'"
+            >
+              释放
+            </a-button>
+            <span v-else class="scm-cell-hint">—</span>
+          </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -113,6 +132,8 @@ import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {inventoryReservationApi} from '/@/api/business/scm/inventory-reservation-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -140,23 +161,24 @@ const statusOptions = Object.values(SCM_INVENTORY_RESERVATION_STATUS_ENUM).map((
 }));
 
 const columns = ref<TableColumnsType<InventoryReservation>>([
-  {title: '仓库', dataIndex: 'warehouseName', width: 160},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
-  {title: '商品规格名称', dataIndex: 'skuName', width: 150},
-  {title: '商品名称', dataIndex: 'productName', width: 160},
-  {title: '预留数量', dataIndex: 'quantity', align: 'right', width: 120},
-  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 90},
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 180},
+  {title: '仓库', dataIndex: 'warehouse', width: 160},
+  {title: '商品', dataIndex: 'productName', width: 160},
+  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '预留数量', dataIndex: 'quantity', align: 'right', width: 110},
+  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '发生时间', dataIndex: 'occurredAt', width: 180},
-  {title: '操作', dataIndex: 'action', width: 90, fixed: 'right'},
+  {title: '发生时间', dataIndex: 'occurredAt', width: 170},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ]);
 
-function statusColor(status?: string) {
-  if (status === 'ACTIVE') return 'orange';
-  if (status === 'CONSUMED') return 'green';
-  return 'default';
-}
+/** 生效中 = 还占着可用量（橙）；已消耗 = 正常走到出库（绿）；已释放 = 占用已归还（灰）。 */
+const STATUS_TONE: Record<string, ScmStatusTone> = {
+  ACTIVE: 'warning',
+  RELEASED: 'neutral',
+  CONSUMED: 'success',
+};
+const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status ?? ''] ?? 'neutral';
 
 async function queryData() {
   const id = ++requestId;
@@ -227,9 +249,3 @@ onMounted(async () => {
   await queryData();
 });
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

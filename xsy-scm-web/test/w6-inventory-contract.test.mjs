@@ -622,9 +622,18 @@ test('the threshold config page is not a stock-mutating page and validates the r
   // 三条区间判据必须在提交前拦一道（后端 41051 会再判一次）
   assert.match(page, /上下限至少填写一个/);
   assert.match(page, /不得大于上限/);
-  // 空串要转成 null（= 清空该边界），不能把空串发上去
+  // 数值控件是 InputNumber（:min=0 + :precision=4），不是自由文本
+  assert.match(page, /<a-input-number[\s\S]{0,120}form\.warnMin/);
+  assert.match(page, /<a-input-number[\s\S]{0,120}form\.warnMax/);
+  assert.match(page, /:precision="4"/);
+  // 提交时必须补足 4 位定点字符串：后端 ScmStrictDecimalStringDeserializer 拒绝 JSON 数字
+  assert.match(page, /value\.toFixed\(4\)/);
+  // 不设边界要转成 null，不能把空串发上去（后端 @Pattern 接受 null、拒绝 ''）
   assert.match(page, /warnMin: min \?\? null/);
   assert.match(page, /warnMax: max \?\? null/);
+  // 更新时间是技术字段，不上列
+  assert.doesNotMatch(page, /title: '更新时间'/);
+  assert.doesNotMatch(page, /dataIndex: 'updatedAt'/);
 
   // 配置接口没有「确认 / 审批」这类动作：改配置立即生效（预警是读时计算的）
   const api = code('../src/api/business/scm/inventory-warning-threshold-api.ts');
@@ -632,6 +641,44 @@ test('the threshold config page is not a stock-mutating page and validates the r
   assert.match(api, /update:/);
   assert.match(api, /delete:/);
   assert.doesNotMatch(api, /confirm|approve|submit/);
+});
+
+// ------------------------------------------------------------------
+// 预留 / 预警列表的展示契约
+// ------------------------------------------------------------------
+
+test('the reservation page shows the source document number, never a raw technical id', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-reservation-list.vue');
+  // 来源单号取不到时显示破折号；回落成 `#<sourceDocumentId>` 会把技术主键端给使用者
+  assert.match(page, /record\.sourceDocumentNo \|\| '—'/);
+  assert.doesNotMatch(page, /sourceDocumentId/, '预留页不得展示裸主键');
+
+  // 状态统一走 ScmStatusTag 语义档位，不再各自写 antd 色名
+  assert.match(page, /ScmStatusTag/);
+  assert.match(page, /ACTIVE: 'warning'/);
+  assert.match(page, /CONSUMED: 'success'/);
+  assert.doesNotMatch(page, /'orange'|'green'|'red'/, '状态色应由 tone 档位给出');
+
+  // 数量与规格编码的展示口径与余额 / 流水页一致
+  assert.match(page, /class="scm-quantity"/);
+  assert.match(page, /scm-cell-stack__sub/);
+});
+
+test('the warning page keeps all three quantities and colours the level, not the row', () => {
+  const page = code('../src/views/business/scm/inventory/inventory-warning-list.vue');
+  // 判定基准是可用量：只给一个数字，用户看不懂预警为什么触发
+  for (const index of ['quantity', 'reservedQuantity', 'availableQuantity']) {
+    assert.match(page, new RegExp(`dataIndex: '${index}'`), '预警页缺少 ' + index + ' 列');
+  }
+  // 低于下限 = 断货风险（红），高于上限 = 积压（橙），正常不强调
+  assert.match(page, /LOW: 'error'/);
+  assert.match(page, /HIGH: 'warning'/);
+  assert.match(page, /NORMAL: 'neutral'/);
+  // 阈值上下限合成一格：两行都带标签，各自可空
+  assert.match(page, /下限 \{\{ quantityText\(record\.warnMin\) \}\}/);
+  assert.match(page, /上限 \{\{ quantityText\(record\.warnMax\) \}\}/);
+  // 状态列不是操作列，不该固定在右侧
+  assert.doesNotMatch(page, /dataIndex: 'status'[^}]*fixed/);
 });
 
 test('warning error codes all have actionable Chinese text', () => {
