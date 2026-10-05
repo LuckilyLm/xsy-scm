@@ -264,7 +264,6 @@ import PrintDocumentModal from '../print/print-document-modal.vue';
 import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
-import {useUserStore} from '/@/store/modules/system/user';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
@@ -286,19 +285,14 @@ import SortingTaskDetailDrawer from './components/sorting-task-detail-drawer.vue
 import SortingTaskCreateModal from './components/sorting-task-create-modal.vue';
 import SortingTaskActionModal from './components/sorting-task-action-modal.vue';
 import SortingTaskFilterForm from './components/sorting-task-filter-form.vue';
+import {useSortingTaskEntry} from './use-sorting-task-entry';
 import type {
     Id,
     SortingActionPayload,
     SortingCandidateLine,
-    SortingEntryItemPayload,
-    SortingEntryPayload,
-    SortingLineResult,
     SortingPrint,
     SortingTask,
-    SortingTaskDetail,
-    SortingTaskItem,
     SortingTaskQuery,
-    SortingTaskStatus,
 } from './sorting-types';
 import {sortingError} from './sorting-types';
 
@@ -316,15 +310,6 @@ function openScale(record: SortingTask) {
   scaleTaskId.value = record.id;
   scaleOpen.value = true;
 }
-
-/** 一行明细的编辑草稿；空串表示「没填」，与后端 `"0.0000"`（填了且为 0）是两回事。 */
-interface EntryDraft {
-    sortedQuantity: string;
-    result: string;
-    reason: string;
-}
-
-const userStore = useUserStore();
 
 // ------------------------------------------------------------------ 列表
 
@@ -376,6 +361,33 @@ function isWorking(status: string) {
     return SCM_SORTING_WORKING_STATUS.includes(status);
 }
 
+const busy = ref(false);
+const {
+    canEditItems,
+    canEditRow,
+    detail,
+    detailError,
+    detailId,
+    detailLoading,
+    detailOpen,
+    dirtyCount,
+    drafts,
+    entryError,
+    entryErrors,
+    isGiftRow,
+    openDetail,
+    readOnlyReason,
+    reloadDetail,
+    submitEntry,
+    updateDraft,
+} = useSortingTaskEntry({
+    busy,
+    refreshTaskList: () => {
+        void queryData();
+    },
+    statusDesc,
+});
+
 async function queryData() {
     const current = ++listGeneration;
     loading.value = true;
@@ -414,196 +426,6 @@ function resetQuery() {
     deliveryRange.value = undefined;
     assigneeFilter.value = undefined;
     onSearch();
-}
-
-// ------------------------------------------------------------------ 详情与录入
-
-const detailOpen = ref(false);
-const detailLoading = ref(false);
-const detailError = ref('');
-const entryError = ref('');
-const busy = ref(false);
-const detail = ref<SortingTaskDetail>();
-const drafts = reactive<Record<string, EntryDraft>>({});
-const entryErrors = reactive<Record<string, string>>({});
-let detailId: Id | undefined;
-let detailGeneration = 0;
-
-/**
- * 当前登录者是否本任务受指派人。
- *
- * `employeeId` 在 store 里是字符串，后端回的是 JSON 数字，因此两边都转成字符串再比 ——
- * 直接 `===` 会让「本人也编辑不了」，而且看起来像权限没配。
- */
-const isAssignee = computed(() => {
-    const assignee = detail.value?.task.assigneeEmployeeId;
-    if (assignee === null || assignee === undefined) return false;
-    return String(assignee) === String(userStore.employeeId);
-});
-
-const canEditItems = computed(
-    () =>
-        !!detail.value &&
-        isWorking(detail.value.task.status) &&
-        isAssignee.value &&
-        hasPermission(SCM_SORTING_PERMISSION.ITEM_UPDATE)
-);
-
-/** 只读时必须说清为什么只读：三种成因（状态已终结 / 不是派给我的 / 没有编辑权）处置方式完全不同。 */
-const readOnlyReason = computed(() => {
-    const task = detail.value?.task;
-    if (!task) return '';
-    if (!isWorking(task.status)) return `任务当前为「${statusDesc(task.status)}」，不再接受录入；已完成的任务需先重开。`;
-    if (!isAssignee.value) return '只有受指派人本人可以录入分拣量；需要变更执行人请使用「改派」。';
-    return '当前账号没有分拣明细编辑权限（scm:sorting:item:update），只能查看。';
-});
-
-/** 满赠赠品行：只读合并进来的第二类来源，缺省按订单行处理（兼容升级前返回的数据）。 */
-function isGiftRow(record: SortingTaskItem) {
-    return record.sourceType === 'PROMOTION_GIFT';
-}
-
-/**
- * 释放占用的历史行不再代表待办量，即使任务还能干活也不能编辑。
- *
- * 赠品行一律不可编辑：分拣只拣货，不写回赠品数量与结果 —— 赠品事实只在冻结权益与出库流水里。
- */
-function canEditRow(record: SortingTaskItem) {
-    if (isGiftRow(record)) return false;
-    return canEditItems.value && record.occupationStatus === 'ACTIVE';
-}
-
-function updateDraft(itemId: Id, field: keyof EntryDraft, value: string) {
-    const draft = drafts[String(itemId)];
-    if (draft) draft[field] = value;
-}
-
-function draftKey(record: SortingTaskItem) {
-    return String(record.id);
-}
-
-function isDirty(record: SortingTaskItem) {
-    const draft = drafts[draftKey(record)];
-    if (!draft) return false;
-    return (
-        draft.sortedQuantity !== (record.sortedQuantity ?? '') ||
-        draft.result !== (record.result ?? '') ||
-        draft.reason.trim() !== (record.reason ?? '').trim()
-    );
-}
-
-const dirtyCount = computed(() => (detail.value?.items ?? []).filter(isDirty).length);
-
-/** 每次读到详情都按后端返回值重建草稿，避免上一次编辑的残值被当成新的改动提交出去。 */
-function resetDrafts(items: SortingTaskItem[]) {
-    Object.keys(drafts).forEach((key) => delete drafts[key]);
-    Object.keys(entryErrors).forEach((key) => delete entryErrors[key]);
-    items.forEach((item) => {
-        drafts[String(item.id)] = {
-            sortedQuantity: item.sortedQuantity ?? '',
-            result: item.result ?? '',
-            reason: item.reason ?? '',
-        };
-    });
-}
-
-async function reloadDetail() {
-    if (detailId === undefined) return;
-    const current = ++detailGeneration;
-    detailLoading.value = true;
-    detailError.value = '';
-    try {
-        const result = await sortingApi.detail(detailId);
-        if (current === detailGeneration) {
-            detail.value = result.data;
-            resetDrafts(result.data.items);
-            entryError.value = '';
-        }
-    } catch (e) {
-        if (current === detailGeneration) detailError.value = sortingError(e);
-    } finally {
-        if (current === detailGeneration) detailLoading.value = false;
-    }
-}
-
-function openDetail(id: Id) {
-    detailId = id;
-    detail.value = undefined;
-    entryError.value = '';
-    resetDrafts([]);
-    detailOpen.value = true;
-    reloadDetail();
-}
-
-/**
- * 装配录入载荷：只收改动过的行，每行带自己读到的 `version`。
- *
- * 校验失败时返回 `null` 并把逐行原因落在对应单元格上 —— 不发请求，
- * 因为后端会整批回滚（同一事务），部分发出去只会让人以为改动已保存。
- */
-function buildEntryPayload(): SortingEntryPayload | null {
-    const items: SortingEntryItemPayload[] = [];
-    let invalid = false;
-    Object.keys(entryErrors).forEach((key) => delete entryErrors[key]);
-    (detail.value?.items ?? []).forEach((record) => {
-        if (!canEditRow(record) || !isDirty(record)) return;
-        const draft = drafts[draftKey(record)];
-        const key = draftKey(record);
-        if (!draft.result) {
-            entryErrors[key] = '请选择分拣结果';
-            invalid = true;
-            return;
-        }
-        const quantity = draft.sortedQuantity.trim();
-        if (!quantity) {
-            entryErrors[key] = '请填写分拣量；整行缺货也请填 0 并把结果选成「缺货」';
-            invalid = true;
-            return;
-        }
-        const reason = draft.reason.trim();
-        if (draft.result !== SCM_SORTING_RESULT_ENUM.NORMAL.value && !reason) {
-            entryErrors[key] = '非正常结果必须填写原因，这是后续核对唯一的依据';
-            invalid = true;
-            return;
-        }
-        items.push({
-            id: record.id,
-            // 行版本原样回传：后端逐行比对，冲突时整批回滚，不覆盖别人刚录入的量
-            version: record.version,
-            sortedQuantity: quantity,
-            result: draft.result as SortingLineResult,
-            reason: reason || undefined,
-        });
-    });
-    if (invalid) {
-        entryError.value = '有明细行未通过校验，本次未提交任何改动。';
-        return null;
-    }
-    if (!items.length) {
-        entryError.value = '没有需要提交的改动。';
-        return null;
-    }
-    entryError.value = '';
-    return {items};
-}
-
-async function submitEntry() {
-    if (!detail.value) return;
-    const payload = buildEntryPayload();
-    if (!payload) return;
-    busy.value = true;
-    try {
-        await sortingApi.enter(detail.value.task.id, payload);
-        message.success(`分拣录入成功（${payload.items.length} 行）`);
-        await reloadDetail();
-        queryData();
-    } catch (e) {
-        entryError.value = sortingError(e);
-        // 版本冲突或状态被他人改过：拉最新数据，让操作人重新对着自己看到的那一版录
-        await reloadDetail();
-    } finally {
-        busy.value = false;
-    }
 }
 
 // ------------------------------------------------------------------ 任务级动作
@@ -692,7 +514,7 @@ function confirmComplete(record: SortingTask) {
 /** 动作之后刷新列表；详情抽屉开着时一并刷新，保证版本号与状态是刚读到的那一版。 */
 async function afterTaskChanged(id: Id) {
     await queryData();
-    if (detailOpen.value && String(detailId) === String(id)) await reloadDetail();
+    if (detailOpen.value && String(detailId.value) === String(id)) await reloadDetail();
 }
 
 // ------------------------------------------------------------------ 新建任务
@@ -842,12 +664,12 @@ async function recordPrint() {
         message.success(`已登记打印，累计 ${result.data.printCount} 次`);
         print.value = {...print.value, printCount: result.data.printCount} as SortingPrint;
         await queryData();
-        if (detailOpen.value && String(detailId) === String(taskId)) await reloadDetail();
+        if (detailOpen.value && String(detailId.value) === String(taskId)) await reloadDetail();
     } catch (e) {
         // 计次不 bump 任务版本，所以版本冲突只可能是任务真被改过：刷新后重新登记
         printError.value = sortingError(e);
         await queryData();
-        if (detailOpen.value && String(detailId) === String(taskId)) await reloadDetail();
+        if (detailOpen.value && String(detailId.value) === String(taskId)) await reloadDetail();
     } finally {
         printing.value = false;
     }
