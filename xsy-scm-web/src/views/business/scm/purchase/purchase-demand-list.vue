@@ -60,35 +60,50 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1700 }"
+        :scroll="{ x: 1635 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'status'">
+        <template v-if="column.dataIndex === 'salesOrderNoSnapshot'">
+          <!-- 来源单号在下，冻结批次在上：批次是这条需求的"计算出处"，
+               点得动就说明能回看当时的建议量解释，点不动就是手工毛需求 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.salesOrderNoSnapshot || '—' }}</span>
+            <a-button
+                v-if="record.calculationBatchId"
+                type="link"
+                size="small"
+                class="scm-cell-stack__sub batch-link"
+                v-privilege="'scm:purchase:demand:batch:query'"
+                @click="openBatch(record.calculationBatchId)"
+            >
+              批次 {{ record.calculationBatchId }}
+            </a-button>
+            <span v-else class="scm-cell-stack__sub">手工毛需求</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'productName'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'status'">
           <a-tag>{{ SCM_DEMAND_STATUS_ENUM[record.status]?.desc }}</a-tag>
         </template>
         <template v-else-if="column.dataIndex === 'requiredQuantity'">
           <span class="num">{{ quantity(record.requiredQuantity) }}</span>
+          <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'allocatedQuantity'">
           <span class="num">{{ quantity(record.allocatedQuantity) }}</span>
+          <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unallocatedQuantity'">
           <span class="num">{{ quantity(record.unallocatedQuantity) }}</span>
+          <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'supplierName'">{{ record.supplierName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'calculationBatchId'">
-          <a-button
-              v-if="record.calculationBatchId"
-              type="link"
-              size="small"
-              v-privilege="'scm:purchase:demand:batch:query'"
-              @click="openBatch(record.calculationBatchId)"
-          >
-            {{ record.calculationBatchId }}
-          </a-button>
-          <span v-else class="hint">手工毛需求</span>
-        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate scm-table-actions">
             <a-button
@@ -236,12 +251,19 @@ const alloc = reactive({
   warehouseId: undefined as Id | undefined,
 });
 
+/**
+ * 列表列（§13.1）：13 → 10 列。
+ *
+ * - 「来源销售单号」与「来源冻结批次」合成一格：两者都是这条需求的来源标识，
+ *   批次是内部计算号，降为 secondary text 后不再单独占 130px；
+ * - 「需求单位」不再单独成列 —— 单位是数量的量纲，写进数量列表头
+ *   （`需求量(单位)`）比另起一列更省横向空间，也避免读者自己去对齐两列；
+ * - 三个数量列保留：判定「要不要分配」看的是未分配量，只留一个数字看不懂为什么触发。
+ */
 const columns = computed<TableColumnsType<Demand>>(() => [
-  {title: '来源销售单号', dataIndex: 'salesOrderNoSnapshot', width: 200},
-  {title: '来源冻结批次', dataIndex: 'calculationBatchId', width: 130},
-  {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 95},
+  {title: '来源单号', dataIndex: 'salesOrderNoSnapshot', width: 190},
+  {title: '商品', dataIndex: 'productName', width: 190},
+  {title: '商品规格', dataIndex: 'skuName', width: 150},
   {title: '需求量', dataIndex: 'requiredQuantity', align: 'right', width: 115},
   {title: '已分配', dataIndex: 'allocatedQuantity', align: 'right', width: 115},
   {title: '未分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 115},
@@ -249,7 +271,7 @@ const columns = computed<TableColumnsType<Demand>>(() => [
   {title: '供应商', dataIndex: 'supplierName', width: 150},
   {title: '仓库', dataIndex: 'warehouseName', width: 130},
   {title: '需求日期', dataIndex: 'demandDate', width: 120},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
 
 async function queryData() {
@@ -387,6 +409,21 @@ onMounted(queryData);
 <style scoped>
 .num {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* 单位跟在数字后面、比数字小一号：它是量纲注脚，不该和数字抢同一档字重 */
+.unit {
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--scm-text-secondary);
+}
+
+/* 复合单元里的批次链接：按钮自带 padding，要压平才能与上一行的单号左边缘对齐 */
+.batch-link {
+  height: auto;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .hint {

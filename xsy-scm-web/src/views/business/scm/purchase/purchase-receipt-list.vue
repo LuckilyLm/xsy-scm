@@ -78,7 +78,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1400 }"
+        :scroll="{ x: 1720 }"
         :row-selection="{
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
@@ -98,41 +98,30 @@
           </a-tag>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate scm-table-actions">
+          <!-- 行内只留当前状态唯一的推进动作（草稿=确认收货、待入库=确认入库）；
+               编辑备注与删除是低频/危险动作，收进「更多」，
+               否则 250px 的操作列里最显眼的永远是那排「编辑备注 删除」 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
                 v-if="record.status === 'DRAFT'"
                 type="link"
+                size="small"
                 v-privilege="'scm:purchase:receipt:confirm'"
                 @click="confirmModal?.open(record.id)"
             >
               确认收货
             </a-button>
             <a-button
-                v-if="record.status === 'CONFIRMED' && record.receiptMode === 'WAREHOUSE_CONFIRM' && record.putawayStatus === 'PENDING'"
+                v-else-if="record.status === 'CONFIRMED' && record.receiptMode === 'WAREHOUSE_CONFIRM' && record.putawayStatus === 'PENDING'"
                 type="link"
+                size="small"
                 v-privilege="'scm:purchase:receipt:putaway'"
                 @click="putaway(record)"
             >
               确认入库
             </a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                v-privilege="'scm:purchase:receipt:update'"
-                @click="form?.open(record.id)"
-            >
-              编辑备注
-            </a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                danger
-                type="link"
-                v-privilege="'scm:purchase:receipt:delete'"
-                @click="remove(record)"
-            >
-              删除
-            </a-button>
-          </div>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -161,7 +150,7 @@
 </template>
 
 <script setup lang="ts">
-import {reactive, ref, watch} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
@@ -169,6 +158,8 @@ import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_PURCHASE_TABLE_ID,
@@ -178,6 +169,7 @@ import {
 } from '/@/constants/business/scm/purchase-const';
 import type {Receipt, ReceiptQuery} from './purchase-types';
 import {purchaseError} from './purchase-errors';
+import {hasPermission} from '../common/scm-permission';
 import {deepLinkFilters} from '/@/lib/query-deep-link';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
 import PurchaseReceiptConfirm from './components/purchase-receipt-confirm-modal.vue';
@@ -210,8 +202,29 @@ const columns = ref<TableColumnsType<Receipt>>([
   {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
   {title: '操作者', dataIndex: 'operator', width: 120},
   {title: '备注', dataIndex: 'remark', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 250},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canUpdate = computed(() => hasPermission('scm:purchase:receipt:update'));
+const canDelete = computed(() => hasPermission('scm:purchase:receipt:delete'));
+
+/** 只有草稿可写；动作集合与原行内按钮一一对应，只按频率重新分组。 */
+function rowActions(row: Receipt): ScmActionItem[] {
+  const draft = row.status === 'DRAFT';
+  return [
+    {key: 'edit', label: '编辑备注', hidden: !(draft && canUpdate.value)},
+    {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
+  ];
+}
+
+function onRowAction(key: string, row: Receipt) {
+  if (key === 'edit') {
+    form.value?.open(row.id);
+  } else if (key === 'delete') {
+    remove(row);
+  }
+}
 
 /** 采购单号 → id：收货单列表按 `purchaseOrderId` 过滤，不能直接传单号。 */
 async function resolveOrderId() {

@@ -51,7 +51,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1350 }"
+        :scroll="{ x: 1180 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -59,32 +59,33 @@
             {{ SCM_WAREHOUSE_STATUS_ENUM[record.status]?.desc || record.status }}
           </a-tag>
         </template>
-        <template v-else-if="column.dataIndex === 'address'">{{ record.address || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'areaText'">
+          <!-- 复合单元：区域在上、详细地址在下。地址是库管实际找货的凭据，
+               不能因为"省市区能定位"就整列删掉，但也不该再占一列 260px -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ areaText(record) }}</span>
+            <span v-if="record.address" class="scm-cell-stack__sub">{{ record.address }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'located'">
+          <!-- 未定位的仓库无法参与路线规划，用图标 + Tooltip 表达，不占一整列文字 -->
+          <a-tooltip :title="isLocated(record) ? '已定位，可参与路线规划' : '未定位，无法参与路线规划'">
+            <CheckCircleOutlined v-if="isLocated(record)" class="located located--ok"/>
+            <ExclamationCircleOutlined v-else class="located located--warn"/>
+          </a-tooltip>
+        </template>
         <template v-else-if="column.dataIndex === 'remark'">{{ record.remark || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate scm-table-actions">
-            <a-button type="link" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
-            <a-button type="link" v-privilege="'scm:warehouse:scope:query'" @click="scopeModal?.openEmployees(record.id, record.name)">
+          <!-- 行内只留高频的「编辑」与「授权员工」；启用/停用是状态机动作，
+               停用还会影响「默认仓库」判定（唯一启用仓库），不与普通动作同排常驻 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
+            <a-button type="link" size="small" v-privilege="'scm:warehouse:scope:query'"
+                      @click="scopeModal?.openEmployees(record.id, record.name)">
               授权员工
             </a-button>
-            <a-button
-                v-if="record.status === 'ENABLED'"
-                danger
-                type="link"
-                v-privilege="'scm:warehouse:disable'"
-                @click="disable(record)"
-            >
-              停用
-            </a-button>
-            <a-button
-                v-if="record.status === 'DISABLED'"
-                type="link"
-                v-privilege="'scm:warehouse:enable'"
-                @click="enable(record)"
-            >
-              启用
-            </a-button>
-          </div>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -144,22 +145,25 @@
 
 <script setup lang="ts">
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
-import {emptyLocation, locationError} from '/@/components/business/scm/map/types';
-import {nextTick, onMounted, reactive, ref} from 'vue';
+import {emptyLocation, isLocated, locationError} from '/@/components/business/scm/map/types';
+import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';
+import {computed, nextTick, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import WarehouseScopeModal from './components/warehouse-scope-modal.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {Warehouse, WarehousePayload, WarehouseQuery} from './purchase-types';
 import {purchaseError} from './purchase-errors';
+import {hasPermission} from '../common/scm-permission';
 import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
-import {datetime} from '../common/scm-display';
 
 const queryForm = reactive<WarehouseQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<Warehouse[]>([]);
@@ -181,15 +185,55 @@ function onAreaChange(_value: unknown, nodes: AreaNode[]) {
 
 let requestId = 0;
 
+/**
+ * 列表列（§13.6）。仓库是「配置 + 业务基础数据」，因此与普通主数据口径不同：
+ *
+ * - **仓库编码保留**：它是运营配置的识别字段（对账、盘点、接口对接都用它），
+ *   不像商品编码那样可以只做次要信息；
+ * - **创建时间下沉**：配置页的时间不参与判断，隐藏后由详情/编辑表单承载；
+ * - **新增定位状态**：未定位的仓库无法参与路线规划（与配送线路页同一口径），
+ *   这是本页唯一「一眼要挑出来」的信号，用图标 + Tooltip 而不是一列文字。
+ *
+ * 地址不再单独占 260px：省市区快照已能定位到区域，完整地址进编辑表单。
+ */
 const columns = ref<TableColumnsType<Warehouse>>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 160},
   {title: '仓库名称', dataIndex: 'name', width: 200},
+  {title: '区域 / 地址', dataIndex: 'areaText', width: 280},
+  {title: '定位', dataIndex: 'located', align: 'center', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
-  {title: '地址', dataIndex: 'address', width: 260},
   {title: '备注', dataIndex: 'remark', width: 200},
-  {title: '创建时间', dataIndex: 'createdAt', width: 190, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 210},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+
+/** 区域摘要：省 / 市 / 区三级名称快照拼一行；未选任何层级时给 `—`（全域空值口径）。 */
+function areaText(record: Warehouse): string {
+  const nodes = areaNodesOf(record);
+  return nodes.length ? nodes.map((node) => node.label).join(' / ') : '—';
+}
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canEnable = computed(() => hasPermission('scm:warehouse:enable'));
+const canDisable = computed(() => hasPermission('scm:warehouse:disable'));
+
+/** 状态机动作按当前状态二选一，与原行内按钮一一对应。 */
+function rowActions(row: Warehouse): ScmActionItem[] {
+  const enabled = row.status === 'ENABLED';
+  return [
+    {key: 'state', label: enabled ? '停用' : '启用', danger: enabled, hidden: enabled ? !canDisable.value : !canEnable.value},
+  ];
+}
+
+function onRowAction(key: string, row: Warehouse) {
+  if (key !== 'state') {
+    return;
+  }
+  if (row.status === 'ENABLED') {
+    disable(row);
+  } else {
+    enable(row);
+  }
+}
 
 async function queryData() {
   const id = ++requestId;
@@ -313,3 +357,14 @@ function disable(row: Warehouse) {
 
 onMounted(queryData);
 </script>
+
+<style scoped>
+/* 定位状态：语义色与配送线路页同一档位（绿=已定位、橙=未定位） */
+.located--ok {
+  color: var(--scm-success, #52c41a);
+}
+
+.located--warn {
+  color: var(--scm-warning, #faad14);
+}
+</style>

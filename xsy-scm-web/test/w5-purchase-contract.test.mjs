@@ -509,6 +509,14 @@ test('B1 commands and action guards stay explicit in the frontend contract', () 
   assert.match(receiptList, /scm:purchase:receipt:putaway/);
 
   const warehouseList = code('../src/views/business/scm/purchase/warehouse-list.vue');
-  assert.match(warehouseList, /record\.status === 'ENABLED'[\s\S]*scm:warehouse:disable/);
-  assert.match(warehouseList, /record\.status === 'DISABLED'[\s\S]*scm:warehouse:enable/);
+  // 启用 / 停用已从行内按钮移入「更多」菜单（§13.6：状态机动作不与普通动作同排常驻），
+  // 因此条件与权限码不再彼此相邻。断言改成分别检查两者的存在与绑定关系：
+  // 菜单项由 `rowActions` 按当前状态二选一生成，权限码由 `hasPermission` 显式裁剪
+  //（`v-privilege` 指令对「更多」里的菜单项不生效，这是必须换写法的原因）。
+  assert.match(warehouseList, /row\.status === 'ENABLED'/);
+  assert.match(warehouseList, /hasPermission\('scm:warehouse:disable'\)/);
+  assert.match(warehouseList, /hasPermission\('scm:warehouse:enable'\)/);
+  // 状态机没有被改写：启用/停用的两个接口调用仍在同一分支里按状态二选一
+  assert.match(warehouseList, /onRowAction[\s\S]{0,400}disable\(row\)/);
+  assert.match(warehouseList, /onRowAction[\s\S]{0,400}else\s*\{\s*enable\(row\)/);
 });

@@ -49,14 +49,11 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1200 }"
+        :scroll="{ x: 1000 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'operationType'">
           {{ SCM_PURCHASE_OPERATION_ENUM[record.operationType]?.desc || record.operationType }}
-        </template>
-        <template v-else-if="column.dataIndex === 'purchaseOrderId'">
-          {{ record.purchaseOrderId ?? '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'purchaseReceiptId'">
           {{ record.purchaseReceiptId ?? '—' }}
@@ -100,12 +97,23 @@ const visible = ref(false);
 const active = ref<LogRow>();
 let requestId = 0;
 
+/**
+ * 日志列（§13.5）。
+ *
+ * **去掉「采购单 id」列**：本页本来就按单号定位到一张采购单才查得出的日志，
+ * 每一行的采购单 id 必然等于当前查询单 —— 它占 120px 却不提供任何行间差异。
+ * 保留「关联收货单」：同一张采购单下收货、入库、删除收货单都会各写日志，
+ * 哪几行属于同一张收货单只能靠它分辨。
+ *
+ * 注意 `purchaseReceiptId` 是**内部主键**而不是收货单号（`PurchaseOperationLogVO`
+ * 只带 id，不带 `receiptNo`）。因此列名写「收货单（内部编号）」，
+ * 不把它伪装成业务单号 —— 假单号比裸 id 更危险，会被拷去当检索条件用。
+ */
 const columns = ref<TableColumnsType<LogRow>>([
   {title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({text}) => datetime(text)},
   {title: '操作', dataIndex: 'operationType', width: 150},
   {title: '操作人', dataIndex: 'operator', width: 130},
-  {title: '采购单 id', dataIndex: 'purchaseOrderId', width: 120},
-  {title: '收货单 id', dataIndex: 'purchaseReceiptId', width: 120},
+  {title: '关联收货单（内部编号）', dataIndex: 'purchaseReceiptId', width: 200},
   {title: '原因', dataIndex: 'reason', width: 200},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
 ]);
