@@ -8,7 +8,7 @@
         <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="advanced = !advanced"><template #icon><UpOutlined v-if="advanced" aria-hidden="true" /><DownOutlined v-else aria-hidden="true" /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
       </a-row>
       <a-row v-if="advanced" class="smart-query-form-row">
-        <a-form-item label="SKU 状态" class="smart-query-form-item"><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px" /></a-form-item>
+        <a-form-item label="商品规格状态" class="smart-query-form-item"><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px" /></a-form-item>
         <a-form-item label="商品类型" class="smart-query-form-item"><a-select v-model:value="filters.productType" allow-clear :options="PRODUCT_TYPE_ENUM" style="width: 120px" /></a-form-item>
         <a-form-item label="主档状态" class="smart-query-form-item"><a-select v-model:value="filters.masterStatus" allow-clear :options="MASTER_STATUS_ENUM" style="width: 120px" /></a-form-item>
         <a-form-item label="储存方式" class="smart-query-form-item"><a-select v-model:value="filters.storageMethod" allow-clear :options="STORAGE_METHOD_ENUM" style="width: 110px" /></a-form-item>
@@ -156,13 +156,13 @@ const columns = ref<TableColumnsType<ProductRow>>([
     width: 200,
     sorter: true
   },
-  {title: 'SPU 编码', dataIndex: 'spuCode', width: 170, sorter: true}, {
+  {title: '商品编码', dataIndex: 'spuCode', width: 170, sorter: true}, {
     title: '分类',
     dataIndex: 'categoryPath',
     width: 210
   },
   {title: '单位', dataIndex: 'saleUnit', width: 65}, {title: '市场价', dataIndex: 'price', width: 205, align: 'right'},
-  {title: 'SKU 数', dataIndex: 'skuCount', width: 80, align: 'right'}, {
+  {title: '规格数', dataIndex: 'skuCount', width: 80, align: 'right'}, {
     title: '在售',
     dataIndex: 'status',
     width: 70,

@@ -4,7 +4,7 @@
       <a-col :xs="24" :md="9">
         <a-card size="small" title="选择商品" :bordered="false">
           <a-form layout="inline" class="pick-form">
-            <a-form-item><a-input v-model:value="keyword" allow-clear placeholder="SPU 编码 / 名称 / 助记码"
+            <a-form-item><a-input v-model:value="keyword" allow-clear placeholder="商品编码 / 名称 / 助记码"
                                    style="width: 200px"/></a-form-item>
             <a-form-item><a-checkbox v-model:checked="onlyNoPrimary">仅无主图</a-checkbox></a-form-item>
             <a-form-item><a-space><a-button type="primary" @click="search">查询</a-button>
@@ -76,7 +76,7 @@
 
     <a-modal v-model:open="batchOpen" title="按文件名批量导入图片" :width="760" :mask-closable="false" @cancel="closeBatch">
       <a-alert type="info" show-icon class="gap"
-               message="文件名（去扩展名）需等于目标商品的 SPU 编码。预览确认后才写入；未匹配、歧义的文件不会被静默丢弃。"/>
+               message="文件名（去扩展名）需等于目标商品的商品编码。预览确认后才写入；未匹配、歧义的文件不会被静默丢弃。"/>
       <a-upload :file-list="[]" :before-upload="stageFiles" accept="image/*" multiple :show-upload-list="false">
         <a-button :loading="staging">选择多张图片</a-button>
       </a-upload>
@@ -128,7 +128,7 @@ const canWrite = computed(() => user.administratorFlag
 
 const keyword = ref(''), onlyNoPrimary = ref(false), products = ref<ProductRow[]>([]), pickLoading = ref(false), pickError = ref('');
 const pickColumns = [
-  { title: 'SPU 编码', dataIndex: 'spuCode', width: 150 },
+  { title: '商品编码', dataIndex: 'spuCode', width: 150 },
   { title: '名称', dataIndex: 'name' },
   { title: '主图', dataIndex: 'primary', width: 90 },
 ];

@@ -12,7 +12,7 @@
     </a-alert>
     <template v-else-if="product">
       <a-descriptions :title="product.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
-        <a-descriptions-item label="SPU 编码">{{ product.spuCode }}</a-descriptions-item>
+        <a-descriptions-item label="商品编码">{{ product.spuCode }}</a-descriptions-item>
         <a-descriptions-item label="分类">{{ product.categoryPath }}</a-descriptions-item>
         <a-descriptions-item label="在售状态">
           <a-tag :color="product.status === 'ON_SHELF' ? 'green' : 'default'">
@@ -80,7 +80,7 @@
         </a-space>
       </a-image-preview-group>
       <a-empty v-else description="暂无商品图片" :image="Empty.PRESENTED_IMAGE_SIMPLE"/>
-      <a-divider orientation="left">SKU 规格</a-divider>
+      <a-divider orientation="left">商品规格</a-divider>
       <SkuTable :rows="product.skuList"/>
     </template>
   </a-card>

@@ -73,7 +73,7 @@ export function productFormOf(row: ProductRow): ProductForm {
 }
 
 export function removeSku(rows: ProductSku[], index: number): ProductSku[] {
-    if (rows.length < 2) throw new Error('至少保留一个 SKU');
+    if (rows.length < 2) throw new Error('至少保留一个商品规格');
     const removedDefault = rows[index].defaultFlag;
     return rows.filter((_, i) => i !== index).map((row, i) => ({
         ...row,
@@ -85,15 +85,15 @@ export function removeSku(rows: ProductSku[], index: number): ProductSku[] {
 export function validateProduct(form: ProductForm): string | undefined {
     // 与 product_spu 的 ck_product_spu_archived_off_shelf 同口径；服务层也会拒，这里只为提前给出可读提示。
     if (form.masterStatus === 'ARCHIVED' && form.status === 'ON_SHELF') return '已归档商品不能处于上架状态';
-    if (!form.skuList.length) return '至少保留一个 SKU';
-    if (form.skuList.filter(s => s.defaultFlag).length !== 1) return '请选择且仅选择一个默认 SKU';
+    if (!form.skuList.length) return '至少保留一个商品规格';
+    if (form.skuList.filter(s => s.defaultFlag).length !== 1) return '请选择且仅选择一个默认商品规格';
     const codes = new Set<string>(), barcodes = new Set<string>(), specs = new Set<string>();
     for (const [index, sku] of form.skuList.entries()) {
-        const label = `第 ${index + 1} 个 SKU：`;
+        const label = `第 ${index + 1} 个商品规格：`;
         if (!sku.skuCode.trim() || !sku.specName.trim() || !sku.saleUnit.trim()) return label + '请填写编码、规格名称和单位';
         if (!/^\d+(\.\d{1,4})?$/.test(sku.marketPrice)) return label + '市场价须为非负数，最多四位小数';
         const code = sku.skuCode.trim().toUpperCase();
-        if (codes.has(code)) return label + 'SKU 编码重复';
+        if (codes.has(code)) return label + '规格编码重复';
         codes.add(code);
         const barcode = sku.barcode?.trim();
         if (barcode && barcodes.has(barcode)) return label + '条码重复';

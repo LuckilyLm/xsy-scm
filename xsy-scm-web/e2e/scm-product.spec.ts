@@ -108,7 +108,7 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   const drawer = page.locator('.ant-drawer');
   const openDrawer = page.locator('.ant-drawer-open');
   const expectDrawerClosed = () => expect(openDrawer).toHaveCount(0);
-  await drawer.getByLabel('商品名称', { exact: true }).fill(prefix + '苹果'); await drawer.getByLabel('SPU 编码', { exact: true }).fill(prefix + 'SPU');
+  await drawer.getByLabel('商品名称', { exact: true }).fill(prefix + '苹果'); await drawer.getByLabel('商品编码', { exact: true }).fill(prefix + 'SPU');
   // 分类树用虚拟列表渲染，节点一多目标行根本不在 DOM 里，只能先按标题搜出唯一节点再点
   const category = drawer.getByLabel('商品分类', { exact: true });
   await selectBox(category).click();
@@ -117,11 +117,11 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   // PCO-1 主档扩展：助记码由运营自维护，储存方式与标签一起进入同一个抽屉
   await drawer.getByLabel('助记码', { exact: true }).fill(prefix + 'PG');
   await pick(page, drawer.getByLabel('储存方式', { exact: true }), '冷藏');
-  await drawer.getByLabel('SKU 1 编码', { exact: true }).fill(prefix + 'A'); await pick(page, drawer.getByLabel('SKU 1 单位', { exact: true }), 'kg');
-  await button(drawer, '添加属性').click(); await drawer.getByLabel('SKU 1 属性值 1', { exact: true }).fill('大果');
-  await button(drawer, '添加 SKU').click();
-  await drawer.getByLabel('SKU 2 编码', { exact: true }).fill(prefix + 'B'); await pick(page, drawer.getByLabel('SKU 2 单位', { exact: true }), 'kg');
-  await drawer.getByLabel('SKU 2 规格名称', { exact: true }).fill('小果'); await drawer.getByLabel('SKU 2 条码', { exact: true }).fill(prefix + 'BAR');
+  await drawer.getByLabel('规格 1 编码', { exact: true }).fill(prefix + 'A'); await pick(page, drawer.getByLabel('规格 1 单位', { exact: true }), 'kg');
+  await button(drawer, '添加属性').click(); await drawer.getByLabel('规格 1 属性值 1', { exact: true }).fill('大果');
+  await button(drawer, '新增规格').click();
+  await drawer.getByLabel('规格 2 编码', { exact: true }).fill(prefix + 'B'); await pick(page, drawer.getByLabel('规格 2 单位', { exact: true }), 'kg');
+  await drawer.getByLabel('规格 2 名称', { exact: true }).fill('小果'); await drawer.getByLabel('规格 2 条码', { exact: true }).fill(prefix + 'BAR');
   await drawer.locator('input[type=file]').setInputFiles({ name: 'pilot.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=', 'base64') });
   await expect(drawer.getByText('主图', { exact: true })).toBeVisible();
   const created = page.waitForResponse(r => r.url().endsWith('/scm/product/add'));
@@ -131,10 +131,10 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await row.locator('.ant-table-row-expand-icon').click(); await expect(page.getByText(prefix + 'BAR', { exact: true })).toBeVisible();
   const before = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
   expect(before.mnemonicCode).toBe(prefix + 'PG'); expect(before.storageMethod).toBe('CHILLED'); expect(before.masterStatus).toBe('ENABLED');
-  await button(row, '编辑').click(); await expect(drawer.getByLabel('SKU 1 编码', { exact: true })).toHaveValue(prefix + 'A');
+  await button(row, '编辑').click(); await expect(drawer.getByLabel('规格 1 编码', { exact: true })).toHaveValue(prefix + 'A');
   // 编辑态必须回显字典值，否则停用单位会让历史商品看不出原值
-  await expect(selectBox(drawer.getByLabel('SKU 1 单位', { exact: true }))).toHaveText(/kg/);
-  await drawer.getByLabel('SKU 1 市场价', { exact: true }).fill('12.3456'); await drawer.getByLabel('将第 2 个 SKU 设为默认').check();
+  await expect(selectBox(drawer.getByLabel('规格 1 单位', { exact: true }))).toHaveText(/kg/);
+  await drawer.getByLabel('规格 1 市场价', { exact: true }).fill('12.3456'); await drawer.getByLabel('将第 2 个规格设为默认规格').check();
   await button(drawer, '保存商品').click(); await expectDrawerClosed();
   const after = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
   expect(after.skuList.map((s: { skuId: string }) => s.skuId)).toEqual(before.skuList.map((s: { skuId: string }) => s.skuId));
@@ -295,7 +295,7 @@ test('PCO-2 image center: filter no-image products, open single-SPU maintenance,
   await expect(page).toHaveURL(/product-image-center|image-center/);
   const noImage = page.locator('.ant-checkbox-wrapper', { hasText: '仅无主图' });
   await noImage.click();
-  await page.getByPlaceholder('SPU 编码 / 名称 / 助记码').fill(prefix + 'IMG');
+  await page.getByPlaceholder('商品编码 / 名称 / 助记码').fill(prefix + 'IMG');
   await button(page, '查询').click();
   const row = page.getByRole('row').filter({ hasText: prefix + 'IMG' });
   await expect(row).toBeVisible();
@@ -310,7 +310,7 @@ test('PCO-2 image center: filter no-image products, open single-SPU maintenance,
   await expect(page.locator('button.add-tile')).toHaveText('+ 上传图片');
   await batchEntry.click();
   const modal = page.locator('.ant-modal:visible');
-  await expect(modal.getByText('文件名（去扩展名）需等于目标商品的 SPU 编码')).toBeVisible();
+  await expect(modal.getByText('文件名（去扩展名）需等于目标商品的商品编码')).toBeVisible();
   // 预览优先：没有选择任何文件时命中为 0，绑定按钮必须禁用，绝不静默写入
   await expect(modal.getByText(/命中 0 · 歧义 0 · 未匹配 0/)).toBeVisible();
   await expect(button(modal, '绑定 0 张')).toBeDisabled();

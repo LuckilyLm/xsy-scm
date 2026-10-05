@@ -16,8 +16,8 @@
             </a-form-item>
           </a-col>
           <a-col :xs="24" :md="12">
-            <a-form-item label="SPU 编码" name="spuCode"
-                         :rules="[{ required: true, whitespace: true, message: '请输入 SPU 编码' }]">
+            <a-form-item label="商品编码" name="spuCode"
+                         :rules="[{ required: true, whitespace: true, message: '请输入商品编码' }]">
               <a-input v-model:value="form.spuCode" :maxlength="64"/>
             </a-form-item>
           </a-col>
@@ -120,7 +120,7 @@
         </a-row>
         <a-divider orientation="left">商品图集</a-divider>
         <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event"/>
-        <a-divider orientation="left">SKU 规格</a-divider>
+        <a-divider orientation="left">商品规格</a-divider>
         <SkuEditor v-model="form.skuList" :units="units"/>
       </a-form>
     </a-spin>
