@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import dayjs from 'dayjs';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 
 export function initialFinanceDateRange() {
     return {
@@ -44,6 +45,37 @@ export function entryTypeText(value: string | null | undefined): string {
 
 export function settleStateText(value: string | null | undefined): string {
     return value === 'OPEN' ? '未结清' : value === 'PARTIAL' ? '部分结清' : value === 'SETTLED' ? '已结清' : value || '—';
+}
+
+export function settleStateTone(value: string | null | undefined): ScmStatusTone {
+    return value === 'SETTLED' ? 'success' : value === 'PARTIAL' ? 'processing' : value === 'OPEN' ? 'warning' : 'neutral';
+}
+
+/**
+ * 金额单元样式。fact：单据自身金额，恒常规显示；balance：未核销/待核销等余额，零值弱化；
+ * anomaly：超额核销/差额，非零即异常，红色加粗（页面配套定义 .money-alert）。
+ */
+export function moneyClass(value: string | null | undefined, mode: 'fact' | 'balance' | 'anomaly' = 'fact'): string {
+    if (value == null || value === '') return 'scm-money scm-money--muted';
+    try {
+        const amount = new Decimal(value);
+        if (amount.isNegative()) return 'scm-money scm-money--negative';
+        if (mode === 'anomaly') return amount.isZero() ? 'scm-money scm-money--muted' : 'scm-money scm-money--negative money-alert';
+        if (mode === 'balance' && amount.isZero()) return 'scm-money scm-money--muted';
+    } catch {
+        return 'scm-money';
+    }
+    return 'scm-money';
+}
+
+/** 收款差额 = 金额 − 有效金额，即已被反向冲减的部分；红字/反向行本身没有差额语义 */
+export function receiptDifference(record: {entryType: string; amount: string; effectiveAmount: string}): string | null {
+    if (record.entryType !== 'NORMAL') return null;
+    try {
+        return new Decimal(record.amount).minus(record.effectiveAmount).toFixed(4);
+    } catch {
+        return null;
+    }
 }
 
 export function paymentMethodText(value: string | null | undefined): string {

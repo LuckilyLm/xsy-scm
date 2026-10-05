@@ -47,16 +47,20 @@
     <a-table id="scm-finance-payable-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
              row-key="payableId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1375}">
       <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='entryType'"><a-tag :color="SCM_FINANCE_ENTRY_COLOR[text]">{{ entryTypeText(text) }}</a-tag></template>
-        <template v-else-if="column.dataIndex==='settleState'">{{ settleStateText(text) }}</template>
-        <template v-else-if="['amount','writtenOffAmount','openAmount','overAppliedAmount'].includes(column.dataIndex)">
-          <span :class="{negative: column.dataIndex==='overAppliedAmount' && text && text!=='0.0000'}">{{ moneyText(text) }}</span>
-          <a-tag v-if="column.dataIndex==='overAppliedAmount' && text && text!=='0.0000'" color="orange">超额核销待处理</a-tag>
+        <template v-if="column.dataIndex==='entryType'"><ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/></template>
+        <template v-else-if="column.dataIndex==='settleState'"><ScmStatusTag :tone="settleStateTone(text)" :label="settleStateText(text)"/></template>
+        <template v-else-if="column.dataIndex==='overAppliedAmount'">
+          <span :class="moneyClass(text,'anomaly')">{{ moneyText(text) }}</span>
+        </template>
+        <template v-else-if="['amount','writtenOffAmount','openAmount'].includes(column.dataIndex)">
+          <span :class="moneyClass(text, column.dataIndex==='amount'?'fact':'balance')">{{ moneyText(text) }}</span>
         </template>
         <template v-else-if="column.dataIndex==='eventAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
-          <a-button type="link" @click="showDetail(record)">明细</a-button>
-          <a-button v-if="record.entryType==='NORMAL'" type="link" v-privilege="PERM.PAYABLE_RED" @click="openRed(record)">登记红字</a-button>
+          <a-space :size="0" class="scm-table-actions">
+            <a-button type="link" @click="showDetail(record)">明细</a-button>
+            <a-button v-if="record.entryType==='NORMAL'" type="link" danger v-privilege="PERM.PAYABLE_RED" @click="openRed(record)">登记红字</a-button>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -110,8 +114,9 @@ import {financeApi} from '/@/api/business/scm/finance-api';
 import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_PERMISSION as PERM, SCM_FINANCE_SETTLE_STATE_ENUM} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
-import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyText, settleStateText} from './finance-form-model';
+import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyClass, moneyText, settleStateText, settleStateTone} from './finance-form-model';
 import {financeError} from './finance-errors';
 import type {FinancePayable, FinancePayableDetail, FinancePayableItem, PayableQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
@@ -136,12 +141,12 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
 const columns = ref<TableColumnsType<FinancePayable>>([
     {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 110, ellipsis: true},
     {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 150}, {title: '供应商', dataIndex: 'supplierName', width: 150},
-    {title: '方向', dataIndex: 'entryType', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
+    {title: '供应商', dataIndex: 'supplierName', width: 150}, {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 150},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 110},
     {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 120},
-    {title: '结清状态', dataIndex: 'settleState', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 165},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'right', width: 95},
+    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 165},
+    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 130},
 ]);
 const redDraftColumns: TableColumnsType<RedDraft> = [
     {title: '商品', dataIndex: 'skuName', width: 190}, {title: '单位', dataIndex: 'unit', width: 90},
@@ -219,7 +224,7 @@ onMounted(queryData);
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
 .page-error,.form-error { margin-bottom: 12px; }
-.negative { color: #cf1322; font-weight: 600; }
+.money-alert { font-weight: 600; }
 .red-source { margin: 16px 0; }
 .drawer-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .table-scroll-hint { display: none; margin-bottom: 8px; color: #667085; font-size: 12px; }

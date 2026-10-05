@@ -51,16 +51,20 @@
              row-key="receivableId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1375}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'">
-          <a-tag :color="SCM_FINANCE_ENTRY_COLOR[text]">{{ entryTypeText(text) }}</a-tag>
+          <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
         </template>
-        <template v-else-if="column.dataIndex==='settleState'">{{ settleStateText(text) }}</template>
-        <template v-else-if="column.dataIndex==='amount' || column.dataIndex==='writtenOffAmount' || column.dataIndex==='openAmount' || column.dataIndex==='overAppliedAmount'">
-          <span :class="{negative: column.dataIndex==='overAppliedAmount' && text && text!=='0.0000'}">{{ moneyText(text) }}</span>
-          <a-tag v-if="column.dataIndex==='overAppliedAmount' && text && text!=='0.0000'" color="orange">超额核销待处理</a-tag>
+        <template v-else-if="column.dataIndex==='settleState'">
+          <ScmStatusTag :tone="settleStateTone(text)" :label="settleStateText(text)"/>
+        </template>
+        <template v-else-if="column.dataIndex==='overAppliedAmount'">
+          <span :class="moneyClass(text,'anomaly')">{{ moneyText(text) }}</span>
+        </template>
+        <template v-else-if="['amount','writtenOffAmount','openAmount'].includes(column.dataIndex)">
+          <span :class="moneyClass(text, column.dataIndex==='amount'?'fact':'balance')">{{ moneyText(text) }}</span>
         </template>
         <template v-else-if="column.dataIndex==='eventAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
-          <a-button type="link" @click="showDetail(record)">明细</a-button>
+          <div class="scm-table-actions"><a-button type="link" @click="showDetail(record)">明细</a-button></div>
         </template>
       </template>
     </a-table>
@@ -81,7 +85,8 @@ import {financeApi} from '/@/api/business/scm/finance-api';
 import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_SETTLE_STATE_ENUM} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyText, settleStateText} from './finance-form-model';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyClass, moneyText, settleStateText, settleStateTone} from './finance-form-model';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import type {FinanceReceivable, FinanceReceivableDetail, ReceivableQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
@@ -99,12 +104,12 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
 const columns = ref<TableColumnsType<FinanceReceivable>>([
     {title: '应收单号', dataIndex: 'receivableNo', fixed: 'left', width: 110, ellipsis: true},
     {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '订单号', dataIndex: 'orderNo', width: 150}, {title: '客户', dataIndex: 'customerName', width: 150},
-    {title: '方向', dataIndex: 'entryType', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
+    {title: '客户', dataIndex: 'customerName', width: 150}, {title: '订单号', dataIndex: 'orderNo', width: 150},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 110},
     {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 120},
-    {title: '结清状态', dataIndex: 'settleState', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 165},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'right', width: 65},
+    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 165},
+    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 65},
 ]);
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];
@@ -158,7 +163,7 @@ onMounted(async () => {
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
 .page-error { margin-bottom: 12px; }
-.negative { color: #cf1322; font-weight: 600; }
+.money-alert { font-weight: 600; }
 .table-scroll-hint { display: none; margin-bottom: 8px; color: #667085; font-size: 12px; }
 .finance-mobile-balance-list { display: none; }
 
