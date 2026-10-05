@@ -226,44 +226,7 @@
     </template>
   </a-drawer>
 
-  <!-- 详情 -->
-  <a-drawer :open="detailOpen" title="调拨单详情" width="860" @close="detailOpen = false">
-    <a-descriptions :column="2" bordered size="small">
-      <a-descriptions-item label="调拨单号">{{ detail.transferNo }}</a-descriptions-item>
-      <a-descriptions-item label="状态">
-        <a-tag :color="statusColor(detail.status)">{{ detail.statusDesc || detail.status }}</a-tag>
-      </a-descriptions-item>
-      <a-descriptions-item label="源仓库">{{ detail.fromWarehouseName || '—' }}</a-descriptions-item>
-      <a-descriptions-item label="目标仓库">{{ detail.toWarehouseName || '—' }}</a-descriptions-item>
-      <a-descriptions-item label="发出人">{{ detail.shippedBy || '—' }}</a-descriptions-item>
-      <a-descriptions-item label="发出时间">{{ datetime(detail.shippedAt) }}</a-descriptions-item>
-      <a-descriptions-item label="收货人">{{ detail.receivedBy || '—' }}</a-descriptions-item>
-      <a-descriptions-item label="收货时间">{{ datetime(detail.receivedAt) }}</a-descriptions-item>
-      <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
-    </a-descriptions>
-    <a-table
-        style="margin-top: 12px"
-        size="small"
-        :data-source="detail.items || []"
-        :columns="detailItemColumns"
-        row-key="id"
-        bordered
-        :pagination="false"
-    >
-      <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'quantity'">
-          <span class="num">{{ quantityText(record.quantity) }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'unitSnapshot'">
-          {{ record.unitSnapshot || '（草稿未发出）' }}
-        </template>
-        <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-      </template>
-    </a-table>
-    <a-typography-text v-if="detail.status === 'SHIPPED'" type="secondary" style="display: block; margin-top: 8px">
-      在途：源仓已扣减、目标仓尚未增加。这批货当前不在任何仓库的余额里，需由目标仓收货后才落地。
-    </a-typography-text>
-  </a-drawer>
+  <InventoryTransferDetailDrawer v-model:open="detailOpen" :detail="detail" />
   <!-- 在途库存报表（只读聚合，不进 inventory_balance） -->
   <a-modal
       :open="inTransitOpen"
@@ -311,6 +274,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import InventoryTransferDetailDrawer from './components/inventory-transfer-detail-drawer.vue';
 import {inventoryTransferApi} from '/@/api/business/scm/inventory-transfer-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -358,14 +322,6 @@ const itemColumns: TableColumnsType = [
   {title: '调拨数量', dataIndex: 'quantity', width: 150},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80},
-];
-
-const detailItemColumns: TableColumnsType = [
-  {title: 'SKU 编码', dataIndex: 'skuCode', width: 160},
-  {title: 'SKU 名称', dataIndex: 'skuName', width: 150},
-  {title: '商品名称', dataIndex: 'productName', width: 150},
-  {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
-  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 130},
 ];
 
 /** 「在途」用醒目的橙色：它代表货不在任何仓库里，最容易被误读成丢失。 */
