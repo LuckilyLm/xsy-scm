@@ -146,7 +146,7 @@ python -m pip install -r tools/requirements-dev.txt
 .\tools\verify.ps1           # 后端 + 类型门禁 + lint + 前端单测/构建 + E2E 就绪检查/执行
 .\tools\verify.ps1 quality   # Java 质量门禁
 .\tools\verify.ps1 backend   # 后端单测与 IT
-.\tools\verify.ps1 frontend  # 前端检查、构建与 E2E
+.\tools\verify.ps1 frontend  # 前端类型、lint、单测与构建（不含 E2E）
 .\tools\verify.ps1 e2e       # 仅 E2E
 python tools/test_verification.py
 ```

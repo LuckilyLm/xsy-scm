@@ -95,8 +95,13 @@ class Verification:
         顺序有依赖：Checkstyle 必须先跑，它产出的 result.xml 是 quality guard 的
         一路输入；guard 自己不会代跑 Maven。
 
-        `backend` / `frontend` / `e2e` 保持原样，本 scope 只新增、不改既有入口
-        （§27 的硬约束）。ArchUnit 不在这里：它是 `*Test`，已随 `mvn test` 执行。
+        `backend` / `e2e` 保持原样，本 scope 只新增、不改既有入口（§27 的硬约束）。
+        ArchUnit 不在这里：它是 `*Test`，已随 `mvn test` 执行。
+
+        `frontend` 只覆盖前端自身的类型棘轮、lint、单测与构建。E2E 需要后端、
+        Vite 与建号脚本等外部前置，把它绑进 `frontend` 会让任何没有这些服务的
+        环境（例如 CI 的前端 job）必然以未覆盖退出。需要连跑时用 `all`，或显式
+        再执行一次 `e2e`。
         """
         self.spotless_coverage()
         self.run("checkstyle-report", ["mvn", "-B", "-N", "checkstyle:check"], SERVER)
@@ -262,7 +267,7 @@ def main():
         verification.backend()
     if args.scope in ("all", "frontend"):
         verification.frontend()
-    if args.scope in ("all", "frontend", "e2e"):
+    if args.scope in ("all", "e2e"):
         verification.e2e()
     return verification.summary()
 

@@ -1,5 +1,6 @@
 """Guard against false-green verification results."""
 import contextlib
+from collections import Counter
 import io
 import json
 from pathlib import Path
@@ -12,6 +13,7 @@ from unittest.mock import patch
 
 import migration_checksum_guard as guard
 import ts_baseline_ratchet as ratchet
+import verify
 from verify import Verification
 
 
@@ -71,6 +73,31 @@ class VerificationTest(unittest.TestCase):
         with patch("verify.shutil.which", return_value=None):
             self.assertFalse(verification.run("backend", ["mvn"], Path.cwd()))
         self.assertEqual(["backend: missing mvn"], verification.failed)
+
+    def dispatch(self, scope):
+        """记录 main() 在给定 scope 下实际调用了哪些步骤。"""
+        calls = Counter()
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(patch.object(verify.Verification, "__init__", return_value=None))
+            stack.enter_context(patch.object(verify.Verification, "summary", return_value=0))
+            for name in ("quality", "backend", "frontend", "e2e"):
+                stack.enter_context(patch.object(verify.Verification, name,
+                                                 side_effect=lambda n=name: calls.update([n])))
+            stack.enter_context(patch("sys.argv", ["verify.py", scope]))
+            self.assertEqual(0, verify.main())
+        return dict(calls)
+
+    def test_frontend_scope_does_not_run_e2e(self):
+        # E2E 需要后端、Vite 与建号脚本等外部前置。若 `frontend` 连带跑 E2E，任何
+        # 没有这些服务的环境（例如 CI 的前端 job）都会以「未覆盖」退出 2。
+        self.assertEqual({"frontend": 1}, self.dispatch("frontend"))
+
+    def test_e2e_scope_runs_e2e_only(self):
+        self.assertEqual({"e2e": 1}, self.dispatch("e2e"))
+
+    def test_all_scope_runs_every_step(self):
+        self.assertEqual({"quality": 1, "backend": 1, "frontend": 1, "e2e": 1},
+                         self.dispatch("all"))
 
 
 class MigrationChecksumGuardTest(unittest.TestCase):
