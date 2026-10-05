@@ -64,7 +64,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1560 }"
+        :scroll="{ x: 1280 }"
         :row-selection="{
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
@@ -75,52 +75,34 @@
         <template v-if="column.dataIndex === 'orderNo'">
           <a @click="detail?.open(record.id)">{{ record.orderNo }}</a>
         </template>
+        <template v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
-          <a-tag>{{ SCM_PURCHASE_STATUS_ENUM[record.status]?.desc }}</a-tag>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="SCM_PURCHASE_STATUS_ENUM[record.status]?.desc"/>
         </template>
+        <template v-else-if="column.dataIndex === 'plannedArrivalDate'">{{ dateOnly(record.plannedArrivalDate) }}</template>
         <template v-else-if="column.dataIndex === 'totalAmount'">
-          <span class="num">{{ amount(record.totalAmount) }}</span>
+          <span class="scm-money">{{ amount(record.totalAmount) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'receivedProgress'">
-          <span class="num">{{ progress(record.receivedProgress) }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'createdAt'">
-          <span class="num">{{ datetime(record.createdAt) }}</span>
+          <span class="scm-quantity">{{ progress(record.receivedProgress) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate">
-            <a-button type="link" @click="detail?.open(record.id)">详情</a-button>
-            <a-button type="link" @click="printRow(record)">打印</a-button>
-            <a-button type="link" v-privilege="'scm:purchase:assign'" @click="openReassign(record)">改派</a-button>
-            <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:purchase:update'"
-                      @click="drawer?.open(record.id)">
-              编辑
-            </a-button>
-            <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:purchase:submit'"
-                      @click="submit(record)">
-              提交
-            </a-button>
-            <a-button
-                v-if="['DRAFT', 'SUBMITTED'].includes(record.status)"
-                type="link"
-                v-privilege="'scm:purchase:cancel'"
-                @click="cancel(record)"
-            >
-              取消
-            </a-button>
-            <a-button
-                v-if="record.status === 'PARTIALLY_RECEIVED'"
-                type="link"
-                v-privilege="'scm:purchase:short-close'"
-                @click="shortClose(record)"
-            >
-              少收关单
-            </a-button>
-            <a-button v-if="record.status === 'DRAFT'" danger type="link" v-privilege="'scm:purchase:delete'"
-                      @click="remove(record)">
-              删除
-            </a-button>
-          </div>
+          <!-- 行内只留当前状态最高频的两个动作，其余收进「更多」；各状态给出的动作集合与原行内按钮一致 -->
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <template v-if="record.status === 'DRAFT'">
+              <a-button type="link" size="small" v-privilege="'scm:purchase:update'" @click="drawer?.open(record.id)">
+                编辑
+              </a-button>
+              <a-button type="link" size="small" v-privilege="'scm:purchase:submit'" @click="submit(record)">
+                提交
+              </a-button>
+            </template>
+            <template v-else>
+              <a-button type="link" size="small" @click="detail?.open(record.id)">详情</a-button>
+              <a-button type="link" size="small" @click="printRow(record)">打印</a-button>
+            </template>
+            <ScmActionMore :actions="moreActions(record)" @select="onRowAction($event, record)"/>
+          </a-space>
         </template>
       </template>
     </a-table>
@@ -188,6 +170,10 @@ import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -199,7 +185,7 @@ import {
 import type {Order, OrderQuery} from './purchase-types';
 import {amount, progress} from './purchase-form-model';
 import {hasPermission} from '../common/scm-permission';
-import {datetime} from '../common/scm-display';
+import {dateOnly} from '../common/scm-display';
 import {purchaseError} from './purchase-errors';
 import PrintDocumentModal from '../print/print-document-modal.vue';import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
 import PurchaseOrderDetail from './components/purchase-order-detail-drawer.vue';
@@ -300,18 +286,75 @@ const selectedOrders = computed(() => tableData.value.filter((o) => selected.val
 const draftSelected = computed(() => selectedOrders.value.filter((o) => o.status === 'DRAFT'));
 const partialSelected = computed(() => selectedOrders.value.filter((o) => o.status === 'PARTIALLY_RECEIVED'));
 
+// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
+// 创建时间是技术时间戳，仍在详情抽屉与导出列里，只是不默认摊在列表上；计划到货才是采购跟单看的业务日期。
 const columns = ref<TableColumnsType<Order>>([
-  {title: '采购单号', dataIndex: 'orderNo', width: 210},
+  {title: '采购单号', dataIndex: 'orderNo', width: 190},
   {title: '供应商', dataIndex: 'supplierName', width: 180},
-  {title: '采购员', dataIndex: 'purchaserName', width: 120},
+  {title: '采购员', dataIndex: 'purchaserName', width: 110},
   {title: '收货仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 120},
-  {title: '采购金额', dataIndex: 'totalAmount', align: 'right', width: 140},
+  {title: '采购金额', dataIndex: 'totalAmount', align: 'right', width: 130},
   {title: '收货进度', dataIndex: 'receivedProgress', align: 'right', width: 110},
-  {title: '创建时间', dataIndex: 'createdAt', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'right', fixed: 'right', width: 420},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
+
+/** 规划 §25：草稿/部分完成=待处理，已提交=处理中，已收货=完成，少收关单/取消=失效。 */
+const STATUS_TONE: Record<string, ScmStatusTone> = {
+  DRAFT: 'warning',
+  SUBMITTED: 'processing',
+  PARTIALLY_RECEIVED: 'warning',
+  RECEIVED: 'success',
+  SHORT_CLOSED: 'neutral',
+  CANCELLED: 'neutral',
+};
+const statusTone = (value?: string | null): ScmStatusTone => STATUS_TONE[value ?? ''] ?? 'neutral';
+
+/** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
+const canAssign = computed(() => hasPermission('scm:purchase:assign'));
+const canCancel = computed(() => hasPermission('scm:purchase:cancel'));
+const canShortClose = computed(() => hasPermission('scm:purchase:short-close'));
+const canDelete = computed(() => hasPermission('scm:purchase:delete'));
+
+/**
+ * 行内常驻当前状态最高频的两个动作，其余收进「更多」。
+ * 各状态给出的动作集合与原行内按钮一一对应，只是按频率重新分组，不新增也不隐藏业务动作。
+ */
+function moreActions(row: Order): ScmActionItem[] {
+  const draft = row.status === 'DRAFT';
+  return [
+    {key: 'detail', label: '详情', hidden: !draft},
+    {key: 'print', label: '打印', hidden: !draft},
+    {key: 'reassign', label: '改派', hidden: !canAssign.value},
+    {key: 'cancel', label: '取消', hidden: !(canCancel.value && ['DRAFT', 'SUBMITTED'].includes(row.status ?? ''))},
+    {
+      key: 'shortClose',
+      label: '少收关单',
+      hidden: !(canShortClose.value && row.status === 'PARTIALLY_RECEIVED'),
+    },
+    {key: 'delete', label: '删除', danger: true, hidden: !(canDelete.value && draft)},
+  ];
+}
+
+function onRowAction(key: string, row: Order) {
+  if (key === 'detail') {
+    // `Order.id` 在 VO 里是可选的，详情抽屉要求确定的 Id，这里按同一口径先判空。
+    if (row.id != null) {
+      detail.value?.open(row.id);
+    }
+  } else if (key === 'print') {
+    printRow(row);
+  } else if (key === 'reassign') {
+    openReassign(row);
+  } else if (key === 'cancel') {
+    cancel(row);
+  } else if (key === 'shortClose') {
+    shortClose(row);
+  } else if (key === 'delete') {
+    remove(row);
+  }
+}
 
 async function queryData() {
   const id = ++requestId;
