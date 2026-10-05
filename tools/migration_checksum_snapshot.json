@@ -436,6 +436,10 @@
     "109": {
       "file": "V109__scm_remove_database_foreign_keys.sql",
       "checksum": 1587756775
+    },
+    "110": {
+      "file": "V110__scm_reorder_root_navigation.sql",
+      "checksum": -771687655
     }
   }
 }

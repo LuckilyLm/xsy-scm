@@ -272,14 +272,19 @@ console.log(33, token.value)
     width: 4px;
   }
 
+  /* 与 side-layout.vue 同一口径：不常驻滚动条，滑块只在 hover 侧栏时显形 */
   .side-menu::-webkit-scrollbar-thumb {
     border-radius: 10px;
-    background: rgba(0, 0, 0, 0.2);
+    background: transparent;
+  }
+
+  .side-menu:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
   }
 
   .side-menu::-webkit-scrollbar-track {
     border-radius: 0;
-    background: rgba(0, 0, 0, 0.1);
+    background: transparent;
   }
 
   .help-doc-sider {

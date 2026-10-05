@@ -42,7 +42,14 @@
         <a-slider v-model:value="formState.borderRadius" :min="0" :max="6" @change="changeBorderRadius"/>
       </a-form-item>
       <a-form-item :label="$t('setting.menu.width')" v-if="formState.layout === LAYOUT_ENUM.SIDE.value">
-        <a-input-number @change="changeSideMenuWidth" v-model:value="formState.sideMenuWidth" :min="1"/>
+        <!-- 收紧上下限：侧栏窄到几十像素会把布局压坏，宽过 240 会白吃掉内容区 -->
+        <a-input-number
+            @change="changeSideMenuWidth"
+            v-model:value="formState.sideMenuWidth"
+            :min="168"
+            :max="240"
+            :step="8"
+        />
         像素（px）
       </a-form-item>
       <a-form-item :label="$t('setting.page.width')" v-if="formState.layout === LAYOUT_ENUM.TOP.value">

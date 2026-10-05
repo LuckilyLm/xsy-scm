@@ -5,7 +5,7 @@
         :id="LAYOUT_ELEMENT_IDS.menu"
         class="side-menu"
         :width="sideMenuWidth"
-        :collapsed-width="isMobile ? 0 : 80"
+        :collapsed-width="isMobile ? 0 : COLLAPSED_MENU_WIDTH"
         :style="isMobile ? {position: 'fixed', inset: '0 auto 0 0', zIndex: 20} : undefined"
         v-model:collapsed="collapsed"
         :theme="theme"
@@ -117,6 +117,9 @@ import {useRouter} from 'vue-router';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
 import {LAYOUT_ELEMENT_IDS} from '/@/layout/layout-const';
 import {theme as antDesignTheme} from 'ant-design-vue';
+
+/** 收起态宽度：与 side-menu/index.vue 的 .min-logo 宽度、logo 尺寸是同一组比例，改一处要三处一起改。 */
+const COLLAPSED_MENU_WIDTH = 64;
 
 const appConfigStore = useAppConfigStore();
 
@@ -303,7 +306,8 @@ const {token} = useToken();
   .side-menu {
     height: 100vh;
     overflow-x: hidden;
-    overflow-y: scroll;
+    /* auto 而不是 scroll：菜单没超出时不该凭空画一条滚动条轨道 */
+    overflow-y: auto;
 
     &.fixed-side {
       position: fixed;
@@ -317,14 +321,19 @@ const {token} = useToken();
     width: 4px;
   }
 
+  /* 默认不画滑块，只有鼠标进到侧栏里才显形：菜单本身不需要一直宣告「我可能能滚」 */
   .side-menu::-webkit-scrollbar-thumb {
     border-radius: 10px;
-    background: rgba(0, 0, 0, 0.2);
+    background: transparent;
+  }
+
+  .side-menu:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
   }
 
   .side-menu::-webkit-scrollbar-track {
     border-radius: 0;
-    background: rgba(0, 0, 0, 0.1);
+    background: transparent;
   }
 
   .help-doc-sider {

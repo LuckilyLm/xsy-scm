@@ -81,16 +81,18 @@ const color = computed(() => {
     padding: 0px 15px 0px 15px;
     background-color: v-bind('color.background');
     position: fixed;
-    width: 80px;
+    /* 必须等于 side-layout.vue 的 COLLAPSED_MENU_WIDTH */
+    width: 64px;
     z-index: 21;
     display: flex;
     justify-content: center;
     align-items: center;
 
     .logo-img {
-      // 收起态用方形图标版，高度与展开态保持一致观感
-      width: 26px;
-      height: 26px;
+      // 收起态用方形图标版。64px 栏里放 28px 图标：既不像 26px 那样显得空，
+      // 也不至于顶满整栏；与展开态 30px 的高度观感基本齐平。
+      width: 28px;
+      height: 28px;
       object-fit: contain;
     }
   }
