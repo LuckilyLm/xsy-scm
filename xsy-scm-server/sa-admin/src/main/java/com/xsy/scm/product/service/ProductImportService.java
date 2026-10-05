@@ -55,9 +55,8 @@ import static com.xsy.scm.product.service.ProductImportValueRules.same;
 import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 
 /**
- * 商品 Excel 导入编排：工作簿读写由 {@link ProductImportWorkbookSupport} 负责，单元格规范化和字段值校验由 {@link ProductImportValueRules} 负责，领域校验通过后交给
- * {@link ProductImportWriteService} 整批回滚写入。
- * 复用既有 ProductSpuService.add / update 的全部领域校验与保护，不新建导入旁路。
+ * 商品 Excel 导入编排：工作簿读写由 {@link ProductImportWorkbookSupport} 负责，单元格规范化和字段值校验由 {@link ProductImportValueRules}
+ * 负责，领域校验通过后交给 {@link ProductImportWriteService} 整批回滚写入。 复用既有 ProductSpuService.add / update 的全部领域校验与保护，不新建导入旁路。
  *
  * <p>
  * 两种模式语义互斥且必须显式选择： {@link ImportMode#CREATE} 整批新增；{@link ImportMode#UPDATE} 按 SPU ID / SKU ID + 版本定位既存行，
@@ -287,8 +286,7 @@ public class ProductImportService {
         }
         if (trim(first.getSpuCode()) != null
                 && !Objects.equals(ProductAggregateValidator.normalizeCode(first.getSpuCode()), spu.getSpuCode()))
-            addError(result, firstRowNumber, trim(first.getSpuCode()), "商品编码", "FIELD_LOCKED",
-                    "商品编码不能通过导入修改，请走商品编辑");
+            addError(result, firstRowNumber, trim(first.getSpuCode()), "商品编码", "FIELD_LOCKED", "商品编码不能通过导入修改，请走商品编辑");
 
         var existingSkus = skuMap.getOrDefault(spuId, List.of()).stream()
                 .collect(Collectors.toMap(ProductSkuEntity::getId, s -> s, (a, b) -> a));

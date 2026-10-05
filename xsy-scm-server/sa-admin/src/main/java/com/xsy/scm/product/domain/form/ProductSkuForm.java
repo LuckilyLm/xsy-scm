@@ -31,7 +31,7 @@ public class ProductSkuForm {
     @NotNull(message = "规格值不能为空")
     @Size(max = 30, message = "规格值不能超过30个字符")
     private Map<@NotBlank(message = "规格项名称不能为空") @Size(max = 100, message = "规格项名称不能超过100个字符") String,
-            @NotBlank(message = "规格值不能为空") @Size(max = 150, message = "规格值不能超过150个字符") String> specValues = new LinkedHashMap<>();
+            @NotBlank(message = "规格值不能为空") @Size(max = 150, message = "规格值不能超过150个字符") String> specValues;
     @NotBlank(message = "销售单位不能为空")
     @Size(max = 32, message = "销售单位不能超过32个字符")
     private String saleUnit;
@@ -50,4 +50,15 @@ public class ProductSkuForm {
     @NotNull(message = "排序值不能为空")
     @Min(value = 0, message = "排序值不能小于0")
     private Integer sortOrder = 0;
+
+    /**
+     * 规格值默认空表，避免调用方为「无规格项」显式传 null。
+     *
+     * <p>
+     * 初始化刻意不写在字段声明行上：这两个容器元素注解的渲染宽度已顶到 Checkstyle 的 120 列上限， 而 Eclipse formatter 不在泛型类型参数内部断行，把
+     * {@code = new LinkedHashMap<>()} 留在声明行 会稳定产出 130 列，Spotless 与 Checkstyle 无法同时满足。
+     */
+    public ProductSkuForm() {
+        this.specValues = new LinkedHashMap<>();
+    }
 }

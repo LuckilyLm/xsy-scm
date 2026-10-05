@@ -446,7 +446,7 @@ class ProductImportServiceTest {
                 .getCell(DEFAULT_SKU).setCellValue(ProductImportService.CLEAR_TOKEN)), ImportMode.UPDATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
             assertThat(error.getCode()).isEqualTo("CLEAR_NOT_ALLOWED");
-            assertThat(error.getColumn()).isEqualTo("默认规格");
+            assertThat(error.getColumn()).isEqualTo("默认商品规格");
         });
         verifyNoInteractions(productImportWriteService);
     }

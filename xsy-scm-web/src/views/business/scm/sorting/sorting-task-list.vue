@@ -293,6 +293,7 @@ import type {
     SortingPrint,
     SortingTask,
     SortingTaskQuery,
+    SortingTaskStatus,
 } from './sorting-types';
 import {sortingError} from './sorting-types';
 

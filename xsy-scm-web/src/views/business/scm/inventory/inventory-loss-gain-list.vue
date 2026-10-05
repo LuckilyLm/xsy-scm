@@ -296,7 +296,7 @@ import type {
   InventoryLossGainQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {quantityText, singleWarehouseDefault} from './inventory-model';
+import {singleWarehouseDefault} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
 

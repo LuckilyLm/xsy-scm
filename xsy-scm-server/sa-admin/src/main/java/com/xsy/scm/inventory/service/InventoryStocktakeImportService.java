@@ -51,14 +51,17 @@ import java.util.Map;
 public class InventoryStocktakeImportService {
 
     public static final String TEMPLATE_VERSION = "1.0";
-    private static final List<String> HEADERS = List.of("快照凭证", "商品规格编码", "商品名称", "商品规格", "记账单位", "账面数量快照", "实盘数量", "备注");
+    private static final List<
+            String> HEADERS = List.of("快照凭证", "商品规格编码", "商品名称", "商品规格", "记账单位", "账面数量快照", "实盘数量", "备注");
     private static final int COL_CREDENTIAL = 0;
     private static final int COL_SKU_CODE = 1;
     private static final int COL_ACTUAL = 6;
     private static final int COL_REMARK = 7;
     private static final int MAX_ROWS = 5000;
     private static final int MAX_ERRORS = 1000;
-    /** 实盘量：非负、整数位 ≤14、小数 ≤4；空白由 required 单独挡（空白不等于 0）。 */
+    /**
+     * 实盘量：非负、整数位 ≤14、小数 ≤4；空白由 required 单独挡（空白不等于 0）。
+     */
     private static final String ACTUAL_PATTERN = "[0-9]{1,14}(\\.[0-9]{1,4})?";
 
     private final InventoryBalanceDao inventoryBalanceDao;
@@ -310,12 +313,13 @@ public class InventoryStocktakeImportService {
     }
 
     private static boolean headerMatches(int column, String value) {
-        return HEADERS.get(column).equals(value)
-                || column == COL_SKU_CODE && "SKU编码".equals(value)
+        return HEADERS.get(column).equals(value) || column == COL_SKU_CODE && "SKU编码".equals(value)
                 || column == 3 && "规格".equals(value);
     }
 
-    /** 参与幂等哈希的指纹：凭证 + 每行（skuCode / 实盘量 / 备注）的稳定序列，内容变即视为不同请求。 */
+    /**
+     * 参与幂等哈希的指纹：凭证 + 每行（skuCode / 实盘量 / 备注）的稳定序列，内容变即视为不同请求。
+     */
     private static Object fingerprint(StocktakeSnapshotSigner.Payload payload,
             List<InventoryStocktakeService.SnapshotLine> lines) {
         var actual = new ArrayList<Map<String, Object>>();

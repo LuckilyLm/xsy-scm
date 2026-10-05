@@ -251,7 +251,6 @@ import RouteFulfillmentPanel from './components/route-fulfillment-panel.vue';
 import RouteOrdersPanel from './components/route-orders-panel.vue';
 import RouteBasePanel from './components/route-base-panel.vue';
 import RoutePrint from './route-print.vue';
-import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
 import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import {
