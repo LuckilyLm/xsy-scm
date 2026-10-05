@@ -341,3 +341,54 @@ test('履约面板具备加载 / 空 / 错三态，与打印面板同一套做�
   const paneKeys = [...view.matchAll(/<a-tab-pane key="(\w+)"/g)].map((m) => m[1]);
   assert.deepEqual(paneKeys, ['base', 'orders', 'map', 'print', 'fulfillment']);
 });
+
+// ------------------------------------------------------------------ 列表展示（§16）
+
+test('配送线路列表把编号折进名称、把定位覆盖率收成图标', () => {
+  const list = code('../src/views/business/scm/delivery/route-list.vue');
+  // 线路编号是业务识别信息（§7.2），但不独占一列：作为线路名称下方的 secondary text
+  assert.doesNotMatch(list, /title: '线路编号'/);
+  assert.match(list, /title: '线路名称', dataIndex: 'routeName'/);
+  assert.match(list, /column\.dataIndex === 'routeName'[\s\S]{0,260}record\.routeNo/);
+  // 定位覆盖率是质量信息：图标 + Tooltip，不再占一列文字、也不再靠内联色名判断
+  assert.match(list, /coverageOk\(record\)/);
+  assert.match(list, /coverageText\(record\)/);
+  assert.doesNotMatch(list, /'green' : 'orange'/, '覆盖率不应再靠内联色名判断');
+  // 状态走 §25 档位：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰
+  assert.match(list, /DRAFT: 'warning'/);
+  assert.match(list, /PLANNED: 'processing'/);
+  assert.match(list, /DISPATCHED: 'processing'/);
+  assert.match(list, /COMPLETED: 'success'/);
+  assert.match(list, /CANCELLED: 'neutral'/);
+  // 操作列 220 → 160 居中：详情 / 路线 / 更多
+  assert.match(list, /dataIndex: 'action', fixed: 'right' as const, align: 'center' as const, width: 160/);
+  assert.match(list, /ScmActionMore/);
+  // 打印仍挂在既有权限码上，不新增权限点
+  assert.match(list, /DELIVERY_PERM\.ROUTE_QUERY/);
+});
+
+test('司机与车辆列表隐藏内部编号、把单位写进表头', () => {
+  const master = code('../src/views/business/scm/delivery/components/master-list.vue');
+  // §16.4 司机：内部编号不上列，但查询条件与编辑表单仍要有它
+  assert.doesNotMatch(master, /title: '司机编码'/);
+  assert.match(master, /title: '姓名', dataIndex: 'driverName'/);
+  assert.match(master, /isDriver \? '司机编码' : '车牌号'/, '查询条件仍应保留司机编码');
+  // §16.5 车辆：数值列的单位写进表头，避免同一列在不同车型下含义漂移
+  assert.match(master, /title: '载重（kg）'/);
+  assert.match(master, /title: '容积（m³）'/);
+  // 状态与「未绑定」都走 ScmStatusTag 档位
+  assert.match(master, /ScmStatusTag/);
+  assert.match(master, /tone="warning" label="未绑定"/);
+  assert.doesNotMatch(master, /color="orange"|:color="record\.status/, '状态色应由 tone 档位给出');
+});
+
+test('线路编辑抽屉分区且宽度走 foundation 分级', () => {
+  const drawer = code('../src/views/business/scm/delivery/components/route-form-drawer.vue');
+  assert.match(drawer, /scmDrawerWidth\('s'\)/, '宽度应走 scmDrawerWidth 分级，不写死像素');
+  for (const title of ['基础信息', '运力', '备注']) {
+    assert.match(drawer, new RegExp(`scm-form-section__title">${title}<`), '抽屉缺少分区：' + title);
+  }
+  // 仓库未定位的 Warning 仍在，但紧贴字段，不撑开表单节奏
+  assert.match(drawer, /isLocated\(warehouse\)/);
+  assert.match(drawer, /class="field-warning"/);
+});

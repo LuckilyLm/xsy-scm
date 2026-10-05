@@ -80,25 +80,29 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1660 }"
+        :scroll="{ x: 1350 }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'status'"
-        >
-          <a-tag :color="routeStatuses[record.status as RouteStatus].color">
-            {{ routeStatuses[record.status as RouteStatus].label }}
-          </a-tag>
-        </template
-        >
-        <template v-else-if="column.dataIndex === 'coverage'"
-        >
-          <a-tag
-              :color="record.locatedCount === record.stopCount && record.startGeomCrs && record.stopCount > 0 ? 'green' : 'orange'"
-          >{{ record.locatedCount }} / {{ record.stopCount }}
-          </a-tag
-          >
-        </template
-        >
+        <template v-if="column.dataIndex === 'routeName'">
+          <!-- 线路编号与名称组合展示：编号是业务识别信息，但不值得独占一列 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.routeName || '—' }}</span>
+            <span v-if="record.routeNo" class="scm-cell-stack__sub">{{ record.routeNo }}</span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex === 'status'">
+          <ScmStatusTag
+              :tone="ROUTE_STATUS_TONE[record.status as RouteStatus]"
+              :label="routeStatuses[record.status as RouteStatus].label"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'coverage'">
+          <!-- 定位覆盖率是质量信息：图标 + Tooltip 足够，不需要一列文字 -->
+          <a-tooltip :title="coverageText(record)">
+            <CheckCircleOutlined v-if="coverageOk(record)" class="coverage coverage--ok"/>
+            <ExclamationCircleOutlined v-else class="coverage coverage--warn"/>
+          </a-tooltip>
+        </template>
         <template v-else-if="column.dataIndex === 'totalAmount'">{{ money(record.totalAmount) }}</template>
         <template v-else-if="column.dataIndex === 'driverNameSnapshot'">{{
             record.driverNameSnapshot || '未分配'
@@ -108,27 +112,13 @@
             record.vehicleNoSnapshot || '未分配'
           }}
         </template>
-        <template v-else-if="column.dataIndex === 'action'"
-        >
-          <a-space :size="0">
-            <a-button type="link" @click="details?.open(record.id)">详情</a-button>
-            <a-button type="link" @click="details?.open(record.id, 'map')">路线</a-button>
-            <a-button v-if="record.status === 'DRAFT'" type="link" v-privilege="'scm:delivery:route:update'"
-                      @click="formDrawer?.open(record)"
-            >编辑
-            </a-button
-            >
-            <a-button
-                v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(record.status)"
-                type="link"
-                v-privilege="'scm:delivery:route:query'"
-                @click="printer?.open(record.id)"
-            >打印
-            </a-button
-            >
+        <template v-else-if="column.dataIndex === 'action'">
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" @click="details?.open(record.id)">详情</a-button>
+            <a-button type="link" size="small" @click="details?.open(record.id, 'map')">路线</a-button>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
-        </template
-        >
+        </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
@@ -151,8 +141,13 @@
 import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
+import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf} from '../common/scm-area';
 import {deepLinkFilters} from '/@/lib/query-deep-link';
@@ -196,10 +191,11 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
 // 金额列按权限出现：服务端已把无权限的 totalAmount 抹成 null，这里决定要不要留这一格。
+// 线路编号不进独立列，改为「线路名称」下方的 secondary text（§16.1）。
+// 操作列收到三个槽位（详情 / 路线 / 更多）：编辑与打印是低频动作，进「更多」。
 const columns = computed<TableColumnsType>(() => [
   {title: '配送日期', dataIndex: 'deliveryDate', width: 120},
-  {title: '线路编号', dataIndex: 'routeNo', width: 180},
-  {title: '线路名称', dataIndex: 'routeName', width: 180},
+  {title: '线路名称', dataIndex: 'routeName', width: 200},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '司机', dataIndex: 'driverNameSnapshot', width: 110},
   {title: '车辆', dataIndex: 'vehicleNoSnapshot', width: 120},
@@ -208,10 +204,60 @@ const columns = computed<TableColumnsType>(() => [
   ...(canViewAmount.value
       ? [{title: '订单金额', dataIndex: 'totalAmount', align: 'right' as const, width: 140}]
       : []),
-  {title: '停靠点定位', dataIndex: 'coverage', align: 'center' as const, width: 110},
+  {title: '停靠点定位', dataIndex: 'coverage', align: 'center' as const, width: 90},
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 100},
-  {title: '操作', dataIndex: 'action', fixed: 'right' as const, align: 'right' as const, width: 220},
+  {title: '操作', dataIndex: 'action', fixed: 'right' as const, align: 'center' as const, width: 160},
 ]);
+
+/** §25 状态视觉：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
+const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
+  DRAFT: 'warning',
+  PLANNED: 'processing',
+  DISPATCHED: 'processing',
+  COMPLETED: 'success',
+  CANCELLED: 'neutral',
+};
+
+/** 全部停靠点都有坐标、且有起点坐标，才算定位完整（未定位的订单无法参与路线规划）。 */
+function coverageOk(record: DeliveryRoute): boolean {
+  return record.stopCount > 0 && record.locatedCount === record.stopCount && !!record.startGeomCrs;
+}
+
+function coverageText(record: DeliveryRoute): string {
+  if (record.stopCount === 0) {
+    return '本条线路没有停靠点';
+  }
+  return coverageOk(record)
+      ? `全部 ${record.stopCount} 个停靠点已定位`
+      : `已定位 ${record.locatedCount} / ${record.stopCount} 个停靠点，未定位的订单无法参与路线规划`;
+}
+
+/**
+ * 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPerm 裁剪。
+ * 打印按原口径挂线路查询权（与行内按钮一致），不新增权限点。
+ */
+function rowActions(record: DeliveryRoute): ScmActionItem[] {
+  return [
+    {
+      key: 'edit',
+      label: '编辑',
+      hidden: !(record.status === 'DRAFT' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE)),
+    },
+    {
+      key: 'print',
+      label: '打印',
+      hidden: !(['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(record.status) && hasPerm(DELIVERY_PERM.ROUTE_QUERY)),
+    },
+  ];
+}
+
+function onRowAction(key: string, record: DeliveryRoute) {
+  if (key === 'edit') {
+    formDrawer?.value?.open(record);
+  } else if (key === 'print') {
+    printer?.value?.open(record.id);
+  }
+}
 let generation = 0;
 
 async function load() {
@@ -305,5 +351,18 @@ onMounted(loadOptions);
 
 .smart-query-form {
   gap: 12px 0;
+}
+
+/* 定位覆盖率：只用一个图标，颜色承担全部语义 */
+.coverage {
+  font-size: 16px;
+}
+
+.coverage--ok {
+  color: var(--scm-success, #52c41a);
+}
+
+.coverage--warn {
+  color: var(--scm-warning, #faad14);
 }
 </style>

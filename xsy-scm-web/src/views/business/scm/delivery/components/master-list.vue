@@ -38,24 +38,21 @@
         :scroll="{ x: 900 }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'status'"
-        >
-          <a-tag :color="record.status === 'ENABLED' ? 'green' : 'default'">
-            {{ record.status === 'ENABLED' ? '启用' : '停用' }}
-          </a-tag>
-        </template
-        >
-        <template v-else-if="column.dataIndex === 'employeeName'"
-        >
+        <template v-if="column.dataIndex === 'status'">
+          <ScmStatusTag
+              :tone="record.status === 'ENABLED' ? 'success' : 'neutral'"
+              :label="record.status === 'ENABLED' ? '启用' : '停用'"
+          />
+        </template>
+        <template v-else-if="column.dataIndex === 'employeeName'">
           <span v-if="record.employeeName">{{ record.employeeName }}</span>
-          <a-tag v-else color="orange">未绑定</a-tag>
-        </template
-        >
-        <template v-else-if="column.dataIndex === 'action'"
-        >
-          <a-button type="link" v-privilege="editPermission" @click="open(record)">编辑</a-button>
-        </template
-        >
+          <ScmStatusTag v-else tone="warning" label="未绑定"/>
+        </template>
+        <template v-else-if="column.dataIndex === 'action'">
+          <a-space :size="0" class="smart-table-operate scm-table-actions">
+            <a-button type="link" size="small" v-privilege="editPermission" @click="open(record)">编辑</a-button>
+          </a-space>
+        </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
@@ -126,6 +123,7 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {deliveryError, type Driver, type Vehicle, type Query} from '../delivery-types';
 
@@ -162,23 +160,25 @@ const employeeValue = computed<number | undefined>({
   },
 });
 
+// 列表按「谁 / 怎么联系 / 能不能派活」排列。司机编码是内部编号（§16.4），不上列 ——
+// 它仍在查询条件与编辑表单里，隐藏列不影响任何提交载荷。
+// 车辆的两个数值列单位写进表头（kg / m³），避免同一列在不同车型下含义漂移。
 const columns = computed<TableColumnsType>(() => [
   ...(isDriver.value
       ? [
-        {title: '司机编码', dataIndex: 'driverCode'},
-        {title: '姓名', dataIndex: 'driverName'},
-        {title: '电话', dataIndex: 'phone'},
-        {title: '绑定员工', dataIndex: 'employeeName'},
+        {title: '姓名', dataIndex: 'driverName', width: 140},
+        {title: '电话', dataIndex: 'phone', width: 150},
+        {title: '绑定员工', dataIndex: 'employeeName', width: 150},
       ]
       : [
-        {title: '车牌号', dataIndex: 'vehicleNo'},
-        {title: '车型', dataIndex: 'vehicleType'},
-        {title: '载重（kg）', dataIndex: 'loadWeight', align: 'right' as const},
-        {title: '容积（m³）', dataIndex: 'loadVolume', align: 'right' as const},
+        {title: '车牌号', dataIndex: 'vehicleNo', width: 150},
+        {title: '车型', dataIndex: 'vehicleType', width: 140},
+        {title: '载重（kg）', dataIndex: 'loadWeight', align: 'right' as const, width: 120},
+        {title: '容积（m³）', dataIndex: 'loadVolume', align: 'right' as const, width: 120},
       ]),
-  {title: '状态', dataIndex: 'status', align: 'center'},
+  {title: '状态', dataIndex: 'status', align: 'center' as const, width: 90},
   {title: '备注', dataIndex: 'remark'},
-  {title: '操作', dataIndex: 'action', align: 'right', width: 90},
+  {title: '操作', dataIndex: 'action', align: 'center' as const, width: 90},
 ]);
 
 async function load() {

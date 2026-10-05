@@ -1,87 +1,84 @@
 <template>
-  <a-drawer v-model:open="visible" :title="routeId == null ? '新建配送线路' : '编辑配送线路'" :width="560"
-            :mask-closable="!saving">
-    <a-alert v-if="error" type="error" :message="error" show-icon/>
+  <a-drawer v-model:open="visible" :title="routeId == null ? '新建配送线路' : '编辑配送线路'"
+            :width="scmDrawerWidth('s')" :mask-closable="!saving">
+    <a-alert v-if="error" type="error" :message="error" show-icon class="drawer-error"/>
     <a-spin :spinning="loading">
       <a-form layout="vertical">
-        <a-form-item label="线路名称" required>
-          <a-input v-model:value="form.routeName" :maxlength="100" placeholder="例如：南山 1 线"/>
-        </a-form-item>
-        <a-row :gutter="16"
-        >
-          <a-col :span="12"
-          >
-            <a-form-item label="配送日期" required>
-              <a-date-picker v-model:value="form.deliveryDate" value-format="YYYY-MM-DD"/>
-            </a-form-item
-            >
-          </a-col>
-          <a-col :span="12"
-          >
-            <a-form-item label="计划发车时间"
-            >
-              <a-date-picker v-model:value="departure" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"/>
-            </a-form-item>
-          </a-col
-          >
-        </a-row>
-        <a-form-item label="起点仓库" required
-        >
-          <a-select v-model:value="form.warehouseId" :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
-                    placeholder="选择启用仓库"
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">基础信息</h3>
+          </div>
+          <a-form-item label="线路名称" required>
+            <a-input v-model:value="form.routeName" :maxlength="100" placeholder="例如：南山 1 线"/>
+          </a-form-item>
+          <a-row :gutter="16">
+            <a-col :span="12">
+              <a-form-item label="配送日期" required>
+                <a-date-picker v-model:value="form.deliveryDate" value-format="YYYY-MM-DD"/>
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="计划发车时间">
+                <a-date-picker v-model:value="departure" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"/>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">运力</h3>
+            <span class="scm-form-section__hint">司机与车辆可稍后分配</span>
+          </div>
+          <a-form-item label="起点仓库" required>
+            <a-select v-model:value="form.warehouseId" :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
+                      placeholder="选择启用仓库"
+            />
+          </a-form-item>
+          <!-- 仓库未定位的提示紧贴字段，不额外撑开表单节奏 -->
+          <a-alert
+              v-if="warehouse && !isLocated(warehouse)"
+              class="field-warning"
+              message="该仓库尚未定位。可先保存草稿，确认规划前需在仓库管理补齐定位，再编辑本线路刷新起点。"
+              type="warning"
+              show-icon
           />
-        </a-form-item>
-        <a-alert
-            v-if="warehouse && !isLocated(warehouse)"
-            message="该仓库尚未定位。可先保存草稿，确认规划前需在仓库管理补齐定位，再编辑本线路刷新起点。"
-            type="warning"
-            show-icon
-        />
-        <a-row :gutter="16"
-        >
-          <a-col :span="12"
-          >
-            <a-form-item label="司机"
-            >
-              <a-select
-                  v-model:value="form.driverId"
-                  :options="drivers.map((d) => ({ value: d.id, label: `${d.driverName} · ${d.phone}` }))"
-                  placeholder="可稍后分配"
-                  allow-clear/>
-            </a-form-item
-            >
-          </a-col>
-          <a-col :span="12"
-          >
-            <a-form-item label="车辆"
-            >
-              <a-select
-                  v-model:value="form.vehicleId"
-                  :options="vehicles.map((v) => ({ value: v.id, label: v.vehicleNo }))"
-                  placeholder="可稍后分配"
-                  allow-clear/>
-            </a-form-item>
-          </a-col
-          >
-        </a-row>
-        <a-form-item label="备注">
-          <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3"/>
-        </a-form-item>
+          <a-row :gutter="16">
+            <a-col :span="12">
+              <a-form-item label="司机">
+                <a-select
+                    v-model:value="form.driverId"
+                    :options="drivers.map((d) => ({ value: d.id, label: `${d.driverName} · ${d.phone}` }))"
+                    placeholder="可稍后分配"
+                    allow-clear/>
+              </a-form-item>
+            </a-col>
+            <a-col :span="12">
+              <a-form-item label="车辆">
+                <a-select
+                    v-model:value="form.vehicleId"
+                    :options="vehicles.map((v) => ({ value: v.id, label: v.vehicleNo }))"
+                    placeholder="可稍后分配"
+                    allow-clear/>
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </section>
+        <section class="scm-form-section">
+          <div class="scm-form-section__head">
+            <h3 class="scm-form-section__title">备注</h3>
+          </div>
+          <a-form-item label="备注">
+            <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3"/>
+          </a-form-item>
+        </section>
       </a-form>
     </a-spin>
-    <template #footer
-    >
-      <a-space
-      >
-        <a-button @click="visible = false">取消
-        </a-button
-        >
-        <a-button type="primary" :loading="saving" :disabled="loading || !optionsReady" @click="save">保存线路
-        </a-button>
-      </a-space
-      >
-    </template
-    >
+    <template #footer>
+      <a-space>
+        <a-button @click="visible = false">取消</a-button>
+        <a-button type="primary" :loading="saving" :disabled="loading || !optionsReady" @click="save">保存线路</a-button>
+      </a-space>
+    </template>
   </a-drawer>
 </template>
 <script setup lang="ts">
@@ -90,6 +87,7 @@ import dayjs from 'dayjs';
 import {message} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {isLocated} from '/@/components/business/scm/map/types';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import type {Warehouse} from '../../purchase/purchase-types';
 import {deliveryError, type Id, type RouteForm, type Driver, type Vehicle, type DeliveryRoute} from '../delivery-types';
 
@@ -166,3 +164,13 @@ async function save() {
 
 defineExpose({open});
 </script>
+<style scoped>
+/* 抽屉顶部的错误条与字段内联提示：都不参与表单纵向节奏 */
+.drawer-error {
+  margin-bottom: 12px;
+}
+
+.field-warning {
+  margin: -12px 0 20px;
+}
+</style>
