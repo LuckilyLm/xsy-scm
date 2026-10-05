@@ -55,3 +55,18 @@ test('§22 两个页面的操作列统一居中固定，金额 / 状态不再各
     assert.doesNotMatch(source, /<a-tag :color=/, `${name} 仍有裸 a-tag 色名`);
   }
 });
+
+test('§31.1 打印模板页的操作列收到 160px 以内，低频动作进「更多」', () => {
+  // 「设为默认」与「删除」不再常驻；只有「编辑」留在行内
+  const width = /dataIndex: 'action', align: 'center', fixed: 'right', width: (\d+)/.exec(templateList);
+  assert.ok(width, '未取到模板页操作列宽度');
+  assert.ok(Number(width[1]) <= 160, `模板页操作列 ${width[1]}px 超出 160px`);
+  assert.match(templateList, /ScmActionMore/);
+  // v-privilege 对菜单项不生效，权限必须在 rowActions 里显式裁剪
+  assert.match(templateList, /hasPermission\('scm:print:template:update'\)/);
+  assert.match(templateList, /hasPermission\('scm:print:template:delete'\)/);
+  assert.match(templateList, /onRowAction[\s\S]{0,300}setDefault\(record\)/);
+  assert.match(templateList, /onRowAction[\s\S]{0,300}remove\(record\)/);
+  // 默认模板不提供「设为默认 / 删除」
+  assert.match(templateList, /hidden: isDefault/);
+});

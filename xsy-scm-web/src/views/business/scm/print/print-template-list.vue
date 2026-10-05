@@ -50,7 +50,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1200 }"
+        :scroll="{ x: 1100 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'defaultFlag'">
@@ -64,12 +64,9 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
-            <a-button v-if="!record.defaultFlag" type="link" size="small" v-privilege="'scm:print:template:update'"
-                      @click="setDefault(record)">设为默认
-            </a-button>
-            <a-button v-if="!record.defaultFlag" type="link" size="small" danger v-privilege="'scm:print:template:delete'"
-                      @click="remove(record)">删除
-            </a-button>
+            <!-- §31.1：操作列超过 3 个动作就要收敛。「设为默认」与「删除」是低频且后者危险，
+                 进「更多」；v-privilege 对菜单项不生效，权限在 `rowActions` 里用 hasPermission 裁剪。 -->
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
       </template>
@@ -189,6 +186,9 @@ import type {
   PrintTemplateSave,
 } from './print-types';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import {hasPermission} from '../common/scm-permission';
 import {printError} from './print-errors';
 
 const queryForm = reactive<PrintTemplateQuery>({pageNum: 1, pageSize: 20});
@@ -237,7 +237,7 @@ const columns: TableColumnsType<PrintTemplate> = [
   {title: '状态', dataIndex: 'enabledFlag', align: 'center', width: 90},
   {title: '版本', dataIndex: 'version', align: 'right', width: 80},
   {title: '更新时间', dataIndex: 'updatedAt', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 220},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 
 const form = reactive<PrintTemplateSave & { id?: Id }>({
@@ -390,6 +390,23 @@ async function submit() {
     editError.value = printError(e);
   } finally {
     saving.value = false;
+  }
+}
+
+/** 更多菜单：只有「设为默认」与「删除」，两者都只对非默认模板出现。 */
+function rowActions(record: PrintTemplate): ScmActionItem[] {
+  const isDefault = !!record.defaultFlag;
+  return [
+    {key: 'setDefault', label: '设为默认', hidden: isDefault || !hasPermission('scm:print:template:update')},
+    {key: 'delete', label: '删除', danger: true, hidden: isDefault || !hasPermission('scm:print:template:delete')},
+  ];
+}
+
+function onRowAction(key: string, record: PrintTemplate) {
+  if (key === 'setDefault') {
+    void setDefault(record);
+  } else if (key === 'delete') {
+    remove(record);
   }
 }
 
