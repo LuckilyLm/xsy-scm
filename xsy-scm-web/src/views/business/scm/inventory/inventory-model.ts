@@ -108,21 +108,6 @@ export function skuMainText(
     return skuName || '—';
 }
 
-/**
- * 表单里的 `number` → 后端要求的 **4 位定点字符串**；不设该值时返回 `undefined`。
- *
- * 库存域所有数量字段（阈值上下限、出库数量、盘点实盘量、报损数量、转换数量、调拨数量）
- * 都由后端 `ScmStrictDecimalStringDeserializer` 接收，它**拒绝 JSON 数字**、也拒绝空串。
- * 因此 InputNumber（只能给 `number`）与接口之间必须有这一层显式转换 ——
- * 直接发 `10` 会被判成参数错误，直接发 `''` 同样不行。
- *
- * `toFixed(4)` 对 `:precision="4"` 的控件是精确的：输入已经被限制在 4 位小数以内，
- * 不存在需要四舍五入的第五位。
- */
-export function fixed4(value: number | null | undefined): string | undefined {
-    return value === null || value === undefined ? undefined : value.toFixed(4);
-}
-
 /** 枚举文案表的最小结构（`SmartEnum` 的每一项都满足它；刻意不 import 常量，见文件头注释）。 */
 export type EnumLabels = Record<string, { desc?: string } | undefined>;
 /**

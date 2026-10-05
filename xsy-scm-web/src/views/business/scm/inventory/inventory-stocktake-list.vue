@@ -272,7 +272,8 @@ import type {
   StocktakeImportResult,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {fixed4, resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-model';
+import {fixed4} from '../common/scm-fixed';
+import {resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-model';
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';

@@ -195,7 +195,8 @@ import type {
   InventoryWarningThresholdQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {fixed4, quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
+import {fixed4} from '../common/scm-fixed';
+import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 
 const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});

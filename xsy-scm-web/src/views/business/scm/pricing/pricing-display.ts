@@ -51,3 +51,34 @@ export function priceEffectiveness(
 export function effectiveRangeText(effectiveFrom?: string | null, effectiveTo?: string | null): string {
     return effectiveTo ? `${datetime(effectiveFrom)} ～ ${datetime(effectiveTo)}` : datetime(effectiveFrom);
 }
+
+/**
+ * 价格历史的来源。
+ *
+ * 后端回的是枚举名（`AGREEMENT` / `CUSTOMER_TYPE`），直接渲染会把英文常量端给使用者；
+ * 查询下拉与列表列共用这一份，避免两处各写一份中文。
+ */
+export const HISTORY_SOURCE_LABEL: Record<string, string> = {
+    AGREEMENT: '客户协议价',
+    CUSTOMER_TYPE: '客户类型价',
+};
+
+/** 价格历史的变更类型。 */
+export const HISTORY_OPERATION_LABEL: Record<string, string> = {
+    CREATE: '新增',
+    UPDATE: '更新',
+    DELETE: '删除',
+};
+
+/** 变更类型的语义档位：新增 = 绿，更新 = 蓝，删除 = 红。 */
+export const HISTORY_OPERATION_TONE: Record<string, ScmStatusTone> = {
+    CREATE: 'success',
+    UPDATE: 'processing',
+    DELETE: 'error',
+};
+
+/** 枚举缺项时回落原值：一个后端新增而前端未跟上的类型本身就是有用信号，不该显示成「—」。 */
+export function historyLabel(labels: Record<string, string>, value?: string | null): string {
+    if (!value) return '—';
+    return labels[value] ?? value;
+}

@@ -242,7 +242,8 @@ import type {
   InventoryOutboundQuery,
 } from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
-import {fixed4, quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
+import {fixed4} from '../common/scm-fixed';
+import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';

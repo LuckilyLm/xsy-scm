@@ -21,7 +21,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  fixed4,
   moneyText,
   singleWarehouseDefault,
   quantityText,
@@ -29,6 +28,9 @@ import {
   specText,
   movementTypeText,
 } from '../src/views/business/scm/inventory/inventory-model.ts';
+// 定点转换住在全域公共层（scm-fixed）：定价 / 营销等模块也要用它，
+// 放在库存域会让别的模块反向依赖库存。
+import {fixed4} from '../src/views/business/scm/common/scm-fixed.ts';
 import {inventoryError} from '../src/views/business/scm/inventory/inventory-errors.ts';
 import {
   SCM_INVENTORY_CONVERSION_STATUS_ENUM,
