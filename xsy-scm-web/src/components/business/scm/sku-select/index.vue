@@ -98,6 +98,6 @@ onBeforeUnmount(() => {
 </script>
 <style scoped>.hint {
   padding: 8px 12px;
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
   font-size: 12px;
 }</style>

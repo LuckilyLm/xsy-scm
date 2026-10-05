@@ -130,12 +130,12 @@ function renameKey(sku: ProductSku, previous: string, key: string) {
   gap: 8px;
   padding-bottom: 12px;
   margin-bottom: 16px;
-  border-bottom: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-bottom: 1px solid var(--scm-border, #f0f0f0);
 }
 
 .sku-card__title {
   font-weight: 600;
-  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
 }
 
 .sku-card__subtitle {
@@ -144,7 +144,7 @@ function renameKey(sku: ProductSku, previous: string, key: string) {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 
 .sku-card__remove {

@@ -261,7 +261,7 @@ function close() {
 }
 
 .preview {
-  border: 1px solid var(--ant-color-border-secondary);
+  border: 1px solid var(--scm-border);
   border-radius: 4px;
   padding: 12px;
   background: #fff;

@@ -832,7 +832,7 @@ defineExpose({open});
   gap: 24px;
   flex-wrap: wrap;
   padding: 12px 0;
-  border-block: 1px solid var(--ant-color-border, #e5e6eb);
+  border-block: 1px solid var(--scm-border, #e5e6eb);
   font-variant-numeric: tabular-nums;
 }
 

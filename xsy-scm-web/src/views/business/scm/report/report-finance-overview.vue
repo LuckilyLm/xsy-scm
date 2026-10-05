@@ -372,7 +372,7 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
 
 <style scoped>
 .report-error { margin: 10px 0; }
-.report-table-hint { color: var(--ant-color-text-secondary); font-size: 12px; margin: 8px 0; }
+.report-table-hint { color: var(--scm-text-secondary); font-size: 12px; margin: 8px 0; }
 .report-metric-note { line-height: 1.8; }
 .smart-table-operate-block { display: flex; align-items: center; gap: 8px; }
 .smart-table-operate-block :deep(.ant-input) { width: 260px; }
@@ -382,14 +382,14 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
 .finance-detail-mobile-heading > div { min-width: 0; }
 .finance-detail-mobile-heading strong { display: block; overflow-wrap: anywhere; }
 .finance-detail-mobile-label,
-.finance-detail-mobile-balance > span { display: block; color: var(--ant-color-text-secondary); font-size: 12px; }
+.finance-detail-mobile-balance > span { display: block; color: var(--scm-text-secondary); font-size: 12px; }
 .finance-detail-mobile-balance { text-align: right; }
-.finance-detail-mobile-balance strong { color: var(--ant-color-primary); font-size: 16px; font-variant-numeric: tabular-nums; }
+.finance-detail-mobile-balance strong { color: var(--scm-primary); font-size: 16px; font-variant-numeric: tabular-nums; }
 .finance-detail-mobile-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin: 14px 0 0; }
 .finance-detail-mobile-fields > div { min-width: 0; }
-.finance-detail-mobile-fields dt { color: var(--ant-color-text-secondary); font-size: 12px; }
+.finance-detail-mobile-fields dt { color: var(--scm-text-secondary); font-size: 12px; }
 .finance-detail-mobile-fields dd { margin: 2px 0 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.finance-detail-mobile-over-applied dd { color: var(--ant-color-warning); font-weight: 600; }
+.finance-detail-mobile-over-applied dd { color: var(--scm-warning); font-weight: 600; }
 @media (max-width: 768px) {
   .smart-table-operate-block { align-items: stretch; flex-wrap: wrap; }
   .smart-table-operate-block :deep(.ant-input) { width: min(260px, 100%); }

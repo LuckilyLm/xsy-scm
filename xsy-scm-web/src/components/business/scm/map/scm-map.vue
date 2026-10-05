@@ -70,7 +70,7 @@ onBeforeUnmount(() => {
   position: relative;
   min-height: 360px;
   height: 100%;
-  background: var(--ant-color-fill-quaternary, #f5f7f9);
+  background: var(--scm-fill, #f5f7f9);
 }
 
 .scm-map-canvas {
@@ -83,7 +83,7 @@ onBeforeUnmount(() => {
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--ant-color-bg-container, #fff);
+  background: var(--scm-bg-container, #fff);
   padding: 24px;
 }
 </style>

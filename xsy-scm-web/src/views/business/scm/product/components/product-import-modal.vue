@@ -141,7 +141,7 @@ defineExpose({ show });
 }
 
 .picked {
-  color: var(--ant-color-text-secondary, #4e5969);
+  color: var(--scm-text-secondary, #4e5969);
   font-size: 12px;
 }
 

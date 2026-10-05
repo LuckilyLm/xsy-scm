@@ -337,6 +337,6 @@ async function submit() {
 .tag-picker__empty {
   margin: 0;
   font-size: 13px;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 </style>

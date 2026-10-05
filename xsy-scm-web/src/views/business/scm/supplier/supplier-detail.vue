@@ -158,6 +158,6 @@ watch(() => route.query.supplierId, load, {immediate: true});
 }
 
 .hint {
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
 }
 </style>

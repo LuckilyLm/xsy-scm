@@ -154,7 +154,7 @@ const planHistoryColumns: TableColumnsType = [
 }
 
 .hint {
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
   font-size: 12px;
 }
 

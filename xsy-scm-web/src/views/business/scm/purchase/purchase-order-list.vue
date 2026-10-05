@@ -585,7 +585,7 @@ onMounted(queryData);
 }
 
 .export-hint {
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
   font-size: 12px;
   margin-bottom: 12px;
 }

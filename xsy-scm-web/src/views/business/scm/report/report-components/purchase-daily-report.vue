@@ -165,7 +165,7 @@ onBeforeUnmount(() => { requestSequence += 1; });
 
 <style scoped>
 .daily-filters { display: flex; flex-wrap: wrap; gap: 12px 0; }
-.daily-description { color: var(--ant-color-text-secondary, #666); margin: 16px 0; }
+.daily-description { color: var(--scm-text-secondary, #666); margin: 16px 0; }
 .daily-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 16px 0; }
 .daily-pagination { display: flex; justify-content: flex-end; overflow-x: auto; margin-top: 16px; }
 @media (max-width: 600px) {

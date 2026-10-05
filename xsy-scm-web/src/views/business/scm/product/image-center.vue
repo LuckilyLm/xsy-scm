@@ -317,7 +317,7 @@ function statusColor(status: string) {
 }
 
 .hint {
-  color: var(--ant-color-text-secondary, #666);
+  color: var(--scm-text-secondary, #666);
   margin: 0 0 12px;
 }
 
@@ -349,6 +349,6 @@ figcaption {
 }
 
 .muted {
-  color: var(--ant-color-text-tertiary, #bbb);
+  color: var(--scm-text-secondary, #bbb);
 }
 </style>

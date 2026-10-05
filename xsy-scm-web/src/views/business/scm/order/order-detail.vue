@@ -427,15 +427,15 @@ pre {
 }
 
 .discount-suppressed {
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
   font-size: 12px;
 }
 
 .gift-source {
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
 }
 
 .gift-note {
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
   font-size: 12px;
 }</style>

@@ -117,7 +117,7 @@ function move(from: number, to: number) {
 
 .route-stops li,
 .warehouse-stop {
-  border-bottom: 1px solid var(--ant-color-border, #e5e6eb);
+  border-bottom: 1px solid var(--scm-border, #e5e6eb);
   padding: 16px 0;
 }
 

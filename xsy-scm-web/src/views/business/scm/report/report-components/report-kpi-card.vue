@@ -52,16 +52,16 @@ defineProps<{
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--ant-color-text-secondary);
+  color: var(--scm-text-secondary);
   font-size: 13px;
 }
 
 .report-kpi-info {
-  color: var(--ant-color-text-tertiary);
+  color: var(--scm-text-secondary);
 }
 
 .report-kpi-value {
-  color: var(--ant-color-text);
+  color: var(--scm-text);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 22px;
   font-variant-numeric: tabular-nums;
@@ -70,18 +70,18 @@ defineProps<{
 }
 
 .report-kpi-value--danger {
-  /* 用 SCM 主题变量：antd 4.2.5 不开 cssVar，--ant-color-* 在项目里从未定义 */
+  /* 用 SCM 主题变量：antd 4.2.5 不开 cssVar，`--ant-color-*` 在项目里从未定义（全仓库已清零） */
   color: var(--scm-error, #cf1322);
 }
 
 .report-kpi-sub {
-  color: var(--ant-color-text-tertiary);
+  color: var(--scm-text-secondary);
   font-size: 12px;
   margin-top: 2px;
 }
 
 .report-kpi-warn {
-  color: var(--ant-color-warning);
+  color: var(--scm-warning);
   font-size: 12px;
   margin-top: 2px;
 }

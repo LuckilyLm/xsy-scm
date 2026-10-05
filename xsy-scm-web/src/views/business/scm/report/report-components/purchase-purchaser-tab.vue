@@ -124,7 +124,7 @@ function changePage(page: number, pageSize: number) {
 
 <style scoped>
 .report-warn-icon {
-  color: var(--ant-color-warning);
+  color: var(--scm-warning);
   margin-left: 4px;
 }
 </style>

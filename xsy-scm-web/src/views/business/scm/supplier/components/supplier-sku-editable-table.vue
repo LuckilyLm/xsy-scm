@@ -121,13 +121,13 @@ table {
 th,
 td {
   padding: 8px;
-  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border: 1px solid var(--scm-border, #f0f0f0);
   vertical-align: top;
   text-align: left;
 }
 
 th {
-  background: var(--ant-color-fill-alter, #fafafa);
+  background: var(--scm-fill, #fafafa);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -158,7 +158,7 @@ td:nth-child(6) {
 
 .empty {
   text-align: center;
-  color: var(--ant-color-text-secondary, #8c8c8c);
+  color: var(--scm-text-secondary, #8c8c8c);
 }
 
 .ant-select {
@@ -171,7 +171,7 @@ td:nth-child(6) {
 
 .hint {
   margin-top: 8px;
-  color: var(--ant-color-text-secondary, #8c8c8c);
+  color: var(--scm-text-secondary, #8c8c8c);
   font-size: 12px;
 }
 </style>

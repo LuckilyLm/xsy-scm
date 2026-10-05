@@ -501,7 +501,7 @@ onMounted(() => {
 }
 
 .report-hint-icon {
-  color: var(--ant-color-text-tertiary);
+  color: var(--scm-text-secondary);
   margin-left: 4px;
 }
 </style>

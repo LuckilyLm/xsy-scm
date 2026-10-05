@@ -93,9 +93,9 @@ async function submit() {
 add();
 </script>
 <style scoped>.row-error {
-  color: var(--ant-color-error);
+  color: var(--scm-error);
 }
 
 :deep(.failed-row td) {
-  background: var(--ant-color-error-bg, #fff2f0);
+  background: var(--scm-error-bg, #fff2f0);
 }</style>
