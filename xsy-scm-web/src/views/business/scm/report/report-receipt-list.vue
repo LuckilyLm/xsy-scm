@@ -86,7 +86,7 @@
             :loading="receipt.loading"
             :pagination="false"
             :locale="{emptyText: '暂无收货明细'}"
-            :scroll="{x: 2500}"
+            :scroll="{x: 2490}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'confirmedAt'">
@@ -105,28 +105,28 @@
               </a-tag>
             </template>
             <template v-else-if="column.dataIndex === 'receivedQuantity'">
-              <span class="num">{{ quantityText(record.receivedQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.receivedQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'cumulativeReceivedQuantity'">
-              <span class="num">{{ quantityText(record.cumulativeReceivedQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.cumulativeReceivedQuantity) }}</span>
               <a-tooltip title="该采购行在全部收货单上的累计已收量，不能在本页逐行相加">
                 <InfoCircleOutlined class="report-hint-icon" aria-hidden="true"/>
               </a-tooltip>
             </template>
             <template v-else-if="column.dataIndex === 'remainingQuantity'">
-              <span class="num">{{ quantityText(record.remainingQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.remainingQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'overReceiptQuantity'">
-              <span class="num">{{ quantityText(record.overReceiptQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.overReceiptQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'receiptDifference'">
-              <span class="num">{{ quantityText(record.receiptDifference) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.receiptDifference) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'purchasePrice'">
-              <span class="num">{{ moneyText(record.purchasePrice) }}</span>
+              <span class="scm-money">{{ moneyText(record.purchasePrice) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'receiptReferenceAmount'">
-              <span class="num">{{ moneyText(record.receiptReferenceAmount) }}</span>
+              <span class="scm-money">{{ moneyText(record.receiptReferenceAmount) }}</span>
             </template>
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
@@ -184,7 +184,7 @@
             :loading="inbound.loading"
             :pagination="false"
             :locale="{emptyText: '暂无入库明细'}"
-            :scroll="{x: 1900}"
+            :scroll="{x: 1890}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'occurredAt'">
@@ -195,13 +195,13 @@
               <span v-else>—</span>
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <span class="num">{{ quantityText(record.quantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'unitCost'">
-              <span class="num">{{ costAmountText(record.unitCost, record.costMissing) }}</span>
+              <span class="scm-money">{{ costAmountText(record.unitCost, record.costMissing) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'costAmount'">
-              <span class="num">{{ costAmountText(record.costAmount, record.costMissing) }}</span>
+              <span class="scm-money">{{ costAmountText(record.costAmount, record.costMissing) }}</span>
             </template>
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
@@ -265,7 +265,7 @@
               {{ datetime(record.confirmedAt) }}
             </template>
             <template v-else-if="column.dataIndex === 'skuKindCount'">
-              <span class="num">{{ countText(record.skuKindCount) }}</span>
+              <span class="scm-quantity">{{ countText(record.skuKindCount) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'quantityText'">
               {{ textOrDash(record.quantityText) }}
@@ -352,9 +352,7 @@ const receiptColumns = ref<TableColumnsType<ReceiptRow>>([
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '收货模式', dataIndex: 'receiptMode', align: 'center', width: 130},
     {title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 110},
-    {title: '商品编码', dataIndex: 'spuCode', width: 140},
     {title: '商品', dataIndex: 'productName', width: 180},
-    {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
     {title: '商品规格', dataIndex: 'skuName', width: 140},
     {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 100},
     {title: '本次收货数量', dataIndex: 'receivedQuantity', align: 'right', width: 140},
@@ -496,10 +494,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .report-hint-icon {
   color: var(--scm-text-secondary);
   margin-left: 4px;
