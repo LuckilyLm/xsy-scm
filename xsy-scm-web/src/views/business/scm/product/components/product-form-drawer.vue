@@ -1,5 +1,5 @@
 <template>
-  <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="'min(1280px, 96vw)'"
+  <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="'min(720px, 94vw)'"
             :mask-closable="!saving" :closable="!saving" :destroy-on-close="true">
     <a-spin :spinning="loading">
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
@@ -9,37 +9,36 @@
       </a-alert>
       <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical">
         <a-row :gutter="20">
-          <a-col :xs="24" :md="12">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="商品名称" name="name"
                          :rules="[{ required: true, whitespace: true, message: '请输入商品名称' }]">
               <a-input v-model:value="form.name" :maxlength="150"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="12">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="商品编码" name="spuCode"
                          :rules="[{ required: true, whitespace: true, message: '请输入商品编码' }]">
               <a-input v-model:value="form.spuCode" :maxlength="64"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="12">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="商品分类" name="categoryId"
                          :rules="[{ required: true, message: '请选择已启用的三级分类' }]">
               <CategorySelect v-model:value="form.categoryId" :categories="categories" mode="product"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="12">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="别名" name="alias">
               <a-input v-model:value="form.alias" :maxlength="150"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="12">
-            <a-form-item label="商品状态" name="status" help="只表达是否在售">
+          <a-col :xs="24" :sm="12">
+            <a-form-item label="商品状态" name="status">
               <a-select v-model:value="form.status" :options="SHELF_STATUS_ENUM"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="12">
-            <a-form-item label="主档状态" name="masterStatus"
-                         help="停止引用后新订单与采购选不到该商品，已生成的单据不受影响">
+          <a-col :xs="24" :sm="12">
+            <a-form-item label="主档状态" name="masterStatus">
               <a-select v-model:value="form.masterStatus" :options="MASTER_STATUS_ENUM"/>
             </a-form-item>
           </a-col>
@@ -51,64 +50,64 @@
         </a-row>
         <a-divider orientation="left">主档扩展信息</a-divider>
         <a-row :gutter="20">
-          <a-col :xs="24" :md="8">
-            <a-form-item label="助记码" name="mnemonicCode" help="运营自维护的拼音缩写，用于列表模糊搜索；系统不自动生成">
+          <a-col :xs="24" :sm="12">
+            <a-form-item label="助记码" name="mnemonicCode">
               <a-input v-model:value="form.mnemonicCode" :maxlength="64"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="品牌" name="brandName">
               <a-input v-model:value="form.brandName" :maxlength="100"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="产地" name="origin">
               <a-input v-model:value="form.origin" :maxlength="100"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="储存方式" name="storageMethod">
               <a-select v-model:value="form.storageMethod" :options="STORAGE_METHOD_ENUM" allow-clear
                         placeholder="未维护"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="保质期天数" name="shelfLifeDays">
               <a-input-number v-model:value="form.shelfLifeDays" :min="0" :max="36500" :precision="0" :controls="false"
-                              style="width: 100%" placeholder="未维护"/>
+                              style="width: 100%; max-width: 160px" placeholder="未维护"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="采购预警天数" name="purchaseWarningDays">
               <a-input-number v-model:value="form.purchaseWarningDays" :min="0" :max="365" :precision="0"
-                              :controls="false" style="width: 100%" placeholder="未维护"/>
+                              :controls="false" style="width: 100%; max-width: 160px" placeholder="未维护"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
-            <a-form-item label="损耗率（%）" name="lossRate" help="仅主数据参考，不参与任何金额计算">
+          <a-col :xs="24" :sm="12">
+            <a-form-item label="损耗率（%）" name="lossRate">
               <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false"
-                              style="width: 100%"/>
+                              style="width: 100%; max-width: 160px"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="开票品名" name="invoiceName">
               <a-input v-model:value="form.invoiceName" :maxlength="100"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="税收分类编码" name="taxCategoryCode">
               <a-input v-model:value="form.taxCategoryCode" :maxlength="32"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
+          <a-col :xs="24" :sm="12">
             <a-form-item label="是否免税" name="taxExempt">
               <a-switch v-model:checked="form.taxExempt"/>
             </a-form-item>
           </a-col>
-          <a-col :xs="24" :md="8">
-            <a-form-item label="税率（%）" name="taxRate" help="财务模块未上线，不改变订单金额口径">
+          <a-col :xs="24" :sm="12">
+            <a-form-item label="税率（%）" name="taxRate">
               <a-input-number v-model:value="form.taxRate" :min="0" :max="100" :precision="4" :controls="false"
-                              style="width: 100%"/>
+                              style="width: 100%; max-width: 160px"/>
             </a-form-item>
           </a-col>
           <a-col :span="24">

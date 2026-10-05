@@ -1,35 +1,61 @@
 <template>
   <div class="sku-editor">
-    <div class="sku-scroll">
-      <table>
-        <thead>
-        <tr>
-          <th>默认</th>
-          <th>商品规格编码 *</th>
-          <th>商品规格 *</th>
-          <th>规格值</th>
-          <th>单位 *</th>
-          <th>市场价 *</th>
-          <th>类型</th>
-          <th>条码</th>
-          <th>状态</th>
-          <th>操作</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="(sku, index) in modelValue" :key="sku.skuId ?? `new-${index}`">
-          <td>
-            <a-radio :checked="sku.defaultFlag" :aria-label="`将第 ${index + 1} 个商品规格设为默认商品规格`"
-                     @change="makeDefault(index)"/>
-          </td>
-          <td>
+    <div v-for="(sku, index) in modelValue" :key="sku.skuId ?? `new-${index}`" class="sku-card">
+      <div class="sku-card__head">
+        <a-radio :checked="sku.defaultFlag" :aria-label="`将第 ${index + 1} 个商品规格设为默认商品规格`"
+                 @change="makeDefault(index)">默认</a-radio>
+        <span class="sku-card__title">商品规格 {{ index + 1 }}</span>
+        <a-popconfirm title="确认删除此商品规格？" :disabled="modelValue.length === 1"
+                      @confirm="emit('update:modelValue', removeSku(modelValue, index))">
+          <a-button type="link" danger size="small" class="sku-card__remove"
+                    :disabled="modelValue.length === 1">删除</a-button>
+        </a-popconfirm>
+      </div>
+      <a-row :gutter="12">
+        <a-col :xs="24" :sm="12">
+          <a-form-item label="商品规格编码" required class="sku-field">
             <a-input v-model:value="sku.skuCode" :maxlength="64" :aria-label="`第 ${index + 1} 个商品规格编码`"/>
-          </td>
-          <td>
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
+          <a-form-item label="商品规格" required class="sku-field">
             <a-input v-model:value="sku.specName" :maxlength="150" :aria-label="`第 ${index + 1} 个商品规格名称`"/>
-          </td>
-          <td>
-            <div v-for="([key, value], pairIndex) in Object.entries(sku.specValues)" :key="pairIndex" class="spec-pair">
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
+          <a-form-item label="单位" required class="sku-field">
+            <a-select v-model:value="sku.saleUnit" :options="unitOptions" show-search option-filter-prop="label"
+                      placeholder="选择单位" :aria-label="`第 ${index + 1} 个商品规格的单位`"/>
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
+          <a-form-item label="市场价" required class="sku-field">
+            <a-input-number :value="sku.marketPrice" string-mode :min="0" step="0.0001" :controls="false"
+                            style="width: 100%" :aria-label="`第 ${index + 1} 个商品规格的市场价`"
+                            @update:value="sku.marketPrice = $event === null ? '' : String($event)"/>
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
+          <a-form-item label="类型" class="sku-field">
+            <a-select v-model:value="sku.productType" :options="PRODUCT_TYPE_ENUM"
+                      :aria-label="`第 ${index + 1} 个商品规格的类型`"/>
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
+          <a-form-item label="条码" class="sku-field">
+            <a-input v-model:value="sku.barcode" :maxlength="64" :aria-label="`第 ${index + 1} 个商品规格的条码`"/>
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
+          <a-form-item label="状态" class="sku-field">
+            <a-select v-model:value="sku.status" :options="SHELF_STATUS_ENUM"
+                      :aria-label="`第 ${index + 1} 个商品规格的状态`"/>
+          </a-form-item>
+        </a-col>
+        <a-col :span="24">
+          <a-form-item label="规格值" class="sku-field">
+            <div v-for="([key, value], pairIndex) in Object.entries(sku.specValues)" :key="pairIndex"
+                 class="spec-pair">
               <a-input :value="key" placeholder="规格项名称" :aria-label="`第 ${index + 1} 个商品规格的第 ${pairIndex + 1} 个规格项名称`"
                        @change="renameKey(sku, key, $event.target.value ?? '')"/>
               <a-input :value="value" placeholder="规格值" :aria-label="`第 ${index + 1} 个商品规格的第 ${pairIndex + 1} 个规格值`"
@@ -39,35 +65,9 @@
               </a-button>
             </div>
             <a-button type="link" size="small" @click="addAttribute(sku)">添加规格项</a-button>
-          </td>
-          <td>
-            <a-select v-model:value="sku.saleUnit" :options="unitOptions" show-search option-filter-prop="label"
-                      placeholder="选择单位" :aria-label="`第 ${index + 1} 个商品规格的单位`"/>
-          </td>
-          <td>
-            <a-input-number :value="sku.marketPrice" string-mode :min="0" step="0.0001" :controls="false"
-                            :aria-label="`第 ${index + 1} 个商品规格的市场价`"
-                            @update:value="sku.marketPrice = $event === null ? '' : String($event)"/>
-          </td>
-          <td>
-            <a-select v-model:value="sku.productType" :options="PRODUCT_TYPE_ENUM"
-                      :aria-label="`第 ${index + 1} 个商品规格的类型`"/>
-          </td>
-          <td>
-            <a-input v-model:value="sku.barcode" :maxlength="64" :aria-label="`第 ${index + 1} 个商品规格的条码`"/>
-          </td>
-          <td>
-            <a-select v-model:value="sku.status" :options="SHELF_STATUS_ENUM" :aria-label="`第 ${index + 1} 个商品规格的状态`"/>
-          </td>
-          <td>
-            <a-popconfirm title="确认删除此商品规格？" :disabled="modelValue.length === 1"
-                          @confirm="emit('update:modelValue', removeSku(modelValue, index))">
-              <a-button type="link" danger size="small" :disabled="modelValue.length === 1">删除商品规格</a-button>
-            </a-popconfirm>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+          </a-form-item>
+        </a-col>
+      </a-row>
     </div>
     <a-button class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySku(modelValue.length)])">新增商品规格</a-button>
   </div>
@@ -112,47 +112,30 @@ function renameKey(sku: ProductSku, previous: string, key: string) {
 }
 </script>
 <style scoped>
-.sku-scroll {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  min-width: 1220px;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 8px;
+.sku-card {
   border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-  vertical-align: top;
-  text-align: left;
+  border-radius: 6px;
+  padding: 12px 12px 0;
+  margin-bottom: 12px;
 }
 
-th {
-  background: var(--ant-color-fill-alter, #fafafa);
+.sku-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sku-card__title {
   font-weight: 500;
-  white-space: nowrap;
 }
 
-td:nth-child(2), td:nth-child(3), td:nth-child(8) {
-  min-width: 135px;
+.sku-card__remove {
+  margin-left: auto;
 }
 
-td:nth-child(4) {
-  min-width: 235px;
-}
-
-td:nth-child(5) {
-  min-width: 85px;
-}
-
-td:nth-child(7), td:nth-child(9) {
-  min-width: 105px;
-}
-
-.ant-select {
-  width: 100%;
+.sku-field {
+  margin-bottom: 8px;
 }
 
 .spec-pair {
@@ -162,6 +145,6 @@ td:nth-child(7), td:nth-child(9) {
 }
 
 .add-sku {
-  margin-top: 12px;
+  margin-top: 4px;
 }
 </style>
