@@ -33,7 +33,6 @@
           </a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
           <a-button v-privilege="'scm:product:export'" :loading="exporting" @click="exportCurrent">导出</a-button>
-          <a-button @click="openImageCenter">图片中心</a-button>
           <span v-if="selectedRows.length" class="batch-hint">已选 {{ selectedRows.length }} 个</span>
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load"/>
@@ -44,7 +43,7 @@
         </template>
       </a-alert>
       <a-table :data-source="rows" :columns="columns" row-key="spuId" :loading="loading" :pagination="false"
-               size="small" bordered :scroll="{ x: 1700 }" :row-selection="canBatch ? rowSelection : undefined"
+               size="small" bordered :scroll="{ x: 1280 }" :row-selection="canBatch ? rowSelection : undefined"
                @change="sortChanged">
         <template #expandedRowRender="{ record }">
           <SkuTable :rows="record.skuList"/>
@@ -55,13 +54,22 @@
           </template>
           <template v-else-if="column.dataIndex === 'primaryImageUrl'">
             <a-image v-if="record.primaryImageUrl" :src="record.primaryImageUrl" :width="40" :height="40"
-                     :alt="record.name"/>
+                     :alt="record.name">
+              <!-- 40px 缩略图放不下遮罩默认的「预览」文字，会被截成省略号；只保留眼睛图标 -->
+              <template #previewMask>
+                <EyeOutlined/>
+              </template>
+            </a-image>
             <span v-else>—</span></template>
           <template v-else-if="column.dataIndex === 'tags'">
-            <a-space v-if="record.tags.length" wrap :size="2">
-              <a-tag v-for="tag in record.tags" :key="tag.tagId" :color="tag.status === 'ENABLED' ? 'blue' : 'default'">
+            <a-space v-if="record.tags.length" :size="2" class="product-table-tags">
+              <a-tag v-for="tag in record.tags.slice(0, TAG_PREVIEW_LIMIT)" :key="tag.tagId"
+                     :color="tag.status === 'ENABLED' ? 'blue' : 'default'">
                 {{ tag.name }}
               </a-tag>
+              <a-tooltip v-if="record.tags.length > TAG_PREVIEW_LIMIT" :title="restTagTitle(record.tags)">
+                <a-tag class="product-table-tags__more">+{{ record.tags.length - TAG_PREVIEW_LIMIT }}</a-tag>
+              </a-tooltip>
             </a-space>
             <span v-else>—</span></template>
           <span v-else-if="column.dataIndex === 'saleUnit'">{{ record.defaultSku?.saleUnit || '—' }}</span>
@@ -73,7 +81,8 @@
           <a-tag v-else-if="column.dataIndex === 'masterStatus'" :color="MASTER_STATUS_COLOR[record.masterStatus]">
             {{ enumLabel(MASTER_STATUS_ENUM, record.masterStatus) }}
           </a-tag>
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate">
+          <a-space v-else-if="column.dataIndex === 'action'" :size="0"
+                   class="smart-table-operate product-table-actions">
             <a-button v-privilege="'scm:product:update'" type="link" size="small" @click="drawer?.open(record.spuId)">
               编辑
             </a-button>
@@ -103,6 +112,7 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {message} from 'ant-design-vue';
+import {EyeOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
@@ -135,7 +145,6 @@ import ProductBatchModal from './components/product-batch-modal.vue';
 import ProductImportModal from './components/product-import-modal.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
-import {datetime} from '../common/scm-display';
 
 const router = useRouter();
 const filters = reactive<ProductQuery>({pageNum: 1, pageSize: 20});
@@ -149,41 +158,26 @@ const user = useUserStore();
 const canBatch = computed(() => user.administratorFlag || user.getPointList?.some((point: {
   webPerms: string
 }) => point.webPerms === 'scm:product:batch'));
+// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
+// 商品编码、别名、创建/更新时间等仍在搜索、高级筛选、详情、编辑与导出里，只是不默认摊在列表上。
 const columns = ref<TableColumnsType<ProductRow>>([
-  {title: '主图', dataIndex: 'primaryImageUrl', width: 65}, {
-    title: '商品名称',
-    dataIndex: 'name',
-    width: 200,
-    sorter: true
-  },
-  {title: '商品编码', dataIndex: 'spuCode', width: 170, sorter: true}, {
-    title: '分类',
-    dataIndex: 'categoryPath',
-    width: 210
-  },
-  {title: '单位', dataIndex: 'saleUnit', width: 65}, {title: '市场价', dataIndex: 'price', width: 205, align: 'right'},
-  {title: '规格数', dataIndex: 'skuCount', width: 80, align: 'right'}, {
-    title: '在售',
-    dataIndex: 'status',
-    width: 70,
-    align: 'center',
-    sorter: true
-  },
-  {title: '主档', dataIndex: 'masterStatus', width: 90, align: 'center'}, {
-    title: '标签',
-    dataIndex: 'tags',
-    width: 170
-  },
-  {title: '别名', dataIndex: 'alias', width: 140}, {
-    title: '更新时间',
-    dataIndex: 'updatedAt',
-    width: 190,
-    sorter: true,
-    customRender: ({text}) => datetime(text)
-  },
-  {title: '操作', dataIndex: 'action', width: 180, align: 'right', fixed: 'right'},
+  {title: '主图', dataIndex: 'primaryImageUrl', width: 64, align: 'center'},
+  {title: '商品名称', dataIndex: 'name', width: 200, sorter: true},
+  {title: '分类', dataIndex: 'categoryPath', width: 210},
+  {title: '单位', dataIndex: 'saleUnit', width: 70, align: 'center'},
+  {title: '市场价', dataIndex: 'price', width: 180, align: 'right'},
+  {title: '规格数', dataIndex: 'skuCount', width: 76, align: 'center'},
+  {title: '在售状态', dataIndex: 'status', width: 84, align: 'center', sorter: true},
+  {title: '主档状态', dataIndex: 'masterStatus', width: 88, align: 'center'},
+  {title: '标签', dataIndex: 'tags', width: 150},
+  {title: '操作', dataIndex: 'action', width: 120, align: 'center', fixed: 'right'},
 ]);
 const tagFilterOptions = computed(() => tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name})));
+// 标签列只展示前 N 个，其余折成 +N；否则标签多的商品会把整行撑宽、撑高。
+const TAG_PREVIEW_LIMIT = 2;
+const restTagTitle = (tags: ProductTagRef[]) => tags.slice(TAG_PREVIEW_LIMIT)
+    .map((tag) => (tag.status === 'ENABLED' ? tag.name : `${tag.name}（已停用）`))
+    .join('、');
 const selectedRows = computed(() => rows.value.filter((row) => selectedKeys.value.some((key) => String(key) === String(row.spuId))));
 /** 批量命令要逐行带乐观锁版本，所以选择只在当前页有效，翻页或刷新后一律清空。 */
 const selectedItems = computed<ProductBatchItem[]>(() => selectedRows.value.map((row) => ({
@@ -281,10 +275,6 @@ async function exportCurrent() {
   }
 }
 
-function openImageCenter() {
-  void router.push('/product/image-center');
-}
-
 function batchDone() {
   message.success('批量维护已完成');
   void load();
@@ -329,4 +319,26 @@ onMounted(async () => {
 .batch-hint {
   color: var(--ant-color-text-secondary, #4e5969);
   font-size: 12px;
+}
+
+/* 操作列表头与三个按钮共用同一条中心线 */
+.product-table-actions {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 标签列固定不换行，最多两个 + 折叠计数 */
+.product-table-tags {
+  flex-wrap: nowrap;
+}
+
+/* 间距统一交给 a-space，避免 antd 标签自带的右边距把列撑宽 */
+.product-table-tags :deep(.ant-tag) {
+  margin-inline-end: 0;
+}
+
+.product-table-tags__more {
+  cursor: default;
 }</style>

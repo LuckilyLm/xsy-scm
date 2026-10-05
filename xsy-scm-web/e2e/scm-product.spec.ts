@@ -251,15 +251,15 @@ test('read-only role cannot mutate products and buttons are hidden', async ({ pa
   await client.get('/login/logout'); await client.dispose();
 });
 
-// PCO-2 商品运营入口：Excel 导入 / 导出按钮、图片中心路由。用真实小 xlsx 字节只验证「选文件前禁止提交、
+// PCO-2 商品运营入口：Excel 导入 / 导出按钮。用真实小 xlsx 字节只验证「选文件前禁止提交、
 // 选后解禁」的结构契约，本用例刻意不点「开始导入」（无效字节必被后端拒，写库另有代价）；
 // 真正以页面提交走完整链路的是文件末尾的 CREATE / UPDATE 往返两个用例。
+// 图片中心已改为侧边栏菜单入口，列表工具栏不再放这个按钮，其路由与功能由下方 image center 用例覆盖。
 test('PCO-2 excel entry: import modal gates submit until a file is chosen', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await authenticate(page); await page.goto('/#/product/product-list');
   await expect(button(page, '导入')).toBeVisible();
   await expect(button(page, '导出')).toBeVisible();
-  await expect(button(page, '图片中心')).toBeVisible();
   await button(page, '导入').click();
   const modal = page.locator('.ant-modal:visible');
   await expect(modal.getByText('导入商品', { exact: true })).toBeVisible();
