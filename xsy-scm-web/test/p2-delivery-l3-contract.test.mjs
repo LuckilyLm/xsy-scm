@@ -32,6 +32,7 @@ const API = '../src/api/business/scm/delivery-api.ts';
 const TYPES = '../src/views/business/scm/delivery/delivery-types.ts';
 const PERM = '../src/views/business/scm/delivery/use-delivery-permission.ts';
 const VIEW = '../src/views/business/scm/delivery/route-detail.vue';
+const BASE_PANEL = '../src/views/business/scm/delivery/components/route-base-panel.vue';
 const PRINT_PANEL = '../src/views/business/scm/delivery/components/route-print-panel.vue';
 const FULFILLMENT_PANEL = '../src/views/business/scm/delivery/components/route-fulfillment-panel.vue';
 const PRINT_VIEW = '../src/views/business/scm/delivery/route-print.vue';
@@ -47,6 +48,7 @@ function code(relative) {
 
 const api = code(API);
 const view = code(VIEW);
+const basePanel = code(BASE_PANEL);
 const outbound = code(OUTBOUND_VIEW);
 
 /** 打印面板整块：`key="print"` 到它自己的闭合标签（非贪婪，中间没有嵌套同名 pane）。 */
@@ -291,7 +293,7 @@ test('按钮出现条件与后端状态机一致，且每个写动作都有二�
 
 test('数量与金额不做前端算术，null 渲染为 —（不是 0）', () => {
   for (const [name, source] of [
-    [API, api], [TYPES, code(TYPES)], [PERM, code(PERM)], [VIEW, view], [PRINT_PANEL, printPane],
+    [API, api], [TYPES, code(TYPES)], [PERM, code(PERM)], [VIEW, view], [BASE_PANEL, basePanel], [PRINT_PANEL, printPane],
     [FULFILLMENT_PANEL, fulfillmentPane],
   ]) {
     assert.ok(!/\bNumber\(/.test(source), `${name} 不该 Number() 后端定点数`);
@@ -300,7 +302,7 @@ test('数量与金额不做前端算术，null 渲染为 —（不是 0）', () 
     assert.ok(!/\.reduce\(|\+=/.test(source), `${name} 出现了前端聚合`);
   }
   // 空单号 / 空签收时间 / 空原因都必须是 —；0 在这些列里是一个真实存在的事实，不能被当作空值复用。
-  assert.match(view, />—（整条线路实发为 0，未生成出库单）</);
+  assert.match(basePanel, />—（整条线路实发为 0，未生成出库单）</);
   assert.match(fulfillmentPane, /\{\{ datetime\(record\.signedAt\) \}\}/);
   assert.match(fulfillmentPane, /record\.signedBy \|\| '—'/);
   assert.match(fulfillmentPane, /record\.signReason \|\| '—'/);

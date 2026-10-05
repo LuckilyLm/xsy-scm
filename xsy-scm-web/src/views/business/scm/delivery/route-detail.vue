@@ -80,43 +80,12 @@
         </div>
         <a-tabs v-model:active-key="tab">
           <a-tab-pane key="base" tab="基础信息">
-            <a-descriptions bordered :column="2" size="small">
-              <a-descriptions-item label="仓库">{{ detail.route.warehouseNameSnapshot }}</a-descriptions-item>
-              <a-descriptions-item label="仓库定位">{{
-                  isLocated(startPoint) ? `已定位 · ${detail.route.startGeomCrs}` : '未定位'
-                }}
-              </a-descriptions-item>
-              <a-descriptions-item label="仓库地址" :span="2">{{
-                  detail.route.warehouseAddressSnapshot || '—'
-                }}
-              </a-descriptions-item>
-              <a-descriptions-item label="司机"
-              >{{ detail.route.driverNameSnapshot || '未分配' }} {{ detail.route.driverPhoneSnapshot }}
-              </a-descriptions-item
-              >
-              <a-descriptions-item label="车辆">{{ detail.route.vehicleNoSnapshot || '未分配' }}</a-descriptions-item>
-              <a-descriptions-item label="计划发车">{{
-                  datetime(detail.route.plannedDepartureTime)
-                }}
-              </a-descriptions-item>
-              <a-descriptions-item label="备注">{{ detail.route.remark || '—' }}</a-descriptions-item>
-              <a-descriptions-item v-if="detail.route.dispatchedAt" label="发车">
-                {{ datetime(detail.route.dispatchedAt) }} · {{ detail.route.dispatchedBy || '—' }}
-              </a-descriptions-item>
-              <a-descriptions-item v-if="detail.route.completedAt" label="完成">
-                {{ datetime(detail.route.completedAt) }} · {{ detail.route.completedBy || '—' }}
-              </a-descriptions-item>
-              <!-- 出库单是发车在库存域留下的事实，配送侧只读编号：数量与金额口径归库存页，这里不复制一份。 -->
-              <a-descriptions-item v-if="showOutbound" label="出库单">
-                <a-button v-if="detail.route.outboundNo" type="link" size="small" @click="goOutbound(detail.route.outboundNo)">
-                  {{ detail.route.outboundNo }}
-                </a-button>
-                <span v-else>—（整条线路实发为 0，未生成出库单）</span>
-              </a-descriptions-item>
-              <a-descriptions-item v-if="detail.route.cancelReason" label="取消原因" :span="2">
-                {{ detail.route.cancelReason }}
-              </a-descriptions-item>
-            </a-descriptions>
+            <RouteBasePanel
+              :route="detail.route"
+              :start-point="startPoint"
+              :show-outbound="showOutbound"
+              @outbound="goOutbound"
+            />
           </a-tab-pane>
           <a-tab-pane key="orders" tab="线路订单">
             <RouteOrdersPanel
@@ -280,6 +249,7 @@ import RouteMapPanel from './components/route-map-panel.vue';
 import RoutePrintPanel from './components/route-print-panel.vue';
 import RouteFulfillmentPanel from './components/route-fulfillment-panel.vue';
 import RouteOrdersPanel from './components/route-orders-panel.vue';
+import RouteBasePanel from './components/route-base-panel.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
