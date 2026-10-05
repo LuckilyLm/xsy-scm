@@ -371,8 +371,8 @@ test('the stocktake page documents that delta is applied to the live book quanti
   // 这是本波次最容易让人误读的一条口径：确认后的账面**不一定等于实盘数**，
   // 因为「保存草稿 → 确认」之间发生的收货 / 出库会被保留（差异是施加到当前账面量上的）。
   // 页面上必须写明，否则用户会把正确行为当成 bug。
-  const page = code('../src/views/business/scm/inventory/inventory-stocktake-list.vue');
-  assert.match(page, /确认瞬间的账面量/);
+  const detail = code('../src/views/business/scm/inventory/components/inventory-stocktake-detail-drawer.vue');
+  assert.match(detail, /确认瞬间的账面量/);
 
   // 明细里的账面量由服务端快照，前端不得提交它（否则盘点能凭空制造差异）
   const api = code('../src/api/business/scm/inventory-stocktake-api.ts');
