@@ -1,5 +1,7 @@
 /**
- * UI 令牌（CSS 自定义属性）契约单测。
+ * SCM UI foundation 的契约单测（主题变量 + 全局容器对齐）。
+ *
+ * ## 主题变量
  *
  * 守的是一条**曾经真实踩过、而且不报错**的线：项目里出现过 30+ 处
  * `var(--ant-color-text-secondary)` 之类的写法，看起来像 antd 的主题变量，
@@ -12,6 +14,12 @@
  *
  * 1. 全仓库不得再出现 `--ant-color-*`；
  * 2. 用到的每一个 `--scm-*` 都必须在 `useScmThemeVars()` 里有定义（打错一个字母同样是静默失效）。
+ *
+ * ## Drawer footer 对齐
+ *
+ * antd 的 `.ant-drawer-footer` 只设了 padding / border-top / flexShrink，**没有设对齐**，
+ * 而 `.ant-modal-footer` 自带 `textAlign: end` —— 同一套「取消 + 保存」在抽屉里贴左边、
+ * 在弹窗里贴右边。这条也只能靠 foundation 统一，页面各自加类会漏。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,6 +28,8 @@ import {fileURLToPath} from 'node:url';
 
 const SRC = fileURLToPath(new URL('../src/', import.meta.url));
 const THEME_VARS = '../src/theme/scm/use-scm-theme-vars.ts';
+const THEME_INDEX = '../src/theme/scm/index.less';
+const THEME_FOOTER = '../src/theme/scm/footer.less';
 
 /** 读源码并剥掉注释 —— 注释里提到反例名字（例如本文件的头注释）是合规的。 */
 function stripComments(source) {
@@ -73,4 +83,30 @@ test('用到的每一个 --scm-* 变量都在 useScmThemeVars 里有定义', () 
       [],
       `以下变量没有定义：\n${[...missing].map(([name, files]) => `  ${name} ← ${files[0]}`).join('\n')}`,
   );
+});
+
+// ------------------------------------------------------------------
+// Drawer footer 对齐
+// ------------------------------------------------------------------
+
+test('抽屉底部操作区统一右对齐，与弹窗口径一致', () => {
+  const index = readFileSync(new URL(THEME_INDEX, import.meta.url), 'utf8');
+  const footer = readFileSync(new URL(THEME_FOOTER, import.meta.url), 'utf8');
+
+  // 规则必须真的被引进来 —— 只建文件不 import 是最容易漏的一步
+  assert.match(index, /@import '\.\/footer\.less';/, 'theme/scm/index.less 未引入 footer.less');
+  // antd 只设了 padding / border-top / flexShrink，没有设对齐，所以要自己补 flex + flex-end
+  assert.match(footer, /\.ant-drawer-footer \{[\s\S]{0,200}display: flex;/);
+  assert.match(footer, /\.ant-drawer-footer \{[\s\S]{0,200}justify-content: flex-end;/);
+  // 刻意不动弹窗：它本来就右对齐，改它只会扩大影响面
+  assert.doesNotMatch(footer, /\.ant-modal-footer \{/, '弹窗 footer 本来已右对齐，不要动它');
+});
+
+test('没有页面在抽屉 footer 上私自改回左对齐', () => {
+  const offenders = [];
+  for (const file of styleFiles(SRC)) {
+    const body = stripComments(readFileSync(file, 'utf8'));
+    if (/drawer-footer[\s\S]{0,200}justify-content: flex-start/.test(body)) offenders.push(file.slice(SRC.length));
+  }
+  assert.deepEqual(offenders, [], '以下文件把抽屉 footer 改回了左对齐');
 });
