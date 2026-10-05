@@ -2,16 +2,16 @@
   <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="'min(920px, 96vw)'"
             :mask-closable="!saving" :closable="!saving" :destroy-on-close="true">
     <a-spin :spinning="loading">
-      <div class="drawer-body" :style="themeVars">
+      <div class="drawer-body">
         <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
           <template #action>
             <a-button v-if="loadFailed" size="small" @click="load(form.spuId)">重新加载</a-button>
           </template>
         </a-alert>
         <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical">
-          <section class="form-section">
-            <div class="form-section__head">
-              <h3 class="form-section__title">基础信息</h3>
+          <section class="scm-form-section">
+            <div class="scm-form-section__head">
+              <h3 class="scm-form-section__title">基础信息</h3>
             </div>
             <a-row :gutter="20">
               <a-col :xs="24" :sm="12">
@@ -55,9 +55,9 @@
             </a-row>
           </section>
 
-          <section class="form-section">
-            <div class="form-section__head">
-              <h3 class="form-section__title">商品属性</h3>
+          <section class="scm-form-section">
+            <div class="scm-form-section__head">
+              <h3 class="scm-form-section__title">商品属性</h3>
             </div>
             <a-row :gutter="20">
               <a-col :xs="24" :sm="12">
@@ -139,7 +139,7 @@
                           </div>
                         </div>
                       </template>
-                      <a-button size="small" type="dashed" class="btn-secondary">
+                      <a-button size="small" type="dashed" class="scm-btn-secondary">
                         <PlusOutlined/>
                         添加标签
                       </a-button>
@@ -150,19 +150,19 @@
             </a-row>
           </section>
 
-          <section class="form-section">
+          <section class="scm-form-section">
             <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event">
               <template #head>
-                <h3 class="form-section__title">商品图片</h3>
-                <span class="form-section__hint">最多 20 张，可拖动排序。</span>
+                <h3 class="scm-form-section__title">商品图片</h3>
+                <span class="scm-form-section__hint">最多 20 张，可拖动排序。</span>
               </template>
             </ImageUpload>
           </section>
 
-          <section class="form-section">
-            <div class="form-section__head">
-              <h3 class="form-section__title">商品规格</h3>
-              <span class="form-section__hint">规格项用于描述不同商品规格；采购、销售与库存都按具体的商品规格记录。</span>
+          <section class="scm-form-section">
+            <div class="scm-form-section__head">
+              <h3 class="scm-form-section__title">商品规格</h3>
+              <span class="scm-form-section__hint">规格项用于描述不同商品规格；采购、销售与库存都按具体的商品规格记录。</span>
             </div>
             <SkuEditor v-model="form.skuList" :units="units"/>
           </section>
@@ -181,8 +181,7 @@
 </template>
 <script setup lang="ts">
 import {computed, nextTick, ref} from 'vue';
-import type {CSSProperties} from 'vue';
-import {message, theme} from 'ant-design-vue';
+import {message} from 'ant-design-vue';
 import type {FormInstance} from 'ant-design-vue';
 import {PlusOutlined} from '@ant-design/icons-vue';
 import {productApi} from '/@/api/business/scm/product-api';
@@ -227,17 +226,6 @@ const user = useUserStore();
 const canEditImages = computed(() => user.administratorFlag || user.getPointList?.some((point: {
   webPerms: string
 }) => point.webPerms === 'scm:product:image'));
-// 主题色注入抽屉正文：抽屉渲染在 portal 里，scoped 的 v-bind 变量不一定落在正文祖先上，
-// 由自己挂一层 CSS 变量最稳，且按钮的 hover 态也能用到。
-const {useToken} = theme;
-const {token} = useToken();
-const themeVars = computed<CSSProperties>(() => ({
-  '--pf-primary': token.value.colorPrimary,
-  '--pf-primary-bg': token.value.colorPrimaryBg,
-  '--pf-primary-border': token.value.colorPrimaryBorder,
-  '--pf-primary-bg-hover': token.value.colorPrimaryBgHover,
-  '--pf-fill': token.value.colorFillTertiary,
-}));
 let session = 0;
 
 function tagLabel(tagId: ProductId) {
@@ -320,68 +308,6 @@ async function submit() {
 }
 </script>
 <style scoped>
-/* 分区卡片：浅边框 + 小圆角，不用阴影，保持后台的克制观感 */
-.form-section {
-  background: var(--ant-color-bg-container, #fff);
-  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.form-section:last-child {
-  margin-bottom: 0;
-}
-
-/* 标题与辅助说明排在同一行，避免各占一行拉长表单 */
-.form-section__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.form-section__title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 22px;
-  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
-}
-
-.form-section__hint {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
-}
-
-/* 纵向节奏：相邻两行之间留出清晰空白；最后一行不留尾距，底部空白交给卡片内边距。
-   这里必须用「直接子级 > .ant-row」限定：:deep() 会去掉作用域，若写成 .form-section :deep(...)，
-   会连带命中子组件（SKU 卡片、图片区）里同样处于最后一行 a-row 的表单项，把它们的间距清零。 */
-.form-section > .ant-row :deep(.ant-form-item) {
-  margin-bottom: 20px;
-}
-
-.form-section > .ant-row:last-child > .ant-col :deep(.ant-form-item) {
-  margin-bottom: 0;
-}
-
-/* 二级操作：浅绿底 + 绿字 + 浅绿边框，不抢主按钮的视觉重心 */
-.btn-secondary {
-  color: var(--pf-primary);
-  background: var(--pf-primary-bg);
-  border-color: var(--pf-primary-border);
-}
-
-.btn-secondary:hover,
-.btn-secondary:focus {
-  color: var(--pf-primary);
-  background: var(--pf-primary-bg-hover);
-  border-color: var(--pf-primary);
-}
-
 /* 商品标签：已选项以 Tag 呈现，新增走弹出面板 */
 .tag-picker {
   display: flex;
