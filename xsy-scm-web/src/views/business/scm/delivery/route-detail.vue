@@ -119,67 +119,15 @@
             </a-descriptions>
           </a-tab-pane>
           <a-tab-pane key="orders" tab="线路订单">
-            <div class="smart-table-btn-block">
-              <a-button
-                  v-if="detail.route.status === 'DRAFT'"
-                  type="primary"
-                  v-privilege="'scm:delivery:route:update'"
-                  :disabled="busy"
-                  @click="candidates?.open(detail.route)"
-              >加入订单
-              </a-button
-              >
-            </div>
-            <a-table
-                id="scm-delivery-route-orders"
-                size="small"
-                :columns="orderColumns"
-                :data-source="detail.orders"
-                row-key="id"
-                :pagination="false"
-                :scroll="{ x: 1100 }"
-                bordered
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.dataIndex === 'stop'"
-                >{{ stopOf(record.stopId)?.stopSeq }} · {{ stopOf(record.stopId)?.customerNameSnapshot }}
-                </template
-                >
-                <template v-else-if="column.dataIndex === 'address'">{{
-                    stopOf(record.stopId)?.addressSnapshot
-                  }}
-                </template>
-                <template v-else-if="column.dataIndex === 'orderAmountSnapshot'">{{
-                    money(record.orderAmountSnapshot)
-                  }}
-                </template>
-                <template v-else-if="column.dataIndex === 'expectDeliveryTimeSnapshot'">
-                  {{ datetime(record.expectDeliveryTimeSnapshot) }}
-                </template>
-                <template v-else-if="column.dataIndex === 'location'"
-                >
-                  <a-tag :color="isLocated(stopOf(record.stopId) ?? {}) ? 'green' : 'default'">{{
-                      isLocated(stopOf(record.stopId) ?? {}) ? '已定位' : '未定位'
-                    }}
-                  </a-tag>
-                </template
-                >
-                <template v-else-if="column.dataIndex === 'action'"
-                >
-                  <a-button
-                      v-if="detail.route.status === 'DRAFT'"
-                      type="link"
-                      danger
-                      v-privilege="'scm:delivery:route:update'"
-                      :disabled="busy"
-                      @click="openReason('remove', record.orderId)"
-                  >移除
-                  </a-button
-                  >
-                </template
-                >
-              </template>
-            </a-table>
+            <RouteOrdersPanel
+                :route-status="detail.route.status"
+                :orders="detail.orders"
+                :stops="detail.stops"
+                :busy="busy"
+                :can-view-amount="canViewAmount"
+                @add-orders="candidates?.open(detail.route)"
+                @remove-order="openReason('remove', $event)"
+            />
           </a-tab-pane>
           <a-tab-pane key="map" tab="停靠点 / 路线地图">
             <RouteMapPanel
@@ -321,7 +269,7 @@
 import {computed, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
-import {Modal, message, type TableColumnsType} from 'ant-design-vue';
+import {Modal, message} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
 import {isLocated, locationError, type MapPoint} from '/@/components/business/scm/map/types';
@@ -331,6 +279,7 @@ import RoutePlanningSuggestionPanel from './components/route-planning-suggestion
 import RouteMapPanel from './components/route-map-panel.vue';
 import RoutePrintPanel from './components/route-print-panel.vue';
 import RouteFulfillmentPanel from './components/route-fulfillment-panel.vue';
+import RouteOrdersPanel from './components/route-orders-panel.vue';
 import RoutePrint from './route-print.vue';
 import {datetime} from '../common/scm-display';
 import {money} from './delivery-display';
@@ -384,18 +333,6 @@ const mapPoints = computed<MapPoint[]>(() => [
         canViewAmount.value ? ` · ${money(s.totalAmount)}` : ''}`,
   })) ?? []),
 ]);
-const orderColumns = computed<TableColumnsType>(() => [
-  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
-  {title: '停靠点 / 客户', dataIndex: 'stop', width: 200},
-  {title: '配送地址', dataIndex: 'address', width: 240},
-  {title: '期望配送', dataIndex: 'expectDeliveryTimeSnapshot', width: 180},
-  ...(canViewAmount.value
-      ? [{title: '订单金额', dataIndex: 'orderAmountSnapshot', align: 'right' as const, width: 120}]
-      : []),
-  {title: '定位', dataIndex: 'location', width: 90},
-  {title: '操作', dataIndex: 'action', align: 'right' as const, width: 80},
-]);
-
 // ------------------------------------------------------------------
 // 辅助排线建议
 // ------------------------------------------------------------------
