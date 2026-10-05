@@ -1,130 +1,173 @@
 <template>
-  <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="'min(720px, 94vw)'"
+  <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="'min(920px, 96vw)'"
             :mask-closable="!saving" :closable="!saving" :destroy-on-close="true">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-        <template #action>
-          <a-button v-if="loadFailed" size="small" @click="load(form.spuId)">重新加载</a-button>
-        </template>
-      </a-alert>
-      <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical">
-        <a-row :gutter="20">
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="商品名称" name="name"
-                         :rules="[{ required: true, whitespace: true, message: '请输入商品名称' }]">
-              <a-input v-model:value="form.name" :maxlength="150"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="商品编码" name="spuCode"
-                         :rules="[{ required: true, whitespace: true, message: '请输入商品编码' }]">
-              <a-input v-model:value="form.spuCode" :maxlength="64"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="商品分类" name="categoryId"
-                         :rules="[{ required: true, message: '请选择已启用的三级分类' }]">
-              <CategorySelect v-model:value="form.categoryId" :categories="categories" mode="product"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="别名" name="alias">
-              <a-input v-model:value="form.alias" :maxlength="150"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="商品状态" name="status">
-              <a-select v-model:value="form.status" :options="SHELF_STATUS_ENUM"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="主档状态" name="masterStatus">
-              <a-select v-model:value="form.masterStatus" :options="MASTER_STATUS_ENUM"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="24">
-            <a-form-item label="商品简介" name="description">
-              <a-textarea v-model:value="form.description" :maxlength="1000" :rows="2" show-count/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-divider orientation="left">主档扩展信息</a-divider>
-        <a-row :gutter="20">
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="助记码" name="mnemonicCode">
-              <a-input v-model:value="form.mnemonicCode" :maxlength="64"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="品牌" name="brandName">
-              <a-input v-model:value="form.brandName" :maxlength="100"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="产地" name="origin">
-              <a-input v-model:value="form.origin" :maxlength="100"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="储存方式" name="storageMethod">
-              <a-select v-model:value="form.storageMethod" :options="STORAGE_METHOD_ENUM" allow-clear
-                        placeholder="未维护"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="保质期天数" name="shelfLifeDays">
-              <a-input-number v-model:value="form.shelfLifeDays" :min="0" :max="36500" :precision="0" :controls="false"
-                              style="width: 100%; max-width: 160px" placeholder="未维护"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="采购预警天数" name="purchaseWarningDays">
-              <a-input-number v-model:value="form.purchaseWarningDays" :min="0" :max="365" :precision="0"
-                              :controls="false" style="width: 100%; max-width: 160px" placeholder="未维护"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="损耗率（%）" name="lossRate">
-              <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false"
-                              style="width: 100%; max-width: 160px"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="开票品名" name="invoiceName">
-              <a-input v-model:value="form.invoiceName" :maxlength="100"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="税收分类编码" name="taxCategoryCode">
-              <a-input v-model:value="form.taxCategoryCode" :maxlength="32"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="是否免税" name="taxExempt">
-              <a-switch v-model:checked="form.taxExempt"/>
-            </a-form-item>
-          </a-col>
-          <a-col :xs="24" :sm="12">
-            <a-form-item label="税率（%）" name="taxRate">
-              <a-input-number v-model:value="form.taxRate" :min="0" :max="100" :precision="4" :controls="false"
-                              style="width: 100%; max-width: 160px"/>
-            </a-form-item>
-          </a-col>
-          <a-col :span="24">
-            <a-form-item label="商品标签" name="tagIds">
-              <a-select v-model:value="form.tagIds" mode="multiple" :options="tagOptions" option-filter-prop="label"
-                        placeholder="选择标签"/>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-divider orientation="left">商品图集</a-divider>
-        <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event"/>
-        <a-divider orientation="left">商品规格</a-divider>
-        <a-typography-text type="secondary" style="display: block; margin-bottom: 8px">
-          规格项用于描述不同商品规格；采购、销售与库存都按具体的商品规格记录。
-        </a-typography-text>
-        <SkuEditor v-model="form.skuList" :units="units"/>
-      </a-form>
+      <div class="drawer-body" :style="themeVars">
+        <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+          <template #action>
+            <a-button v-if="loadFailed" size="small" @click="load(form.spuId)">重新加载</a-button>
+          </template>
+        </a-alert>
+        <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical">
+          <section class="form-section">
+            <div class="form-section__head">
+              <h3 class="form-section__title">基础信息</h3>
+            </div>
+            <a-row :gutter="20">
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="商品名称" name="name"
+                             :rules="[{ required: true, whitespace: true, message: '请输入商品名称' }]">
+                  <a-input v-model:value="form.name" :maxlength="150"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="商品编码" name="spuCode"
+                             :rules="[{ required: true, whitespace: true, message: '请输入商品编码' }]">
+                  <a-input v-model:value="form.spuCode" :maxlength="64"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="商品分类" name="categoryId"
+                             :rules="[{ required: true, message: '请选择已启用的三级分类' }]">
+                  <CategorySelect v-model:value="form.categoryId" :categories="categories" mode="product"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="别名" name="alias">
+                  <a-input v-model:value="form.alias" :maxlength="150"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="商品状态" name="status">
+                  <a-select v-model:value="form.status" :options="SHELF_STATUS_ENUM"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="主档状态" name="masterStatus">
+                  <a-select v-model:value="form.masterStatus" :options="MASTER_STATUS_ENUM"/>
+                </a-form-item>
+              </a-col>
+              <a-col :span="24">
+                <a-form-item label="商品简介" name="description">
+                  <a-textarea v-model:value="form.description" :maxlength="1000" :rows="2" show-count/>
+                </a-form-item>
+              </a-col>
+            </a-row>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section__head">
+              <h3 class="form-section__title">商品属性</h3>
+            </div>
+            <a-row :gutter="20">
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="助记码" name="mnemonicCode">
+                  <a-input v-model:value="form.mnemonicCode" :maxlength="64"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="品牌" name="brandName">
+                  <a-input v-model:value="form.brandName" :maxlength="100"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="产地" name="origin">
+                  <a-input v-model:value="form.origin" :maxlength="100"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="储存方式" name="storageMethod">
+                  <a-select v-model:value="form.storageMethod" :options="STORAGE_METHOD_ENUM" allow-clear
+                            placeholder="未维护"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="保质期" name="shelfLifeDays">
+                  <a-input-number v-model:value="form.shelfLifeDays" :min="0" :max="36500" :precision="0"
+                                  addon-after="天" style="width: 100%" placeholder="未维护"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="采购预警" name="purchaseWarningDays">
+                  <a-input-number v-model:value="form.purchaseWarningDays" :min="0" :max="365" :precision="0"
+                                  addon-after="天" style="width: 100%" placeholder="未维护"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="损耗率" name="lossRate">
+                  <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false"
+                                  addon-after="%" style="width: 100%"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="税率" name="taxRate">
+                  <a-input-number v-model:value="form.taxRate" :min="0" :max="100" :precision="4" :controls="false"
+                                  addon-after="%" style="width: 100%"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="开票品名" name="invoiceName">
+                  <a-input v-model:value="form.invoiceName" :maxlength="100"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="税收分类编码" name="taxCategoryCode">
+                  <a-input v-model:value="form.taxCategoryCode" :maxlength="32"/>
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :sm="12">
+                <a-form-item label="是否免税" name="taxExempt">
+                  <a-switch v-model:checked="form.taxExempt" checked-children="是" un-checked-children="否"/>
+                </a-form-item>
+              </a-col>
+              <a-col :span="24">
+                <a-form-item label="商品标签" name="tagIds">
+                  <div class="tag-picker">
+                    <a-tag v-for="tagId in form.tagIds" :key="tagId" closable class="tag-picker__tag"
+                           @close="removeTag(tagId)">{{ tagLabel(tagId) }}</a-tag>
+                    <a-popover v-model:open="tagPickerOpen" trigger="click" placement="bottomLeft"
+                               :overlay-style="{width: '280px'}" @open-change="onTagPickerToggle">
+                      <template #content>
+                        <div class="tag-picker__panel">
+                          <a-input v-model:value="tagKeyword" size="small" allow-clear placeholder="搜索标签"/>
+                          <div class="tag-picker__list">
+                            <a-checkbox v-for="option in filteredTagOptions" :key="option.value"
+                                        :checked="form.tagIds.includes(option.value)"
+                                        @change="toggleTag(option.value)">{{ option.label }}
+                            </a-checkbox>
+                            <p v-if="!filteredTagOptions.length" class="tag-picker__empty">没有匹配的标签</p>
+                          </div>
+                        </div>
+                      </template>
+                      <a-button size="small" type="dashed" class="btn-secondary">
+                        <PlusOutlined/>
+                        添加标签
+                      </a-button>
+                    </a-popover>
+                  </div>
+                </a-form-item>
+              </a-col>
+            </a-row>
+          </section>
+
+          <section class="form-section">
+            <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event">
+              <template #head>
+                <h3 class="form-section__title">商品图片</h3>
+                <span class="form-section__hint">最多 20 张，可拖动排序。</span>
+              </template>
+            </ImageUpload>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section__head">
+              <h3 class="form-section__title">商品规格</h3>
+              <span class="form-section__hint">规格项用于描述不同商品规格；采购、销售与库存都按具体的商品规格记录。</span>
+            </div>
+            <SkuEditor v-model="form.skuList" :units="units"/>
+          </section>
+        </a-form>
+      </div>
     </a-spin>
     <template #footer>
       <a-space style="float: right">
@@ -138,8 +181,10 @@
 </template>
 <script setup lang="ts">
 import {computed, nextTick, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import type {CSSProperties} from 'vue';
+import {message, theme} from 'ant-design-vue';
 import type {FormInstance} from 'ant-design-vue';
+import {PlusOutlined} from '@ant-design/icons-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {productTagApi, productUomApi} from '/@/api/business/scm/product-assistant-api';
@@ -164,6 +209,7 @@ const form = ref<ProductForm>(emptyProduct()), categories = ref<ProductCategory[
 const units = ref<ProductUom[]>([]), tagChoices = ref<ProductTag[]>([]), boundTags = ref<ProductTagRef[]>([]);
 const visible = ref(false), loading = ref(false), saving = ref(false), uploading = ref(false), error = ref(''),
     loadFailed = ref(false);
+const tagPickerOpen = ref(false), tagKeyword = ref('');
 // 停用标签仍要出现在下拉里：编辑只校验新增绑定，摘不掉就等于历史标签永远清不掉。
 const tagOptions = computed(() => {
   const active = tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name}));
@@ -173,11 +219,44 @@ const tagOptions = computed(() => {
     label: `${tag.name}（已停用）`
   }))];
 });
+const filteredTagOptions = computed(() => {
+  const keyword = tagKeyword.value.trim().toLowerCase();
+  return keyword ? tagOptions.value.filter((option) => option.label.toLowerCase().includes(keyword)) : tagOptions.value;
+});
 const user = useUserStore();
 const canEditImages = computed(() => user.administratorFlag || user.getPointList?.some((point: {
   webPerms: string
 }) => point.webPerms === 'scm:product:image'));
+// 主题色注入抽屉正文：抽屉渲染在 portal 里，scoped 的 v-bind 变量不一定落在正文祖先上，
+// 由自己挂一层 CSS 变量最稳，且按钮的 hover 态也能用到。
+const {useToken} = theme;
+const {token} = useToken();
+const themeVars = computed<CSSProperties>(() => ({
+  '--pf-primary': token.value.colorPrimary,
+  '--pf-primary-bg': token.value.colorPrimaryBg,
+  '--pf-primary-border': token.value.colorPrimaryBorder,
+  '--pf-primary-bg-hover': token.value.colorPrimaryBgHover,
+  '--pf-fill': token.value.colorFillTertiary,
+}));
 let session = 0;
+
+function tagLabel(tagId: ProductId) {
+  return tagOptions.value.find((option) => String(option.value) === String(tagId))?.label ?? `#${tagId}`;
+}
+
+function removeTag(tagId: ProductId) {
+  form.value.tagIds = form.value.tagIds.filter((id) => String(id) !== String(tagId));
+}
+
+function toggleTag(tagId: ProductId) {
+  form.value.tagIds = form.value.tagIds.includes(tagId)
+      ? form.value.tagIds.filter((id) => String(id) !== String(tagId))
+      : [...form.value.tagIds, tagId];
+}
+
+function onTagPickerToggle(open: boolean) {
+  if (open) tagKeyword.value = '';
+}
 
 async function load(id?: ProductId) {
   const current = ++session;
@@ -240,3 +319,98 @@ async function submit() {
   await save();
 }
 </script>
+<style scoped>
+/* 分区卡片：浅边框 + 小圆角，不用阴影，保持后台的克制观感 */
+.form-section {
+  background: var(--ant-color-bg-container, #fff);
+  border: 1px solid var(--ant-color-border-secondary, #f0f0f0);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+/* 标题与辅助说明排在同一行，避免各占一行拉长表单 */
+.form-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.form-section__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+}
+
+.form-section__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+/* 纵向节奏：相邻两行之间留出清晰空白；最后一行不留尾距，底部空白交给卡片内边距。
+   这里必须用「直接子级 > .ant-row」限定：:deep() 会去掉作用域，若写成 .form-section :deep(...)，
+   会连带命中子组件（SKU 卡片、图片区）里同样处于最后一行 a-row 的表单项，把它们的间距清零。 */
+.form-section > .ant-row :deep(.ant-form-item) {
+  margin-bottom: 20px;
+}
+
+.form-section > .ant-row:last-child > .ant-col :deep(.ant-form-item) {
+  margin-bottom: 0;
+}
+
+/* 二级操作：浅绿底 + 绿字 + 浅绿边框，不抢主按钮的视觉重心 */
+.btn-secondary {
+  color: var(--pf-primary);
+  background: var(--pf-primary-bg);
+  border-color: var(--pf-primary-border);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+  color: var(--pf-primary);
+  background: var(--pf-primary-bg-hover);
+  border-color: var(--pf-primary);
+}
+
+/* 商品标签：已选项以 Tag 呈现，新增走弹出面板 */
+.tag-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-picker__tag {
+  margin: 0;
+}
+
+.tag-picker__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tag-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.tag-picker__empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+}
+</style>
