@@ -14,15 +14,12 @@ import java.sql.SQLException;
 import java.util.Map;
 
 /**
- * JSONB ↔ {@code Map<String, Object>} 的共享 TypeHandler，用于操作日志的 before / after 快照。
+ * JSONB ↔ {@code Map<String, Object>} 的共享 TypeHandler，用于操作日志的 before / after 快照
+ * （快照里有金额、数量与嵌套对象，{@code Map<String, String>} 表达不了）。
  *
  * <p>
- * 与同包的 {@link JsonbStringMapTypeHandler} 只差值类型：快照里会出现金额、数量与嵌套对象， {@code Map<String, String>} 表达不了。
- *
- * <p>
- * {@code order} 域已有一份等价的 {@code OrderJsonbTypeHandler}。这里不直接复用它， 是为了不让 {@code finance} 依赖
- * {@code order/support}；把两份合并到本包是一次纯 Java 重构， 不涉及 migration、不改变对外行为， 留待后续统一处理（与 {@code ScmCommonErrorCode} 里 记录的 40921
- * 重复声明同一处置取向：先记录为已知技术债，不顺手重构）。
+ * {@code order} 域有一份等价的 {@code OrderJsonbTypeHandler}，未合并是为了不让 {@code finance} 依赖 {@code order/support}；合并是一次纯 Java
+ * 重构，不涉及 migration、不改变对外行为，留待后续统一处理。
  */
 public class JsonbObjectMapTypeHandler extends BaseTypeHandler<Map<String, Object>> {
 

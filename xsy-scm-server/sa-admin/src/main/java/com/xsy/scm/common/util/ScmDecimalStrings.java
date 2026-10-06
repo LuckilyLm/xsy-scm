@@ -9,15 +9,12 @@ import java.util.regex.Pattern;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * SCM 定点数（数量 / 金额）字符串的唯一解析入口。
- *
- * <p>
- * <b>为什么需要它：</b>legacy 对同一批字段存在两套解析规则（一处接受数字、一处只接受字符串， 一处四舍五入、一处直接截断）， 导致同一份请求在不同入口得到不同金额。数量与金额 <b>只有一条规则</b>：
+ * SCM 定点数（数量 / 金额）字符串的唯一解析入口。数量与金额只有一条规则：
  *
  * <ul>
  * <li>传输形态固定为 JSON <b>字符串</b>，整数部分最多 14 位、小数部分最多 4 位；</li>
  * <li>接受 {@code "12.34"} / {@code "12.3400"}，拒绝 {@code "12.34000"}（超 4 位小数）；</li>
- * <li>拒绝 JSON 数字字面量 {@code 12.34}（避免前端浮点数在传输层就丢精度）；</li>
+ * <li>拒绝 JSON 数字字面量 {@code 12.34}（浮点数在传输层就可能丢精度）；</li>
  * <li>拒绝负数与科学计数法（{@code 1e5}）；</li>
  * <li>{@code null} 与空白 → {@code null}，与 {@code "0"} 严格区分。</li>
  * </ul>
@@ -26,9 +23,8 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
  * 解析结果统一 {@code setScale(4, HALF_UP)}，与 {@code ScmFixedScale4Serializer} 的对外形态对称。
  *
  * <p>
- * <b>使用边界：</b>本类服务于「非 MVC 入口」——参数已经进入 Service / Manager / 工具层， 不再经过 Bean Validation 的场景。 MVC 入口的字段仍用 {@code @Pattern}
- * 注解做第一道拦截 （失败由 SmartAdmin 全局异常处理返回 30001）；本类失败抛 {@link ScmBusinessException}，携带
- * {@code ScmCommonErrorCode.VALIDATION_ERROR}(40000)。
+ * <b>使用边界</b>：只服务「非 MVC 入口」——参数已经进入 Service / Manager / 工具层。MVC 入口的字段仍用 {@code @Pattern} 做第一道拦截（失败返回 30001）；本类失败抛
+ * {@code VALIDATION_ERROR}(40000)。
  */
 public final class ScmDecimalStrings {
 
