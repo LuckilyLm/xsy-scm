@@ -1,18 +1,12 @@
 /*
- * Drawer 底部操作区
+ * Drawer 底部操作区统一右对齐，与 `a-modal` 口径一致。
  *
- * antd 的 `.ant-drawer-footer` 只设了 padding / border-top / flexShrink，**没有设对齐**；
- * 而同一份表单放进 `a-modal` 时按钮是右对齐的（`.ant-modal-footer` 自带 `textAlign: end`）。
- * 于是同一套「取消 + 保存」在抽屉里贴左边、在弹窗里贴右边 —— 两种容器表现不一致。
+ * antd 的 `.ant-drawer-footer` 只设了 padding / border-top / flexShrink，**没有设对齐**，
+ * 而 `.ant-modal-footer` 自带 `textAlign: end` —— 于是同一套「取消 + 保存」在抽屉里贴左、
+ * 在弹窗里贴右。
  *
- * 这里把抽屉底部统一成右对齐，与弹窗口径一致（「Footer 右对齐」/ 全局一致性）。
- * 已核对：全仓库 31 个 `#footer` 插槽里没有 `block` 按钮、也没有按钮之外的内容，
- * 因此把 footer 变成 flex 容器不会改变任何既有布局。
- *
- * **刻意不动 `.ant-modal-footer`**：弹窗本来就右对齐，改它只会扩大影响面而不带来收益。
- *
- * 选择器带 `.ant-*` 前缀是为了在 CSS-in-JS 注入顺序不确定时稳定生效；
- * 库本身没有设 `display` / `justify-content`，所以不存在优先级争夺。
+ * **刻意不动 `.ant-modal-footer`**：弹窗本来就右对齐，改它只扩大影响面。
+ * 选择器带 `.ant-*` 前缀是为了在 CSS-in-JS 注入顺序不确定时稳定生效。
  */
 .ant-drawer-footer {
   display: flex;

@@ -1,21 +1,13 @@
 /**
- * 报表中心前端类型（新增文件）。
+ * 报表中心前端类型。字段与后端 `module/scm/report/domain/vo` 的 VO **逐字对齐**，
+ * 命名即口径。
  *
- * 字段与后端 `module/scm/report/domain/vo` 的 VO **逐字对齐**，命名即口径：
- *
- * - 这里**不存在**「营业收入」「已收款」「应收」「应付」「毛利」这类字段。当前没有签收、
- *   应收、应付与核销事实，把已确认订单金额叫成收入会把「承诺」说成「已实现」；
- * - 销售侧只有 `CONFIRMED + confirmed_at + settlement_*`；采购侧只有提交后的采购事实；
- * - 定点数一律是 `string | null`（后端 `ScmFixedScale4Serializer`：`null → JSON null`、
- *   `0 → "0.0000"`）。**`null` 是「没有这个事实」，与 `"0.0000"` 是两种不同的东西**，
- *   所以类型上不写 `number`，也不允许前端 `Number` 后再算；
- * - 计数字段（`Long` / `Integer`）是 JSON 数字，与定点数区分，因此类型是 `number | null`；
+ * - 这里**不存在**「营业收入」「已收款」「应收」「应付」「毛利」这类字段 —— 当前没有
+ *   签收、应收、应付与核销事实，把已确认订单金额叫成收入会把「承诺」说成「已实现」；
+ * - 定点数一律 `string | null`（后端 `null → JSON null`、`0 → "0.0000"`）。
+ *   **`null` 是「没有这个事实」，与 `"0.0000"` 是两种不同的东西**，因此类型上不写
+ *   `number`，也不允许前端 `Number` 后再算；计数字段是 `number | null`；
  * - 时间是字符串，由 `common/scm-display` 的 `datetime` 直接渲染，不做二次时区换算。
- *
- * 库存分析四张表（`InventoryReportVO` 各内部类）在写这份类型时后端尚未落盘，
- * 字段按后端列清单 + 既有 `inventory-types.ts` 的同名字段推得，
- * 并刻意与 `InventoryMovement` 的命名保持一致（`unitSnapshot` / `sourceDocumentNo`），
- * 避免同一事实出现两套字段名。后端落盘后如出现差异，以**后端为准并改这里**。
  */
 import type {ScmPage} from '/@/types/business/scm/customer';
 

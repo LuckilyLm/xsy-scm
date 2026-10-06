@@ -27,20 +27,11 @@ export type ScmDrawerSize = keyof typeof SCM_DRAWER_WIDTH;
 /**
  * 取 Drawer 宽度。
  *
- * `workspace` **不是普通 Drawer 的第五个宽度档**，而是一个受限语义：
- * 只有「横向空间本身就是业务内容」的场景才允许使用，且**仅限以下五类**：
+ * `workspace` 是**受限特殊档**，不是普通 Drawer 的第五个宽度档，**仅限五类**：
+ * 地图工作台 / 分拣 / 称重工作台 / 报表下钻 / 超宽业务数据阅读 / 多面板业务工作台。
+ * 普通表单、编辑、配置与普通详情一律禁止 —— 这类内容应升到 `xl`（1120）或拆分。
  *
- * 1. 地图工作台
- * 2. 分拣 / 称重工作台
- * 3. 报表下钻
- * 4. 超宽业务数据阅读
- * 5. 多面板业务工作台
- *
- * **普通表单 / 编辑 / 配置 / 普通详情一律禁止使用 `workspace`** ——
- * 这类内容应该升到 `xl`（1120）或者拆分，而不是靠再放宽抽屉来容纳。
- *
- * 使用 `workspace` 的页面必须在代码注释里写明它属于上述哪一类；
- * 当前白名单由 `test/scm-drawer-width-contract.test.mjs` 直接钉住；
+ * 白名单由 `test/scm-drawer-width-contract.test.mjs` 直接钉住；
  * 新增用例需先更新 UI 规范并同步契约。
  */
 export function scmDrawerWidth(size: ScmDrawerSize): number {

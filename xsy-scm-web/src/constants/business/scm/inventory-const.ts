@@ -1,21 +1,13 @@
 /**
- *  库存域前端常量（新增文件）。
- *
- * **为什么单独建文件而不塞进 `purchase-const.ts`**：库存域是**与来源无关**的领域原语
- * （出库 / 盘点 / 报损报溢 / 调拨 / 规格转换都会写同一张流水表），把它的枚举挂到采购常量里，
- * 会让后续波次在「库存常量到底在哪个文件」上反复犯错。
+ * 库存域前端常量。
  *
  * 枚举值与后端**逐字对应**，且与 DB 的 CHECK 白名单同源：
- * - `ScmInventoryMovementTypeEnum` ↔ `ck_inventory_movement_type`
- * - `ScmInventorySourceDocumentTypeEnum` ↔ `uk_inventory_movement_source_active` 的列值
- * - `ScmInventoryLossGainTypeEnum` / `ScmInventoryLossGainStatusEnum` ↔ 报损报溢单两张 CHECK
- * - `ScmInventoryTransferStatusEnum` ↔ `ck_inventory_transfer_status`
- * - `ScmInventoryWarningStatusEnum` ↔ 读时计算（无 CHECK，但必须与后端枚举一致）
- * - `ScmInventoryConversionTypeEnum` / `ScmInventoryConversionStatusEnum` ↔ 转换单两张 CHECK
+ * `ScmInventoryMovementTypeEnum` ↔ `ck_inventory_movement_type`；来源单据类型、
+ * 报损报溢、调拨、预警、转换各自对应同名 CHECK（预警为读时计算，无 CHECK）。
  *
- * **新增流水类型时必须同时改四处**：本文件的枚举、后端枚举类、DB CHECK（新迁移），
- * 以及后端 `InventoryMovementQueryForm` 的 `@Pattern` 白名单 ——
- * 漏掉最后一项的表现是「流水写进去了，页面按新类型筛选却报 30001」。
+ * **新增流水类型时必须同时改四处**：本文件枚举、后端枚举类、DB CHECK（新迁移）、
+ * 后端 `InventoryMovementQueryForm` 的 `@Pattern` 白名单 —— 漏掉最后一项的表现是
+ * 「流水写进去了，页面按新类型筛选却报 30001」。
  */
 import type {SmartEnum} from '/@/types/smart-enum';
 

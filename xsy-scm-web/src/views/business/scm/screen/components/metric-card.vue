@@ -35,15 +35,12 @@ import {computed} from 'vue';
 import {deltaDirection, formatDeltaText} from '../format';
 
 /**
- * 单个指标卡。
+ * 单个指标卡。用 {@link size} 表达视觉层级，不让调用方各写样式。
  *
- * <p>设计稿的关键要求是**视觉层级递减**：今日销售额 → 订单数 → 客户/出库/采购，
- * 而不是每个 KPI 一样大。所以这里用 {@link size} 表达层级，而不是让调用方各写样式。
+ * **环比写「较昨日」而不是「较上一期」**：唯一的数据源就是今天 vs 昨天，
+ * 说「较上一期」会让用户以为可以选周期。
  *
- * <p><b>环比用「较昨日」而不是「较上一期」</b>：目前唯一的数据源就是今天 vs 昨天。
- * 说「较上一期」会让用户以为可以选周期，而它其实不能。
- *
- * <p>基数为 0 时（昨天没营业）环比显示「—」而不是 0% —— 见 {@link deltaDirection}。
+ * 基数为 0 时（昨天没营业）环比显示「—」而不是 0% —— 见 {@link deltaDirection}。
  */
 const props = withDefaults(
     defineProps<{

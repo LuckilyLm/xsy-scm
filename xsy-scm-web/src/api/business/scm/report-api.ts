@@ -1,17 +1,11 @@
 /**
- * 报表中心接口（新增文件）。
+ * 报表中心接口，与后端 `ScmReportController`（`/scm/report`）逐端点对应，**全部只读**：
+ * 没有任何写端点。报表是「已成立事实的另一种看法」，不是第二套账。
  *
- * 与后端 `ScmReportController`（`/scm/report`）逐端点对应，**全部只读**：
- * 这里没有任何 create / update / delete 函数，也没有任何写端点。
- * 报表是「已成立事实的另一种看法」，不是第二套账 —— 一个不存在的函数比一个
- * 会返回 405 的函数更能说明这件事。
- *
- * 三条统一约定：
- * - 查询体一律 `POST` + JSON，日期是闭区间 `startDate` / `endDate`（前端不做日界换算）；
- * - 分页响应用 `ScmPage`（`r.data.list` / `r.data.total`），非分页响应用 `ScmResponse<T>`；
- * - 导出走 `postDownload`：它已经负责创建 `<a download>` 并从 `Content-Disposition`
- *   取文件名，因此**不在前端硬编码文件名、不自己拼 Blob**。
- *   导出不带分页参数：后端强制第 1 页 + 行数上限，且超过上限时整体拒绝而不是截断。
+ * 三条统一约定：查询体一律 `POST` + JSON，日期是闭区间 `startDate` / `endDate`
+ * （前端不做日界换算）；分页响应用 `ScmPage`，非分页用 `ScmResponse<T>`；
+ * 导出走 `postDownload`（它已负责 `<a download>` 与文件名），**不在前端硬编码文件名、
+ * 不自己拼 Blob**。导出不带分页参数：后端强制第 1 页 + 行数上限，超限整体拒绝。
  */
 import {postDownload, postRequest} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';

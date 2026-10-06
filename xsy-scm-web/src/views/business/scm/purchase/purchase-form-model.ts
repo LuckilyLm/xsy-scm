@@ -153,18 +153,13 @@ export function hasAllocation(item: OrderItem, demandId: Order['id']): boolean {
 /**
  * 把**输入框里正在编辑的数**归一为 4 位定点字符串（{@link fixed} 的宽进版）。
  *
- * 存在的理由：`a-input-number` 在用户键入期间**不应用** `precision`
- * （antd 4.2.5 `InputNumber.js` 的 `getPrecision(numStr, userTyping)` 在 `userTyping` 为真时
- * 直接返回 `undefined`，注释原文「it will not block user typing」；提交只发生在 blur 时经
- * `onBlur → flushInputValue(false) → triggerValueUpdate(parsed, false)`）。
- * 于是 `<a-input-number :precision="4">` 绑定到模型上的是**裸输入** `"2"` / `"2.5"`，而不是 `"2.0000"`。
+ * `a-input-number` 在用户键入期间**不应用** `precision`（antd 4.2.5 的
+ * `getPrecision(numStr, userTyping)` 在 `userTyping` 为真时直接返回 `undefined`，
+ * 提交只发生在 blur），因此绑定到模型上的是裸输入 `"2"` / `"2.5"` 而不是 `"2.0000"`。
  *
- * 用户没有输入 → 原样返回（`''` / `null` / `undefined` 不伪造 `0`）；
- * 是合法数字 → {@link fixed} 归一；其余（`'-'`、`'.'`、空串）→ `''`，
- * 由调用方按「未填写」处理，绝不能把这类值交给 `new Decimal()`（否则抛 Invalid argument）。
- *
- * 这里**只归一数值表示，不放宽定点形状**：`10 ^ 15` 这类超出后端
- * `ScmStrictDecimalStringDeserializer` （`\d{1,14}`）整数位的输入，归一后仍会被 {@link FIXED} 拒绝。
+ * 用户没输入 → 原样返回（`''` / `null` / `undefined` 不伪造 `0`）；合法数字 → 归一；
+ * 其余（`'-'`、`'.'`、空串）→ `''`，绝不能交给 `new Decimal()`（会抛 Invalid argument）。
+ * 只归一数值表示，**不放宽定点形状**：超长整数位仍会被 {@link FIXED} 拒绝。
  */
 function typedFixed(value: string | number | null | undefined): string {
     if (value === null || value === undefined || value === '') {
@@ -206,17 +201,13 @@ export function priceFilled(value: string | null | undefined): boolean {
 /**
  * 提交前校验。返回第一条错误文案；全部通过返回 `undefined`。
  *
- * 只做**形状与业务前置**校验（必填、正数、重复 SKU、单位一致、上限）；
- * 「需求被别的单据抢走」这类并发冲突交给服务端（40972 / 40082）—— 前端不假装能预测。
+ * 只做**形状与业务前置**校验（必填、正数、重复商品规格、单位一致、上限）；
+ * 「需求被别的单据抢走」这类并发冲突交给服务端（40972 / 40082），前端不假装能预测。
  *
- * **校验时机与提交口径一致**：用户可能一次都没离开过数量输入框就点「保存草稿」，
- * 此时模型里是键入中的裸数（见 {@link typedFixed}），必须先归一再套 `FIXED`；
- * 否则会出现「明明填了 2 却说不是四位定点数」。{@link payload} 用的是同一个 {@link fixed}，
- * 因此校验通过的输入一定能构造出合法请求体。
- *
- * 只有真正**缺失**（`''` / `null`）才报「4 位定点数」文案。空串一律经 {@link typedFixed}
- * 兜底转 `''` —— 单元测试里可以直接把 `null` 塞进模型，此时 `test(null)` 会把 `null`
- * 强转成字符串 `'null'` 而误判「形状合法」，必须防住。
+ * **校验时机与提交口径一致**：用户可能一次都没离开数量输入框就点保存，
+ * 此时模型里是键入中的裸数，必须先经 {@link typedFixed} 归一 —— 否则会出现
+ * 「明明填了 2 却说不是四位定点数」。只有真正**缺失**（`''` / `null`）才报该文案；
+ * `null` 必须显式兜底，否则 `test(null)` 会强转成 `'null'` 而误判形状合法。
  */
 export function validateOrder(form: Order): string | undefined {
     if (!form.supplierId) {

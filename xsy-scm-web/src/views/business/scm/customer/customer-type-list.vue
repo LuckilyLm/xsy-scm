@@ -1,17 +1,9 @@
 <!--
-  * 客户类型管理（分页列表）
-  *
-  * C 没有客户类型管理页（C 用前端硬编码枚举），因此没有可复制的源码。
-  *
-  * 与商品分类列表的差异：
-  * - 分类是**树表**（一次取全量、无分页），V2 客户类型是**平铺分页表**，
-  *   因此这里补了查询表单 + 服务端分页 + 排序白名单（后端 `CustomerTypeService.SORTABLE`）；
-  * - 去掉「新增子分类」这类层级操作；
-  * - 删除改为 `POST /scm/customer/type/delete` 并回传 `version`（分类同为 version 删除）。
-  *
-  * 注意：后端 `CustomerTypeVO` **不返回 `updatedAt`**（只有 `createdAt`），
-  * 因此排序只开放 `typeCode / name / status` 三列，
-  * 避免出现「点了排序但后端没有对应可见列」的假象。
+  客户类型管理（平铺分页表）。
+
+  删除走 `POST /scm/customer/type/delete` 并回传 `version`。
+  排序只开放 `typeCode` / `name` / `status` 三列 —— 后端 `CustomerTypeVO` **不返回
+  `updatedAt`**，开放它会出现「点了排序但后端没有对应可见列」的假象。
 -->
 <template>
   <section aria-label="客户类型">

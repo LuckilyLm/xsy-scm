@@ -1,25 +1,16 @@
 /**
- *  库存域的**纯函数**（新增文件，仿 `purchase-form-model.ts` 的取向：把纪律放进可单测的函数，
- * 而不是散在模板里的三元表达式）。
+ * 库存域纯函数。
  *
- * 四块职责：
- * 1. **Q12 默认仓库**：{@link singleWarehouseDefault} —— 恰好只有一个启用仓库时默认带出它，
- *    否则**不自动选任何一个**。这是「多仓下随便选一个仓会让人误以为在看全部库存」的防线，
- *    因此必须是一条可断言的规则，而不是页面里的一个 `if`。
- * 2. **三态展示**（A18 同族）：`null` / `undefined` → `—`，`"0.0000"` → `0.0000`。
- *    「没有值」与「值是零」是两种不同事实，合并显示会掩盖数据问题。
- * 3. **枚举文案**：`movementType` 的中文描述；枚举缺 desc 时回落到原值，不显示空白。
- * 4. **复制历史盘点的按页解析**：{@link resolveStocktakeCopyUnits} —— 余额查询上限是 `@Max(100)`，
- *    一次拉 2000 行会被拒成 400；按页找齐即停，找不到的 SKU 显性返回而不是静默丢行。
+ * - `singleWarehouseDefault`：恰好只有一个启用仓库时默认带出它，否则**不自动选任何一个**
+ *   （多仓下随便选一个会让人误以为在看全部库存）；
+ * - 三态展示：`null` / `undefined` → `—`，`"0.0000"` → `0.0000`。**「没有值」与「值是零」
+ *   是两种不同事实**，合并显示会掩盖数据问题；
+ * - `resolveStocktakeCopyUnits`：余额查询上限 `@Max(100)`，按页找齐即停，
+ *   找不到的 SKU 显性返回而不是静默丢行。
  *
- * 本文件**不依赖 Vue、不发请求**，因此可以被 `node --test` 直接导入。
- *
- * <p><b>为什么这里只允许「类型导入」而不能值导入常量</b>：本模块会被
- * `node --experimental-strip-types --test` 加载，而 node 的 ESM 解析**不做扩展名补全**
- * —— 值导入必须写 `.ts` 后缀；但本项目 `tsconfig` 未开启 `allowImportingTsExtensions`，
- * 值导入写 `.ts` 会触发 TS5097（见 `tools/ts_baseline_ratchet.py` 的 SCM 零错误区）。
- * 两个约束的交集就是：**node 可加载的模块只能有 type-only 的相对导入**（会被类型擦除）。
- * 因此枚举文案由调用方传入（见 {@link movementTypeText}），而不是在这里 import 常量。
+ * 本文件不依赖 Vue、不发请求，可被 `node --test` 直接加载。**node 可加载的模块只能有
+ * type-only 的相对导入**（值导入要写 `.ts` 后缀，而 `tsconfig` 未开
+ * `allowImportingTsExtensions`，会触发 TS5097），因此枚举文案由调用方传入。
  */
 import type {Id} from './inventory-types.ts';
 

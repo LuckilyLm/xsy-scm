@@ -1,17 +1,11 @@
 /**
- * 报表中心前端常量（新增文件）。
+ * 报表中心前端常量：表格 DOM id、权限码、损耗类型口径。
  *
- * 这里只放**报表中心自己**的东西：表格 DOM id、权限码、损耗类型口径。
- * 其余枚举一律复用既有单一来源，**不在本文件复制第二份**：
+ * 其余枚举一律复用既有单一来源，**不在本文件复制第二份**：流水类型 / 来源单据类型 →
+ * `inventory-const.ts`；收货模式 / 入库状态 / 采购状态 → `purchase-const.ts`；
+ * 订单来源 / 价格来源 → `order-const.ts`。
  *
- * ```text
- * 流水类型 / 来源单据类型 → inventory-const.ts 的 SCM_INVENTORY_MOVEMENT_TYPE_ENUM / SCM_INVENTORY_SOURCE_TYPE_ENUM
- * 收货模式 / 入库状态 → purchase-const.ts 的 SCM_RECEIPT_MODE_ENUM / SCM_PUTAWAY_STATUS_ENUM
- * 采购状态 → purchase-const.ts 的 SCM_PURCHASE_STATUS_ENUM
- * 订单来源 / 价格来源 → order-const.ts 的 SCM_ORDER_SOURCE_ENUM / SCM_ORDER_PRICE_SOURCE_ENUM
- * ```
- *
- * 复制一份枚举值等于制造第二个真相：后端扩枚举时只改一处，另一份会**静默陈旧**，
+ * 复制一份枚举等于制造第二个真相：后端扩枚举时只改一处，另一份会**静默陈旧**，
  * 表现是筛选下拉里少一个类型、而列表里那一行的类型列显示成原值。
  */
 import type {SmartEnum} from '/@/types/smart-enum';

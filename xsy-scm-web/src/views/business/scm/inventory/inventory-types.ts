@@ -1,19 +1,14 @@
 /**
- *  库存域前端类型（新增文件）。
- *
- * 字段与后端 VO / Form **逐字对齐**：
- * - VO 侧：`InventoryBalanceVO` / `InventoryMovementVO`；
- * - Form 侧：`InventoryBalanceQueryForm` / `InventoryMovementQueryForm`。
+ * 库存域前端类型。字段与后端 VO / Form **逐字对齐**。
  *
  * 两条硬约束体现在类型里：
- * 1. **定点数字段一律是 `string | null`**（4 位小数）。后端用
- *    `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字，前端不得传 number；
- *    `null`（无值）与 `"0.0000"`（合法的零）是两种不同事实。
- * 2. **时间字段一律是字符串**，且后端已统一成 `yyyy-MM-dd HH:mm:ss`（北京时间）——
- *    前端直接渲染，不做 `new Date()` 二次换算（见 `common/scm-display.ts`）。
+ * 1. **定点数字段一律 `string | null`**（4 位小数）。后端 `ScmStrictDecimalStringDeserializer`
+ *    拒绝 JSON 数字，前端不得传 number；`null`（无值）与 `"0.0000"`（合法的零）是两种事实；
+ * 2. **时间字段一律是字符串**，后端已统一成 `yyyy-MM-dd HH:mm:ss`（北京时间），
+ *    前端直接渲染，不做 `new Date()` 二次换算。
  *
- * 余额与流水的**快照 vs 实时**区别也体现在类型注释里：余额行的编码/名称是实时联表结果，
- * 流水行的 `unitSnapshot` / `unitCost` / `beforeQuantity` / `afterQuantity` 是写入时冻结的事实。
+ * 余额行是实时联表结果；流水行的 `unitSnapshot` / `unitCost` / `beforeQuantity` /
+ * `afterQuantity` 是写入时**冻结**的事实。
  */
 
 export type Id = string | number;
