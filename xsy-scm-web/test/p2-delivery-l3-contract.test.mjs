@@ -307,9 +307,9 @@ test('数量与金额不做前端算术，null 渲染为 —（不是 0）', () 
   assert.match(fulfillmentPane, /record\.signedBy \|\| '—'/);
   assert.match(fulfillmentPane, /record\.signReason \|\| '—'/);
   assert.ok(!/\|\| 0\b/.test(view), '空值不得回落成 0');
-  // 对齐口径（AGENTS §12）：状态居中、操作右。
+  // 对齐口径（§8：状态居中、操作居中；操作列固定右侧时表头与按钮同一中心线）。
   assert.match(fulfillmentPane, /title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'/);
-  assert.match(fulfillmentPane, /title: '操作', dataIndex: 'action', width: 160, align: 'right' as const/);
+  assert.match(fulfillmentPane, /title: '操作', dataIndex: 'action', width: 160, align: 'center' as const/);
 });
 
 // ------------------------------------------------------------------ 跨页跳转

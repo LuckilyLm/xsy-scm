@@ -89,7 +89,7 @@ const columns = computed<TableColumnsType<RouteOrder>>(() => [
   {title: '签收人', dataIndex: 'signedBy', width: 140},
   {title: '原因', dataIndex: 'signReason', width: 240, ellipsis: true},
   ...(props.canSign
-    ? [{title: '操作', dataIndex: 'action', width: 160, align: 'right' as const, fixed: 'right' as const}]
+    ? [{title: '操作', dataIndex: 'action', width: 160, align: 'center' as const, fixed: 'right' as const}]
     : []),
 ]);
 

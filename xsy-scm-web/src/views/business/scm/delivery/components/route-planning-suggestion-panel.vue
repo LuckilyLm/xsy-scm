@@ -136,7 +136,7 @@ const planHistoryColumns: TableColumnsType = [
   {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 100},
   {title: '总距离（米）', dataIndex: 'totalDistance', align: 'right', width: 130},
   {title: '算路来源', dataIndex: 'providerCode', width: 220},
-  {title: '操作', dataIndex: 'action', align: 'right', width: 90},
+  {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 </script>
 

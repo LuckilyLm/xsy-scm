@@ -98,7 +98,7 @@ const columns: TableColumnsType<Item> = [{
 }, {title: '价格修订', dataIndex: 'override', width: 230}, {
   title: '操作',
   dataIndex: 'action',
-  align: 'right',
+  align: 'center',
   width: 80
 }];
 

@@ -197,7 +197,7 @@ const columns = ref<TableColumnsType<FinanceWriteOff>>([
 const targetColumns: TableColumnsType<AllocationDraft> = [
     {title: '目标单号', dataIndex: 'documentNo', width: 210}, {title: '往来方', dataIndex: 'partyName', width: 170},
     {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 180}, {title: '可核销金额', dataIndex: 'availableAmount', align: 'right', width: 150},
-    {title: '本次金额', dataIndex: 'amount', align: 'right', width: 180}, {title: '操作', dataIndex: 'action', width: 90},
+    {title: '本次金额', dataIndex: 'amount', align: 'right', width: 180}, {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];

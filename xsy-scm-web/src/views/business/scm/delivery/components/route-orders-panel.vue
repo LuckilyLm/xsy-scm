@@ -82,7 +82,7 @@ const orderColumns = computed<TableColumnsType<RouteOrder>>(() => [
       ? [{title: '订单金额', dataIndex: 'orderAmountSnapshot', align: 'right' as const, width: 120}]
       : []),
   {title: '定位', dataIndex: 'location', width: 90},
-  {title: '操作', dataIndex: 'action', align: 'right' as const, width: 80},
+  {title: '操作', dataIndex: 'action', align: 'center' as const, width: 80},
 ]);
 
 function stopOf(id: Id) {

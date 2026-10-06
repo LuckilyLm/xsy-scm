@@ -54,7 +54,7 @@ const columns = computed<TableColumnsType<FinanceRefundOption>>(() => [
     {title: '客户', dataIndex: 'customerName', width: 190},
     {title: '退款金额', dataIndex: 'refundAmount', align: 'right', width: 150},
     {title: '完成时点', dataIndex: 'completedAt', width: 180},
-    {title: '操作', dataIndex: 'action', align: 'right', width: 90},
+    {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ]);
 
 async function queryData() {
