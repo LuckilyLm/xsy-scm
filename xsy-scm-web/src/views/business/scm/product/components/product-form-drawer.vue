@@ -1,5 +1,5 @@
 <template>
-  <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="'min(920px, 96vw)'"
+  <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="scmDrawerWidth('l')"
             :mask-closable="!saving" :closable="!saving" :destroy-on-close="true">
     <a-spin :spinning="loading">
       <div class="drawer-body">
@@ -202,6 +202,7 @@ import ImageUpload from './product-image-upload.vue';
 import SkuEditor from './product-sku-editable-table.vue';
 import {emptyProduct, productFormOf, validateProduct} from '../product-form-model';
 import {productError} from '../product-errors';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 const form = ref<ProductForm>(emptyProduct()), categories = ref<ProductCategory[]>([]), formRef = ref<FormInstance>();

@@ -1,5 +1,6 @@
 <template>
-  <a-drawer :open="open" title="秤读数" width="960px" @close="close">
+  <!-- workspace：称重工作台 —— 秤读数事件表 scroll.x 1410，读数要逐列横向比对设备 / 稳定位 / 时间。 -->
+  <a-drawer :open="open" title="秤读数" :width="scmDrawerWidth('workspace')" @close="close">
     <a-alert
         message="读数不等于分拣结果：只有「接受」才会把该读数写进分拣结果，且只处理标准品。"
         type="info"
@@ -72,6 +73,7 @@ import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {datetime} from '../../common/scm-display';
 import {quantityText, sortingError, sortingScaleStatuses} from '../sorting-types';
 import type {Id, SortingScaleEvent, SortingScaleStatus} from '../sorting-types';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const props = defineProps<{open: boolean; taskId?: Id}>();
 const emit = defineEmits<{ 'update:open': [value: boolean] }>();

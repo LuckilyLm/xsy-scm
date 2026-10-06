@@ -9,7 +9,7 @@
   <a-drawer
       :title="form.id ? '编辑采购单' : '新建采购单'"
       :open="visible"
-      width="min(1280px, 96vw)"
+      :width="scmDrawerWidth('xl')"
       @close="visible = false"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
@@ -83,6 +83,7 @@ import {newOrder, payload, validateOrder} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import {hasPermission} from '../../common/scm-permission';
 import ItemTable from './purchase-order-item-editable-table.vue';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 

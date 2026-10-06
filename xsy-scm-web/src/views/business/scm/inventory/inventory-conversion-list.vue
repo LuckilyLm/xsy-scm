@@ -140,7 +140,7 @@
   <a-drawer
       :open="drawerOpen"
       :title="form.id ? `编辑转换单 ${form.conversionNo}` : '新建转换单'"
-      width="1080"
+      :width="scmDrawerWidth('xl')"
       @close="closeDrawer"
   >
     <a-alert
@@ -314,6 +314,7 @@ import {singleWarehouseDefault} from './inventory-model';
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryConversionQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryConversion[]>([]);

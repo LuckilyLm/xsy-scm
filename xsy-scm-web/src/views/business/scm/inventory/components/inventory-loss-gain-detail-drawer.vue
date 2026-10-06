@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :open="open" title="报损报溢单详情" width="860" @close="emit('update:open', false)">
+  <a-drawer :open="open" title="报损报溢单详情" :width="scmDrawerWidth('l')" @close="emit('update:open', false)">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="单据号">{{ detail.lossGainNo }}</a-descriptions-item>
       <a-descriptions-item label="类型">
@@ -43,6 +43,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import {quantityText} from '../inventory-model';
 import type {InventoryLossGain} from '../inventory-types';
 import {datetime} from '../../common/scm-display';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 defineProps<{
   open: boolean;

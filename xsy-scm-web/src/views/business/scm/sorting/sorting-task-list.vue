@@ -103,12 +103,21 @@
           {{ record.supplierNameSnapshot || '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内只留「详情」与本状态唯一的推进动作「完成」；指派 / 改派与其余动作收进「更多」。
-               宽度上限 150，行内最多 3 个元素，再多会换行。 -->
+          <!-- 操作工作台优先暴露「当前下一步」，而不是机械地把所有状态动作塞进「更多」：
+               未指派 → 指派，已指派 → 完成；改派属低频调整，留在「更多」。
+               行内恒为「详情 + 一个当前最重要的下一步 + 更多」，宽度上限 150。 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
             <a-button
-                v-if="isWorking(record.status)"
+                v-if="canAssignNext(record)"
+                type="link"
+                size="small"
+                v-privilege="'scm:sorting:task:assign'"
+                @click="openAction('assign', record)"
+            >指派
+            </a-button>
+            <a-button
+                v-else-if="canCompleteNext(record)"
                 type="link"
                 size="small"
                 v-privilege="'scm:sorting:task:complete'"
@@ -313,13 +322,27 @@ const SORTING_STATUS_TONE: Record<string, ScmStatusTone> = {
 };
 const statusTone = (status?: string | null): ScmStatusTone => SORTING_STATUS_TONE[status ?? ''] ?? 'neutral';
 
+/**
+ * 当前行的「下一步」：未指派先指派，已指派则完成 —— 行内同一时刻只出现其中一个。
+ *
+ * 状态与权限同判（`hasPermission` 与 `v-privilege` 读同一份数据、同样放行超管），
+ * 缺一即不占行内位置，避免出现「按钮在那儿、点了却没反应」。
+ */
+const canAssignNext = (row: SortingTask) =>
+    isWorking(row.status) && row.assigneeEmployeeId == null
+    && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN);
+
+const canCompleteNext = (row: SortingTask) =>
+    isWorking(row.status) && row.assigneeEmployeeId != null
+    && hasPermission(SCM_SORTING_PERMISSION.TASK_COMPLETE);
+
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
 function rowActions(row: SortingTask): ScmActionItem[] {
   const working = isWorking(row.status);
   const printable = SCM_SORTING_PRINTABLE_STATUS.includes(row.status);
   return [
-    // 指派 / 改派：原为行内按钮，本轮按「低频状态动作进更多」的口径移入；标签随是否已指派变化
-    {key: 'assign', label: row.assigneeEmployeeId == null ? '指派' : '改派', hidden: !(working && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN))},
+    // 「指派」已提到行内（未指派任务的关键下一步）；「更多」里只留低频的改派
+    {key: 'assign', label: '改派', hidden: !(working && row.assigneeEmployeeId != null && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN))},
     {key: 'scale', label: '秤读数', hidden: !hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
     {key: 'ticket', label: '小票', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY))},
     {key: 'print', label: '打印', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_PRINT))},

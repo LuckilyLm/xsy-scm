@@ -1,5 +1,5 @@
 <template>
-  <a-drawer v-model:open="visible" :title="`订单支付 · ${order?.orderNo || ''}`" width="min(780px, 96vw)"
+  <a-drawer v-model:open="visible" :title="`订单支付 · ${order?.orderNo || ''}`" :width="scmDrawerWidth('m')"
             :closable="!saving" :mask-closable="!saving" :keyboard="!saving">
     <a-alert v-if="error" type="error" show-icon :message="error" class="payment-message"/>
     <a-alert v-if="created" type="success" show-icon
@@ -49,6 +49,7 @@ import type {Order} from '../order-types';
 import {financeError} from '../../finance/finance-errors';
 import {isValidPositiveAmount} from '../../finance/finance-form-model';
 import BalanceMovementDetail from '../../finance/balance-movement-detail.vue';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const visible = ref(false), saving = ref(false), loading = ref(false), error = ref(''), queried = ref(false);
 const order = ref<Order>(), amount = ref(''), method = ref<'BALANCE' | 'ONLINE'>('BALANCE');
 const created = ref<PaymentIntent>(), detail = ref<PaymentIntent>(), rows = ref<PaymentIntent[]>([]);

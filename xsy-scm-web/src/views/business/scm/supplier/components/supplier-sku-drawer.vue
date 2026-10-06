@@ -14,7 +14,7 @@
   * - 同一供应商允许出现多条「默认来源」（legacy 不变量 R12）。
 -->
 <template>
-  <a-drawer v-model:open="visible" :title="title" width="1120" @close="close">
+  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('xl')" @close="close">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
       <a-alert
@@ -43,6 +43,7 @@ import SupplierSkuEditableTable from './supplier-sku-editable-table.vue';
 import {fromRows, toReplaceItems, validateSkuDrafts} from '../supplier-form-model';
 import type {SkuDraft} from '../supplier-form-model';
 import {supplierError} from '../supplier-errors';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 

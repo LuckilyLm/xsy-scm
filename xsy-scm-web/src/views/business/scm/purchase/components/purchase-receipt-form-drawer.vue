@@ -10,7 +10,7 @@
   <a-drawer
       :title="form.id ? '编辑收货单备注' : '新建收货单'"
       :open="visible"
-      width="min(720px, 96vw)"
+      :width="scmDrawerWidth('m')"
       @close="visible = false"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
@@ -91,6 +91,7 @@ import {
 } from '/@/constants/business/scm/purchase-const';
 import type {Id, Receipt} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 

@@ -131,13 +131,12 @@
           </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 下钻是四个对等的只读跳转入口。按 §8「超过 3 个动作使用更多菜单」：
-               保留销售 / 采购两个最高频入口，收货入库与库存收进「更多」。
+          <!-- 下钻的四个维度（销售 / 采购 / 收货入库 / 库存）是完全平级的只读分析入口，
+               没有任何依据说明其中两个更高频，因此不人为制造信息层级：
+               四个入口统一收进一个「下钻」菜单，行内只留一个入口。
                跳转不涉及写操作，因此没有权限需要裁剪。 -->
           <div class="scm-table-actions">
-            <a-button type="link" size="small" @click="goAnalysis('sales', record.bizDate)">销售</a-button>
-            <a-button type="link" size="small" @click="goAnalysis('purchase', record.bizDate)">采购</a-button>
-            <ScmActionMore :actions="drilldownActions" @select="onDrilldown($event, record)"/>
+            <ScmActionMore label="下钻" :actions="drilldownActions" @select="onDrilldown($event, record)"/>
           </div>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -219,20 +218,24 @@ const columns = ref<TableColumnsType<ReportDailyStat>>([
     {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
     {title: '已提交采购金额', dataIndex: 'submittedPurchaseAmount', align: 'right', width: 160},
     {title: '采购入库成本金额', dataIndex: 'purchaseInCostAmount', align: 'right', width: 180},
-    {title: '下钻', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
+    {title: '下钻', dataIndex: 'action', align: 'center', fixed: 'right', width: 110},
 ]);
 
 /**
- * 下钻「更多」里的两个入口。四个维度是并列的只读跳转，没有权限差异，
- * 因此这里不裁剪 `hidden` —— 与写操作型菜单不同。
+ * 下钻的四个平级维度，按业务主线排序（销售 → 采购 → 收货入库 → 库存）。
+ * 都是只读跳转、没有权限差异，因此不裁剪 `hidden` —— 与写操作型菜单不同。
  */
 const drilldownActions: ScmActionItem[] = [
+    {key: 'sales', label: '销售分析'},
+    {key: 'purchase', label: '采购分析'},
     {key: 'receipt', label: '收货入库'},
-    {key: 'inventory', label: '库存'},
+    {key: 'inventory', label: '库存分析'},
 ];
 
 function onDrilldown(key: string, record: ReportDailyStat) {
-    if (key === 'receipt' || key === 'inventory') goAnalysis(key, record.bizDate);
+    if (key === 'sales' || key === 'purchase' || key === 'receipt' || key === 'inventory') {
+        goAnalysis(key, record.bizDate);
+    }
 }
 
 /** 成本列：无 `scm:report:cost:query` 时整列不出现（不是显示一串 `—`）。 */

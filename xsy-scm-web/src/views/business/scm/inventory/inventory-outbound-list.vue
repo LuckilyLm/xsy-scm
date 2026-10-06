@@ -118,7 +118,7 @@
   <a-drawer
       :open="drawerOpen"
       :title="form.id ? `编辑出库单 ${form.outboundNo}` : '新建出库单'"
-      width="900"
+      :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
@@ -176,7 +176,7 @@
   </a-drawer>
 
   <!-- 详情 -->
-  <a-drawer :open="detailOpen" title="出库单详情" width="760" @close="detailOpen = false">
+  <a-drawer :open="detailOpen" title="出库单详情" :width="scmDrawerWidth('l')" @close="detailOpen = false">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="出库单号">{{ detail.outboundNo }}</a-descriptions-item>
       <a-descriptions-item label="状态">
@@ -247,6 +247,7 @@ import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-mod
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryOutboundQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryOutbound[]>([]);

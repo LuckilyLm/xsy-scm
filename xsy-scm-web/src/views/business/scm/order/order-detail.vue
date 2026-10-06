@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :open="visible" :title="order?.orderNo||'订单详情'" width="min(1180px,96vw)" @close="visible=false">
+  <a-drawer :open="visible" :title="order?.orderNo||'订单详情'" :width="scmDrawerWidth('xl')" @close="visible=false">
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <template v-if="order">
@@ -204,6 +204,7 @@ import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {orderError} from './order-errors';
 import ReturnForm from './components/order-return-form-modal.vue';
 import OrderPaymentDrawer from './components/order-payment-drawer.vue';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const paymentDrawer = ref<InstanceType<typeof OrderPaymentDrawer>>();
 
 const emit = defineEmits<{ saved: [] }>();

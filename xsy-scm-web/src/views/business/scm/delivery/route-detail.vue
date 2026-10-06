@@ -1,5 +1,7 @@
 <template>
-  <a-drawer v-model:open="visible" title="配送线路详情" width="min(1500px, 96vw)" :destroy-on-close="true">
+  <!-- workspace：地图工作台 + 多面板业务工作台 —— 地图与订单 / 履约 / 打印面板要并排看，
+       横向空间本身就是业务内容，不是「内容放不下就再放宽一档」。 -->
+  <a-drawer v-model:open="visible" title="配送线路详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true">
     <a-alert v-if="error" :message="error" type="error" show-icon
     >
       <template #action>
@@ -268,6 +270,7 @@ import {
   type SignResult,
 } from './delivery-types';
 import {deliveryPlanApi} from '/@/api/business/scm/delivery-plan-api';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ changed: [] }>();
 const visible = ref(false),
