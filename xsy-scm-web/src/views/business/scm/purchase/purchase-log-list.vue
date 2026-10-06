@@ -1,6 +1,6 @@
 <!--
   采购操作日志。
-  <b>没有全局日志分页端点</b> —— 只有 `GET /scm/purchase/log/{orderId}`，
+  没有全局日志分页端点 —— 只有 `GET /scm/purchase/log/{orderId}`，
   因此按采购单维度查询：先用单号定位采购单，再拉它的日志。
   日志按 `created_at DESC` 返回，最新在前。
 -->
@@ -98,12 +98,12 @@ let requestId = 0;
 /**
  * 日志列。
  *
- * <b>去掉「采购单 id」列</b>：本页本来就按单号定位到一张采购单才查得出的日志，
+ * 去掉「采购单 id」列：本页本来就按单号定位到一张采购单才查得出的日志，
  * 每一行的采购单 id 必然等于当前查询单 —— 它占 120px 却不提供任何行间差异。
  * 保留「关联收货单」：同一张采购单下收货、入库、删除收货单都会各写日志，
  * 哪几行属于同一张收货单只能靠它分辨。
  *
- * 注意 `purchaseReceiptId` 是<b>内部主键</b>而不是收货单号（`PurchaseOperationLogVO`
+ * 注意 `purchaseReceiptId` 是内部主键而不是收货单号（`PurchaseOperationLogVO`
  * 只带 id，不带 `receiptNo`）。因此列名写「收货单（内部编号）」，
  * 不把它伪装成业务单号 —— 假单号比裸 id 更危险，会被拷去当检索条件用。
  */
@@ -132,7 +132,7 @@ async function queryData() {
     }
     const r = await purchaseOrderApi.logs(order.id!);
     if (id === requestId) {
-      // 操作类型是<b>客户端过滤</b>：后端只按采购单维度提供日志，没有按类型过滤的入参。
+      // 操作类型是客户端过滤：后端只按采购单维度提供日志，没有按类型过滤的入参。
       tableData.value = operationType.value
           ? r.data.filter((row) => row.operationType === operationType.value)
           : r.data;

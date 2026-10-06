@@ -67,15 +67,15 @@ import type {BusinessData, GeoData, GeoCityNode, InventoryData} from '../types';
 /**
  * 供应链分布（大屏主视觉，地图 M1）。
  *
- * <p>省界着色与市级气泡来自<b>同一个</b> `/scm/screen/data/geo` 返回，前端不做二次聚合：
+ * 省界着色与市级气泡来自同一个 `/scm/screen/data/geo` 返回，前端不做二次聚合：
  * 省级数值由后端从市级事实上卷，图例与气泡因此不会各自漂移。
  *
- * <p><b>底图是仓库里存档的省界 GeoJSON</b>（`public/screen/china-province.json`，
+ * 底图是仓库里存档的省界 GeoJSON（`public/screen/china-province.json`，
  * 属性只留 `adcode` 与 `name`），零网络依赖、零授权。省级节点按 `adcode` 与底图对齐
  * （两者同为 GB/T 2260 六位码），不按名称对齐 —— 字典里港澳用简称、边界数据用官方全称，
  * 按名称匹配会静默丢省。
  *
- * <p><b>气泡坐标是区划质心（GCJ-02）</b>，代表「这个市」而不是某个单位的实际位置；
+ * 气泡坐标是区划质心（GCJ-02），代表「这个市」而不是某个单位的实际位置；
  * 真正的点位/街道底图属于 M2，届时才需要地图服务商授权。
  */
 const props = defineProps<{
@@ -131,7 +131,7 @@ let baseMap: Promise<void> | null = null;
 /**
  * 底图要素名按 `adcode` 索引。
  *
- * <p>省名<b>不能</b>直接当 ECharts map series 的匹配键：`scm_region` 存的是简称
+ * 省名不能直接当 ECharts map series 的匹配键：`scm_region` 存的是简称
  * （香港 / 澳门），官方边界数据用的是全称（香港特别行政区 / 澳门特别行政区），
  * 按名称匹配会让这两省静默不着色。`adcode` 与 `province_code` 同为 GB/T 2260 六位码，
  * 是两份数据唯一稳定的共同身份，因此名称只在加载时按码回查一次。

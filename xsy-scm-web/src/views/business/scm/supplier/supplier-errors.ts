@@ -1,7 +1,7 @@
 /*
  * 供应商域错误码 → 用户可读文案。码值定义见后端 `SupplierErrorCode` / `ScmCommonErrorCode`。
  *
- * 40941 <b>已弃用</b>：它曾表示「供应商 SKU 版本冲突」，现统一为 40921。
+ * 40941 已弃用：它曾表示「供应商 SKU 版本冲突」，现统一为 40921。
  */
 export function supplierError(error: unknown): string {
     const response = error as { data?: { code?: number; msg?: string }; message?: string };

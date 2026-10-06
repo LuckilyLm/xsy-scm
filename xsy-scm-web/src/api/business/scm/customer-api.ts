@@ -31,7 +31,7 @@ export const customerApi = {
     update: (form: CustomerForm) => postRequest('/scm/customer/update', form) as unknown as Promise<ScmResponse<null>>,
     updateStatus: (payload: CustomerStatusPayload) => postRequest('/scm/customer/updateStatus', payload),
     /**
-     * 改派业务归属（{@code scm:customer:assign}）：独立端点、独立权限，带乐观锁 version。
+     * 改派业务归属（scm:customer:assign）：独立端点、独立权限，带乐观锁 version。
      * `/update` 不触碰 seller_id，归属变更只能走这里，才会留下单独的操作日志。
      */
     reassignSeller: (payload: CustomerSellerReassignPayload) =>

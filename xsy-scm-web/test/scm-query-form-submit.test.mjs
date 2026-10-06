@@ -4,7 +4,7 @@
  * 起因：真实浏览器验收点「查询」后一个请求都没发出去。根因是 ant-design-vue 的
  * `Form.handleSubmit` 只在 `props.model` 存在时才校验并 emit `finish`
  * （见 node_modules/ant-design-vue/es/form/Form.js），所以
- * `<a-form @finish="search">` + `<a-button html-type="submit">` 在无 `:model` 时是<b>静默死按钮</b>：
+ * `<a-form @finish="search">` + `<a-button html-type="submit">` 在无 `:model` 时是静默死按钮：
  * 页面照常渲染、照常首屏查询，只有点按钮没反应，单测里 `search()` 的实现再怎么对也没用。
  *
  * 本门禁只钉两件事：

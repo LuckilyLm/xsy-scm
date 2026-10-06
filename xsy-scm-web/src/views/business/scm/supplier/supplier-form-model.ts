@@ -2,10 +2,10 @@
  * 供应商表单模型（纯函数，可被 `node --test` 直接单测）。
  *
  * 关键业务规则（与后端一致）：
- * - 新建时状态<b>强制</b> `ENABLED`，表单里没有状态字段；
- * - `supplier_sku` 是<b>整表替换</b>：已存在的行带 `id` + `version`，新增行不带 `id`；
+ * - 新建时状态强制 `ENABLED`，表单里没有状态字段；
+ * - `supplier_sku` 是整表替换：已存在的行带 `id` + `version`，新增行不带 `id`；
  *   空数组表示清空全部关联；
- * - <b>同一供应商允许多条 `defaultFlag = true`</b> —— 校验里绝不加「只允许一条默认」。
+ * - 同一供应商允许多条 `defaultFlag = true` —— 校验里绝不加「只允许一条默认」。
  */
 import type {EnableStatus, ScmId, SupplierForm, SupplierSkuItem, SupplierSkuRow} from '/@/types/business/scm/supplier';
 
@@ -18,7 +18,7 @@ const PHONE = /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/;
  * 可编辑表格的行。
  *
  * 与 `SupplierSkuItem` 的唯一区别是 `skuId` 允许为空 —— 新建行在用户选完商品规格之前就是空的。
- * 提交时由 {@link toReplaceItems} 负责把空行挡掉。
+ * 提交时由 toReplaceItems 负责把空行挡掉。
  */
 export interface SkuDraft {
     id?: ScmId;
@@ -123,7 +123,7 @@ export function validateSkuDrafts(drafts: SkuDraft[]): string | undefined {
     return undefined;
 }
 
-/** 草稿 → 替换请求体。<b>不校验</b> `defaultFlag` 的基数（R12）。 */
+/** 草稿 → 替换请求体。不校验 `defaultFlag` 的基数（R12）。 */
 export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
     const blankToNull = (value?: string | null): string | null => {
         const text = value == null ? '' : String(value).trim();

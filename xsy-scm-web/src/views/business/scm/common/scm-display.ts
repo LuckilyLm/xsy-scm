@@ -5,7 +5,7 @@
  * 统一输出 `yyyy-MM-dd HH:mm:ss`；`null` / `undefined` / 空串 → `—`；
  * 认不出的形状原样返回（不猜测性解析）。
  *
- * <b>刻意不做时区换算</b>：后端 `ScmOffsetDateTimeSerializer` 已统一换算到 `Asia/Shanghai`
+ * 刻意不做时区换算：后端 `ScmOffsetDateTimeSerializer` 已统一换算到 `Asia/Shanghai`
  * 再格式化，前端拿到的就是要显示的字符串。用 `new Date()` 解析会按浏览器本地时区
  * 二次换算，同一份数据在不同机器上显示成不同时刻。
  */
@@ -40,7 +40,7 @@ export function datetime(value: string | null | undefined): string {
 /**
  * 日期渲染：统一输出 `yyyy-MM-dd`（用于「计划到货日期」这类纯日期字段）。
  *
- * 与 {@link datetime} 分开，是因为纯日期字段后端是 `LocalDate`，
+ * 与 datetime 分开，是因为纯日期字段后端是 `LocalDate`，
  * 不该被硬塞一个 `00:00:00`。
  */
 export function dateOnly(value: string | null | undefined): string {

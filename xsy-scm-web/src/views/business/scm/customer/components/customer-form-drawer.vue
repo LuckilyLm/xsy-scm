@@ -1,6 +1,6 @@
 <!--
   客户 新建 / 编辑 抽屉。
-  - 表单<b>不含 status</b>：新建固定「潜在」，变更走独立的 `updateStatus` 端点，因此这里只读展示；
+  - 表单不含 status：新建固定「潜在」，变更走独立的 `updateStatus` 端点，因此这里只读展示；
   - 上级客户只接受集团且拒绝环形（后端 `CustomerValidator.validateParent`），
     前端提前挡掉必然失败的选项。
 -->
@@ -129,7 +129,7 @@
             <span class="scm-form-section__hint">账期三种形态互斥：不设置 / 按金额 / 按时间。</span>
           </div>
           <a-row :gutter="20">
-            <!-- 额度与阈值都是后端的 4 位定点<b>字符串</b>，必须 string-mode：走 number 会丢精度、也会改掉提交类型 -->
+            <!-- 额度与阈值都是后端的 4 位定点字符串，必须 string-mode：走 number 会丢精度、也会改掉提交类型 -->
             <a-col :xs="24" :sm="12">
               <a-form-item label="授信额度" name="creditLimit">
                 <a-input-number v-model:value="form.creditLimit" string-mode :min="0" :max="99999999999999"
@@ -348,7 +348,7 @@ async function open(customerId?: ScmId) {
     error.value = customerError(e);
   } finally {
     loading.value = false;
-    // 抽屉内容首次打开才挂载，而 AreaCascader 只用<b>非 immediate</b> 的 watch 同步 value，
+    // 抽屉内容首次打开才挂载，而 AreaCascader 只用非 immediate 的 watch 同步 value，
     // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
     await nextTick();
     area.value = areaNodesOf(form);
@@ -359,7 +359,7 @@ async function open(customerId?: ScmId) {
 /**
  * 账期类型的桥接。
  *
- * `SmartEnumSelect` 的 `value` prop 声明是 `[Number, String]`，<b>不接受 `null`</b>；
+ * `SmartEnumSelect` 的 `value` prop 声明是 `[Number, String]`，不接受 `null`；
  * 而 `CustomerForm.creditPeriodType` 的可空语义正是 `null`（表示「不设置账期」），
  * 直接绑会报 TS2322。这里用 computed 把 `null` 折成 `undefined`。
  *

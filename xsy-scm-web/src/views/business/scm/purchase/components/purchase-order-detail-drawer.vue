@@ -1,6 +1,6 @@
 <!--
  * 采购单详情抽屉。
- * - 分配是<b>单级平铺</b>（`PurchaseOrderVO.allocations` 已由后端铺平），前端不必自己拍平；
+ * - 分配是单级平铺（`PurchaseOrderVO.allocations` 已由后端铺平），前端不必自己拍平；
  * - 日志按 `created_at DESC` 返回，最新在前。
 -->
 <template>

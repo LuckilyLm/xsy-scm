@@ -32,12 +32,12 @@ export const purchaseReceiptApi = {
             ScmResponse<ScmPage<ReceiptItemWorkbenchRow>>
         >,
 
-    /** 建草稿收货单：行由服务端按采购单<b>全部活动行</b>生成。 */
+    /** 建草稿收货单：行由服务端按采购单全部活动行生成。 */
     create: (data: ReceiptCreatePayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/create', data),
-    /** `update` <b>只允许改备注</b>（数量只在 `confirm` 一次性落库）。 */
+    /** `update` 只允许改备注（数量只在 `confirm` 一次性落库）。 */
     update: (data: ReceiptUpdatePayload) =>
         postRequest('/scm/purchase/receipt/update', data) as unknown as Promise<ScmResponse<Receipt>>,
-    /** 确认收货：必须覆盖<b>全部</b>收货行（40998），非标品必须带实重（40083）。 */
+    /** 确认收货：必须覆盖全部收货行（40998），非标品必须带实重（40083）。 */
     confirm: (data: ReceiptConfirmPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/confirm', data),
     /** 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
     putaway: (data: ReceiptPutawayPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/putaway', data),

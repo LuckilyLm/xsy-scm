@@ -1,11 +1,11 @@
 /**
- * 报表中心的<b>列级</b>权限判定。
+ * 报表中心的列级权限判定。
  *
  * 为什么不能只用 `v-privilege`：指令按单个码删 DOM 节点，够管按钮，但
  * 「无成本权限时整列消失」是 `columns` 数组的计算逻辑，必须能在 script 里问一句
  * 「当前调用者有没有这个码」。
  *
- * 因此这里<b>读的就是指令读的同一份数据</b>：`useUserStore().getPointList` 里的 `webPerms`，
+ * 因此这里读的就是指令读的同一份数据：`useUserStore().getPointList` 里的 `webPerms`，
  * 并且同样先看 `administratorFlag`（超级管理员绕过校验）。不新建 store、不缓存副本，
  * 否则会出现「按钮没了但列还在」这类两套真相分叉。
  */

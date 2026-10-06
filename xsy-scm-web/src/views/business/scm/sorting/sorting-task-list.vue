@@ -1,8 +1,8 @@
 <!--
   分拣任务列表 + 详情录入。
 
-  本页只生产「实发事实」：分拣量写在 `sorting_task_item`，<b>不回写</b>订单行实发量、
-  <b>不写</b>库存余额与流水、不创建出库单。页面上的「计划量」是建单时冻结的订单行快照，
+  本页只生产「实发事实」：分拣量写在 `sorting_task_item`，不回写订单行实发量、
+  不写库存余额与流水、不创建出库单。页面上的「计划量」是建单时冻结的订单行快照，
   之后订单侧怎么改都不追溯已生成的任务。
 
   状态机：PENDING ──首次录入──▶ SORTING ──每行都有结果──▶ COMPLETED ──重开──▶ SORTING；
@@ -402,7 +402,7 @@ async function queryData() {
         const result = await sortingApi.tasks({
             ...queryForm,
             assigneeEmployeeId: assigneeFilter.value,
-            // 送货时间按<b>冻结快照</b>过滤，半开区间 [from, to)
+            // 送货时间按冻结快照过滤，半开区间 [from, to)
             deliveryTimeFrom: deliveryRange.value?.[0],
             deliveryTimeTo: deliveryRange.value?.[1],
         });

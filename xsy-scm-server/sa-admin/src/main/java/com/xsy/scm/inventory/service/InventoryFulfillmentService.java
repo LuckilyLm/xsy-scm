@@ -50,9 +50,6 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERV
  * <p>
  * <b>少拣与跨仓</b>：预留按整条生命周期收口，同一事务里整条归还 {@code reserved_quantity}，实发量只从发货仓可用量扣；差额现算不另存。预留仓与发货仓一致且本行确有出库时置
  * {@code CONSUMED}，否则置 {@code RELEASED}。
- *
- * <p>
- * 详细约束与反例见 {@code docs/architecture/} 下库存域说明。
  */
 @Service
 @RequiredArgsConstructor

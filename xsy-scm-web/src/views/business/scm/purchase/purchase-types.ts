@@ -2,16 +2,16 @@ import type {ScmLocation} from '/@/components/business/scm/map/types';
 /**
  *  采购域前端类型。
  *
- * 字段与后端 VO / Form <b>逐字对齐</b>：
+ * 字段与后端 VO / Form 逐字对齐：
  * - VO 侧：`PurchaseOrderVO` / `PurchaseOrderItemVO` / `PurchaseOrderAllocationVO` /
  *   `PurchaseDemandVO` / `PurchaseReceiptVO` / `PurchaseReceiptItemVO` / `PurchaseOperationLogVO`；
  * - Form 侧：`PurchaseOrderAddForm` / `PurchaseOrderUpdateForm` / `PurchaseReceiptConfirmForm` 等。
  *
  * 两条硬约束体现在类型里：
- * 1. <b>定点数字段一律是 `string | null`</b>（4 位小数）。后端用
+ * 1. 定点数字段一律是 `string | null`（4 位小数）。后端用
  *    `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字，前端不得传 number；
  *    `null`（未定价 / 未分配）与 `"0.0000"`（合法的零）是两种不同事实。
- * 2. <b>`version` 必填且为 `number`</b>，乐观锁靠它。
+ * 2. `version` 必填且为 `number`，乐观锁靠它。
  */
 
 import type {AreaColumns} from '/@/types/business/scm/area';
@@ -102,7 +102,7 @@ export interface DemandCalculationBatch {
  * `summary` 是 SKU 级解释行（订单需求 − 本批可用 − 在途 − 已有采购覆盖 = 净缺口），
  * `items` 是逐行建议（净缺口摊到哪张订单行、摊了多少）。
  *
- * 所有数字原样取自冻结快照，与生成时逐字一致 —— <b>不能</b>拿它当「当前库存」再判断一次。
+ * 所有数字原样取自冻结快照，与生成时逐字一致 —— 不能拿它当「当前库存」再判断一次。
  */
 export interface DemandBatchDetail {
     batchId: Id;
@@ -184,7 +184,7 @@ export interface GenerateResult {
     skippedCount: number;
 }
 
-/** `PurchaseDemandAllocateForm` —— `version` 是<b>采购需求</b>的版本。 */
+/** `PurchaseDemandAllocateForm` —— `version` 是采购需求的版本。 */
 export interface DemandAllocate {
     demandId: Id;
     purchaseOrderItemId: Id;
@@ -212,7 +212,7 @@ export interface DemandSummaryPreviewQuery extends Page {
  * `PurchaseDemandSummaryVO` —— 预览聚合行。
  *
  * 数量全部是后端 SQL 内用 `BigDecimal` 算好的四位定点字符串（`null` 与 `"0.0000"` 语义不同），
- * 前端<b>不得</b>重算 `availableQuantity` / `stockComparisonGap`。
+ * 前端不得重算 `availableQuantity` / `stockComparisonGap`。
  * `UNIT_MISMATCH` 时 `stockComparisonGap` 为 `null`（单位门禁，不猜折算率）。
  *
  * 预留分三段：`reservedQuantity` 是全仓该 SKU 的总预留，其中 `selectedOrderReservedQuantity`
@@ -238,7 +238,7 @@ export interface DemandSummaryRow {
     otherReservedQuantity?: string | null;
     availableQuantity?: string | null;
     stockAvailableForSelectedOrders?: string | null;
-    /** 已确认订单与当前库存/预留的对比差额，<b>不是</b>最终净采购建议（该口径尚未裁决）。 */
+    /** 已确认订单与当前库存/预留的对比差额，不是最终净采购建议（该口径尚未裁决）。 */
     stockComparisonGap?: string | null;
     /** 未收采购覆盖：在途未收量扣除已分配需求后的余量。 */
     inTransitQuantity?: string | null;
@@ -257,7 +257,7 @@ export interface DemandSummaryRow {
 /**
  * 一条采购行分配。
  *
- * 分配身份 = `(purchaseOrderItemId, demandId)`，因此同一个采购行可以承接<b>多个</b>需求；
+ * 分配身份 = `(purchaseOrderItemId, demandId)`，因此同一个采购行可以承接多个需求；
  * 编辑时只改 / 删其中一条不得影响同行其它分配。
  */
 export interface Allocation {
@@ -391,7 +391,7 @@ export interface OrderBatchShortClosePayload {
 }
 
 /**
- * 采购单列表导出入参（只读）：筛选复用 {@link OrderQuery}。
+ * 采购单列表导出入参（只读）：筛选复用 OrderQuery。
  *
  * `exportColumns` 只是勾选列的 key 列表，落哪几列、以何顺序由后端
  * `PurchaseOrderExportSupport` 目录裁决；为空或全部未知即导出整目录。分页由服务端强制改为「第 1 页 + 上限行」。
@@ -498,7 +498,7 @@ export interface ReceiptVersionPayload {
  * 确认收货的一条明细。
  *
  * 非标品必须给 `actualWeight` + `weightSource='MANUAL'`（`effectiveQuantity` 取实重）；
- * `receivedQuantity` 是<b>声明数量</b>，与实重独立。两者都是 4 位定点字符串。
+ * `receivedQuantity` 是声明数量，与实重独立。两者都是 4 位定点字符串。
  */
 export interface ReceiptConfirmItemPayload {
     receiptItemId: Id;
@@ -518,7 +518,7 @@ export interface ReceiptConfirmPayload {
 /**
  * 按商品收货工作台查询（只读）。
  *
- * 范围由后端固定为「可收货」采购单（`SUBMITTED` / `PARTIALLY_RECEIVED`），<b>不开放状态入参</b>；
+ * 范围由后端固定为「可收货」采购单（`SUBMITTED` / `PARTIALLY_RECEIVED`），不开放状态入参；
  * 其余筛选仅缩小视图范围，不改变任何聚合口径。
  */
 export interface ReceiptItemWorkbenchQuery extends Page {
@@ -531,7 +531,7 @@ export interface ReceiptItemWorkbenchQuery extends Page {
 /**
  * 按商品收货工作台行（跨待收采购单按 `skuId + 采购单位` 归并的只读聚合）。
  *
- * 数量全部是后端逐行裁剪后求和的四位定点字符串，前端<b>绝不重算</b>；`pendingQuantity` 与
+ * 数量全部是后端逐行裁剪后求和的四位定点字符串，前端绝不重算；`pendingQuantity` 与
  * `overReceiptQuantity` 分别来自 `SUM(max(计划-已收,0))` / `SUM(max(已收-计划,0))`，二者相加不等于计划或已收。
  */
 export interface ReceiptItemWorkbenchRow {
@@ -553,7 +553,7 @@ export interface ReceiptItemWorkbenchRow {
 // 操作日志 / 仓库
 // ------------------------------------------------------------------
 
-/** `PurchaseOperationLogVO`。日志按 `created_at DESC, id DESC` 返回（<b>最新在前</b>）。 */
+/** `PurchaseOperationLogVO`。日志按 `created_at DESC, id DESC` 返回（最新在前）。 */
 export interface LogRow {
     id: Id;
     purchaseOrderId?: Id | null;
@@ -630,7 +630,7 @@ export interface WarehouseScopeWarehouse {
 /**
  * `WarehouseScopeUpdateForm`：设置某员工可访问的仓库集合。
  *
- * 语义是<b>整体替换</b>（不是增量追加）——增量没有任何办法回收一次错误授权，
+ * 语义是整体替换（不是增量追加）——增量没有任何办法回收一次错误授权，
  * 而回收（失败关闭）恰是这套机制存在的意义。空清单即回收该员工的全部仓库授权。
  */
 export interface WarehouseScopeUpdatePayload {
@@ -639,7 +639,7 @@ export interface WarehouseScopeUpdatePayload {
 }
 
 /**
- * `PurchaseOrderReassignForm`：改派采购归属（{@code scm:purchase:assign}）。
+ * `PurchaseOrderReassignForm`：改派采购归属（scm:purchase:assign）。
  *
  * `purchaserId` 为 `null` 即「收回归属、留作未分配」（未分配单据只有全量采购范围者可见）；
  * `version` 是乐观锁，编辑接口 `/update` 永不改归属，改派只有 `/reassign` 一条路。

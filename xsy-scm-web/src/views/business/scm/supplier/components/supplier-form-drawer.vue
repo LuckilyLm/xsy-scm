@@ -1,9 +1,9 @@
 <!--
   供应商 新建 / 编辑 抽屉。
-  - 表单<b>不含 status</b>：新建强制 `ENABLED`，变更走独立的 `updateStatus` 端点；
+  - 表单不含 status：新建强制 `ENABLED`，变更走独立的 `updateStatus` 端点；
   - 编辑时先拉详情（列表 VO 不含 `address` / `remark`）；
   - 提交前 `supplierCode` 去空白并大写，与后端 `SupplierValidator` 归一化一致；
-  - 「所在地区」省市区级联与 `address` 自由文本<b>并存</b>：编码供地图按市聚合，
+  - 「所在地区」省市区级联与 `address` 自由文本并存：编码供地图按市聚合，
     地址仍是收货与展示口径。
 -->
 <template>
@@ -175,7 +175,7 @@ async function open(supplierId?: ScmId) {
     error.value = supplierError(e);
   } finally {
     loading.value = false;
-    // 抽屉内容首次打开才挂载，而 AreaCascader 只用<b>非 immediate</b> 的 watch 同步 value，
+    // 抽屉内容首次打开才挂载，而 AreaCascader 只用非 immediate 的 watch 同步 value，
     // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
     await nextTick();
     area.value = areaNodesOf(form);

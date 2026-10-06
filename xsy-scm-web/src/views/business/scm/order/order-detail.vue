@@ -278,7 +278,7 @@ const discountPreview = ref<PromotionDiscount>();
 const previewError = ref('');
 
 /**
- * 已冻结优惠里实际生效的活动。<b>只渲染、不重算</b>：每条活动的优惠额是后端冻结时写下的字符串，
+ * 已冻结优惠里实际生效的活动。只渲染、不重算：每条活动的优惠额是后端冻结时写下的字符串，
  * 前端不做求和（求和会引入第二个真相，与「优惠合计」对不上时无法判断哪个对）。
  */
 const appliedActivities = computed<OrderDiscountAppliedActivity[]>(

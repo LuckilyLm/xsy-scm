@@ -3,15 +3,15 @@ import type {SmartEnum} from '/@/types/smart-enum';
 /**
  * 采购单状态（6 值字符串，与状态机和 DB `ck_purchase_order_status` 白名单逐字一致）。
  *
- * <pre>
+ *
  * DRAFT ──submit──→ SUBMITTED ──收货──→ PARTIALLY_RECEIVED ──收货──→ RECEIVED
  *   │                   │                        │
  *   │cancel             │cancel                  │short-close
  *   ▼                   ▼                        ▼
  * CANCELLED ←───────────┘                  SHORT_CLOSED
- * </pre>
  *
- * `RECEIVED` / `SHORT_CLOSED` / `CANCELLED` 是终态；`PARTIALLY_RECEIVED` <b>不允许取消</b>。
+ *
+ * `RECEIVED` / `SHORT_CLOSED` / `CANCELLED` 是终态；`PARTIALLY_RECEIVED` 不允许取消。
  */
 export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
     DRAFT: {value: 'DRAFT', desc: '草稿'},
@@ -99,7 +99,7 @@ export const SCM_PURCHASE_OPERATION_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 采购单导出列目录——<b>key 必须与后端 `PurchaseOrderExportSupport` 的列目录逐字一致</b>。
+ * 采购单导出列目录——key 必须与后端 `PurchaseOrderExportSupport` 的列目录逐字一致。
  *
  * 这里只是「导出设置」勾选框的可读标题来源；落哪几列、以何顺序最终由后端目录裁决，
  * 前端传未知 key 会被忽略、不勾选即导出整目录。此处数组顺序只影响勾选框的展示顺序。
@@ -123,7 +123,7 @@ export const SCM_PURCHASE_EXPORT_COLUMNS: {key: string; title: string}[] = [
 ];
 
 /**
- * 表格 DOM id——<b>给 Playwright 定位用</b>，不是 `TableOperator` 的 `tableId`。
+ * 表格 DOM id——给 Playwright 定位用，不是 `TableOperator` 的 `tableId`。
  *
  * `TableOperator` 的 `tableId` prop 是 `Number`（列配置持久化用），因此另在
  * `TABLE_ID_CONST.BUSINESS` 里以既有的扁平 `SCM_*` 命名注册数字 id。

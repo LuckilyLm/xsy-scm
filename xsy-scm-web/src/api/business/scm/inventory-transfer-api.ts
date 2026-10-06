@@ -4,7 +4,7 @@
  * 与后端 `InventoryTransferController` 逐端点对应（8 个）：
  * query / detail / create / update / ship / receive / cancel / delete。
  *
- * <b>两步式</b>：`ship` 与 `receive` 是两个<b>独立权限</b>，因为它们通常由不同的人执行
+ * 两步式：`ship` 与 `receive` 是两个独立权限，因为它们通常由不同的人执行
  * （源仓发货、目标仓点收）。由同一个人两头都确认会让在途数量失去复核 ——
  * 而在途数量正是最容易出错的地方。
  *
@@ -36,7 +36,7 @@ export const inventoryTransferApi = {
     /** 改草稿（仅 DRAFT 可改）。 */
     update: (id: Id, data: InventoryTransferAdd) =>
         postRequest(`/scm/inventory/transfer/update/${id}`, data) as unknown as Promise<ScmResponse<string>>,
-    /** 发出：从源仓扣减，单据进入<b>在途</b>。 */
+    /** 发出：从源仓扣减，单据进入在途。 */
     ship: (id: Id) =>
         postRequest(`/scm/inventory/transfer/ship/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
     /** 收货：向目标仓累加，单据完成。目标仓单位必须与调拨单位一致（41044）。 */
@@ -49,10 +49,10 @@ export const inventoryTransferApi = {
     delete: (id: Id) =>
         postRequest(`/scm/inventory/transfer/delete/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
     /**
-     * 在途库存报表（只读聚合，<b>不进 `inventory_balance`</b>）。
+     * 在途库存报表（只读聚合，不进 `inventory_balance`）。
      *
      * 把 SHIPPED 的调拨单展开成明细行，用于对账与库存查询 —— 这是「在途库存可见」的
-     * 落地方式：不引入虚拟在途仓，而是以报表形式暴露。因此<b>在途量不会出现在库存余额页</b>。
+     * 落地方式：不引入虚拟在途仓，而是以报表形式暴露。因此在途量不会出现在库存余额页。
      */
     inTransit: () =>
         getRequest('/scm/inventory/transfer/in-transit', {}) as unknown as Promise<

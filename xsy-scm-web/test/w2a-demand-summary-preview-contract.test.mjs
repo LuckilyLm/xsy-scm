@@ -3,7 +3,7 @@
  *
  * 保护这一「只读辅助决策」最容易被悄悄违背、且违背后不报错的几条线：
  * 1. 计算状态枚举与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对齐（5 值），颜色映射全覆盖；
- * 2. 预览端点走只读 `postRequest`（无幂等键），且<b>不得</b>复用/改写 `generate`；
+ * 2. 预览端点走只读 `postRequest`（无幂等键），且不得复用/改写 `generate`；
  * 3. 前端绝不重算 `availableQuantity` / `shortageAgainstAvailable`，也不引入浮点 / Decimal 运算；
  * 4. 在途采购是否抵扣缺口尚无结论，`openPurchaseQuantity` 不得出现在前端契约里。
  */

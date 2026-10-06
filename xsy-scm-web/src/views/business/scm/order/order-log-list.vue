@@ -70,7 +70,7 @@ let requestId = 0;
  * 明细下载类单动作页可到 120px。收窄后把省下的宽度还给「原因」：
  * 排查时读的是原因，不是那一列空白。
  *
- * 时间（`createdAt`）<b>必须保留</b>：日志页是明确列出的时间例外，
+ * 时间（`createdAt`）必须保留：日志页是明确列出的时间例外，
  * 隐藏时间会让「谁在什么时候改的」这条审计链断掉。
  */
 const columns = ref<TableColumnsType<LogRow>>([{

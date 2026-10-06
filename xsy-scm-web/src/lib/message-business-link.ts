@@ -1,11 +1,11 @@
 /*
  * 站内消息 → 业务单据的跳转解析（纯函数，零运行时依赖，便于单测）。
  *
- * 业务类型只认后端 `MessageTypeEnum` 的<b>数值</b>（消息 VO 的 `messageType` 就是该数值），
+ * 业务类型只认后端 `MessageTypeEnum` 的数值（消息 VO 的 `messageType` 就是该数值），
  * 不解析中文标题：标题是可随意改动的文案，用它判断业务会把跳转悄悄绑死在措辞上。
  * 复用原生 `t_message.message_type` + `data_id`，不新建第二套消息中心、不加列。
  *
- * 这里只产出<b>站内路由</b>，不直接调用业务接口：目标页面的列表 / 详情接口自带
+ * 这里只产出站内路由，不直接调用业务接口：目标页面的列表 / 详情接口自带
  * `scm:inventory:loss-gain:*` 校验，因此用户后来失去权限时旧消息照样跳不出数据（仍 403）。
  */
 
@@ -19,7 +19,7 @@ export const MESSAGE_TYPE_INVENTORY_WARNING = 4;
 export const INVENTORY_LOSS_GAIN_LIST_PATH = '/inventory/inventory-loss-gain-list';
 
 /**
- * 库存预警列表路由。消息的 `dataId` 是<b>阈值配置 id</b>，页面按它精确定位那一条预警 ——
+ * 库存预警列表路由。消息的 `dataId` 是阈值配置 id，页面按它精确定位那一条预警 ——
  * 只跳到整个列表而不带锚点，用户还得自己再找一遍，那不算闭环。
  */
 export const INVENTORY_WARNING_LIST_PATH = '/inventory/inventory-warning-list';

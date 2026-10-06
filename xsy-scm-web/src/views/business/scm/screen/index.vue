@@ -82,11 +82,11 @@ import {useScreenScale} from './composables/use-screen-scale';
 /**
  * 供应链运营中心（数据大屏）。
  *
- * <p>本文件<b>只负责布局</b>：三列（420 / 1000 / 420）+ 顶部状态栏 + 底部趋势带。
- * 所有数据获取在 {@link useScreenData}，所有缩放适配在 {@link useScreenScale}，
+ * 本文件只负责布局：三列（420 / 1000 / 420）+ 顶部状态栏 + 底部趋势带。
+ * 所有数据获取在 useScreenData，所有缩放适配在 useScreenScale，
  * 每个面板的渲染细节在自己的组件里。
  *
- * <p><b>这是 Layout 之外的独立路由</b>（不带侧边栏/标签页），
+ * 这是 Layout 之外的独立路由（不带侧边栏/标签页），
  * 所以：① 任何新窗口打开它的链接都必须带 hash（`#/screen`）；
  * ② 页面内的全局监听（resize / visibilitychange）必须在卸载时注销，
  * 否则离开大屏后仍会触发。

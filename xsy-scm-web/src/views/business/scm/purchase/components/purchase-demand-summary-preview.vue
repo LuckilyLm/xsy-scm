@@ -2,9 +2,9 @@
  * 订单汇总 / 库存缺口预览（只读辅助决策）。
  * - 只读：不建需求、不改 `PurchaseDemandService.generate()` 语义，取数口径与其一致（实发量 `actual_quantity`）；
  * - 数量（现有 / 预留分段 / 本批可用 / 对比差额）全部由后端算好、以四位定点字符串下发，
- *   本页只渲染、<b>绝不重算</b>；`UNIT_MISMATCH` 行差额为 null（单位门禁，不猜折算率）；
+ *   本页只渲染、绝不重算；`UNIT_MISMATCH` 行差额为 null（单位门禁，不猜折算率）；
  * - 接口按 `scm:purchase:demand:query` AND `scm:inventory:balance:query` 鉴权（返回体含库存量），
- *   页面按钮的 `v-privilege` 只是体验，<b>不是权限边界</b>。
+ *   页面按钮的 `v-privilege` 只是体验，不是权限边界。
 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>

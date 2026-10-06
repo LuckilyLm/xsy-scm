@@ -7,11 +7,11 @@ import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SOURCE_INVALID;
 
 /**
- * 采购需求来源不变量：只有未删除且已确认（{@code CONFIRMED}）的销售订单才能生成采购需求。
+ * 采购需求来源约束：只有未删除且 {@code CONFIRMED} 的销售订单可以生成采购需求。
  *
  * <p>
- * {@code uk_purchase_demand_source_active} 只保证「一个销售订单行只产生一条活动需求」，不保证来源订单处于可采购状态；数据库层没有外键，因此这条不变量只能由服务层承担，本类即唯一入口 ——
- * 独立于查询 SQL 的取数口径（{@code generate} 只查已确认订单），不变量断言不允许被新入口放宽，否则 40980 永不可达。
+ * {@code uk_purchase_demand_source_active} 只约束「一个销售订单行只产生一条活动需求」，不约束来源订单状态；数据库层也没有外键。 这条不变量独立于查询 SQL
+ * 的取数口径，由本类对所有生成入口统一承担。
  */
 public final class PurchaseDemandSourceGuard {
 
@@ -19,18 +19,7 @@ public final class PurchaseDemandSourceGuard {
     }
 
     /**
-     * 断言来源销售订单可产生采购需求。
-     *
-     * <p>
-     * 拒绝条件（全部 → 40980）：
-     * <ul>
-     * <li>来源订单缺失（{@code null}）；</li>
-     * <li>来源订单已软删（{@code deleted == true}）；</li>
-     * <li>来源订单状态不是 {@code CONFIRMED} （{@code DRAFT} / {@code PENDING} 尚未确认，{@code CANCELLED} 已作废）。</li>
-     * </ul>
-     *
-     * @throws ScmBusinessException
-     *             40980
+     * 断言来源销售订单可产生采购需求；来源缺失、已软删或状态不是 {@code CONFIRMED} 时抛 40980。
      */
     public static void requireConfirmed(SalesOrderEntity order) {
         if (order == null || Boolean.TRUE.equals(order.getDeleted())) {

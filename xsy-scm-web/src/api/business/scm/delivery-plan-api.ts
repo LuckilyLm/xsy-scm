@@ -22,7 +22,7 @@ export const deliveryPlanApi = {
             ScmResponse<DeliveryPlanProposal[]>
         >,
 
-    /** 应用建议；`version` 是<b>线路</b>版本。 */
+    /** 应用建议；`version` 是线路版本。 */
     apply: (proposalId: Id, version: number) =>
         postRequest(`/scm/delivery/plan/proposal/${proposalId}/apply`, {version}) as unknown as Promise<
             ScmResponse<string>

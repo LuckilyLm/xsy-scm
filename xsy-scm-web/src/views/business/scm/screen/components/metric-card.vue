@@ -35,12 +35,12 @@ import {computed} from 'vue';
 import {deltaDirection, formatDeltaText} from '../format';
 
 /**
- * 单个指标卡。用 {@link size} 表达视觉层级，不让调用方各写样式。
+ * 单个指标卡。用 size 表达视觉层级，不让调用方各写样式。
  *
- * <b>环比写「较昨日」而不是「较上一期」</b>：唯一的数据源就是今天 vs 昨天，
+ * 环比写「较昨日」而不是「较上一期」：唯一的数据源就是今天 vs 昨天，
  * 说「较上一期」会让用户以为可以选周期。
  *
- * 基数为 0 时（昨天没营业）环比显示「—」而不是 0% —— 见 {@link deltaDirection}。
+ * 基数为 0 时（昨天没营业）环比显示「—」而不是 0% —— 见 deltaDirection。
  */
 const props = withDefaults(
     defineProps<{

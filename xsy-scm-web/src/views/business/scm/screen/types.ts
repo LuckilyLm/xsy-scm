@@ -1,9 +1,9 @@
 /**
  * 大屏接口返回类型。
  *
- * <p><b>所有小数都是 string，不是 number</b>：后端 BigDecimal 被 Jackson 序列化成字符串
+ * 所有小数都是 string，不是 number：后端 BigDecimal 被 Jackson 序列化成字符串
  * （保留 NUMERIC(18,4) 的精度，避免 JS 的 IEEE754 把 0.1+0.2 这类金额算歪）。
- * 需要参与计算时用 {@link toNumber} 显式转换，不要在模板里直接做算术。
+ * 需要参与计算时用 toNumber 显式转换，不要在模板里直接做算术。
  */
 
 /** 排行榜项（客户 / 商品共用）。 */
@@ -44,11 +44,11 @@ export interface WarehouseNode {
 /**
  * 库存健康度。
  *
- * <p>四档<b>互斥</b>，且 {@link outOfStockCount} + {@link lowCount} + {@link highCount}
- * + {@link normalCount} + {@link unconfiguredCount} === {@link totalSkuCount}，
+ * 四档互斥，且 outOfStockCount + lowCount + highCount
+ * + normalCount + unconfiguredCount === totalSkuCount，
  * 所以占比可以直接拿总数当分母。
  *
- * <p>判定顺序是「缺货 → 未配置 → 三档」：缺货只要求可用量 ≤ 0，不要求配了阈值；
+ * 判定顺序是「缺货 → 未配置 → 三档」：缺货只要求可用量 ≤ 0，不要求配了阈值；
  * 未配置的塞进「正常」会让健康度虚高，所以单独成档。
  */
 export interface InventoryHealth {
@@ -82,8 +82,8 @@ export interface PurchaseData {
 /**
  * 地理分布（地图 M1）。
  *
- * <p>省级由市级在 Java 侧上卷，所以<b>只拿市级求和就能校验省级</b>，两者不会各自演算。
- * 坐标是 `scm_region` 的<b>区划质心</b>（GCJ-02），不是任何单位的实际地址坐标。
+ * 省级由市级在 Java 侧上卷，所以只拿市级求和就能校验省级，两者不会各自演算。
+ * 坐标是 `scm_region` 的区划质心（GCJ-02），不是任何单位的实际地址坐标。
  */
 export interface GeoCityNode {
     cityCode: number;
@@ -110,7 +110,7 @@ export interface GeoProvinceNode {
 /**
  * 归属覆盖度：`*Total` 是全部主档，`*Located` 是其中解析出市级归属的。
  *
- * <p>差额必须显示在大屏上 —— 否则用户会以为图上的分布就是全部业务量。
+ * 差额必须显示在大屏上 —— 否则用户会以为图上的分布就是全部业务量。
  */
 export interface GeoCoverage {
     customerTotal: number;

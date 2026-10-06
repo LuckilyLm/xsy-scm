@@ -1,5 +1,5 @@
 /**
- * 配送页的<b>列级</b>权限判定。
+ * 配送页的列级权限判定。
  *
  * 为什么不能只用 `v-privilege`：指令按单个码删 DOM 节点，够管按钮，但「无金额权限时整列消失」
  * 是 `columns` 数组的计算逻辑，必须能在 script 里问一句「当前调用者有没有这个码」。
@@ -15,7 +15,7 @@ import {useUserStore} from '/@/store/modules/system/user';
 export const DELIVERY_AMOUNT_PERM = 'scm:delivery:amount:query';
 
 /**
- * 配送域功能点的<b>唯一来源</b>（与菜单种子 `t_menu.web_perms` 逐字一致）。
+ * 配送域功能点的唯一来源（与菜单种子 `t_menu.web_perms` 逐字一致）。
  *
  * 模板里的 `v-privilege` 只能引用这里的值：写错一个字符的表现是「按钮显示出来了，点下去 403」，
  * 而 403 文案是底座统一的「无权限」，看不出是拼错，排查成本远高于这里多写一层常量。
@@ -32,7 +32,7 @@ export const DELIVERY_PERM = {
     ROUTE_DISPATCH: 'scm:delivery:route:dispatch',
     /** L3 完成线路：DISPATCHED → COMPLETED，硬前置是全部活动订单已签收或登记异常。 */
     ROUTE_COMPLETE: 'scm:delivery:route:complete',
-    /** L3 订单签收：权限点在<b>订单</b>维度，不在线路维度（司机只持这一条，不持发车）。 */
+    /** L3 订单签收：权限点在订单维度，不在线路维度（司机只持这一条，不持发车）。 */
     ORDER_SIGN: 'scm:delivery:order:sign',
     /** ADM-10 排线建议：生成（只算建议）与应用（写回顺序）分开，避免「看一眼」顺手改线路。 */
     PLAN_QUERY: 'scm:delivery:plan:query',

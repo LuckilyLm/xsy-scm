@@ -1,7 +1,7 @@
 /**
  * 营销中心前端类型（与后端 promotion 域 VO 逐字对齐）。
  *
- * 金额一律是<b>四位定点字符串</b>，前端只渲染、不重算；优惠试算的金额与分摊都由服务端算好。
+ * 金额一律是四位定点字符串，前端只渲染、不重算；优惠试算的金额与分摊都由服务端算好。
  */
 
 export type Id = string | number;
@@ -20,7 +20,7 @@ export type PromotionStatus = 'DRAFT' | 'ACTIVE' | 'STOPPED';
 export type PromotionCouponInstanceStatus = 'AVAILABLE' | 'RESERVED' | 'USED' | 'RELEASED';
 
 /**
- * 活动规则：<b>受控键值</b>，不是表达式。
+ * 活动规则：受控键值，不是表达式。
  *
  * 每种活动类型只接受自己的键，未知键会被服务端拒收（41324）——
  * 因此这里的字段按类型分开声明，不合并成一个「任意键」的字典。
@@ -260,10 +260,10 @@ export function promotionError(error: unknown): string {
 }
 
 /**
- * 折扣率的<b>展示换算</b>：后端存的是 (0,1] 的比率（0.95），业务人员说的是百分比（95%）。
+ * 折扣率的展示换算：后端存的是 (0,1] 的比率（0.95），业务人员说的是百分比（95%）。
  *
  * 只在展示层换算，提交回来的比率与直接填比率完全一致 —— 后端与历史数据都不受影响。
- * 百分比取 2 位小数即可<b>无损</b>覆盖 4 位比率的全部取值（0.0001 比率 = 0.01%），
+ * 百分比取 2 位小数即可无损覆盖 4 位比率的全部取值（0.0001 比率 = 0.01%），
  * 因此往返 `rate → percent → rate` 不会丢精度。
  */
 export function rateToPercent(rate?: string | null): number | null {
@@ -272,7 +272,7 @@ export function rateToPercent(rate?: string | null): number | null {
     return Number.isFinite(value) ? Number((value * 100).toFixed(2)) : null;
 }
 
-/** {@link rateToPercent} 的逆运算；不填时返回 `undefined`（不收进规则载荷）。 */
+/** rateToPercent 的逆运算；不填时返回 `undefined`（不收进规则载荷）。 */
 export function percentToRate(percent?: number | null): string | undefined {
     return percent === null || percent === undefined ? undefined : (percent / 100).toFixed(4);
 }

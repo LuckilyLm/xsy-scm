@@ -2,11 +2,11 @@
  *  采购域表单模型。
  *
  * 三块职责：
- * 1. <b>定点数纪律</b>：所有数量 / 金额在提交前经 {@link fixed} 归一为 4 位小数字符串；
- *    渲染时 `null` → `—`、`"0.0000"` → `0.0000`（<b>三态不可合并</b>）。
- * 2. <b>分配集合</b>：`items[].allocations[]` 是<b>集合</b>，增删改都以 `demandId` 为身份，
+ * 1. 定点数纪律：所有数量 / 金额在提交前经 fixed 归一为 4 位小数字符串；
+ *    渲染时 `null` → `—`、`"0.0000"` → `0.0000`（三态不可合并）。
+ * 2. 分配集合：`items[].allocations[]` 是集合，增删改都以 `demandId` 为身份，
  *    只改一条不得影响同行其它条。
- * 3. <b>单位一致性</b>：需求单位 ≠ 采购单位时<b>禁止</b>加入分配，且不猜换算系数。
+ * 3. 单位一致性：需求单位 ≠ 采购单位时禁止加入分配，且不猜换算系数。
  */
 import Decimal from 'decimal.js';
 import type {
@@ -55,7 +55,7 @@ export function quantity(value: string | null | undefined): string {
 /**
  * 收货进度渲染。
  *
- * `received_progress` 是<b>比例</b>（`已收合计 / 计划合计`，scale 4），<b>不是金额</b>；
+ * `received_progress` 是比例（`已收合计 / 计划合计`，scale 4），不是金额；
  * 没有活动行时后端给 `null`（「无值 ≠ 0.0000」），这里同样渲染 `—`。
  */
 export function progress(value: string | null | undefined): string {
@@ -66,7 +66,7 @@ export function progress(value: string | null | undefined): string {
 }
 
 /*
- * 本模块会被 `node --experimental-strip-types --test` 直接加载，因此<b>不得有相对路径的值导入</b>：
+ * 本模块会被 `node --experimental-strip-types --test` 直接加载，因此不得有相对路径的值导入：
  * node 的 ESM 解析不给相对路径补扩展名，打包器与 `vue-tsc` 都会补，所以构建与类型检查发现不了；
  * 而补上 `.ts` 又会触发 TS5097（本项目 `tsconfig` 未开启 `allowImportingTsExtensions`）。
  * 时间渲染由 `common/scm-display.ts` 的调用方直接引入，不从本模块转出。
@@ -102,7 +102,7 @@ export function newAllocation(demand: Demand): Allocation {
 /**
  * 该采购行上的分配合计。
  *
- * 注意这是<b>本行</b>合计，不是该需求的全库已分配合计 —— 后者由服务端裁定（40082）。
+ * 注意这是本行合计，不是该需求的全库已分配合计 —— 后者由服务端裁定（40082）。
  */
 export function allocatedOnItem(item: OrderItem): string {
     const sum = (item.allocations ?? []).reduce(
@@ -113,7 +113,7 @@ export function allocatedOnItem(item: OrderItem): string {
 }
 
 /**
- * 本条分配在该需求上的<b>可分配上限</b>（客户端预检）。
+ * 本条分配在该需求上的可分配上限（客户端预检）。
  *
  * `demand.unallocatedQuantity` 是「全库剩余」，其中已扣掉本行上一次提交的量；
  * 因此加上「本行该需求的旧分配量」才是本行本次可填的上限 —— 与后端
@@ -144,15 +144,15 @@ export function hasAllocation(item: OrderItem, demandId: Order['id']): boolean {
 }
 
 /**
- * 把<b>输入框里正在编辑的数</b>归一为 4 位定点字符串（{@link fixed} 的宽进版）。
+ * 把输入框里正在编辑的数归一为 4 位定点字符串（fixed 的宽进版）。
  *
- * `a-input-number` 在用户键入期间<b>不应用</b> `precision`（antd 4.2.5 的
+ * `a-input-number` 在用户键入期间不应用 `precision`（antd 4.2.5 的
  * `getPrecision(numStr, userTyping)` 在 `userTyping` 为真时直接返回 `undefined`，
  * 提交只发生在 blur），因此绑定到模型上的是裸输入 `"2"` / `"2.5"` 而不是 `"2.0000"`。
  *
  * 用户没输入 → 原样返回（`''` / `null` / `undefined` 不伪造 `0`）；合法数字 → 归一；
  * 其余（`'-'`、`'.'`、空串）→ `''`，绝不能交给 `new Decimal()`（会抛 Invalid argument）。
- * 只归一数值表示，<b>不放宽定点形状</b>：超长整数位仍会被 {@link FIXED} 拒绝。
+ * 只归一数值表示，不放宽定点形状：超长整数位仍会被 FIXED 拒绝。
  */
 function typedFixed(value: string | number | null | undefined): string {
     if (value === null || value === undefined || value === '') {
@@ -166,10 +166,10 @@ function typedFixed(value: string | number | null | undefined): string {
 }
 
 /**
- * 输入框失焦用的归一：完整数字 → 4 位定点；<b>未定型的输入原样保留</b>。
+ * 输入框失焦用的归一：完整数字 → 4 位定点；未定型的输入原样保留。
  *
  * 刻意不在这里把 `"2."` 清掉 —— 用户在「2.」上误触失焦后再点回来，留着比抹掉更少惊吓；
- * 该值提交时会被 {@link validateOrder} 拦下并给出文案。
+ * 该值提交时会被 validateOrder 拦下并给出文案。
  */
 export function normalizeTyped(value: string | number | null | undefined): string {
     if (value === null || value === undefined) {
@@ -180,11 +180,11 @@ export function normalizeTyped(value: string | number | null | undefined): strin
 }
 
 /**
- * 单价是否<b>已填写</b>（形状合法 + 非负）。
+ * 单价是否已填写（形状合法 + 非负）。
  *
  * 未填写时由服务端按「未定价」处理（允许价格待定）；一旦填了就必须是合法价。
- * 与 {@link validateOrder} 同口径：先 {@link typedFixed} 归一（吸收输入框键入中的裸数），
- * 再套 {@link FIXED} 的严格形状 —— 不放宽形状，只对齐「校验时机」。
+ * 与 validateOrder 同口径：先 typedFixed 归一（吸收输入框键入中的裸数），
+ * 再套 FIXED 的严格形状 —— 不放宽形状，只对齐「校验时机」。
  */
 export function priceFilled(value: string | null | undefined): boolean {
     const normalized = typedFixed(value);
@@ -194,12 +194,12 @@ export function priceFilled(value: string | null | undefined): boolean {
 /**
  * 提交前校验。返回第一条错误文案；全部通过返回 `undefined`。
  *
- * 只做<b>形状与业务前置</b>校验（必填、正数、重复商品规格、单位一致、上限）；
+ * 只做形状与业务前置校验（必填、正数、重复商品规格、单位一致、上限）；
  * 「需求被别的单据抢走」这类并发冲突交给服务端（40972 / 40082），前端不假装能预测。
  *
- * <b>校验时机与提交口径一致</b>：用户可能一次都没离开数量输入框就点保存，
- * 此时模型里是键入中的裸数，必须先经 {@link typedFixed} 归一 —— 否则会出现
- * 「明明填了 2 却说不是四位定点数」。只有真正<b>缺失</b>（`''` / `null`）才报该文案；
+ * 校验时机与提交口径一致：用户可能一次都没离开数量输入框就点保存，
+ * 此时模型里是键入中的裸数，必须先经 typedFixed 归一 —— 否则会出现
+ * 「明明填了 2 却说不是四位定点数」。只有真正缺失（`''` / `null`）才报该文案；
  * `null` 必须显式兜底，否则 `test(null)` 会强转成 `'null'` 而误判形状合法。
  */
 export function validateOrder(form: Order): string | undefined {
@@ -299,7 +299,7 @@ export function isNonStandard(item: ReceiptItem | undefined): boolean {
 /**
  * 确认收货的客户端预检。
  *
- * 必须覆盖<b>全部</b>收货行（40998）；非标品必须有实重（40083）；
+ * 必须覆盖全部收货行（40998）；非标品必须有实重（40083）；
  * 声明数量与实重都必须是 4 位定点字符串。
  */
 export function validateConfirm(receipt: Receipt, lines: ReceiptConfirmItemPayload[]): string | undefined {
@@ -354,7 +354,7 @@ export function confirmPayload(receipt: Receipt, lines: ReceiptConfirmItemPayloa
  * 容差提示文案。
  *
  * 超收容差是服务端配置（`scm.purchase.over_receipt_tolerance_percent`），
- *  <b>没有</b>把它暴露给前端的读取端点，因此这里不假装能算出「上限」，
+ *  没有把它暴露给前端的读取端点，因此这里不假装能算出「上限」，
  * 只给出确定的事实：剩余可收量 + 超收会被服务端按配置拒绝（40989）。
  */
 export function toleranceHint(item: ReceiptItem): string {

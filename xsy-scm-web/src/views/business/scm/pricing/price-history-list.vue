@@ -135,7 +135,7 @@ const operationOptions = Object.entries(HISTORY_OPERATION_LABEL).map(([value, la
 /**
  * 列按「哪来的 / 谁的价格 / 什么货 / 改了什么 / 现在是什么价、有效期到什么时候 / 谁在什么时候改的」排列。
  *
- * 时间不能隐藏：本页是<b>变更账本</b>，生效时间与变更时间就是它要回答的问题本身。
+ * 时间不能隐藏：本页是变更账本，生效时间与变更时间就是它要回答的问题本身。
  * 编码（商品规格）与操作人各自下沉为名称 / 时间的次要行，不再各占一列。
  */
 const columns = ref<TableColumnsType<HistoryRow>>([

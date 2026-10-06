@@ -60,15 +60,14 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH;
 
 /**
- * 统一协调 SCM 的库存余额与流水写入，必须参与调用方事务，失败时随业务命令整体回滚。
+ * 统一协调库存余额与流水的写入，参与调用方事务，失败时随业务命令整体回滚。
+ *
+ * <p>
+ * 全仓唯一会改变 {@code inventory_balance.quantity} 的地方：十条写入路径都只通过 {@code incrementQuantity} / {@code decrementQuantity}
+ * 增量语句改数量，不做读-改-写赋值。加权均价只在采购入库、销售退货回库、调拨转入、规格转换转入 这四条有明确单位成本的入库路径上更新；盘点与报损报溢不改变均价，出库保留当时均价到流水。
  *
  * <p>
  * 调用方须先持有自己的单据锁，再按 {@code (warehouseId, skuId)} 升序写余额，避免多行命令以相反顺序获取余额锁。
- *
- * <p>
- * 本类是全仓唯一会改变 {@code inventory_balance.quantity} 的地方，十条写入路径都不自行开启事务， 只通过 {@code incrementQuantity} /
- * {@code decrementQuantity} 增量语句改数量，不做读-改-写赋值。 加权均价只在采购入库、销售退货回库、调拨转入和规格转换转入这四条有明确单位成本的入库路径上更新；
- * 盘点与报损报溢调整不改变均价，出库保留当时均价到流水。
  *
  * <p>
  * 只有四条入库路径可以并发首建零余额行；其余六条都要求余额已存在，正向盘点或报溢不能代替入库建行。

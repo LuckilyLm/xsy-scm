@@ -2,7 +2,7 @@
  * 按商品收货工作台（只读辅助视图）。
  * - 「可收货」范围由后端固定为 `SUBMITTED` / `PARTIALLY_RECEIVED`，不开放状态入参；
  * - 数量（计划 / 已收 / 欠收 / 超收）由后端逐行裁剪后以四位定点字符串聚合下发，
- *   本页只渲染、<b>绝不重算</b>。
+ *   本页只渲染、绝不重算。
 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>

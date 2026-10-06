@@ -1,20 +1,20 @@
 /**
  * 库存域契约测试。
  *
- * 保护<b>前端最容易悄悄违背、且违背后不会报错</b>的几条契约：
- * 1. <b>默认仓库</b>：恰好 1 个启用仓库才默认带出，否则一个都不选 ——
+ * 保护前端最容易悄悄违背、且违背后不会报错的几条契约：
+ * 1. 默认仓库：恰好 1 个启用仓库才默认带出，否则一个都不选 ——
  *    多仓下自动选一个会让用户误以为在看全部库存；
- * 2. <b>三态展示</b>：`null` / `undefined` / 空串 → `—`，
+ * 2. 三态展示：`null` / `undefined` / 空串 → `—`，
  *    `"0.0000"` → `0.0000`；「没有值」与「值是零」不得被合并；
- * 3. <b>append-only</b>：流水前端只有 query，没有新增 / 编辑 / 删除入口；
- * 4. <b>枚举与 DB 白名单同源</b>：流水类型 `PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` /
+ * 3. append-only：流水前端只有 query，没有新增 / 编辑 / 删除入口；
+ * 4. 枚举与 DB 白名单同源：流水类型 `PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` /
  *    `STOCKTAKE_LOSS` / `LOSS_REPORT` / `GAIN_REPORT`，来源 `PURCHASE_RECEIPT_ITEM` /
  *    `SALES_OUTBOUND_ITEM` / `SALES_ORDER_ITEM` / `STOCKTAKE_ITEM` / `LOSS_GAIN_ITEM`；
- * 5. <b>错误码有可执行文案</b>：库存域全部码（含盘点 41019–41027、报损报溢 41028–41037）
+ * 5. 错误码有可执行文案：库存域全部码（含盘点 41019–41027、报损报溢 41028–41037）
  *    都必须在映射表里，且提示要说「下一步做什么」；
- * 6. <b>盘点口径不被误读</b>：确认后的账面不一定等于实盘数（差异施加到确认瞬间的账面量上），
+ * 6. 盘点口径不被误读：确认后的账面不一定等于实盘数（差异施加到确认瞬间的账面量上），
  *    页面必须写明，且新增表单不得提交账面量；
- * 7. <b>审批乐观锁</b>：报损报溢的审批请求必须带上审批人看到的 `version`，
+ * 7. 审批乐观锁：报损报溢的审批请求必须带上审批人看到的 `version`，
  *    且打开审批弹窗时不得重新拉取单据 —— 否则「审批人必须批准自己读到的内容」这条防线失效。
  */
 import test from 'node:test';
@@ -73,7 +73,7 @@ test('default warehouse only applies when exactly one enabled warehouse exists',
   assert.equal(singleWarehouseDefault(null), undefined);
   assert.equal(singleWarehouseDefault(undefined), undefined);
 
-  // 2 个及以上 → <b>不自动选任何一个</b>（多仓下自动选中一个仓会让人误以为在看全部库存）
+  // 2 个及以上 → 不自动选任何一个（多仓下自动选中一个仓会让人误以为在看全部库存）
   assert.equal(singleWarehouseDefault([{id: 1}, {id: 2}]), undefined);
   assert.equal(singleWarehouseDefault([{id: 1}, {id: 2}, {id: 3}]), undefined);
 });
@@ -81,7 +81,7 @@ test('default warehouse only applies when exactly one enabled warehouse exists',
 test('default warehouse wiring: the balance page applies it before the first query, and reset clears it', () => {
   const page = code('../src/views/business/scm/inventory/inventory-balance-list.vue');
 
-  // 默认仓库必须在第一屏查询<b>之前</b>落定，否则首屏会先显示「全部仓库」再跳成「默认仓库」
+  // 默认仓库必须在第一屏查询之前落定，否则首屏会先显示「全部仓库」再跳成「默认仓库」
   assert.match(page, /applySingleWarehouseDefault/);
   assert.match(page, /singleWarehouseDefault/);
   assert.ok(
@@ -214,7 +214,7 @@ test('the balance page shows the moving-average cost and the derived amount', ()
   assert.match(page, /column\.dataIndex === 'amount'[\s\S]{0,120}moneyText\(record\.amount\)/);
 
   const types = code('../src/views/business/scm/inventory/inventory-types.ts');
-  // 均价是 NOT NULL DEFAULT 0，所以类型里<b>不带</b> `| null`；金额允许为空
+  // 均价是 NOT NULL DEFAULT 0，所以类型里不带 `| null`；金额允许为空
   assert.match(types, /avgCost\?:\s*string;/);
   assert.match(types, /amount\?:\s*string \| null;/);
 });
@@ -225,8 +225,8 @@ test('movement type text falls back to the raw value so an unmapped type stays v
   assert.equal(movementTypeText('', labels), '—');
   assert.equal(movementTypeText(null, labels), '—');
   assert.equal(movementTypeText(undefined, labels), '—');
-  // 未知类型<b>不显示成「—」</b>：一个后端新增而前端未跟上的类型本身就是有用信号。
-  // 用 UNKNOWN_IN（<b>明确不存在</b>的名字）：真实类型已全部落地，
+  // 未知类型不显示成「—」：一个后端新增而前端未跟上的类型本身就是有用信号。
+  // 用 UNKNOWN_IN（明确不存在的名字）：真实类型已全部落地，
   // 再拿「未实现的业务类型」当反例会每落地一个就要改一次。
   assert.equal(movementTypeText('UNKNOWN_IN', labels), 'UNKNOWN_IN');
   // 文案表里缺 desc 时同样回落到原值，而不是显示空白
@@ -256,11 +256,11 @@ test('inventory enums expose exactly the values the backend CHECK whitelist allo
     assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
   }
 
-  // 盘盈与盘亏必须是<b>两个</b>类型：方向要能从类型本身读出来，否则 DB 的
+  // 盘盈与盘亏必须是两个类型：方向要能从类型本身读出来，否则 DB 的
   // `ck_inventory_movement_snap` 无法判定 after 该加还是该减。报损 / 报溢、转出 / 转入同理。
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), /STOCKTAKE_ADJUST/);
 
-  // 全部类型必须<b>恰好</b>分成两个方向组（入 6 / 出 6）——
+  // 全部类型必须恰好分成两个方向组（入 6 / 出 6）——
   // 这是 `ck_inventory_movement_snap`「按方向分组」写法的前提。
   const inbound = ['PURCHASE_IN', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN', 'CONVERT_IN'];
   const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT', 'CONVERT_OUT',
@@ -277,7 +277,7 @@ test('inventory enums expose exactly the values the backend CHECK whitelist allo
 });
 
 test('loss/gain document enums match the backend state machine', () => {
-  // 方向是<b>单据级</b>属性：一张单要么全报损、要么全报溢
+  // 方向是单据级属性：一张单要么全报损、要么全报溢
   assert.deepEqual(Object.keys(SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM), ['LOSS', 'OVERFLOW']);
   // 没有 DRAFT：报损报溢创建即提交待审核（录单与审批应当由不同的人完成）
   assert.deepEqual(Object.keys(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM),
@@ -352,7 +352,7 @@ test('both inventory pages are read-only and wired to TableOperator + their own 
     assert.match(source, /SCM_INVENTORY_TABLE_ID/, page + ' 未绑定表格 DOM id');
     assert.match(source, /v-privilege/, page + ' 缺少权限指令');
 
-    // 只读页不得有任何写入口。判据刻意落在<b>结构</b>而不是文案上：
+    // 只读页不得有任何写入口。判据刻意落在结构而不是文案上：
     // 页面里确实会写「流水不可编辑、不可删除」这类说明文字，用关键词匹配会误报。
     //   - 本项目的写表单一律住在 `<a-modal>` 里（各域的 `*-form-drawer/modal`）；
     //   - 写操作一定表现为调用某个 `create/update/remove/delete` 方法。
@@ -362,7 +362,7 @@ test('both inventory pages are read-only and wired to TableOperator + their own 
 });
 
 test('inventory sources never depend on the purchase form model (domains stay decoupled)', () => {
-  // 库存域是<b>与来源无关</b>的领域原语：它可以复用展示工具（`scm-display`），
+  // 库存域是与来源无关的领域原语：它可以复用展示工具（`scm-display`），
   // 但不得反向依赖采购的表单模型 —— 那会让未来接入出库 / 调拨时被迫带上采购语义。
   for (const file of ['inventory-model.ts', 'inventory-types.ts', 'inventory-errors.ts']) {
     const source = code('../src/views/business/scm/inventory/' + file);
@@ -390,7 +390,7 @@ test('inventory errors resolve from body, data and response shapes with actionab
   assert.match(inventoryError({data: {code: 41001}}), /不做自动换算/);
   assert.match(inventoryError({response: {data: {code: 41002}}}), /不能重复入库/);
 
-  // 未登记的码<b>不吞掉后端消息</b>
+  // 未登记的码不吞掉后端消息
   assert.equal(inventoryError({code: 99999, msg: '后端原文'}), '后端原文');
   assert.equal(inventoryError({msg: '后端原文'}), '后端原文');
   assert.equal(inventoryError({}), '操作失败，请重试');
@@ -416,7 +416,7 @@ test('the stocktake page is a stateful document page wired to its own DOM id and
   assert.match(page, /v-privilege/);
 
   // 四个权限点都要出现：查询 / 新建 / 编辑 / 确认 / 删除。
-  // 「确认盘点」必须是<b>独立权限</b> —— 它会真实调整库存并写不可逆流水，
+  // 「确认盘点」必须是独立权限 —— 它会真实调整库存并写不可逆流水，
   // 允许仓管录数、由主管确认是完全合理的分工。
   for (const perm of [
     'scm:inventory:stocktake:query',
@@ -431,7 +431,7 @@ test('the stocktake page is a stateful document page wired to its own DOM id and
   // 只有草稿可写：确认 / 取消 / 删除都必须挂在 status === 'DRAFT' 上
   assert.match(page, /record\.status === 'DRAFT'/);
 
-  // 实盘量允许 0（确实一件不剩）：InputNumber 的下限是 0（<b>不是</b> 0.0001），
+  // 实盘量允许 0（确实一件不剩）：InputNumber 的下限是 0（不是 0.0001），
   // 提交走 fixed4 补足 4 位定点 —— 空值（null）与 0.0000 必须区分。
   assert.match(page, /:min="0"/);
   assert.doesNotMatch(page, /:min="0\.0001"/, '实盘量必须允许 0');
@@ -439,7 +439,7 @@ test('the stocktake page is a stateful document page wired to its own DOM id and
 });
 
 test('the stocktake page documents that delta is applied to the live book quantity', () => {
-  // 这里最容易让人误读的一条口径：确认后的账面<b>不一定等于实盘数</b>，
+  // 这里最容易让人误读的一条口径：确认后的账面不一定等于实盘数，
   // 因为「保存草稿 → 确认」之间发生的收货 / 出库会被保留（差异是施加到当前账面量上的）。
   // 页面上必须写明，否则用户会把正确行为当成 bug。
   const detail = code('../src/views/business/scm/inventory/components/inventory-stocktake-detail-drawer.vue');
@@ -449,7 +449,7 @@ test('the stocktake page documents that delta is applied to the live book quanti
   const api = code('../src/api/business/scm/inventory-stocktake-api.ts');
   assert.match(api, /create:/);
   assert.match(api, /confirm:/);
-  // 盘点单是<b>有状态单据</b>，与 append-only 的流水不同：它有 update / cancel / delete
+  // 盘点单是有状态单据，与 append-only 的流水不同：它有 update / cancel / delete
   assert.match(api, /update:/);
   assert.match(api, /cancel:/);
   assert.match(api, /delete:/);
@@ -506,7 +506,7 @@ test('the loss/gain page wires its own DOM id, six privileges and a PENDING-only
 test('the audit request carries the version the approver saw (optimistic lock)', () => {
   // 审批人必须批准自己读到的内容。若在「打开单据 → 点审批」之间单据被改过，
   // 后端以 40921 拒绝并要求刷新。因此前端必须把打开时的 version 原样回传，
-  // 且<b>不得</b>在打开弹窗时重新拉取单据（那等于「总是批准最新的」，防线就没了）。
+  // 且不得在打开弹窗时重新拉取单据（那等于「总是批准最新的」，防线就没了）。
   const page = code('../src/views/business/scm/inventory/inventory-loss-gain-list.vue');
   assert.match(page, /version:\s*record\.version \?\? 0/);
 
@@ -516,7 +516,7 @@ test('the audit request carries the version the approver saw (optimistic lock)',
   const api = code('../src/api/business/scm/inventory-loss-gain-api.ts');
   assert.match(api, /approve:/);
   assert.match(api, /reject:/);
-  // 报损报溢是<b>有状态单据</b>，与 append-only 的流水不同
+  // 报损报溢是有状态单据，与 append-only 的流水不同
   assert.match(api, /create:/);
   assert.match(api, /update:/);
   assert.match(api, /delete:/);
@@ -638,7 +638,7 @@ test('the warning status enum matches the backend and treats the boundary as nor
     assert.equal(item.value, key);
     assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
   }
-  // 状态是<b>派生值</b>，不落库：不得出现任何「已读 / 已忽略」这类需要持久化的状态
+  // 状态是派生值，不落库：不得出现任何「已读 / 已忽略」这类需要持久化的状态
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_WARNING_STATUS_ENUM),
       /READ|ACK|IGNORED|DISMISSED/);
 });
@@ -649,7 +649,7 @@ test('the warning list page is read-only and defaults to abnormal-only', () => {
   assert.match(page, /SCM_INVENTORY_TABLE_ID/);
   assert.match(page, /v-privilege/);
 
-  // 只读页不得有任何写入口。判据落在<b>结构</b>上而不是文案上：
+  // 只读页不得有任何写入口。判据落在结构上而不是文案上：
   // 页面里确实会写「预警不能标记已读」这类说明文字，用关键词匹配会误报。
   //   - 本项目的写表单一律住在 `<a-modal>` 里；
   //   - 写操作一定表现为调用某个 create/update/remove/delete 方法。
@@ -798,7 +798,7 @@ test('the conversion enums match the backend whitelist and stay cross-SKU', () =
     assert.equal(item.value, key);
     assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
   }
-  // <b>定位换算不受影响</b>：转换是跨 SKU 的（源规格 → 目标规格），
+  // 定位换算不受影响：转换是跨 SKU 的（源规格 → 目标规格），
   // 两个 SKU 各自仍只锁一个记账单位。一旦有人往类型枚举里加「单位」维度，这里会失败。
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_CONVERSION_TYPE_ENUM), /UNIT/);
 });
@@ -901,7 +901,7 @@ test('the conversion page keeps the declared units free-text while quantities go
   assert.match(page, /<a-input-number[\s\S]{0,140}record\.targetQuantity/);
   assert.match(page, /sourceQuantity: fixed4\(i\.sourceQuantity\) as string/);
   assert.match(page, /targetQuantity: fixed4\(i\.targetQuantity\) as string/);
-  // 单位是<b>单据声明</b>（折算关系的一部分），仍是自由文本 —— 不做单位换算
+  // 单位是单据声明（折算关系的一部分），仍是自由文本 —— 不做单位换算
   assert.match(page, /<a-input v-model:value="record\.sourceUnit"/);
   assert.match(page, /<a-input v-model:value="record\.targetUnit"/);
 });
@@ -925,13 +925,13 @@ test('conversion error codes all have actionable Chinese text', () => {
 test('every node-loaded SCM module stays free of value imports on relative paths', () => {
   // `purchase-form-model.ts` 曾用 `export { datetime } from '../common/scm-display'` 转出时间渲染。
   // 打包器（Vite）与 `vue-tsc` 都会自动补全扩展名，所以 `npm run build` / `npm run typecheck`
-  // <b>都发现不了</b>；但 `npm run test` 用 `node --experimental-strip-types --test` 直接加载 `.ts`，
+  // 都发现不了；但 `npm run test` 用 `node --experimental-strip-types --test` 直接加载 `.ts`，
   // node 的 ESM 解析不做补全 → 整份前端单测以 ERR_MODULE_NOT_FOUND 加载失败。
   //
   // 而「补上 `.ts`」这条路是走不通的：本项目 `tsconfig` 未开启 `allowImportingTsExtensions`，
   // 值导入写 `.ts` 会触发 TS5097（被 `tools/ts_baseline_ratchet.py` 的 SCM 零错误区拦下）。
   //
-  // 两个约束的交集就是这条纪律：<b>node 可加载的模块只能有 type-only 的相对导入</b>
+  // 两个约束的交集就是这条纪律：node 可加载的模块只能有 type-only 的相对导入
   // （type-only 会被类型擦除，node 根本不会去解析它）。
   const modules = [
     '../src/views/business/scm/purchase/purchase-form-model.ts',

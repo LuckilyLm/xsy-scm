@@ -9,10 +9,10 @@
  * 改造前它只有 5 段，且金额与单号混在同一张 descriptions 里 —— 金额和 ID 视觉权重相同。
  * 本文件钉住三件事，防止被后续改动合并回去：
  *
- * 1. <b>段标题存在且顺序正确</b>：段名是用户找信息的唯一锚点，缺一段就等于丢掉一类事实。
- * 2. <b>金额组成用独立的高权重结构与 .scm-money</b>：不能退回 descriptions 里的普通一行。
- * 3. <b>系统信息不得凭空编造</b>：后端 VO 不暴露 createTime / updateTime / 创建人，
- *    因此第 7 段<b>必须不渲染</b>（而不是编字段）。后端补齐后再启用。
+ * 1. 段标题存在且顺序正确：段名是用户找信息的唯一锚点，缺一段就等于丢掉一类事实。
+ * 2. 金额组成用独立的高权重结构与 .scm-money：不能退回 descriptions 里的普通一行。
+ * 3. 系统信息不得凭空编造：后端 VO 不暴露 createTime / updateTime / 创建人，
+ *    因此第 7 段必须不渲染（而不是编字段）。后端补齐后再启用。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';

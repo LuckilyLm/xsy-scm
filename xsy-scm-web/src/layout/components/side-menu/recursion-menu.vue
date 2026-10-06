@@ -120,12 +120,12 @@ defineExpose({
  * 菜单图标配色
  *
  * antd 的菜单项图标是 `color: inherit`（`resetIcon()`），跟着菜单项自身的状态色走。
- * 亮色菜单下 antd 给的是：普通 = colorText、hover = colorText（<b>只换背景、不换字色</b>）、
+ * 亮色菜单下 antd 给的是：普通 = colorText、hover = colorText（只换背景、不换字色）、
  * 选中 = colorPrimary。也就是说 hover 时图标并不会变色 —— 这里把三档显式写出来，
  * 让「普通深色 / hover 主题色 / 当前主题色」成为明确的设计，而不是继承出来的巧合。
  *
  * 两条约束：
- * 1. <b>必须排除 `.ant-menu-dark`</b>：暗色菜单的文字是浅色，用 `--scm-text`（深色）会把图标压到看不见。
+ * 1. 必须排除 `.ant-menu-dark`：暗色菜单的文字是浅色，用 `--scm-text`（深色）会把图标压到看不见。
  *    暗色下继续交给 antd 自己的 dark 主题 token。
  * 2. 用 `--scm-*` 而不是写死 `#333` / `#00b96b`：主题色可切换（当前是绿），写死会在换色后失效。
  *    这两个变量由 `useScmThemeVars()` 落在 `<html>` 上。

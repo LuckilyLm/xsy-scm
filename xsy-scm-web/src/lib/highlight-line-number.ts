@@ -193,7 +193,7 @@ function getLinesCount(text) {
 }
 
 /**
- * {@link https://wcoder.github.io/notes/string-format-for-string-formating-in-javascript}
+ * https://wcoder.github.io/notes/string-format-for-string-formating-in-javascript
  * @param {string} format
  * @param {array} args
  */

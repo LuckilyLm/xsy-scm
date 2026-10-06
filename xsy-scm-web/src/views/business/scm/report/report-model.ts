@@ -1,16 +1,7 @@
 /**
- * 报表中心纯函数层。
+ * 报表中心纯函数层：日期口径、查询装配、三态展示与成本门禁的取值规则。
  *
- * - 日期口径：默认「本月」；周起点固定<b>周一</b>；「本周 / 本月」一律<b>截至今天</b>
- *   （把未来日子算进「已发生」会让趋势图多出一段零值尾巴）；
- * - 查询装配：空串一律转 `undefined` 后省略 —— 后端 `@Pattern` 接受 null、拒绝 `''`，
- *   空串会把整次查询拒成 30001；
- * - Tab 共享筛选、不共享分页，切 Tab 只把目标 Tab 页码归 1；
- * - 三态展示：`null`（没有这个事实）与 `"0.0000"`（真的是零）必须区分，
- *   图表取数时 `null` 保持 `null`（ECharts 断线），不塌成 0；
- * - 成本门禁：无 `scm:report:cost:query` 时成本列整列消失。
- *
- * 本文件不依赖 Vue、不发请求，可被 `node --test` 直接加载，因此同样只允许
+ * 本文件不依赖 Vue、不发请求，可被 `node --test` 直接加载，因此只允许
  * type-only 的相对导入（理由见 `inventory-model.ts`）。
  */
 import dayjs from 'dayjs';
@@ -45,8 +36,8 @@ function day(value?: Date | string): dayjs.Dayjs {
 /**
  * 快捷区间：返回闭区间 `[start, end]` 的 `yyyy-MM-dd` 字符串。
  *
- * 周以周一为起点；`THIS_WEEK` / `THIS_MONTH` 的终点是<b>今天</b>而非周末 / 月末，
- * 见文件头第 1 条。
+ * 周以周一为起点；`THIS_WEEK` / `THIS_MONTH` 的终点是今天而非周末 / 月末 ——
+ * 把未来日子算进「已发生」会让趋势图多出一段零值尾巴。
  *
  * @param today 基准日，默认取当前时间；单测传定值以获得确定性结果
  */
@@ -89,7 +80,7 @@ export function defaultDateRange(today?: Date | string): DateRange {
 /**
  * `a-range-picker` 的 `presets` 数据源。
  *
- * 值给的是 `yyyy-MM-dd` <b>字符串</b>而不是 dayjs 对象：picker 上绑了
+ * 值给的是 `yyyy-MM-dd` 字符串而不是 dayjs 对象：picker 上绑了
  * `value-format="YYYY-MM-DD"`，给对象会让组件在写回时再格式化一次，
  * 两条路径都产生同一个字符串没问题，但保持单一形状更好排查。
  */
@@ -101,7 +92,7 @@ export function datePresets(today?: Date | string): Array<{label: string; value:
 }
 
 /**
- * 区间跨度是否超过 {@link MAX_REPORT_RANGE_DAYS}（含首尾两天）。
+ * 区间跨度是否超过 MAX_REPORT_RANGE_DAYS（含首尾两天）。
  *
  * 返回错误文案而不是抛异常：页面把它接到 `error` ref 上，既挡住请求又能就地重试。
  * 区间不完整时返回 `''`（交给后端日期校验，前端不猜）。
@@ -127,7 +118,7 @@ export function textOrDash(value: string | null | undefined): string {
  *
  * 与定点数一样要区分三态：`null` 表示「后端没有这个事实」，`0` 表示「确实是零笔」。
  * 后端把 `COUNT(*)` 恒返回数字，但跨接口拼装的对象里计数字段可能缺席，
- * 这里统一按三态处理，<b>不把 undefined 显示成 0</b>。
+ * 这里统一按三态处理，不把 undefined 显示成 0。
  */
 export function countText(value: number | null | undefined): string {
     if (value === null || value === undefined) {
@@ -137,7 +128,7 @@ export function countText(value: number | null | undefined): string {
 }
 
 /**
- * 图表取数：定点数字符串 → number，<b>`null` 保持 `null`</b>。
+ * 图表取数：定点数字符串 → number，`null` 保持 `null`。
  *
  * 只服务坐标轴刻度与折线点位，不参与任何业务算式：金额、均价、数量的数值一律
  * 由后端算好，前端 `Number()` 一次只为画图，`moneyText` 仍按原字符串展示。
@@ -152,7 +143,7 @@ export function chartValue(value: string | number | null | undefined): number | 
 }
 
 /**
- * 成本列的展示文本：无成本权限时<b>恒为 `—`</b>。
+ * 成本列的展示文本：无成本权限时恒为 `—`。
  *
  * 后端已经对缺权限的调用者把成本字段置 `null`，这里再拦一道是纵深防御：
  * 万一某个 VO 忘了清空（成本字段散在多个报表行里，漏一处是真实风险），
@@ -166,7 +157,7 @@ export function costText(value: string | null | undefined, canSeeCost: boolean):
 }
 
 /**
- * 「成本和不完整」提示：后端跳过了一些无成本流水时，聚合金额只是<b>部分和</b>。
+ * 「成本和不完整」提示：后端跳过了一些无成本流水时，聚合金额只是部分和。
  *
  * 不提示就会让用户把部分和当成全量入库成本，这类误读比多一行字昂贵得多。
  * 返回 `''` 表示无需提示。
@@ -218,7 +209,7 @@ export function movementDirection(movementType: string | null | undefined, inbou
     return inboundTypes.includes(movementType) ? 'IN' : 'OUT';
 }
 
-/** 方向的中文文案；未知类型返回 `—`（与 {@link movementDirection} 的 null 分支一致）。 */
+/** 方向的中文文案；未知类型返回 `—`（与 movementDirection 的 null 分支一致）。 */
 export function directionText(direction: 'IN' | 'OUT' | null): string {
     if (direction === 'IN') {
         return '入';
@@ -229,11 +220,11 @@ export function directionText(direction: 'IN' | 'OUT' | null): string {
     return '—';
 }
 
-/** 枚举文案表的最小结构（`SmartEnum` 的每一项都满足它；刻意不 import 常量，见文件头注释）。 */
+/** 枚举文案表的最小结构（`SmartEnum` 的每一项都满足它；刻意不 import 常量，理由同 `inventory-model.ts`）。 */
 export type EnumLabels = Record<string, { desc?: string } | undefined>;
 
 /**
- * 枚举的中文描述；命不中时<b>回落原值</b>。
+ * 枚举的中文描述；命不中时回落原值。
  *
  * 一个未知的枚举串本身就是有用的信息（后端加了类型而前端没跟上），
  * 显示成 `—` 会把这个信号藏起来。与 `inventory-model.movementTypeText` 同一取向，
@@ -268,11 +259,11 @@ export function yesNoText(value: boolean | null | undefined): string {
 /**
  * 一个 Tab 的全部视图状态。
  *
- * <b>每个 Tab 一份</b>（不是共享一个对象）：共用 `pageNum` 时，A Tab 翻到第 3 页再切到 B Tab，
+ * 每个 Tab 一份（不是共享一个对象）：共用 `pageNum` 时，A Tab 翻到第 3 页再切到 B Tab，
  * B 会直接落在第 3 页甚至空态 —— 这就是「Tab 串条件」。`rows` / `error` / `loading`
  * 分开也是同一个道理：A Tab 的报错横幅不该盖在 B Tab 的表格上。
  *
- * 共享的是<b>筛选</b>（日期区间 + 常用条件），它留在页面级对象上。
+ * 共享的是筛选（日期区间 + 常用条件），它留在页面级对象上。
  */
 export interface TabView<T> {
     pageNum: number;
@@ -316,7 +307,7 @@ function omitEmpty(source: LooseFilters): LooseFilters {
  * 装配报表查询体：日期区间 + 共享筛选（+ 可选的分页）。
  *
  * 三条规则：
- * - `startDate` / `endDate` 只从区间来，缺失时<b>省略字段</b>而不是传 `''`；
+ * - `startDate` / `endDate` 只从区间来，缺失时省略字段而不是传 `''`；
  * - 共享筛选里的 `''`（清空的下拉、空关键字）转成省略，避免后端 `@Pattern` 直接拒整次查询；
  * - 导出请求不带分页（传 `tab` 省略即可）：后端强制第 1 页 + 上限行，
  *   前端传分页只会让人误以为导出的是当前页。
@@ -342,7 +333,7 @@ export function buildReportQuery<T extends object>(
     return payload as unknown as T;
 }
 
-/** 路由 query 的形状（`vue-router` 的 `LocationQuery` 的子集；同 {@link buildReportQuery} 刻意只用结构类型）。 */
+/** 路由 query 的形状（`vue-router` 的 `LocationQuery` 的子集；同 buildReportQuery 刻意只用结构类型）。 */
 export type RouteQuery = Record<string, string | (string | null)[] | null | undefined>;
 
 function firstQueryValue(raw: RouteQuery[string]): string {
@@ -353,7 +344,7 @@ function firstQueryValue(raw: RouteQuery[string]): string {
 /**
  * 从路由 query 还原日期区间（概览页点击某日 → 跳到分析页并带上区间）。
  *
- * 两个日期必须<b>都给且是 `yyyy-MM-dd`</b> 才生效：URL 是用户可手改、可收藏转发的输入，
+ * 两个日期必须都给且是 `yyyy-MM-dd` 才生效：URL 是用户可手改、可收藏转发的输入，
  * 半截区间或 `?startDate=<script>` 一律按「未提供」处理，让页面回落到默认的本月，
  * 不能把脏值透传给后端。
  */
@@ -365,10 +356,10 @@ export function rangeFromQuery(query: RouteQuery | undefined | null): DateRange 
 }
 
 /**
- * 某日 deep-link：概览页表格点一行 → 分析页查<b>这一天</b>。
+ * 某日 deep-link：概览页表格点一行 → 分析页查这一天。
  *
  * 起止同为一天，是闭区间语义下最小的区间；不要图省事只传 `startDate`，
- * 那样目标页会因 {@link rangeFromQuery} 校验不过而回落成本月，看起来像「跳转丢了参数」。
+ * 那样目标页会因 rangeFromQuery 校验不过而回落成本月，看起来像「跳转丢了参数」。
  */
 export function dayRange(bizDate: string): DateRange {
     const normalized = /^\d{4}-\d{2}-\d{2}$/.test(bizDate) ? bizDate : defaultDateRange()[0];

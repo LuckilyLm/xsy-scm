@@ -4,11 +4,11 @@
  * 与后端 `InventoryLossGainController` 逐端点对应（7 个）：
  * query / detail / create / update / approve / reject / delete。
  *
- * <b>权限分三档</b>：录单与改待审核是日常操作（`add` / `update`），
- * <b>`approve` 与 `reject` 是两个独立权限</b> —— 允许主管审批、由另一角色驳回是常见分工。
+ * 权限分三档：录单与改待审核是日常操作（`add` / `update`），
+ * `approve` 与 `reject` 是两个独立权限 —— 允许主管审批、由另一角色驳回是常见分工。
  * 「新建」与「审批」必须分开：报损是把货从账上抹掉的动作，由同一人录单并批准就失去了制衡。
  *
- * <b>审批必须带 `version`</b>（乐观锁）：审批人必须批准自己读到的内容。
+ * 审批必须带 `version`（乐观锁）：审批人必须批准自己读到的内容。
  * 若在「打开单据 → 点审批」之间单据被改过，后端返回 40921 并要求刷新。
  */
 import {getRequest, postRequest} from '/@/lib/axios';

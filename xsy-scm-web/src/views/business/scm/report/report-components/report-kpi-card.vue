@@ -19,12 +19,12 @@ import {InfoCircleOutlined} from '@ant-design/icons-vue';
 /**
  * 报表指标卡（的「重要金额/数量先展示指标卡」）。
  *
- * `value` 收的是<b>已经格式化好的文本</b>（由 `moneyText` / `countText` 产出），
+ * `value` 收的是已经格式化好的文本（由 `moneyText` / `countText` 产出），
  * 不在组件里做任何数值处理：定点数的位数与形状由源头决定，
  * 组件再格式化一次就会出现「同一笔钱在卡片和表格里位数不同」。
  * `null` 由调用方传成 `—`，卡片本身不猜。
  *
- * `currentPoint` + `sub` 服务「当前库存账面金额」这类<b>时点值</b>：
+ * `currentPoint` + `sub` 服务「当前库存账面金额」这类时点值：
  * 它不受查询区间影响，不标注就会被读成区间合计。
  */
 defineProps<{

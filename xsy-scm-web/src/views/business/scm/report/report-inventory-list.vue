@@ -2,12 +2,12 @@
   库存分析：库存流水 / 损耗分析 / 当前库存价值 / 收发存（数量版）。
 
   三条边界：
-  1. <b>方向不重新发明</b>：流水的「入 / 出」由 `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES`
+  1. 方向不重新发明：流水的「入 / 出」由 `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES`
      （与后端 `ScmInventoryMovementTypeEnum.getInbound()` 同源）派生，本页不再维护第二份
      IN / OUT 清单；`quantity` 恒为正。
-  2. <b>成本受 `scm:report:cost:query` 控制</b>：没有该权限时单位成本 / 成本金额整列不出现，
+  2. 成本受 `scm:report:cost:query` 控制：没有该权限时单位成本 / 成本金额整列不出现，
      「当前库存价值」整个 Tab 也不出现；后端同时已把这些字段置 null，前端不会看到别人的成本。
-  3. <b>收发存只有数量</b>：不做历史期初 / 期末均价与金额 ——
+  3. 收发存只有数量：不做历史期初 / 期末均价与金额 ——
      流水存的是「本次 movement 的 unit_cost」，不是「每次 movement 后的 avg_cost」，
      用它回算历史均价就是伪造成本。跨单位的数量也永不相加。
 -->
@@ -15,7 +15,7 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <!--
-        「当前库存价值」是当前时点快照，与日期区间无关，因此在该 Tab 下<b>收掉日期筛选</b>：
+        「当前库存价值」是当前时点快照，与日期区间无关，因此在该 Tab 下收掉日期筛选：
         留着它会被读成「这段区间的库存金额」。后端日期字段必填，所以请求仍带当前区间，
         只是那个值在该 Tab 不参与计算。
       -->

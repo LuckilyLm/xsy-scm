@@ -3,7 +3,7 @@
  *
  * 运行方式与断言风格与 `test/product-form-model.test.mjs` 一致。
  *
- * 重点覆盖两条<b>反直觉</b>的业务规则，它们是最容易写错的地方：
+ * 重点覆盖两条反直觉的业务规则，它们是最容易写错的地方：
  * 1. legacy R12：同一供应商允许多条 `defaultFlag = true`，前端绝不能做单选限制；
  * 2. `supplier_sku` 是整表替换：已存在的行必须带 `id` + `version`，新增行不能带。
  */

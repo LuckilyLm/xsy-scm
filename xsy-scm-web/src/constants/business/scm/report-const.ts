@@ -1,11 +1,11 @@
 /**
  * 报表中心前端常量：表格 DOM id、权限码、损耗类型口径。
  *
- * 其余枚举一律复用既有单一来源，<b>不在本文件复制第二份</b>：流水类型 / 来源单据类型 →
+ * 其余枚举一律复用既有单一来源，不在本文件复制第二份：流水类型 / 来源单据类型 →
  * `inventory-const.ts`；收货模式 / 入库状态 / 采购状态 → `purchase-const.ts`；
  * 订单来源 / 价格来源 → `order-const.ts`。
  *
- * 复制一份枚举等于制造第二个真相：后端扩枚举时只改一处，另一份会<b>静默陈旧</b>，
+ * 复制一份枚举等于制造第二个真相：后端扩枚举时只改一处，另一份会静默陈旧，
  * 表现是筛选下拉里少一个类型、而列表里那一行的类型列显示成原值。
  */
 import type {SmartEnum} from '/@/types/smart-enum';
@@ -13,7 +13,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
 /**
  * 损耗分析口径下的流水类型子集。
  *
- * <b>报表侧的分类，不是库存侧的枚举</b>：只承认「盘亏」与「手工报损」两类
+ * 报表侧的分类，不是库存侧的枚举：只承认「盘亏」与「手工报损」两类
  * 可证明的损耗事实，`STOCKTAKE_GAIN` / `GAIN_REPORT` 是增益、`SALES_OUT` 是履约，
  * 都不进损耗成本。因此这个子集属于报表中心，放在这里而不是去改库存枚举。
  */
@@ -26,11 +26,11 @@ export const SCM_REPORT_LOSS_TYPE_ENUM: SmartEnum<string> = {
  * 报表中心权限码（与后端 `@SaCheckPermission` 逐字对应）。
  *
  * 三条约束：
- * - 导出 = 对应页的 query 权限 <b>AND</b> `export`；`v-privilege` 只吃一个码，
+ * - 导出 = 对应页的 query 权限 AND `export`；`v-privilege` 只吃一个码，
  *   所以按钮上挂 `EXPORT`，AND 关系由后端裁决；
- * - `COST_QUERY` 是<b>独立的成本门禁</b>：没有它的角色可以看数量流水，不能看均价与金额；
+ * - `COST_QUERY` 是独立的成本门禁：没有它的角色可以看数量流水，不能看均价与金额；
  * - 后端已对缺权限的调用者把成本字段置 `null`，前端只需把列隐藏并把 `null` 渲染成 `—`，
- *   <b>不得</b>在前端做「无权限就显示 0」。
+ *   不得在前端做「无权限就显示 0」。
  */
 export const SCM_REPORT_PERMISSION = {
     OVERVIEW_QUERY: 'scm:report:overview:query',
@@ -50,7 +50,7 @@ export const SCM_REPORT_PERMISSION = {
 } as const;
 
 /**
- * 表格 DOM id —— <b>给 Playwright 定位用</b>，不是 `TableOperator` 的 `tableId`。
+ * 表格 DOM id —— 给 Playwright 定位用，不是 `TableOperator` 的 `tableId`。
  *
  * `TableOperator` 的 `tableId` 是数字（列配置持久化键），注册在
  * `TABLE_ID_CONST.BUSINESS.SCM_REPORT_*`；两者用途不同，沿用库存域的做法分开声明。
@@ -83,7 +83,7 @@ export const SCM_REPORT_TABLE_ID = {
 } as const;
 
 export default {
-    // 只导出<b>枚举</b>：`SCM_REPORT_TABLE_ID` / `SCM_REPORT_PERMISSION` 不是枚举，
+    // 只导出枚举：`SCM_REPORT_TABLE_ID` / `SCM_REPORT_PERMISSION` 不是枚举，
     // 混进 `constantsInfo` 会让 `$smartEnumPlugin.getValueDescList` 拿到非枚举对象。
     SCM_REPORT_LOSS_TYPE_ENUM,
 };

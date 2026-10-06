@@ -24,8 +24,8 @@ import type {BusinessData, PurchaseData} from '../types';
 /**
  * 采购概览 2×2。
  *
- * <p>「活跃供应商」取的是<b>今日有采购单的供应商数</b>（来自经营聚合的
- * {@code todaySupplierCount}），而不是供应商总数 —— 大屏关心「今天和谁在做生意」。
+ * 「活跃供应商」取的是今日有采购单的供应商数（来自经营聚合的
+ * todaySupplierCount），而不是供应商总数 —— 大屏关心「今天和谁在做生意」。
  */
 defineProps<{
   purchase: PurchaseData | null;

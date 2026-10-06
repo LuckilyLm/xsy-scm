@@ -10,10 +10,10 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  // flex: 1 1 0% —— 面板必须<b>撑满父容器分配的空间</b>，而不是按内容高度收缩。
+  // flex: 1 1 0% —— 面板必须撑满父容器分配的空间，而不是按内容高度收缩。
   // 默认的 flex: 0 1 auto 会让面板高度等于内容高度：侧栏三个面板只占上半屏、
   // 中列地图只占 286px（可用 494px），剩下整片留白，而每块面板内部看起来都是"正常"的。
-  // flex-basis 取 0% 而不是 auto，是为了让同一父容器里的多个面板<b>等分</b>空间。
+  // flex-basis 取 0% 而不是 auto，是为了让同一父容器里的多个面板等分空间。
   flex: 1 1 0%;
   min-height: 0;
   background: @panel-bg;

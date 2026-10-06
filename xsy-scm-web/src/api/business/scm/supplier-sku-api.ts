@@ -1,6 +1,6 @@
 /*
  * 写路径只有一个入口：`replace`（整表替换）。
- * <b>空数组表示清空全部关联</b>，不是「无操作」。
+ * 空数组表示清空全部关联，不是「无操作」。
  */
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {

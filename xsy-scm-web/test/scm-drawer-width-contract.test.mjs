@@ -14,7 +14,7 @@
  *   m          780   中型主数据 / 常规编辑表单
  *   l          940   复杂业务编辑表单
  *   xl        1120   复杂详情 / 内嵌宽表 / 多明细业务
- *   workspace 1440   <b>受限特殊档</b>，见第 4 项断言
+ *   workspace 1440   受限特殊档，见第 4 项断言
  *
  * 长期准入规则见 `docs/architecture/scm-ui-guidelines.md` §5；
  * 当前 34 个实例及 workspace 白名单直接由本测试维护。

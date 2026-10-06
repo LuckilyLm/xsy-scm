@@ -6,11 +6,11 @@
  * `align: 'right'` —— 视觉上与全站相反，且靠肉眼验收不容易发现（组件不在主路由上）。
  *
  * 本文件钉住：
- * 1. <b>操作列居中</b>。
- * 2. <b>分类表展示父分类、不展示内部编码</b>：保留清单是
+ * 1. 操作列居中。
+ * 2. 分类表展示父分类、不展示内部编码：保留清单是
  *    分类名称 / 层级 / 父分类 / 状态 / 排序 / 操作，没有分类编码；
  *    父分类从 `categoryPath` 推导（一级分类为 —）。
- * 3. <b>数值走全局 `.scm-quantity`</b>，不再保留局部 `.price` 样式。
+ * 3. 数值走全局 `.scm-quantity`，不再保留局部 `.price` 样式。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';

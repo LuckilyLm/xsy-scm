@@ -154,7 +154,7 @@ test('五张财务列表的操作列统一居中固定', () => {
 });
 
 test('核销页把「资金」与「目标」各自合成一格', () => {
-  // 只看<b>主列表</b>的列定义：抽屉里的分配子表另有自己的「目标单号」，
+  // 只看主列表的列定义：抽屉里的分配子表另有自己的「目标单号」，
   // 那是登记核销时逐条录入的对象，不属于列表展示口径。
   const mainColumns = pageCode.writeOff
       .match(/const columns = ref<TableColumnsType<FinanceWriteOff>>\(\[[\s\S]*?\n\]\);/)?.[0];

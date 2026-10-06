@@ -68,7 +68,7 @@
           </div>
         </template>
         <template v-else-if="column.dataIndex==='action'">
-          <!-- 撤销核销是<b>追加反向事实</b>，不是编辑：保持 danger 视觉 + 独立的二次确认弹窗 -->
+          <!-- 撤销核销是追加反向事实，不是编辑：保持 danger 视觉 + 独立的二次确认弹窗 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button v-if="record.entryType==='NORMAL'" type="link" size="small" danger v-privilege="PERM.WRITE_OFF_REVERSE"
                       @click="openReverse(record)">撤销核销</a-button>

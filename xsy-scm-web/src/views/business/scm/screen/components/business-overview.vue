@@ -25,8 +25,8 @@ import type {BusinessData} from '../types';
 /**
  * 今日经营 2×2。
  *
- * <p><b>这里刻意不显示「累计订单 / 累计销售额」</b>：设计稿指出累计数适合后台报表，
- * 大屏要表达的是「现在正在发生什么」。累计数仍然在接口里（{@code totalOrderCount}），
+ * 这里刻意不显示「累计订单 / 累计销售额」：设计稿指出累计数适合后台报表，
+ * 大屏要表达的是「现在正在发生什么」。累计数仍然在接口里（totalOrderCount），
  * 需要时可作为副标题补上。
  */
 const props = defineProps<{ business: BusinessData | null }>();
@@ -34,7 +34,7 @@ const props = defineProps<{ business: BusinessData | null }>();
 /**
  * 客单价 = 今日销售额 / 今日订单数。
  *
- * <p>订单数为 0 时显示「—」而不是「¥0.00」：没有订单时客单价<b>不存在</b>，
+ * 订单数为 0 时显示「—」而不是「¥0.00」：没有订单时客单价不存在，
  * 而不是「客单价是零元」。
  */
 const avgOrderText = computed(() => {

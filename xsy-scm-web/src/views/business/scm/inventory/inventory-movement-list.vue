@@ -182,7 +182,7 @@ const columns = ref<TableColumnsType<InventoryMovement>>([
 /**
  * 入 / 出方向。
  *
- * 流水表的 `quantity` 恒为正，方向<b>只能</b>由类型派生，因此这里读的是与后端
+ * 流水表的 `quantity` 恒为正，方向只能由类型派生，因此这里读的是与后端
  * `ScmInventoryMovementTypeEnum.getInbound()` 同源的 `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES`，
  * 而不是在本页再写一份 IN / OUT 名单 —— 那样后端加类型时方向会判反，而数字看起来完全正常。
  */

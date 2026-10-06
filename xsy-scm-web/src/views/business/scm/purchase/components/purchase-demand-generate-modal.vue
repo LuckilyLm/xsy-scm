@@ -1,8 +1,8 @@
 <!--
  * 采购需求生成弹窗。
- * - 时间段是<b>半开区间</b> `[startAt, endAt)`，不是 `startTime`/`endTime`，也不是闭区间；
+ * - 时间段是半开区间 `[startAt, endAt)`，不是 `startTime`/`endTime`，也不是闭区间；
  * - `demand_date` 取 `confirmed_at` 在上海时区下的日期；
- * - <b>两步走</b>：先 `demand/batch/create` 冻结净需求批次，再由 `demand/batch/generate`
+ * - 两步走：先 `demand/batch/create` 冻结净需求批次，再由 `demand/batch/generate`
  *   从同一批次生成需求 —— 重复生成不会重复建需求。
 -->
 <template>

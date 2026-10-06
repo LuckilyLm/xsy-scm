@@ -2,12 +2,12 @@
   库存规格转换。
 
   状态机：PENDING → COMPLETED | REJECTED，两个终态都不可回退（流水 append-only）。
-  创建即提交待审核：转换会把<b>两个 SKU</b> 的余额同时改掉，而折算率是人工声明的，
+  创建即提交待审核：转换会把两个 SKU 的余额同时改掉，而折算率是人工声明的，
   没有审批等于录单人可以单方面决定「一箱等于多少 kg」。
 
-  <b>跨 SKU、同仓库</b>：源规格 → 目标规格（整件 → 散装）。跨仓搬运是「调拨」，不是转换。
+  跨 SKU、同仓库：源规格 → 目标规格（整件 → 散装）。跨仓搬运是「调拨」，不是转换。
 
-  页面上要讲清楚的一件事：<b>两个单位都由单据声明，后端会与各自 SKU 的余额记账单位比对</b>，
+  页面上要讲清楚的一件事：两个单位都由单据声明，后端会与各自 SKU 的余额记账单位比对，
   不一致直接失败（41059 / 41060）—— 库存不做自动换算。
 -->
 <template>
@@ -448,7 +448,7 @@ interface EditableItem {
    * 4 位定点字符串。`null` = 还没填。
    */
   sourceQuantity?: number | null;
-  /** 单位是<b>单据声明</b>（折算关系的一部分），仍是自由文本，不做单位换算。 */
+  /** 单位是单据声明（折算关系的一部分），仍是自由文本，不做单位换算。 */
   sourceUnit: string;
   targetSkuId?: string | number;
   targetQuantity?: number | null;
@@ -629,7 +629,7 @@ const auditOpinion = ref('');
 
 /**
  * 打开审批弹窗时把 `version` 一起记下来 —— 提交时原样回传。
- * 不重新拉取单据：审批人应当批准自己<b>看到的那一版</b>；重新拉取会让乐观锁失效。
+ * 不重新拉取单据：审批人应当批准自己看到的那一版；重新拉取会让乐观锁失效。
  */
 function openAudit(record: InventoryConversion, mode: 'approve' | 'reject') {
   auditRecord.value = {...record};
