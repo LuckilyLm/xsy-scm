@@ -234,15 +234,26 @@ test('按钮出现条件与后端状态机一致', () => {
     assert.match(reopenAction, /row\.status === 'COMPLETED'/);
     assert.match(printAction, /printable && hasPermission\(SCM_SORTING_PERMISSION\.TASK_PRINT\)/);
     assert.match(taskList, /const printable = SCM_SORTING_PRINTABLE_STATUS\.includes\(row\.status\)/);
-    // 行内只留「完成」这一个推进动作；指派 / 改派按操作列收尾口径移入「更多」，
-    // 但**业务约束不变**：仍限 WORKING 状态、仍需 TASK_ASSIGN 权限，标签随是否已指派变化。
-    assert.match(taskList, /v-if="isWorking\(record\.status\)"[\s\S]{0,160}scm:sorting:task:complete/);
-    assert.doesNotMatch(taskList, /v-privilege="'scm:sorting:task:assign'"/,
-        '指派 / 改派已移入「更多」，不应再以行内 v-privilege 按钮形式出现');
+    // 原则：**操作工作台优先暴露「当前下一步」，而不是机械地把所有状态动作塞进「更多」。**
+    // 分拣是操作型工作台，行内恒为「详情 + 一个当前最重要的下一步 + 更多」：
+    //   未指派且 WORKING 且有 TASK_ASSIGN  → 指派
+    //   已指派且 WORKING 且有 TASK_COMPLETE → 完成
+    // 「改派」属低频调整，留在「更多」。
+    assert.match(taskList,
+        /const canAssignNext = \(row: SortingTask\) =>[\s\S]{0,160}isWorking\(row\.status\)[\s\S]{0,80}assigneeEmployeeId == null[\s\S]{0,120}TASK_ASSIGN/);
+    assert.match(taskList,
+        /const canCompleteNext = \(row: SortingTask\) =>[\s\S]{0,160}isWorking\(row\.status\)[\s\S]{0,80}assigneeEmployeeId != null[\s\S]{0,120}TASK_COMPLETE/);
+    assert.match(taskList, /v-if="canAssignNext\(record\)"[\s\S]{0,200}scm:sorting:task:assign/);
+    assert.match(taskList, /v-else-if="canCompleteNext\(record\)"[\s\S]{0,200}scm:sorting:task:complete/);
+    // 行内推进动作必须按「当前下一步」判定：不能再出现只按状态无条件显示的按钮
+    assert.doesNotMatch(taskList, /v-if="isWorking\(record\.status\)"/,
+        '行内推进动作必须按「当前下一步」判定，不能只按状态无条件显示');
+    // 「更多」里只留低频的改派，且仍受 WORKING + 已指派 + TASK_ASSIGN 三重约束
     const assignAction = actionOf('assign');
-    assert.ok(assignAction, '缺指派 / 改派动作');
-    assert.match(assignAction, /working && hasPermission\(SCM_SORTING_PERMISSION\.TASK_ASSIGN\)/);
-    assert.match(assignAction, /label: row\.assigneeEmployeeId == null \? '指派' : '改派'/);
+    assert.ok(assignAction, '缺改派动作');
+    assert.match(assignAction, /label: '改派'/);
+    assert.match(assignAction,
+        /working && row\.assigneeEmployeeId != null && hasPermission\(SCM_SORTING_PERMISSION\.TASK_ASSIGN\)/);
     assert.match(taskList, /if \(key === 'assign'\)[\s\S]{0,80}openAction\('assign', row\)/);
     // 取消与重开的原因是必填项（与后端 requireReason 同口径）
     assert.match(taskList, /if \(actionMode\.value !== 'assign' && !reason\)/);

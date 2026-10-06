@@ -148,7 +148,7 @@ const NARROWED = {
     'sorting/sorting-task-list.vue': 150,
     'promotion/promotion-coupon-list.vue': 150,
     'product/components/category-tree-table.vue': 160,
-    'report/report-overview-list.vue': 150,
+    'report/report-overview-list.vue': 110,
 };
 
 test('§8 本轮收窄的操作列不得回退', () => {
@@ -234,7 +234,26 @@ test('每个 ScmActionMore 调用方都用权限助手裁剪菜单项', () => {
 });
 
 // ------------------------------------------------------------------
-// 5. 不允许用 CSS 假装收窄
+// 5. 平级入口不得人为分主次
+// ------------------------------------------------------------------
+
+test('平级的只读入口不人为分主次（报表总览下钻）', () => {
+    const file = files.find((f) => f.rel === 'report/report-overview-list.vue');
+    assert.ok(file, '文件不存在：report/report-overview-list.vue');
+    // 四个维度完全平级，必须同住一个菜单，而不是挑两个提到行内
+    for (const key of ['sales', 'purchase', 'receipt', 'inventory']) {
+        assert.match(file.source, new RegExp(`\\{key: '${key}', label: '[^']+'\\}`),
+            `下钻菜单缺 ${key}`);
+    }
+    assert.match(file.source, /<ScmActionMore label="下钻"/, '下钻应统一走 ScmActionMore');
+    const cell = file.source.match(/column\.dataIndex === 'action'[\s\S]*?<\/template>/)?.[0];
+    assert.ok(cell, '缺 action 单元格');
+    assert.doesNotMatch(cell, /goAnalysis\(/,
+        '行内不应再直接暴露单个下钻跳转，否则又变成了人为分主次');
+});
+
+// ------------------------------------------------------------------
+// 6. 不允许用 CSS 假装收窄
 // ------------------------------------------------------------------
 
 test('不得用 overflow hidden + nowrap 把操作按钮藏起来冒充收窄', () => {
