@@ -27,11 +27,17 @@
 
         <ul class="xsy-login__features">
           <li class="xsy-login__feature">
-            <span class="xsy-login__feature-badge"><BulbOutlined class="xsy-login__feature-icon"/></span>
+            <span class="xsy-login__feature-badge">
+              <svg class="xsy-login__feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 21c.5 -4.5 2.5 -8 7 -10"/>
+                <path d="M9 18c6.218 0 10.5 -3.288 11 -12v-2h-4.014c-9 0 -11.986 4 -12 9c0 1 0 3 2 5c3 2 6 3 6 3"/>
+              </svg>
+            </span>
             <span>新鲜高效</span>
           </li>
           <li class="xsy-login__feature">
-            <span class="xsy-login__feature-badge"><NodeIndexOutlined class="xsy-login__feature-icon"/></span>
+            <span class="xsy-login__feature-badge"><LinkOutlined class="xsy-login__feature-icon"/></span>
             <span>全链协同</span>
           </li>
           <li class="xsy-login__feature">
@@ -39,7 +45,7 @@
             <span>数据驱动</span>
           </li>
           <li class="xsy-login__feature">
-            <span class="xsy-login__feature-badge"><RiseOutlined class="xsy-login__feature-icon"/></span>
+            <span class="xsy-login__feature-badge"><SafetyCertificateOutlined class="xsy-login__feature-icon"/></span>
             <span>降本增效</span>
           </li>
         </ul>
@@ -122,10 +128,8 @@
 defineOptions({name: "SystemLoginThree"});
 import {
   BarChartOutlined,
-  BulbOutlined,
+  LinkOutlined,
   LockOutlined,
-  NodeIndexOutlined,
-  RiseOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue';
