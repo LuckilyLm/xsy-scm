@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 采购单行（****）。
+ * 采购单行。
  *
  * <p>
  * 行身份 = {@code (purchase_order_id, sku_id)}，由 {@code uk_purchase_order_item_order_sku_active} 强制。

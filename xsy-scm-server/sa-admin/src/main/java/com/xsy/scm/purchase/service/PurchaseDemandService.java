@@ -53,7 +53,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_QUANTITY_
  * 两个命令，各自一个事务、各自一个幂等 scope：
  * <ul>
  * <li>{@code generate}：窗口内**已确认**订单行 → 需求。去重靠 `uk_purchase_demand_source_active` + INSERT 竞争（并发 generate 收敛到同一行）；</li>
- * <li>{@code allocate}：把某条需求分到某个采购行上。****：需求单位与采购单位必须一致， 否则 40971 —— 绝不猜换算系数。</li>
+ * <li>{@code allocate}：把某条需求分到某个采购行上。分配门禁：需求单位与采购单位必须一致， 否则 40971 —— 绝不猜换算系数。</li>
  * </ul>
  *
  * <p>

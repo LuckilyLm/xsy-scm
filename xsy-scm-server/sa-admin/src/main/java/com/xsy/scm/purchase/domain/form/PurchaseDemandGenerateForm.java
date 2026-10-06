@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
  * `PURCHASE_QUANTITY_INVALID`）。
  *
  * <p>
- * ****：生成出来的 `demand_date` 取每行 `source_confirmed_at` 在 `Asia/Shanghai` 下的日期， **不是**本窗口的第一天 —— 跨多日窗口不会被压平成同一天。
+ * 需求日期：生成出来的 `demand_date` 取每行 `source_confirmed_at` 在 `Asia/Shanghai` 下的日期， **不是**本窗口的第一天 —— 跨多日窗口不会被压平成同一天。
  */
 @Data
 public class PurchaseDemandGenerateForm {

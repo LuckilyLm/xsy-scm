@@ -25,11 +25,11 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
  * 来源：{@code sales_order_item}（只读）。`sales_order_item_id` 上有部分唯一索引， 一条订单行最多生成一条活动需求。
  *
  * <p>
- * ****：`demandDate` = `sourceConfirmedAt` 在 {@code Asia/Shanghai} 下的日期， 由 DB CHECK `ck_purchase_demand_date`
+ * 需求日期：`demandDate` = `sourceConfirmedAt` 在 {@code Asia/Shanghai} 下的日期， 由 DB CHECK `ck_purchase_demand_date`
  * 强制，**不是**汇总窗口的第一天。
  *
  * <p>
- * ****：`demandUnitSnapshot` 是**需求单位**（来源 `sales_order_item.sale_unit_snapshot`）， 永不被采购单位覆盖。
+ * 需求单位：`demandUnitSnapshot` 是**需求单位**（来源 `sales_order_item.sale_unit_snapshot`）， 永不被采购单位覆盖。
  */
 @Data
 @TableName(value = "purchase_demand", autoResultMap = true)

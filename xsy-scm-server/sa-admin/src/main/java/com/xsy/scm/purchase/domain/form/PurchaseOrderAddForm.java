@@ -18,10 +18,10 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
  * 新建采购单。
  *
  * <p>
- * ****：一行（一个 SKU）可以承接**多个**采购需求 —— 由 `items[].allocations[]` 表达， 不是行上的单个 `demandId` 字段。`(item, demand)` 组合在一张采购单内不得重复。
+ * 多需求分配：一行（一个 SKU）可以承接**多个**采购需求 —— 由 `items[].allocations[]` 表达， 不是行上的单个 `demandId` 字段。`(item, demand)` 组合在一张采购单内不得重复。
  *
  * <p>
- * ****：需求单位（`demandUnitSnapshot`）与采购单位（`purchaseUnitSnapshot`）是两个独立快照；
+ * 单位快照：需求单位（`demandUnitSnapshot`）与采购单位（`purchaseUnitSnapshot`）是两个独立快照；
  * 两者不一致时不允许自动分配（`PURCHASE_UNIT_CONVERSION_REQUIRED`）， 不做换算。
  *
  * <p>

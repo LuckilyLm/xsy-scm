@@ -24,7 +24,7 @@ public enum ScmCommonErrorCode implements ScmErrorCode {
      *
      * <p>
      * 用于「非 MVC 入口」的解析失败——即参数已经进入 Service / Manager，不再经过 Bean Validation 的场景（内部调用、批量导入、工具类解析）。 MVC 入口的校验失败仍由 SmartAdmin
-     * 的 {@code GlobalExceptionHandler} 以 30001 返回，SCM 不重复接管。
+     * 底座的 {@code GlobalExceptionHandler} 以 30001 返回，SCM 不重复接管。
      */
     VALIDATION_ERROR(40000, "请求参数不正确"),
 
