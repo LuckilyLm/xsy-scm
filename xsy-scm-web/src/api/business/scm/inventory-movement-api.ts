@@ -5,7 +5,7 @@
  * `POST /scm/inventory/movement/query`。
  *
  * **append-only 在接口形状上的体现**：只有 query 一个端点。没有新增、没有编辑、没有删除 ——
- * 这不是「暂时没做」，而是 Q7 硬化后的契约：流水表在 DB 层有
+ * 这不是「暂时没做」，而是硬化后的契约：流水表在 DB 层有
  * `CHECK (deleted = FALSE)`，未来冲销必须**新增反向 movement**，
  * 因此永远不会出现「改历史流水」的 API。
  *

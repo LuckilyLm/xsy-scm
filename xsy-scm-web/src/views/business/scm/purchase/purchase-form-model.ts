@@ -4,9 +4,9 @@
  * 三块职责：
  * 1. **定点数纪律（A17/A18）**：所有数量 / 金额在提交前经 {@link fixed} 归一为 4 位小数字符串；
  *    渲染时 `null` → `—`、`"0.0000"` → `0.0000`（**三态不可合并**）。
- * 2. **分配集合（A31 / Q13）**：`items[].allocations[]` 是**集合**，增删改都以 `demandId` 为身份，
+ * 2. **分配集合**：`items[].allocations[]` 是**集合**，增删改都以 `demandId` 为身份，
  *    只改一条不得影响同行其它条。
- * 3. **单位一致性（A32 / Q17）**：需求单位 ≠ 采购单位时**禁止**加入分配，且不猜换算系数。
+ * 3. **单位一致性**：需求单位 ≠ 采购单位时**禁止**加入分配，且不猜换算系数。
  */
 import Decimal from 'decimal.js';
 import type {
@@ -133,7 +133,7 @@ export function allocationCapacity(demand: Demand, previousOnItem: string | null
 }
 
 /**
- * **A32 / Q17**：需求单位与采购单位是否不一致。
+ * 需求单位与采购单位是否不一致。
  *
  * 不一致时前端直接拒绝加入分配，并给出 40971 的同一句话 —— 不允许「只换单位字符串」
  * 或猜换算系数（那会把 100 kg 静默变成 100 箱）。
@@ -145,7 +145,7 @@ export function unitMismatch(item: OrderItem, demand: Demand): boolean {
     return item.purchaseUnit !== demand.demandUnit;
 }
 
-/** 同一采购行内是否已经有该需求（Q13 禁止重复 `(item, demand)`）。 */
+/** 同一采购行内是否已经有该需求（禁止重复 `(item, demand)`）。 */
 export function hasAllocation(item: OrderItem, demandId: Order['id']): boolean {
     return (item.allocations ?? []).some((row) => String(row.demandId) === String(demandId));
 }

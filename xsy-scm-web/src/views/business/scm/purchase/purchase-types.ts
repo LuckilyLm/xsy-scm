@@ -212,8 +212,8 @@ export interface DemandSummaryPreviewQuery extends Page {
  * `PurchaseDemandSummaryVO` —— 预览聚合行。
  *
  * 数量全部是后端 SQL 内用 `BigDecimal` 算好的四位定点字符串（`null` 与 `"0.0000"` 语义不同），
- * 前端**不得**重算 `availableQuantity` / `stockComparisonGap`（A.4）。
- * `UNIT_MISMATCH` 时 `stockComparisonGap` 为 `null`（Q13 单位门禁，不猜折算率）。
+ * 前端**不得**重算 `availableQuantity` / `stockComparisonGap`。
+ * `UNIT_MISMATCH` 时 `stockComparisonGap` 为 `null`（单位门禁，不猜折算率）。
  *
  * 预留分三段：`reservedQuantity` 是全仓该 SKU 的总预留，其中 `selectedOrderReservedQuantity`
  * 属于本批预览订单自身，`otherReservedQuantity` 才是其他业务的占用。判断本批是否缺料要看
@@ -255,7 +255,7 @@ export interface DemandSummaryRow {
 // ------------------------------------------------------------------
 
 /**
- * 一条采购行分配（Q13）。
+ * 一条采购行分配。
  *
  * 分配身份 = `(purchaseOrderItemId, demandId)`，因此同一个采购行可以承接**多个**需求；
  * 编辑时只改 / 删其中一条不得影响同行其它分配。
@@ -268,7 +268,7 @@ export interface Allocation {
     salesOrderItemId?: Id;
     skuId?: Id;
     quantity: string;
-    /** 需求单位快照（来自销售单位），Q17 要求与 `purchaseUnit` 相等才允许自动分配。 */
+    /** 需求单位快照（来自销售单位），必须与 `purchaseUnit` 相等才允许自动分配。 */
     demandUnit?: string;
     /** 需求版本：提交分配时必须带当前值，否则 40972。 */
     demandVersion?: number;
@@ -295,7 +295,7 @@ export interface OrderItem {
     purchasePrice: string;
     lineAmount?: string | null;
     sortOrder?: number;
-    /** **Q13**：集合，不是单个 `demandId`。 */
+    /** 集合，不是单个 `demandId`。 */
     allocations: Allocation[];
 }
 

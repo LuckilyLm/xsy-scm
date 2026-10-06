@@ -36,7 +36,7 @@ export interface InventoryBalance {
     /** 商品名称（来自 `product_spu.name`）。 */
     productName?: string;
     specValues?: Record<string, unknown> | null;
-    /** Q13 记账单位：一个仓库 + SKU 只可能有一个（异单位入库会被 41001 拒绝）。 */
+    /** 记账单位：一个仓库 + SKU 只可能有一个（异单位入库会被 41001 拒绝）。 */
     unit?: string;
     quantity?: string | null;
     /** 已预留量（出库波次新增）。 */
@@ -96,7 +96,7 @@ export interface InventoryMovement {
     sourceDocumentId?: Id;
     /** 收货行 id（防重锚点）。 */
     sourceDocumentItemId?: Id;
-    /** 收货单号（Q9：人类可读来源， 不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
+    /** 收货单号（人类可读来源，不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
     receiptNo?: string;
     /** 来源单号：`SALES_OUT` 取出库单号、`STOCKTAKE_*` 取盘点单号。后端 COALESCE 成一个展示列。 */
     sourceDocumentNo?: string;

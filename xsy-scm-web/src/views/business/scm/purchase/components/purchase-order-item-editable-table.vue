@@ -241,7 +241,7 @@ function pick(demand: Demand) {
     message.warning('该需求已经在这一行上，请直接修改它的分配数量');
     return;
   }
-  // A32 / Q17：单位不一致时**拒绝**，不猜换算系数、不换单位字符串。
+  // 单位不一致时**拒绝**，不猜换算系数、不换单位字符串。
   if (unitMismatch(item, demand)) {
     picker.error = `需求单位 ${demand.demandUnit} 与采购单位 ${item.purchaseUnit} 不一致：W5 不做自动换算，请改用与需求单位一致的供应商采购配置`;
     return;

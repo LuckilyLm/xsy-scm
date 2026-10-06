@@ -1,4 +1,4 @@
-<!--  新能力：取价试算。价格状态与可售状态独立展示（Q2）。 -->
+<!--  新能力：取价试算。价格状态与可售状态独立展示。 -->
 <template>
   <a-card title="取价试算" size="small" :bordered="false">
     <a-form layout="inline" class="smart-query-form">

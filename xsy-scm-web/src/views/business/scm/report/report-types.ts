@@ -588,7 +588,7 @@ export interface InventoryValueRow {
     reservedQuantity?: string | null;
     /** 可用量 = 现有量 − 预留量，后端派生。 */
     availableQuantity?: string | null;
-    /** 记账单位；一个 (仓库, SKU) 只有一个单位（Q13）。 */
+    /** 记账单位；一个 (仓库, SKU) 只有一个单位。 */
     unit?: string | null;
     avgCost?: string | null;
     /** `quantity × avg_cost`，后端派生。 */
