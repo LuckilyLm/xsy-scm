@@ -20,7 +20,7 @@ public class PurchaseReceiptBatchDeleteForm {
     private List<PurchaseReceiptVersionForm> receipts;
 
     /**
-     * `id + version` 双谓词。
+     * {@code id + version} 双谓词。
      */
     @Data
     public static class PurchaseReceiptVersionForm {

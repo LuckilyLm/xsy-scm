@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>
  * {@code MANUAL} 行的 {@code source_id} 必须为 {@code NULL}，这让它落在 {@code uk_finance_payable_source_active} 的
- * {@code source_id IS NOT NULL} 谓词之外； 其防重由金额上限和请求级幂等键承担。
+ * {@code source_id IS NOT NULL} 谓词之外；其防重由金额上限和请求级幂等键承担。
  */
 @Getter
 @RequiredArgsConstructor

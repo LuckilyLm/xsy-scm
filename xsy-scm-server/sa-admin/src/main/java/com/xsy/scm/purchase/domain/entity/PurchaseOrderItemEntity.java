@@ -21,12 +21,13 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
  * 采购单行。
  *
  * <p>
- * **行身份** = `(purchase_order_id, sku_id)`（`uk_purchase_order_item_order_sku_active`， 保留）； **allocation 身份** =
- * `(purchase_order_item_id, purchase_demand_id)`。两者必须区分。
+ * <b>行身份</b> = {@code (purchase_order_id, sku_id)}（{@code uk_purchase_order_item_order_sku_active}，保留）； <b>allocation
+ * 身份</b> = {@code (purchase_order_item_id, purchase_demand_id)}。两者必须区分。
  *
  * <p>
- * **不引入 `received_quantity <= planned_quantity` 约束**：容差内超收合法， 超收上限是**运行时**计算（`planned × (1 + tolerance/100)`），不能表达为静态
- * CHECK。 这是已知的 DB 级缺口，由 `PurchaseReceiptQuantityCalculator` + 40989 在服务层强制。
+ * <b>不引入 {@code received_quantity <= planned_quantity}
+ * 约束</b>：容差内超收合法，超收上限是<b>运行时</b>计算（{@code planned × (1 + tolerance/100)}），不能表达为静态 CHECK。这是已知的 DB 级缺口，由
+ * {@code PurchaseReceiptQuantityCalculator} + 40989 在服务层强制。
  */
 @Data
 @TableName(value = "purchase_order_item", autoResultMap = true)

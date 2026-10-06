@@ -13,11 +13,11 @@ import java.util.Map;
  * 报损报溢单（头 + 明细）。
  *
  * <p>
- * 展示字段（仓库编码/名称、SKU 编码/名称、商品名）是**实时联表结果，不是快照** —— 与库存余额、出库单、盘点单同一取向：单据上真正需要冻结的是明细行的 {@code quantity} 与
+ * 展示字段（仓库编码/名称、SKU 编码/名称、商品名）是<b>实时联表结果，不是快照</b> —— 与库存余额、出库单、盘点单同一取向：单据上真正需要冻结的是明细行的 {@code quantity} 与
  * {@code unitSnapshot}。
  *
  * <p>
- * {@code adjustTypeDesc} / {@code statusDesc} 由服务层按枚举填充， 前端不硬编码字典（与出库单 / 盘点单一致）。
+ * {@code adjustTypeDesc} / {@code statusDesc} 由服务层按枚举填充，前端不硬编码字典（与出库单 / 盘点单一致）。
  */
 @Data
 public class InventoryLossGainVO {
@@ -72,7 +72,7 @@ public class InventoryLossGainVO {
     private String auditOpinion;
 
     /**
-     * 乐观锁版本号 —— **前端审批时必须原样回传**（见 {@code InventoryLossGainAuditForm}）， 否则「审批人看到的内容」与「审批的内容」可能不一致。
+     * 乐观锁版本号 —— <b>前端审批时必须原样回传</b>（见 {@code InventoryLossGainAuditForm}），否则「审批人看到的内容」与「审批的内容」可能不一致。
      */
     private Integer version;
 

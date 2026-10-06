@@ -372,7 +372,7 @@ function resetQuery() {
 /**
  * URL 带入的筛选条件：配送线路详情页的「跳出库单」带 `?outboundNo=`。
  *
- * 只把值填进**已有**筛选项，不新增任何后端能力；出库单号是自由文本（`null` 白名单），
+ * 只把值填进<b>已有</b>筛选项，不新增任何后端能力；出库单号是自由文本（`null` 白名单），
  * 但仍经 `deepLinkFilters` 做 trim 与空值收口，避免 `?outboundNo=` 空串被当成有效条件。
  * 用 `route.query` 而不是 props：菜单路由不传 props，hash 路由下 query 是唯一稳定通道。
  */

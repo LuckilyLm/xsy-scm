@@ -42,7 +42,7 @@
           AND deleted = FALSE FOR UPDATE
     </select>
 
-    <!-- received_quantity 只增不减；**不做上限判定**（上限是运行时 t_config 容差，静态表达不了） -->
+    <!-- received_quantity 只增不减；不做上限判定（上限是运行时 t_config 容差，静态表达不了） -->
     <update id="accumulateReceived">
         UPDATE purchase_order_item
         SET received_quantity = received_quantity + #{delta},
@@ -84,10 +84,10 @@
     <!--
        按商品收货工作台（只读聚合）：跨「可收货」采购单把同一 SKU 的计划 / 已收并排展示。
 
-      口径全部来自 purchase_order_item（收货回写的目标行），因此工作台汇总与底层收货单逐行求和恒等
-      ；本视图不新增收货事实，确认收货仍走各收货单的既有端点。
+      口径全部来自 purchase_order_item（收货回写的目标行），因此工作台汇总与底层收货单逐行求和恒等；
+      本视图不新增收货事实，确认收货仍走各收货单的既有端点。
 
-      ：采购单位进入分组键，同一 SKU 若用了不同单位会拆成多行，绝不跨单位相加。
+      采购单位进入分组键，同一 SKU 若用了不同单位会拆成多行，绝不跨单位相加。
       pending / over 逐行裁剪后再求和（不能用 Σ已收与 Σ计划相减，否则欠收行与超收行会互相抵消）。
       状态过滤固定为可收货的两态，不接收入参；排序固定「欠收降序 → SKU」，不接受客户端排序。
 

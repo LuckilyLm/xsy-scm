@@ -122,7 +122,7 @@ public class ProductTagService {
     }
 
     /**
-     * REPLACE 语义：活动关系收敛到 tagIds 全集，多退少补。整批一次锁定标签行， 与删除标签互斥；调用方必须已持有这些 SPU 的行锁。 这里不校验标签可用性：新建与批量打标由调用方全量校验，单商品编辑只校验新增绑定。
+     * REPLACE 语义：活动关系收敛到 tagIds 全集，多退少补。整批一次锁定标签行，与删除标签互斥；调用方必须已持有这些 SPU 的行锁。这里不校验标签可用性：新建与批量打标由调用方全量校验，单商品编辑只校验新增绑定。
      */
     @Transactional
     public void replaceTags(Collection<Long> spuIds, Collection<Long> tagIds) {
@@ -182,7 +182,7 @@ public class ProductTagService {
     }
 
     /**
-     * 单商品编辑口径：只校验本次新增的绑定。已绑定的停用标签允许原样保留， 否则运营改一个无关字段就会被迫先摘标签；要换掉时前端本来就会重选。
+     * 单商品编辑口径：只校验本次新增的绑定。已绑定的停用标签允许原样保留，否则运营改一个无关字段就会被迫先摘标签；要换掉时前端本来就会重选。
      */
     public void assertNewBindings(Long spuId, Collection<Long> tagIds) {
         if (tagIds == null || tagIds.isEmpty())

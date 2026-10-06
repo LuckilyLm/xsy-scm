@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
  * 收款登记请求，只创建 {@code NORMAL} 收款事实。
  *
  * <p>
- * 收款登记只携带客户、金额、方式、业务时点、资金凭据号和备注；核销、审批、附件、币种、账期与余额 不属于这条命令。
+ * 收款登记只携带客户、金额、方式、业务时点、资金凭据号和备注；核销、审批、附件、币种、账期与余额不属于这条命令。
  */
 @Data
 public class FinanceReceiptAddForm {
@@ -23,7 +23,7 @@ public class FinanceReceiptAddForm {
     private Long customerId;
 
     /**
-     * 收款金额：一律 JSON 字符串，整数最多 14 位、小数最多 4 位； 服务端按 {@link ScmDecimalStrings} 统一成 scale 4，并要求严格大于 0。
+     * 收款金额：一律 JSON 字符串，整数最多 14 位、小数最多 4 位；服务端按 {@link ScmDecimalStrings} 统一成 scale 4，并要求严格大于 0。
      */
     @NotNull(message = "收款金额不能为空")
     @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "收款金额格式无效")

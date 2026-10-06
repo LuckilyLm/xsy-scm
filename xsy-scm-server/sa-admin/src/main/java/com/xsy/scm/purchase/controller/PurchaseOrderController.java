@@ -42,14 +42,15 @@ import java.util.List;
  * 采购单端点（的 11 个端点）。
  *
  * <p>
- * 查询类走 `scm:purchase:query`，日志单独一个 `scm:purchase:log:query` （审计数据与业务数据分权，与订单域的 `scm:order:log:query` 一致）。
+ * 查询类走 {@code scm:purchase:query}，日志单独一个 {@code scm:purchase:log:query} （审计数据与业务数据分权，与订单域的 {@code scm:order:log:query}
+ * 一致）。
  *
  * <p>
- * `Idempotency-Key` 头一律声明为 {@code required = false}：缺失时由 {@code PurchaseIdempotencyService} 抛 40084，若标成必填会被框架转成 30001，
- * 与错误码契约不符（同 {@code PurchaseDemandController}）。
+ * {@code Idempotency-Key} 头一律声明为 {@code required = false}：缺失时由 {@code PurchaseIdempotencyService} 抛 40084，若标成必填会被框架转成
+ * 30001， 与错误码契约不符（同 {@code PurchaseDemandController}）。
  *
  * <p>
- * `update` **不带**幂等头 —— 它靠行级 `@Version` 保证重复提交安全。
+ * {@code update} <b>不带</b>幂等头 —— 它靠行级 {@code @Version} 保证重复提交安全。
  */
 @RestController
 @RequiredArgsConstructor
@@ -91,8 +92,8 @@ public class PurchaseOrderController {
     }
 
     /**
-     * 采购单列表导出（只读）：复用 {@code scm:purchase:query}，一次取「第 1 页 + 上限行」的 当前筛选结果，按前端勾选列和 {@link PurchaseOrderExportSupport}
-     * 的列目录生成动态表头 xlsx。 与列表页共用同一投影，导出内容 == 列表可见内容；<b>不触碰任何采购状态</b>。
+     * 采购单列表导出（只读）：复用 {@code scm:purchase:query}，一次取「第 1 页 + 上限行」的当前筛选结果，按前端勾选列和 {@link PurchaseOrderExportSupport}
+     * 的列目录生成动态表头 xlsx。与列表页共用同一投影，导出内容 == 列表可见内容；<b>不触碰任何采购状态</b>。
      */
     @PostMapping("/export")
     @SaCheckPermission(PurchasePermission.QUERY)
@@ -131,7 +132,7 @@ public class PurchaseOrderController {
      * 改派采购归属（{@code scm:purchase:assign}，与「新建时指定别人」同一项权利）。
      *
      * <p>
-     * 单独一个端点，而不是把改派混在 {@code /update} 里：归属同时是**数据范围依据**， 谁把它换成了谁必须是一个显式、单独可授权、可审计的动作。 不接幂等头，与 {@code /update} 同一取向 ——
+     * 单独一个端点，而不是把改派混在 {@code /update} 里：归属同时是<b>数据范围依据</b>，谁把它换成了谁必须是一个显式、单独可授权、可审计的动作。不接幂等头，与 {@code /update} 同一取向 ——
      * 重复提交由 {@code id + version} 乐观锁挡住。
      */
     @PostMapping("/reassign")
@@ -166,7 +167,7 @@ public class PurchaseOrderController {
     }
 
     /**
-     * 批量少收关单：整批共享原因，在同一事务内逐单套用与单单完全相同的合法性 / 版本校验， 任一单非法即整批回滚。复用 {@code scm:purchase:short-close} 权限；不接幂等头（批量本身原子）。
+     * 批量少收关单：整批共享原因，在同一事务内逐单套用与单单完全相同的合法性 / 版本校验，任一单非法即整批回滚。复用 {@code scm:purchase:short-close} 权限；不接幂等头（批量本身原子）。
      */
     @PostMapping("/batch/short-close")
     @SaCheckPermission(PurchasePermission.SHORT_CLOSE)

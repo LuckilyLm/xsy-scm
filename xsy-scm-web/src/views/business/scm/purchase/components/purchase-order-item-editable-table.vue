@@ -1,7 +1,7 @@
 <!--
  * 采购单明细（表单内可编辑表格）。
- * - 明细**只能随采购单整体提交**，没有独立的明细 CRUD 端点；
- * - 需求单位 ≠ 采购单位时**禁止**加入分配（不猜折算率）。
+ * - 明细<b>只能随采购单整体提交</b>，没有独立的明细 CRUD 端点；
+ * - 需求单位 ≠ 采购单位时<b>禁止</b>加入分配（不猜折算率）。
 -->
 <template>
   <a-table
@@ -56,7 +56,7 @@
       </template>
     </template>
 
-    <!-- 一行的分配是**集合**，用展开行承载「多需求分配」编辑 -->
+    <!-- 一行的分配是<b>集合</b>，用展开行承载「多需求分配」编辑 -->
     <template #expandedRowRender="slot">
       <div class="alloc-block">
         <a-table
@@ -104,7 +104,7 @@
 
   <a-button class="add-line" @click="items.push(newOrderItem())">添加采购行</a-button>
 
-  <!-- 需求选择：只列**同一 SKU**且仍有可分配余量的需求（跨 SKU → 40995） -->
+  <!-- 需求选择：只列<b>同一 SKU</b>且仍有可分配余量的需求（跨 SKU → 40995） -->
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
     <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon/>
     <a-spin :spinning="picker.loading">
@@ -194,7 +194,7 @@ function removeAllocation(item: OrderItem, index: number) {
  * 失焦时把输入框里的裸数显示成四位定点（`"2"` → `"2.0000"`）。
  *
  * `a-input-number` 只在 blur 之后才按 `precision` 归一（读的是组件内部 `inputValue`），
- * 而 `props.value` 的 watch 会因为「新值等于当前解析值」而**跳过**回写，
+ * 而 `props.value` 的 watch 会因为「新值等于当前解析值」而<b>跳过</b>回写，
  * 于是显示值会一直停在 `"2"`。这里直接写模型：不等值才赋值，避免多余渲染。
  */
 function normalizeNumber(target: object, key: 'plannedQuantity' | 'purchasePrice' | 'quantity') {
@@ -241,7 +241,7 @@ function pick(demand: Demand) {
     message.warning('该需求已经在这一行上，请直接修改它的分配数量');
     return;
   }
-  // 单位不一致时**拒绝**，不猜换算系数、不换单位字符串。
+  // 单位不一致时<b>拒绝</b>，不猜换算系数、不换单位字符串。
   if (unitMismatch(item, demand)) {
     picker.error = `需求单位 ${demand.demandUnit} 与采购单位 ${item.purchaseUnit} 不一致：不支持自动换算，请改用与需求单位一致的供应商采购配置`;
     return;

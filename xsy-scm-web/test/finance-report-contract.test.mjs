@@ -1,9 +1,9 @@
 /**
- * 报表中心的**契约**测试（源码扫描取向）。
+ * 报表中心的<b>契约</b>测试（源码扫描取向）。
  *
  * 这里守的是「只有跨文件同时成立才有意义」的不变量，靠肉眼验收发现不了：
  *
- * 1. 接口清单与后端 `/scm/report` 的固定契约逐条对齐，且**没有任何写端点**
+ * 1. 接口清单与后端 `/scm/report` 的固定契约逐条对齐，且<b>没有任何写端点</b>
  *    （报表是只读的，一个多余的 create 就是第二个写入口）；
  * 2. 导出必须走 `postDownload`（文件名来自 `Content-Disposition`，前端不硬编码、不拼 Blob），
  *    并且导出请求体不带分页——带分页会让人以为导的是当前页；
@@ -354,7 +354,7 @@ test('流水方向复用库存域的入方向集合，不另建 IN / OUT 清单'
   assert.match(PAGES.inventory, /SCM_INVENTORY_MOVEMENT_INBOUND_TYPES/);
   assert.match(PAGES.inventory, /movementDirection\(/);
   // 页面里再出现一份流水类型字符串数组就是第二份真相
-  // 只有把枚举名当**数组元素**写死才算第二份清单；提示文案里提到 PURCHASE_IN 不是
+  // 只有把枚举名当<b>数组元素</b>写死才算第二份清单；提示文案里提到 PURCHASE_IN 不是
   assert.ok(!/=\s*\[\s*['"]PURCHASE_IN['"]/.test(ALL_PAGES), '页面不得内联流水类型清单');
   assert.ok(raw('../src/constants/business/scm/inventory-const.ts').includes('SCM_INVENTORY_MOVEMENT_INBOUND_TYPES'));
 });

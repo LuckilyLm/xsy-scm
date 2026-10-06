@@ -17,11 +17,11 @@ import java.util.List;
  *
  * <p>
  * <b>唯一的写入口</b>是 {@link #insertOnConflictDoNothing}（并发首建余额）+ {@link #incrementQuantity}（持锁后自增），两者都在
- * {@code InventoryCommandService} 里 **先持行锁再调用**。本接口没有任何「设置绝对数量」的方法 —— 余额不是可以被随意赋值的状态， 它只能是流水的净和。
+ * {@code InventoryCommandService} 里 <b>先持行锁再调用</b>。本接口没有任何「设置绝对数量」的方法 —— 余额不是可以被随意赋值的状态，它只能是流水的净和。
  *
  * <p>
- * <b>冲突目标</b>：{@link #insertOnConflictDoNothing} 的冲突目标与部分唯一索引 {@code uk_inventory_balance_wh_sku_active} **完全匹配**（含
- * {@code WHERE deleted = FALSE} 谓词）。 业务代码不制造任何 PG 版本分支；该 SQL 由 PG IT 在真实 PostgreSQL 上执行验证。
+ * <b>冲突目标</b>：{@link #insertOnConflictDoNothing} 的冲突目标与部分唯一索引 {@code uk_inventory_balance_wh_sku_active} <b>完全匹配</b>（含
+ * {@code WHERE deleted = FALSE} 谓词）。业务代码不制造任何 PG 版本分支；该 SQL 由 PG IT 在真实 PostgreSQL 上执行验证。
  */
 @Mapper
 public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> {
@@ -30,8 +30,8 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 并发安全的「首建余额行」：冲突目标与部分唯一索引完全匹配。
      *
      * <p>
-     * 返回 1 = 本次插入了新行（本事务是赢家）；返回 0 = 行已存在（本事务是输家）。 两种情况都**不是错误**：调用方随后统一走 {@link #lockByWarehouseAndSku} 拿行锁，
-     * 赢家与输家最终都会拿到**同一行**。
+     * 返回 1 = 本次插入了新行（本事务是赢家）；返回 0 = 行已存在（本事务是输家）。两种情况都<b>不是错误</b>：调用方随后统一走 {@link #lockByWarehouseAndSku} 拿行锁，
+     * 赢家与输家最终都会拿到<b>同一行</b>。
      */
     int insertOnConflictDoNothing(@Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId,
             @Param("unit") String unit, @Param("operator") String operator);
@@ -40,7 +40,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 锁定余额行（{@code SELECT... FOR UPDATE}）。
      *
      * <p>
-     * 锁序纪律：余额锁永远是整个事务里**最后**获取的锁， 且多把余额锁之间必须按 {@code (warehouse_id, sku_id)} 字典序升序获取 （排序发生在调用方
+     * 锁序纪律：余额锁永远是整个事务里<b>最后</b>获取的锁，且多把余额锁之间必须按 {@code (warehouse_id, sku_id)} 字典序升序获取 （排序发生在调用方
      * {@code PurchaseReceiptService.confirm}，见）。
      */
     InventoryBalanceEntity lockByWarehouseAndSku(@Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId);
@@ -54,7 +54,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 持锁后的增量更新（{@code quantity = quantity + ?}）。
      *
      * <p>
-     * <b>为什么是增量而不是赋值</b>：赋值会把「读到的值 + 增量」变成两步写， 一旦有人漏了行锁就是丢失更新；增量在 DB 侧完成，配合行锁天然无窗口。 {@code version} 同步自增，作为纵深防御。
+     * <b>为什么是增量而不是赋值</b>：赋值会把「读到的值 + 增量」变成两步写，一旦有人漏了行锁就是丢失更新；增量在 DB 侧完成，配合行锁天然无窗口。 {@code version} 同步自增，作为纵深防御。
      *
      * @return 影响行数，必须为 1（否则说明行被删除或 id 不存在 → 调用方抛 40921）
      */
@@ -76,7 +76,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 持锁后的预留占用自增（{@code reserved_quantity = reserved_quantity + ?}）。
      *
      * <p>
-     * 只改预留计数，**不动 {@code quantity}** —— 预留不改变物理库存。 「占用不得超过现有量」由 {@code ck_inventory_balance_available} 在 DB 层兜底。
+     * 只改预留计数，<b>不动 {@code quantity}</b> —— 预留不改变物理库存。 「占用不得超过现有量」由 {@code ck_inventory_balance_available} 在 DB 层兜底。
      */
     int incrementReserved(@Param("id") Long id, @Param("quantity") BigDecimal quantity,
             @Param("operator") String operator);
@@ -88,17 +88,17 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
             @Param("operator") String operator);
 
     /**
-     * 持锁后的**数量增量 + 成本重算**，一条语句完成（移动加权）。
+     * 持锁后的<b>数量增量 + 成本重算</b>，一条语句完成（移动加权）。
      *
      * <p>
-     * 与 {@link #incrementQuantity} 同一纪律：只在**持有行锁之后**调用，且是 DB 侧赋值 而不是「读-改-写」—— 调用方在持锁状态下算出新均价，这里一次写入。
+     * 与 {@link #incrementQuantity} 同一纪律：只在<b>持有行锁之后</b>调用，且是 DB 侧赋值而不是「读-改-写」—— 调用方在持锁状态下算出新均价，这里一次写入。
      *
      * <p>
-     * <b>为什么合并成一条</b>：这是**一次**逻辑上的行变更，{@code version} 应当只自增一次。 拆成「先增量、再改均价」会让一张收货单把余额 version 顶高 2， 而 version
-     * 是纵深防御用的「这行动过没有」计数器，跳 2 会让这个信息失真。 两条语句之间也不存在任何需要被观察到的中间态。
+     * <b>为什么合并成一条</b>：这是<b>一次</b>逻辑上的行变更，{@code version} 应当只自增一次。拆成「先增量、再改均价」会让一张收货单把余额 version 顶高 2，而 version
+     * 是纵深防御用的「这行动过没有」计数器，跳 2 会让这个信息失真。两条语句之间也不存在任何需要被观察到的中间态。
      *
      * <p>
-     * <b>三条带成本事实的入方向腿调用它</b>：采购入库、调拨转入（成本回读发出腿流水）、 规格转换转入（成本由调用方按持锁快照换算）。报溢等「不带来新成本事实」的入库按现有均价 入账、均价不变，走出普通的
+     * <b>三条带成本事实的入方向腿调用它</b>：采购入库、调拨转入（成本回读发出腿流水）、规格转换转入（成本由调用方按持锁快照换算）。报溢等「不带来新成本事实」的入库按现有均价入账、均价不变，走出普通的
      * {@link #incrementQuantity}；出库更不改均价。
      *
      * @return 影响行数，必须为 1
@@ -124,7 +124,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 导出盘点 Excel 模板用：取某仓库全部活动余额行（联 SKU / 商品展示字段），按 {@code sku_id} 升序。
      *
      * <p>
-     * 模板是「这一仓库当前所有可盘点余额」的快照，因此不做分页、不接客户端排序； 排序固定 {@code sku_id} 与确认阶段的锁序一致，保证凭证来源集合稳定可复核。
+     * 模板是「这一仓库当前所有可盘点余额」的快照，因此不做分页、不接客户端排序；排序固定 {@code sku_id} 与确认阶段的锁序一致，保证凭证来源集合稳定可复核。
      */
     List<InventoryBalanceVO> listActiveByWarehouse(@Param("warehouseId") Long warehouseId);
 }

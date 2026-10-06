@@ -11,20 +11,13 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
  * 采购单状态机（6 状态）。
  *
  * <p>
- * 实现为**声明式策略**，不是散落的 if。转换表与 `ck_purchase_order_status` 白名单逐条对应。
- *
- * <pre>
- * DRAFT ──submit──→ SUBMITTED ──收货确认──→ PARTIALLY_RECEIVED ──收货确认──→ RECEIVED
- *   │                    │                          │
- *   │cancel              │cancel                    │short-close
- *   ▼                    ▼                          ▼
- * CANCELLED ←────────────┘                     SHORT_CLOSED
- * </pre>
+ * 实现为声明式转换表，不是散落的 if，与 {@code ck_purchase_order_status} 白名单逐条对应： {@code DRAFT} 提交转 {@code SUBMITTED}，收货确认依次转
+ * {@code PARTIALLY_RECEIVED} / {@code RECEIVED}； {@code DRAFT} 与 {@code SUBMITTED} 可取消为
+ * {@code CANCELLED}，{@code PARTIALLY_RECEIVED} 只能短关为 {@code SHORT_CLOSED}。
  *
  * <p>
- * <b>部分收货不可取消</b>：{@code PARTIALLY_RECEIVED} **不允许 cancel**；需要终止时用 {@link #shortClosable} 对应的 {@code shortClose}。
- * <p>
- * {@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED} 是**终态**。
+ * 部分收货不可取消，需要终止时走 {@link #shortClosable} 对应的 {@code shortClose}。 {@code RECEIVED} / {@code SHORT_CLOSED} /
+ * {@code CANCELLED} 是终态。
  */
 public final class PurchaseOrderStateMachine {
 
@@ -87,7 +80,7 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}。**不含** {@code PARTIALLY_RECEIVED}。
+     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}。<b>不含</b> {@code PARTIALLY_RECEIVED}。
      */
     public static boolean cancellable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus)
@@ -114,7 +107,7 @@ public final class PurchaseOrderStateMachine {
      * 收货确认后由「全部行是否收齐」推导出的采购单新状态。
      *
      * <p>
-     * 注意：**已收满的采购单不再回到 {@code PARTIALLY_RECEIVED}**；只要所有活动行 {@code received >= planned} 就是 {@code RECEIVED}，否则
+     * 注意：<b>已收满的采购单不再回到 {@code PARTIALLY_RECEIVED}</b>；只要所有活动行 {@code received >= planned} 就是 {@code RECEIVED}，否则
      * {@code PARTIALLY_RECEIVED}。
      */
     public static String afterReceipt(boolean allLinesFulfilled) {

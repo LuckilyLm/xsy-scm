@@ -13,7 +13,7 @@
 
     <!--
       其余列由下划线→驼峰自动映射；JSONB 列需要显式 typeHandler。
-      `is_default` 必须显式映射：自动映射会把它折成 `isDefault`（实体属性名是 `defaultFlag`），
+      is_default 必须显式映射：自动映射会把它折成 isDefault（实体属性名是 defaultFlag），
       列名与属性名不同源，不写这一行读路径会静默返回 null。
     -->
     <resultMap id="supplierSkuMap" type="com.xsy.scm.supplier.domain.entity.SupplierSkuEntity">

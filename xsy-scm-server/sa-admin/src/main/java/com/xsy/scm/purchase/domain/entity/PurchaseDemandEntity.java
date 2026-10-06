@@ -22,14 +22,14 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
  * 采购需求。
  *
  * <p>
- * 来源：{@code sales_order_item}（只读）。`sales_order_item_id` 上有部分唯一索引， 一条订单行最多生成一条活动需求。
+ * 来源：{@code sales_order_item}（只读）。{@code sales_order_item_id} 上有部分唯一索引，一条订单行最多生成一条活动需求。
  *
  * <p>
- * 需求日期：`demandDate` = `sourceConfirmedAt` 在 {@code Asia/Shanghai} 下的日期， 由 DB CHECK `ck_purchase_demand_date`
- * 强制，**不是**汇总窗口的第一天。
+ * 需求日期：{@code demandDate} = {@code sourceConfirmedAt} 在 {@code Asia/Shanghai} 下的日期，由 DB CHECK
+ * {@code ck_purchase_demand_date} 强制，<b>不是</b>汇总窗口的第一天。
  *
  * <p>
- * 需求单位：`demandUnitSnapshot` 是**需求单位**（来源 `sales_order_item.sale_unit_snapshot`）， 永不被采购单位覆盖。
+ * 需求单位：{@code demandUnitSnapshot} 是<b>需求单位</b>（来源 {@code sales_order_item.sale_unit_snapshot}），永不被采购单位覆盖。
  */
 @Data
 @TableName(value = "purchase_demand", autoResultMap = true)

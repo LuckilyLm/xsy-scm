@@ -1,15 +1,15 @@
 /**
  * 库存域纯函数。
  *
- * - `singleWarehouseDefault`：恰好只有一个启用仓库时默认带出它，否则**不自动选任何一个**
+ * - `singleWarehouseDefault`：恰好只有一个启用仓库时默认带出它，否则<b>不自动选任何一个</b>
  *   （多仓下随便选一个会让人误以为在看全部库存）；
- * - 三态展示：`null` / `undefined` → `—`，`"0.0000"` → `0.0000`。**「没有值」与「值是零」
- *   是两种不同事实**，合并显示会掩盖数据问题；
+ * - 三态展示：`null` / `undefined` → `—`，`"0.0000"` → `0.0000`。<b>「没有值」与「值是零」
+ *   是两种不同事实</b>，合并显示会掩盖数据问题；
  * - `resolveStocktakeCopyUnits`：余额查询上限 `@Max(100)`，按页找齐即停，
  *   找不到的 SKU 显性返回而不是静默丢行。
  *
- * 本文件不依赖 Vue、不发请求，可被 `node --test` 直接加载。**node 可加载的模块只能有
- * type-only 的相对导入**（值导入要写 `.ts` 后缀，而 `tsconfig` 未开
+ * 本文件不依赖 Vue、不发请求，可被 `node --test` 直接加载。<b>node 可加载的模块只能有
+ * type-only 的相对导入</b>（值导入要写 `.ts` 后缀，而 `tsconfig` 未开
  * `allowImportingTsExtensions`，会触发 TS5097），因此枚举文案由调用方传入。
  */
 import type {Id} from './inventory-types.ts';
@@ -20,9 +20,9 @@ export interface WarehouseLike {
 }
 
 /**
- * 系统**恰好只有 1 个**启用仓库时，返回它的 id 作为余额页的默认筛选；否则返回 `undefined`。
+ * 系统<b>恰好只有 1 个</b>启用仓库时，返回它的 id 作为余额页的默认筛选；否则返回 `undefined`。
  *
- * <p>为什么 `!= 1` 时**不**选任何一个：多仓场景下自动选中某一个仓，用户看到的余额只是
+ * <p>为什么 `!= 1` 时<b>不</b>选任何一个：多仓场景下自动选中某一个仓，用户看到的余额只是
  * 那一个仓的，但他会以为自己在看全部 —— 这种误解比多一次点击昂贵得多。
  * 0 个仓库时同样不选（没什么可选，且 0 个仓库本身就是异常状态，页面应当以空态呈现）。
  *
@@ -40,7 +40,7 @@ export function singleWarehouseDefault(
 /**
  * 三态数量 / 金额的展示文本。
  *
- * `null` / `undefined` / 空串 → `—`；其余**原样返回**（后端已保证是 4 位定点字符串，
+ * `null` / `undefined` / 空串 → `—`；其余<b>原样返回</b>（后端已保证是 4 位定点字符串，
  * 前端不做二次格式化，否则会与后端口径分叉）。
  */
 export function quantityText(value: string | null | undefined): string {
@@ -53,7 +53,7 @@ export function quantityText(value: string | null | undefined): string {
 /**
  * 金额 / 均价的展示文本（V34）。
  *
- * **与 `quantityText` 一样是「null 安全 + 原样透传」，刻意不做二次换算**：
+ * <b>与 `quantityText` 一样是「null 安全 + 原样透传」，刻意不做二次换算</b>：
  * 千分位、补零、四舍五入都已经在源头定好 —— 均价由后端按 4 位小数存，
  * 金额由 SQL `ROUND(..., 2)` 收敛到 2 位。前端再格式化一次就会出现
  * 「同一笔钱在列表和详情里位数不同」这类只能靠肉眼发现的问题。
@@ -85,7 +85,7 @@ export function specText(specValues: Record<string, unknown> | null | undefined)
  *
  * 编码不进主行 —— 它作为 `.scm-cell-stack__sub` 展示在名称下方，不再各占一列。
  *
- * **不要写成 `specText(specValues) || skuName`**：{@link specText} 无值时返回的是 `'—'`，
+ * <b>不要写成 `specText(specValues) || skuName`</b>：{@link specText} 无值时返回的是 `'—'`，
  * 那是 truthy，回落分支永远不会执行，结果是无规格的商品在列表里只显示一个破折号。
  */
 export function skuMainText(
@@ -104,7 +104,7 @@ export type EnumLabels = Record<string, { desc?: string } | undefined>;
 /**
  * 流水类型的中文描述。
  *
- * 枚举里没有该值时**回落到原值**（而不是 `—`）：一个未知的类型字符串本身就是有用的信息
+ * 枚举里没有该值时<b>回落到原值</b>（而不是 `—`）：一个未知的类型字符串本身就是有用的信息
  * （说明后端加了新类型而前端还没跟上），把它显示成「—」会把这个信号藏起来。
  *
  * @param labels 枚举文案表（调用方传 `SCM_INVENTORY_MOVEMENT_TYPE_ENUM`）

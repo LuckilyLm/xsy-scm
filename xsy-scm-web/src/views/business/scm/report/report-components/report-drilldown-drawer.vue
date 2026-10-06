@@ -55,7 +55,7 @@ import type {PurchaseProductRow} from '../report-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 /**
- * 采购下钻抽屉：点供应商 / 采购员的一行，右侧看**该实体**的商品维度明细。
+ * 采购下钻抽屉：点供应商 / 采购员的一行，右侧看<b>该实体</b>的商品维度明细。
  *
  * 刻意用右侧抽屉而不是新页面，也不在报表里再造一份详情页 ——
  * 报表的价值是「就地在两个粒度之间对照」，跳走就要重新选一次条件。

@@ -36,7 +36,7 @@ export type RouteStatus = 'DRAFT' | 'PLANNED' | 'DISPATCHED' | 'COMPLETED' | 'CA
 /**
  * 订单级履约状态（V63 `ck_delivery_order_fulfillment`）。
  *
- * 与 `assignmentStatus`（ACTIVE / RELEASED）**正交**：一个说「货到没到手」，
+ * 与 `assignmentStatus`（ACTIVE / RELEASED）<b>正交</b>：一个说「货到没到手」，
  * 一个说「这单还在不在线路上」。取消线路会写 RELEASED，那与拒收不是同一个事实，
  * 因此两者不能互相推导，页面上也不能拿其中一个替代另一个渲染。
  */
@@ -82,7 +82,7 @@ export interface DeliveryRoute extends RouteForm {
     totalAmount?: string | null;
     cancelReason?: string | null;
     /**
-     * 发车产生的出库单：整条线路零实发（每行都 OUT_OF_STOCK）时**没有**出库单，
+     * 发车产生的出库单：整条线路零实发（每行都 OUT_OF_STOCK）时<b>没有</b>出库单，
      * 两列同时为 null。这是合法成功，不是失败，UI 只能显示「—」不能显示 0。
      */
     outboundId?: Id | null;

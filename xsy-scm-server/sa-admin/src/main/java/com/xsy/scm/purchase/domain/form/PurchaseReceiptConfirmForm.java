@@ -18,11 +18,11 @@ import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
  * 确认采购收货。
  *
  * <p>
- * **必须提交本收货单的全部活动行**（`PURCHASE_RECEIPT_ITEM_INCOMPLETE(40998)`）， 不允许只提交子集 —— 修 /G11 的「确认了但仍有 0 数量行」歧义。
+ * <b>必须提交本收货单的全部活动行</b>（{@code PURCHASE_RECEIPT_ITEM_INCOMPLETE(40998)}），不允许只提交子集 —— 修 /G11 的「确认了但仍有 0 数量行」歧义。
  *
  * <p>
- * 标品：`actualWeight` / `weightSource` / `correctionReason` 必须全空； 非标品：`actualWeight` 必填且 &gt; 0，`weightSource` 必须 ==
- * `MANUAL`，有效数量取实重。
+ * 标品：{@code actualWeight} / {@code weightSource} / {@code correctionReason} 必须全空；非标品：{@code actualWeight} 必填且 &gt;
+ * 0，{@code weightSource} 必须 == {@code MANUAL}，有效数量取实重。
  */
 @Data
 public class PurchaseReceiptConfirmForm {
@@ -50,12 +50,12 @@ public class PurchaseReceiptConfirmForm {
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String receivedQuantity;
         /**
-         * 非标品必填且 &gt; 0；标品必须为空（不是 `0.0000`）。
+         * 非标品必填且 &gt; 0；标品必须为空（不是 {@code 0.0000}）。
          */
         @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
         private String actualWeight;
         /**
-         * 非标品必须为 `MANUAL`；标品必须为空。
+         * 非标品必须为 {@code MANUAL}；标品必须为空。
          */
         @Pattern(regexp = "MANUAL", message = "非标品称重来源当前只允许手工录入")
         private String weightSource;

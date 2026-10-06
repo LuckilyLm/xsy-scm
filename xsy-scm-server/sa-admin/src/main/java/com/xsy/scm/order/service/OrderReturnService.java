@@ -75,7 +75,7 @@ public class OrderReturnService {
     private final OrderOperationLogRecorder orderLogs;
     private final ScmDataScopeService dataScopeService;
     /**
-     * 红字应收生成器。依赖方向是 order → finance， finance 对订单与退货表只读、不反向 import 订单域，因此不构成环； 生成失败即整笔批准回滚（与库存/幂等写入同一事务纪律）。
+     * 红字应收生成器。依赖方向是 order → finance， finance 对订单与退货表只读、不反向 import 订单域，因此不构成环；生成失败即整笔批准回滚（与库存/幂等写入同一事务纪律）。
      */
     private final FinanceReceivableService financeReceivableService;
 
@@ -102,7 +102,7 @@ public class OrderReturnService {
     }
 
     /**
-     * 退货单详情读 + 显式范围。父订单读不到时同样按 30005 处理： 退货单本身没有归属列，「看不到订单却能看它的退货」就是绕过。
+     * 退货单详情读 + 显式范围。父订单读不到时同样按 30005 处理：退货单本身没有归属列，「看不到订单却能看它的退货」就是绕过。
      */
     public OrderReturnDetailVO detail(Long orderReturnId, ScmDataScopeContext dataScopeContext) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
@@ -113,7 +113,7 @@ public class OrderReturnService {
     }
 
     /**
-     * 未收窄的详情快照：审批/驳回/取消等写命令在同一事务里回读自己刚改过的单据， 归属判定只属于读接口，不给写流程加第二次门槛（写流程的门槛在订单锁与状态机上）。
+     * 未收窄的详情快照：审批/驳回/取消等写命令在同一事务里回读自己刚改过的单据，归属判定只属于读接口，不给写流程加第二次门槛（写流程的门槛在订单锁与状态机上）。
      */
     public OrderReturnDetailVO detailSnapshot(Long orderReturnId) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);

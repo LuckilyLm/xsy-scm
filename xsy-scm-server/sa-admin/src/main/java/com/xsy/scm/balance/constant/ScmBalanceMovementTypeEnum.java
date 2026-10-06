@@ -7,8 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 余额流水类型。持久化到 {@code customer_balance_movement.type}。
  *
  * <p>
- * 每个类型**自带允许的方向**（与库上的 {@code ck_customer_balance_movement_type_direction}
- * 逐字一致）：充值只能进、消费只能出、退款返还只能进、人工更正两个方向都可以。
+ * 每个类型<b>自带允许的方向</b>（与库上的 {@code ck_customer_balance_movement_type_direction} 逐字一致）：充值只能进、消费只能出、退款返还只能进、人工更正两个方向都可以。
  * 把「什么类型能往哪个方向走」写死在类型上，就不可能出现「充值扣钱」这种自相矛盾的流水。
  */
 @Getter
@@ -25,7 +24,7 @@ public enum ScmBalanceMovementTypeEnum {
     REFUND("退款返还", ScmBalanceDirectionEnum.CREDIT),
 
     /**
-     * 人工更正：管理员对账后修正。**两个方向都可以**，因此必须显式给方向与原因。
+     * 人工更正：管理员对账后修正。<b>两个方向都可以</b>，因此必须显式给方向与原因。
      */
     CORRECTION("人工更正", null);
 

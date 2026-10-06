@@ -10,10 +10,10 @@ import lombok.Data;
  *
  * <p>
  * 改派是独立的端点而不是普通编辑的一部分：{@code /scm/customer/update} 一律不触碰 {@code seller_id}（见
- * {@code CustomerService#update}），否则任何能编辑客户的人都可以 通过在表单里回传一个 {@code sellerId} 把客户挪出或挪进别人的可见范围，行级范围就不成立。
+ * {@code CustomerService#update}），否则任何能编辑客户的人都可以通过在表单里回传一个 {@code sellerId} 把客户挪出或挪进别人的可见范围，行级范围就不成立。
  *
  * <p>
- * {@code sellerId} 允许为空，语义是<b>收回为未分配</b>：未分配客户只有持分配权或全量范围的人 能读到，这正是裁决第 6 条定义的中间态，因此它必须是可显式落回的状态。
+ * {@code sellerId} 允许为空，语义是<b>收回为未分配</b>：未分配客户只有持分配权或全量范围的人能读到，这正是裁决第 6 条定义的中间态，因此它必须是可显式落回的状态。
  */
 @Data
 public class CustomerSellerReassignForm {

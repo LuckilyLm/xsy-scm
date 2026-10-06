@@ -13,16 +13,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 模板模型校验：受控模板的**唯一**准入点。
+ * 模板模型校验：受控模板的<b>唯一</b>准入点。
  *
  * <p>
- * 校验的取向是「失败关闭」：任何不在白名单里的 key、任何结构不明的东西一律拒收，不做
- * 「忽略未知字段」这种宽容处理 —— 宽容会让一份写错的模板静默变成另一张单据，
- * 而用户以为它生效了。
+ * 校验的取向是「失败关闭」：任何不在白名单里的 key、任何结构不明的东西一律拒收，不做 「忽略未知字段」这种宽容处理 —— 宽容会让一份写错的模板静默变成另一张单据， 而用户以为它生效了。
  *
  * <p>
- * 文本字段（标题、页脚备注）额外拒绝尖括号：渲染侧本来就会转义，但在这里直接拒绝能把
- * 「模板不是 HTML」这条边界写在接口契约里，而不是留给下一个人去猜。
+ * 文本字段（标题、页脚备注）额外拒绝尖括号：渲染侧本来就会转义，但在这里直接拒绝能把 「模板不是 HTML」这条边界写在接口契约里，而不是留给下一个人去猜。
  */
 public final class ScmPrintTemplateValidator {
 
@@ -34,7 +31,7 @@ public final class ScmPrintTemplateValidator {
     }
 
     /**
-     * 校验并返回**归一化后**的模型（去重、trim）。
+     * 校验并返回<b>归一化后</b>的模型（去重、trim）。
      *
      * @throws ScmBusinessException
      *             任一规则不满足；错误码区分「字段不被支持」与「模型不合法」两类
@@ -59,7 +56,8 @@ public final class ScmPrintTemplateValidator {
     }
 
     private enum FieldScope {
-        HEADER, COLUMN
+        HEADER,
+        COLUMN
     }
 
     private static String requirePlainText(String value, String label, int maxLength, boolean required) {

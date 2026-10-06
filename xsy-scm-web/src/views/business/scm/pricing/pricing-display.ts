@@ -2,7 +2,7 @@ import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {datetime} from '../common/scm-display';
 
 /**
- * 价格列表的生效状态是**前端推导**的：`AgreementPriceVO` / `CustomerTypePriceVO`
+ * 价格列表的生效状态是<b>前端推导</b>的：`AgreementPriceVO` / `CustomerTypePriceVO`
  * 只返回生效区间，不带状态字段。推导结果仅用于列表展示，取价仍以服务端解析为准。
  */
 export type PriceEffectiveness = 'PENDING' | 'EFFECTIVE' | 'EXPIRED';

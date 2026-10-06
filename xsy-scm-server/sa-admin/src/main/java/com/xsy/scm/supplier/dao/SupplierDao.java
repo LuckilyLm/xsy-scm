@@ -21,7 +21,7 @@ public interface SupplierDao extends BaseMapper<SupplierEntity> {
      * 加行锁读取活动供应商。
      *
      * <p>
-     * 这是 {@code supplier_sku} 写入路径的第一把锁：先锁 supplier 行，再按 id 锁关联行， 使供应商状态检查与关联写入串行，并保持稳定锁序。
+     * 这是 {@code supplier_sku} 写入路径的第一把锁：先锁 supplier 行，再按 id 锁关联行，使供应商状态检查与关联写入串行，并保持稳定锁序。
      */
     SupplierEntity selectActiveByIdForUpdate(@Param("supplierId") Long supplierId);
 

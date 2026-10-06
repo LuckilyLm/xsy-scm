@@ -12,16 +12,12 @@ import java.util.Map;
  * 库存流水行。
  *
  * <p>
- * <b>溯源字段</b>：
- * <ul>
- * <li>{@code sourceDocumentType + sourceDocumentItemId} —— 防重锚点（唯一索引列）；</li>
- * <li>{@code sourceDocumentId + receiptNo} —— 人类可读溯源（不设 {@code movement_no}， 来源单号由 {@code purchase_receipt.receipt_no}
- * 承担），前端据此跳收货单详情。</li>
- * </ul>
+ * 溯源字段分两组：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点（唯一索引列），{@code sourceDocumentId + receiptNo}
+ * 是人类可读溯源（流水表不设 {@code movement_no}，来源单号由 {@code purchase_receipt.receipt_no} 承担），前端据此跳收货单详情。
  *
  * <p>
- * <b>快照 vs 实时</b>：{@code unitSnapshot} / {@code unitCost} / {@code beforeQuantity} / {@code afterQuantity} /
- * {@code occurredAt} / {@code operator} 是**写入时冻结的事实**； SKU / 仓库的编码与名称是**实时联表**（流水表刻意不存展示快照，溯源靠 id）。
+ * {@code unitSnapshot} / {@code unitCost} / {@code beforeQuantity} / {@code afterQuantity} / {@code occurredAt} /
+ * {@code operator} 是写入时冻结的事实；SKU 与仓库的编码、名称是实时联表（流水表刻意不存展示快照，溯源靠 id）。
  */
 @Data
 public class InventoryMovementVO {

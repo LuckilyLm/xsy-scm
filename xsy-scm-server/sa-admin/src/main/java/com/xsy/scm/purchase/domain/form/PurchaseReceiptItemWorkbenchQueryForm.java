@@ -11,7 +11,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
  * 按商品收货工作台查询条件（只读）。
  *
  * <p>
- * 范围固定为「可收货」的采购单（{@code SUBMITTED} / {@code PARTIALLY_RECEIVED}）， 不额外开放状态入参 —— 已收货完成 / 短关 / 取消 / 草稿单都不该出现在收货工作台上。
+ * 范围固定为「可收货」的采购单（{@code SUBMITTED} / {@code PARTIALLY_RECEIVED}），不额外开放状态入参 —— 已收货完成 / 短关 / 取消 / 草稿单都不该出现在收货工作台上。
  * 其余均为可选过滤，仅缩小视图范围，不改变任何聚合口径。
  */
 @Data

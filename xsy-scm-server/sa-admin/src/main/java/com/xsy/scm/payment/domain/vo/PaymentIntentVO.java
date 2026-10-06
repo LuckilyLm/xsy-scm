@@ -25,7 +25,7 @@ public class PaymentIntentVO {
 
     private String sourceNoSnapshot;
 
-    /** 应付金额：**显式给出**，不从订单金额推断。 */
+    /** 应付金额：<b>显式给出</b>，不从订单金额推断。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal amount;
 

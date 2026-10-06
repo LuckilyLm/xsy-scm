@@ -1,12 +1,12 @@
 <!--
   收货与入库。
 
-  这是 XSY 与参考系统最需要「借结构、不抄语义」的一页：**收货确认与库存入账是两件事**。
+  这是 XSY 与参考系统最需要「借结构、不抄语义」的一页：<b>收货确认与库存入账是两件事</b>。
   `purchase_receipt.status = CONFIRMED` 只是商业确认；库存真正入账由 `putaway_status = COMPLETED`
   决定（`DIRECT` 同事务完成，`WAREHOUSE_CONFIRM` 要仓库再操作一次）。因此：
 
   - 收货明细的时间列叫「收货确认时间」（`confirmed_at`），入库明细的时间列叫「入库时间」
-    （`inventory_movement.occurred_at`），**两个 Tab 的日期筛选落在不同事实上**；
+    （`inventory_movement.occurred_at`），<b>两个 Tab 的日期筛选落在不同事实上</b>；
   - 收货明细必须显示「入库状态」，不能把已确认收货显示成已入库；
   - 待入库 Tab 只读：不提供任何「确认入库」写入口，入库动作留在采购收货页，
     报表页写库存会让同一笔入库有两个入口。

@@ -8,16 +8,16 @@
   1. 只读冻结事实（销售 settlement_* / 采购 purchase_price 与 line_amount /
      流水 unit_cost / 余额 avg_cost），绝不调用定价解析或成本重算 —— 否则今天的规则
      一变，昨天的报表数字就跟着变。
-  2. 时间条件只有 `>= startAt AND < endAt` 一种写法，区间由 ScmReportTimeRangeResolver 生成。
+  2. 时间条件只有 >= startAt AND < endAt 一种写法，区间由 ScmReportTimeRangeResolver 生成。
   3. 跨明细的聚合先各自成 CTE/派生表，再按业务主键合并，绝不「订单 × 行 × 退款」直接 JOIN 后求和。
   4. 数量一律与单位同组返回；无法同单位合并的（多单位收货、跨单位入库）用文本表达，不给无量纲合计。
   5. 金额/数量的精度交给 NUMERIC 与 ScmFixedScale4Serializer，本文件不做 2 位收敛。
-  6. `scope` 是调用者的仓库数据范围（`ScmValueScope`），由 Service 层显式下传，谓词一律落在
-     被聚合的事实表行上（`purchase_order` / `purchase_receipt` / `inventory_movement` /
-     `inventory_balance`），不落在维度表 JOIN 上、也不落在聚合之后 —— 报表里放错位置改的是
-     一个数字而不是一组行，事后看不出破绽。`scope == null` 恒假（失败关闭），`scope.all` 时
-     不拼任何谓词。销售侧事实（`sales_order` / `sales_order_item` / `order_refund`）
-     没有仓库列，因此相关语句按仓库不收窄 —— 见 `ScmSalesReportQueryForm` 的类注释。
+  6. scope 是调用者的仓库数据范围（ScmValueScope），由 Service 层显式下传，谓词一律落在
+     被聚合的事实表行上（purchase_order / purchase_receipt / inventory_movement /
+     inventory_balance），不落在维度表 JOIN 上、也不落在聚合之后 —— 报表里放错位置改的是
+     一个数字而不是一组行，事后看不出破绽。scope == null 恒假（失败关闭），scope.all 时
+     不拼任何谓词。销售侧事实（sales_order / sales_order_item / order_refund）
+     没有仓库列，因此相关语句按仓库不收窄 —— 见 ScmSalesReportQueryForm 的类注释。
 -->
 <mapper namespace="com.xsy.scm.report.dao.ReportDao">
 
@@ -67,7 +67,7 @@
     <!--
       采购分析的共用谓词，同时承载仓库数据范围：五个消费方（purchaseByProduct /
       purchaseBySupplier / purchaseByPurchaser / purchaseItemList / purchasePriceTrend）
-      都把 `o` 绑给 purchase_order、`oi` 绑给 purchase_order_item，新增消费方必须守住同一
+      都把 o 绑给 purchase_order、oi 绑给 purchase_order_item，新增消费方必须守住同一
       别名契约，否则这里会收窄错表。范围落在采购单事实行上，与调用方的 warehouseId 筛选同级。
     -->
     <sql id="purchaseFilters">
@@ -483,8 +483,8 @@
     <!--
       订单表头级「客户订单明细」的筛选。
 
-      与 `salesFilters` 的差别是刻意的：categoryId / keyword 是**行级**条件，这里用 EXISTS 只判定
-      「该订单是否命中」，命中后金额仍按整单汇总。若直接套 `salesFilters`，订单金额会变成
+      与 salesFilters 的差别是刻意的：categoryId / keyword 是行级条件，这里用 EXISTS 只判定
+      「该订单是否命中」，命中后金额仍按整单汇总。若直接套 salesFilters，订单金额会变成
       「只匹配那几行」的合计 —— 一单买 10 个菜、只筛蔬菜时金额凭空变小，而页面看不出来。
     -->
     <sql id="salesOrderLevelFilters">
@@ -1137,7 +1137,7 @@
                   ON m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
                       AND src_conversion.id = m.source_document_id
         <!--
-          促销赠品出库：头级 source_document_id 记的是**发车事实**（配送线路），
+          促销赠品出库：头级 source_document_id 记的是发车事实（配送线路），
           因此这里显示线路编号回答「这趟车送的赠品」。防重锚点在 item 级（赠品权益 id），
           与「哪个活动赠了什么」的追溯走 order_promotion_gift，不在本报表展开。
         -->

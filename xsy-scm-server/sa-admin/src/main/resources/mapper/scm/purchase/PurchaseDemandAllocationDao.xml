@@ -9,7 +9,7 @@
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- ：全部查询都是集合形态。没有「按 itemId 查单条」的方法（的错误形状）。 -->
+    <!-- 全部查询都是集合形态。没有「按 itemId 查单条」的方法。 -->
     <select id="listActiveByOrderId" resultMap="allocationRowMap">
         SELECT a.*
         FROM purchase_demand_allocation a

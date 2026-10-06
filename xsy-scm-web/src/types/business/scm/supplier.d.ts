@@ -2,7 +2,7 @@
  *  供应商域前端契约（与后端 `module/scm/supplier` 的 Form / VO 一一对应）。
  *
  * 约定（与 `customer.d.ts` 一致）：
- * - 金额字段是**4 位定点字符串**（`"0.0000"`），`null` 表示「未设置」。
+ * - 金额字段是<b>4 位定点字符串</b>（`"0.0000"`），`null` 表示「未设置」。
  * - 枚举一律用后端字符串码（`ENABLED` / `DISABLED`），不用数字。
  * - `version` 是乐观锁版本；`supplier_sku` 的行级版本也要回传（整表替换时按行比对）。
  */
@@ -40,7 +40,7 @@ export interface ScmSortItem {
 // 供应商
 // ---------------------------------------------------------------------------
 
-/** 新建 / 编辑请求体（对应 SupplierAddForm / SupplierUpdateForm，**不含 status**）。 */
+/** 新建 / 编辑请求体（对应 SupplierAddForm / SupplierUpdateForm，<b>不含 status</b>）。 */
 export interface SupplierForm extends Partial<AreaColumns>, ScmLocation {
     supplierId?: ScmId;
     version?: number;

@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * SCM 库存流水——**全只读**。
+ * SCM 库存流水——<b>全只读</b>。
  *
  * <p>
- * 流水是 append-only 账本：没有新增、没有编辑、没有删除端点。 未来冲销以「新增反向 movement」实现，同样不会出现「改历史流水」的 API。
+ * 流水是 append-only 账本：没有新增、没有编辑、没有删除端点。未来冲销以「新增反向 movement」实现，同样不会出现「改历史流水」的 API。
  *
  * <p>
  * 权限码 {@code scm:inventory:movement:query}（菜单 821）。

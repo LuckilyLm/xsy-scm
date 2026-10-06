@@ -45,7 +45,7 @@ public final class ScmDataScopeContext {
     }
 
     /**
-     * break-glass：{@code administratorFlag=true} 与既有底座语义一致，绕过数据范围。 正式业务角色的验收必须用 {@code administratorFlag=false}
+     * break-glass：{@code administratorFlag=true} 与既有底座语义一致，绕过数据范围。正式业务角色的验收必须用 {@code administratorFlag=false}
      * 的账号，超管通过不算证据。
      */
     static ScmDataScopeContext unrestricted(Long employeeId, boolean costVisible) {
@@ -54,7 +54,7 @@ public final class ScmDataScopeContext {
     }
 
     /**
-     * 取不到登录员工时的结果：所有维度都无授权。SCM 读接口不应在无身份上下文里被调用， 真出现了按「什么都看不到」处理，绝不回退成全量。
+     * 取不到登录员工时的结果：所有维度都无授权。SCM 读接口不应在无身份上下文里被调用，真出现了按「什么都看不到」处理，绝不回退成全量。
      */
     static ScmDataScopeContext denied() {
         return new ScmDataScopeContext(null, ScmValueScope.none(), ScmValueScope.none(), ScmValueScope.none(),
@@ -62,7 +62,7 @@ public final class ScmDataScopeContext {
     }
 
     /**
-     * 便捷入口：本上下文里「按仓库收窄」的维度（库存族、收货、出库、调拨）是否必然 0 行， 调用方据此短路成空分页，不必让数据库跑一次恒假谓词。
+     * 便捷入口：本上下文里「按仓库收窄」的维度（库存族、收货、出库、调拨）是否必然 0 行，调用方据此短路成空分页，不必让数据库跑一次恒假谓词。
      */
     public boolean warehouseNowhere() {
         return warehouseScope.isEmpty();

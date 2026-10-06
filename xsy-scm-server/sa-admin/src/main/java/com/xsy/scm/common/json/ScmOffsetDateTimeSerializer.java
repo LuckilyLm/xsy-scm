@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
  * SCM 时间字段的序列化器：{@code yyyy-MM-dd HH:mm:ss}（秒级，统一换算到 {@code Asia/Shanghai}）。
  *
  * <p>
- * null → JSON null（保留「无值」语义，前端显示 —）；带时区的输入按 +08:00 换算后输出， 避免同一份数据在不同时区客户端上显示成不同时刻。
+ * null → JSON null（保留「无值」语义，前端显示 —）；带时区的输入按 +08:00 换算后输出，避免同一份数据在不同时区客户端上显示成不同时刻。
  *
  * <p>
  * <b>必须显式注册</b>：SmartAdmin 的 {@code JsonConfig} 只给 {@code LocalDate} / {@code LocalDateTime} 注册了格式，未覆盖

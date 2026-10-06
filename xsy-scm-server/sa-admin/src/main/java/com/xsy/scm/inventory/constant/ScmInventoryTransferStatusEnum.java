@@ -6,23 +6,15 @@ import lombok.RequiredArgsConstructor;
 /**
  * 调拨单状态（两步式：发出 → 在途 → 收货）。
  *
- * <pre>
- * DRAFT ──ship──▶ SHIPPED（在途）──receive──▶ RECEIVED
- *   │
- *   └──cancel──▶ CANCELLED
- * </pre>
+ * <p>
+ * {@code DRAFT} 发出后经 {@code SHIPPED}（在途）到达 {@code RECEIVED}；草稿可取消为 {@code CANCELLED}。
  *
  * <p>
- * <b>为什么是两步而不是一步</b>：
- * <ol>
- * <li><b>语义正确</b>：货在卡车上时既不在源仓也不在目标仓。一步式会让「发出」那一刻 目标仓就凭空多出库存，而货还没到 —— 那正是仓库最不能接受的账实不符；</li>
- * <li><b>并发安全</b>：两步各自只锁**一个仓库**的余额行，因此既有的 「按 {@code (warehouse_id, sku_id)} 升序锁余额」纪律完全不用改。
- * 一步式要在同一事务里锁两个仓库的行，锁序规则就得升级为跨仓排序 —— 而那是四条既有写入路径都要跟着改的事。</li>
- * </ol>
+ * 之所以是两步而不是一步：货在卡车上时既不在源仓也不在目标仓，一步式会让「发出」那一刻目标仓就凭空多出库存； 且两步各自只锁一个仓库的余额行，既有的「按 {@code (warehouse_id, sku_id)}
+ * 升序锁余额」纪律完全不用改， 一步式则要把锁序规则升级为跨仓排序。
  *
  * <p>
- * <b>{@code SHIPPED} 不可取消</b>：货已经物理离开了源仓，账上只能靠一张反向调拨单冲回， 不能把状态改回草稿再删流水（那会被 {@code trg_inventory_movement_append_only}
- * 拒绝）。
+ * {@code SHIPPED} 不可取消：货已物理离开源仓，账上只能靠一张反向调拨单冲回， 改回草稿再删流水会被 {@code trg_inventory_movement_append_only} 拒绝。
  */
 @Getter
 @RequiredArgsConstructor
@@ -37,7 +29,7 @@ public enum ScmInventoryTransferStatusEnum {
      * 在途：源仓已扣减、目标仓未增加。
      *
      * <p>
-     * 此期间这批货**不在任何余额行里**（`inventory_balance` 只表达「在仓库里的货」， 没有虚拟在途仓），因此全仓总库存会暂时减少。这是两步式的必然结果，不是缺陷。
+     * 此期间这批货不在任何余额行里（{@code inventory_balance} 只表达「在仓库里的货」，没有虚拟在途仓）， 因此全仓总库存会暂时减少。这是两步式的必然结果，不是缺陷。
      */
     SHIPPED("在途"),
 
@@ -89,7 +81,7 @@ public enum ScmInventoryTransferStatusEnum {
     }
 
     /**
-     * 是否为**在途**（源仓已扣、目标仓未加）—— 仓库停用守卫据此阻塞。
+     * 是否为在途（源仓已扣、目标仓未加）—— 仓库停用守卫据此阻塞。
      */
     public boolean isInTransit() {
         return this == SHIPPED;

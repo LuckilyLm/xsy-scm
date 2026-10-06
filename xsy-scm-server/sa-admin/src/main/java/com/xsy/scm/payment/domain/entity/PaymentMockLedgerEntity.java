@@ -9,15 +9,13 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 本地模拟渠道**自己的账**（仅 MOCK 渠道使用）。
+ * 本地模拟渠道<b>自己的账</b>（仅 MOCK 渠道使用）。
  *
  * <p>
- * 存在的理由是让对账能真的对出差异：如果模拟渠道的账就是本地交易表的投影，
- * 它永远平账，差异路径不可测。
+ * 存在的理由是让对账能真的对出差异：如果模拟渠道的账就是本地交易表的投影， 它永远平账，差异路径不可测。
  *
  * <p>
- * 这张表刻意没有 {@code deleted} / {@code version} / {@code updated_*}：
- * 渠道的账本只有追加，结构上就没有改一行的入口。
+ * 这张表刻意没有 {@code deleted} / {@code version} / {@code updated_*}： 渠道的账本只有追加，结构上就没有改一行的入口。
  */
 @Data
 @TableName("payment_mock_ledger")

@@ -163,7 +163,7 @@ public class ProductSpuService {
     }
 
     /**
-     * 只复核新增或改过单位的 SKU：单位字典晚于既有商品建立， 未改动的历史值即便不在字典里也必须允许原样保存，否则每次编辑都会被拦住。
+     * 只复核新增或改过单位的 SKU：单位字典晚于既有商品建立，未改动的历史值即便不在字典里也必须允许原样保存，否则每次编辑都会被拦住。
      */
     private Collection<String> changedUnits(List<ProductSkuEntity> existing, ProductSkuChangeSet changes) {
         Map<Long, String> before = new HashMap<>();

@@ -26,7 +26,7 @@ public class ProductImageForm {
     @Min(value = 0, message = "排序值不能小于0")
     private Integer sortOrder = 0;
     /**
-     * 图片内容角色：GALLERY 图集 / DETAIL 详情图，与是否主图无关。 新增行留空即按图集归类；已有行的取值一律以库内现值为准，本字段不参与改写。
+     * 图片内容角色：GALLERY 图集 / DETAIL 详情图，与是否主图无关。新增行留空即按图集归类；已有行的取值一律以库内现值为准，本字段不参与改写。
      */
     @ScmEnumValue(enumClass = ScmProductImageTypeEnum.class, message = "图片类型只能是 GALLERY 或 DETAIL")
     private String imageType;

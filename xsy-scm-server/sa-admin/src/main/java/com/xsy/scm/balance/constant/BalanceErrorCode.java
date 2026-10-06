@@ -16,7 +16,7 @@ public enum BalanceErrorCode implements ScmErrorCode {
 
     BALANCE_ACCOUNT_NOT_FOUND(41360, "客户余额账户不存在"),
 
-    /** 余额不足：**不允许负余额**，宁可失败也不透支。 */
+    /** 余额不足：<b>不允许负余额</b>，宁可失败也不透支。 */
     BALANCE_INSUFFICIENT(41361, "客户余额不足"),
 
     BALANCE_MOVEMENT_NOT_FOUND(41362, "余额流水不存在"),

@@ -91,7 +91,7 @@ public class DeliveryDriverService {
     }
 
     /**
-     * 启用即要求绑定：未绑定的司机档案无法把登录人映射回 {@code delivery_route.driver_id}， 数据范围收不出来，因此「正式司机」必须有员工归属（历史行可以留空，但要重新启用就得补）。
+     * 启用即要求绑定：未绑定的司机档案无法把登录人映射回 {@code delivery_route.driver_id}，数据范围收不出来，因此「正式司机」必须有员工归属（历史行可以留空，但要重新启用就得补）。
      */
     private void requireBindableEmployee(Long employeeId, String status) {
         if (employeeId == null) {

@@ -34,13 +34,13 @@ export interface RankRow {
 }
 
 /**
- * 自定义排行条（**不是** ECharts bar）。
+ * 自定义排行条（<b>不是</b> ECharts bar）。
  *
  * <p>设计稿明确要求排行不要用普通 ECharts bar：ECharts 的类目轴会把名称和数值
  * 分列两侧、条形贴轴，做不出「序号 + 名称 + 金额 一行，条形另起一行」的紧凑排布，
  * 而且 10 条柱状图在 420px 宽的面板里标签必然截断。
  *
- * <p>Top3 给金银铜的序号底色，但**只染序号**，不整行染色 —— 设计稿要求「别太花」。
+ * <p>Top3 给金银铜的序号底色，但<b>只染序号</b>，不整行染色 —— 设计稿要求「别太花」。
  */
 const props = withDefaults(
     defineProps<{
@@ -55,7 +55,7 @@ const props = withDefaults(
 
 const visible = computed(() => props.items.slice(0, props.limit));
 
-/** 条形长度以**本列表最大值**为 100%（相对长度，不是绝对量级）。 */
+/** 条形长度以<b>本列表最大值</b>为 100%（相对长度，不是绝对量级）。 */
 function barWidth(value: string | number): string {
   const max = props.items.reduce((acc, cur) => Math.max(acc, toNumber(cur.value)), 0);
   if (max <= 0) {

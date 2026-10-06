@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
- * 编辑采购收货单（仅 DRAFT）： 只允许改备注。
+ * 编辑采购收货单（仅 DRAFT）：只允许改备注。
  */
 @Data
 public class PurchaseReceiptUpdateForm {

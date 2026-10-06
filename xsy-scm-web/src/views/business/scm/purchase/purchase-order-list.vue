@@ -531,7 +531,7 @@ function batchShortClose() {
   });
 }
 
-/** 导出走**当前筛选**（后端强制第 1 页 + 上限行，分页参数会被覆盖），只回传勾选列 key。 */
+/** 导出走<b>当前筛选</b>（后端强制第 1 页 + 上限行，分页参数会被覆盖），只回传勾选列 key。 */
 function onExport() {
   purchaseOrderApi.export({...queryForm, exportColumns: exportColumns.value});
 }

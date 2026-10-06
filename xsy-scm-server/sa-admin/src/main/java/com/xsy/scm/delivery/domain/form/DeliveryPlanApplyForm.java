@@ -8,8 +8,7 @@ import lombok.Data;
  * 应用排线建议：显式确认，按线路乐观锁。
  *
  * <p>
- * {@code version} 是**线路**的版本而不是建议的：应用会写回停靠顺序，属于对线路的一次变更，
- * 必须与界面上看到的线路状态同一版本。
+ * {@code version} 是<b>线路</b>的版本而不是建议的：应用会写回停靠顺序，属于对线路的一次变更， 必须与界面上看到的线路状态同一版本。
  */
 @Data
 public class DeliveryPlanApplyForm {

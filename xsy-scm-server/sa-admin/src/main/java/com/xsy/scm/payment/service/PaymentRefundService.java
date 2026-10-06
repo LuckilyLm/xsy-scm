@@ -35,31 +35,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 退款服务：支付域**自己的**退款事实。
+ * 退款服务：支付域自己的退款事实，从 {@code CREATED} 经渠道退款推进到 {@code PROCESSING → SUCCEEDED | FAILED}。
  *
  * <p>
- * 链路：
- *
- * <pre>
- * 业务退款申请 / 售后退款单
- *        ↓
- * PaymentRefund（CREATED）
- *        ↓
- * ScmPaymentProvider.refund(...)
- *        ↓
- * PaymentRefund（PROCESSING）── 渠道回调 / 查单 ──▶ SUCCEEDED | FAILED
- * </pre>
+ * 三条硬约束：①资金来源必须是成功的 {@code PaymentTransaction} —— 没收到钱就退钱是账外行为； ②累计成功退款不超过原支付成功金额；③同一业务退款来源只能映射一笔有效退款（表上有唯一索引兜底）。
  *
  * <p>
- * <b>渠道退款成功按实退登记 Finance 付款事实</b>，不冲减或反向应收及历史核销。
- *
- * <p>
- * 三条硬约束：
- * <ol>
- * <li><b>资金来源必须是 {@code PaymentTransaction}</b>，且该交易必须是成功的 —— 没收到钱就退钱是账外行为；</li>
- * <li><b>累计成功退款不得超过原支付成功金额</b>；</li>
- * <li><b>同一业务退款来源只能映射一笔有效退款</b>（表上有唯一索引兜底）。</li>
- * </ol>
+ * 渠道退款成功按实退登记 Finance 付款事实，不冲减或反向应收及历史核销。
  */
 @Slf4j
 @Service
@@ -80,7 +62,7 @@ public class PaymentRefundService {
     private final PaymentSourceDao paymentSourceDao;
 
     /**
-     * 财务域的系统退款付款入口。依赖方向是 payment → finance；finance 不反向依赖支付域， 因此不构成环（与 payment → finance 收款是同一套做法）。
+     * 财务域的系统退款付款入口。依赖方向是 payment → finance；finance 不反向依赖支付域，因此不构成环（与 payment → finance 收款是同一套做法）。
      */
     private final FinancePaymentService financePaymentService;
     private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
@@ -96,7 +78,7 @@ public class PaymentRefundService {
      * 发起退款。
      *
      * <p>
-     * <b>重复请求靠业务幂等键回放首次结果</b>，不是「发现已有就随便返回一个」： 前者回答「这次请求的结果是什么」，后者会在两次请求参数不同时给出一个看似成功的错误答案。
+     * <b>重复请求靠业务幂等键回放首次结果</b>，不是「发现已有就随便返回一个」：前者回答「这次请求的结果是什么」，后者会在两次请求参数不同时给出一个看似成功的错误答案。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentRefundEntity create(PaymentRefundCreateForm form, String idempotencyKey) {
@@ -135,10 +117,10 @@ public class PaymentRefundService {
 
         BigDecimal amount = form.getAmount().setScale(SCALE, RoundingMode.HALF_UP);
 
-        // **业务来源校验必须早于 provider.refund()**：这里任何一条不成立，渠道的钱都还没动。
+        // <b>业务来源校验必须早于 provider.refund()</b>：这里任何一条不成立，渠道的钱都还没动。
         // 留到 3-11b 由 Finance 侧拒绝就晚了 —— 那时渠道已经把钱退出去了，数据库拒绝没有意义。
         //
-        // 当前阶段唯一受支持的正式退款来源就是售后退款，因此**强制要求**来源，不接受无来源退款：
+        // 当前阶段唯一受支持的正式退款来源就是售后退款，因此<b>强制要求</b>来源，不接受无来源退款：
         // 无来源的渠道退款会在 Finance 侧落不下付款事实（付款必须挂业务退款单），
         // 而钱那时已经退出去了。将来若需要「渠道技术退款 / 人工补退」，另开内部命令，
         // 不要借这个正式入口绕开业务退款事实。
@@ -185,7 +167,7 @@ public class PaymentRefundService {
      * 把渠道的退款结果落到状态机上。
      *
      * <p>
-     * 发起时与回调时**复用同一段**判定：两处各写一份，迟早会出现「回调说成功、本地还停在处理中」。 受影响行数 != 1 说明这笔退款已被处理过（重复回调），直接返回，由幂等层回答「已处理」。
+     * 发起时与回调时<b>复用同一段</b>判定：两处各写一份，迟早会出现「回调说成功、本地还停在处理中」。受影响行数 != 1 说明这笔退款已被处理过（重复回调），直接返回，由幂等层回答「已处理」。
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long refundId, ScmPaymentProvider.Outcome outcome, String providerRefundNo,
@@ -199,7 +181,7 @@ public class PaymentRefundService {
                 }
                 paymentRefundDao.markSucceeded(refundId, providerRefundNo,
                         providerAmount.setScale(SCALE, RoundingMode.HALF_UP), operator);
-                // **无论是否首次都确保 Finance 付款事实存在**：这样「渠道已退、本地在上次落账前失败」
+                // <b>无论是否首次都确保 Finance 付款事实存在</b>：这样「渠道已退、本地在上次落账前失败」
                 // 可以靠下一次回调恢复 —— 与收款的 registerFinanceReceipt 同一条纪律。
                 registerFinancePayment(refundId, operator);
             }
@@ -215,12 +197,12 @@ public class PaymentRefundService {
      * 业务退款来源（{@code ORDER_REFUND}）的前置校验。
      *
      * <p>
-     * 顺序即纪律，且**必须在 {@code provider.refund()} 之前**完成：
+     * 顺序即纪律，且<b>必须在 {@code provider.refund()} 之前</b>完成：
      * <ol>
      * <li>锁 {@code order_refund} —— 线上退款与人工退款付款（财务域 {@code CUSTOMER + ORDER_REFUND}） 必须互斥，两边锁同一行才能关掉「先查后写」的窗口；</li>
      * <li>退款单必须存在且 {@code COMPLETED}；</li>
      * <li>退款对象必须与原支付客户一致（否则会把 A 的付款退给 B）；</li>
-     * <li>提交金额必须与应退额**逐值一致**（差一分钱，两条路径就各退一部分）；</li>
+     * <li>提交金额必须与应退额<b>逐值一致</b>（差一分钱，两条路径就各退一部分）；</li>
      * <li>不存在人工登记的退款付款；</li>
      * <li>不存在已有的线上退款。</li>
      * </ol>
@@ -238,7 +220,7 @@ public class PaymentRefundService {
         if (intent == null || !refund.customerId().equals(intent.getCustomerId())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
-        // **范围边界**：只有订单支付的交易能走订单退款链。
+        // <b>范围边界</b>：只有订单支付的交易能走订单退款链。
         // 充值支付（BALANCE_RECHARGE）若从这里退走渠道的钱，钱包里的 RECHARGE 并不会被撤销 ——
         // 结果是「公司退了 100、钱包还剩 100」，等于白送一笔余额。
         // 充值退款要单独设计（先查未消费余额 → DEBIT 钱包 → 再退渠道），不借这条链。
@@ -270,7 +252,7 @@ public class PaymentRefundService {
      *
      * <p>
      * <b>金额不一致时只保留渠道成功事实，不生成 Finance 付款、也不回滚。</b> 渠道实际退了 98 而业务应退 100 是可能发生的；若因此把整笔已验签的退款成功回滚，
-     * 每次重复回调都会因为同一个永久差异失败，本地永远停在「退款处理中」， 反而丢掉「渠道确实已经退钱」这个最重要的事实。这类记录天然可查
+     * 每次重复回调都会因为同一个永久差异失败，本地永远停在「退款处理中」，反而丢掉「渠道确实已经退钱」这个最重要的事实。这类记录天然可查
      * （{@code SUCCEEDED AND provider_amount <> amount}），留给后续退款对账处理。
      */
     private void registerFinancePayment(Long refundId, String operator) {
@@ -305,11 +287,11 @@ public class PaymentRefundService {
     }
 
     /**
-     * 可退本金 = **渠道实际成功捕获/结算的金额** − 已成功退款合计。
+     * 可退本金 = <b>渠道实际成功捕获/结算的金额</b> − 已成功退款合计。
      *
      * <p>
-     * 刻意**不** fallback 到本地应付金额：本地应付 100、渠道实收 98 时，按 100 退必然被渠道拒； 而更糟的是「本地根本没记下渠道实收」时静默按 100 退 —— 那会掩盖支付结果落库不完整，
-     * 等接真实渠道时才以「退款被渠道拒」的形式暴露出来。缺可信金额就**拒绝退款**。
+     * 刻意<b>不</b> fallback 到本地应付金额：本地应付 100、渠道实收 98 时，按 100 退必然被渠道拒；而更糟的是「本地根本没记下渠道实收」时静默按 100 退 —— 那会掩盖支付结果落库不完整，
+     * 等接真实渠道时才以「退款被渠道拒」的形式暴露出来。缺可信金额就<b>拒绝退款</b>。
      */
     private BigDecimal refundableOf(PaymentTransactionEntity transaction) {
         if (transaction.getProviderAmount() == null) {

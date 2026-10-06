@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
  * 应付单头：一张已确认收货单一条正常应付。
  *
  * <p>
- * <b>红字应付是另一张 {@code entry_type = 'RED'} 的单</b>，与应收红字同形， 不是原单上的一列调整。它的来源是 {@code MANUAL} 且 {@code sourceId} 为
+ * <b>红字应付是另一张 {@code entry_type = 'RED'} 的单</b>，与应收红字同形，不是原单上的一列调整。它的来源是 {@code MANUAL} 且 {@code sourceId} 为
  * {@code null} —— 手工事实没有外部业务行，因此落在 {@code uk_finance_payable_source_active} 的 {@code source_id IS NOT NULL}
  * 谓词之外，防重由「可冲上限 + 请求级幂等键」承担。
  *
@@ -35,7 +35,7 @@ public class FinancePayableEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * 正常 = {@code purchase_receipt.id}；手工红字**必须为 {@code null}**。
+     * 正常 = {@code purchase_receipt.id}；手工红字<b>必须为 {@code null}</b>。
      */
     private Long sourceId;
 

@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 规格转换单状态（与报损报溢单**刻意同构**）。
+ * 规格转换单状态（与报损报溢单<b>刻意同构</b>）。
  *
  * <pre>
  * PENDING ──approve──▶ COMPLETED （写 CONVERT_OUT + CONVERT_IN 流水并调整两边余额）
@@ -13,10 +13,10 @@ import lombok.RequiredArgsConstructor;
  * </pre>
  *
  * <p>
- * <b>为什么需要审批</b>：转换会把**两个 SKU** 的余额同时改掉，影响面比单纯报损更大； 而且折算关系是人工声明的，没有审批就等于「录单人可以单方面决定一箱等于多少 kg」。
+ * <b>为什么需要审批</b>：转换会把<b>两个 SKU</b> 的余额同时改掉，影响面比单纯报损更大；而且折算关系是人工声明的，没有审批就等于「录单人可以单方面决定一箱等于多少 kg」。
  *
  * <p>
- * 两个终态都**不可回退**：流水 append-only，修正靠**反向转换单**。
+ * 两个终态都<b>不可回退</b>：流水 append-only，修正靠<b>反向转换单</b>。
  */
 @Getter
 @RequiredArgsConstructor

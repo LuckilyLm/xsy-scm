@@ -36,7 +36,7 @@ import type {WarehouseDistribution} from '../types';
  * 在固定宽度下永远可读，且能并排给出绝对数量。
  *
  * <p>注意数量是各 SKU 之和，而 SKU 单位不统一（kg / 箱 / 把 …），
- * 所以这里只用于**相对比较**，不当作可换算的重量口径。
+ * 所以这里只用于<b>相对比较</b>，不当作可换算的重量口径。
  */
 const props = defineProps<{ distribution: WarehouseDistribution[] }>();
 

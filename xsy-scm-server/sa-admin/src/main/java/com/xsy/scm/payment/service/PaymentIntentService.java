@@ -66,7 +66,7 @@ public class PaymentIntentService {
     private final ScmPaymentProviderRegistry providerRegistry;
 
     /**
-     * 财务域的系统收款入口。依赖方向是 payment → finance；finance 不反向依赖支付域， 因此不构成环，与 delivery → finance 是同一套做法。
+     * 财务域的系统收款入口。依赖方向是 payment → finance；finance 不反向依赖支付域，因此不构成环，与 delivery → finance 是同一套做法。
      */
     private final FinanceReceiptService financeReceiptService;
 
@@ -74,11 +74,11 @@ public class PaymentIntentService {
      * 充值落账入口（由余额域实现）。
      *
      * <p>
-     * 用 {@link ObjectProvider} 而不是直接注入：这是**真实的双向业务关系** —— 余额域要调本域 创建意图，本域要在支付成功后通知余额域落账。接口定义在本域（依赖倒置，编译期单向）， 但 Bean
+     * 用 {@link ObjectProvider} 而不是直接注入：这是<b>真实的双向业务关系</b> —— 余额域要调本域创建意图，本域要在支付成功后通知余额域落账。接口定义在本域（依赖倒置，编译期单向），但 Bean
      * 依赖仍是双向的，因此按需解析、不在构造期解环。
      *
      * <p>
-     * 用 {@code getObject()} 而不是 {@code getIfAvailable()}：拿不到实现是装配错误， 必须响亮失败 —— 静默跳过会让「钱进来了、钱包没加」这种最糟的情况无声发生。
+     * 用 {@code getObject()} 而不是 {@code getIfAvailable()}：拿不到实现是装配错误，必须响亮失败 —— 静默跳过会让「钱进来了、钱包没加」这种最糟的情况无声发生。
      */
     private final ObjectProvider<BalanceRechargeSink> balanceRechargeSinkProvider;
     private final ObjectProvider<BalanceConsumptionSink> balanceConsumptionSinkProvider;
@@ -92,7 +92,7 @@ public class PaymentIntentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey) {
-        // 幂等：**收钱也要幂等**。这里往下会真的调用 provider.createIntent()，
+        // 幂等：<b>收钱也要幂等</b>。这里往下会真的调用 provider.createIntent()，
         // 后台双击 / 网络重试 / 前端超时重试都会造出第二个意图与第二笔渠道交易。
         var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE, idempotencyKey, form);
         PaymentOrderFact order = requireOrder(form);
@@ -132,7 +132,7 @@ public class PaymentIntentService {
     }
 
     /**
-     * 余额充值：**内部契约**，只由余额域调用。
+     * 余额充值：<b>内部契约</b>，只由余额域调用。
      *
      * <p>
      * 刻意不放开公开的 {@code /scm/payment/intent/create}：客户端若能自己拼
@@ -174,7 +174,7 @@ public class PaymentIntentService {
         PaymentIntentEntity intent = new PaymentIntentEntity();
         intent.setIntentNo(paymentNumberGenerator.nextIntentNo());
         intent.setCustomerId(draft.customerId());
-        // 冻结**正式**客户名与业务单号：存 id 字符串不仅是显示问题 ——
+        // 冻结<b>正式</b>客户名与业务单号：存 id 字符串不仅是显示问题 ——
         // 支付成功后会顺着 customer_id 进 Finance 收款事实，来源身份必须从一开始就是对的
         intent.setCustomerNameSnapshot(draft.customerName());
         intent.setSourceType(draft.sourceType());
@@ -250,7 +250,7 @@ public class PaymentIntentService {
      * 把渠道的发起结果落到状态机上。
      *
      * <p>
-     * 抽成方法是为了让回调路径能复用同一段判定：发起时同步成功与之后回调成功， 落到本地必须是**同一条**状态转换，不能各写一份。
+     * 抽成方法是为了让回调路径能复用同一段判定：发起时同步成功与之后回调成功，落到本地必须是<b>同一条</b>状态转换，不能各写一份。
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long intentId, Long transactionId, ScmPaymentProvider.Outcome outcome, String failureCode,
@@ -283,7 +283,7 @@ public class PaymentIntentService {
                     transition(intentId, ScmPaymentIntentStatusEnum.PENDING, ScmPaymentIntentStatusEnum.SUCCEEDED,
                             operator);
                 }
-                // **无论是否首次都确保 Finance 收款事实存在**：
+                // <b>无论是否首次都确保 Finance 收款事实存在</b>：
                 // 「渠道已成功、本地事务当时失败」的场景靠下一次回调 / 对账重新驱动恢复，
                 // 而恢复的入口就是这一句。注册本身按来源键幂等，重复调用不会多记一笔收款。
                 registerFinanceReceipt(intentId, transactionId, operator);
@@ -305,7 +305,7 @@ public class PaymentIntentService {
      * 支付成功 → Finance 收款事实（ADM-12 3-11a）。
      *
      * <p>
-     * <b>同一事务</b>：Finance 写失败就整笔回滚，本地不会留下「已成功但没登记收款」的半截事实。 渠道事实不回滚 —— 那正是对账要发现、并靠下一次回调重新驱动的差异。
+     * <b>同一事务</b>：Finance 写失败就整笔回滚，本地不会留下「已成功但没登记收款」的半截事实。渠道事实不回滚 —— 那正是对账要发现、并靠下一次回调重新驱动的差异。
      *
      * <p>
      * <b>唯一来源键</b>：{@code source_type = PAYMENT_TRANSACTION} + {@code source_id = transactionId}。
@@ -328,7 +328,7 @@ public class PaymentIntentService {
                 intent.getCustomerId(), transaction.getProviderAmount(), transaction.getPaidAt(),
                 transaction.getProviderTransactionNo()));
 
-        // 充值来源还要把**钱包权益**同时记上：两条事实回答两个不同问题 ——
+        // 充值来源还要把<b>钱包权益</b>同时记上：两条事实回答两个不同问题 ——
         // Finance 收款说「公司实际进账了多少」，余额流水说「这笔钱形成了多少钱包权益」。
         // 不是重复记账：一个回答资金，一个回答权益。
         if (ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name().equals(intent.getSourceType())) {
@@ -360,13 +360,13 @@ public class PaymentIntentService {
      * 按订单 id 解析并校验正式订单事实。
      *
      * <p>
-     * 校验四件事：来源类型受支持、订单存在、**订单客户与提交的客户一致**、订单在当前调用者的 订单数据范围内。
+     * 校验四件事：来源类型受支持、订单存在、<b>订单客户与提交的客户一致</b>、订单在当前调用者的订单数据范围内。
      *
      * <p>
-     * 越权与「订单不存在」**共用同一个拒绝**（{@link ScmDataScopeException}，对外 30005）： 能分辨「存在但无权」就等于把订单主键探测变成了可用信号，与 Finance 收款的纪律一致。
+     * 越权与「订单不存在」<b>共用同一个拒绝</b>（{@link ScmDataScopeException}，对外 30005）：能分辨「存在但无权」就等于把订单主键探测变成了可用信号，与 Finance 收款的纪律一致。
      *
      * <p>
-     * 金额仍由调用方显式给出（允许部分支付、余额 + 在线支付拆分），但**来源身份不能由客户端自己拼**。
+     * 金额仍由调用方显式给出（允许部分支付、余额 + 在线支付拆分），但<b>来源身份不能由客户端自己拼</b>。
      */
     private PaymentOrderFact requireOrder(PaymentIntentCreateForm form) {
         if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(form.getSourceType())) {

@@ -25,7 +25,7 @@ public class PurchaseIdempotencyService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。 该 mapper 只负责结果回放；请求哈希由公共幂等服务保持统一规则。
+     * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。该 mapper 只负责结果回放；请求哈希由公共幂等服务保持统一规则。
      */
     static final ObjectMapper RESULT_JSON = JsonMapper.builder().addModule(new JavaTimeModule())
             // 覆盖 JavaTimeModule 的时间读取器，同时接受展示格式和 ISO-8601。

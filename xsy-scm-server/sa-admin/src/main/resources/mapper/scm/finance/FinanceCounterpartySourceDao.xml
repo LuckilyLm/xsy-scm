@@ -8,7 +8,7 @@
       不在服务层再走 CustomerService（那会带来第二套校验与写能力）。
       收款与退款付款的 CUSTOMER 侧共用这一条，范围口径不留两处实现。
 
-      结算主体的 id 与名称必须来自**同一行**：customer.settlement_customer_id 是 NOT NULL，
+      结算主体的 id 与名称必须来自同一行：customer.settlement_customer_id 是 NOT NULL，
       自己结算自己时这一行就是付款客户本身。历史写法用 COALESCE(sc.name, c.name) 给名称兜底，
       会在结算父客户被软删（客户域删除只拦协议价/SKU 可见性，不拦「被别人当结算主体」）时
       产出「结算 id 是父客户、名称是付款客户」的错配快照，而 finance_receipt 这两列都是

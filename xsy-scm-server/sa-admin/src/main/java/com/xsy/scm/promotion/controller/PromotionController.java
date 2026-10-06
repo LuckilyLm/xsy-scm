@@ -35,9 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 营销中心：活动、优惠券与优惠试算 / 冻结。
  *
  * <p>
- * 试算是只读的（{@code POST} 只是因为要传订单行数组），**不占用券、不写任何表**；
- * 只有 {@code confirm} 才占用券并冻结优惠。两者分开是 ADR-009 的明确要求：
- * 预览不等于最终占用。
+ * 试算是只读的（{@code POST} 只是因为要传订单行数组），<b>不占用券、不写任何表</b>； 只有 {@code confirm} 才占用券并冻结优惠。两者分开是 ADR-009 的明确要求： 预览不等于最终占用。
  */
 @RestController
 @RequestMapping("/scm/promotion")
@@ -93,8 +91,7 @@ public class PromotionController {
 
     @PostMapping("/coupon/query")
     @SaCheckPermission(PromotionPermission.COUPON_QUERY)
-    public ResponseDTO<PageResult<PromotionCouponVO>> queryCoupon(
-            @Valid @RequestBody PromotionCouponQueryForm form) {
+    public ResponseDTO<PageResult<PromotionCouponVO>> queryCoupon(@Valid @RequestBody PromotionCouponQueryForm form) {
         return ResponseDTO.ok(promotionCouponService.queryPage(form));
     }
 
@@ -117,8 +114,7 @@ public class PromotionController {
     @PostMapping("/coupon/{id}/status")
     @SaCheckPermission(PromotionPermission.COUPON_STATUS)
     @OperateLog
-    public ResponseDTO<String> couponStatus(@PathVariable("id") Long id,
-            @Valid @RequestBody PromotionStatusForm form) {
+    public ResponseDTO<String> couponStatus(@PathVariable("id") Long id, @Valid @RequestBody PromotionStatusForm form) {
         promotionCouponService.updateStatus(id, form);
         return ResponseDTO.ok();
     }
@@ -127,8 +123,7 @@ public class PromotionController {
      * 发券：给某客户发 N 张可用券。
      *
      * <p>
-     * 需要 {@code Idempotency-Key}（缺失 → 40069）：重试回放首次结果，不重复发券；
-     * 客户归属与数据范围在服务端重新判定。
+     * 需要 {@code Idempotency-Key}（缺失 → 40069）：重试回放首次结果，不重复发券； 客户归属与数据范围在服务端重新判定。
      */
     @PostMapping("/coupon/issue")
     @SaCheckPermission(PromotionPermission.COUPON_ISSUE)
@@ -143,8 +138,7 @@ public class PromotionController {
      */
     @GetMapping("/coupon/instances")
     @SaCheckPermission(PromotionPermission.COUPON_QUERY)
-    public ResponseDTO<List<PromotionCouponVO.Instance>> couponInstances(
-            @RequestParam("customerId") Long customerId,
+    public ResponseDTO<List<PromotionCouponVO.Instance>> couponInstances(@RequestParam("customerId") Long customerId,
             @RequestParam(value = "status", required = false) String status) {
         return ResponseDTO.ok(promotionCouponService.listInstances(customerId, status));
     }
@@ -157,8 +151,7 @@ public class PromotionController {
      * 试算：只读，不占用券。
      *
      * <p>
-     * 冻结（{@code confirm}）已并入订单确认：优惠由订单确认在服务端按订单事实冻结，
-     * 客户端不能再单独调冻结接口，否则会出现「订单确认了但优惠没冻结」的中间态。
+     * 冻结（{@code confirm}）已并入订单确认：优惠由订单确认在服务端按订单事实冻结， 客户端不能再单独调冻结接口，否则会出现「订单确认了但优惠没冻结」的中间态。
      */
     @PostMapping("/discount/preview")
     @SaCheckPermission(PromotionPermission.ACTIVITY_QUERY)

@@ -18,11 +18,11 @@ import net.lab1024.sa.base.common.util.SmartResponseUtil;
  * 报表的同步 Excel 导出写出。
  *
  * <p>
- * 用 FastExcel 的动态表头而不是给每张报表建一个 {@code @ExcelProperty} 模型： 报表列是「口径」的一部分，与查询 SQL 一一对应，做成两个平行结构后两边很容易长歪。 因此每个导出在同一处给出
- * titles 与 rows，列顺序不可能分叉。
+ * 用 FastExcel 的动态表头而不是给每张报表建一个 {@code @ExcelProperty} 模型：报表列是「口径」的一部分，与查询 SQL 一一对应，做成两个平行结构后两边很容易长歪。因此每个导出在同一处给出 titles
+ * 与 rows，列顺序不可能分叉。
  *
  * <p>
- * 单元格一律写字符串：金额/数量的精度由后端序列化前就定死， 交给 Excel 的数值格式会按 Excel 的显示规则收敛位数。
+ * 单元格一律写字符串：金额/数量的精度由后端序列化前就定死，交给 Excel 的数值格式会按 Excel 的显示规则收敛位数。
  */
 public final class ScmReportExcel {
 
@@ -71,11 +71,11 @@ public final class ScmReportExcel {
      * 单元格归一化。
      *
      * <p>
-     * 时间必须在服务端转成字符串：FastExcel 没有 {@code OffsetDateTime} 的 Converter， 直接塞进去会在写出的那一刻抛
-     * {@code ExcelWriteDataConvertException}（HTTP 500， 用户看到的是「点了导出没反应」）。字符串也顺带保证导出与接口显示同一套北京时间格式。
+     * 时间必须在服务端转成字符串：FastExcel 没有 {@code OffsetDateTime} 的 Converter，直接塞进去会在写出的那一刻抛
+     * {@code ExcelWriteDataConvertException}（HTTP 500，用户看到的是「点了导出没反应」）。字符串也顺带保证导出与接口显示同一套北京时间格式。
      *
      * <p>
-     * {@code BigDecimal} 走 {@code toPlainString()}：科学计数法形态与位数交给文本固定下来， 不让 Excel 按单元格默认格式重新收敛小数位，保留金额和数量的四位精度。
+     * {@code BigDecimal} 走 {@code toPlainString()}：科学计数法形态与位数交给文本固定下来，不让 Excel 按单元格默认格式重新收敛小数位，保留金额和数量的四位精度。
      */
     private static Object cell(Object value) {
         if (value == null) {

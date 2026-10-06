@@ -20,9 +20,9 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
  * 经营概览（只读）。趋势与每日统计共用同一条 SQL，因此图上那个点与表里那一行必然同口径。
  *
  * <p>
- * <b>仓库范围只收窄能按仓库归属的指标</b>：采购与库存四个派生表按调用者的仓库授权范围取数， 而销售与退款指标所在的 {@code sales_order} / {@code order_refund} 没有仓库列，
- * 既不能按仓库收窄，也不得拿 {@code created_by} 之类的审计字段顶替。 因此仓库范围为空时，采购与库存指标返回 {@code null}（页面显示 {@code —}）而不是 0 —— 0
- * 会把它谎报成「这些仓库里没有数据」，而真实原因是「你没有可看的仓库」。 两个方法抹的字段必须一致，否则指标卡与趋势图会对不上。
+ * <b>仓库范围只收窄能按仓库归属的指标</b>：采购与库存四个派生表按调用者的仓库授权范围取数，而销售与退款指标所在的 {@code sales_order} / {@code order_refund} 没有仓库列，
+ * 既不能按仓库收窄，也不得拿 {@code created_by} 之类的审计字段顶替。因此仓库范围为空时，采购与库存指标返回 {@code null}（页面显示 {@code —}）而不是 0 —— 0
+ * 会把它谎报成「这些仓库里没有数据」，而真实原因是「你没有可看的仓库」。两个方法抹的字段必须一致，否则指标卡与趋势图会对不上。
  */
 @Service
 @RequiredArgsConstructor
@@ -73,11 +73,11 @@ public class OverviewReportService {
     }
 
     /**
-     * 概览是「一条 SQL 里混着两类指标」的例外：销售与退款指标没有仓库维度，不能因为调用者 一个仓都没授权就消失，所以这里不能像列表那样整体短路掉。
+     * 概览是「一条 SQL 里混着两类指标」的例外：销售与退款指标没有仓库维度，不能因为调用者一个仓都没授权就消失，所以这里不能像列表那样整体短路掉。
      *
      * <p>
      * 但空授权清单也不能直接下传 —— {@code IN ()} 是非法 SQL。XML 把 {@code scope == null} 读成恒假（失败关闭），正好是「采购与库存这四个派生表一行都不取」的合法表达，
-     * 于是范围在此处保持「不知道」，再由 {@link #clearWarehouseMetrics} 把那些零抹成 null。 其余按仓库归属的查询都在 Service 层就短路了，不需要这个写法。
+     * 于是范围在此处保持「不知道」，再由 {@link #clearWarehouseMetrics} 把那些零抹成 null。其余按仓库归属的查询都在 Service 层就短路了，不需要这个写法。
      */
     private static ScmValueScope warehousePredicate(ScmDataScopeContext context) {
         return context.warehouseNowhere() ? null : context.getWarehouseScope();

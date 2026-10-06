@@ -14,11 +14,11 @@ import java.time.OffsetDateTime;
  * <b>没有来源列</b>：收款一律人工登记，与应收的关系只通过 {@code finance_write_off} 表达 （允许无应收的预收）。<b>没有状态列</b>：待核销余额读时派生。
  *
  * <p>
- * <b>纠错只能新增 {@code REVERSE} 行</b>：登错金额、登错客户、登错凭据号都不能改原行。 反向行的金额**同样恒为正**，方向由 {@code entryType} 表达；反向前该单的已用额必须为 0
+ * <b>纠错只能新增 {@code REVERSE} 行</b>：登错金额、登错客户、登错凭据号都不能改原行。反向行的金额<b>同样恒为正</b>，方向由 {@code entryType} 表达；反向前该单的已用额必须为 0
  * （即先反向其全部核销），否则会出现「已用 &gt; 有效额」的负待核销余额。
  *
  * <p>
- * {@code externalReference} 只是资金凭据文本，<b>不唯一、也不作幂等键</b>： 银行流水号跨客户重复是真实存在的，把它当唯一键会让第二笔合法收款登不进去。
+ * {@code externalReference} 只是资金凭据文本，<b>不唯一、也不作幂等键</b>：银行流水号跨客户重复是真实存在的，把它当唯一键会让第二笔合法收款登不进去。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -59,7 +59,7 @@ public class FinanceReceiptEntity extends FinanceRecord {
     private String entryType;
 
     /**
-     * 反向行必填，指向被冲的 {@code NORMAL} 收款；正常行必须为 {@code null}。 一条 {@code NORMAL} 最多一条
+     * 反向行必填，指向被冲的 {@code NORMAL} 收款；正常行必须为 {@code null}。一条 {@code NORMAL} 最多一条
      * {@code REVERSE}（{@code uk_finance_receipt_single_reverse}）。
      */
     private Long reverseOfId;
@@ -77,8 +77,8 @@ public class FinanceReceiptEntity extends FinanceRecord {
      * 系统来源类型；人工登记的收款为空。
      *
      * <p>
-     * 与 {@link #sourceId} 成对（库上有 CHECK），且只出现在 {@code NORMAL} 行上；
-     * 唯一索引 {@code uk_finance_receipt_source_active} 保证同一来源只有一条正常收款事实。
+     * 与 {@link #sourceId} 成对（库上有 CHECK），且只出现在 {@code NORMAL} 行上； 唯一索引 {@code uk_finance_receipt_source_active}
+     * 保证同一来源只有一条正常收款事实。
      */
     private String sourceType;
 

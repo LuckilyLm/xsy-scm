@@ -4,16 +4,16 @@ package com.xsy.scm.purchase.constant;
  * 采购域使用的 SmartAdmin Config（{@code t_config}）键。
  *
  * <p>
- * 使用 SmartAdmin 原生 Config 作为载体，不使用 Dict，也不新建 SCM 配置表。 本类只持有**字面量常量**（key / 默认值 / 范围），**不含任何读取逻辑**：读取由
+ * 使用 SmartAdmin 原生 Config 作为载体，不使用 Dict，也不新建 SCM 配置表。本类只持有<b>字面量常量</b>（key / 默认值 / 范围），<b>不含任何读取逻辑</b>：读取由
  * {@code PurchaseReceiptService} 注入的 {@code ConfigService} 完成，解析与范围校验放在
- * {@code PurchaseReceiptQuantityCalculator.tolerance(String raw)} 这个**纯函数**里。
+ * {@code PurchaseReceiptQuantityCalculator.tolerance(String raw)} 这个<b>纯函数</b>里。
  *
  * <p>
- * **不扩充 {@code ConfigKeyEnum}**：它属 SmartAdmin 底座（在零修改清单内），且它在 {@code @PostConstruct} 期被枚举遍历做校验，扩充它会改变底座行为，因此 SCM 侧自持
+ * <b>不扩充 {@code ConfigKeyEnum}</b>：它属 SmartAdmin 底座（在零修改清单内），且它在 {@code @PostConstruct} 期被枚举遍历做校验，扩充它会改变底座行为，因此 SCM 侧自持
  * key 常量。
  *
  * <p>
- * **默认值必须可回退**：配置缺失时若直接报错，会让「未配置环境」完全无法收货， 因此缺失时回退默认值 10。
+ * <b>默认值必须可回退</b>：配置缺失时若直接报错，会让「未配置环境」完全无法收货，因此缺失时回退默认值 10。
  */
 public final class PurchaseConfigKey {
 

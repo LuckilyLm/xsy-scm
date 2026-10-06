@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
  * </pre>
  *
  * <p>
- * 与采购/收货/出库/盘点/报损报溢/调拨同口径：序列来自 PG sequence， **全局单调递增、不按日 reset**；日期段只是可读性装饰，唯一性由序列保证。
+ * 与采购/收货/出库/盘点/报损报溢/调拨同口径：序列来自 PG sequence， <b>全局单调递增、不按日 reset</b>；日期段只是可读性装饰，唯一性由序列保证。
  */
 @Service
 @RequiredArgsConstructor

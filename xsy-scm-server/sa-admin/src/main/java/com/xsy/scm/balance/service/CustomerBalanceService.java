@@ -54,7 +54,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 钱包归属：**结算主体**。
+     * 钱包归属：<b>结算主体</b>。
      *
      * <p>
      * 普通客户的钱包就是自己的；集团下属单位共用集团钱包。理由是应收、授信、收款早已把 「实际下单客户」与「结算主体」分开 —— 若钱包挂在子客户，A 店与 B 店各有一份不能共享的
@@ -70,7 +70,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 钱包余额（只读）。
      *
      * <p>
-     * <b>不创建账户</b>：读路径不该写库。没有账户就是 0 元 —— 「还没有钱包」与「钱包是空的」 在金额上等价，不必为此落一行。
+     * <b>不创建账户</b>：读路径不该写库。没有账户就是 0 元 —— 「还没有钱包」与「钱包是空的」在金额上等价，不必为此落一行。
      */
     @Transactional(readOnly = true)
     public BigDecimal balanceOf(Long customerId) {
@@ -78,7 +78,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 按**结算主体**读余额（供查询层复用）。
+     * 按<b>结算主体</b>读余额（供查询层复用）。
      *
      * <p>
      * 查询层已经解析过结算主体，再走一遍 {@link #balanceOf} 会重复解析客户关系 —— 而解析里含「客户必须合法可结算」这类校验，重复调用只会多一次查询、不改结果。
@@ -212,11 +212,11 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 充值支付成功 → 钱包权益增加（ADM-12 3-12b，{@link BalanceRechargeSink} 的实现）。
      *
      * <p>
-     * <b>入账金额取渠道实收</b>：钱包进多少必须等于公司真收多少。渠道实收 98 而充值申请 100 时， 记 98 并留下告警 —— 与退款那条口径（不一致就不落账）刻意不同：
-     * 充值场景下「客户付了钱却没有任何权益」比「权益比申请额少 2 元」严重得多。 差异本身可查（充值事实仍保留申请额），留给对账处理。
+     * <b>入账金额取渠道实收</b>：钱包进多少必须等于公司真收多少。渠道实收 98 而充值申请 100 时，记 98 并留下告警 —— 与退款那条口径（不一致就不落账）刻意不同：
+     * 充值场景下「客户付了钱却没有任何权益」比「权益比申请额少 2 元」严重得多。差异本身可查（充值事实仍保留申请额），留给对账处理。
      *
      * <p>
-     * 幂等靠 {@code (PAYMENT_TRANSACTION, transactionId)} 的来源唯一索引： 同一个回调重复投递多少次，也只产生一条充值流水。
+     * 幂等靠 {@code (PAYMENT_TRANSACTION, transactionId)} 的来源唯一索引：同一个回调重复投递多少次，也只产生一条充值流水。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -293,10 +293,10 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 取钱包账户并在必要时创建，然后**加锁**。
+     * 取钱包账户并在必要时创建，然后<b>加锁</b>。
      *
      * <p>
-     * 创建放在锁路径里而不是读路径里：读余额不该写库，而真正要动钱时必须有一个可锁的行。 唯一索引保证同一结算主体只有一个账户；并发下第二个事务会命中冲突，因此先查再插， 冲突时读回已有行。
+     * 创建放在锁路径里而不是读路径里：读余额不该写库，而真正要动钱时必须有一个可锁的行。唯一索引保证同一结算主体只有一个账户；并发下第二个事务会命中冲突，因此先查再插，冲突时读回已有行。
      */
     private CustomerBalanceAccountEntity lockAccount(CustomerEntity settlement) {
         CustomerBalanceAccountEntity existing = customerBalanceAccountDao

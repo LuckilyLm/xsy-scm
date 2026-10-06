@@ -41,16 +41,16 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
             @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 
     /**
-     * 按**来源单据头**查全部有效预留（订单取消时批量释放用）。
+     * 按<b>来源单据头</b>查全部有效预留（订单取消时批量释放用）。
      *
      * <p>
-     * 与 {@link #selectActiveBySource} 的区别在粒度：订单确认是逐行预留， 订单取消却是整单释放，因此需要一个头级入口，避免调用方自己拿明细再循环。
+     * 与 {@link #selectActiveBySource} 的区别在粒度：订单确认是逐行预留，订单取消却是整单释放，因此需要一个头级入口，避免调用方自己拿明细再循环。
      */
     List<InventoryReservationEntity> listActiveBySourceDocument(@Param("sourceDocumentType") String sourceDocumentType,
             @Param("sourceDocumentId") Long sourceDocumentId);
 
     /**
-     * 按来源**行** id 批量查有效预留（发车一次性取整条线路的预留，不逐行往返）。
+     * 按来源<b>行</b> id 批量查有效预留（发车一次性取整条线路的预留，不逐行往返）。
      *
      * <p>
      * 不锁；调用方随后按返回顺序逐行 {@link #lockById}。排序取 {@code (warehouse_id, sku_id, id)} 升序，与既有的余额锁序一致 ——
@@ -63,7 +63,7 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
      * 锁定预留行（{@code SELECT ... FOR UPDATE}）。
      *
      * <p>
-     * 锁序：预留行锁在**余额锁之前**获取，与出库单头锁同一层级。
+     * 锁序：预留行锁在<b>余额锁之前</b>获取，与出库单头锁同一层级。
      */
     InventoryReservationEntity lockById(@Param("id") Long id);
 

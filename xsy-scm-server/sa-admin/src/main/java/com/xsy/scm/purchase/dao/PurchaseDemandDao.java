@@ -22,8 +22,8 @@ import java.util.List;
  * <p>
  * 三个要点：
  * <ul>
- * <li>{@link #listSourceItems} 是 `generate` 的**取数口径**，返回 {@code SalesOrderItemEntity} （需求快照的 8 个商品字段全部来自
- * {@code sales_order_item}，无需自建投影类型）； 订单号与确认时间由调用方用 {@code SalesOrderDao.selectBatchIds} 批量补齐（2 次查询，无 N+1）；</li>
+ * <li>{@link #listSourceItems} 是 {@code generate} 的<b>取数口径</b>，返回 {@code SalesOrderItemEntity} （需求快照的 8 个商品字段全部来自
+ * {@code sales_order_item}，无需自建投影类型）；订单号与确认时间由调用方用 {@code SalesOrderDao.selectBatchIds} 批量补齐（2 次查询，无 N+1）；</li>
  * <li>{@link #lockByIds} 按 id 升序加行锁，避免与订单写路径形成反向锁序；</li>
  * <li>{@link #insertIgnore} 用 {@code ON CONFLICT DO NOTHING} 做 INSERT 竞争 （不先查后插），冲突时由调用方重读收敛到同一行。</li>
  * </ul>
@@ -32,7 +32,7 @@ import java.util.List;
 public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
 
     /**
-     * 来源行（`generate` 取数）：已确认订单 + 有实数量，确定性排序。
+     * 来源行（{@code generate} 取数）：已确认订单 + 有实数量，确定性排序。
      *
      * <p>
      * 按 SKU、订单确认时间与行 id 排序，使同一窗口的重复 generate 得到相同结果。
@@ -49,7 +49,7 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * 分页查询（联 supplier / warehouse 取名称快照）。
      *
      * <p>
-     * {@code scope} 是采购员维度的授权范围（{@code purchase_demand.purchaser_id}）， 与 {@code PurchaseOrderDao.query}
+     * {@code scope} 是采购员维度的授权范围（{@code purchase_demand.purchaser_id}），与 {@code PurchaseOrderDao.query}
      * 同一口径；{@code null} 在 Mapper 里失败关闭，不表示「全部」。
      */
     List<PurchaseDemandVO> query(Page<?> page, @Param("query") PurchaseDemandQueryForm query,
@@ -59,11 +59,11 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * 订单汇总 / 库存缺口预览（只读聚合）。
      *
      * <p>
-     * WHERE 与 {@link #listSourceItems} 同源（已确认订单 + 有实数量 + 同一确认窗口）， 按 {@code sku_id + sale_unit_snapshot} 聚合后左连
+     * WHERE 与 {@link #listSourceItems} 同源（已确认订单 + 有实数量 + 同一确认窗口），按 {@code sku_id + sale_unit_snapshot} 聚合后左连
      * {@code inventory_balance} （{@code warehouse_id} 来自入参）比对可用量。可用量、缺口、状态全在 SQL 里用 {@code NUMERIC} 算好，Java/前端不做浮点运算。
      *
      * <p>
-     * {@code scope} 是调用者的<b>仓库</b>授权范围：整页数字都归属到入参那一个仓库 （余额、预留、由它算出的缺口），因此范围谓词落在「请求仓」上而不是余额左连上， 详见 XML 里的说明。{@code null}
+     * {@code scope} 是调用者的<b>仓库</b>授权范围：整页数字都归属到入参那一个仓库 （余额、预留、由它算出的缺口），因此范围谓词落在「请求仓」上而不是余额左连上，详见 XML 里的说明。{@code null}
      * 失败关闭。
      *
      * <p>
@@ -78,15 +78,15 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     PurchaseDemandVO detail(@Param("id") Long id);
 
     /**
-     * 按 id 升序逐个 `FOR UPDATE` 锁定需求（** 锁序**）。
+     * 按 id 升序逐个 {@code FOR UPDATE} 锁定需求（<b>锁序</b>）。
      *
      * <p>
-     * 调用方必须先经 {@code PurchaseDemandAllocator.ascendingDemandIds} 去重排序， 否则不同事务可能以不同顺序取锁而成环。
+     * 调用方必须先经 {@code PurchaseDemandAllocator.ascendingDemandIds} 去重排序，否则不同事务可能以不同顺序取锁而成环。
      */
     List<PurchaseDemandEntity> lockByIds(@Param("ids") List<Long> ids);
 
     /**
-     * 单条 `FOR UPDATE`。
+     * 单条 {@code FOR UPDATE}。
      */
     PurchaseDemandEntity lock(@Param("id") Long id);
 
@@ -104,7 +104,8 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * 重算分配。
      *
      * <p>
-     * 同时更新 `allocated_quantity` / `status` / `supplier_id`（首次分配固定）与 `version + 1`； 用 `version` 做乐观锁，影响行数为 0 表示并发冲突。
+     * 同时更新 {@code allocated_quantity} / {@code status} / {@code supplier_id}（首次分配固定）与 {@code version + 1}；用
+     * {@code version} 做乐观锁，影响行数为 0 表示并发冲突。
      */
     int updateAllocation(@Param("id") Long id, @Param("version") Integer version,
             @Param("allocatedQuantity") BigDecimal allocatedQuantity, @Param("status") String status,

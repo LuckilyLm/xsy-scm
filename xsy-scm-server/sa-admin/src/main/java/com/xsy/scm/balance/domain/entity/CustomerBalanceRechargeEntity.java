@@ -15,12 +15,11 @@ import lombok.Data;
  * 充值请求事实（ADM-12 3-12b）。
  *
  * <p>
- * <b>只有业务身份，没有支付状态机</b>：{@code CREATED / PAYING / SUCCESS / FAILED} 那些状态
- * 已经由 {@code payment_intent} 与 {@code payment_transaction} 表达。再造一套就会出现
- * 「两个地方都说自己知道充值成没成功」，而它们迟早会不一致。
+ * <b>只有业务身份，没有支付状态机</b>：{@code CREATED / PAYING / SUCCESS / FAILED} 那些状态 已经由 {@code payment_intent} 与
+ * {@code payment_transaction} 表达。再造一套就会出现 「两个地方都说自己知道充值成没成功」，而它们迟早会不一致。
  *
  * <p>
- * 它回答的问题只有一个：**谁准备往哪个钱包充多少钱、业务编号是什么**。
+ * 它回答的问题只有一个：<b>谁准备往哪个钱包充多少钱、业务编号是什么</b>。
  */
 @Data
 @TableName("customer_balance_recharge")

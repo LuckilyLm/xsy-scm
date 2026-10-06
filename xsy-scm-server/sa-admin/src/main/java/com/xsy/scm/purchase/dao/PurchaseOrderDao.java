@@ -15,7 +15,7 @@ import java.util.List;
  * 采购单。
  *
  * <p>
- * {@link #nextOrderNo()} 取全局序列，**不按日 reset**： 单号形如 {@code PO + yyyyMMdd + 至少 6 位}，超过 999999 自然扩位， 由
+ * {@link #nextOrderNo()} 取全局序列，<b>不按日 reset</b>：单号形如 {@code PO + yyyyMMdd + 至少 6 位}，超过 999999 自然扩位，由
  * {@code PurchaseNumberGenerator} 负责拼接与补零。
  */
 @Mapper
@@ -37,7 +37,7 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
     PurchaseOrderVO detail(@Param("id") Long id);
 
     /**
-     * 单条 `FOR UPDATE`（锁序：purchase_demand → purchase_order → purchase_order_item）。
+     * 单条 {@code FOR UPDATE}（锁序：purchase_demand → purchase_order → purchase_order_item）。
      */
     PurchaseOrderEntity lock(@Param("id") Long id);
 

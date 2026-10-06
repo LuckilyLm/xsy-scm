@@ -12,8 +12,8 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 库存分析返回行（库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版）。
  *
  * <p>
- * 数据源是 append-only 的 {@code inventory_movement}：报表只读它，永不改它。 方向不另存一份枚举清单，由
- * {@code ScmInventoryMovementTypeEnum.isInbound()} 在服务层派生， 避免报表维护出第二套 IN / OUT 口径。
+ * 数据源是 append-only 的 {@code inventory_movement}：报表只读它，永不改它。方向不另存一份枚举清单，由
+ * {@code ScmInventoryMovementTypeEnum.isInbound()} 在服务层派生，避免报表维护出第二套 IN / OUT 口径。
  */
 @Data
 public class InventoryReportVO {
@@ -51,7 +51,7 @@ public class InventoryReportVO {
     }
 
     /**
-     * 损耗 KPI。只统计 {@code STOCKTAKE_LOSS}（盘亏）与 {@code LOSS_REPORT}（报损）； 盘盈 / 报溢不是损耗，不得混进来。当前系统没有「采购损耗」「退货损耗」的独立事实，
+     * 损耗 KPI。只统计 {@code STOCKTAKE_LOSS}（盘亏）与 {@code LOSS_REPORT}（报损）；盘盈 / 报溢不是损耗，不得混进来。当前系统没有「采购损耗」「退货损耗」的独立事实，
      * 因此本类也不提供这两项。
      */
     @Data
@@ -113,8 +113,8 @@ public class InventoryReportVO {
      * 收发存（数量版）行，粒度 = 仓库 × SKU × 记账单位。
      *
      * <p>
-     * 刻意<b>没有</b>期初 / 期末数量与金额：{@code inventory_movement} 不是从库存起点完整 覆盖全部历史（初次库存入账前的采购量不在流水中），且流水存的是本次 {@code unit_cost}
-     * 而非每次变动后的 {@code avg_cost}，所以历史期初期末均价无法还原。 宁可只有期内净变动量，也不造一个看起来精确的假期初。
+     * 刻意<b>没有</b>期初 / 期末数量与金额：{@code inventory_movement} 不是从库存起点完整覆盖全部历史（初次库存入账前的采购量不在流水中），且流水存的是本次 {@code unit_cost}
+     * 而非每次变动后的 {@code avg_cost}，所以历史期初期末均价无法还原。宁可只有期内净变动量，也不造一个看起来精确的假期初。
      */
     @Data
     public static class FlowSummaryRow {

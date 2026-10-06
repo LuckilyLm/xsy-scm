@@ -21,7 +21,7 @@ import java.util.List;
  * 创建与编辑共用同一表单：只有「待审核」可改，因此两者字段集合完全一致 （与出库单、盘点单同一取向）。
  *
  * <p>
- * <b>{@code adjustType} 是单据级方向</b>，行上不表达方向：一张单要么全报损、要么全报溢。 正则白名单与 {@code ScmInventoryLossGainTypeEnum} /
+ * <b>{@code adjustType} 是单据级方向</b>，行上不表达方向：一张单要么全报损、要么全报溢。正则白名单与 {@code ScmInventoryLossGainTypeEnum} /
  * {@code ck_inventory_loss_gain_type} 同源。
  *
  * <p>

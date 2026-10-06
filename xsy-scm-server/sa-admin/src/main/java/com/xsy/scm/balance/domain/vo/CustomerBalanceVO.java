@@ -23,8 +23,7 @@ public class CustomerBalanceVO {
      * 可用余额 = SUM(CREDIT) − SUM(DEBIT)；没有账户时是 0。
      *
      * <p>
-     * **每次现算**，账户表上没有可缓存的 balance 字段：存一份就要维护它，
-     * 任何一次漏更新都会让余额与流水永久漂移，且没人说得清该信哪个。
+     * <b>每次现算</b>，账户表上没有可缓存的 balance 字段：存一份就要维护它， 任何一次漏更新都会让余额与流水永久漂移，且没人说得清该信哪个。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal availableBalance;

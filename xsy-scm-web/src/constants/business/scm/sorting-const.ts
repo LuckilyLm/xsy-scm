@@ -1,12 +1,12 @@
 /**
  * 分拣管理前端常量。
  *
- * 枚举值与后端**逐字对应**，且与 DB 的 CHECK 白名单同源：
+ * 枚举值与后端<b>逐字对应</b>，且与 DB 的 CHECK 白名单同源：
  * - `ScmSortingTaskStatusEnum` / `SortingConstant` ↔ `ck_sorting_task_status`
  * - 明细结果 ↔ `ck_sorting_task_item_result`，占用位 ↔ `ck_sorting_task_item_occupation`
  * - 商品类型是订单行快照（`product_type`），不是分拣自己的状态
  *
- * **新增取值时必须同时改三处**：本文件、后端枚举 / `SortingConstant`、DB CHECK 白名单。
+ * <b>新增取值时必须同时改三处</b>：本文件、后端枚举 / `SortingConstant`、DB CHECK 白名单。
  * 漏掉最后一项的表现是「值写进去了，按它筛选时列表恒空」，比编译失败难发现得多。
  *
  * 本域不复用库存 / 采购的枚举：分拣状态与报损报溢的 `PENDING / COMPLETED` 只是字面相同，
@@ -52,7 +52,7 @@ export const SCM_SORTING_PRODUCT_TYPE_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 明细占用位（与任务状态**不是一回事**，别混用）。
+ * 明细占用位（与任务状态<b>不是一回事</b>，别混用）。
  *
  * 活动占用下「订单行 → 分拣任务」由部分唯一索引保证一对一；
  * 取消释放后同一订单行可以进入新任务，历史行仍随详情返回以便追溯。
@@ -92,7 +92,7 @@ export const SCM_SORTING_OCCUPATION_COLOR: Record<string, string> = {
  * 分拣域权限码（与后端 `@SaCheckPermission` 与 V61 的 `web_perms` 逐字一致）。
  *
  * 两条不是显而易见的语义：
- * - `scm:sorting:task:assign` **隐含跨指派人可见**：持者才能建单、指派 / 改派、取消与重开，
+ * - `scm:sorting:task:assign` <b>隐含跨指派人可见</b>：持者才能建单、指派 / 改派、取消与重开，
  *   也只有他能按人筛选与看未指派队列；分拣员只看到派给自己的任务。因此前端用它作为
  *   「队列管理者」开关，不再另设 `*:scope:all:query`。
  * - 录入（`scm:sorting:item:update`）与完成只认受指派人本人，权限码之外服务端还会比对身份；
@@ -115,7 +115,7 @@ export const SCM_SORTING_PERMISSION = {
 } as const;
 
 /**
- * 表格 DOM id —— **给 Playwright 定位用**，不是 `TableOperator` 的 `tableId`。
+ * 表格 DOM id —— <b>给 Playwright 定位用</b>，不是 `TableOperator` 的 `tableId`。
  *
  * 未向 `TABLE_ID_CONST.BUSINESS` 注册数字 id，因此页面不提供列配置入口（`TableOperator`）。
  */
@@ -136,7 +136,7 @@ export const SCM_SORTING_WORKING_STATUS: readonly string[] = ['PENDING', 'SORTIN
 export const SCM_SORTING_MAX_PAGE_SIZE = 100;
 
 export default {
-    // 只导出**枚举**：`SCM_SORTING_TABLE_ID` / `SCM_SORTING_PERMISSION` 不是枚举，
+    // 只导出<b>枚举</b>：`SCM_SORTING_TABLE_ID` / `SCM_SORTING_PERMISSION` 不是枚举，
     // 混进 `constantsInfo` 会让 `$smartEnumPlugin.getValueDescList` 拿到非枚举对象。
     SCM_SORTING_TASK_STATUS_ENUM,
     SCM_SORTING_RESULT_ENUM,

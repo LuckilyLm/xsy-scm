@@ -44,7 +44,7 @@ public class DeliveryRouteOrderEntity extends DeliveryRecord {
      * 订单级履约状态：{@code PENDING → IN_TRANSIT → SIGNED | EXCEPTION}。
      *
      * <p>
-     * 与 {@code assignmentStatus} 正交：一个说「货到没到手」，一个说「这单还在不在线路上」。 不拿 RELEASED 表达签收 —— 取消线路也会写 RELEASED，那与拒收不是同一个事实。
+     * 与 {@code assignmentStatus} 正交：一个说「货到没到手」，一个说「这单还在不在线路上」。不拿 RELEASED 表达签收 —— 取消线路也会写 RELEASED，那与拒收不是同一个事实。
      */
     private String fulfillmentStatus;
     /**

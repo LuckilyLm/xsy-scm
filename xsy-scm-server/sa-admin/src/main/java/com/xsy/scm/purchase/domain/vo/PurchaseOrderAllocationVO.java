@@ -11,8 +11,8 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 采购单行上的单条需求分配。
  *
  * <p>
- * 身份是 `(purchaseOrderItemId, demandId)`；`allocationId` 是 `purchase_demand_allocation.id`。 `demandVersion`
- * 供前端编辑时回传做乐观锁；`demandStatus` 让前端知道该需求是否已被别的行分满。
+ * 身份是 {@code (purchaseOrderItemId, demandId)}；{@code allocationId} 是 {@code purchase_demand_allocation.id}。
+ * {@code demandVersion} 供前端编辑时回传做乐观锁；{@code demandStatus} 让前端知道该需求是否已被别的行分满。
  */
 @Data
 public class PurchaseOrderAllocationVO {
@@ -25,7 +25,7 @@ public class PurchaseOrderAllocationVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;
     /**
-     * 需求单位：与行上的 `purchaseUnit` 不一致时不允许自动分配。
+     * 需求单位：与行上的 {@code purchaseUnit} 不一致时不允许自动分配。
      */
     private String demandUnit;
     private Integer demandVersion;

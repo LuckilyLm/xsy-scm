@@ -56,11 +56,11 @@ import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 
 /**
  * 商品 Excel 导入编排：工作簿读写由 {@link ProductImportWorkbookSupport} 负责，单元格规范化和字段值校验由 {@link ProductImportValueRules}
- * 负责，领域校验通过后交给 {@link ProductImportWriteService} 整批回滚写入。 复用既有 ProductSpuService.add / update 的全部领域校验与保护，不新建导入旁路。
+ * 负责，领域校验通过后交给 {@link ProductImportWriteService} 整批回滚写入。复用既有 ProductSpuService.add / update 的全部领域校验与保护，不新建导入旁路。
  *
  * <p>
  * 两种模式语义互斥且必须显式选择： {@link ImportMode#CREATE} 整批新增；{@link ImportMode#UPDATE} 按 SPU ID / SKU ID + 版本定位既存行，
- * <b>留空表示保持原值</b>（不是清空），未出现在 Excel 的 SKU 也不会被删除； 要把可空属性（别名、助记码、品牌、产地、标签编码、条码）清成空，在该单元格填 {@link #CLEAR_TOKEN}。
+ * <b>留空表示保持原值</b>（不是清空），未出现在 Excel 的 SKU 也不会被删除；要把可空属性（别名、助记码、品牌、产地、标签编码、条码）清成空，在该单元格填 {@link #CLEAR_TOKEN}。
  */
 @Service
 @RequiredArgsConstructor
@@ -197,7 +197,7 @@ public class ProductImportService {
     // ------------------------------------------------------------------
 
     /**
-     * 更新模式先按定位键读回现状，再把 Excel 的非空单元格覆盖到现状之上： 空白保持原值、未列出的 SKU 保持原样、Excel 之外的字段（详情描述、税率、图片等）一律原值回写， 因此不会把「只改一个市场价」变成整单替换。
+     * 更新模式先按定位键读回现状，再把 Excel 的非空单元格覆盖到现状之上：空白保持原值、未列出的 SKU 保持原样、Excel 之外的字段（详情描述、税率、图片等）一律原值回写，因此不会把「只改一个市场价」变成整单替换。
      */
     private UpdateAssembly assembleUpdates(List<ProductImportRow> rows, ProductImportResultVO result) {
         result.setTotalRows(rows.size());
@@ -589,8 +589,8 @@ public class ProductImportService {
         integer(result, rowNumber, key, "保质期天数", row.getShelfLifeDays(), 0, 36500);
         integer(result, rowNumber, key, "排序", row.getSortOrder(), 0, Integer.MAX_VALUE);
         // 单位与标签的「存在 + 启用」只在 CREATE 模式逐行预判。
-        // UPDATE 不预判：写入口劲只复核**变动过**的单位（ProductSpuService.update 的 changedUnits）
-        // 与**新挂**的标签（assertNewBindings 允许已绑的停用标签原样保留），
+        // UPDATE 不预判：写入口劲只复核<b>变动过</b>的单位（ProductSpuService.update 的 changedUnits）
+        // 与<b>新挂</b>的标签（assertNewBindings 允许已绑的停用标签原样保留），
         // 在这里照抄「必须在字典且启用」会把合法的历史值误拒成单元格错误。
         if (!allowClearToken) {
             var unit = trim(row.getSaleUnit());
@@ -620,7 +620,7 @@ public class ProductImportService {
      * 标签编码列取值：UPDATE 允许显式清空标记（表示解除全部标签），CREATE 没有「原值」可清，标记按非法编码处理。
      *
      * <p>
-     * CREATE 同时复核启用态：{@code loadTags} 只按 {@code deleted=FALSE} 取行、不看 {@code status}， 缺了这一步，填了停用标签要等整批写库被
+     * CREATE 同时复核启用态：{@code loadTags} 只按 {@code deleted=FALSE} 取行、不看 {@code status}，缺了这一步，填了停用标签要等整批写库被
      * {@code assertUsable} 抛 40028 才知道是哪一行。
      */
     private void validateTagCodes(ProductImportResultVO result, ProductImportRow row,

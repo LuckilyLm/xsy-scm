@@ -1,11 +1,11 @@
 /**
  * 库存域前端常量。
  *
- * 枚举值与后端**逐字对应**，且与 DB 的 CHECK 白名单同源：
+ * 枚举值与后端<b>逐字对应</b>，且与 DB 的 CHECK 白名单同源：
  * `ScmInventoryMovementTypeEnum` ↔ `ck_inventory_movement_type`；来源单据类型、
  * 报损报溢、调拨、预警、转换各自对应同名 CHECK（预警为读时计算，无 CHECK）。
  *
- * **新增流水类型时必须同时改四处**：本文件枚举、后端枚举类、DB CHECK（新迁移）、
+ * <b>新增流水类型时必须同时改四处</b>：本文件枚举、后端枚举类、DB CHECK（新迁移）、
  * 后端 `InventoryMovementQueryForm` 的 `@Pattern` 白名单 —— 漏掉最后一项的表现是
  * 「流水写进去了，页面按新类型筛选却报 30001」。
  */
@@ -14,7 +14,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
 /**
  * 库存流水类型。
  *
- * **方向编码在类型里**：`PURCHASE_IN` / `STOCKTAKE_GAIN` / `GAIN_REPORT` / `TRANSFER_IN` /
+ * <b>方向编码在类型里</b>：`PURCHASE_IN` / `STOCKTAKE_GAIN` / `GAIN_REPORT` / `TRANSFER_IN` /
  * `CONVERT_IN` 即「入」，其余即「出」，因此流水没有独立的 `direction` 列，
  * `quantity` 恒为正。新增类型必须先扩 DB CHECK 白名单。
  */
@@ -39,7 +39,7 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
  * 「入」方向的流水类型（与后端 `ScmInventoryMovementTypeEnum.getInbound()` 同集合）。
  *
  * 流水表没有 `direction` 列、`quantity` 恒为正，所以任何要展示「入 / 出」的页面
- * （库存流水列表、报表中心的流水 Tab）都**只能**从这里派生方向。
+ * （库存流水列表、报表中心的流水 Tab）都<b>只能</b>从这里派生方向。
  * 在别处再写一份 IN / OUT 判断，就是第二份真相：
  * 后端加类型时改了这个集合，方向立刻判反，而数字看起来完全正常。
  */
@@ -55,10 +55,10 @@ export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [
 /**
  * 流水来源单据类型。
  *
- * 与 `sourceDocumentItemId` 一起构成**稳定唯一源键**（防重锚点）；
+ * 与 `sourceDocumentItemId` 一起构成<b>稳定唯一源键</b>（防重锚点）；
  * 人类可读的来源单号用 `receiptNo`（收货单）或 `sourceDocumentNo`。
  *
- * **调拨与规格转换各占两个来源类型**：它们的同一条明细行会产生两条流水（出、入），
+ * <b>调拨与规格转换各占两个来源类型</b>：它们的同一条明细行会产生两条流水（出、入），
  * 而唯一索引只认 `(source_document_type, source_document_item_id)` ——
  * 共用一个来源类型会让第二条流水插不进去。因此方向被编进了来源类型。
  */
@@ -81,7 +81,7 @@ export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
 /**
  * 出库单状态（与后端 `ScmInventoryOutboundStatusEnum` 逐字对应）。
  *
- * `DRAFT → CONFIRMED`，草稿可 `CANCELLED`。**已确认不可回退** ——
+ * `DRAFT → CONFIRMED`，草稿可 `CANCELLED`。<b>已确认不可回退</b> ——
  * 流水 append-only，冲销必须新增反向流水。
  */
 export const SCM_INVENTORY_OUTBOUND_STATUS_ENUM: SmartEnum<string> = {
@@ -100,7 +100,7 @@ export const SCM_INVENTORY_RESERVATION_STATUS_ENUM: SmartEnum<string> = {
 /**
  * 盘点单状态（与后端 `ScmInventoryStocktakeStatusEnum` 逐字对应）。
  *
- * 状态机与出库单**刻意同构**。没有独立的「盘点中」状态：
+ * 状态机与出库单<b>刻意同构</b>。没有独立的「盘点中」状态：
  * 录入实盘数就是草稿态的编辑动作，`DRAFT` 即「盘点进行中」。
  */
 export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
@@ -112,7 +112,7 @@ export const SCM_INVENTORY_STOCKTAKE_STATUS_ENUM: SmartEnum<string> = {
 /**
  * 报损报溢单的调整类型（与后端 `ScmInventoryLossGainTypeEnum` 逐字对应）。
  *
- * **方向是单据级属性**：一张单要么全报损、要么全报溢，行上的数量恒为正。
+ * <b>方向是单据级属性</b>：一张单要么全报损、要么全报溢，行上的数量恒为正。
  */
 export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
     LOSS: {value: 'LOSS', desc: '报损'},
@@ -122,7 +122,7 @@ export const SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM: SmartEnum<string> = {
 /**
  * 报损报溢单状态（与后端 `ScmInventoryLossGainStatusEnum` 逐字对应）。
  *
- * **没有 DRAFT**：报损报溢创建即提交（待审核），因为「把货从账上抹掉」需要制衡。
+ * <b>没有 DRAFT</b>：报损报溢创建即提交（待审核），因为「把货从账上抹掉」需要制衡。
  */
 export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
     PENDING: {value: 'PENDING', desc: '待审核'},
@@ -133,8 +133,8 @@ export const SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM: SmartEnum<string> = {
 /**
  * 调拨单状态（与后端 `ScmInventoryTransferStatusEnum` 逐字对应）。
  *
- * **两步式**：`DRAFT → SHIPPED（在途）→ RECEIVED`，草稿可 `CANCELLED`。
- * `SHIPPED` **不可取消** —— 货已经物理离开源仓，账上只能靠一张反向调拨单冲回。
+ * <b>两步式</b>：`DRAFT → SHIPPED（在途）→ RECEIVED`，草稿可 `CANCELLED`。
+ * `SHIPPED` <b>不可取消</b> —— 货已经物理离开源仓，账上只能靠一张反向调拨单冲回。
  * 在途期间这批货不在任何余额行里，需用「在途库存」报表查看（不进余额表）。
  */
 export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
@@ -147,9 +147,9 @@ export const SCM_INVENTORY_TRANSFER_STATUS_ENUM: SmartEnum<string> = {
 /**
  * 库存预警状态（与后端 `ScmInventoryWarningStatusEnum` 逐字对应）。
  *
- * **这是派生值，不落库**：完全由 `(阈值, 可用量)` 决定，读时计算。
- * 判定基准是**可用量**（现有量 − 预留量）而不是现有量。
- * **取等号算正常**：`可用量 == 下限` 是「不低于下限」，属 `NORMAL`。
+ * <b>这是派生值，不落库</b>：完全由 `(阈值, 可用量)` 决定，读时计算。
+ * 判定基准是<b>可用量</b>（现有量 − 预留量）而不是现有量。
+ * <b>取等号算正常</b>：`可用量 == 下限` 是「不低于下限」，属 `NORMAL`。
  */
 export const SCM_INVENTORY_WARNING_STATUS_ENUM: SmartEnum<string> = {
     NORMAL: {value: 'NORMAL', desc: '正常'},
@@ -160,7 +160,7 @@ export const SCM_INVENTORY_WARNING_STATUS_ENUM: SmartEnum<string> = {
 /**
  * 规格转换类型（与后端 `ScmInventoryConversionTypeEnum` 逐字对应）。
  *
- * **跨 SKU、同仓库**：源规格 → 目标规格（如整件 → 散装）。跨仓搬运是**调拨**，不是转换。
+ * <b>跨 SKU、同仓库</b>：源规格 → 目标规格（如整件 → 散装）。跨仓搬运是<b>调拨</b>，不是转换。
  * 折算关系（源数量 : 目标数量）由单据显式声明，系统不推断 ——
  * 一箱到底是 9.5 kg 还是 10 kg 取决于供应商与批次，猜错会直接污染两边余额。
  */
@@ -172,7 +172,7 @@ export const SCM_INVENTORY_CONVERSION_TYPE_ENUM: SmartEnum<string> = {
 /**
  * 规格转换单状态（与后端 `ScmInventoryConversionStatusEnum` 逐字对应）。
  *
- * 与报损报溢**刻意同构**：转换会把**两个 SKU** 的余额同时改掉，且折算率是人工声明的，
+ * 与报损报溢<b>刻意同构</b>：转换会把<b>两个 SKU</b> 的余额同时改掉，且折算率是人工声明的，
  * 没有审批等于录单人可以单方面决定「一箱等于多少 kg」。
  */
 export const SCM_INVENTORY_CONVERSION_STATUS_ENUM: SmartEnum<string> = {
@@ -182,7 +182,7 @@ export const SCM_INVENTORY_CONVERSION_STATUS_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 表格 DOM id —— **给 Playwright 定位用**，不是 `TableOperator` 的 `tableId`。
+ * 表格 DOM id —— <b>给 Playwright 定位用</b>，不是 `TableOperator` 的 `tableId`。
  *
  * `TableOperator` 的 `tableId` prop 是 `Number`（列配置持久化用），因此另在
  * `TABLE_ID_CONST.BUSINESS` 里以既有的扁平 `SCM_*` 命名注册数字 id。
@@ -201,7 +201,7 @@ export const SCM_INVENTORY_TABLE_ID = {
 } as const;
 
 export default {
-    // 只导出**枚举**：`SCM_INVENTORY_TABLE_ID` 不是枚举，混进 `constantsInfo` 会让
+    // 只导出<b>枚举</b>：`SCM_INVENTORY_TABLE_ID` 不是枚举，混进 `constantsInfo` 会让
     // `$smartEnumPlugin.getValueDescList` 拿到一个非枚举对象。
     SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
     SCM_INVENTORY_SOURCE_TYPE_ENUM,

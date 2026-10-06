@@ -47,7 +47,7 @@
         <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
         <if test="q.assigneeEmployeeId != null">AND t.assignee_employee_id=#{q.assigneeEmployeeId}</if>
         <if test="q.unassignedOnly != null and q.unassignedOnly">AND t.assignee_employee_id IS NULL</if>
-        <!-- ADM-11 冻结维度筛选：送货时间 / 波次 / 供应商来源全部按**建单时冻结的快照**过滤，
+        <!-- ADM-11 冻结维度筛选：送货时间 / 波次 / 供应商来源全部按建单时冻结的快照过滤，
              不联订单或线路回查 —— 任务建出来之后，它的作业口径就不该跟着主档变。 -->
         <if test="q.deliveryTimeFrom != null">AND t.delivery_time_snapshot &gt;= #{q.deliveryTimeFrom}</if>
         <if test="q.deliveryTimeTo != null">AND t.delivery_time_snapshot &lt; #{q.deliveryTimeTo}</if>
@@ -160,10 +160,10 @@
         ORDER BY i.product_name_snapshot,i.sale_unit_snapshot,i.sku_code_snapshot
     </select>
     <!--
-      候选订单行（裁决补充第 22 条）：这是**分拣队列视图**，不按订单业务员维度收窄 ——
+      候选订单行（裁决补充第 22 条）：这是分拣队列视图，不按订单业务员维度收窄 ——
       仓库岗位默认不持任何订单范围，若沿用 seller_id 收窄会一个也选不到，建单根本无法发生。
       不收窄的代价由两点兑住：入口只授建单权（现状仅仓库主管与超管），
-      且本语句只取队列必需列，**不取任何价格与金额**。
+      且本语句只取队列必需列，不取任何价格与金额。
       已确认订单的有效明细，且尚未被任何活动任务占用（裁决第 1、2 条）。
       actual_quantity IS NOT NULL 是防御性重复：标品在提交时按订购量落值、非标在确认前必须已录实重，
       因此 CONFIRMED 的行必然有值；写下这条是为了让「计划量快照 > 0」的前提在 SQL 里也看得出来。

@@ -50,7 +50,7 @@ export const purchaseDemandApi = {
             ScmResponse<DemandBatchDetail>
         >,
 
-    /** 把一条需求分配到某个采购行（`version` 是**需求**的版本）。 */
+    /** 把一条需求分配到某个采购行（`version` 是<b>需求</b>的版本）。 */
     allocate: (data: DemandAllocate) => purchaseCommand<Demand>('/scm/purchase/demand/allocate', data),
 };
 

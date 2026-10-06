@@ -4,8 +4,8 @@
  * 与后端 `InventoryOutboundController` 逐端点对应（7 个）：
  * query / detail / create / update / confirm / cancel / delete。
  *
- * **权限分两档**：录单与改草稿是日常操作（`add` / `update`），
- * **`confirm` 是独立权限** —— 它会真实扣减库存并写不可逆流水，
+ * <b>权限分两档</b>：录单与改草稿是日常操作（`add` / `update`），
+ * <b>`confirm` 是独立权限</b> —— 它会真实扣减库存并写不可逆流水，
  * 允许仓管录单、由主管确认是完全合理的分工，因此不复用 `update`。
  *
  * `confirm` 失败时整单回滚，不存在「出一半」；重复确认会被状态机拒绝（41014）。

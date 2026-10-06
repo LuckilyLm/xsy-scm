@@ -6,7 +6,7 @@ import java.util.Set;
  * 分拣任务的固定口径：工作状态集合、可打印状态集合与单号前缀。
  *
  * <p>
- * 状态只有四个：取消即释放占用，不存在 {@code RELEASED} 任务状态； 明细行上另有 {@code ACTIVE / RELEASED} 占用位，两者不要混用。
+ * 状态只有四个：取消即释放占用，不存在 {@code RELEASED} 任务状态；明细行上另有 {@code ACTIVE / RELEASED} 占用位，两者不要混用。
  */
 public final class SortingConstant {
 

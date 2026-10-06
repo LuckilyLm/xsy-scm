@@ -2,8 +2,8 @@
   客户类型管理（平铺分页表）。
 
   删除走 `POST /scm/customer/type/delete` 并回传 `version`。
-  排序只开放 `typeCode` / `name` / `status` 三列 —— 后端 `CustomerTypeVO` **不返回
-  `updatedAt`**，开放它会出现「点了排序但后端没有对应可见列」的假象。
+  排序只开放 `typeCode` / `name` / `status` 三列 —— 后端 `CustomerTypeVO` <b>不返回
+  `updatedAt`</b>，开放它会出现「点了排序但后端没有对应可见列」的假象。
 -->
 <template>
   <section aria-label="客户类型">

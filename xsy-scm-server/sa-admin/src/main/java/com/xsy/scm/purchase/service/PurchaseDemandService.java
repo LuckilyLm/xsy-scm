@@ -52,12 +52,13 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_QUANTITY_
  * <p>
  * 两个命令，各自一个事务、各自一个幂等 scope：
  * <ul>
- * <li>{@code generate}：窗口内**已确认**订单行 → 需求。去重靠 `uk_purchase_demand_source_active` + INSERT 竞争（并发 generate 收敛到同一行）；</li>
- * <li>{@code allocate}：把某条需求分到某个采购行上。分配门禁：需求单位与采购单位必须一致， 否则 40971 —— 绝不猜换算系数。</li>
+ * <li>{@code generate}：窗口内<b>已确认</b>订单行 → 需求。去重靠 {@code uk_purchase_demand_source_active} + INSERT 竞争（并发 generate
+ * 收敛到同一行）；</li>
+ * <li>{@code allocate}：把某条需求分到某个采购行上。分配门禁：需求单位与采购单位必须一致，否则 40971 —— 绝不猜换算系数。</li>
  * </ul>
  *
  * <p>
- * <b>锁序</b>：本类只锁 `purchase_demand`（单条，或按 id 升序）。 它是全局锁序的第 1 层，因此**不会**与 `receipt.confirm`（2→3→4→5）交叉成环。
+ * <b>锁序</b>：本类只锁 {@code purchase_demand}（单条，或按 id 升序）。它是全局锁序的第 1 层，因此<b>不会</b>与 {@code receipt.confirm}（2→3→4→5）交叉成环。
  */
 @Service
 @RequiredArgsConstructor
@@ -88,11 +89,11 @@ public class PurchaseDemandService {
     private final PurchaseOwnerResolver purchaseOwnerResolver;
 
     /**
-     * `generate` 的返回体。
+     * {@code generate} 的返回体。
      *
      * <p>
-     * 与 `DEMAND_GENERATE` 日志 `after_data` 同构 —— 日志与返回值不是两套口径。 `skippedCount` 统计的是「来源行已存在活动需求」的数量（重复 generate
-     * 的正常结果，不是错误）。
+     * 与 {@code DEMAND_GENERATE} 日志 {@code after_data} 同构 —— 日志与返回值不是两套口径。 {@code skippedCount} 统计的是「来源行已存在活动需求」的数量（重复
+     * generate 的正常结果，不是错误）。
      */
     @Data
     public static class GenerateResult {
@@ -110,8 +111,8 @@ public class PurchaseDemandService {
      * 汇总窗口内的已确认订单行 → 采购需求。
      *
      * <p>
-     * 半开区间 {@code [startAt, endAt)}；`demand_date` 按 **Asia/Shanghai** 取 `sales_order.confirmed_at` 的日期，**不是**
-     * `date(startAt)`。
+     * 半开区间 {@code [startAt, endAt)}；{@code demand_date} 按 <b>Asia/Shanghai</b> 取 {@code sales_order.confirmed_at}
+     * 的日期，<b>不是</b> {@code date(startAt)}。
      */
     @Transactional(rollbackFor = Exception.class)
     public GenerateResult generate(PurchaseDemandGenerateForm form, String idempotencyKey) {
@@ -142,7 +143,7 @@ public class PurchaseDemandService {
 
             for (SalesOrderItemEntity source : sourceItems) {
                 SalesOrderEntity order = orders.get(source.getOrderId());
-                // 40980：来源订单必须已确认且未软删。SQL 已按 status 过滤，这里是**不变量断言** ——
+                // 40980：来源订单必须已确认且未软删。SQL 已按 status 过滤，这里是<b>不变量断言</b> ——
                 // 口径（取哪些行）与不变量（取到的行是否可信）是两层防线，不允许被合并。
                 PurchaseDemandSourceGuard.requireConfirmed(order);
 
@@ -175,7 +176,7 @@ public class PurchaseDemandService {
         after.put("sourceLineCount", result.getSourceLineCount());
         after.put("createdCount", result.getCreatedCount());
         after.put("skippedCount", result.getSkippedCount());
-        // ：DEMAND_GENERATE 时采购单与收货单都还不存在 → 两个 id 都必须为 NULL
+        // DEMAND_GENERATE 时采购单与收货单都还不存在 → 两个 id 都必须为 NULL
         purchaseOperationLogDao.append(PurchaseSnapshotFactory
                 .operationLog(ScmPurchaseOperationTypeEnum.DEMAND_GENERATE, null, null, null, null, after));
 
@@ -191,7 +192,7 @@ public class PurchaseDemandService {
      * 把一条需求分配到某个采购行上（一次一条 allocation；：单位必须一致）。
      *
      * <p>
-     * 需求侧 `allocated_quantity` 是**跨采购单累计值**，因此这里读的是需求行自身的 `allocated_quantity`（已在锁内），加上本次数量后回写。
+     * 需求侧 {@code allocated_quantity} 是<b>跨采购单累计值</b>，因此这里读的是需求行自身的 {@code allocated_quantity}（已在锁内），加上本次数量后回写。
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseDemandVO allocate(PurchaseDemandAllocateForm form, String idempotencyKey) {
@@ -222,13 +223,13 @@ public class PurchaseDemandService {
         }
         purchaseOwnerResolver.requireVisible(order.getPurchaserId());
         // 只有 SUBMITTED 的采购单可以继续接需求：DRAFT 还没定稿，RECEIVED/SHORT_CLOSED/CANCELLED 已结束。
-        // 这里沿用设计 指定的 40980（PURCHASE_DEMAND_SOURCE_INVALID）——
+        // 这里沿用设计指定的 40980（PURCHASE_DEMAND_SOURCE_INVALID）——
         // 语义上「来源不允许再产生/变更需求关联」，与来源订单状态校验同源。
         if (!ScmPurchaseStatusEnum.SUBMITTED.name().equals(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
         }
 
-        // ：需求单位（销售单位快照）必须等于采购单位（supplier_sku.purchase_unit 快照）
+        // 需求单位（销售单位快照）必须等于采购单位（supplier_sku.purchase_unit 快照）
         PurchaseDemandAllocator.unitCompatible(demand.getDemandUnitSnapshot(), orderItem.getPurchaseUnitSnapshot());
         // 同一 SKU 才能挂
         PurchaseDemandAllocator.itemMatchesDemand(orderItem.getSkuId(), demand.getSkuId());
@@ -262,7 +263,7 @@ public class PurchaseDemandService {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
         }
 
-        // ：DEMAND_ALLOCATE 的 purchase_order_id 由 purchaseOrderItemId **反查**得到，非空；
+        // DEMAND_ALLOCATE 的 purchase_order_id 由 purchaseOrderItemId <b>反查</b>得到，非空；
         // purchase_receipt_id 为 NULL。ck_purchase_operation_log_owner 会复核这一分支。
         Map<String, Object> before = PurchaseSnapshotFactory.snapshot();
         before.put("allocatedQuantity", PurchaseSnapshotFactory.fixed(previousAllocated));

@@ -75,7 +75,7 @@ export function formatDeltaText(delta: number | null): string {
 /**
  * 环比的方向，决定颜色：涨/跌/持平/无基数。
  *
- * <p>注意这里**只表达方向，不表达好坏** —— 销售额涨是好事、库存积压涨是坏事，
+ * <p>注意这里<b>只表达方向，不表达好坏</b> —— 销售额涨是好事、库存积压涨是坏事，
  * 由调用方决定用哪个颜色。所以不在这里映射 @state-ok / @state-danger。
  */
 export type DeltaDirection = 'up' | 'down' | 'flat' | 'unknown';

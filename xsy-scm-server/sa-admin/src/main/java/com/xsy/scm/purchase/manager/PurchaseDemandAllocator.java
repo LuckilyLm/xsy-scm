@@ -20,10 +20,10 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_UNIT_CONV
  * 采购需求分配规则。
  *
  * <p>
- * 全部为静态纯函数，无 Spring、无 DB、无事务；需求超量、跨供应商或仓库冲突、需求 ID 排序和单位匹配 规则集中在此处判定。
+ * 全部为静态纯函数，无 Spring、无 DB、无事务；需求超量、跨供应商或仓库冲突、需求 ID 排序和单位匹配规则集中在此处判定。
  *
  * <p>
- * 需求单位（销售单位）与采购单位（{@code supplier_sku.purchase_unit}）是两个独立快照。 两者不一致时拒绝自动分配（40971）；仅替换单位字符串或猜测换算系数都会产生错误数量。
+ * 需求单位（销售单位）与采购单位（{@code supplier_sku.purchase_unit}）是两个独立快照。两者不一致时拒绝自动分配（40971）；仅替换单位字符串或猜测换算系数都会产生错误数量。
  */
 public final class PurchaseDemandAllocator {
 
@@ -34,7 +34,7 @@ public final class PurchaseDemandAllocator {
      * 需求单位必须与采购单位一致，否则返回 40971。
      *
      * <p>
-     * 比较是**大小写敏感的字符串相等**：单位是主数据里冻结的展示值， 不做归一化（归一化会把 `kg` 与 `KG` 视为可互换，从而掩盖真实的单位不一致）。
+     * 比较是<b>大小写敏感的字符串相等</b>：单位是主数据里冻结的展示值，不做归一化（归一化会把 {@code kg} 与 {@code KG} 视为可互换，从而掩盖真实的单位不一致）。
      */
     public static void unitCompatible(String demandUnit, String purchaseUnit) {
         if (demandUnit == null || purchaseUnit == null || !demandUnit.equals(purchaseUnit)) {
@@ -52,10 +52,10 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * 需求状态必须允许分配（`PENDING` / `PARTIALLY_ALLOCATED` / `ALLOCATED` 三者都允许）。
+     * 需求状态必须允许分配（{@code PENDING} / {@code PARTIALLY_ALLOCATED} / {@code ALLOCATED} 三者都允许）。
      *
      * <p>
-     * 这是对**未知取值**的白名单防护，不是业务上的「不可分配」判定 —— 分配本身可以重复发生（补分配）。
+     * 这是对<b>未知取值</b>的白名单防护，不是业务上的「不可分配」判定 —— 分配本身可以重复发生（补分配）。
      */
     public static void assignable(String demandStatus) {
         for (ScmPurchaseDemandStatusEnum candidate : ScmPurchaseDemandStatusEnum.values()) {
@@ -79,14 +79,14 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * `(supplier, warehouse)` 一致性（40981）。
+     * {@code (supplier, warehouse)} 一致性（40981）。
      *
      * <p>
-     * `warehouse_id` 在 `generate` 时已固定，因此必须始终等于采购单的仓库； `supplier_id` 由**第一次分配**固定（`allocated_quantity == 0`
-     * 时由调用方写入），之后不得改变。 所以：
+     * {@code warehouse_id} 在 {@code generate} 时已固定，因此必须始终等于采购单的仓库； {@code supplier_id}
+     * 由<b>第一次分配</b>固定（{@code allocated_quantity == 0} 时由调用方写入），之后不得改变。所以：
      * <ul>
      * <li>需求已有仓库且与采购单仓库不等 → 40981；</li>
-     * <li>需求已分配过（`allocated > 0`）且供应商与采购单不等 → 40981。</li>
+     * <li>需求已分配过（{@code allocated > 0}）且供应商与采购单不等 → 40981。</li>
      * </ul>
      */
     public static void assignmentCompatible(Long orderSupplierId, Long orderWarehouseId, PurchaseDemandEntity demand) {
@@ -108,14 +108,14 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * 首次分配且供应商尚未固定 → 调用方应把 `supplier_id` 落为采购单的供应商。
+     * 首次分配且供应商尚未固定 → 调用方应把 {@code supplier_id} 落为采购单的供应商。
      */
     public static boolean shouldFixSupplier(PurchaseDemandEntity demand) {
         return isFirstAllocation(demand) && demand.getSupplierId() == null;
     }
 
     /**
-     * 分配后的合计必须在 `[0, required]` 内，否则 40082。
+     * 分配后的合计必须在 {@code [0, required]} 内，否则 40082。
      */
     public static void withinRequired(BigDecimal requiredQuantity, BigDecimal finalAllocatedQuantity) {
         if (finalAllocatedQuantity == null || finalAllocatedQuantity.signum() < 0
@@ -125,7 +125,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * 由 `allocated` 与 `required` 推导需求状态。
+     * 由 {@code allocated} 与 {@code required} 推导需求状态。
      *
      * <pre>
      * allocated == 0        → PENDING
@@ -134,7 +134,7 @@ public final class PurchaseDemandAllocator {
      * </pre>
      *
      * <p>
-     * **必须能回落**：编辑采购单删掉某个 demand 的全部分配后，`allocated` 归零、 状态必须从 `ALLOCATED` 退回 `PENDING`（并集遍历就是为此）。
+     * <b>必须能回落</b>：编辑采购单删掉某个 demand 的全部分配后，{@code allocated} 归零、状态必须从 {@code ALLOCATED} 退回 {@code PENDING}（并集遍历就是为此）。
      */
     public static String statusFor(BigDecimal requiredQuantity, BigDecimal allocatedQuantity) {
         if (allocatedQuantity == null || allocatedQuantity.signum() == 0) {
@@ -147,7 +147,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * 锁序：需求必须**按 demandId 升序**逐个 `SELECT... FOR UPDATE`， 避免与 `order.create` 路径交叉成环。返回去重后的升序列表。
+     * 锁序：需求必须<b>按 demandId 升序</b>逐个 {@code SELECT... FOR UPDATE}，避免与 {@code order.create} 路径交叉成环。返回去重后的升序列表。
      *
      * <p>
      * 调用方在锁定前校验需求 ID。这里过滤空值并去重，保证后续锁始终按升序获取。

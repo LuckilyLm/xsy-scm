@@ -11,7 +11,7 @@ import java.util.Map;
  * 出库单明细行（独立 VO，供明细接口与 mapper 复用）。
  *
  * <p>
- * 与 {@link InventoryOutboundVO.Item} 字段一致，但**不复用同一个类**： 头内嵌明细是「详情的组成部分」，独立接口返回的是「一行的投影」，
+ * 与 {@link InventoryOutboundVO.Item} 字段一致，但<b>不复用同一个类</b>：头内嵌明细是「详情的组成部分」，独立接口返回的是「一行的投影」，
  * 两者的演进理由不同（前者跟随头、后者跟随行）。用同名字段保持前端一致即可。
  */
 @Data

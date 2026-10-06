@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
  * 员工被授权的仓库（SCM 数据范围仓库维度的唯一事实来源）。
  *
  * <p>
- * 一行 = 一人一仓。角色只回答「能做什么」，本表回答「能看哪些仓的数据」， 因此不把仓库编进角色名、也不借用部门。没有任何隐式默认：无活动行即看不到该仓数据。
+ * 一行 = 一人一仓。角色只回答「能做什么」，本表回答「能看哪些仓的数据」，因此不把仓库编进角色名、也不借用部门。没有任何隐式默认：无活动行即看不到该仓数据。
  *
  * <p>
- * 列名沿用 SmartAdmin 底座风格（{@code deleted_flag} / {@code create_time}）， 与 SCM 业务表的 {@code deleted} / {@code created_at}
+ * 列名沿用 SmartAdmin 底座风格（{@code deleted_flag} / {@code create_time}），与 SCM 业务表的 {@code deleted} / {@code created_at}
  * 不同，映射必须逐列写清。
  */
 @Data

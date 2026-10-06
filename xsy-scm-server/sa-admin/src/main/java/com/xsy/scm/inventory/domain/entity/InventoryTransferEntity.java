@@ -15,11 +15,11 @@ import java.time.OffsetDateTime;
  * 调拨单（跨仓，两步式：发出 → 在途 → 收货）。
  *
  * <p>
- * <b>本表是原创设计</b>。两步式的两条理由见 {@code ScmInventoryTransferStatusEnum}：语义正确（货在卡车上时不在任何仓）、 并发安全（每步只锁一个仓库的余额行，既有锁序纪律不用改）。
+ * <b>本表是原创设计</b>。两步式的两条理由见 {@code ScmInventoryTransferStatusEnum}：语义正确（货在卡车上时不在任何仓）、并发安全（每步只锁一个仓库的余额行，既有锁序纪律不用改）。
  *
  * <p>
  * <b>{@code shippedAt} / {@code shippedBy} 是转出流水的事实来源</b>， {@code receivedAt} / {@code receivedBy} 是转入流水的事实来源 —— 两笔流水的
- * {@code occurred_at} 与 {@code operator} 分别取自它们， 禁止用 {@code now()} 或当前登录人顶替（否则「按业务时间查流水」会失真）。
+ * {@code occurred_at} 与 {@code operator} 分别取自它们，禁止用 {@code now()} 或当前登录人顶替（否则「按业务时间查流水」会失真）。
  */
 @Data
 @TableName(value = "inventory_transfer", autoResultMap = true)

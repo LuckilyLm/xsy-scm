@@ -9,32 +9,32 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 收货单行（** 对账恒等式**）。
+ * 收货单行（<b>对账恒等式</b>）。
  *
  * <p>
- * 五个对账数量（`received` / `cumulative_received` / `remaining` / `over_receipt` / `receipt_difference`） 由
- * {@code ck_purchase_receipt_item_reconciliation} 在 DB 层强制， 因此 {@link #updateReconciliation} **必须一次写全五个值** —— 少写一个就会撞
- * CHECK。
+ * 五个对账数量（{@code received} / {@code cumulative_received} / {@code remaining} / {@code over_receipt} /
+ * {@code receipt_difference}）由 {@code ck_purchase_receipt_item_reconciliation} 在 DB 层强制，因此
+ * {@link #updateReconciliation} <b>必须一次写全五个值</b> —— 少写一个就会撞 CHECK。
  *
  * <p>
- * {@link #updateReconciliation} 显式传 `plannedQuantity` 是为了让 CHECK 恒等式可被 DB 复核； `planned_quantity`
- * 本身**永不被覆盖**，传的是从采购行继承的同一个值。
+ * {@link #updateReconciliation} 显式传 {@code plannedQuantity} 是为了让 CHECK 恒等式可被 DB 复核； {@code planned_quantity}
+ * 本身<b>永不被覆盖</b>，传的是从采购行继承的同一个值。
  */
 @Mapper
 public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEntity> {
 
     /**
-     * 本收货单全部活动行，按 `sort_order` 排序。
+     * 本收货单全部活动行，按 {@code sort_order} 排序。
      */
     List<PurchaseReceiptItemEntity> listByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
     /**
-     * 锁定本收货单全部行（`ORDER BY id ASC FOR UPDATE`）。
+     * 锁定本收货单全部行（{@code ORDER BY id ASC FOR UPDATE}）。
      */
     List<PurchaseReceiptItemEntity> lockByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
     /**
-     * 单行 `FOR UPDATE`。
+     * 单行 {@code FOR UPDATE}。
      */
     PurchaseReceiptItemEntity lock(@Param("id") Long id);
 
@@ -47,7 +47,8 @@ public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEn
      * 一次性写全 5 个对账数量 + 实重三字段（标品三字段全空）。
      *
      * <p>
-     * 实重三字段与 `actual_weight` 必须**同生同灭**（`ck_purchase_receipt_item_weight_fields`）， 因此它们和 5 个对账数量放在同一条 UPDATE 里，不做两步写。
+     * 实重三字段与 {@code actual_weight} 必须<b>同生同灭</b>（{@code ck_purchase_receipt_item_weight_fields}），因此它们和 5 个对账数量放在同一条
+     * UPDATE 里，不做两步写。
      */
     int updateReconciliation(@Param("id") Long id, @Param("version") Integer version,
             @Param("receivedQuantity") BigDecimal receivedQuantity,
@@ -69,7 +70,7 @@ public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEn
     int softDeleteByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId, @Param("operator") String operator);
 
     /**
-     * 活动行数（`confirm` 必须提交全部明细的判定用，40998）。
+     * 活动行数（{@code confirm} 必须提交全部明细的判定用，40998）。
      */
     int countActiveByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 }

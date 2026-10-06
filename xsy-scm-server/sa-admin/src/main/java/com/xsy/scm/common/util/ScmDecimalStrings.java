@@ -12,7 +12,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
  * SCM 定点数（数量 / 金额）字符串的唯一解析入口。数量与金额只有一条规则：
  *
  * <ul>
- * <li>传输形态固定为 JSON <b>字符串</b>，整数部分最多 14 位、小数部分最多 4 位；</li>
+ * <li>传输形态固定为 JSON 字符串，整数部分最多 14 位、小数部分最多 4 位；</li>
  * <li>接受 {@code "12.34"} / {@code "12.3400"}，拒绝 {@code "12.34000"}（超 4 位小数）；</li>
  * <li>拒绝 JSON 数字字面量 {@code 12.34}（浮点数在传输层就可能丢精度）；</li>
  * <li>拒绝负数与科学计数法（{@code 1e5}）；</li>
@@ -23,7 +23,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
  * 解析结果统一 {@code setScale(4, HALF_UP)}，与 {@code ScmFixedScale4Serializer} 的对外形态对称。
  *
  * <p>
- * <b>使用边界</b>：只服务「非 MVC 入口」——参数已经进入 Service / Manager / 工具层。MVC 入口的字段仍用 {@code @Pattern} 做第一道拦截（失败返回 30001）；本类失败抛
+ * 只服务「非 MVC 入口」，即参数已经进入 Service / Manager / 工具层的情况。MVC 入口的字段仍用 {@code @Pattern} 做第一道拦截（失败返回 30001）；本类失败抛
  * {@code VALIDATION_ERROR}(40000)。
  */
 public final class ScmDecimalStrings {

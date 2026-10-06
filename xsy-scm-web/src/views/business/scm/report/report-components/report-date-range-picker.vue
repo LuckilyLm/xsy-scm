@@ -20,7 +20,7 @@ import {datePresets} from '../report-model';
  * 绑定值恒为 `yyyy-MM-dd` 字符串，与后端 `LocalDate` 的闭区间语义一致。
  *
  * `presets` 的取值必须是 dayjs 对象（面板要按它算月份与格子，传字符串会让日历空白），
- * 因此这里把字符串区间**只为画日历**转成 dayjs，写回 `v-model` 的仍是字符串。
+ * 因此这里把字符串区间<b>只为画日历</b>转成 dayjs，写回 `v-model` 的仍是字符串。
  *
  * `allow-clear` 关掉：报表没有「不设日期看全部」这一档 —— 后端会以 41110 拒掉缺日期的查询。
  */

@@ -4,16 +4,15 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * **客户退款**的付款方式：与供应商付款的 {@link ScmFinancePaymentMethodEnum} 分开。
+ * <b>客户退款</b>的付款方式：与供应商付款的 {@link ScmFinancePaymentMethodEnum} 分开。
  *
  * <p>
- * <b>为什么不能直接扩那个枚举</b>：它是供应商付款与客户退款共用的。加 {@code ONLINE_PAYMENT}
- * 会让供应商付款入口也拿到这个值，而库上的 {@code ck_finance_payment_method} 是按对手方约束的
- * —— 供应商付款带 ONLINE_PAYMENT 会被数据库拒绝。让前端能选、后端必然失败，是最差的一种「支持」。
+ * <b>为什么不能直接扩那个枚举</b>：它是供应商付款与客户退款共用的。加 {@code ONLINE_PAYMENT} 会让供应商付款入口也拿到这个值，而库上的 {@code ck_finance_payment_method}
+ * 是按对手方约束的 —— 供应商付款带 ONLINE_PAYMENT 会被数据库拒绝。让前端能选、后端必然失败，是最差的一种「支持」。
  *
  * <p>
- * 数据库侧同义：{@code ck_finance_payment_method} 对 {@code CUSTOMER} 放行这四个值，
- * 对 {@code SUPPLIER} 仍然只放行前三个中的 CASH / BANK_TRANSFER / OTHER。
+ * 数据库侧同义：{@code ck_finance_payment_method} 对 {@code CUSTOMER} 放行这四个值， 对 {@code SUPPLIER} 仍然只放行前三个中的 CASH /
+ * BANK_TRANSFER / OTHER。
  */
 @Getter
 @RequiredArgsConstructor

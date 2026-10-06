@@ -16,7 +16,7 @@ import java.util.List;
  * 盘点单头读写。
  *
  * <p>
- * 与出库单 DAO 同构：本表是**普通有状态单据**（草稿可改、可取消），因此有 update 方法。 真正的不可变纪律在 {@code inventory_movement} 上，不在这里。
+ * 与出库单 DAO 同构：本表是<b>普通有状态单据</b>（草稿可改、可取消），因此有 update 方法。真正的不可变纪律在 {@code inventory_movement} 上，不在这里。
  */
 @Mapper
 public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEntity> {
@@ -40,7 +40,7 @@ public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEnti
      * 锁定单据行（{@code SELECT ... FOR UPDATE}）。
      *
      * <p>
-     * 锁序纪律：**单据锁先于余额锁**。确认盘点时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁余额行，与收货确认、出库确认同一顺序， 避免三条链路以相反顺序拿锁而死锁。
+     * 锁序纪律：<b>单据锁先于余额锁</b>。确认盘点时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁余额行，与收货确认、出库确认同一顺序，避免三条链路以相反顺序拿锁而死锁。
      */
     InventoryStocktakeEntity lockById(@Param("id") Long id);
 

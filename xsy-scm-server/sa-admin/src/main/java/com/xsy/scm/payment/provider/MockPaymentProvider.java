@@ -25,18 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
  * 本地模拟支付渠道。
  *
  * <p>
- * <b>它模拟的是「渠道」这一侧</b>：有自己的一本账（{@link PaymentMockLedgerEntity}）、
- * 自己签名、自己决定什么时候回。业务域那边的验签、幂等与状态机照常执行 ——
- * mock 无权跳过任何一条业务纪律，否则本地验证就失去意义。
+ * 它模拟的是渠道这一侧：有自己的一本账（{@link PaymentMockLedgerEntity}）、自己签名、自己决定什么时候回。 业务域那边的验签、幂等与状态机照常执行，mock
+ * 无权跳过任何一条业务纪律，否则本地验证就失去意义。
  *
  * <p>
- * <b>为什么账本用独立事务写</b>：渠道是另一个系统。如果 mock 的账随业务事务一起回滚，
- * 它永远和本地平账，「渠道扣了钱、本地没记上」这类差异根本测不出来。用
- * {@code REQUIRES_NEW} 如实模拟「两边各自记账」。
+ * 账本用独立事务写的理由是：渠道是另一个系统。如果 mock 的账随业务事务一起回滚，它永远和本地平账， 「渠道扣了钱、本地没记上」这类差异根本测不出来，因此用 {@code REQUIRES_NEW} 如实模拟两边各自记账。
  *
  * <p>
- * 签名用 HMAC-SHA256（密钥来自配置，不进业务规则）。真实渠道实现会换成渠道自己的
- * 签名算法与证书，业务侧代码一行不用改。
+ * 签名用 HMAC-SHA256（密钥来自配置，不进业务规则）。真实渠道实现会换成渠道自己的签名算法与证书， 业务侧代码一行不用改。
  */
 @Slf4j
 @Component
@@ -52,7 +48,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     private final PaymentMockLedgerDao paymentMockLedgerDao;
 
     /**
-     * 模拟渠道的签名密钥。**只在这里读**：渠道密钥不进业务规则、不进客户端、不落库。
+     * 模拟渠道的签名密钥。<b>只在这里读</b>：渠道密钥不进业务规则、不进客户端、不落库。
      */
     @Value("${scm.payment.mock.secret:scm-local-mock-secret}")
     private String secret;
@@ -76,9 +72,8 @@ public class MockPaymentProvider implements ScmPaymentProvider {
                 yield new IntentResult(externalIntentId, providerTransactionNo, Outcome.SUCCEEDED, request.amount(),
                         null, null);
             }
-            case FAILURE ->
-                new IntentResult(externalIntentId, providerTransactionNo, Outcome.FAILED, null, "MOCK_DECLINED",
-                        "模拟渠道拒付");
+            case FAILURE -> new IntentResult(externalIntentId, providerTransactionNo, Outcome.FAILED, null,
+                    "MOCK_DECLINED", "模拟渠道拒付");
             case DELAYED, EXPIRED ->
                 // 延迟与过期都不立即记账：等真正成功的那一刻（回调）才入渠道账
                 new IntentResult(externalIntentId, providerTransactionNo, Outcome.PENDING, null, null, null);
@@ -92,8 +87,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
                 : request.scenario();
         String providerRefundNo = "MOCK-REFUND-" + request.refundNo();
         if (scenario == ScmPaymentMockScenarioEnum.FAILURE) {
-            return new RefundResult(providerRefundNo, Outcome.FAILED, null, "MOCK_REFUND_REJECTED",
-                    "模拟渠道拒绝退款");
+            return new RefundResult(providerRefundNo, Outcome.FAILED, null, "MOCK_REFUND_REJECTED", "模拟渠道拒绝退款");
         }
         recordLedger(request.providerTransactionNo(), providerRefundNo, "OUT", request.amount());
         return new RefundResult(providerRefundNo, Outcome.SUCCEEDED, request.amount(), null, null);
@@ -108,8 +102,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
      * "providerRefundNo":null,"bizDate":"2026-10-03"}}。
      *
      * <p>
-     * 不抛异常：验签失败也返回一个 {@code signatureVerified = false} 的结果，
-     * 让业务侧落一条 REJECTED 事件留证。
+     * 不抛异常：验签失败也返回一个 {@code signatureVerified = false} 的结果， 让业务侧落一条 REJECTED 事件留证。
      */
     @Override
     public Callback parseCallback(Map<String, String> headers, String rawBody) {
@@ -142,8 +135,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
      * 查单：从渠道账本里找这一笔。
      *
      * <p>
-     * 查得到「入」即视为成功；查不到返回 {@code null}（渠道没有这笔）——
-     * 这正是对账要区分的情形之一。
+     * 查得到「入」即视为成功；查不到返回 {@code null}（渠道没有这笔）—— 这正是对账要区分的情形之一。
      */
     @Override
     public TransactionResult queryTransaction(String providerTransactionNo) {
@@ -155,7 +147,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     }
 
     /**
-     * 渠道收款对账明细：按业务日汇总渠道自己的账（**只取 IN**，退款对账是后续独立一项）。
+     * 渠道收款对账明细：按业务日汇总渠道自己的账（<b>只取 IN</b>，退款对账是后续独立一项）。
      */
     @Override
     public Settlement fetchSettlement(LocalDate bizDate) {
@@ -184,7 +176,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     }
 
     /**
-     * 渠道记账。**独立事务**（见类注释）：渠道的账不随本地事务回滚。
+     * 渠道记账。<b>独立事务</b>（见类注释）：渠道的账不随本地事务回滚。
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void recordLedger(String providerTransactionNo, String providerRefundNo, String direction,

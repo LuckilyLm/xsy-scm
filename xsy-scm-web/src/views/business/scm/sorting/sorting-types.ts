@@ -2,13 +2,13 @@
  * 分拣管理前端契约（与后端 `module/scm/sorting/domain/{form,vo}` 逐字对齐）。
  *
  * 三条口径：
- * - 数量（`BigDecimal` + `ScmFixedScale4Serializer`）到前端一律是 **4 位定点字符串**或 `null`；
+ * - 数量（`BigDecimal` + `ScmFixedScale4Serializer`）到前端一律是 <b>4 位定点字符串</b>或 `null`；
  *   `null` 是「尚未录入」，`"0.0000"` 是「录入过且为 0（整行缺货）」，两者绝不合并渲染。
  *   因此这里不出现 `number` 类型的量，页面也不得 `Number()` / `toFixed()` 后再算。
  * - 计数（`itemCount` / `printCount` 等 `Integer`）才是 JSON 数字。
  * - 每个任务与每条明细各带自己的 `version`：录入按行提交，所以行版本不能被任务版本替代。
  *
- * 分拣是**独立的实发事实**：不回写订单实发量、不改结算金额、不写库存余额与流水
+ * 分拣是<b>独立的实发事实</b>：不回写订单实发量、不改结算金额、不写库存余额与流水
  * （裁决第 1、3 条）。任何把本页数字当成「订单已改成这个数」的命名都属于口径漂移。
  */
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
@@ -95,7 +95,7 @@ export type SortingItemSourceType = 'ORDER_ITEM' | 'PROMOTION_GIFT';
 /**
  * `SortingTaskItemVO`：计划量是建单时冻结的订单行实发量，之后订单怎么改都不追溯。
  *
- * 这是一个**只读合并模型**：订单行来自 `sorting_task_item`，满赠赠品来自
+ * 这是一个<b>只读合并模型</b>：订单行来自 `sorting_task_item`，满赠赠品来自
  * `order_promotion_gift`（赠品不复制成订单行，否则会污染销售数量与商品排行）。
  * 赠品行 `salesOrderItemId` 为 null、`sortedQuantity` 恒为 null —— 分拣不写回赠品数量。
  */
@@ -217,7 +217,7 @@ export interface SortingAssignPayload {
 /**
  * `SortingEntryItemForm`：一行明细的分拣结果。
  *
- * `sortedQuantity` 以字符串提交（4 位定点），`version` 是**这一行**读到的版本 ——
+ * `sortedQuantity` 以字符串提交（4 位定点），`version` 是<b>这一行</b>读到的版本 ——
  * 一次批量录入里某行被他人改过只该顶掉那一行所在的这次提交，不能被任务版本掩盖。
  */
 export interface SortingEntryItemPayload {
@@ -271,7 +271,7 @@ export type SortingScaleStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
  *
  * 原始读数与接受数量都返回：两者不一致时必须能看出来，而不是只留一个「最终值」。
  * `capturedAt` 是设备采集时间，`receivedAt` 是服务端接收时间（设备可能离线补传）。
- * `duplicated` 表示本次上报是重复事件（服务端已有同键记录），**不是错误**。
+ * `duplicated` 表示本次上报是重复事件（服务端已有同键记录），<b>不是错误</b>。
  */
 export interface SortingScaleEvent {
     id: Id;

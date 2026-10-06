@@ -52,8 +52,7 @@ public class SalesOrderQueryService {
     private final ScmDataScopeService dataScopeService;
 
     /**
-     * 订单详情带上已冻结优惠（只读事实）。订单域不重复实现优惠规则，只把营销域的读模型嵌进来，
-     * 让「这单减了多少、用了哪张券」在详情页可查；没有优惠时为 null。
+     * 订单详情带上已冻结优惠（只读事实）。订单域不重复实现优惠规则，只把营销域的读模型嵌进来， 让「这单减了多少、用了哪张券」在详情页可查；没有优惠时为 null。
      */
     private final PromotionDiscountService promotionDiscountService;
 
@@ -83,7 +82,7 @@ public class SalesOrderQueryService {
      * 详情读（HTTP 入口用的默认形态）：按当前调用者的订单业务员范围判定，越权 30005。
      *
      * <p>
-     * 范围判定放在这里而不是各个 Controller 里，是为了让「新加的读入口自动带范围」。 写路径需要的是同一行的<b>未收窄</b>快照，见 {@link #detailSnapshot(Long)}。
+     * 范围判定放在这里而不是各个 Controller 里，是为了让「新加的读入口自动带范围」。写路径需要的是同一行的<b>未收窄</b>快照，见 {@link #detailSnapshot(Long)}。
      */
     public SalesOrderDetailVO detail(Long orderId) {
         return detail(orderId, dataScopeService.resolve());
@@ -107,7 +106,7 @@ public class SalesOrderQueryService {
 
     /**
      * 详情快照（<b>刻意不收范围</b>）：写路径在同一事务里取操作日志的前后镜像 （create/submit/confirm/cancel/actual-quantity，见
-     * {@code SalesOrderService}）， 读的是自己刚写下的行，不是「查看别人的单」。数据范围只约束读接口，不约束写流程的自取快照。
+     * {@code SalesOrderService}），读的是自己刚写下的行，不是「查看别人的单」。数据范围只约束读接口，不约束写流程的自取快照。
      */
     public SalesOrderDetailVO detailSnapshot(Long orderId) {
         var salesOrder = salesOrderDao.selectById(orderId);
@@ -142,7 +141,7 @@ public class SalesOrderQueryService {
      * 某客户某 SKU 的最近成交参考价（只读）：仅供录单旁证，不回算当前价格、不参与定价。
      *
      * <p>
-     * 刻意不按调用者范围收窄：它是录单时的取价旁证入参，客户与 SKU 都由前端选择， 真正的下单校验在 {@code SalesOrderService} 的归属判定里做（读不到该客户就建不了单）。
+     * 刻意不按调用者范围收窄：它是录单时的取价旁证入参，客户与 SKU 都由前端选择，真正的下单校验在 {@code SalesOrderService} 的归属判定里做（读不到该客户就建不了单）。
      */
     public List<OrderRecentPriceVO> recentPrices(Long customerId, Long skuId, int limit) {
         int n = Math.min(Math.max(limit, RECENT_PRICE_MIN_LIMIT), RECENT_PRICE_MAX_LIMIT);

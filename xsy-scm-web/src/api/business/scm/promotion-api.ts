@@ -1,7 +1,7 @@
 /**
  * 营销中心接口。
  *
- * 试算是只读的（`POST` 只是因为要传订单行数组）：**不占用券、不写任何表**；
+ * 试算是只读的（`POST` 只是因为要传订单行数组）：<b>不占用券、不写任何表</b>；
  * 只有 `confirm` 才占用券并冻结优惠。两者分开是 ADR-009 的明确要求 —— 预览不等于最终占用。
  */
 import {getRequest, postRequest, request} from '/@/lib/axios';
@@ -96,7 +96,7 @@ export const promotionApi = {
         postRequest('/scm/promotion/discount/preview', form) as unknown as Promise<ScmResponse<PromotionDiscount>>,
 
     /**
-     * 冻结不再有独立端点：优惠由**订单确认**在服务端按订单事实冻结。
+     * 冻结不再有独立端点：优惠由<b>订单确认</b>在服务端按订单事实冻结。
      *
      * 客户端只传 `couponInstanceId`（客户选用哪张券是客户的权益），活动由服务端自行选出，
      * 客户与行金额由服务端从订单读取 —— 这样不会出现「订单确认了但优惠没冻结」的中间态。

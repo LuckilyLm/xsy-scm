@@ -3,7 +3,7 @@
  *
  * 保护这一批「不新增迁移、复用既有权限」的效率能力最容易被悄悄违背、且违背后不报错的线：
  * 1. 导出走只读 `postDownload('/scm/purchase/export')`，绝不落写接口；
- * 2. 批量少收关单 / 按商品工作台走只读 `postRequest`，且**不得**复用带 Idempotency-Key 的 `purchaseCommand`
+ * 2. 批量少收关单 / 按商品工作台走只读 `postRequest`，且<b>不得</b>复用带 Idempotency-Key 的 `purchaseCommand`
  *    （后端这两个端点都不接幂等头，误用会让契约与后端不一致）；
  * 3. 按商品工作台只渲染后端逐行裁剪后聚合的四位定点字符串，前端绝不重算欠收 / 超收；
  * 4. 打印是纯客户端动作，`purchase-order-print.ts` 里不得出现任何网络 / 写调用；

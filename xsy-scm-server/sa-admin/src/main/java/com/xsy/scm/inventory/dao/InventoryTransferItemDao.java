@@ -12,10 +12,10 @@ import java.util.List;
  * 调拨单明细读写。
  *
  * <p>
- * 明细整行替换只发生在**草稿态**（先逻辑删旧行再插新行，同一事务内）。 发出之后不再有任何写方法被调用 —— 由服务层状态机与 {@code InventoryTransferDao} 的 SQL 守卫共同保证。
+ * 明细整行替换只发生在<b>草稿态</b>（先逻辑删旧行再插新行，同一事务内）。发出之后不再有任何写方法被调用 —— 由服务层状态机与 {@code InventoryTransferDao} 的 SQL 守卫共同保证。
  *
  * <p>
- * 注意 {@link #updateUnitSnapshot} 只在**发出**时被调用一次：收货不再改单位快照， 因为它是「源仓记账单位」的事实记录，收货要做的是**断言**目标仓与之一致，而不是改写它。
+ * 注意 {@link #updateUnitSnapshot} 只在<b>发出</b>时被调用一次：收货不再改单位快照，因为它是「源仓记账单位」的事实记录，收货要做的是<b>断言</b>目标仓与之一致，而不是改写它。
  */
 @Mapper
 public interface InventoryTransferItemDao extends BaseMapper<InventoryTransferItemEntity> {
@@ -31,7 +31,7 @@ public interface InventoryTransferItemDao extends BaseMapper<InventoryTransferIt
     int deleteByTransferId(@Param("transferId") Long transferId, @Param("operator") String operator);
 
     /**
-     * 回写单位快照（**发出**时按源仓记账单位写入）。
+     * 回写单位快照（<b>发出</b>时按源仓记账单位写入）。
      */
     int updateUnitSnapshot(@Param("id") Long id, @Param("unit") String unit, @Param("operator") String operator);
 }

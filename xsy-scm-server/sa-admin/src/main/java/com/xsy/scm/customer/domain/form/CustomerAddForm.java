@@ -25,7 +25,7 @@ import java.util.List;
  * 新增客户。
  *
  * <p>
- * <b>刻意不含 {@code status}</b>：状态变更走独立的 {@code /scm/customer/updateStatus} 端点， 新客户的初始状态由 Service 固定为 {@code POTENTIAL}。
+ * <b>刻意不含 {@code status}</b>：状态变更走独立的 {@code /scm/customer/updateStatus} 端点，新客户的初始状态由 Service 固定为 {@code POTENTIAL}。
  */
 @Data
 public class CustomerAddForm extends ScmLocationForm {

@@ -8,7 +8,7 @@ import com.xsy.scm.common.error.ScmErrorCode;
  * 分拣域使用 41120–41128 错误码，与配送域的 41100–41119 错误码保持分离。
  *
  * <p>
- * 「不属于你的任务」一律不走这里的业务码：那等于回答「这个 id 存在但你不该看」， 让探测主键与探测权限可分辨，故由 {@code ScmDataScopeException} 统一回 30005。
+ * 「不属于你的任务」一律不走这里的业务码：那等于回答「这个 id 存在但你不该看」，让探测主键与探测权限可分辨，故由 {@code ScmDataScopeException} 统一回 30005。
  */
 @Getter
 @RequiredArgsConstructor
@@ -37,8 +37,7 @@ public enum SortingErrorCode implements ScmErrorCode {
     SCALE_EVENT_STATE_INVALID(41131, "秤读数当前状态不允许此操作"),
 
     /**
-     * 一键分拣只处理标准品：非标品的数量是称重结果，必须人工录入并说明差异，
-     * 由一键操作推断会绕过「人工确认」这条链路。
+     * 一键分拣只处理标准品：非标品的数量是称重结果，必须人工录入并说明差异， 由一键操作推断会绕过「人工确认」这条链路。
      */
     SCALE_EVENT_ITEM_NOT_STANDARD(41132, "该明细不是标准品，不能一键分拣，请人工录入"),
 

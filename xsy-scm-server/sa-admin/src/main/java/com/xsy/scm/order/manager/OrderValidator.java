@@ -35,7 +35,7 @@ public final class OrderValidator {
      * 解析数量 / 金额的定点字符串。
      *
      * <p>
-     * 形态规则直接复用 {@link ScmDecimalStrings}：订单域曾要求「恰好 4 位小数」，比全项目唯一规则 更严，导致前端与 Excel 导入提交的 {@code "10"} 被拒。负数、科学计数法与超 4
+     * 形态规则直接复用 {@link ScmDecimalStrings}：订单域曾要求「恰好 4 位小数」，比全项目唯一规则更严，导致前端与 Excel 导入提交的 {@code "10"} 被拒。负数、科学计数法与超 4
      * 位小数仍然拒绝。
      *
      * @param positive

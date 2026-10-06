@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
  * 客户类型（可维护字典表）。
  *
  * <p>
- * 客户类型存储在 {@code customer_type} 表中，类型编码由种子数据提供，新增类型不需要 在前端维护另一份枚举。
+ * 客户类型存储在 {@code customer_type} 表中，类型编码由种子数据提供，新增类型不需要在前端维护另一份枚举。
  */
 @Data
 @TableName(value = "customer_type", autoResultMap = true)

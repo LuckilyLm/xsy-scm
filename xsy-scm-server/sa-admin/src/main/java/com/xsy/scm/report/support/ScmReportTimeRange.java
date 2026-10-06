@@ -6,14 +6,8 @@ import java.time.OffsetDateTime;
 /**
  * 解析后的报表查询区间。
  *
- * @param startDate
- *            用户选择的起始日（闭）
- * @param endDate
- *            用户选择的结束日（闭）
- * @param startAt
- *            {@code startDate} 在 Asia/Shanghai 的日界瞬间（含）
- * @param endAt
- *            {@code endDate + 1 天} 在 Asia/Shanghai 的日界瞬间（不含）
+ * <p>
+ * 日期是用户选择的闭区间，时刻是两个日界瞬间：{@code startAt} 含，{@code endAt} 为 {@code endDate + 1 天} 的日界、不含，两端都在 Asia/Shanghai 上解析。
  */
 public record ScmReportTimeRange(LocalDate startDate, LocalDate endDate, OffsetDateTime startAt, OffsetDateTime endAt) {
 }

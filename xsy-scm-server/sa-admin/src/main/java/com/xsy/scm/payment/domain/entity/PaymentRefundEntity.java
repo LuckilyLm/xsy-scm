@@ -15,9 +15,8 @@ import lombok.Data;
  * 渠道退款事实。
  *
  * <p>
- * 与订单域的 {@code order_refund}（售后退款单）是两件事：{@code order_refund} 说「该退多少」，
- * 这里说「渠道实际退了多少、退到哪一笔交易上」。通过 {@code source_type = ORDER_REFUND}
- * + {@code source_id} 关联，且**一张售后退款单只对应一笔渠道退款**（唯一索引）。
+ * 与订单域的 {@code order_refund}（售后退款单）是两件事：{@code order_refund} 说「该退多少」， 这里说「渠道实际退了多少、退到哪一笔交易上」。通过
+ * {@code source_type = ORDER_REFUND} + {@code source_id} 关联，且<b>一张售后退款单只对应一笔渠道退款</b>（唯一索引）。
  */
 @Data
 @TableName("payment_refund")
@@ -34,15 +33,14 @@ public class PaymentRefundEntity {
 
     private String provider;
 
-    /** **申请**退款金额（本地决定）。 */
+    /** <b>申请</b>退款金额（本地决定）。 */
     private BigDecimal amount;
 
     /**
-     * **渠道实际退款金额**。成功态必有值（库上有 CHECK）。
+     * <b>渠道实际退款金额</b>。成功态必有值（库上有 CHECK）。
      *
      * <p>
-     * 与 {@link #amount} 分开：申请 100 而渠道实际退了 98 是可能发生的，
-     * 3-11b 的资金反向事实认的是这一列，不是申请额。
+     * 与 {@link #amount} 分开：申请 100 而渠道实际退了 98 是可能发生的， 3-11b 的资金反向事实认的是这一列，不是申请额。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal providerAmount;

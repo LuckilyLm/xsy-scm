@@ -47,7 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
  * （客户退款付款）。客户付款必须对应退款来源；不接受无来源的客户付款。
  *
  * <p>
- * <b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收， 本命令只表达「钱真的付出去了」，因此绝不写 {@code finance_write_off}、绝不改任何
+ * <b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收，本命令只表达「钱真的付出去了」，因此绝不写 {@code finance_write_off}、绝不改任何
  * {@code finance_receivable} 行 —— 否则同一笔退货被冲减两次。
  *
  * <p>
@@ -69,7 +69,7 @@ public class FinancePaymentService {
      * 登记一笔 {@code NORMAL} 付款。
      *
      * <p>
-     * <b>整条链必须同事务</b>：幂等 claim、付款事实、操作日志、幂等 complete 要么一起成， 要么一起不成。退款来源撞 {@code uk_finance_payment_source_active}
+     * <b>整条链必须同事务</b>：幂等 claim、付款事实、操作日志、幂等 complete 要么一起成，要么一起不成。退款来源撞 {@code uk_finance_payment_source_active}
      * 时同样整笔回滚 —— 留下「已付款但无日志」或「claim 已占但无结果」都是不可接受的半成品。
      *
      * <p>
@@ -146,8 +146,8 @@ public class FinancePaymentService {
      * 付款事实本身（不含幂等三段式）。
      *
      * <p>
-     * 两种模式的判定顺序刻意是「先形态、后来源、再范围、最后落库」，并且 <b>CUSTOMER 侧的一切不通过都收敛到同一个 41139</b>：退款不存在、退款不属于我、 状态未完成、金额或对方不符、已付过 ——
-     * 全部同一个码。若把「不属于我」换成 范围异常（30005）而「不存在」保持 41139，就等于是给调用者一个「这张退款存在且不是你的」 的探测信号，因此客户范围校验也使用相同的失败响应。
+     * 两种模式的判定顺序刻意是「先形态、后来源、再范围、最后落库」，并且 <b>CUSTOMER 侧的一切不通过都收敛到同一个 41139</b>：退款不存在、退款不属于我、状态未完成、金额或对方不符、已付过 ——
+     * 全部同一个码。若把「不属于我」换成范围异常（30005）而「不存在」保持 41139，就等于是给调用者一个「这张退款存在且不是你的」的探测信号，因此客户范围校验也使用相同的失败响应。
      */
     private FinancePaymentEntity register(FinancePaymentAddForm form) {
         String counterpartyType = counterpartyType(form.getCounterpartyType());
@@ -240,7 +240,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 模式 A：供应商付款 / 预付。<b>没有任何应付、没有采购单也可以付</b>（预付）， 因此这里不接受也不校验 payableId / purchaseOrderId / purchaseReceiptId。
+     * 模式 A：供应商付款 / 预付。<b>没有任何应付、没有采购单也可以付</b>（预付），因此这里不接受也不校验 payableId / purchaseOrderId / purchaseReceiptId。
      * 只判供应商存在性与 deleted；{@code status} 不做前置（停用的供应商也可能要结清历史债务）。
      */
     private void fillSupplier(FinancePaymentEntity payment, FinancePaymentAddForm form) {
@@ -264,30 +264,26 @@ public class FinancePaymentService {
      * 系统入口：渠道退款成功后登记付款事实（ADM-12 3-11b）。
      *
      * <p>
-     * <b>不复用人工的 {@code add(FinancePaymentAddForm)}</b>：那个入口假设「有人在填」。
-     * 系统来源固定生成 {@code CUSTOMER + ORDER_REFUND + ONLINE_PAYMENT}，金额取**渠道实退**，
-     * 时点取渠道退款成功时间，渠道退款号落 {@code external_reference}。
+     * <b>不复用人工的 {@code add(FinancePaymentAddForm)}</b>：那个入口假设「有人在填」。 系统来源固定生成
+     * {@code CUSTOMER + ORDER_REFUND + ONLINE_PAYMENT}，金额取<b>渠道实退</b>， 时点取渠道退款成功时间，渠道退款号落 {@code external_reference}。
      *
      * <p>
-     * <b>财务域再校验一遍业务退款单</b>（不因为支付域校验过就跳过）：退款单存在且 COMPLETED、
-     * 客户一致、金额与应退额逐值一致、客户在当前调用者的客户数据范围内。
-     * 已有 {@code uk_finance_payment_source_active} 是并发下最终的仲裁点。
+     * <b>财务域再校验一遍业务退款单</b>（不因为支付域校验过就跳过）：退款单存在且 COMPLETED、 客户一致、金额与应退额逐值一致、客户在当前调用者的客户数据范围内。 已有
+     * {@code uk_finance_payment_source_active} 是并发下最终的仲裁点。
      *
      * <p>
-     * <b>金额不一致时这里会拒绝</b>：但正常情况下走不到这里 —— 支付域已按口径「金额不一致就不生成」
-     * 提前跳过（见 {@code PaymentRefundService.applyOutcome}）。真走到这里说明两边口径分叉了，
-     * 宁可失败也不要落一笔金额对不上的付款。
+     * <b>金额不一致时这里会拒绝</b>：但正常情况下走不到这里 —— 支付域已按口径「金额不一致就不生成」 提前跳过（见
+     * {@code PaymentRefundService.applyOutcome}）。真走到这里说明两边口径分叉了， 宁可失败也不要落一笔金额对不上的付款。
      *
      * @return 已存在的或新登记的付款事实
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentEntity registerFromPaymentRefund(FinancePaymentRefundFact fact) {
-        if (fact == null || fact.orderRefundId() == null || fact.customerId() == null
-                || fact.providerAmount() == null || fact.refundedAt() == null) {
+        if (fact == null || fact.orderRefundId() == null || fact.customerId() == null || fact.providerAmount() == null
+                || fact.refundedAt() == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        BigDecimal amount = fact.providerAmount()
-                .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
+        BigDecimal amount = fact.providerAmount().setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
         if (amount.signum() <= 0) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
@@ -345,13 +341,13 @@ public class FinancePaymentService {
             }
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(), ScmFinanceOperationTypeEnum.PAY,
-                null, null, snapshot(payment));
+        operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(), ScmFinanceOperationTypeEnum.PAY, null,
+                null, snapshot(payment));
         return payment;
     }
 
     /**
-     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}， 金额与对方必须与 {@code order_refund} **逐值一致**。
+     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}，金额与对方必须与 {@code order_refund} <b>逐值一致</b>。
      */
     private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form, BigDecimal amount) {
         if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(StringUtils.trimToNull(form.getSourceType()))
@@ -381,7 +377,7 @@ public class FinancePaymentService {
         financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), false);
         if (financePaymentSourceDao.selectActivePaymentRefund(refund.getRefundId()) != null) {
             // 线上退款已发起/完成：再人工退一次，就是同一张退款单被退两遍。
-            // 与支付域的 requireOrderRefundSource 构成**双向互斥**，两边都锁同一行 order_refund。
+            // 与支付域的 requireOrderRefundSource 构成<b>双向互斥</b>，两边都锁同一行 order_refund。
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
 
@@ -425,12 +421,10 @@ public class FinancePaymentService {
     }
 
     /**
-     * 方式按**对手方**校验，与 {@code ck_finance_payment_method} 的分组逐字一致：
-     * 供应商付款只有三值；客户退款多一个 {@code ONLINE_PAYMENT}（系统退款固定用它）。
+     * 方式按<b>对手方</b>校验，与 {@code ck_finance_payment_method} 的分组逐字一致： 供应商付款只有三值；客户退款多一个 {@code ONLINE_PAYMENT}（系统退款固定用它）。
      *
      * <p>
-     * 不按对手方分组校验，就会出现「前端能选、后端必然失败」的最差一种支持：
-     * 供应商付款带 ONLINE_PAYMENT 会被数据库拒绝。
+     * 不按对手方分组校验，就会出现「前端能选、后端必然失败」的最差一种支持： 供应商付款带 ONLINE_PAYMENT 会被数据库拒绝。
      */
     private static String method(String counterpartyType, String raw) {
         String value = StringUtils.trimToNull(raw);

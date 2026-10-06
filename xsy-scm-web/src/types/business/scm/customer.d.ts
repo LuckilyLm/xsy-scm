@@ -3,7 +3,7 @@ import type {ScmLocation} from '/@/components/business/scm/map/types';
  *  客户域前端契约（与后端 `module/scm/customer` 的 Form / VO 一一对应）。
  *
  * 约定（与 `product.d.ts` 一致）：
- * - 金额字段是**4 位定点字符串**（`"0.0000"`），不是 number；`null` 表示「未设置」，与 `"0.0000"` 语义不同。
+ * - 金额字段是<b>4 位定点字符串</b>（`"0.0000"`），不是 number；`null` 表示「未设置」，与 `"0.0000"` 语义不同。
  * - 枚举一律用后端字符串码（`POTENTIAL` / `GROUP` / `BY_AMOUNT` …），不用数字。
  * - `version` 是乐观锁版本，编辑 / 状态 / 删除都必须回传。
  */
@@ -178,7 +178,7 @@ export interface CustomerSellerReassignPayload {
  * 客户「常购商品」聚合行（对应后端 CustomerFrequentSkuVO， 只读）。
  *
  * 按 (skuId, unit) 分组：同 SKU 历史单位改变时分行展示，绝不跨单位求和。
- * orderedQuantity 是**订购量**（非实重 / 结算量）；recentUnitPrice 是最近已确认订单价，
+ * orderedQuantity 是<b>订购量</b>（非实重 / 结算量）；recentUnitPrice 是最近已确认订单价，
  * 锁定单价缺失时为 {@code null}（前端不兜底为草稿价 / 当前价）。
  */
 export interface CustomerFrequentSku {

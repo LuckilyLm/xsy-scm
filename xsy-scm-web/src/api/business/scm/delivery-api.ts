@@ -70,7 +70,7 @@ export const deliveryApi = {
     dispatch: (id: Id, version: number) => idempotentCommand<DispatchResult>(`/routes/${id}/dispatch`, {version}),
     /**
      * L3 订单签收：IN_TRANSIT → SIGNED | EXCEPTION。
-     * 不带 Idempotency-Key —— 后端签名里没有这个头，重复提交由**行版本**乐观锁拒绝；
+     * 不带 Idempotency-Key —— 后端签名里没有这个头，重复提交由<b>行版本</b>乐观锁拒绝；
      * 加了反而会把「别人已先签了」的冲突掩盖成一次成功回放。
      */
     sign: (id: Id, orderId: Id, form: SignPayload) => call<string>('post', `/routes/${id}/orders/${orderId}/sign`, form),

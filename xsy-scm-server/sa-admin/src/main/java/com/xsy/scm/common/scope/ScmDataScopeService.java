@@ -26,7 +26,7 @@ import java.util.List;
  * </ul>
  *
  * <p>
- * 取不到登录员工（异步线程、定时任务、直连 Service 的测试）时按失败关闭处理。需要跨全量跑的内部逻辑 应当直接调用未收窄的 Dao，而不是绕过本类去读列表接口。
+ * 取不到登录员工（异步线程、定时任务、直连 Service 的测试）时按失败关闭处理。需要跨全量跑的内部逻辑应当直接调用未收窄的 Dao，而不是绕过本类去读列表接口。
  */
 @Service
 @RequiredArgsConstructor
@@ -59,7 +59,7 @@ public class ScmDataScopeService {
     private final ScmDataScopeDao dataScopeDao;
 
     /**
-     * 解析当前调用者的数据范围。每次请求都重新解析，不缓存在登录态里： 授权行调整后必须立即生效，而 {@code RequestEmployee} 是带 Spring Cache 的登录快照。
+     * 解析当前调用者的数据范围。每次请求都重新解析，不缓存在登录态里：授权行调整后必须立即生效，而 {@code RequestEmployee} 是带 Spring Cache 的登录快照。
      */
     public ScmDataScopeContext resolve() {
 
@@ -96,8 +96,8 @@ public class ScmDataScopeService {
      * break-glass 判定的唯一出处：{@code administratorFlag=true} 绕过 SCM 数据范围。
      *
      * <p>
-     * 维度落在 {@link ScmValueScope} 里的（仓库、负责人、司机）由 {@link #resolve()} 返回 {@code all()} 天然放行；**不落在范围值对象里的维度**（例如分拣的「受指派人 =
-     * 本人」是 与员工 id 直接比等值）必须显式调用本方法同等放行，否则同一个超管账号会出现 「仓库看得见、人看不见」这种半开半关的口径。
+     * 维度落在 {@link ScmValueScope} 里的（仓库、负责人、司机）由 {@link #resolve()} 返回 {@code all()} 天然放行；<b>不落在范围值对象里的维度</b>（例如分拣的「受指派人
+     * = 本人」是与员工 id 直接比等值）必须显式调用本方法同等放行，否则同一个超管账号会出现 「仓库看得见、人看不见」这种半开半关的口径。
      */
     public static boolean isAdministrator() {
         return SmartRequestUtil.getRequestUser() instanceof RequestEmployee employee
@@ -116,7 +116,7 @@ public class ScmDataScopeService {
     }
 
     /**
-     * 维度为空时的空分页：形状与正常分页一致（{@code total=0}、{@code emptyFlag=true}）， 前端不需要为「无授权」写第二套分支，也不会把它误读成「确实没有数据」以外的状态。
+     * 维度为空时的空分页：形状与正常分页一致（{@code total=0}、{@code emptyFlag=true}），前端不需要为「无授权」写第二套分支，也不会把它误读成「确实没有数据」以外的状态。
      */
     public static <T> PageResult<T> emptyPage(PageParam form) {
         Page<T> page = new Page<>(form.getPageNum(), form.getPageSize());

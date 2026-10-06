@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 收款 / 付款 / 核销的方向：{@code NORMAL} 原始事实，{@code REVERSE} 反向事实。
  *
  * <p>
- * 反向事实是 append-only 纪律下**唯一**的纠错手段（全局不变量 1/2）： 登错的收付款、分错的核销都不能改原行，只能新增一条引用原行、带原因、金额同样为正的反向行。 一条 {@code NORMAL}
+ * 反向事实是 append-only 纪律下<b>唯一</b>的纠错手段（全局不变量 1/2）：登错的收付款、分错的核销都不能改原行，只能新增一条引用原行、带原因、金额同样为正的反向行。一条 {@code NORMAL}
  * 最多被反向一次，由 {@code uk_finance_*_single_reverse} 在库级强制。
  *
  * <p>

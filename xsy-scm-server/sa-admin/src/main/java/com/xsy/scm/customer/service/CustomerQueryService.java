@@ -45,7 +45,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND
  * 客户读路径。
  *
  * <p>
- * 列表补全（类型名 / 上级客户名 / 业务员名）一律走**批量查询**，绝不在循环里查库， 避免查询次数随列表行数增长。
+ * 列表补全（类型名 / 上级客户名 / 业务员名）一律走<b>批量查询</b>，绝不在循环里查库，避免查询次数随列表行数增长。
  */
 @Service
 @RequiredArgsConstructor
@@ -116,10 +116,10 @@ public class CustomerQueryService {
      * 客户详情读 + 显式范围。
      *
      * <p>
-     * 不存在与越权分得很清：不存在仍按 {@code CUSTOMER_NOT_FOUND}，存在但负责人不在范围内 按 30005 拒绝。列表收窄不等于读不到，猜 id 直连详情必须是拒绝，否则整套行级范围只是隐藏。
+     * 不存在与越权分得很清：不存在仍按 {@code CUSTOMER_NOT_FOUND}，存在但负责人不在范围内按 30005 拒绝。列表收窄不等于读不到，猜 id 直连详情必须是拒绝，否则整套行级范围只是隐藏。
      *
      * <p>
-     * 上级集团客户名仍由 {@code context()} 单行取回，<b>不做也不校验集团展开</b>： 集团统一结算不代表跨业务员互见（裁决第 6 条）。
+     * 上级集团客户名仍由 {@code context()} 单行取回，<b>不做也不校验集团展开</b>：集团统一结算不代表跨业务员互见（裁决第 6 条）。
      */
     public CustomerDetailVO detail(Long customerId, ScmDataScopeContext scope) {
         CustomerEntity entity = customerDao.selectById(customerId);
@@ -153,7 +153,7 @@ public class CustomerQueryService {
      * 客户「常购商品」（客户 360°，只读）：近 {@code days} 天已确认订单按 (SKU, 单位) 现算聚合，不落副本。
      *
      * <p>
-     * days / limit 一律服务端裁剪到安全区间；窗口按 <b>Asia/Shanghai 日界</b>对齐——「近 N 天含今天」 下界取当天零点往前 {@code days-1}
+     * days / limit 一律服务端裁剪到安全区间；窗口按 <b>Asia/Shanghai 日界</b>对齐——「近 N 天含今天」下界取当天零点往前 {@code days-1}
      * 天，避免按时分秒滚动窗口导致的边界抖动。客户不存在时与详情同样报 {@code CUSTOMER_NOT_FOUND}。
      *
      * <p>
@@ -178,10 +178,10 @@ public class CustomerQueryService {
      * 客户下拉选项。
      *
      * <p>
-     * 返回全部活动客户（按名称排序）。客户状态是四态业务状态而不是启用位，因此不像供应商那样 只筛 {@code ENABLED}；调用方（例如「上级集团客户」选择器）按 {@code customerTypeCode} 过滤。
+     * 返回全部活动客户（按名称排序）。客户状态是四态业务状态而不是启用位，因此不像供应商那样只筛 {@code ENABLED}；调用方（例如「上级集团客户」选择器）按 {@code customerTypeCode} 过滤。
      *
      * <p>
-     * <b>刻意不按数据范围收窄</b>：它是「选一个客户」的选择器入口（上级集团、订单录入等都用它）， 收窄会让主数据下拉在某些角色下整框落空。真正的读边界在列表与详情上， 且「能否对该客户建单」在服务端另有归属判定。
+     * <b>刻意不按数据范围收窄</b>：它是「选一个客户」的选择器入口（上级集团、订单录入等都用它），收窄会让主数据下拉在某些角色下整框落空。真正的读边界在列表与详情上，且「能否对该客户建单」在服务端另有归属判定。
      */
     public List<CustomerOptionVO> optionList() {
         List<CustomerEntity> rows = customerDao.selectList(
@@ -235,7 +235,7 @@ public class CustomerQueryService {
      * 一次性把一批客户行需要的外部名称全部取回来。
      *
      * <p>
-     * 四次批量查询封顶，与行数无关；空集合显式跳过，避免生成 `IN ()` 这种非法 SQL。
+     * 四次批量查询封顶，与行数无关；空集合显式跳过，避免生成 {@code IN ()} 这种非法 SQL。
      */
     private EnrichmentContext context(List<CustomerEntity> rows) {
         if (rows.isEmpty()) {

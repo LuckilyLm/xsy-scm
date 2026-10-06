@@ -15,13 +15,13 @@ import java.time.OffsetDateTime;
  * 库存域出库单。
  *
  * <p>
- * <b>两种产生方式</b>：仓库自己开草稿单再确认（{@code InventoryOutboundService}）， 以及配送发车一次性生成已确认单（{@code InventoryFulfillmentService}）。后者把
+ * <b>两种产生方式</b>：仓库自己开草稿单再确认（{@code InventoryOutboundService}），以及配送发车一次性生成已确认单（{@code InventoryFulfillmentService}）。后者把
  * {@code sourceDocumentType = DELIVERY_ROUTE} 与 {@code sourceDocumentId = delivery_route.id} 写在头上，由部分唯一索引
  * {@code uk_inventory_outbound_source_active} 保证 「一条线路最多一张出库单」。
  *
  * <p>
- * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>： 确认出库时把这两个值传给 {@code InventoryCommandService}，作为
- * {@code inventory_movement.occurred_at} 与 {@code operator} —— 与入库同纪律， 禁止用 {@code now()} 或当前登录人顶替。
+ * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>：确认出库时把这两个值传给 {@code InventoryCommandService}，作为
+ * {@code inventory_movement.occurred_at} 与 {@code operator} —— 与入库同纪律，禁止用 {@code now()} 或当前登录人顶替。
  */
 @Data
 @TableName(value = "inventory_outbound", autoResultMap = true)
@@ -61,7 +61,7 @@ public class InventoryOutboundEntity {
     private String operator;
 
     /**
-     * 来源单据类型（{@code ScmInventorySourceDocumentTypeEnum}），手工出库单为 null。 刻意不加 {@code ALWAYS}：来源是这张单的出身，一旦写入就不允许被后续整行更新抹掉。
+     * 来源单据类型（{@code ScmInventorySourceDocumentTypeEnum}），手工出库单为 null。刻意不加 {@code ALWAYS}：来源是这张单的出身，一旦写入就不允许被后续整行更新抹掉。
      */
     private String sourceDocumentType;
 

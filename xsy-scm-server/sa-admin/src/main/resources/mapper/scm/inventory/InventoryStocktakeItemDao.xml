@@ -9,7 +9,7 @@
     </resultMap>
 
     <!--
-      delta_quantity 是**派生列**（actual − book），只在 SQL 里算给前端看，不落库：
+      delta_quantity 是派生列（actual − book），只在 SQL 里算给前端看，不落库：
       落库会与两个真值列失去同步。展示单位也一并取出，前端不必再查一次余额。
     -->
     <select id="listByStocktakeId" resultMap="itemVoMap">

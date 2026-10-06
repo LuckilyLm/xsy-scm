@@ -7,7 +7,7 @@ import java.time.LocalDate;
  * 让 {@link ScmReportTimeRangeResolver} 只认一个入口。
  *
  * <p>
- * 字段语义是<b>用户输入的闭区间日期</b>（Asia/Shanghai 日界），不是瞬间； 半开区间的换算只允许发生在 {@link ScmReportTimeRangeResolver} 内，
+ * 字段语义是<b>用户输入的闭区间日期</b>（Asia/Shanghai 日界），不是瞬间；半开区间的换算只允许发生在 {@link ScmReportTimeRangeResolver} 内，
  * 各报表不得自行拼日界，否则同一张页面会出现两种口径。
  */
 public interface ScmReportDateFilter {

@@ -12,7 +12,7 @@ import lombok.Data;
 @Data
 public class BalanceRechargeCreateForm {
 
-    /** 实际发起充值的客户；钱包取它的**结算主体**（集团下属单位充进集团钱包）。 */
+    /** 实际发起充值的客户；钱包取它的<b>结算主体</b>（集团下属单位充进集团钱包）。 */
     @NotNull(message = "客户不能为空")
     @Positive(message = "客户 ID 必须大于0")
     private Long customerId;

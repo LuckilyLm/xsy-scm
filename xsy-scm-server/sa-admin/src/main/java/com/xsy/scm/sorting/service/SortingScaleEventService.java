@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
  * </ul>
  *
  * <p>
- * 接受写的是**分拣明细**（只写已分拣数量），不碰订单数量、不碰库存、不触发结算 —— 与手工录入走的是同一个 {@code enter} 入口，因此两条路径的约束完全一致。
+ * 接受写的是<b>分拣明细</b>（只写已分拣数量），不碰订单数量、不碰库存、不触发结算 —— 与手工录入走的是同一个 {@code enter} 入口，因此两条路径的约束完全一致。
  */
 @Service
 @RequiredArgsConstructor
@@ -111,7 +111,7 @@ public class SortingScaleEventService {
      * 接受读数：把该读数写进分拣结果。
      *
      * <p>
-     * 写入经 {@link SortingTaskService#enter}（与手工录入同一入口），因此任务状态、明细版本、 结果枚举、原因必填这些约束一条都不会被绕过。
+     * 写入经 {@link SortingTaskService#enter}（与手工录入同一入口），因此任务状态、明细版本、结果枚举、原因必填这些约束一条都不会被绕过。
      */
     @Transactional(rollbackFor = Exception.class)
     public void accept(Long id, SortingScaleAcceptForm form) {
@@ -131,7 +131,7 @@ public class SortingScaleEventService {
 
         SortingEntryItemForm entry = new SortingEntryItemForm();
         entry.setId(item.getId());
-        // 用**读到的当前版本**提交：enter 内部仍会再校验一次，版本在这中间被改掉就整体回滚
+        // 用<b>读到的当前版本</b>提交：enter 内部仍会再校验一次，版本在这中间被改掉就整体回滚
         entry.setVersion(item.getVersion());
         entry.setSortedQuantity(event.getRawReading());
         entry.setResult(ScmSortingResultEnum.NORMAL.name());

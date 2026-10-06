@@ -6,13 +6,13 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 财务域读取的**对方主档事实**（只读跨域 DAO，形态照 {@link FinancePayableSourceDao}）。
+ * 财务域读取的<b>对方主档事实</b>（只读跨域 DAO，形态照 {@link FinancePayableSourceDao}）。
  *
  * <p>
  * 刻意不继承 {@code BaseMapper}：财务域对业务表没有写入口，Mapper XML 只读取这些主档事实。
  *
  * <p>
- * <b>客户事实只在这里读一次</b>：收款登记与退款付款的 CUSTOMER 侧共用同一条 {@code customer_id → seller_id → customerSellerScope} 判定， 复制到第二个 DAO
+ * <b>客户事实只在这里读一次</b>：收款登记与退款付款的 CUSTOMER 侧共用同一条 {@code customer_id → seller_id → customerSellerScope} 判定，复制到第二个 DAO
  * 就等于让两处的范围口径可以各自漂移。
  */
 @Mapper
@@ -22,7 +22,7 @@ public interface FinanceCounterpartySourceDao {
      * 未删除的客户行（名称快照 + 归属业务员）。
      *
      * <p>
-     * 只判**存在性与 deleted**；当前收付款命令不以客户经营状态为前置条件。
+     * 只判<b>存在性与 deleted</b>；当前收付款命令不以客户经营状态为前置条件。
      */
     FinanceCustomerFactDto selectCustomer(@Param("customerId") Long customerId);
 

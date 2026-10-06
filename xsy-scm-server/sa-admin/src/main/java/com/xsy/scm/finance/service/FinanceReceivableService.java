@@ -34,11 +34,11 @@ import org.springframework.transaction.annotation.Transactional;
  * 应收域服务：正常应收（签收派生）与红字应收（退货批准派生）。
  *
  * <p>
- * <b>红字没有金额上限</b>：红字金额直接取已批准退货事实，不扣既有核销额，也不受原应收余额限制。 生成器失败不能反过来阻止订单域批准退货。允许净应收为负，{@code openAmount} 与
+ * <b>红字没有金额上限</b>：红字金额直接取已批准退货事实，不扣既有核销额，也不受原应收余额限制。生成器失败不能反过来阻止订单域批准退货。允许净应收为负，{@code openAmount} 与
  * {@code overAppliedAmount} 均为读侧派生值。
  *
  * <p>
- * 来源 DAO 只读订单、退货、库存和配送事实；本服务只写财务应收记录与操作日志。 应收由签收和退货批准命令触发，不提供历史回填接口；收付款事实由各自登记命令负责。
+ * 来源 DAO 只读订单、退货、库存和配送事实；本服务只写财务应收记录与操作日志。应收由签收和退货批准命令触发，不提供历史回填接口；收付款事实由各自登记命令负责。
  */
 @Service
 @RequiredArgsConstructor
@@ -54,15 +54,15 @@ public class FinanceReceivableService {
      * 签收后生成正常应收，并补生成该订单此前已批准退货的红字。
      *
      * <p>
-     * 两步必须在这里连续做：{@code sign} 与 {@code approve} 是两条独立事务， 只靠「退货批准时看一眼有没有正常应收」会漏账 —— 批准的那一方看不到尚未提交的签收，
+     * 两步必须在这里连续做：{@code sign} 与 {@code approve} 是两条独立事务，只靠「退货批准时看一眼有没有正常应收」会漏账 —— 批准的那一方看不到尚未提交的签收，
      * 签收的一方也可能看不到刚刚提交的批准。共享串行点是订单行锁 （{@code OrderReturnService.lock} 与 {@code DeliveryRouteService.sign} 都先锁
      * {@code sales_order}），后拿到锁的一方在 {@code READ COMMITTED} 下一定能看见先提交的一方。
      *
      * <p>
-     * <b>必须与签收同事务同成败</b>（{@code MANDATORY}）；跳过语义（零实发 / 整单 0 元） 是成功返回，不回滚签收。
+     * <b>必须与签收同事务同成败</b>（{@code MANDATORY}）；跳过语义（零实发 / 整单 0 元）是成功返回，不回滚签收。
      *
      * @param deliveryRouteOrderId
-     *            刚被置为 {@code SIGNED} 的 {@code delivery_route_order.id}； 时点与操作人只存在于这一行，不能由调用方现取
+     *            刚被置为 {@code SIGNED} 的 {@code delivery_route_order.id}；时点与操作人只存在于这一行，不能由调用方现取
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateOnSign(Long deliveryRouteOrderId) {
@@ -86,12 +86,12 @@ public class FinanceReceivableService {
      * 退货批准 → 红字应收。
      *
      * <p>
-     * <b>正常应收尚不存在时成功跳过</b>：不创建孤立红字、不抛「原应收不存在」、不引入待处理状态， 更不阻塞 {@code approve} —— 退货与退款单是订单域已经成立的事实。该订单后续签收时由
+     * <b>正常应收尚不存在时成功跳过</b>：不创建孤立红字、不抛「原应收不存在」、不引入待处理状态，更不阻塞 {@code approve} —— 退货与退款单是订单域已经成立的事实。该订单后续签收时由
      * {@link #generateOnSign} 补生成（同一套实现，不复制第二份算法）。
      *
      * <p>
-     * 重复执行（批准幂等重放、签收补生成、生成器重放）都收敛到「一张退货一张红字」： 防重是 {@code uk_finance_receivable_source_active} 与
-     * {@code..._item_source_active}， 本方法不吃 {@code Idempotency-Key}。
+     * 重复执行（批准幂等重放、签收补生成、生成器重放）都收敛到「一张退货一张红字」：防重是 {@code uk_finance_receivable_source_active} 与
+     * {@code..._item_source_active}，本方法不吃 {@code Idempotency-Key}。
      *
      * @param orderReturnId
      *            刚被置为 {@code APPROVED} 的 {@code order_return.id}
@@ -153,7 +153,7 @@ public class FinanceReceivableService {
      * 补生成该订单全部已批准退货的红字（的第三种时序）。
      *
      * <p>
-     * 逐张走与「批准时直接触发」完全相同的那一个 {@link #generateRed} 实现： 只有一份红字算法，两条触发路径的差别只在「什么时候被叫到」。
+     * 逐张走与「批准时直接触发」完全相同的那一个 {@link #generateRed} 实现：只有一份红字算法，两条触发路径的差别只在「什么时候被叫到」。
      */
     private void backfillRedForApprovedReturns(Long salesOrderId, FinanceReceivableEntity normal) {
         for (Long returnId : financeReceivableSourceDao.selectApprovedReturnIds(salesOrderId)) {
@@ -170,7 +170,7 @@ public class FinanceReceivableService {
      * 红字生成算法本体（唯一实现）。
      *
      * <p>
-     * 结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上， 从订单或退货行重新解析快照会让同一笔债权出现两个对方身份 （「必须引用原 {@code Receivable}」的含意之一）。
+     * 结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上，从订单或退货行重新解析快照会让同一笔债权出现两个对方身份 （「必须引用原 {@code Receivable}」的含意之一）。
      */
     private void generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
         List<FinanceReceivableItemEntity> items = toRedItems(returned,
@@ -229,7 +229,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字应收单头。事件时点与原因继承退货业务事实，金额取已批准红字行之和； **不做任何上限比较**。
+     * 红字应收单头。事件时点与原因继承退货业务事实，金额取已批准红字行之和； <b>不做任何上限比较</b>。
      */
     private FinanceReceivableEntity redHeader(FinanceReturnSourceDto returned, FinanceReceivableEntity normal,
             BigDecimal amount) {
@@ -262,8 +262,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 正常明细：量取出库行、价取订单行的冻结售价，毛额 {@code ROUND(量 × 价, 4, HALF_UP)}，
-     * 再扣该订单行承担的优惠分摊得到净额；单头是**已舍入行净额之和**。
+     * 正常明细：量取出库行、价取订单行的冻结售价，毛额 {@code ROUND(量 × 价, 4, HALF_UP)}， 再扣该订单行承担的优惠分摊得到净额；单头是<b>已舍入行净额之和</b>。
      * 一条订单行对应多条出库行时逐条成行、不合并。
      */
     private List<FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
@@ -292,7 +291,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字明细：毛额直接采用订单域已落库的 {@code approved_amount}， **不重算** {@code quantity × unit_price}；
+     * 红字明细：毛额直接采用订单域已落库的 {@code approved_amount}， <b>不重算</b> {@code quantity × unit_price}；
      * 再扣按同一把尺子算出的反向优惠得到净额。也不存行级原明细指针 ——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
      */
     private List<FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
@@ -331,25 +330,22 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 行级优惠分摊：把冻结的**订单行**优惠按「该行本次金额 / 该订单行下单金额」等比折算到本次行金额上。
+     * 行级优惠分摊：把冻结的<b>订单行</b>优惠按「该行本次金额 / 该订单行下单金额」等比折算到本次行金额上。
      *
      * <p>
-     * <b>为什么必须等比</b>：优惠是按下单金额冻结的，少发或部分退货时该行应承担的优惠要按比例变小。
-     * 整额落到部分金额上会减出负数（被库上 CHECK 拒绝），也会让部分退货多冲优惠。
+     * <b>为什么必须等比</b>：优惠是按下单金额冻结的，少发或部分退货时该行应承担的优惠要按比例变小。 整额落到部分金额上会减出负数（被库上 CHECK 拒绝），也会让部分退货多冲优惠。
      *
      * <p>
-     * 正常与红字共用本方法，因此「已确认优惠 × 退货金额 / 已出库金额」与
-     * 「冻结行分摊 × 退货金额 / 下单金额」恒等 —— 红字不必回读正常应收明细就能得到一致的反向额。
+     * 正常与红字共用本方法，因此「已确认优惠 × 退货金额 / 已出库金额」与 「冻结行分摊 × 退货金额 / 下单金额」恒等 —— 红字不必回读正常应收明细就能得到一致的反向额。
      *
      * <p>
-     * 下单金额缺失或为 0（历史数据 / 0 元单）时按 0 处理，而不是把整额优惠压到这一行：
-     * 没有可依的比例时「不减」比「乱减」更可解释。
+     * 下单金额缺失或为 0（历史数据 / 0 元单）时按 0 处理，而不是把整额优惠压到这一行： 没有可依的比例时「不减」比「乱减」更可解释。
      */
     private static BigDecimal discountShare(Long orderItemId, BigDecimal lineAmount, BigDecimal orderedLineAmount,
             Map<Long, BigDecimal> orderLineDiscounts) {
         BigDecimal allocated = orderLineDiscounts.get(orderItemId);
-        if (allocated == null || allocated.signum() <= 0 || lineAmount.signum() <= 0
-                || orderedLineAmount == null || orderedLineAmount.signum() <= 0) {
+        if (allocated == null || allocated.signum() <= 0 || lineAmount.signum() <= 0 || orderedLineAmount == null
+                || orderedLineAmount.signum() <= 0) {
             return BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
         }
         BigDecimal share = lineAmount.multiply(allocated).divide(orderedLineAmount, FinanceConstant.AMOUNT_SCALE,

@@ -1,7 +1,7 @@
 <!--
   打印模板配置（打印中心）。
 
-  模板是**受控模型**：只能从该单据类型的字段目录里挑表头字段与明细列，加上标题、纸张、方向、
+  模板是<b>受控模型</b>：只能从该单据类型的字段目录里挑表头字段与明细列，加上标题、纸张、方向、
   是否合计、页脚备注。没有 HTML、没有脚本、没有表达式 —— 因此不存在「模板执行任意代码」
   这条路径，也不需要一套模板求值器。
 
@@ -64,7 +64,7 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
-            <!-- ：操作列超过 3 个动作就要收敛。「设为默认」与「删除」是低频且后者危险，
+            <!-- 操作列超过 3 个动作就要收敛。「设为默认」与「删除」是低频且后者危险，
                  进「更多」；v-privilege 对菜单项不生效，权限在 `rowActions` 里用 hasPermission 裁剪。 -->
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>

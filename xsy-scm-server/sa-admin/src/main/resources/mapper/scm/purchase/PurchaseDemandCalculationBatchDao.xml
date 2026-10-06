@@ -5,7 +5,7 @@
         SELECT * FROM purchase_demand_calculation_batch WHERE id=#{batchId} FOR UPDATE
     </select>
 
-    <!-- 回看用的批次头：联仓库 / 供应商 / 员工取**当前**名称（快照里没有名称，
+    <!-- 回看用的批次头：联仓库 / 供应商 / 员工取当前名称（快照里没有名称，
          名称不是冻结对象——冻结的是数量口径与输入条件）。列走下划线→驼峰自动映射。 -->
     <select id="selectHeader" resultType="com.xsy.scm.purchase.domain.vo.PurchaseDemandCalculationBatchDetailVO">
         SELECT b.id                     AS batch_id,

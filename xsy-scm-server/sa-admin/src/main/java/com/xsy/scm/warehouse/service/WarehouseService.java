@@ -27,8 +27,8 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
  * 仓库主数据读写与启停命令。
  *
  * <p>
- * **错误码边界**：本类只抛 {@code WarehouseErrorCode} 与 {@code ScmCommonErrorCode}。 「仓库已停用 → 不能用于新采购单」是**采购侧规则**，错误码
- * {@code PURCHASE_WAREHOUSE_DISABLED(40987)} 属于 {@code PurchaseErrorCode}， 由
+ * <b>错误码边界</b>：本类只抛 {@code WarehouseErrorCode} 与 {@code ScmCommonErrorCode}。 「仓库已停用 → 不能用于新采购单」是<b>采购侧规则</b>，错误码
+ * {@code PURCHASE_WAREHOUSE_DISABLED(40987)} 属于 {@code PurchaseErrorCode}，由
  * {@code purchase/support/PurchaseWarehouseReferenceGuard} 判定 —— 这样 {@code warehouse} 域不必反向依赖 {@code purchase} 域。
  */
 @Service
@@ -54,10 +54,10 @@ public class WarehouseService {
     }
 
     /**
-     * 读取仓库并断言**启用**。
+     * 读取仓库并断言<b>启用</b>。
      *
      * <p>
-     * 停用时抛 {@code WAREHOUSE_NOT_FOUND} 会掩盖真实原因，因此这里**不**抛错， 只把判定结果交给调用方；采购侧的 {@code PurchaseWarehouseReferenceGuard}
+     * 停用时抛 {@code WAREHOUSE_NOT_FOUND} 会掩盖真实原因，因此这里<b>不</b>抛错，只把判定结果交给调用方；采购侧的 {@code PurchaseWarehouseReferenceGuard}
      * 负责抛 40987。
      */
     public boolean enabled(Long id) {
@@ -73,11 +73,11 @@ public class WarehouseService {
     }
 
     /**
-     * 解析「默认仓库」= 当前**唯一启用**的仓库。
+     * 解析「默认仓库」= 当前<b>唯一启用</b>的仓库。
      *
      * <p>
-     * 销售订单没有仓库字段，而订单确认时要预留库存， 必须落在一个具体仓库上。启用仓库恰好一个时直接返回；0 个或多个都**不猜**， 抛 {@code WAREHOUSE_DEFAULT_AMBIGUOUS(41018)} ——
-     * 猜错会把货占在错误的仓库， 而且要到出库/盘点才暴露。
+     * 销售订单没有仓库字段，而订单确认时要预留库存，必须落在一个具体仓库上。启用仓库恰好一个时直接返回；0 个或多个都<b>不猜</b>，抛 {@code WAREHOUSE_DEFAULT_AMBIGUOUS(41018)} ——
+     * 猜错会把货占在错误的仓库，而且要到出库/盘点才暴露。
      */
     public WarehouseEntity defaultEnabledWarehouse() {
         List<WarehouseEntity> enabled = all().stream()
@@ -170,7 +170,7 @@ public class WarehouseService {
      * 停用仓库：{@code ENABLED → DISABLED}。
      *
      * <p>
-     * 任一阻塞条件成立（库存余额 / 在途采购单 / 待入库收货单）即拒绝，并返回对应错误码， 不使用 {@code WAREHOUSE_NOT_FOUND} 掩盖真实原因。阻塞检查与状态写入在同一事务。
+     * 任一阻塞条件成立（库存余额 / 在途采购单 / 待入库收货单）即拒绝，并返回对应错误码，不使用 {@code WAREHOUSE_NOT_FOUND} 掩盖真实原因。阻塞检查与状态写入在同一事务。
      */
     @Transactional(rollbackFor = Exception.class)
     public void disable(WarehouseStatusForm form) {

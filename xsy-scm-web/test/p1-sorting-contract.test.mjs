@@ -3,18 +3,18 @@
  *
  * 这一波值得钉住的，都是「违背之后页面照样能跑、只是业务事实错了」的那一类：
  *
- * 1. **汇总页必须一个动作入口都没有**（硬产品规则）。聚合行没有主键，在它上面下写命令
+ * 1. <b>汇总页必须一个动作入口都没有</b>（硬产品规则）。聚合行没有主键，在它上面下写命令
  *    要么产生未定义的拆回行为，要么把导航伪装成命令；
- * 2. **录入载荷必须逐行带 `version`**。带任务版本等于「我用任务的版本号覆盖了别人的行编辑」，
+ * 2. <b>录入载荷必须逐行带 `version`</b>。带任务版本等于「我用任务的版本号覆盖了别人的行编辑」，
  *    乐观锁会在别人改过时照样放行；
- * 3. **打印预览是 GET、登记计次才是 POST**。预览若走成 POST，每次刷新预览都会多算一次打印；
+ * 3. <b>打印预览是 GET、登记计次才是 POST</b>。预览若走成 POST，每次刷新预览都会多算一次打印；
  *    建单与登记打印还要带 `Idempotency-Key`，录入 / 完成 / 取消 / 重开不带（后端签名里没有，
  *    多加只会掩盖版本冲突）；
- * 4. **权限码只有一个来源**。页面的 `v-privilege` 字面量必须全部落在 `sorting-const.ts`
+ * 4. <b>权限码只有一个来源</b>。页面的 `v-privilege` 字面量必须全部落在 `sorting-const.ts`
  *    声明的集合内，而该集合又必须与后端契约逐字相同 —— 两处都对，才不存在「按钮能点、接口 403」；
- * 5. **数量不做前端算术**：`Number(` / `toFixed(` / `parseFloat(` 不得出现在两页里，
+ * 5. <b>数量不做前端算术</b>：`Number(` / `toFixed(` / `parseFloat(` 不得出现在两页里，
  *    `null` 渲染成 `—` 而不是 `0`；
- * 6. **状态机的按钮出现条件**与后端一致：取消限 WORKING、重开限 COMPLETED、
+ * 6. <b>状态机的按钮出现条件</b>与后端一致：取消限 WORKING、重开限 COMPLETED、
  *    打印限 PRINTABLE，且取消 / 重开的 `reason` 在前端就是必填。
  *
  * 扫描前剥掉注释：这些文件里大量出现「不得跨单位求和」这类反例说明，
@@ -234,7 +234,7 @@ test('按钮出现条件与后端状态机一致', () => {
     assert.match(reopenAction, /row\.status === 'COMPLETED'/);
     assert.match(printAction, /printable && hasPermission\(SCM_SORTING_PERMISSION\.TASK_PRINT\)/);
     assert.match(taskList, /const printable = SCM_SORTING_PRINTABLE_STATUS\.includes\(row\.status\)/);
-    // 原则：**操作工作台优先暴露「当前下一步」，而不是机械地把所有状态动作塞进「更多」。**
+    // 原则：<b>操作工作台优先暴露「当前下一步」，而不是机械地把所有状态动作塞进「更多」。</b>
     // 分拣是操作型工作台，行内恒为「详情 + 一个当前最重要的下一步 + 更多」：
     //   未指派且 WORKING 且有 TASK_ASSIGN  → 指派
     //   已指派且 WORKING 且有 TASK_COMPLETE → 完成

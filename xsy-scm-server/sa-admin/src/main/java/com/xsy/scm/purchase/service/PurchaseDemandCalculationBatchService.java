@@ -74,19 +74,21 @@ public class PurchaseDemandCalculationBatchService {
         previewForm.setCategoryId(form.getCategoryId());
         previewForm.setKeyword(form.getKeyword());
         var summary = purchaseQueryService.summaryPreviewAll(previewForm, MAX_ROWS);
-        Map<String, BigDecimal> gaps = summary.stream().collect(Collectors.toMap(
-                row -> key(row.getSkuId(), row.getDemandUnit()),
-                row -> row.getNetPurchaseGap() == null ? BigDecimal.ZERO : row.getNetPurchaseGap(),
-                BigDecimal::add, LinkedHashMap::new));
+        Map<String,
+                BigDecimal> gaps = summary.stream()
+                        .collect(Collectors.toMap(row -> key(row.getSkuId(), row.getDemandUnit()),
+                                row -> row.getNetPurchaseGap() == null ? BigDecimal.ZERO : row.getNetPurchaseGap(),
+                                BigDecimal::add, LinkedHashMap::new));
 
         List<SalesOrderItemEntity> sourceItems = purchaseDemandDao.listSourceItems(form.getStartAt(), form.getEndAt(),
                 ScmValueScope.all());
-        Map<Long, SalesOrderEntity> orders = salesOrderDao.selectBatchIds(sourceItems.stream()
-                .map(SalesOrderItemEntity::getOrderId).distinct().toList()).stream()
-                .collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
+        Map<Long,
+                SalesOrderEntity> orders = salesOrderDao
+                        .selectBatchIds(sourceItems.stream().map(SalesOrderItemEntity::getOrderId).distinct().toList())
+                        .stream().collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
         Map<Long, PurchaseDemandEntity> existing = existing(sourceItems);
 
-        // 批次头记录**解析后**的归属，与稍后由同一批次生成的需求保持同一个 owner：
+        // 批次头记录<b>解析后</b>的归属，与稍后由同一批次生成的需求保持同一个 owner：
         // 只存表单原值会让「没分配权的采购员建了自己的批次却读不回来」。
         Long resolvedPurchaserId = ownerResolver.resolveForCreate(form.getPurchaserId());
 
@@ -138,8 +140,9 @@ public class PurchaseDemandCalculationBatchService {
                 continue;
             }
             PurchaseDemandEntity old = existing.get(source.getId());
-            BigDecimal required = old == null ? consume(gaps, key(source.getSkuId(), source.getSaleUnitSnapshot()),
-                    source.getActualQuantity()) : BigDecimal.ZERO.setScale(4);
+            BigDecimal required = old == null
+                    ? consume(gaps, key(source.getSkuId(), source.getSaleUnitSnapshot()), source.getActualQuantity())
+                    : BigDecimal.ZERO.setScale(4);
             PurchaseDemandCalculationBatchItemEntity item = new PurchaseDemandCalculationBatchItemEntity();
             item.setBatchId(null);
             item.setLineNo(lineNo++);
@@ -187,9 +190,11 @@ public class PurchaseDemandCalculationBatchService {
             throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_DEMAND_ALLOCATION_CONFLICT);
         }
         List<PurchaseDemandCalculationBatchItemEntity> items = batchItemDao.listByBatchId(batch.getId());
-        Map<Long, SalesOrderEntity> orders = salesOrderDao.selectBatchIds(items.stream()
-                .map(PurchaseDemandCalculationBatchItemEntity::getSalesOrderId).distinct().toList()).stream()
-                .collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
+        Map<Long,
+                SalesOrderEntity> orders = salesOrderDao
+                        .selectBatchIds(items.stream().map(PurchaseDemandCalculationBatchItemEntity::getSalesOrderId)
+                                .distinct().toList())
+                        .stream().collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
         PurchaseDemandService.GenerateResult result = new PurchaseDemandService.GenerateResult();
         result.setSourceLineCount(items.size());
         for (PurchaseDemandCalculationBatchItemEntity item : items) {
@@ -238,7 +243,7 @@ public class PurchaseDemandCalculationBatchService {
      * 回看一个冻结批次：批次头 + 冻结解释行 + 逐行建议量。
      *
      * <p>
-     * <b>只读</b>：所有数字都取自冻结快照，不回表重算，因此回看结果与当初生成时逐字一致。 这是 ADM-05「建议量可以逐项解释」的落点 —— 没有这一步，批次一旦生成就只剩计数，解释链断了。
+     * <b>只读</b>：所有数字都取自冻结快照，不回表重算，因此回看结果与当初生成时逐字一致。这是 ADM-05「建议量可以逐项解释」的落点 —— 没有这一步，批次一旦生成就只剩计数，解释链断了。
      */
     @Transactional(readOnly = true)
     public PurchaseDemandCalculationBatchDetailVO detail(Long batchId) {
@@ -249,8 +254,8 @@ public class PurchaseDemandCalculationBatchService {
         requireVisible(detail);
         PurchaseDemandCalculationBatchEntity batch = batchDao.selectById(batchId);
         detail.setSummary(summaryRows(batch == null ? null : batch.getSummarySnapshot()));
-        detail.setItems(batchItemDao.listByBatchId(batchId).stream()
-                .map(PurchaseDemandCalculationBatchService::itemVo).toList());
+        detail.setItems(batchItemDao.listByBatchId(batchId).stream().map(PurchaseDemandCalculationBatchService::itemVo)
+                .toList());
         return detail;
     }
 
@@ -258,7 +263,7 @@ public class PurchaseDemandCalculationBatchService {
      * 批次可见性：仓库范围管解释行里的库存数字，采购员范围管这个采购归属的批次本身。
      *
      * <p>
-     * 两个维度<b>相交而不互相替代</b>：只判仓库会让任何有查看权的人按 id 猜出别人的采购批次； 只判采购员则会把未授权仓库的库存量随解释行一起发出去。
+     * 两个维度<b>相交而不互相替代</b>：只判仓库会让任何有查看权的人按 id 猜出别人的采购批次；只判采购员则会把未授权仓库的库存量随解释行一起发出去。
      */
     private void requireVisible(PurchaseDemandCalculationBatchDetailVO detail) {
         if (!dataScopeService.resolve().getWarehouseScope().allows(detail.getWarehouseId())) {
@@ -268,7 +273,8 @@ public class PurchaseDemandCalculationBatchService {
     }
 
     private Map<Long, PurchaseDemandEntity> existing(List<SalesOrderItemEntity> sourceItems) {
-        if (sourceItems.isEmpty()) return Map.of();
+        if (sourceItems.isEmpty())
+            return Map.of();
         return purchaseDemandDao
                 .listActiveBySourceItemIds(sourceItems.stream().map(SalesOrderItemEntity::getId).toList()).stream()
                 .collect(Collectors.toMap(PurchaseDemandEntity::getSalesOrderItemId, Function.identity()));
@@ -307,7 +313,7 @@ public class PurchaseDemandCalculationBatchService {
      * 冻结快照里的解释行（快照是 {@code {"rows":[...]}}）。
      *
      * <p>
-     * 结构不符或字段缺失时退化成空列表而不是抛异常：批次头本身仍然可读， 让一个损坏的快照把整次回看打成 500 是拿不到任何信息的。
+     * 结构不符或字段缺失时退化成空列表而不是抛异常：批次头本身仍然可读，让一个损坏的快照把整次回看打成 500 是拿不到任何信息的。
      */
     private static List<Map<String, Object>> summaryRows(Map<String, Object> snapshot) {
         if (snapshot == null || !(snapshot.get("rows") instanceof List<?> rows)) {

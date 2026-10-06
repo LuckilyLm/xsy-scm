@@ -21,8 +21,8 @@ public interface PurchaseInventoryContract {
      * 一张已确认收货行所代表的库存事实（采购域对库存域的中立契约）。
      *
      * <p>
-     * 数量是**有效收货量**、单位与成本都是采购侧的**快照**；{@code idempotencyKey} 是稳定防重键， {@code occurredAt} / {@code operator}
-     * 取**持久化的收货确认时刻与确认人**，不是写入时刻与当前登录人。
+     * 数量是<b>有效收货量</b>、单位与成本都是采购侧的<b>快照</b>；{@code idempotencyKey} 是稳定防重键， {@code occurredAt} / {@code operator}
+     * 取<b>持久化的收货确认时刻与确认人</b>，不是写入时刻与当前登录人。
      */
     record InboundFact(Long purchaseOrderId, Long receiptId, Long receiptItemId, Long warehouseId, Long skuId,
             String warehouseCode, String warehouseName, String skuCode, String skuName, String unit,

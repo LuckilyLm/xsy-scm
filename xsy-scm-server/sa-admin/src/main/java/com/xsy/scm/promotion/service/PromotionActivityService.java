@@ -28,12 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
  * 营销活动维护。
  *
  * <p>
- * 活动是**版本化的规则**：每次编辑 {@code version} 自增，订单优惠冻结时一并记录，
- * 因此「这单当时按哪一版算的」永远可查。
+ * 活动是<b>版本化的规则</b>：每次编辑 {@code version} 自增，订单优惠冻结时一并记录， 因此「这单当时按哪一版算的」永远可查。
  *
  * <p>
- * 只有 {@code DRAFT} 可以编辑：已生效的活动被改内容，会让同一时间窗内的两笔订单按两套规则
- * 计算而界面上看不出来。要改就先停用再改。
+ * 只有 {@code DRAFT} 可以编辑：已生效的活动被改内容，会让同一时间窗内的两笔订单按两套规则 计算而界面上看不出来。要改就先停用再改。
  */
 @Service
 @RequiredArgsConstructor
@@ -120,8 +118,7 @@ public class PromotionActivityService {
             // 已过期的活动上线只会得到一条永远不生效的规则
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_WINDOW_INVALID);
         }
-        if (promotionActivityDao.updateStatus(id, form.getStatus(), form.getVersion(),
-                ScmOperator.current()) != 1) {
+        if (promotionActivityDao.updateStatus(id, form.getStatus(), form.getVersion(), ScmOperator.current()) != 1) {
             throw new ScmBusinessException(ScmCommonErrorCode.VERSION_CONFLICT);
         }
     }
@@ -130,8 +127,7 @@ public class PromotionActivityService {
             ScmPromotionActivityTypeEnum type) {
         row.setActivityName(form.getActivityName().trim());
         row.setActivityType(type.name());
-        row.setExclusiveGroup(StringUtils.isBlank(form.getExclusiveGroup()) ? null
-                : form.getExclusiveGroup().trim());
+        row.setExclusiveGroup(StringUtils.isBlank(form.getExclusiveGroup()) ? null : form.getExclusiveGroup().trim());
         row.setPriority(form.getPriority() == null ? 0 : form.getPriority());
         row.setValidFrom(form.getValidFrom());
         row.setValidTo(form.getValidTo());

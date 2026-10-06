@@ -56,10 +56,10 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_N
  * 采购域只读查询。
  *
  * <p>
- * 列表与详情按采购员范围收窄，工作台汇总按仓库范围收窄；命令结果快照由已授权的写命令调用。 空范围返回空分页，不把无权数据伪装成零值。
+ * 列表与详情按采购员范围收窄，工作台汇总按仓库范围收窄；命令结果快照由已授权的写命令调用。空范围返回空分页，不把无权数据伪装成零值。
  *
  * <p>
- * 收货余量与超收量统一由 {@link PurchaseReceiptQuantityCalculator} 计算， 避免列表和详情使用不同的数量口径。
+ * 收货余量与超收量统一由 {@link PurchaseReceiptQuantityCalculator} 计算，避免列表和详情使用不同的数量口径。
  */
 @Service
 @RequiredArgsConstructor
@@ -86,7 +86,7 @@ public class PurchaseQueryService {
     // ------------------------------------------------------------------
 
     /**
-     * 需求列表：按当前调用者的采购员范围收窄。表单里没有采购员筛选项， 因此不存在「用户筛选放大范围」的入口。
+     * 需求列表：按当前调用者的采购员范围收窄。表单里没有采购员筛选项，因此不存在「用户筛选放大范围」的入口。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseDemandVO> demandQuery(PurchaseDemandQueryForm form) {
@@ -102,14 +102,14 @@ public class PurchaseQueryService {
      * 订单汇总 / 库存缺口预览。
      *
      * <p>
-     * <b>只读</b>：不写任何表、不改 {@link PurchaseDemandService#generate} 的需求语义， 只是把「已确认订单实发量」与「目标仓可用余额」并排算一个缺口供决策。
+     * <b>只读</b>：不写任何表、不改 {@link PurchaseDemandService#generate} 的需求语义，只是把「已确认订单实发量」与「目标仓可用余额」并排算一个缺口供决策。
      *
      * <p>
-     * 拒绝客户端排序的理由与库存余额页一致（join + 聚合，裸列名有歧义），排序固定为 「缺口降序 → SKU」；{@code optimizeCountSql=false} 让分页 count 按聚合组数而非明细行数统计。
+     * 拒绝客户端排序的理由与库存余额页一致（join + 聚合，裸列名有歧义），排序固定为「缺口降序 → SKU」；{@code optimizeCountSql=false} 让分页 count 按聚合组数而非明细行数统计。
      *
      * <p>
-     * <b>仓库范围</b>：{@code warehouseId} 必填且单选，整页数字（余额、预留、缺口）都归属到它， 因此请求仓不在授权范围内时整页给空分页。只把余额左连收窄是错的：那会让调用者读到同一页
-     * 订单需求量、只是状态变成 {@code NO_BALANCE}，等于把「无权看这个仓」谎报成「这个仓没货」。 范围谓词同时下传 Mapper 兜底，见 {@code PurchaseDemandDao.xml}。
+     * <b>仓库范围</b>：{@code warehouseId} 必填且单选，整页数字（余额、预留、缺口）都归属到它，因此请求仓不在授权范围内时整页给空分页。只把余额左连收窄是错的：那会让调用者读到同一页
+     * 订单需求量、只是状态变成 {@code NO_BALANCE}，等于把「无权看这个仓」谎报成「这个仓没货」。范围谓词同时下传 Mapper 兜底，见 {@code PurchaseDemandDao.xml}。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseDemandSummaryVO> summaryPreview(PurchaseDemandSummaryPreviewForm form) {
@@ -185,7 +185,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 采购员维度的可见性判定：范围外的单据按「没有权限」处理，而不是伪装成「不存在」。 未分配（{@code purchaser_id IS NULL}）只有 {@link ScmValueScope#all()} 才可见。
+     * 采购员维度的可见性判定：范围外的单据按「没有权限」处理，而不是伪装成「不存在」。未分配（{@code purchaser_id IS NULL}）只有 {@link ScmValueScope#all()} 才可见。
      */
     private static void requirePurchaserVisible(ScmValueScope purchaserScope, Long ownerEmployeeId) {
         if (!purchaserScope.allows(ownerEmployeeId)) {
@@ -206,7 +206,7 @@ public class PurchaseQueryService {
     // ------------------------------------------------------------------
 
     /**
-     * 采购单列表：先按调用者范围，再与表单的 {@code purchaserId} 取交集 （用户筛选只能缩小授权范围，不能放大）。
+     * 采购单列表：先按调用者范围，再与表单的 {@code purchaserId} 取交集（用户筛选只能缩小授权范围，不能放大）。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseOrderVO> orderQuery(PurchaseOrderQueryForm form) {
@@ -254,10 +254,10 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 采购单行（含每行的分配集合，**：N allocations**）。
+     * 采购单行（含每行的分配集合，<b>：N allocations</b>）。
      *
      * <p>
-     * 它是独立端点 {@code GET /scm/purchase/item/{orderId}} 的实现，因此与详情同样受范围约束： 只挡详情、放行行清单等于把别人单据的价格与数量照样端出去。
+     * 它是独立端点 {@code GET /scm/purchase/item/{orderId}} 的实现，因此与详情同样受范围约束：只挡详情、放行行清单等于把别人单据的价格与数量照样端出去。
      */
     @Transactional(readOnly = true)
     public List<PurchaseOrderItemVO> orderItems(Long orderId) {
@@ -329,7 +329,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 命令侧投影：收货的创建 / 确认 / 入库回的是自己刚写的单据， 且父单归属不该让一次合法的收货确认回滚（见类说明）。
+     * 命令侧投影：收货的创建 / 确认 / 入库回的是自己刚写的单据，且父单归属不该让一次合法的收货确认回滚（见类说明）。
      */
     @Transactional(readOnly = true)
     public PurchaseReceiptVO receiptDetailForCommand(Long receiptId) {
@@ -360,12 +360,12 @@ public class PurchaseQueryService {
      * 按商品收货工作台（只读）。
      *
      * <p>
-     * 与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、 排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页
-     * count 按 SKU×单位 组数统计。 只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
+     * 与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页
+     * count 按 SKU×单位组数统计。只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
      *
      * <p>
      * <b>仓库范围</b>：计划量与已收量归属的仓库就是采购单的 {@code warehouse_id} （收货单建单时从采购单继承，因此不需要另判收货侧的仓），范围谓词落在采购单事实行上、
-     * 分组之前，未授权仓的采购单整单不参与聚合。表单的 {@code warehouseId} 只能进一步缩小范围。 一个授权仓都没有时给空分页：0 会被读成「这些仓没收过货」，而真实原因是「你没有可看的仓」。
+     * 分组之前，未授权仓的采购单整单不参与聚合。表单的 {@code warehouseId} 只能进一步缩小范围。一个授权仓都没有时给空分页：0 会被读成「这些仓没收过货」，而真实原因是「你没有可看的仓」。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseReceiptItemWorkbenchVO> receiptItemWorkbench(PurchaseReceiptItemWorkbenchQueryForm form) {
@@ -382,14 +382,14 @@ public class PurchaseQueryService {
     }
 
     // ------------------------------------------------------------------
-    // 实体 → VO（显式映射：列名快照与 VO 字段名**故意不同**，不用 BeanUtils 猜）
+    // 实体 → VO（显式映射：列名快照与 VO 字段名<b>故意不同</b>，不用 BeanUtils 猜）
     // ------------------------------------------------------------------
 
     /**
      * 批量装配采购单行 VO。
      *
      * <p>
-     * 一次取全部行的 allocation，再按 `purchaseOrderItemId` 分组 —— 避免逐行查库（N+1）。
+     * 一次取全部行的 allocation，再按 {@code purchaseOrderItemId} 分组 —— 避免逐行查库（N+1）。
      */
     public List<PurchaseOrderItemVO> itemVos(List<PurchaseOrderItemEntity> rows) {
         if (rows.isEmpty()) {
@@ -428,7 +428,7 @@ public class PurchaseQueryService {
         vo.setProductType(row.getProductTypeSnapshot());
         vo.setPlannedQuantity(row.getPlannedQuantity());
         vo.setReceivedQuantity(row.getReceivedQuantity());
-        // ：与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
+        // 与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
         vo.setRemainingQuantity(
                 PurchaseReceiptQuantityCalculator.remaining(row.getPlannedQuantity(), row.getReceivedQuantity()));
         vo.setOverReceiptQuantity(
@@ -445,8 +445,8 @@ public class PurchaseQueryService {
      * 分配 VO。
      *
      * <p>
-     * `demandUnit` / `demandVersion` / `demandStatus` 取自**需求当前值**（不是分配行上的快照）： 它们表达的是「这条分配现在挂在一个什么状态的需求上」，快照表达不了「需求已补齐」。
-     * `quantity` 取分配行自己的数量（一条分配一个数量）。
+     * {@code demandUnit} / {@code demandVersion} / {@code demandStatus}
+     * 取自<b>需求当前值</b>（不是分配行上的快照）：它们表达的是「这条分配现在挂在一个什么状态的需求上」，快照表达不了「需求已补齐」。 {@code quantity} 取分配行自己的数量（一条分配一个数量）。
      */
     private static PurchaseOrderAllocationVO allocationVo(PurchaseDemandAllocationEntity row,
             PurchaseDemandEntity demand) {

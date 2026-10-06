@@ -13,10 +13,10 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  *
  * <p>
  * <b>全类共同遵守的口径</b>：只统计 {@code status=CONFIRMED} 的订单，业务日是 {@code confirmed_at}，金额只取
- * {@code settlement_*}。{@code ordered_*} 在本域完全不出现， 避免出现「同一页面两个金额、不知哪个算数」的情况。
+ * {@code settlement_*}。{@code ordered_*} 在本域完全不出现，避免出现「同一页面两个金额、不知哪个算数」的情况。
  *
  * <p>
- * 行数排名（{@code amountRank}）由 SQL 窗口函数在<b>分页之前</b>算出，所以第 2 页的排名 仍是全局排名，不是页内排名。
+ * 行数排名（{@code amountRank}）由 SQL 窗口函数在<b>分页之前</b>算出，所以第 2 页的排名仍是全局排名，不是页内排名。
  */
 @Data
 public class SalesReportVO {
@@ -74,7 +74,7 @@ public class SalesReportVO {
     }
 
     /**
-     * 粒度 = 客户。退款按 {@code order_refund.customer_id} 独立聚合后再合并， 不经订单行 JOIN，否则一单多行会把退款放大。
+     * 粒度 = 客户。退款按 {@code order_refund.customer_id} 独立聚合后再合并，不经订单行 JOIN，否则一单多行会把退款放大。
      */
     @Data
     public static class CustomerRow {
@@ -110,14 +110,12 @@ public class SalesReportVO {
      * 粒度 = {@code sales_order}（订单表头级）。
      *
      * <p>
-     * 与 {@link ItemRow} 的分工：行级回答「这单买了什么」，本行回答「这个客户有几单、每单多少」。
-     * 因此筛选语义也不同——{@code categoryId} / {@code keyword} 是**行级**条件，在本维度下用
-     * {@code EXISTS} 判定「该订单是否命中」，命中后金额仍按**整单**汇总，不会因为只匹配部分行
-     * 而把订单金额算小。
+     * 与 {@link ItemRow} 的分工：行级回答「这单买了什么」，本行回答「这个客户有几单、每单多少」。因此筛选语义也不同——{@code categoryId} / {@code keyword}
+     * 是<b>行级</b>条件，在本维度下用 {@code EXISTS} 判定「该订单是否命中」，命中后金额仍按<b>整单</b>汇总，不会因为只匹配部分行而把订单金额算小。
      *
      * <p>
-     * 退款按 {@code order_refund} 独立聚合后按订单关联，不经订单行 JOIN，否则一单多行会把退款放大。
-     * 与按客户 / 按销售员一致：退款只统计窗口内 {@code COMPLETED} 的退款，不推算「净额」。
+     * 退款按 {@code order_refund} 独立聚合后按订单关联，不经订单行 JOIN，否则一单多行会把退款放大。 与按客户 / 按销售员一致：退款只统计窗口内 {@code COMPLETED}
+     * 的退款，不推算「净额」。
      */
     @Data
     public static class OrderRow {

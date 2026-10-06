@@ -4,8 +4,8 @@
  * 与后端 `InventoryStocktakeController` 逐端点对应（7 个）：
  * query / detail / create / update / confirm / cancel / delete。
  *
- * **权限分两档**：录实盘数与改草稿是日常操作（`add` / `update`），
- * **`confirm` 是独立权限** —— 它会真实调整库存并写不可逆流水，
+ * <b>权限分两档</b>：录实盘数与改草稿是日常操作（`add` / `update`），
+ * <b>`confirm` 是独立权限</b> —— 它会真实调整库存并写不可逆流水，
  * 允许仓管录数、由主管确认是完全合理的分工，因此不复用 `update`。与出库单同一取向。
  *
  * `confirm` 失败时整单回滚，不存在「盘一半」；重复确认会被状态机拒绝（41020）。
@@ -55,7 +55,7 @@ export const inventoryStocktakeApi = {
     /** 新建草稿，返回新单 id。保存时会从余额行快照账面量。 */
     create: (data: InventoryStocktakeAdd) =>
         postRequest('/scm/inventory/stocktake/create', data) as unknown as Promise<ScmResponse<Id>>,
-    /** 改草稿（仅 DRAFT 可改）；会**重新快照账面量**。 */
+    /** 改草稿（仅 DRAFT 可改）；会<b>重新快照账面量</b>。 */
     update: (id: Id, data: InventoryStocktakeAdd) =>
         postRequest(`/scm/inventory/stocktake/update/${id}`, data) as unknown as Promise<ScmResponse<string>>,
     /** 确认盘点：差异转盘盈 / 盘亏流水并调整余额。 */

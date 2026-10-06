@@ -9,27 +9,20 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 库存流水（**append-only 账本**）。
+ * 库存流水，append-only 账本。
  *
  * <p>
- * <b>append-only 硬化后的纪律</b>：表上有 {@code deleted} 列（为了与 TD 预留的部分唯一索引
- * {@code WHERE deleted = FALSE AND source_document_item_id IS NOT NULL} 逐字匹配）， 但 DB 约束
- * {@code ck_inventory_movement_append_only CHECK (deleted = FALSE)} 把它锁死为 FALSE。 因此：
- * <ul>
- * <li>soft delete / update 历史流水在**数据库层直接失败**；</li>
- * <li>本实体**没有** {@code version} / {@code updatedAt} / {@code updatedBy} —— 对齐 {@code receipt_weighing_record}
- * 的只追加纪律；</li>
- * <li>对应 DAO **只有** insert + select，没有任何 update 方法；</li>
- * <li>未来冲销（如采购退货）必须**新增反向 movement**，不得修改历史行。</li>
- * </ul>
+ * 表上有 {@code deleted} 列（为与部分唯一索引 {@code WHERE deleted = FALSE AND source_document_item_id IS NOT NULL} 逐字匹配），但
+ * {@code ck_inventory_movement_append_only CHECK (deleted = FALSE)} 把它锁死为 FALSE：soft delete / update 历史流水在数据库层直接失败。
+ * 因此本实体没有 {@code version} / {@code updatedAt} / {@code updatedBy}，对应 DAO 只有 insert + select；未来冲销（如采购退货）必须新增反向
+ * movement，不得修改历史行。
  *
  * <p>
- * <b>为什么不用 {@code @TableLogic}</b>：{@code @TableLogic} 表达的是「可被软删的实体」， 与本表的语义正好相反。这里所有读取都在 SQL 里显式写
- * {@code deleted = FALSE} （与部分唯一索引的谓词保持同一口径），而不是靠框架注入。
+ * 不用 {@code @TableLogic}（它表达「可被软删的实体」，与本表语义相反）：所有读取在 SQL 里显式写 {@code deleted = FALSE}，与部分唯一索引谓词同口径。
  *
  * <p>
- * <b>溯源三件套</b>：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点， {@code sourceDocumentId}
- * 是头级溯源（列表页跳转收货单用，不参与唯一索引）。 人类可读的来源单号由查询侧联 {@code purchase_receipt.receipt_no} 取得（不设 movement_no）。
+ * 溯源三件套：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点，{@code sourceDocumentId}
+ * 是头级溯源（列表页跳转收货单用，不参与唯一索引）。人类可读的来源单号由查询侧联 {@code purchase_receipt.receipt_no} 取得。
  */
 @Data
 @TableName(value = "inventory_movement", autoResultMap = true)
@@ -43,12 +36,12 @@ public class InventoryMovementEntity {
     private Long skuId;
 
     /**
-     * {@code ScmInventoryMovementTypeEnum}； 仅 {@code PURCHASE_IN}（DB CHECK 白名单）。
+     * {@code ScmInventoryMovementTypeEnum}；仅 {@code PURCHASE_IN}（DB CHECK 白名单）。
      */
     private String movementType;
 
     /**
-     * {@code ScmInventorySourceDocumentTypeEnum}； 仅 {@code PURCHASE_RECEIPT_ITEM}。
+     * {@code ScmInventorySourceDocumentTypeEnum}；仅 {@code PURCHASE_RECEIPT_ITEM}。
      */
     private String sourceDocumentType;
 
@@ -82,7 +75,7 @@ public class InventoryMovementEntity {
     private BigDecimal afterQuantity;
 
     /**
-     * 发生时刻 —— **等于 {@code purchase_receipt.confirmed_at}**，不是写入时刻。
+     * 发生时刻 —— <b>等于 {@code purchase_receipt.confirmed_at}</b>，不是写入时刻。
      *
      * <p>
      * 实时路径与 backfill 路径同口径：都由收货确认事实传入，禁止 {@code now()} 替代。
@@ -90,7 +83,7 @@ public class InventoryMovementEntity {
     private OffsetDateTime occurredAt;
 
     /**
-     * 操作者 —— **等于 {@code purchase_receipt.operator}**（已冻结的收货确认事实）。
+     * 操作者 —— <b>等于 {@code purchase_receipt.operator}</b>（已冻结的收货确认事实）。
      */
     private String operator;
 

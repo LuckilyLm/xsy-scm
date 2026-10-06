@@ -1,11 +1,11 @@
 /**
  * 配送打印追踪的前端契约测试。
  *
- * 守的是打印计次这条 L0-L2 增量里**前端最容易悄悄违背、违背后又不报错**的几条：
+ * 守的是打印计次这条 L0-L2 增量里<b>前端最容易悄悄违背、违背后又不报错</b>的几条：
  * 1. 双视角只读查询走 GET，正式生成打印走带 Idempotency-Key 的 POST；
  * 2. 「登记打印」只在可打印状态（PLANNED / DISPATCHED / COMPLETED）出现，且受打印权限约束；
  * 3. 打印状态三态（已打印 / 未打印 / 部分打印）标签与后端返回值一致；
- * 4. 生成打印绝不越界：配送域不自己写库存、不接 GPS 轨迹（L3 的发车 / 签收是**另外**的端点，
+ * 4. 生成打印绝不越界：配送域不自己写库存、不接 GPS 轨迹（L3 的发车 / 签收是<b>另外</b>的端点，
  *    由 p2-delivery-l3-contract.test.mjs 钉住，打印这条线仍然只有预览与计次两个动作）。
  */
 import test from 'node:test';
@@ -46,7 +46,7 @@ test('the delivery API still exposes no inventory write / GPS tracking endpoint'
   // 本用例写于 L0–L2（当时连 dispatch / sign 都还不存在）。P2 L3 落地后，
   // 发车 / 签收 / 完成三个端点成为事实，由 p2-delivery-l3-contract.test.mjs 正向钉住它们的载荷口径。
   // 仍然成立、也仍然要害的那部分：配送域绝不自己写库存，也不接 GPS 轨迹 ——
-  // 出库单是发车在**库存域内**生成的事实，配送侧只读它返回的单号。
+  // 出库单是发车在<b>库存域内</b>生成的事实，配送侧只读它返回的单号。
   assert.doesNotMatch(api, /inventory|\bgps\b|track|sign-?off|departure|库存出库|轨迹/i);
   assert.ok(!/\/scm\/inventory|outboundApi|reservationApi/.test(api), '配送 API 不得直接触达库存域接口');
 });

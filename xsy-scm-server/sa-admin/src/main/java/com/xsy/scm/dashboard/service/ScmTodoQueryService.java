@@ -30,8 +30,8 @@ import java.util.List;
  * 业务待办聚合（只读）。实时聚合现有业务表，不落任何快照表、不新增消息表。
  *
  * <p>
- * 可见性 = 待办入口权限（由控制器 {@code scm:todo:query} 保证）∩ 本卡片领域权限， 由 {@link ScmTodoCardEnum#visibleTo} 判定；无权卡片整卡省略、既不给数字也不填 0，
- * 有权但零任务才返回 0。计数一律复用对应领域查询服务的分页 {@code total}， 不重写筛选口径、异常判定或数据范围。
+ * 可见性 = 待办入口权限（由控制器 {@code scm:todo:query} 保证）∩ 本卡片领域权限，由 {@link ScmTodoCardEnum#visibleTo} 判定；无权卡片整卡省略、既不给数字也不填 0，
+ * 有权但零任务才返回 0。计数一律复用对应领域查询服务的分页 {@code total}，不重写筛选口径、异常判定或数据范围。
  */
 @Service
 @RequiredArgsConstructor

@@ -1,12 +1,12 @@
 /**
  * 库存流水接口。
  *
- * 与后端 `InventoryMovementController` 逐端点对应（1 个，**只读**）：
+ * 与后端 `InventoryMovementController` 逐端点对应（1 个，<b>只读</b>）：
  * `POST /scm/inventory/movement/query`。
  *
- * **append-only 在接口形状上的体现**：只有 query 一个端点。没有新增、没有编辑、没有删除 ——
+ * <b>append-only 在接口形状上的体现</b>：只有 query 一个端点。没有新增、没有编辑、没有删除 ——
  * 这不是「暂时没做」，而是硬化后的契约：流水表在 DB 层有
- * `CHECK (deleted = FALSE)`，未来冲销必须**新增反向 movement**，
+ * `CHECK (deleted = FALSE)`，未来冲销必须<b>新增反向 movement</b>，
  * 因此永远不会出现「改历史流水」的 API。
  *
  * 权限：`scm:inventory:movement:query`（菜单 821）。

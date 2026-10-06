@@ -44,7 +44,7 @@
 
     <!-- 一次写全 5 个对账数量 + 实重三字段：
          ck_purchase_receipt_item_reconciliation 与 ck_purchase_receipt_item_weight_fields
-         要求这些列**同时**满足恒等式，分两步写必然中间态撞 CHECK。
+         要求这些列同时满足恒等式，分两步写必然中间态撞 CHECK。
          标品传 actualWeight/weightUnit/weighingSource 全 NULL（三字段同生同灭）。 -->
     <update id="updateReconciliation">
         UPDATE purchase_receipt_item

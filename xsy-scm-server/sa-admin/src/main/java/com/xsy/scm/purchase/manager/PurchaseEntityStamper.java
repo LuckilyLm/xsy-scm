@@ -8,7 +8,7 @@ import com.xsy.scm.purchase.domain.entity.PurchaseOrderItemEntity;
 import java.time.OffsetDateTime;
 
 /**
- * 采购单、采购行和分配行的审计字段赋值。 新建行与分配记录复位 version/deleted；单据头由 PurchaseSnapshotFactory 初始化。
+ * 采购单、采购行和分配行的审计字段赋值。新建行与分配记录复位 version/deleted；单据头由 PurchaseSnapshotFactory 初始化。
  */
 public final class PurchaseEntityStamper {
 

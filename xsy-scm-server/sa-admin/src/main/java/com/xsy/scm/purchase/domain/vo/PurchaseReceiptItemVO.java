@@ -12,11 +12,11 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 采购收货单行。
  *
  * <p>
- * 含 5 个对账数量（恒等式）： `remaining = max(planned − cumulative, 0)`、`over = max(cumulative − planned, 0)`、 `difference =
- * cumulative − planned`（可为负）。
+ * 含 5 个对账数量（恒等式）：{@code remaining = max(planned − cumulative, 0)}、
+ * {@code over = max(cumulative − planned, 0)}、{@code difference = cumulative − planned}（可为负）。
  *
  * <p>
- * `actualWeight` 三态：标品为 `null` 渲染为 `—`；非标品为实重。 **不存价格** —— 金额由采购行派生。
+ * {@code actualWeight} 三态：标品为 {@code null} 渲染为 {@code —}；非标品为实重。不存价格，金额由采购行派生。
  */
 @Data
 public class PurchaseReceiptItemVO {

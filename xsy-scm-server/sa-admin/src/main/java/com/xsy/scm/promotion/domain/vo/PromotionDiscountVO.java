@@ -13,8 +13,7 @@ import lombok.Data;
  * 优惠试算 / 冻结结果。
  *
  * <p>
- * 三个金额分开返回（基础合计、活动优惠、券优惠）：只给一个「最终优惠」时，
- * 客户问「这张券到底减了多少」无法回答，而对账时需要分别核对。
+ * 三个金额分开返回（基础合计、活动优惠、券优惠）：只给一个「最终优惠」时， 客户问「这张券到底减了多少」无法回答，而对账时需要分别核对。
  */
 @Data
 public class PromotionDiscountVO {
@@ -34,8 +33,8 @@ public class PromotionDiscountVO {
      * 限时特价让利（不含满减/折扣与券）。
      *
      * <p>
-     * 与 {@link #activityDiscount} 分开：特价作用在**基础价之上、其余活动之前**，且让利按**行**归集
-     * （针对某个 SKU），不是按订单金额比例分摊的订单级优惠。分开才能回答「原基础价多少、特价让了多少」。
+     * 与 {@link #activityDiscount} 分开：特价作用在<b>基础价之上、其余活动之前</b>，且让利按<b>行</b>归集 （针对某个
+     * SKU），不是按订单金额比例分摊的订单级优惠。分开才能回答「原基础价多少、特价让了多少」。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal specialDiscount;
@@ -75,18 +74,16 @@ public class PromotionDiscountVO {
     private List<String> suppressedActivities = new ArrayList<>();
 
     /**
-     * 实际产生优惠的**全部**活动，按作用顺序。
+     * 实际产生优惠的<b>全部</b>活动，按作用顺序。
      *
      * <p>
-     * 与 {@link #activityId} 的区别：{@code activityId} 只记第一条产生优惠的活动（主规则，便于快速展示），
-     * 不同互斥组可以叠加，因此真实生效的可能不止一条。冻结时必须按本列表完整落快照，
+     * 与 {@link #activityId} 的区别：{@code activityId} 只记第一条产生优惠的活动（主规则，便于快速展示）， 不同互斥组可以叠加，因此真实生效的可能不止一条。冻结时必须按本列表完整落快照，
      * 否则退款反向会漏掉叠加的那部分。
      */
     private List<AppliedActivityVO> appliedActivities = new ArrayList<>();
 
     /**
-     * 满赠赠品权益：**非金额权益**，不参与优惠分摊、不进 {@link #discountAmount}，
-     * 而是单独冻结成 {@code order_promotion_gift}，供出库、分拣、小票与成本归集读取。
+     * 满赠赠品权益：<b>非金额权益</b>，不参与优惠分摊、不进 {@link #discountAmount}， 而是单独冻结成 {@code order_promotion_gift}，供出库、分拣、小票与成本归集读取。
      */
     private List<GiftEntitlementVO> gifts = new ArrayList<>();
 

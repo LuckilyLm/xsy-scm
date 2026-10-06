@@ -13,13 +13,11 @@ import java.util.Map;
  * 支付渠道契约（provider-neutral）。
  *
  * <p>
- * <b>业务域只认这个接口，不认任何渠道</b>：状态机、幂等、Finance 收款映射都在业务侧，
- * 换渠道只换实现。渠道密钥、签名算法、通知地址全部封装在实现里，
- * **不得出现在业务规则、配置以外的类或客户端**（ADR-009 第 17 条）。
+ * <b>业务域只认这个接口，不认任何渠道</b>：状态机、幂等、Finance 收款映射都在业务侧， 换渠道只换实现。渠道密钥、签名算法、通知地址全部封装在实现里， <b>不得出现在业务规则、配置以外的类或客户端</b>（ADR-009
+ * 第 17 条）。
  *
  * <p>
- * <b>实现必须是纯函数式的「问渠道 / 让渠道做事」</b>：不写库、不开事务、不改业务状态。
- * 状态转换由 {@code PaymentCallbackService} 在事务里做 —— 否则「渠道调用成功但事务回滚」
+ * <b>实现必须是纯函数式的「问渠道 / 让渠道做事」</b>：不写库、不开事务、不改业务状态。 状态转换由 {@code PaymentCallbackService} 在事务里做 —— 否则「渠道调用成功但事务回滚」
  * 会留下说不清的外部事实。
  *
  * <p>
@@ -47,9 +45,8 @@ public interface ScmPaymentProvider {
      * 验签并归一化回调。
      *
      * <p>
-     * <b>不抛异常</b>：验签失败或报文不合法时返回 {@code signatureVerified = false} 并带上
-     * {@code rejectReason}，由业务侧落一条 {@code REJECTED} 事件留证 ——
-     * 「有人伪造回调」必须是看得见的，而不是被异常吞掉。
+     * <b>不抛异常</b>：验签失败或报文不合法时返回 {@code signatureVerified = false} 并带上 {@code rejectReason}，由业务侧落一条 {@code REJECTED}
+     * 事件留证 —— 「有人伪造回调」必须是看得见的，而不是被异常吞掉。
      */
     Callback parseCallback(Map<String, String> headers, String rawBody);
 
@@ -59,18 +56,18 @@ public interface ScmPaymentProvider {
     TransactionResult queryTransaction(String providerTransactionNo);
 
     /**
-     * 拉取某业务日的渠道**收款**明细。
+     * 拉取某业务日的渠道<b>收款</b>明细。
      *
      * <p>
-     * 首版只对收款：退款的渠道账与本地退款事实是另一组口径，混进同一个合计会让
-     * 「渠道合计含退款、本地合计不含」这种不对称的比较永远报差异 —— 那不是发现了问题，
-     * 是拿两把尺子量。退款对账作为后续独立一项。
+     * 首版只对收款：退款的渠道账与本地退款事实是另一组口径，混进同一个合计会让 「渠道合计含退款、本地合计不含」这种不对称的比较永远报差异 —— 那不是发现了问题， 是拿两把尺子量。退款对账作为后续独立一项。
      */
     Settlement fetchSettlement(LocalDate bizDate);
 
     /** 渠道发起结果。 */
     enum Outcome {
-        PENDING, SUCCEEDED, FAILED
+        PENDING,
+        SUCCEEDED,
+        FAILED
     }
 
     /**
@@ -88,9 +85,7 @@ public interface ScmPaymentProvider {
      * @param providerTransactionNo
      *            渠道交易号；回调按它匹配本地交易
      * @param amount
-     *            **渠道确认收到的金额**。只有同步成功（{@code SUCCEEDED}）才有值；
-     *            延迟 / 失败时为空，等回调再报。它是 Finance 收款金额的唯一依据 ——
-     *            本地绝不拿应付金额去顶替它
+     *            <b>渠道确认收到的金额</b>。只有同步成功（{@code SUCCEEDED}）才有值； 延迟 / 失败时为空，等回调再报。它是 Finance 收款金额的唯一依据 —— 本地绝不拿应付金额去顶替它
      */
     record IntentResult(String externalIntentId, String providerTransactionNo, Outcome outcome, BigDecimal amount,
             String failureCode, String failureMessage) {
@@ -105,8 +100,7 @@ public interface ScmPaymentProvider {
      * 退款结果。
      *
      * @param amount
-     *            **渠道实际退回的金额**；只有成功时才有值。与申请退款额分开：
-     *            申请 100 而渠道实退 98 是可能发生的，资金反向事实认的是它
+     *            <b>渠道实际退回的金额</b>；只有成功时才有值。与申请退款额分开： 申请 100 而渠道实退 98 是可能发生的，资金反向事实认的是它
      */
     record RefundResult(String providerRefundNo, Outcome outcome, BigDecimal amount, String failureCode,
             String failureMessage) {
@@ -116,12 +110,11 @@ public interface ScmPaymentProvider {
      * 归一化后的回调。
      *
      * @param providerEventId
-     *            渠道事件 id —— **回调幂等的主锚点**
+     *            渠道事件 id —— <b>回调幂等的主锚点</b>
      * @param eventType
      *            归一化事件类型；类型不认识时为 {@code null}
      * @param rawEventType
-     *            渠道原始事件名。类型不认识时**原样保留**：落库留证比编一个本地占位值诚实
-     *            （也避免在业务代码里造一个与其它域撞值的魔法字符串）
+     *            渠道原始事件名。类型不认识时<b>原样保留</b>：落库留证比编一个本地占位值诚实 （也避免在业务代码里造一个与其它域撞值的魔法字符串）
      * @param providerTransactionNo
      *            渠道交易号
      * @param amount

@@ -37,17 +37,12 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_PURCH
  * {@code supplier_sku} 的差量落库。
  *
  * <p>
- * <b>整表替换分四段执行：</b>
- * <ol>
- * <li><b>校验段 A</b>：请求内一致性（skuId 不重复、id 归属正确）——由 {@link SupplierSkuChangeSet#between} 完成；</li>
- * <li><b>锁段</b>：先锁 {@code supplier} 行，再锁 {@code supplier_sku} 行。锁序固定， 且 supplier
- * 的启用状态在持有行锁之后才判断，避免「判断完状态、供应商刚好被停用」的窗口；</li>
- * <li><b>校验段 B</b>：对每条待写行做外部校验（采购员存在、SKU 可下单、构造快照）。 这一步<b>只构造、不写库</b>；</li>
- * <li><b>写段</b>：校验段 A/B 全部通过后才开始更新 / 插入 / 软删。</li>
- * </ol>
+ * 整表替换分四段执行。校验段 A：请求内一致性（{@code skuId} 不重复、{@code id} 归属正确）， 由 {@link SupplierSkuChangeSet#between} 完成。锁段：先锁
+ * {@code supplier} 行，再锁 {@code supplier_sku} 行， 锁序固定且 {@code supplier} 的启用状态在持有行锁之后才判断，避免「判断完状态、供应商刚好被停用」的窗口。 校验段
+ * B：对每条待写行做外部校验（采购员存在、SKU 可下单、构造快照），只构造、不写库。 写段：校验段 A/B 全部通过后才开始更新 / 插入 / 软删。
  *
  * <p>
- * Manager 不控制事务——事务边界在 {@code SupplierSkuService.replace}。
+ * Manager 不控制事务，事务边界在 {@code SupplierSkuService.replace}。
  */
 @Component
 @RequiredArgsConstructor

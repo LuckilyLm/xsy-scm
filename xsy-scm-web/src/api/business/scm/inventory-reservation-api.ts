@@ -4,7 +4,7 @@
  * 与后端 `InventoryReservationController` 逐端点对应（2 个）：
  * query / release。
  *
- * **没有 create 端点**：预留是**业务动作的副产物**，不是人手工录的单据。
+ * <b>没有 create 端点</b>：预留是<b>业务动作的副产物</b>，不是人手工录的单据。
  * 由销售订单确认触发（后端 `InventoryReservationService.reserve`），
  * 前端只做查看与释放。一个不存在的函数比一个会返回 404 的函数更能说明这一点。
  *

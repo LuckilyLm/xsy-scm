@@ -13,7 +13,7 @@
         <id column="id" property="id"/>
     </resultMap>
 
-    <!-- 供应商 / 仓库 / 采购单号一律取**快照**（收货单继承采购单）；
+    <!-- 供应商 / 仓库 / 采购单号一律取快照（收货单继承采购单）；
          不联 supplier / warehouse 主数据，避免快照与主数据被混用。 -->
     <select id="query" resultMap="receiptVoMap">
         SELECT r.id, r.receipt_no,

@@ -2,9 +2,9 @@
  * 客户表单模型（纯函数，可被 `node --test` 直接单测）。
  *
  * 关键业务规则（与后端一致）：
- * - 账期三种形态**互斥且穷尽**：不设置 / 按金额 / 按时间（后端 `ck_customer_credit_period`）；
+ * - 账期三种形态<b>互斥且穷尽</b>：不设置 / 按金额 / 按时间（后端 `ck_customer_credit_period`）；
  * - 单位为「月」时结算日限 1–28（保证 2 月也存在该日期）；
- * - 金额一律是**字符串**形式的 4 位定点数，绝不做 `Number()` 运算。
+ * - 金额一律是<b>字符串</b>形式的 4 位定点数，绝不做 `Number()` 运算。
  */
 import type {CreditPeriodType, CustomerForm} from '/@/types/business/scm/customer';
 

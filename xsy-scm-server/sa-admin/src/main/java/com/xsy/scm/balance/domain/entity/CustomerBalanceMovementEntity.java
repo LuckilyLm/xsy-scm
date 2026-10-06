@@ -12,8 +12,7 @@ import lombok.Data;
  * 客户余额流水（append-only）。
  *
  * <p>
- * 金额**恒正**，方向由 {@link #direction} 独立表达：与 Finance 的「数量恒正、方向编码在类型里」
- * 同一套风格，避免「正负号 + 方向」两处表达同一件事。
+ * 金额<b>恒正</b>，方向由 {@link #direction} 独立表达：与 Finance 的「数量恒正、方向编码在类型里」 同一套风格，避免「正负号 + 方向」两处表达同一件事。
  *
  * <p>
  * 改余额靠追加反向流水，绝不修改历史行（库上有 append-only CHECK）。

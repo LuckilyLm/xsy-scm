@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
  * 客户列表行。
  *
  * <p>
- * 列表<b>不</b>返回明细字段：地址 / 备注 / 账期细节只在 {@link CustomerDetailVO} 出现， 避免列表接口在客户量增长后变重。
+ * 列表<b>不</b>返回明细字段：地址 / 备注 / 账期细节只在 {@link CustomerDetailVO} 出现，避免列表接口在客户量增长后变重。
  */
 @Data
 public class CustomerVO {

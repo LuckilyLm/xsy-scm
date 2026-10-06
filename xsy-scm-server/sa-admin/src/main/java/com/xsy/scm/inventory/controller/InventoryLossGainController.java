@@ -29,11 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
  * 共 7 个端点：分页 / 详情 / 新建 / 改待审核 / 审批通过 / 驳回 / 删除。
  *
  * <p>
- * <b>权限划分</b>：查询 {@code scm:inventory:loss-gain:query}、 新建 {@code :add}、改待审核 {@code :update}、审批 {@code :approve}、驳回
- * {@code :reject}、 删除 {@code :delete}。
+ * <b>权限划分</b>：查询 {@code scm:inventory:loss-gain:query}、新建 {@code :add}、改待审核 {@code :update}、审批 {@code :approve}、驳回
+ * {@code :reject}、删除 {@code :delete}。
  *
  * <p>
- * <b>「审批」与「驳回」是两个独立权限</b>：允许主管审批、 由另一角色驳回是常见分工；合成一个「审核」权限会让这两件事无法分权。 「新建」与「审批」也必须分开 —— 报损是把货从账上抹掉的动作， 由同一个人录单并批准就失去了制衡。
+ * <b>「审批」与「驳回」是两个独立权限</b>：允许主管审批、由另一角色驳回是常见分工；合成一个「审核」权限会让这两件事无法分权。 「新建」与「审批」也必须分开 —— 报损是把货从账上抹掉的动作，由同一个人录单并批准就失去了制衡。
  */
 @RestController
 @RequestMapping("/scm/inventory/loss-gain")
@@ -83,7 +83,7 @@ public class InventoryLossGainController {
      * 审批通过：写 {@code LOSS_REPORT} / {@code GAIN_REPORT} 流水并调整余额。
      *
      * <p>
-     * 这是本模块唯一会改变库存的端点，失败整单回滚，不存在「报一半」。 请求体必须带上审批人看到的 {@code version}，否则若单据在审批期间被改过会以 40921 失败。
+     * 这是本模块唯一会改变库存的端点，失败整单回滚，不存在「报一半」。请求体必须带上审批人看到的 {@code version}，否则若单据在审批期间被改过会以 40921 失败。
      */
     @PostMapping("/approve/{id}")
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_APPROVE)

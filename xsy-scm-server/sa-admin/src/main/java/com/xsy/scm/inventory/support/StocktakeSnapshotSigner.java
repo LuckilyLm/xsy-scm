@@ -16,12 +16,12 @@ import java.util.List;
  * 盘点 Excel 模板的「签名快照凭证」编解码器（无状态，不落任何快照表）。
  *
  * <p>
- * <b>为什么是无状态签名而不是快照表</b>：盘点计划要求「从导出到导入任一参与行余额版本变化即整批拒绝」， 又不允许新建业务快照表，因此导出时把权威快照（仓库、来源 SKU 集合、每行的余额 id / 版本 / 记账单位 /
- * 账面量、模板版本、导出人、有效期）编成一段令牌随模板带出，导入时用它做「受保护来源集合」并与持锁读取的 当前余额逐项核验。令牌用 HMAC-SHA256 签名，用户改一个字节即校验失败，故 Excel 里的元数据列不可信也无妨。
+ * <b>为什么是无状态签名而不是快照表</b>：盘点计划要求「从导出到导入任一参与行余额版本变化即整批拒绝」，又不允许新建业务快照表，因此导出时把权威快照（仓库、来源 SKU 集合、每行的余额 id / 版本 / 记账单位 /
+ * 账面量、模板版本、导出人、有效期）编成一段令牌随模板带出，导入时用它做「受保护来源集合」并与持锁读取的当前余额逐项核验。令牌用 HMAC-SHA256 签名，用户改一个字节即校验失败，故 Excel 里的元数据列不可信也无妨。
  *
  * <p>
  * <b>密钥来源</b>：{@code scm.inventory.stocktake.snapshot.secret}。默认值 {@code DEV_SECRET} 只保证本地开发与 IT 可运行；pre / prod profile
- * 下缺失或仍等于该公开默认值会让构造直接抛错、 启动失败（见 {@link #requireNonPublicSecret}），生产必须用环境变量
+ * 下缺失或仍等于该公开默认值会让构造直接抛错、启动失败（见 {@link #requireNonPublicSecret}），生产必须用环境变量
  * {@code SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET} 显式配置（AGENTS：不把真实密钥写进源码 / 配置）。
  */
 @Component
@@ -70,7 +70,7 @@ public class StocktakeSnapshotSigner {
     }
 
     /**
-     * 验签通过后仍解析不出载荷：body 是本服务自己签出去的字节，所以这只可能是服务端故障， 不是用户凭证坏了。调用方必须与真正的凭证类失败分开处理，否则会把用户推进「重导模板」的死循环。
+     * 验签通过后仍解析不出载荷：body 是本服务自己签出去的字节，所以这只可能是服务端故障，不是用户凭证坏了。调用方必须与真正的凭证类失败分开处理，否则会把用户推进「重导模板」的死循环。
      */
     public static class SnapshotPayloadUnreadable extends SnapshotCredentialException {
         public SnapshotPayloadUnreadable(Throwable cause) {
@@ -97,7 +97,7 @@ public class StocktakeSnapshotSigner {
      * pre / prod 下密钥必须显式配置且不等于仓库默认值，否则构造失败即启动失败。
      *
      * <p>
-     * 只看 profile 字符串而不是 {@code SystemEnvironment#isProd()}：后者把 {@code pre} 判为非生产， 而预发布同样是不能用公开密钥的环境。口径与
+     * 只看 profile 字符串而不是 {@code SystemEnvironment#isProd()}：后者把 {@code pre} 判为非生产，而预发布同样是不能用公开密钥的环境。口径与
      * {@code FileConfig#validateCloudConfig} 保持一致。
      */
     static void requireNonPublicSecret(String secret, String activeProfiles) {
@@ -165,7 +165,7 @@ public class StocktakeSnapshotSigner {
     /**
      * 验签并反序列化；签名不符、结构损坏或 {@code expiresAtEpochSec < nowEpochSec} 均抛
      * {@link SnapshotCredentialException}。验签<b>通过之后</b>仍解析不出载荷时抛
-     * {@link SnapshotPayloadUnreadable}——那是服务端故障，调用方不得按「用户凭证坏了」处理。 模板版本 / 仓库 / 操作者的匹配由调用方负责。
+     * {@link SnapshotPayloadUnreadable}——那是服务端故障，调用方不得按「用户凭证坏了」处理。模板版本 / 仓库 / 操作者的匹配由调用方负责。
      */
     public Payload verify(String token, long nowEpochSec) {
         if (token == null) {

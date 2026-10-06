@@ -1,11 +1,11 @@
 /*
  * Drawer 底部操作区统一右对齐，与 `a-modal` 口径一致。
  *
- * antd 的 `.ant-drawer-footer` 只设了 padding / border-top / flexShrink，**没有设对齐**，
+ * antd 的 `.ant-drawer-footer` 只设了 padding / border-top / flexShrink，<b>没有设对齐</b>，
  * 而 `.ant-modal-footer` 自带 `textAlign: end` —— 于是同一套「取消 + 保存」在抽屉里贴左、
  * 在弹窗里贴右。
  *
- * **刻意不动 `.ant-modal-footer`**：弹窗本来就右对齐，改它只扩大影响面。
+ * <b>刻意不动 `.ant-modal-footer`</b>：弹窗本来就右对齐，改它只扩大影响面。
  * 选择器带 `.ant-*` 前缀是为了在 CSS-in-JS 注入顺序不确定时稳定生效。
  */
 .ant-drawer-footer {

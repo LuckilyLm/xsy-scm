@@ -19,10 +19,10 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLI
  * 整表替换的差量计算结果。
  *
  * <p>
- * 把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断—— 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功， 后续写库就不会因为业务规则失败而回滚一半。
+ * 把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断—— 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功，后续写库就不会因为业务规则失败而回滚一半。
  *
  * <p>
- * {@code defaultFlag} 的基数不在这里校验：同一供应商允许多个默认来源， 因此默认标记的数量不是约束。
+ * {@code defaultFlag} 的基数不在这里校验：同一供应商允许多个默认来源，因此默认标记的数量不是约束。
  */
 public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemForm> inserted, List<Long> removedIds) {
 
@@ -36,7 +36,7 @@ public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemF
      * 计算整表替换差量。
      *
      * <p>
-     * {@code requested} 为空列表表示**清空全部关联**，不是「无操作」。
+     * {@code requested} 为空列表表示<b>清空全部关联</b>，不是「无操作」。
      *
      * @throws ScmBusinessException
      *             40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、 40921（带 id 的行版本不一致）

@@ -3,7 +3,7 @@
  *
  * ## 为什么需要这份契约
  *
- * 项目曾系统性地把**开发设计说明、业务规则推导、技术实现细节**直接写进业务 UI：
+ * 项目曾系统性地把<b>开发设计说明、业务规则推导、技术实现细节</b>直接写进业务 UI：
  * 常驻蓝色说明框、表单 `help` 长句、报表工具栏口径注释，甚至把 `path` / `parent_id` /
  * `SALES_OUT` / `occurred_at` 这类字段名与枚举名展示给业务用户。
  *
@@ -17,7 +17,7 @@
  * ```
  *
  * 治理规则见 `docs/architecture/scm-ui-guidelines.md §8`：
- * **不要为了证明系统设计严谨，而让 UI 替代码写设计文档。**
+ * <b>不要为了证明系统设计严谨，而让 UI 替代码写设计文档。</b>
  * 代码注释、ADR、测试负责解释「为什么」；业务 UI 负责告诉用户「现在能做什么」。
  *
  * 本文件钉住治理结果，防止「随手再补一句说明」把噪音重新引回来。
@@ -25,14 +25,14 @@
  * ## 为什么用 AST 而不是正则
  *
  * 曾经的一次性扫描用「正则 + 人工排除」，因为要区分「渲染文案」和「源码注释」，
- * 还要排除组件标签名、SVG 属性、`v-for :key`。人工复核可以容忍误报，**长期跑的测试不允许**。
+ * 还要排除组件标签名、SVG 属性、`v-for :key`。人工复核可以容忍误报，<b>长期跑的测试不允许</b>。
  *
  * 因此这里用 `vue-eslint-parser`（项目 `devDependencies` 直接依赖）解析 SFC 的 template AST，
  * 只看两类目标：
  *
  * - 文本节点（`VText`）；
  * - `placeholder` / `help` / `title` / `message` / `description` / `label` / `extra` / `empty-text`
- *   的属性值，绑定形式（`:message="…"`）先取表达式里的**字面文本**再检查。
+ *   的属性值，绑定形式（`:message="…"`）先取表达式里的<b>字面文本</b>再检查。
  *
  * AST 天然放过、不需要额外排除逻辑的：
  *
@@ -184,7 +184,7 @@ function hasDirective(element, name) {
       (attribute) => attribute.directive && attribute.key?.name?.name === name);
 }
 
-/** 从绑定表达式中抽取**字面文本**；纯动态表达式（`:title="row.name"`）返回空数组。 */
+/** 从绑定表达式中抽取<b>字面文本</b>；纯动态表达式（`:title="row.name"`）返回空数组。 */
 function literalTexts(node, out = []) {
   if (!node) return out;
   switch (node.type) {
@@ -324,7 +324,7 @@ const hasHintClass = (node) =>
 // ------------------------------------------------------------------
 
 /**
- * 基线 = 文案收口完成后由本文件的扫描器跑出来的真实值，**棘轮只降不升**。
+ * 基线 = 文案收口完成后由本文件的扫描器跑出来的真实值，<b>棘轮只降不升</b>。
  *
  * `type="secondary"` 与 `hint` 类分开计数：前者是 antd 排版的属性形态，后者是页面自建的
  * 提示样式（`coupon-hint` / `__hint`），两者不重叠也不互相替代。每个数字只用于

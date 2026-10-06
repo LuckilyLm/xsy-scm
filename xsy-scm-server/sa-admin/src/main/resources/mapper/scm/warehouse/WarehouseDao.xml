@@ -21,7 +21,7 @@
         </if>
         <!--
           仓库主档按授权范围收窄：非管理员不得从未授权仓库拿到 id、名称或地址。
-          `all` 不拼谓词；scope 为空或没有授权值即 AND FALSE —— 与库存族读侧同一条失败关闭口径。
+          all 不拼谓词；scope 为空或没有授权值即 AND FALSE —— 与库存族读侧同一条失败关闭口径。
         -->
         <choose>
             <when test="scope == null or scope.empty">AND FALSE</when>

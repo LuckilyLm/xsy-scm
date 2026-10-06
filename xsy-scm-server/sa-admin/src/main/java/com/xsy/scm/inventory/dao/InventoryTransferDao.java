@@ -17,12 +17,12 @@ import java.util.List;
  * 调拨单头读写。
  *
  * <p>
- * <b>每个写方法都带状态守卫</b>（{@code WHERE status = ...}）： 发出仅 {@code DRAFT}、收货仅 {@code SHIPPED}、改 / 删仅 {@code DRAFT}。 守卫写在 SQL
+ * <b>每个写方法都带状态守卫</b>（{@code WHERE status = ...}）：发出仅 {@code DRAFT}、收货仅 {@code SHIPPED}、改 / 删仅 {@code DRAFT}。守卫写在 SQL
  * 里而不只是服务层 —— 服务层的状态判断是「给人看的错误码」， SQL 的守卫才是并发下真正生效的那一道。
  *
  * <p>
- * <b>为什么不需要乐观锁</b>：发出与收货都先 {@link #lockById}（{@code FOR UPDATE}） 持有单据行锁，再读明细。并发的「改草稿」也要拿同一把行锁 → 它只能等发出/收货提交后才执行，
- * 而那时状态已不是 DRAFT，改草稿会被守卫拒绝。行锁天然把「读明细 → 写流水」这段序列化了， 所以不需要额外的版本号（报损报溢的审批需要，是因为它的「读」发生在弹窗打开那一刻， 不在锁的保护范围内）。
+ * <b>为什么不需要乐观锁</b>：发出与收货都先 {@link #lockById}（{@code FOR UPDATE}）持有单据行锁，再读明细。并发的「改草稿」也要拿同一把行锁 → 它只能等发出/收货提交后才执行，
+ * 而那时状态已不是 DRAFT，改草稿会被守卫拒绝。行锁天然把「读明细 → 写流水」这段序列化了，所以不需要额外的版本号（报损报溢的审批需要，是因为它的「读」发生在弹窗打开那一刻，不在锁的保护范围内）。
  */
 @Mapper
 public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity> {
@@ -46,7 +46,7 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      * 锁定单据行（{@code SELECT ... FOR UPDATE}）。
      *
      * <p>
-     * 锁序纪律：**单据锁先于余额锁**。发出时先锁本行再按 {@code (warehouse_id, sku_id)} 升序锁源仓余额行；收货时同理锁目标仓余额行。与收货 / 出库 / 盘点 / 报损报溢同一顺序。
+     * 锁序纪律：<b>单据锁先于余额锁</b>。发出时先锁本行再按 {@code (warehouse_id, sku_id)} 升序锁源仓余额行；收货时同理锁目标仓余额行。与收货 / 出库 / 盘点 / 报损报溢同一顺序。
      */
     InventoryTransferEntity lockById(@Param("id") Long id);
 

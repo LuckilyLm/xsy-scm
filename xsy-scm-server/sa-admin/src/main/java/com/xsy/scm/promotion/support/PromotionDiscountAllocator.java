@@ -7,22 +7,14 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * 订单优惠的**按行比例分摊**（纯函数）。
+ * 订单优惠的按行比例分摊（纯函数）。
  *
  * <p>
- * 规则来自 ADR-009：优惠按订单行金额比例分摊并冻结；舍入差额以**确定性规则**归集。
- * 「确定性」在这里是可复现的意思 —— 同样的输入永远得到同样的分摊，不依赖集合顺序或时钟。
+ * 规则来自 ADR-009：优惠按订单行金额比例分摊并冻结，舍入差额以确定性规则归集。 「确定性」在这里是可复现的意思 —— 同样的输入永远得到同样的分摊，不依赖集合顺序或时钟。
  *
  * <p>
- * 三个必须做对的地方：
- * <ol>
- * <li><b>比例分摊后逐行取整到 4 位</b>（{@code HALF_UP}，与全仓金额口径一致），
- * 因此各行之和通常不等于总优惠，差额必须归集而不是丢掉；</li>
- * <li><b>归集目标固定</b>：基础金额最大的一行，同额时取行 id 最小的一行。归集后若该行被
- * 顶到超过自己的基础金额，则顺延到下一行 —— 允许「某行优惠超过行金额」会直接造出负数行金额；</li>
- * <li><b>优惠总额先夹在 [0, 基础合计]</b>：活动算出来的减免可能超过订单金额（例如门槛满足但
- * 客户只买了很少的量），越界的分摊没有意义。</li>
- * </ol>
+ * 三个必须做对的地方：比例分摊后逐行取整到 4 位（{@code HALF_UP}，与全仓金额口径一致）， 因此各行之和通常不等于总优惠，差额必须归集而不是丢掉；归集目标固定为基础金额最大的一行、 同额时取行 id
+ * 最小的一行，归集后若该行被顶到超过自己的基础金额则顺延到下一行 （允许「某行优惠超过行金额」会直接造出负数行金额）；优惠总额先夹在 {@code [0, 基础合计]}， 因为活动算出来的减免可能超过订单金额，越界的分摊没有意义。
  */
 public final class PromotionDiscountAllocator {
 
@@ -75,8 +67,8 @@ public final class PromotionDiscountAllocator {
 
         if (safeLines.isEmpty() || discount.signum() == 0) {
             List<Allocation> zero = new ArrayList<>(safeLines.size());
-            safeLines.forEach(line -> zero.add(new Allocation(line.orderItemId(), amount(line.baseAmount()),
-                    BigDecimal.ZERO.setScale(SCALE))));
+            safeLines.forEach(line -> zero.add(
+                    new Allocation(line.orderItemId(), amount(line.baseAmount()), BigDecimal.ZERO.setScale(SCALE))));
             return new Result(baseTotal, discount, zero, null);
         }
 
@@ -85,7 +77,8 @@ public final class PromotionDiscountAllocator {
         BigDecimal allocated = BigDecimal.ZERO;
         for (Line line : safeLines) {
             BigDecimal base = amount(line.baseAmount());
-            BigDecimal share = baseTotal.signum() == 0 ? BigDecimal.ZERO
+            BigDecimal share = baseTotal.signum() == 0
+                    ? BigDecimal.ZERO
                     : discount.multiply(base).divide(baseTotal, SCALE, RoundingMode.HALF_UP);
             allocations.add(new Allocation(line.orderItemId(), base, share));
             allocated = allocated.add(share);
@@ -105,9 +98,8 @@ public final class PromotionDiscountAllocator {
                 if (room.signum() <= 0) {
                     continue;
                 }
-                BigDecimal applied = residual.abs().min(room).multiply(residual.signum() >= 0
-                        ? BigDecimal.ONE
-                        : BigDecimal.ONE.negate());
+                BigDecimal applied = residual.abs().min(room)
+                        .multiply(residual.signum() >= 0 ? BigDecimal.ONE : BigDecimal.ONE.negate());
                 allocations.set(index, new Allocation(current.orderItemId(), current.baseAmount(),
                         current.discountAmount().add(applied).setScale(SCALE, RoundingMode.HALF_UP)));
                 residual = residual.subtract(applied);
@@ -126,16 +118,14 @@ public final class PromotionDiscountAllocator {
      * 归集顺序：基础金额降序、同额按行 id 升序。
      *
      * <p>
-     * 不用「入参顺序」或「金额最大但并列时随意」：那会让同一份订单在两次计算中把差额放到
-     * 不同行上，而分摊是要冻结进订单的。
+     * 不用「入参顺序」或「金额最大但并列时随意」：那会让同一份订单在两次计算中把差额放到不同行上，而分摊是要冻结进订单的。
      */
     private static List<Integer> targetOrder(List<Allocation> allocations) {
         List<Integer> order = new ArrayList<>(allocations.size());
         for (int index = 0; index < allocations.size(); index++) {
             order.add(index);
         }
-        order.sort(Comparator
-                .comparing((Integer index) -> allocations.get(index).baseAmount()).reversed()
+        order.sort(Comparator.comparing((Integer index) -> allocations.get(index).baseAmount()).reversed()
                 .thenComparing(index -> allocations.get(index).orderItemId()));
         return order;
     }

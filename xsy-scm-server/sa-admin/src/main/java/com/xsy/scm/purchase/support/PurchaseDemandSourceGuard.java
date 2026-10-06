@@ -7,19 +7,11 @@ import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SOURCE_INVALID;
 
 /**
- * 采购需求来源守卫：拒绝无法采购的销售订单。
+ * 采购需求来源不变量：只有未删除且已确认（{@code CONFIRMED}）的销售订单才能生成采购需求。
  *
  * <p>
- * 为什么需要它：`purchase_demand` 的来源唯一索引 （`uk_purchase_demand_source_active`）只保证「一个销售订单行只产生一条活动需求」，
- * **不保证来源订单处于可采购状态**。需求一旦生成，`required_quantity` 会被后续分配 长期引用；若来源订单尚未确认（`DRAFT`）或被取消，就会产生「采购了不该采购的东西」。
- * 数据库层没有外键（`AGENTS.md` 明文禁止），因此这条不变量只能由服务层承担 —— 本类就是那个唯一入口。
- *
- * <p>
- * <b>实现为纯函数</b>：只依赖传入的实体，不注入 DAO、不开事务，供需求生成逐行复用。
- *
- * <p>
- * <b>为什么不用 SQL 里已有的 {@code o.status = 'CONFIRMED'} 过滤</b>：那是 `generate` 的**取数口径**（决定「取哪些行」），本类是**不变量断言**（决定「取到的行是否可信」）。
- * 两者是不同层次的防线：口径可能因新入口（按订单 id 定向生成、补生成、数据修复脚本） 而被放宽，而不变量不允许被放宽。若只有 SQL 过滤，40980 将永远不可达。
+ * {@code uk_purchase_demand_source_active} 只保证「一个销售订单行只产生一条活动需求」，不保证来源订单处于可采购状态；数据库层没有外键，因此这条不变量只能由服务层承担，本类即唯一入口 ——
+ * 独立于查询 SQL 的取数口径（{@code generate} 只查已确认订单），不变量断言不允许被新入口放宽，否则 40980 永不可达。
  */
 public final class PurchaseDemandSourceGuard {
 
@@ -34,7 +26,7 @@ public final class PurchaseDemandSourceGuard {
      * <ul>
      * <li>来源订单缺失（{@code null}）；</li>
      * <li>来源订单已软删（{@code deleted == true}）；</li>
-     * <li>来源订单状态不是 {@code CONFIRMED} （`DRAFT` / `PENDING` 尚未确认，`CANCELLED` 已作废）。</li>
+     * <li>来源订单状态不是 {@code CONFIRMED} （{@code DRAFT} / {@code PENDING} 尚未确认，{@code CANCELLED} 已作废）。</li>
      * </ul>
      *
      * @throws ScmBusinessException
@@ -50,7 +42,7 @@ public final class PurchaseDemandSourceGuard {
     }
 
     /**
-     * 布尔形态，便于 `generate` 在流式过滤中复用（不抛异常）。
+     * 布尔形态，便于 {@code generate} 在流式过滤中复用（不抛异常）。
      */
     public static boolean isConfirmed(SalesOrderEntity order) {
         return order != null && !Boolean.TRUE.equals(order.getDeleted())

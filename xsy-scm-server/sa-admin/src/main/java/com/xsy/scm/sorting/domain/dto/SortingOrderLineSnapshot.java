@@ -8,7 +8,7 @@ import java.math.BigDecimal;
  * 建单时从订单域读到的行快照与校验所需字段。
  *
  * <p>
- * 刻意带上 {@code orderStatus} / {@code orderDeleted} / {@code itemDeleted}： 建单要求「已确认订单的有效明细」，把状态读出来才能给出可分辨的拒绝理由，
+ * 刻意带上 {@code orderStatus} / {@code orderDeleted} / {@code itemDeleted}：建单要求「已确认订单的有效明细」，把状态读出来才能给出可分辨的拒绝理由，
  * 而不是让一条已经被删掉的行以「数量为 null」的形式冒出来。
  */
 @Data

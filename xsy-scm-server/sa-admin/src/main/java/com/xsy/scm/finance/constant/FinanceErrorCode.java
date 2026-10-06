@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
  * 财务域错误码使用 41130–41149；已发布数值保持稳定。
  *
  * <p>
- * 需要隐藏资源是否存在的客户数据范围拒绝由 {@code ScmDataScopeException} 统一返回 30005； 其余错误码只表达财务命令本身的业务拒绝原因。
+ * 需要隐藏资源是否存在的客户数据范围拒绝由 {@code ScmDataScopeException} 统一返回 30005；其余错误码只表达财务命令本身的业务拒绝原因。
  */
 @Getter
 @RequiredArgsConstructor
@@ -37,18 +37,18 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * <b>仅</b>用于手工红字应付超额冲减。
      *
      * <p>
-     * 自动红字应收**永不**使用本码：红字生成在 {@code OrderReturn approve} 的同一事务内， 抛错会让整笔退货批准回滚，等于财务规则反向控制订单域状态机。 手工红字应付可以
+     * 自动红字应收<b>永不</b>使用本码：红字生成在 {@code OrderReturn approve} 的同一事务内，抛错会让整笔退货批准回滚，等于财务规则反向控制订单域状态机。手工红字应付可以
      * fail-loud，因为拒绝它不会回滚任何业务域状态机。
      */
     RED_AMOUNT_EXCEEDED(41137, "红字金额超过原单可冲减金额"),
 
     /**
-     * 反向核销 / 手工红字 / 收付款反向缺原因。DB CHECK 已经拒绝空原因， 本码只为给出可解释的业务错误，而不是把 23514 抛给用户。
+     * 反向核销 / 手工红字 / 收付款反向缺原因。DB CHECK 已经拒绝空原因，本码只为给出可解释的业务错误，而不是把 23514 抛给用户。
      */
     REVERSE_REASON_REQUIRED(41138, "该操作必须填写原因"),
 
     /**
-     * 退款付款来源不合法：退款未 {@code COMPLETED}、金额不等于 {@code refund_amount}、 或对方与该退款的客户不一致。
+     * 退款付款来源不合法：退款未 {@code COMPLETED}、金额不等于 {@code refund_amount}、或对方与该退款的客户不一致。
      */
     PAYMENT_SOURCE_INVALID(41139, "退款付款来源不合法"),
 
@@ -60,12 +60,12 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * 收款或付款仍有有效核销额时不得反向，必须先逐笔反向核销并把已用额降至 0。
      *
      * <p>
-     * 不设这条前置就会出现「已用 &gt; 有效额」的负待核销余额，与红字造成的负净应收叠加后 无法向用户解释 —— 负值只允许出现在「应收侧忠实记录已成立退货」这一处。
+     * 不设这条前置就会出现「已用 &gt; 有效额」的负待核销余额，与红字造成的负净应收叠加后无法向用户解释 —— 负值只允许出现在「应收侧忠实记录已成立退货」这一处。
      */
     REVERSE_BLOCKED_BY_WRITE_OFF(41142, "该单仍有有效核销，请先撤销相关核销"),
 
     /**
-     * 该事实已被反向过。{@code uk_finance_*_single_reverse} 是最终防线， 本码让服务层在撞库级唯一索引之前给出可读错误。
+     * 该事实已被反向过。{@code uk_finance_*_single_reverse} 是最终防线，本码让服务层在撞库级唯一索引之前给出可读错误。
      */
     ALREADY_REVERSED(41143, "该单据已被反向，不能重复反向"),
 
@@ -73,9 +73,8 @@ public enum FinanceErrorCode implements ScmErrorCode {
      * 系统来源的收款不允许走人工冲正。
      *
      * <p>
-     * 人工 {@code reverse()} 的语义是「整笔登记错了，撤销这笔登记」，且要求原收款已核销金额为 0。
-     * 而支付退款是**业务退款**，可能部分、可能多次（100 退 30 再退 20），
-     * 现有 REVERSE 模型表达不了。支付退款应走独立的系统资金反向事实。
+     * 人工 {@code reverse()} 的语义是「整笔登记错了，撤销这笔登记」，且要求原收款已核销金额为 0。 而支付退款是<b>业务退款</b>，可能部分、可能多次（100 退 30 再退 20）， 现有 REVERSE
+     * 模型表达不了。支付退款应走独立的系统资金反向事实。
      */
     SYSTEM_RECEIPT_REVERSE_FORBIDDEN(41144, "系统来源的收款不能人工冲正，请走支付退款流程"),
 

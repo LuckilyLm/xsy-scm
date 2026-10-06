@@ -60,8 +60,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_SHORT_CLOSE_REASON_REQUIRED;
 
 /**
- * 采购单命令编排：幂等、状态转换、写入顺序、操作日志与事务边界。 行级身份为 (order, sku)，分配级身份为 (item, demand)，两层独立对账，保留一行多需求。
- * 新建先锁需求再写单据；编辑先锁单据和采购行，再由分配服务锁旧、新需求并集。 取消和删除持有单据锁后释放分配并重算需求；少收关单保留已有分配。
+ * 采购单命令编排：幂等、状态转换、写入顺序、操作日志与事务边界。行级身份为 (order, sku)，分配级身份为 (item, demand)，两层独立对账，保留一行多需求。
+ * 新建先锁需求再写单据；编辑先锁单据和采购行，再由分配服务锁旧、新需求并集。取消和删除持有单据锁后释放分配并重算需求；少收关单保留已有分配。
  */
 @Service
 @RequiredArgsConstructor
@@ -155,8 +155,8 @@ public class PurchaseOrderService {
         PurchaseOrderValidator.draft(form);
         PurchaseOrderEntity order = lockOrder(form.getId());
         version(order.getVersion(), form.getVersion());
-        // 只有 DRAFT 可编辑行与分配。注意这里**必须判返回值**：
-        // `editable(...)` 是纯布尔判定，写成裸语句会静默放过 SUBMITTED / 终态单，
+        // 只有 DRAFT 可编辑行与分配。注意这里<b>必须判返回值</b>：
+        // {@code editable(...)} 是纯布尔判定，写成裸语句会静默放过 SUBMITTED / 终态单，
         // 让后续的分配校验（40082）抢先抛出，把一个状态错误伪装成数量错误。
         if (!PurchaseOrderStateMachine.editable(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
@@ -190,8 +190,8 @@ public class PurchaseOrderService {
                 .forEach(list -> list.forEach(allocation -> involved.add(allocation.getPurchaseDemandId())));
         Map<Long, PurchaseDemandEntity> demands = purchaseOrderAllocationService.lockDemands(involved);
 
-        // 本单**已有**的分配合计（按 demandId）。校验新请求时必须先把它减掉 ——
-        // 库里的 `demand.allocated_quantity` 已经包含了本单的旧分配，直接相加会把自己数两遍，
+        // 本单<b>已有</b>的分配合计（按 demandId）。校验新请求时必须先把它减掉 ——
+        // 库里的 {@code demand.allocated_quantity} 已经包含了本单的旧分配，直接相加会把自己数两遍，
         // 于是「数量没变的一次编辑」也会撞 40082。
         Map<Long, BigDecimal> oldTotals = PurchaseOrderAllocationService.totals(existingAllocations.values());
         Map<Long, BigDecimal> newTotals = purchaseOrderAllocationService.validateAllocations(rows, demands,
@@ -203,7 +203,7 @@ public class PurchaseOrderService {
         PurchaseOrderVO before = purchaseQueryService.orderDetailForCommand(order.getId());
 
         // 先删后插：被删行的 SKU 允许在同一次请求里作为新行重新出现，
-        // 否则会撞 uk_purchase_order_item_order_sku_active（同 的处理）
+        // 否则会撞 uk_purchase_order_item_order_sku_active（分配行同样如此处理）
         for (PurchaseOrderItemEntity removed : itemChanges.removed()) {
             purchaseDemandAllocationDao.softDeleteByOrderItemId(removed.getId(), ScmOperator.current());
             if (purchaseOrderItemDao.softDelete(removed.getId(), removed.getVersion(), ScmOperator.current()) != 1) {
@@ -258,11 +258,11 @@ public class PurchaseOrderService {
      * 改派采购归属：只有持 {@code scm:purchase:assign} 的调用方能到达（权限在控制器上）。
      *
      * <p>
-     * 不按单据状态设限；只要调用者有分配权即可指定或改派负责人， 而单据在途时换人（离职、调岗）恰恰是本端点的主要用途。
+     * 不按单据状态设限；只要调用者有分配权即可指定或改派负责人，而单据在途时换人（离职、调岗）恰恰是本端点的主要用途。
      *
      * <p>
-     * 乐观锁沿用本模块既有纪律：先 {@code FOR UPDATE} 锁单，比对 {@code id + version}， 再由 {@code @Version} 的 {@code updateById}
-     * 做并发下的第二道防线（0 行 → 40921）。 改派必须留操作日志：归属是数据范围依据，换了谁必须可追溯。
+     * 乐观锁沿用本模块既有纪律：先 {@code FOR UPDATE} 锁单，比对 {@code id + version}，再由 {@code @Version} 的 {@code updateById}
+     * 做并发下的第二道防线（0 行 → 40921）。改派必须留操作日志：归属是数据范围依据，换了谁必须可追溯。
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO reassign(PurchaseOrderReassignForm form) {
@@ -366,7 +366,7 @@ public class PurchaseOrderService {
      * 少收关单的核心转换：锁单 → 版本校验 → 状态机 → 「至少一行已收且一行未收齐」→ 落库 → 操作日志。
      *
      * <p>
-     * 单单命令与批量命令共用此方法，二者对合法性 / 版本 / 原因的要求完全一致；区别只在批量命令 不走每单幂等（整批在同一事务内要么全成要么全回滚）。
+     * 单单命令与批量命令共用此方法，二者对合法性 / 版本 / 原因的要求完全一致；区别只在批量命令不走每单幂等（整批在同一事务内要么全成要么全回滚）。
      */
     private PurchaseOrderVO applyShortClose(PurchaseOrderShortCloseForm form) {
         PurchaseOrderEntity order = lockOrder(form.getId());
@@ -437,8 +437,8 @@ public class PurchaseOrderService {
     }
 
     /**
-     * 批量少收关单。整批共享原因，逐单套用与单单 {@link #applyShortClose} 完全相同的 合法性 / 版本 / 状态校验；本方法自带
-     * {@code @Transactional}，任一单非法即整批回滚——不存在部分成功。 锁序按 id 升序，与批量删除一致，避免交叉持锁死锁。
+     * 批量少收关单。整批共享原因，逐单套用与单单 {@link #applyShortClose} 完全相同的合法性 / 版本 / 状态校验；本方法自带
+     * {@code @Transactional}，任一单非法即整批回滚——不存在部分成功。锁序按 id 升序，与批量删除一致，避免交叉持锁死锁。
      */
     @Transactional(rollbackFor = Exception.class)
     public void batchShortClose(PurchaseOrderBatchShortCloseForm form) {

@@ -20,8 +20,7 @@ public interface CustomerBalanceMovementDao extends BaseMapper<CustomerBalanceMo
      * 账户余额（有符号合计）。
      *
      * <p>
-     * 方向字面量由调用方以参数传入（{@code #{credit}} / {@code #{debit}}），不写死在 SQL 里：
-     * 方向的唯一来源是 Java 枚举，SQL 里再抄一份就会在加方向时静默算错。
+     * 方向字面量由调用方以参数传入（{@code #{credit}} / {@code #{debit}}），不写死在 SQL 里： 方向的唯一来源是 Java 枚举，SQL 里再抄一份就会在加方向时静默算错。
      */
     BigDecimal sumSignedByAccount(@Param("accountId") Long accountId, @Param("credit") String creditDirection);
 
@@ -33,8 +32,7 @@ public interface CustomerBalanceMovementDao extends BaseMapper<CustomerBalanceMo
      * 流水分页。
      *
      * <p>
-     * 数据范围**按结算主体的业务员**收窄，与收款列表同一套规则：范围为空时直接返回空页
-     * （{@code AND FALSE}），不做「无范围即全量」的宽松处理 —— 那是 fail-open。
+     * 数据范围<b>按结算主体的业务员</b>收窄，与收款列表同一套规则：范围为空时直接返回空页 （{@code AND FALSE}），不做「无范围即全量」的宽松处理 —— 那是 fail-open。
      * 查询结果同时带出结算主体名与实际业务客户名，页面不必再逐行回查。
      */
     List<BalanceMovementVO> queryPage(Page<?> page, @Param("query") BalanceMovementQueryForm query,

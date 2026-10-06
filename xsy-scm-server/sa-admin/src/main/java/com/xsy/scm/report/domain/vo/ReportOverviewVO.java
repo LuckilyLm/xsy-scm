@@ -45,7 +45,7 @@ public class ReportOverviewVO {
      * 上述成本金额里被跳过的无成本流水行数。
      *
      * <p>
-     * &gt; 0 表示 {@link #purchaseInCostAmount} 是<b>不完整</b>的和，前端必须显性提示， 不能让用户把它当成全部入库成本。
+     * &gt; 0 表示 {@link #purchaseInCostAmount} 是<b>不完整</b>的和，前端必须显性提示，不能让用户把它当成全部入库成本。
      */
     private Integer purchaseInCostMissingCount;
 

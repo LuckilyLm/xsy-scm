@@ -71,7 +71,7 @@ public class OrderRefundService {
     }
 
     /**
-     * 退款单详情读 + 显式范围。退款金额是财务事实，读不到原订单的人也不能读到它， 因此父订单缺失或不在范围内都按 30005 处理。
+     * 退款单详情读 + 显式范围。退款金额是财务事实，读不到原订单的人也不能读到它，因此父订单缺失或不在范围内都按 30005 处理。
      */
     public OrderRefundVO detail(Long refundId, ScmDataScopeContext dataScopeContext) {
         var refundEntity = orderRefundDao.selectById(refundId);
@@ -87,7 +87,7 @@ public class OrderRefundService {
     }
 
     /**
-     * 未收窄的详情：退款完成命令在同一事务里取改前/改后镜像并回传结果， 该路径的门槛是订单锁与状态机，不是读范围。
+     * 未收窄的详情：退款完成命令在同一事务里取改前/改后镜像并回传结果，该路径的门槛是订单锁与状态机，不是读范围。
      */
     public OrderRefundVO detailSnapshot(Long refundId) {
         var refundEntity = orderRefundDao.selectById(refundId);

@@ -18,8 +18,7 @@ public interface PromotionActivityDao extends BaseMapper<PromotionActivityEntity
      * 取当前生效中的活动（状态 ACTIVE 且落在有效窗口内）。
      *
      * <p>
-     * 只按时间窗口与状态取，**不在这里判互斥组**：互斥是「同一单里选哪几条」的决策，
-     * 属于计算逻辑，塞进 SQL 会让同一条规则有两个实现。
+     * 只按时间窗口与状态取，<b>不在这里判互斥组</b>：互斥是「同一单里选哪几条」的决策， 属于计算逻辑，塞进 SQL 会让同一条规则有两个实现。
      */
     List<PromotionActivityEntity> listActive(@Param("at") OffsetDateTime at);
 

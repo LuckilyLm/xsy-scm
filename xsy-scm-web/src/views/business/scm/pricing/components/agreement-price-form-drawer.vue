@@ -86,7 +86,7 @@ const form = reactive<PriceForm>(emptyPrice());
 const range = ref<[string, string] | undefined>();
 /**
  * 单价在表单里是 `number`（InputNumber 只接受数字），而 `PriceForm.unitPrice` 是
- * **定点字符串**（后端拒绝 JSON 数字）。这里用一个独立 ref 承载控件值：
+ * <b>定点字符串</b>（后端拒绝 JSON 数字）。这里用一个独立 ref 承载控件值：
  * 打开时从字符串解出，提交时由 `fixed4` 收口回字符串 —— 不做双向桥接，
  * 免得每次击键都往返一次格式化，把控件自己的编辑态冲掉。
  */

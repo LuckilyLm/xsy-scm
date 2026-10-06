@@ -14,15 +14,15 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 采购单。
  *
  * <p>
- * **没有 `confirmedAt`**：`purchase_order` 表没有 `confirmed_at` 列， 收货完成时间见各收货单的 `confirmed_at`。`submittedAt` / `cancelledAt`
- * / `shortClosedAt` 与状态时间戳 CHECK 一一对应。
+ * <b>没有 {@code confirmedAt}</b>：{@code purchase_order} 表没有 {@code confirmed_at} 列，收货完成时间见各收货单的
+ * {@code confirmed_at}。{@code submittedAt} / {@code cancelledAt} / {@code shortClosedAt} 与状态时间戳 CHECK 一一对应。
  *
  * <p>
- * `receivedProgress` 是**汇总进度**（派生量，不落库），用于列表展示。
+ * {@code receivedProgress} 是<b>汇总进度</b>（派生量，不落库），用于列表展示。
  *
  * <p>
- * `items` / `allocations` / `logs` **仅 detail 返回**：`allocations` 是跨行扁平化的分配列表 （前端「一行多需求」编辑器用），与 `items[].allocations`
- * 是同一批数据的不同切面。
+ * {@code items} / {@code allocations} / {@code logs} <b>仅 detail 返回</b>：{@code allocations} 是跨行扁平化的分配列表
+ * （前端「一行多需求」编辑器用），与 {@code items[].allocations} 是同一批数据的不同切面。
  */
 @Data
 public class PurchaseOrderVO {

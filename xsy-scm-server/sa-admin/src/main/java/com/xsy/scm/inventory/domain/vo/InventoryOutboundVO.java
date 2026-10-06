@@ -13,7 +13,7 @@ import java.util.Map;
  * 出库单（头 + 明细）。
  *
  * <p>
- * 展示字段（仓库编码/名称、SKU 编码/名称、商品名）是**实时联表结果，不是快照** —— 与库存余额同一取向：单据上真正需要冻结的是 {@code unitSnapshot}（在明细行上）。
+ * 展示字段（仓库编码/名称、SKU 编码/名称、商品名）是<b>实时联表结果，不是快照</b> —— 与库存余额同一取向：单据上真正需要冻结的是 {@code unitSnapshot}（在明细行上）。
  */
 @Data
 public class InventoryOutboundVO {

@@ -15,21 +15,18 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_TOLERANCE
  * 收货数量与对账恒等式。
  *
  * <p>
- * <b>容差配置解析是一个纯函数</b>（{@link #tolerance(String)}）：缺失配置回退到 10， 非数字或超出 0–100 的值会报错。配置存储在 SmartAdmin {@code t_config} 中。
- *
- * <pre>
- * tolerance  = config("scm.purchase.over_receipt_tolerance_percent")  默认 10，范围 0–100
- * ceiling    = planned_quantity × (1 + tolerance / 100)
- * available  = ceiling − purchase_order_item.received_quantity
- * 本次 effectiveQuantity &gt; available → PURCHASE_RECEIPT_OVER_RECEIVED（整笔回滚）
- *
- * remaining_quantity    = GREATEST(planned − cumulative, 0)
- * over_receipt_quantity = GREATEST(cumulative − planned, 0)
- * receipt_difference    = cumulative − planned        （可为负）
- * </pre>
+ * 超收上限：{@code tolerance} 取自 SmartAdmin {@code t_config} 的 {@code scm.purchase.over_receipt_tolerance_percent}，缺失回退
+ * 10，非数字或超出 0–100 报错； {@code ceiling = planned_quantity × (1 + tolerance / 100)}，
+ * {@code available = ceiling − purchase_order_item.received_quantity}， 本次 {@code effectiveQuantity > available} 抛
+ * {@code PURCHASE_RECEIPT_OVER_RECEIVED} 并整笔回滚。
  *
  * <p>
- * <b>为什么 ceiling 不做 4 位取整</b>：它是**运行时**判定上限，不落库。 保留精确值可以避免「取整后恰好放行/拒绝」的边界歧义；参与比较的 {@code effectiveQuantity} 本身已是 4 位定点。
+ * 对账恒等式： {@code remaining_quantity = GREATEST(planned − cumulative, 0)}；
+ * {@code over_receipt_quantity = GREATEST(cumulative − planned, 0)}；
+ * {@code receipt_difference = cumulative − planned}（可为负）。
+ *
+ * <p>
+ * {@code ceiling} 是有意不做 4 位取整的：它是运行时判定上限、不落库，保留精确值可以避免 「取整后恰好放行 / 拒绝」的边界歧义；参与比较的 {@code effectiveQuantity} 本身已是 4 位定点。
  */
 public final class PurchaseReceiptQuantityCalculator {
 
@@ -42,16 +39,16 @@ public final class PurchaseReceiptQuantityCalculator {
      * 解析超收容差百分比。
      *
      * <p>
-     * 解析口径是 **trim + {@link Integer#parseInt(String)}**，因此：
+     * 解析口径是 <b>trim + {@link Integer#parseInt(String)}</b>，因此：
      * <ul>
      * <li>首尾空白被接受（{@code "  15 "} → 15）；</li>
-     * <li>前导 {@code +} 被接受（{@code "+10"} → 10）—— 这是**有意为之的宽松**： 值由管理员在配置页手工输入，数值语义无歧义，没有理由因写法而拒绝；</li>
+     * <li>前导 {@code +} 被接受（{@code "+10"} → 10）—— 这是<b>有意为之的宽松</b>： 值由管理员在配置页手工输入，数值语义无歧义，没有理由因写法而拒绝；</li>
      * <li>小数、科学计数、百分号、千分位一律拒绝（{@code "10.5"} / {@code "1e2"} / {@code "10%"} → 40999）——
      * 它们代表「作者以为可以填别的单位」，静默截断会掩盖真实意图。</li>
      * </ul>
      *
      * @param raw
-     *            {@code t_config} 里读到的原始值；{@code null} 或空白 → **回退默认 10**
+     *            {@code t_config} 里读到的原始值；{@code null} 或空白 → <b>回退默认 10</b>
      * @return 0–100（含端点）
      * @throws ScmBusinessException
      *             非整数 / 负数 / &gt; 100 → 40999
@@ -105,7 +102,7 @@ public final class PurchaseReceiptQuantityCalculator {
     }
 
     /**
-     * 收货差异 = cumulative − planned（**可为负**）。
+     * 收货差异 = cumulative − planned（<b>可为负</b>）。
      */
     public static BigDecimal difference(BigDecimal plannedQuantity, BigDecimal cumulativeReceivedQuantity) {
         return cumulativeReceivedQuantity.subtract(plannedQuantity);

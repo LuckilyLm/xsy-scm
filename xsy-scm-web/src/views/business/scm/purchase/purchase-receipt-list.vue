@@ -169,7 +169,7 @@ const receiptModeOptions = Object.values(SCM_RECEIPT_MODE_ENUM).map((i) => ({val
 const putawayStatusOptions = Object.values(SCM_PUTAWAY_STATUS_ENUM).map((i) => ({value: i.value, label: i.desc}));
 /** 按单据（既有写流程）为默认 Tab；按商品是只读收货工作台。 */
 const activeTab = ref('by-order');
-/** 用户输入的是**采购单号**（业务视角），请求参数要的是 `purchaseOrderId`。 */
+/** 用户输入的是<b>采购单号</b>（业务视角），请求参数要的是 `purchaseOrderId`。 */
 const orderNoInput = ref<string | undefined>(undefined);
 const tableData = ref<Receipt[]>([]);
 const total = ref(0);
@@ -322,7 +322,7 @@ async function putaway(row: Receipt) {
   });
 }
 
-// ：支持从库存流水页「来源单号」跳进来； 待办卡片则带 status/receiptMode/putawayStatus。
+// 入参来源：支持从库存流水页「来源单号」跳进来；待办卡片则带 status/receiptMode/putawayStatus。
 // 两者都只读 URL、填进已有筛选框，不新增任何后端能力——待办数字与列表结果必须同源，
 // 否则「待办 5 条」点进来看到的不是那 5 条。
 // 用 `route.query` 而不是 props：菜单路由不会传 props，而 `query` 是 hash 路由下唯一稳定的传参方式。

@@ -3,8 +3,8 @@
  *
  * ## 为什么需要这份契约
  *
- * 项目里曾有 **19 个页面各自定义** `.num { font-family: ui-monospace, … }`，
- * 共 **55 处使用点**。这些局部类把三种不同语义压成同一种视觉：
+ * 项目里曾有 <b>19 个页面各自定义</b> `.num { font-family: ui-monospace, … }`，
+ * 共 <b>55 处使用点</b>。这些局部类把三种不同语义压成同一种视觉：
  *
  * - 金额（要纵向比大小）
  * - 数量（要纵向比大小）
@@ -19,7 +19,7 @@
  *
  * - `.scm-money`    金额 / 单价 / 成本 —— 比例字体 + tabular-nums
  * - `.scm-quantity` 数量 / 百分比 / 统计数字 —— 比例字体 + tabular-nums
- * - `.scm-mono`     单号 / 编码 / 外部流水号 —— **等宽字体** + tabular-nums
+ * - `.scm-mono`     单号 / 编码 / 外部流水号 —— <b>等宽字体</b> + tabular-nums
  *
  * 注意 `.scm-mono` 本轮只建立公共能力，标识字段的全项目接入是独立审计，不在本契约断言范围内。
  */
@@ -118,7 +118,7 @@ test('scm-money / scm-quantity / scm-mono 三个公共样式都存在', () => {
   assert.match(table, /\.scm-money,\s*\n\.scm-quantity\s*\{[\s\S]{0,120}font-variant-numeric: tabular-nums/,
       '.scm-money / .scm-quantity 未共用 tabular-nums 规则');
 
-  // 等宽类：必须是**等宽字体**，而不是只把数字拉齐 —— 这是它区别于 scm-quantity 的全部意义
+  // 等宽类：必须是<b>等宽字体</b>，而不是只把数字拉齐 —— 这是它区别于 scm-quantity 的全部意义
   assert.match(table, /\.scm-mono\s*\{[\s\S]{0,240}font-family:[\s\S]{0,160}ui-monospace/,
       '.scm-mono 缺少 ui-monospace 等宽字族');
   assert.match(table, /\.scm-mono\s*\{[\s\S]{0,320}font-variant-numeric: tabular-nums/,
@@ -139,7 +139,7 @@ test('迁移结果仍然存在：SCM 视图里确实在用公共数值类', () =
 });
 
 /*
- * 刻意**不**断言「src 下只有 .scm-mono 用等宽字体」。
+ * 刻意<b>不</b>断言「src 下只有 .scm-mono 用等宽字体」。
  *
  * 除 `.num` 外，项目里还有若干与本次口径无关的等宽样式：
  * `.scm-diff-key` / `.scm-diff-row-title`（变更对比的字段名）、`.log-time`（日志时间）、

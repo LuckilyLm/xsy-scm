@@ -4,21 +4,11 @@ import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import java.math.BigDecimal;
 
 /**
- * 支付域读取的**业务退款单事实**（只读，来源 {@code order_refund}）。
+ * 支付域读取的业务退款单事实（只读，来源 {@code order_refund}）。
  *
- * @param refundId
- *            退款单 id
- * @param refundNo
- *            退款单号
- * @param orderId
- *            所属订单
- * @param customerId
- *            退款对象客户；必须与原支付客户一致
- * @param refundAmount
- *            应退金额。支付域提交的退款额必须与它**逐值一致** ——
- *            差一分钱，人工与线上两条退款路径就会各退一部分，账上永远对不齐
- * @param status
- *            {@code PENDING} / {@code COMPLETED}；读侧不过滤，让服务层给出可解释的拒绝原因
+ * <p>
+ * {@code customerId} 必须与原支付客户一致；{@code refundAmount} 必须与支付域提交的退款额逐值一致 —— 差一分钱，人工与线上两条退款路径就会各退一部分。{@code status} 读侧不过滤，
+ * 由服务层给出可解释的拒绝原因。
  */
 public record PaymentOrderRefundFact(Long refundId, String refundNo, Long orderId, Long customerId,
         BigDecimal refundAmount, String status) {

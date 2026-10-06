@@ -1,11 +1,11 @@
 /**
- * 报表中心接口，与后端 `ScmReportController`（`/scm/report`）逐端点对应，**全部只读**：
+ * 报表中心接口，与后端 `ScmReportController`（`/scm/report`）逐端点对应，<b>全部只读</b>：
  * 没有任何写端点。报表是「已成立事实的另一种看法」，不是第二套账。
  *
  * 三条统一约定：查询体一律 `POST` + JSON，日期是闭区间 `startDate` / `endDate`
  * （前端不做日界换算）；分页响应用 `ScmPage`，非分页用 `ScmResponse<T>`；
- * 导出走 `postDownload`（它已负责 `<a download>` 与文件名），**不在前端硬编码文件名、
- * 不自己拼 Blob**。导出不带分页参数：后端强制第 1 页 + 行数上限，超限整体拒绝。
+ * 导出走 `postDownload`（它已负责 `<a download>` 与文件名），<b>不在前端硬编码文件名、
+ * 不自己拼 Blob</b>。导出不带分页参数：后端强制第 1 页 + 行数上限，超限整体拒绝。
  */
 import {postDownload, postRequest} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
@@ -54,13 +54,13 @@ export const reportOverviewApi = {
     overview: (data: OverviewQuery) =>
         postRequest(`${BASE}/overview`, data) as unknown as Promise<ScmResponse<ReportOverview>>,
     /**
-     * 日趋势。返回**补齐过的完整日期轴**（无单据的天也是零值行），
+     * 日趋势。返回<b>补齐过的完整日期轴</b>（无单据的天也是零值行），
      * 因此折线不会自己跳过某天。
      */
     trend: (data: OverviewQuery) =>
         postRequest(`${BASE}/overview/trend`, data) as unknown as Promise<ScmResponse<ReportDailyStat[]>>,
     /**
-     * 每日统计。后端返回**整段数组**而不是分页结果：行数被 366 天的跨度上限天然约束住，
+     * 每日统计。后端返回<b>整段数组</b>而不是分页结果：行数被 366 天的跨度上限天然约束住，
      * 再套一层分页只会让「这一页的合计」被误读成「整段的合计」。
      */
     daily: (data: OverviewQuery) =>
@@ -123,7 +123,7 @@ export const reportPurchaseApi = {
         postRequest(`${BASE}/purchase/supplier/top`, data) as unknown as Promise<ScmResponse<PurchaseTopItem[]>>,
     /**
      * 价格波动点。粒度 = 业务日 × SKU × 采购单位，
-     * **不同单位不会合并成一条线**（箱价与公斤价混画没有意义）。
+     * <b>不同单位不会合并成一条线</b>（箱价与公斤价混画没有意义）。
      */
     priceTrend: (data: PurchaseQuery) =>
         postRequest(`${BASE}/purchase/price-trend`, data) as unknown as Promise<ScmResponse<PurchasePriceTrendPoint[]>>,
@@ -136,7 +136,7 @@ export const reportPurchaseApi = {
     priceTrendExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/price-trend/export`, data),
 };
 
-/** 收货与入库：三张表是**三种不同事实**。 */
+/** 收货与入库：三张表是<b>三种不同事实</b>。 */
 export const reportReceiptApi = {
     /** 收货明细：粒度 = `purchase_receipt_item`，按 `confirmed_at`。 */
     query: (data: ReceiptQuery) =>
@@ -144,7 +144,7 @@ export const reportReceiptApi = {
     /** 入库明细：粒度 = 一条 `PURCHASE_IN` 流水，按 `occurred_at`。 */
     inboundQuery: (data: ReceiptQuery) =>
         postRequest(`${BASE}/inbound/query`, data) as unknown as Promise<ScmResponse<ScmPage<InboundRow>>>,
-    /** 待入库：`WAREHOUSE_CONFIRM + CONFIRMED + PENDING`。**只读**，入库动作在采购收货页。 */
+    /** 待入库：`WAREHOUSE_CONFIRM + CONFIRMED + PENDING`。<b>只读</b>，入库动作在采购收货页。 */
     pendingPutawayQuery: (data: ReceiptQuery) =>
         postRequest(`${BASE}/pending-putaway/query`, data) as unknown as Promise<ScmResponse<ScmPage<PendingPutawayRow>>>,
 

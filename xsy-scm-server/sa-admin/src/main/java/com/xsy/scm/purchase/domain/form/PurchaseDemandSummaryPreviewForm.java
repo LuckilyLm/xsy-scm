@@ -18,10 +18,10 @@ import java.time.OffsetDateTime;
  * 过滤已确认订单，{@code warehouseId} 决定比对哪个仓的余额。
  *
  * <p>
- * <b>为什么 warehouseId 必填</b>：预览要「同仓」比订单量与可用量，而订单行本身不带仓库 （仓库只存在于采购需求/库存侧），必须由调用方显式指定，服务端不替调用方选仓（与 一致）。
+ * <b>为什么 warehouseId 必填</b>：预览要「同仓」比订单量与可用量，而订单行本身不带仓库 （仓库只存在于采购需求/库存侧），必须由调用方显式指定，服务端不替调用方选仓（与一致）。
  *
  * <p>
- * 本表单不提供 {@code supplierId} / {@code purchaserId}：{@code sales_order_item} 没有这两个维度， 将它们作为筛选项会产生无事实依据的结果。
+ * 本表单不提供 {@code supplierId} / {@code purchaserId}：{@code sales_order_item} 没有这两个维度，将它们作为筛选项会产生无事实依据的结果。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

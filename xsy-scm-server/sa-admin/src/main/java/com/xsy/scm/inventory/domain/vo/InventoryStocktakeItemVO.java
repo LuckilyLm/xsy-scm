@@ -11,7 +11,7 @@ import java.util.Map;
  * 盘点单明细行（独立 VO，供 mapper 与命令侧复用）。
  *
  * <p>
- * 与 {@link InventoryStocktakeVO.Item} 字段一致但**不复用同一个类**， 理由与出库单明细相同：头内嵌明细是「详情的组成部分」，独立投影是「一行的视图」，
+ * 与 {@link InventoryStocktakeVO.Item} 字段一致但<b>不复用同一个类</b>，理由与出库单明细相同：头内嵌明细是「详情的组成部分」，独立投影是「一行的视图」，
  * 两者演进理由不同。用同名字段保持前端一致即可。
  */
 @Data

@@ -33,7 +33,7 @@ import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 
 /**
- * 分拣管理。写侧全部经服务端权限 + 数据范围（授权仓 ∩ 可见指派人）双重判定； 生成入口带 {@code Idempotency-Key}，预览类入口只读、不计次。
+ * 分拣管理。写侧全部经服务端权限 + 数据范围（授权仓 ∩ 可见指派人）双重判定；生成入口带 {@code Idempotency-Key}，预览类入口只读、不计次。
  */
 @RestController
 @RequestMapping("/scm/sorting")

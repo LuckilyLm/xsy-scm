@@ -43,9 +43,8 @@ public interface SortingQueryDao {
      * 任务内各订单的满赠赠品权益（只读，来源 {@code order_promotion_gift}）。
      *
      * <p>
-     * 与 {@link #items(Long)} 合起来构成分拣清单：赠品**不写进** {@code sorting_task_item}
-     * （那张表强制挂订单行，虚造订单行会污染销售数量、商品排行、采购分析与客户购买历史），
-     * 而是每次读取时按「任务内订单」现合并。
+     * 与 {@link #items(Long)} 合起来构成分拣清单：赠品<b>不写进</b> {@code sorting_task_item}
+     * （那张表强制挂订单行，虚造订单行会污染销售数量、商品排行、采购分析与客户购买历史）， 而是每次读取时按「任务内订单」现合并。
      */
     List<SortingTaskItemVO> giftItems(@Param("taskId") Long taskId);
 
@@ -53,7 +52,7 @@ public interface SortingQueryDao {
             @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     /**
-     * 建单用的候选订单行队列：不受订单业务员维度约束， 由「只授建单权 + 只取队列必需列」两头收口。
+     * 建单用的候选订单行队列：不受订单业务员维度约束，由「只授建单权 + 只取队列必需列」两头收口。
      */
     List<SortingCandidateLineVO> candidateLines(Page<?> page, @Param("q") SortingCandidateQueryForm q);
 

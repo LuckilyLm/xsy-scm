@@ -33,10 +33,10 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_WAREHOUSE
  * 采购单输入与主数据引用校验。
  *
  * <p>
- * 标量和集合规则在写入前统一校验；供应商、仓库与可采购 SKU 通过各自的域服务读取。 数量与单价使用严格四位小数格式，并映射到采购域错误码。
+ * 标量和集合规则在写入前统一校验；供应商、仓库与可采购 SKU 通过各自的域服务读取。数量与单价使用严格四位小数格式，并映射到采购域错误码。
  *
  * <p>
- * {@code SupplierSkuService.requireEnabledForPurchasing} 是可采购性唯一入口；本类将供应商域错误 映射为采购域错误，避免采购调用方依赖供应商错误码。
+ * {@code SupplierSkuService.requireEnabledForPurchasing} 是可采购性唯一入口；本类将供应商域错误映射为采购域错误，避免采购调用方依赖供应商错误码。
  */
 @Component
 @RequiredArgsConstructor
@@ -90,8 +90,8 @@ public class PurchaseOrderValidator {
      * 新建 / 编辑草稿单的表单规则（不涉及主数据）。
      *
      * <p>
-     * 覆盖：至少一行（40089）· 每行 SKU 非空且不重复（40997）· 数量 / 单价形态（40080 / 40081）· 每条分配必须带 `demandVersion`（40091）· 同一行内 `demandId`
-     * 不重复（40090）。
+     * 覆盖：至少一行（40089）· 每行 SKU 非空且不重复（40997）· 数量 / 单价形态（40080 / 40081）· 每条分配必须带 {@code demandVersion}（40091）· 同一行内
+     * {@code demandId} 不重复（40090）。
      */
     public static void draft(PurchaseOrderAddForm form) {
         List<PurchaseOrderAddForm.Item> items = form.getItems();
@@ -129,7 +129,7 @@ public class PurchaseOrderValidator {
      * 供应商必须存在且启用，否则 40986。
      *
      * <p>
-     * 存在性走 的 {@code require}（40440），**启用判定用 的码** —— 因为 「供应商已停用，不能用于新采购单」是采购侧规则，不是供应商域自身的不变量。
+     * 存在性走的 {@code require}（40440），<b>启用判定用的码</b> —— 因为 「供应商已停用，不能用于新采购单」是采购侧规则，不是供应商域自身的不变量。
      */
     public SupplierEntity requireEnabledSupplier(Long supplierId) {
         SupplierEntity supplier = supplierService.require(supplierId);
@@ -154,8 +154,8 @@ public class PurchaseOrderValidator {
      * 该 SKU 必须能由该供应商供货（的唯一判定入口）。
      *
      * <p>
-     * 返回的 {@code supplier_sku} 提供 需要的 `purchase_unit`（→ `purchase_order_item.purchase_unit_snapshot`）与
-     * `reference_price`（只作建议值）。 的失败码在这里被翻译成 40992。
+     * 返回的 {@code supplier_sku} 提供需要的 {@code purchase_unit}（→ {@code purchase_order_item.purchase_unit_snapshot}）与
+     * {@code reference_price}（只作建议值）。的失败码在这里被翻译成 40992。
      */
     public SupplierSkuEntity requirePurchasableSku(Long supplierId, Long skuId) {
         try {

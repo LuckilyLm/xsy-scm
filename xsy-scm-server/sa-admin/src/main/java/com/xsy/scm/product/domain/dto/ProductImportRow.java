@@ -3,7 +3,7 @@ package com.xsy.scm.product.domain.dto;
 import lombok.Data;
 
 /**
- * 商品导入的单个 Excel 行，一行一个 SKU，同 SPU 编码的多行在服务层聚合为一张商品。 字段全部按字符串接收，数值/日期/枚举校验在 {@code ProductImportService} 里做，避免解析期丢精度。
+ * 商品导入的单个 Excel 行，一行一个 SKU，同 SPU 编码的多行在服务层聚合为一张商品。字段全部按字符串接收，数值/日期/枚举校验在 {@code ProductImportService} 里做，避免解析期丢精度。
  *
  * <p>
  * UPDATE 模式下 {@code spuId} / {@code spuVersion} 与已存在 SKU 的 {@code skuId} / {@code skuVersion}

@@ -208,15 +208,15 @@ public class FinancePayableService {
      *
      * <p>
      * <b>必须与触发它的事务同成败</b>，因此传播级别是 {@code MANDATORY} 而不是 {@code REQUIRED}：
-     * 后者会在没有外层事务时**自己提交**，那会造出「收货单还是草稿、应付已经入账」的孤立事实， 而 {@code confirm} 后续的库存写入一旦失败也没有回滚它的机会。脱离事务调用即
+     * 后者会在没有外层事务时<b>自己提交</b>，那会造出「收货单还是草稿、应付已经入账」的孤立事实，而 {@code confirm} 后续的库存写入一旦失败也没有回滚它的机会。脱离事务调用即
      * {@code IllegalTransactionStateException}，这是刻意的失败。
      *
      * <p>
      * <b>不是用户命令，因此不吃 {@code Idempotency-Key}</b>：防重复请求由 {@code confirm} 自身的幂等三段式与「只有 DRAFT 可确认」的状态守卫承担；
-     * 防重复**事实**由库级来源唯一索引承担，命中即视为已生成并成功返回。
+     * 防重复<b>事实</b>由库级来源唯一索引承担，命中即视为已生成并成功返回。
      *
      * <p>
-     * <b>不锁任何行、不碰任何业务表</b>：业务锁已由 {@code confirm} 持有， 并发的双触发由 {@code uk_finance_payable_source_active} 仲裁。
+     * <b>不锁任何行、不碰任何业务表</b>：业务锁已由 {@code confirm} 持有，并发的双触发由 {@code uk_finance_payable_source_active} 仲裁。
      *
      * @param purchaseReceiptId
      *            刚被置为 {@code CONFIRMED} 的收货单 id
@@ -285,7 +285,8 @@ public class FinancePayableService {
     }
 
     /**
-     * 明细装配：量取收货行的有效量、价取采购行的结算单价，金额按四位精度 HALF_UP 舍入。 单头金额是**已按四位舍入的行金额之和**，不是「先求和再舍入」—— 后者会让单头与明细对不上账，而对账时没人能解释那半分钱的差额。
+     * 明细装配：量取收货行的有效量、价取采购行的结算单价，金额按四位精度 HALF_UP 舍入。单头金额是<b>已按四位舍入的行金额之和</b>，不是「先求和再舍入」——
+     * 后者会让单头与明细对不上账，而对账时没人能解释那半分钱的差额。
      */
     private List<FinancePayableItemEntity> toItems(List<FinancePayableSourceLineDto> lines) {
         String operator = ScmOperator.current();
@@ -317,7 +318,7 @@ public class FinancePayableService {
      * {@code GENERATE} 的 {@code after_data}：单头快照，{@code before_data} 为 {@code null}。
      *
      * <p>
-     * 金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是**未注册 JavaTimeModule 的裸 ObjectMapper**，把
+     * 金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是<b>未注册 JavaTimeModule 的裸 ObjectMapper</b>，把
      * {@code OffsetDateTime} 直接放进快照会在写入时炸。
      */
     private Map<String, Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {

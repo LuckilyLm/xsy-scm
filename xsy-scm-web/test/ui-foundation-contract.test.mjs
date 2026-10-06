@@ -3,10 +3,10 @@
  *
  * ## 主题变量
  *
- * 守的是一条**曾经真实踩过、而且不报错**的线：项目里出现过 30+ 处
+ * 守的是一条<b>曾经真实踩过、而且不报错</b>的线：项目里出现过 30+ 处
  * `var(--ant-color-text-secondary)` 之类的写法，看起来像 antd 的主题变量，
- * 实际上 antd-vue 4.2.5 **默认不开 cssVar**，静态产物里根本搜不到 `--ant-color-*` 的定义，
- * 而 `src/` 里也没有任何地方定义过它们 —— 于是这些声明**全部静默失效**，
+ * 实际上 antd-vue 4.2.5 <b>默认不开 cssVar</b>，静态产物里根本搜不到 `--ant-color-*` 的定义，
+ * 而 `src/` 里也没有任何地方定义过它们 —— 于是这些声明<b>全部静默失效</b>，
  * 颜色退化成继承值，页面照样能跑、构建照样通过、单测照样全绿。
  *
  * 项目真正的主题变量只有一套：`useScmThemeVars()` 在 `<html>` 上落下的 `--scm-*`。
@@ -17,7 +17,7 @@
  *
  * ## Drawer footer 对齐
  *
- * antd 的 `.ant-drawer-footer` 只设了 padding / border-top / flexShrink，**没有设对齐**，
+ * antd 的 `.ant-drawer-footer` 只设了 padding / border-top / flexShrink，<b>没有设对齐</b>，
  * 而 `.ant-modal-footer` 自带 `textAlign: end` —— 同一套「取消 + 保存」在抽屉里贴左边、
  * 在弹窗里贴右边。这条也只能靠 foundation 统一，页面各自加类会漏。
  */

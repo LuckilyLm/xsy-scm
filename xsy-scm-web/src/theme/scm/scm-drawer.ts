@@ -18,7 +18,7 @@ export const SCM_DRAWER_WIDTH = {
   l: 940,
   /** 1120：复杂详情 / 内嵌宽表 / 多明细业务 */
   xl: 1120,
-  /** 1440：受限特殊档 —— **不是普通的第五档**，准入条件见 `scmDrawerWidth` 的注释 */
+  /** 1440：受限特殊档 —— <b>不是普通的第五档</b>，准入条件见 `scmDrawerWidth` 的注释 */
   workspace: 1440,
 } as const;
 
@@ -27,7 +27,7 @@ export type ScmDrawerSize = keyof typeof SCM_DRAWER_WIDTH;
 /**
  * 取 Drawer 宽度。
  *
- * `workspace` 是**受限特殊档**，不是普通 Drawer 的第五个宽度档，**仅限五类**：
+ * `workspace` 是<b>受限特殊档</b>，不是普通 Drawer 的第五个宽度档，<b>仅限五类</b>：
  * 地图工作台 / 分拣 / 称重工作台 / 报表下钻 / 超宽业务数据阅读 / 多面板业务工作台。
  * 普通表单、编辑、配置与普通详情一律禁止 —— 这类内容应升到 `xl`（1120）或拆分。
  *

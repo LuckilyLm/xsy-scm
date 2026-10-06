@@ -30,26 +30,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 对账服务：把「渠道账」与「本地账」比一遍，把差异**冻成事实**。
+ * 对账服务：比较渠道账与本地账，把差异冻成 {@code payment_reconciliation_item} 事实供人工处理。
  *
  * <p>
- * <b>首版只发现差异，绝不自动修复。</b> 自动改交易状态会把审计链搞复杂： 之后没人说得清「这条记录是渠道说的，还是对账程序改的」。 差异落
- * {@code payment_reconciliation_item}，后台展示，人工处理。
+ * 首版只发现差异，绝不自动修复 —— 自动改交易状态会让审计链说不清「这条记录是渠道说的，还是对账程序改的」。 分类：{@code LOCAL_MISSING}（渠道有本地无，最危险）/ {@code PROVIDER_MISSING}
+ * / {@code AMOUNT_MISMATCH} / {@code STATUS_MISMATCH}。
  *
  * <p>
- * 分类：
- * <ul>
- * <li>{@code LOCAL_MISSING}：渠道收到了钱，本地没有对应交易 —— 最危险的一类；</li>
- * <li>{@code PROVIDER_MISSING}：本地记了成功，渠道账上没有；</li>
- * <li>{@code AMOUNT_MISMATCH}：两边都有、金额不一致（{@code amount} 与 {@code provider_amount} 分开存的价值就在这里）；</li>
- * <li>{@code STATUS_MISMATCH}：本地不是成功态，渠道账上却有这笔。</li>
- * </ul>
- *
- * <p>
- * 本地侧取**全部状态**的交易，不只看成功的：只看成功交易就永远发现不了 STATUS_MISMATCH。
- *
- * <p>
- * 首版只对**收款**；退款对账是后续独立一项（口径不对称的比较会永远报差异）。
+ * 本地侧取全部状态的交易，不只看成功的：只看成功交易就永远发现不了 {@code STATUS_MISMATCH}。 首版只对收款；退款对账口径不对称，是后续独立一项。
  */
 @Service
 @RequiredArgsConstructor
@@ -74,7 +62,7 @@ public class PaymentReconciliationService {
      * 执行一次对账。
      *
      * <p>
-     * 同一渠道同一业务日**只出一次结论**：允许重复生成会得到两份互相矛盾的结论， 而后台没法判断该信哪一份。
+     * 同一渠道同一业务日<b>只出一次结论</b>：允许重复生成会得到两份互相矛盾的结论，而后台没法判断该信哪一份。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentReconciliationEntity run(String providerCode, LocalDate bizDate) {
@@ -145,8 +133,8 @@ public class PaymentReconciliationService {
         reconciliation.setProviderCount(settlement.count());
         reconciliation.setLocalCount(locals.size());
         reconciliation.setDifferenceCount(items.size());
-        // 参与比对的交易数 = 渠道侧与本地侧的**并集**（同一笔两边都有时只算一次）；
-        // 平账数 = 总数 − 差异数。平不平以**差异条数**为准，不看净差额：
+        // 参与比对的交易数 = 渠道侧与本地侧的<b>并集</b>（同一笔两边都有时只算一次）；
+        // 平账数 = 总数 − 差异数。平不平以<b>差异条数</b>为准，不看净差额：
         // 一正一负的差异会让净差额归零，但账其实不平。
         int totalCount = unionCount(providerNos, localByNo);
         reconciliation.setTotalCount(totalCount);

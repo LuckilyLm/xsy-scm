@@ -7,17 +7,14 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 /**
- * 可配置打印的单据类型，以及每种类型的**字段白名单**。
+ * 可配置打印的单据类型，以及每种类型的<b>字段白名单</b>。
  *
  * <p>
- * 白名单是「受控模板」的落点：模板只能从表头字段、列和合计里挑 key，服务端不接受的键一律
- * 拒收。这样模板里不存在「任意数据库字段」这种可能，也不需要一套模板表达式求值器。
+ * 白名单是「受控模板」的落点：模板只能从表头字段、列和合计里挑 key，服务端不接受的键一律 拒收。这样模板里不存在「任意数据库字段」这种可能，也不需要一套模板表达式求值器。
  *
  * <p>
- * <b>金额与权限</b>：{@link #moneyPermission} 是该单据类型「看金额」所需的权限码，
- * {@code null} 表示该域本来就没有金额门禁、按既有可见性打印（采购单即如此：能看到采购单的人
- * 本来就看得到单价，打印不额外放宽也不额外收紧）。需要门禁的类型在这里声明，渲染阶段据此
- * 剔除金额字段 —— 授权信息不写进模板。
+ * <b>金额与权限</b>：{@link #moneyPermission} 是该单据类型「看金额」所需的权限码， {@code null} 表示该域本来就没有金额门禁、按既有可见性打印（采购单即如此：能看到采购单的人
+ * 本来就看得到单价，打印不额外放宽也不额外收紧）。需要门禁的类型在这里声明，渲染阶段据此 剔除金额字段 —— 授权信息不写进模板。
  *
  */
 @Getter
@@ -27,14 +24,14 @@ public enum ScmPrintDocumentTypeEnum {
     /**
      * 采购单。默认模型的选列与接入模板前的固定版式一致，因此接入模板不改变既有打印效果。
      */
-    PURCHASE_ORDER("采购单", null, List.of(
-            new ScmPrintField("orderNo", "采购单号", false, false),
-            new ScmPrintField("supplierName", "供应商", false, false),
-            new ScmPrintField("warehouseName", "收货仓库", false, false),
-            new ScmPrintField("purchaserName", "采购员", false, false),
-            new ScmPrintField("plannedArrivalDate", "计划到货", false, false),
-            new ScmPrintField("remark", "备注", false, false)), List.of(
-                    new ScmPrintField("productName", "商品", false, false),
+    PURCHASE_ORDER("采购单", null,
+            List.of(new ScmPrintField("orderNo", "采购单号", false, false),
+                    new ScmPrintField("supplierName", "供应商", false, false),
+                    new ScmPrintField("warehouseName", "收货仓库", false, false),
+                    new ScmPrintField("purchaserName", "采购员", false, false),
+                    new ScmPrintField("plannedArrivalDate", "计划到货", false, false),
+                    new ScmPrintField("remark", "备注", false, false)),
+            List.of(new ScmPrintField("productName", "商品", false, false),
                     new ScmPrintField("skuCode", "商品规格编码", false, false),
                     new ScmPrintField("skuName", "规格", false, false),
                     new ScmPrintField("purchaseUnit", "采购单位", false, false),
@@ -45,15 +42,12 @@ public enum ScmPrintDocumentTypeEnum {
                     new ScmPrintField("lineAmount", "行金额", true, true)),
             List.of(new ScmPrintField("totalAmount", "合计金额", true, true))),
 
-    DELIVERY_NOTE("发货单", DeliveryPermission.AMOUNT_QUERY, List.of(
-            new ScmPrintField("routeName", "线路", false, false),
+    DELIVERY_NOTE("发货单", DeliveryPermission.AMOUNT_QUERY, List.of(new ScmPrintField("routeName", "线路", false, false),
             new ScmPrintField("deliveryDate", "配送日期", false, false),
-            new ScmPrintField("warehouseName", "仓库", false, false),
-            new ScmPrintField("driverName", "司机", false, false),
-            new ScmPrintField("driverPhone", "司机电话", false, false),
-            new ScmPrintField("vehicleNo", "车牌", false, false),
-            new ScmPrintField("remark", "线路备注", false, false)), List.of(
-                    new ScmPrintField("stopSeq", "停靠序", false, true),
+            new ScmPrintField("warehouseName", "仓库", false, false), new ScmPrintField("driverName", "司机", false, false),
+            new ScmPrintField("driverPhone", "司机电话", false, false), new ScmPrintField("vehicleNo", "车牌", false, false),
+            new ScmPrintField("remark", "线路备注", false, false)),
+            List.of(new ScmPrintField("stopSeq", "停靠序", false, true),
                     new ScmPrintField("customerName", "客户", false, false),
                     new ScmPrintField("address", "收货地址", false, false),
                     new ScmPrintField("receiverName", "收货人", false, false),
@@ -70,12 +64,12 @@ public enum ScmPrintDocumentTypeEnum {
                     new ScmPrintField("settlementLineAmount", "结算行金额", true, true)),
             List.of(new ScmPrintField("totalAmount", "订单合计金额", true, true))),
 
-    SORTING_TICKET("分拣小票", null, List.of(
-            new ScmPrintField("warehouseName", "仓库", false, false),
-            new ScmPrintField("assigneeName", "分拣员", false, false)), List.of(
-                    new ScmPrintField("orderNo", "订单号", false, false),
+    SORTING_TICKET("分拣小票", null,
+            List.of(new ScmPrintField("warehouseName", "仓库", false, false),
+                    new ScmPrintField("assigneeName", "分拣员", false, false)),
+            List.of(new ScmPrintField("orderNo", "订单号", false, false),
                     new ScmPrintField("customerName", "客户", false, false),
-                    // 来源：商品 / 赠品。满赠赠品随订单一起拣，但**不挂订单行**，
+                    // 来源：商品 / 赠品。满赠赠品随订单一起拣，但<b>不挂订单行</b>，
                     // 因此小票必须自己说清这一行是赠品，否则仓库会按订单量去核。
                     new ScmPrintField("sourceType", "来源", false, false),
                     new ScmPrintField("productName", "商品", false, false),
@@ -85,7 +79,8 @@ public enum ScmPrintDocumentTypeEnum {
                     new ScmPrintField("plannedQuantity", "计划量", false, true),
                     new ScmPrintField("sortedQuantity", "实分量", false, true),
                     new ScmPrintField("result", "分拣结果", false, false),
-                    new ScmPrintField("reason", "差异原因", false, false)), List.of());
+                    new ScmPrintField("reason", "差异原因", false, false)),
+            List.of());
 
     /**
      * 展示名（模板列表与错误信息用）。

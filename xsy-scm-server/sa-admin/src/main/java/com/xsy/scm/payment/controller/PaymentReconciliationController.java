@@ -24,8 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 支付对账：执行对账、查结论。
  *
  * <p>
- * 对账**只发现差异、不自动修复**：自动改交易状态会让审计链说不清「这条是渠道说的、
- * 还是对账程序改的」。差异以事实形式落库，后台展示、人工处理。
+ * 对账<b>只发现差异、不自动修复</b>：自动改交易状态会让审计链说不清「这条是渠道说的、 还是对账程序改的」。差异以事实形式落库，后台展示、人工处理。
  */
 @RestController
 @RequestMapping("/scm/payment/reconciliation")

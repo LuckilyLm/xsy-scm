@@ -18,7 +18,7 @@ public class SalesOrderQueryForm extends PageParam {
     private Long orderId;
     private Long customerId;
     /**
-     * 按业务员筛选：只是用户侧的**收窄**条件，与数据范围取交集，不能用来扩大可见行。
+     * 按业务员筛选：只是用户侧的<b>收窄</b>条件，与数据范围取交集，不能用来扩大可见行。
      */
     private Long sellerId;
     @Size(max = 150, message = "查询关键词不能超过150个字符")

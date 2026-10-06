@@ -19,21 +19,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 渲染：把「一份模板 + 一张单据的数据源」变成一份**已经算好的版面**。
+ * 渲染：把「一份模板 + 一张单据的数据源」变成一份已经算好的版面。
  *
  * <p>
- * 这里是权限与白名单的收口点，两件事都在服务端做完：
- * <ul>
- * <li><b>白名单</b>：模板只能选到类型目录里的 key（写入时已校验），渲染按模板选的 key 取值，
- * 不存在「模板里写什么就取什么」；</li>
- * <li><b>金额</b>：模板里选了金额字段、而调用者没有该单据类型的金额权限时，字段在这里被
- * 剔除并记入 {@code hiddenFields}。授权不写进模板 —— 同一份模板对不同的人渲染出不同的列，
- * 这正是「打印不绕过金额权限」的实现方式。</li>
- * </ul>
+ * 这里是权限与白名单的收口点，两件事都在服务端做完。白名单方面，模板只能选到类型目录里的 key （写入时已校验），渲染按模板选的 key 取值，不存在「模板里写什么就取什么」；金额方面，
+ * 模板里选了金额字段而调用者没有该单据类型的金额权限时，字段在这里被剔除并记入 {@code hiddenFields} —— 授权不写进模板，同一份模板对不同的人渲染出不同的列，这正是「打印不绕过金额权限」的实现方式。
  *
  * <p>
- * 本类<b>不读库</b>：数据源由调用方先取好（因此范围判定与详情页同源），
- * 快照与实时渲染走的是同一段代码，不会出现「预览和打印不是同一张」。
+ * 本类不读库：数据源由调用方先取好（因此范围判定与详情页同源），快照与实时渲染走的是同一段代码， 不会出现「预览和打印不是同一张」。
  */
 @Service
 @RequiredArgsConstructor
@@ -132,8 +125,7 @@ public class ScmPrintRenderService {
      * 版面 → 冻结数据快照。
      *
      * <p>
-     * 存的是**版面本身**（列定义、行、合计、被剔除的字段），不是业务数据：重印因此不需要
-     * 再认识任何一种业务单据，也不会随业务数据变化而改变。
+     * 存的是<b>版面本身</b>（列定义、行、合计、被剔除的字段），不是业务数据：重印因此不需要 再认识任何一种业务单据，也不会随业务数据变化而改变。
      */
     public static Map<String, Object> toDataSnapshot(ScmPrintRenderVO render) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
@@ -166,8 +158,7 @@ public class ScmPrintRenderService {
      * 冻结数据快照 → 版面（历史重印）。
      *
      * <p>
-     * 对结构缺失一律按空处理：一份结构坏掉的快照应该退化成一个空版面并让人看见，
-     * 而不是把整次重印打成 500。
+     * 对结构缺失一律按空处理：一份结构坏掉的快照应该退化成一个空版面并让人看见， 而不是把整次重印打成 500。
      */
     public static void applyDataSnapshot(ScmPrintRenderVO render, Map<String, Object> snapshot) {
         if (snapshot == null) {

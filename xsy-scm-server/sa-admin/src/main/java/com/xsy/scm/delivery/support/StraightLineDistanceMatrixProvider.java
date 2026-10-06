@@ -8,16 +8,13 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * 直线（大圆）距离矩阵：**估算**实现，不查路网、不看实时交通。
+ * 直线（大圆）距离矩阵：<b>估算</b>实现，不查路网、不看实时交通。
  *
  * <p>
- * 存在的意义是让排线建议在没有商用路网服务时也能跑起来，并且把「这是估算」写进建议快照。
- * 它刻意不叫「距离服务」或「路网 provider」：名字一旦暗示真实路网，后面所有基于它的
- * 排线结论都会被当成路网结论使用。
+ * 存在的意义是让排线建议在没有商用路网服务时也能跑起来，并且把「这是估算」写进建议快照。 它刻意不叫「距离服务」或「路网 provider」：名字一旦暗示真实路网，后面所有基于它的 排线结论都会被当成路网结论使用。
  *
  * <p>
- * 用 Haversine 而不是平面近似：跨城市线路的纬度差会带来百分之几的系统性偏差，
- * 而 Haversine 的成本与平面近似同量级。
+ * 用 Haversine 而不是平面近似：跨城市线路的纬度差会带来百分之几的系统性偏差， 而 Haversine 的成本与平面近似同量级。
  */
 @Component
 public class StraightLineDistanceMatrixProvider implements DeliveryDistanceMatrixProvider {

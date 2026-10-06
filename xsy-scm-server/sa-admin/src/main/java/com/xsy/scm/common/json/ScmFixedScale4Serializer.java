@@ -12,7 +12,7 @@ import java.math.RoundingMode;
  * SCM 金额与数量的 4 位定点序列化器。
  *
  * <p>
- * null 保持 JSON null（与「价格为零」严格区分），0 输出 "0.0000"； 数值使用 HALF_UP 保留 4 位并输出字符串，避免 JSON Number 精度损失。
+ * null 保持 JSON null（与「价格为零」严格区分），0 输出 "0.0000"；数值使用 HALF_UP 保留 4 位并输出字符串，避免 JSON Number 精度损失。
  *
  * <p>
  * 字段同时需要配置 using 与 nullsUsing，确保 null 不受全局序列化器影响。

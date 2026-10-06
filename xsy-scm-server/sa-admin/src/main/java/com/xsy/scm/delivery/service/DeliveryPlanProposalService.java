@@ -42,21 +42,12 @@ import org.springframework.transaction.annotation.Transactional;
  * 辅助排线建议：生成 → 比较 → 显式应用 / 放弃。
  *
  * <p>
- * 三条不变量：
- * <ul>
- * <li><b>只建议，不动线路</b>：生成建议不改任何停靠顺序、不改线路状态；只有 {@code apply}
- * 写回顺序，且要求线路仍是 {@code DRAFT}（未发车）。建议<b>不会</b>自动发车，也不会覆盖
- * 已规划 / 已发车的线路。</li>
- * <li><b>输入与结果一起冻结</b>：停靠点、起点、坐标系、生效与未生效的约束、provider 版本、
- * 每段与累计距离全部写进快照。表上有触发器拒绝改动，因此「建议里看到的距离」与
- * 「应用时依据的距离」必然是同一份。</li>
- * <li><b>一条线路同时至多一条待确认建议</b>：生成新建议时旧的待确认建议转为放弃，
- * 避免「应用哪一个」变成猜。</li>
- * </ul>
+ * 三条不变量。只建议、不动线路：生成建议不改任何停靠顺序、不改线路状态，只有 {@code apply} 写回顺序， 且要求线路仍是 {@code DRAFT}（未发车），建议不会自动发车。输入与结果一起冻结：停靠点、起点、
+ * 坐标系、生效与未生效的约束、provider 版本、每段与累计距离全部写进快照，表上有触发器拒绝改动， 因此建议里看到的距离与应用时依据的距离必然是同一份。一条线路同时至多一条待确认建议：
+ * 生成新建议时旧的待确认建议转为放弃，避免「应用哪一个」变成猜。
  *
  * <p>
- * 本类不写库存、不写订单、不发车：应用建议只等价于一次「按给定顺序重排停靠点」，
- * 与手工拖拽排序走同一套写入纪律。
+ * 本类不写库存、不写订单、不发车：应用建议只等价于一次「按给定顺序重排停靠点」， 与手工拖拽排序走同一套写入纪律。
  */
 @Service
 @RequiredArgsConstructor
@@ -140,8 +131,7 @@ public class DeliveryPlanProposalService {
      * 应用建议：按建议顺序重排停靠点，并把建议标记为已应用。
      *
      * <p>
-     * 顺序写入沿用与手工排序相同的做法（先把序号整体挪到不相交的正数区间，再逐个赋值），
-     * 因为 {@code (route_id, stop_seq)} 上有活动行唯一索引，直接互换会中途撞唯一键。
+     * 顺序写入沿用与手工排序相同的做法（先把序号整体挪到不相交的正数区间，再逐个赋值）， 因为 {@code (route_id, stop_seq)} 上有活动行唯一索引，直接互换会中途撞唯一键。
      */
     @Transactional(rollbackFor = Exception.class)
     public void apply(Long proposalId, DeliveryPlanApplyForm form) {
@@ -243,8 +233,7 @@ public class DeliveryPlanProposalService {
 
     private List<DeliveryRouteStopEntity> stops(Long routeId) {
         return deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
-                .eq(DeliveryRouteStopEntity::getRouteId, routeId)
-                .orderByAsc(DeliveryRouteStopEntity::getStopSeq));
+                .eq(DeliveryRouteStopEntity::getRouteId, routeId).orderByAsc(DeliveryRouteStopEntity::getStopSeq));
     }
 
     private static void requireDraft(DeliveryRouteEntity route) {
@@ -254,12 +243,11 @@ public class DeliveryPlanProposalService {
     }
 
     /**
-     * 起点与全部停靠点都要有坐标且同一坐标系 —— 与 {@code DeliveryRouteService#plan} 同一条规则，
-     * 因为排线建议喂给它的正是这份坐标。
+     * 起点与全部停靠点都要有坐标且同一坐标系 —— 与 {@code DeliveryRouteService#plan} 同一条规则， 因为排线建议喂给它的正是这份坐标。
      */
     private static void requireLocations(DeliveryRouteEntity route, List<DeliveryRouteStopEntity> stops) {
-        if (route.getStartLongitude() == null || route.getStartLatitude() == null
-                || route.getStartGeomCrs() == null || stops.isEmpty()) {
+        if (route.getStartLongitude() == null || route.getStartLatitude() == null || route.getStartGeomCrs() == null
+                || stops.isEmpty()) {
             throw new ScmBusinessException(DeliveryErrorCode.LOCATION_REQUIRED);
         }
         for (DeliveryRouteStopEntity stop : stops) {

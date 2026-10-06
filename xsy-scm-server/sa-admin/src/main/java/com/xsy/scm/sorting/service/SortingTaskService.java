@@ -60,10 +60,10 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.WAREHOUSE_INVALID;
 
 /**
- * 分拣任务的全部写侧动作。<b>任务行是聚合锁</b>：每个动作先锁 {@code sorting_task}， 再动明细，因此「任务状态」与「明细占用位」不会各自漂移——后者是部分唯一索引成立的前提。
+ * 分拣任务的全部写侧动作。<b>任务行是聚合锁</b>：每个动作先锁 {@code sorting_task}，再动明细，因此「任务状态」与「明细占用位」不会各自漂移——后者是部分唯一索引成立的前提。
  *
  * <p>
- * 这个类不写订单、库存与配送：不回写 {@code sales_order_item} 的实发量与结算金额， 不写余额与流水，不创建出库单，也不动预留；取消与重开的理由记录在通用操作日志中。
+ * 这个类不写订单、库存与配送：不回写 {@code sales_order_item} 的实发量与结算金额，不写余额与流水，不创建出库单，也不动预留；取消与重开的理由记录在通用操作日志中。
  *
  * <p>
  * 唯一的例外是<b>读</b>库存：重开前要查这些订单行是否已经过发车真实出库 （{@code reopen} 的只读守卫）。读侧不产生任何库存事实，方向也是单向的 —— 库存域不认识分拣，分拣只在守卫上读它。
@@ -96,7 +96,7 @@ public class SortingTaskService {
     private final SortingQueryService sortingQueryService;
 
     /**
-     * 建单并指派。幂等键挡住「同一请求重发生成第二套业务事实」； 不同请求抢同一订单行由部分唯一索引兜底，报可读的占用冲突。
+     * 建单并指派。幂等键挡住「同一请求重发生成第二套业务事实」；不同请求抢同一订单行由部分唯一索引兜底，报可读的占用冲突。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingTaskDetailVO create(SortingTaskCreateForm form, String key) {
@@ -118,7 +118,7 @@ public class SortingTaskService {
         task.setStatus(ScmSortingTaskStatusEnum.PENDING.name());
         String remark = form.getRemark();
         task.setRemark(StringUtils.isBlank(remark) ? null : StringUtils.trim(remark));
-        // 三个筛选维度在**建单时**冻结：任务一旦建出来，作业口径就不该随主档或配送线路变化。
+        // 三个筛选维度在<b>建单时</b>冻结：任务一旦建出来，作业口径就不该随主档或配送线路变化。
         // 供应商必须显式给出并校验启用态 —— 从 SKU 与供应商的多对多关系反推会得到一个
         // 「可能对、也可能不对」的来源，而分拣台上正是按它找货的。
         task.setDeliveryTimeSnapshot(form.getDeliveryTime());
@@ -164,7 +164,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 批量录入分拣结果。允许一次只处理任务里的部分行（边称边录是常态），但每条提交行都必须 属于本任务且带它自己读到的版本；首次录入把任务从 {@code PENDING} 推到 {@code SORTING}。
+     * 批量录入分拣结果。允许一次只处理任务里的部分行（边称边录是常态），但每条提交行都必须属于本任务且带它自己读到的版本；首次录入把任务从 {@code PENDING} 推到 {@code SORTING}。
      */
     @Transactional(rollbackFor = Exception.class)
     public void enter(Long id, SortingEntryForm form) {
@@ -202,7 +202,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 完成：硬前置是任务内每条活动明细都已有结果。 一张订单要分多次完成时靠「剩余有效行另建新任务」实现，不靠带洞完成。
+     * 完成：硬前置是任务内每条活动明细都已有结果。一张订单要分多次完成时靠「剩余有效行另建新任务」实现，不靠带洞完成。
      */
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long id, SortingActionForm form) {
@@ -221,7 +221,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 取消：同一事务里释放该任务全部活动明细的占用位，被释放的订单行才能重新进入新任务。 已完成的任务不能直接取消，必须先重开 —— 否则「完成」这一事实会被静默抹掉。
+     * 取消：同一事务里释放该任务全部活动明细的占用位，被释放的订单行才能重新进入新任务。已完成的任务不能直接取消，必须先重开 —— 否则「完成」这一事实会被静默抹掉。
      */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long id, SortingActionForm form) {
@@ -239,14 +239,14 @@ public class SortingTaskService {
     }
 
     /**
-     * 重开：已完成任务回到分拣中，已录入的量与原因**保留**继续修改。 订单在配送资格上立刻不合格，靠的是资格按任务状态判定，而不是靠清数据。
+     * 重开：已完成任务回到分拣中，已录入的量与原因<b>保留</b>继续修改。订单在配送资格上立刻不合格，靠的是资格按任务状态判定，而不是靠清数据。
      *
      * <p>
-     * <b>已产生真实出库则禁止重开</b>： 判据是「本任务某条明细对应的订单行上存在<b>父单为 CONFIRMED</b> 的出库行」。 只认 CONFIRMED 是因为出库单的取消只在 DRAFT 可用且不发任何流水，
+     * <b>已产生真实出库则禁止重开</b>：判据是「本任务某条明细对应的订单行上存在<b>父单为 CONFIRMED</b> 的出库行」。只认 CONFIRMED 是因为出库单的取消只在 DRAFT 可用且不发任何流水，
      * 没扣过库存的出库行不构成「货已出去」这个事实。仍然不使用「仓库 + SKU + 时间窗」近似判据。
      *
      * <p>
-     * 与发车的交错：发车在线路锁内重查资格并把任务所在订单行写进出库单， 因此「先重开成功 → 发车整条被拒」与「先发车成功 → 重开被本条拦住」都是自洽的串行结果； 反过来若本方法早于发车提交，发车侧的资格复核会把它挡在线路之外。
+     * 与发车的交错：发车在线路锁内重查资格并把任务所在订单行写进出库单，因此「先重开成功 → 发车整条被拒」与「先发车成功 → 重开被本条拦住」都是自洽的串行结果；反过来若本方法早于发车提交，发车侧的资格复核会把它挡在线路之外。
      */
     @Transactional(rollbackFor = Exception.class)
     public void reopen(Long id, SortingActionForm form) {
@@ -275,7 +275,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 正式生成打印：只登记计次、时间与操作人。 打印不改状态也不写库存，并且不 bump 版本 —— 内容没变，让计次把别人的编辑顶成版本冲突 是假冲突；计次累加由本方法持有的任务聚合锁串行化。
+     * 正式生成打印：只登记计次、时间与操作人。打印不改状态也不写库存，并且不 bump 版本 —— 内容没变，让计次把别人的编辑顶成版本冲突是假冲突；计次累加由本方法持有的任务聚合锁串行化。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingPrintResultVO print(Long id, SortingActionForm form, String key) {

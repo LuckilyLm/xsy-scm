@@ -18,7 +18,7 @@ import lombok.Data;
  * </ul>
  *
  * <p>
- * 所有数字都来自冻结快照，服务端<b>不回表重算</b>：回看与生成必须逐字一致， 否则「为什么当时建议 3」会在库存变化后变成另一个答案。
+ * 所有数字都来自冻结快照，服务端<b>不回表重算</b>：回看与生成必须逐字一致，否则「为什么当时建议 3」会在库存变化后变成另一个答案。
  */
 @Data
 public class PurchaseDemandCalculationBatchDetailVO {

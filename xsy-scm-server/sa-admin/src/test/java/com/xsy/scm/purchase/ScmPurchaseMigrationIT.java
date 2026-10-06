@@ -208,7 +208,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //   V70 = Finance R1 F1-5（仅数据）：查询与导出权限。
     //   V71–V72 = Finance R1 F1-6（仅数据）：五个页面菜单与折叠导航图标。
     //   V73 = Finance R1 F1-8（仅数据）：报表中心往来概览页面与查询权限。
-    @DisplayName("flyway_schema_history：V1–V109 全部 success，V15–V109 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V110 全部 success，V15–V110 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -225,7 +225,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 // 这里仍然逐条列举而不是 contains：只增不减，且顺序不变。
                 "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90",
                 "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105",
-                "106", "107", "108", "109");
+                "106", "107", "108", "109", "110");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
         // 除上面逐条列举的版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）

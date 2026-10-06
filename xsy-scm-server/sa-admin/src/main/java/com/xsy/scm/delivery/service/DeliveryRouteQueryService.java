@@ -99,18 +99,17 @@ public class DeliveryRouteQueryService {
     }
 
     /**
-     * 按**当前登录态**的司机维度校验线路可见性：不存在抛 41100，越权抛 30005。
+     * 按<b>当前登录态</b>的司机维度校验线路可见性：不存在抛 41100，越权抛 30005。
      *
      * <p>
-     * 供配送子资源（排线建议等）复用：它们挂在线路下，可见性判定必须与线路读侧同源，
-     * 避免子资源绕过司机范围。
+     * 供配送子资源（排线建议等）复用：它们挂在线路下，可见性判定必须与线路读侧同源， 避免子资源绕过司机范围。
      */
     public DeliveryRouteVO requireVisible(Long id) {
         return scopedRoute(id, dataScopeService.resolve());
     }
 
     /**
-     * 按司机维度读线路；SQL 已经收口，取不到行时再分「不存在」与「存在但不归本范围」。 后者按无权访问处理：越权读不是「没有这条线路」，把它报成 404 会让调度台以为数据丢了。
+     * 按司机维度读线路；SQL 已经收口，取不到行时再分「不存在」与「存在但不归本范围」。后者按无权访问处理：越权读不是「没有这条线路」，把它报成 404 会让调度台以为数据丢了。
      */
     private DeliveryRouteVO scopedRoute(Long id, ScmDataScopeContext context) {
         var scope = context.getDriverScope();

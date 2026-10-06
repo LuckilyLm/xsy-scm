@@ -27,12 +27,12 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_BALANC
  * <b>只读</b>：本类不写任何表，只读事务。余额的唯一写入路径是 {@link InventoryCommandService}（收货确认同事务）。
  *
  * <p>
- * <b>后端不做隐式默认</b>：{@code warehouseId} 为空即不过滤。 「恰好只有一个启用仓库时默认带出该仓库」是**前端**行为（余额页加载时联 {@code GET /scm/warehouse/list}
+ * <b>后端不做隐式默认</b>：{@code warehouseId} 为空即不过滤。 「恰好只有一个启用仓库时默认带出该仓库」是<b>前端</b>行为（余额页加载时联 {@code GET /scm/warehouse/list}
  * 判定），服务端不会替调用方选仓库。
  *
  * <p>
- * <b>为什么不接受客户端排序</b>：本查询是 join（余额 + 仓库 + SKU + 商品）， 客户端传来的裸列名（如 {@code updated_at}）在四张表里都存在，交给框架拼 ORDER BY 会直接产生歧义列错误。
- * 的排序语义是固定的业务序 （余额：{@code updated_at DESC}），因此这里对 {@code sortItemList} **显式报错** 而不是静默忽略 —— 静默忽略会让前端以为排序生效了。
+ * <b>为什么不接受客户端排序</b>：本查询是 join（余额 + 仓库 + SKU + 商品），客户端传来的裸列名（如 {@code updated_at}）在四张表里都存在，交给框架拼 ORDER BY 会直接产生歧义列错误。
+ * 的排序语义是固定的业务序 （余额：{@code updated_at DESC}），因此这里对 {@code sortItemList} <b>显式报错</b> 而不是静默忽略 —— 静默忽略会让前端以为排序生效了。
  */
 @Service
 @RequiredArgsConstructor
@@ -73,7 +73,7 @@ public class InventoryBalanceQueryService {
     }
 
     /**
-     * 均价与账面金额同源（都来自 {@code avg_cost}），无成本权限时一并抹成 null； 抹成 0 会被读成「这批货没有成本」，那是一个事实，不是无权知道。
+     * 均价与账面金额同源（都来自 {@code avg_cost}），无成本权限时一并抹成 null；抹成 0 会被读成「这批货没有成本」，那是一个事实，不是无权知道。
      */
     private static void clearCost(InventoryBalanceVO vo) {
         vo.setAvgCost(null);

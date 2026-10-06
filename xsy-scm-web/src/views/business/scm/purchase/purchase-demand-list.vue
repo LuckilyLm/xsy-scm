@@ -1,6 +1,6 @@
 <!--
   采购需求列表。
-  - 时间段是**半开区间** `[startAt, endAt)`，不是 `startTime`/`endTime`；
+  - 时间段是<b>半开区间</b> `[startAt, endAt)`，不是 `startTime`/`endTime`；
   - 分配弹窗内联在本页（不新增组件文件）。
 -->
 <template>
@@ -338,7 +338,7 @@ async function loadOrders(keyword: string) {
   }
 }
 
-/** 选单后拉详情，只留**同一 SKU** 的行（跨 SKU 会 40995）。 */
+/** 选单后拉详情，只留<b>同一 SKU</b> 的行（跨 SKU 会 40995）。 */
 async function orderChanged(orderId: Id | undefined) {
   alloc.purchaseOrderItemId = undefined;
   alloc.itemOptions = [];

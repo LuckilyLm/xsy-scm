@@ -31,13 +31,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付域的**只读**查询。
+ * 支付域的<b>只读</b>查询。
  *
  * <p>
- * 集中一处而不是散在各个 Controller：查询不改状态，没有事务与编排可言， 分成四个 Service 只会让「哪个接口查什么」更难找。
+ * 集中一处而不是散在各个 Controller：查询不改状态，没有事务与编排可言，分成四个 Service 只会让「哪个接口查什么」更难找。
  *
  * <p>
- * 排序一律在 Mapper 里写死（{@code created_at DESC, id DESC}），**不接受客户端排序字段**： 把客户端字符串拼进 ORDER BY 是注入面，而且会让分页结果不稳定。
+ * 排序一律在 Mapper 里写死（{@code created_at DESC, id DESC}），<b>不接受客户端排序字段</b>：把客户端字符串拼进 ORDER BY 是注入面，而且会让分页结果不稳定。
  */
 @Service
 @RequiredArgsConstructor
@@ -69,7 +69,7 @@ public class PaymentQueryService {
      * 支付意图详情：连同它下面的交易流水一起返回。
      *
      * <p>
-     * 交易是「这个意图发起过几次、渠道怎么回的」的完整答案，让前端再发一次请求去取 只会让详情页在慢网络下出现「意图已加载、交易还没到」的半截状态。
+     * 交易是「这个意图发起过几次、渠道怎么回的」的完整答案，让前端再发一次请求去取只会让详情页在慢网络下出现「意图已加载、交易还没到」的半截状态。
      */
     @Transactional(readOnly = true)
     public PaymentIntentVO intentDetail(Long id) {
@@ -111,7 +111,7 @@ public class PaymentQueryService {
     }
 
     /**
-     * 回调记录。{@code processStatus = REJECTED} 的记录**必须能查**： 它回答「有没有人伪造过回调」，这正是把未验签事件也落库的理由。
+     * 回调记录。{@code processStatus = REJECTED} 的记录<b>必须能查</b>：它回答「有没有人伪造过回调」，这正是把未验签事件也落库的理由。
      */
     @Transactional(readOnly = true)
     public PageResult<PaymentCallbackEventVO> callbackPage(PaymentCallbackQueryForm form) {

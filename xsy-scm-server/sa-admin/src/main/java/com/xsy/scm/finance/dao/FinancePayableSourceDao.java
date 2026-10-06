@@ -23,13 +23,13 @@ public interface FinancePayableSourceDao {
      * 收货确认事实（单头维度）。
      *
      * <p>
-     * 谓词 {@code status = 'CONFIRMED'} 保证未确认的收货单不会生成应付； 本方法只服务**正在被确认**的收货单 （同事务内 {@code confirm} 已把该行置为
-     * CONFIRMED，PostgreSQL 能看见自身未提交的写入）。 返回 {@code null} 表示调用点用错了对象，必须失败而不是静默跳过。
+     * 谓词 {@code status = 'CONFIRMED'} 保证未确认的收货单不会生成应付；本方法只服务<b>正在被确认</b>的收货单 （同事务内 {@code confirm} 已把该行置为
+     * CONFIRMED，PostgreSQL 能看见自身未提交的写入）。返回 {@code null} 表示调用点用错了对象，必须失败而不是静默跳过。
      */
     FinancePayableSourceDto selectConfirmedReceipt(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
     /**
-     * 收货确认事实（明细维度），只含**有效量 &gt; 0** 的行，按收货行的录入顺序返回。
+     * 收货确认事实（明细维度），只含<b>有效量 &gt; 0</b> 的行，按收货行的录入顺序返回。
      *
      * <p>
      * 一行都没收到就不该进应付明细（{@code finance_payable_item.quantity} 的库级 CHECK 是 {@code > 0}）；少收未交部分不产生任何财务事实。

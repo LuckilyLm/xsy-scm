@@ -12,7 +12,7 @@ import java.util.Set;
  * 会被调用方读成「全部」，而本类的默认语义是失败关闭。
  *
  * <p>
- * {@link #isAll()} 为真时 Mapper 不拼本维度谓词，因此 {@code owner_id IS NULL} 的未分配行照常可见； 反之 {@code IN (...)} 天然排除
+ * {@link #isAll()} 为真时 Mapper 不拼本维度谓词，因此 {@code owner_id IS NULL} 的未分配行照常可见；反之 {@code IN (...)} 天然排除
  * NULL，正好对应「未分配数据普通业务员不可见」。
  */
 public final class ScmValueScope {

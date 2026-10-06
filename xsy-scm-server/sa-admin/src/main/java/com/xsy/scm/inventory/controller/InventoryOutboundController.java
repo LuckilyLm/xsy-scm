@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
  * 共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 确认出库 / 取消 / 删除。
  *
  * <p>
- * <b>权限划分</b>：查询 {@code scm:inventory:outbound:query}、 新建 {@code :add}、改草稿 {@code :update}、确认出库 {@code :confirm}、删除
- * {@code :delete}。 「确认出库」是**独立的权限**而不是复用 {@code :update} —— 确认会真实扣减库存并写不可逆流水， 与「改个草稿」不是同一量级的操作，允许仓管录单但由主管确认是完全合理的分工。
+ * <b>权限划分</b>：查询 {@code scm:inventory:outbound:query}、新建 {@code :add}、改草稿 {@code :update}、确认出库 {@code :confirm}、删除
+ * {@code :delete}。 「确认出库」是<b>独立的权限</b>而不是复用 {@code :update} —— 确认会真实扣减库存并写不可逆流水，与「改个草稿」不是同一量级的操作，允许仓管录单但由主管确认是完全合理的分工。
  */
 @RestController
 @RequestMapping("/scm/inventory/outbound")

@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
  * 分拣任务：某仓库内派给某位分拣员的一批订单行。
  *
  * <p>
- * 任务状态即「是否占用订单行」的聚合答案，但**占用位写在明细行上** （{@code occupation_status}），因为部分唯一索引不能跨表判断任务状态； 代价是取消任务必须在同一事务里把该任务全部明细置为
+ * 任务状态即「是否占用订单行」的聚合答案，但<b>占用位写在明细行上</b> （{@code occupation_status}），因为部分唯一索引不能跨表判断任务状态；代价是取消任务必须在同一事务里把该任务全部明细置为
  * {@code RELEASED}。
  */
 @Data
@@ -42,7 +42,7 @@ public class SortingTaskEntity extends SortingRecord {
     private OffsetDateTime cancelledAt;
 
     /**
-     * 建单时**冻结**的送货时间：筛选按它，不按订单当前值。
+     * 建单时<b>冻结</b>的送货时间：筛选按它，不按订单当前值。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime deliveryTimeSnapshot;
@@ -54,7 +54,7 @@ public class SortingTaskEntity extends SortingRecord {
     private String deliveryWave;
 
     /**
-     * 建单时**显式指定**的供应商来源；不从 SKU 与供应商的多对多关系推断。
+     * 建单时<b>显式指定</b>的供应商来源；不从 SKU 与供应商的多对多关系推断。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long supplierId;

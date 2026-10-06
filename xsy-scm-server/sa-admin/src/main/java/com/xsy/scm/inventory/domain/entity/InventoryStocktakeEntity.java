@@ -15,11 +15,11 @@ import java.time.OffsetDateTime;
  * 库存盘点单。
  *
  * <p>
- * <b>差异不落库到明细的「差异列」上</b>：差异是 {@code actual_quantity - book_quantity} 的派生值，不另设列（冗余列会与两个真值列失去同步）。确认时真正写下来的是 流水的
+ * <b>差异不落库到明细的「差异列」上</b>：差异是 {@code actual_quantity - book_quantity} 的派生值，不另设列（冗余列会与两个真值列失去同步）。确认时真正写下来的是流水的
  * {@code before_quantity} / {@code after_quantity} —— 那才是权威账。
  *
  * <p>
- * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>：确认盘点时把这两个值 传给 {@code InventoryCommandService}，作为
+ * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>：确认盘点时把这两个值传给 {@code InventoryCommandService}，作为
  * {@code inventory_movement.occurred_at} 与 {@code operator} —— 与入库/出库同纪律，禁止用 {@code now()} 或当前登录人顶替。
  */
 @Data

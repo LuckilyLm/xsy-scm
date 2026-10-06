@@ -34,7 +34,7 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
  * 分拣读侧：任务列表、任务详情、按商品汇总（只读）与建单用的候选订单行。
  *
  * <p>
- * SQL 负责排序与分页，客户端不能传排序列；范围一律由 {@link SortingAccess} 解析后下传， 页面能看到的行与打印预览看到的行是同一套口径。
+ * SQL 负责排序与分页，客户端不能传排序列；范围一律由 {@link SortingAccess} 解析后下传，页面能看到的行与打印预览看到的行是同一套口径。
  */
 @Service
 @RequiredArgsConstructor
@@ -61,7 +61,7 @@ public class SortingQueryService {
     }
 
     /**
-     * 任务详情。读不到行时统一按无权访问处理：分拣任务的存在性本身不是公开信息， 分成 404 与 30005 会让探测主键与探测权限可分辨。
+     * 任务详情。读不到行时统一按无权访问处理：分拣任务的存在性本身不是公开信息，分成 404 与 30005 会让探测主键与探测权限可分辨。
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public SortingTaskDetailVO detail(Long id) {
@@ -71,7 +71,7 @@ public class SortingQueryService {
         var result = new SortingTaskDetailVO();
         result.setTask(task);
         // 明细挂在已经放行的任务下，不再各自收窄：子集收窄会破坏「按订单与按商品同一套事实」。
-        // 满赠赠品是**只读合并**的第二类来源：它不落 sorting_task_item（那张表强制挂订单行），
+        // 满赠赠品是<b>只读合并</b>的第二类来源：它不落 sorting_task_item（那张表强制挂订单行），
         // 但仓库照单要备货，因此追加在订单行之后并带 sourceType，界面据它打「赠品」标记。
         var items = new ArrayList<>(sortingQueryDao.items(id));
         items.addAll(sortingQueryDao.giftItems(id));
@@ -110,7 +110,7 @@ public class SortingQueryService {
     }
 
     /**
-     * 建单用的候选订单行队列，不按订单业务员维度收窄：仓库岗位通过建单权限读取候选项， 返回列不含价格或金额。
+     * 建单用的候选订单行队列，不按订单业务员维度收窄：仓库岗位通过建单权限读取候选项，返回列不含价格或金额。
      */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingCandidateLineVO> candidateLines(SortingCandidateQueryForm form) {

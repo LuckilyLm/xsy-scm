@@ -14,8 +14,7 @@ import lombok.Data;
  * 优惠试算入参。
  *
  * <p>
- * 订单行只传「行 id + 基础金额」：**基础价由订单域算好后传入**，优惠域不重复实现定价。
- * 这样「协议价 → 客户类型价 → 市场价」这条顺序仍然只有一处实现。
+ * 订单行只传「行 id + 基础金额」：<b>基础价由订单域算好后传入</b>，优惠域不重复实现定价。 这样「协议价 → 客户类型价 → 市场价」这条顺序仍然只有一处实现。
  */
 @Data
 public class PromotionDiscountPreviewForm {
@@ -30,8 +29,7 @@ public class PromotionDiscountPreviewForm {
     private Long activityId;
 
     /**
-     * 指定客户券实例；为空表示不使用券。**不使用「自动挑一张」**：
-     * 用哪张券是客户的权益，不能让系统替他决定。
+     * 指定客户券实例；为空表示不使用券。<b>不使用「自动挑一张」</b>： 用哪张券是客户的权益，不能让系统替他决定。
      */
     private Long couponInstanceId;
 

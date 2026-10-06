@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
  * </ul>
  *
  * <p>
- * {@code occurredAt} / {@code operator} 发出取 {@code shippedAt} / {@code shippedBy}， 收货取 {@code receivedAt} /
+ * {@code occurredAt} / {@code operator} 发出取 {@code shippedAt} / {@code shippedBy}，收货取 {@code receivedAt} /
  * {@code receivedBy}。
  */
 public record InventoryTransferFact(Long warehouseId, Long skuId, Long transferId, Long transferItemId,

@@ -17,7 +17,7 @@ public interface ProductTagDao extends BaseMapper<ProductTagEntity> {
     ProductTagVO selectVoById(@Param("id") Long id);
 
     /**
-     * 打标入口按 id 升序加行锁，与删除标签互斥；停用的标签会被返回但由调用方判为不可用， 这样历史商品保留旧标签时仍能读出名称，只是不能再新挂。
+     * 打标入口按 id 升序加行锁，与删除标签互斥；停用的标签会被返回但由调用方判为不可用，这样历史商品保留旧标签时仍能读出名称，只是不能再新挂。
      */
     List<ProductTagEntity> lockByIds(@Param("ids") List<Long> ids);
 

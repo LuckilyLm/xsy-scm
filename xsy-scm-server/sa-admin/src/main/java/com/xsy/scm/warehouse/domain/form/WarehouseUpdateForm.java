@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 编辑仓库。`status` 同 {@link WarehouseAddForm}，不在字段清单内。
+ * 编辑仓库。{@code status} 同 {@link WarehouseAddForm}，不在字段清单内。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

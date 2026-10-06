@@ -26,22 +26,16 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 在线充值（ADM-12 3-12b）。
  *
- * <pre>
- * POST /scm/balance/recharge/create
- *         │ 解析客户 → 解析结算主体 → 校验数据范围 → Idempotency-Key
- *         ▼
- * customer_balance_recharge（业务事实：谁往哪个钱包充多少）
- *         ▼
- * PaymentIntent（method=ONLINE、source_type=BALANCE_RECHARGE、source_id=recharge.id）
- *         ▼
- * PaymentTransaction SUCCEEDED
- *         ├─ FinanceReceipt  ONLINE_PAYMENT + PAYMENT_TRANSACTION   ← 公司实际进账
- *         └─ BalanceMovement RECHARGE/CREDIT + PAYMENT_TRANSACTION  ← 钱包权益增加
- * </pre>
+ * <p>
+ * 链路：解析客户 → 解析结算主体 → 校验数据范围 → Idempotency-Key，落 {@code customer_balance_recharge}（谁往哪个钱包充多少），再创建
+ * {@code PaymentIntent}（{@code method=ONLINE}、{@code source_type=BALANCE_RECHARGE}、
+ * {@code source_id=recharge.id}）。支付成功后由 {@code PaymentTransaction SUCCEEDED} 派生两条事实：
+ * {@code FinanceReceipt}（{@code ONLINE_PAYMENT + PAYMENT_TRANSACTION}，公司实际进账）与
+ * {@code BalanceMovement}（{@code RECHARGE/CREDIT + PAYMENT_TRANSACTION}，钱包权益增加）。
  *
  * <p>
- * <b>余额域负责解释「为什么要支付」，支付域负责支付本身。</b> 因此充值意图由本服务内部创建， 而不是把公开的 {@code /scm/payment/intent/create} 放开给客户端拼
- * {@code sourceType=BALANCE_RECHARGE + sourceId=任意充值 id}。
+ * 余额域负责解释「为什么要支付」，支付域负责支付本身。因此充值意图由本服务内部创建， 而不是把公开的 {@code /scm/payment/intent/create} 放开给客户端拼 {@code sourceType} 与任意
+ * {@code sourceId}。
  */
 @Service
 @RequiredArgsConstructor
@@ -69,7 +63,7 @@ public class BalanceRechargeService {
      * 发起充值：先落充值事实，再创建支付意图。
      *
      * <p>
-     * <b>幂等在外层先占</b>：如果等内部创建意图时才 claim，一次超时重试会先多出一条充值事实。 同一个 {@code Idempotency-Key} 回放首次结果；换 key 再提就是一笔新充值（允许多次充值）。
+     * <b>幂等在外层先占</b>：如果等内部创建意图时才 claim，一次超时重试会先多出一条充值事实。同一个 {@code Idempotency-Key} 回放首次结果；换 key 再提就是一笔新充值（允许多次充值）。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(BalanceRechargeCreateForm form, String idempotencyKey) {

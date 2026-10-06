@@ -11,9 +11,8 @@ import lombok.Data;
  * 发起退款。
  *
  * <p>
- * <b>资金来源是 {@code PaymentTransaction}，不是售后退款单</b>：退款必须退到某一笔**实际收到的**
- * 渠道交易上。{@code orderRefundId} 只是业务来源标记（用于「一张售后退款单只映射一笔渠道退款」），
- * 不参与金额判定。
+ * <b>资金来源是 {@code PaymentTransaction}，不是售后退款单</b>：退款必须退到某一笔<b>实际收到的</b> 渠道交易上。{@code orderRefundId}
+ * 只是业务来源标记（用于「一张售后退款单只映射一笔渠道退款」）， 不参与金额判定。
  */
 @Data
 public class PaymentRefundCreateForm {

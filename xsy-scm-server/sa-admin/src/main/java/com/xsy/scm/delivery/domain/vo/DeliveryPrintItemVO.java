@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  *
  * <p>
  * 金额与数量刻意带 {@link ScmFixedScale4Serializer}：实体上的 {@code BigDecimal} 会输出成 JSON 数字，而前端 {@code PrintItem} 把这些字段声明为
- * {@code string}，且四定点一律走字符串 是本仓库既有约定。换成实体直出等于同时违反形状与精度两条口径。
+ * {@code string}，且四定点一律走字符串是本仓库既有约定。换成实体直出等于同时违反形状与精度两条口径。
  */
 @Data
 public class DeliveryPrintItemVO {

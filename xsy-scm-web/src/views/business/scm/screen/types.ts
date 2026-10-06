@@ -44,7 +44,7 @@ export interface WarehouseNode {
 /**
  * 库存健康度。
  *
- * <p>四档**互斥**，且 {@link outOfStockCount} + {@link lowCount} + {@link highCount}
+ * <p>四档<b>互斥</b>，且 {@link outOfStockCount} + {@link lowCount} + {@link highCount}
  * + {@link normalCount} + {@link unconfiguredCount} === {@link totalSkuCount}，
  * 所以占比可以直接拿总数当分母。
  *
@@ -82,8 +82,8 @@ export interface PurchaseData {
 /**
  * 地理分布（地图 M1）。
  *
- * <p>省级由市级在 Java 侧上卷，所以**只拿市级求和就能校验省级**，两者不会各自演算。
- * 坐标是 `scm_region` 的**区划质心**（GCJ-02），不是任何单位的实际地址坐标。
+ * <p>省级由市级在 Java 侧上卷，所以<b>只拿市级求和就能校验省级</b>，两者不会各自演算。
+ * 坐标是 `scm_region` 的<b>区划质心</b>（GCJ-02），不是任何单位的实际地址坐标。
  */
 export interface GeoCityNode {
     cityCode: number;

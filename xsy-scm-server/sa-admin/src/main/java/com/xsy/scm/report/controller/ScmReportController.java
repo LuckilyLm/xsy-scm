@@ -46,19 +46,14 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
  * 报表中心（只读）。
  *
  * <p>
- * <b>本类没有任何写端点</b>。金额字段只使用报表对应的已成立事实，不把确认订单额当作收入， 也不把采购金额或收货参考金额标成应付。
+ * 本类没有任何写端点。金额字段只使用报表对应的已成立事实，不把确认订单额当作收入， 也不把采购金额或收货参考金额标成应付。
  *
  * <p>
- * 权限分三层，彼此不隐含：
- * <ul>
- * <li>{@code scm:report:<page>:query} —— 页面与查询；</li>
- * <li>{@code scm:report:cost:query} —— 成本字段。数量流水与成本分属两类岗位， 因此成本是<b>字段级</b>抹除（返回 null → 页面显示 {@code —}），
- * 而「当前库存价值」整页都是成本，直接由接口拦住；</li>
- * <li>{@code scm:report:export} —— 导出，且必须 AND 上对应查询权限。</li>
- * </ul>
+ * 权限分三层且彼此不隐含：{@code scm:report:<page>:query} 管页面与查询； {@code scm:report:cost:query} 管成本字段，数量流水与成本分属两类岗位，因此成本是字段级抹除 （返回
+ * {@code null}，页面显示 {@code —}），而「当前库存价值」整页都是成本，直接由接口拦住； {@code scm:report:export} 管导出，且必须 AND 上对应查询权限。
  *
  * <p>
- * 导出与列表调用<b>同一个</b>查询方法，口径不可能分叉；超过行数上限时明确拒绝而不是静默截断。 因此导出继承列表的仓库数据范围；{@code scm:report:export} 只代表允许导出，绝不扩大可见范围。
+ * 导出与列表调用同一个查询方法，口径不可能分叉，超过行数上限时明确拒绝而不是静默截断。 因此导出继承列表的仓库数据范围，{@code scm:report:export} 只代表允许导出，绝不扩大可见范围。
  */
 @RestController
 @RequestMapping("/scm/report")
@@ -101,7 +96,7 @@ public class ScmReportController {
      * 每日统计导出。
      *
      * <p>
-     * 与列表调用<b>同一个</b> {@code dailyStat}：日期轴由 SQL 补齐（无单据的天也是零值行）， 且成本 / 仓库字段按调用者范围同样抹除，导出不会比页面多看到一列。跨度上限 366 天，
+     * 与列表调用<b>同一个</b> {@code dailyStat}：日期轴由 SQL 补齐（无单据的天也是零值行），且成本 / 仓库字段按调用者范围同样抹除，导出不会比页面多看到一列。跨度上限 366 天，
      * 行数天然有界，因此不再探超限。
      */
     @PostMapping("/overview/daily/export")
@@ -357,7 +352,7 @@ public class ScmReportController {
     }
 
     /**
-     * 价格波动导出。粒度 = 业务日 × SKU × 采购单位，不同单位不会合并成一条线； 与列表同一个 {@code priceTrend}。
+     * 价格波动导出。粒度 = 业务日 × SKU × 采购单位，不同单位不会合并成一条线；与列表同一个 {@code priceTrend}。
      */
     @PostMapping("/purchase/price-trend/export")
     @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
@@ -563,7 +558,7 @@ public class ScmReportController {
     // ==================== 内部 ====================
 
     /**
-     * 导出与列表走<b>同一个</b>查询方法，只是把分页换成「第 1 页 + 上限多一行」； 多出一行即判定超限并抛 41112，避免静默只导前 N 行。
+     * 导出与列表走<b>同一个</b>查询方法，只是把分页换成「第 1 页 + 上限多一行」；多出一行即判定超限并抛 41112，避免静默只导前 N 行。
      */
     private <T> List<T> exportRows(PageParam form, Supplier<PageResult<T>> query) {
         form.setPageNum(1L);

@@ -8,8 +8,7 @@ import lombok.Data;
  * 回调事件（留证）。
  *
  * <p>
- * {@code processStatus = REJECTED} 的记录**必须能查**：它回答「有没有人伪造过回调」，
- * 而这正是把未验签事件也落库的理由。
+ * {@code processStatus = REJECTED} 的记录<b>必须能查</b>：它回答「有没有人伪造过回调」， 而这正是把未验签事件也落库的理由。
  */
 @Data
 public class PaymentCallbackEventVO {

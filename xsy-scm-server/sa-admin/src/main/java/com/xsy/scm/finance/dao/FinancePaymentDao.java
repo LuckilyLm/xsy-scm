@@ -18,8 +18,8 @@ import java.util.List;
  *
  * <p>
  * 退款付款的行级防重锚点是 {@code uk_finance_payment_source_active}
- * （{@code (source_type, source_id) WHERE deleted = FALSE AND source_id IS NOT NULL}）： 同一张 {@code order_refund}
- * 最多一笔正式退款付款。 反向付款的 {@code source_id} 必须为 NULL，因此不与原行抢这个键。
+ * （{@code (source_type, source_id) WHERE deleted = FALSE AND source_id IS NOT NULL}）：同一张 {@code order_refund}
+ * 最多一笔正式退款付款。反向付款的 {@code source_id} 必须为 NULL，因此不与原行抢这个键。
  */
 @Mapper
 public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
@@ -33,7 +33,7 @@ public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
      * 插入一笔正常付款，同一 {@code ORDER_REFUND} 已有付款时什么都不做。
      *
      * <p>
-     * 冲突目标与 {@code uk_finance_payment_source_active} 的列和谓词**逐字一致**（纪律）： 少写谓词会命中「无索引可仲裁」而直接报错，用无目标的
+     * 冲突目标与 {@code uk_finance_payment_source_active} 的列和谓词<b>逐字一致</b>（纪律）：少写谓词会命中「无索引可仲裁」而直接报错，用无目标的
      * {@code ON CONFLICT DO NOTHING} 会把 {@code payment_no} 撞号一起吞掉。
      *
      * <p>
@@ -51,11 +51,9 @@ public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
      * 按系统来源键取正常付款事实（ADM-12 3-11b）。
      *
      * <p>
-     * 系统登记退款付款时先查这里：重复驱动（同一笔退款被多次回调）在这一步就返回已有事实，
-     * 库上的 {@code uk_finance_payment_source_active} 是并发下真正的仲裁者。
+     * 系统登记退款付款时先查这里：重复驱动（同一笔退款被多次回调）在这一步就返回已有事实， 库上的 {@code uk_finance_payment_source_active} 是并发下真正的仲裁者。
      */
-    FinancePaymentEntity selectBySource(@Param("sourceType") String sourceType,
-            @Param("sourceId") Long sourceId);
+    FinancePaymentEntity selectBySource(@Param("sourceType") String sourceType, @Param("sourceId") Long sourceId);
 
     /** Effective write-off amount (NORMAL minus REVERSE) for this source payment. */
     BigDecimal selectEffectiveWriteOffAmount(@Param("paymentId") Long paymentId);

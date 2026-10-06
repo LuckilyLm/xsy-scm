@@ -82,7 +82,7 @@ import {useScreenScale} from './composables/use-screen-scale';
 /**
  * 供应链运营中心（数据大屏）。
  *
- * <p>本文件**只负责布局**：三列（420 / 1000 / 420）+ 顶部状态栏 + 底部趋势带。
+ * <p>本文件<b>只负责布局</b>：三列（420 / 1000 / 420）+ 顶部状态栏 + 底部趋势带。
  * 所有数据获取在 {@link useScreenData}，所有缩放适配在 {@link useScreenScale}，
  * 每个面板的渲染细节在自己的组件里。
  *

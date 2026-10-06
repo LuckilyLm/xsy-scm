@@ -54,7 +54,7 @@ import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.coup
  * <li><b>试算不占用</b>：{@code preview} 不写任何表、不动券状态（ADR-009：预览不等于最终占用）。</li>
  * <li><b>冻结只认订单事实</b>：{@code freeze} 由订单确认在服务端编排调用，客户与行金额来自
  * {@link PromotionOrderFacts}，活动由服务端自行选出；客户端无法指定客户、行金额或优惠组合。</li>
- * <li><b>冻结时重验</b>：{@code freeze} 重新读活动与券的**当前**状态与版本， 试算之后活动可能已停用、券可能已被别人占用 —— 用试算结果直接落库会写出一个从未成立过的优惠。</li>
+ * <li><b>冻结时重验</b>：{@code freeze} 重新读活动与券的<b>当前</b>状态与版本， 试算之后活动可能已停用、券可能已被别人占用 —— 用试算结果直接落库会写出一个从未成立过的优惠。</li>
  * <li><b>互斥组</b>：同组内只取优先级最高的一条，其余记入 {@code suppressedActivities} 供解释； 不同组可以叠加，顺序按优先级降序、id 升序，保证同一份输入得到同一份结果。</li>
  * </ul>
  */
@@ -75,7 +75,7 @@ public class PromotionDiscountService {
     private final OrderPromotionGiftDao orderPromotionGiftDao;
 
     /**
-     * 跨域只读：满赠冻结时取赠品 SKU 的名称 / 规格 / 销售单位快照。 只读商品主档，不写商品域任何表（见 {@code cross-domain-dao-allowlist.tsv}）。
+     * 跨域只读：满赠冻结时取赠品 SKU 的名称 / 规格 / 销售单位快照。只读商品主档，不写商品域任何表（见 {@code cross-domain-dao-allowlist.tsv}）。
      */
     private final ProductSkuOptionDao productSkuOptionDao;
 
@@ -85,7 +85,7 @@ public class PromotionDiscountService {
      * 试算：只读，不占用券。
      *
      * <p>
-     * 试算面向「还没有订单」的结算预览，因此客户与行由调用方给出；它不写任何表， 因此不构成「客户端自行组合优惠」——真正落库的冻结只认订单事实。
+     * 试算面向「还没有订单」的结算预览，因此客户与行由调用方给出；它不写任何表，因此不构成「客户端自行组合优惠」——真正落库的冻结只认订单事实。
      */
     @Transactional(readOnly = true)
     public PromotionDiscountVO preview(PromotionDiscountPreviewForm form) {
@@ -97,7 +97,7 @@ public class PromotionDiscountService {
     }
 
     /**
-     * 冻结：由**订单确认**在服务端编排调用，按订单事实计算并占用券。
+     * 冻结：由<b>订单确认</b>在服务端编排调用，按订单事实计算并占用券。
      *
      * <p>
      * 与试算的三点差别：
@@ -119,7 +119,7 @@ public class PromotionDiscountService {
         boolean hasGifts = computed.getGifts() != null && !computed.getGifts().isEmpty();
         if (!hasDiscount && !hasGifts) {
             // 既没有金额优惠也没有赠品就不落冻结记录：留一条 0 元记录会让「这单有没有优惠」
-            // 变得要读快照才知道。反之，**只有赠品的单也必须冻结** —— 赠品是独立事实，
+            // 变得要读快照才知道。反之，<b>只有赠品的单也必须冻结</b> —— 赠品是独立事实，
             // 它不产生金额优惠，但出库、分拣与成本都靠它。
             return computed;
         }
@@ -171,7 +171,7 @@ public class PromotionDiscountService {
      * 订单冻结的赠品权益（只读）。
      *
      * <p>
-     * 与优惠分开读：赠品是**非金额权益**，只有赠品、没有金额优惠的订单不会有 {@code order_discount} 行， 把赠品塞进优惠读模型会让这种订单看起来「什么都没有」。
+     * 与优惠分开读：赠品是<b>非金额权益</b>，只有赠品、没有金额优惠的订单不会有 {@code order_discount} 行，把赠品塞进优惠读模型会让这种订单看起来「什么都没有」。
      */
     @Transactional(readOnly = true)
     public List<PromotionDiscountVO.GiftEntitlementVO> listGifts(Long salesOrderId) {
@@ -183,7 +183,7 @@ public class PromotionDiscountService {
      * 订单冻结的赠品权益事实（出库用）：只给「哪一行权益、哪个 SKU、多少」。
      *
      * <p>
-     * 与 {@link #listGifts} 分开：出库不关心活动名与规则，而订单详情需要解释「为什么送」。 一个方法返回两套字段只会让出库路径被迫依赖展示模型。
+     * 与 {@link #listGifts} 分开：出库不关心活动名与规则，而订单详情需要解释「为什么送」。一个方法返回两套字段只会让出库路径被迫依赖展示模型。
      */
     @Transactional(readOnly = true)
     public List<PromotionGiftFact> listGiftFacts(Long salesOrderId) {
@@ -227,15 +227,15 @@ public class PromotionDiscountService {
      * 正常签收 → 核销该订单占用的券：{@code RESERVED → USED}。
      *
      * <p>
-     * <b>必须与签收同事务</b>（{@code MANDATORY}）：签收是订单级不可逆终态，也正是应收的形成时点， 券「已被一笔真实成交用掉」的判定与它对齐。任何一步失败整笔回滚，不会出现 「已签收但券还是
+     * <b>必须与签收同事务</b>（{@code MANDATORY}）：签收是订单级不可逆终态，也正是应收的形成时点，券「已被一笔真实成交用掉」的判定与它对齐。任何一步失败整笔回滚，不会出现 「已签收但券还是
      * RESERVED」，也不会出现「券已核销但财务没生成」。
      *
      * <p>
-     * <b>异常签收不核销</b>：{@code EXCEPTION} 不形成应收，券也保持 {@code RESERVED}， 等异常解决后真正签收再核销 —— 与「异常签收不形成应收」同一条规则。
+     * <b>异常签收不核销</b>：{@code EXCEPTION} 不形成应收，券也保持 {@code RESERVED}，等异常解决后真正签收再核销 —— 与「异常签收不形成应收」同一条规则。
      *
      * <p>
-     * <b>退款不恢复券</b>：签收之后的部分 / 全额退款都保持 {@code USED}。退款反向的是**金额** （按冻结分摊），券回答的是**权益是否已被一笔成交使用过**，两者不是一回事； 允许复活会让「100 元订单用
-     * 20 元券、退款后券回来、再用于下一单」变成重复营销权益。 业务若确需「全额退款返券」，应重新 {@code issue} 一张新券，而不是把旧券改回 {@code AVAILABLE}。
+     * <b>退款不恢复券</b>：签收之后的部分 / 全额退款都保持 {@code USED}。退款反向的是<b>金额</b> （按冻结分摊），券回答的是<b>权益是否已被一笔成交使用过</b>，两者不是一回事；允许复活会让「100
+     * 元订单用 20 元券、退款后券回来、再用于下一单」变成重复营销权益。业务若确需「全额退款返券」，应重新 {@code issue} 一张新券，而不是把旧券改回 {@code AVAILABLE}。
      *
      * <p>
      * 没有冻结记录或没用券时成功跳过：签收本身合法，不能因为没有券而回滚。
@@ -265,7 +265,7 @@ public class PromotionDiscountService {
      * 订单已冻结优惠（只读）。
      *
      * <p>
-     * 没有冻结记录返回 {@code null} 而不是 0 元对象：「这单没优惠」与「优惠是 0」是两件事， 返回 0 会让页面无法区分，也会让「有没有用过优惠」变得要读快照才知道。
+     * 没有冻结记录返回 {@code null} 而不是 0 元对象：「这单没优惠」与「优惠是 0」是两件事，返回 0 会让页面无法区分，也会让「有没有用过优惠」变得要读快照才知道。
      */
     @Transactional(readOnly = true)
     public OrderDiscountVO getByOrder(Long salesOrderId) {
@@ -343,8 +343,8 @@ public class PromotionDiscountService {
         List<PromotionDiscountVO.AppliedActivityVO> appliedActivities = new ArrayList<>();
         List<PromotionDiscountVO.GiftEntitlementVO> gifts = new ArrayList<>();
 
-        // 1a) 限时特价：作用在**基础价之上、其余活动之前**（基础价 → 限时特价 → 满减/折扣 → 券）。
-        // 让利按**行**归集而不是按金额比例分摊：特价针对某个 SKU，摊到别的行上会让退款反向错行。
+        // 1a) 限时特价：作用在<b>基础价之上、其余活动之前</b>（基础价 → 限时特价 → 满减/折扣 → 券）。
+        // 让利按<b>行</b>归集而不是按金额比例分摊：特价针对某个 SKU，摊到别的行上会让退款反向错行。
         Map<Long, BigDecimal> specialByItem = new LinkedHashMap<>();
         for (PromotionActivityEntity activity : applied) {
             if (!ScmPromotionActivityTypeEnum.SPECIAL_PRICE.name().equals(activity.getActivityType())) {
@@ -360,13 +360,13 @@ public class PromotionDiscountService {
                 .setScale(SCALE, RoundingMode.HALF_UP).min(baseTotal);
         BigDecimal remaining = baseTotal.subtract(specialDiscount).max(BigDecimal.ZERO);
 
-        // 1b) 满减 / 折扣 / 满赠：逐条作用在**特价之后**的剩余金额上
+        // 1b) 满减 / 折扣 / 满赠：逐条作用在<b>特价之后</b>的剩余金额上
         BigDecimal activityDiscount = BigDecimal.ZERO.setScale(SCALE);
         for (PromotionActivityEntity activity : applied) {
             if (ScmPromotionActivityTypeEnum.FULL_GIFT.name().equals(activity.getActivityType())) {
-                // 满赠是**非金额权益**：它不让订单金额变小，所以既不参与下面的剩余金额递减，
+                // 满赠是<b>非金额权益</b>：它不让订单金额变小，所以既不参与下面的剩余金额递减，
                 // 也不进 appliedActivities（那里记的是「实际减了多少钱的活动」）。
-                // 门槛按**基础合计**判定，不按逐条作用后的剩余金额 —— 「满 100 赠 2kg」不该因为
+                // 门槛按<b>基础合计</b>判定，不按逐条作用后的剩余金额 —— 「满 100 赠 2kg」不该因为
                 // 同单另有满减把门槛压没：客户看的是订单金额达没达标。
                 if (giftThresholdReached(activity, baseTotal)) {
                     gifts.add(giftEntitlement(activity));
@@ -400,7 +400,7 @@ public class PromotionDiscountService {
             vo.setCouponName(coupon.getCouponName());
         }
 
-        // 3) 分摊：满减/折扣与券合成一个总额，在**特价之后**的行金额上按比例分摊（这样优惠跟着
+        // 3) 分摊：满减/折扣与券合成一个总额，在<b>特价之后</b>的行金额上按比例分摊（这样优惠跟着
         // 客户实际要付的钱走）；特价让利再逐行加回。两段相加即逐行优惠，且每行不会超过行金额。
         BigDecimal proportional = activityDiscount.add(couponDiscount).min(remaining).setScale(SCALE,
                 RoundingMode.HALF_UP);
@@ -424,7 +424,7 @@ public class PromotionDiscountService {
         vo.setDiscountAmount(total);
         vo.setFinalAmount(baseTotal.subtract(total).max(BigDecimal.ZERO));
         vo.setRoundingTargetItemId(allocation.roundingTargetItemId());
-        // 逐行基础金额回填**原始**行金额（不是特价后的），否则「原价多少」在分摊里就丢了
+        // 逐行基础金额回填<b>原始</b>行金额（不是特价后的），否则「原价多少」在分摊里就丢了
         vo.setAllocations(lines.stream().map(line -> {
             var allocationVo = new PromotionDiscountVO.PromotionDiscountAllocationVO();
             allocationVo.setOrderItemId(line.orderItemId());
@@ -439,7 +439,7 @@ public class PromotionDiscountService {
     }
 
     /**
-     * 主活动只记「实际产生优惠的第一条」：多组叠加时，快速展示能说出主规则是哪一条； 叠加生效的其余活动完整落在 {@code appliedActivities} 里，冻结时一并入快照。
+     * 主活动只记「实际产生优惠的第一条」：多组叠加时，快速展示能说出主规则是哪一条；叠加生效的其余活动完整落在 {@code appliedActivities} 里，冻结时一并入快照。
      */
     private static void markPrimaryActivity(PromotionDiscountVO vo, PromotionActivityEntity activity) {
         if (vo.getActivityId() != null) {
@@ -456,10 +456,10 @@ public class PromotionDiscountService {
      * 一条限时特价活动作用在匹配行上的让利，并把它记进 {@code specialByItem}。
      *
      * <p>
-     * 让利 = 行基础金额 − 数量 × 特价；**特价 ≥ 该行单价时让利为 0** —— 特价只能把价格往下压， 不能抬高（否则协议客户的价格会被活动抬上去）。
+     * 让利 = 行基础金额 − 数量 × 特价；<b>特价 ≥ 该行单价时让利为 0</b> —— 特价只能把价格往下压，不能抬高（否则协议客户的价格会被活动抬上去）。
      *
      * <p>
-     * 同一行只让一次价：已被更靠前的一条特价命中过的行直接跳过。这样「按优先级顺序作用」 这条既有语义在特价上也成立，且每条活动记进快照的让利额之和恰好等于总让利。
+     * 同一行只让一次价：已被更靠前的一条特价命中过的行直接跳过。这样「按优先级顺序作用」这条既有语义在特价上也成立，且每条活动记进快照的让利额之和恰好等于总让利。
      */
     private static BigDecimal specialPriceDelta(PromotionActivityEntity activity, List<PromotionOrderFacts.Line> lines,
             Map<Long, BigDecimal> specialByItem) {
@@ -514,7 +514,7 @@ public class PromotionDiscountService {
      * 单条活动作用在剩余金额上的减免额。
      *
      * <p>
-     * 满赠的减免额恒为 0：赠品是**非金额**权益，它不该让订单金额变小，也不该参与按行分摊。
+     * 满赠的减免额恒为 0：赠品是<b>非金额</b>权益，它不该让订单金额变小，也不该参与按行分摊。
      */
     private static BigDecimal activityDiscountOf(PromotionActivityEntity activity, BigDecimal remaining) {
         Map<String, Object> rule = activity.getRule();
@@ -596,7 +596,7 @@ public class PromotionDiscountService {
      * 满赠门槛判定：订单金额达到门槛即成立。
      *
      * <p>
-     * 门槛比的是**基础合计**（未扣任何优惠的订单金额），不是逐条作用后的剩余金额： 「满 100 赠 2kg」不该因为同单另有满减把门槛压没 —— 客户看的是订单金额达没达标。
+     * 门槛比的是<b>基础合计</b>（未扣任何优惠的订单金额），不是逐条作用后的剩余金额： 「满 100 赠 2kg」不该因为同单另有满减把门槛压没 —— 客户看的是订单金额达没达标。
      */
     private static boolean giftThresholdReached(PromotionActivityEntity activity, BigDecimal baseTotal) {
         Map<String, Object> rule = activity.getRule();
@@ -611,7 +611,7 @@ public class PromotionDiscountService {
      * 把满赠活动规则解析成一条赠品权益，并取赠品 SKU 快照。
      *
      * <p>
-     * 赠品 SKU 读不到时**失败**而不是静默跳过：规则指向一个不存在的商品，冻结一条发不出货的权益 比当场报错更糟 —— 后者在确认订单时就能发现，前者要到发货才暴露。
+     * 赠品 SKU 读不到时<b>失败</b>而不是静默跳过：规则指向一个不存在的商品，冻结一条发不出货的权益比当场报错更糟 —— 后者在确认订单时就能发现，前者要到发货才暴露。
      */
     private PromotionDiscountVO.GiftEntitlementVO giftEntitlement(PromotionActivityEntity activity) {
         Map<String, Object> rule = activity.getRule();

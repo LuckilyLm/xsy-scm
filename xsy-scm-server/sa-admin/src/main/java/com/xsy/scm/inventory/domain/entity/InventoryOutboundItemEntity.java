@@ -16,7 +16,7 @@ import java.time.OffsetDateTime;
  * 出库单明细行。
  *
  * <p>
- * {@code unitSnapshot} 在**确认出库**时写入（= 该 (仓库, SKU) 的记账单位）， 草稿态允许为空 —— 因为草稿还没校验单位，提前写一个快照反而会误导。
+ * {@code unitSnapshot} 在<b>确认出库</b>时写入（= 该 (仓库, SKU) 的记账单位），草稿态允许为空 —— 因为草稿还没校验单位，提前写一个快照反而会误导。
  * 确认时若与余额记账单位不一致，直接失败（41001），不静默换算。
  */
 @Data
@@ -48,7 +48,7 @@ public class InventoryOutboundItemEntity {
     private String remark;
 
     /**
-     * 来源销售订单 id，手工出库行为 null；与 {@link #salesOrderItemId} 成对（DB CHECK）。 刻意不加 {@code ALWAYS} —— 来源写入后不允许被整行更新抹掉。
+     * 来源销售订单 id，手工出库行为 null；与 {@link #salesOrderItemId} 成对（DB CHECK）。刻意不加 {@code ALWAYS} —— 来源写入后不允许被整行更新抹掉。
      */
     private Long salesOrderId;
 
@@ -56,7 +56,7 @@ public class InventoryOutboundItemEntity {
      * 来源销售订单行 id：本行的 {@code quantity} 就是这一行的实发量。
      *
      * <p>
-     * <b>同 SKU 的不同订单行不合并</b>，否则「哪张订单实发了多少」在库里失去答案， 分拣的 REOPEN 守卫与成本归属都无从判定。
+     * <b>同 SKU 的不同订单行不合并</b>，否则「哪张订单实发了多少」在库里失去答案，分拣的 REOPEN 守卫与成本归属都无从判定。
      */
     private Long salesOrderItemId;
 

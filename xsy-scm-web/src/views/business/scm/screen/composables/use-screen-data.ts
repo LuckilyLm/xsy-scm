@@ -14,7 +14,7 @@ import {
 /**
  * 静默刷新间隔。
  *
- * <p>30 秒对应设计稿的「排行榜 30s 更新一次」。刷新时**不显示 loading**：
+ * <p>30 秒对应设计稿的「排行榜 30s 更新一次」。刷新时<b>不显示 loading</b>：
  * 大屏上任何一次整屏闪烁都会被注意到，而绝大多数刷新拿回的数据和上次一样。
  */
 const REFRESH_INTERVAL = 30_000;
@@ -24,9 +24,9 @@ const REFRESH_INTERVAL = 30_000;
  *
  * <p><b>三态设计</b>：
  * <ul>
- *   <li>{@code loading} —— 只有**首次**加载为 true，用于整屏 loading 骨架；</li>
+ *   <li>{@code loading} —— 只有<b>首次</b>加载为 true，用于整屏 loading 骨架；</li>
  *   <li>{@code error} —— 只有首次加载失败才设置，此时页面没有可用数据，显示错误态；</li>
- *   <li>{@code staleError} —— 静默刷新失败。**保留旧数据**，只把「数据可能过期」的
+ *   <li>{@code staleError} —— 静默刷新失败。<b>保留旧数据</b>，只把「数据可能过期」的
  *       提示交给头部状态栏。大屏上把已经渲染好的数据换成错误页是最差的选择。</li>
  * </ul>
  *

@@ -1,7 +1,7 @@
 <!--
   仓库列表。
   - 启用 / 停用走独立命令，基础信息表单不直接修改状态；
-  - 「所在地区」的省市区级联与 `address` 自由文本**并存**：编码供大屏按市聚合，
+  - 「所在地区」的省市区级联与 `address` 自由文本<b>并存</b>：编码供大屏按市聚合，
     地址仍是收货与展示口径。
 -->
 <template>
@@ -285,7 +285,7 @@ async function open(row?: Warehouse) {
       : {warehouseCode: '', name: ''};
   area.value = [];
   visible.value = true;
-  // 弹窗内容首次打开才挂载，而 AreaCascader 只用**非 immediate** 的 watch 同步 value，
+  // 弹窗内容首次打开才挂载，而 AreaCascader 只用<b>非 immediate</b> 的 watch 同步 value，
   // 因此回填必须排在 nextTick 之后，否则第一次编辑时选择器是空的。
   await nextTick();
   area.value = areaNodesOf(form.value);

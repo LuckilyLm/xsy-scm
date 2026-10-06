@@ -15,17 +15,14 @@ import org.springframework.stereotype.Component;
  * 采购单的打印数据源。
  *
  * <p>
- * 读的是 {@link PurchaseQueryService#orderDetail(Long)} —— 与采购单详情页**同一个**方法，
- * 因此数据范围（采购员范围）与「无权查看」的 30005 回答完全一致。打印域不写自己的 SQL、
- * 不绕过范围判定，也不因为「只是打印」就放宽可见性。
+ * 读的是 {@link PurchaseQueryService#orderDetail(Long)} —— 与采购单详情页<b>同一个</b>方法， 因此数据范围（采购员范围）与「无权查看」的 30005
+ * 回答完全一致。打印域不写自己的 SQL、 不绕过范围判定，也不因为「只是打印」就放宽可见性。
  *
  * <p>
- * 功能权限（{@link #queryPermission()}）由打印服务在取数前单独校验：查询服务只收窄数据范围，
- * 不判权限码，两者缺一不可。
+ * 功能权限（{@link #queryPermission()}）由打印服务在取数前单独校验：查询服务只收窄数据范围， 不判权限码，两者缺一不可。
  *
  * <p>
- * 字段集合与 {@code ScmPrintDocumentTypeEnum.PURCHASE_ORDER} 的白名单一一对应；
- * 这里 put 的 key 超出白名单没有意义（渲染层只按模板选的 key 取值）。
+ * 字段集合与 {@code ScmPrintDocumentTypeEnum.PURCHASE_ORDER} 的白名单一一对应； 这里 put 的 key 超出白名单没有意义（渲染层只按模板选的 key 取值）。
  */
 @Component
 @RequiredArgsConstructor

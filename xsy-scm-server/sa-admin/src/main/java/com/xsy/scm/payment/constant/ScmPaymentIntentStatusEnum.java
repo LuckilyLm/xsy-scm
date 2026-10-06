@@ -15,8 +15,7 @@ import lombok.RequiredArgsConstructor;
  * </pre>
  *
  * <p>
- * <b>三个终态都不可回退</b>：支付是外部事实，本地改状态改不掉客户已经付过的钱。
- * 需要「撤销」时追加新的支付事实（退款），而不是把意图改回未付。
+ * <b>三个终态都不可回退</b>：支付是外部事实，本地改状态改不掉客户已经付过的钱。 需要「撤销」时追加新的支付事实（退款），而不是把意图改回未付。
  */
 @Getter
 @RequiredArgsConstructor
@@ -28,7 +27,7 @@ public enum ScmPaymentIntentStatusEnum {
     /** 已向渠道发起，等渠道结果。 */
     PENDING("待支付", false),
 
-    /** 渠道确认收款成功。**唯一可以派生 Finance 收款事实的状态**。 */
+    /** 渠道确认收款成功。<b>唯一可以派生 Finance 收款事实的状态</b>。 */
     SUCCEEDED("支付成功", true),
 
     /** 渠道明确失败。 */
@@ -49,8 +48,7 @@ public enum ScmPaymentIntentStatusEnum {
      * 状态转换表（唯一的转换实现，别在 Service 里再写一份 if）。
      *
      * <p>
-     * {@code PENDING} 允许直接回到 {@code CREATED} 吗？不允许 —— 发起过就是发起过，
-     * 要重试就新建一个意图，这样「发起了几次」是可数的。
+     * {@code PENDING} 允许直接回到 {@code CREATED} 吗？不允许 —— 发起过就是发起过， 要重试就新建一个意图，这样「发起了几次」是可数的。
      */
     public static boolean canTransition(String from, String to) {
         ScmPaymentIntentStatusEnum source = of(from);

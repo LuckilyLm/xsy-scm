@@ -15,7 +15,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
  * 客户列表查询条件。
  *
  * <p>
- * 分页限制为 1–100，并在 DTO 上声明， 避免每个调用方各写一遍。
+ * 分页限制为 1–100，并在 DTO 上声明，避免每个调用方各写一遍。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

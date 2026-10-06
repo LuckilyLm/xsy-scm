@@ -12,7 +12,7 @@ package com.xsy.scm.purchase.constant;
  * </ul>
  *
  * <p>
- * 创建收货单时必须显式二选一，**没有系统默认值** —— 不允许隐藏成隐式行为。
+ * 创建收货单时必须显式二选一，<b>没有系统默认值</b> —— 不允许隐藏成隐式行为。
  */
 public enum ScmReceiptModeEnum {
     DIRECT,

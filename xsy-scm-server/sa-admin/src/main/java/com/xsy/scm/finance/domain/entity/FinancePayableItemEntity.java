@@ -23,7 +23,7 @@ public class FinancePayableItemEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * 正常 = {@code purchase_receipt_item.id}；{@code MANUAL} 时**必须为 {@code null}**。
+     * 正常 = {@code purchase_receipt_item.id}；{@code MANUAL} 时<b>必须为 {@code null}</b>。
      */
     private Long sourceId;
 

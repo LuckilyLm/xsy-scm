@@ -34,7 +34,7 @@ const props = defineProps<{ business: BusinessData | null }>();
 /**
  * 客单价 = 今日销售额 / 今日订单数。
  *
- * <p>订单数为 0 时显示「—」而不是「¥0.00」：没有订单时客单价**不存在**，
+ * <p>订单数为 0 时显示「—」而不是「¥0.00」：没有订单时客单价<b>不存在</b>，
  * 而不是「客单价是零元」。
  */
 const avgOrderText = computed(() => {

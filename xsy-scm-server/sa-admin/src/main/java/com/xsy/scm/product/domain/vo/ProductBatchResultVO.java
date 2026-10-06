@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 批量命令的结果：预校验失败时 updatedCount 为 0 且没有任何写入，失败行可逐条定位； 全部通过时 failedCount 为 0。整批在一个事务里应用，不会部分成功。
+ * 批量命令的结果：预校验失败时 updatedCount 为 0 且没有任何写入，失败行可逐条定位；全部通过时 failedCount 为 0。整批在一个事务里应用，不会部分成功。
  */
 @Data
 public class ProductBatchResultVO {

@@ -11,8 +11,8 @@ import java.time.OffsetDateTime;
  * 客户「常购商品」聚合行（客户 360°，只读）。
  *
  * <p>
- * 由近 N 天已确认（CONFIRMED）订单事实现算，<b>不落任何副本表</b>。按 (SKU, 销售单位快照) 分组， 因此同 SKU 历史单位改变时分行展示、绝不把不同单位的量相加成一个「总量」。
- * {@code orderedQuantity} 是该分组各订购行的 {@code ordered_quantity} 之和，语义为**订购量**， 不是实重或结算量；{@code recentUnitPrice}
+ * 由近 N 天已确认（CONFIRMED）订单事实现算，<b>不落任何副本表</b>。按 (SKU, 销售单位快照) 分组，因此同 SKU 历史单位改变时分行展示、绝不把不同单位的量相加成一个「总量」。
+ * {@code orderedQuantity} 是该分组各订购行的 {@code ordered_quantity} 之和，语义为<b>订购量</b>，不是实重或结算量；{@code recentUnitPrice}
  * 取该分组最近一张已确认订单行的锁定单价快照 （锁定价异常缺失时为 {@code null}，不用草稿价 / 当前价兜底），不回算当前价格、不参与 {@code PriceResolver} 定价。
  */
 @Data

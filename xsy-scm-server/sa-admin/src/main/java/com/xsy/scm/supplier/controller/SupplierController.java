@@ -31,7 +31,7 @@ import java.util.List;
  * SCM 供应商档案。
  *
  * <p>
- * 更新端点不接收 {@code status}：{@link SupplierUpdateForm} 没有该字段， 客户端传入的未知属性由 Jackson 忽略。
+ * 更新端点不接收 {@code status}：{@link SupplierUpdateForm} 没有该字段，客户端传入的未知属性由 Jackson 忽略。
  */
 @RestController
 @RequestMapping("/scm/supplier")

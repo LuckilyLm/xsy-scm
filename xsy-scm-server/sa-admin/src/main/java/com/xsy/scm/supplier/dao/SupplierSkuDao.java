@@ -24,7 +24,7 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
      * 加行锁读取某供应商的全部活动关联行（写入路径的<b>第二把锁</b>）。
      *
      * <p>
-     * {@code ORDER BY id ... FOR UPDATE} 保证多行加锁顺序确定，配合 {@code supplier} 行锁形成 固定锁序。
+     * {@code ORDER BY id ... FOR UPDATE} 保证多行加锁顺序确定，配合 {@code supplier} 行锁形成固定锁序。
      */
     List<SupplierSkuEntity> selectActiveBySupplierIdForUpdate(@Param("supplierId") Long supplierId);
 

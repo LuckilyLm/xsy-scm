@@ -48,8 +48,7 @@ public class BalanceController {
     @PostMapping("/refund")
     @SaCheckPermission(ScmBalancePermission.REFUND)
     @OperateLog
-    public ResponseDTO<BalanceMovementVO> refund(
-            @Valid @RequestBody BalanceRefundForm form,
+    public ResponseDTO<BalanceMovementVO> refund(@Valid @RequestBody BalanceRefundForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(BalanceVoAssembler.toMovement(balanceRefundService.refund(form, key)));
     }
@@ -63,8 +62,7 @@ public class BalanceController {
 
     @PostMapping("/movement/query")
     @SaCheckPermission(ScmBalancePermission.MOVEMENT_QUERY)
-    public ResponseDTO<PageResult<BalanceMovementVO>> movementQuery(
-            @Valid @RequestBody BalanceMovementQueryForm form) {
+    public ResponseDTO<PageResult<BalanceMovementVO>> movementQuery(@Valid @RequestBody BalanceMovementQueryForm form) {
         return ResponseDTO.ok(customerBalanceQueryService.movementPage(form));
     }
 
@@ -72,8 +70,7 @@ public class BalanceController {
      * 发起在线充值。
      *
      * <p>
-     * 由余额域创建充值事实后**内部**创建支付意图；客户端拿不到「拿任意 rechargeId 拼一笔支付」
-     * 的能力。要求 {@code Idempotency-Key}：这里往下会真的调用渠道。
+     * 由余额域创建充值事实后<b>内部</b>创建支付意图；客户端拿不到「拿任意 rechargeId 拼一笔支付」 的能力。要求 {@code Idempotency-Key}：这里往下会真的调用渠道。
      */
     @PostMapping("/recharge/create")
     @SaCheckPermission(ScmBalancePermission.RECHARGE)
@@ -87,8 +84,7 @@ public class BalanceController {
      * 人工更正余额。
      *
      * <p>
-     * 动的是客户的钱，因此要求独立权限 + 方向 + 金额 + 原因 + {@code Idempotency-Key}
-     * （重复提交的代价是真金白银）+ 操作人（落流水）。
+     * 动的是客户的钱，因此要求独立权限 + 方向 + 金额 + 原因 + {@code Idempotency-Key} （重复提交的代价是真金白银）+ 操作人（落流水）。
      */
     @PostMapping("/correction")
     @SaCheckPermission(ScmBalancePermission.CORRECTION)

@@ -27,11 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * 三条不变量：
  * <ul>
- * <li><b>同类型至多一个默认模板</b>：设默认是「清旧 + 设新」，两步在同一事务里；
- * 该类型还没有任何默认时，新建的模板自动成为默认 —— 否则「不指定模板就打印」在只有一份
- * 模板时会直接失败，而那正是最常见的情形。</li>
- * <li><b>模板类型不可改</b>：模型里的字段是相对类型校验过的，换类型等于把一份按 A 校验过的
- * 配置挂到 B 上。要换就新建一份。</li>
+ * <li><b>同类型至多一个默认模板</b>：设默认是「清旧 + 设新」，两步在同一事务里； 该类型还没有任何默认时，新建的模板自动成为默认 —— 否则「不指定模板就打印」在只有一份 模板时会直接失败，而那正是最常见的情形。</li>
+ * <li><b>模板类型不可改</b>：模型里的字段是相对类型校验过的，换类型等于把一份按 A 校验过的 配置挂到 B 上。要换就新建一份。</li>
  * <li><b>默认模板不可删</b>：删掉默认会让该类型的打印失去默认入口；先指定别的模板为默认。</li>
  * </ul>
  */
@@ -52,8 +49,7 @@ public class ScmPrintTemplateService {
 
     public List<ScmPrintTemplateVO> enabledOptions(String documentType) {
         requireType(documentType);
-        return scmPrintTemplateDao.enabledOptions(documentType).stream()
-                .map(ScmPrintTemplateService::toVO).toList();
+        return scmPrintTemplateDao.enabledOptions(documentType).stream().map(ScmPrintTemplateService::toVO).toList();
     }
 
     /**
@@ -191,11 +187,10 @@ public class ScmPrintTemplateService {
     }
 
     /**
-     * 供打印侧按 id 取一份**启用中**的模板；不存在或已停用时抛「模板不存在」。
+     * 供打印侧按 id 取一份<b>启用中</b>的模板；不存在或已停用时抛「模板不存在」。
      *
      * <p>
-     * 停用模板与不存在同样处理：停用就是「别再用了」，把停用报成另一个错误只会让调用方
-     * 多写一个分支。
+     * 停用模板与不存在同样处理：停用就是「别再用了」，把停用报成另一个错误只会让调用方 多写一个分支。
      */
     @Transactional(readOnly = true)
     public ScmPrintTemplateEntity requireEnabled(Long templateId) {

@@ -5,12 +5,12 @@
  * 项目已先后用 `bb77b10e centre all table headers`、`ffa95370 centre the remaining action
  * columns`、`ff8d2ce1` 与 `ff710abe` 批量化过，但每一轮都只覆盖了当时看见的那批页面。
  *
- * 本文件按**对象块**判定，而不是按行匹配：`{title:'本次金额', align:'right'}, {title:'操作',
+ * 本文件按<b>对象块</b>判定，而不是按行匹配：`{title:'本次金额', align:'right'}, {title:'操作',
  * dataIndex:'action', align:'center'}` 里的 `align:'right'` 属于金额列，是合规的。
  * 按行 grep 会把后者误判成违规，因此这里用括号块截取。
  *
  * 钉住五件事：
- * 1. 凡声明 `dataIndex:'action'` / `key:'action'` 的列对象，必须**显式** `align:'center'`。
+ * 1. 凡声明 `dataIndex:'action'` / `key:'action'` 的列对象，必须<b>显式</b> `align:'center'`。
  *    省略不行 —— antd 默认左对齐，表头中心线与按钮组中心线会对不上。
  * 2. 操作列宽度不得超过 180px（复杂工作台的放宽上限）。
  * 3. 本轮收窄过的页面不得回退为超宽操作列。
@@ -138,7 +138,7 @@ test(`操作列宽度不得超过 ${MAX_ACTION_WIDTH}px`, () => {
 // 3. 本轮收窄的页面不得回退
 // ------------------------------------------------------------------
 
-/** 文件 → 该文件内**任何**操作列都不允许超过的宽度。 */
+/** 文件 → 该文件内<b>任何</b>操作列都不允许超过的宽度。 */
 const NARROWED = {
     'inventory/inventory-loss-gain-list.vue': 150,
     'inventory/inventory-outbound-list.vue': 150,

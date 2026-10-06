@@ -4,7 +4,7 @@
  * 运行方式与断言风格与 `test/product-form-model.test.mjs` 一致。
  * （`node --experimental-strip-types --test`，直接 import `.ts` 源码）。
  *
- * 覆盖的是**后端会拒绝的非法组合**，也就是前端必须提前挡住的那些：
+ * 覆盖的是<b>后端会拒绝的非法组合</b>，也就是前端必须提前挡住的那些：
  * 账期三形态互斥、金额格式、可空字段的 `null` 语义。
  */
 import { test } from 'node:test';

@@ -39,7 +39,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_NO
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_SUPPLIER_SKU_DISABLED;
 
 /**
- * 采购行装配与需求分配对账，由 {@link PurchaseOrderService} 的事务方法调用。 新建先按需求 ID 升序加锁，再写采购单；编辑先锁单据和采购行，再读取旧分配并锁旧、新需求并集。
+ * 采购行装配与需求分配对账，由 {@link PurchaseOrderService} 的事务方法调用。新建先按需求 ID 升序加锁，再写采购单；编辑先锁单据和采购行，再读取旧分配并锁旧、新需求并集。
  * 取消和删除持有单据锁后释放分配，并重算需求数量与状态；少收关单不释放分配。
  */
 @Service
@@ -62,7 +62,7 @@ public class PurchaseOrderAllocationService {
      * 请求行 + 请求分配（一行 N 条分配）。
      *
      * <p>
-     * {@code allocations} 中保存已关联的 {@link PurchaseDemandAllocationEntity}。 快照字段只能从已锁定的需求行读取，避免装配采购商品时生成来源不明的数据。
+     * {@code allocations} 中保存已关联的 {@link PurchaseDemandAllocationEntity}。快照字段只能从已锁定的需求行读取，避免装配采购商品时生成来源不明的数据。
      */
     public static final class RequestedRow {
 
@@ -95,7 +95,7 @@ public class PurchaseOrderAllocationService {
             ProductSkuOptionVO sku = products.get(itemForm.getSkuId());
             if (sku == null) {
                 // 商品不存在 / 不可售：与商品域的采购判定入口共用同一个对外码（40992），
-                // 不让 的内部码从采购 API 泄漏出去
+                // 不让商品域的内部码从采购 API 泄漏出去
                 throw new ScmBusinessException(PURCHASE_SUPPLIER_SKU_DISABLED);
             }
             SupplierSkuEntity supplierSku = purchaseOrderValidator.requirePurchasableSku(form.getSupplierId(),
@@ -114,9 +114,9 @@ public class PurchaseOrderAllocationService {
      * 逐条对应分配校验表。
      *
      * <p>
-     * <b>累计上限必须扣除本单旧值</b>：`demand.allocated_quantity` 是**全库**已分配合计， 其中已含本单上一次提交的量。`create` 时本单尚无分配（传空 Map），`update`
-     * 时必须传入 旧合计，否则「原样保存」都会因为 `旧 + 新 > required` 而误报 40082。 这与 {@code recomputeDemands} 里 `otherAllocated = allocated −
-     * oldTotals[demand]` 是同一个口径。
+     * <b>累计上限必须扣除本单旧值</b>：{@code demand.allocated_quantity} 是全库已分配合计， 其中已含本单上一次提交的量。{@code create} 时本单尚无分配（传空
+     * Map），{@code update} 时必须传入旧合计， 否则「原样保存」都会因为 {@code 旧 + 新 > required} 而误报 40082。这与 {@code recomputeDemands} 里
+     * {@code otherAllocated = allocated − oldTotals[demand]} 是同一个口径。
      */
     public Map<Long, BigDecimal> validateAllocations(List<RequestedRow> rows, Map<Long, PurchaseDemandEntity> demands,
             Long supplierId, Long warehouseId, Map<Long, BigDecimal> oldTotals) {
@@ -131,7 +131,7 @@ public class PurchaseOrderAllocationService {
                 PurchaseDemandAllocator.demandVersion(allocationForm.getDemandVersion(), demand.getVersion());
                 // 同一 SKU 才能挂（40995）
                 PurchaseDemandAllocator.itemMatchesDemand(row.item.getSkuId(), demand.getSkuId());
-                // ：需求单位必须等于采购单位， 不换算（40971）
+                // 单位：需求单位必须等于采购单位，不换算（40971）
                 PurchaseDemandAllocator.unitCompatible(demand.getDemandUnitSnapshot(),
                         row.item.getPurchaseUnitSnapshot());
                 // (supplier, warehouse) 一致性；首次分配时由调用方固定 supplier（40981）
@@ -164,10 +164,11 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * 按 `旧 ∪ 新` 的 demandId 升序逐个重算需求侧。
+     * 按 {@code 旧 ∪ 新} 的 demandId 升序逐个重算需求侧。
      *
      * <p>
-     * **必须遍历并集**：只在旧集合出现的 demand（被删空 / 整单取消）也要重算， 否则 `allocated_quantity` 不会回落、`status` 也不会从 `ALLOCATED` 退回 `PENDING`。
+     * <b>必须遍历并集</b>：只在旧集合出现的 demand（被删空 / 整单取消）也要重算，否则 {@code allocated_quantity} 不会回落、{@code status} 也不会从
+     * {@code ALLOCATED} 退回 {@code PENDING}。
      */
     public void recomputeDemands(Map<Long, PurchaseDemandEntity> locked, Map<Long, BigDecimal> oldTotals,
             Map<Long, BigDecimal> newTotals, Long orderSupplierId) {
@@ -197,7 +198,7 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * 单行内的分配集合差量（**禁止**「一个 item 对一个 allocation」的算法）。
+     * 单行内的分配集合差量（<b>禁止</b>「一个 item 对一个 allocation」的算法）。
      */
     public void applyAllocationChanges(RequestedRow row, List<PurchaseDemandAllocationEntity> existing) {
         // 新增采购行在落库后才取得 ID；差量身份和插入记录都必须使用该 ID。
@@ -235,10 +236,10 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * 释放本单的全部分配并重算需求（`cancel` / `delete`）。
+     * 释放本单的全部分配并重算需求（{@code cancel} / {@code delete}）。
      *
      * <p>
-     * 见类注释：不释放会让需求永久卡在 {@code ALLOCATED}。**不删任何行、不删任何单据** —— 只把分配软删、把需求的 `allocated_quantity` 减回去。
+     * 见类注释：不释放会让需求永久卡在 {@code ALLOCATED}。<b>不删任何行、不删任何单据</b> —— 只把分配软删、把需求的 {@code allocated_quantity} 减回去。
      */
     public void releaseAllocations(PurchaseOrderEntity order) {
         List<PurchaseOrderItemEntity> items = purchaseOrderItemDao.listByOrderId(order.getId());
@@ -277,7 +278,7 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * 锁序第 1 层：需求必须**按 id 升序**一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
+     * 锁序第 1 层：需求必须<b>按 id 升序</b>一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
      */
     public Map<Long, PurchaseDemandEntity> lockDemands(Collection<Long> demandIds) {
         List<Long> ascending = PurchaseDemandAllocator.ascendingDemandIds(demandIds);

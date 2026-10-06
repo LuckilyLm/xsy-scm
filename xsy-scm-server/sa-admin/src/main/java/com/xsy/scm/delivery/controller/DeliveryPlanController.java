@@ -24,8 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 辅助排线建议。
  *
  * <p>
- * 「生成」与「应用」分开授权：生成只是算一份建议（不碰线路），应用才写回停靠顺序。
- * 合并成一个权限会让「只是想看看怎么排」的人顺手获得改线路的能力。
+ * 「生成」与「应用」分开授权：生成只是算一份建议（不碰线路），应用才写回停靠顺序。 合并成一个权限会让「只是想看看怎么排」的人顺手获得改线路的能力。
  *
  * <p>
  * 建议不自动发车：应用之后线路仍是 {@code DRAFT}，发车要走 {@code /routes/{id}/dispatch}。
@@ -58,7 +57,7 @@ public class DeliveryPlanController {
     }
 
     /**
-     * 应用建议：按建议顺序重排停靠点。{@code version} 是**线路**版本。
+     * 应用建议：按建议顺序重排停靠点。{@code version} 是<b>线路</b>版本。
      */
     @PostMapping("/proposal/{proposalId}/apply")
     @SaCheckPermission(value = {DeliveryPermission.PLAN_APPLY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)

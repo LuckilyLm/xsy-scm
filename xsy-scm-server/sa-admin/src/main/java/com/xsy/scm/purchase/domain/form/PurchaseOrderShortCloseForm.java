@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
  * 少收关单。
  *
  * <p>
- * 只允许 `PARTIALLY_RECEIVED` → `SHORT_CLOSED`，且要求「至少一行已收 **且** 至少一行未收齐」； 原因必填，否则 40087。少收关单保留已收数量，不会冲销已收货物。
+ * 只允许 {@code PARTIALLY_RECEIVED} → {@code SHORT_CLOSED}，且要求「至少一行已收 <b>且</b> 至少一行未收齐」；原因必填，否则 40087。少收关单保留已收数量，不会冲销已收货物。
  */
 @Data
 public class PurchaseOrderShortCloseForm {

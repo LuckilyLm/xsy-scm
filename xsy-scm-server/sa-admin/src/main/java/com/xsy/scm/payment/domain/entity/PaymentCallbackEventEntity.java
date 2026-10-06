@@ -14,12 +14,10 @@ import lombok.Data;
  * 回调事件：渠道投递过来的每一次通知。
  *
  * <p>
- * <b>这是回调幂等的锚点</b>：{@code (provider, provider_event_id)} 唯一。重复投递同一事件
- * 必然撞唯一索引，业务侧据此判定「已处理过」并静默返回，**不重复执行任何副作用**。
+ * <b>这是回调幂等的锚点</b>：{@code (provider, provider_event_id)} 唯一。重复投递同一事件 必然撞唯一索引，业务侧据此判定「已处理过」并静默返回，<b>不重复执行任何副作用</b>。
  *
  * <p>
- * 未通过验签的事件**照样落库**（{@code process_status = REJECTED}）：
- * 「有人伪造回调」必须留下证据，而不是被静默丢弃。
+ * 未通过验签的事件<b>照样落库</b>（{@code process_status = REJECTED}）： 「有人伪造回调」必须留下证据，而不是被静默丢弃。
  *
  * <p>
  * 这张表没有 {@code version} / {@code deleted}：事实表只有追加。

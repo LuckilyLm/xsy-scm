@@ -22,7 +22,7 @@ public enum ScmFinanceOperationTypeEnum {
     GENERATE("生成"),
 
     /**
-     * 生成红字应收 / 登记红字应付。红字应收是自动派生（退货批准触发）， 红字应付是人工命令（{@code scm:finance:payable:red}）。
+     * 生成红字应收 / 登记红字应付。红字应收是自动派生（退货批准触发），红字应付是人工命令（{@code scm:finance:payable:red}）。
      */
     RED_GENERATE("红字生成"),
 

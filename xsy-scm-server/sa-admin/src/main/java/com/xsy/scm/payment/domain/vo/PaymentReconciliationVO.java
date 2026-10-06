@@ -29,7 +29,7 @@ public class PaymentReconciliationVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal localTotal;
 
-    /** 净差额。**它不用于判断平不平**：一正一负的差异会让它归零，但账其实不平。 */
+    /** 净差额。<b>它不用于判断平不平</b>：一正一负的差异会让它归零，但账其实不平。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal difference;
 
@@ -43,7 +43,7 @@ public class PaymentReconciliationVO {
     /** 其中的平账数。 */
     private Integer matchedCount;
 
-    /** **判断平不平看这个**：差异条数为 0 才是平账。 */
+    /** <b>判断平不平看这个</b>：差异条数为 0 才是平账。 */
     private Integer differenceCount;
 
     /** 分类汇总（各类各几条）。 */

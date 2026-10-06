@@ -99,14 +99,13 @@ public class DeliveryRouteService {
      */
     private final ScmDataScopeService dataScopeService;
     /**
-     * 应收生成器：签收成功即在同一事务内派生正常应收。 依赖方向是 delivery → finance，finance 对配送 / 订单 / 库存表只读、不反向 import 配送域， 因此不构成环；生成失败即整笔签收回滚，与
+     * 应收生成器：签收成功即在同一事务内派生正常应收。依赖方向是 delivery → finance，finance 对配送 / 订单 / 库存表只读、不反向 import 配送域，因此不构成环；生成失败即整笔签收回滚，与
      * {@link #inventoryFulfillmentService} 的库存写入同事务。
      */
     private final FinanceReceivableService financeReceivableService;
 
     /**
-     * 券核销：正常签收与应收同一个时点，也在同一个事务里。依赖方向是 delivery → promotion，
-     * 营销域不回读配送表，因此不构成环；核销失败即整笔签收回滚。
+     * 券核销：正常签收与应收同一个时点，也在同一个事务里。依赖方向是 delivery → promotion， 营销域不回读配送表，因此不构成环；核销失败即整笔签收回滚。
      */
     private final PromotionDiscountService promotionDiscountService;
 
@@ -362,10 +361,10 @@ public class DeliveryRouteService {
      * 发车：整条线路原子出库，{@code PLANNED → DISPATCHED}。
      *
      * <p>
-     * 实发量一律取分拣的 {@code sorted_quantity}，本方法不读 {@code actual_quantity}、 不重新计算差异。锁序：线路聚合锁 → 逐订单行锁 → 库存命令内部的预留锁与余额锁。
+     * 实发量一律取分拣的 {@code sorted_quantity}，本方法不读 {@code actual_quantity}、不重新计算差异。锁序：线路聚合锁 → 逐订单行锁 → 库存命令内部的预留锁与余额锁。
      *
      * <p>
-     * 线路内任一订单在锁上复核后不再合格（例如分拣被重开）就<b>整条拒绝</b>， 不做「先发能发的」；库存不足同样整条回滚，一行库存都不扣。 全部订单都实发 0（整线
+     * 线路内任一订单在锁上复核后不再合格（例如分拣被重开）就<b>整条拒绝</b>，不做「先发能发的」；库存不足同样整条回滚，一行库存都不扣。全部订单都实发 0（整线
      * OUT_OF_STOCK）时不生成出库单，{@code outboundId} 返回 null —— 没有实物离开仓库，不该留下一张空出库单。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -409,8 +408,8 @@ public class DeliveryRouteService {
         var giftLines = new ArrayList<InventoryFulfillmentService.GiftLine>();
         for (var orderId : orderIds) {
             for (var gift : promotionDiscountService.listGiftFacts(orderId)) {
-                giftLines.add(new InventoryFulfillmentService.GiftLine(gift.giftId(), gift.salesOrderId(),
-                        gift.skuId(), gift.quantity()));
+                giftLines.add(new InventoryFulfillmentService.GiftLine(gift.giftId(), gift.salesOrderId(), gift.skuId(),
+                        gift.quantity()));
             }
         }
         // 先预检赠品库存：缺货要在动正常商品之前暴露。整笔发车本来就是一个事务、失败都会回滚，
@@ -419,8 +418,8 @@ public class DeliveryRouteService {
         var outbound = inventoryFulfillmentService.dispatchOutbound(
                 new InventoryFulfillmentService.Command(id, route.getWarehouseId(), now, operator, lines));
         if (!giftLines.isEmpty()) {
-            inventoryFulfillmentService.dispatchPromotionGiftOutbound(new InventoryFulfillmentService.GiftCommand(id,
-                    route.getWarehouseId(), now, operator, giftLines));
+            inventoryFulfillmentService.dispatchPromotionGiftOutbound(
+                    new InventoryFulfillmentService.GiftCommand(id, route.getWarehouseId(), now, operator, giftLines));
         }
 
         route.setStatus(ScmDeliveryRouteStatusEnum.DISPATCHED.name());
@@ -448,12 +447,12 @@ public class DeliveryRouteService {
      * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}。
      *
      * <p>
-     * 本方法先锁线路行，再按 {@code route → sales_order} 的顺序锁被签订单行。 与退货批准共用订单行锁，确保签收与批准按同一顺序串行，避免遗漏红字应收。 线路内某一单的行级并发另外由
-     * {@code version} 乐观锁 + 条件更新兜底 （{@code markSigned} 返回 0 即「有人比你先签了」）。 签收是单向推进（{@code PENDING / IN_TRANSIT}
+     * 本方法先锁线路行，再按 {@code route → sales_order} 的顺序锁被签订单行。与退货批准共用订单行锁，确保签收与批准按同一顺序串行，避免遗漏红字应收。线路内某一单的行级并发另外由
+     * {@code version} 乐观锁 + 条件更新兜底 （{@code markSigned} 返回 0 即「有人比你先签了」）。签收是单向推进（{@code PENDING / IN_TRANSIT}
      * 只能走向终态），因此完成线路所要求的 「全部活动订单已终态」对并发签收是单调的。
      *
      * <p>
-     * 应收生成不获取业务行锁：订单行锁由本方法这个调用方持有， 生成器只 INSERT 财务自己的表；跨线路重复签同一订单由 {@code uk_finance_receivable_source_active}
+     * 应收生成不获取业务行锁：订单行锁由本方法这个调用方持有，生成器只 INSERT 财务自己的表；跨线路重复签同一订单由 {@code uk_finance_receivable_source_active}
      * 仲裁，后到者命中唯一索引即按「已生成」静默返回。
      *
      * <p>
@@ -523,7 +522,7 @@ public class DeliveryRouteService {
     }
 
     /**
-     * 按订单正式生成打印：只对本次显式提交且当前仍为 ACTIVE 的订单计次。 持有线路聚合锁，故同一线路的计次串行累加，不丢失；同一幂等键重试只计一次。
+     * 按订单正式生成打印：只对本次显式提交且当前仍为 ACTIVE 的订单计次。持有线路聚合锁，故同一线路的计次串行累加，不丢失；同一幂等键重试只计一次。
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
@@ -531,7 +530,7 @@ public class DeliveryRouteService {
     }
 
     /**
-     * 按客户正式生成打印：先按客户状态圈定客户，再决定这些客户中打印哪些订单。 客户状态在线路锁内按当前 ACTIVE 订单重新聚合，前端名单只是候选范围——预览后计数已变的
+     * 按客户正式生成打印：先按客户状态圈定客户，再决定这些客户中打印哪些订单。客户状态在线路锁内按当前 ACTIVE 订单重新聚合，前端名单只是候选范围——预览后计数已变的
      * 客户会被排除，而不是按过期状态重打；展开后无订单则拒绝而非生成零单打印。
      */
     @Transactional(rollbackFor = Exception.class)

@@ -16,13 +16,13 @@ import java.time.OffsetDateTime;
  * 库存预留（来源单据行维度）。
  *
  * <p>
- * <b>为什么不写进 {@code inventory_movement}</b>：那张表是**物理数量账本** —— {@code quantity > 0}、方向编码在类型里、且
- * {@code after = before ± quantity}。 预留不改变物理数量，塞进去会直接破坏该快照约束的语义。因此预留单独建表， 并在
- * {@code inventory_balance.reserved_quantity} 上维护活状态计数。
+ * <b>为什么不写进 {@code inventory_movement}</b>：那张表是<b>物理数量账本</b> —— {@code quantity > 0}、方向编码在类型里、且
+ * {@code after = before ± quantity}。预留不改变物理数量，塞进去会直接破坏该快照约束的语义。因此预留单独建表，并在 {@code inventory_balance.reserved_quantity}
+ * 上维护活状态计数。
  *
  * <p>
- * <b>与流水相反，本表是「有状态记录」</b>：{@code ACTIVE → RELEASED / CONSUMED}。 所以它有 {@code version} / {@code updated_*}，可以 update —— 与
- * movement 的只追加纪律 是刻意不同的两套规则，不要互相套用。
+ * <b>与流水相反，本表是「有状态记录」</b>：{@code ACTIVE → RELEASED / CONSUMED}。所以它有 {@code version} / {@code updated_*}，可以 update —— 与
+ * movement 的只追加纪律是刻意不同的两套规则，不要互相套用。
  */
 @Data
 @TableName(value = "inventory_reservation", autoResultMap = true)

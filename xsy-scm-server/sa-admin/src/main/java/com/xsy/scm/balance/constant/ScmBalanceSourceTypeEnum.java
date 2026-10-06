@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
  * 余额流水的业务来源类型。持久化到 {@code customer_balance_movement.source_type}。
  *
  * <p>
- * 与库上的 {@code ck_customer_balance_movement_source_type} 逐字一致，且**不允许自由填写**：
- * 来源类型一旦可随意填，来源唯一索引就形同虚设 —— 换个名字就能为同一笔钱再充值一次。
+ * 与库上的 {@code ck_customer_balance_movement_source_type} 逐字一致，且<b>不允许自由填写</b>： 来源类型一旦可随意填，来源唯一索引就形同虚设 ——
+ * 换个名字就能为同一笔钱再充值一次。
  */
 @Getter
 @RequiredArgsConstructor

@@ -544,7 +544,7 @@ function open(id: Id, initialTab = 'base') {
   printMode.value = 'orders';
   customerStatusFilter.value = 'ALL';
   customerFilter.value = 'ALL';
-  // 换线路时签收弹窗一起关掉并清掉目标行：里面带的是上一条线路的**行版本与订单号**，
+  // 换线路时签收弹窗一起关掉并清掉目标行：里面带的是上一条线路的<b>行版本与订单号</b>，
   // 留着会把签收登记到另一条线路的订单上。
   signVisible.value = false;
   signTarget.value = undefined;
@@ -652,7 +652,7 @@ async function submitSign() {
   busy.value = true;
   signError.value = '';
   try {
-    // version 用的是这一行打开弹窗时读到的**行版本**：同一线路上不同订单要能并发签收，
+    // version 用的是这一行打开弹窗时读到的<b>行版本</b>：同一线路上不同订单要能并发签收，
     // 传线路版本等于用线路版本覆盖别人对这一行的签收。
     await deliveryApi.sign(route.id, target.orderId, {
       version: target.version,

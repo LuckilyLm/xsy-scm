@@ -24,7 +24,7 @@ import type {ReportChartSlice} from '../report-types';
 /**
  * 分类占比饼图（损耗类型金额占比）。
  *
- * 切片值只做**角度分配**：占比由 ECharts 自己按值算，文本一律用 `text`
+ * 切片值只做<b>角度分配</b>：占比由 ECharts 自己按值算，文本一律用 `text`
  * （后端 4 位定点原文，见 `report-types.ReportChartSlice`）。饼图刻意不显示「合计」，
  * 因为合计是聚合事实，需要的时候由 KPI 卡给出，不在图例里再算一遍。
  */
