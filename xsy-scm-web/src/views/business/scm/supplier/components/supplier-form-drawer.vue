@@ -1,22 +1,10 @@
 <!--
-  * 供应商 新建 / 编辑 抽屉
-  *
-  * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/supplier-list.vue
-  * 第 83–117 行的**内联抽屉**（Copy First + Adapt，从列表里位移到独立组件）。
-  *
-  * 剪枝（W2 范围外）：
-  * - 删除「供应商ID」只读字段（数据库主键不该出现在表单里，C 把它当成一个可填项）；
-  * - 删除「状态」下拉 —— V2 的 `SupplierAddForm` / `SupplierUpdateForm` **不含 status**：
-  *   新建强制 `ENABLED`（legacy 不变量 S7），变更走独立的 `updateStatus` 端点；
-  * - 删除供应商协同相关字段（账号 / 报品 / 厂商 / 对账，属 W3+）。
-  *
-  * 适配：
-  * - API → `/@/api/business/scm/supplier-api`；
-  * - 权限码 `supplier:xxx` → `scm:supplier:xxx`；
-  * - 编辑时先拉详情（列表 VO 不含 `address` / `remark`）；
-  * - 提交前 `supplierCode` 去空白并大写，与后端 `SupplierValidator` 归一化一致；
-  * - 「所在地区」省市区级联（地图 M0 / V40）与 `address` 自由文本并存：编码供地图按市聚合，
-  *   地址仍是收货与展示口径；点位经纬度随 M2 的地图选点再加。
+  供应商 新建 / 编辑 抽屉。
+  - 表单**不含 status**：新建强制 `ENABLED`，变更走独立的 `updateStatus` 端点；
+  - 编辑时先拉详情（列表 VO 不含 `address` / `remark`）；
+  - 提交前 `supplierCode` 去空白并大写，与后端 `SupplierValidator` 归一化一致；
+  - 「所在地区」省市区级联与 `address` 自由文本**并存**：编码供地图按市聚合，
+    地址仍是收货与展示口径。
 -->
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">

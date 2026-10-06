@@ -1,17 +1,3 @@
-/*
- * 客户域枚举
- *
- * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/constants/business/customer/customer-const.ts
- * （Copy First + Adapt）。原文件用数字码 1/2/3/4，此处改为后端 V2 字符串码。
- *
- * 适配说明：
- * - `CUSTOMER_TYPE_ENUM` **已删除** —— V2 的客户类型是可维护字典表（`customer_type`），
- *   由 `customer-type-select` 从 `/scm/customer/type/option/list` 动态取数，不再前端硬编码。
- * - `PERIOD_TYPE_ENUM` / `PERIOD_UNIT_ENUM` 重命名为 `CREDIT_PERIOD_*`，避免与 V2 全局枚举命名空间冲突。
- * - `PERIOD_STATUS_ENUM` / `VISIBLE_TYPE_ENUM` 已删除（W2 范围外：账期在 W2 是客户内嵌字段，
- *   可见性 / 二维码属 W3+）。
- */
-
 import {SmartEnum} from '/@/types/smart-enum';
 
 /**

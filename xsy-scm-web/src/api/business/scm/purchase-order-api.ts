@@ -1,11 +1,3 @@
-/* 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/purchase/purchase-api.ts
-   + .../purchase-item-api.ts（两个 C 文件合并为一个采购单 API，与后端单控制器一致）
-复制日期：2026-09-16。Copy First + Adapt。
-剪枝：`accept`（C 的接单动作，W5 状态机无此转换）、`item/add|update|delete`（A-D1：明细只能随单整体提交）、
-      `batchDelete(idList)` 裸数组（V2 要求 `{orders:[{id,version}]}`）。
-适配：API 前缀 `/purchase/**` → `/scm/purchase/**`（A6）；写命令补 `Idempotency-Key`（A7）；
-      全量补 `version`（A8）；错误提示走 `purchase-errors.ts`（A24）。
-验收：W5 单测、TS 棘轮与 Playwright。 */
 import {getRequest, postDownload, postRequest, request} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

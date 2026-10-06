@@ -1,12 +1,8 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-item-list.vue（**降级**）
-复制日期：2026-09-16。Copy First + Adapt。
-剪枝：C 的独立明细 CRUD 页（A-D1：明细只能随采购单整体提交）、`resizable`（A1）、
-      C 的 `unitPrice`/`receiveFlag` 列（W5 用 `purchasePrice` + 派生对账量）。
-适配：`purchase-item-list.vue` → **表单内可编辑表格**（A19，修 C 的 H13/H29）；
-      **A31 采购行多需求分配编辑器**（`allocations[]` 可增 / 删 / 改，不是单个 `demandId`）；
-      **A32 需求单位 ≠ 采购单位时禁止加入分配**；右对齐 + 等宽（A17）；`null` → `—`（A18）；
-      `scm:purchase:*`（A22）；`v-privilege`（A30）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+<!--
+ * 采购单明细（表单内可编辑表格）。
+ * - 明细**只能随采购单整体提交**，没有独立的明细 CRUD 端点；
+ * - 需求单位 ≠ 采购单位时**禁止**加入分配（不猜折算率）。
+-->
 <template>
   <a-table
       id="purchase-order-item-table"

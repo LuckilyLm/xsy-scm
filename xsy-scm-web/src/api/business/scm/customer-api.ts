@@ -1,17 +1,3 @@
-/*
- * 客户接口
- *
- * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/customer/customer-api.ts
- * （Copy First + Adapt，形状复制，URL / version 改写）。
- *
- * 适配：
- * - URL 加 `/scm` 前缀；
- * - 删除改为 `POST /scm/customer/delete` + body `{ customerId, version }`（C 是 `GET /customer/delete/{id}`，无 version）；
- * - **删除 `batchDelete`** —— W2 不做批量删除（Target Design Q14）；
- * - `queryAll` → `optionList`，走 `POST /scm/customer/option/list`；
- * - 编辑 / 状态 / 删除全部携带 `version`。
- */
-
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {
     CustomerDeletePayload,

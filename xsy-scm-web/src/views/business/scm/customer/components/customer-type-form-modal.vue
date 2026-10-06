@@ -1,17 +1,7 @@
 <!--
-  * 客户类型 新建 / 编辑 弹窗
-  *
-  * 来源：**W1 派生** —— 结构照抄 `views/business/scm/product/components/category-form-modal.vue`。
-  * C（project-reference-examples/xsy-scm）**没有**客户类型管理页：它把客户类型做成前端硬编码枚举
-  * （`CUSTOMER_TYPE_ENUM` = 1/2/3），因此没有可复制的源码。V2 的客户类型是可维护字典表
-  * （`customer_type`），必须单独做一个 CRUD 页。
-  *
-  * 与 W1 分类弹窗的差异（剪枝 + 适配）：
-  * - 去掉「上级分类」与「排序」：V2 客户类型是**平铺字典表**，没有层级也没有排序字段；
-  * - 状态改用 V2 SmartEnum（`CUSTOMER_TYPE_STATUS_ENUM`）走 `SmartEnumSelect`，
-  *   而不是 W1 分类用的普通数组 + `a-select :options=`（W1 既有偏差，不回头改 W1）；
-  * - 提交前把 `typeCode` 去空白并大写，与后端 `CustomerTypeValidator.normalizeCode` 保持一致，
-  *   避免用户输入 `group` 后第二次输入 `GROUP` 撞唯一索引却看不出原因。
+  客户类型 新建 / 编辑 弹窗。
+  提交前 `typeCode` 去空白并大写，与后端 `CustomerTypeValidator.normalizeCode` 保持一致 ——
+  否则用户先输 `group` 再输 `GROUP` 会撞唯一索引却看不出原因。
 -->
 <template>
   <a-modal

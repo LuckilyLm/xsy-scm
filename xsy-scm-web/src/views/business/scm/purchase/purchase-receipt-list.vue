@@ -1,14 +1,3 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-receive-list.vue
-复制日期：2026-09-16。Copy First + Adapt。
-剪枝：`resizable`/`@resizeColumn`（A1）、`RECEIVE_FLAG_ENUM` 收货标记列（A4）、
-      C 的「收货数量 / 收货重量 / 单价 / 收货人」列（W5 的行级对账量在**确认弹窗**里逐行展示，
-      列表不再复制一套口径）、C 的 `confirmInbound`（B1 改为受控的 `putaway` 命令）、
-      C 的行内抽屉表单（拆为独立组件）、C 的 `TABLE_ID_CONST.BUSINESS.PURCHASE.*`（A28）。
-适配：2 值字符串状态枚举（A3）、`/scm/purchase/receipt/**`（A6）、`version`（A8）、
-      `confirm` 操作仅 DRAFT（A15）、**不允许直接填状态**（A16）、右对齐 + 等宽（A17）、
-      `null` → `—`（A18）、`scm:purchase:receipt:*`（A22）、`scm-purchase-receipt-table`（A23）、
-      `purchase-errors`（A24）、loading/empty/error/retry（A27）、`v-privilege`（A30）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="by-order" tab="按单据">

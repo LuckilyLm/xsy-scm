@@ -1,10 +1,3 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-list.vue 的行内抽屉表单
-复制日期：2026-09-16。Copy First + Adapt（C 把表单内嵌在列表页里，这里拆成独立组件）。
-剪枝：C 的裸 ID 数字输入（`supplierId` / `buyerId` / `categoryId`）、`totalAmount` 手填、`qrcodeUrl`。
-适配：供应商选择器（A9）、**新增仓库选择器**（A10）、员工选择器（A11）、`version`（A8）、
-      多需求分配编辑器（A31）、单位不一致禁止分配（A32）、`a-form-item` 带 `name`（A29）、
-      `scm:purchase:*`（A22）、loading/error/retry（A27）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-drawer
       :title="form.id ? '编辑采购单' : '新建采购单'"

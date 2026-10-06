@@ -1,16 +1,11 @@
 /*
- * 客户表单模型（纯函数，可被 `node --test` 直接单测）
- *
- * 来源：**新写**。
- * C 没有独立的表单模型 —— 校验、默认值、字段拼装全部内联在 `customer-list.vue` 里，
- * 因此无法单测。这里按 V2 W1 `product-form-model.ts` 的方式抽出。
+ * 客户表单模型（纯函数，可被 `node --test` 直接单测）。
  *
  * 关键业务规则（与后端一致）：
  * - 账期三种形态**互斥且穷尽**：不设置 / 按金额 / 按时间（后端 `ck_customer_credit_period`）；
  * - 单位为「月」时结算日限 1–28（保证 2 月也存在该日期）；
  * - 金额一律是**字符串**形式的 4 位定点数，绝不做 `Number()` 运算。
  */
-
 import type {CreditPeriodType, CustomerForm} from '/@/types/business/scm/customer';
 
 /** 非负定点数：最多 14 位整数 + 最多 4 位小数（与后端 `ScmDecimalStrings.PATTERN` 同构）。 */

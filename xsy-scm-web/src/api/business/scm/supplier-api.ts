@@ -1,17 +1,3 @@
-/*
- * 供应商接口
- *
- * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/purchase/supplier-api.ts
- * （Copy First + Adapt，形状复制，URL / version 改写）。
- *
- * 适配：
- * - URL 加 `/scm` 前缀；
- * - 删除改为 `POST /scm/supplier/delete` + body `{ supplierId, version }`；
- * - **删除 `batchDelete`** —— W2 不做批量删除（Target Design Q14）；
- * - `queryAll` → `optionList`，走 `POST /scm/supplier/option/list`（只返回 `ENABLED`）；
- * - 编辑 / 状态 / 删除全部携带 `version`。
- */
-
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
     ScmId,

@@ -1,11 +1,8 @@
-<!-- C 无需求页（新增文件）。仿 W4 `order-list.vue` 的列表骨架。
-适配：`/scm/purchase/demand/**`（A6）、`version`（A8）、
-      **Q6a 半开区间生成**（`startAt` / `endAt`，不是 `startTime`/`endTime`）、
-      A-D3 **去掉库存抵扣**、A21 半开时间段、`scm:purchase:demand:*`（A22）、
-      `scm-purchase-demand-table`（A23）、`purchase-errors`（A24）、
-      loading/empty/error/retry（A27）、`v-privilege`（A30）。
-分配弹窗**内联在本页**：W5 的文件清单是冻结的 22 个，不新增组件文件。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+<!--
+  采购需求列表。
+  - 时间段是**半开区间** `[startAt, endAt)`，不是 `startTime`/`endTime`；
+  - 分配弹窗内联在本页（不新增组件文件）。
+-->
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="list" tab="采购需求">

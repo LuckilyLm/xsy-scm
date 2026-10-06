@@ -1,10 +1,8 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-list.vue（C 无独立详情页）
-复制日期：2026-09-16。Copy First + Adapt。仿 W4 `order-detail.vue` 的结构。
-剪枝：履约 / 支付 / 库存抵扣 / C 的 `actualAmount`。
-适配：6 值状态机命令（A13）、`scm:purchase:*`（A22）、右对齐 + 等宽（A17）、`null` → `—`（A18）、
-      **单级分配平铺**（`PurchaseOrderVO.allocations`，前端不必自己拍平）、
-      日志按 DESC 返回（最新在前）、loading/error/retry（A27）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+<!--
+ * 采购单详情抽屉。
+ * - 分配是**单级平铺**（`PurchaseOrderVO.allocations` 已由后端铺平），前端不必自己拍平；
+ * - 日志按 `created_at DESC` 返回，最新在前。
+-->
 <template>
   <a-drawer :open="visible" :title="order?.orderNo || '采购单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
     <a-alert v-if="error" :message="error" type="error" show-icon>

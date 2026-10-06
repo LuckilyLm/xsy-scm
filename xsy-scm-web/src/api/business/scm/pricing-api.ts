@@ -1,5 +1,3 @@
-/* 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/product/product-price-api.ts
- * 复制日期：2026-09-15。剪枝：去批量删除。适配：两个资源、版本、定点字符串、SmartAdmin 信封。验收：W3 E2E。 */
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {ScmId, ScmResponse, ScmPage} from '/@/types/business/scm/customer';
 import type {

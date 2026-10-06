@@ -1,13 +1,3 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-list.vue
-复制日期：2026-09-16。Copy First + Adapt。
-剪枝：`resizable`/`@resizeColumn`/`handleResizeColumn`（A1）、`actualAmount` 列（A12）、
-      `accept` 接单动作、C 的 `TABLE_ID_CONST.BUSINESS.PURCHASE.*`（A28）、C 的行内抽屉表单（拆为独立组件）。
-适配：6 值字符串状态枚举（A2）、`/scm/purchase/**`（A6）、`version`（A8）、
-      供应商/仓库/员工选择器（A9/A10/A11）、submit/cancel/short-close/delete（A13/A14）、
-      右对齐 + 等宽（A17）、`null` → `—`（A18）、`scm:purchase:*`（A22）、
-      `scm-purchase-order-table`（A23）、`purchase-errors`（A24）、
-      loading/empty/error/retry/409 重载（A27）、`v-privilege`（A30）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">

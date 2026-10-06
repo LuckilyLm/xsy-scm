@@ -1,13 +1,3 @@
-/*
- * 供应商域枚举
- *
- * 来源：**新写**。
- * C 的 `constants/business/supplier/supplier-const.ts` 全部是**供应商协同**枚举
- * （账号 / 报品 / 厂商 / 对账），与供应商主数据无关；C 把主数据状态
- * `SUPPLIER_STATUS_ENUM` 放在了 `constants/business/purchase/purchase-const.ts` 里，
- * 属于归类错误。V2 按业务域归位到本文件。
- */
-
 import {SmartEnum} from '/@/types/smart-enum';
 
 /**

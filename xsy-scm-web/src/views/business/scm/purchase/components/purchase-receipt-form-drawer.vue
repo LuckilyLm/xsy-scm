@@ -1,11 +1,9 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-receive-list.vue 的行内抽屉表单
-复制日期：2026-09-16。Copy First + Adapt（C 把表单内嵌在列表页里，这里拆成独立组件）。
-剪枝：C 的 `receiveQuantity` / `receiveWeight` / `unitPrice` / `receiveBy` / `receiveTime` / `directStock`
-      —— **收货数量只在 `confirm` 一次性确认**（A16：草稿态不允许改数量，否则会出现
-      「草稿数量」与「实际收货」两套真相）；B1 以 `receiptMode` 明确确认即入库或仓库二次入库。
-适配：**状态由命令驱动**（A16：表单里没有 `status`）、`version`（A8）、`/scm/purchase/receipt/**`（A6）、
-      采购单选择器只列**可收货状态**、`a-form-item` 带 `name`（A29）、loading/error/retry（A27）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+<!--
+ * 采购收货单表单。
+ * - **收货数量只在 `confirm` 一次性确认**：草稿态不允许改数量，否则会出现
+ *   「草稿数量」与「实际收货」两套真相；
+ * - 表单里**没有 `status`**，状态由命令驱动；采购单选择器只列**可收货状态**。
+-->
 <template>
   <a-drawer
       :title="form.id ? '编辑收货单备注' : '新建收货单'"

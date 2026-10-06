@@ -1,11 +1,9 @@
-<!-- 仿 W4 `order-log-list.vue`（新增文件）。
-**与 W4 的关键差异**：W5 **没有**全局日志分页端点 —— 只有 `GET /scm/purchase/log/{orderId}`
-（设计 §8.1 的 27 个端点里没有 `log/query`）。因此本页按**采购单维度**查询：
-先用单号定位采购单，再拉它的日志。不为了对齐 W4 的形状而伪造一个不存在的接口。
-适配：`scm:purchase:log:query`（A22）、`scm-purchase-log-table`（A23）、
-      `purchase-errors`（A24）、loading/empty/error/retry（A27）、
-      日志按 `created_at DESC` 返回（**最新在前**，与 W4 一致）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+<!--
+  采购操作日志。
+  **没有全局日志分页端点** —— 只有 `GET /scm/purchase/log/{orderId}`，
+  因此按采购单维度查询：先用单号定位采购单，再拉它的日志。
+  日志按 `created_at DESC` 返回，最新在前。
+-->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">

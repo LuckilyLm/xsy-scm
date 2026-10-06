@@ -1,8 +1,3 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/product/product-price-list.vue
- 复制日期：2026-09-15。Copy First + Adapt。
- 剪枝：裸 ID、四值价格类型、批量删除、resizable、强制 productId 查询。
- 适配：SKU/客户维度、定点字符串、版本、权限、时间区间、请求竞态及错误状态。
- 验收：W3 Playwright、TS baseline、ESLint。 -->
 <template>
   <a-drawer :title="form.customerTypePriceId?'编辑客户类型价':'新增客户类型价'" :open="visible" :width="scmDrawerWidth('s')"
             @close="visible=false">

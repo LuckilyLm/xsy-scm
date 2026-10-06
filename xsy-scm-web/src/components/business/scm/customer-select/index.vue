@@ -1,17 +1,3 @@
-<!--
-  * 客户下拉选择框
-  *
-  * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/components/business/customer-select/index.vue
-  * （Copy First + Adapt）
-  *
-  * 适配：
-  * - API 改为 `/@/api/business/scm/customer-api`，`queryAll` → `optionList`；
-  * - DTO 字段 `customerId` / `customerName` / `customerNo` → `customerId` / `name` / `customerCode`；
-  * - `customerList` 补 DTO 类型（原为 `ref([])`，在 V2 严格模式下是 TS2322）；
-  * - `onChange(value)` 补显式类型（原为隐式 any，TS7006）；
-  * - 补 `optionFilterProp="label"`：C 只设了 `showSearch` 没设过滤字段，搜索实际不生效；
-  * - `value` 增加 `String` 支持（ID 可能是字符串）。
--->
 <template>
   <a-select
       v-model:value="selectValue"

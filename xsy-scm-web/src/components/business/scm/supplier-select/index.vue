@@ -1,15 +1,3 @@
-<!--
-  * 供应商下拉选择框
-  *
-  * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/components/business/supplier-select/index.vue
-  * （Copy First + Adapt）
-  *
-  * 适配：
-  * - API 改为 `/@/api/business/scm/supplier-api`，`queryAll` → `optionList`（后端只返回 `ENABLED`）；
-  * - DTO 字段 `supplierId` / `supplierName` / `supplierNo` → `supplierId` / `name` / `supplierCode`；
-  * - `supplierList` 补 DTO 类型；`onChange(value)` 补显式类型；
-  * - 补 `optionFilterProp="label"`；`value` 增加 `String` 支持。
--->
 <template>
   <a-select
       v-model:value="selectValue"

@@ -1,11 +1,3 @@
-/* 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/constants/business/purchase/purchase-const.ts
-复制日期：2026-09-16。Copy First + Adapt。
-剪枝：RECEIVE_FLAG_ENUM（A4）、SUPPLIER_STATUS_ENUM / INQUIRY_STATUS_ENUM（A5）、
-      PURCHASE_ITEM_STATUS_ENUM（W5 明细状态由对账量派生，无独立列）。
-适配：PURCHASE_STATUS_ENUM 5 值数字 → 6 值字符串（A2）；RECEIVE_STATUS_ENUM 3 值 → 2 值（A3）；
-      新增 DEMAND_STATUS_ENUM / WAREHOUSE_STATUS_ENUM / SCM_PURCHASE_OPERATION_ENUM；
-      新增 Playwright 定位用的表格 DOM id（§9.4）。
-验收：W5 单测、TS 棘轮与 Playwright。 */
 import type {SmartEnum} from '/@/types/smart-enum';
 
 /**

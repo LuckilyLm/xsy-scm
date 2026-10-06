@@ -1,17 +1,7 @@
 <!--
-  * 仓库下拉选择框（W6 新增文件）
-  *
-  * 来源：`components/business/scm/supplier-select/index.vue`（Copy First + Adapt）。
-  *
-  * **为什么必须新增**：W5 的采购页用 `a-input-number` 直接填仓库 id
-  * （`warehouse-api.ts` 已把这记为建模缺口）。W6 的库存页要「按仓库筛选」，
-  * 并且 Q12 要求「系统恰好只有一个启用仓库时默认带出该仓库」——
-  * 这两件事都需要一个真正理解仓库主数据的选择器。
-  *
-  * 端点：`GET /scm/warehouse/list`（只返回启用仓库；权限 `scm:warehouse:query`）。
-  *
-  * **`options` 由调用方传入时不再自己拉取**：库存余额页本来就要为 Q12 拉一次这个端点，
-  * 传进来可以避免同一个请求被发两次。不传时组件自己拉，保持可独立使用。
+  仓库选择器。
+  端点：`GET /scm/warehouse/list`（只返回启用仓库；权限 `scm:warehouse:query`）。
+  `options` 由调用方传入时不再自己拉取 —— 调用方本来就要拉一次，传进来避免同一请求发两次。
 -->
 <template>
   <a-select

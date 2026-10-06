@@ -1,11 +1,9 @@
-<!-- Wave 2B §6.6 按商品收货工作台（新增文件，只读辅助视图）。
-把「可收货」采购单（后端固定为 SUBMITTED / PARTIALLY_RECEIVED，不开放状态入参）的行，
-按 `skuId + 采购单位` 跨单归并成一张欠收 / 超收全景，方便收货员按商品盘点而非按单据翻找。
-数量（计划 / 已收 / 欠收 / 超收）全部由后端逐行裁剪后以四位定点字符串聚合下发，本页只渲染、绝不重算；
-`pendingQuantity` 与 `overReceiptQuantity` 分别来自 SUM(max(计划-已收,0)) / SUM(max(已收-计划,0))，二者相加不等于计划或已收。
-无新增迁移：作为「收货单」页的一个 Tab 内联渲染，复用 `scm:purchase:receipt:query` 权限。
-本视图不改任何采购 / 收货状态——收货仍走「按单据」页的确认 / 入库命令。
-验收：Wave 2B 后端 IT、TS 棘轮、契约单测与 Playwright。 -->
+<!--
+ * 按商品收货工作台（只读辅助视图）。
+ * - 「可收货」范围由后端固定为 `SUBMITTED` / `PARTIALLY_RECEIVED`，不开放状态入参；
+ * - 数量（计划 / 已收 / 欠收 / 超收）由后端逐行裁剪后以四位定点字符串聚合下发，
+ *   本页只渲染、**绝不重算**。
+-->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">

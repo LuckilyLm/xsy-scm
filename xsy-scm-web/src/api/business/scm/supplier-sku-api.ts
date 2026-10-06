@@ -1,14 +1,7 @@
 /*
- * 商品-供应商关系接口（SKU 级）
- *
- * 来源：**新写**。
- * C 的 `api/business/product/product-supplier-api.ts` 是 **SPU 级** `/product/supplier/*`，
- * 与 V2 的 **SKU 级** `/scm/supplier/sku/*` 语义不符（C 的「供货价 / 是否默认」挂在 SPU 上），
- * 因此只借命名风格，不复用其端点或形状。
- *
- * 写路径只有一个入口：`replace`（整表替换）。**空数组表示清空全部关联**，不是无操作。
+ * 写路径只有一个入口：`replace`（整表替换）。
+ * **空数组表示清空全部关联**，不是「无操作」。
  */
-
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {
     ScmId,

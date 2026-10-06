@@ -1,23 +1,7 @@
 <!--
-  * 客户档案列表
-  *
-  * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/customer/customer-list.vue
-  * （Copy First + Adapt，376 行 → 剪枝 + 类型补全）。
-  *
-  * 剪枝（W2 范围外）：
-  * - 删除「账户余额」列与相关展示（财务域，W2 不做）；
-  * - 删除**批量删除**（Target Design Q14：W2 只做单条删除，后端也没有 batchDelete 端点）；
-  * - 删除 `:row-selection` / `onSelectChange` / `selectedRowKeyList`（随批量删除一起移除）；
-  * - 删除客户等级、区域、二维码、可见性等列。
-  *
-  * 适配：
-  * - 删除全部 `resizable: true` / `@resizeColumn` / `handleResizeColumn` —— V2 没有 `TableHeaderCell`，
-  *   全库 0 命中（Target Design §5.2）；
-  * - 权限码 `customer:xxx` → `scm:customer:xxx`；
-  * - 状态变更从 C 的 `Modal.confirm` 改为 `a-dropdown` + 二次确认，
-  *   因为 V2 有 4 个状态（潜在 / 合作中 / 暂停合作 / 黑名单），不是 C 的「启用 / 停用」二态；
-  * - `columns` 显式标注 `TableColumnsType<CustomerRow>`（C 是裸数组，V2 严格模式下是 TS2322）；
-  * - 补 `requestId` 请求序号，避免快速翻页时旧响应覆盖新响应。
+  客户档案列表。
+  - 不做批量删除：后端没有 `batchDelete` 端点，只有单条删除；
+  - `requestId` 请求序号用于丢弃过期响应，否则快速翻页时旧响应会覆盖新响应。
 -->
 <template>
   <section aria-label="客户档案">

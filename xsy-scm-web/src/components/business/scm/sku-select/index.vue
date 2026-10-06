@@ -1,5 +1,3 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/components/business/sku-select/index.vue
- 复制日期：2026-09-15。剪枝：SPU 分页拍平。适配：远程搜索、截断提示、竞态保护、多选与不可售禁选。验收：W1/W2/W3 E2E。 -->
 <template>
   <a-select :value="value" :mode="mode" :style="{width}" :size="size" :placeholder="placeholder" show-search allow-clear
             :filter-option="false" :loading="loading" :options="options" @search="search" @change="changed"

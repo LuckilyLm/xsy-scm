@@ -1,5 +1,3 @@
-/* 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/constants/business/product/product-const.ts
- * 复制日期：2026-09-15。剪枝：去 LEVEL/PROMOTION。适配：字符串枚举、价格与可售性独立。验收：W3 tests/Playwright。 */
 import type {SmartEnum} from '/@/types/smart-enum';
 
 export const SCM_PRICE_SOURCE_ENUM: SmartEnum<string> = {

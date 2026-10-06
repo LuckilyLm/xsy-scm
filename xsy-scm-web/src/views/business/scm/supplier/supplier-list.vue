@@ -1,21 +1,8 @@
 <!--
-  * 供应商档案列表
-  *
-  * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/supplier-list.vue
-  * （Copy First + Adapt，328 行 → 剪枝 + 类型补全）。
-  *
-  * 剪枝（W2 范围外）：
-  * - 删除「供应商ID」列（把主键当业务字段展示，没有意义）；
-  * - 删除「状态」查询字段以外的状态编辑入口 —— 状态变更收敛成单条「启用 / 停用」二次确认；
-  * - 删除**批量删除**（Target Design Q14：后端没有 batchDelete 端点）；
-  * - 删除 `resizable: true` / `@resizeColumn` / `handleResizeColumn`（V2 无 `TableHeaderCell`）；
-  * - 删除供应商协同列（账号 / 报品 / 对账，W3+）。
-  *
-  * 适配 / 新增：
-  * - 「关联商品」操作 → 打开 `SupplierSkuDrawer`，走 `supplier_sku` 的**整表替换**写入口；
-  * - 新增「关联商品数」列（`skuCount`，后端 `SupplierVO` 已返回，只计活动关联）；
-  * - 权限码 → `scm:supplier:*` / `scm:supplier:sku:*`；
-  * - 删除改为 `POST /scm/supplier/delete` + `{ supplierId, version }`。
+  供应商档案列表。
+  - 不做批量删除：后端没有 `batchDelete` 端点；
+  - 「关联商品」走 `supplier_sku` 的**整表替换**写入口；
+  - 状态变更收敛成单条「启用 / 停用」二次确认。
 -->
 <template>
   <section aria-label="供应商档案">

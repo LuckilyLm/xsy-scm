@@ -1,13 +1,4 @@
-/*
- * 客户域错误码 → 用户可读文案
- *
- * 来源：**新写**（对齐 V2 W1 `product-errors.ts`）。
- * C 只有一把 `smartSentry.captureError`，所有业务冲突都退化成通用错误提示，
- * 用户无法知道「编码重复」和「版本冲突」的区别。
- *
- * 码值定义见后端 `CustomerErrorCode` / `ScmCommonErrorCode`。
- */
-
+/* 客户域错误码 → 用户可读文案。码值定义见后端 `CustomerErrorCode` / `ScmCommonErrorCode`。 */
 export function customerError(error: unknown): string {
     const response = error as { data?: { code?: number; msg?: string }; message?: string };
     const code = response?.data?.code;

@@ -1,17 +1,10 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-generate.vue
-复制日期：2026-09-16。Copy First + Adapt（C 是整页，这里降级为弹窗；W5 无 `preview` 端点）。
-剪枝：`calculateStock` 计算库存开关与「现有库存」列（A20 / A-D3：W5 不做库存抵扣）、
-      `preview` 预览端点（W5 只提供 `generate`，返回 `GenerateResult` 计数）、
-      `purchaseQuantity` / `unitPrice` 列（那是 A 源的汇总预览列，W5 的汇总在服务端完成）。
-适配：**A21 半开区间** `[startAt, endAt)`（不是 `startTime`/`endTime`，也不是闭区间）、
-      Q6a `demand_date` 取 `confirmed_at` 在上海时区下的日期、
-      补 `warehouseId`（必填）/ `supplierId` / `purchaserId`、
-      **两步走**：先 `demand/batch/create` 冻结净需求批次（含库存/在途/已有采购覆盖解释行），
-      再 `demand/batch/generate` 从同一批次生成需求；权限分别是
-      `scm:purchase:demand:batch:create` 与 `scm:purchase:demand:batch:generate`、
-      `a-form-item` 带 `name`（A29）、loading/error/retry（A27）。
-      回看冻结明细走 `scm:purchase:demand:batch:query`，抽屉实例挂在列表页（本弹窗只发事件）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+<!--
+ * 采购需求生成弹窗。
+ * - 时间段是**半开区间** `[startAt, endAt)`，不是 `startTime`/`endTime`，也不是闭区间；
+ * - `demand_date` 取 `confirmed_at` 在上海时区下的日期；
+ * - **两步走**：先 `demand/batch/create` 冻结净需求批次，再由 `demand/batch/generate`
+ *   从同一批次生成需求 —— 重复生成不会重复建需求。
+-->
 <template>
   <a-modal
       :open="open"

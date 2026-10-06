@@ -1,9 +1,9 @@
-<!-- C 无仓库页（新增文件）。仿 W2 `supplier-list.vue` 的列表骨架。
-适配：`/scm/warehouse/**`、`version`（A8）、`scm:warehouse:*`（A22）、
-      `scm-warehouse-table`（A23）、`purchase-errors`（A24）、loading/empty/error/retry（A27）、
-      `v-privilege`（A30）。B1 使用独立命令启用或停用仓库，基础信息表单不直接修改状态。
-验收：W5 单测、TS 棘轮与 Playwright。
-地图 M0（V40）：弹窗的「所在地区」省市区级联与 `address` 并存，编码列供大屏按市聚合，名称为同一次选择的快照。 -->
+<!--
+  仓库列表。
+  - 启用 / 停用走独立命令，基础信息表单不直接修改状态；
+  - 「所在地区」的省市区级联与 `address` 自由文本**并存**：编码供大屏按市聚合，
+    地址仍是收货与展示口径。
+-->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">

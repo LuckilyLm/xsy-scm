@@ -1,26 +1,8 @@
 <!--
-  * 客户 新建 / 编辑 抽屉
-  *
-  * 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/customer/customer-list.vue
-  * 第 93–147 行的**内联抽屉**（Copy First + Adapt，从列表里位移到独立组件）。
-  *
-  * 剪枝（W2 范围外，Target Design §5.4）：
-  * - 删除 `customerLevelId`（客户等级，W2 不做）；
-  * - 删除 `longitude` / `latitude`（地图坐标，随 M2 的高德选点一起做）；
-  * - 「所属区域 / 省市区」级联：W2 只保留 `address` 文本，地图 M0（V40）起恢复级联，
-  *   与 `address` 并存 —— 前者是可统计的编码 + 名称快照，后者仍是配送用的自由文本；
-  * - 删除 `visibleType` / 二维码相关字段（W3+）。
-  *
-  * 适配：
-  * - 客户类型从 C 的**硬编码下拉**改为 `CustomerTypeSelect`（V2 是可维护字典表）；
-  * - `parentCustomerId` → `CustomerSelect`（`type-code="GROUP"` 收窄 + `exclude-id` 排除自己，
-  *   后端 `CustomerValidator.validateParent` 只接受集团且拒绝环形，前端提前挡掉必然失败的选项）；
-  * - `sellerId` → V2 原生 `EmployeeSelect`（不新写员工下拉）；
-  * - `supplierId` → `SupplierSelect`；
-  * - 新增 C 完全没有的**账期 6 字段**（额度 / 类型 / 金额阈值 / 账期值 / 单位 / 结算日），
-  *   由 `customer-form-model.ts` 的三个纯函数负责「形态互斥清理 + 校验 + 归一化」；
-  * - 状态在 C 里是可编辑下拉，V2 的 `CustomerAddForm` / `CustomerUpdateForm` **不含 status**，
-  *   新建固定「潜在」、变更走独立的 `updateStatus` 端点，因此这里改成只读展示。
+  客户 新建 / 编辑 抽屉。
+  - 表单**不含 status**：新建固定「潜在」，变更走独立的 `updateStatus` 端点，因此这里只读展示；
+  - 上级客户只接受集团且拒绝环形（后端 `CustomerValidator.validateParent`），
+    前端提前挡掉必然失败的选项。
 -->
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('l')" @close="close">

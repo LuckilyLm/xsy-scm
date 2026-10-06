@@ -1,17 +1,12 @@
 /*
- * 供应商表单模型（纯函数，可被 `node --test` 直接单测）
- *
- * 来源：**新写**。
- * C 没有独立的表单模型（校验 / 默认值内联在 `supplier-list.vue`），按 V2 W1
- * `product-form-model.ts` 的方式抽出。
+ * 供应商表单模型（纯函数，可被 `node --test` 直接单测）。
  *
  * 关键业务规则（与后端一致）：
- * - 供应商新建时状态**强制** `ENABLED`，表单里根本没有状态字段（legacy S7）；
+ * - 新建时状态**强制** `ENABLED`，表单里没有状态字段；
  * - `supplier_sku` 是**整表替换**：已存在的行带 `id` + `version`，新增行不带 `id`；
  *   空数组表示清空全部关联；
- * - **同一供应商允许多条 `defaultFlag = true`**（legacy R12）——校验里绝不加「只允许一条默认」。
+ * - **同一供应商允许多条 `defaultFlag = true`** —— 校验里绝不加「只允许一条默认」。
  */
-
 import type {EnableStatus, ScmId, SupplierForm, SupplierSkuItem, SupplierSkuRow} from '/@/types/business/scm/supplier';
 
 /** 非负定点数：最多 14 位整数 + 最多 4 位小数。 */

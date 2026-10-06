@@ -1,12 +1,9 @@
-<!-- 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/views/business/purchase/purchase-receive-list.vue（C 无确认弹窗，只有「入库确认」按钮）
-复制日期：2026-09-16。Copy First + Adapt。仿 W4 `order-detail.vue` 的实重录入弹窗结构。
-剪枝：`confirmInbound` 的库存入库语义（W5 不做库存）、C 的 `receiveFlag` 枚举（A4）。
-适配：**A25 非标品必须录入实重**（`effectiveQuantity` 取实重）、
-      **A26 容差提示**（超收容差是服务端配置，弹窗只给「剩余可收」这个确定事实）、
-      P24 对账量逐行展示（`remaining` / `overReceiptQuantity` / `receiptDifference`）、
-      必须覆盖**全部**收货行（40998）、右对齐 + 等宽（A17）、`null` → `—`（A18）、
-      loading/error/retry（A27）。
-验收：W5 单测、TS 棘轮与 Playwright。 -->
+<!--
+ * 收货确认弹窗。
+ * - 非标品**必须录入实重**（`effectiveQuantity` 取实重）；
+ * - 必须覆盖**全部**收货行（后端 40998）；
+ * - 超收容差是服务端配置，弹窗只给「剩余可收」这个确定事实，不在前端判定容差。
+-->
 <template>
   <a-modal
       :open="visible"

@@ -1,11 +1,11 @@
-<!-- Wave 2A §6A 订单汇总 / 库存缺口预览（新增文件，只读辅助决策）。
-只读：不建需求、不改 `PurchaseDemandService.generate()` 语义，取数口径与其一致（实发量 actual_quantity）。
-数量（现有 / 预留分段 / 本批可用 / 对比差额）全部由后端 SQL 用 BigDecimal 算好、以四位定点字符串下发，
-本页只渲染、绝不重算（§6A.4）；`UNIT_MISMATCH` 行差额为 null（Q13 单位门禁，不猜折算率）。
-接口按 `scm:purchase:demand:query` AND `scm:inventory:balance:query` 鉴权（返回体含库存量），
-这里的按钮 v-privilege 只是体验，不是权限边界。
-无新增迁移：作为「采购需求」页的一个 Tab 内联渲染，复用其路由 / 菜单。
-验收：Wave 2A 后端 IT、TS 棘轮与 Playwright。 -->
+<!--
+ * 订单汇总 / 库存缺口预览（只读辅助决策）。
+ * - 只读：不建需求、不改 `PurchaseDemandService.generate()` 语义，取数口径与其一致（实发量 `actual_quantity`）；
+ * - 数量（现有 / 预留分段 / 本批可用 / 对比差额）全部由后端算好、以四位定点字符串下发，
+ *   本页只渲染、**绝不重算**；`UNIT_MISMATCH` 行差额为 null（单位门禁，不猜折算率）；
+ * - 接口按 `scm:purchase:demand:query` AND `scm:inventory:balance:query` 鉴权（返回体含库存量），
+ *   页面按钮的 `v-privilege` 只是体验，**不是权限边界**。
+-->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">

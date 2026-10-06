@@ -130,15 +130,16 @@ const DOC_REFERENCE = /[\w./-]+\.md/;
 const BASELINE = {
   'xsy-scm-web/src': {
     process: {
-      '来源：project-reference-examples': 38,
-      '来源：新写': 9,
-      '复制日期': 29,
-      'Copy First + Adapt': 35,
-      '剪枝 / 适配 / 验收记录': 41,
-      '测试 / 验收记录': 32,
-      '参考项目 / 旧项目对比': 44,
+      // P4.1 已清空：前端 54 个文件头的来源 / 复制日期 / 适配 / 验收块全部删除或压成当前约束
+      '来源：project-reference-examples': 0,
+      '来源：新写': 0,
+      '复制日期': 0,
+      'Copy First + Adapt': 0,
+      '剪枝 / 适配 / 验收记录': 0,
+      '测试 / 验收记录': 0,
+      '参考项目 / 旧项目对比': 0,
       '为什么新增此文件': 0,
-      'AI 指令式措辞': 1,
+      'AI 指令式措辞': 0,
     },
     plan: {
       'Sprint / Wave': 28,

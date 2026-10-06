@@ -1,11 +1,4 @@
-/* 来源：project-reference-examples/xsy-scm/xsy-scm-web/src/api/business/purchase/purchase-receive-api.ts
-复制日期：2026-09-16。Copy First + Adapt。
-剪枝：`add`（C 直接新增收货单并自填状态）、C 的 `confirmInbound`（B1 改为受控的 `putaway` 命令）、
-      `batchDelete(idList)` 裸数组。
-适配：API 前缀 → `/scm/purchase/receipt/**`（A6）；补 `Idempotency-Key`（A7）；补 `version`（A8）；
-      **状态由命令驱动**（A16）：`create` 一律 DRAFT，`confirm` 才 CONFIRMED；
-      收货行由服务端按采购单活动行生成，前端不提交行。
-验收：W5 单测、TS 棘轮与 Playwright。 */
+/* 收货行由服务端按采购单活动行生成，前端不提交行。 */
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import {purchaseCommand} from '/@/api/business/scm/purchase-order-api';
