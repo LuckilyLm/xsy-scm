@@ -179,25 +179,25 @@
   >
     <template #bodyCell="{ record, column }">
       <template v-if="column.dataIndex === 'orderCount'">
-        <span class="num">{{ countText(record.orderCount) }}</span>
+        <span class="scm-quantity">{{ countText(record.orderCount) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'plannedQuantity'">
-        <span class="num">{{ quantityText(record.plannedQuantity) }}</span>
+        <span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'receivedQuantity'">
-        <span class="num">{{ quantityText(record.receivedQuantity) }}</span>
+        <span class="scm-quantity">{{ quantityText(record.receivedQuantity) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'orderAmount'">
-        <span class="num">{{ moneyText(record.orderAmount) }}</span>
+        <span class="scm-money">{{ moneyText(record.orderAmount) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'avgPurchasePrice'">
-        <span class="num">{{ moneyText(record.avgPurchasePrice) }}</span>
+        <span class="scm-money">{{ moneyText(record.avgPurchasePrice) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'inboundQuantityText'">
         {{ textOrDash(record.inboundQuantityText) }}
       </template>
       <template v-else-if="column.dataIndex === 'inboundCostAmount'">
-        <span class="num">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
+        <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
       </template>
       <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
     </template>
@@ -563,10 +563,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .report-warn-icon {
   color: var(--scm-warning);
   margin-left: 4px;

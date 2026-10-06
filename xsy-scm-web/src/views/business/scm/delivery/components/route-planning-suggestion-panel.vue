@@ -48,7 +48,7 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'legDistance' || column.dataIndex === 'cumulativeDistance'">
-          <span class="num">{{ record[column.dataIndex] }}</span>
+          <span class="scm-quantity">{{ record[column.dataIndex] }}</span>
         </template>
       </template>
     </a-table>
@@ -147,10 +147,6 @@ const planHistoryColumns: TableColumnsType = [
 
 .plan-meta {
   margin-bottom: 12px;
-}
-
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .hint {

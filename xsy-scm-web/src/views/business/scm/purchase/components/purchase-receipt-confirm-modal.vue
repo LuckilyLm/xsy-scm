@@ -42,19 +42,19 @@
       >
         <template #bodyCell="{ record, column }">
           <template v-if="column.dataIndex === 'plannedQuantity'">
-            <span class="num">{{ quantity(record.plannedQuantity) }}</span>
+            <span class="scm-quantity">{{ quantity(record.plannedQuantity) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'cumulativeReceivedQuantity'">
-            <span class="num">{{ quantity(record.cumulativeReceivedQuantity) }}</span>
+            <span class="scm-quantity">{{ quantity(record.cumulativeReceivedQuantity) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'remainingQuantity'">
-            <span class="num">{{ quantity(record.remainingQuantity) }}</span>
+            <span class="scm-quantity">{{ quantity(record.remainingQuantity) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'overReceiptQuantity'">
-            <span class="num">{{ quantity(record.overReceiptQuantity) }}</span>
+            <span class="scm-quantity">{{ quantity(record.overReceiptQuantity) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'receiptDifference'">
-            <span class="num">{{ quantity(record.receiptDifference) }}</span>
+            <span class="scm-quantity">{{ quantity(record.receiptDifference) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'receivedQuantity'">
             <a-input-number
@@ -216,10 +216,6 @@ defineExpose({open});
 <style scoped>
 .lines {
   margin: 16px 0;
-}
-
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .hint {

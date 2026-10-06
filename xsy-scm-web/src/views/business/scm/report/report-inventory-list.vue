@@ -116,19 +116,19 @@
               {{ enumDescText(record.sourceDocumentType, SCM_INVENTORY_SOURCE_TYPE_ENUM) }}
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <span class="num">{{ quantityText(record.quantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'unitCost'">
-              <span class="num">{{ costText(record.unitCost, canViewCost) }}</span>
+              <span class="scm-money">{{ costText(record.unitCost, canViewCost) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'costAmount'">
-              <span class="num">{{ costText(record.costAmount, canViewCost) }}</span>
+              <span class="scm-money">{{ costText(record.costAmount, canViewCost) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'beforeQuantity'">
-              <span class="num">{{ quantityText(record.beforeQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.beforeQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'afterQuantity'">
-              <span class="num">{{ quantityText(record.afterQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.afterQuantity) }}</span>
             </template>
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
@@ -212,19 +212,19 @@
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'quantity'">
-              <span class="num">{{ quantityText(record.quantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'reservedQuantity'">
-              <span class="num">{{ quantityText(record.reservedQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.reservedQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'availableQuantity'">
-              <span class="num">{{ quantityText(record.availableQuantity) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.availableQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'avgCost'">
-              <span class="num">{{ moneyText(record.avgCost) }}</span>
+              <span class="scm-money">{{ moneyText(record.avgCost) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'amount'">
-              <span class="num">{{ moneyText(record.amount) }}</span>
+              <span class="scm-money">{{ moneyText(record.amount) }}</span>
             </template>
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
@@ -279,7 +279,7 @@
         >
           <template #bodyCell="{ record, column }">
             <template v-if="QUANTITY_INDEXES.includes(String(column.dataIndex))">
-              <span class="num">{{ quantityText(record[column.dataIndex]) }}</span>
+              <span class="scm-quantity">{{ quantityText(record[column.dataIndex]) }}</span>
             </template>
             <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
           </template>
@@ -582,9 +582,3 @@ onMounted(() => {
     queryActiveTab();
 });
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

@@ -65,7 +65,7 @@
           </a-tag>
         </template>
         <template v-else-if="numericColumns.includes(column.dataIndex)">
-          <span class="num">{{ quantity(record[column.dataIndex]) }}</span>
+          <span class="scm-quantity">{{ quantity(record[column.dataIndex]) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'inventoryUnit'">
           {{ record.inventoryUnit || '—' }}
@@ -201,10 +201,6 @@ function resetQuery() {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .banner {
   margin-bottom: 12px;
 }

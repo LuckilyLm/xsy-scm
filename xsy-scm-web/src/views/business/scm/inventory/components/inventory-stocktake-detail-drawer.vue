@@ -23,13 +23,13 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'bookQuantity'">
-          <span class="num">{{ quantityText(record.bookQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.bookQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'actualQuantity'">
-          <span class="num">{{ quantityText(record.actualQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.actualQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'deltaQuantity'">
-          <span class="num" :class="deltaClass(record.deltaQuantity)">{{ deltaText(record.deltaQuantity) }}</span>
+          <span class="scm-quantity" :class="deltaClass(record.deltaQuantity)">{{ deltaText(record.deltaQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unitSnapshot'">
           {{ record.unitSnapshot || '（草稿未确认）' }}
@@ -92,10 +92,6 @@ function statusColor(status?: string) {
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .delta-up {
   color: #389e0d;
 }

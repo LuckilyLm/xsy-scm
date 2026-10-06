@@ -71,10 +71,10 @@
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'actualQuantity'">
-          <span class="num">{{ quantityText(record.actualQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.actualQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'orderedQuantity'">
-          <span class="num">{{ quantityText(record.orderedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.orderedQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'productTypeSnapshot'">
           {{ productTypeDesc(record.productTypeSnapshot) }}
@@ -158,10 +158,6 @@ function onPageChange(pageNum: number, pageSize: number) {
 </script>
 
 <style scoped>
-.num {
-  font-variant-numeric: tabular-nums;
-}
-
 .create-form {
   gap: 12px 0;
   margin: 16px 0;

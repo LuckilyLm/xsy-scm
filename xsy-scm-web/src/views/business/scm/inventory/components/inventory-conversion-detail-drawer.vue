@@ -28,10 +28,10 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'sourceQuantity'">
-          <span class="num">{{ quantityText(record.sourceQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.sourceQuantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'targetQuantity'">
-          <span class="num">{{ quantityText(record.targetQuantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.targetQuantity) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -75,9 +75,3 @@ function statusColor(status?: string) {
   return 'orange';
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

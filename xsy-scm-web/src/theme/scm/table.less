@@ -59,6 +59,22 @@
   white-space: nowrap;
 }
 
+/*
+ * 单号 / 编码 / 外部流水号：需要**字符等宽**（而不只是数字等宽）的标识类文本。
+ *
+ * 与 `.scm-quantity` 的区别不是「看起来像数字」，而是**语义是不是标识**：
+ * - `.scm-money` / `.scm-quantity`：比例字体 + tabular-nums，用于金额与数量；
+ * - `.scm-mono`：真正的等宽字体，用于要抄录、比对、逐位核对的技术/业务标识。
+ *
+ * 本类只建立公共能力，**不代表当前所有标识字段都已接入**；
+ * 标识字段的全项目接入是独立审计，不在数值口径统一那一批里做。
+ * 依据：`docs/plan/active/frontend-ui-closeout-decisions.md` §C1。
+ */
+.scm-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
 .scm-money--negative {
   color: var(--scm-error, #ff4d4f);
 }

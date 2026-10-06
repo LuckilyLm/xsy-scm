@@ -580,10 +580,6 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .export-hint {
   color: var(--scm-text-secondary);
   font-size: 12px;

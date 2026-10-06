@@ -64,10 +64,10 @@
           </a-descriptions-item>
           <a-descriptions-item label="计划到货日期">{{ order.plannedArrivalDate || '—' }}</a-descriptions-item>
           <a-descriptions-item label="采购金额">
-            <span class="num">{{ amount(order.totalAmount) }}</span>
+            <span class="scm-money">{{ amount(order.totalAmount) }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="收货进度">
-            <span class="num">{{ progress(order.receivedProgress) }}</span>
+            <span class="scm-quantity">{{ progress(order.receivedProgress) }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="提交时间">{{ datetime(order.submittedAt) }}</a-descriptions-item>
           <a-descriptions-item label="取消时间">{{ datetime(order.cancelledAt) }}</a-descriptions-item>
@@ -91,22 +91,22 @@
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'purchaseUnit'">{{ record.purchaseUnit || '—' }}</template>
             <template v-else-if="column.dataIndex === 'plannedQuantity'">
-              <span class="num">{{ quantity(record.plannedQuantity) }}</span>
+              <span class="scm-quantity">{{ quantity(record.plannedQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'receivedQuantity'">
-              <span class="num">{{ quantity(record.receivedQuantity) }}</span>
+              <span class="scm-quantity">{{ quantity(record.receivedQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'remainingQuantity'">
-              <span class="num">{{ quantity(record.remainingQuantity) }}</span>
+              <span class="scm-quantity">{{ quantity(record.remainingQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'overReceiptQuantity'">
-              <span class="num">{{ quantity(record.overReceiptQuantity) }}</span>
+              <span class="scm-quantity">{{ quantity(record.overReceiptQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'purchasePrice'">
-              <span class="num">{{ amount(record.purchasePrice) }}</span>
+              <span class="scm-money">{{ amount(record.purchasePrice) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'lineAmount'">
-              <span class="num">{{ amount(record.lineAmount) }}</span>
+              <span class="scm-money">{{ amount(record.lineAmount) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'allocationCount'">
               {{ (record.allocations ?? []).length }}
@@ -126,7 +126,7 @@
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'salesOrderNo'">{{ record.salesOrderNo || '—' }}</template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <span class="num">{{ quantity(record.quantity) }}</span>
+              <span class="scm-quantity">{{ quantity(record.quantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'demandUnit'">{{ record.demandUnit || '—' }}</template>
             <template v-else-if="column.dataIndex === 'demandStatus'">
@@ -392,10 +392,6 @@ defineExpose({open});
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .logs-trigger {

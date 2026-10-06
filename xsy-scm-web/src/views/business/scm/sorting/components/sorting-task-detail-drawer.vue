@@ -99,7 +99,7 @@
               </a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'plannedQuantitySnapshot'">
-              <span class="num">{{ quantityText(record.plannedQuantitySnapshot) }}</span>
+              <span class="scm-quantity">{{ quantityText(record.plannedQuantitySnapshot) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'sortedQuantity'">
               <a-input-number
@@ -113,7 +113,7 @@
                   :aria-label="`分拣量 ${record.orderNoSnapshot} ${record.productNameSnapshot}`"
                   @update:value="updateDraft(record.id, 'sortedQuantity', $event)"
               />
-              <span v-else class="num">{{ quantityText(record.sortedQuantity) }}</span>
+              <span v-else class="scm-quantity">{{ quantityText(record.sortedQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'result'">
               <a-select
@@ -292,7 +292,4 @@ function updateDraft(itemId: Id, field: DraftField, value: unknown) {
   margin-top: 16px;
 }
 
-.num {
-  font-variant-numeric: tabular-nums;
-}
 </style>

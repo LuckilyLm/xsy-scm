@@ -57,7 +57,7 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="numericColumns.includes(column.dataIndex)">
-          <span class="num">{{ quantity(record[column.dataIndex]) }}</span>
+          <span class="scm-quantity">{{ quantity(record[column.dataIndex]) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'productType'">
           <a-tag>{{ record.productType === 'NON_STANDARD' ? '非标品' : '标品' }}</a-tag>
@@ -171,10 +171,6 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 .banner {
   margin-bottom: 12px;
 }

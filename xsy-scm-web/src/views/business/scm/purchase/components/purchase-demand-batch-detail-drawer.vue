@@ -61,7 +61,7 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
               </a-tag>
             </template>
             <template v-else-if="numericColumns.includes(column.dataIndex)">
-              <span class="num">{{ quantity(record[column.dataIndex]) }}</span>
+              <span class="scm-quantity">{{ quantity(record[column.dataIndex]) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'demandUnit'">{{ record.demandUnit || '—' }}</template>
           </template>
@@ -79,10 +79,10 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'sourceQuantity'">
-              <span class="num">{{ quantity(record.sourceQuantity) }}</span>
+              <span class="scm-quantity">{{ quantity(record.sourceQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'requiredQuantity'">
-              <span class="num">{{ quantity(record.requiredQuantity) }}</span>
+              <span class="scm-quantity">{{ quantity(record.requiredQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'existingDemandId'">
               <span v-if="record.existingDemandId">已有需求 {{ record.existingDemandId }}</span>
@@ -212,10 +212,6 @@ function close() {
 
 .banner {
   margin-bottom: 12px;
-}
-
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .hint {

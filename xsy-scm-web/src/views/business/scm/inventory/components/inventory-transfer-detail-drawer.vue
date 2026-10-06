@@ -24,7 +24,7 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'quantity'">
-          <span class="num">{{ quantityText(record.quantity) }}</span>
+          <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unitSnapshot'">
           {{ record.unitSnapshot || '（草稿未发出）' }}
@@ -68,9 +68,3 @@ function statusColor(status?: string) {
   return 'blue';
 }
 </script>
-
-<style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-</style>

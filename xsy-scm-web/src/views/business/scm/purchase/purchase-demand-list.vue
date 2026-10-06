@@ -91,15 +91,15 @@
           <a-tag>{{ SCM_DEMAND_STATUS_ENUM[record.status]?.desc }}</a-tag>
         </template>
         <template v-else-if="column.dataIndex === 'requiredQuantity'">
-          <span class="num">{{ quantity(record.requiredQuantity) }}</span>
+          <span class="scm-quantity">{{ quantity(record.requiredQuantity) }}</span>
           <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'allocatedQuantity'">
-          <span class="num">{{ quantity(record.allocatedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantity(record.allocatedQuantity) }}</span>
           <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unallocatedQuantity'">
-          <span class="num">{{ quantity(record.unallocatedQuantity) }}</span>
+          <span class="scm-quantity">{{ quantity(record.unallocatedQuantity) }}</span>
           <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'supplierName'">{{ record.supplierName || '—' }}</template>
@@ -407,10 +407,6 @@ onMounted(queryData);
 </script>
 
 <style scoped>
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 /* 单位跟在数字后面、比数字小一号：它是量纲注脚，不该和数字抢同一档字重 */
 .unit {
   margin-left: 4px;

@@ -840,8 +840,4 @@ defineExpose({open});
   margin-left: 8px;
 }
 
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
 </style>

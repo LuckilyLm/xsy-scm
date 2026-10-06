@@ -50,7 +50,7 @@
         />
       </template>
       <template v-else-if="column.dataIndex === 'allocated'">
-        <span class="num">{{ allocatedOnItem(record) }}</span>
+        <span class="scm-quantity">{{ allocatedOnItem(record) }}</span>
       </template>
       <template v-else-if="column.dataIndex === 'allocationCount'">
         <a-tag>{{ (record.allocations ?? []).length }} 条需求</a-tag>
@@ -115,7 +115,7 @@
       <a-table size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
         <template #bodyCell="{ record: demand, column }">
           <template v-if="column.dataIndex === 'unallocatedQuantity'">
-            <span class="num">{{ quantity(demand.unallocatedQuantity) }}</span>
+            <span class="scm-quantity">{{ quantity(demand.unallocatedQuantity) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'demandUnit'">{{ demand.demandUnit || '—' }}</template>
           <template v-else-if="column.dataIndex === 'action'">
@@ -269,10 +269,6 @@ defineExpose({openDemandPicker});
 
 .add-line {
   margin-top: 12px;
-}
-
-.num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .hint {

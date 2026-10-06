@@ -63,7 +63,7 @@
                    bordered :scroll="{x: 1500, y: tableBodyHeight}">
             <template #bodyCell="{column,text}">
               <template v-if="['amount','redAmount','netAmount','writtenOffAmount','openAmount','overAppliedAmount'].includes(column.dataIndex)">
-                <span class="num">{{ moneyText(text) }}</span>
+                <span class="scm-money">{{ moneyText(text) }}</span>
                 <a-tag v-if="column.dataIndex==='overAppliedAmount' && text && text!=='0.0000'" color="orange">
                   超额核销待处理
                 </a-tag>
@@ -130,7 +130,7 @@
                    bordered :scroll="{x: 1500, y: tableBodyHeight}">
             <template #bodyCell="{column,text}">
               <template v-if="['amount','redAmount','netAmount','writtenOffAmount','openAmount','overAppliedAmount'].includes(column.dataIndex)">
-                <span class="num">{{ moneyText(text) }}</span>
+                <span class="scm-money">{{ moneyText(text) }}</span>
                 <a-tag v-if="column.dataIndex==='overAppliedAmount' && text && text!=='0.0000'" color="orange">
                   超额核销待处理
                 </a-tag>
@@ -376,7 +376,6 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
 .report-metric-note { line-height: 1.8; }
 .smart-table-operate-block { display: flex; align-items: center; gap: 8px; }
 .smart-table-operate-block :deep(.ant-input) { width: 260px; }
-.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .finance-detail-mobile-list { display: none; }
 .finance-detail-mobile-heading { display: flex; justify-content: space-between; gap: 12px; }
 .finance-detail-mobile-heading > div { min-width: 0; }
