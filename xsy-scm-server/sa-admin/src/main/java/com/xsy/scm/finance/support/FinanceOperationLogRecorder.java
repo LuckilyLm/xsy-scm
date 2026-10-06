@@ -41,18 +41,9 @@ public class FinanceOperationLogRecorder {
     /**
      * 追加一条财务操作日志。
      *
-     * @param businessType
-     *            财务对象类型，与 {@code businessId} 一起定位被操作的事实
-     * @param businessId
-     *            财务事实主键（不存单号：单号是读时 join 取得的派生展示值）
-     * @param operation
-     *            动作类型，取值受 {@code ck_finance_operation_log_type} 白名单约束
-     * @param reason
-     *            原因；破坏性动作必填，由调用方与对应事实表的 CHECK 共同保证
-     * @param before
-     *            改前快照，可为 {@code null}（生成类动作没有「改前」）
-     * @param after
-     *            改后快照
+     * <p>
+     * {@code reason} 对破坏性动作必填（由调用方与对应事实表的 CHECK 共同保证）；{@code before} 可为 {@code null}（生成类动作没有「改前」）。{@code businessId}
+     * 存的是事实主键而不是单号 —— 单号是读时 join 取得的派生展示值。
      */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId, ScmFinanceOperationTypeEnum operation,
             String reason, Object before, Object after) {
@@ -65,7 +56,7 @@ public class FinanceOperationLogRecorder {
      * <p>
      * 派生生成器用这一条：红字应收的操作人是 {@code order_return.updated_by}（批准人）， 正常应收的是
      * {@code delivery_route_order.signed_by}（签收人）。取已落库的业务事实操作人 而不是
-     * {@link ScmOperator#current()}，是为了让「财务事实的身份列」与「日志的操作人」 来自同一个事实源 —— 否则同一笔账会出现两个可能对不上的操作人（的 「红字是已成立业务事实的映射」要求这一点成立）。
+     * {@link ScmOperator#current()}，是为了让「财务事实的身份列」与「日志的操作人」 来自同一个事实源 —— 否则同一笔账会出现两个可能对不上的操作人（「红字是已成立业务事实的映射」要求这一点成立）。
      */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId, ScmFinanceOperationTypeEnum operation,
             String reason, Object before, Object after, String operator) {

@@ -283,7 +283,7 @@ const statusText = computed(() => CUSTOMER_STATUS_ENUM[status.value]?.desc || st
 /**
  * 业务员下拉的桥接。
  *
- * V2 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，
+ * 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，
  * 直接绑 `number | null` 会因 `null` 报 TS2322；这里统一把 `null` 折成 `undefined`。
  */
 const sellerValue = computed<number | undefined>({

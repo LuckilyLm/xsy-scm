@@ -134,7 +134,7 @@ public final class PurchaseDemandAllocator {
      * </pre>
      *
      * <p>
-     * **必须能回落**：编辑采购单删掉某个 demand 的全部分配后，`allocated` 归零、 状态必须从 `ALLOCATED` 退回 `PENDING`（C 段的并集遍历就是为此）。
+     * **必须能回落**：编辑采购单删掉某个 demand 的全部分配后，`allocated` 归零、 状态必须从 `ALLOCATED` 退回 `PENDING`（并集遍历就是为此）。
      */
     public static String statusFor(BigDecimal requiredQuantity, BigDecimal allocatedQuantity) {
         if (allocatedQuantity == null || allocatedQuantity.signum() == 0) {

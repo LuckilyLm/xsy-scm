@@ -22,7 +22,7 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLI
  * 把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断—— 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功， 后续写库就不会因为业务规则失败而回滚一半。
  *
  * <p>
- * <b>刻意不做的事：</b>不校验 {@code defaultFlag} 的基数。同一供应商允许多条默认来源 同一供应商允许多个默认来源，因此这里不检查默认标记的数量。
+ * <b>刻意不做的事：</b>不校验 {@code defaultFlag} 的基数。同一供应商允许多个默认来源， 因此这里不检查默认标记的数量。
  */
 public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemForm> inserted, List<Long> removedIds) {
 
@@ -33,12 +33,11 @@ public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemF
     }
 
     /**
-     * 计算差量。
+     * 计算整表替换差量。
      *
-     * @param existing
-     *            库中该供应商的全部活动行（调用方已加锁读取）
-     * @param requested
-     *            请求列表；空列表表示清空全部关联
+     * <p>
+     * {@code requested} 为空列表表示**清空全部关联**，不是「无操作」。
+     *
      * @throws ScmBusinessException
      *             40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、 40921（带 id 的行版本不一致）
      */

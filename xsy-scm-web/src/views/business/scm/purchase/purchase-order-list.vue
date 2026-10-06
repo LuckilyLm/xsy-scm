@@ -380,7 +380,7 @@ function resetQuery() {
   onSearch();
 }
 
-/** 状态类命令：成功后重载，失败把错误码翻成中文（A24）并把错误留给用户重试。 */
+/** 状态类命令：成功后重载，失败把错误码翻成中文并把错误留给用户重试。 */
 function submit(row: Order) {
   Modal.confirm({
     title: '提交这张采购单？提交后不可再改行与分配。',

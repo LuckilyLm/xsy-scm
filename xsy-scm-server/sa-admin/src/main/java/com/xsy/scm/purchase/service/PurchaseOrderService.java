@@ -184,7 +184,7 @@ public class PurchaseOrderService {
         }
 
         // 锁序：需求（旧 ∪ 新，按 id 升序）—— 并集是硬要求，只在旧集合出现的 demand
-        // 也必须锁，否则删除后 allocated 不会回落（C 段）
+        // 也必须锁，否则删除后 allocated 不会回落
         Collection<Long> involved = new LinkedHashSet<>(PurchaseOrderAllocationService.requestedDemandIds(rows));
         existingAllocations.values()
                 .forEach(list -> list.forEach(allocation -> involved.add(allocation.getPurchaseDemandId())));
@@ -329,7 +329,7 @@ public class PurchaseOrderService {
         PurchaseOrderStateMachine.transition(order.getStatus(), ScmPurchaseStatusEnum.CANCELLED.name());
         PurchaseOrderValidator.reason(form.getCancelReason(), PURCHASE_CANCEL_REASON_REQUIRED);
 
-        // 释放本单的全部分配并重算需求（C 段不变量：allocated 必须能回落）
+        // 释放本单的全部分配并重算需求（不变量：allocated 必须能回落）
         purchaseOrderAllocationService.releaseAllocations(order);
 
         Map<String, Object> before = PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order);

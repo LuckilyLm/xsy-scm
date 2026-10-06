@@ -1,9 +1,6 @@
 /**
  * 仓库接口。
  *
- * 仓库是采购的**基础数据**（采购单必须有收货仓库），此前没有前端 API —— C 的采购页用
- * `a-input-number` 直接填 `supplierId` / 仓库 id，属于 A 源的建模缺口。
- *
  * 与后端 `WarehouseController` 逐端点对应：查询与基础信息写入沿用既有契约，
  * 状态通过独立的 `enable` / `disable` 命令管理。`status` 不进入新增或编辑表单，
  * 新建仓库仍一律为 `ENABLED`。

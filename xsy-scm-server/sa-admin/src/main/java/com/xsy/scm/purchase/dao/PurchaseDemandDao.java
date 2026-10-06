@@ -101,7 +101,7 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     int insertIgnore(@Param("row") PurchaseDemandEntity row);
 
     /**
-     * 重算分配（C 段）。
+     * 重算分配。
      *
      * <p>
      * 同时更新 `allocated_quantity` / `status` / `supplier_id`（首次分配固定）与 `version + 1`； 用 `version` 做乐观锁，影响行数为 0 表示并发冲突。

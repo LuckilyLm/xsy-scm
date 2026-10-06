@@ -90,7 +90,7 @@ export interface CustomerForm extends Partial<AreaColumns>, ScmLocation {
     /**
      * 业务员（员工）ID。
      *
-     * 刻意不用 `ScmId` 而是 `number | null`：V2 原生 `employee-select` 的 `value` prop 声明为
+     * 刻意不用 `ScmId` 而是 `number | null`：原生 `employee-select` 的 `value` prop 声明为
      * `[Number, Array]`，传 `string | number | null` 会在 vue-tsc 下报 TS2322。
      * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近事实。
      */

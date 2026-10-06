@@ -438,9 +438,12 @@ public class SalesOrderService {
         // 优惠冻结并入确认命令，而不是让客户端确认后再单独调一次：否则会出现
         // 「订单已确认、优惠却没冻结」的中间态。行基础金额取 ordered_line_amount
         // （下单量 × 锁定单价），该口径由负责人 2026-10-03 确认。
-        promotionDiscountService.freeze(new PromotionOrderFacts(salesOrder.getId(), salesOrder.getCustomerId(),
-                rows.stream().map(row -> new PromotionOrderFacts.Line(row.getId(), row.getSkuId(),
-                        row.getOrderedQuantity(), row.getOrderedLineAmount())).toList()),
+        promotionDiscountService.freeze(
+                new PromotionOrderFacts(salesOrder.getId(), salesOrder.getCustomerId(),
+                        rows.stream()
+                                .map(row -> new PromotionOrderFacts.Line(row.getId(), row.getSkuId(),
+                                        row.getOrderedQuantity(), row.getOrderedLineAmount()))
+                                .toList()),
                 confirmation == null ? null : confirmation.getCouponInstanceId());
         notificationService.sendOnce("ORDER_CONFIRMED:" + salesOrder.getId(), "ORDER_CONFIRMED",
                 salesOrder.getSellerId(), salesOrder.getId(), "销售订单已确认",
@@ -501,7 +504,7 @@ public class SalesOrderService {
     }
 
     /**
-     * 为已确认的订单**显式预留库存**（出库波次）。
+     * 为已确认的订单**显式预留库存**。
      *
      * <p>
      * <b>为什么是显式操作而不是确认时自动预留</b>：本业务的链路是 「客户下单 → 订单 → 确认 → 聚合 → 采购需求 → 采购单 → 收货 → 库存」，

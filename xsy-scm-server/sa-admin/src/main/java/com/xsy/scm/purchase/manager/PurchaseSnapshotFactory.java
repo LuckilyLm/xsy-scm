@@ -181,7 +181,7 @@ public final class PurchaseSnapshotFactory {
      * 采购单位来自 `supplier_sku.purchase_unit` 并落在 `purchase_order_item.purchase_unit_snapshot`，两者在分配时做一致性校验。
      *
      * <p>
-     * `requiredQuantity` 取 **`actual_quantity`（实数量）** 而不是 `ordered_quantity`， 与 A 源口径一致（订单集成表）。
+     * `requiredQuantity` 取 **`actual_quantity`（实数量）** 而不是 `ordered_quantity`， 与订单集成表口径一致。
      *
      * <p>
      * `status` 固定从 `PENDING` 起（的默认值也一致）；`allocatedQuantity` 从 0 起。
@@ -216,7 +216,7 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 分配行上的 `demand_snapshot`（A 源只有 `{demandId}`）。
+     * 分配行上的 `demand_snapshot`。
      *
      * <p>
      * 作用：让每条 allocation **自带证据**，即使需求行之后被改/被删， 也能从分配行回答「当初挂的是哪张订单行、什么单位、多少量」。 数量按 的 4 位定点**字符串**存（不是 JSON 数字）—— 避免 JSON

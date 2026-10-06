@@ -75,7 +75,7 @@ export const orderApi = {
         skuIds: Id[]
     }) => postRequest('/scm/order/price/preview', data) as unknown as Promise<ScmResponse<ResolveResult>>,
     /**
-     * 为已确认订单预留库存（出库波次）。
+     * 为已确认订单预留库存。
      *
      * 显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生，
      * 挂在确认上会让「先接单 → 再采购」链路无法运转。货到后由业务人员执行。

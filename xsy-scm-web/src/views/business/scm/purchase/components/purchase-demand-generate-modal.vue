@@ -97,9 +97,9 @@ const warehouseOptions = computed(() =>
 );
 
 /**
- * 采购员下拉的桥接（A11）。
+ * 采购员下拉的桥接。
  *
- * V2 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，
+ * 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，
  * 直接绑 `Id | undefined` 会因为 `string` 报 TS2322。
  * 员工 id 在后端是自增数字，这里显式收敛成 `number | undefined`；
  * 本弹窗的 `purchaserId` 本就是可选（提交时 `?? null`），因此清空写回 `undefined`。

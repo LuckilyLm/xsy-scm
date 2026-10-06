@@ -77,6 +77,13 @@ const PROCESS_MARKERS = [
   ['Pn 批次号（非裁决锚点）', /(?<!锁序 )\bP\d{1,2}\b(?!\s*(?:裁决|基线收口裁决|锁序))/],
   // 裸 `B\d+` 会命中缺口文档的 `Bn` 溯源（那是活契约），由 WHITELIST 逐文件放行。
   ['Bn 批次号（非缺口溯源）', /\bB\d{1,2}\b/],
+  // 裸 `A\d+` 曾因「`A4` 是纸张尺寸」被放过，结果 `A17/A18/A25/A26/A31` 全漏了。
+  // 现在改成**默认禁止 + 精确白名单放行**（纸张尺寸的两个文件已登记）。
+  ['An 条目号（非业务值）', /\bA\d{1,2}\b/],
+  // 「设计考古」：旧项目当时怎么做、旧口径的段落名。
+  ['考古：C 的 / A 源 / C 段', /C 的|A 源|C 段|V2 原生/],
+  // 开发波次。注意 `预配送波次`（`deliveryWave`）是真实业务字段，不能裸匹配 `波次`。
+  ['开发波次', /(出库|盘点|报损报溢|调拨|阈值预警|规格转换)波次|波次新增|本波次/],
   ['机械删除残句', /：\s+的/],
 ];
 
@@ -122,6 +129,16 @@ const WHITELIST = [
     file: 'xsy-scm-web/src/views/business/scm/finance/finance-detail-drawer.vue',
     marker: 'Bn 批次号（非缺口溯源）',
     reason: '同上，B3 缺口溯源',
+  },
+  {
+    file: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintPaperEnum.java',
+    marker: 'An 条目号（非业务值）',
+    reason: '`{@link #A4}` 是纸张尺寸枚举值，不是计划编号',
+  },
+  {
+    file: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/domain/model/ScmPrintTemplateModel.java',
+    marker: 'An 条目号（非业务值）',
+    reason: '`{@code A4}` 是纸张尺寸，不是计划编号',
   },
 ];
 

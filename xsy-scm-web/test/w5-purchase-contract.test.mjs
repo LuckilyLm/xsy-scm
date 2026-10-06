@@ -415,7 +415,8 @@ test('A26 tolerance stays server-side while the client only warns on the remaind
 
 test('purchase errors resolve from body, data and response shapes', () => {
   assert.match(purchaseError({code: 40921}), /刷新/);
-  assert.match(purchaseError({code: 40971}), /不做自动换算/);
+  // 保护的是「文案必须说明不会自动换算」，不是具体措辞；两种写法都算达标。
+  assert.match(purchaseError({code: 40971}), /不(做|支持)自动换算/);
   assert.match(purchaseError({code: 40082}), /可分配余量/);
   assert.match(purchaseError({code: 40989}), /超收容差/);
   assert.match(purchaseError({code: 40998}), /全部明细/);

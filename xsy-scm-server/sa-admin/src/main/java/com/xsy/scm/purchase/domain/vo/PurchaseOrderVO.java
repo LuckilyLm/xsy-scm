@@ -21,8 +21,8 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * `receivedProgress` 是**汇总进度**（派生量，不落库），用于列表展示。
  *
  * <p>
- * `items` / `allocations` / `logs` **仅 detail 返回**：`allocations` 是跨行扁平化的分配列表 （前端「一行多需求」编辑器 A31 用），与
- * `items[].allocations` 是同一批数据的不同切面。
+ * `items` / `allocations` / `logs` **仅 detail 返回**：`allocations` 是跨行扁平化的分配列表 （前端「一行多需求」编辑器用），与 `items[].allocations`
+ * 是同一批数据的不同切面。
  */
 @Data
 public class PurchaseOrderVO {

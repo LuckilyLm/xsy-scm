@@ -16,7 +16,7 @@ import java.util.List;
  * {@code uk_purchase_demand_allocation_source_active} 强制。
  *
  * <p>
- * **这里没有「按 itemId 查单条 allocation」的方法** —— 那是 A 源的错误形状。 所有查询都是**集合形态**，让调用方按 allocation 集合做差量对账。
+ * **这里没有「按 itemId 查单条 allocation」的方法** —— 那是错误的形状。 所有查询都是**集合形态**，让调用方按 allocation 集合做差量对账。
  *
  * <p>
  * {@link #listActiveByDemandIds} 返回的是**跨采购单的全部活动分配**： 需求侧 `allocated_quantity` 是跨单累计值，只按本单算会漏掉其它采购单的贡献。

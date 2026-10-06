@@ -164,7 +164,7 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * C 段：按 `旧 ∪ 新` 的 demandId 升序逐个重算需求侧。
+     * 按 `旧 ∪ 新` 的 demandId 升序逐个重算需求侧。
      *
      * <p>
      * **必须遍历并集**：只在旧集合出现的 demand（被删空 / 整单取消）也要重算， 否则 `allocated_quantity` 不会回落、`status` 也不会从 `ALLOCATED` 退回 `PENDING`。

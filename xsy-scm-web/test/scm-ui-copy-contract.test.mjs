@@ -113,6 +113,9 @@ const tagOf = (node) => node.name.toLowerCase().replace(/-/g, '');
 const BLACKLIST = [
   {label: '模块名 Finance', pattern: /Finance/},
   {label: '阶段代号 R0/R1/R2', pattern: /\bR[012]\b/},
+  // 开发波次代号会以错误文案的形式漏到用户面前（实测 `W5 不做自动换算` 出现在 40971
+  // 的用户可读文案里），因此必须与 R0/R1/R2 同等对待。
+  {label: '阶段代号 Wn', pattern: /\bW\d{1,2}\b/},
   {label: '计划章节号 §', pattern: /§/},
   {label: '术语 SPU', pattern: /\bSPU\b/i},
   {label: '术语 SKU', pattern: /\bSKU\b/i},

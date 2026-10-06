@@ -2,7 +2,7 @@
  *  采购域表单模型。
  *
  * 三块职责：
- * 1. **定点数纪律（A17/A18）**：所有数量 / 金额在提交前经 {@link fixed} 归一为 4 位小数字符串；
+ * 1. **定点数纪律**：所有数量 / 金额在提交前经 {@link fixed} 归一为 4 位小数字符串；
  *    渲染时 `null` → `—`、`"0.0000"` → `0.0000`（**三态不可合并**）。
  * 2. **分配集合**：`items[].allocations[]` 是**集合**，增删改都以 `demandId` 为身份，
  *    只改一条不得影响同行其它条。
@@ -35,7 +35,7 @@ export function fixed(value: string | number | null | undefined): string {
 }
 
 /**
- * 金额渲染（A18）。
+ * 金额渲染。
  *
  * @param unpriced 该字段的 `null` 是否表示「未定价」而非「无此金额」。
  *    里 `totalAmount` 的 `null` 是「还没有行」，不是「未定价」→ 传 `false` 渲染 `—`。
@@ -47,7 +47,7 @@ export function amount(value: string | null | undefined, unpriced = false): stri
     return '¥ ' + fixed(value);
 }
 
-/** 数量渲染（A18）：`null` → `—`，`"0.0000"` → `0.0000`。 */
+/** 数量渲染：`null` → `—`，`"0.0000"` → `0.0000`。 */
 export function quantity(value: string | null | undefined): string {
     if (value === null || value === undefined || value === '') {
         return '—';
@@ -69,7 +69,7 @@ export function progress(value: string | null | undefined): string {
 }
 
 /*
- * 时间渲染（A18 同族）的实现在 `../common/scm-display.ts`，**不再从这里转出**。
+ * 时间渲染的实现在 `../common/scm-display.ts`，**不再从这里转出**。
  *
  * 历史：提交 48134bf 曾在这里 `export { datetime } from '../common/scm-display'`（漏了 `.ts`），
  * 于是本模块在 `node --experimental-strip-types --test` 下以 ERR_MODULE_NOT_FOUND 整体加载失败；
@@ -120,7 +120,7 @@ export function allocatedOnItem(item: OrderItem): string {
 }
 
 /**
- * 本条分配在该需求上的**可分配上限**（A31 的客户端预检）。
+ * 本条分配在该需求上的**可分配上限**（客户端预检）。
  *
  * `demand.unallocatedQuantity` 是「全库剩余」，其中已扣掉本行上一次提交的量；
  * 因此加上「本行该需求的旧分配量」才是本行本次可填的上限 —— 与后端
@@ -253,7 +253,7 @@ export function validateOrder(form: Order): string | undefined {
     return undefined;
 }
 
-/** 表单 → 请求体（A17：所有定点数归一为 4 位字符串；`null` 保持 `null`）。 */
+/** 表单 → 请求体（所有定点数归一为 4 位字符串；`null` 保持 `null`）。 */
 export function payload(form: Order): OrderPayload {
     const body: OrderPayload = {
         supplierId: form.supplierId!,
@@ -298,7 +298,7 @@ export function newConfirmLines(receipt: Receipt): ReceiptConfirmItemPayload[] {
     }));
 }
 
-/** 非标品必须录入实重（A25）：实重缺失 → 40083。 */
+/** 非标品必须录入实重：实重缺失 → 40083。 */
 export function isNonStandard(item: ReceiptItem | undefined): boolean {
     return item?.productType === 'NON_STANDARD';
 }
@@ -358,7 +358,7 @@ export function confirmPayload(receipt: Receipt, lines: ReceiptConfirmItemPayloa
 }
 
 /**
- * **A26** 容差提示文案。
+ * 容差提示文案。
  *
  * 超收容差是服务端配置（`scm.purchase.over_receipt_tolerance_percent`），
  *  **没有**把它暴露给前端的读取端点，因此这里不假装能算出「上限」，

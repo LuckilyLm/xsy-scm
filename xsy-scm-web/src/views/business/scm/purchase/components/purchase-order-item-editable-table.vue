@@ -56,7 +56,7 @@
       </template>
     </template>
 
-    <!-- A31：一行的分配是**集合**，用展开行承载「多需求分配」编辑 -->
+    <!-- 一行的分配是**集合**，用展开行承载「多需求分配」编辑 -->
     <template #expandedRowRender="slot">
       <div class="alloc-block">
         <a-table
@@ -243,7 +243,7 @@ function pick(demand: Demand) {
   }
   // 单位不一致时**拒绝**，不猜换算系数、不换单位字符串。
   if (unitMismatch(item, demand)) {
-    picker.error = `需求单位 ${demand.demandUnit} 与采购单位 ${item.purchaseUnit} 不一致：W5 不做自动换算，请改用与需求单位一致的供应商采购配置`;
+    picker.error = `需求单位 ${demand.demandUnit} 与采购单位 ${item.purchaseUnit} 不一致：不支持自动换算，请改用与需求单位一致的供应商采购配置`;
     return;
   }
   item.allocations = [...(item.allocations ?? []), newAllocation(demand)];

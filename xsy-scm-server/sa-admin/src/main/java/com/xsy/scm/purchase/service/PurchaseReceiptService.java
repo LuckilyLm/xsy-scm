@@ -347,7 +347,7 @@ public class PurchaseReceiptService {
             }
 
             if (actualWeight != null) {
-                // 只追加的审计事实（无 version / deleted / updated_*），同 A 源 inventory_movement 纪律
+                // 只追加的审计事实（无 version / deleted / updated_*），与 `inventory_movement` 的纪律一致
                 appendWeighingRecord(line.getId(), actualWeight, weightUnit, correctionReason);
             }
 

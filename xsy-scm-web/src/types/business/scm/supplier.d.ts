@@ -114,7 +114,7 @@ export interface SupplierSkuRow {
     /**
      * 采购员（员工）ID。
      *
-     * 刻意用 `number | null` 而非 `ScmId`：V2 原生 `employee-select` 的 `value` prop 是
+     * 刻意用 `number | null` 而非 `ScmId`：原生 `employee-select` 的 `value` prop 是
      * `[Number, Array]`，传 `string | number | null` 会触发 TS2322。后端是 Java `Long`，
      * JSON 里本来就是 number。
      */

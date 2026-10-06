@@ -35,7 +35,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 41002：源身份重复入库。
      *
      * <p>
-     * 实时 confirm 路径下这属于**不可能发生的数据异常**（claim 幂等 + 收货单状态机已挡住）， 因此 fail-fast 暴露问题，**不静默吞掉**（A 源 spec：不能通过捕获异常后继续写入
+     * 实时 confirm 路径下这属于**不可能发生的数据异常**（claim 幂等 + 收货单状态机已挡住）， 因此 fail-fast 暴露问题，**不静默吞掉**（不能通过捕获异常后继续写入
      * 来掩盖库存不一致）。backfill 路径下「影响行数 = 0」是预期值，由 backfill 自身区分处理。
      */
     INVENTORY_DUPLICATE_INBOUND(41002, "该来源单据已入库，不能重复入库"),

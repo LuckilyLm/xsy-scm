@@ -31,7 +31,7 @@ export const TABLE_ID_CONST = {
         SCM_PRICING_HISTORY: 50009,
         SCM_PRICING_BATCH: 50010,
         SCM_CUSTOMER_SKU_VISIBILITY: 50011,
-        //  销售订单沿用 C 的裸数字（602–605）； 起统一走常量（A23）
+        // 销售订单保留既有表格 ID（602–605）：改号会让已保存的列配置失效
         SCM_ORDER: 602,
         SCM_ORDER_RETURN: 603,
         SCM_ORDER_REFUND: 604,
@@ -44,19 +44,19 @@ export const TABLE_ID_CONST = {
         //  库存域（两个只读查询页）
         SCM_INVENTORY_BALANCE: 50017,
         SCM_INVENTORY_MOVEMENT: 50018,
-        // 出库波次（出库单 / 库存预留）
+        // 出库单 / 库存预留
         SCM_INVENTORY_OUTBOUND: 50019,
         SCM_INVENTORY_RESERVATION: 50020,
-        // 盘点波次（盘点单）
+        // 盘点单
         SCM_INVENTORY_STOCKTAKE: 50021,
-        // 报损报溢波次（报损报溢单）
+        // 报损报溢单
         SCM_INVENTORY_LOSS_GAIN: 50022,
-        // 调拨波次（调拨单）
+        // 调拨单
         SCM_INVENTORY_TRANSFER: 50023,
-        // 阈值预警波次（预警列表 + 阈值配置）
+        // 预警列表 + 阈值配置
         SCM_INVENTORY_WARNING: 50024,
         SCM_INVENTORY_WARNING_THRESHOLD: 50025,
-        // 规格转换波次（转换单）
+        // 规格转换单
         SCM_INVENTORY_CONVERSION: 50026,
         // 报表中心：一张表一个 id（列配置按表持久化，共用会让各 Tab 的列显隐互相覆盖）
         SCM_REPORT_OVERVIEW_DAILY: 50027,

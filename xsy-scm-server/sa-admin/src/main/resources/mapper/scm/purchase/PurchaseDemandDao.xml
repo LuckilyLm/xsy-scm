@@ -374,7 +374,7 @@
         ON CONFLICT DO NOTHING
     </insert>
 
-    <!-- C 段：需求侧重算。supplier_id 只在首次分配时写入 -->
+    <!-- 需求侧重算。supplier_id 只在首次分配时写入 -->
     <update id="updateAllocation">
         UPDATE purchase_demand
         SET allocated_quantity = #{allocatedQuantity},

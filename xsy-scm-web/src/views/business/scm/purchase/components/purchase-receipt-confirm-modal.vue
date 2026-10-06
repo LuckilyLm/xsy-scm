@@ -63,7 +63,7 @@
             />
           </template>
           <template v-else-if="column.dataIndex === 'actualWeight'">
-            <!-- A25：非标品的有效数量取实重，必须录入 -->
+            <!-- 非标品的有效数量取实重，必须录入 -->
             <a-input-number
                 v-if="isNonStandard(record)"
                 string-mode

@@ -150,7 +150,7 @@ let originalStatus = '',
 /**
  * 绑定员工下拉的桥接。
  *
- * V2 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，直接绑 `Id | null`
+ * 原生 `EmployeeSelect` 的 `value` prop 声明是 `[Number, Array]`，直接绑 `Id | null`
  * 会因 `string` / `null` 报 TS2322；这里把 `null` 折成 `undefined`，清空写回 `null`（解绑）。
  */
 const employeeValue = computed<number | undefined>({

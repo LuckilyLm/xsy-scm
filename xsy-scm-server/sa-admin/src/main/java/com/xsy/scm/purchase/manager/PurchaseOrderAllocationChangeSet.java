@@ -11,16 +11,11 @@ import java.util.Objects;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_ALLOCATION_DUPLICATE;
 
 /**
- * 采购单**分配级**差量。
+ * 采购单分配级差量。
  *
  * <p>
- * <b>allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}</b>， 由
+ * allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}，由
  * {@code uk_purchase_demand_allocation_source_active} 强制。
- *
- * <p>
- * <b>为什么必须有这个类</b>：A 源用 {@code Map<itemId, allocation>}（覆盖写）表达分配， 导致「一行多需求」在编辑时只保留最后一条。 的算法**以 allocation 为主键集合**对账
- * （`Map<(itemId, demandId), allocation>`），于是 「只改一个 allocation / 删一个 allocation / 保留其它 allocation」都是**独立的行级操作**，
- * **禁止**任何「一个 item 对一个 allocation」的算法。
  *
  * <p>
  * 规则：
@@ -34,7 +29,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_AL
  *
  * <p>
  * <b>调用方必须遍历 {@code 旧集合 ∪ 新集合} 的 demandId 去重算需求侧</b>： 只在旧集合出现的 demand（被删空）也要重算，否则 {@code allocated_quantity} 不会回落、
- * {@code status} 也不会从 {@code ALLOCATED} 退回 {@code PENDING}（C 段）。 并集请用 {@link #involvedDemandIds}。
+ * {@code status} 也不会从 {@code ALLOCATED} 退回 {@code PENDING}。 并集请用 {@link #involvedDemandIds}。
  */
 public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEntity> inserted,
         List<PurchaseDemandAllocationEntity> updated, List<PurchaseDemandAllocationEntity> removed) {
