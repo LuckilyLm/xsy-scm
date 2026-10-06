@@ -15,7 +15,14 @@
                    :loading="pickLoading" :pagination="false" :scroll="{ y: 420 }"
                    :custom-row="(row: ProductRow) => ({ onClick: () => select(row.spuId), style: { cursor: 'pointer' } })">
             <template #bodyCell="{ column, record }">
-              <template v-if="column.dataIndex === 'primary'">
+              <template v-if="column.dataIndex === 'name'">
+                <!-- §10.6：名称是主信息，商品编码下沉为次行，不再单独占一个大列 -->
+                <div class="scm-cell-stack">
+                  <span class="scm-cell-stack__main">{{ record.name || '—' }}</span>
+                  <span v-if="record.spuCode" class="scm-cell-stack__sub">{{ record.spuCode }}</span>
+                </div>
+              </template>
+              <template v-else-if="column.dataIndex === 'primary'">
                 <a-tag v-if="record.primaryImageUrl" color="green">有主图</a-tag>
                 <a-tag v-else>无主图</a-tag>
               </template>
@@ -127,9 +134,9 @@ const canWrite = computed(() => user.administratorFlag
     || user.getPointList?.some((p: { webPerms: string }) => p.webPerms === 'scm:product:image:batch'));
 
 const keyword = ref(''), onlyNoPrimary = ref(false), products = ref<ProductRow[]>([]), pickLoading = ref(false), pickError = ref('');
+// §10.6：左侧只保留「名称（编码次行）/ 主图状态」，编码不再单独占列
 const pickColumns = [
-  { title: '商品编码', dataIndex: 'spuCode', width: 150 },
-  { title: '名称', dataIndex: 'name' },
+  { title: '商品', dataIndex: 'name' },
   { title: '主图', dataIndex: 'primary', width: 90 },
 ];
 
