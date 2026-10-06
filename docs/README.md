@@ -12,6 +12,7 @@
 - 架构：[SmartAdmin 底座](architecture/smartadmin-foundation.md)、[SCM UI 规范](architecture/scm-ui-guidelines.md)、[地图部署](architecture/map-deployment.md)。
 - 正式设计：[Finance R1](plan/active/finance-r1-design.md)、[余额支付、订单资金核销与售后返还](plan/active/balance-payment-order-settlement-design.md)。
 - 尚未补齐的接口字段：[前端所需后端字段缺口](plan/active/frontend-ui-backend-gap-inventory.md)。
+- 进行中的源码注释降噪：[源码注释降噪](plan/active/source-comment-cleanup.md)。
 - 工程规则：[Java 工程规范与质量基线](quality/java-code-quality-remediation-plan.md)、[贡献与验证指南](../CONTRIBUTING.md)。
 
 ## 文档治理
