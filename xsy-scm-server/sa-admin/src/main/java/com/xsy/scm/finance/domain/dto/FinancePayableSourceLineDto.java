@@ -8,7 +8,7 @@ import java.math.BigDecimal;
  * 应付生成所需的**收货确认事实**（明细维度）：一行收货 = 一行应付明细。
  *
  * <p>
- * 量取收货行、价取采购行，两者刻意来自不同的表：收货行不存价格（A-D8）， 采购行的 {@code purchase_price} 是这批货结算时用过的单价（不含任何税务语义）。
+ * 量取收货行、价取采购行，两者刻意来自不同的表：收货行不存价格， 采购行的 {@code purchase_price} 是这批货结算时用过的单价（不含任何税务语义）。
  */
 @Data
 public class FinancePayableSourceLineDto {

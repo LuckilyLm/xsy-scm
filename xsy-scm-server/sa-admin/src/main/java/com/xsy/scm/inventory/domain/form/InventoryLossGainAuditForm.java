@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * 审批 / 驳回报损报溢单（两个动作共用一个表单，与参考项目一致）。
+ * 审批 / 驳回报损报溢单（两个动作共用一个表单）。
  *
  * <p>
  * <b>{@code version} 必填并参与乐观锁校验</b>：审批人看到的内容必须与审批的内容一致。 若在「打开单据 → 点审批」之间录单人改了明细，{@code version} 已经前进， 审批会以 40921

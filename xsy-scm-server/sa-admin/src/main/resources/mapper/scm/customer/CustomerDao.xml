@@ -26,7 +26,7 @@
             AND FALSE
         </if>
         <if test="query.keyword != null and query.keyword != ''">
-            <!-- 增强（Target Design Q8）：legacy 只搜编码 + 名称，这里追加联系人 / 联系电话 -->
+            <!-- 增强：legacy 只搜编码 + 名称，这里追加联系人 / 联系电话 -->
             AND (c.customer_code ILIKE CONCAT('%', #{query.keyword}, '%')
             OR c.name ILIKE CONCAT('%', #{query.keyword}, '%')
             OR c.contact_name ILIKE CONCAT('%', #{query.keyword}, '%')

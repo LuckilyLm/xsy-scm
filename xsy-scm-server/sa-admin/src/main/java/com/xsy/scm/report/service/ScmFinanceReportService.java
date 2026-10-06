@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/** Finance R0 read model. All balances are derived from append-only Finance R1 facts. */
+/** Finance read model. All balances are derived from append-only facts. */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

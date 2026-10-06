@@ -11,7 +11,7 @@
       ck_finance_payment_append_only 在库级锁死，不给调用方留写别的值的机会）。
       NORMAL 行的 reverse_of_id / reason 必须为 NULL（ck_finance_payment_entry_pairing）。
 
-      ON CONFLICT 的列与 WHERE 谓词必须与 uk_finance_payment_source_active 逐字一致（Q11）：
+      ON CONFLICT 的列与 WHERE 谓词必须与 uk_finance_payment_source_active 逐字一致：
       少写谓词会命中「无索引可仲裁」而直接报错，无目标写法会把 payment_no 撞号一起吞掉。
       供应商付款的 source_id 为 NULL，根本不在这个索引里，所以 0 行只可能是「退款已付过」。
     -->

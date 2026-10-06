@@ -56,7 +56,7 @@ public class CustomerValidator {
     }
 
     /**
-     * 可选文本归一化：去首尾空白，空白视作「未填写」返回 {@code null}，以便真正清空列（R7）。
+     * 可选文本归一化：去首尾空白，空白视作「未填写」返回 {@code null}，以便真正清空列。
      */
     public static String normalizeOptional(String raw) {
         if (raw == null) {

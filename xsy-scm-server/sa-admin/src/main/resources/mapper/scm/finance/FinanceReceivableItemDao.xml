@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableItemDao">
 
     <!--
-      冲突目标与 uk_finance_receivable_item_source_active 逐字一致（Q11）。
+      冲突目标与 uk_finance_receivable_item_source_active 逐字一致。
       行级来源是出库行主键而不是订单行 id：V63 刻意不为 sales_order_item_id 建唯一索引
       （一条订单行将来可能再出一行），所以一条订单行允许多行应收明细，合并就会丢掉追溯链。
       返回 0 不是重放：单头是本次刚插入的，因此同一条出库行撞键意味着它已挂在别的应收单上，

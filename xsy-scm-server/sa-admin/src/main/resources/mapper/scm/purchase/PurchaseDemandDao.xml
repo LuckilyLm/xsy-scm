@@ -2,8 +2,8 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.purchase.dao.PurchaseDemandDao">
 
-    <!-- 约定（同 W1–W3）：只显式声明 <id> 与 JSONB 列，其余列走下划线→驼峰自动映射。
-         W5 的 8 张表列名与属性名全部是干净的单射（无 is_default→defaultFlag 这类错位），
+    <!-- 约定：只显式声明 <id> 与 JSONB 列，其余列走下划线→驼峰自动映射。
+          本域 8 张表的列名与属性名全部是干净的单射（无 is_default→defaultFlag 这类错位），
          因此不需要逐列罗列；JSONB 列必须显式 typeHandler，否则 PGobject 无法转成 Map。 -->
     <resultMap id="demandRowMap" type="com.xsy.scm.purchase.domain.entity.PurchaseDemandEntity">
         <id column="id" property="id"/>
@@ -17,7 +17,7 @@
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- 来源行属于 W4 的 sales_order_item，其 JSONB 处理器是 W4 的 OrderJsonbTypeHandler；
+    <!-- 来源行属于订单域的 sales_order_item，其 JSONB 处理器是订单域的 OrderJsonbTypeHandler；
          这里只以字符串引用，不产生 purchase → order 的编译期依赖。 -->
     <resultMap id="sourceItemMap" type="com.xsy.scm.order.domain.entity.SalesOrderItemEntity">
         <id column="id" property="id"/>
@@ -25,7 +25,7 @@
                 typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- §7.4 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。
+    <!-- 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。
          仓库数据范围：来源行所在的 sales_order / sales_order_item 都没有仓库列，按仓库无从收窄
          （与 ReportDao.xml 销售侧同一口径）。本次命令落哪个仓由表单显式给出，边界在
          PurchaseWarehouseReferenceGuard 与后续收货/出库的仓库守卫上，不在这里重复实现。
@@ -99,7 +99,7 @@
         <if test="query.status != null and query.status != ''">
             AND d.status = #{query.status}
         </if>
-        <!-- 半开区间：与 Q6a 的 demand_date 口径一致 -->
+        <!-- 半开区间：与 demand_date 口径一致 -->
         <if test="query.demandDateFrom != null">
             AND d.demand_date &gt;= #{query.demandDateFrom}
         </if>
@@ -119,15 +119,15 @@
     </select>
 
     <!--
-      Wave 2A 订单汇总 / 库存缺口预览（只读聚合，§6A.4）。
+       订单汇总 / 库存缺口预览（只读聚合）。
 
       取数口径 WHERE 与 listSourceItems 完全同源：已确认订单 + 有实数量 + 同一确认窗口，
-      因此本预览看到的订单量与将来 generate 生成的需求数量一致（§6A.1 不改写需求语义）。
+      因此本预览看到的订单量与将来 generate 生成的需求数量一致（不改写需求语义）。
 
       仓库只存在于库存/采购侧、订单行不带仓库，故 warehouseId 作为入参进入 inventory_balance
       的 LEFT JOIN 谓词（放 ON 而非 WHERE，否则左连退化成内连会把无余额的 SKU 整行藏掉）。
 
-      Q13 单位门禁：按 (sku_id, warehouse_id) 连余额，比对 b.unit 与订单销售单位；
+       单位门禁：按 (sku_id, warehouse_id) 连余额，比对 b.unit 与订单销售单位；
       不一致即 UNIT_MISMATCH 且差额为 null，绝不换算、绝不猜折算率。
 
       预留必须拆成两半，否则缺口虚增：inventory_balance.reserved_quantity 是该 (仓库, SKU) 的
@@ -353,7 +353,7 @@
         ORDER BY id ASC
     </select>
 
-    <!-- INSERT 竞争（修 A-D17）：不先查后插；冲突返回 0，调用方重读收敛。
+    <!-- INSERT 竞争：不先查后插；冲突返回 0，调用方重读收敛。
          冲突（0 行）时 JDBC 不回传生成键，因此 row.id 保持 null —— 调用方必须走「重读」分支。 -->
     <insert id="insertIgnore" useGeneratedKeys="true" keyProperty="row.id">
         INSERT INTO purchase_demand (sales_order_id, sales_order_item_id, spu_id, sku_id,
@@ -374,7 +374,7 @@
         ON CONFLICT DO NOTHING
     </insert>
 
-    <!-- §7.8 C 段：需求侧重算。supplier_id 只在首次分配时写入（Q17/§7.4 分配段） -->
+    <!-- C 段：需求侧重算。supplier_id 只在首次分配时写入 -->
     <update id="updateAllocation">
         UPDATE purchase_demand
         SET allocated_quantity = #{allocatedQuantity},

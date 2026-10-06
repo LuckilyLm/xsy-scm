@@ -20,7 +20,7 @@
           AND spu_id = #{spuId}
     </select>
     <!-- 一条语句完成整批打标：spuIds × tagIds 的笛卡尔积。
-         ON CONFLICT 目标与 uk_product_tag_relation_active 的谓词逐字一致（Q11），
+         ON CONFLICT 目标与 uk_product_tag_relation_active 的谓词逐字一致，
          已有活动关系时整行跳过，不刷新 version，也不复活已下线的行。 -->
     <insert id="insertIgnore">
         INSERT INTO product_tag_relation(spu_id,tag_id,created_at,updated_at,created_by,updated_by)

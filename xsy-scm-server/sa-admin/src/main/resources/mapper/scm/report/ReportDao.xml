@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--
-  Finance R0 报表只读 SQL。
+   报表只读 SQL。
 
   全文件共同遵守的纪律：
   1. 只读冻结事实（销售 settlement_* / 采购 purchase_price 与 line_amount /
@@ -714,7 +714,7 @@
 
     <!--
       供应商维度不给「计划采购数量」单一数字：一个供应商可以供多种单位，
-      合计没有意义（AGENTS 与 R0 计划的「数量不跨单位总计」纪律）。
+      合计没有意义（AGENTS 的「数量不跨单位总计」纪律）。
       数量看抽屉（该供应商的按商品明细，按单位分组）。
     -->
     <select id="purchaseBySupplier"
@@ -940,7 +940,7 @@
     </select>
 
     <!--
-      R0-B 价格波动：同一天多笔按数量加权平均，且按 SKU × 采购单位分组，
+       价格波动：同一天多笔按数量加权平均，且按 SKU × 采购单位分组，
       所以箱价与公斤价不可能落进同一条线。GROUP BY 用序号，与 SELECT 表达式一一对应。
     -->
     <select id="purchasePriceTrend"

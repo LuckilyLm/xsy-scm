@@ -121,7 +121,7 @@
           AND deleted = FALSE FOR UPDATE
     </select>
 
-    <!-- 全局单调递增，不按日 reset（§5.1） -->
+    <!-- 全局单调递增，不按日 reset -->
     <select id="nextOrderNo" resultType="long">
         SELECT nextval('purchase_order_no_seq')
     </select>

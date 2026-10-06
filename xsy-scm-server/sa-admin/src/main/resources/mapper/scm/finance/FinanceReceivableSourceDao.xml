@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableSourceDao">
 
     <!--
-      财务域对配送 / 订单 / 库存表只读（设计稿 §0 第 2 条）：本文件只有 SELECT。
+      财务域对配送 / 订单 / 库存表只读：本文件只有 SELECT。
       读取一律显式写 deleted = FALSE，与 uk_finance_receivable_source_active 的谓词同口径；
       唯一例外是 JOIN 进来的 sales_order：它是这张应收的**来源主体**，主档被软删也不能让
       一次真实签收静默变成「什么都不生成」（漏账比多读一行危险），缺行时结果集为空、
@@ -89,7 +89,7 @@
     </select>
 
     <!--
-      有效红字行：逐行跳过非正金额（设计稿 §8.2）。金额原样取 approved_amount，
+      有效红字行：逐行跳过非正金额。金额原样取 approved_amount，
       不在 SQL 里乘回来 —— 订单域已按 round(approved_quantity × locked_unit_price, 4) 落库。
       商品三件套从来源订单行取（order_return_item 不存快照）。
     -->

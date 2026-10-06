@@ -61,7 +61,7 @@
     </select>
     <!-- 删除前的业务引用复核：只要产生过交易或价格事实就不允许删除，改为停用/归档。
          按 spu 直连与经 SKU 两级探测，全部走短路 OR，命中即返回；
-         供应商关系与客户可见性是主数据关联，不在此拦删除（方案 §11.2）。 -->
+         供应商关系与客户可见性是主数据关联，不在此拦删除（方案）。 -->
     <select id="hasBusinessReference" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM sales_order_item WHERE spu_id=#{spuId})
         OR EXISTS (SELECT 1 FROM purchase_demand WHERE spu_id=#{spuId})

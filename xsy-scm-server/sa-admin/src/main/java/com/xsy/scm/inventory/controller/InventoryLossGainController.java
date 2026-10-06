@@ -33,8 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code :reject}、 删除 {@code :delete}。
  *
  * <p>
- * <b>「审批」与「驳回」是两个独立权限</b>（与参考项目一致）：允许主管审批、 由另一角色驳回是常见分工；合成一个「审核」权限会让这两件事无法分权。 「新建」与「审批」也必须分开 —— 报损是把货从账上抹掉的动作，
- * 由同一个人录单并批准就失去了制衡。
+ * <b>「审批」与「驳回」是两个独立权限</b>：允许主管审批、 由另一角色驳回是常见分工；合成一个「审核」权限会让这两件事无法分权。 「新建」与「审批」也必须分开 —— 报损是把货从账上抹掉的动作， 由同一个人录单并批准就失去了制衡。
  */
 @RestController
 @RequestMapping("/scm/inventory/loss-gain")

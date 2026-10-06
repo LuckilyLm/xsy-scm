@@ -4,12 +4,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 规格转换单状态（与报损报溢单**刻意同构**，也与参考项目 `ConvertStatusEnum` 的三态一致）。
+ * 规格转换单状态（与报损报溢单**刻意同构**）。
  *
  * <pre>
- * PENDING ──approve──▶ COMPLETED      （写 CONVERT_OUT + CONVERT_IN 流水并调整两边余额）
+ * PENDING ──approve──▶ COMPLETED （写 CONVERT_OUT + CONVERT_IN 流水并调整两边余额）
  *    │
- *    └──reject───▶ REJECTED            （不产生任何库存影响）
+ *    └──reject───▶ REJECTED （不产生任何库存影响）
  * </pre>
  *
  * <p>

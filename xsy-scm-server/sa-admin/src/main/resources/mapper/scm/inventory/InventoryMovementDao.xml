@@ -10,10 +10,10 @@
     </resultMap>
 
     <!--
-      追加流水（append-only）。Q11：冲突目标与部分唯一索引
+      追加流水（append-only）。：冲突目标与部分唯一索引
       uk_inventory_movement_source_active 的列 + WHERE 谓词完全一致
       （该谓词里的 source_document_item_id IS NOT NULL 对 NOT NULL 列是冗余的，
-       保留是为了与 W5 TD §8.5 预留 SQL 逐字匹配）。
+       保留是为了与 预留 SQL 逐字匹配）。
       返回 0 = 源身份已存在；实时路径视为数据异常（41002），backfill 视为幂等跳过。
     -->
     <insert id="insertOnConflictDoNothing"
@@ -35,7 +35,7 @@
     </insert>
 
     <!--
-      展示字段实时联表；收货单号 LEFT JOIN 而来（Q9：不设 movement_no，人类可读溯源用 receipt_no）。
+      展示字段实时联表；收货单号 LEFT JOIN 而来（：不设 movement_no，人类可读溯源用 receipt_no）。
       source_document_id 只在 source_document_type = 'PURCHASE_RECEIPT_ITEM' 时才是收货单 id，
       因此 join 条件里带上类型判定，未来接入别的来源类型时不会误联到收货单。
       排序写死：客户端 sortItemList 由 Service 显式拒绝（join 列名歧义风险）。
@@ -145,9 +145,9 @@
 
     <!--
       按来源行读回唯一那条活动流水（调拨收货回读发出腿的成本事实）。
-      流水不可改删（Q7 / V21），所以「上一步用了什么成本」只能回读账本，
+      流水不可改删（DB 层有 append-only 触发器强制），所以「上一步用了什么成本」只能回读账本，
       不在单据行上另存一份副本 —— 那会变成两处可各自漂移的同一事实。
-      deleted = FALSE 谓词与 uk_inventory_movement_source_active 逐字一致（Q11），走同一个索引。
+      deleted = FALSE 谓词与 uk_inventory_movement_source_active 逐字一致，走同一个索引。
     -->
     <select id="selectBySourceItem"
             resultType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">

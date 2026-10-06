@@ -55,7 +55,7 @@
                                       ORDER BY id</select>
 
     <!--
-      Wave 3 §7.5「最近已确认订单价」（只读）：按 (customer, sku) 取历史 CONFIRMED 订单行的锁定单价与单位快照。
+       「最近已确认订单价」（只读）：按 (customer, sku) 取历史 CONFIRMED 订单行的锁定单价与单位快照。
       只取未删除的 CONFIRMED 单（排除 DRAFT / PENDING / CANCELLED），不做 locked_unit_price 非空过滤，
       锁定价异常缺失时以 null 展示而非用草稿价 / 当前价兜底；limit 约束「最近 N 张包含该 SKU 的订单」而非行数，
       由分组子查询先定 N 张单，再返回这些单的匹配明细（同单同 SKU 多行各自成行，带 itemId，不任取 / 相加 / 求平均）。

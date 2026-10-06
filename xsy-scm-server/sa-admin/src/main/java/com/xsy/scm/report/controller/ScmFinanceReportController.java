@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
-/** Read-only R0 account overview and aging-free detail endpoints. */
+/** Read-only account overview and aging-free detail endpoints. */
 @RestController
 @RequestMapping("/scm/report/finance")
 @RequiredArgsConstructor

@@ -20,7 +20,7 @@
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- 归属（Q14）由 ck_purchase_operation_log_owner 在 DB 层强制：
+    <!-- 归属由 ck_purchase_operation_log_owner 在 DB 层强制：
          DEMAND_GENERATE 双 id 为 NULL；DEMAND_ALLOCATE 只有采购单 id；RECEIPT_* 双 id 非空。
          本 Dao 不做任何归属推断，只把调用方算好的 id 原样写入。 -->
     <insert id="append">

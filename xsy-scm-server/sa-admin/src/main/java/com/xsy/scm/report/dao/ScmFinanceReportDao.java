@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** Read-only Finance R0 projection over Finance R1 facts. */
+/** Read-only finance projection over immutable facts. */
 @Mapper
 public interface ScmFinanceReportDao {
 

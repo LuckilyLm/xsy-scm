@@ -69,7 +69,7 @@ const PLAN_MARKERS = [
   ['Wn 波次', /\bW\d{1,2}\b/],
   ['Rn 阶段代号', /\bR[0-9]\b/],
   ['A-Dn 编号', /\bA-D\d+\b/],
-  ['Qna 编号', /\bQ\d{1,2}[a-z]\b/],
+  ['Qna 编号', /\bQ\d{1,2}[a-z]?\b/],
 ];
 
 /** 判定 `§` 是否指向现存长期文档。 */
@@ -116,15 +116,15 @@ const BASELINE = {
       'Copy First + Adapt': 0,
       '剪枝 / 适配 / 验收记录': 0,
       '测试 / 验收记录': 0,
-      '参考项目 / 旧项目对比': 12,
+      '参考项目 / 旧项目对比': 0,
       '为什么新增此文件': 0,
       'AI 指令式措辞': 0,
     },
     plan: {
       'Sprint / Wave': 0,
-      'Wn 波次': 3,
-      'Rn 阶段代号': 8,
-      'A-Dn 编号': 1,
+      'Wn 波次': 0,
+      'Rn 阶段代号': 0,
+      'A-Dn 编号': 0,
       'Qna 编号': 0,
       '§ 无 .md 引用': 0,
     },
@@ -145,14 +145,16 @@ const BASELINE = {
       'AI 指令式措辞': 0,
     },
     plan: {
-      'Sprint / Wave': 4,
-      'Wn 波次': 5,
-      'Rn 阶段代号': 4,
-      'A-Dn 编号': 3,
-      'Qna 编号': 1,
-      '§ 无 .md 引用': 16,
+      'Sprint / Wave': 0,
+      'Wn 波次': 0,
+      'Rn 阶段代号': 0,
+      'A-Dn 编号': 0,
+      'Qna 编号': 0,
+      '§ 无 .md 引用': 0,
     },
-    anchoredSection: 4,
+    // resources 里那 4 处「§」其实是 `设计稿 §0` 这类计划章节号，不是文档链接，已随 P4.5 清除；
+    // 该指标是启发式护栏（块内含 .md 就认为 § 合法），在 resources 上会误判，故基线为 0。
+    anchoredSection: 0,
     longCommentCount: 16,
   },
 };

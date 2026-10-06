@@ -7,9 +7,8 @@ import lombok.RequiredArgsConstructor;
  * 跨 SCM 域共享的错误码。
  *
  * <p>
- * W1 已在 {@code ProductErrorCode} 中定义过 {@code VERSION_CONFLICT(40921)}。W2 不修改已验收的 W1
- * 代码，因此在这里重新声明一次同码值常量；两个枚举对外表现完全一致（前端与 {@code t_operate_log} 无法区分）。 建议 W3 开始前做一次纯 Java 重构让 ProductErrorCode 指向本枚举，
- * 该重构不涉及 migration、不改变对外行为。
+ * 同码值常量已在 {@code ProductErrorCode} 中定义过 {@code VERSION_CONFLICT(40921)}。本处不修改已验收的 代码，因此在这里重新声明一次同码值常量；两个枚举对外表现完全一致（前端与
+ * {@code t_operate_log} 无法区分）。 建议后续做一次纯 Java 重构让 ProductErrorCode 指向本枚举， 该重构不涉及 migration、不改变对外行为。
  */
 @Getter
 @RequiredArgsConstructor

@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.finance.dao.FinancePayableSourceDao">
 
     <!--
-      财务域对采购表只读（设计稿 §0 第 2 条）：本文件只有 SELECT。
+      财务域对采购表只读：本文件只有 SELECT。
       读取一律显式写 deleted = FALSE，与 uk_finance_payable_source_active 的谓词同口径。
     -->
     <select id="selectConfirmedReceipt"
@@ -20,10 +20,10 @@
     </select>
 
     <!--
-      量取收货行、价取采购行（收货行不存价格，A-D8）。
+      量取收货行、价取采购行（收货行不存价格）。
 
       采购行**不加 deleted 过滤**：purchase_order_item_id 是收货单创建时解析好的引用，采购单提交后
-      行不可变（W5 §7.5），在这条 JOIN 上再加一道 deleted 只会把「少一行 = 少算一笔债务」变成
+      行不可变，在这条 JOIN 上再加一道 deleted 只会把「少一行 = 少算一笔债务」变成
       静默漏账 —— 加与不加在缺行时结果相同，但不加就不会把「主档被软删」这种运维动作算成免税。
       全部行都取不到时金额为 0，由服务侧「不产生 0 元财务事实」的判据跳过，不会留一张空单头。
     -->

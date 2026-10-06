@@ -44,9 +44,9 @@
     </select>
 
     <!--
-      「可采购来源」四表联动（legacy R16）：supplier_sku → supplier → product_sku → product_spu。
-      W2 无消费端点，查询先落地供 W3 采购域复用。
-      排序 is_default DESC 让默认来源排在前面，但不改变基数（允许多条默认，R12）。
+      「可采购来源」四表联动：supplier_sku → supplier → product_sku → product_spu。
+      无消费端点，查询先落地供采购域复用。
+      排序 is_default DESC 让默认来源排在前面，但不改变基数（允许多条默认）。
     -->
     <select id="selectEnabledBySkuId" resultMap="supplierSkuMap">
         SELECT
@@ -114,7 +114,7 @@
                 typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
     </resultMap>
 
-    <!-- 名称取 SPU 名称（productName），不是 SKU 的 specName（legacy R4） -->
+    <!-- 名称取 SPU 名称（productName），不是 SKU 的 specName -->
     <select id="selectOrderableSkuByIds" resultMap="orderableSkuMap">
         SELECT k.id AS sku_id, k.sku_code, p.name AS product_name, k.spec_values
         FROM product_sku k

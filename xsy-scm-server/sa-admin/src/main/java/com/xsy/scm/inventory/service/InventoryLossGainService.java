@@ -41,8 +41,8 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
  * 报损报溢单命令侧：创建 / 改待审核 / 审批 / 驳回 / 删除。
  *
  * <p>
- * <b>状态机</b>：{@code PENDING → COMPLETED | REJECTED}，两个终态都不可回退。 只有 {@code PENDING} 可改 / 可删 / 可审 —— 与参考项目不同，参考项目对 update
- * / delete 没有状态守卫，那会让「已完成（已写流水）」的单据被改内容或被删掉，账与单从此对不上。
+ * <b>状态机</b>：{@code PENDING → COMPLETED | REJECTED}，两个终态都不可回退。 只有 {@code PENDING} 可改 / 可删 / 可审 —— 与既有单据不同，对 update /
+ * delete 没有状态守卫，那会让「已完成（已写流水）」的单据被改内容或被删掉，账与单从此对不上。
  *
  * <p>
  * <b>锁序（与收货 / 出库 / 盘点同一顺序）</b>：

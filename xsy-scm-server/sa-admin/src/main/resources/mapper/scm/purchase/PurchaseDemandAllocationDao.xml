@@ -9,7 +9,7 @@
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- Q13：全部查询都是集合形态。没有「按 itemId 查单条」的方法（A-D23 的错误形状）。 -->
+    <!-- ：全部查询都是集合形态。没有「按 itemId 查单条」的方法（的错误形状）。 -->
     <select id="listActiveByOrderId" resultMap="allocationRowMap">
         SELECT a.*
         FROM purchase_demand_allocation a
@@ -47,7 +47,7 @@
         ORDER BY a.purchase_order_item_id ASC, a.purchase_demand_id ASC
     </select>
 
-    <!-- 保留的 allocation：只改数量，不重建行（Q13）。版本作为显式参数，0 行 = 并发冲突 -->
+    <!-- 保留的 allocation：只改数量，不重建行。版本作为显式参数，0 行 = 并发冲突 -->
     <update id="updateQuantity">
         UPDATE purchase_demand_allocation
         SET allocated_quantity = #{allocatedQuantity},
@@ -59,7 +59,7 @@
           AND deleted = FALSE
     </update>
 
-    <!-- 只删这一条：同一采购行的其它 allocation 必须原样保留（Q13） -->
+    <!-- 只删这一条：同一采购行的其它 allocation 必须原样保留 -->
     <update id="softDelete">
         UPDATE purchase_demand_allocation
         SET deleted    = TRUE,

@@ -114,7 +114,7 @@
         ORDER BY id ASC
     </select>
 
-    <!-- 全局单调递增，不按日 reset（§5.1） -->
+    <!-- 全局单调递增，不按日 reset -->
     <select id="nextReceiptNo" resultType="long">
         SELECT nextval('purchase_receipt_no_seq')
     </select>

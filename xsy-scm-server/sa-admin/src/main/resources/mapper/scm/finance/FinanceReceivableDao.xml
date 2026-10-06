@@ -13,7 +13,7 @@
       正常应收的插入（append-only：version 从 0 起、deleted 恒 FALSE，
       由 ck_finance_receivable_append_only 在库级锁死）。
 
-      ON CONFLICT 的列与 WHERE 谓词必须与 uk_finance_receivable_source_active 逐字一致（Q11）：
+      ON CONFLICT 的列与 WHERE 谓词必须与 uk_finance_receivable_source_active 逐字一致：
       该索引只写 deleted = FALSE（应收与应收明细的来源恒非空，与应付侧多一句 IS NOT NULL 不同），
       多写一个谓词会让冲突无法被索引仲裁。返回 0 = 这张订单已经生成过应收，
       由服务侧按「已生成」成功返回（生成器不是用户命令）。

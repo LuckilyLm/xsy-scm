@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 规格转换类型（与参考项目 `ConvertTypeEnum` 的 `SPLIT` / `COMBINE` 对齐）。
+ * 规格转换类型（`SPLIT` / `COMBINE`）。
  *
  * <p>
  * 本枚举只表达**业务形态**，不参与任何计算：折算关系（源数量 : 目标数量） 由单据显式声明。系统不推断折算率 —— 一箱到底是 9.5 kg 还是 10 kg 取决于供应商与批次， 猜错会直接污染两边余额。

@@ -6,7 +6,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/** The six fixed Finance R0 measures: period flows and end-of-period open balances. */
+/** The six fixed finance measures: period flows and end-of-period open balances. */
 @Data
 public class ScmFinanceOverviewVO {
 
