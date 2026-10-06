@@ -183,18 +183,39 @@ views/business/scm 下不再存在任何页面自定义的 .num：
 
 # C2 Drawer 宽度分级
 
+> **修订记录（2026-10-07）**：C2 初版为纯 S/M/L/XL 四档，且登记了 9 项待人工决策。
+> 经审核后修订为：**四档 + 一个受限的 `workspace = 1440` 特殊语义**，9 项待决全部拍板。
+> 修订后分布：S=5 / M=4 / L=12 / XL=8 / workspace=5，合计 34。以下内容为修订后版本。
+
 ## C2.1 决策
 
-`theme/scm/scm-drawer.ts` 由三级扩展为四级（Sprint F-D 落地）：
+`theme/scm/scm-drawer.ts` 由三级扩展为四级，**并额外增加一个受限的特殊档 `workspace`**（Sprint F-D 落地）：
 
 | 等级 | 宽度 | 语义 |
 | --- | --- | --- |
 | S | 600 | 简单配置 / 简单维护 |
 | M | 780 | 中型主数据 / 常规编辑表单 |
 | L | 940 | 复杂业务编辑表单 |
-| XL | 1120 | 复杂详情 / 工作台 / 内嵌宽表 / 多明细业务 |
+| XL | 1120 | 复杂详情 / 内嵌宽表 / 多明细业务 |
+| **workspace** | **1440** | **受限特殊档，见 C2.2** |
 
-**不再允许业务页面硬编码** `620 / 760 / 860 / 920 / 1000 / 1120` 等宽度。所有 Drawer 一律经 `scmDrawerWidth(level)` 取值，视口兜底继续由 `theme/scm/responsive.less` 的 `max-width: 96vw` 负责。
+**不再允许业务页面硬编码** `620 / 760 / 860 / 920 / 1000 / 1120 / 1500` 等宽度。所有 Drawer 一律经 `scmDrawerWidth(level)` 取值，视口兜底继续由 `theme/scm/responsive.less` 的 `max-width: 96vw` 负责。
+
+### C2.1.1 `workspace` 不是第五档
+
+`workspace = 1440` **不是普通 Drawer 的第五个宽度档**，而是一个**受限语义**：只有同时满足「横向空间本身就是业务内容」的场景才允许使用，且**仅限以下五类**：
+
+1. 地图工作台
+2. 分拣 / 称重工作台
+3. 报表下钻
+4. 超宽业务数据阅读
+5. 多面板业务工作台
+
+**准入约束**（Sprint F-D 落地时写进 `scm-drawer.ts` 注释）：
+
+- 任何"表单 / 编辑 / 配置 / 详情"类 Drawer **一律不得**使用 `workspace`，即使内容看起来很宽 —— 这类应升到 XL 或拆分。
+- 使用 `workspace` 的 Drawer 必须在代码注释中写明它属于上述五类中的哪一类。
+- 新增 `workspace` 用例需要在本文件登记，不允许随手加。
 
 ## C2.2 映射原则
 
@@ -244,57 +265,75 @@ views/business/scm 下不再存在任何页面自定义的 .num：
 | `inventory/components/inventory-transfer-detail-drawer.vue` | `860` | L | 940 | 调拨单详情 | 双列描述 9 项 + 明细表；860 → 940 |
 | `inventory/inventory-outbound-list.vue`（出库单详情） | `760` | L | 940 | 出库单详情 | 双列描述 7 项 + 明细表；与同族四个库存单据详情统一到 L（原 760 偏窄） |
 
-### XL = 1120（13 个）
+### XL = 1120（8 个）
 
 | 文件 | 当前宽度 | 建议等级 | 目标宽度 | 业务类型 | 调整理由 |
 | --- | --- | --- | --- | --- | --- |
 | `finance/finance-detail-drawer.vue` | `min(1120px, 96vw)` | XL | 1120 | 财务单据详情 | 已合规；7 个 section、5 张内嵌表（`scroll.x` 760/900/960）+ 金额组成网格 |
 | `supplier/components/supplier-sku-drawer.vue` | `1120` | XL | 1120 | 供应商关联商品维护 | 已合规；整表替换式宽表编辑 |
-| `purchase/components/purchase-demand-batch-detail-drawer.vue` | `1000px` | XL | 1120 | 冻结批次明细 | 三列描述 12 项 + 2 张宽表（`scroll.x` 1800 / 1400），宽度需求远超 L |
-| `inventory/components/inventory-conversion-detail-drawer.vue` | `1000` | XL | 1120 | 转换单详情 | 双列描述 11 项 + 明细表 `scroll.x=1100`，L(940) 不足以容纳 |
+| `inventory/components/inventory-conversion-detail-drawer.vue` | `1000` | XL | 1120 | 转换单详情 | 双列描述 11 项 + 明细表 `scroll.x=1100`；库存单据详情体系中唯一进 XL 的一张（见 C2.4） |
 | `inventory/inventory-conversion-list.vue`（新建/编辑） | `1080` | XL | 1120 | 转换单编辑 | 4 项表单 + 双 `SkuSelect` 可编辑表（`scroll.x=900`），多明细业务 |
-| `report/report-components/report-drilldown-drawer.vue` | `min(1180px, 94vw)` | XL | 1120 | 报表下钻 | 单张宽表 `scroll.x=1500`；1180 → 1120（仍大于 XL，见 C2.4） |
 | `order/components/order-form-drawer.vue` | `min(1200px, 96vw)` | XL | 1120 | 销售订单编辑 | 10 项双列表单 + 商品明细可编辑表 + 价格解析，多明细业务 |
 | `order/order-detail.vue` | `min(1180px,96vw)` | XL | 1120 | 销售订单详情 | 6 个 section + 明细表 `scroll.x=1100` + 时间线 + 变更对比 |
 | `purchase/components/purchase-order-form-drawer.vue` | `min(1280px, 96vw)` | XL | 1120 | 采购单编辑 | 双列表单 + 需求分配可编辑表，多明细业务 |
 | `purchase/components/purchase-order-detail-drawer.vue` | `min(1240px, 96vw)` | XL | 1120 | 采购单详情 | 13 项描述 + 明细表 `scroll.x=1300` |
-| `sorting/components/sorting-scale-drawer.vue` | `960px` | XL | 1120 | 秤读数工作台 | 宽表 `scroll.x=1410`，属工作台；960 → 1120 |
-| `sorting/components/sorting-task-detail-drawer.vue` | `min(1500px, 96vw)` | XL | 1120 | 分拣任务详情/工作台 | 任务头 + 三列描述 + 明细表 `scroll.x=1420`，属工作台 |
-| `delivery/route-detail.vue` | `min(1500px, 96vw)` | XL | 1120 | 配送线路详情/工作台 | 线路头 + 汇总 + 地图面板 + 订单/履约/打印多面板 |
+
+### workspace = 1440（5 个）
+
+| 文件 | 当前宽度 | 建议等级 | 目标宽度 | 业务类型 | 准入类别（C2.1.1） |
+| --- | --- | --- | --- | --- | --- |
+| `delivery/route-detail.vue` | `min(1500px, 96vw)` | workspace | 1440 | 配送线路详情 | 地图工作台 + 多面板业务工作台（线路头 + 汇总 + 地图面板 + 订单 / 履约 / 打印面板） |
+| `sorting/components/sorting-task-detail-drawer.vue` | `min(1500px, 96vw)` | workspace | 1440 | 分拣任务详情 | 分拣工作台（任务头 + 三列描述 + 明细表 `scroll.x=1420`） |
+| `sorting/components/sorting-scale-drawer.vue` | `960px` | workspace | 1440 | 秤读数 | 称重工作台（宽表 `scroll.x=1410`） |
+| `report/report-components/report-drilldown-drawer.vue` | `min(1180px, 94vw)` | workspace | 1440 | 报表下钻 | 报表下钻（单张宽表 `scroll.x=1500`） |
+| `purchase/components/purchase-demand-batch-detail-drawer.vue` | `1000px` | workspace | 1440 | 冻结批次明细 | 超宽业务数据阅读（2 张宽表 `scroll.x` 1800 / 1400，全项目最宽） |
 
 ### 统计
 
 ```text
-S  = 5
-M  = 4
-L  = 12
-XL = 13
-合计 = 34（对应 33 个文件）
+S         = 5
+M         = 4
+L         = 12
+XL        = 8
+workspace = 5
+合计      = 34（对应 33 个文件）
 ```
 
-## C2.4 需要人工决策的 Drawer
+## C2.4 人工决策结论（已拍板 2026-10-07）
 
-以下 9 项无法仅凭分级规则定论，**不建议在 Sprint F-D 机械执行**：
+C2 初版登记的 9 项待决已定论，Sprint F-D 可直接执行，无需再讨论：
 
-| # | Drawer | 问题 | 建议决策项 |
-| --- | --- | --- | --- |
-| 1 | `delivery/route-detail.vue` | 含地图面板 + 多面板工作台，1500 → 1120 会明显压缩地图与面板并排布局 | 是否允许工作台类单独放宽，或改为地图全屏入口 |
-| 2 | `sorting/components/sorting-task-detail-drawer.vue` | 明细表 `scroll.x=1420` > 1120，收敛后抽屉内必出横向滚动 | 接受内部横向滚动，还是收窄该表列宽 |
-| 3 | `purchase/components/purchase-demand-batch-detail-drawer.vue` | 表 `scroll.x=1800`，是全部 Drawer 中宽度需求最大者 | 同上；1800 已超出任何合理抽屉宽度，建议改为独立页面或列折叠 |
-| 4 | `report/report-components/report-drilldown-drawer.vue` | 表 `scroll.x=1500` > 1120 | 接受内部滚动，或下钻改为独立页面 |
-| 5 | `purchase/components/purchase-order-detail-drawer.vue` | 表 `scroll.x=1300` > 1120 | 同上 |
-| 6 | `sorting/components/sorting-scale-drawer.vue` | 表 `scroll.x=1410` > 1120 | 同上 |
-| 7 | `order/order-detail.vue` | 表 `scroll.x=1100` 略大于 XL 可用内宽（约 1072） | 接受 1% 级内部滚动，或把明细表 `scroll.x` 调到 1060 |
-| 8 | 库存 5 个单据详情抽屉 | 现状宽度不一致：760 / 860 / 860 / 860 / 1000；本方案统一为 L(940) + 转换单 XL(1120) | 确认是否接受"转换单与其他四张不同级"，或把转换单明细表列宽压到 940 内 |
-| 9 | `inventory/inventory-conversion-detail-drawer.vue` | 明细表 `scroll.x=1100` 略大于 XL 内宽 | 同 #7 |
+| # | 原待决项 | 结论 |
+| --- | --- | --- |
+| 1 | `delivery/route-detail.vue`（地图 + 多面板） | **workspace = 1440**（地图工作台 + 多面板业务工作台） |
+| 2 | `sorting/components/sorting-task-detail-drawer.vue` | **workspace = 1440**（分拣工作台） |
+| 3 | `purchase/components/purchase-demand-batch-detail-drawer.vue` | **workspace = 1440**（超宽业务数据阅读） |
+| 4 | `report/report-components/report-drilldown-drawer.vue` | **workspace = 1440**（报表下钻） |
+| 5 | `sorting/components/sorting-scale-drawer.vue` | **workspace = 1440**（称重工作台） |
+| 6 | `purchase/components/purchase-order-detail-drawer.vue` | **XL = 1120** |
+| 7 | `order/order-detail.vue` | **XL = 1120** |
+| 8 | `inventory/components/inventory-conversion-detail-drawer.vue` | **XL = 1120** |
+| 9 | 库存单据详情体系宽度不一致 | 统一为：**outbound detail → L、loss/gain detail → L、stocktake detail → L、transfer detail → L、conversion detail → XL** |
 
-**共同结论**：C2 暴露的不只是"宽度不统一"，而是**多个 Drawer 内嵌表格的 `scroll.x` 本身超过任何合理抽屉宽度**。这是 Sprint F-D 之前需要先拍板的口径，否则会变成"把硬编码换成另一种硬编码"。
+### 库存单据详情体系（口径统一）
+
+| 抽屉 | 等级 | 宽度 |
+| --- | --- | --- |
+| `inventory/inventory-outbound-list.vue`（出库单详情） | L | 940 |
+| `inventory/components/inventory-loss-gain-detail-drawer.vue` | L | 940 |
+| `inventory/components/inventory-stocktake-detail-drawer.vue` | L | 940 |
+| `inventory/components/inventory-transfer-detail-drawer.vue` | L | 940 |
+| `inventory/components/inventory-conversion-detail-drawer.vue` | **XL** | 1120 |
+
+**遗留说明**：转换单详情因内嵌明细表 `scroll.x=1100` 单列一级，是唯一与同族不一致的一张。F-D 执行时须在代码注释中写明该例外的原因（`scroll.x=1100` 大于 L 的可用内宽），避免后人误判为遗漏。
+
+**结论**：C2 初版提出的"内嵌宽表 `scroll.x` 超出抽屉宽度"问题，通过引入**受限的 `workspace = 1440`** 一次性解决 —— 不再需要"接受内部横向滚动"或"改为独立页面"两种降级方案。
 
 ## C2.5 规划与代码的冲突
 
 | # | 冲突 | 规划/文档表述 | 当前代码实际 | 处理 |
 | --- | --- | --- | --- | --- |
-| 1 | Drawer 分级等级数 | 规划 §6.2 只有 S/M/L 三级 | 实际存在 1000 / 1080 / 1120 / 1180 / 1200 / 1240 / 1280 / 1500 等取值，均超出三级 | 本文件扩展为四级并回写规划 §6.2 |
+| 1 | Drawer 分级等级数 | 规划 §6.2 只有 S/M/L 三级 | 实际存在 1000 / 1080 / 1120 / 1180 / 1200 / 1240 / 1280 / 1500 等取值，均超出三级 | 本文件扩展为 S/M/L/XL 四级 + 受限 `workspace` 档，并回写规划 §6.2 |
 | 2 | `.num` 规模 | 缺口盘点 §4 F1 表述为"16 个页面各自存在" | 实际 19 个文件定义、17 个文件使用、55 处使用点；另有 2 个文件定义后从未使用 | 以本文件为准，回写 F1 |
 | 3 | Drawer 数量 | 收尾审计 §5.A3 记为"33 个 a-drawer" | 33 个**文件**、34 个**实例**（`inventory-outbound-list.vue` 含新建 + 详情两个） | 以本文件为准，回写审计 §5.A3 |
 | 4 | 规划 §8 操作列上限 | "少数复杂工作台可放宽到 180px" | 与收尾审计 §5.A1 列出的 7 处超宽（200~250px）一致，无冲突 | 无需处理，F-C 执行 |
@@ -308,8 +347,8 @@ XL = 13
 | --- | --- |
 | 1. `.num` 总使用点 | **55 处**，分布在 **17 个文件**；另有 19 个文件定义（含 2 个定义后从未使用） |
 | 2. 各目标 class 迁移数 | `.scm-money` **12 处**、`.scm-quantity` **43 处**、`.scm-mono` **0 处** |
-| 3. Drawer 分级分布 | S **5**、M **4**、L **12**、XL **13**，合计 **34 个实例 / 33 个文件** |
-| 4. 需人工决策 | **9 项**（见 C2.4），核心是 6 个 Drawer 的内嵌表 `scroll.x` 超过 1120 |
+| 3. Drawer 分级分布 | S **5**、M **4**、L **12**、XL **8**、workspace **5**，合计 **34 个实例 / 33 个文件** |
+| 4. 需人工决策 | 初版登记 **9 项**，**已全部拍板**（见 C2.4）；结论为 5 个 `workspace` + 3 个 XL + 库存详情体系统一 |
 | 5. 规划与代码冲突 | **5 项**（见 C2.5），其中 3 项需回写规划/审计文档 |
 
 ## 本轮未做的事
@@ -324,5 +363,5 @@ XL = 13
 ## 后续
 
 - **Sprint F-B**：落地 `.scm-mono`，按 C1.4 迁移 55 处，删除 19 处自定义 `.num`；提交信息须说明字体变更。
-- **Sprint F-D**：先拍板 C2.4 的 9 项，再落地四级宽度并迁移 34 个 Drawer。
+- **Sprint F-D**：按 C2.4 已拍板结论，落地 S/M/L/XL 四级 + 受限 `workspace` 档，并迁移 34 个 Drawer 实例。
 - **文档回写**：按 C2.5 更新规划 §6.2、缺口盘点 §4 F1、收尾审计 §5.A3。
