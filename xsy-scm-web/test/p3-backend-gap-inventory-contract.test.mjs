@@ -99,3 +99,11 @@ test('§3 澄清节不得把「已具备的字段」误列为缺口', () => {
     assert.match(doc, /FinanceOperationLogVO[\s\S]{0,120}operator/);
     assert.match(doc, /不是缺口/);
 });
+
+test('§3 F 系列（前端口径分歧）也被登记，防止被机械清理', () => {
+    const fIds = [...doc.matchAll(/^\|\s*(F\d+)\s*\|/gm)].map((m) => m[1]);
+    assert.ok(fIds.includes('F1'), '文档缺少 F1（局部 .num 与全局 .scm-quantity 口径不一致）');
+    // 必须说明「为何不能机械处理」，否则登记失去意义
+    assert.match(doc, /为何不能机械处理/);
+    assert.match(doc, /等宽/);
+});
