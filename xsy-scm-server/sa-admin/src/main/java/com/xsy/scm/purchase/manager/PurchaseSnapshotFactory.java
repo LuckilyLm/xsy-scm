@@ -191,7 +191,7 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * ：`demand_date` = `source_confirmed_at` 在 **Asia/Shanghai** 下的日期。
+     * `demand_date` = `source_confirmed_at` 在 **Asia/Shanghai** 下的日期。
      *
      * <p>
      * **禁止**用汇总窗口的第一天（`date(startAt)`）—— 跨多日窗口会把全部需求压平成同一天。 结果由 的 `ck_purchase_demand_date` 在 DB 层复核，两侧口径必须一致。
@@ -275,7 +275,7 @@ public final class PurchaseSnapshotFactory {
      * 操作日志行。
      *
      * <p>
-     * <b> 的归属由调用方决定，本方法不做推断</b>： `DEMAND_GENERATE` 传两个 `null`；`DEMAND_ALLOCATE` 传反查得到的 `purchaseOrderId` + `null`；
+     * <b>日志的归属由调用方决定，本方法不做推断</b>： `DEMAND_GENERATE` 传两个 `null`；`DEMAND_ALLOCATE` 传反查得到的 `purchaseOrderId` + `null`；
      * `RECEIPT_*` 传两个非空。DB 的 `ck_purchase_operation_log_owner` 会复核 —— 传错就写不进去，这是**故意**的（让错误在写入点暴露，而不是留一条脏日志）。
      *
      * @param before

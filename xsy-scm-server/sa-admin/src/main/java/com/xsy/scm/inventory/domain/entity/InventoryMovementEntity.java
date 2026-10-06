@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
  * 库存流水（**append-only 账本**）。
  *
  * <p>
- * <b> 硬化后的纪律</b>：表上有 {@code deleted} 列（为了与 TD 预留的部分唯一索引
+ * <b>append-only 硬化后的纪律</b>：表上有 {@code deleted} 列（为了与 TD 预留的部分唯一索引
  * {@code WHERE deleted = FALSE AND source_document_item_id IS NOT NULL} 逐字匹配）， 但 DB 约束
  * {@code ck_inventory_movement_append_only CHECK (deleted = FALSE)} 把它锁死为 FALSE。 因此：
  * <ul>
@@ -73,7 +73,7 @@ public class InventoryMovementEntity {
     private String unitSnapshot;
 
     /**
-     * ：采购成本事实快照；可空只为未来的无成本 movement 类型预留表达空间。
+     * 采购成本事实快照；可空只为未来的无成本 movement 类型预留表达空间。
      */
     private BigDecimal unitCost;
 

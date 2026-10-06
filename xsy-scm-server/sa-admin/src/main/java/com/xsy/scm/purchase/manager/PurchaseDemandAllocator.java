@@ -125,7 +125,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * ：由 `allocated` 与 `required` 推导需求状态。
+     * 由 `allocated` 与 `required` 推导需求状态。
      *
      * <pre>
      * allocated == 0        → PENDING

@@ -86,11 +86,11 @@ import static com.xsy.scm.purchase.service.PurchaseReceiptSnapshotMapper.receipt
  * `order.create` （需求 → 采购单 → 采购行）不构成环。
  *
  * <p>
- * <b> 库存接线</b>：{@code confirm} 的最后一步（第 15 步）调用 {@link PurchaseInventoryContract#postInbound}，**在同一个事务内**。 本类只依赖
+ * <b>库存接线</b>：{@code confirm} 的最后一步（第 15 步）调用 {@link PurchaseInventoryContract#postInbound}，**在同一个事务内**。 本类只依赖
  * 已定义的接口，**不 import inventory 模块任何类** —— purchase → inventory 的编译期依赖为零，真实实现由 Spring 在装配期注入。
  *
  * <p>
- * <b> 应付接线</b>：{@code confirm} 把收货单置为 {@code CONFIRMED} 之后调用
+ * <b>应付接线</b>：{@code confirm} 把收货单置为 {@code CONFIRMED} 之后调用
  * {@link FinancePayableService#generateOnReceiptConfirm}，与库存写入同一个事务。 这里不需要 那样的接口：依赖方向是 purchase → finance，而 finance
  * 对采购表只读、 不反向 import 采购域，因此不存在环。
  */

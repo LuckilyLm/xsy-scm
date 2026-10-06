@@ -27,7 +27,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_BALANC
  * <b>只读</b>：本类不写任何表，只读事务。余额的唯一写入路径是 {@link InventoryCommandService}（收货确认同事务）。
  *
  * <p>
- * <b> 后端不做隐式默认</b>：{@code warehouseId} 为空即不过滤。 「恰好只有一个启用仓库时默认带出该仓库」是**前端**行为（余额页加载时联 {@code GET /scm/warehouse/list}
+ * <b>后端不做隐式默认</b>：{@code warehouseId} 为空即不过滤。 「恰好只有一个启用仓库时默认带出该仓库」是**前端**行为（余额页加载时联 {@code GET /scm/warehouse/list}
  * 判定），服务端不会替调用方选仓库。
  *
  * <p>
