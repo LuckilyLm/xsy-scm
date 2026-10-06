@@ -1,7 +1,7 @@
 # 前端 UI 收尾口径决策（Sprint F-A）
 
 决策日期：2026-10-07。
-基线 HEAD：`422cc988`（审计文档 `be823423` 之后）。
+基线 HEAD：`b835fb81`（含 `dad5cb3f`，仅改登录页 `login.vue` / `login.less`，未触及本文件的扫描范围 `views/business/scm`）；审计依据 `be823423`。
 状态：**本轮只产出决策与映射，未修改任何 Vue / LESS / TS 业务代码**。
 依据：[前端 UI 收尾审计](frontend-ui-closeout-audit.md) §5.A3 / §5.A4 / §6、[前端 UI 优化规划](frontend-ui-optimization-plan.md) §6.2 / §7 / §8、[后端字段缺口盘点](frontend-ui-backend-gap-inventory.md) §4 F1。
 
