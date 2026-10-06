@@ -8,7 +8,7 @@
  * 裸 `§` 会命中指向 `docs/architecture` 与 `docs/adr` 的有效链接。
  *
  * 分两阶段：现在 `count <= BASELINE` 且逐标记比较，P4.4 完成后再收紧到 0。
- * 详细规则、基线与扫描口径见 `docs/plan/active/source-comment-cleanup.md`。
+ * 详细规则、基线与扫描口径见 `docs/architecture/code-comment-guidelines.md`。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';

@@ -7,6 +7,7 @@
 
 - SmartAdmin 系统底座边界见 [SmartAdmin 底座规则](architecture/smartadmin-foundation.md)。
 - Java 质量、包结构和文档治理见 [整改基线](quality/java-code-quality-remediation-plan.md)。
+- 注释怎么写、哪些不许写见[源码注释规范](architecture/code-comment-guidelines.md)（由 `test/scm-comment-noise-contract.test.mjs` 钉住）。
 - 已应用的数据库迁移不可修改；新变更只追加新版本。
 
 ## P0 基线收口裁决：角色模型、SCM 数据范围与 F0 附件收口
