@@ -1,5 +1,5 @@
 /**
- * 库存出库单接口（出库波次新增文件）。
+ * 库存出库单接口。
  *
  * 与后端 `InventoryOutboundController` 逐端点对应（7 个）：
  * query / detail / create / update / confirm / cancel / delete。

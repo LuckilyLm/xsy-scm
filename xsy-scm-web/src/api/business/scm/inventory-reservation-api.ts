@@ -1,5 +1,5 @@
 /**
- * 库存预留接口（出库波次新增文件）。
+ * 库存预留接口。
  *
  * 与后端 `InventoryReservationController` 逐端点对应（2 个）：
  * query / release。

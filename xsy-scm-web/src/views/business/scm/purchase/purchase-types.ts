@@ -1,6 +1,6 @@
 import type {ScmLocation} from '/@/components/business/scm/map/types';
 /**
- *  采购域前端类型（新增文件，无 Provenance 要求）。
+ *  采购域前端类型。
  *
  * 字段与后端 VO / Form **逐字对齐**：
  * - VO 侧：`PurchaseOrderVO` / `PurchaseOrderItemVO` / `PurchaseOrderAllocationVO` /
@@ -238,7 +238,7 @@ export interface DemandSummaryRow {
     otherReservedQuantity?: string | null;
     availableQuantity?: string | null;
     stockAvailableForSelectedOrders?: string | null;
-    /** 已确认订单与当前库存/预留的对比差额，**不是**最终净采购建议（A.6 未裁决）。 */
+    /** 已确认订单与当前库存/预留的对比差额，**不是**最终净采购建议（该口径尚未裁决）。 */
     stockComparisonGap?: string | null;
     /** 未收采购覆盖：在途未收量扣除已分配需求后的余量。 */
     inTransitQuantity?: string | null;
@@ -404,7 +404,7 @@ export interface OrderExportPayload extends OrderQuery {
 // 收货单
 // ------------------------------------------------------------------
 
-/** `PurchaseReceiptItemVO`。P24 恒等式：`remaining = planned − cumulative`、`difference = cumulative − planned`。 */
+/** `PurchaseReceiptItemVO` 的恒等式：`remaining = planned − cumulative`、`difference = cumulative − planned`。 */
 export interface ReceiptItem {
     id: Id;
     version: number;
@@ -466,7 +466,7 @@ export interface ReceiptQuery extends Page {
 
 export interface ReceiptCreatePayload {
     purchaseOrderId: Id;
-    /** 入库方式（HD-B1-02）：DIRECT | WAREHOUSE_CONFIRM，必填无默认。 */
+    /** 入库方式：DIRECT | WAREHOUSE_CONFIRM，必填无默认。 */
     receiptMode: string;
     remark?: string | null;
 }

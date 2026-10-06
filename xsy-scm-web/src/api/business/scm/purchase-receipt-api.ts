@@ -39,7 +39,7 @@ export const purchaseReceiptApi = {
         postRequest('/scm/purchase/receipt/update', data) as unknown as Promise<ScmResponse<Receipt>>,
     /** 确认收货：必须覆盖**全部**收货行（40998），非标品必须带实重（40083）。 */
     confirm: (data: ReceiptConfirmPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/confirm', data),
-    /** 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
+    /** 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
     putaway: (data: ReceiptPutawayPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/putaway', data),
     delete: (data: ReceiptDeletePayload) =>
         postRequest('/scm/purchase/receipt/delete', data) as unknown as Promise<ScmResponse<string>>,

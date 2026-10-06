@@ -370,7 +370,7 @@ function resetQuery() {
 }
 
 /**
- * URL 带入的筛选条件：P2 配送线路详情页的「跳出库单」带 `?outboundNo=`。
+ * URL 带入的筛选条件：配送线路详情页的「跳出库单」带 `?outboundNo=`。
  *
  * 只把值填进**已有**筛选项，不新增任何后端能力；出库单号是自由文本（`null` 白名单），
  * 但仍经 `deepLinkFilters` 做 trim 与空值收口，避免 `?outboundNo=` 空串被当成有效条件。

@@ -1,5 +1,5 @@
 /**
- * P1 分拣管理前端契约（与后端 `module/scm/sorting/domain/{form,vo}` 逐字对齐）。
+ * 分拣管理前端契约（与后端 `module/scm/sorting/domain/{form,vo}` 逐字对齐）。
  *
  * 三条口径：
  * - 数量（`BigDecimal` + `ScmFixedScale4Serializer`）到前端一律是 **4 位定点字符串**或 `null`；
@@ -22,7 +22,7 @@ export type SortingTaskStatus = 'PENDING' | 'SORTING' | 'COMPLETED' | 'CANCELLED
 /** 明细行的分拣结果；非 `NORMAL` 时后端强制要求原因。 */
 export type SortingLineResult = 'NORMAL' | 'SHORT' | 'OUT_OF_STOCK' | 'OVER';
 
-/** 商品类型快照（P1 不做单位换算，非标品这里录的是实重）。 */
+/** 商品类型快照（不做单位换算，非标品这里录的是实重）。 */
 export type SortingProductType = 'STANDARD' | 'NON_STANDARD';
 
 /** 明细占用位：`ACTIVE` 才代表待办量；随取消释放的历史行仍随详情返回。 */

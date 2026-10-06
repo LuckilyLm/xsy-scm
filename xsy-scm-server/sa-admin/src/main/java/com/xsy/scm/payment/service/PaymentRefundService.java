@@ -238,7 +238,7 @@ public class PaymentRefundService {
         if (intent == null || !refund.customerId().equals(intent.getCustomerId())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
-        // **P0 边界**：只有订单支付的交易能走订单退款链。
+        // **范围边界**：只有订单支付的交易能走订单退款链。
         // 充值支付（BALANCE_RECHARGE）若从这里退走渠道的钱，钱包里的 RECHARGE 并不会被撤销 ——
         // 结果是「公司退了 100、钱包还剩 100」，等于白送一笔余额。
         // 充值退款要单独设计（先查未消费余额 → DEBIT 钱包 → 再退渠道），不借这条链。

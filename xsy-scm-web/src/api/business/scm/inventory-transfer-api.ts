@@ -1,5 +1,5 @@
 /**
- * 库存调拨单接口（调拨波次新增文件）。
+ * 库存调拨单接口。
  *
  * 与后端 `InventoryTransferController` 逐端点对应（8 个）：
  * query / detail / create / update / ship / receive / cancel / delete。

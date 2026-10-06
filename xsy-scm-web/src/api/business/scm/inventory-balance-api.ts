@@ -1,5 +1,5 @@
 /**
- * 库存余额接口（新增文件）。
+ * 库存余额接口。
  *
  * 与后端 `InventoryBalanceController` 逐端点对应（2 个，**全部只读**）：
  * `POST /scm/inventory/balance/query` / `GET /scm/inventory/balance/detail/{id}`。

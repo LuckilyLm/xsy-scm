@@ -304,7 +304,7 @@ function batchDelete() {
   });
 }
 
-/** 仓库确认入库（B1）：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
+/** 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
 async function putaway(row: Receipt) {
   Modal.confirm({
     title: '确认入库？',

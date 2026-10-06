@@ -1,5 +1,5 @@
 /**
- * 库存预警阈值配置接口（阈值预警波次新增文件）。
+ * 库存预警阈值配置接口。
  *
  * 与后端 `InventoryWarningThresholdController` 逐端点对应（5 个）：
  * query / detail / create / update / delete。

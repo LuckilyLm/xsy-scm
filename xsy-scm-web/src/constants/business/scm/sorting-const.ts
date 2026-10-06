@@ -1,5 +1,5 @@
 /**
- * P1 分拣管理前端常量（新增文件）。
+ * 分拣管理前端常量。
  *
  * 枚举值与后端**逐字对应**，且与 DB 的 CHECK 白名单同源：
  * - `ScmSortingTaskStatusEnum` / `SortingConstant` ↔ `ck_sorting_task_status`
@@ -33,7 +33,7 @@ export const SCM_SORTING_TASK_STATUS_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 明细行分拣结果（非标品这一层录的是实重，P1 不做单位换算，也不记毛重 / 皮重 / 净重）。
+ * 明细行分拣结果（非标品这一层录的是实重，不做单位换算，也不记毛重 / 皮重 / 净重）。
  *
  * 结果为 0 是合法的（整行缺货），所以「缺货」必须能被显式表达 ——
  * 靠「不提交这一行」表达缺货会让任务永远无法完成。
@@ -117,8 +117,7 @@ export const SCM_SORTING_PERMISSION = {
 /**
  * 表格 DOM id —— **给 Playwright 定位用**，不是 `TableOperator` 的 `tableId`。
  *
- * 本阶段未向 `TABLE_ID_CONST.BUSINESS` 注册数字 id，因此页面不提供列配置入口（`TableOperator`）；
- * 注册属于底座常量文件，不在这次改动范围内。
+ * 未向 `TABLE_ID_CONST.BUSINESS` 注册数字 id，因此页面不提供列配置入口（`TableOperator`）。
  */
 export const SCM_SORTING_TABLE_ID = {
     TASK: 'scm-sorting-task-table',

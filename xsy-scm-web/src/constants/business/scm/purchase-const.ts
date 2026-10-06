@@ -12,7 +12,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
  * CANCELLED ←───────────┘                  SHORT_CLOSED
  * </pre>
  *
- * `RECEIVED` / `SHORT_CLOSED` / `CANCELLED` 是终态；`PARTIALLY_RECEIVED` **不允许取消**（P14）。
+ * `RECEIVED` / `SHORT_CLOSED` / `CANCELLED` 是终态；`PARTIALLY_RECEIVED` **不允许取消**。
  */
 export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
     DRAFT: {value: 'DRAFT', desc: '草稿'},
@@ -36,26 +36,26 @@ export const SCM_DEMAND_STATUS_ENUM: SmartEnum<string> = {
     ALLOCATED: {value: 'ALLOCATED', desc: '已分配'},
 };
 
-/** 仓库状态（B1 起支持启用 / 停用端点）。 */
+/** 仓库状态。 */
 export const SCM_WAREHOUSE_STATUS_ENUM: SmartEnum<string> = {
     ENABLED: {value: 'ENABLED', desc: '启用'},
     DISABLED: {value: 'DISABLED', desc: '停用'},
 };
 
-/** 收货入库方式（B1 HD-B1-02）：确认即入库 / 确认后仓库二次入库。 */
+/** 收货入库方式：确认即入库 / 确认后仓库二次入库。 */
 export const SCM_RECEIPT_MODE_ENUM: SmartEnum<string> = {
     DIRECT: {value: 'DIRECT', desc: '直接入库'},
     WAREHOUSE_CONFIRM: {value: 'WAREHOUSE_CONFIRM', desc: '仓库确认入库'},
 };
 
-/** 入库状态（B1 HD-B1-03）：待入库 / 已入库，与收货单 status 解耦。 */
+/** 入库状态：待入库 / 已入库，与收货单 status 解耦。 */
 export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
     PENDING: {value: 'PENDING', desc: '待入库'},
     COMPLETED: {value: 'COMPLETED', desc: '已入库'},
 };
 
 /**
- * 库存缺口预览的计算状态（A.5，与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对应）。
+ * 库存缺口预览的计算状态（与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对应）。
  *
  * 只读辅助决策：`UNIT_MISMATCH` 表示需求单位与余额记账单位不一致，缺口为 null 不猜折算率；
  * `NO_BALANCE` 表示该仓库下该 SKU 无余额行。

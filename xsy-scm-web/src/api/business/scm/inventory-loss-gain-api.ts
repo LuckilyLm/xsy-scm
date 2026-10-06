@@ -1,5 +1,5 @@
 /**
- * 库存报损报溢单接口（报损报溢波次新增文件）。
+ * 库存报损报溢单接口。
  *
  * 与后端 `InventoryLossGainController` 逐端点对应（7 个）：
  * query / detail / create / update / approve / reject / delete。

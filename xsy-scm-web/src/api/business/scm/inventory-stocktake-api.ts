@@ -1,5 +1,5 @@
 /**
- * 库存盘点单接口（盘点波次新增文件）。
+ * 库存盘点单接口。
  *
  * 与后端 `InventoryStocktakeController` 逐端点对应（7 个）：
  * query / detail / create / update / confirm / cancel / delete。

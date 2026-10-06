@@ -15,12 +15,12 @@ import type {
 } from '/@/views/business/scm/purchase/purchase-types';
 
 /**
- * 幂等命令封装（A7）。
+ * 幂等命令封装。
  *
  * 失败的请求**保留**它原来的 UUID：同一个签名重试会复用同一个键，因此后端能识别成重放；
  * 一旦请求成功（或载荷变了）就换新键。这与 `order-api.ts` 的 `orderCommand` 同源。
  *
- * 放在本文件而不是独立模块： 的文件清单是冻结的 22 个，不新增共享文件；
+ * 放在本文件而不是独立模块：不新增共享文件；
  * 需求 / 收货 API 从这里 import。
  */
 const keys = new Map<string, string>();

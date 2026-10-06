@@ -1,14 +1,16 @@
 /**
  * SCM 生产源码注释噪声契约。
  *
- * 只约束**开发过程标记**（来源 / 复制日期 / 波次 / 阶段号 / 计划章节号），不限制注释长度
- * —— 长度是审计信号，`longCommentCount` 只输出报告。
+ * 只约束**开发过程标记**（来源 / 复制日期 / 波次 / 阶段号 / 批次号 / 计划章节号 / 「新增文件」），
+ * 不限制注释长度 —— 长度是审计信号，`longCommentCount` 只输出报告。
+ *
+ * **标记必须为 0**：任何命中都失败，确需保留的例外逐条登记在 `WHITELIST` 并写明理由。
  *
  * 标记用组合 / 条件匹配，避免误报：裸 `来源：` 会命中业务含义（`来源：销售订单`），
- * 裸 `§` 会命中指向 `docs/architecture` 与 `docs/adr` 的有效链接。
+ * 裸 `§` 会命中指向 `docs/architecture` 的有效链接，裸 `P\d+` 会命中指向
+ * `docs/decisions.md` 的「P0/P1/P2 裁决」与 `CONTRIBUTING.md` 的「P12 锁序」。
  *
- * 分两阶段：现在 `count <= BASELINE` 且逐标记比较，P4.4 完成后再收紧到 0。
- * 详细规则、基线与扫描口径见 `docs/architecture/code-comment-guidelines.md`。
+ * 详细规则见 `docs/architecture/code-comment-guidelines.md`。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -62,6 +64,20 @@ const PROCESS_MARKERS = [
   ['参考项目 / 旧项目对比', /project-reference-examples|参考项目|参考实现|legacy 项目|V2 W\d/],
   ['为什么新增此文件', /为什么(必须)?(新增|新建)此?文件/],
   ['AI 指令式措辞', /绝不能改|不要乱动|刻意这样|不得改动|禁止修改|必须照做/],
+  // closeout 补：这一批是「没有被 marker 集合覆盖」的历史计划标签，
+  // 语境上仍是开发批次编号而不是当前业务概念。
+  ['新增文件', /新增文件/],
+  ['仿 xxx 文件', /仿\s*[`\w]/],
+  ['Provenance 要求', /Provenance/],
+  ['本阶段', /本阶段/],
+  ['HD-Bn 批次号', /HD-[A-Z0-9-]+/],
+  ['A.n 条目号', /\bA\.\d+\b/],
+  // 裸 `P\d+` 会命中指向 `docs/decisions.md`「P0/P1/P2/P3 裁决」与
+  // `CONTRIBUTING.md`「P12 锁序」的**活锚点**，因此只在没有这些后缀时才算标记。
+  ['Pn 批次号（非裁决锚点）', /(?<!锁序 )\bP\d{1,2}\b(?!\s*(?:裁决|基线收口裁决|锁序))/],
+  // 裸 `B\d+` 会命中缺口文档的 `Bn` 溯源（那是活契约），由 WHITELIST 逐文件放行。
+  ['Bn 批次号（非缺口溯源）', /\bB\d{1,2}\b/],
+  ['机械删除残句', /：\s+的/],
 ];
 
 const PLAN_MARKERS = [
@@ -76,98 +92,49 @@ const PLAN_MARKERS = [
 const DOC_REFERENCE = /[\w./-]+\.md/;
 
 /**
- * 基线（**P4.6b 已完成：三个范围的标记基线全部为 0**）。
+ * 过程标记**必须为 0**：任何命中都失败，除非逐条登记在下面的 `WHITELIST` 里。
  *
- * **逐标记比较**：任一标记新增即失败，即使总数因别的标记下降而没超基线。
+ * 标记集见 `PROCESS_MARKERS` / `PLAN_MARKERS`。它们覆盖了本仓库历史上出现过的全部
+ * 过程形式：来源与复制日期、剪枝适配验收记录、参考项目对比、`Wave` / `Wn` / `Rn` /
+ * `A-Dn` / `Qna`、无文档引用的 `§`、`Pn` / `Bn` 批次号、`HD-*`、`A.n`、「新增文件」、
+ * 「仿 xxx」、「本阶段」、`Provenance`，以及机械删除留下的残句 `： 的`。
  *
- * P4.1 / P4.2 清空了前端的来源块与计划编号，P4.5 清空了后端的
- * Wave / Wn / Rn / A-Dn / Qna / § 章节号，因此现在 `count <= 0` 就是
- * 「发现新增就失败」—— 这是最终要的状态。需要保留的例外请显式登记在
- * {@link WHITELIST} 并写明理由，**不要调高这里的数字**。
+ * 需要保留的例外请登记到 `WHITELIST` 并写明理由，**不要放宽标记或调高判定**。
  */
-/** 显式白名单：确需保留的过程标记写在这里，{@code reason} 为空即失败。当前为空。 */
+/** 显式白名单：确需保留的过程标记逐条登记，`reason` 为空即失败。 */
 const WHITELIST = [
-  // {file: 'path/to/File.java', marker: 'Wn 波次', reason: '说明为什么这条必须留'},
+  {
+    file: 'xsy-scm-web/src/views/business/scm/order/order-return-list.vue',
+    marker: 'Bn 批次号（非缺口溯源）',
+    reason: '指向 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B6 缺口溯源，是活契约',
+  },
+  {
+    file: 'xsy-scm-web/src/views/business/scm/promotion/promotion-coupon-list.vue',
+    marker: 'Bn 批次号（非缺口溯源）',
+    reason: '同上，B7 缺口溯源',
+  },
+  {
+    file: 'xsy-scm-web/src/views/business/scm/inventory/inventory-reservation-list.vue',
+    marker: 'Bn 批次号（非缺口溯源）',
+    reason: '同上，B8 缺口溯源',
+  },
+  {
+    file: 'xsy-scm-web/src/views/business/scm/finance/finance-detail-drawer.vue',
+    marker: 'Bn 批次号（非缺口溯源）',
+    reason: '同上，B3 缺口溯源',
+  },
 ];
 
-const BASELINE = {
-  'xsy-scm-web/src': {
-    process: {
-      // P4.1 清空 54 个文件头的来源块；P4.2 顺手清掉 4 处 `来源：**W1 派生**`
-      '来源：project-reference-examples': 0,
-      '来源：新写': 0,
-      '来源：Wn 派生': 0,
-      '复制日期': 0,
-      'Copy First + Adapt': 0,
-      '剪枝 / 适配 / 验收记录': 0,
-      '测试 / 验收记录': 0,
-      '参考项目 / 旧项目对比': 0,
-      '为什么新增此文件': 0,
-      'AI 指令式措辞': 0,
-    },
-    plan: {
-      // P4.2 清空：Wave / Wn / Rn / A-Dn / Qna / 无 .md 引用的 §
-      'Sprint / Wave': 0,
-      'Wn 波次': 0,
-      'Rn 阶段代号': 0,
-      'A-Dn 编号': 0,
-      'Qna 编号': 0,
-      '§ 无 .md 引用': 0,
-    },
-    // 指向现存文档的 § 是有效链接，只允许不减少
-    anchoredSection: 4,
-    longCommentCount: 157,
-  },
-  'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {
-    process: {
-      '来源：project-reference-examples': 0,
-      '来源：新写': 0,
-      '来源：Wn 派生': 0,
-      '复制日期': 0,
-      'Copy First + Adapt': 0,
-      '剪枝 / 适配 / 验收记录': 0,
-      '测试 / 验收记录': 0,
-      '参考项目 / 旧项目对比': 0,
-      '为什么新增此文件': 0,
-      'AI 指令式措辞': 0,
-    },
-    plan: {
-      'Sprint / Wave': 0,
-      'Wn 波次': 0,
-      'Rn 阶段代号': 0,
-      'A-Dn 编号': 0,
-      'Qna 编号': 0,
-      '§ 无 .md 引用': 0,
-    },
-    anchoredSection: 0,
-    longCommentCount: 401,
-  },
-  'xsy-scm-server/sa-admin/src/main/resources': {
-    process: {
-      '来源：project-reference-examples': 0,
-      '来源：新写': 0,
-      '来源：Wn 派生': 0,
-      '复制日期': 0,
-      'Copy First + Adapt': 0,
-      '剪枝 / 适配 / 验收记录': 0,
-      '测试 / 验收记录': 0,
-      '参考项目 / 旧项目对比': 0,
-      '为什么新增此文件': 0,
-      'AI 指令式措辞': 0,
-    },
-    plan: {
-      'Sprint / Wave': 0,
-      'Wn 波次': 0,
-      'Rn 阶段代号': 0,
-      'A-Dn 编号': 0,
-      'Qna 编号': 0,
-      '§ 无 .md 引用': 0,
-    },
-    // resources 里那 4 处「§」其实是 `设计稿 §0` 这类计划章节号，不是文档链接，已随 P4.5 清除；
-    // 该指标是启发式护栏（块内含 .md 就认为 § 合法），在 resources 上会误判，故基线为 0。
-    anchoredSection: 0,
-    longCommentCount: 16,
-  },
+/**
+ * 只作**报告**的基线（不参与过程标记的成败判定 —— 那一项要求恒为 0）。
+ *
+ * `anchoredSection`：指向现存文档的 `§` 链接数，**只允许不减少**（它们是有效引用）。
+ * `longCommentCount`：`> 8 行`的注释块数，仅 console.log 输出，**不判违规**。
+ */
+const REPORT_BASELINE = {
+  'xsy-scm-web/src': {anchoredSection: 4, longCommentCount: 130},
+  'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {anchoredSection: 0, longCommentCount: 396},
+  'xsy-scm-server/sa-admin/src/main/resources': {anchoredSection: 0, longCommentCount: 16},
 };
 
 // ------------------------------------------------------------------
@@ -420,12 +387,14 @@ function collectFiles(root, extensions) {
 
 /** 扫描一个范围，返回各标记命中数、`§` 分类与长注释计数。 */
 function scanScope(scope) {
-  const processCounts = Object.fromEntries(PROCESS_MARKERS.map(([key]) => [key, 0]));
-  const planCounts = Object.fromEntries(PLAN_MARKERS.map(([key]) => [key, 0]));
-  planCounts['§ 无 .md 引用'] = 0;
+  const hits = new Map();
   let anchoredSection = 0;
   let longCommentCount = 0;
-  const offenders = new Map();
+
+  const record = (key, relative) => {
+    if (!hits.has(key)) hits.set(key, []);
+    hits.get(key).push(relative);
+  };
 
   const files = collectFiles(scope.root, scope.extensions);
   for (const file of files) {
@@ -433,28 +402,18 @@ function scanScope(scope) {
     for (const {start, end, body} of commentsOf(file)) {
       if (end - start + 1 > 8) longCommentCount += 1;
       for (const [key, pattern] of [...PROCESS_MARKERS, ...PLAN_MARKERS]) {
-        if (!pattern.test(body)) continue;
-        const bucket = PROCESS_MARKERS.some(([name]) => name === key) ? processCounts : planCounts;
-        bucket[key] += 1;
-        if (!offenders.has(key)) offenders.set(key, []);
-        const list = offenders.get(key);
-        if (list.length < 4) list.push(`${relative}:${start}`);
+        if (pattern.test(body)) record(key, relative);
       }
       const hasDocumentReference = DOC_REFERENCE.test(body);
       const sections = body.match(/§/g);
       if (sections) {
         if (hasDocumentReference) anchoredSection += sections.length;
-        else {
-          planCounts['§ 无 .md 引用'] += sections.length;
-          if (!offenders.has('§ 无 .md 引用')) offenders.set('§ 无 .md 引用', []);
-          const list = offenders.get('§ 无 .md 引用');
-          if (list.length < 4) list.push(`${relative}:${start}`);
-        }
+        else for (const _ of sections) record('§ 无 .md 引用', relative);
       }
     }
   }
 
-  return {files: files.length, processCounts, planCounts, anchoredSection, longCommentCount, offenders};
+  return {files: files.length, hits, anchoredSection, longCommentCount};
 }
 
 const RESULTS = new Map(SCOPES.map((scope) => [scope.key, scanScope(scope)]));
@@ -485,46 +444,31 @@ test('Flyway 已应用 migration 不在扫描范围内', () => {
       'migration 目录不存在或为空，排除规则没有被真正验证');
 });
 
-test('过程标记必须为 0（P4.6b：逐标记棘轮已收紧）', () => {
+test('过程标记必须为 0（未登记白名单的一律失败）', () => {
+  assert.ok(
+      WHITELIST.every((entry) => entry.reason && entry.reason.trim()),
+      'WHITELIST 的每条都要写 reason，否则等于无理由放宽',
+  );
+  const allowed = new Set(WHITELIST.map((entry) => `${entry.marker}\u0000${entry.file}`));
   const failures = [];
   for (const scope of SCOPES) {
-    const {processCounts, offenders} = RESULTS.get(scope.key);
-    const baseline = BASELINE[scope.key].process;
-    for (const [key, expected] of Object.entries(baseline)) {
-      const actual = processCounts[key];
-      if (actual > expected) {
-        failures.push(`${scope.key} 的「${key}」从 ${expected} 涨到 ${actual}` +
-            `（${(offenders.get(key) ?? []).join(', ')}）`);
+    const {hits} = RESULTS.get(scope.key);
+    for (const [key] of [...PROCESS_MARKERS, ...PLAN_MARKERS, ['§ 无 .md 引用']]) {
+      const remaining = (hits.get(key) ?? []).filter((file) => !allowed.has(`${key}\u0000${file}`));
+      if (remaining.length) {
+        failures.push(`${scope.key} 的「${key}」${remaining.length} 处：${[...new Set(remaining)].slice(0, 4).join(', ')}`);
       }
     }
   }
   assert.deepEqual(failures, [],
-      '新增了 AI 开发过程残留注释。注释只解释当前代码中无法直接看出的约束，' +
-      '不记录代码是怎么被开发出来的；确需保留请走 BASELINE 白名单并说明理由');
-});
-
-test('计划编号必须为 0（P4.6b：逐标记棘轮已收紧）', () => {
-  const failures = [];
-  for (const scope of SCOPES) {
-    const {planCounts, offenders} = RESULTS.get(scope.key);
-    const baseline = BASELINE[scope.key].plan;
-    for (const [key, expected] of Object.entries(baseline)) {
-      const actual = planCounts[key];
-      if (actual > expected) {
-        failures.push(`${scope.key} 的「${key}」从 ${expected} 涨到 ${actual}` +
-            `（${(offenders.get(key) ?? []).join(', ')}）`);
-      }
-    }
-  }
-  assert.deepEqual(failures, [],
-      '新增了对已失效计划文档的引用（Wave / Wn / Rn / A-Dn / Qna / §章节号）。' +
-      '这些编号读者无从追溯，请改为不依赖编号的陈述');
+      '新增了 AI 开发过程残留注释。注释只解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的；' +
+      '确需保留请登记到 WHITELIST 并写明理由（见 docs/architecture/code-comment-guidelines.md）');
 });
 
 test('指向现存文档的 § 链接不得被误删', () => {
   for (const scope of SCOPES) {
     const {anchoredSection} = RESULTS.get(scope.key);
-    const expected = BASELINE[scope.key].anchoredSection;
+    const expected = REPORT_BASELINE[scope.key].anchoredSection;
     assert.ok(anchoredSection >= expected,
         `${scope.key} 指向现存文档的 § 链接从 ${expected} 降到 ${anchoredSection}；` +
         '`长期规则见 docs/architecture/xxx.md §5` 是有效引用，不是过程标记');

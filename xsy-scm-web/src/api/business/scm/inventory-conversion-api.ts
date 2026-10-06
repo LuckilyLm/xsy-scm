@@ -1,5 +1,5 @@
 /**
- * 库存规格转换接口（规格转换波次新增文件）。
+ * 库存规格转换接口。
  *
  * 与后端 `InventoryConversionController` 逐端点对应（7 个）：
  * query / detail / create / update / approve / reject / delete。

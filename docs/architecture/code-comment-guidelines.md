@@ -23,6 +23,9 @@
 | `Sprint` / `Wave` / `W1`～`Wn` | 删除 |
 | `R0` / `R1` / `R2` 阶段代号 | 删除 |
 | `A-Dn` / `Qna` / `§x.x` 临时计划编号 | 删除（`§` 指向现存 `*.md` 时**保留**） |
+| `Pn` / `Bn` 批次号、`HD-Bn-xx`、`A.n` 条目号 | 删除。**但**指向 `docs/decisions.md` 的「P0/P1/P2/P3 裁决」「P0 基线收口裁决」与 `CONTRIBUTING.md` 的「P12 锁序」是**活锚点**，保留（与 `§` 同口径）；指向缺口文档的 `Bn` 溯源也保留（见 §5） |
+| 「（新增文件）」「仿 `xxx.ts`」「无 Provenance 要求」「本阶段」「不在这次改动范围内」 | 删除。文件是不是新增、抄自哪个文件，Git 与 `import` 已经说明 |
+| 机械删除留下的残句（`： 的…`、`与 的…`、`<b></b>`、`****：`、`（，）`） | 删除或补回被吃掉的标签 —— 这是批量替换的副产物，不是内容 |
 | 「来源：**新写**」「为什么必须新增此文件」 | 删除 |
 | 旧项目（C / V2 / legacy 项目）当时怎么做的考古说明 | 删除 |
 | **字段名翻译式 `@param`**（`@param skuId SKU` / `@param quantity 数量`） | 删除。Java record / DTO / Entity 天然自描述 |
@@ -94,13 +97,23 @@
 
 `xsy-scm-web/test/scm-comment-noise-contract.test.mjs` 把上述规则钉成门禁：
 
-- **过程标记必须为 0**：三范围（`xsy-scm-web/src`、`com/xsy/scm`、`sa-admin/resources`）的 `来源：project-reference-examples` / `来源：新写` / `来源：Wn 派生` / `复制日期` / `Copy First` / 剪枝适配验收 / 测试验收记录 / 参考项目对比 / AI 指令式措辞 / `Wave` / `Wn` / `Rn` / `A-Dn` / `Qna` / 无 `.md` 引用的 `§`，逐标记比较且基线全为 0。
-- 需要保留的例外登记在测试内的 `WHITELIST`（`{file, marker, reason}`，`reason` 为空即失败）。**不要调高 `BASELINE` 的数字。**
+- **过程标记必须为 0**：三范围（`xsy-scm-web/src`、`com/xsy/scm`、`sa-admin/resources`）逐标记比较，任何命中都失败。标记集覆盖本仓库历史上出现过的全部过程形式：`来源：`（三种组合形态）/ `复制日期` / `Copy First` / 剪枝适配验收 / 测试验收记录 / 参考项目对比 / AI 指令式措辞 / `Wave` / `Wn` / `Rn` / `A-Dn` / `Qna` / 无 `.md` 引用的 `§` / `新增文件` / `仿 xxx` / `Provenance` / `本阶段` / `HD-Bn-xx` / `A.n` / `Pn`（非裁决锚点）/ `Bn`（非缺口溯源）/ 残句 `： 的`。
+- 需要保留的例外登记在测试内的 `WHITELIST`（`{file, marker, reason}`，`reason` 为空即失败）。当前白名单只有 4 条：缺口文档的 `Bn` 溯源（见 §5）。**不要放宽标记或调高判定。**
 - **指向现存文档的 `§` 链接不得减少**（`长期规则见 docs/architecture/xxx.md §5` 是有效引用）。
 - **`longCommentCount` 只输出报告，不参与成败** —— 长度是审计信号，不是质量判定。
 - 扫描**不含** `db/migration/`。
 
-标记用组合 / 条件匹配，不能用裸词：裸 `来源：` 会命中业务含义（`来源：销售订单`），裸 `§` 会命中指向 `docs/architecture` 的有效链接，裸 `Playwright` 会命中「表格 DOM id —— 给 Playwright 定位用」，`A4` 是纸张尺寸不是计划编号，`legacy` / `DRAFT` 是中性词与枚举值。
+标记用组合 / 条件匹配，不能用裸词。实测反例：
+
+| 裸词 | 会误命中 |
+| --- | --- |
+| `来源：` | 业务含义（`来源：销售订单`） |
+| `§` | 指向 `docs/architecture` 与 `docs/adr` 的有效链接 |
+| `Playwright` | 「表格 DOM id —— 给 Playwright 定位用」 |
+| `P\d+` | `docs/decisions.md` 的「P0/P1/P2 裁决」、`CONTRIBUTING.md` 的「P12 锁序」 |
+| `B\d+` | 缺口文档的 `Bn` 溯源（活契约） |
+| `A4` | 纸张尺寸（`ScmPrintPaperEnum.A4`） |
+| `legacy` / `DRAFT` | 中性词与业务枚举值 |
 
 ## 7. 批量改注释时的注意事项
 
