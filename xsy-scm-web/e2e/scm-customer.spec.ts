@@ -197,7 +197,7 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   await page.screenshot({ path: '../.runtime/w2-customer-detail.png', fullPage: true });
 
   // ------------------------------------------------------------------ 删除
-  await button(page, '返回客户列表').click();
+  await button(page, '客户档案').click();
   row = page.getByRole('row').filter({ hasText: prefix + 'C1' });
   // 删除属于危险动作，已从常驻操作收进「更多」；菜单项只在展开后进入 DOM。
   // 二次确认随之由 popconfirm 改为 Modal，断言的仍是「必须确认后才真的删除」。

@@ -60,15 +60,16 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'name'">
             <div class="scm-cell-stack">
-              <a-button type="link" size="small" @click="detail(record.supplierId)">{{ record.name }}</a-button>
+              <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.supplierId)">{{ record.name }}</a-button>
               <span class="scm-cell-stack__sub">{{ record.supplierCode }}</span>
             </div>
           </template>
           <template v-else-if="column.dataIndex === 'contact'">
-            <div class="scm-cell-stack">
-              <span class="scm-cell-stack__main">{{ record.contactName || '—' }}</span>
-              <span v-if="record.contactPhone" class="scm-cell-stack__sub">{{ record.contactPhone }}</span>
+            <div v-if="record.contactName || record.contactPhone" class="scm-cell-stack">
+              <span v-if="record.contactName" class="scm-cell-stack__main">{{ record.contactName }}</span>
+              <span v-if="record.contactPhone" class="scm-cell-stack__sub scm-cell-stack__sub--num">{{ record.contactPhone }}</span>
             </div>
+            <span v-else>—</span>
           </template>
           <a-button
               v-else-if="column.dataIndex === 'skuCount'"

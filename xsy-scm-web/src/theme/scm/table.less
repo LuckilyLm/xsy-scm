@@ -28,17 +28,30 @@
   justify-content: center;
 }
 
-/* 复合单元：业务名称在上，内部编码作为 secondary text 在下，不再各占一列 */
+/*
+ * 复合单元：业务名称在上、内部编码作为 secondary text 在下，不再各占一列。
+ *
+ * 两行是**有层级的两个信息**，不是一句话换行，所以字号 / 字重 / 颜色三样都要拉开：
+ * 主行 14px / 500 / 20px 主文字色，副行 12px / 16px secondary。
+ * 只靠颜色区分的话，低分辨率屏和投屏上两行会糊成一片。
+ *
+ * `justify-content: center` + `min-height` 是为「副行可能缺失」的行准备的
+ * （比如没有登记电话的联系人）：不撑住高度，同一张表里就会出现忽高忽低的行。
+ */
 .scm-cell-stack {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
+  min-height: 38px;
   min-width: 0;
 }
 
 .scm-cell-stack__main {
   overflow: hidden;
   font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--scm-text, rgba(0, 0, 0, 0.88));
@@ -47,9 +60,45 @@
 .scm-cell-stack__sub {
   overflow: hidden;
   font-size: 12px;
+  line-height: 16px;
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+/* 副行是纯数字时（电话）对齐位数：默认字体的数字是变宽的，一列电话会参差不齐 */
+.scm-cell-stack__sub--num {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * 复合单元里的「名称入口」（点进详情）。
+ *
+ * 默认是主行那一档的普通深色文字，**不是链接色** —— 一列品牌绿会让「名称」和状态标签
+ * 抢层级，也让主文本看起来像个操作按钮。悬停 / 聚焦才给链接反馈。
+ * 也不额外加 padding：它和 `.scm-cell-stack__main` 要在同一条左轴线上。
+ *
+ * 选择器故意把类名写两遍（0,2,0）：antd 的链接按钮样式是 `:where(.css-xxx).ant-btn-link`，
+ * `:where` 零特异性 → 实得 (0,1,0)，而它在运行时注入 <head>、排在构建产物之后，同特异性下会赢。
+ * 写两遍既能稳定压过它，又不依赖父元素结构，也不用 `!important` —— 那会把后续调整一起锁死。
+ */
+.scm-cell-link.scm-cell-link {
+  height: auto;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scm-cell-link.scm-cell-link:hover,
+.scm-cell-link.scm-cell-link:focus {
+  color: var(--scm-primary);
+  text-decoration: underline;
 }
 
 /* 金额与数量：等宽数字，列内可直接比较且不会因数值变化而抖动 */
