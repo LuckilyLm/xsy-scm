@@ -156,7 +156,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="调拨分两步：先「发出」（源仓扣减，进入在途），再由目标仓「收货」（目标仓增加）。"
+        message="调拨分两步：先发出，再由目标仓收货。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
@@ -231,7 +231,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="在途 = 已发出（源仓已扣减）但目标仓尚未收货的调拨量。这批货不在任何仓库的余额里，因此库存余额页看不到它 —— 对账时必须把这份报表算进去。"
+        message="在途量不在任何仓库的余额里，对账时需单独计入。"
     />
     <a-table
         size="small"

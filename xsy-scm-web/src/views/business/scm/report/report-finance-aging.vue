@@ -25,11 +25,10 @@
     <a-form-item label="关键字"><a-input v-model:value="query.keyword" :maxlength="120" placeholder="单号或往来方" allow-clear @pressEnter="search"/></a-form-item>
     <a-form-item>
       <a-space><a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_AGING_QUERY" @click="search">查询</a-button>
-        <a-button @click="reset">重置</a-button></a-space>
+        <a-button @click="reset">重置</a-button>
+        <ReportNote title="账龄口径" :sections="agingNoteSections"/></a-space>
     </a-form-item>
   </a-form>
-  <a-alert type="info" show-icon class="aging-note" message="账龄按冻结到期日与截止日未核销余额计算"
-           description="红字与核销只计入截止日之前的事实；收付款登记不直接抵减应收应付。到期日未设置单列展示。按仓库筛选时，只展示全部来源均在选定仓库内的财务单据；单据详情显示当前余额，可能与截止日余额不同。"/>
   <a-alert v-if="error" :message="error" type="error" show-icon class="aging-note">
     <template #action><a-button @click="load">重试</a-button></template>
   </a-alert>
@@ -75,6 +74,8 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
+import type {ReportNoteSection} from '/@/components/business/scm/report-note/index.vue';
 
 const bucketOptions: {value: AgingBucket; label: string}[] = [
   {value: 'NOT_DUE', label: '未逾期'}, {value: 'DAYS_1_30', label: '逾期1至30天'},
@@ -82,6 +83,26 @@ const bucketOptions: {value: AgingBucket; label: string}[] = [
   {value: 'DAYS_91_180', label: '逾期91至180天'}, {value: 'OVER_180', label: '逾期超过180天'},
   {value: 'UNKNOWN', label: '到期日未设置'},
 ];
+// 口径说明：只讲「数字是什么意思」，不讲实现。
+const agingNoteSections: ReportNoteSection[] = [
+  {
+    label: '统计口径',
+    items: [
+      '账龄按冻结到期日与截止日的未核销余额计算',
+      '红字与核销只计入截止日之前的事实',
+      '收付款登记不直接抵减应收应付'
+    ]
+  },
+  {
+    label: '统计范围',
+    items: ['按仓库筛选时，只展示全部来源均在选定仓库内的财务单据']
+  },
+  {
+    label: '特殊情况',
+    items: ['到期日未设置的单列展示', '单据详情显示当前余额，可能与截止日余额不同']
+  }
+];
+
 const defaults = (): AgingQuery => ({accountType: 'RECEIVABLE', asOfDate: dayjs().format('YYYY-MM-DD'), pageNum: 1, pageSize: 20});
 const query = reactive<AgingQuery>(defaults());
 const rows = ref<AgingRow[]>([]), summary = ref<AgingSummary[]>([]), total = ref(0);

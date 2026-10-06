@@ -86,7 +86,58 @@
 - 768px 等窄屏下表单退回单列；Drawer / Modal 最大宽度统一受 96vw 约束。
 - 不通过隐藏溢出把操作按钮“裁掉”；真正解决列宽和动作层级。
 
-## 8. 契约与维护
+## 8. 文案与信息层级
+
+**默认不解释。只有「不告诉用户就可能操作错误」的信息才进入主界面。**
+
+> 不要为了证明系统设计严谨，而让 UI 替代码写设计文档。
+> 代码注释、ADR、测试负责解释「为什么」；业务 UI 负责告诉用户「现在能做什么」。
+
+### 8.1 判定规则
+
+| 情况 | 处理 |
+| --- | --- |
+| 数据库、事务、字段、真值来源、前后端精度、DTO、枚举名、错误码 | UI 删除 |
+| 用户看控件本身就知道怎么操作 | 删除说明 |
+| 对正常状态进行解释（「只读」「不可编辑」） | 删除 |
+| 「这是只读页面」「这里用于……」自我介绍 | 删除 |
+| 示例值（`如 UOM-KG`） | 改用 `placeholder`，不再额外占一行 `help` |
+| 不影响当前操作结果的业务背景 | 删除，或收进帮助文档 |
+| 报表统计口径 | 收进「口径说明」/ `ⓘ`（见 §8.3） |
+| 禁用按钮的原因 | `Tooltip` 保留 |
+| 当前数据异常、缺失、权限不足 | Warning 保留 |
+| 操作不可逆、会清空/覆盖数据 | 改为**操作时确认**，不长期挂 Alert |
+| 导入文件格式、大小等操作必需规则 | 保留，压缩到 1～2 行 |
+| API/网络/校验失败 | Error Alert 保留 |
+| 成功结果 | Toast / Result 保留 |
+
+**新增常驻 `info alert` 或表单 `help` 需在 PR 说明理由**（说明「不告知会导致什么操作错误」）；新增常驻解释性文案要同时更新 `test/scm-ui-copy-contract.test.mjs` 的基线，棘轮只降不升。
+
+### 8.2 术语与形态黑名单
+
+UI 可见文案（渲染文本节点，以及 `message` / `description` / `help` / `placeholder` / `label` / `title` / `extra` / `empty-text` 属性值）中禁止出现：
+
+- 模块名与阶段代号：`Finance`、`R0` / `R1` / `R2`、`§` 计划章节号；
+- 违反用词规则的术语：`SPU` / `SKU` / `品规` / `货品` / `单品`（见 [AGENTS.md](../../AGENTS.md) 用词规则）；
+- 字段名：`path`、`parent_id`、`seller_id`、`fileKey`、`occurred_at`、`createTime`；
+- 枚举名：`PURCHASE_IN`、`SALES_OUT`、`DIRECT`、`WAREHOUSE_CONFIRM`；
+- 错误码：`40989`、`40995`；
+- 实现词：`数据库`、`事务`、`幂等`、`真值`、`精度`、`后端`、`前端`、`服务端`、`客户端`、`VO`。
+
+**不算违规、测试会放过**：Vue 组件标签名（`<FinanceDetailDrawer>`）、SVG 属性（`<path d="…">`）、`v-for :key` 里的技术标识（`:key="image.fileKey"`）、源码注释与 `<script>`。
+
+### 8.3 报表口径说明
+
+报表的统计口径一律走 `src/components/business/scm/report-note/index.vue`，不写成常驻大段 Alert：
+
+| 形态 | 约束 |
+| --- | --- |
+| Popover（默认） | 最多 3 条，每条 ≤ 40 字 |
+| Drawer（`sections` 非空时自动切换） | 必须分组：指标定义 / 统计时点 / 统计范围 / 特殊情况 |
+
+口径说明回答「这个数字是什么意思」，不回答「程序是怎么算出来的」，因此同样受 §8.2 黑名单约束。正文只保留指标名与异常（Warning）；「不是 X」的免责声明若会改变用户决策，保留一句短句。
+
+## 9. 契约与维护
 
 当前关键契约包括：
 
@@ -95,5 +146,6 @@
 - `test/p1-action-column-centre-contract.test.mjs`
 - `test/customer-360-layout-contract.test.mjs`
 - `test/p1-detail-pages-sections-contract.test.mjs`
+- `test/scm-ui-copy-contract.test.mjs`
 
 UI 规则发生有意变化时，先说明设计原因，再同时更新共享实现、本文和对应契约。不要重新创建“UI 优化最新版”“收尾审计 v2”一类平行文档。

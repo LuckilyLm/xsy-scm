@@ -1,9 +1,4 @@
 <template>
-  <a-alert
-      message="建议只是建议：生成不会改动线路，只有「应用建议」才会写回停靠顺序；建议也不会自动发车。"
-      type="info"
-      show-icon
-  />
   <a-space class="plan-actions">
     <a-button
         type="primary"

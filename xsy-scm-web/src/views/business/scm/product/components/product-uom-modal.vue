@@ -7,16 +7,14 @@
       <a-row :gutter="16">
         <a-col :span="12">
           <a-form-item label="单位编码" name="uomCode"
-                       :rules="[{ required: true, whitespace: true, message: '请输入单位编码' }]"
-                       :help="form.uomId ? undefined : '如 UOM-KG，活动单位内唯一'">
-            <a-input v-model:value="form.uomCode" :maxlength="64" :disabled="!!form.uomId"/>
+                       :rules="[{ required: true, whitespace: true, message: '请输入单位编码' }]">
+            <a-input v-model:value="form.uomCode" :maxlength="64" :disabled="!!form.uomId" placeholder="如 UOM-KG"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="单位名称" name="name"
-                       :rules="[{ required: true, whitespace: true, message: '请输入单位名称' }]"
-                       :help="form.uomId ? '业务表按名称记账，改名会让历史数据失去真值来源' : '如 kg / 箱，活动单位内唯一'">
-            <a-input v-model:value="form.name" :maxlength="32" :disabled="!!form.uomId"/>
+                       :rules="[{ required: true, whitespace: true, message: '请输入单位名称' }]">
+            <a-input v-model:value="form.name" :maxlength="32" :disabled="!!form.uomId" placeholder="如 kg / 箱"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -25,7 +23,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item label="建议小数位" name="precisionScale" help="只约束前端输入，不改变数据库精度">
+          <a-form-item label="建议小数位" name="precisionScale">
             <a-input-number v-model:value="form.precisionScale" :min="0" :max="6" :precision="0" style="width: 100%"/>
           </a-form-item>
         </a-col>
@@ -35,7 +33,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item label="状态" name="status" help="停用后既有商品照旧显示，只是新配置选不到">
+          <a-form-item label="状态" name="status">
             <a-select v-model:value="form.status" :options="ENABLE_STATUS_ENUM"/>
           </a-form-item>
         </a-col>

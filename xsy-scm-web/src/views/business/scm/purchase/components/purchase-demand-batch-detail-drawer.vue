@@ -38,14 +38,6 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
           <a-descriptions-item label="已跳过">{{ detail.skippedCount }}</a-descriptions-item>
         </a-descriptions>
 
-        <a-alert
-            class="banner"
-            type="info"
-            show-icon
-            message="以下数字是冻结快照，不是当前库存"
-            description="批次创建时一次性冻结。库存、在途与预留之后如何变化都不会回写到这里——回看与生成必须逐字一致，否则「当时为什么建议这个数量」会被现在的库存改写。需要最新数字请回缺口预览重算。"
-        />
-
         <a-divider orientation="left">商品规格需求解释行</a-divider>
         <a-table
             size="small"

@@ -12,7 +12,7 @@
     <a-alert
         type="info"
         show-icon
-        message="候选行是「已确认订单上尚未被任何活动任务占用」的明细；计划量取该行的实发量并在此刻冻结。"
+        message="候选行是已确认订单上未被占用的明细。"
     />
     <a-alert v-if="error" type="error" show-icon :message="error"/>
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">

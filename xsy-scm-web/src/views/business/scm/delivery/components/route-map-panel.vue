@@ -1,5 +1,4 @@
 <template>
-  <a-alert message="计划路线按仓库起点和停靠顺序连线，展示大致配送方向。" type="info" show-icon/>
   <a-alert
       v-if="!allLocated"
       :message="`尚有 ${route.stopCount - route.locatedCount} 个停靠点未定位${

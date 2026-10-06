@@ -4,15 +4,12 @@
       title="客户确认订单金额 TOP5"
       :items="items"
       series-name="确认订单金额"
-      extra="退款按 order_refund.customer_id 独立聚合，不经订单行 JOIN"
+      extra="退款按退款单所属客户独立聚合"
   />
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <a-typography-text type="secondary" class="smart-margin-left10">
-          本页不展示已收 / 未收 / 应收余额：R0 还没有收款与核销事实。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_CUSTOMER" :refresh="refresh"/>

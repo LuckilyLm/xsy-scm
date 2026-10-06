@@ -17,12 +17,6 @@
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('xl')" @close="close">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
-      <a-alert
-          type="info"
-          show-icon
-          class="smart-margin-bottom10"
-          message="保存时以当前表格内容整体覆盖该供应商的关联关系；清空全部行并保存等于删除所有关联。"
-      />
       <SupplierSkuEditableTable v-model="drafts"/>
     </a-spin>
     <template #footer>
@@ -36,7 +30,7 @@
 
 <script setup lang="ts">
 import {computed, nextTick, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
 import type {ScmId, SupplierRow} from '/@/types/business/scm/supplier';
 import SupplierSkuEditableTable from './supplier-sku-editable-table.vue';
@@ -52,6 +46,8 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const drafts = ref<SkuDraft[]>([]);
+// 打开时已存在的关联行数：用于判断本次保存是否会把全部关联清空。
+const loadedCount = ref(0);
 const supplierId = ref<ScmId>();
 const supplierName = ref('');
 
@@ -68,6 +64,7 @@ async function open(row: SupplierRow) {
   try {
     const response = await supplierSkuApi.listBySupplierId(row.supplierId);
     drafts.value = fromRows(response.data ?? []);
+    loadedCount.value = drafts.value.length;
   } catch (e) {
     error.value = supplierError(e);
   } finally {
@@ -88,6 +85,19 @@ async function submit() {
   if (problem) {
     error.value = problem;
     return;
+  }
+  // 清空全部行并保存等于删除所有关联，属于不可逆影响，落在操作时确认。
+  if (drafts.value.length === 0 && loadedCount.value > 0) {
+    try {
+      await Modal.confirm({
+        title: '确认清空关联商品',
+        content: `保存后将删除该供应商现有的全部 ${loadedCount.value} 条商品关联。`,
+        okText: '确认清空并保存',
+        cancelText: '取消'
+      });
+    } catch {
+      return;
+    }
   }
   saving.value = true;
   error.value = '';

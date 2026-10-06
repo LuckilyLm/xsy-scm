@@ -45,7 +45,7 @@
             v-if="!form.id"
             type="info"
             show-icon
-            message="收货明细由服务端按采购单的全部活动行自动生成，无需手工添加"
+            message="收货明细会根据采购单当前明细自动生成，无需手工添加"
         />
 
         <a-form-item label="备注" name="remark">

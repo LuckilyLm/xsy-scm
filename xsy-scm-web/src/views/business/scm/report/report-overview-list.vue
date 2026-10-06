@@ -79,9 +79,8 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="PERM.EXPORT" @click="exportDaily">导出</a-button>
-        <a-typography-text type="secondary" class="smart-margin-left10">
-          每行的数与上方指标卡同一口径；点击行末链接可带着这一天跳到对应分析页。
-        </a-typography-text>
+        <ReportNote title="口径说明"
+                    :points="['每行的数与上方指标卡同一口径', '点击行末链接可跳到对应分析页']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -160,6 +159,7 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import ReportLineChart from './report-components/report-line-chart.vue';
 import {reportOverviewApi} from '/@/api/business/scm/report-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';

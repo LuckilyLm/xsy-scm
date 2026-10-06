@@ -1,9 +1,4 @@
 <template>
-  <a-alert
-      message="发车后订单进入在途，客户到手才登记签收；「异常签收」含拒收，但货已真实出库，因此不冲减库存——冲销必须走后续退货流程新增反向事实。完成线路要求全部在途订单都已登记结果。"
-      type="info"
-      show-icon
-  />
   <a-table
       id="scm-delivery-route-fulfillment"
       size="small"

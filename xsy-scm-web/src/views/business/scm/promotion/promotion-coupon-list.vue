@@ -192,7 +192,7 @@
             </a-form-item>
           </a-col>
           <a-col v-if="form.discountType === 'RATE'" :span="24">
-            <span class="scm-cell-hint">填 95 表示按原价的 95% 计价（即 9.5 折）；提交时换算回后端的比率。</span>
+            <span class="scm-cell-hint">填 95 表示按原价的 95% 计价（即 9.5 折）。</span>
           </a-col>
           <a-col :span="12">
             <a-form-item label="门槛金额">

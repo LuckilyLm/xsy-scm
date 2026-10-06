@@ -3,9 +3,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <a-typography-text type="secondary" class="smart-margin-left10">
-          点采购员名称，右侧抽屉看该采购员的商品维度明细；这是业绩与成本视角，不是提成。
-        </a-typography-text>
+        <ReportNote title="口径说明" :points="['点采购员名称看商品维度明细', '这是业绩与成本视角，不是提成']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_PURCHASER" :refresh="refresh"/>
@@ -76,6 +74,7 @@ import {computed, ref} from 'vue';
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {costText, countText, filterCostColumns, incompleteCostHint} from '../report-model';

@@ -151,7 +151,7 @@
   </a-modal>
 
   <a-modal v-model:open="exportSettingsOpen" title="导出列设置" width="520px" @ok="saveExportSettings">
-    <p class="export-hint">勾选需要导出的列；设置按当前登录用户本地记忆，刷新后仍保留。不勾选任何列时后端导出全部目录。</p>
+    <p class="export-hint">勾选需要导出的列；设置按当前登录用户本地记忆，刷新后仍保留。不勾选任何列时导出全部目录。</p>
     <a-checkbox-group v-model:value="exportColumns">
       <a-row>
         <a-col v-for="col in SCM_PURCHASE_EXPORT_COLUMNS" :key="col.key" :span="12">

@@ -7,16 +7,14 @@
       <a-row :gutter="16">
         <a-col :span="12">
           <a-form-item label="标签编码" name="tagCode"
-                       :rules="[{ required: true, whitespace: true, message: '请输入标签编码' }]"
-                       help="如 TAG-ORGANIC，活动标签内唯一">
-            <a-input v-model:value="form.tagCode" :maxlength="64"/>
+                       :rules="[{ required: true, whitespace: true, message: '请输入标签编码' }]">
+            <a-input v-model:value="form.tagCode" :maxlength="64" placeholder="如 TAG-ORGANIC"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="标签名称" name="name"
-                       :rules="[{ required: true, whitespace: true, message: '请输入标签名称' }]"
-                       help="如 有机，活动标签内唯一">
-            <a-input v-model:value="form.name" :maxlength="64"/>
+                       :rules="[{ required: true, whitespace: true, message: '请输入标签名称' }]">
+            <a-input v-model:value="form.name" :maxlength="64" placeholder="如 有机"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
@@ -25,7 +23,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item label="状态" name="status" help="停用后不再出现在可选标签里，已绑定商品仍显示该标签">
+          <a-form-item label="状态" name="status">
             <a-select v-model:value="form.status" :options="ENABLE_STATUS_ENUM"/>
           </a-form-item>
         </a-col>

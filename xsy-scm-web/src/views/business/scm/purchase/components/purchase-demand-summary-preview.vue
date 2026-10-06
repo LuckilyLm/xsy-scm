@@ -40,13 +40,7 @@
 
   <a-card size="small" :bordered="false">
     <a-tag color="blue">只读预览</a-tag>
-    <a-alert
-        class="banner"
-        type="info"
-        show-icon
-        message="冻结批次净需求预览"
-        description="按仓库、商品规格、单位扣除本批可用库存、有效在途未收量和已有采购覆盖。结果仍是只读的冻结批次预览，不是最终净采购建议，也不生成采购单；正式生成需求必须使用同一冻结批次。"
-    />
+    <a-typography-text type="secondary">预览不是最终净采购建议，也不生成采购单。</a-typography-text>
     <a-table
         id="scm-purchase-demand-summary-preview-table"
         size="small"

@@ -148,7 +148,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="报损减少库存、报溢增加库存。原因必填 —— 它是审批人唯一的判断依据。"
+        message="报损减库存、报溢加库存；原因必填。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="调整类型" name="adjustType">

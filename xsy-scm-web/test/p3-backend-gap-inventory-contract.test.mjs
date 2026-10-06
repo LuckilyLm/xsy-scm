@@ -14,15 +14,28 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync, existsSync} from 'node:fs';
+import {readFileSync, readdirSync, existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 
 // test/ → xsy-scm-web/ → 仓库根
 const repo = fileURLToPath(new URL('../../', import.meta.url));
 const docPath = `${repo}/docs/plan/active/frontend-ui-backend-gap-inventory.md`;
 const webRoot = `${repo}/xsy-scm-web`;
+const backendJavaRoot = `${repo}/xsy-scm-server/sa-admin/src/main/java`;
 
 const doc = readFileSync(docPath, 'utf8');
+
+/** 后端生产源码里的全部类名（不含 `.java`），用于验证文档引用的证据锚点没有漂移。 */
+function backendClassNames() {
+    const names = new Set();
+    (function walk(dir) {
+        for (const entry of readdirSync(dir, {withFileTypes: true})) {
+            if (entry.isDirectory()) walk(`${dir}/${entry.name}`);
+            else if (entry.name.endsWith('.java')) names.add(entry.name.replace(/\.java$/, ''));
+        }
+    })(backendJavaRoot);
+    return names;
+}
 
 /** 文档里声明的所有缺口编号（表格首列的 | B12 | 形式）。 */
 function declaredIds() {
@@ -75,35 +88,29 @@ test('§3 登记过的缺口文件不得退化为无指向的模糊说法', () =
 });
 
 test('§3 盘点文档引用的后端证据锚点真实存在', () => {
-    const anchors = [
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/domain/vo/ReceiptReportVO.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/service/ReceiptReportService.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/finance/domain/vo/FinanceReceivableVO.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/finance/domain/vo/FinancePayableVO.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/finance/domain/vo/FinanceReceiptVO.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/finance/domain/vo/FinanceReceivableDetailVO.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/finance/domain/vo/FinanceOperationLogVO.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/domain/vo/SalesOrderVO.java',
-        'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/domain/vo/SalesOrderDetailVO.java',
-    ];
-    for (const anchor of anchors) {
-        assert.ok(existsSync(`${repo}/${anchor}`), `证据锚点已不存在：${anchor}`);
-        // 文档里可能写类名（`FinancePayableVO`）而不带 .java 后缀，按基名比对。
-        const base = anchor.split('/').pop().replace(/\.java$/, '');
-        assert.ok(doc.includes(base), `盘点文档未引用证据文件 ${base}`);
+    // 从文档里抽 `` `XxxVO` `` / `` `XxxService` `` / `` `XxxEntity` `` 形式的类名，逐个到后端源码里找。
+    // 不写死锚点清单：文档只保留「当前仍成立」的条目，条目一关就会被删，
+    // 写死的清单会把「条目已关闭」误报成「证据漂移」。反过来，只要文档还引用着某个类名，
+    // 它就必须真实存在 —— 这才是要钉的不变量。
+    const named = [...new Set([...doc.matchAll(/`([A-Z][A-Za-z]*(?:VO|Service|Entity))`/g)].map((m) => m[1]))];
+    assert.ok(named.length >= 1, '盘点文档没有引用任何后端类名，证据链已断（缺口的「当前缺口」列必须指向具体 VO/Service）');
+
+    const existing = backendClassNames();
+    for (const name of named) {
+        assert.ok(existing.has(name), `盘点文档引用了后端不存在的类 ${name}（证据漂移）`);
     }
 });
 
 test('§3 澄清节不得把「已具备的字段」误列为缺口', () => {
     // 流水行本身带 operator/createdAt，文档必须显式澄清，防止后续被误开单
-    assert.match(doc, /FinanceOperationLogVO[\s\S]{0,120}operator/);
+    assert.match(doc, /operator[\s\S]{0,80}createdAt/);
     assert.match(doc, /不是缺口/);
 });
 
-test('§3 F 系列（前端口径分歧）也被登记，防止被机械清理', () => {
-    const fIds = [...doc.matchAll(/^\|\s*(F\d+)\s*\|/gm)].map((m) => m[1]);
-    assert.ok(fIds.includes('F1'), '文档缺少 F1（局部 .num 与全局 .scm-quantity 口径不一致）');
-    // 必须说明「为何不能机械处理」，否则登记失去意义
-    assert.match(doc, /为何不能机械处理/);
-    assert.match(doc, /等宽/);
+test('§3 已关闭的旧 UI 口径项仍被记录，防止被机械清理', () => {
+    // F 系列（前端口径分歧）随 `.num` 收口一并关闭：条目可以从「当前缺口」表里删掉，
+    // 但「为什么不再处理」必须留在文档里，否则下次审计会把它当成漏项重新登记。
+    assert.match(doc, /已关闭的旧 UI 口径项/);
+    assert.match(doc, /\.num/);
+    assert.match(doc, /不再是后端缺口/);
 });

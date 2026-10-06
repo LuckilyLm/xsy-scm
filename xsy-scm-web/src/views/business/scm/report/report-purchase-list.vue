@@ -61,9 +61,8 @@
       <a-row class="smart-table-btn-block">
         <div class="smart-table-operate-block">
           <a-button v-privilege="PERM.EXPORT" @click="exportOverview">导出</a-button>
-          <a-typography-text type="secondary" class="smart-margin-left10">
-            导出的是本页指标卡单行；没有授权仓库时指标不可知，导出同样为空而不是 0。
-          </a-typography-text>
+          <ReportNote title="口径说明"
+                      :points="['导出的是本页指标卡单行', '没有授权仓库时指标不可知，导出为空而不是 0']"/>
         </div>
       </a-row>
       <a-row :gutter="[12, 12]">
@@ -81,7 +80,7 @@
           title="供应商采购入库成本 TOP10"
           :items="topItems(supplierTopRows)"
           series-name="采购入库成本金额"
-          extra="来源 PURCHASE_IN 流水 → 收货行 → 采购行 → 采购单 → 供应商，不是采购单金额"
+          extra="由采购入库形成，不是采购单金额"
       />
     </a-tab-pane>
 
@@ -219,6 +218,7 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import PurchaseOrderDetail from '../purchase/components/purchase-order-detail-drawer.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import ReportBarChart from './report-components/report-bar-chart.vue';
 import ReportDrilldownDrawer from './report-components/report-drilldown-drawer.vue';
 import PurchasePriceTrendTab from './report-components/purchase-price-trend-tab.vue';

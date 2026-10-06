@@ -39,11 +39,6 @@
         @click="emit('recordPrint')"
     >生成打印 · 登记 {{ targetCount }}</a-button>
   </div>
-  <a-alert
-      message="「生成打印」仅登记本次已生成打印预览并累加计次，不代表发货确认，也不扣减库存。客户与订单的打印状态在生成时由服务端按当前有效订单重新判定，列表状态仅供预览。"
-      type="info"
-      show-icon
-  />
   <a-table
       v-if="printMode === 'orders'"
       size="small"

@@ -17,7 +17,7 @@
           title="损耗金额按日趋势"
           :x-axis="lossTrendAxis"
           :series="lossTrendSeries"
-          empty-text="暂无按日损耗趋势（需后端提供按日聚合，前端不自行累加分页明细）"
+          empty-text="暂无按日损耗趋势"
       />
     </a-col>
   </a-row>
@@ -25,9 +25,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <a-typography-text type="secondary" class="smart-margin-left10">
-          R0 只承认盘亏与手工报损两类可证明的损耗事实，不伪造「采购损耗 / 退货损耗」。
-        </a-typography-text>
+        <ReportNote title="口径说明" :points="['只统计盘亏与手工报损两类损耗']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -91,6 +89,7 @@
 import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_REPORT_LOSS_TYPE_ENUM,

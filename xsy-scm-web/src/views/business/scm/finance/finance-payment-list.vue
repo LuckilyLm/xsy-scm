@@ -87,7 +87,7 @@
 
   <a-modal v-model:open="addOpen" title="登记付款" :confirm-loading="addSaving" @ok="submitAdd">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-alert class="form-hint" type="info" show-icon message="供应商预付款无需来源；客户付款只能登记已完成退款，金额必须与退款金额一致。"/>
+    <a-alert class="form-hint" type="info" show-icon message="客户付款只能登记已完成退款。"/>
     <a-form layout="vertical">
       <a-form-item label="往来方类型" required>
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange"/>

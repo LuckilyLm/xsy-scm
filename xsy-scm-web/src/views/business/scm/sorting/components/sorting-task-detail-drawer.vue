@@ -68,13 +68,6 @@
           <a-descriptions-item label="备注" :span="3">{{ detail.task.remark || '—' }}</a-descriptions-item>
         </a-descriptions>
 
-        <a-alert
-            type="info"
-            show-icon
-            class="entry-hint"
-            message="分拣不回写订单、不改库存"
-            description="这里录入的数量只写在本任务明细上，作为后续出库与结算的实发依据；订单行的实发量与结算金额、库存余额与流水都不会因此变化。计划量是建单时冻结的快照，之后订单侧修改不追溯。"
-        />
         <a-alert v-if="!canEditItems" type="warning" show-icon :message="readOnlyReason"/>
         <a-alert v-if="entryError" type="error" show-icon :message="entryError"/>
 
@@ -161,7 +154,7 @@
 
         <div class="entry-footer">
           <a-typography-text type="secondary">
-            只提交改动过的行，每行带它自己读到的版本；若某行在录入期间被别人改过，本次提交会被服务端拒绝并要求刷新。
+            只提交改动过的行；若某行在录入期间被他人改动，提交会被拒绝，请刷新后重试。
           </a-typography-text>
           <a-button
               type="primary"

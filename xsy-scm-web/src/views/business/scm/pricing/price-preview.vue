@@ -19,7 +19,7 @@
       </a-row>
     </a-form>
     <a-alert v-if="error" :message="error" type="error" show-icon/>
-    <a-alert message="已定价的商品也可能不可售。零价是有效价格；未定价不等于零价。" type="info" show-icon/>
+    <a-alert message="零价是有效价格。" type="info" show-icon/>
     <p v-if="result" class="resolve-meta">
       解析时点：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
     </p>

@@ -27,7 +27,7 @@
         type="info"
         show-icon
         message="区间是半开区间 [开始, 结束)"
-        description="只汇总区间内「已确认」的销售订单行。生成分两步：先按仓库、商品规格、单位冻结净需求批次（含库存、在途与已有采购覆盖的解释行），再从同一冻结批次生成需求；重复生成不会重复建需求，已存在的来源行计入「已跳过」。"
+        description="只汇总区间内「已确认」的销售订单行；重复生成不会重复建需求。"
     />
     <a-form layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>

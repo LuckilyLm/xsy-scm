@@ -159,8 +159,7 @@
               style="width: 100%"
           />
           <a-typography-text type="secondary" class="coupon-hint">
-            活动优惠由服务端按当前生效规则自动计算；券只接受「用哪张」，确认时服务端会再验一次券状态。
-            试算不占用券，确认成功才占用。
+            券需手动选择；试算不占用券，确认下单才占用。
           </a-typography-text>
         </a-form-item>
         <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint"/>

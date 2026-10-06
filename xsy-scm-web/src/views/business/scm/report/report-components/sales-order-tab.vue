@@ -3,10 +3,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <a-typography-text type="secondary" class="smart-margin-left10">
-          一行 = 一个订单：回答「这个客户有几单、每单多少」。分类与关键词只判定订单是否命中，
-          命中后金额仍按整单汇总，不会只算匹配到的行。
-        </a-typography-text>
+        <ReportNote title="口径说明" :points="['一行 = 一个订单', '分类与关键词只判定是否命中，金额仍按整单汇总']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ORDER" :refresh="refresh"/>
@@ -76,6 +73,7 @@
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {SCM_ORDER_SOURCE_ENUM} from '/@/constants/business/scm/order-const';

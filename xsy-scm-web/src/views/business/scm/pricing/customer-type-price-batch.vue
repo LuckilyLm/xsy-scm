@@ -1,7 +1,7 @@
 <!-- W3 新写，参照 legacy 批量调价行为；整批提交，逐行错误。 -->
 <template>
  <a-card title="客户类型价批量调价" size="small" :bordered="false">
-  <a-alert type="info" show-icon message="任意一行失败，整批价格不会写入。最多 500 行；成功批次号不可重复使用。" />
+  <a-alert type="info" show-icon message="任一行失败则整批不写入；最多 500 行。" />
   <a-form layout="inline" class="smart-query-form">
    <a-row class="smart-query-form-row">
     <a-form-item label="批次号" required class="smart-query-form-item"><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width:320px" /></a-form-item>

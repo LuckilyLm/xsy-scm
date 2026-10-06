@@ -12,6 +12,7 @@
           </a-button-group>
           <a-button class="smart-margin-left10" v-privilege="PERM.EXPORT" :loading="exportingOverview"
                     @click="exportOverview">导出概览</a-button>
+          <ReportNote title="口径说明" :sections="overviewNoteSections"/>
         </a-form-item>
       </a-row>
     </a-form>
@@ -26,13 +27,6 @@
         <ReportKpiCard :label="card.label" :value="card.value" :hint="card.hint"/>
       </a-col>
     </a-row>
-
-    <a-alert class="report-metric-note smart-margin-top10" type="info" show-icon>
-      <template #message>
-        应收/应付发生额与已核销金额按所选区间统计；期末待收/待付按结束日结算，包含起始日前形成的单据。
-        已核销来自收付款与应收/应付之间的分配关系，不代表实际现金收付。明细按结束日列示普通单据，红字按原单汇总，超额核销单独显示。
-      </template>
-    </a-alert>
 
     <a-card size="small" :bordered="false" class="smart-margin-top10">
       <a-tabs v-model:active-key="activeTab" @change="onTabChange">
@@ -56,7 +50,6 @@
                    :message="receivableView.error">
             <template #action><a-button @click="loadReceivables">重试</a-button></template>
           </a-alert>
-          <div class="report-table-hint">列表按期末日期列示全部已形成的普通应收，红字金额与核销余额逐单计算。</div>
           <a-table :id="SCM_REPORT_TABLE_ID.FINANCE_RECEIVABLE" class="finance-detail-table" size="small"
                    :data-source="receivableView.rows" :columns="receivableColumns"
                    row-key="receivableId" :loading="receivableView.loading" :pagination="false"
@@ -123,7 +116,6 @@
           <a-alert v-if="payableView.error" class="report-error" type="error" show-icon :message="payableView.error">
             <template #action><a-button @click="loadPayables">重试</a-button></template>
           </a-alert>
-          <div class="report-table-hint">列表按期末日期列示全部已形成的普通应付，红字金额与核销余额逐单计算。</div>
           <a-table :id="SCM_REPORT_TABLE_ID.FINANCE_PAYABLE" class="finance-detail-table" size="small"
                    :data-source="payableView.rows" :columns="payableColumns"
                    row-key="payableId" :loading="payableView.loading" :pagination="false"
@@ -185,6 +177,8 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
+import type {ReportNoteSection} from '/@/components/business/scm/report-note/index.vue';
 import {reportError} from './report-errors';
 import type {
     FinanceOverviewQuery,
@@ -206,6 +200,30 @@ import {moneyText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 
 const dateRange = ref<DateRange>(defaultDateRange());
+
+// 口径说明：只讲「数字是什么意思」，不讲实现。
+const overviewNoteSections: ReportNoteSection[] = [
+  {
+    label: '指标定义',
+    items: [
+      '发生额与已核销金额按所选区间统计',
+      '期末待收 / 待付按结束日结算，包含起始日前形成的单据'
+    ]
+  },
+  {
+    label: '统计范围',
+    items: [
+      '已核销来自收付款与应收应付之间的分配关系，不代表实际现金收付',
+      '明细按结束日列示普通单据，红字按原单汇总，超额核销单独显示'
+    ]
+  },
+  {
+    label: '明细列示',
+    items: [
+      '应收、应付列表均按期末日期列示，红字金额与核销余额逐单计算'
+    ]
+  }
+];
 const activeTab = ref<'receivable' | 'payable'>('receivable');
 const keyword = ref('');
 const overview = ref<FinanceReportOverview | null>(null);

@@ -54,14 +54,6 @@
     </template>
   </a-alert>
 
-  <a-alert
-      type="info"
-      show-icon
-      class="read-only-hint"
-      message="只读汇总视角"
-      description="每行是一个「商品 + 规格 + 单位」的聚合，不对应任何单据，因此本页不提供录入、完成或批量处理入口；请到「分拣任务」按任务明细行办理。"
-  />
-
   <a-card size="small" :bordered="false">
     <div class="smart-table-setting-block">
       <TableOperator

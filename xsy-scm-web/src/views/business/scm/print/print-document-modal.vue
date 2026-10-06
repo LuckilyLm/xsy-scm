@@ -43,8 +43,6 @@
       </a-form-item>
     </a-form>
 
-    <a-alert v-if="registrationHint" class="banner" type="info" show-icon :message="registrationHint"/>
-
     <a-alert
         v-if="hiddenFields.length"
         class="banner"
@@ -94,12 +92,6 @@ const printing = ref(false);
 const error = ref('');
 let requestId = 0;
 const frozenByBusiness = new Map<string, PrintRender>();
-
-const registrationHint = computed(() => props.documentType === 'SORTING_TICKET'
-    ? '出单后请在分拣单预览中登记打印次数。此处生成小票不自动登记。'
-    : props.documentType === 'DELIVERY_NOTE'
-        ? '此处打印整条线路的发货单。订单打印次数仍在「配送打印」中按订单或客户登记。'
-        : '');
 
 const templateOptions = computed(() =>
     templates.value.map((item) => ({

@@ -84,7 +84,7 @@
   </a-card>
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
-    <a-alert class="form-hint" type="info" show-icon message="一笔收款只能分配到应收，一笔付款只能分配到应付；逐条输入本次核销金额。"/>
+    <a-alert class="form-hint" type="info" show-icon message="收款只核销应收，付款只核销应付。"/>
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
     <a-form layout="vertical">
       <a-form-item label="资金类型" required>

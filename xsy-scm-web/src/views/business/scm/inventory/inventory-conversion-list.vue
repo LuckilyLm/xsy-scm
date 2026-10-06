@@ -147,7 +147,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="折算关系由你显式声明（如 1 箱 = 10 kg），系统不推断。两个单位会与各自商品规格的库存记账单位比对，不一致会被拒绝。"
+        message="折算率由本单声明，两个单位须与商品规格的库存记账单位一致。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">

@@ -24,12 +24,6 @@
     </a-form>
 
     <a-card size="small" :bordered="false">
-      <a-alert
-        class="smart-margin-bottom10"
-        type="info"
-        show-icon
-        message="列表按客户归属范围展示可见策略与商品规格白名单；“全部可售”客户显示一行，不会展开每个可售商品规格。按商品规格查询只筛选明确配置的白名单关联。"
-      />
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
         <template #action>
           <a-button size="small" @click="load">重新加载</a-button>

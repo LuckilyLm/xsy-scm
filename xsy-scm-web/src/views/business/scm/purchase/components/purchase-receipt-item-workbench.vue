@@ -37,13 +37,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-alert
-        class="banner"
-        type="info"
-        show-icon
-        message="只读工作台"
-        description="把待收采购单（已提交 / 部分收货）按商品 + 采购单位归并，展示跨单的计划 / 已收 / 欠收 / 超收汇总；本页只读，收货请切到「按单据」。欠收与超收按每一行裁剪后求和，二者相加不等于计划或已收总量。"
-    />
     <a-table
         id="scm-purchase-receipt-item-workbench-table"
         size="small"

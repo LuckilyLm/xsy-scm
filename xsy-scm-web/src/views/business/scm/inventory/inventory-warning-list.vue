@@ -53,7 +53,6 @@
         type="info"
         show-icon
         :message="`已按消息定位到阈值配置 ${anchorThresholdId}`"
-        description="库存预警消息带的是阈值配置 id，这里直接按它过滤。点「重置」可回到全部预警。"
     />
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">

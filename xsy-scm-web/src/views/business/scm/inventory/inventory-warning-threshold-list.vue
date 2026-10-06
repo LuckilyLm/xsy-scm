@@ -131,7 +131,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="判定基准是可用量（现有量 − 预留量）：货已被订走就不算有货，因此预留量会把可用量压到下限以下并触发补货预警。"
+        message="预警按可用量（现有量 − 预留量）判定。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">

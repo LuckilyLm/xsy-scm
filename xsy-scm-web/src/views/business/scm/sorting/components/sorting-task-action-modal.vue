@@ -8,7 +8,7 @@
       @ok="emit('submit')"
       @cancel="emit('update:open', false)"
   >
-    <a-alert v-if="tip" type="info" show-icon :message="tip"/>
+    <a-alert v-if="tip" type="warning" show-icon :message="tip"/>
     <a-alert v-if="error" type="error" show-icon :message="error"/>
     <a-form layout="vertical">
       <a-form-item v-if="mode === 'assign'" label="受指派人" required>
@@ -71,16 +71,10 @@ const title = computed(() => ({
   reopen: '重开分拣任务',
 }[props.mode]));
 
-const tip = computed(() => {
-  switch (props.mode) {
-    case 'assign':
-      return '已完成与已取消的任务不再改派；改派保留已录入的分拣量。';
-    case 'cancel':
-      return '取消会在同一事务里释放本任务全部明细的占用位，被释放的订单行才能重新进入新任务。此操作不可撤销。';
-    default:
-      return '重开后任务回到「分拣中」，已录入的量与原因保留，可以继续修改。';
-  }
-});
+// 只有「取消」会不可逆地释放占用位，需要常驻告知；改派与重开是正常操作，不再解释。
+const tip = computed(() => props.mode === 'cancel'
+    ? '取消会释放本任务全部明细的占用位，被释放的订单行才能重新进入新任务。此操作不可撤销。'
+    : '');
 
 const reasonHint = computed(() =>
     props.mode === 'cancel' ? '例如：订单行下错、客户临时取消' : '例如：完成后发现一行称重有误'

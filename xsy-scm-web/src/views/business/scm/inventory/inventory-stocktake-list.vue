@@ -144,7 +144,7 @@
         type="info"
         show-icon
         style="margin-bottom: 12px"
-        message="本表单尚未保存，点「保存草稿」前不会产生任何单据。账面量由系统在保存时按当前余额自动快照，无需手工填写；实盘量填 0 表示确实一件不剩。"
+        message="保存草稿前不产生单据；账面量保存时自动快照。"
     />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="盘点仓库" name="warehouseId">
@@ -220,7 +220,7 @@
         v-if="importResult && importResult.stocktakeId"
         type="success"
         show-icon
-        :message="`已创建草稿（${importResult.importedItems} 条明细）${importResult.replayed ? '（幂等重放，未重复建单）' : ''}`"
+        :message="`已创建草稿（${importResult.importedItems} 条明细）`"
     />
     <a-alert
         v-else-if="importResult"

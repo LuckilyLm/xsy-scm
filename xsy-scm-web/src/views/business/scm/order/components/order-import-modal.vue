@@ -6,7 +6,11 @@
     <a-alert type="info" show-icon class="import-tip">
       <template #message>导入规则</template>
       <template #description>
-        同一“导入订单标识”的多行会合并为一张订单。请删除或替换模板示例行；人工单价留空时使用系统定价，填写时必须同时填写改价原因并具备改价权限。纯标品自动确认；包含非标品时整单进入待确认，等待电子秤回写实重。
+        <ul class="import-rules">
+          <li>同一「导入订单标识」的多行会合并为一张订单；请删除或替换模板示例行。</li>
+          <li>人工单价留空用系统定价；填写时必须同时填写改价原因并具备改价权限。</li>
+          <li>纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。</li>
+        </ul>
       </template>
     </a-alert>
     <a-space direction="vertical" size="middle" style="width:100%">

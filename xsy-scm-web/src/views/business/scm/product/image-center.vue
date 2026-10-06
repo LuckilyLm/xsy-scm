@@ -45,7 +45,7 @@
           <a-empty v-if="!view" description="请从左侧选择一个商品"/>
           <template v-else>
             <a-alert v-if="imageError" :message="imageError" type="error" show-icon class="gap"/>
-            <p class="hint">单个商品最多一张主图；URL 由后端按 fileKey 现算，只读展示。拖动或用按钮调整详情图顺序。</p>
+            <p class="hint">单个商品最多一张主图。拖动或用按钮调整详情图顺序。</p>
             <a-spin :spinning="imageLoading">
               <div class="images">
                 <figure v-for="(image, index) in view.images" :key="String(image.imageId)" :draggable="canWrite"
@@ -83,7 +83,7 @@
 
     <a-modal v-model:open="batchOpen" title="按文件名批量导入图片" :width="760" :mask-closable="false" @cancel="closeBatch">
       <a-alert type="info" show-icon class="gap"
-               message="文件名（去扩展名）需等于目标商品的商品编码。预览确认后才写入；未匹配、歧义的文件不会被静默丢弃。"/>
+               message="文件名（去扩展名）需等于目标商品的商品编码；预览确认后才写入。"/>
       <a-upload :file-list="[]" :before-upload="stageFiles" accept="image/*" multiple :show-upload-list="false">
         <a-button :loading="staging">选择多张图片</a-button>
       </a-upload>

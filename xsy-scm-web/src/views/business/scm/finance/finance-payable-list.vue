@@ -74,7 +74,7 @@
 
   <a-drawer v-model:open="redOpen" title="登记红字应付" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-spin :spinning="redLoading">
-      <a-alert type="info" show-icon message="逐行填写红字数量、单价和金额；金额必须等于数量 × 单价。原单红字累计不得超过原应付金额。"/>
+      <a-alert type="info" show-icon message="红字金额必须等于数量 × 单价，累计不超过原单金额。"/>
       <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError"/>
       <a-descriptions v-if="redSource" class="red-source" bordered size="small" :column="2">
         <a-descriptions-item label="原应付单">{{ redSource.payableNo }}</a-descriptions-item>

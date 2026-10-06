@@ -26,9 +26,6 @@
   <a-alert v-if="error" :message="error" type="error" show-icon class="profit-alert">
     <template #action><a-button @click="load">重试</a-button></template>
   </a-alert>
-  <a-alert type="info" show-icon class="profit-alert"
-           message="毛利 = Finance 应收收入 − 商品销售成本 − 促销赠品成本"
-           description="收入按应收/红字应收事件时点，成本按销售出库流水时点；退货红字先冲收入，实物接收后按原出库仓及原成本冲回。未接收红字仅全仓授权可见，后续接收会改变历史期间的仓库分组；受限仓库结果不保证与全仓红字总额一致。跨期收入与成本不按订单配比，历史成本缺失时不按零补算。促销赠品成本单独一列：赠品不减收入，但它的出库成本是订单的履约成本，所以要从毛利里扣。"/>
   <a-alert v-if="(summary?.costMissingCount ?? 0) > 0" type="warning" show-icon class="profit-alert"
            :message="`有 ${summary?.costMissingCount} 行历史销售成本缺失，毛利和毛利率暂不完整`"
            description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本事实。"/>
@@ -45,7 +42,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows">导出当前结果</a-button>
-        <a-typography-text type="secondary" class="smart-margin-left10">汇总卡片按全部筛选结果计算，不是当前页小计。</a-typography-text>
+        <ReportNote title="毛利口径" :sections="profitNoteSections"/>
       </div>
     </a-row>
     <a-table id="scm-report-finance-profit-table" size="small" :data-source="rows" :columns="columns"
@@ -81,6 +78,8 @@ import type {ProductCategory} from '/@/types/business/scm/product';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
+import type {ReportNoteSection} from '/@/components/business/scm/report-note/index.vue';
 import {buildReportQuery, defaultDateRange, rangeOverLimitError} from './report-model';
 import type {DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
@@ -98,6 +97,39 @@ const categories = ref<ProductCategory[]>([]);
 const loading = ref(false), exporting = ref(false), error = ref('');
 const applied = ref<FinanceProfitQuery>();
 let requestId = 0;
+
+// 口径说明：只讲「数字是什么意思」，不讲实现。
+const profitNoteSections: ReportNoteSection[] = [
+  {
+    label: '指标定义',
+    items: [
+      '毛利 = 应收收入 − 商品销售成本 − 促销赠品成本',
+      '赠品不减收入，但其出库成本计入履约成本，因此单列并从毛利中扣除'
+    ]
+  },
+  {
+    label: '统计时点',
+    items: [
+      '收入按应收、红字应收的发生时间统计',
+      '成本按销售出库时间统计',
+      '退货红字先冲收入，实物接收后按原出库仓与原成本冲回'
+    ]
+  },
+  {
+    label: '统计范围',
+    items: [
+      '汇总卡片按全部筛选结果计算，不是当前页小计',
+      '未接收红字仅全仓授权可见，后续接收会改变历史期间的仓库分组'
+    ]
+  },
+  {
+    label: '特殊情况',
+    items: [
+      '跨期收入与成本不按订单配比',
+      '历史成本缺失时不按零补算，毛利与毛利率显示为 —'
+    ]
+  }
+];
 
 const columns: TableColumnsType<FinanceProfitRow> = [
   {title: '日期', dataIndex: 'bizDate', width: 120},

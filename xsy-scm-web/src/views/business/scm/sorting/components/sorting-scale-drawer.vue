@@ -2,7 +2,7 @@
   <!-- workspace：称重工作台 —— 秤读数事件表 scroll.x 1410，读数要逐列横向比对设备 / 稳定位 / 时间。 -->
   <a-drawer :open="open" title="秤读数" :width="scmDrawerWidth('workspace')" @close="close">
     <a-alert
-        message="读数不等于分拣结果：只有「接受」才会把该读数写进分拣结果，且只处理标准品。"
+        message="只有「接受」才写入分拣结果。"
         type="info"
         show-icon
     />

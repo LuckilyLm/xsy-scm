@@ -49,19 +49,12 @@
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <!-- ==================== 收货明细 ==================== -->
     <a-tab-pane key="receipt" tab="收货明细">
-      <a-alert
-          message="日期筛选的是「收货确认时间」；本 Tab 的每一行是收货单行，不是库存入账记录。"
-          type="info"
-          show-icon
-          class="smart-margin-bottom10"
-      />
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" @click="exportReceipt">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              「收货参考金额」= 本次收货数量 × 采购单价，不是应付金额。
-            </a-typography-text>
+            <ReportNote title="口径说明"
+                        :points="['日期筛选的是「收货确认时间」', '每一行是收货单行，不是库存入账记录', '「收货参考金额」= 本次收货数量 × 采购单价，不是应付金额']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -147,19 +140,12 @@
 
     <!-- ==================== 入库明细 ==================== -->
     <a-tab-pane key="inbound" tab="入库明细">
-      <a-alert
-          message="日期筛选的是「入库时间」（PURCHASE_IN 流水的 occurred_at）；未做仓库二次入库的收货单不会出现在这里。"
-          type="info"
-          show-icon
-          class="smart-margin-bottom10"
-      />
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" @click="exportInbound">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              单位成本缺失的行显示 — 而不是 0：0 是「成本确实是零」，— 才是「没有这个事实」。
-            </a-typography-text>
+            <ReportNote title="口径说明"
+                        :points="['日期筛选的是「入库时间」', '未做仓库二次入库的收货单不会出现', '单位成本缺失的行显示 — 而不是 0']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -222,18 +208,11 @@
 
     <!-- ==================== 待入库 ==================== -->
     <a-tab-pane key="pending" tab="待入库">
-      <a-alert
-          message="只列「仓库确认入库 + 收货已确认 + 入库状态待入库」的收货单；本页只读，请到采购收货页办理入库。"
-          type="info"
-          show-icon
-          class="smart-margin-bottom10"
-      />
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-typography-text type="secondary">
-              收货数量按采购单位分组显示（如 12kg / 3箱）：一张单可以有多种单位，相加没有量纲。
-            </a-typography-text>
+            <ReportNote title="口径说明"
+                        :points="['只列「仓库确认入库 + 收货已确认 + 待入库」的收货单', '收货数量按采购单位分组，不做跨单位合计', '本页只读，办理入库请到采购收货页']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -325,6 +304,7 @@ import {
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {createTabLoader} from './use-report-query';
 import type {DateRange} from './report-model';
 

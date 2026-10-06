@@ -71,9 +71,6 @@
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" @click="exportMovement">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              流水是只追加的账本：不可编辑、不可删除，冲销以新增反向流水实现。
-            </a-typography-text>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -166,12 +163,6 @@
 
     <!-- ==================== 当前库存价值（成本权限可见） ==================== -->
     <a-tab-pane v-if="canViewCost" key="value" tab="当前库存价值">
-      <a-alert
-          message="当前时点快照：数值是此刻的余额 × 移动加权均价，不是所选区间的期末值。"
-          type="info"
-          show-icon
-          class="smart-margin-bottom10"
-      />
       <a-row v-if="hasValueSummary" :gutter="[12, 12]">
         <a-col v-for="card in valueCards" :key="card.label" :xs="24" :sm="12" :md="8">
           <ReportKpiCard :label="card.label" :value="card.value" :hint="card.hint" :sub="card.sub" current-point/>
@@ -181,9 +172,8 @@
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" @click="exportValue">导出</a-button>
-            <a-typography-text type="secondary" class="smart-margin-left10">
-              账面金额 = 当前数量 × 移动加权均价，由后端算，前端不做二次乘除。
-            </a-typography-text>
+            <ReportNote title="口径说明"
+                        :points="['账面金额 = 当前数量 × 移动加权均价', '数值是此刻快照，不是所选区间的期末值']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -248,9 +238,8 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-typography-text type="secondary">
-              一行 = 仓库 + 商品规格 + 记账单位；数量列按单位分组，不做跨单位合计（10kg + 5箱 ≠ 15）。
-            </a-typography-text>
+            <ReportNote title="口径说明"
+                        :points="['一行 = 仓库 + 商品规格 + 记账单位', '数量按单位分组，不做跨单位合计']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -310,6 +299,7 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import InventoryLossAnalysisTab from './report-components/inventory-loss-analysis-tab.vue';
 import {reportInventoryApi} from '/@/api/business/scm/report-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';

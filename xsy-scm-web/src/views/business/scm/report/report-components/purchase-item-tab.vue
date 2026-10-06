@@ -3,9 +3,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <a-typography-text type="secondary" class="smart-margin-left10">
-          一行 = 一个采购订单行；采购单号可回原采购单详情，不造第二套详情页。
-        </a-typography-text>
+        <ReportNote title="口径说明" :points="['一行 = 一个采购订单行', '采购单号可回原采购单详情']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_ITEM" :refresh="refresh"/>
@@ -75,6 +73,7 @@
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
+import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_PURCHASE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
