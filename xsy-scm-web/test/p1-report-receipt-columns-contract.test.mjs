@@ -1,20 +1,20 @@
 /**
- * §21 报表中心——收货与入库页的列精简与数值样式契约单测。
+ * 报表中心——收货与入库页的列精简与数值样式契约测试。
  *
- * `report-receipt-list.vue` 是报表中心里**唯一没被 §21 对齐提交（8c46c4fb）覆盖**的页面
+ * `report-receipt-list.vue` 是报表中心里**唯一没被列对齐改动覆盖**的页面
  * （那次改了 overview / purchase / sales / inventory 与九个 tab 组件），
  * 所以它是唯一还在用自己那套「编码列 + 局部 `.num`」写法的页面。
  *
- * 本文件钉住 §21 两条容易被回退的纪律：
+ * 本文件钉住两条容易被回退的纪律：
  *
  * 1. **商品身份不做四列**：`商品名称` + `商品规格` 两列足够；把 `商品编码` / `商品规格编码`
- *    也各占一列会让一行商品身份吃满 4 列 600px。§21 说「编码默认隐藏，除非是对账/导出核验
+ *    也各占一列会让一行商品身份吃满 4 列 600px。规则是「编码默认隐藏，除非是对账 / 导出核验
  *    场景」——本页虽是核验场景，但**同一份报表里沿用已对齐页面（如 sales-product-tab）
  *    的两列写法**才是一致的口径（导出走 Excel，不靠表格列）。
  * 2. **数值样式走公共类**：`.scm-money` / `.scm-quantity` 是全局唯一的金额/数量样式，
  *    页面里再定义一个局部 `.num` 会造成「同一个数字在不同报表里字体不同」。
  *
- * `scroll.x` 必须等于各列 width 之和：§21 要求同一报表精度一致，横向滚动宽度与实际列宽
+ * `scroll.x` 必须等于各列 width 之和：同一报表的精度要一致，横向滚动宽度与实际列宽
  * 脱节会让固定列（操作列）压住内容列。
  */
 import test from 'node:test';
@@ -48,17 +48,17 @@ function scrollX(source, emptyText) {
     return Number(matched[1]);
 }
 
-test('§21 收货明细：商品身份只占两列，不复制编码列', () => {
+test('收货明细：商品身份只占两列，不复制编码列', () => {
     assert.match(receipt, /title: '商品', dataIndex: 'productName'/);
     assert.match(receipt, /title: '商品规格', dataIndex: 'skuName'/);
-    // §21：编码默认隐藏。商品编码 / 商品规格编码 不得再各占一列
+    // 编码默认隐藏。商品编码 / 商品规格编码 不得再各占一列
     assert.ok(!/title: '商品编码'/.test(receipt), '收货明细仍有独立的「商品编码」列');
     assert.ok(!/title: '商品规格编码'/.test(receipt), '收货明细仍有独立的「商品规格编码」列');
     assert.ok(!/dataIndex: 'spuCode'/.test(receipt), '收货明细仍在渲染 spuCode');
 });
 
-test('§21 收款与入库明细：金额右对齐、数量右对齐，且无局部 .num 样式', () => {
-    // 金额与数量列必须显式右对齐（§21「金额右对齐 / 数量右对齐」）
+test('收款与入库明细：金额右对齐、数量右对齐，且无局部 .num 样式', () => {
+    // 金额与数量列必须显式右对齐
     for (const index of [
         'receivedQuantity',
         'cumulativeReceivedQuantity',
@@ -84,7 +84,7 @@ test('§21 收款与入库明细：金额右对齐、数量右对齐，且无局
     assert.match(receipt, /class="scm-money"/, '金额列未使用 .scm-money');
 });
 
-test('§21 两个明细表的 scroll.x 等于各列宽度之和', () => {
+test('两个明细表的 scroll.x 等于各列宽度之和', () => {
     assert.equal(
         scrollX(receipt, '暂无收货明细'),
         widthSum(receipt, 'receiptColumns'),
@@ -97,7 +97,7 @@ test('§21 两个明细表的 scroll.x 等于各列宽度之和', () => {
     );
 });
 
-test('§21 待入库：操作列居中且只有一个回原单的跳转', () => {
+test('待入库：操作列居中且只有一个回原单的跳转', () => {
     assert.match(receipt, /dataIndex: 'action'[\s\S]{0,120}?align: 'center'/);
     assert.match(receipt, /查看原收货单/);
     // 报表页不得有入库写入口（finance-report-contract 已锁，这里只锁它没有随列精简被重新引入）

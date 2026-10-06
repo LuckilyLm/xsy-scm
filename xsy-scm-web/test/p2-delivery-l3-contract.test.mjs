@@ -307,7 +307,7 @@ test('数量与金额不做前端算术，null 渲染为 —（不是 0）', () 
   assert.match(fulfillmentPane, /record\.signedBy \|\| '—'/);
   assert.match(fulfillmentPane, /record\.signReason \|\| '—'/);
   assert.ok(!/\|\| 0\b/.test(view), '空值不得回落成 0');
-  // 对齐口径（§8：状态居中、操作居中；操作列固定右侧时表头与按钮同一中心线）。
+  // 对齐口径（状态居中、操作居中；操作列固定右侧时表头与按钮同一中心线）。
   assert.match(fulfillmentPane, /title: '履约状态', dataIndex: 'fulfillmentStatus', width: 110, align: 'center'/);
   assert.match(fulfillmentPane, /title: '操作', dataIndex: 'action', width: 160, align: 'center' as const/);
 });
@@ -342,11 +342,11 @@ test('履约面板具备加载 / 空 / 错三态，与打印面板同一套做�
   assert.deepEqual(paneKeys, ['base', 'orders', 'map', 'print', 'fulfillment']);
 });
 
-// ------------------------------------------------------------------ 列表展示（§16）
+// ------------------------------------------------------------------ 列表展示
 
 test('配送线路列表把编号折进名称、把定位覆盖率收成图标', () => {
   const list = code('../src/views/business/scm/delivery/route-list.vue');
-  // 线路编号是业务识别信息（§7.2），但不独占一列：作为线路名称下方的 secondary text
+  // 线路编号是业务识别信息，但不独占一列：作为线路名称下方的次要文本
   assert.doesNotMatch(list, /title: '线路编号'/);
   assert.match(list, /title: '线路名称', dataIndex: 'routeName'/);
   assert.match(list, /column\.dataIndex === 'routeName'[\s\S]{0,260}record\.routeNo/);
@@ -354,7 +354,7 @@ test('配送线路列表把编号折进名称、把定位覆盖率收成图标',
   assert.match(list, /coverageOk\(record\)/);
   assert.match(list, /coverageText\(record\)/);
   assert.doesNotMatch(list, /'green' : 'orange'/, '覆盖率不应再靠内联色名判断');
-  // 状态走 §25 档位：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰
+  // 状态走统一档位映射：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰
   assert.match(list, /DRAFT: 'warning'/);
   assert.match(list, /PLANNED: 'processing'/);
   assert.match(list, /DISPATCHED: 'processing'/);
@@ -369,11 +369,11 @@ test('配送线路列表把编号折进名称、把定位覆盖率收成图标',
 
 test('司机与车辆列表隐藏内部编号、把单位写进表头', () => {
   const master = code('../src/views/business/scm/delivery/components/master-list.vue');
-  // §16.4 司机：内部编号不上列，但查询条件与编辑表单仍要有它
+  // 司机：内部编号不上列，但查询条件与编辑表单仍要有它
   assert.doesNotMatch(master, /title: '司机编码'/);
   assert.match(master, /title: '姓名', dataIndex: 'driverName'/);
   assert.match(master, /isDriver \? '司机编码' : '车牌号'/, '查询条件仍应保留司机编码');
-  // §16.5 车辆：数值列的单位写进表头，避免同一列在不同车型下含义漂移
+  // 车辆：数值列的单位写进表头，避免同一列在不同车型下含义漂移
   assert.match(master, /title: '载重（kg）'/);
   assert.match(master, /title: '容积（m³）'/);
   // 状态与「未绑定」都走 ScmStatusTag 档位

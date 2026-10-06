@@ -1,15 +1,15 @@
 /**
- * Finance R0 报表中心的**契约**单测（新增文件，仿 `w6-inventory-contract.test.mjs` 的源码扫描取向）。
+ * 报表中心的**契约**测试（源码扫描取向）。
  *
  * 这里守的是「只有跨文件同时成立才有意义」的不变量，靠肉眼验收发现不了：
  *
  * 1. 接口清单与后端 `/scm/report` 的固定契约逐条对齐，且**没有任何写端点**
- *    （R0 是只读报表，一个多余的 create 就是第二个写入口）；
+ *    （报表是只读的，一个多余的 create 就是第二个写入口）；
  * 2. 导出必须走 `postDownload`（文件名来自 `Content-Disposition`，前端不硬编码、不拼 Blob），
  *    并且导出请求体不带分页——带分页会让人以为导的是当前页；
  * 3. 权限码与后端逐字一致，查询按钮带权限、重置按钮不带；
  * 4. 成本列与「当前库存价值」Tab 受 `scm:report:cost:query` 控制；
- * 5. 指标名就是口径名：出现「营业收入 / 应收 / 应付 / 毛利」这类 R0 无事实的命名即为缺陷；
+ * 5. 指标名就是口径名：出现「营业收入 / 应收 / 应付 / 毛利」这类没有事实支撑的命名即为缺陷；
  * 6. 「待入库」不提供入库写入口，只有回原收货单的链接；
  * 7. 金额与数量不在前端做数值运算（`Number(` / `toFixed` / `parseFloat` 不得出现在页面里），
  *    方向也不得有第二份 IN / OUT 清单；
@@ -131,7 +131,7 @@ const CONTRACT_PATHS = [
 ];
 
 test('后端约定的 43 个端点逐条存在，且都挂在 /scm/report 下', () => {
-  assert.equal(CONTRACT_PATHS.length, 43, '清单本身必须与计划 §30 + Finance R0 契约同数');
+  assert.equal(CONTRACT_PATHS.length, 43, '清单本身必须与后端报表契约同数');
   assert.match(API, /const BASE = '\/scm\/report'/);
   for (const path of CONTRACT_PATHS) {
     assert.ok(API.includes('${BASE}' + path), `缺少端点 ${path}`);
@@ -179,8 +179,8 @@ test('导出统一走 postDownload，不自己拼 Blob、不硬编码文件名',
 
 test('页面导出用当前筛选，且不带分页参数', () => {
   // 有导出的四张页面：exportQuery() 只由日期区间 + 共享筛选装配，不接 tab。
-  // 概览页按计划 §30 没有导出端点，所以它反过来必须「没有」导出装配。
-  assert.ok(!/function exportQuery\(\)/.test(PAGES.overview), '概览页不该有导出装配（计划里没有概览导出）');
+  // 概览页没有导出端点，所以它反过来必须「没有」导出装配。
+  assert.ok(!/function exportQuery\(\)/.test(PAGES.overview), '概览页不该有导出装配（没有概览导出端点）');
   for (const [name, source] of Object.entries(PAGES)) {
     if (name === 'overview') continue;
     const body = source.match(/function exportQuery\([\s\S]*?\n\s*\}/)?.[0];
@@ -208,13 +208,13 @@ test('七个权限码逐字正确', () => {
   }
 });
 
-test('Finance R0 exposes only the six fixed measures and read-only page actions', () => {
+test('finance report overview exposes only the six fixed measures and read-only page actions', () => {
   for (const label of ['应收发生额', '应收已核销', '期末待收', '应付发生额', '应付已核销', '期末待付']) {
     assert.ok(FINANCE_PAGE.includes(label), `往来概览缺固定指标「${label}」`);
   }
   assert.match(FINANCE_PAGE, /包含起始日前的未结单据/, '期末余额口径要说明不受起始日截断');
   assert.match(FINANCE_PAGE, /核销是分配关系/, '已核销不得让人读成现金收付');
-  assert.match(FINANCE_PAGE, /v-privilege="PERM\.FINANCE_QUERY"/, '页面查询必须受 Finance R0 权限控制');
+  assert.match(FINANCE_PAGE, /v-privilege="PERM\.FINANCE_QUERY"/, '页面查询必须受报表查询权限控制');
   assert.match(FINANCE_PAGE, /v-privilege="PERM\.EXPORT"/, '三个导出按钮必须受导出权限控制');
   assert.match(FINANCE_PAGE, /SCM_REPORT_TABLE_ID\.FINANCE_RECEIVABLE/);
   assert.match(FINANCE_PAGE, /SCM_REPORT_TABLE_ID\.FINANCE_PAYABLE/);
@@ -225,7 +225,7 @@ test('Finance R0 exposes only the six fixed measures and read-only page actions'
   assert.ok(!/toFixed\(/.test(FINANCE_PAGE), '金额精度由 Finance 后端提供');
 });
 
-test('Finance R0 query and export requests share the report date range without exporting the current page', () => {
+test('query and export requests share the report date range without exporting the current page', () => {
   assert.match(FINANCE_PAGE, /reportFinanceApi\.overviewExport\(overviewExportQuery\(\)\)/);
   assert.match(FINANCE_PAGE, /reportFinanceApi\.receivableExport\(detailExportQuery\(\)\)/);
   assert.match(FINANCE_PAGE, /reportFinanceApi\.payableExport\(detailExportQuery\(\)\)/);
@@ -240,7 +240,7 @@ test('Finance R0 query and export requests share the report date range without e
     '/finance/receivable/aging-free-detail/export',
     '/finance/payable/aging-free-detail/export',
   ]) {
-    assert.ok(API.includes(`\${BASE}${endpoint}`), `Finance R0 API missing ${endpoint}`);
+    assert.ok(API.includes(`\${BASE}${endpoint}`), `Finance report API missing ${endpoint}`);
   }
 });
 
@@ -260,7 +260,7 @@ test('每页的查询按钮带本页 query 权限，重置按钮不带权限', (
     assert.ok(!/v-privilege/.test(reset[1]), `${name} 页的重置按钮不应带权限`);
   }
   for (const [name, source] of Object.entries(PAGES)) {
-    if (name === 'overview') continue;   // 计划 §30 里没有概览导出
+    if (name === 'overview') continue;   // 概览没有导出端点
     const panelSources = [source, ...(PAGE_COMPONENTS[name] ?? [])].join('\n');
     assert.match(panelSources, /v-privilege="(?:PERM|SCM_REPORT_PERMISSION)\.EXPORT"/, '导出按钮挂在 export 权限上');
   }
@@ -298,7 +298,7 @@ test('计划里的指标名逐字出现，没有被同义词替换掉', () => {
   }
 });
 
-test('没有把 R0 无事实的口径写进标签（title / label / tab）', () => {
+test('没有把无事实支撑的口径写进标签（title / label / tab）', () => {
   const labels = [
     ...ALL_PAGES.matchAll(/title:\s*'([^']*)'/g),
     ...ALL_PAGES.matchAll(/label:\s*'([^']*)'/g),
@@ -309,7 +309,7 @@ test('没有把 R0 无事实的口径写进标签（title / label / tab）', () 
   assert.ok(labels.length > 80, '标签样本太少说明扫描方式失效');
   for (const forbidden of ['营业收入', '销售收入', '实收金额', '应收', '应付', '毛利', '资金流水', '已收款', '待收款']) {
     const hit = labels.filter((label) => label.includes(forbidden));
-    assert.deepEqual(hit, [], `标签里出现了 R0 无事实的口径：${forbidden}`);
+    assert.deepEqual(hit, [], `标签里出现了无事实支撑的口径：${forbidden}`);
   }
 });
 

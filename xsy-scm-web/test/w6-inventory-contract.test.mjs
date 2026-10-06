@@ -1,10 +1,10 @@
 /**
- * W6 库存域契约单测（新增文件，仿 W5 `w5-purchase-contract.test.mjs`）。
+ * 库存域契约测试。
  *
- * 这里守的是**前端最容易悄悄违背、且违背后不会报错**的几条契约：
- * 1. **Q12 默认仓库**：恰好 1 个启用仓库才默认带出，否则一个都不选 ——
+ * 保护**前端最容易悄悄违背、且违背后不会报错**的几条契约：
+ * 1. **默认仓库**：恰好 1 个启用仓库才默认带出，否则一个都不选 ——
  *    多仓下自动选一个会让用户误以为在看全部库存；
- * 2. **三态展示**（A18 同族）：`null` / `undefined` / 空串 → `—`，
+ * 2. **三态展示**：`null` / `undefined` / 空串 → `—`，
  *    `"0.0000"` → `0.0000`；「没有值」与「值是零」不得被合并；
  * 3. **append-only**：流水前端只有 query，没有新增 / 编辑 / 删除入口；
  * 4. **枚举与 DB 白名单同源**：流水类型 `PURCHASE_IN` / `SALES_OUT` / `STOCKTAKE_GAIN` /
@@ -60,10 +60,10 @@ function code(relative) {
 }
 
 // ------------------------------------------------------------------
-// Q12：默认仓库
+// 默认仓库
 // ------------------------------------------------------------------
 
-test('Q12 default warehouse only applies when exactly one enabled warehouse exists', () => {
+test('default warehouse only applies when exactly one enabled warehouse exists', () => {
   // 恰好 1 个 → 默认带出
   assert.equal(singleWarehouseDefault([{id: 7}]), 7);
   assert.equal(singleWarehouseDefault([{id: '7'}]), '7');
@@ -78,7 +78,7 @@ test('Q12 default warehouse only applies when exactly one enabled warehouse exis
   assert.equal(singleWarehouseDefault([{id: 1}, {id: 2}, {id: 3}]), undefined);
 });
 
-test('Q12 wiring: the balance page applies the default before the first query, and reset clears it', () => {
+test('default warehouse wiring: the balance page applies it before the first query, and reset clears it', () => {
   const page = code('../src/views/business/scm/inventory/inventory-balance-list.vue');
 
   // 默认仓库必须在第一屏查询**之前**落定，否则首屏会先显示「全部仓库」再跳成「默认仓库」
@@ -189,7 +189,7 @@ test('fixed4 pads to 4 decimals and turns "not set" into undefined, never an emp
 });
 
 // ------------------------------------------------------------------
-// V34 移动加权成本
+// 移动加权成本
 // ------------------------------------------------------------------
 
 test('money text passes the server-formatted value through unchanged', () => {
@@ -205,7 +205,7 @@ test('money text passes the server-formatted value through unchanged', () => {
   assert.equal(moneyText('12345678.9000'), '12345678.9000');
 });
 
-test('V34: the balance page shows the moving-average cost and the derived amount', () => {
+test('the balance page shows the moving-average cost and the derived amount', () => {
   const page = code('../src/views/business/scm/inventory/inventory-balance-list.vue');
   assert.match(page, /dataIndex: 'avgCost'/, '余额页必须有均价列');
   assert.match(page, /dataIndex: 'amount'/, '余额页必须有金额列');
@@ -354,7 +354,7 @@ test('both inventory pages are read-only and wired to TableOperator + their own 
 
     // 只读页不得有任何写入口。判据刻意落在**结构**而不是文案上：
     // 页面里确实会写「流水不可编辑、不可删除」这类说明文字，用关键词匹配会误报。
-    //   - 本项目的写表单一律住在 `<a-modal>` 里（见 W2–W5 的各 `*-form-drawer/modal`）；
+    //   - 本项目的写表单一律住在 `<a-modal>` 里（各域的 `*-form-drawer/modal`）；
     //   - 写操作一定表现为调用某个 `create/update/remove/delete` 方法。
     assert.doesNotMatch(source, /<a-modal/, page + ' 出现了写表单弹窗');
     assert.doesNotMatch(source, /\.(create|update|remove|delete)\s*\(/, page + ' 调用了写接口');
@@ -386,7 +386,7 @@ test('inventory errors resolve from body, data and response shapes with actionab
   assert.match(inventoryError({code: 40921}), /刷新/);
   assert.match(inventoryError({code: 40000}), /请求参数/);
 
-  // 三种包裹形状都要认（W5 同款）
+  // 三种包裹形状都要认（与采购域同一口径）
   assert.match(inventoryError({data: {code: 41001}}), /不做自动换算/);
   assert.match(inventoryError({response: {data: {code: 41002}}}), /不能重复入库/);
 
@@ -798,7 +798,7 @@ test('the conversion enums match the backend whitelist and stay cross-SKU', () =
     assert.equal(item.value, key);
     assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
   }
-  // **Q13 不受影响**：转换是跨 SKU 的（源规格 → 目标规格），
+  // **定位换算不受影响**：转换是跨 SKU 的（源规格 → 目标规格），
   // 两个 SKU 各自仍只锁一个记账单位。一旦有人往类型枚举里加「单位」维度，这里会失败。
   assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_CONVERSION_TYPE_ENUM), /UNIT/);
 });
@@ -923,10 +923,9 @@ test('conversion error codes all have actionable Chinese text', () => {
 // ------------------------------------------------------------------
 
 test('every node-loaded SCM module stays free of value imports on relative paths', () => {
-  // 背景（W6 验收期间发现）：提交 48134bf 在 `purchase-form-model.ts` 里加了
-  // `export { datetime } from '../common/scm-display'`。打包器（Vite）与 `vue-tsc` 都会自动补全
-  // 扩展名，所以 `npm run build` / `npm run typecheck` **都发现不了**；
-  // 但 `npm run test` 用 `node --experimental-strip-types --test` 直接加载 `.ts`，
+  // `purchase-form-model.ts` 曾用 `export { datetime } from '../common/scm-display'` 转出时间渲染。
+  // 打包器（Vite）与 `vue-tsc` 都会自动补全扩展名，所以 `npm run build` / `npm run typecheck`
+  // **都发现不了**；但 `npm run test` 用 `node --experimental-strip-types --test` 直接加载 `.ts`，
   // node 的 ESM 解析不做补全 → 整份前端单测以 ERR_MODULE_NOT_FOUND 加载失败。
   //
   // 而「补上 `.ts`」这条路是走不通的：本项目 `tsconfig` 未开启 `allowImportingTsExtensions`，

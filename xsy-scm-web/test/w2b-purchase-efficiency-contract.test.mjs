@@ -1,7 +1,7 @@
 /**
- * Wave 2B 采购效率（批量 / 导出 / 打印 / 按商品收货工作台）前端契约单测（新增文件）。
+ * 采购效率（批量 / 导出 / 打印 / 按商品收货工作台）的前端契约测试。
  *
- * 守的是这一批「不新增迁移、复用既有权限」的效率增量最容易被悄悄违背、且违背后不报错的线：
+ * 保护这一批「不新增迁移、复用既有权限」的效率能力最容易被悄悄违背、且违背后不报错的线：
  * 1. 导出走只读 `postDownload('/scm/purchase/export')`，绝不落写接口；
  * 2. 批量少收关单 / 按商品工作台走只读 `postRequest`，且**不得**复用带 Idempotency-Key 的 `purchaseCommand`
  *    （后端这两个端点都不接幂等头，误用会让契约与后端不一致）；
@@ -46,7 +46,7 @@ test('工作台组件只渲染后端聚合量，绝不重算欠收 / 超收', ()
   assert.match(src, /scm-purchase-receipt-item-workbench-table/);
   assert.match(src, /purchaseReceiptApi\.itemWorkbench/);
   assert.doesNotMatch(src, /Decimal/);
-  // §6.6：欠收 / 超收来自后端逐行裁剪求和，前端不得自行做 planned-received 之类减法
+  // 欠收 / 超收来自后端逐行裁剪求和，前端不得自行做 planned-received 之类减法
   assert.doesNotMatch(src, /plannedQuantity\s*[-+]/);
   assert.doesNotMatch(src, /receivedQuantity\s*[-+]/);
   assert.doesNotMatch(src, /plannedQuantity\s*-\s*receivedQuantity/);

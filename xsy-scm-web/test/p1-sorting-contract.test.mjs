@@ -301,7 +301,7 @@ test('分拣列表与汇总页按「少列、编码下沉」收敛', () => {
     assert.doesNotMatch(taskList, /title: '明细行数'/);
     assert.match(taskList, /title: '分拣进度', dataIndex: 'processedCount'/);
     assert.match(taskList, /record\.processedCount \}\} \/ \{\{ record\.itemCount/);
-    // 状态走 §25 档位，不再直接读 antd 色名表
+    // 状态走统一档位映射，不再直接读 antd 色名表
     assert.match(taskList, /PENDING: 'warning'/);
     assert.match(taskList, /SORTING: 'processing'/);
     assert.match(taskList, /COMPLETED: 'success'/);

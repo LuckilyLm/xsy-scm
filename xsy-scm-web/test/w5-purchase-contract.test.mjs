@@ -1,12 +1,13 @@
 /**
- * W5 采购域契约单测（新增文件，仿 W4 `w4-order-contract.test.mjs`）。
+ * 采购域契约测试。
  *
- * 这里守的是**前端最容易悄悄违背、且违背后不会报错**的几条契约：
+ * 保护定点数、分配集合、单位一致性、收货完整性等跨文件约束 ——
+ * 这些是前端**最容易悄悄违背、且违背后不会报错**的几条：
  * 1. 三态定点数（`null` / `"0.0000"` / 有值）在渲染层不得被合并；
- * 2. 分配是**集合**（Q13），改一条不得牵动同行其它条；
- * 3. 单位不一致（Q17）必须拒绝，不得猜换算系数；
+ * 2. 分配是**集合**，改一条不得牵动同行其它条；
+ * 3. 单位不一致必须拒绝，不得猜换算系数；
  * 4. 提交前必须覆盖全部收货行（40998）、非标品必须给实重（40083）；
- * 5. 剪枝项（A4/A5、`resizable`）不得从 C 回流。
+ * 5. 已剪枝的尺寸调整管线与旧枚举不得回流。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -245,7 +246,7 @@ test('payload keeps id and version only for retained lines', () => {
 });
 
 // ------------------------------------------------------------------
-// 分配集合（Q13 / A31）与单位（Q17 / A32）
+// 分配集合与单位一致性
 // ------------------------------------------------------------------
 
 test('new allocation carries the demand version and its unallocated remainder', () => {
@@ -279,7 +280,7 @@ test('item totals and per-demand capacity follow the server allocation identity'
   assert.equal(allocationCapacity({}, '').toFixed(4), '0.0000');
 });
 
-test('A31 editing one allocation leaves the sibling allocation untouched', () => {
+test('editing one allocation leaves the sibling allocation untouched', () => {
   const item = {
     ...newOrderItem(),
     allocations: [
@@ -304,7 +305,7 @@ test('allocation identity compares numerically so id types never diverge', () =>
   assert.equal(hasAllocation(newOrderItem(), '7'), false);
 });
 
-test('A32 unit mismatch blocks allocation instead of guessing a conversion', () => {
+test('unit mismatch blocks allocation instead of guessing a conversion', () => {
   assert.equal(unitMismatch({purchaseUnit: 'kg'}, demand({demandUnit: '箱'})), true);
   assert.equal(unitMismatch({purchaseUnit: 'kg'}, demand({demandUnit: 'kg'})), false);
   assert.equal(unitMismatch({}, demand()), false);
@@ -312,7 +313,7 @@ test('A32 unit mismatch blocks allocation instead of guessing a conversion', () 
 });
 
 // ------------------------------------------------------------------
-// 收货确认（P24 / A25 / A26）
+// 收货确认
 // ------------------------------------------------------------------
 
 test('confirm lines default to the remaining quantity of every receipt line', () => {
@@ -336,7 +337,7 @@ test('confirm must cover every receipt line', () => {
   assert.match(validateConfirm({items: []}, []), /没有明细/);
 });
 
-test('A25 non-standard lines demand a manual actual weight', () => {
+test('non-standard lines demand a manual actual weight', () => {
   const r = receipt();
   const lines = newConfirmLines(r);
   assert.match(validateConfirm(r, lines), /非标品必须录入实重/);
@@ -401,7 +402,7 @@ test('confirm payload normalizes quantities and derives the manual weight source
   });
 });
 
-test('A26 tolerance stays server-side while the client only warns on the remainder', () => {
+test('tolerance stays server-side while the client only warns on the remainder', () => {
   assert.match(toleranceHint({remainingQuantity: '5.0000'}), /剩余可收 5\.0000/);
   assert.equal(beyondRemaining({remainingQuantity: '5.0000'}, '6.0000'), true);
   assert.equal(beyondRemaining({remainingQuantity: '5.0000'}, '5.0000'), false);
@@ -467,7 +468,7 @@ test('purchase enums expose exactly the states the backend state machine allows'
   assert.equal(SCM_PURCHASE_TABLE_ID.ORDER, 'scm-purchase-order-table');
 });
 
-test('pruned legacy enums, resize plumbing and inventory wiring never reach the W5 sources', () => {
+test('pruned legacy enums, resize plumbing and inventory wiring never reach the purchase sources', () => {
   const constants = code('../src/constants/business/scm/purchase-const.ts');
   assert.doesNotMatch(constants, /RECEIVE_FLAG_ENUM|SUPPLIER_STATUS_ENUM|INQUIRY_STATUS_ENUM|PURCHASE_ITEM_STATUS_ENUM/);
   assert.doesNotMatch(constants, /resizable|resizeColumn/);
@@ -489,12 +490,12 @@ test('pruned legacy enums, resize plumbing and inventory wiring never reach the 
   const editable = code('../src/views/business/scm/purchase/components/purchase-order-item-editable-table.vue');
   assert.doesNotMatch(editable, /resizable|resizeColumn|handleResizeColumn/);
 
-  // W5 不实现库存：采购域不得出现库存读写入口（`OrderInventoryContract` 只有定义、零调用点）。
+  // 采购域不实现库存：不得出现库存读写入口（`OrderInventoryContract` 只有定义、零调用点）。
   const inventory = code('../src/api/business/scm/purchase-order-api.ts');
   assert.doesNotMatch(inventory, /inventory|stock/i);
 });
 
-test('B1 commands and action guards stay explicit in the frontend contract', () => {
+test('commands and action guards stay explicit in the frontend contract', () => {
   const receiptApi = code('../src/api/business/scm/purchase-receipt-api.ts');
   assert.match(receiptApi, /purchaseCommand<Receipt>\('\/scm\/purchase\/receipt\/putaway'/);
 
@@ -510,7 +511,7 @@ test('B1 commands and action guards stay explicit in the frontend contract', () 
   assert.match(receiptList, /scm:purchase:receipt:putaway/);
 
   const warehouseList = code('../src/views/business/scm/purchase/warehouse-list.vue');
-  // 启用 / 停用已从行内按钮移入「更多」菜单（§13.6：状态机动作不与普通动作同排常驻），
+  // 启用 / 停用已从行内按钮移入「更多」菜单（状态机动作不与普通动作同排常驻），
   // 因此条件与权限码不再彼此相邻。断言改成分别检查两者的存在与绑定关系：
   // 菜单项由 `rowActions` 按当前状态二选一生成，权限码由 `hasPermission` 显式裁剪
   //（`v-privilege` 指令对「更多」里的菜单项不生效，这是必须换写法的原因）。

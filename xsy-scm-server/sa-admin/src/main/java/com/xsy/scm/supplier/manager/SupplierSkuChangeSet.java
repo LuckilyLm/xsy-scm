@@ -22,7 +22,7 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLI
  * 把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断—— 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功， 后续写库就不会因为业务规则失败而回滚一半。
  *
  * <p>
- * <b>刻意不做的事：</b>不校验 {@code defaultFlag} 的基数。同一供应商允许多个默认来源， 因此这里不检查默认标记的数量。
+ * {@code defaultFlag} 的基数不在这里校验：同一供应商允许多个默认来源， 因此默认标记的数量不是约束。
  */
 public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemForm> inserted, List<Long> removedIds) {
 

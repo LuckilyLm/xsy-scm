@@ -69,7 +69,7 @@ test('活动列表把编码折进名称、把生效与失效时间合成一格',
   assert.doesNotMatch(activity, /title: '失效时间'/);
   assert.match(activity, /title: '有效期', dataIndex: 'validity'/);
   assert.match(activity, /column\.dataIndex === 'validity'[\s\S]{0,240}record\.validTo/);
-  // 状态走 §25 档位
+  // 状态走统一档位映射
   assert.match(activity, /DRAFT: 'warning'/);
   assert.match(activity, /ACTIVE: 'success'/);
   assert.match(activity, /STOPPED: 'neutral'/);
@@ -77,7 +77,7 @@ test('活动列表把编码折进名称、把生效与失效时间合成一格',
 });
 
 test('活动规则的数值字段全部是 InputNumber，且提交时收口回定点字符串', () => {
-  // 折扣率带 %、特价与满减带 ¥：语义化控件是 §19.2 的硬要求
+  // 折扣率带 %、特价与满减带 ¥：语义化控件是硬要求
   assert.match(activity, /addon-after="%"/);
   assert.match(activity, /addon-before="¥"/);
   assert.match(activity, /v-model:value="rule\.discountPercent"/);
@@ -121,7 +121,7 @@ test('优惠券列表把券编码折进名称，并把「无门槛」与「门�
   assert.match(coupon, /无门槛/);
   // 生效与失效时间合成一格
   assert.match(coupon, /title: '有效期', dataIndex: 'validity'/);
-  // 状态走 §25 档位
+  // 状态走统一档位映射
   assert.match(coupon, /ScmStatusTag/);
   assert.match(coupon, /DRAFT: 'warning'/);
 });

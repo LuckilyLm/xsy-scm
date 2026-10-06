@@ -1,12 +1,12 @@
 /**
- * §22 打印中心（模板配置 + 打印记录）前端契约单测。
+ * 打印中心（模板配置 + 打印记录）的前端契约测试。
  *
  * 只钉「违背之后页面照样能跑、但事实已经错了」的那一类：
  *
  * 1. **打印记录是审计凭据**：必须能说清当初用的是哪一版模板，但模板编码 / 版本
  *    不该各占一列 —— 它们下沉为模板名的次要行。
  * 2. **「谁在什么时候打的」是同一件事的两面**，合成一格。
- * 3. **模板配置页的编码有维护价值**（§22 明确保留），与普通主数据不同。
+ * 3. **模板配置页的编码有维护价值**，与普通主数据不同。
  * 4. **操作列统一居中固定**，不再右对齐。
  */
 import test from 'node:test';
@@ -24,7 +24,7 @@ function code(relative) {
 const templateList = code('../src/views/business/scm/print/print-template-list.vue');
 const recordList = code('../src/views/business/scm/print/print-record-list.vue');
 
-test('§22 打印记录把模板编码与版本折进模板名、把操作人折进打印时间', () => {
+test('打印记录把模板编码与版本折进模板名、把操作人折进打印时间', () => {
   // 编码 / 版本不再各占一列，但必须仍能在列表上核出来（审计场景）
   assert.ok(!recordList.includes(`title: '模板编码'`), '打印记录仍有独立的模板编码列');
   assert.ok(!recordList.includes(`title: '模板版本'`), '打印记录仍有独立的模板版本列');
@@ -38,7 +38,7 @@ test('§22 打印记录把模板编码与版本折进模板名、把操作人折
   assert.match(recordList, /record\.printedAt/);
 });
 
-test('§22 打印模板配置页保留模板编码（与普通主数据的口径不同）', () => {
+test('打印模板配置页保留模板编码（与普通主数据的口径不同）', () => {
   assert.match(templateList, /title: '模板编码', dataIndex: 'templateCode'/);
   assert.match(templateList, /title: '模板名称', dataIndex: 'templateName'/);
   assert.match(templateList, /title: '更新时间'/);
@@ -49,14 +49,14 @@ test('§22 打印模板配置页保留模板编码（与普通主数据的口径
   assert.match(templateList, /tone="processing" label="默认"/);
 });
 
-test('§22 两个页面的操作列统一居中固定，金额 / 状态不再各写色名', () => {
+test('两个页面的操作列统一居中固定，金额 / 状态不再各写色名', () => {
   for (const [name, source] of [['模板页', templateList], ['记录页', recordList]]) {
     assert.match(source, /dataIndex: 'action', align: 'center', fixed: 'right'/, `${name} 的操作列未居中`);
     assert.doesNotMatch(source, /<a-tag :color=/, `${name} 仍有裸 a-tag 色名`);
   }
 });
 
-test('§31.1 打印模板页的操作列收到 160px 以内，低频动作进「更多」', () => {
+test('打印模板页的操作列收到 160px 以内，低频动作进「更多」', () => {
   // 「设为默认」与「删除」不再常驻；只有「编辑」留在行内
   const width = /dataIndex: 'action', align: 'center', fixed: 'right', width: (\d+)/.exec(templateList);
   assert.ok(width, '未取到模板页操作列宽度');

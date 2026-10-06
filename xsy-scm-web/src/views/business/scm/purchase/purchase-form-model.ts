@@ -69,14 +69,10 @@ export function progress(value: string | null | undefined): string {
 }
 
 /*
- * 时间渲染的实现在 `../common/scm-display.ts`，**不再从这里转出**。
- *
- * 历史：提交 48134bf 曾在这里 `export { datetime } from '../common/scm-display'`（漏了 `.ts`），
- * 于是本模块在 `node --experimental-strip-types --test` 下以 ERR_MODULE_NOT_FOUND 整体加载失败；
+ * 本模块会被 `node --experimental-strip-types --test` 直接加载，因此**不得有相对路径的值导入**：
+ * node 的 ESM 解析不给相对路径补扩展名，打包器与 `vue-tsc` 都会补，所以构建与类型检查发现不了；
  * 而补上 `.ts` 又会触发 TS5097（本项目 `tsconfig` 未开启 `allowImportingTsExtensions`）。
- * 两个约束的交集是：**本模块不得有值导入**（它要被 node 直接加载）。
- * 因此转出去掉，原来经这里取 `datetime` 的两个页面改为直接从 `common/scm-display` 取。
- * 详见 `test/w6-inventory-contract.test.mjs` 里的 node 可加载性门禁。
+ * 时间渲染由 `common/scm-display.ts` 的调用方直接引入，不从本模块转出。
  */
 
 

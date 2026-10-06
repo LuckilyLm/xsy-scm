@@ -1,5 +1,5 @@
 /**
- * Wave 3 订单录单效率（草稿恢复 / 历史复用 / 最近已确认订单价）前端契约单测。
+ * 订单录单效率（草稿恢复 / 历史复用 / 最近已确认订单价）的前端契约测试。
  *
  * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端读路径 / 权限由 Java 测试覆盖）：
  * 1. 最近已确认订单价是只读查询：走 getRequest，绝不复用带 Idempotency-Key 的 orderCommand；
@@ -59,7 +59,7 @@ test('明细表按客户 + SKU 现查最近已确认订单价，且不回写解�
 
 test('订单列表把「复用为新单」接在操作列的「更多」里，沿用 scm:order:add 权限', () => {
   const list = code('../src/views/business/scm/order/order-list.vue');
-  // 规划 §14.1：已确认订单行内只留「详情 + 预留库存」，复用为新单属于低频动作，收进「更多」。
+  // 已确认订单行内只留「详情 + 预留库存」，复用为新单属于低频动作，收进「更多」。
   // 菜单项挂不上 v-privilege 指令，改用同一口径的 hasPermission 裁剪，权限码不变。
   assert.match(list, /key: 'reuse', label: '复用为新单'/);
   assert.match(list, /openFromHistory\(row\.orderId\)/);

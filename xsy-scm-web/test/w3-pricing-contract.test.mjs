@@ -11,7 +11,7 @@ function code(relative) {
       .replace(/^\s*\/\/.*$/gm, '');
 }
 
-test('W3 amount contract keeps zero distinct from missing price', () => {
+test('amount contract keeps zero distinct from missing price', () => {
   assert.equal(formatAmount('0.0000'), '¥ 0.0000');
   assert.equal(formatAmount(null), '未定价');
   assert.equal(formatAmount(undefined), '未定价');
@@ -19,7 +19,7 @@ test('W3 amount contract keeps zero distinct from missing price', () => {
   assert.equal(formatAmountOrDash(null), '—');
 });
 
-test('W3 status contract has one unpriced reason and five unavailable reasons', async () => {
+test('status contract has one unpriced reason and five unavailable reasons', async () => {
   const constants = await import('../src/constants/business/scm/pricing-const.ts');
   assert.deepEqual(Object.keys(constants.UNPRICED_REASON_ENUM), ['NO_PRICE_SOURCE']);
   assert.deepEqual(Object.keys(constants.UNAVAILABLE_REASON_ENUM).sort(), [
@@ -27,7 +27,7 @@ test('W3 status contract has one unpriced reason and five unavailable reasons', 
   ]);
 });
 
-test('W3 pricing error mapping preserves overlap, conflict, idempotency and sellability codes', async () => {
+test('pricing error mapping preserves overlap, conflict, idempotency and sellability codes', async () => {
   const { pricingError } = await import('../src/views/business/scm/pricing/pricing-errors.ts');
   assert.match(pricingError({ code: 40933 }), /重叠/);
   assert.match(pricingError({ code: 40935 }), /重叠/);
@@ -36,9 +36,9 @@ test('W3 pricing error mapping preserves overlap, conflict, idempotency and sell
   assert.match(pricingError({ code: 40949 }), /不可售/);
 });
 
-// ------------------------------------------------------------------ §18 价格中心展示
+// ------------------------------------------------------------------ 价格中心展示
 
-test('W3 协议价抽屉：单价用 InputNumber + ¥，宽度走 foundation 分级', () => {
+test('协议价抽屉：单价用 InputNumber + ¥，宽度走 foundation 分级', () => {
   const drawer = code('../src/views/business/scm/pricing/components/agreement-price-form-drawer.vue');
   assert.match(drawer, /<a-input-number[\s\S]{0,240}unitPrice/);
   assert.match(drawer, /addon-before="¥"/);
@@ -54,7 +54,7 @@ test('W3 协议价抽屉：单价用 InputNumber + ¥，宽度走 foundation 分
   }
 });
 
-test('W3 价格历史：英文枚举必须落成中文，时间不上隐藏', () => {
+test('价格历史：英文枚举必须落成中文，时间不上隐藏', () => {
   const page = code('../src/views/business/scm/pricing/price-history-list.vue');
   const display = code('../src/views/business/scm/pricing/pricing-display.ts');
   // 来源与变更类型都要有中文映射：直接渲染会把 AGREEMENT / CREATE 端给使用者
@@ -77,7 +77,7 @@ test('W3 价格历史：英文枚举必须落成中文，时间不上隐藏', ()
   assert.match(page, /column\.dataIndex==='operatedAt'[\s\S]{0,240}record\.operator/);
 });
 
-test('W3 价格预览：突出最终价格与来源，不展示命中的记录主键', () => {
+test('价格预览：突出最终价格与来源，不展示命中的记录主键', () => {
   const page = code('../src/views/business/scm/pricing/price-preview.vue');
   assert.match(page, /'final-price'/);
   assert.match(page, /final-price--muted/);

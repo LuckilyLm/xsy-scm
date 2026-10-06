@@ -1,5 +1,5 @@
 /**
- * Wave 8 §12.1 通用操作日志「业务上下文」与脱敏前端契约单测。
+ * 通用操作日志「业务上下文」与脱敏的前端契约测试。
  *
  * 钉死这一波破坏后不报错的前端边界（后端 STRPOS 精确匹配与读权限白名单由
  * OperateLogBusinessFilterPgIT / AdminOperateLogBusinessGuardTest 覆盖）：

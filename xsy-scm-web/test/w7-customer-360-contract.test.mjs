@@ -1,5 +1,5 @@
 /**
- * Wave 7 客户 360° 上下文（customer-detail.vue 五 Tab）前端契约单测。
+ * 客户 360° 上下文（customer-detail.vue 五 Tab）的前端契约测试。
  *
  * 钉死这一波最容易被日后改动悄悄破坏、且破坏后不报错的前端边界（后端聚合与排除口径由
  * CustomerFrequentSkuIT 覆盖）：

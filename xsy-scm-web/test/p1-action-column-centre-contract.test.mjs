@@ -1,7 +1,7 @@
 /**
- * §8 表格统一规范「操作列」的全树契约单测。
+ * 操作列的表格统一规范在全树成立的契约测试。
  *
- * §8 明确规定「操作：居中」「操作列普通场景控制在 120～160px」「少数复杂工作台可放宽到 180px」。
+ * 规则：操作列居中；普通场景 120～160px，少数复杂工作台可放宽到 180px。
  * 项目已先后用 `bb77b10e centre all table headers`、`ffa95370 centre the remaining action
  * columns`、`ff8d2ce1` 与 `ff710abe` 批量化过，但每一轮都只覆盖了当时看见的那批页面。
  *
@@ -12,7 +12,7 @@
  * 钉住五件事：
  * 1. 凡声明 `dataIndex:'action'` / `key:'action'` 的列对象，必须**显式** `align:'center'`。
  *    省略不行 —— antd 默认左对齐，表头中心线与按钮组中心线会对不上。
- * 2. 操作列宽度不得超过 180px（§8 对复杂工作台的放宽上限）。
+ * 2. 操作列宽度不得超过 180px（复杂工作台的放宽上限）。
  * 3. 本轮收窄过的页面不得回退为超宽操作列。
  * 4. `ScmActionMore` 的权限裁剪链路仍然存在（菜单项挂不上 `v-privilege`，必须由调用方算 hidden）。
  * 5. 不允许用 `overflow: hidden` + `white-space: nowrap` 把按钮藏起来假装收窄成功。
@@ -32,7 +32,7 @@ const ACTION_ITEM = fileURLToPath(
     new URL('../src/components/business/scm/scm-action-more/action-item.ts', import.meta.url),
 );
 
-/** §8 对复杂工作台的放宽上限。 */
+/** 复杂工作台的放宽上限。 */
 const MAX_ACTION_WIDTH = 180;
 
 /** 递归收集指定后缀的文件。 */
@@ -85,7 +85,7 @@ test('扫描基线有效：确实枚举到操作列', () => {
 // 1. 居中
 // ------------------------------------------------------------------
 
-test('§8 操作列必须显式 align center', () => {
+test('操作列必须显式 align center', () => {
     const offenders = [];
     for (const {rel, source} of files) {
         for (const {block, line} of actionColumnBlocks(source)) {
@@ -101,7 +101,7 @@ test('§8 操作列必须显式 align center', () => {
     );
 });
 
-test('§8 操作列不得右对齐', () => {
+test('操作列不得右对齐', () => {
     const offenders = [];
     for (const {rel, source} of files) {
         for (const {block, line} of actionColumnBlocks(source)) {
@@ -117,7 +117,7 @@ test('§8 操作列不得右对齐', () => {
 // 2. 宽度上限
 // ------------------------------------------------------------------
 
-test(`§8 操作列宽度不得超过 ${MAX_ACTION_WIDTH}px`, () => {
+test(`操作列宽度不得超过 ${MAX_ACTION_WIDTH}px`, () => {
     const offenders = [];
     for (const {rel, source} of files) {
         for (const {block, line} of actionColumnBlocks(source)) {
@@ -151,7 +151,7 @@ const NARROWED = {
     'report/report-overview-list.vue': 110,
 };
 
-test('§8 本轮收窄的操作列不得回退', () => {
+test('已收窄的操作列不得回退', () => {
     for (const [rel, limit] of Object.entries(NARROWED)) {
         const file = files.find((f) => f.rel === rel);
         assert.ok(file, `文件不存在：${rel}`);
@@ -168,7 +168,7 @@ test('§8 本轮收窄的操作列不得回退', () => {
     }
 });
 
-test('§8 更早一轮修复的子组件不得回退', () => {
+test('已修复的子组件不得回退', () => {
     const fixed = [
         'delivery/components/route-fulfillment-panel.vue',
         'delivery/components/route-orders-panel.vue',

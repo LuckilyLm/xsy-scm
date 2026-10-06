@@ -1,11 +1,11 @@
 /**
- * Wave 2A 订单汇总 / 库存缺口预览前端契约单测（新增文件）。
+ * 订单汇总 / 库存缺口预览的前端契约测试。
  *
- * 守的是这一「只读辅助决策」增量最容易被悄悄违背、且违背后不报错的几条线：
+ * 保护这一「只读辅助决策」最容易被悄悄违背、且违背后不报错的几条线：
  * 1. 计算状态枚举与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对齐（5 值），颜色映射全覆盖；
  * 2. 预览端点走只读 `postRequest`（无幂等键），且**不得**复用/改写 `generate`；
- * 3. 前端绝不重算 `availableQuantity` / `shortageAgainstAvailable`（§6A.4），也不引入浮点/Decimal 运算；
- * 4. §6A.6 尚未裁决「在途采购是否抵扣缺口」→ `openPurchaseQuantity` 不得出现在前端契约里。
+ * 3. 前端绝不重算 `availableQuantity` / `shortageAgainstAvailable`，也不引入浮点 / Decimal 运算；
+ * 4. 在途采购是否抵扣缺口尚无结论，`openPurchaseQuantity` 不得出现在前端契约里。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -51,7 +51,7 @@ test('preview component renders backend-derived quantities and never recomputes 
   assert.match(src, /scm-purchase-demand-summary-preview-table/);
   assert.match(src, /purchaseDemandApi\.summaryPreview/);
   assert.match(src, /SCM_DEMAND_SUMMARY_STATUS_ENUM\[record\.calculationStatus\]/);
-  // §6A.4：数量全部后端算好，前端只渲染，绝不自己算可用量 / 差额
+  // 数量全部后端算好，前端只渲染，绝不自己算可用量 / 差额
   assert.doesNotMatch(src, /Decimal/);
   assert.doesNotMatch(src, /availableQuantity\s*[-+]/);
   assert.doesNotMatch(src, /onHandQuantity\s*[-+]\s*reservedQuantity/);
@@ -65,7 +65,7 @@ test('preview component renders backend-derived quantities and never recomputes 
   assert.match(src, /不是最终净采购建议/);
 });
 
-test('undecided in-transit deduction stays out of the Wave 2A frontend contract', () => {
+test('undecided in-transit deduction stays out of the frontend contract', () => {
   const types = code('../src/views/business/scm/purchase/purchase-types.ts');
   assert.doesNotMatch(types, /openPurchaseQuantity/);
   assert.match(types, /interface DemandSummaryRow/);

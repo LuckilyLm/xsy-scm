@@ -1,8 +1,7 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 
 /**
- * 采购单状态（6 值字符串，与 `PurchaseOrderStateMachine` / V15 的
- * `ck_purchase_order_status` 白名单逐字对应）。
+ * 采购单状态（6 值字符串，与状态机和 DB `ck_purchase_order_status` 白名单逐字一致）。
  *
  * <pre>
  * DRAFT ──submit──→ SUBMITTED ──收货──→ PARTIALLY_RECEIVED ──收货──→ RECEIVED

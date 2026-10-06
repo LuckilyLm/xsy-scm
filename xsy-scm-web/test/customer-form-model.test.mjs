@@ -1,7 +1,7 @@
 /*
  * 客户表单模型单测
  *
- * 来源：**W1 派生** —— 运行方式与断言风格照抄 `test/product-form-model.test.mjs`
+ * 运行方式与断言风格与 `test/product-form-model.test.mjs` 一致。
  * （`node --experimental-strip-types --test`，直接 import `.ts` 源码）。
  *
  * 覆盖的是**后端会拒绝的非法组合**，也就是前端必须提前挡住的那些：

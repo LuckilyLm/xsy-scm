@@ -120,7 +120,7 @@ test('表头统一居中，且只动表头、不动列内容', () => {
   // antd 把 column.align 写成 <th>/<td> 的行内样式，普通选择器压不过它，必须 !important
   assert.match(table, /\.ant-table-thead > tr > th \{[\s\S]{0,160}text-align: center !important/,
       '表头未统一居中（或漏了 !important，行内样式会盖住它）');
-  // 只动表头：把 tbody 一起拉进来会废掉 §8 的「数量/金额右对齐」
+  // 只动表头：把 tbody 一起拉进来会废掉「数量 / 金额右对齐」
   assert.doesNotMatch(table, /\.ant-table-tbody[\s\S]{0,120}text-align: center !important/,
       '不得改动列内容的对齐');
   // 规则必须真的被引进来

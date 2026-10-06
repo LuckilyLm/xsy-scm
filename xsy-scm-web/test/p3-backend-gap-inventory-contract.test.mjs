@@ -2,7 +2,7 @@
  * 前端后端字段缺口盘点的登记契约单测。
  *
  * `docs/architecture/scm-ui-guidelines.md` 要求 UI 不臆造后端尚未提供的业务事实，
- * §33 禁止把「后端字段重构」与 UI 改动同提交。因此执行中遇到的后端字段不足，
+ * 后端字段重构不得与 UI 改动同提交。因此执行中遇到的后端字段不足，
  * 一律登记到 `docs/plan/active/frontend-ui-backend-gap-inventory.md`（编号 B1…Bn），
  * 前端只做「不渲染该段 / 不臆造数值」。
  *
@@ -42,7 +42,7 @@ function declaredIds() {
     return [...doc.matchAll(/^\|\s*(B\d+)\s*\|/gm)].map((m) => m[1]);
 }
 
-test('§3 盘点文档存在且声明了 B 系列缺口编号', () => {
+test('盘点文档存在且声明了 B 系列缺口编号', () => {
     assert.ok(existsSync(docPath), '缺少 docs/plan/active/frontend-ui-backend-gap-inventory.md');
     const ids = declaredIds();
     assert.ok(ids.length >= 5, `盘点文档只声明了 ${ids.length} 个缺口编号，疑似结构被破坏`);
@@ -51,7 +51,7 @@ test('§3 盘点文档存在且声明了 B 系列缺口编号', () => {
     }
 });
 
-test('§3 缺口编号不重复', () => {
+test('缺口编号不重复', () => {
     const ids = declaredIds();
     const seen = new Set();
     for (const id of ids) {
@@ -60,7 +60,7 @@ test('§3 缺口编号不重复', () => {
     }
 });
 
-test('§3 代码注释引用的 B 编号必须在盘点文档中存在', () => {
+test('代码注释引用的 B 编号必须在盘点文档中存在', () => {
     const registered = [
         ['src/views/business/scm/order/order-return-list.vue', 'B6'],
         ['src/views/business/scm/promotion/promotion-coupon-list.vue', 'B7'],
@@ -77,7 +77,7 @@ test('§3 代码注释引用的 B 编号必须在盘点文档中存在', () => {
     }
 });
 
-test('§3 登记过的缺口文件不得退化为无指向的模糊说法', () => {
+test('登记过的缺口文件不得退化为无指向的模糊说法', () => {
     for (const file of [
         'src/views/business/scm/order/order-return-list.vue',
         'src/views/business/scm/promotion/promotion-coupon-list.vue',
@@ -87,7 +87,7 @@ test('§3 登记过的缺口文件不得退化为无指向的模糊说法', () =
     }
 });
 
-test('§3 盘点文档引用的后端证据锚点真实存在', () => {
+test('盘点文档引用的后端证据锚点真实存在', () => {
     // 从文档里抽 `` `XxxVO` `` / `` `XxxService` `` / `` `XxxEntity` `` 形式的类名，逐个到后端源码里找。
     // 不写死锚点清单：文档只保留「当前仍成立」的条目，条目一关就会被删，
     // 写死的清单会把「条目已关闭」误报成「证据漂移」。反过来，只要文档还引用着某个类名，
@@ -101,13 +101,13 @@ test('§3 盘点文档引用的后端证据锚点真实存在', () => {
     }
 });
 
-test('§3 澄清节不得把「已具备的字段」误列为缺口', () => {
+test('澄清节不得把「已具备的字段」误列为缺口', () => {
     // 流水行本身带 operator/createdAt，文档必须显式澄清，防止后续被误开单
     assert.match(doc, /operator[\s\S]{0,80}createdAt/);
     assert.match(doc, /不是缺口/);
 });
 
-test('§3 已关闭的旧 UI 口径项仍被记录，防止被机械清理', () => {
+test('已关闭的旧 UI 口径项仍被记录，防止被机械清理', () => {
     // F 系列（前端口径分歧）随 `.num` 收口一并关闭：条目可以从「当前缺口」表里删掉，
     // 但「为什么不再处理」必须留在文档里，否则下次审计会把它当成漏项重新登记。
     assert.match(doc, /已关闭的旧 UI 口径项/);

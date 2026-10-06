@@ -1,7 +1,7 @@
 /**
- * §20.6 财务详情抽屉七段分区的契约单测。
+ * 财务详情抽屉七段分区的契约测试。
  *
- * §20.6 要求 `finance-detail-drawer.vue` 统一分区为：
+ * `finance-detail-drawer.vue` 统一分区为：
  *   1 单据概要 / 2 对象信息 / 3 金额组成 / 4 核销·退款·红字关系 /
  *   5 来源单据 / 6 流水记录 / 7 系统信息，
  * 并强调「金额摘要应比 ID、编码更突出」。
@@ -28,7 +28,7 @@ function code(relative) {
 
 const drawer = code('../src/views/business/scm/finance/finance-detail-drawer.vue');
 
-test('§20.6 抽屉按计划的顺序分区', () => {
+test('抽屉按固定顺序分区', () => {
     const expected = ['单据概要', '对象信息', '金额组成', '来源单据', '核销 / 红字关系', '流水记录'];
     const positions = expected.map((title) => {
         // h3 可能带 class（金额组成就是 detail-section--nested），不能写死 `<h3>`
@@ -36,12 +36,12 @@ test('§20.6 抽屉按计划的顺序分区', () => {
         assert.ok(index >= 0, `抽屉缺少分区标题「${title}」`);
         return index;
     });
-    // 顺序必须与 §20.6 一致（金额组成在对象信息之后、来源单据之前）
+    // 顺序固定：金额组成在对象信息之后、来源单据之前
     const sorted = [...positions].sort((a, b) => a - b);
-    assert.deepEqual(positions, sorted, '分区顺序与 §20.6 不符');
+    assert.deepEqual(positions, sorted, '分区顺序不符');
 });
 
-test('§20.6 金额组成比 ID / 编码更突出', () => {
+test('金额组成比 ID / 编码更突出', () => {
     // 金额摘要走独立的 amount-grid 结构，而不是普通 descriptions 行
     assert.match(drawer, /class="amount-grid"/);
     assert.match(drawer, /amount-cell__value scm-money/);
@@ -53,7 +53,7 @@ test('§20.6 金额组成比 ID / 编码更突出', () => {
     assert.ok(!/label="金额"/.test(header), '单据概要段仍有「金额」行，金额未迁到金额组成段');
 });
 
-test('§20.6 第 7 段系统信息不编造后端没有的字段', () => {
+test('第 7 段系统信息不编造后端没有的字段', () => {
     // 后端 VO（FinanceReceivableVO 等）只有业务字段，没有审计字段
     assert.ok(!/title>系统信息/.test(drawer), '渲染了系统信息段，但后端未提供审计字段');
     for (const fabricated of ['createTime', 'updateTime', 'creatorName', '创建时间', '更新时间', '创建人']) {
@@ -61,7 +61,7 @@ test('§20.6 第 7 段系统信息不编造后端没有的字段', () => {
     }
 });
 
-test('§20.6 核销与红字合为同一段，仍各自带小标题', () => {
+test('核销与红字合为同一段，仍各自带小标题', () => {
     const relation = drawer.slice(drawer.indexOf('<h3>核销 / 红字关系</h3>'));
     assert.match(relation, /核销记录/);
     assert.match(relation, /红字关联/);

@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * 财务操作日志的唯一写入口，形态照 {@code OrderOperationLogRecorder}。
+ * 财务操作日志的唯一写入口。
  *
  * <p>
- * <b>调用方必须在自身事务内使用</b>：日志与财务事实变更必须同事务， 否则会出现「账已改、日志没落」—— 对财务而言那等于证据链断裂。 本类刻意不加 {@code @Transactional}，事务边界由调用方（写命令）决定。
+ * <b>调用方必须在自身事务内使用</b>：日志与财务事实变更必须同事务， 否则会出现「账已改、日志没落」—— 对财务而言那等于证据链断裂。 本类不加 {@code @Transactional}，事务边界由调用方（写命令）决定。
  *
  * <p>
  * <b>不复用 {@code t_operate_log}</b>：通用日志不保证与业务事务同成同败， 也不带金额快照与类型白名单。财务需要的是「改前 / 改后金额级证据」， 因此 {@code before} /
@@ -29,7 +29,7 @@ import java.util.Map;
  * <li>核销与反向核销：{@code before} 为目标的派生余额快照，{@code after} 为写入后的派生余额快照；</li>
  * <li>收付款反向：{@code before} 为原行有效额快照，{@code after} 为反向后快照。</li>
  * </ul>
- * 派生余额快照必须在**持有目标行锁之后**取，否则记下的是一份并发下已经不成立的数字。
+ * 派生余额快照必须在持有目标行锁之后取，否则记下的是一份并发下已经不成立的数字。
  */
 @Component
 @RequiredArgsConstructor
