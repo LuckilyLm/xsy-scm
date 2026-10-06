@@ -117,14 +117,16 @@
 }
 
 // 供应链网络：圆底节点（叶片 / 车辆 / 数据）+ 连接曲线。
-// 素材是 650x183 的扁长条，参考图里它横贯页面顶部、卡片上沿之上，
-// 所以这里给足宽度让它自然铺开，而不是缩小成一个图标组。
+// 素材是 650x183 的扁长条，参考图里它横贯页面顶部、卡片上沿之上且节点圆点清晰可辨。
+// 素材本身是很浅的薄荷绿，opacity 给低会直接融进背景，所以实色显示。
+// 垂直定位必须跟着卡片走：卡片随视口垂直居中，固定 top 只在一个视口高度上正确，
+// 故用 50vh 偏移让叶片节点圆始终悬在卡片上沿上方。
 .xsy-login__decor-img--connectors {
-  left: 50%;
-  top: -1%;
-  width: 1120px;
-  max-width: 78vw;
-  opacity: 0.5;
+  left: 72%;
+  top: calc(50vh - 455px);
+  width: 1150px;
+  max-width: 80vw;
+  opacity: 1;
   transform: translateX(-50%);
   animation-delay: 0.3s;
 }
@@ -275,6 +277,9 @@
 .xsy-login__feature-icon {
   font-size: 13px;
   color: @xsy-primary;
+  // antd 图标经 font-size 定尺寸；内联 SVG（叶片）需显式宽高
+  width: 13px;
+  height: 13px;
 }
 
 // 全链路主插画
@@ -525,6 +530,11 @@
     max-height: 200px;
     width: auto;
     max-width: 100%;
+  }
+
+  // 640px 以下卡片上沿贴近视口顶，连接线条带会压到卡片，直接隐藏
+  .xsy-login__decor-img--connectors {
+    display: none;
   }
 }
 
