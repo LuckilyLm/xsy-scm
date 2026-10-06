@@ -1,4 +1,4 @@
-/** Finance R1 page queries, exports and append-only commands. */
+/** 财务域查询、导出与只追加命令。 */
 import {getRequest, postDownload, postRequest, request} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

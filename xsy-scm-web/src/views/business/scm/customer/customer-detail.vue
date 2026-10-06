@@ -1,13 +1,12 @@
 <!--
   * 客户详情（独立隐藏路由，可深链）—— 客户 360° 业务档案。
   *
-  * 来源：**W1 派生** —— 结构照抄 `views/business/scm/product/product-detail.vue`。
   * V2 需要可深链的独立页（对应 `t_menu` 434「客户详情」，`visible_flag = false`）。
   *
-  * Wave 7：在原「基础资料」之上补 4 个只读上下文 Tab，全部锁定同一个 customerId。
+  * ：在原「基础资料」之上补 4 个只读上下文 Tab，全部锁定同一个 customerId。
   * - 最近订单 / 协议价 / 可售商品分别复用订单、价格中心、客户 SKU 可见性的**既有查询接口**，
   *   不新建第二份事实，也不落副本；各 Tab 仍受各自领域权限约束（无订单权限时订单/常购 Tab 退化为错误提示）。
-  * - 常购商品是后端只读聚合（§7.5 口径：仅已确认订单、按 SKU+单位分组、订购量为订购量非结算量、
+  * - 常购商品是后端只读聚合（仅已确认订单、按 SKU+单位分组、订购量为订购量非结算量、
   *   最近价为锁定单价缺失即空不兜底）。
   * 非基础资料 Tab 采用**首次进入才加载**（lazy），切换客户时整体复位。
   *
@@ -360,7 +359,7 @@ function backToList(): void {
 }
 
 // ---------------------------------------------------------------------------
-// 基础资料（沿用 W2 的详情加载与竞态守卫）
+// 基础资料（沿用详情加载与竞态守卫）
 // ---------------------------------------------------------------------------
 const customer = ref<CustomerDetail>();
 const baseLoading = ref(false);
@@ -579,7 +578,7 @@ const shelfStatusLabel = (value?: string | null): string =>
     SHELF_STATUS_ENUM.find((item) => item.value === value)?.label ?? '';
 const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : 'neutral');
 
-/** 规划 §25：草稿/待确认=待处理，已确认=处理中，已取消=失效（与订单列表同一套档位）。 */
+/** 草稿/待确认=待处理，已确认=处理中，已取消=失效（与订单列表同一套档位）。 */
 const ORDER_STATUS_TONE: Record<string, ScmStatusTone> = {
   DRAFT: 'warning',
   PENDING: 'warning',

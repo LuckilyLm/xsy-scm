@@ -1,5 +1,5 @@
 /**
- * W6 库存域前端常量（新增文件）。
+ *  库存域前端常量（新增文件）。
  *
  * **为什么单独建文件而不塞进 `purchase-const.ts`**：库存域是**与来源无关**的领域原语
  * （出库 / 盘点 / 报损报溢 / 调拨 / 规格转换都会写同一张流水表），把它的枚举挂到采购常量里，
@@ -48,7 +48,7 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
  *
  * 流水表没有 `direction` 列、`quantity` 恒为正，所以任何要展示「入 / 出」的页面
  * （库存流水列表、报表中心的流水 Tab）都**只能**从这里派生方向。
- * 在别处再写一份 IN / OUT 判断，就是计划 §22 禁止的第二份真相：
+ * 在别处再写一份 IN / OUT 判断，就是第二份真相：
  * 后端加类型时改了这个集合，方向立刻判反，而数字看起来完全正常。
  */
 export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [

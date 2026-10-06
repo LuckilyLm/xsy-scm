@@ -15,12 +15,12 @@ import type {DateRange} from '../report-model';
 import {datePresets} from '../report-model';
 
 /**
- * 报表中心统一的日期区间选择器（计划 §1 的「快捷日期 + 业务日期范围」）。
+ * 报表中心统一的日期区间选择器（的「快捷日期 + 业务日期范围」）。
  *
  * 五个页面共用它，为的是两件事只能有一个实现：
  *
  * 1. **快捷区间集合与默认值**：昨日 / 本周 / 上周 / 本月 / 上月，全部由
- *    `report-model.datePresets()` 生成，纯函数、可单测；
+ *    `report-model.datePresets` 生成，纯函数、可单测；
  * 2. **绑定值恒为 `yyyy-MM-dd` 字符串**：`value-format` 让组件收发字符串，
  *    与后端 `LocalDate` 的闭区间语义一致，前端不做任何日界换算。
  *

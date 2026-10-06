@@ -1,5 +1,5 @@
 <!--
-  收货与入库（Finance R0 计划 §17–§20）。
+  收货与入库。
 
   这是 XSY 与参考系统最需要「借结构、不抄语义」的一页：**收货确认与库存入账是两件事**。
   `purchase_receipt.status = CONFIRMED` 只是商业确认；库存真正入账由 `putaway_status = COMPLETED`

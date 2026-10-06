@@ -1,4 +1,4 @@
-/** Finance R1 codes mirror the backend enums and protected endpoint permissions. */
+/** 权限码与后端枚举、受保护端点权限一致。 */
 import type {SmartEnum} from '/@/types/smart-enum';
 
 export const SCM_FINANCE_PERMISSION = {

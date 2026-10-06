@@ -160,7 +160,7 @@ const employeeValue = computed<number | undefined>({
   },
 });
 
-// 列表按「谁 / 怎么联系 / 能不能派活」排列。司机编码是内部编号（§16.4），不上列 ——
+// 列表按「谁 / 怎么联系 / 能不能派活」排列。司机编码是内部编号，不上列 ——
 // 它仍在查询条件与编辑表单里，隐藏列不影响任何提交载荷。
 // 车辆的两个数值列单位写进表头（kg / m³），避免同一列在不同车型下含义漂移。
 const columns = computed<TableColumnsType>(() => [

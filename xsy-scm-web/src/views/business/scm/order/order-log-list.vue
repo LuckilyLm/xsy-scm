@@ -64,13 +64,13 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<L
     loading = ref(false), error = ref(''), visible = ref(false), active = ref<LogRow>();
 let requestId = 0;
 /**
- * 日志列（§14.4）。
+ * 日志列。
  *
- * 本页只有「变更前后」一个动作，操作列却占 240px —— §8 规定普通操作列 120～160px、
+ * 本页只有「变更前后」一个动作，操作列却占 240px —— 普通操作列 120～160px、
  * 明细下载类单动作页可到 120px。收窄后把省下的宽度还给「原因」：
  * 排查时读的是原因，不是那一列空白。
  *
- * 时间（`createdAt`）**必须保留**：日志页是 §7.3 明确列出的时间例外，
+ * 时间（`createdAt`）**必须保留**：日志页是明确列出的时间例外，
  * 隐藏时间会让「谁在什么时候改的」这条审计链断掉。
  */
 const columns = ref<TableColumnsType<LogRow>>([{

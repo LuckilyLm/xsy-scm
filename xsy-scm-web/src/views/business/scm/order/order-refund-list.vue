@@ -90,7 +90,7 @@ const balanceRefundOpen = ref(false), returning = ref(false), balanceRefundError
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 let requestId = 0;
 /**
- * 退款列（§14.6）。
+ * 退款列。
  *
  * 外部凭证是渠道返回的长字符串（订单号 / 流水号 / 人工备注都可能塞进来），
  * 固定 200px + ellipsis + Tooltip：不给 Tooltip 就只剩一串截断字符，

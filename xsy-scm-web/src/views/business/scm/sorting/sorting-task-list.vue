@@ -313,7 +313,7 @@ const columns = ref<TableColumnsType<SortingTask>>([
   {title: '操作', dataIndex: 'action', fixed: 'right', align: 'center', width: 150},
 ]);
 
-/** §25 状态视觉：待分拣 = 待处理（橙），分拣中 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
+/** 状态视觉：待分拣 = 待处理（橙），分拣中 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
 const SORTING_STATUS_TONE: Record<string, ScmStatusTone> = {
   PENDING: 'warning',
   SORTING: 'processing',

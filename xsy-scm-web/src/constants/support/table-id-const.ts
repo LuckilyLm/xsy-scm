@@ -31,7 +31,7 @@ export const TABLE_ID_CONST = {
         SCM_PRICING_HISTORY: 50009,
         SCM_PRICING_BATCH: 50010,
         SCM_CUSTOMER_SKU_VISIBILITY: 50011,
-        // W4 销售订单沿用 C 的裸数字（602–605）；W5 起统一走常量（A23）
+        //  销售订单沿用 C 的裸数字（602–605）； 起统一走常量（A23）
         SCM_ORDER: 602,
         SCM_ORDER_RETURN: 603,
         SCM_ORDER_REFUND: 604,
@@ -41,7 +41,7 @@ export const TABLE_ID_CONST = {
         SCM_PURCHASE_DEMAND: 50014,
         SCM_PURCHASE_LOG: 50015,
         SCM_WAREHOUSE: 50016,
-        // W6 库存域（两个只读查询页）
+        //  库存域（两个只读查询页）
         SCM_INVENTORY_BALANCE: 50017,
         SCM_INVENTORY_MOVEMENT: 50018,
         // 出库波次（出库单 / 库存预留）
@@ -58,7 +58,7 @@ export const TABLE_ID_CONST = {
         SCM_INVENTORY_WARNING_THRESHOLD: 50025,
         // 规格转换波次（转换单）
         SCM_INVENTORY_CONVERSION: 50026,
-        // Finance R0 报表中心：一张表一个 id（列配置按表持久化，共用会让各 Tab 的列显隐互相覆盖）
+        // 报表中心：一张表一个 id（列配置按表持久化，共用会让各 Tab 的列显隐互相覆盖）
         SCM_REPORT_OVERVIEW_DAILY: 50027,
         SCM_REPORT_SALES_PRODUCT: 50028,
         SCM_REPORT_SALES_CATEGORY: 50029,

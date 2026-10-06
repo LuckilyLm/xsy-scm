@@ -1,5 +1,5 @@
 /**
- * W6 库存域前端类型（新增文件）。
+ *  库存域前端类型（新增文件）。
  *
  * 字段与后端 VO / Form **逐字对齐**：
  * - VO 侧：`InventoryBalanceVO` / `InventoryMovementVO`；
@@ -101,7 +101,7 @@ export interface InventoryMovement {
     sourceDocumentId?: Id;
     /** 收货行 id（防重锚点）。 */
     sourceDocumentItemId?: Id;
-    /** 收货单号（Q9：人类可读来源，W6-1 不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
+    /** 收货单号（Q9：人类可读来源， 不设 movement_no）。仅 `PURCHASE_IN` 有值。 */
     receiptNo?: string;
     /** 来源单号：`SALES_OUT` 取出库单号、`STOCKTAKE_*` 取盘点单号。后端 COALESCE 成一个展示列。 */
     sourceDocumentNo?: string;

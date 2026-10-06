@@ -10,7 +10,7 @@ export function fixed(value: string | number): string {
 }
 
 /**
- * 本地未提交草稿的行（Wave 3 §7.3）：只保留用户录入，不含任何服务端解析结果。
+ * 本地未提交草稿的行：只保留用户录入，不含任何服务端解析结果。
  */
 export interface DraftItem {
     skuId?: string | number;
@@ -36,7 +36,7 @@ export interface Draft {
     items: DraftItem[];
 }
 
-/** 草稿存储键：按登录用户隔离，避免不同操作员草稿互串（§7.3 / 验收「不同登录用户草稿互不串」）。 */
+/** 草稿存储键：按登录用户隔离，避免不同操作员草稿互串（验收「不同登录用户草稿互不串」）。 */
 export function draftKey(employeeId: string | number): string {
     return `xsy-scm:order-draft:${employeeId}`;
 }
@@ -82,7 +82,7 @@ export function applyDraft(draft: Draft): Order {
 }
 
 /**
- * 历史订单复用（Wave 3 §7.4）：从历史单构造「新增草稿」，只复制允许字段并强制重新解析。
+ * 历史订单复用：从历史单构造「新增草稿」，只复制允许字段并强制重新解析。
  *
  * 绝不复制：orderId / orderNo / version / status / 历史 lockedUnitPrice / draftUnitPrice /
  * 人工改价 / 库存预留 / 日志。订单来源回落为后台录单、补单字段清空；价格与主档可用性由后续
@@ -148,7 +148,7 @@ export function amount(value: string | null | undefined, unpriced = false): stri
 }
 
 /**
- * 「历史价」旁证的缓存状态（Wave 3 §7.5）。抽成纯模型是因为串数据的代价只有测试能钉死：
+ * 「历史价」旁证的缓存状态。抽成纯模型是因为串数据的代价只有测试能钉死：
  * 缓存键一旦含行序号，换商品、删行上移、换客户都会静默显示上一个 SKU / 上一个客户的历史成交价。
  */
 export interface RecentPriceCache {

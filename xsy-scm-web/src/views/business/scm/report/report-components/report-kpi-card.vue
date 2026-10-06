@@ -17,7 +17,7 @@
 import {InfoCircleOutlined} from '@ant-design/icons-vue';
 
 /**
- * 报表指标卡（计划 §1 的「重要金额/数量先展示指标卡」）。
+ * 报表指标卡（的「重要金额/数量先展示指标卡」）。
  *
  * `value` 收的是**已经格式化好的文本**（由 `moneyText` / `countText` 产出），
  * 不在组件里做任何数值处理：定点数的位数与形状由源头决定，

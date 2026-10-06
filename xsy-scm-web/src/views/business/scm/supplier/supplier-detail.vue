@@ -1,12 +1,11 @@
 <!--
   * 供应商详情（独立隐藏路由，可深链）
   *
-  * 来源：**W1 派生** —— 结构照抄 `views/business/scm/product/product-detail.vue`
-  * （返回按钮 + 刷新 + 分节说明区 + 子表格）；§12.4 起按业务 Section 分区（概览 / 联系方式 /
+  * （返回按钮 + 刷新 + 分节说明区 + 子表格）； 起按业务 Section 分区（概览 / 联系方式 /
   * 地址与地图 / 采购与账期 / 关联商品 / 系统信息），不再用 `a-divider` 串成一长串描述列表。
   *
   * C 的供应商详情是列表抽屉里的只读区，没有独立详情页；V2 需要可深链的独立页
-  * （对应 `t_menu` 463「供应商详情」，`visible_flag = false`，与 W1 商品详情同策略）。
+  * （对应 `t_menu` 463「供应商详情」，`visible_flag = false`，与商品详情同策略）。
   *
   * 适配 / 新增：
   * - 路由参数 `supplierId`；
@@ -64,7 +63,7 @@
           <a-descriptions-item label="付款账期">{{ supplier.paymentPeriodDays ?? 0 }} 天</a-descriptions-item>
         </a-descriptions>
 
-        <!-- 6. 系统信息：§12.4 要求编码与时间放最后，不占核心区域 -->
+        <!-- 6. 系统信息：编码与时间放最后，不占核心区域 -->
         <h3 class="detail-section--nested">系统信息</h3>
         <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
           <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
@@ -180,7 +179,7 @@ watch(() => route.query.supplierId, load, {immediate: true});
 </script>
 
 <style scoped>
-/* 文档标题：比描述列表更突出（§31.3「核心业务信息优先」） */
+/* 文档标题：比描述列表更突出（「核心业务信息优先」） */
 .detail-doc-title {
   color: var(--scm-text);
   font-size: 18px;

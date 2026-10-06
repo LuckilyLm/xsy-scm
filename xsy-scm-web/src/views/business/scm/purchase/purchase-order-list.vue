@@ -242,7 +242,7 @@ async function submitReassign() {
 }
 
 const userStore = useUserStore();
-/** 导出列偏好按「登录用户 + 场景」本地记忆（Wave 2B §6.5），不建后端表；缺失 / 损坏回落到整目录。 */
+/** 导出列偏好按「登录用户 + 场景」本地记忆，不建后端表；缺失 / 损坏回落到整目录。 */
 const EXPORT_SCENE = 'purchase-order-list';
 const ALL_EXPORT_KEYS = SCM_PURCHASE_EXPORT_COLUMNS.map((c) => c.key);
 function exportSettingKey() {
@@ -290,7 +290,7 @@ const columns = ref<TableColumnsType<Order>>([
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
 
-/** 规划 §25：草稿/部分完成=待处理，已提交=处理中，已收货=完成，少收关单/取消=失效。 */
+/** 草稿/部分完成=待处理，已提交=处理中，已收货=完成，少收关单/取消=失效。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
   DRAFT: 'warning',
   SUBMITTED: 'processing',
@@ -491,7 +491,7 @@ function batchDelete() {
   });
 }
 
-/** 批量少收关单（Wave 2B §6.3）：只作用于「部分收货」勾选，整批共享原因、后端同事务逐单校验。 */
+/** 批量少收关单：只作用于「部分收货」勾选，整批共享原因、后端同事务逐单校验。 */
 function batchShortClose() {
   const targets = partialSelected.value;
   if (!targets.length) {

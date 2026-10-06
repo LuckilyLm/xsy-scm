@@ -1,5 +1,5 @@
 <!--
-  销售分析（Finance R0 计划 §5–§10）：按商品 / 按分类 / 按客户 / 按销售员 / 订单明细。
+  销售分析：按商品 / 按分类 / 按客户 / 按销售员 / 订单明细。
 
   全页只有一个口径，五个 Tab 都不得偏离（后端也保证同一筛选在各维度下一致）：
   订单 `status=CONFIRMED`、业务日 `confirmed_at`、金额只取 `settlement_*`。
@@ -376,7 +376,7 @@ function resetQuery() {
     filters.orderSource = undefined;
     filters.categoryId = undefined;
     filters.keyword = undefined;
-    // 重置回到「本月」（计划 §28 的统一默认值），并把每个 Tab 的页码归零位
+    // 重置回到「本月」（的统一默认值），并把每个 Tab 的页码归零位
     dateRange.value = defaultDateRange();
     resetAllTabsPage();
     onSearch();

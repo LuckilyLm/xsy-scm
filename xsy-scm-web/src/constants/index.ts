@@ -21,7 +21,7 @@ import codeGeneratorConst from './support/code-generator-const';
 import changeLogConst from './support/change-log-const';
 import jobConst from './support/job-const';
 import dictConst from './support/dict-const';
-// SCM 业务枚举（W2 起）：注册进 SmartEnum 插件后，SmartEnumSelect / $smartEnumPlugin 才能取到值
+// SCM 业务枚举：注册进 SmartEnum 插件后，SmartEnumSelect / $smartEnumPlugin 才能取到值
 import scmCustomer from './business/scm/customer-const';
 import scmSupplier from './business/scm/supplier-const';
 import scmReport from './business/scm/report-const';

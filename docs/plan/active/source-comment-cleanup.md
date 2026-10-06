@@ -58,6 +58,13 @@ UI 侧的问题是「用户看到太多解释」，源码侧是「开发者看�
 6. public API / 复杂算法真正需要的契约说明。
 
 > **注释解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的。**
+>
+> **能从类名、方法名、参数名、类型和代码流程直接读出来的信息，不要再用 Javadoc 翻译一遍。**
+
+后一句是后端的主战场。即使把 `Wave` / `W5` / `R0` / `§14.3` / 参考项目全部清到 0，
+后端仍然会显得啰嗦 —— 因为它的注释文化本身偏重：类头写设计动机与替代方案、record 逐个
+`@param` 翻译字段名、方法注释复述整条业务流程。**后端真正的大头是「代码复述」与
+「架构说明」，不是「开发过程」。**
 
 ### 2.1 删除
 
@@ -71,6 +78,9 @@ UI 侧的问题是「用户看到太多解释」，源码侧是「开发者看�
 | 「来源：**新写**」「为什么必须新增此文件」 | 删除 |
 | 旧项目（C / V2 / legacy 项目）当时怎么做的考古说明 | 删除 |
 | 与当前代码重复的 API / 字段 / 流程逐项复述 | 删除 |
+| **字段名翻译式 `@param`**（`@param skuId SKU` / `@param quantity 数量` / `@param operator 操作者`） | 删除。Java record / DTO / Entity 天然自描述，这类注释价值接近零 |
+| **类头「这个类为什么存在」的长篇论证**（设计动机 / 替代方案 / 后果推演 / 使用示例 / 契约表） | 只留输入输出契约与隐藏约束，其余移入 architecture / ADR |
+| 表格 / 矩阵 / 完整流程说明（如「快照矩阵」「冻结时点表」） | 移入 architecture，源码留职责 + 一句链接。否则任一字段的冻结时点一变，实现与几十行 Javadoc 都要同步改，极易漂移 |
 | 「绝不能改」「不要乱动」「刻意这样」等 AI 指令式措辞 | 改写为陈述事实，或删除 |
 | 大段设计说明 | 移入 ADR / architecture，源码留一句 + 文档链接 |
 
@@ -269,31 +279,56 @@ theme/scm/table.less:111     长期规则见 `docs/architecture/scm-ui-guideline
 
 ### P4.4 后端：长注释审计（327 文件 / 401 块候选，不是 327 个都要改）
 
-401 个 > 8 行的块是**审计池**，不是待改清单。逐块分三类：
+**后端真正的大头是 B + C，不是 A。** 即使把 `Wave` / `W5` / `R0` / `§14.3` / 参考项目全部清到 0，后端仍会显得啰嗦 —— 类头写设计动机与替代方案、record 逐个 `@param` 翻译字段名、方法注释复述整条业务流程。所以这里分**四类**：
 
 | 类 | 判断依据 | 处理 |
 | --- | --- | --- |
-| **A 过程性说明** | 来源 / 波次 / 阶段号 / 历史比较 / 「为什么当时这样设计」 | 删除 |
-| **B 当前约束但重复** | 约束仍成立，但与类型、签名或邻近注释重复，或同一段在多处复述 | 压缩 |
-| **C 当前复杂契约** | 定点精度、并发 / 事务边界、幂等、外部协议、跨域只读 | **原样保留**，或仅轻微整理 |
+| **A 开发过程** | 来源 / 波次 / 阶段号 / 参考项目 / 「当初为什么新建」 | 删除 |
+| **B 代码复述** | 字段名与方法名已经表达出来的东西；**字段名翻译式 `@param`** | 删除 |
+| **C 架构设计说明** | 设计动机 / 替代方案 / 后果推演 / 使用示例 / 契约表 / 快照矩阵 / 完整流程 | 移入 ADR / architecture，源码留一句链接 |
+| **D 隐藏业务契约** | 精度、`null` 与 `0` 的区别、事务边界、幂等、乐观锁、跨域一致性、特殊时间口径、库存事实 | **保留**（可轻微整理） |
 
-**不预设最终修改文件数。** 按扫描经验推测可能落在 80～150 个文件，但**这不是目标，也不是验收指标** —— 写出来只为让你对工作量有量级预期，**不要为了凑数去改本该保留的 C 类注释**。**审计覆盖率要求 100%，改动率不设目标** —— 「看了但决定不改」是合格结论，需要在提交说明里写清理由（一句话即可）。
+**不预设最终修改文件数。** 按扫描经验推测可能落在 80～150 个文件，但**这不是目标，也不是验收指标** —— 写出来只为让你对工作量有量级预期，**不要为了凑数去改本该保留的 D 类注释**。**审计覆盖率要求 100%，改动率不设目标** —— 「看了但决定不改」是合格结论，需要在提交说明里写清理由（一句话即可）。
 
-**内部按业务域拆成 6 个子批，每批一个提交**（否则一次改上百个 Java 文件，review 无法判断是否删错了某个幂等 / 精度 / 事务约束）：
+#### 从「明显过度」的开始，不啃全部 327 个
+
+1. **文件级 Javadoc > 15 行的先人工过一遍**（后端 82 处）；
+2. 删除所有「类为什么存在」的长篇论证（C 类）；
+3. 删除 record / entity / VO 里的**字段名翻译式 `@param`**（B 类）；
+4. 把表格 / 矩阵 / 完整流程说明移入 `docs/architecture/`（C 类）；
+5. 保留 serializer、并发、幂等、库存事实里的真正隐藏约束（D 类）。
+
+**record / DTO / Fact 类适合先清** —— Java record 天然自描述，里面大量 `@param skuId SKU` 价值几乎为零。
+
+#### 优先目录（先重灾区，再扩到其余 domain / service / controller）
+
+```text
+common/json  →  inventory/domain  →  purchase/manager  →  purchase/support
+→  inventory/service  →  finance/service  →  report/service  →  其余
+```
+
+典型形态与期望结果：
+
+- `common/json/ScmFixedScale4Serializer`（类头 36 行）：删掉「为什么不用 SmartAdmin 的 serializer」「null 被写成 0 的三种后果」「`@JsonSerialize` 与 `nullsUsing` 的区别」「完整使用示例」「legacy SCM 以前怎么做」，只留 —— 4 位定点、`null` 保持 JSON null 而 `0` 输出 `"0.0000"`、数值 HALF_UP 输出字符串避免精度损失、字段需同时配 `using` 与 `nullsUsing`。
+- `inventory/domain/InventoryConversionFact`：删掉「为什么方向不用 boolean」「与调拨是同一取向」「入方向才能建余额行」与全部字段名翻译，只留 —— 同一转换行分别产生转出与转入事实、方向由调用的库存命令决定、单据声明单位必须与库存记账单位一致。
+- `inventory/domain/InventoryTransferFact`：只留「发出时 `unitSnapshot` 为空、单位取源仓余额；收货时 `unitSnapshot` 必须提供，用于目标仓首次建立余额」。
+- `purchase/manager/PurchaseSnapshotFactory`：类头那套「快照矩阵」移入 `docs/architecture/purchase-snapshot.md`，源码留 —— 职责一句 + 「详细冻结矩阵见 …」。
+
+**内部按业务域拆成 6 个子批，每批一个提交**（否则一次改上百个 Java 文件，review 无法判断是否删错了某个幂等 / 精度 / 事务约束）。子批按**重灾区优先**排序，不按包名字母序：
 
 | 子批 | 包 | 审计池文件 |
 | --- | --- | ---: |
-| P4.4a | `common`（含 `common/json`） | 15 |
-| P4.4b | `product` / `customer` / `supplier` / `warehouse` | 24 |
-| P4.4c | `purchase` | 54 |
-| P4.4d | `inventory` | 94 |
-| P4.4e | `order` / `delivery` / `sorting` / `pricing` | 23 |
-| P4.4f | `finance` / `report` / `promotion` / `payment` / `balance` / `print` / `screen` / `notification` / `dashboard` | 117 |
+| P4.4a | `common`（含 `common/json` —— 最重灾区） | 15 |
+| P4.4b | `inventory`（`domain/*Fact` 与 `service` 是 B/C 类集中地） | 94 |
+| P4.4c | `purchase`（`manager` / `support` 的矩阵与冻结说明） | 54 |
+| P4.4d | `finance` / `report` / `promotion` / `payment` / `balance` / `print` / `screen` / `notification` / `dashboard` | 117 |
+| P4.4e | `product` / `customer` / `supplier` / `warehouse` | 24 |
+| P4.4f | `order` / `delivery` / `sorting` / `pricing` | 23 |
 | | **合计** | **327** |
 
-每个子批仍执行同一套 A / B / C 分类，不做任何按批次的规则放宽。
+每个子批仍执行同一套 A / B / C / D 分类，不做任何按批次的规则放宽。
 
-复核起点（最长的一批；这几处**大概率属 C 类，长是合理的**，先确认再决定）：
+复核起点（> 15 行的 82 处里最长的一批；这几处**同时含 C 与 D**，逐段拆开处理）：
 
 ```text
 36 行  purchase/manager/PurchaseSnapshotFactory.java:28
@@ -306,7 +341,7 @@ theme/scm/table.less:111     长期规则见 `docs/architecture/scm-ui-guideline
 28 行  inventory/domain/InventoryStocktakeFact.java:6
 ```
 
-后端 Javadoc 里大量 `<p>` 分段的「为什么这样设计」属 A 类，应移入 `docs/architecture/` 或 ADR；类 / 方法上只留一句职责 + 仍成立的约束。**但后端注释里确有真约束**（定点精度、乐观锁、幂等、跨域只读），压缩时逐条确认，**不能按长度机械截断**。
+**后端注释里确有真约束**（定点精度、乐观锁、幂等、跨域只读、库存事实），压缩时逐条确认，**不能按长度机械截断**。
 
 ### P4.5 后端：过程残留（小，24 + 15 文件）
 
@@ -447,19 +482,23 @@ markerCount = 0
 
 ## 10. 批次顺序
 
-**先建门禁，再清低风险的，最后做后端 327 文件的审计。**
+**先把前端做完，再按模块清后端**（前端是「计划编号没清完」，后端是「注释文化本身太重」，
+两者节奏不同，混在一起做会让 review 失去焦点）。
 
 ```text
-P4.6a 建立「过程标记」当前基线（契约先落地，后面每批都有保护）
-→ P4.1 前端：删除来源 / 复制日期 / 验收记录（54 文件，低风险高收益）
-→ P4.2 前端：删除阶段号 / 计划编号（102 文件）
+P4.6a 建立「过程标记」当前基线（契约先落地，后面每批都有保护）   ✅ 已完成 b0372951
+→ P4.1 前端：删除来源 / 复制日期 / 验收记录（54 文件）          ✅ 已完成 8c6c6b61
+→ P4.2 前端：删除阶段号 / 计划编号（70 文件 / 135 块）
 → P4.3 前端：长注释人工审计（125 文件 / 157 块候选，改动量不设目标）
-→ P4.5 后端：过程残留（24 + 15 文件，量小）
-→ P4.4 后端：长 Javadoc 人工审计，内部再拆 6 个子批（327 文件 / 401 块候选，放最后）
-     P4.4a common 15 → P4.4b product/customer/supplier/warehouse 24
-     → P4.4c purchase 54 → P4.4d inventory 94
-     → P4.4e order/delivery/sorting/pricing 23 → P4.4f finance 等 117
+────────── 以上前端收口 ──────────
+→ P4.5 后端：过程残留（24 + 15 文件，量小，先清掉低风险的）
+→ P4.4 后端：长注释人工审计，按重灾区优先拆 6 个子批
+     P4.4a common（含 common/json）15
+     → P4.4b inventory 94 → P4.4c purchase 54
+     → P4.4d finance / report 等 117
+     → P4.4e product / customer / supplier / warehouse 24
+     → P4.4f order / delivery / sorting / pricing 23
 → P4.6b 把过程标记基线收紧到 0
 ```
 
-把后端 327 文件的审计放最后，是因为它风险、review 成本与 merge conflict 都最大，且改动量不确定（可能只有 80～150 个文件真的需要动）。前面几批做完后，后端剩余的问题面也更容易看清。
+把后端 327 文件的审计拆到最后，是因为它风险、review 成本与 merge conflict 都最大，且改动量不确定（可能只有 80～150 个文件真的需要动）。前端收口后，后端剩余的问题面也更容易看清。

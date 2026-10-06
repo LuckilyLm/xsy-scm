@@ -83,7 +83,7 @@ export const orderApi = {
      */
     reserveStock: (orderId: Id) => postRequest('/scm/order/reserve-stock/' + orderId, {}) as unknown as Promise<ScmResponse<string>>,
     /**
-     * 某客户某 SKU 的最近成交参考价（Wave 3 §7.5，只读）：仅录单旁证，不回算当前价格、不参与定价。
+     * 某客户某 SKU 的最近成交参考价（只读）：仅录单旁证，不回算当前价格、不参与定价。
      * limit 由后端裁剪到 [1,10]，默认 5。
      */
     recentPrices: (customerId: Id, skuId: Id, limit = 5) => getRequest('/scm/order/reference/recent-prices', {customerId, skuId, limit}) as unknown as Promise<ScmResponse<RecentPrice[]>>,

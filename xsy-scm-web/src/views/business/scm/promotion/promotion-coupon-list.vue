@@ -297,7 +297,7 @@ const discountTypeOptions = [
   {value: 'RATE', label: '折扣券（折扣率）'},
 ];
 
-/** §25 状态视觉：草稿 = 待处理（橙），生效中 = 绿，已停用 = 灰。 */
+/** 状态视觉：草稿 = 待处理（橙），生效中 = 绿，已停用 = 灰。 */
 const PROMOTION_STATUS_TONE: Record<PromotionStatus, ScmStatusTone> = {
   DRAFT: 'warning',
   ACTIVE: 'success',

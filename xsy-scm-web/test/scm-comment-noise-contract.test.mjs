@@ -1,64 +1,14 @@
 /**
- * 生产源码注释噪声的契约单测（P4.6a）。
+ * SCM 生产源码注释噪声契约。
  *
- * ## 为什么需要这份契约
+ * 只约束**开发过程标记**（来源 / 复制日期 / 波次 / 阶段号 / 计划章节号），不限制注释长度
+ * —— 长度是审计信号，`longCommentCount` 只输出报告。
  *
- * 源码注释里的「AI 开发工作日志」与 UI 文案里的过度解释是同一种问题：前者让开发者
- * 看到开发过程，后者让用户看到设计推导。典型残留：
+ * 标记用组合 / 条件匹配，避免误报：裸 `来源：` 会命中业务含义（`来源：销售订单`），
+ * 裸 `§` 会命中指向 `docs/architecture` 与 `docs/adr` 的有效链接。
  *
- * ```ts
- * /*
- *  * 来源：project-reference-examples/.../order-api.ts
- *  * 复制日期：2026-09-16。Copy First + Adapt
- *  * 剪枝：删掉了 C 的 xxx；适配：W4 改成 yyy
- *  * 验收：W4 单测、TS 棘轮与 Playwright
- *  *\/
- * ```
- *
- * 治理规则见 `docs/plan/active/source-comment-cleanup.md`：
- * **注释解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的。**
- *
- * ## 治理对象不是「所有长注释」
- *
- * 长度只是审计信号。本契约**只强制过程标记**，长度仅作为报告指标输出：
- *
- * ```text
- * longCommentCount:  前端 116  后端 401
- * ```
- *
- * 允许因为新增复杂协议、并发约束等合理上涨；**不设 CI 阈值**。否则开发者为了过测试
- * 会把 9 行有价值的说明硬压成 5 行，反而降低代码质量。
- *
- * ## 为什么标记必须是组合 / 条件形态
- *
- * 实测证明两个最直觉的标记都是错的（详见计划的 §2.3）：
- *
- * - **裸 `来源：`**：后端 9 处**全是业务含义**（`来源：销售订单`、`来源：售后退款单`、
- *   `来源：{@code sales_order_item}`），前端还有 `来源：订单行 / 满赠赠品权益`。
- *   零处是「代码来源」。因此只在 `来源：project-reference-examples…` / `来源：新写`
- *   这两种组合形态下才算标记。
- * - **裸 `§`**：`§14.5` 这种失效的计划章节号要删，但
- *   `长期规则见 docs/architecture/scm-ui-guidelines.md §5` 是**有效长期文档链接**。
- *   因此只在同一注释块里**没有 `*.md` 引用**时才判为过程标记。
- *
- * 同理不能进标记集的还有：`A4`（`ScmPrintPaperEnum.A4` 是真实业务值）、`legacy`
- * （中性词，「legacy 对同一批字段存在两套解析规则」是仍成立的约束）、`DRAFT`（枚举值）、
- * 泛化 `A\d+`（会命中 `{@link #A4}`）。
- *
- * ## 为什么先抽注释再匹配
- *
- * 直接 `source.includes('来源：')` 会命中字符串、URL 与枚举值。本文件先把注释抽出来
- * （跳过字符串字面量、模板字符串、正则字面量与 Java 文本块），再在注释体内匹配。
- * `.vue` 按顶层 SFC 块切分：`<template>` 走 HTML 注释，`<script>` / `<style>` 走
- * JS/CSS 注释 —— 否则模板里的 `http://` 会被当成行注释。
- *
- * ## 两阶段
- *
- * - **P4.6a（本文件当前状态）**：`count <= BASELINE`，且**逐标记**比较 —— 任一标记
- *   新增即失败，即使总数因别的标记下降而没超基线。每完成一批同步下调基线。
- * - **P4.6b（P4.4 完成后）**：基线收紧到 `0`，仅显式白名单允许非零。
- *
- * 不写死「= 0」是因为建契约当天就有 271 处命中，执行者会为了「让测试绿」开始乱删。
+ * 分两阶段：现在 `count <= BASELINE` 且逐标记比较，P4.4 完成后再收紧到 0。
+ * 详细规则、基线与扫描口径见 `docs/plan/active/source-comment-cleanup.md`。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -101,6 +51,8 @@ const FLYWAY_DIRECTORY = '/db/migration';
 const PROCESS_MARKERS = [
   ['来源：project-reference-examples', /来源\s*[:：]\s*\**\s*project-reference-examples/],
   ['来源：新写', /来源\s*[:：]\s*\**\s*新写/],
+  // `来源：**W1 派生**` 是第三种形态，P4.1 的组合匹配没覆盖到
+  ['来源：Wn 派生', /来源\s*[:：]\s*\**\s*派生/],
   ['复制日期', /复制日期/],
   ['Copy First + Adapt', /Copy\s*First/],
   ['剪枝 / 适配 / 验收记录', /(剪枝|适配|验收)\s*[:：]/],
@@ -130,9 +82,10 @@ const DOC_REFERENCE = /[\w./-]+\.md/;
 const BASELINE = {
   'xsy-scm-web/src': {
     process: {
-      // P4.1 已清空：前端 54 个文件头的来源 / 复制日期 / 适配 / 验收块全部删除或压成当前约束
+      // P4.1 清空 54 个文件头的来源块；P4.2 顺手清掉 4 处 `来源：**W1 派生**`
       '来源：project-reference-examples': 0,
       '来源：新写': 0,
+      '来源：Wn 派生': 0,
       '复制日期': 0,
       'Copy First + Adapt': 0,
       '剪枝 / 适配 / 验收记录': 0,
@@ -142,12 +95,13 @@ const BASELINE = {
       'AI 指令式措辞': 0,
     },
     plan: {
-      'Sprint / Wave': 28,
-      'Wn 波次': 81,
-      'Rn 阶段代号': 19,
-      'A-Dn 编号': 5,
-      'Qna 编号': 5,
-      '§ 无 .md 引用': 112,
+      // P4.2 清空：Wave / Wn / Rn / A-Dn / Qna / 无 .md 引用的 §
+      'Sprint / Wave': 0,
+      'Wn 波次': 0,
+      'Rn 阶段代号': 0,
+      'A-Dn 编号': 0,
+      'Qna 编号': 0,
+      '§ 无 .md 引用': 0,
     },
     // 指向现存文档的 § 是有效链接，只允许不减少
     anchoredSection: 4,
@@ -157,6 +111,7 @@ const BASELINE = {
     process: {
       '来源：project-reference-examples': 0,
       '来源：新写': 0,
+      '来源：Wn 派生': 0,
       '复制日期': 0,
       'Copy First + Adapt': 0,
       '剪枝 / 适配 / 验收记录': 0,
@@ -180,6 +135,7 @@ const BASELINE = {
     process: {
       '来源：project-reference-examples': 0,
       '来源：新写': 0,
+      '来源：Wn 派生': 0,
       '复制日期': 0,
       'Copy First + Adapt': 0,
       '剪枝 / 适配 / 验收记录': 0,

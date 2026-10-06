@@ -1,5 +1,5 @@
 /**
- * 库存流水接口（W6 新增文件）。
+ * 库存流水接口（新增文件）。
  *
  * 与后端 `InventoryMovementController` 逐端点对应（1 个，**只读**）：
  * `POST /scm/inventory/movement/query`。

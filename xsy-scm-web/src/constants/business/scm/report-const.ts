@@ -1,14 +1,14 @@
 /**
- * Finance R0 报表中心前端常量（新增文件）。
+ * 报表中心前端常量（新增文件）。
  *
  * 这里只放**报表中心自己**的东西：表格 DOM id、权限码、损耗类型口径。
  * 其余枚举一律复用既有单一来源，**不在本文件复制第二份**：
  *
  * ```text
- * 流水类型 / 来源单据类型  → inventory-const.ts 的 SCM_INVENTORY_MOVEMENT_TYPE_ENUM / SCM_INVENTORY_SOURCE_TYPE_ENUM
- * 收货模式 / 入库状态      → purchase-const.ts 的 SCM_RECEIPT_MODE_ENUM / SCM_PUTAWAY_STATUS_ENUM
- * 采购状态                 → purchase-const.ts 的 SCM_PURCHASE_STATUS_ENUM
- * 订单来源 / 价格来源      → order-const.ts 的 SCM_ORDER_SOURCE_ENUM / SCM_ORDER_PRICE_SOURCE_ENUM
+ * 流水类型 / 来源单据类型 → inventory-const.ts 的 SCM_INVENTORY_MOVEMENT_TYPE_ENUM / SCM_INVENTORY_SOURCE_TYPE_ENUM
+ * 收货模式 / 入库状态 → purchase-const.ts 的 SCM_RECEIPT_MODE_ENUM / SCM_PUTAWAY_STATUS_ENUM
+ * 采购状态 → purchase-const.ts 的 SCM_PURCHASE_STATUS_ENUM
+ * 订单来源 / 价格来源 → order-const.ts 的 SCM_ORDER_SOURCE_ENUM / SCM_ORDER_PRICE_SOURCE_ENUM
  * ```
  *
  * 复制一份枚举值等于制造第二个真相：后端扩枚举时只改一处，另一份会**静默陈旧**，
@@ -19,7 +19,7 @@ import type {SmartEnum} from '/@/types/smart-enum';
 /**
  * 损耗分析口径下的流水类型子集。
  *
- * **报表侧的分类，不是库存侧的枚举**：计划 §23 明确 R0 只承认「盘亏」与「手工报损」两类
+ * **报表侧的分类，不是库存侧的枚举**：只承认「盘亏」与「手工报损」两类
  * 可证明的损耗事实，`STOCKTAKE_GAIN` / `GAIN_REPORT` 是增益、`SALES_OUT` 是履约，
  * 都不进损耗成本。因此这个子集属于报表中心，放在这里而不是去改库存枚举。
  */
@@ -29,7 +29,7 @@ export const SCM_REPORT_LOSS_TYPE_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 报表中心权限码（与后端 `@SaCheckPermission` 逐字对应，计划 §32）。
+ * 报表中心权限码（与后端 `@SaCheckPermission` 逐字对应）。
  *
  * 三条约束：
  * - 导出 = 对应页的 query 权限 **AND** `export`；`v-privilege` 只吃一个码，

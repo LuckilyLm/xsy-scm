@@ -92,7 +92,7 @@ const form = ref<Order>(newOrder()), visible = ref(false), loading = ref(false),
 const userStore = useUserStore();
 let requestId = 0;
 
-/* 草稿只存本地、按登录用户隔离（§7.3）；解析价 / version / 快照一律不落，恢复后重新请求。 */
+/* 草稿只存本地、按登录用户隔离；解析价 / version / 快照一律不落，恢复后重新请求。 */
 function draftStorageKey() {
   return draftKey(userStore.employeeId);
 }
@@ -138,7 +138,7 @@ async function open(id?: Id) {
 }
 
 /**
- * 打开新建时若存在本地草稿，弹窗让用户选择恢复或丢弃（§7.3）。
+ * 打开新建时若存在本地草稿，弹窗让用户选择恢复或丢弃。
  * 恢复后必须重新请求客户 / 价格：草稿只存用户录入，不含解析价、快照与 version。
  */
 async function promptRestoreDraft() {
@@ -206,7 +206,7 @@ onBeforeUnmount(() => {
 });
 
 /**
- * 历史订单复用（§7.4）：读取历史单，仅复制允许字段构造新的新增草稿，价格 / 可用性重新解析。
+ * 历史订单复用：读取历史单，仅复制允许字段构造新的新增草稿，价格 / 可用性重新解析。
  * 不进入草稿恢复提示，也不复用历史价 / 状态 / version。
  */
 async function openFromHistory(id: Id) {

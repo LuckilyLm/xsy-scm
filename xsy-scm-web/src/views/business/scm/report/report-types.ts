@@ -1,19 +1,19 @@
 /**
- * Finance R0 报表中心前端类型（新增文件）。
+ * 报表中心前端类型（新增文件）。
  *
  * 字段与后端 `module/scm/report/domain/vo` 的 VO **逐字对齐**，命名即口径：
  *
- * - 这里**不存在**「营业收入」「已收款」「应收」「应付」「毛利」这类字段。R0 没有签收、
+ * - 这里**不存在**「营业收入」「已收款」「应收」「应付」「毛利」这类字段。当前没有签收、
  *   应收、应付与核销事实，把已确认订单金额叫成收入会把「承诺」说成「已实现」；
  * - 销售侧只有 `CONFIRMED + confirmed_at + settlement_*`；采购侧只有提交后的采购事实；
  * - 定点数一律是 `string | null`（后端 `ScmFixedScale4Serializer`：`null → JSON null`、
  *   `0 → "0.0000"`）。**`null` 是「没有这个事实」，与 `"0.0000"` 是两种不同的东西**，
- *   所以类型上不写 `number`，也不允许前端 `Number()` 后再算；
+ *   所以类型上不写 `number`，也不允许前端 `Number` 后再算；
  * - 计数字段（`Long` / `Integer`）是 JSON 数字，与定点数区分，因此类型是 `number | null`；
  * - 时间是字符串，由 `common/scm-display` 的 `datetime` 直接渲染，不做二次时区换算。
  *
  * 库存分析四张表（`InventoryReportVO` 各内部类）在写这份类型时后端尚未落盘，
- * 字段按计划 §22–§25 的列清单 + 既有 `inventory-types.ts` 的同名字段推得，
+ * 字段按后端列清单 + 既有 `inventory-types.ts` 的同名字段推得，
  * 并刻意与 `InventoryMovement` 的命名保持一致（`unitSnapshot` / `sourceDocumentNo`），
  * 避免同一事实出现两套字段名。后端落盘后如出现差异，以**后端为准并改这里**。
  */
@@ -102,7 +102,7 @@ export interface ReportOverview {
     snapshotAt?: string | null;
 }
 
-/** Six fixed Finance R0 measures; field names describe the source fact and time role. */
+/** Six fixed measures; field names describe the source fact and time role. */
 export interface FinanceReportOverview {
     receivableOccurredAmount: string | null;
     receivableWrittenOffAmount: string | null;
@@ -501,7 +501,7 @@ export interface ReceiptQuery extends ReportPage, ReportDateQuery {
 // ==================================================================
 
 /**
- * 库存流水报表行（计划 §22）。
+ * 库存流水报表行。
  *
  * 方向不在字段里：`quantity` 恒为正，方向由 `movementType` 经
  * `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES` 派生（计划禁止报表再维护一份 IN / OUT 硬编码）。
@@ -533,7 +533,7 @@ export interface InventoryMovementRow {
     operator?: string | null;
 }
 
-/** 损耗分析 KPI（计划 §23）。数量按单位分组，因此只有文本没有可加数字。 */
+/** 损耗分析 KPI。数量按单位分组，因此只有文本没有可加数字。 */
 export interface InventoryLossSummary {
     /** 盘亏数量文本（按记账单位分组）。 */
     stocktakeLossQuantityText?: string | null;
@@ -546,7 +546,7 @@ export interface InventoryLossSummary {
     /** 被跳过的无成本行数；> 0 表示上面的金额不完整。 */
     missingCostCount?: number | null;
     /**
-     * 按日损耗成本趋势（计划 §23 的「损耗金额按日趋势」）。
+     * 按日损耗成本趋势（的「损耗金额按日趋势」）。
      *
      * 后端未提供该聚合时这里是 `undefined`，页面显示图表空态而**不在前端把明细行相加**：
      * 明细是分页的，拿一页去代表整个区间会画出一张错的图。
@@ -562,7 +562,7 @@ export interface InventoryLossTrendPoint {
     totalLossCostAmount?: string | null;
 }
 
-/** 损耗明细行（计划 §23 表列）。 */
+/** 损耗明细行（表列）。 */
 export interface InventoryLossRow {
     movementId?: ReportId;
     productName?: string | null;
@@ -581,7 +581,7 @@ export interface InventoryLossRow {
 }
 
 /**
- * 当前库存价值行（计划 §24）。
+ * 当前库存价值行。
  *
  * **当前时点值**：不受查询区间影响，页面必须标注「当前时点」，日期筛选在该 Tab 下失效。
  * 成本列受 `scm:report:cost:query` 控制，后端已对无权限调用者置 null。
@@ -620,7 +620,7 @@ export interface InventoryValueSummary {
     snapshotAt?: string | null;
 }
 
-/** 收发存（数量版）行（计划 §25）：粒度 = 仓库 + SKU + 记账单位。 */
+/** 收发存（数量版）行：粒度 = 仓库 + SKU + 记账单位。 */
 export interface InventoryFlowSummaryRow {
     warehouseId?: ReportId;
     warehouseName?: string | null;
@@ -639,7 +639,7 @@ export interface InventoryFlowSummaryRow {
     transferOutQuantity?: string | null;
     convertInQuantity?: string | null;
     convertOutQuantity?: string | null;
-    /** 期内净变动量（后端按方向算好）；**没有期初 / 期末**，那需要成本快照，R0 不做。 */
+    /** 期内净变动量（后端按方向算好）；**没有期初 / 期末**，那需要成本快照， 不做。 */
     netChangeQuantity?: string | null;
 }
 

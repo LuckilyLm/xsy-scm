@@ -1,5 +1,5 @@
 /**
- * Finance R0 报表中心接口（新增文件）。
+ * 报表中心接口（新增文件）。
  *
  * 与后端 `ScmReportController`（`/scm/report`）逐端点对应，**全部只读**：
  * 这里没有任何 create / update / delete 函数，也没有任何写端点。
@@ -54,7 +54,7 @@ import type {
 
 const BASE = '/scm/report';
 
-/** 经营概览：指标卡 / 日趋势 / 每日统计（计划 §4）。 */
+/** 经营概览：指标卡 / 日趋势 / 每日统计。 */
 export const reportOverviewApi = {
     /** 指标卡。 */
     overview: (data: OverviewQuery) =>
@@ -79,7 +79,7 @@ export const reportOverviewApi = {
     dailyExport: (data: Partial<OverviewQuery>) => postDownload(`${BASE}/overview/daily/export`, data),
 };
 
-/** 销售分析：按商品 / 按分类 / 按客户 / 按销售员 / 订单明细（计划 §5–§10）。 */
+/** 销售分析：按商品 / 按分类 / 按客户 / 按销售员 / 订单明细。 */
 export const reportSalesApi = {
     product: (data: SalesQuery) =>
         postRequest(`${BASE}/sales/product`, data) as unknown as Promise<ScmResponse<ScmPage<SalesProductRow>>>,
@@ -111,7 +111,7 @@ export const reportSalesApi = {
     orderExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/order/export`, data),
 };
 
-/** 采购分析：采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动（计划 §11–§16、§26）。 */
+/** 采购分析：采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动。 */
 export const reportPurchaseApi = {
     overview: (data: PurchaseQuery) =>
         postRequest(`${BASE}/purchase/overview`, data) as unknown as Promise<ScmResponse<PurchaseOverview>>,
@@ -142,7 +142,7 @@ export const reportPurchaseApi = {
     priceTrendExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/price-trend/export`, data),
 };
 
-/** 收货与入库：三张表是**三种不同事实**（计划 §17–§20）。 */
+/** 收货与入库：三张表是**三种不同事实**。 */
 export const reportReceiptApi = {
     /** 收货明细：粒度 = `purchase_receipt_item`，按 `confirmed_at`。 */
     query: (data: ReceiptQuery) =>
@@ -158,7 +158,7 @@ export const reportReceiptApi = {
     inboundExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/inbound/export`, data),
 };
 
-/** Finance R0: immutable Finance R1 facts, separate from the operational report measures above. */
+/** 财务域不可变事实，与上面的经营口径报表指标分开。 */
 export const reportFinanceApi = {
     overview: (data: FinanceOverviewQuery) =>
         postRequest(`${BASE}/finance/overview`, data) as unknown as Promise<ScmResponse<FinanceReportOverview>>,
@@ -175,7 +175,7 @@ export const reportFinanceApi = {
         postDownload(`${BASE}/finance/payable/aging-free-detail/export`, data),
 };
 
-/** 库存分析：库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版（计划 §21–§25）。 */
+/** 库存分析：库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版。 */
 export const reportInventoryApi = {
     movementQuery: (data: InventoryReportQuery) =>
         postRequest(`${BASE}/inventory/movement/query`, data) as unknown as Promise<

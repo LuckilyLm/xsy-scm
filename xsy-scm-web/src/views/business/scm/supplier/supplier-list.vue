@@ -128,7 +128,7 @@ const drawer = ref<InstanceType<typeof SupplierDrawer>>();
 const skuDrawer = ref<InstanceType<typeof SupplierSkuDrawer>>();
 
 const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?.desc || value;
-/** 规划 §25：启用=正常（绿），停用=失效（灰）。 */
+/** 启用=正常（绿），停用=失效（灰）。 */
 const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' ? 'success' : 'neutral');
 
 // 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。

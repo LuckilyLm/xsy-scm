@@ -1,5 +1,5 @@
 /**
- * 首页业务待办接口（Wave 4）。
+ * 首页业务待办接口。
  *
  * 与后端 `ScmTodoController` 一一对应，**只有一个只读端点**：
  * `GET /scm/dashboard/todo` 返回当前登录人「可见」的待办卡片清单。

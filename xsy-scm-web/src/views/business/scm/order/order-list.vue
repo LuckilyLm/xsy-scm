@@ -131,7 +131,7 @@ const columns = ref<TableColumnsType<Order>>([
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
 
-/** 规划 §25：草稿/待确认=待处理，已确认=处理中，已取消=失效。 */
+/** 草稿/待确认=待处理，已确认=处理中，已取消=失效。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
   DRAFT: 'warning',
   PENDING: 'warning',

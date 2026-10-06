@@ -1,5 +1,5 @@
 /**
- * W2 供应商域前端契约（与后端 `module/scm/supplier` 的 Form / VO 一一对应）。
+ *  供应商域前端契约（与后端 `module/scm/supplier` 的 Form / VO 一一对应）。
  *
  * 约定（与 `customer.d.ts` 一致）：
  * - 金额字段是**4 位定点字符串**（`"0.0000"`），`null` 表示「未设置」。

@@ -55,7 +55,7 @@ export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 库存缺口预览的计算状态（Wave 2A §6A.5，与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对应）。
+ * 库存缺口预览的计算状态（A.5，与后端 `PurchaseDemandSummaryVO.calculationStatus` 逐字对应）。
  *
  * 只读辅助决策：`UNIT_MISMATCH` 表示需求单位与余额记账单位不一致（Q13），缺口为 null 不猜折算率；
  * `NO_BALANCE` 表示该仓库下该 SKU 无余额行。
@@ -100,7 +100,7 @@ export const SCM_PURCHASE_OPERATION_ENUM: SmartEnum<string> = {
 };
 
 /**
- * 采购单导出列目录（Wave 2B §6.5）——**key 必须与后端 `PurchaseOrderExportSupport` 的列目录逐字一致**。
+ * 采购单导出列目录——**key 必须与后端 `PurchaseOrderExportSupport` 的列目录逐字一致**。
  *
  * 这里只是「导出设置」勾选框的可读标题来源；落哪几列、以何顺序最终由后端目录裁决，
  * 前端传未知 key 会被忽略、不勾选即导出整目录。此处数组顺序只影响勾选框的展示顺序。
@@ -124,7 +124,7 @@ export const SCM_PURCHASE_EXPORT_COLUMNS: {key: string; title: string}[] = [
 ];
 
 /**
- * 表格 DOM id（W5 Target Design §9.4）——**给 Playwright 定位用**，不是 `TableOperator` 的 `tableId`。
+ * 表格 DOM id——**给 Playwright 定位用**，不是 `TableOperator` 的 `tableId`。
  *
  * `TableOperator` 的 `tableId` prop 是 `Number`（列配置持久化用），因此另在
  * `TABLE_ID_CONST.BUSINESS` 里以既有的扁平 `SCM_*` 命名注册数字 id。

@@ -64,7 +64,7 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
-            <!-- §31.1：操作列超过 3 个动作就要收敛。「设为默认」与「删除」是低频且后者危险，
+            <!-- ：操作列超过 3 个动作就要收敛。「设为默认」与「删除」是低频且后者危险，
                  进「更多」；v-privilege 对菜单项不生效，权限在 `rowActions` 里用 hasPermission 裁剪。 -->
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>

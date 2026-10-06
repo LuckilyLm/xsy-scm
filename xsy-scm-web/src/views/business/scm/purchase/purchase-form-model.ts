@@ -1,5 +1,5 @@
 /**
- * W5 采购域表单模型（新增文件，仿 W4 `order-form-model.ts`）。
+ *  采购域表单模型（新增文件，仿 `order-form-model.ts`）。
  *
  * 三块职责：
  * 1. **定点数纪律（A17/A18）**：所有数量 / 金额在提交前经 {@link fixed} 归一为 4 位小数字符串；
@@ -38,7 +38,7 @@ export function fixed(value: string | number | null | undefined): string {
  * 金额渲染（A18）。
  *
  * @param unpriced 该字段的 `null` 是否表示「未定价」而非「无此金额」。
- *   W5 里 `totalAmount` 的 `null` 是「还没有行」，不是「未定价」→ 传 `false` 渲染 `—`。
+ *    里 `totalAmount` 的 `null` 是「还没有行」，不是「未定价」→ 传 `false` 渲染 `—`。
  */
 export function amount(value: string | null | undefined, unpriced = false): string {
     if (value === null || value === undefined || value === '') {
@@ -194,7 +194,7 @@ export function normalizeTyped(value: string | number | null | undefined): strin
 /**
  * 单价是否**已填写**（形状合法 + 非负）。
  *
- * 未填写时由服务端按「未定价」处理（W5 允许价格待定）；一旦填了就必须是合法价。
+ * 未填写时由服务端按「未定价」处理（允许价格待定）；一旦填了就必须是合法价。
  * 与 {@link validateOrder} 同口径：先 {@link typedFixed} 归一（吸收输入框键入中的裸数），
  * 再套 {@link FIXED} 的严格形状 —— 不放宽形状，只对齐「校验时机」。
  */
@@ -369,8 +369,8 @@ export function confirmPayload(receipt: Receipt, lines: ReceiptConfirmItemPayloa
 /**
  * **A26** 容差提示文案。
  *
- * 超收容差是服务端配置（`scm.purchase.over_receipt_tolerance_percent`，Q3a），
- * W5 **没有**把它暴露给前端的读取端点，因此这里不假装能算出「上限」，
+ * 超收容差是服务端配置（`scm.purchase.over_receipt_tolerance_percent`），
+ *  **没有**把它暴露给前端的读取端点，因此这里不假装能算出「上限」，
  * 只给出确定的事实：剩余可收量 + 超收会被服务端按配置拒绝（40989）。
  */
 export function toleranceHint(item: ReceiptItem): string {

@@ -1,14 +1,13 @@
 <!--
   * 客户类型管理（分页列表）
   *
-  * 来源：**W1 派生** —— 结构照抄 `views/business/scm/product/category-list.vue`。
   * C 没有客户类型管理页（C 用前端硬编码枚举），因此没有可复制的源码。
   *
-  * 与 W1 分类列表的差异（剪枝 + 适配）：
-  * - W1 分类是**树表**（一次取全量、无分页），V2 客户类型是**平铺分页表**，
+  * 与商品分类列表的差异：
+  * - 分类是**树表**（一次取全量、无分页），V2 客户类型是**平铺分页表**，
   *   因此这里补了查询表单 + 服务端分页 + 排序白名单（后端 `CustomerTypeService.SORTABLE`）；
   * - 去掉「新增子分类」这类层级操作；
-  * - 删除改为 `POST /scm/customer/type/delete` 并回传 `version`（W1 分类同为 version 删除）。
+  * - 删除改为 `POST /scm/customer/type/delete` 并回传 `version`（分类同为 version 删除）。
   *
   * 注意：后端 `CustomerTypeVO` **不返回 `updatedAt`**（只有 `createdAt`），
   * 因此排序只开放 `typeCode / name / status` 三列，
@@ -115,7 +114,7 @@ const columns = ref<TableColumnsType<CustomerType>>([
   {title: '操作', dataIndex: 'action', width: 140, align: 'center', fixed: 'right'},
 ]);
 
-// 请求序号：避免快速切页时旧响应覆盖新响应（与 W1 product-list 同策略）。
+// 请求序号：避免快速切页时旧响应覆盖新响应（与 product-list 同策略）。
 let requestId = 0;
 
 async function load() {

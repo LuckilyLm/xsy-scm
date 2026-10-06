@@ -1,6 +1,6 @@
 import type {ScmLocation} from '/@/components/business/scm/map/types';
 /**
- * W5 采购域前端类型（新增文件，无 Provenance 要求）。
+ *  采购域前端类型（新增文件，无 Provenance 要求）。
  *
  * 字段与后端 VO / Form **逐字对齐**：
  * - VO 侧：`PurchaseOrderVO` / `PurchaseOrderItemVO` / `PurchaseOrderAllocationVO` /
@@ -67,7 +67,7 @@ export interface DemandQuery extends Page {
     demandDateTo?: string;
 }
 
-/** `PurchaseDemandGenerateForm` —— 半开区间 `[startAt, endAt)`（Q6a）。 */
+/** `PurchaseDemandGenerateForm` —— 半开区间 `[startAt, endAt)`。 */
 export interface DemandGenerate {
     startAt: string;
     endAt: string;
@@ -195,7 +195,7 @@ export interface DemandAllocate {
 }
 
 /**
- * `PurchaseDemandSummaryPreviewForm` —— 订单汇总 / 库存缺口预览（Wave 2A §6A，只读）。
+ * `PurchaseDemandSummaryPreviewForm` —— 订单汇总 / 库存缺口预览（只读）。
  *
  * 半开区间 `[startAt, endAt)` 与 `generate` 同口径；`warehouseId` 必填（销售订单不携带仓库，
  * 缺口只能针对一个仓库算）。可选 `categoryId` / `keyword` 只收窄聚合范围。
@@ -212,7 +212,7 @@ export interface DemandSummaryPreviewQuery extends Page {
  * `PurchaseDemandSummaryVO` —— 预览聚合行。
  *
  * 数量全部是后端 SQL 内用 `BigDecimal` 算好的四位定点字符串（`null` 与 `"0.0000"` 语义不同），
- * 前端**不得**重算 `availableQuantity` / `stockComparisonGap`（§6A.4）。
+ * 前端**不得**重算 `availableQuantity` / `stockComparisonGap`（A.4）。
  * `UNIT_MISMATCH` 时 `stockComparisonGap` 为 `null`（Q13 单位门禁，不猜折算率）。
  *
  * 预留分三段：`reservedQuantity` 是全仓该 SKU 的总预留，其中 `selectedOrderReservedQuantity`
@@ -238,7 +238,7 @@ export interface DemandSummaryRow {
     otherReservedQuantity?: string | null;
     availableQuantity?: string | null;
     stockAvailableForSelectedOrders?: string | null;
-    /** 已确认订单与当前库存/预留的对比差额，**不是**最终净采购建议（§6A.6 未裁决）。 */
+    /** 已确认订单与当前库存/预留的对比差额，**不是**最终净采购建议（A.6 未裁决）。 */
     stockComparisonGap?: string | null;
     /** 未收采购覆盖：在途未收量扣除已分配需求后的余量。 */
     inTransitQuantity?: string | null;
@@ -381,7 +381,7 @@ export interface OrderShortClosePayload extends OrderVersionPayload {
 }
 
 /**
- * 批量少收关单（Wave 2B §6.3）：整批共享一个关单原因，`orders` 每行携带各自 `version`。
+ * 批量少收关单：整批共享一个关单原因，`orders` 每行携带各自 `version`。
  *
  * 服务侧在同一事务内按 id 升序逐单套用与单单完全相同的状态机 / 版本校验，任一单非法即整批回滚。
  */
@@ -391,7 +391,7 @@ export interface OrderBatchShortClosePayload {
 }
 
 /**
- * 采购单列表导出入参（Wave 2B §6.4，只读）：筛选复用 {@link OrderQuery}。
+ * 采购单列表导出入参（只读）：筛选复用 {@link OrderQuery}。
  *
  * `exportColumns` 只是勾选列的 key 列表，落哪几列、以何顺序由后端
  * `PurchaseOrderExportSupport` 目录裁决；为空或全部未知即导出整目录。分页由服务端强制改为「第 1 页 + 上限行」。
@@ -516,7 +516,7 @@ export interface ReceiptConfirmPayload {
 }
 
 /**
- * 按商品收货工作台查询（Wave 2B §6.3，只读）。
+ * 按商品收货工作台查询（只读）。
  *
  * 范围由后端固定为「可收货」采购单（`SUBMITTED` / `PARTIALLY_RECEIVED`），**不开放状态入参**；
  * 其余筛选仅缩小视图范围，不改变任何聚合口径。

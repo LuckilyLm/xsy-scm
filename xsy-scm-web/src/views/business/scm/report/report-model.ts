@@ -1,10 +1,10 @@
 /**
- * Finance R0 报表中心的**纯函数**层（新增文件，仿 `inventory/inventory-model.ts` 的取向：
+ * 报表中心的**纯函数**层（新增文件，仿 `inventory/inventory-model.ts` 的取向：
  * 把纪律放进可单测的函数，而不是散在五个页面里的三元表达式）。
  *
  * 五块职责：
  *
- * 1. **日期口径**（计划 §28）：报表中心统一「本月」为默认区间，快捷区间只有
+ * 1. **日期口径**：报表中心统一「本月」为默认区间，快捷区间只有
  *    昨日 / 本周 / 上周 / 本月 / 上月五个；周起点固定为**周一**（不是 dayjs 默认的周日），
  *    且「本周 / 本月」一律**截至今天**——把未来日子算进「已发生」的区间，
  *    会让趋势图上凭空多出一段零值尾巴，读起来像「这几天营业额掉到 0」。
@@ -26,7 +26,7 @@ import dayjs from 'dayjs';
 /** 闭区间日期对，`yyyy-MM-dd`（后端按 Asia/Shanghai 日界解释）。 */
 export type DateRange = [string, string];
 
-/** 报表中心的快捷日期，取值固定五个（计划 §1）。 */
+/** 报表中心的快捷日期，取值固定五个。 */
 export type DatePresetKey = 'YESTERDAY' | 'THIS_WEEK' | 'LAST_WEEK' | 'THIS_MONTH' | 'LAST_MONTH';
 
 /** 预设的中文名，同时作为 `a-range-picker` presets 的标签来源，避免两处各写一份。 */
@@ -38,7 +38,7 @@ export const DATE_PRESET_LABELS: Record<DatePresetKey, string> = {
     LAST_MONTH: '上月',
 };
 
-/** 报表中心的默认区间（计划 §28 选定「本月」）。 */
+/** 报表中心的默认区间（选定「本月」）。 */
 export const DEFAULT_DATE_PRESET: DatePresetKey = 'THIS_MONTH';
 
 /** 单次查询的最大跨度（天，含首尾）；超过由后端显式报错，前端提前拦一道。 */

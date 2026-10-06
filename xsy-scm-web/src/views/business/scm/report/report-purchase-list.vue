@@ -1,9 +1,9 @@
 <!--
-  采购分析（Finance R0 计划 §11–§16 + §26 的 R0-B 价格波动）：
+  采购分析（含价格波动）：
   采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动。
 
   本页刻意**没有**「应付金额」：采购单金额是采购承诺，收货参考金额是履约事实，
-  两者都不等于应付 —— 应付需要收货/入账时点与核销规则，R0 没有这些事实，不能提前命名。
+  两者都不等于应付 —— 应付需要收货/入账时点与核销规则， 没有这些事实，不能提前命名。
 
   日期是「提交日期」：草稿没有承诺量也没有价格事实，因此默认统计
   SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED，排除 DRAFT 与 CANCELLED（SQL 固定）。
@@ -152,7 +152,7 @@
       />
     </a-tab-pane>
 
-    <!-- ==================== 价格波动（R0-B） ==================== -->
+    <!-- ==================== 价格波动（-B） ==================== -->
     <a-tab-pane key="trend" tab="价格波动">
       <PurchasePriceTrendTab
           :rows="trend.rows"
@@ -506,7 +506,7 @@ function resetQuery() {
     onSearch();
 }
 
-/** §14：点供应商 → 右侧抽屉看该供应商的商品维度明细（带当前日期区间）。 */
+/** ：点供应商 → 右侧抽屉看该供应商的商品维度明细（带当前日期区间）。 */
 function openSupplierDrilldown(row: PurchaseSupplierRow) {
     drilldownTarget.supplierId = row.supplierId;
     drilldownTarget.purchaserId = undefined;
@@ -516,7 +516,7 @@ function openSupplierDrilldown(row: PurchaseSupplierRow) {
     void loadDrilldown();
 }
 
-/** §15：点采购员 → 同一张抽屉、同一套列。 */
+/** ：点采购员 → 同一张抽屉、同一套列。 */
 function openPurchaserDrilldown(row: PurchasePurchaserRow) {
     drilldownTarget.supplierId = undefined;
     drilldownTarget.purchaserId = row.purchaserId;

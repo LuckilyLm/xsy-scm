@@ -2,7 +2,7 @@
   <a-drawer :open="open" :title="title" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="close">
     <a-spin :spinning="loading">
       <template v-if="detail">
-        <!-- 1. 单据概要：只放「这是什么单」。金额不在这里，见 §20.6 金额组成。 -->
+        <!-- 1. 单据概要：只放「这是什么单」。金额不在这里，见「金额组成」。 -->
         <section class="detail-section">
           <h3>单据概要</h3>
           <a-descriptions bordered size="small" :column="2">
@@ -24,7 +24,7 @@
             <a-descriptions-item v-if="isAccount" label="冻结到期日">{{ header.dueDate || '未设置（不推算历史账期）' }}</a-descriptions-item>
           </a-descriptions>
 
-          <!-- 3. 金额组成：§20.6 要求金额摘要比 ID、编码更突出，所以单独成段并用数值强调。 -->
+          <!-- 3. 金额组成：金额摘要比 ID、编码更突出，所以单独成段并用数值强调。 -->
           <h3 class="detail-section--nested">金额组成</h3>
           <div class="amount-grid">
             <div class="amount-cell">
@@ -94,7 +94,7 @@
         </section>
 
         <!--
-          7. 系统信息：§20.6 计划的第 7 段。`FinanceReceivableVO` / `FinanceReceiptVO` 等后端 VO
+          7. 系统信息。`FinanceReceivableVO` / `FinanceReceiptVO` 等后端 VO
           表头不暴露 createTime / updateTime / 创建人（见前端后端缺口盘点 B3），前端没有可渲染的事实，
           因此本段暂不渲染 —— 不编造系统字段。补后端字段后再启用。
           注意：流水「行」本身是带 operator / createdAt 的（第 6 段已可渲染），缺的只是表头单据级信息。
@@ -210,7 +210,7 @@ function close() {
   font-weight: 600;
 }
 
-/* 金额组成是同一段里的第二个小标题（§20.6 要求金额比 ID、编码更突出） */
+/* 金额组成是同一段里的第二个小标题（要求金额比 ID、编码更突出） */
 .detail-section--nested {
   margin-top: 20px;
 }

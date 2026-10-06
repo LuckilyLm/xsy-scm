@@ -209,7 +209,7 @@ import PurchaseDemandBatchDetailDrawer from './components/purchase-demand-batch-
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
-/** Wave 2A：本页两个 Tab —— 采购需求列表（既有）与只读缺口预览。 */
+/** ：本页两个 Tab —— 采购需求列表（既有）与只读缺口预览。 */
 const activeTab = ref('list');
 
 const queryForm = reactive<DemandQuery>({pageNum: 1, pageSize: 20});
@@ -249,7 +249,7 @@ const alloc = reactive({
 });
 
 /**
- * 列表列（§13.1）：13 → 10 列。
+ * 列表列：13 → 10 列。
  *
  * - 「来源销售单号」与「来源冻结批次」合成一格：两者都是这条需求的来源标识，
  *   批次是内部计算号，降为 secondary text 后不再单独占 130px；

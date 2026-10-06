@@ -1,7 +1,6 @@
 <!--
   * 商品-供应商关系 可编辑表格
   *
-  * 来源：**W1 派生** —— 结构照抄 `views/business/scm/product/components/product-sku-editable-table.vue`
   * （同样的「原生 table + 内联控件」手写表格，不使用 `a-table` 的可编辑单元格，
   * 因为这一层要精确控制列宽、行内控件与 aria 标签）。
   *
@@ -9,10 +8,10 @@
   * 「供货价 / 是否默认」挂在 SPU 上），V2 是 **SKU 级**（`supplier_sku`），
   * 两者行标识、字段与唯一性约束都不同，只借交互形态，不借数据形状。
   *
-  * 与 W1 SKU 表格的关键差异（业务规则，必须守住）：
+  * 与 SKU 表格的关键差异（业务规则，必须守住）：
   * - **「默认来源」用 checkbox 而不是 radio** —— legacy 不变量 R12 明确允许同一供应商下
   *   存在多条 `is_default = TRUE`，做成单选是凭空发明约束；
-  * - 单位、参考价是**字符串**，参考价绝不做 `Number()` 运算（后端 `ScmDecimalStrings.PATTERN`）；
+  * - 单位、参考价是**字符串**，参考价绝不做 `Number` 运算（后端 `ScmDecimalStrings.PATTERN`）；
   * - 规格用 `SkuSelect`，只列「SPU 与 SKU 同时上架」的规格，与后端 `40942` 判定一致。
 -->
 <template>
@@ -102,7 +101,7 @@ import type {SkuDraft} from '../supplier-form-model';
 const props = defineProps<{ modelValue: SkuDraft[] }>();
 const emit = defineEmits<{ 'update:modelValue': [rows: SkuDraft[]] }>();
 
-// 模板里 `modelValue` 直接引用 props（与 W1 product-sku-editable-table 同写法）；
+// 模板里 `modelValue` 直接引用 props（与 product-sku-editable-table 同写法）；
 // 这里显式引用一次，避免 `noUnusedLocals` 把 props 变量判为未使用。
 void props;
 </script>

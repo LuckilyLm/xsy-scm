@@ -1,4 +1,4 @@
-<!-- W3 新写，参照 legacy 批量调价行为；整批提交，逐行错误。 -->
+<!--  新写，参照 legacy 批量调价行为；整批提交，逐行错误。 -->
 <template>
  <a-card title="客户类型价批量调价" size="small" :bordered="false">
   <a-alert type="info" show-icon message="任一行失败则整批不写入；最多 500 行。" />
