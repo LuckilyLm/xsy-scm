@@ -76,9 +76,20 @@ const PLAN_MARKERS = [
 const DOC_REFERENCE = /[\w./-]+\.md/;
 
 /**
- * P4.6a 基线（本地 `1c564164` 实测）。
- * **逐标记比较**：任一标记新增即失败；每完成一批同步下调。
+ * 基线（**P4.6b 已完成：三个范围的标记基线全部为 0**）。
+ *
+ * **逐标记比较**：任一标记新增即失败，即使总数因别的标记下降而没超基线。
+ *
+ * P4.1 / P4.2 清空了前端的来源块与计划编号，P4.5 清空了后端的
+ * Wave / Wn / Rn / A-Dn / Qna / § 章节号，因此现在 `count <= 0` 就是
+ * 「发现新增就失败」—— 这是最终要的状态。需要保留的例外请显式登记在
+ * {@link WHITELIST} 并写明理由，**不要调高这里的数字**。
  */
+/** 显式白名单：确需保留的过程标记写在这里，{@code reason} 为空即失败。当前为空。 */
+const WHITELIST = [
+  // {file: 'path/to/File.java', marker: 'Wn 波次', reason: '说明为什么这条必须留'},
+];
+
 const BASELINE = {
   'xsy-scm-web/src': {
     process: {
@@ -474,7 +485,7 @@ test('Flyway 已应用 migration 不在扫描范围内', () => {
       'migration 目录不存在或为空，排除规则没有被真正验证');
 });
 
-test('过程标记：不得新增，且不超过基线（P4.6a 逐标记棘轮）', () => {
+test('过程标记必须为 0（P4.6b：逐标记棘轮已收紧）', () => {
   const failures = [];
   for (const scope of SCOPES) {
     const {processCounts, offenders} = RESULTS.get(scope.key);
@@ -492,7 +503,7 @@ test('过程标记：不得新增，且不超过基线（P4.6a 逐标记棘轮�
       '不记录代码是怎么被开发出来的；确需保留请走 BASELINE 白名单并说明理由');
 });
 
-test('计划编号：不得新增，且不超过基线（P4.6a 逐标记棘轮）', () => {
+test('计划编号必须为 0（P4.6b：逐标记棘轮已收紧）', () => {
   const failures = [];
   for (const scope of SCOPES) {
     const {planCounts, offenders} = RESULTS.get(scope.key);
