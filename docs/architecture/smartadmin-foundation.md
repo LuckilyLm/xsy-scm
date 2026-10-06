@@ -91,7 +91,7 @@ SCM 业务模块放入：
 com.xsy.scm.<domain>
 ```
 
-当前业务域包括 `product | customer | supplier | pricing | order | purchase | inventory | warehouse | sorting | delivery | finance | report | dashboard | screen`，共用能力位于 `common`。`mall` / `marketing` 尚未在正式主线形成完整模块，不能把规划包名当成实现状态。
+当前业务域包括 `product | customer | supplier | pricing | order | purchase | inventory | warehouse | sorting | delivery | finance | promotion | payment | balance | report | dashboard | screen`，共用能力位于 `common`。`mall` 尚未在正式主线形成完整模块，不能把规划包名当成实现状态。
 
 ### 2.2 前端
 

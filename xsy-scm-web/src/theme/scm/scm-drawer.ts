@@ -7,7 +7,7 @@
  *
  * 业务页面一律通过 `scmDrawerWidth('s' | 'm' | 'l' | 'xl' | 'workspace')` 取值，
  * 不允许再出现硬编码宽度（契约测试 `test/scm-drawer-width-contract.test.mjs` 钉住这一点）。
- * 完整映射见 `docs/plan/active/frontend-ui-closeout-decisions.md` §C2。
+ * 长期规则见 `docs/architecture/scm-ui-guidelines.md` §5。
  */
 export const SCM_DRAWER_WIDTH = {
   /** 600：简单配置 / 简单维护，以及单列只读详情 */
@@ -40,8 +40,8 @@ export type ScmDrawerSize = keyof typeof SCM_DRAWER_WIDTH;
  * 这类内容应该升到 `xl`（1120）或者拆分，而不是靠再放宽抽屉来容纳。
  *
  * 使用 `workspace` 的页面必须在代码注释里写明它属于上述哪一类；
- * 当前批准的 5 个用例见 `docs/plan/active/frontend-ui-closeout-decisions.md` §C2.3，
- * 新增用例需要先在该文件登记。
+ * 当前白名单由 `test/scm-drawer-width-contract.test.mjs` 直接钉住；
+ * 新增用例需先更新 UI 规范并同步契约。
  */
 export function scmDrawerWidth(size: ScmDrawerSize): number {
   return SCM_DRAWER_WIDTH[size];

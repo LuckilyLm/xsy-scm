@@ -1,7 +1,7 @@
 /**
  * 前端后端字段缺口盘点的登记契约单测。
  *
- * `frontend-ui-optimization-plan.md` §3「非目标」禁止在 UI 优化中改后端字段结构，
+ * `docs/architecture/scm-ui-guidelines.md` 要求 UI 不臆造后端尚未提供的业务事实，
  * §33 禁止把「后端字段重构」与 UI 改动同提交。因此执行中遇到的后端字段不足，
  * 一律登记到 `docs/plan/active/frontend-ui-backend-gap-inventory.md`（编号 B1…Bn），
  * 前端只做「不渲染该段 / 不臆造数值」。

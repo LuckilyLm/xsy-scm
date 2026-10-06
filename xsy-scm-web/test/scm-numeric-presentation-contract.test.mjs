@@ -15,7 +15,7 @@
  * Sprint F-B 把这 55 处按字段语义迁到公共类，并删掉全部局部定义。本文件钉住这个结果，
  * 防止「随手再写一个 .num」把口径重新打散。
  *
- * ## 口径（docs/plan/active/frontend-ui-closeout-decisions.md §C1）
+ * ## 口径（docs/architecture/scm-ui-guidelines.md §3）
  *
  * - `.scm-money`    金额 / 单价 / 成本 —— 比例字体 + tabular-nums
  * - `.scm-quantity` 数量 / 百分比 / 统计数字 —— 比例字体 + tabular-nums

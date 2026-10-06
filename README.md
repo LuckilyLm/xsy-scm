@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-截至 2026-10-02，供应链核心域当前阶段、Finance R1 F1-8、采购商品每日清单和质量复核待办已完成，最新验收与生产部署边界见[项目状态](docs/status.md)。利润/账龄/对账、售后库存与客户结算联动等剩余工作见[管理后台开发规划](docs/plan/active/admin-development-roadmap.md)。W6-2 客户商城仍未开始，legacy 小程序保持冻结；本轮仅整理文档。
+截至 2026-10-07，管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近一次完整验收见[项目状态](docs/status.md)，只剩未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。仓库 Flyway 源码已到 V110，但最近一次完整后端/E2E 数据库基线仍是 V109，不能把源码版本等同于已部署版本。客户商城仍未开始，legacy 小程序保持冻结。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 

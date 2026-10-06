@@ -1,79 +1,40 @@
-# 前端 UI 优化的后端字段缺口盘点
+# 前端所需后端字段缺口
 
-盘点日期：2026-10-06。
-状态：只读静态盘点完成（读代码与 VO 定义），未运行构建、测试或迁移，未访问数据库。
-依据：[前端 UI 优化规划](frontend-ui-optimization-plan.md)、[财务与报表缺口盘点](finance-r2-report-gap-inventory.md)及当前主线代码。
+盘点基线：2026-10-07。
+状态：仅保留当前仍成立的 B1～B8。UI 的长期规则见[SCM UI 规范](../../architecture/scm-ui-guidelines.md)；已经完成的 UI 审计、数值口径与 Drawer 映射不再作为 active 计划保存。
 
-## 1. 为什么单独开这张单
+## 1. 使用原则
 
-`frontend-ui-optimization-plan.md` §3「非目标」明确本轮 UI 优化 **不改后端接口、不改 DTO / VO / Entity 字段结构、不改数据库**；
-§33「建议提交拆分」进一步禁止一个提交同时包含「UI foundation + 多业务模块 + **后端字段重构** + 数据库迁移」。
+- 本文件只登记“页面确实需要，但当前后端没有提供”的事实缺口。
+- UI 提交不得顺带修改接口、DTO/VO、Entity 或数据库。
+- 后端未提供时，前端选择“不显示”，不能用相近字段、当前页求和或常量 0 冒充。
+- 每个 B 项独立后端提交；补齐后再独立开启对应前端展示。
+- 补字段前先核对数据库与领域事实是否真实存在，禁止为了界面完整而制造第二套状态。
 
-因此在执行 UI 优化时遇到的后端字段不足，一律**不在 UI 提交里补齐**，也不在前端用近似字段冒充。
-本文件集中登记这些缺口，作为后续独立后端工单的输入；每条都给出**当前代码证据**，便于独立复核。
+## 2. 当前缺口
 
-**前端既有纪律**：遇到缺口时前端只做「不显示」，绝不用 `orderId` 冒充订单号、用 0 冒充未知成本之类的降级方案。
-本盘点同时列出前置条件与建议补齐方式，但**不代表已排期**。
-
-## 2. 需要在 UI 上落位、但当前后端未提供的字段
-
-### 2.1 报表 - 收货 / 入库（§21）
-
-| 编号 | 缺口 | 现有代码证据 | 建议补齐方式 |
+| ID | 场景 | 当前缺口 | 建议补齐方向 |
 | --- | --- | --- | --- |
-| B1 | 收货明细 / 入库明细 / 待入库三张表**无页面级汇总**（无合计金额、合计数量、单据数、SKU 种类数） | `ReceiptReportVO` 只有 `ReceiptRow` / `InboundRow` / `PendingPutawayRow` 三个**行** VO，**无 `Summary` 内部类**（`report/domain/vo/ReceiptReportVO.java`）；`ReceiptReportService` 三个方法一律 `return PageResult<...>`，无 summary 端点（`report/service/ReceiptReportService.java:37,49,70`）。对比：库存域已有 `/inventory/loss/summary`（返回 `InventoryReportVO.LossSummary`）与 `/inventory/flow-summary/query`，说明本报表缺的是同一模式 | 仿 `InventoryReportVO.LossSummary`：新增 `ReceiptReportVO.ReceiptSummary` / `InboundSummary` / `PendingPutawaySummary` 与对应 `/summary` 端点，复用三条查询的**同一时间范围与仓库范围**；汇总口径必须与列表同方法派生，避免合计与明细对不上 |
-| B2 | 收货明细行**无「收货人 / 经办人」** | `ReceiptRow` 无 operator 字段（`ReceiptReportVO.java:23-57`）；对比 `InboundRow` 有 `operator`（`:79`） | 若确认业务需要，从 `purchase_receipt` 补 `operator`（需确认码表语义与 `InboundRow.operator` 一致） |
+| B1 | 收货 / 入库报表 | 收货明细、入库明细、待入库三张表没有页面级全量汇总 | 复用列表相同时间/仓库范围，新增服务端 Summary；不能对当前分页前端求和 |
+| B2 | 收货报表 | 收货明细行没有收货人 / 经办人 | 核对 `purchase_receipt` 的操作者语义后，在读模型补正式字段 |
+| B3 | 财务详情 | 表头 VO 没有单据级 createdAt / updatedAt / createdBy，无法展示“系统信息”段 | 核对财务事实表真实审计列后补 VO；不能拿 operation log 第一条冒充创建时间 |
+| B4 | 销售订单详情 | 没有库存预留 / 配送状态的只读聚合 | 由订单详情组合正式库存/配送事实返回，不在订单表双写状态 |
+| B5 | 销售订单详情 | 没有该订单的退货 / 退款聚合 | 由详情读路径组合退货单与已完成退款事实，不在前端自行拼第二套状态 |
+| B6 | 退货列表 | 没有原订单号 / 客户名 | `OrderReturnVO` 补 `orderNo` / `customerName` 等只读展示字段 |
+| B7 | 优惠券列表 | 没有发放量 / 已领取 / 已使用统计 | 由券模板/实例做只读聚合；若引入时间窗口先明确统计口径 |
+| B8 | 库存预留 | 没有规格值 `specValues` | 预留 VO 复用商品/库存域现有规格展示口径 |
 
-**说明**：B1 属「后端无聚合」，不是「前端不做」。前端在 B1 落地前**不得**用当前页数据在前端求和冒充全量汇总（分页会算错）。
+## 3. 明确不是缺口
 
-### 2.2 财务详情抽屉（§20.6）
+- 财务操作流水已经有 operator / createdAt；B3 缺的是**单据表头**审计信息。
+- 收货/入库已有 `receiptMode` 与 `putawayStatus`，两个生命周期能区分。
+- 订单优惠与赠品已进入详情读模型，不需要前端重算。
+- 入库成本已有“成本缺失/无权限”的区分能力，不应用 0 代替未知值。
 
-| 编号 | 缺口 | 现有代码证据 | 建议补齐方式 |
-| --- | --- | --- | --- |
-| B3 | 财务详情**表头 VO 无审计字段**（createTime / updateTime / creator），§20.6 计划第 7 段「系统信息」无法渲染 | `FinanceReceivableVO` 字段止于 `dueDate` / `reason`（`finance/domain/vo/FinanceReceivableVO.java:57-58`），`FinancePayableVO` / `FinanceReceiptVO` 同样无审计字段；`FinanceReceivableDetailVO` 只组合 `receivable` / `items` / `redEntries` / `originalReceivable` / `writeOffs` / `operationLogs`（`finance/domain/vo/FinanceReceivableDetailVO.java:11-21`） | 在 `FinanceReceivableVO` / `FinancePayableVO` / `FinanceReceiptVO` 增加 `createdAt` / `updatedAt` / `createdBy`（若表上确有 `create_time` / `update_time` / `creator` 列；需先核对 migration） |
+## 4. 已关闭的旧 UI 口径项
 
-**重要澄清（避免误修）**：**流水行本身是有审计信息的**——`FinanceOperationLogVO` 已含 `operator` 与 `createdAt`（`finance/domain/vo/FinanceOperationLogVO.java:20,28`），§20.6 第 6 段「流水记录」已完整可用。
-缺的只是**表头单据级**的创建/更新信息（第 7 段）。前端已在 `finance-detail-drawer.vue:97` 用注释记录该段不渲染，**不得**用 `operationLogs` 首条冒充单据创建时间。
+此前登记的本地 `.num` 与共享数字样式分歧已经由 `c6b33974` 收口：金额使用 `.scm-money`，数量/比例使用 `.scm-quantity`，标识类公共能力使用 `.scm-mono`；页面本地 `.num` 已移除并有契约测试保护。该事项不再是后端缺口或待决设计。
 
-### 2.3 销售订单详情（§14.3）
+## 5. 关闭条目的方式
 
-| 编号 | 缺口 | 现有代码证据 | 建议补齐方式 |
-| --- | --- | --- | --- |
-| B4 | 订单详情**无库存 / 配送状态**，§14.3 第 5 段无法渲染 | `SalesOrderDetailVO extends SalesOrderVO`，新增字段仅 `items` / `address` / `discount` / `gifts`（`order/domain/vo/SalesOrderDetailVO.java:11-31`）；`SalesOrderVO` 状态止于 `status` / `cancelReason` / `submittedAt` / `confirmedAt` / `cancelledAt`，**无库存占用状态、无配送/发运状态**（`order/domain/vo/SalesOrderVO.java:21,30-33`） | 若需求确认，由订单域组合库存预留状态与配送单状态为**只读快照**返回（订单本身不写库存状态，避免双写） |
-| B5 | 订单详情**无退货 / 退款数据**，§14.3 第 6 段无法渲染 | 同上，`SalesOrderDetailVO` 无退货或退款集合；退货走独立列表 `order-return-list.vue`，其 `ReturnRow` 亦只有 `orderId`（见 B6） | 由详情接口组合该订单的退货单与已完成退款金额（只读聚合），不做前端二次请求拼装 |
-
-### 2.4 其他已在前端注释中登记的缺口
-
-以下缺口此前已在前端代码注释中显式登记，此处统一收编，避免散落。
-
-| 编号 | 缺口 | 现有代码证据 | 建议补齐方式 |
-| --- | --- | --- | --- |
-| B6 | 退货列表**无原订单号 / 客户名** | `OrderReturnVO` 只带 `orderId`，`ReturnRow` 无订单号与客户名 → `order-return-list.vue:139-141` 注释说明 §14.5「原订单/客户（若 VO 已有）」当前无法满足 | `OrderReturnVO` 补 `orderNo` / `customerName`（订单已有关联，属读路径补齐，无迁移） |
-| B7 | 优惠券列表**无发放量 / 已领取 / 已使用** | `PromotionCoupon` 无这三个统计字段 → `promotion-coupon-list.vue:323` 注释说明「VO 不返回，前端不臆造」 | 由券模板聚合领取/使用计数（只读聚合）；需确认是否需要按时间窗口径 |
-| B8 | 库存预留**无规格值（specValues）** | 预留 VO 不返回 `specValues` → `inventory-reservation-list.vue:81` 注释说明「主行只能是规格名称，编码作次要行」 | 预留 VO 补 `specValues`（与商品/库存域口径一致） |
-
-## 3. 明确**不**属于缺口的情形
-
-避免被误当缺口重复开单：
-
-- **财务「流水记录」段**：`FinanceOperationLogVO` 已有 `operator` / `createdAt`，功能完整（见 2.2 澄清）。
-- **收货与入库的生命周期区分**：`ReceiptRow` 已同时暴露 `receiptMode` 与 `putawayStatus`，页面能正确区分「已确认收货」与「已入库」，**不是缺口**。
-- **订单优惠与赠品**：`SalesOrderDetailVO.discount`（`OrderDiscountVO`）与 `gifts`（`PromotionDiscountVO.GiftEntitlementVO`）已提供，§14.3 金额结算段可完整渲染。
-- **入库成本缺失的标志位**：`InboundRow.costMissing` 已用于区分「无成本权限」与「成本确实缺失」，属已解决项。
-
-## 4. 前端内部待决的口径问题（非后端缺口，同属「不静默改」）
-
-以下不是后端字段缺口，而是前端自身的**设计口径分歧**；本文件一并登记，避免被当成
-机械清理顺手扫掉。
-
-| 编号 | 事项 | 现状证据 | 为何不能机械处理 |
-| --- | --- | --- | --- |
-| F1 | 局部 `.num` 与全局 `.scm-quantity` 口径不一致 | 全 `views/business/scm` 有 **16 个文件**定义 `.num { font-family: ui-monospace, … }`（等宽字体），另有 3 个文件定义 `.num { font-variant-numeric: tabular-nums }`。全局 `--scm-*` 主题只有 `.scm-quantity`（tabular-nums，**比例字体**），**没有等宽工具类** | 二者视觉不同：`.num` 是等宽字体，`.scm-quantity` 是比例字体仅数字等宽。把 16 个文件的 `class="num"` 直接换成 `scm-quantity` 会**静默改变字体**，属设计变更而非清理。若要统一，需先在主题新增等宽类（如 `.scm-mono`）再迁移，属 §5.1 的样式组织决策 |
-
-## 5. 处理纪律
-
-1. 本清单条目**不与 UI 提交混做**；每条独立后端工单、独立提交。
-2. 后端补齐后，前端再单独提交「段落开启 + 契约测试」，两者不合并。
-3. 补齐前，前端保持现状：**不渲染该段 / 不臆造数值**，并在代码注释中指向本文件对应编号。
-4. 任何涉及 VO 字段新增的改动，须同步核对该字段在表结构中是否真实存在（避免为「看起来完整」而造字段）。
-5. F 系列同属「不静默改」：口径变更要先定新口径（含公共类），再迁移并补契约测试。
+B 项补齐并完成对应前端接入后，直接从本文件删除该条，同时在提交说明中保留实现与验证证据。不要再建立“已完成缺口清单”；历史由 Git 追溯。

@@ -21,7 +21,8 @@
 
 - 当前业务和工程决策索引：[docs/decisions.md](docs/decisions.md)
 - 正式 ADR：[docs/adr/](docs/adr/)
-- 质量整改基线：[docs/quality/java-code-quality-remediation-plan.md](docs/quality/java-code-quality-remediation-plan.md)
+- 质量基线：[docs/quality/java-code-quality-remediation-plan.md](docs/quality/java-code-quality-remediation-plan.md)
+- SCM UI 长期规范：[docs/architecture/scm-ui-guidelines.md](docs/architecture/scm-ui-guidelines.md)
 - 文档入口：[docs/README.md](docs/README.md)
 
 ## 协作与 Git
@@ -51,6 +52,6 @@
 
 ## 文档与验证
 
-- 当前状态写入 `docs/status.md`；已发生的长篇进度和旧决策放入 `docs/archive/`；活动计划位于 `docs/plan/active/`。
+- 当前状态写入 `docs/status.md`；`docs/plan/active/` 只保留仍指导后续施工的计划或正式设计。已完成计划、一次性审计和执行日志直接删除并从 Git 历史追溯；只有仍被现行文档引用的历史决策才放 `docs/archive/`。
 - 验证入口位于 `tools/verify.ps1`、`tools/verify.sh` 和 `tools/verify.py`。未运行的验证不得报告为通过。
 - 完成任务时简要说明改动、提交或工作区状态，以及未执行的验证。

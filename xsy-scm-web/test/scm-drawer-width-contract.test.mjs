@@ -16,8 +16,8 @@
  *   xl        1120   复杂详情 / 内嵌宽表 / 多明细业务
  *   workspace 1440   **受限特殊档**，见第 4 项断言
  *
- * 完整映射（34 个实例逐一对应）见
- * `docs/plan/active/frontend-ui-closeout-decisions.md` §C2.3 / §C2.4。
+ * 长期准入规则见 `docs/architecture/scm-ui-guidelines.md` §5；
+ * 当前 34 个实例及 workspace 白名单直接由本测试维护。
  *
  * ## 判定方式
  *
@@ -41,7 +41,7 @@ const EXPECTED_INSTANCES = 34;
 const ALLOWED_LEVELS = ['s', 'm', 'l', 'xl', 'workspace'];
 
 /**
- * `workspace` 的准入白名单 —— 与 decisions 文档 §C2.3 一致。
+ * `workspace` 的准入白名单 —— 与 `docs/architecture/scm-ui-guidelines.md` §5 一致。
  * 每一类都必须能在代码注释里说出「为什么横向空间本身属于业务内容」。
  */
 const WORKSPACE_FILES = new Set([
@@ -166,7 +166,7 @@ test('workspace 只允许出现在已批准的 5 个文件里', () => {
         offenders,
         [],
         `workspace 是受限特殊档，只允许地图工作台 / 分拣称重工作台 / 报表下钻 /\n` +
-        `超宽业务数据阅读 / 多面板业务工作台五类；新增用例要先在 decisions 文档 §C2.3 登记：\n${offenders.join('\n')}`,
+        `超宽业务数据阅读 / 多面板业务工作台五类；新增用例要先更新 SCM UI 规范并同步本契约：\n${offenders.join('\n')}`,
     );
 });
 
