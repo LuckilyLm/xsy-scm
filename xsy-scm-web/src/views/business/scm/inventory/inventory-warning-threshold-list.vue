@@ -124,7 +124,7 @@
   <a-drawer
       :open="drawerOpen"
       :title="form.id ? '编辑阈值配置' : '新建阈值配置'"
-      width="620"
+      :width="scmDrawerWidth('s')"
       @close="closeDrawer"
   >
     <a-alert
@@ -198,6 +198,7 @@ import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarningThreshold[]>([]);

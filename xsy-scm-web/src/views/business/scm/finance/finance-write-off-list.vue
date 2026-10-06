@@ -83,7 +83,7 @@
     </div>
   </a-card>
 
-  <a-drawer v-model:open="addOpen" title="登记多目标核销" width="min(860px, 96vw)" :destroy-on-close="true">
+  <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-alert class="form-hint" type="info" show-icon message="一笔收款只能分配到应收，一笔付款只能分配到应付；逐条输入本次核销金额。"/>
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
     <a-form layout="vertical">
@@ -142,6 +142,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceRecordPicker from './finance-record-picker.vue';
 import BalanceMovementDetail from './balance-movement-detail.vue';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyText, isValidPositiveAmount} from './finance-form-model';
 import {financeError} from './finance-errors';

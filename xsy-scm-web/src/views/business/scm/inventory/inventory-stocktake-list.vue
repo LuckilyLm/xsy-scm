@@ -137,7 +137,7 @@
   <a-drawer
       :open="drawerOpen"
       :title="form.id ? `编辑盘点单 ${form.stocktakeNo}` : '新建盘点单'"
-      width="900"
+      :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
     <a-alert
@@ -277,6 +277,7 @@ import {resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-mod
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryStocktakeQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryStocktake[]>([]);

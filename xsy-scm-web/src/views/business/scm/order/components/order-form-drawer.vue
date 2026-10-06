@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :title="form.orderId?'编辑销售订单':'新建销售订单'" :open="visible" width="min(1200px, 96vw)"
+  <a-drawer :title="form.orderId?'编辑销售订单':'新建销售订单'" :open="visible" :width="scmDrawerWidth('xl')"
             @close="closeDrawer">
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
@@ -84,6 +84,7 @@ import {useUserStore} from '/@/store/modules/system/user';
 import {orderError} from '../order-errors';
 import type {Order, Id} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 const form = ref<Order>(newOrder()), visible = ref(false), loading = ref(false), saving = ref(false),

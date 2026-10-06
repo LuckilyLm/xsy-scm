@@ -1,5 +1,7 @@
 <template>
-  <a-drawer :open="open" title="分拣任务详情" width="min(1500px, 96vw)" :destroy-on-close="true" @close="emit('update:open', false)">
+  <!-- workspace：分拣工作台 —— 明细表 scroll.x 1420，且录入时要把任务头、进度与明细行
+       放在同一屏里对照，横向空间即作业面。 -->
+  <a-drawer :open="open" title="分拣任务详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true" @close="emit('update:open', false)">
     <a-alert v-if="detailError" :message="detailError" type="error" show-icon>
       <template #action>
         <a-button @click="emit('reload')">刷新任务</a-button>
@@ -190,6 +192,7 @@ import {
 } from '/@/constants/business/scm/sorting-const';
 import {quantityText} from '../sorting-types';
 import type {Id, SortingTask, SortingTaskDetail, SortingTaskItem} from '../sorting-types';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 type ActionMode = 'assign' | 'cancel' | 'reopen';
 type DraftField = 'sortedQuantity' | 'result' | 'reason';

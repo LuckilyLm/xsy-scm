@@ -1,5 +1,5 @@
 <template>
-  <a-drawer v-model:open="visible" title="余额来源流水" width="min(600px, 96vw)">
+  <a-drawer v-model:open="visible" title="余额来源流水" :width="scmDrawerWidth('s')">
     <a-alert v-if="error" type="error" show-icon :message="error"/>
     <a-spin :spinning="loading">
       <a-empty v-if="!loading && !error && !rows.length" description="没有可查看的来源流水"/>
@@ -20,6 +20,7 @@ import {paymentApi, type BalanceMovement} from '/@/api/business/scm/payment-api'
 import type {Id} from '../order/order-types';
 import {financeError} from './finance-errors';
 import {moneyText, dateTimeText} from './finance-form-model';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const visible = ref(false), loading = ref(false), error = ref('');
 const rows = ref<BalanceMovement[]>([]);
 let generation = 0;

@@ -61,7 +61,7 @@
                     :show-total="(n:number)=>`共${n}条`"/>
     </div>
   </a-card>
-  <a-drawer v-model:open="detailOpen" title="退货单详情" width="min(850px,96vw)">
+  <a-drawer v-model:open="detailOpen" title="退货单详情" :width="scmDrawerWidth('m')">
     <a-alert v-if="detailError" type="error" show-icon :message="detailError">
       <template #action><a-button @click="showDetail(detailId)">重试</a-button></template>
     </a-alert>
@@ -122,6 +122,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ReturnRow, Query, ReturnItem, Id} from './order-types';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 type ReturnItemWithDisposition = ReturnItem & { disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string };
 import {amount, fixed} from './order-form-model';
 import {orderError} from './order-errors';

@@ -149,7 +149,7 @@
   <a-drawer
       :open="drawerOpen"
       :title="form.id ? `编辑调拨单 ${form.transferNo}` : '新建调拨单'"
-      width="900"
+      :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
     <a-alert
@@ -298,6 +298,7 @@ import {quantityText, singleWarehouseDefault} from './inventory-model';
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryTransferQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryTransfer[]>([]);

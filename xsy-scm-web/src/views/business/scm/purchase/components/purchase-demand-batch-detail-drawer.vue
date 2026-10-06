@@ -5,10 +5,12 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
 接口按 `scm:purchase:demand:batch:query` AND `scm:inventory:balance:query` 鉴权（返回体含库存量），
 调用方的 `v-privilege` 只是体验，不是权限边界。 -->
 <template>
+  <!-- workspace：超宽业务数据阅读 —— 冻结快照的两张宽表（scroll.x 1800 / 1400）
+       是回看「当时为什么建议这个数量」的全部依据，横向空间即内容。 -->
   <a-drawer
       :open="open"
       title="冻结批次明细"
-      width="1000px"
+      :width="scmDrawerWidth('workspace')"
       @close="close"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon>
@@ -106,6 +108,7 @@ import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/
 import type {DemandBatchDetail, DemandBatchItem, DemandBatchSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const props = defineProps<{ open: boolean; batchId?: Id }>();
 const emit = defineEmits<{ close: [] }>();

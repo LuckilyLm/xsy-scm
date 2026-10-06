@@ -72,7 +72,7 @@
 
   <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"/>
 
-  <a-drawer v-model:open="redOpen" title="登记红字应付" width="min(920px, 96vw)" :destroy-on-close="true">
+  <a-drawer v-model:open="redOpen" title="登记红字应付" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-spin :spinning="redLoading">
       <a-alert type="info" show-icon message="逐行填写红字数量、单价和金额；金额必须等于数量 × 单价。原单红字累计不得超过原应付金额。"/>
       <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError"/>
@@ -121,6 +121,7 @@ import {financeError} from './finance-errors';
 import type {FinancePayable, FinancePayableDetail, FinancePayableItem, PayableQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 interface RedDraft extends FinancePayableItem {
     redQuantity: string;

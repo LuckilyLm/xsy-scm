@@ -1,8 +1,10 @@
 <template>
+  <!-- workspace：报表下钻 —— 下钻的宽表（scroll.x 1500）就是被阅读的内容本身，
+       抽屉的价值在于「就地在两个粒度之间对照」，收窄会直接损害对照能力。 -->
   <a-drawer
       :open="open"
       :title="title"
-      width="min(1180px, 94vw)"
+      :width="scmDrawerWidth('workspace')"
       @close="emit('update:open', false)"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
@@ -50,6 +52,7 @@
 import type {TableColumnsType} from 'ant-design-vue';
 import {SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import type {PurchaseProductRow} from '../report-types';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 /**
  * 采购下钻抽屉：点供应商 / 采购员的一行，右侧看**该实体**的商品维度明细（计划 §14、§15）。

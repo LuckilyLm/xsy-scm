@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :open="open" :title="title" width="min(1120px, 96vw)" :destroy-on-close="true" @close="close">
+  <a-drawer :open="open" :title="title" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="close">
     <a-spin :spinning="loading">
       <template v-if="detail">
         <!-- 1. 单据概要：只放「这是什么单」。金额不在这里，见 §20.6 金额组成。 -->
@@ -122,6 +122,7 @@ import type {
     FinanceWriteOff,
 } from './finance-types';
 import {dateTimeText, entryTypeText, moneyText, numberText} from './finance-form-model';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 type FinanceDetail = FinanceReceivableDetail | FinancePayableDetail | FinanceReceiptDetail | FinancePaymentDetail;
 const props = defineProps<{open: boolean; loading: boolean; kind: 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT'; detail?: FinanceDetail | null}>();

@@ -1,5 +1,5 @@
 <template>
-  <a-drawer :open="open" title="调拨单详情" width="860" @close="emit('update:open', false)">
+  <a-drawer :open="open" title="调拨单详情" :width="scmDrawerWidth('l')" @close="emit('update:open', false)">
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="调拨单号">{{ detail.transferNo }}</a-descriptions-item>
       <a-descriptions-item label="状态">
@@ -43,6 +43,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import {quantityText} from '../inventory-model';
 import type {InventoryTransfer} from '../inventory-types';
 import {datetime} from '../../common/scm-display';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 defineProps<{
   open: boolean;

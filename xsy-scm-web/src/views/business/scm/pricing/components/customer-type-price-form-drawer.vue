@@ -4,7 +4,7 @@
  适配：SKU/客户维度、定点字符串、版本、权限、时间区间、请求竞态及错误状态。
  验收：W3 Playwright、TS baseline、ESLint。 -->
 <template>
-  <a-drawer :title="form.customerTypePriceId?'编辑客户类型价':'新增客户类型价'" :open="visible" :width="620"
+  <a-drawer :title="form.customerTypePriceId?'编辑客户类型价':'新增客户类型价'" :open="visible" :width="scmDrawerWidth('s')"
             @close="visible=false">
     <a-spin :spinning="loading">
       <a-alert v-if="error" :message="error" type="error" show-icon/>
@@ -42,6 +42,7 @@ import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {emptyPrice, validatePrice} from '../pricing-form-model';
 import {pricingError} from '../pricing-errors';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 const visible = ref(false), loading = ref(false), saving = ref(false), error = ref('');

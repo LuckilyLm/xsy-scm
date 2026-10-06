@@ -6,7 +6,7 @@
       日志按 DESC 返回（最新在前）、loading/error/retry（A27）。
 验收：W5 单测、TS 棘轮与 Playwright。 -->
 <template>
-  <a-drawer :open="visible" :title="order?.orderNo || '采购单详情'" width="min(1240px, 96vw)" @close="visible = false">
+  <a-drawer :open="visible" :title="order?.orderNo || '采购单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
     <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>
         <a-button @click="load">重试</a-button>
@@ -210,6 +210,7 @@ import type {Allocation, Id, LogRow, Order, OrderItem} from '../purchase-types';
 import {amount, progress, quantity} from '../purchase-form-model';
 import {datetime} from '../../common/scm-display';
 import {purchaseError} from '../purchase-errors';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 
