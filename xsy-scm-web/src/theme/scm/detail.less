@@ -1,0 +1,233 @@
+/*
+ * SCM 只读详情页版式（客户 360° 档案为第一个使用者）。
+ *
+ * 解决的是同一类问题：详情页原本把基础资料铺成一长串 `a-descriptions bordered`，
+ * 表格式的横线网格把「读」的页面变成了「看表」，且核心业务字段与编码、时间混在一层。
+ *
+ * 这里给出的公共件（页头 / 经营概览 / 业务 Card / label-value 字段 / 阅读宽度）供
+ * 后续详情页按同一套语汇接入，避免各页再各写一份局部样式。
+ * 全局样式、不加 scoped：与 `form.less` 同理，需要直接命中 antd 类名。
+ */
+
+/* ---------------- 页头 ----------------
+ * 客户名这类「整个页面的上下文」必须落在 Tabs 之外，切 Tab 后始终可见。
+ */
+.scm-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.scm-detail-header__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 返回入口用链接按钮，清掉内边距让它与下方标题共用左边缘 */
+.scm-detail-header__back.ant-btn {
+  height: auto;
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.scm-detail-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.scm-detail-header__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+}
+
+.scm-detail-header__meta {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+.scm-detail-header__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------------- 阅读宽度 ----------------
+ * 基础资料是「读」的内容，超宽屏铺满会让 label 与值隔出半屏距离；
+ * 表格类 Tab 需要横向比较，继续使用完整可用宽度。
+ */
+.scm-detail-read {
+  max-width: 1360px;
+}
+
+/* ---------------- 经营概览 ----------------
+ * 4 个轻量 summary item：只用详情接口已有的字段，不造 KPI。
+ */
+.scm-summary-section {
+  margin-bottom: 16px;
+}
+
+.scm-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.scm-summary__item {
+  min-width: 0;
+  padding: 12px 16px;
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  border-radius: 8px;
+}
+
+.scm-summary__label {
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+.scm-summary__value {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+}
+
+/* ---------------- 业务 Card ----------------
+ * 轻边框 + label/value，替代大面积 bordered descriptions（Excel 观感）。
+ */
+.scm-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.scm-detail-card {
+  min-width: 0;
+  padding: 16px 20px;
+  background: var(--scm-bg-container, #fff);
+  border: 1px solid var(--scm-border, #f0f0f0);
+  border-radius: 8px;
+}
+
+/* 整行卡片（授信与账期） */
+.scm-detail-card--full {
+  grid-column: 1 / -1;
+}
+
+/* 弱化卡片（系统信息）：虚线边框 + 次要标题，明确「不是业务主体」 */
+.scm-detail-card--muted {
+  background: transparent;
+  border-style: dashed;
+}
+
+.scm-detail-card__title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+}
+
+.scm-detail-card--muted .scm-detail-card__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+/* ---------------- label / value 字段 ----------------
+ * 用 dl/dt/dd：这是「名称—取值」的语义结构，不是表格。
+ */
+.scm-field-list {
+  display: grid;
+  gap: 12px 24px;
+  margin: 0;
+}
+
+.scm-field-list--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scm-field-list--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.scm-field {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.scm-field__label {
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+.scm-field__value {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  /* 地址、备注这类长文本必须能换行，不能把卡片顶宽 */
+  overflow-wrap: anywhere;
+}
+
+/* 占满整行（地址、备注） */
+.scm-field--wide {
+  grid-column: 1 / -1;
+}
+
+/* 网格之外的单块卡片（系统信息）与上方业务 Card 之间留出节奏 */
+.scm-detail-block {
+  margin-top: 16px;
+}
+
+/* ---------------- 响应式 ----------------
+ * 桌面主目标 1920×1080 / 1440×900，最低兼容 1280。
+ */
+@media (max-width: 1199px) {
+  .scm-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scm-detail-card--full {
+    grid-column: auto;
+  }
+
+  .scm-field-list--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .scm-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scm-field-list--2,
+  .scm-field-list--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scm-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}

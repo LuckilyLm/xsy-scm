@@ -106,7 +106,11 @@ test('客户 / 配送线路详情各自带业务类型跳转到统一操作日�
     assert.match(vue, /function openOperateLog\(\)/, `${file} 应有操作日志入口`);
     assert.match(vue, /path: '\/support\/operate-log\/operate-log-list'/, `${file} 应跳到操作日志列表`);
     assert.match(vue, new RegExp(`query: \\{businessType: '${businessType}'`), `${file} 业务类型应为 ${businessType}`);
-    // 入口受操作日志查询权限约束
-    assert.match(vue, /v-privilege="'support:operateLog:query'/);
+    // 入口受操作日志查询权限约束。常驻按钮走 v-privilege；收进 ScmActionMore「更多」的
+    // 菜单项挂不上指令（项目既有约定：菜单项一律用同一口径的 hasPermission 裁剪），
+    // 因此两种写法都算合规，约束本身（必须受该权限码约束）不变。
+    const gated = /v-privilege="'support:operateLog:query'/.test(vue)
+      || /hasPermission\('support:operateLog:query'\)/.test(vue);
+    assert.ok(gated, `${file} 操作日志入口未受权限约束`);
   }
 });

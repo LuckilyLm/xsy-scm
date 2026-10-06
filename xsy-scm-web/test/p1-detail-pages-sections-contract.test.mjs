@@ -33,18 +33,20 @@ function posOf(source, title) {
     return index;
 }
 
-test('§11.3 客户详情按「概览 / 联系 / 归属 / 授信 / 系统信息」分区', () => {
-    const sections = ['客户概览', '联系与地址', '归属关系', '授信与账期', '系统信息'];
+test('§11.3 客户详情按「经营概览 / 联系 / 归属 / 授信 / 系统信息」分区', () => {
+    const sections = ['客户经营概览', '联系与地址', '归属关系', '授信与账期', '系统信息'];
     const positions = sections.map((title) => posOf(customer, title));
     // 顺序必须与 §11.3 一致，系统信息在最后
     assert.deepEqual(positions, [...positions].sort((a, b) => a - b), '客户详情分区顺序不符');
     assert.ok(positions[positions.length - 1] > positions[0], '系统信息必须在核心业务段之后');
-    // 时间与备注必须落在系统信息段内
+    // 时间与备注必须落在系统信息段内（label/value 结构用 dt，不再要求 descriptions 的 label 属性）
     const sysIndex = positions[positions.length - 1];
     const tail = customer.slice(sysIndex);
-    assert.match(tail, /label="创建时间"/);
-    assert.match(tail, /label="更新时间"/);
-    assert.match(tail, /label="备注"/);
+    assert.match(tail, />创建时间</);
+    assert.match(tail, />更新时间</);
+    assert.match(tail, />备注</);
+    // 客户编码仍在系统信息段保留完整值（页头只是 secondary 呈现，不等于下沉掉）
+    assert.match(tail, />客户编码</);
 });
 
 test('§12.4 供应商详情按「概览 / 联系方式 / 地址与地图 / 采购与账期 / 关联商品 / 系统信息」分区', () => {

@@ -1,23 +1,55 @@
 <!--
-  * 客户详情（独立隐藏路由，可深链）—— Wave 7 起为客户 360° 业务上下文。
+  * 客户详情（独立隐藏路由，可深链）—— 客户 360° 业务档案。
   *
   * 来源：**W1 派生** —— 结构照抄 `views/business/scm/product/product-detail.vue`。
   * V2 需要可深链的独立页（对应 `t_menu` 434「客户详情」，`visible_flag = false`）。
   *
-  * Wave 7 适配（§11）：在原「基础资料」之上补 4 个只读上下文 Tab，全部锁定同一个 customerId。
+  * Wave 7：在原「基础资料」之上补 4 个只读上下文 Tab，全部锁定同一个 customerId。
   * - 最近订单 / 协议价 / 可售商品分别复用订单、价格中心、客户 SKU 可见性的**既有查询接口**，
   *   不新建第二份事实，也不落副本；各 Tab 仍受各自领域权限约束（无订单权限时订单/常购 Tab 退化为错误提示）。
-  * - 常购商品是后端只读聚合（§7.5 口径：仅已确认订单、按 SKU+单位分组、订购量非结算量、
+  * - 常购商品是后端只读聚合（§7.5 口径：仅已确认订单、按 SKU+单位分组、订购量为订购量非结算量、
   *   最近价为锁定单价缺失即空不兜底）。
   * 非基础资料 Tab 采用**首次进入才加载**（lazy），切换客户时整体复位。
+  *
+  * 本轮版式（客户 360° 档案）：
+  * - **客户名与编码提到 Tabs 之上**做整页上下文（切 Tab 后始终可见），基础资料不再是"页面标题"；
+  * - 基础资料由「客户经营概览（4 项 summary）+ 三张业务 Card + 弱化系统信息 Card」组成，
+  *   不再用大面积 `a-descriptions bordered` 拼成 Excel 观感（公共类见 `theme/scm/detail.less`）；
+  * - 经营概览**只用详情接口已有字段**（状态 / 结算方式 / 授信额度 / 账期），
+  *   不新增销售额、欠款额、订单数这类接口没有的指标；
+  * - 只读口径不变：本页不发起任何客户写命令，编辑走列表同一只 `CustomerDrawer`。
 -->
 <template>
   <a-card size="small" :bordered="false">
-    <a-space class="smart-margin-bottom10">
-      <a-button @click="router.push('/customer/customer-list')">返回客户列表</a-button>
-      <a-button @click="reloadActive">刷新</a-button>
-      <a-button v-privilege="'support:operateLog:query'" :disabled="!customerId" @click="openOperateLog">操作日志</a-button>
-    </a-space>
+    <!-- 页头：整个页面的上下文，必须留在 Tabs 之外 -->
+    <header class="scm-detail-header">
+      <div class="scm-detail-header__main">
+        <a-button type="link" class="scm-detail-header__back" @click="backToList">
+          <ArrowLeftOutlined/>
+          客户档案
+        </a-button>
+        <div class="scm-detail-header__title-row">
+          <h1 class="scm-detail-header__title">{{ customer?.name || '客户详情' }}</h1>
+          <ScmStatusTag v-if="customer" :color="statusColor(customer.status)" :label="statusText(customer.status)"/>
+        </div>
+        <p v-if="customer" class="scm-detail-header__meta">
+          <span class="scm-mono">{{ customer.customerCode }}</span>
+          <span v-if="customer.customerTypeName"> · {{ customer.customerTypeName }}</span>
+          <span v-if="customer.sellerName"> · {{ customer.sellerName }}</span>
+        </p>
+      </div>
+      <div class="scm-detail-header__actions">
+        <a-button v-privilege="'scm:customer:update'" :disabled="!customerId" @click="openEditDrawer">
+          编辑客户
+        </a-button>
+        <a-tooltip title="刷新">
+          <a-button :disabled="!customerId" aria-label="刷新" @click="reloadActive">
+            <ReloadOutlined/>
+          </a-button>
+        </a-tooltip>
+        <ScmActionMore :actions="headerActions" @select="onHeaderAction"/>
+      </div>
+    </header>
 
     <a-tabs v-model:activeKey="activeTab">
       <!-- 基础资料 -->
@@ -29,62 +61,135 @@
             </template>
           </a-alert>
           <template v-else-if="customer">
-            <div class="detail-doc-title">{{ customer.name }}</div>
+            <!-- 阅读宽度：基础资料不铺满超宽屏；表格类 Tab 仍用完整宽度 -->
+            <div class="scm-detail-read">
+              <!-- 1. 客户经营概览：仅用详情接口已有字段 -->
+              <section class="scm-summary-section">
+                <h3 class="scm-detail-card__title">客户经营概览</h3>
+                <div class="scm-summary">
+                  <div class="scm-summary__item">
+                    <span class="scm-summary__label">客户状态</span>
+                    <span class="scm-summary__value">
+                      <ScmStatusTag :color="statusColor(customer.status)" :label="statusText(customer.status)"/>
+                    </span>
+                  </div>
+                  <div class="scm-summary__item">
+                    <span class="scm-summary__label">结算方式</span>
+                    <span class="scm-summary__value">{{ settleModeText(customer.settleMode) }}</span>
+                  </div>
+                  <div class="scm-summary__item">
+                    <span class="scm-summary__label">授信额度</span>
+                    <span class="scm-summary__value scm-money">{{ creditLimitText }}</span>
+                  </div>
+                  <div class="scm-summary__item">
+                    <span class="scm-summary__label">账期</span>
+                    <span class="scm-summary__value">{{ creditPeriodSummary }}</span>
+                  </div>
+                </div>
+              </section>
 
-            <!-- 1. 客户概览 -->
-            <section class="detail-section">
-              <h3>客户概览</h3>
-              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-                <a-descriptions-item label="客户编码">{{ customer.customerCode }}</a-descriptions-item>
-                <a-descriptions-item label="客户类型">{{ customer.customerTypeName || '—' }}</a-descriptions-item>
-                <a-descriptions-item label="状态">
-                  <a-tag :color="statusColor(customer.status)">{{ statusText(customer.status) }}</a-tag>
-                </a-descriptions-item>
-                <a-descriptions-item label="结算方式">{{ settleModeText(customer.settleMode) }}</a-descriptions-item>
-              </a-descriptions>
+              <div class="scm-detail-grid">
+                <!-- 2. 联系与地址 -->
+                <section class="scm-detail-card">
+                  <h3 class="scm-detail-card__title">联系与地址</h3>
+                  <dl class="scm-field-list">
+                    <div class="scm-field">
+                      <dt class="scm-field__label">联系人</dt>
+                      <dd class="scm-field__value">{{ customer.contactName || '—' }}</dd>
+                    </div>
+                    <div class="scm-field">
+                      <dt class="scm-field__label">电话</dt>
+                      <dd class="scm-field__value">{{ customer.contactPhone || '—' }}</dd>
+                    </div>
+                    <div class="scm-field scm-field--wide">
+                      <dt class="scm-field__label">地址</dt>
+                      <dd class="scm-field__value">{{ customer.address || '—' }}</dd>
+                    </div>
+                  </dl>
+                </section>
 
-              <!-- 2. 联系与地址 -->
-              <h3 class="detail-section--nested">联系与地址</h3>
-              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-                <a-descriptions-item label="联系人">{{ customer.contactName || '—' }}</a-descriptions-item>
-                <a-descriptions-item label="联系电话">{{ customer.contactPhone || '—' }}</a-descriptions-item>
-                <a-descriptions-item label="地址" :span="3">{{ customer.address || '—' }}</a-descriptions-item>
-              </a-descriptions>
+                <!-- 3. 归属关系 -->
+                <section class="scm-detail-card">
+                  <h3 class="scm-detail-card__title">归属关系</h3>
+                  <dl class="scm-field-list">
+                    <div class="scm-field">
+                      <dt class="scm-field__label">上级集团</dt>
+                      <dd class="scm-field__value">{{ customer.parentCustomerName || '—' }}</dd>
+                    </div>
+                    <div class="scm-field">
+                      <dt class="scm-field__label">统一结算方</dt>
+                      <dd class="scm-field__value">{{ customer.settlementCustomerName || customer.name }}</dd>
+                    </div>
+                    <div class="scm-field">
+                      <dt class="scm-field__label">归属业务员</dt>
+                      <dd class="scm-field__value">{{ customer.sellerName || '未分配' }}</dd>
+                    </div>
+                    <div class="scm-field">
+                      <dt class="scm-field__label">绑定供应商</dt>
+                      <dd class="scm-field__value">{{ customer.supplierName || '—' }}</dd>
+                    </div>
+                  </dl>
+                </section>
 
-              <!-- 3. 归属关系 -->
-              <h3 class="detail-section--nested">归属关系</h3>
-              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-                <a-descriptions-item label="上级集团">{{ customer.parentCustomerName || '—' }}</a-descriptions-item>
-                <a-descriptions-item label="统一结算方">{{ customer.settlementCustomerName || customer.name }}</a-descriptions-item>
-                <a-descriptions-item label="归属业务员">{{ customer.sellerName || '—' }}</a-descriptions-item>
-                <a-descriptions-item label="绑定供应商">{{ customer.supplierName || '—' }}</a-descriptions-item>
-              </a-descriptions>
+                <!-- 4. 授信与账期：整行卡片 -->
+                <section class="scm-detail-card scm-detail-card--full">
+                  <h3 class="scm-detail-card__title">授信与账期</h3>
+                  <dl class="scm-field-list scm-field-list--3">
+                    <div class="scm-field">
+                      <dt class="scm-field__label">授信额度</dt>
+                      <dd class="scm-field__value scm-money">{{ creditLimitText }}</dd>
+                    </div>
+                    <div class="scm-field">
+                      <dt class="scm-field__label">账期类型</dt>
+                      <dd class="scm-field__value">{{ creditPeriodTypeText }}</dd>
+                    </div>
+                    <template v-if="customer.creditPeriodType === 'BY_AMOUNT'">
+                      <div class="scm-field">
+                        <dt class="scm-field__label">金额阈值</dt>
+                        <dd class="scm-field__value scm-money">{{ amountOrDash(customer.creditAmountThreshold) }}</dd>
+                      </div>
+                    </template>
+                    <template v-else-if="customer.creditPeriodType === 'BY_TIME'">
+                      <div class="scm-field">
+                        <dt class="scm-field__label">账期值</dt>
+                        <dd class="scm-field__value">{{ customer.creditPeriodValue ?? '—' }}</dd>
+                      </div>
+                      <div class="scm-field">
+                        <dt class="scm-field__label">账期单位</dt>
+                        <dd class="scm-field__value">{{ creditPeriodUnitText }}</dd>
+                      </div>
+                      <div v-if="customer.creditPeriodUnit === 'MONTH'" class="scm-field">
+                        <dt class="scm-field__label">固定结算日</dt>
+                        <dd class="scm-field__value">{{ customer.settleDay ?? '—' }}</dd>
+                      </div>
+                    </template>
+                  </dl>
+                </section>
+              </div>
 
-              <!-- 4. 授信与账期 -->
-              <h3 class="detail-section--nested">授信与账期</h3>
-              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-                <a-descriptions-item label="授信额度">{{ customer.creditLimit ?? '未设置' }}</a-descriptions-item>
-                <a-descriptions-item label="账期类型">{{ creditPeriodTypeText }}</a-descriptions-item>
-                <template v-if="customer.creditPeriodType === 'BY_AMOUNT'">
-                  <a-descriptions-item label="金额阈值">{{ customer.creditAmountThreshold ?? '—' }}</a-descriptions-item>
-                </template>
-                <template v-else-if="customer.creditPeriodType === 'BY_TIME'">
-                  <a-descriptions-item label="账期值">{{ customer.creditPeriodValue ?? '—' }}</a-descriptions-item>
-                  <a-descriptions-item label="账期单位">{{ creditPeriodUnitText }}</a-descriptions-item>
-                  <a-descriptions-item v-if="customer.creditPeriodUnit === 'MONTH'" label="固定结算日">
-                    {{ customer.settleDay ?? '—' }}
-                  </a-descriptions-item>
-                </template>
-              </a-descriptions>
-
-              <!-- 7. 系统信息：§11.3 要求编码与时间不占核心区域 -->
-              <h3 class="detail-section--nested">系统信息</h3>
-              <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-                <a-descriptions-item label="创建时间">{{ datetime(customer.createdAt) }}</a-descriptions-item>
-                <a-descriptions-item label="更新时间">{{ datetime(customer.updatedAt) }}</a-descriptions-item>
-                <a-descriptions-item label="备注" :span="3">{{ customer.remark || '—' }}</a-descriptions-item>
-              </a-descriptions>
-            </section>
+              <!-- 5. 系统信息：弱化卡片，编码与时间不占核心区域 -->
+              <section class="scm-detail-card scm-detail-card--muted scm-detail-block">
+                <h3 class="scm-detail-card__title">系统信息</h3>
+                <dl class="scm-field-list scm-field-list--3">
+                  <div class="scm-field">
+                    <dt class="scm-field__label">客户编码</dt>
+                    <dd class="scm-field__value scm-mono">{{ customer.customerCode }}</dd>
+                  </div>
+                  <div class="scm-field">
+                    <dt class="scm-field__label">创建时间</dt>
+                    <dd class="scm-field__value">{{ datetime(customer.createdAt) }}</dd>
+                  </div>
+                  <div class="scm-field">
+                    <dt class="scm-field__label">更新时间</dt>
+                    <dd class="scm-field__value">{{ datetime(customer.updatedAt) }}</dd>
+                  </div>
+                  <div class="scm-field scm-field--wide">
+                    <dt class="scm-field__label">备注</dt>
+                    <dd class="scm-field__value">{{ customer.remark || '—' }}</dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
           </template>
         </a-spin>
       </a-tab-pane>
@@ -97,11 +202,12 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="orders.rows.value" :columns="orderCols" row-key="orderId" size="small" bordered
-                 :loading="orders.loading.value" :pagination="false" :scroll="{ x: 760 }">
+                 :loading="orders.loading.value" :pagination="false" :scroll="{ x: 710 }">
           <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc || record.orderSource }}</template>
+            <template v-if="column.dataIndex === 'orderNo'"><span class="scm-mono">{{ record.orderNo }}</span></template>
+            <template v-else-if="column.dataIndex === 'orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc || record.orderSource }}</template>
             <template v-else-if="column.dataIndex === 'status'">
-              <a-tag>{{ SCM_ORDER_STATUS_ENUM[record.status]?.desc || record.status }}</a-tag>
+              <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc || record.status"/>
             </template>
             <template v-else-if="column.dataIndex === 'orderedTotalAmount'"><span class="scm-money">{{ formatAmountOrDash(record.orderedTotalAmount) }}</span></template>
             <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
@@ -115,9 +221,9 @@
 
       <!-- 常购商品 -->
       <a-tab-pane key="frequent" tab="常购商品">
-        <a-space class="smart-margin-bottom10">
+        <a-space class="smart-margin-bottom10" :size="12">
           <span>统计窗口</span>
-          <a-select v-model:value="freqDays" style="width: 120px" :options="freqDayOptions" @change="onFreqDaysChange" />
+          <a-segmented v-model:value="freqDays" :options="freqDayOptions" @change="onFreqDaysChange"/>
           <span class="smart-font-size12 smart-color-gray">按商品规格＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
         </a-space>
         <a-alert v-if="frequent.error.value" :message="frequent.error.value" type="error" show-icon>
@@ -126,9 +232,15 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="frequent.rows.value" :columns="frequentCols" :row-key="(r: CustomerFrequentSku) => `${r.skuId}-${r.unit}`" size="small" bordered
-                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 960 }">
+                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 950 }">
           <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'orderedQuantity'"><span class="scm-quantity">{{ record.orderedQuantity }}</span></template>
+            <template v-if="column.dataIndex === 'productName'">
+              <div class="scm-cell-stack">
+                <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
+                <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
+              </div>
+            </template>
+            <template v-else-if="column.dataIndex === 'orderedQuantity'"><span class="scm-quantity">{{ record.orderedQuantity }}</span></template>
             <template v-else-if="column.dataIndex === 'recentUnitPrice'"><span class="scm-money">{{ formatAmountOrDash(record.recentUnitPrice) }}</span></template>
             <template v-else-if="column.dataIndex === 'lastConfirmedAt'">{{ datetime(record.lastConfirmedAt) }}</template>
           </template>
@@ -143,11 +255,16 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="agreement.rows.value" :columns="agreementCols" row-key="agreementPriceId" size="small" bordered
-                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 900 }">
+                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 790 }">
           <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'unitPrice'"><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template>
-            <template v-else-if="column.dataIndex === 'effectiveFrom'">{{ datetime(record.effectiveFrom) }}</template>
-            <template v-else-if="column.dataIndex === 'effectiveTo'">{{ record.effectiveTo ? datetime(record.effectiveTo) : '长期有效' }}</template>
+            <template v-if="column.dataIndex === 'productName'">
+              <div class="scm-cell-stack">
+                <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
+                <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
+              </div>
+            </template>
+            <template v-else-if="column.dataIndex === 'unitPrice'"><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template>
+            <template v-else-if="column.dataIndex === 'effectivePeriod'">{{ effectivePeriodText(record) }}</template>
           </template>
         </a-table>
         <div v-if="!agreement.error.value" class="smart-query-table-page">
@@ -166,10 +283,18 @@
         <template v-else>
           <a-alert v-if="visPolicyText" :message="visPolicyText" type="info" show-icon class="smart-margin-bottom10" />
           <a-table :data-source="visRows" :columns="visibilityCols" :row-key="(r: VisibilityRow) => String(r.skuId)" size="small" bordered
-                   :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 720 }">
+                   :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 650 }">
             <template #bodyCell="{ record, column }">
-              <template v-if="column.dataIndex === 'skuStatus'">
-                <a-tag>{{ record.skuStatus || '—' }}</a-tag>
+              <template v-if="column.dataIndex === 'productName'">
+                <div class="scm-cell-stack">
+                  <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
+                  <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
+                </div>
+              </template>
+              <template v-else-if="column.dataIndex === 'skuStatus'">
+                <ScmStatusTag v-if="shelfStatusLabel(record.skuStatus)" :tone="shelfStatusTone(record.skuStatus)"
+                              :label="shelfStatusLabel(record.skuStatus)"/>
+                <span v-else>—</span>
               </template>
               <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
             </template>
@@ -181,12 +306,16 @@
         </template>
       </a-tab-pane>
     </a-tabs>
+
+    <!-- 编辑入口复用列表的同一只抽屉：本页不新增写端点，也不改表单口径 -->
+    <CustomerDrawer ref="editDrawer" @saved="loadBase"/>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref, shallowRef, watch, type Ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
+import {ArrowLeftOutlined, ReloadOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
@@ -202,11 +331,18 @@ import {
   SETTLE_MODE_ENUM
 } from '/@/constants/business/scm/customer-const';
 import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
+import {SHELF_STATUS_ENUM} from '/@/constants/business/scm/product-const';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {customerError} from './customer-errors';
 import {orderError} from '../order/order-errors';
 import {pricingError} from '../pricing/pricing-errors';
+import {hasPermission} from '../common/scm-permission';
 import {formatAmount, formatAmountOrDash} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
+import CustomerDrawer from './components/customer-form-drawer.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -219,6 +355,10 @@ const customerId = computed(() => {
   return typeof id === 'string' && /^\d+$/.test(id) ? id : '';
 });
 
+function backToList(): void {
+  void router.push('/customer/customer-list');
+}
+
 // ---------------------------------------------------------------------------
 // 基础资料（沿用 W2 的详情加载与竞态守卫）
 // ---------------------------------------------------------------------------
@@ -226,6 +366,13 @@ const customer = ref<CustomerDetail>();
 const baseLoading = ref(false);
 const baseError = ref('');
 let baseReq = 0;
+
+/** 编辑入口复用列表的同一只抽屉：只暴露 open(customerId)，写命令仍由抽屉自己发起。 */
+const editDrawer = ref<InstanceType<typeof CustomerDrawer>>();
+
+function openEditDrawer(): void {
+  if (customerId.value) editDrawer.value?.open(customerId.value);
+}
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
 const settleModeText = (value: string): string => SETTLE_MODE_ENUM[value]?.desc || value;
@@ -242,6 +389,26 @@ const creditPeriodTypeText = computed(() => {
 const creditPeriodUnitText = computed(() => {
   const unit = customer.value?.creditPeriodUnit;
   return unit ? CREDIT_PERIOD_UNIT_ENUM[unit]?.desc || unit : '—';
+});
+
+/** 授信额度：`null` 是「未设置」，与 `"0.0000"`（明确授信为零）语义不同，不能混成一个 0。 */
+const creditLimitText = computed(() =>
+  customer.value?.creditLimit == null ? '未设置' : formatAmount(customer.value.creditLimit)
+);
+
+const amountOrDash = (value: string | null | undefined): string => formatAmountOrDash(value);
+
+/** 概览里的「账期」一格：把类型与取值合成一句，明细仍在「授信与账期」卡片里逐项列出。 */
+const creditPeriodSummary = computed(() => {
+  const current = customer.value;
+  if (!current?.creditPeriodType) return '未设置账期';
+  const type = creditPeriodTypeText.value;
+  if (current.creditPeriodType === 'BY_AMOUNT') {
+    return current.creditAmountThreshold == null ? type : `${type} · 阈值 ${formatAmount(current.creditAmountThreshold)}`;
+  }
+  if (current.creditPeriodValue == null) return type;
+  const unit = current.creditPeriodUnit ? creditPeriodUnitText.value : '';
+  return `${type} · ${current.creditPeriodValue}${unit}`;
 });
 
 async function loadBase() {
@@ -324,11 +491,12 @@ const orders = useTab<Order>(
     orderError);
 
 const freqDays = ref(90);
+/** 只有这四档：用 segmented 一次摊开，避免为一个四选一的窗口点两次下拉。 */
 const freqDayOptions = [
-  {value: 30, label: '近 30 天'},
-  {value: 90, label: '近 90 天'},
-  {value: 180, label: '近 180 天'},
-  {value: 365, label: '近一年'}
+  {value: 30, label: '30天'},
+  {value: 90, label: '90天'},
+  {value: 180, label: '180天'},
+  {value: 365, label: '1年'}
 ];
 const frequent = useTab<CustomerFrequentSku>(
     () => customerApi.frequentSkus(customerId.value, freqDays.value, 20).then((r) => ({list: r.data, total: r.data.length})),
@@ -373,6 +541,16 @@ function onFreqDaysChange(): void {
   if (customerId.value) void frequent.reload();
 }
 
+/** 页头「更多」：本页唯一低频动作是操作日志，与列表一样用同一口径的权限裁剪。 */
+const canViewOperateLog = computed(() => hasPermission('support:operateLog:query'));
+const headerActions = computed<ScmActionItem[]>(() => [
+  {key: 'operateLog', label: '操作日志', hidden: !canViewOperateLog.value || !customerId.value},
+]);
+
+function onHeaderAction(key: string): void {
+  if (key === 'operateLog') openOperateLog();
+}
+
 // 携带业务上下文跳到通用操作日志页，按 customerId 精确筛选。
 function openOperateLog(): void {
   if (!customerId.value) return;
@@ -393,39 +571,54 @@ const visPolicyText = computed(() => {
 const visRows = computed(() => visibility.rows.value.filter((r) => r.skuId != null));
 
 // ---------------------------------------------------------------------------
-// 列定义（静态）
+// 枚举翻译与列定义（静态）
 // ---------------------------------------------------------------------------
+
+/** 商品规格状态：后端给的是枚举码，展示必须走翻译，不能把 `ON_SHELF` 直接摊给用户。 */
+const shelfStatusLabel = (value?: string | null): string =>
+    SHELF_STATUS_ENUM.find((item) => item.value === value)?.label ?? '';
+const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : 'neutral');
+
+/** 规划 §25：草稿/待确认=待处理，已确认=处理中，已取消=失效（与订单列表同一套档位）。 */
+const ORDER_STATUS_TONE: Record<string, ScmStatusTone> = {
+  DRAFT: 'warning',
+  PENDING: 'warning',
+  CONFIRMED: 'processing',
+  CANCELLED: 'neutral',
+};
+const orderStatusTone = (value?: string | null): ScmStatusTone => ORDER_STATUS_TONE[value ?? ''] ?? 'neutral';
+
+/** 协议价有效期：无结束时间即长期有效（不是缺数据，不能显示破折号）。 */
+const effectivePeriodText = (row: PriceRow): string =>
+    `${datetime(row.effectiveFrom)} ～ ${row.effectiveTo ? datetime(row.effectiveTo) : '长期有效'}`;
+
 const orderCols: TableColumnsType<Order> = [
-  {title: '订单号', dataIndex: 'orderNo', width: 170},
+  {title: '订单号', dataIndex: 'orderNo', width: 180},
   {title: '来源', dataIndex: 'orderSource', width: 110},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '订单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 130},
+  {title: '订单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 140},
   {title: '创建时间', dataIndex: 'createdAt', width: 180}
 ];
 const frequentCols: TableColumnsType<CustomerFrequentSku> = [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
-  {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '商品规格', dataIndex: 'specName', width: 120},
-  {title: '单位', dataIndex: 'unit', width: 80},
+  {title: '商品', dataIndex: 'productName', width: 220},
+  {title: '商品规格', dataIndex: 'specName', width: 140},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '订购次数', dataIndex: 'orderCount', align: 'right', width: 100},
   {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
-  {title: '最近确认', dataIndex: 'lastConfirmedAt', width: 180},
-  {title: '最近成交价', dataIndex: 'recentUnitPrice', align: 'right', width: 120}
+  {title: '最近成交价', dataIndex: 'recentUnitPrice', align: 'right', width: 120},
+  {title: '最近购买', dataIndex: 'lastConfirmedAt', width: 180}
 ];
 const agreementCols: TableColumnsType<PriceRow> = [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
-  {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '商品规格', dataIndex: 'specName', width: 120},
-  {title: '协议单价', dataIndex: 'unitPrice', align: 'right', width: 120},
-  {title: '生效时间', dataIndex: 'effectiveFrom', width: 180},
-  {title: '结束时间', dataIndex: 'effectiveTo', width: 180}
+  {title: '商品', dataIndex: 'productName', width: 220},
+  {title: '商品规格', dataIndex: 'specName', width: 140},
+  {title: '协议单价', dataIndex: 'unitPrice', align: 'right', width: 130},
+  {title: '有效期', dataIndex: 'effectivePeriod', width: 300}
 ];
 const visibilityCols: TableColumnsType<VisibilityRow> = [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
-  {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '商品规格', dataIndex: 'specName', width: 120},
-  {title: '商品规格状态', dataIndex: 'skuStatus', align: 'center', width: 110},
-  {title: '加入白名单时间', dataIndex: 'createdAt', width: 180}
+  {title: '商品', dataIndex: 'productName', width: 220},
+  {title: '商品规格', dataIndex: 'specName', width: 140},
+  {title: '状态', dataIndex: 'skuStatus', align: 'center', width: 110},
+  {title: '加入时间', dataIndex: 'createdAt', width: 180}
 ];
 
 watch(customerId, () => {
@@ -440,23 +633,3 @@ onMounted(() => {
   ensureTab(activeTab.value);
 });
 </script>
-
-<style scoped>
-/* 文档标题：比描述列表更突出（§31.3「核心业务信息优先」） */
-.detail-doc-title {
-  color: var(--scm-text);
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.detail-section h3 {
-  margin: 0 0 12px;
-  font-weight: 600;
-}
-
-/* 同一段里的后续小标题（概览段串起 联系/归属/授信/系统信息） */
-.detail-section--nested {
-  margin-top: 20px;
-}
-</style>
