@@ -234,10 +234,16 @@ test('按钮出现条件与后端状态机一致', () => {
     assert.match(reopenAction, /row\.status === 'COMPLETED'/);
     assert.match(printAction, /printable && hasPermission\(SCM_SORTING_PERMISSION\.TASK_PRINT\)/);
     assert.match(taskList, /const printable = SCM_SORTING_PRINTABLE_STATUS\.includes\(row\.status\)/);
-    // 推进动作（指派 / 改派、完成）必须留在行内：分拣是操作型工作台，
-    // 把「下一步该干什么」藏进「更多」等于每次多一次点击。
-    assert.match(taskList, /v-if="isWorking\(record\.status\)"[\s\S]{0,160}scm:sorting:task:assign/);
+    // 行内只留「完成」这一个推进动作；指派 / 改派按操作列收尾口径移入「更多」，
+    // 但**业务约束不变**：仍限 WORKING 状态、仍需 TASK_ASSIGN 权限，标签随是否已指派变化。
     assert.match(taskList, /v-if="isWorking\(record\.status\)"[\s\S]{0,160}scm:sorting:task:complete/);
+    assert.doesNotMatch(taskList, /v-privilege="'scm:sorting:task:assign'"/,
+        '指派 / 改派已移入「更多」，不应再以行内 v-privilege 按钮形式出现');
+    const assignAction = actionOf('assign');
+    assert.ok(assignAction, '缺指派 / 改派动作');
+    assert.match(assignAction, /working && hasPermission\(SCM_SORTING_PERMISSION\.TASK_ASSIGN\)/);
+    assert.match(assignAction, /label: row\.assigneeEmployeeId == null \? '指派' : '改派'/);
+    assert.match(taskList, /if \(key === 'assign'\)[\s\S]{0,80}openAction\('assign', row\)/);
     // 取消与重开的原因是必填项（与后端 requireReason 同口径）
     assert.match(taskList, /if \(actionMode\.value !== 'assign' && !reason\)/);
     // 编辑权 = 干活的状态 + 派给本人 + 明细编辑权，缺一即只读；三者同源于录入组合式函数
@@ -291,8 +297,8 @@ test('分拣列表与汇总页按「少列、编码下沉」收敛', () => {
     assert.match(taskList, /CANCELLED: 'neutral'/);
     assert.match(taskList, /ScmStatusTag/);
     assert.doesNotMatch(taskList, /SCM_SORTING_TASK_STATUS_COLOR/);
-    // 操作列 320 → 220 居中：详情 / 指派·改派 / 完成 / 更多
-    assert.match(taskList, /dataIndex: 'action', fixed: 'right', align: 'center', width: 220/);
+    // 操作列 320 → 220 → 150 居中：详情 / 完成 / 更多（指派·改派已收进「更多」）
+    assert.match(taskList, /dataIndex: 'action', fixed: 'right', align: 'center', width: 150/);
     assert.match(taskList, /ScmActionMore/);
 
     // 汇总页：两个编码折进名称下方，未处理行数走 tag 档位

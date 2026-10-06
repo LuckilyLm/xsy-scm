@@ -8,7 +8,7 @@
       <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
         {{ record.status === 'ENABLED' ? '启用' : '停用' }}
       </a-tag>
-      <a-space v-else-if="column.dataIndex === 'action'" class="smart-table-operate scm-table-actions">
+      <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
         <a-button v-if="record.level < 3" v-privilege="'scm:product:category:add'" type="link" size="small"
                   :disabled="record.status !== 'ENABLED'" @click="emit('add', record)">新增子分类
         </a-button>
@@ -47,6 +47,6 @@ const columns = [
   {title: '父分类', dataIndex: 'parentName', width: 240},
   {title: '排序', dataIndex: 'sortOrder', width: 90, align: 'right' as const},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center' as const},
-  {title: '操作', dataIndex: 'action', width: 250, align: 'center' as const},
+  {title: '操作', dataIndex: 'action', width: 160, align: 'center' as const},
 ];
 </script>

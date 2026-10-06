@@ -80,7 +80,7 @@ const historyColumns: TableColumnsType<SupplierStatement> = [
   {title: '版本', dataIndex: 'id'}, {title: '供应商', dataIndex: 'supplierName'},
   {title: '起始日', dataIndex: 'startDate'}, {title: '截止日', dataIndex: 'endDate'},
   {title: '范围', dataIndex: 'partialScope'}, {title: '冻结时间', dataIndex: 'generatedAt'},
-  {title: '操作', dataIndex: 'action'},
+  {title: '操作', dataIndex: 'action', align: 'center', width: 130},
 ];
 const lineColumns: TableColumnsType<SupplierStatementLine> = [
   {title: '业务时间', dataIndex: 'eventAt', width: 170}, {title: '类型', dataIndex: 'factType', width: 120},

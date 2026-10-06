@@ -103,17 +103,10 @@
           {{ record.supplierNameSnapshot || '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内只留本状态唯一的推进动作（指派 / 改派、完成），其余收进「更多」 -->
+          <!-- 行内只留「详情」与本状态唯一的推进动作「完成」；指派 / 改派与其余动作收进「更多」。
+               宽度上限 150，行内最多 3 个元素，再多会换行。 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
-            <a-button
-                v-if="isWorking(record.status)"
-                type="link"
-                size="small"
-                v-privilege="'scm:sorting:task:assign'"
-                @click="openAction('assign', record)"
-            >{{ record.assigneeEmployeeId == null ? '指派' : '改派' }}
-            </a-button>
             <a-button
                 v-if="isWorking(record.status)"
                 type="link"
@@ -308,7 +301,7 @@ const columns = ref<TableColumnsType<SortingTask>>([
   {title: '送货时间', dataIndex: 'deliveryTimeSnapshot', width: 170},
   {title: '波次', dataIndex: 'deliveryWave', width: 110},
   {title: '供应商来源', dataIndex: 'supplierNameSnapshot', width: 150},
-  {title: '操作', dataIndex: 'action', fixed: 'right', align: 'center', width: 220},
+  {title: '操作', dataIndex: 'action', fixed: 'right', align: 'center', width: 150},
 ]);
 
 /** §25 状态视觉：待分拣 = 待处理（橙），分拣中 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
@@ -325,6 +318,8 @@ function rowActions(row: SortingTask): ScmActionItem[] {
   const working = isWorking(row.status);
   const printable = SCM_SORTING_PRINTABLE_STATUS.includes(row.status);
   return [
+    // 指派 / 改派：原为行内按钮，本轮按「低频状态动作进更多」的口径移入；标签随是否已指派变化
+    {key: 'assign', label: row.assigneeEmployeeId == null ? '指派' : '改派', hidden: !(working && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN))},
     {key: 'scale', label: '秤读数', hidden: !hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
     {key: 'ticket', label: '小票', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY))},
     {key: 'print', label: '打印', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_PRINT))},
@@ -335,7 +330,9 @@ function rowActions(row: SortingTask): ScmActionItem[] {
 }
 
 function onRowAction(key: string, row: SortingTask) {
-  if (key === 'scale') {
+  if (key === 'assign') {
+    openAction('assign', row);
+  } else if (key === 'scale') {
     openScale(row);
   } else if (key === 'ticket') {
     openTicket(row.id);

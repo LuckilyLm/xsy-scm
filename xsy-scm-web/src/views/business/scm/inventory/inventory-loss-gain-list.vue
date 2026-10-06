@@ -324,14 +324,14 @@ const columns = ref<TableColumnsType<InventoryLossGain>>([
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
   {title: '审核', dataIndex: 'auditedAt', width: 180},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 200},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '数量', dataIndex: 'quantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
-  {title: '操作', dataIndex: 'action', width: 80},
+  {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
 /** 报损 = 库存减少（红），报溢 = 库存增加（绿）—— 方向在列表里必须一眼可见。 */

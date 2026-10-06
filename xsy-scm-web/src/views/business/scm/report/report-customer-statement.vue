@@ -77,7 +77,7 @@ const historyColumns: TableColumnsType<CustomerStatement> = [
   {title: '版本', dataIndex: 'id'}, {title: '结算方', dataIndex: 'settlementCustomerName'},
   {title: '起始日', dataIndex: 'startDate'}, {title: '截止日', dataIndex: 'endDate'},
   {title: '范围', dataIndex: 'partialScope'}, {title: '冻结时间', dataIndex: 'generatedAt'},
-  {title: '操作', dataIndex: 'action'},
+  {title: '操作', dataIndex: 'action', align: 'center', width: 130},
 ];
 const lineColumns: TableColumnsType<CustomerStatementLine> = [
   {title: '业务时间', dataIndex: 'eventAt', width: 175}, {title: '类型', dataIndex: 'factType', width: 110},

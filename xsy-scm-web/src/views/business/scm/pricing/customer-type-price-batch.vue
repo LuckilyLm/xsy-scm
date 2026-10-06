@@ -50,7 +50,7 @@ const columns: TableColumnsType<BatchRow> = [{title: '行号', dataIndex: 'rowNu
   title: '错误',
   dataIndex: 'error',
   width: 230
-}, {title: '操作', dataIndex: 'action', width: 80}];
+}, {title: '操作', dataIndex: 'action', width: 80, align: 'center'}];
 
 function add() {
   rows.value.push({...emptyPrice(), rowNumber: ++number});

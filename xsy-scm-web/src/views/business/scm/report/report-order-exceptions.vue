@@ -97,7 +97,7 @@ const columns: TableColumnsType<OrderExceptionRow> = [
   {title: '实际量', dataIndex: 'actualQuantity', width: 110, align: 'right'},
   {title: '差异（实际−计划）', dataIndex: 'differenceQuantity', width: 150, align: 'right'},
   {title: '源状态', dataIndex: 'sourceStatus', width: 100}, {title: '原因', dataIndex: 'reason', width: 260},
-  {title: '操作', dataIndex: 'action', fixed: 'right', width: 110},
+  {title: '操作', dataIndex: 'action', fixed: 'right', width: 110, align: 'center'},
 ];
 function statusLabel(row: OrderExceptionRow) {
   if (row.exceptionType === 'SORTING_DIFFERENCE') return SCM_SORTING_RESULT_ENUM[row.sourceStatus]?.desc ?? row.sourceStatus;

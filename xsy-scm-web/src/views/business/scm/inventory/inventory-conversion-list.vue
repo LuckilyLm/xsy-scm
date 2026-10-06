@@ -352,7 +352,7 @@ const itemColumns: TableColumnsType = [
   {title: '目标商品规格（转入）', dataIndex: 'targetSkuId', width: 220},
   {title: '目标数量', dataIndex: 'targetQuantity', width: 120},
   {title: '目标单位', dataIndex: 'targetUnit', width: 90},
-  {title: '操作', dataIndex: 'action', width: 70},
+  {title: '操作', dataIndex: 'action', width: 70, align: 'center'},
 ];
 
 /** 待审核 = 待处理（橙），已完成 = 通过（绿），已驳回 = 拒绝（红）。 */

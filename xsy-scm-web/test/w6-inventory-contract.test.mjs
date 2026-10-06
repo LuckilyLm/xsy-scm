@@ -757,7 +757,9 @@ test('the outbound page drops the technical timestamp and keeps the confirm acti
   assert.doesNotMatch(page, /'orange'|'green'/, '状态色应由 tone 档位给出');
 
   // 操作列收窄到三个槽位（详情 / 确认出库 / 更多），不可撤销的确认出库留在行内
-  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 200/);
+  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 150/);
+  assert.match(page, /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:outbound:confirm/,
+      '确认出库是当前状态唯一的推进动作，必须留在行内');
   assert.match(page, /ScmActionMore/);
   assert.match(page, /key: 'edit', label: '编辑'/);
   assert.match(page, /key: 'cancel', label: '取消单据'/);
@@ -861,7 +863,9 @@ test('the stocktake page keeps the confirm action inline and re-counts copied ro
   assert.match(page, /DRAFT: 'warning'/);
   assert.match(page, /CONFIRMED: 'success'/);
   assert.match(page, /CANCELLED: 'neutral'/);
-  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 200/);
+  assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 150/);
+  assert.match(page, /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:stocktake:confirm/,
+      '确认盘点是当前状态唯一的推进动作，必须留在行内');
   assert.match(page, /key: 'copy', label: '复制到新建'/);
   assert.match(page, /key: 'delete', label: '删除', danger: true/);
   // 实盘量用 InputNumber（:min=0 允许「一件不剩」），提交走 fixed4

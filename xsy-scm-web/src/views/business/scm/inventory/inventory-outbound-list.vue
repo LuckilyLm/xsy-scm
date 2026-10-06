@@ -270,7 +270,7 @@ const columns = ref<TableColumnsType<InventoryOutbound>>([
   {title: '确认人', dataIndex: 'operator', width: 120},
   {title: '出库时间', dataIndex: 'confirmedAt', width: 170},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 200},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
 
 /** 草稿 = 待处理（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
@@ -285,7 +285,7 @@ const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '出库数量', dataIndex: 'quantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
-  {title: '操作', dataIndex: 'action', width: 80},
+  {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
 // 明细的规格编码是名称下方的次要信息，不再各占一列（与列表页同一口径）。

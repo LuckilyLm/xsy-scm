@@ -105,7 +105,7 @@ const columns: TableColumnsType<AgingRow> = [
     title: ['原金额', '红字金额', '净额', '已核销', '未核销余额'][index], dataIndex: key, width: 130,
     align: 'right' as const, customRender: ({text}: {text: string}) => moneyText(text),
   })),
-  {title: '操作', dataIndex: 'action', fixed: 'right', width: 100},
+  {title: '操作', dataIndex: 'action', fixed: 'right', width: 100, align: 'center'},
 ];
 
 async function load() {

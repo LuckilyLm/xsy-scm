@@ -131,11 +131,13 @@
           </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
+          <!-- 下钻是四个对等的只读跳转入口。按 §8「超过 3 个动作使用更多菜单」：
+               保留销售 / 采购两个最高频入口，收货入库与库存收进「更多」。
+               跳转不涉及写操作，因此没有权限需要裁剪。 -->
           <div class="scm-table-actions">
-            <a-button type="link" @click="goAnalysis('sales', record.bizDate)">销售</a-button>
-            <a-button type="link" @click="goAnalysis('purchase', record.bizDate)">采购</a-button>
-            <a-button type="link" @click="goAnalysis('receipt', record.bizDate)">收货入库</a-button>
-            <a-button type="link" @click="goAnalysis('inventory', record.bizDate)">库存</a-button>
+            <a-button type="link" size="small" @click="goAnalysis('sales', record.bizDate)">销售</a-button>
+            <a-button type="link" size="small" @click="goAnalysis('purchase', record.bizDate)">采购</a-button>
+            <ScmActionMore :actions="drilldownActions" @select="onDrilldown($event, record)"/>
           </div>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -155,6 +157,8 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
 import ReportLineChart from './report-components/report-line-chart.vue';
@@ -215,8 +219,21 @@ const columns = ref<TableColumnsType<ReportDailyStat>>([
     {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
     {title: '已提交采购金额', dataIndex: 'submittedPurchaseAmount', align: 'right', width: 160},
     {title: '采购入库成本金额', dataIndex: 'purchaseInCostAmount', align: 'right', width: 180},
-    {title: '下钻', dataIndex: 'action', align: 'center', fixed: 'right', width: 260},
+    {title: '下钻', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+
+/**
+ * 下钻「更多」里的两个入口。四个维度是并列的只读跳转，没有权限差异，
+ * 因此这里不裁剪 `hidden` —— 与写操作型菜单不同。
+ */
+const drilldownActions: ScmActionItem[] = [
+    {key: 'receipt', label: '收货入库'},
+    {key: 'inventory', label: '库存'},
+];
+
+function onDrilldown(key: string, record: ReportDailyStat) {
+    if (key === 'receipt' || key === 'inventory') goAnalysis(key, record.bizDate);
+}
 
 /** 成本列：无 `scm:report:cost:query` 时整列不出现（不是显示一串 `—`）。 */
 const COST_INDEXES = ['purchaseInCostAmount'];

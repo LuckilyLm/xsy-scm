@@ -330,7 +330,7 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '门槛金额', dataIndex: 'minOrderAmount', align: 'right', width: 130},
   {title: '有效期', dataIndex: 'validity', width: 220},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 200},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 
 const form = reactive<PromotionCouponSave>({

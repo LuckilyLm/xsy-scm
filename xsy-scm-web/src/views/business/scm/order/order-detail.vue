@@ -233,7 +233,8 @@ const columns: TableColumnsType<Item> = [{title: '商品', dataIndex: 'productNa
 }, {title: '结算金额', dataIndex: 'settlementLineAmount', align: 'right', width: 115}, {
   title: '操作',
   dataIndex: 'action',
-  width: 120
+  width: 120,
+  align: 'center'
 }];
 
 async function open(id: Id) {

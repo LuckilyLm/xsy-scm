@@ -327,7 +327,7 @@ const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '调拨数量', dataIndex: 'quantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
-  {title: '操作', dataIndex: 'action', width: 80},
+  {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
 /** 在途用醒目的橙色：它代表货不在任何仓库里，最容易被误读成丢失。 */

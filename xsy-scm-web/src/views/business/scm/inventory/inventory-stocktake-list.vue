@@ -300,7 +300,7 @@ const columns = ref<TableColumnsType<InventoryStocktake>>([
   {title: '确认人', dataIndex: 'operator', width: 130},
   {title: '确认时间', dataIndex: 'confirmedAt', width: 170},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
-  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 200},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
 
 const itemColumns: TableColumnsType = [
@@ -308,7 +308,7 @@ const itemColumns: TableColumnsType = [
   {title: '记账单位', dataIndex: 'unit', align: 'center', width: 100},
   {title: '实盘量', dataIndex: 'actualQuantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
-  {title: '操作', dataIndex: 'action', width: 80},
+  {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
 /** 草稿 = 盘点进行中（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
