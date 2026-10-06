@@ -24,7 +24,7 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
  * `CREATE/UPDATE/SUBMIT/CANCEL/SHORT_CLOSE/DELETE` 只有采购单 id · `RECEIPT_*` 双 id 非空。
  *
  * <p>
- * `beforeData` / `afterData` 写**全量快照**（修），格式与 的 `order_operation_log` 一致。
+ * `beforeData` / `afterData` 写**全量快照**，格式与订单域的 `order_operation_log` 一致。
  */
 @Data
 @TableName(value = "purchase_operation_log", autoResultMap = true)

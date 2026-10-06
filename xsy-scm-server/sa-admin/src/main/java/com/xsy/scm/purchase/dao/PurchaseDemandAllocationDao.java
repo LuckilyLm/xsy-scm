@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 采购需求分配（B 段，****）。
+ * 采购需求分配。
  *
  * <p>
  * allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}， 由

@@ -26,45 +26,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 采购快照装配（快照矩阵）。
+ * 采购快照装配。
  *
  * <p>
- * 快照矩阵的四个冻结时点：
- * <table border="1">
- * <tr>
- * <th>快照</th>
- * <th>落点</th>
- * <th>冻结时点</th>
- * </tr>
- * <tr>
- * <td>Supplier</td>
- * <td>{@code purchase_order} / {@code purchase_receipt}</td>
- * <td>创建 / 编辑时（DRAFT 可刷新）；收货单创建时继承</td>
- * </tr>
- * <tr>
- * <td>SKU</td>
- * <td>{@code purchase_order_item} / {@code purchase_receipt_item} / {@code purchase_demand}</td>
- * <td>创建 / 编辑时；收货单创建时继承；需求生成时</td>
- * </tr>
- * <tr>
- * <td>Purchase unit</td>
- * <td>{@code purchase_order_item.purchase_unit_snapshot}</td>
- * <td>创建 / 编辑时，来源 {@code supplier_sku.purchase_unit}</td>
- * </tr>
- * <tr>
- * <td>Purchase price</td>
- * <td>{@code purchase_order_item.purchase_price} + {@code line_amount}</td>
- * <td>创建 / 编辑时（人工确认值）</td>
- * </tr>
- * </table>
+ * 负责在业务约定的冻结时点生成采购、需求、收货相关快照。两条不变量： <b>{@code submit} 后永不回读主数据</b>、<b>收货单行不存价格</b>。
  *
  * <p>
- * **`submit` 后永不回读主数据**；**收货单行不存价格**。
+ * 完整冻结矩阵（四个快照 × 落点 × 冻结时点）见 {@code docs/architecture/purchase-snapshot.md} —— 那张表会随业务调整，写在类头里会与实现长期漂移。
  */
 public final class PurchaseSnapshotFactory {
 
     /**
-     * 与 的 `AT TIME ZONE 'Asia/Shanghai'` 字面量保持一致。
+     * 与 SQL 里的 `AT TIME ZONE 'Asia/Shanghai'` 字面量保持一致。
      */
     public static final ZoneId ASIA_SHANGHAI = ZoneId.of("Asia/Shanghai");
 
@@ -103,7 +76,7 @@ public final class PurchaseSnapshotFactory {
      * 采购单行快照。
      *
      * <p>
-     * <b></b>：`purchaseUnitSnapshot` 来自 `supplier_sku.purchase_unit`， **不是** `product_sku.sale_unit` ——
+     * <b>采购单位</b>：`purchaseUnitSnapshot` 来自 `supplier_sku.purchase_unit`， **不是** `product_sku.sale_unit` ——
      * 需求单位（销售单位）与采购单位是两个独立快照， 生成时冻结、永不互相覆盖。
      *
      * <p>
@@ -204,7 +177,7 @@ public final class PurchaseSnapshotFactory {
      * 需求快照装配（`generate` 用）。
      *
      * <p>
-     * <b></b>：`demandUnitSnapshot` 取 `sales_order_item.sale_unit_snapshot`（**销售单位**）， 生成时冻结、**永不改写**。它**不是**采购单位 ——
+     * <b>需求单位</b>：`demandUnitSnapshot` 取 `sales_order_item.sale_unit_snapshot`（**销售单位**）， 生成时冻结、**永不改写**。它**不是**采购单位 ——
      * 采购单位来自 `supplier_sku.purchase_unit` 并落在 `purchase_order_item.purchase_unit_snapshot`，两者在分配时做一致性校验。
      *
      * <p>

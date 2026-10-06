@@ -91,7 +91,7 @@ public class PurchaseDemandService {
      * `generate` 的返回体。
      *
      * <p>
-     * 与 的 `DEMAND_GENERATE` 日志 `after_data` 同构 —— 日志与返回值不是两套口径。 `skippedCount` 统计的是「来源行已存在活动需求」的数量（重复 generate
+     * 与 `DEMAND_GENERATE` 日志 `after_data` 同构 —— 日志与返回值不是两套口径。 `skippedCount` 统计的是「来源行已存在活动需求」的数量（重复 generate
      * 的正常结果，不是错误）。
      */
     @Data

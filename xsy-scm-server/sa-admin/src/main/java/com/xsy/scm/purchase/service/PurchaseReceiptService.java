@@ -72,7 +72,7 @@ import static com.xsy.scm.purchase.service.PurchaseReceiptSnapshotMapper.receipt
  * 采购收货命令服务。
  *
  * <p>
- * <b>收货单只有 2 个状态</b>：`DRAFT` 不产生任何副作用，`CONFIRMED` 只读。 「多次收货」由「一采购单多收货单」表达，不是同一张单反复确认（修）。
+ * <b>收货单只有 2 个状态</b>：`DRAFT` 不产生任何副作用，`CONFIRMED` 只读。 「多次收货」由「一采购单多收货单」表达，不是同一张单反复确认。
  *
  * <p>
  * <b>容差走 SmartAdmin 原生 Config</b>：{@link ConfigService#getConfig(String)} 读 `t_config`，缺失 → 回退 10，非法 → 40999。SCM
@@ -91,7 +91,7 @@ import static com.xsy.scm.purchase.service.PurchaseReceiptSnapshotMapper.receipt
  *
  * <p>
  * <b>应付接线</b>：{@code confirm} 把收货单置为 {@code CONFIRMED} 之后调用
- * {@link FinancePayableService#generateOnReceiptConfirm}，与库存写入同一个事务。 这里不需要 那样的接口：依赖方向是 purchase → finance，而 finance
+ * {@link FinancePayableService#generateOnReceiptConfirm}，与库存写入同一个事务。 这里不需要那样的接口：依赖方向是 purchase → finance，而 finance
  * 对采购表只读、 不反向 import 采购域，因此不存在环。
  */
 @Service

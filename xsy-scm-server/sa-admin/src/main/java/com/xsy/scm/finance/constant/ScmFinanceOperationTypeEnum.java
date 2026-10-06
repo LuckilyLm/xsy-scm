@@ -47,12 +47,12 @@ public enum ScmFinanceOperationTypeEnum {
     WRITE_OFF_REVERSE("核销撤销"),
 
     /**
-     * 反向收款（{@code scm:finance:receipt:reverse}， 的独立破坏性权限）。
+     * 反向收款（{@code scm:finance:receipt:reverse}，独立的破坏性权限）。
      */
     RECEIPT_REVERSE("收款反向"),
 
     /**
-     * 反向付款（{@code scm:finance:payment:reverse}， 的独立破坏性权限）。
+     * 反向付款（{@code scm:finance:payment:reverse}，独立的破坏性权限）。
      */
     PAYMENT_REVERSE("付款反向");
 

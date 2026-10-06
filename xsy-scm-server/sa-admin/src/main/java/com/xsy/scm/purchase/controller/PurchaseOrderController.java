@@ -42,11 +42,11 @@ import java.util.List;
  * 采购单端点（的 11 个端点）。
  *
  * <p>
- * 查询类走 `scm:purchase:query`，日志单独一个 `scm:purchase:log:query` （审计数据与业务数据分权，与 的 `scm:order:log:query` 一致）。
+ * 查询类走 `scm:purchase:query`，日志单独一个 `scm:purchase:log:query` （审计数据与业务数据分权，与订单域的 `scm:order:log:query` 一致）。
  *
  * <p>
  * `Idempotency-Key` 头一律声明为 {@code required = false}：缺失时由 {@code PurchaseIdempotencyService} 抛 40084，若标成必填会被框架转成 30001，
- * 与 的错误码契约不符（同 {@code PurchaseDemandController}）。
+ * 与错误码契约不符（同 {@code PurchaseDemandController}）。
  *
  * <p>
  * `update` **不带**幂等头 —— 它靠行级 `@Version` 保证重复提交安全。

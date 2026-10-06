@@ -11,7 +11,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
  * 采购单状态机（6 状态）。
  *
  * <p>
- * 实现为**声明式策略**，不是散落的 if。转换表与 的 `ck_purchase_order_status` 白名单、 以及 的 – 逐条对应。
+ * 实现为**声明式策略**，不是散落的 if。转换表与 `ck_purchase_order_status` 白名单逐条对应。
  *
  * <pre>
  * DRAFT ──submit──→ SUBMITTED ──收货确认──→ PARTIALLY_RECEIVED ──收货确认──→ RECEIVED
@@ -22,7 +22,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
  * </pre>
  *
  * <p>
- * <b></b>：{@code PARTIALLY_RECEIVED} **不允许 cancel**；需要终止时用 {@link #shortClosable} 对应的 {@code shortClose}。
+ * <b>部分收货不可取消</b>：{@code PARTIALLY_RECEIVED} **不允许 cancel**；需要终止时用 {@link #shortClosable} 对应的 {@code shortClose}。
  * <p>
  * {@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED} 是**终态**。
  */

@@ -21,7 +21,7 @@ import java.util.List;
  * {@code uk_finance_receipt_single_reverse} 保证一条 {@code NORMAL} 最多被反向一次。
  *
  * <p>
- * 的登记与 的反向都必须先 {@code SELECT … FOR UPDATE} 锁住原行 （{@code FinanceConstant.LOCK_RANK_RECEIPT}），再校验已用额；反向与核销共用这把锁，
+ * 收款登记与退款反向都必须先 {@code SELECT … FOR UPDATE} 锁住原行 （{@code FinanceConstant.LOCK_RANK_RECEIPT}），再校验已用额；反向与核销共用这把锁，
  * 因此「反向前已用额 = 0」这条前置在并发下才成立。
  */
 @Mapper
@@ -39,11 +39,9 @@ public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
      * 按系统来源键取正常收款事实（ADM-12 3-11a）。
      *
      * <p>
-     * 系统来源登记收款时先查这里：常见的重复驱动（同一笔支付被多次回调）在这一步就返回已有事实，
-     * 库上的 {@code uk_finance_receipt_source_active} 才是并发下真正的仲裁者。
+     * 系统来源登记收款时先查这里：常见的重复驱动（同一笔支付被多次回调）在这一步就返回已有事实， 库上的 {@code uk_finance_receipt_source_active} 才是并发下真正的仲裁者。
      */
-    FinanceReceiptEntity selectBySource(@Param("sourceType") String sourceType,
-            @Param("sourceId") Long sourceId);
+    FinanceReceiptEntity selectBySource(@Param("sourceType") String sourceType, @Param("sourceId") Long sourceId);
 
     /** Effective write-off amount (NORMAL minus REVERSE) for this source receipt. */
     BigDecimal selectEffectiveWriteOffAmount(@Param("receiptId") Long receiptId);

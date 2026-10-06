@@ -18,38 +18,11 @@ public interface PurchaseInventoryContract {
     String SOURCE_DOCUMENT_TYPE = "PURCHASE_RECEIPT_ITEM";
 
     /**
-     * Inventory fact represented by one confirmed purchase receipt item.
+     * 一张已确认收货行所代表的库存事实（采购域对库存域的中立契约）。
      *
-     * @param purchaseOrderId
-     *            purchase order identifier
-     * @param receiptId
-     *            receipt identifier
-     * @param receiptItemId
-     *            stable source item identifier
-     * @param warehouseId
-     *            warehouse identifier inherited from the purchase order
-     * @param skuId
-     *            product SKU identifier
-     * @param warehouseCode
-     *            warehouse code snapshot
-     * @param warehouseName
-     *            warehouse name snapshot
-     * @param skuCode
-     *            SKU code snapshot
-     * @param skuName
-     *            SKU name snapshot
-     * @param unit
-     *            purchase unit snapshot
-     * @param quantity
-     *            effective received quantity
-     * @param unitCost
-     *            purchase price snapshot
-     * @param idempotencyKey
-     *            stable duplicate-protection key
-     * @param occurredAt
-     *            persisted receipt confirmation time
-     * @param operator
-     *            persisted receipt operator
+     * <p>
+     * 数量是**有效收货量**、单位与成本都是采购侧的**快照**；{@code idempotencyKey} 是稳定防重键， {@code occurredAt} / {@code operator}
+     * 取**持久化的收货确认时刻与确认人**，不是写入时刻与当前登录人。
      */
     record InboundFact(Long purchaseOrderId, Long receiptId, Long receiptItemId, Long warehouseId, Long skuId,
             String warehouseCode, String warehouseName, String skuCode, String skuName, String unit,

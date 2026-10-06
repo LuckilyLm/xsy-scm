@@ -94,7 +94,7 @@ public class PurchaseOrderAllocationService {
         for (PurchaseOrderAddForm.Item itemForm : form.getItems()) {
             ProductSkuOptionVO sku = products.get(itemForm.getSkuId());
             if (sku == null) {
-                // 商品不存在 / 不可售：与 的采购判定入口共用同一个对外码（40992），
+                // 商品不存在 / 不可售：与商品域的采购判定入口共用同一个对外码（40992），
                 // 不让 的内部码从采购 API 泄漏出去
                 throw new ScmBusinessException(PURCHASE_SUPPLIER_SKU_DISABLED);
             }
@@ -111,7 +111,7 @@ public class PurchaseOrderAllocationService {
      * 校验分配集合并补全快照字段；返回「本次请求按 demandId 的合计」。
      *
      * <p>
-     * 逐条对应 B 段第 7 步与 的分配校验表。
+     * 逐条对应分配校验表。
      *
      * <p>
      * <b>累计上限必须扣除本单旧值</b>：`demand.allocated_quantity` 是**全库**已分配合计， 其中已含本单上一次提交的量。`create` 时本单尚无分配（传空 Map），`update`

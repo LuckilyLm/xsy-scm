@@ -20,7 +20,7 @@ import java.util.List;
  * {@code InventoryCommandService} 里 **先持行锁再调用**。本接口没有任何「设置绝对数量」的方法 —— 余额不是可以被随意赋值的状态， 它只能是流水的净和。
  *
  * <p>
- * <b></b>：{@link #insertOnConflictDoNothing} 的冲突目标与部分唯一索引 {@code uk_inventory_balance_wh_sku_active} **完全匹配**（含
+ * <b>冲突目标</b>：{@link #insertOnConflictDoNothing} 的冲突目标与部分唯一索引 {@code uk_inventory_balance_wh_sku_active} **完全匹配**（含
  * {@code WHERE deleted = FALSE} 谓词）。 业务代码不制造任何 PG 版本分支；该 SQL 由 PG IT 在真实 PostgreSQL 上执行验证。
  */
 @Mapper

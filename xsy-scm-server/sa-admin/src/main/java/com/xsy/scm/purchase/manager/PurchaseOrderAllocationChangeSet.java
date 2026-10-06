@@ -11,7 +11,7 @@ import java.util.Objects;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_ALLOCATION_DUPLICATE;
 
 /**
- * 采购单**分配级**差量（B 段，** 修订的核心**）。
+ * 采购单**分配级**差量。
  *
  * <p>
  * <b>allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}</b>， 由

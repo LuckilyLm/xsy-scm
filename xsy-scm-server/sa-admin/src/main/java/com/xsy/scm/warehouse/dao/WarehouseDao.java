@@ -14,7 +14,7 @@ import java.util.List;
  * 仓库读写。
  *
  * <p>
- * **没有删除方法**： 的仓库端点只有 list / query / detail / create / update， 仓库作为主数据不做逻辑删除。
+ * **没有删除方法**：仓库端点只有 list / query / detail / create / update， 仓库作为主数据不做逻辑删除。
  */
 @Mapper
 public interface WarehouseDao extends BaseMapper<WarehouseEntity> {
