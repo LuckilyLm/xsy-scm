@@ -117,13 +117,11 @@ public class PaymentRefundService {
 
         BigDecimal amount = form.getAmount().setScale(SCALE, RoundingMode.HALF_UP);
 
-        // <b>业务来源校验必须早于 provider.refund()</b>：这里任何一条不成立，渠道的钱都还没动。
-        // 留到 3-11b 由 Finance 侧拒绝就晚了 —— 那时渠道已经把钱退出去了，数据库拒绝没有意义。
+        // 业务来源校验必须早于 provider.refund()：渠道的钱一旦退出去就无法回退，
+        // 那时才由 Finance 侧拒绝已经没有意义 —— 数据库拒绝改变不了资金已经动了的事实。
         //
-        // 当前阶段唯一受支持的正式退款来源就是售后退款，因此<b>强制要求</b>来源，不接受无来源退款：
-        // 无来源的渠道退款会在 Finance 侧落不下付款事实（付款必须挂业务退款单），
-        // 而钱那时已经退出去了。将来若需要「渠道技术退款 / 人工补退」，另开内部命令，
-        // 不要借这个正式入口绕开业务退款事实。
+        // 正式退款必须关联售后退款事实：付款事实要挂在业务退款单上，
+        // 无来源的渠道退款在 Finance 侧落不下账。
         requireOrderRefundSource(form, transaction, amount);
 
         BigDecimal refundable = refundableOf(transaction);
@@ -176,7 +174,7 @@ public class PaymentRefundService {
             case SUCCEEDED -> {
                 if (providerAmount == null || providerAmount.signum() <= 0) {
                     // 没有渠道实退金额就不算退成功：硬写会让「退了多少」无从回答，
-                    // 3-11b 也无法据此登记资金反向事实。宁可失败，让渠道重试带全信息。
+                    // 无法据此登记资金反向事实。宁可失败，让渠道重试带全信息。
                     throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_PROVIDER_AMOUNT_MISSING);
                 }
                 paymentRefundDao.markSucceeded(refundId, providerRefundNo,
@@ -244,7 +242,7 @@ public class PaymentRefundService {
     }
 
     /**
-     * 退款成功 → Finance 付款事实（ADM-12 3-11b）。
+     * 退款成功 → Finance 付款事实（ADM-12）。
      *
      * <p>
      * 复用财务域 {@code finance_payment} 的 {@code CUSTOMER + ORDER_REFUND}，唯一来源键是

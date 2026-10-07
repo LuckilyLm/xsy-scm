@@ -31,7 +31,7 @@ export const SCM_INVENTORY_MOVEMENT_TYPE_ENUM: SmartEnum<string> = {
     TRANSFER_IN: {value: 'TRANSFER_IN', desc: '调拨转入'},
     CONVERT_OUT: {value: 'CONVERT_OUT', desc: '规格转换出'},
     CONVERT_IN: {value: 'CONVERT_IN', desc: '规格转换入'},
-    /** 满赠赠品出库：方向为「出」，但来源是赠品权益而不是订单行（ADM-12 3-5b）。 */
+    /** 满赠赠品出库：方向为「出」，但来源是赠品权益而不是订单行（ADM-12）。 */
     PROMOTION_GIFT_OUT: {value: 'PROMOTION_GIFT_OUT', desc: '促销赠品出库'},
 };
 

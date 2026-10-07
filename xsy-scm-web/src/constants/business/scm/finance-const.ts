@@ -39,9 +39,9 @@ export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
 /**
  * 收款方式（与后端 `ScmFinanceReceiptMethodEnum` 逐字对应）。
  *
- * 与付款方式刻意分开：在线支付是收款侧才有的资金渠道（ADM-12 3-11a）。
+ * 与付款方式刻意分开：在线支付是收款侧才有的资金渠道（ADM-12）。
  * 没有 COD —— 它是「什么时候收钱」的结算时机，不是实际收款渠道。
- * 也没有 BALANCE —— 余额消费不是实际资金进入，不产生收款事实（ADM-12 3-12a 撤销）。
+ * 也没有 BALANCE —— 余额消费不是实际资金进入，不产生收款事实（ADM-12）。
  */
 export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
     CASH: {value: 'CASH', desc: '现金'},

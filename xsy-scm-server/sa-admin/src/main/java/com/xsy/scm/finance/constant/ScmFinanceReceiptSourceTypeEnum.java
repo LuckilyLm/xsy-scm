@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmFinanceReceiptSourceTypeEnum {
 
-    /** 来源是支付域的交易事实：{@code source_id = payment_transaction.id}（ADM-12 3-11a）。 */
+    /** 来源是支付域的交易事实：{@code source_id = payment_transaction.id}（ADM-12）。 */
     PAYMENT_TRANSACTION("支付交易");
 
     private final String desc;

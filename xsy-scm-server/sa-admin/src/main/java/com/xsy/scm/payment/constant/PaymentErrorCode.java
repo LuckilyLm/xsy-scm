@@ -48,10 +48,11 @@ public enum PaymentErrorCode implements ScmErrorCode {
     PAYMENT_PROVIDER_AMOUNT_MISMATCH(41352, "渠道回报金额与本地应付金额不一致"),
 
     /**
-     * 该支付方式尚未启用。
+     * 该支付方式尚未启用：明确拒绝，而不是让它悄悄落到外部渠道上。
      *
      * <p>
-     * 余额（{@code BALANCE}）的余额流水与扣减是 ADM-12 3-12 的内容；在它落地之前， 这里<b>明确拒绝</b>而不是让它悄悄走到外部渠道上去。
+     * 余额（{@code BALANCE}）抵扣不经过外部渠道，必须由余额流水与扣减配套落地（ADM-12）；
+     * 这条链路未接通时宁可拒绝，避免出现「渠道无出款记录、余额也未扣减」的资金事实。
      */
     PAYMENT_METHOD_NOT_ENABLED(41353, "该支付方式尚未启用"),
 

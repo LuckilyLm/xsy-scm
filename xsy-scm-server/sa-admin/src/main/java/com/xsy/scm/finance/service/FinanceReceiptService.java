@@ -114,7 +114,7 @@ public class FinanceReceiptService {
         if (original.getSourceType() != null) {
             // 人工 reverse 的语义是「整笔登记错了，撤销这笔登记」，而支付退款是<b>业务退款</b>：
             // 可能部分、可能多次（100 退 30 再退 20）。现有 REVERSE 模型表达不了，
-            // 硬套会把「退款」记成「纠错」，审计上再也分不开。退款资金反向另行设计（3-11b）。
+            // 硬套会把「退款」记成「纠错」，审计上再也分不开。退款的资金反向由付款事实表达。
             throw new ScmBusinessException(FinanceErrorCode.SYSTEM_RECEIPT_REVERSE_FORBIDDEN);
         }
 
@@ -150,7 +150,7 @@ public class FinanceReceiptService {
     }
 
     /**
-     * 系统入口：支付交易成功后登记收款事实（ADM-12 3-11a）。
+     * 系统入口：支付交易成功后登记收款事实（ADM-12）。
      *
      * <p>
      * <b>不复用人工的 {@code add(FinanceReceiptAddForm)}</b>：那个入口的字段假设「有人在填」，方式、时点、外部凭据都由人给。系统来源必须由财务域自己决定这些 ——

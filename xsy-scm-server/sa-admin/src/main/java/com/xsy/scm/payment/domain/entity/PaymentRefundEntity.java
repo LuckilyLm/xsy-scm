@@ -40,7 +40,7 @@ public class PaymentRefundEntity {
      * <b>渠道实际退款金额</b>。成功态必有值（库上有 CHECK）。
      *
      * <p>
-     * 与 {@link #amount} 分开：申请 100 而渠道实际退了 98 是可能发生的， 3-11b 的资金反向事实认的是这一列，不是申请额。
+     * 与 {@link #amount} 分开：申请 100 而渠道实际退了 98 是可能发生的， 资金反向事实认的是这一列，不是申请额。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal providerAmount;

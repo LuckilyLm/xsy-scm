@@ -302,7 +302,7 @@ public class PaymentIntentService {
     }
 
     /**
-     * 支付成功 → Finance 收款事实（ADM-12 3-11a）。
+     * 支付成功 → Finance 收款事实（ADM-12）。
      *
      * <p>
      * <b>同一事务</b>：Finance 写失败就整笔回滚，本地不会留下「已成功但没登记收款」的半截事实。渠道事实不回滚 —— 那正是对账要发现、并靠下一次回调重新驱动的差异。

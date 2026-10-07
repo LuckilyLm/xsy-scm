@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 余额只读查询（ADM-12 3-12a）。
+ * 余额只读查询（ADM-12）。
  *
  * <p>
  * <b>数据范围 fail-closed</b>：范围为空时列表直接返回空页（SQL 里是 {@code AND FALSE}）， 概览直接拒绝。不做「无范围即全量」的宽松处理 —— 那是 fail-open，而余额是客户的钱。

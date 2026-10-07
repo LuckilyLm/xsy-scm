@@ -261,7 +261,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 系统入口：渠道退款成功后登记付款事实（ADM-12 3-11b）。
+     * 系统入口：渠道退款成功后登记付款事实（ADM-12）。
      *
      * <p>
      * <b>不复用人工的 {@code add(FinancePaymentAddForm)}</b>：那个入口假设「有人在填」。 系统来源固定生成

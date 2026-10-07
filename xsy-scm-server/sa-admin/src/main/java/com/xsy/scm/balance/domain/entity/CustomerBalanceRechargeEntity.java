@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 充值请求事实（ADM-12 3-12b）。
+ * 充值请求事实（ADM-12）。
  *
  * <p>
  * <b>只有业务身份，没有支付状态机</b>：{@code CREATED / PAYING / SUCCESS / FAILED} 那些状态 已经由 {@code payment_intent} 与

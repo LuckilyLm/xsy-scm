@@ -209,7 +209,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 充值支付成功 → 钱包权益增加（ADM-12 3-12b，{@link BalanceRechargeSink} 的实现）。
+     * 充值支付成功 → 钱包权益增加（ADM-12，{@link BalanceRechargeSink} 的实现）。
      *
      * <p>
      * <b>入账金额取渠道实收</b>：钱包进多少必须等于公司真收多少。渠道实收 98 而充值申请 100 时，记 98 并留下告警 —— 与退款那条口径（不一致就不落账）刻意不同：

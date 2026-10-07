@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 在线充值（ADM-12 3-12b）。
+ * 在线充值（ADM-12）。
  *
  * <p>
  * 链路：解析客户 → 解析结算主体 → 校验数据范围 → Idempotency-Key，落 {@code customer_balance_recharge}（谁往哪个钱包充多少），再创建
