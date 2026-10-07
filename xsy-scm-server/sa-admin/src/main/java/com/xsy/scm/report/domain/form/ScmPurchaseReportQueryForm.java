@@ -14,6 +14,10 @@ import com.xsy.scm.report.support.ScmReportDateFilter;
  * <p>
  * <b>日期是「提交日期」</b>：采购事实从提交起才成立，草稿没有承诺量也没有价格事实。默认统计 {@code SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED}， 排除
  * {@code DRAFT} 与 {@code CANCELLED}（由 SQL 固定，不开放给调用方改写）。
+ *
+ * <p>
+ * 本表单同时服务分页端点（按商品 / 按供应商 / 按采购员 / 采购明细）与非分页端点（采购概览 / 价格波动）。非分页端点不接受分页参数，控制器对它们不加 {@code @Valid}，因此继承自 {@code PageParam}
+ * 的 {@code pageNum} / {@code pageSize} 只在分页端点上必填；日期缺失仍由 {@code ScmReportTimeRangeResolver} 拒绝。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
