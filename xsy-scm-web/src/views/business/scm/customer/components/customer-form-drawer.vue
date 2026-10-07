@@ -21,9 +21,9 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="客户编码" name="customerCode"
-                           :rules="[{ required: true, whitespace: true, message: '请输入客户编码' }]">
-                <a-input v-model:value="form.customerCode" :maxlength="64" placeholder="保存时自动转为大写"/>
+              <a-form-item label="客户编码">
+                <span v-if="isEdit" class="scm-form-readonly">{{ form.customerCode || '—' }}</span>
+                <span v-else class="scm-form-readonly">保存后由系统自动生成</span>
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">

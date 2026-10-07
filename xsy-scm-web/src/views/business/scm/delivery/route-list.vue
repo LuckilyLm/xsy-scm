@@ -114,8 +114,8 @@
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button type="link" size="small" @click="details?.open(record.id)">详情</a-button>
-            <a-button type="link" size="small" @click="details?.open(record.id, 'map')">路线</a-button>
+            <a-button type="link" size="small" @click="openDetail(record.id, 'base')">详情</a-button>
+            <a-button type="link" size="small" @click="openDetail(record.id, 'map')">路线</a-button>
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
         </template>
@@ -134,13 +134,12 @@
     </div>
   </a-card>
   <RouteFormDrawer ref="formDrawer" @saved="created"/>
-  <RouteDetail ref="details" @changed="load"/>
   <RoutePrint ref="printer"/>
 </template>
 <script setup lang="ts">
-import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, reactive, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
-import {useRoute} from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
@@ -165,7 +164,6 @@ import {
 import {money} from './delivery-display';
 import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import RouteFormDrawer from './components/route-form-drawer.vue';
-import RouteDetail from './route-detail.vue';
 import RoutePrint from './route-print.vue';
 
 const query = reactive<Query>({pageNum: 1, pageSize: 20});
@@ -187,7 +185,6 @@ const warehouses = ref<Warehouse[]>([]),
     vehicles = ref<Vehicle[]>([]),
     area = ref<AreaNode[]>([]);
 const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
-    details = ref<InstanceType<typeof RouteDetail>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
 // 金额列按权限出现：服务端已把无权限的 totalAmount 抹成 null，这里决定要不要留这一格。
@@ -258,6 +255,12 @@ function onRowAction(key: string, record: DeliveryRoute) {
     printer?.value?.open(record.id);
   }
 }
+
+/** 详情与路线都进独立详情页，仅 Tab 不同：路线直达地图工作台。 */
+function openDetail(id: Id, targetTab: 'base' | 'map' | 'orders') {
+  void router.push({path: `/delivery/routes/${id}`, query: {tab: targetTab}});
+}
+
 let generation = 0;
 
 async function load() {
@@ -312,7 +315,7 @@ function reset() {
 
 function created(id: Id) {
   load();
-  details.value?.open(id, 'orders');
+  openDetail(id, 'orders');
 }
 
 // 待办卡片带 `?status=DRAFT`（待排线线路）：点进来必须看到同一批数据。
@@ -321,6 +324,7 @@ function created(id: Id) {
 const ROUTE_DEEP_LINK = {status: Object.keys(routeStatuses)};
 
 const route = useRoute();
+const router = useRouter();
 const routesRouteName = route.name;
 
 watch(
@@ -334,9 +338,7 @@ watch(
       load();
       const id = incomingQuery.routeId;
       if (typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) {
-        void nextTick(() => {
-          if (route.name === routesRouteName && route.query.routeId === id) details.value?.open(id, 'orders');
-        });
+        openDetail(id, 'orders');
       }
     },
     {immediate: true}

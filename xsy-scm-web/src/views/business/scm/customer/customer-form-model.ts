@@ -80,9 +80,6 @@ export function applyCreditPeriodUnit(form: CustomerForm, unit?: 'DAY' | 'MONTH'
 }
 
 export function validateCustomer(form: CustomerForm): string | undefined {
-    if (!form.customerCode?.trim()) {
-        return '请输入客户编码';
-    }
     if (!form.name?.trim()) {
         return '请输入客户名称';
     }
@@ -133,7 +130,6 @@ export function toCustomerPayload(form: CustomerForm): CustomerForm {
     };
     return {
         ...form,
-        customerCode: (form.customerCode ?? '').trim().toUpperCase(),
         name: (form.name ?? '').trim(),
         parentCustomerId: form.parentCustomerId ?? null,
         sellerId: form.sellerId ?? null,

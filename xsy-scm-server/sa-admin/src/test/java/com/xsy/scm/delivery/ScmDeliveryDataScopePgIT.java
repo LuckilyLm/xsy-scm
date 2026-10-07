@@ -108,7 +108,6 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
 
     private Long newWarehouse() {
         var warehouse = new WarehouseAddForm();
-        warehouse.setWarehouseCode(prefix + "-WH");
         warehouse.setName("范围 IT 仓");
         warehouse.setLongitude(new BigDecimal("113.9"));
         warehouse.setLatitude(new BigDecimal("22.5"));

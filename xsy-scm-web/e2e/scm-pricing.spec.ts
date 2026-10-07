@@ -79,7 +79,8 @@ test('pricing resolver keeps price and sale eligibility independent', async ({ p
   const types = await (await api.post('/scm/customer/type/option/list', { data: {} })).json();
   expect(types.code).toBe(0); const typeId = types.data[0].typeId;
   const prefix = name.toUpperCase();
-  const customer = await (await api.post('/scm/customer/add', { data: { customerCode: prefix, name: prefix, customerTypeId: typeId, settleMode: 'INDEPENDENT' } })).json();
+  // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
+  const customer = await (await api.post('/scm/customer/add', { data: { name: prefix, customerTypeId: typeId, settleMode: 'INDEPENDENT' } })).json();
   expect(customer.code).toBe(0); customerId = customer.data;
   const detail = await (await api.get(`/scm/customer/detail/${customerId}`)).json();
   await api.post('/scm/customer/updateStatus', { data: { customerId, version: detail.data.version, status: 'COOPERATING' } });

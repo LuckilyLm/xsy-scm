@@ -26,6 +26,9 @@ import java.util.List;
  *
  * <p>
  * <b>刻意不含 {@code status}</b>：状态变更走独立的 {@code /scm/customer/updateStatus} 端点，新客户的初始状态由 Service 固定为 {@code POTENTIAL}。
+ *
+ * <p>
+ * <b>刻意不含 {@code customerCode}</b>：客户编码由服务端生成（{@code ScmBusinessNoService}），客户端传入的值不会被采信。
  */
 @Data
 public class CustomerAddForm extends ScmLocationForm {
@@ -34,10 +37,6 @@ public class CustomerAddForm extends ScmLocationForm {
     @Valid
     @Size(max = 500, message = "商品可见性清单不能超过500项")
     private List<CustomerSkuVisibilityItemForm> visibilities;
-
-    @NotBlank(message = "客户编码不能为空")
-    @Size(max = 64, message = "客户编码不能超过64个字符")
-    private String customerCode;
 
     @NotBlank(message = "客户名称不能为空")
     @Size(max = 150, message = "客户名称不能超过150个字符")

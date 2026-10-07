@@ -1,11 +1,12 @@
 package com.xsy.scm.customer.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xsy.scm.common.constant.ScmCustomerStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.constant.ScmSettleModeEnum;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.no.ScmBusinessNoService;
+import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.util.ScmDecimalStrings;
@@ -39,7 +40,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADA
  * 客户写路径。
  *
  * <p>
- * 所有写方法都在事务内，并按固定顺序执行：校验 → 读取并比对版本 → 归属校验 → 查重 → 落库。顺序固定是为了让并发场景下的失败原因可预测（版本冲突永远先于编码冲突暴露）。
+ * 所有写方法都在事务内，并按固定顺序执行：校验 → 读取并比对版本 → 归属校验 → 落库。顺序固定是为了让并发场景下的失败原因可预测（版本冲突永远先于其他业务冲突暴露）。
  */
 @Service
 @RequiredArgsConstructor
@@ -58,6 +59,8 @@ public class CustomerService {
     private final CustomerValidator customerValidator;
 
     private final CustomerTypeService customerTypeService;
+
+    private final ScmBusinessNoService businessNoService;
 
     /**
      * 读取客户，不存在或已删除 → 40430。
@@ -141,12 +144,8 @@ public class CustomerService {
         customerTypeService.requireSelectableType(form.getCustomerTypeId());
         customerValidator.validateParent(form.getParentCustomerId(), null);
 
-        String code = CustomerValidator.normalizeCode(form.getCustomerCode());
-        if (existsCode(code, null)) {
-            throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
-        }
-
         CustomerEntity entity = new CustomerEntity();
+        entity.setCustomerCode(businessNoService.next(ScmBusinessNoType.CUSTOMER));
         apply(entity, form);
         entity.setSellerId(resolveSellerOnCreate(form.getSellerId()));
         entity.setStatus(INITIAL_STATUS);
@@ -173,11 +172,6 @@ public class CustomerService {
         CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
         customerTypeService.requireSelectableType(form.getCustomerTypeId());
         customerValidator.validateParent(form.getParentCustomerId(), form.getCustomerId());
-
-        String code = CustomerValidator.normalizeCode(form.getCustomerCode());
-        if (existsCode(code, form.getCustomerId())) {
-            throw new ScmBusinessException(CUSTOMER_CODE_DUPLICATE);
-        }
 
         // apply 不触碰 status；状态只能通过 updateStatus 变更。
         // 也不触碰 seller_id —— 归属只能通过 reassignSeller 变更（裁决 第 6 条）：
@@ -268,18 +262,6 @@ public class CustomerService {
     }
 
     /**
-     * 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。
-     */
-    public boolean existsCode(String normalizedCode, Long excludeId) {
-        LambdaQueryWrapper<CustomerEntity> wrapper = new LambdaQueryWrapper<CustomerEntity>()
-                .eq(CustomerEntity::getCustomerCode, normalizedCode);
-        if (excludeId != null) {
-            wrapper.ne(CustomerEntity::getId, excludeId);
-        }
-        return customerDao.selectCount(wrapper) > 0;
-    }
-
-    /**
      * 删除前检查客户 SKU 可见性引用。
      *
      * <p>
@@ -296,7 +278,6 @@ public class CustomerService {
         else if (entity.getVisibilityPolicy() == null) {
             entity.setVisibilityPolicy(CustomerVisibilityPolicy.ALL_ENABLED);
         }
-        entity.setCustomerCode(CustomerValidator.normalizeCode(form.getCustomerCode()));
         entity.setName(CustomerValidator.normalizeName(form.getName()));
         entity.setCustomerTypeId(form.getCustomerTypeId());
         entity.setSettleMode(form.getSettleMode());

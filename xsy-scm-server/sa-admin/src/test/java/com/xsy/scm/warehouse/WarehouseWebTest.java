@@ -159,14 +159,19 @@ class WarehouseWebTest {
     }
 
     @Test
-    @DisplayName("MVC 校验失败仍是 30001：编码空白 / 名称缺失")
+    @DisplayName("MVC 校验：编码不再必填（服务端生成）；名称缺失 / 全空白 → 30001")
     void validatesForm() throws Exception {
+        // 不提交编码、名称合法 → 通过 MVC 校验到达 service
         mvc.perform(post("/scm/warehouse/create").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"warehouseCode\":\"   \",\"name\":\"二号仓\"}"))
+                        .content("{\"name\":\"二号仓\"}"))
+                .andExpect(jsonPath("$.code").value(0));
+
+        mvc.perform(post("/scm/warehouse/create").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"   \"}"))
                 .andExpect(jsonPath("$.code").value(30001));
 
         mvc.perform(post("/scm/warehouse/create").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"warehouseCode\":\"WH002\"}"))
+                        .content("{}"))
                 .andExpect(jsonPath("$.code").value(30001));
     }
 

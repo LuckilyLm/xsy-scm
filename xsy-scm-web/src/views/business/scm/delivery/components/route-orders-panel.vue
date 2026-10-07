@@ -8,8 +8,38 @@
         @click="emit('addOrders')"
     >加入订单
     </a-button>
+    <span class="order-count">共 {{ orders.length }} 单</span>
+  </div>
+  <!-- 1~3 行用轻量列表：一两条数据铺一张宽表格，下面会空出一大片 -->
+  <a-empty v-if="!orders.length" description="还没有订单，请先加入订单"/>
+  <div v-else-if="orders.length <= 3" class="order-cards">
+    <div v-for="record in orders" :key="record.id" class="order-card">
+      <div class="order-card__head">
+        <strong class="scm-mono">{{ record.orderNoSnapshot }}</strong>
+        <span v-if="canViewAmount" class="scm-money">{{ money(record.orderAmountSnapshot) }}</span>
+      </div>
+      <p class="order-card__line">{{ stopOf(record.stopId)?.stopSeq }} · {{ stopOf(record.stopId)?.customerNameSnapshot }}</p>
+      <p class="order-card__line order-card__line--muted">{{ stopOf(record.stopId)?.addressSnapshot }}</p>
+      <p class="order-card__line order-card__line--muted">期望配送 {{ datetime(record.expectDeliveryTimeSnapshot) }}</p>
+      <div class="order-card__foot">
+        <a-tag :color="isLocated(stopOf(record.stopId) ?? {}) ? 'green' : 'default'">
+          {{ isLocated(stopOf(record.stopId) ?? {}) ? '已定位' : '未定位' }}
+        </a-tag>
+        <a-button
+            v-if="routeStatus === 'DRAFT'"
+            type="link"
+            danger
+            size="small"
+            v-privilege="'scm:delivery:route:update'"
+            :disabled="busy"
+            @click="emit('removeOrder', record.orderId)"
+        >移除
+        </a-button>
+      </div>
+    </div>
   </div>
   <a-table
+      v-else
       id="scm-delivery-route-orders"
       size="small"
       :columns="orderColumns"
@@ -89,3 +119,45 @@ function stopOf(id: Id) {
   return props.stops.find((stop) => String(stop.id) === String(id));
 }
 </script>
+
+<style scoped>
+.order-count {
+  margin-left: 12px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 13px;
+}
+
+.order-cards {
+  display: grid;
+  gap: 12px;
+}
+
+.order-card {
+  padding: 12px 16px;
+  border: 1px solid var(--scm-border, #f0f0f0);
+  border-radius: 8px;
+}
+
+.order-card__head,
+.order-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.order-card__line {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.order-card__line--muted {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 13px;
+}
+
+.order-card__foot {
+  margin-top: 8px;
+  justify-content: flex-start;
+}
+</style>

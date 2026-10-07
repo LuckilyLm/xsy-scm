@@ -38,8 +38,8 @@ test.describe('Wave 7 客户 360° 只读上下文', () => {
     const employees = await (await admin.post('/employee/query', {data: {pageNum: 1, pageSize: 1}})).json();
     expect(employees.code, `查询员工失败：${employees.msg}`).toBe(0);
     const suffix = randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase();
+    // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码；用例全部按 customerId 定位。
     const created = await (await admin.post('/scm/customer/add', {data: {
-      customerCode: `W7CUS${suffix}`,
       name: `W7 客户 360 ${suffix}`,
       customerTypeId: types.data.list[0].typeId,
       settleMode: 'INDEPENDENT',

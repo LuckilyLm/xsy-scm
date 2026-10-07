@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
-import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_CODE_DUPLICATE;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -95,16 +94,6 @@ class SupplierControllerTest {
         mvc.perform(get("/scm/supplier/detail/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(40440));
-    }
-
-    @Test
-    @DisplayName("供应商编码重复 → 40944")
-    void mapsDuplicateCode() throws Exception {
-        doThrow(new ScmBusinessException(SUPPLIER_CODE_DUPLICATE)).when(service).add(any());
-
-        mvc.perform(post("/scm/supplier/add").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"supplierCode\":\"S001\",\"name\":\"基地\"}"))
-                .andExpect(jsonPath("$.code").value(40944));
     }
 
     @Test

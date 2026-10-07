@@ -63,12 +63,14 @@ test.beforeAll(async()=>{
  // 仓库：用 V15 播种的默认仓（W5 只做「新建 / 编辑基础信息」，无启停写入路径 → G1）
  const warehouses=await get('/scm/warehouse/list');warehouseId=String((warehouses.find((w:any)=>w.warehouseCode==='WH001')??warehouses[0]).id);
  const types=await post('/scm/customer/type/option/list',{});
- customerId=await post('/scm/customer/add',{customerCode:name.toUpperCase(),name:name,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W5验收',contactPhone:'13800000000',address:'验收地址'});
+ // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
+ customerId=await post('/scm/customer/add',{name:name,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W5验收',contactPhone:'13800000000',address:'验收地址'});
  const customer=await get('/scm/customer/detail/'+customerId);await post('/scm/customer/updateStatus',{customerId,version:customer.version,status:'COOPERATING'});
  const tree=await post('/scm/product/category/tree',{});const flatten=(rows:any[]):any[]=>rows.flatMap(x=>[x,...flatten(x.children??[])]);const category=flatten(tree).find(x=>x.level===3)??flatten(tree)[0];
  await post('/scm/product/add',{spuCode:name.toUpperCase(),name:name+'商品',categoryId:category.categoryId,status:'ON_SHELF',images:[],skuList:[{skuCode:name.toUpperCase()+'-KG',specName:'散装',specValues:{规格:'散装'},saleUnit:'kg',productType:'NON_STANDARD',marketPrice:'3.5000',status:'ON_SHELF',defaultFlag:true,sortOrder:0},{skuCode:name.toUpperCase()+'-BOX',specName:'整箱',specValues:{规格:'整箱'},saleUnit:'箱',productType:'STANDARD',marketPrice:'0.0000',status:'ON_SHELF',defaultFlag:false,sortOrder:1}]});
  const options=(await post('/scm/product/sku/option-list',{keyword:name,limit:10})).options;skuId=String(options.find((x:any)=>x.specName==='散装').skuId);const boxSkuId=String(options.find((x:any)=>x.specName==='整箱').skuId);
- supplierId=await post('/scm/supplier/add',{supplierCode:name.toUpperCase(),name:name+'供应商'});
+ // 供应商编码由服务端生成（SUP + 6 位序号），创建载荷不再提交编码。
+ supplierId=await post('/scm/supplier/add',{name:name+'供应商'});
  // 采购单位必须与需求单位（= 销售单位）一致，否则 Q17 直接 40971；这里逐个对齐。
  await post('/scm/supplier/sku/replace',{supplierId,items:[{skuId,purchaseUnit:'kg',defaultFlag:true,status:'ENABLED'},{skuId:boxSkuId,purchaseUnit:'箱',defaultFlag:false,status:'ENABLED'}]});
 });

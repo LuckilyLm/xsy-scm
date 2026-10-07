@@ -133,8 +133,8 @@ export async function openFinanceHarness(): Promise<FinanceHarness> {
 }
 
 async function createSupplier(harness: FinanceHarness, suffix: string, skuIds: string[]) {
+    // 供应商编码由服务端生成（SUP + 6 位序号），创建载荷不再提交编码；后续步骤按 supplierId 使用。
     const supplierId = String(await call(harness.admin, 'post', '/scm/supplier/add', {
-        supplierCode: `${harness.runTag}-${suffix}-SUP`.toUpperCase(),
         name: `${harness.runTag}供应商${suffix}`,
     }));
     await call(harness.admin, 'post', '/scm/supplier/sku/replace', {

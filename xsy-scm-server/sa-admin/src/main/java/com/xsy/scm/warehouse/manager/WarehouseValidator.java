@@ -10,19 +10,11 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
  * 仓库单条业务规则（纯函数，无 Spring 依赖）。
  *
  * <p>
- * 仓库是薄主数据，规则只有三条：编码归一化、名称归一化、状态取值域。 「编码重复」不是本类的职责 —— 它由 {@code uk_warehouse_code_active} 唯一索引 +
- * {@code WarehouseService} 的显式查重共同保证。
+ * 编码由服务端生成（{@code ScmBusinessNoService}），不参与表单校验；「编码重复」由 {@code uk_warehouse_code_active} 唯一索引兜底。 本类保留名称归一化、名称必填与状态取值域三条规则。
  */
 public final class WarehouseValidator {
 
     private WarehouseValidator() {
-    }
-
-    /**
-     * 编码归一化：去首尾空白并转大写。
-     */
-    public static String normalizeCode(String raw) {
-        return raw == null ? null : raw.trim().toUpperCase(java.util.Locale.ROOT);
     }
 
     /**
@@ -51,11 +43,10 @@ public final class WarehouseValidator {
     }
 
     /**
-     * 编码 / 名称必填校验（非 MVC 入口用）。
+     * 名称必填校验（非 MVC 入口用）。
      */
     public static void validateRequired(WarehouseAddForm form) {
-        if (form == null || form.getWarehouseCode() == null || form.getWarehouseCode().trim().isEmpty()
-                || form.getName() == null || form.getName().trim().isEmpty()) {
+        if (form == null || form.getName() == null || form.getName().trim().isEmpty()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
     }

@@ -180,15 +180,17 @@ test.beforeAll(async () => {
     expect(sku, '报表夹具需要至少一个已上架且 SPU 同样上架的 SKU').toBeTruthy();
     skuId = String(sku.skuId);
     standardSku = sku.productType === 'STANDARD';
+    // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
     customerId = String(await post('/scm/customer/add', {
-        customerCode: name.toUpperCase(), name, customerTypeId: (await post('/scm/customer/type/option/list', {}))[0].typeId,
+        name, customerTypeId: (await post('/scm/customer/type/option/list', {}))[0].typeId,
         settleMode: 'INDEPENDENT', contactName: 'R0验收', contactPhone: '13800000000', address: '验收地址',
     }));
     // 新建客户是 POTENTIAL（潜在）状态，不可交易（40930）；下单前先转成合作中
     const cust = await get('/scm/customer/detail/' + customerId);
     await post('/scm/customer/updateStatus', {customerId, version: cust.version, status: 'COOPERATING'});
+    // 供应商编码同样由服务端生成（SUP + 6 位序号）。
     supplierId = String(await post('/scm/supplier/add', {
-        supplierCode: name.toUpperCase(), name, contactName: 'R0验收', contactPhone: '13800000000', address: '验收地址',
+        name, contactName: 'R0验收', contactPhone: '13800000000', address: '验收地址',
     }));
     // 采购单要求供应商已启用该 SKU 的采购配置（40992），否则采购事实根本不成立
     await post('/scm/supplier/sku/replace', {

@@ -145,7 +145,8 @@ test.beforeAll(async()=>{
   const warehouses=await get('/scm/warehouse/list');
   warehouseId=String((warehouses.find((w:any)=>w.warehouseCode==='WH001')??warehouses[0]).id);
 
-  supplierId=await post('/scm/supplier/add',{supplierCode:(name+'-SUP').toUpperCase(),name:name+'供应商'});
+  // 供应商编码由服务端生成（SUP + 6 位序号），创建载荷不再提交编码。
+  supplierId=await post('/scm/supplier/add',{name:name+'供应商'});
   categoryId=await ensureCategoryChain();
   for(const tag of ['1','2','3','4','5','6'])await newSku(tag);
   // replace 是**整体替换**，必须一次带上全部 SKU
@@ -309,8 +310,9 @@ test('4 transfer moves stock and cost across warehouses in two steps',async({pag
   await stockIn(id,'20.0000');
   const before=await totalCost(id);
   expect(num(before)).toBeCloseTo(124,5);
-  // 目标仓建完立刻停用：Q12 要求启用仓库唯一，不能把第二个启用仓留在库里
-  const destId=await post('/scm/warehouse/create',{warehouseCode:(name+'-DST').toUpperCase(),name:name+'调入仓',address:null,remark:name});
+  // 目标仓建完立刻停用：Q12 要求启用仓库唯一，不能把第二个启用仓留在库里。
+  // 仓库编码由服务端生成（WH + 6 位序号），创建载荷不再提交编码。
+  const destId=await post('/scm/warehouse/create',{name:name+'调入仓',address:null,remark:name});
   await post('/scm/warehouse/disable',{id:destId,version:await version('/scm/warehouse',destId)});
 
   const transferId=await post('/scm/inventory/transfer/create',{fromWarehouseId:warehouseId,toWarehouseId:destId,remark:name,

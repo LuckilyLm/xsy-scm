@@ -15,12 +15,9 @@ import com.xsy.scm.supplier.service.SupplierSkuService;
 import net.lab1024.sa.base.common.domain.PageParam;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,8 +41,9 @@ class SupplierQueryServiceIT extends ScmW2PgITBase {
 
     private SupplierAddForm form(String suffix) {
         SupplierAddForm form = new SupplierAddForm();
-        form.setSupplierCode(prefix + "-" + suffix);
         form.setName("供应商" + suffix);
+        // 编码由服务端生成、不再携带测试前缀；用联系人字段承载前缀，保证 keyword 查询能收敛到本用例的数据
+        form.setContactName("联系人" + prefix);
         return form;
     }
 
@@ -57,18 +55,23 @@ class SupplierQueryServiceIT extends ScmW2PgITBase {
         return form;
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", "CONTACT-NAME", "13900002222"})
+    @Test
     @DisplayName("关键字覆盖编码 / 名称 / 联系人 / 联系电话")
-    void keywordCoversCodeNameContactAndPhone(String keyword) {
+    void keywordCoversCodeNameContactAndPhone() {
         SupplierAddForm form = form("K1");
         form.setContactName(prefix + "CONTACT-NAME");
         form.setContactPhone("13900002222");
         Long id = service.add(form);
+        String generatedCode = jdbc.queryForObject(
+                "SELECT supplier_code FROM supplier WHERE id = ?", String.class, id);
 
-        SupplierQueryForm query = queryForm();
-        query.setKeyword(keyword.isEmpty() ? prefix : keyword);
-        assertThat(queryService.query(query).getList()).extracting(SupplierVO::getSupplierId).contains(id);
+        for (String keyword : List.of("供应商K1", generatedCode, prefix + "CONTACT-NAME", "13900002222")) {
+            SupplierQueryForm query = queryForm();
+            query.setKeyword(keyword);
+            assertThat(queryService.query(query).getList())
+                    .as("关键字 %s 必须命中新建供应商", keyword)
+                    .extracting(SupplierVO::getSupplierId).contains(id);
+        }
     }
 
     @Test
@@ -123,7 +126,7 @@ class SupplierQueryServiceIT extends ScmW2PgITBase {
 
         SupplierDetailVO detail = queryService.detail(supplierId);
         assertThat(detail.getSkuCount()).as("软删的关联不再计入").isEqualTo(1L);
-        assertThat(detail.getSupplierCode()).isEqualTo((prefix + "-c").toUpperCase(Locale.ROOT));
+        assertThat(detail.getSupplierCode()).matches("^SUP\\d{6,}$");
     }
 
     @Test

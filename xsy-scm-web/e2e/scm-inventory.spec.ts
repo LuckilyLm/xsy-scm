@@ -56,7 +56,8 @@ test.beforeAll(async()=>{
   const warehouses=await get('/scm/warehouse/list');
   warehouseId=String((warehouses.find((w:any)=>w.warehouseCode==='WH001')??warehouses[0]).id);
   const types=await post('/scm/customer/type/option/list',{});
-  customerId=await post('/scm/customer/add',{customerCode:name.toUpperCase(),name:name,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W6验收',contactPhone:'13800000000',address:'验收地址'});
+  // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
+  customerId=await post('/scm/customer/add',{name:name,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W6验收',contactPhone:'13800000000',address:'验收地址'});
   const customer=await get('/scm/customer/detail/'+customerId);
   await post('/scm/customer/updateStatus',{customerId,version:customer.version,status:'COOPERATING'});
   const tree=await post('/scm/product/category/tree',{});
@@ -70,7 +71,8 @@ test.beforeAll(async()=>{
   skuId=String(options.find((x:any)=>x.specName==='散装-A').skuId);
   emptySkuCode=String(options.find((x:any)=>x.specName==='散装-E').skuCode);
   skuCode=String(options.find((x:any)=>x.specName==='散装-A').skuCode);
-  supplierId=await post('/scm/supplier/add',{supplierCode:name.toUpperCase(),name:name+'供应商'});
+  // 供应商编码由服务端生成（SUP + 6 位序号），创建载荷不再提交编码。
+  supplierId=await post('/scm/supplier/add',{name:name+'供应商'});
   await post('/scm/supplier/sku/replace',{supplierId,items:[{skuId,purchaseUnit:'kg',defaultFlag:true,status:'ENABLED'}]});
 });
 test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose();}execFileSync('python',['../tools/w6_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});});
@@ -340,8 +342,10 @@ test('7 WAREHOUSE_CONFIRM posts inventory only when the warehouse confirms putaw
 // ------------------------------------------------------------------
 
 test('8 warehouse disable is strict and an empty warehouse can be disabled and enabled',async({page})=>{
-  const code=(name+'_WH').toUpperCase();
-  const isolatedId=await post('/scm/warehouse/create',{warehouseCode:code,name:name+'隔离仓',address:null,remark:name});
+  // 仓库编码由服务端生成（WH + 6 位序号）：创建载荷不再提交编码，查询用回读的真实编码。
+  const isolatedId=await post('/scm/warehouse/create',{name:name+'隔离仓',address:null,remark:name});
+  const isolatedCode=String((await get('/scm/warehouse/detail/'+isolatedId)).warehouseCode);
+  expect(isolatedCode).toMatch(/^WH\d{6,}$/);
 
   await browse(page,'/purchase/warehouse-list');
   await page.getByPlaceholder('仓库编码').fill('WH001');
@@ -353,9 +357,9 @@ test('8 warehouse disable is strict and an empty warehouse can be disabled and e
   await expect(page.locator('.ant-alert-error')).toContainText('仓库仍有库存余额，不能停用');
   await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/取\s*消/}).click();
 
-  await page.getByPlaceholder('仓库编码').fill(code);
+  await page.getByPlaceholder('仓库编码').fill(isolatedCode);
   await search(page);
-  const isolatedRow=page.locator('#scm-warehouse-table tr').filter({hasText:code});
+  const isolatedRow=page.locator('#scm-warehouse-table tr').filter({hasText:isolatedCode});
   await expect(isolatedRow).toHaveCount(1);
   await isolatedRow.getByRole('button',{name:'停用'}).click();
   await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/确\s*定/}).click();

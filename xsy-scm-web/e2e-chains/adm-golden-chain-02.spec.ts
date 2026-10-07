@@ -30,7 +30,7 @@ let facts: SignedOrderFacts;
 let receipt: Row;
 
 /** 建一个客户并立刻置为合作中（`createLocatedCustomer` 的集团版：可指定结算主体）。 */
-const addCustomer = async (code: string, name: string, settleMode: string,
+const addCustomer = async (name: string, settleMode: string,
     settlementCustomerId?: number) => {
     const typeData = await call<Row>(harness.admin, 'post', '/scm/customer/type/option/list', {});
     const typeList = (Array.isArray(typeData) ? typeData : ((typeData as any).options ?? [])) as Row[];
@@ -42,8 +42,9 @@ const addCustomer = async (code: string, name: string, settleMode: string,
         || String(t.name ?? t.typeName ?? '').includes('集团'));
     if (wantGroup) expect(groupOption !== undefined, '库里没有 GROUP 客户类型，建不出集团母客户').toBe(true);
     const chosen = wantGroup ? groupOption : typeList[0];
+    // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码；后续按返回 id 使用。
     const id = Number(await call(harness.admin, 'post', '/scm/customer/add', {
-        customerCode: code.toUpperCase(), name,
+        name,
         customerTypeId: Number(chosen.typeId ?? chosen.customerTypeId ?? chosen.id),
         settleMode,
         ...(settlementCustomerId ? {parentCustomerId: settlementCustomerId, settlementCustomerId} : {}),
@@ -65,8 +66,8 @@ test.afterAll(async () => {
 });
 
 test('1 集团母客户 + 集团结算的子客户', async () => {
-    parentCustomerId = String(await addCustomer(`${harness.runTag}-GRP`, `${harness.runTag}集团母公司`, 'GROUP'));
-    childCustomerId = String(await addCustomer(`${harness.runTag}-SUB`, `${harness.runTag}集团子公司`,
+    parentCustomerId = String(await addCustomer(`${harness.runTag}集团母公司`, 'GROUP'));
+    childCustomerId = String(await addCustomer(`${harness.runTag}集团子公司`,
         'GROUP', Number(parentCustomerId)));
 
     const child = await call<Row>(harness.admin, 'get', `/scm/customer/detail/${childCustomerId}`);

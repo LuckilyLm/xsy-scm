@@ -221,10 +221,13 @@ test('页面接线：打印标签双视角可切换，登记只发计次请求�
   await expect(row).toHaveCount(1);
   await row.getByRole('button', {name: accessibleName('详情')}).click();
 
-  const drawer = page.locator('.ant-drawer:visible');
-  const pane = drawer.locator('.ant-tabs-tabpane-active');
-  await drawer.getByRole('tab', {name: accessibleName('配送打印')}).click();
-  await expect(pane.getByText('不代表发货确认')).toBeVisible();
+  // 详情已是独立页面；打印视角挂在页面的「配送打印」Tab 上。
+  await expect(page).toHaveURL(/#\/delivery\/routes\/\d+\?tab=base/);
+  const detailPage = page.locator('.route-detail-page');
+  const pane = detailPage.locator('.ant-tabs-tabpane-active');
+  await detailPage.getByRole('tab', {name: accessibleName('配送打印')}).click();
+  // 打印面板就位：默认「按订单」视角（原常驻口径说明已按文案治理删除，语义由下面的接口计数断言承载）
+  await expect(pane.getByText('按订单', {exact: true}).first()).toBeVisible();
   // 默认「按订单」视角：未勾选任何行时登记按钮必须禁用，避免无选择地重打整条线路
   const record = pane.getByRole('button', {name: /^生\s*成\s*打\s*印/});
   await expect(record).toBeDisabled();
@@ -238,7 +241,8 @@ test('页面接线：打印标签双视角可切换，登记只发计次请求�
     expect(body.code, `页面登记的 POST /print/${kind} 应成功：${body.msg}`).toBe(0);
   };
   const before = await ordersView();
-  await pane.locator('tbody tr.ant-table-row .ant-table-selection-column .ant-checkbox').first().click();
+  // 线路上只有 3 张订单，打印面板渲染的是卡片列表（≤3 行），不再是表格行。
+  await pane.locator('.print-card').first().locator('.ant-checkbox-input').check();
   await expect(record).toBeEnabled();
   await expect(record).toContainText('登记 1');
   await register('orders');
@@ -265,9 +269,10 @@ test('页面接线：打印标签双视角可切换，登记只发计次请求�
   for (const order of printedBefore.filter((o) => String(o.customerId) !== String(unprintedCustomer.customerId))) {
     expect(countOf(printedAfter, order.orderId), '已打印客户不受影响').toBe(Number(order.printCount));
   }
-  await drawer.locator('.ant-drawer-close').click();
-  // a-drawer 关闭后根节点仍挂在 body 上（destroy-on-close 只丢内容），收起状态看 ant-drawer-open
-  await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
+  // 关闭详情 = 回线路管理列表（左上「返回线路管理」；按钮内含图标，图标自身 aria-label
+  // 会混进可及名，因此按专用类名定位）。页面已无抽屉。
+  await detailPage.locator('.scm-detail-header__back').click();
+  await expect(page).toHaveURL(/#\/delivery\/routes$/);
   // 全程只有两次打印登记：任何其它 SCM 写接口（库存、出库、发货）都不该被页面偷偷发起。
   // 底座 Layout 自身的非业务请求（如 /support/feedback/query 轮询）不在这条约束的语义范围内。
   const scmWrites = writes.filter((u) => u.includes(' /scm/'));

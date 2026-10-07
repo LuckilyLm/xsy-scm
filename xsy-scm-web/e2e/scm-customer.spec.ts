@@ -110,7 +110,8 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   const openDrawer = page.locator('.ant-drawer-open');
   const expectDrawerClosed = () => expect(openDrawer).toHaveCount(0);
 
-  await drawer.getByLabel('客户编码', { exact: true }).fill(prefix + 'C1');
+  // 客户编码由服务端生成：创建态不再有可填输入框，只读提示「保存后由系统自动生成」。
+  await expect(drawer.getByText('保存后由系统自动生成')).toBeVisible();
   await drawer.getByLabel('客户名称', { exact: true }).fill(prefix + '客户甲');
   await openSelect(drawer, 'customerTypeId');
   // 客户类型下拉的选项文本是「名称 （编码）」，不是纯名称，所以不能用 exact 匹配。
@@ -145,6 +146,9 @@ test('live customer pilot: type, credit period, status, search, deep link and de
 
   // 列表 VO 不含账期字段，必须回详情接口核对 —— 这是 W2 新增能力是否真落库的唯一证据。
   const detail = (await (await api.get(`/scm/customer/detail/${customerId}`)).json()).data;
+  // 编码不再采信客户端提交值：真实编码只能从服务端回读（CUS + 至少 6 位全局序号）。
+  const customerCode = String(detail.customerCode);
+  expect(customerCode).toMatch(/^CUS\d{6,}$/);
   expect(detail.creditLimit).toBe('1234.5000');
   expect(detail.creditPeriodType).toBe('BY_TIME');
   expect(detail.creditPeriodValue).toBe(1);
@@ -158,7 +162,8 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   expect([detail.districtCode, detail.districtName]).toEqual([330106, '西湖区']);
 
   // -------------------------------------------------------------- 状态变更
-  let row = page.getByRole('row').filter({ hasText: prefix + 'C1' });
+  // 列表行按名称定位：编码是服务端生成的，不能用「提交什么码」当锚点。
+  let row = page.getByRole('row').filter({ hasText: prefix + '客户甲' });
   await expect(row).toBeVisible();
   const statusChanged = page.waitForResponse((r) => r.url().endsWith('/scm/customer/updateStatus'));
   await button(row, '状态').click();
@@ -168,7 +173,9 @@ test('live customer pilot: type, credit period, status, search, deep link and de
 
   // ------------------------------------------------------------------ 编辑
   await button(row, '编辑').click();
-  await expect(drawer.getByLabel('客户编码', { exact: true })).toHaveValue(prefix + 'C1');
+  // 编辑态编码只读回显真实生成的编码；文本证据取服务端回读值，不假设提交码。
+  await expect(drawer.locator('.ant-form-item').filter({ hasText: '客户编码' })
+    .locator('.scm-form-readonly')).toHaveText(customerCode);
   // 回填走 `areaNodesOf`：三级必须显示成一条连续路径，缺一级时级联选择器会渲染异常。
   await expect(drawer.locator('.ant-cascader .ant-select-selection-item')).toHaveText(
     /浙江省\s*\/\s*杭州市\s*\/\s*西湖区/
@@ -184,7 +191,8 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   expect([afterUpdate.provinceCode, afterUpdate.cityCode, afterUpdate.districtCode]).toEqual([330000, 330100, 330106]);
 
   // ------------------------------------------------------------------ 查询
-  await page.getByPlaceholder('编码 / 名称 / 联系人 / 电话').fill(prefix + 'C1');
+  // 编码搜索仍要可用，但输入的是服务端回读的真实编码。
+  await page.getByPlaceholder('编码 / 名称 / 联系人 / 电话').fill(customerCode);
   await button(page, '查询').click();
   await expect(row).toBeVisible();
 
@@ -192,13 +200,14 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   await button(row, prefix + '客户甲').click();
   await expect(page).toHaveURL(new RegExp(`customer-detail.*customerId=${customerId}`));
   await page.reload();
-  await expect(page.getByText(prefix + 'C1', { exact: true })).toBeVisible();
+  // 编码在页头与「系统信息」卡片各出现一次，按 exact 取第一条即可（避免 strict mode 多命中）。
+  await expect(page.getByText(customerCode, { exact: true }).first()).toBeVisible();
   await expect(page.getByText('按时间', { exact: true })).toBeVisible();
   await page.screenshot({ path: '../.runtime/w2-customer-detail.png', fullPage: true });
 
   // ------------------------------------------------------------------ 删除
   await button(page, '客户档案').click();
-  row = page.getByRole('row').filter({ hasText: prefix + 'C1' });
+  row = page.getByRole('row').filter({ hasText: prefix + '客户甲' });
   // 删除属于危险动作，已从常驻操作收进「更多」；菜单项只在展开后进入 DOM。
   // 二次确认随之由 popconfirm 改为 Modal，断言的仍是「必须确认后才真的删除」。
   await row.getByRole('button', { name: /更多/ }).click();

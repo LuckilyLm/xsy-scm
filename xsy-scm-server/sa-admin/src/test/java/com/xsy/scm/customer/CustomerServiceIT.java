@@ -14,7 +14,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
-import java.util.Locale;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 客户写路径在真实 PostgreSQL 上的行为。
  *
- * <p>验证的都是「只有在数据库里才成立」的契约：partial unique index 与显式查重双保险、
+ * <p>验证的都是「只有在数据库里才成立」的契约：服务端编码生成（PG sequence，{@code CUS######}）、
  * {@code NUMERIC(18,4)} 的定点数落库、{@code ck_customer_credit_period} 与 Validator 一致、
  * 以及状态机只能通过 {@code updateStatus} 前进。
  */
@@ -34,7 +33,6 @@ class CustomerServiceIT extends ScmW2PgITBase {
 
     private CustomerAddForm form(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + suffix);
         form.setName("客户" + suffix);
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         return form;
@@ -50,10 +48,13 @@ class CustomerServiceIT extends ScmW2PgITBase {
         CustomerUpdateForm form = new CustomerUpdateForm();
         form.setCustomerId(id);
         form.setVersion(version);
-        form.setCustomerCode(prefix + "-U");
         form.setName("改名");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         return form;
+    }
+
+    private String customerCode(Long id) {
+        return jdbc.queryForObject("SELECT customer_code FROM customer WHERE id = ?", String.class, id);
     }
 
     @Test
@@ -73,20 +74,26 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("编码大小写不敏感：归一化后重复被拒 40936，软删后编码可复用")
-    void codeIsNormalizedAndDuplicateRejected() {
+    @DisplayName("编码由服务端生成（CUS######）：同名两次创建都成功且不重号；软删后可重建")
+    void generatesUniqueCodesAndAllowsRecreateAfterSoftDelete() {
         Long id = service.add(form("c1"));
-        assertThat(jdbc.queryForObject("SELECT customer_code FROM customer WHERE id = ?", String.class, id))
-                .isEqualTo((prefix + "c1").toUpperCase(Locale.ROOT));
+        String firstCode = customerCode(id);
+        assertThat(firstCode).matches("^CUS\\d{6,}$");
 
-        expectCode(() -> service.add(form("C1")), 40936);
+        Long sameName = service.add(form("c1"));
+        assertThat(customerCode(sameName)).as("两次创建不重号")
+                .matches("^CUS\\d{6,}$")
+                .isNotEqualTo(firstCode);
 
         CustomerDeleteForm deletion = new CustomerDeleteForm();
         deletion.setCustomerId(id);
         deletion.setVersion(0);
         service.delete(deletion);
 
-        assertThat(service.add(form("C1"))).as("partial unique index 只约束活动行").isNotEqualTo(id);
+        Long recreated = service.add(form("c1"));
+        assertThat(customerCode(recreated)).as("软删后重建成功并拿到新编码")
+                .matches("^CUS\\d{6,}$")
+                .isNotEqualTo(firstCode);
     }
 
     @Test
@@ -280,7 +287,6 @@ class CustomerServiceIT extends ScmW2PgITBase {
         CustomerUpdateForm back = new CustomerUpdateForm();
         back.setCustomerId(b);
         back.setVersion(0);
-        back.setCustomerCode(prefix + "-R2");
         back.setName("客户R2");
         back.setCustomerTypeId(groupTypeId);
         back.setParentCustomerId(a);

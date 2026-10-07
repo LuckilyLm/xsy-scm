@@ -63,10 +63,10 @@ test('服务端行转草稿时保留 id 与 version，否则保存会退化成�
 });
 
 test('校验供应商必填项与电话格式', () => {
-  assert.match(validateSupplier(emptySupplier()), /供应商编码/);
-  assert.match(validateSupplier({ ...emptySupplier(), supplierCode: 'S001' }), /供应商名称/);
-  assert.equal(validateSupplier({ ...emptySupplier(), supplierCode: 'S001', name: '供应商甲' }), undefined);
-  assert.match(validateSupplier({ ...emptySupplier(), supplierCode: 'S001', name: '甲', contactPhone: 'abc' }), /联系电话/);
+  // 编码由服务端生成：不带编码的合法表单必须直接通过校验。
+  assert.match(validateSupplier(emptySupplier()), /供应商名称/);
+  assert.equal(validateSupplier({ ...emptySupplier(), name: '供应商甲' }), undefined);
+  assert.match(validateSupplier({ ...emptySupplier(), name: '甲', contactPhone: 'abc' }), /联系电话/);
 });
 
 test('校验关联行：规格必选、不得重复、单位必填、参考价最多四位小数', () => {
@@ -135,9 +135,8 @@ test('移除行是纯函数，不改动入参数组', () => {
   assert.equal(drafts.length, 2);
 });
 
-test('提交前归一化：编码大写去空白、空白串转 null', () => {
-  const payload = toSupplierPayload({ ...emptySupplier(), supplierCode: ' s001 ', name: ' 供应商甲 ', address: '  ', remark: ' 备注 ' });
-  assert.equal(payload.supplierCode, 'S001');
+test('提交前归一化：空白串转 null', () => {
+  const payload = toSupplierPayload({ ...emptySupplier(), name: ' 供应商甲 ', address: '  ', remark: ' 备注 ' });
   assert.equal(payload.name, '供应商甲');
   assert.equal(payload.address, null);
   assert.equal(payload.remark, '备注');

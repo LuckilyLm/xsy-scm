@@ -183,7 +183,6 @@ test.beforeAll(async () => {
 
     async function newCustomer(tag: string, address: string, located: boolean): Promise<string> {
         const id = String(await post('/scm/customer/add', {
-            customerCode: `${name}-C${tag}`,
             name: `${name}客户${tag}`,
             customerTypeId,
             settleMode: 'INDEPENDENT',
@@ -363,8 +362,7 @@ test('3｜L2 页面新建草稿线路并快照仓库起点坐标', async ({page}
     await expect(page.locator('#scm-delivery-route-table')).toBeVisible();
 
     await button(page, '新建线路').click();
-    // 按标题锁定要操作的那个抽屉：页面同时挂着「线路详情」抽屉的根节点，
-    // 只按 .ant-drawer-open 类判断会在保存成功后仍然数到 1 个元素。
+    // 新建线路仍是抽屉表单；按标题锁定它，避免在保存未生效时误命中页面上的其它浮层。
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '新建配送线路'});
     await expect(button(drawer, '保存线路')).toBeEnabled();
     await fillField(drawer, '线路名称', `${name} 1 线`);
@@ -417,14 +415,16 @@ test('4｜L2 组单：同客户同地址合并停靠点，未定位客户单照�
     await page.goto('/#/delivery/routes');
     await page.locator('#scm-delivery-route-table tbody tr.ant-table-row').filter({hasText: name}).first()
         .getByText(accessibleName('详情')).click();
-    const drawer = page.locator('.ant-drawer-open');
-    await expect(drawer).toHaveCount(1);
-    await drawer.getByRole('tab', {name: accessibleName('线路订单')}).click();
+    // 详情已是独立页面（列表页不再挂线路详情抽屉）：URL 落在 /delivery/routes/<id>?tab=base
+    await expect(page).toHaveURL(/#\/delivery\/routes\/\d+\?tab=base/);
+    const detailPage = page.locator('.route-detail-page');
+    await expect(detailPage.locator('.scm-detail-header')).toBeVisible();
+    await detailPage.getByRole('tab', {name: accessibleName('线路订单')}).click();
 
     // 候选清单是共享池且分页，且重新查询会重置勾选，因此按「一个订单一趟往返」驱动：
     // 关键字筛到该单 → 勾选 → 填组单原因 → 加入线路。这同时验到关键字过滤与逐次组单后的版本推进。
     for (const order of orders) {
-        await button(drawer, '加入订单').click();
+        await button(detailPage, '加入订单').click();
         const modal = page.locator('.ant-modal:visible').last();
         await expect(modal).toContainText('选择待配送订单');
         const keyword = field(modal, '客户').locator('input').first();
@@ -466,13 +466,14 @@ test('5｜L2 未定位时确认规划被拒，页面补定位后放行', async (
     await page.goto('/#/delivery/routes');
     await page.locator('#scm-delivery-route-table tbody tr.ant-table-row').filter({hasText: name}).first()
         .getByText(accessibleName('路线')).click();
-    const drawer = page.locator('.ant-drawer-open');
-    await drawer.getByRole('tab', {name: accessibleName('停靠点 / 路线地图')}).click();
-    await expect(drawer.locator('.route-map-layout')).toBeVisible();
-    await expect(drawer).toContainText('尚有 1 个停靠点未定位');
-    // 只有「未定位」那个停靠点需要补坐标：按列表项文本筛，避免点到已定位项的同类按钮。
-    await drawer.locator('li').filter({hasText: '未定位'}).first()
-        .getByRole('button', {name: /定\s*位\s*\/\s*备\s*注/}).click();
+    // 「路线」直达独立详情页的地图 Tab（URL 带 ?tab=map），不再是抽屉内切页
+    await expect(page).toHaveURL(/#\/delivery\/routes\/\d+\?tab=map/);
+    const detailPage = page.locator('.route-detail-page');
+    await expect(detailPage.locator('.route-map-layout')).toBeVisible();
+    await expect(detailPage).toContainText('尚有 1 个停靠点未定位');
+    // 只有「未定位」那个停靠点需要补坐标：按停靠点卡片文本筛，避免点到已定位项的同类按钮。
+    await detailPage.locator('.stop-card').filter({hasText: '未定位'}).first()
+        .getByRole('button', {name: accessibleName('定位 / 备注')}).click();
     // 经纬度与坐标系是「停靠点定位与备注」弹窗里的内联输入，直接改字段值；
     // 只有需要地图选点时才会再叠一层选择器弹窗，因此必须按标题锁定外层弹窗。
     const modal = page.locator('.ant-modal:visible').filter({hasText: '停靠点定位与备注'}).last();
@@ -497,11 +498,12 @@ test('6｜L2 确认规划：状态迁移、重复请求与后续编辑全部封�
     await page.goto('/#/delivery/routes');
     await page.locator('#scm-delivery-route-table tbody tr.ant-table-row').filter({hasText: name}).first()
         .getByText(accessibleName('详情')).click();
-    const drawer = page.locator('.ant-drawer-open');
-    await button(drawer, '确认规划').click();
+    const detailPage = page.locator('.route-detail-page');
+    await expect(page).toHaveURL(/#\/delivery\/routes\/\d+\?tab=base/);
+    await button(detailPage, '确认规划').click();
     await page.locator('.ant-modal-confirm:visible').getByRole('button', {name: accessibleName('确 定')}).click();
-    await expect(drawer).toContainText('线路已规划', {timeout: 15000}).catch(async () => {
-        // toast 可能已经消失；状态迁移本身才是承重断言，回读接口确认
+    // toast 挂在 body 上、不在详情页容器里，可能先于断言消失；状态迁移本身才是承重断言，回读接口确认
+    await expect(page.getByText('线路已规划')).toBeVisible({timeout: 15000}).catch(async () => {
         expect((await route()).status).toBe('PLANNED');
     });
 

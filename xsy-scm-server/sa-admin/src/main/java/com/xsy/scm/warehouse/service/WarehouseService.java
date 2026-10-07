@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.no.ScmBusinessNoService;
+import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import com.xsy.scm.warehouse.constant.WarehouseErrorCode;
 import com.xsy.scm.warehouse.dao.WarehouseDao;
@@ -41,6 +43,8 @@ public class WarehouseService {
      * 停用前置守卫由库存域实现，避免仓库域反向依赖库存域。
      */
     private final WarehouseDisableGuard warehouseDisableGuard;
+
+    private final ScmBusinessNoService businessNoService;
 
     /**
      * 读取仓库，不存在或已删除 → 40485。
@@ -91,12 +95,8 @@ public class WarehouseService {
     @Transactional(rollbackFor = Exception.class)
     public Long create(WarehouseAddForm form) {
         WarehouseValidator.validateRequired(form);
-        String code = WarehouseValidator.normalizeCode(form.getWarehouseCode());
-        if (existsCode(code, null)) {
-            throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE);
-        }
         WarehouseEntity entity = new WarehouseEntity();
-        entity.setWarehouseCode(code);
+        entity.setWarehouseCode(businessNoService.next(ScmBusinessNoType.WAREHOUSE));
         entity.setName(WarehouseValidator.normalizeName(form.getName()));
         // WarehouseAddForm 不含 status：新建一律 ENABLED。
         entity.setStatus(ScmWarehouseStatusEnum.ENABLED.name());
@@ -122,11 +122,6 @@ public class WarehouseService {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        String code = WarehouseValidator.normalizeCode(form.getWarehouseCode());
-        if (existsCode(code, form.getId())) {
-            throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE);
-        }
-        entity.setWarehouseCode(code);
         entity.setName(WarehouseValidator.normalizeName(form.getName()));
         entity.setAddress(form.getAddress());
         applyRegion(entity, form);
@@ -135,12 +130,8 @@ public class WarehouseService {
         // 因此保持 require() 读出的原值（实体声明 updateStrategy = ALWAYS，会原值回写）。
         entity.setVersion(form.getVersion());
         stamp(entity, false);
-        try {
-            if (warehouseDao.updateById(entity) != 1) {
-                throw new ScmBusinessException(VERSION_CONFLICT);
-            }
-        } catch (DuplicateKeyException e) {
-            throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE);
+        if (warehouseDao.updateById(entity) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
 
@@ -190,15 +181,6 @@ public class WarehouseService {
         if (warehouseDao.updateById(entity) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-    }
-
-    private boolean existsCode(String code, Long excludeId) {
-        LambdaQueryWrapper<WarehouseEntity> wrapper = new LambdaQueryWrapper<WarehouseEntity>()
-                .eq(WarehouseEntity::getWarehouseCode, code);
-        if (excludeId != null) {
-            wrapper.ne(WarehouseEntity::getId, excludeId);
-        }
-        return warehouseDao.selectCount(wrapper) > 0;
     }
 
     /**

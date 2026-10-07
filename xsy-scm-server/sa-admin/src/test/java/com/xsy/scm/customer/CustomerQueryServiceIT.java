@@ -15,12 +15,9 @@ import com.xsy.scm.supplier.service.SupplierService;
 import net.lab1024.sa.base.common.domain.PageParam;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,8 +49,9 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
 
     private CustomerAddForm form(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + suffix);
         form.setName("客户" + suffix);
+        // 编码由服务端生成、不再携带测试前缀；用联系人字段承载前缀，保证 keyword 查询能收敛到本用例的数据
+        form.setContactName("联系人" + prefix);
         form.setCustomerTypeId(enterpriseTypeId());
         return form;
     }
@@ -66,18 +64,23 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         return form;
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", "CONTACT-NAME", "13800001111"})
+    @Test
     @DisplayName("关键字覆盖编码 / 名称 / 联系人 / 联系电话")
-    void keywordCoversCodeNameContactAndPhone(String field) {
+    void keywordCoversCodeNameContactAndPhone() {
         CustomerAddForm form = form("K1");
         form.setContactName(prefix + "CONTACT-NAME");
         form.setContactPhone("13800001111");
         Long id = service.add(form);
+        String generatedCode = jdbc.queryForObject(
+                "SELECT customer_code FROM customer WHERE id = ?", String.class, id);
 
-        CustomerQueryForm query = queryForm();
-        query.setKeyword(field.isEmpty() ? prefix : field);
-        assertThat(queryService.query(query).getList()).extracting(CustomerVO::getCustomerId).contains(id);
+        for (String keyword : List.of("客户K1", generatedCode, prefix + "CONTACT-NAME", "13800001111")) {
+            CustomerQueryForm query = queryForm();
+            query.setKeyword(keyword);
+            assertThat(queryService.query(query).getList())
+                    .as("关键字 %s 必须命中新建客户", keyword)
+                    .extracting(CustomerVO::getCustomerId).contains(id);
+        }
     }
 
     @Test
@@ -118,8 +121,8 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
 
     private CustomerAddForm groupForm(String suffix, Long groupTypeId) {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + suffix);
         form.setName("集团" + suffix);
+        form.setContactName("联系人" + prefix);
         form.setCustomerTypeId(groupTypeId);
         form.setSettleMode("GROUP");
         return form;
@@ -133,7 +136,6 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         Long employeeId = anyEmployeeId();
 
         SupplierAddForm supplierForm = new SupplierAddForm();
-        supplierForm.setSupplierCode(prefix + "-SUP");
         supplierForm.setName("供应商" + prefix);
         Long supplierId = supplierService.add(supplierForm);
 
@@ -186,7 +188,7 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         CustomerOptionVO mine = options.stream()
                 .filter(vo -> vo.getCustomerId().equals(id)).findFirst().orElseThrow();
         assertThat(mine.getStatus()).isEqualTo("POTENTIAL");
-        assertThat(mine.getCustomerCode()).isEqualTo((prefix + "O1").toUpperCase(Locale.ROOT));
+        assertThat(mine.getCustomerCode()).matches("^CUS\\d{6,}$");
     }
 
     @Test

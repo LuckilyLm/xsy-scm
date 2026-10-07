@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +41,6 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
 
     private Long supplier(String suffix) {
         SupplierAddForm form = new SupplierAddForm();
-        form.setSupplierCode(prefix + "-" + suffix);
         form.setName("供应商" + suffix);
         return supplierService.add(form);
     }
@@ -94,7 +92,8 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
                 Long.class, supplierId, skuId);
         Map<String, Object> row = row(id);
 
-        assertThat(row.get("supplier_code_snapshot")).isEqualTo((prefix + "-a").toUpperCase(Locale.ROOT));
+        assertThat(row.get("supplier_code_snapshot")).isEqualTo(
+                jdbc.queryForObject("SELECT supplier_code FROM supplier WHERE id = ?", String.class, supplierId));
         assertThat(row.get("supplier_name_snapshot")).isEqualTo("供应商a");
         assertThat(row.get("sku_code_snapshot")).isEqualTo(prefix + "A1-K");
         assertThat((String) row.get("sku_name_snapshot"))

@@ -55,7 +55,6 @@ class PricingIT extends ScmW3PgITBase {
 
     Long customer() {
         var f = new CustomerAddForm();
-        f.setCustomerCode(prefix);
         f.setName(prefix);
         f.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         f.setSettleMode("INDEPENDENT");

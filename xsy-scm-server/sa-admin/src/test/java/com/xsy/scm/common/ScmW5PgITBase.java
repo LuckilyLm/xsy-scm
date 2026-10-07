@@ -188,12 +188,9 @@ public abstract class ScmW5PgITBase {
     private int salesOrderSequence;
 
     /**
-     * 同一用例内造第几个客户。
+     * 同一用例内造第几个客户：名称带递增序号，便于同一用例内区分。
      *
-     * <p><b>为什么必须逐个唯一</b>：{@code t_customer.customer_code} 上有唯一索引，而
-     * {@link #newCustomer()} 无参（调用方只关心「有个客户」）。若编码固定为 {@code prefix}，
-     * 一个用例里调两次（例如 {@code receiptFixture} 造两套数据）就会撞「客户编码已存在」——
-     * 报错点落在上游的 {@code CustomerService.add}，看起来像客户域坏了。
+     * <p>编码由服务端生成（{@code CUS######}），不再需要靠序号避开编码唯一索引。
      */
     private int customerSequence;
 
@@ -323,7 +320,6 @@ public abstract class ScmW5PgITBase {
      */
     protected Long newWarehouse(String suffix) {
         WarehouseAddForm form = new WarehouseAddForm();
-        form.setWarehouseCode(prefix + "-" + suffix);
         form.setName(prefix + "仓" + suffix);
         return warehouseService.create(form);
     }
@@ -389,11 +385,10 @@ public abstract class ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 新建一个启用状态的供应商（走供应商聚合服务，不直接插表）。
+     * 新建一个启用状态的供应商（走供应商聚合服务，不直接插表）。编码由服务端生成。
      */
     protected Long newSupplier(String suffix) {
         SupplierAddForm form = new SupplierAddForm();
-        form.setSupplierCode(prefix + "-" + suffix);
         form.setName(prefix + "供应商" + suffix);
         return supplierService.add(form);
     }
@@ -463,13 +458,12 @@ public abstract class ScmW5PgITBase {
     /**
      * 新建一个 {@code COOPERATING} 客户（{@code add} + {@code updateStatus} 两步）。
      *
-     * <p>编码带逐个递增的序号，同一用例内可反复调用（见 {@link #customerSequence}）。
+     * <p>名称带逐个递增的序号，同一用例内可反复调用且互不混淆；编码由服务端生成。
      */
     protected Long newCustomer() {
-        String code = prefix + "-C" + (++customerSequence);
+        String name = prefix + "-C" + (++customerSequence);
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(code);
-        form.setName(code + "客户");
+        form.setName(name + "客户");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
         form.setSellerId(anyEmployeeId());

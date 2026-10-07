@@ -122,7 +122,7 @@ test('三个页面把解析结果整体写回查询表单，不做「有才覆�
 test('三个页面用同一个进入模式：route.name 守卫 + route.query 依赖 + immediate', () => {
   for (const page of PAGES) {
     const vue = code(page.file);
-    assert.match(vue, /import \{useRoute\} from 'vue-router';/);
+    assert.match(vue, /import \{useRoute(?:, useRouter)?\} from 'vue-router';/);
     assert.match(vue, /const route = useRoute\(\);/);
     assert.match(
       vue,

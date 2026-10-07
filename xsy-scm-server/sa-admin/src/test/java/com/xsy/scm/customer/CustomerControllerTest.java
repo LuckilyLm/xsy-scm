@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
-import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_CODE_DUPLICATE;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADABLE;
 import static org.mockito.ArgumentMatchers.any;
@@ -127,13 +126,16 @@ class CustomerControllerTest {
     }
 
     @Test
-    @DisplayName("编码重复 → 40936")
-    void mapsDuplicateCode() throws Exception {
-        doThrow(new ScmBusinessException(CUSTOMER_CODE_DUPLICATE)).when(service).add(any());
+    @DisplayName("新增客户成功返回新客户 id 信封（编码由服务端生成，不再由表单提交）")
+    void createsCustomer() throws Exception {
+        when(service.add(any())).thenReturn(42L);
 
         mvc.perform(post("/scm/customer/add").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"customerCode\":\"C001\",\"name\":\"测试\",\"customerTypeId\":1}"))
-                .andExpect(jsonPath("$.code").value(40936));
+                        .content("{\"name\":\"测试\",\"customerTypeId\":1}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.ok").value(true))
+                .andExpect(jsonPath("$.data").value(42));
     }
 
     @Test

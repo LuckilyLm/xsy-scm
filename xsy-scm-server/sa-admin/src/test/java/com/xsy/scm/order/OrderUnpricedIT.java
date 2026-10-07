@@ -31,7 +31,6 @@ class OrderUnpricedIT extends ScmW3PgITBase {
     @Test
     void missingPricePersistsNullRejectsSubmitAndRollbackKeepsDraft() throws Exception {
         var customer = new CustomerAddForm();
-        customer.setCustomerCode(prefix);
         customer.setName(prefix);
         customer.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         customer.setSettleMode("INDEPENDENT");

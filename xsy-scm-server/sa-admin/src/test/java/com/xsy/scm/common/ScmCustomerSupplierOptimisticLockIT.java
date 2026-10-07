@@ -65,7 +65,6 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
 
     private Long customerId() {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + "-C");
         form.setName("乐观锁客户");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         return customerService.add(form);
@@ -81,7 +80,6 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
 
     private Long supplierId() {
         SupplierAddForm form = new SupplierAddForm();
-        form.setSupplierCode(prefix + "-S");
         form.setName("乐观锁供应商");
         return supplierService.add(form);
     }

@@ -217,7 +217,6 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
 
     private Long route() {
         var w = new WarehouseAddForm();
-        w.setWarehouseCode(prefix + "-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         w.setName("打印仓");
         w.setLongitude(new java.math.BigDecimal("113.9"));
         w.setLatitude(new java.math.BigDecimal("22.5"));

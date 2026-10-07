@@ -2,7 +2,6 @@ package com.xsy.scm.warehouse;
 
 import com.xsy.scm.common.ScmW5PgITBase;
 import com.xsy.scm.warehouse.constant.ScmWarehouseStatusEnum;
-import com.xsy.scm.warehouse.constant.WarehouseErrorCode;
 import com.xsy.scm.warehouse.domain.form.WarehouseUpdateForm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 仓库域 PostgreSQL 集成测试。
  *
- * <p>覆盖：V15 种子、编码唯一（部分唯一索引 + 归一化）、停用语义与 {@code ck_warehouse_status}。
+ * <p>覆盖：V15 种子、服务端编码生成（{@code WH######}）与不重号、停用语义与 {@code ck_warehouse_status}。
  *
  * <p><b>「停用后不能用于新采购单」这一用例</b>需要 {@code PurchaseOrderService}
  * 与 {@code PurchaseWarehouseReferenceGuard} 同时存在，属采购侧规则（40987）。
@@ -40,34 +39,27 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("编码唯一：归一化后重复 → 40996；跨仓库重复 → 40996；过期版本 → 40921")
-    void enforcesUniqueCodeAndOptimisticLock() {
-        String code = prefix + "-UNIQ";
-        Long first = warehouseService.create(addForm(code, "一号仓"));
+    @DisplayName("编码由服务端生成（WH######）：同名两次创建都成功且不重号；编辑不触碰编码；过期版本 → 40921")
+    void generatesUniqueCodesAndEnforcesOptimisticLock() {
+        Long first = warehouseService.create(addForm("一号仓"));
+        Long second = warehouseService.create(addForm("一号仓"));
 
-        // 同码再建
-        expectCode(() -> warehouseService.create(addForm(code, "二号仓")),
-                WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE.getCode());
-        // 大小写不同但归一化后同码（normalizeCode 会 trim + upper）
-        expectCode(() -> warehouseService.create(addForm(code.toLowerCase(), "三号仓")),
-                WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE.getCode());
-
-        // 编辑到已被占用的编码
-        Long second = warehouseService.create(addForm(prefix + "-OTHER", "四号仓"));
-        WarehouseUpdateForm clash = updateForm(second, code, "四号仓", 0);
-        expectCode(() -> warehouseService.update(clash),
-                WarehouseErrorCode.WAREHOUSE_CODE_DUPLICATE.getCode());
+        String firstCode = warehouseCode(first);
+        String secondCode = warehouseCode(second);
+        assertThat(firstCode).matches("^WH\\d{6,}$");
+        assertThat(secondCode).matches("^WH\\d{6,}$").isNotEqualTo(firstCode);
 
         // 过期版本
-        WarehouseUpdateForm stale = updateForm(first, code, "一号仓改名", 99);
+        WarehouseUpdateForm stale = updateForm(first, "一号仓改名", 99);
         expectCode(() -> warehouseService.update(stale), VERSION_CONFLICT.getCode());
 
-        // 正常编辑成功
-        warehouseService.update(updateForm(first, code, "一号仓改名", 0));
+        // 正常编辑成功；编码不可改，服务端不读写表单里的编码
+        warehouseService.update(updateForm(first, "一号仓改名", 0));
         assertThat(jdbc.queryForObject("SELECT name FROM warehouse WHERE id = ?", String.class, first))
                 .isEqualTo("一号仓改名");
         assertThat(jdbc.queryForObject("SELECT version FROM warehouse WHERE id = ?", Integer.class, first))
                 .isEqualTo(1);
+        assertThat(warehouseCode(first)).as("编辑不触碰编码").isEqualTo(firstCode);
     }
 
     @Test
@@ -90,18 +82,19 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
 
     // ------------------------------------------------------------------
 
-    private static com.xsy.scm.warehouse.domain.form.WarehouseAddForm addForm(
-            String code, String name) {
+    private String warehouseCode(Long id) {
+        return jdbc.queryForObject("SELECT warehouse_code FROM warehouse WHERE id = ?", String.class, id);
+    }
+
+    private static com.xsy.scm.warehouse.domain.form.WarehouseAddForm addForm(String name) {
         var form = new com.xsy.scm.warehouse.domain.form.WarehouseAddForm();
-        form.setWarehouseCode(code);
         form.setName(name);
         return form;
     }
 
-    private static WarehouseUpdateForm updateForm(Long id, String code, String name, Integer version) {
+    private static WarehouseUpdateForm updateForm(Long id, String name, Integer version) {
         var form = new WarehouseUpdateForm();
         form.setId(id);
-        form.setWarehouseCode(code);
         form.setName(name);
         form.setVersion(version);
         return form;

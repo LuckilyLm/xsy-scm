@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +38,6 @@ class SupplierServiceIT extends ScmW2PgITBase {
 
     private SupplierAddForm form(String suffix) {
         SupplierAddForm form = new SupplierAddForm();
-        form.setSupplierCode(" " + prefix + "-" + suffix + " ");
         form.setName("供应商" + suffix);
         return form;
     }
@@ -48,19 +46,22 @@ class SupplierServiceIT extends ScmW2PgITBase {
         SupplierUpdateForm form = new SupplierUpdateForm();
         form.setSupplierId(id);
         form.setVersion(version);
-        form.setSupplierCode(prefix + "-" + suffix);
         form.setName("改名" + suffix);
         return form;
     }
 
+    private String supplierCode(Long id) {
+        return jdbc.queryForObject("SELECT supplier_code FROM supplier WHERE id = ?", String.class, id);
+    }
+
     @Test
-    @DisplayName("新建强制 ENABLED（S7），编码归一化，审计写入操作人")
-    void addForcesEnabledAndNormalizesCode() {
+    @DisplayName("新建强制 ENABLED（S7），编码由服务端生成（SUP######），审计写入操作人")
+    void addForcesEnabledAndGeneratesCode() {
         Long id = service.add(form("a"));
 
         Map<String, Object> row = jdbc.queryForMap(
                 "SELECT supplier_code, status, version, deleted, created_by FROM supplier WHERE id = ?", id);
-        assertThat(row.get("supplier_code")).isEqualTo((prefix + "-a").toUpperCase(Locale.ROOT));
+        assertThat((String) row.get("supplier_code")).matches("^SUP\\d{6,}$");
         assertThat(row.get("status")).isEqualTo("ENABLED");
         assertThat(((Number) row.get("version")).intValue()).isZero();
         assertThat(row.get("deleted")).isEqualTo(false);
@@ -68,17 +69,23 @@ class SupplierServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("活动编码唯一：重复 40944；软删后编码可复用")
-    void duplicateCodeRejectedAndReusableAfterDelete() {
-        Long id = service.add(form("b"));
-        expectCode(() -> service.add(form("b")), 40944);
+    @DisplayName("编码由服务端生成且不重号：同名两次创建都成功、编码不同；软删后可重建")
+    void generatedCodesAreUniqueAndRecreateAfterDeleteSucceeds() {
+        Long first = service.add(form("b"));
+        Long second = service.add(form("b"));
+        String firstCode = supplierCode(first);
+        String secondCode = supplierCode(second);
+        assertThat(firstCode).matches("^SUP\\d{6,}$");
+        assertThat(secondCode).matches("^SUP\\d{6,}$").isNotEqualTo(firstCode);
 
         SupplierDeleteForm deletion = new SupplierDeleteForm();
-        deletion.setSupplierId(id);
+        deletion.setSupplierId(first);
         deletion.setVersion(0);
         service.delete(deletion);
 
-        assertThat(service.add(form("b"))).isNotEqualTo(id);
+        Long recreated = service.add(form("b"));
+        assertThat(recreated).as("软删后重建成功").isNotEqualTo(first);
+        assertThat(supplierCode(recreated)).matches("^SUP\\d{6,}$").isNotEqualTo(firstCode);
     }
 
     @Test

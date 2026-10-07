@@ -87,9 +87,6 @@ export function fromRows(rows: SupplierSkuRow[]): SkuDraft[] {
 }
 
 export function validateSupplier(form: SupplierForm): string | undefined {
-    if (!form.supplierCode?.trim()) {
-        return '请输入供应商编码';
-    }
     if (!form.name?.trim()) {
         return '请输入供应商名称';
     }
@@ -153,7 +150,6 @@ export function toSupplierPayload(form: SupplierForm): SupplierForm {
     };
     return {
         ...form,
-        supplierCode: (form.supplierCode ?? '').trim().toUpperCase(),
         name: (form.name ?? '').trim(),
         contactName: blankToNull(form.contactName),
         contactPhone: blankToNull(form.contactPhone),

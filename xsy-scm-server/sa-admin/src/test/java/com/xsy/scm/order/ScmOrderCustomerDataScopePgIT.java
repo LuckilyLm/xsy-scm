@@ -511,7 +511,6 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
 
     private CustomerAddForm customerForm(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + "-" + suffix);
         form.setName("范围测试" + suffix);
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
@@ -522,7 +521,6 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         CustomerUpdateForm form = new CustomerUpdateForm();
         form.setCustomerId(customerId);
         form.setVersion(version);
-        form.setCustomerCode(prefix + "-UPD");
         form.setName("编辑后名称");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");

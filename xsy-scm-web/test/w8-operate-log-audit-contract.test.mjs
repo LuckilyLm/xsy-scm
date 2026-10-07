@@ -28,7 +28,7 @@ function code(relative) {
 const LIST = '../src/views/support/operate-log/operate-log-list.vue';
 const MODAL = '../src/views/support/operate-log/operate-log-detail-modal.vue';
 const CUSTOMER = '../src/views/business/scm/customer/customer-detail.vue';
-const ROUTE_DETAIL = '../src/views/business/scm/delivery/route-detail.vue';
+const ROUTE_DETAIL = '../src/views/business/scm/delivery/route-detail-page.vue';
 
 test('脱敏纯函数：敏感键替换为占位符、其余原样、递归覆盖对象与数组', () => {
   const input = {

@@ -13,19 +13,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 仓库单条业务规则测试。
  *
- * <p>纯函数，无 Spring、无 DB。「编码重复」不在这里 —— 它由唯一索引 + Service 查重共同保证，
- * 属 {@code PurchaseWarehouseIT} 的覆盖范围。
+ * <p>纯函数，无 Spring、无 DB。编码由服务端生成（{@code ScmBusinessNoService}），不参与表单校验；
+ * 本类只覆盖名称归一化、名称必填与状态取值域三条规则。
  */
 class WarehouseValidatorTest {
-
-    @Test
-    @DisplayName("编码归一化：去空白 + 转大写；空值透传")
-    void normalizesCode() {
-        assertThat(WarehouseValidator.normalizeCode("  wh001  ")).isEqualTo("WH001");
-        assertThat(WarehouseValidator.normalizeCode("Wh-001")).isEqualTo("WH-001");
-        assertThat(WarehouseValidator.normalizeCode(null)).isNull();
-        assertThat(WarehouseValidator.normalizeCode("   ")).isEmpty();
-    }
 
     @Test
     @DisplayName("名称归一化：只去首尾空白，不改大小写")
@@ -51,24 +42,23 @@ class WarehouseValidatorTest {
     }
 
     @Test
-    @DisplayName("必填校验：编码 / 名称缺失或空白 → 40000；非法状态 → 40000")
-    void validatesRequiredFields() {
+    @DisplayName("名称必填：null 表单 / 名称缺失或全空白 → 40000；名称存在即通过")
+    void validatesRequiredName() {
         assertThatThrownBy(() -> WarehouseValidator.validateRequired(null))
-                .isInstanceOf(ScmBusinessException.class);
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        e -> assertThat(e.getErrorCode().getCode()).isEqualTo(VALIDATION_ERROR.getCode()));
 
         WarehouseAddForm form = new WarehouseAddForm();
         assertThatThrownBy(() -> WarehouseValidator.validateRequired(form))
-                .isInstanceOf(ScmBusinessException.class);
-
-        form.setWarehouseCode("WH-X");
-        assertThatThrownBy(() -> WarehouseValidator.validateRequired(form))
                 .as("名称缺失")
-                .isInstanceOf(ScmBusinessException.class);
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        e -> assertThat(e.getErrorCode().getCode()).isEqualTo(VALIDATION_ERROR.getCode()));
 
         form.setName("   ");
         assertThatThrownBy(() -> WarehouseValidator.validateRequired(form))
                 .as("名称全空白")
-                .isInstanceOf(ScmBusinessException.class);
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        e -> assertThat(e.getErrorCode().getCode()).isEqualTo(VALIDATION_ERROR.getCode()));
 
         form.setName("仓");
         WarehouseValidator.validateRequired(form);

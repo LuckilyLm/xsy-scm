@@ -34,8 +34,8 @@ const scmRoot = fileURLToPath(new URL('../src/views/business/scm', import.meta.u
 const DRAWER_TS = '../src/theme/scm/scm-drawer.ts';
 const RESPONSIVE_LESS = '../src/theme/scm/responsive.less';
 
-/** 迁移完成时的实例基线：低于它就说明扫描方式失效了。 */
-const EXPECTED_INSTANCES = 34;
+/** 迁移完成时的实例基线：低于它就说明扫描方式失效了（线路详情页面化后由 34 降为 33）。 */
+const EXPECTED_INSTANCES = 33;
 
 /** 只允许这五个等级。 */
 const ALLOWED_LEVELS = ['s', 'm', 'l', 'xl', 'workspace'];
@@ -45,7 +45,6 @@ const ALLOWED_LEVELS = ['s', 'm', 'l', 'xl', 'workspace'];
  * 每一类都必须能在代码注释里说出「为什么横向空间本身属于业务内容」。
  */
 const WORKSPACE_FILES = new Set([
-    'delivery/route-detail.vue',
     'sorting/components/sorting-task-detail-drawer.vue',
     'purchase/components/purchase-demand-batch-detail-drawer.vue',
     'report/report-components/report-drilldown-drawer.vue',
@@ -157,7 +156,7 @@ test('不得再出现 min(NNNpx, Nvw) 形式的抽屉宽度', () => {
 // 4. workspace 是受限档
 // ------------------------------------------------------------------
 
-test('workspace 只允许出现在已批准的 5 个文件里', () => {
+test('workspace 只允许出现在已批准的 4 个文件里', () => {
     const offenders = instances
         .filter((i) => /scmDrawerWidth\('workspace'\)/.test(i.expr ?? ''))
         .filter((i) => !WORKSPACE_FILES.has(i.rel))
@@ -165,8 +164,9 @@ test('workspace 只允许出现在已批准的 5 个文件里', () => {
     assert.deepEqual(
         offenders,
         [],
-        `workspace 是受限特殊档，只允许地图工作台 / 分拣称重工作台 / 报表下钻 /\n` +
-        `超宽业务数据阅读 / 多面板业务工作台五类；新增用例要先更新 SCM UI 规范并同步本契约：\n${offenders.join('\n')}`,
+        `workspace 是受限特殊档，只允许分拣称重工作台 / 报表下钻 /\n` +
+        `超宽业务数据阅读 / 多面板业务工作台四类（线路详情已页面化，不再占用本档）；\n` +
+        `新增用例要先更新 SCM UI 规范并同步本契约：\n${offenders.join('\n')}`,
     );
 });
 

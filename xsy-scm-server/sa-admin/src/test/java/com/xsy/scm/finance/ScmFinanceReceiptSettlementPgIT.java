@@ -77,7 +77,6 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
 
     private Long groupCustomer(Long parentCustomerId) {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + "-G" + UUID.randomUUID().toString().substring(0, 8));
         form.setName("结算主体边界集团客户");
         form.setCustomerTypeId(customerTypeId(parentCustomerId == null ? "GROUP" : "ENTERPRISE"));
         form.setSettleMode("GROUP");

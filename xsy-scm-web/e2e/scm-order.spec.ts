@@ -7,7 +7,7 @@ import smCrypto from 'sm-crypto';
 const apiUrl='http://127.0.0.1:18080';
 const name='w4_e2e_'+Date.now().toString(36),password='W4@'+randomBytes(8).toString('hex');
 const env={...process.env,W4_E2E_NAME:name,W4_E2E_PASSWORD:password};
-let api:APIRequestContext,token:string,customerId:string,skuId:string,standardSkuId:string;
+let api:APIRequestContext,token:string,customerId:string,customerCode:string,skuId:string,standardSkuId:string;
 let confirmedOrder:any;
 test.describe.configure({mode:'serial'});
 async function login(account:string){const c=await request.newContext({baseURL:apiUrl});const captcha=(await(await c.get('/login/getCaptcha')).json()).data;const source=readFileSync('src/lib/encrypt.ts','utf8');const key=/const SM4_KEY = '([^']+)'/.exec(source)![1];const encrypted=Buffer.from(smCrypto.sm4.encrypt(password,Buffer.from(key).toString('hex'))).toString('base64');const r=await(await c.post('/login',{data:{loginName:account,password:encrypted,captchaUuid:captcha.captchaUuid,captchaCode:captcha.captchaText,loginDevice:1}})).json();expect(r.code).toBe(0);await c.dispose();return r.data.token;}
@@ -25,8 +25,9 @@ async function select(page:Page,label:string,value:string){const box=page.locato
 test.beforeAll(async()=>{
  execFileSync('python',['../tools/w4_e2e_accounts.py','setup'],{env,stdio:'pipe'});token=await login(name);api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
  const types=(await(await api.post('/scm/customer/type/option/list',{data:{}})).json()).data;
- customerId=await post('/scm/customer/add',{customerCode:name.toUpperCase(),name:name,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W4验收',contactPhone:'13800000000',address:'验收地址'});
- const customer=(await(await api.get('/scm/customer/detail/'+customerId)).json()).data;await post('/scm/customer/updateStatus',{customerId,version:customer.version,status:'COOPERATING'});
+ customerId=await post('/scm/customer/add',{name:name,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W4验收',contactPhone:'13800000000',address:'验收地址'});
+ // 客户编码由服务端生成（CUS + 6 位序号）：后面的 Excel 导入必须以回读的真实编码为匹配键。
+ const customer=(await(await api.get('/scm/customer/detail/'+customerId)).json()).data;customerCode=String(customer.customerCode);expect(customerCode).toMatch(/^CUS\d{6,}$/);await post('/scm/customer/updateStatus',{customerId,version:customer.version,status:'COOPERATING'});
  const tree=(await(await api.post('/scm/product/category/tree',{data:{}})).json()).data;const flatten=(rows:any[]):any[]=>rows.flatMap(x=>[x,...flatten(x.children??[])]);const category=flatten(tree).find(x=>x.level===3)??flatten(tree)[0];
  await post('/scm/product/add',{spuCode:name.toUpperCase(),name:name+'商品',categoryId:category.categoryId,status:'ON_SHELF',images:[],skuList:[{skuCode:name.toUpperCase()+'-KG',specName:'散装',specValues:{规格:'散装'},saleUnit:'kg',productType:'NON_STANDARD',marketPrice:'3.5000',status:'ON_SHELF',defaultFlag:true,sortOrder:0},{skuCode:name.toUpperCase()+'-BOX',specName:'整箱',specValues:{规格:'整箱'},saleUnit:'箱',productType:'STANDARD',marketPrice:'0.0000',status:'ON_SHELF',defaultFlag:false,sortOrder:1}]});
  const options=(await(await api.post('/scm/product/sku/option-list',{data:{keyword:name,limit:10}})).json()).data.options;skuId=options.find((x:any)=>x.specName==='散装').skuId;standardSkuId=options.find((x:any)=>x.specName==='整箱').skuId;
@@ -68,7 +69,8 @@ test('7 download template and import standard/nonstandard orders atomically',asy
  await browse(page);await page.getByRole('button',{name:'导入订单',exact:true}).click();
  const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'下载 Excel 模板',exact:true}).click();const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('销售订单导入模板.xlsx');const valid='../.runtime/w4-order-import-valid.xlsx';await download.saveAs(valid);
- const customerCode=name.toUpperCase(),standardCode=customerCode+'-BOX',weightCode=customerCode+'-KG';
+ // 客户编码列必须填服务端回读的真实编码；SKU 编码仍是人工码，可继续拼前缀。
+ const standardCode=name.toUpperCase()+'-BOX',weightCode=name.toUpperCase()+'-KG';
  const fillScript=`from openpyxl import load_workbook\nimport sys\np=sys.argv[1]; customer=sys.argv[2]; standard=sys.argv[3]; weight=sys.argv[4]; bad=sys.argv[5]=='bad'\nwb=load_workbook(p); ws=wb.active\nfor row in range(2,ws.max_row+1):\n    for col in range(1,13): ws.cell(row,col).value=None\nrows=[['1.0','IMPORT-STANDARD',customer,'W4验收','13800000000','验收地址',None,standard,'2.0000',None,None,'页面联调'],['1.0','IMPORT-WEIGHT',customer,'W4验收','13800000000','验收地址',None,weight,'3.0000',None,None,'页面联调']]\nif bad: rows.append(['1.0','IMPORT-BAD',customer,'W4验收','13800000000','验收地址',None,'SKU-NOT-FOUND','1.0000',None,None,'错误行'])\nfor r,row in enumerate(rows,2):\n    for c,v in enumerate(row,1): ws.cell(r,c).value=v\nwb.save(p)`;
  execFileSync('python',['-c',fillScript,valid,customerCode,standardCode,weightCode,'valid']);
  await page.locator('.ant-modal:visible input[type=file]').setInputFiles(valid);await page.getByRole('button',{name:'开始导入',exact:true}).click();
@@ -82,7 +84,7 @@ test('7 download template and import standard/nonstandard orders atomically',asy
 });
 
 test('8 sample row and manual override rules block the whole batch',async({page})=>{
- const customerCode=name.toUpperCase(),standardCode=customerCode+'-BOX';
+ const standardCode=name.toUpperCase()+'-BOX';
  const importFile=async(path:string)=>{await page.locator('.ant-modal:visible input[type=file]').setInputFiles(path);await page.getByRole('button',{name:'开始导入',exact:true}).click();};
  const reopen=async()=>{await page.getByRole('button',{name:'取 消'}).click();await page.getByRole('button',{name:'导入订单',exact:true}).click();};
  const importedTotal=async()=>(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;
@@ -237,7 +239,8 @@ async function pickSku(page:Page,spec:string){
 async function cooperatingCustomer(suffix:string){
  const types=(await(await api.post('/scm/customer/type/option/list',{data:{}})).json()).data;
  const customerName=name+'_'+suffix;
- const id=await post('/scm/customer/add',{customerCode:customerName.toUpperCase(),name:customerName,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W4验收',contactPhone:'13800000000',address:'验收地址'});
+ // 客户编码由服务端生成：创建载荷不再提交编码（列表/选择器都按名称定位）。
+ const id=await post('/scm/customer/add',{name:customerName,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W4验收',contactPhone:'13800000000',address:'验收地址'});
  const r=await(await api.get('/scm/customer/detail/'+id)).json();
  await post('/scm/customer/updateStatus',{customerId:id,version:r.data.version,status:'COOPERATING'});
  return {customerName,customerId:id};

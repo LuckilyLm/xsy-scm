@@ -7,66 +7,75 @@
       type="warning"
       show-icon
   />
-  <div v-if="routeStatus.state !== 'idle'" class="route-plan-summary">
-    <strong>计划配送路线</strong>
-    <p v-if="routeStatus.state === 'planning'"><a-spin size="small"/> 正在规划道路路线...</p>
-    <template v-else-if="drivingResult">
-      <p>起点仓库 → {{ route.stopCount }} 个停靠点</p>
-      <p class="route-plan-metrics">
-        <span class="scm-quantity">路程 {{ distanceText }}</span>
-        <span class="scm-quantity">预计 {{ durationText }}</span>
-        <span>高德驾车规划</span>
-      </p>
-      <p v-if="!allLocated" class="route-plan-note">未定位停靠点处线路中断，未计入路程与耗时。</p>
+  <div class="route-map-toolbar">
+    <strong>计划路线</strong>
+    <template v-if="routeStatus.state === 'ready' && drivingResult">
+      <span class="route-map-toolbar__legs">起点仓库 → {{ route.stopCount }} 个停靠点</span>
+      <span class="scm-quantity">路程 {{ distanceText }}</span>
+      <span class="scm-quantity">预计 {{ durationText }}</span>
+      <span class="route-map-toolbar__provider">高德驾车规划</span>
     </template>
-    <p v-else>道路路线暂时不可用，当前显示停靠点直线示意。</p>
+    <span v-else-if="routeStatus.state === 'planning'" class="route-map-toolbar__legs">
+      <a-spin size="small"/> 正在规划道路路线...
+    </span>
+    <span v-else-if="routeStatus.state === 'fallback'" class="route-map-toolbar__legs">
+      道路路线暂时不可用，当前显示停靠点直线示意。
+    </span>
   </div>
   <div class="route-map-layout">
     <div class="route-stops">
-      <div class="warehouse-stop">
-        <strong>起点 · {{ route.warehouseNameSnapshot }}</strong>
-        <p>{{ route.warehouseAddressSnapshot || '未填写地址' }}</p>
+      <div class="stop-card">
+        <div class="stop-card__head">
+          <strong>● 起点</strong>
+        </div>
+        <p class="stop-card__name">{{ route.warehouseNameSnapshot }}</p>
+        <p class="stop-card__line stop-card__line--muted">{{ route.warehouseAddressSnapshot || '暂无详细地址' }}</p>
       </div>
-      <p v-if="canEdit">拖动停靠点排序，或使用上移 / 下移。顺序调整后自动保存。</p>
+      <p v-if="canEdit" class="stop-edit-note">拖动停靠点排序，或使用上移 / 下移。顺序调整后自动保存。</p>
       <a-empty v-if="!stops.length" description="还没有停靠点，请先在线路订单中加入订单"/>
-      <ol>
-        <li
-            v-for="(stop, index) in stops"
-            :key="stop.id"
-            :draggable="canEdit && !busy"
-            @dragstart="dragFrom = index"
-            @dragend="dragFrom = undefined"
-            @dragover.prevent
-            @drop.prevent="drop(index)"
-        >
-          <div class="stop-heading">
-            <strong>{{ stop.stopSeq }}. {{ stop.customerNameSnapshot }}</strong>
+      <div
+          v-for="(stop, index) in stops"
+          :key="stop.id"
+          class="stop-card"
+          :draggable="canEdit && !busy"
+          @dragstart="dragFrom = index"
+          @dragend="dragFrom = undefined"
+          @dragover.prevent
+          @drop.prevent="drop(index)"
+      >
+        <div class="stop-card__head">
+          <strong>{{ stop.stopSeq }}. {{ stop.customerNameSnapshot }}</strong>
+          <!-- 坐标系属于定位细节：悬停标签可查，不长期占版面 -->
+          <a-tooltip :title="stop.geomCrs ? `坐标系 ${stop.geomCrs}` : undefined">
             <a-tag :color="isLocated(stop) ? 'green' : 'default'">{{ isLocated(stop) ? '已定位' : '未定位' }}</a-tag>
-          </div>
-          <p>{{ stop.addressSnapshot }}</p>
-          <p>{{ stop.receiverNameSnapshot || '—' }} · {{ stop.receiverPhoneSnapshot || '—' }}</p>
-          <p>
-            {{ stop.orderCount }} 张订单<span v-if="canViewAmount"> · {{ money(stop.totalAmount) }}</span><span
-              v-if="stop.geomCrs"> · {{ stop.geomCrs }}</span>
-          </p>
-          <p v-if="stop.plannedArrivalTime">计划到达：{{ datetime(stop.plannedArrivalTime) }}</p>
-          <a-space v-if="canEdit">
-            <a-button
-                size="small"
-                :disabled="index === 0 || busy"
-                :aria-label="`上移${stop.customerNameSnapshot}`"
-                @click="move(index, index - 1)"
-            >上移</a-button>
-            <a-button
-                size="small"
-                :disabled="index === stops.length - 1 || busy"
-                :aria-label="`下移${stop.customerNameSnapshot}`"
-                @click="move(index, index + 1)"
-            >下移</a-button>
-            <a-button size="small" :disabled="busy" @click="emit('editStop', stop)">定位 / 备注</a-button>
-          </a-space>
-        </li>
-      </ol>
+          </a-tooltip>
+        </div>
+        <p class="stop-card__line">{{ stop.addressSnapshot }}</p>
+        <p class="stop-card__line stop-card__line--muted">
+          {{ stop.receiverNameSnapshot || '—' }} · {{ stop.receiverPhoneSnapshot || '—' }}
+        </p>
+        <p class="stop-card__line">
+          {{ stop.orderCount }} 张订单<span v-if="canViewAmount"> · <span class="scm-money">{{ money(stop.totalAmount) }}</span></span>
+        </p>
+        <p class="stop-card__line stop-card__line--muted">
+          预计到达 {{ stop.plannedArrivalTime ? datetime(stop.plannedArrivalTime) : '—' }}
+        </p>
+        <a-space v-if="canEdit">
+          <a-button
+              size="small"
+              :disabled="index === 0 || busy"
+              :aria-label="`上移${stop.customerNameSnapshot}`"
+              @click="move(index, index - 1)"
+          >上移</a-button>
+          <a-button
+              size="small"
+              :disabled="index === stops.length - 1 || busy"
+              :aria-label="`下移${stop.customerNameSnapshot}`"
+              @click="move(index, index + 1)"
+          >下移</a-button>
+          <a-button size="small" :disabled="busy" @click="emit('editStop', stop)">定位 / 备注</a-button>
+        </a-space>
+      </div>
     </div>
     <ScmMap :points="mapPoints" route @route-status="routeStatus = $event"/>
   </div>
@@ -124,77 +133,82 @@ function move(from: number, to: number) {
 </script>
 
 <style scoped>
+.route-map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  border-radius: 8px;
+}
+
+.route-map-toolbar__legs,
+.route-map-toolbar__provider {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 13px;
+}
+
 .route-map-layout {
   display: grid;
   gap: 16px;
   grid-template-columns: 360px minmax(0, 1fr);
+  height: calc(100vh - 330px);
+  min-height: 520px;
   margin-top: 16px;
-}
-
-.route-plan-summary {
-  margin-top: 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--scm-border, #e5e6eb);
-  border-radius: 8px;
-}
-
-.route-plan-summary strong {
-  display: block;
-}
-
-.route-plan-summary p {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 8px 0 0;
-  flex-wrap: wrap;
-}
-
-.route-plan-note {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
 }
 
 .route-stops {
-  max-height: 620px;
   overflow: auto;
   padding-right: 8px;
 }
 
-.route-stops ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.stop-card {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: var(--scm-bg-container, #fff);
+  border: 1px solid var(--scm-border, #e5e6eb);
+  border-radius: 8px;
 }
 
-.route-stops li,
-.warehouse-stop {
-  border-bottom: 1px solid var(--scm-border, #e5e6eb);
-  padding: 16px 0;
-}
-
-.route-stops li[draggable='true'] {
+.stop-card[draggable='true'] {
   cursor: grab;
 }
 
-.route-stops p {
-  margin: 8px 0;
+.stop-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stop-card__name {
+  margin: 6px 0 0;
+  font-weight: 500;
+}
+
+.stop-card__line {
+  margin: 6px 0 0;
   overflow-wrap: anywhere;
 }
 
-.stop-heading {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
+.stop-card__line--muted {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 13px;
+}
+
+.stop-edit-note {
+  margin: 0 0 12px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
 }
 
 @media (max-width: 900px) {
   .route-map-layout {
     grid-template-columns: 1fr;
-  }
-
-  .route-stops {
-    max-height: none;
+    height: auto;
+    min-height: 0;
   }
 }
 </style>

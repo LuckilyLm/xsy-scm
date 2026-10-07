@@ -49,7 +49,6 @@ class CustomerTypeServiceIT extends ScmW2PgITBase {
 
     private CustomerAddForm customer(String suffix, Long typeId) {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + suffix);
         form.setName("客户" + suffix);
         form.setCustomerTypeId(typeId);
         return form;

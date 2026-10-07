@@ -69,7 +69,6 @@ export async function createLocatedCustomer(client: APIRequestContext, runTag: s
     if (!typeList.length) throw new Error('开发库没有客户类型，无法建客户夹具');
     const customerTypeId = Number(typeList[0].typeId ?? typeList[0].customerTypeId ?? typeList[0].id);
     const id = String(await call(client, 'post', '/scm/customer/add', {
-        customerCode: `${runTag}-C${tag}`.toUpperCase(),
         name: `${runTag}客户${tag}`,
         customerTypeId,
         settleMode: 'INDEPENDENT',
@@ -82,6 +81,10 @@ export async function createLocatedCustomer(client: APIRequestContext, runTag: s
         longitude: '113.94000000', latitude: '22.54000000', geomCrs: 'GCJ02',
     }));
     const created = await call<Row>(client, 'get', `/scm/customer/detail/${id}`);
+    // 客户编码由服务端生成（CUS + 至少 6 位全局序号）：打点一次，creation 契约变了要在这里红。
+    if (!/^CUS\d{6,}$/.test(String(created.customerCode))) {
+        throw new Error(`客户编码不是服务端生成形态：${String(created.customerCode)}`);
+    }
     await call(client, 'post', '/scm/customer/updateStatus', {
         customerId: id, version: created.version, status: 'COOPERATING',
     });

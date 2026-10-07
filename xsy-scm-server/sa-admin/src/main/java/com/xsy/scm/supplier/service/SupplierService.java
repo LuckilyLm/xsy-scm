@@ -1,10 +1,11 @@
 package com.xsy.scm.supplier.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.no.ScmBusinessNoService;
+import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.supplier.dao.SupplierDao;
 import com.xsy.scm.supplier.dao.SupplierSkuDao;
 import com.xsy.scm.supplier.domain.entity.SupplierEntity;
@@ -45,6 +46,8 @@ public class SupplierService {
 
     private final SupplierSkuDao supplierSkuDao;
 
+    private final ScmBusinessNoService businessNoService;
+
     /**
      * 读取供应商，不存在或已删除 → 40440。
      */
@@ -80,11 +83,8 @@ public class SupplierService {
 
     @Transactional(rollbackFor = Exception.class)
     public Long add(SupplierAddForm form) {
-        String code = SupplierValidator.normalizeCode(form.getSupplierCode());
-        if (existsCode(code, null)) {
-            throw new ScmBusinessException(SUPPLIER_CODE_DUPLICATE);
-        }
         SupplierEntity entity = new SupplierEntity();
+        entity.setSupplierCode(businessNoService.next(ScmBusinessNoType.SUPPLIER));
         apply(entity, form);
         // 新建供应商强制启用，不接受客户端指定状态。
         entity.setStatus(ScmEnableStatusEnum.ENABLED.name());
@@ -102,10 +102,6 @@ public class SupplierService {
     @Transactional(rollbackFor = Exception.class)
     public void update(SupplierUpdateForm form) {
         SupplierEntity entity = require(form.getSupplierId(), form.getVersion());
-        String code = SupplierValidator.normalizeCode(form.getSupplierCode());
-        if (existsCode(code, form.getSupplierId())) {
-            throw new ScmBusinessException(SUPPLIER_CODE_DUPLICATE);
-        }
         apply(entity, form);
         // apply 不触碰 status；状态只能通过 updateStatus 变更。
         entity.setVersion(form.getVersion());
@@ -147,20 +143,7 @@ public class SupplierService {
         }
     }
 
-    /**
-     * 活动记录内编码是否已存在（编码大小写不敏感：先归一化再比较）。
-     */
-    public boolean existsCode(String normalizedCode, Long excludeId) {
-        LambdaQueryWrapper<SupplierEntity> wrapper = new LambdaQueryWrapper<SupplierEntity>()
-                .eq(SupplierEntity::getSupplierCode, normalizedCode);
-        if (excludeId != null) {
-            wrapper.ne(SupplierEntity::getId, excludeId);
-        }
-        return supplierDao.selectCount(wrapper) > 0;
-    }
-
     private void apply(SupplierEntity entity, SupplierAddForm form) {
-        entity.setSupplierCode(SupplierValidator.normalizeCode(form.getSupplierCode()));
         entity.setName(SupplierValidator.normalizeName(form.getName()));
         entity.setPaymentPeriodDays(form.getPaymentPeriodDays() == null ? 0 : form.getPaymentPeriodDays());
         entity.setContactName(SupplierValidator.normalizeOptional(form.getContactName()));

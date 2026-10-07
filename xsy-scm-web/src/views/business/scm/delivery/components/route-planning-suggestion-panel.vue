@@ -1,4 +1,5 @@
 <template>
+  <p class="plan-intro">根据当前停靠点提供配送顺序建议。建议不会自动修改线路，需要人工确认应用。</p>
   <a-space class="plan-actions">
     <a-button
         type="primary"
@@ -9,7 +10,7 @@
     >
       生成排线建议
     </a-button>
-    <span class="hint" v-if="!canEdit">只有草稿线路可以生成与应用建议</span>
+    <span class="plan-note" v-if="disabledReason">{{ disabledReason }}</span>
   </a-space>
   <a-alert v-if="error" type="error" :message="error" show-icon/>
 
@@ -61,7 +62,7 @@
       <a-button
           v-privilege="DELIVERY_PERM.PLAN_APPLY"
           :loading="busy"
-          :disabled="proposal.status !== 'PROPOSED' || loading || busy"
+          :disabled="proposal.status !== 'PROPOSED' || !canEdit || loading || busy"
           @click="emit('discard')"
       >
         放弃建议
@@ -69,7 +70,15 @@
     </a-space>
   </template>
   <a-spin v-else-if="loading"/>
-  <a-empty v-else-if="!busy" description="还没有排线建议，可继续使用地图或手动调整停靠顺序"/>
+  <a-empty
+      v-else-if="!busy"
+      description="暂无排线建议"
+  >
+    <template #description>
+      <p>暂无排线建议。</p>
+      <p v-if="disabledReason" class="plan-note">{{ disabledReason }}</p>
+    </template>
+  </a-empty>
 
   <template v-if="history.length > 1">
     <a-divider orientation="left">历史建议</a-divider>
@@ -106,6 +115,7 @@ defineProps<{
   loading: boolean;
   busy: boolean;
   error: string;
+  disabledReason?: string;
   proposal?: DeliveryPlanProposal;
   history: DeliveryPlanProposal[];
 }>();
@@ -136,6 +146,11 @@ const planHistoryColumns: TableColumnsType = [
 </script>
 
 <style scoped>
+.plan-intro {
+  margin: 0 0 12px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
 .plan-actions {
   margin: 12px 0;
 }
@@ -144,8 +159,8 @@ const planHistoryColumns: TableColumnsType = [
   margin-bottom: 12px;
 }
 
-.hint {
-  color: var(--scm-text-secondary);
+.plan-note {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
   font-size: 12px;
 }
 

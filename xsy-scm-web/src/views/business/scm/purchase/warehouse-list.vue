@@ -112,8 +112,9 @@
   >
     <a-alert v-if="formError" :message="formError" type="error" show-icon/>
     <a-form :model="form" layout="vertical">
-      <a-form-item label="仓库编码" name="warehouseCode" required>
-        <a-input v-model:value="form.warehouseCode" maxlength="64" :disabled="!!form.id"/>
+      <a-form-item label="仓库编码">
+        <span v-if="form.id" class="scm-form-readonly">{{ form.warehouseCode || '—' }}</span>
+        <span v-else class="scm-form-readonly">保存后由系统自动生成</span>
       </a-form-item>
       <a-form-item label="仓库名称" name="name" required>
         <a-input v-model:value="form.name" maxlength="150"/>
@@ -294,10 +295,6 @@ async function open(row?: Warehouse) {
 async function save() {
   formError.value = locationError(form.value) ?? '';
   if (formError.value) return;
-  if (!form.value.warehouseCode.trim()) {
-    formError.value = '请填写仓库编码';
-    return;
-  }
   if (!form.value.name.trim()) {
     formError.value = '请填写仓库名称';
     return;

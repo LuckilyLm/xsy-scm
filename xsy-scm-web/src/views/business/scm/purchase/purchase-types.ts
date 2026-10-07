@@ -593,7 +593,8 @@ export interface WarehouseQuery extends Page {
 export interface WarehousePayload extends Partial<AreaColumns>, ScmLocation {
     id?: Id;
     version?: number;
-    warehouseCode: string;
+    /** 仅编辑回显与列表展示用；创建时由服务端生成，提交不依赖该字段。 */
+    warehouseCode?: string;
     name: string;
     address?: string | null;
     remark?: string | null;

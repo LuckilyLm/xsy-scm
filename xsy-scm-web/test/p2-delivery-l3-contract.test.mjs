@@ -31,7 +31,7 @@ import {
 const API = '../src/api/business/scm/delivery-api.ts';
 const TYPES = '../src/views/business/scm/delivery/delivery-types.ts';
 const PERM = '../src/views/business/scm/delivery/use-delivery-permission.ts';
-const VIEW = '../src/views/business/scm/delivery/route-detail.vue';
+const VIEW = '../src/views/business/scm/delivery/route-detail-page.vue';
 const BASE_PANEL = '../src/views/business/scm/delivery/components/route-base-panel.vue';
 const PRINT_PANEL = '../src/views/business/scm/delivery/components/route-print-panel.vue';
 const FULFILLMENT_PANEL = '../src/views/business/scm/delivery/components/route-fulfillment-panel.vue';

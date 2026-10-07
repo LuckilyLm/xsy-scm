@@ -44,7 +44,6 @@ class CustomerFrequentSkuIT extends ScmW3PgITBase {
 
     private Long customer(String sfx) {
         var f = new CustomerAddForm();
-        f.setCustomerCode(prefix + sfx);
         f.setName(prefix + sfx);
         f.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         f.setSettleMode("INDEPENDENT");

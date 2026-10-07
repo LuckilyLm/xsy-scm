@@ -22,7 +22,7 @@ function code(relative) {
 }
 
 const api = code('../src/api/business/scm/delivery-api.ts');
-const view = code('../src/views/business/scm/delivery/route-detail.vue');
+const view = code('../src/views/business/scm/delivery/route-detail-page.vue');
 const printPanel = code('../src/views/business/scm/delivery/components/route-print-panel.vue');
 
 test('dual views are read-only GETs while formal printing is an idempotent POST', () => {

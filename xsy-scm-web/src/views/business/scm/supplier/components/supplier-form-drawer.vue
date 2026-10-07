@@ -23,9 +23,9 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="供应商编码" name="supplierCode"
-                           :rules="[{ required: true, whitespace: true, message: '请输入供应商编码' }]">
-                <a-input v-model:value="form.supplierCode" :maxlength="64" placeholder="保存时自动转为大写"/>
+              <a-form-item label="供应商编码">
+                <span v-if="form.supplierId" class="scm-form-readonly">{{ form.supplierCode || '—' }}</span>
+                <span v-else class="scm-form-readonly">保存后由系统自动生成</span>
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">

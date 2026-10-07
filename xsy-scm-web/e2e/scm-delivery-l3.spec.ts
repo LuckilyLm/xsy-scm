@@ -183,8 +183,9 @@ test.beforeAll(async () => {
     }
 
     skuId = await createSku(api, tag, 'L3');
+    // 编码由服务端生成（SUP + 6 位序号），夹具不再提交 supplierCode。
     supplierId = String(await post('/scm/supplier/add',
-        {supplierCode: `${tag}-SUP`.toUpperCase(), name: `${tag}供应商`}));
+        {name: `${tag}供应商`}));
     await post('/scm/supplier/sku/replace', {supplierId,
         items: [{skuId: Number(skuId), purchaseUnit: 'kg', defaultFlag: true, status: 'ENABLED'}]});
     await stockIn('20.0000');
@@ -374,29 +375,34 @@ test('8｜非超管取证：缺仓库授权不能发车，司机签不了别人�
         {version: await version()});
     expect(allowed.status).toBe('DISPATCHED');
 
-    // 页面上：已完成的线路不再提供发车动作，出库单线索在抽屉里读得到。
+    // 页面上：已完成的线路不再提供发车动作，出库单线索在详情页基础信息里读得到。
     // 令牌必须在 goto 之前注入 localStorage，否则页面停在登录路由上什么都找不到。
     await authenticate(page, adminToken);
     await page.goto('/#/delivery/routes');
     const row = page.locator('tr').filter({hasText: `${tag} 发车验收线路`}).first();
     await expect(row, '线路列表要能按名称找到本轮线路').toBeVisible({timeout: 20000});
     await button(row, '详情').click();
-    const drawer = page.locator('.ant-drawer-open').filter({hasText: '线路详情'}).first();
-    await expect(drawer).toBeVisible({timeout: 10000});
-    await expect(button(drawer, '发车'), '已完成线路不应再提供发车动作').toHaveCount(0);
-    await expect(drawer.getByText('出库单').first(), '发车后的线路要能看出库单线索')
+    // 详情已是独立页面（列表页不再有线路详情抽屉），无 Escape 关闭语义。
+    await expect(page).toHaveURL(/#\/delivery\/routes\/\d+\?tab=base/);
+    const detailPage = page.locator('.route-detail-page');
+    await expect(button(detailPage, '发车'), '已完成线路不应再提供发车动作').toHaveCount(0);
+    await expect(detailPage.getByText('出库单').first(), '发车后的线路要能看出库单线索')
         .toBeVisible({timeout: 10000});
 
     // 履约标签页是这次新增的 UI 主体：状态必须来自后端返回值，签收/异常两行都要看得见，
     // 且已进入终态的行不能再有签收动作（按钮留在页上就是「可以再签一次」的错觉）。
-    await drawer.getByRole('tab', {name: accessibleName('履约')}).click();
-    const pane = drawer.locator('#rc-tabs-0-panel-fulfillment, .ant-tabs-tabpane-active').last();
+    await detailPage.getByRole('tab', {name: accessibleName('履约')}).click();
+    const pane = detailPage.locator('.ant-tabs-tabpane-active').last();
     await expect(pane.getByText('已签收').first(), '正常签收行要渲染出终态').toBeVisible({timeout: 10000});
     await expect(pane.getByText('异常签收').first().or(pane.getByText('异常').first()),
         '异常签收行要渲染出终态').toBeVisible();
     await expect(pane.getByText(`${tag} 客户拒收破损`).first(), '异常原因要看得见面').toBeVisible();
     await expect(button(pane, '签收'), '终态行不得再提供签收动作').toHaveCount(0);
-    await page.keyboard.press('Escape');
+
+    // 关闭详情 = 回列表页（页面左上「返回线路管理」；按钮内含图标，图标自身 aria-label
+    // 会混进可及名，因此直接按专用类名定位而不是按纯文案的可及名匹配）。
+    await detailPage.locator('.scm-detail-header__back').click();
+    await expect(page).toHaveURL(/#\/delivery\/routes$/);
 });
 
 async function routeVersionOf(id: string | number): Promise<number> {

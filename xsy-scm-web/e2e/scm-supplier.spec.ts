@@ -35,6 +35,7 @@ const buttonName = (text: string) => new RegExp('^' + [...text].map(escapeRe).jo
 const button = (root: Page | Locator, text: string) => root.getByRole('button', { name: buttonName(text) });
 
 async function searchSupplier(page: Page, keyword: string): Promise<Locator> {
+  // 编码由服务端生成，夹具只能按「创建后回读的真实编码」或名称搜索；helper 本身与关键字无关。
   await page.getByPlaceholder('编码 / 名称 / 联系人 / 电话').fill(keyword);
   await button(page, '查询').click();
   const row = page.getByRole('row').filter({ hasText: keyword }).first();
@@ -183,7 +184,8 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
   await page.goto('/#/supplier/supplier-list');
   await button(page, '新增供应商').click();
   let drawer = currentDrawer(page);
-  await drawer.getByLabel('供应商编码', { exact: true }).fill(prefix + 'S1');
+  // 供应商编码由服务端生成：创建态不再有可填输入框，只读提示「保存后由系统自动生成」。
+  await expect(drawer.getByText('保存后由系统自动生成')).toBeVisible();
   await drawer.getByLabel('供应商名称', { exact: true }).fill(prefix + '供应商甲');
   await drawer.getByLabel('联系人', { exact: true }).fill('张三');
   await drawer.getByLabel('联系电话', { exact: true }).fill('13900139000');
@@ -194,9 +196,13 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
   const supplierId = body.data as number;
   supplierIds.push(supplierId);
   await expect(page.locator('.ant-drawer-open')).toHaveCount(0);
+  // 提交的编码不再被采信：真实编码只能回读（SUP + 至少 6 位全局序号）。
+  const supplierDetail = (await (await api.get(`/scm/supplier/detail/${supplierId}`)).json()).data;
+  const supplierCode = String(supplierDetail.supplierCode);
+  expect(supplierCode).toMatch(/^SUP\d{6,}$/);
 
   // ------------------------------------------------- 关联两个 SKU，且都为默认来源
-  let row = await searchSupplier(page, prefix + 'S1');
+  let row = await searchSupplier(page, supplierCode);
   await button(row, '关联商品').click();
   drawer = currentDrawer(page);
   await expect(drawer.getByText('关联商品 · ' + prefix + '供应商甲')).toBeVisible();
@@ -234,7 +240,7 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
   // 列表「关联商品数」必须反映活动关联数量。
   // `exact: true` 不能省：前缀（时间戳 base36）里可能含「2」，供应商名称按钮会被一并命中。
   await page.reload();
-  row = await searchSupplier(page, prefix + 'S1');
+  row = await searchSupplier(page, supplierCode);
   await expect(row.getByRole('button', { name: '2', exact: true })).toBeVisible();
 
   // ------------------------------------------------- 深链详情：只读快照表
@@ -247,10 +253,12 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
 
   // ------------------------------------------------------------------ 编辑
   await button(page, '返回供应商列表').click();
-  row = await searchSupplier(page, prefix + 'S1');
+  row = await searchSupplier(page, supplierCode);
   await button(row, '编辑').click();
   drawer = currentDrawer(page);
-  await expect(drawer.getByLabel('供应商编码', { exact: true })).toHaveValue(prefix + 'S1');
+  // 编辑态编码只读回显真实生成的编码；文本证据取服务端回读值，不假设提交码。
+  await expect(drawer.locator('.ant-form-item').filter({ hasText: '供应商编码' })
+    .locator('.scm-form-readonly')).toHaveText(supplierCode);
   await drawer.getByLabel('联系人', { exact: true }).fill('李四');
   const updated = page.waitForResponse((r) => r.url().endsWith('/scm/supplier/update'));
   await button(drawer, '保存').click();
@@ -282,7 +290,7 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
 
   // ------------------------------------------------------------------ 删除
   await page.reload();
-  row = await searchSupplier(page, prefix + 'S1');
+  row = await searchSupplier(page, supplierCode);
   await button(row, '删除').click();
   await page.locator('.ant-popover:visible').getByRole('button', { name: /确.*定/ }).click();
   await expect(row).toHaveCount(0);

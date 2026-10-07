@@ -33,7 +33,6 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
 
     private Long groupCustomer(Long parent) {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + key().substring(0, 5));
         form.setName("集团结算验收");
         form.setCustomerTypeId(customerTypeId(parent == null ? "GROUP" : "ENTERPRISE"));
         form.setSettleMode("GROUP");
@@ -103,7 +102,6 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
         Long parent = groupCustomer(null);
         Long sibling = groupCustomer(parent);
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode(prefix + key().substring(0, 5));
         form.setName("非法兄弟结算客户");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("GROUP");

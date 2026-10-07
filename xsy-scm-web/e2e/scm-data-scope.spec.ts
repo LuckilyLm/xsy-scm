@@ -132,8 +132,9 @@ const warehouseIdsOf = (rows: Row[]) => [...new Set(rows.map((row) => Number(row
 const button = (page: Page, text: string) => page.getByRole('button', {name: accessibleName(text)});
 
 async function receiveInitialStock(warehouseId: number, skuId: number) {
+    // 供应商编码由服务端生成（SUP + 6 位序号），创建载荷不再提交编码；后续按 supplierId 使用。
     const supplierId = await ok<number>(api, 'post', '/scm/supplier/add', {
-        supplierCode: `${tag}-SUP`, name: `${tag} 范围夹具供应商`,
+        name: `${tag} 范围夹具供应商`,
     });
     await ok(api, 'post', '/scm/supplier/sku/replace', {
         supplierId, items: [{skuId, purchaseUnit: 'kg', defaultFlag: true, status: 'ENABLED'}],
@@ -229,8 +230,9 @@ test.beforeAll(async () => {
             donorRows.sort((x, y) => Number(y.quantity) - Number(x.quantity));
             const line = donorRows[0];
             if (line) {
+                // 仓库编码由服务端生成（WH + 6 位序号），创建载荷不再提交编码；后续按返回 id 使用。
                 const createdId = await ok<number>(api, 'post', '/scm/warehouse/create',
-                    {warehouseCode: `${tag}-B`, name: `${tag} 范围对照仓`, address: null, remark: `${tag} scope fixture`});
+                    {name: `${tag} 范围对照仓`, address: null, remark: `${tag} scope fixture`});
                 const transferId = await ok<number>(api, 'post', '/scm/inventory/transfer/create', {
                     fromWarehouseId: donor.id, toWarehouseId: createdId, remark: `${tag} scope fixture`,
                     items: [{skuId: Number(line.skuId), quantity: '1.0000'}],

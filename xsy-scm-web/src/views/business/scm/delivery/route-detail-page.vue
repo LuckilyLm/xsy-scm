@@ -1,7 +1,8 @@
 <template>
-  <!-- workspace：地图工作台 + 多面板业务工作台 —— 地图与订单 / 履约 / 打印面板要并排看，
-       横向空间本身就是业务内容，不是「内容放不下就再放宽一档」。 -->
-  <a-drawer v-model:open="visible" title="配送线路详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true">
+  <div class="route-detail-page scm-detail-read">
+    <a-button type="link" class="scm-detail-header__back" @click="backToList">
+      <ArrowLeftOutlined/> 返回线路管理
+    </a-button>
     <a-alert v-if="error" :message="error" type="error" show-icon
     >
       <template #action>
@@ -11,74 +12,96 @@
     >
     <a-spin :spinning="loading">
       <template v-if="detail">
-        <div class="route-heading">
-          <div>
-            <h2>{{ detail.route.routeName }}</h2>
-            <span>{{ detail.route.routeNo }} · {{ detail.route.deliveryDate }}</span>
+        <div class="scm-detail-header">
+          <div class="scm-detail-header__main">
+            <div class="scm-detail-header__title-row">
+              <h2 class="scm-detail-header__title">{{ detail.route.routeName }}</h2>
+              <ScmStatusTag
+                  :tone="ROUTE_STATUS_TONE[detail.route.status as RouteStatus]"
+                  :label="routeStatuses[detail.route.status].label"
+              />
+            </div>
+            <p class="scm-detail-header__meta">{{ detail.route.routeNo }} · {{ detail.route.deliveryDate }}</p>
           </div>
-          <a-space wrap>
-            <a-tag :color="routeStatuses[detail.route.status].color">{{
-                routeStatuses[detail.route.status].label
-              }}
-            </a-tag>
-            <a-button
-                v-if="detail.route.status === 'DRAFT'"
-                v-privilege="'scm:delivery:route:update'"
-                :disabled="busy"
-                @click="formDrawer?.open(detail.route)"
-            >编辑信息
-            </a-button
-            >
-            <a-button v-if="detail.route.status === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:plan'"
-                      :disabled="busy" @click="plan"
-            >确认规划
-            </a-button
-            >
-            <a-button
-                v-if="detail.route.status === 'PLANNED'"
-                type="primary"
-                v-privilege="DELIVERY_PERM.ROUTE_DISPATCH"
-                :disabled="busy"
-                @click="dispatch"
-            >发车
-            </a-button
-            >
-            <a-button
-                v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.route.status)"
-                v-privilege="'scm:delivery:route:query'"
-                @click="printer?.open(detail.route.id)"
-            >打印发货单
-            </a-button
-            >
-            <a-button
-                v-if="detail.route.status === 'DISPATCHED'"
-                v-privilege="DELIVERY_PERM.ROUTE_COMPLETE"
-                :disabled="busy"
-                @click="complete"
-            >完成线路
-            </a-button
-            >
-            <a-button
-                v-if="['DRAFT', 'PLANNED'].includes(detail.route.status)"
-                danger
-                v-privilege="'scm:delivery:route:cancel'"
-                :disabled="busy"
-                @click="openReason('cancel')"
-            >取消线路
-            </a-button
-            >
-            <a-button v-privilege="'support:operateLog:query'" :disabled="routeId == null" @click="openOperateLog">操作日志</a-button>
-          </a-space>
+          <div class="scm-detail-header__actions">
+            <a-space wrap>
+              <a-button
+                  v-if="detail.route.status === 'DRAFT'"
+                  v-privilege="'scm:delivery:route:update'"
+                  :disabled="busy"
+                  @click="formDrawer?.open(detail.route)"
+              >编辑信息
+              </a-button
+              >
+              <a-button v-if="detail.route.status === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:plan'"
+                        :disabled="busy" @click="plan"
+              >确认规划
+              </a-button
+              >
+              <a-button
+                  v-if="detail.route.status === 'PLANNED'"
+                  type="primary"
+                  v-privilege="DELIVERY_PERM.ROUTE_DISPATCH"
+                  :disabled="busy"
+                  @click="dispatch"
+              >发车
+              </a-button
+              >
+              <a-button
+                  v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.route.status)"
+                  v-privilege="'scm:delivery:route:query'"
+                  @click="printer?.open(detail.route.id)"
+              >打印发货单
+              </a-button
+              >
+              <a-button
+                  v-if="detail.route.status === 'DISPATCHED'"
+                  v-privilege="DELIVERY_PERM.ROUTE_COMPLETE"
+                  :disabled="busy"
+                  @click="complete"
+              >完成线路
+              </a-button
+              >
+              <a-button
+                  v-if="['DRAFT', 'PLANNED'].includes(detail.route.status)"
+                  danger
+                  v-privilege="'scm:delivery:route:cancel'"
+                  :disabled="busy"
+                  @click="openReason('cancel')"
+              >取消线路
+              </a-button
+              >
+              <a-button v-privilege="'support:operateLog:query'" :disabled="routeId == null" @click="openOperateLog">操作日志</a-button>
+            </a-space>
+          </div>
         </div>
-        <div class="route-summary">
-          <span
-          >停靠点 <strong>{{ detail.route.stopCount }}</strong></span
-          ><span
-        >订单 <strong>{{ detail.route.orderCount }}</strong></span
-        ><span v-if="canViewAmount">订单金额 <strong>{{ money(detail.route.totalAmount) }}</strong></span
-        ><span
-        >停靠点定位 <strong>{{ detail.route.locatedCount }} / {{ detail.route.stopCount }}</strong></span
-        >
+        <div class="scm-summary-section">
+          <div class="scm-summary">
+            <div class="scm-summary__item">
+              <span class="scm-summary__label">停靠点</span>
+              <span class="scm-summary__value">{{ detail.route.stopCount }}</span>
+            </div>
+            <div class="scm-summary__item">
+              <span class="scm-summary__label">订单</span>
+              <span class="scm-summary__value">{{ detail.route.orderCount }}</span>
+            </div>
+            <div v-if="canViewAmount" class="scm-summary__item">
+              <span class="scm-summary__label">订单金额</span>
+              <span class="scm-summary__value scm-money">{{ money(detail.route.totalAmount) }}</span>
+            </div>
+            <div class="scm-summary__item">
+              <span class="scm-summary__label">停靠点定位</span>
+              <span class="scm-summary__value">{{ detail.route.locatedCount }} / {{ detail.route.stopCount }}</span>
+            </div>
+            <div class="scm-summary__item">
+              <span class="scm-summary__label">仓库</span>
+              <span class="scm-summary__value">{{ detail.route.warehouseNameSnapshot || '—' }}</span>
+            </div>
+            <div class="scm-summary__item">
+              <span class="scm-summary__label">司机</span>
+              <span class="scm-summary__value">{{ detail.route.driverNameSnapshot || '未分配' }}</span>
+            </div>
+          </div>
         </div>
         <a-tabs v-model:active-key="tab">
           <a-tab-pane key="base" tab="基础信息">
@@ -100,7 +123,7 @@
                 @remove-order="openReason('remove', $event)"
             />
           </a-tab-pane>
-          <a-tab-pane key="map" tab="停靠点 / 路线地图">
+          <a-tab-pane key="map" tab="路线地图">
             <RouteMapPanel
                 :route="detail.route"
                 :stops="detail.stops"
@@ -151,6 +174,7 @@
                 :loading="planLoading"
                 :busy="planBusy"
                 :error="planError"
+                :disabled-reason="planDisabledReason"
                 :proposal="proposal"
                 :history="planHistory"
                 @propose="proposePlan"
@@ -163,7 +187,7 @@
       </template>
       <a-empty v-else-if="!loading" description="线路尚未加载"/>
     </a-spin>
-  </a-drawer>
+  </div>
   <RouteFormDrawer ref="formDrawer" @saved="changed"/>
   <CandidateOrderModal ref="candidates" @saved="changed"/>
   <RoutePrint ref="printer"/>
@@ -200,7 +224,8 @@
         </a-form-item>
         <a-form-item label="备注">
           <a-textarea v-model:value="stopForm.remark" :maxlength="500"/>
-        </a-form-item>
+        </a-form-item
+        >
       </a-form
       >
       <a-alert v-if="stopError" type="error" :message="stopError" show-icon
@@ -237,12 +262,15 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import {computed, ref, watch} from 'vue';
-import {useRouter} from 'vue-router';
+import {computed, onMounted, ref, watch} from 'vue';
+import {useRoute, useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import {Modal, message} from 'ant-design-vue';
+import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {isLocated, locationError, type MapPoint} from '/@/components/business/scm/map/types';
 import RouteFormDrawer from './components/route-form-drawer.vue';
 import CandidateOrderModal from './components/candidate-order-modal.vue';
@@ -267,14 +295,26 @@ import {
   type RouteDetail,
   type RouteOrder,
   type RouteOrderView,
+  type RouteStatus,
   type SignResult,
 } from './delivery-types';
 import {deliveryPlanApi} from '/@/api/business/scm/delivery-plan-api';
-import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
-const emit = defineEmits<{ changed: [] }>();
-const visible = ref(false),
-    loading = ref(false),
+/** 状态视觉与列表页同口径：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
+const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
+  DRAFT: 'warning',
+  PLANNED: 'processing',
+  DISPATCHED: 'processing',
+  COMPLETED: 'success',
+  CANCELLED: 'neutral',
+};
+
+/** Tab 与 URL 的 `?tab=` 一一对应；未知取值回落到基础信息。 */
+const TAB_KEYS = ['base', 'orders', 'map', 'print', 'fulfillment', 'plan'];
+
+const route = useRoute();
+const router = useRouter();
+const loading = ref(false),
     busy = ref(false),
     error = ref(''),
     tab = ref('base');
@@ -284,7 +324,6 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const {canViewAmount, canSign, hasPerm} = useDeliveryPermission();
-const router = useRouter();
 // 编辑权 = 草稿态 ∧ route:update；权限判定与 v-privilege 共用 hasPerm 一份口径
 // （超管在其内部放行），不在这里再抄一次 administratorFlag。
 const canEdit = computed(() => detail.value?.route.status === 'DRAFT' && hasPerm(DELIVERY_PERM.ROUTE_UPDATE));
@@ -302,7 +341,8 @@ const mapPoints = computed<MapPoint[]>(() => [
     ...s,
     label: `${s.stopSeq} ${s.customerNameSnapshot}`,
     description: `${s.addressSnapshot}\n${s.receiverPhoneSnapshot ?? ''} · ${s.orderCount} 张订单${
-        canViewAmount.value ? ` · ${money(s.totalAmount)}` : ''}`,
+        canViewAmount.value ? ` · ${money(s.totalAmount)}` : ''
+    }`,
   })) ?? []),
 ]);
 // ------------------------------------------------------------------
@@ -317,8 +357,20 @@ const planError = ref('');
 const proposal = ref<DeliveryPlanProposal>();
 const planHistory = ref<DeliveryPlanProposal[]>([]);
 
+/** 禁用「生成建议」的原因：区分草稿态与终态，避免只说「只有草稿线路可以…」。 */
+const planDisabledReason = computed(() => {
+  const status = detail.value?.route.status;
+  if (status === 'DISPATCHED' || status === 'COMPLETED') {
+    return '当前线路已发车，因此不能重新生成建议。';
+  }
+  if (status === 'CANCELLED') {
+    return '当前线路已取消，因此不能生成建议。';
+  }
+  return '只有草稿线路可以生成与应用建议。';
+});
+
 function currentPlanContext(id: Id, context: number) {
-  return visible.value && context === planContext && String(routeId.value) === String(id);
+  return context === planContext && String(routeId.value) === String(id);
 }
 
 async function loadPlan(id: Id) {
@@ -470,6 +522,10 @@ watch(tab, (value) => {
   // 建议按需加载，查看计划地图不依赖建议生成。
   // 但每次切回来都重取 —— 建议可能已被别人生成/应用，缓存旧结果会让人对着过期建议点「应用」。
   if (value === 'plan' && routeId.value != null) void loadPlan(routeId.value);
+  // Tab 落进 URL：刷新与分享都能回到同一页；未知取值不进 URL。
+  if (route.query.tab !== value) {
+    void router.replace({path: route.path, query: {...route.query, tab: value}});
+  }
 });
 
 async function recordPrint() {
@@ -526,7 +582,14 @@ async function reload() {
   }
 }
 
-function open(id: Id, initialTab = 'base') {
+/** 路径参数是唯一的线路上下文来源；非法 id 不猜，直接提示。 */
+function currentRouteId(): Id | undefined {
+  const raw = route.params.id;
+  const id = Array.isArray(raw) ? raw[0] : raw;
+  return typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id) ? id : undefined;
+}
+
+function openRoute(id: Id, initialTab: string) {
   planContext++;
   planRequest++;
   planBusy.value = false;
@@ -549,10 +612,37 @@ function open(id: Id, initialTab = 'base') {
   signVisible.value = false;
   signTarget.value = undefined;
   signError.value = '';
-  visible.value = true;
-  tab.value = initialTab;
+  tab.value = TAB_KEYS.includes(initialTab) ? initialTab : 'base';
+  if (tab.value === 'plan' && !hasPerm(DELIVERY_PERM.PLAN_QUERY)) tab.value = 'base';
   reload();
 }
+
+function syncFromRoute() {
+  const id = currentRouteId();
+  if (id === undefined) {
+    routeId.value = undefined;
+    detail.value = undefined;
+    error.value = '线路不存在或已被删除，请返回线路管理重新打开。';
+    return;
+  }
+  const queryTab = typeof route.query.tab === 'string' ? route.query.tab : 'base';
+  if (String(routeId.value) !== String(id)) {
+    openRoute(id, queryTab);
+    return;
+  }
+  const next = TAB_KEYS.includes(queryTab) ? queryTab : 'base';
+  if (tab.value !== next) tab.value = next;
+}
+
+function backToList() {
+  void router.push({path: '/delivery/routes'});
+}
+
+onMounted(syncFromRoute);
+// 同一路由记录内换 id（列表连续点开不同线路）不会重挂载，必须自己同步。
+watch(() => [route.params.id, route.query.tab], syncFromRoute);
+
+const emit = defineEmits<{ changed: [] }>();
 
 async function changed() {
   await reload();
@@ -812,35 +902,13 @@ function openOperateLog() {
     query: {businessType: 'DELIVERY_ROUTE', businessId: String(routeId.value)},
   });
 }
-
-defineExpose({open});
 </script>
 <style scoped>
-.route-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+.route-detail-page {
+  padding-bottom: 24px;
+}
+
+.route-detail-page :deep(.ant-tabs-nav) {
   margin-bottom: 16px;
 }
-
-.route-heading h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
-}
-
-.route-summary {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  padding: 12px 0;
-  border-block: 1px solid var(--scm-border, #e5e6eb);
-  font-variant-numeric: tabular-nums;
-}
-
-.route-summary strong {
-  margin-left: 8px;
-}
-
 </style>

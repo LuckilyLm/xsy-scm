@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
  * 客户校验器契约测试（无 DB，Mockito）。
  *
  * <p>覆盖账期组合、上级关系与字段归一化。错误码断言是硬门禁——
- * 编码冲突必须是 40936 而不是数据库异常，上级问题必须是 40032 而不是 40430。
+ * 上级问题必须是 40032 而不是 40430。
  */
 class CustomerValidatorTest {
 
@@ -36,7 +36,6 @@ class CustomerValidatorTest {
 
     private static CustomerAddForm baseForm() {
         CustomerAddForm form = new CustomerAddForm();
-        form.setCustomerCode("c001");
         form.setName("  测试客户  ");
         form.setCustomerTypeId(1L);
         form.setSettleMode("INDEPENDENT");

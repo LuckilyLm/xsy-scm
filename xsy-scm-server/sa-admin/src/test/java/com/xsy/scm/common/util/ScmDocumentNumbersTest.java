@@ -38,4 +38,12 @@ class ScmDocumentNumbersTest {
         assertThat(ScmDocumentNumbers.format("XX", 42L)).contains("000042");
         assertThat(ScmDocumentNumbers.format("STK", 42L)).startsWith("STK").endsWith("000042");
     }
+
+    @Test
+    @DisplayName("主数据编码 = 前缀 + 至少 6 位补零，不带日期段")
+    void masterCodePadsWithoutDateSegment() {
+        assertThat(ScmDocumentNumbers.masterCode("CUS", 1L)).isEqualTo("CUS000001");
+        assertThat(ScmDocumentNumbers.masterCode("SUP", 123456L)).isEqualTo("SUP123456");
+        assertThat(ScmDocumentNumbers.masterCode("WH", 1_000_000L)).isEqualTo("WH1000000");
+    }
 }

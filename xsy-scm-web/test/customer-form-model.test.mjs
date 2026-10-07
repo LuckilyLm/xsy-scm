@@ -81,11 +81,10 @@ test('账期单位切到「天」会清掉固定结算日', () => {
 });
 
 test('校验必填项、电话格式与金额精度', () => {
-  const ok = { ...emptyCustomer(), customerCode: 'C001', name: '客户甲', customerTypeId: 1 };
+  // 编码由服务端生成：不带编码的合法表单必须直接通过校验。
+  const ok = { ...emptyCustomer(), name: '客户甲', customerTypeId: 1 };
   assert.equal(validateCustomer(ok), undefined);
 
-  assert.match(validateCustomer(emptyCustomer()), /客户编码/);
-  assert.match(validateCustomer({ ...ok, customerCode: '   ' }), /客户编码/);
   assert.match(validateCustomer({ ...ok, name: '' }), /客户名称/);
   assert.match(validateCustomer({ ...ok, customerTypeId: undefined }), /客户类型/);
   assert.match(validateCustomer({ ...ok, contactPhone: '12345' }), /联系电话/);
@@ -97,7 +96,7 @@ test('校验必填项、电话格式与金额精度', () => {
 });
 
 test('按金额账期必须有阈值，按时间账期必须有值且结算日限 1–28', () => {
-  const ok = { ...emptyCustomer(), customerCode: 'C001', name: '客户甲', customerTypeId: 1 };
+  const ok = { ...emptyCustomer(), name: '客户甲', customerTypeId: 1 };
 
   assert.match(validateCustomer({ ...ok, creditPeriodType: 'BY_AMOUNT' }), /金额阈值/);
   assert.match(validateCustomer({ ...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '1.23456' }), /四位小数/);
@@ -115,17 +114,15 @@ test('按金额账期必须有阈值，按时间账期必须有值且结算日�
   assert.match(validateCustomer({ ...monthly, settleDay: 0 }), /1 到 28/);
 });
 
-test('提交前归一化：编码大写去空白、空白串转 null、零额度保持字符串', () => {
+test('提交前归一化：姓名去空白、空白串转 null、零额度保持字符串', () => {
   const payload = toCustomerPayload({
     ...emptyCustomer(),
-    customerCode: '  c001 ',
     name: '  客户甲  ',
     customerTypeId: 1,
     contactName: '   ',
     remark: ' 有备注 ',
   });
 
-  assert.equal(payload.customerCode, 'C001');
   assert.equal(payload.name, '客户甲');
   // 空白 → null：后端 FieldStrategy.ALWAYS 只对 null 生效，送 "" 会变成「想清空却清不掉」。
   assert.equal(payload.contactName, null);

@@ -10,13 +10,12 @@ import lombok.Data;
  *
  * <p>
  * <b>不含 {@code status}</b>：新建仓库由服务端设为 {@code ENABLED}；状态变更走专用命令。
+ *
+ * <p>
+ * <b>不含 {@code warehouseCode}</b>：仓库编码由服务端生成（{@code ScmBusinessNoService}），客户端传入的值不会被采信。
  */
 @Data
 public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm {
-
-    @NotBlank(message = "仓库编码不能为空")
-    @Size(max = 64, message = "仓库编码不能超过64个字符")
-    private String warehouseCode;
 
     @NotBlank(message = "仓库名称不能为空")
     @Size(max = 150, message = "仓库名称不能超过150个字符")

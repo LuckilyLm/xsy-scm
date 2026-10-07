@@ -65,8 +65,8 @@ let pilotCustomer: {customerId: number; version: number} | undefined;
 async function createPilotCustomer() {
   const typeList = await (await adminApi.post('/scm/customer/type/query', {data: {pageSize: 1, pageNum: 1}})).json();
   const employee = await (await adminApi.post('/scm/employee/query', {data: {pageNum: 1, pageSize: 1}})).json();
+  // 客户编码由服务端生成（CUS + 6 位序号），创建载荷不再提交编码。
   const form = {
-    customerCode: account.toUpperCase(),
     name: account.toUpperCase() + '日志客户',
     customerTypeId: typeList.code === 0 ? typeList.data.list[0].typeId : 1,
     settleMode: 'INDEPENDENT',

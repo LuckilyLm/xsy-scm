@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -140,12 +139,6 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     private Long route() {
-        var warehouse = new WarehouseAddForm();
-        warehouse.setWarehouseCode(prefix + "-" + UUID.randomUUID().toString().substring(0, 8));
-        warehouse.setName("并发打印仓");
-        warehouse.setLongitude(new BigDecimal("113.9"));
-        warehouse.setLatitude(new BigDecimal("22.5"));
-        warehouse.setGeomCrs("GCJ02");
         var form = new DeliveryRouteForm();
         form.setRouteName("并发打印线路");
         form.setDeliveryDate(LocalDate.now());
@@ -155,7 +148,6 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
 
     private Long createPrintWarehouse() {
         var warehouse = new WarehouseAddForm();
-        warehouse.setWarehouseCode(prefix + "-" + UUID.randomUUID().toString().substring(0, 8));
         warehouse.setName("并发打印仓");
         warehouse.setLongitude(new BigDecimal("113.9"));
         warehouse.setLatitude(new BigDecimal("22.5"));
