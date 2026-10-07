@@ -9,7 +9,7 @@
   />
   <div class="route-map-toolbar">
     <strong>计划路线</strong>
-    <template v-if="routeStatus.state === 'ready' && drivingResult">
+    <template v-if="allLocated && routeStatus.state === 'ready' && drivingResult">
       <span class="route-map-toolbar__legs">起点仓库 → {{ route.stopCount }} 个停靠点</span>
       <span class="scm-quantity">路程 {{ distanceText }}</span>
       <span class="scm-quantity">预计 {{ durationText }}</span>
@@ -20,6 +20,10 @@
     </span>
     <span v-else-if="routeStatus.state === 'fallback'" class="route-map-toolbar__legs">
       道路路线暂时不可用，当前显示停靠点直线示意。
+    </span>
+    <!-- 缺定位时算路只覆盖已定位的连续段，此时给出总里程会被读成整线里程 -->
+    <span v-else-if="!allLocated && routeStatus.state === 'ready'" class="route-map-toolbar__legs">
+      仅显示已定位路段，不作为整线里程。
     </span>
   </div>
   <div class="route-map-layout">

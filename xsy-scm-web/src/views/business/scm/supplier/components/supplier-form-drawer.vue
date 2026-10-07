@@ -2,7 +2,6 @@
   供应商 新建 / 编辑 抽屉。
   - 表单不含 status：新建强制 `ENABLED`，变更走独立的 `updateStatus` 端点；
   - 编辑时先拉详情（列表 VO 不含 `address` / `remark`）；
-  - 提交前 `supplierCode` 去空白并大写，与后端 `SupplierValidator` 归一化一致；
   - 「所在地区」省市区级联与 `address` 自由文本并存：编码供地图按市聚合，
     地址仍是收货与展示口径。
 -->

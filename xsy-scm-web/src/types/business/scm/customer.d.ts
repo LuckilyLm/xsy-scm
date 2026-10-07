@@ -78,10 +78,11 @@ export interface CustomerTypeQuery {
 // 客户
 // ---------------------------------------------------------------------------
 
-/** 新建 / 编辑请求体（对应 CustomerAddForm / CustomerUpdateForm）。 */
+/** 新建 / 编辑表单模型（请求体对应 CustomerAddForm / CustomerUpdateForm）。 */
 export interface CustomerForm extends Partial<AreaColumns>, ScmLocation {
     customerId?: ScmId;
     version?: number;
+    /** 仅编辑回显与列表展示用；创建时由服务端生成，提交不依赖该字段。 */
     customerCode: string;
     name: string;
     customerTypeId?: ScmId;

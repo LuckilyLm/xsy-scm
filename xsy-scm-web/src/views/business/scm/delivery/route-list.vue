@@ -148,7 +148,7 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import type {AreaNode} from '/@/types/business/scm/area';
-import {areaColumnsOf} from '../common/scm-area';
+import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
 import {deepLinkFilters} from '/@/lib/query-deep-link';
 import type {Warehouse} from '../purchase/purchase-types';
 import {
@@ -256,9 +256,25 @@ function onRowAction(key: string, record: DeliveryRoute) {
   }
 }
 
-/** 详情与路线都进独立详情页，仅 Tab 不同：路线直达地图工作台。 */
+/**
+ * 当前列表筛选 → URL 参数，只带非空项。键取自 ROUTE_DEEP_LINK，保证「带出去」与「还原回来」
+ * 用的是同一份清单，不会一边加了键另一边漏接。
+ */
+function listFilterParams(): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const key of Object.keys(ROUTE_DEEP_LINK)) {
+    const value = (query as unknown as Record<string, unknown>)[key];
+    if (value !== undefined && value !== null && value !== '') params[key] = String(value);
+  }
+  return params;
+}
+
+/**
+ * 详情与路线都进独立详情页，仅 Tab 不同：路线直达地图工作台。
+ * 列表筛选一并带过去，详情页「返回线路管理」时原样带回，用户不必重筛一遍。
+ */
 function openDetail(id: Id, targetTab: 'base' | 'map' | 'orders') {
-  void router.push({path: `/delivery/routes/${id}`, query: {tab: targetTab}});
+  void router.push({path: `/delivery/routes/${id}`, query: {tab: targetTab, ...listFilterParams()}});
 }
 
 let generation = 0;
@@ -320,12 +336,33 @@ function created(id: Id) {
 
 // 待办卡片带 `?status=DRAFT`（待排线线路）：点进来必须看到同一批数据。
 // 进入时先回落到页面默认再落 URL 条件，因此从普通菜单进入不会残留上次 deep-link 的筛选；
-// status 取值过线路状态字典白名单，URL 里写别的值按未筛选处理。
-const ROUTE_DEEP_LINK = {status: Object.keys(routeStatuses)};
+// 枚举键过字典白名单，自由文本键（编号 / 日期 / id）只做 trim 与空值收口。
+//
+// 这些键还有第二个来源：详情页「返回线路管理」会把列表当时的筛选原样带回来
+// （openDetail 带出去、route-detail-page 的 backToList 带回来），所以清单必须与那边一致。
+const ROUTE_DEEP_LINK = {
+  status: Object.keys(routeStatuses),
+  keyword: null,
+  deliveryDate: null,
+  warehouseId: null,
+  driverId: null,
+  vehicleId: null,
+  provinceCode: null,
+  provinceName: null,
+  cityCode: null,
+  cityName: null,
+  districtCode: null,
+  districtName: null,
+  pageNum: null,
+  pageSize: null,
+};
 
 const route = useRoute();
 const router = useRouter();
 const routesRouteName = route.name;
+
+/** 省市区编码在 URL 里是字符串，回填查询条件必须是数字：级联控件按数字比对。 */
+const areaCode = (value?: string) => (value && /^\d+$/.test(value) ? Number(value) : null);
 
 watch(
     [() => route.name, () => route.query],
@@ -335,6 +372,23 @@ watch(
       const filters = deepLinkFilters(incomingQuery, ROUTE_DEEP_LINK);
       clearQuery();
       query.status = filters.status;
+      query.keyword = filters.keyword;
+      query.deliveryDate = filters.deliveryDate;
+      query.warehouseId = filters.warehouseId;
+      query.driverId = filters.driverId;
+      query.vehicleId = filters.vehicleId;
+      query.provinceCode = areaCode(filters.provinceCode);
+      query.provinceName = filters.provinceName || null;
+      query.cityCode = areaCode(filters.cityCode);
+      query.cityName = filters.cityName || null;
+      query.districtCode = areaCode(filters.districtCode);
+      query.districtName = filters.districtName || null;
+      const pageNum = Number(filters.pageNum);
+      const pageSize = Number(filters.pageSize);
+      if (Number.isInteger(pageNum) && pageNum > 0) query.pageNum = pageNum;
+      if (Number.isInteger(pageSize) && pageSize > 0) query.pageSize = pageSize;
+      // 级联控件只认连续路径，缺层的快照按未筛选处理，与 areaColumnsOf 同口径。
+      area.value = areaNodesOf(query);
       load();
       const id = incomingQuery.routeId;
       if (typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) {

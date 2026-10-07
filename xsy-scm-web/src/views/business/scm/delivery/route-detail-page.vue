@@ -188,8 +188,8 @@
       <a-empty v-else-if="!loading" description="线路尚未加载"/>
     </a-spin>
   </div>
-  <RouteFormDrawer ref="formDrawer" @saved="changed"/>
-  <CandidateOrderModal ref="candidates" @saved="changed"/>
+  <RouteFormDrawer ref="formDrawer" @saved="refreshAfterMutation"/>
+  <CandidateOrderModal ref="candidates" @saved="refreshAfterMutation"/>
   <RoutePrint ref="printer"/>
   <a-modal
       v-model:open="reasonVisible"
@@ -415,7 +415,6 @@ async function applyPlan() {
   planError.value = '';
   try {
     await deliveryPlanApi.apply(current.id, route.version);
-    emit('changed');
     if (!currentPlanContext(route.id, context)) return;
     await reload();
     if (!currentPlanContext(route.id, context)) return;
@@ -589,6 +588,15 @@ function currentRouteId(): Id | undefined {
   return typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id) ? id : undefined;
 }
 
+/**
+ * Tab 取值的唯一归一入口：白名单外的值回落基础信息，辅助排线还要求查询权 ——
+ * 否则从 URL 直接改 `?tab=plan` 就能把这一页显示出来。
+ */
+function normalizeTab(value: unknown): string {
+  const next = typeof value === 'string' && TAB_KEYS.includes(value) ? value : 'base';
+  return next === 'plan' && !hasPerm(DELIVERY_PERM.PLAN_QUERY) ? 'base' : next;
+}
+
 function openRoute(id: Id, initialTab: string) {
   planContext++;
   planRequest++;
@@ -612,8 +620,7 @@ function openRoute(id: Id, initialTab: string) {
   signVisible.value = false;
   signTarget.value = undefined;
   signError.value = '';
-  tab.value = TAB_KEYS.includes(initialTab) ? initialTab : 'base';
-  if (tab.value === 'plan' && !hasPerm(DELIVERY_PERM.PLAN_QUERY)) tab.value = 'base';
+  tab.value = normalizeTab(initialTab);
   reload();
 }
 
@@ -630,23 +637,26 @@ function syncFromRoute() {
     openRoute(id, queryTab);
     return;
   }
-  const next = TAB_KEYS.includes(queryTab) ? queryTab : 'base';
+  const next = normalizeTab(queryTab);
   if (tab.value !== next) tab.value = next;
 }
 
+/**
+ * 返回线路管理：把详情 URL 上的列表筛选原样带回列表（列表按同一套键还原），
+ * 不用 `router.back()` —— 直接打开详情时上一页可能已经离开本系统。
+ */
 function backToList() {
-  void router.push({path: '/delivery/routes'});
+  const filters = {...route.query};
+  delete filters.tab;
+  void router.push({path: '/delivery/routes', query: filters});
 }
 
 onMounted(syncFromRoute);
 // 同一路由记录内换 id（列表连续点开不同线路）不会重挂载，必须自己同步。
 watch(() => [route.params.id, route.query.tab], syncFromRoute);
 
-const emit = defineEmits<{ changed: [] }>();
-
-async function changed() {
+async function refreshAfterMutation() {
   await reload();
-  emit('changed');
 }
 
 /**
@@ -672,7 +682,7 @@ function dispatch() {
                 ? `已发车：${result.data.orderCount} 张订单进入在途，出库单 ${result.data.outboundNo}`
                 : '已发车：本线路实发为 0，未生成出库单'
         );
-        await changed();
+        await refreshAfterMutation();
       } catch (e) {
         error.value = deliveryError(e);
       } finally {
@@ -700,7 +710,7 @@ function complete() {
       try {
         await deliveryApi.complete(route.id, route.version);
         message.success('线路已完成');
-        await changed();
+        await refreshAfterMutation();
       } catch (e) {
         error.value = deliveryError(e);
       } finally {
@@ -751,7 +761,7 @@ async function submitSign() {
     });
     message.success(signForm.value.result === 'EXCEPTION' ? '已登记异常签收' : '已签收');
     signVisible.value = false;
-    await changed();
+    await refreshAfterMutation();
   } catch (e) {
     // 版本冲突写进弹窗而不是全局横幅：用户大概率还想补那句原因。
     signError.value = deliveryError(e);
@@ -797,7 +807,7 @@ function plan() {
       try {
         await deliveryApi.plan(detail.value.route.id, detail.value.route.version);
         message.success('线路已规划');
-        await changed();
+        await refreshAfterMutation();
       } catch (e) {
         error.value = deliveryError(e);
         throw e;
@@ -816,7 +826,7 @@ async function move(from: number, to: number) {
   busy.value = true;
   try {
     await deliveryApi.reorder(detail.value.route.id, detail.value.route.version, ids);
-    await changed();
+    await refreshAfterMutation();
   } catch (e) {
     error.value = deliveryError(e);
   } finally {
@@ -851,7 +861,7 @@ async function submitReason() {
     if (reasonAction.value === 'cancel') await deliveryApi.cancel(route.id, route.version, reason.value);
     else await deliveryApi.removeOrder(route.id, removeId.value!, route.version, reason.value);
     reasonVisible.value = false;
-    await changed();
+    await refreshAfterMutation();
   } catch (e) {
     reasonError.value = deliveryError(e);
   } finally {
@@ -886,7 +896,7 @@ async function saveStop() {
       remark: stopForm.value.remark,
     });
     stopVisible.value = false;
-    await changed();
+    await refreshAfterMutation();
   } catch (e) {
     stopError.value = deliveryError(e);
   } finally {

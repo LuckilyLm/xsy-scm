@@ -40,10 +40,11 @@ export interface ScmSortItem {
 // 供应商
 // ---------------------------------------------------------------------------
 
-/** 新建 / 编辑请求体（对应 SupplierAddForm / SupplierUpdateForm，不含 status）。 */
+/** 新建 / 编辑表单模型（请求体对应 SupplierAddForm / SupplierUpdateForm，不含 status）。 */
 export interface SupplierForm extends Partial<AreaColumns>, ScmLocation {
     supplierId?: ScmId;
     version?: number;
+    /** 仅编辑回显与列表展示用；创建时由服务端生成，提交不依赖该字段。 */
     supplierCode: string;
     name: string;
     contactName?: string | null;
