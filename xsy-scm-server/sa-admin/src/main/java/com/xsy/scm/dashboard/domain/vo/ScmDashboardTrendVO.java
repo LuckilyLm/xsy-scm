@@ -12,7 +12,8 @@ import java.util.List;
  * 主序列与次序列由 {@code metric} 决定（销售额 + 订单数 / 采购额 + 采购单数 / 入库量 + 出库量），前端据此决定 轴标签与图例文案。两条序列可能不同量纲（金额 vs 笔数），由前端用双轴表达。
  *
  * <p>
- * 每一条序列都与工作台上的今日 KPI 同口径 —— 最后一点就是 KPI 本身，前端可以直接用它算环比。
+ * <b>销售与采购的末点与对应经营指标同口径</b>（销售额 + 订单数 / 采购额 + 采购单数），前端可以直接用它算环比。 <b>库存趋势不同</b>：它表达的是当日入库量与出库量，与顶部的库存预警 KPI
+ * 属不同指标，别把两者对齐。
  */
 @Schema(description = "首页趋势图")
 public record ScmDashboardTrendVO(@Schema(description = "指标族：sales / purchase / inventory") String metric,

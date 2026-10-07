@@ -8,9 +8,13 @@ import com.xsy.scm.dashboard.constant.ScmDashboardCardEnum;
 import com.xsy.scm.dashboard.constant.ScmDashboardRankDimension;
 import com.xsy.scm.dashboard.constant.ScmDashboardTrendMetric;
 import com.xsy.scm.dashboard.domain.vo.ScmDashboardCardVO;
+import com.xsy.scm.dashboard.domain.vo.ScmDashboardInventoryHealthVO;
 import com.xsy.scm.dashboard.domain.vo.ScmDashboardTrendVO;
+import com.xsy.scm.inventory.domain.form.InventoryWarningQueryForm;
+import com.xsy.scm.inventory.domain.vo.InventoryWarningVO;
 import com.xsy.scm.inventory.permission.InventoryPermission;
-import com.xsy.scm.metrics.domain.InventoryMetrics;
+import com.xsy.scm.inventory.service.InventoryWarningQueryService;
+import com.xsy.scm.metrics.domain.InventoryHealth;
 import com.xsy.scm.metrics.domain.PurchaseMetrics;
 import com.xsy.scm.metrics.domain.RankItem;
 import com.xsy.scm.metrics.domain.SalesMetrics;
@@ -19,6 +23,7 @@ import com.xsy.scm.metrics.service.ScmBusinessMetricsService;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.admin.module.system.login.manager.LoginManager;
+import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.RequestUser;
 import net.lab1024.sa.base.common.domain.UserPermission;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
@@ -57,6 +62,8 @@ public class ScmDashboardService {
 
     private final ScmDataScopeService dataScopeService;
 
+    private final InventoryWarningQueryService inventoryWarningQueryService;
+
     /** 当前登录员工的 KPI 卡片。 */
     public List<ScmDashboardCardVO> overview() {
         return overviewFor(heldPermissions());
@@ -66,26 +73,26 @@ public class ScmDashboardService {
      * 按给定权限集合算卡片（与登录态解耦，便于负向夹具直接验证「省略」与「范围」的组合）。
      *
      * <p>
-     * 三组指标一次取齐：它们是同一批走索引的聚合，比按卡片分组惰性取数少一层分支；代价是只有一种卡片权限的人 也会触发另外两组查询（都已按范围收窄，不构成越权）。
+     * 三组数据一次取齐：它们是同一批走索引的聚合，比按卡片分组惰性取数少一层分支；代价是只有一种卡片权限的人 也会触发另外几组查询（都已按范围收窄，不构成越权）。要优化就按可见卡片惰性取数，见设计文档的待办项。
      */
     public List<ScmDashboardCardVO> overviewFor(List<String> heldPermissions) {
         ScmDataScopeContext scope = dataScopeService.resolve();
         return cardsFor(heldPermissions, metricsService.todaySales(scope), metricsService.todayPurchase(scope),
-                metricsService.inventory(scope));
+                warningTotal());
     }
 
     /**
      * 按给定权限集合与指标计算卡片（与登录态解耦，便于负向夹具直接验证省略语义）。
      */
     public List<ScmDashboardCardVO> cardsFor(List<String> heldPermissions, SalesMetrics sales, PurchaseMetrics purchase,
-            InventoryMetrics inventory) {
+            long warningTotal) {
         List<ScmDashboardCardVO> cards = new ArrayList<>();
         for (ScmDashboardCardEnum card : ScmDashboardCardEnum.values()) {
             if (!card.visibleTo(heldPermissions)) {
                 continue;
             }
-            cards.add(new ScmDashboardCardVO(card.getKey(), valueOf(card, sales, purchase, inventory), card.getUnit(),
-                    card.getRoute()));
+            cards.add(new ScmDashboardCardVO(card.getKey(), valueOf(card, sales, purchase, warningTotal),
+                    card.getUnit(), card.getRoute()));
         }
         return cards;
     }
@@ -94,22 +101,44 @@ public class ScmDashboardService {
      * 卡片取值：穷尽 switch、不写 default —— 新增卡片时这里会直接编译不过，逼着补上取值口径。
      *
      * <p>
-     * 三组指标一定非 null：调用方只为可见卡片取数，见 {@link #cardsFor}。
+     * 三组数据一定非 null：调用方只为可见卡片取数，见 {@link #cardsFor}。
      */
     private static BigDecimal valueOf(ScmDashboardCardEnum card, SalesMetrics sales, PurchaseMetrics purchase,
-            InventoryMetrics inventory) {
+            long warningTotal) {
         return switch (card) {
             case SALES_AMOUNT -> sales.todaySettlementAmount();
             case ORDER_COUNT -> BigDecimal.valueOf(sales.todayOrderCount());
             case PURCHASE_AMOUNT -> purchase.todayPurchaseAmount();
             case RECEIPT_COUNT -> BigDecimal.valueOf(purchase.todayReceiptCount());
-            case INVENTORY_ALERT -> BigDecimal.valueOf(alertCount(inventory));
+            case INVENTORY_WARNING -> BigDecimal.valueOf(warningTotal);
         };
     }
 
-    /** 库存异常 = 缺货 + 低于下限 + 高于上限；「未配置阈值」不算异常。 */
-    private static long alertCount(InventoryMetrics inventory) {
-        return inventory.health().outOfStockCount() + inventory.health().lowCount() + inventory.health().highCount();
+    /**
+     * 库存预警总数：与库存预警列表同源（同一个查询服务、同一套默认筛选），因此「卡片数字 = 点进去的条数」。
+     *
+     * <p>
+     * 不在这里写统计 SQL，也不把指标层的健康度分档拿来求和 —— 后者的口径更宽（含缺货与未配置阈值）， 会让首页与明细对不上。
+     */
+    private long warningTotal() {
+        InventoryWarningQueryForm form = new InventoryWarningQueryForm();
+        form.setPageNum(1L);
+        form.setPageSize(1L);
+        PageResult<InventoryWarningVO> page = inventoryWarningQueryService.queryWarningPage(form);
+        return page == null || page.getTotal() == null ? 0L : page.getTotal();
+    }
+
+    /**
+     * 库存健康度五档，供首页的库存健康卡使用。
+     *
+     * <p>
+     * 与顶部的「库存预警」是<b>两个指标</b>：这里含缺货与未配置阈值，预警列表只收低于下限 / 高于上限。 权限同样按库存预警权校验（看到分档等于看到库存状况）。
+     */
+    public ScmDashboardInventoryHealthVO inventoryHealth() {
+        StpUtil.checkPermission(InventoryPermission.WARNING_QUERY);
+        InventoryHealth health = metricsService.inventory(dataScopeService.resolve()).health();
+        return new ScmDashboardInventoryHealthVO(health.totalSkuCount(), health.normalCount(), health.lowCount(),
+                health.highCount(), health.unconfiguredCount(), health.outOfStockCount());
     }
 
     /** 趋势：按指标族校验领域权限后再取数。 */

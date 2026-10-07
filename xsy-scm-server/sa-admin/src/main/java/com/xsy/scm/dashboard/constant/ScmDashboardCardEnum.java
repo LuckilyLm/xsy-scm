@@ -32,12 +32,14 @@ public enum ScmDashboardCardEnum {
     RECEIPT_COUNT("receipt-count", PurchasePermission.RECEIPT_QUERY, "COUNT", "/purchase/purchase-receipt-list"),
 
     /**
-     * 库存异常：缺货 + 低于下限 + 高于上限。
+     * 库存预警：取值就是库存预警列表的分页总数。
      *
      * <p>
-     * 三个档位都要人处理，所以合成一个数；「未配置阈值」不算异常（它表示还没配阈值，不是库存出了问题）。
+     * <b>刻意不用指标层的健康度分档求和</b>：那张分档表更宽（含缺货与未配置阈值），而预警列表默认只收「低于下限 / 高于上限」 两档。用分档求和当卡片数字会出现「首页 12、点进去只有 8」——
+     * 数字与明细对不上，比数字本身更伤信任。 分档数据另走 {@code /scm/dashboard/inventory-health}，供首页的库存健康卡使用。
      */
-    INVENTORY_ALERT("inventory-alert", InventoryPermission.WARNING_QUERY, "COUNT", "/inventory/inventory-warning-list");
+    INVENTORY_WARNING("inventory-warning", InventoryPermission.WARNING_QUERY, "COUNT",
+            "/inventory/inventory-warning-list");
 
     private final String key;
     private final String queryPermission;

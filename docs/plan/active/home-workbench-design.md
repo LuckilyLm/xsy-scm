@@ -300,9 +300,17 @@ ScmBusinessMetricsService
 
 | 端点 | 返回 | 说明 |
 | --- | --- | --- |
-| `GET /scm/dashboard/overview` | KPI 卡列表 | 今日销售额 / 今日订单 / 今日采购额 / 今日收货 / 库存异常 |
+| `GET /scm/dashboard/overview` | KPI 卡列表 | 今日销售额 / 今日订单 / 今日采购额 / 今日收货 / 库存预警 |
 | `GET /scm/dashboard/trend?metric=sales\|purchase\|inventory&range=7d\|30d` | 薄 VO：`{metric, range, dates, primarySeries, secondarySeries}` | 主 / 次两条序列由 metric 决定；不再复制 `ScreenTrendVO` 的八条序列 |
 | `GET /scm/dashboard/ranking?dimension=customer\|product&limit=5` | `List<RankItem>` | metrics 已取回 TOP10，这里只截断（`limit` 默认 5、上限 10） |
+| `GET /scm/dashboard/inventory-health` | `{total, normal, low, high, unconfigured, outOfStock}` | 供首页的库存健康卡；直接取 `metricsService.inventory(scope).health()`，不新增 SQL |
+
+**「库存预警」卡片与「库存健康」是两个指标，不能互相替代**：
+
+- 顶部卡片取的是**库存预警列表的分页总数**（复用 `InventoryWarningQueryService.queryWarningPage`，与待办卡同源），
+  因此「卡片数字 = 点进去的条数」严格成立。
+- 健康度五档更宽（含缺货与未配置阈值），若拿它求和当卡片数字，会出现「首页 12、点进去只有 8」——
+  数字与明细对不上，比数字本身更伤信任。它只用于首页的库存健康卡。
 
 **接口只带业务语义，不带 UI 决策**：卡片返回 `{key, value, unit, route}`，中文文案、图标、配色、卡片样式全由前端决定；
 后端只回答「该不该给 / 多少 / 跳哪里」。把 label / color / icon 放进接口等于把 UI 设计固化进 Java。
@@ -320,10 +328,18 @@ ScmBusinessMetricsService
 - 新增 `scm:dashboard:query`（V115：**2000** 隐藏目录 + **2001** 权限点），**不复用** `scm:screen:query`。
   1200 段被报表中心占用（1200 报表中心 / 1201 经营概览 / 1211-1230 各报表权限点），2000 段已核对空闲。
 - 首版数据库只授 role 1；随后由角色配置授给销售 / 采购 / 仓库 / 管理角色。
-- KPI 卡与待办同范式做**卡片级裁剪**：缺 `scm:inventory:warning:query` 就不返回「库存异常」格；**省略而不是给 0**（0 会被读成「今天真的没有」）。
-  卡片与领域权限的对应：销售额 / 订单 → `scm:order:query`；采购额 → `scm:purchase:query`；收货 → `scm:purchase:receipt:query`；库存异常 → `scm:inventory:warning:query`。
+- KPI 卡与待办同范式做**卡片级裁剪**：缺 `scm:inventory:warning:query` 就不返回「库存预警」格；**省略而不是给 0**（0 会被读成「今天真的没有」）。
+  卡片与领域权限的对应：销售额 / 订单 → `scm:order:query`；采购额 → `scm:purchase:query`；收货 → `scm:purchase:receipt:query`；库存预警 → `scm:inventory:warning:query`。
 - 趋势与排行是单指标端点，没有「省略」的形态，**按指标 / 维度逐个校验领域权限**（销售额走订单查询权、采购额走采购查询权、库存趋势走库存流水查询权），缺权直接拒绝 —— 入口权限不隐含任何领域可见性。
+- `inventory-health` 除入口权限外还要求 `scm:inventory:warning:query`（看到分档等于看到库存状况）。
 - 「进入运营大屏」入口仍需 `scm:screen:query`，前端按权限显隐。
+
+### 4.4 已知优化（P2，不阻塞）
+
+`overviewFor` 目前无论用户持有哪些领域权限，都会先取齐销售 / 采购两组指标与库存预警总数，再按权限裁卡。
+这不构成越权（SQL 本身按范围收窄、结果也不返回），但只有库存预警权的人也会触发销售与采购的聚合。
+优化方向是**按可见卡片惰性取数**（`ScmTodoQueryService.todosFor` 已是这个范式），需要加一层按组记忆，
+避免两张卡共用一组指标时重复取数。
 
 ### 4.3 不做的事
 
@@ -358,7 +374,7 @@ views/system/home/
 │ 晚上好，XX · XX部门        快捷入口  运营大屏  刷新数据  │
 └───────────────────────────────────────────────────────┘
 
-┌ 今日销售额 ┐ ┌ 今日订单 ┐ ┌ 今日采购额 ┐ ┌ 今日收货 ┐ ┌ 库存异常 ┐
+┌ 今日销售额 ┐ ┌ 今日订单 ┐ ┌ 今日采购额 ┐ ┌ 今日收货 ┐ ┌ 库存预警 ┐
 
 ┌──────────────────────────────┬───────────────────────┐
 │      近 7 / 30 天经营趋势      │       业务待办         │
@@ -403,6 +419,7 @@ views/system/home/
 | 1A | **销售口径闭环**：把报表概览的销售三件套与大屏对齐到同一套口径定义（确认轴 + 结算金额列 + CONFIRMED），并补跨日 IT 与口径契约 | 报表与大屏对同一区间同数；跨日边界（昨天创建今天确认）两端都算今天；口径断言可被注入违规打红（范围策略未变，见 §3.6） |
 | 1B | **采购口径正式切换**：`ScmPurchaseStatusEnum.committed()` 派生已提交状态 → metrics 采购方法改 `submitted_at` 轴 + 状态过滤 → 大屏「今日采购 / 活跃供应商」切过来 → 趋势的采购序列同步 → 收货单切 `confirmed_at + CONFIRMED` → 报表采购 SQL 的状态清单改由枚举传入（范围策略不动，见 §3.6） | §2.2 的验收单；大屏 KPI、趋势末点、报表采购概览三者同数；新增采购跨日 / 草稿 / 取消 / 收货草稿的 IT |
 | 2 | `scm:dashboard:query` 权限种子 + `ScmDashboardController` 三个只读端点（只调 metrics，不写 SQL） | 缺领域权限的卡片被省略而不是给 0；趋势 / 排行按指标校验领域权限；数据范围与大屏一致；7d / 30d 与 ranking limit 用例 |
+| 2A | 收尾：库存顶部 KPI 改「库存预警」并复用预警列表总数（原先用健康度分档求和，与明细对不上）；新增 `/scm/dashboard/inventory-health`；修正趋势 VO 关于「末点等于 KPI」的注释 | 卡片数字 == 预警列表 total；五档之和 == total；缺库存预警权时 health 拒绝 |
 | 3 | 首页 UI 重构（删假数据组件、欢迎区、KPI、主图、待办、双排行、库存健康） | 截图复核；`verify.py frontend` PASS；§5.5 的列数自适应逐档验证 |
 | 4a | 首页清理：删 `echarts/*`、`heart-sentence.ts`；修 `home-notice` 死 prop；快捷入口换业务入口并按权限过滤 | 无残留引用；lint / 契约全绿 |
 | 4b | **整套删除 SmartAdmin 本地待办能力**（清单见下） | 顶部铃铛只剩未读消息；全仓无 `TO_BE_DONE` 残留 |
@@ -437,7 +454,7 @@ views/system/home/
 | `ToBeDoneCard` | **整套功能删除**，不是只从首页移走（清单见 §6 批次 4b） |
 | 快捷入口 | 保留机制，默认项全部换成 SCM 业务入口并按权限过滤 |
 
-已无待定夺项。批次顺序：0（已完成）→ 1A（已完成）→ 1B（已完成）→ 2（已完成）→ 3 → 4a → 4b。
+已无待定夺项。批次顺序：0（已完成）→ 1A（已完成）→ 1B（已完成）→ 2（已完成）→ 2A（已完成）→ 3 → 4a → 4b。
 
 批次 1B 的两点补充说明：
 

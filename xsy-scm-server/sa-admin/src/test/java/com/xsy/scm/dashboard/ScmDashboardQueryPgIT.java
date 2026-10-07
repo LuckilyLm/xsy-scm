@@ -6,11 +6,15 @@ import com.xsy.scm.dashboard.constant.ScmDashboardCardEnum;
 import com.xsy.scm.dashboard.domain.vo.ScmDashboardCardVO;
 import com.xsy.scm.dashboard.domain.vo.ScmDashboardTrendVO;
 import com.xsy.scm.dashboard.service.ScmDashboardService;
+import com.xsy.scm.inventory.domain.form.InventoryWarningQueryForm;
+import com.xsy.scm.inventory.domain.vo.InventoryWarningVO;
 import com.xsy.scm.inventory.permission.InventoryPermission;
+import com.xsy.scm.inventory.service.InventoryWarningQueryService;
 import com.xsy.scm.metrics.domain.RankItem;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
+import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +50,9 @@ class ScmDashboardQueryPgIT extends ScmW5PgITBase {
     @Autowired
     private ScmDashboardService dashboardService;
 
+    @Autowired
+    private InventoryWarningQueryService inventoryWarningQueryService;
+
     @BeforeEach
     void loginAsAdministrator() {
         RequestEmployee employee = new RequestEmployee();
@@ -69,7 +76,7 @@ class ScmDashboardQueryPgIT extends ScmW5PgITBase {
 
         assertThat(keysOf(List.of(InventoryPermission.WARNING_QUERY)))
                 .as("只有库存预警权：只给库存异常一张卡，不能顺带把订单 / 采购的数字也给他")
-                .containsExactly("inventory-alert");
+                .containsExactly("inventory-warning");
 
         assertThat(keysOf(List.of(OrderPermission.QUERY, PurchasePermission.QUERY,
                 PurchasePermission.RECEIPT_QUERY, InventoryPermission.WARNING_QUERY)))
@@ -164,6 +171,22 @@ class ScmDashboardQueryPgIT extends ScmW5PgITBase {
         } finally {
             loginAsAdministrator();
         }
+    }
+
+    @Test
+    @DisplayName("库存预警卡片与预警列表同源：卡片数字就是点进去的条数")
+    void inventoryWarningCardEqualsTheWarningListTotal() {
+        InventoryWarningQueryForm form = new InventoryWarningQueryForm();
+        form.setPageNum(1L);
+        form.setPageSize(1L);
+        PageResult<InventoryWarningVO> page = inventoryWarningQueryService.queryWarningPage(form);
+        long listTotal = page == null || page.getTotal() == null ? 0L : page.getTotal();
+
+        BigDecimal cardValue = cardValue(dashboardService.overviewFor(List.of(InventoryPermission.WARNING_QUERY)),
+                ScmDashboardCardEnum.INVENTORY_WARNING.getKey());
+
+        assertThat(cardValue).as("卡片与列表必须是同一个数，否则用户点进去会觉得少了")
+                .isEqualByComparingTo(BigDecimal.valueOf(listTotal));
     }
 
     private List<String> keysOf(List<String> heldPermissions) {

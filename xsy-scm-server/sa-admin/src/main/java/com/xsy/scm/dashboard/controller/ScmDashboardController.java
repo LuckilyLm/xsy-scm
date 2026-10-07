@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.dashboard.domain.vo.ScmDashboardCardVO;
+import com.xsy.scm.dashboard.domain.vo.ScmDashboardInventoryHealthVO;
 import com.xsy.scm.dashboard.domain.vo.ScmDashboardTrendVO;
 import com.xsy.scm.dashboard.permission.DashboardPermission;
 import com.xsy.scm.dashboard.service.ScmDashboardService;
@@ -63,5 +64,17 @@ public class ScmDashboardController {
     public ResponseDTO<List<RankItem>> ranking(@RequestParam("dimension") String dimension,
             @RequestParam(value = "limit", required = false) Integer limit) {
         return ResponseDTO.ok(dashboardService.ranking(dimension, limit));
+    }
+
+    /**
+     * 库存健康度五档，供首页的库存健康卡使用。
+     *
+     * <p>
+     * 与顶部「库存预警」卡片是两个指标：这里含缺货与未配置阈值，预警列表只收低于下限 / 高于上限。 除入口权限外还要求库存预警权（服务层校验）。
+     */
+    @GetMapping("/inventory-health")
+    @SaCheckPermission(DashboardPermission.QUERY)
+    public ResponseDTO<ScmDashboardInventoryHealthVO> inventoryHealth() {
+        return ResponseDTO.ok(dashboardService.inventoryHealth());
     }
 }
