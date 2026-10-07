@@ -4,8 +4,7 @@ package com.xsy.scm.balance.constant;
  * 余额域权限码（稳定标识，前端 {@code v-privilege} 与后端 {@code @SaCheckPermission} 共用）。
  *
  * <p>
- * 权限码只随实际操作开放而落地：入口形态未定时不预占权限点，
- * 否则「拥有该权限」会被误读成「该操作已可用」。
+ * 权限码只随实际操作开放而落地：入口形态未定时不预占权限点，否则「拥有该权限」会被误读成「该操作已可用」。
  */
 public final class ScmBalancePermission {
 
