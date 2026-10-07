@@ -81,14 +81,14 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
         assertThat(settlement.signum()).as("同上").isPositive();
 
         ScmDataScopeContext scope = dataScopeService.resolve();
-        SalesMetrics before = metricsService.sales(scope);
+        SalesMetrics before = metricsService.todaySales(scope);
 
         // 只把创建时间挪到昨天：这一单变成「昨天创建、今天确认」。
         // 销售额与订单数走确认轴，都不受影响；下单金额走创建轴，少掉这一单。
         assertThat(jdbc.update("UPDATE sales_order SET created_at = now() - interval '1 day' WHERE id = ?", orderId))
                 .isEqualTo(1);
         evictMyBatisCache();
-        SalesMetrics afterCreatedMove = metricsService.sales(scope);
+        SalesMetrics afterCreatedMove = metricsService.todaySales(scope);
         assertThat(afterCreatedMove.todayOrderCount()).as("订单数按确认轴，创建时间变化不应影响它")
                 .isEqualTo(before.todayOrderCount());
         assertThat(afterCreatedMove.todaySettlementAmount()).as("销售额按确认轴，创建时间变化不应影响它")
@@ -100,7 +100,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
         assertThat(jdbc.update("UPDATE sales_order SET confirmed_at = now() - interval '1 day' WHERE id = ?", orderId))
                 .isEqualTo(1);
         evictMyBatisCache();
-        SalesMetrics afterConfirmedMove = metricsService.sales(scope);
+        SalesMetrics afterConfirmedMove = metricsService.todaySales(scope);
         assertThat(afterConfirmedMove.todayOrderCount()).as("订单数按确认轴，确认时间挪走后才应少这一单")
                 .isEqualTo(before.todayOrderCount() - 1);
         assertThat(afterConfirmedMove.todaySettlementAmount()).as("销售额同上")
@@ -111,7 +111,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
     @DisplayName("今日 KPI 与趋势序列最后一点同口径（大屏环比依赖这一点）")
     void todayKpiMatchesTrendLastPoint() {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        SalesMetrics sales = metricsService.sales(scope);
+        SalesMetrics sales = metricsService.todaySales(scope);
         TrendMetrics trend = metricsService.trend("7d", scope);
 
         int last = trend.sales().size() - 1;
@@ -122,21 +122,53 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
     }
 
     @Test
+    @DisplayName("跨日边界：昨天创建、今天确认的单同时计入大屏与报表的今日销售额")
+    void crossDayBoundaryAgreesBetweenMetricsAndReport() {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        BigDecimal beforeSales = metricsService.todaySales(scope).todaySettlementAmount();
+
+        Long sku = newOnShelfSku("MX2");
+        Long customer = newCustomer();
+        Long orderId = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
+        BigDecimal settlement = jdbc.queryForObject("SELECT settlement_total_amount FROM sales_order WHERE id = ?",
+                BigDecimal.class, orderId);
+        // 昨天 23:50 创建、今天 09:00 确认。按创建轴归属会落到昨天，按确认轴归属才是今天。
+        jdbc.update("UPDATE sales_order SET"
+                + " created_at = (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') - interval '10 minutes')"
+                + " AT TIME ZONE 'Asia/Shanghai',"
+                + " confirmed_at = (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') + interval '9 hours')"
+                + " AT TIME ZONE 'Asia/Shanghai' WHERE id = ?", orderId);
+        evictMyBatisCache();
+
+        BigDecimal metricsToday = metricsService.todaySales(scope).todaySettlementAmount();
+        ReportOverviewVO overview = overviewReportService.overview(todayForm());
+
+        assertThat(metricsToday).as("昨天创建、今天确认的单必须计入今日销售额")
+                .isEqualByComparingTo(beforeSales.add(settlement));
+        assertThat(overview.getConfirmedOrderAmount()).as("跨日边界上报表与大屏仍必须同数")
+                .isEqualByComparingTo(metricsToday);
+    }
+
+    @Test
     @DisplayName("报表概览与大屏对同一区间给出同一个销售额与订单数")
     void reportOverviewAgreesWithMetricsOnSameRange() {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        SalesMetrics sales = metricsService.sales(scope);
+        SalesMetrics sales = metricsService.todaySales(scope);
 
-        LocalDate today = LocalDate.now(BUSINESS_ZONE);
-        ScmOverviewReportQueryForm form = new ScmOverviewReportQueryForm();
-        form.setStartDate(today);
-        form.setEndDate(today);
-        ReportOverviewVO overview = overviewReportService.overview(form);
+        ReportOverviewVO overview = overviewReportService.overview(todayForm());
 
         assertThat(overview).isNotNull();
         assertThat(overview.getConfirmedOrderAmount()).as("销售额：首页 / 大屏与报表必须同一个数")
                 .isEqualByComparingTo(sales.todaySettlementAmount());
         assertThat(overview.getConfirmedOrderCount()).as("订单数：同上").isEqualTo(sales.todayOrderCount());
+    }
+
+    private ScmOverviewReportQueryForm todayForm() {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        ScmOverviewReportQueryForm form = new ScmOverviewReportQueryForm();
+        form.setStartDate(today);
+        form.setEndDate(today);
+        return form;
     }
 
     /**

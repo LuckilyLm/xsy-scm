@@ -122,6 +122,18 @@
     </sql>
 
     <!--
+      销售指标的附加筛选（客户 / 业务员 / 订单来源）。报表概览的筛选表单用它，首页与大屏传空对象。
+      与范围谓词同一条纪律：落在被聚合的事实行上，不在聚合之后补。
+    -->
+    <sql id="salesFilter">
+        <if test="filter != null and filter.customerId != null">AND so.customer_id = #{filter.customerId}</if>
+        <if test="filter != null and filter.sellerId != null">AND so.seller_id = #{filter.sellerId}</if>
+        <if test="filter != null and filter.orderSource != null and filter.orderSource != ''">
+            AND so.order_source = #{filter.orderSource}
+        </if>
+    </sql>
+
+    <!--
       ================= 销售：一律确认轴 =================
       「今日销售额」「今日订单」「成交客户」「两张排行」全部按 confirmed_at 归属：
       按创建时间归属的已确认订单不是「今天成交了多少」——昨天创建今天确认的单会落到昨天，
@@ -135,6 +147,7 @@
         AND so.status = 'CONFIRMED'
         AND so.confirmed_at &gt;= #{startTime}
         AND so.confirmed_at &lt; #{endTime}
+        <include refid="salesFilter"/>
         <include refid="scopeSo"/>
     </select>
 
@@ -145,6 +158,7 @@
         AND so.status = 'CONFIRMED'
         AND so.confirmed_at &gt;= #{startTime}
         AND so.confirmed_at &lt; #{endTime}
+        <include refid="salesFilter"/>
         <include refid="scopeSo"/>
     </select>
 
@@ -182,6 +196,7 @@
         AND so.status = 'CONFIRMED'
         AND so.confirmed_at &gt;= #{startTime}
         AND so.confirmed_at &lt; #{endTime}
+        <include refid="salesFilter"/>
         <include refid="scopeSo"/>
     </select>
 

@@ -18,6 +18,7 @@ const ROOT = path.resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const MAPPERS = path.join(ROOT, 'xsy-scm-server/sa-admin/src/main/resources/mapper/scm');
 const METRICS_MAPPER = path.join(MAPPERS, 'metrics/ScmBusinessMetricsMapper.xml');
 const SCREEN_MAPPER = path.join(MAPPERS, 'screen/ScreenDataMapper.xml');
+const REPORT_MAPPER = path.join(MAPPERS, 'report/ReportDao.xml');
 const DASHBOARD_SRC = path.join(ROOT, 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard');
 
 const read = (file) => readFileSync(file, 'utf8');
@@ -87,6 +88,18 @@ test('大屏 mapper 不再重复定义经营类指标', () => {
     assert.ok(
       !xml.includes(column),
       `大屏 mapper 不应再出现 ${column}（销售额 / 下单金额的唯一口径在 metrics）`,
+    );
+  }
+});
+
+test('报表概览不再自己实现已迁入 metrics 的销售 KPI', () => {
+  const xml = read(REPORT_MAPPER);
+  const overview = /<select id="overviewKpi"[\s\S]*?<\/select>/.exec(xml);
+  assert.ok(overview, 'ReportDao.xml 必须保留 overviewKpi：采购 / 退款 / 库值仍由报表自己取');
+  for (const token of ['sales_order', 'settlement_total_amount', 'confirmed_at']) {
+    assert.ok(
+      !overview[0].includes(token),
+      `overviewKpi 不应再出现 ${token}：销售三件套已迁入 ScmBusinessMetricsService.salesRange`,
     );
   }
 });

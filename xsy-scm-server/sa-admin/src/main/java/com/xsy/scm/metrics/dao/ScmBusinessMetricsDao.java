@@ -3,6 +3,7 @@ package com.xsy.scm.metrics.dao;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.metrics.domain.InventoryHealthRow;
 import com.xsy.scm.metrics.domain.RankItem;
+import com.xsy.scm.metrics.domain.SalesFilter;
 import com.xsy.scm.metrics.domain.TrendPoint;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -31,11 +32,13 @@ public interface ScmBusinessMetricsDao {
 
     /** 区间内确认的订单数。时间轴 {@code confirmed_at}。 */
     Long countOrdersByConfirmedAt(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
+            @Param("endTime") OffsetDateTime endTime, @Param("filter") SalesFilter filter,
+            @Param("scope") ScmDataScopeContext scope);
 
     /** 区间内确认订单的结算金额，即「销售额」。时间轴 {@code confirmed_at}。 */
     BigDecimal sumSettlementAmountByConfirmedAt(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
+            @Param("endTime") OffsetDateTime endTime, @Param("filter") SalesFilter filter,
+            @Param("scope") ScmDataScopeContext scope);
 
     /** 区间内创建的确认订单金额，即「下单金额」。时间轴 {@code created_at}，与销售额<b>不是同一个数</b>。 */
     BigDecimal sumOrderedAmountByCreatedAt(@Param("startTime") OffsetDateTime startTime,
@@ -49,7 +52,8 @@ public interface ScmBusinessMetricsDao {
 
     /** 区间内成交客户数（有确认订单的客户去重）。时间轴 {@code confirmed_at}，与销售额同轴。 */
     Long countCustomersWithOrdersByConfirmedAt(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
+            @Param("endTime") OffsetDateTime endTime, @Param("filter") SalesFilter filter,
+            @Param("scope") ScmDataScopeContext scope);
 
     /** 客户销售排行。时间轴 {@code confirmed_at}，与销售额同轴。 */
     List<RankItem> topCustomersByConfirmedAt(@Param("startTime") OffsetDateTime startTime,

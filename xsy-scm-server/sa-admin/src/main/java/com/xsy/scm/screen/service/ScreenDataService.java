@@ -61,7 +61,7 @@ public class ScreenDataService {
 
     public ScreenBusinessVO getBusinessData() {
         ScmDataScopeContext scope = dataScopeService.resolve();
-        SalesMetrics sales = metricsService.sales(scope);
+        SalesMetrics sales = metricsService.todaySales(scope);
         MasterDataMetrics masterData = metricsService.masterData(scope);
 
         ScreenBusinessVO vo = new ScreenBusinessVO();

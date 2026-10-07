@@ -122,11 +122,14 @@
       客户 / 销售员 / 来源 / 分类 / 商品筛选只作用于销售侧三个指标；
       采购与库存指标本来就不带这些维度，因此页面必须让人看清「卡片之间筛选范围不同」。
     -->
+    <!--
+      经营概览里「采购 / 退款 / 库值」这几块。
+      销售三件套（订单数 / 成交客户 / 销售额）不在这里 —— 它们与首页、大屏共用同一份定义，
+      由 ScmBusinessMetricsService.salesRange 提供，报表只负责装进 VO。
+      同一件事在两处各写一份 SQL，漂移后不会报错，只会给出三个不同的数。
+    -->
     <select id="overviewKpi" resultType="com.xsy.scm.report.domain.vo.ReportOverviewVO">
-        SELECT ord.confirmedOrderCount,
-               ord.customerCount,
-               ord.confirmedOrderAmount,
-               rf.completedRefundAmount,
+        SELECT rf.completedRefundAmount,
                po.submittedOrderCount,
                po.submittedAmount                       AS submittedPurchaseAmount,
                mv.purchaseInCostAmount,
@@ -134,20 +137,7 @@
                bal.inventoryBookValue,
                bal.stockedSkuCount,
                CURRENT_TIMESTAMP                        AS snapshotAt
-        FROM (SELECT COUNT(*)                            AS confirmedOrderCount,
-                     COUNT(DISTINCT o.customer_id)      AS customerCount,
-                     COALESCE(SUM(o.settlement_total_amount), 0) AS confirmedOrderAmount
-              FROM sales_order o
-              WHERE o.deleted = FALSE
-                AND o.status = 'CONFIRMED'
-                AND o.confirmed_at &gt;= #{startAt}
-                AND o.confirmed_at &lt; #{endAt}
-                <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
-                <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
-                <if test="query.orderSource != null and query.orderSource != ''">
-                    AND o.order_source = #{query.orderSource}
-                </if>) ord
-                 CROSS JOIN (SELECT COALESCE(SUM(r.refund_amount), 0) AS completedRefundAmount
+        FROM (SELECT COALESCE(SUM(r.refund_amount), 0) AS completedRefundAmount
                              FROM order_refund r
                              WHERE r.deleted = FALSE
                                AND r.status = 'COMPLETED'

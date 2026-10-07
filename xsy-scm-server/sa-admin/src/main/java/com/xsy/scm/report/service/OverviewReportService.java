@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmValueScope;
+import com.xsy.scm.metrics.domain.SalesFilter;
+import com.xsy.scm.metrics.domain.SalesRangeMetrics;
+import com.xsy.scm.metrics.service.ScmBusinessMetricsService;
 import com.xsy.scm.report.dao.ReportDao;
 import com.xsy.scm.report.domain.form.ScmOverviewReportQueryForm;
 import com.xsy.scm.report.domain.vo.ReportDailyStatVO;
@@ -23,6 +26,10 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
  * <b>仓库范围只收窄能按仓库归属的指标</b>：采购与库存四个派生表按调用者的仓库授权范围取数，而销售与退款指标所在的 {@code sales_order} / {@code order_refund} 没有仓库列，
  * 既不能按仓库收窄，也不得拿 {@code created_by} 之类的审计字段顶替。因此仓库范围为空时，采购与库存指标返回 {@code null}（页面显示 {@code —}）而不是 0 —— 0
  * 会把它谎报成「这些仓库里没有数据」，而真实原因是「你没有可看的仓库」。两个方法抹的字段必须一致，否则指标卡与趋势图会对不上。
+ *
+ * <p>
+ * <b>销售三件套不在这里算</b>：订单数 / 成交客户 / 销售额向 {@link ScmBusinessMetricsService#salesRange} 取，与首页、大屏同源同轴
+ * （{@code confirmed_at}）。它们是「订单自身的业务维度」而非仓库维度，所以按调用者的<b>业务员范围</b>收窄 —— 与大屏经营面板一致； 一个只被授权看自己客户的业务员，不该在概览上读到全公司的销售额。
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +40,8 @@ public class OverviewReportService {
 
     private final ScmDataScopeService dataScopeService;
 
+    private final ScmBusinessMetricsService metricsService;
+
     public ReportOverviewVO overview(ScmOverviewReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
@@ -40,6 +49,13 @@ public class OverviewReportService {
         if (vo == null) {
             return null;
         }
+        // 销售三件套（订单数 / 成交客户 / 销售额）向 metrics 取：与首页、大屏共用同一份定义与同一条时间轴。
+        // 报表的筛选表单原样传下去，不在这里另写一份带筛选的销售 SQL。
+        SalesRangeMetrics sales = metricsService.salesRange(range.startDate(), range.endDate(),
+                new SalesFilter(form.getCustomerId(), form.getSellerId(), form.getOrderSource()), context);
+        vo.setConfirmedOrderCount(sales.orderCount());
+        vo.setConfirmedOrderAmount(sales.settlementAmount());
+        vo.setCustomerCount(sales.customerCount());
         if (context.warehouseNowhere()) {
             clearWarehouseMetrics(vo);
         }

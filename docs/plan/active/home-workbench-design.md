@@ -86,7 +86,45 @@
 但**它不是本次换轴能顺手解决的** —— 「今日采购额」到底指「今天新建了多少采购单」还是「今天提交了多少采购额」是个业务选择。
 
 批次 0 的处理：**保持大屏现有行为不变**（不改变数字），只在 metrics 的方法名与注释里把口径写清楚
-（`countPurchaseOrdersByCreatedAt` / `sumPurchaseAmountByCreatedAt`），并把它登记为待定夺项（见 §7）。
+（`countPurchaseOrdersByCreatedAt` / `sumPurchaseAmountByCreatedAt`）。
+
+**已定稿（见 §3.4）**：今日采购额 / 采购单改为 `submitted_at` 轴 + 已提交状态集合；`created_at` 轴改名为
+「今日采购建单金额 / 建单数」。切换放在**批次 1B** 单独做，因为它会明显改变大屏现有采购数字。
+
+### 2.2 采购状态机核对结果（决定「今日采购额」是历史发生口径还是当前有效口径）
+
+`ScmPurchaseStatusEnum` 六状态，`PurchaseOrderStateMachine` 的合法转换：
+
+```
+DRAFT               → SUBMITTED | CANCELLED
+SUBMITTED           → PARTIALLY_RECEIVED | RECEIVED | CANCELLED
+PARTIALLY_RECEIVED  → PARTIALLY_RECEIVED | RECEIVED | SHORT_CLOSED
+RECEIVED / SHORT_CLOSED / CANCELLED 为终态
+```
+
+关键两点：
+
+- **只有 `DRAFT` 与 `SUBMITTED` 可取消**；`PARTIALLY_RECEIVED` 不可取消，需要终止只能 `shortClose`。
+  也就是说「已提交后又被取消」只发生在**一票货都没收**的单上。
+- 因此「已提交」= 非 `DRAFT` 且非 `CANCELLED`，与报表现有那组状态名完全等价。
+
+**结论：采用当前有效口径**（与报表现有行为一致）。理由来自状态机语义而不是 UI：`CANCELLED` 表示该单已退出履约链路，
+且从未产生收货，所以它不该计入采购额。代价要写清楚 —— **取消一张已提交的单，会让它提交那天的采购额变小**
+（历史数字会变动）。这是「当前有效」的固有代价，与销售的确认口径不同（后者一旦确认就不再回退）。
+
+验收用例（批次 1B）：
+
+```
+采购单 A：10-06 23:50 创建 → 10-07 09:00 提交，金额 100
+  10-06：今日采购建单金额 = 100，今日采购额 = 0
+  10-07：今日采购建单金额 = 0，  今日采购额 = 100
+
+采购单 B：10-07 创建，状态 DRAFT，金额 200
+  今日采购额不得包含 200（草稿未进入履约链路）
+
+采购单 C：10-07 创建并提交，随后 CANCELLED
+  按当前有效口径：不计入今日采购额
+```
 
 ## 3. 架构决策
 
@@ -162,10 +200,29 @@ mapper/scm/metrics/ScmBusinessMetricsMapper.xml
 | 今日订单 | `confirmed_at` | `CONFIRMED` | `COUNT(*)` |
 | 今日下单金额 | `created_at` | `CONFIRMED` | `ordered_total_amount` |
 | 今日下单数 | `created_at` | `CONFIRMED` | `COUNT(*)` |
+| 今日采购额 | `submitted_at` | 已提交状态集合 | `total_amount` |
+| 今日采购单 | `submitted_at` | 已提交状态集合 | `COUNT(*)` |
+| 今日采购建单金额 | `created_at` | 任意状态 | `total_amount` |
+| 今日采购建单数 | `created_at` | 任意状态 | `COUNT(*)` |
 
-**不得把 `created_at + CONFIRMED` 叫「今日销售额」** —— 它实际上是「按创建时间归属的已确认订单」，昨天的单今天确认会落到昨天，而今天的单明天确认会让「昨天」的数字在明天回头看时变化。
+统一语言是：**销售看「确认」，采购看「提交」** —— 这两个时间点都是「业务正式生效」的节点。
 
-首页两个 KPI 同轴（都走 `confirmed_at`），语义是「今天实际成交了多少」，符合用户直觉；要看获客 / 接单能力就用另外两个名字（下单金额 / 下单数）。
+- **不得把 `created_at + CONFIRMED` 叫「今日销售额」**，也不得把 `created_at` 轴上的采购单叫「今日采购额」。
+- `created_at` 轴的指标必须带「建单」二字（今日采购建单金额 / 建单数），一眼能看出它不是「今天发生了多少业务」。
+
+**「已提交状态集合」不得在 metrics 里硬编码**，必须从采购领域的枚举派生：
+
+```
+ScmPurchaseStatusEnum.isCommitted()  →  committedNames()
+        ↓
+ScmBusinessMetricsService
+        ↓
+首页 / 大屏 / 报表
+```
+
+当前实现为**排除法**（非 `DRAFT` 且非 `CANCELLED`），而不是正列举四个状态名。理由与 `ScmMovementDirections` 同源：
+以后新增 `CLOSED` / `PARTIALLY_CLOSED` 这类状态时，正列举会**静默漏算**（数字看起来正常、只是偏小），排除法则默认把它算进来。
+采购状态机的合法转换（`PurchaseOrderStateMachine`）与 `ck_purchase_order_status` 白名单是这套派生的依据。
 
 **大屏的处置**：把「今日销售额」从 `created_at` 轴切到 `confirmed_at` 轴，与报表同名同义。若决定保留创建轴，则**必须改名**为「今日下单金额」。`todayOrderedAmount` 这个死字段要么删掉，要么改名后真正展示出来。
 
@@ -285,13 +342,14 @@ views/system/home/
 | 批次 | 内容 | 验收 |
 | --- | --- | --- |
 | 0 | 抽 `ScmBusinessMetricsService`；大屏改接它并**切到确认口径**（见 §3.4） | 大屏 IT 与前端契约全绿；除「销售额 / 订单数 / 成交客户 / 两张销售排行 / 趋势的 sales 与 orders 序列」因换轴而变化外，其余数字与改动前逐项一致；换轴后与报表同区间取值相等 |
-| 1 | 报表重叠部分改接 metrics；补 §3.5 的三条源码契约 + 结果一致性 IT | 三条契约可被注入违规打红；IT 断言两端取值相等（含 0 值与跨日边界） |
+| 1A | **销售闭环**：报表概览的销售三件套迁入 metrics（含客户 / 业务员 / 订单来源筛选），报表不再自己写销售 SQL；补 §3.5 第 2 条契约与跨日 IT | 报表与大屏对同一区间同数；跨日边界（昨天创建今天确认）两端都算今天；`overviewKpi` 不再出现 `sales_order` / `settlement_total_amount` |
+| 1B | **采购口径正式切换**：`ScmPurchaseStatusEnum.committed()` 派生已提交状态 → metrics 采购方法改 `submitted_at` 轴 + 状态过滤 → 大屏「今日采购」切过来 → `created_at` 轴改名为建单金额 / 建单数 | §2.2 的三张验收单；大屏与报表的采购数字一致；新增采购跨日 / 草稿 / 取消 IT |
 | 2 | `scm:dashboard:query` 权限种子 + 三个只读端点 + IT | 缺领域权限的卡片被省略而不是给 0；越权 403；数据范围用例通过 |
-| 3 | 首页 UI 重构（删假数据组件、欢迎区、5 张 KPI、主图、待办、双排行、库存健康） | 截图复核；`verify.py frontend` PASS；§5.5 的列数自适应逐档验证 |
+| 3 | 首页 UI 重构（删假数据组件、欢迎区、KPI、主图、待办、双排行、库存健康） | 截图复核；`verify.py frontend` PASS；§5.5 的列数自适应逐档验证 |
 | 4a | 首页清理：删 `echarts/*`、`heart-sentence.ts`；修 `home-notice` 死 prop；快捷入口换业务入口并按权限过滤 | 无残留引用；lint / 契约全绿 |
 | 4b | **整套删除 SmartAdmin 本地待办能力**（清单见下） | 顶部铃铛只剩未读消息；全仓无 `TO_BE_DONE` 残留 |
 
-批次 0 是关键路径，也是唯一会改变现有数字的一步（换轴），建议单独提交、单独验证。
+批次 0 与 1B 是会改变现有数字的两步（换轴），各自单独提交、单独验证；批次 1A 不改变数字，只把定义收口。
 
 ### 批次 4b 清单（不止首页组件）
 
@@ -311,9 +369,14 @@ views/system/home/
 | 项 | 决策 |
 | --- | --- |
 | 首页今日销售额 / 今日订单 | **确认口径**：`confirmed_at` + `status='CONFIRMED'`，金额取 `settlement_total_amount` |
-| 大屏 / 报表 | 允许不同指标存在，**禁止同名不同义**。大屏「今日销售额」切确认口径；若保留创建轴则改名「今日下单金额」 |
+| 今日采购额 / 今日采购单 | **提交口径**：`submitted_at` + 已提交状态（非 `DRAFT` 且非 `CANCELLED`，由采购枚举派生） |
+| 今日采购建单金额 / 建单数 | 创建轴（`created_at`），名称必须带「建单」二字 |
+| 大屏 / 报表 | 允许不同指标存在，**禁止同名不同义**。大屏「今日销售额」已切确认口径；「今日采购」在批次 1B 切提交口径 |
+| 已提交状态集合 | **从采购枚举派生**（`ScmPurchaseStatusEnum.committed()` → `committedNames()`），不在 metrics 硬编码状态名 |
+| 「今日采购额」语义 | **当前有效口径**（取消后不计入），依据是状态机：`CANCELLED` 已退出履约链路且从未产生收货。代价是取消会让历史数字变动，已在 §2.2 写明 |
+| 报表概览的销售指标 | 按调用者的**业务员范围**收窄，与大屏经营面板一致（原实现完全不收窄，见批次 1A） |
 | `scm:dashboard:query` | 保留该基础权限；首版只授 role 1，随后由角色配置授给销售 / 采购 / 仓库 / 管理角色，并继续叠加领域权限裁剪 |
 | `ToBeDoneCard` | **整套功能删除**，不是只从首页移走（清单见 §6 批次 4b） |
 | 快捷入口 | 保留机制，默认项全部换成 SCM 业务入口并按权限过滤 |
 
-唯一未决：**大屏换轴的时机** —— 与大屏其他改动一起做，还是跟随批次 0 一起落。建议跟随批次 0（口径收敛一次做完，避免中间态）。
+已无待定夺项。批次顺序：0（已完成）→ 1A → 1B → 2 → 3 → 4a → 4b。

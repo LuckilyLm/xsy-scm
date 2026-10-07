@@ -10,7 +10,9 @@ import com.xsy.scm.metrics.domain.InventoryHealthRow;
 import com.xsy.scm.metrics.domain.InventoryMetrics;
 import com.xsy.scm.metrics.domain.MasterDataMetrics;
 import com.xsy.scm.metrics.domain.PurchaseMetrics;
+import com.xsy.scm.metrics.domain.SalesFilter;
 import com.xsy.scm.metrics.domain.SalesMetrics;
+import com.xsy.scm.metrics.domain.SalesRangeMetrics;
 import com.xsy.scm.metrics.domain.TrendMetrics;
 import com.xsy.scm.metrics.domain.TrendPoint;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 经营类指标的唯一定义处：首页 / 大屏 / 报表都从这里取数。
+ * 跨端复用经营指标的统一业务入口：首页 / 大屏 / 报表都从这里取数。
  *
  * <p>
- * <b>一个业务指标只有一个口径定义</b>。要换口径就改这里的一处 SQL，不要在各页面另写一份 —— 同一件事写出两个数， 而且都不报错，是本项目最忌讳的失败方式。
+ * 边界分三层，不要把它们混成一件事：<b>业务口径</b>在本类编排（区间怎么取、日界用哪个时区、哪几个字段同轴）； <b>SQL</b> 只在 {@code ScmBusinessMetricsMapper}
+ * 定义一处；<b>状态与方向等语义</b>继续复用各业务域的枚举 （如 {@code ScmMovementDirections} 从流水类型的方向位派生），不在 metrics 里再抄一份清单。
+ * 「唯一」指的是同一指标只有一处定义，不是「所有统计逻辑都要堆进这个类」。
  *
  * <p>
  * <b>本类只收跨端共用的经营类指标</b>，不是「所有查询的万能入口」：报表专有的按业务员 / 分类分组、对账、账龄、 利润、退款、异常订单、分页导出都留在报表域，进来只会把它变成 God Service。
@@ -54,14 +58,34 @@ public class ScmBusinessMetricsService {
 
     private final ScmBusinessMetricsDao metricsDao;
 
-    /** 销售经营指标：销售额 / 订单 / 成交客户走确认轴，下单金额走创建轴（见 {@link SalesMetrics}）。 */
-    public SalesMetrics sales(ScmDataScopeContext scope) {
+    /**
+     * 区间内的销售事实：报表概览与首页 / 大屏共用同一份定义。
+     *
+     * <p>
+     * 三个字段同轴（{@code confirmed_at}）。报表按表单筛选收窄（客户 / 业务员 / 订单来源），首页与大屏传 {@link SalesFilter#NONE}；两者都按调用者的数据范围收窄。
+     */
+    public SalesRangeMetrics salesRange(LocalDate startDate, LocalDate endDate, SalesFilter filter,
+            ScmDataScopeContext scope) {
+        OffsetDateTime[] range = dayRange(startDate, endDate);
+        return new SalesRangeMetrics(orZero(metricsDao.countOrdersByConfirmedAt(range[0], range[1], filter, scope)),
+                orZero(metricsDao.sumSettlementAmountByConfirmedAt(range[0], range[1], filter, scope)),
+                orZero(metricsDao.countCustomersWithOrdersByConfirmedAt(range[0], range[1], filter, scope)));
+    }
+
+    /**
+     * 今日销售经营指标（首页 / 大屏）。
+     *
+     * <p>
+     * 销售额 / 订单 / 成交客户走确认轴，下单金额走创建轴（见 {@link SalesMetrics}）；区间内的三个数直接复用 {@link #salesRange}，不另写一份 SQL。
+     */
+    public SalesMetrics todaySales(ScmDataScopeContext scope) {
         OffsetDateTime[] range = todayRange();
-        return new SalesMetrics(orZero(metricsDao.countOrdersByConfirmedAt(range[0], range[1], scope)),
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        SalesRangeMetrics todayFacts = salesRange(today, today, SalesFilter.NONE, scope);
+        return new SalesMetrics(todayFacts.orderCount(),
                 orZero(metricsDao.sumOrderedAmountByCreatedAt(range[0], range[1], scope)),
-                orZero(metricsDao.sumSettlementAmountByConfirmedAt(range[0], range[1], scope)),
-                orZero(metricsDao.countTotalOrders(scope)), orZero(metricsDao.sumTotalSettlementAmount(scope)),
-                orZero(metricsDao.countCustomersWithOrdersByConfirmedAt(range[0], range[1], scope)),
+                todayFacts.settlementAmount(), orZero(metricsDao.countTotalOrders(scope)),
+                orZero(metricsDao.sumTotalSettlementAmount(scope)), todayFacts.customerCount(),
                 nullToEmpty(metricsDao.topCustomersByConfirmedAt(range[0], range[1], TOP_RANK_LIMIT, scope)),
                 nullToEmpty(metricsDao.topProductsByConfirmedAt(range[0], range[1], TOP_RANK_LIMIT, scope)));
     }
@@ -189,8 +213,13 @@ public class ScmBusinessMetricsService {
     }
 
     private static OffsetDateTime[] dayRange(LocalDate day) {
-        return new OffsetDateTime[]{day.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                day.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime()};
+        return dayRange(day, day);
+    }
+
+    /** 闭区间日期 → 半开瞬间区间，与报表的日界换算同源（起始日 00:00 含，结束日次日 00:00 不含）。 */
+    private static OffsetDateTime[] dayRange(LocalDate startDate, LocalDate endDate) {
+        return new OffsetDateTime[]{startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
+                endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime()};
     }
 
     private static long orZero(Long value) {
