@@ -13,7 +13,6 @@
     <a-alert v-if="error" class="picker-error" type="error" show-icon :message="error">
       <template #action><a-button @click="queryData">重试</a-button></template>
     </a-alert>
-    <div class="table-scroll-hint">左右滑动表格查看退款、订单和客户信息</div>
     <a-table size="small" row-key="refundId" :data-source="rows" :columns="columns" :loading="loading"
              :pagination="false" :scroll="{x:1040}">
       <template #bodyCell="{record,column,text}">
@@ -96,8 +95,4 @@ watch(() => props.open, (isOpen) => {
 
 <style scoped>
 .picker-error { margin-bottom: 12px; }
-.table-scroll-hint { display: none; margin-bottom: 8px; color: #667085; font-size: 12px; }
-@media (max-width: 768px) {
-  .table-scroll-hint { display: block; }
-}
 </style>

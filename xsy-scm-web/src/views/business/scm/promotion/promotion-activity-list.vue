@@ -31,7 +31,6 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:promotion:activity:edit'" @click="openCreate">新建活动</a-button>
-        <span class="hint">活动价在基础价（协议价 → 客户类型价 → 市场价）之后计算；互斥组决定可否叠加</span>
       </div>
     </a-row>
 
@@ -144,7 +143,6 @@
       <section class="scm-form-section">
         <div class="scm-form-section__head">
           <h3 class="scm-form-section__title">活动规则</h3>
-          <span class="scm-form-section__hint">规则是受控键值：每种类型只接受自己的键</span>
         </div>
         <a-row :gutter="20">
           <template v-if="form.activityType === 'DISCOUNT'">

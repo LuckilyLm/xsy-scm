@@ -91,7 +91,7 @@ test('五个页面表格定位符及列配置 id 全部唯一', () => {
   assert.equal(new Set(financeIds).size, 5);
 });
 
-test('未核销余额固定在首屏，横向滚动提示只在窄屏出现', () => {
+test('未核销余额固定在首屏，不再挂常驻的横向滚动提示', () => {
   assert.match(pageCode.receivable, /dataIndex: 'openAmount', fixed: 'left'/);
   assert.match(pageCode.payable, /dataIndex: 'openAmount', fixed: 'left'/);
   assert.match(pageCode.receipt, /dataIndex: 'pendingWriteOffAmount', fixed: 'left'/);
@@ -100,8 +100,9 @@ test('未核销余额固定在首屏，横向滚动提示只在窄屏出现', ()
   assert.match(pageCode.payable, /finance-mobile-balance-list[\s\S]*record\.openAmount/);
   assert.match(pageCode.receipt, /finance-mobile-balance-list[\s\S]*record\.pendingWriteOffAmount/);
   assert.match(pageCode.payment, /finance-mobile-balance-list[\s\S]*record\.pendingWriteOffAmount/);
-  assert.match(pageCode.receivable, /table-scroll-hint[\s\S]*@media \(max-width: 768px\)/);
-  assert.match(pageCode.writeOff, /左右滑动表格查看/);
+  // 横向滚动提示已删除：窄屏表格本身可滑动，不需要一句常驻说明（见 scm-ui-guidelines.md）。
+  assert.doesNotMatch(pageCode.receivable, /table-scroll-hint/);
+  assert.doesNotMatch(pageCode.writeOff, /table-scroll-hint/);
   assert.match(pageCode.writeOff, /source\.partyName[\s\S]*source\.availableAmount/);
 });
 

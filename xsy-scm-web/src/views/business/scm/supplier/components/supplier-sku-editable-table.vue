@@ -80,7 +80,6 @@
       </table>
     </div>
     <a-button class="add-sku" @click="emit('update:modelValue', [...modelValue, emptySkuDraft()])">添加商品</a-button>
-    <div class="hint">同一供应商可以同时有多条「默认来源」，这不是配置错误。</div>
   </div>
 </template>
 
@@ -160,12 +159,6 @@ td:nth-child(6) {
 
 .add-sku {
   margin-top: 12px;
-}
-
-.hint {
-  margin-top: 8px;
-  color: var(--scm-text-secondary, #8c8c8c);
-  font-size: 12px;
 }
 </style>
 

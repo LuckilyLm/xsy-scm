@@ -22,7 +22,7 @@
     </a-form>
 
     <p class="daily-description">
-      每日自动统计前一天提交的有效采购单，排除草稿和取消单。按采购时的商品名称、规格和单位分组汇总，生成后保留历史快照。
+      每日生成，保留生成时的快照。
       <router-link v-privilege="'support:job:query'" to="/job/list">配置执行时间</router-link>
     </p>
 

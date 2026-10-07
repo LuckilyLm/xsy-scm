@@ -59,7 +59,7 @@
           新建转换单
         </a-button>
         <a-typography-text type="secondary" style="margin-left: 12px">
-          创建后进入待审核；审批通过才调整库存，并生成不可删除的两条流水（源出 / 目标入）。
+          审批通过才调库存，流水不可删除
         </a-typography-text>
       </div>
       <div class="smart-table-setting-block">

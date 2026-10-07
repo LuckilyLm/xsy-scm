@@ -46,7 +46,7 @@
             <span v-if="isLocated(supplier)">
               {{ supplier.longitude }}，{{ supplier.latitude }}（{{ supplier.geomCrs }}）
             </span>
-            <span v-else class="hint">未采集点位；点位用于地图分布与供应商位置查询</span>
+            <span v-else>未采集</span>
           </a-descriptions-item>
         </a-descriptions>
 
@@ -188,9 +188,5 @@ watch(() => route.query.supplierId, load, {immediate: true});
 /* 同一段里的后续小标题（概览段串起 联系/地址/采购/系统信息/关联商品） */
 .detail-section--nested {
   margin-top: 20px;
-}
-
-.hint {
-  color: var(--scm-text-secondary);
 }
 </style>

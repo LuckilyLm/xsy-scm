@@ -56,9 +56,6 @@
         >
           检查并发送预警通知
         </a-button>
-        <span class="hint">
-          向本仓的授权员工投递站内信；只在状态发生跃迁时发送，重复点击不会重复发信
-        </span>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -313,12 +310,6 @@ watch(
 /* 可用量是判定基准，加粗以区别于现有量 */
 .available {
   font-weight: 600;
-}
-
-.hint {
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-  font-size: 12px;
-  margin-left: 8px;
 }
 
 .anchor {

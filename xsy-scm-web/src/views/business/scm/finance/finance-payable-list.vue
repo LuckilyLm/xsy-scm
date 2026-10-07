@@ -35,7 +35,6 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYABLE" :refresh="queryData"/>
       </div>
     </a-row>
-    <div class="table-scroll-hint">左右滑动表格查看其余金额、时点和操作列</div>
     <div class="finance-mobile-balance-list">
       <div v-for="record in page.tableData.value" :key="record.payableId" class="finance-mobile-balance-row">
         <div class="mobile-balance-heading"><strong>{{ record.payableNo }}</strong><a-button type="link" @click="showDetail(record)">明细</a-button></div>
@@ -228,7 +227,6 @@ onMounted(queryData);
 .money-alert { font-weight: 600; }
 .red-source { margin: 16px 0; }
 .drawer-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
-.table-scroll-hint { display: none; margin-bottom: 8px; color: #667085; font-size: 12px; }
 .finance-mobile-balance-list { display: none; }
 
 .finance-mobile-balance-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
@@ -239,7 +237,6 @@ onMounted(queryData);
 .mobile-balance-values span { color: #667085; font-size: 12px; }
 .mobile-balance-values strong { color: #1d2939; font-weight: 600; }
 @media (max-width: 768px) {
-  .table-scroll-hint { display: block; }
   .finance-mobile-balance-list { display: block; }
   .finance-table :deep(.ant-table-cell-fix-right) { position: static !important; right: auto !important; }
 }

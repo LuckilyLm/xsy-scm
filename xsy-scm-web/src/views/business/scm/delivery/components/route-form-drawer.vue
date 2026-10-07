@@ -27,7 +27,6 @@
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">运力</h3>
-            <span class="scm-form-section__hint">司机与车辆可稍后分配</span>
           </div>
           <a-form-item label="起点仓库" required>
             <a-select v-model:value="form.warehouseId" :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"

@@ -154,13 +154,10 @@
               v-model:value="couponInstanceId"
               :loading="couponLoading"
               :options="couponOptions"
-              placeholder="不使用优惠券"
+              placeholder="不使用优惠券（试算不占用）"
               allow-clear
               style="width: 100%"
           />
-          <a-typography-text type="secondary" class="coupon-hint">
-            券需手动选择；试算不占用券，确认下单才占用。
-          </a-typography-text>
         </a-form-item>
         <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint"/>
         <a-descriptions v-if="discountPreview" :column="1" size="small" bordered>

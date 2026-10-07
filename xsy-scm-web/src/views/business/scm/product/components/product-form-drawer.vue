@@ -162,7 +162,6 @@
           <section class="scm-form-section">
             <div class="scm-form-section__head">
               <h3 class="scm-form-section__title">商品规格</h3>
-              <span class="scm-form-section__hint">规格项用于描述不同商品规格；采购、销售与库存都按具体的商品规格记录。</span>
             </div>
             <SkuEditor v-model="form.skuList" :units="units"/>
           </section>

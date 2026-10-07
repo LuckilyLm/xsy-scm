@@ -39,7 +39,6 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
-        <span class="hint">券的占用与核销由下单 / 退款流程驱动；试算不占用券</span>
       </div>
     </a-row>
 

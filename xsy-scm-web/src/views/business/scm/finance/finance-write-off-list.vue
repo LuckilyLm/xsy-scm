@@ -33,7 +33,6 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData"/>
       </div>
     </a-row>
-    <div class="table-scroll-hint">左右滑动表格查看来源、对象、原因、时点和操作列</div>
     <a-table id="scm-finance-write-off-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
              row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1295}">
       <template #bodyCell="{record,column,text}">
@@ -271,9 +270,7 @@ onMounted(queryData);
 .date-separator { margin: 0 8px; color: #667085; }
 .page-error,.form-error { margin-bottom: 12px; }
 .form-hint { margin-bottom: 16px; }
-.table-scroll-hint { display: none; margin-bottom: 8px; color: #667085; font-size: 12px; }
 @media (max-width: 768px) {
-  .table-scroll-hint { display: block; }
   .finance-table :deep(.ant-table-cell-fix-right) { position: static !important; right: auto !important; }
 }
 .source-summary { margin-top: 12px; }

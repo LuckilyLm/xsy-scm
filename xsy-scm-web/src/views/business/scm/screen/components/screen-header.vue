@@ -4,7 +4,6 @@
     <div class="scm-header-side is-left">
       <div class="scm-brand">
         <span class="scm-brand-name">鲜蔬源智链</span>
-        <span class="scm-brand-sub">SUPPLY CHAIN INTELLIGENCE</span>
       </div>
     </div>
 
@@ -150,14 +149,6 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
     font-weight: 700;
     letter-spacing: 2px;
     color: @text-1;
-  }
-
-  .scm-brand-sub {
-    font-size: 9px;
-    letter-spacing: 1.6px;
-    color: @text-3;
-    transform: scale(0.98);
-    transform-origin: left center;
   }
 }
 

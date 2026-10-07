@@ -90,10 +90,18 @@ const TEXT_ATTRIBUTES = new Set([
   'label',
   'extra',
   'empty-text',
+  // `hint` 渲染成 ⓘ Tooltip，同样摆在用户眼前；全仓库当前为 0，纳入扫描免得再长出实现细节。
+  'hint',
 ]);
 
 /** 子树整体跳过：不是用户可见文案，且最容易混入技术标识。 */
 const SKIP_SUBTREE = new Set(['svg', 'script', 'style']);
+
+/**
+ * 「就地」上下文：这些组件里的文案只在用户主动打开后出现，不算常驻解释，
+ * 因此不计入常驻长句棘轮（弹窗里的操作后果说明、Warning 里的原因都属此列）。
+ */
+const CONTEXTUAL = new Set(['amodal', 'adrawer', 'aalert', 'aempty', 'atooltip', 'apopover', 'adescriptions']);
 
 /**
  * 标签名归一化：parser 会把标签名转小写，但 `ReportNote` 得到 `reportnote`、
@@ -275,6 +283,37 @@ function countShape(files, predicate) {
   return {total, offenders};
 }
 
+/**
+ * 统计常驻正文里的长句（渲染文本 > 40 字，且不在 `CONTEXTUAL` 子树内）。
+ *
+ * 这一类比 `hint` 类元素更难发现：它没有专门的类名，只是「顺手多写一句」，
+ * 因此单钉一条上限棘轮，逼着新增时长句必须有理由。
+ */
+function countResidentLongText(files, limit = 40) {
+  let total = 0;
+  const offenders = [];
+  for (const file of files) {
+    let perFile = 0;
+    const visit = (node, contextual) => {
+      if (!node || typeof node.type !== 'string') return;
+      if (node.type === 'VElement') {
+        const tag = tagOf(node);
+        if (SKIP_SUBTREE.has(tag)) return;
+        const nested = contextual || CONTEXTUAL.has(tag);
+        for (const child of node.children ?? []) visit(child, nested);
+        return;
+      }
+      if (node.type === 'VText' && !contextual && node.value.trim().length > limit) perFile += 1;
+    };
+    visit(templateRootOf(file), false);
+    if (perFile > 0) {
+      total += perFile;
+      offenders.push({file: rel(file), count: perFile});
+    }
+  }
+  return {total, offenders};
+}
+
 const isElement = (name) => {
   const expected = name.toLowerCase().replace(/-/g, '');
   return (node) => node.type === 'VElement' && tagOf(node) === expected;
@@ -333,6 +372,9 @@ const hasHintClass = (node) =>
  *
  * 提高基线必须在 PR 里说明「不告知会导致什么操作错误」，否则应改为
  * Tooltip / 口径说明 / 操作时确认（见 scm-ui-guidelines.md §8.1）。
+ *
+ * 清理是分批做的（见 `docs/plan/active/frontend-ui-copy-declutter.md`）：每清完一批就把
+ * 受影响的基线降到新的实测值，别留旧数字 —— 留下的差额会被下一轮「顺手补一句」吃掉。
  */
 const BASELINE = {
   residentInfoAlert: 19,
@@ -340,8 +382,9 @@ const BASELINE = {
   // 32 = 收口后的 31 + `purchase-demand-summary-preview.vue` 那句「不是最终净采购建议」
   // （会改变用户决策的免责声明，按 guidelines §8.1 保留，不是回归）。
   secondaryType: 32,
-  hintClass: 54,
+  hintClass: 38,
   reportResidentInfoAlert: 0,
+  residentLongText: 0,
 };
 
 const REPORT_FILES = SCM_VIEW_FILES.filter((file) => rel(file).includes('/report/'));
@@ -424,6 +467,15 @@ test('hint 类提示数量不超过基线', () => {
       total <= BASELINE.hintClass,
       `hint 类提示从 ${BASELINE.hintClass} 涨到 ${total}：${JSON.stringify(offenders)}；` +
       '这类文案和 `type="secondary"` 一样属于「常驻解释」，新增前先确认用户不被告知就会操作错误。',
+  );
+});
+
+test('常驻正文长句数量不超过基线', () => {
+  const {total, offenders} = countResidentLongText(SCM_VIEW_FILES);
+  assert.ok(
+      total <= BASELINE.residentLongText,
+      `常驻正文长句从 ${BASELINE.residentLongText} 涨到 ${total}：${JSON.stringify(offenders)}；` +
+      '弹窗 / 提示 / 空态里的长句是「就地」出现的，不算常驻；正文里只该留一句话。',
   );
 });
 

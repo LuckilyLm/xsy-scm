@@ -41,7 +41,7 @@
         <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true">
           冻结批次生成需求
         </a-button>
-        <span class="hint">先按仓库/商品规格/单位冻结净需求批次（含库存、在途、已有采购覆盖的解释行），再从同一批次生成需求；重复生成不会重复建需求</span>
+        <span class="hint">按仓库 × 商品规格 × 单位冻结批次后生成需求</span>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData"/>

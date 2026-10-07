@@ -59,7 +59,6 @@
       <a-button v-privilege="'scm:purchase:demand:batch:query'" @click="viewBatch">
         查看冻结批次明细
       </a-button>
-      <span class="hint">回看冻结时的解释行与逐行建议；数字不会随后续库存变化重算</span>
     </div>
     <a-descriptions v-if="result" bordered size="small" :column="2">
       <a-descriptions-item label="区间内来源行">{{ result.sourceLineCount }}</a-descriptions-item>
@@ -194,10 +193,5 @@ function viewBatch() {
   align-items: center;
   gap: 8px;
   margin: 12px 0;
-}
-
-.hint {
-  color: var(--scm-text-secondary);
-  font-size: 12px;
 }
 </style>
