@@ -7,7 +7,7 @@
  *   空数组表示清空全部关联；
  * - 同一供应商允许多条 `defaultFlag = true` —— 校验里绝不加「只允许一条默认」。
  */
-import type {EnableStatus, ScmId, SupplierForm, SupplierSkuItem, SupplierSkuRow} from '/@/types/business/scm/supplier';
+import type {EnableStatus, ScmId, SupplierFormModel, SupplierPayload, SupplierSkuItem, SupplierSkuRow} from '/@/types/business/scm/supplier';
 
 /** 非负定点数：最多 14 位整数 + 最多 4 位小数。 */
 const DECIMAL = /^\d{1,14}(\.\d{1,4})?$/;
@@ -39,7 +39,7 @@ export interface SkuDraft {
     status?: EnableStatus;
 }
 
-export function emptySupplier(): SupplierForm {
+export function emptySupplier(): SupplierFormModel {
     return {
         // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
         // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的供应商。
@@ -86,7 +86,7 @@ export function fromRows(rows: SupplierSkuRow[]): SkuDraft[] {
     }));
 }
 
-export function validateSupplier(form: SupplierForm): string | undefined {
+export function validateSupplier(form: SupplierFormModel): string | undefined {
     if (!form.name?.trim()) {
         return '请输入供应商名称';
     }
@@ -143,13 +143,20 @@ export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
     });
 }
 
-export function toSupplierPayload(form: SupplierForm): SupplierForm {
+/**
+ * 提交前归一化 → 写请求体。
+ *
+ * 编码在这里被摘掉：它是服务端生成的只读回显，返回类型 `SupplierPayload` 上根本没有这个键，
+ * 所以「客户端 × 编码」是类型层面的事实，不是靠后端忽略。
+ */
+export function toSupplierPayload(form: SupplierFormModel): SupplierPayload {
     const blankToNull = (value?: string | null): string | null => {
         const text = value == null ? '' : String(value).trim();
         return text === '' ? null : text;
     };
+    const {supplierCode, ...rest} = form;
     return {
-        ...form,
+        ...rest,
         name: (form.name ?? '').trim(),
         contactName: blankToNull(form.contactName),
         contactPhone: blankToNull(form.contactPhone),

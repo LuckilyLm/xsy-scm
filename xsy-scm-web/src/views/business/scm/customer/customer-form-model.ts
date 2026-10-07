@@ -6,7 +6,7 @@
  * - 单位为「月」时结算日限 1–28（保证 2 月也存在该日期）；
  * - 金额一律是字符串形式的 4 位定点数，绝不做 `Number()` 运算。
  */
-import type {CreditPeriodType, CustomerForm} from '/@/types/business/scm/customer';
+import type {CreditPeriodType, CustomerFormModel, CustomerPayload} from '/@/types/business/scm/customer';
 
 /** 非负定点数：最多 14 位整数 + 最多 4 位小数（与后端 `ScmDecimalStrings.PATTERN` 同构）。 */
 const DECIMAL = /^\d{1,14}(\.\d{1,4})?$/;
@@ -14,7 +14,7 @@ const DECIMAL = /^\d{1,14}(\.\d{1,4})?$/;
 /** 宽松手机号 / 固话校验。 */
 const PHONE = /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/;
 
-export function emptyCustomer(): CustomerForm {
+export function emptyCustomer(): CustomerFormModel {
     return {
         // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
         // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的客户。
@@ -52,8 +52,8 @@ export function emptyCustomer(): CustomerForm {
  *
  * 不做清理的话，「按金额」的行会残留上一次「按时间」的账期值，后端会直接判为非法组合（40000）。
  */
-export function applyCreditPeriodType(form: CustomerForm, type?: CreditPeriodType | null): CustomerForm {
-    const next: CustomerForm = {...form, creditPeriodType: type ?? undefined};
+export function applyCreditPeriodType(form: CustomerFormModel, type?: CreditPeriodType | null): CustomerFormModel {
+    const next: CustomerFormModel = {...form, creditPeriodType: type ?? undefined};
     if (type !== 'BY_AMOUNT') {
         next.creditAmountThreshold = undefined;
     }
@@ -71,15 +71,15 @@ export function applyCreditPeriodType(form: CustomerForm, type?: CreditPeriodTyp
 }
 
 /** 单位切到「天」时清掉结算日（按天账期没有结算日概念）。 */
-export function applyCreditPeriodUnit(form: CustomerForm, unit?: 'DAY' | 'MONTH' | null): CustomerForm {
-    const next: CustomerForm = {...form, creditPeriodUnit: unit ?? undefined};
+export function applyCreditPeriodUnit(form: CustomerFormModel, unit?: 'DAY' | 'MONTH' | null): CustomerFormModel {
+    const next: CustomerFormModel = {...form, creditPeriodUnit: unit ?? undefined};
     if (unit !== 'MONTH') {
         next.settleDay = undefined;
     }
     return next;
 }
 
-export function validateCustomer(form: CustomerForm): string | undefined {
+export function validateCustomer(form: CustomerFormModel): string | undefined {
     if (!form.name?.trim()) {
         return '请输入客户名称';
     }
@@ -118,18 +118,22 @@ export function validateCustomer(form: CustomerForm): string | undefined {
 }
 
 /**
- * 提交前归一化。
+ * 提交前归一化 → 写请求体。
  *
  * 空白字符串统一转成 `null`：后端把「空白」也视作未填写，但如果前端直接送 `""`，
  * 就会出现「想清空却清不掉」的错觉（后端 `FieldStrategy.ALWAYS` 只对 `null` 生效）。
+ *
+ * 编码在这里被摘掉：它是服务端生成的只读回显，返回类型 `CustomerPayload` 上根本没有这个键，
+ * 所以「客户端 × 编码」是类型层面的事实，不是靠后端忽略。
  */
-export function toCustomerPayload(form: CustomerForm): CustomerForm {
+export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
     const blankToNull = (value?: string | null): string | null => {
         const text = value == null ? '' : String(value).trim();
         return text === '' ? null : text;
     };
+    const {customerCode, ...rest} = form;
     return {
-        ...form,
+        ...rest,
         name: (form.name ?? '').trim(),
         parentCustomerId: form.parentCustomerId ?? null,
         sellerId: form.sellerId ?? null,

@@ -136,3 +136,10 @@ test('提交前归一化：姓名去空白、空白串转 null、零额度保持
   // "0.0000" 不是空白，必须原样保留 —— 这是「额度为零」与「未设置额度」的区别。
   assert.equal(payload.creditLimit, '0.0000');
 });
+
+test('写请求体不含客户编码：编码由服务端生成', () => {
+  const payload = toCustomerPayload({...emptyCustomer(), customerCode: 'CUS000001', name: '客户甲'});
+  // 编码只在 UI 表单模型（CustomerFormModel）上做只读回显，写请求体（CustomerPayload）没有这个键。
+  assert.equal('customerCode' in payload, false);
+  assert.equal(payload.name, '客户甲');
+});

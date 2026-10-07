@@ -40,11 +40,11 @@ export interface ScmSortItem {
 // 供应商
 // ---------------------------------------------------------------------------
 
-/** 新建 / 编辑表单模型（请求体对应 SupplierAddForm / SupplierUpdateForm，不含 status）。 */
-export interface SupplierForm extends Partial<AreaColumns>, ScmLocation {
+/** 新建 / 编辑表单模型（UI 侧，不含 status）：比写请求体多一个只读的编码回显。 */
+export interface SupplierFormModel extends Partial<AreaColumns>, ScmLocation {
     supplierId?: ScmId;
     version?: number;
-    /** 仅编辑回显与列表展示用；创建时由服务端生成，提交不依赖该字段。 */
+    /** 只读回显：编码由服务端生成，不进入写请求（见 `SupplierPayload`）。 */
     supplierCode: string;
     name: string;
     contactName?: string | null;
@@ -54,8 +54,16 @@ export interface SupplierForm extends Partial<AreaColumns>, ScmLocation {
     remark?: string | null;
 }
 
+/**
+ * 写请求体（对应 SupplierAddForm / SupplierUpdateForm）。
+ *
+ * 刻意不含 `supplierCode`：后端两个表单都没有这个字段，客户端带上它只会让「UI 能填、服务端不采信」
+ * 变成两套真相。类型上摘掉之后，谁再把它拼回请求体都过不了编译。
+ */
+export type SupplierPayload = Omit<SupplierFormModel, 'supplierCode'>;
+
 /** 列表行（对应 SupplierVO）。 */
-export interface SupplierRow extends SupplierForm {
+export interface SupplierRow extends SupplierFormModel {
     supplierId: ScmId;
     version: number;
     status: EnableStatus;

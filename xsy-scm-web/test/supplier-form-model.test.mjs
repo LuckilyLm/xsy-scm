@@ -141,3 +141,10 @@ test('提交前归一化：空白串转 null', () => {
   assert.equal(payload.address, null);
   assert.equal(payload.remark, '备注');
 });
+
+test('写请求体不含供应商编码：编码由服务端生成', () => {
+  const payload = toSupplierPayload({ ...emptySupplier(), supplierCode: 'SUP000001', name: '供应商甲' });
+  // 编码只在 UI 表单模型（SupplierFormModel）上做只读回显，写请求体（SupplierPayload）没有这个键。
+  assert.equal('supplierCode' in payload, false);
+  assert.equal(payload.name, '供应商甲');
+});

@@ -104,7 +104,7 @@ import {computed, nextTick, reactive, ref} from 'vue';
 import type {FormInstance} from 'ant-design-vue';
 import {message} from 'ant-design-vue';
 import {supplierApi} from '/@/api/business/scm/supplier-api';
-import type {ScmId, SupplierForm} from '/@/types/business/scm/supplier';
+import type {ScmId, SupplierFormModel} from '/@/types/business/scm/supplier';
 import {emptySupplier, toSupplierPayload, validateSupplier} from '../supplier-form-model';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
@@ -122,7 +122,7 @@ const saving = ref(false);
 const error = ref('');
 const formRef = ref<FormInstance>();
 
-const form = reactive<SupplierForm>(emptySupplier());
+const form = reactive<SupplierFormModel>(emptySupplier());
 
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);

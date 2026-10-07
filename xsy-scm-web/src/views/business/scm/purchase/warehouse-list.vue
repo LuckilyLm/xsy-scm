@@ -161,7 +161,8 @@ import WarehouseScopeModal from './components/warehouse-scope-modal.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
-import type {Warehouse, WarehousePayload, WarehouseQuery} from './purchase-types';
+import type {Warehouse, WarehouseFormModel, WarehouseQuery} from './purchase-types';
+import {toWarehousePayload} from './warehouse-form-model';
 import {purchaseError} from './purchase-errors';
 import {hasPermission} from '../common/scm-permission';
 import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
@@ -174,7 +175,7 @@ const error = ref('');
 const visible = ref(false);
 const saving = ref(false);
 const formError = ref('');
-const form = ref<WarehousePayload>({warehouseCode: '', name: ''});
+const form = ref<WarehouseFormModel>({warehouseCode: '', name: ''});
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);
 /** 员工—仓库授权维护（独立权限点，与仓库主数据编辑分开）。 */
@@ -301,11 +302,12 @@ async function save() {
   }
   saving.value = true;
   try {
+    const payload = toWarehousePayload(form.value);
     if (form.value.id === undefined) {
-      await warehouseApi.create(form.value);
+      await warehouseApi.create(payload);
       message.success('仓库已创建');
     } else {
-      await warehouseApi.update(form.value);
+      await warehouseApi.update(payload);
       message.success('仓库已更新');
     }
     visible.value = false;

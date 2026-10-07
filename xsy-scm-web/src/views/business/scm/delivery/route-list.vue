@@ -129,7 +129,7 @@
           show-size-changer
           show-quick-jumper
           :show-total="(n: number) => `共 ${n} 条线路`"
-          @change="load"
+          @change="applyQuery"
       />
     </div>
   </a-card>
@@ -257,16 +257,45 @@ function onRowAction(key: string, record: DeliveryRoute) {
 }
 
 /**
- * 当前列表筛选 → URL 参数，只带非空项。键取自 ROUTE_DEEP_LINK，保证「带出去」与「还原回来」
- * 用的是同一份清单，不会一边加了键另一边漏接。
+ * 当前列表筛选 → URL 参数，只带非空项，且省略等于默认值的分页键（URL 里不必出现 `pageNum=1`）。
+ * 键取自 ROUTE_DEEP_LINK，保证「带出去」与「还原回来」用的是同一份清单，不会一边加了键另一边漏接。
  */
 function listFilterParams(): Record<string, string> {
   const params: Record<string, string> = {};
   for (const key of Object.keys(ROUTE_DEEP_LINK)) {
     const value = (query as unknown as Record<string, unknown>)[key];
-    if (value !== undefined && value !== null && value !== '') params[key] = String(value);
+    if (value === undefined || value === null || value === '') continue;
+    if (key === 'pageNum' && value === DEFAULT_QUERY.pageNum) continue;
+    if (key === 'pageSize' && value === DEFAULT_QUERY.pageSize) continue;
+    params[key] = String(value);
   }
   return params;
+}
+
+/** 路由 query 与目标参数是否等价；本页不产生多值键，遇到数组一律按不等处理。 */
+function sameQuery(current: Record<string, unknown>, next: Record<string, string>): boolean {
+  const keys = new Set([...Object.keys(current), ...Object.keys(next)]);
+  for (const key of keys) {
+    const left = current[key];
+    if (Array.isArray(left)) return false;
+    if ((left ?? '') !== (next[key] ?? '')) return false;
+  }
+  return true;
+}
+
+/**
+ * 把当前筛选写进 URL —— URL 是「已执行的查询」的唯一载体。
+ *
+ * 按钮与分页只改路由，下方 watcher 只消费路由并查询，两边不互相写，因此不会自触发。
+ * 连点两次查询时目标与当前 URL 等价，路由不会产生新导航，此时直接查一次。
+ */
+function applyQuery() {
+  const params = listFilterParams();
+  if (sameQuery(route.query, params)) {
+    load();
+    return;
+  }
+  void router.replace({path: route.path, query: params});
 }
 
 /**
@@ -310,23 +339,25 @@ async function loadOptions() {
 
 function search() {
   query.pageNum = 1;
-  load();
+  applyQuery();
 }
 
 function changeArea(_value: unknown, nodes: AreaNode[]) {
   Object.assign(query, areaColumnsOf(nodes));
 }
 
-/** 页面默认查询条件：手动重置与 deep-link 进入共用，避免两处各自维护一份「清空」。 */
+/** 页面默认查询条件：手动重置、deep-link 进入与 URL 省略默认分页共用同一份定义。 */
+const DEFAULT_QUERY = {pageNum: 1, pageSize: 20};
+
 function clearQuery() {
   Object.keys(query).forEach((key) => delete (query as unknown as Record<string, unknown>)[key]);
-  Object.assign(query, {pageNum: 1, pageSize: 20});
+  Object.assign(query, {...DEFAULT_QUERY});
   area.value = [];
 }
 
 function reset() {
   clearQuery();
-  load();
+  applyQuery();
 }
 
 function created(id: Id) {
@@ -335,11 +366,14 @@ function created(id: Id) {
 }
 
 // 待办卡片带 `?status=DRAFT`（待排线线路）：点进来必须看到同一批数据。
-// 进入时先回落到页面默认再落 URL 条件，因此从普通菜单进入不会残留上次 deep-link 的筛选；
 // 枚举键过字典白名单，自由文本键（编号 / 日期 / id）只做 trim 与空值收口。
 //
-// 这些键还有第二个来源：详情页「返回线路管理」会把列表当时的筛选原样带回来
-// （openDetail 带出去、route-detail-page 的 backToList 带回来），所以清单必须与那边一致。
+// 这个 query 同时是「已执行的查询」的唯一载体：查询 / 重置 / 翻页只改路由，下面的 watcher
+// 只消费路由并 load()，两边不互相写，因此不会自触发。于是浏览器后退能回到上一次的筛选与页码，
+// 而「从普通菜单进入」因为 URL 没有 query，仍会回落到页面默认、不残留上次条件。
+//
+// 详情页「返回线路管理」复用同一份清单（openDetail 带出去、route-detail-page 的 backToList
+// 带回来），所以键名必须与那边一致。
 const ROUTE_DEEP_LINK = {
   status: Object.keys(routeStatuses),
   keyword: null,

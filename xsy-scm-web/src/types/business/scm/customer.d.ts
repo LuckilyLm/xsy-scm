@@ -78,11 +78,11 @@ export interface CustomerTypeQuery {
 // 客户
 // ---------------------------------------------------------------------------
 
-/** 新建 / 编辑表单模型（请求体对应 CustomerAddForm / CustomerUpdateForm）。 */
-export interface CustomerForm extends Partial<AreaColumns>, ScmLocation {
+/** 新建 / 编辑表单模型（UI 侧）：比写请求体多一个只读的编码回显。 */
+export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
     customerId?: ScmId;
     version?: number;
-    /** 仅编辑回显与列表展示用；创建时由服务端生成，提交不依赖该字段。 */
+    /** 只读回显：编码由服务端生成，不进入写请求（见 `CustomerPayload`）。 */
     customerCode: string;
     name: string;
     customerTypeId?: ScmId;
@@ -110,8 +110,16 @@ export interface CustomerForm extends Partial<AreaColumns>, ScmLocation {
     remark?: string | null;
 }
 
+/**
+ * 写请求体（对应 CustomerAddForm / CustomerUpdateForm）。
+ *
+ * 刻意不含 `customerCode`：后端两个表单都没有这个字段，客户端带上它只会让「UI 能填、服务端不采信」
+ * 变成两套真相。类型上摘掉之后，谁再把它拼回请求体都过不了编译。
+ */
+export type CustomerPayload = Omit<CustomerFormModel, 'customerCode'>;
+
 /** 列表行（对应 CustomerVO）。 */
-export interface CustomerRow extends CustomerForm {
+export interface CustomerRow extends CustomerFormModel {
     customerId: ScmId;
     version: number;
     status: CustomerStatus;
@@ -165,7 +173,7 @@ export interface CustomerDeletePayload {
 /**
  * 改派客户业务归属（对应后端 CustomerSellerReassignForm，POST /scm/customer/reassignSeller）。
  *
- * 与 CustomerForm 分离：归属只能通过本端点变更（/update 一律不动 seller_id），
+ * 与 CustomerFormModel 分离：归属只能通过本端点变更（/update 一律不动 seller_id），
  * 且必须携带读到的 CustomerRow.version 做乐观锁，`sellerId` 为 `null` 即收回为未分配。
  */
 export interface CustomerSellerReassignPayload {

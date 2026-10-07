@@ -643,7 +643,7 @@ function syncFromRoute() {
 
 /**
  * 返回线路管理：把详情 URL 上的列表筛选原样带回列表（列表按同一套键还原），
- * 不用 `router.back()` —— 直接打开详情时上一页可能已经离开本系统。
+ * 不走浏览器历史回退 —— 直接打开详情时上一页可能已经离开本系统。
  */
 function backToList() {
   const filters = {...route.query};

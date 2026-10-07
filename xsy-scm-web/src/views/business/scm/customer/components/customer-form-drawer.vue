@@ -207,7 +207,7 @@ import {customerApi} from '/@/api/business/scm/customer-api';
 import type {
   CreditPeriodType,
   CreditPeriodUnit,
-  CustomerForm,
+  CustomerFormModel,
   CustomerStatus,
   ScmId
 } from '/@/types/business/scm/customer';
@@ -267,7 +267,7 @@ const sellerHint = computed(() => {
   return '留空表示暂不分配（未分配客户仅持分配权或全量范围者可见）。';
 });
 
-const form = reactive<CustomerForm>(emptyCustomer());
+const form = reactive<CustomerFormModel>(emptyCustomer());
 
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);
@@ -359,7 +359,7 @@ async function open(customerId?: ScmId) {
  * 账期类型的桥接。
  *
  * `SmartEnumSelect` 的 `value` prop 声明是 `[Number, String]`，不接受 `null`；
- * 而 `CustomerForm.creditPeriodType` 的可空语义正是 `null`（表示「不设置账期」），
+ * 而 `CustomerFormModel.creditPeriodType` 的可空语义正是 `null`（表示「不设置账期」），
  * 直接绑会报 TS2322。这里用 computed 把 `null` 折成 `undefined`。
  *
  * 顺带把「切换形态时清掉不属于该形态的字段」放进 setter：无论用户选择还是程序回填，

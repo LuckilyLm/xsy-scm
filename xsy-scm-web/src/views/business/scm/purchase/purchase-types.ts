@@ -590,15 +590,24 @@ export interface WarehouseQuery extends Page {
     status?: string;
 }
 
-export interface WarehousePayload extends Partial<AreaColumns>, ScmLocation {
+/** 新建 / 编辑表单模型（UI 侧）：比写请求体多一个只读的编码回显。 */
+export interface WarehouseFormModel extends Partial<AreaColumns>, ScmLocation {
     id?: Id;
     version?: number;
-    /** 仅编辑回显与列表展示用；创建时由服务端生成，提交不依赖该字段。 */
+    /** 只读回显：编码由服务端生成，不进入写请求（见 `WarehousePayload`）。 */
     warehouseCode?: string;
     name: string;
     address?: string | null;
     remark?: string | null;
 }
+
+/**
+ * 写请求体（对应 `WarehouseAddForm` / `WarehouseUpdateForm`）。
+ *
+ * 刻意不含 `warehouseCode`：后端两个表单都没有这个字段，客户端带上它只会让「UI 能填、服务端不采信」
+ * 变成两套真相。类型上摘掉之后，谁再把它拼回请求体都过不了编译。
+ */
+export type WarehousePayload = Omit<WarehouseFormModel, 'warehouseCode'>;
 
 /** `WarehouseStatusForm`：启用 / 停用（乐观锁 version）。 */
 export interface WarehouseStatusPayload {

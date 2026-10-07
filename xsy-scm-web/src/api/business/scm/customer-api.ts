@@ -2,9 +2,9 @@ import {getRequest, postRequest} from '/@/lib/axios';
 import type {
     CustomerDeletePayload,
     CustomerDetail,
-    CustomerForm,
     CustomerFrequentSku,
     CustomerOption,
+    CustomerPayload,
     CustomerQuery,
     CustomerRow,
     CustomerSellerReassignPayload,
@@ -27,8 +27,9 @@ export const customerApi = {
         >,
     optionList: () =>
         postRequest('/scm/customer/option/list', {}) as unknown as Promise<ScmResponse<CustomerOption[]>>,
-    add: (form: CustomerForm) => postRequest('/scm/customer/add', form) as unknown as Promise<ScmResponse<ScmId>>,
-    update: (form: CustomerForm) => postRequest('/scm/customer/update', form) as unknown as Promise<ScmResponse<null>>,
+    add: (form: CustomerPayload) => postRequest('/scm/customer/add', form) as unknown as Promise<ScmResponse<ScmId>>,
+    update: (form: CustomerPayload) =>
+        postRequest('/scm/customer/update', form) as unknown as Promise<ScmResponse<null>>,
     updateStatus: (payload: CustomerStatusPayload) => postRequest('/scm/customer/updateStatus', payload),
     /**
      * 改派业务归属（scm:customer:assign）：独立端点、独立权限，带乐观锁 version。
