@@ -316,6 +316,7 @@ import type {
     InventoryMovementRow,
     InventoryReportQuery,
     InventoryValueRow,
+    ReportFilterQuery,
 } from './report-types';
 import {
     buildReportQuery,
@@ -466,7 +467,7 @@ function loadLossPage(pageNum: number, pageSize: number) {
 }
 
 const loadLossSummary = createGuardedLoader(
-    () => reportInventoryApi.lossSummary(buildReportQuery<InventoryReportQuery>(dateRange.value, {...filters})),
+    () => reportInventoryApi.lossSummary(buildReportQuery<ReportFilterQuery<InventoryReportQuery>>(dateRange.value, {...filters})),
     (data) => (lossSummary.value = data),
     chartError
 );

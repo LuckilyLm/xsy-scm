@@ -34,7 +34,7 @@
       </a-form-item>
     </a-row>
     <a-row v-if="advanced" class="smart-query-form-row">
-      <a-form-item label="状态" class="smart-query-form-item" extra="只在四个已提交状态内收窄">
+      <a-form-item label="状态" class="smart-query-form-item">
         <SmartEnumSelect v-model:value="filters.status" enum-name="SCM_PURCHASE_STATUS_ENUM" width="160px"/>
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
@@ -61,8 +61,6 @@
       <a-row class="smart-table-btn-block">
         <div class="smart-table-operate-block">
           <a-button v-privilege="PERM.EXPORT" @click="exportOverview">导出</a-button>
-          <ReportNote title="口径说明"
-                      :points="['导出的是本页指标卡单行', '没有授权仓库时指标不可知，导出为空而不是 0']"/>
         </div>
       </a-row>
       <a-row :gutter="[12, 12]">
@@ -80,7 +78,6 @@
           title="供应商采购入库成本 TOP10"
           :items="topItems(supplierTopRows)"
           series-name="采购入库成本金额"
-          extra="由采购入库形成，不是采购单金额"
       />
     </a-tab-pane>
 
@@ -218,7 +215,6 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import PurchaseOrderDetail from '../purchase/components/purchase-order-detail-drawer.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import ReportBarChart from './report-components/report-bar-chart.vue';
 import ReportDrilldownDrawer from './report-components/report-drilldown-drawer.vue';
 import PurchasePriceTrendTab from './report-components/purchase-price-trend-tab.vue';
@@ -238,6 +234,7 @@ import type {
     PurchaseSupplierRow,
     PurchaseTopItem,
     ReportChartBar,
+    ReportFilterQuery,
     ReportId,
 } from './report-types';
 import {
@@ -362,6 +359,11 @@ function purchaseQuery(tab: {pageNum: number; pageSize: number}): PurchaseQuery 
     return buildReportQuery<PurchaseQuery>(dateRange.value, {...filters}, tab);
 }
 
+/** 非分页端点（采购概览 / 供应商 TOP 榜 / 价格波动）的查询体：不带分页字段。 */
+function purchaseFilterQuery(): ReportFilterQuery<PurchaseQuery> {
+    return buildReportQuery<ReportFilterQuery<PurchaseQuery>>(dateRange.value, {...filters});
+}
+
 function exportQuery(): Partial<PurchaseQuery> {
     return buildReportQuery<Partial<PurchaseQuery>>(dateRange.value, {...filters});
 }
@@ -396,18 +398,18 @@ function loadPurchaserPage(pageNum: number, pageSize: number) {
 }
 
 const loadOverview = createGuardedLoader(
-    () => reportPurchaseApi.overview(buildReportQuery<PurchaseQuery>(dateRange.value, {...filters})),
+    () => reportPurchaseApi.overview(purchaseFilterQuery()),
     (data) => (overview.value = data),
     chartError
 );
 const loadSupplierTop = createGuardedLoader(
-    () => reportPurchaseApi.supplierTop(buildReportQuery<PurchaseQuery>(dateRange.value, {...filters})),
+    () => reportPurchaseApi.supplierTop(purchaseFilterQuery()),
     (rows) => (supplierTopRows.value = rows ?? []),
     chartError
 );
 /** 价格波动不分页（一次给完整个区间的按日点），表格只渲染返回的行。 */
 const loadTrend = createGuardedLoader(
-    () => reportPurchaseApi.priceTrend(purchaseQuery(trend)),
+    () => reportPurchaseApi.priceTrend(purchaseFilterQuery()),
     (rows) => {
         trend.rows = rows ?? [];
         trend.total = (rows ?? []).length;

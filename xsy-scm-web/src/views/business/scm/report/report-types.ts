@@ -21,6 +21,15 @@ export interface ReportPage {
 }
 
 /**
+ * 非分页入参：与对应的分页入参同形，但去掉分页字段。
+ *
+ * 指标卡、TOP 榜与价格波动返回的是单行或整段数组，导出由后端强制第 1 页与行数上限，
+ * 这些端点都不接收分页参数。类型上不放 `pageNum` / `pageSize`，否则「后端不接受分页」
+ * 这件事会被「类型说必填」掩盖，调用处只能靠断言绕过。
+ */
+export type ReportFilterQuery<T> = Omit<T, 'pageNum' | 'pageSize'>;
+
+/**
  * 报表查询的公共日期段（Asia/Shanghai 日界的闭区间）。
  *
  * 后端把它转成 `[startDate 00:00, endDate+1 00:00)` 的半开区间，前端不参与这个换算。

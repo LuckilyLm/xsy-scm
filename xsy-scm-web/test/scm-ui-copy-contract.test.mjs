@@ -342,7 +342,8 @@ const BASELINE = {
   secondaryType: 32,
   hintClass: 54,
   reportResidentInfoAlert: 0,
-  reportNoteUsers: 24,
+  // 24 → 23：采购概览那两条讲的是导出范围与无授权仓库时的表现（机制），不是数字口径，已删。
+  reportNoteUsers: 23,
 };
 
 const REPORT_FILES = SCM_VIEW_FILES.filter((file) => rel(file).includes('/report/'));

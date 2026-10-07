@@ -35,6 +35,7 @@ import type {
     InboundRow,
     PendingPutawayRow,
     ReportDailyStat,
+    ReportFilterQuery,
     ReportOverview,
     SalesCategoryRow,
     SalesCustomerRow,
@@ -107,7 +108,7 @@ export const reportSalesApi = {
 
 /** 采购分析：采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动。 */
 export const reportPurchaseApi = {
-    overview: (data: PurchaseQuery) =>
+    overview: (data: ReportFilterQuery<PurchaseQuery>) =>
         postRequest(`${BASE}/purchase/overview`, data) as unknown as Promise<ScmResponse<PurchaseOverview>>,
     product: (data: PurchaseQuery) =>
         postRequest(`${BASE}/purchase/product`, data) as unknown as Promise<ScmResponse<ScmPage<PurchaseProductRow>>>,
@@ -119,13 +120,13 @@ export const reportPurchaseApi = {
         postRequest(`${BASE}/purchase/item/query`, data) as unknown as Promise<ScmResponse<ScmPage<PurchaseItemRow>>>,
 
     /** 供应商采购入库成本 TOP10（来源是 `PURCHASE_IN` 流水，不是采购单金额）。 */
-    supplierTop: (data: PurchaseQuery) =>
+    supplierTop: (data: ReportFilterQuery<PurchaseQuery>) =>
         postRequest(`${BASE}/purchase/supplier/top`, data) as unknown as Promise<ScmResponse<PurchaseTopItem[]>>,
     /**
      * 价格波动点。粒度 = 业务日 × SKU × 采购单位，
      * 不同单位不会合并成一条线（箱价与公斤价混画没有意义）。
      */
-    priceTrend: (data: PurchaseQuery) =>
+    priceTrend: (data: ReportFilterQuery<PurchaseQuery>) =>
         postRequest(`${BASE}/purchase/price-trend`, data) as unknown as Promise<ScmResponse<PurchasePriceTrendPoint[]>>,
 
     productExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/product/export`, data),
@@ -175,7 +176,7 @@ export const reportInventoryApi = {
         postRequest(`${BASE}/inventory/movement/query`, data) as unknown as Promise<
             ScmResponse<ScmPage<InventoryMovementRow>>
         >,
-    lossSummary: (data: InventoryReportQuery) =>
+    lossSummary: (data: ReportFilterQuery<InventoryReportQuery>) =>
         postRequest(`${BASE}/inventory/loss/summary`, data) as unknown as Promise<ScmResponse<InventoryLossSummary>>,
     lossQuery: (data: InventoryReportQuery) =>
         postRequest(`${BASE}/inventory/loss/query`, data) as unknown as Promise<ScmResponse<ScmPage<InventoryLossRow>>>,
