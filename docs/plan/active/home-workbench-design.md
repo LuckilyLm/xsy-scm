@@ -75,6 +75,19 @@
 
 而且这种偏差不会报错、不会告警，只会让业务人员不再相信任何一个数字。
 
+### 2.1 采购侧还有一处同类分叉（实现批次 0 时发现）
+
+| 出口 | 显示名 | 时间轴 | 状态过滤 |
+| --- | --- | --- | --- |
+| 大屏 `countPurchaseOrders` / `sumPurchaseAmount` | 「今日采购」 | **`created_at`** | **无**（含草稿、已取消） |
+| 报表 `purchaseOverview` | 「已提交采购金额」 | **`submitted_at`** | `SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED` |
+
+大屏的「今日采购」把草稿和已取消的采购单也算进金额，报表只算已提交。这比销售侧那处分叉更严重（数字差距可能很大），
+但**它不是本次换轴能顺手解决的** —— 「今日采购额」到底指「今天新建了多少采购单」还是「今天提交了多少采购额」是个业务选择。
+
+批次 0 的处理：**保持大屏现有行为不变**（不改变数字），只在 metrics 的方法名与注释里把口径写清楚
+（`countPurchaseOrdersByCreatedAt` / `sumPurchaseAmountByCreatedAt`），并把它登记为待定夺项（见 §7）。
+
 ## 3. 架构决策
 
 ### 3.1 原则：一个业务指标只有一处口径定义
@@ -123,13 +136,17 @@
 
 ```
 com/xsy/scm/metrics/
-├── service/ScmBusinessMetricsService.java
-├── dao/ScmBusinessMetricsDao.java
-├── domain/            BusinessOverviewMetrics / PurchaseMetrics / InventoryMetrics / TrendMetrics
-├── constant/          指标与口径枚举（见 §3.4）
-└── query/             区间、粒度等入参对象
+├── service/ScmBusinessMetricsService.java   唯一取数出口
+├── dao/ScmBusinessMetricsDao.java           方法名自带时间轴（ByConfirmedAt / ByCreatedAt）
+├── domain/                                  SalesMetrics / MasterDataMetrics / PurchaseMetrics
+│                                            InventoryMetrics / InventoryHealth / InventoryHealthRow
+│                                            TrendMetrics / TrendPoint / RankItem
+└── constant/ScmMovementDirections.java      流水方向清单，由枚举方向位派生
 mapper/scm/metrics/ScmBusinessMetricsMapper.xml
 ```
+
+`screen/ScreenDataDao` 收窄到只剩大屏专属的四条（仓库分布条、供应链网络节点、地理分布），
+`ScreenDataService` 只做「取指标 + 装面板」。
 
 迁移动作：
 
@@ -151,6 +168,8 @@ mapper/scm/metrics/ScmBusinessMetricsMapper.xml
 首页两个 KPI 同轴（都走 `confirmed_at`），语义是「今天实际成交了多少」，符合用户直觉；要看获客 / 接单能力就用另外两个名字（下单金额 / 下单数）。
 
 **大屏的处置**：把「今日销售额」从 `created_at` 轴切到 `confirmed_at` 轴，与报表同名同义。若决定保留创建轴，则**必须改名**为「今日下单金额」。`todayOrderedAmount` 这个死字段要么删掉，要么改名后真正展示出来。
+
+**换轴的影响面比「一个 KPI」大**（实现时实测确认）：大屏的「今日订单」「成交客户」、客户 / 商品两张销售排行、以及趋势里的 `sales` / `orders` 两条序列，与「今日销售额」是**同一个口径**，必须一起换。否则会出现两种自相矛盾：趋势最后一点与 KPI 不相等，而大屏的环比正是拿这两者相减（`core-metrics.vue` 的 `deltaOf(business.todaySettlementAmount, trend.sales)`）；客单价 = 销售额 / 订单数也会变成跨口径的比值。
 
 口径名落到界面上（沿用 §8 的「指标名自解释」约定，不写解释性长句）：首页固定显示确认口径，指标名直接写「今日销售额」，不额外加「（确认口径）」；只有同时出现两个口径的地方才需要显式区分。
 
@@ -265,7 +284,7 @@ views/system/home/
 
 | 批次 | 内容 | 验收 |
 | --- | --- | --- |
-| 0 | 抽 `ScmBusinessMetricsService`；大屏改接它并**切到确认口径**（见 §3.4） | 大屏 IT 与前端契约全绿；除「今日销售额 / 今日订单」因换轴而变化外，其余数字与改动前逐项一致；换轴后的值与报表同区间取值相等 |
+| 0 | 抽 `ScmBusinessMetricsService`；大屏改接它并**切到确认口径**（见 §3.4） | 大屏 IT 与前端契约全绿；除「销售额 / 订单数 / 成交客户 / 两张销售排行 / 趋势的 sales 与 orders 序列」因换轴而变化外，其余数字与改动前逐项一致；换轴后与报表同区间取值相等 |
 | 1 | 报表重叠部分改接 metrics；补 §3.5 的三条源码契约 + 结果一致性 IT | 三条契约可被注入违规打红；IT 断言两端取值相等（含 0 值与跨日边界） |
 | 2 | `scm:dashboard:query` 权限种子 + 三个只读端点 + IT | 缺领域权限的卡片被省略而不是给 0；越权 403；数据范围用例通过 |
 | 3 | 首页 UI 重构（删假数据组件、欢迎区、5 张 KPI、主图、待办、双排行、库存健康） | 截图复核；`verify.py frontend` PASS；§5.5 的列数自适应逐档验证 |

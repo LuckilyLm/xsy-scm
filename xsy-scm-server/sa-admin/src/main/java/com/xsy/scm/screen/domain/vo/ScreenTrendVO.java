@@ -34,10 +34,10 @@ public class ScreenTrendVO {
     @Schema(description = "日期轴（YYYY-MM-DD，用于 tooltip 完整展示）")
     private List<String> fullDates;
 
-    @Schema(description = "每日结算金额（CONFIRMED）")
+    @Schema(description = "每日销售额（确认口径：confirmed_at 归属，取结算金额）")
     private List<BigDecimal> sales;
 
-    @Schema(description = "每日订单数（CONFIRMED）")
+    @Schema(description = "每日订单数（确认口径：confirmed_at 归属）")
     private List<Long> orders;
 
     @Schema(description = "每日采购金额")
@@ -54,25 +54,4 @@ public class ScreenTrendVO {
 
     @Schema(description = "每日出库数量（五个出方向流水求和）")
     private List<BigDecimal> outboundQuantity;
-
-    /**
-     * 单日聚合行（SQL 直接映射，再由服务层转置成上面的数组）。
-     *
-     * <p>
-     * SQL 用「一天一行、八个标量子查询」而不是「八个查询分别 group by」：日期轴由 {@code generate_series} 生成，<b>没有任何单据的日期也必须出现在轴上</b>，
-     * 否则前端折线会在缺数据的日期上断开或错位。
-     */
-    @Data
-    @Schema(description = "趋势单日聚合行")
-    public static class Point {
-        private String date;
-        private String label;
-        private Long orders;
-        private BigDecimal sales;
-        private Long purchaseOrders;
-        private BigDecimal purchaseAmounts;
-        private BigDecimal inventoryQuantity;
-        private BigDecimal inboundQuantity;
-        private BigDecimal outboundQuantity;
-    }
 }

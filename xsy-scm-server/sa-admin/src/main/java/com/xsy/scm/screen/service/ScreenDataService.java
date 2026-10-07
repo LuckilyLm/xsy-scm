@@ -3,204 +3,111 @@ package com.xsy.scm.screen.service;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
-import com.xsy.scm.inventory.constant.ScmInventoryMovementTypeEnum;
-import com.xsy.scm.inventory.constant.ScmInventoryWarningStatusEnum;
+import com.xsy.scm.metrics.constant.ScmMovementDirections;
+import com.xsy.scm.metrics.domain.InventoryHealth;
+import com.xsy.scm.metrics.domain.InventoryMetrics;
+import com.xsy.scm.metrics.domain.MasterDataMetrics;
+import com.xsy.scm.metrics.domain.PurchaseMetrics;
+import com.xsy.scm.metrics.domain.RankItem;
+import com.xsy.scm.metrics.domain.SalesMetrics;
+import com.xsy.scm.metrics.domain.TrendMetrics;
+import com.xsy.scm.metrics.service.ScmBusinessMetricsService;
 import com.xsy.scm.screen.dao.ScreenDataDao;
 import com.xsy.scm.screen.domain.vo.ScreenBusinessVO;
 import com.xsy.scm.screen.domain.vo.ScreenGeoVO;
-import com.xsy.scm.screen.domain.vo.ScreenInventoryHealthRow;
 import com.xsy.scm.screen.domain.vo.ScreenInventoryVO;
 import com.xsy.scm.screen.domain.vo.ScreenPurchaseVO;
 import com.xsy.scm.screen.domain.vo.ScreenTrendVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
- * 数据大屏只读聚合服务。
+ * 数据大屏只读聚合服务：只做「取指标 + 装成大屏面板」两件事。
  *
  * <p>
- * 只查询，不写业务表；所有统计基于现有业务域，不维护独立副本。
+ * <b>经营类指标不在这里算</b>，一律向 {@link ScmBusinessMetricsService} 取 —— 大屏、首页、报表对同一件事必须给出同一个数。
+ * 本类只保留呈现形态属于大屏自己的查询（仓库分布条、供应链网络节点、地理分布）。
  *
  * <p>
- * <b>大屏同样受数据范围约束</b>：它是业务列表的聚合视图，如果这里不收范围，一个只有 A 仓授权的人拿到 {@code scm:screen:query} 就能读到全公司的成交额、库存量和采购额 ——
- * 聚合值比明细更容易被误当成「已经授权过的数据」。每个入口解析一次上下文再下传给各 Dao，一次页面加载发十几个 Dao 调用也只解析一次（授权行改动必须立即生效，所以不缓存在登录态里）。
- * 各面板按自己的事实维度收：经营/趋势的销售序列按业务员，采购面板按「采购归属 ∩ 仓库」，库存与地理的仓库段按仓库；供应商与 SKU 主档没有任何范围维度，按团队共享读处理。
+ * <b>大屏同样受数据范围约束</b>：它是业务列表的聚合视图，如果这里不收范围，一个只有 A 仓授权的人拿到 {@code scm:screen:query}
+ * 就能读到全公司的成交额、库存量和采购额。每个入口解析一次上下文再下传，一次页面加载发十几个 Dao 调用也只解析一次 （授权行改动必须立即生效，所以不缓存在登录态里）。
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ScreenDataService {
 
-    private static final int TOP_RANK_LIMIT = 10;
-
     /**
      * 业务时区。
      *
      * <p>
-     * <b>「今日」必须是北京时间的今天</b>。早先这里用的是 {@code ZoneOffset.UTC} 的日界，实际窗口变成「北京时间 08:00 → 次日 08:00」—— 早上 07:00 下的单会被算进前一天，而
-     * 08:00 之后的单才落进当天。这不是显示问题而是口径错误，与需求日期 {@code demand_date} 显式使用 {@code AT TIME ZONE 'Asia/Shanghai'} 的约定也不一致。
+     * 大屏自己的两条查询（网络节点的今日出库量）仍要算「今日」。用 UTC 日界会把窗口整体平移 8 小时，与其余面板的口径不一致。
      */
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
-    private static final String RANGE_7D = "7d";
-    private static final String RANGE_30D = "30d";
-
-    /**
-     * 入库 / 出库方向的流水类型名，<b>由枚举的方向位派生</b>。
-     *
-     * <p>
-     * 大屏有三处口径都表达「入库」或「出库」：今日出入库次数、趋势的出入库量、供应链网络节点的今日出库量。若各自在 SQL 里抄一份类型清单，新增第 11 个流水类型时会<b>静默少算</b>（数字看起来正常，只是偏小）——
-     * 这是本项目最忌讳的失败方式。
-     *
-     * <p>
-     * 方向位本身已被 {@code ScmInventoryConstantTest#movementDirectionMatchesSnapshotConstraint} 钉住（10 个类型恰好分成两组、每组 5 个，且与
-     * {@code ck_inventory_movement_snap} 的方向分支同源），所以从这里派生等于把这三处口径一并接进那道契约守卫。
-     */
-    private static final List<String> INBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
-            .filter(ScmInventoryMovementTypeEnum::isInbound).map(type -> type.name()).toList();
-
-    private static final List<String> OUTBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
-            .filter(type -> !type.isInbound()).map(type -> type.name()).toList();
-
     private final ScreenDataDao screenDataDao;
+
+    private final ScmBusinessMetricsService metricsService;
 
     private final ScmDataScopeService dataScopeService;
 
-    /**
-     * 今日起止（北京时间日界，转成带 +08:00 偏移的瞬间，与库中 TIMESTAMPTZ 可比）。
-     */
-    private OffsetDateTime[] todayRange() {
-        return dayRange(LocalDate.now(BUSINESS_ZONE));
-    }
-
-    private OffsetDateTime[] dayRange(LocalDate day) {
-        return new OffsetDateTime[]{day.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                day.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime()};
-    }
-
     public ScreenBusinessVO getBusinessData() {
-        OffsetDateTime[] range = todayRange();
         ScmDataScopeContext scope = dataScopeService.resolve();
+        SalesMetrics sales = metricsService.sales(scope);
+        MasterDataMetrics masterData = metricsService.masterData(scope);
+
         ScreenBusinessVO vo = new ScreenBusinessVO();
-        vo.setTodayOrderCount(
-                Objects.requireNonNullElse(screenDataDao.countConfirmedOrders(range[0], range[1], scope), 0L));
-        vo.setTodayOrderedAmount(
-                Objects.requireNonNullElse(screenDataDao.sumOrderedAmount(range[0], range[1], scope), BigDecimal.ZERO));
-        vo.setTodaySettlementAmount(Objects
-                .requireNonNullElse(screenDataDao.sumSettlementAmount(range[0], range[1], scope), BigDecimal.ZERO));
-        vo.setTotalOrderCount(Objects.requireNonNullElse(screenDataDao.countTotalConfirmedOrders(scope), 0L));
-        vo.setTotalSettlementAmount(
-                Objects.requireNonNullElse(screenDataDao.sumTotalSettlementAmount(scope), BigDecimal.ZERO));
-        vo.setCustomerCount(Objects.requireNonNullElse(screenDataDao.countCustomers(scope), 0L));
-        vo.setSupplierCount(Objects.requireNonNullElse(screenDataDao.countSuppliers(), 0L));
-        vo.setSkuCount(Objects.requireNonNullElse(screenDataDao.countSkus(), 0L));
-        vo.setTodayCustomerCount(Objects
-                .requireNonNullElse(screenDataDao.countCustomersWithOrdersInRange(range[0], range[1], scope), 0L));
-        vo.setTodaySupplierCount(Objects
-                .requireNonNullElse(screenDataDao.countSuppliersWithOrdersInRange(range[0], range[1], scope), 0L));
-        vo.setTopCustomers(
-                nullToEmpty(screenDataDao.topCustomersBySettlement(range[0], range[1], TOP_RANK_LIMIT, scope)));
-        vo.setTopProducts(
-                nullToEmpty(screenDataDao.topProductsBySettlement(range[0], range[1], TOP_RANK_LIMIT, scope)));
+        vo.setTodayOrderCount(sales.todayOrderCount());
+        vo.setTodayOrderedAmount(sales.todayOrderedAmount());
+        vo.setTodaySettlementAmount(sales.todaySettlementAmount());
+        vo.setTotalOrderCount(sales.totalOrderCount());
+        vo.setTotalSettlementAmount(sales.totalSettlementAmount());
+        vo.setCustomerCount(masterData.customerCount());
+        vo.setSupplierCount(masterData.supplierCount());
+        vo.setSkuCount(masterData.skuCount());
+        vo.setTodayCustomerCount(sales.todayCustomerCount());
+        vo.setTodaySupplierCount(metricsService.activeSupplierCount(scope));
+        vo.setTopCustomers(toRankItems(sales.topCustomers()));
+        vo.setTopProducts(toRankItems(sales.topProducts()));
         return vo;
     }
 
     public ScreenInventoryVO getInventoryData() {
-        OffsetDateTime[] range = todayRange();
         ScmDataScopeContext scope = dataScopeService.resolve();
+        InventoryMetrics metrics = metricsService.inventory(scope);
+
         ScreenInventoryVO vo = new ScreenInventoryVO();
-        vo.setTotalQuantity(Objects.requireNonNullElse(screenDataDao.sumInventoryQuantity(scope), BigDecimal.ZERO));
-        vo.setSkuCount(Objects.requireNonNullElse(screenDataDao.countInventorySkus(scope), 0L));
-        vo.setWarehouseCount(Objects.requireNonNullElse(screenDataDao.countEnabledWarehouses(scope), 0L));
-        vo.setTodayInboundCount(Objects.requireNonNullElse(
-                screenDataDao.countMovementsByTypeAndRange(INBOUND_MOVEMENT_TYPES, range[0], range[1], scope), 0L));
-        vo.setTodayOutboundCount(Objects.requireNonNullElse(
-                screenDataDao.countMovementsByTypeAndRange(OUTBOUND_MOVEMENT_TYPES, range[0], range[1], scope), 0L));
+        vo.setTotalQuantity(metrics.totalQuantity());
+        vo.setSkuCount(metrics.skuCount());
+        vo.setWarehouseCount(metrics.warehouseCount());
+        vo.setTodayInboundCount(metrics.todayInboundCount());
+        vo.setTodayOutboundCount(metrics.todayOutboundCount());
+        vo.setHealth(toScreenHealth(metrics.health()));
         vo.setWarehouseDistribution(nullToEmpty(screenDataDao.inventoryDistributionByWarehouse(scope)));
-        vo.setHealth(buildHealth(scope));
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
         vo.setWarehouseNodes(
-                nullToEmpty(screenDataDao.warehouseNetworkNodes(range[0], range[1], OUTBOUND_MOVEMENT_TYPES, scope)));
+                nullToEmpty(screenDataDao.warehouseNetworkNodes(today.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
+                        today.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
+                        ScmMovementDirections.outboundTypes(), scope)));
         return vo;
     }
 
-    /**
-     * 库存健康度分档。
-     *
-     * <p>
-     * <b>判定完全交给预警枚举</b>（{@link ScmInventoryWarningStatusEnum#evaluate}），这里只做计数。SQL 只提供「可用量 + 上下限」三个事实，不参与分类 —— 一旦 SQL
-     * 里也写一份「正常/低于下限/高于上限」，两份规则漂移后大屏的健康度就会和预警列表对不上。
-     *
-     * <p>
-     * <b>四档互斥且之和等于 {@code totalSkuCount}</b>：缺货单独分档，其余 SKU 再按库存阈值分为三档，使四档占比合计为 100%：
-     * <ol>
-     * <li>缺货 —— 可用量 ≤ 0。<b>优先于其它档</b>，且不依赖阈值配置， 否则「配了阈值但一件都没有」会被算成预警，而缺货段恒为 0。</li>
-     * <li>未配置阈值 —— 有余额但没配阈值，无法判定，单独成档而不是塞进「正常」。</li>
-     * <li>预警 / 积压 / 正常 —— 由 {@code evaluate} 给出的 LOW / HIGH / NORMAL。</li>
-     * </ol>
-     */
-    private ScreenInventoryVO.InventoryHealth buildHealth(ScmDataScopeContext scope) {
-        List<ScreenInventoryHealthRow> rows = nullToEmpty(screenDataDao.inventoryHealthRows(scope));
-        long normal = 0L;
-        long low = 0L;
-        long high = 0L;
-        long unconfigured = 0L;
-        long outOfStock = 0L;
-        for (ScreenInventoryHealthRow row : rows) {
-            BigDecimal available = row.getAvailableQuantity();
-            // 缺货先判：它比「低于下限」更具体，且不要求配了阈值
-            if (available == null || available.signum() <= 0) {
-                outOfStock++;
-                continue;
-            }
-            if (row.getWarnMin() == null && row.getWarnMax() == null) {
-                unconfigured++;
-                continue;
-            }
-            ScmInventoryWarningStatusEnum status = ScmInventoryWarningStatusEnum.evaluate(available, row.getWarnMin(),
-                    row.getWarnMax());
-            if (status == ScmInventoryWarningStatusEnum.LOW) {
-                low++;
-            } else if (status == ScmInventoryWarningStatusEnum.HIGH) {
-                high++;
-            } else {
-                normal++;
-            }
-        }
-        ScreenInventoryVO.InventoryHealth health = new ScreenInventoryVO.InventoryHealth();
-        // 总数取参与评估的行数（余额行 ∪ 已配阈值），保证四档之和 = 总数
-        health.setTotalSkuCount((long) rows.size());
-        health.setNormalCount(normal);
-        health.setLowCount(low);
-        health.setHighCount(high);
-        health.setUnconfiguredCount(unconfigured);
-        health.setOutOfStockCount(outOfStock);
-        return health;
-    }
-
     public ScreenPurchaseVO getPurchaseData() {
-        OffsetDateTime[] range = todayRange();
-        ScmDataScopeContext scope = dataScopeService.resolve();
+        PurchaseMetrics metrics = metricsService.purchase(dataScopeService.resolve());
         ScreenPurchaseVO vo = new ScreenPurchaseVO();
-        vo.setTodayPurchaseOrderCount(
-                Objects.requireNonNullElse(screenDataDao.countPurchaseOrders(range[0], range[1], scope), 0L));
-        vo.setTodayPurchaseAmount(Objects.requireNonNullElse(screenDataDao.sumPurchaseAmount(range[0], range[1], scope),
-                BigDecimal.ZERO));
-        vo.setTotalPurchaseOrderCount(Objects.requireNonNullElse(screenDataDao.countTotalPurchaseOrders(scope), 0L));
-        vo.setTotalPurchaseAmount(
-                Objects.requireNonNullElse(screenDataDao.sumTotalPurchaseAmount(scope), BigDecimal.ZERO));
-        vo.setTodayReceiptCount(Objects.requireNonNullElse(screenDataDao.countReceipts(range[0], range[1], scope), 0L));
+        vo.setTodayPurchaseOrderCount(metrics.todayPurchaseOrderCount());
+        vo.setTodayPurchaseAmount(metrics.todayPurchaseAmount());
+        vo.setTotalPurchaseOrderCount(metrics.totalPurchaseOrderCount());
+        vo.setTotalPurchaseAmount(metrics.totalPurchaseAmount());
+        vo.setTodayReceiptCount(metrics.todayReceiptCount());
         return vo;
     }
 
@@ -208,53 +115,21 @@ public class ScreenDataService {
      * 趋势数据（近 7 / 30 天，含今天）。
      *
      * <p>
-     * DAO 返回「一天一行」，这里<b>转置成按序列的数组</b>：ECharts 的 series 是按序列组织的，转置放在服务层可以让 SQL 保持「一天一行」这种最好读也最好核对的形状。
-     *
-     * <p>
-     * 区间是<b>闭区间且含今天</b>：{@code 7d} = 今天往前数 6 天到今天，共 7 个点。
+     * 区间是<b>闭区间且含今天</b>：{@code 7d} = 今天往前数 6 天到今天，共 7 个点。序列口径由 metrics 服务负责， 这里只把结果搬进大屏 VO。
      */
     public ScreenTrendVO getTrendData(String range) {
-        boolean thirty = RANGE_30D.equalsIgnoreCase(range);
-        String normalized = thirty ? RANGE_30D : RANGE_7D;
-        LocalDate end = LocalDate.now(BUSINESS_ZONE);
-        LocalDate start = end.minusDays(thirty ? 29L : 6L);
-
-        List<ScreenTrendVO.Point> points = nullToEmpty(screenDataDao.trendByDay(start, end, INBOUND_MOVEMENT_TYPES,
-                OUTBOUND_MOVEMENT_TYPES, dataScopeService.resolve()));
-
-        List<String> dates = new ArrayList<>(points.size());
-        List<String> fullDates = new ArrayList<>(points.size());
-        List<BigDecimal> sales = new ArrayList<>(points.size());
-        List<Long> orders = new ArrayList<>(points.size());
-        List<BigDecimal> purchaseAmounts = new ArrayList<>(points.size());
-        List<Long> purchaseOrders = new ArrayList<>(points.size());
-        List<BigDecimal> inventoryQuantity = new ArrayList<>(points.size());
-        List<BigDecimal> inboundQuantity = new ArrayList<>(points.size());
-        List<BigDecimal> outboundQuantity = new ArrayList<>(points.size());
-
-        for (ScreenTrendVO.Point p : points) {
-            dates.add(p.getLabel());
-            fullDates.add(p.getDate());
-            sales.add(Objects.requireNonNullElse(p.getSales(), BigDecimal.ZERO));
-            orders.add(Objects.requireNonNullElse(p.getOrders(), 0L));
-            purchaseAmounts.add(Objects.requireNonNullElse(p.getPurchaseAmounts(), BigDecimal.ZERO));
-            purchaseOrders.add(Objects.requireNonNullElse(p.getPurchaseOrders(), 0L));
-            inventoryQuantity.add(Objects.requireNonNullElse(p.getInventoryQuantity(), BigDecimal.ZERO));
-            inboundQuantity.add(Objects.requireNonNullElse(p.getInboundQuantity(), BigDecimal.ZERO));
-            outboundQuantity.add(Objects.requireNonNullElse(p.getOutboundQuantity(), BigDecimal.ZERO));
-        }
-
+        TrendMetrics metrics = metricsService.trend(range, dataScopeService.resolve());
         ScreenTrendVO vo = new ScreenTrendVO();
-        vo.setRange(normalized);
-        vo.setDates(dates);
-        vo.setFullDates(fullDates);
-        vo.setSales(sales);
-        vo.setOrders(orders);
-        vo.setPurchaseAmounts(purchaseAmounts);
-        vo.setPurchaseOrders(purchaseOrders);
-        vo.setInventoryQuantity(inventoryQuantity);
-        vo.setInboundQuantity(inboundQuantity);
-        vo.setOutboundQuantity(outboundQuantity);
+        vo.setRange(metrics.range());
+        vo.setDates(metrics.dates());
+        vo.setFullDates(metrics.fullDates());
+        vo.setSales(metrics.sales());
+        vo.setOrders(metrics.orders());
+        vo.setPurchaseAmounts(metrics.purchaseAmounts());
+        vo.setPurchaseOrders(metrics.purchaseOrders());
+        vo.setInventoryQuantity(metrics.inventoryQuantity());
+        vo.setInboundQuantity(metrics.inboundQuantity());
+        vo.setOutboundQuantity(metrics.outboundQuantity());
         return vo;
     }
 
@@ -302,6 +177,28 @@ public class ScreenDataService {
         provinces.sort(Comparator.comparingLong(ScreenGeoVO.ProvinceNode::getCustomerCount).reversed()
                 .thenComparing(ScreenGeoVO.ProvinceNode::getProvinceCode));
         return provinces;
+    }
+
+    private static List<ScreenBusinessVO.RankItem> toRankItems(List<RankItem> source) {
+        List<ScreenBusinessVO.RankItem> items = new ArrayList<>(source.size());
+        for (RankItem item : source) {
+            ScreenBusinessVO.RankItem target = new ScreenBusinessVO.RankItem();
+            target.setName(item.name());
+            target.setAmount(item.amount());
+            items.add(target);
+        }
+        return items;
+    }
+
+    private static ScreenInventoryVO.InventoryHealth toScreenHealth(InventoryHealth health) {
+        ScreenInventoryVO.InventoryHealth target = new ScreenInventoryVO.InventoryHealth();
+        target.setTotalSkuCount(health.totalSkuCount());
+        target.setNormalCount(health.normalCount());
+        target.setLowCount(health.lowCount());
+        target.setHighCount(health.highCount());
+        target.setUnconfiguredCount(health.unconfiguredCount());
+        target.setOutOfStockCount(health.outOfStockCount());
+        return target;
     }
 
     private static <T> List<T> nullToEmpty(List<T> value) {
