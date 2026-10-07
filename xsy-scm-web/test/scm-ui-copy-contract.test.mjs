@@ -429,6 +429,30 @@ test('UI 可见文案不出现 SPU / SKU / 品规 / 货品 / 单品', () => {
   assert.deepEqual(hits, [], '用户界面统一使用 商品 / 商品规格，不出现 SPU / SKU / 品规 / 货品 / 单品');
 });
 
+/**
+ * 模板里**用户可见**的 markdown / HTML 残迹。
+ *
+ * 注释层的同类规则在 `scm-comment-noise-contract`，那里只扫注释，因此写在正文里的
+ * `**加粗**` 会原样显示成星号 —— 实测在库存盘点详情与转换单页各漏了一处。
+ * 只扫 SCM 自己的页面：SmartAdmin 的代码生成器里有真实的 JSDoc 代码示例。
+ */
+const VISIBLE_MARKDOWN = [
+  {label: 'markdown 加粗', pattern: /\*\*/},
+  {label: 'HTML 强调标签', pattern: /<\/?[biu]\s*>/},
+];
+
+test('SCM 界面可见文案不含 markdown 残迹', () => {
+  const hits = [];
+  for (const file of SCM_UI_FILES) {
+    for (const {text, where} of visibleCopyOf(file)) {
+      for (const {label, pattern} of VISIBLE_MARKDOWN) {
+        if (pattern.test(text)) hits.push(`${rel(file)} [${where}] ${label} → ${text.trim().slice(0, 60)}`);
+      }
+    }
+  }
+  assert.deepEqual(hits, [], '可见文案里出现 markdown / HTML 强调标记，用户看到的是星号或尖括号');
+});
+
 // ------------------------------------------------------------------
 // 4. 常驻解释性文案：棘轮只降不升
 // ------------------------------------------------------------------

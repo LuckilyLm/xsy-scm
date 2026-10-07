@@ -226,7 +226,7 @@
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
         <a-typography-text type="secondary" style="display: block; margin-top: 8px">
           同一商品规格可以在多行里出现（既是某行的源、又是另一行的目标，用于链式转换），
-          但**同一行的源与目标不能是同一个商品规格**。
+          但同一行的源与目标不能是同一个商品规格。
         </a-typography-text>
       </a-form-item>
     </a-form>

@@ -19,8 +19,8 @@
     <a-alert
         type="info"
         show-icon
-        message="区间是半开区间 [开始, 结束)"
-        description="只汇总区间内「已确认」的销售订单行；重复生成不会重复建需求。"
+        message="含开始日，不含结束日"
+        description="只汇总区间内「已确认」的销售订单行"
     />
     <a-form layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
