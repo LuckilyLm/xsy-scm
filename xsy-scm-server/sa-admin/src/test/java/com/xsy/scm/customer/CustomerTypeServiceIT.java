@@ -23,7 +23,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 客户类型（可维护字典）在真实 PostgreSQL 上的行为（T11）。
+ * 客户类型（可维护字典）在真实 PostgreSQL 上的行为。
  *
  * <p>重点是三件只有在数据库里才能成立的事：
  * partial unique index 让「软删后编码可复用」成立；引用检查必须在同一事务里读得到活动客户；
@@ -40,7 +40,7 @@ class CustomerTypeServiceIT extends ScmW2PgITBase {
 
     private CustomerTypeAddForm form(String suffix, String status) {
         CustomerTypeAddForm form = new CustomerTypeAddForm();
-        // 刻意加空白 + 小写，验证归一化真的落到了库里
+        // 加空白 + 小写，验证归一化真的落到了库里
         form.setTypeCode(" " + prefix + "-" + suffix + " ");
         form.setName("类型" + suffix);
         form.setStatus(status);

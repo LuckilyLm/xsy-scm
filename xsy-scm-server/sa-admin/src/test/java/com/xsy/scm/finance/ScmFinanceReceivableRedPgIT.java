@@ -39,9 +39,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 退货批准 → 红字应收（Finance R1 F1-2C，PG IT）。
+ * 退货批准 → 红字应收（PG IT）。
  *
- * <p>本类钉的是「红字是已成立退货事实的映射」这一条（第二批 Q27 + 第三批 D-2 / D-4）：
+ * <p>本类钉的是「红字是已成立退货事实的映射」这一条：
  * <ul>
  *   <li>红字金额一律采用订单域已落库的 {@code approved_amount}，财务不重算；</li>
  *   <li>红字<b>没有任何上限校验</b>：不扣既有核销额、不超过原正常应收、不抛 41137；</li>
@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </ul>
  *
  * <p>链路走真实命令（下单 → 分拣 → 发车 → 签收 / 退货建单 → 批准），因为「少拣导致红字大于应收」
- * 这一裁决场景只有真实出库量才能构造出来。
+ * 这一场景只有真实出库量才能构造出来。
  */
 @DisplayName("退货批准生成红字应收（Finance R1 F1-2C，PG IT）")
 class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
@@ -73,7 +73,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 单行链路：已确认订单（可指定单价）+ 已分拣 + 线路已规划，**未发车**。
+     * 单行链路：已确认订单（可指定单价）+ 已分拣 + 线路已规划，未发车。
      *
      * <p>单价走订单手工改价通道（{@code manualPriceOverride}）：这是订单域真实支持的定价路径，
      * 且 0 元赠品行也合法（{@code OrderValidator.decimal(value, false)}），
@@ -82,7 +82,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     private Chain planned(String tag, String ordered, String price, String sorted) {
         Long warehouseId = locatedWarehouse(tag);
         Long skuId = newOnShelfSku(tag);
-        // 库存刻意备足：本类的少拣 / 超额退货场景要的是「出库量与订单量不一致」，
+        // 库存备足：本类的少拣 / 超额退货场景要的是「出库量与订单量不一致」，
         // 不是「无货可发」，库存不足会让发车失败并把原因混淆成夹具问题。
         stockIn(warehouseId, skuId, tag, "1000.0000");
         Long customerId = addressedCustomer(tag);
@@ -404,7 +404,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 returned.getReturnId(), longOf(red, "id")))
                 .as("红字创建人必须是批准人本人（order_return.updated_by）").isTrue();
 
-        // 原正常应收一字未改（第二批 Q27：不修改原 Receivable）
+        // 原正常应收一字未改：红字是追加的反向事实，不修改原记录
         assertThat(decimalOf(normalOf(chain.orderId()), "amount"))
                 .isEqualByComparingTo(decimalOf(normal, "amount"));
         assertThat(longOf(normalOf(chain.orderId()), "version")).isEqualTo(longOf(normal, "version"));
@@ -536,7 +536,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // H. D-2：已核销不影响红字生成
+    // H. 已核销不影响红字生成
     // ------------------------------------------------------------------
 
     @Test
@@ -548,8 +548,8 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         Map<String, Object> normal = normalOf(chain.orderId());
         assertThat(decimalOf(normal, "amount")).isEqualByComparingTo("100.0000");
 
-        // 受控夹具：F1-4 的核销命令尚未实现，因此按 V65 schema 直接落一条合法核销行
-        //（source_type RECEIPT 的来源单在 F1-3 之前不存在，本用例只服务「不扣已核销额」这一判据）。
+        // 受控夹具：按 V65 schema 直接落一条合法核销行
+        //（source_id 不指向真实收款单，本用例只需要「存在一笔已核销额」这一判据）。
         jdbc.update("INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type,"
                         + " target_id, amount, entry_type, written_off_at, operator, created_at, updated_at)"
                         + " VALUES (?, 'RECEIPT', 900001, 'RECEIVABLE', ?, 100.0000, 'NORMAL',"
@@ -563,7 +563,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         Map<String, Object> red = redOf(returned.getReturnId());
         assertThat(decimalOf(red, "amount")).as("已核销 100 不抵扣可生成额度（D-2）")
                 .isEqualByComparingTo("20.0000");
-        // 财务事实净额可直接用 SQL 读出（读侧派生属 F1-5，本轮不建查询层）
+        // 财务事实净额可直接用 SQL 读出，不经过读侧派生
         assertThat(jdbc.queryForObject(
                 "SELECT sum(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)"
                         + " FROM finance_receivable WHERE order_id = ?", BigDecimal.class, chain.orderId()))
@@ -572,7 +572,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // I. D-4：红字大于正常应收也全额生成
+    // I. 红字大于正常应收也全额生成
     // ------------------------------------------------------------------
 
     @Test

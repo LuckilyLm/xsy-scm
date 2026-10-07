@@ -31,15 +31,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 付款登记（Finance R1 F1-3B，PG IT）。
+ * 付款登记（PG IT）。
  *
  * <p>这里钉的是「一笔付出就是一个事实，且它只有两种成立方式」：
- * {@code SUPPLIER} + 无来源（付款 / 预付，允许当前没有任何应付，Q16），
- * {@code CUSTOMER} + {@code ORDER_REFUND}（退款付款，必须 COMPLETED 且金额与对方逐值相等，Q19）。
- * 其余组合一律 41139，包括没有需求基线的「客户无来源付款」（属 P5）。
+ * {@code SUPPLIER} + 无来源（付款 / 预付，允许当前没有任何应付），
+ * {@code CUSTOMER} + {@code ORDER_REFUND}（退款付款，必须 COMPLETED 且金额与对方逐值相等）。
+ * 其余组合一律 41139，包括「客户无来源付款」—— 客户侧付款必须挂在退款来源上。
  *
- * <p>另外两组必须显性成立的边界：<b>付款不核销</b>（核销是 F1-4）与
- * <b>退款付款不二次冲减应收</b>（Q27：Return 已经红冲过一次，钱付出去不再动应收）。
+ * <p>另外两组必须显性成立的边界：<b>付款不核销</b>（核销是独立的核销命令）与
+ * <b>退款付款不二次冲减应收</b>（退货已经红冲过一次，钱付出去不再动应收）。
  */
 @DisplayName("付款登记（Finance R1 F1-3B，PG IT）")
 class ScmFinancePaymentPgIT extends ScmW5PgITBase {
@@ -115,7 +115,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
      */
     private Refund completedRefund(String tag, String ordered, String approved) {
         Long customerId = customerOwnedBy(null);
-        // 商品编码是 prefix + suffix，而 prefix 只在**单个用例**内唯一，
+        // 商品编码是 prefix + suffix，而 prefix 只在单个用例内唯一，
         // 因此同一用例里造多张退款必须各用自己的 tag，否则第二张撞 SPU 编码唯一。
         Long skuId = newOnShelfSku(tag);
         Long orderId = confirmedSalesOrder(customerId, skuId, ordered, ordered);
@@ -151,9 +151,9 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         complete.setRefundId(refundId);
         complete.setVersion(refundVersion);
         // order_refund.external_reference 上有部分唯一索引（uk_order_refund_external_reference_active），
-        // 与财务侧刻意「可重复」的同名列正相反，因此这里的值必须每次唯一。
-        // 也正因为它唯一，把它复制进 finance_payment.external_reference（§15 明令禁止）
-        // 会让两域的凭据号互相牵连，D 用例对此有显式断言。
+        // 与财务侧「可重复」的同名列正相反，因此这里的值必须每次唯一。
+        // 也正因为它唯一，不能把这份凭据号复制进 finance_payment.external_reference：
+        // 那会让两域的凭据号互相牵连，本类对此有显式断言。
         complete.setExternalReference("ORDER-SIDE-" + tag + "-" + UUID.randomUUID());
         refunds.complete(complete, key("refund-complete:" + tag));
         evictMybatisCache();
@@ -299,8 +299,8 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     @DisplayName("B 已有应付的供应商付款：付款成立、应付一字未改、仍然零核销")
     void supplierPaymentWithExistingPayableNeverAutoWritesOff() {
         Long supplierId = supplier();
-        // 受控夹具：应付生成属 F1-2A，这里按 schema 直插一张正常应付，
-        // 目的是证明「付款不会自动去冲它」，不依赖也不提前实现 F1-4 的核销能力。
+        // 受控夹具：按 schema 直插一张正常应付，
+        // 目的是证明「付款不会自动去冲它」，核销仍只能由核销命令产生。
         Long purchaseOrderId = 900_001L;
         long receiptId = 900_002L;
         jdbc.update("INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id,"
@@ -503,7 +503,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // M. 付款不二次冲减应收（Q27）
+    // M. 付款不二次冲减应收
     // ------------------------------------------------------------------
 
     @Test
@@ -511,7 +511,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     void paymentNeverReducesReceivableTwice() {
         Refund refund = completedRefund("M", "10.0000", "2.0000");
         // 该退货发生在签收之前，因此批准时成功跳过、库里此刻没有红字。
-        // 直接按 schema 补两张应收事实作为「已存在」的前置，不依赖 F1-2B 的签收链路。
+        // 直接按 schema 补两张应收事实作为「已存在」的前置，不依赖签收链路。
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
@@ -613,7 +613,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // T / U. 数据范围（第三批 D-5）
+    // T / U. 数据范围
     // ------------------------------------------------------------------
 
     @Test
@@ -667,7 +667,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         try {
             asEmployee(employeeId);
             // 该账号没有任何角色、没有任何仓库 / 采购员范围授权，连一张应付都不属于它；
-            // 供应商侧按 D-5 不收窄，因此付款照样成立。
+            // 供应商侧不受销售归属范围收窄，因此付款照样成立。
             FinancePaymentVO result = add(supplierForm(supplierId, "77.0000"));
             assertThat(result.getPaymentId()).isNotNull();
             assertThat(paymentRow(result.getPaymentId()).get("created_by"))
@@ -765,7 +765,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     @DisplayName("X 操作日志 PAY：改前为空、快照含来源与对方、操作人是登记人；重放不追加")
     void operationLogPaysTheRegistration() throws Exception {
         Refund refund = completedRefund("X", "10.0000", "2.0000");
-        // 重放必须用**同一把** key 与**同一份请求内容**：换 key 就是另一条命令（会被来源唯一索引
+        // 重放必须用同一把 key 与同一份请求内容：换 key 就是另一条命令（会被来源唯一索引
         // 按重复事实拒掉），换内容则按既有语义报 40966 —— 两者都不是「重放」。
         String idempotencyKey = key("x");
         FinancePaymentAddForm form = refundForm(refund.customerId(),

@@ -13,10 +13,9 @@ import java.sql.Statement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V12 的落地验证：D-1（{@code t_oa_enterprise_employee} 关联列类型不匹配）按方案 A 在 schema 根因修复。
+ * V12 的落地验证：{@code t_oa_enterprise_employee} 关联列类型不匹配已在 schema 根因修复。
  *
- * <p>与 {@code ScmCustomerSupplierMigrationIT} 一样刻意**不**启动 Spring 上下文：这里验证的是
- * 「migration 本身」能否独立跑通并留下正确结构。
+ * <p>这里不启动 Spring 上下文：要验证的是「migration 本身」能否独立跑通并留下正确结构。
  *
  * <p>覆盖四类断言：
  * <ol>
@@ -25,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       {@code bigint}（{@code information_schema.columns.data_type='bigint'} 且
  *       {@code udt_name='int8'}），不是 {@code character varying}；</li>
  *   <li>列类型变更后，唯一键与两个索引被 PG 自动重建且仍然有效；</li>
- *   <li><b>行为断言</b>：原先报 {@code operator does not exist: character varying = bigint}
- *       的两条真实语句（JOIN 查询 + Long 参数比较）现在能执行。</li>
+ *   <li><b>行为断言</b>：JOIN 查询与 Long 强类型参数比较这两条真实语句可执行
+ *       （列类型不匹配时它们报 {@code operator does not exist: character varying = bigint}）。</li>
  * </ol>
  */
 class SmartAdminOaEnterpriseEmployeeMigrationIT {
@@ -66,7 +65,7 @@ class SmartAdminOaEnterpriseEmployeeMigrationIT {
         try (Connection connection = DriverManager.getConnection(URL, user(), password());
              Statement statement = connection.createStatement()) {
 
-            // ---- 1. 迁移历史：V12 新增且成功；V1–V11 全部保持 success ----
+            // ---- 1. 迁移历史：V12 成功；V1–V11 全部保持 success ----
             assertThat(scalar(statement,
                     "SELECT count(*) FROM flyway_schema_history WHERE version = '12' AND success"))
                     .as("V12 必须有一条成功记录").isEqualTo(1);
@@ -121,13 +120,13 @@ class SmartAdminOaEnterpriseEmployeeMigrationIT {
                             + "  AND a.atttypid = 'int8'::regtype"))
                     .as("唯一键的两个键列都必须已是 int8").isEqualTo(2);
 
-            // ---- 4. 行为断言：原先失败的语句现在可执行 ----
-            // 4a. JOIN 比较（D-1 报告里的原始失败语句形态）
+            // ---- 4. 行为断言：列类型不匹配时失败的语句现在可执行 ----
+            // 4a. JOIN 比较
             scalar(statement,
                     "SELECT count(*) FROM t_oa_enterprise_employee e "
                             + "LEFT JOIN t_oa_enterprise en ON e.enterprise_id = en.enterprise_id "
                             + "LEFT JOIN t_employee emp ON e.employee_id = emp.employee_id");
-            // 4b. JDBC 强类型参数（Long → int8），D-1 里 PREPARE 失败的形态
+            // 4b. JDBC 强类型参数（Long → int8），PREPARE 失败的形态
             try (var prepared = connection.prepareStatement(
                     "SELECT count(*) FROM t_oa_enterprise_employee WHERE enterprise_id = ? "
                             + "AND employee_id IN (?)")) {

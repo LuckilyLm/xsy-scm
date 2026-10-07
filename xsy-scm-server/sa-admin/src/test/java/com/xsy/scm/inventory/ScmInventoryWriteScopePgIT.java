@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * 库存族**写侧**的仓库数据范围取证（{@code docs/decisions.md}「P0 基线收口裁决」第 8 条）。
+ * 库存族写侧的仓库数据范围取证（{@code docs/decisions.md}「P0 基线收口裁决」第 8 条）。
  *
  * <p>读侧的收口（{@code ScmInventoryDataScopePgIT}）只解决「看不见」；本类钉的是另一件事：
  * 只被授权甲仓的仓管，即使手里有 {@code scm:inventory:*:confirm} 这类功能权限，
@@ -81,7 +81,7 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p><b>夹具</b>：每个用例新建独立仓库与独立 SKU，经真实的
  * 「采购单 → 提交 → 收货 → 确认」链路入库 10 kg，因此余额行数与流水条数都是可精确断言的数字；
- * 流水一律由命令服务写入（Q7 / V21 append-only），测试不 UPDATE、不 DELETE 账本。
+ * 流水一律由命令服务写入（V21 append-only），测试不 UPDATE、不 DELETE 账本。
  */
 @DisplayName("库存写侧仓库数据范围（PG IT）")
 class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {

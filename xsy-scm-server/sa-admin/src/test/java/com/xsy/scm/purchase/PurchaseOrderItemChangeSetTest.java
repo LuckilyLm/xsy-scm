@@ -14,10 +14,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购单**行级**差量契约测试（W5 Target Design §11.1，12 例）。
+ * 采购单行级差量契约测试。
  *
  * <p>行身份 = {@code (purchase_order_id, sku_id)}，由
- * {@code uk_purchase_order_item_order_sku_active} 强制（Q13 修订后**保留**）。
+ * {@code uk_purchase_order_item_order_sku_active} 强制（分配集合改造后仍保留）。
  * 与 allocation 身份 {@code (purchase_order_item_id, purchase_demand_id)} 是两个层次，
  * 本类只测行级；分配级见 {@code PurchaseOrderAllocationChangeSetTest}。
  */

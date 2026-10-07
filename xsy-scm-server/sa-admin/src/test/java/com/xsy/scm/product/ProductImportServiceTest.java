@@ -230,8 +230,8 @@ class ProductImportServiceTest {
      * 单位与标签的「在字典 + 启用」必须在逐行阶段指到单元格。
      *
      * <p>写入口 {@code ProductSpuService.add} 走 {@code uom.assertUsable} 与
-     * {@code productTagDao.assertUsable}，此前逐行只查单位的长度与标签的存在性：填了停用单位/标签，
-     * 要等整批写库抛 40027/40028 才知道是哪一行 —— 与 071bcc7 修掉的分类层级缺口同型。
+     * {@code productTagDao.assertUsable}：填了停用单位或停用标签时，逐行阶段就得把错误指到单元格，
+     * 否则要等整批写库抛 40027/40028 才知道是哪一行。
      */
     @Test
     void unknownSaleUnitIsReportedPerRowBeforeWrite() throws Exception {

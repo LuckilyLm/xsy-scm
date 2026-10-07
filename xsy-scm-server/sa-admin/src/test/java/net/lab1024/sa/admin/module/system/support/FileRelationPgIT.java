@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * FA-2 的真实库验证：V52 的表结构事实、存量回填，以及守卫按关系放行。
+ * 文件关系的真实库验证：V52 的表结构事实、存量回填，以及守卫按关系放行。
  *
  * <p>单测能证明判定逻辑，证明不了「回填真的把历史附件的关系建出来了」。
  * 而读侧一旦改成按关系判定，漏回填就等于把历史附件集体变成不可读 —— 这是

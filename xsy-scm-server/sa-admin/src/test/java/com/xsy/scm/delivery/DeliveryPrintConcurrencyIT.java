@@ -33,9 +33,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Wave 5 §8.2：打印计次的**真并发**验收。
+ * 打印计次的真并发验证。
  *
- * <p><b>为什么必须关掉测试事务</b>：同一条线路上的两个打印请求要在两个**互相独立的事务**里跑；
+ * <p><b>为什么必须关掉测试事务</b>：同一条线路上的两个打印请求要在两个互相独立的事务里跑；
  * 塞进同一个测试事务时它们共享同一条连接、互相看不见对方，线路聚合锁与
  * {@code print_count = print_count + 1} 的累加根本压不到，丢更新也就无法显形。
  * 因此本类用 {@code Propagation.NOT_SUPPORTED}，让每次 Service 调用自开事务
@@ -62,7 +62,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
      * 本类新建并提交到测试库的仓库，用例结束后停用。
      *
      * <p><b>为什么必须停用</b>：{@code NOT_SUPPORTED} 让造数随各自事务提交，随机前缀能隔离业务数据，
-     * 但 {@code warehouse.status = ENABLED} 是**全局**判据 —— 库存 IT 按「唯一启用仓库」推导默认仓库，
+     * 但 {@code warehouse.status = ENABLED} 是全局判据 —— 库存 IT 按「唯一启用仓库」推导默认仓库，
      * 残留一个启用仓库就会让它们整批报「当前启用仓库不是唯一一个」。停用而非删行，
      * 是为了不给 {@code delivery_route.warehouse_id} 留下悬空引用。
      */
@@ -121,7 +121,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
         Long sku = newOnShelfSku("PRC");
         Long customer = newCustomer();
         // 停靠点坐标来自订单冻结地址，缺失时按「客户地址 == 冻结地址」回落客户坐标，
-        // 故必须在下单前把地址写成基类 fixture 的冻结地址（'W5 IT 地址'），否则坐标为空、规划失败。
+        // 故必须在下单前把地址写成基类 fixture 的冻结地址，否则坐标为空、规划失败。
         jdbc.update("UPDATE customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id=?", customer);
         Long a = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
         Long b = confirmedSalesOrder(customer, sku, "2.0000", "2.0000");
@@ -166,7 +166,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     private void add(Long route, List<Long> orderIds) {
-        // 组单前把订单做到分拣完成：P1 之后这是配送候选的硬前置。
+        // 组单前把订单做到分拣完成：这是配送候选的硬前置。
         sortingCompletedFor(orderIds.toArray(Long[]::new));
         var form = new DeliveryOrdersForm();
         form.setVersion(currentVersion(route));

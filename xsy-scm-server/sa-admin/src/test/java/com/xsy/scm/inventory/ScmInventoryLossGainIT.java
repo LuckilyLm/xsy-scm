@@ -25,7 +25,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 报损报溢的 PostgreSQL 集成测试（报损报溢波次）。
+ * 报损报溢的 PostgreSQL 集成测试。
  *
  * <p>覆盖五件在单测里验证不了的事：
  * <ol>
@@ -185,10 +185,10 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         // 方向感知快照：报损是减
         assertThat(decimal(row, "before_quantity")).isEqualByComparingTo("10.0000");
         assertThat(decimal(row, "after_quantity")).isEqualByComparingTo("7.0000");
-        // 单位以余额记账单位为准（Q13），由服务端取
+        // 单位以余额记账单位为准，由服务端取
         assertThat(String.valueOf(row.get("unit_snapshot"))).isEqualTo(balanceRow(wh, sku).getUnit());
-        // V34 起：**出库方向的流水必须带成本**，写的是出库那一刻的余额均价。
-        // 此前这里断言 `isNull()`（「报损没有成本依据」）—— 那是成本核算上线前的语义。
+        // V34 起：出库方向的流水必须带成本，写的是出库那一刻的余额均价。
+        // 「报损没有成本依据」不是这里的口径：报损同样是出库，成本随数量一起离开仓库。
         // 移动加权平均的性质是「出库不改变均价」，所以事后再读余额拿到的仍是同一个值。
         assertThat(decimal(row, "unit_cost"))
                 .isEqualByComparingTo(balanceRow(wh, sku).getAvgCost());
@@ -309,7 +309,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         assertThat(lossGainMovements(wh, sku)).isEmpty();
         assertThat(statusOf(id)).isEqualTo("PENDING");
 
-        // 刷新后重新审批（用新版本）即可通过，且按**改后**的数量执行
+        // 刷新后重新审批（用新版本）即可通过，且按改后的数量执行
         approveAsAuditor(id, audit(id, null));
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("1.0000");
     }

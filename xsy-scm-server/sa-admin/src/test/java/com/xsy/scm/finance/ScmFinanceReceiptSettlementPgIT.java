@@ -29,8 +29,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 收款登记的结算主体边界（PG IT）。
  *
  * <p>
- * 这里钉的是**两条方向相反的语义**，少一条都会被后人误读成「{@code selectCustomer} 应该改成
- * INNER JOIN 更严格」，而把本次修复改回去：
+ * 这里钉的是两条方向相反的语义，少一条都会被误读成「{@code selectCustomer} 应该改成
+ * INNER JOIN 更严格」而被回退：
  *
  * <ol>
  * <li>{@link #danglingSettlementSubjectStillReadsThePayerButRejectsANewReceipt()} ——

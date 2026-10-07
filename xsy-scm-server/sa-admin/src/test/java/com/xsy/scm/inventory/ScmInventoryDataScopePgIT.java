@@ -65,7 +65,7 @@ import static org.mockito.Mockito.mockStatic;
  * <p><b>夹具</b>：两个仓库各自经真实的「采购单 → 收货确认」路径入库，因此每个仓都同时留下
  * 一行 {@code inventory_balance} 与一条 {@code PURCHASE_IN} 流水。仓库用新建的独立仓，
  * 余额与流水的期望条数才是可精确断言的数字；流水一律由命令服务写入
- * —— 它是 append-only 账本（Q7 / V21），测试不 UPDATE、不 DELETE。
+ * —— 它是 append-only 账本（V21 的 DB 约束），测试不 UPDATE、不 DELETE。
  */
 @DisplayName("库存仓库数据范围（PG IT）")
 class ScmInventoryDataScopePgIT extends ScmW6PgITBase {

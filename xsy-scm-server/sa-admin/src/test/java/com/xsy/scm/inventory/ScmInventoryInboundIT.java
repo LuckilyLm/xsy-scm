@@ -26,14 +26,15 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购入库（{@code PURCHASE_IN}）的实时路径（W6 Target Design §12.1 #1 / #2 / #4 / #7 / #12 / #16 / #18）。
+ * 采购入库（{@code PURCHASE_IN}）的实时路径。
  *
  * <p><b>本类只覆盖「一笔入库是怎么落地的」</b>：同事务、多行、幂等重放、源身份防重、
- * 单位一致累加、可用量探测、以及两个只读查询页的行为。真正的**回滚原子性**（#3 / #13）与
- * **并发**（#5 / #6）在各自的类里，因为它们必须关掉测试的外层事务才能被真实观测。
+ * 单位一致累加、可用量探测、以及两个只读查询页的行为。真正的回滚原子性在
+ * {@code ScmInventoryRollbackIT}、并发在 {@code ScmInventoryConcurrencyIT}，
+ * 因为它们必须关掉测试的外层事务才能被真实观测。
  *
  * <p><b>为什么每个用例都用新 SKU</b>：库存余额的粒度是 {@code (warehouse_id, sku_id)}，
- * 用新 SKU 就等于拿到一个**零基线**，断言不必减去其它用例或开发库的存量。
+ * 用新 SKU 就等于拿到一个零基线，断言不必减去其它用例或开发库的存量。
  */
 @DisplayName("W6 采购入库实时路径（PG IT）")
 class ScmInventoryInboundIT extends ScmW6PgITBase {
@@ -78,7 +79,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         // version 从 0 起，一次自增 = 1（纵深防御列确实在动）
         assertThat(balance.getVersion()).isEqualTo(1);
 
-        // 流水：恰好一条，四元组 + before/after 恒等式 + 成本快照（Q3）
+        // 流水：恰好一条，四元组 + before/after 恒等式 + 成本快照
         List<Map<String, Object>> movements = movementsOf(warehouseId, skuId);
         assertThat(movements).hasSize(1);
         Map<String, Object> movement = movements.getFirst();
@@ -92,7 +93,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat((BigDecimal) movement.get("after_quantity")).isEqualByComparingTo("10.0000");
         assertThat(movement.get("unit_snapshot")).isEqualTo(DEFAULT_PURCHASE_UNIT);
         assertThat((BigDecimal) movement.get("unit_cost")).isEqualByComparingTo("6.2000");
-        // append-only：deleted 恒为 FALSE（Q7）
+        // append-only：deleted 恒为 FALSE
         assertThat(movement.get("deleted")).isEqualTo(false);
         assertThat(movementsOfReceiptItem(fx.receiptItemId())).isEqualTo(1);
 
@@ -106,7 +107,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         PageResult<InventoryMovementVO> movementPage =
                 inventoryMovementQueryService.query(movementQuery(warehouseId, skuId));
         assertThat(movementPage.getList()).hasSize(1);
-        // Q9：人类可读来源 = 收货单号（没有 movement_no）
+        // 人类可读来源 = 收货单号（没有 movement_no）
         assertThat(movementPage.getList().getFirst().getReceiptNo()).isEqualTo(confirmed.getReceiptNo());
     }
 
@@ -171,7 +172,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         Long skuId = newOnShelfSku("IN4");
         W6Fixture fx = inboundFixture("IN4", skuId, "10.0000");
 
-        // 必须复用**同一个 form 实例**：W5 的幂等按「键 + 请求内容哈希」判定，
+        // 必须复用同一个 form 实例：幂等按「键 + 请求内容哈希」判定，
         // 重新读一次库拿到的 version 已经变了，会被判成「同键不同内容」(40990)。
         PurchaseReceiptVO current = reloadReceipt(fx.receipt().getId());
         PurchaseReceiptItemVO line = current.getItems().getFirst();
@@ -207,7 +208,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         confirmReceipt(fx.receipt().getId(), "5.0000");
         assertThat(movementCount(warehouseId, skuId)).isEqualTo(1);
 
-        // 命令侧：同一源事实再来一次 → 41002 fail-fast（**不静默跳过**，否则会出现
+        // 命令侧：同一源事实再来一次 → 41002 fail-fast（不静默跳过，否则会出现
         // 「接口返回成功但库存没动」这种最难排查的不一致）
         expectCode(() -> inventoryCommandService.postPurchaseInbound(
                 new PurchaseInventoryContract.InboundFact(
@@ -290,7 +291,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         PurchaseInventoryContract.Availability filled =
                 inventoryCommandService.queryAvailability(skuId, warehouseId);
         assertThat(filled.available()).isEqualByComparingTo("8.0000");
-        // W6-1 没有占用机制：reserved 恒 0（OrderInventoryContract 保持零实现零调用）
+        // 采购入库不占用预留：reserved 恒 0（OrderInventoryContract 保持零实现零调用）
         assertThat(filled.reserved()).isEqualByComparingTo("0");
     }
 
@@ -337,7 +338,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
                 .isEqualByComparingTo("7.0000");
         expectCode(() -> inventoryBalanceQueryService.detail(balance.getId() + 999_999_999L), 40486);
 
-        // --- 拒绝客户端排序：join 查询里 `updated_at` 在四张表上都存在，
+        // --- 拒绝客户端排序：join 查询里 {@code updated_at} 在四张表上都存在，
         //     静默忽略会让前端以为排序生效了，因此显式 40000 ---
         InventoryBalanceQueryForm sorted = balanceQuery(warehouseId, skuId);
         PageParam.SortItem sortItem = new PageParam.SortItem();
@@ -346,7 +347,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         sorted.setSortItemList(List.of(sortItem));
         expectCode(() -> inventoryBalanceQueryService.query(sorted), 40000);
 
-        // --- 流水：溯源字段（Q9 收货单号）+ 快照字段 ---
+        // --- 流水：溯源字段（收货单号）+ 快照字段 ---
         PageResult<InventoryMovementVO> movementPage =
                 inventoryMovementQueryService.query(movementQuery(warehouseId, skuId));
         assertThat(movementPage.getList()).hasSize(1);
@@ -375,16 +376,16 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(inventoryMovementQueryService.query(inWindow).getList()).hasSize(1);
 
         InventoryMovementQueryForm outWindow = movementQuery(warehouseId, skuId);
-        // occurredTo 取 occurredAt 本身 → `occurred_at < occurredTo` 为假 → 排除（左闭右开）
+        // occurredTo 取 occurredAt 本身 → {@code occurred_at < occurredTo} 为假 → 排除（左闭右开）
         outWindow.setOccurredTo(movement.getOccurredAt());
         assertThat(inventoryMovementQueryService.query(outWindow).getList()).isEmpty();
 
         // --- 类型白名单：枚举与 DB CHECK 同源
-        //（W6-1 = PURCHASE_IN；出库 / 盘点 / 报损报溢 / 调拨 / 规格转换依次追加）---
+        //（PURCHASE_IN 之外，出库 / 盘点 / 报损报溢 / 调拨 / 规格转换各有自己的类型）---
         assertThat(ScmInventoryMovementTypeEnum.isSupported("PURCHASE_IN")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("SALES_OUT")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported(null)).isFalse();
-        // 白名单之外一律拒绝。用 UNKNOWN_IN 这个**明确不存在**的名字 ——
+        // 白名单之外一律拒绝。用 UNKNOWN_IN 这个明确不存在的名字 ——
         // 十个真实类型已全部落地，再拿「未实现的业务类型」当反例会每落地一个就要改一次。
         assertThat(ScmInventoryMovementTypeEnum.isSupported("UNKNOWN_IN")).isFalse();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("STOCKTAKE_ADJUST")).isFalse();

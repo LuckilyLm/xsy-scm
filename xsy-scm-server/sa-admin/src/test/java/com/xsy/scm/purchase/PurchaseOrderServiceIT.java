@@ -21,18 +21,18 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购单生命周期（W5 Target Design §11.2，10 例）。
+ * 采购单生命周期。
  *
- * <p>覆盖 `create / update / submit / cancel / delete / short-close` 的**正例 + 状态机边界**，
- * 以及每次写入对**需求侧**的连带影响（`allocated_quantity` 与 `status` 必须跟着动）。
+ * <p>覆盖 {@code create / update / submit / cancel / delete / short-close} 的正例与状态机边界，
+ * 以及每次写入对需求侧的连带影响（{@code allocated_quantity} 与 {@code status} 必须跟着动）。
  *
- * <p><b>为什么需求侧断言和采购单断言同等重要</b>：§4.4 的三态（PENDING / PARTIALLY_ALLOCATED /
+ * <p><b>为什么需求侧断言和采购单断言同等重要</b>：需求的三态（PENDING / PARTIALLY_ALLOCATED /
  * ALLOCATED）是「需求能被重新分配」的前提。采购单侧的 CRUD 只要漏掉一次
  * {@code recomputeDemands}，需求就会永久卡在 ALLOCATED —— 而采购单自己的字段看起来完全正常，
  * 所以这类回归只有在这里才拦得住。
  *
- * <p><b>不 mock 需求来源</b>：需求由 W4 已验收的订单（create → submit → actualQuantity → confirm）
- * 经 {@code PurchaseDemandService.generate} 真实汇总而来，见 {@link ScmW5PgITBase}。
+ * <p><b>不 mock 需求来源</b>：需求由真实的销售订单（create → submit → actualQuantity → confirm）
+ * 经 {@code PurchaseDemandService.generate} 汇总而来，见 {@link ScmW5PgITBase}。
  */
 @DisplayName("采购单生命周期：create / update / submit / cancel / delete（PG IT）")
 class PurchaseOrderServiceIT extends ScmW5PgITBase {
@@ -57,7 +57,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(order.getOrderNo()).matches("^PO\\d{14,}$");
         assertThat(order.getStatus()).isEqualTo("DRAFT");
 
-        // 供应商 / 仓库快照在创建时固化（§7.3：历史永不回读主数据）
+        // 供应商 / 仓库快照在创建时固化：历史永不回读主数据
         assertThat(order.getSupplierId()).isEqualTo(supplierId);
         assertThat(order.getSupplierCode()).isNotBlank();
         assertThat(order.getSupplierName()).isNotBlank();
@@ -81,13 +81,13 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(item.getAllocations()).hasSize(1);
         assertThat(item.getAllocations().getFirst().getDemandId()).isEqualTo(demand.getId());
 
-        // 需求侧：分配落账 → ALLOCATED，且供应商被固定到需求上（§7.4）
+        // 需求侧：分配落账 → ALLOCATED，且供应商被固定到需求上
         PurchaseDemandEntity reloaded = reloadDemand(demand.getId());
         assertThat(reloaded.getAllocatedQuantity()).isEqualByComparingTo("3.0000");
         assertThat(reloaded.getStatus()).isEqualTo("ALLOCATED");
         assertThat(reloaded.getSupplierId()).isEqualTo(supplierId);
 
-        // CREATE 日志：before 为空、after 是全量快照（§7.12）
+        // CREATE 日志：before 为空、after 是全量快照
         List<PurchaseOperationLogVO> logs = purchaseQueryService.orderLogs(order.getId());
         assertThat(logs).hasSize(1);
         assertThat(logs.getFirst().getOperationType()).isEqualTo("CREATE");
@@ -148,7 +148,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         Long skuId = newOnShelfSku("PO4");
         Long supplierId = newPurchasableSupplier("PO4", skuId);
 
-        // 供应商：直改库置 DISABLED（W2 的启停不经过采购侧）
+        // 供应商：直改库置 DISABLED（供应商启停不经过采购侧）
         assertThat(jdbc.update("UPDATE supplier SET status = 'DISABLED', version = version + 1 "
                 + "WHERE id = ? AND deleted = FALSE", supplierId)).isEqualTo(1);
         evictMybatisCache();
@@ -202,7 +202,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(afterUpdate.getStatus()).isEqualTo("PARTIALLY_ALLOCATED");
 
         // UPDATE 日志：before / after 都是全量快照。
-        // 日志按 `created_at DESC, id DESC` 返回（与 W4 的 order_operation_log 一致）→ **最新在前**
+        // 日志按 {@code created_at DESC, id DESC} 返回（与 order_operation_log 一致）→ 最新在前
         List<PurchaseOperationLogVO> logs = purchaseQueryService.orderLogs(order.getId());
         assertThat(logs).extracting(PurchaseOperationLogVO::getOperationType)
                 .containsExactly("UPDATE", "CREATE");
@@ -259,7 +259,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
                 allocation(demand, "3.0000"));
         Long itemId = order.getItems().getFirst().getId();
 
-        // DRAFT 单的已收量现实中恒为 0，这里**故意**写一个非零值：
+        // DRAFT 单的已收量现实中恒为 0，这里写入一个非零值：
         // 若 update 依赖「DRAFT 已收恒为 0」这个可松动的隐含前提，就会把它静默清 0。
         assertThat(jdbc.update("UPDATE purchase_order_item SET received_quantity = 1.5000 "
                 + "WHERE id = ? AND deleted = FALSE", itemId)).isEqualTo(1);
@@ -338,7 +338,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(cancelled.getCancelledAt()).isNotNull();
         assertThat(cancelled.getCancelReason()).isEqualTo("供应商临时缺货");
 
-        // 分配必须被释放：否则需求永久卡在 ALLOCATED（§7.8 C 段不变量）
+        // 分配必须被释放：否则需求永久卡在 ALLOCATED
         assertThat(allocationsOf(order.getId())).isEmpty();
         PurchaseDemandEntity afterCancel = reloadDemand(demand.getId());
         assertThat(afterCancel.getAllocatedQuantity()).isEqualByComparingTo("0.0000");
@@ -405,14 +405,14 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         PurchaseOrderVO order = createDraftOrder("PO10", supplierId, skuId, "3.0000", "6.2000",
                 allocation(demand, "3.0000"));
 
-        // 少收关单只允许从 PARTIALLY_RECEIVED 出发（T5）
+        // 少收关单只允许从 PARTIALLY_RECEIVED 出发
         PurchaseOrderShortCloseForm shortClose = new PurchaseOrderShortCloseForm();
         shortClose.setId(order.getId());
         shortClose.setVersion(order.getVersion());
         shortClose.setShortCloseReason("供应商只发一半");
         expectCode(() -> purchaseOrderService.shortClose(shortClose, prefix + ":PO10:sc"), 40982);
 
-        // 提交之后不可再编辑行 / 分配（T2 只允许 DRAFT）
+        // 提交之后不可再编辑行 / 分配（只允许 DRAFT）
         PurchaseOrderVersionForm submit = new PurchaseOrderVersionForm();
         submit.setId(order.getId());
         submit.setVersion(order.getVersion());
@@ -423,7 +423,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
                 allocation(fresh, "3.0000"));
         expectCode(() -> purchaseOrderService.update(edit), 40982);
 
-        // 编辑失败不得改动需求侧
+        // 编辑失败不能改到需求侧
         assertThat(reloadDemand(demand.getId()).getAllocatedQuantity()).isEqualByComparingTo("3.0000");
 
         // 分配身份的唯一键：同一 (item, demand) 的第二条活动分配被库层拒绝

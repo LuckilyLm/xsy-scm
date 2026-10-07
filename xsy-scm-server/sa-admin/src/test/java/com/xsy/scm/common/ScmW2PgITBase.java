@@ -30,17 +30,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * W2 PostgreSQL 集成测试基类。
+ * 客户与供应商域 PostgreSQL 集成测试基类。
  *
- * <p>W2 的读写在数据库里才有完整语义（partial unique index、CHECK 约束、{@code FOR UPDATE} 锁序、
- * {@code JSONB} 映射、{@code NUMERIC(18,4)} 精度），因此这部分只能用真实 PostgreSQL 验证。
+ * <p>客户与供应商的读写语义只有真实数据库能完整验证：partial unique index、CHECK 约束、
+ * {@code FOR UPDATE} 锁序、{@code JSONB} 映射、{@code NUMERIC(18,4)} 精度。
  *
- * <p><b>事务策略：</b>与 W1 {@code ProductPgIT} 一致——整个用例包在一个事务里，结束时回滚，
- * 不向开发库留下任何数据。种子数据（{@code customer_type}）由 V8 migration 提供，只读使用。
+ * <p><b>事务策略：</b>整个用例包在一个事务里，结束时回滚，不向开发库留下任何数据。
+ * 种子数据（{@code customer_type}）由 V8 迁移提供，只读使用。
  *
  * <p><b>不 mock 商品域：</b>{@code supplier_sku} 的外键语义依赖真实存在的 {@code product_spu} /
- * {@code product_sku}，所以这里通过 W1 已验收的 {@link ProductSpuService} 造数，而不是直接插表——
- * 直接插表会绕过 W1 的聚合不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
+ * {@code product_sku}，所以这里通过 {@link ProductSpuService} 造数，而不是直接插表——
+ * 直接插表会绕过商品聚合的不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -115,7 +115,7 @@ public abstract class ScmW2PgITBase {
     }
 
     /**
-     * 用 W1 已验收的商品聚合服务造一个真实 SKU，返回 {@code product_sku.id}。
+     * 用商品聚合服务造一个真实 SKU，返回 {@code product_sku.id}。
      *
      * @param spuStatus SPU 上下架状态（{@code ON_SHELF} / {@code OFF_SHELF}）
      * @param skuStatus SKU 上下架状态

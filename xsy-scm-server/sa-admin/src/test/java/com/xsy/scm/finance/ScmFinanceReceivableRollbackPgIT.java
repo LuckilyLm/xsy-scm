@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 应收生成失败时签收**真实回滚**（F1-2B，PG IT，无外层事务）。
+ * 应收生成失败时签收真实回滚（PG IT，无外层事务）。
  *
  * <p>与 {@link ScmFinancePayableRollbackPgIT} 同一取向：要断言「财务写失败后签收没留下 SIGNED」，
  * 每次 Service 调用必须自己提交或自己回滚；沿用「整包在一个事务里回滚」的夹具形态，

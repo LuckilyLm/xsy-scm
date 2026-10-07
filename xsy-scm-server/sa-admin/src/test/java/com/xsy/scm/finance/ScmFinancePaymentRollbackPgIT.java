@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 付款登记的原子性（F1-3B，PG IT，无外层事务）。
+ * 付款登记的原子性（PG IT，无外层事务）。
  *
  * <p>付款是一条资金事实，幂等 claim 也在同一个事务里，因此任何一段失败都必须「整笔什么都不留」。
  * 两个失败点各有取证价值：
@@ -115,7 +115,7 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
         complete.setRefundId(refundId);
         complete.setVersion(refundVersion);
         // order_refund.external_reference 上有部分唯一索引（uk_order_refund_external_reference_active），
-        // 与财务侧刻意「可重复」的同名列正相反；本类是真提交，所以这里的值必须每次唯一，
+        // 与财务侧「可重复」的同名列正相反；本类是真提交，所以这里的值必须每次唯一，
         // 否则第二遍跑同一个库就会被自己的上一轮挡住（并被 complete 映射成状态错误）。
         complete.setExternalReference("ORDER-SIDE-" + tag + "-" + UUID.randomUUID());
         refunds.complete(complete, prefix + ":fc:" + tag + UUID.randomUUID());

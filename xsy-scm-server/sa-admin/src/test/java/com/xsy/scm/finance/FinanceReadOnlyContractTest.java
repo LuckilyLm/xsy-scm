@@ -16,17 +16,15 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 财务域对业务域**只读**的静态契约（设计稿 §0 第 2 条、全局不变量 4，F1-1 交付物）。
+ * 财务域对业务域只读的静态契约。
  *
- * <p>财务域是新边界：既有跨域写都走显式契约（如 {@code PurchaseInventoryContract}），
- * 而财务域被允许直接建只读 DAO 去读订单 / 退货 / 收货 / 出库 / 配送表。允许只读的代价是
+ * <p>既有跨域写都走显式契约（如 {@code PurchaseInventoryContract}），而财务域直接建只读 DAO
+ * 去读订单 / 退货 / 收货 / 出库 / 配送表。允许只读的代价是
  * 「不小心写了一句」没有任何编译期或运行期信号 —— 页面照常跑、接口照常返回成功，
  * 只有库存账或订单账在事后解释不了。因此把边界钉成一个静态扫描断言。
  *
- * <p><b>为什么是静态扫描而不是运行时拦截</b>：运行时只能抓到「被执行到的那条写语句」，
- * 而 F1-1 的写路径一条都还没有；等到 F1-2 接上生成器再补断言，恰好错过了唯一一次
- * 「新增代码是否越界」的评审时机。静态扫描在编译产物之外检查源码文本，
- * 新增任何一句越界 SQL 都会当场失败。
+ * <p><b>为什么是静态扫描而不是运行时拦截</b>：运行时只能抓到被执行到的那条写语句；
+ * 静态扫描在编译产物之外检查源码文本，新增任何一句越界 SQL 都会当场失败。
  *
  * <p><b>不是 Spring 测试</b>：只读源码文件，因此跑得比 IT 快得多，也不依赖数据库。
  */
@@ -34,10 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FinanceReadOnlyContractTest {
 
     /**
-     * 财务域不得写入的业务表，按前缀匹配（指令口径：{@code sales_order*} / {@code order_return*} /
-     * {@code order_refund} / {@code purchase_*} / {@code inventory_*} / {@code delivery_*}）。
+     * 财务域不得写入的业务表，按前缀匹配：{@code sales_order*} / {@code order_return*} /
+     * {@code order_refund} / {@code purchase_*} / {@code inventory_*} / {@code delivery_*}。
      *
-     * <p>{@code sorting_task} 也一并纳入：财务不消费分拣事实（应收数量只取出库量，Q2），
+     * <p>{@code sorting_task} 也一并纳入：财务不消费分拣事实（应收数量只取出库量），
      * 因此同样没有任何写它的理由。
      */
     private static final List<String> READ_ONLY_TABLE_PREFIXES = List.of(
@@ -45,7 +43,7 @@ class FinanceReadOnlyContractTest {
             "purchase_", "inventory_", "delivery_", "sorting_");
 
     /**
-     * 写语句关键字。刻意不含 {@code SELECT}：财务域**允许**读这些表，这正是本契约的前提。
+     * 写语句关键字，不含 {@code SELECT}：财务域允许读这些表，这正是本契约的前提。
      */
     private static final Pattern WRITE_STATEMENT = Pattern.compile(
             "\\b(INSERT\\s+INTO|UPDATE|DELETE\\s+FROM|TRUNCATE(?:\\s+TABLE)?)\\s+"
@@ -55,7 +53,7 @@ class FinanceReadOnlyContractTest {
     /**
      * Java 字符串字面量（含文本块）。SQL 只可能出现在这里或 mapper XML 里，
      * 因此只扫描这两处就能覆盖全部越界写法，同时避免把 javadoc 里
-     * 「不得 UPDATE {@code sales_order}」这类**说明性文字**误判成违规。
+     * 「不得 UPDATE {@code sales_order}」这类说明性文字误判成违规。
      */
     private static final Pattern JAVA_TEXT_BLOCK = Pattern.compile("\"\"\"(.*?)\"\"\"", Pattern.DOTALL);
     private static final Pattern JAVA_STRING_LITERAL = Pattern.compile("\"((?:[^\"\\\\]|\\\\.)*)\"");
@@ -83,8 +81,8 @@ class FinanceReadOnlyContractTest {
             }
         }
 
-        // mapper XML：财务域自定义 SQL 的唯一合法去处（AGENTS.md §8）。F1-1 还没有，
-        // 但目录一旦出现就要纳入扫描，否则越界 SQL 可以从这里溜过去。
+        // mapper XML：财务域自定义 SQL 的唯一合法去处（见 AGENTS.md）。目录存在就纳入扫描，
+        // 否则越界 SQL 可以从这里溜过去。
         Path mapperRoot = moduleRoot().resolve("src/main/resources/mapper/scm/finance");
         if (Files.isDirectory(mapperRoot)) {
             try (Stream<Path> paths = Files.walk(mapperRoot)) {

@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 仓库端点契约测试（W5 Target Design §7.1 的 5 个端点）。
+ * 仓库端点契约测试（5 个端点）。
  *
  * <p>锁定三件事：响应信封形状、业务码到 HTTP 200 + {@code ResponseDTO.code} 的映射、
  * MVC 层校验失败仍是 SmartAdmin 的 30001（SCM 不重复接管）。

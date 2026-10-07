@@ -14,12 +14,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购单**分配级**差量契约测试（W5 Target Design §11.1，12 例）—— **Q13 修订的核心防线**。
+ * 采购单分配级差量契约测试 —— 分配集合的核心防线。
  *
  * <p>allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}。
- * A 源用 {@code Map<itemId, allocation>} 覆盖写，导致「一行多需求」在编辑时只保留最后一条（A-D23）。
+ * 用 {@code Map<itemId, allocation>} 覆盖写的实现，会让「一行多需求」在编辑时只保留最后一条。
  * 本类逐条锁死「N allocations 是独立集合」这件事：
- * 只改一条 / 删一条 / 保留其它条，都必须是**互不干扰的行级操作**。
+ * 只改一条 / 删一条 / 保留其它条，都必须是互不干扰的行级操作。
  */
 class PurchaseOrderAllocationChangeSetTest {
 
@@ -48,7 +48,7 @@ class PurchaseOrderAllocationChangeSetTest {
     }
 
     // ------------------------------------------------------------------
-    // Q13 主线：一行多需求
+    // 主线：一行多需求
     // ------------------------------------------------------------------
 
     @Test
@@ -150,7 +150,7 @@ class PurchaseOrderAllocationChangeSetTest {
     }
 
     // ------------------------------------------------------------------
-    // §7.8 C 段：需求侧重算必须覆盖「旧 ∪ 新」
+    // 需求侧重算必须覆盖「旧 ∪ 新」
     // ------------------------------------------------------------------
 
     @Test
@@ -190,7 +190,7 @@ class PurchaseOrderAllocationChangeSetTest {
         assertThat(diff.updated().get(0).getCreatedAt()).isEqualTo(a.getCreatedAt());
         assertThat(diff.updated().get(0).getCreatedBy()).isEqualTo("creator");
         // version 必须来自库中值：请求只带 demandVersion，不带 allocation 自己的版本。
-        // 漏继承会让 updateQuantity 的 `WHERE version = ?` 拿到 null → 0 行 → 并发写被误判为冲突。
+        // 漏继承会让 updateQuantity 的 WHERE version = ? 拿到 null → 0 行 → 并发写被误判为冲突。
         assertThat(diff.updated().get(0).getVersion()).isEqualTo(3);
     }
 

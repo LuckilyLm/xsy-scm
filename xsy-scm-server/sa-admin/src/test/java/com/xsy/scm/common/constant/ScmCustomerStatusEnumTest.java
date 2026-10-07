@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 客户「可交易」判定唯一性门禁。
  *
- * <p>W3 引入订单域后，是否允许下单必须调用 {@link ScmCustomerStatusEnum#tradable()}，
+ * <p>是否允许下单必须调用 {@link ScmCustomerStatusEnum#tradable()}，
  * 不允许在业务代码里散落字符串比较。本测试锁定只有 {@code COOPERATING} 可交易。
  */
 class ScmCustomerStatusEnumTest {

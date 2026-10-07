@@ -20,7 +20,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@code scm:finance:payment:add} 的正式权限取证（F1-3B）。
+ * {@code scm:finance:payment:add} 的正式权限取证。
  *
  * <p>与收款侧同一套三段证据，且<b>不依赖 {@code MockedStatic<StpUtil>}</b>：
  * <ol>

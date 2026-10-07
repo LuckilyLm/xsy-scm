@@ -23,7 +23,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Wave 3 §7.5：「最近已确认订单价」只读参考的真实 SQL 验证。
+ * 「最近已确认订单价」只读参考的真实 SQL 验证。
  *
  * <p>过滤口径（只取未删除 CONFIRMED 单，排除 DRAFT / PENDING / CANCELLED）、按 (客户, SKU) 收敛、
  * 订单分组的 limit 语义与 confirmed_at 倒序，都依赖 PostgreSQL 上的 JOIN / 状态 / 唯一索引，
@@ -107,7 +107,7 @@ class SalesOrderRecentPriceIT extends ScmW3PgITBase {
 
         // DRAFT：未提交，必须排除
         SalesOrderDetailVO draft = orders.create(form(c, sku), prefix + "dc");
-        // PENDING：submit 已锁价但未确认，按 §7.5 新口径必须排除（区别于旧的 status<>CANCELLED）
+        // PENDING：submit 已锁价但未确认，参考口径只认 CONFIRMED，必须排除而不是只排除 CANCELLED
         SalesOrderDetailVO pending = submitted(c, sku, "p");
         // CANCELLED：从 PENDING 取消得到（状态机禁止 CONFIRMED 取消），必须排除
         SalesOrderDetailVO pendingToCancel = submitted(c, sku, "x");

@@ -16,7 +16,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 入库方式 / 仓库确认入库（B1，HD-B1-01/02/03，PG IT）。
+ * 入库方式 / 仓库确认入库（PG IT）。
  *
  * <p>核心不变量：{@code purchase_receipt.status=CONFIRMED} 与「库存已入账」解耦。
  * <ul>
@@ -135,7 +135,7 @@ class PurchaseReceiptPutawayIT extends ScmW6PgITBase {
         OffsetDateTime confirmedAt = receiptConfirmedAt(receipt.getId());
         assertThat(occurredAt.toInstant()).isEqualTo(putawayAt.toInstant());
         assertThat(mv.get("operator")).isEqualTo(putaway.getPutawayBy());
-        // 与 confirm 是两次独立动作：putaway 时刻不早于 confirm 时刻（HD-B1-03 语义）。
+        // 与 confirm 是两次独立动作：putaway 时刻不早于 confirm 时刻。
         assertThat(putawayAt.toInstant()).isAfterOrEqualTo(confirmedAt.toInstant());
     }
 
@@ -161,7 +161,7 @@ class PurchaseReceiptPutawayIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 5. 历史 CONFIRMED 收货 → DIRECT / COMPLETED（B1 迁移的事实映射）
+    // 5. 历史 CONFIRMED 收货 → DIRECT / COMPLETED（迁移的事实映射）
     // ------------------------------------------------------------------
 
     @Test

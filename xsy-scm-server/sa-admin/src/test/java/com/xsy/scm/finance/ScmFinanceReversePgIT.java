@@ -31,7 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** PostgreSQL coverage for append-only receipt and payment reversals (Finance R1 F1-3C). */
+/** PostgreSQL coverage for append-only receipt and payment reversals. */
 @DisplayName("收付款反向（Finance R1 F1-3C，PG IT）")
 class ScmFinanceReversePgIT extends ScmW5PgITBase {
 

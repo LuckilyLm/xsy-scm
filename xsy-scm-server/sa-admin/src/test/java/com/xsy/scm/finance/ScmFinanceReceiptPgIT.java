@@ -25,11 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 收款登记（Finance R1 F1-3A，PG IT）。
+ * 收款登记（PG IT）。
  *
  * <p>这里钉的是「一笔钱就是一个事实」：登记收款只产生 {@code finance_receipt} + 一条
  * {@code RECEIVE} 日志，<b>不</b>自动核销、<b>不</b>改应收、<b>不</b>改客户与订单，
- * 也<b>不</b>要求客户存在任何应收（预收是合法业务，第二批 Q16）。
+ * 也<b>不</b>要求客户存在任何应收（预收是合法业务）。
  *
  * <p>金额形态、方式三值、幂等重放、数据范围与快照冻结各有一条以上断言；
  * 幂等键冲突与越权都必须「什么都不产生」，而不是产生一张孤儿单。
@@ -205,7 +205,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         expectCode(() -> add(form(customerId, "10.0000", "BALANCE", PAST)), 41140);
         assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isZero();
 
-        // 在线支付是收款侧合法方式（ADM-12 3-11a 起）：人工登记一笔在线收款是允许的
+        // 在线支付是收款侧的合法方式（ADM-12）：人工登记一笔在线收款是允许的
         assertThat(add(form(customerId, "10.0000", "ONLINE_PAYMENT", PAST)).getMethod())
                 .isEqualTo("ONLINE_PAYMENT");
 
@@ -269,7 +269,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         // external_reference 上有普通索引、没有唯一约束（V65）：银行流水号跨客户重复是真实存在的
         assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'finance_receipt'"
                 + " AND indexdef ILIKE '%unique%' AND indexdef ILIKE '%external_reference%'")).isZero();
-        // ADM-12 3-11a（V100）之后收款表**有了**来源列，并带一条第二层幂等索引：
+        // 收款表的来源列 + 第二层幂等索引（ADM-12）：
         // 同一笔支付交易被驱动多少次，Finance 只留一条 NORMAL 且带来源的收款事实。
         // 它是「支付交易 → 收款」的幂等键，不是人工收款的自然唯一键，因此谓词必须收窄。
         assertThat(jdbc.queryForList(
@@ -310,8 +310,8 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     void registeringReceiptNeverWritesOffOrTouchesReceivable() {
         Long customerId = customerOwnedBy(null);
         Long orderId = confirmedSalesOrder(customerId, newOnShelfSku("RCT"), "10.0000", "10.0000");
-        // 受控夹具：F1-5 的应收查询/派生尚未实现，此处按 schema 直插一张正常应收事实，
-        // 目的是证明「收款登记不会碰它」，不依赖也不提前实现 F1-4 的核销能力。
+        // 受控夹具：按 schema 直插一张正常应收事实，
+        // 目的是证明「收款登记不会碰它」，核销仍只能由核销命令产生。
         jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
@@ -437,7 +437,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // O / P / Q. 数据范围（第三批 D-5）
+    // O / P / Q. 数据范围
     // ------------------------------------------------------------------
 
     @Test

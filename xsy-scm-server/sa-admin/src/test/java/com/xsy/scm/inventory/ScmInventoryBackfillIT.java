@@ -13,24 +13,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Q5 bootstrap backfill（W6 Target Design §12.1 #8 / #9 / #10 / #14 / #15）。
+ * bootstrap backfill（V19 的回填 SQL）的回放与对账。
  *
  * <p><b>被测对象是 V19 里的原文 SQL</b>，不是测试里另抄的一份：基类
  * {@link ScmW6PgITBase#migrationSection} 从 classpath 上读迁移文件、按 {@code -- Step N}
  * 标记切段执行。抄一份 SQL 到测试里，抄错或漂移都会让「backfill 已验证」变成一句没有依据的话。
  *
  * <p>backfill 的每一条 INSERT 都以 {@code ON CONFLICT ... DO NOTHING} 收尾，
- * 所以**在测试事务里重放它是安全的**：语义与「迁移执行时」完全一致（幂等跳过已入库的源事实），
+ * 所以在测试事务里重放它是安全的：语义与「迁移执行时」完全一致（幂等跳过已入库的源事实），
  * 而所有写入都在用例结束时回滚。
  *
  * <p>需要「历史数据」的场景用两个动作构造：
  * <ol>
  *   <li>{@code overrideReceiptConfirmedAt} / {@code overrideReceiptItemUnit} —— 把收货事实改成
- *       实时路径**永远产生不出来**的形状（乱序的确认时刻、混单位的采购快照）；</li>
+ *       实时路径永远产生不出来的形状（乱序的确认时刻、混单位的采购快照）；</li>
  *   <li>{@code eraseMovementsFor} —— 把时钟拨回去：删掉实时路径已经写下的流水，
  *       让这些收货看起来「还没被任何路径入库过」，从而能观察 backfill 的回放结果。</li>
  * </ol>
- * 这两个动作都是**测试构造**，不是产品能力（产品侧没有任何删除/改写流水的入口）。
+ * 这两个动作都是测试构造，不是产品能力（产品侧没有任何删除/改写流水的入口）。
  */
 @DisplayName("W6 backfill 回放与对账（PG IT）")
 class ScmInventoryBackfillIT extends ScmW6PgITBase {
@@ -38,7 +38,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     /**
      * 本 SKU 的已确认收货行里，没有对应流水的条数（V19 Step 4 第一条判据的范围内重算）。
      *
-     * <p>刻意按 SKU 收口而不是全库：V22 之后「已确认收货但尚未上架」是合法中间态，
+     * <p>按 SKU 收口而不是全库：V22 之后「已确认收货但未上架」是合法中间态，
      * 那条判据在全库上不再成立，但它对 backfill 负责回放的那批 DIRECT 收货事实仍然成立。
      */
     private int confirmedLineWithoutMovementCount(Long skuId) {
@@ -54,7 +54,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // #8
+    // 幂等与对账
     // ------------------------------------------------------------------
 
     @Test
@@ -94,7 +94,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // #9
+    // 与实时路径不交叠
     // ------------------------------------------------------------------
 
     @Test
@@ -127,7 +127,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // #10
+    // 回放顺序：id 顺序 ≠ confirmed_at 顺序时按 confirmed_at
     // ------------------------------------------------------------------
 
     @Test
@@ -140,8 +140,8 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         W6Fixture laterId = inboundFixture("BF10b", skuId, "4.0000");
         assertThat(earlierId.receiptItemId()).isLessThan(laterId.receiptItemId());
 
-        // 但**先确认 B**（item id 大的那张），再确认 A —— 于是 id 顺序与 confirmed_at 顺序相反。
-        // 这正是 Q5 要求「禁止仅 ORDER BY purchase_receipt_item.id」的原因。
+        // 但先确认 B（item id 大的那张），再确认 A —— 于是 id 顺序与 confirmed_at 顺序相反。
+        // 这正是「禁止仅 ORDER BY purchase_receipt_item.id」的原因。
         confirmReceipt(laterId.receipt().getId(), "4.0000");
         confirmReceipt(earlierId.receipt().getId(), "6.0000");
 
@@ -177,7 +177,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // #14
+    // 前置检查：混单位拒绝汇总
     // ------------------------------------------------------------------
 
     @Test
@@ -196,8 +196,8 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         runBackfillUnitPreCheck();
 
         // 人为制造「实时路径上线前遗留的脏数据」：同一 (wh, sku) 的历史收货行单位不一致。
-        // 实时路径**永远产生不出**这种数据（异单位会被 41001 挡下），
-        // 所以这正是前置检查存在的理由 —— 迁移要处理的是 W6 上线之前就躺在库里的历史。
+        // 实时路径产生不出这种数据（异单位会被 41001 挡下），
+        // 所以这正是前置检查存在的理由 —— 迁移要处理的是实时路径上线之前就躺在库里的历史。
         overrideReceiptItemUnit(b.receiptItemId(), "box");
         assertThat(jdbc.queryForObject(
                 "SELECT count(DISTINCT ri.purchase_unit_snapshot) FROM purchase_receipt_item ri "
@@ -205,7 +205,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
                         + "WHERE r.status = 'CONFIRMED' AND ri.deleted = FALSE AND ri.sku_id = ?",
                 Integer.class, skuId)).isEqualTo(2);
 
-        // 前置检查必须让迁移**失败**，而不是把 5kg + 3箱 汇总成 8
+        // 前置检查必须让迁移失败，而不是把 5kg + 3箱 汇总成 8
         expectSqlFailure(migrationSection(V19, "-- Step 1", "-- Step 2"));
 
         // 失败之后什么都没被改动（检查发生在任何写入之前）
@@ -220,7 +220,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // #15
+    // occurred_at / operator 取收货确认事实
     // ------------------------------------------------------------------
 
     @Test
@@ -238,7 +238,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertThat(operator).isEqualTo("1:1");
 
         Map<String, Object> live = movementsOf(warehouseId, skuId).getFirst();
-        // **精确相等**，不是「大约相同」：流水的 occurred_at 就是收货确认时刻本身
+        // 精确相等，不是「大约相同」：流水的 occurred_at 就是收货确认时刻本身
         assertThat(timestampOf(live.get("occurred_at")).toInstant())
                 .isEqualTo(confirmedAt.toInstant());
         assertThat(live.get("operator")).isEqualTo(operator);

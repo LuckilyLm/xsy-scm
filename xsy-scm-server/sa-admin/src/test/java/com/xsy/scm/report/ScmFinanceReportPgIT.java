@@ -26,7 +26,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Finance R0 flow / stock separation and per-document balance formulas. */
+/** Finance flow / stock separation and per-document balance formulas. */
 @DisplayName("Finance R0 往来概览（PG IT）")
 class ScmFinanceReportPgIT extends ScmW5PgITBase {
 

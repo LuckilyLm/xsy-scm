@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 盘点单号拼接（纯函数，不需要 DB）。
  *
- * <p>锁住三个口径：前缀、日期段、**至少 6 位且超过 999999 自然扩位**（不截断、不报错）。
+ * <p>锁住三个口径：前缀、日期段、至少 6 位且超过 999999 自然扩位（不截断、不报错）。
  * 与出库单号 {@code InventoryOutboundNumberGenerator} 同一纪律。
  *
  * <p>另外锁住「前缀互不相同」：盘点单号与出库单号都带日期段，若前缀撞了，

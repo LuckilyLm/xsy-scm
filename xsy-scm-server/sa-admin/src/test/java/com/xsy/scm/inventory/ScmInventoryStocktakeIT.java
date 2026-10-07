@@ -22,7 +22,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 盘点的 PostgreSQL 集成测试（盘点波次）。
+ * 盘点的 PostgreSQL 集成测试。
  *
  * <p>覆盖四件在单测里验证不了的事：
  * <ol>
@@ -30,9 +30,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       盘亏 {@code after = before - quantity}，这是 V29 重建
  *       {@code ck_inventory_movement_snap} 的直接原因；</li>
  *   <li><b>差异施加到「确认瞬间的账面量」而不是快照</b> —— 保存草稿到确认之间发生的
- *       收货 / 出库必须被保留，这是本波次最核心的口径；</li>
- *   <li><b>Q10 / 预留的双重下限</b> —— 盘亏不得把库存推成负数，也不得吃掉已预留的货；</li>
- *   <li><b>append-only 对盘点同样生效</b> —— 新增流水类型不是绕过 Q7 的口子。</li>
+ *       收货 / 出库必须被保留，这是盘点确认环节的核心口径；</li>
+ *   <li><b>可用量与预留的双重下限</b> —— 盘亏不得把库存推成负数，也不得吃掉已预留的货；</li>
+ *   <li><b>append-only 对盘点同样生效</b> —— 新增流水类型不能绕过 append-only 约束。</li>
  * </ol>
  */
 @DisplayName("盘点（PG IT）")
@@ -106,10 +106,10 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
         // 方向感知快照：盘盈是加，这正是 V29 必须重建 ck_inventory_movement_snap 的原因
         assertThat(decimal(row, "before_quantity")).isEqualByComparingTo("10.0000");
         assertThat(decimal(row, "after_quantity")).isEqualByComparingTo("12.0000");
-        // 单位以余额记账单位为准（Q13），由服务端取，不由调用方传
+        // 单位以余额记账单位为准，由服务端取，不由调用方传
         assertThat(String.valueOf(row.get("unit_snapshot"))).isEqualTo(balanceRow(wh, sku).getUnit());
-        // V34 起：盘盈按**现有均价**入账（它不带来新的采购价格信息，均价因此不变），
-        // 流水必须写下这个成本。此前这里断言 `isNull()`，那是成本核算上线前的语义。
+        // V34 起：盘盈按现有均价入账（它不带来新的采购价格信息，均价因此不变），
+        // 流水必须写下这个成本。
         assertThat(decimal(row, "unit_cost"))
                 .isEqualByComparingTo(balanceRow(wh, sku).getAvgCost());
     }
@@ -186,7 +186,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 下限：Q10 与预留
+    // 下限：可用量与预留
     // ------------------------------------------------------------------
 
     @Test

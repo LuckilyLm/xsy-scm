@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 仓库单条业务规则测试（W5 Target Design §11.1）。
+ * 仓库单条业务规则测试。
  *
  * <p>纯函数，无 Spring、无 DB。「编码重复」不在这里 —— 它由唯一索引 + Service 查重共同保证，
  * 属 {@code PurchaseWarehouseIT} 的覆盖范围。

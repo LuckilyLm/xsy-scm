@@ -78,21 +78,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * W5 PostgreSQL 集成测试基类（仿 {@code ScmW2PgITBase} / {@code ScmW3PgITBase}）。
+ * 采购域 PostgreSQL 集成测试基类。
  *
- * <p>W5 的读写在数据库里才有完整语义（partial unique index、CHECK 约束、{@code FOR UPDATE} 锁序、
- * {@code JSONB} 映射、{@code NUMERIC(18,4)} 精度、PG sequence 单号），因此这部分只能用真实
- * PostgreSQL 验证。
+ * <p>采购的读写语义只有真实数据库能完整验证：partial unique index、CHECK 约束、
+ * {@code FOR UPDATE} 锁序、{@code JSONB} 映射、{@code NUMERIC(18,4)} 精度、PG sequence 单号。
  *
- * <p><b>事务策略：</b>与 W1–W4 一致 —— 整个用例包在一个事务里，结束时回滚，不向开发库留下数据。
- * 种子数据（{@code warehouse} 的 WH001、{@code t_config} 的采购容差）由 V15 migration 提供，只读使用。
+ * <p><b>事务策略：</b>整个用例包在一个事务里，结束时回滚，不向开发库留下数据。
+ * 种子数据（{@code warehouse} 的 WH001、{@code t_config} 的采购容差）由 V15 迁移提供，只读使用。
  *
  * <p><b>不 mock 上游域：</b>{@code supplier_sku} 依赖真实存在的 {@code product_spu} / {@code product_sku}，
- * 所以用 W1 已验收的 {@link ProductSpuService} 造数，而不是直接插表 ——
- * 直接插表会绕过 W1 的聚合不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
+ * 所以用 {@link ProductSpuService} 造数，而不是直接插表 ——
+ * 直接插表会绕过商品聚合的不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
  *
- * <p><b>不 mock 需求来源：</b>采购需求来自 W4 的 {@code sales_order} / {@code sales_order_item}，
- * 因此 W5 的 IT 通过 W4 已验收的 {@code SalesOrderService} 造真实订单，再驱动汇总，
+ * <p><b>不 mock 需求来源</b>：采购需求取自 {@code sales_order} / {@code sales_order_item}，
+ * 因此这里通过 {@code SalesOrderService} 造真实订单再驱动汇总，
  * 而不是往 {@code purchase_demand} 里直接插行。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
@@ -104,14 +103,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public abstract class ScmW5PgITBase {
 
     /**
-     * V15 播种的默认仓库编码（G-03 单仓库口径）。
+     * V15 迁移建立的默认仓库编码（单仓库口径）。
      */
     public static final String SEED_WAREHOUSE_CODE = "WH001";
 
     /**
      * 基类造的 SKU 一律以 {@code kg} 为销售单位（见 {@link #newProductSku}）。
      *
-     * <p>**Q17**：采购单位必须与需求单位（= 销售单位）一致才允许自动分配，
+     * <p>采购单位必须与需求单位（= 销售单位）一致才允许自动分配，
      * 因此默认采购单位也是 {@code kg}；要测「单位不一致 → 40971」的用例显式传别的单位。
      */
     public static final String DEFAULT_PURCHASE_UNIT = "kg";
@@ -141,13 +140,13 @@ public abstract class ScmW5PgITBase {
     protected SalesOrderService salesOrderService;
 
     /**
-     * P1 之后配送候选要求「订单每条有效明细行都被已完成分拣任务覆盖」，
+     * 配送候选要求「订单每条有效明细行都被已完成分拣任务覆盖」，
      * 因此线路类用例都依赖分拣服务做前置（见 {@link #sortingCompletedFor}）。
      */
     @Autowired
     protected com.xsy.scm.sorting.service.SortingTaskService sortingTaskService;
 
-    // ---- W5 自身（需求 / 采购单 / 只读查询）----
+    // ---- 采购域自身（需求 / 采购单 / 只读查询）----
 
     @Autowired
     protected PurchaseDemandService purchaseDemandService;
@@ -181,9 +180,9 @@ public abstract class ScmW5PgITBase {
     /**
      * 同一用例内造第几张销售订单。
      *
-     * <p><b>为什么必须逐张唯一</b>：W4 的 `SalesOrderService` 按「幂等键 + 请求内容哈希」判定重放。
+     * <p><b>为什么必须逐张唯一</b>：{@code SalesOrderService} 按「幂等键 + 请求内容哈希」判定重放。
      * 一个用例里造两张订单（例如「一个 SKU 要两个需求」）如果复用同一个幂等键，第二次会因为
-     * **内容不同**而抛 40990「相同幂等键的请求内容不一致」—— 看起来像 W5 的分配逻辑出错，
+     * 内容不同而抛 40990「相同幂等键的请求内容不一致」—— 看起来像采购分配逻辑出错，
      * 实际只是测试自己把幂等键写重了。
      */
     private int salesOrderSequence;
@@ -191,10 +190,10 @@ public abstract class ScmW5PgITBase {
     /**
      * 同一用例内造第几个客户。
      *
-     * <p><b>为什么必须逐个唯一</b>：`t_customer.customer_code` 上有唯一索引，而
+     * <p><b>为什么必须逐个唯一</b>：{@code t_customer.customer_code} 上有唯一索引，而
      * {@link #newCustomer()} 无参（调用方只关心「有个客户」）。若编码固定为 {@code prefix}，
      * 一个用例里调两次（例如 {@code receiptFixture} 造两套数据）就会撞「客户编码已存在」——
-     * 报错点落在上游 W2 的 {@code CustomerService.add}，看起来像客户域坏了。
+     * 报错点落在上游的 {@code CustomerService.add}，看起来像客户域坏了。
      */
     private int customerSequence;
 
@@ -207,7 +206,7 @@ public abstract class ScmW5PgITBase {
         employee.setEmployeeId(1L);
         employee.setActualName("W5 IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
-        // 本夹具代表「不受数据范围约束的操作者」，不是某个正式业务角色：W1–W5 的造数链路会
+        // 本夹具代表「不受数据范围约束的操作者」，不是某个正式业务角色：造数链路会
         // 为每个用例新建仓库，逐仓授权既无意义也会把夹具变成被测对象。
         // 数据范围本身用例（ScmInventoryDataScopePgIT）自己构造 administratorFlag=false 的员工。
         employee.setAdministratorFlag(true);
@@ -227,7 +226,7 @@ public abstract class ScmW5PgITBase {
      * 清空 MyBatis 一级缓存。
      *
      * <p><b>为什么必须显式调用</b>：整个用例跑在一个 Spring 事务里，MyBatis 的 SqlSession 与事务同生命周期，
-     * 因此一级缓存跨越多次 Service 调用。{@code JdbcTemplate} 直改库**不会**清这个缓存，
+     * 因此一级缓存跨越多次 Service 调用。{@code JdbcTemplate} 直改库不会清这个缓存，
      * 于是「先用 Service 读、再用 JdbcTemplate 改、再用 Service 读」会读到事务内的旧值，
      * 表现为断言莫名失败。凡是绕过 DAO 改库之后还要走 Service 读，就必须先调本方法。
      */
@@ -245,21 +244,21 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 在**同一个事务 / 同一条连接**里执行一段必然失败的 SQL，并断言它失败
+     * 在同一个事务 / 同一条连接里执行一段必然失败的 SQL，并断言它失败
      * （CHECK / 唯一索引 / NOT NULL）。
      *
      * <p><b>为什么必须隔离</b>：PostgreSQL 一旦在事务内报错就把整个事务置为 aborted，
      * 后续语句全部以「current transaction is aborted」失败 —— 一个「验证 CHECK 生效」的断言
      * 会顺手毁掉这个用例的其余部分。
      *
-     * <p><b>为什么用 SAVEPOINT 而**不是** {@code PROPAGATION_REQUIRES_NEW}</b>：
-     * `REQUIRES_NEW` 会挂起外层事务、另开一条连接，但外层事务**仍然持有**相关行的锁与唯一索引项。
-     * 于是内层连接去插同一个键时**永久阻塞**等待外层提交，而外层正在等内层返回 ——
-     * PostgreSQL 的死锁检测**看不到**这种循环（外层只是在应用层等待，没有向数据库发任何语句），
-     * 结果是整个测试**无声挂死**，既不报错也不超时。
+     * <p><b>为什么用 SAVEPOINT 而不是 {@code PROPAGATION_REQUIRES_NEW}</b>：
+     * {@code REQUIRES_NEW} 会挂起外层事务、另开一条连接，但外层事务仍然持有相关行的锁与唯一索引项。
+     * 于是内层连接去插同一个键时永久阻塞等待外层提交，而外层正在等内层返回 ——
+     * PostgreSQL 的死锁检测看不到这种循环（外层只是在应用层等待，没有向数据库发任何语句），
+     * 结果是整个测试无声挂死，既不报错也不超时。
      *
      * <p>SAVEPOINT 在同一条连接上完成隔离：失败后 {@code ROLLBACK TO SAVEPOINT}，
-     * 外层事务恢复可用；而且同一事务内的唯一索引冲突是**立即报错**（不是等锁），
+     * 外层事务恢复可用；而且同一事务内的唯一索引冲突是立即报错（不是等锁），
      * 因此不存在自我阻塞。
      */
     protected void expectSqlFailure(String sql, Object... args) {
@@ -289,7 +288,7 @@ public abstract class ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * V15 播种的默认仓库 id。
+     * V15 迁移建立的默认仓库 id。
      */
     protected Long seedWarehouseId() {
         return warehouseId(SEED_WAREHOUSE_CODE);
@@ -298,8 +297,8 @@ public abstract class ScmW5PgITBase {
     /**
      * 本类夹具（需求 / 采购单 / 收货单 / 分拣任务）落库时使用的仓库。
      *
-     * <p>默认就是 V15 播种的 {@code WH001}，因此对所有既有测试行为不变。存在这个可覆盖点的原因是：
-     * 播种仓库是全测试体系共享的，任何一处给它新增一个 (warehouse, sku) 余额行，都会改变
+     * <p>默认就是 V15 迁移建立的 {@code WH001}。这个可覆盖点存在的原因是：种子仓库被整个测试
+     * 体系共享，任何一处给它新增一个 (warehouse, sku) 余额行，都会改变
      * 「按整仓出快照」的那类夹具的输出规模。盘点 Excel 导入正是这样的夹具 —— 它的快照凭证
      * 要为仓库里每条活跃余额带上 skuCode / 单位 / 账面量，并被逐行写进模板单元格，
      * 而 POI 单元格有 32767 字符上限（见 {@code StocktakeSnapshotSigner#sign} 的压缩说明）。
@@ -343,7 +342,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 用 W1 已验收的商品聚合服务造一个真实 SKU，返回 {@code product_sku.id}。
+     * 用商品聚合服务造一个真实 SKU，返回 {@code product_sku.id}。
      *
      * @param spuStatus SPU 上下架状态（{@code ON_SHELF} / {@code OFF_SHELF}）
      * @param skuStatus SKU 上下架状态
@@ -373,7 +372,9 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 直接改库把仓库置为 DISABLED（`status` 不在 §7.2 的表单字段清单内，见验收报告 G1）。
+     * 直接改库把仓库置为 DISABLED：正式停用要走 {@code WarehouseService.disable} 的乐观锁，
+     * 以及库存余额 / 在途采购单 / 待入库收货单三重阻塞校验，而造数场景只需要一个已停用的仓库。
+     * {@code WarehouseStatusForm} 只带 id 与 version，状态由操作本身决定。
      */
     protected void disableWarehouse(Long warehouseId) {
         int updated = jdbc.update(
@@ -384,11 +385,11 @@ public abstract class ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 上游域造数（W2 供应商 / 客户，W4 销售订单）
+    // 上游域造数（供应商 / 客户、销售订单）
     // ------------------------------------------------------------------
 
     /**
-     * 新建一个启用状态的供应商（走 W2 已验收的聚合服务，不直接插表）。
+     * 新建一个启用状态的供应商（走供应商聚合服务，不直接插表）。
      */
     protected Long newSupplier(String suffix) {
         SupplierAddForm form = new SupplierAddForm();
@@ -398,10 +399,10 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 把 SKU 挂到供应商上（W2 的**唯一写入口** `replace`，空数组 = 清空）。
+     * 把 SKU 挂到供应商上（唯一写入口 {@code replace}，空数组 = 清空）。
      *
-     * <p>`purchaseUnit` 就是 W5 的采购单位来源（{@code supplier_sku.purchase_unit} →
-     * {@code purchase_order_item.purchase_unit_snapshot}）。**Q17** 要求它与需求单位
+     * <p>{@code purchaseUnit} 就是采购单位的来源（{@code supplier_sku.purchase_unit} →
+     * {@code purchase_order_item.purchase_unit_snapshot}）。它必须与需求单位
      * （{@code sales_order_item.sale_unit_snapshot}）一致才能自动分配，因此调用方要
      * 传 SKU 的 {@code sale_unit}（本基类造的 SKU 一律是 {@code kg}）。
      */
@@ -426,10 +427,10 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 一次把**多个** SKU 挂到同一个供应商。
+     * 一次把多个 SKU 挂到同一个供应商。
      *
-     * <p><b>不能循环调用 {@link #linkSupplierSku}</b>：它走的是 W2 的唯一写入口 {@code replace}，
-     * 语义是**整体替换**（空数组 = 清空），第二次调用会把第一次挂上的 SKU 全部清掉。
+     * <p><b>不能循环调用 {@link #linkSupplierSku}</b>：它走的是唯一写入口 {@code replace}，
+     * 语义是整体替换（空数组 = 清空），第二次调用会把第一次挂上的 SKU 全部清掉。
      */
     protected void linkSupplierSkus(Long supplierId, Long... skuIds) {
         List<SupplierSkuItemForm> items = new ArrayList<>(skuIds.length);
@@ -447,10 +448,10 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 客户类型 id（V2 种子字典，{@code ENTERPRISE} 一定存在）。
+     * 客户类型 id（V2 的种子字典，{@code ENTERPRISE} 一定存在）。
      *
-     * <p>注意列名是 {@code id} 而**不是** {@code customer_type_id}：W2 的 `customer_type`
-     * 表沿用「表名 = 实体名」的主键命名，没有前缀。写错会得到一个 `BadSqlGrammar`，
+     * <p>注意列名是 {@code id} 而不是 {@code customer_type_id}：{@code customer_type}
+     * 表沿用「表名 = 实体名」的主键命名，没有前缀。写错会得到一个 {@code BadSqlGrammar}，
      * 而它的栈顶看起来像「fixture 造数失败」，很容易误判成需求生成的问题。
      */
     protected Long customerTypeId(String typeCode) {
@@ -460,9 +461,9 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 新建一个 {@code COOPERATING} 客户（W2 的 `add` + `updateStatus` 两步）。
+     * 新建一个 {@code COOPERATING} 客户（{@code add} + {@code updateStatus} 两步）。
      *
-     * <p>编码带**逐个递增的序号**，同一用例内可反复调用（见 {@link #customerSequence}）。
+     * <p>编码带逐个递增的序号，同一用例内可反复调用（见 {@link #customerSequence}）。
      */
     protected Long newCustomer() {
         String code = prefix + "-C" + (++customerSequence);
@@ -483,13 +484,13 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 造一张**已确认**的销售订单（W5 需求的唯一来源口径：`status = CONFIRMED` + `confirmed_at`）。
+     * 造一张已确认的销售订单（采购需求的唯一取数口径：{@code status = CONFIRMED} + {@code confirmed_at}）。
      *
-     * <p>链路完全走 W4 已验收的命令：`create → submit → actualQuantity → confirm`。
-     * 非标品必须在 `confirm` 前显式给实数量，因此这里一定要调 `actualQuantity`。
+     * <p>链路完全走订单命令：{@code create → submit → actualQuantity → confirm}。
+     * 非标品必须在 {@code confirm} 前显式给实数量，因此这里一定要调 {@code actualQuantity}。
      *
-     * <p>幂等键带**逐张递增的序号**：同一用例造多张订单时必须各不相同，否则第二次会撞
-     * W4 的「同键不同内容」判定（40990）。见 {@link #salesOrderSequence}。
+     * <p>幂等键带逐张递增的序号：同一用例造多张订单时必须各不相同，否则第二次会撞
+     * 订单域的「同键不同内容」判定（40990）。见 {@link #salesOrderSequence}。
      *
      * @return 该订单的 id（{@code sales_order.id}）
      */
@@ -535,7 +536,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 来源订单的确认时间（Q6a 的 `demand_date` 与 `source_confirmed_at` 都取自它）。
+     * 来源订单的确认时间（需求的 {@code demand_date} 与 {@code source_confirmed_at} 都取自它）。
      */
     protected java.time.OffsetDateTime salesOrderConfirmedAt(Long orderId) {
         return jdbc.queryForObject(
@@ -563,13 +564,13 @@ public abstract class ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // W5 采购单造数（T11–T14 共用）
+    // 采购单造数
     // ------------------------------------------------------------------
 
     /**
-     * 汇总窗口内**恰好这一张**已确认订单 → 需求，并返回该需求。
+     * 汇总窗口内恰好这一张已确认订单 → 需求，并返回该需求。
      *
-     * <p>窗口取 {@code [confirmedAt, confirmedAt + 1s)}：开发库里有 W4 遗留的 14 张
+     * <p>窗口取 {@code [confirmedAt, confirmedAt + 1s)}：开发库里存在别的用例留下的
      * CONFIRMED 订单，窗口一旦放宽就会把它们一起汇总，让「本次生成几条」失去可断言性。
      */
     protected PurchaseDemandEntity generateDemandFor(Long supplierId, Long salesOrderId) {
@@ -584,7 +585,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 按来源销售订单行读**唯一**的活动需求（{@code uk_purchase_demand_source_active} 保证唯一）。
+     * 按来源销售订单行读唯一的活动需求（{@code uk_purchase_demand_source_active} 保证唯一）。
      */
     protected PurchaseDemandEntity demandOfSourceItem(Long salesOrderItemId) {
         List<PurchaseDemandEntity> rows =
@@ -644,10 +645,10 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 造一张**草稿**采购单：一个 SKU 行 + 指定分配集合。
+     * 造一张草稿采购单：一个 SKU 行 + 指定分配集合。
      *
-     * <p>{@code itemQuantity} 与分配合计刻意解耦 —— 采购行可以有「没有需求来源」的部分，
-     * 这是 §7.3「一采购行一个 SKU，可承接多个需求」的必然结果（采购量 ≠ 需求量）。
+     * <p>{@code itemQuantity} 与分配合计是解耦的 —— 采购行可以有「没有需求来源」的部分，
+     * 这是「一采购行一个 SKU，可承接多个需求」的必然结果（采购量 ≠ 需求量）。
      */
     protected PurchaseOrderVO createDraftOrder(String suffix, Long supplierId, Long skuId,
                                                String itemQuantity, String price,
@@ -658,7 +659,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 把既有采购单读成一次**单行**编辑请求（保留行 + 替换分配集合）。
+     * 把既有采购单读成一次单行编辑请求（保留行 + 替换分配集合）。
      *
      * <p>从 {@code orderDetail} 回读 {@code version}，而不是让调用方自己数 ——
      * 编辑请求的版本必须与库中一致，写错会得到 40921 而不是被测的行为。
@@ -713,7 +714,7 @@ public abstract class ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // W5 收货造数（T13 共用）
+    // 收货造数
     // ------------------------------------------------------------------
 
     /**
@@ -729,26 +730,26 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 为采购单建一张草稿收货单（收货行由服务端按采购单的**全部活动行**自动生成）。
+     * 为采购单建一张草稿收货单（收货行由服务端按采购单的全部活动行自动生成）。
      *
-     * <p>幂等键固定为 {@code prefix + ":receipt:" + orderId}，因此**同一个采购单只能调一次**。
-     * 若先调它并让 `create` 因业务原因抛错（例如 DRAFT 单 → 40991），这次失败已经在本用例的
+     * <p>幂等键固定为 {@code prefix + ":receipt:" + orderId}，因此同一个采购单只能调一次。
+     * 若先调它并让 {@code create} 因业务原因抛错（例如 DRAFT 单 → 40991），这次失败已经在本用例的
      * 事务里插入了 claim 行；再用同一个键调第二次会命中「已提交的幂等记录缺少 result_data」。
      * 那种场景要改用 {@link #createAnotherReceipt(Long, String)} 换键。
      */
     protected PurchaseReceiptVO createReceipt(Long orderId) {
         PurchaseReceiptCreateForm form = new PurchaseReceiptCreateForm();
         form.setPurchaseOrderId(orderId);
-        // B1：历史用例验证的是「确认即入库」的 DIRECT 语义，因此默认 DIRECT。
+        // 收货模式默认 DIRECT：语义是「确认收货即入库」。
         form.setReceiptMode(ScmReceiptModeEnum.DIRECT.name());
         form.setRemark("W5 IT 收货单");
         return purchaseReceiptService.create(form, prefix + ":receipt:" + orderId);
     }
 
     /**
-     * 同一采购单的**第二张及以后**的收货单（分次到货是正常业务，W5 不限张数）。
+     * 同一采购单的第二张及后续收货单（分次到货是正常业务，不限制张数）。
      *
-     * <p>幂等键必须逐张唯一：`create` 的 scope 是 `PURCHASE_RECEIPT_CREATE:<采购单id>`，
+     * <p>幂等键必须逐张唯一：{@code create} 的 scope 是 {@code PURCHASE_RECEIPT_CREATE:<采购单id>}，
      * 同键同内容会命中重放、拿回同一张单（这正是 {@link #createReceipt} 的行为）。
      */
     protected PurchaseReceiptVO createAnotherReceipt(Long orderId, String suffix) {
@@ -763,7 +764,7 @@ public abstract class ScmW5PgITBase {
      * 一条收货明细：声明数量 = 实重 = {@code quantity}。
      *
      * <p><b>为什么默认带实重</b>：基类造的 SKU 一律是 {@code NON_STANDARD}，而非标品的
-     * 「有效数量」取 {@code actualWeight}、且 {@code weightSource} 必须是 {@code MANUAL}（§7.5）——
+     * 「有效数量」取 {@code actualWeight}、且 {@code weightSource} 必须是 {@code MANUAL} ——
      * 只填声明数量会直接得到 40083。
      */
     protected PurchaseReceiptConfirmForm.Item receiptLine(Long receiptItemId, Integer version,
@@ -772,9 +773,9 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 一条收货明细，声明数量与实重**分开**给。
+     * 一条收货明细，声明数量与实重分开给。
      *
-     * <p>{@code actualWeight == null} 时三字段全空 —— 那是**标品**的形状；
+     * <p>{@code actualWeight == null} 时三字段全空 —— 那是标品的形状；
      * 基类造的 SKU 是非标品，因此只有「验证非标品缺实重被拒」这类用例才传 null。
      */
     protected PurchaseReceiptConfirmForm.Item receiptLine(Long receiptItemId, Integer version,
@@ -792,7 +793,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 确认收货请求。必须覆盖该收货单的**全部**活动行，否则 40998。
+     * 确认收货请求。必须覆盖该收货单的全部活动行，否则 40998。
      */
     protected PurchaseReceiptConfirmForm confirmForm(Long receiptId, Integer version,
                                                      PurchaseReceiptConfirmForm.Item... items) {
@@ -814,8 +815,8 @@ public abstract class ScmW5PgITBase {
     /**
      * 按采购单找收货单（断言恰好一张）。
      *
-     * <p>只适用于「本用例为该采购单只建了一张收货单」的场景：W5 **不限制**同一采购单的
-     * 草稿收货单张数（分次到货是正常业务），所以多次建单的用例请直接用
+     * <p>只适用于「本用例为该采购单只建了一张收货单」的场景：同一采购单的
+     * 草稿收货单张数不受限制（分次到货是正常业务），所以多次建单的用例请直接用
      * {@link #reloadReceipt(Long)}。
      */
     protected PurchaseReceiptVO receiptOfOrder(Long orderId) {
@@ -931,7 +932,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 更新收货单备注的请求（`receipt.update` 只允许改备注）。
+     * 更新收货单备注的请求（{@code receipt.update} 只允许改备注）。
      */
     protected PurchaseReceiptUpdateForm receiptRemarkForm(Long receiptId, Integer version, String remark) {
         PurchaseReceiptUpdateForm form = new PurchaseReceiptUpdateForm();
@@ -951,7 +952,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 一张**已提交**的采购单 + 它的草稿收货单（T13 六个收货 IT 的通用前置）。
+     * 一张已提交的采购单 + 它的草稿收货单（收货类用例的通用前置）。
      *
      * <p>{@code plannedQuantity} 同时用作销售订单的订购量与实数量，因此
      * {@code required_quantity == planned_quantity == 分配量} ——
@@ -961,11 +962,10 @@ public abstract class ScmW5PgITBase {
                                     PurchaseOrderVO order, PurchaseReceiptVO receipt) {
 
         /**
-         * 该采购单唯一活动行的 id（`purchase_receipt_item.purchase_order_item_id`）。
+         * 该采购单唯一活动行的 id（{@code purchase_receipt_item.purchase_order_item_id}）。
          *
-         * <p>record 里的**自定义方法**（非组件 accessor）默认是包私有，
-         * 而子类在 `...module.scm.purchase` 包、本基类在 `...module.scm.common` ——
-         * 因此这里必须显式写 `public`，否则子类编译不过。
+         * <p>record 里的自定义方法（非组件 accessor）默认是包私有，而子类与本基类不在同一个包 ——
+         * 因此这里必须显式声明 {@code public}，否则子类编译不过。
          */
         public Long orderItemId() {
             return order.getItems().getFirst().getId();
@@ -1001,13 +1001,13 @@ public abstract class ScmW5PgITBase {
     /**
      * 把订单做到「可进配送候选」：建一个分拣任务、逐行按快照量正常收口、完成任务。
      *
-     * <p>P1 之后这是线路类用例的**前置条件**（裁决第 11 条与补充第 18 条：候选 = CONFIRMED ∧
-     * 每条有效明细行都被 {@code COMPLETED} 任务覆盖）。走真实分拣命令服务而不是直插行 ——
-     * 直插正好绕过被验收的那条口径，会让「资格判定改没改」在 IT 里看不出来。
+     * <p>这是线路类用例的前置条件：候选 = CONFIRMED ∧ 每条有效明细行都被 {@code COMPLETED}
+     * 任务覆盖。走真实分拣命令服务而不是直插行 ——
+     * 直插正好绕过被验证的那条口径，会让「资格判定改没改」在 IT 里看不出来。
      *
-     * <p>任务派给**当前登录人**：分拣范围是「授权仓 ∩ 受指派人」，派给别人会让调用方
+     * <p>任务派给当前登录人：分拣范围是「授权仓 ∩ 受指派人」，派给别人会让调用方
      * 读不到自己刚造出来的行。仓库取种子仓 —— 分拣仓库与线路仓库是两个独立维度，
-     * 线路侧不校验二者一致（那是 P2 的部分发货口径）。
+     * 线路侧不校验二者一致。
      */
     protected void sortingCompletedFor(Long... orderIds) {
         var user = SmartRequestUtil.getRequestUser();

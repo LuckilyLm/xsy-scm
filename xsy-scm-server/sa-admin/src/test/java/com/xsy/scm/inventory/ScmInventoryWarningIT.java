@@ -21,14 +21,14 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 库存阈值预警的 PostgreSQL 集成测试（阈值预警波次）。
+ * 库存阈值预警的 PostgreSQL 集成测试。
  *
  * <p>覆盖四件在单测里验证不了的事：
  * <ol>
  *   <li><b>预警列表由配置驱动</b> —— 只列配置了阈值的 (仓库, SKU)；
  *       没有配置就没有预警，否则每个 SKU × 每个仓库都会因为「没有余额行 = 0 < 下限」而刷屏；</li>
  *   <li><b>判定基准是可用量</b> —— 现有量够但已被预留时仍然要预警，
- *       这是本波次最容易被实现错的一条；</li>
+ *       这是最容易被实现错的一条；</li>
  *   <li><b>没有余额行 + 设了下限 → 预警</b>（数量按 0 计），
  *       这是本能力唯一能表达「还没进过货就要补货」的方式；</li>
  *   <li><b>SQL 过滤与 Java 判定等价</b> —— 状态判定的规则在 Java 枚举里只实现一次，
@@ -266,7 +266,7 @@ class ScmInventoryWarningIT extends ScmW6PgITBase {
         thresholdService.create(threshold(wh, highSku, null, "100.0000")); // 500 > 100 → HIGH
         thresholdService.create(threshold(wh, normalSku, "10.0000", "100.0000")); // 正常
 
-        // 状态判定的规则在 Java 枚举里只实现一次；列表 SQL 里另有一份**过滤**谓词。
+        // 状态判定的规则在 Java 枚举里只实现一次；列表 SQL 里另有一份过滤谓词。
         // 逐个状态查一遍，断言「SQL 筛出来的行」与「Java 算出来的状态」完全一致 ——
         // 两份实现一旦漂移，这里会立刻失败。
         for (String status : List.of("LOW", "HIGH", "NORMAL")) {

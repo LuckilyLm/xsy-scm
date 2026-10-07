@@ -75,8 +75,8 @@ class FileAccessGuardTest {
     }
 
     /**
-     * FA-2 的核心变化：以前「是 private/notice/ 前缀就放行」，现在前缀本身不再构成理由。
-     * 同前缀下所有人的附件互看正是这笔债的成因，所以这条断言是承重的。
+     * 前缀本身不构成放行理由：不能因为 key 带 private/notice/ 前缀就放行。
+     * 同前缀下所有人的附件互看正是这条规则要挡的，所以这条断言是承重的。
      */
     @ParameterizedTest
     @ValueSource(strings = {"private/notice/a.pdf", "private/help-doc/a.pdf"})

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 仓库确认入库前置判定（B1，HD-B1-03）。
+ * 仓库确认入库前置判定。
  *
  * <p>把状态迁移矩阵钉住：只有「已确认 + WAREHOUSE_CONFIRM + 待入库」三者同时成立才放行，
  * 其余任何组合（草稿、DIRECT、已入库、空值）一律拒绝。

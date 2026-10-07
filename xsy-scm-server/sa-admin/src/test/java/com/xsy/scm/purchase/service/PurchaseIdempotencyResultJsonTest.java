@@ -12,12 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 幂等结果的持久化编解码（W6 修正 48134bf 引入的回归，见 {@code PurchaseIdempotencyService#RESULT_JSON}）。
+ * 幂等结果的持久化编解码（被测：{@code PurchaseIdempotencyService#RESULT_JSON}）。
  *
- * <p>被测的是「写出去再读回来是否**无损**」，因为幂等重放的契约是
- * 「返回首次的**真实**结果」而不是「返回一个大致相同的对象」。
+ * <p>测的是「写出去再读回来是否无损」，因为幂等重放的契约是「返回首次的真实结果」
+ * 而不是「返回一个大致相同的对象」。
  *
- * <p><b>为什么测试放在 {@code ...purchase.service} 子包</b>：被测的 mapper 刻意保持包私有
+ * <p>测试放在 {@code ...purchase.service} 子包：被测的 mapper 保持包私有
  * （它是这个服务的内部实现细节，不是给外部用的 API）。
  */
 @DisplayName("W6 幂等结果持久化编解码（单元）")

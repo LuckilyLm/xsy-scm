@@ -12,7 +12,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 收货重量口径（W5 Target Design §7.5 / §4.3 第 6 步，4 例）。
+ * 收货重量口径。
  *
  * <pre>
  * STANDARD      有效数量 = declaredQuantity；actualWeight / weighingSource / correctionReason 必须全空
@@ -20,12 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </pre>
  *
  * <p><b>为什么非标品的有效数量取实重而不是声明数量</b>：鲜蔬是称重商品，
- * 采购员下单时写的数量只是意向，真正决定库存与结算的是**过秤读数**。
- * 如果取声明数量，电子秤接进来（W6）以后就会出现「称了但没用上」的静默错误 ——
+ * 采购员下单时写的数量只是意向，真正决定库存与结算的是过秤读数。
+ * 如果取声明数量，电子秤接入以后就会出现「称了但没用上」的静默错误 ——
  * 这里用「声明 5 / 实重 3 → 累计 3」直接把这个口径钉死。
  *
- * <p><b>实重必须留痕</b>：每次带实重的确认都要往 `receipt_weighing_record` 追一行审计事实
- * （只追加，无 version / deleted），原始读数与确认读数同值（G-05 手工录入）。
+ * <p><b>实重必须留痕</b>：每次带实重的确认都要往 {@code receipt_weighing_record} 追一行审计事实
+ * （只追加，无 version / deleted），原始读数与确认读数同值（手工录入）。
  */
 @DisplayName("收货重量：非标品实重口径与过秤留痕（PG IT）")
 class PurchaseReceiptWeightIT extends ScmW5PgITBase {
@@ -125,7 +125,7 @@ class PurchaseReceiptWeightIT extends ScmW5PgITBase {
         assertThat(record.get("unit")).isEqualTo(DEFAULT_PURCHASE_UNIT);
         assertThat(record.get("source")).isEqualTo("MANUAL");
         assertThat(record.get("modification_reason")).isNull();
-        // 操作者落的是 `userType:employeeId`（ScmOperator 的口径），不是员工姓名
+        // 操作者落的是 userType:employeeId（ScmOperator 的口径），不是员工姓名
         assertThat(record.get("operator")).isEqualTo(ScmOperator.current());
     }
 

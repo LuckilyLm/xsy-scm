@@ -32,15 +32,15 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V65 的 schema 契约与 F1-1 的阶段边界（F1-1 唯一新增的 PG IT，设计稿 §22.1）。
+ * V65 财务 schema 的契约：表 / 序列 / 列 / 约束 / 索引谓词的形状，以及财务菜单与权限的发布范围。
  *
- * <p>本类是 Finance R1 **唯一直接断言 schema 形状**的地方（表 / 序列 / 列 / 约束 / 索引谓词），
- * 其余财务 IT 只断言行为。schema 一旦被后续阶段悄悄改动，这里会先失败
+ * <p>本类是 Finance 域唯一直接断言 schema 形状的地方，其余财务 IT 只断言行为。
+ * schema 一旦被后续迁移悄悄改动，这里会先失败
  * （与 {@code ScmInventoryMigrationIT} / {@code ScmPurchaseMigrationIT} 同一分工）。
  *
- * <p><b>只测 F1-1 的契约，不提前写 F1-2 的业务 IT</b>：本类不生成任何应收 / 应付，
- * 只验证「库会把不合法的事实挡在外面」，以及「本阶段没有越界发布菜单与权限」
- * （见 {@link #financePublishesNoMenuOrPermissionYet()}）。
+ * <p><b>不生成业务事实</b>：本类不生成任何应收 / 应付，
+ * 只验证「库会把不合法的事实挡在外面」，以及「没有越界发布菜单与权限」
+ * （见 {@link #financePublishesOnlyImplementedCapabilities()}）。
  *
  * <p><b>不修改任何数据</b>：只读元数据 + 用 {@code expectSqlFailure}（SAVEPOINT 隔离）
  * 验证约束真的会拒绝坏数据。用例整体在一个事务里，结束回滚。
@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     /**
-     * V65 建的 8 张表（设计稿 §2 对象清单）。
+     * V65 建的 8 张财务表。
      */
     private static final List<String> FINANCE_TABLES = List.of(
             "finance_receivable", "finance_receivable_item",
@@ -58,7 +58,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
             "finance_write_off", "finance_operation_log");
 
     /**
-     * 七张带 {@code deleted} 列的事实表；{@code finance_operation_log} 刻意不在其中 ——
+     * 七张带 {@code deleted} 列的事实表；{@code finance_operation_log} 不在其中 ——
      * 它连 {@code deleted} 列都没有，append-only 是结构性的。
      */
     private static final List<String> APPEND_ONLY_TABLES = List.of(
@@ -98,7 +98,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     /**
      * 从约束定义里抽出全部单引号字面量，用于比对 Java enum 与 DB CHECK 白名单是否同一份真值。
      *
-     * <p>模式刻意允许空串（{@code [^']*}）：配对类约束里有 {@code btrim(COALESCE(reason, '')) <> ''}，
+     * <p>模式允许空串（{@code [^']*}）：配对类约束里有 {@code btrim(COALESCE(reason, '')) <> ''}，
      * 若要求至少一个字符，正则会跨过 {@code ''} 去匹配到 {@code ') <> '} 这种伪字面量。
      * 空串随后被过滤掉，因此只留下真正的枚举取值。
      */
@@ -141,8 +141,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("财务表不含状态列 / 余额列 / 账期列（Q15 Q17 Q20，全局不变量 6）")
     void noStateMachineOrDerivedColumns() {
-        // 落库的派生态一定会漂移；审批字段属未裁决范围。
-        // `due_date` 不在禁用之列：ADM-04 账期把它作为**冻结事实**落库（主档后来改账期不得重算旧应收），
+        // 落库的派生态一定会漂移；审批相关列不属于财务域。
+        // due_date 不在禁用之列：ADM-04 账期把它作为冻结事实落库（主档后来改账期不得重算旧应收），
         // 它是账期规则的求值结果快照，不是可被回写的派生态。
         List<String> forbidden = List.of(
                 "status", "settled_amount", "open_amount", "written_off_amount", "net_amount",
@@ -166,7 +166,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                     .as("%s 的 append-only CHECK", table)
                     .containsIgnoringCase("deleted = false");
         }
-        // finance_operation_log 刻意不设 deleted 列：没有可翻转的标记，就没有删除入口。
+        // finance_operation_log 不设 deleted 列：没有可翻转的标记，就没有删除入口。
         assertThat(columnsOf("finance_operation_log")).doesNotContain("deleted", "version");
     }
 
@@ -179,7 +179,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     void amountAndQuantityChecks() {
         long id = insertReceivable("AR", "SALES_ORDER", "NORMAL", null, null, new BigDecimal("100.0000"));
 
-        // 金额与数量恒正：0 元事实不允许存在（Q8「不生成 0 元财务事实」的库级兜底）。
+        // 金额与数量恒正：0 元事实不允许存在，这是「不生成 0 元财务事实」的库级兜底。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
                         + "VALUES (?, 'SALES_ORDER', 900001, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 0, now())",
@@ -194,13 +194,13 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 id);
         expectSqlFailure("UPDATE finance_receivable SET version = -1 WHERE id = ?", id);
 
-        // 单价允许为 0（赠品口径），但明细金额因此为 0 时**单头**不会生成，见 F1-2 生成器。
+        // 单价允许为 0（赠品口径），但明细金额因此为 0 时单头不会生成。
         jdbc.update("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, order_item_id, "
                         + "sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount) "
                         + "VALUES (?, 'INVENTORY_OUTBOUND_ITEM', 900003, 900001, 900001, '商品', 'kg', 1, 0, 0)",
                 id);
 
-        // 全表金额精度恒为 NUMERIC(18,4)（Q22）：本期不新增 2 位财务存储体系。
+        // 全表金额精度恒为 NUMERIC(18,4)：财务域不新增 2 位小数的存储体系。
         for (String table : FINANCE_TABLES) {
             List<String> moneyColumns = jdbc.queryForList(
                     "SELECT column_name FROM information_schema.columns "
@@ -233,7 +233,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(constraintDef("finance_receivable", "ck_finance_receivable_source_pairing"))
                 .contains("SALES_ORDER").contains("ORDER_RETURN");
 
-        // 红字缺原单引用 → 拒绝（Q13 / Q27：红字必须可追溯到被冲的原应收）。
+        // 红字缺原单引用 → 拒绝：红字必须可追溯到被冲的原应收。
         expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, reason) "
                         + "VALUES (?, 'ORDER_RETURN', 900002, 900001, 900001, '客户', 900001, '客户', 'RED', 20, now(), '退货')",
@@ -268,7 +268,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                         + "supplier_id, supplier_name_snapshot, entry_type, original_payable_id, amount, event_at, "
                         + "reason) VALUES (?, 'MANUAL', 900009, 900001, 900001, '供应商', 'RED', 1, 10, now(), '录错')",
                 no("AP"));
-        // 手工红字缺原因 → 拒绝（Q13）。
+        // 手工红字缺原因 → 拒绝。
         expectSqlFailure("INSERT INTO finance_payable (payable_no, source_type, purchase_order_id, supplier_id, "
                         + "supplier_name_snapshot, entry_type, original_payable_id, amount, event_at) "
                         + "VALUES (?, 'MANUAL', 900001, 900001, '供应商', 'RED', 1, 10, now())",
@@ -349,7 +349,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 .contains("RECEIVABLE").contains("PAYABLE").contains("RECEIPT").contains("PAYMENT")
                 .contains("WRITE_OFF");
         String typeDef = constraintDef("finance_operation_log", "ck_finance_operation_log_type");
-        // 八个值就是 F1-1 的最终范围，含 D-3 带来的两个反向类型。
+        // 八个值是操作类型的完整值域，其中包含两个反向类型。
         assertThat(literalsOf(typeDef)).containsExactlyInAnyOrder(
                 Stream.of(ScmFinanceOperationTypeEnum.values())
                         .map(Enum::name).toArray(String[]::new));
@@ -368,7 +368,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 唯一索引：来源防重、反向防重、以及刻意**不**唯一的两处
+    // 唯一索引：来源防重、反向防重，以及两处不唯一的索引
     // ------------------------------------------------------------------
 
     @Test
@@ -380,7 +380,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                 .contains("CREATE UNIQUE").contains("source_type, source_id").contains("WHERE (deleted = false)");
         // 应付 / 应付明细 / 付款的谓词必须带 source_id IS NOT NULL：手工红字、MANUAL 明细与
         // 无来源预付的 source_id 为 NULL，而 NULL 不等于任何值 —— 少了这个谓词，
-        // PostgreSQL 会放行任意多条手工红字，索引形同不存在（设计稿 §3.1 / §11）。
+        // PostgreSQL 会放行任意多条手工红字，索引形同不存在。
         for (String index : List.of("uk_finance_payable_source_active",
                 "uk_finance_payable_item_source_active", "uk_finance_payment_source_active")) {
             assertThat(indexDef(index))
@@ -409,7 +409,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     void singleReverseUniqueIndexes() {
         for (String index : List.of("uk_finance_write_off_single_reverse",
                 "uk_finance_receipt_single_reverse", "uk_finance_payment_single_reverse")) {
-            // 断言谓词的**语义**而不是逐字文本：PostgreSQL 会把 varchar 比较渲染成
+            // 断言谓词的语义而不是逐字文本：PostgreSQL 会把 varchar 比较渲染成
             // ((entry_type)::text = 'REVERSE'::text)，逐字比对等于把断言绑在 PG 版本的
             // 反解析格式上。三个成分齐备才是「只约束反向行」这件事的实质。
             assertThat(indexDef(index))
@@ -432,8 +432,8 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("external_reference 刻意**不**唯一，且不作幂等键（设计稿 §3.2 修正）")
     void externalReferenceIsNotUnique() {
-        // 银行流水号跨客户重复是真实存在的；把它当唯一键会让第二笔合法收款登不进去。
-        // 本断言防止有人「顺手」把 UNIQUE 加回去。
+        // 银行流水号跨客户重复是真实存在的；把它当唯一键会让第二笔合法收款登不进去，
+        // 因此这两条索引不能加 UNIQUE。
         for (String index : List.of("idx_finance_receipt_external_ref", "idx_finance_payment_external_ref")) {
             assertThat(indexDef(index)).doesNotContain("CREATE UNIQUE");
         }
@@ -464,7 +464,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("Java enum 与 DB CHECK 白名单逐值一致（Q21：enum + CHECK，不用 t_dict）")
     void enumValuesMatchDatabaseCheckWhitelist() {
-        // 每个枚举都对上一条** dedicated **的单列 CHECK，因此可以断言双向相等：
+        // 每个枚举都对应一条单列 CHECK，因此可以断言双向相等：
         // 少一个值意味着 Java 侧能造出库里不接受的事实，多一个值意味着库里放行了
         // 一个 Java 侧无法表达（因而也无法在页面上解释）的取值。
         assertWhitelist("finance_receivable", "ck_finance_receivable_source_type",
@@ -488,14 +488,14 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertWhitelist("finance_operation_log", "ck_finance_operation_log_type",
                 ScmFinanceOperationTypeEnum.class);
 
-        // 收款方式与付款方式**刻意分开**（ADM-12 3-11a）：在线支付与余额是收款侧才有的资金渠道，
+        // 收款方式与付款方式分开（ADM-12）：在线支付与余额是收款侧才有的资金渠道，
         // 放进共用的付款枚举会让供应商付款入口也拿到它们，等于让支付域反向污染供应商付款语义。
         assertWhitelist("finance_receipt", "ck_finance_receipt_method", ScmFinanceReceiptMethodEnum.class);
-        // 付款方式**按对手方分组**约束（ADM-12 3-11b）：一条 CHECK 覆盖两组值域，
+        // 付款方式按对手方分组约束（ADM-12）：一条 CHECK 覆盖两组值域，
         // 因此不能再与单一枚举双向相等。分组本身也要断言 —— 否则它退化成一条扁平白名单时没人发现。
-        // 不能按 `counterparty_type = 'SUPPLIER'` 这种字面子串匹配：PostgreSQL 会把约束规范化成
-        // `(counterparty_type)::text = 'SUPPLIER'::text`，照字面写会随 PG 版本升级假失败。
-        // 改成按结构判定：必须恰好是「SUPPLIER 分支 OR CUSTOMER 分支」，且 ONLINE_PAYMENT 只在客户分支。
+        // 不能按 counterparty_type = 'SUPPLIER' 这种字面子串匹配：PostgreSQL 会把约束规范化成
+        // (counterparty_type)::text = 'SUPPLIER'::text，照字面写会随 PG 版本升级假失败。
+        // 判定按结构：必须恰好是「SUPPLIER 分支 OR CUSTOMER 分支」，且 ONLINE_PAYMENT 只在客户分支。
         String[] methodBranches = constraintDef("finance_payment", "ck_finance_payment_method")
                 .split("\\bOR\\b");
         assertThat(methodBranches).as("付款方式必须按对手方分成两条分支").hasSize(2);
@@ -513,7 +513,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(ScmFinancePaymentMethodEnum.values()).hasSize(3);
         assertThat(ScmFinanceCustomerRefundMethodEnum.values()).hasSize(4);
 
-        // NORMAL / RED 用于应收应付，NORMAL / REVERSE 用于收付款与核销；两套刻意不合并。
+        // NORMAL / RED 用于应收应付，NORMAL / REVERSE 用于收付款与核销；两套不合并。
         assertWhitelist("finance_receivable", "ck_finance_receivable_entry_type", ScmFinanceEntryTypeEnum.class);
         assertWhitelist("finance_payable", "ck_finance_payable_entry_type", ScmFinanceEntryTypeEnum.class);
         assertWhitelist("finance_receipt", "ck_finance_receipt_entry_type",
@@ -523,18 +523,18 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertWhitelist("finance_write_off", "ck_finance_write_off_entry_type",
                 ScmFinanceReverseEntryTypeEnum.class);
 
-        // ONLINE_PAYMENT 已按对手方放行给客户退款（3-11b）；余额 / COD / 渠道名**依然**不得进入付款方式：
+        // ONLINE_PAYMENT 按对手方分组放行给客户退款；余额 / COD / 渠道名不得进入付款方式：
         // 余额抵扣不是付款渠道，COD 是结算时机，具体渠道名写在 external_reference。
         assertThat(literalsOf(constraintDef("finance_payment", "ck_finance_payment_method")))
                 .doesNotContain("BALANCE", "COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
-        // 收款侧放开了 ONLINE_PAYMENT / BALANCE（3-11a 的支付与余额），但两条**依然**不得进入：
+        // 收款侧放行 ONLINE_PAYMENT 与 BALANCE，但下面几项不得进入：
         // COD 是「什么时候收钱」的结算时机，不是实际收款渠道；具体渠道名写在 external_reference。
         assertThat(literalsOf(constraintDef("finance_receipt", "ck_finance_receipt_method")))
                 .doesNotContain("COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
     }
 
     /**
-     * 断言枚举取值与约束白名单**双向相等**。
+     * 断言枚举取值与约束白名单双向相等。
      */
     private void assertWhitelist(String table, String constraint, Class<? extends Enum<?>> type) {
         Set<String> allowed = literalsOf(constraintDef(table, constraint));
@@ -547,20 +547,17 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 阶段边界：财务菜单/权限只发布「已经真实存在的能力」
+    // 发布范围：财务菜单/权限只覆盖「已经真实存在的能力」
     // ------------------------------------------------------------------
 
     /**
-     * F1-3A / F1-3B 分别交付收款与付款登记；F1-3C 发布两条收付款反向端点；F1-4 发布核销与红字应付；
-     * F1-5 发布只读与导出；F1-6 才发布五个真实页面菜单。V66–V71 分阶段对应这些能力。
+     * 财务菜单与权限只发布已经真实存在的能力：页面组件、登记与查询端点先落地，菜单和权限串才进库。
      *
-     * <p><b>为什么这条断言必须随阶段收紧而不是删掉</b>：F1-1 那轮一度把设计稿 §16 的 1500–1531
-     * 全部种了下去，结果是「已授权的页面菜单指向不存在的 {@code .vue}」——
+     * <p><b>为什么逐值钉住已发布集合</b>：页面菜单一旦指向不存在的 {@code .vue}，
      * {@code src/router/index.ts} 的 {@code route.component = modules[relativePath]} 在文件缺失时
-     * 得到 {@code undefined}，菜单点开是空白页，而构建 / 类型检查 / 后端测试全绿。
+     * 得到 {@code undefined}，菜单点开是空白页，而构建 / 类型检查 / 后端测试全绿；
      * {@code visible_flag = false} 掩盖不了它：那只影响 {@code meta.hideInMenu}。
-     * 反过来，提前种一条<b>没有端点使用的权限串</b>（如 F1-3 阶段的 {@code receipt:query}）
-     * 是同一类错误的镜像：menu_id 一旦被真实库应用就不可回收。
+     * 反过来，提前种一条没有端点使用的权限串是同一类错误的镜像：menu_id 一旦被真实库应用就不可回收。
      * 所以下面逐值钉的是「已发布集合 == 已有真实端点的能力集合」。
      */
     @Test
@@ -608,7 +605,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
                         "scm:finance:receipt:add", "scm:finance:receipt:query", "scm:finance:receipt:reverse",
                         "scm:finance:receivable:query", "scm:finance:write-off:add",
                         "scm:finance:write-off:query", "scm:finance:write-off:reverse");
-        // 四条种子约定之一：api_perms == web_perms，前端按钮与服务端鉴权读的是同一个串。
+        // api_perms == web_perms：前端按钮与服务端鉴权读的是同一个串。
         // 作用域限制在财务段：底座原生菜单行本就允许两者不对称，全库断言会误伤。
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM t_menu "
@@ -691,9 +688,9 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * D-5 的边界在 F1-1 只体现为「没有新增任何范围放宽点」：V65 是纯 DDL，
+     * 财务域不新增任何范围放宽点：V65 是纯 DDL，
      * 因此全库的 {@code *:scope:all:query} 仍恰好是 V55 种的五个维度。
-     * 财务的全范围继续只能来自既有显式授权，等 F1-3…F1-6 开始种权限时这条依然成立。
+     * 财务的全范围继续只能来自既有显式授权。
      */
     @Test
     @DisplayName("D-5：本轮没有新增任何 *:scope:all:query 范围放宽权限点")

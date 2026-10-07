@@ -37,7 +37,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * 配送数据范围的 PostgreSQL 集成测试（P0-F 裁决第 9 条）。
+ * 配送数据范围的 PostgreSQL 集成测试（P0 基线收口裁决第 9 条）。
  *
  * <p>钉住的口径：
  * <ul>
@@ -139,7 +139,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
     }
 
     /**
-     * 已确认且**分拣已完成**的订单 —— P1 之后这是配送候选的硬前置（裁决第 11 条与补充第 18 条）。
+     * 已确认且分拣已完成的订单 —— 这是配送候选的硬前置（P1 裁决第 11 条与补充第 18 条）。
      * 分拣这一步必须在有仓库授权的身份下做，因此需要时与 {@link #attach} 分开调用。
      */
     private Long sortedOrder(Long customerId, Long skuId) {
@@ -344,7 +344,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
         Long sku = newOnShelfSku("SCOPE");
         Long customer = newLocatedCustomer();
         Long confirmed = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
-        // 候选池的门槛里有「分拣已完成」这一条（P1 补充第 18 条），前置放在换身份之前做。
+        // 候选池的门槛里有「分拣已完成」这一条（P1 裁决补充第 18 条），前置放在换身份之前做。
         sortingCompletedFor(confirmed);
         loginAs(newEmployee("H"));
 

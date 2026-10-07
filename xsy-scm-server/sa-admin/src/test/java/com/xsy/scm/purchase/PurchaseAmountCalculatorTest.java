@@ -15,13 +15,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 采购金额精度契约测试（W5 Target Design §11.1，8 例）。
+ * 采购金额精度契约测试。
  *
- * <p>口径与 W4 的 {@code OrderAmountCalculator} 一致：**4 位定点、HALF_UP、null 传播**。
+ * <p>口径与 {@code OrderAmountCalculator} 一致：4 位定点、HALF_UP、null 传播。
  * 这里锁死三件事：
  * <ol>
  *   <li>{@code null} 参与运算 → 结果仍为 {@code null}（不静默变 {@code 0.0000}）；</li>
- *   <li>{@code 0.0000} 是**合法值**，与 {@code null} 语义不同；</li>
+ *   <li>{@code 0.0000} 是合法值，与 {@code null} 语义不同；</li>
  *   <li>{@code NUMERIC(18,4)} 的容量上界（整数 14 位）越界 → 40081。</li>
  * </ol>
  */

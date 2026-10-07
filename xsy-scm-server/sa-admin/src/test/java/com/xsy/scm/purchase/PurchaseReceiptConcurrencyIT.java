@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 收货累计与乐观锁（W5 Target Design §11.2，3 例）。
+ * 收货累计与乐观锁。
  *
- * <p><b>`purchase_order_item.received_quantity` 只增不减</b>，唯一入口是
- * {@code accumulateReceived}（持行锁的 `UPDATE ... SET received_quantity = received_quantity + ?`）。
+ * <p><b>purchase_order_item.received_quantity 只增不减</b>，唯一入口是
+ * {@code accumulateReceived}（持行锁的 {@code UPDATE ... SET received_quantity = received_quantity + ?}）。
  * 分次到货因此是「多次确认、同一行累加」，而不是「覆盖上一次的值」。
  *
  * <p><b>收货单只记「本次」，采购行记「累计」</b>：第二张收货单的
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 把这两个混为一谈会让「分次到货」的账面完全错位。
  *
  * <p><b>两层版本各自独立</b>：收货单版本挡「同一张草稿被两个人同时确认」，
- * 收货行版本挡「同一行被两次并发确认」。第 2、3 例分别验证两层。
+ * 收货行版本挡「同一行被两次并发确认」，两层各有一例专门验证。
  */
 @DisplayName("收货累计与乐观锁：累加 / 单据版本 / 行版本（PG IT）")
 class PurchaseReceiptConcurrencyIT extends ScmW5PgITBase {

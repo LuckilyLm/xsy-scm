@@ -13,11 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 仓库域 PostgreSQL 集成测试（W5 Target Design §11.2）。
+ * 仓库域 PostgreSQL 集成测试。
  *
  * <p>覆盖：V15 种子、编码唯一（部分唯一索引 + 归一化）、停用语义与 {@code ck_warehouse_status}。
  *
- * <p><b>第 4 个用例「停用后不能用于新采购单」在 T12 补入</b>：它需要 {@code PurchaseOrderService}
+ * <p><b>「停用后不能用于新采购单」这一用例</b>需要 {@code PurchaseOrderService}
  * 与 {@code PurchaseWarehouseReferenceGuard} 同时存在，属采购侧规则（40987）。
  */
 class PurchaseWarehouseIT extends ScmW5PgITBase {

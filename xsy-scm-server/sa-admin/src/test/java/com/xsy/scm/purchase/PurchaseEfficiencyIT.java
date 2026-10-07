@@ -16,9 +16,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购效率增强（Wave 2B §6.3 批量少收关单 / §6.3 按商品收货工作台）。
+ * 采购效率增强：批量少收关单与按商品收货工作台。
  *
- * <p>两块都是这一波新加、且必须在真实 PostgreSQL 上才成立的能力：批量关单走 {@code FOR UPDATE} 锁序
+ * <p>两块能力都必须在真实 PostgreSQL 上才成立：批量关单走 {@code FOR UPDATE} 锁序
  * 与状态机，工作台走 {@code purchase_order_item} 上的聚合与 {@code SUBMITTED}/{@code PARTIALLY_RECEIVED}
  * 状态过滤，内存单测无法覆盖，因此整类落 IT。
  *

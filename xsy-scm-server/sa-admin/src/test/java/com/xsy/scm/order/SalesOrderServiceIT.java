@@ -325,7 +325,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         expectCode(() -> returns.approve(approve, prefix + "staleReturn"), 40921);
         assertThat(query.detail(o.getOrderId()).getStatus()).isEqualTo("CONFIRMED");
 
-        // §7.3 要求 return / refund 与 cancellation 一样留操作日志。建单 + 审批 = 两条 RETURN，
+        // return / refund 与 cancellation 一样要留操作日志。建单 + 审批 = 两条 RETURN，
         // 退款只有一条 REFUND —— 上面那笔 complete 用同一个 Idempotency-Key 调了两次，
         // 第二次是重放，因此日志条数同时钉住「重放不重复记日志」。
         assertThat(logCount(o.getOrderId(), "RETURN")).isEqualTo(2);

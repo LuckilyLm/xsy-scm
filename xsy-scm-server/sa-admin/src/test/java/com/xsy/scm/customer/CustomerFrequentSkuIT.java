@@ -23,7 +23,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Wave 7 客户「常购商品」只读聚合的真实 SQL 验证。
+ * 客户「常购商品」只读聚合的真实 SQL 验证。
  *
  * <p>聚合口径全部落在 PostgreSQL 的 JOIN / 状态过滤 / {@code COUNT(DISTINCT)} / {@code ROW_NUMBER} /
  * {@code SUM} 与日界窗口上，MockMvc 触不到 mapper，因此这里用真实库跑一遍：

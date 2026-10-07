@@ -17,10 +17,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 订单汇总 / 库存缺口只读预览（Wave 2A §6A.12）。
+ * 订单汇总 / 库存缺口只读预览。
  *
  * <p>验证的是「读侧口径」而非写入：预览必须与 {@code generate} 同源（已确认订单 + 实发量），
- * 并在 Q13 单位门禁、仓库隔离、无余额、四位定点这些边界上给出正确判定。
+ * 并在单位门禁、仓库隔离、无余额、四位定点这些边界上给出正确判定。
  *
  * <p><b>预留口径</b>：{@code inventory_balance.reserved_quantity} 是全仓总量，其中包含本批订单
  * 自己占用的预留。预览必须把「本批自身预留」从占用里排除后再比对，否则已备好货的订单会被
@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>余额用 {@link #seedBalance} 直接插表：预览只<b>读</b>余额，不经收货入库链路，
  * 直插一个 {@code inventory_balance} 行是本用例要构造的「已知库存事实」夹具，不是绕过业务写入口
- * （写入口是 {@code InventoryCommandService}，本 Wave 完全不碰）。预留则一律走
+ * （写入口是 {@code InventoryCommandService}，预览完全不碰）。预留则一律走
  * {@code InventoryReservationService.reserve} 真实写入口，保证 {@code reserved_quantity}
  * 与预留行由同一事务维护，夹具不会造出库里不可能出现的状态。
  */

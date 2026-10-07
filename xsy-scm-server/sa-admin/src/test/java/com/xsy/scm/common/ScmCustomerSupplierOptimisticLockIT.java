@@ -26,10 +26,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * W2 四个聚合的乐观锁端到端验证（T11，对应 G1 门禁的 W2 延伸）。
+ * 客户与供应商四个聚合的乐观锁端到端验证。
  *
- * <p>W1 的 {@code ScmOptimisticLockIT} 用临时表证明了「拦截器存在且行为正确」。
- * 这个用例把同样的证明搬到 W2 的真实表上：只要任何一张 W2 表的实体漏了 {@code @Version}，
+ * <p>临时表版的 {@code ScmOptimisticLockIT} 证明了「拦截器存在且行为正确」；
+ * 这个用例把同样的证明搬到客户与供应商的真实表上：只要任何一张表的实体漏了 {@code @Version}，
  * 或者拦截器被移出 MP 配置，下面的断言就会失败。
  *
  * <p><b>为什么要用 {@code updateById} 直接验证，而不是只看 Service 的 40921：</b>

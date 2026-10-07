@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Finance R0 报表中心（真实 PostgreSQL IT）。
+ * Finance 报表中心（真实 PostgreSQL IT）。
  *
  * <p>本类的核心职责有两条：
  * <ol>
@@ -52,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *       一律不得进入报表，且一单多行不得把退款放大。</li>
  * </ol>
  *
- * <p><b>夹具用直接 INSERT 而不是领域服务</b>：R0 只读，被测的是「状态与时间轴的组合」，
+ * <p><b>夹具用直接 INSERT 而不是领域服务</b>：报表只读，被测的是「状态与时间轴的组合」，
  * 用服务造一张 CONFIRMED 订单反而要把整条销售流程跑通，且会把口径测试与写流程耦合在一起。
  * 所有夹具都带随机后缀并靠基类事务回滚清理。
  *

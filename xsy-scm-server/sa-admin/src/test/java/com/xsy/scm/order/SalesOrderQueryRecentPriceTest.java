@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Wave 3 §7.5：最近成交价的 limit 裁剪是纯服务层不变量（[1,10]，越界收敛而非报错），
+ * 最近成交价的 limit 裁剪是纯服务层不变量（[1,10]，越界收敛而非报错），
  * 与 SQL 无关，用轻量 Mockito 直接验证传给 DAO 的实参，无需数据库。
  */
 class SalesOrderQueryRecentPriceTest {

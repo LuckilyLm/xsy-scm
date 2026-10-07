@@ -25,17 +25,17 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 报损报溢审批失败时的**真实回滚**（报损报溢波次）。
+ * 报损报溢审批失败时的真实回滚。
  *
- * <p><b>为什么这个类必须关掉测试事务</b>：W1–W5 的 IT 基类把整个用例包在一个事务里，
- * 于是 Service 上 {@code @Transactional(rollbackFor = Exception.class)} 只是**加入**这个事务；
- * 抛异常时 Spring 只把事务标记成 rollback-only，**不会**把已经写下的行撤掉。
+ * <p><b>为什么这个类必须关掉测试事务</b>：IT 基类把整个用例包在一个事务里，
+ * 于是 Service 上 {@code @Transactional(rollbackFor = Exception.class)} 只是加入这个事务；
+ * 抛异常时 Spring 只把事务标记成 rollback-only，不会把已经写下的行撤掉。
  * 在这种环境下断言「失败后零残留」，看到的其实是「失败前写下的行还在」——
  * 断言会因为「检查发生在任何写入之前」而碰巧通过，但完全没有验证到原子性。
  * （与 {@code ScmInventoryRollbackIT} / {@code ScmInventoryStocktakeRollbackIT} 同一取舍。）
  *
  * <p>本类用 {@code Propagation.NOT_SUPPORTED} 关掉外层事务，让每次 Service 调用
- * 自己开事务、自己提交或回滚。于是每个断言都是**独立事务里的已提交读**，
+ * 自己开事务、自己提交或回滚。于是每个断言都是独立事务里的已提交读，
  * 一张报损单要么整单生效，要么整单不生效。
  *
  * <p><b>代价</b>：造数会提交到开发库。所有编码都带 {@link #prefix} 的随机后缀，

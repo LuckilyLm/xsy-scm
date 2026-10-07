@@ -17,19 +17,19 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 少收关单（W5 Target Design §4.2 T5 / R12 / G1，3 例）。
+ * 少收关单。
  *
- * <p><b>`shortClose` 的准入条件是两个「至少」</b>：至少一行**已收**，且至少一行**未收齐**。
+ * <p><b>{@code shortClose} 的准入条件是两个「至少」</b>：至少一行已收，且至少一行未收齐。
  * 缺一都不成立 ——
  * <ul>
- *   <li>没有任何已收 → 那是「取消」，不是「少收」（`cancellable` 管的是 DRAFT/SUBMITTED）；</li>
+ *   <li>没有任何已收 → 那是「取消」，不是「少收」（{@code cancellable} 管的是 DRAFT/SUBMITTED）；</li>
  *   <li>全部收齐 → 采购单已经是 {@code RECEIVED}，状态机根本不允许再关单。</li>
  * </ul>
- * 所以本类的前置必须造**两行**：一行收齐、一行欠收。单行订单永远测不出这条规则。
+ * 所以本类的前置必须造两行：一行收齐、一行欠收。单行订单永远测不出这条规则。
  *
- * <p><b>R12 / G1：少收关单**不**释放需求分配</b>。这与 `cancel` / `delete` 相反，是**有意**的 ——
+ * <p><b>少收关单不释放需求分配</b>。这与 {@code cancel} / {@code delete} 相反，是有意的 ——
  * 少收意味着「货已经到了一部分」，需求与采购的关联是既成事实；把分配撤掉会让
- * 「已收的货对应哪个客户需求」失去依据。冲销口径（多收/少收怎么结算）不在 W5 范围内。
+ * 「已收的货对应哪个客户需求」失去依据。冲销口径（多收/少收怎么结算）不在采购域的用例范围内。
  */
 @DisplayName("少收关单：混合收付状态 + 分配保留（PG IT）")
 class PurchaseReceiptShortCloseIT extends ScmW5PgITBase {

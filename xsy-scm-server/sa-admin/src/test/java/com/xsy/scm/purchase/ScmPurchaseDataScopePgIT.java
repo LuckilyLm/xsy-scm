@@ -64,7 +64,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * P0-F 采购域的行级数据范围、写入侧归属收口，以及报损报溢的「禁止自建自审」。
+ * 采购域的行级数据范围、写入侧归属收口，以及报损报溢的「禁止自建自审」。
  *
  * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 7、8 条：
  * 普通采购员默认只看 {@code purchase_order.purchaser_id} / {@code purchase_demand.purchaser_id}
@@ -113,8 +113,8 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     void setUpPurchasers() {
         purchaserA = newEmployee("PA");
         purchaserB = newEmployee("PB");
-        // 库存侧的仓库授权行由并行的 P0-F 子任务收口，这里先把两个测试员工授权给种子仓库，
-        // 免得同一用例的结果取决于两条工作流的落地顺序。
+        // 仓库授权属库存域，不在本用例的射程内；这里显式把两个测试员工授权给种子仓库，
+        // 免得用例结果取决于别人的种子数据有没有落地。
         grantWarehouseScope(purchaserA);
         grantWarehouseScope(purchaserB);
     }

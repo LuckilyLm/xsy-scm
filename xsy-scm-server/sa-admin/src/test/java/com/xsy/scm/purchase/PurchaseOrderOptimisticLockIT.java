@@ -11,14 +11,14 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购单乐观锁（W5 Target Design §11.2，3 例）。
+ * 采购单乐观锁。
  *
- * <p>两个层级各自独立：**采购单版本**（`purchase_order.version`）挡「同一张单被两个人同时编辑」，
- * **采购行版本**（`purchase_order_item.version`）挡「同一行被两个人同时改数量」。
+ * <p>两个层级各自独立：采购单版本（{@code purchase_order.version}）挡「同一张单被两个人同时编辑」，
+ * 采购行版本（{@code purchase_order_item.version}）挡「同一行被两个人同时改数量」。
  *
  * <p><b>为什么必须两层都有</b>：只校验单头版本时，一个客户端可以拿着「刚读到的单头版本 +
  * 过期的行版本」提交，把别人刚改过的行覆盖掉 —— 单头版本看起来完全合法。
- * 因此这里的第 3 例专门验证行级版本过期必须被拦。
+ * 因此这里专门验证行级版本过期必须被拦。
  *
  * <p><b>断言的重点是「拒绝之后库中一个字节都没变」</b>：乐观锁失败必须整体回滚，
  * 不能出现「单头没改、行改了」或「需求侧被扣了但单没保存」这类半成品状态。
@@ -108,7 +108,7 @@ class PurchaseOrderOptimisticLockIT extends ScmW5PgITBase {
 
         PurchaseOrderUpdateForm form = editForm(draft.order().getId(), "2.0000", "5.0000",
                 allocation(fresh, "2.0000"));
-        // 单头版本是**当前值**（合法），只有行版本过期 —— 这正是「只校验单头」会漏掉的场景
+        // 单头版本是当前值（合法），只有行版本过期 —— 这正是「只校验单头」会漏掉的场景
         form.getItems().getFirst().setVersion(form.getItems().getFirst().getVersion() + 3);
 
         expectCode(() -> purchaseOrderService.update(form), 40984);

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 正式非管理员角色矩阵的落库取证（V56 + V57 增量，对应 P0-H 三条裁决）。
+ * 正式非管理员角色矩阵的落库取证（V56 + V57 两个迁移建立的授权口径）。
  *
  * <p>本类只回答一个问题：<b>库里的授权矩阵是否等于裁决写的口径</b>。运行时行为（越权读/写各自的
  * 表现）由 {@code ScmPurchaseDataScopePgIT}、{@code WarehouseDataScopePgIT}、
@@ -46,7 +46,7 @@ class ScmBusinessRoleMatrixPgIT extends ScmW5PgITBase {
                 "SCM_PURCHASER_LEAD", "SCM_SALES", "SCM_SALES_LEAD", "SCM_SORTER", "SCM_STOREKEEPER",
                 "SCM_STOREKEEPER_LEAD");
         // t_role 上根本没有 administrator_flag 这一列：超管位是员工的属性，不是角色的属性，
-        // 所以「正式角色必须用 administrator_flag=false 的账号验收」只能由 E2E 的登录账号保证。
+        // 所以「正式角色只能用 administrator_flag=false 的账号登录」这条只能由 E2E 保证。
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM information_schema.columns
                 WHERE table_schema = current_schema() AND table_name = 't_role'
@@ -98,7 +98,7 @@ class ScmBusinessRoleMatrixPgIT extends ScmW5PgITBase {
                 "scm:sorting:task:reopen", "scm:sorting:task:print", "scm:sorting:summary:query")) {
             assertThat(holds("SCM_STOREKEEPER_LEAD", perm)).as("仓库主管拿到完整队列管理权：%s", perm).isTrue();
         }
-        // 普通仓管员不在 P1 的分拣岗位里：裁决第 7 条选的是新增 SCM_SORTER，而不是给既有岗位顺带放行。
+        // 普通仓管员不在分拣岗位里：分拣走新增的 SCM_SORTER 角色，而不是给既有岗位顺带放行。
         assertThat(holds("SCM_STOREKEEPER", "scm:sorting:task:query")).isFalse();
 
         // 跨指派人可见性由 scm:sorting:task:assign 隐含：库里根本不该有第二条分拣范围权限。
@@ -122,7 +122,7 @@ class ScmBusinessRoleMatrixPgIT extends ScmW5PgITBase {
         assertThat(holds("SCM_SALES", "scm:order:return:approve")).isFalse();
         assertThat(holds("SCM_SALES", "scm:order:refund:complete")).isFalse();
         // 「业务审批」不等于「资金操作」：本仓库现在没有任何付款/核销类权限点，
-        // 销售主管因此也拿不到成本列 —— Finance R1 的退款付款必须另走财务权限。
+        // 销售主管因此也拿不到成本列 —— 退款付款必须另走财务权限。
         assertThat(holds("SCM_SALES_LEAD", COST_QUERY)).isFalse();
         assertThat(holds("SCM_SALES", COST_QUERY)).isFalse();
     }

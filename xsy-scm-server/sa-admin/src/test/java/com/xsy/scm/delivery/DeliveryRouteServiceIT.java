@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mockStatic;
  * Small PostgreSQL smoke suite; use an isolated DB on local Docker Desktop. No external map calls.
  *
  * <p>本类测组单 / 规划 / 打印的业务行为，不测数据范围，因此调用者要拿「全部范围 + 全部功能点」：
- * 只读接口现在按司机维度收口，未绑定司机的登录人（基类的 employeeId=1）会看到 0 条线路。
+ * 只读接口按司机维度收口，未绑定司机的登录人（基类的 employeeId=1）会看到 0 条线路。
  * 范围口径本身由 {@code ScmDeliveryDataScopePgIT} 负责。
  */
 class DeliveryRouteServiceIT extends ScmW5PgITBase {
@@ -104,8 +104,8 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
             assertThat(item.getSaleUnitSnapshot()).isNotBlank();
             assertThat(item.getOrderedQuantity()).isNotNull();
         });
-        // 打印明细原先直出 SalesOrderItemEntity（33 列，含 deleted/version/createdBy 审计列与
-        // draftPriceSourceId/lockedPriceSourceId/manualPriceReason 等价格口径内部字段）。
+        // 出网明细不能带 SalesOrderItemEntity 的内部列（33 列里有 deleted/version/createdBy 审计列与
+        // draftPriceSourceId/lockedPriceSourceId/manualPriceReason 等价格口径字段）。
         var printedItems = objectMapper.writeValueAsString(items);
         // 出网契约：金额为归一到 4 位的定点字符串。注意 JsonConfig 已全局把 BigDecimal 序列化成
         // 字符串，所以这条校验的不是下面的注解，注解额外保证的是「补到 4 位」这层语义。
@@ -177,7 +177,7 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
     }
 
     private void add(Long id, List<Long> ids) {
-        // P1 之后：未分拣完成的订单不再是配送候选，组单前先把它们做到 COMPLETED。
+        // 未分拣完成的订单不是配送候选，组单前先把它们做到 COMPLETED。
         sortingCompletedFor(ids.toArray(Long[]::new));
         var f = new DeliveryOrdersForm();
         f.setVersion(version(id).getVersion());

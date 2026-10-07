@@ -38,12 +38,11 @@ class ScmOrderMigrationIT extends ScmW3PgITBase {
     }
 
     /**
-     * 操作日志的 operation_type：Java 枚举与库里的 CHECK 白名单必须**逐项相等**。
+     * 操作日志的 operation_type：Java 枚举与库里的 CHECK 白名单必须逐项相等。
      *
-     * <p>V27 的注释把这类耦合列成五处硬编码（业务枚举、DB CHECK、前端常量、查询表单 @Pattern、
-     * 日志 operation_type 白名单），而当年就是漏了第五处，导致 reserveStock 写日志直接
-     * DataIntegrityViolation。这里把最容易漏的两处钉成可执行的：加枚举不写迁移、或迁移加了
-     * 取值而枚举没有，都会在这里变红，而不是等第一次写日志时在线上炸。
+     * <p>同一份取值硬编码在五处（业务枚举、DB CHECK、前端常量、查询表单 @Pattern、
+     * 日志 operation_type 白名单），漏掉任何一处都要等第一次写日志才暴露。
+     * 这里把最容易漏的两处钉成可执行的：加枚举不写迁移、或迁移加了取值而枚举没有，都会在这里变红。
      */
     @Test
     void operationLogTypeWhitelistMatchesJavaEnum() {

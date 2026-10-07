@@ -15,8 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p><b>为什么要钉在库级契约上</b>：路由注册是 {@code route.component = modules[relativePath]}，
  * {@code relativePath} 取的是 {@code t_menu.component}；文件缺失时它静默变成 {@code undefined}，
- * 菜单点开是空白页，而构建、类型检查与后端测试全部照绿。F1-1 那轮就是这样漏出去过一次，
- * 所以这条不能只写在文档里。
+ * 菜单点开是空白页，而构建、类型检查与后端测试全部照绿。这种失败只能在库级契约上拦住，
+ * 写在文档里挡不住。
  *
  * <p>外链型菜单（{@code component} 是 http 地址，例如 swagger）不参与文件系统检查。
  */

@@ -21,21 +21,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>为什么需要这条门禁</b>：{@code src/router/index.ts} 用
  * {@code route.component = modules[relativePath]} 解析动态菜单，而 {@code modules} 来自
  * {@code import.meta.glob} 对 {@code ../views} 下全部 {@code .vue} 的扫描（构建期静态生成）。
- * 文件不存在时 {@code modules[relativePath]} 是 {@code undefined}，于是路由**照样注册成功**、
- * 菜单**照样出现在侧栏**，用户点进去才是一片空白 —— 构建、类型检查、后端测试全绿，
+ * 文件不存在时 {@code modules[relativePath]} 是 {@code undefined}，于是路由照样注册成功、
+ * 菜单照样出现在侧栏，用户点进去才是一片空白 —— 构建、类型检查、后端测试全绿，
  * 没有任何一处会报错。把菜单种子与前端文件放进同一条断言，才能让这种漂移在 CI 就失败。
  *
- * <p>{@code visible_flag = false} **不是**解法：它只映射到 {@code meta.hideInMenu}，
+ * <p>{@code visible_flag = false} 不是解法：它只映射到 {@code meta.hideInMenu}，
  * 路由与 {@code component} 依然注册，深链依然落到空白页。因此本契约不接受
  * 「先种菜单、用 visible_flag 藏起来、页面以后再补」这种做法 ——
  * 页面菜单必须与它的 {@code .vue} 同一阶段落库。
  *
- * <p><b>阶段纪律</b>：一个阶段只发布它已经真实具备的能力。后端骨架阶段（无 Controller）
- * 既不种 action 权限，也不种页面菜单；action 权限随首个受保护 API 所在阶段的迁移落库，
- * 页面菜单随页面实现的阶段落库。Finance R1 的 F1-1 即按此办理（V65 是纯 DDL），
- * F1-3A 交付第一个受保护端点后由 V66 只补一行能力点（外加它必需的隐藏目录父级）。
- *
- * <p>客户 SKU 可见性页面已补齐，底座演示菜单由新增 migration 下线；所有未删除页面菜单都必须解析到真实组件。
+ * <p><b>落库时机</b>：一次 migration 只发布它已经真实具备的能力。只有后端骨架（无 Controller）时
+ * 既不种 action 权限，也不种页面菜单；action 权限随首个受保护 API 所在的迁移落库，
+ * 页面菜单随页面实现落库。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -80,7 +77,7 @@ class SmartAdminMenuComponentPgIT {
     @Test
     @DisplayName("Finance 五个页面菜单都指向已存在组件")
     void financePagesArePublishedWithTheirComponents() {
-        // F1-6 才发布五个真实页面菜单；此前能力点可以先行，但不能注册不存在的 .vue。
+        // 能力点可以先行，但不能注册不存在的 .vue。
         assertThat(jdbc.queryForList(
                 "SELECT menu_id FROM t_menu WHERE (menu_id BETWEEN 1500 AND 1599"
                         + " OR api_perms LIKE 'scm:finance:%' OR web_perms LIKE 'scm:finance:%'"

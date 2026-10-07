@@ -16,7 +16,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 出库与预留的 PostgreSQL 集成测试（出库波次）。
+ * 出库与预留的 PostgreSQL 集成测试。
  *
  * <p>覆盖三件在单测里验证不了的事：
  * <ol>
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       这是 V25 重建 {@code ck_inventory_movement_snap} 的直接原因；</li>
  *   <li><b>可用量门槛</b> —— 出库不能吃掉已预留的货，DB 的
  *       {@code ck_inventory_balance_available} 与服务层的 41011 双重把关；</li>
- *   <li><b>append-only 对出库同样生效</b> —— 新增流水类型不能成为绕过 Q7 的口子。</li>
+ *   <li><b>append-only 对出库同样生效</b> —— 新增流水类型不能成为绕过这条约束的口子。</li>
  * </ol>
  */
 @DisplayName("出库与预留（PG IT）")
@@ -77,7 +77,7 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
         assertThat(new BigDecimal(String.valueOf(row.get("before_quantity")))).isEqualByComparingTo("10.0000");
         assertThat(new BigDecimal(String.valueOf(row.get("quantity")))).isEqualByComparingTo("3.0000");
         assertThat(new BigDecimal(String.valueOf(row.get("after_quantity")))).isEqualByComparingTo("7.0000");
-        // 单位以余额记账单位为准（Q13），由服务端取，不由调用方传
+        // 单位以余额记账单位为准，由服务端取，不由调用方传
         assertThat(String.valueOf(row.get("unit_snapshot"))).isEqualTo(balanceRow(wh, sku).getUnit());
     }
 

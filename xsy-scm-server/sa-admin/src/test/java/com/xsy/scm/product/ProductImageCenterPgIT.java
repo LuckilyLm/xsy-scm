@@ -409,8 +409,8 @@ class ProductImageCenterPgIT {
     /**
      * 换绑自己就要把「两张主图」和「同一 fileKey 重复绑」挡在写库之前。
      *
-     * <p>这两条规则原先只在 {@code validateSpu} 里，图片中心不经那条路径，于是主图唯一只能靠 V49 的
-     * {@code uq_product_image_primary_spu} 在库里炸出来——抛的是未捕获的
+     * <p>图片中心不经 {@code validateSpu} 那条路径，这两条规则必须在写库前自己挡：主图唯一
+     * 只能靠 V49 的 {@code uq_product_image_primary_spu} 在库里炸出来——抛的是未捕获的
      * {@code DataIntegrityViolationException}（HTTP 500），而不是稳定的 IMAGE_INVALID；
      * 重复 key 则根本没有库级约束，会静默插成两张同图。
      */

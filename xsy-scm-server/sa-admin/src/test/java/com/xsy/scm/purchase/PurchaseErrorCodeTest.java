@@ -25,29 +25,27 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * W5 错误码撞码门禁（W5 Target Design §7.7 Q11 / §11.1）。
+ * 采购与仓库错误码的撞码门禁。
  *
  * <p>锁定三件事：
  * <ol>
- *   <li>{@link PurchaseErrorCode} 恰好 **41** 个、{@link WarehouseErrorCode} 恰好 **8** 个，合计 **49**
- *       （W5 冻结 40 个，B1 加 1、出库波次加 1、调拨波次加 1、净需求批次加 2）；</li>
- *   <li>W5+B1 的 49 个码**段内无重复**，且段分布为 400xx=13 · 404xx=7 · 409xx=22 · 410xx=7；</li>
- *   <li>W5 的 47 个码与 **W1–W4 全部** SCM 错误码**零交集**，且两个枚举之间也零重复。</li>
+ *   <li>{@link PurchaseErrorCode} 恰好 41 个、{@link WarehouseErrorCode} 恰好 8 个，合计 49；</li>
+ *   <li>这 49 个码段内无重复，且段分布为 400xx=13 · 404xx=7 · 409xx=22 · 410xx=7；</li>
+ *   <li>它们与其余全部 SCM 错误码零交集，且两个枚举之间也零重复。</li>
  * </ol>
  *
- * <p>**为什么自动扫描而不是硬编码清单**：硬编码清单在 W6+ 新增域时会被忘记更新，
- * 门禁就形同虚设。这里从 classpath 上 {@code module/scm} 目录反查所有
- * {@code *ErrorCode} 枚举（实现 {@link ScmErrorCode} 且为 enum），
- * 因此**未来任何新域的错误码都会被自动纳入比对**。
- * 目录不可读时（例如从 jar 运行）回退到显式清单，并断言清单里 6 个 W1–W4 枚举确实被扫到。
+ * <p>自动扫描而不是硬编码清单：硬编码清单在新域加入时会被忘记更新，门禁就形同虚设。
+ * 这里从 classpath 上 {@code module/scm} 目录反查所有 {@code *ErrorCode} 枚举
+ * （实现 {@link ScmErrorCode} 且为 enum），因此任何新域的错误码都会被自动纳入比对。
+ * 目录不可读时（例如从 jar 运行）回退到显式清单，并断言清单里 6 个既有域枚举确实被扫到。
  */
 class PurchaseErrorCodeTest {
 
     /**
-     * SCM 根包。Q1 迁包收口（2026-09-26）后 SCM 全部在 {@code com.xsy.scm}；
-     * 下面的 {@link #FALLBACK} 从一开始写的就是新包名，本常量此前指向旧包，
-     * 是收口时漏改的最后一处（旧包扫到 0 个类会回退到 FALLBACK，
-     * 于是「扫描失败」被静默降级成「清单可用」，属于典型的假绿面）。
+     * SCM 根包：全部 SCM 错误码枚举都在 {@code com.xsy.scm} 之下。
+     *
+     * <p>它必须与 {@link #FALLBACK} 的包名一致：包名对不上时扫描得到 0 个类并静默回退到 FALLBACK 清单，
+     * 「扫描失败」就被降级成「清单可用」，属于典型的假绿面。
      */
     private static final String SCM_PACKAGE = "com.xsy.scm";
 
@@ -63,12 +61,12 @@ class PurchaseErrorCodeTest {
             "com.xsy.scm.order.constant.OrderErrorCode",
             PurchaseErrorCode.class.getName(),
             WarehouseErrorCode.class.getName(),
-            // W6 库存域（V19/V20）：本类只断言「W5 的 40 个码不撞车」，
-            // W6 与其余域的撞码由 ScmInventoryConstantTest 的全库唯一性判据负责。
+            // 库存域：本类只断言采购与仓库两枚枚举不撞车，
+            // 库存域与其余域的撞码由 ScmInventoryConstantTest 的全库唯一性判据负责。
             "com.xsy.scm.inventory.constant.InventoryErrorCode");
 
     /**
-     * W1–W4 已存在的错误码枚举，必须被扫描到（防止扫描静默失效）。
+     * 既有域的错误码枚举，必须被扫描到（防止扫描静默失效）。
      */
     private static final Set<String> W1_TO_W4_ENUMS = Set.of(
             "ScmCommonErrorCode", "ProductErrorCode", "CustomerErrorCode",
@@ -78,10 +76,10 @@ class PurchaseErrorCodeTest {
     @DisplayName("撞码门禁：W5+B1 合计 49 码、段内无重复、段分布正确、与 W1–W4 零交集")
     void gate() {
         // ---------- 1. 数量 ----------
-        // 净需求计算批次加了 40092（批量上限）与 40487（批次不存在），采购域由 39 增至 41。
+        // 41 个里含净需求计算的 40092（批量上限）与 40487（批次不存在）。
         assertThat(PurchaseErrorCode.values()).hasSize(41);
-        // 出库波次新增 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，仓库域由 6 增至 7；
-        // 调拨波次新增 WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009)，再增至 8。
+        // 8 个里含 WAREHOUSE_DEFAULT_AMBIGUOUS(41018)，
+        // 以及阻塞仓库停用的在途调拨 41009。
         assertThat(WarehouseErrorCode.values()).hasSize(8);
 
         Map<String, Integer> w5 = new LinkedHashMap<>();
@@ -114,9 +112,9 @@ class PurchaseErrorCodeTest {
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_BALANCE.getCode()).isEqualTo(41005);
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_INBOUND.getCode()).isEqualTo(41006);
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_PENDING_PUTAWAY.getCode()).isEqualTo(41007);
-        // 出库波次：启用仓库不唯一时无法解析「默认仓库」（订单无仓库字段，G-03）
+        // 启用仓库不唯一时无法解析「默认仓库」（订单无仓库字段）
         assertThat(WarehouseErrorCode.WAREHOUSE_DEFAULT_AMBIGUOUS.getCode()).isEqualTo(41018);
-        // 调拨波次：在途调拨单阻塞仓库停用（第四条停用阻塞条件）
+        // 在途调拨单阻塞仓库停用（第四条停用阻塞条件）
         assertThat(WarehouseErrorCode.WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER.getCode()).isEqualTo(41009);
 
         // 合并后的段分布：400xx=13 · 404xx=7（含 40485）· 409xx=22（含 40996）· 410xx=7
@@ -125,7 +123,7 @@ class PurchaseErrorCodeTest {
         assertThat(w5Codes.stream().filter(c -> c / 100 == 409).count()).isEqualTo(22L);
         assertThat(w5Codes.stream().filter(c -> c / 100 == 410).count()).isEqualTo(7L);
 
-        // ---------- 4. 与 W1–W4 零交集 ----------
+        // ---------- 4. 与既有域错误码零交集 ----------
         List<Class<?>> discovered = discover();
         Set<String> discoveredNames = discovered.stream()
                 .map(Class::getSimpleName).collect(Collectors.toCollection(LinkedHashSet::new));

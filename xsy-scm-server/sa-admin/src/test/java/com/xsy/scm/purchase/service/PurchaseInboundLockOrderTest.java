@@ -12,13 +12,13 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 余额加锁顺序（W6 Target Design §8.1 / §12.2）。
+ * 入库前的余额加锁顺序。
  *
  * <p>被测的是 {@link PurchaseReceiptService#inboundLockOrder()}。它的正确性直接决定
  * 「多 SKU 采购单并发确认会不会死锁」：两个事务若按相反的 (warehouse, sku) 顺序去锁余额，
  * 等待环就形成了，PostgreSQL 只能靠死锁检测牺牲其中一个事务。
  *
- * <p><b>为什么测试放在 {@code ...purchase.service} 子包</b>：被测方法刻意保持包私有
+ * <p>测试放在 {@code ...purchase.service} 子包：被测方法保持包私有
  * （它不是给外部用的 API，只是把一条纪律变成可断言的东西）。放在同一个包里测试，
  * 就不必为了可测性把它抬成 {@code public}。
  */

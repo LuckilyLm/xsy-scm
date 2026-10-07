@@ -54,14 +54,14 @@ import static org.mockito.Mockito.mockStatic;
  *   <li>发车只消费分拣实发量，线路状态、出库单、订单在途三者要么一起成，要么一起不成；</li>
  *   <li>整条线路原子发车 —— 线路上任何一单失去资格就整条拒绝，不允许「先发一半」；</li>
  *   <li>同一 Idempotency-Key 重放拿到的是同一张出库单，不重复扣库存；缺键直接拒；</li>
- *   <li>P1 裁决第 21 条的守卫现在成立：发车之后分拣不能重开，反过来重开之后不能发车；</li>
+ *   <li>P1 裁决第 21 条的守卫：发车之后分拣不能重开，反过来重开之后不能发车；</li>
  *   <li>签收是订单级终态，异常必须有原因；线路只有在全部活动订单终态后才能完成；</li>
  *   <li>发车后线路不可逆（取消被拒），PLANNED 之外的状态不能发车；</li>
  *   <li>权限取证一律用 {@code administrator_flag = false} 的账号：没有仓库授权的调度不能发车，
  *       绑定到别的司机的员工不能签不属于自己的线路。</li>
  * </ol>
  *
- * <p>线路与分拣刻意用<b>同一个仓库</b>（种子仓），因为本类要断言的是「扣了哪一仓的货」；
+ * <p>线路与分拣用<b>同一个仓库</b>（种子仓），因为本类要断言的是「扣了哪一仓的货」；
  * 跨仓预留的收口在库存命令侧单独钉。
  */
 @DisplayName("配送 L3 发车 / 签收 / 完成线路（PG IT）")
@@ -102,7 +102,7 @@ class DeliveryDispatchPgIT extends ScmW6PgITBase {
     void repeatedDispatchWithSameKeyReplaysOriginalResult() {
         Case one = plannedRouteWithOneSortedOrder("l3b", "4.0000");
         String key = key("dispatch-once");
-        // 重放要求**载荷逐字相同**（version 也在哈希里），所以这里复用同一个 form ——
+        // 重放要求载荷逐字相同（version 也在哈希里），所以这里复用同一个 form ——
         // 真实客户端的重试是 axios 原样重发，不是重新读一遍 version 再组一次请求。
         var form = dispatchForm(one.routeId());
 

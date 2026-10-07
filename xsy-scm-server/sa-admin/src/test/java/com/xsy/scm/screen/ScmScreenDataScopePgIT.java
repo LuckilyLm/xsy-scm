@@ -32,9 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * 数据大屏的正式数据范围（P0-H 裁决第 4 步）。
+ * 数据大屏的正式数据范围（P0 基线收口裁决第 4 步）。
  *
- * <p>大屏此前是唯一没有接范围的 SCM 读路径：今天 {@code scm:screen:query} 只授超管所以没有泄漏路径，
+ * <p>大屏是唯一没有接范围的 SCM 读路径：{@code scm:screen:query} 只授超管所以没有泄漏路径，
  * 但它是业务列表的<b>聚合视图</b>，一旦把入口授给某个岗位，没收窄的面板就是把全公司的成交额、
  * 库存量和采购额交给只被授权看自己那一块的人 —— 而且聚合值比明细更容易被误当成「已经授权过的数据」。
  *
@@ -276,7 +276,7 @@ class ScmScreenDataScopePgIT extends ScmW5PgITBase {
                 employeeId, warehouseId);
     }
 
-    /** 余额行是已验收的库存事实，直接落表：大屏只读它，不经收货入库链路。 */
+    /** 余额行是既成的库存事实，直接落表：大屏只读它，不经收货入库链路。 */
     private void seedBalance(Long warehouseId, Long skuId, String quantity) {
         jdbc.update("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
                         + "avg_cost, version, deleted, created_at, updated_at, created_by, updated_by) "

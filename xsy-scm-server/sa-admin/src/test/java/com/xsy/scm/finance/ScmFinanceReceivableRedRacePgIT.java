@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 签收与退货批准**真并发**下的红字收敛（F1-2C，PG IT，无外层事务）。
+ * 签收与退货批准真并发下的红字收敛（PG IT，无外层事务）。
  *
  * <p><b>要防的是漏账，不是重复账</b>：{@code approve} 与 {@code sign} 是两条独立事务。
  * 若「批准时看一眼有没有正常应收、签收时看一眼有没有已批准退货」两边的读取都不被定序，
@@ -47,12 +47,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 来源唯一索引修不了「没有人尝试 INSERT」。
  *
  * <p>这里的定序点是订单行锁：{@code OrderReturnService.lock} 一开始就 {@code orders.lock(orderId)}，
- * F1-2C 让 {@code DeliveryRouteService.sign} 在 {@code markSigned} 之前按
+ * {@code DeliveryRouteService.sign} 在 {@code markSigned} 之前按
  * {@code route → sales_order} 锁同一行（与本域 dispatch / plan / addOrders 同序）。
  * 后拿到锁的一方在 {@code READ COMMITTED} 下必然看见先提交的一方，
  * 于是两条路径都调用同一个红字算法，其中一次真正生成、另一次命中来源唯一索引静默返回。
  *
- * <p>断言只看**最终事实**，不断言哪个线程一定先成功 —— 先后取决于调度，写死顺序的断言
+ * <p>断言只看最终事实，不断言哪个线程一定先成功 —— 先后取决于调度，写死顺序的断言
  * 只是在测调度器。同时把两边的异常都收上来断言为空，因此死锁 / 超时 / 一方被牺牲都会红。
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)

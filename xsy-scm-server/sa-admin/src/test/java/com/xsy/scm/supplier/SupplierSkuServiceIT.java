@@ -22,11 +22,11 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 商品-供应商关系（{@code supplier_sku}）在真实 PostgreSQL 上的行为（T11）。
+ * 商品-供应商关系（{@code supplier_sku}）在真实 PostgreSQL 上的行为。
  *
- * <p>这是 W2 规则密度最高的一张表，因此 IT 覆盖它的全部 legacy 不变量：
- * 整表替换的差量语义（R5 / R7–R11）、快照冻结（R4）、
- * 以及<b>最容易被「顺手加个约束」破坏的 R12</b>——同一供应商允许多条默认来源。
+ * <p>这是规则密度最高的一张表，因此 IT 覆盖它的全部 legacy 不变量：
+ * 整表替换的差量语义、快照冻结、
+ * 以及<b>最容易被「顺手加个约束」破坏的那条</b>——同一供应商允许多条默认来源。
  *
  * <p>另外单独验证「清空后重新添加同一 SKU」不会撞 {@code uk_supplier_sku_active}，
  * 因为该索引是 partial（{@code WHERE deleted = FALSE}）——这是软删 + 唯一索引组合的经典坑。
@@ -172,8 +172,8 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
                 "SELECT count(*) FROM supplier_sku WHERE supplier_id = ? AND is_default = TRUE AND deleted = FALSE",
                 Integer.class, supplierId)).isEqualTo(2);
 
-        // 走服务读路径再断言一次：`is_default` 列名与实体属性 `defaultFlag` 不同源，
-        // 自定义 resultMap 若漏掉显式映射，自动驼峰映射会把它折成 `isDefault` 而静默丢值
+        // 走服务读路径再断言一次：{@code is_default} 列名与实体属性 {@code defaultFlag} 不同源，
+        // 自定义 resultMap 若漏掉显式映射，自动驼峰映射会把它折成 {@code isDefault} 而静默丢值
         // —— 只查裸 SQL 是抓不到这个回归的。
         List<SupplierSkuVO> readBack = skuService.listBySupplierId(supplierId);
         assertThat(readBack).hasSize(2);
@@ -356,7 +356,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
     }
 
     /**
-     * 刻意制造「关联仍在，但 SPU 已下架」的脏状态（W1 的写入校验正常情况下不会让它出现），
+     * 制造「关联仍在，但 SPU 已下架」的脏状态（正常写入校验不会让它出现），
      * 用来证明供应商域自己的守卫独立成立。
      *
      * <p>这个用例必须独立成一个方法：SPU 的下架是通过 {@code JdbcTemplate} 直接改库完成的，

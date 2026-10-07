@@ -26,14 +26,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 签收 → 正常应收（Finance R1 F1-2B，PG IT）。
+ * 签收 → 正常应收（PG IT）。
  *
  * <p>本类钉的是「应收事实由签收与出库两条既有事实派生」这一口径：
- * 时点必须**逐值等于** {@code delivery_route_order.signed_at}（不是"接近"），
- * 数量必须**只**来自 {@code inventory_outbound_item.quantity}（不是下单量、不是订单结算量、
- * 不是分拣量），价格必须**只**来自 {@code sales_order_item.locked_unit_price}（不是库存成本）。
+ * 时点必须逐值等于 {@code delivery_route_order.signed_at}（不是"接近"），
+ * 数量只来自 {@code inventory_outbound_item.quantity}（不是下单量、不是订单结算量、
+ * 不是分拣量），价格只来自 {@code sales_order_item.locked_unit_price}（不是库存成本）。
  *
- * <p>链路刻意走真实命令（下单 → 分拣 → 组单 → 规划 → 发车 → 签收），因为「少拣」这一形态
+ * <p>链路走真实命令（下单 → 分拣 → 组单 → 规划 → 发车 → 签收），因为「少拣」这一形态
  * 只有在真实分拣与出库之后才存在；mock 出来的 {@code inventory_outbound_item} 证明不了任何东西。
  *
  * <p><b>受控夹具的三处直改库</b>（商品市场价、出库行软删、补第二条出库行）都是为了构造
@@ -60,7 +60,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 建一条「地址齐备 + 已确认 + 已分拣 + 线路已规划」的链路，**未发车**。
+     * 建一条「地址齐备 + 已确认 + 已分拣 + 线路已规划」的链路，未发车。
      *
      * @param orderedQuantity 订单行下单量
      * @param marketPrice     SKU 市场价：订单走真实价格解析链路，因此价格只能通过主数据施加
@@ -126,7 +126,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 改 SKU 市场价，让订单在**真实价格解析链路**上拿到调用方要的单价。
+     * 改 SKU 市场价，让订单在真实价格解析链路上拿到调用方要的单价。
      *
      * <p>不走订单手工改价：那会把 {@code locked_price_source} 变成 OVERRIDE，
      * 而本类要证明的是「财务读的就是订单行那个冻结单价列」，与它来自哪个价格源无关。
@@ -265,7 +265,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     /**
      * 本订单的出库行所产生的应收明细数。
      *
-     * <p>刻意按来源作用域而不是全表计数：本仓库的 NOT_SUPPORTED 用例会留下已提交的事实，
+     * <p>按来源作用域而不是全表计数：本仓库的 NOT_SUPPORTED 用例会留下已提交的事实，
      * 「全库只有 N 行」这类断言会随执行顺序忽绿忽红。
      */
     private int receivableItemsOfOrder(Long orderId) {
@@ -496,7 +496,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         Chain chain = sortedAndPlanned("FRG", "10.0000", "3.5000", "6.0000");
         dispatch(chain.routeId());
 
-        // 受控夹具：V63 刻意不为 sales_order_item_id 建唯一索引（一条订单行将来可能再出一行），
+        // 受控夹具：V63 不给 sales_order_item_id 建唯一索引（一条订单行可以对应多条出库行），
         // 因此「同订单行的第二条出库行」是 schema 合法形状，但现有发车入口一次只生成一条。
         Long first = outboundItemIdOf(chain.orderId());
         Long outboundId = jdbc.queryForObject(
@@ -569,7 +569,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         dispatch(chain.routeId());
 
         // 受控夹具：真实入口走不到「已发车出库、但没有任何有效出库行」这一形状
-        // （零实发的线路在发车前置就被拒），而第二批 Q8 要求这条跳过分支被取证，
+        // （零实发的线路在发车前置就被拒），而这条跳过分支必须留下证据，
         // 因此按 schema 允许的方式把出库行软删，不修改任何产品规则。
         // 必须断言恰好软删到一行：软删 0 行时下面所有「财务跳过」的断言都会空转通过，
         // 那等于这条用例根本没被执行。
@@ -632,7 +632,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // L. 两条独立订单各自一张应收（补单按独立 source 处理，第二批 Q7）
+    // L. 两条独立订单各自一张应收（补单按独立 source 处理）
     // ------------------------------------------------------------------
 
     @Test

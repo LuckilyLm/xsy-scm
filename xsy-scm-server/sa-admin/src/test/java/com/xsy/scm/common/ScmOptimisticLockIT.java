@@ -17,7 +17,7 @@ import org.postgresql.ds.PGSimpleDataSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * G1 gate: real PostgreSQL + production interceptor; no permanent fixture table.
+ * Real PostgreSQL plus the production interceptor; no permanent fixture table.
  */
 class ScmOptimisticLockIT {
     @Data

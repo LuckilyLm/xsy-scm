@@ -61,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * P0-F 报表中心的仓库数据范围（真实 PostgreSQL IT）。
+ * 报表中心的仓库数据范围（真实 PostgreSQL IT）。
  *
  * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、8、10 条，其中第 10 条是
  * 本类存在的理由：<b>财务不等于代码里的全组织可见</b>，报表的页面查询与 Excel 导出必须用同一套
@@ -80,7 +80,7 @@ import static org.mockito.Mockito.mockStatic;
  * {@link SmartRequestUtil#setRequestUser}，功能权限用 {@code mockStatic(StpUtil.class)}（IT 线程里
  * 没有 Sa-Token 上下文，未点名的权限码取 Mockito 默认值 false，正好等于失败关闭）。
  * 测试员工一律 {@code administratorFlag=false}（裁决第 5 条：超管通过不构成权限证据）；
- * 超管那一例是刻意保留的对照组，用来证明范围收口没有改动 break-glass 语义。
+ * 超管那一例是对照组，用来证明范围收口没有改动 break-glass 语义。
  * {@link #as} 不可嵌套：同一线程只能注册一次静态 mock。基类的 {@code @AfterEach} 负责清登录态。
  */
 @DisplayName("P0-F 报表仓库数据范围与导出口径（PG IT）")

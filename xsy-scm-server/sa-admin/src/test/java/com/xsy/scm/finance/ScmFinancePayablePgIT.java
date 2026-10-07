@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 收货确认 → 正常应付（Finance R1 F1-2A，PG IT）。
+ * 收货确认 → 正常应付（PG IT）。
  *
  * <p>本类盯的是「财务事实由收货事实派生」这条口径本身，而不是采购域的收货规则（那些已由
  * {@code PurchaseReceipt*IT} 覆盖）：金额必须 = 实际确认的有效量 × 采购行结算单价，
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p><b>为什么用真实 PostgreSQL</b>：{@code NUMERIC(18,4)} 的舍入、{@code ON CONFLICT} 与部分唯一
  * 索引谓词的逐字匹配、单头 {@code amount > 0} 与明细 {@code quantity > 0} 的 CHECK，
- * 全都只在真实数据库里有语义（设计稿 §22）。
+ * 全都只在真实数据库里有语义。
  *
  * <p><b>断言一律按来源作用域，不用全表计数</b>：本仓库的 IT 可能跑在长驻开发库上，
  * 「整张 {@code finance_payable} 只有一行」这种断言会把别的用例的数据算进来，
@@ -57,8 +57,8 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
     /**
      * 单行采购单 + 指定入库方式的草稿收货单。
      *
-     * <p>刻意不复用 {@link ScmW6PgITBase#inboundFixture}：那条链带需求来源，需求分配又要求
-     * 采购单位与销售单位一致，而本类需要的是**单价**与**入库方式**两个自由度。
+     * <p>不复用 {@link ScmW6PgITBase#inboundFixture}：那条链带需求来源，需求分配又要求
+     * 采购单位与销售单位一致，而本类需要的是单价与入库方式两个自由度。
      */
     private PurchaseReceiptVO draftReceipt(String suffix, Long skuId, String planned,
                                            String price, ScmReceiptModeEnum mode) {
@@ -74,8 +74,8 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         form.setPurchaseOrderId(orderId);
         form.setReceiptMode(mode.name());
         form.setRemark("F1-2A IT 收货单 " + suffix);
-        // 幂等键必须逐张唯一：同一采购单的多张收货单是分次到货的正常业务（W5 不限张数），
-        // 复用同一个键会因为**内容不同**而得到 40990，那看起来像本类的断言错了。
+        // 幂等键必须逐张唯一：同一采购单的多张收货单是分次到货的正常业务，不限张数；
+        // 复用同一个键会因为内容不同而得到 40990，那看起来像本类的断言错了。
         return purchaseReceiptService.create(form, prefix + ":receipt:" + orderId + ":" + suffix);
     }
 
@@ -97,7 +97,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 按收货行录入顺序提交**全部**活动行（W5 要求请求行集合 == 活动行集合，少一行即 40998）。
+     * 按收货行录入顺序提交全部活动行（请求行集合必须等于活动行集合，少一行即 40998）。
      */
     private PurchaseReceiptVO confirmAllLines(Long receiptId, String... quantities) {
         PurchaseReceiptVO current = reloadReceipt(receiptId);
@@ -266,7 +266,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         Map<String, Object> payable = payableOf(receipt.getId());
         Long payableId = longOf(payable, "id");
         OffsetDateTime confirmedAt = receiptConfirmedAt(receipt.getId());
-        // 库存还没入账（putaway 仍 PENDING、无流水），应付已经成立 —— 这就是 Q9 的全部内容
+        // 库存还没入账（putaway 仍 PENDING、无流水），应付已经成立 —— 应付只由收货事实派生，不等到货入库
         assertThat(reloadReceipt(receipt.getId()).getPutawayStatus()).isEqualTo("PENDING");
         assertThat(movementCount(seedWarehouseId(), skuId)).isZero();
         assertThat(timeOf(payable, "event_at").toInstant()).isEqualTo(confirmedAt.toInstant());
@@ -339,7 +339,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         assertThat(decimalOf(items.getFirst(), "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimalOf(payable, "amount")).isEqualByComparingTo("24.8000");
 
-        // 「不复制差异数据」（第二批 Q12）：这张收货单在财务侧只有这一张单、这一行。
+        // 「不复制差异数据」：这张收货单在财务侧只有这一张单、这一行。
         // 尤其不得出现一条表达「还欠 6.0000」的差异行，也不得有 RED 单。
         assertThat(payableItemCountOfReceipt(receipt.getId()))
                 .as("本张收货单只留下一行应付明细").isEqualTo(1);
@@ -424,7 +424,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // J. 一张采购单多次收货 = 多张应付（第一批 Q10）
+    // J. 一张采购单多次收货 = 多张应付
     // ------------------------------------------------------------------
 
     @Test

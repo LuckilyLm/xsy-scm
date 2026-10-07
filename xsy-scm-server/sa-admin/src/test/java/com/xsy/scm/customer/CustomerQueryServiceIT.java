@@ -25,7 +25,7 @@ import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 客户读路径在真实 PostgreSQL 上的行为（T11）。
+ * 客户读路径在真实 PostgreSQL 上的行为。
  *
  * <p>重点是两件在纯单测里证明不了的事：
  * <ul>

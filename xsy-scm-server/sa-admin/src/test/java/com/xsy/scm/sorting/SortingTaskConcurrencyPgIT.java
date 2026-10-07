@@ -33,7 +33,7 @@ import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 分拣的<b>真并发</b>验证（P1 完成标准里的「重复生成不会生成重复业务事实」与状态机竞态）。
+ * 分拣的<b>真并发</b>验证（P1 裁决里的「重复生成不会生成重复业务事实」与状态机竞态）。
  *
  * <p>单线程 IT 只能证明规则写对了，证不了竞态下仍成立：一条订单行被两个任务同时抢、
  * 同一明细被两个录入同时改、同一任务被两个人同时点完成 —— 分别由部分唯一索引、
@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 且最终值按「与成功那笔相符」而不是按提交顺序断言。
  *
  * <p>工作线程没有 Sa-Token 上下文，{@code StpUtil.hasPermission} 取失败关闭，
- * 因此这里刻意只走「自己建单派给自己」「受指派人本人」这类不需要放宽权限的路径。
+ * 因此这里只走「自己建单派给自己」「受指派人本人」这类不需要放宽权限的路径。
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @DisplayName("P1 分拣并发（PG IT，无外层事务）")

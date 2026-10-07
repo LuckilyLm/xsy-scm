@@ -21,21 +21,20 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 调拨的 PostgreSQL 集成测试（调拨波次）。
+ * 调拨的 PostgreSQL 集成测试。
  *
  * <p>覆盖七件在单测里验证不了的事：
  * <ol>
- *   <li><b>两步式的中间态</b> —— 发出后源仓已扣、目标仓未加（在途期间这批货不在任何余额行里），
- *       这是本波次最核心的语义；</li>
- *   <li><b>一条明细行产生两条流水</b> —— 转出与转入各占一个来源类型，
+ *   <li>两步式的中间态 —— 发出后源仓已扣、目标仓未加（在途期间这批货不在任何余额行里）；</li>
+ *   <li>一条明细行产生两条流水 —— 转出与转入各占一个来源类型，
  *       这是被迫的（{@code uk_inventory_movement_source_active} 只认
  *       {@code (source_document_type, source_document_item_id)}）；</li>
- *   <li><b>源仓的可用量门槛</b> —— 不得让源仓变负，也不得吃掉源仓已预留的货；</li>
- *   <li><b>两仓单位必须一致</b> —— Q13 不做隐式换算（41044）；</li>
- *   <li><b>成本随货平移</b> —— 转入腿的成本回读同一明细行的转出腿，目标仓自己的均价
+ *   <li>源仓的可用量门槛 —— 不得让源仓变负，也不得吃掉源仓已预留的货；</li>
+ *   <li>两仓单位必须一致 —— 不做隐式换算（41044）；</li>
+ *   <li>成本随货平移 —— 转入腿的成本回读同一明细行的转出腿，目标仓自己的均价
  *       （新建行时是 0）不参与定价；</li>
- *   <li><b>状态机</b> —— 在途不可取消，两个终态不可回退；</li>
- *   <li><b>在途调拨阻塞仓库停用</b> —— 调拨波次新增的第四条停用阻塞条件。</li>
+ *   <li>状态机 —— 在途不可取消，两个终态不可回退；</li>
+ *   <li>在途调拨阻塞仓库停用 —— 停用守卫的第四条阻塞条件。</li>
  * </ol>
  */
 @DisplayName("调拨（PG IT）")
@@ -54,7 +53,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     private WarehouseDisableGuard warehouseDisableGuard;
 
     /**
-     * 造一个已入库指定数量到**默认启用仓库**的 SKU，返回 skuId。
+     * 造一个已入库指定数量到默认启用仓库的 SKU，返回 skuId。
      */
     private Long stockedInSeed(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
@@ -117,7 +116,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
 
         transferService.ship(id);
 
-        // 发出后：源仓已扣、目标仓**还没有** —— 在途期间这批货不在任何余额行里。
+        // 发出后：源仓已扣、目标仓还没有 —— 在途期间这批货不在任何余额行里。
         // 这不是缺陷，是两步式的必然结果（inventory_balance 只表达「在仓库里的货」）。
         assertThat(statusOf(id)).isEqualTo("SHIPPED");
         assertThat(balanceRow(wh1, sku).getQuantity()).isEqualByComparingTo("6.0000");
@@ -128,15 +127,14 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(decimal(out, "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimal(out, "before_quantity")).isEqualByComparingTo("10.0000");
         assertThat(decimal(out, "after_quantity")).isEqualByComparingTo("6.0000");
-        // V34 起：调拨转出按**源仓当时的均价**记成本（出库不改变均价）。
-        // 此前这里断言 `isNull()`，那是成本核算上线前的语义。
+        // 调拨转出按源仓当时的均价记成本（出库不改变均价），V34 起的移动加权口径。
         // 这条流水同时是收货时的转入成本基准 —— 见 transferInCost 的回读。
         assertThat(decimal(out, "unit_cost"))
                 .isEqualByComparingTo(balanceRow(wh1, sku).getAvgCost());
 
         transferService.receive(id);
 
-        // 收货后：目标仓由本次调入**建立**余额行（入方向允许建行），源仓不再变化
+        // 收货后：目标仓由本次调入建立余额行（入方向允许建行），源仓不再变化
         assertThat(statusOf(id)).isEqualTo("RECEIVED");
         assertThat(balanceRow(wh2, sku).getQuantity()).isEqualByComparingTo("4.0000");
         assertThat(balanceRow(wh1, sku).getQuantity()).isEqualByComparingTo("6.0000");
@@ -146,10 +144,10 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(decimal(in, "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimal(in, "before_quantity")).isEqualByComparingTo("0.0000");
         assertThat(decimal(in, "after_quantity")).isEqualByComparingTo("4.0000");
-        // 单位快照 = 源仓记账单位（Q13），目标仓新建行时用的就是它
+        // 单位快照 = 源仓记账单位，目标仓新建行时用的就是它
         assertThat(String.valueOf(in.get("unit_snapshot"))).isEqualTo(balanceRow(wh1, sku).getUnit());
 
-        // **成本守恒**：转入腿带的是转出腿的成本，不是目标行当时的 0 均价。
+        // 成本守恒：转入腿带的是转出腿的成本，不是目标行当时的 0 均价。
         // 旧实现取目标行的 avg_cost（新建行 = 0），整批货的成本就此清零 —— 数量对、金额账全丢。
         assertThat(decimal(in, "unit_cost"))
                 .as("转入腿回读同一明细行转出腿的成本")
@@ -344,7 +342,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 仓库停用守卫（调拨波次新增第四条）
+    // 仓库停用守卫
     // ------------------------------------------------------------------
 
     @Test
@@ -380,12 +378,12 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh1, sku).getQuantity()).isEqualByComparingTo("0.0000");
 
         // 还要排掉另外两条，否则先触发的是它们、断言会假红。它们都不是本用例要验证的东西：
-        //   * 正库存：本仓还有**其它** SKU 的余额 —— 来源是前面 NOT_SUPPORTED 的用例
+        //   * 正库存：本仓还有其它 SKU 的余额 —— 来源是前面 NOT_SUPPORTED 的用例
         //     （它们会把数据提交进库），属测试间的顺序耦合，不是产品行为；
         //   * 在途采购单 / 待入库收货单：夹具自己建的采购单与收货单留下的。
         // 三条语句都在测试事务内，用例结束即回滚，不影响真实数据。
         //
-        // 注意必须**同时**清零 reserved_quantity：ck_inventory_balance_available 要求
+        // 注意必须同时清零 reserved_quantity：ck_inventory_balance_available 要求
         // reserved <= quantity，那些提交进库的行上带着预留量，只清 quantity 会直接违反约束。
         jdbc.update("UPDATE inventory_balance SET quantity = 0, reserved_quantity = 0 "
                 + "WHERE warehouse_id = ? AND deleted = FALSE", wh1);
@@ -432,7 +430,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         assertThat(row.getQuantity()).isEqualByComparingTo("4.0000");
         assertThat(row.getUnit()).isEqualTo(balanceRow(wh1, sku).getUnit());
 
-        // **核心断言**：在途量不在余额表里 —— 目标仓此时还没有余额行。
+        // 核心断言：在途量不在余额表里 —— 目标仓此时还没有余额行。
         // 这正是「不引入虚拟在途仓」的代价，也是这份报表存在的理由：
         // 对账时必须把它算进去，否则「全仓总库存」在在途期间会对不上。
         assertThat(balanceRow(wh2, sku)).as("在途期间目标仓没有余额行").isNull();

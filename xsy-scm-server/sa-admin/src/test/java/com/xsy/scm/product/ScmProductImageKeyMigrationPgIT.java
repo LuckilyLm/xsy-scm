@@ -11,17 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * FA-3 商品图 key 搬运（V58）的落库取证。
+ * 商品图 key 搬运（V58）的库内事实取证。
  *
  * <p><b>为什么必须自己摆历史形态</b>：本环境的 {@code xsy_scm_b0} 与全部一次性 IT 库里，
- * 「活行且非 public 前缀」的 {@code product_image} 行数实测为 0 —— 搬运在真实库上是空操作，
+ * 「活行且非 public 前缀」的 {@code product_image} 行数为 0 —— 搬运在真实库上是空操作，
  * 「改写正确」这件事不可能靠跑一遍现网数据来证明。因此这里按迁移文件里的标记取出<b>同一段 SQL</b>
  * （不复制一份等价语句），在模拟的搬运前状态上执行。
  *
  * <p>本仓库不建外键，且 V58 的三条语句都不 join {@code product_spu}，所以夹具不需要一个真实商品：
- * 造真商品只会让这条迁移用例额外依赖 W1 的商品聚合不变量。
+ * 造真商品只会让这条迁移用例额外依赖商品聚合不变量。
  *
- * <p>软删行刻意留在原地：CHECK 无法做成部分约束，V58 因此把 {@code deleted = TRUE} 写进约束，
+ * <p>软删行留在原地：CHECK 无法做成部分约束，V58 因此把 {@code deleted = TRUE} 写进约束，
  * 历史行的原 key 是搬运前的事实，改写它等于改审计。
  */
 @DisplayName("FA-3 商品图 key 搬运（PG IT）")

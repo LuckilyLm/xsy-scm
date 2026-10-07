@@ -28,7 +28,7 @@ import java.util.function.BiFunction;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 盘点 Excel「导出快照模板 → 填实盘 → 导回草稿」的 PostgreSQL 集成测试（Wave 6 盘点效率）。
+ * 盘点 Excel「导出快照模板 → 填实盘 → 导回草稿」的 PostgreSQL 集成测试。
  *
  * <p>这条链路的两个关键性质在 mock 测试里都验不了，必须在真 PG + 真签名凭证 + 真 Excel 上跑：
  * <ol>
@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       草稿（校验全部发生在写库之前，所以共享测试事务里也不会残留半截行）。</li>
  * </ol>
  *
- * <p><b>漂移用例是本波次的裁决核心</b>（计划 §10.3）：账面 10 → 导出快照 → 出库 2（版本自增）→
+ * <p><b>漂移用例是裁决核心</b>：账面 10 → 导出快照 → 出库 2（版本自增）→
  * 填实盘导回，即使「当前账面恰好等于要填的实盘」也必须因版本变化整批拒绝，不接受「先校验再保存」竞态。
  *
  * <p><b>为什么每个用例都填写全表实盘量</b>：模板是<b>整仓</b>余额快照，不是「本次这几行」的快照。

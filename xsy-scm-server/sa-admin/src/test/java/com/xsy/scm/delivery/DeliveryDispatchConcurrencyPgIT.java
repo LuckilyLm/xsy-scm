@@ -56,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       若允许两者都成功，就会留下一张已真实出库的订单行还能继续改分拣量。</li>
  * </ol>
  *
- * <p>本类刻意自带夹具而不与 {@code DeliveryDispatchPgIT} 共用：那边的数据在测试结束时回滚，
+ * <p>本类自带夹具而不与 {@code DeliveryDispatchPgIT} 共用：那边的数据在测试结束时回滚，
  * 这边每一步都是真提交，混在一起会让残留互相污染。
  */
 @DisplayName("配送 L3 发车并发（PG IT）")
@@ -190,7 +190,7 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * 管理员位是刻意的：本类测的是竞态，断言不该对仓库授权守卫敏感。
+     * 这里用管理员位：本类测的是竞态，断言不该对仓库授权守卫敏感。
      * 每次调用都新建线程，登录态是 ThreadLocal，因此必须在子线程里重设。
      */
     private static void setThreadOperator() {
@@ -216,7 +216,7 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
      * 「唯一启用仓库」解析默认仓的链路（41018），多留一个启用仓就会把它们改成红的 ——
      * 那不是被发现的缺陷，而是夹具污染。所以用完立刻停用。
      *
-     * <p>这里刻意走直改状态而不是 {@code WarehouseService#disable}：本类要验的是发车竞态，
+     * <p>这里直接改状态而不走 {@code WarehouseService#disable}：本类要验的是发车竞态，
      * 不是停用守卫；用服务接口反而会被在途 / 余额守卫挡下来，把那条规则的错误码混进本类的失败里。
      */
     @AfterEach

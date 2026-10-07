@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 直接插一行假余额 + 假流水也能让迁移跑出数字，但那证明不了「重放口径」与
  * 「应用代码的记账口径」同源 —— 而这条同源性正是 V37 唯一值得测的地方。
  *
- * <p>另外三条判据（缺配对转出腿 / 账实不符必须响亮失败，盘盈不得凭空造价）走**直插流水**：
+ * <p>另外三条判据（缺配对转出腿 / 账实不符必须响亮失败，盘盈不得凭空造价）走直插流水：
  * 流水是 append-only（V21 触发器），真实业务路径造不出这些形状，只有直接 INSERT 能。
  */
 @DisplayName("V37 零成本余额重放修复（PG IT）")
@@ -52,7 +52,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 造一个已按默认采购价（6.2000）入库指定数量到**默认启用仓库**的 SKU。
+     * 造一个已按默认采购价（6.2000）入库指定数量到默认启用仓库的 SKU。
      */
     private Long stockedInSeed(String suffix, String quantity) {
         Long skuId = newSkuOfType(suffix, "NON_STANDARD", "ON_SHELF");
@@ -99,7 +99,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     }
 
     /**
-     * 把库里**其它**零成本行暂时移出 V37 的候选集合。
+     * 把库里其它零成本行暂时移出 V37 的候选集合。
      *
      * <p>V37 的候选是全库口径（{@code quantity > 0 AND avg_cost = 0}），而 IT 跑在共享开发库上，
      * 里面可能有与本次用例无关、本身账实就不平的零成本行 —— 那会让「V37 能不能修好我这行」
@@ -150,7 +150,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     /**
      * 直插一条流水。
      *
-     * <p>只有直插才能造出「转入腿找不到配对转出腿」这类**账本残缺**形状 ——
+     * <p>只有直插才能造出「转入腿找不到配对转出腿」这类账本残缺形状 ——
      * 流水是 append-only，业务路径既写不出它也删不掉它。
      */
     private void insertMovement(Long warehouseId, Long skuId, String movementType,
@@ -187,7 +187,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         Long sku = stockedInSeed("v37a", "10.0000");
         transferOneWay(wh1, wh2, sku, "4.0000");
 
-        // 修复后的代码本来就会写对均价；这里把它改回 0，模拟**缺陷上线期间**留下的数据形状。
+        // 修复后的代码本来就会写对均价；这里把它改回 0，模拟缺陷上线期间留下的数据形状。
         isolateCandidates(List.of(sku));
         setAvgCost(wh2, sku, "0.0000");
 

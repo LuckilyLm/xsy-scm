@@ -114,7 +114,7 @@ class F0FileStorageCloudIT {
 
     @Test
     void publicPolicyAllowsGetButNotAnonymousList() throws Exception {
-        // Infrastructure-only path; F0 intentionally adds no PUBLIC business folder enum.
+        // Infrastructure-only path; the file layer adds no PUBLIC business folder enum.
         var result = storage.upload(image(), "public/f0-it/");
         assertThat(result.getOk()).isTrue();
         var file = result.getData();

@@ -14,18 +14,18 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 幂等请求哈希契约测试（W5 Target Design §11.1，5 例；§7.11）。
+ * 幂等请求哈希契约测试。
  *
  * <p>这三条规范化规则决定了「同 key 同内容 → 重放」与「同 key 异内容 → 40990」的边界，
- * 任何一条缺失都会造成**误判**：
+ * 任何一条缺失都会造成误判：
  * <ul>
  *   <li>缺键排序 → 同一请求因 Map 迭代顺序不同被判定为内容冲突；</li>
- *   <li>缺数字归一 → `1.5000` 与 `1.5` 被判为两个不同请求；</li>
- *   <li>缺数字字符串归一 → W5 的定点字段（请求体里就是字符串）无法重放。</li>
+ *   <li>缺数字归一 → {@code 1.5000} 与 {@code 1.5} 被判为两个不同请求；</li>
+ *   <li>缺数字字符串归一 → 采购的定点字段（请求体里就是字符串）无法重放。</li>
  * </ul>
  *
- * <p>反向边界同样重要：**{@code null} 与 {@code "0.0000"} 必须哈希不同**，
- * 否则「无值」与「值为零」会被当成同一个请求（W5 三态语义）。
+ * <p>反向边界同样重要：{@code null} 与 {@code "0.0000"} 必须哈希不同，
+ * 否则「无值」与「值为零」会被当成同一个请求。
  */
 class PurchaseIdempotencyRequestHasherTest {
 
@@ -51,7 +51,7 @@ class PurchaseIdempotencyRequestHasherTest {
 
         assertThat(hasher.hash(left)).isEqualTo(hasher.hash(right));
 
-        // 数组是**有序**的：allocations 的先后不可归一，否则「换序的同一组分配」会被误判为重放
+        // 数组是有序的：allocations 的先后不可归一，否则「换序的同一组分配」会被误判为重放
         assertThat(hasher.hash(Map.of("items", List.of(
                 Map.of("skuId", 100, "quantity", "1.5000"), Map.of("skuId", 101, "quantity", "2.0000")))))
                 .isNotEqualTo(hasher.hash(Map.of("items", List.of(

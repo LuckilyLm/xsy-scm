@@ -27,10 +27,10 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 并发入库确认（B1，PG IT，无外层事务）。
+ * 并发入库确认（PG IT，无外层事务）。
  *
  * <p>两个线程对同一张 {@code WAREHOUSE_CONFIRM + PENDING} 收货单并发 putaway：
- * 收货单行锁把两者串行化，**只有一个**能通过 {@code putaway_status=PENDING} 校验并写库存，
+ * 收货单行锁把两者串行化，只有一个能通过 {@code putaway_status=PENDING} 校验并写库存，
  * 另一个要么版本冲突（40921）要么状态冲突（41008），绝不重复 PURCHASE_IN。
  */
 @Transactional(propagation = Propagation.NOT_SUPPORTED)

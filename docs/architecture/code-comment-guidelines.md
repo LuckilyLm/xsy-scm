@@ -1,6 +1,6 @@
 # 源码注释规范
 
-状态：当前长期规则。适用于 `xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/**` 与 `xsy-scm-web/src/**` 的生产源码。
+状态：当前长期规则。适用于 `xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/**` 与 `xsy-scm-web/src/**` 的生产源码，以及两侧测试源码（`xsy-scm-web/test/**`、`xsy-scm-server/sa-admin/src/test/java/**`）——测试树同样不保留开发波次与计划编号，只是**只清注释，不改测试名、断言措辞与类名**。
 
 本文件只保存**已经落地、需要长期维持**的注释约束。一次性的治理清单、逐文件映射与「当时还有哪些没改」不在这里维护 —— 那种内容放在 `docs/plan/active/`，清完即删。
 
@@ -108,13 +108,14 @@
 
 `xsy-scm-web/test/scm-comment-noise-contract.test.mjs` 把上述规则钉成门禁：
 
-- **过程标记必须为 0**：四范围（`xsy-scm-web/src`、`xsy-scm-web/test`、`com/xsy/scm`、`sa-admin/resources`）逐标记比较，任何命中都失败。标记集覆盖本仓库历史上出现过的全部过程形式：`来源：`（三种组合形态）/ `复制日期` / `Copy First` / 剪枝适配验收 / 测试验收记录 / 参考项目对比 / AI 指令式措辞 / `Wave` / `Wn` / `Rn` / `A-Dn` / `Qna` / 无 `.md` 引用的 `§` / **ADR 锚点后的开发切片号（字母尾巴的 `3-11a`、`F1-3A`，以及紧跟 `ADM-n` 之后的 `3-12`）** / `新增文件` / `仿 xxx` / `Provenance` / `本阶段` / `HD-Bn-xx` / `An` / `Pn`（非裁决锚点）/ `Bn`（非缺口溯源）/ 考古词（`C 的` / `A 源` / `C 段` / `V2 原生`）/ 开发波次 / commit 考古（`历史：提交 <sha>`）/ `V\d+` 的开发语境 / 破损句（`注释行以标点开头` / `空格后接的` / `单字虚词两侧空格` / `： 的` / `行内折行留空格`）。
+- **过程标记必须为 0**：五范围（`xsy-scm-web/src`、`xsy-scm-web/test`、`com/xsy/scm` 主源码、`sa-admin/resources`、`sa-admin/src/test/java` 测试树）逐标记比较，任何命中都失败。标记集覆盖本仓库历史上出现过的全部过程形式：`来源：`（三种组合形态）/ `复制日期` / `Copy First` / 剪枝适配验收 / 测试验收记录 / 参考项目对比 / AI 指令式措辞 / `Wave` / `Wn` / `Rn` / `A-Dn` / `Qna` / 无 `.md` 引用的 `§` / **ADR 锚点后的开发切片号（字母尾巴的 `3-11a`、`F1-3A`，以及紧跟 `ADM-n` 之后的 `3-12`）** / `新增文件` / `仿 xxx` / `Provenance` / `本阶段` / `HD-Bn-xx` / `An` / `Pn`（非裁决锚点）/ `Bn`（非缺口溯源）/ 考古词（`C 的` / `A 源` / `C 段` / `V2 原生`）/ 开发波次 / commit 考古（`历史：提交 <sha>`）/ `V\d+` 的开发语境 / 破损句（`注释行以标点开头` / `空格后接的` / `单字虚词两侧空格` / `： 的` / `行内折行留空格`）。
   - **切片号标记刻意要窄**：裸 `\d+-\d+` 会命中长度范围（`请输入3-16位`）与日期（`09-21`），所以只收「带字母尾巴」与「紧跟 `ADM-n` 之后」两种真实写法，并用 `(?![a-z\d])` 放过 `2-4bit` 这类单位。新规则按第 7 节的做法做过反向验证：注入 `ADM-12 3-11a`、`3-12a`、`ADM-12 3-12` 会让契约变红，而上述三类正常散文不红。
 - **排版语法标记全范围禁**：Markdown 粗体 `**x**` 在四个范围都不允许；前端（`.ts` / `.vue` / `.less`）注释里的 HTML 强调标签 `<b>` / `<i>` / `<u>` 与 Javadoc 内联标记 `{@code}` / `{@link}` 同样不允许。**粗体与强调标签在注释里都没有渲染意义**，统一改写成普通文字（不是换成另一种标记）。反引号只对 **Java** 禁（换 `{@code xxx}`）—— 前端 `.vue` / `.ts` 的反引号是模板字符串语法的一部分，禁了会误杀生产代码。
   - 前端契约里**刻意只收 `[biu]`，不收 `<p>` / `<br>` / `<li>`**：这些标签可能是在描述真实的 HTML 语义（如 `file-preview` 的「分隔符可设置 HTML 标签 `<br/>`」、`data-tracer` 里被注释掉的 `replaceAll('<br/>','；')`），全禁会误伤。判断标准是「这个标签是在强调文字，还是在描述一段 HTML」。
   - Java 的 `<p>` / `<ul>` 只在复杂公共契约里用，`<b>` 尽量不用；`{@code}` / `{@link}` 可以用。
 - **Flyway `db/migration/**.sql` 永不扫描、永不修改**：`resources` 范围的 extensions 刻意不含 `.sql`，这既排除了 migration，也排除了整个 `db/` 目录。原因是 `validate-on-migrate: true` —— 已应用迁移的 checksum 一旦变化，后端启动即失败。migration 注释里的排版残迹是**已知的、故意保留的**，不要在后续治理里「顺手清掉」。
-- **测试源码范围（`xsy-scm-web/test`）只扫注释**：`commentsOf` 对 `.mjs` 走 `codeComments`，天然跳过字符串字面量与正则字面量。因此**测试文件名、测试名、断言、内联快照与正则内容都不在射程内** —— 治理测试目录时只清注释，不动用例措辞。两个契约测试自身（`scm-comment-noise-contract`、`scm-ui-copy-contract`）必须排除：它们把标记模式写成注释与正则字面量，扫自己必然自证违规（`excludedFiles`）。
+- **测试源码范围只扫注释**（`xsy-scm-web/test` 与 `sa-admin/src/test/java`）：`commentsOf` 对 `.mjs` 与 `.java` 都走 `codeComments`，先看字面量再看注释，天然跳过字符串、文本块与正则字面量。因此**测试文件名、类名、测试名、`@DisplayName`、断言与内联快照里的 `W5-` / `F1-1` 这类前缀都不在射程内** —— 治理测试目录时只清注释，不动用例措辞；把 `ScmW5PgITBase` 改名为 `ScmPurchasePgITBase` 属于另一件事，不混进注释降噪。两个契约测试自身（`scm-comment-noise-contract`、`scm-ui-copy-contract`）必须排除：它们把标记模式写成注释与正则字面量，扫自己必然自证违规（`excludedFiles`）。
+- **测试树不受格式门禁，别顺手重排**：`spotless` 的 `<includes>` 只有 `src/main/java/com/xsy/scm/**`，`checkstyle` 也设了 `includeTestSourceDirectory=false`（pom 里注明「测试类由用户要求保持不动」）。所以改测试注释时不要格式化、不要重排 Javadoc、也不必迁就 120 列；同理 `eclipse-formatter` 的 `comment.join_lines_in_comments` 那条坑（第 7 节第 4 条）在这里不适用。
 - 破损句规则刻意做窄，**不搞泛化误杀**：
   - `历史/背景/提交 + <7~40 位 sha>` 才拦。裸 sha 不等 —— 文件里的数字 id 不是提交号。
   - `V\d+` **紧跟动作/产物词**（`一并落库` / `落库` / `阶段` / `旧版` / `migration` / `播种` / `新建` / `引入` / `尚未`）才拦。**裸 `V\d+` 不禁**：生产源码里 `V34 移动加权`、`V63 ck_*`、`V61 web_perms` 指向真实存在且不可变的 migration 文件，是有效溯源；后置词「迁移」也刻意不收，好让「见 V34 迁移头注释」继续成立。

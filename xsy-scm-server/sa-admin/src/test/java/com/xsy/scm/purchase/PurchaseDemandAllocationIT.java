@@ -26,20 +26,20 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购单**分配集合**（Q13 / Q17）端到端验收（W5 Target Design §11.2，9 例）。
+ * 采购单分配集合的端到端验收。
  *
- * <p>这是 **Q13 修订的主防线**：allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}，
- * 因此「一行承接两个需求」「只改其中一条」「删其中一条」必须是**互不干扰的行级操作**。
- * A 源用 {@code Map<itemId, allocation>} 覆盖写（A-D23），一行两需求在编辑时只剩最后一条 ——
+ * <p>本类是分配集合的主防线：allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}，
+ * 因此「一行承接两个需求」「只改其中一条」「删其中一条」必须是互不干扰的行级操作。
+ * 用 {@code Map<itemId, allocation>} 覆盖写的实现会让一行两需求在编辑时只剩最后一条，
  * 本类的每个用例都在防这件事回归。
  *
- * <p>同时覆盖 **Q17**：需求单位（销售单位）与采购单位（{@code supplier_sku.purchase_unit}）
- * 不一致时必须拒绝自动分配（40971），**不允许**猜换算系数、也不允许只换单位字符串。
+ * <p>同时覆盖单位一致性：需求单位（销售单位）与采购单位（{@code supplier_sku.purchase_unit}）
+ * 不一致时必须拒绝自动分配（40971），不允许猜换算系数、也不允许只换单位字符串。
  *
  * <p><b>「一行两 demand」怎么造</b>：需求来自 {@code sales_order_item}，一行一个需求
  * （{@code uk_purchase_demand_source_active}）。因此同一 SKU 要有两个需求，
- * 需要**两张已确认订单**各含该 SKU，然后一次汇总生成两条需求，
- * 再把这两条需求分配到**同一个采购行**上。
+ * 需要两张已确认订单各含该 SKU，然后一次汇总生成两条需求，
+ * 再把这两条需求分配到同一个采购行上。
  */
 @DisplayName("采购单分配集合：Q13 一行多需求 + Q17 单位一致（PG IT）")
 class PurchaseDemandAllocationIT extends ScmW5PgITBase {
@@ -78,7 +78,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
     /**
      * 造出「一个 SKU 行挂两条需求」的完整前置数据，并按给定数量建单。
      *
-     * @param purchaseUnit 供应商侧的采购单位（传 {@code 箱} 即可构造 Q17 的单位不一致）
+     * @param purchaseUnit 供应商侧的采购单位（传 {@code 箱} 即可构造单位不一致）
      * @param quantityA    分配到需求 A 的数量（4 位定点字符串）
      * @param quantityB    分配到需求 B 的数量
      */
@@ -139,14 +139,14 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
     }
 
     /**
-     * 把既有采购单读成一次编辑请求，**目标分配集合完全由参数决定**。
+     * 把既有采购单读成一次编辑请求，目标分配集合完全由参数决定。
      *
-     * <p>服务端对分配做的是**集合差量同步**（Q13），请求体就是「这一行最终应该有哪些分配」。
+     * <p>服务端对分配做的是集合差量同步，请求体就是「这一行最终应该有哪些分配」。
      * 因此「保留另一条」必须在请求里显式带上它 —— 不写就等于要求删除，
      * 这正是 {@link #updateDeletesOneAllocationAndDemandFallsBack} 依赖的语义。
      *
-     * <p><b>需求版本取「当前值」而不是建单前的值</b>：`create` 里的 `recomputeDemands` 会把
-     * 需求的 `version` 推进一次，因此建单时读到的版本在编辑时已经过期，
+     * <p><b>需求版本取「当前值」而不是建单前的值</b>：{@code create} 里的 {@code recomputeDemands} 会把
+     * 需求的 {@code version} 推进一次，因此建单时读到的版本在编辑时已经过期，
      * 直接用它会得到 40972（需求版本冲突）而不是被测的行为。
      */
     private PurchaseOrderUpdateForm updateForm(TwoDemandFixture fx, Map<Long, String> target) {
@@ -180,14 +180,14 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
     }
 
     /**
-     * 目标态**只含一条**分配（同行的其它分配一律被删）。
+     * 目标态只含一条分配（同行的其它分配一律被删）。
      */
     private PurchaseOrderUpdateForm updateForm(TwoDemandFixture fx, Long demandId, String quantity) {
         return updateForm(fx, Map.of(demandId, quantity));
     }
 
     /**
-     * 重新读需求。**必须先清一级缓存**：整个用例跑在一个事务里，MyBatis 的 SqlSession 与事务同生命周期。
+     * 重新读需求。必须先清一级缓存：整个用例跑在一个事务里，MyBatis 的 SqlSession 与事务同生命周期。
      */
     private PurchaseDemandEntity demandById(Long demandId) {
         evictMybatisCache();
@@ -205,7 +205,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
 
         PurchaseOrderVO order = queryService.orderDetail(fx.purchaseOrderId());
         List<PurchaseOrderItemVO> items = order.getItems();
-        assertThat(items).hasSize(1);   // 行身份 = (order, sku)：两个需求**不**拆成两行
+        assertThat(items).hasSize(1);   // 行身份 = (order, sku)：两个需求不拆成两行
         assertThat(items.getFirst().getAllocations())
                 .extracting(PurchaseOrderAllocationVO::getDemandId)
                 .containsExactlyInAnyOrder(fx.demandA(), fx.demandB());
@@ -215,7 +215,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
         assertThat(demandById(fx.demandA()).getStatus()).isEqualTo("ALLOCATED");
         assertThat(demandById(fx.demandB()).getAllocatedQuantity()).isEqualByComparingTo("4.0000");
         assertThat(demandById(fx.demandB()).getStatus()).isEqualTo("ALLOCATED");
-        // 首次分配时把 supplier 固定到需求上（§7.4）
+        // 首次分配时把 supplier 固定到需求上
         assertThat(demandById(fx.demandA()).getSupplierId()).isEqualTo(fx.supplierId());
     }
 
@@ -229,7 +229,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
         TwoDemandFixture fx = twoDemands("AL2", DEFAULT_PURCHASE_UNIT, "3.0000", "4.0000");
         Long allocationIdOfA = allocationOf(fx.purchaseOrderItemId(), fx.demandA()).getId();
 
-        // 只改需求 B：4.0000 → 3.0000（B 变成部分分配）；A 在请求里**原样带上** 3.0000。
+        // 只改需求 B：4.0000 → 3.0000（B 变成部分分配）；A 在请求里原样带上 3.0000。
         // 请求体是目标态，所以「保留 A」必须写出来 —— 见 updateForm 的注释。
         PurchaseOrderUpdateForm form = updateForm(fx, Map.of(
                 fx.demandA(), "3.0000",
@@ -240,7 +240,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
         assertThat(item.getAllocations()).hasSize(2);
 
         PurchaseDemandAllocationEntity a = allocationOf(fx.purchaseOrderItemId(), fx.demandA());
-        // A 是**同一行**（id 未变）+ 数量未变 → 证明「只改一条」没有重建兄弟行
+        // A 是同一行（id 未变）+ 数量未变 → 证明「只改一条」没有重建兄弟行
         assertThat(a.getId()).isEqualTo(allocationIdOfA);
         assertThat(a.getAllocatedQuantity()).isEqualByComparingTo("3.0000");
         assertThat(demandById(fx.demandA()).getAllocatedQuantity()).isEqualByComparingTo("3.0000");
@@ -269,7 +269,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
                 .containsExactly(fx.demandA());
         assertThat(purchaseDemandAllocationDao.listActiveByDemandIds(List.of(fx.demandB()))).isEmpty();
 
-        // B 的 allocated 回落、状态回落 —— §7.8 C 段「必须遍历旧 ∪ 新」的直接证据
+        // B 的 allocated 回落、状态回落 —— 「重算必须遍历旧 ∪ 新」的直接证据
         assertThat(demandById(fx.demandB()).getAllocatedQuantity()).isEqualByComparingTo("0.0000");
         assertThat(demandById(fx.demandB()).getStatus()).isEqualTo("PENDING");
         // A 不受影响
@@ -362,7 +362,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
-    // 7. Q17：单位不一致
+    // 7. 单位不一致
     // ------------------------------------------------------------------
 
     @Test
@@ -383,7 +383,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
         demandService.generate(generate, prefix + ":AL7:gen");
 
         PurchaseDemandEntity demand = demandOf(sourceItem);
-        // 需求单位来自销售单位，与 supplier_sku.purchase_unit 独立（Q17 的核心）
+        // 需求单位来自销售单位，与 supplier_sku.purchase_unit 相互独立
         assertThat(demand.getDemandUnitSnapshot()).isEqualTo(DEFAULT_PURCHASE_UNIT);
 
         PurchaseOrderAddForm form = orderForm(supplierId, skuId, demand, "3.0000", null, null);

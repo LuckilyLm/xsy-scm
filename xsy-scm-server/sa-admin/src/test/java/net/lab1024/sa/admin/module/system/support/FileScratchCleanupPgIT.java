@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 暂存附件生命周期（FA-2b）的真实库验证：上限只数未绑定的、回收只删真正无主的。
+ * 暂存附件生命周期的真实库验证：上限只数未绑定的、回收只删真正无主的。
  *
- * <p>回收是**物理删除**，误删不可逆，所以这里承重的是「不删」的那几条断言：
+ * <p>回收是物理删除，误删不可逆，所以这里承重的是「不删」的那几条断言：
  * 有关系行的、被业务列引用的、还没超期的，都必须原地保留。
  */
 @DisplayName("FA-2b 暂存附件回收（PG IT）")

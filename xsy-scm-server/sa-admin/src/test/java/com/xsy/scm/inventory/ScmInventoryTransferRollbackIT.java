@@ -17,16 +17,16 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 调拨**发出**失败时的真实回滚（调拨波次）。
+ * 调拨发出失败时的真实回滚。
  *
- * <p><b>为什么这个类必须关掉测试事务</b>：W1–W5 的 IT 基类把整个用例包在一个事务里，
- * 于是 Service 上 {@code @Transactional(rollbackFor = Exception.class)} 只是**加入**这个事务；
- * 抛异常时 Spring 只把事务标记成 rollback-only，**不会**把已经写下的行撤掉。
+ * <p><b>为什么这个类必须关掉测试事务</b>：IT 基类把整个用例包在一个事务里，
+ * 于是 Service 上 {@code @Transactional(rollbackFor = Exception.class)} 只是加入这个事务；
+ * 抛异常时 Spring 只把事务标记成 rollback-only，不会把已经写下的行撤掉。
  * 在这种环境下断言「失败后零残留」，看到的其实是「失败前写下的行还在」。
  * （与 {@code ScmInventoryRollbackIT} 同一取舍。）
  *
  * <p><b>本类会向开发库提交数据</b>（造数与 {@code seedWarehouseId} 之外的一切）。
- * 因此它必须自己收拾干净：调拨需要**第二个仓库**，而 `G-03` 的口径是「唯一启用仓库」，
+ * 因此它必须自己收拾干净：调拨需要第二个仓库，而夹具的口径是「唯一启用仓库」，
  * 多留一个启用仓库会让后续任何依赖 {@code defaultEnabledWarehouse} 的用例拿到 41018。
  * 所以在 {@link #cleanupWarehouses()} 里把本类建的仓库软删掉 —— 见下方注释。
  */

@@ -32,7 +32,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Real role-to-menu and controller-contract evidence for Finance R1 F1-6. */
+/** Real role-to-menu and controller-contract evidence for the finance pages and permissions. */
 @DisplayName("Finance R1 页面与功能权限矩阵（PG IT）")
 class ScmFinanceRoleMatrixPgIT extends ScmW5PgITBase {
 

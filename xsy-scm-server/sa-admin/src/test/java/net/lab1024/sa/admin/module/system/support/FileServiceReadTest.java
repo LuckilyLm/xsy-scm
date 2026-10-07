@@ -25,10 +25,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * FA-1：FileService 的读侧入口本身。
+ * FileService 的读侧入口本身。
  *
  * <p>序列化器测试只证明「谁调了哪个入口」，证明不了入口是不是真的守得住。
- * 这里接**真实的 FileAccessGuard**（只 mock DAO 与身份判定），因此断言的是
+ * 这里接真实的 FileAccessGuard（只 mock DAO 与身份判定），因此断言的是
  * 「无身份入口拿不到私有附件的 URL」这条收口目标，而不是某个调用习惯。
  */
 class FileServiceReadTest {

@@ -9,16 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 入库失败时的**真实回滚**（W6 Target Design §12.1 #3 / #13）。
+ * 入库失败时的真实回滚。
  *
- * <p><b>为什么这个类必须关掉测试事务</b>：W1–W5 的 IT 基类把整个用例包在一个事务里，
- * 于是 Service 上 {@code @Transactional(rollbackFor = Exception.class)} 只是**加入**这个事务；
- * 抛异常时 Spring 只是把事务标记成 rollback-only，**不会**把已经写下的行撤掉。
+ * <p><b>为什么这个类必须关掉测试事务</b>：IT 基类把整个用例包在一个事务里，
+ * 于是 Service 上 {@code @Transactional(rollbackFor = Exception.class)} 只是加入这个事务；
+ * 抛异常时 Spring 只是把事务标记成 rollback-only，不会把已经写下的行撤掉。
  * 在这种环境下断言「失败后零残留」，看到的其实是「失败前写下的行还在」——
- * 断言会因为「检查发生在任何写入之前」而**碰巧通过**，但完全没有验证到原子性。
+ * 断言会因为「检查发生在任何写入之前」而碰巧通过，但完全没有验证到原子性。
  *
  * <p>本类用 {@code Propagation.NOT_SUPPORTED} 关掉外层事务，让每次 Service 调用
- * 自己开事务、自己提交或回滚。于是每个断言都是**独立事务里的已提交读**，
+ * 自己开事务、自己提交或回滚。于是每个断言都是独立事务里的已提交读，
  * 「采购侧全部写入 + 库存写入」要么整体在库里，要么整体不在。
  *
  * <p><b>代价</b>：造数会提交到开发库（与 {@code PricingIT} 的并发用例同一取舍）。
@@ -60,7 +60,7 @@ class ScmInventoryRollbackIT extends ScmW6PgITBase {
         assertThat(receivedQuantityOf(fx.orderItemId())).isEqualByComparingTo("0.0000");
         assertThat(reloadOrder(fx.order().getId()).getStatus()).isEqualTo("SUBMITTED");
 
-        // 幂等 claim 也随事务回滚：同一个键 + 同样的内容重试，**再次执行**并再次得到 40989。
+        // 幂等 claim 也随事务回滚：同一个键 + 同样的内容重试，再次执行并再次得到 40989。
         // 若 claim 残留成「已提交但缺 result_data」，这里会得到另一个错误码 —— 断言会立刻失败。
         String key = prefix + ":RB3:retry";
         expectCode(() -> confirmReceipt(fx.receipt().getId(), "20.0000", key), 40989);
@@ -82,7 +82,7 @@ class ScmInventoryRollbackIT extends ScmW6PgITBase {
         Long warehouseId = seedWarehouseId();
         Long skuId = newOnShelfSku("RB13");
         // 同一个 SKU 经两个供应商入库、采购单位不同 —— 只有「无需求来源」的采购行能构造出来
-        // （有需求来源时 W5 Q17 要求采购单位 == 销售单位，异单位在分配阶段就被拒了）
+        // （有需求来源时要求采购单位 == 销售单位，异单位在分配阶段就被拒了）
         W6Fixture kilogram = freeInboundFixture("RB13a", skuId, "5.0000", "kg");
         W6Fixture box = freeInboundFixture("RB13b", skuId, "3.0000", "box");
 
@@ -92,7 +92,7 @@ class ScmInventoryRollbackIT extends ScmW6PgITBase {
         assertThat(balanceRow(warehouseId, skuId).getQuantity()).isEqualByComparingTo("5.0000");
         assertThat(movementCount(warehouseId, skuId)).isEqualTo(1);
 
-        // 第二笔异单位 → 41001（显式失败，**不是**把 5kg + 3箱 加成一个没有物理意义的数）
+        // 第二笔异单位 → 41001（显式失败，不是把 5kg + 3箱 加成一个没有物理意义的数）
         expectCode(() -> confirmReceipt(box.receipt().getId(), "3.0000"), 41001);
 
         // 库存侧：既没有第二行余额，也没有「加了一半」的余额，流水也没多

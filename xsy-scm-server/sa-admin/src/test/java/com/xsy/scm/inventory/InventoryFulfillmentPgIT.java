@@ -28,9 +28,9 @@ import static com.xsy.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum.
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 库存域履约出库命令（P2 物流配送 L3 的库存侧）。
+ * 库存域履约出库命令（发车出库的库存侧）。
  *
- * <p>这一波值得钉住的，都是「命令照样返回成功、账却错了」的那一类：
+ * <p>本类钉住的，都是「命令照样返回成功、账却错了」的那一类：
  *
  * <ol>
  *   <li><b>先归还预留、再扣实物</b>：{@code ck_inventory_balance_available} 逐语句求值，
@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       差额只能由「预留量 − 出库流水量」现算，库里不留第二个数；</li>
  *   <li><b>跨仓预留是被释放、不是被消耗</b>：货没从那个仓走，归还方必须留下 RELEASED 事实；</li>
  *   <li><b>实发 0 不出库单</b>：整线全缺时没有实物离仓，返回的出库单 id 必须是 null；</li>
- *   <li><b>明细带订单行来源</b>：这是发车后禁止重开、以及 Finance R1 成本归属的唯一依据；</li>
+ *   <li><b>明细带订单行来源</b>：这是发车后禁止重开、以及 Finance 成本归属的唯一依据；</li>
  *   <li><b>一条线路一张出库单</b>：同一 routeId 重复出库必须在库里被拒（部分唯一索引）。</li>
  * </ol>
  *

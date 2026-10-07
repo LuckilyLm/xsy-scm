@@ -19,22 +19,21 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * W5 权限种子（W5 Target Design §7.10 / §11.2，2 例）。
+ * 采购域权限种子（V16，2 例）。
  *
- * <p>V16 是**只追加**的迁移：25 条 `t_menu`（701–706 目录/页面 + 711–713 + 721–727 +
- * 731–735 + 741 + 751–753 权限点）全部授权给 `role_id = 1`，并把 `t_menu` 的序列推到 `max + 1`。
+ * <p>V16 是只追加的迁移：25 条 {@code t_menu}（701–706 目录/页面 + 711–713 + 721–727 +
+ * 731–735 + 741 + 751–753 权限点）全部授权给 {@code role_id = 1}，并把 {@code t_menu} 的序列推到 {@code max + 1}。
  *
- * <p><b>为什么第 2 例（代码与菜单一致性）比第 1 例更重要</b>：
- * 菜单种子写错只是「前端少一个按钮」，但 **Controller 上写了一个菜单里没有的权限码**
- * 会让该接口对**所有人**都不可用（Sa-Token 找不到授权即拒绝），而且没有任何编译期信号。
- * 反过来，菜单里有、代码里没人用只是冗余。所以这里断言的方向是
- * 「**代码里出现的每个权限码都必须在种子中**」。
+ * <p>代码与菜单一致性那一例比 schema 那一例更重要：菜单种子写错只是「前端少一个按钮」，但
+ * Controller 上写了一个菜单里没有的权限码，会让该接口对所有人都不可用（Sa-Token 找不到授权即拒绝），
+ * 而且没有任何编译期信号。反过来，菜单里有、代码里没人用只是冗余。所以断言的方向是
+ * 「代码里出现的每个权限码都必须在种子中」。
  */
 @DisplayName("W5 权限种子：V16 菜单 / 授权 / 代码一致性（PG IT）")
 class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
 
     /**
-     * V16 播种的 25 个菜单 id。
+     * V16 里的 25 个菜单 id。
      */
     private static final List<Long> W5_MENU_IDS = List.of(
             701L, 702L, 703L, 704L, 705L, 706L,
@@ -125,12 +124,12 @@ class ScmPurchasePermissionMigrationIT extends ScmW5PgITBase {
         }
 
         // 7（需求：原 4 条含缺口预览 + ADM-05 冻结批次的 create / generate / detail）
-        // + 14（采购单，含单笔/批量少收关单、P0-F 加 reassign 改派归属）
-        // + 10（收货，B1 加 putaway）+ 7（仓库，B1 加 enable/disable）= 38 个端点
+        // + 14（采购单，含单笔/批量少收关单与 reassign 改派归属）
+        // + 10（收货，含 putaway）+ 7（仓库，含 enable/disable）= 38 个端点
         assertThat(endpointCount).isEqualTo(38);
         // 权限码去重后 24 个：3 + 9 + 6 + 5 + 1（缺口预览叠加 scm:inventory:balance:query，AND 模式）；
         // 改派只多出一个 scm:purchase:assign —— 它是「能把单据换成谁」的分配权，
-        // 与 B1 的 putaway / enable 一样是新增动作而非新维度，所以端点与权限码同步 +1
+        // 与 putaway / enable 一样是新增动作而非新维度，所以端点与权限码同步 +1
         // 端点 35 → 38 带来 3 个新权限码（ADM-05 冻结批次 batch:create / batch:generate / batch:query），
         // 去重后 24 → 27。下面紧身的 containsAll(declared) 才是关键：
         // 只要有一个码没进 V16 种子，接口对所有人不可用，这条会直接点名。

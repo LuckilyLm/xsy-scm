@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmInventoryCostingIT extends ScmW6PgITBase {
 
     /**
-     * 造一笔**指定采购单价**的入库，返回 skuId（同一 SKU 可多次调用以构造不同价）。
+     * 造一笔指定采购单价的入库，返回 skuId（同一 SKU 可多次调用以构造不同价）。
      */
     private void inboundAtPrice(String suffix, Long skuId, String quantity, String price) {
         Long supplierId = newSupplier(suffix);
@@ -110,7 +110,7 @@ class ScmInventoryCostingIT extends ScmW6PgITBase {
                 .as("出库流水带的是出库那一刻的均价（此前一律为 NULL）")
                 .isEqualByComparingTo("7.0000");
 
-        // 出库后的再入库，加权基数用**出库后的量**（16），不是入库总量（20）
+        // 出库后的再入库，加权基数用出库后的量（16），不是入库总量（20）
         inboundAtPrice("co3c", sku, "4.0000", "11.0000");
         // (16×7 + 4×11) / 20 = (112 + 44) / 20 = 7.8000
         assertThat(balanceRow(wh, sku).getAvgCost()).isEqualByComparingTo("7.8000");
@@ -129,7 +129,7 @@ class ScmInventoryCostingIT extends ScmW6PgITBase {
                 .filter(m -> "PURCHASE_IN".equals(String.valueOf(m.get("movement_type"))))
                 .toList();
         assertThat(purchaseIn).hasSize(2);
-        // 流水的 unit_cost 记的是**该笔入库的实际单价**，不是余额均价 ——
+        // 流水的 unit_cost 记的是该笔入库的实际单价，不是余额均价 ——
         // 这是「期初均价取最近一次采购入库单价」这条回填口径能成立的前提。
         assertThat(new BigDecimal(String.valueOf(purchaseIn.get(0).get("unit_cost"))))
                 .isEqualByComparingTo("6.0000");

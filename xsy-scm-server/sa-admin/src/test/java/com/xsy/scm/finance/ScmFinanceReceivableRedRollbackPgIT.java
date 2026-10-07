@@ -34,13 +34,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 红字生成失败时退货批准**真实回滚**（F1-2C，PG IT，无外层事务）。
+ * 红字生成失败时退货批准真实回滚（PG IT，无外层事务）。
  *
  * <p>与 {@link ScmFinancePayableRollbackPgIT} 同一条理由：要断言「财务写失败后退货批准没留下
  * APPROVED」，每次 Service 调用必须自己提交或自己回滚，否则看到的永远是「什么都没发生」。
  *
- * <p>本类同时是「财务不反向控制订单域」这条裁决的**边界**证明：D-2 / D-4 禁止的是
- * **金额上限**校验阻塞 {@code approve}（本仓库确实没有任何这类检查），而**不是**
+ * <p>本类同时是「财务不反向控制订单域」这条边界的证明：禁止的是用金额上限校验阻塞
+ * {@code approve}（本仓库确实没有任何这类检查），而不是
  * 「财务写入失败也不许回滚批准」—— 后者会让退货已批准、红字却永久缺失的账无法成立。
  * 两者是不同的事，这里钉的是后者：写入失败 ⇒ 整笔批准回滚。
  */

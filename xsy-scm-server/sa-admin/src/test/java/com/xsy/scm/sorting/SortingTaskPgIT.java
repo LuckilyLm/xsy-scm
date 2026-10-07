@@ -41,9 +41,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * P1 分拣：任务状态机、幂等与占用、数据范围，以及交给配送资格的那一半口径。
+ * 分拣任务状态机、幂等与占用、数据范围，以及交给配送资格的那一半口径。
  *
- * <p>逐条对上的裁决（{@code docs/decisions.md}「P1 分拣管理裁决」第 1–3、6、8、10、11、16–19 条与
+ * <p>逐条对上的裁决（{@code docs/decisions.md}「分拣管理裁决」第 1–3、6、8、10、11、16–19 条与
  * 补充第 15、17、18 条）：
  * <ul>
  *   <li>计划量是冻结快照，<b>绝不回写</b>订单行的 {@code actual_quantity} 与结算金额（第 1、3 条）；</li>
@@ -56,7 +56,7 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p><b>身份与权限</b>：员工用裸 SQL 造且 {@code administrator_flag=false}（超管跑绿不算权限证据）；
  * 功能权限按既有做法用 {@code mockStatic(StpUtil)} 显式点名，未点名的取默认 false 即失败关闭；
- * 仓库授权走行配置表 {@code employee_warehouse_scope}，因为「范围是配置值」本身就是被验收对象。
+ * 仓库授权走行配置表 {@code employee_warehouse_scope}，因为「范围是配置值」本身就是被测对象。
  * {@link #as} 不可嵌套调用。
  */
 @DisplayName("P1 分拣任务状态机、占用、范围与资格交接（PG IT）")
@@ -399,9 +399,9 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     /**
-     * break-glass：超管位绕过数据范围是 P0 定下的不变量，「受指派人」这一维是直接比员工 id
+     * break-glass：超管位绕过数据范围是 P0 基线收口裁决定下的不变量，「受指派人」这一维是直接比员工 id
      * 而不是范围值对象，因此必须同等放行 —— 否则同一个账号会「仓库看得见、人看不见」。
-     * 反过来它也**不是权限证据**：正向能力一律由上面的角色账号取证，这里只钉口径不放宽。
+     * 反过来它也不是权限证据：正向能力一律由上面的角色账号取证，这里只钉口径不放宽。
      */
     @Test
     @DisplayName("未指派任务对分拣员不可操作，但超管按 break-glass 可以代为处理")

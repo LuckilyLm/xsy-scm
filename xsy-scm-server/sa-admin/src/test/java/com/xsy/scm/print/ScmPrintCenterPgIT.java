@@ -21,10 +21,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * ADM-07 单据模板与打印中心的 PostgreSQL 验收（D-16 补的缺口）。
+ * ADM-07 单据模板与打印中心的 PostgreSQL 契约校验。
  *
- * <p>守的是清单 §7 里最容易在改造中被悄悄破掉的几条：打印记录必须冻结当时的模板版本、业务模型与版面，
- * 所以「事后改模板」不能回头改写历史重印结果；重印必须重新判**当前**权限，
+ * <p>守的是几条最容易被悄悄改破的约束：打印记录必须冻结当时的模板版本、业务模型与版面，
+ * 所以「事后改模板」不能回头改写历史重印结果；重印必须重新判调用者此刻的权限，
  * 不能因为「这条记录是我以前打过的」就绕过查看权；打印与重印都不许动采购单本身的状态。
  *
  * <p>金额权限的剔除路径只有 {@code DELIVERY_NOTE} 挂了金额权限码
@@ -96,7 +96,7 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
         Integer frozenVersion = printed.getTemplateVersion();
         assertThat(frozenTitle).isNotBlank();
 
-        // 改版：只改标题与页脚（纸张白名单只有 A4 / TICKET_80，不改纸张避免掺入无关口径）
+        // 改版：只改标题与页脚（不动纸张，避免掺入与断言无关的版面口径）
         ScmPrintTemplateForm update = new ScmPrintTemplateForm();
         var detail = templateService.detail(templateId);
         update.setId(detail.getId());
@@ -152,7 +152,7 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
         Long recordId = latestRecordId(orderId);
 
         // 先前打印成功过，此刻撤回功能权限：旧记录绝不能成为读内容的后门。
-        // 这里刻意用 anyString：要守的性质是「重印必须重新做一次权限校验并把拒绝传出去」，
+        // 这里用 anyString：要守的性质是「重印必须重新做一次权限校验并把拒绝传出去」，
         // 而不是钉住某个具体权限码字符串（码值归 PurchasePermission 目录管）。
         permissions.when(() -> StpUtil.checkPermission(anyString()))
                 .thenThrow(new IllegalStateException("权限已撤回"));

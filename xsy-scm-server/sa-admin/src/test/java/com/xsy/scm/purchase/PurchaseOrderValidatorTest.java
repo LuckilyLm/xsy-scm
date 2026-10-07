@@ -26,14 +26,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * 采购单校验器契约测试（W5 Target Design §11.1，8 例；无 DB，Mockito）。
+ * 采购单校验器契约测试（无 DB，Mockito）。
  *
  * <p>覆盖两层：
  * <ul>
  *   <li><b>静态纯函数</b>（{@code trim} / {@code reason} / {@code decimal} / {@code draft}）——
- *       锁定 §7.2 的「4 位定点字符串」入站形态与 40080 / 40081 / 40089 / 40090 / 40091 / 40997；</li>
+ *       锁定「4 位定点字符串」入站形态与 40080 / 40081 / 40089 / 40090 / 40091 / 40997；</li>
  *   <li><b>引用校验</b>（供应商 / 仓库 / supplier_sku）—— 锁定 40986 / 40987，以及
- *       **错误码防腐层**：W2 的失败码在采购边界被翻译成 40992。</li>
+ *       错误码防腐层：供应商域的失败码在采购边界被翻译成 40992。</li>
  * </ul>
  */
 class PurchaseOrderValidatorTest {
@@ -105,7 +105,7 @@ class PurchaseOrderValidatorTest {
     }
 
     // ------------------------------------------------------------------
-    // 4 位定点字符串形态（§7.2）
+    // 4 位定点字符串形态
     // ------------------------------------------------------------------
 
     @ParameterizedTest
@@ -230,7 +230,7 @@ class PurchaseOrderValidatorTest {
         when(supplierSkuService.requireEnabledForPurchasing(1L, 100L)).thenReturn(sku);
         assertThat(validator.requirePurchasableSku(1L, 100L).getPurchaseUnit()).isEqualTo("箱");
 
-        // W2 侧的真实失败码（40442 / 40940 / 40942）对采购域调用方不可见
+        // 供应侧的真实失败码（40442 / 40940 / 40942）对采购域调用方不可见
         when(supplierSkuService.requireEnabledForPurchasing(1L, 200L))
                 .thenThrow(new ScmBusinessException(SupplierErrorCode.SUPPLIER_DISABLED));
         assertThatThrownBy(() -> validator.requirePurchasableSku(1L, 200L))

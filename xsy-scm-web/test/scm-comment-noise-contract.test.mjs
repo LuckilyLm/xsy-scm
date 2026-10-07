@@ -42,11 +42,22 @@ const SCOPES = [
     key: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm',
     root: `${REPO}xsy-scm-server/sa-admin/src/main/java/com/xsy/scm`,
     extensions: new Set(['.java']),
+    java: true,
   },
   {
     key: 'xsy-scm-server/sa-admin/src/main/resources',
     root: `${REPO}xsy-scm-server/sa-admin/src/main/resources`,
     extensions: new Set(['.xml', '.yml', '.yaml', '.properties']),
+  },
+  {
+    // 后端测试树。与 `xsy-scm-web/test` 同理：只扫注释，测试类名、方法名、@DisplayName
+    // 与断言里的字符串都不在射程内（`commentsOf` 对 `.java` 走 codeComments，先看字面量
+    // 再看注释），所以「W5-」这类造数前缀、`assertThat(...)` 的期望值不会被误判。
+    // 范围刻意覆盖 net/lab1024 —— SmartAdminMapperPgValidationIT 的阶段演进账就在里面。
+    key: 'xsy-scm-server/sa-admin/src/test/java',
+    root: `${REPO}xsy-scm-server/sa-admin/src/test/java`,
+    extensions: new Set(['.java']),
+    java: true,
   },
 ];
 
@@ -167,8 +178,8 @@ const FRONTEND_ONLY_MARKERS = [
   ['前端 Javadoc link', /\{@link\b/],
 ];
 
-/** 声明 Java 范围 key，避免与 `SCOPES` 里的字符串字面量漂移。 */
-const JAVA_SCOPE_KEY = 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm';
+/** 声明哪些范围是 Java：反引号规则按语言判定，而不是绑死某个范围名。 */
+const isJavaScope = (scope) => scope.java === true;
 
 const PLAN_MARKERS = [
   ['Sprint / Wave', /\bWave\b/],
@@ -286,6 +297,7 @@ const REPORT_BASELINE = {
   'xsy-scm-web/test': {anchoredSection: 0},
   'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {anchoredSection: 0},
   'xsy-scm-server/sa-admin/src/main/resources': {anchoredSection: 0},
+  'xsy-scm-server/sa-admin/src/test/java': {anchoredSection: 0},
 };
 
 // ------------------------------------------------------------------
@@ -552,7 +564,7 @@ function scanScope(scope) {
   const markers = [
     ...PROCESS_MARKERS,
     ...PLAN_MARKERS,
-    ...(scope.key === JAVA_SCOPE_KEY ? JAVA_ONLY_MARKERS : []),
+    ...(isJavaScope(scope) ? JAVA_ONLY_MARKERS : []),
     ...(scope.key.startsWith('xsy-scm-web/') ? FRONTEND_ONLY_MARKERS : []),
   ];
   for (const file of files) {
@@ -580,7 +592,7 @@ const RESULTS = new Map(SCOPES.map((scope) => [scope.key, scanScope(scope)]));
 // 断言
 // ------------------------------------------------------------------
 
-test('扫描基线有效：四个范围都能被枚举并解析', () => {
+test('扫描基线有效：每个范围都能被枚举并解析', () => {
   for (const scope of SCOPES) {
     const result = RESULTS.get(scope.key);
     // 测试目录是单层 `.mjs`，不适用「> 50 个文件」的体量门槛；其余范围沿用。
@@ -618,7 +630,7 @@ test('过程标记必须为 0（未登记白名单的一律失败）', () => {
     const checked = [
       ...PROCESS_MARKERS,
       ...PLAN_MARKERS,
-      ...(scope.key === JAVA_SCOPE_KEY ? JAVA_ONLY_MARKERS : []),
+      ...(isJavaScope(scope) ? JAVA_ONLY_MARKERS : []),
       ...(scope.key.startsWith('xsy-scm-web/') ? FRONTEND_ONLY_MARKERS : []),
       ['§ 无 .md 引用'],
     ];

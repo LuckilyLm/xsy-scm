@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 收款登记的原子性（F1-3A，PG IT，无外层事务）。
+ * 收款登记的原子性（PG IT，无外层事务）。
  *
  * <p>收款是一条资金事实，幂等 claim 也在同一个事务里。因此任何一段失败都必须「整笔什么都不留」：
  * 留下收款单而没有日志 = 资金动作没有证据；留下 claim 而没有结果 = 同一把 key 的后续重放

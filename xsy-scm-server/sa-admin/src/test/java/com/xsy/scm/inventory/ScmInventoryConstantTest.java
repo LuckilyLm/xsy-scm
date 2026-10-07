@@ -31,26 +31,26 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * W6 库存域常量与错误码（W6 Target Design §12.2）。
+ * 库存域常量与错误码。
  *
  * <p>三件事必须被断言而不是靠人记得：
  * <ol>
- *   <li>{@code source_document_type} 的常量值与 W5 冻结的
- *       {@link PurchaseInventoryContract#SOURCE_DOCUMENT_TYPE} **逐字相等** ——
- *       库存域刻意不 import purchase 的常量（领域原语不该依赖某一个来源域），
+ *   <li>{@code source_document_type} 的常量值与 purchase 侧冻结的
+ *       {@link PurchaseInventoryContract#SOURCE_DOCUMENT_TYPE} 逐字相等 ——
+ *       库存域不 import purchase 的常量（领域原语不该依赖某一个来源域），
  *       所以两个常量的一致性只能靠断言强制；</li>
  *   <li>枚举白名单只放行已支持的值（DB CHECK 与枚举必须同源）；</li>
- *   <li>错误码与**全部** SCM 域零交集 —— 这里用「全库码值集合无重复」的全局判据，
- *       而不是「W6 与 W5 比一次」，这样未来任何新域的撞码都会在这里先失败。</li>
+ *   <li>错误码与全部 SCM 域零交集 —— 这里用「全库码值集合无重复」的全局判据，
+ *       而不是「只与 purchase 比一次」，这样任何新域的撞码都会在这里先失败。</li>
  * </ol>
  */
 @DisplayName("W6 库存域常量与错误码（单元）")
 class ScmInventoryConstantTest {
 
     /**
-     * SCM 根包。Q1 迁包收口（2026-09-26）后 SCM 全部在 {@code com.xsy.scm}。
+     * SCM 根包：SCM 的业务代码全部在 {@code com.xsy.scm}。
      *
-     * <p>刻意写成常量而不是从类反推：这个值同时被用来拼 classpath 资源路径
+     * <p>写成常量而不是从类反推：这个值同时被用来拼 classpath 资源路径
      * （见 {@link #discoverErrorCodeEnums()}），两处必须一致，
      * 而从 {@code ScmErrorCode.class.getPackageName()} 反推会引入「包名对了但基础目录不对」
      * 的隐患 —— 本测试的立场是「包名是一个必须显式声明的契约」。
@@ -82,8 +82,8 @@ class ScmInventoryConstantTest {
         assertThat(ScmInventoryMovementTypeEnum.isSupported("TRANSFER_IN")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("CONVERT_OUT")).isTrue();
         assertThat(ScmInventoryMovementTypeEnum.isSupported("CONVERT_IN")).isTrue();
-        // 促销赠品出库：方向为「出」，但**不复用 SALES_OUT** —— 赠品不进订单金额与应收，
-        // 独立类型才能让毛利报表直接拆出赠品成本（ADM-12 3-5b）。
+        // 促销赠品出库：方向为「出」，但不复用 SALES_OUT —— 赠品不进订单金额与应收，
+        // 独立类型才能让毛利报表直接拆出赠品成本（ADM-12）。
         assertThat(ScmInventoryMovementTypeEnum.isSupported("PROMOTION_GIFT_OUT")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("PURCHASE_RECEIPT_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("SALES_OUTBOUND_ITEM")).isTrue();
@@ -94,13 +94,13 @@ class ScmInventoryConstantTest {
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("CONVERT_OUT_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("CONVERT_IN_ITEM")).isTrue();
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("DELIVERY_ROUTE")).isTrue();
-        // 赠品出库的源身份是**冻结的赠品权益**而不是出库单行：赠品不挂订单行，
+        // 赠品出库的源身份是冻结的赠品权益而不是出库单行：赠品不挂订单行，
         // 防重锚点用 order_promotion_gift.id。
         assertThat(ScmInventorySourceDocumentTypeEnum.isSupported("ORDER_PROMOTION_GIFT")).isTrue();
 
-        // STOCKTAKE_ADJUST 是**刻意不存在**的类型名（盘盈与盘亏必须是两个类型）；
-        // UNKNOWN_IN 是一个**明确不存在**的类型名 —— 十一个真实类型已全部落地，
-        // 因此这里不能再拿「未实现的业务类型」当反例（每落地一个就要改一次），
+        // STOCKTAKE_ADJUST 不存在（盘盈与盘亏必须是两个类型，不能合并成一个）；
+        // UNKNOWN_IN 也不存在 —— 真实类型已全部落地，因此这里不能拿
+        // 「未实现的业务类型」当反例（每落地一个就要改一次），
         // 改用不可能被实现的名字，断言的是「白名单之外一律拒绝」这条性质本身。
         for (String rejected : new String[]{null, "", " ", "UNKNOWN_IN", "STOCKTAKE_ADJUST", "purchase_in"}) {
             assertThat(ScmInventoryMovementTypeEnum.isSupported(rejected))
@@ -114,9 +114,9 @@ class ScmInventoryConstantTest {
         assertThat(ScmInventoryMovementTypeEnum.values()).hasSize(12);
         // 来源类型：采购收货行 / 出库单行 / 销售退货接收行 / 销售订单行（预留）/ 盘点单行 /
         // 报损报溢单行 / 调拨转出行 / 调拨转入行 / 转换转出行 / 转换转入行 / 促销赠品权益 ——
-        // 调拨与转换各占两个是**被迫的**：它们的同一条明细行会产生两条流水，
+        // 调拨与转换各占两个是必然的：它们的同一条明细行会产生两条流水，
         // 共用一个来源类型会撞上 uk_inventory_movement_source_active。
-        // DELIVERY_ROUTE 是唯一**不出现在流水里**的来源类型：它只标在出库单头上回答
+        // DELIVERY_ROUTE 是唯一不出现在流水里的来源类型：它只标在出库单头上回答
         // 「这张单是哪条线路发车的」，流水仍按 SALES_OUTBOUND_ITEM 记账。
         assertThat(ScmInventorySourceDocumentTypeEnum.values()).hasSize(12);
     }
@@ -144,7 +144,7 @@ class ScmInventoryConstantTest {
                 .isEqualTo(ScmInventoryMovementTypeEnum.SALES_OUT);
         assertThat(ScmInventoryMovementTypeEnum.of("NOT_A_TYPE")).isNull();
 
-        // 十二个类型必须**恰好**分成两个方向组、6 入 6 出：
+        // 十二个类型必须恰好分成两个方向组、6 入 6 出：
         // 这是 ck_inventory_movement_snap「按方向分组」写法的前提 ——
         // 漏分类的类型会插不进流水（响亮失败），但漏了也没人会发现，所以在这里钉住。
         long inbound = Arrays.stream(ScmInventoryMovementTypeEnum.values())
@@ -176,7 +176,7 @@ class ScmInventoryConstantTest {
             assertThat(terminal.isDeletable()).as("%s 不应可删", terminal).isFalse();
         }
 
-        // **Q13 不受影响**：规格转换是跨 SKU 的（源 SKU → 目标 SKU），
+        // 规格转换不改变「一个余额行只锁一个记账单位」：它是跨 SKU 的（源 SKU → 目标 SKU），
         // 两个 SKU 各自仍只锁一个记账单位。这里用「转换的两个来源类型都存在、
         // 且转换类型枚举里没有单位相关的取值」把「不做同一 SKU 多单位记账」钉住 ——
         // 一旦有人往枚举里加「单位」维度，这个断言会失败，强制走评审。
@@ -237,7 +237,7 @@ class ScmInventoryConstantTest {
         assertThat(ScmInventoryTransferStatusEnum.DRAFT.isReceivable()).isFalse();
         assertThat(ScmInventoryTransferStatusEnum.DRAFT.isInTransit()).isFalse();
 
-        // 在途：只能收货。**不可取消、不可改、不可删** ——
+        // 在途：只能收货，不可取消、不可改、不可删 ——
         // 货已经物理离开源仓，账上只能靠一张反向调拨单冲回。
         assertThat(ScmInventoryTransferStatusEnum.SHIPPED.isReceivable()).isTrue();
         assertThat(ScmInventoryTransferStatusEnum.SHIPPED.isInTransit()).isTrue();
@@ -266,7 +266,7 @@ class ScmInventoryConstantTest {
     void warningStatusIsEvaluatedFromAvailableQuantity() {
         assertThat(ScmInventoryWarningStatusEnum.values()).hasSize(3);
 
-        // 边界语义：**取等号算正常**（「不低于下限」= 刚好等于下限是正常的）。
+        // 边界语义：取等号算正常（「不低于下限」= 刚好等于下限是正常的）。
         // 这条最容易写反，所以把等号两侧都钉住。
         assertThat(ScmInventoryWarningStatusEnum.evaluate(new BigDecimal("10"), new BigDecimal("10"), null))
                 .as("恰好等于下限 → 正常").isEqualTo(ScmInventoryWarningStatusEnum.NORMAL);
@@ -307,13 +307,13 @@ class ScmInventoryConstantTest {
     void errorCodesAreFrozenAndUniqueWithinTheDomain() {
         assertThat(InventoryErrorCode.values()).hasSize(59);
 
-        // W6-1 的 4 个码值冻结不变
+        // 以下 4 个码值冻结不变
         assertThat(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND.getCode()).isEqualTo(40486);
         assertThat(InventoryErrorCode.INVENTORY_UNIT_MISMATCH.getCode()).isEqualTo(41001);
         assertThat(InventoryErrorCode.INVENTORY_DUPLICATE_INBOUND.getCode()).isEqualTo(41002);
         assertThat(InventoryErrorCode.INVENTORY_PARAM_INVALID.getCode()).isEqualTo(41003);
 
-        // 出库波次新增：41011–41017
+        // 出库：41011–41017
         // （41004–41008 已被 warehouse / purchase 占用，故出库从 41011 起）
         assertThat(InventoryErrorCode.INVENTORY_INSUFFICIENT_AVAILABLE.getCode()).isEqualTo(41011);
         assertThat(InventoryErrorCode.INVENTORY_OUTBOUND_PARAM_INVALID.getCode()).isEqualTo(41012);
@@ -323,7 +323,7 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_RESERVATION_INVALID.getCode()).isEqualTo(41016);
         assertThat(InventoryErrorCode.INVENTORY_OUTBOUND_EMPTY_ITEMS.getCode()).isEqualTo(41017);
 
-        // 盘点波次新增：41019–41027（41018 已被 warehouse 占用，故盘点从 41019 起）
+        // 盘点：41019–41027（41018 已被 warehouse 占用，故盘点从 41019 起）
         assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_NOT_FOUND.getCode()).isEqualTo(41019);
         assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_STATUS_INVALID.getCode()).isEqualTo(41020);
         assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_EMPTY_ITEMS.getCode()).isEqualTo(41021);
@@ -334,7 +334,7 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_DUPLICATE_STOCKTAKE.getCode()).isEqualTo(41026);
         assertThat(InventoryErrorCode.INVENTORY_STOCKTAKE_DUPLICATE_SKU.getCode()).isEqualTo(41027);
 
-        // 报损报溢波次新增：41028–41037
+        // 报损报溢：41028–41037
         assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_NOT_FOUND.getCode()).isEqualTo(41028);
         assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_STATUS_INVALID.getCode()).isEqualTo(41029);
         assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_EMPTY_ITEMS.getCode()).isEqualTo(41030);
@@ -346,7 +346,7 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_DUPLICATE_SKU.getCode()).isEqualTo(41036);
         assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_REJECT_OPINION_REQUIRED.getCode()).isEqualTo(41037);
 
-        // 调拨波次新增：41038–41048
+        // 调拨：41038–41048
         assertThat(InventoryErrorCode.INVENTORY_TRANSFER_NOT_FOUND.getCode()).isEqualTo(41038);
         assertThat(InventoryErrorCode.INVENTORY_TRANSFER_STATUS_INVALID.getCode()).isEqualTo(41039);
         assertThat(InventoryErrorCode.INVENTORY_TRANSFER_EMPTY_ITEMS.getCode()).isEqualTo(41040);
@@ -359,13 +359,13 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_DUPLICATE_TRANSFER.getCode()).isEqualTo(41047);
         assertThat(InventoryErrorCode.INVENTORY_TRANSFER_WAREHOUSE_DISABLED.getCode()).isEqualTo(41048);
 
-        // 阈值预警波次新增：41049–41052
+        // 阈值预警：41049–41052
         assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_NOT_FOUND.getCode()).isEqualTo(41049);
         assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_DUPLICATE.getCode()).isEqualTo(41050);
         assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_INVALID.getCode()).isEqualTo(41051);
         assertThat(InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND.getCode()).isEqualTo(41052);
 
-        // 规格转换波次新增：41053–41064
+        // 规格转换：41053–41064
         assertThat(InventoryErrorCode.INVENTORY_CONVERSION_NOT_FOUND.getCode()).isEqualTo(41053);
         assertThat(InventoryErrorCode.INVENTORY_CONVERSION_STATUS_INVALID.getCode()).isEqualTo(41054);
         assertThat(InventoryErrorCode.INVENTORY_CONVERSION_EMPTY_ITEMS.getCode()).isEqualTo(41055);
@@ -383,7 +383,7 @@ class ScmInventoryConstantTest {
         assertThat(InventoryErrorCode.INVENTORY_LOSS_GAIN_SELF_APPROVAL_FORBIDDEN.getCode())
                 .isEqualTo(41065);
 
-        // P2 发车出库：来源单据已有出库单时重复出库必须被拒（兜 uk_inventory_outbound_source_active）。
+        // 发车出库：来源单据已有出库单时重复出库必须被拒（兜 uk_inventory_outbound_source_active）。
         assertThat(InventoryErrorCode.INVENTORY_SOURCE_ALREADY_OUTBOUND.getCode()).isEqualTo(41066);
 
         Set<Integer> codes = Arrays.stream(InventoryErrorCode.values())
@@ -439,15 +439,15 @@ class ScmInventoryConstantTest {
         // （见 InventoryCommandService），不新增自己的 40921。
         //
         // 本用例把这个事实钉住：一旦有人给库存域也加一个 40921，上面的撞码门禁会失败，
-        // 而这里说明**为什么** W6 选择复用而不是复制。清理既有三处重复属于 W1/W2/W5 的
-        // 独立重构，不在 W6-1 范围内。
+        // 本用例把这个事实钉住：库存域一旦也声明一个 40921，上面的撞码门禁就会失败。
+        // 既有三处重复的清理是独立的重构，不属于库存域。
         assertThat(InventoryErrorCode.values())
                 .extracting(InventoryErrorCode::getCode)
                 .doesNotContain(40921);
     }
 
     // ------------------------------------------------------------------
-    // classpath 扫描（与 W5 的撞码门禁同一手法：反查目录，未来新域自动纳入）
+    // classpath 扫描（撞码门禁的手法：反查目录，新域自动纳入）
     // ------------------------------------------------------------------
 
     /**

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 应付生成失败时收货确认**真实回滚**（F1-2A，PG IT，无外层事务）。
+ * 应付生成失败时收货确认真实回滚（PG IT，无外层事务）。
  *
  * <p>要断言「财务写失败后收货单没留下 CONFIRMED」，每次 Service 调用必须自己提交或自己回滚；
  * 若沿用 {@link ScmW5PgITBase} 的「整包在一个事务里回滚」形态，失败前写下的行还在同一个事务中，

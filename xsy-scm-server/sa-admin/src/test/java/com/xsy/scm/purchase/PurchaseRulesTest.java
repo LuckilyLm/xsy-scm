@@ -23,13 +23,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * W5 采购规则契约测试（无 DB，纯函数）。
+ * 采购规则契约测试（无 DB，纯函数）。
  *
- * <p>设计依据：W5 Target Design §11.1 的 {@code PurchaseRulesTest}（状态机 6 状态全部转换
- * 合法 + 非法 + 权限判定，20 例）。
+ * <p>覆盖状态机 6 状态的全部转换（合法与非法）以及权限判定。
  *
- * <p>与 W4 的 {@code OrderRulesTest} 同定位：把**不需要 Spring / DB 的规则**压在一处，
- * 让状态图、终态判定、以及 Q6a 的 `demand_date` 派生都能被毫秒级覆盖。
+ * <p>与订单域的 {@code OrderRulesTest} 同定位：把不需要 Spring / DB 的规则压在一处，
+ * 让状态图、终态判定和 {@code demand_date} 派生都能被毫秒级覆盖。
  */
 class PurchaseRulesTest {
 
@@ -63,7 +62,7 @@ class PurchaseRulesTest {
             "PARTIALLY_RECEIVED,PARTIALLY_RECEIVED,true",
             "PARTIALLY_RECEIVED,RECEIVED,true",
             "PARTIALLY_RECEIVED,SHORT_CLOSED,true",
-            // P14：已部分收货不允许 cancel，需要终止时用 short-close
+            // 已部分收货不允许 cancel，需要终止时用 short-close
             "PARTIALLY_RECEIVED,CANCELLED,false",
             // 终态
             "RECEIVED,RECEIVED,false",
@@ -97,7 +96,7 @@ class PurchaseRulesTest {
     }
 
     // ------------------------------------------------------------------
-    // 状态谓词（§4.2 T2 / T4 / T5 / T7）
+    // 状态谓词
     // ------------------------------------------------------------------
 
     @Test
@@ -180,13 +179,13 @@ class PurchaseRulesTest {
     }
 
     // ------------------------------------------------------------------
-    // Q6a：demand_date 必须按 Asia/Shanghai 派生，而不是 UTC 日期
+    // demand_date 必须按 Asia/Shanghai 派生，而不是 UTC 日期
     // ------------------------------------------------------------------
 
     @Test
     @DisplayName("Q6a：demand_date = source_confirmed_at 在 Asia/Shanghai 下的 LocalDate")
     void demandDateUsesAsiaShanghai() {
-        // UTC 16:00 == 上海次日 00:00 —— 若实现退化成 UTC 日期，这里会得到 09-16
+        // UTC 16:00 == 上海次日 00:00 —— 若实现退化成 UTC 日期，这里会得到 9 月 16 日
         assertThat(PurchaseSnapshotFactory.demandDate(OffsetDateTime.parse("2026-09-16T16:00:00Z")))
                 .isEqualTo(LocalDate.of(2026, 9, 17));
         // 上海 23:59:59 仍是当日
@@ -210,7 +209,7 @@ class PurchaseRulesTest {
     }
 
     // ------------------------------------------------------------------
-    // §7.4 来源合法性：40980 的唯一可达入口（PurchaseDemandSourceGuard）
+    // 来源合法性：40980 的唯一可达入口（PurchaseDemandSourceGuard）
     // ------------------------------------------------------------------
 
     @Test
@@ -251,14 +250,14 @@ class PurchaseRulesTest {
         // 不截断、不报错：7 位原样输出
         assertThat(PurchaseNumberGenerator.format("PO", 1000000)).matches("PO[0-9]{8}1000000");
         assertThat(PurchaseNumberGenerator.format("PR", 12345678)).matches("PR[0-9]{8}12345678");
-        // 日期段取 Asia/Shanghai（与 Q6a 的 demand_date 同一个 ZoneId 常量）
+        // 日期段取 Asia/Shanghai（与 demand_date 同一个 ZoneId 常量）
         assertThat(PurchaseNumberGenerator.format("PO", 1))
                 .startsWith("PO" + LocalDate.now(PurchaseSnapshotFactory.ASIA_SHANGHAI)
                         .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE));
     }
 
     // ------------------------------------------------------------------
-    // 收货单状态谓词（§4.3）
+    // 收货单状态谓词
     // ------------------------------------------------------------------
 
     @ParameterizedTest

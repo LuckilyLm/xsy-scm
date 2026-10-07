@@ -31,8 +31,8 @@ import static com.xsy.scm.product.constant.ProductErrorCode.*;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * PCO-1 商品主档增强：单位与标签字典、master_status 作用域、删除保护、批量维护与高级筛选。
- * 用例只覆盖主数据侧的新增口径，订单与采购写入路径的既有行为由 {@link ProductPgIT} 守住了事实验证。
+ * 商品主档增强：单位与标签字典、master_status 作用域、删除保护、批量维护与高级筛选。
+ * 用例只覆盖主数据侧的口径，订单与采购写入路径的既有行为由 {@link ProductPgIT} 守住了事实验证。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -337,7 +337,7 @@ class ProductMasterDataPgIT {
     }
 
     /**
-     * 供应商关系与客户可见性只是主数据关联，按方案 §11.2 不拦删除。
+     * 供应商关系与客户可见性只是主数据关联，不拦删除。
      */
     @Test
     void supplierRelationDoesNotBlockProductDeletion() {

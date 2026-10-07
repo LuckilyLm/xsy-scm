@@ -16,14 +16,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 收货数量与对账恒等式契约测试（W5 Target Design §11.1，16 例）。
+ * 收货数量与对账恒等式契约测试。
  *
- * <p>本测试是 **Q3a 与 P24 的单点防线**：
+ * <p>本测试是超收容差与对账恒等式的单点防线：
  * <ul>
  *   <li>容差解析 {@link PurchaseReceiptQuantityCalculator#tolerance(String)} 是纯函数，
  *       因此「缺失回退 10 / 非法 / 越界 → 40999」无需 Spring 与 DB 即可断言；</li>
  *   <li>对账恒等式（remaining / over / difference）在这里锁死符号方向 ——
- *       `difference` **可为负**，这正是 {@code ck_purchase_receipt_item_reconciliation} 的前提。</li>
+ *       {@code difference} 可为负，这正是 {@code ck_purchase_receipt_item_reconciliation} 的前提。</li>
  * </ul>
  */
 class PurchaseReceiptQuantityCalculatorTest {
@@ -37,7 +37,7 @@ class PurchaseReceiptQuantityCalculatorTest {
     }
 
     // ------------------------------------------------------------------
-    // Q3a：容差配置解析（缺失回退 / 合法 / 非法 / 越界）
+    // 容差配置解析（缺失回退 / 合法 / 非法 / 越界）
     // ------------------------------------------------------------------
 
     @ParameterizedTest(name = "raw=[{0}] -> {1}")
@@ -120,7 +120,7 @@ class PurchaseReceiptQuantityCalculatorTest {
     }
 
     // ------------------------------------------------------------------
-    // P24 对账恒等式
+    // 对账恒等式
     // ------------------------------------------------------------------
 
     @Test
@@ -175,7 +175,7 @@ class PurchaseReceiptQuantityCalculatorTest {
     }
 
     // ------------------------------------------------------------------
-    // §4.3 第 6 步：标品 vs 非标品的有效数量
+    // 标品 vs 非标品的有效数量
     // ------------------------------------------------------------------
 
     @Test

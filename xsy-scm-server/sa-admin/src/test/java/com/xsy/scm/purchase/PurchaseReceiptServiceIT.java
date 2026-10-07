@@ -16,20 +16,20 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 收货单生命周期（W5 Target Design §11.2，6 例）。
+ * 收货单生命周期。
  *
  * <p>收货单的三条硬规则：
  * <ol>
- *   <li><b>行由服务端生成</b>：`create` 按采购单的**全部活动行**建行，调用方不能挑行 ——
+ *   <li><b>行由服务端生成</b>：{@code create} 按采购单的全部活动行建行，调用方不能挑行 ——
  *       否则「确认时必须覆盖全部行」（40998）就失去基准集合；</li>
  *   <li><b>只有 SUBMITTED / PARTIALLY_RECEIVED 的采购单可收货</b>：DRAFT / RECEIVED /
  *       SHORT_CLOSED / CANCELLED 一律 40991；</li>
- *   <li><b>`update` 只允许改备注</b>：草稿态也不允许改数量 —— 数量只在 `confirm` 一次性落库，
+ *   <li><b>update 只允许改备注</b>：草稿态也不允许改数量 —— 数量只在 {@code confirm} 一次性写库，
  *       这样「草稿数量」与「实际收货」不会出现两套真相。</li>
  * </ol>
  *
- * <p>新建的收货行对账量必须是**初始态**（`remaining = planned`、`difference = −planned`），
- * 这不是「零值」而是 P24 恒等式在 `cumulative = 0` 时的取值 —— 断言它同时锁住了初始口径。
+ * <p>新建的收货行对账量必须是初始态（{@code remaining = planned}、{@code difference = −planned}），
+ * 这不是「零值」而是对账恒等式在 {@code cumulative = 0} 时的取值 —— 断言它同时锁住了初始口径。
  */
 @DisplayName("收货单生命周期：create / update / delete / 幂等（PG IT）")
 class PurchaseReceiptServiceIT extends ScmW5PgITBase {
@@ -74,7 +74,7 @@ class PurchaseReceiptServiceIT extends ScmW5PgITBase {
         assertThat(line.getProductType()).isEqualTo("NON_STANDARD");
         assertThat(line.getPurchaseUnit()).isEqualTo(DEFAULT_PURCHASE_UNIT);
         assertThat(line.getPlannedQuantity()).isEqualByComparingTo("10.0000");
-        // P24 在 cumulative = 0 时的取值
+        // 对账恒等式在 cumulative = 0 时的取值
         assertThat(line.getReceivedQuantity()).isEqualByComparingTo("0.0000");
         assertThat(line.getCumulativeReceivedQuantity()).isEqualByComparingTo("0.0000");
         assertThat(line.getRemainingQuantity()).isEqualByComparingTo("10.0000");
@@ -83,8 +83,8 @@ class PurchaseReceiptServiceIT extends ScmW5PgITBase {
         assertThat(line.getActualWeight()).isNull();
         assertThat(line.getWeighingSource()).isNull();
 
-        // RECEIPT_CREATE 日志：Q14 的第四分支，两个 id 都非空
-        // 日志按 `created_at DESC, id DESC` 返回（与 W4 的 order_operation_log 一致）→ **最新在前**
+        // RECEIPT_CREATE 日志：归属约束的第四分支，两个 id 都非空
+        // 日志按 created_at DESC, id DESC 返回（与 order_operation_log 一致）→ 最新在前
         List<PurchaseOperationLogVO> logs = purchaseQueryService.orderLogs(fx.order().getId());
         assertThat(logs).extracting(PurchaseOperationLogVO::getOperationType)
                 .containsExactly("RECEIPT_CREATE", "SUBMIT", "CREATE");
@@ -109,15 +109,15 @@ class PurchaseReceiptServiceIT extends ScmW5PgITBase {
         PurchaseOrderVO draft = createDraftOrder("RC2", supplierId, skuId, "3.0000", "6.2000",
                 allocation(demand, "3.0000"));
 
-        // DRAFT 不可收货（T8）
+        // DRAFT 不可收货
         expectCode(() -> createReceipt(draft.getId()), 40991);
 
         expectCode(() -> createReceipt(999_999_999L), 40481);
 
         // 提交之后同一张单就能建收货单了 —— 证明上一条拒绝的原因是状态而不是别的。
         //
-        // 必须换一个幂等键：上面那次失败调用已经**在本用例的事务里**插入了 claim 行
-        // （`result_data` 为 null，因为业务在写结果之前就抛了）。同键再来一次会命中
+        // 必须换一个幂等键：上面那次失败调用已经在本用例的事务里插入了 claim 行
+        // （result_data 为 null，因为业务在写结果之前就抛了）。同键再来一次会命中
         // 「已提交的幂等记录缺少 result_data」。真实环境里失败的调用整事务回滚，
         // claim 行不会残留 —— 这是「整个用例共用一个事务」的测试基建特性，不是产品缺陷。
         submitOrder(draft.getId());

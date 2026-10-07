@@ -16,9 +16,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 入库确认失败时的**真实回滚**（B1，PG IT，无外层事务）。
+ * 入库确认失败时的真实回滚（PG IT，无外层事务）。
  *
- * <p>与 W6 的 {@code ScmInventoryRollbackIT} 同理：要断言「异单位 putaway 失败后零残留」，
+ * <p>与 {@code ScmInventoryRollbackIT} 同理：要断言「异单位 putaway 失败后零残留」，
  * 必须关掉测试事务（{@code Propagation.NOT_SUPPORTED}），让每次 Service 调用自己开事务、
  * 自己提交或回滚，否则看到的只是「失败前写下的行还在」。
  */
@@ -75,7 +75,7 @@ class PurchaseReceiptPutawayRollbackIT extends ScmW6PgITBase {
         assertThat(balanceRow(warehouseId, skuId).getUnit()).isEqualTo("kg");
         assertThat(movementCount(warehouseId, skuId)).isEqualTo(1);
 
-        // 清理：NOT_SUPPORTED 把数据提交到开发库。WAREHOUSE_CONFIRM + PENDING 的收货单是 B1 才有的
+        // 清理：NOT_SUPPORTED 把数据提交到开发库。WAREHOUSE_CONFIRM + PENDING 的收货单是合法形态
         // 合法形态（CONFIRMED 却没有流水），会打破 ScmInventoryBackfillIT 等对「CONFIRMED ⇒ 有流水」
         // 的 V19 全局对账假设，因此物理删除这张 box 收货单，避免残留污染其它测试。
         jdbc.update("DELETE FROM receipt_weighing_record WHERE purchase_receipt_item_id IN "

@@ -46,22 +46,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * W5 Web 层（W5 Target Design §11.3，8 例）。
+ * 采购域 Web 层。
  *
  * <p>覆盖三件事：
  * <ol>
- *   <li><b>27 个端点全部有原生权限注解</b>（3 需求 + 11 采购单 + 8 收货 + 5 仓库）。
- *       少一个注解 = 该接口对所有人开放，而这是**没有编译期信号**的错误；</li>
- *   <li><b>定点数一律是 4 位小数字符串、`null` 必须保持 `null`</b>。
- *       `0.0000`（合法价格/数量）与 `null`（未定价/未分配）是两种不同的业务事实，
- *       序列化时把 `null` 写成 `"0.0000"` 会让前端三态渲染直接失效；</li>
- *   <li><b>JSON 数字不得进入定点数字段</b>：`"quantity": 1.2` 必须被拒（30001），
- *       而不是被静默转成 `1.2000` —— 浮点数进入数量字段是精度事故的源头。</li>
+ *   <li><b>全部公开端点都带原生权限注解</b>（需求 + 采购单 + 收货 + 仓库四类 Controller）。
+ *       少一个注解 = 该接口对所有人开放，而这是没有编译期信号的错误；</li>
+ *   <li><b>定点数一律是 4 位小数字符串，null 必须保持 null</b>。
+ *       {@code 0.0000}（合法价格/数量）与 {@code null}（未定价/未分配）是两种不同的业务事实，
+ *       序列化时把 {@code null} 写成 {@code "0.0000"} 会让前端三态渲染直接失效；</li>
+ *   <li><b>JSON 数字不得进入定点数字段</b>：{@code "quantity": 1.2} 必须被拒（30001），
+ *       而不是被静默转成 {@code 1.2000} —— 浮点数进入数量字段是精度事故的源头。</li>
  * </ol>
  *
  * <p>{@code addFilters = false}：Sa-Token 的 Servlet 过滤器不参与，
- * 因此这里验证的是**注解存在**（第 1 例，反射），而不是「未登录被拦」——
- * 后者由 W4 已验收的底座过滤器覆盖，不在业务 Web 测试的职责内。
+ * 因此这里验证的是注解存在（反射），而不是「未登录被拦」——
+ * 后者由底座过滤器覆盖，不在业务 Web 测试的职责内。
  */
 @WebMvcTest({PurchaseDemandController.class, PurchaseOrderController.class,
         PurchaseReceiptController.class, WarehouseController.class})
@@ -94,11 +94,11 @@ class PurchaseOrderWebTest {
     private WarehouseService warehouseService;
 
     /**
-     * {@code WarehouseController} 的构造器是 `(WarehouseService, WarehouseQueryService)`。
+     * {@code WarehouseController} 的构造器是 {@code (WarehouseService, WarehouseQueryService)}。
      *
-     * <p>`@WebMvcTest` 只自动注册 Web 层切片 Bean，Service 一律不扫描 —— 漏掉这一个会让
-     * **整个上下文加载失败**，8 个用例全部报 `ApplicationContext failure threshold exceeded`，
-     * 而真正的错误信息（`No qualifying bean of type WarehouseQueryService`）藏在 `Caused by` 里。
+     * <p>{@code @WebMvcTest} 只自动注册 Web 层切片 Bean，Service 一律不扫描 —— 漏掉这一个会让
+     * 整个上下文加载失败，用例全部报 ApplicationContext failure threshold exceeded，
+     * 而真正的错误信息（No qualifying bean of type WarehouseQueryService）藏在 Caused by 里。
      */
     @MockitoBean
     private WarehouseQueryService warehouseQueryService;
@@ -113,9 +113,9 @@ class PurchaseOrderWebTest {
     @Test
     @DisplayName("38 个端点全部声明 @SaCheckPermission，且权限码都在 scm: 命名空间内")
     void allEndpointsHaveNativePermissions() {
-        // 计数只是登记增量（34 → 35：P0-F 把改派归属拆成独立端点 /scm/purchase/reassign，
-        // 权限码 scm:purchase:assign —— 归属同时是数据范围依据，混在 /update 里就无法单独授权）；
-        // 真正的不变量是下面逐方法的断言 —— 新增公开端点漏声明权限会立刻失败。
+        // 计数只是登记端点个数；真正的不变量是下面逐方法的断言 —— 新增公开端点漏声明权限会立刻失败。
+        // 改派归属是独立端点 /scm/purchase/reassign（权限码 scm:purchase:assign）：
+        // 归属同时是数据范围依据，混在 /update 里就无法单独授权。
         int count = 0;
         for (Class<?> controller : List.of(PurchaseDemandController.class, PurchaseOrderController.class,
                 PurchaseReceiptController.class, WarehouseController.class)) {
@@ -183,9 +183,9 @@ class PurchaseOrderWebTest {
         vo.setUnallocatedQuantity(new BigDecimal("6"));
         when(demandService.allocate(any(), any())).thenReturn(vo);
 
-        // 需求**没有** `/demand/detail/{id}` 端点（§8.1 只定义 query / generate / allocate 三个），
-        // 而 `PurchaseDemandVO` 的两个真实出口是 `query` 的分页元素与 `allocate` 的返回体。
-        // 这里走 `allocate`：单对象响应，断言最直接。
+        // 需求没有 /demand/detail/{id} 端点（只定义 query / generate / allocate 三个），
+        // 而 PurchaseDemandVO 的两个真实出口是 query 的分页元素与 allocate 的返回体。
+        // 这里走 allocate：单对象响应，断言最直接。
         mvc.perform(post("/scm/purchase/demand/allocate")
                         .header("Idempotency-Key", "W5-WEB-demand-allocate")
                         .contentType(MediaType.APPLICATION_JSON)

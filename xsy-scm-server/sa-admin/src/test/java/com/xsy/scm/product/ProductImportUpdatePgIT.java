@@ -29,10 +29,10 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 
 /**
- * 商品 Excel 更新导入（修复计划 §7.2）的真实写库验证。
+ * 商品 Excel 更新导入的真实写库验证。
  * 单元测试只能证明合并结果，这里要证明的是「只改一列不会清掉其他列、未列出的 SKU 不会被删」
  * 这类只有落到 {@code ProductSpuService.update} 与变更集上才会暴露的破坏性语义，以及整批回滚。
- * <p>本类<b>刻意不加</b> {@code @Transactional}：更新写入必须真的提交，之后才能在新的只读事务里
+ * <p>本类<b>不加</b> {@code @Transactional}：更新写入必须真的提交，之后才能在新的只读事务里
  * 读回事实；写阶段冲突的整批回滚也只有脱离测试事务才观察得到。用例结束时按前缀清理自建数据。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
@@ -93,7 +93,7 @@ class ProductImportUpdatePgIT {
             jdbc.update("DELETE FROM product_spu WHERE id=?", spuId);
         }
         for (var tagId : createdTagIds) jdbc.update("DELETE FROM product_tag WHERE id=?", tagId);
-        // 本类刻意不用测试事务回滚，上传行会真的提交；用例自建的商品图用完即回收，
+        // 本类不用测试事务回滚，上传行会真的提交；用例自建的商品图用完即回收，
         // 只留本地磁盘上的探针文件，不给库留下没有业务引用的附件
         for (var fileKey : createdFileKeys) jdbc.update("DELETE FROM t_file WHERE file_key=?", fileKey);
     }

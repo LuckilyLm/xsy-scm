@@ -63,7 +63,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * P0-F 销售域（订单族 + 客户）的行级数据范围与其写入侧前提。
+ * 销售域（订单族 + 客户）的行级数据范围与其写入侧前提。
  *
  * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、6 条：
  * 销售默认只看 {@code customer.seller_id} / {@code sales_order.seller_id} 等于本人的行；

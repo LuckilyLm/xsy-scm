@@ -11,16 +11,16 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 收货对账恒等式（W5 Target Design §7.6 / P24，3 例）。
+ * 收货对账恒等式。
  *
  * <pre>
  * remaining_quantity    = GREATEST(planned − cumulative, 0)   ← 永不为负
  * over_receipt_quantity = GREATEST(cumulative − planned, 0)   ← 永不为负
- * receipt_difference    = cumulative − planned                ← **可为负**
+ * receipt_difference    = cumulative − planned                ← 可为负
  * </pre>
  *
- * <p><b>为什么 `difference` 允许为负而另两个不允许</b>：前两个是**可执行的量**
- * （还能收多少 / 已经超了多少），负数没有业务含义；`difference` 是**对账差异**，
+ * <p><b>为什么 {@code difference} 允许为负而另两个不允许</b>：前两个是可执行的量
+ * （还能收多少 / 已经超了多少），负数没有业务含义；{@code difference} 是对账差异，
  * 它的符号本身就是信息 —— 负 = 欠收、正 = 超收、零 = 收齐。
  * 把三者压成一个字段会立刻丢掉「欠收」与「超收」的区分，所以必须分开存。
  *

@@ -19,21 +19,21 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购操作日志（W5 Target Design §7.12 / Q14，5 例）。
+ * 采购操作日志。
  *
- * <p><b>Q14 的核心是「归属由操作类型决定」</b>，不是一个宽松的非空约束：
+ * <p><b>核心是「归属由操作类型决定」</b>，不是一个宽松的非空约束：
  * <pre>
  * DEMAND_GENERATE   purchase_order_id = NULL  AND purchase_receipt_id = NULL   ← 需求还没有单据
  * DEMAND_ALLOCATE   purchase_order_id ≠ NULL  AND purchase_receipt_id = NULL   ← 由 itemId 反查得到
  * CREATE/UPDATE/SUBMIT/CANCEL/SHORT_CLOSE/DELETE   purchase_order_id ≠ NULL
  * RECEIPT_CREATE/RECEIPT_UPDATE/RECEIPT_CONFIRM   两者都 ≠ NULL
  * </pre>
- * 写成 `IS NOT NULL OR IS NOT NULL` 会让 `DEMAND_GENERATE` 无法落库（两个都空），
+ * 写成「IS NOT NULL OR IS NOT NULL」会让 DEMAND_GENERATE 无法入库（两个 id 都空），
  * 也会让「收货日志漏填采购单」这种错误溜过去 —— V15 的
- * `ck_purchase_operation_log_owner` 是**四分支** CHECK，本类逐分支验证。
+ * ck_purchase_operation_log_owner 是四分支 CHECK，本类逐分支验证。
  *
- * <p><b>日志是只追加的审计事实</b>：没有 `version` / `updated_*`，
- * 单据的后续变更不得改写既有行。因此「跑完整流程后回看早期日志仍原样」也是断言的一部分。
+ * <p><b>日志是只追加的审计事实</b>：表上没有 version / updated_* 列，
+ * 单据的后续变更不会改写既有行。因此「跑完整流程后回看早期日志仍原样」也是断言的一部分。
  */
 @DisplayName("采购操作日志：Q14 归属四分支 + 快照契约（PG IT）")
 class PurchaseOperationLogIT extends ScmW5PgITBase {
@@ -70,7 +70,7 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
         Map<String, Object> log = latestLog("DEMAND_GENERATE");
         assertThat(log.get("purchase_order_id")).isNull();
         assertThat(log.get("purchase_receipt_id")).isNull();
-        // 操作者落的是 `userType:employeeId`（ScmOperator 的口径），不是员工姓名
+        // 操作者落的是 userType:employeeId（ScmOperator 的口径），不是员工姓名
         assertThat(log.get("operator")).isEqualTo(ScmOperator.current());
         assertThat(log.get("before_data")).isNull();
         assertThat(String.valueOf(log.get("after_data"))).contains("createdCount");
@@ -89,12 +89,12 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
         Long salesOrder = confirmedSalesOrder(customerId, skuId, "5.0000", "3.0000");
         PurchaseDemandEntity demand = generateDemandFor(supplierId, salesOrder);
 
-        // 采购单行先建出来（**不带**分配），再由独立分配端点补上 —— 这条路径才会写 DEMAND_ALLOCATE
+        // 采购单行先建出来（不带分配），再由独立分配端点补上 —— 这条路径才会写 DEMAND_ALLOCATE
         PurchaseOrderVO order = createDraftOrder("LG2", supplierId, skuId, "3.0000", "6.2000");
         Long orderItemId = order.getItems().getFirst().getId();
         assertThat(order.getItems().getFirst().getAllocations()).isEmpty();
 
-        // `allocate` 只接受 SUBMITTED 的采购单：DRAFT 还没定稿，终态已结束（40982）
+        // allocate 只接受 SUBMITTED 的采购单：DRAFT 还没定稿，终态已结束（40982）
         submitOrder(order.getId());
 
         PurchaseDemandAllocateForm form = new PurchaseDemandAllocateForm();

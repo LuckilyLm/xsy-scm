@@ -13,16 +13,16 @@ import java.sql.Statement;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V8 / V9 migration 的落地验证（对应 Target Design §3）。
+ * V8 / V9 两个迁移的落地验证。
  *
- * <p>这个用例刻意**不**用 Spring 上下文：它要验证的是「migration 本身」能否在干净的应用之外
- * 独立跑通并留下正确的数据库结构，因此直接用 Flyway API + JDBC。
+ * <p>本用例不加载 Spring 上下文：要验证的是迁移脚本本身能否在应用之外独立跑通
+ * 并留下正确的数据库结构，因此直接用 Flyway API + JDBC。
  *
  * <p>覆盖四类断言：
  * <ol>
- *   <li>V8 / V9 已成功应用，且 V6 / V7（W1）历史未被改动；</li>
+ *   <li>V8 / V9 已成功应用，且 V6 / V7 的历史未被改动；</li>
  *   <li>4 张表与 5 条关键 CHECK 约束存在；</li>
- *   <li><b>R12 反陷阱</b>：{@code supplier_sku} 上不存在任何以 {@code is_default} 为键的唯一索引；</li>
+ *   <li><b>反陷阱</b>：{@code supplier_sku} 上不存在任何以 {@code is_default} 为键的唯一索引；</li>
  *   <li>菜单 / 权限点 / 角色授权 / 隐藏路由全部落库。</li>
  * </ol>
  */
@@ -83,7 +83,7 @@ class ScmCustomerSupplierMigrationIT {
                             + "'uk_supplier_code_active','uk_supplier_sku_active')"))
                     .as("四条 partial unique index").isEqualTo(4);
 
-            // ---- 3. R12 反陷阱：绝不存在「每个供应商只能有一条默认」的唯一索引 ----
+            // ---- 3. 反陷阱：绝不存在「每个供应商只能有一条默认」的唯一索引 ----
             assertThat(scalar(statement,
                     "SELECT count(*) FROM pg_indexes WHERE schemaname='xsy_v2' AND tablename='supplier_sku' "
                             + "AND indexdef ILIKE '%is_default%'"))

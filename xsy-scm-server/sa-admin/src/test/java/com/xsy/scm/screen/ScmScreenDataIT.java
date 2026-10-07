@@ -22,15 +22,15 @@ import java.time.ZoneId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * B7 数据大屏聚合服务集成测试。
+ * 数据大屏聚合服务集成测试。
  *
  * <p>验证只读聚合接口从现有业务表（sales_order / purchase_order / inventory_balance 等）
  * 统计出的指标正确。
  *
  * <p><b>为什么不断言「空库返回零」</b>：本类的基类把用例包在一个事务里，但同一套件里
- * {@code Propagation.NOT_SUPPORTED} 的 IT（库存回滚 / 并发 / 调拨回滚）会把数据**提交**进库，
- * 因此「累计类指标为 0」只在特定执行顺序下成立 —— 那是一条依赖测试顺序的脆弱断言
- * （曾稳定失败：期望 0、实际 17）。现在断言的是**真实成立的口径**：
+ * {@code Propagation.NOT_SUPPORTED} 的 IT（库存回滚 / 并发 / 调拨回滚）会把数据提交进库，
+ * 因此「累计类指标为 0」只在特定执行顺序下成立 —— 那是一条依赖测试顺序的脆弱断言。
+ * 这里断言的是真实成立的口径：
  * 字段非 null（契约是「返回零值而不是 null」）、非负、且今日量不超过累计量。
  */
 @DisplayName("B7 数据大屏聚合服务（PG IT）")
@@ -117,7 +117,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         assertThat(health.getUnconfiguredCount()).isNotNull().isGreaterThanOrEqualTo(0L);
         assertThat(health.getOutOfStockCount()).isNotNull().isGreaterThanOrEqualTo(0L);
 
-        // 四档互斥且**之和恰好等于总数**（设计稿把缺货画成与预警并列的一段，占比要凑满 100%）。
+        // 四档互斥且之和恰好等于总数（设计稿把缺货画成与预警并列的一段，占比要凑满 100%）。
         // 这是分档实现的核心不变量：一旦有人把缺货改回「与三档重叠的子集」，
         // 占比之和会超过 100%，而界面上看不出任何异常。
         long sum = health.getNormalCount() + health.getLowCount() + health.getHighCount()
@@ -129,7 +129,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         // 交叉验证：大屏健康度与预警列表是同一条业务规则的两条实现路径
         // （Java 枚举 vs 列表 SQL 谓词）—— 一旦漂移，两边会对不上。
         //
-        // 注意两边**口径并不完全重合**，所以只能断言夹逼而不是相等：
+        // 注意两边口径并不完全重合，所以只能断言夹逼而不是相等：
         //   预警列表 FROM inventory_warning_threshold，只包含「配了阈值」的 (仓库,SKU)；
         //   健康度还包含「没配阈值但可用量 ≤ 0」的余额行（这些行列表里根本没有）。
         // 于是：
@@ -185,7 +185,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
             cityWarehouses += city.getWarehouseCount();
         }
 
-        // 省级是市级**上卷**而不是第二次聚合，因此三档量与市数都必须守恒
+        // 省级是市级上卷而不是第二次聚合，因此三档量与市数都必须守恒
         assertThat(geo.getProvinces()).extracting(ScreenGeoVO.ProvinceNode::getProvinceCode).doesNotHaveDuplicates();
         long provinceCustomers = 0L;
         long provinceSuppliers = 0L;
@@ -236,7 +236,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
                 customerInGuangzhou);
         jdbc.update("UPDATE supplier SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
         jdbc.update("UPDATE warehouse SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
-        // 前置守卫：杭州桶为空会让下面所有 `- 1` 断言在别处失败，看不出真正的原因
+        // 前置守卫：杭州桶为空会让下面所有 {@code - 1} 断言在别处失败，看不出真正的原因
         assertThat(jdbc.queryForObject("SELECT count(*) FROM customer WHERE deleted = FALSE "
                 + "AND id <> ?", Integer.class, customerInGuangzhou)).isGreaterThan(0);
 
@@ -282,7 +282,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         assertThat(coverage.getSupplierLocated()).isEqualTo(supplierTotal);
         assertThat(coverage.getWarehouseLocated()).isEqualTo(warehouseTotal);
 
-        // 字典外编码：`located` 只问「有没有市码」，气泡却要 JOIN 字典才画得出来。
+        // 字典外编码：{@code located} 只问「有没有市码」，气泡却要 JOIN 字典才画得出来。
         // 于是这条客户被算进「已归属」，同时从图上消失 —— 差额只能在覆盖度里被看见，
         // 这正是 coverage 存在的理由，所以把它钉成断言而不是留在注释里。
         jdbc.update("UPDATE customer SET city_code = 999999 WHERE id = ?", customerInGuangzhou);
@@ -328,11 +328,10 @@ class ScmScreenDataIT extends ScmW6PgITBase {
     }
 
     /**
-     * 断言八条序列与日期轴长度一致，且末点就是**北京时间的今天**。
+     * 断言八条序列与日期轴长度一致，且末点就是北京时间的今天。
      *
-     * <p>末点日期这条断言是「今日时区」的回归点：服务层曾经用 UTC 日界，
-     * 窗口整体平移 8 小时，早上下的单会被算到前一天，而序列长度看起来完全正常 ——
-     * 只看长度是抓不到的。
+     * <p>末点日期这条断言是「今日时区」的回归点：按 UTC 日界会让窗口整体平移 8 小时，
+     * 早上下的单被算到前一天，而序列长度看起来完全正常 —— 只看长度是抓不到的。
      */
     private void assertSeriesAligned(ScreenTrendVO vo, int expected) {
         assertThat(vo.getRange()).isEqualTo(expected == 7 ? "7d" : "30d");

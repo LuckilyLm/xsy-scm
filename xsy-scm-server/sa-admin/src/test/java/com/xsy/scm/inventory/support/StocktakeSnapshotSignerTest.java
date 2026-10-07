@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 盘点快照签名密钥的环境门禁（Wave 6 审计修复）。
+ * 盘点快照签名密钥的环境门禁。
  *
  * <p>密钥保护的正是「快照未被篡改」这一件事：生产沿用仓库里的公开默认值等于没有签名，
  * 因此必须在<b>启动</b>时失败，而不是等到有人伪造凭证才被发现。

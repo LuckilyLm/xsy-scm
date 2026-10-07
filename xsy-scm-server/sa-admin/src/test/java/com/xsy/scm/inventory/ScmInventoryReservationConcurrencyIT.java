@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 库存预留的**真并发**验证（主线计划 P0「补库存预留并发测试」）。
+ * 库存预留的真并发验证。
  *
  * <p>单线程 IT（{@code ScmInventoryOutboundIT}）只能证明「规则写对了」，证明不了
  * 「规则在竞态下仍然成立」。预留的三条硬要求都是竞态命题：
@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 来源行 id 也从 {@link #sourceIdSeed()} 派生而不用常量（常量会在第二轮运行撞
  * {@code uk_inventory_reservation_source_active}，把「防重生效」误报成红）。
  *
- * <p><b>期望的不是「都成功」</b>：这类竞态里失败是**正确行为**。因此每个用例都断言
+ * <p><b>期望的不是「都成功」</b>：这类竞态里失败是正确行为。因此每个用例都断言
  * 「成功数 + 失败码 + 最终账」三者一致，而不是只断言不抛异常 —— 后者会让
  * 「两个都失败」这种真故障（锁序写错导致死锁）悄悄通过。
  */
@@ -60,7 +60,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     private InventoryReservationService reservations;
 
     /**
-     * 出库命令与预留一样要求**调用方持有事务**（{@code InventoryCommandService} 会直接抛错），
+     * 出库命令与预留一样要求调用方持有事务（{@code InventoryCommandService} 会直接抛错），
      * 本类没有外层事务，因此跨到出库时必须显式开一个，而不是让 IllegalTransactionStateException
      * 冒充「可用量门槛拒绝」——那会让并发断言以错误的理由通过。
      */
@@ -72,7 +72,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     }
 
     /**
-     * 造来源行号用的种子：必须**只增不减**，且落在库里已用行号之上。
+     * 造来源行号用的种子：必须只增不减，且落在库里已用行号之上。
      *
      * <p>原先写 {@code MAX(id) + 100000}，但预留表被别的用例部分清理过，{@code MAX(id)} 会回落：
      * 实测遗留行号已到 100778，而下一颗种子只算到 100740 —— 于是新一轮造出的行号与上一轮遗留的
@@ -105,7 +105,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
         employee.setEmployeeId(1L);
         employee.setActualName("Reservation concurrency IT");
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
-        // 与种子员工 1 的真实行一致：id 1 是 V3 播种的 break-glass 超管。本用例测的是竞态，
+        // 与种子员工 1 的真实行一致：id 1 是 V3 里的 break-glass 超管。本用例测的是竞态，
         // 断言不能对仓库授权范围守卫敏感——缺了这一位，预留与释放会被按「无任何授权」拒掉，
         // 竞态根本发生不了，失败的那笔还会留下未释放的预留行污染后面的用例。
         employee.setAdministratorFlag(true);
@@ -124,7 +124,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     }
 
     /**
-     * 让 N 段动作在同一起跑线开始，各自跑在**独立事务**里。
+     * 让 N 段动作在同一起跑线开始，各自跑在独立事务里。
      */
     private List<Outcome> runConcurrently(List<java.util.concurrent.Callable<Long>> tasks) throws Exception {
         CountDownLatch start = new CountDownLatch(1);

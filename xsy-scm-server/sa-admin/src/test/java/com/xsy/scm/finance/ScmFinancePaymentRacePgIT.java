@@ -32,9 +32,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 同一退款被**真并发**双付时的收敛（F1-3B，PG IT，无外层事务）。
+ * 同一退款被真并发双付时的收敛（PG IT，无外层事务）。
  *
- * <p>这是第二批 Q26 的核心场景，值得现在就钉而不是等 F1-4：两个<b>不同</b> {@code Idempotency-Key}
+ * <p>两个<b>不同</b> {@code Idempotency-Key}
  * 同时付同一张 {@code COMPLETED} 退款。幂等键只能防「同一个请求重发」，防不了「两个人各自发起一次」，
  * 而财务上「同一笔退款只付一次钱」必须由库来保证 —— 唯一索引
  * {@code uk_finance_payment_source_active} 在这里是唯一的仲裁点。
@@ -102,7 +102,7 @@ class ScmFinancePaymentRacePgIT extends ScmW5PgITBase {
         complete.setRefundId(refundId);
         complete.setVersion(refundVersion);
         // order_refund.external_reference 上有部分唯一索引（uk_order_refund_external_reference_active），
-        // 与财务侧刻意「可重复」的同名列正相反；本类是真提交，所以这里的值必须每次唯一，
+        // 与财务侧「可重复」的同名列正相反；本类是真提交，所以这里的值必须每次唯一，
         // 否则第二遍跑同一个库就会被自己的上一轮挡住（并被 complete 映射成状态错误）。
         complete.setExternalReference("ORDER-SIDE-" + tag + "-" + UUID.randomUUID());
         refunds.complete(complete, key("fc:" + tag));

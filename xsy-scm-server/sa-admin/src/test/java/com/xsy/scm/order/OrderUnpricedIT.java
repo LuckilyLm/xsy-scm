@@ -46,7 +46,7 @@ class OrderUnpricedIT extends ScmW3PgITBase {
         p.setSkuId(sku);
         p.setSellable(true);
         p.price(null, ScmPriceSourceEnum.MARKET, null);
-        // W3 Product currently requires market price; inject the published UNPRICED resolver contract here.
+        // Product pricing requires a market price, so the published UNPRICED resolver contract is injected here.
         doReturn(List.of(p)).when(resolver).resolve(eq(c), anyList(), any());
         var f = new SalesOrderAddForm();
         f.setCustomerId(c);

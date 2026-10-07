@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * W3 web contract coverage. Authentication filters are disabled; permission annotations remain on controllers.
+ * Web contract coverage. Authentication filters are disabled; permission annotations remain on controllers.
  */
 @WebMvcTest({AgreementPriceController.class, CustomerTypePriceController.class,
         PriceBatchController.class, PriceHistoryController.class, PriceResolveController.class,

@@ -19,10 +19,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@code scm:finance:receipt:add} 的正式权限取证（F1-3A）。
+ * {@code scm:finance:receipt:add} 的正式权限取证。
  *
  * <p><b>要证明的是「产品权限真的发布了」，不是「mock 里通过了」。</b>
- * 因此三条断言分别覆盖交付链的三段，没有一条依赖 {@code MockedStatic<StpUtil>}：
+ * 因此三条断言分别覆盖发布链的三段，没有一条依赖 {@code MockedStatic<StpUtil>}：
  * <ol>
  *   <li>V66 把能力点种进了 {@code t_menu}，并按 {@code role_code} 授给 SCM_FINANCE（配置事实）；</li>
  *   <li>真实登录用户的权限集合里出现 / 不出现这个串（{@link LoginManager} 走的就是
@@ -88,7 +88,7 @@ class ScmFinanceReceiptPermissionPgIT extends ScmW5PgITBase {
         assertThat(annotation).as("收款登记端点必须挂功能权限注解").isNotNull();
         assertThat(annotation.value()).containsExactly(FinanceConstant.RECEIPT_ADD_PERM);
 
-        // 交付链第一段：t_menu 里发布的串必须与注解一致，且只有 SCM_FINANCE 与超管拿到
+        // 发布链第一段：t_menu 里发布的串必须与注解一致，且只有 SCM_FINANCE 与超管拿到
         assertThat(jdbc.queryForList(
                 "SELECT api_perms FROM t_menu WHERE api_perms = ?", String.class,
                 FinanceConstant.RECEIPT_ADD_PERM))
@@ -105,7 +105,7 @@ class ScmFinanceReceiptPermissionPgIT extends ScmW5PgITBase {
     @DisplayName("收款侧发布登记、查询与反向权限，五个财务页面随组件同步发布")
     void nothingElseIsPublishedYet() {
         // 只钉「收款侧」：整个财务段发布了哪几行由 ScmFinanceSchemaPgIT 按 containsExactly 负责，
-        // 在这里重复一份会随下一个阶段（F1-3B 的付款能力）无谓变红。
+        // 在这里重复一份，付款侧能力一变就会连带无谓变红。
         assertThat(jdbc.queryForList(
                 "SELECT DISTINCT api_perms FROM t_menu WHERE api_perms LIKE 'scm:finance:receipt:%'"
                         + " ORDER BY api_perms", String.class))

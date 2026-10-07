@@ -12,14 +12,14 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V40 地图 M0 的落地验证：区划字典种子、主档地理列约束，以及**存量地址保守解析规则本身**。
+ * V40 地图地理数据地基的落地验证：区划字典种子、主档地理列约束，以及存量地址保守解析规则本身。
  *
  * <p>三件事都值得单独钉，因为它们一旦漂移就是静默的：
  * 字典少一个市 → 那个市的气泡从此画不出来（接口不报错，图上就是没有）；
- * 坐标约束松一格 → 半套坐标落库，M2 选点无从解释；
+ * 坐标约束松一格 → 半套坐标落库，地图选点无从解释；
  * 解析规则放宽 → 把「长沙路」认成「长沙市」，地理数据被污染且没人知道哪些行是错的。
  *
- * <p>解析段**不复制到测试里**：直接从 classpath 读 V40 原文的 {@code -- Step 4} 之后整段执行，
+ * <p>解析段不复制到测试里：直接从 classpath 读 V40 原文的 {@code -- Step 4} 之后整段执行，
  * 被测的就是上线的那段 SQL（沿用 {@link ScmW6PgITBase} 对 V19 backfill 的做法）。
  */
 @DisplayName("地图 M0 地理数据地基（V40 PG IT）")
@@ -72,7 +72,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
      * 钉住「市名在全国不唯一」这一事实。
      *
      * <p>V40 解析规则里「市名不唯一时必须同时命中省名」那条分支不是防御性冗余 ——
-     * 种子数据里确实存在重名市。断言它**只有**重庆市，是为了让重名清单变化时立刻暴露：
+     * 种子数据里确实存在重名市。断言它只有重庆市，是为了让重名清单变化时立刻暴露：
      * 届时消歧规则需要重新评估，而不是悄悄失守或变成死代码。
      */
     @Test
@@ -98,7 +98,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
      * 三张主档共用同一组 CHECK（由 {@code format()} 批量建出），逐表验证一次，
      * 防止「只给一张表加了约束」这种只在另两张表写入时才暴露的缺陷。
      *
-     * <p>每个期望失败的语句都包在 SAVEPOINT 里：PostgreSQL 在报错后会把**整个事务**置为
+     * <p>每个期望失败的语句都包在 SAVEPOINT 里：PostgreSQL 在报错后会把整个事务置为
      * aborted，不回滚到保存点就无法在同一用例里继续验证下一条约束和「合法值必须写得进」。
      */
     @Test
@@ -300,7 +300,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     }
 
     /**
-     * 三张主档各取一条新建行（走已验收的服务写入口，不直插表）。
+     * 三张主档各取一条新建行（走服务写入口，不直接插表）。
      */
     private Long newMasterRow(String table) {
         return switch (table) {

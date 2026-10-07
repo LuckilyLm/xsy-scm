@@ -20,7 +20,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 客户写路径在真实 PostgreSQL 上的行为（T11）。
+ * 客户写路径在真实 PostgreSQL 上的行为。
  *
  * <p>验证的都是「只有在数据库里才成立」的契约：partial unique index 与显式查重双保险、
  * {@code NUMERIC(18,4)} 的定点数落库、{@code ck_customer_credit_period} 与 Validator 一致、
@@ -299,7 +299,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
      *
      * <p>{@code CustomerService.add/update} 的条件是「策略或清单任一非空就送进 replace」，
      * 所以「切到 ALL_ENABLED 且不动清单」这一唯一合法请求会以 {@code visibilities == null} 抵达
-     * replace；原先 null 被当成 40034「明细行不合法」拒掉，而真实原因与任何明细行无关。
+     * replace，必须按空清单处理，不能当成明细行不合法。
      */
     @Test
     @DisplayName("只改可见性策略、visibilities 留空时不得被 40034 拒掉")

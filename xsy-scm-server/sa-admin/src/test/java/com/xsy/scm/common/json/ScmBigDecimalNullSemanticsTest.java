@@ -19,9 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * SCM null / UNPRICED 语义门禁测试。
  *
- * <p>这是进入 Product Pilot 的前置条件（W0 额外确认项 1）：
- * SmartAdmin 的 {@link BigDecimalNullZeroSerializer} 会把 {@code null} 序列化为 {@code 0}，
- * 与 SCM「缺价 = UNPRICED（值为 null）」的业务语义直接冲突，必须保证它不会污染 SCM。
+ * <p>SmartAdmin 的 {@link BigDecimalNullZeroSerializer} 会把 {@code null} 序列化为 {@code 0}，
+ * 与 SCM「缺价 = UNPRICED（值为 null）」的业务语义直接冲突，因此必须保证它不会污染 SCM。
  *
  * <p>本测试锁定三件事：
  * <ol>
@@ -35,10 +34,10 @@ class ScmBigDecimalNullSemanticsTest {
     /**
      * SCM 业务代码根包；任何新增 SCM 代码都必须落在这个包下。
      *
-     * <p>Q1 迁包收口（2026-09-26）：SCM 已整体从
-     * {@code net.lab1024.sa.admin.module.scm} 迁到 {@code com.xsy.scm}，旧包下已无任何
-     * 生产类，因此扫描根必须跟着换 —— 继续指向旧包会扫到 0 个类，
-     * 而下面 {@code isNotEmpty()} 断言会让它当场失败（这正是该断言存在的意义）。
+     * <p>SCM 生产代码整体位于 {@code com.xsy.scm}，旧包
+     * {@code net.lab1024.sa.admin.module.scm} 下已无任何生产类，因此扫描根必须跟着指向本包 ——
+     * 继续指向旧包会扫到 0 个类，而下面 {@code isNotEmpty()} 断言会让它当场失败
+     * （这正是该断言存在的意义）。
      */
     private static final String SCM_ROOT_PACKAGE = "com.xsy.scm";
 

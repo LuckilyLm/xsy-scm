@@ -14,12 +14,12 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * W5 枚举 ↔ DB CHECK 白名单一致性门禁（W5 Target Design §11.1；B1 扩展）。
+ * 枚举与 DB CHECK 白名单一致性门禁。
  *
- * <p>**不硬编码白名单**：直接读取 migration 文件里各 {@code CONSTRAINT ck_* CHECK (... IN (...))}
+ * <p>不硬编码白名单：直接读取迁移文件里各 {@code CONSTRAINT ck_* CHECK (... IN (...))}
  * 的取值集合，与 Java 枚举逐一比对。这样 DDL 或枚举任何一侧漂移都会立刻失败。
  *
- * <p>操作日志类型在 B1（V22）追加了 {@code RECEIPT_PUTAWAY}，因此该白名单与归属 CHECK 从
+ * <p>操作日志类型追加了 {@code RECEIPT_PUTAWAY}，因此该白名单与归属 CHECK 从
  * {@code V22__scm_receipt_putaway_warehouse.sql} 读取（V22 是 {@code ck_purchase_operation_log_type}
  * / {@code ck_purchase_operation_log_owner} 的最终形态），其余状态白名单仍读 V15。
  */
@@ -59,12 +59,12 @@ class ScmPurchaseStatusEnumTest {
     @Test
     @DisplayName("操作日志 13 型与 ck_purchase_operation_log_type 一致，且归属 CHECK 覆盖全部 13 型")
     void operationTypeMatchesDdlAndOwnerConstraintCoversAll() {
-        // B1 追加 RECEIPT_PUTAWAY 后，白名单与归属 CHECK 的最终形态在 V22。
+        // 追加 RECEIPT_PUTAWAY 之后，白名单与归属 CHECK 的最终形态在 V22。
         Set<String> fromDdl = whitelist(V22_MIGRATION, "ck_purchase_operation_log_type");
         assertThat(names(ScmPurchaseOperationTypeEnum.values())).isEqualTo(fromDdl);
         assertThat(ScmPurchaseOperationTypeEnum.values()).hasSize(13);
 
-        // Q14：归属由 operation_type 决定，因此**每一种**类型都必须出现在归属 CHECK 里，
+        // 归属由 operation_type 决定，因此每一种类型都必须出现在归属 CHECK 里，
         //      否则该类型的日志会既不被接受也不被拒绝（约束整体求值为 NULL 而放行）。
         String sql = migrationSql(V22_MIGRATION);
         String owner = between(sql, "ck_purchase_operation_log_owner", "COMMENT ON COLUMN purchase_receipt");
@@ -73,7 +73,7 @@ class ScmPurchaseStatusEnumTest {
                     .as("归属 CHECK 未覆盖 operation_type=%s", type.name())
                     .contains("'" + type.name() + "'");
         }
-        // 四个分支的分组必须与设计 §7.12 一致（B1 在收货分支追加 RECEIPT_PUTAWAY）
+        // 四个分支的分组口径固定，收货分支含 RECEIPT_PUTAWAY
         assertThat(owner).contains("operation_type = 'DEMAND_GENERATE'");
         assertThat(owner).contains("operation_type = 'DEMAND_ALLOCATE'");
         assertThat(owner).contains("'CREATE','UPDATE','SUBMIT','CANCEL','SHORT_CLOSE','DELETE'");

@@ -15,17 +15,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 超收容差（W5 Target Design §7.5 / Q3a，7 例）。
+ * 超收容差。
  *
  * <pre>
  * tolerance = t_config("scm.purchase.over_receipt_tolerance_percent")   默认 10，范围 0–100
  * ceiling   = planned × (1 + tolerance / 100)
  * available = ceiling − purchase_order_item.received_quantity
- * 本次有效数量 &gt; available → 40989（**整笔回滚**）
+ * 本次有效数量 &gt; available → 40989（整笔回滚）
  * </pre>
  *
- * <p><b>Q3a：载体是 SmartAdmin 原生 Config，不是字典、也不新建 `sys_config`</b>。
- * 因此本类刻意只通过 {@link ConfigService} 读写 —— 这既是用例，也是「不绕过底座」的证明。
+ * <p><b>载体是 SmartAdmin 原生 Config，不是字典、也不另建 sys_config</b>。
+ * 因此本类只通过 {@link ConfigService} 读写 —— 这既是用例，也是「不绕过底座」的证明。
  *
  * <p><b>为什么改配置必须走 ConfigService</b>：它的缓存是手写的 {@code ConcurrentHashMap}
  * （不是 Spring Cache），直接 {@code jdbc.update} 改库不会刷新缓存，用例会读到旧值，

@@ -9,10 +9,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V15 / V16 迁移验收（W5 Target Design §11.2，4 例）。
+ * 采购域迁移的 schema 形状验收。
  *
- * <p>本类是**唯一直接断言 schema 形状**的地方（表 / 索引 / 序列 / 种子 / 外键 / 库存表 / CHECK），
- * 其余 IT 只断言行为。schema 一旦被后续波次悄悄改动，这里会先失败。
+ * <p>本类是唯一直接断言 schema 形状的地方（表 / 索引 / 序列 / 种子 / 外键 / 库存表 / CHECK），
+ * 其余 IT 只断言行为。schema 一旦后续被悄悄改动，这里会先失败。
  *
  * <p><b>V1–V12 永久冻结、V15/V16 只追加</b>：本类不修改任何数据，只读元数据 + 断言约束生效。
  */
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmPurchaseMigrationIT extends ScmW5PgITBase {
 
     /**
-     * V15 新建的 9 张表。
+     * V15 建出的 9 张采购域表。
      */
     private static final List<String> V15_TABLES = List.of(
             "warehouse",
@@ -36,8 +36,8 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     /**
      * 逗号分隔的表名清单，配合 {@code string_to_array(?, ',')} 使用。
      *
-     * <p>**为什么不直接传 {@code String[]}**：{@code JdbcTemplate.queryForObject(sql, Class, Object...)}
-     * 会把数组当成**可变参数展开**（9 个表名 → 9 个参数），而 SQL 里只有 1 个 {@code ?}，
+     * <p>不直接传 {@code String[]} 的原因：{@code JdbcTemplate.queryForObject(sql, Class, Object...)}
+     * 会把数组当成可变参数展开（9 个表名 → 9 个参数），而 SQL 里只有 1 个 {@code ?}，
      * 于是报「column index out of range」。拼成字符串再在 SQL 里切开，行为与驱动无关。
      */
     private static final String V15_TABLE_LIST = String.join(",", V15_TABLES);
@@ -54,9 +54,9 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 "SELECT sequencename FROM pg_sequences WHERE schemaname = current_schema()", String.class);
         assertThat(sequences).contains("purchase_order_no_seq", "purchase_receipt_no_seq");
 
-        // 非主键索引（主键走 pg_constraint，不计入 §6.4 的 31 条；B1 的 V22 追加 1 条部分索引，
-        // V40 的地图归属再追加 1 条 warehouse 部分索引，V51 的报表日期轴和 V74 的采购每日清单各追加 1 条部分索引；
-        // V78 的 ADM-05 净需求冻结批次给 purchase_demand 加 1 条「同一批次行只能生成一条需求」的唯一索引）
+        // 非主键索引：主键走 pg_constraint，不计入这里的计数。部分索引分别来自
+        // V22（双入库生命周期）、V40（地图归属，warehouse）、V51（报表日期轴）、V74（采购每日清单）
+        // 与 V78（ADM-05 净需求冻结批次给 purchase_demand 加的「同一批次行只能生成一条需求」唯一索引）
         Integer indexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
@@ -71,15 +71,15 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                         + "WHERE i.schemaname = current_schema() "
                         + "  AND i.tablename = ANY (string_to_array(?, ',')) "
                         + "  AND i.indexdef LIKE '%WHERE%'", Integer.class, V15_TABLE_LIST);
-        // 已批准部分索引：此前 29 条，V51 的报表确认日期轴、V74 的采购每日清单各追加 1 条，
-        // V78 的 ADM-05 批次行唯一索引（ON purchase_demand(calculation_batch_item_id)
-        // WHERE deleted=FALSE AND calculation_batch_item_id IS NOT NULL）再加 1 条 = 32。
+        // 计数 = V15 建表时的索引 + 后续获批的部分索引，最后一条是 V78 的 ADM-05 批次行唯一索引
+        // （ON purchase_demand(calculation_batch_item_id)
+        // WHERE deleted=FALSE AND calculation_batch_item_id IS NOT NULL）。
         assertThat(partial).isEqualTo(32);
 
         // 8 条唯一索引 = V15 里显式 CREATE UNIQUE INDEX 的 7 条 + V78（ADM-05 冻结批次）
         // 在 purchase_demand 上加的批次行唯一索引。
         // 必须排除「约束支撑的索引」：PG 的 PRIMARY KEY / UNIQUE 约束也会生成 CREATE UNIQUE INDEX，
-        // 不排除就会把 9 个主键算进来（实测 16），从而把断言变成对主键个数的间接断言。
+        // 不排除就会把 9 个主键算进来，从而把断言变成对主键个数的间接断言。
         Integer unique = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes i "
                         + "WHERE i.schemaname = current_schema() "
@@ -90,7 +90,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 Integer.class, V15_TABLE_LIST);
         assertThat(unique).isEqualTo(8);
 
-        // 2 条种子：默认仓库（G-03 单仓库）+ 超收容差配置（Q3a）
+        // 2 条种子：默认仓库（单仓库口径）+ 超收容差配置
         assertThat(jdbc.queryForObject(
                 "SELECT status FROM warehouse WHERE warehouse_code = ? AND deleted = FALSE",
                 String.class, SEED_WAREHOUSE_CODE)).isEqualTo("ENABLED");
@@ -102,17 +102,17 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     @Test
     @DisplayName("全库零外键 + 库存表归属 W6/V19 而非 W5（§3 / §8.1）")
     void noForeignKeysAndInventoryTablesBelongToW6() {
-        // 全库 FK=0 是 V2 的既有纪律（W1–W4 已实测），W5/W6 都不得引入第一个外键。
+        // 全库 FK=0 是 V2 起定下的既有纪律，任何域都不得引入第一个外键。
         // 库存表之间（余额 → 流水）的引用完整性同样走服务层守卫，不走 DB 外键。
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM pg_constraint WHERE contype = 'f'", Integer.class)).isZero();
 
-        // W5 当时断言「一张库存表都不存在」（库存是 W6 的活，W5 不得留迁移债）。
-        // W6 的 V19 合法地建了这两张表，因此这里改成断言**归属**：
+        // 库存表不在采购域的建表范围里，因此这里断言的不是「存在性」，而是「归属」：
         //   1) 它们确实存在；
-        //   2) 它们不在 V15 的 9 张表里（证明不是 W5 偷偷建的）；
-        //   3) 表注释带 V19 的 `W6 库存域` 前缀（证明来自 V19 而不是别处）。
-        // 形状（列 / 约束 / 索引）由 W6 的 ScmInventoryMigrationIT 负责断言，本类不重复。
+        //   2) 它们不在 V15 的 9 张采购表里；
+        //   3) 表注释带 V19 写入的库存域前缀（证明来自 V19 而不是别处）。
+        // 形状（列 / 约束 / 索引）由库存域的 ScmInventoryMigrationIT 负责断言，
+        // 本类不重复。
         List<String> inventoryTables = List.of("inventory_balance", "inventory_movement");
         assertThat(inventoryTables).doesNotContainAnyElementsOf(V15_TABLES);
         assertThat(jdbc.queryForList(
@@ -137,10 +137,10 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 .contains("DEMAND_GENERATE")
                 .contains("DEMAND_ALLOCATE")
                 .contains("RECEIPT_CREATE")
-                // 简单写法的特征：`IS NOT NULL OR ... IS NOT NULL`（Q14 明令禁止）
+                // 简单写法的特征：「IS NOT NULL OR ... IS NOT NULL」，这种写法必须被拒
                 .doesNotContain("purchase_order_id IS NOT NULL OR purchase_receipt_id IS NOT NULL");
 
-        // 正例：DEMAND_GENERATE 的两个 id 必须**同时为空**（A 源的 NOT NULL 在这里会直接写不进去）
+        // 正例：DEMAND_GENERATE 发生在采购单还不存在之前，两个 id 必须同时为空才写得进去
         int inserted = jdbc.update(
                 "INSERT INTO purchase_operation_log (purchase_order_id, purchase_receipt_id, operation_type, "
                         + "operator, after_data, created_by) VALUES (NULL, NULL, 'DEMAND_GENERATE', 'W5 IT', "
@@ -159,55 +159,55 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         expectSqlFailure(
                 "INSERT INTO purchase_operation_log (purchase_order_id, operation_type, operator) "
                         + "VALUES (1, 'RECEIPT_CREATE', 'W5 IT')");
-        // 反例：operation_type 不在白名单（修 A-D16）
+        // 反例：operation_type 不在白名单
         expectSqlFailure(
                 "INSERT INTO purchase_operation_log (purchase_order_id, operation_type, operator) "
                         + "VALUES (1, 'UNKNOWN_OP', 'W5 IT')");
     }
 
     @Test
-    // 上限随获批的新迁移追加而抬升。当前上限 43：
-    //   V17 = F0（仅数据，t_config 文件上传大小）
-    //   V18 = W5.5（仅数据，t_menu 侧边栏图标）
-    //   V19 = W6（inventory_balance / inventory_movement + Q5 backfill）
-    //   V20 = W6（仅数据，t_menu 库存菜单与权限）
-    //   V21 = W6 静态复核修复（流水不可改删触发器）
-    //   V22 = B1（purchase_receipt 双入库生命周期 + 操作日志类型扩展）
-    //   V23 = B1（仅数据，t_menu 入库确认 / 仓库启停权限）
-    //   V24 = chore（仅数据，补齐 15 表 + 323 字段 COMMENT，并覆盖 V5 遗留的上游品牌列注释）
-    //   V25 = 出库波次（SALES_OUT 流水类型 + reserved_quantity + 出库单/预留三张表 + 菜单）
+    // 版本清单逐条列举，而不是只断言 contains：已应用的迁移只追加，新版本只能出现在尾部，
+    // 因此任何回改、重排或漏账都会让这个断言立刻失败。
+    // 各版本的内容口径：
+    //   V17 = 仅数据，t_config 文件上传大小
+    //   V18 = 仅数据，t_menu 侧边栏图标
+    //   V19 = inventory_balance / inventory_movement 两张库存表
+    //         + 历史已确认收货行的期初回填
+    //   V20 = 仅数据，t_menu 库存菜单与权限
+    //   V21 = 库存流水不可改删触发器
+    //   V22 = purchase_receipt 双入库生命周期 + 操作日志类型扩展
+    //   V23 = 仅数据，t_menu 入库确认 / 仓库启停权限
+    //   V24 = 仅数据，补齐 15 表 + 323 字段 COMMENT，并覆盖 V5 遗留的上游品牌列注释
+    //   V25 = SALES_OUT 流水类型 + reserved_quantity + 出库单/预留三张表 + 菜单
     //   V26–V37 = 出库权限 / 日志类型 / 大屏 / 盘点 / 报损报溢 / 调拨 / 预警 / 转换 / 成本 / 导入
-    //             （逐条口径见 AGENTS.md 的迁移表）
-    //   V40 = 地图 M0（scm_region 省市字典 + 三张主档地理归属列 + 存量地址保守解析）
-    //   V41 = F0-DEBT-01 写侧收口（删 product_image.file_url：预签名地址不再落库，按 file_key 现算）
-    //   V42–V43 = 物流配送 L0–L2（五张配送表 + 地理快照约束；菜单与权限，原编号 V41/V42 因撞号重排）
-    //   V44–V45 = 商品中心 PCO-2（product_image 图集分组列；导入导出与图片中心菜单权限）
-    //   V46 = 业务待办（仅数据，scm:todo:query 菜单与权限）
-    //   V47 = 配送打印追踪（delivery_route_order 打印计次三列）
-    //   V48 = 盘点效率（仅数据，盘点批量导入权限）
-    //   V49 = PCO-2 图片类型语义收口（image_type 改为 GALLERY/DETAIL，主图唯一事实回归 is_primary）
-    //   V50 = 报表中心（仅数据，菜单与 scm:report:* 权限 1200-1216）
-    //   V51 = 报表日期轴索引（sales_order / order_refund / purchase_receipt 三条部分索引）
-    // V1–V18 的内容与顺序仍被逐条钉死，任何回改/重排都会立刻失败。
-    //   V63 = 配送 L3 履约数据地基（出库行订单来源 + 线路履约状态）
-    //   V64 = 配送 L3 三个权限点（仅数据）
+    //   V40 = scm_region 省市字典 + 三张主档地理归属列 + 存量地址保守解析
+    //   V41 = product_image 删 file_url 列（预签名地址不入库，按 file_key 现算）
+    //   V42–V43 = 物流配送：五张配送表 + 地理快照约束；菜单与权限
+    //   V44–V45 = product_image 图集分组列；导入导出与图片中心菜单权限
+    //   V46 = 仅数据，scm:todo:query 菜单与权限
+    //   V47 = delivery_route_order 打印计次三列
+    //   V48 = 仅数据，盘点批量导入权限
+    //   V49 = image_type 改为 GALLERY/DETAIL，主图唯一事实回归 is_primary
+    //   V50 = 仅数据，报表中心菜单与 scm:report:* 权限 1200-1216
+    //   V51 = sales_order / order_refund / purchase_receipt 三条报表日期轴部分索引
+    //   V63 = 出库行订单来源 + 线路履约状态
+    //   V64 = 仅数据，配送三个权限点
+    //   V65 = 8 张财务事实表 + 5 条单号序列，零既有表改动
+    //   V66 = 仅数据，财务收款登记权限（财务第一个受保护端点）
+    //   V67 = 仅数据，付款登记权限
+    //   V68 = 仅数据，收款 / 付款反向权限
+    //   V69 = 仅数据，核销、反向核销与应付红字权限
+    //   V70 = 仅数据，财务查询与导出权限
+    //   V71–V72 = 仅数据，五个财务页面菜单与折叠导航图标
+    //   V73 = 仅数据，报表中心往来概览页面与查询权限
+    //   V74 = report_purchase_daily 每日清单表 + 部分索引
+    //   V75 起对应 ADM 系列决策追加的版本（ADM-02/03/04 结算与退货、ADM-12 支付与余额）
+    // 没有受保护端点也没有真实页面的一次交付不发布菜单与权限点：财务菜单/权限只随第一次
+    // 出现受保护 API 或页面的那次迁移发布，不提前占号，
+    // 口径见 docs/plan/active/finance-r1-design.md 的权限矩阵与 Flyway 规划两节。
     //
-    // 注意：本用例只读 flyway_schema_history（DB 侧），**不扫描磁盘上的 migration 文件**，
+    // 注意：本用例只读 flyway_schema_history（DB 侧），不扫描磁盘上的迁移文件，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    //   V65 = Finance R1 数据地基（8 张财务事实表 + 5 条单号序列，零既有表改动）。
-    //         F1-1 / F1-2 **不含任何 data-only 迁移**：那几轮没有 Controller，
-    //         因此没有需要授权的菜单与权限点；财务菜单/权限按「哪个阶段第一次出现受保护 API
-    //         或真实页面，就由那个阶段的迁移种」推进（页面菜单随 F1-6 的 .vue 一起落库），
-    //         见 docs/plan/finance-r1-design.md §16 / §21。
-    //   V66 = Finance R1 F1-3A（仅数据）：F1-3A 交付第一个受保护端点 POST /scm/finance/receipt/add，
-    //         因此只发布 1500 隐藏目录 + 1521 scm:finance:receipt:add（形态照 V28 / V46），
-    //         仍然不发布任何财务页面菜单。
-    //   V67 = Finance R1 F1-3B（仅数据）：登记付款权限。
-    //   V68 = Finance R1 F1-3C（仅数据）：收款 / 付款反向权限。
-    //   V69 = Finance R1 F1-4（仅数据）：核销、反向核销与应付红字权限。
-    //   V70 = Finance R1 F1-5（仅数据）：查询与导出权限。
-    //   V71–V72 = Finance R1 F1-6（仅数据）：五个页面菜单与折叠导航图标。
-    //   V73 = Finance R1 F1-8（仅数据）：报表中心往来概览页面与查询权限。
     @DisplayName("flyway_schema_history：V1–V110 全部 success，V15–V110 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
@@ -221,8 +221,8 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52",
                 "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67",
                 "68", "69", "70", "71", "72", "73", "74",
-                // V75 起是后续 ADM 交付追加的版本（ADM-02/03/04 结算与退货 → ADM-12 支付/余额）。
-                // 这里仍然逐条列举而不是 contains：只增不减，且顺序不变。
+                // ADM 系列决策追加的版本（ADM-02/03/04 结算与退货、ADM-12 支付与余额）；
+                // 同样逐条列举而不是 contains：只增不减，且顺序不变。
                 "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90",
                 "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105",
                 "106", "107", "108", "109", "110");

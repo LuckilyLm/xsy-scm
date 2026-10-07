@@ -8,10 +8,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 单据编号拼接规则（纯函数，不连库）。
  *
- * <p>原先这套断言在 4 个 {@code Inventory*NumberGeneratorTest} 里各写一遍，而它们调用的是
- * 各自类中<b>逐字节相同</b>的 {@code format} 实现 —— 同一个口径被重复断言 12 次，
- * 按 §31「Avoid Over-Testing」属于该合并的一类。拼接现已收敛到本类，规则在这里测一次；
- * 各单据自己的前缀是否互不撞车仍留在各自的测试里，那才是每个文档独有的事实。
+ * <p>拼接规则收敛在本类：各 {@code Inventory*NumberGeneratorTest} 用的是同一个
+ * {@code format} 实现，同一口径只在这里断言一次；各单据自己的前缀是否互不撞车仍留在
+ * 各自的测试里，那才是每个文档独有的事实。
  */
 @DisplayName("SCM 单据编号拼接规则")
 class ScmDocumentNumbersTest {

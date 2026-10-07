@@ -45,10 +45,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * SmartAdmin 系统层 Mapper SQL 的 PostgreSQL 可解析性校验。
  *
- * <p><b>为什么需要这个测试：</b>W0 做过一轮 MySQL → PostgreSQL 的 mapper XML 机械转换
- * （{@code tools/pg_convert_mapper_xml.py}：{@code INSTR -> STRPOS}、{@code DATE_FORMAT -> CAST}）。
- * 机械转换只覆盖了函数名，无法发现「MySQL 下合法、PostgreSQL 下非法」的标识符问题——
- * 最典型的是驼峰列名：MySQL 标识符大小写不敏感，PostgreSQL 未加引号会折叠为小写。
+ * <p><b>为什么需要这个测试：</b>mapper XML 只做过函数名层面的 MySQL → PostgreSQL 转换
+ * （{@code INSTR -> STRPOS}、{@code DATE_FORMAT -> CAST}），发现不了「MySQL 下合法、PostgreSQL 下非法」
+ * 的标识符问题——最典型的是驼峰列名：MySQL 标识符大小写不敏感，PostgreSQL 未加引号会折叠为小写。
  *
  * <p><b>做法：</b>不执行、不改数据。对 {@code SqlSessionFactory} 里注册的每一条 MappedStatement：
  * <ol>
@@ -57,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>取 {@link BoundSql} 得到带 {@code ?} 占位符的最终 SQL；</li>
  *   <li>把 {@code ?} 换成 {@code $n} 后交给真实 PostgreSQL 执行 {@code PREPARE}——
  *       PREPARE 会走完整的 parse + 语义分析，表名/列名/函数名/类型不合法会直接报错，
- *       但**不会**执行、不会写数据。</li>
+ *       但不会执行、不会写数据。</li>
  * </ol>
  *
  * <p>这条路径能同时覆盖动态 SQL 的每个 {@code <if>}/{@code <foreach>} 分支，
@@ -76,18 +75,13 @@ class SmartAdminMapperPgValidationIT {
     private static final AtomicInteger SEQ = new AtomicInteger();
 
     /**
-     * 已知且已归档的失败（棘轮基线）。任何**新增**失败都会让本测试变红。
+     * 已知且已归档的失败（棘轮基线）。任何新增失败都会让本测试变红。
      *
      * <p>当前只剩 1 条：
      * <ul>
      *   <li>{@code DEAD_CODE}：语句本身非法（MySQL 下同样非法），但当前调用链不可达；
      *       修它等于发明未验证的行为，故只登记不改。</li>
      * </ul>
-     *
-     * <p>原先的 3 条 {@code BLOCKED_ON_SCHEMA_DECISION}（{@code EnterpriseEmployeeDao} 的
-     * {@code queryPageEmployeeList} / {@code selectByEnterpriseIdList} / {@code selectByEmployeeIdList}）
-     * 已在 **V12** 中按方案 A 从 schema 根因修复：{@code t_oa_enterprise_employee.enterprise_id}
-     * 与 {@code employee_id} 由 {@code VARCHAR(100)} 改为 {@code BIGINT}，因此移出本基线。
      */
     private static final Map<String, String> KNOWN_FAILURES = Map.of(
             "net.lab1024.sa.base.module.support.serialnumber.dao.SerialNumberRecordDao"
@@ -200,13 +194,13 @@ class SmartAdminMapperPgValidationIT {
                 .hasSize(KNOWN_FAILURES.size());
         assertThat(validated).as("应至少校验到一批语句").isGreaterThan(100);
 
-        // skipped 原先只 println，等于给这套校验留了一个无声的逃逸口：任何在 getBoundSql 抛错的
-        // 语句整条跳过 PG 解析，failures 仍为空、用例照样绿。实测 433 条跳过全部来自
-        // MyBatis-Plus BaseMapper 继承的泛型 CRUD（SQL 由框架生成，不是本仓库手写的）。
+        // 任何在 getBoundSql 抛错的语句都会整条跳过 PG 解析，failures 仍为空、用例照样绿，
+        // 所以 skipped 不能只打印。被跳过的语句全部来自 MyBatis-Plus BaseMapper 继承的泛型 CRUD
+        // （SQL 由框架生成，不是本仓库手写的）。
         // 真正要防的是「有人在 mapper XML 里写了与继承方法同名的自定义语句」——
         // 那会被这套按方法名枚举的机制静默跳过，所以钉两条：
         //   1) 每条跳过项的方法名必须在 BaseMapper 自身的方法集合内（运行时取，不另抄一份清单）；
-        //   2) 跳过总数不得超过基线，新增 mapper 时要显式改这个数字才会过。
+        //   2) 跳过总数不得超过基线，新增跳过项时要显式调整这个数字才会过。
         var inheritedCrudMethods = new java.util.HashSet<String>();
         for (Method base : com.baomidou.mybatisplus.core.mapper.BaseMapper.class.getMethods()) {
             inheritedCrudMethods.add(base.getName());
@@ -219,19 +213,10 @@ class SmartAdminMapperPgValidationIT {
                             + "按方法名枚举会漏掉）: %s", statementId)
                     .contains(methodName);
         }
-        // 基线 433 → 443：合并进来的报表中心 / 文件授权 / 数据范围三批新 DAO 各带若干 BaseMapper
-        // 泛型方法。基线 443 → 453：P1 分拣新增 sorting_task / sorting_task_item 两张表的 BaseMapper。
-        // 基线 453 → 493：P3 Finance R1 的 F1-1 新增 8 张财务表的 BaseMapper（8 × 5 = 40 条，
-        // 与 P1 的「每张表 5 条」同一形态）。
-        // 基线 493 → 608：F1-1 之后各 ADM 交付又带来 23 张 BaseMapper 表（+115 条），
-        // 集中在 ADM-12 支付/余额（payment_* 7 张、customer_balance_* 3 张）、
-        // ADM-07 打印中心（print_template / print_record）、ADM-02 退货接收单（2 张）、
-        // ADM-05 净需求冻结批次（2 张）、ADM-10 排线建议、ADM-01 对账单等。
-        // 数字在 V106 干净库上实测取得；上面第 1) 条已保证这 608 条的**方法名全部属于 BaseMapper**，
-        // 因此它们不可能是手写语句被漏掉——手写语句一旦混进来会先在那条断言上点名失败。
-        // 另注：本轮把 ScmValueScope / ScmDataScopeContext 变成可构造之后，
-        // 原本因 `scope.ids` 为 null 而被跳过的数据范围手写语句（如 CustomerCreditDao.selectExposure、
-        // ScmSupplierStatementDao.selectEvents）已从 skipped 移到真正被 PREPARE 校验的集合里。
+        // BaseMapper 自动注册的方法不做独立 SQL PREPARE，因此这里跳过统计。
+        // 当前允许的最大跳过数为 608；新增跳过项必须显式调整这个数字。
+        // 上面第 1) 条已保证这些跳过项的方法名全部属于 BaseMapper，因此它们不可能是手写语句被漏掉——
+        // 手写语句一旦混进来会先在那条断言上点名失败。
         assertThat(skipped).as("跳过项基线 608 条，只增不减需显式确认").hasSizeLessThanOrEqualTo(608);
     }
 

@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * FA-1 读侧收口在序列化层的落点：内嵌 VO 字段必须走**带调用者身份**的批量入口，
+ * 读侧收口在序列化层的落点：内嵌 VO 字段必须走带调用者身份的批量入口，
  * 并且任何退化路径都不回显原始 key。
  *
  * <p>逐 key 的放行规则本身不在这里测（那是 {@code FileAccessGuardTest} 与
@@ -70,7 +70,7 @@ class FileKeyVoSerializerTest {
     @Test
     void neverFallsBackToTheUnauthenticatedBatchEntry() throws Exception {
         // 无身份入口只服务公开目录；序列化器拿不到身份时必须什么都不解析，
-        // 而不是退回旧入口把私有附件展开成 URL。
+        // 而不是退回无守卫的解析入口，把私有附件展开成 URL。
         wired().serialize("private/common/a.png", generator, provider);
 
         verify(fileService, never()).getFileList(anyList());
@@ -95,7 +95,7 @@ class FileKeyVoSerializerTest {
 
         unwired.serialize("private/common/a.pdf", generator, provider);
 
-        // 旧实现会在依赖缺失时把存储里的 key 原样写进响应，那仍然泄露私有附件的存在与路径。
+        // 依赖缺失时把存储里的 key 原样写进响应，仍然会泄露私有附件的存在与路径。
         verify(generator, never()).writeString(anyString());
         verify(generator).writeObject(List.of());
     }

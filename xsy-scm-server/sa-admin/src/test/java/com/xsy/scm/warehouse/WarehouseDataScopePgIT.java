@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * 仓库主档的可见性收口（P0-H 裁决第 3 条）。
+ * 仓库主档的可见性收口（P0 基线收口裁决第 3 条）。
  *
  * <p>裁决口径：非管理员调用仓库接口时<b>只返回自己被授权的仓库</b>，未授权仓的
  * id / 名称 / 地址一律不给 —— 选择器一旦漏出别人的仓库 id，就等于把「往那个仓提交单据」

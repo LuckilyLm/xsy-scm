@@ -17,7 +17,7 @@ import java.time.OffsetDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 仓库启停生命周期（B1，HD-B1-01 严格模式，PG IT）。
+ * 仓库启停生命周期（严格停用模式，PG IT）。
  *
  * <p>停用有三条阻塞条件（按序短路）：库存余额、在途采购单（SUBMITTED/PARTIALLY_RECEIVED）、
  * 待入库收货单（CONFIRMED + putaway=PENDING）。停用后：历史查询/详情照常，新业务引用一律拒绝。

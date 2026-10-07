@@ -10,7 +10,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 采购单导出列目录（Wave 2B §6.5）的纯单元测试。
+ * 采购单导出列目录的纯单元测试。
  *
  * <p>导出的正确性完全落在「列目录」这层纯函数上：前端勾选只回传 key，后端按固定顺序过滤、
  * 未知 key 忽略、空勾选回退整目录，null 单元格落成空串。这些都是无需数据库即可断言的口径，
