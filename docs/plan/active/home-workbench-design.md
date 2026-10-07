@@ -296,26 +296,33 @@ ScmBusinessMetricsService
 
 ### 4.1 接口
 
-沿用已有 `/scm/dashboard` 命名空间（`ScmTodoController` 已在此），新增三个只读端点：
+沿用已有 `/scm/dashboard` 命名空间（`ScmTodoController` 已在此），新增三个只读端点（`ScmDashboardController`）：
 
 | 端点 | 返回 | 说明 |
 | --- | --- | --- |
 | `GET /scm/dashboard/overview` | KPI 卡列表 | 今日销售额 / 今日订单 / 今日采购额 / 今日收货 / 库存异常 |
-| `GET /scm/dashboard/trend?range=7d\|30d&metric=sales\|purchase\|inventory` | 一条主序列 | 复用 `ScreenTrendVO` 的 8 条序列，按 metric 取金额 + 笔数两条 |
-| `GET /scm/dashboard/ranking?dimension=customer\|product&limit=5` | 排行行 | 复用客户 / 商品销售排行 |
+| `GET /scm/dashboard/trend?metric=sales\|purchase\|inventory&range=7d\|30d` | 薄 VO：`{metric, range, dates, primarySeries, secondarySeries}` | 主 / 次两条序列由 metric 决定；不再复制 `ScreenTrendVO` 的八条序列 |
+| `GET /scm/dashboard/ranking?dimension=customer\|product&limit=5` | `List<RankItem>` | metrics 已取回 TOP10，这里只截断（`limit` 默认 5、上限 10） |
+
+**接口只带业务语义，不带 UI 决策**：卡片返回 `{key, value, unit, route}`，中文文案、图标、配色、卡片样式全由前端决定；
+后端只回答「该不该给 / 多少 / 跳哪里」。把 label / color / icon 放进接口等于把 UI 设计固化进 Java。
 
 约束：
 
 - 全部只读，`@Transactional(readOnly = true)`，不写业务表、不发消息、不落快照。
-- 每次请求解析一次 `ScmDataScopeContext` 并下传，**不得绕过数据范围**（与大屏同口径）。
-- 「今日」一律用 `Asia/Shanghai` 日界（`ScreenDataService` 已有 `BUSINESS_ZONE`，迁移时保留这条口径理由）。
+- **不写统计 SQL**：一律调 `ScmBusinessMetricsService`，数据范围沿用大屏那一套「归属 ∩ 仓库」，不沿用报表的宽范围语义。
+- 「今日」一律用 `Asia/Shanghai` 日界（口径由 metrics 服务负责，这里不重复实现）。
 - KPI 返回**列表**而非固定字段：卡片由服务端决定给不给，前端按返回数量自适应（见 §5.5）。
+- `metric` / `dimension` 的未知取值按参数不合法拒绝（40000），不静默回落。
 
 ### 4.2 权限
 
-- 新增 `scm:dashboard:query`（V115：1200 隐藏目录 + 1201 权限点），**不复用** `scm:screen:query`。
+- 新增 `scm:dashboard:query`（V115：**2000** 隐藏目录 + **2001** 权限点），**不复用** `scm:screen:query`。
+  1200 段被报表中心占用（1200 报表中心 / 1201 经营概览 / 1211-1230 各报表权限点），2000 段已核对空闲。
 - 首版数据库只授 role 1；随后由角色配置授给销售 / 采购 / 仓库 / 管理角色。
-- KPI 卡与待办同范式做**卡片级裁剪**：缺 `scm:inventory:warning:query` 就不返回「库存异常」格，缺采购域权限就不返回采购格；**省略而不是给 0**（0 会被读成「今天真的没有」）。
+- KPI 卡与待办同范式做**卡片级裁剪**：缺 `scm:inventory:warning:query` 就不返回「库存异常」格；**省略而不是给 0**（0 会被读成「今天真的没有」）。
+  卡片与领域权限的对应：销售额 / 订单 → `scm:order:query`；采购额 → `scm:purchase:query`；收货 → `scm:purchase:receipt:query`；库存异常 → `scm:inventory:warning:query`。
+- 趋势与排行是单指标端点，没有「省略」的形态，**按指标 / 维度逐个校验领域权限**（销售额走订单查询权、采购额走采购查询权、库存趋势走库存流水查询权），缺权直接拒绝 —— 入口权限不隐含任何领域可见性。
 - 「进入运营大屏」入口仍需 `scm:screen:query`，前端按权限显隐。
 
 ### 4.3 不做的事
@@ -395,7 +402,7 @@ views/system/home/
 | 0 | 抽 `ScmBusinessMetricsService`；大屏改接它并**切到确认口径**（见 §3.4） | 大屏 IT 与前端契约全绿；除「销售额 / 订单数 / 成交客户 / 两张销售排行 / 趋势的 sales 与 orders 序列」因换轴而变化外，其余数字与改动前逐项一致；换轴后与报表同区间取值相等 |
 | 1A | **销售口径闭环**：把报表概览的销售三件套与大屏对齐到同一套口径定义（确认轴 + 结算金额列 + CONFIRMED），并补跨日 IT 与口径契约 | 报表与大屏对同一区间同数；跨日边界（昨天创建今天确认）两端都算今天；口径断言可被注入违规打红（范围策略未变，见 §3.6） |
 | 1B | **采购口径正式切换**：`ScmPurchaseStatusEnum.committed()` 派生已提交状态 → metrics 采购方法改 `submitted_at` 轴 + 状态过滤 → 大屏「今日采购 / 活跃供应商」切过来 → 趋势的采购序列同步 → 收货单切 `confirmed_at + CONFIRMED` → 报表采购 SQL 的状态清单改由枚举传入（范围策略不动，见 §3.6） | §2.2 的验收单；大屏 KPI、趋势末点、报表采购概览三者同数；新增采购跨日 / 草稿 / 取消 / 收货草稿的 IT |
-| 2 | `scm:dashboard:query` 权限种子 + 三个只读端点 + IT | 缺领域权限的卡片被省略而不是给 0；越权 403；数据范围用例通过 |
+| 2 | `scm:dashboard:query` 权限种子 + `ScmDashboardController` 三个只读端点（只调 metrics，不写 SQL） | 缺领域权限的卡片被省略而不是给 0；趋势 / 排行按指标校验领域权限；数据范围与大屏一致；7d / 30d 与 ranking limit 用例 |
 | 3 | 首页 UI 重构（删假数据组件、欢迎区、KPI、主图、待办、双排行、库存健康） | 截图复核；`verify.py frontend` PASS；§5.5 的列数自适应逐档验证 |
 | 4a | 首页清理：删 `echarts/*`、`heart-sentence.ts`；修 `home-notice` 死 prop；快捷入口换业务入口并按权限过滤 | 无残留引用；lint / 契约全绿 |
 | 4b | **整套删除 SmartAdmin 本地待办能力**（清单见下） | 顶部铃铛只剩未读消息；全仓无 `TO_BE_DONE` 残留 |
@@ -430,7 +437,7 @@ views/system/home/
 | `ToBeDoneCard` | **整套功能删除**，不是只从首页移走（清单见 §6 批次 4b） |
 | 快捷入口 | 保留机制，默认项全部换成 SCM 业务入口并按权限过滤 |
 
-已无待定夺项。批次顺序：0（已完成）→ 1A（已完成）→ 1B（已完成）→ 2 → 3 → 4a → 4b。
+已无待定夺项。批次顺序：0（已完成）→ 1A（已完成）→ 1B（已完成）→ 2（已完成）→ 3 → 4a → 4b。
 
 批次 1B 的两点补充说明：
 
