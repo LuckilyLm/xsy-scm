@@ -161,6 +161,10 @@ const JAVA_ONLY_MARKERS = [
  */
 const FRONTEND_ONLY_MARKERS = [
   ['注释里的 HTML 强调标签', /<\/?[biu]\s*\/?>/],
+  // 规范第 2 节把 `{@code}` / `{@link}` 与 HTML 强调标签同等对待：它们是 Javadoc 内联标记，
+  // 搬到 `.ts` / `.vue` 注释里不会渲染。此前仓库里恰好是 0，但契约没钉，加回来不会红。
+  ['前端 Javadoc code', /\{@code\b/],
+  ['前端 Javadoc link', /\{@link\b/],
 ];
 
 /** 声明 Java 范围 key，避免与 `SCOPES` 里的字符串字面量漂移。 */
@@ -172,6 +176,14 @@ const PLAN_MARKERS = [
   ['Rn 阶段代号', /\bR[0-9]\b/],
   ['A-Dn 编号', /\bA-D\d+\b/],
   ['Qna 编号', /\bQ\d{1,2}[a-z]?\b/],
+  // 开发切片号 `3-11a` / `3-12b` / `F1-3A`：ADM-12 是 ADR-009 定义的长期锚点，但它后面的
+  // 「3-11a」在 docs 里没有对应小节，属「这批开发是第几刀」而不是当前约束。
+  // 必须收窄，否则会命中两类正常散文：长度范围（`请输入3-16位`）与日期（`09-21`）。
+  // 判据是「带字母尾巴」或「紧跟在 ADM-n 之后」——这两种才是切片号的实际写法。
+  // `(?<![\d-])` 排掉日期里的中段；`(?![a-z\d])` 排掉 `2-4bit` 这类单位。
+  ['字母尾巴的切片号', /(?<![\d-])\d{1,2}-\d{1,2}[a-z](?![a-z\d])/],
+  ['ADM 锚点后的切片号', /\bADM-\d{1,2}\s+\d{1,2}-\d{1,2}\b/],
+  ['Fn-n 切片号', /\bF\d+-\d+[A-Z]?\b/],
 ];
 
 /** 判定 `§` 是否指向现存长期文档。 */
@@ -264,13 +276,16 @@ const WHITELIST = [
  * 只需报告的基线（不参与过程标记的成败判定 —— 那一项要求恒为 0）。
  *
  * `anchoredSection`：指向现存文档的 `§` 链接数，只允许不减少（它们是有效引用）。
- * `longCommentCount`：`> 8 行`的注释块数，仅 console.log 输出，不判违规。
+ *
+ * 这里刻意不再保存 `longCommentCount`：长注释数从来不参与成败，写死的数字却会随治理
+ * 漂移（曾经的 130 / 396 早已不是实际值），一个叫 baseline 的错数字比没有更误导人。
+ * 实际数量由「长注释计数」那条测试在运行时从扫描结果打印。
  */
 const REPORT_BASELINE = {
-  'xsy-scm-web/src': {anchoredSection: 4, longCommentCount: 130},
-  'xsy-scm-web/test': {anchoredSection: 0, longCommentCount: 0},
-  'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {anchoredSection: 0, longCommentCount: 396},
-  'xsy-scm-server/sa-admin/src/main/resources': {anchoredSection: 0, longCommentCount: 16},
+  'xsy-scm-web/src': {anchoredSection: 4},
+  'xsy-scm-web/test': {anchoredSection: 0},
+  'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {anchoredSection: 0},
+  'xsy-scm-server/sa-admin/src/main/resources': {anchoredSection: 0},
 };
 
 // ------------------------------------------------------------------
