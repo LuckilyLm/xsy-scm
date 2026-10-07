@@ -187,9 +187,3 @@ function resetQuery() {
 
 onMounted(queryData);
 </script>
-
-<style scoped>
-.read-only-hint {
-  margin-bottom: 12px;
-}
-</style>

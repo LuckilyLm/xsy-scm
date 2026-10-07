@@ -270,10 +270,6 @@ function updateDraft(itemId: Id, field: DraftField, value: unknown) {
   margin-bottom: 12px;
 }
 
-.entry-hint {
-  margin-bottom: 12px;
-}
-
 .cell-error {
   display: block;
   font-size: 12px;
