@@ -20,9 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ScmPurchaseStatusEnumTest {
 
     @Test
-    @DisplayName("已提交清单 = 全部状态去掉 DRAFT 与 CANCELLED")
-    void committedNamesAreDerivedByExclusion() {
-        // 期望值在这里独立算一遍，不复用 committed()：实现若被改成硬编码的正列举，新增状态时会与这里对不上。
+    @DisplayName("已提交清单 = 全部状态减去 DRAFT 与 CANCELLED")
+    void committedNamesCoverEveryStatusExceptDraftAndCancelled() {
+        // 期望值在这里独立算一遍，不复用 committed()：实现若漏掉某个状态，两边会对不上。
         List<String> expected = Arrays.stream(ScmPurchaseStatusEnum.values()).map(Enum::name)
                 .filter(name -> !Set.of("DRAFT", "CANCELLED").contains(name)).toList();
         assertThat(ScmPurchaseStatusEnum.committedNames()).containsExactlyElementsOf(expected);

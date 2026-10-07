@@ -25,15 +25,21 @@ public enum ScmPurchaseStatusEnum {
      * 是否已进入正式采购履约链路（「已提交」口径，提交时间见 {@code submitted_at}）。
      *
      * <p>
-     * <b>用排除法而不是正列举</b>：新增状态（如 {@code CLOSED} / {@code PARTIALLY_CLOSED}）时，正列举会<b>静默漏算</b> ——
-     * 数字看起来正常，只是偏小，而这是本项目最忌讳的失败方式。排除法默认把新状态算进履约链路。
+     * <b>穷尽 switch、不写 default</b>：enum 一旦新增状态（如 {@code PENDING_APPROVAL} / {@code REJECTED} / {@code CLOSED}），
+     * 这里会直接编译不过，逼着开发者显式裁决新状态算不算已提交。
+     *
+     * <p>
+     * 不用「排除 DRAFT 与 CANCELLED」的写法：那样确实不会漏算新状态，但会把<b>尚未进入履约</b>的状态 （审批中、已驳回、备货中）默认算进来，而这类错法同样是静默的 —— 数字看起来正常，只是偏大。
      *
      * <p>
      * 依据 {@code PurchaseOrderStateMachine}：只有 {@code DRAFT} 与 {@code SUBMITTED} 可取消，{@code PARTIALLY_RECEIVED} 只能
      * {@code shortClose}。所以「已提交后又被取消」只发生在一票货都没收的单上 —— 这类单从未产生收货，不计入采购额是对的。
      */
     public boolean committed() {
-        return this != DRAFT && this != CANCELLED;
+        return switch (this) {
+            case SUBMITTED, PARTIALLY_RECEIVED, RECEIVED, SHORT_CLOSED -> true;
+            case DRAFT, CANCELLED -> false;
+        };
     }
 
     /**

@@ -62,10 +62,15 @@ public class ScmBusinessMetricsService {
     private final ScmBusinessMetricsDao metricsDao;
 
     /**
-     * 区间内的销售事实：报表概览与首页 / 大屏共用同一份定义。
+     * 区间内的销售事实（订单数 / 销售额 / 成交客户数），三个字段同轴（{@code confirmed_at}）。
      *
      * <p>
-     * 三个字段同轴（{@code confirmed_at}）。报表按表单筛选收窄（客户 / 业务员 / 订单来源），首页与大屏传 {@link SalesFilter#NONE}；两者都按调用者的数据范围收窄。
+     * 首页 / 大屏直接使用本方法。报表概览因<b>可见性范围策略不同</b>（销售不做归属收窄，由页面权限承担） 保留自己的查询实现，不复用这里 —— 但时间轴、状态与金额列必须与这里保持同一套口径契约， 由
+     * {@code scm-metrics-single-source-contract} 钉住。详见 {@code docs/plan/active/home-workbench-design.md} 的「口径同源 ≠
+     * 范围同源」一节。
+     *
+     * <p>
+     * {@code filter} 是本方法自带的业务维度筛选（客户 / 业务员 / 订单来源），与范围收窄是两件事。
      */
     public SalesRangeMetrics salesRange(LocalDate startDate, LocalDate endDate, SalesFilter filter,
             ScmDataScopeContext scope) {
@@ -99,11 +104,11 @@ public class ScmBusinessMetricsService {
     }
 
     /**
-     * 区间内的已提交采购事实：报表采购分析与首页 / 大屏共用同一份定义。
+     * 区间内的已提交采购事实（采购单数 / 金额），两个字段同轴（{@code submitted_at}）且只算已提交状态。
      *
      * <p>
-     * 两个字段同轴（{@code submitted_at}）且只算已提交状态。报表按表单筛选收窄（供应商 / 采购员 / 仓库）， 首页与大屏传
-     * {@link PurchaseFilter#NONE}；两者都按调用者的数据范围收窄。
+     * 首页 / 大屏直接使用本方法。报表的采购分析因<b>可见性范围策略不同</b>（只按仓库收窄，不按采购归属收窄） 保留自己的查询实现，不复用这里 —— 但时间轴、状态与金额列必须与这里保持同一套口径契约，
+     * 其中「已提交状态清单」由 {@code ScmPurchaseStatusEnum.committedNames()} 传参给两边的 SQL，只有一处来源。
      */
     public PurchaseRangeMetrics purchaseRange(LocalDate startDate, LocalDate endDate, PurchaseFilter filter,
             ScmDataScopeContext scope) {

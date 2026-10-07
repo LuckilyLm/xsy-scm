@@ -128,13 +128,18 @@ RECEIVED / SHORT_CLOSED / CANCELLED 为终态
 
 ## 3. 架构决策
 
-### 3.1 原则：一个业务指标只有一处口径定义
+### 3.1 原则：一个业务指标只有一套业务口径定义
 
 大屏要「创建轴」、报表要「确认轴」都可以存在，问题不在口径不同，而在**同一个口径被写了两遍**、以及**同一个名字被用在两个口径上**。
 
 所以目标是：
 
-> 每个业务指标只有一处 SQL 定义，且这个定义有一个唯一的名字；任何界面要用某个数，都必须引用同一个定义。
+> 每个业务指标只有**一套业务口径定义**（时间轴 + 状态 + 金额列 + 指标名）；
+> 因为**可见性范围策略不同**，SQL 实现允许多个，但必须受契约测试与跨端一致性测试约束。
+
+「SQL 实现允许多个」这条是批次 1B 实测后补的（见 §3.6）：报表的销售 / 采购页面有自己的范围策略
+（页面权限 + 只按仓库），强行与首页 / 大屏共用同一份 SQL 会把两边的权限边界搅在一起。因此
+**统一的是口径，不是 SQL 位置**。
 
 **注意边界**：这不等于「所有报表查询都必须调一个万能 Service」。`ScmBusinessMetricsService` 只收**跨端共用的经营类指标**，收多了必然变成 God Service。
 
@@ -165,20 +170,29 @@ RECEIVED / SHORT_CLOSED / CANCELLED 为终态
 ### 3.3 分层与目录
 
 ```
-              ScmBusinessMetricsService        ← 唯一取数出口（只读）
-                 /        |         \
-                ↓         ↓          ↓
-     DashboardService  ScreenDataService  ReportService
-          首页             大屏              报表
+                      经营指标口径规则（轴 / 状态 / 金额列 / 指标名）
+                              │
+              ┌───────────────┴───────────────┐
+              ↓                               ↓
+   ScmBusinessMetricsService            ReportService
+        首页 / 大屏 / Dashboard           报表专属范围策略
+              │                               │
+              ↓                               ↓
+   ScmBusinessMetricsMapper.xml         ReportDao.xml
 ```
+
+两边**必须一致**：时间轴、状态、金额列。两边**允许不同**：范围策略（大屏按「归属 ∩ 仓库」，
+报表按「页面权限 + 只按仓库」）。采购的已提交状态清单由 `ScmPurchaseStatusEnum.committedNames()`
+传参给两边的 SQL，只有一处来源。
 
 ```
 com/xsy/scm/metrics/
-├── service/ScmBusinessMetricsService.java   唯一取数出口
+├── service/ScmBusinessMetricsService.java   跨端共用经营指标的编排（口径规则在这里）
 ├── dao/ScmBusinessMetricsDao.java           方法名自带时间轴（ByConfirmedAt / ByCreatedAt）
-├── domain/                                  SalesMetrics / MasterDataMetrics / PurchaseMetrics
-│                                            InventoryMetrics / InventoryHealth / InventoryHealthRow
-│                                            TrendMetrics / TrendPoint / RankItem
+├── domain/                                  SalesMetrics / SalesRangeMetrics / SalesFilter
+│                                            MasterDataMetrics / PurchaseMetrics / PurchaseRangeMetrics
+│                                            PurchaseFilter / InventoryMetrics / InventoryHealth
+│                                            InventoryHealthRow / TrendMetrics / TrendPoint / RankItem
 └── constant/ScmMovementDirections.java      流水方向清单，由枚举方向位派生
 mapper/scm/metrics/ScmBusinessMetricsMapper.xml
 ```
@@ -189,7 +203,7 @@ mapper/scm/metrics/ScmBusinessMetricsMapper.xml
 迁移动作：
 
 - `screen/ScreenDataMapper.xml` 里的经营 / 采购 / 库存聚合 SQL **迁入** metrics mapper；`ScreenDataService` 改为调用 metrics service，**大屏 VO 与前端契约不变**。
-- `report/ReportDao.xml` 里与 metrics 重叠的部分（订单数、销售额、采购额）改为引用 metrics service；报表特有的部分留在报表域。
+- `report/ReportDao.xml` 保留自己的销售 / 采购聚合 SQL（范围策略不同），但**口径必须与 metrics 一致**，采购状态清单改由枚举传参。
 - `dashboard` 模块只做「面向首页的装配 + 权限裁剪」，**不写 SQL**。
 
 ### 3.4 口径命名规则（长期规则）
@@ -220,8 +234,12 @@ ScmBusinessMetricsService
 首页 / 大屏 / 报表
 ```
 
-当前实现为**排除法**（非 `DRAFT` 且非 `CANCELLED`），而不是正列举四个状态名。理由与 `ScmMovementDirections` 同源：
-以后新增 `CLOSED` / `PARTIALLY_CLOSED` 这类状态时，正列举会**静默漏算**（数字看起来正常、只是偏小），排除法则默认把它算进来。
+当前实现为**穷尽 switch、不写 default**：enum 一旦新增状态（如 `PENDING_APPROVAL` / `REJECTED` / `CLOSED`），
+`committed()` 直接编译不过，逼着开发者显式裁决新状态算不算已提交。
+
+不用「排除 `DRAFT` 与 `CANCELLED`」的写法：那样确实不会漏算新状态，但会把**尚未进入履约**的状态
+（审批中、已驳回、备货中）默认算进来，而这类错法同样是静默的 —— 数字看起来正常，只是偏大。
+
 采购状态机的合法转换（`PurchaseOrderStateMachine`）与 `ck_purchase_order_status` 白名单是这套派生的依据。
 
 **大屏的处置**：把「今日销售额」从 `created_at` 轴切到 `confirmed_at` 轴，与报表同名同义。若决定保留创建轴，则**必须改名**为「今日下单金额」。`todayOrderedAmount` 这个死字段要么删掉，要么改名后真正展示出来。
@@ -234,12 +252,15 @@ ScmBusinessMetricsService
 
 **不做全仓 `SUM(...)` 扫描** —— 订单、支付、结算、打印、财务里合法出现金额聚合，一刀切会误杀。改成三条针对性规则 + 一层结果守卫：
 
-1. **`screen/ScreenDataMapper.xml`**：迁移完成后不得再存在目标经营 KPI 的独立聚合 SQL（这些 `select` 应已删除，只留大屏独有的大屏专属聚合）。
-2. **`report/ReportDao.xml`**：不得独立实现已迁入 metrics 的同名 KPI（断言对应 `select` 不再含 `sales_order` / `purchase_order` 的金额聚合）。
+1. **`screen/ScreenDataMapper.xml`**：不得再存在目标经营 KPI 的独立聚合 SQL（这些 `select` 应已删除，只留大屏专属的聚合）。
+2. **`report/ReportDao.xml`**：允许保留自己的 SQL（范围策略不同），但**口径必须与 metrics 一致** —— 断言销售聚合用 `confirmed_at` + 结算金额列 + `CONFIRMED`，采购状态必须来自 `committedStatuses` 参数而不是字面量。
 3. **`dashboard` 模块**：不得直接访问 `sales_order` / `purchase_order` 写统计 SQL（只许调 metrics service）。
 4. **PG IT 结果一致性守卫**：同一区间下，metrics service 与各消费端返回值必须相等；用例覆盖 0 值、跨日边界（23:50 创建 / 次日确认）与数据范围收窄。
 
 规则 1–3 走源码契约（可被注入违规打红），规则 4 走 IT。
+
+**注意规则 2 的形态变化**：它守的是「口径一致」，不是「不许有第二份 SQL」。这是 §3.6 的直接后果 ——
+契约也要跟着从「同 SQL」改成「同口径」。
 
 ### 3.6 口径同源 ≠ 范围同源（1B 实测出的边界）
 
